@@ -5,8 +5,8 @@ import { expect } from 'chai';
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
-import { EventEmitter } from 'node:stream';
 import * as tty from 'node:tty';
 import { pathToFileURL } from 'node:url';
 import * as util from 'node:util';
@@ -17,8 +17,8 @@ import {
   shouldRunCodesignTests,
   signApp,
   spawn
-} from './lib/codesign-helpers';
-import { withTempDirectory } from './lib/fs-helpers';
+} from './lib/codesign-helpers.ts';
+import { withTempDirectory } from './lib/fs-helpers.ts';
 import {
   getRemoteContext,
   ifdescribe,
@@ -26,13 +26,18 @@ import {
   itremote,
   startRemoteControlApp,
   useRemoteContext
-} from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+} from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
-const mainFixturesPath = path.resolve(__dirname, 'fixtures');
+import type { EventEmitter } from 'node:stream';
+
+// The startup snapshot spec below eval()s a CommonJS snippet in this scope too.
+const require = createRequire(import.meta.url);
+
+const mainFixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
 describe('node feature', () => {
-  const fixtures = path.join(__dirname, 'fixtures');
+  const fixtures = path.join(import.meta.dirname, 'fixtures');
 
   describe('child_process', () => {
     describe('child_process.fork', () => {
@@ -189,7 +194,7 @@ describe('node feature', () => {
 
       it('has the electron version in process.versions', async () => {
         const source = 'process.send(process.versions)';
-        const forked = require('node:child_process').fork('--eval', [source]);
+        const forked = childProcess.fork('--eval', [source]);
         const [message] = await once(forked, 'message');
         expect(message)
           .to.have.own.property('electron')
@@ -353,7 +358,7 @@ describe('node feature', () => {
     };
     describe('error thrown in main process node context', () => {
       it('gets emitted as a process uncaughtException event', async () => {
-        fs.readFile(__filename, () => {
+        fs.readFile(import.meta.filename, () => {
           throw new Error('hello');
         });
         const result = await new Promise((resolve) =>
@@ -367,7 +372,7 @@ describe('node feature', () => {
 
     describe('promise rejection in main process node context', () => {
       it('gets emitted as a process unhandledRejection event', async () => {
-        fs.readFile(__filename, () => {
+        fs.readFile(import.meta.filename, () => {
           Promise.reject(new Error('hello'));
         });
         const result = await new Promise((resolve) =>
@@ -431,7 +436,7 @@ describe('node feature', () => {
             })
           );
         },
-        [__filename]
+        [import.meta.filename]
       );
     });
 
@@ -454,7 +459,7 @@ describe('node feature', () => {
             });
           });
         },
-        [__filename]
+        [import.meta.filename]
       );
     });
 
@@ -633,6 +638,76 @@ describe('node feature', () => {
       })`);
       const result = await Promise.race([removed, gone.then(([, details]) => `render process ${details.reason}`)]);
       expect(result).to.equal(10);
+    });
+
+    // A preload that removes its own frame asynchronously must not have that
+    // run underneath Blink's context creation or one of the frame's own Node.js
+    // callbacks.
+    for (const via of ['queueMicrotask', 'nextTick', 'setImmediate', 'fs-callback']) {
+      it(`does not crash when a preload removes its own iframe from ${via}`, async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: false,
+            nodeIntegrationInSubFrames: true,
+            preload: path.join(fixtures, 'module', 'preload-remove-own-frame.js'),
+            additionalArguments: [`--remove-own-frame-via=${via}`]
+          }
+        });
+        const gone = once(w.webContents, 'render-process-gone') as Promise<
+          [Electron.Event, Electron.RenderProcessGoneDetails]
+        >;
+        await w.loadFile(path.join(fixtures, 'pages', 'blank.html'));
+        const removed = w.webContents.executeJavaScript(`new Promise((resolve) => {
+          const frames = Array.from({ length: 10 }, () => {
+            const frame = document.createElement('iframe');
+            frame.src = 'base-page.html';
+            return document.body.appendChild(frame);
+          });
+          const check = () => frames.some((frame) => frame.isConnected) ? setTimeout(check, 10) : resolve(frames.length);
+          check();
+        })`);
+        const result = await Promise.race([removed, gone.then(([, details]) => `render process ${details.reason}`)]);
+        expect(result).to.equal(10);
+      });
+    }
+
+    it('runs preload promise reactions and nextTick callbacks before page scripts', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: false,
+          contextIsolation: false,
+          preload: path.join(fixtures, 'module', 'preload-task-order.js')
+        }
+      });
+      await w.loadFile(path.join(fixtures, 'pages', 'task-order.html'));
+      expect(await w.webContents.executeJavaScript('window.taskOrder')).to.deep.equal([
+        'preload',
+        'microtask',
+        'nextTick',
+        'page'
+      ]);
+    });
+
+    // about:blank finishes loading inside the task that creates the frame's
+    // environment, so the callbacks the preload queued are still pending when
+    // the document-start hook runs instead of at a later checkpoint.
+    it('runs preload promise reactions and nextTick callbacks in a document that loads synchronously', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: false,
+          contextIsolation: false,
+          preload: path.join(fixtures, 'module', 'preload-task-order.js')
+        }
+      });
+      await w.loadURL('about:blank');
+      expect(await w.webContents.executeJavaScript('window.taskOrder')).to.have.members([
+        'preload',
+        'microtask',
+        'nextTick'
+      ]);
     });
   });
 

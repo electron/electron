@@ -146,7 +146,6 @@ declare namespace Electron {
     _send(internal: boolean, channel: string, args: any): void;
     _sendInternal(channel: string, ...args: any[]): void;
     _transferSharedTexture(transfer: any, textureId: string, args: any[]): Promise<Electron.SharedTextureSyncToken>;
-    _postMessage(channel: string, message: any, transfer?: any[]): void;
     _lifecycleStateForTesting: string;
   }
 

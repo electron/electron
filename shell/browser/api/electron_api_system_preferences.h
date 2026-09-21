@@ -8,10 +8,10 @@
 #include <string>
 
 #include "base/values.h"
-#include "gin/per_isolate_data.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/browser/microtasks_runner.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "base/callback_list.h"
@@ -40,8 +40,7 @@ enum class NotificationCenterKind {
 
 class SystemPreferences final
     : public gin::Wrappable<SystemPreferences>,
-      public gin_helper::EventEmitterMixin<SystemPreferences>,
-      public gin::PerIsolateData::DisposeObserver
+      public gin_helper::EventEmitterMixin<SystemPreferences>
 #if BUILDFLAG(IS_WIN)
     ,
       public BrowserObserver
@@ -62,10 +61,7 @@ class SystemPreferences final
   const char* GetHumanReadableName() const override;
   void Trace(cppgc::Visitor* visitor) const override;
 
-  // gin::PerIsolateData::DisposeObserver
-  void OnBeforeDispose(v8::Isolate* isolate) override {}
-  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override;
-  void OnDisposed() override {}
+  void OnBeforeMicrotasksRunnerDispose();
 
   std::string GetAccentColor();
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)

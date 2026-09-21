@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, session, net as electronNet, WebContents, utilityProcess } from 'electron/main';
+import { app, BrowserWindow, Menu, session, net as electronNet, type WebContents, utilityProcess } from 'electron/main';
 
 import { assert, expect } from 'chai';
 
@@ -7,6 +7,7 @@ import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
+import { createRequire } from 'node:module';
 import * as net from 'node:net';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -14,17 +15,19 @@ import * as readline from 'node:readline';
 import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
-import { collectStreamBody, getResponse } from './lib/net-helpers';
-import { defer, ifdescribe, ifit, isWayland, listen, waitUntil } from './lib/spec-helpers';
-import { closeWindow, closeAllWindows } from './lib/window-helpers';
+import { collectStreamBody, getResponse } from './lib/net-helpers.ts';
+import { defer, ifdescribe, ifit, isWayland, listen, waitUntil } from './lib/spec-helpers.ts';
+import { closeWindow, closeAllWindows } from './lib/window-helpers.ts';
 import {
   makeXdgMockDirectories,
   spawnProtocolInfoWithXdgMock,
   spawnProtocolNameWithXdgMock,
   writeProtocolAssociation
-} from './lib/xdg-helpers';
+} from './lib/xdg-helpers.ts';
 
-const fixturesPath = path.resolve(__dirname, 'fixtures');
+const require = createRequire(import.meta.url);
+
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
 const isMacOSx64 = process.platform === 'darwin' && process.arch === 'x64';
 
@@ -288,6 +291,30 @@ describe('app module', () => {
         expect(stderr).to.not.match(/Received signal \d+|Ignoring extra certs/, message);
       }
     });
+
+    // A missing display makes toolkit initialisation fail before the main loop
+    // runs; that early return must still tear the JS environment down cleanly.
+    // Skipped under ASan for the same reason as the test above.
+    ifit(process.platform === 'linux' && !process.env.IS_ASAN)(
+      'exits with code 1 when no display is available',
+      async () => {
+        const appPath = path.join(fixturesPath, 'api', 'no-display');
+        const env = { ...process.env };
+        delete env.DISPLAY;
+        delete env.WAYLAND_DISPLAY;
+        appProcess = cp.spawn(process.execPath, [appPath, '--ozone-platform=x11'], { env });
+        let stderr = '';
+        appProcess.stderr!.on('data', (data) => {
+          stderr += data;
+        });
+        const [code, signal] = await once(appProcess, 'exit');
+        appProcess = null;
+        const message = `code=${code} signal=${signal}\n${stderr}`;
+        expect(signal).to.equal(null, message);
+        expect(code).to.equal(1, message);
+        expect(stderr).to.not.match(/Received signal \d+|Check failed/, message);
+      }
+    );
 
     ifit(['darwin', 'linux'].includes(process.platform))('exits gracefully', async function () {
       const electronPath = process.execPath;
@@ -1106,6 +1133,12 @@ describe('app module', () => {
   });
 
   ifdescribe(process.platform !== 'linux')('accessibility support functionality', () => {
+    // These tests toggle a process-wide AXMode. Turn it back off so the rest of
+    // the suite doesn't run with renderer accessibility enabled.
+    afterEach(() => {
+      app.setAccessibilitySupportEnabled(false);
+    });
+
     it('is mutable', () => {
       const values = [false, true, false];
       const setters: Array<(arg: boolean) => void> = [
@@ -1273,8 +1306,8 @@ describe('app module', () => {
     });
 
     it('returns the overridden path', () => {
-      app.setPath('music', __dirname);
-      expect(app.getPath('music')).to.equal(__dirname);
+      app.setPath('music', import.meta.dirname);
+      expect(app.getPath('music')).to.equal(import.meta.dirname);
     });
 
     if (process.platform === 'win32') {
@@ -1311,7 +1344,7 @@ describe('app module', () => {
     });
 
     it('does not create a new directory by default', () => {
-      const badPath = path.join(__dirname, 'music');
+      const badPath = path.join(import.meta.dirname, 'music');
 
       expect(fs.existsSync(badPath)).to.be.false();
       app.setPath('music', badPath);
@@ -1323,7 +1356,7 @@ describe('app module', () => {
     });
 
     describe('sessionData', () => {
-      const appPath = path.join(__dirname, 'fixtures', 'apps', 'set-path');
+      const appPath = path.join(import.meta.dirname, 'fixtures', 'apps', 'set-path');
       const appName = JSON.parse(fs.readFileSync(path.join(appPath, 'package.json'), 'utf8')).name;
       const userDataPath = path.join(app.getPath('appData'), appName);
       const tempBrowserDataPath = path.join(app.getPath('temp'), appName);
@@ -1780,7 +1813,7 @@ describe('app module', () => {
 
   // FIXME Get these specs running on Linux CI
   ifdescribe(process.platform !== 'linux')('getFileIcon() API', () => {
-    const iconPath = path.join(__dirname, 'fixtures/assets/icon.ico');
+    const iconPath = path.join(import.meta.dirname, 'fixtures/assets/icon.ico');
     const sizes = {
       small: 16,
       normal: 32,
@@ -2477,7 +2510,13 @@ describe('app module', () => {
     });
 
     it('impacts proxy for requests made from utility process', async () => {
-      const utilityFixturePath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process', 'api-net-spec.js');
+      const utilityFixturePath = path.resolve(
+        import.meta.dirname,
+        'fixtures',
+        'api',
+        'utility-process',
+        'api-net-spec.js'
+      );
       const fn = async () => {
         const urlRequest = electronNet.request('http://example.com/');
         const response = await getResponse(urlRequest);

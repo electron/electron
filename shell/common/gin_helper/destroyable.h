@@ -7,12 +7,20 @@
 
 #include "v8/include/v8-forward.h"
 
+namespace gin {
+class WrappableBase;
+}
+
 namespace gin_helper {
 
 // Manage the native object wrapped in JS wrappers.
 struct Destroyable {
   // Determine whether the native object has been destroyed.
   static bool IsDestroyed(v8::Local<v8::Object> object);
+
+  // Disconnect a cppgc managed object from its existing JavaScript wrapper.
+  static void MarkDestroyed(v8::Isolate* isolate,
+                            gin::WrappableBase* wrappable);
 
   // Add "destroy" and "isDestroyed" to prototype chain.
   static void MakeDestroyable(v8::Isolate* isolate,

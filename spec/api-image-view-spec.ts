@@ -5,7 +5,7 @@ import { expect } from 'chai';
 
 import * as path from 'node:path';
 
-import { closeAllWindows } from './lib/window-helpers';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('ImageView', () => {
   afterEach(async () => {
@@ -25,14 +25,14 @@ describe('ImageView', () => {
 
   it('can set a NativeImage', () => {
     const view = new ImageView();
-    const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+    const image = nativeImage.createFromPath(path.join(import.meta.dirname, 'fixtures', 'assets', 'logo.png'));
     view.setImage(image);
   });
 
   it('can change its NativeImage', () => {
     const view = new ImageView();
-    const image1 = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
-    const image2 = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'capybara.png'));
+    const image1 = nativeImage.createFromPath(path.join(import.meta.dirname, 'fixtures', 'assets', 'logo.png'));
+    const image2 = nativeImage.createFromPath(path.join(import.meta.dirname, 'fixtures', 'assets', 'capybara.png'));
     view.setImage(image1);
     view.setImage(image2);
   });
@@ -40,7 +40,7 @@ describe('ImageView', () => {
   it('can be embedded in a BaseWindow', () => {
     const w = new BaseWindow({ show: false });
     const view = new ImageView();
-    const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'capybara.png'));
+    const image = nativeImage.createFromPath(path.join(import.meta.dirname, 'fixtures', 'assets', 'capybara.png'));
     view.setImage(image);
     w.setContentView(view);
     w.setContentSize(image.getSize().width, image.getSize().height);
@@ -54,7 +54,7 @@ describe('ImageView', () => {
 
   it('can be embedded in a BrowserWindow', () => {
     const w = new BrowserWindow({ show: false });
-    const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+    const image = nativeImage.createFromPath(path.join(import.meta.dirname, 'fixtures', 'assets', 'logo.png'));
     const view = new ImageView();
     view.setImage(image);
     w.contentView.addChildView(view);
@@ -71,14 +71,14 @@ describe('ImageView', () => {
 
   it('can be removed from a BrowserWindow', async () => {
     const w = new BrowserWindow({ show: false });
-    const image = nativeImage.createFromPath(path.join(__dirname, 'fixtures', 'assets', 'logo.png'));
+    const image = nativeImage.createFromPath(path.join(import.meta.dirname, 'fixtures', 'assets', 'logo.png'));
     const view = new ImageView();
     view.setImage(image);
 
     w.contentView.addChildView(view);
     expect(w.contentView.children).to.include(view);
 
-    await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'blank.html'));
+    await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'blank.html'));
 
     w.contentView.removeChildView(view);
     expect(w.contentView.children).to.not.include(view);

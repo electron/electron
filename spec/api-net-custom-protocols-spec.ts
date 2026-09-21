@@ -5,11 +5,11 @@ import { expect } from 'chai';
 import * as path from 'node:path';
 import * as url from 'node:url';
 
-import { defer } from './lib/spec-helpers';
+import { defer } from './lib/spec-helpers.ts';
 
 describe('net module custom protocols', () => {
   it('can request file:// URLs', async () => {
-    const resp = await net.fetch(url.pathToFileURL(path.join(__dirname, 'fixtures', 'hello.txt')).toString());
+    const resp = await net.fetch(url.pathToFileURL(path.join(import.meta.dirname, 'fixtures', 'hello.txt')).toString());
     expect(resp.ok).to.be.true();
     // trimRight instead of asserting the whole string to avoid line ending shenanigans on WOA
     expect((await resp.text()).trimRight()).to.equal('hello world');

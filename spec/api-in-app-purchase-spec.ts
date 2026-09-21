@@ -4,7 +4,7 @@ import { expect } from 'chai';
 
 import * as childProcess from 'node:child_process';
 
-import { ifdescribe, waitUntil } from './lib/spec-helpers';
+import { ifdescribe, waitUntil } from './lib/spec-helpers.ts';
 
 // pid -> executable for every process that owns an on-screen window. Owner
 // pids, unlike window titles, need no screen-recording permission.

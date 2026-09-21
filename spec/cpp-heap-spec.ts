@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { once } from 'node:events';
 import * as path from 'node:path';
 
-import { ifdescribe, isTestingBindingAvailable, itremote, startRemoteControlApp } from './lib/spec-helpers';
+import { ifdescribe, isTestingBindingAvailable, itremote, startRemoteControlApp } from './lib/spec-helpers.ts';
 
 describe('cpp heap', () => {
   describe('app module', () => {
@@ -35,8 +35,8 @@ describe('cpp heap', () => {
           const state = recordState();
           return containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / App']);
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true);
     });
@@ -74,8 +74,8 @@ describe('cpp heap', () => {
           console.log(nativeTheme.shouldUseDarkColors);
           return containsRetainingPath(recordState().snapshot, ['C++ Persistent roots', 'Electron / NativeTheme']);
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true);
     });
@@ -116,8 +116,8 @@ describe('cpp heap', () => {
             'Electron / PushNotifications'
           ]);
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true);
     });
@@ -155,8 +155,8 @@ describe('cpp heap', () => {
           console.log(typeof safeStorage.isAsyncEncryptionAvailable);
           return containsRetainingPath(recordState().snapshot, ['C++ Persistent roots', 'Electron / SafeStorage']);
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true);
     });
@@ -212,8 +212,8 @@ describe('cpp heap', () => {
             'Electron / SystemPreferences'
           ]);
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true);
     });
@@ -275,20 +275,33 @@ describe('cpp heap', () => {
           const isClosed = once(w, 'closed');
           w.destroy();
           await isClosed;
-          const numSessions = containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / Session'], {
-            occurrences: 4
-          });
-          const canTraceJSReferences = containsRetainingPath(state.snapshot, [
+          const hasThreeSessionRoots = containsRetainingPath(
+            state.snapshot,
+            ['C++ Persistent roots', 'Electron / Session'],
+            {
+              occurrences: 3
+            }
+          );
+          const tracesWindowSession = containsRetainingPath(state.snapshot, [
+            'Electron / WebContents',
+            'Electron / Session'
+          ]);
+          const tracesCookies = containsRetainingPath(state.snapshot, [
             'C++ Persistent roots',
             'Electron / Session',
             'Electron / Cookies'
           ]);
-          return numSessions && canTraceJSReferences;
+          return { hasThreeSessionRoots, tracesWindowSession, tracesCookies };
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
-      expect(result).to.equal(true);
+      expect(result.hasThreeSessionRoots).to.equal(true, 'each distinct Session should have its own persistent root');
+      expect(result.tracesWindowSession).to.equal(
+        true,
+        'WebContents should trace its Session instead of adding a persistent root'
+      );
+      expect(result.tracesCookies).to.equal(true, 'Session should trace its Cookies');
     });
   });
 
@@ -335,8 +348,8 @@ describe('cpp heap', () => {
           ]);
           return stillAlive;
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true, 'Cookies should survive GC when traced from Session');
     });
@@ -396,8 +409,8 @@ describe('cpp heap', () => {
           server.close();
           return stillAlive;
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true, 'DownloadItem should survive GC while the download is in progress');
     });
@@ -445,8 +458,8 @@ describe('cpp heap', () => {
           const found = containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / DownloadItem']);
           return !found;
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true, 'DownloadItem should be released after the download completes and GC runs');
     });
@@ -562,7 +575,7 @@ describe('cpp heap', () => {
 
           setTimeout(() => app.quit());
         },
-        path.join(__dirname, 'fixtures', 'api', 'service-workers'),
+        path.join(import.meta.dirname, 'fixtures', 'api', 'service-workers'),
         setupWorkerSource
       );
 
@@ -598,10 +611,10 @@ describe('cpp heap', () => {
           ctx.server.close();
           return rooted;
         },
-        path.join(__dirname, 'fixtures', 'api', 'service-workers'),
+        path.join(import.meta.dirname, 'fixtures', 'api', 'service-workers'),
         setupWorkerSource,
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true, 'ServiceWorkerMain should be rooted via SelfKeepAlive while the version is live');
     });
@@ -649,10 +662,10 @@ describe('cpp heap', () => {
           ctx.server.close();
           return !rooted && !stillExists;
         },
-        path.join(__dirname, 'fixtures', 'api', 'service-workers'),
+        path.join(import.meta.dirname, 'fixtures', 'api', 'service-workers'),
         setupWorkerSource,
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(
         true,
@@ -678,8 +691,8 @@ describe('cpp heap', () => {
           ]);
           return present && !isPersistentRooted;
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true);
     });
@@ -738,8 +751,8 @@ describe('cpp heap', () => {
           ]);
           return present && !isPersistentRooted;
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true);
     });
@@ -783,8 +796,8 @@ describe('cpp heap', () => {
           port2.close();
           return containsRetainingPath(snapshot, ['C++ Persistent roots', 'Electron / MessagePort']);
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true);
     });
@@ -806,7 +819,7 @@ describe('cpp heap', () => {
 
         let { port1, port2 } = new MessageChannelMain();
         port1.start();
-        const weakRef = new WeakRef((port1 as any)._internalPort);
+        const weakRef = new WeakRef(port1);
         port1.close();
         port1 = null as any;
 
@@ -1089,8 +1102,8 @@ describe('cpp heap', () => {
             setTimeout(() => app.quit());
           }
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
 
       const [code] = await once(rc.process, 'exit');
@@ -1346,6 +1359,569 @@ describe('cpp heap', () => {
     });
   });
 
+  describe('webContents module', () => {
+    it('drops debugger protocol messages after its wrapper is collected', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--stress-incremental-marking']);
+      const collected = await remotely(async () => {
+        const { webContents } = require('electron');
+
+        const debuggerRef = await (async () => {
+          const contents = webContents.create();
+          await contents.loadURL(
+            'data:text/html,<script>setInterval(() => console.log("protocol traffic"), 10)</script>'
+          );
+          contents.debugger.attach();
+          await contents.debugger.sendCommand('Runtime.enable');
+          return new WeakRef(contents.debugger);
+        })();
+
+        const pressure: object[][] = [];
+        for (let attempt = 0; attempt < 200; ++attempt) {
+          pressure.push(
+            Array.from({ length: 5000 }, (_, index) => ({
+              value: `${attempt}:${index}`
+            }))
+          );
+          if (pressure.length > 8) pressure.shift();
+          await new Promise((resolve) => setTimeout(resolve, 10));
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        return !debuggerRef.deref();
+      });
+
+      expect(collected).to.equal(true);
+    });
+
+    it('detaches a retained debugger before collecting it with an unowned WebContents', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string) => {
+          const { webContents } = require('electron');
+          const { recordState } = require(heap);
+          const v8Util = process._linkedBinding('electron_common_v8_util');
+          const countContents = () =>
+            recordState().snapshot.filter(
+              (node: { name: string; type: string }) => node.name === 'Electron / WebContents' && node.type !== 'string'
+            ).length;
+          const before = countContents();
+          let detachedEvents = 0;
+          const onDetach = () => {
+            detachedEvents++;
+          };
+          const state = await (async () => {
+            const contents = webContents.create();
+            await contents.loadURL('about:blank');
+            contents.on('test-cycle', () => contents.id);
+            const debuggerApi = contents.debugger;
+            debuggerApi.attach();
+            debuggerApi.on('detach', onDetach);
+            return {
+              contents: new WeakRef(contents),
+              debugger: debuggerApi as typeof debuggerApi | null,
+              debuggerRef: new WeakRef(debuggerApi),
+              frame: contents.mainFrame,
+              id: contents.id
+            };
+          })();
+
+          for (let attempt = 0; attempt < 30; ++attempt) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+            if (detachedEvents === 1) break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          state.debugger = null;
+          for (let attempt = 0; attempt < 30; ++attempt) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          let frameError = '';
+          try {
+            frameError = `Frame is still live: ${state.frame.url}`;
+          } catch (error) {
+            frameError = (error as Error).message;
+          }
+          return {
+            released: !state.contents.deref() && !state.debuggerRef.deref(),
+            removedFromRegistry: webContents.fromId(state.id) === undefined,
+            detachedEvents,
+            frameError,
+            before,
+            after: countContents()
+          };
+        },
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap')
+      );
+
+      expect(result.released).to.equal(true);
+      expect(result.removedFromRegistry).to.equal(true);
+      expect(result.detachedEvents).to.equal(1);
+      expect(result.frameError).to.include('Render frame was disposed');
+      expect(result.after).to.equal(result.before);
+    });
+
+    it('defers guest destruction and emits destroyed only once', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const result = await remotely(async () => {
+        const { webContents } = require('electron');
+        const { once } = require('node:events');
+        const embedder = webContents.create();
+        const guest = webContents.create({ type: 'webview', embedder });
+        const type = guest.getType();
+        let destroyedEvents = 0;
+        guest.on('destroyed', () => {
+          destroyedEvents++;
+        });
+        const destroyed = once(guest, 'destroyed', { signal: AbortSignal.timeout(10000) });
+        guest.destroy();
+        const destroyedOnReturn = guest.isDestroyed();
+        const eventsOnReturn = destroyedEvents;
+        guest.destroy();
+        await destroyed;
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        const embedderDestroyed = once(embedder, 'destroyed', { signal: AbortSignal.timeout(10000) });
+        embedder.destroy();
+        await embedderDestroyed;
+        return { type, destroyedOnReturn, eventsOnReturn, destroyedEvents, destroyed: guest.isDestroyed() };
+      });
+
+      expect(result).to.deep.equal({
+        type: 'webview',
+        destroyedOnReturn: false,
+        eventsOnReturn: 0,
+        destroyedEvents: 1,
+        destroyed: true
+      });
+    });
+
+    it('does not retain an attached guest through its embedder', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(async () => {
+        const { webContents } = require('electron');
+        const v8Util = process._linkedBinding('electron_common_v8_util');
+        const state = await (async () => {
+          const embedder = webContents.create();
+          await embedder.loadURL('data:text/html,<iframe src="about:blank"></iframe>');
+          const guest = (webContents as typeof ElectronInternal.WebContents).create({
+            type: 'webview',
+            embedder
+          });
+          await guest.loadURL('about:blank');
+          guest.attachToIframe(embedder, embedder.mainFrame.frames[0].frameToken);
+          return {
+            embedder: new WeakRef(embedder),
+            embedderId: embedder.id,
+            guest: new WeakRef(guest),
+            guestId: guest.id
+          };
+        })();
+
+        for (let attempt = 0; attempt < 60; ++attempt) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          v8Util.requestGarbageCollectionForTesting();
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        return {
+          embedderReleased: !state.embedder.deref(),
+          embedderRemovedFromRegistry: webContents.fromId(state.embedderId) === undefined,
+          guestReleased: !state.guest.deref(),
+          guestRemovedFromRegistry: webContents.fromId(state.guestId) === undefined
+        };
+      });
+
+      expect(result).to.deep.equal({
+        embedderReleased: true,
+        embedderRemovedFromRegistry: true,
+        guestReleased: true,
+        guestRemovedFromRegistry: true
+      });
+    });
+
+    it('disposes frame wrappers when an attached guest wrapper is destroyed', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(async () => {
+        const { webContents } = require('electron');
+        const { once } = require('node:events');
+        const v8Util = process._linkedBinding('electron_common_v8_util');
+        const embedder = webContents.create();
+
+        const frameState = await (async () => {
+          await embedder.loadURL('data:text/html,<iframe src="about:blank"></iframe>');
+          const embedderFrame = embedder.mainFrame.frames[0];
+          const guest = (webContents as typeof ElectronInternal.WebContents).create({
+            type: 'webview',
+            embedder
+          });
+          await guest.loadURL('about:blank');
+          guest.attachToIframe(embedder, embedderFrame.frameToken);
+
+          const guestFrame = guest.mainFrame;
+          const destroyed = once(guest, 'destroyed', { signal: AbortSignal.timeout(10000) });
+          guest.destroy();
+          await destroyed;
+
+          let frameError = '';
+          try {
+            frameError = `Frame is still live: ${guestFrame.url}`;
+          } catch (error) {
+            frameError = (error as Error).message;
+          }
+          return {
+            frameDestroyed: guestFrame.isDestroyed(),
+            frameError,
+            frameRef: new WeakRef(guestFrame)
+          };
+        })();
+
+        for (let attempt = 0; attempt < 30; ++attempt) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          v8Util.requestGarbageCollectionForTesting();
+          if (!frameState.frameRef.deref()) break;
+        }
+
+        const frameReleased = !frameState.frameRef.deref();
+        const embedderDestroyed = once(embedder, 'destroyed', { signal: AbortSignal.timeout(10000) });
+        embedder.destroy();
+        await embedderDestroyed;
+
+        return {
+          frameDestroyed: frameState.frameDestroyed,
+          frameError: frameState.frameError,
+          frameReleased
+        };
+      });
+
+      expect(result.frameDestroyed).to.equal(true);
+      expect(result.frameError).to.include('Render frame was disposed');
+      expect(result.frameReleased).to.equal(true, 'the attached guest frame should release its SelfKeepAlive root');
+    });
+
+    it('disposes frame wrappers when a background page wrapper is destroyed', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const result = await remotely(
+        async (extensionPath: string) => {
+          const { app, session } = require('electron');
+          const { randomUUID } = require('node:crypto');
+          const { once } = require('node:events');
+          const customSession = session.fromPartition(`persist:cppgc-background-page-${randomUUID()}`);
+          const created = once(app, 'web-contents-created', { signal: AbortSignal.timeout(10000) });
+          const extension = await customSession.extensions.loadExtension(extensionPath);
+          const [, backgroundPage] = await created;
+
+          try {
+            if (backgroundPage.isLoading()) {
+              await once(backgroundPage, 'did-finish-load', { signal: AbortSignal.timeout(10000) });
+            }
+            const type = backgroundPage.getType();
+            const frame = backgroundPage.mainFrame;
+            const destroyed = once(backgroundPage, 'destroyed', { signal: AbortSignal.timeout(10000) });
+            backgroundPage.destroy();
+            await destroyed;
+
+            let frameError = '';
+            try {
+              frameError = `Frame is still live: ${frame.url}`;
+            } catch (error) {
+              frameError = (error as Error).message;
+            }
+            return {
+              type,
+              frameDestroyed: frame.isDestroyed(),
+              frameError
+            };
+          } finally {
+            await customSession.extensions.removeExtension(extension.id);
+          }
+        },
+        path.join(import.meta.dirname, 'fixtures', 'extensions', 'persistent-background-page')
+      );
+
+      expect(result.type).to.equal('backgroundPage');
+      expect(result.frameDestroyed).to.equal(true);
+      expect(result.frameError).to.include('Render frame was disposed');
+    });
+
+    it('retains WebContents through their WebContentsView until native destruction', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { WebContentsView } = require('electron');
+          const { once } = require('node:events');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = process._linkedBinding('electron_common_v8_util');
+          const view = new WebContentsView();
+          const ref = new WeakRef(view.webContents);
+
+          for (let attempt = 0; attempt < 5; ++attempt) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+          const retained = ref.deref() === view.webContents && !view.webContents.isDestroyed();
+          const rooted = containsRetainingPath(recordState().snapshot, [
+            'C++ Persistent roots',
+            'Electron / WebContents'
+          ]);
+          const destroyed = once(view.webContents, 'destroyed', { signal: AbortSignal.timeout(10000) });
+          view.webContents.close();
+          await destroyed;
+
+          for (let attempt = 0; attempt < 30; ++attempt) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+            if (!ref.deref()) break;
+          }
+          return { retained, rooted, released: !ref.deref() };
+        },
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+
+      expect(result.retained).to.equal(true);
+      expect(result.rooted).to.equal(true);
+      expect(result.released).to.equal(true);
+    });
+
+    it('invalidates native methods while a destroyed JS wrapper remains reachable', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string) => {
+          const { webContents } = require('electron');
+          const { once } = require('node:events');
+          const { recordState } = require(heap);
+          const v8Util = process._linkedBinding('electron_common_v8_util');
+          const countContents = () =>
+            recordState().snapshot.filter(
+              (node: { name: string; type: string }) => node.name === 'Electron / WebContents' && node.type !== 'string'
+            ).length;
+          const before = countContents();
+          const contents = webContents.create();
+          const id = contents.id;
+          let destroyedEvents = 0;
+          let destroyedDuringEvent = false;
+          contents.on('destroyed', () => {
+            destroyedEvents++;
+            destroyedDuringEvent = contents.isDestroyed();
+          });
+          const destroyed = once(contents, 'destroyed', { signal: AbortSignal.timeout(10000) });
+          contents.destroy();
+          contents.destroy();
+          await destroyed;
+
+          for (let attempt = 0; attempt < 10; ++attempt) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+          let methodError = '';
+          try {
+            contents.getURL();
+          } catch (error) {
+            methodError = (error as Error).message;
+          }
+          const after = countContents();
+          return {
+            destroyedEvents,
+            destroyedDuringEvent,
+            methodError,
+            idPreserved: contents.id === id,
+            removedFromRegistry: webContents.fromId(id) === undefined,
+            isDestroyed: contents.isDestroyed(),
+            before,
+            after
+          };
+        },
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap')
+      );
+
+      expect(result.destroyedEvents).to.equal(1);
+      expect(result.destroyedDuringEvent).to.equal(true);
+      expect(result.methodError).to.equal('Object has been destroyed');
+      expect(result.idPreserved).to.equal(true);
+      expect(result.removedFromRegistry).to.equal(true);
+      expect(result.isDestroyed).to.equal(true);
+      expect(result.after).to.equal(result.before);
+    });
+
+    it('releases the remote DevTools root when DevTools closes', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { webContents } = require('electron');
+          const { once } = require('node:events');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = process._linkedBinding('electron_common_v8_util');
+          const contents = webContents.create();
+          await contents.loadURL('about:blank');
+          const opened = once(contents, 'devtools-opened', { signal: AbortSignal.timeout(10000) });
+          contents.openDevTools({ mode: 'detach', activate: false });
+          v8Util.requestGarbageCollectionForTesting();
+          await opened;
+          const ref = new WeakRef(contents.devToolsWebContents);
+          const rooted = containsRetainingPath(recordState().snapshot, [
+            'C++ Persistent roots',
+            'Electron / WebContents'
+          ]);
+          const closed = once(contents, 'devtools-closed', { signal: AbortSignal.timeout(10000) });
+          contents.closeDevTools();
+          await closed;
+
+          for (let attempt = 0; attempt < 30; ++attempt) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+            if (!ref.deref()) break;
+          }
+          const released = !ref.deref();
+          const rootReleased = !containsRetainingPath(recordState().snapshot, [
+            'C++ Persistent roots',
+            'Electron / WebContents'
+          ]);
+          const destroyed = once(contents, 'destroyed', { signal: AbortSignal.timeout(10000) });
+          contents.close();
+          await destroyed;
+          return { rooted, released, rootReleased };
+        },
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+
+      expect(result.rooted).to.equal(true);
+      expect(result.released).to.equal(true);
+      expect(result.rootReleased).to.equal(true);
+    });
+
+    it('stops DevTools indexing without retaining cppgc handles on its worker sequence', async () => {
+      const rc = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      await rc.remotely(async () => {
+        const { app, webContents } = require('electron');
+        const { once } = require('node:events');
+        const fs = require('node:fs');
+        const os = require('node:os');
+        const path = require('node:path');
+        const v8Util = process._linkedBinding('electron_common_v8_util');
+        const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-devtools-index-'));
+        const contents = webContents.create();
+
+        try {
+          for (let i = 0; i < 500; ++i) {
+            fs.writeFileSync(path.join(workspace, `${i}.txt`), `indexed content ${i}`);
+          }
+
+          await contents.loadURL('about:blank');
+          const opened = once(contents, 'devtools-opened', { signal: AbortSignal.timeout(10000) });
+          contents.openDevTools({ mode: 'detach', activate: false });
+          await opened;
+          contents.addWorkSpace(workspace);
+
+          const devTools = contents.devToolsWebContents;
+          await devTools.executeJavaScript(`InspectorFrontendHost.indexPath(42, ${JSON.stringify(workspace)}, '[]')`);
+          await devTools.executeJavaScript('InspectorFrontendHost.stopIndexing(42)');
+
+          const destroyed = once(contents, 'destroyed', { signal: AbortSignal.timeout(10000) });
+          contents.destroy();
+          await destroyed;
+          for (let attempt = 0; attempt < 10; ++attempt) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+          await new Promise((resolve) => setTimeout(resolve, 250));
+        } finally {
+          fs.rmSync(workspace, { recursive: true, force: true });
+        }
+
+        setTimeout(() => app.quit());
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    for (const collect of [false, true]) {
+      it(`does not crash on exit with ${collect ? 'collected' : 'live'} WebContents`, async () => {
+        const rc = await startRemoteControlApp(['--js-flags=--expose-gc']);
+        await rc.remotely(async (collect: boolean) => {
+          const { app, webContents } = require('electron');
+          const v8Util = process._linkedBinding('electron_common_v8_util');
+          if (collect) {
+            const ref = (() => {
+              const contents = webContents.create();
+              return new WeakRef(contents);
+            })();
+            for (let attempt = 0; attempt < 30; ++attempt) {
+              await new Promise((resolve) => setTimeout(resolve, 0));
+              v8Util.requestGarbageCollectionForTesting();
+              if (!ref.deref()) break;
+            }
+            if (ref.deref()) {
+              app.exit(1);
+              return;
+            }
+          } else {
+            (globalThis as any).contents = webContents.create();
+          }
+          setTimeout(() => app.quit());
+        }, collect);
+        const [code] = await once(rc.process, 'exit');
+        expect(code).to.equal(0);
+      });
+    }
+
+    it('destroys a live WebContentsView before its Session at exit', async () => {
+      const rc = await startRemoteControlApp();
+      await rc.remotely(async () => {
+        const { app, WebContentsView } = require('electron');
+        const view = new WebContentsView({
+          webPreferences: {
+            partition: `persist:shutdown-order-${process.pid}`
+          }
+        });
+        const session = view.webContents.session;
+        view.webContents.on('destroyed', () => {
+          session.getUserAgent();
+          session.getStoragePath();
+        });
+        (globalThis as any).view = view;
+        setTimeout(() => app.quit());
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('makes wrappers inert before shutdown cleanup regardless of registration order', async () => {
+      const rc = await startRemoteControlApp();
+      let stdout = '';
+      rc.process.stdout!.on('data', (chunk) => {
+        stdout += chunk;
+      });
+      await rc.remotely(async () => {
+        const { app, session, WebContentsView } = require('electron');
+        const view = new WebContentsView();
+        const laterSession = session.fromPartition(`persist:shutdown-later-${process.pid}`);
+        // app.exit() cannot change the exit code this late in shutdown, so
+        // report through stdout instead.
+        view.webContents.on('destroyed', () => {
+          let result = 'did not throw';
+          try {
+            laterSession.getUserAgent();
+          } catch (error) {
+            result = (error as Error).message;
+          }
+          process.stdout.write(`inert-session: ${result}\n`);
+        });
+        (globalThis as any).view = view;
+        (globalThis as any).laterSession = laterSession;
+        setTimeout(() => app.quit());
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+      expect(stdout).to.contain('inert-session: Object has been destroyed');
+    });
+  });
+
   describe('webFrameMain module', () => {
     it('does not crash on exit with live frame wrappers', async () => {
       const rc = await startRemoteControlApp();
@@ -1390,8 +1966,8 @@ describe('cpp heap', () => {
           w.destroy();
           return rooted;
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true, 'WebFrameMain should stay rooted via SelfKeepAlive while the frame is live');
     });
@@ -1444,8 +2020,8 @@ describe('cpp heap', () => {
             hasOneFrame
           };
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result.subframeCount).to.equal(1, 'a subframe WebFrameMain should be created before navigation');
       expect(result.mainFrameIsActive).to.equal(true, 'the remaining WebFrameMain should be the active main frame');
@@ -1521,9 +2097,9 @@ describe('cpp heap', () => {
             server.close();
           }
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js'),
-        path.join(__dirname, 'fixtures', 'sub-frames', 'preload.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js'),
+        path.join(import.meta.dirname, 'fixtures', 'sub-frames', 'preload.js')
       );
       expect(result).to.equal(true, 'only the active WebFrameMain should remain rooted after navigation');
     });
@@ -1598,8 +2174,8 @@ describe('cpp heap', () => {
           ]);
           return eventNativeStackReference && noPersistentReference;
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true);
     });
@@ -1636,7 +2212,7 @@ describe('cpp heap', () => {
           setTimeout(() => app.quit());
           return { found, noDuplicates };
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap')
       );
 
       const [code] = await once(rc.process, 'exit');
@@ -1666,9 +2242,9 @@ describe('cpp heap', () => {
           await once(child, 'exit');
           return found;
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js'),
-        path.join(__dirname, 'fixtures/api/utility-process/endless.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js'),
+        path.join(import.meta.dirname, 'fixtures/api/utility-process/endless.js')
       );
       expect(result).to.equal(true);
     });
@@ -1696,9 +2272,9 @@ describe('cpp heap', () => {
           const found = containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / UtilityProcess']);
           return !found;
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js'),
-        path.join(__dirname, 'fixtures/api/utility-process/empty.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js'),
+        path.join(import.meta.dirname, 'fixtures/api/utility-process/empty.js')
       );
       expect(result).to.equal(true, 'UtilityProcess should be released after exit and GC');
     });
@@ -1733,9 +2309,9 @@ describe('cpp heap', () => {
           setTimeout(() => app.quit());
           return stillAlive;
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js'),
-        path.join(__dirname, 'fixtures/api/utility-process/endless.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js'),
+        path.join(import.meta.dirname, 'fixtures/api/utility-process/endless.js')
       );
 
       const [code] = await once(rc.process, 'exit');
@@ -1773,7 +2349,7 @@ describe('cpp heap', () => {
           const after2 = await measure(10);
           return { after1, after2 };
         },
-        path.join(__dirname, 'fixtures/api/utility-process/empty.js')
+        path.join(import.meta.dirname, 'fixtures/api/utility-process/empty.js')
       );
 
       const growth = result.after2 - result.after1;
@@ -1816,8 +2392,8 @@ describe('cpp heap', () => {
           console.log(inAppPurchase.canMakePayments());
           return containsRetainingPath(recordState().snapshot, ['Electron / InAppPurchase']);
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true);
     });
@@ -1862,7 +2438,7 @@ describe('cpp heap', () => {
           setTimeout(() => app.quit());
           return { found, noDuplicates };
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap')
       );
 
       const [code] = await once(rc.process, 'exit');
@@ -1920,7 +2496,7 @@ describe('cpp heap', () => {
 
           return { beforeGC, afterGC, afterClear };
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap')
       );
 
       expect(result.afterGC).to.be.at.least(result.beforeGC, 'held PromiseHandle must survive GC');

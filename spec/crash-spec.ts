@@ -5,9 +5,9 @@ import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { ifit } from './lib/spec-helpers';
+import { ifit } from './lib/spec-helpers.ts';
 
-const fixturePath = path.resolve(__dirname, 'fixtures', 'crash-cases');
+const fixturePath = path.resolve(import.meta.dirname, 'fixtures', 'crash-cases');
 
 let children: cp.ChildProcessWithoutNullStreams[] = [];
 

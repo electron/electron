@@ -4,10 +4,10 @@ import {
   BrowserWindow,
   net,
   ipcMain,
-  Session,
+  type Session,
   utilityProcess,
   webFrameMain,
-  WebFrameMain
+  type WebFrameMain
 } from 'electron/main';
 
 import { expect } from 'chai';
@@ -21,12 +21,12 @@ import * as https from 'node:https';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { parseBasicAuth } from './lib/net-helpers';
-import { defer, deferKillUtilityProcess, ifit, listen, waitUntil } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { parseBasicAuth } from './lib/net-helpers.ts';
+import { defer, deferKillUtilityProcess, ifit, listen, waitUntil } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('session module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures');
+  const fixtures = path.resolve(import.meta.dirname, 'fixtures');
   const url = 'http://127.0.0.1';
 
   describe('session.defaultSession', () => {
@@ -43,7 +43,7 @@ describe('session module', () => {
 
   describe('session.fromPath(path)', () => {
     it('returns storage path of a session which was created with an absolute path', () => {
-      const tmppath = require('electron').app.getPath('temp');
+      const tmppath = app.getPath('temp');
       const ses = session.fromPath(tmppath);
       expect(ses.storagePath).to.equal(tmppath);
     });
@@ -133,7 +133,7 @@ describe('session module', () => {
       expect(c.value).to.equal(value);
     });
 
-    for (const sameSite of <const>['unspecified', 'no_restriction', 'lax', 'strict']) {
+    for (const sameSite of ['unspecified', 'no_restriction', 'lax', 'strict'] as const) {
       it(`sets cookies with samesite=${sameSite}`, async () => {
         const { cookies } = session.defaultSession;
         const value = 'hithere';
@@ -1383,7 +1383,7 @@ describe('session module', () => {
 
   describe('DownloadItem', () => {
     const mockPDF = Buffer.alloc(1024 * 1024 * 5);
-    const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf');
+    const downloadFilePath = path.join(import.meta.dirname, '..', 'fixtures', 'mock.pdf');
     const protocolName = 'custom-dl';
     const contentDisposition = 'inline; filename="mock.pdf"';
     let port: number;
@@ -1762,7 +1762,7 @@ describe('session module', () => {
       });
 
       it('can set options for the save dialog', async () => {
-        const filePath = path.join(__dirname, 'fixtures', 'mock.pdf');
+        const filePath = path.join(import.meta.dirname, 'fixtures', 'mock.pdf');
         const options = {
           window: null,
           title: 'title',
@@ -1800,7 +1800,7 @@ describe('session module', () => {
         it('does not display a save dialog and reports the done state as interrupted', async () => {
           const w = new BrowserWindow({ show: false });
           const willDownload = once(w.webContents.session, 'will-download');
-          w.webContents.downloadURL(`file://${path.join(__dirname, 'does-not-exist.txt')}`);
+          w.webContents.downloadURL(`file://${path.join(import.meta.dirname, 'does-not-exist.txt')}`);
           const [, item] = await willDownload;
           item.savePath = downloadFilePath;
           if (item.getState() === 'interrupted') {
@@ -1842,7 +1842,7 @@ describe('session module', () => {
   describe('ses.createInterruptedDownload(options)', () => {
     afterEach(closeAllWindows);
     it('can create an interrupted download item', async () => {
-      const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf');
+      const downloadFilePath = path.join(import.meta.dirname, '..', 'fixtures', 'mock.pdf');
       const options = {
         path: downloadFilePath,
         urlChain: ['http://127.0.0.1/'],
@@ -1964,7 +1964,7 @@ describe('session module', () => {
         cb(`<html><script>(${remote})()</script></html>`);
       });
 
-      const result = once(require('electron').ipcMain, 'message');
+      const result = once(ipcMain, 'message');
 
       function remote() {
         (navigator as any).requestMIDIAccess({ sysex: true }).then(
@@ -2312,7 +2312,7 @@ describe('session module', () => {
   describe('ses.setSSLConfig()', () => {
     it('can disable cipher suites', async () => {
       const ses = session.fromPartition('' + Math.random());
-      const fixturesPath = path.resolve(__dirname, 'fixtures');
+      const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
       const certPath = path.join(fixturesPath, 'certificates');
       const server = https.createServer(
         {
@@ -2502,7 +2502,7 @@ describe('session module', () => {
       await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
 
       const aiHandler = utilityProcess.fork(
-        path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
+        path.join(path.resolve(import.meta.dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
       );
       deferKillUtilityProcess(aiHandler);
       w.webContents.session.registerLocalAIHandler(aiHandler);
@@ -2515,7 +2515,7 @@ describe('session module', () => {
       const { session } = w.webContents;
 
       const aiHandler = utilityProcess.fork(
-        path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
+        path.join(path.resolve(import.meta.dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
       );
       deferKillUtilityProcess(aiHandler);
       session.registerLocalAIHandler(aiHandler);
@@ -2530,7 +2530,7 @@ describe('session module', () => {
       const { session } = w.webContents;
 
       const aiHandler = utilityProcess.fork(
-        path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
+        path.join(path.resolve(import.meta.dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
       );
       deferKillUtilityProcess(aiHandler);
       session.registerLocalAIHandler(aiHandler);
@@ -2547,7 +2547,7 @@ describe('session module', () => {
       const { session } = w.webContents;
 
       const aiHandler1 = utilityProcess.fork(
-        path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
+        path.join(path.resolve(import.meta.dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
       );
       deferKillUtilityProcess(aiHandler1);
       session.registerLocalAIHandler(aiHandler1);
@@ -2557,7 +2557,7 @@ describe('session module', () => {
       expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('unavailable');
 
       const aiHandler2 = utilityProcess.fork(
-        path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
+        path.join(path.resolve(import.meta.dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
       );
       deferKillUtilityProcess(aiHandler2);
       session.registerLocalAIHandler(aiHandler2);
@@ -2578,7 +2578,7 @@ describe('session module', () => {
       const { session } = w.webContents;
 
       const aiHandler = utilityProcess.fork(
-        path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
+        path.join(path.resolve(import.meta.dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
       );
       deferKillUtilityProcess(aiHandler);
       session.registerLocalAIHandler(aiHandler);

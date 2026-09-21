@@ -4,7 +4,7 @@ import { expect } from 'chai';
 
 import { once } from 'node:events';
 
-import { closeWindow } from './lib/window-helpers';
+import { closeWindow } from './lib/window-helpers.ts';
 
 describe('ipcRenderer module', () => {
   let w: BrowserWindow;

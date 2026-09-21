@@ -112,9 +112,9 @@ const { webFrame } = require('electron')
 const spellChecker = require('spellchecker')
 
 webFrame.setSpellCheckProvider('en-US', {
-  spellCheck (words, callback) {
+  spellCheck(words, callback) {
     setTimeout(() => {
-      const misspelled = words.filter(x => spellchecker.isMisspelled(x))
+      const misspelled = words.filter((x) => spellchecker.isMisspelled(x))
       callback(misspelled)
     }, 0)
   }
@@ -243,19 +243,25 @@ console.log(webFrame.getResourceUsage())
 
 This will generate:
 
-<!-- eslint-skip -->
-
-```js
+```json5
 {
   images: {
     count: 22,
     size: 2549,
     liveSize: 2542
   },
-  cssStyleSheets: { /* same with "images" */ },
-  xslStyleSheets: { /* same with "images" */ },
-  fonts: { /* same with "images" */ },
-  other: { /* same with "images" */ }
+  cssStyleSheets: {
+    /* same with "images" */
+  },
+  xslStyleSheets: {
+    /* same with "images" */
+  },
+  fonts: {
+    /* same with "images" */
+  },
+  other: {
+    /* same with "images" */
+  }
 }
 ```
 

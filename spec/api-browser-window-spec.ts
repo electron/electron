@@ -3,11 +3,11 @@ import {
   app,
   BrowserWindow,
   BaseWindow,
-  BrowserWindowConstructorOptions,
+  type BrowserWindowConstructorOptions,
   BrowserView,
   dialog,
   ipcMain,
-  OnBeforeSendHeadersListenerDetails,
+  type OnBeforeSendHeadersListenerDetails,
   net,
   protocol,
   screen,
@@ -15,19 +15,19 @@ import {
   webFrameMain,
   session,
   systemPreferences,
-  WebContents,
+  type WebContents,
   WebContentsView,
-  WebFrameMain
+  type WebFrameMain
 } from 'electron/main';
 
 import { expect } from 'chai';
 
 import * as childProcess from 'node:child_process';
 import * as crypto from 'node:crypto';
-import { once } from 'node:events';
+import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
-import { AddressInfo } from 'node:net';
+import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as qs from 'node:querystring';
@@ -35,14 +35,26 @@ import { setTimeout as syncSetTimeout } from 'node:timers';
 import { setTimeout } from 'node:timers/promises';
 import * as nodeUrl from 'node:url';
 
-import { emittedUntil, emittedNTimes } from './lib/events-helpers';
-import { randomString } from './lib/net-helpers';
-import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers';
-import { ifit, ifdescribe, defer, listen, waitUntil, isWayland, isTestingBindingAvailable } from './lib/spec-helpers';
-import { closeWindow, closeAllWindows } from './lib/window-helpers';
+import { emittedUntil, emittedNTimes } from './lib/events-helpers.ts';
+import { randomString } from './lib/net-helpers.ts';
+import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers.ts';
+import {
+  ifit,
+  ifdescribe,
+  defer,
+  listen,
+  waitUntil,
+  isWayland,
+  isTestingBindingAvailable
+} from './lib/spec-helpers.ts';
+import { closeWindow, closeAllWindows } from './lib/window-helpers.ts';
 
-const fixtures = path.resolve(__dirname, 'fixtures');
-const mainFixtures = path.resolve(__dirname, 'fixtures');
+import type { AddressInfo } from 'node:net';
+
+const require = createRequire(import.meta.url);
+
+const fixtures = path.resolve(import.meta.dirname, 'fixtures');
+const mainFixtures = path.resolve(import.meta.dirname, 'fixtures');
 
 // Is the display's scale factor possibly causing rounding of pixel coordinate
 // values?
@@ -237,7 +249,7 @@ describe('BrowserWindow module', () => {
     });
 
     it('should emit beforeunload handler', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       w.close();
       await once(w.webContents, '-before-unload-fired');
     });
@@ -359,7 +371,7 @@ describe('BrowserWindow module', () => {
     });
 
     it('should emit beforeunload event', async function () {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       w.webContents.executeJavaScript('window.close()', true);
       await once(w.webContents, '-before-unload-fired');
     });
@@ -553,15 +565,24 @@ describe('BrowserWindow module', () => {
       w.loadURL('about:blank');
       await readyToShow;
     });
-    // DISABLED-FIXME(deepak1556): The error code now seems to be `ERR_FAILED`, verify what
-    // changed and adjust the test.
     it('should emit did-fail-load event for files that do not exist', async () => {
-      const didFailLoad = once(w.webContents, 'did-fail-load');
-      w.loadURL('file://a.txt');
-      const [, code, desc, , isMainFrame] = await didFailLoad;
-      expect(code).to.equal(-6);
-      expect(desc).to.equal('ERR_FILE_NOT_FOUND');
-      expect(isMainFrame).to.equal(true);
+      const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'electron-'));
+      const url = nodeUrl.pathToFileURL(path.join(tempDir, 'missing.txt')).toString();
+
+      try {
+        const didFailLoad = once(w.webContents, 'did-fail-load');
+        const loadURL = w.loadURL(url);
+        const didFailLoadEvent = didFailLoad.then(([, code, desc, eventURL, isMainFrame]) => {
+          expect(eventURL).to.equal(url);
+          expect(code).to.equal(-6);
+          expect(desc).to.equal('ERR_FILE_NOT_FOUND');
+          expect(isMainFrame).to.equal(true);
+        });
+
+        await Promise.all([expect(loadURL).to.be.rejected, didFailLoadEvent]);
+      } finally {
+        await fs.promises.rm(tempDir, { recursive: true, force: true });
+      }
     });
     it('should emit did-fail-load event for invalid URL', async () => {
       const didFailLoad = once(w.webContents, 'did-fail-load');
@@ -672,11 +693,10 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    // FIXME(#43730): fix underlying bug and re-enable asap
-    it.skip('should support base url for data urls', async () => {
-      await w
-        .loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', { baseURLForDataURL: 'other://' })
-        .catch((e) => console.log(e));
+    it('should support base url for data urls', async () => {
+      await w.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', {
+        baseURLForDataURL: 'other://'
+      });
       expect(await w.webContents.executeJavaScript('window.ping')).to.equal('pong');
     });
 
@@ -3460,7 +3480,7 @@ describe('BrowserWindow module', () => {
     });
 
     it('can properly open and load a new window from a link', async () => {
-      const appPath = path.join(__dirname, 'fixtures', 'apps', 'open-new-window-from-link');
+      const appPath = path.join(import.meta.dirname, 'fixtures', 'apps', 'open-new-window-from-link');
 
       appProcess = childProcess.spawn(process.execPath, [appPath]);
 
@@ -3680,6 +3700,12 @@ describe('BrowserWindow module', () => {
     await shown;
   };
 
+  // The overlay geometry may already be in place when the page's scripts run,
+  // in which case no initial geometrychange event is dispatched, so poll for
+  // it rather than waiting for that event.
+  const waitForOverlay = (w: BrowserWindow) =>
+    waitUntil(() => w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible'));
+
   describe('"titleBarStyle" option', () => {
     const testWindowsOverlay = async (style: any) => {
       const w = new BrowserWindow({
@@ -3693,18 +3719,10 @@ describe('BrowserWindow module', () => {
         },
         titleBarOverlay: true
       });
-      const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
-      if (process.platform === 'darwin') {
-        await w.loadFile(overlayHTML);
-      } else {
-        const overlayReady = once(ipcMain, 'geometrychange');
-        await w.loadFile(overlayHTML);
-        await showWindowForWayland(w);
-        await overlayReady;
-      }
-
-      const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
-      expect(overlayEnabled).to.be.true('overlayEnabled');
+      const overlayHTML = path.join(import.meta.dirname, 'fixtures', 'pages', 'overlay.html');
+      await w.loadFile(overlayHTML);
+      await showWindowForWayland(w);
+      await waitForOverlay(w);
       const overlayRect = await w.webContents.executeJavaScript('getJSOverlayProperties()');
       expect(overlayRect.y).to.equal(0);
       if (process.platform === 'darwin') {
@@ -3809,18 +3827,10 @@ describe('BrowserWindow module', () => {
         }
       });
 
-      const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
-      if (process.platform === 'darwin') {
-        await w.loadFile(overlayHTML);
-      } else {
-        const overlayReady = once(ipcMain, 'geometrychange');
-        await w.loadFile(overlayHTML);
-        await showWindowForWayland(w);
-        await overlayReady;
-      }
-
-      const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
-      expect(overlayEnabled).to.be.true('overlayEnabled');
+      const overlayHTML = path.join(import.meta.dirname, 'fixtures', 'pages', 'overlay.html');
+      await w.loadFile(overlayHTML);
+      await showWindowForWayland(w);
+      await waitForOverlay(w);
       const overlayRectPreMax = await w.webContents.executeJavaScript('getJSOverlayProperties()');
 
       expect(overlayRectPreMax.y).to.equal(0);
@@ -3856,6 +3866,75 @@ describe('BrowserWindow module', () => {
       await testWindowsOverlayHeight(40);
     });
 
+    // https://github.com/electron/electron/issues/54025: pushing the overlay
+    // rect to a hidden (but painting) window after a navigation sent the
+    // renderer visual properties without a surface id, which stopped it from
+    // producing frames until the window was shown. On Wayland hidden windows
+    // aren't laid out at all, so there's nothing to test there.
+    ifdescribe(!isWayland)('on a window that is never shown', () => {
+      const rendersFrames = (w: BrowserWindow) =>
+        w.webContents.executeJavaScript(
+          'new Promise(r => { const t = setTimeout(() => r(false), 2000); requestAnimationFrame(() => { clearTimeout(t); r(true); }); })'
+        );
+      const createWindow = () =>
+        new BrowserWindow({
+          show: false,
+          width: 400,
+          height: 400,
+          titleBarStyle: 'hidden',
+          titleBarOverlay: { height: 40 }
+        });
+
+      const runFixtureApp = async (appPath: string) => {
+        const appProcess = childProcess.spawn(process.execPath, [appPath]);
+        let out = '';
+        appProcess.stdout.on('data', (data) => {
+          out += data;
+        });
+        appProcess.stderr.on('data', (data) => {
+          out += data;
+        });
+        const [code] = await once(appProcess, 'exit');
+        return { code, out };
+      };
+
+      it('emits ready-to-show', async () => {
+        // The first window of a cold process is where the renderer used to
+        // commit its navigation before the frame was laid out, so run a small
+        // app a few times rather than opening windows in this (warm) process.
+        const appPath = path.join(fixtures, 'apps', 'hidden-window-overlay');
+        for (let i = 0; i < 6; i++) {
+          const { code, out } = await runFixtureApp(appPath);
+          expect(code).to.equal(0, `run ${i + 1}: ${out}`);
+        }
+      });
+
+      ifit(process.platform !== 'darwin')('keeps rendering when the overlay changes as it navigates', async () => {
+        const w = createWindow();
+        const readyToShow = once(w, 'ready-to-show', { signal: AbortSignal.timeout(10000) });
+        await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+        await readyToShow;
+        expect(await rendersFrames(w)).to.equal(true, 'not rendering before navigating');
+        // Push new overlay geometry from each navigation; this used to reach
+        // the renderer without a surface id and stall it until show().
+        for (const [page, height] of [
+          ['b.html', 60],
+          ['a.html', 30],
+          ['b.html', 50]
+        ] as const) {
+          w.webContents.once('did-navigate', () => w.setTitleBarOverlay({ height }));
+          await w.loadFile(path.join(fixtures, 'pages', page));
+          await waitUntil(async () => {
+            const current = await w.webContents.executeJavaScript(
+              'navigator.windowControlsOverlay.getTitlebarAreaRect().height'
+            );
+            return current === height;
+          });
+          expect(await rendersFrames(w)).to.equal(true, `renderer stopped producing frames after ${page} @ ${height}`);
+        }
+      });
+    });
+
     it('propagates the overlay to WebContentsViews in a BaseWindow', async () => {
       const w = new BaseWindow({
         show: false,
@@ -3878,7 +3957,7 @@ describe('BrowserWindow module', () => {
       const shown = once(w, 'show');
       w.show();
       await shown;
-      const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+      const overlayHTML = path.join(import.meta.dirname, 'fixtures', 'pages', 'overlay.html');
       await topView.webContents.loadFile(overlayHTML);
       await bottomView.webContents.loadFile(overlayHTML);
 
@@ -3937,17 +4016,11 @@ describe('BrowserWindow module', () => {
     });
 
     it('correctly updates the height of the overlay', async () => {
-      const testOverlay = async (w: BrowserWindow, size: Number, firstRun: boolean) => {
-        const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
-        const overlayReady = once(ipcMain, 'geometrychange');
+      const testOverlay = async (w: BrowserWindow, size: number) => {
+        const overlayHTML = path.join(import.meta.dirname, 'fixtures', 'pages', 'overlay.html');
         await w.loadFile(overlayHTML);
         await showWindowForWayland(w);
-        if (firstRun) {
-          await overlayReady;
-        }
-
-        const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
-        expect(overlayEnabled).to.be.true('overlayEnabled');
+        await waitForOverlay(w);
 
         const { height: preMaxHeight } = await w.webContents.executeJavaScript('getJSOverlayProperties()');
         expect(preMaxHeight).to.equal(size);
@@ -3984,13 +4057,13 @@ describe('BrowserWindow module', () => {
         }
       });
 
-      await testOverlay(w, INITIAL_SIZE, true);
+      await testOverlay(w, INITIAL_SIZE);
 
       w.setTitleBarOverlay({
         height: INITIAL_SIZE + 10
       });
 
-      await testOverlay(w, INITIAL_SIZE + 10, false);
+      await testOverlay(w, INITIAL_SIZE + 10);
     });
   });
 
@@ -4706,7 +4779,7 @@ describe('BrowserWindow module', () => {
     });
 
     describe('"sandbox" option', () => {
-      const preload = path.join(path.resolve(__dirname, 'fixtures'), 'module', 'preload-sandbox.js');
+      const preload = path.join(path.resolve(import.meta.dirname, 'fixtures'), 'module', 'preload-sandbox.js');
 
       let server: http.Server;
       let serverUrl: string;
@@ -4778,7 +4851,7 @@ describe('BrowserWindow module', () => {
             contextIsolation: false
           }
         });
-        const htmlPath = path.join(__dirname, 'fixtures', 'api', 'sandbox.html?exit-event');
+        const htmlPath = path.join(import.meta.dirname, 'fixtures', 'api', 'sandbox.html?exit-event');
         const pageUrl = 'file://' + htmlPath;
         w.loadURL(pageUrl);
         const [, url] = await once(ipcMain, 'answer');
@@ -4796,7 +4869,6 @@ describe('BrowserWindow module', () => {
         });
         w.loadURL('about:blank');
         const [, rendererEventEmitterProperties] = await once(ipcMain, 'answer');
-        const { EventEmitter } = require('node:events');
         const browserEventEmitterProperties = Object.getOwnPropertyNames(EventEmitter.prototype).sort();
         expect(rendererEventEmitterProperties).to.deep.equal(browserEventEmitterProperties);
       });
@@ -4820,7 +4892,7 @@ describe('BrowserWindow module', () => {
           }
         }));
 
-        const htmlPath = path.join(__dirname, 'fixtures', 'api', 'sandbox.html?window-open');
+        const htmlPath = path.join(import.meta.dirname, 'fixtures', 'api', 'sandbox.html?window-open');
         const pageUrl = 'file://' + htmlPath;
         const answer = once(ipcMain, 'answer');
         w.loadURL(pageUrl);
@@ -4856,7 +4928,9 @@ describe('BrowserWindow module', () => {
           }
         }));
 
-        w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'window-open-external' });
+        w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'sandbox.html'), {
+          search: 'window-open-external'
+        });
 
         // Wait for a message from the main window saying that it's ready.
         await once(ipcMain, 'opener-loaded');
@@ -4997,7 +5071,7 @@ describe('BrowserWindow module', () => {
         });
 
         const done = Promise.all(['parent-answer', 'child-answer'].map((name) => once(ipcMain, name)));
-        w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'verify-ipc-sender' });
+        w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'verify-ipc-sender' });
         await done;
       });
 
@@ -5039,7 +5113,9 @@ describe('BrowserWindow module', () => {
               'dom-ready'
             ].map((name) => once(w.webContents, name))
           );
-          w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'webcontents-events' });
+          w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'sandbox.html'), {
+            search: 'webcontents-events'
+          });
           await done;
         });
       });
@@ -5174,7 +5250,7 @@ describe('BrowserWindow module', () => {
         expect(content).to.equal('Hello');
       });
       ifit(!process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)('loads native addons correctly after reload', async () => {
-        w.loadFile(path.join(__dirname, 'fixtures', 'api', 'native-window-open-native-addon.html'));
+        w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'native-window-open-native-addon.html'));
         {
           const [, content] = await once(ipcMain, 'answer');
           expect(content).to.equal('function');
@@ -5350,28 +5426,28 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
 
     it('returning undefined would not prevent close', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-undefined.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-undefined.html'));
       const wait = once(w, 'closed');
       w.close();
       await wait;
     });
 
     it('returning false would prevent close', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       w.close();
       const [, proceed] = await once(w.webContents, '-before-unload-fired');
       expect(proceed).to.equal(false);
     });
 
     it('returning empty string would prevent close', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-empty-string.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-empty-string.html'));
       w.close();
       const [, proceed] = await once(w.webContents, '-before-unload-fired');
       expect(proceed).to.equal(false);
     });
 
     it('emits for each close attempt', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
 
       const destroyListener = () => {
         expect.fail('Close was not prevented');
@@ -5395,7 +5471,7 @@ describe('BrowserWindow module', () => {
     });
 
     it('emits for each reload attempt', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
 
       const navigationListener = () => {
         expect.fail('Reload was not prevented');
@@ -5421,7 +5497,7 @@ describe('BrowserWindow module', () => {
     });
 
     it('emits for each navigation attempt', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
 
       const navigationListener = () => {
         expect.fail('Reload was not prevented');
@@ -7011,26 +7087,27 @@ describe('BrowserWindow module', () => {
         expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
         expect(w.isFullScreen()).to.be.false('is fullscreen');
 
-        const enterFullScreen = once(w, 'enter-full-screen');
-        const leaveFullScreen = once(w, 'leave-full-screen');
+        for (const menuBarVisible of [true, false]) {
+          w.setMenuBarVisibility(menuBarVisible);
+          expect(w.isMenuBarVisible()).to.equal(
+            menuBarVisible,
+            `isMenuBarVisible before fullscreen (menuBarVisible=${menuBarVisible})`
+          );
 
-        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
-        await enterFullScreen;
-        await w.webContents.executeJavaScript('document.exitFullscreen()', true);
-        await leaveFullScreen;
+          const enterFullScreen = once(w, 'enter-full-screen');
+          await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+          await enterFullScreen;
 
-        expect(w.isFullScreen()).to.be.false('is fullscreen');
-        expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
+          const leaveFullScreen = once(w, 'leave-full-screen');
+          await w.webContents.executeJavaScript('document.exitFullscreen()', true);
+          await leaveFullScreen;
 
-        w.setMenuBarVisibility(false);
-        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
-
-        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
-        await enterFullScreen;
-        await w.webContents.executeJavaScript('document.exitFullscreen()', true);
-        await leaveFullScreen;
-
-        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
+          expect(w.isFullScreen()).to.be.false(`isFullScreen after exit (menuBarVisible=${menuBarVisible})`);
+          expect(w.isMenuBarVisible()).to.equal(
+            menuBarVisible,
+            `isMenuBarVisible after fullscreen exit (menuBarVisible=${menuBarVisible})`
+          );
+        }
       });
 
       for (const frame of [true, false]) {
@@ -7595,7 +7672,7 @@ describe('BrowserWindow module', () => {
     it('opens the path in Quick Look on macOS', () => {
       const w = new BrowserWindow({ show: false });
       expect(() => {
-        w.previewFile(__filename);
+        w.previewFile(import.meta.filename);
         w.closeFilePreview();
       }).to.not.throw();
     });
@@ -7611,7 +7688,7 @@ describe('BrowserWindow module', () => {
         showCalled = true;
       });
 
-      w.previewFile(__filename);
+      w.previewFile(import.meta.filename);
       await setTimeout(500);
       expect(showCalled).to.equal(false, 'should not have called show twice');
       w.closeFilePreview();
@@ -8137,7 +8214,7 @@ describe('BrowserWindow module', () => {
     );
 
     // Only applicable on Windows where transparent windows can't be maximized.
-    ifit(process.platform === 'win32')('can show maximized frameless window', async () => {
+    ifit(process.platform === 'win32')('can show maximized frameless window', () => {
       const display = screen.getPrimaryDisplay();
 
       const w = new BrowserWindow({
@@ -8146,9 +8223,6 @@ describe('BrowserWindow module', () => {
         transparent: true,
         show: true
       });
-
-      w.loadURL('about:blank');
-      await once(w, 'ready-to-show');
 
       expect(w.isMaximized()).to.be.true();
 
@@ -8183,7 +8257,7 @@ describe('BrowserWindow module', () => {
           hasShadow: false
         });
 
-        const colorFile = path.join(__dirname, 'fixtures', 'pages', 'half-background-color.html');
+        const colorFile = path.join(import.meta.dirname, 'fixtures', 'pages', 'half-background-color.html');
         await foregroundWindow.loadFile(colorFile);
 
         // This verifies how the transparent window composites over the window
@@ -8226,7 +8300,7 @@ describe('BrowserWindow module', () => {
           }
         });
 
-        foregroundWindow.loadFile(path.join(__dirname, 'fixtures', 'pages', 'css-transparent.html'));
+        foregroundWindow.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'css-transparent.html'));
         await once(ipcMain, 'set-transparent');
 
         // This verifies how the transparent window composites over the window
@@ -8376,7 +8450,7 @@ describe('BrowserWindow module', () => {
     };
 
     describe('save window state', () => {
-      const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'window-state-save');
+      const fixturesPath = path.resolve(import.meta.dirname, 'fixtures', 'api', 'window-state-save');
       const sharedUserDataPath = path.join(os.tmpdir(), 'electron-window-state-test');
       const sharedPreferencesPath = path.join(sharedUserDataPath, 'Local State');
 

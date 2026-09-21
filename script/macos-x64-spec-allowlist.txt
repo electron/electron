@@ -1,0 +1,41 @@
+# Spec files the macOS x64 (darwin) test leg runs on pull requests, one per
+# line, matched exactly against script/split-tests output. The arm64 legs run
+# the whole suite; this list is the code whose behavior can differ by CPU
+# architecture (V8 code cache, JIT and WebAssembly, the Node.js startup
+# snapshot, native addons, crash reporting) plus Squirrel.Mac, whose specs
+# have x64-only cases. The full suite still runs on pushes to main and
+# release branches, on roller/ PRs and on PRs carrying the run-full-macos
+# label. Used by .github/workflows/pipeline-segment-electron-test.yml.
+#
+# Squirrel.Mac update lifecycle; unsigned-app cases only run on x64
+spec/api-autoupdater-darwin-spec.ts
+# Squirrel.Mac update policy (version rules, tampered payloads, JSON mode)
+spec/api-autoupdater-darwin-policy-spec.ts
+# autoUpdater module API surface
+spec/api-auto-updater-spec.ts
+# Node.js startup snapshot captures process.arch and friends; native addons
+spec/node-spec.ts
+# electron_xcache: the Node startup snapshot / code cache blob for this arch
+spec/xcache-spec.ts
+# js2c build-time V8 code cache and LoadBrowserProcessSpecificV8Snapshot
+spec/api-js2c-code-cache-spec.ts
+# sandboxed preload V8 code cache; the largest window-level surface
+spec/api-browser-window-spec.ts
+# codeCache for privileged custom protocols
+spec/api-protocol-spec.ts
+# wasm-eval CSP, WebAssembly streaming compilation, workers, heap snapshots
+spec/chromium-spec.ts
+# utility process Node isolate, ESM loading, heap snapshots near heap limit
+spec/api-utility-process-spec.ts
+# heap statistics, memory info and takeHeapSnapshot
+spec/api-process-spec.ts
+# native module loading (compiled per arch) and uv_dlopen
+spec/modules-spec.ts
+# child_process.execFile out of asar has a darwin x64-only case
+spec/asar-spec.ts
+# runningUnderARM64Translation, x64-only recent-documents skip, sandbox options
+spec/api-app-spec.ts
+# crashpad minidumps and stack walking are architecture specific
+spec/api-crash-reporter-spec.ts
+# renderer, main and node crash paths
+spec/crash-spec.ts

@@ -5,9 +5,10 @@ import {
   session,
   app,
   BrowserView,
-  WebContents,
+  type WebContents,
   BaseWindow,
-  WebContentsView
+  WebContentsView,
+  Menu
 } from 'electron/main';
 
 import { assert, expect } from 'chai';
@@ -15,14 +16,14 @@ import { assert, expect } from 'chai';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
-import { AddressInfo } from 'node:net';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
+import * as vm from 'node:vm';
 
-import { captureWithTabSourceId } from './lib/media-helpers';
-import { containsText, readPDF } from './lib/pdf-helpers';
+import { captureWithTabSourceId } from './lib/media-helpers.ts';
+import { containsText, readPDF } from './lib/pdf-helpers.ts';
 import {
   ifdescribe,
   defer,
@@ -31,10 +32,12 @@ import {
   ifit,
   isTestingBindingAvailable,
   startRemoteControlApp
-} from './lib/spec-helpers';
-import { cleanupWebContents, closeAllWindows } from './lib/window-helpers';
+} from './lib/spec-helpers.ts';
+import { cleanupWebContents, closeAllWindows } from './lib/window-helpers.ts';
 
-const fixturesPath = path.resolve(__dirname, 'fixtures');
+import type { AddressInfo } from 'node:net';
+
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 const features = process._linkedBinding('electron_common_features');
 
 describe('webContents module', () => {
@@ -93,6 +96,22 @@ describe('webContents module', () => {
       contents.destroy();
       await waitUntil(() => typeof webContents.fromFrame(mainFrame) === 'undefined');
     });
+    it('disposes frames when a remote WebContents is destroyed', async () => {
+      const w = new BrowserWindow({ show: false });
+      defer(() => w.destroy());
+      const opened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach' });
+      await opened;
+
+      const devTools = w.webContents.devToolsWebContents!;
+      const frame = devTools.mainFrame;
+      const destroyed = once(devTools, 'destroyed');
+      devTools.destroy();
+      await destroyed;
+      w.webContents.closeDevTools();
+
+      expect(() => frame.url).to.throw('Render frame was disposed');
+    });
     it('throws when passing invalid argument', async () => {
       let errored = false;
       try {
@@ -134,7 +153,7 @@ describe('webContents module', () => {
       w.webContents.once('will-prevent-unload', () => {
         expect.fail('should not have fired');
       });
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-undefined.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-undefined.html'));
       const wait = once(w, 'closed');
       w.close();
       await wait;
@@ -150,7 +169,7 @@ describe('webContents module', () => {
         expect.fail('should not have fired');
       });
 
-      await view.webContents.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-undefined.html'));
+      await view.webContents.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-undefined.html'));
       const wait = once(w, 'closed');
       w.close();
       await wait;
@@ -158,7 +177,7 @@ describe('webContents module', () => {
 
     it('emits if beforeunload returns false in a BrowserWindow', async () => {
       const w = new BrowserWindow({ show: false });
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       w.close();
       await once(w.webContents, 'will-prevent-unload');
     });
@@ -169,7 +188,7 @@ describe('webContents module', () => {
       w.setBrowserView(view);
       view.setBounds(w.getBounds());
 
-      await view.webContents.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      await view.webContents.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       w.close();
       await once(view.webContents, 'will-prevent-unload');
     });
@@ -177,7 +196,7 @@ describe('webContents module', () => {
     it('supports calling preventDefault on will-prevent-unload events in a BrowserWindow', async () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('will-prevent-unload', (event) => event.preventDefault());
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       const wait = once(w, 'closed');
       w.close();
       await wait;
@@ -187,13 +206,13 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false });
 
       const didFailLoad = once(w.webContents, 'did-fail-load');
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       await w.webContents.executeJavaScript("console.log('gesture')", true);
 
-      w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'a.html'));
+      w.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'a.html'));
       const [, code, , validatedURL] = await didFailLoad;
       expect(code).to.equal(-3); // ERR_ABORTED
-      const { href: expectedURL } = url.pathToFileURL(path.join(__dirname, 'fixtures', 'pages', 'a.html'));
+      const { href: expectedURL } = url.pathToFileURL(path.join(import.meta.dirname, 'fixtures', 'pages', 'a.html'));
       expect(validatedURL).to.equal(expectedURL);
     });
 
@@ -201,9 +220,9 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('will-prevent-unload', (event) => event.preventDefault());
 
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       await w.webContents.executeJavaScript("console.log('gesture')", true);
-      await w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'a.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'a.html'));
       const pageTitle = await w.webContents.executeJavaScript('document.title');
       expect(pageTitle).to.equal('test');
 
@@ -1275,7 +1294,7 @@ describe('webContents module', () => {
     // FIXME
     ifit(!(process.platform === 'win32' && process.arch === 'arm64'))('returns the focused web contents', async () => {
       const w = new BrowserWindow({ show: true });
-      await w.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'blank.html'));
       expect(webContents.getFocusedWebContents()?.id).to.equal(w.webContents.id);
 
       const devToolsOpened = once(w.webContents, 'devtools-opened');
@@ -1315,22 +1334,15 @@ describe('webContents module', () => {
     it('Inspect activates detached devtools window', async () => {
       const window = new BrowserWindow({ show: true });
       await window.loadURL('about:blank');
-      const webContentsBeforeOpenedDevtools = webContents.getAllWebContents();
+      window.focus();
+      await waitUntil(() => window.isFocused());
 
       const windowWasBlurred = once(window, 'blur');
+      const devToolsOpened = once(window.webContents, 'devtools-opened');
       window.webContents.openDevTools({ mode: 'detach' });
-      await windowWasBlurred;
+      await Promise.all([windowWasBlurred, devToolsOpened]);
 
-      let devToolsWebContents = null;
-      for (const newWebContents of webContents.getAllWebContents()) {
-        const oldWebContents = webContentsBeforeOpenedDevtools.find((oldWebContents) => {
-          return newWebContents.id === oldWebContents.id;
-        });
-        if (oldWebContents !== null) {
-          devToolsWebContents = newWebContents;
-          break;
-        }
-      }
+      const devToolsWebContents = window.webContents.devToolsWebContents;
       assert(devToolsWebContents !== null);
 
       const windowFocused = once(window, 'focus');
@@ -1450,7 +1462,7 @@ describe('webContents module', () => {
     // collected object had not been freed yet) or create a second
     // api::WebContents for the same DevTools WebContents.
     it('keeps the DevTools WebContents alive across a garbage collection while the frontend is loading', async () => {
-      const gc = require('node:vm').runInNewContext('gc');
+      const gc = vm.runInNewContext('gc');
       const w = new BrowserWindow({ show: false });
       await w.loadURL('about:blank');
 
@@ -2087,11 +2099,11 @@ describe('webContents module', () => {
       }).to.throw("Must specify either 'file' or 'files' option");
 
       expect(() => {
-        w.webContents.startDrag({ file: __filename } as any);
+        w.webContents.startDrag({ file: import.meta.filename } as any);
       }).to.throw("'icon' parameter is required");
 
       expect(() => {
-        w.webContents.startDrag({ file: __filename, icon: path.join(fixturesPath, 'blank.png') });
+        w.webContents.startDrag({ file: import.meta.filename, icon: path.join(fixturesPath, 'blank.png') });
       }).to.throw(/Failed to load image from path (.+)/);
     });
   });
@@ -4039,8 +4051,12 @@ describe('webContents module', () => {
     it('emits render-view-deleted if any RVHs are deleted', async () => {
       const w = new BrowserWindow({ show: false });
       let rvhDeletedCount = 0;
+      let ownerDuringDeletion: BrowserWindow | null = null;
+      let windowFromContentsDuringDeletion: BrowserWindow | null = null;
       w.webContents.on('render-view-deleted' as any, () => {
         rvhDeletedCount++;
+        ownerDuringDeletion = w.webContents.getOwnerBrowserWindow();
+        windowFromContentsDuringDeletion = BrowserWindow.fromWebContents(w.webContents);
       });
       w.webContents.on('did-finish-load', () => {
         w.close();
@@ -4053,11 +4069,50 @@ describe('webContents module', () => {
         expectedRenderViewDeletedEventCount,
         "render-view-deleted wasn't emitted the expected nr. of times"
       );
+      expect(ownerDuringDeletion).to.equal(w);
+      expect(windowFromContentsDuringDeletion).to.equal(w);
     });
   });
 
   describe('setIgnoreMenuShortcuts(ignore)', () => {
     afterEach(closeAllWindows);
+
+    const trackShortcutInvocations = (contents: WebContents) => {
+      const previousMenu = Menu.getApplicationMenu();
+      let invocations = 0;
+      Menu.setApplicationMenu(
+        Menu.buildFromTemplate([
+          {
+            label: 'Test',
+            submenu: [{ label: 'Shortcut', accelerator: 'F13', click: () => invocations++ }]
+          }
+        ])
+      );
+      contents.debugger.attach();
+      defer(() => {
+        Menu.setApplicationMenu(previousMenu);
+        if (!contents.isDestroyed() && contents.debugger.isAttached()) contents.debugger.detach();
+      });
+
+      return async (expectedInvocations: number) => {
+        const base = { key: 'F13', code: 'F13', windowsVirtualKeyCode: 124 };
+        if (process.platform === 'darwin') {
+          // Native macOS menu input requires kVK_F13 and NSF13FunctionKey.
+          await contents.debugger.sendCommand('Input.dispatchKeyEvent', {
+            ...base,
+            type: 'rawKeyDown',
+            nativeVirtualKeyCode: 0x69,
+            text: '\uF710'
+          });
+        } else {
+          contents.sendInputEvent({ type: 'keyDown', keyCode: 'F13' });
+        }
+        await contents.debugger.sendCommand('Input.dispatchKeyEvent', { ...base, type: 'keyUp' });
+        await waitUntil(() => invocations >= expectedInvocations);
+        return invocations;
+      };
+    };
+
     it('does not throw', () => {
       const w = new BrowserWindow({ show: false });
       expect(() => {
@@ -4065,6 +4120,68 @@ describe('webContents module', () => {
         w.webContents.setIgnoreMenuShortcuts(false);
       }).to.not.throw();
     });
+
+    it('honors the initial ignoreMenuShortcuts preference', async () => {
+      const window = new BrowserWindow({
+        show: true,
+        webPreferences: { ignoreMenuShortcuts: true } as Electron.WebPreferences
+      });
+      await window.loadURL('about:blank');
+      window.webContents.focus();
+      const sendShortcut = trackShortcutInvocations(window.webContents);
+      expect(await sendShortcut(0)).to.equal(0);
+      window.webContents.setIgnoreMenuShortcuts(false);
+      expect(await sendShortcut(1)).to.equal(1);
+    });
+
+    it('does not crash for detached DevTools without preferences', async () => {
+      const window = new BrowserWindow({ show: false });
+      await window.loadURL('about:blank');
+      const devToolsOpened = once(window.webContents, 'devtools-opened');
+      window.webContents.openDevTools({ mode: 'detach', activate: false });
+      await devToolsOpened;
+
+      const devTools = window.webContents.devToolsWebContents!;
+      expect(devTools.getLastWebPreferences()).to.equal(null);
+      devTools.setIgnoreMenuShortcuts(false);
+      devTools.setIgnoreMenuShortcuts(true);
+      devTools.setIgnoreMenuShortcuts(false);
+    });
+
+    for (const target of ['webview', 'docked DevTools'] as const) {
+      it(`uses the source settings for ${target}`, async () => {
+        const window = new BrowserWindow({ show: true, webPreferences: { webviewTag: true } });
+        let source: WebContents;
+        if (target === 'webview') {
+          const attached = once(window.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
+          await window.loadFile(path.join(fixturesPath, 'pages', 'webview-zoom-factor.html'));
+          [, source] = await attached;
+          await source.loadURL('about:blank');
+        } else {
+          await window.loadURL('about:blank');
+          const devToolsOpened = once(window.webContents, 'devtools-opened');
+          const devToolsFocused = once(window.webContents, 'devtools-focused');
+          window.webContents.openDevTools({ mode: 'right', activate: true });
+          await Promise.all([devToolsOpened, devToolsFocused]);
+          source = window.webContents.devToolsWebContents!;
+          expect(source.getLastWebPreferences()).to.equal(null);
+          source.setIgnoreMenuShortcuts(false);
+        }
+
+        const sendShortcut = trackShortcutInvocations(source);
+        let expectedInvocations = 0;
+        for (const ignore of [true, false, true, false]) {
+          if (target === 'webview') {
+            window.focus();
+            await window.webContents.executeJavaScript("document.querySelector('webview').focus()");
+          }
+          window.webContents.setIgnoreMenuShortcuts(!ignore);
+          source.setIgnoreMenuShortcuts(ignore);
+          if (!ignore) expectedInvocations++;
+          expect(await sendShortcut(expectedInvocations)).to.equal(expectedInvocations);
+        }
+      });
+    }
   });
 
   const crashPrefs = [
@@ -4764,6 +4881,17 @@ describe('webContents module', () => {
       }
     });
 
+    it('rejects queued jobs when the WebContents is destroyed', async () => {
+      await w.loadURL('data:text/html,<h1>Hello, World!</h1>');
+
+      const first = w.webContents.printToPDF({});
+      const second = w.webContents.printToPDF({});
+      w.webContents.destroy();
+
+      first.catch(() => {});
+      await expect(second).to.eventually.be.rejectedWith('Object has been destroyed');
+    });
+
     it('does not crash when called multiple times in sequence', async () => {
       await w.loadURL('data:text/html,<h1>Hello, World!</h1>');
 
@@ -4802,7 +4930,7 @@ describe('webContents module', () => {
         A6: { width: 4.13, height: 5.83 }
       };
 
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
 
       for (const format of Object.keys(paperFormats) as PageSizeString[]) {
         const data = await w.webContents.printToPDF({ pageSize: format });
@@ -4836,7 +4964,7 @@ describe('webContents module', () => {
     });
 
     it('in landscape mode', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
 
       const data = await w.webContents.printToPDF({ landscape: true });
       const pdfInfo = await readPDF(data);
@@ -4849,7 +4977,7 @@ describe('webContents module', () => {
     });
 
     it('with custom page ranges', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-large.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'print-to-pdf-large.html'));
 
       const data = await w.webContents.printToPDF({
         pageRanges: '1-3',
@@ -4873,7 +5001,7 @@ describe('webContents module', () => {
     });
 
     it('does not tag PDFs by default', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
 
       const data = await w.webContents.printToPDF({});
       const pdfInfo = await readPDF(data);
@@ -4881,7 +5009,7 @@ describe('webContents module', () => {
     });
 
     it('can print same-origin iframes', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-same-origin.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'print-to-pdf-same-origin.html'));
 
       const data = await w.webContents.printToPDF({});
       const pdfInfo = await readPDF(data);
@@ -4907,7 +5035,7 @@ describe('webContents module', () => {
     });
 
     it('can generate tag data for PDFs', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
 
       const data = await w.webContents.printToPDF({ generateTaggedPDF: true });
       const pdfInfo = await readPDF(data);
@@ -5240,7 +5368,7 @@ describe('webContents module', () => {
 
       const mainView = new WebContentsView({
         webPreferences: {
-          preload: path.join(__dirname, 'preload.js')
+          preload: path.join(import.meta.dirname, 'preload.js')
         }
       });
 

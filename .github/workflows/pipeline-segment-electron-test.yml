@@ -40,6 +40,11 @@ on:
         required: false
         type: string
         default: x11
+      full-macos-tests:
+        description: 'Run the whole spec suite on every macOS leg. When false the x64 legs and the mas legs each run one shard over the allowlist in script/macos-{x64,mas}-spec-allowlist.txt; darwin arm64 always runs the whole suite'
+        required: false
+        type: boolean
+        default: true
     secrets:
       # ACTIONS_STEP_DEBUG is a reserved name for workflow_call secrets; the
       # workflows that read it map this back to the ACTIONS_STEP_DEBUG env.
@@ -90,11 +95,19 @@ jobs:
       fail-fast: false
       matrix:
         build-type: ${{ inputs.target-platform == 'macos' && (inputs.is-ubsan && fromJSON('["darwin"]') || fromJSON('["darwin","mas"]')) || (inputs.target-platform == 'win' && fromJSON('["win"]') || fromJSON('["linux"]')) }}
-        shard: ${{ case(inputs.display-server == 'wayland', fromJSON('[1]'), inputs.target-platform == 'macos' && inputs.is-ubsan, fromJSON('[1, 2, 3]'), inputs.target-platform == 'linux', fromJSON('[1, 2, 3]'), inputs.target-platform == 'macos' && inputs.target-arch == 'x64', fromJSON('[1, 2, 3]'), fromJSON('[1, 2]')) }}
+        shard: ${{ case(inputs.display-server == 'wayland', fromJSON('[1]'), inputs.target-platform == 'macos' && inputs.is-ubsan, fromJSON('[1, 2, 3]'), inputs.target-platform == 'linux', fromJSON('[1, 2, 3]'), inputs.target-platform == 'macos' && !inputs.full-macos-tests && inputs.target-arch == 'x64', fromJSON('[1]'), inputs.target-platform == 'macos' && inputs.target-arch == 'x64', fromJSON('[1, 2, 3]'), fromJSON('[1, 2]')) }}
+        # The reduced macOS arm64 leg keeps both darwin shards and runs mas on
+        # a single one; the reduced x64 leg is already one shard per variant.
+        exclude: ${{ inputs.target-platform == 'macos' && !inputs.full-macos-tests && inputs.target-arch == 'arm64' && fromJSON('[{"build-type":"mas","shard":2}]') || fromJSON('[]') }}
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
       ARTIFACT_KEY: ${{ matrix.build-type }}_${{ inputs.target-arch }}
+      # Set on the reduced macOS legs (x64, and mas on any arch): the file
+      # listing the spec files to run instead of the whole suite. Empty
+      # elsewhere. The mas list wins on mas_x64: its arch coverage comes from
+      # the darwin_x64 leg of the same run.
+      MACOS_SPEC_ALLOWLIST: ${{ inputs.target-platform == 'macos' && !inputs.full-macos-tests && (matrix.build-type == 'mas' && 'script/macos-mas-spec-allowlist.txt' || inputs.target-arch == 'x64' && 'script/macos-x64-spec-allowlist.txt') || '' }}
       # depot_tools' unbootstrapped python3 wrapper (crrev.com/c/8162440) breaks system python3 resolution; bypass it
       DEPOT_TOOLS_PYTHON_BYPASS: 1
     steps:
@@ -341,14 +354,31 @@ jobs:
         TARGET_PLATFORM: ${{ inputs.target-platform }}
         DISPLAY_SERVER: ${{ inputs.display-server }}
         SHARD: ${{ matrix.shard }}
-        SHARD_COUNT: ${{ case(inputs.display-server == 'wayland', 1, inputs.target-platform == 'macos' && inputs.is-ubsan, 3, inputs.target-platform == 'linux', 3, inputs.target-platform == 'macos' && inputs.target-arch == 'x64', 3, 2) }}
+        SHARD_COUNT: ${{ case(inputs.display-server == 'wayland', 1, env.MACOS_SPEC_ALLOWLIST != '', 1, inputs.target-platform == 'macos' && inputs.is-ubsan, 3, inputs.target-platform == 'linux', 3, inputs.target-platform == 'macos' && inputs.target-arch == 'x64', 3, 2) }}
       run: |
         cd src/electron
         export ELECTRON_TEST_RESULTS_DIR=`pwd`/junit
         # Get which tests are on this shard
         tests_files=$(node script/split-tests "$SHARD" "$SHARD_COUNT")
+        # The Wayland leg and the reduced macOS legs run only the spec files
+        # named in an allowlist (one path per line, # comments ignored).
+        allowlist_file=""
         if [ "$DISPLAY_SERVER" = "wayland" ]; then
           allowlist_file=script/wayland-test-allowlist.txt
+        elif [ -n "$MACOS_SPEC_ALLOWLIST" ]; then
+          allowlist_file="$MACOS_SPEC_ALLOWLIST"
+          # A renamed or deleted spec would otherwise silently drop out of the
+          # reduced run.
+          while IFS= read -r allowed; do
+            case "$allowed" in ''|'#'*) continue ;; esac
+            if [ ! -f "$allowed" ]; then
+              echo "::error file=$allowlist_file::lists $allowed, which does not exist"
+              exit 1
+            fi
+          done < "$allowlist_file"
+        fi
+        if [ -n "$allowlist_file" ]; then
+          echo "Running only the spec files listed in $allowlist_file"
           filtered_tests=""
           for test_file in $tests_files; do
             if grep -Fxq "$test_file" "$allowlist_file"; then
@@ -358,7 +388,7 @@ jobs:
           tests_files="${filtered_tests# }"
 
           if [ -z "$tests_files" ]; then
-            echo "No tests matched Wayland filter, skipping."
+            echo "No tests matched $allowlist_file, skipping."
             exit 0
           fi
         fi

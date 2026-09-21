@@ -603,6 +603,9 @@ Returns `boolean` - Whether the window is focused.
 
 Returns `boolean` - Whether the window is destroyed.
 
+> [!NOTE]
+> Once a window is destroyed, accessing most of its other properties and methods throws `Object has been destroyed`, so callbacks that may run after the window is gone should guard with `isDestroyed()`.
+
 #### `win.show()`
 
 Shows and gives focus to the window.

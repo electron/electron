@@ -3,7 +3,7 @@ const path = require('node:path')
 
 let mainWindow = null
 
-ipcMain.handle('get-app-path', (event) => app.getAppPath())
+ipcMain.handle('get-app-path', () => app.getAppPath())
 
 function createWindow () {
   const windowOptions = {

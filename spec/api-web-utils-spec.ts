@@ -4,12 +4,12 @@ import { expect } from 'chai';
 
 import * as path from 'node:path';
 
-import { defer } from './lib/spec-helpers';
+import { defer } from './lib/spec-helpers.ts';
 
 // import { once } from 'node:events';
 
 describe('webUtils module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures');
+  const fixtures = path.resolve(import.meta.dirname, 'fixtures');
 
   describe('getPathForFile', () => {
     it('returns nothing for a Blob', async () => {
@@ -48,13 +48,13 @@ describe('webUtils module', () => {
         } = await debug.sendCommand('DOM.getDocument');
         const { nodeId: inputNodeId } = await debug.sendCommand('DOM.querySelector', { nodeId, selector: 'input' });
         await debug.sendCommand('DOM.setFileInputFiles', {
-          files: [__filename],
+          files: [import.meta.filename],
           nodeId: inputNodeId
         });
         const pathFromWebUtils = await w.webContents.executeJavaScript(
           'require("electron").webUtils.getPathForFile(document.querySelector("input").files[0])'
         );
-        expect(pathFromWebUtils).to.equal(__filename);
+        expect(pathFromWebUtils).to.equal(import.meta.filename);
       } finally {
         debug.detach();
       }
