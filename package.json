@@ -147,7 +147,7 @@
     "put": "npm:@nornagon/put@0.0.8",
     "get-intrinsic": "^1.3.0"
   },
-  "packageManager": "yarn@4.12.0",
+  "packageManager": "yarn@4.18.0",
   "workspaces": [
     ".github/workflows",
     "script/pgo",
