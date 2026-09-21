@@ -129,9 +129,9 @@ void Initialize(v8::Local<v8::Object> exports,
 
 In the [`typings/internal-ambient.d.ts`](../../typings/internal-ambient.d.ts) file, we need to append a new property onto the `Process` interface like so:
 
-```ts title='typings/internal-ambient.d.ts' @ts-nocheck
+```ts title='typings/internal-ambient.d.ts' @ts-nocheck @noformat
 interface Process {
-    _linkedBinding(name: 'electron_browser_{api_name}'): Electron.ApiName;
+  _linkedBinding(name: 'electron_browser_{api_name}'): Electron.ApiName;
 }
 ```
 
@@ -165,7 +165,7 @@ An example of the contents of this file can be found [here](../../lib/browser/ap
 
 Add your module to the module list found at `"lib/browser/api/module-list.ts"` like so:
 
-```ts title='lib/browser/api/module-list.ts' @ts-nocheck
+```ts title='lib/browser/api/module-list.ts' @ts-nocheck @noformat
 export const browserModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'apiName', loader: () => require('./api-name') }
 ];

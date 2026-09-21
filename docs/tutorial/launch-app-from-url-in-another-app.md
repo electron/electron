@@ -193,9 +193,9 @@ packager({
       schemes: ['electron-fiddle']
     }
   ]
-
-}).then(paths => console.log(`SUCCESS: Created ${paths.join(', ')}`))
-  .catch(err => console.error(`ERROR: ${err.message}`))
+})
+  .then((paths) => console.log(`SUCCESS: Created ${paths.join(', ')}`))
+  .catch((err) => console.error(`ERROR: ${err.message}`))
 ```
 
 If you're using Electron Packager's CLI, use the `--protocol` and `--protocol-name` flags. For
