@@ -1,13 +1,22 @@
-import { BaseWindow, BrowserWindow, View, WebContentsView, webContents, screen } from 'electron/main';
+import { BaseWindow, BrowserWindow, View, WebContentsView, webContents, screen, ipcMain } from 'electron/main';
 
 import { expect } from 'chai';
 
 import { once } from 'node:events';
+import * as path from 'node:path';
 import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
 
 import { HexColors, ScreenCapture, hasCapturableScreen, nextFrameTime } from './lib/screen-helpers';
 import { defer, ifdescribe, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
+
+// Try to load robotjs
+let robot: typeof import('@hurdlegroup/robotjs');
+try {
+  robot = require('@hurdlegroup/robotjs');
+} catch {
+  // ignore. tests are skipped below if this is undefined.
+}
 
 describe('WebContentsView', () => {
   afterEach(async () => {
@@ -606,6 +615,94 @@ describe('WebContentsView', () => {
       expect(v.webContents.isFocused()).to.be.false();
       await v.webContents.loadURL('data:text/html,<body>test</body>');
       expect(v.webContents.isFocused()).to.be.false();
+    });
+  });
+
+  describe('setInteractive', () => {
+    afterEach(closeAllWindows);
+
+    it('does not throw when toggled', () => {
+      const v = new WebContentsView();
+      expect(() => v.setInteractive(false)).to.not.throw();
+      expect(() => v.setInteractive(true)).to.not.throw();
+    });
+
+    it('correctly records state when toggled', () => {
+      const v = new WebContentsView();
+      expect(v.getInteractive()).to.be.true();
+      v.setInteractive(false);
+      expect(v.getInteractive()).to.be.false();
+      v.setInteractive(true);
+      expect(v.getInteractive()).to.be.true();
+    });
+
+    it('does not throw for a WebContentsView, before and after attach', async () => {
+      const w = new BaseWindow({ show: false });
+      const view = new WebContentsView();
+      expect(() => view.setInteractive(false)).to.not.throw(); // before attach
+      w.contentView.addChildView(view);
+      expect(() => view.setInteractive(true)).to.not.throw(); // after attach
+    });
+
+    it('survives destroy/toggle churn', () => {
+      const view = new WebContentsView();
+      view.setInteractive(false);
+      view.setInteractive(true);
+      view.setInteractive(false);
+      view.webContents.destroy();
+      expect(() => view.setInteractive(true)).to.not.throw();
+    });
+
+    it('prevents interaction when setInteractive(false) is called', async function () {
+      if (!robot) {
+        this.skip();
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const w = new BaseWindow({ show: true, width: 400, height: 400 });
+
+      const bottom = new WebContentsView({
+        webPreferences: { nodeIntegration: true, contextIsolation: false }
+      });
+      w.contentView.addChildView(bottom);
+      bottom.setBounds({ x: 0, y: 0, width: 400, height: 400 });
+      await bottom.webContents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'click.html'), {
+        query: { id: 'bottom' }
+      });
+
+      const top = new WebContentsView({
+        webPreferences: { nodeIntegration: true, contextIsolation: false }
+      });
+      w.contentView.addChildView(top);
+      top.setBounds({ x: 0, y: 0, width: 400, height: 400 });
+      await top.webContents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'click.html'), { query: { id: 'top' } });
+      top.setInteractive(false);
+
+      w.focus();
+
+      // give the window manager a beat to actually raise/activate the window
+      // before we start sending input at it
+      await new Promise((resolve) => setTimeout(resolve, 250));
+
+      const clickedPromise = once(ipcMain, 'clicked');
+      const { x, y, width, height } = w.getBounds();
+      robot.moveMouse(x + Math.floor(width / 2), y + Math.floor(height / 2));
+      robot.mouseClick();
+
+      const [, id] = await clickedPromise;
+      expect(id).to.equal('bottom');
+
+      top.setInteractive(true);
+
+      await new Promise((resolve) => setTimeout(resolve, 250));
+
+      const clickedPromise2 = once(ipcMain, 'clicked');
+      robot.moveMouse(x + Math.floor(width / 2), y + Math.floor(height / 2));
+      robot.mouseClick();
+
+      const [, id2] = await clickedPromise2;
+      expect(id2).to.equal('top');
     });
   });
 });

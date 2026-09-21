@@ -46,6 +46,7 @@ class WebContentsView : public View,
   WebContents* GetWebContents();
   void SetBackgroundColor(std::optional<WrappedSkColor> color);
   void SetBorderRadius(int radius);
+  void SetInteractive(bool interactive) override;
 
   int NonClientHitTest(const gfx::Point& point) override;
 
@@ -56,6 +57,8 @@ class WebContentsView : public View,
 
   // content::WebContentsObserver:
   void WebContentsDestroyed() override;
+  void RenderFrameHostChanged(content::RenderFrameHost* old_host,
+                              content::RenderFrameHost* new_host) override;
 
   // views::ViewObserver
   void OnViewAddedToWidget(views::View* view) override;
@@ -69,6 +72,7 @@ class WebContentsView : public View,
 
   WebContents* GetLiveWebContents() const;
   void ApplyBorderRadius();
+  void ApplyInteractive();
   void StopObservingWindow();
   void OnContentsBoundsChanging();
   bool HasLivePage();
