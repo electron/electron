@@ -1,16 +1,16 @@
-import * as minimist from 'minimist';
-import * as streamChain from 'stream-chain';
-import * as streamJson from 'stream-json';
-import { ignore as streamJsonIgnore } from 'stream-json/filters/Ignore';
-import { streamArray as streamJsonStreamArray } from 'stream-json/streamers/StreamArray';
+import minimist from 'minimist';
+import StreamChain from 'stream-chain';
+import StreamJson from 'stream-json';
+import StreamJsonIgnore from 'stream-json/filters/Ignore.js';
+import StreamJsonStreamArray from 'stream-json/streamers/StreamArray.js';
 
 import * as childProcess from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { chunkFilenames, findMatchingFiles, getDepotToolsEnv } from './lib/utils';
+import { chunkFilenames, findMatchingFiles, getDepotToolsEnv } from './lib/utils.js';
 
-const SOURCE_ROOT = path.normalize(path.dirname(__dirname));
+const SOURCE_ROOT = path.normalize(path.dirname(import.meta.dirname));
 const LLVM_BIN = path.resolve(SOURCE_ROOT, '..', 'third_party', 'llvm-build', 'Release+Asserts', 'bin');
 
 type SpawnAsyncResult = {
@@ -88,11 +88,11 @@ async function runClangTidy(
     const compiledFilenames: string[] = [];
 
     return new Promise((resolve) => {
-      const pipeline = streamChain.chain([
+      const pipeline = StreamChain.chain([
         fs.createReadStream(path.resolve(outDir, 'compile_commands.json')),
-        streamJson.parser(),
-        streamJsonIgnore({ filter: /\bcommand\b/i }),
-        streamJsonStreamArray(),
+        StreamJson.parser(),
+        StreamJsonIgnore.ignore({ filter: /\bcommand\b/i }),
+        StreamJsonStreamArray.streamArray(),
         ({ value: { file, directory } }) => {
           const filename = path.resolve(directory, file);
           return filenames.includes(filename) ? filename : null;
@@ -163,7 +163,8 @@ function parseCommandLine() {
   const showUsage = (arg?: string): boolean => {
     if (!arg || arg.startsWith('-')) {
       console.log(
-        'Usage: script/run-clang-tidy.ts [-h|--help] [--jobs|-j] ' + '[--fix] [--checks] --out-dir OUTDIR [file1 file2]'
+        'Usage: script/run-clang-tidy.mts [-h|--help] [--jobs|-j] ' +
+          '[--fix] [--checks] --out-dir OUTDIR [file1 file2]'
       );
       process.exit(0);
     }
@@ -252,13 +253,11 @@ async function main(): Promise<boolean> {
   return runClangTidy(outDir, filenames, opts.checks, opts.jobs, opts.fix);
 }
 
-if (require.main === module) {
-  main()
-    .then((success) => {
-      process.exit(success ? 0 : 1);
-    })
-    .catch((err: ErrorWithExitCode) => {
-      console.error(`ERROR: ${err.message}`);
-      process.exit(err.exitCode || 1);
-    });
-}
+main()
+  .then((success) => {
+    process.exit(success ? 0 : 1);
+  })
+  .catch((err: ErrorWithExitCode) => {
+    console.error(`ERROR: ${err.message}`);
+    process.exit(err.exitCode || 1);
+  });

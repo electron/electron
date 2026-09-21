@@ -6,7 +6,7 @@
 //     --buildflags out/gen/electron/buildflags/buildflags.h --mode production
 //
 // --print-graph prints the bundle's source files as a JSON array instead of
-// writing anything; script/gen-filenames.ts uses it to keep filenames.auto.gni
+// writing anything; script/gen-filenames.mts uses it to keep filenames.auto.gni
 // in sync.
 //
 // Type checking is not done here; see typecheck.mjs.
