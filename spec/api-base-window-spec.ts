@@ -365,6 +365,27 @@ describe('BaseWindow module', () => {
 
         expectBoundsEqual(w.getSize(), size);
       });
+
+      ifit(process.platform !== 'darwin' && !isWayland)(
+        'can shrink a non-resizable window after growing it',
+        async () => {
+          const fixed = new BaseWindow({ show: false, width: 300, height: 300, resizable: false });
+
+          try {
+            let resized = once(fixed, 'resize');
+            fixed.setSize(500, 500);
+            await resized;
+            expectBoundsEqual(fixed.getSize(), [500, 500]);
+
+            resized = once(fixed, 'resize');
+            fixed.setSize(300, 300);
+            await resized;
+            expectBoundsEqual(fixed.getSize(), [300, 300]);
+          } finally {
+            fixed.destroy();
+          }
+        }
+      );
     });
 
     describe('BaseWindow.setPosition(x, y)', () => {

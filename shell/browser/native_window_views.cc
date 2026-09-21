@@ -914,8 +914,10 @@ void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool animate) {
   // On Linux and Windows the minimum and maximum size should be updated with
   // window size when window is not resizable.
   if (!CanResize()) {
-    SetMaximumSize(bounds.size());
-    SetMinimumSize(bounds.size());
+    // Update both constraints atomically. Updating them one at a time can
+    // preserve the previous minimum as the effective maximum when shrinking.
+    SetSizeConstraints(
+        extensions::SizeConstraints(bounds.size(), bounds.size()));
   }
 #endif
 
