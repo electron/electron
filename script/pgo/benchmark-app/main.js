@@ -156,25 +156,51 @@ async function sleep(ms) {
 // of failing one workload and moving on.
 const NAVIGATION_TIMEOUT_MS = 2 * 60 * 1000;
 
-async function loadURLWithTimeout(win, url) {
-  const load = win.loadURL(url);
-  // If the timeout wins the race the eventual loadURL rejection has no
+async function withTimeout(promise, timeoutMs, label) {
+  // If the timeout wins the race the eventual rejection of `promise` has no
   // listener; swallow it so it does not surface as an unhandled rejection.
-  load.catch(() => {});
+  promise.catch(() => {});
   let timer;
   try {
-    await Promise.race([
-      load,
+    return await Promise.race([
+      promise,
       new Promise((_resolve, reject) => {
-        timer = setTimeout(
-          () => reject(new Error(`navigation to ${url.slice(0, 80)} timed out after ${NAVIGATION_TIMEOUT_MS / 1000}s`)),
-          NAVIGATION_TIMEOUT_MS
-        );
+        timer = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs / 1000}s`)), timeoutMs);
       })
     ]);
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function loadURLWithTimeout(win, url) {
+  await withTimeout(win.loadURL(url), NAVIGATION_TIMEOUT_MS, `navigation to ${url.slice(0, 80)}`);
+}
+
+// executeJavaScript never settles if the renderer dies mid-evaluation: the
+// reply simply never arrives. Observed on the windows-x86 collect job, where a
+// renderer OOM 13 seconds into the network workload left the app awaiting its
+// driver script for 5+ hours until the CI step timeout - collect-profile.js
+// only retries once the app exits, so the retry loop never ran. Every page
+// evaluation therefore races against both a deadline and the diagnostics'
+// renderer-death signal (attachDiagnostics), so a dead renderer fails the
+// running workload instead of hanging collection.
+//
+// POLL_TIMEOUT_MS bounds the short state queries runWorkload polls with;
+// EVALUATE_GRACE_MS is how long past their own deadline the renderer-side
+// drivers (IPC, network) may run before they are presumed hung - their loops
+// await in-flight requests that have no timeout of their own.
+const POLL_TIMEOUT_MS = 30 * 1000;
+const EVALUATE_GRACE_MS = 60 * 1000;
+
+async function evaluateInPage(win, diag, script, timeoutMs, label) {
+  const racers = [win.webContents.executeJavaScript(script, true)];
+  if (diag) racers.push(diag.rendererDeath);
+  return withTimeout(Promise.race(racers), timeoutMs, label);
+}
+
+function describeRendererGone(details) {
+  return `renderer process gone (reason: ${details.reason}, exit code: ${details.exitCode})`;
 }
 
 // ---------------------------------------------------------------------------
@@ -188,20 +214,31 @@ async function loadURLWithTimeout(win, url) {
 // ---------------------------------------------------------------------------
 
 function attachDiagnostics(win) {
+  let failRenderer;
   const diag = {
     consoleErrors: [],
     rendererGone: null,
     unresponsive: false,
+    // Rejects once the renderer dies; page evaluations race against it (see
+    // evaluateInPage). Re-armed by reset() because each workload's loadURL
+    // spawns a fresh renderer.
+    rendererDeath: null,
     reset() {
       this.consoleErrors = [];
       this.rendererGone = null;
       this.unresponsive = false;
+      this.rendererDeath = new Promise((_resolve, reject) => {
+        failRenderer = reject;
+      });
+      this.rendererDeath.catch(() => {});
     }
   };
+  diag.reset();
 
   win.webContents.on('render-process-gone', (_event, details) => {
     diag.rendererGone = details;
     log(`DIAGNOSTIC: renderer process gone: ${JSON.stringify(details)}`);
+    failRenderer(new Error(describeRendererGone(details)));
   });
   win.webContents.on('unresponsive', () => {
     diag.unresponsive = true;
@@ -281,6 +318,15 @@ async function runWorkload(win, workload, diag) {
   log(`starting workload: ${workload.name}`);
   if (diag) diag.reset();
   const startTime = Date.now();
+
+  // A dead renderer never answers a poll (the evaluation fails instantly via
+  // diag.rendererDeath and is swallowed as "page busy"), so without this the
+  // loops below would spin until the workload deadline - up to 45 minutes.
+  const throwIfRendererGone = async () => {
+    if (!diag || !diag.rendererGone) return;
+    await reportWorkloadFailure(win, workload.name, diag);
+    throw new Error(`workload ${workload.name} aborted: ${describeRendererGone(diag.rendererGone)}`);
+  };
   try {
     await loadURLWithTimeout(win, workload.url);
   } catch (err) {
@@ -294,7 +340,9 @@ async function runWorkload(win, workload, diag) {
   // happened during static page load (before this injection) are detected by
   // checking driver state flags where they exist.
   try {
-    await win.webContents.executeJavaScript(
+    await evaluateInPage(
+      win,
+      diag,
       `(() => {
         window.__pgoErrors = window.__pgoErrors || [];
         if (typeof allIsGood !== 'undefined' && !allIsGood) {
@@ -312,7 +360,8 @@ async function runWorkload(win, workload, diag) {
         });
         return true;
       })()`,
-      true
+      POLL_TIMEOUT_MS,
+      'error capture injection'
     );
   } catch {
     /* page busy - diagnostics only */
@@ -329,15 +378,16 @@ async function runWorkload(win, workload, diag) {
     let started = false;
     for (let i = 0; i < 300 && !started; i++) {
       await sleep(1000);
+      await throwIfRendererGone();
       try {
-        started = await win.webContents.executeJavaScript(workload.startExpr, true);
+        started = await evaluateInPage(win, diag, workload.startExpr, POLL_TIMEOUT_MS, 'start poll');
       } catch {
         /* page busy - retry */
       }
       if (!started && workload.startFailExpr) {
         let unstartable = false;
         try {
-          unstartable = await win.webContents.executeJavaScript(workload.startFailExpr, true);
+          unstartable = await evaluateInPage(win, diag, workload.startFailExpr, POLL_TIMEOUT_MS, 'start-fail poll');
         } catch {
           /* page busy - keep polling */
         }
@@ -354,6 +404,7 @@ async function runWorkload(win, workload, diag) {
   const deadline = Date.now() + workload.timeoutMin * 60 * 1000;
   while (Date.now() < deadline) {
     await sleep(5000);
+    await throwIfRendererGone();
     // Soft cap: treat a long-running benchmark as complete. Profile counters
     // accumulate continuously, so everything up to this point is kept.
     if (workload.softCapMs && Date.now() - startTime > workload.softCapMs) {
@@ -364,7 +415,7 @@ async function runWorkload(win, workload, diag) {
     }
     let done = false;
     try {
-      done = await win.webContents.executeJavaScript(workload.doneExpr, true);
+      done = await evaluateInPage(win, diag, workload.doneExpr, POLL_TIMEOUT_MS, 'completion poll');
     } catch {
       /* page busy running benchmark - retry */
     }
@@ -375,7 +426,7 @@ async function runWorkload(win, workload, diag) {
       let succeeded = true;
       if (workload.successExpr) {
         try {
-          succeeded = await win.webContents.executeJavaScript(workload.successExpr, true);
+          succeeded = await evaluateInPage(win, diag, workload.successExpr, POLL_TIMEOUT_MS, 'success poll');
         } catch {
           succeeded = false;
         }
@@ -644,7 +695,9 @@ async function runIpcBridgeWorkload(durationMs, maxCalls) {
     // The driver runs in the main world and calls across the bridge. Payload
     // sizes cover the spectrum apps use: small control messages, medium JSON
     // payloads, and large binary transfers.
-    result = await win.webContents.executeJavaScript(
+    result = await evaluateInPage(
+      win,
+      diag,
       `(async () => {
     const small = { id: 1, type: 'msg', body: 'hello world' };
     const medium = { rows: Array.from({ length: 200 }, (_, i) => ({ i, name: 'row-' + i, values: [i, i * 2, i * 3] })) };
@@ -677,7 +730,8 @@ async function runIpcBridgeWorkload(durationMs, maxCalls) {
     }
     return { bridgeCalls, ipcCalls };
   })()`,
-      true
+      durationMs + EVALUATE_GRACE_MS,
+      'ipc-contextbridge renderer driver'
     );
   } catch (err) {
     await reportWorkloadFailure(win, 'ipc-contextbridge', diag);
@@ -709,8 +763,9 @@ async function runIpcBridgeWorkload(durationMs, maxCalls) {
 // to point at the collection CA (set by collect-profile.js).
 // ---------------------------------------------------------------------------
 
-async function runNetworkWorkload(win, durationMs, maxRequests) {
+async function runNetworkWorkload(win, diag, durationMs, maxRequests) {
   log('starting workload: network');
+  diag.reset();
   const startTime = Date.now();
   const isTls = BASE_URL.startsWith('https:');
   const wsUrl = BASE_URL.replace(/^http/, 'ws') + '/__pgo/ws';
@@ -718,9 +773,13 @@ async function runNetworkWorkload(win, durationMs, maxRequests) {
   // Renderer: parallel fetches + WebSocket echo. Runs for the first half of
   // the budget; the Node-side loop runs for the second half.
   const rendererBudget = Math.floor(durationMs / 2);
-  await loadURLWithTimeout(win, `${BASE_URL}/speedometer/`);
-  const rendererResult = await win.webContents.executeJavaScript(
-    `(async () => {
+  let rendererResult;
+  try {
+    await loadURLWithTimeout(win, `${BASE_URL}/speedometer/`);
+    rendererResult = await evaluateInPage(
+      win,
+      diag,
+      `(async () => {
     const deadline = Date.now() + ${rendererBudget};
     const maxRequests = ${maxRequests};
     let requests = 0;
@@ -768,8 +827,13 @@ async function runNetworkWorkload(win, durationMs, maxRequests) {
 
     return { requests, wsMessages };
   })()`,
-    true
-  );
+      rendererBudget + EVALUATE_GRACE_MS,
+      'network renderer driver'
+    );
+  } catch (err) {
+    await reportWorkloadFailure(win, 'network', diag);
+    throw err;
+  }
 
   // Main process: Node-side HTTPS/HTTP requests.
   let nodeRequests = 0;
@@ -847,7 +911,7 @@ app.whenReady().then(async () => {
     () => runAsyncChurnWorkload(ASYNC_CHURN_MAX_OPS),
     () => runPackagedAppWorkload(),
     () => runIpcBridgeWorkload(IPC_BRIDGE_TIMEOUT_MS, IPC_BRIDGE_MAX_CALLS),
-    () => runNetworkWorkload(win, NETWORK_TIMEOUT_MS, NETWORK_MAX_REQUESTS)
+    () => runNetworkWorkload(win, diag, NETWORK_TIMEOUT_MS, NETWORK_MAX_REQUESTS)
   ];
   let phaseNames = [
     ...WORKLOADS.map((w) => w.name),
