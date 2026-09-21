@@ -70,6 +70,7 @@ class WebContentsView : public View,
 
   void ApplyBorderRadius();
   void StopObservingWindow();
+  void SyncOffscreenViewBounds();
   void OnContentsBoundsChanging();
   bool HasLivePage();
   void ScheduleWindowControlsOverlayUpdate();

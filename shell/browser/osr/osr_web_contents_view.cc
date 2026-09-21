@@ -106,6 +106,11 @@ gfx::Rect OffScreenWebContentsView::GetContainerBounds() const {
   return GetViewBounds();
 }
 
+void OffScreenWebContentsView::Resize(const gfx::Rect& new_bounds) {
+  if (auto* view = GetView())
+    view->SetSize(new_bounds.size());
+}
+
 content::DropData* OffScreenWebContentsView::GetDropData() const {
   return nullptr;
 }

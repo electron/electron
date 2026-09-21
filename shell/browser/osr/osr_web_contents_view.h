@@ -59,7 +59,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
   gfx::NativeWindow GetTopLevelNativeWindow() const override;
   gfx::Rect GetContainerBounds() const override;
   void Focus() override {}
-  void Resize(const gfx::Rect& new_bounds) override {}
+  void Resize(const gfx::Rect& new_bounds) override;
   void SetInitialFocus() override {}
   void StoreFocus() override {}
   void RestoreFocus() override {}

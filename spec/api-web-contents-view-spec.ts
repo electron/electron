@@ -6,7 +6,7 @@ import { once } from 'node:events';
 import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
 
 import { HexColors, ScreenCapture, hasCapturableScreen, nextFrameTime } from './lib/screen-helpers';
-import { defer, ifdescribe, waitUntil } from './lib/spec-helpers';
+import { defer, ifdescribe, ifit, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('WebContentsView', () => {
@@ -95,6 +95,26 @@ describe('WebContentsView', () => {
   it('can be used as content view', () => {
     const w = new BaseWindow({ show: false });
     w.setContentView(new WebContentsView());
+  });
+
+  ifit(process.platform === 'linux')('uses its own bounds for offscreen painting', async () => {
+    const w = new BaseWindow({ show: false, width: 800, height: 600 });
+    const view = new WebContentsView({
+      webPreferences: { offscreen: true, backgroundThrottling: false }
+    });
+    view.setBounds({ x: 20, y: 30, width: 320, height: 180 });
+    w.contentView.addChildView(view);
+
+    let painted = once(view.webContents, 'paint');
+    await view.webContents.loadURL('data:text/html,<body style="margin:0;background:red"></body>');
+    let [, , image] = await painted;
+    expect(image.getSize()).to.deep.equal({ width: 320, height: 180 });
+
+    painted = once(view.webContents, 'paint');
+    view.setBounds({ x: 20, y: 30, width: 400, height: 240 });
+    view.webContents.invalidate();
+    [, , image] = await painted;
+    expect(image.getSize()).to.deep.equal({ width: 400, height: 240 });
   });
 
   it('can be removed after a close', async () => {

@@ -142,6 +142,7 @@ void WebContentsView::OnViewAddedToWidget(views::View* observed_view) {
   // We don't need to call SetOwnerWindow(nullptr) in OnViewRemovedFromWidget
   // because that's handled in the WebContents dtor called prior.
   api_web_contents_->SetOwnerWindow(native_window);
+  SyncOffscreenViewBounds();
   native_window->AddDraggableRegionProvider(this);
   StopObservingWindow();
   observed_window_ = native_window->GetWeakPtr();
@@ -167,7 +168,14 @@ void WebContentsView::OnViewRemovedFromWidget(views::View* observed_view) {
 // match. Push the re-clipped overlay rect now so that it rides along with the
 // resize in a single VisualProperties update, rather than trailing it (where it
 // could sit behind the resize's pending ack).
+void WebContentsView::SyncOffscreenViewBounds() {
+  if (api_web_contents_ && api_web_contents_->IsOffScreen()) {
+    api_web_contents_->GetWebContents()->Resize(gfx::Rect(view()->size()));
+  }
+}
+
 void WebContentsView::OnContentsBoundsChanging() {
+  SyncOffscreenViewBounds();
   if (HasLivePage())
     SendWindowControlsOverlay();
 }
