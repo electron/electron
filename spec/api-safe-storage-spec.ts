@@ -9,7 +9,7 @@ import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { ifdescribe } from './lib/spec-helpers';
+import { ifdescribe } from './lib/spec-helpers.ts';
 
 chai.use(chaiAsPromised);
 
@@ -21,7 +21,7 @@ describe('safeStorage module', () => {
   });
 
   after(async () => {
-    const pathToEncryptedString = path.resolve(__dirname, 'fixtures', 'api', 'safe-storage', 'encrypted.txt');
+    const pathToEncryptedString = path.resolve(import.meta.dirname, 'fixtures', 'api', 'safe-storage', 'encrypted.txt');
     if (fs.existsSync(pathToEncryptedString)) {
       await fs.promises.rm(pathToEncryptedString, { force: true, recursive: true });
     }
@@ -209,7 +209,7 @@ describe('safeStorage module', () => {
 
   describe('safeStorage persists encryption key across app relaunch', () => {
     it('can decrypt after closing and reopening app', async () => {
-      const fixturesPath = path.resolve(__dirname, 'fixtures');
+      const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
       const encryptAppPath = path.join(fixturesPath, 'api', 'safe-storage', 'encrypt-app');
       const encryptAppProcess = cp.spawn(process.execPath, [encryptAppPath]);

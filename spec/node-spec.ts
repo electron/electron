@@ -5,6 +5,7 @@ import { expect } from 'chai';
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import * as tty from 'node:tty';
 import { pathToFileURL } from 'node:url';
@@ -16,8 +17,8 @@ import {
   shouldRunCodesignTests,
   signApp,
   spawn
-} from './lib/codesign-helpers';
-import { withTempDirectory } from './lib/fs-helpers';
+} from './lib/codesign-helpers.ts';
+import { withTempDirectory } from './lib/fs-helpers.ts';
 import {
   getRemoteContext,
   ifdescribe,
@@ -25,15 +26,18 @@ import {
   itremote,
   startRemoteControlApp,
   useRemoteContext
-} from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+} from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 import type { EventEmitter } from 'node:stream';
 
-const mainFixturesPath = path.resolve(__dirname, 'fixtures');
+// The startup snapshot spec below eval()s a CommonJS snippet in this scope too.
+const require = createRequire(import.meta.url);
+
+const mainFixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
 describe('node feature', () => {
-  const fixtures = path.join(__dirname, 'fixtures');
+  const fixtures = path.join(import.meta.dirname, 'fixtures');
 
   describe('child_process', () => {
     describe('child_process.fork', () => {
@@ -354,7 +358,7 @@ describe('node feature', () => {
     };
     describe('error thrown in main process node context', () => {
       it('gets emitted as a process uncaughtException event', async () => {
-        fs.readFile(__filename, () => {
+        fs.readFile(import.meta.filename, () => {
           throw new Error('hello');
         });
         const result = await new Promise((resolve) =>
@@ -368,7 +372,7 @@ describe('node feature', () => {
 
     describe('promise rejection in main process node context', () => {
       it('gets emitted as a process unhandledRejection event', async () => {
-        fs.readFile(__filename, () => {
+        fs.readFile(import.meta.filename, () => {
           Promise.reject(new Error('hello'));
         });
         const result = await new Promise((resolve) =>
@@ -432,7 +436,7 @@ describe('node feature', () => {
             })
           );
         },
-        [__filename]
+        [import.meta.filename]
       );
     });
 
@@ -455,7 +459,7 @@ describe('node feature', () => {
             });
           });
         },
-        [__filename]
+        [import.meta.filename]
       );
     });
 

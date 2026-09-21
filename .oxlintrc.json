@@ -353,9 +353,8 @@
       }
     },
     {
-      // Specs will be run straight from source with Node's type stripping,
-      // which leaves imports untouched: a type imported without `type` would
-      // fail at load time.
+      // Specs run straight from source with Node's type stripping, which leaves
+      // imports untouched: a type imported without `type` fails at load time.
       "files": [
         "spec/**/*.ts"
       ],

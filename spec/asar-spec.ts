@@ -4,19 +4,22 @@ import { expect } from 'chai';
 
 import { once } from 'node:events';
 import * as importedFs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 import { Worker } from 'node:worker_threads';
 
-import { defer, getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { defer, getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
+
+const require = createRequire(import.meta.url);
 
 const features = process._linkedBinding('electron_common_features');
 
 describe('asar package', () => {
-  const fixtures = path.join(__dirname, 'fixtures');
+  const fixtures = path.join(import.meta.dirname, 'fixtures');
   const asarDir = path.join(fixtures, 'test.asar');
 
   afterEach(closeAllWindows);
@@ -748,7 +751,7 @@ function promisify(_f: Function): any {
 }
 
 describe('asar package', function () {
-  const fixtures = path.join(__dirname, 'fixtures');
+  const fixtures = path.join(import.meta.dirname, 'fixtures');
   const asarDir = path.join(fixtures, 'test.asar');
   const fs = require('node:fs') as typeof importedFs; // dummy, to fool typescript
 

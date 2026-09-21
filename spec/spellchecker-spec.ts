@@ -8,8 +8,8 @@ import * as http from 'node:http';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { ifit, ifdescribe, listen } from './lib/spec-helpers';
-import { closeWindow } from './lib/window-helpers';
+import { ifit, ifdescribe, listen } from './lib/spec-helpers.ts';
+import { closeWindow } from './lib/window-helpers.ts';
 
 const features = process._linkedBinding('electron_common_features');
 const v8Util = process._linkedBinding('electron_common_v8_util');
@@ -49,7 +49,9 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
     // The provided is minimal dict for testing only, full list of words can
     // be found at src/third_party/hunspell_dictionaries/xx_XX.dic.
     try {
-      const data = await fs.readFile(path.join(__dirname, '/../../third_party/hunspell_dictionaries/xx-XX-3-0.bdic'));
+      const data = await fs.readFile(
+        path.join(import.meta.dirname, '/../../third_party/hunspell_dictionaries/xx-XX-3-0.bdic')
+      );
       res.writeHead(200);
       res.end(data);
     } catch (err) {
@@ -64,7 +66,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
   });
   after(() => server.close());
 
-  const fixtures = path.resolve(__dirname, 'fixtures');
+  const fixtures = path.resolve(import.meta.dirname, 'fixtures');
   const preload = path.join(fixtures, 'module', 'preload-electron.js');
 
   const generateSpecs = (description: string, sandbox: boolean) => {
@@ -81,7 +83,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
         });
         w.webContents.session.setSpellCheckerDictionaryDownloadURL(serverUrl);
         w.webContents.session.setSpellCheckerLanguages(['en-US']);
-        await w.loadFile(path.resolve(__dirname, './fixtures/chromium/spellchecker.html'));
+        await w.loadFile(path.resolve(import.meta.dirname, './fixtures/chromium/spellchecker.html'));
       });
 
       afterEach(async () => {

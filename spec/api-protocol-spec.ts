@@ -7,6 +7,7 @@ import * as ChildProcess from 'node:child_process';
 import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
+import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as qs from 'node:querystring';
@@ -17,12 +18,14 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 import * as zlib from 'node:zlib';
 
-import { collectStreamBody, getResponse } from './lib/net-helpers';
-import { listen, defer } from './lib/spec-helpers';
-import { WebmGenerator } from './lib/video-helpers';
-import { closeAllWindows, closeWindow } from './lib/window-helpers';
+import { collectStreamBody, getResponse } from './lib/net-helpers.ts';
+import { listen, defer } from './lib/spec-helpers.ts';
+import { WebmGenerator } from './lib/video-helpers.js';
+import { closeAllWindows, closeWindow } from './lib/window-helpers.ts';
 
-const fixturesPath = path.resolve(__dirname, 'fixtures');
+const require = createRequire(import.meta.url);
+
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
 const registerStringProtocol = protocol.registerStringProtocol;
 const registerBufferProtocol = protocol.registerBufferProtocol;
@@ -94,7 +97,7 @@ describe('protocol module', () => {
     // Note that we need to do navigation every time after a protocol is
     // registered or unregistered, otherwise the new protocol won't be
     // recognized by current page when NetworkService is used.
-    await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'fetch.html'));
+    await contents.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'fetch.html'));
     return contents.executeJavaScript(`ajax("${url}", ${JSON.stringify(options)})`);
   }
 
@@ -278,7 +281,7 @@ describe('protocol module', () => {
       it('can load iframes with custom protocols', async () => {
         registerFileProtocol('custom', (request, callback) => {
           const filename = request.url.substring(9);
-          const p = path.join(__dirname, 'fixtures', 'pages', filename);
+          const p = path.join(import.meta.dirname, 'fixtures', 'pages', filename);
           callback({ path: p });
         });
 
@@ -291,7 +294,7 @@ describe('protocol module', () => {
         });
 
         const loaded = once(ipcMain, 'loaded-iframe-custom-protocol');
-        w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'iframe-protocol.html'));
+        w.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'iframe-protocol.html'));
         await loaded;
       });
 
@@ -412,7 +415,7 @@ describe('protocol module', () => {
 
       const w = new BrowserWindow({ show: false, webPreferences: { session: ses, sandbox: true } });
       defer(() => w.destroy());
-      await w.webContents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'fetch.html'));
+      await w.webContents.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'fetch.html'));
       const r = await w.webContents.executeJavaScript(`ajax("${protocolName}://fake-host", {})`);
       expect(r.data).to.equal(text);
 
@@ -654,7 +657,7 @@ describe('protocol module', () => {
         const hasClosedPromise = once(events, 'close');
         ajax(protocolName + '://fake-host').catch(() => {});
         await hasRespondedPromise;
-        await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'fetch.html'));
+        await contents.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'fetch.html'));
         await hasClosedPromise;
       });
 
@@ -938,7 +941,7 @@ describe('protocol module', () => {
 
   describe('protocol.registerSchemeAsPrivileged', () => {
     it('does not crash on exit', async () => {
-      const appPath = path.join(__dirname, 'fixtures', 'api', 'custom-protocol-shutdown.js');
+      const appPath = path.join(import.meta.dirname, 'fixtures', 'api', 'custom-protocol-shutdown.js');
       const appProcess = ChildProcess.spawn(process.execPath, ['--enable-logging', appPath]);
       let stdout = '';
       let stderr = '';
@@ -1591,7 +1594,7 @@ describe('protocol module', () => {
     });
 
     it('receives requests to the existing file scheme', (done) => {
-      const filePath = path.join(__dirname, 'fixtures', 'pages', 'a.html');
+      const filePath = path.join(import.meta.dirname, 'fixtures', 'pages', 'a.html');
 
       protocol.handle('file', (req) => {
         let file;
@@ -1868,7 +1871,7 @@ describe('protocol module', () => {
 
     it('can forward to file', async () => {
       protocol.handle('test-scheme', () =>
-        net.fetch(url.pathToFileURL(path.join(__dirname, 'fixtures', 'hello.txt')).toString())
+        net.fetch(url.pathToFileURL(path.join(import.meta.dirname, 'fixtures', 'hello.txt')).toString())
       );
       defer(() => {
         protocol.unhandle('test-scheme');

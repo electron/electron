@@ -6,11 +6,11 @@ import { EventEmitter, once } from 'node:events';
 import * as http from 'node:http';
 import * as path from 'node:path';
 
-import { defer, listen, startRemoteControlApp } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { defer, listen, startRemoteControlApp } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
-const fixturesPath = path.resolve(__dirname, 'fixtures');
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
 describe('ipc module', () => {
   describe('invoke', () => {
@@ -1163,7 +1163,7 @@ describe('ipc module', () => {
             w.destroy();
           }
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap')
       );
 
       expect(templatesCreated).to.be.below(messageCount / 2);
