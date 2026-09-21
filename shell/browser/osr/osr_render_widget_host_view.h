@@ -17,12 +17,14 @@
 
 #include "base/functional/callback_forward.h"
 #include "base/memory/raw_ptr.h"
+#include "base/memory/weak_ptr.h"
 #include "components/viz/common/quads/compositor_frame.h"
 #include "components/viz/common/surfaces/parent_local_surface_id_allocator.h"
 #include "content/browser/renderer_host/delegated_frame_host.h"  // nogncheck
 #include "content/browser/renderer_host/input/mouse_wheel_phase_handler.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
+#include "content/browser/renderer_host/text_input_manager.h"  // nogncheck
 #include "shell/browser/osr/osr_paint_event.h"
 #include "shell/browser/osr/osr_view_proxy.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
@@ -49,11 +51,13 @@ namespace electron {
 class ElectronDelegatedFrameHostClient;
 class OffScreenHostDisplayClient;
 class OffScreenVideoConsumer;
+class OffScreenWebContentsView;
 
 using OnPopupPaintCallback = base::RepeatingCallback<void(const gfx::Rect&)>;
 
 class OffScreenRenderWidgetHostView
     : public content::RenderWidgetHostViewBase,
+      public content::TextInputManager::Observer,
       private content::RenderFrameMetadataProvider::Observer,
       public ui::CompositorDelegate,
       private OffscreenViewProxyObserver {
@@ -83,7 +87,7 @@ class OffScreenRenderWidgetHostView
   gfx::NativeView GetNativeView() override;
   gfx::NativeViewAccessible GetNativeViewAccessible() override;
   ui::TextInputClient* GetTextInputClient() override;
-  void Focus() override {}
+  void Focus() override;
   bool HasFocus() override;
   bool IsSurfaceAvailableForCopy() override;
   void Hide() override;
@@ -124,9 +128,6 @@ class OffScreenRenderWidgetHostView
                    const gfx::Rect& anchor_rect) override;
   void UpdateCursor(const ui::Cursor&) override {}
   void SetIsLoading(bool is_loading) override {}
-  void TextInputStateChanged(const ui::mojom::TextInputState& params) override {
-  }
-  void ImeCancelComposition() override {}
   void RenderProcessGone() override;
   void ShowWithVisibility(content::PageVisibilityState page_visibility) final;
   void Destroy() override;
@@ -155,11 +156,9 @@ class OffScreenRenderWidgetHostView
   bool HasSavedCompositorFrame() const override;
   std::unique_ptr<content::SyntheticGestureTarget>
   CreateSyntheticGestureTarget() override;
-  void ImeCompositionRangeChanged(
-      const gfx::Range&,
-      const std::optional<std::vector<gfx::Rect>>& character_bounds) override {}
   gfx::Size GetCompositorViewportPixelSize() override;
   ui::Compositor* GetCompositor() override;
+  viz::FrameSinkId GetRootFrameSinkId() override;
   display::ScreenInfos GetNewScreenInfosForUpdate() override;
 
   const viz::LocalSurfaceId& GetLocalSurfaceId() const override;
@@ -171,6 +170,19 @@ class OffScreenRenderWidgetHostView
       const gfx::PointF& point,
       RenderWidgetHostViewInput* target_view,
       gfx::PointF* transformed_point) override;
+
+  // content::TextInputManager::Observer:
+  void OnUpdateTextInputStateCalled(content::TextInputManager* manager,
+                                    RenderWidgetHostViewBase* updated_view,
+                                    bool did_update_state) override;
+  void OnImeCancelComposition(content::TextInputManager* manager,
+                              RenderWidgetHostViewBase* updated_view) override;
+  void OnSelectionBoundsChanged(
+      content::TextInputManager* manager,
+      RenderWidgetHostViewBase* updated_view) override;
+  void OnImeCompositionRangeChanged(content::TextInputManager* manager,
+                                    RenderWidgetHostViewBase* updated_view,
+                                    bool character_bounds_changed) override;
 
   // RenderFrameMetadataProvider::Observer:
   void OnRenderFrameMetadataChangedBeforeActivation(
@@ -217,6 +229,10 @@ class OffScreenRenderWidgetHostView
 
   void SendMouseEvent(const blink::WebMouseEvent& event);
   void SendMouseWheelEvent(const blink::WebMouseWheelEvent& event);
+
+  // Root views report paint and text input state to |view|.
+  void SetWebContentsView(base::WeakPtr<OffScreenWebContentsView> view);
+  void SetPaintCallback(const OnPaintCallback& callback);
 
   void SetPainting(bool painting);
   bool is_painting() const { return painting_; }
@@ -266,6 +282,10 @@ class OffScreenRenderWidgetHostView
   // opaqueness changes.
   void UpdateBackgroundColorFromRenderer(SkColor color);
 
+  // Only the primary main frame's view reports text input state.
+  bool ShouldReportTextInputState() const;
+  void ReportSelectionBounds(content::TextInputManager* manager);
+
   // Weak ptrs.
   raw_ptr<content::RenderWidgetHostImpl> render_widget_host_;
 
@@ -282,6 +302,7 @@ class OffScreenRenderWidgetHostView
 
   OnPaintCallback callback_;
   OnPopupPaintCallback parent_callback_;
+  base::WeakPtr<OffScreenWebContentsView> web_contents_view_;
 
   int frame_rate_ = 0;
   int frame_rate_threshold_us_ = 0;
