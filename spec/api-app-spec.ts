@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, session, net as electronNet, WebContents, utilityProcess } from 'electron/main';
+import { app, BrowserWindow, Menu, session, net as electronNet, type WebContents, utilityProcess } from 'electron/main';
 
 import { assert, expect } from 'chai';
 import * as semver from 'semver';

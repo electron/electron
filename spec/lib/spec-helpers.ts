@@ -1,19 +1,20 @@
 import { BrowserWindow } from 'electron/main';
 
 import { AssertionError } from 'chai';
-import { SuiteFunction, TestFunction } from 'mocha';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
 import * as http from 'node:http';
-import * as http2 from 'node:http2';
-import * as https from 'node:https';
-import * as net from 'node:net';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 import { stripVTControlCharacters } from 'node:util';
 import * as v8 from 'node:v8';
+
+import type { SuiteFunction, TestFunction } from 'mocha';
+import type * as http2 from 'node:http2';
+import type * as https from 'node:https';
+import type * as net from 'node:net';
 
 const addOnly = <T>(fn: Function): T => {
   const wrapped = (...args: any[]) => {

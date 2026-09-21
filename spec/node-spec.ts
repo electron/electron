@@ -6,7 +6,6 @@ import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { EventEmitter } from 'node:stream';
 import * as tty from 'node:tty';
 import { pathToFileURL } from 'node:url';
 import * as util from 'node:util';
@@ -28,6 +27,8 @@ import {
   useRemoteContext
 } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
+
+import type { EventEmitter } from 'node:stream';
 
 const mainFixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -173,7 +174,7 @@ describe('node feature', () => {
 
       it('has the electron version in process.versions', async () => {
         const source = 'process.send(process.versions)';
-        const forked = require('node:child_process').fork('--eval', [source]);
+        const forked = childProcess.fork('--eval', [source]);
         const [message] = await once(forked, 'message');
         expect(message)
           .to.have.own.property('electron')

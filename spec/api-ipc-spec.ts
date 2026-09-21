@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, IpcMainInvokeEvent, MessageChannelMain, WebContents } from 'electron/main';
+import { BrowserWindow, ipcMain, type IpcMainInvokeEvent, MessageChannelMain, type WebContents } from 'electron/main';
 
 import { expect } from 'chai';
 

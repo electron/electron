@@ -1,4 +1,10 @@
-import { app, contentTracing, EnableHeapProfilingOptions, TraceConfig, TraceCategoriesAndOptions } from 'electron/main';
+import {
+  app,
+  contentTracing,
+  type EnableHeapProfilingOptions,
+  type TraceConfig,
+  type TraceCategoriesAndOptions
+} from 'electron/main';
 
 import { expect } from 'chai';
 

@@ -1,4 +1,13 @@
-import { app, session, BrowserWindow, net, ipcMain, Session, webFrameMain, WebFrameMain } from 'electron/main';
+import {
+  app,
+  session,
+  BrowserWindow,
+  net,
+  ipcMain,
+  type Session,
+  webFrameMain,
+  type WebFrameMain
+} from 'electron/main';
 
 import auth from 'basic-auth';
 import { expect } from 'chai';
@@ -123,7 +132,7 @@ describe('session module', () => {
       expect(c.value).to.equal(value);
     });
 
-    for (const sameSite of <const>['unspecified', 'no_restriction', 'lax', 'strict']) {
+    for (const sameSite of ['unspecified', 'no_restriction', 'lax', 'strict'] as const) {
       it(`sets cookies with samesite=${sameSite}`, async () => {
         const { cookies } = session.defaultSession;
         const value = 'hithere';

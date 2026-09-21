@@ -1,4 +1,11 @@
-import { net, protocol, session, ClientRequest, ClientRequestConstructorOptions, utilityProcess } from 'electron/main';
+import {
+  net,
+  protocol,
+  session,
+  type ClientRequest,
+  type ClientRequestConstructorOptions,
+  utilityProcess
+} from 'electron/main';
 
 import { expect } from 'chai';
 

@@ -1,9 +1,9 @@
-import { NativeImage, nativeImage } from 'electron/common';
+import { type NativeImage, nativeImage } from 'electron/common';
 import { BrowserWindow } from 'electron/main';
 
 import { AssertionError, expect } from 'chai';
 
-import path = require('node:path');
+import * as path from 'node:path';
 
 import { createArtifact } from './lib/artifacts';
 import { closeAllWindows } from './lib/window-helpers';
