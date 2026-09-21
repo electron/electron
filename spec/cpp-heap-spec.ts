@@ -1892,19 +1892,24 @@ describe('cpp heap', () => {
 
     it('makes wrappers inert before shutdown cleanup regardless of registration order', async () => {
       const rc = await startRemoteControlApp();
+      let stdout = '';
+      rc.process.stdout!.on('data', (chunk) => {
+        stdout += chunk;
+      });
       await rc.remotely(async () => {
         const { app, session, WebContentsView } = require('electron');
         const view = new WebContentsView();
         const laterSession = session.fromPartition(`persist:shutdown-later-${process.pid}`);
+        // app.exit() cannot change the exit code this late in shutdown, so
+        // report through stdout instead.
         view.webContents.on('destroyed', () => {
+          let result = 'did not throw';
           try {
             laterSession.getUserAgent();
-            app.exit(1);
           } catch (error) {
-            if ((error as Error).message !== 'Object has been destroyed') {
-              app.exit(2);
-            }
+            result = (error as Error).message;
           }
+          process.stdout.write(`inert-session: ${result}\n`);
         });
         (globalThis as any).view = view;
         (globalThis as any).laterSession = laterSession;
@@ -1913,6 +1918,7 @@ describe('cpp heap', () => {
 
       const [code] = await once(rc.process, 'exit');
       expect(code).to.equal(0);
+      expect(stdout).to.contain('inert-session: Object has been destroyed');
     });
   });
 

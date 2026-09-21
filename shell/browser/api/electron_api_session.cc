@@ -1840,7 +1840,9 @@ void Session::New() {
 
 void Session::FillObjectTemplate(v8::Isolate* isolate,
                                  v8::Local<v8::ObjectTemplate> templ) {
-  gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
+  // gin_helper::ObjectTemplateBuilder so that a Session made inert at shutdown
+  // throws "Object has been destroyed" rather than gin's conversion error.
+  gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod("resolveHost", &Session::ResolveHost)
       .SetMethod("resolveProxy", &Session::ResolveProxy)
       .SetMethod("getCacheSize", &Session::GetCacheSize)
