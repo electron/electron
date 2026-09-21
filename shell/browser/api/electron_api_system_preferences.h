@@ -40,8 +40,7 @@ enum class NotificationCenterKind {
 
 class SystemPreferences final
     : public gin::Wrappable<SystemPreferences>,
-      public gin_helper::EventEmitterMixin<SystemPreferences>,
-      public MicrotasksRunner::Observer
+      public gin_helper::EventEmitterMixin<SystemPreferences>
 #if BUILDFLAG(IS_WIN)
     ,
       public BrowserObserver
@@ -62,8 +61,7 @@ class SystemPreferences final
   const char* GetHumanReadableName() const override;
   void Trace(cppgc::Visitor* visitor) const override;
 
-  // MicrotasksRunner::Observer
-  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override;
+  void OnBeforeMicrotasksRunnerDispose();
 
   std::string GetAccentColor();
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)

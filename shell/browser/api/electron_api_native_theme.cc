@@ -30,7 +30,7 @@ NativeTheme::NativeTheme(v8::Isolate* isolate,
                          ui::NativeTheme* web_theme)
     : ui_theme_(ui_theme), web_theme_(web_theme) {
   ui_theme_->AddObserver(this);
-  MicrotasksRunner::AddObserver(this);
+  MicrotasksRunner::AddWrappableObserver(this);
 #if BUILDFLAG(IS_WIN)
   std::ignore = hkcu_themes_regkey_.Open(HKEY_CURRENT_USER,
                                          L"Software\\Microsoft\\Windows\\"
@@ -41,8 +41,7 @@ NativeTheme::NativeTheme(v8::Isolate* isolate,
 
 NativeTheme::~NativeTheme() = default;
 
-void NativeTheme::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
-  MicrotasksRunner::RemoveObserver(this);
+void NativeTheme::OnBeforeMicrotasksRunnerDispose() {
   ui_theme_->RemoveObserver(this);
   weak_factory_.Invalidate();
 }

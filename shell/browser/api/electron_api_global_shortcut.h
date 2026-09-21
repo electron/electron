@@ -22,8 +22,7 @@ namespace electron::api {
 class GlobalShortcut final
     : public gin::Wrappable<GlobalShortcut>,
       public gin_helper::EventEmitterMixin<GlobalShortcut>,
-      private ui::GlobalAcceleratorListener::Observer,
-      public MicrotasksRunner::Observer {
+      private ui::GlobalAcceleratorListener::Observer {
  public:
   static GlobalShortcut* Create(v8::Isolate* isolate);
 
@@ -36,8 +35,7 @@ class GlobalShortcut final
       v8::Isolate* isolate) override;
   const char* GetClassName() const { return "GlobalShortcut"; }
 
-  // MicrotasksRunner::Observer
-  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override;
+  void OnBeforeMicrotasksRunnerDispose();
 
   // Make public for cppgc::MakeGarbageCollected.
   explicit GlobalShortcut(v8::Isolate* isolate);

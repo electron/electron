@@ -86,15 +86,10 @@ class NotificationDelegateProxy final : public electron::NotificationDelegate,
   }
 
   ~NotificationDelegateProxy() override {
-    if (is_observing_)
-      MicrotasksRunner::RemoveObserver(this);
+    MicrotasksRunner::RemoveObserver(this);
   }
 
-  void OnBeforeMicrotasksRunnerDispose(v8::Isolate*) override {
-    notification_.Clear();
-    MicrotasksRunner::RemoveObserver(this);
-    is_observing_ = false;
-  }
+  void OnBeforeMicrotasksRunnerDispose() override { notification_.Clear(); }
 
   void NotificationAction(int action_index, int selection_index) override {
     if (auto* notification = notification_.Get())
@@ -128,7 +123,6 @@ class NotificationDelegateProxy final : public electron::NotificationDelegate,
 
  private:
   cppgc::WeakPersistent<Notification> notification_;
-  bool is_observing_ = true;
 };
 
 Notification::Notification(gin::Arguments* args)

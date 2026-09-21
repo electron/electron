@@ -48,7 +48,7 @@ class Debugger::AgentHostLifecycle final
   }
 
   ~AgentHostLifecycle() override {
-    StopObserving();
+    MicrotasksRunner::RemoveObserver(this);
     Detach();
   }
 
@@ -74,9 +74,8 @@ class Debugger::AgentHostLifecycle final
   }
 
   bool IsAttached() const { return agent_host_ && agent_host_->IsAttached(); }
-  void OnBeforeMicrotasksRunnerDispose(v8::Isolate*) override {
+  void OnBeforeMicrotasksRunnerDispose() override {
     debugger_.Clear();
-    StopObserving();
     Detach();
   }
 
@@ -172,13 +171,6 @@ class Debugger::AgentHostLifecycle final
     agent_host_->ConnectWebContents(web_contents);
   }
 
-  void StopObserving() {
-    if (!is_observing_)
-      return;
-    MicrotasksRunner::RemoveObserver(this);
-    is_observing_ = false;
-  }
-
   void ClearPendingRequests() {
     PendingRequestMap pending_requests = std::move(pending_requests_);
     for (auto& [id, promise] : pending_requests)
@@ -189,7 +181,6 @@ class Debugger::AgentHostLifecycle final
   scoped_refptr<DevToolsAgentHost> agent_host_;
   PendingRequestMap pending_requests_;
   int previous_request_id_ = 0;
-  bool is_observing_ = true;
 };
 
 Debugger::Debugger(content::WebContents* web_contents)

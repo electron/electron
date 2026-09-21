@@ -25,13 +25,12 @@ const gin::WrapperInfo AutoUpdater::kWrapperInfo =
 
 AutoUpdater::AutoUpdater(v8::Isolate* isolate) {
   auto_updater::AutoUpdater::SetDelegate(this);
-  MicrotasksRunner::AddObserver(this);
+  MicrotasksRunner::AddWrappableObserver(this);
 }
 
 AutoUpdater::~AutoUpdater() = default;
 
-void AutoUpdater::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
-  MicrotasksRunner::RemoveObserver(this);
+void AutoUpdater::OnBeforeMicrotasksRunnerDispose() {
   auto_updater::AutoUpdater::SetDelegate(nullptr);
 }
 

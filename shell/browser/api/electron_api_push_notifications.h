@@ -18,8 +18,7 @@ namespace electron::api {
 
 class PushNotifications final
     : public gin::Wrappable<PushNotifications>,
-      public gin_helper::EventEmitterMixin<PushNotifications>,
-      public MicrotasksRunner::Observer {
+      public gin_helper::EventEmitterMixin<PushNotifications> {
  public:
   static PushNotifications* Get();
 
@@ -31,8 +30,7 @@ class PushNotifications final
   const gin::WrapperInfo* wrapper_info() const override;
   const char* GetHumanReadableName() const override;
 
-  // MicrotasksRunner::Observer
-  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override;
+  void OnBeforeMicrotasksRunnerDispose();
 
   // disable copy
   PushNotifications(const PushNotifications&) = delete;

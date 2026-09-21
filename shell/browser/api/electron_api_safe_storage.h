@@ -32,8 +32,7 @@ class ObjectTemplateBuilder;
 
 namespace electron::api {
 
-class SafeStorage final : public gin::Wrappable<SafeStorage>,
-                          public MicrotasksRunner::Observer {
+class SafeStorage final : public gin::Wrappable<SafeStorage> {
  public:
   static SafeStorage* Create(v8::Isolate* isolate);
 
@@ -46,8 +45,7 @@ class SafeStorage final : public gin::Wrappable<SafeStorage>,
   const char* GetHumanReadableName() const override;
   void Trace(cppgc::Visitor* visitor) const override;
 
-  // MicrotasksRunner::Observer
-  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override;
+  void OnBeforeMicrotasksRunnerDispose();
 
   // disable copy
   SafeStorage(const SafeStorage&) = delete;

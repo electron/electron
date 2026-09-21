@@ -60,7 +60,6 @@ class WebRequest;
 class Session final : public gin::Wrappable<Session>,
                       public gin_helper::Constructible<Session>,
                       public gin_helper::EventEmitterMixin<Session>,
-                      public MicrotasksRunner::Observer,
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
                       private SpellcheckHunspellDictionary::Observer,
 #endif
@@ -106,8 +105,7 @@ class Session final : public gin::Wrappable<Session>,
   const gin::WrapperInfo* wrapper_info() const override;
   const char* GetHumanReadableName() const override;
 
-  // MicrotasksRunner::Observer
-  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override;
+  void OnBeforeMicrotasksRunnerDispose();
 
   // Methods.
   void Dispose();

@@ -21,7 +21,6 @@ namespace electron::api {
 
 class NativeTheme final : public gin::Wrappable<NativeTheme>,
                           public gin_helper::EventEmitterMixin<NativeTheme>,
-                          public MicrotasksRunner::Observer,
                           private ui::NativeThemeObserver {
  public:
   static NativeTheme* Create(v8::Isolate* isolate);
@@ -35,8 +34,7 @@ class NativeTheme final : public gin::Wrappable<NativeTheme>,
   const char* GetHumanReadableName() const override;
   void Trace(cppgc::Visitor* visitor) const override;
 
-  // MicrotasksRunner::Observer
-  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override;
+  void OnBeforeMicrotasksRunnerDispose();
 
   // disable copy
   NativeTheme(const NativeTheme&) = delete;

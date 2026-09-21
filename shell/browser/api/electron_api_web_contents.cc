@@ -972,16 +972,13 @@ class WebContents::NativeLifecycle final
  public:
   using content::WebContentsObserver::Observe;
 
-  NativeLifecycle(v8::Isolate* isolate, WebContents* contents)
-      : isolate_(isolate), contents_(contents) {}
+  explicit NativeLifecycle(WebContents* contents) : contents_(contents) {}
 
   void StartObservingShutdown() { MicrotasksRunner::AddObserver(this); }
 
   ~NativeLifecycle() override { DisposeNative(); }
 
-  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override {
-    MicrotasksRunner::RemoveObserver(this);
-    isolate_ = nullptr;
+  void OnBeforeMicrotasksRunnerDispose() override {
     if (auto* contents = contents_.Get())
       contents->Dispose();
     DisposeNative();
@@ -1617,10 +1614,7 @@ class WebContents::NativeLifecycle final
       return;
     disposed_ = true;
     weak_factory_.InvalidateWeakPtrs();
-    if (isolate_) {
-      MicrotasksRunner::RemoveObserver(this);
-      isolate_ = nullptr;
-    }
+    MicrotasksRunner::RemoveObserver(this);
     DetachCallbacks();
     if (!contents_.Get())
       load_url_promises_.DidStopLoading();
@@ -1647,7 +1641,6 @@ class WebContents::NativeLifecycle final
     contents_.Clear();
   }
 
-  raw_ptr<v8::Isolate> isolate_;
   cppgc::WeakPersistent<WebContents> contents_;
   LoadURLPromises load_url_promises_;
   std::unique_ptr<InspectableWebContents> inspectable_web_contents_;
@@ -1680,7 +1673,7 @@ WebContents::WebContents(v8::Isolate* isolate,
       print_task_runner_(CreatePrinterHandlerTaskRunner())
 #endif
 {
-  native_lifecycle_ = std::make_unique<NativeLifecycle>(isolate, this);
+  native_lifecycle_ = std::make_unique<NativeLifecycle>(this);
   Observe(web_contents);
 
   // A Type::kRemote WebContents returns from InitWithExtensionView() before the
@@ -1730,7 +1723,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 {
   DCHECK(type != Type::kRemote)
       << "Can't take ownership of a remote WebContents";
-  native_lifecycle_ = std::make_unique<NativeLifecycle>(isolate, this);
+  native_lifecycle_ = std::make_unique<NativeLifecycle>(this);
   Observe(web_contents.get());
   session_ = Session::FromOrCreate(isolate, GetBrowserContext());
   native_lifecycle_->StartObservingShutdown();
@@ -1748,7 +1741,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 #endif
 {
   // Read options.
-  native_lifecycle_ = std::make_unique<NativeLifecycle>(isolate, this);
+  native_lifecycle_ = std::make_unique<NativeLifecycle>(this);
   options.Get("backgroundThrottling", &background_throttling_);
 
   // Get type
@@ -2086,7 +2079,7 @@ WebContents::~WebContents() {
   // Do not traverse the GC graph or destroy native contents during sweeping.
   // The helper's weak back link is already cleared, and it stays registered for
   // shutdown until the task runs. Shutdown disposed helpers need no deferral.
-  if (native_lifecycle_->isolate_) {
+  if (!native_lifecycle_->disposed_) {
     content::GetUIThreadTaskRunner({})->DeleteSoon(
         FROM_HERE, std::move(native_lifecycle_));
   }
@@ -3808,8 +3801,7 @@ void WebContents::WebContentsDestroyed() {
   v8::HandleScope scope(isolate);
   v8::Local<v8::Object> wrapper;
   if (GetWrapper(isolate).ToLocal(&wrapper)) {
-    v8::Object::Wrap(isolate, wrapper, nullptr,
-                     static_cast<v8::CppHeapPointerTag>(kElectronWebContents));
+    gin_helper::Destroyable::MarkDestroyed(isolate, this);
     native_lifecycle_->load_url_promises_.DidStopLoading();
     Emit("destroyed");
   } else {

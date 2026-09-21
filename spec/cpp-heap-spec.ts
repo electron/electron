@@ -1889,6 +1889,31 @@ describe('cpp heap', () => {
       const [code] = await once(rc.process, 'exit');
       expect(code).to.equal(0);
     });
+
+    it('makes wrappers inert before shutdown cleanup regardless of registration order', async () => {
+      const rc = await startRemoteControlApp();
+      await rc.remotely(async () => {
+        const { app, session, WebContentsView } = require('electron');
+        const view = new WebContentsView();
+        const laterSession = session.fromPartition(`persist:shutdown-later-${process.pid}`);
+        view.webContents.on('destroyed', () => {
+          try {
+            laterSession.getUserAgent();
+            app.exit(1);
+          } catch (error) {
+            if ((error as Error).message !== 'Object has been destroyed') {
+              app.exit(2);
+            }
+          }
+        });
+        (globalThis as any).view = view;
+        (globalThis as any).laterSession = laterSession;
+        setTimeout(() => app.quit());
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+    });
   });
 
   describe('webFrameMain module', () => {

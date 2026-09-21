@@ -18,7 +18,6 @@ namespace electron::api {
 class AutoUpdater final : public gin::Wrappable<AutoUpdater>,
                           public gin_helper::EventEmitterMixin<AutoUpdater>,
                           public auto_updater::Delegate,
-                          public MicrotasksRunner::Observer,
                           private WindowListObserver {
  public:
   static AutoUpdater* Create(v8::Isolate* isolate);
@@ -31,8 +30,7 @@ class AutoUpdater final : public gin::Wrappable<AutoUpdater>,
       v8::Isolate* isolate) override;
   const char* GetClassName() const { return "AutoUpdater"; }
 
-  // MicrotasksRunner::Observer
-  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override;
+  void OnBeforeMicrotasksRunnerDispose();
 
   // Make public for cppgc::MakeGarbageCollected.
   explicit AutoUpdater(v8::Isolate* isolate);
