@@ -13,8 +13,6 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-// Tell ts-node which tsconfig to use
-process.env.TS_NODE_PROJECT = path.resolve(__dirname, '../tsconfig.spec.json');
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 
 // Some Linux machines have broken hardware acceleration support.
@@ -27,7 +25,7 @@ if (process.env.ELECTRON_TEST_DISABLE_HARDWARE_ACCELERATION) {
 // until Chromium falls back to software compositing with GL disabled. Start in
 // that end state directly to skip the failed launches. Mirrors `ciGpuArgs`
 // (--disable-gpu) in spec/lib/spec-helpers.ts, which cannot be required here
-// because ts-node is registered only after app is ready.
+// because the .ts require hook is registered only after app is ready.
 if (process.env.CI && process.platform === 'darwin' && process.arch === 'x64') {
   app.disableHardwareAcceleration();
 }
@@ -210,7 +208,7 @@ async function killOrphanedElectronProcesses(suiteName) {
 app
   .whenReady()
   .then(async () => {
-    require('ts-node/register');
+    require('./ts-register');
 
     const argv = require('yargs')
       .boolean('ci')

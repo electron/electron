@@ -1,5 +1,5 @@
 /* oxlint-disable @typescript-eslint/no-unused-vars */
-require('ts-node/register');
+require('../../../ts-register');
 
 const main_1 = require('electron/main');
 
