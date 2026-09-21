@@ -21,8 +21,9 @@ v8::Local<v8::Object> GetEventEmitterPrototype(v8::Isolate* isolate);
 // Whether |emitter|.emit(|name|, ...) can do anything at all. False only when
 // that is provably a no-op: |emitter| still uses Node's own emit(), nothing
 // listens for |name|, and |name| is not 'error'. The answer is read from the
-// emitter's listener table on every call, without entering JavaScript, so
-// there is no native copy of it to fall out of date.
+// emitter's listener table on every call, so there is no native copy of it to
+// fall out of date, and reading it runs no JavaScript: only data properties
+// are inspected, and a proxy or an accessor in the way answers true.
 bool MayHaveEventListeners(v8::Isolate* isolate,
                            v8::Local<v8::Object> emitter,
                            std::string_view name);
