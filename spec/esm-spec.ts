@@ -82,6 +82,26 @@ describe('esm', () => {
     });
   });
 
+  // The `electron` module that `import` sees is produced by wrapping the one
+  // `require()` returns, so the two should expose exactly the same names bound
+  // to exactly the same objects in every process type that can load ESM.
+  describe('import / require parity', () => {
+    let results: Record<string, string[]> = {};
+
+    before(async () => {
+      const result = await runFixture(path.resolve(fixturePath, 'import-require-parity'));
+      expect(result.code).to.be.oneOf([0, 1], `fixture did not run to completion:\n${result.stderr}`);
+      results = JSON.parse(result.stdout.split('\n').pop()!);
+    });
+
+    for (const processType of ['main', 'utility', 'renderer']) {
+      it(`exposes the same electron module to import and require() in the ${processType} process`, () => {
+        expect(results).to.have.property(processType);
+        expect(results[processType]).to.deep.equal([]);
+      });
+    }
+  });
+
   describe('renderer process', () => {
     let w: BrowserWindow | null = null;
     const tempDirs: string[] = [];
