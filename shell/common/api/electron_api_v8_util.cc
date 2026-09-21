@@ -168,8 +168,6 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod<&ExitImmediately>("exitImmediately");
 #if DCHECK_IS_ON()
   dict.SetMethod<&GetJs2cCodeCacheStatus>("getJs2cCodeCacheStatus");
-  dict.SetMethod<&electron::SetIpcSerializationBufferLimitForTesting>(
-      "setIpcSerializationBufferLimitForTesting");
 #endif
 }
 
