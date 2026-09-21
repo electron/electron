@@ -1,16 +1,16 @@
-import { screen, desktopCapturer, NativeImage } from 'electron';
+import { screen, desktopCapturer, type NativeImage } from 'electron';
 
 import { AssertionError } from 'chai';
 
 import { createArtifactWithRandomId } from './artifacts';
 
-export enum HexColors {
-  GREEN = '#00b140',
-  PURPLE = '#6a0dad',
-  RED = '#ff0000',
-  BLUE = '#0000ff',
-  WHITE = '#ffffff'
-}
+export const HexColors = {
+  GREEN: '#00b140',
+  PURPLE: '#6a0dad',
+  RED: '#ff0000',
+  BLUE: '#0000ff',
+  WHITE: '#ffffff'
+} as const;
 
 function hexToRgba(hexColor: string): [number, number, number, number] | undefined {
   const match = hexColor.match(/^#([0-9a-fA-F]{6,8})$/);

@@ -1,4 +1,4 @@
-import { ipcMain, net, protocol, session, WebContents, webContents } from 'electron/main';
+import { ipcMain, net, protocol, session, type WebContents, webContents } from 'electron/main';
 
 import { expect } from 'chai';
 import * as WebSocket from 'ws';
@@ -7,13 +7,14 @@ import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as http2 from 'node:http2';
-import { Socket } from 'node:net';
 import * as path from 'node:path';
 import * as qs from 'node:querystring';
 import { ReadableStream } from 'node:stream/web';
 import * as url from 'node:url';
 
 import { listen, defer } from './lib/spec-helpers';
+
+import type { Socket } from 'node:net';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 

@@ -1,8 +1,8 @@
-import { MediaAccessPermissionRequest } from 'electron';
+import type { MediaAccessPermissionRequest } from 'electron';
 import { clipboard } from 'electron/common';
 import {
   BrowserWindow,
-  WebContents,
+  type WebContents,
   webFrameMain,
   session,
   ipcMain,
@@ -10,18 +10,17 @@ import {
   protocol,
   webContents,
   dialog,
-  MessageBoxOptions
+  type MessageBoxOptions
 } from 'electron/main';
 
 import { expect } from 'chai';
-import WebSocketClient = require('ws');
+import { type RawData, WebSocket, WebSocketServer } from 'ws';
 
 import * as ChildProcess from 'node:child_process';
 import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
-import { AddressInfo } from 'node:net';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
@@ -30,6 +29,8 @@ import * as url from 'node:url';
 import { ifit, ifdescribe, defer, itremote, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 import { PipeTransport } from './pipe-transport';
+
+import type { AddressInfo } from 'node:net';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -801,16 +802,16 @@ describe('command line switches', () => {
       });
 
       type Client = {
-        socket: WebSocketClient;
+        socket: WebSocket;
         send(method: string, params?: unknown, sessionId?: string): Promise<any>;
         attachToPage(): Promise<string>;
       };
       const connectClient = async (): Promise<Client> => {
-        const socket = new WebSocketClient(browserWsUrl);
+        const socket = new WebSocket(browserWsUrl);
         await once(socket, 'open');
         let nextId = 1;
         const pending = new Map<number, { resolve: (result: any) => void; reject: (error: Error) => void }>();
-        socket.on('message', (data: WebSocketClient.Data) => {
+        socket.on('message', (data: RawData) => {
           const message = JSON.parse(data.toString());
           const handler = message.id && pending.get(message.id);
           if (handler) {
@@ -3803,7 +3804,7 @@ describe('chromium features', () => {
       const server = http.createServer();
       defer(() => server.close());
       const { port } = await listen(server);
-      const wss = new WebSocketClient.Server({ server });
+      const wss = new WebSocketServer({ server });
       const finished = new Promise<string | undefined>((resolve, reject) => {
         wss.on('error', reject);
         wss.on('connection', (ws, upgradeReq) => {
@@ -5207,7 +5208,7 @@ describe('navigator.hid', () => {
   });
 
   it('excludes a device when a exclusionFilter is specified', async () => {
-    const exclusionFilters = <any>[];
+    const exclusionFilters: any[] = [];
     let haveDevices = false;
     let checkForExcludedDevice = false;
 

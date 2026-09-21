@@ -3,8 +3,6 @@ import psList from 'ps-list';
 
 import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
-import * as http from 'node:http';
-import { AddressInfo } from 'node:net';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -18,6 +16,9 @@ import {
   stripFrameworkSymbols
 } from './codesign-helpers';
 import { withTempDirectory } from './fs-helpers';
+
+import type * as http from 'node:http';
+import type { AddressInfo } from 'node:net';
 
 // The Squirrel.Mac updater specs are split across files so that shards can
 // run them in parallel on separate runners; this is the harness they share.
@@ -85,7 +86,10 @@ class SlotPool {
   // ends, so a retry never raises the concurrency for the rest of the file.
   private transient = new Set<Slot>();
 
-  constructor(public readonly slots: Slot[]) {
+  readonly slots: Slot[];
+
+  constructor(slots: Slot[]) {
+    this.slots = slots;
     this.free = [...slots];
     this.nextIndex = slots.length;
   }

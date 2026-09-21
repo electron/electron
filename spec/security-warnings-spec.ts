@@ -1,4 +1,4 @@
-import { BrowserWindow, WebPreferences } from 'electron/main';
+import { BrowserWindow, type WebPreferences } from 'electron/main';
 
 import { expect } from 'chai';
 

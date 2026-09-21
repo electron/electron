@@ -6,7 +6,6 @@ import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { EventEmitter } from 'node:stream';
 import { pathToFileURL } from 'node:url';
 import * as util from 'node:util';
 
@@ -20,6 +19,8 @@ import {
 import { withTempDirectory } from './lib/fs-helpers';
 import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
+
+import type { EventEmitter } from 'node:stream';
 
 const mainFixturesPath = path.resolve(__dirname, 'fixtures');
 
