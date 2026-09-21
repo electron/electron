@@ -87,6 +87,7 @@ In your `api_name.cc` file:
 ```cpp title='api_name.cc'
 #include "shell/browser/api/electron_api_api_name.h"
 
+#include "gin/object_template_builder.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"

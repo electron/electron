@@ -289,6 +289,30 @@ describe('app module', () => {
       }
     });
 
+    // A missing display makes toolkit initialisation fail before the main loop
+    // runs; that early return must still tear the JS environment down cleanly.
+    // Skipped under ASan for the same reason as the test above.
+    ifit(process.platform === 'linux' && !process.env.IS_ASAN)(
+      'exits with code 1 when no display is available',
+      async () => {
+        const appPath = path.join(fixturesPath, 'api', 'no-display');
+        const env = { ...process.env };
+        delete env.DISPLAY;
+        delete env.WAYLAND_DISPLAY;
+        appProcess = cp.spawn(process.execPath, [appPath, '--ozone-platform=x11'], { env });
+        let stderr = '';
+        appProcess.stderr!.on('data', (data) => {
+          stderr += data;
+        });
+        const [code, signal] = await once(appProcess, 'exit');
+        appProcess = null;
+        const message = `code=${code} signal=${signal}\n${stderr}`;
+        expect(signal).to.equal(null, message);
+        expect(code).to.equal(1, message);
+        expect(stderr).to.not.match(/Received signal \d+|Check failed/, message);
+      }
+    );
+
     ifit(['darwin', 'linux'].includes(process.platform))('exits gracefully', async function () {
       const electronPath = process.execPath;
       const appPath = path.join(fixturesPath, 'api', 'singleton');
