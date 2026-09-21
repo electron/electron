@@ -5,6 +5,15 @@ Subject: disable_hidden.patch
 
 Electron uses this to disable background throttling for hidden windows.
 
+Electron also keeps the widget visible while its native view is hidden
+(paintWhenInitiallyHidden, backgroundThrottling: false), so
+RenderWidgetHostViewAura::DidNavigate must not treat such a widget as
+dormant: invalidating the LocalSurfaceId there means the next
+VisualProperties update (e.g. a Window Controls Overlay rect pushed from
+DidFinishNavigation) reaches the renderer without a surface id, which
+makes it defer main frames until the view is eventually shown. Key the
+decision off the host's visibility, as RenderWidgetHostViewMac does.
+
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
 index acebec733209fb90d9b0cf6da8748d7f8b0d0447..f76e51d7f08172679dec5b20e647aa850ee85da0 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
@@ -34,7 +43,7 @@ index 8674f11f01723b1cb02030c28fc3c314d52b5dc1..b9d59dff85e8d485ef01d7273526af91
    // |routing_id| must not be IPC::mojom::kRoutingIdNone.
    // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index f6fb54b97428fcea4cb6f7c8f518434bdf453e36..13834001d87aea7d2ad5f9977e0ad9ca9eb56133 100644
+index f6fb54b97428fcea4cb6f7c8f518434bdf453e36..09e5f350772a4423c1f3c6d527164e6c3208e969 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -741,7 +741,7 @@ void RenderWidgetHostViewAura::HideImpl() {
@@ -46,3 +55,17 @@ index f6fb54b97428fcea4cb6f7c8f518434bdf453e36..13834001d87aea7d2ad5f9977e0ad9ca
      host()->WasHidden();
      aura::WindowTreeHost* host = window_->GetHost();
        aura::Window* parent = window_->parent();
+@@ -3607,7 +3607,12 @@ RenderWidgetHostViewAura::DidUpdateVisualProperties(
+ void RenderWidgetHostViewAura::DidNavigate() {
+   CHECK(delegated_frame_host_) << "Cannot be invoked during destruction.";
+ 
+-  if (!IsShowing()) {
++  // Electron: a widget that Electron keeps visible while its native view is
++  // hidden is still producing frames, so treat it as showing here. Otherwise
++  // the next VisualProperties update is sent without a LocalSurfaceId and the
++  // renderer stops producing frames until the view is shown. This matches
++  // RenderWidgetHostViewMac, which keys this off the host's visibility.
++  if (!IsShowing() && host()->IsHidden()) {
+     // Navigating while hidden should not allocate a new LocalSurfaceID. Once
+     // sizes are ready, or we begin to Show, we can then allocate the new
+     // LocalSurfaceId.

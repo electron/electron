@@ -33,7 +33,7 @@ Cr-Commit-Position: refs/branch-heads/7977@{#2645}
 Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 7418423de67104d3e6ba7de0557a8a7abb10ac3e..b65ae39dc58c5929fec40b18660af57870f3cf99 100644
+index f610e181554f8440523b178e03bf26a10003b9f5..261966aac9e3c4b67a2b630b4d35aa0a120a2642 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -3436,15 +3436,26 @@ void RenderWidgetHostViewAura::OnUpdateTextInputStateCalled(

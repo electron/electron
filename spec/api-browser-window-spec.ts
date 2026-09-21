@@ -3568,6 +3568,12 @@ describe('BrowserWindow module', () => {
     await shown;
   };
 
+  // The overlay geometry may already be in place when the page's scripts run,
+  // in which case no initial geometrychange event is dispatched, so poll for
+  // it rather than waiting for that event.
+  const waitForOverlay = (w: BrowserWindow) =>
+    waitUntil(() => w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible'));
+
   describe('"titleBarStyle" option', () => {
     const testWindowsOverlay = async (style: any) => {
       const w = new BrowserWindow({
@@ -3582,17 +3588,9 @@ describe('BrowserWindow module', () => {
         titleBarOverlay: true
       });
       const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
-      if (process.platform === 'darwin') {
-        await w.loadFile(overlayHTML);
-      } else {
-        const overlayReady = once(ipcMain, 'geometrychange');
-        await w.loadFile(overlayHTML);
-        await showWindowForWayland(w);
-        await overlayReady;
-      }
-
-      const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
-      expect(overlayEnabled).to.be.true('overlayEnabled');
+      await w.loadFile(overlayHTML);
+      await showWindowForWayland(w);
+      await waitForOverlay(w);
       const overlayRect = await w.webContents.executeJavaScript('getJSOverlayProperties()');
       expect(overlayRect.y).to.equal(0);
       if (process.platform === 'darwin') {
@@ -3698,17 +3696,9 @@ describe('BrowserWindow module', () => {
       });
 
       const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
-      if (process.platform === 'darwin') {
-        await w.loadFile(overlayHTML);
-      } else {
-        const overlayReady = once(ipcMain, 'geometrychange');
-        await w.loadFile(overlayHTML);
-        await showWindowForWayland(w);
-        await overlayReady;
-      }
-
-      const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
-      expect(overlayEnabled).to.be.true('overlayEnabled');
+      await w.loadFile(overlayHTML);
+      await showWindowForWayland(w);
+      await waitForOverlay(w);
       const overlayRectPreMax = await w.webContents.executeJavaScript('getJSOverlayProperties()');
 
       expect(overlayRectPreMax.y).to.equal(0);
@@ -3743,6 +3733,75 @@ describe('BrowserWindow module', () => {
     it('sets Window Control Overlay with title bar height of 40', async () => {
       await testWindowsOverlayHeight(40);
     });
+
+    // https://github.com/electron/electron/issues/54025: pushing the overlay
+    // rect to a hidden (but painting) window after a navigation sent the
+    // renderer visual properties without a surface id, which stopped it from
+    // producing frames until the window was shown. On Wayland hidden windows
+    // aren't laid out at all, so there's nothing to test there.
+    ifdescribe(!isWayland)('on a window that is never shown', () => {
+      const rendersFrames = (w: BrowserWindow) =>
+        w.webContents.executeJavaScript(
+          'new Promise(r => { const t = setTimeout(() => r(false), 2000); requestAnimationFrame(() => { clearTimeout(t); r(true); }); })'
+        );
+      const createWindow = () =>
+        new BrowserWindow({
+          show: false,
+          width: 400,
+          height: 400,
+          titleBarStyle: 'hidden',
+          titleBarOverlay: { height: 40 }
+        });
+
+      const runFixtureApp = async (appPath: string) => {
+        const appProcess = childProcess.spawn(process.execPath, [appPath]);
+        let out = '';
+        appProcess.stdout.on('data', (data) => {
+          out += data;
+        });
+        appProcess.stderr.on('data', (data) => {
+          out += data;
+        });
+        const [code] = await once(appProcess, 'exit');
+        return { code, out };
+      };
+
+      it('emits ready-to-show', async () => {
+        // The first window of a cold process is where the renderer used to
+        // commit its navigation before the frame was laid out, so run a small
+        // app a few times rather than opening windows in this (warm) process.
+        const appPath = path.join(fixtures, 'apps', 'hidden-window-overlay');
+        for (let i = 0; i < 6; i++) {
+          const { code, out } = await runFixtureApp(appPath);
+          expect(code).to.equal(0, `run ${i + 1}: ${out}`);
+        }
+      });
+
+      ifit(process.platform !== 'darwin')('keeps rendering when the overlay changes as it navigates', async () => {
+        const w = createWindow();
+        const readyToShow = once(w, 'ready-to-show', { signal: AbortSignal.timeout(10000) });
+        await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+        await readyToShow;
+        expect(await rendersFrames(w)).to.equal(true, 'not rendering before navigating');
+        // Push new overlay geometry from each navigation; this used to reach
+        // the renderer without a surface id and stall it until show().
+        for (const [page, height] of [
+          ['b.html', 60],
+          ['a.html', 30],
+          ['b.html', 50]
+        ] as const) {
+          w.webContents.once('did-navigate', () => w.setTitleBarOverlay({ height }));
+          await w.loadFile(path.join(fixtures, 'pages', page));
+          await waitUntil(async () => {
+            const current = await w.webContents.executeJavaScript(
+              'navigator.windowControlsOverlay.getTitlebarAreaRect().height'
+            );
+            return current === height;
+          });
+          expect(await rendersFrames(w)).to.equal(true, `renderer stopped producing frames after ${page} @ ${height}`);
+        }
+      });
+    });
   });
 
   ifdescribe(process.platform !== 'darwin')('BrowserWindow.setTitlebarOverlay', () => {
@@ -3773,17 +3832,11 @@ describe('BrowserWindow module', () => {
     });
 
     it('correctly updates the height of the overlay', async () => {
-      const testOverlay = async (w: BrowserWindow, size: Number, firstRun: boolean) => {
+      const testOverlay = async (w: BrowserWindow, size: Number) => {
         const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
-        const overlayReady = once(ipcMain, 'geometrychange');
         await w.loadFile(overlayHTML);
         await showWindowForWayland(w);
-        if (firstRun) {
-          await overlayReady;
-        }
-
-        const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
-        expect(overlayEnabled).to.be.true('overlayEnabled');
+        await waitForOverlay(w);
 
         const { height: preMaxHeight } = await w.webContents.executeJavaScript('getJSOverlayProperties()');
         expect(preMaxHeight).to.equal(size);
@@ -3820,13 +3873,13 @@ describe('BrowserWindow module', () => {
         }
       });
 
-      await testOverlay(w, INITIAL_SIZE, true);
+      await testOverlay(w, INITIAL_SIZE);
 
       w.setTitleBarOverlay({
         height: INITIAL_SIZE + 10
       });
 
-      await testOverlay(w, INITIAL_SIZE + 10, false);
+      await testOverlay(w, INITIAL_SIZE + 10);
     });
   });
 
