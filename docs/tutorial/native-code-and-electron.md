@@ -279,7 +279,7 @@ const native = bindings('my_addon')
 
 // Create a nice JavaScript wrapper
 class MyNativeAddon extends EventEmitter {
-  constructor () {
+  constructor() {
     super()
 
     // Create an instance of our C++ class
@@ -287,7 +287,7 @@ class MyNativeAddon extends EventEmitter {
   }
 
   // Wrap the C++ method with a nicer JavaScript API
-  helloWorld (input = '') {
+  helloWorld(input = '') {
     if (typeof input !== 'string') {
       throw new TypeError('Input must be a string')
     }
