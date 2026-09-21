@@ -269,8 +269,6 @@ Let's break down this code:
 
 Now, let's create a JavaScript wrapper to make the addon easier to use. Create `js/index.js`:
 
-<!-- eslint-disable import/newline-after-import,import/order -->
-
 ```js title='js/index.js' @ts-expect-error=[5]
 const EventEmitter = require('node:events')
 

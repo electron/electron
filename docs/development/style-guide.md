@@ -55,7 +55,7 @@ There are a few style guidelines that aren't covered by the linter rules:
   purposes.
 * No nesting lists more than 2 levels (due to the markdown renderer).
 * All `js` and `javascript` code blocks are linted with
-[standard-markdown](https://www.npmjs.com/package/standard-markdown).
+  [oxlint](https://oxc.rs/docs/guide/usage/linter) as part of `npm run lint:docs`.
 * For unordered lists, use asterisks instead of dashes.
 
 ## Picking words
