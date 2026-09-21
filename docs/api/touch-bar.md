@@ -115,7 +115,7 @@ const spin = new TouchBarButton({
     const spinReels = () => {
       updateReels()
 
-      if ((Date.now() - startTime) >= spinLength) {
+      if (Date.now() - startTime >= spinLength) {
         finishSpin()
       } else {
         // Slow down a bit on each spin
