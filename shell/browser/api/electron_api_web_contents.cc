@@ -913,6 +913,10 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Get type
   options.Get("type", &type_);
 
+  // Set by BrowserWindow on the contents it creates; see
+  // electron_api_browser_window.cc.
+  options.GetHidden(options::kOwnedByWindow, &owned_by_window_);
+
   // Get transparent for guest view
   options.Get("transparent", &guest_transparent_);
 
@@ -3569,17 +3573,15 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
     return;
 
   std::string state;
-  // Offscreen contents are never displayed on screen, so docked DevTools would
-  // be invisible; they detach regardless of any window association. Listing
-  // them here is also what keeps them clear of the owner_window() check below:
-  // `offscreen: true` overwrites type_, so an offscreen BrowserWindow no longer
-  // reports kBrowserWindow and would otherwise be timing-dependent again.
-  const bool inherently_detached = type_ == Type::kWebView ||
-                                   type_ == Type::kBackgroundPage ||
-                                   type_ == Type::kOffScreen;
-  const bool windowed_type =
-      type_ == Type::kBrowserWindow || type_ == Type::kBrowserView;
-  if (inherently_detached || (!owner_window() && !windowed_type)) {
+  const bool inherently_detached =
+      type_ == Type::kWebView || type_ == Type::kBackgroundPage;
+  // owner_window() is only wired up part-way through BrowserWindow's
+  // construction, so on its own it would make the dock mode depend on how early
+  // openDevTools() is called. owned_by_window_ is known from the start and says
+  // the association is coming; contents that never get a window (an unattached
+  // WebContentsView or BrowserView) don't have it set and still detach, since
+  // docked DevTools would have no widget to appear in.
+  if (inherently_detached || (!owner_window() && !owned_by_window_)) {
     state = "detach";
   }
 

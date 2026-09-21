@@ -2023,10 +2023,6 @@ Opens the DevTools.
 When `contents` is a `<webview>` tag, the `mode` would be `detach` by default,
 explicitly passing an empty `mode` can force using last used dock state.
 
-When `contents` is rendered offscreen (see [`webPreferences.offscreen`](structures/web-preferences.md)),
-the `mode` would also be `detach` by default, since an offscreen window is not
-displayed on screen and docked DevTools would not be visible. As with `<webview>`, explicitly passing an empty `mode` can force using last used dock state.
-
 On Windows, if Window Control Overlay is enabled and the DevTools would dock over the window controls (`right`, or `left` in RTL layouts), it will be opened with `mode: 'undocked'` to avoid overlapping the controls.
 
 #### `contents.closeDevTools()`

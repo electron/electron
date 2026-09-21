@@ -851,6 +851,10 @@ class WebContents final : public ExclusiveAccessContext,
   // The type of current WebContents.
   Type type_ = Type::kBrowserWindow;
 
+  // Whether these contents were created by a BrowserWindow. Unlike
+  // owner_window(), this is already known before SetOwnerWindow() runs.
+  bool owned_by_window_ = false;
+
   // Weather the guest view should be transparent
   bool guest_transparent_ = true;
 

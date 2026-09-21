@@ -1683,22 +1683,25 @@ describe('webContents module', () => {
     // contents may dock at all; a 'detach' open loads it with can_dock empty. Reading
     // that back needs no layout to settle, and it is independent of which side was
     // last used — 'undocked' still counts as dockable.
-    async function devToolsCanDock(w: BrowserWindow) {
-      const devToolsWebContents = w.webContents.devToolsWebContents!;
-      await waitUntil(() => devToolsWebContents.getURL() !== '');
-      return new URL(devToolsWebContents.getURL()).searchParams.get('can_dock') === 'true';
+    async function devToolsCanDock(contents: Electron.WebContents) {
+      // isDevToolsOpened() can already be true while devToolsWebContents is still
+      // null, and the frontend URL lands a moment later again — wait for both.
+      await waitUntil(() => !!contents.devToolsWebContents?.getURL());
+      return new URL(contents.devToolsWebContents!.getURL()).searchParams.get('can_dock') === 'true';
     }
 
-    it('detaches on an offscreen window when openDevTools() is called from web-contents-created', async () => {
+    // `offscreen: true` overwrites the contents type, so an offscreen window does
+    // not report kBrowserWindow. These cover both call sites to make sure the dock
+    // decision comes from the window association and not from the type.
+    it('allows docking on an offscreen window when openDevTools() is called from web-contents-created', async () => {
       app.once('web-contents-created', (_e, contents) => contents.openDevTools());
       const w = new BrowserWindow({ show: false, width: 800, height: 600, webPreferences: { offscreen: true } });
       await w.loadURL('about:blank');
-      await waitUntil(async () => w.webContents.isDevToolsOpened());
 
-      expect(await devToolsCanDock(w)).to.be.false();
+      expect(await devToolsCanDock(w.webContents)).to.be.true();
     });
 
-    it('detaches on an offscreen window when openDevTools() is called from dom-ready', async () => {
+    it('allows docking on an offscreen window when openDevTools() is called from dom-ready', async () => {
       const w = new BrowserWindow({ show: false, width: 800, height: 600, webPreferences: { offscreen: true } });
       await w.loadURL('about:blank');
 
@@ -1707,7 +1710,25 @@ describe('webContents module', () => {
       await w.loadURL('about:blank'); // reload triggers a fresh dom-ready
       await opened;
 
-      expect(await devToolsCanDock(w)).to.be.false();
+      expect(await devToolsCanDock(w.webContents)).to.be.true();
+    });
+
+    it('detaches when the contents belong to no window', async () => {
+      // A WebContentsView only gets an owner window once it is added to one, so
+      // an unattached one has none, permanently — docked DevTools would be
+      // embedded in a view that is in no widget, and nobody would see them.
+      const view = new WebContentsView();
+      await view.webContents.loadURL('about:blank');
+
+      const opened = once(view.webContents, 'devtools-opened');
+      view.webContents.openDevTools();
+      await opened;
+
+      expect(await devToolsCanDock(view.webContents)).to.be.false();
+
+      const destroyed = once(view.webContents, 'destroyed');
+      view.webContents.destroy(); // closeAllWindows() won't reach this one
+      await destroyed;
     });
   });
 
