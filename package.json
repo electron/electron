@@ -142,7 +142,7 @@
     "markdown-it@npm:14.1.0": "14.3.0",
     "serialize-javascript@npm:^6.0.2": "^7.0.5"
   },
-  "packageManager": "yarn@4.12.0",
+  "packageManager": "yarn@4.18.0",
   "workspaces": [
     ".github/workflows",
     "script/pgo",
