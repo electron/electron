@@ -105,7 +105,10 @@ class MicrotasksRunner : public base::TaskObserver {
     Observation& operator=(Observation&&);
     ~Observation();
 
-    raw_ptr<Observer> observer;
+    Observer* observer() const { return owned ? owned.get() : native.get(); }
+
+    // Only one of these is set, so no raw_ptr ever aliases |owned|.
+    raw_ptr<Observer> native;
     std::unique_ptr<Observer> owned;
   };
 

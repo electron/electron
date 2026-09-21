@@ -24,10 +24,10 @@ bool MicrotasksRunner::Observer::IsAlive() const {
 }
 
 MicrotasksRunner::Observation::Observation(Observer* observer_in)
-    : observer(observer_in) {}
+    : native(observer_in) {}
 
 MicrotasksRunner::Observation::Observation(std::unique_ptr<Observer> owned_in)
-    : observer(owned_in.get()), owned(std::move(owned_in)) {}
+    : owned(std::move(owned_in)) {}
 
 MicrotasksRunner::Observation::Observation(Observation&&) = default;
 
@@ -54,7 +54,7 @@ void MicrotasksRunner::AddNativeObserver(Observer* observer) {
   CHECK(g_microtasks_runner);
   CHECK(std::ranges::none_of(g_microtasks_runner->observers_,
                              [observer](const Observation& item) {
-                               return item.observer == observer;
+                               return item.observer() == observer;
                              }));
   g_microtasks_runner->observers_.emplace_back(observer);
 }
@@ -81,7 +81,7 @@ v8::Isolate* MicrotasksRunner::GetIsolate() {
 
 void MicrotasksRunner::PruneDeadWrappableObservers() {
   std::erase_if(observers_, [](const Observation& item) {
-    return item.owned && !item.observer->IsAlive();
+    return item.owned && !item.observer()->IsAlive();
   });
 }
 
@@ -90,7 +90,7 @@ void MicrotasksRunner::RemoveObserver(Observer* observer) {
   if (g_microtasks_runner) {
     std::erase_if(g_microtasks_runner->observers_,
                   [observer](const Observation& item) {
-                    return item.observer == observer;
+                    return item.observer() == observer;
                   });
   }
 }
@@ -103,7 +103,7 @@ void MicrotasksRunner::NotifyBeforeDispose() {
   while (!observers_.empty()) {
     Observation observation = std::move(observers_.back());
     observers_.pop_back();
-    Observer* observer = observation.observer;
+    Observer* observer = observation.observer();
     observer->OnBeforeMicrotasksRunnerDispose();
   }
 }
