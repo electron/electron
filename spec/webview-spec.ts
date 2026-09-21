@@ -2094,7 +2094,7 @@ describe('<webview> tag', function () {
       itremote('does not emit when src is not changed', async () => {
         const webview = new WebView();
         document.body.appendChild(webview);
-        await setTimeout();
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         const expectedErrorMessage =
           'The WebView must be attached to the DOM and the dom-ready event emitted before this method can be called.';
         expect(() => {

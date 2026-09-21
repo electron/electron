@@ -1,21 +1,40 @@
+// Runs test bodies from spec/api-net-spec.ts (and one from
+// spec/api-app-spec.ts) inside a utility process. Each body arrives as source
+// text, so everything it refers to from those spec files' imports has to be in
+// scope here under the same name.
 /* oxlint-disable @typescript-eslint/no-unused-vars */
-require('../../../ts-register');
+const { app, net, protocol, session, utilityProcess } = require('electron/main');
 
-const main_1 = require('electron/main');
+const chai = require('chai');
 
-const chai_1 = require('chai');
-
-const node_events_1 = require('node:events');
+const { once } = require('node:events');
+const fs = require('node:fs');
 const http = require('node:http');
-const promises_1 = require('node:timers/promises');
-const url = require('node:url');
+const http2 = require('node:http2');
+const https = require('node:https');
+const path = require('node:path');
+const { setTimeout } = require('node:timers/promises');
 const v8 = require('node:v8');
 
-const net_helpers_1 = require('../../../lib/net-helpers');
+const {
+  collectStreamBody,
+  collectStreamBodyBuffer,
+  getResponse,
+  kOneKiloByte,
+  kOneMegaByte,
+  randomBuffer,
+  randomString,
+  respondNTimes,
+  respondOnce
+} = require('../../../lib/net-helpers.ts');
+const { listen, defer, ifdescribe, isTestingBindingAvailable } = require('../../../lib/spec-helpers.ts');
+
+const { expect } = chai;
+const electronNet = net;
 
 v8.setFlagsFromString('--expose_gc');
-chai_1.use(require('chai-as-promised'));
-chai_1.use(require('dirty-chai'));
+chai.use(require('chai-as-promised'));
+chai.use(require('dirty-chai'));
 
 function fail(message) {
   process.parentPort.postMessage({ ok: false, message });
@@ -23,7 +42,7 @@ function fail(message) {
 
 process.parentPort.on('message', async (e) => {
   // Equivalent of beforeEach in spec/api-net-spec.ts
-  net_helpers_1.respondNTimes.routeFailure = false;
+  respondNTimes.routeFailure = false;
 
   try {
     if (e.data.args) {
@@ -40,7 +59,7 @@ process.parentPort.on('message', async (e) => {
   }
 
   // Equivalent of afterEach in spec/api-net-spec.ts
-  if (net_helpers_1.respondNTimes.routeFailure) {
+  if (respondNTimes.routeFailure) {
     fail(
       'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
     );

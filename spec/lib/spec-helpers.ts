@@ -1,4 +1,4 @@
-import { BrowserWindow } from 'electron/main';
+import type { BrowserWindow } from 'electron/main';
 
 import { AssertionError } from 'chai';
 
@@ -253,6 +253,10 @@ export async function repeatedly<T>(fn: () => Promise<T>, opts?: { until?: (x: T
 }
 
 async function makeRemoteContext(opts?: any) {
+  // Resolved here rather than with a top-level import so that this file stays
+  // loadable in a utility process (see fixtures/api/utility-process/api-net-spec.js),
+  // whose 'electron/main' has no BrowserWindow export.
+  const { BrowserWindow } = await import('electron/main');
   const { webPreferences, setup, url = 'about:blank', ...rest } = opts ?? {};
   const w = new BrowserWindow({
     show: false,
@@ -289,10 +293,10 @@ async function runRemote(type: 'skip' | 'none' | 'only', name: string, fn: Funct
     const w = await getRemoteContext();
     const { ok, message } = await w.webContents.executeJavaScript(`(async () => {
       try {
-        const chai_1 = require('chai')
-        const promises_1 = require('node:timers/promises')
-        chai_1.use(require('chai-as-promised'))
-        chai_1.use(require('dirty-chai'))
+        const chai = require('chai')
+        chai.use(require('chai-as-promised'))
+        chai.use(require('dirty-chai'))
+        const { expect } = chai
         await (${fn})(...${JSON.stringify(args ?? [])})
         return {ok: true};
       } catch (e) {

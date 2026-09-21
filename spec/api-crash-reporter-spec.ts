@@ -396,7 +396,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
           ignoreSystemCrashHandler: true,
           extra: { longParam: 'a'.repeat(100000) }
         });
-        setTimeout().then(() => process.crash());
+        global.setTimeout(() => process.crash());
       }, port);
       const crash = await waitForCrash();
       expect(stitchLongCrashParam(crash, 'longParam')).to.have.lengthOf(
@@ -422,7 +422,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
             }
           });
           require('electron').crashReporter.addExtraParameter('c'.repeat(kKeyLengthMax + 10), 'value');
-          setTimeout().then(() => process.crash());
+          global.setTimeout(() => process.crash());
         },
         port,
         kKeyLengthMax
@@ -628,7 +628,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
     function crash(processType: string, remotely: Function) {
       if (processType === 'main') {
         return remotely(() => {
-          setTimeout().then(() => {
+          global.setTimeout(() => {
             process.crash();
           });
         });

@@ -1,5 +1,3 @@
-import { BrowserWindow } from 'electron';
-
 import { expect } from 'chai';
 
 import { spawn, spawnSync } from 'node:child_process';
@@ -50,6 +48,7 @@ ifdescribe(isTestingBindingAvailable())('fuses', () => {
     await expect(
       rc.remotely(
         async (fixture: string) => {
+          const { BrowserWindow } = require('electron');
           const bw = new BrowserWindow({ show: false });
           await bw.loadFile(fixture);
           return await bw.webContents.executeJavaScript("ajax('file:///etc/passwd')");

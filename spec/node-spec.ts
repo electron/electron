@@ -5,6 +5,7 @@ import { expect } from 'chai';
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import * as tty from 'node:tty';
 import { pathToFileURL } from 'node:url';
@@ -29,6 +30,9 @@ import {
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 import type { EventEmitter } from 'node:stream';
+
+// The startup snapshot spec below eval()s a CommonJS snippet in this scope too.
+const require = createRequire(import.meta.url);
 
 const mainFixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 

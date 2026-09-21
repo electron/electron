@@ -1,6 +1,10 @@
 import { expect } from 'chai';
 
-import { parseCommaSeparatedKeyValue, parseFeatures } from '../lib/browser/parse-features-string.ts';
+import { createRequire } from 'node:module';
+
+// See deprecate-spec.ts for why this is require()d rather than imported.
+const { parseCommaSeparatedKeyValue, parseFeatures }: typeof import('../lib/browser/parse-features-string.ts') =
+  createRequire(import.meta.url)('../lib/browser/parse-features-string.ts');
 
 describe('feature-string parsing', () => {
   it('is indifferent to whitespace around keys and values', () => {
