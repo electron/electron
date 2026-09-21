@@ -4,10 +4,16 @@
     "skipLibCheck": true,
     "module": "nodenext",
     "moduleResolution": "node16",
+    // Keep specs to syntax that Node's built-in type stripping can erase.
+    "erasableSyntaxOnly": true,
+    "isolatedModules": true,
     "noEmit": true
   },
   "include": [
     "spec",
     "typings"
+  ],
+  "exclude": [
+    "spec/fixtures/type-stripping"
   ]
 }

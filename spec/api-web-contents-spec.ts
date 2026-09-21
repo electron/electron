@@ -5,7 +5,7 @@ import {
   session,
   app,
   BrowserView,
-  WebContents,
+  type WebContents,
   BaseWindow,
   WebContentsView,
   Menu
@@ -16,11 +16,11 @@ import { assert, expect } from 'chai';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
-import { AddressInfo } from 'node:net';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
+import * as vm from 'node:vm';
 
 import { captureWithTabSourceId } from './lib/media-helpers';
 import { containsText, readPDF } from './lib/pdf-helpers';
@@ -34,6 +34,8 @@ import {
   startRemoteControlApp
 } from './lib/spec-helpers';
 import { cleanupWebContents, closeAllWindows } from './lib/window-helpers';
+
+import type { AddressInfo } from 'node:net';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 const features = process._linkedBinding('electron_common_features');
@@ -1451,7 +1453,7 @@ describe('webContents module', () => {
     // collected object had not been freed yet) or create a second
     // api::WebContents for the same DevTools WebContents.
     it('keeps the DevTools WebContents alive across a garbage collection while the frontend is loading', async () => {
-      const gc = require('node:vm').runInNewContext('gc');
+      const gc = vm.runInNewContext('gc');
       const w = new BrowserWindow({ show: false });
       await w.loadURL('about:blank');
 

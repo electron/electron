@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, WebContents } from 'electron/main';
+import { BrowserWindow, ipcMain, type WebContents } from 'electron/main';
 
 import { expect } from 'chai';
 

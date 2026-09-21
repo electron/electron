@@ -1,9 +1,9 @@
 import {
   BaseWindow,
   BrowserWindow,
-  BrowserWindowConstructorOptions,
+  type BrowserWindowConstructorOptions,
   webContents,
-  WebContents,
+  type WebContents,
   WebContentsView
 } from 'electron/main';
 

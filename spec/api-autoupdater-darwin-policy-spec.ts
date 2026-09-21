@@ -8,7 +8,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 
-import { Mutation, setupUpdaterHarness, shouldRunUpdaterSpecs } from './lib/autoupdater-darwin-helpers';
+import { type Mutation, setupUpdaterHarness, shouldRunUpdaterSpecs } from './lib/autoupdater-darwin-helpers';
 import { ifdescribe } from './lib/spec-helpers';
 
 // When Squirrel.Mac refuses or alters an update: version rules, a running
@@ -60,17 +60,13 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', function () {
         async (appPath, updateZipPath) => {
           ctx.serveUpdate(updateZipPath);
 
-          enum FlipFlop {
-            INITIAL,
-            FLIPPED,
-            FLOPPED
-          }
+          const FlipFlop = { INITIAL: 0, FLIPPED: 1, FLOPPED: 2 } as const;
 
           // ShipIt should appear, find the retainer still running, and quit
           // without installing. Poll in a loop rather than on an interval, so
           // a slow `ps` cannot pile up behind itself.
           const shipItFlipFlopPromise = (async () => {
-            let state = FlipFlop.INITIAL;
+            let state: (typeof FlipFlop)[keyof typeof FlipFlop] = FlipFlop.INITIAL;
             while (state !== FlipFlop.FLOPPED) {
               if (ctx.signal.aborted) throw ctx.signal.reason;
               const running = await ctx.getRunningShipIts(appPath);
