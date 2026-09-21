@@ -1,7 +1,11 @@
 import { createTokenAuth } from '@octokit/auth-token';
-import got from 'got';
+import gotCjs from 'got';
 
-import { ElectronReleaseRepo } from './types';
+import type { ElectronReleaseRepo } from './types.mts';
+
+// got is CommonJS; from an ES module its default import is module.exports,
+// which got also exposes as `.default`.
+const got = gotCjs.default;
 
 const cachedTokens = Object.create(null);
 
