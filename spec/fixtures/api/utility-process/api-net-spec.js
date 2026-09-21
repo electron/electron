@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable camelcase */
-require('ts-node/register');
+require('../../../ts-register');
 
 const main_1 = require('electron/main');
 
