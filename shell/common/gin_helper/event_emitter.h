@@ -8,6 +8,7 @@
 #include <string_view>
 #include <utility>
 
+#include "shell/browser/api/electron_api_event_emitter.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/wrappable.h"
@@ -26,6 +27,10 @@ class EventEmitter : public gin_helper::Wrappable<T> {
     v8::Local<v8::Object> wrapper = this->GetWrapper();
     if (wrapper.IsEmpty())
       return false;
+    // Nobody is listening: don't create the Event, convert the arguments or
+    // enter JavaScript just for emit() to find that out.
+    if (!electron::MayHaveEventListeners(isolate, wrapper, name))
+      return false;
     internal::Event* event = internal::Event::New(isolate);
     v8::Local<v8::Object> event_object =
         event->GetWrapper(isolate).ToLocalChecked();
@@ -43,6 +48,8 @@ class EventEmitter : public gin_helper::Wrappable<T> {
     v8::HandleScope handle_scope{isolate};
     v8::Local<v8::Object> wrapper = this->GetWrapper();
     if (wrapper.IsEmpty())
+      return;
+    if (!electron::MayHaveEventListeners(isolate, wrapper, name))
       return;
     EmitEvent(isolate, wrapper, name, std::forward<Args>(args)...);
   }

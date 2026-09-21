@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "gin/object_template_builder.h"
+#include "shell/browser/api/electron_api_event_emitter.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
@@ -32,6 +33,10 @@ class EventEmitterMixin {
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
       return false;
+    // Nobody is listening: don't create the Event, convert the arguments or
+    // enter JavaScript just for emit() to find that out.
+    if (!electron::MayHaveEventListeners(isolate, wrapper, name))
+      return false;
     internal::Event* event = internal::Event::New(isolate);
     v8::Local<v8::Object> event_object =
         event->GetWrapper(isolate).ToLocalChecked();
@@ -47,6 +52,8 @@ class EventEmitterMixin {
     v8::HandleScope handle_scope(isolate);
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
+      return;
+    if (!electron::MayHaveEventListeners(isolate, wrapper, name))
       return;
     gin_helper::EmitEvent(isolate, wrapper, name, std::forward<Args>(args)...);
   }
