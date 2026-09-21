@@ -60,9 +60,7 @@ The `window` argument allows the dialog to attach itself to a parent window, mak
 The `filters` specifies an array of file types that can be displayed or
 selected when you want to limit the user to a specific type. For example:
 
-<!-- eslint-skip -->
-
-```js
+```json5
 {
   filters: [
     { name: 'Images', extensions: ['jpg', 'png', 'gif'] },
@@ -145,9 +143,7 @@ The `window` argument allows the dialog to attach itself to a parent window, mak
 The `filters` specifies an array of file types that can be displayed or
 selected when you want to limit the user to a specific type. For example:
 
-<!-- eslint-skip -->
-
-```js
+```json5
 {
   filters: [
     { name: 'Images', extensions: ['jpg', 'png', 'gif'] },
@@ -169,14 +165,17 @@ The `extensions` array should contain extensions without wildcards or dots (e.g.
 > shown.
 
 ```js @ts-type={mainWindow:Electron.BaseWindow}
-dialog.showOpenDialog(mainWindow, {
-  properties: ['openFile', 'openDirectory']
-}).then(result => {
-  console.log(result.canceled)
-  console.log(result.filePaths)
-}).catch(err => {
-  console.log(err)
-})
+dialog
+  .showOpenDialog(mainWindow, {
+    properties: ['openFile', 'openDirectory']
+  })
+  .then((result) => {
+    console.log(result.canceled)
+    console.log(result.filePaths)
+  })
+  .catch((err) => {
+    console.log(err)
+  })
 ```
 
 > [!NOTE]

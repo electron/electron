@@ -88,9 +88,7 @@ Policy:
 ```js
 const { protocol } = require('electron')
 
-protocol.registerSchemesAsPrivileged([
-  { scheme: 'foo', privileges: { bypassCSP: true } }
-])
+protocol.registerSchemesAsPrivileged([{ scheme: 'foo', privileges: { bypassCSP: true } }])
 ```
 
 A standard scheme adheres to what RFC 3986 calls [generic URI syntax](https://tools.ietf.org/html/rfc3986#section-3).
@@ -346,7 +344,7 @@ const { protocol } = require('electron')
 
 const { PassThrough } = require('node:stream')
 
-function createStream (text) {
+function createStream(text) {
   const rv = new PassThrough() // PassThrough is also a Readable stream
   rv.push(text)
   rv.push(null)
