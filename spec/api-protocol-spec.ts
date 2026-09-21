@@ -1218,7 +1218,16 @@ describe('protocol module', () => {
       expect(() => protocol.registerSource('https', { routes: [{ source: { type: 'directory', root } }] })).to.throw(
         /built-in/
       );
-      for (const scheme of ['https', 'file', 'blob', 'javascript', 'wss', 'devtools', 'chrome-extension', 'view-source']) {
+      for (const scheme of [
+        'https',
+        'file',
+        'blob',
+        'javascript',
+        'wss',
+        'devtools',
+        'chrome-extension',
+        'view-source'
+      ]) {
         expect(
           () => protocol.registerSource(scheme, { routes: [{ source: { type: 'directory', root } }] }),
           scheme
