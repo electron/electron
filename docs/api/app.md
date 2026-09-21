@@ -996,7 +996,8 @@ app.setJumpList([
       { type: 'file', path: 'C:\\Projects\\project2.proj' }
     ]
   },
-  { // has a name so `type` is assumed to be "custom"
+  {
+    // has a name so `type` is assumed to be "custom"
     name: 'Tools',
     items: [
       {
@@ -1020,7 +1021,8 @@ app.setJumpList([
     ]
   },
   { type: 'frequent' },
-  { // has no name and no type so `type` is assumed to be "tasks"
+  {
+    // has no name and no type so `type` is assumed to be "tasks"
     items: [
       {
         type: 'task',
@@ -1243,9 +1245,7 @@ const { app } = require('electron')
 app.whenReady().then(() => {
   app.configureHostResolver({
     secureDnsMode: 'secure',
-    secureDnsServers: [
-      'https://cloudflare-dns.com/dns-query'
-    ]
+    secureDnsServers: ['https://cloudflare-dns.com/dns-query']
   })
 })
 ```
@@ -1353,26 +1353,26 @@ For `infoType` equal to `basic`:
 
 ```json5
 {
-  auxAttributes:
-   {
-     amdSwitchable: true,
-     canSupportThreadedTextureMailbox: false,
-     directComposition: false,
-     directRendering: true,
-     glResetNotificationStrategy: 0,
-     inProcessGpu: true,
-     initializationTime: 0,
-     jpegDecodeAcceleratorSupported: false,
-     optimus: false,
-     passthroughCmdDecoder: false,
-     sandboxed: false,
-     softwareRendering: false,
-     supportsOverlays: false,
-     videoDecodeAcceleratorFlags: 0
-   },
-  gpuDevice:
-   [{ active: true, deviceId: 26657, vendorId: 4098 },
-     { active: false, deviceId: 3366, vendorId: 32902 }],
+  auxAttributes: {
+    amdSwitchable: true,
+    canSupportThreadedTextureMailbox: false,
+    directComposition: false,
+    directRendering: true,
+    glResetNotificationStrategy: 0,
+    inProcessGpu: true,
+    initializationTime: 0,
+    jpegDecodeAcceleratorSupported: false,
+    optimus: false,
+    passthroughCmdDecoder: false,
+    sandboxed: false,
+    softwareRendering: false,
+    supportsOverlays: false,
+    videoDecodeAcceleratorFlags: 0
+  },
+  gpuDevice: [
+    { active: true, deviceId: 26657, vendorId: 4098 },
+    { active: false, deviceId: 3366, vendorId: 32902 }
+  ],
   machineModelName: 'MacBookPro',
   machineModelVersion: '11.5'
 }
@@ -1560,11 +1560,7 @@ const { app } = require('electron')
 
 app.whenReady().then(() => {
   // Enable a subset of features:
-  app.setAccessibilitySupportFeatures([
-    'screenReader',
-    'pdfPrinting',
-    'webContents'
-  ])
+  app.setAccessibilitySupportFeatures(['screenReader', 'pdfPrinting', 'webContents'])
 
   // Other logic
 
@@ -1670,12 +1666,14 @@ const { app, dialog } = require('electron')
 app.moveToApplicationsFolder({
   conflictHandler: (conflictType) => {
     if (conflictType === 'exists') {
-      return dialog.showMessageBoxSync({
-        type: 'question',
-        buttons: ['Halt Move', 'Continue Move'],
-        defaultId: 0,
-        message: 'An app of this name already exists'
-      }) === 1
+      return (
+        dialog.showMessageBoxSync({
+          type: 'question',
+          buttons: ['Halt Move', 'Continue Move'],
+          defaultId: 0,
+          message: 'An app of this name already exists'
+        }) === 1
+      )
     }
   }
 })
@@ -1737,7 +1735,7 @@ The handler is called when a password is needed to unlock a client certificate f
 ```js
 const { app } = require('electron')
 
-async function passwordPromptUI (text) {
+async function passwordPromptUI(text) {
   return new Promise((resolve, reject) => {
     // display UI to prompt user for password
     // ...

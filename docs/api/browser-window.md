@@ -1301,10 +1301,12 @@ const { BrowserWindow } = require('electron')
 const win = new BrowserWindow()
 
 win.loadURL('http://localhost:8000/post', {
-  postData: [{
-    type: 'rawData',
-    bytes: Buffer.from('hello=world')
-  }],
+  postData: [
+    {
+      type: 'rawData',
+      bytes: Buffer.from('hello=world')
+    }
+  ],
   extraHeaders: 'Content-Type: application/x-www-form-urlencoded'
 })
 ```

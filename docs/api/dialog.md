@@ -165,14 +165,17 @@ The `extensions` array should contain extensions without wildcards or dots (e.g.
 > shown.
 
 ```js @ts-type={mainWindow:Electron.BaseWindow}
-dialog.showOpenDialog(mainWindow, {
-  properties: ['openFile', 'openDirectory']
-}).then(result => {
-  console.log(result.canceled)
-  console.log(result.filePaths)
-}).catch(err => {
-  console.log(err)
-})
+dialog
+  .showOpenDialog(mainWindow, {
+    properties: ['openFile', 'openDirectory']
+  })
+  .then((result) => {
+    console.log(result.canceled)
+    console.log(result.filePaths)
+  })
+  .catch((err) => {
+    console.log(err)
+  })
 ```
 
 > [!NOTE]
