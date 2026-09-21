@@ -8,39 +8,86 @@
 #import <Cocoa/Cocoa.h>
 #include <objc/runtime.h>
 
+#include "base/no_destructor.h"
+#include "base/strings/stringprintf.h"
+
 namespace {
 
-// Associated-object key tagging the specific NSView instance backing a
-// WebContents' rendered content as non-interactive. Object identity is what
-// matters, not the value stored under it.
-const void* kInteractiveKey = &kInteractiveKey;
+// Suffix appended to a view's real class name to form our synthesized
+// non-interactive subclass, e.g.
+// "RenderWidgetHostViewCocoa_ElectronNonInteractive".
+constexpr char kSubclassSuffix[] = "_ElectronNonInteractive";
 
-// Cached IMP for -[NSView hitTest:]'s original implementation, resolved once
-// in EnsureHitTestSwizzled(). Do not look this up per-call — -hitTest: fires
-// on essentially every mouse interaction across every NSView in the process.
-NSView* (*g_original_hit_test)(id, SEL, NSPoint) = nullptr;
-
-NSView* ElectronHitTest(id self_view, SEL _cmd, NSPoint point) {
-  NSNumber* interactive = objc_getAssociatedObject(self_view, kInteractiveKey);
-  if (interactive && !interactive.boolValue)
-    return nil;  // Not part of this click — let AppKit try our siblings.
-
-  return g_original_hit_test(self_view, _cmd, point);
+// -hitTest: override installed on the synthesized subclass only. Returning nil
+// is AppKit's "this point isn't mine" signal: the superview's default
+// implementation keeps walking its remaining subviews, so the click falls
+// through to whatever sibling is underneath — the Cocoa analogue of
+// aura's EventTargetingPolicy::kNone.
+NSView* NonInteractiveHitTest(id self_view, SEL _cmd, NSPoint point) {
+  return nil;
 }
 
-void EnsureHitTestSwizzled() {
-  static dispatch_once_t once_token;
-  dispatch_once(&once_token, ^{
-    Class cls = [NSView class];
-    SEL selector = @selector(hitTest:);
-    Method original_method = class_getInstanceMethod(cls, selector);
+// Returns (creating on first use) the non-interactive subclass of `base_class`.
+// Cached per base class, since registering the same name twice fails.
+Class GetOrCreateNonInteractiveSubclass(Class base_class) {
+  const std::string subclass_name =
+      base::StringPrintf("%s%s", class_getName(base_class), kSubclassSuffix);
 
-    g_original_hit_test = reinterpret_cast<NSView* (*)(id, SEL, NSPoint)>(
-        method_getImplementation(original_method));
+  if (Class existing = objc_lookUpClass(subclass_name.c_str()))
+    return existing;
 
-    class_replaceMethod(cls, selector, reinterpret_cast<IMP>(ElectronHitTest),
-                        method_getTypeEncoding(original_method));
-  });
+  Class subclass = objc_allocateClassPair(base_class, subclass_name.c_str(), 0);
+  if (!subclass)
+    return nil;
+
+  // Match the real -hitTest: type encoding rather than hardcoding one.
+  Method hit_test = class_getInstanceMethod(base_class, @selector(hitTest:));
+  class_addMethod(subclass, @selector(hitTest:),
+                  reinterpret_cast<IMP>(NonInteractiveHitTest),
+                  method_getTypeEncoding(hit_test));
+
+  // -class must keep reporting the original class so any code doing class
+  // checks, and KVO's own isa games, don't observe our substitution.
+  // This mirrors what KVO does for its dynamic subclasses.
+  class_addMethod(subclass, @selector(class),
+                  imp_implementationWithBlock(^Class(id _self) {
+                    return base_class;
+                  }),
+                  "#@:");
+
+  objc_registerClassPair(subclass);
+  return subclass;
+}
+
+// Tracks each view's true class so we can restore it exactly.
+std::map<NSView*, Class>& OriginalClasses() {
+  static base::NoDestructor<std::map<NSView*, Class>> instance;
+  return *instance;
+}
+
+void SetViewHitTestable(NSView* view, bool hit_testable) {
+  auto& originals = OriginalClasses();
+  auto it = originals.find(view);
+  const bool currently_swizzled = it != originals.end();
+
+  if (hit_testable) {
+    if (!currently_swizzled)
+      return;
+    object_setClass(view, it->second);
+    originals.erase(it);
+    return;
+  }
+
+  if (currently_swizzled)
+    return;
+
+  // object_getClass(), not -class: we need the real isa, which may already be
+  // a KVO subclass we must subclass in turn rather than clobber.
+  Class original = object_getClass(view);
+  if (Class subclass = GetOrCreateNonInteractiveSubclass(original)) {
+    object_setClass(view, subclass);
+    originals[view] = original;
+  }
 }
 
 }  // namespace
@@ -56,9 +103,7 @@ void WebContentsView::ApplyInteractive() {
   if (!content_view)
     return;
 
-  EnsureHitTestSwizzled();
-  objc_setAssociatedObject(content_view, kInteractiveKey, @(GetInteractive()),
-                           OBJC_ASSOCIATION_RETAIN);
+  SetViewHitTestable(content_view, GetInteractive());
 }
 
 }  // namespace electron::api
