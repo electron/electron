@@ -94,6 +94,22 @@ describe('webContents module', () => {
       contents.destroy();
       await waitUntil(() => typeof webContents.fromFrame(mainFrame) === 'undefined');
     });
+    it('disposes frames when a remote WebContents is destroyed', async () => {
+      const w = new BrowserWindow({ show: false });
+      defer(() => w.destroy());
+      const opened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach' });
+      await opened;
+
+      const devTools = w.webContents.devToolsWebContents!;
+      const frame = devTools.mainFrame;
+      const destroyed = once(devTools, 'destroyed');
+      devTools.destroy();
+      await destroyed;
+      w.webContents.closeDevTools();
+
+      expect(() => frame.url).to.throw('Render frame was disposed');
+    });
     it('throws when passing invalid argument', async () => {
       let errored = false;
       try {
@@ -3935,8 +3951,12 @@ describe('webContents module', () => {
     it('emits render-view-deleted if any RVHs are deleted', async () => {
       const w = new BrowserWindow({ show: false });
       let rvhDeletedCount = 0;
+      let ownerDuringDeletion: BrowserWindow | null = null;
+      let windowFromContentsDuringDeletion: BrowserWindow | null = null;
       w.webContents.on('render-view-deleted' as any, () => {
         rvhDeletedCount++;
+        ownerDuringDeletion = w.webContents.getOwnerBrowserWindow();
+        windowFromContentsDuringDeletion = BrowserWindow.fromWebContents(w.webContents);
       });
       w.webContents.on('did-finish-load', () => {
         w.close();
@@ -3949,6 +3969,8 @@ describe('webContents module', () => {
         expectedRenderViewDeletedEventCount,
         "render-view-deleted wasn't emitted the expected nr. of times"
       );
+      expect(ownerDuringDeletion).to.equal(w);
+      expect(windowFromContentsDuringDeletion).to.equal(w);
     });
   });
 

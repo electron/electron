@@ -794,19 +794,24 @@ void NativeWindow::RemoveDraggableRegionProvider(
       [&provider](DraggableRegionProvider* p) { return p == provider; });
 }
 
-void NativeWindow::AddBackgroundThrottlingSource(
+base::ScopedClosureRunner NativeWindow::RegisterBackgroundThrottlingSource(
     BackgroundThrottlingSource* source) {
   auto result = background_throttling_sources_.insert(source);
   DCHECK(result.second) << "Added already stored BackgroundThrottlingSource.";
   UpdateBackgroundThrottlingState();
-}
 
-void NativeWindow::RemoveBackgroundThrottlingSource(
-    BackgroundThrottlingSource* source) {
-  auto result = background_throttling_sources_.erase(source);
-  DCHECK(result == 1)
-      << "Tried to remove non existing BackgroundThrottlingSource.";
-  UpdateBackgroundThrottlingState();
+  return base::ScopedClosureRunner(base::BindOnce(
+      [](base::WeakPtr<NativeWindow> window,
+         BackgroundThrottlingSource* source) {
+        if (!window)
+          return;
+        const size_t removed =
+            window->background_throttling_sources_.erase(source);
+        DCHECK_EQ(removed, 1u)
+            << "Tried to remove non existing BackgroundThrottlingSource.";
+        window->UpdateBackgroundThrottlingState();
+      },
+      GetWeakPtr(), source));
 }
 
 void NativeWindow::UpdateBackgroundThrottlingState() {
