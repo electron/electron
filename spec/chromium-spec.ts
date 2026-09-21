@@ -622,6 +622,44 @@ describe('command line switches', () => {
     );
   });
 
+  // On Linux the C library's multibyte conversion follows the process locale,
+  // which stays "C" when LANG is unset or an LC_* variable names a locale that
+  // is not installed. Electron gives such a process a UTF-8 LC_CTYPE so that
+  // non-ASCII file names still convert; before that a pasted or dropped file
+  // crashed the browser process (https://github.com/electron/electron/issues/54153)
+  // and a download lost its name.
+  ifdescribe(process.platform === 'linux')('with a C or unavailable locale', () => {
+    // U+00EF and U+2014, matching the fixture.
+    const name = 'naïve — file.txt';
+    const runFixture = async (env: Record<string, string | undefined>) => {
+      const appPath = path.join(fixturesPath, 'api', 'c-locale');
+      appProcess = ChildProcess.spawn(process.execPath, [appPath], {
+        env: { ...process.env, ...env }
+      });
+      let stdout = '';
+      let stderr = '';
+      appProcess.stdout.on('data', (data) => {
+        stdout += data;
+      });
+      appProcess.stderr.on('data', (data) => {
+        stderr += data;
+      });
+      const [code, signal] = await once(appProcess, 'exit');
+      expect({ code, signal }, `stdout: ${stdout}\nstderr: ${stderr}`).to.deep.equal({ code: 0, signal: null });
+      return JSON.parse(stdout.trim().split('\n').pop()!);
+    };
+
+    it('keeps non-ASCII file names when LC_ALL=C', async () => {
+      expect(await runFixture({ LC_ALL: 'C' })).to.deep.equal({ download: name, paste: name });
+    });
+
+    it('keeps non-ASCII file names when the configured locale is not installed', async () => {
+      // A single unavailable LC_* category makes setlocale(LC_ALL, "") fail outright.
+      const env = { LC_ALL: undefined, LANG: 'en_US.UTF-8', LC_MEASUREMENT: 'xx_XX.UTF-8' };
+      expect(await runFixture(env)).to.deep.equal({ download: name, paste: name });
+    });
+  });
+
   describe('--remote-debugging-pipe switch', () => {
     it('should expose CDP via pipe', async () => {
       const electronPath = process.execPath;

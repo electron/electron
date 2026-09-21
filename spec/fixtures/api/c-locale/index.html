@@ -1,0 +1,13 @@
+<!doctype html>
+<meta charset="utf-8">
+<body>
+<div id="target" contenteditable>paste here</div>
+<script>
+  const { ipcRenderer } = require('electron');
+  document.addEventListener('paste', (event) => {
+    event.preventDefault();
+    ipcRenderer.send('pasted', [...event.clipboardData.files].map((file) => file.name));
+  });
+  document.getElementById('target').focus();
+</script>
+</body>

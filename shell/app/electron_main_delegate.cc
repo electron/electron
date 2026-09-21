@@ -72,6 +72,8 @@
 #endif
 
 #if BUILDFLAG(IS_LINUX)
+#include <locale.h>
+
 #include "base/nix/xdg_util.h"
 #include "ui/linux/display_server_utils.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
@@ -101,6 +103,38 @@ constexpr base::cstring_view kElectronDisableSandbox{
     "ELECTRON_DISABLE_SANDBOX"};
 constexpr base::cstring_view kElectronEnableStackDumping{
     "ELECTRON_ENABLE_STACK_DUMPING"};
+
+#if BUILDFLAG(IS_LINUX)
+// content::ContentMain() has already called setlocale(LC_ALL, ""). That call
+// is all-or-nothing: if LANG is unset, or any LC_* variable names a locale
+// that is not installed (KDE writes per-category values such as en_SE.UTF-8),
+// it fails and LC_CTYPE stays "C". In the "C" locale mbrtowc()/wcrtomb()
+// reject every byte >= 0x80, so base::SysNativeMBToWide() and friends - and
+// therefore base::FilePath::AsUTF8Unsafe()/FromUTF8Unsafe() - return an empty
+// string for any non-ASCII path. Chromium CHECKs on some of those (dropping
+// or pasting such a file, or picking it with showOpenFilePicker(), kills the
+// browser process) and silently mangles paths elsewhere. Linux filenames are
+// UTF-8 in practice whatever the C locale says, so do what CPython does
+// (PEP 538) and give a "C"/"POSIX" LC_CTYPE a UTF-8 replacement. Only
+// LC_CTYPE is touched, and an explicitly configured non-UTF-8 locale such as
+// ja_JP.eucjp is left alone.
+void EnsureUTF8CTypeLocale() {
+  auto is_c_locale = [](const char* name) {
+    return !name || std::string_view(name) == "C" ||
+           std::string_view(name) == "POSIX";
+  };
+  if (!is_c_locale(setlocale(LC_CTYPE, nullptr)))
+    return;
+  // One bad category may have sunk setlocale(LC_ALL, ""); LC_CTYPE on its
+  // own may still resolve from LC_ALL/LC_CTYPE/LANG.
+  if (!is_c_locale(setlocale(LC_CTYPE, "")))
+    return;
+  for (const char* fallback : {"C.UTF-8", "C.utf8"}) {
+    if (setlocale(LC_CTYPE, fallback))
+      return;
+  }
+}
+#endif  // BUILDFLAG(IS_LINUX)
 
 #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
 // The LoadBrowserProcessSpecificV8Snapshot fuse gives the browser process its
@@ -215,6 +249,10 @@ ElectronMainDelegate::GetNonWildcardDomainNonPortSchemes() {
 
 std::optional<int> ElectronMainDelegate::BasicStartupComplete() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
+
+#if BUILDFLAG(IS_LINUX)
+  EnsureUTF8CTypeLocale();
+#endif
 
 #if BUILDFLAG(IS_WIN)
   v8_crashpad_support::SetUp();
