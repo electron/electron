@@ -1,7 +1,7 @@
-import { MediaAccessPermissionRequest } from 'electron';
+import type { MediaAccessPermissionRequest } from 'electron';
 import {
   BrowserWindow,
-  WebContents,
+  type WebContents,
   webFrameMain,
   session,
   ipcMain,
@@ -11,18 +11,17 @@ import {
   protocol,
   webContents,
   dialog,
-  MessageBoxOptions
+  type MessageBoxOptions
 } from 'electron/main';
 
 import { expect } from 'chai';
-import * as ws from 'ws';
+import { WebSocket, WebSocketServer } from 'ws';
 
 import * as ChildProcess from 'node:child_process';
 import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
-import { AddressInfo } from 'node:net';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
@@ -32,6 +31,8 @@ import { emittedUntil } from './lib/events-helpers';
 import { ifit, ifdescribe, defer, itremote, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 import { PipeTransport } from './pipe-transport';
+
+import type { AddressInfo } from 'node:net';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -812,12 +813,12 @@ describe('command line switches', () => {
       });
 
       type Client = {
-        socket: ws.WebSocket;
+        socket: WebSocket;
         send(method: string, params?: unknown, sessionId?: string): Promise<any>;
         attachToPage(): Promise<string>;
       };
       const connectClient = async (): Promise<Client> => {
-        const socket = new ws.WebSocket(browserWsUrl);
+        const socket = new WebSocket(browserWsUrl);
         await once(socket, 'open');
         let nextId = 1;
         const pending = new Map<number, { resolve: (result: any) => void; reject: (error: Error) => void }>();
@@ -2515,7 +2516,7 @@ describe('chromium features', () => {
       async () => {
         const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true } });
         w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
-        const windowUrl = require('node:url').format({
+        const windowUrl = url.format({
           pathname: `${fixturesPath}/pages/window-no-javascript.html`,
           protocol: 'file',
           slashes: true
@@ -4015,7 +4016,7 @@ describe('chromium features', () => {
       const server = http.createServer();
       defer(() => server.close());
       const { port } = await listen(server);
-      const wss = new ws.Server({ server });
+      const wss = new WebSocketServer({ server });
       const finished = new Promise<string | undefined>((resolve, reject) => {
         wss.on('error', reject);
         wss.on('connection', (ws, upgradeReq) => {
@@ -5461,7 +5462,7 @@ describe('navigator.hid', () => {
   });
 
   it('excludes a device when a exclusionFilter is specified', async () => {
-    const exclusionFilters = <any>[];
+    const exclusionFilters: any[] = [];
     let haveDevices = false;
     let checkForExcludedDevice = false;
 

@@ -1,4 +1,4 @@
-import { net, session, BrowserWindow, ClientRequestConstructorOptions } from 'electron/main';
+import { net, session, BrowserWindow, type ClientRequestConstructorOptions } from 'electron/main';
 
 import { expect } from 'chai';
 

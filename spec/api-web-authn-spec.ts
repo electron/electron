@@ -3,10 +3,11 @@ import { app, BrowserWindow, session } from 'electron/main';
 import { expect } from 'chai';
 
 import * as http from 'node:http';
-import { AddressInfo } from 'node:net';
 
 import { ifdescribe } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
+
+import type { AddressInfo } from 'node:net';
 
 const configureWebAuthn = (app as any).configureWebAuthn?.bind(app) as (options?: unknown) => void;
 

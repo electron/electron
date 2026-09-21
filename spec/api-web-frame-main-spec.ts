@@ -1,4 +1,12 @@
-import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents, clipboard } from 'electron/main';
+import {
+  BrowserWindow,
+  type WebFrameMain,
+  webFrameMain,
+  ipcMain,
+  app,
+  type WebContents,
+  clipboard
+} from 'electron/main';
 
 import { expect } from 'chai';
 

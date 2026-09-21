@@ -1,4 +1,4 @@
-import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
+import { BrowserWindow, session, ipcMain, app, type WebContents } from 'electron/main';
 
 import auth from 'basic-auth';
 import { expect } from 'chai';

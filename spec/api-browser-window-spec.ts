@@ -2,11 +2,11 @@ import {
   app,
   BrowserWindow,
   BaseWindow,
-  BrowserWindowConstructorOptions,
+  type BrowserWindowConstructorOptions,
   BrowserView,
   dialog,
   ipcMain,
-  OnBeforeSendHeadersListenerDetails,
+  type OnBeforeSendHeadersListenerDetails,
   net,
   protocol,
   screen,
@@ -14,19 +14,18 @@ import {
   webFrameMain,
   session,
   systemPreferences,
-  WebContents,
+  type WebContents,
   WebContentsView,
-  WebFrameMain
+  type WebFrameMain
 } from 'electron/main';
 
 import { expect } from 'chai';
 
 import * as childProcess from 'node:child_process';
 import * as crypto from 'node:crypto';
-import { once } from 'node:events';
+import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
-import { AddressInfo } from 'node:net';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as qs from 'node:querystring';
@@ -39,6 +38,8 @@ import { randomString } from './lib/net-helpers';
 import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers';
 import { ifit, ifdescribe, defer, listen, waitUntil, isWayland, isTestingBindingAvailable } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
+
+import type { AddressInfo } from 'node:net';
 
 const fixtures = path.resolve(__dirname, 'fixtures');
 const mainFixtures = path.resolve(__dirname, 'fixtures');
@@ -3997,7 +3998,7 @@ describe('BrowserWindow module', () => {
     });
 
     it('correctly updates the height of the overlay', async () => {
-      const testOverlay = async (w: BrowserWindow, size: Number) => {
+      const testOverlay = async (w: BrowserWindow, size: number) => {
         const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
         await w.loadFile(overlayHTML);
         await showWindowForWayland(w);
@@ -4850,7 +4851,6 @@ describe('BrowserWindow module', () => {
         });
         w.loadURL('about:blank');
         const [, rendererEventEmitterProperties] = await once(ipcMain, 'answer');
-        const { EventEmitter } = require('node:events');
         const browserEventEmitterProperties = Object.getOwnPropertyNames(EventEmitter.prototype).sort();
         expect(rendererEventEmitterProperties).to.deep.equal(browserEventEmitterProperties);
       });

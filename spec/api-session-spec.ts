@@ -4,10 +4,10 @@ import {
   BrowserWindow,
   net,
   ipcMain,
-  Session,
+  type Session,
   utilityProcess,
   webFrameMain,
-  WebFrameMain
+  type WebFrameMain
 } from 'electron/main';
 
 import auth from 'basic-auth';
@@ -43,7 +43,7 @@ describe('session module', () => {
 
   describe('session.fromPath(path)', () => {
     it('returns storage path of a session which was created with an absolute path', () => {
-      const tmppath = require('electron').app.getPath('temp');
+      const tmppath = app.getPath('temp');
       const ses = session.fromPath(tmppath);
       expect(ses.storagePath).to.equal(tmppath);
     });
@@ -133,7 +133,7 @@ describe('session module', () => {
       expect(c.value).to.equal(value);
     });
 
-    for (const sameSite of <const>['unspecified', 'no_restriction', 'lax', 'strict']) {
+    for (const sameSite of ['unspecified', 'no_restriction', 'lax', 'strict'] as const) {
       it(`sets cookies with samesite=${sameSite}`, async () => {
         const { cookies } = session.defaultSession;
         const value = 'hithere';
@@ -1964,7 +1964,7 @@ describe('session module', () => {
         cb(`<html><script>(${remote})()</script></html>`);
       });
 
-      const result = once(require('electron').ipcMain, 'message');
+      const result = once(ipcMain, 'message');
 
       function remote() {
         (navigator as any).requestMIDIAccess({ sysex: true }).then(

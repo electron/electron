@@ -1,20 +1,21 @@
-import { BrowserWindow, ipcMain, net, protocol, session, WebContents, webContents } from 'electron/main';
+import { BrowserWindow, ipcMain, net, protocol, session, type WebContents, webContents } from 'electron/main';
 
 import { expect } from 'chai';
-import * as WebSocket from 'ws';
+import { WebSocketServer } from 'ws';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as http2 from 'node:http2';
-import { Socket } from 'node:net';
 import * as path from 'node:path';
 import * as qs from 'node:querystring';
 import { ReadableStream } from 'node:stream/web';
 import * as url from 'node:url';
 
 import { listen, defer, startRemoteControlApp } from './lib/spec-helpers';
+
+import type { Socket } from 'node:net';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -1098,7 +1099,7 @@ describe('webRequest module', () => {
         res.setHeader('foo1', 'bar1');
         res.end('ok');
       });
-      let wss = new WebSocket.Server({ noServer: true });
+      let wss = new WebSocketServer({ noServer: true });
       wss.on('connection', function connection(ws) {
         ws.on('message', function incoming(message) {
           if (message.toString() === 'foo') {
@@ -1169,7 +1170,7 @@ describe('webRequest module', () => {
         server.close();
         server = null as unknown as http.Server;
         wss.close();
-        wss = null as unknown as WebSocket.Server;
+        wss = null as unknown as WebSocketServer;
         ses.webRequest.onBeforeRequest(null);
         ses.webRequest.onBeforeSendHeaders(null);
         ses.webRequest.onHeadersReceived(null);
@@ -1189,7 +1190,7 @@ describe('webRequest module', () => {
 
     it('authenticates a WebSocket via login event', async () => {
       const authServer = http.createServer();
-      const wssAuth = new WebSocket.Server({ noServer: true });
+      const wssAuth = new WebSocketServer({ noServer: true });
       const expected = 'Basic ' + Buffer.from('user:pass').toString('base64');
 
       wssAuth.on('connection', (ws) => {

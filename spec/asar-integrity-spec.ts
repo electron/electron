@@ -1,5 +1,5 @@
 import { createPackage, getRawHeader } from '@electron/asar';
-import { flipFuses, FuseV1Config, FuseV1Options, FuseVersion } from '@electron/fuses';
+import { flipFuses, type FuseV1Config, FuseV1Options, FuseVersion } from '@electron/fuses';
 import { resedit } from '@electron/packager/resedit';
 
 import { expect } from 'chai';

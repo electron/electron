@@ -1,4 +1,4 @@
-import { BrowserWindow, Session, session } from 'electron/main';
+import { BrowserWindow, type Session, session } from 'electron/main';
 
 import { expect } from 'chai';
 
