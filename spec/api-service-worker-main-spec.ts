@@ -1,4 +1,4 @@
-import { ipcMain, session, webContents as webContentsModule, WebContents } from 'electron/main';
+import { ipcMain, session, webContents as webContentsModule, type WebContents } from 'electron/main';
 
 import { expect } from 'chai';
 

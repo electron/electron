@@ -3,8 +3,8 @@ import {
   net,
   protocol,
   session,
-  ClientRequest,
-  ClientRequestConstructorOptions,
+  type ClientRequest,
+  type ClientRequestConstructorOptions,
   utilityProcess
 } from 'electron/main';
 

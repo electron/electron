@@ -1,9 +1,6 @@
 import { expect } from 'chai';
 
-import * as http from 'node:http';
-import { AddressInfo } from 'node:net';
-
-import { createRoutedServer, RoutedRequest, RoutedServer } from './lib/http-server-helpers';
+import { createRoutedServer, type RoutedRequest, type RoutedServer } from './lib/http-server-helpers';
 import {
   getElectronExecutable,
   getMainJsFixturePath,
@@ -18,6 +15,9 @@ import {
   unregisterExecutableWithIdentity
 } from './lib/msix-helpers';
 import { ifdescribe } from './lib/spec-helpers';
+
+import type * as http from 'node:http';
+import type { AddressInfo } from 'node:net';
 
 const ELECTRON_MSIX_ALIAS = 'ElectronMSIX.exe';
 const MAIN_JS_PATH = getMainJsFixturePath();

@@ -3,7 +3,7 @@ import { BaseWindow, Menu, View, screen } from 'electron/main';
 
 import { expect } from 'chai';
 
-import { EventEmitter, once } from 'node:events';
+import { type EventEmitter, once } from 'node:events';
 
 import { isScaleFactorRounding } from './lib/screen-helpers';
 import { ifdescribe, isWayland } from './lib/spec-helpers';

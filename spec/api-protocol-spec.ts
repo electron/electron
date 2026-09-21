@@ -1,4 +1,4 @@
-import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain, net } from 'electron/main';
+import { protocol, webContents, type WebContents, session, BrowserWindow, ipcMain, net } from 'electron/main';
 
 import { expect } from 'chai';
 

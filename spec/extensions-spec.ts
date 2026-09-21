@@ -4,15 +4,15 @@ import {
   webFrameMain,
   BrowserWindow,
   ipcMain,
-  WebContents,
-  Extension,
-  Session,
-  ServiceWorkerInfo,
-  ServiceWorkersRunningStatusChangedEventParams
+  type WebContents,
+  type Extension,
+  type Session,
+  type ServiceWorkerInfo,
+  type ServiceWorkersRunningStatusChangedEventParams
 } from 'electron/main';
 
 import { expect } from 'chai';
-import * as WebSocket from 'ws';
+import { WebSocketServer } from 'ws';
 
 import { spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -35,7 +35,7 @@ describe('chrome extensions', () => {
   let server: http.Server;
   let url: string;
   let port: number;
-  let wss: WebSocket.Server;
+  let wss: WebSocketServer;
   before(async () => {
     server = http.createServer((req, res) => {
       if (req.url === '/cors') {
@@ -44,7 +44,7 @@ describe('chrome extensions', () => {
       res.end(emptyPage);
     });
 
-    wss = new WebSocket.Server({ noServer: true });
+    wss = new WebSocketServer({ noServer: true });
     wss.on('connection', function connection(ws) {
       ws.on('message', function incoming(message) {
         if (message.toString() === 'foo') {
