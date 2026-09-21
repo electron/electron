@@ -4,7 +4,7 @@ import { expect } from 'chai';
 
 import * as path from 'node:path';
 
-import { closeWindow } from './lib/window-helpers';
+import { closeWindow } from './lib/window-helpers.ts';
 
 const {
   TouchBarButton,
@@ -82,7 +82,7 @@ describe('TouchBar module', () => {
             items: [
               new TouchBarButton({ label: 'foo', backgroundColor: '#F00', click: () => {} }),
               new TouchBarButton({
-                icon: path.join(__dirname, 'fixtures', 'assets', 'logo.png'),
+                icon: path.join(import.meta.dirname, 'fixtures', 'assets', 'logo.png'),
                 iconPosition: 'right',
                 click: () => {}
               }),

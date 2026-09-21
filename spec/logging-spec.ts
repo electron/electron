@@ -7,7 +7,7 @@ import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-import { startRemoteControlApp, ifdescribe, ifit, isTestingBindingAvailable } from './lib/spec-helpers';
+import { startRemoteControlApp, ifdescribe, ifit, isTestingBindingAvailable } from './lib/spec-helpers.ts';
 
 // This test depends on functions that are only available when DCHECK_IS_ON.
 ifdescribe(isTestingBindingAvailable())('logging', () => {
@@ -138,7 +138,7 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
 
   ifit(process.platform === 'win32')('child process logs to the given file when --log-file is passed', async () => {
     const logFilePath = path.join(app.getPath('temp'), 'test-log-file-' + uuid.v4());
-    const preloadPath = path.resolve(__dirname, 'fixtures', 'log-test.js');
+    const preloadPath = path.resolve(import.meta.dirname, 'fixtures', 'log-test.js');
     const rc = await startRemoteControlApp([
       '--enable-logging',
       `--log-file=${logFilePath}`,

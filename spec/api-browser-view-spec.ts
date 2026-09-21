@@ -5,12 +5,12 @@ import { expect } from 'chai';
 import { once } from 'node:events';
 import * as path from 'node:path';
 
-import { ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
-import { defer, ifit, startRemoteControlApp } from './lib/spec-helpers';
-import { closeWindow } from './lib/window-helpers';
+import { ScreenCapture, hasCapturableScreen } from './lib/screen-helpers.ts';
+import { defer, ifit, startRemoteControlApp } from './lib/spec-helpers.ts';
+import { closeWindow } from './lib/window-helpers.ts';
 
 describe('BrowserView module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures');
+  const fixtures = path.resolve(import.meta.dirname, 'fixtures');
   const ses = session.fromPartition(crypto.randomUUID());
 
   let w: BrowserWindow;

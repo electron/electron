@@ -11,13 +11,16 @@ import { expect } from 'chai';
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { ifdescribe, ifit, startRemoteControlApp } from './lib/spec-helpers';
+import { ifdescribe, ifit, startRemoteControlApp } from './lib/spec-helpers.ts';
+
+const require = createRequire(import.meta.url);
 
 const isCI = !!process.env.CI;
-const fixturesPath = path.resolve(__dirname, 'fixtures');
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
 // FIXME: The tests are skipped on linux arm/arm64
 ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'linux')('contentTracing', () => {
@@ -505,7 +508,7 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
         included_categories: ['node.fs.sync']
       });
 
-      fs.readFileSync(__filename, 'utf8');
+      fs.readFileSync(import.meta.filename, 'utf8');
 
       const resultPath = await contentTracing.stopRecording();
       const data = fs.readFileSync(resultPath, 'utf8');
@@ -525,7 +528,7 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
       });
 
       vm.runInNewContext('1 + 1');
-      await fs.promises.readFile(__filename, 'utf8');
+      await fs.promises.readFile(import.meta.filename, 'utf8');
 
       const resultPath = await contentTracing.stopRecording();
       const data = fs.readFileSync(resultPath, 'utf8');
@@ -546,8 +549,8 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
         included_categories: ['node.fs.*']
       });
 
-      fs.readFileSync(__filename, 'utf8');
-      await fs.promises.readFile(__filename, 'utf8');
+      fs.readFileSync(import.meta.filename, 'utf8');
+      await fs.promises.readFile(import.meta.filename, 'utf8');
 
       const resultPath = await contentTracing.stopRecording();
       const data = fs.readFileSync(resultPath, 'utf8');

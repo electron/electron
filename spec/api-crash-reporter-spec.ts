@@ -11,7 +11,7 @@ import * as http from 'node:http';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { ifdescribe, ifit, defer, startRemoteControlApp, repeatedly, listen } from './lib/spec-helpers';
+import { ifdescribe, ifit, defer, startRemoteControlApp, repeatedly, listen } from './lib/spec-helpers.ts';
 
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
 const isLinuxOnArm = process.platform === 'linux' && process.arch.includes('arm');
@@ -117,7 +117,7 @@ function runApp(appPath: string, args: Array<string> = []) {
 }
 
 function runCrashApp(crashType: string, port: number, extraArgs: Array<string> = []) {
-  const appPath = path.join(__dirname, 'fixtures', 'apps', 'crash');
+  const appPath = path.join(import.meta.dirname, 'fixtures', 'apps', 'crash');
   return runApp(appPath, [`--crash-type=${crashType}`, `--crash-reporter-url=http://127.0.0.1:${port}`, ...extraArgs]);
 }
 
@@ -196,7 +196,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       ifit(process.platform === 'linux')('ensure linux child process args are not modified', async () => {
         const { port, waitForCrash } = await startServer();
         let exitCode: number | null = null;
-        const appPath = path.join(__dirname, 'fixtures', 'apps', 'crash');
+        const appPath = path.join(import.meta.dirname, 'fixtures', 'apps', 'crash');
         const crashType = 'node-extra-args';
         const crashProcess = childProcess.spawn(
           process.execPath,
@@ -389,7 +389,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
             ignoreSystemCrashHandler: true,
             extra: { longParam: 'a'.repeat(100000) }
           });
-          setTimeout().then(() => process.crash());
+          global.setTimeout(() => process.crash());
         }, port);
         const crash = await waitForCrash();
         expect(stitchLongCrashParam(crash, 'longParam')).to.have.lengthOf(
@@ -415,7 +415,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
               }
             });
             require('electron').crashReporter.addExtraParameter('c'.repeat(kKeyLengthMax + 10), 'value');
-            setTimeout().then(() => process.crash());
+            global.setTimeout(() => process.crash());
           },
           port,
           kKeyLengthMax
@@ -599,9 +599,13 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
           });
         }
         // TODO(nornagon): how to enable crashpad in a node child process...?
-        const child = childProcess.fork(path.join(__dirname, 'fixtures', 'module', 'print-crash-parameters.js'), [], {
-          silent: true
-        });
+        const child = childProcess.fork(
+          path.join(import.meta.dirname, 'fixtures', 'module', 'print-crash-parameters.js'),
+          [],
+          {
+            silent: true
+          }
+        );
         const output = await slurp(child.stdout!);
         expect(JSON.parse(output)).to.deep.equal({ hello: 'world' });
       });
@@ -619,7 +623,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       function crash(processType: string, remotely: Function) {
         if (processType === 'main') {
           return remotely(() => {
-            setTimeout().then(() => {
+            global.setTimeout(() => {
               process.crash();
             });
           });
@@ -634,7 +638,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
             bw.webContents.executeJavaScript('process.crash()');
           });
         } else if (processType === 'sandboxed-renderer') {
-          const preloadPath = path.join(__dirname, 'fixtures', 'apps', 'crash', 'sandbox-preload.js');
+          const preloadPath = path.join(import.meta.dirname, 'fixtures', 'apps', 'crash', 'sandbox-preload.js');
           return remotely((preload: string) => {
             const { BrowserWindow } = require('electron');
             const bw = new BrowserWindow({
@@ -644,7 +648,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
             bw.loadURL('about:blank');
           }, preloadPath);
         } else if (processType === 'node') {
-          const crashScriptPath = path.join(__dirname, 'fixtures', 'apps', 'crash', 'node-crash.js');
+          const crashScriptPath = path.join(import.meta.dirname, 'fixtures', 'apps', 'crash', 'node-crash.js');
           return remotely((crashScriptPath: string) => {
             const { app } = require('electron');
             const childProcess = require('node:child_process');
@@ -787,7 +791,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
 
     describe('when not started', () => {
       it('does not prevent process from crashing', async () => {
-        const appPath = path.join(__dirname, 'fixtures', 'api', 'cookie-app');
+        const appPath = path.join(import.meta.dirname, 'fixtures', 'api', 'cookie-app');
         await runApp(appPath);
       });
     });

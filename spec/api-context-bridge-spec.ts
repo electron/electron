@@ -1,5 +1,4 @@
 import { BrowserWindow, ipcMain } from 'electron/main';
-import { contextBridge } from 'electron/renderer';
 
 import { expect } from 'chai';
 
@@ -10,10 +9,14 @@ import * as http from 'node:http';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { ifdescribe, isTestingBindingAvailable, listen } from './lib/spec-helpers';
-import { closeWindow } from './lib/window-helpers';
+import { ifdescribe, isTestingBindingAvailable, listen } from './lib/spec-helpers.ts';
+import { closeWindow } from './lib/window-helpers.ts';
 
-const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'context-bridge');
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures', 'api', 'context-bridge');
+
+// The binding creators handed to makeBindingWindow() run in a preload script,
+// which is where this comes from (see the generated preload below).
+declare const contextBridge: Electron.ContextBridge;
 
 describe('contextBridge', () => {
   let w: BrowserWindow;
@@ -68,28 +71,28 @@ describe('contextBridge', () => {
   const generateTests = (useSandbox: boolean) => {
     describe(`with sandbox=${useSandbox}`, () => {
       const makeBindingWindow = async (bindingCreator: Function, worldId: number = 0) => {
-        const preloadContentForMainWorld = `const renderer_1 = require('electron');
+        const preloadContentForMainWorld = `const { contextBridge, webFrame } = require('electron');
         ${
           useSandbox
             ? ''
             : `require('node:v8').setFlagsFromString('--expose_gc');
         const gc=require('node:vm').runInNewContext('gc');
-        renderer_1.contextBridge.exposeInMainWorld('GCRunner', {
+        contextBridge.exposeInMainWorld('GCRunner', {
           run: () => gc()
         });`
         }
         (${bindingCreator.toString()})();`;
 
-        const preloadContentForIsolatedWorld = `const renderer_1 = require('electron');
+        const preloadContentForIsolatedWorld = `const { contextBridge, webFrame } = require('electron');
         ${
           useSandbox
             ? ''
             : `require('node:v8').setFlagsFromString('--expose_gc');
         const gc=require('node:vm').runInNewContext('gc');
-        renderer_1.webFrame.setIsolatedWorldInfo(${worldId}, {
+        webFrame.setIsolatedWorldInfo(${worldId}, {
           name: "Isolated World"
         });
-        renderer_1.contextBridge.exposeInIsolatedWorld(${worldId}, 'GCRunner', {
+        contextBridge.exposeInIsolatedWorld(${worldId}, 'GCRunner', {
           run: () => gc()
         });`
         }
@@ -715,7 +718,7 @@ describe('contextBridge', () => {
       it('should proxy symbols', async () => {
         await makeBindingWindow(() => {
           const mySymbol = Symbol('unique');
-          const isSymbol = (s: Symbol) => s === mySymbol;
+          const isSymbol = (s: symbol) => s === mySymbol;
           contextBridge.exposeInMainWorld('symbol', mySymbol);
           contextBridge.exposeInMainWorld('isSymbol', isSymbol);
         });
@@ -730,7 +733,7 @@ describe('contextBridge', () => {
           const mySymbol = Symbol('unique');
           contextBridge.exposeInMainWorld('example', {
             getSymbol: () => mySymbol,
-            isSymbol: (s: Symbol) => s === mySymbol
+            isSymbol: (s: symbol) => s === mySymbol
           });
         });
         const result = await callWithBindings((root: any) => {

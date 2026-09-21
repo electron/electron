@@ -5,11 +5,11 @@ import { expect } from 'chai';
 import { Buffer } from 'node:buffer';
 import * as path from 'node:path';
 
-import { ifdescribe, ifit } from './lib/spec-helpers';
+import { ifdescribe, ifit } from './lib/spec-helpers.ts';
 
 // FIXME(zcbenz): Clipboard tests are failing on WOA.
 ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures');
+  const fixtures = path.resolve(import.meta.dirname, 'fixtures');
 
   describe('clipboard.readImage()', () => {
     it('returns NativeImage instance', () => {

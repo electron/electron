@@ -8,8 +8,8 @@ import * as originalFs from 'node:original-fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { copyApp } from './lib/fs-helpers';
-import { ifdescribe, isTestingBindingAvailable } from './lib/spec-helpers';
+import { copyApp } from './lib/fs-helpers.ts';
+import { ifdescribe, isTestingBindingAvailable } from './lib/spec-helpers.ts';
 
 // Asserts the build-time V8 code cache for each electron/js2c/* bundle -- and
 // for Node's own builtins, from the embedded Node snapshot in the browser
@@ -21,7 +21,7 @@ import { ifdescribe, isTestingBindingAvailable } from './lib/spec-helpers';
 type Status = Record<string, boolean>;
 type Result = { browser: Status; sandbox: Status; renderer: Status; utility: Status; runAsNode: Status };
 
-const APP = path.resolve(__dirname, 'fixtures/api/js2c-code-cache/app');
+const APP = path.resolve(import.meta.dirname, 'fixtures/api/js2c-code-cache/app');
 
 async function runFixtureApp(execPath: string): Promise<Result> {
   const out = await new Promise<string>((resolve, reject) => {
