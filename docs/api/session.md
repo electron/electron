@@ -185,7 +185,7 @@ Returns:
 ```js
 const { app, dialog, BrowserWindow, session } = require('electron')
 
-async function createWindow () {
+async function createWindow() {
   const mainWindow = new BrowserWindow()
 
   await mainWindow.loadURL('https://buzzfeed.com')
@@ -208,14 +208,16 @@ async function createWindow () {
     }
   })
 
-  mainWindow.webContents.executeJavaScript(`
+  mainWindow.webContents.executeJavaScript(
+    `
     window.showDirectoryPicker({
       id: 'electron-demo',
       mode: 'readwrite',
       startIn: 'downloads',
     }).catch(e => {
       console.log(e)
-    })`, true
+    })`,
+    true
   )
 }
 
@@ -341,9 +343,12 @@ app.whenReady().then(() => {
 
       // Search through the list of devices that have previously been granted permission
       return grantedDevices.some((grantedDevice) => {
-        return grantedDevice.vendorId === details.device.vendorId &&
-              grantedDevice.productId === details.device.productId &&
-              grantedDevice.serialNumber && grantedDevice.serialNumber === details.device.serialNumber
+        return (
+          grantedDevice.vendorId === details.device.vendorId &&
+          grantedDevice.productId === details.device.productId &&
+          grantedDevice.serialNumber &&
+          grantedDevice.serialNumber === details.device.serialNumber
+        )
       })
     }
     return false
@@ -452,9 +457,12 @@ app.whenReady().then(() => {
 
       // Search through the list of devices that have previously been granted permission
       return grantedDevices.some((grantedDevice) => {
-        return grantedDevice.vendorId === details.device.vendorId &&
-              grantedDevice.productId === details.device.productId &&
-              grantedDevice.serialNumber && grantedDevice.serialNumber === details.device.serialNumber
+        return (
+          grantedDevice.vendorId === details.device.vendorId &&
+          grantedDevice.productId === details.device.productId &&
+          grantedDevice.serialNumber &&
+          grantedDevice.serialNumber === details.device.serialNumber
+        )
       })
     }
     return false
@@ -594,9 +602,12 @@ app.whenReady().then(() => {
 
       // Search through the list of devices that have previously been granted permission
       return grantedDevices.some((grantedDevice) => {
-        return grantedDevice.vendorId === details.device.vendorId &&
-              grantedDevice.productId === details.device.productId &&
-              grantedDevice.serialNumber && grantedDevice.serialNumber === details.device.serialNumber
+        return (
+          grantedDevice.vendorId === details.device.vendorId &&
+          grantedDevice.productId === details.device.productId &&
+          grantedDevice.serialNumber &&
+          grantedDevice.serialNumber === details.device.serialNumber
+        )
       })
     }
     return false
@@ -856,7 +867,7 @@ Node.js's HTTP stack.
 Example:
 
 ```js
-async function example () {
+async function example() {
   const response = await net.fetch('https://my.app')
   if (response.ok) {
     const body = await response.json()
@@ -1093,16 +1104,19 @@ is set to `true`, the handler will not be invoked.
 ```js
 const { session, desktopCapturer } = require('electron')
 
-session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
-  desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
-    // Grant access to the first screen found.
-    callback({ video: sources[0] })
-  })
-  // Use the system picker if available.
-  // Note: this is currently experimental. If the system picker
-  // is available, it will be used and the media request handler
-  // will not be invoked.
-}, { useSystemPicker: true })
+session.defaultSession.setDisplayMediaRequestHandler(
+  (request, callback) => {
+    desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
+      // Grant access to the first screen found.
+      callback({ video: sources[0] })
+    })
+    // Use the system picker if available.
+    // Note: this is currently experimental. If the system picker
+    // is available, it will be used and the media request handler
+    // will not be invoked.
+  },
+  { useSystemPicker: true }
+)
 ```
 
 Passing a [WebFrameMain](web-frame-main.md) object as a video or audio stream
@@ -1177,9 +1191,12 @@ app.whenReady().then(() => {
 
       // Search through the list of devices that have previously been granted permission
       return grantedDevices.some((grantedDevice) => {
-        return grantedDevice.vendorId === details.device.vendorId &&
-              grantedDevice.productId === details.device.productId &&
-              grantedDevice.serialNumber && grantedDevice.serialNumber === details.device.serialNumber
+        return (
+          grantedDevice.vendorId === details.device.vendorId &&
+          grantedDevice.productId === details.device.productId &&
+          grantedDevice.serialNumber &&
+          grantedDevice.serialNumber === details.device.serialNumber
+        )
       })
     } else if (details.deviceType === 'serial') {
       if (details.device.vendorId === 123 && details.device.productId === 345) {
@@ -1288,7 +1305,7 @@ const { app, BrowserWindow, session } = require('electron')
 
 const path = require('node:path')
 
-function createWindow () {
+function createWindow() {
   let bluetoothPinCallback = null
 
   const mainWindow = new BrowserWindow({
@@ -1762,10 +1779,12 @@ const path = require('node:path')
 
 app.whenReady().then(() => {
   const protocol = session.fromPartition('some-partition').protocol
-  if (!protocol.registerFileProtocol('atom', (request, callback) => {
-    const url = request.url.substr(7)
-    callback({ path: path.normalize(path.join(__dirname, url)) })
-  })) {
+  if (
+    !protocol.registerFileProtocol('atom', (request, callback) => {
+      const url = request.url.substr(7)
+      callback({ path: path.normalize(path.join(__dirname, url)) })
+    })
+  ) {
     console.error('Failed to register protocol')
   }
 })

@@ -45,7 +45,9 @@ app.whenReady().then(() => {
   const dockMenu = Menu.buildFromTemplate([
     {
       label: 'New Window',
-      click: () => { const win = new BrowserWindow() }
+      click: () => {
+        const win = new BrowserWindow()
+      }
     }
     // add more menu options to the array
   ])
