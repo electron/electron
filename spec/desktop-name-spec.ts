@@ -2,7 +2,7 @@ import { expect } from 'chai';
 
 import * as path from 'node:path';
 
-import { ifdescribe } from './lib/spec-helpers';
+import { ifdescribe } from './lib/spec-helpers.ts';
 
 const { defaultDesktopName } = process._linkedBinding('electron_browser_app');
 

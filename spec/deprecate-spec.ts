@@ -1,6 +1,13 @@
 import { expect } from 'chai';
 
-import * as deprecate from '../lib/common/deprecate';
+import { createRequire } from 'node:module';
+
+// lib/ sits in a package scope with no "type", so import-ing its ESM-syntax
+// sources makes Node reparse them with a MODULE_TYPELESS_PACKAGE_JSON warning;
+// require() detects the module syntax quietly.
+const deprecate: typeof import('../lib/common/deprecate.ts') = createRequire(import.meta.url)(
+  '../lib/common/deprecate.ts'
+);
 
 describe('deprecate', () => {
   let throwing: boolean;

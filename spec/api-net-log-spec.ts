@@ -10,11 +10,11 @@ import * as http from 'node:http';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { ifit, listen } from './lib/spec-helpers';
+import { ifit, listen } from './lib/spec-helpers.ts';
 
 import type { Socket } from 'node:net';
 
-const appPath = path.join(__dirname, 'fixtures', 'api', 'net-log');
+const appPath = path.join(import.meta.dirname, 'fixtures', 'api', 'net-log');
 const dumpFile = path.join(os.tmpdir(), 'net_log.json');
 const dumpFileDynamic = path.join(os.tmpdir(), 'net_log_dynamic.json');
 

@@ -3,16 +3,19 @@ import { BrowserWindow, screen } from 'electron/main';
 import { expect } from 'chai';
 
 import { once } from 'node:events';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 
-import { hasCapturableScreen } from './lib/screen-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { hasCapturableScreen } from './lib/screen-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
+
+const require = createRequire(import.meta.url);
 
 const display = screen.getPrimaryDisplay();
 
-const fixtures = path.resolve(__dirname, 'fixtures');
+const fixtures = path.resolve(import.meta.dirname, 'fixtures');
 
 // Try to load robotjs
 let robot: typeof import('@hurdlegroup/robotjs');

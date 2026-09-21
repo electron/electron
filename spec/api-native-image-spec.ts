@@ -6,11 +6,11 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
-import { expectDeprecationMessages } from './lib/warning-helpers';
+import { ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers.ts';
+import { expectDeprecationMessages } from './lib/warning-helpers.ts';
 
 describe('nativeImage module', () => {
-  const fixturesPath = path.join(__dirname, 'fixtures');
+  const fixturesPath = path.join(import.meta.dirname, 'fixtures');
 
   const imageLogo = {
     path: path.join(fixturesPath, 'assets', 'logo.png'),
@@ -290,8 +290,8 @@ describe('nativeImage module', () => {
       expect(nativeImage.createFromPath('').isEmpty()).to.be.true();
       expect(nativeImage.createFromPath('does-not-exist.png').isEmpty()).to.be.true();
       expect(nativeImage.createFromPath('does-not-exist.ico').isEmpty()).to.be.true();
-      expect(nativeImage.createFromPath(__dirname).isEmpty()).to.be.true();
-      expect(nativeImage.createFromPath(__filename).isEmpty()).to.be.true();
+      expect(nativeImage.createFromPath(import.meta.dirname).isEmpty()).to.be.true();
+      expect(nativeImage.createFromPath(import.meta.filename).isEmpty()).to.be.true();
     });
 
     it('loads images from paths relative to the current working directory', () => {

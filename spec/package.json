@@ -2,6 +2,7 @@
   "name": "electron-test-main",
   "productName": "Electron Test Main",
   "main": "index.js",
+  "type": "module",
   "version": "0.1.0",
   "scripts": {
     "node-gyp-install": "node-gyp install"

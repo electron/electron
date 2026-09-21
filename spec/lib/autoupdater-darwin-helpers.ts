@@ -13,9 +13,9 @@ import {
   signApp,
   spawn,
   stripFrameworkSymbols
-} from './codesign-helpers';
-import { withTempDirectory } from './fs-helpers';
-import { createRoutedServer, type RoutedRequest, type RoutedServer } from './http-server-helpers';
+} from './codesign-helpers.ts';
+import { withTempDirectory } from './fs-helpers.ts';
+import { createRoutedServer, type RoutedRequest, type RoutedServer } from './http-server-helpers.ts';
 
 import type * as http from 'node:http';
 import type { AddressInfo } from 'node:net';

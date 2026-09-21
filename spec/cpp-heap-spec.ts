@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { once } from 'node:events';
 import * as path from 'node:path';
 
-import { ifdescribe, isTestingBindingAvailable, itremote, startRemoteControlApp } from './lib/spec-helpers';
+import { ifdescribe, isTestingBindingAvailable, itremote, startRemoteControlApp } from './lib/spec-helpers.ts';
 
 describe('cpp heap', () => {
   describe('app module', () => {
@@ -35,8 +35,8 @@ describe('cpp heap', () => {
           const state = recordState();
           return containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / App']);
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true);
     });
@@ -74,8 +74,8 @@ describe('cpp heap', () => {
           console.log(nativeTheme.shouldUseDarkColors);
           return containsRetainingPath(recordState().snapshot, ['C++ Persistent roots', 'Electron / NativeTheme']);
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true);
     });
@@ -116,8 +116,8 @@ describe('cpp heap', () => {
             'Electron / PushNotifications'
           ]);
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true);
     });
@@ -155,8 +155,8 @@ describe('cpp heap', () => {
           console.log(typeof safeStorage.isAsyncEncryptionAvailable);
           return containsRetainingPath(recordState().snapshot, ['C++ Persistent roots', 'Electron / SafeStorage']);
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true);
     });
@@ -212,8 +212,8 @@ describe('cpp heap', () => {
             'Electron / SystemPreferences'
           ]);
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true);
     });
@@ -293,8 +293,8 @@ describe('cpp heap', () => {
           ]);
           return { hasThreeSessionRoots, tracesWindowSession, tracesCookies };
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result.hasThreeSessionRoots).to.equal(true, 'each distinct Session should have its own persistent root');
       expect(result.tracesWindowSession).to.equal(
@@ -348,8 +348,8 @@ describe('cpp heap', () => {
           ]);
           return stillAlive;
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true, 'Cookies should survive GC when traced from Session');
     });
@@ -409,8 +409,8 @@ describe('cpp heap', () => {
           server.close();
           return stillAlive;
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true, 'DownloadItem should survive GC while the download is in progress');
     });
@@ -458,8 +458,8 @@ describe('cpp heap', () => {
           const found = containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / DownloadItem']);
           return !found;
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true, 'DownloadItem should be released after the download completes and GC runs');
     });
@@ -575,7 +575,7 @@ describe('cpp heap', () => {
 
           setTimeout(() => app.quit());
         },
-        path.join(__dirname, 'fixtures', 'api', 'service-workers'),
+        path.join(import.meta.dirname, 'fixtures', 'api', 'service-workers'),
         setupWorkerSource
       );
 
@@ -611,10 +611,10 @@ describe('cpp heap', () => {
           ctx.server.close();
           return rooted;
         },
-        path.join(__dirname, 'fixtures', 'api', 'service-workers'),
+        path.join(import.meta.dirname, 'fixtures', 'api', 'service-workers'),
         setupWorkerSource,
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true, 'ServiceWorkerMain should be rooted via SelfKeepAlive while the version is live');
     });
@@ -662,10 +662,10 @@ describe('cpp heap', () => {
           ctx.server.close();
           return !rooted && !stillExists;
         },
-        path.join(__dirname, 'fixtures', 'api', 'service-workers'),
+        path.join(import.meta.dirname, 'fixtures', 'api', 'service-workers'),
         setupWorkerSource,
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(
         true,
@@ -691,8 +691,8 @@ describe('cpp heap', () => {
           ]);
           return present && !isPersistentRooted;
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true);
     });
@@ -751,8 +751,8 @@ describe('cpp heap', () => {
           ]);
           return present && !isPersistentRooted;
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true);
     });
@@ -796,8 +796,8 @@ describe('cpp heap', () => {
           port2.close();
           return containsRetainingPath(snapshot, ['C++ Persistent roots', 'Electron / MessagePort']);
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true);
     });
@@ -1102,8 +1102,8 @@ describe('cpp heap', () => {
             setTimeout(() => app.quit());
           }
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
 
       const [code] = await once(rc.process, 'exit');
@@ -1451,7 +1451,7 @@ describe('cpp heap', () => {
             after: countContents()
           };
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap')
       );
 
       expect(result.released).to.equal(true);
@@ -1635,7 +1635,7 @@ describe('cpp heap', () => {
             await customSession.extensions.removeExtension(extension.id);
           }
         },
-        path.join(__dirname, 'fixtures', 'extensions', 'persistent-background-page')
+        path.join(import.meta.dirname, 'fixtures', 'extensions', 'persistent-background-page')
       );
 
       expect(result.type).to.equal('backgroundPage');
@@ -1675,8 +1675,8 @@ describe('cpp heap', () => {
           }
           return { retained, rooted, released: !ref.deref() };
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
 
       expect(result.retained).to.equal(true);
@@ -1732,7 +1732,7 @@ describe('cpp heap', () => {
             after
           };
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap')
       );
 
       expect(result.destroyedEvents).to.equal(1);
@@ -1783,8 +1783,8 @@ describe('cpp heap', () => {
           await destroyed;
           return { rooted, released, rootReleased };
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
 
       expect(result.rooted).to.equal(true);
@@ -1966,8 +1966,8 @@ describe('cpp heap', () => {
           w.destroy();
           return rooted;
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true, 'WebFrameMain should stay rooted via SelfKeepAlive while the frame is live');
     });
@@ -2020,8 +2020,8 @@ describe('cpp heap', () => {
             hasOneFrame
           };
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result.subframeCount).to.equal(1, 'a subframe WebFrameMain should be created before navigation');
       expect(result.mainFrameIsActive).to.equal(true, 'the remaining WebFrameMain should be the active main frame');
@@ -2097,9 +2097,9 @@ describe('cpp heap', () => {
             server.close();
           }
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js'),
-        path.join(__dirname, 'fixtures', 'sub-frames', 'preload.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js'),
+        path.join(import.meta.dirname, 'fixtures', 'sub-frames', 'preload.js')
       );
       expect(result).to.equal(true, 'only the active WebFrameMain should remain rooted after navigation');
     });
@@ -2174,8 +2174,8 @@ describe('cpp heap', () => {
           ]);
           return eventNativeStackReference && noPersistentReference;
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true);
     });
@@ -2212,7 +2212,7 @@ describe('cpp heap', () => {
           setTimeout(() => app.quit());
           return { found, noDuplicates };
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap')
       );
 
       const [code] = await once(rc.process, 'exit');
@@ -2242,9 +2242,9 @@ describe('cpp heap', () => {
           await once(child, 'exit');
           return found;
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js'),
-        path.join(__dirname, 'fixtures/api/utility-process/endless.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js'),
+        path.join(import.meta.dirname, 'fixtures/api/utility-process/endless.js')
       );
       expect(result).to.equal(true);
     });
@@ -2272,9 +2272,9 @@ describe('cpp heap', () => {
           const found = containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / UtilityProcess']);
           return !found;
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js'),
-        path.join(__dirname, 'fixtures/api/utility-process/empty.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js'),
+        path.join(import.meta.dirname, 'fixtures/api/utility-process/empty.js')
       );
       expect(result).to.equal(true, 'UtilityProcess should be released after exit and GC');
     });
@@ -2309,9 +2309,9 @@ describe('cpp heap', () => {
           setTimeout(() => app.quit());
           return stillAlive;
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js'),
-        path.join(__dirname, 'fixtures/api/utility-process/endless.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js'),
+        path.join(import.meta.dirname, 'fixtures/api/utility-process/endless.js')
       );
 
       const [code] = await once(rc.process, 'exit');
@@ -2349,7 +2349,7 @@ describe('cpp heap', () => {
           const after2 = await measure(10);
           return { after1, after2 };
         },
-        path.join(__dirname, 'fixtures/api/utility-process/empty.js')
+        path.join(import.meta.dirname, 'fixtures/api/utility-process/empty.js')
       );
 
       const growth = result.after2 - result.after1;
@@ -2392,8 +2392,8 @@ describe('cpp heap', () => {
           console.log(inAppPurchase.canMakePayments());
           return containsRetainingPath(recordState().snapshot, ['Electron / InAppPurchase']);
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
-        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true);
     });
@@ -2438,7 +2438,7 @@ describe('cpp heap', () => {
           setTimeout(() => app.quit());
           return { found, noDuplicates };
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap')
       );
 
       const [code] = await once(rc.process, 'exit');
@@ -2496,7 +2496,7 @@ describe('cpp heap', () => {
 
           return { beforeGC, afterGC, afterClear };
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap')
       );
 
       expect(result.afterGC).to.be.at.least(result.beforeGC, 'held PromiseHandle must survive GC');

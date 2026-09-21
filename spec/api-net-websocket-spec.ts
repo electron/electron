@@ -5,7 +5,7 @@ import { WebSocketServer, type WebSocket as WSWebSocket, type ServerOptions } fr
 
 import * as http from 'node:http';
 
-import { defer } from './lib/spec-helpers';
+import { defer } from './lib/spec-helpers.ts';
 
 import type { AddressInfo } from 'node:net';
 

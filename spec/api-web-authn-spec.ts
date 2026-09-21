@@ -4,8 +4,8 @@ import { expect } from 'chai';
 
 import * as http from 'node:http';
 
-import { ifdescribe } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { ifdescribe } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 import type { AddressInfo } from 'node:net';
 
