@@ -64,7 +64,7 @@ describe('clipboard module', () => {
     it('round-trips a NativeImage through the image/* MIME type', async () => {
       const p = path.join(fixtures, 'assets', 'logo.png');
       const i = nativeImage.createFromPath(p);
-      await clipboard.write([new ClipboardItem({ 'image/png': new Blob([i.toPNG()]) })]);
+      await clipboard.write([new ClipboardItem({ 'image/png': new Blob([new Uint8Array(i.toPNG())]) })]);
 
       const buffer = await readType('image/png');
       expect(buffer).to.be.an.instanceOf(Buffer);
@@ -221,7 +221,7 @@ describe('clipboard module', () => {
           'text/plain': text,
           'text/html': '<b>Hi</b>',
           'text/rtf': rtf,
-          'image/png': new Blob([i.toPNG()]),
+          'image/png': new Blob([new Uint8Array(i.toPNG())]),
           [BOOKMARK_MIME]: bookmark
         })
       ]);

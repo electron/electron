@@ -61,7 +61,7 @@ const { codes: errorCodes } = require('internal/errors') as typeof import('@node
 
 // In the renderer node internals use the node global URL but we do not set that to be
 // the global URL instance.  We need to do instanceof checks against the internal URL impl
-const { URL: NodeURL } = require('internal/url') as typeof import('@node/lib/internal/url');
+const { URL: NodeURL } = require('internal/url') as typeof import('node:url');
 
 type SplitPathResult = { isAsar: false } | { isAsar: true; asarPath: string; filePath: string };
 

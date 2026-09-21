@@ -174,7 +174,7 @@ async function writeClipboard() {
     new ClipboardItem({
       'text/plain': 'hello',
       'text/html': '<b>hello</b>',
-      'image/png': new Blob([png], { type: 'image/png' }),
+      'image/png': new Blob([new Uint8Array(png)], { type: 'image/png' }),
       'electron application/bookmark': {
         title: 'Electron',
         url: 'https://electronjs.org'
