@@ -6,11 +6,11 @@ import * as cp from 'node:child_process';
 import { once } from 'node:events';
 import * as path from 'node:path';
 
-import { defer } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { defer } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('ipc main module', () => {
-  const fixtures = path.join(__dirname, 'fixtures');
+  const fixtures = path.join(import.meta.dirname, 'fixtures');
 
   afterEach(closeAllWindows);
 

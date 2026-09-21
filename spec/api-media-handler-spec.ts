@@ -4,9 +4,9 @@ import { expect } from 'chai';
 
 import * as http from 'node:http';
 
-import { captureWithTabSourceId } from './lib/media-helpers';
-import { ifit, listen, waitUntil } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { captureWithTabSourceId } from './lib/media-helpers.ts';
+import { ifit, listen, waitUntil } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('setDisplayMediaRequestHandler', () => {
   afterEach(closeAllWindows);

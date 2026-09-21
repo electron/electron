@@ -5,7 +5,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 const features = process._linkedBinding('electron_common_features');
-const fixturesPath = path.resolve(__dirname, '..', 'fixtures');
+const fixturesPath = path.resolve(import.meta.dirname, '..', 'fixtures');
 
 export const shouldRunCodesignTests = process.platform === 'darwin' && !process.mas && !features.isComponentBuild();
 
@@ -13,7 +13,7 @@ let identity: string | null;
 
 export function getCodesignIdentity() {
   if (identity === undefined) {
-    const result = cp.spawnSync(path.resolve(__dirname, '../../script/codesign/get-trusted-identity.sh'));
+    const result = cp.spawnSync(path.resolve(import.meta.dirname, '../../script/codesign/get-trusted-identity.sh'));
     if (result.status !== 0 || result.stdout.toString().trim().length === 0) {
       identity = null;
     } else {

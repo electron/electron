@@ -13,12 +13,15 @@ import { expect } from 'chai';
 import * as dbus from 'dbus-native';
 
 import { once } from 'node:events';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { promisify } from 'node:util';
 
-import { ifdescribe } from './lib/spec-helpers';
+import { ifdescribe } from './lib/spec-helpers.ts';
 
-const fixturesPath = path.join(__dirname, 'fixtures');
+const require = createRequire(import.meta.url);
+
+const fixturesPath = path.join(import.meta.dirname, 'fixtures');
 
 const skip =
   process.platform !== 'linux' ||

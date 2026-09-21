@@ -5,10 +5,10 @@ import { expect } from 'chai';
 import { randomUUID } from 'node:crypto';
 import * as path from 'node:path';
 
-import { ifdescribe } from './lib/spec-helpers';
-import { closeWindow } from './lib/window-helpers';
+import { ifdescribe } from './lib/spec-helpers.ts';
+import { closeWindow } from './lib/window-helpers.ts';
 
-const fixtures = path.resolve(__dirname, 'fixtures');
+const fixtures = path.resolve(import.meta.dirname, 'fixtures');
 
 // Tests only run properly on macOS arm64 for now
 const skip = process.platform !== 'darwin' || process.arch !== 'arm64';
