@@ -281,7 +281,7 @@ v8::Local<v8::Value> Converter<content::WebContents*>::ToV8(
     return v8::Null(isolate);
   auto* contents = electron::api::WebContents::FromOrCreate(isolate, val);
   v8::Local<v8::Object> wrapper;
-  if (!contents->GetWrapper(isolate).ToLocal(&wrapper))
+  if (!contents || !contents->GetWrapper(isolate).ToLocal(&wrapper))
     return v8::Null(isolate);
   return wrapper;
 }

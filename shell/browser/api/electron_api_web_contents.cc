@@ -6565,12 +6565,15 @@ WebContents* WebContents::From(content::WebContents* web_contents) {
 // static
 WebContents* WebContents::FromOrCreate(v8::Isolate* isolate,
                                        content::WebContents* web_contents) {
-  WebContents* api_web_contents = From(web_contents);
-  if (!api_web_contents) {
-    api_web_contents = cppgc::MakeGarbageCollected<WebContents>(
-        isolate->GetCppHeap()->GetAllocationHandle(), isolate, web_contents);
-    api_web_contents->InitializeJS(isolate);
+  // A link whose wrapper has been collected belongs to a WebContents whose
+  // native teardown is already queued; do not mint a second wrapper for it.
+  if (auto* data = static_cast<UserDataLink*>(
+          web_contents->GetUserData(kElectronApiWebContentsKey))) {
+    return data->web_contents.Get();
   }
+  WebContents* api_web_contents = cppgc::MakeGarbageCollected<WebContents>(
+      isolate->GetCppHeap()->GetAllocationHandle(), isolate, web_contents);
+  api_web_contents->InitializeJS(isolate);
   return api_web_contents;
 }
 

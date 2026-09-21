@@ -170,6 +170,8 @@ class WebContents final : public gin::Wrappable<WebContents>,
   static void SetDisableDraggableRegions(bool disable);
 
   // Get the V8 wrapper of the |web_contents|, or create one if not existed.
+  // Returns nullptr if the existing wrapper has been collected and the
+  // contents is awaiting teardown.
   //
   // The lifetime of |web_contents| is NOT managed by this class, and the type
   // of this wrapper is always REMOTE.
