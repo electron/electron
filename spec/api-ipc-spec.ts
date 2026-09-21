@@ -7,7 +7,7 @@ import { EventEmitter, once } from 'node:events';
 import * as http from 'node:http';
 import * as path from 'node:path';
 
-import { defer, listen, startRemoteControlApp } from './lib/spec-helpers';
+import { defer, ifit, listen, startRemoteControlApp } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
@@ -273,6 +273,31 @@ describe('ipc module', () => {
       const expected = sizes.flatMap((n) => samples(n).flatMap((value) => Array(3).fill(digest(value))));
       expect(result).to.deep.equal(expected);
     });
+
+    ifit(process.arch === 'x64' || process.arch === 'arm64')(
+      'sends a maximum-length string followed by another value without crashing',
+      async () => {
+        defer(() => ipcMain.removeAllListeners('x'));
+        const received = new Promise<number[]>((resolve) => {
+          ipcMain.once('x', (_event, [text, value]: [string, number]) => {
+            resolve([text.length, value]);
+          });
+        });
+        await w.webContents.executeJavaScript(
+          `(${function () {
+            const { ipcRenderer } = require('electron');
+            ipcRenderer.send('x', ['x'.repeat(2 ** 29 - 24), 1]);
+          }})()`
+        );
+
+        expect(await received).to.deep.equal([2 ** 29 - 24, 1]);
+        expect(
+          await w.webContents.executeJavaScript(
+            `require('electron').ipcRenderer.sendSync('echo-large-sync', 'still alive')`
+          )
+        ).to.equal('still alive');
+      }
+    );
   });
 
   describe('ordering', () => {

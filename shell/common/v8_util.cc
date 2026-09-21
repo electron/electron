@@ -6,15 +6,19 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <optional>
 #include <utility>
 #include <vector>
 
 #include "base/base_switches.h"
 #include "base/containers/heap_array.h"
 #include "base/memory/raw_ptr.h"
+#include "base/memory/unsafe_shared_memory_region.h"
+#include "base/numerics/clamped_math.h"
 #include "gin/converter.h"
 #include "gin/public/wrapper_info.h"
 #include "mojo/public/cpp/base/big_buffer.h"
+#include "mojo/public/cpp/system/platform_handle.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/process_util.h"
@@ -42,6 +46,22 @@ namespace {
 constexpr uint8_t kNativeImageTag = 'i';
 constexpr uint8_t kTrailerOffsetTag = 0xFE;
 constexpr uint8_t kVersionTag = 0xFF;
+// For small allocations, we speculatively allocate a multiple of the requested
+// memory to avoid roundtrips. As the requested memory grows past
+// `kMaxSpeculativeSerializationBufferSize`, roundtrip cost is dwarfed by copy
+// speed, so we just allocate what V8 requests.
+constexpr size_t kMaxSpeculativeSerializationBufferSize = 64 * 1024 * 1024;
+
+std::optional<mojo_base::BigBuffer> CreateSharedMemoryBuffer(size_t size) {
+  auto region = base::UnsafeSharedMemoryRegion::Create(size);
+  if (!region.IsValid())
+    return std::nullopt;
+  mojo_base::internal::BigBufferSharedMemoryRegion shared_memory(
+      mojo::WrapUnsafeSharedMemoryRegion(std::move(region)), size);
+  if (!shared_memory.memory())
+    return std::nullopt;
+  return mojo_base::BigBuffer(std::move(shared_memory));
+}
 
 bool IsElectronApiWrapper(v8::Isolate* isolate, v8::Local<v8::Object> object) {
   if (!object->IsApiWrapper())
@@ -110,18 +130,26 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
     const size_t needed = size > 2 * capacity_ + 64 ? size - 64 : capacity_ + 1;
     if (use_transport_buffer_ &&
         needed > mojo_base::BigBuffer::kMaxInlineBytes) {
-      mojo_base::BigBuffer bigger(std::max(size, 4 * capacity_));
-      // Only kernel-zeroed shared memory is adopted; if the region could not
-      // be created BigBuffer falls back to uninitialized heap, so stay on ours.
-      if (bigger.storage_type() ==
-          mojo_base::BigBuffer::StorageType::kSharedMemory) {
-        base::span(bigger).first(capacity_).copy_from(written.first(capacity_));
-        transport_ = std::move(bigger);
-        heap_ = {};
-        capacity_ = transport_.size();
-        *actual_size = capacity_;
-        return transport_.data();
+      if (size > kMaxIpcSerializationBufferSize) {
+        serialization_limit_exceeded_ = true;
+        // nullptr tells V8 the allocation failed; it throws a DataCloneError.
+        return nullptr;
       }
+      size_t grown_capacity = size;
+      if (size <= kMaxSpeculativeSerializationBufferSize) {
+        grown_capacity = std::max(
+            size, std::min(kMaxIpcSerializationBufferSize,
+                           base::ClampMul(capacity_, size_t{4}).RawValue()));
+      }
+      auto bigger = CreateSharedMemoryBuffer(grown_capacity);
+      if (!bigger)
+        return nullptr;
+      base::span(*bigger).first(capacity_).copy_from(written.first(capacity_));
+      transport_ = std::move(*bigger);
+      heap_ = {};
+      capacity_ = transport_.size();
+      *actual_size = capacity_;
+      return transport_.data();
     }
     if (transport_.size() != 0) {
       base::span<const uint8_t> kept = written.first(capacity_);
@@ -188,8 +216,12 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
     bool wrote_value;
     if (!serializer_.WriteValue(isolate_->GetCurrentContext(), value)
              .To(&wrote_value)) {
-      isolate_->ThrowException(v8::Exception::Error(
-          gin::StringToV8(isolate_, "An object could not be cloned.")));
+      const char* message =
+          serialization_limit_exceeded_
+              ? "IPC message exceeds the maximum serialized size."
+              : "An object could not be cloned.";
+      isolate_->ThrowException(
+          v8::Exception::Error(gin::StringToV8(isolate_, message)));
       return false;
     }
     DCHECK(wrote_value);
@@ -215,6 +247,7 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
   mojo_base::BigBuffer transport_;
   size_t capacity_ = 0;
   bool use_transport_buffer_ = false;
+  bool serialization_limit_exceeded_ = false;
   v8::ValueSerializer serializer_;
 };
 

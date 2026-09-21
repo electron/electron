@@ -8,6 +8,7 @@ source_set("serialized_value") {
   include_dirs = [ "//electron" ]
   public_deps = [
     "//base",
+    "//base/allocator/partition_allocator:partition_alloc",
     "//mojo/public/cpp/base",
   ]
 }
