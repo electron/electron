@@ -5,10 +5,13 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_BLINK_CONVERTER_H_
 #define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_BLINK_CONVERTER_H_
 
+#include <optional>
+
 #include "gin/converter.h"
 #include "third_party/blink/public/common/context_menu_data/context_menu_data.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/blink/public/common/messaging/cloneable_message.h"
+#include "third_party/blink/public/common/user_agent/user_agent_metadata.h"
 #include "third_party/blink/public/common/web_cache/web_cache_resource_type_stats.h"
 #include "third_party/blink/public/mojom/devtools/console_message.mojom-forward.h"
 #include "third_party/blink/public/mojom/loader/referrer.mojom-forward.h"
@@ -127,6 +130,34 @@ struct Converter<blink::CloneableMessage> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      blink::CloneableMessage* out);
+};
+
+template <>
+struct Converter<blink::UserAgentBrandVersion> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const blink::UserAgentBrandVersion& in);
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     blink::UserAgentBrandVersion* out);
+};
+
+template <>
+struct Converter<blink::UserAgentMetadata> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const blink::UserAgentMetadata& val);
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     blink::UserAgentMetadata* out);
+};
+
+template <>
+struct Converter<std::optional<blink::UserAgentMetadata>> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const std::optional<blink::UserAgentMetadata>& val);
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     std::optional<blink::UserAgentMetadata>* out);
 };
 
 template <>

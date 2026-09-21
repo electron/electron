@@ -1272,10 +1272,19 @@ Captures a snapshot of the page within `rect`. Omitting `rect` will capture the 
 
 #### `win.loadURL(url[, options])`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53519
+    description: "Added the `userAgentMetadata` option."
+```
+-->
+
 * `url` string
 * `options` Object (optional)
   * `httpReferrer` (string | [Referrer](structures/referrer.md)) (optional) - An HTTP Referrer URL.
   * `userAgent` string (optional) - A user agent originating the request.
+  * `userAgentMetadata` [UserAgentMetadata](structures/user-agent-metadata.md) (optional) - The user agent metadata.
   * `extraHeaders` string (optional) - Extra headers separated by "\n"
   * `postData` ([UploadRawData](structures/upload-raw-data.md) | [UploadFile](structures/upload-file.md))[] (optional)
   * `baseURLForDataURL` string (optional) - Base URL (with trailing path separator) for files to be loaded by the data URL. This is needed only if the specified `url` is a data URL and needs to load other files.

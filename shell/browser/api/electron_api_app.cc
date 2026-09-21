@@ -45,6 +45,7 @@
 #include "content/public/common/content_switches.h"
 #include "crypto/crypto_buildflags.h"
 #include "electron/mas.h"
+#include "gin/arguments.h"
 #include "media/audio/audio_manager.h"
 #include "net/dns/public/dns_over_https_config.h"
 #include "net/dns/public/dns_over_https_server_config.h"
@@ -80,6 +81,7 @@
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/login_item_settings_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -1670,8 +1672,58 @@ v8::Local<v8::Promise> App::ResolveProxy(gin::Arguments* args) {
   return handle;
 }
 
-void App::SetUserAgentFallback(const std::string& user_agent) {
-  ElectronBrowserClient::Get()->SetUserAgent(user_agent);
+void App::SetUserAgentFallback(gin::Arguments* args) {
+  std::string user_agent;
+  std::optional<blink::UserAgentMetadata> ua_metadata;
+  bool has_user_agent = false;
+  bool has_ua_metadata = false;
+  gin_helper::Dictionary opts;
+
+  const auto value = args->PeekNext();
+  if (!value.IsEmpty() && value->IsString() && args->GetNext(&user_agent)) {
+    has_user_agent = true;
+  } else if (!value.IsEmpty() && value->IsObject() && args->GetNext(&opts)) {
+    if (opts.Has("userAgent")) {
+      if (!opts.Get("userAgent", &user_agent)) {
+        args->ThrowTypeError("Expected options.userAgent to be a string");
+        return;
+      }
+      has_user_agent = true;
+    }
+    if (opts.Has("userAgentMetadata")) {
+      if (!opts.Get("userAgentMetadata", &ua_metadata)) {
+        args->ThrowTypeError(
+            "Expected options.userAgentMetadata to be an object");
+        return;
+      }
+      has_ua_metadata = true;
+    }
+    if (!has_user_agent && !has_ua_metadata) {
+      args->ThrowTypeError(
+          "Expected options to contain userAgent or userAgentMetadata");
+      return;
+    }
+  } else {
+    args->ThrowTypeError(
+        "Expected options to be a string or an object containing userAgent "
+        "or userAgentMetadata");
+    return;
+  }
+
+  if (has_user_agent)
+    ElectronBrowserClient::Get()->SetUserAgent(user_agent);
+  if (has_ua_metadata)
+    ElectronBrowserClient::Get()->SetUserAgentMetadata(std::move(ua_metadata));
+}
+
+void App::SetUserAgentMetadataFallback(
+    std::optional<blink::UserAgentMetadata> ua_metadata) {
+  ElectronBrowserClient::Get()->SetUserAgentMetadata(std::move(ua_metadata));
+}
+
+v8::Local<v8::Value> App::GetUserAgentMetadataFallback(v8::Isolate* isolate) {
+  return gin::ConvertToV8(isolate,
+                          ElectronBrowserClient::Get()->GetUserAgentMetadata());
 }
 
 #if BUILDFLAG(IS_WIN)
@@ -2055,8 +2107,12 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetProperty("runningUnderARM64Translation",
                    &App::IsRunningUnderARM64Translation)
 #endif
+      .SetMethod("setUserAgentFallback", &App::SetUserAgentFallback)
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)
+      .SetProperty("userAgentMetadataFallback",
+                   &App::GetUserAgentMetadataFallback,
+                   &App::SetUserAgentMetadataFallback)
       .SetMethod("configureHostResolver", &ConfigureHostResolver)
       .SetMethod("enableSandbox", &App::EnableSandbox)
       .SetMethod("setProxy", &App::SetProxy)

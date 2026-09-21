@@ -1500,12 +1500,23 @@ session.defaultSession.allowNTLMCredentialsForDomains('*example.com, *foobar.com
 session.defaultSession.allowNTLMCredentialsForDomains('*')
 ```
 
-#### `ses.setUserAgent(userAgent[, acceptLanguages])`
+#### `ses.setUserAgent(options[, acceptLanguages])`
 
-* `userAgent` string
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53519
+    description: "Added support for passing User-Agent metadata through an options object."
+```
+-->
+
+* `options` (Object | string) - If `options` is a string, it is interpreted as
+the user agent string.
+  * `userAgent` string
+  * `userAgentMetadata` [UserAgentMetadata](structures/user-agent-metadata.md) (optional)
 * `acceptLanguages` string (optional)
 
-Overrides the `userAgent` and `acceptLanguages` for this session.
+Overrides the `userAgent`, `acceptLanguages` and `userAgentMetadata` for this session.
 
 The `acceptLanguages` must be a comma separated ordered list of language codes, for
 example `"en-US,fr,de,ko,zh-CN,ja"`.
@@ -1523,6 +1534,44 @@ will be temporary.
 #### `ses.getUserAgent()`
 
 Returns `string` - The user agent for this session.
+
+#### `ses.setUserAgentMetadata([userAgentMetadata])`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53519
+```
+-->
+
+* `userAgentMetadata` [UserAgentMetadata](structures/user-agent-metadata.md) (optional)
+
+Overrides the user agent metadata reported as `navigator.userAgentData` for this
+session. Call it with no argument to remove the override and fall back to
+`app.userAgentMetadataFallback`.
+
+This doesn't affect existing `WebContents`; the metadata is read when a
+`WebContents` is created. A single `WebContents` can override it for itself with
+`webContents.setUserAgent({ userAgent, userAgentMetadata })`.
+
+The override applies to that `WebContents`' frames and their dedicated workers.
+Shared workers, service workers and cross-process iframes read the process-wide
+value, so `app.userAgentMetadataFallback` is the only level that reaches them.
+
+This changes `navigator.userAgentData` and the client hints Blink attaches to
+subresource requests. It does not change the `Sec-CH-UA*` headers on navigation
+requests.
+
+#### `ses.getUserAgentMetadata()`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/53519
+```
+-->
+
+Returns `UserAgentMetadata` - The user agent metadata for this session.
 
 #### `ses.setSSLConfig(config)`
 

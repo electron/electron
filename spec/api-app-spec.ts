@@ -2595,6 +2595,40 @@ describe('default behavior', () => {
       app.userAgentFallback = '';
       expect(app.userAgentFallback).to.equal(initialValue);
     });
+
+    it('should reject invalid options without changing the fallback', () => {
+      const userAgent = app.userAgentFallback;
+
+      expect(() => app.setUserAgentFallback(42 as any)).to.throw(
+        'Expected options to be a string or an object containing userAgent or userAgentMetadata'
+      );
+      expect(() => app.setUserAgentFallback({} as any)).to.throw(
+        'Expected options to contain userAgent or userAgentMetadata'
+      );
+      expect(app.userAgentFallback).to.equal(userAgent);
+    });
+  });
+
+  describe('user agent metadata fallback', () => {
+    afterEach(() => {
+      app.userAgentMetadataFallback = null as any;
+    });
+
+    it('should reject malformed metadata without clearing the fallback', () => {
+      const metadata = app.userAgentMetadataFallback;
+      metadata.platform = 'app-validation';
+      app.userAgentMetadataFallback = metadata;
+
+      expect(() =>
+        app.setUserAgentFallback({
+          userAgentMetadata: 42 as any
+        })
+      ).to.throw('Expected options.userAgentMetadata to be an object');
+      expect(() => {
+        app.userAgentMetadataFallback = [] as any;
+      }).to.throw();
+      expect(app.userAgentMetadataFallback.platform).to.equal('app-validation');
+    });
   });
 
   describe('login event', () => {

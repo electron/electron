@@ -737,6 +737,113 @@ bool Converter<blink::mojom::Referrer>::FromV8(v8::Isolate* isolate,
   return true;
 }
 
+// static
+v8::Local<v8::Value> Converter<blink::UserAgentBrandVersion>::ToV8(
+    v8::Isolate* isolate,
+    const blink::UserAgentBrandVersion& val) {
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  dict.Set("brand", ConvertToV8(isolate, val.brand));
+  dict.Set("version", ConvertToV8(isolate, val.version));
+  return gin::ConvertToV8(isolate, dict);
+}
+
+// static
+bool Converter<blink::UserAgentBrandVersion>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    blink::UserAgentBrandVersion* out) {
+  gin_helper::Dictionary dict;
+  if (!ConvertFromV8(isolate, val, &dict))
+    return false;
+
+  if (!dict.Get("brand", &out->brand)) {
+    return false;
+  }
+  if (!dict.Get("version", &out->version)) {
+    return false;
+  }
+  return true;
+}
+
+// static
+v8::Local<v8::Value> Converter<blink::UserAgentMetadata>::ToV8(
+    v8::Isolate* isolate,
+    const blink::UserAgentMetadata& val) {
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  dict.Set("brands", ConvertToV8(isolate, val.brand_version_list));
+  dict.Set("fullVersionList",
+           ConvertToV8(isolate, val.brand_full_version_list));
+  dict.Set("fullVersion", ConvertToV8(isolate, val.full_version));
+  dict.Set("platform", ConvertToV8(isolate, val.platform));
+  dict.Set("architecture", ConvertToV8(isolate, val.architecture));
+  dict.Set("platformVersion", ConvertToV8(isolate, val.platform_version));
+  dict.Set("model", ConvertToV8(isolate, val.model));
+  dict.Set("mobile", ConvertToV8(isolate, val.mobile));
+  dict.Set("bitness", ConvertToV8(isolate, val.bitness));
+  dict.Set("wow64", ConvertToV8(isolate, val.wow64));
+  dict.Set("formFactors", ConvertToV8(isolate, val.form_factors));
+  return gin::ConvertToV8(isolate, dict);
+}
+
+// static
+bool Converter<blink::UserAgentMetadata>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    blink::UserAgentMetadata* out) {
+  if (!val->IsObject() || val->IsArray() || val->IsFunction())
+    return false;
+
+  gin_helper::Dictionary dict;
+  if (!ConvertFromV8(isolate, val, &dict))
+    return false;
+
+  if ((dict.Has("brands") && !dict.Get("brands", &out->brand_version_list)) ||
+      (dict.Has("fullVersionList") &&
+       !dict.Get("fullVersionList", &out->brand_full_version_list)) ||
+      (dict.Has("fullVersion") &&
+       !dict.Get("fullVersion", &out->full_version)) ||
+      (dict.Has("platform") && !dict.Get("platform", &out->platform)) ||
+      (dict.Has("platformVersion") &&
+       !dict.Get("platformVersion", &out->platform_version)) ||
+      (dict.Has("architecture") &&
+       !dict.Get("architecture", &out->architecture)) ||
+      (dict.Has("model") && !dict.Get("model", &out->model)) ||
+      (dict.Has("mobile") && !dict.Get("mobile", &out->mobile)) ||
+      (dict.Has("bitness") && !dict.Get("bitness", &out->bitness)) ||
+      (dict.Has("wow64") && !dict.Get("wow64", &out->wow64)) ||
+      (dict.Has("formFactors") &&
+       !dict.Get("formFactors", &out->form_factors))) {
+    return false;
+  }
+  return true;
+}
+
+// static
+v8::Local<v8::Value> Converter<std::optional<blink::UserAgentMetadata>>::ToV8(
+    v8::Isolate* isolate,
+    const std::optional<blink::UserAgentMetadata>& val) {
+  return val ? Converter<blink::UserAgentMetadata>::ToV8(isolate, *val)
+             : v8::Null(isolate);
+}
+
+// static
+bool Converter<std::optional<blink::UserAgentMetadata>>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    std::optional<blink::UserAgentMetadata>* out) {
+  if (val->IsNullOrUndefined()) {
+    out->reset();
+    return true;
+  }
+
+  blink::UserAgentMetadata converted;
+  if (!Converter<blink::UserAgentMetadata>::FromV8(isolate, val, &converted))
+    return false;
+
+  out->emplace(std::move(converted));
+  return true;
+}
+
 v8::Local<v8::Value> Converter<blink::CloneableMessage>::ToV8(
     v8::Isolate* isolate,
     const blink::CloneableMessage& in) {
