@@ -19,10 +19,10 @@ already user-observable through back/forward behavior, and exposing it
 read-only lets embedders honor the intervention in custom history UI.
 
 diff --git a/content/browser/renderer_host/navigation_entry_impl.cc b/content/browser/renderer_host/navigation_entry_impl.cc
-index c2df360207322b057ec304f1a990ce90a968a388..7f508320a9e6a680be7fef791ff3d065a0fd77ef 100644
+index 83b871f22c2fb037b7a4f6a37e33d03904b89889..6439cfa547d4633e2214caa2c70bc3c9699a8ab4 100644
 --- a/content/browser/renderer_host/navigation_entry_impl.cc
 +++ b/content/browser/renderer_host/navigation_entry_impl.cc
-@@ -846,6 +846,10 @@ int64_t NavigationEntryImpl::GetMainFrameDocumentSequenceNumber() const {
+@@ -847,6 +847,10 @@ int64_t NavigationEntryImpl::GetMainFrameDocumentSequenceNumber() const {
    return frame_tree_->frame_entry->document_sequence_number();
  }
  
@@ -34,7 +34,7 @@ index c2df360207322b057ec304f1a990ce90a968a388..7f508320a9e6a680be7fef791ff3d065
    can_load_local_resources_ = allow;
  }
 diff --git a/content/browser/renderer_host/navigation_entry_impl.h b/content/browser/renderer_host/navigation_entry_impl.h
-index 863d846e6c28277c1705d6a6c5d338089a234fb7..caa5b5e9672deaae89a51c270330fafd5834aaea 100644
+index b4c070cd2a28a524f918eb52ea1e92e103b92273..899048c5dae9983a3a0738215a4234895a8626d5 100644
 --- a/content/browser/renderer_host/navigation_entry_impl.h
 +++ b/content/browser/renderer_host/navigation_entry_impl.h
 @@ -185,6 +185,7 @@ class CONTENT_EXPORT NavigationEntryImpl : public NavigationEntry {
