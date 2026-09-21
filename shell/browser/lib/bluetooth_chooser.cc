@@ -90,8 +90,6 @@ void BluetoothChooser::SetAdapterPresence(AdapterPresence presence) {
 }
 
 void BluetoothChooser::ShowDiscoveryState(DiscoveryState state) {
-  if (!api_web_contents_ || api_web_contents_->IsDestroyed())
-    return;
   bool idle_state = false;
   switch (state) {
     case DiscoveryState::FAILED_TO_START:
@@ -112,6 +110,14 @@ void BluetoothChooser::ShowDiscoveryState(DiscoveryState state) {
         refreshing_ = false;
       }
       break;
+  }
+
+  // Without a live wrapper nobody can answer the chooser; settle the request
+  // instead of leaving it pending.
+  if (!api_web_contents_ || api_web_contents_->IsDestroyed()) {
+    if (idle_state)
+      event_handler_.Run(content::BluetoothChooserEvent::CANCELLED, "");
+    return;
   }
 
   // The handler may run the callback synchronously, which runs
