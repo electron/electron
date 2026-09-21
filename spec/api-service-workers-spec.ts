@@ -1,4 +1,4 @@
-import { session, webContents, WebContents } from 'electron/main';
+import { session, webContents, type WebContents } from 'electron/main';
 
 import { expect } from 'chai';
 

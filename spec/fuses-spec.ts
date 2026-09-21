@@ -4,7 +4,7 @@ import { expect } from 'chai';
 
 import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
-import path = require('node:path');
+import * as path from 'node:path';
 
 import { ifdescribe, isTestingBindingAvailable, startRemoteControlApp } from './lib/spec-helpers';
 

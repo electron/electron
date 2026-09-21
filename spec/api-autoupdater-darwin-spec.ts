@@ -3,8 +3,9 @@ import { expect } from 'chai';
 import { setupUpdaterHarness, shouldRunUpdaterSpecs } from './lib/autoupdater-darwin-helpers';
 import { copyMacOSFixtureApp, unsignApp } from './lib/codesign-helpers';
 import { withTempDirectory } from './lib/fs-helpers';
-import { RoutedResponse } from './lib/http-server-helpers';
 import { ifdescribe, ifit } from './lib/spec-helpers';
+
+import type { RoutedResponse } from './lib/http-server-helpers';
 
 // The update lifecycle: checking, downloading, staging, installing and
 // relaunching. The rules for refusing or altering an update are in

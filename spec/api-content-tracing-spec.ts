@@ -1,11 +1,13 @@
-import { app, contentTracing, TraceConfig, TraceCategoriesAndOptions } from 'electron/main';
+import { app, contentTracing, type TraceConfig, type TraceCategoriesAndOptions } from 'electron/main';
 
 import { expect } from 'chai';
 
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { performance } from 'node:perf_hooks';
 import { setTimeout } from 'node:timers/promises';
+import * as vm from 'node:vm';
 
 import { ifdescribe } from './lib/spec-helpers';
 
@@ -204,8 +206,6 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
 
   describe('node trace categories', () => {
     it('captures performance.mark() as instant trace events', async function () {
-      const { performance } = require('node:perf_hooks');
-
       await contentTracing.startRecording({
         included_categories: ['node.perf.usertiming']
       });
@@ -224,8 +224,6 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
     });
 
     it('captures performance.measure() as nestable async begin/end trace events', async function () {
-      const { performance } = require('node:perf_hooks');
-
       await contentTracing.startRecording({
         included_categories: ['node.perf.usertiming']
       });
@@ -264,8 +262,6 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
     });
 
     it('captures multiple node categories simultaneously', async function () {
-      const vm = require('node:vm');
-
       await contentTracing.startRecording({
         included_categories: ['node.async_hooks', 'node.vm.script']
       });

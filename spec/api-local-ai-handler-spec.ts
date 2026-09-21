@@ -179,7 +179,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
   });
 
   describe('LanguageModel.create()', () => {
-    async function expectRejectedWithError(message: string | RegExp, options?: Object) {
+    async function expectRejectedWithError(message: string | RegExp, options?: object) {
       // Unwrap the error message because NotAllowedError won't serialize
       if (options) {
         await expect(
@@ -404,7 +404,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
   });
 
   describe('LanguageModel.prompt()', () => {
-    async function expectRejectedWithError(message: string | RegExp, prompt: string, options?: Object) {
+    async function expectRejectedWithError(message: string | RegExp, prompt: string, options?: object) {
       // Unwrap the error message because NotAllowedError won't serialize
       if (options) {
         await expect(
@@ -584,7 +584,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     const collectStream =
       'async (stream) => { const reader = stream.getReader(); let r = ""; while (true) { const { done, value } = await reader.read(); if (done) return r; r += value; } }';
 
-    async function expectRejectedWithError(message: string | RegExp, prompt: string, options?: Object) {
+    async function expectRejectedWithError(message: string | RegExp, prompt: string, options?: object) {
       const collectStreamFn = collectStream;
       // Unwrap the error message because NotAllowedError won't serialize
       if (options) {

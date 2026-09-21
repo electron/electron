@@ -5,7 +5,7 @@ import {
   app,
   Menu,
   MenuItem,
-  MenuItemConstructorOptions
+  type MenuItemConstructorOptions
 } from 'electron/main';
 
 import { expect } from 'chai';
