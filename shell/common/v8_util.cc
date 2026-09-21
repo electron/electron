@@ -13,6 +13,7 @@
 #include "base/containers/heap_array.h"
 #include "base/memory/raw_ptr.h"
 #include "gin/converter.h"
+#include "gin/public/wrapper_info.h"
 #include "mojo/public/cpp/base/big_buffer.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
@@ -43,9 +44,19 @@ constexpr uint8_t kTrailerOffsetTag = 0xFE;
 constexpr uint8_t kVersionTag = 0xFF;
 
 bool IsElectronApiWrapper(v8::Isolate* isolate, v8::Local<v8::Object> object) {
-  return object->IsApiWrapper() &&
-         v8::Object::Unwrap<v8::Object::Wrappable>(isolate, object,
-                                                   kElectronWrappableTagRange);
+  if (!object->IsApiWrapper())
+    return false;
+  // The serializer sees Blink, Node and gin wrappers too, so unwrap with the
+  // generic range and check the type info rather than probing with our tags.
+  auto* wrappable = v8::Object::Unwrap<v8::Object::Wrappable>(
+      isolate, object, v8::kObjectWrappableTagRange);
+  if (!wrappable)
+    return false;
+  const v8::Object::WrapperTypeInfo* info = wrappable->GetWrapperTypeInfo();
+  if (!info || info->type_id != gin::kEmbedderNativeGin)
+    return false;
+  return kElectronWrappableTagRange.Contains(static_cast<v8::CppHeapPointerTag>(
+      static_cast<const gin::WrapperInfo*>(info)->pointer_tag));
 }
 
 }  // namespace
