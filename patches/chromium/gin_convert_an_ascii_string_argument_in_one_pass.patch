@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Attard <sattard@anthropic.com>
+Date: Tue, 22 Sep 2026 08:14:31 +0000
+Subject: gin: convert an ASCII string argument in one pass
+
+Converting a JavaScript string to std::string walked it twice, once to
+measure its UTF-8 length and once to write it. A flat one-byte string
+whose bytes are all ASCII is already its own UTF-8 encoding, so it can be
+copied straight out of V8's buffer; anything else falls through to the
+two-pass path unchanged.
+
+For a short key-sized argument this roughly halves the conversion cost.
+
+diff --git a/gin/converter.cc b/gin/converter.cc
+index 04bfeb77157ea168de6a382852e7163e0f8d9949..426d2e4d454abb18ec50bbb425e2be02987b96bf 100644
+--- a/gin/converter.cc
++++ b/gin/converter.cc
+@@ -6,8 +6,11 @@
+ 
+ #include <stdint.h>
+ 
++#include <algorithm>
+ #include <string_view>
+ 
++#include "base/compiler_specific.h"
++#include "base/containers/span.h"
+ #include "base/strings/string_util.h"
+ #include "base/time/time.h"
+ #include "v8/include/v8-array-buffer.h"
+@@ -154,6 +157,23 @@ bool Converter<std::string>::FromV8(Isolate* isolate,
+   if (!val->IsString())
+     return false;
+   Local<String> str = Local<String>::Cast(val);
++
++  // A flat one-byte string that is all ASCII is already valid UTF-8; copy it
++  // out directly instead of measuring and then transcoding.
++  {
++    String::ValueView view(isolate, str);
++    if (view.is_one_byte()) {
++      // SAFETY: v8::String::ValueView guarantees that data8() addresses
++      // length() bytes.
++      const auto bytes = UNSAFE_BUFFERS(
++          base::span(view.data8(), static_cast<size_t>(view.length())));
++      if (std::ranges::none_of(bytes, [](uint8_t c) { return c >= 0x80; })) {
++        out->assign(reinterpret_cast<const char*>(bytes.data()), bytes.size());
++        return true;
++      }
++    }
++  }
++
+   size_t length = str->Utf8LengthV2(isolate);
+   out->resize(length);
+   str->WriteUtf8V2(isolate, out->data(), length);
