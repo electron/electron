@@ -1,4 +1,4 @@
-import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
+import { BrowserWindow, session, ipcMain, app, type WebContents } from 'electron/main';
 
 import auth from 'basic-auth';
 import { expect } from 'chai';
@@ -9,10 +9,10 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
-import { emittedUntil } from './lib/events-helpers';
-import { HexColors, ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
-import { ifit, ifdescribe, defer, itremote, useRemoteContext, listen } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { emittedUntil } from './lib/events-helpers.ts';
+import { HexColors, ScreenCapture, hasCapturableScreen } from './lib/screen-helpers.ts';
+import { ifit, ifdescribe, defer, itremote, useRemoteContext, listen } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 declare let WebView: any;
 const features = process._linkedBinding('electron_common_features');
@@ -81,7 +81,7 @@ async function loadWebViewAndWaitForMessage(w: WebContents, attributes: Record<s
 }
 
 describe('<webview> tag', function () {
-  const fixtures = path.join(__dirname, 'fixtures');
+  const fixtures = path.join(import.meta.dirname, 'fixtures');
   const blankPageUrl = url.pathToFileURL(path.join(fixtures, 'pages', 'blank.html')).toString();
 
   function hideChildWindows(e: any, wc: WebContents) {
@@ -341,18 +341,18 @@ describe('<webview> tag', function () {
         });
         w.webContents.session.removeExtension('foo');
 
-        const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo');
+        const extensionPath = path.join(import.meta.dirname, 'fixtures', 'devtools-extensions', 'foo');
         await w.webContents.session.loadExtension(extensionPath, {
           allowFileAccess: true
         });
 
-        w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'webview-devtools.html'));
+        w.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'webview-devtools.html'));
         loadWebView(
           w.webContents,
           {
             nodeintegration: 'on',
             webpreferences: 'contextIsolation=no',
-            src: `file://${path.join(__dirname, 'fixtures', 'blank.html')}`
+            src: `file://${path.join(import.meta.dirname, 'fixtures', 'blank.html')}`
           },
           { openDevTools: true }
         );
@@ -570,7 +570,7 @@ describe('<webview> tag', function () {
       const loadPromise = once(w.webContents, 'did-finish-load');
       const readyPromise = once(ipcMain, 'webview-ready');
 
-      w.loadFile(path.join(__dirname, 'fixtures', 'webview', 'fullscreen', 'main.html'));
+      w.loadFile(path.join(import.meta.dirname, 'fixtures', 'webview', 'fullscreen', 'main.html'));
 
       const [, webview] = await attachPromise;
       await Promise.all([readyPromise, loadPromise]);
@@ -2094,7 +2094,7 @@ describe('<webview> tag', function () {
       itremote('does not emit when src is not changed', async () => {
         const webview = new WebView();
         document.body.appendChild(webview);
-        await setTimeout();
+        await new Promise((resolve) => requestAnimationFrame(resolve));
         const expectedErrorMessage =
           'The WebView must be attached to the DOM and the dom-ready event emitted before this method can be called.';
         expect(() => {

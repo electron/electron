@@ -1,7 +1,7 @@
 import * as cp from 'node:child_process';
 import * as path from 'node:path';
 
-import { ifdescribe } from './lib/spec-helpers';
+import { ifdescribe } from './lib/spec-helpers.ts';
 
 ifdescribe(process.platform === 'darwin' && process.mas)('Mac App Store build', () => {
   describe('private API usage', () => {

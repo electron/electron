@@ -2,7 +2,7 @@ import { systemPreferences } from 'electron/main';
 
 import { expect } from 'chai';
 
-import { ifdescribe, ifit } from './lib/spec-helpers';
+import { ifdescribe, ifit } from './lib/spec-helpers.ts';
 
 describe('systemPreferences module', () => {
   ifdescribe(['win32', 'linux'].includes(process.platform))('systemPreferences.getAccentColor', () => {

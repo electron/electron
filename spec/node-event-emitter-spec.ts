@@ -5,7 +5,7 @@ import { expect } from 'chai';
 import { EventEmitter as NodeEventEmitter, once } from 'node:events';
 import * as path from 'node:path';
 
-import { closeAllWindows } from './lib/window-helpers';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 // The native EventEmitter that sandboxed renderers use in place of Node's
 // `events` module. It is registered as a common binding, so the main process
@@ -441,7 +441,7 @@ describe('native EventEmitter (electron_common_events)', () => {
         show: false,
         webPreferences: {
           sandbox: true,
-          preload: path.join(__dirname, 'fixtures', 'module', 'preload-eventemitter.js')
+          preload: path.join(import.meta.dirname, 'fixtures', 'module', 'preload-eventemitter.js')
         }
       });
       w.loadURL('about:blank');

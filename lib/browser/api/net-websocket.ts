@@ -157,7 +157,7 @@ export class WebSocket extends EventTarget {
         // sized exactly to the message, so .buffer is safe to expose.
         payload = data.buffer as ArrayBuffer;
       } else if (this[kBinaryType] === 'blob') {
-        payload = new Blob([data]);
+        payload = new Blob([data as Buffer<ArrayBuffer>]);
       } else {
         payload = data;
       }

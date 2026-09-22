@@ -1,20 +1,18 @@
-import { BaseWindow } from 'electron';
+import { BaseWindow, BrowserWindow, app, ipcMain, nativeImage, sharedTexture } from 'electron';
 
 import { expect } from 'chai';
 
 import { randomUUID } from 'node:crypto';
 import * as path from 'node:path';
 
-import { ifdescribe } from './lib/spec-helpers';
-import { closeWindow } from './lib/window-helpers';
+import { ifdescribe } from './lib/spec-helpers.ts';
+import { closeWindow } from './lib/window-helpers.ts';
 
-const fixtures = path.resolve(__dirname, 'fixtures');
+const fixtures = path.resolve(import.meta.dirname, 'fixtures');
 
 // Tests only run properly on macOS arm64 for now
 const skip = process.platform !== 'darwin' || process.arch !== 'arm64';
 ifdescribe(!skip)('sharedTexture module', () => {
-  const { nativeImage } = require('electron');
-
   const debugSpec = false;
   const dirPath = path.join(fixtures, 'api', 'shared-texture');
   const osrPath = path.join(dirPath, 'osr.html');
@@ -22,8 +20,6 @@ ifdescribe(!skip)('sharedTexture module', () => {
   const targetImage = nativeImage.createFromPath(imagePath);
 
   describe('import shared texture produced by osr', () => {
-    const { app, BrowserWindow, sharedTexture, ipcMain } = require('electron');
-
     afterEach(async () => {
       ipcMain.removeAllListeners();
       for (const w of BaseWindow.getAllWindows()) {

@@ -1,9 +1,6 @@
 import { expect } from 'chai';
 import express from 'express';
 
-import * as http from 'node:http';
-import { AddressInfo } from 'node:net';
-
 import {
   getElectronExecutable,
   getMainJsFixturePath,
@@ -16,8 +13,11 @@ import {
   spawn,
   uninstallMsixPackage,
   unregisterExecutableWithIdentity
-} from './lib/msix-helpers';
-import { ifdescribe } from './lib/spec-helpers';
+} from './lib/msix-helpers.ts';
+import { ifdescribe } from './lib/spec-helpers.ts';
+
+import type * as http from 'node:http';
+import type { AddressInfo } from 'node:net';
 
 const ELECTRON_MSIX_ALIAS = 'ElectronMSIX.exe';
 const MAIN_JS_PATH = getMainJsFixturePath();

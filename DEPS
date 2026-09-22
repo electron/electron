@@ -163,7 +163,7 @@ hooks = [
     'action': [
       'python3',
       '-c',
-      'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["node", ".yarn/releases/yarn-4.12.0.cjs", "install", "--immutable"]);',
+      'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["node", ".yarn/releases/yarn-4.18.0.cjs", "install", "--immutable"]);',
     ],
   },
   {

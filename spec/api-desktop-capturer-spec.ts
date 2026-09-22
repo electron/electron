@@ -5,8 +5,8 @@ import { expect } from 'chai';
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
 
-import { ifdescribe, ifit } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { ifdescribe, ifit } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 function getSourceTypes(): ('window' | 'screen')[] {
   if (process.platform === 'linux') {
