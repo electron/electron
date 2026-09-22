@@ -27,3 +27,12 @@ trusted-reviewers:
     id: 114909645
     paths:
       - docs/**
+
+# Review hold: while a PR carries the hold label (and none of the skip
+# labels), faraday keeps its check pending until the configured number of
+# weekday wall-clock hours has passed since the label was last applied.
+hold-for-review:
+  label: hold-for-review
+  business-hours: 24
+  skip-labels: [fast-track]
+  timezone: America/Los_Angeles
