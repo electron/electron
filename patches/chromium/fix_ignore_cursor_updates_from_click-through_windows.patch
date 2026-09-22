@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Anton Izmailov <wapgear4@gmail.com>
-Date: Tue, 22 Sep 2026 15:34:26 +0200
+Date: Tue, 22 Sep 2026 16:19:36 +0200
 Subject: fix: ignore cursor updates from click-through windows
 
 Electron forwards mouse movement to click-through windows so their contents can observe hover and mouseleave events. Those windows must not select the shared desktop cursor, otherwise their cursor competes with the underlying window and flickers.
@@ -28,10 +28,18 @@ index 277febb199dac5fdb40b3f1fada416694808b137..b81eaaec93fb61bb4d4f0a1d14b8e4fa
    display::Screen* screen = display::Screen::Get();
    CHECK(screen);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc b/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
-index 33ed433801c887ffb9cd23298c64ad85e621508e..75b6859a31380b41e841fd497a8204ce9080a6c0 100644
+index 33ed433801c887ffb9cd23298c64ad85e621508e..2a364e66ac3be038c2b3ca46a76d25a1d490781e 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
-@@ -100,6 +100,8 @@
+@@ -83,6 +83,7 @@
+ #include "testing/gmock/include/gmock/gmock.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/blink/public/common/input/synthetic_web_input_event_builders.h"
++#include "third_party/blink/public/mojom/input/pointer_lock_result.mojom.h"
+ #include "third_party/blink/public/mojom/input/touch_event.mojom.h"
+ #include "ui/aura/client/aura_constants.h"
+ #include "ui/aura/client/window_parenting_client.h"
+@@ -100,6 +101,8 @@
  #include "ui/aura/window_tree_host.h"
  #include "ui/base/clipboard/clipboard.h"
  #include "ui/base/clipboard/test/clipboard_test_util.h"
@@ -40,7 +48,7 @@ index 33ed433801c887ffb9cd23298c64ad85e621508e..75b6859a31380b41e841fd497a8204ce
  #include "ui/base/ime/init/input_method_factory.h"
  #include "ui/base/ime/input_method.h"
  #include "ui/base/ime/mock_input_method.h"
-@@ -3081,6 +3083,34 @@ TEST_F(RenderWidgetHostViewAuraTest, CursorVisibilityChange) {
+@@ -3081,6 +3084,74 @@ TEST_F(RenderWidgetHostViewAuraTest, CursorVisibilityChange) {
    cursor_client.RemoveObserver(view_);
  }
  
@@ -70,6 +78,46 @@ index 33ed433801c887ffb9cd23298c64ad85e621508e..75b6859a31380b41e841fd497a8204ce
 +  EXPECT_EQ(1, cursor_client.calls_to_set_cursor());
 +  EXPECT_EQ(ui::mojom::CursorType::kCross,
 +            view_->GetNativeView()->GetCursor(gfx::Point()).type());
++}
++
++TEST_F(RenderWidgetHostViewAuraTest, IgnoreCursorUpdatesPreservesPointerLock) {
++  InitViewForFrame(nullptr);
++  ParentHostView(view_, parent_view_);
++  view_->SetBounds(gfx::Rect(60, 60, 100, 100));
++  view_->ShowWithVisibility(PageVisibilityState::kVisible);
++
++  aura::Window* root = view_->GetNativeView()->GetRootWindow();
++  aura::test::TestCursorClient cursor_client(root);
++
++  for (bool ignore_before_lock : {false, true}) {
++    SCOPED_TRACE(ignore_before_lock);
++    root->SetProperty(aura::client::kIgnoreCursorUpdatesKey,
++                      ignore_before_lock);
++
++    ASSERT_EQ(blink::mojom::PointerLockResult::kSuccess,
++              view_->LockPointer(false));
++    EXPECT_TRUE(view_->IsPointerLocked());
++    ASSERT_TRUE(cursor_client.IsCursorLocked());
++    EXPECT_EQ(&cursor_client, aura::client::GetCursorClient(root));
++    EXPECT_FALSE(cursor_client.IsCursorVisible());
++
++    root->SetProperty(aura::client::kIgnoreCursorUpdatesKey,
++                      !ignore_before_lock);
++    EXPECT_EQ(&cursor_client, aura::client::GetCursorClient(root));
++    EXPECT_TRUE(cursor_client.IsCursorLocked());
++    EXPECT_FALSE(cursor_client.IsCursorVisible());
++
++    view_->UnlockPointer();
++    EXPECT_FALSE(view_->IsPointerLocked());
++    EXPECT_FALSE(cursor_client.IsCursorLocked());
++    EXPECT_EQ(&cursor_client, aura::client::GetCursorClient(root));
++    EXPECT_TRUE(cursor_client.IsCursorVisible());
++  }
++
++  aura::Env::GetInstance()->SetLastMouseLocation(gfx::Point(110, 110));
++  cursor_client.reset_calls_to_set_cursor();
++  view_->DisplayCursor(ui::mojom::CursorType::kHand);
++  EXPECT_EQ(1, cursor_client.calls_to_set_cursor());
 +}
 +
  TEST_F(RenderWidgetHostViewAuraTest, UpdateCursorIfOverSelf) {
@@ -118,10 +166,10 @@ index 2b4fe6967420e8935a0ce6990fbc3bf3aa2d9887..50c34465c00e0bfe24140f98d9a1aa86
        aura::client::GetCursorClient(host_->window());
    if (cursor_client) {
 diff --git a/ui/views/widget/desktop_aura/desktop_native_widget_aura_unittest.cc b/ui/views/widget/desktop_aura/desktop_native_widget_aura_unittest.cc
-index 04cbbca4fbc3c074c2cb5d403a9d22a05d009e74..e0bb39dced340181bd5d2ba3902909db742103f7 100644
+index 04cbbca4fbc3c074c2cb5d403a9d22a05d009e74..d55892d025805d5c65f9153cdfdbb443f8632e0f 100644
 --- a/ui/views/widget/desktop_aura/desktop_native_widget_aura_unittest.cc
 +++ b/ui/views/widget/desktop_aura/desktop_native_widget_aura_unittest.cc
-@@ -149,6 +149,44 @@ TEST_F(DesktopNativeWidgetAuraTest, WidgetNotVisibleOnlyWindowTreeHostShown) {
+@@ -149,6 +149,98 @@ TEST_F(DesktopNativeWidgetAuraTest, WidgetNotVisibleOnlyWindowTreeHostShown) {
  #define MAYBE_GlobalCursorState GlobalCursorState
  #endif
  
@@ -157,9 +205,63 @@ index 04cbbca4fbc3c074c2cb5d403a9d22a05d009e74..e0bb39dced340181bd5d2ba3902909db
 +  widget_a.SetCursor(ui::mojom::CursorType::kIBeam);
 +  EXPECT_EQ(ui::mojom::CursorType::kIBeam, cursor_client->GetCursor().type());
 +
++  cursor_client->HideCursor();
++  cursor_client->LockCursor();
++  EXPECT_TRUE(cursor_client->IsCursorLocked());
++  EXPECT_FALSE(cursor_client->IsCursorVisible());
++
 +  root_b->SetProperty(aura::client::kIgnoreCursorUpdatesKey, false);
++  EXPECT_EQ(cursor_client, aura::client::GetCursorClient(root_b));
++  EXPECT_TRUE(cursor_client->IsCursorLocked());
++  EXPECT_FALSE(cursor_client->IsCursorVisible());
 +  widget_b.SetCursor(ui::mojom::CursorType::kCross);
++  EXPECT_EQ(ui::mojom::CursorType::kIBeam, cursor_client->GetCursor().type());
++  aura::client::GetCursorClient(root_b)->UnlockCursor();
++  cursor_client->ShowCursor();
++  EXPECT_FALSE(cursor_client->IsCursorLocked());
++  EXPECT_TRUE(cursor_client->IsCursorVisible());
 +  EXPECT_EQ(ui::mojom::CursorType::kCross, cursor_client->GetCursor().type());
++}
++
++TEST_F(DesktopNativeWidgetAuraTest, IgnoreCursorUpdatesIsolatedAcrossRoots) {
++  Widget normal;
++  normal.Init(CreateParams(Widget::InitParams::CLIENT_OWNS_WIDGET,
++                           Widget::InitParams::TYPE_WINDOW));
++  Widget overlay_a;
++  overlay_a.Init(CreateParams(Widget::InitParams::CLIENT_OWNS_WIDGET,
++                              Widget::InitParams::TYPE_WINDOW));
++  Widget overlay_b;
++  overlay_b.Init(CreateParams(Widget::InitParams::CLIENT_OWNS_WIDGET,
++                              Widget::InitParams::TYPE_WINDOW));
++
++  aura::Window* normal_root = normal.GetNativeView()->GetRootWindow();
++  aura::Window* root_a = overlay_a.GetNativeView()->GetRootWindow();
++  aura::Window* root_b = overlay_b.GetNativeView()->GetRootWindow();
++  auto* cursor_client = aura::client::GetCursorClient(normal_root);
++  ASSERT_TRUE(cursor_client);
++  ASSERT_EQ(cursor_client, aura::client::GetCursorClient(root_a));
++  ASSERT_EQ(cursor_client, aura::client::GetCursorClient(root_b));
++  cursor_client->UpdateSystemCursorVisibilityForTest(true);
++
++  root_a->SetProperty(aura::client::kIgnoreCursorUpdatesKey, true);
++  root_b->SetProperty(aura::client::kIgnoreCursorUpdatesKey, true);
++  normal.SetCursor(ui::mojom::CursorType::kHand);
++  overlay_a.SetCursor(ui::mojom::CursorType::kCross);
++  overlay_b.SetCursor(ui::mojom::CursorType::kIBeam);
++  EXPECT_EQ(ui::mojom::CursorType::kHand, cursor_client->GetCursor().type());
++
++  root_a->SetProperty(aura::client::kIgnoreCursorUpdatesKey, false);
++  overlay_a.SetCursor(ui::mojom::CursorType::kCross);
++  overlay_b.SetCursor(ui::mojom::CursorType::kIBeam);
++  EXPECT_EQ(ui::mojom::CursorType::kCross, cursor_client->GetCursor().type());
++
++  root_a->SetProperty(aura::client::kIgnoreCursorUpdatesKey, true);
++  overlay_a.CloseNow();
++  EXPECT_EQ(cursor_client, aura::client::GetCursorClient(root_b));
++  EXPECT_TRUE(root_b->GetProperty(aura::client::kIgnoreCursorUpdatesKey));
++  normal.SetCursor(ui::mojom::CursorType::kHand);
++  overlay_b.SetCursor(ui::mojom::CursorType::kIBeam);
++  EXPECT_EQ(ui::mojom::CursorType::kHand, cursor_client->GetCursor().type());
 +}
 +#endif
 +
