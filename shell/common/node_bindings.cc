@@ -23,6 +23,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/current_thread.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/trace_event/trace_event.h"
 #include "chrome/common/chrome_version.h"
@@ -548,6 +549,8 @@ NodeBindings::NodeBindings(BrowserEnvironment browser_env, uv_loop_t* loop)
 
 NodeBindings::~NodeBindings() {
   StopPolling();
+  if (base::CurrentThread::IsSet())
+    base::CurrentThread::Get()->RemoveTaskObserver(this);
 
   if (embed_thread_prepared_) {
     uv_sem_destroy(&embed_sem_);
@@ -598,19 +601,47 @@ void NodeBindings::StopPolling() {
   embed_closed_ = false;
   initialized_ = false;
   poll_deadline_ = 0;
+  ++polling_generation_;
 }
 
 void NodeBindings::set_uv_env(node::Environment* env) {
-  if (uv_env_) {
-    v8::HandleScope handle_scope(uv_env_->isolate());
-    uv_env_->context()->GetMicrotaskQueue()->RemoveMicrotasksCompletedCallback(
-        &OnMicrotasksCompleted, this);
-  }
+  if (uv_env_)
+    EnableDeadlineChecks(false);
   uv_env_ = env;
-  if (uv_env_) {
-    v8::HandleScope handle_scope(uv_env_->isolate());
-    uv_env_->context()->GetMicrotaskQueue()->AddMicrotasksCompletedCallback(
-        &OnMicrotasksCompleted, this);
+  if (uv_env_)
+    EnableDeadlineChecks(true);
+}
+
+void NodeBindings::EnableDeadlineChecks(bool enable) {
+  v8::Isolate* const isolate = uv_env_->isolate();
+  v8::HandleScope handle_scope(isolate);
+
+  if (enable)
+    base::CurrentThread::Get()->AddTaskObserver(this);
+  else if (base::CurrentThread::IsSet())
+    base::CurrentThread::Get()->RemoveTaskObserver(this);
+
+  // A worker's microtasks already run in a task observer registered before
+  // this one, and a pooled worklet's queue can go away under its environment.
+  if (browser_env_ != BrowserEnvironment::kWorker) {
+    v8::MicrotaskQueue* const queue = uv_env_->context()->GetMicrotaskQueue();
+    if (enable)
+      queue->AddMicrotasksCompletedCallback(&OnMicrotasksCompleted, this);
+    else if (queue)
+      queue->RemoveMicrotasksCompletedCallback(&OnMicrotasksCompleted, this);
+  }
+
+  // Under kExplicit a bare v8::Function::Call from a native event (a global
+  // shortcut, a menu action, a native module's own OS callback) is neither a
+  // task nor followed by a checkpoint.
+  if (browser_env_ == BrowserEnvironment::kBrowser ||
+      browser_env_ == BrowserEnvironment::kUtility) {
+    CHECK_EQ(MainThreadInstance(), enable ? nullptr : this);
+    MainThreadInstance() = enable ? this : nullptr;
+    if (enable)
+      isolate->AddCallCompletedCallback(&OnCallCompleted);
+    else
+      isolate->RemoveCallCompletedCallback(&OnCallCompleted);
   }
 }
 
@@ -1121,7 +1152,7 @@ void NodeBindings::StartPolling() {
   task_runner_ = base::SingleThreadTaskRunner::GetCurrentDefault();
 
   // Run uv loop for once to give the uv__io_poll a chance to add all events.
-  UvRunOnce();
+  UvRunOnce(polling_generation_);
 }
 
 void NodeBindings::SetAppCodeLoaded() {
@@ -1155,7 +1186,10 @@ void NodeBindings::JoinAppCode() {
   }
 }
 
-void NodeBindings::UvRunOnce() {
+void NodeBindings::UvRunOnce(uint64_t polling_generation) {
+  if (polling_generation != polling_generation_)
+    return;
+
   node::Environment* env = uv_env();
 
   // When doing navigation without restarting renderer process, it may happen
@@ -1166,12 +1200,20 @@ void NodeBindings::UvRunOnce() {
 
   v8::HandleScope handle_scope(env->isolate());
 
+  // A pooled worklet's environment can outlive its first context, whose
+  // microtask queue Blink frees when it disposes that global scope.
+  // TODO(codebytere): re-home the environment onto a surviving context
+  // instead of leaving its loop stopped.
+  v8::MicrotaskQueue* const microtask_queue =
+      env->context()->GetMicrotaskQueue();
+  if (!microtask_queue)
+    return;
+
   // Enter node context while dealing with uv events.
   v8::Context::Scope context_scope(env->context());
 
   {
-    util::ExplicitMicrotasksScope microtasks_scope(
-        env->context()->GetMicrotaskQueue());
+    util::ExplicitMicrotasksScope microtasks_scope(microtask_queue);
 
     if (browser_env_ != BrowserEnvironment::kBrowser)
       TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
@@ -1187,10 +1229,16 @@ void NodeBindings::UvRunOnce() {
       base::RunLoop().QuitWhenIdle();  // Quit from uv.
   }
 
-  // Tell the worker thread to continue polling.
+  if (polling_generation != polling_generation_)
+    return;
+
+  // Tell the worker thread to continue polling. A zero timeout comes straight
+  // back, so there is nothing to wake in that case.
+  uv_update_time(uv_loop_);
   poll_timeout_ = uv_backend_timeout(uv_loop_);
-  poll_deadline_ = poll_timeout_ < 0 ? std::numeric_limits<uint64_t>::max()
-                                     : uv_now(uv_loop_) + poll_timeout_;
+  poll_deadline_ = poll_timeout_ < 0    ? std::numeric_limits<uint64_t>::max()
+                   : poll_timeout_ == 0 ? 0
+                                        : uv_now(uv_loop_) + poll_timeout_;
   uv_sem_post(&embed_sem_);
 }
 
@@ -1199,26 +1247,43 @@ void NodeBindings::OnMicrotasksCompleted(v8::Isolate*, void* self) {
   static_cast<NodeBindings*>(self)->WakeupEmbedThreadIfLoopHasEarlierWork();
 }
 
+// static
+void NodeBindings::OnCallCompleted(v8::Isolate*) {
+  MainThreadInstance()->WakeupEmbedThreadIfLoopHasEarlierWork();
+}
+
+// static
+NodeBindings*& NodeBindings::MainThreadInstance() {
+  static NodeBindings* instance = nullptr;
+  return instance;
+}
+
+void NodeBindings::DidProcessTask(const base::PendingTask& pending_task) {
+  WakeupEmbedThreadIfLoopHasEarlierWork();
+}
+
 void NodeBindings::WakeupEmbedThreadIfLoopHasEarlierWork() {
-  // 0 when a handle, request or watcher change needs a uv_run() to take
-  // effect, otherwise the next timer; both relative to the cached uv_now().
-  int timeout = uv_backend_timeout(uv_loop_);
-  if (timeout < 0 || poll_deadline_ == 0)
+  if (poll_deadline_ == 0)
     return;
-  // A poll can overshoot its timeout (GetQueuedCompletionStatus rounds up to
-  // the system timer period), so a deadline that has passed does not mean the
-  // embed thread is back; only leave it be while it is still due in time.
+  uv_update_time(uv_loop_);
+  // 0 when a handle, request or watcher change needs a uv_run() to take
+  // effect, otherwise the time until the next timer.
+  const int timeout = uv_backend_timeout(uv_loop_);
+  // Only stay quiet while the poll is still due in time: once its deadline has
+  // passed on the loop clock it may still be asleep (the loop clock counts
+  // system sleep on macOS, and a poll can overshoot), so wake it anyway.
   const uint64_t now = uv_now(uv_loop_);
-  if (now < poll_deadline_ && now + timeout >= poll_deadline_)
+  if (timeout < 0 || (now < poll_deadline_ && now + timeout >= poll_deadline_))
     return;
   poll_deadline_ = 0;
   WakeupEmbedThread();
 }
 
-void NodeBindings::WakeupMainThread() {
+void NodeBindings::WakeupMainThread(uint64_t polling_generation) {
   DCHECK(task_runner_);
   task_runner_->PostTask(FROM_HERE, base::BindOnce(&NodeBindings::UvRunOnce,
-                                                   weak_factory_.GetWeakPtr()));
+                                                   weak_factory_.GetWeakPtr(),
+                                                   polling_generation));
 }
 
 void NodeBindings::WakeupEmbedThread() {
@@ -1228,6 +1293,8 @@ void NodeBindings::WakeupEmbedThread() {
 // static
 void NodeBindings::EmbedThreadRunner(void* arg) {
   auto* self = static_cast<NodeBindings*>(arg);
+  // Only StopPolling() changes this, and only once this thread has exited.
+  const uint64_t polling_generation = self->polling_generation_;
 
   while (true) {
     // Wait for the main loop to deal with events.
@@ -1245,7 +1312,7 @@ void NodeBindings::EmbedThreadRunner(void* arg) {
       break;
 
     // Deal with event in main thread.
-    self->WakeupMainThread();
+    self->WakeupMainThread(polling_generation);
   }
 }
 
