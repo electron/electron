@@ -372,6 +372,13 @@ class WebContents final : public ExclusiveAccessContext,
   // Notifies the web page that there is user interaction.
   void NotifyUserActivation();
 
+  // webContents.send(): resolves the primary main frame here rather than
+  // via the mainFrame accessor, so a send crosses into C++ once.
+  void SendToMainFrame(v8::Isolate* isolate,
+                       bool internal,
+                       const std::string& channel,
+                       v8::Local<v8::Value> args);
+
   v8::Local<v8::Promise> TakeHeapSnapshot(v8::Isolate* isolate,
                                           const base::FilePath& file_path);
   v8::Local<v8::Promise> GetProcessMemoryInfo(gin::Arguments* args);

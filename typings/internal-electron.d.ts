@@ -118,6 +118,7 @@ declare namespace Electron {
         Pick<Electron.BrowserWindowConstructorOptions, 'backgroundColor'>
     ): void;
     _send(internal: boolean, channel: string, args: any): boolean;
+    _sendToMainFrame(internal: boolean, channel: string, args: any): void;
     _sendInternal(channel: string, ...args: any[]): void;
     _printToPDF(options: any): Promise<Buffer>;
     _print(options: any, callback?: (success: boolean, failureReason: string) => void): void;
