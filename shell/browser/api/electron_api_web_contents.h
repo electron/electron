@@ -398,6 +398,13 @@ class WebContents final : public ExclusiveAccessContext,
   // Notifies the web page that there is user interaction.
   void NotifyUserActivation();
 
+  // webContents.send(): resolves the primary main frame here rather than
+  // via the mainFrame accessor, so a send crosses into C++ once.
+  void SendToMainFrame(v8::Isolate* isolate,
+                       bool internal,
+                       const std::string& channel,
+                       v8::Local<v8::Value> args);
+
   // The main frame's renderer-side API, or null with |promise| rejected when
   // there is no live render frame.
   mojom::ElectronFrame* MainFrameRenderer(v8::Isolate* isolate,

@@ -5031,6 +5031,22 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
   return handle;
 }
 
+void WebContents::SendToMainFrame(v8::Isolate* isolate,
+                                  bool internal,
+                                  const std::string& channel,
+                                  v8::Local<v8::Value> args) {
+  content::RenderFrameHost* const rfh = web_contents()->GetPrimaryMainFrame();
+  WebFrameMain* const frame = rfh ? WebFrameMain::From(isolate, rfh) : nullptr;
+  if (!frame) {
+    // A TypeError, as calling send on a null mainFrame was, so the JS
+    // wrapper rethrows it rather than logging it.
+    isolate->ThrowException(v8::Exception::TypeError(
+        gin::StringToV8(isolate, "webContents has no main frame to send to")));
+    return;
+  }
+  frame->Send(isolate, internal, channel, args);
+}
+
 mojom::ElectronFrame* WebContents::MainFrameRenderer(
     v8::Isolate* isolate,
     gin_helper::PromiseBase& promise) {
@@ -5723,6 +5739,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetProperty("mainFrame", &WebContents::MainFrame)
       .SetProperty("opener", &WebContents::Opener)
       .SetProperty("focusedFrame", &WebContents::FocusedFrame)
+      .SetMethod("_sendToMainFrame", &WebContents::SendToMainFrame)
       .SetMethod("_setOwnerWindow", &WebContents::SetOwnerBaseWindow)
       .Build();
 }
