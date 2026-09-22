@@ -25,11 +25,29 @@ WebContents.prototype.postMessage = function (...args) {
 };
 
 WebContents.prototype.send = function (channel, ...args) {
-  return this.mainFrame.send(channel, ...args);
+  if (typeof channel !== 'string') {
+    throw new TypeError('Missing required channel argument');
+  }
+
+  try {
+    return this._sendToMainFrame(false /* internal */, channel, args);
+  } catch (e) {
+    if (e instanceof TypeError) throw e;
+    console.error('Error sending from webContents: ', e);
+  }
 };
 
 WebContents.prototype._sendInternal = function (channel, ...args) {
-  return this.mainFrame._sendInternal(channel, ...args);
+  if (typeof channel !== 'string') {
+    throw new TypeError('Missing required channel argument');
+  }
+
+  try {
+    return this._sendToMainFrame(true /* internal */, channel, args);
+  } catch (e) {
+    if (e instanceof TypeError) throw e;
+    console.error('Error sending from webContents: ', e);
+  }
 };
 
 function getWebFrame(contents: Electron.WebContents, frame: number | [number, number]) {
