@@ -91,17 +91,24 @@ To verify whether Widevine is registered, you can use the
 [Encrypted Media Extensions API][eme]:
 
 ```js
-const config = [{
-  initDataTypes: ['cenc'],
-  videoCapabilities: [{
-    contentType: 'video/webm; codecs="vp8"'
-  }],
-  audioCapabilities: [{
-    contentType: 'audio/webm; codecs="opus"'
-  }]
-}]
+const config = [
+  {
+    initDataTypes: ['cenc'],
+    videoCapabilities: [
+      {
+        contentType: 'video/webm; codecs="vp8"'
+      }
+    ],
+    audioCapabilities: [
+      {
+        contentType: 'audio/webm; codecs="opus"'
+      }
+    ]
+  }
+]
 
-navigator.requestMediaKeySystemAccess('com.widevine.alpha', config)
+navigator
+  .requestMediaKeySystemAccess('com.widevine.alpha', config)
   .then(() => {
     console.log('Widevine is available')
   })
