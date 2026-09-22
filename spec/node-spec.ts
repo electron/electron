@@ -161,7 +161,7 @@ describe('node feature', () => {
 
       itremote('works when sending a message to a process forked with the --eval argument', async () => {
         const source = "process.on('message', (message) => { process.send(message) })";
-        const forked = childProcess.fork('--eval', [source]);
+        const forked = require('node:child_process').fork('--eval', [source]);
         const message = new Promise((resolve) => forked.once('message', resolve));
         forked.send('hello');
         const msg = await message;
