@@ -7,7 +7,6 @@ electron.exe
 electron_wer.dll
 ffmpeg.dll
 icudtl.dat
-dxil.dll
 dxcompiler.dll
 locales/af.pak
 locales/am.pak
