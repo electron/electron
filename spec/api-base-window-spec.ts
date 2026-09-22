@@ -344,6 +344,20 @@ describe('BaseWindow module', () => {
         expect(bounds).to.deep.equal({ x: 441, y: 225, width: 500, height: 401 });
       });
 
+      it('throws on non-finite or out-of-range bounds', () => {
+        const before = w.getBounds();
+        const bad = [
+          { x: Number.NaN, y: 0, width: 100, height: 100 },
+          { x: Number.POSITIVE_INFINITY, y: 0, width: 100, height: 100 },
+          { x: Number.NEGATIVE_INFINITY, y: 0, width: 100, height: 100 },
+          { x: -1e10, y: -1e10, width: 100, height: 100 }
+        ];
+        for (const bounds of bad) {
+          expect(() => w.setBounds(bounds)).to.throw(/conversion failure/);
+        }
+        expectBoundsEqual(w.getBounds(), before);
+      });
+
       it('does not emit the resize event for move-only changes', async () => {
         const { x, y, width, height } = w.getBounds();
 
