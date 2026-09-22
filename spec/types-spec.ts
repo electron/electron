@@ -1,5 +1,9 @@
 import { expect } from 'chai';
 
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+
 describe('bundled @types/node', () => {
   it('should match the major version of bundled node', () => {
     expect(require('../npm/package.json').dependencies).to.have.property('@types/node');

@@ -10,8 +10,8 @@ import * as http from 'node:http';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { ifdescribe, ifit, listen } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { ifdescribe, ifit, listen } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('shell module', () => {
   describe('shell.openExternal()', () => {
@@ -155,7 +155,7 @@ describe('shell module', () => {
       }).to.throw('Failed to read shortcut link');
     });
 
-    const fixtures = path.resolve(__dirname, 'fixtures');
+    const fixtures = path.resolve(import.meta.dirname, 'fixtures');
     it('reads all properties of a shortcut', () => {
       const shortcut = shell.readShortcutLink(path.join(fixtures, 'assets', 'shortcut.lnk'));
       expect(shortcut).to.deep.equal(shortcutOptions);

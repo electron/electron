@@ -6,8 +6,8 @@ import { once } from 'node:events';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { ifdescribe } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { ifdescribe } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('nativeTheme module', () => {
   describe('nativeTheme.shouldUseDarkColors', () => {
@@ -69,7 +69,7 @@ describe('nativeTheme module', () => {
 
     it('should override the result of prefers-color-scheme CSS media query', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false, nodeIntegration: true } });
-      await w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      await w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
       await w.webContents.executeJavaScript(`
         window.matchMedia('(prefers-color-scheme: dark)')
           .addEventListener('change', () => require('electron').ipcRenderer.send('theme-change'))

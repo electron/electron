@@ -1,5 +1,5 @@
 import { clipboard } from 'electron/common';
-import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents } from 'electron/main';
+import { BrowserWindow, type WebFrameMain, webFrameMain, ipcMain, app, type WebContents } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -9,10 +9,10 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
-import { emittedNTimes } from './lib/events-helpers';
-import { containsText, readPDF } from './lib/pdf-helpers';
-import { defer, ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { emittedNTimes } from './lib/events-helpers.ts';
+import { containsText, readPDF } from './lib/pdf-helpers.ts';
+import { defer, ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -36,7 +36,7 @@ async function onceUnload(webContents: WebContents) {
 }
 
 describe('webFrameMain module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures');
+  const fixtures = path.resolve(import.meta.dirname, 'fixtures');
   const subframesPath = path.join(fixtures, 'sub-frames');
 
   const fileUrl = (filename: string) => url.pathToFileURL(path.join(subframesPath, filename)).href;

@@ -1,4 +1,11 @@
-import { net, protocol, session, ClientRequest, ClientRequestConstructorOptions, utilityProcess } from 'electron/main';
+import {
+  net,
+  protocol,
+  session,
+  type ClientRequest,
+  type ClientRequestConstructorOptions,
+  utilityProcess
+} from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -19,11 +26,11 @@ import {
   randomString,
   respondNTimes,
   respondOnce
-} from './lib/net-helpers';
-import { listen, defer, ifdescribe, isTestingBindingAvailable } from './lib/spec-helpers';
+} from './lib/net-helpers.ts';
+import { listen, defer, ifdescribe, isTestingBindingAvailable } from './lib/spec-helpers.ts';
 
-const utilityFixturePath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process', 'api-net-spec.js');
-const fixturesPath = path.resolve(__dirname, 'fixtures');
+const utilityFixturePath = path.resolve(import.meta.dirname, 'fixtures', 'api', 'utility-process', 'api-net-spec.js');
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
 async function itUtility(name: string, fn?: Function, args?: { [key: string]: any }) {
   it(`${name} in utility process`, async () => {

@@ -1,21 +1,22 @@
-import { BrowserWindow, ipcMain, net, protocol, session, WebContents, webContents } from 'electron/main';
+import { BrowserWindow, ipcMain, net, protocol, session, type WebContents, webContents } from 'electron/main';
 
 import { expect } from 'chai';
-import * as WebSocket from 'ws';
+import { WebSocketServer } from 'ws';
 
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as http2 from 'node:http2';
-import { Socket } from 'node:net';
 import * as path from 'node:path';
 import * as qs from 'node:querystring';
 import { ReadableStream } from 'node:stream/web';
 import * as url from 'node:url';
 
-import { listen, defer, startRemoteControlApp } from './lib/spec-helpers';
+import { listen, defer, startRemoteControlApp } from './lib/spec-helpers.ts';
 
-const fixturesPath = path.resolve(__dirname, 'fixtures');
+import type { Socket } from 'node:net';
+
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
 describe('webRequest module', () => {
   const ses = session.defaultSession;
@@ -548,7 +549,7 @@ describe('webRequest module', () => {
       // Note that we need to do navigation every time after a protocol is
       // registered or unregistered, otherwise the new protocol won't be
       // recognized by current page when NetworkService is used.
-      await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'fetch.html'));
+      await contents.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'fetch.html'));
 
       try {
         ses.webRequest.onBeforeSendHeaders((details, callback) => {
@@ -869,10 +870,10 @@ describe('webRequest module', () => {
         res.setHeader('foo1', 'bar1');
         res.end('ok');
       });
-      let wss = new WebSocket.Server({ noServer: true });
+      let wss = new WebSocketServer({ noServer: true });
       wss.on('connection', function connection(ws) {
         ws.on('message', function incoming(message) {
-          if (message === 'foo') {
+          if (message.toString() === 'foo') {
             ws.send('bar');
           }
         });
@@ -940,7 +941,7 @@ describe('webRequest module', () => {
         server.close();
         server = null as unknown as http.Server;
         wss.close();
-        wss = null as unknown as WebSocket.Server;
+        wss = null as unknown as WebSocketServer;
         ses.webRequest.onBeforeRequest(null);
         ses.webRequest.onBeforeSendHeaders(null);
         ses.webRequest.onHeadersReceived(null);
@@ -960,7 +961,7 @@ describe('webRequest module', () => {
 
     it('authenticates a WebSocket via login event', async () => {
       const authServer = http.createServer();
-      const wssAuth = new WebSocket.Server({ noServer: true });
+      const wssAuth = new WebSocketServer({ noServer: true });
       const expected = 'Basic ' + Buffer.from('user:pass').toString('base64');
 
       wssAuth.on('connection', (ws) => {

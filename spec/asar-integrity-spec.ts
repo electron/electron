@@ -1,6 +1,6 @@
 import { getRawHeader } from '@electron/asar';
-import { flipFuses, FuseV1Config, FuseV1Options, FuseVersion } from '@electron/fuses';
-import { resedit } from '@electron/packager/dist/resedit';
+import { flipFuses, type FuseV1Config, FuseV1Options, FuseVersion } from '@electron/fuses';
+import { resedit } from '@electron/packager/dist/resedit.js';
 
 import { expect } from 'chai';
 
@@ -11,8 +11,8 @@ import * as originalFs from 'node:original-fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { copyApp } from './lib/fs-helpers';
-import { ifdescribe } from './lib/spec-helpers';
+import { copyApp } from './lib/fs-helpers.ts';
+import { ifdescribe } from './lib/spec-helpers.ts';
 
 const bufferReplace = (haystack: Buffer, needle: string, replacement: string, throwOnMissing = true): Buffer => {
   const needleBuffer = Buffer.from(needle);
@@ -131,7 +131,7 @@ describe('fuses', function () {
         });
 
         it('opens normally when unmodified', async () => {
-          const res = await launchApp([path.resolve(__dirname, 'fixtures/apps/hello/hello.js')]);
+          const res = await launchApp([path.resolve(import.meta.dirname, 'fixtures/apps/hello/hello.js')]);
           expect(res.code).to.equal(0);
           expect(res.signal).to.equal(null);
           expect(res.out).to.include('alive');

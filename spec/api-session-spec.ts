@@ -1,4 +1,13 @@
-import { app, session, BrowserWindow, net, ipcMain, Session, webFrameMain, WebFrameMain } from 'electron/main';
+import {
+  app,
+  session,
+  BrowserWindow,
+  net,
+  ipcMain,
+  type Session,
+  webFrameMain,
+  type WebFrameMain
+} from 'electron/main';
 
 import auth from 'basic-auth';
 import { expect } from 'chai';
@@ -9,14 +18,17 @@ import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { defer, ifit, listen, waitUntil } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { defer, ifit, listen, waitUntil } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
+
+const require = createRequire(import.meta.url);
 
 describe('session module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures');
+  const fixtures = path.resolve(import.meta.dirname, 'fixtures');
   const url = 'http://127.0.0.1';
 
   describe('session.defaultSession', () => {
@@ -123,7 +135,7 @@ describe('session module', () => {
       expect(c.value).to.equal(value);
     });
 
-    for (const sameSite of <const>['unspecified', 'no_restriction', 'lax', 'strict']) {
+    for (const sameSite of ['unspecified', 'no_restriction', 'lax', 'strict'] as const) {
       it(`sets cookies with samesite=${sameSite}`, async () => {
         const { cookies } = session.defaultSession;
         const value = 'hithere';
@@ -1373,7 +1385,7 @@ describe('session module', () => {
 
   describe('DownloadItem', () => {
     const mockPDF = Buffer.alloc(1024 * 1024 * 5);
-    const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf');
+    const downloadFilePath = path.join(import.meta.dirname, '..', 'fixtures', 'mock.pdf');
     const protocolName = 'custom-dl';
     const contentDisposition = 'inline; filename="mock.pdf"';
     let port: number;
@@ -1752,7 +1764,7 @@ describe('session module', () => {
       });
 
       it('can set options for the save dialog', async () => {
-        const filePath = path.join(__dirname, 'fixtures', 'mock.pdf');
+        const filePath = path.join(import.meta.dirname, 'fixtures', 'mock.pdf');
         const options = {
           window: null,
           title: 'title',
@@ -1790,7 +1802,7 @@ describe('session module', () => {
         it('does not display a save dialog and reports the done state as interrupted', async () => {
           const w = new BrowserWindow({ show: false });
           const willDownload = once(w.webContents.session, 'will-download');
-          w.webContents.downloadURL(`file://${path.join(__dirname, 'does-not-exist.txt')}`);
+          w.webContents.downloadURL(`file://${path.join(import.meta.dirname, 'does-not-exist.txt')}`);
           const [, item] = await willDownload;
           item.savePath = downloadFilePath;
           if (item.getState() === 'interrupted') {
@@ -1832,7 +1844,7 @@ describe('session module', () => {
   describe('ses.createInterruptedDownload(options)', () => {
     afterEach(closeAllWindows);
     it('can create an interrupted download item', async () => {
-      const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf');
+      const downloadFilePath = path.join(import.meta.dirname, '..', 'fixtures', 'mock.pdf');
       const options = {
         path: downloadFilePath,
         urlChain: ['http://127.0.0.1/'],
@@ -2302,7 +2314,7 @@ describe('session module', () => {
   describe('ses.setSSLConfig()', () => {
     it('can disable cipher suites', async () => {
       const ses = session.fromPartition('' + Math.random());
-      const fixturesPath = path.resolve(__dirname, 'fixtures');
+      const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
       const certPath = path.join(fixturesPath, 'certificates');
       const server = https.createServer(
         {

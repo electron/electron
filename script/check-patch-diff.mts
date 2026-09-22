@@ -1,9 +1,9 @@
 import { spawnSync } from 'node:child_process';
 import * as path from 'node:path';
 
-const srcPath = path.resolve(__dirname, '..', '..', '..');
-const patchExportFnPath = path.resolve(__dirname, 'export_all_patches.py');
-const configPath = path.resolve(__dirname, '..', 'patches', 'config.json');
+const srcPath = path.resolve(import.meta.dirname, '..', '..', '..');
+const patchExportFnPath = path.resolve(import.meta.dirname, 'export_all_patches.py');
+const configPath = path.resolve(import.meta.dirname, '..', 'patches', 'config.json');
 
 // Re-export all the patches to check if there were changes.
 const proc = spawnSync('python3', [patchExportFnPath, configPath, '--dry-run'], {

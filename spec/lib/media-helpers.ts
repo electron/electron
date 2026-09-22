@@ -1,4 +1,4 @@
-import { BrowserWindow } from 'electron/main';
+import type { BrowserWindow } from 'electron/main';
 
 export interface TabSourceCaptureResult {
   ok: boolean;
