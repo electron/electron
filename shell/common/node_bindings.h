@@ -196,7 +196,7 @@ class NodeBindings {
   void StopPolling();
 
   // Gets/sets the environment to wrap uv loop.
-  void set_uv_env(node::Environment* env) { uv_env_ = env; }
+  void set_uv_env(node::Environment* env);
   node::Environment* uv_env() const { return uv_env_; }
 
   [[nodiscard]] constexpr uv_loop_t* uv_loop() { return uv_loop_; }
@@ -212,8 +212,9 @@ class NodeBindings {
  protected:
   NodeBindings(BrowserEnvironment browser_env, uv_loop_t* loop);
 
-  // Called to poll events in new thread.
-  virtual void PollEvents() = 0;
+  // Called on the embed thread to wait for the loop's backend to become ready
+  // or |timeout| ms (-1 for no timeout), as computed by the main thread.
+  virtual void PollEvents(int timeout) = 0;
 
   // Make the main thread run libuv loop.
   void WakeupMainThread();
@@ -224,6 +225,13 @@ class NodeBindings {
  private:
   // Run the libuv loop for once.
   void UvRunOnce();
+
+  // The loop is only run from UvRunOnce(), so work given to it from any other
+  // JS entry (a Chromium task, a native event) is picked up by re-checking its
+  // next deadline once that JS settles and waking the embed thread if it is
+  // asleep on an older one. See libuv/libuv#3308.
+  static void OnMicrotasksCompleted(v8::Isolate* isolate, void* self);
+  void WakeupEmbedThreadIfLoopHasEarlierWork();
 
   // Which environment we are running.
   // "browser" / "renderer" / "worker" / "utility"; names process.type and
@@ -281,6 +289,14 @@ class NodeBindings {
 
   // Semaphore to wait for main loop in the embed thread.
   uv_sem_t embed_sem_;
+
+  // uv_backend_timeout() as of the end of the last UvRunOnce(), for the embed
+  // thread's next PollEvents(). Handed over through |embed_sem_|.
+  int poll_timeout_ = -1;
+
+  // Loop time (uv_now() base) at which that PollEvents() times out; 0 while
+  // the embed thread is parked in UvRunOnce() or has been woken. Main thread.
+  uint64_t poll_deadline_ = 0;
 
   // Environment that to wrap the uv loop.
   raw_ptr<node::Environment> uv_env_ = nullptr;

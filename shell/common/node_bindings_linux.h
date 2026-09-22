@@ -15,7 +15,7 @@ class NodeBindingsLinux : public NodeBindings {
 
  private:
   // NodeBindings
-  void PollEvents() override;
+  void PollEvents(int timeout) override;
 
   // Epoll to poll for uv's backend fd.
   int epoll_;

@@ -20,12 +20,7 @@ NodeBindingsLinux::NodeBindingsLinux(BrowserEnvironment browser_env,
   epoll_ctl(epoll_, EPOLL_CTL_ADD, backend_fd, &ev);
 }
 
-void NodeBindingsLinux::PollEvents() {
-  auto* const event_loop = uv_loop();
-
-  int timeout = uv_backend_timeout(event_loop);
-
-  // Wait for new libuv events.
+void NodeBindingsLinux::PollEvents(int timeout) {
   int r;
   do {
     struct epoll_event ev;

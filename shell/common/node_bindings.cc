@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -543,9 +544,6 @@ NodeBindings::NodeBindings(BrowserEnvironment browser_env, uv_loop_t* loop)
       uv_loop_{loop ? loop : &owned_loop_.emplace()} {
   if (owned_loop_)
     CHECK_EQ(0, uv_loop_init(uv_loop_));
-
-  // Interrupt embed polling when a handle is started.
-  uv_loop_configure(uv_loop_, UV_LOOP_INTERRUPT_ON_IO_CHANGE);
 }
 
 NodeBindings::~NodeBindings() {
@@ -599,6 +597,21 @@ void NodeBindings::StopPolling() {
   // Allow PrepareEmbedThread + StartPolling to restart.
   embed_closed_ = false;
   initialized_ = false;
+  poll_deadline_ = 0;
+}
+
+void NodeBindings::set_uv_env(node::Environment* env) {
+  if (uv_env_) {
+    v8::HandleScope handle_scope(uv_env_->isolate());
+    uv_env_->context()->GetMicrotaskQueue()->RemoveMicrotasksCompletedCallback(
+        &OnMicrotasksCompleted, this);
+  }
+  uv_env_ = env;
+  if (uv_env_) {
+    v8::HandleScope handle_scope(uv_env_->isolate());
+    uv_env_->context()->GetMicrotaskQueue()->AddMicrotasksCompletedCallback(
+        &OnMicrotasksCompleted, this);
+  }
 }
 
 void NodeBindings::RegisterBuiltinBindings() {
@@ -1163,11 +1176,9 @@ void NodeBindings::UvRunOnce() {
     if (browser_env_ != BrowserEnvironment::kBrowser)
       TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
 
-    // The embed thread is parked on |embed_sem_| until we post it below and
-    // re-reads uv_backend_timeout() before polling, so skip the interrupts.
-    uv_loop_interrupt_suspend(uv_loop_);
+    // The embed thread is parked on |embed_sem_| for the whole of this run.
+    poll_deadline_ = 0;
     int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
-    uv_loop_interrupt_resume(uv_loop_);
 
     if (browser_env_ != BrowserEnvironment::kBrowser)
       TRACE_EVENT_END0("devtools.timeline", "FunctionCall");
@@ -1177,7 +1188,31 @@ void NodeBindings::UvRunOnce() {
   }
 
   // Tell the worker thread to continue polling.
+  poll_timeout_ = uv_backend_timeout(uv_loop_);
+  poll_deadline_ = poll_timeout_ < 0 ? std::numeric_limits<uint64_t>::max()
+                                     : uv_now(uv_loop_) + poll_timeout_;
   uv_sem_post(&embed_sem_);
+}
+
+// static
+void NodeBindings::OnMicrotasksCompleted(v8::Isolate*, void* self) {
+  static_cast<NodeBindings*>(self)->WakeupEmbedThreadIfLoopHasEarlierWork();
+}
+
+void NodeBindings::WakeupEmbedThreadIfLoopHasEarlierWork() {
+  // 0 when a handle, request or watcher change needs a uv_run() to take
+  // effect, otherwise the next timer; both relative to the cached uv_now().
+  int timeout = uv_backend_timeout(uv_loop_);
+  if (timeout < 0 || poll_deadline_ == 0)
+    return;
+  // A poll can overshoot its timeout (GetQueuedCompletionStatus rounds up to
+  // the system timer period), so a deadline that has passed does not mean the
+  // embed thread is back; only leave it be while it is still due in time.
+  const uint64_t now = uv_now(uv_loop_);
+  if (now < poll_deadline_ && now + timeout >= poll_deadline_)
+    return;
+  poll_deadline_ = 0;
+  WakeupEmbedThread();
 }
 
 void NodeBindings::WakeupMainThread() {
@@ -1205,7 +1240,7 @@ void NodeBindings::EmbedThreadRunner(void* arg) {
     // this class is being destructed the PollEvents() would not be available
     // anymore. Because of it we must make sure we only invoke PollEvents()
     // when this class is alive.
-    self->PollEvents();
+    self->PollEvents(self->poll_timeout_);
     if (self->embed_closed_)
       break;
 
