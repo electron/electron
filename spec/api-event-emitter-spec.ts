@@ -7,9 +7,10 @@ import * as path from 'node:path';
 
 import { closeAllWindows } from './lib/window-helpers';
 
-// Native code does not call emit() for an event nobody listens to. Whether it
-// did is not something JavaScript can see, which is the point: these pin down
-// everything around it that JavaScript can see, for both native emitter bases.
+// Native code keeps track of which events have listeners and does not call
+// emit() for the rest. Whether it did is not something JavaScript can see, which
+// is the point: these pin down everything around it that JavaScript can see,
+// for both native emitter bases.
 describe('native event emission', () => {
   const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -194,15 +195,18 @@ describe('native event emission', () => {
       expect(seen).to.include('input-event');
     });
 
-    it('on EventEmitter.prototype still sees events without listeners', async () => {
-      const w = await loadWindow();
+    it('on EventEmitter.prototype, before the emitter first emits, still sees events without listeners', async () => {
       const seen: (string | symbol)[] = [];
+      let target: Electron.WebContents | undefined;
       const emit = EventEmitter.prototype.emit;
       EventEmitter.prototype.emit = function (this: EventEmitter, eventName: string | symbol, ...args: any[]) {
-        if (this === w.webContents) seen.push(eventName);
+        if (this === target) seen.push(eventName);
         return emit.call(this, eventName, ...args);
       };
       try {
+        const w = new BrowserWindow({ show: false });
+        target = w.webContents;
+        await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
         sendMouseMove(w);
       } finally {
         EventEmitter.prototype.emit = emit;

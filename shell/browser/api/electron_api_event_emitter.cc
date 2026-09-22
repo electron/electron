@@ -4,6 +4,10 @@
 
 #include "shell/browser/api/electron_api_event_emitter.h"
 
+#include <string>
+#include <tuple>
+#include <utility>
+
 #include "base/check.h"
 #include "base/no_destructor.h"
 #include "gin/converter.h"
@@ -17,11 +21,23 @@ v8::Global<v8::Object>* GetEventEmitterPrototypeReference() {
   return event_emitter_prototype.get();
 }
 
-// EventEmitter.prototype.emit as it was when the prototype was registered,
-// which is before any app code had a chance to replace it.
+// Node's EventEmitter.prototype.emit as it was when the prototype was
+// registered, which is before any app code had a chance to replace it.
 v8::Global<v8::Value>* GetOriginalEmitReference() {
   static base::NoDestructor<v8::Global<v8::Value>> original_emit;
   return original_emit.get();
+}
+
+v8::Local<v8::String> EmitKey(v8::Isolate* isolate) {
+  static const v8::Eternal<v8::String> key(
+      isolate, gin::StringToSymbol(isolate, "emit"));
+  return key.Get(isolate);
+}
+
+// The private slot of a wrapper that holds its EventListenerSet.
+v8::Local<v8::Private> ListenerSetKey(v8::Isolate* isolate) {
+  return v8::Private::ForApi(
+      isolate, gin::StringToSymbol(isolate, "electron.eventListenerSet"));
 }
 
 // The outcome of reading a property without running any JavaScript.
@@ -39,7 +55,7 @@ DataProperty ReadDataProperty(v8::Isolate* isolate,
                               v8::Local<v8::Object> object,
                               v8::Local<v8::String> key,
                               v8::Local<v8::Value>* value) {
-  static base::NoDestructor<v8::Eternal<v8::String>> value_key(
+  static const v8::Eternal<v8::String> value_key(
       isolate, gin::StringToSymbol(isolate, "value"));
 
   // Far longer than the chain of any native emitter.
@@ -65,10 +81,10 @@ DataProperty ReadDataProperty(v8::Isolate* isolate,
                .ToLocal(&descriptor) ||
           !descriptor->IsObject() ||
           !descriptor.As<v8::Object>()
-               ->HasOwnProperty(context, value_key->Get(isolate))
+               ->HasOwnProperty(context, value_key.Get(isolate))
                .FromMaybe(false) ||
           !descriptor.As<v8::Object>()
-               ->Get(context, value_key->Get(isolate))
+               ->Get(context, value_key.Get(isolate))
                .ToLocal(value)) {
         return DataProperty::kUnknown;
       }
@@ -79,6 +95,66 @@ DataProperty ReadDataProperty(v8::Isolate* isolate,
   return DataProperty::kUnknown;
 }
 
+// Whether |wrapper| gets its emit() from the registered prototype, with
+// nothing of its own in front of it, and Node's emit() behind that is still
+// the original. Anything else - an emit() assigned to the wrapper or to a
+// subclass, a patched EventEmitter.prototype.emit - sees every event whether
+// or not it has listeners.
+bool InheritsOriginalEmit(v8::Isolate* isolate,
+                          v8::Local<v8::Context> context,
+                          v8::Local<v8::Object> wrapper) {
+  if (GetEventEmitterPrototypeReference()->IsEmpty() ||
+      GetOriginalEmitReference()->IsEmpty()) {
+    return false;
+  }
+  v8::Local<v8::Object> registered =
+      GetEventEmitterPrototypeReference()->Get(isolate);
+
+  constexpr int kMaxChainLength = 16;
+  v8::Local<v8::Value> current = wrapper;
+  for (int i = 0; i < kMaxChainLength; i++) {
+    if (!current->IsObject() || current->IsProxy())
+      return false;
+    v8::Local<v8::Object> holder = current.As<v8::Object>();
+    if (holder->StrictEquals(registered)) {
+      // Node's own prototype is what the registered one inherits from.
+      v8::Local<v8::Value> node_prototype = holder->GetPrototype();
+      v8::Local<v8::Value> emit;
+      return node_prototype->IsObject() &&
+             ReadDataProperty(isolate, context, node_prototype.As<v8::Object>(),
+                              EmitKey(isolate),
+                              &emit) == DataProperty::kValue &&
+             emit->StrictEquals(GetOriginalEmitReference()->Get(isolate));
+    }
+    bool has_own = true;
+    if (!holder->HasOwnProperty(context, EmitKey(isolate)).To(&has_own) ||
+        has_own) {
+      return false;
+    }
+    current = holder->GetPrototype();
+  }
+  return false;
+}
+
+// The set that EventListenerSet::Link() tied to |emitter|, if any.
+electron::EventListenerSet* ListenerSetOf(v8::Isolate* isolate,
+                                          v8::Local<v8::Value> emitter) {
+  if (!emitter->IsObject())
+    return nullptr;
+  v8::Local<v8::Object> object = emitter.As<v8::Object>();
+  v8::Local<v8::Context> context;
+  v8::Local<v8::Value> slot;
+  if (!object->GetCreationContext(isolate).ToLocal(&context) ||
+      !object->GetPrivate(context, ListenerSetKey(isolate)).ToLocal(&slot) ||
+      !slot->IsExternal()) {
+    return nullptr;
+  }
+  return static_cast<electron::EventListenerSet*>(
+      slot.As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault));
+}
+
+// setEventEmitterPrototype(prototype): the object every native emitter
+// inherits from, itself inheriting from Node's EventEmitter.prototype.
 void SetEventEmitterPrototype(const v8::FunctionCallbackInfo<v8::Value>& info) {
   v8::Isolate* isolate = info.GetIsolate();
   if (info.Length() < 1 || !info[0]->IsObject()) {
@@ -90,14 +166,42 @@ void SetEventEmitterPrototype(const v8::FunctionCallbackInfo<v8::Value>& info) {
   v8::Local<v8::Object> prototype = info[0].As<v8::Object>();
   GetEventEmitterPrototypeReference()->Reset(isolate, prototype);
 
+  v8::Local<v8::Value> node_prototype = prototype->GetPrototype();
   v8::Local<v8::Value> emit;
-  if (prototype
-          ->Get(isolate->GetCurrentContext(),
-                gin::StringToSymbol(isolate, "emit"))
-          .ToLocal(&emit) &&
+  if (node_prototype->IsObject() &&
+      ReadDataProperty(isolate, isolate->GetCurrentContext(),
+                       node_prototype.As<v8::Object>(), EmitKey(isolate),
+                       &emit) == DataProperty::kValue &&
       emit->IsFunction()) {
     GetOriginalEmitReference()->Reset(isolate, emit);
   }
+}
+
+// setEventObserved(emitter, name, observed)
+void SetEventObserved(const v8::FunctionCallbackInfo<v8::Value>& info) {
+  v8::Isolate* isolate = info.GetIsolate();
+  if (info.Length() < 3 || !info[1]->IsString())
+    return;
+  electron::EventListenerSet* listeners = ListenerSetOf(isolate, info[0]);
+  std::string name;
+  if (listeners && gin::ConvertFromV8(isolate, info[1], &name))
+    listeners->SetObserved(name, info[2]->IsTrue());
+}
+
+// clearObservedEvents(emitter)
+void ClearObservedEvents(const v8::FunctionCallbackInfo<v8::Value>& info) {
+  if (info.Length() < 1)
+    return;
+  if (auto* listeners = ListenerSetOf(info.GetIsolate(), info[0]))
+    listeners->Clear();
+}
+
+// observeAllEvents(emitter)
+void ObserveAllEvents(const v8::FunctionCallbackInfo<v8::Value>& info) {
+  if (info.Length() < 1)
+    return;
+  if (auto* listeners = ListenerSetOf(info.GetIsolate(), info[0]))
+    listeners->ObserveAll();
 }
 
 void Initialize(v8::Local<v8::Object> exports,
@@ -106,6 +210,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   NODE_SET_METHOD(exports, "setEventEmitterPrototype",
                   &SetEventEmitterPrototype);
+  NODE_SET_METHOD(exports, "setEventObserved", &SetEventObserved);
+  NODE_SET_METHOD(exports, "clearObservedEvents", &ClearObservedEvents);
+  NODE_SET_METHOD(exports, "observeAllEvents", &ObserveAllEvents);
 }
 
 }  // namespace
@@ -117,56 +224,80 @@ v8::Local<v8::Object> GetEventEmitterPrototype(v8::Isolate* isolate) {
   return GetEventEmitterPrototypeReference()->Get(isolate);
 }
 
-bool MayHaveEventListeners(v8::Isolate* isolate,
-                           v8::Local<v8::Object> emitter,
-                           std::string_view name) {
-  // emit('error') throws when nothing handles it, so it is never a no-op.
-  if (name == "error")
-    return true;
+EventListenerSet::EventListenerSet() = default;
+EventListenerSet::~EventListenerSet() = default;
 
-  v8::Global<v8::Value>* original_emit = GetOriginalEmitReference();
-  v8::Local<v8::Context> context;
-  if (original_emit->IsEmpty() ||
-      !emitter->GetCreationContext(isolate).ToLocal(&context)) {
-    return true;
-  }
+void EventListenerSet::Link(v8::Isolate* isolate,
+                            v8::Local<v8::Object> wrapper) {
+  if (linked_)
+    return;
 
-  static base::NoDestructor<v8::Eternal<v8::String>> emit_key(
-      isolate, gin::StringToSymbol(isolate, "emit"));
-  static base::NoDestructor<v8::Eternal<v8::String>> events_key(
+  static const v8::Eternal<v8::String> events_key(
       isolate, gin::StringToSymbol(isolate, "_events"));
 
-  // Nothing below runs JavaScript, so asking has no effect of its own; when
-  // only JavaScript could answer, the answer is "yes" and emit() decides.
+  v8::Local<v8::Context> context;
+  if (!wrapper->GetCreationContext(isolate).ToLocal(&context))
+    return;
 
-  // The same lookup emit() does: with no `_events`, or no entry for |name| in
-  // it, emit() returns false without calling anything. An event that does have
-  // listeners is settled here, by the emitter's own `_events`.
+  // From here on() and friends can reach the set. Listeners added before now
+  // are picked up below; nothing in between runs JavaScript.
+  if (!wrapper
+           ->SetPrivate(context, ListenerSetKey(isolate),
+                        v8::External::New(isolate, this,
+                                          v8::kExternalPointerTypeTagDefault))
+           .FromMaybe(false)) {
+    return;
+  }
+  linked_ = true;
+
+  if (!InheritsOriginalEmit(isolate, context, wrapper)) {
+    observe_all_ = true;
+    return;
+  }
+
   v8::Local<v8::Value> events;
-  if (ReadDataProperty(isolate, context, emitter, events_key->Get(isolate),
+  if (ReadDataProperty(isolate, context, wrapper, events_key.Get(isolate),
                        &events) == DataProperty::kUnknown) {
-    return true;
+    observe_all_ = true;
+    return;
   }
-  if (!events.IsEmpty() && !events->IsUndefined()) {
-    if (!events->IsObject())
-      return true;
-    v8::Local<v8::Value> listeners;
-    const DataProperty found =
-        ReadDataProperty(isolate, context, events.As<v8::Object>(),
-                         gin::StringToSymbol(isolate, name), &listeners);
-    if (found == DataProperty::kUnknown ||
-        (found == DataProperty::kValue && !listeners->IsUndefined())) {
-      return true;
+  if (events.IsEmpty() || events->IsUndefined())
+    return;
+  v8::Local<v8::Array> names;
+  if (!events->IsObject() || events->IsProxy() ||
+      !events.As<v8::Object>()->GetOwnPropertyNames(context).ToLocal(&names)) {
+    observe_all_ = true;
+    return;
+  }
+  for (uint32_t i = 0; i < names->Length(); i++) {
+    v8::Local<v8::Value> name;
+    std::string utf8;
+    if (!names->Get(context, i).ToLocal(&name) || !name->IsString() ||
+        !gin::ConvertFromV8(isolate, name, &utf8)) {
+      observe_all_ = true;
+      return;
     }
+    names_.insert(std::move(utf8));
   }
+}
 
-  // Nothing listens. Anything other than Node's own emit() - replaced on the
-  // instance, on a subclass or on EventEmitter.prototype itself - still sees
-  // every event, so only the original can be skipped.
-  v8::Local<v8::Value> emit;
-  return ReadDataProperty(isolate, context, emitter, emit_key->Get(isolate),
-                          &emit) != DataProperty::kValue ||
-         !emit->StrictEquals(original_emit->Get(isolate));
+void EventListenerSet::Unlink(v8::Isolate* isolate,
+                              v8::Local<v8::Object> wrapper) {
+  if (!linked_)
+    return;
+  v8::Local<v8::Context> context;
+  if (wrapper->GetCreationContext(isolate).ToLocal(&context)) {
+    std::ignore = wrapper->SetPrivate(context, ListenerSetKey(isolate),
+                                      v8::Undefined(isolate));
+  }
+}
+
+void EventListenerSet::SetObserved(std::string_view name, bool observed) {
+  if (observed) {
+    names_.emplace(name);
+  } else if (auto it = names_.find(name); it != names_.end()) {
+    names_.erase(it);
+  }
 }
 
 }  // namespace electron
