@@ -2,14 +2,22 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <memory>
 #include <optional>
 #include <string>
+#include <tuple>
+#include <utility>
 
 #include "base/command_line.h"
 #include "base/dcheck_is_on.h"
 #include "base/logging.h"
+#include "base/memory/raw_ptr.h"
 #include "base/no_destructor.h"
 #include "base/power_monitor/power_monitor_source.h"
+#include "base/run_loop.h"
+#include "base/task/sequenced_task_runner.h"
+#include "base/time/time.h"
+#include "build/build_config.h"
 #include "chrome/browser/browser_process.h"
 #include "components/prefs/pref_service.h"
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
@@ -21,10 +29,20 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/uv_includes.h"
 #include "ui/accessibility/platform/ax_platform.h"
 #include "v8/include/v8.h"
+
+#if BUILDFLAG(IS_LINUX)
+#include <glib.h>
+#elif BUILDFLAG(IS_MAC)
+#include <CoreFoundation/CoreFoundation.h>
+#elif BUILDFLAG(IS_WIN)
+#include <windows.h>
+#endif
 
 #if DCHECK_IS_ON()
 namespace {
@@ -258,6 +276,114 @@ void SimulatePowerEvent(gin_helper::ErrorThrower thrower,
     thrower.ThrowTypeError("unknown power event");
 }
 
+// Starts a libuv timer from a plain Chromium task with no JavaScript on the
+// stack, the way a native module hooked into the message loop would, and
+// resolves once the loop has run it.
+v8::Local<v8::Promise> StartUvTimerFromTask(v8::Isolate* isolate,
+                                            int delay_ms) {
+  gin_helper::Promise<void> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  uv_loop_t* loop = node::Environment::GetCurrent(isolate)->event_loop();
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE,
+      base::BindOnce(
+          [](uv_loop_t* loop, int delay_ms, gin_helper::Promise<void> promise) {
+            auto* timer = new uv_timer_t;
+            timer->data = new gin_helper::Promise<void>(std::move(promise));
+            uv_update_time(loop);
+            uv_timer_init(loop, timer);
+            uv_timer_start(
+                timer,
+                [](uv_timer_t* timer) {
+                  std::unique_ptr<gin_helper::Promise<void>> promise(
+                      static_cast<gin_helper::Promise<void>*>(timer->data));
+                  promise->Resolve();
+                  uv_close(reinterpret_cast<uv_handle_t*>(timer),
+                           [](uv_handle_t* handle) {
+                             delete reinterpret_cast<uv_timer_t*>(handle);
+                           });
+                },
+                delay_ms, 0);
+          },
+          loop, delay_ms, std::move(promise)));
+  return handle;
+}
+
+// Runs a nested run loop that processes tasks for |ms| while the calling
+// JavaScript frame stays on the stack, like a synchronous dialog does.
+void RunNestedLoopForTesting(int ms) {
+  base::RunLoop loop(base::RunLoop::Type::kNestableTasksAllowed);
+  base::SequencedTaskRunner::GetCurrentDefault()->PostDelayedTask(
+      FROM_HERE, loop.QuitClosure(), base::Milliseconds(ms));
+  loop.Run();
+}
+
+// Calls |fn| from a platform event source rather than a Chromium task, the
+// way a native event enters JS: through EventEmitter emit as Electron's own
+// events do, or through a bare v8::Function::Call as a native module calling
+// napi_call_function() from its own OS callback does.
+struct NativeSourceCall {
+  raw_ptr<v8::Isolate> isolate;
+  v8::Global<v8::Context> context;
+  v8::Global<v8::Function> fn;
+  bool via_emit;
+
+  static void Run(void* data) {
+    std::unique_ptr<NativeSourceCall> call(
+        static_cast<NativeSourceCall*>(data));
+    v8::Isolate* isolate = call->isolate;
+    v8::HandleScope handle_scope(isolate);
+    v8::Local<v8::Context> context = call->context.Get(isolate);
+    v8::Context::Scope context_scope(context);
+    v8::Local<v8::Function> fn = call->fn.Get(isolate);
+    if (call->via_emit) {
+      v8::Local<v8::Object> holder = v8::Object::New(isolate);
+      holder->Set(context, gin::StringToV8(isolate, "run"), fn).Check();
+      gin_helper::CallMethod(isolate, holder, "run");
+    } else {
+      v8::MicrotasksScope microtasks_scope(
+          context, v8::MicrotasksScope::kDoNotRunMicrotasks);
+      std::ignore = fn->Call(context, v8::Undefined(isolate), 0, nullptr);
+    }
+  }
+};
+
+#if BUILDFLAG(IS_WIN)
+NativeSourceCall* g_native_source_call = nullptr;
+
+void CALLBACK RunNativeSourceCall(HWND, UINT, UINT_PTR id, DWORD) {
+  ::KillTimer(nullptr, id);
+  NativeSourceCall::Run(std::exchange(g_native_source_call, nullptr));
+}
+#endif
+
+void InvokeFromNativeSourceForTesting(v8::Isolate* isolate,
+                                      v8::Local<v8::Function> fn,
+                                      bool via_emit) {
+  auto* call = new NativeSourceCall{
+      isolate, v8::Global<v8::Context>(isolate, isolate->GetCurrentContext()),
+      v8::Global<v8::Function>(isolate, fn), via_emit};
+#if BUILDFLAG(IS_LINUX)
+  g_idle_add(
+      [](gpointer data) {
+        NativeSourceCall::Run(data);
+        return G_SOURCE_REMOVE;
+      },
+      call);
+#elif BUILDFLAG(IS_MAC)
+  CFRunLoopTimerContext timer_context = {0, call, nullptr, nullptr, nullptr};
+  CFRunLoopTimerRef timer = CFRunLoopTimerCreate(
+      kCFAllocatorDefault, CFAbsoluteTimeGetCurrent(), 0, 0, 0,
+      [](CFRunLoopTimerRef, void* data) { NativeSourceCall::Run(data); },
+      &timer_context);
+  CFRunLoopAddTimer(CFRunLoopGetMain(), timer, kCFRunLoopCommonModes);
+  CFRelease(timer);
+#elif BUILDFLAG(IS_WIN)
+  g_native_source_call = call;
+  ::SetTimer(nullptr, 0, USER_TIMER_MINIMUM, &RunNativeSourceCall);
+#endif
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -291,6 +417,10 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("commitPendingLocalStateWrites",
                  &CommitPendingLocalStateWrites);
   dict.SetMethod("clearHeldPromiseForTesting", &ClearHeldPromiseForTesting);
+  dict.SetMethod("startUvTimerFromTask", &StartUvTimerFromTask);
+  dict.SetMethod("runNestedLoopForTesting", &RunNestedLoopForTesting);
+  dict.SetMethod("invokeFromNativeSourceForTesting",
+                 &InvokeFromNativeSourceForTesting);
 }
 
 }  // namespace

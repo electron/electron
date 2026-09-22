@@ -1,0 +1,4 @@
+{
+  "name": "electron-test-uv-wake",
+  "main": "main.js"
+}
