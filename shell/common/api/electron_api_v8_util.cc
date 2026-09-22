@@ -3,13 +3,18 @@
 // found in the LICENSE file.
 
 #include <iterator>
+#include <string>
 #include <utility>
 
 #include "base/dcheck_is_on.h"
+#include "base/functional/bind.h"
+#include "base/location.h"
 #include "base/process/process.h"
 #include "base/run_loop.h"
+#include "base/task/sequenced_task_runner.h"
 #include "gin/arguments.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "url/origin.h"
 #include "v8/include/v8-profiler.h"
@@ -69,9 +74,42 @@ void TakeHeapSnapshot(v8::Isolate* isolate) {
   isolate->GetHeapProfiler()->TakeHeapSnapshot();
 }
 
-void RequestGarbageCollectionForTesting(v8::Isolate* isolate) {
-  isolate->RequestGarbageCollectionForTesting(
-      v8::Isolate::GarbageCollectionType::kFullGarbageCollection);
+// requestGarbageCollectionForTesting([{ execution: 'sync' | 'async' }])
+//
+// Forces a full garbage collection. The default ('sync') collects immediately,
+// which means the native stack is scanned conservatively: any word on it that
+// looks like a pointer into the C++ (cppgc) heap keeps that object alive, and a
+// stale pointer left behind by an earlier native frame is enough. That makes a
+// synchronous request unsuitable for asserting that an unreferenced C++ object
+// is reclaimed. With { execution: 'async' } the collection instead runs from a
+// fresh non-nestable task, where the stack holds no heap pointers and is not
+// scanned, and the returned promise resolves once it has finished. This mirrors
+// `gc({ type: 'major', execution: 'async' })` from --expose-gc.
+v8::Local<v8::Value> RequestGarbageCollectionForTesting(gin::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  std::string execution;
+  gin_helper::Dictionary options;
+  if (args->GetNext(&options))
+    options.Get("execution", &execution);
+  if (execution != "async") {
+    isolate->RequestGarbageCollectionForTesting(
+        v8::Isolate::GarbageCollectionType::kFullGarbageCollection);
+    return v8::Undefined(isolate);
+  }
+
+  gin_helper::Promise<void> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  base::SequencedTaskRunner::GetCurrentDefault()->PostNonNestableTask(
+      FROM_HERE,
+      base::BindOnce(
+          [](v8::Isolate* isolate, gin_helper::Promise<void> promise) {
+            isolate->RequestGarbageCollectionForTesting(
+                v8::Isolate::GarbageCollectionType::kFullGarbageCollection,
+                v8::StackState::kNoHeapPointers);
+            promise.Resolve();
+          },
+          base::Unretained(isolate), std::move(promise)));
+  return handle;
 }
 
 // This causes a fatal error by creating a circular extension dependency.
