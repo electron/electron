@@ -1,0 +1,240 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Anton Izmailov <wapgear4@gmail.com>
+Date: Tue, 22 Sep 2026 15:34:26 +0200
+Subject: fix: ignore cursor updates from click-through windows
+
+Electron forwards mouse movement to click-through windows so their contents can observe hover and mouseleave events. Those windows must not select the shared desktop cursor, otherwise their cursor competes with the underlying window and flickers.
+
+Add a per-root cursor suppression property and honor it in the event filter, Views cursor selection and renderer cursor updates. Keep cached cursor values and the CursorClient attached so forwarding and pointer-lock bookkeeping remain intact.
+
+These selection paths run inside Chromium before native cursor changes, so an Electron HWND subclass cannot suppress them all. Remove this patch when upstream Aura provides equivalent per-root cursor suppression. Regression coverage exercises all three paths, event delivery, restoration and shared cursor state.
+
+Fixes electron/electron#35414
+
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
+index 277febb199dac5fdb40b3f1fada416694808b137..b81eaaec93fb61bb4d4f0a1d14b8e4fabf1599cb 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura.cc
++++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
+@@ -3020,8 +3020,10 @@ void RenderWidgetHostViewAura::UpdateCursorIfOverSelf() {
+   if (!root_window)
+     return;
+ 
+-  if (ShouldSkipCursorUpdate())
++  if (root_window->GetProperty(aura::client::kIgnoreCursorUpdatesKey) ||
++      ShouldSkipCursorUpdate()) {
+     return;
++  }
+ 
+   display::Screen* screen = display::Screen::Get();
+   CHECK(screen);
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc b/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
+index 33ed433801c887ffb9cd23298c64ad85e621508e..75b6859a31380b41e841fd497a8204ce9080a6c0 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
++++ b/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
+@@ -100,6 +100,8 @@
+ #include "ui/aura/window_tree_host.h"
+ #include "ui/base/clipboard/clipboard.h"
+ #include "ui/base/clipboard/test/clipboard_test_util.h"
++#include "ui/base/cursor/cursor.h"
++#include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
+ #include "ui/base/ime/init/input_method_factory.h"
+ #include "ui/base/ime/input_method.h"
+ #include "ui/base/ime/mock_input_method.h"
+@@ -3081,6 +3083,34 @@ TEST_F(RenderWidgetHostViewAuraTest, CursorVisibilityChange) {
+   cursor_client.RemoveObserver(view_);
+ }
+ 
++TEST_F(RenderWidgetHostViewAuraTest,
++       IgnoreCursorUpdatesPreservesRendererCursor) {
++  InitViewForFrame(nullptr);
++  ParentHostView(view_, parent_view_);
++  view_->SetBounds(gfx::Rect(60, 60, 100, 100));
++  view_->ShowWithVisibility(PageVisibilityState::kVisible);
++
++  aura::Window* root = view_->GetNativeView()->GetRootWindow();
++  aura::test::TestCursorClient cursor_client(root);
++  aura::Env::GetInstance()->SetLastMouseLocation(gfx::Point(110, 110));
++
++  view_->DisplayCursor(ui::mojom::CursorType::kHand);
++  EXPECT_EQ(1, cursor_client.calls_to_set_cursor());
++
++  root->SetProperty(aura::client::kIgnoreCursorUpdatesKey, true);
++  cursor_client.reset_calls_to_set_cursor();
++  view_->DisplayCursor(ui::mojom::CursorType::kCross);
++  EXPECT_EQ(0, cursor_client.calls_to_set_cursor());
++  EXPECT_EQ(ui::mojom::CursorType::kCross,
++            view_->GetNativeView()->GetCursor(gfx::Point()).type());
++
++  root->SetProperty(aura::client::kIgnoreCursorUpdatesKey, false);
++  view_->UpdateCursorIfOverSelf();
++  EXPECT_EQ(1, cursor_client.calls_to_set_cursor());
++  EXPECT_EQ(ui::mojom::CursorType::kCross,
++            view_->GetNativeView()->GetCursor(gfx::Point()).type());
++}
++
+ TEST_F(RenderWidgetHostViewAuraTest, UpdateCursorIfOverSelf) {
+   InitViewForFrame(nullptr);
+   ParentHostView(view_, parent_view_);
+diff --git a/ui/aura/client/aura_constants.cc b/ui/aura/client/aura_constants.cc
+index 02e350a01857196658d72c926c6afb04c8a5b5fc..353c6976f2883de5d0d861cb7b240f044ac8fc78 100644
+--- a/ui/aura/client/aura_constants.cc
++++ b/ui/aura/client/aura_constants.cc
+@@ -50,6 +50,7 @@ DEFINE_UI_CLASS_PROPERTY_KEY(bool, kDrawAttentionKey, false)
+ DEFINE_UI_CLASS_PROPERTY_KEY(FocusClient*, kFocusClientKey, nullptr)
+ DEFINE_OWNED_UI_CLASS_PROPERTY_KEY(gfx::Rect, kHeadlessBoundsKey)
+ DEFINE_OWNED_UI_CLASS_PROPERTY_KEY(base::WeakPtr<Window>, kHostWindowKey)
++DEFINE_UI_CLASS_PROPERTY_KEY(bool, kIgnoreCursorUpdatesKey, false)
+ DEFINE_OWNED_UI_CLASS_PROPERTY_KEY(base::WeakPtr<Window>, kChildModalParentKey)
+ DEFINE_UI_CLASS_PROPERTY_KEY(ui::mojom::ModalType,
+                              kModalKey,
+diff --git a/ui/aura/client/aura_constants.h b/ui/aura/client/aura_constants.h
+index 0b58687d3981639c8bf882e16e477504749b0a42..971b691a33281da3ab2bea769d172a5640c1a57e 100644
+--- a/ui/aura/client/aura_constants.h
++++ b/ui/aura/client/aura_constants.h
+@@ -107,6 +107,10 @@ AURA_EXPORT extern const WindowProperty<gfx::Rect*>* const kHeadlessBoundsKey;
+ AURA_EXPORT extern const WindowProperty<base::WeakPtr<Window>*>* const
+     kHostWindowKey;
+ 
++// A property key set on a root window to suppress cursor shape updates from
++// its contents without disabling mouse events or changing cursor visibility.
++AURA_EXPORT extern const WindowProperty<bool>* const kIgnoreCursorUpdatesKey;
++
+ // The modal parent of a child modal window.
+ AURA_EXPORT extern const WindowProperty<base::WeakPtr<Window>*>* const
+     kChildModalParentKey;
+diff --git a/ui/views/widget/desktop_aura/desktop_native_widget_aura.cc b/ui/views/widget/desktop_aura/desktop_native_widget_aura.cc
+index 2b4fe6967420e8935a0ce6990fbc3bf3aa2d9887..50c34465c00e0bfe24140f98d9a1aa868dbc650d 100644
+--- a/ui/views/widget/desktop_aura/desktop_native_widget_aura.cc
++++ b/ui/views/widget/desktop_aura/desktop_native_widget_aura.cc
+@@ -1215,6 +1215,10 @@ void DesktopNativeWidgetAura::ScheduleLayout() {
+ 
+ void DesktopNativeWidgetAura::SetCursor(const ui::Cursor& cursor) {
+   cursor_ = cursor;
++  if (host_->window()->GetProperty(aura::client::kIgnoreCursorUpdatesKey)) {
++    return;
++  }
++
+   aura::client::CursorClient* cursor_client =
+       aura::client::GetCursorClient(host_->window());
+   if (cursor_client) {
+diff --git a/ui/views/widget/desktop_aura/desktop_native_widget_aura_unittest.cc b/ui/views/widget/desktop_aura/desktop_native_widget_aura_unittest.cc
+index 04cbbca4fbc3c074c2cb5d403a9d22a05d009e74..e0bb39dced340181bd5d2ba3902909db742103f7 100644
+--- a/ui/views/widget/desktop_aura/desktop_native_widget_aura_unittest.cc
++++ b/ui/views/widget/desktop_aura/desktop_native_widget_aura_unittest.cc
+@@ -149,6 +149,44 @@ TEST_F(DesktopNativeWidgetAuraTest, WidgetNotVisibleOnlyWindowTreeHostShown) {
+ #define MAYBE_GlobalCursorState GlobalCursorState
+ #endif
+ 
++#if BUILDFLAG(IS_WIN)
++TEST_F(DesktopNativeWidgetAuraTest, IgnoreCursorUpdatesPreservesSharedCursor) {
++  Widget widget_a;
++  widget_a.Init(CreateParams(Widget::InitParams::CLIENT_OWNS_WIDGET,
++                             Widget::InitParams::TYPE_WINDOW));
++  Widget widget_b;
++  widget_b.Init(CreateParams(Widget::InitParams::CLIENT_OWNS_WIDGET,
++                             Widget::InitParams::TYPE_WINDOW));
++
++  aura::Window* root_a = widget_a.GetNativeView()->GetRootWindow();
++  aura::Window* root_b = widget_b.GetNativeView()->GetRootWindow();
++  auto* cursor_client = aura::client::GetCursorClient(root_a);
++  ASSERT_EQ(cursor_client, aura::client::GetCursorClient(root_b));
++  ASSERT_TRUE(cursor_client);
++  cursor_client->UpdateSystemCursorVisibilityForTest(true);
++
++  widget_a.SetCursor(ui::mojom::CursorType::kHand);
++  EXPECT_EQ(ui::mojom::CursorType::kHand, cursor_client->GetCursor().type());
++
++  cursor_client->LockCursor();
++  root_b->SetProperty(aura::client::kIgnoreCursorUpdatesKey, true);
++  aura::client::GetCursorClient(root_b)->UnlockCursor();
++  EXPECT_FALSE(cursor_client->IsCursorLocked());
++
++  widget_b.SetCursor(ui::mojom::CursorType::kCross);
++  EXPECT_EQ(ui::mojom::CursorType::kHand, cursor_client->GetCursor().type());
++  EXPECT_EQ(ui::mojom::CursorType::kCross,
++            widget_b.GetNativeView()->GetCursor(gfx::Point()).type());
++
++  widget_a.SetCursor(ui::mojom::CursorType::kIBeam);
++  EXPECT_EQ(ui::mojom::CursorType::kIBeam, cursor_client->GetCursor().type());
++
++  root_b->SetProperty(aura::client::kIgnoreCursorUpdatesKey, false);
++  widget_b.SetCursor(ui::mojom::CursorType::kCross);
++  EXPECT_EQ(ui::mojom::CursorType::kCross, cursor_client->GetCursor().type());
++}
++#endif
++
+ // Verify that the cursor state is shared between two native widgets.
+ TEST_F(DesktopNativeWidgetAuraTest, MAYBE_GlobalCursorState) {
+   // Create two native widgets, each owning different root windows.
+diff --git a/ui/wm/core/compound_event_filter.cc b/ui/wm/core/compound_event_filter.cc
+index 90e274e73a7a9ced23e081cf9c689eb3e8e21ac9..369eb723f4d481bfe77b5b50e0acd26077beb6ae 100644
+--- a/ui/wm/core/compound_event_filter.cc
++++ b/ui/wm/core/compound_event_filter.cc
+@@ -101,6 +101,10 @@ void CompoundEventFilter::UpdateCursor(aura::Window* target,
+   // If drag and drop is in progress, let the drag drop client set the cursor
+   // instead of setting the cursor here.
+   aura::Window* root_window = target->GetRootWindow();
++  if (root_window->GetProperty(aura::client::kIgnoreCursorUpdatesKey)) {
++    return;
++  }
++
+   aura::client::DragDropClient* drag_drop_client =
+       aura::client::GetDragDropClient(root_window);
+   if (drag_drop_client && drag_drop_client->IsDragDropInProgress())
+diff --git a/ui/wm/core/compound_event_filter_unittest.cc b/ui/wm/core/compound_event_filter_unittest.cc
+index 33eae4a93e8c7f3b5d9328851536bac040a37d09..37c655093d556d069181638dac1282c55bd3c62e 100644
+--- a/ui/wm/core/compound_event_filter_unittest.cc
++++ b/ui/wm/core/compound_event_filter_unittest.cc
+@@ -5,10 +5,12 @@
+ #include "ui/wm/core/compound_event_filter.h"
+ 
+ #include "build/build_config.h"
++#include "ui/aura/client/aura_constants.h"
+ #include "ui/aura/client/cursor_client.h"
+ #include "ui/aura/env.h"
+ #include "ui/aura/test/aura_test_base.h"
+ #include "ui/aura/test/test_cursor_client.h"
++#include "ui/aura/test/test_window_delegate.h"
+ #include "ui/aura/test/test_windows.h"
+ #include "ui/aura/window.h"
+ #include "ui/aura/window_event_dispatcher.h"
+@@ -51,6 +53,39 @@ class ConsumeGestureEventFilter : public ui::EventHandler {
+ 
+ typedef aura::test::AuraTestBase CompoundEventFilterTest;
+ 
++TEST_F(CompoundEventFilterTest, IgnoreCursorUpdatesPreservesMouseEvents) {
++  CompoundEventFilter compound_filter;
++  aura::Env::GetInstance()->AddPreTargetHandler(&compound_filter);
++  aura::test::EventCountDelegate delegate;
++  auto window = aura::test::CreateTestWindow({.delegate = &delegate,
++                                              .parent = root_window(),
++                                              .bounds = {5, 5, 100, 100}});
++  window->Show();
++  aura::test::TestCursorClient cursor_client(root_window());
++  ui::test::EventGenerator generator(root_window());
++
++  generator.MoveMouseTo(10, 10);
++  EXPECT_GT(cursor_client.calls_to_set_cursor(), 0);
++
++  root_window()->SetProperty(aura::client::kIgnoreCursorUpdatesKey, true);
++  generator.MoveMouseTo(150, 150);
++  delegate.GetMouseMotionCountsAndReset();
++  cursor_client.reset_calls_to_set_cursor();
++
++  generator.MoveMouseTo(10, 10);
++  EXPECT_EQ(0, cursor_client.calls_to_set_cursor());
++  EXPECT_EQ("1 1 0", delegate.GetMouseMotionCountsAndReset());
++  EXPECT_EQ(&cursor_client, aura::client::GetCursorClient(root_window()));
++  EXPECT_TRUE(cursor_client.IsMouseEventsEnabled());
++
++  root_window()->SetProperty(aura::client::kIgnoreCursorUpdatesKey, false);
++  generator.MoveMouseTo(11, 10);
++  EXPECT_GT(cursor_client.calls_to_set_cursor(), 0);
++  EXPECT_EQ("0 1 0", delegate.GetMouseMotionCountsAndReset());
++
++  aura::Env::GetInstance()->RemovePreTargetHandler(&compound_filter);
++}
++
+ #if BUILDFLAG(IS_CHROMEOS)
+ // A keypress only hides the cursor on ChromeOS (crbug.com/304296).
+ TEST_F(CompoundEventFilterTest, CursorVisibilityChange) {

@@ -94,6 +94,7 @@
 #include "shell/browser/ui/win/electron_desktop_window_tree_host_win.h"
 #include "shell/common/color_util.h"
 #include "skia/ext/skia_utils_win.h"
+#include "ui/aura/client/aura_constants.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/win/msg_util.h"
 #endif
@@ -1392,6 +1393,10 @@ double NativeWindowViews::GetOpacity() const {
 
 void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
 #if BUILDFLAG(IS_WIN)
+  // Forwarded mouse moves must not select the shared desktop cursor.
+  GetNativeWindow()->GetRootWindow()->SetProperty(
+      aura::client::kIgnoreCursorUpdatesKey, ignore);
+
   LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
   if (ignore)
     ex_style |= (WS_EX_TRANSPARENT | WS_EX_LAYERED);
