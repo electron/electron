@@ -5,17 +5,20 @@ import { expect } from 'chai';
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
 
-import { ifdescribe, ifit } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { ifdescribe, ifit } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
+
+const require = createRequire(import.meta.url);
 
 const Module = require('node:module') as NodeJS.ModuleInternal;
 
 const nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS;
 
 describe('modules support', () => {
-  const fixtures = path.join(__dirname, 'fixtures');
+  const fixtures = path.join(import.meta.dirname, 'fixtures');
 
   describe('third-party module', () => {
     ifdescribe(nativeModulesEnabled)('echo', () => {
@@ -81,7 +84,7 @@ describe('modules support', () => {
 
     describe("require('electron/...')", () => {
       const utilityProcessFixturesPath = path.resolve(
-        __dirname,
+        import.meta.dirname,
         'fixtures',
         'api',
         'utility-process',

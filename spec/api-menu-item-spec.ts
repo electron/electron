@@ -5,17 +5,21 @@ import {
   app,
   Menu,
   MenuItem,
-  MenuItemConstructorOptions
+  type MenuItemConstructorOptions
 } from 'electron/main';
 
 import { expect } from 'chai';
 
 import { once } from 'node:events';
+import { createRequire } from 'node:module';
 
-/* oxlint-disable-next-line no-restricted-imports */
-import { roleList } from '../lib/browser/api/menu-item-roles';
-import { ifit, ifdescribe } from './lib/spec-helpers';
-import { closeAllWindows, cleanupWebContents } from './lib/window-helpers';
+import { ifit, ifdescribe } from './lib/spec-helpers.ts';
+import { closeAllWindows, cleanupWebContents } from './lib/window-helpers.ts';
+
+// See deprecate-spec.ts for why this is require()d rather than imported.
+const { roleList }: typeof import('../lib/browser/api/menu-item-roles.ts') = createRequire(import.meta.url)(
+  '../lib/browser/api/menu-item-roles.ts'
+);
 
 function keys<Key extends string, Value>(record: Record<Key, Value>) {
   return Object.keys(record) as Key[];

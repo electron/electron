@@ -16,11 +16,7 @@ from lib.config import verbose_mode_print
 ELECTRON_DIR = os.path.abspath(
   os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 )
-TS_NODE = os.path.join(ELECTRON_DIR, 'node_modules', '.bin', 'ts-node')
 SRC_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', '..'))
-
-if sys.platform in ['win32', 'cygwin']:
-  TS_NODE += '.cmd'
 
 @contextlib.contextmanager
 def scoped_cwd(path):
