@@ -2,7 +2,7 @@
 # Manual changes might be lost - proceed with caution!
 
 __metadata:
-  version: 8
+  version: 10
   cacheKey: 10c0
 
 "@actions/cache@npm:^4.0.3":
@@ -595,7 +595,6 @@ __metadata:
     tap-xunit: "npm:^2.4.1"
     temp: "npm:^0.9.4"
     ts-loader: "npm:^8.0.2"
-    ts-node: "npm:6.2.0"
     typescript: "npm:^5.8.3"
     url: "npm:^0.11.4"
     webpack: "npm:^5.104.1"
@@ -2427,12 +2426,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/ws@npm:^7.2.0":
-  version: 7.4.7
-  resolution: "@types/ws@npm:7.4.7"
+"@types/ws@npm:^8.18.1":
+  version: 8.18.1
+  resolution: "@types/ws@npm:8.18.1"
   dependencies:
     "@types/node": "npm:*"
-  checksum: 10c0/f1f53febd8623a85cef2652949acd19d83967e350ea15a851593e3033501750a1e04f418552e487db90a3d48611a1cff3ffcf139b94190c10f2fd1e1dc95ff10
+  checksum: 10c0/61aff1129143fcc4312f083bc9e9e168aa3026b7dd6e70796276dcfb2c8211c4292603f9c4864fae702f2ed86e4abd4d38aa421831c2fd7f856c931a481afbab
   languageName: node
   linkType: hard
 
@@ -2982,13 +2981,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"arrify@npm:^1.0.0":
-  version: 1.0.1
-  resolution: "arrify@npm:1.0.1"
-  checksum: 10c0/c35c8d1a81bcd5474c0c57fe3f4bad1a4d46a5fa353cedcff7a54da315df60db71829e69104b859dff96c5d68af46bd2be259fe5e50dc6aa9df3b36bea0383ab
-  languageName: node
-  linkType: hard
-
 "asn1@npm:^0.2.6, asn1@npm:~0.2.3":
   version: 0.2.6
   resolution: "asn1@npm:0.2.6"
@@ -3313,13 +3305,6 @@ __metadata:
   version: 1.1.2
   resolution: "buffer-from@npm:1.1.2"
   checksum: 10c0/124fff9d66d691a86d3b062eff4663fe437a9d9ee4b47b1b9e97f5a5d14f6d5399345db80f796827be7c95e70a8e765dd404b7c3ff3b3324f98e9b0c8826cc34
-  languageName: node
-  linkType: hard
-
-"buffer-from@npm:^1.1.0":
-  version: 1.1.1
-  resolution: "buffer-from@npm:1.1.1"
-  checksum: 10c0/a8c5057c985d8071e7a64988ad72f313e08eb3001eda76bead78b1f9afc7a07d20be9677eed0b5791727baeecd56360fe541bc5dd74feb40efe202a74584d533
   languageName: node
   linkType: hard
 
@@ -4255,13 +4240,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"diff@npm:^3.1.0":
-  version: 3.5.1
-  resolution: "diff@npm:3.5.1"
-  checksum: 10c0/28913ba64929561bd91e9aad8b6d5a2766d3c75451b8a2f7b2c0aa19f7edd32842da92ae23ae418a57362cc7a8673a26a9441d6ad896b0c64faf0a54c7ccffe6
-  languageName: node
-  linkType: hard
-
 "diff@npm:^4.0.2":
   version: 4.0.4
   resolution: "diff@npm:4.0.4"
@@ -4383,7 +4361,7 @@ __metadata:
     "@types/sinon": "npm:^9.0.4"
     "@types/uuid": "npm:^3.4.6"
     "@types/w3c-web-serial": "npm:^1.0.7"
-    "@types/ws": "npm:^7.2.0"
+    "@types/ws": "npm:^8.18.1"
     abstract-socket: "github:deepak1556/node-abstractsocket#928cc591decd12aff7dad96449da8afc29832c19"
     basic-auth: "npm:^2.0.1"
     busboy: "npm:^1.6.0"
@@ -4405,7 +4383,7 @@ __metadata:
     sinon: "npm:^9.0.1"
     uuid: "npm:^3.3.3"
     winreg: "npm:1.2.4"
-    ws: "npm:^7.5.10"
+    ws: "npm:^8.21.0"
     yargs: "npm:^16.0.3"
   languageName: unknown
   linkType: soft
@@ -6714,13 +6692,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"make-error@npm:^1.1.1":
-  version: 1.3.5
-  resolution: "make-error@npm:1.3.5"
-  checksum: 10c0/c79a4c8adff05521702c1c2a8903eca7c3e79188ff47059efe113d7ca6d65ce2e46091ae391682c4e564a3d50eed7fc8a08cef3e9f0db59dd8e19ee93fc51114
-  languageName: node
-  linkType: hard
-
 "map-stream@npm:0.0.7":
   version: 0.0.7
   resolution: "map-stream@npm:0.0.7"
@@ -8874,27 +8845,27 @@ __metadata:
 
 "resolve@patch:resolve@npm%3A^1.1.6#optional!builtin<compat/resolve>, resolve@patch:resolve@npm%3A^1.10.0#optional!builtin<compat/resolve>":
   version: 1.22.11
-  resolution: "resolve@patch:resolve@npm%3A1.22.11#optional!builtin<compat/resolve>::version=1.22.11&hash=c3c19d"
+  resolution: "resolve@patch:resolve@npm%3A1.22.11#optional!builtin<compat/resolve>::version=1.22.11&hash=9bd1a5"
   dependencies:
     is-core-module: "npm:^2.16.1"
     path-parse: "npm:^1.0.7"
     supports-preserve-symlinks-flag: "npm:^1.0.0"
   bin:
     resolve: bin/resolve
-  checksum: 10c0/ee5b182f2e37cb1165465e58c6abc797fec0a80b5ba3231607beb4677db0c9291ac010c47cf092b6daa2b7f518d69a0e21888e7e2b633f68d501a874212a8c63
+  checksum: 10c0/55f7a298977b1aacf6dbec6dcfc81100ba98675bced193b57d3ac58ced65acc40c3a38927853cea86b7f75edb3c20e1f099a09d48b0d8ceccc25d466993eec47
   languageName: node
   linkType: hard
 
 "resolve@patch:resolve@npm%3A^1.20.0#optional!builtin<compat/resolve>":
   version: 1.22.8
-  resolution: "resolve@patch:resolve@npm%3A1.22.8#optional!builtin<compat/resolve>::version=1.22.8&hash=c3c19d"
+  resolution: "resolve@patch:resolve@npm%3A1.22.8#optional!builtin<compat/resolve>::version=1.22.8&hash=9bd1a5"
   dependencies:
     is-core-module: "npm:^2.13.0"
     path-parse: "npm:^1.0.7"
     supports-preserve-symlinks-flag: "npm:^1.0.0"
   bin:
     resolve: bin/resolve
-  checksum: 10c0/0446f024439cd2e50c6c8fa8ba77eaa8370b4180f401a96abf3d1ebc770ac51c1955e12764cde449fde3fff480a61f84388e3505ecdbab778f4bef5f8212c729
+  checksum: 10c0/4bc6de64a713422234e0e773bff296767d77d6e545b98042ff90a796d356f2b131853f4fa1d54e2c415aa6efa6dc2eed5b3f501f63164f834619fda900e33b8e
   languageName: node
   linkType: hard
 
@@ -9430,16 +9401,6 @@ __metadata:
     ip-address: "npm:^10.0.1"
     smart-buffer: "npm:^4.2.0"
   checksum: 10c0/2805a43a1c4bcf9ebf6e018268d87b32b32b06fbbc1f9282573583acc155860dc361500f89c73bfbb157caa1b4ac78059eac0ef15d1811eb0ca75e0bdadbc9d2
-  languageName: node
-  linkType: hard
-
-"source-map-support@npm:^0.5.6":
-  version: 0.5.19
-  resolution: "source-map-support@npm:0.5.19"
-  dependencies:
-    buffer-from: "npm:^1.0.0"
-    source-map: "npm:^0.6.0"
-  checksum: 10c0/a232cb02dc5c2c048460dff3ca1a4c2aa44488822028932daff99b8707c8e4f87d2535dae319d65691c905096f2c06a2517793472634efb01f8a095661b9aa93
   languageName: node
   linkType: hard
 
@@ -10087,24 +10048,6 @@ __metadata:
   peerDependencies:
     typescript: "*"
   checksum: 10c0/ddbd5064a1e6d2f54c9e2415e8166f89e48e8b8c8f7f65f76dccbd443236a597bf4d9266a0f240b5e3ed25f7d65e9c83780e98a51ab733e7fb38cfd9e9c3b438
-  languageName: node
-  linkType: hard
-
-"ts-node@npm:6.2.0":
-  version: 6.2.0
-  resolution: "ts-node@npm:6.2.0"
-  dependencies:
-    arrify: "npm:^1.0.0"
-    buffer-from: "npm:^1.1.0"
-    diff: "npm:^3.1.0"
-    make-error: "npm:^1.1.1"
-    minimist: "npm:^1.2.0"
-    mkdirp: "npm:^0.5.1"
-    source-map-support: "npm:^0.5.6"
-    yn: "npm:^2.0.0"
-  bin:
-    ts-node: dist/bin.js
-  checksum: 10c0/373316eb3b5e761e8260e4a6dbd74c22d512bf72c1214d7b301e0d1f7c23d0454b00e6c88cceb4ad9f52c710a45e3686e5cb52ccefc3d05c98ea01c90a6b204c
   languageName: node
   linkType: hard
 
@@ -10818,6 +10761,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ws@npm:^8.21.0":
+  version: 8.21.0
+  resolution: "ws@npm:8.21.0"
+  peerDependencies:
+    bufferutil: ^4.0.1
+    utf-8-validate: ">=5.0.2"
+  peerDependenciesMeta:
+    bufferutil:
+      optional: true
+    utf-8-validate:
+      optional: true
+  checksum: 10c0/ef4a243476283fc49bc7550966c4af4aa0eef56273837211e700de3b664e08604a760cdddcb5ba43c049140e74ccfec5b0ee0bb439e08c2adf9138902fdde5f9
+  languageName: node
+  linkType: hard
+
 "xml-naming@npm:^0.3.0":
   version: 0.3.0
   resolution: "xml-naming@npm:0.3.0"
@@ -10957,13 +10915,6 @@ __metadata:
     buffer-crc32: "npm:~0.2.3"
     fd-slicer: "npm:~1.1.0"
   checksum: 10c0/f265002af7541b9ec3589a27f5fb8f11cf348b53cc15e2751272e3c062cd73f3e715bc72d43257de71bbaecae446c3f1b14af7559e8ab0261625375541816422
-  languageName: node
-  linkType: hard
-
-"yn@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "yn@npm:2.0.0"
-  checksum: 10c0/a52d74080871f22b3af8a6068d8579b86bf2bb81a968f6e406aa6e1ee85ba15f2e1d334184df6cd81024cec32a3cc8dc1f2f09ec4957b58b7b038b3cdef5cbd1
   languageName: node
   linkType: hard
 

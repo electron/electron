@@ -1,18 +1,19 @@
-import { BrowserWindow } from 'electron/main';
+import type { BrowserWindow } from 'electron/main';
 
 import { AssertionError } from 'chai';
-import { SuiteFunction, TestFunction } from 'mocha';
 
 import * as childProcess from 'node:child_process';
 import * as http from 'node:http';
-import * as http2 from 'node:http2';
-import * as https from 'node:https';
-import * as net from 'node:net';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 import { stripVTControlCharacters } from 'node:util';
 import * as v8 from 'node:v8';
+
+import type { SuiteFunction, TestFunction } from 'mocha';
+import type * as http2 from 'node:http2';
+import type * as https from 'node:https';
+import type * as net from 'node:net';
 
 const addOnly = <T>(fn: Function): T => {
   const wrapped = (...args: any[]) => {
@@ -92,7 +93,7 @@ class RemoteControlApp {
 }
 
 export async function startRemoteControlApp(extraArgs: string[] = [], options?: childProcess.SpawnOptionsWithoutStdio) {
-  const appPath = path.join(__dirname, '..', 'fixtures', 'apps', 'remote-control');
+  const appPath = path.join(import.meta.dirname, '..', 'fixtures', 'apps', 'remote-control');
   const appProcess = childProcess.spawn(process.execPath, [appPath, ...extraArgs], options);
   appProcess.stderr.on('data', (d) => {
     process.stderr.write(d);
@@ -240,6 +241,10 @@ export async function repeatedly<T>(fn: () => Promise<T>, opts?: { until?: (x: T
 }
 
 async function makeRemoteContext(opts?: any) {
+  // Resolved here rather than with a top-level import so that this file stays
+  // loadable in a utility process (see fixtures/api/utility-process/api-net-spec.js),
+  // whose 'electron/main' has no BrowserWindow export.
+  const { BrowserWindow } = await import('electron/main');
   const { webPreferences, setup, url = 'about:blank', ...rest } = opts ?? {};
   const w = new BrowserWindow({
     show: false,
@@ -276,10 +281,10 @@ async function runRemote(type: 'skip' | 'none' | 'only', name: string, fn: Funct
     const w = await getRemoteContext();
     const { ok, message } = await w.webContents.executeJavaScript(`(async () => {
       try {
-        const chai_1 = require('chai')
-        const promises_1 = require('node:timers/promises')
-        chai_1.use(require('chai-as-promised'))
-        chai_1.use(require('dirty-chai'))
+        const chai = require('chai')
+        chai.use(require('chai-as-promised'))
+        chai.use(require('dirty-chai'))
+        const { expect } = chai
         await (${fn})(...${JSON.stringify(args ?? [])})
         return {ok: true};
       } catch (e) {

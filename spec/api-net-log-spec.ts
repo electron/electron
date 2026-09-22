@@ -6,13 +6,17 @@ import * as ChildProcess from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
-import { Socket } from 'node:net';
+import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { ifit, listen } from './lib/spec-helpers';
+import { ifit, listen } from './lib/spec-helpers.ts';
 
-const appPath = path.join(__dirname, 'fixtures', 'api', 'net-log');
+import type { Socket } from 'node:net';
+
+const require = createRequire(import.meta.url);
+
+const appPath = path.join(import.meta.dirname, 'fixtures', 'api', 'net-log');
 const dumpFile = path.join(os.tmpdir(), 'net_log.json');
 const dumpFileDynamic = path.join(os.tmpdir(), 'net_log_dynamic.json');
 

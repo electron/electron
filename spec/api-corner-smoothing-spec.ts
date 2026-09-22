@@ -1,14 +1,14 @@
-import { NativeImage, nativeImage } from 'electron/common';
+import { type NativeImage, nativeImage } from 'electron/common';
 import { BrowserWindow } from 'electron/main';
 
 import { AssertionError, expect } from 'chai';
 
-import path = require('node:path');
+import * as path from 'node:path';
 
-import { createArtifact } from './lib/artifacts';
-import { closeAllWindows } from './lib/window-helpers';
+import { createArtifact } from './lib/artifacts.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
-const FIXTURE_PATH = path.resolve(__dirname, 'fixtures', 'api', 'corner-smoothing');
+const FIXTURE_PATH = path.resolve(import.meta.dirname, 'fixtures', 'api', 'corner-smoothing');
 
 /**
  * Rendered images may "match" but slightly differ due to rendering artifacts
@@ -99,7 +99,7 @@ async function pageCaptureTestRecipe(
 
     throw new AssertionError(
       `Actual image did not match expected reference image. Actual: "${artifactFileName}" in artifacts, Expected: "${path.relative(
-        path.resolve(__dirname, '..'),
+        path.resolve(import.meta.dirname, '..'),
         expectedImgPath
       )}" in source`
     );

@@ -7,11 +7,11 @@ import { once } from 'node:events';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { singleModifierCombinations } from './lib/accelerator-helpers';
-import { ifit } from './lib/spec-helpers';
-import { closeWindow } from './lib/window-helpers';
+import { singleModifierCombinations } from './lib/accelerator-helpers.ts';
+import { ifit } from './lib/spec-helpers.ts';
+import { closeWindow } from './lib/window-helpers.ts';
 
-const fixturesPath = path.resolve(__dirname, 'fixtures');
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
 describe('Menu module', function () {
   it('sets the correct class name on the prototype', () => {

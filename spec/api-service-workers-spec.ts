@@ -1,14 +1,14 @@
-import { session, webContents, WebContents } from 'electron/main';
+import { session, webContents, type WebContents } from 'electron/main';
 
 import { expect } from 'chai';
-import { v4 } from 'uuid';
 
+import { randomUUID } from 'node:crypto';
 import { on, once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as path from 'node:path';
 
-import { listen } from './lib/spec-helpers';
+import { listen } from './lib/spec-helpers.ts';
 
 const partition = 'service-workers-spec';
 
@@ -24,7 +24,7 @@ describe('session.serviceWorkers', () => {
   });
 
   beforeEach(async () => {
-    const uuid = v4();
+    const uuid = randomUUID();
 
     server = http.createServer((req, res) => {
       const url = new URL(req.url!, `http://${req.headers.host}`);
@@ -34,7 +34,7 @@ describe('session.serviceWorkers', () => {
       if (file.endsWith('.js')) {
         res.setHeader('Content-Type', 'application/javascript');
       }
-      res.end(fs.readFileSync(path.resolve(__dirname, 'fixtures', 'api', 'service-workers', file)));
+      res.end(fs.readFileSync(path.resolve(import.meta.dirname, 'fixtures', 'api', 'service-workers', file)));
     });
     const { port } = await listen(server);
     baseUrl = `http://localhost:${port}/${uuid}`;

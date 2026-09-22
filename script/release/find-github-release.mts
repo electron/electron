@@ -1,7 +1,7 @@
 import { Octokit } from '@octokit/rest';
 
-import { createGitHubTokenStrategy } from './github-token';
-import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from './types';
+import { createGitHubTokenStrategy } from './github-token.mts';
+import { ELECTRON_ORG, ELECTRON_REPO, type ElectronReleaseRepo, NIGHTLY_REPO } from './types.mts';
 
 if (process.argv.length < 3) {
   console.log('Usage: find-release version');

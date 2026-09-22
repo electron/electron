@@ -1,8 +1,8 @@
-import { MediaAccessPermissionRequest } from 'electron';
+import type { MediaAccessPermissionRequest } from 'electron';
 import { clipboard } from 'electron/common';
 import {
   BrowserWindow,
-  WebContents,
+  type WebContents,
   webFrameMain,
   session,
   ipcMain,
@@ -10,30 +10,31 @@ import {
   protocol,
   webContents,
   dialog,
-  MessageBoxOptions
+  type MessageBoxOptions
 } from 'electron/main';
 
 import { expect } from 'chai';
-import WebSocketClient = require('ws');
+import { type RawData, WebSocket, WebSocketServer } from 'ws';
 
 import * as ChildProcess from 'node:child_process';
 import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
-import { AddressInfo } from 'node:net';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
-import { ifit, ifdescribe, defer, itremote, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
-import { PipeTransport } from './pipe-transport';
+import { ifit, ifdescribe, defer, itremote, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
+import { PipeTransport } from './pipe-transport.ts';
+
+import type { AddressInfo } from 'node:net';
 
 const features = process._linkedBinding('electron_common_features');
 
-const fixturesPath = path.resolve(__dirname, 'fixtures');
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 const certPath = path.join(fixturesPath, 'certificates');
 
 describe('reporting api', () => {
@@ -385,7 +386,7 @@ describe('web security', () => {
   describe('accessing file://', () => {
     async function loadFile(w: BrowserWindow) {
       const thisFile = url.format({
-        pathname: __filename.replaceAll('\\', '/'),
+        pathname: import.meta.filename.replaceAll('\\', '/'),
         protocol: 'file',
         slashes: true
       });
@@ -801,16 +802,16 @@ describe('command line switches', () => {
       });
 
       type Client = {
-        socket: WebSocketClient;
+        socket: WebSocket;
         send(method: string, params?: unknown, sessionId?: string): Promise<any>;
         attachToPage(): Promise<string>;
       };
       const connectClient = async (): Promise<Client> => {
-        const socket = new WebSocketClient(browserWsUrl);
+        const socket = new WebSocket(browserWsUrl);
         await once(socket, 'open');
         let nextId = 1;
         const pending = new Map<number, { resolve: (result: any) => void; reject: (error: Error) => void }>();
-        socket.on('message', (data: WebSocketClient.Data) => {
+        socket.on('message', (data: RawData) => {
           const message = JSON.parse(data.toString());
           const handler = message.id && pending.get(message.id);
           if (handler) {
@@ -981,7 +982,7 @@ describe('chromium features', () => {
         done();
       });
       w.webContents.once('render-process-gone', () => done(new Error('WebContents crashed.')));
-      w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'jquery.html'));
+      w.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'jquery.html'));
     });
   });
 
@@ -2012,7 +2013,7 @@ describe('chromium features', () => {
     });
 
     it('Worker with nodeIntegrationInWorker has access to self.module.paths', async () => {
-      const appPath = path.join(__dirname, 'fixtures', 'apps', 'self-module-paths');
+      const appPath = path.join(import.meta.dirname, 'fixtures', 'apps', 'self-module-paths');
 
       appProcess = ChildProcess.spawn(process.execPath, [appPath]);
 
@@ -2058,7 +2059,7 @@ describe('chromium features', () => {
           headers.append('Content-Type', 'text/xml');
         }).not.to.throw();
       },
-      [path.join(__dirname, 'fixtures')]
+      [path.join(import.meta.dirname, 'fixtures')]
     );
 
     it('Worker can work', async () => {
@@ -2422,7 +2423,7 @@ describe('chromium features', () => {
 
     it('is always resizable', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
       w.webContents.executeJavaScript(`
         { b = window.open('about:blank', '', 'resizable=no,show=no'); null }
       `);
@@ -2438,7 +2439,7 @@ describe('chromium features', () => {
         windowUrl.searchParams.set('p', `${fixturesPath}/pages/window-opener-node.html`);
 
         const w = new BrowserWindow({ show: false });
-        w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+        w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
 
         const { eventData } = await w.webContents.executeJavaScript(`(async () => {
         const message = new Promise(resolve => window.addEventListener('message', resolve, {once: true}));
@@ -2483,8 +2484,8 @@ describe('chromium features', () => {
       'disables JavaScript when it is disabled on the parent window',
       async () => {
         const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true } });
-        w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
-        const windowUrl = require('node:url').format({
+        w.webContents.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
+        const windowUrl = url.format({
           pathname: `${fixturesPath}/pages/window-no-javascript.html`,
           protocol: 'file',
           slashes: true
@@ -2511,7 +2512,7 @@ describe('chromium features', () => {
         targetURL = `file://${fixturesPath}/pages/base-page.html`;
       }
       const w = new BrowserWindow({ show: false });
-      w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.webContents.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
       w.webContents.executeJavaScript(`{ b = window.open(${JSON.stringify(targetURL)}); null }`);
       const [, window] = (await once(app, 'browser-window-created')) as [any, BrowserWindow];
       await once(window.webContents, 'did-finish-load');
@@ -2520,7 +2521,7 @@ describe('chromium features', () => {
 
     it('defines a window.location setter', async () => {
       const w = new BrowserWindow({ show: false });
-      w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.webContents.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
       w.webContents.executeJavaScript('{ b = window.open("about:blank"); null }');
       const [, { webContents }] = (await once(app, 'browser-window-created')) as [any, BrowserWindow];
       await once(webContents, 'did-finish-load');
@@ -2533,7 +2534,7 @@ describe('chromium features', () => {
 
     it('defines a window.location.href setter', async () => {
       const w = new BrowserWindow({ show: false });
-      w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.webContents.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
       w.webContents.executeJavaScript('{ b = window.open("about:blank"); null }');
       const [, { webContents }] = (await once(app, 'browser-window-created')) as [any, BrowserWindow];
       await once(webContents, 'did-finish-load');
@@ -2584,7 +2585,7 @@ describe('chromium features', () => {
         }
       });
 
-      await w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      await w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
 
       const { contextObject } = await w.webContents.executeJavaScript(`(async () => {
         const vm = require('node:vm');
@@ -2600,7 +2601,7 @@ describe('chromium features', () => {
     // FIXME(nornagon): I'm not sure this ... ever was correct?
     xit('inherit options of parent window', async () => {
       const w = new BrowserWindow({ show: false, width: 123, height: 456 });
-      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
       const url = `file://${fixturesPath}/pages/window-open-size.html`;
       const { width, height, eventData } = await w.webContents.executeJavaScript(`(async () => {
         const message = new Promise(resolve => window.addEventListener('message', resolve, {once: true}));
@@ -2621,7 +2622,7 @@ describe('chromium features', () => {
 
     it('does not override child options', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
       const windowUrl = `file://${fixturesPath}/pages/window-open-size.html`;
       const { eventData } = await w.webContents.executeJavaScript(`(async () => {
         const message = new Promise(resolve => window.addEventListener('message', resolve, {once: true}));
@@ -2635,7 +2636,7 @@ describe('chromium features', () => {
 
     it('window opened with innerWidth option has the same innerWidth', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
       const windowUrl = `file://${fixturesPath}/pages/window-open-size-inner.html`;
       const windowCreatedPromise = once(app, 'browser-window-created') as Promise<[any, BrowserWindow]>;
       const eventDataPromise = w.webContents.executeJavaScript(`(async () => {
@@ -2652,7 +2653,7 @@ describe('chromium features', () => {
     });
     it('window opened with innerHeight option has the same innerHeight', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
       const windowUrl = `file://${fixturesPath}/pages/window-open-size-inner.html`;
       const windowCreatedPromise = once(app, 'browser-window-created') as Promise<[any, BrowserWindow]>;
       const eventDataPromise = w.webContents.executeJavaScript(`(async () => {
@@ -2692,7 +2693,7 @@ describe('chromium features', () => {
       windowUrl.searchParams.set('p', `${fixturesPath}/pages/window-opener-webview.html`);
 
       const w = new BrowserWindow({ show: false });
-      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
 
       const { eventData } = await w.webContents.executeJavaScript(`(async () => {
         const message = new Promise(resolve => window.addEventListener('message', resolve, {once: true}));
@@ -2744,7 +2745,7 @@ describe('chromium features', () => {
           contextIsolation: false
         }
       });
-      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
 
       const windowUrl = `file://${fixturesPath}/pages/window-opener.html`;
       const eventData = await w.webContents.executeJavaScript(`
@@ -2758,7 +2759,7 @@ describe('chromium features', () => {
   describe('window.opener.postMessage', () => {
     it('sets source and origin correctly', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
 
       const windowUrl = `file://${fixturesPath}/pages/window-opener-postMessage.html`;
       const { sourceIsChild, origin } = await w.webContents.executeJavaScript(`
@@ -2810,7 +2811,7 @@ describe('chromium features', () => {
 
       it('delivers messages that match the origin', async () => {
         const w = new BrowserWindow({ show: false });
-        w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+        w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
         const data = await w.webContents.executeJavaScript(`
           window.open(${JSON.stringify(serverURL)}, '', 'show=no');
           new Promise(resolve => window.addEventListener('message', resolve, {once: true})).then(e => e.data)
@@ -3511,7 +3512,7 @@ describe('chromium features', () => {
 
   ifdescribe(features.isPDFViewerEnabled())('PDF Viewer', () => {
     const pdfSource = url.format({
-      pathname: path.join(__dirname, 'fixtures', 'cat.pdf').replaceAll('\\', '/'),
+      pathname: path.join(import.meta.dirname, 'fixtures', 'cat.pdf').replaceAll('\\', '/'),
       protocol: 'file',
       slashes: true
     });
@@ -3539,7 +3540,7 @@ describe('chromium features', () => {
         });
       });
 
-      await w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'pdf-in-iframe.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'pdf-in-iframe.html'));
 
       const frames = w.webContents.mainFrame.frames;
       expect(frames.length).to.equal(1);
@@ -3623,9 +3624,9 @@ describe('chromium features', () => {
       const w1 = new BrowserWindow({ show: true });
       const w2 = new BrowserWindow({ show: true });
       const w3 = new BrowserWindow({ show: false });
-      await w1.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
-      await w2.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
-      await w3.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
+      await w1.loadFile(path.join(import.meta.dirname, 'fixtures', 'blank.html'));
+      await w2.loadFile(path.join(import.meta.dirname, 'fixtures', 'blank.html'));
+      await w3.loadFile(path.join(import.meta.dirname, 'fixtures', 'blank.html'));
       expect(webContents.getFocusedWebContents()?.id).to.equal(w2.webContents.id);
       let focus = false;
       focus = await w1.webContents.executeJavaScript('document.hasFocus()');
@@ -3803,7 +3804,7 @@ describe('chromium features', () => {
       const server = http.createServer();
       defer(() => server.close());
       const { port } = await listen(server);
-      const wss = new WebSocketClient.Server({ server });
+      const wss = new WebSocketServer({ server });
       const finished = new Promise<string | undefined>((resolve, reject) => {
         wss.on('error', reject);
         wss.on('connection', (ws, upgradeReq) => {
@@ -5207,7 +5208,7 @@ describe('navigator.hid', () => {
   });
 
   it('excludes a device when a exclusionFilter is specified', async () => {
-    const exclusionFilters = <any>[];
+    const exclusionFilters: any[] = [];
     let haveDevices = false;
     let checkForExcludedDevice = false;
 

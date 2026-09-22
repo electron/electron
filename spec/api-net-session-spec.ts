@@ -1,11 +1,11 @@
-import { net, session, BrowserWindow, ClientRequestConstructorOptions } from 'electron/main';
+import { net, session, BrowserWindow, type ClientRequestConstructorOptions } from 'electron/main';
 
 import { expect } from 'chai';
 
 import * as dns from 'node:dns';
 
-import { collectStreamBody, getResponse, respondNTimes, respondOnce } from './lib/net-helpers';
-import { defer } from './lib/spec-helpers';
+import { collectStreamBody, getResponse, respondNTimes, respondOnce } from './lib/net-helpers.ts';
+import { defer } from './lib/spec-helpers.ts';
 
 // See https://github.com/nodejs/node/issues/40702.
 dns.setDefaultResultOrder('ipv4first');

@@ -6,12 +6,12 @@ import { once } from 'node:events';
 import * as http from 'node:http';
 import * as path from 'node:path';
 
-import { emittedUntil } from './lib/events-helpers';
-import { listen, waitUntil } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { emittedUntil } from './lib/events-helpers.ts';
+import { listen, waitUntil } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('debugger module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures');
+  const fixtures = path.resolve(import.meta.dirname, 'fixtures');
   let w: BrowserWindow;
 
   beforeEach(() => {
@@ -354,7 +354,7 @@ describe('debugger module', () => {
     });
 
     it('creates unique session id for each target', (done) => {
-      w.webContents.loadFile(path.join(__dirname, 'fixtures', 'sub-frames', 'debug-frames.html'));
+      w.webContents.loadFile(path.join(import.meta.dirname, 'fixtures', 'sub-frames', 'debug-frames.html'));
       w.webContents.debugger.attach();
       let debuggerSessionId: string;
 

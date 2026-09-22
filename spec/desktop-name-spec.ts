@@ -1,9 +1,14 @@
 import { expect } from 'chai';
 
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
 
-import { defaultDesktopName } from '../lib/browser/desktop-name';
-import { ifdescribe } from './lib/spec-helpers';
+import { ifdescribe } from './lib/spec-helpers.ts';
+
+// See deprecate-spec.ts for why this is require()d rather than imported.
+const { defaultDesktopName }: typeof import('../lib/browser/desktop-name.ts') = createRequire(import.meta.url)(
+  '../lib/browser/desktop-name.ts'
+);
 
 ifdescribe(process.platform === 'linux')('defaultDesktopName', () => {
   it("derives an appropriate .desktop name from the app's human readable name", () => {

@@ -21,7 +21,7 @@ from lib.config import PLATFORM, get_target_arch, \
                        verbose_mode_print
 from lib.util import get_electron_branding, execute, get_electron_version, \
                      store_artifact, get_electron_exec, get_out_dir, \
-                     SRC_DIR, ELECTRON_DIR, TS_NODE
+                     SRC_DIR, ELECTRON_DIR
 
 
 ELECTRON_VERSION = 'v' + get_electron_version()
@@ -169,9 +169,6 @@ def parse_args():
                       default=ELECTRON_VERSION)
   parser.add_argument('-o', '--overwrite',
                       help='Overwrite a published release',
-                      action='store_true')
-  parser.add_argument('-p', '--publish-release',
-                      help='Publish the release',
                       action='store_true')
   parser.add_argument('-s', '--upload_to_storage',
                       help='Upload assets to azure bucket',
@@ -359,8 +356,8 @@ def upload_electron(release, file_path, args):
 def upload_io_to_github(release, filename, filepath, version):
   print(f'Uploading {filename} to GitHub')
   script_path = os.path.join(
-    ELECTRON_DIR, 'script', 'release', 'uploaders', 'upload-to-github.ts')
-  with subprocess.Popen([TS_NODE, script_path, filepath,
+    ELECTRON_DIR, 'script', 'release', 'uploaders', 'upload-to-github.mts')
+  with subprocess.Popen(['node', script_path, filepath,
                          filename, str(release['id']), version],
                         stdout=subprocess.PIPE, 
                         stderr=subprocess.STDOUT) as upload_process:
@@ -397,12 +394,12 @@ def upload_sha256_checksum(version, file_path, key_prefix=None):
 
 def get_release(version):
   script_path = os.path.join(
-    ELECTRON_DIR, 'script', 'release', 'find-github-release.ts')
+    ELECTRON_DIR, 'script', 'release', 'find-github-release.mts')
 
   # Strip warnings from stdout to ensure the only output is the desired object
   release_env = os.environ.copy()
   release_env['NODE_NO_WARNINGS'] = '1'
-  release_info = execute([TS_NODE, script_path, version], release_env)
+  release_info = execute(['node', script_path, version], release_env)
   verbose_mode_print(f'Release info for version: {version}:\n')
   verbose_mode_print(release_info)
   release = json.loads(release_info)

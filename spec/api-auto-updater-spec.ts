@@ -4,7 +4,7 @@ import { expect } from 'chai';
 
 import { once } from 'node:events';
 
-import { ifit, ifdescribe } from './lib/spec-helpers';
+import { ifit, ifdescribe } from './lib/spec-helpers.ts';
 
 ifdescribe(!process.mas)('autoUpdater module', function () {
   describe('checkForUpdates', function () {

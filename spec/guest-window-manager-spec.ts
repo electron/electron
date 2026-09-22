@@ -6,9 +6,9 @@ import { once } from 'node:events';
 import * as http from 'node:http';
 import * as nodePath from 'node:path';
 
-import { HexColors, ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
-import { ifit, listen } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { HexColors, ScreenCapture, hasCapturableScreen } from './lib/screen-helpers.ts';
+import { ifit, listen } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('webContents.setWindowOpenHandler', () => {
   describe('native window', () => {
@@ -292,7 +292,7 @@ describe('webContents.setWindowOpenHandler', () => {
     });
 
     it('still allows the main process to set icon via overrideBrowserWindowOptions', async () => {
-      const iconPath = nodePath.join(__dirname, 'fixtures', 'assets', 'icon.ico');
+      const iconPath = nodePath.join(import.meta.dirname, 'fixtures', 'assets', 'icon.ico');
       browserWindow.webContents.setWindowOpenHandler(() => ({
         action: 'allow',
         overrideBrowserWindowOptions: { icon: iconPath }

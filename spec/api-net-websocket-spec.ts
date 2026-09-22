@@ -1,27 +1,27 @@
 import { net, session } from 'electron/main';
 
 import { expect } from 'chai';
-import * as WSS from 'ws';
+import { WebSocketServer, type WebSocket as WSWebSocket, type ServerOptions } from 'ws';
 
 import * as http from 'node:http';
-import { AddressInfo } from 'node:net';
 
-import { defer } from './lib/spec-helpers';
+import { defer } from './lib/spec-helpers.ts';
+
+import type { AddressInfo } from 'node:net';
 
 type StartedServer = {
   url: string;
   server: http.Server;
-  wss: WSS.Server;
+  wss: WebSocketServer;
 };
 
 async function startWSServer(
-  onConnection?: (ws: WSS, request: http.IncomingMessage) => void,
-  options: WSS.ServerOptions = {}
+  onConnection?: (ws: WSWebSocket, request: http.IncomingMessage) => void,
+  options: ServerOptions = {}
 ): Promise<StartedServer> {
   const server = http.createServer();
-  // permessage-deflate negotiation in ws@7 can race a server-initiated close;
-  // it isn't the subject under test, so keep it off for determinism.
-  const wss = new WSS.Server({ server, perMessageDeflate: false, ...options });
+  // permessage-deflate is not the subject under test, so keep it off for determinism.
+  const wss = new WebSocketServer({ server, perMessageDeflate: false, ...options });
   if (onConnection) wss.on('connection', onConnection);
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   defer(() => {
@@ -156,7 +156,7 @@ describe('net.WebSocket', () => {
   describe('messaging', () => {
     it('echoes text messages', async () => {
       const { url } = await startWSServer((ws) => {
-        ws.on('message', (m: Buffer | string) => ws.send(m));
+        ws.on('message', (data: Buffer, isBinary: boolean) => ws.send(data, { binary: isBinary }));
       });
       const ws = new net.WebSocket(url);
       defer(() => ws.close());
@@ -171,7 +171,7 @@ describe('net.WebSocket', () => {
 
     it('echoes binary messages as Buffer by default', async () => {
       const { url } = await startWSServer((ws) => {
-        ws.on('message', (m: Buffer | string) => ws.send(m));
+        ws.on('message', (data: Buffer, isBinary: boolean) => ws.send(data, { binary: isBinary }));
       });
       const ws = new net.WebSocket(url);
       defer(() => ws.close());

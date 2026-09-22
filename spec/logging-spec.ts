@@ -1,13 +1,13 @@
 import { app } from 'electron';
 
 import { expect } from 'chai';
-import * as uuid from 'uuid';
 
+import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-import { startRemoteControlApp, ifdescribe, ifit, isTestingBindingAvailable } from './lib/spec-helpers';
+import { startRemoteControlApp, ifdescribe, ifit, isTestingBindingAvailable } from './lib/spec-helpers.ts';
 
 // This test depends on functions that are only available when DCHECK_IS_ON.
 ifdescribe(isTestingBindingAvailable())('logging', () => {
@@ -121,7 +121,7 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
   });
 
   it('logs to the given file when --log-file is passed', async () => {
-    const logFilePath = path.join(app.getPath('temp'), 'test-log-file-' + uuid.v4());
+    const logFilePath = path.join(app.getPath('temp'), 'test-log-file-' + randomUUID());
     const rc = await startRemoteControlApp(['--enable-logging', '--log-file=' + logFilePath]);
     rc.remotely(() => {
       process._linkedBinding('electron_common_testing').log(0, 'TEST_LOG');
@@ -137,8 +137,8 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
   });
 
   ifit(process.platform === 'win32')('child process logs to the given file when --log-file is passed', async () => {
-    const logFilePath = path.join(app.getPath('temp'), 'test-log-file-' + uuid.v4());
-    const preloadPath = path.resolve(__dirname, 'fixtures', 'log-test.js');
+    const logFilePath = path.join(app.getPath('temp'), 'test-log-file-' + randomUUID());
+    const preloadPath = path.resolve(import.meta.dirname, 'fixtures', 'log-test.js');
     const rc = await startRemoteControlApp([
       '--enable-logging',
       `--log-file=${logFilePath}`,
@@ -171,7 +171,7 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
   });
 
   it('logs to the given file when ELECTRON_LOG_FILE is set', async () => {
-    const logFilePath = path.join(app.getPath('temp'), 'test-log-file-' + uuid.v4());
+    const logFilePath = path.join(app.getPath('temp'), 'test-log-file-' + randomUUID());
     const rc = await startRemoteControlApp([], {
       env: { ...process.env, ELECTRON_ENABLE_LOGGING: '1', ELECTRON_LOG_FILE: logFilePath }
     });
@@ -189,7 +189,7 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
   });
 
   it('does not lose early log messages when logging to a given file with --log-file', async () => {
-    const logFilePath = path.join(app.getPath('temp'), 'test-log-file-' + uuid.v4());
+    const logFilePath = path.join(app.getPath('temp'), 'test-log-file-' + randomUUID());
     const rc = await startRemoteControlApp([
       '--enable-logging',
       '--log-file=' + logFilePath,

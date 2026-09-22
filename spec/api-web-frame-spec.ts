@@ -1,14 +1,14 @@
-import { BrowserWindow, ipcMain, WebContents } from 'electron/main';
+import { BrowserWindow, ipcMain, type WebContents } from 'electron/main';
 
 import { expect } from 'chai';
 
 import { once } from 'node:events';
 import * as path from 'node:path';
 
-import { defer } from './lib/spec-helpers';
+import { defer } from './lib/spec-helpers.ts';
 
 describe('webFrame module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures');
+  const fixtures = path.resolve(import.meta.dirname, 'fixtures');
 
   it('can use executeJavaScript', async () => {
     const w = new BrowserWindow({
