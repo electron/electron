@@ -116,6 +116,7 @@ declare namespace Electron {
         Pick<Electron.BrowserWindowConstructorOptions, 'backgroundColor'>
     ): void;
     _send(internal: boolean, channel: string, args: any): boolean;
+    _sendToMainFrame(internal: boolean, channel: string, args: any): void;
     _sendInternal(channel: string, ...args: any[]): void;
     _executeJavaScript(worldId: number, sources: Electron.WebSource[], hasUserGesture: boolean): Promise<any>;
     _init(): void;
