@@ -47,6 +47,7 @@ class InternedStringCache final : public gin::PerIsolateData::DisposeObserver {
 
   // gin::PerIsolateData::DisposeObserver
   void OnBeforeDispose(v8::Isolate* isolate) override { strings_.clear(); }
+  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override {}
   void OnDisposed() override { Detach(); }
 
  private:
