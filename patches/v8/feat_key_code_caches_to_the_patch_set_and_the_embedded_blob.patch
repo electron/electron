@@ -14,11 +14,13 @@ and crashes or traps at runtime.
 
 This adds two things:
 
-* a v8_version_hash_salt GN arg that is mixed into Version::Hash().
-  Electron sets it to a fingerprint of patches/v8 (see build/args/all.gn),
-  so any change to the patch set invalidates every code cache and every
-  serialized wasm module. The salt reaches version.cc through a header
-  written at gn gen time so that changing it recompiles one file.
+* a v8_version_hash_salt GN arg that is mixed into Version::Hash(), plus
+  v8_version_hash_salt_files to derive the salt at gn gen time from a
+  list of files. Electron points the latter at patches/v8 (see
+  build/args/all.gn), so any change to the patch set invalidates every
+  code cache and every serialized wasm module. The salt reaches
+  version.cc through a header written at gn gen time so that changing it
+  recompiles one file.
 * the embedded blob's data and code hashes in the serialized wasm module
   header, so that a module is only ever deserialized into a build whose
   builtins are identical to the one that produced it, whatever the
@@ -27,24 +29,18 @@ This adds two things:
 Both parts are suitable for upstreaming.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 3698b9b9724ec9425c5e57d395ae9d305841b7aa..fa2b9bb9a6b14c5b78b41d42b2962e28b136bd13 100644
+index 3698b9b9724ec9425c5e57d395ae9d305841b7aa..e501112d41330d4aec34d2c8c8841e985377e648 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -98,6 +98,13 @@ declare_args() {
-   # Allows the embedder to add a custom suffix to the version string.
-   v8_embedder_string = ""
+@@ -20,6 +20,7 @@ import("//third_party/icu/config.gni")
+ import("gni/cluster_build.gni")
+ import("gni/snapshot_toolchain.gni")
+ import("gni/v8.gni")
++import("gni/version_hash_salt.gni")
  
-+  # An arbitrary string that is mixed into the hash that keys code caches and
-+  # serialized wasm modules (see Version::Hash). Embedders that carry patches
-+  # on top of a V8 release should derive this from their patch set so that
-+  # serialized code produced by a differently-patched build of the same V8
-+  # version is rejected instead of deserialized.
-+  v8_version_hash_salt = ""
-+
-   # Sets -DENABLE_DISASSEMBLER.
-   v8_enable_disassembler = ""
- 
-@@ -1299,6 +1306,12 @@ enabled_external_defines =
+ if (is_clang) {
+   import("//build/config/clang/clang.gni")
+@@ -1299,6 +1300,12 @@ enabled_external_defines =
  disabled_external_defines =
      disabled_external_v8_defines + disabled_external_cppgc_defines
  
@@ -57,6 +53,39 @@ index 3698b9b9724ec9425c5e57d395ae9d305841b7aa..fa2b9bb9a6b14c5b78b41d42b2962e28
  # Put defines here that are only used in our internal files and NEVER in
  # external headers that embedders (such as chromium and node) might include.
  config("features") {
+diff --git a/gni/version_hash_salt.gni b/gni/version_hash_salt.gni
+new file mode 100644
+index 0000000000000000000000000000000000000000..80031afb917abf21a175198537a4d2b784a66ee6
+--- /dev/null
++++ b/gni/version_hash_salt.gni
+@@ -0,0 +1,27 @@
++# Copyright 2026 the V8 project authors. All rights reserved.
++# Use of this source code is governed by a BSD-style license that can be
++# found in the LICENSE file.
++
++declare_args() {
++  # An arbitrary string that is mixed into the hash that keys code caches and
++  # serialized wasm modules (see Version::Hash). Embedders that carry patches
++  # on top of a V8 release should derive this from their patch set so that
++  # serialized code produced by a differently-patched build of the same V8
++  # version is rejected instead of deserialized.
++  v8_version_hash_salt = ""
++
++  # Alternatively, a list of files (for example the embedder's patch series)
++  # whose contents are fingerprinted at gn gen time to produce the salt.
++  # Changing any of them re-runs gn gen.
++  v8_version_hash_salt_files = []
++}
++
++if (v8_version_hash_salt_files != []) {
++  assert(v8_version_hash_salt == "",
++         "Set either v8_version_hash_salt or v8_version_hash_salt_files")
++  v8_version_hash_salt =
++      exec_script("../tools/gen-version-hash-salt.py",
++                  rebase_path(v8_version_hash_salt_files, root_build_dir),
++                  "trim string",
++                  v8_version_hash_salt_files)
++}
 diff --git a/src/utils/version.cc b/src/utils/version.cc
 index 7423f45762d20e9a9bb7ae1ce0b7e7d44d4e81ba..75f7ebc7ac620d286f9405e5baacb72642cb169e 100644
 --- a/src/utils/version.cc
@@ -184,3 +213,41 @@ index 31becd542dd6ff9d72dc9e9e89fb6ced399920f8..bf38e9ddc0d3247bd2a1f9f8b3a2f4e6
    static constexpr size_t kVersionHashOffset = kUInt32Size;
  
   private:
+diff --git a/tools/gen-version-hash-salt.py b/tools/gen-version-hash-salt.py
+new file mode 100755
+index 0000000000000000000000000000000000000000..bd443f28d11f130ef419d7f04b5b86800bd01fc0
+--- /dev/null
++++ b/tools/gen-version-hash-salt.py
+@@ -0,0 +1,32 @@
++#!/usr/bin/env python3
++
++# Copyright 2026 the V8 project authors. All rights reserved.
++# Use of this source code is governed by a BSD-style license that can be
++# found in the LICENSE file.
++"""Prints a short, stable fingerprint of the given files.
++
++Called by GN at gen time (see gni/version_hash_salt.gni) to derive
++v8_version_hash_salt from v8_version_hash_salt_files.
++
++Usage:
++  gen-version-hash-salt.py <file1> [file2] ...
++"""
++
++import hashlib
++import os
++import sys
++
++
++def main(paths):
++  digest = hashlib.sha256()
++  for path in paths:
++    digest.update(os.path.basename(path).encode('utf-8') + b'\n')
++    with open(path, 'rb') as f:
++      # Normalise line endings so that a CRLF checkout yields the same salt.
++      digest.update(f.read().replace(b'\r\n', b'\n'))
++  print(digest.hexdigest()[:16])
++  return 0
++
++
++if __name__ == '__main__':
++  sys.exit(main(sys.argv[1:]))
