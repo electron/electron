@@ -51,9 +51,9 @@ app.commandLine.appendSwitch(
 app.commandLine.appendSwitch(
   'enable-features',
   [
-    // spec/api-web-frame-main-spec.ts
+    // spec/api-web-frame-main.spec.ts
     'DocumentPolicyIncludeJSCallStacksInCrashReports',
-    // spec/spellchecker-spec.ts - allows spellcheck without user gesture
+    // spec/spellchecker.spec.ts - allows spellcheck without user gesture
     // https://chromium-review.googlesource.com/c/chromium/src/+/7452579
     'UnrestrictSpellingAndGrammarForTesting'
   ].join(',')
@@ -296,7 +296,7 @@ app
       argv.files &&
       argv.files.map((file) => (path.isAbsolute(file) ? path.relative(baseElectronDir, file) : path.normalize(file)));
     const filter = (file) => {
-      if (!/-spec\.[tj]s$/.test(file)) {
+      if (!/\.spec\.[tj]s$/.test(file)) {
         return false;
       }
 
