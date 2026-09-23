@@ -440,13 +440,6 @@ content::WebContents* ElectronBrowserClient::GetWebContentsFromProcessID(
   return WebContentsPreferences::GetWebContentsFromProcessID(process_id);
 }
 
-content::SiteInstance* ElectronBrowserClient::GetSiteInstanceFromAffinity(
-    content::BrowserContext* browser_context,
-    const GURL& url,
-    content::RenderFrameHost* rfh) const {
-  return nullptr;
-}
-
 bool ElectronBrowserClient::IsRendererSubFrame(
     content::ChildProcessId process_id) const {
   return renderer_is_subframe_.contains(process_id);

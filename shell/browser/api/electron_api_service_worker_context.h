@@ -57,7 +57,6 @@ class ServiceWorkerContext final
   void DidFailToStartWorkerForScope(
       std::shared_ptr<gin_helper::Promise<v8::Local<v8::Value>>> shared_promise,
       content::StatusCodeResponse status);
-  void StopWorkersForScope(GURL scope);
   v8::Local<v8::Promise> StopAllWorkers(v8::Isolate* isolate);
 
   // content::ServiceWorkerContextObserver

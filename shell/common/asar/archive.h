@@ -17,6 +17,7 @@
 #include "base/synchronization/lock.h"
 #include "base/thread_annotations.h"
 #include "base/values.h"
+#include "build/build_config.h"
 #include "shell/common/uv_includes.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 
@@ -73,8 +74,10 @@ class Archive {
   // Read and parse the header.
   bool Init();
 
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   std::optional<IntegrityPayload> HeaderIntegrity() const;
   std::optional<base::FilePath> RelativePath() const;
+#endif
 
   // Paths inside the archive are UTF-8, relative to the archive root, with the
   // platform's separators. The std::string_view overloads are what the fs

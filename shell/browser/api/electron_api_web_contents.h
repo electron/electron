@@ -733,8 +733,6 @@ class WebContents final : public gin::Wrappable<WebContents>,
   void Dispose();
   void DetachNativeCallbacks();
 
-  void OnElectronBrowserConnectionError();
-
   // Posted from PrimaryMainFrameRenderProcessGone(); see the comment there.
   void EmitRenderProcessGone(base::TerminationStatus status, int exit_code);
 
@@ -744,11 +742,6 @@ class WebContents final : public gin::Wrappable<WebContents>,
 
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
   OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
-
-  // Called when received a synchronous message from renderer to
-  // get the zoom level.
-  void OnGetZoomLevel(content::RenderFrameHost* frame_host,
-                      IPC::Message* reply_msg);
 
   void InitZoomController(content::WebContents* web_contents,
                           const gin_helper::Dictionary& options);

@@ -284,16 +284,6 @@ bool Archive::Init() {
   return true;
 }
 
-#if !BUILDFLAG(IS_MAC) && !BUILDFLAG(IS_WIN)
-std::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
-  return std::nullopt;
-}
-
-std::optional<base::FilePath> Archive::RelativePath() const {
-  return std::nullopt;
-}
-#endif
-
 // Enough for every distinct path a large app probes during startup; past
 // this the memo is simply started over rather than evicted entry by entry.
 constexpr size_t kMaxNodeCacheEntries = 32 * 1024;
