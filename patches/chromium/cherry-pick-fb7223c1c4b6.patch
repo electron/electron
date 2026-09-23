@@ -1,0 +1,92 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Yeung <dayeung@chromium.org>
+Date: Mon, 21 Sep 2026 13:36:41 -0700
+Subject: [M152] Guard against widget destruction during show and hide
+
+Original change's description:
+> Guard against widget destruction during show and hide
+>
+> Delegating window visibility changes to the native widget in
+> Widget::Show(), Widget::ShowInactive(), and Widget::Hide() can
+> synchronously trigger window observer callbacks, focus changes, or
+> capture loss that destroy the underlying aura window and free the Widget
+> instance before the call returns.
+>
+> Fix is to acquire a WeakPtr and check if the widget was destroyed to
+> prevent any UAFs.
+>
+> Fixed: 553136141
+> Change-Id: Ie27e7d9b46a23df033045ac6f6603362f16b5734
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8391999
+> Commit-Queue: Keren Zhu <kerenzhu@chromium.org>
+> Reviewed-by: Keren Zhu <kerenzhu@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1697039}
+
+(cherry picked from commit 6080f65e48f96ee710060f982eb0a4a006919ac5)
+
+Bug: 561873370,553136141
+Change-Id: Ie27e7d9b46a23df033045ac6f6603362f16b5734
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8427108
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: David Yeung <dayeung@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7977@{#2702}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
+index f28bcdd878a48dfe4edcb46f912b91dcdd91f255..c233996f2995b95b8f40f3c844ff19c7ea5298c5 100644
+--- a/ui/views/widget/widget.cc
++++ b/ui/views/widget/widget.cc
+@@ -1094,6 +1094,7 @@ void Widget::Show() {
+   ui::mojom::WindowShowState preferred_show_state =
+       CanActivate() ? ui::mojom::WindowShowState::kNormal
+                     : ui::mojom::WindowShowState::kInactive;
++  auto weak_this = GetWeakPtr();
+   if (non_client_view_) {
+     // While initializing, the kiosk mode will go to full screen before the
+     // widget gets shown. In that case we stay in full screen mode, regardless
+@@ -1105,12 +1106,14 @@ void Widget::Show() {
+     } else {
+       native_widget_->Show(saved_show_state_, gfx::Rect());
+     }
++    CHECK(weak_this);
+     // |saved_show_state_| only applies the first time the window is shown.
+     // If we don't reset the value the window may be shown maximized every time
+     // it is subsequently shown after being hidden.
+     saved_show_state_ = preferred_show_state;
+   } else {
+     native_widget_->Show(preferred_show_state, gfx::Rect());
++    CHECK(weak_this);
+   }
+ 
+   HandleShowRequested();
+@@ -1120,7 +1123,9 @@ void Widget::Hide() {
+   if (!native_widget_) {
+     return;
+   }
++  auto weak_this = GetWeakPtr();
+   native_widget_->Hide();
++  CHECK(weak_this);
+   internal::AnyWidgetObserverSingleton::GetInstance()->OnAnyWidgetHidden(this);
+ }
+ 
+@@ -1128,6 +1133,7 @@ void Widget::ShowInactive() {
+   if (!native_widget_) {
+     return;
+   }
++  auto weak_this = GetWeakPtr();
+   // If this gets called with saved_show_state_ ==
+   // ui::mojom::WindowShowState::kMaximized, call SetBounds()with the restored
+   // bounds to set the correct size. This normally should not happen, but if it
+@@ -1135,9 +1141,11 @@ void Widget::ShowInactive() {
+   if (saved_show_state_ == ui::mojom::WindowShowState::kMaximized &&
+       !initial_restored_bounds_.IsEmpty()) {
+     SetBounds(initial_restored_bounds_);
++    CHECK(weak_this);
+     saved_show_state_ = ui::mojom::WindowShowState::kNormal;
+   }
+   native_widget_->Show(ui::mojom::WindowShowState::kInactive, gfx::Rect());
++  CHECK(weak_this);
+ 
+   HandleShowRequested();
+ }

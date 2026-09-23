@@ -1,0 +1,176 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Tseng <dtseng@google.com>
+Date: Tue, 18 Aug 2026 11:07:53 -0700
+Subject: [Extensions] Validate process authorization in
+ AutomationEventRouter::BindForRenderer
+
+This CL adds a check against ProcessMap and AutomationInfo in
+AutomationEventRouter::BindForRenderer. If the calling process is not
+hosting an enabled extension with automation permission, the request
+is rejected and the renderer process is terminated with a bad message.
+
+Fixed: 540265100
+TAG=agy
+CONV=0fba6596-b871-40d8-8ac4-a6d2854a4d9c
+
+Change-Id: I107134d7419d5b797a3068932972feb097bb3f9c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8259787
+Reviewed-by: Andrea Orru <andreaorru@chromium.org>
+Reviewed-by: Alexei Svitkine <asvitkine@chromium.org>
+Reviewed-by: Devlin Cronin <rdevlin.cronin@chromium.org>
+Commit-Queue: David Tseng <dtseng@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1681537}
+
+Electron adaptation notes (44-x-y):
+bad_message.h / enums.xml: this branch does not have the WER_* reasons
+(41, 42) that precede the new value upstream, so
+AER_INVALID_PROCESS_FOR_AUTOMATION_BINDING is numbered 41 here (43
+upstream) in both files. The automation_event_router.cc change is
+verbatim.
+
+diff --git a/chrome/browser/extensions/extension_security_exploit_browsertest.cc b/chrome/browser/extensions/extension_security_exploit_browsertest.cc
+index 08359989667ca686964e798b464e8ba25e103f33..7ee34e34d75eee30d7356ef69425dd6ed152feb4 100644
+--- a/chrome/browser/extensions/extension_security_exploit_browsertest.cc
++++ b/chrome/browser/extensions/extension_security_exploit_browsertest.cc
+@@ -29,6 +29,7 @@
+ #include "content/public/test/browser_test.h"
+ #include "content/public/test/browser_test_utils.h"
+ #include "content/public/test/test_navigation_observer.h"
++#include "extensions/browser/api/automation_internal/automation_event_router.h"
+ #include "extensions/browser/api/messaging/channel_endpoint.h"
+ #include "extensions/browser/api/messaging/message_service.h"
+ #include "extensions/browser/api/storage/storage_api.h"
+@@ -46,6 +47,7 @@
+ #include "extensions/common/api/messaging/port_id.h"
+ #include "extensions/common/constants.h"
+ #include "extensions/common/extension_features.h"
++#include "extensions/common/mojom/automation_registry.mojom.h"
+ #include "extensions/common/mojom/event_router.mojom.h"
+ #include "extensions/common/mojom/frame.mojom-test-utils.h"
+ #include "extensions/common/mojom/message_port.mojom.h"
+@@ -2146,4 +2148,53 @@ IN_PROC_BROWSER_TEST_F(ExtensionSecurityExploitBrowserTest,
+   run_loop.Run();
+ }
+ 
++// Tests that attempting to bind the automation registry interface from an
++// unauthorized process (such as a web page) results in the process being
++// terminated.
++IN_PROC_BROWSER_TEST_F(ExtensionSecurityExploitBrowserTest,
++                       Automation_BindAutomationFromWebPage) {
++  GURL test_page_url =
++      embedded_test_server()->GetURL("foo.com", "/title1.html");
++  auto* web_contents = GetActiveWebContents();
++  ASSERT_TRUE(NavigateToURL(web_contents, test_page_url));
++
++  content::RenderProcessHost* main_frame_process =
++      web_contents->GetPrimaryMainFrame()->GetProcess();
++
++  RenderProcessHostBadIpcMessageWaiter kill_waiter(main_frame_process);
++
++  mojo::AssociatedRemote<mojom::RendererAutomationRegistry> registry;
++  AutomationEventRouter::BindForRenderer(
++      main_frame_process->GetID(),
++      registry.BindNewEndpointAndPassDedicatedReceiver());
++
++  EXPECT_EQ(bad_message::AER_INVALID_PROCESS_FOR_AUTOMATION_BINDING,
++            kill_waiter.Wait());
++}
++
++// Tests that attempting to bind the automation registry interface from an
++// extension process that does not have the "automation" manifest permission
++// results in the process being terminated.
++IN_PROC_BROWSER_TEST_F(
++    ExtensionSecurityExploitBrowserTest,
++    Automation_BindAutomationFromExtensionWithoutPermission) {
++  InstallTestExtensions();
++  GURL extension_page_url = active_extension().GetResourceURL("page.html");
++  auto* web_contents = GetActiveWebContents();
++  ASSERT_TRUE(NavigateToURL(web_contents, extension_page_url));
++
++  content::RenderProcessHost* extension_process =
++      web_contents->GetPrimaryMainFrame()->GetProcess();
++
++  RenderProcessHostBadIpcMessageWaiter kill_waiter(extension_process);
++
++  mojo::AssociatedRemote<mojom::RendererAutomationRegistry> registry;
++  AutomationEventRouter::BindForRenderer(
++      extension_process->GetID(),
++      registry.BindNewEndpointAndPassDedicatedReceiver());
++
++  EXPECT_EQ(bad_message::AER_INVALID_PROCESS_FOR_AUTOMATION_BINDING,
++            kill_waiter.Wait());
++}
++
+ }  // namespace extensions
+diff --git a/extensions/browser/api/automation_internal/automation_event_router.cc b/extensions/browser/api/automation_internal/automation_event_router.cc
+index 160691e3ccb25ecbe24851890a3bb05e665f7635..c4bb2ae3309b20ca8567e1599c03a60755a1926a 100644
+--- a/extensions/browser/api/automation_internal/automation_event_router.cc
++++ b/extensions/browser/api/automation_internal/automation_event_router.cc
+@@ -16,12 +16,15 @@
+ #include "build/chromeos_buildflags.h"
+ #include "extensions/browser/api/automation_internal/automation_internal_api_delegate.h"
+ #include "extensions/browser/api/extensions_api_client.h"
++#include "extensions/browser/bad_message.h"
+ #include "extensions/browser/event_router.h"
+ #include "extensions/browser/process_manager.h"
++#include "extensions/browser/process_map.h"
+ #include "extensions/browser/service_worker/worker_id.h"
+ #include "extensions/common/api/automation_internal.h"
+ #include "extensions/common/extension.h"
+ #include "extensions/common/extension_id.h"
++#include "extensions/common/manifest_handlers/automation.h"
+ #include "mojo/public/cpp/bindings/associated_remote.h"
+ #include "mojo/public/cpp/bindings/pending_associated_remote.h"
+ #include "ui/accessibility/ax_action_data.h"
+@@ -349,6 +352,27 @@ void AutomationEventRouter::BindForRenderer(
+     RenderProcessHostId render_process_id,
+     mojo::PendingAssociatedReceiver<
+         extensions::mojom::RendererAutomationRegistry> receiver) {
++  content::RenderProcessHost* host =
++      content::RenderProcessHost::FromID(render_process_id);
++  if (!host) {
++    return;
++  }
++
++  ProcessMap* process_map = ProcessMap::Get(host->GetBrowserContext());
++  const Extension* extension =
++      process_map
++          ? process_map->GetEnabledExtensionByProcessID(render_process_id)
++          : nullptr;
++
++  const AutomationInfo* automation_info =
++      extension ? AutomationInfo::Get(extension) : nullptr;
++
++  if (!automation_info) {
++    bad_message::ReceivedBadMessage(
++        host, bad_message::AER_INVALID_PROCESS_FOR_AUTOMATION_BINDING);
++    return;
++  }
++
+   AutomationEventRouter* router = AutomationEventRouter::GetInstance();
+   CHECK(router);
+ 
+diff --git a/extensions/browser/bad_message.h b/extensions/browser/bad_message.h
+index dc0ffe62018f7d32f6900287a95b3273244775f5..cf416e9215bea86d9d47b1f300bd1fcb745fc970 100644
+--- a/extensions/browser/bad_message.h
++++ b/extensions/browser/bad_message.h
+@@ -78,6 +78,7 @@ enum BadMessageReason {
+   EMF_INVALID_MESSAGE_FROM_SANDBOXED_PROCESS = 38,
+   WRA_INVALID_EXTENSION_ID_FOR_PROCESS = 39,
+   WRA_INVALID_LISTENER_REGISTRATION = 40,
++  AER_INVALID_PROCESS_FOR_AUTOMATION_BINDING = 41,
+   // Please add new elements here. The naming convention is abbreviated class
+   // name (e.g. ExtensionHost becomes EH) plus a unique description of the
+   // reason. After making changes, you MUST update histograms.xml by running:
+diff --git a/tools/metrics/histograms/metadata/stability/enums.xml b/tools/metrics/histograms/metadata/stability/enums.xml
+index 296c32978d4371cdbc61ea54bea48bc3678da1a2..f3a224ec4af10ee54d05a2cf8b77243abea20ef1 100644
+--- a/tools/metrics/histograms/metadata/stability/enums.xml
++++ b/tools/metrics/histograms/metadata/stability/enums.xml
+@@ -592,6 +592,7 @@ Called by update_bad_message_reasons.py.-->
+   <int value="38" label="EMF_INVALID_MESSAGE_FROM_SANDBOXED_PROCESS"/>
+   <int value="39" label="WRA_INVALID_EXTENSION_ID_FOR_PROCESS"/>
+   <int value="40" label="WRA_INVALID_LISTENER_REGISTRATION"/>
++  <int value="41" label="AER_INVALID_PROCESS_FOR_AUTOMATION_BINDING"/>
+ </enum>
+ 
+ <enum name="BadMessageReasonGuestView">
