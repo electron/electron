@@ -315,6 +315,13 @@ app
     };
 
     const { getFiles } = await import('./get-files.ts');
+    // The filter above only loads *.spec.ts, so a file still named *-spec.ts
+    // (e.g. from a PR opened before the rename) would silently never run.
+    const misnamed = await getFiles(import.meta.dirname, (file) => /-spec\.[cm]?[jt]sx?$/.test(file));
+    if (misnamed.length > 0) {
+      const names = misnamed.map((file) => path.relative(baseElectronDir, file)).join(', ');
+      throw new Error(`Spec files must be named *.spec.ts, rename: ${names}`);
+    }
     const testFiles = await getFiles(import.meta.dirname, filter);
     for (const file of testFiles.sort()) {
       mocha.addFile(file);
