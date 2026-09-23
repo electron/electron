@@ -1526,7 +1526,7 @@ describe('protocol module', () => {
     });
   });
 
-  // protocol.registerSchemesAsPrivileged allowExtensions tests are in extensions-spec.ts.
+  // protocol.registerSchemesAsPrivileged allowExtensions tests are in extensions.spec.ts.
 
   describe('handle', () => {
     afterEach(closeAllWindows);

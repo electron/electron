@@ -10,7 +10,7 @@
 - Wait for the output you expect, not for `'exit'`. `utilityProcess` drops its
   stdio listeners the moment the child exits, so a chunk still in the pipe when
   `'exit'` fires is lost. Accumulate output until the expected pattern appears
-  (see `outputUntil` in `api-utility-process-spec.ts`), then assert on it.
+  (see `outputUntil` in `api-utility-process.spec.ts`), then assert on it.
 - Don't assert on the first chunk from a pipe. stdout and stderr race, and a
   stray warning on stderr (a `net/dns` config warning, a GPU message) can land
   before the line you want. Match a pattern against the accumulated output.
