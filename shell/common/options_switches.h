@@ -103,6 +103,8 @@ inline constexpr std::string_view kOpacity = "opacity";
 
 // Whether the window can be activated.
 inline constexpr std::string_view kFocusable = "focusable";
+// Whether a panel window can become the main window.
+inline constexpr std::string_view kActivable = "activable";
 
 // The WebPreferences.
 inline constexpr std::string_view kWebPreferences = "webPreferences";

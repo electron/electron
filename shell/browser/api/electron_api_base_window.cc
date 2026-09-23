@@ -961,6 +961,10 @@ bool BaseWindow::IsHiddenInMissionControl() {
 void BaseWindow::SetHiddenInMissionControl(bool hidden) {
   window_->SetHiddenInMissionControl(hidden);
 }
+
+void BaseWindow::SetActivable(bool activable) {
+  window_->SetActivable(activable);
+}
 #endif
 
 void BaseWindow::SetTouchBar(
@@ -1406,6 +1410,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
                  &BaseWindow::IsHiddenInMissionControl)
       .SetMethod("setHiddenInMissionControl",
                  &BaseWindow::SetHiddenInMissionControl)
+      .SetMethod("setActivable", &BaseWindow::SetActivable)
 #endif
       .SetMethod("_setTouchBarItems", &BaseWindow::SetTouchBar)
       .SetMethod("_refreshTouchBarItem", &BaseWindow::RefreshTouchBarItem)
