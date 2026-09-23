@@ -1,0 +1,125 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Thu, 10 Sep 2026 18:28:29 -0700
+Subject: GL: apply host-twiddled TexSubImage2D workaround to all formats.
+
+The previous use_tex_sub_image_for_host_twiddled_npot_uploads
+workaround is needed for more texture formats, so simply apply it to
+all formats on affected GPUs, and rename the workaround to
+use_tex_sub_image_for_client_data_npot_uploads .
+
+Bug: chromium:559320837
+Change-Id: I588a6b0c664447e591bc2edb7a7682a103375ae2
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8392118
+Auto-Submit: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+
+Electron adaptation notes (42-x-y):
+- src/tests/gl_tests/TextureTest.cpp: the branch's test file has diverged, so
+  the new test is not carried; the branch's file is kept. Test-only. All
+  other hunks merged verbatim.
+
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index e69c2dfecd3e13b9e767a031d84724b82576f229..28deb49683ffcbf7d4a43c319ac18d2f6e03fc78 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -782,8 +782,8 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
+-    FeatureInfo useTexSubImageForHostTwiddledNpotUploads = {
+-        "useTexSubImageForHostTwiddledNpotUploads",
++    FeatureInfo useTexSubImageForClientDataNpotUploads = {
++        "useTexSubImageForClientDataNpotUploads",
+         FeatureCategory::OpenGLWorkarounds,
+         &members,
+     };
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index b7a16d52dd8d1a0e2b162b673a9b534ff8c88171..dd7caef8e26e3540cd536c7c6048b8e6d47edc65 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -1031,10 +1031,10 @@
+             "issue": "http://crbug.com/546252753"
+         },
+         {
+-            "name": "use_tex_sub_image_for_host_twiddled_npot_uploads",
++            "name": "use_tex_sub_image_for_client_data_npot_uploads",
+             "category": "Workarounds",
+             "description": [
+-                "For texture formats which would be twiddled on the host CPU, upload via TexSubImage2D instead of TexImage2D."
++                "For non-power-of-two textures, upload via TexSubImage2D instead of TexImage2D when uploading client-side data."
+             ],
+             "issue": "http://crbug.com/553172761"
+         }
+diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
+index e31e7ce670c4723c3c0c13fe08ec60478ba7f238..76a809a0d360a6dcc4f2dd5d9c15702100489dcd 100644
+--- a/src/libANGLE/renderer/gl/TextureGL.cpp
++++ b/src/libANGLE/renderer/gl/TextureGL.cpp
+@@ -114,13 +114,6 @@ LevelInfoGL GetLevelInfo(const angle::FeaturesGL &features,
+                        GetEmulatedAlphaChannel(features, originalInternalFormat));
+ }
+ 
+-bool IsHostTwiddledFormat(GLenum internalFormat, GLenum format, GLenum type)
+-{
+-    return (internalFormat == GL_RGB10_A2 && format == GL_RGBA &&
+-            type == GL_UNSIGNED_INT_2_10_10_10_REV) ||
+-           (internalFormat == GL_SRGB8_ALPHA8 && format == GL_RGBA && type == GL_UNSIGNED_BYTE);
+-}
+-
+ gl::Texture::DirtyBits GetLevelWorkaroundDirtyBits()
+ {
+     gl::Texture::DirtyBits bits;
+@@ -345,10 +338,8 @@ angle::Result TextureGL::setImageHelper(const gl::Context *context,
+     if (nativegl::UseTexImage2D(getType()))
+     {
+         ASSERT(size.depth == 1);
+-        if (features.useTexSubImageForHostTwiddledNpotUploads.enabled && pixels != nullptr &&
+-            (!gl::isPow2(size.width) || !gl::isPow2(size.height)) &&
+-            IsHostTwiddledFormat(texImageFormat.internalFormat, texImageFormat.format,
+-                                 texImageFormat.type))
++        if (features.useTexSubImageForClientDataNpotUploads.enabled && pixels != nullptr &&
++            (!gl::isPow2(size.width) || !gl::isPow2(size.height)))
+         {
+             ANGLE_GL_TRY_ALWAYS_CHECK(
+                 context, functions->texImage2D(
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index 6b30772e26fc365c5bc20306ff1ebaec08e9b721..f7093b52d22e938f5a38797f8a15a941e2492159 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2876,7 +2876,7 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+                             IsPowerVR(vendor));
+ 
+     // crbug.com/553172761
+-    ANGLE_FEATURE_CONDITION(features, useTexSubImageForHostTwiddledNpotUploads,
++    ANGLE_FEATURE_CONDITION(features, useTexSubImageForClientDataNpotUploads,
+                             false /* IsPowerVR(vendor) */);
+ 
+     // Mac Intel drivers are unable to allocate buffers larger than ~1gb
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index a356158cd80c70d86ddb2c31b1e1aac3b5926943..74e90d666fd76b3331973e32f76a64d09e19ac63 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -511,7 +511,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::UseStencilTestEnableDynamicState, "useStencilTestEnableDynamicState"},
+     {Feature::UseSystemMemoryForConstantBuffers, "useSystemMemoryForConstantBuffers"},
+     {Feature::UseTempForNonZeroBaseLevelGenMipmapUsingCopyImageSubData, "useTempForNonZeroBaseLevelGenMipmapUsingCopyImageSubData"},
+-    {Feature::UseTexSubImageForHostTwiddledNpotUploads, "useTexSubImageForHostTwiddledNpotUploads"},
++    {Feature::UseTexSubImageForClientDataNpotUploads, "useTexSubImageForClientDataNpotUploads"},
+     {Feature::UseUnusedBlocksWithStandardOrSharedLayout, "useUnusedBlocksWithStandardOrSharedLayout"},
+     {Feature::UseVertexInputBindingStrideDynamicState, "useVertexInputBindingStrideDynamicState"},
+     {Feature::UseVkEventForBufferBarrier, "useVkEventForBufferBarrier"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index 31c564194e92e70fd0494dfd592c6c0d65be9d4b..4d3a6f4706f855c30063a91af9c83a72818b50ea 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -511,7 +511,7 @@ enum class Feature
+     UseStencilTestEnableDynamicState,
+     UseSystemMemoryForConstantBuffers,
+     UseTempForNonZeroBaseLevelGenMipmapUsingCopyImageSubData,
+-    UseTexSubImageForHostTwiddledNpotUploads,
++    UseTexSubImageForClientDataNpotUploads,
+     UseUnusedBlocksWithStandardOrSharedLayout,
+     UseVertexInputBindingStrideDynamicState,
+     UseVkEventForBufferBarrier,

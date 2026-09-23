@@ -1,0 +1,73 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brandon Jones <bajones@chromium.org>
+Date: Wed, 2 Sep 2026 17:37:15 -0700
+Subject: More GL error checks in GLTextureHolder
+
+Flushes any existing GL errors and checks for new ones in
+GLTextureHolder::UploadFromMemory and GLTextureHolder::ReadbackToMemory.
+Mirrors the check done in Initialize().
+
+Fixed: 550953039
+Change-Id: I0073a2a1b9462e8501ec8b2fd9d70ca2500215c8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8340268
+Reviewed-by: Kai Ninomiya <kainino@chromium.org>
+Auto-Submit: Brandon Jones <bajones@chromium.org>
+Commit-Queue: Kai Ninomiya <kainino@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1691225}
+
+Electron adaptation notes (42-x-y):
+- gl_texture_holder.cc: comment context drift only (the branch's comment
+  refers to ScopedTemporaryFramebuffer instead of ScopedGLFramebuffer); the
+  branch's comment wording is kept. Code hunks merged verbatim.
+
+diff --git a/gpu/command_buffer/service/shared_image/gl_texture_holder.cc b/gpu/command_buffer/service/shared_image/gl_texture_holder.cc
+index 54423f38d59426c81b7c0c2383256449256baa5a..20eb6e76ef4b012f01ac576be286e10359170b7a 100644
+--- a/gpu/command_buffer/service/shared_image/gl_texture_holder.cc
++++ b/gpu/command_buffer/service/shared_image/gl_texture_holder.cc
+@@ -352,13 +352,21 @@ bool GLTextureHolder::UploadFromMemory(const SkPixmap& pixmap) {
+   const void* pixels =
+       !repacked_data.empty() ? repacked_data.data() : pixmap.addr();
+   gl::GLApi* api = gl::g_current_gl_context;
++
++  // Drain any pre-existing GL errors so the post-allocation check below is
++  // attributable to the storage call. Mirrors other allocation checks done in
++  // the command decoder.
++  while (api->glGetErrorFn() != GL_NO_ERROR) {
++  }
++
+   {
+     gl::ScopedProgressReporter scoped_progress_reporter(progress_reporter_);
+     api->glTexSubImage2DFn(gl_target, /*level=*/0, 0, 0, size_.width(),
+                            size_.height(), gl_format, gl_type, pixels);
+   }
+ 
+-  return true;
++  // Report any failures
++  return api->glGetErrorFn() == GL_NO_ERROR;
+ }
+ 
+ bool GLTextureHolder::ReadbackToMemory(const SkPixmap& pixmap) {
+@@ -381,6 +389,13 @@ bool GLTextureHolder::ReadbackToMemory(const SkPixmap& pixmap) {
+   }
+ 
+   gl::GLApi* api = gl::g_current_gl_context;
++
++  // Drain any pre-existing GL errors so the post-allocation check below is
++  // attributable to the storage call. Mirrors other allocation checks done in
++  // the command decoder.
++  while (api->glGetErrorFn() != GL_NO_ERROR) {
++  }
++
+   // ScopedTemporaryFramebuffer must be declared before ScopedFramebufferBinder
+   // so that when this scope exits, ScopedFramebufferBinder is destroyed first
+   // (restoring the previous framebuffer binding) before the temporary FBO is
+@@ -477,7 +492,8 @@ bool GLTextureHolder::ReadbackToMemory(const SkPixmap& pixmap) {
+     SwizzleRedAndBlue(pixmap);
+   }
+ 
+-  return true;
++  // Report any failures
++  return api->glGetErrorFn() == GL_NO_ERROR;
+ }
+ 
+ sk_sp<GrPromiseImageTexture> GLTextureHolder::GetPromiseImage(

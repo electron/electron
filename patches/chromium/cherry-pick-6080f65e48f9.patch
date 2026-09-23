@@ -1,0 +1,78 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Yeung <dayeung@chromium.org>
+Date: Sun, 13 Sep 2026 21:10:56 -0700
+Subject: Guard against widget destruction during show and hide
+
+Delegating window visibility changes to the native widget in
+Widget::Show(), Widget::ShowInactive(), and Widget::Hide() can
+synchronously trigger window observer callbacks, focus changes, or
+capture loss that destroy the underlying aura window and free the Widget
+instance before the call returns.
+
+Fix is to acquire a WeakPtr and check if the widget was destroyed to
+prevent any UAFs.
+
+Fixed: 553136141
+Change-Id: Ie27e7d9b46a23df033045ac6f6603362f16b5734
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8391999
+Commit-Queue: Keren Zhu <kerenzhu@chromium.org>
+Reviewed-by: Keren Zhu <kerenzhu@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1697039}
+
+diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
+index 4b29c955c3347e2907c0d064834d917cc95ac546..55166230dbffccb7f82bcfab342cb755ee6ae2de 100644
+--- a/ui/views/widget/widget.cc
++++ b/ui/views/widget/widget.cc
+@@ -1068,6 +1068,7 @@ void Widget::Show() {
+   ui::mojom::WindowShowState preferred_show_state =
+       CanActivate() ? ui::mojom::WindowShowState::kNormal
+                     : ui::mojom::WindowShowState::kInactive;
++  auto weak_this = GetWeakPtr();
+   if (non_client_view_) {
+     // While initializing, the kiosk mode will go to full screen before the
+     // widget gets shown. In that case we stay in full screen mode, regardless
+@@ -1079,12 +1080,14 @@ void Widget::Show() {
+     } else {
+       native_widget_->Show(saved_show_state_, gfx::Rect());
+     }
++    CHECK(weak_this);
+     // |saved_show_state_| only applies the first time the window is shown.
+     // If we don't reset the value the window may be shown maximized every time
+     // it is subsequently shown after being hidden.
+     saved_show_state_ = preferred_show_state;
+   } else {
+     native_widget_->Show(preferred_show_state, gfx::Rect());
++    CHECK(weak_this);
+   }
+ 
+   HandleShowRequested();
+@@ -1094,7 +1097,9 @@ void Widget::Hide() {
+   if (!native_widget_) {
+     return;
+   }
++  auto weak_this = GetWeakPtr();
+   native_widget_->Hide();
++  CHECK(weak_this);
+   internal::AnyWidgetObserverSingleton::GetInstance()->OnAnyWidgetHidden(this);
+ }
+ 
+@@ -1102,6 +1107,7 @@ void Widget::ShowInactive() {
+   if (!native_widget_) {
+     return;
+   }
++  auto weak_this = GetWeakPtr();
+   // If this gets called with saved_show_state_ ==
+   // ui::mojom::WindowShowState::kMaximized, call SetBounds()with the restored
+   // bounds to set the correct size. This normally should not happen, but if it
+@@ -1109,9 +1115,11 @@ void Widget::ShowInactive() {
+   if (saved_show_state_ == ui::mojom::WindowShowState::kMaximized &&
+       !initial_restored_bounds_.IsEmpty()) {
+     SetBounds(initial_restored_bounds_);
++    CHECK(weak_this);
+     saved_show_state_ = ui::mojom::WindowShowState::kNormal;
+   }
+   native_widget_->Show(ui::mojom::WindowShowState::kInactive, gfx::Rect());
++  CHECK(weak_this);
+ 
+   HandleShowRequested();
+ }

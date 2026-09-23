@@ -1,0 +1,150 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zhenyao Mo <zmo@chromium.org>
+Date: Mon, 24 Aug 2026 15:11:05 -0700
+Subject: GL: Reset base level before TexStorage2D on PowerVR GPUs
+
+PowerVR GPUs have a driver bug when glTexStorage2D is called
+on a texture with a non-zero base level already applied.
+This workaround resets the base level to zero before making
+the TexStorage2D call, and restores the base level to its
+original level afterwards.
+
+Bug: chromium:551573368
+Change-Id: I334f242842f01bdd10fc65200f81ff3b65867bec
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8283072
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Auto-Submit: Zhenyao Mo <zmo@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+
+Electron adaptation notes (42-x-y):
+- src/tests/gl_tests/TextureTest.cpp: the branch's test file has diverged (it
+  carries other backported tests at upstream's insertion points), so the new
+  test is not carried; the branch's file is kept. Test-only, all other hunks
+  merged verbatim.
+
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index d11e8fbfc9abc537cb3ee43dc3d62504495f5afd..ce08496b1a34e78495692e042532fc89e1774aa5 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -260,6 +260,12 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo resetTexStorage2DBaseLevel = {
++        "resetTexStorage2DBaseLevel",
++        FeatureCategory::OpenGLWorkarounds,
++        &members,
++    };
++
+     FeatureInfo useTempForNonZeroBaseLevelGenMipmapUsingCopyImageSubData = {
+         "useTempForNonZeroBaseLevelGenMipmapUsingCopyImageSubData",
+         FeatureCategory::OpenGLWorkarounds,
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index 457e09cbc8f8514a4220269b3960b263538a2ba5..79e02dc874d944b5b916b1a28a61199e7871a55b 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -317,6 +317,15 @@
+             ],
+             "issue": "https://crbug.com/528131119"
+         },
++        {
++            "name": "reset_TexStorage2D_base_level",
++            "category": "Workarounds",
++            "description": [
++                "Reset texture base level before calling glTexStorage2D to ",
++                "work around PowerVR driver bug."
++            ],
++            "issue": "https://crbug.com/551573368"
++        },
+         {
+             "name": "use_temp_for_non_zero_base_level_GenMipmap_using_CopyImageSubData",
+             "category": "Workarounds",
+diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
+index a2eb97e203cebde067a1730135f70639cefef2b8..cdc449865aed12602ad76c91ade001c538e0e629 100644
+--- a/src/libANGLE/renderer/gl/TextureGL.cpp
++++ b/src/libANGLE/renderer/gl/TextureGL.cpp
+@@ -1474,10 +1474,23 @@ angle::Result TextureGL::setStorage(const gl::Context *context,
+         ASSERT(size.depth == 1);
+         if (functions->texStorage2D)
+         {
++            const bool resetBaseLevel =
++                features.resetTexStorage2DBaseLevel.enabled && mAppliedBaseLevel > 0;
++            const GLuint originalBaseLevel = mAppliedBaseLevel;
++            if (resetBaseLevel)
++            {
++                ANGLE_TRY(setBaseLevel(context, 0));
++            }
++
+             ANGLE_GL_TRY_ALWAYS_CHECK(
+                 context,
+                 functions->texStorage2D(ToGLenum(type), static_cast<GLsizei>(levels),
+                                         texStorageFormat.internalFormat, size.width, size.height));
++
++            if (resetBaseLevel)
++            {
++                ANGLE_TRY(setBaseLevel(context, originalBaseLevel));
++            }
+         }
+         else
+         {
+@@ -1578,10 +1591,23 @@ angle::Result TextureGL::setStorage(const gl::Context *context,
+                                         features.emulateImmutableCompressedTexture3D.enabled;
+         if (functions->texStorage3D && !bypassTexStorage3D)
+         {
++            const bool resetBaseLevel =
++                features.resetTexStorage2DBaseLevel.enabled && mAppliedBaseLevel > 0;
++            const GLuint originalBaseLevel = mAppliedBaseLevel;
++            if (resetBaseLevel)
++            {
++                ANGLE_TRY(setBaseLevel(context, 0));
++            }
++
+             ANGLE_GL_TRY_ALWAYS_CHECK(
+                 context, functions->texStorage3D(ToGLenum(type), static_cast<GLsizei>(levels),
+                                                  texStorageFormat.internalFormat, size.width,
+                                                  size.height, size.depth));
++
++            if (resetBaseLevel)
++            {
++                ANGLE_TRY(setBaseLevel(context, originalBaseLevel));
++            }
+         }
+         else
+         {
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index f043962482f44bb799fea6fc5dcb70aba650b079..179afcfdc5ea7abad8a2a3cb07e3e443ee0eb692 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2504,6 +2504,7 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+ 
+     ANGLE_FEATURE_CONDITION(features, recreateImmutableTextureOnBaseLevelIncrease,
+                             IsPowerVR(vendor));
++    ANGLE_FEATURE_CONDITION(features, resetTexStorage2DBaseLevel, IsPowerVR(vendor));
+     ANGLE_FEATURE_CONDITION(features, recreateTextureOnTexImage3dDepthIncrease,
+                             isQualcomm && IsAndroid());
+ 
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index bc67808d73ed99f092adcc605f4297f14da1f1fe..b8040e1e9426a500ae94a9b3362fb3ddbebf775c 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -304,6 +304,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::ResetBaseLevelForASTCSubImage, "resetBaseLevelForASTCSubImage"},
+     {Feature::ResetSampleCoverageOnFBOChange, "resetSampleCoverageOnFBOChange"},
+     {Feature::ResetTexImage2DBaseLevel, "resetTexImage2DBaseLevel"},
++    {Feature::ResetTexStorage2DBaseLevel, "resetTexStorage2DBaseLevel"},
+     {Feature::ResyncDepthRangeOnClipControl, "resyncDepthRangeOnClipControl"},
+     {Feature::RetainSPIRVDebugInfo, "retainSPIRVDebugInfo"},
+     {Feature::RewriteRepeatedAssignToSwizzled, "rewriteRepeatedAssignToSwizzled"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index 879dbe1e7d5a3ba8c599778e40592de67bca0395..92cf0f680a25b4cc9c6f703afe575dc5996159df 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -304,6 +304,7 @@ enum class Feature
+     ResetBaseLevelForASTCSubImage,
+     ResetSampleCoverageOnFBOChange,
+     ResetTexImage2DBaseLevel,
++    ResetTexStorage2DBaseLevel,
+     ResyncDepthRangeOnClipControl,
+     RetainSPIRVDebugInfo,
+     RewriteRepeatedAssignToSwizzled,

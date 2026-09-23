@@ -1,0 +1,307 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Thu, 17 Sep 2026 18:12:42 -0700
+Subject: gpu: revise size checks for compressed texture workarounds.
+
+For the previous upload_oversized_mip_levels_via_unpack_buffer
+workaround, compute compressed texture sizes in blocks rather than
+pixels to be more correct. Add a regression test for oversized ASTC
+mipmap uploads which ensures they don't crash.
+
+Bug: 556435507
+Change-Id: I9b0ad52ab332bbc18d9425f05d5a5df0a4304c6a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8417361
+Commit-Queue: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1700359}
+
+diff --git a/gpu/command_buffer/service/gl_utils.cc b/gpu/command_buffer/service/gl_utils.cc
+index 903f897ff32829227675bc4fb392a46f32fd323d..4a48b2adfd6528290f3d286d0f536911f5d9fe71 100644
+--- a/gpu/command_buffer/service/gl_utils.cc
++++ b/gpu/command_buffer/service/gl_utils.cc
+@@ -492,6 +492,89 @@ error::ContextLostReason GetContextLostReasonFromResetStatus(
+   NOTREACHED();
+ }
+ 
++gfx::Vector2d GetCompressedTexBlockDimensions(GLenum format) {
++  switch (format) {
++    case GL_ATC_RGB_AMD:
++    case GL_ATC_RGBA_EXPLICIT_ALPHA_AMD:
++    case GL_ATC_RGBA_INTERPOLATED_ALPHA_AMD:
++    case GL_COMPRESSED_RGB_S3TC_DXT1_EXT:
++    case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
++    case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
++    case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
++    case GL_COMPRESSED_SRGB_S3TC_DXT1_EXT:
++    case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT:
++    case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT:
++    case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT:
++    case GL_ETC1_RGB8_OES:
++      return gfx::Vector2d(kS3TCBlockWidth, kS3TCBlockHeight);
++    case GL_COMPRESSED_RGBA_ASTC_4x4_KHR:
++    case GL_COMPRESSED_RGBA_ASTC_5x4_KHR:
++    case GL_COMPRESSED_RGBA_ASTC_5x5_KHR:
++    case GL_COMPRESSED_RGBA_ASTC_6x5_KHR:
++    case GL_COMPRESSED_RGBA_ASTC_6x6_KHR:
++    case GL_COMPRESSED_RGBA_ASTC_8x5_KHR:
++    case GL_COMPRESSED_RGBA_ASTC_8x6_KHR:
++    case GL_COMPRESSED_RGBA_ASTC_8x8_KHR:
++    case GL_COMPRESSED_RGBA_ASTC_10x5_KHR:
++    case GL_COMPRESSED_RGBA_ASTC_10x6_KHR:
++    case GL_COMPRESSED_RGBA_ASTC_10x8_KHR:
++    case GL_COMPRESSED_RGBA_ASTC_10x10_KHR:
++    case GL_COMPRESSED_RGBA_ASTC_12x10_KHR:
++    case GL_COMPRESSED_RGBA_ASTC_12x12_KHR:
++    case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR:
++    case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR:
++    case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR:
++    case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR:
++    case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR:
++    case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR:
++    case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR:
++    case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR:
++    case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR:
++    case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR:
++    case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR:
++    case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR:
++    case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR:
++    case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR: {
++      const int index =
++          (format < GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR)
++              ? static_cast<int>(format - GL_COMPRESSED_RGBA_ASTC_4x4_KHR)
++              : static_cast<int>(format -
++                                 GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR);
++      return gfx::Vector2d(kASTCBlockArray[index].blockWidth,
++                           kASTCBlockArray[index].blockHeight);
++    }
++    case GL_COMPRESSED_RGB_PVRTC_4BPPV1_IMG:
++    case GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG:
++      return gfx::Vector2d(4, 4);
++    case GL_COMPRESSED_RGB_PVRTC_2BPPV1_IMG:
++    case GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG:
++      return gfx::Vector2d(8, 4);
++    case GL_COMPRESSED_R11_EAC:
++    case GL_COMPRESSED_SIGNED_R11_EAC:
++    case GL_COMPRESSED_RGB8_ETC2:
++    case GL_COMPRESSED_SRGB8_ETC2:
++    case GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2:
++    case GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2:
++    case GL_COMPRESSED_RG11_EAC:
++    case GL_COMPRESSED_SIGNED_RG11_EAC:
++    case GL_COMPRESSED_RGBA8_ETC2_EAC:
++    case GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC:
++      return gfx::Vector2d(kEACAndETC2BlockSize, kEACAndETC2BlockSize);
++    case GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM_EXT:
++    case GL_COMPRESSED_RGBA_BPTC_UNORM_EXT:
++    case GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT_EXT:
++    case GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT_EXT:
++      return gfx::Vector2d(kBPTCBlockWidth, kBPTCBlockHeight);
++    case GL_COMPRESSED_RED_RGTC1_EXT:
++    case GL_COMPRESSED_SIGNED_RED_RGTC1_EXT:
++    case GL_COMPRESSED_RED_GREEN_RGTC2_EXT:
++    case GL_COMPRESSED_SIGNED_RED_GREEN_RGTC2_EXT:
++      return gfx::Vector2d(kRGTCBlockWidth, kRGTCBlockHeight);
++    default:
++      return gfx::Vector2d(1, 1);
++  }
++}
++
+ bool GetCompressedTexSizeInBytes(const char* function_name,
+                                  GLsizei width,
+                                  GLsizei height,
+diff --git a/gpu/command_buffer/service/gl_utils.h b/gpu/command_buffer/service/gl_utils.h
+index a567a04869bcfb32a94a71c0ccebb6ecef3c6418..b68069c29c22b2dbf46205202af90fe18d611563 100644
+--- a/gpu/command_buffer/service/gl_utils.h
++++ b/gpu/command_buffer/service/gl_utils.h
+@@ -21,6 +21,7 @@
+ #include "ui/gfx/geometry/rect.h"
+ #include "ui/gfx/geometry/rrect_f.h"
+ #include "ui/gfx/geometry/transform.h"
++#include "ui/gfx/geometry/vector2d.h"
+ #include "ui/gfx/overlay_transform.h"
+ #include "ui/gl/gl_bindings.h"
+ 
+@@ -117,6 +118,8 @@ bool ValidContextLostReason(GLenum reason);
+ error::ContextLostReason GetContextLostReasonFromResetStatus(
+     GLenum reset_status);
+ 
++GPU_GLES2_EXPORT gfx::Vector2d GetCompressedTexBlockDimensions(GLenum format);
++
+ bool GetCompressedTexSizeInBytes(const char* function_name,
+                                  GLsizei width,
+                                  GLsizei height,
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index 0a3ab369fd696c9637635d62e60fc988bc699018..573483861ba9825edff5559c6f9af7f9846280e7 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -13371,15 +13371,20 @@ error::Error GLES2DecoderImpl::DoCompressedTexImage(
+         if (texture->GetLevelSize(target, 0, &level0_width, &level0_height,
+                                   &level0_depth) &&
+             level0_width > 0 && level0_height > 0) {
+-          const int slot_w = std::max(
+-              1, static_cast<int>(
+-                     std::bit_ceil(static_cast<uint32_t>(level0_width))) >>
+-                     level);
+-          const int slot_h = std::max(
+-              1, static_cast<int>(
+-                     std::bit_ceil(static_cast<uint32_t>(level0_height))) >>
+-                     level);
+-          if (width > slot_w || height > slot_h) {
++          const gfx::Vector2d block_size =
++              GetCompressedTexBlockDimensions(internal_format);
++          const int expected_width = std::max(1, level0_width >> level);
++          const int expected_height = std::max(1, level0_height >> level);
++          const int expected_blocks_x =
++              (expected_width + block_size.x() - 1) / block_size.x();
++          const int expected_blocks_y =
++              (expected_height + block_size.y() - 1) / block_size.y();
++          const int incoming_blocks_x =
++              (width + block_size.x() - 1) / block_size.x();
++          const int incoming_blocks_y =
++              (height + block_size.y() - 1) / block_size.y();
++          if (incoming_blocks_x > expected_blocks_x ||
++              incoming_blocks_y > expected_blocks_y) {
+             GLuint scratch = 0;
+             api()->glGenBuffersARBFn(1, &scratch);
+             api()->glBindBufferFn(GL_PIXEL_UNPACK_BUFFER, scratch);
+diff --git a/gpu/command_buffer/tests/gl_texture_unittest.cc b/gpu/command_buffer/tests/gl_texture_unittest.cc
+index 5c27242cf73b11ab6976ed91984da557a918f925..a858a54d9d658c07a9c94bf2654c8fb031266b29 100644
+--- a/gpu/command_buffer/tests/gl_texture_unittest.cc
++++ b/gpu/command_buffer/tests/gl_texture_unittest.cc
+@@ -13,6 +13,7 @@
+ 
+ #include "base/containers/span.h"
+ #include "base/logging.h"
++#include "build/build_config.h"
+ #include "gpu/command_buffer/tests/gl_manager.h"
+ #include "gpu/command_buffer/tests/gl_test_utils.h"
+ #include "gpu/config/gpu_driver_bug_workarounds.h"
+@@ -303,6 +304,128 @@ TEST_P(GLTextureTest, OversizedMipLevelsCompressedASTC) {
+   glDeleteProgram(program);
+ }
+ 
++// Test that defining an oversized nonzero mip level (level 0 257x257, level 1
++// 256x256) on an ASTC 12x12 compressed texture does not crash during the
++// level 1 upload.
++TEST_P(GLTextureTest, OversizedMipLevelsCompressedASTC12x12_256x256) {
++  if (!IsApplicable()) {
++    return;
++  }
++
++  const bool has_astc =
++      GLTestHelper::HasExtension("GL_KHR_texture_compression_astc_ldr") ||
++      GLTestHelper::HasExtension("GL_OES_texture_compression_astc");
++  if (!has_astc) {
++    LOG(INFO) << "ASTC not supported, skipping test";
++    return;
++  }
++
++  GLuint tex = 0;
++  glGenTextures(1, &tex);
++  glBindTexture(GL_TEXTURE_2D, tex);
++  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++  // ASTC void-extent solid color block: 16 bytes per block.
++  constexpr auto kAstcBlock =
++      std::to_array<uint8_t>({0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++                              0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF});
++
++  // Level 0: 257x257. In 12x12 blocks: ceil(257/12) = 22 blocks per axis.
++  constexpr int kLevel0Width = 257;
++  constexpr int kLevel0Height = 257;
++  constexpr size_t kLevel0Blocks = 22 * 22;
++  constexpr size_t kLevel0Bytes = kLevel0Blocks * 16;
++  std::vector<uint8_t> level0_data(kLevel0Bytes);
++  for (size_t b = 0; b < kLevel0Blocks; ++b) {
++    base::span(level0_data).subspan(b * 16u, 16u).copy_from(kAstcBlock);
++  }
++  glCompressedTexImage2D(
++      GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_12x12_KHR, kLevel0Width,
++      kLevel0Height, 0, static_cast<GLsizei>(kLevel0Bytes), level0_data.data());
++  ASSERT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++  // Level 1: 256x256. In 12x12 blocks: ceil(256/12) = 22 blocks per axis.
++  constexpr int kLevel1Width = 256;
++  constexpr int kLevel1Height = 256;
++  constexpr size_t kLevel1Blocks = 22 * 22;
++  constexpr size_t kLevel1Bytes = kLevel1Blocks * 16;
++  std::vector<uint8_t> level1_data(kLevel1Bytes);
++  for (size_t b = 0; b < kLevel1Blocks; ++b) {
++    base::span(level1_data).subspan(b * 16u, 16u).copy_from(kAstcBlock);
++  }
++  glCompressedTexImage2D(
++      GL_TEXTURE_2D, 1, GL_COMPRESSED_RGBA_ASTC_12x12_KHR, kLevel1Width,
++      kLevel1Height, 0, static_cast<GLsizei>(kLevel1Bytes), level1_data.data());
++  ASSERT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++  glFinish();
++  ASSERT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++  glDeleteTextures(1, &tex);
++}
++
++// Test that defining an oversized nonzero mip level (level 0 257x257, level 1
++// 192x192) on an ASTC 12x12 compressed texture does not crash during the
++// level 1 upload.
++TEST_P(GLTextureTest, OversizedMipLevelsCompressedASTC12x12_192x192) {
++  if (!IsApplicable()) {
++    return;
++  }
++
++  const bool has_astc =
++      GLTestHelper::HasExtension("GL_KHR_texture_compression_astc_ldr") ||
++      GLTestHelper::HasExtension("GL_OES_texture_compression_astc");
++  if (!has_astc) {
++    LOG(INFO) << "ASTC not supported, skipping test";
++    return;
++  }
++
++  GLuint tex = 0;
++  glGenTextures(1, &tex);
++  glBindTexture(GL_TEXTURE_2D, tex);
++  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++  // ASTC void-extent solid color block: 16 bytes per block.
++  constexpr auto kAstcBlock =
++      std::to_array<uint8_t>({0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++                              0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF});
++
++  // Level 0: 257x257. In 12x12 blocks: ceil(257/12) = 22 blocks per axis.
++  constexpr int kLevel0Width = 257;
++  constexpr int kLevel0Height = 257;
++  constexpr size_t kLevel0Blocks = 22 * 22;
++  constexpr size_t kLevel0Bytes = kLevel0Blocks * 16;
++  std::vector<uint8_t> level0_data(kLevel0Bytes);
++  for (size_t b = 0; b < kLevel0Blocks; ++b) {
++    base::span(level0_data).subspan(b * 16u, 16u).copy_from(kAstcBlock);
++  }
++  glCompressedTexImage2D(
++      GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_12x12_KHR, kLevel0Width,
++      kLevel0Height, 0, static_cast<GLsizei>(kLevel0Bytes), level0_data.data());
++  ASSERT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++  // Level 1: 192x192. In 12x12 blocks: ceil(192/12) = 16 blocks per axis.
++  constexpr int kLevel1Width = 192;
++  constexpr int kLevel1Height = 192;
++  constexpr size_t kLevel1Blocks = 16 * 16;
++  constexpr size_t kLevel1Bytes = kLevel1Blocks * 16;
++  std::vector<uint8_t> level1_data(kLevel1Bytes);
++  for (size_t b = 0; b < kLevel1Blocks; ++b) {
++    base::span(level1_data).subspan(b * 16u, 16u).copy_from(kAstcBlock);
++  }
++  glCompressedTexImage2D(
++      GL_TEXTURE_2D, 1, GL_COMPRESSED_RGBA_ASTC_12x12_KHR, kLevel1Width,
++      kLevel1Height, 0, static_cast<GLsizei>(kLevel1Bytes), level1_data.data());
++  ASSERT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++  glFinish();
++  ASSERT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++  glDeleteTextures(1, &tex);
++}
++
+ // Test that defining an oversized nonzero mip level on a DXT compressed texture
+ // succeeds and renders correctly.
+ TEST_P(GLTextureTest, OversizedMipLevelsCompressedDXT) {

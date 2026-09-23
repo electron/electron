@@ -1,0 +1,250 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Wed, 15 Jul 2026 07:29:41 -0700
+Subject: Reset base level to 0 during ASTC uploads on PowerVR.
+
+Add a workaround which resets the base level of the texture to 0
+during glCompressedTexSubImage2D uploads of ASTC data. Apply this
+workaround on Imagination's drivers.
+
+Also apply the workaround to ClearCompressedTextureLevel and
+ClearCompressedTextureLevel3D, as the validating command decoder's
+texture clearing path uses glCompressedTexSubImage2D internally to
+initialize uncleared compressed textures, which would otherwise
+trigger the same crash.
+
+Co-authored with Gemini.
+
+Test: out/AndroidRelease/bin/gl_tests --use-cmd-decoder=validating \
+  --gtest_filter=*ASTCCompressedSubImageWithBaseLevel*
+TAG=agy
+CONV=b6f783ec-ad2a-4e4b-95c8-86d2fe49e5ee
+
+Bug: 528131939
+Change-Id: I215641dcae6bd1e011e0f3ae1892c5a533e59b85
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8092082
+Auto-Submit: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1662580}
+
+Electron adaptation notes (42-x-y):
+- gpu_driver_bug_list.json: the branch already carries later workaround
+  entries (ids 485/488/491/492/493 via merges), so the new id 483 entry is
+  appended after them instead of after id 482. No other changes.
+
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index 523e0fbcd087747db1bc606a50767c41f22ce2b6..47ab3cdac85b43d8ff7a4d9120c7ef069e2d452a 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -12566,9 +12566,18 @@ bool GLES2DecoderImpl::ClearCompressedTextureLevel(Texture* texture,
+     // Add extra scope to destroy zero and the object it owns right
+     // after its usage.
+     auto zero = base::HeapArray<char>::WithSize(bytes_required);
++    bool reset_base_level = workarounds().reset_base_level_for_astc_sub_image &&
++                            IsASTCFormat(format) && texture->base_level() != 0;
+     api()->glBindTextureFn(texture->target(), texture->service_id());
++    if (reset_base_level) {
++      api()->glTexParameteriFn(texture->target(), GL_TEXTURE_BASE_LEVEL, 0);
++    }
+     api()->glCompressedTexSubImage2DFn(target, level, 0, 0, width, height,
+                                        format, zero.size(), zero.data());
++    if (reset_base_level) {
++      api()->glTexParameteriFn(texture->target(), GL_TEXTURE_BASE_LEVEL,
++                               texture->base_level());
++    }
+   }
+   TextureRef* bound_texture =
+       texture_manager()->GetTextureInfoForTarget(&state_, texture->target());
+@@ -12611,9 +12620,18 @@ bool GLES2DecoderImpl::ClearCompressedTextureLevel3D(Texture* texture,
+     // Add extra scope to destroy zero and the object it owns right
+     // after its usage.
+     auto zero = base::HeapArray<char>::WithSize(bytes_required);
++    bool reset_base_level = workarounds().reset_base_level_for_astc_sub_image &&
++                            IsASTCFormat(format) && texture->base_level() != 0;
+     api()->glBindTextureFn(texture->target(), texture->service_id());
++    if (reset_base_level) {
++      api()->glTexParameteriFn(texture->target(), GL_TEXTURE_BASE_LEVEL, 0);
++    }
+     api()->glCompressedTexSubImage3DFn(target, level, 0, 0, 0, width, height,
+                                        depth, format, zero.size(), zero.data());
++    if (reset_base_level) {
++      api()->glTexParameteriFn(texture->target(), GL_TEXTURE_BASE_LEVEL,
++                               texture->base_level());
++    }
+   }
+   TextureRef* bound_texture =
+       texture_manager()->GetTextureInfoForTarget(&state_, texture->target());
+@@ -13772,6 +13790,11 @@ error::Error GLES2DecoderImpl::DoCompressedTexSubImage(
+                                decompressed_data.data());
+     }
+   } else {
++    bool reset_base_level = workarounds().reset_base_level_for_astc_sub_image &&
++                            IsASTCFormat(format) && texture->base_level() != 0;
++    if (reset_base_level) {
++      api()->glTexParameteriFn(texture->target(), GL_TEXTURE_BASE_LEVEL, 0);
++    }
+     if (dimension == ContextState::k2D) {
+       api()->glCompressedTexSubImage2DFn(target, level, xoffset, yoffset, width,
+                                          height, format, image_size, data);
+@@ -13780,6 +13803,10 @@ error::Error GLES2DecoderImpl::DoCompressedTexSubImage(
+                                          zoffset, width, height, depth, format,
+                                          image_size, data);
+     }
++    if (reset_base_level) {
++      api()->glTexParameteriFn(texture->target(), GL_TEXTURE_BASE_LEVEL,
++                               texture->base_level());
++    }
+   }
+ 
+   // This may be a slow command.  Exit command processing to allow for
+diff --git a/gpu/command_buffer/tests/compressed_texture_test.cc b/gpu/command_buffer/tests/compressed_texture_test.cc
+index c9e8a7c9d3b2d1b9e1ec0b8b749214ea6b2177fb..1bd682119ae13ad7c504b7e93dfad7fc7206fdee 100644
+--- a/gpu/command_buffer/tests/compressed_texture_test.cc
++++ b/gpu/command_buffer/tests/compressed_texture_test.cc
+@@ -5,6 +5,7 @@
+ #include <GLES2/gl2.h>
+ #include <GLES2/gl2ext.h>
+ #include <GLES2/gl2extchromium.h>
++#include <GLES3/gl3.h>
+ #include <stdint.h>
+ 
+ #include <array>
+@@ -254,4 +255,102 @@ INSTANTIATE_TEST_SUITE_P(Format,
+                          CompressedTextureTest,
+                          ::testing::ValuesIn(kFormats));
+ 
++class CompressedTextureTestES3 : public ::testing::Test {
++ protected:
++  void SetUp() override {
++    GLManager::Options options;
++    options.size = gfx::Size(kTextureWidth, kTextureHeight);
++    options.context_type = CONTEXT_TYPE_OPENGLES3;
++    gl_.Initialize(options);
++  }
++
++  void TearDown() override { gl_.Destroy(); }
++
++ private:
++  GLManager gl_;
++};
++
++// Test that compressed sub-image updates work when TEXTURE_BASE_LEVEL > 0.
++// This is a workaround for a PowerVR driver bug where it miscomputes the
++// offset.
++TEST_F(CompressedTextureTestES3, ASTCCompressedSubImageWithBaseLevel) {
++  if (!GLTestHelper::HasExtension("GL_KHR_texture_compression_astc_ldr")) {
++    return;
++  }
++
++  // Use shaders that match the proof-of-concept.
++  // They don't use vertex attributes, but gl_VertexID to generate a quad.
++  const char* kVS =
++      "#version 300 es\n"
++      "out vec2 uv;\n"
++      "void main() {\n"
++      "  vec2 p = vec2(gl_VertexID & 1, gl_VertexID >> 1);\n"
++      "  uv = p;\n"
++      "  gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);\n"
++      "}\n";
++
++  const char* kFS =
++      "#version 300 es\n"
++      "precision highp float;\n"
++      "uniform sampler2D t;\n"
++      "in vec2 uv;\n"
++      "out vec4 c;\n"
++      "void main() {\n"
++      "  c = texture(t, uv);\n"
++      "}\n";
++
++  GLuint program = GLTestHelper::LoadProgram(kVS, kFS);
++  ASSERT_NE(program, 0u);
++  glUseProgram(program);
++  GLint tex_location = glGetUniformLocation(program, "t");
++  ASSERT_NE(tex_location, -1);
++  glUniform1i(tex_location, 0);
++  GLTestHelper::CheckGLError("Setup program", __LINE__);
++
++  // 8x5 ASTC format.
++  GLenum format = GL_COMPRESSED_RGBA_ASTC_8x5_KHR;
++  constexpr GLsizei kWidth = 8;
++  constexpr GLsizei kHeight = 160;
++  constexpr GLsizei kLevels = 5;
++  std::vector<uint8_t> data(16, 0);
++
++  // Loop multiple times to increase chances of hitting OOB write/crash if
++  // workaround fails. Keep textures alive to groom the heap.
++  constexpr int kIterations = 16;
++  std::vector<GLuint> textures(kIterations);
++  glGenTextures(kIterations, textures.data());
++
++  for (int i = 0; i < kIterations; ++i) {
++    glBindTexture(GL_TEXTURE_2D, textures[i]);
++
++    glTexStorage2DEXT(GL_TEXTURE_2D, kLevels, format, kWidth, kHeight);
++    GLTestHelper::CheckGLError("glTexStorage2D", __LINE__);
++
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
++                    GL_LINEAR_MIPMAP_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 4);
++    GLTestHelper::CheckGLError("glTexParameteri", __LINE__);
++
++    // Draw using the program that samples the texture.
++    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
++    glFinish();
++    GLTestHelper::CheckGLError("Draw", __LINE__);
++
++    // Perform sub-image update to level 3.
++    // 1x5 pixels is 1 block for 8x5 ASTC, which is 16 bytes.
++    glCompressedTexSubImage2D(GL_TEXTURE_2D, 3, 0, 0, 1, 5, format,
++                              static_cast<GLsizei>(data.size()), data.data());
++    GLTestHelper::CheckGLError("glCompressedTexSubImage2D level 3", __LINE__);
++
++    // Also try level 4 (which is the base level)
++    glCompressedTexSubImage2D(GL_TEXTURE_2D, 4, 0, 0, 1, 5, format,
++                              static_cast<GLsizei>(data.size()), data.data());
++    GLTestHelper::CheckGLError("glCompressedTexSubImage2D level 4", __LINE__);
++  }
++
++  glDeleteTextures(kIterations, textures.data());
++  glDeleteProgram(program);
++}
++
+ }  // namespace gpu
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index a04bdb9b2ed8e464db49fa6cc0a012373c192a4e..6412ba0002f5e2139c3a308152cdffb8e3489618 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3882,6 +3882,18 @@
+       "features": [
+         "max_texture_image_units_13"
+       ]
++    },
++    {
++      "id": 483,
++      "cr_bugs": [528131939],
++      "description": "Reset texture base level before calling glCompressedTexSubImage2D for ASTC textures to work around PowerVR driver bug.",
++      "os": {
++        "type": "android"
++      },
++      "gl_vendor": "Imagination.*",
++      "features": [
++        "reset_base_level_for_astc_sub_image"
++      ]
+     }
+   ]
+ }
+diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
+index f83d44119398ebe73de2d701a6a7c2cdb75eb6c8..a4636ce7fcde1a3c768f72dde2d501e9913a0b97 100644
+--- a/gpu/config/gpu_workaround_list.txt
++++ b/gpu/config/gpu_workaround_list.txt
+@@ -121,6 +121,7 @@ reattach_texture_to_fbo_after_layer_increase
+ recreate_fbo_upon_flush
+ rely_on_implicit_sync_for_swap_buffers
+ remove_dynamic_indexing_of_swizzled_vector
++reset_base_level_for_astc_sub_image
+ round_down_uniform_bind_buffer_range_size
+ scalarize_vec_and_mat_constructor_args
+ split_level_0_pbo_full_sub_image_2d

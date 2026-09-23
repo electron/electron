@@ -1,0 +1,524 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jordan Bayles <jophba@chromium.org>
+Date: Mon, 22 Jun 2026 19:03:23 -0700
+Subject: [M148] content: Prevent UAF in WebContentsImpl related to drop
+ fullscreen
+
+This was not a clean cherry pick due to some merge conflicts due to
+https://chromium-review.git.corp.google.com/c/chromium/src/+/7756827 not
+being cherry picked to M148, which originally added the fullscreen
+blocker class to the media router dialog view.
+
+Original change's description:
+> content: Prevent UAF in WebContentsImpl related to drop fullscreen
+>
+> ForSecurityDropFullscreen can synchronously destroy the WebContentsImpl
+> object. This CL updates ForSecurityDropFullscreen() to return a
+> std::optional<base::ScopedClosureRunner> that is std::nullopt if `this`
+> was destroyed, forcing callers to handle it explicitly.
+>
+> Affected methods:
+> - ShowCreatedWindow
+> - ViewSource
+> - EnumerateDirectory
+> - RunJavaScriptDialog
+> - RunBeforeUnloadConfirm
+> - RunFileChooser
+> - SetWindowRect
+> - DidCallFocus
+>
+> Bug: 506684534
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7818866
+> Commit-Queue: Jordan Bayles <jophba@chromium.org>
+> Reviewed-by: Avi Drissman <avi@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1627248}
+
+(cherry picked from commit 058c2d6ea49cf80034fe78cfdb88cf24be7435de)
+https://chromium-review.git.corp.google.com/c/chromium/src/+/7818866
+
+Bug: 506684534
+Fixed: 514925767
+Change-Id: Iff61aad85be7487fe1ef29ce887a25c0825c8f7b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7953520
+Reviewed-by: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Reviewed-by: Thomas Lukaszewicz <tluk@chromium.org>
+Commit-Queue: Jordan Bayles <jophba@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7778@{#4410}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
+index 057ef82bd6c6f9c01a2a82d0ce429efb22487d8b..7d5e9c903fb78d3f686fc86d8b6c382ba72e9d9b 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
+@@ -782,9 +782,13 @@ class ChromeFileSystemAccessPermissionContext::PermissionGrantImpl
+     }
+ 
+     // Drop fullscreen mode so that the user sees the URL bar.
+-    base::ScopedClosureRunner fullscreen_block =
+-        web_contents->ForSecurityDropFullscreen(
+-            /*display_id=*/display::kInvalidDisplayId);
++    auto blocker = web_contents->ForSecurityDropFullscreen(
++        /*display_id=*/display::kInvalidDisplayId);
++    if (!blocker) {
++      RunCallbackAndRecordPermissionRequestOutcome(
++          std::move(callback), PermissionRequestOutcome::kRequestAborted);
++      return;
++    }
+ 
+     if (context_->IsEligibleToUpgradePermissionRequestToRestorePrompt(
+             origin_, path_info_.path, handle_type_, user_action_, type_)) {
+@@ -796,7 +800,7 @@ class ChromeFileSystemAccessPermissionContext::PermissionGrantImpl
+            origin_, request_data_list},
+           base::BindOnce(&PermissionGrantImpl::OnRestorePermissionRequestResult,
+                          this, std::move(callback)),
+-          std::move(fullscreen_block));
++          std::move(*blocker));
+       return;
+     }
+ 
+@@ -814,7 +818,7 @@ class ChromeFileSystemAccessPermissionContext::PermissionGrantImpl
+          {file_request_data}},
+         base::BindOnce(&PermissionGrantImpl::OnPermissionRequestResult, this,
+                        std::move(callback)),
+-        std::move(fullscreen_block));
++        std::move(*blocker));
+   }
+ 
+   const url::Origin& origin() const {
+diff --git a/chrome/browser/renderer_context_menu/render_view_context_menu.cc b/chrome/browser/renderer_context_menu/render_view_context_menu.cc
+index a72a0002b82aee8fe47834d6e06047b9daf7f86c..0680dd8c69e1e92ee6443ab745aca3d41fce0888 100644
+--- a/chrome/browser/renderer_context_menu/render_view_context_menu.cc
++++ b/chrome/browser/renderer_context_menu/render_view_context_menu.cc
+@@ -3698,9 +3698,10 @@ void RenderViewContextMenu::ExecuteCommand(int id, int event_flags) {
+       // so drop fullscreen when it is shown. https://crbug.com/1170584
+       // TODO(avi): Do we need to attach the fullscreen block to the emoji
+       // panel?
+-      source_web_contents_
+-          ->ForSecurityDropFullscreen(/*display_id=*/display::kInvalidDisplayId)
+-          .RunAndReset();
++      if (!source_web_contents_->ForSecurityDropFullscreen(
++              /*display_id=*/display::kInvalidDisplayId)) {
++        return;
++      }
+ 
+       Browser* browser = GetBrowser();
+       if (browser) {
+diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
+index 21fc8cd1551ffd9eafd6f7252c19bd730de39e8e..7bf5a9bf6a065e697699b08278d6d49ebf115932 100644
+--- a/chrome/browser/ui/browser.cc
++++ b/chrome/browser/ui/browser.cc
+@@ -2726,17 +2726,18 @@ void Browser::RegisterProtocolHandler(
+   permissions::PermissionRequestManager* permission_request_manager =
+       permissions::PermissionRequestManager::FromWebContents(web_contents);
+   if (permission_request_manager) {
+-    // At this point, there will be UI presented, and running a dialog causes an
+-    // exit to webpage-initiated fullscreen. http://crbug.com/728276
+-    base::ScopedClosureRunner fullscreen_block =
+-        web_contents->ForSecurityDropFullscreen(
+-            /*display_id=*/display::kInvalidDisplayId);
++    auto blocker = web_contents->ForSecurityDropFullscreen(
++        /*display_id=*/display::kInvalidDisplayId);
++    if (!blocker) {
++      return;
++    }
++
+ 
+     permission_request_manager->AddRequest(
+         requesting_frame,
+         std::make_unique<
+             custom_handlers::RegisterProtocolHandlerPermissionRequest>(
+-            registry, handler, url, std::move(fullscreen_block)));
++            registry, handler, url, std::move(*blocker)));
+   }
+ }
+ 
+diff --git a/chrome/browser/ui/views/media_router/media_router_dialog_controller_views.cc b/chrome/browser/ui/views/media_router/media_router_dialog_controller_views.cc
+index 8b391a0856f2ab69f520233747526bbd19d90555..1acea78f07c35186496147800a436c963ac9ebde 100644
+--- a/chrome/browser/ui/views/media_router/media_router_dialog_controller_views.cc
++++ b/chrome/browser/ui/views/media_router/media_router_dialog_controller_views.cc
+@@ -9,6 +9,8 @@
+ #include "build/build_config.h"
+ #include "chrome/browser/media/router/media_router_feature.h"
+ #include "chrome/browser/ui/browser_finder.h"
++#include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
++#include "chrome/browser/ui/exclusive_access/fullscreen_controller.h"
+ #include "chrome/browser/ui/global_media_controls/media_notification_service.h"
+ #include "chrome/browser/ui/global_media_controls/media_notification_service_factory.h"
+ #include "chrome/browser/ui/global_media_controls/media_toolbar_button_controller.h"
+@@ -63,6 +65,25 @@ void MediaRouterDialogControllerViews::CreateMediaRouterDialog(
+ 
+   InitializeMediaRouterUI();
+   Browser* browser = chrome::FindBrowserWithTab(initiator());
++
++  // Block tab fullscreen. There is no toolbar to anchor the cast dialog to in
++  // tab fullscreen mode. It is unsafe to show the dialog entirely within the
++  // content area, as this would make it susceptible to spoofing attacks.
++  if (browser) {
++    ExclusiveAccessManager* exclusive_access_manager =
++        browser->GetExclusiveAccessManager();
++    FullscreenController* fullscreen_controller =
++        exclusive_access_manager->fullscreen_controller();
++    if (fullscreen_controller->IsTabFullscreen()) {
++      auto blocker =
++          initiator()->ForSecurityDropFullscreen(display::kInvalidDisplayId);
++      if (!blocker) {
++        return;
++      }
++      fullscreen_blocker_ = std::move(*blocker);
++    }
++  }
++
+   BrowserView* browser_view =
+       browser ? BrowserView::GetBrowserViewForBrowser(browser) : nullptr;
+   if (browser_view) {
+diff --git a/chrome/browser/ui/views/media_router/media_router_dialog_controller_views.h b/chrome/browser/ui/views/media_router/media_router_dialog_controller_views.h
+index bc9d23b33709efc573bbcfe3727d8b54d653ccc1..f8ce8a85384e06ccb08685fdf406c5b216020dc7 100644
+--- a/chrome/browser/ui/views/media_router/media_router_dialog_controller_views.h
++++ b/chrome/browser/ui/views/media_router/media_router_dialog_controller_views.h
+@@ -116,6 +116,8 @@ class MediaRouterDialogControllerViews
+ 
+   bool hide_media_button_for_testing_ = false;
+ 
++  base::ScopedClosureRunner fullscreen_blocker_;
++
+   base::WeakPtrFactory<MediaRouterDialogControllerViews> weak_ptr_factory_{
+       this};
+ 
+diff --git a/chrome/browser/ui/views/permissions/chooser_bubble_ui.cc b/chrome/browser/ui/views/permissions/chooser_bubble_ui.cc
+index c7a5d704701c3f4ea396dee25a9ff06b3a50d0c4..4b7fdfdae77cb50543b52bacf9ee5d3596fcbd83 100644
+--- a/chrome/browser/ui/views/permissions/chooser_bubble_ui.cc
++++ b/chrome/browser/ui/views/permissions/chooser_bubble_ui.cc
+@@ -157,8 +157,11 @@ ChooserBubbleUiViewDelegate::ChooserBubbleUiViewDelegate(
+   // Drop fullscreen mode for the current webcontent so that the user sees the
+   // URL.
+   if (fullscreen_controller->IsTabFullscreen()) {
+-    fullscreen_blocker_ =
++    auto blocker =
+         contents->ForSecurityDropFullscreen(display::kInvalidDisplayId);
++    if (blocker) {
++      fullscreen_blocker_ = std::move(*blocker);
++    }
+   }
+ }
+ 
+diff --git a/chrome/browser/ui/views/permissions/permission_prompt_bubble.cc b/chrome/browser/ui/views/permissions/permission_prompt_bubble.cc
+index eea73a36f7d6961bc32ecd75763b2c106223686f..d32fb0ca00bcc5b233727ebb77d5ab1f4f6c0c31 100644
+--- a/chrome/browser/ui/views/permissions/permission_prompt_bubble.cc
++++ b/chrome/browser/ui/views/permissions/permission_prompt_bubble.cc
+@@ -46,8 +46,12 @@ void PermissionPromptBubble::ShowBubble() {
+                                                     ->fullscreen_controller();
+   CHECK(fullscreen_controller);
+   if (fullscreen_controller->IsTabFullscreen()) {
+-    fullscreen_blocker_ =
++    auto blocker =
+         web_contents()->ForSecurityDropFullscreen(display::kInvalidDisplayId);
++    if (!blocker) {
++      return;
++    }
++    fullscreen_blocker_ = std::move(*blocker);
+   }
+ 
+   raw_ptr<PermissionPromptBubbleBaseView> prompt_bubble =
+diff --git a/chrome/browser/webshare/share_service_impl.cc b/chrome/browser/webshare/share_service_impl.cc
+index 805e2baddec96c267937b11e615d5c1a62f07ce0..4681357e1c994e6f882a7303098f775a12f88807 100644
+--- a/chrome/browser/webshare/share_service_impl.cc
++++ b/chrome/browser/webshare/share_service_impl.cc
+@@ -298,11 +298,12 @@ void ShareServiceImpl::RunShareOperation(
+          blink::mojom::ShareError result) { std::move(callback).Run(result); },
+       std::move(sharing_service_operation), std::move(callback)));
+ #elif BUILDFLAG(IS_WIN)
+-  // Drop fullscreen mode so the Share UI can be easily clicked away from,
+-  // without clicking back into the web contents
+-  base::ScopedClosureRunner fullscreen_block =
+-      web_contents->ForSecurityDropFullscreen(
+-          /*display_id=*/display::kInvalidDisplayId);
++  auto blocker = web_contents->ForSecurityDropFullscreen(
++      /*display_id=*/display::kInvalidDisplayId);
++  if (!blocker) {
++    std::move(callback).Run(blink::mojom::ShareError::PERMISSION_DENIED);
++    return;
++  }
+ 
+   auto share_operation = std::make_unique<webshare::ShareOperation>(
+       title, text, share_url, web_contents);
+@@ -316,7 +317,7 @@ void ShareServiceImpl::RunShareOperation(
+             fullscreen_block.RunAndReset();
+             std::move(callback).Run(result);
+           },
+-          std::move(share_operation), std::move(fullscreen_block),
++          std::move(share_operation), std::move(*blocker),
+           std::move(callback)));
+ #else
+   NOTREACHED();
+diff --git a/content/browser/file_system_access/file_system_access_manager_impl.cc b/content/browser/file_system_access/file_system_access_manager_impl.cc
+index aaea502bde5afaf31329dfc3c79e9a083e2aa95f..eeaa96754aaa79190958cf837f05e2cc252f49e7 100644
+--- a/content/browser/file_system_access/file_system_access_manager_impl.cc
++++ b/content/browser/file_system_access/file_system_access_manager_impl.cc
+@@ -287,10 +287,17 @@ void ShowFilePickerOnUIThread(
+   }
+ #endif
+ 
++  auto blocker =
++      web_contents->ForSecurityDropFullscreen(display::kInvalidDisplayId);
++  if (!blocker) {
++    std::move(callback).Run(file_system_access_error::FromStatus(
++                                FileSystemAccessStatus::kOperationAborted),
++                            {});
++    return;
++  }
++
+   FileSystemChooser::ScopedObjects scoped_objects(
+-      // Drop fullscreen mode so that the user sees the URL bar.
+-      /*fullscreen_block=*/web_contents->ForSecurityDropFullscreen(
+-          display::kInvalidDisplayId),
++      /*fullscreen_block=*/std::move(*blocker),
+       // Maybe tuck the pip window so that it would not block the file picker
+       // UI.
+       /*pip_tucker=*/GetContentClient()
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 2beb3ea411196e6f138596be68d91fef6f77482b..4ccd515ae8be62b5f0bc10765726efe3fc54d02b 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -5857,7 +5857,9 @@ WebContents* WebContentsImpl::ShowCreatedWindow(
+   // Only drop fullscreen on the specific destination display, if it is known.
+   // This supports sites using cross-screen window management capabilities to
+   // retain fullscreen and open a window on another screen.
+-  ForSecurityDropFullscreen(display_id).RunAndReset();
++  if (!ForSecurityDropFullscreen(display_id)) {
++    return nullptr;
++  }
+ 
+   // The delegate can be null in tests.
+   if (!delegate) {
+@@ -7430,10 +7432,12 @@ void WebContentsImpl::ExitFullscreen(bool will_cause_resize) {
+   ExitFullscreenMode(will_cause_resize);
+ }
+ 
+-base::ScopedClosureRunner WebContentsImpl::ForSecurityDropFullscreen(
+-    int64_t display_id) {
++std::optional<base::ScopedClosureRunner>
++WebContentsImpl::ForSecurityDropFullscreen(int64_t display_id) {
+   OPTIONAL_TRACE_EVENT1("content", "WebContentsImpl::ForSecurityDropFullscreen",
+                         "display_id", display_id);
++  base::WeakPtr<WebContentsImpl> weak_this = weak_factory_.GetWeakPtr();
++
+   // Make WebContentses "related" to this instance exit HTML element fullscreen,
+   // ignoring browser fullscreen and fullscreen-within-tab modes. This needs to
+   // be done with two passes, because it is simple to walk _up_ the chain of
+@@ -7461,6 +7465,9 @@ base::ScopedClosureRunner WebContentsImpl::ForSecurityDropFullscreen(
+   }
+ 
+   for (auto& fullscreen_contents : fullscreen_contents_list) {
++    if (!weak_this) {
++      return std::nullopt;
++    }
+     if (!fullscreen_contents) {
+       continue;
+     }
+@@ -7473,6 +7480,10 @@ base::ScopedClosureRunner WebContentsImpl::ForSecurityDropFullscreen(
+     }
+   }
+ 
++  if (!weak_this) {
++    return std::nullopt;
++  }
++
+   // Second, walk upstream from this WebContents, and drop the fullscreen of
+   // all WebContentses that are in fullscreen. Block all the WebContentses in
+   // the chain from entering fullscreen while the returned closure runner is
+@@ -7487,6 +7498,9 @@ base::ScopedClosureRunner WebContentsImpl::ForSecurityDropFullscreen(
+   }
+ 
+   for (auto& opener : openers) {
++    if (!weak_this) {
++      return std::nullopt;
++    }
+     if (!opener) {
+       continue;
+     }
+@@ -8285,11 +8299,9 @@ void WebContentsImpl::ViewSource(RenderFrameHostImpl* frame) {
+ 
+   // Any new WebContents opened while this WebContents is in fullscreen can be
+   // used to confuse the user, so drop fullscreen.
+-  base::ScopedClosureRunner fullscreen_block =
+-      ForSecurityDropFullscreen(/*display_id=*/display::kInvalidDisplayId);
+-  // The new view source contents will be independent of this contents, so
+-  // release the fullscreen block.
+-  fullscreen_block.RunAndReset();
++  if (!ForSecurityDropFullscreen(/*display_id=*/display::kInvalidDisplayId)) {
++    return;
++  }
+ 
+   // We intentionally don't share the SiteInstance with the original frame so
+   // that view source has a consistent process model and always ends up in a new
+@@ -8542,9 +8554,12 @@ void WebContentsImpl::EnumerateDirectory(
+ 
+   // Any explicit focusing of another window while this WebContents is in
+   // fullscreen can be used to confuse the user, so drop fullscreen.
+-  base::ScopedClosureRunner fullscreen_block =
++  auto blocker =
+       ForSecurityDropFullscreen(/*display_id=*/display::kInvalidDisplayId);
+-  listener->SetFullscreenBlock(std::move(fullscreen_block));
++  if (!blocker) {
++    return;
++  }
++  listener->SetFullscreenBlock(std::move(*blocker));
+ 
+   if (delegate_) {
+     active_file_chooser_ = std::move(file_chooser);
+@@ -9119,14 +9134,17 @@ void WebContentsImpl::RunJavaScriptDialog(
+ 
+   // Running a dialog causes an exit to webpage-initiated fullscreen.
+   // http://crbug.com/728276
+-  base::ScopedClosureRunner fullscreen_block =
++  auto blocker =
+       ForSecurityDropFullscreen(/*display_id=*/display::kInvalidDisplayId);
++  if (!blocker) {
++    return;
++  }
+ 
+   auto callback = base::BindOnce(
+       &WebContentsImpl::OnDialogClosed, weak_factory_.GetWeakPtr(),
+       render_frame_host->GetProcess()->GetDeprecatedID(),
+       render_frame_host->GetRoutingID(), std::move(response_callback),
+-      std::move(fullscreen_block));
++      std::move(*blocker));
+ 
+   std::vector<protocol::PageHandler*> page_handlers =
+       protocol::PageHandler::EnabledForWebContents(this);
+@@ -9252,14 +9270,17 @@ void WebContentsImpl::RunBeforeUnloadConfirm(
+ 
+   // Running a dialog causes an exit to webpage-initiated fullscreen.
+   // http://crbug.com/728276
+-  base::ScopedClosureRunner fullscreen_block =
++  auto blocker =
+       ForSecurityDropFullscreen(/*display_id=*/display::kInvalidDisplayId);
++  if (!blocker) {
++    return;
++  }
+ 
+   auto callback = base::BindOnce(
+       &WebContentsImpl::OnDialogClosed, weak_factory_.GetWeakPtr(),
+       render_frame_host->GetProcess()->GetDeprecatedID(),
+       render_frame_host->GetRoutingID(), std::move(response_callback),
+-      std::move(fullscreen_block));
++      std::move(*blocker));
+ 
+   std::vector<protocol::PageHandler*> page_handlers =
+       protocol::PageHandler::EnabledForWebContents(this);
+@@ -9356,9 +9377,12 @@ void WebContentsImpl::RunFileChooser(
+ 
+   // Any explicit focusing of another window while this WebContents is in
+   // fullscreen can be used to confuse the user, so drop fullscreen.
+-  base::ScopedClosureRunner fullscreen_block =
++  auto blocker =
+       ForSecurityDropFullscreen(/*display_id=*/display::kInvalidDisplayId);
+-  listener->SetFullscreenBlock(std::move(fullscreen_block));
++  if (!blocker) {
++    return;
++  }
++  listener->SetFullscreenBlock(std::move(*blocker));
+ 
+   if (delegate_) {
+     active_file_chooser_ = std::move(file_chooser);
+@@ -9762,7 +9786,9 @@ void WebContentsImpl::SetWindowRect(const gfx::Rect& new_bounds) {
+   // Only drop fullscreen on the specific destination display, which is known.
+   // This supports sites using cross-screen window management capabilities to
+   // retain fullscreen and place a window on another screen.
+-  ForSecurityDropFullscreen(display_id).RunAndReset();
++  if (!ForSecurityDropFullscreen(display_id)) {
++    return;
++  }
+ 
+   delegate_->SetContentsBounds(this, bounds);
+ }
+@@ -10468,11 +10494,9 @@ void WebContentsImpl::DidCallFocus() {
+   OPTIONAL_TRACE_EVENT0("content", "WebContentsImpl::DidCallFocus");
+   // Any explicit focusing of another window while this WebContents is in
+   // fullscreen can be used to confuse the user, so drop fullscreen.
+-  base::ScopedClosureRunner fullscreen_block =
+-      ForSecurityDropFullscreen(/*display_id=*/display::kInvalidDisplayId);
+-  // The other contents is independent of this contents, so release the
+-  // fullscreen block.
+-  fullscreen_block.RunAndReset();
++  if (!ForSecurityDropFullscreen(/*display_id=*/display::kInvalidDisplayId)) {
++    return;
++  }
+ }
+ 
+ void WebContentsImpl::OnAdvanceFocus(RenderFrameHostImpl* source_rfh) {
+diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
+index 1da6dd4fccf91cde6bcf89450f01fa3c0260005f..af6f42f8903eaf94747ebaec40051722592f6175 100644
+--- a/content/browser/web_contents/web_contents_impl.h
++++ b/content/browser/web_contents/web_contents_impl.h
+@@ -616,8 +616,8 @@ class CONTENT_EXPORT WebContentsImpl
+   bool IsFullscreen() override;
+   bool ShouldShowStaleContentOnEviction() override;
+   void ExitFullscreen(bool will_cause_resize) override;
+-  [[nodiscard]] base::ScopedClosureRunner ForSecurityDropFullscreen(
+-      int64_t display_id) override;
++  [[nodiscard]] std::optional<base::ScopedClosureRunner>
++  ForSecurityDropFullscreen(int64_t display_id) override;
+   void ResumeLoadingCreatedWebContents() override;
+   void SetIsOverlayContent(bool is_overlay_content) override;
+   bool IsFocusedElementEditable() override;
+diff --git a/content/browser/web_contents/web_contents_impl_browsertest.cc b/content/browser/web_contents/web_contents_impl_browsertest.cc
+index 1766bf3c4b767ad2f8521318dff85751968de64b..10c4e803c676ad56e9d19d47fb4b8e5017e149fa 100644
+--- a/content/browser/web_contents/web_contents_impl_browsertest.cc
++++ b/content/browser/web_contents/web_contents_impl_browsertest.cc
+@@ -4084,9 +4084,9 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest, RejectFullscreenIfBlocked) {
+ 
+   // While the |fullscreen_block| is in scope, fullscreen should fail with an
+   // error.
+-  base::ScopedClosureRunner fullscreen_block =
+-      web_contents->ForSecurityDropFullscreen(
+-          /*display_id=*/display::kInvalidDisplayId);
++  auto blocker = web_contents->ForSecurityDropFullscreen(
++      /*display_id=*/display::kInvalidDisplayId);
++  ASSERT_TRUE(blocker.has_value());
+ 
+   EXPECT_TRUE(ExecJs(main_frame, "document.body.requestFullscreen();",
+                      EXECUTE_SCRIPT_NO_RESOLVE_PROMISES));
+diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
+index 9d3f09670205ee922b37f9d5f544db0bbd639f91..f29ec2187df09b4cf60f2ce060aee2b8ec638663 100644
+--- a/content/public/browser/web_contents.h
++++ b/content/public/browser/web_contents.h
+@@ -1500,21 +1500,27 @@ class WebContents : public PageNavigator, public base::SupportsUserData {
+   // confusion if taken while in fullscreen. If this WebContents or any outer
+   // WebContents is in fullscreen, drop it.
+   //
+-  // Returns a ScopedClosureRunner, and for the lifetime of that closure, this
+-  // (and other related) WebContentses will not enter fullscreen. If the action
+-  // should cause a one-time dropping of fullscreen (e.g. a UI element not
+-  // attached to the WebContents), invoke RunAndReset() on the returned
+-  // base::ScopedClosureRunner to release the fullscreen block immediately.
+-  // Otherwise, if the action should cause fullscreen to be prohibited for a
+-  // span of time (e.g. a UI element attached to the WebContents), keep the
+-  // closure alive for that duration.
++  // Returns a ScopedClosureRunner (wrapped in std::optional), and for the
++  // lifetime of that closure, this (and other related) WebContentses will not
++  // enter fullscreen. If the action should cause a one-time dropping of
++  // fullscreen (e.g. a UI element not attached to the WebContents), the block
++  // can be released immediately by letting the returned optional go out of
++  // scope (e.g. `if (!ForSecurityDropFullscreen(...)) return;`), which
++  // automatically runs the closure upon temporary destruction. Alternatively,
++  // invoke RunAndReset() on the returned runner. Otherwise, if the action
++  // should cause fullscreen to be prohibited for a span of time (e.g. a UI
++  // element attached to the WebContents), keep the closure alive for that
++  // duration.
++  //
++  // If `this` WebContents is destroyed during the call (e.g. if exiting
++  // fullscreen triggers destruction), returns `std::nullopt`.
+   //
+   // If |display_id| is valid, only WebContentses on that specific screen will
+   // exit fullscreen; the scoped prohibition will still apply to all displays.
+   // This supports sites using cross-screen window placement capabilities to
+   // retain fullscreen and open or place a window on another screen.
+-  [[nodiscard]] virtual base::ScopedClosureRunner ForSecurityDropFullscreen(
+-      int64_t display_id) = 0;
++  [[nodiscard]] virtual std::optional<base::ScopedClosureRunner>
++  ForSecurityDropFullscreen(int64_t display_id) = 0;
+ 
+   // Unblocks requests from renderer for a newly created window. This is
+   // used in showCreatedWindow() or sometimes later in cases where

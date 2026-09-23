@@ -1,0 +1,200 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Mon, 14 Sep 2026 12:27:22 -0700
+Subject: GPU: apply host-twiddled TexSubImage2D workaround to all formats.
+
+The previous use_tex_sub_image_for_host_twiddled_npot_uploads
+workaround is needed for more texture formats, so simply apply it to
+all formats on affected GPUs, and rename the workaround to
+use_tex_sub_image_for_client_data_npot_uploads .
+
+Bug: 559320837
+Change-Id: I179c3479bad4bac06cbd1b6465b6f9229178c13d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8391507
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Auto-Submit: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Kenneth Russell <kbr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1697432}
+
+Electron adaptation notes (42-x-y):
+- gpu/BUILD.gn: context drift only (the branch keeps an adjacent test entry).
+- texture_manager.cc: as in the preceding pick, this branch's DoTexSubImage
+  has no 'uploaded' flag chain, so the renamed/broadened exclusion is applied
+  to the branch's plain 'if (full_image && !texture->IsImmutable())'
+  condition. All other hunks merged verbatim.
+
+diff --git a/gpu/BUILD.gn b/gpu/BUILD.gn
+index a103f5f80907ab76b9a28043000f6e1f5ac883e4..d782cfb526880bad00cef108816f1b556e815fdf 100644
+--- a/gpu/BUILD.gn
++++ b/gpu/BUILD.gn
+@@ -245,7 +245,7 @@ test("gl_tests") {
+     "command_buffer/tests/gl_manager.cc",
+     "command_buffer/tests/gl_manager.h",
+     "command_buffer/tests/gl_map_buffer_range_unittest.cc",
+-    "command_buffer/tests/gl_npot_host_twiddled_texture_unittest.cc",
++    "command_buffer/tests/gl_npot_client_data_texture_unittest.cc",
+     "command_buffer/tests/gl_object_bindings_unittest.cc",
+     "command_buffer/tests/gl_offscreen_surface_unittest.cc",
+     "command_buffer/tests/gl_oob_attrib_unittest.cc",
+diff --git a/gpu/command_buffer/service/texture_manager.cc b/gpu/command_buffer/service/texture_manager.cc
+index b9566220573337077c464c28a6671cc03aaa99bd..09789d9251779f3400d089462d9eb1eb83466751 100644
+--- a/gpu/command_buffer/service/texture_manager.cc
++++ b/gpu/command_buffer/service/texture_manager.cc
+@@ -432,13 +432,6 @@ class ScopedMemTrackerChange {
+   uint32_t previous_size_;
+ };
+ 
+-bool IsHostTwiddledFormat(GLenum internal_format, GLenum format, GLenum type) {
+-  return (internal_format == GL_RGB10_A2 && format == GL_RGBA &&
+-          type == GL_UNSIGNED_INT_2_10_10_10_REV) ||
+-         (internal_format == GL_SRGB8_ALPHA8 && format == GL_RGBA &&
+-          type == GL_UNSIGNED_BYTE);
+-}
+-
+ }  // namespace anonymous
+ 
+ DecoderTextureState::DecoderTextureState(
+@@ -457,8 +450,8 @@ DecoderTextureState::DecoderTextureState(
+           workarounds.split_level_0_pbo_full_sub_image_2d),
+       upload_oversized_mip_levels_via_unpack_buffer(
+           workarounds.upload_oversized_mip_levels_via_unpack_buffer),
+-      use_tex_sub_image_for_host_twiddled_npot_uploads(
+-          workarounds.use_tex_sub_image_for_host_twiddled_npot_uploads) {}
++      use_tex_sub_image_for_client_data_npot_uploads(
++          workarounds.use_tex_sub_image_for_client_data_npot_uploads) {}
+ 
+ TextureManager::DestructionObserver::DestructionObserver() = default;
+ 
+@@ -2976,18 +2969,16 @@ void TextureManager::ValidateAndDoTexSubImage(
+     return;
+   }
+ 
+-  GLenum internal_format = 0;
+-  GLenum tex_type = 0;
+-  texture->GetLevelType(args.target, args.level, &tex_type, &internal_format);
+-
+   if (full_image && !texture->IsImmutable() &&
+-      !(texture_state->use_tex_sub_image_for_host_twiddled_npot_uploads &&
++      !(texture_state->use_tex_sub_image_for_client_data_npot_uploads &&
+         args.command_type ==
+             DoTexSubImageArguments::CommandType::kTexSubImage2D &&
+         (!std::has_single_bit(static_cast<uint32_t>(args.width)) ||
+-         !std::has_single_bit(static_cast<uint32_t>(args.height))) &&
+-        IsHostTwiddledFormat(internal_format, args.format, args.type))) {
++         !std::has_single_bit(static_cast<uint32_t>(args.height))))) {
+     TRACE_EVENT0("gpu", "FullImage");
++    GLenum internal_format = 0;
++    GLenum tex_type = 0;
++    texture->GetLevelType(args.target, args.level, &tex_type, &internal_format);
+     // NOTE: In OpenGL ES 2/3 border is always zero. If that changes we'll need
+     // to look it up.
+     if (args.command_type ==
+@@ -3431,11 +3422,10 @@ void TextureManager::DoTexImage(DecoderTextureState* texture_state,
+                    AdjustTexFormat(feature_info_.get(), args.format), args.type,
+                    args.pixels);
+     } else {
+-      if (texture_state->use_tex_sub_image_for_host_twiddled_npot_uploads &&
++      if (texture_state->use_tex_sub_image_for_client_data_npot_uploads &&
+           (args.pixels != nullptr || unpack_buffer_bound) &&
+           (!std::has_single_bit(static_cast<uint32_t>(args.width)) ||
+-           !std::has_single_bit(static_cast<uint32_t>(args.height))) &&
+-          IsHostTwiddledFormat(args.internal_format, args.format, args.type)) {
++           !std::has_single_bit(static_cast<uint32_t>(args.height)))) {
+         glTexImage2D(args.target, args.level,
+                      AdjustTexInternalFormat(feature_info_.get(),
+                                              args.internal_format, args.type),
+diff --git a/gpu/command_buffer/service/texture_manager.h b/gpu/command_buffer/service/texture_manager.h
+index 4b2a333f3a7baf2a25e65c59399f987df603675d..a9ce1dd4973818dcb8bb81a5d2900d8fac6e8df7 100644
+--- a/gpu/command_buffer/service/texture_manager.h
++++ b/gpu/command_buffer/service/texture_manager.h
+@@ -705,7 +705,7 @@ struct DecoderTextureState {
+   bool unpack_overlapping_rows_separately_unpack_buffer;
+   bool split_level_0_pbo_full_sub_image_2d;
+   bool upload_oversized_mip_levels_via_unpack_buffer;
+-  bool use_tex_sub_image_for_host_twiddled_npot_uploads;
++  bool use_tex_sub_image_for_client_data_npot_uploads;
+ };
+ 
+ // This class keeps track of the textures and their sizes so we can do NPOT and
+diff --git a/gpu/command_buffer/tests/gl_npot_host_twiddled_texture_unittest.cc b/gpu/command_buffer/tests/gl_npot_client_data_texture_unittest.cc
+similarity index 96%
+rename from gpu/command_buffer/tests/gl_npot_host_twiddled_texture_unittest.cc
+rename to gpu/command_buffer/tests/gl_npot_client_data_texture_unittest.cc
+index ea0e6328659b4cdc1664b6e15fbd624bdba7678a..7e2279111bab509a5360a77db0047a222bde49d9 100644
+--- a/gpu/command_buffer/tests/gl_npot_host_twiddled_texture_unittest.cc
++++ b/gpu/command_buffer/tests/gl_npot_client_data_texture_unittest.cc
+@@ -45,7 +45,7 @@ void BlitTexture(GLuint program) {
+ 
+ }  // namespace
+ 
+-class GLNPOTHostTwiddledTextureTest : public testing::TestWithParam<bool> {
++class GLNPOTClientDataTextureTest : public testing::TestWithParam<bool> {
+  protected:
+   void SetUp() override {
+     GLManager::Options options;
+@@ -53,7 +53,7 @@ class GLNPOTHostTwiddledTextureTest : public testing::TestWithParam<bool> {
+     options.size = gfx::Size(256, 256);
+ 
+     GpuDriverBugWorkarounds workarounds;
+-    workarounds.use_tex_sub_image_for_host_twiddled_npot_uploads = GetParam();
++    workarounds.use_tex_sub_image_for_client_data_npot_uploads = GetParam();
+     gl_.InitializeWithWorkarounds(options, workarounds);
+ 
+     if (!IsApplicable()) {
+@@ -104,13 +104,13 @@ class GLNPOTHostTwiddledTextureTest : public testing::TestWithParam<bool> {
+   GLuint fbo_ = 0;
+ };
+ 
+-INSTANTIATE_TEST_SUITE_P(GLNPOTHostTwiddledTextureTests,
+-                         GLNPOTHostTwiddledTextureTest,
++INSTANTIATE_TEST_SUITE_P(GLNPOTClientDataTextureTests,
++                         GLNPOTClientDataTextureTest,
+                          ::testing::Bool());
+ 
+ // Test that non-power-of-two uploads of RGB10_A2 with
+ // UNSIGNED_INT_2_10_10_10_REV data succeed and verify texture contents.
+-TEST_P(GLNPOTHostTwiddledTextureTest, RGB10A2) {
++TEST_P(GLNPOTClientDataTextureTest, RGB10A2) {
+   if (!IsApplicable()) {
+     return;
+   }
+@@ -185,7 +185,7 @@ TEST_P(GLNPOTHostTwiddledTextureTest, RGB10A2) {
+ // Test that non-power-of-two uploads of SRGB8_ALPHA8 with UNSIGNED_BYTE data
+ // succeed and verify texture contents, including non-default unpack alignment
+ // and skip pixels.
+-TEST_P(GLNPOTHostTwiddledTextureTest, SRGB8Alpha8) {
++TEST_P(GLNPOTClientDataTextureTest, SRGB8Alpha8) {
+   if (!IsApplicable()) {
+     return;
+   }
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index c0521e451a85e3b7f18de8e61b6afcef5f1d6026..4039b5278817fc03ab1e40c9029bc91ada260bd0 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3919,10 +3919,10 @@
+     {
+       "id": 494,
+       "cr_bugs": [553172761],
+-      "description": "For texture formats which would be twiddled on the host CPU, upload via TexSubImage2D instead of TexImage2D.",
++      "description": "Upload non-power-of-two textures via TexSubImage2D instead of TexImage2D when uploading client-side data.",
+       "gl_vendor": "Imagination.*",
+       "features": [
+-        "use_tex_sub_image_for_host_twiddled_npot_uploads"
++        "use_tex_sub_image_for_client_data_npot_uploads"
+       ]
+     },
+     {
+diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
+index 8ab14a478358030b29b57a840cdc44e2ce98e96c..cdc70dc90515461ce47b19f3e8ed22f6fca9773b 100644
+--- a/gpu/config/gpu_workaround_list.txt
++++ b/gpu/config/gpu_workaround_list.txt
+@@ -140,7 +140,7 @@ use_eqaa_storage_samples_2
+ use_first_valid_ref_for_av1_invalid_ref
+ use_gpu_driver_workaround_for_testing
+ use_non_zero_size_for_client_side_stream_buffers
+-use_tex_sub_image_for_host_twiddled_npot_uploads
++use_tex_sub_image_for_client_data_npot_uploads
+ use_virtualized_gl_contexts
+ validate_max_per_stage_uniform_blocks_at_compile_time
+ wake_up_gpu_before_drawing

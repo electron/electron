@@ -1,0 +1,141 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zhenyao Mo <zmo@chromium.org>
+Date: Wed, 26 Aug 2026 19:12:20 -0700
+Subject: GPU: Reset base level before TexStorage in validating decoder
+
+PowerVR GPUs have a driver bug when glTexStorage2D or glTexStorage3D
+is called on a texture with a non-zero base level already applied.
+This workaround resets the base level to zero before making the
+TexStorage call, and restores the base level afterwards.
+
+Bug: 551573368
+Change-Id: I25eae6a9ed52fd123d3e65143bf99d4e3ea51322
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8298400
+Auto-Submit: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1686868}
+
+Electron adaptation notes (42-x-y):
+- gles2_cmd_decoder.cc: on this branch TexStorageImpl still issues the
+  glTexStorage2D/3D calls at the end of the function without the later
+  upstream error-check block, so the base-level reset/restore is placed
+  directly around those calls (same semantics, different surrounding context).
+
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index 811420d3186d0466d5debdae7d3a21d776081f03..412bbb9cb565cb2d2c24b467dde189e0ede94297 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -16615,6 +16615,12 @@ void GLES2DecoderImpl::TexStorageImpl(GLenum target,
+   // TODO(zmo): We might need to emulate TexStorage using TexImage or
+   // CompressedTexImage on Mac OSX where we expose ES3 APIs when the underlying
+   // driver is lower than 4.2 and ARB_texture_storage extension doesn't exist.
++  bool reset_base_level =
++      workarounds().reset_tex_storage_base_level && texture->base_level() != 0;
++  if (reset_base_level) {
++    api()->glTexParameteriFn(target, GL_TEXTURE_BASE_LEVEL, 0);
++  }
++
+   if (dimension == ContextState::k2D) {
+     api()->glTexStorage2DEXTFn(target, levels, compatibility_internal_format,
+                                width, height);
+@@ -16622,6 +16628,11 @@ void GLES2DecoderImpl::TexStorageImpl(GLenum target,
+     api()->glTexStorage3DFn(target, levels, compatibility_internal_format,
+                             width, height, depth);
+   }
++
++  if (reset_base_level) {
++    api()->glTexParameteriFn(target, GL_TEXTURE_BASE_LEVEL,
++                             texture->base_level());
++  }
+ }
+ 
+ void GLES2DecoderImpl::DoTexStorage2DEXT(GLenum target,
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc
+index 7e1acfd77c3613e3704c1c2af05c75ecba5d62ab..fe8cc11c42b6f0212c5867e5f2f21c4cfb5d7be3 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc
+@@ -3827,6 +3827,48 @@ TEST_P(GLES3DecoderTest, TexStorage3DValidArgs) {
+   EXPECT_EQ(GL_NO_ERROR, GetGLError());
+ }
+ 
++TEST_P(GLES3DecoderManualInitTest, ResetTexStorageBaseLevelWorkaround) {
++  InitState init;
++  init.extensions = "GL_EXT_texture_storage";
++  init.gl_version = "OpenGL ES 3.0";
++  init.has_alpha = true;
++  init.has_depth = true;
++  init.context_type = CONTEXT_TYPE_OPENGLES3;
++  GpuDriverBugWorkarounds workarounds;
++  workarounds.reset_tex_storage_base_level = true;
++  InitDecoderWithWorkarounds(init, workarounds);
++
++  DoBindTexture(GL_TEXTURE_2D, client_texture_id_, kServiceTextureId);
++
++  // Set BASE_LEVEL to 1 before calling TexStorage2D.
++  cmds::TexParameteri param_cmd;
++  param_cmd.Init(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++  EXPECT_CALL(*gl_, TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1))
++      .Times(1)
++      .RetiresOnSaturation();
++  EXPECT_EQ(error::kNoError, ExecuteCmd(param_cmd));
++
++  // Calling TexStorage2DEXT should reset BASE_LEVEL to 0 first, call
++  // TexStorage2DEXT, and then restore BASE_LEVEL to 1.
++  EXPECT_CALL(*gl_, TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0))
++      .Times(1)
++      .RetiresOnSaturation();
++  EXPECT_CALL(*gl_, TexStorage2DEXT(GL_TEXTURE_2D, 2, GL_RGBA8, 16, 16))
++      .Times(1)
++      .RetiresOnSaturation();
++  EXPECT_CALL(*gl_, TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1))
++      .Times(1)
++      .RetiresOnSaturation();
++  EXPECT_CALL(*gl_, GetError())
++      .WillOnce(Return(GL_NO_ERROR))
++      .WillOnce(Return(GL_NO_ERROR))
++      .RetiresOnSaturation();
++
++  cmds::TexStorage2DEXT storage_cmd;
++  storage_cmd.Init(GL_TEXTURE_2D, 2, GL_RGBA8, 16, 16);
++  EXPECT_EQ(error::kNoError, ExecuteCmd(storage_cmd));
++}
++
+ TEST_P(GLES3DecoderTest, TexImage3DValidArgs) {
+   const GLenum kTarget = GL_TEXTURE_3D;
+   const GLint kLevel = 2;
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index f70fe9d1307b48ef3e567ca5742883130d8f8588..b0ad042e7d2a4139962a5e7c05fa7a3bbfd10ad6 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3903,6 +3903,18 @@
+       "features": [
+         "lose_gl_context_when_increase_texture_3d_depth"
+       ]
++    },
++    {
++      "id": 490,
++      "cr_bugs": [551573368],
++      "description": "Reset texture base level before calling glTexStorage2D to work around PowerVR driver bug.",
++      "os": {
++        "type": "android"
++      },
++      "gl_vendor": "Imagination.*",
++      "features": [
++        "reset_tex_storage_base_level"
++      ]
+     }
+   ]
+ }
+diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
+index 8f0acd10529ac64daf450e8a83565b1fd72fd674..66089458a232983a210ae78942fda8ebefd23941 100644
+--- a/gpu/config/gpu_workaround_list.txt
++++ b/gpu/config/gpu_workaround_list.txt
+@@ -123,6 +123,7 @@ recreate_fbo_upon_flush
+ rely_on_implicit_sync_for_swap_buffers
+ remove_dynamic_indexing_of_swizzled_vector
+ reset_base_level_for_astc_sub_image
++reset_tex_storage_base_level
+ round_down_uniform_bind_buffer_range_size
+ scalarize_vec_and_mat_constructor_args
+ split_level_0_pbo_full_sub_image_2d
