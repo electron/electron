@@ -285,6 +285,28 @@ app
     if (!process.env.MOCHA_REPORTER) {
       mocha.ui('bdd').reporter('tap');
     }
+    // Accept an options object between the title and the function, as vitest
+    // does: `it(title, { timeout, retry, tags }, fn)`. `timeout` and `retry`
+    // map onto mocha's; `tags` only matter to the vitest runner.
+    mocha.suite.on('pre-require', (context) => {
+      const withOptions = (original) => {
+        if (typeof original !== 'function') return original;
+        const wrapped = function (title, options, fn) {
+          if (options === null || typeof options !== 'object') return original.apply(this, arguments);
+          const runnable = original.call(this, title, fn);
+          if (runnable && options.timeout !== undefined) runnable.timeout(options.timeout);
+          if (runnable && options.retry !== undefined) runnable.retries(options.retry);
+          return runnable;
+        };
+        for (const variant of ['only', 'skip']) {
+          if (typeof original[variant] === 'function') wrapped[variant] = withOptions(original[variant]);
+        }
+        return wrapped;
+      };
+      for (const name of ['describe', 'context', 'it', 'specify', 'xdescribe', 'xit']) {
+        context[name] = withOptions(context[name]);
+      }
+    });
     const mochaTimeout = process.env.MOCHA_TIMEOUT || 30000;
     mocha.timeout(mochaTimeout);
 
