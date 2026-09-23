@@ -1496,7 +1496,7 @@ describe('BrowserWindow module', () => {
   });
 
   // Wayland does not allow focus and z-order to be controlled without user input
-  ifdescribe(!isWayland)('focus, blur, and z-order', () => {
+  ifdescribe(!isWayland)('focus, blur, and z-order', { tags: ['serial'] }, () => {
     let w: BrowserWindow;
     beforeEach(() => {
       w = new BrowserWindow({ show: false });
@@ -8200,7 +8200,7 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  describe('"transparent" option', () => {
+  describe('"transparent" option', { tags: ['serial'] }, () => {
     afterEach(closeAllWindows);
 
     ifit(process.platform !== 'linux')(
@@ -8342,7 +8342,7 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  describe('"backgroundColor" option', () => {
+  describe('"backgroundColor" option', { tags: ['serial'] }, () => {
     afterEach(closeAllWindows);
 
     ifit(hasCapturableScreen())('should display the set color', async () => {
@@ -8362,7 +8362,7 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  ifdescribe(hasCapturableScreen())('windowStatePersistence', () => {
+  ifdescribe(hasCapturableScreen())('windowStatePersistence', { tags: ['serial'] }, () => {
     const getWindowStateFromDisk = (windowName: string, preferencesPath: string) => {
       if (!fs.existsSync(preferencesPath)) {
         throw new Error(

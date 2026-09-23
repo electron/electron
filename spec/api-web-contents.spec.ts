@@ -1288,7 +1288,7 @@ describe('webContents module', () => {
     });
   });
 
-  describe('getFocusedWebContents() API', () => {
+  describe('getFocusedWebContents() API', { tags: ['serial'] }, () => {
     afterEach(closeAllWindows);
 
     // FIXME
@@ -1391,7 +1391,7 @@ describe('webContents module', () => {
     });
   });
 
-  describe('isFocused() API', () => {
+  describe('isFocused() API', { tags: ['serial'] }, () => {
     afterEach(closeAllWindows);
     it('returns false when the window is hidden', async () => {
       const w = new BrowserWindow({ show: false });
@@ -1426,7 +1426,7 @@ describe('webContents module', () => {
     });
   });
 
-  describe('openDevTools() API', () => {
+  describe('openDevTools() API', { tags: ['serial'] }, () => {
     afterEach(closeAllWindows);
 
     async function getViewportSize(w: BrowserWindow) {
@@ -2108,7 +2108,7 @@ describe('webContents module', () => {
     });
   });
 
-  describe('focus APIs', () => {
+  describe('focus APIs', { tags: ['serial'] }, () => {
     describe('focus()', () => {
       afterEach(closeAllWindows);
       it('does not blur the focused window when the web contents is hidden', async () => {
@@ -2205,7 +2205,7 @@ describe('webContents module', () => {
     });
   });
 
-  describe('disableWakeLocks webPreference', () => {
+  describe('disableWakeLocks webPreference', { tags: ['serial'] }, () => {
     const blankPage = path.join(fixturesPath, 'api', 'blank.html');
     afterEach(closeAllWindows);
 
@@ -3794,7 +3794,7 @@ describe('webContents module', () => {
     });
   });
 
-  describe('unresponsive event', () => {
+  describe('unresponsive event', { tags: ['serial'] }, () => {
     afterEach(closeAllWindows);
     const testing = () => process._linkedBinding('electron_common_testing');
     // The hang monitor reports after kHungRendererDelay (15 s) plus a 1 s ping.

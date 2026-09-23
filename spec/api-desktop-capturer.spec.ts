@@ -15,7 +15,7 @@ function getSourceTypes(): ('window' | 'screen')[] {
   return ['window', 'screen'];
 }
 
-describe('desktopCapturer', () => {
+describe('desktopCapturer', { tags: ['serial'] }, () => {
   it('should return a non-empty array of sources', async () => {
     const sources = await desktopCapturer.getSources({ types: getSourceTypes() });
     expect(sources).to.be.an('array').that.is.not.empty();

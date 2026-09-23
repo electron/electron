@@ -82,25 +82,29 @@ describe('BrowserView module', () => {
       }).not.to.throw();
     });
 
-    ifit(hasCapturableScreen())('sets the background color to transparent if none is set', async () => {
-      const display = screen.getPrimaryDisplay();
-      const WINDOW_BACKGROUND_COLOR = '#55ccbb';
+    ifit(hasCapturableScreen())(
+      'sets the background color to transparent if none is set',
+      { tags: ['serial'] },
+      async () => {
+        const display = screen.getPrimaryDisplay();
+        const WINDOW_BACKGROUND_COLOR = '#55ccbb';
 
-      w.show();
-      w.setBounds(display.bounds);
-      w.setBackgroundColor(WINDOW_BACKGROUND_COLOR);
-      await w.loadURL('data:text/html,<html></html>');
+        w.show();
+        w.setBounds(display.bounds);
+        w.setBackgroundColor(WINDOW_BACKGROUND_COLOR);
+        await w.loadURL('data:text/html,<html></html>');
 
-      view = new BrowserView();
-      view.setBounds(display.bounds);
-      w.setBrowserView(view);
-      await view.webContents.loadURL('data:text/html,hello there');
+        view = new BrowserView();
+        view.setBounds(display.bounds);
+        w.setBrowserView(view);
+        await view.webContents.loadURL('data:text/html,hello there');
 
-      const capture = ScreenCapture.forWindow(w);
-      await capture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
-    });
+        const capture = ScreenCapture.forWindow(w);
+        await capture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
+      }
+    );
 
-    ifit(hasCapturableScreen())('successfully applies the background color', async () => {
+    ifit(hasCapturableScreen())('successfully applies the background color', { tags: ['serial'] }, async () => {
       const WINDOW_BACKGROUND_COLOR = '#55ccbb';
       const VIEW_BACKGROUND_COLOR = '#ff00ff';
       const display = screen.getPrimaryDisplay();

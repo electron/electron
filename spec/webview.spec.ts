@@ -932,7 +932,7 @@ describe('<webview> tag', function () {
     });
     after(() => w.close());
 
-    ifit(hasCapturableScreen())('is transparent by default', async () => {
+    ifit(hasCapturableScreen())('is transparent by default', { tags: ['serial'] }, async () => {
       await loadWebView(w.webContents, {
         src: 'data:text/html,foo'
       });
@@ -941,7 +941,7 @@ describe('<webview> tag', function () {
       await capture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
     });
 
-    ifit(hasCapturableScreen())('remains transparent when set', async () => {
+    ifit(hasCapturableScreen())('remains transparent when set', { tags: ['serial'] }, async () => {
       await loadWebView(w.webContents, {
         src: 'data:text/html,foo',
         webpreferences: 'transparent=yes'
@@ -951,7 +951,7 @@ describe('<webview> tag', function () {
       await capture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
     });
 
-    ifit(hasCapturableScreen())('can disable transparency', async () => {
+    ifit(hasCapturableScreen())('can disable transparency', { tags: ['serial'] }, async () => {
       await loadWebView(w.webContents, {
         src: 'data:text/html,foo',
         webpreferences: 'transparent=no'
