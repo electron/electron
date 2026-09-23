@@ -29,7 +29,7 @@ This adds two things:
 Both parts are suitable for upstreaming.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 3698b9b9724ec9425c5e57d395ae9d305841b7aa..e501112d41330d4aec34d2c8c8841e985377e648 100644
+index 3698b9b9724ec9425c5e57d395ae9d305841b7aa..b2d3bad6d186ab0fb57b93d895eda3f30d7ed5bb 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -20,6 +20,7 @@ import("//third_party/icu/config.gni")
@@ -40,13 +40,15 @@ index 3698b9b9724ec9425c5e57d395ae9d305841b7aa..e501112d41330d4aec34d2c8c8841e98
  
  if (is_clang) {
    import("//build/config/clang/clang.gni")
-@@ -1299,6 +1300,12 @@ enabled_external_defines =
+@@ -1299,6 +1300,14 @@ enabled_external_defines =
  disabled_external_defines =
      disabled_external_v8_defines + disabled_external_cppgc_defines
  
 +# The salt is written to a generated header that only src/utils/version.cc
 +# includes, so that changing it recompiles a single file rather than all of
 +# V8. write_file() only touches the file when its contents change.
++assert(v8_version_hash_salt_files == [] || v8_version_hash_salt != "",
++       "v8_version_hash_salt_files is set but produced an empty salt")
 +write_file("$target_gen_dir/src/utils/version-hash-salt.inc",
 +           [ "#define V8_VERSION_HASH_SALT \"$v8_version_hash_salt\"" ])
 +
