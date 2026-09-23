@@ -175,13 +175,15 @@ class App final : public gin::Wrappable<App>,
   void BrowserChildProcessKilled(
       const content::ChildProcessData& data,
       const content::ChildProcessTerminationInfo& info) override;
+  void BrowserChildProcessLaunchFailed(
+      const content::ChildProcessData& data,
+      const content::ChildProcessTerminationInfo& info) override;
 
  private:
   [[nodiscard]] static base::FilePath GetDefaultAppLogPath();
 
-  void BrowserChildProcessCrashedOrKilled(
-      const content::ChildProcessData& data,
-      const content::ChildProcessTerminationInfo& info);
+  void EmitChildProcessGone(const content::ChildProcessData& data,
+                            const content::ChildProcessTerminationInfo& info);
 
   void SetAppPath(const base::FilePath& app_path);
   void ChildProcessLaunched(int process_type,
