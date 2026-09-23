@@ -6,12 +6,12 @@
 #define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_BLINK_CONVERTER_H_
 
 #include "gin/converter.h"
+#include "services/network/public/mojom/referrer_policy.mojom-forward.h"
 #include "third_party/blink/public/common/context_menu_data/context_menu_data.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/blink/public/common/messaging/cloneable_message.h"
 #include "third_party/blink/public/common/web_cache/web_cache_resource_type_stats.h"
 #include "third_party/blink/public/mojom/devtools/console_message.mojom-forward.h"
-#include "third_party/blink/public/mojom/loader/referrer.mojom-forward.h"
 
 namespace blink {
 class WebMouseEvent;
@@ -109,15 +109,6 @@ struct Converter<network::mojom::ReferrerPolicy> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      network::mojom::ReferrerPolicy* out);
-};
-
-template <>
-struct Converter<blink::mojom::Referrer> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const blink::mojom::Referrer& val);
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     blink::mojom::Referrer* out);
 };
 
 template <>
