@@ -14,15 +14,22 @@ Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
 Reviewed-by: Thibaud Michaud <thibaudm@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#109190}
 
+Electron: on this branch NeedsContext is still
+`enum class NeedsContext { kYes, kNo }` (the StrongAlias<bool> form only
+exists upstream from a59996fbddf onwards), so the builtin is declared
+with NeedsContext::kNo here. The upstream spelling NeedsContext{false}
+brace-initialises the enum to kYes and gives the builtin a context
+parameter that none of its callers pass (electron/electron#54203).
+
 diff --git a/src/builtins/builtins-definitions.h b/src/builtins/builtins-definitions.h
-index 9c70f3429abc30de1bb333bbd71db98a77dcd2ee..9906dddde98ecbb63c5ec93379fcad0fa0781794 100644
+index 9c70f3429abc30de1bb333bbd71db98a77dcd2ee..1d0ddd48c7a4ea453e067f28d421dcdbffe4bce3 100644
 --- a/src/builtins/builtins-definitions.h
 +++ b/src/builtins/builtins-definitions.h
 @@ -1410,6 +1410,7 @@ constexpr int kGearboxGenericBuiltinIdOffset = -2;
    IF_WASM(TFC, WasmFloat64ToNumber, WasmFloat64ToTagged)                       \
    IF_WASM(TFC, WasmFloat64ToString, WasmFloat64ToTagged)                       \
    IF_WASM(TFC, JSToWasmLazyDeoptContinuation, SingleParameterOnStack)          \
-+  IF_WASM(TFS, WasmGetOwnProperty, NeedsContext{false}, kObject, kSymbol)      \
++  IF_WASM(TFS, WasmGetOwnProperty, NeedsContext::kNo, kObject, kSymbol)       \
                                                                                 \
    /* WeakMap */                                                                \
    TFJ(WeakMapConstructor, kDontAdaptArgumentsSentinel)                         \
