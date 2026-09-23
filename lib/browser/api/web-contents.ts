@@ -232,6 +232,14 @@ const consoleMessageDeprecated = deprecate.warnOnceMessage(
   "'console-message' arguments are deprecated and will be removed. Please use Event<WebContentsConsoleMessageEventParams> object instead."
 );
 
+const didNavigateDeprecated = deprecate.warnOnceMessage(
+  "'did-navigate' arguments are deprecated and will be removed. Please use Event<WebContentsDidNavigateEventParams> object instead."
+);
+
+const didFrameNavigateDeprecated = deprecate.warnOnceMessage(
+  "'did-frame-navigate' arguments are deprecated and will be removed. Please use Event<WebContentsDidFrameNavigateEventParams> object instead."
+);
+
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
   const prefs = this.getLastWebPreferences() || {};
@@ -513,6 +521,9 @@ WebContents.prototype._init = function () {
       if (listener.length > 1) consoleMessageDeprecated();
       if (!this.isDestroyed()) this._setConsoleMessageObserved(true);
     }
+    // TODO(issacgerges): remove deprecated 'did-navigate' and 'did-frame-navigate' arguments
+    if (eventName === 'did-navigate' && listener.length > 1) didNavigateDeprecated();
+    if (eventName === 'did-frame-navigate' && listener.length > 1) didFrameNavigateDeprecated();
   });
   this.on('removeListener' as any, (eventName: string | symbol) => {
     if (eventName === 'console-message' && !this.isDestroyed() && this.listenerCount('console-message') === 0) {
