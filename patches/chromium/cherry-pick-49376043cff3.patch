@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Evan Stade <evanstade@microsoft.com>
+Date: Mon, 21 Sep 2026 23:11:16 -0700
+Subject: [M150-LTS] Convert DCHECK before downcasting DOMArrayBufferBase to
+ CHECK
+
+There are certainly other DCHECKs in this general area which may also be
+better as CHECKs, but they're less obviously problematic, so they are
+likely better off going through the NotFatalUntil pipeline.
+
+Bug: 558764482
+Change-Id: Ia1e9e893fb419c5e346276933dc5ea4e132a1122
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8395471
+Commit-Queue: Evan Stade <evanstade@microsoft.com>
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1696699}
+(cherry picked from commit b0365badbc09c4809cfc270bdf392d07dace3a9e)
+
+diff --git a/third_party/blink/renderer/core/typed_arrays/dom_array_buffer_view.h b/third_party/blink/renderer/core/typed_arrays/dom_array_buffer_view.h
+index 501df74360ea567bf9eb80635879729b62128441..cd34ebc78bb285dfba87079e632872ffe1d2fe50 100644
+--- a/third_party/blink/renderer/core/typed_arrays/dom_array_buffer_view.h
++++ b/third_party/blink/renderer/core/typed_arrays/dom_array_buffer_view.h
+@@ -39,13 +39,13 @@ class CORE_EXPORT DOMArrayBufferView : public ScriptWrappable {
+   ~DOMArrayBufferView() override = default;
+ 
+   DOMArrayBuffer* buffer() const {
+-    DCHECK(!IsShared());
++    CHECK(!IsShared());
+     DCHECK(dom_array_buffer_);
+     return static_cast<DOMArrayBuffer*>(dom_array_buffer_.Get());
+   }
+ 
+   DOMSharedArrayBuffer* BufferShared() const {
+-    DCHECK(IsShared());
++    CHECK(IsShared());
+     DCHECK(dom_array_buffer_);
+     return static_cast<DOMSharedArrayBuffer*>(dom_array_buffer_.Get());
+   }

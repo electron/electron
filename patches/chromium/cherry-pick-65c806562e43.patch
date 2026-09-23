@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ted Meyer <tmathmeyer@chromium.org>
+Date: Fri, 11 Sep 2026 14:30:54 -0700
+Subject: Add workaround for AV1 Issue in old iHD drivers
+
+This will disable AV1 HW decode for ~9% of all linux users in the last
+28 days according to UMA. This number represents 16% of all linux/intel
+users, and 21% of all linux/intel/iHD users.
+
+Fixed: 556576976
+Change-Id: I65d6137bea6e8233d45c5ca450070d4736bb962a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8384191
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+Auto-Submit: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1696620}
+
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index d62036543c0d80d3f33248f95c83e45a5412f972..ca05a81d69f3826ced82810da95e152e6509535e 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3925,6 +3925,22 @@
+       "features": [
+         "use_tex_sub_image_for_host_twiddled_npot_uploads"
+       ]
++    },
++    {
++      "id": 500,
++      "cr_bugs": [556576976],
++      "description": "Older intel iHD drivers allocate too few tiles for AV1 decode, leading to potential memory corruption.",
++      "os": {
++        "type": "linux"
++      },
++      "vendor_id": "0x8086",
++      "driver_version": {
++        "op": "<",
++        "value": "23.2.4"
++      },
++      "features": [
++        "disable_accelerated_av1_decode"
++      ]
+     }
+   ]
+ }

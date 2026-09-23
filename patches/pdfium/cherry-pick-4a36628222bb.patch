@@ -1,0 +1,194 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Sepez <tsepez@google.com>
+Date: Tue, 8 Sep 2026 11:52:29 -0700
+Subject: Ignore re-entrant form calls during passive FFI callbacks
+
+Passive FFI callbacks (e.g. FFI_OutputSelectedRect, FFI_Invalidate)
+are notifications invoked during internal operations such as painting.
+Embedders must not re-entrantly execute form actions or load/close
+pages during these callbacks.
+
+Track passive callbacks using CPDFSDK_FormFillEnvironment's
+in_passive_ffi_callback_ flag, and early-return from entry points
+such as FORM_OnAfterLoadPage, FORM_OnBeforeClosePage, and
+FORM_Do*Action when invoked re-entrantly.
+
+Active retrieval callbacks such as FFI_GetPage remain unflagged, as
+page loading is expected in those paths.
+
+TAG=agy
+CONV=9e87637a-cb01-4106-9c04-ad4da437fc61
+
+Bug: 556535630
+Change-Id: Id892141ce082cc8895b4ed5dc66af3edaf5ef740
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/156913
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Commit-Queue: Tom Sepez <tsepez@chromium.org>
+
+diff --git a/fpdfsdk/cpdfsdk_formfillenvironment.cpp b/fpdfsdk/cpdfsdk_formfillenvironment.cpp
+index f35ea60432f752d1ade0534c344f1f5c001936e1..f0e8bf2dcfb6f3e27765b07235d353a17d9e858e 100644
+--- a/fpdfsdk/cpdfsdk_formfillenvironment.cpp
++++ b/fpdfsdk/cpdfsdk_formfillenvironment.cpp
+@@ -16,6 +16,7 @@
+ #include "core/fpdfapi/parser/cpdf_array.h"
+ #include "core/fpdfapi/parser/cpdf_dictionary.h"
+ #include "core/fpdfdoc/cpdf_nametree.h"
++#include "core/fxcrt/autorestorer.h"
+ #include "core/fxcrt/check.h"
+ #include "core/fxcrt/containers/contains.h"
+ #include "core/fxcrt/data_vector.h"
+@@ -120,6 +121,9 @@ void CPDFSDK_FormFillEnvironment::OutputSelectedRect(
+ 
+   CFX_PointF ptA = pFormField->PWLtoFFL(CFX_PointF(rect.left, rect.bottom));
+   CFX_PointF ptB = pFormField->PWLtoFFL(CFX_PointF(rect.right, rect.top));
++
++  AutoRestorer<bool> ffi_restorer(&in_passive_ffi_callback_);
++  in_passive_ffi_callback_ = true;
+   info_->FFI_OutputSelectedRect(info_, pPage, ptA.x, ptB.y, ptB.x, ptA.y);
+ }
+ 
+@@ -366,6 +370,8 @@ IJS_Runtime* CPDFSDK_FormFillEnvironment::GetIJSRuntime() {
+ void CPDFSDK_FormFillEnvironment::Invalidate(IPDF_Page* page,
+                                              const FX_RECT& rect) {
+   if (info_ && info_->FFI_Invalidate) {
++    AutoRestorer<bool> ffi_restorer(&in_passive_ffi_callback_);
++    in_passive_ffi_callback_ = true;
+     info_->FFI_Invalidate(info_, FPDFPageFromIPDFPage(page), rect.left,
+                           rect.top, rect.right, rect.bottom);
+   }
+@@ -374,6 +380,8 @@ void CPDFSDK_FormFillEnvironment::Invalidate(IPDF_Page* page,
+ void CPDFSDK_FormFillEnvironment::SetCursor(
+     IPWL_FillerNotify::CursorStyle nCursorType) {
+   if (info_ && info_->FFI_SetCursor) {
++    AutoRestorer<bool> ffi_restorer(&in_passive_ffi_callback_);
++    in_passive_ffi_callback_ = true;
+     info_->FFI_SetCursor(info_, static_cast<int>(nCursorType));
+   }
+ }
+@@ -394,6 +402,8 @@ void CPDFSDK_FormFillEnvironment::KillTimer(int nTimerID) {
+ 
+ void CPDFSDK_FormFillEnvironment::OnChange() {
+   if (info_ && info_->FFI_OnChange) {
++    AutoRestorer<bool> ffi_restorer(&in_passive_ffi_callback_);
++    in_passive_ffi_callback_ = true;
+     info_->FFI_OnChange(info_);
+   }
+ }
+@@ -416,6 +426,8 @@ void CPDFSDK_FormFillEnvironment::OnSetFieldInputFocusInternal(
+     size_t nCharacters = text.GetLength();
+     ByteString bsUTFText = text.ToUTF16LE();
+     auto* pBuffer = reinterpret_cast<const unsigned short*>(bsUTFText.c_str());
++    AutoRestorer<bool> ffi_restorer(&in_passive_ffi_callback_);
++    in_passive_ffi_callback_ = true;
+     info_->FFI_SetTextFieldFocus(
+         info_, pBuffer, pdfium::checked_cast<FPDF_DWORD>(nCharacters), bFocus);
+   }
+@@ -480,6 +492,8 @@ void CPDFSDK_FormFillEnvironment::DisplayCaret(IPDF_Page* page,
+                                                double right,
+                                                double bottom) {
+   if (info_ && info_->version >= 2 && info_->FFI_DisplayCaret) {
++    AutoRestorer<bool> ffi_restorer(&in_passive_ffi_callback_);
++    in_passive_ffi_callback_ = true;
+     info_->FFI_DisplayCaret(info_, FPDFPageFromIPDFPage(page), bVisible, left,
+                             top, right, bottom);
+   }
+@@ -897,6 +911,8 @@ void CPDFSDK_FormFillEnvironment::SendOnFocusChange(
+   FPDF_ANNOTATION fpdf_annot =
+       FPDFAnnotationFromCPDFAnnotContext(focused_annot.get());
+ 
++  AutoRestorer<bool> ffi_restorer(&in_passive_ffi_callback_);
++  in_passive_ffi_callback_ = true;
+   info_->FFI_OnFocusChange(info_, fpdf_annot, pPageView->GetPageIndex());
+ }
+ 
+diff --git a/fpdfsdk/cpdfsdk_formfillenvironment.h b/fpdfsdk/cpdfsdk_formfillenvironment.h
+index 575c496ee8680001ee095b3095cf634c0c354fd6..5007acc942aeb3f0e3d6dc881e32ed890c21ed5b 100644
+--- a/fpdfsdk/cpdfsdk_formfillenvironment.h
++++ b/fpdfsdk/cpdfsdk_formfillenvironment.h
+@@ -85,6 +85,8 @@ class CPDFSDK_FormFillEnvironment final
+   bool HasPermissions(uint32_t flags) const override;
+   void OnChange() override;
+ 
++  bool InPassiveFFICallback() const { return in_passive_ffi_callback_; }
++
+   CPDFSDK_PageView* GetPageViewAtIndex(int nIndex);
+   void RemovePageView(IPDF_Page* pUnderlyingPage);
+   void UpdateAllViews(CPDFSDK_Annot* pAnnot);
+@@ -285,6 +287,7 @@ class CPDFSDK_FormFillEnvironment final
+   std::unique_ptr<CFFL_InteractiveFormFiller> interactive_form_filler_;
+   bool change_mask_ = false;
+   bool being_destroyed_ = false;
++  bool in_passive_ffi_callback_ = false;
+ 
+   // Holds the list of focusable annot types.
+   // Annotations of type WIDGET are by default focusable.
+diff --git a/fpdfsdk/fpdf_formfill.cpp b/fpdfsdk/fpdf_formfill.cpp
+index 0f2d539eb65260f0ae28ee90dd93354dfdea4d62..098a88db91fc8bec60e2bc9c5a7f4377a796f790 100644
+--- a/fpdfsdk/fpdf_formfill.cpp
++++ b/fpdfsdk/fpdf_formfill.cpp
+@@ -830,6 +830,12 @@ FPDF_RemoveFormFieldHighlight(FPDF_FORMHANDLE hHandle) {
+ 
+ FPDF_EXPORT void FPDF_CALLCONV FORM_OnAfterLoadPage(FPDF_PAGE page,
+                                                     FPDF_FORMHANDLE hHandle) {
++  CPDFSDK_FormFillEnvironment* pFormFillEnv =
++      CPDFSDKFormFillEnvironmentFromFPDFFormHandle(hHandle);
++  if (!pFormFillEnv || pFormFillEnv->InPassiveFFICallback()) {
++    return;
++  }
++
+   if (CPDFSDK_PageView* pPageView = FormHandleToPageView(hHandle, page)) {
+     pPageView->SetValid(true);
+   }
+@@ -839,7 +845,7 @@ FPDF_EXPORT void FPDF_CALLCONV FORM_OnBeforeClosePage(FPDF_PAGE page,
+                                                       FPDF_FORMHANDLE hHandle) {
+   CPDFSDK_FormFillEnvironment* pFormFillEnv =
+       CPDFSDKFormFillEnvironmentFromFPDFFormHandle(hHandle);
+-  if (!pFormFillEnv) {
++  if (!pFormFillEnv || pFormFillEnv->InPassiveFFICallback()) {
+     return;
+   }
+ 
+@@ -860,7 +866,11 @@ FPDF_EXPORT void FPDF_CALLCONV
+ FORM_DoDocumentJSAction(FPDF_FORMHANDLE hHandle) {
+   CPDFSDK_FormFillEnvironment* pFormFillEnv =
+       CPDFSDKFormFillEnvironmentFromFPDFFormHandle(hHandle);
+-  if (pFormFillEnv && pFormFillEnv->IsJSPlatformPresent()) {
++  if (!pFormFillEnv || pFormFillEnv->InPassiveFFICallback()) {
++    return;
++  }
++
++  if (pFormFillEnv->IsJSPlatformPresent()) {
+     pFormFillEnv->ProcJavascriptAction();
+   }
+ }
+@@ -869,16 +879,18 @@ FPDF_EXPORT void FPDF_CALLCONV
+ FORM_DoDocumentOpenAction(FPDF_FORMHANDLE hHandle) {
+   CPDFSDK_FormFillEnvironment* pFormFillEnv =
+       CPDFSDKFormFillEnvironmentFromFPDFFormHandle(hHandle);
+-  if (pFormFillEnv) {
+-    pFormFillEnv->ProcOpenAction();
++  if (!pFormFillEnv || pFormFillEnv->InPassiveFFICallback()) {
++    return;
+   }
++
++  pFormFillEnv->ProcOpenAction();
+ }
+ 
+ FPDF_EXPORT void FPDF_CALLCONV FORM_DoDocumentAAction(FPDF_FORMHANDLE hHandle,
+                                                       int aaType) {
+   CPDFSDK_FormFillEnvironment* pFormFillEnv =
+       CPDFSDKFormFillEnvironmentFromFPDFFormHandle(hHandle);
+-  if (!pFormFillEnv) {
++  if (!pFormFillEnv || pFormFillEnv->InPassiveFFICallback()) {
+     return;
+   }
+ 
+@@ -900,7 +912,7 @@ FPDF_EXPORT void FPDF_CALLCONV FORM_DoPageAAction(FPDF_PAGE page,
+                                                   int aaType) {
+   CPDFSDK_FormFillEnvironment* pFormFillEnv =
+       CPDFSDKFormFillEnvironmentFromFPDFFormHandle(hHandle);
+-  if (!pFormFillEnv) {
++  if (!pFormFillEnv || pFormFillEnv->InPassiveFFICallback()) {
+     return;
+   }
+ 

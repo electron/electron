@@ -1,0 +1,88 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zhenyao Mo <zmo@chromium.org>
+Date: Fri, 21 Aug 2026 17:40:56 -0700
+Subject: GPU: Lose context on 3D texture depth increase for Qualcomm
+
+Lose the GL context when glTexImage3D is called on a mutable TEXTURE_3D
+texture with an increased depth to work around a Qualcomm driver bug.
+
+Bug: 530045332
+Change-Id: I4673557a7e17cca7d2165dbb138bc89a6658e176
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8273535
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+Auto-Submit: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1684344}
+
+diff --git a/content/test/gpu/gpu_tests/test_expectations/webgl2_conformance_expectations.txt b/content/test/gpu/gpu_tests/test_expectations/webgl2_conformance_expectations.txt
+index c7d068fd388fed54fe40358f06e2a16ebb653691..40ed8f02a36ccccb84bb28b7e17e587b2144773a 100644
+--- a/content/test/gpu/gpu_tests/test_expectations/webgl2_conformance_expectations.txt
++++ b/content/test/gpu/gpu_tests/test_expectations/webgl2_conformance_expectations.txt
+@@ -855,6 +855,11 @@ crbug.com/40167875 [ android android-pixel-4 angle-opengles passthrough ] confor
+ 
+ crbug.com/angleproject/3684 [ android angle-opengles graphite-disabled qualcomm target-cpu-32 ] conformance2/renderbuffers/multisample-with-full-sample-counts.html [ Failure ]
+ 
++# Lose context when glTexImage3D is called again with increased depth on
++# Qualcomm GPUs.
++crbug.com/530045332 [ android qualcomm no-passthrough ] conformance2/textures/misc/tex-3d-size-limit.html [ Skip ]
++crbug.com/530045332 [ android qualcomm no-passthrough ] conformance2/textures/misc/tex-unpack-params-imagedata.html [ Skip ]
++
+ ## DrDc being re-enabled ##
+ 
+ # On Adreno GPUs, flushes (which may happen inadvertently when the command
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index 4aa081b1e4a706875a6632e1792a8c3534ae7a26..6bce1a55b86d8de3b77843ee0bd90c6cc23f0894 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -13409,6 +13409,19 @@ error::Error GLES2DecoderImpl::HandleTexImage3D(uint32_t immediate_data_size,
+     return error::kNoError;
+   }
+ 
++  if (target == GL_TEXTURE_3D &&
++      workarounds().lose_gl_context_when_increase_texture_3d_depth &&
++      texture_ref && texture_ref->texture()) {
++    GLsizei current_weight = 0, current_height = 0, current_depth = 0;
++    if (texture_ref->texture()->GetLevelSize(target, level, &current_weight,
++                                             &current_height, &current_depth) &&
++        depth > current_depth) {
++      MarkContextLost(error::kUnknown);
++      group_->LoseContexts(error::kUnknown);
++      return error::kLostContext;
++    }
++  }
++
+   PixelStoreParams params;
+   Buffer* buffer = state_.bound_pixel_unpack_buffer.get();
+   if (buffer) {
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index ed5fa795e5a840a284adc58dc50500f82bd33ed3..784881dc5085d9327db8ed78d7bae4acfdcb7ec4 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3895,6 +3895,15 @@
+       "features": [
+         "finish_before_blit_framebuffer_multi_attachment"
+       ]
++    },
++    {
++      "id": 489,
++      "cr_bugs": [530045332],
++      "description": "Lose context when 3D texture depth increases on Qualcomm GPUs",
++      "gl_vendor": "Qualcomm.*",
++      "features": [
++        "lose_gl_context_when_increase_texture_3d_depth"
++      ]
+     }
+   ]
+ }
+diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
+index 8c1d9feb54100778af43808de8b4678ec08a3d6d..a528ea9798bf5fb84b69700ec2d45a4a43f3f6a5 100644
+--- a/gpu/config/gpu_workaround_list.txt
++++ b/gpu/config/gpu_workaround_list.txt
+@@ -102,6 +102,7 @@ gl_clear_broken
+ init_gl_position_in_vertex_shader
+ limit_d3d11_video_decoder_to_11_0
+ limit_output_varyings_at_compile_time
++lose_gl_context_when_increase_texture_3d_depth
+ max_3d_array_texture_size_1024
+ max_msaa_sample_count_2
+ max_msaa_sample_count_4

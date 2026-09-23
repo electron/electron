@@ -1,0 +1,376 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zhenyao Mo <zmo@chromium.org>
+Date: Thu, 27 Aug 2026 13:17:43 -0700
+Subject: [M153] GL: Reset base level for ASTC compressed image uploads
+
+Rename ResetBaseLevelForASTCSubImage workaround to
+ResetBaseLevelForASTCImage, and apply it to glCompressedTexImage2D
+in addition to glCompressedTexSubImage2D. For ASTC textures when
+base_level > 0, base_level is reset to 0 before calling
+glCompressedTexImage2D or glCompressedTexSubImage2D and restored to
+its original value afterwards to work around a PowerVR driver bug.
+
+Bug: chromium:563218544, chromium:551708184
+Change-Id: Ia0218a2148ae007a15773fe7bb58b723f5159e9d
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8315907
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+(cherry picked from commit a5804ada06ac3756d2d1917912856d4ab110a434)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8435420
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index bfd95cecef0accb9205e70ef84251934d58d00ab..3924afd6913e0cb9f4dd270f7d8b468b2c68b406 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -254,8 +254,8 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
+-    FeatureInfo resetBaseLevelForASTCSubImage = {
+-        "resetBaseLevelForASTCSubImage",
++    FeatureInfo resetBaseLevelForASTCImage = {
++        "resetBaseLevelForASTCImage",
+         FeatureCategory::OpenGLWorkarounds,
+         &members,
+     };
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index 420c112adf8d58540d52d30ce645ac7066e075d6..3f7a6f311e999d2179f56d5a3a671ce935698cb4 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -309,13 +309,13 @@
+             "issue": "https://crbug.com/705865"
+         },
+         {
+-            "name": "reset_base_level_for_ASTC_sub_image",
++            "name": "reset_base_level_for_ASTC_image",
+             "category": "Workarounds",
+             "description": [
+-                "Reset texture base level before calling glCompressedTexSubImage2D for ASTC textures to ",
++                "Reset texture base level before calling glCompressedTexImage2D or glCompressedTexSubImage2D for ASTC textures to ",
+                 "work around PowerVR driver bug."
+             ],
+-            "issue": "https://crbug.com/528131939"
++            "issue": "https://crbug.com/551708184"
+         },
+         {
+             "name": "recreate_immutable_texture_on_base_level_increase",
+diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
+index 7d7396ebcd3e904f63ac836cd7784d62fdc91e8e..80087d4a089a0b843d2644b094e7994d6fab9b5f 100644
+--- a/src/libANGLE/renderer/gl/TextureGL.cpp
++++ b/src/libANGLE/renderer/gl/TextureGL.cpp
+@@ -883,6 +883,13 @@ angle::Result TextureGL::setCompressedImage(const gl::Context *context,
+ 
+     stateManager->bindTexture(getType(), mTextureID);
+     ANGLE_TRY(stateManager->setPixelUnpackState(context, unpack));
++
++    const bool isASTC = gl::IsASTC2DFormat(internalFormat) || gl::IsASTC3DFormat(internalFormat);
++    if (features.resetBaseLevelForASTCImage.enabled && isASTC)
++    {
++        ANGLE_TRY(setBaseLevel(context, 0));
++    }
++
+     if (nativegl::UseTexImage2D(getType()))
+     {
+         ASSERT(size.depth == 1);
+@@ -937,7 +944,7 @@ angle::Result TextureGL::setCompressedSubImage(const gl::Context *context,
+     ANGLE_TRY(stateManager->setPixelUnpackState(context, unpack));
+ 
+     const bool isASTC = gl::IsASTC2DFormat(format) || gl::IsASTC3DFormat(format);
+-    if (features.resetBaseLevelForASTCSubImage.enabled && isASTC)
++    if (features.resetBaseLevelForASTCImage.enabled && isASTC)
+     {
+         ANGLE_TRY(setBaseLevel(context, 0));
+     }
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index 5c8ba5ae01bad63083c470d27e69c5fc02f28115..8e5f09836bc1fa18fc20ad38d024ce9bffed8f01 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2508,7 +2508,7 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+     ANGLE_FEATURE_CONDITION(features, resetTexImage2DBaseLevel,
+                             IsApple() && isIntel && GetMacOSVersion() >= OSVersion(10, 12, 4));
+ 
+-    ANGLE_FEATURE_CONDITION(features, resetBaseLevelForASTCSubImage, IsPowerVR(vendor));
++    ANGLE_FEATURE_CONDITION(features, resetBaseLevelForASTCImage, IsPowerVR(vendor));
+     ANGLE_FEATURE_CONDITION(features, recreateImmutableTextureOnBaseLevelIncrease,
+                             IsPowerVR(vendor));
+     ANGLE_FEATURE_CONDITION(features, resetTexStorage2DBaseLevel, IsPowerVR(vendor));
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index 61ffdb8fba0fbd72797fc926304d68515ce631d5..483344b655fac816f7e21a070cef35ea20ca0539 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -11542,15 +11542,57 @@ TEST_P(Texture2DTestES3, ASTCDecodeModeDrawTexture)
+     }
+ }
+ 
+-// Test that compressed sub-image updates work when TEXTURE_BASE_LEVEL > 0.
+-// This is a workaround for a PowerVR driver bug where it miscomputes the offset.
+-TEST_P(Texture2DTestES3, ASTCCompressedSubImageWithBaseLevel)
++class ASTCCompressedWithBaseLevelTest : public Texture2DTestES3
+ {
+-    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_KHR_texture_compression_astc_ldr"));
++  protected:
++    void uploadASTCLevel(GLenum target,
++                         GLenum format,
++                         GLint level,
++                         GLsizei width,
++                         GLsizei height,
++                         GLsizei blockWidth,
++                         GLsizei blockHeight,
++                         const GLColor &color,
++                         bool useSubImage)
++    {
++        // Void-extent block for ASTC.
++        // Format: 0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++        // R_lo, R_hi, G_lo, G_hi, B_lo, B_hi, A_lo, A_hi
++        const uint8_t block[16] = {0xFC,    0xFD,    0xFF,    0xFF,    0xFF,    0xFF,
++                                   0xFF,    0xFF,    color.R, color.R, color.G, color.G,
++                                   color.B, color.B, color.A, color.A};
++
++        GLsizei numBlocksX = (width + blockWidth - 1) / blockWidth;
++        GLsizei numBlocksY = (height + blockHeight - 1) / blockHeight;
++        GLsizei numBlocks  = numBlocksX * numBlocksY;
++
++        std::vector<uint8_t> data;
++        data.reserve(numBlocks * 16);
++        for (GLsizei i = 0; i < numBlocks; ++i)
++        {
++            data.insert(data.end(), std::begin(block), std::end(block));
++        }
+ 
+-    // Use shaders that match the proof-of-concept.
+-    // They don't use vertex attributes, but gl_VertexID to generate a quad.
+-    const char *kVS = R"(#version 300 es
++        if (useSubImage)
++        {
++            glCompressedTexSubImage2D(target, level, 0, 0, width, height, format,
++                                      static_cast<GLsizei>(data.size()), data.data());
++        }
++        else
++        {
++            glCompressedTexImage2D(target, level, format, width, height, 0,
++                                   static_cast<GLsizei>(data.size()), data.data());
++        }
++        ASSERT_GL_NO_ERROR();
++    }
++
++    void runASTCCompressedWithBaseLevelTest(bool useSubImage)
++    {
++        ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_KHR_texture_compression_astc_ldr"));
++
++        // Use shaders that match the proof-of-concept.
++        // They don't use vertex attributes, but gl_VertexID to generate a quad.
++        const char *kVS = R"(#version 300 es
+ out vec2 uv;
+ void main()
+ {
+@@ -11559,7 +11601,7 @@ void main()
+     gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+ })";
+ 
+-    const char *kFS = R"(#version 300 es
++        const char *kFS = R"(#version 300 es
+ precision highp float;
+ uniform sampler2D t;
+ in vec2 uv;
+@@ -11569,85 +11611,96 @@ void main()
+     c = texture(t, uv);
+ })";
+ 
+-    ANGLE_GL_PROGRAM(program, kVS, kFS);
+-    glUseProgram(program);
+-    GLint texLocation = glGetUniformLocation(program, "t");
+-    ASSERT_NE(-1, texLocation);
+-    glUniform1i(texLocation, 0);
+-    ASSERT_GL_NO_ERROR();
+-
+-    // 8x5 ASTC format.
+-    GLenum format             = GL_COMPRESSED_RGBA_ASTC_8x5_KHR;
+-    constexpr GLsizei kWidth  = 8;
+-    constexpr GLsizei kHeight = 160;
+-    constexpr GLsizei kLevels = 5;
+-    // Void-extent blocks for ASTC.
+-    // Format: 0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, R_lo, R_hi, G_lo, G_hi, B_lo, B_hi,
+-    // A_lo, A_hi Red: (255, 0, 0, 255) -> R=0xFFFF, G=0x0000, B=0x0000, A=0xFFFF
+-    constexpr uint8_t kBlockRed[16] = {0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+-                                       0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF};
+-    // Green: (0, 255, 0, 255) -> R=0x0000, G=0xFFFF, B=0x0000, A=0xFFFF
+-    constexpr uint8_t kBlockGreen[16] = {0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+-                                         0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF};
++        ANGLE_GL_PROGRAM(program, kVS, kFS);
++        glUseProgram(program);
++        GLint texLocation = glGetUniformLocation(program, "t");
++        ASSERT_NE(-1, texLocation);
++        glUniform1i(texLocation, 0);
++        ASSERT_GL_NO_ERROR();
+ 
+-    // Level 4: 1x10 pixels. 8x5 blocks. Padded: 8x10. Blocks: 1x2 = 2.
+-    std::vector<uint8_t> dataRed;
+-    dataRed.reserve(32);
+-    dataRed.insert(dataRed.end(), std::begin(kBlockRed), std::end(kBlockRed));
+-    dataRed.insert(dataRed.end(), std::begin(kBlockRed), std::end(kBlockRed));
++        // 8x5 ASTC format.
++        GLenum format = GL_COMPRESSED_RGBA_ASTC_8x5_KHR;
++        // This needs to be big enough, so at smallest level (=4), width >= kBlockWidth.
++        // This is to work around a driver bug: https://crbug.com/562185979.
++        constexpr GLsizei kWidth       = 128;
++        constexpr GLsizei kHeight      = 160;
++        constexpr GLsizei kLevels      = 5;
++        constexpr GLsizei kBlockWidth  = 8;
++        constexpr GLsizei kBlockHeight = 5;
++
++        // Loop multiple times to increase chances of hitting OOB write/crash if workaround fails.
++        // Keep textures alive to groom the heap similarly to the WebGL PoC.
++        constexpr int kIterations = 16;
++        std::vector<GLTexture> textures(kIterations);
++        for (int i = 0; i < kIterations; ++i)
++        {
++            glBindTexture(GL_TEXTURE_2D, textures[i]);
+ 
+-    // Level 3: 1x20 pixels. 8x5 blocks. Padded: 8x20. Blocks: 1x4 = 4.
+-    std::vector<uint8_t> dataGreen;
+-    dataGreen.reserve(64);
+-    for (int i = 0; i < 4; ++i)
+-    {
+-        dataGreen.insert(dataGreen.end(), std::begin(kBlockGreen), std::end(kBlockGreen));
+-    }
++            if (useSubImage)
++            {
++                glTexStorage2D(GL_TEXTURE_2D, kLevels, format, kWidth, kHeight);
++                ASSERT_GL_NO_ERROR();
++            }
++            else
++            {
++                // We need to initialize all levels to work around a driver bug.
++                // https://crbug.com/556435507.
++                for (GLint level = 0; level < kLevels; ++level)
++                {
++                    GLsizei levelWidth  = std::max(1, kWidth >> level);
++                    GLsizei levelHeight = std::max(1, kHeight >> level);
++                    uploadASTCLevel(GL_TEXTURE_2D, format, level, levelWidth, levelHeight,
++                                    kBlockWidth, kBlockHeight, GLColor::black,
++                                    /*useSubImage=*/false);
++                }
++            }
+ 
+-    // Loop multiple times to increase chances of hitting OOB write/crash if workaround fails.
+-    // Keep textures alive to groom the heap similarly to the WebGL PoC.
+-    constexpr int kIterations = 16;
+-    std::vector<GLTexture> textures(kIterations);
+-    for (int i = 0; i < kIterations; ++i)
+-    {
+-        glBindTexture(GL_TEXTURE_2D, textures[i]);
++            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 4);
++            ASSERT_GL_NO_ERROR();
+ 
+-        glTexStorage2D(GL_TEXTURE_2D, kLevels, format, kWidth, kHeight);
+-        ASSERT_GL_NO_ERROR();
++            // Upload Red to level 4 (8x10).
++            uploadASTCLevel(GL_TEXTURE_2D, format, 4, 8, 10, kBlockWidth, kBlockHeight,
++                            GLColor::red, useSubImage);
+ 
+-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 4);
+-        ASSERT_GL_NO_ERROR();
++            // Upload Green to level 3 (16x20).
++            uploadASTCLevel(GL_TEXTURE_2D, format, 3, 16, 20, kBlockWidth, kBlockHeight,
++                            GLColor::green, useSubImage);
+ 
+-        // Upload Red to level 4.
+-        glCompressedTexSubImage2D(GL_TEXTURE_2D, 4, 0, 0, 1, 10, format,
+-                                  static_cast<GLsizei>(dataRed.size()), dataRed.data());
+-        ASSERT_GL_NO_ERROR();
++            // Draw. Since BASE_LEVEL is 4, it should sample from level 4 (Red).
++            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
++            glFinish();
++            ASSERT_GL_NO_ERROR();
+ 
+-        // Upload Green to level 3.
+-        glCompressedTexSubImage2D(GL_TEXTURE_2D, 3, 0, 0, 1, 20, format,
+-                                  static_cast<GLsizei>(dataGreen.size()), dataGreen.data());
+-        ASSERT_GL_NO_ERROR();
++            EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(255, 0, 0, 255), 1);
+ 
+-        // Draw. Since BASE_LEVEL is 4, it should sample from level 4 (Red).
+-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+-        glFinish();
+-        ASSERT_GL_NO_ERROR();
++            // Change BASE_LEVEL to 3.
++            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 3);
++            ASSERT_GL_NO_ERROR();
+ 
+-        EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(255, 0, 0, 255), 1);
++            // Draw again. Now it should sample from level 3 (Green).
++            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
++            glFinish();
++            ASSERT_GL_NO_ERROR();
+ 
+-        // Change BASE_LEVEL to 3.
+-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 3);
+-        ASSERT_GL_NO_ERROR();
++            EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(0, 255, 0, 255), 1);
++        }
++    }
++};
+ 
+-        // Draw again. Now it should sample from level 3 (Green).
+-        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+-        glFinish();
+-        ASSERT_GL_NO_ERROR();
++// Test that compressed sub-image updates work when TEXTURE_BASE_LEVEL > 0.
++// This is a workaround for a PowerVR driver bug where it miscomputes the offset.
++TEST_P(ASTCCompressedWithBaseLevelTest, SubImage)
++{
++    runASTCCompressedWithBaseLevelTest(/*useSubImage=*/true);
++}
+ 
+-        EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(0, 255, 0, 255), 1);
+-    }
++// Test that compressed image updates work when TEXTURE_BASE_LEVEL > 0.
++// This is a workaround for a PowerVR driver bug where it miscomputes the offset.
++TEST_P(ASTCCompressedWithBaseLevelTest, Image)
++{
++    runASTCCompressedWithBaseLevelTest(/*useSubImage=*/false);
+ }
+ 
+ // Test that the selected decode precision is actually used for texture decoding.
+@@ -23267,6 +23320,9 @@ ANGLE_INSTANTIATE_TEST_ES3_AND(
+     ES3_OPENGL().enable(Feature::UseTexSubImageForClientDataNpotUploads),
+     ES3_OPENGLES().enable(Feature::UseTexSubImageForClientDataNpotUploads));
+ 
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(ASTCCompressedWithBaseLevelTest);
++ANGLE_INSTANTIATE_TEST_ES3(ASTCCompressedWithBaseLevelTest);
++
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TextureSizeLimitTest);
+ ANGLE_INSTANTIATE_TEST(TextureSizeLimitTest,
+                        ES2_D3D11().enable(Feature::LimitMaxTextureBytesTo1MB),
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index 03e0bef56180bd55dabecbb7b65d8a120eb8e658..f976090ae4d401bb8b355d3b05d61a19c8b1a794 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -310,7 +310,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::RemoveInvariantAndCentroidForESSL3, "removeInvariantAndCentroidForESSL3"},
+     {Feature::RequireGpuFamily2, "requireGpuFamily2"},
+     {Feature::RescopeGlobalVariables, "rescopeGlobalVariables"},
+-    {Feature::ResetBaseLevelForASTCSubImage, "resetBaseLevelForASTCSubImage"},
++    {Feature::ResetBaseLevelForASTCImage, "resetBaseLevelForASTCImage"},
+     {Feature::ResetSampleCoverageOnFBOChange, "resetSampleCoverageOnFBOChange"},
+     {Feature::ResetTexImage2DBaseLevel, "resetTexImage2DBaseLevel"},
+     {Feature::ResetTexStorage2DBaseLevel, "resetTexStorage2DBaseLevel"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index fdbebc4317a08d06938f7a788c923b78998da379..8ab3ac456b9a2d5f3fb7d1a685081889475a1287 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -310,7 +310,7 @@ enum class Feature
+     RemoveInvariantAndCentroidForESSL3,
+     RequireGpuFamily2,
+     RescopeGlobalVariables,
+-    ResetBaseLevelForASTCSubImage,
++    ResetBaseLevelForASTCImage,
+     ResetSampleCoverageOnFBOChange,
+     ResetTexImage2DBaseLevel,
+     ResetTexStorage2DBaseLevel,

@@ -1,0 +1,265 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Will Harris <wfh@chromium.org>
+Date: Tue, 15 Sep 2026 23:12:32 -0700
+Subject: Validate accessor callability in V8ObjectToPropertyDescriptor
+
+V8ObjectToPropertyDescriptor previously omitted checking whether present
+get and set attributes are callable or undefined per ECMA-262
+ToPropertyDescriptor (steps 12.b and 14.b). During reentrant descriptor
+conversion in the ObservableArray defineProperty trap, non-callable
+values could be passed to v8::PropertyDescriptor and installed as an
+AccessorPair, causing type confusion in V8.
+
+Enforce that present getter and setter properties are either undefined
+or callable functions, throwing a TypeError otherwise.
+
+Bug: 557523002
+Change-Id: Ia524d3c71cb5bb6085ef1d2bc0af650b55a87e9c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8405731
+Reviewed-by: Nate Chapin <japhet@chromium.org>
+Commit-Queue: Will Harris <wfh@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1698665}
+
+diff --git a/third_party/blink/renderer/bindings/bindings.gni b/third_party/blink/renderer/bindings/bindings.gni
+index be2ed0564d8521c83ffed37c6ff1b725f78d64d7..e5532ab6ae15b0cf4983d6add9688f515d384e41 100644
+--- a/third_party/blink/renderer/bindings/bindings.gni
++++ b/third_party/blink/renderer/bindings/bindings.gni
+@@ -230,6 +230,7 @@ bindings_unittest_files = get_path_info(
+           "core/v8/module_record_test.cc",
+           "core/v8/native_value_traits_impl_test.cc",
+           "core/v8/native_value_traits_test.cc",
++          "core/v8/observable_array_test.cc",
+           "core/v8/profiler_trace_builder_test.cc",
+           "core/v8/promise_all_test.cc",
+           "core/v8/referrer_script_info_test.cc",
+diff --git a/third_party/blink/renderer/bindings/core/v8/observable_array_test.cc b/third_party/blink/renderer/bindings/core/v8/observable_array_test.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..a0133f83dae3bd53fd1130efbf0e4a1d8daed6d2
+--- /dev/null
++++ b/third_party/blink/renderer/bindings/core/v8/observable_array_test.cc
+@@ -0,0 +1,149 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/blink/renderer/bindings/core/v8/script_evaluation_result.h"
++#include "third_party/blink/renderer/bindings/core/v8/v8_binding_for_testing.h"
++#include "third_party/blink/renderer/core/script/classic_script.h"
++#include "third_party/blink/renderer/platform/bindings/v8_binding.h"
++#include "third_party/blink/renderer/platform/testing/task_environment.h"
++#include "v8/include/v8.h"
++
++namespace blink {
++
++namespace {
++
++// Helper to execute a JavaScript string expression in the test scope and return
++// the string result.
++String RunScript(V8TestingScope& scope, const char* source) {
++  v8::Local<v8::Value> result =
++      ClassicScript::CreateUnspecifiedScript(source)
++          ->RunScriptAndReturnValue(&scope.GetWindow())
++          .GetSuccessValueOrEmpty();
++  if (result.IsEmpty() || !result->IsString()) {
++    return String();
++  }
++  return ToCoreString(scope.GetIsolate(), result.As<v8::String>());
++}
++
++// Helper to evaluate a descriptor expression and run
++// V8ObjectToPropertyDescriptor.
++void ConvertDescriptor(V8TestingScope& scope,
++                       const char* descriptor_expression,
++                       bool& has_caught,
++                       bindings::V8PropertyDescriptorBag& desc_bag) {
++  v8::Local<v8::Value> desc_value =
++      ClassicScript::CreateUnspecifiedScript(descriptor_expression)
++          ->RunScriptAndReturnValue(&scope.GetWindow())
++          .GetSuccessValueOrEmpty();
++  ASSERT_FALSE(desc_value.IsEmpty());
++  v8::TryCatch try_catch(scope.GetIsolate());
++  bindings::V8ObjectToPropertyDescriptor(scope.GetIsolate(), desc_value,
++                                         desc_bag);
++  has_caught = try_catch.HasCaught();
++}
++
++}  // namespace
++
++// Tests that V8ObjectToPropertyDescriptor throws a TypeError when the 'get'
++// property is not callable and not undefined.
++TEST(V8ObjectToPropertyDescriptorTest, NonCallableGetter) {
++  test::TaskEnvironment task_environment;
++  V8TestingScope scope;
++  bool has_caught = false;
++  bindings::V8PropertyDescriptorBag desc_bag;
++  ConvertDescriptor(scope, "({get: 1})", has_caught, desc_bag);
++  EXPECT_TRUE(has_caught);
++}
++
++// Tests that V8ObjectToPropertyDescriptor throws a TypeError when the 'set'
++// property is not callable and not undefined.
++TEST(V8ObjectToPropertyDescriptorTest, NonCallableSetter) {
++  test::TaskEnvironment task_environment;
++  V8TestingScope scope;
++  bool has_caught = false;
++  bindings::V8PropertyDescriptorBag desc_bag;
++  ConvertDescriptor(scope, "({set: 'text'})", has_caught, desc_bag);
++  EXPECT_TRUE(has_caught);
++}
++
++// Tests that V8ObjectToPropertyDescriptor throws a TypeError when an inherited
++// 'get' property is not callable.
++TEST(V8ObjectToPropertyDescriptorTest, InheritedNonCallableGetter) {
++  test::TaskEnvironment task_environment;
++  V8TestingScope scope;
++  bool has_caught = false;
++  bindings::V8PropertyDescriptorBag desc_bag;
++  ConvertDescriptor(scope, "Object.create({get: 1})", has_caught, desc_bag);
++  EXPECT_TRUE(has_caught);
++}
++
++// Tests that V8ObjectToPropertyDescriptor accepts undefined accessors.
++TEST(V8ObjectToPropertyDescriptorTest, UndefinedAccessors) {
++  test::TaskEnvironment task_environment;
++  V8TestingScope scope;
++  bool has_caught = false;
++  bindings::V8PropertyDescriptorBag desc_bag;
++  ConvertDescriptor(scope, "({get: undefined, set: undefined})", has_caught,
++                    desc_bag);
++  EXPECT_FALSE(has_caught);
++  EXPECT_TRUE(desc_bag.has_get);
++  EXPECT_TRUE(desc_bag.has_set);
++}
++
++// Tests that V8ObjectToPropertyDescriptor accepts valid callable accessors.
++TEST(V8ObjectToPropertyDescriptorTest, CallableAccessors) {
++  test::TaskEnvironment task_environment;
++  V8TestingScope scope;
++  bool has_caught = false;
++  bindings::V8PropertyDescriptorBag desc_bag;
++  ConvertDescriptor(scope, "({get: () => 1, set: () => {}})", has_caught,
++                    desc_bag);
++  EXPECT_FALSE(has_caught);
++  EXPECT_TRUE(desc_bag.has_get);
++  EXPECT_TRUE(desc_bag.has_set);
++  EXPECT_TRUE(desc_bag.get->IsFunction());
++  EXPECT_TRUE(desc_bag.set->IsFunction());
++}
++
++// The property descriptor of a defineProperty trap must be rejected when its
++// accessors are made non-callable during reentrant descriptor conversion.
++TEST(ObservableArrayTest, DefinePropertyRejectsNonCallableAccessor) {
++  test::TaskEnvironment task_environment;
++  V8TestingScope scope;
++  const char* source = R"JS((() => {
++    const observable = document.adoptedStyleSheets;
++    const numeric = Object.create(null);
++    numeric.value = 1;
++    numeric.writable = true;
++    numeric.configurable = true;
++    const descriptor = new Proxy(Object.create(null), {
++      has(_target, key) {
++        if (key === 'set') {
++          Reflect.defineProperty(Object.prototype, 'get', numeric);
++          Reflect.defineProperty(Object.prototype, 'set', numeric);
++        }
++        return false;
++      },
++    });
++    let outcome;
++    try {
++      outcome = 'defined:' +
++          Reflect.defineProperty(observable, 'testProperty', descriptor);
++    } catch (e) {
++      outcome = e instanceof TypeError ? 'TypeError' : 'unexpected:' + e;
++    } finally {
++      Reflect.deleteProperty(Object.prototype, 'get');
++      Reflect.deleteProperty(Object.prototype, 'set');
++    }
++    if (outcome !== 'TypeError')
++      return outcome;
++    if (Reflect.getOwnPropertyDescriptor(observable, 'testProperty'))
++      return 'property-installed';
++    return 'TypeError';
++  })())JS";
++  EXPECT_EQ("TypeError", RunScript(scope, source));
++}
++
++}  // namespace blink
+diff --git a/third_party/blink/renderer/platform/bindings/v8_binding.cc b/third_party/blink/renderer/platform/bindings/v8_binding.cc
+index a74889fca36af65c5e64aac84bfc242e1e2c9d87..d61f8e2adba81d605a4302c9f6c98a072279902b 100644
+--- a/third_party/blink/renderer/platform/bindings/v8_binding.cc
++++ b/third_party/blink/renderer/platform/bindings/v8_binding.cc
+@@ -114,9 +114,29 @@ void V8ObjectToPropertyDescriptor(v8::Isolate* isolate,
+   if (!get_value("get", desc.has_get, desc.get))
+     return;
+ 
++  // https://tc39.es/ecma262/#sec-topropertydescriptor
++  // Step 12.b: If IsCallable(getter) is false and getter is not undefined,
++  // throw a TypeError exception.
++  // Validate that any present getter attribute is either undefined or a
++  // callable function to prevent type confusion in V8.
++  if (desc.has_get && !desc.get->IsUndefined() && !desc.get->IsFunction()) {
++    V8ThrowException::ThrowTypeError(isolate, "Getter must be a function.");
++    return;
++  }
++
+   if (!get_value("set", desc.has_set, desc.set))
+     return;
+ 
++  // https://tc39.es/ecma262/#sec-topropertydescriptor
++  // Step 14.b: If IsCallable(setter) is false and setter is not undefined,
++  // throw a TypeError exception.
++  // Validate that any present setter attribute is either undefined or a
++  // callable function to prevent type confusion in V8.
++  if (desc.has_set && !desc.set->IsUndefined() && !desc.set->IsFunction()) {
++    V8ThrowException::ThrowTypeError(isolate, "Setter must be a function.");
++    return;
++  }
++
+   if ((desc.has_get || desc.has_set) && (desc.has_value || desc.has_writable)) {
+     V8ThrowException::ThrowTypeError(
+         isolate,
+diff --git a/third_party/blink/web_tests/external/wpt/css/cssom/adoptedstylesheets-observablearray.html b/third_party/blink/web_tests/external/wpt/css/cssom/adoptedstylesheets-observablearray.html
+index 75d8ffc5c38c5d7dac8b1d6370fd23419c2a2af7..d2acde0cbb81aae1c2960a2bde0338aae9d5efa1 100644
+--- a/third_party/blink/web_tests/external/wpt/css/cssom/adoptedstylesheets-observablearray.html
++++ b/third_party/blink/web_tests/external/wpt/css/cssom/adoptedstylesheets-observablearray.html
+@@ -100,4 +100,37 @@ test(function() {
+   delete Array.prototype["1"];
+   assert_equals(backing, null);
+ }, "adoptedStyleSheets should not expose its backing object via prototype");
++
++test(function() {
++  // A prototype-less descriptor keeps Object.defineProperty() below working
++  // once Object.prototype.get is a number.
++  const numeric = Object.create(null);
++  numeric.value = 1;
++  numeric.writable = true;
++  numeric.configurable = true;
++  const descriptor = new Proxy(Object.create(null), {
++    has(target, key) {
++      if (key === "set") {
++        // Runs while the descriptor is being converted, after the initial
++        // conversion has already looked up "get".
++        Object.defineProperty(Object.prototype, "get", numeric);
++        Object.defineProperty(Object.prototype, "set", numeric);
++      }
++      return false;
++    },
++  });
++  try {
++    assert_throws_js(TypeError, () => {
++      Reflect.defineProperty(document.adoptedStyleSheets, "reentrantAccessor",
++                             descriptor);
++    });
++  } finally {
++    delete Object.prototype.get;
++    delete Object.prototype.set;
++  }
++  assert_equals(
++      Object.getOwnPropertyDescriptor(document.adoptedStyleSheets,
++                                      "reentrantAccessor"),
++      undefined);
++}, "adoptedStyleSheets defineProperty should reject accessors that become non-callable during descriptor conversion");
+ </script>

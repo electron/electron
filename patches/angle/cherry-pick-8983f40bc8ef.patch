@@ -1,0 +1,520 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zhenyao Mo <zmo@chromium.org>
+Date: Thu, 20 Aug 2026 11:31:42 -0700
+Subject: GL: Recreate texture on glTexImage3D with increased depth
+
+Recreate texture and copy existing levels when glTexImage3D is called
+on a mutable TEXTURE_3D texture with an increased depth to work around
+Qualcomm driver bug.
+
+Bug: chromium:530045332
+Bug: chromium:549910689
+Bug: chromium:549916890
+Change-Id: I81697b57d1370620d00ca115edad15f94a8ba56d
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8128217
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+Auto-Submit: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index 0d1a8ceb20a158d9fd259f6749ded09d02395efc..d400d0b06c229f4309b8efd0bd15b4bf01c0f63b 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -272,6 +272,12 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo recreateTextureOnTexImage3dDepthIncrease = {
++        "recreateTextureOnTexImage3dDepthIncrease",
++        FeatureCategory::OpenGLWorkarounds,
++        &members,
++    };
++
+     FeatureInfo limitMax3dArrayTextureSizeTo1024 = {
+         "limitMax3dArrayTextureSizeTo1024",
+         FeatureCategory::OpenGLWorkarounds,
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index 42c9dfeeaa0d85bb58bfc3ad655bb0e8efcbdd2c..5c3c3537fd09daf62478935c1d2719ff6a1bf8a8 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -335,6 +335,15 @@
+             ],
+             "issue": "https://crbug.com/534923522"
+         },
++        {
++            "name": "recreate_texture_on_tex_image_3d_depth_increase",
++            "category": "Workarounds",
++            "description": [
++                "Recreate texture and copy existing levels when glTexImage3D is called on a mutable ",
++                "TEXTURE_3D texture with an increased depth to work around Qualcomm driver bug."
++            ],
++            "issue": "http://anglebug.com/530045332"
++        },
+         {
+             "name": "limit_max_3d_array_texture_size_to_1024",
+             "category": "Workarounds",
+diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
+index 434808fb785bb6a9f392eb8427e660fff45c8553..4cb3d717a24f86d09ba45d7d3868b70acd23d2d0 100644
+--- a/src/libANGLE/renderer/gl/TextureGL.cpp
++++ b/src/libANGLE/renderer/gl/TextureGL.cpp
+@@ -337,6 +337,13 @@ angle::Result TextureGL::setImageHelper(const gl::Context *context,
+ 
+     stateManager->bindTexture(getType(), mTextureID);
+ 
++    if (features.recreateTextureOnTexImage3dDepthIncrease.enabled &&
++        getType() == gl::TextureType::_3D && !mState.getImmutableFormat() &&
++        functions->copyImageSubData)
++    {
++        ANGLE_TRY(recreateTextureOnTexImage3DDepthIncreaseWorkaround(context, target, level, size));
++    }
++
+     if (features.resetTexImage2DBaseLevel.enabled)
+     {
+         // setBaseLevel doesn't ever generate errors.
+@@ -3131,4 +3138,86 @@ GLint TextureGL::getRequiredExternalTextureImageUnits(const gl::Context *context
+     return result;
+ }
+ 
++angle::Result TextureGL::recreateTextureOnTexImage3DDepthIncreaseWorkaround(
++    const gl::Context *context,
++    gl::TextureTarget target,
++    size_t level,
++    const gl::Extents &size)
++{
++    const FunctionsGL *functions      = GetFunctionsGL(context);
++    const angle::FeaturesGL &features = GetFeaturesGL(context);
++    StateManagerGL *stateManager      = GetStateManagerGL(context);
++
++    const gl::ImageDesc &currentDesc = mState.getImageDesc(target, level);
++    if (currentDesc.size.empty() || size.depth <= currentDesc.size.depth)
++    {
++        return angle::Result::Continue;
++    }
++
++    GLuint oldTextureID = mTextureID;
++
++    stateManager->bindTexture(getType(), oldTextureID);
++    functions->texParameteri(ToGLenum(getType()), GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    functions->texParameteri(ToGLenum(getType()), GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    functions->genTextures(1, &mTextureID);
++    stateManager->bindTexture(getType(), mTextureID);
++    functions->texParameteri(ToGLenum(getType()), GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    functions->texParameteri(ToGLenum(getType()), GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    mAppliedSwizzle = gl::SwizzleState();
++    mAppliedSampler = gl::SamplerState::CreateDefaultForTarget(getType());
++    mAppliedSampler.setMinFilter(GL_NEAREST);
++    mAppliedSampler.setMagFilter(GL_NEAREST);
++    mAppliedBaseLevel = 0;
++    mAppliedMaxLevel  = gl::kInitialMaxLevel;
++
++    for (size_t l = 0; l < mState.getImageDescs().size(); ++l)
++    {
++        if (l == level)
++        {
++            continue;
++        }
++
++        const gl::ImageDesc &desc = mState.getImageDesc(target, l);
++        if (desc.size.empty())
++        {
++            continue;
++        }
++
++        nativegl::TexImageFormat levelTexImageFormat =
++            nativegl::GetTexImageFormat(functions, features, desc.format.info->sizedInternalFormat,
++                                        desc.format.info->format, desc.format.info->type);
++        ANGLE_GL_TRY_ALWAYS_CHECK(
++            context,
++            functions->texImage3D(ToGLenum(target), static_cast<GLint>(l),
++                                  levelTexImageFormat.internalFormat, desc.size.width,
++                                  desc.size.height, desc.size.depth, 0, levelTexImageFormat.format,
++                                  levelTexImageFormat.type, nullptr));
++
++        stateManager->bindTexture(getType(), oldTextureID);
++        functions->texParameteri(ToGLenum(getType()), GL_TEXTURE_MAX_LEVEL, static_cast<GLint>(l));
++        functions->texParameteri(ToGLenum(getType()), GL_TEXTURE_BASE_LEVEL, static_cast<GLint>(l));
++
++        stateManager->bindTexture(getType(), mTextureID);
++        functions->texParameteri(ToGLenum(getType()), GL_TEXTURE_MAX_LEVEL, static_cast<GLint>(l));
++        functions->texParameteri(ToGLenum(getType()), GL_TEXTURE_BASE_LEVEL, static_cast<GLint>(l));
++        mAppliedMaxLevel  = static_cast<GLuint>(l);
++        mAppliedBaseLevel = static_cast<GLuint>(l);
++
++        ANGLE_GL_TRY_ALWAYS_CHECK(
++            context,
++            functions->copyImageSubData(oldTextureID, ToGLenum(target), static_cast<GLint>(l), 0, 0,
++                                        0, mTextureID, ToGLenum(target), static_cast<GLint>(l), 0,
++                                        0, 0, desc.size.width, desc.size.height, desc.size.depth));
++    }
++
++    stateManager->deleteTexture(oldTextureID);
++
++    mLocalDirtyBits = mAllModifiedDirtyBits;
++    onStateChange(angle::SubjectMessage::SubjectChanged);
++
++    return angle::Result::Continue;
++}
++
+ }  // namespace rx
+diff --git a/src/libANGLE/renderer/gl/TextureGL.h b/src/libANGLE/renderer/gl/TextureGL.h
+index a177eceb03dbd21fd2cab1d7ee6ce2141b131336..df3cd0753eb611268c9a828d242cf0b84b3b8c19 100644
+--- a/src/libANGLE/renderer/gl/TextureGL.h
++++ b/src/libANGLE/renderer/gl/TextureGL.h
+@@ -243,6 +243,11 @@ class TextureGL : public TextureImpl
+     angle::Result recreateNativeStoragePreservingLevels(const gl::Context *context);
+     angle::Result useTempForNonZeroBaseLevelGenmipmap(const gl::Context *context);
+ 
++    angle::Result recreateTextureOnTexImage3DDepthIncreaseWorkaround(const gl::Context *context,
++                                                                     gl::TextureTarget target,
++                                                                     size_t level,
++                                                                     const gl::Extents &size);
++
+     angle::Result setImageHelper(const gl::Context *context,
+                                  gl::TextureTarget target,
+                                  size_t level,
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index 4ba333abfc232d0d54ee14bb55c5ec655701c8c4..1873bb27c8b8016dc8a392acbfacbc90e2031f69 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2511,6 +2511,8 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+     ANGLE_FEATURE_CONDITION(features, resetBaseLevelForASTCSubImage, IsPowerVR(vendor));
+     ANGLE_FEATURE_CONDITION(features, recreateImmutableTextureOnBaseLevelIncrease,
+                             IsPowerVR(vendor));
++    ANGLE_FEATURE_CONDITION(features, recreateTextureOnTexImage3dDepthIncrease,
++                            isQualcomm && IsAndroid());
+ 
+     ANGLE_FEATURE_CONDITION(features, useTempForNonZeroBaseLevelGenMipmapUsingCopyImageSubData,
+                             IsPowerVR(vendor));
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index c5348d2943ba81343d89a55f5d2576afd1e373e2..d1618eaaec75e52f58c26c6fec0398384b6446dd 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -1394,7 +1394,11 @@ class Texture3DTestES3 : public Texture3DTestES2
+                "out vec4 fragColor;\n"
+                "void main()\n"
+                "{\n"
+-               "    fragColor = texture(tex3D, vec3(texcoord, 0.0));\n"
++               "    fragColor = (texture(tex3D, vec3(texcoord, 0.0)) +\n"
++               "                 texture(tex3D, vec3(texcoord, 0.25)) +\n"
++               "                 texture(tex3D, vec3(texcoord, 0.5)) +\n"
++               "                 texture(tex3D, vec3(texcoord, 0.75)) +\n"
++               "                 texture(tex3D, vec3(texcoord, 1.0))) / 5.0;\n"
+                "}\n";
+     }
+ };
+@@ -8977,6 +8981,274 @@ TEST_P(Texture3DTestES3, RedefineLevelData)
+     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
+ }
+ 
++class Texture3DIncreaseDepthTestES3 : public Texture3DTestES3
++{
++  protected:
++    GLuint setUp7Level3DTexture(bool drawBeforeIncrease);
++    void increaseLevelDepth(int levelToIncrease, GLColor newColor);
++    void verifyByReadPixels(GLuint texture3D, int levelToIncrease, GLColor newColor);
++    void verifyByDraw(GLuint texture3D, int levelToIncrease, GLColor newColor);
++    void cleanUp(GLuint texture3D);
++    void runTest(bool drawBeforeIncrease, bool doVerifyByDraw, int levelToIncrease);
++};
++
++GLuint Texture3DIncreaseDepthTestES3::setUp7Level3DTexture(bool drawBeforeIncrease)
++{
++    EXPECT_NE(0u, mProgram);
++    EXPECT_NE(-1, mTexture3DUniformLocation);
++
++    GLuint texture3D = 0;
++    glGenTextures(1, &texture3D);
++
++    glUseProgram(mProgram);
++    glUniform1i(mTexture3DUniformLocation, 0);
++    glActiveTexture(GL_TEXTURE0);
++    glBindTexture(GL_TEXTURE_3D, texture3D);
++    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
++    glPixelStorei(GL_PACK_ALIGNMENT, 1);
++    EXPECT_GL_NO_ERROR();
++
++    // Create a 7-level 3D texture (64x64x64 down to 1x1x2).
++    std::vector<GLubyte> data0(64 * 64 * 64, 255);
++    glTexImage3D(GL_TEXTURE_3D, 0, GL_R8, 64, 64, 64, 0, GL_RED, GL_UNSIGNED_BYTE, data0.data());
++
++    std::vector<GLubyte> data1(32 * 32 * 32 * 2, 0);
++    for (size_t i = 1; i < data1.size(); i += 2)
++    {
++        data1[i] = 255;
++    }
++    glTexImage3D(GL_TEXTURE_3D, 1, GL_RG8, 32, 32, 32, 0, GL_RG, GL_UNSIGNED_BYTE, data1.data());
++
++    std::vector<GLubyte> data2(16 * 16 * 16 * 3, 0);
++    for (size_t i = 2; i < data2.size(); i += 3)
++    {
++        data2[i] = 255;
++    }
++    glTexImage3D(GL_TEXTURE_3D, 2, GL_RGB8, 16, 16, 16, 0, GL_RGB, GL_UNSIGNED_BYTE, data2.data());
++
++    std::vector<GLColor> data3(8 * 8 * 8, GLColor::yellow);
++    glTexImage3D(GL_TEXTURE_3D, 3, GL_RGBA8, 8, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, data3.data());
++
++    std::vector<GLColor> data4(4 * 4 * 4, GLColor::cyan);
++    glTexImage3D(GL_TEXTURE_3D, 4, GL_RGBA8, 4, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, data4.data());
++
++    std::vector<GLushort> data5(2 * 2 * 1, 0xFFFF);
++    glTexImage3D(GL_TEXTURE_3D, 5, GL_RGB565, 2, 2, 1, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5,
++                 data5.data());
++
++    std::vector<GLColor> data6(1 * 1 * 2, GLColor::magenta);
++    glTexImage3D(GL_TEXTURE_3D, 6, GL_RGBA8, 1, 1, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, data6.data());
++
++    EXPECT_GL_NO_ERROR();
++
++    // Set BASE_LEVEL to 3, MAX_LEVEL to 4.
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_BASE_LEVEL, 3);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL, 4);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
++
++    glBindFramebuffer(GL_FRAMEBUFFER, mFramebuffer);
++    glViewport(0, 0, getWindowWidth(), getWindowHeight());
++
++    if (drawBeforeIncrease)
++    {
++        // Draw to backbuffer, sampling level 3 from texture
++        drawQuad(mProgram, "position", 0.5f);
++        EXPECT_GL_NO_ERROR();
++        EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth(), getWindowHeight(), GLColor::yellow);
++    }
++
++    return texture3D;
++}
++
++void Texture3DIncreaseDepthTestES3::increaseLevelDepth(int levelToIncrease, GLColor newColor)
++{
++    // Increase depth of specified level and upload new data.
++    if (levelToIncrease == 6)
++    {
++        std::vector<GLColor> newLevel6Data(1 * 1 * 4, newColor);
++        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_BASE_LEVEL, 6);
++        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL, 6);
++        glTexImage3D(GL_TEXTURE_3D, 6, GL_RGBA8, 1, 1, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                     newLevel6Data.data());
++    }
++    else if (levelToIncrease == 3)
++    {
++        std::vector<GLColor> newLevel3Data(8 * 8 * 16, newColor);
++        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_BASE_LEVEL, 3);
++        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL, 3);
++        glTexImage3D(GL_TEXTURE_3D, 3, GL_RGBA8, 8, 8, 16, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                     newLevel3Data.data());
++    }
++    else if (levelToIncrease == 4)
++    {
++        std::vector<GLColor> newLevel4Data(4 * 4 * 8, newColor);
++        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_BASE_LEVEL, 4);
++        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL, 4);
++        glTexImage3D(GL_TEXTURE_3D, 4, GL_RGBA8, 4, 4, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                     newLevel4Data.data());
++    }
++
++    ASSERT_GL_NO_ERROR();
++}
++
++void Texture3DIncreaseDepthTestES3::verifyByReadPixels(GLuint texture3D,
++                                                       int levelToIncrease,
++                                                       GLColor newColor)
++{
++    struct LevelExpectation
++    {
++        GLint level;
++        GLint width;
++        GLint height;
++        GLint depth;
++        GLColor expectedColor;
++    };
++
++    LevelExpectation expectedLevels[] = {
++        {3, 8, 8, (levelToIncrease == 3) ? 16 : 8,
++         (levelToIncrease == 3) ? newColor : GLColor::yellow},
++        {4, 4, 4, (levelToIncrease == 4) ? 8 : 4,
++         (levelToIncrease == 4) ? newColor : GLColor::cyan},
++        {6, 1, 1, (levelToIncrease == 6) ? 4 : 2,
++         (levelToIncrease == 6) ? newColor : GLColor::magenta},
++    };
++
++    glBindFramebuffer(GL_FRAMEBUFFER, mFramebuffer);
++
++    for (const auto &expected : expectedLevels)
++    {
++        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_BASE_LEVEL, expected.level);
++        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL, expected.level);
++
++        for (GLint slice = 0; slice < expected.depth; ++slice)
++        {
++            // Read back the texture through framebuffer
++            glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture3D,
++                                      expected.level, slice);
++            EXPECT_GL_NO_ERROR();
++            ASSERT_GLENUM_EQ(GL_FRAMEBUFFER_COMPLETE, glCheckFramebufferStatus(GL_FRAMEBUFFER));
++            EXPECT_PIXEL_RECT_EQ(0, 0, expected.width, expected.height, expected.expectedColor);
++        }
++    }
++    ASSERT_GL_NO_ERROR();
++}
++
++void Texture3DIncreaseDepthTestES3::verifyByDraw(GLuint texture3D,
++                                                 int levelToIncrease,
++                                                 GLColor newColor)
++{
++    struct LevelExpectation
++    {
++        GLint level;
++        GLColor expectedColor;
++    };
++
++    LevelExpectation expectedLevels[] = {
++        {3, (levelToIncrease == 3) ? newColor : GLColor::yellow},
++        {4, (levelToIncrease == 4) ? newColor : GLColor::cyan},
++        {6, (levelToIncrease == 6) ? newColor : GLColor::magenta},
++    };
++
++    glBindFramebuffer(GL_FRAMEBUFFER, mFramebuffer);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
++                           mFramebufferColorTexture, 0);
++
++    for (const auto &expected : expectedLevels)
++    {
++        // Draw to backbuffer, sampling level from texture
++        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_BASE_LEVEL, expected.level);
++        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL, expected.level);
++
++        glViewport(0, 0, getWindowWidth(), getWindowHeight());
++        drawQuad(mProgram, "position", 0.5f);
++        ASSERT_GL_NO_ERROR();
++        EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth(), getWindowHeight(), expected.expectedColor);
++    }
++    ASSERT_GL_NO_ERROR();
++}
++
++void Texture3DIncreaseDepthTestES3::cleanUp(GLuint texture3D)
++{
++    // Clean up mFramebuffer attachment so it is not left with texture3D attached to
++    // GL_COLOR_ATTACHMENT0. Restore mFramebufferColorTexture.
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
++                           mFramebufferColorTexture, 0);
++
++    glDeleteTextures(1, &texture3D);
++}
++
++void Texture3DIncreaseDepthTestES3::runTest(bool drawBeforeIncrease,
++                                            bool doVerifyByDraw,
++                                            int levelToIncrease)
++{
++    GLuint texture3D = setUp7Level3DTexture(drawBeforeIncrease);
++    GLColor newColor(255, 128, 0, 255);
++    increaseLevelDepth(levelToIncrease, newColor);
++
++    if (doVerifyByDraw)
++    {
++        verifyByDraw(texture3D, levelToIncrease, newColor);
++    }
++    else
++    {
++        verifyByReadPixels(texture3D, levelToIncrease, newColor);
++    }
++
++    cleanUp(texture3D);
++}
++
++// Test increasing depth of level 6 (outside base/max range) after drawing (updates flushed).
++TEST_P(Texture3DIncreaseDepthTestES3, TexImage3DDepthIncreaseOutsideRangeDrawnVerifyByDraw)
++{
++    runTest(/*drawBeforeIncrease=*/true, /*doVerifyByDraw=*/true, 6);
++}
++
++// Test increasing depth of level 6 (outside base/max range) after drawing (updates flushed).
++TEST_P(Texture3DIncreaseDepthTestES3, TexImage3DDepthIncreaseOutsideRangeDrawnVerifyByReadPixels)
++{
++    runTest(/*drawBeforeIncrease=*/true, /*doVerifyByDraw=*/false, 6);
++}
++
++// Test increasing depth of level 6 (outside base/max range) without drawing (updates staged).
++TEST_P(Texture3DIncreaseDepthTestES3, TexImage3DDepthIncreaseOutsideRangeStagedVerifyByDraw)
++{
++    runTest(/*drawBeforeIncrease=*/false, /*doVerifyByDraw=*/true, 6);
++}
++
++// Test increasing depth of level 6 (outside base/max range) without drawing (updates staged).
++TEST_P(Texture3DIncreaseDepthTestES3, TexImage3DDepthIncreaseOutsideRangeStagedVerifyByReadPixels)
++{
++    runTest(/*drawBeforeIncrease=*/false, /*doVerifyByDraw=*/false, 6);
++}
++
++// Test increasing depth of level 3 (inside base/max range) after drawing (updates flushed).
++TEST_P(Texture3DIncreaseDepthTestES3, TexImage3DDepthIncreaseInsideRangeDrawnVerifyByDraw)
++{
++    runTest(/*drawBeforeIncrease=*/true, /*doVerifyByDraw=*/true, 3);
++}
++
++// Test increasing depth of level 3 (inside base/max range) after drawing (updates flushed).
++TEST_P(Texture3DIncreaseDepthTestES3, TexImage3DDepthIncreaseInsideRangeDrawnVerifyByReadPixels)
++{
++    runTest(/*drawBeforeIncrease=*/true, /*doVerifyByDraw=*/false, 3);
++}
++
++// Test increasing depth of level 3 (inside base/max range) without drawing (updates staged).
++TEST_P(Texture3DIncreaseDepthTestES3, TexImage3DDepthIncreaseInsideRangeStagedVerifyByDraw)
++{
++    runTest(/*drawBeforeIncrease=*/false, /*doVerifyByDraw=*/true, 3);
++}
++
++// Test increasing depth of level 3 (inside base/max range) without drawing (updates staged).
++TEST_P(Texture3DIncreaseDepthTestES3, TexImage3DDepthIncreaseInsideRangeStagedVerifyByReadPixels)
++{
++    runTest(/*drawBeforeIncrease=*/false, /*doVerifyByDraw=*/false, 3);
++}
++
+ // Test that texture completeness is updated if texture max level changes.
+ // GLES 3.0.4 section 3.8.13 Texture completeness
+ TEST_P(Texture2DTestES3, TextureCompletenessChangesWithMaxLevel)
+@@ -22697,6 +22969,12 @@ ANGLE_INSTANTIATE_TEST_ES2(Texture3DTestES2);
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture3DTestES3);
+ ANGLE_INSTANTIATE_TEST_ES3(Texture3DTestES3);
+ 
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture3DIncreaseDepthTestES3);
++ANGLE_INSTANTIATE_TEST_ES3_AND(
++    Texture3DIncreaseDepthTestES3,
++    ES3_OPENGL().enable(Feature::RecreateTextureOnTexImage3dDepthIncrease),
++    ES3_OPENGLES().enable(Feature::RecreateTextureOnTexImage3dDepthIncrease));
++
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DIntegerAlpha1TestES3);
+ ANGLE_INSTANTIATE_TEST_ES3(Texture2DIntegerAlpha1TestES3);
+ 
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index 1afeab80631b2d2ab3c90c937b422a09fa78e64c..b47958ae83b3b020bada353a8c68a9260f6f39d5 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -303,6 +303,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::RecreateFboUponFlush, "recreateFboUponFlush"},
+     {Feature::RecreateImmutableTextureOnBaseLevelIncrease, "recreateImmutableTextureOnBaseLevelIncrease"},
+     {Feature::RecreateMipmapLevelsBeforeGenerate, "recreateMipmapLevelsBeforeGenerate"},
++    {Feature::RecreateTextureOnTexImage3dDepthIncrease, "recreateTextureOnTexImage3dDepthIncrease"},
+     {Feature::RecycleVkEvent, "recycleVkEvent"},
+     {Feature::RegenerateStructNames, "regenerateStructNames"},
+     {Feature::RemoveDynamicIndexingOfSwizzledVector, "removeDynamicIndexingOfSwizzledVector"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index 45c4fb8ff09b2e503b50277cb0282c9de5bf857c..7126ed61b7fe25d2e172ecbe9b1e810e6effd58e 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -303,6 +303,7 @@ enum class Feature
+     RecreateFboUponFlush,
+     RecreateImmutableTextureOnBaseLevelIncrease,
+     RecreateMipmapLevelsBeforeGenerate,
++    RecreateTextureOnTexImage3dDepthIncrease,
+     RecycleVkEvent,
+     RegenerateStructNames,
+     RemoveDynamicIndexingOfSwizzledVector,
