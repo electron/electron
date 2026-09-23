@@ -82,8 +82,6 @@ class ElectronExtensionSystem : public ExtensionSystem {
       const base::DictValue& attributes) override;
 
  private:
-  void OnExtensionRegisteredWithRequestContexts(
-      scoped_refptr<Extension> extension);
   void LoadComponentExtensions();
 
   raw_ptr<content::BrowserContext> browser_context_;  // Not owned.

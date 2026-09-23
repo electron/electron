@@ -133,7 +133,6 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_web_contents_view.h"
-#include "shell/browser/preload_script.h"
 #include "shell/browser/renderer_startup_data.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/devtools_context_menu.h"
@@ -3049,18 +3048,13 @@ void WebContents::FrameDeleted(content::FrameTreeNodeId frame_tree_node_id) {
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
-  const auto id = render_view_host->GetProcess()->GetID().GetUnsafeValue();
-  // This event is necessary for tracking any states with respect to
-  // intermediate render view hosts aka speculative render view hosts. Currently
-  // used by object-registry.js to ref count remote objects.
-  Emit("render-view-deleted", id);
-
   if (web_contents()->GetRenderViewHost() == render_view_host) {
     // When the RVH that has been deleted is the current RVH it means that the
     // the web contents are being closed. This is communicated by this event.
     // Currently tracked by guest-window-manager.ts to destroy the
     // BrowserWindow.
-    Emit("current-render-view-deleted", id);
+    Emit("current-render-view-deleted",
+         render_view_host->GetProcess()->GetID().GetUnsafeValue());
   }
 }
 
@@ -5473,17 +5467,6 @@ void WebContents::SetTemporaryZoomLevel(double level) {
   GetZoomController()->SetTemporaryZoomLevel(level);
 }
 
-std::optional<PreloadScript> WebContents::GetPreloadScript() const {
-  if (auto* web_preferences = WebContentsPreferences::From(web_contents())) {
-    if (auto preload = web_preferences->GetPreloadPath()) {
-      auto preload_script = PreloadScript{
-          "", PreloadScript::ScriptType::kWebFrame, preload.value()};
-      return preload_script;
-    }
-  }
-  return std::nullopt;
-}
-
 v8::Local<v8::Value> WebContents::GetLastWebPreferences(
     v8::Isolate* isolate) const {
   auto* web_preferences = WebContentsPreferences::From(web_contents());
@@ -5757,6 +5740,22 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
           },
           base::Owned(std::move(electron_renderer)), std::move(promise)));
   return handle;
+}
+
+void WebContents::SendToMainFrame(v8::Isolate* isolate,
+                                  bool internal,
+                                  const std::string& channel,
+                                  v8::Local<v8::Value> args) {
+  content::RenderFrameHost* const rfh = web_contents()->GetPrimaryMainFrame();
+  WebFrameMain* const frame = rfh ? WebFrameMain::From(isolate, rfh) : nullptr;
+  if (!frame) {
+    // A TypeError, as calling send on a null mainFrame was, so the JS
+    // wrapper rethrows it rather than logging it.
+    isolate->ThrowException(v8::Exception::TypeError(
+        gin::StringToV8(isolate, "webContents has no main frame to send to")));
+    return;
+  }
+  frame->Send(isolate, internal, channel, args);
 }
 
 mojom::ElectronFrame* WebContents::MainFrameRenderer(
@@ -6398,7 +6397,6 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setZoomMode", &WebContents::SetZoomMode)
       .SetMethod("getZoomMode", &WebContents::GetZoomMode)
       .SetMethod("getType", &WebContents::type)
-      .SetMethod("_getPreloadScript", &WebContents::GetPreloadScript)
       .SetMethod("getLastWebPreferences", &WebContents::GetLastWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
       .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
@@ -6448,6 +6446,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetProperty("mainFrame", &WebContents::MainFrame)
       .SetProperty("opener", &WebContents::Opener)
       .SetProperty("focusedFrame", &WebContents::FocusedFrame)
+      .SetMethod("_sendToMainFrame", &WebContents::SendToMainFrame)
       .SetMethod("_setOwnerWindow", &WebContents::SetOwnerBaseWindow)
       .Build();
 }

@@ -1,7 +1,0 @@
-root_extra_deps = [ "//electron/spec-chromium:spec" ]
-
-dcheck_always_on = true
-is_debug = false
-is_component_build = false
-is_component_ffmpeg = false
-symbol_level = 1

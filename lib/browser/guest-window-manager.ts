@@ -163,8 +163,7 @@ const securityWebPreferences: { [key: string]: boolean } = {
   nodeIntegrationInWorker: false,
   sandbox: true,
   webviewTag: false,
-  nodeIntegrationInSubFrames: false,
-  enableWebSQL: false
+  nodeIntegrationInSubFrames: false
 };
 
 export function makeWebPreferences({

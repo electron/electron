@@ -7,11 +7,11 @@ import { once } from 'node:events';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { singleModifierCombinations } from './lib/accelerator-helpers';
-import { ifit } from './lib/spec-helpers';
-import { closeWindow } from './lib/window-helpers';
+import { singleModifierCombinations } from './lib/accelerator-helpers.ts';
+import { defer, ifit } from './lib/spec-helpers.ts';
+import { closeWindow } from './lib/window-helpers.ts';
 
-const fixturesPath = path.resolve(__dirname, 'fixtures');
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
 describe('Menu module', function () {
   it('sets the correct class name on the prototype', () => {
@@ -1036,6 +1036,11 @@ describe('Menu module', function () {
   });
 
   describe('Menu.setApplicationMenu', () => {
+    beforeEach(() => {
+      const menu = Menu.getApplicationMenu();
+      defer(() => Menu.setApplicationMenu(menu));
+    });
+
     it('sets a menu', () => {
       const menu = Menu.buildFromTemplate([{ label: '1' }, { label: '2' }]);
 
@@ -1043,8 +1048,8 @@ describe('Menu module', function () {
       expect(Menu.getApplicationMenu()).to.not.be.null('application menu');
     });
 
-    // DISABLED-FIXME(nornagon): this causes the focus handling tests to fail
     it('unsets a menu with null', () => {
+      Menu.setApplicationMenu(Menu.buildFromTemplate([{ label: '1' }]));
       Menu.setApplicationMenu(null);
       expect(Menu.getApplicationMenu()).to.be.null('application menu');
     });

@@ -4,7 +4,7 @@ import { expect } from 'chai';
 
 import { once } from 'node:events';
 
-import { ifit } from './lib/spec-helpers';
+import { ifit } from './lib/spec-helpers.ts';
 
 describe('Notification module', () => {
   it('sets the correct class name on the prototype', () => {

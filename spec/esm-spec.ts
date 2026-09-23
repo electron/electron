@@ -3,11 +3,14 @@ import { BrowserWindow } from 'electron';
 import { expect } from 'chai';
 
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { spawnAndWait } from './lib/spec-helpers';
+import { spawnAndWait } from './lib/spec-helpers.ts';
+
+const require = createRequire(import.meta.url);
 
 const fixtureTimeout = 20000;
 const fixtureKillTimeout = 5000;
@@ -22,7 +25,7 @@ const runFixture = async (appPath: string, args: string[] = []) => {
   });
 };
 
-const fixturePath = path.resolve(__dirname, 'fixtures', 'esm');
+const fixturePath = path.resolve(import.meta.dirname, 'fixtures', 'esm');
 
 describe('esm', () => {
   describe('main process', () => {
@@ -80,6 +83,26 @@ describe('esm', () => {
       const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-utility.mjs'));
       expect(result.code).to.equal(0);
     });
+  });
+
+  // The `electron` module that `import` sees is produced by wrapping the one
+  // `require()` returns, so the two should expose exactly the same names bound
+  // to exactly the same objects in every process type that can load ESM.
+  describe('import / require parity', () => {
+    let results: Record<string, string[]> = {};
+
+    before(async () => {
+      const result = await runFixture(path.resolve(fixturePath, 'import-require-parity'));
+      expect(result.code).to.be.oneOf([0, 1], `fixture did not run to completion:\n${result.stderr}`);
+      results = JSON.parse(result.stdout.split('\n').pop()!);
+    });
+
+    for (const processType of ['main', 'utility', 'renderer']) {
+      it(`exposes the same electron module to import and require() in the ${processType} process`, () => {
+        expect(results).to.have.property(processType);
+        expect(results[processType]).to.deep.equal([]);
+      });
+    }
   });
 
   describe('renderer process', () => {

@@ -59,8 +59,7 @@ function makeWebPreferences(embedder: Electron.WebContents, params: Record<strin
     ['nodeIntegration', false],
     ['nodeIntegrationInWorker', false],
     ['sandbox', true],
-    ['nodeIntegrationInSubFrames', false],
-    ['enableWebSQL', false]
+    ['nodeIntegrationInSubFrames', false]
   ]);
 
   // Inherit certain option values from embedder

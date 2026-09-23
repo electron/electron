@@ -7,16 +7,19 @@ import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
+import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { setImmediate } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 
-import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers';
-import { deferKillUtilityProcess, ifit, listen, startRemoteControlApp } from './lib/spec-helpers';
-import { closeWindow } from './lib/window-helpers';
+import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers.ts';
+import { deferKillUtilityProcess, ifit, listen, startRemoteControlApp } from './lib/spec-helpers.ts';
+import { closeWindow } from './lib/window-helpers.ts';
 
-const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process');
+const require = createRequire(import.meta.url);
+
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures', 'api', 'utility-process');
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
 
 describe('utilityProcess module', () => {
@@ -235,6 +238,20 @@ describe('utilityProcess module', () => {
       expect(details.serviceName).to.equal('node.mojom.NodeService');
       expect(details.name).to.equal(name);
       expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
+    });
+
+    ifit(process.platform === 'win32')('reports a launch failure with its system error code', async () => {
+      const ERROR_FILENAME_EXCED_RANGE = 206;
+      const name = crypto.randomUUID();
+      const gonePromise = waitForCrash(name);
+      utilityProcess.fork(path.join(fixturesPath, 'empty.js'), [], {
+        serviceName: name,
+        execArgv: [`--title=${'a'.repeat(40000)}`]
+      });
+      const details = await gonePromise;
+      expect(details.type).to.equal('Utility');
+      expect(details.reason).to.equal('launch-failed');
+      expect(details.systemErrorCode).to.equal(ERROR_FILENAME_EXCED_RANGE);
     });
 
     it('does not keep stale observers for crashed processes without JS references', async () => {
@@ -644,7 +661,7 @@ describe('utilityProcess module', () => {
           preload: path.join(fixturesPath, 'preload.js')
         }
       });
-      await w.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
+      await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'blank.html'));
       // Create Message port pair for Renderer <-> Utility Process.
       const { port1: rendererPort, port2: childPort1 } = new MessageChannelMain();
       w.webContents.postMessage('port', result, [rendererPort]);

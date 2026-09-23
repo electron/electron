@@ -156,7 +156,8 @@ const LINTERS = [
       'spec/node_modules',
       'spec/fixtures/native-addon'
     ],
-    test: (filename) => filename.endsWith('.js') || filename.endsWith('.ts') || filename.endsWith('.mjs'),
+    test: (filename) =>
+      filename.endsWith('.js') || filename.endsWith('.ts') || filename.endsWith('.mjs') || filename.endsWith('.mts'),
     run: async (opts, filenames) => {
       const clean = runOxlint(filenames, { fix: opts.fix });
       if (!clean) {

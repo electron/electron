@@ -1,5 +1,5 @@
 import { nativeImage } from 'electron/common';
-import { BrowserWindow, ipcMain, IpcMainInvokeEvent, MessageChannelMain, WebContents } from 'electron/main';
+import { BrowserWindow, ipcMain, type IpcMainInvokeEvent, MessageChannelMain, type WebContents } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -7,11 +7,11 @@ import { EventEmitter, once } from 'node:events';
 import * as http from 'node:http';
 import * as path from 'node:path';
 
-import { defer, listen, startRemoteControlApp } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { defer, listen, startRemoteControlApp } from './lib/spec-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
-const fixturesPath = path.resolve(__dirname, 'fixtures');
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
 describe('ipc module', () => {
   describe('invoke', () => {
@@ -201,8 +201,10 @@ describe('ipc module', () => {
         'test',
         () =>
           new Promise(() => {
-            setTimeout(() => v8Util.requestGarbageCollectionForTesting());
-            /* never resolve */
+            // Never resolves. Dropping the only reference to the reply callback
+            // and collecting it without a native stack scan (see v8Util) is what
+            // makes the renderer's invoke() reject.
+            v8Util.requestGarbageCollectionForTesting({ execution: 'async' });
           })
       );
       w.webContents.executeJavaScript(`(${rendererInvoke})()`);
@@ -559,7 +561,14 @@ describe('ipc module', () => {
             webPreferences: { nodeIntegration: true, contextIsolation: false }
           });
           w.loadURL('about:blank');
-          ipcMain.once('do-a-gc', () => v8Util.requestGarbageCollectionForTesting());
+          // The orphaned MessagePortMain must actually be reclaimed for port2 to
+          // see 'close'. A synchronous GC from inside this IPC handler scans the
+          // native stack conservatively, and the frames that entangled the port a
+          // moment ago can leave a stale pointer there that keeps it alive, so
+          // collect from a clean task instead (like gc({ execution: 'async' })).
+          ipcMain.once('do-a-gc', () => {
+            v8Util.requestGarbageCollectionForTesting({ execution: 'async' });
+          });
           await w.webContents.executeJavaScript(
             `(${async function () {
               const { port1, port2 } = new MessageChannel();
@@ -1243,7 +1252,7 @@ describe('ipc module', () => {
             w.destroy();
           }
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap')
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap')
       );
 
       expect(templatesCreated).to.be.below(messageCount / 2);

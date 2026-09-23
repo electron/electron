@@ -234,9 +234,9 @@ Special values `yes` and `1` are interpreted as `true`, while `no` and `0` are i
 
 Security-critical preferences cannot be used to make the guest less secure than
 its embedder. When the embedder has any of `contextIsolation`, `javascript`,
-`nodeIntegration`, `nodeIntegrationInWorker`, `sandbox`, `nodeIntegrationInSubFrames`
-or `enableWebSQL` set to its more secure value, the guest inherits that value and
-the corresponding `webpreferences` entry is ignored.
+`nodeIntegration`, `nodeIntegrationInWorker`, `sandbox` or `nodeIntegrationInSubFrames`
+set to its more secure value, the guest inherits that value and the corresponding
+`webpreferences` entry is ignored.
 
 ### `enableblinkfeatures`
 

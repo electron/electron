@@ -1,4 +1,4 @@
-import { ipcMain, session, webContents as webContentsModule, WebContents } from 'electron/main';
+import { ipcMain, session, webContents as webContentsModule, type WebContents } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -7,13 +7,13 @@ import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as path from 'node:path';
 
-import { listen, waitUntil } from './lib/spec-helpers';
+import { listen, waitUntil } from './lib/spec-helpers.ts';
 
 // Toggle to add extra debug output
 const DEBUG = !process.env.CI;
 
 describe('ServiceWorkerMain module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures');
+  const fixtures = path.resolve(import.meta.dirname, 'fixtures');
   const preloadRealmFixtures = path.resolve(fixtures, 'api/preload-realm');
   const webContentsInternal: typeof ElectronInternal.WebContents = webContentsModule as any;
 

@@ -7,7 +7,7 @@ import { Buffer } from 'node:buffer';
 import * as path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { ifdescribe, ifit } from './lib/spec-helpers';
+import { ifdescribe, ifit } from './lib/spec-helpers.ts';
 
 const BOOKMARK_MIME = 'electron application/bookmark';
 const FIND_TEXT_MIME = 'electron application/findtext';
@@ -58,13 +58,13 @@ async function readUriListPaths(): Promise<string[] | undefined> {
 }
 
 describe('clipboard module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures');
+  const fixtures = path.resolve(import.meta.dirname, 'fixtures');
 
   describe('reading images via clipboard.read()', () => {
     it('round-trips a NativeImage through the image/* MIME type', async () => {
       const p = path.join(fixtures, 'assets', 'logo.png');
       const i = nativeImage.createFromPath(p);
-      await clipboard.write([new ClipboardItem({ 'image/png': new Blob([i.toPNG()]) })]);
+      await clipboard.write([new ClipboardItem({ 'image/png': new Blob([new Uint8Array(i.toPNG())]) })]);
 
       const buffer = await readType('image/png');
       expect(buffer).to.be.an.instanceOf(Buffer);
@@ -221,7 +221,7 @@ describe('clipboard module', () => {
           'text/plain': text,
           'text/html': '<b>Hi</b>',
           'text/rtf': rtf,
-          'image/png': new Blob([i.toPNG()]),
+          'image/png': new Blob([new Uint8Array(i.toPNG())]),
           [BOOKMARK_MIME]: bookmark
         })
       ]);
@@ -441,7 +441,7 @@ describe('clipboard module', () => {
   // RFC 2483 `file://` URI list.
   describe('reading/writing files via the text/uri-list MIME type', () => {
     const fileA = path.join(fixtures, 'assets', 'logo.png');
-    const fileB = __filename;
+    const fileB = import.meta.filename;
 
     it('round-trips a single file path', async () => {
       await clipboard.write([new ClipboardItem({ [URI_LIST_MIME]: pathToFileURL(fileA).href })]);

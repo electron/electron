@@ -81,10 +81,6 @@ class Protocol final : public gin::Wrappable<Protocol>,
   bool UninterceptProtocol(const std::string& scheme, gin::Arguments* args);
   bool IsProtocolIntercepted(const std::string& scheme);
 
-  // Old async version of IsProtocolRegistered.
-  v8::Local<v8::Promise> IsProtocolHandled(v8::Isolate* isolate,
-                                           const std::string& scheme);
-
   // Helper for converting old registration APIs to new RegisterProtocol API.
   template <ProtocolType type>
   bool RegisterProtocolFor(const std::string& scheme,
