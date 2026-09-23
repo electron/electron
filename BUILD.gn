@@ -1861,6 +1861,10 @@ template("dist_zip") {
   action(target_name) {
     script = "//electron/build/zip.py"
     deps = [ ":$_runtime_deps_target" ]
+    if (defined(invoker.build_deps)) {
+      # Ordered before the zip without contributing to its runtime deps.
+      deps += invoker.build_deps
+    }
     forward_variables_from(invoker,
                            [
                              "outputs",
@@ -1922,10 +1926,7 @@ dist_zip("electron_dist_zip") {
   }
   deps = data_deps
   if (electron_use_resource_allowlist) {
-    # Build-order dep only (not data_deps): the check must pass before the
-    # dist zip is created, but its stamp output must not be packed into the
-    # zip's runtime deps.
-    deps += [ ":electron_resource_allowlist_check" ]
+    build_deps = [ ":electron_resource_allowlist_check" ]
   }
   outputs = [ "$root_build_dir/dist.zip" ]
 }
