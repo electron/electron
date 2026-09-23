@@ -2,7 +2,7 @@ import { expect } from 'chai';
 
 import { createRequire } from 'node:module';
 
-// See deprecate-spec.ts for why this is require()d rather than imported.
+// See deprecate.spec.ts for why this is require()d rather than imported.
 const { parseCommaSeparatedKeyValue, parseFeatures }: typeof import('../lib/browser/parse-features-string.ts') =
   createRequire(import.meta.url)('../lib/browser/parse-features-string.ts');
 
