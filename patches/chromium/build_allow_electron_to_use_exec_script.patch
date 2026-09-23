@@ -3,18 +3,22 @@ From: Samuel Attard <sattard@salesforce.com>
 Date: Fri, 21 Oct 2022 16:29:06 -0700
 Subject: build: allow electron to use exec_script
 
-This is similar to the //build usecase so we're OK adding ourselves here
+This is similar to the //build usecase so we're OK adding ourselves here.
+
+//v8/gni/version_hash_salt.gni comes from our V8 patch that derives the
+code-cache salt from patches/v8 at gen time.
 
 diff --git a/.gn b/.gn
-index 8859ecde27105c5256dcbc687e3d8eeacbd8cde6..2e1912d0091dbdcb5aa917c60bdfb16c55ebc6fc 100644
+index 8859ecde27105c5256dcbc687e3d8eeacbd8cde6..f2f529ed6722d6ec540c52c2ea5df7353ddd09d5 100644
 --- a/.gn
 +++ b/.gn
-@@ -174,6 +174,30 @@ exec_script_allowlist =
+@@ -174,6 +174,31 @@ exec_script_allowlist =
        # script. exec_script only happens when the checkout_mesa gclient arg is
        # set. If/when a 'proper' GN build for Mesa exists, this can be removed.
        "//third_party/dawn/third_party/meson/meson_target.gni",
 +
 +      "//electron/BUILD.gn",
++      "//v8/gni/version_hash_salt.gni",
 +      "//third_party/electron_node/deps/ada/unofficial.gni",
 +      "//third_party/electron_node/deps/base64/BUILD.gn",
 +      "//third_party/electron_node/deps/base64/unofficial.gni",
