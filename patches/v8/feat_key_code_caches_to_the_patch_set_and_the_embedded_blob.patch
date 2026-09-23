@@ -1,0 +1,186 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Attard <sattard@anthropic.com>
+Date: Wed, 23 Sep 2026 17:52:51 +0000
+Subject: feat: key code caches to the patch set and the embedded blob
+
+V8 keys serialized code (JS code caches and serialized wasm modules) on
+Version::Hash(), i.e. on major.minor.build.patch only. Electron applies
+V8 fixes on release branches as patches without changing that version
+number, so a build with a different patch set still accepts serialized
+code written by the previous release. Serialized wasm code stores calls
+to builtins as raw Builtin ids, so when a patch adds, removes or reorders
+a builtin the deserialized code is relinked against the wrong builtins
+and crashes or traps at runtime.
+
+This adds two things:
+
+* a v8_version_hash_salt GN arg that is mixed into Version::Hash().
+  Electron sets it to a fingerprint of patches/v8 (see build/args/all.gn),
+  so any change to the patch set invalidates every code cache and every
+  serialized wasm module. The salt reaches version.cc through a header
+  written at gn gen time so that changing it recompiles one file.
+* the embedded blob's data and code hashes in the serialized wasm module
+  header, so that a module is only ever deserialized into a build whose
+  builtins are identical to the one that produced it, whatever the
+  version number says.
+
+Both parts are suitable for upstreaming.
+
+diff --git a/BUILD.gn b/BUILD.gn
+index 3698b9b9724ec9425c5e57d395ae9d305841b7aa..fa2b9bb9a6b14c5b78b41d42b2962e28b136bd13 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -98,6 +98,13 @@ declare_args() {
+   # Allows the embedder to add a custom suffix to the version string.
+   v8_embedder_string = ""
+ 
++  # An arbitrary string that is mixed into the hash that keys code caches and
++  # serialized wasm modules (see Version::Hash). Embedders that carry patches
++  # on top of a V8 release should derive this from their patch set so that
++  # serialized code produced by a differently-patched build of the same V8
++  # version is rejected instead of deserialized.
++  v8_version_hash_salt = ""
++
+   # Sets -DENABLE_DISASSEMBLER.
+   v8_enable_disassembler = ""
+ 
+@@ -1299,6 +1306,12 @@ enabled_external_defines =
+ disabled_external_defines =
+     disabled_external_v8_defines + disabled_external_cppgc_defines
+ 
++# The salt is written to a generated header that only src/utils/version.cc
++# includes, so that changing it recompiles a single file rather than all of
++# V8. write_file() only touches the file when its contents change.
++write_file("$target_gen_dir/src/utils/version-hash-salt.inc",
++           [ "#define V8_VERSION_HASH_SALT \"$v8_version_hash_salt\"" ])
++
+ # Put defines here that are only used in our internal files and NEVER in
+ # external headers that embedders (such as chromium and node) might include.
+ config("features") {
+diff --git a/src/utils/version.cc b/src/utils/version.cc
+index 7423f45762d20e9a9bb7ae1ce0b7e7d44d4e81ba..75f7ebc7ac620d286f9405e5baacb72642cb169e 100644
+--- a/src/utils/version.cc
++++ b/src/utils/version.cc
+@@ -6,7 +6,11 @@
+ 
+ #include "include/v8-version-string.h"
+ #include "include/v8-version.h"
++#include "src/base/hashing.h"
+ #include "src/base/strings.h"
++// Generated at gn gen time from the v8_version_hash_salt GN arg; defines
++// V8_VERSION_HASH_SALT.
++#include "src/utils/version-hash-salt.inc"
+ 
+ // Define SONAME to have the build system put a specific SONAME into the
+ // shared library instead the generic SONAME generated from the V8 version
+@@ -25,6 +29,25 @@ bool Version::candidate_ = (V8_IS_CANDIDATE_VERSION != 0);
+ const char* Version::soname_ = SONAME;
+ const char* Version::version_string_ = V8_VERSION_STRING;
+ 
++namespace {
++
++// FNV-1a over the salt string, evaluated at compile time.
++constexpr uint32_t SaltHash() {
++  uint32_t hash = 2166136261u;
++  for (const char* p = V8_VERSION_HASH_SALT; *p != '\0'; ++p) {
++    hash = (hash ^ static_cast<uint8_t>(*p)) * 16777619u;
++  }
++  return hash;
++}
++
++}  // namespace
++
++// static
++uint32_t Version::Hash() {
++  return static_cast<uint32_t>(
++      base::hash_combine(major_, minor_, build_, patch_, SaltHash()));
++}
++
+ // Calculate the V8 version string.
+ void Version::GetString(base::Vector<char> str) {
+   const char* candidate = IsCandidate() ? " (candidate)" : "";
+diff --git a/src/utils/version.h b/src/utils/version.h
+index 1bae3e72371a18a81e48bdc451e55bac58d86214..4585b0222b96e7af722515ac6433aa18fc96f15d 100644
+--- a/src/utils/version.h
++++ b/src/utils/version.h
+@@ -27,10 +27,13 @@ class V8_EXPORT Version {
+   static int GetPatch() { return patch_; }
+   static const char* GetEmbedder() { return embedder_; }
+   static bool IsCandidate() { return candidate_; }
+-  static uint32_t Hash() {
+-    return static_cast<uint32_t>(
+-        base::hash_combine(major_, minor_, build_, patch_));
+-  }
++
++  // Keys serialized code (code caches, serialized wasm modules) to the V8
++  // build that produced it. This covers the version number plus the
++  // embedder-provided v8_version_hash_salt GN arg, so that embedders which
++  // apply patches without changing the version number still invalidate
++  // serialized code whenever their patch set changes.
++  static uint32_t Hash();
+ 
+   // Calculate the V8 version string.
+   static void GetString(base::Vector<char> str);
+diff --git a/src/wasm/wasm-serialization.cc b/src/wasm/wasm-serialization.cc
+index 83cd5af3dcb01cbb088edc9a28eae7ae9da4d6b5..7a636e982b5cace1d881855fca09d1fbf14ec681 100644
+--- a/src/wasm/wasm-serialization.cc
++++ b/src/wasm/wasm-serialization.cc
+@@ -8,6 +8,7 @@
+ #include "src/codegen/assembler-inl.h"
+ #include "src/debug/debug.h"
+ #include "src/runtime/runtime.h"
++#include "src/snapshot/embedded/embedded-data.h"
+ #include "src/snapshot/snapshot-data.h"
+ #include "src/utils/ostreams.h"
+ #include "src/utils/version.h"
+@@ -128,9 +129,20 @@ class Reader {
+   const uint8_t* pos_;
+ };
+ 
++// Serialized code refers to builtins by id and embeds root-register-relative
++// offsets, so it is only valid for the exact embedded blob it was compiled
++// against. The version hash alone does not capture that for builds which
++// patch V8 without changing the version number.
++uint32_t EmbeddedBlobHash() {
++  EmbeddedData embedded_data = EmbeddedData::FromBlob();
++  return static_cast<uint32_t>(
++      base::hash_combine(embedded_data.EmbeddedBlobDataHash(),
++                         embedded_data.EmbeddedBlobCodeHash()));
++}
++
+ size_t MeasureHeader(const CompileTimeImports& compile_imports) {
+-  return 5 * kUInt32Size +  // magic number, version hash, cpu features, flags
+-                            // hash, enabled features
++  return 6 * kUInt32Size +  // magic number, version hash, embedded blob hash,
++                            // cpu features, flags hash, enabled features
+          sizeof(typename CompileTimeImportFlags::StorageType) +
+          sizeof(uint32_t) +  // length of constants_module.
+          compile_imports.constants_module().size();
+@@ -141,6 +153,7 @@ void WriteHeader(Writer* writer, WasmEnabledFeatures enabled_features,
+   DCHECK_EQ(0, writer->bytes_written());
+   writer->Write(SerializedData::kMagicNumber);
+   writer->Write(Version::Hash());
++  writer->Write(EmbeddedBlobHash());
+   writer->Write(CpuFeatures::SupportedFeatures().ToIntegral());
+   writer->Write(FlagList::Hash());
+   writer->Write(enabled_features.ToIntegral());
+diff --git a/src/wasm/wasm-serialization.h b/src/wasm/wasm-serialization.h
+index 31becd542dd6ff9d72dc9e9e89fb6ced399920f8..bf38e9ddc0d3247bd2a1f9f8b3a2f4e6b9e208b9 100644
+--- a/src/wasm/wasm-serialization.h
++++ b/src/wasm/wasm-serialization.h
+@@ -30,10 +30,11 @@ class V8_EXPORT_PRIVATE WasmSerializer {
+   // The data header consists of (see {WriteHeader}):
+   // [0] magic number (uint32_t)
+   // [1] version hash (uint32_t)
+-  // [2] supported CPU features (uint32_t)
+-  // [3] flag hash (uint32_t)
+-  // [4] enabled features (via flags and OT) (uint32_t)
+-  // [5] compile time imports (variable size)
++  // [2] embedded blob hash (uint32_t)
++  // [3] supported CPU features (uint32_t)
++  // [4] flag hash (uint32_t)
++  // [5] enabled features (via flags and OT) (uint32_t)
++  // [6] compile time imports (variable size)
+   static constexpr size_t kVersionHashOffset = kUInt32Size;
+ 
+  private:

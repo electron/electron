@@ -10,6 +10,24 @@ node_openssl_path = "//third_party/boringssl"
 v8_promise_internal_field_count = 1
 v8_embedder_string = "-electron.0"
 
+# Salt the hash V8 uses to key code caches and serialized wasm modules with a
+# fingerprint of the patches we apply on top of the V8 release. Release
+# branches cherry-pick V8 fixes without changing V8's own version number, so
+# without this a build with a different patch set would still accept (and
+# mis-link) serialized code written by the previous release. The patch files
+# are passed as dependencies so that `gn gen` re-runs whenever one changes.
+_v8_patch_dir = "//electron/patches/v8"
+_v8_patch_files = [ "$_v8_patch_dir/.patches" ]
+foreach(_patch, read_file("$_v8_patch_dir/.patches", "list lines")) {
+  if (_patch != "") {
+    _v8_patch_files += [ "$_v8_patch_dir/$_patch" ]
+  }
+}
+v8_version_hash_salt = exec_script("//electron/script/patches-hash.py",
+                                   [ rebase_path(_v8_patch_dir) ],
+                                   "trim string",
+                                   _v8_patch_files)
+
 # TODO: this breaks mksnapshot
 v8_enable_snapshot_native_code_counters = false
 
