@@ -1345,22 +1345,20 @@ if (is_mac) {
     if (!is_mas_build) {
       framework_contents += [ "Helpers" ]
     }
-    public_deps = [
+    public_deps = [ ":electron_lib" ]
+    deps = [ "//third_party/electron_node:libnode" ]
+
+    # bundle_deps reach the bundle but not the framework's link, which
+    # :electron_resource_allowlist (and through it :packed_resources) depends
+    # on; bundle_data on the link would leak to every consumer of the paks.
+    bundle_deps = [
       ":electron_framework_libraries",
-      ":electron_lib",
-    ]
-    deps = [
-      ":electron_framework_libraries",
+      ":electron_framework_resources",
       ":electron_swiftshader_library",
       ":electron_xibs",
-      "//third_party/electron_node:libnode",
     ]
-
-    # bundle_deps reach the bundle but not the framework's link, which the
-    # locale paks in here depend on for the resource allowlist.
-    bundle_deps = [ ":electron_framework_resources" ]
     if (!is_mas_build) {
-      deps += [ ":electron_crashpad_helper" ]
+      bundle_deps += [ ":electron_crashpad_helper" ]
     }
     info_plist = "shell/common/resources/mac/Info.plist"
 
