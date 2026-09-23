@@ -1,0 +1,524 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zhenyao Mo <zmo@chromium.org>
+Date: Wed, 16 Sep 2026 09:21:28 -0700
+Subject: gpu: Reset base level for ASTC compressed image uploads
+
+Rename reset_base_level_for_astc_sub_image to
+reset_base_level_for_astc_image, and apply it to
+glCompressedTexImage2D and glCompressedTexImage3D in addition to
+sub-image calls. For ASTC textures when base_level > 0, base_level
+is reset to 0 before compressed image calls and restored afterwards to
+work around a PowerVR driver bug.
+
+Bug: 551708184
+Change-Id: I29ae9c8037e160eb9d4604b0256042308156c7ed
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8303384
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1699003}
+
+Electron adaptation notes (42-x-y):
+- Applied on top of the picked prerequisite 'Reset base level to 0 during
+  ASTC uploads on PowerVR.' (cherry-pick-b6130c724e76.patch).
+- gpu_driver_bug_list.json: entry id 483 lives at the end of the list on this
+  branch, so its cr_bugs/description/feature update is applied there by hand.
+- compressed_texture_test.cc: upstream's version of the test file is taken
+  (the branch's copy came from the prerequisite; gl_tests is not built by
+  Electron).
+
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index 412bbb9cb565cb2d2c24b467dde189e0ede94297..0a3ab369fd696c9637635d62e60fc988bc699018 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -12566,7 +12566,7 @@ bool GLES2DecoderImpl::ClearCompressedTextureLevel(Texture* texture,
+     // Add extra scope to destroy zero and the object it owns right
+     // after its usage.
+     auto zero = base::HeapArray<char>::WithSize(bytes_required);
+-    bool reset_base_level = workarounds().reset_base_level_for_astc_sub_image &&
++    bool reset_base_level = workarounds().reset_base_level_for_astc_image &&
+                             IsASTCFormat(format) && texture->base_level() != 0;
+     api()->glBindTextureFn(texture->target(), texture->service_id());
+     if (reset_base_level) {
+@@ -12620,7 +12620,7 @@ bool GLES2DecoderImpl::ClearCompressedTextureLevel3D(Texture* texture,
+     // Add extra scope to destroy zero and the object it owns right
+     // after its usage.
+     auto zero = base::HeapArray<char>::WithSize(bytes_required);
+-    bool reset_base_level = workarounds().reset_base_level_for_astc_sub_image &&
++    bool reset_base_level = workarounds().reset_base_level_for_astc_image &&
+                             IsASTCFormat(format) && texture->base_level() != 0;
+     api()->glBindTextureFn(texture->target(), texture->service_id());
+     if (reset_base_level) {
+@@ -13354,6 +13354,12 @@ error::Error GLES2DecoderImpl::DoCompressedTexImage(
+           format_info->decompressed_type, decompressed_data.data());
+     }
+   } else {
++    bool reset_base_level = workarounds().reset_base_level_for_astc_image &&
++                            IsASTCFormat(internal_format) &&
++                            texture->base_level() != 0;
++    if (reset_base_level) {
++      api()->glTexParameteriFn(texture->target(), GL_TEXTURE_BASE_LEVEL, 0);
++    }
+     if (dimension == ContextState::k2D) {
+       bool handled = false;
+       if (workarounds().upload_oversized_mip_levels_via_unpack_buffer &&
+@@ -13401,6 +13407,10 @@ error::Error GLES2DecoderImpl::DoCompressedTexImage(
+       api()->glCompressedTexImage3DFn(target, level, internal_format, width,
+                                       height, depth, border, image_size, data);
+     }
++    if (reset_base_level) {
++      api()->glTexParameteriFn(texture->target(), GL_TEXTURE_BASE_LEVEL,
++                               texture->base_level());
++    }
+   }
+   GLenum error = LOCAL_PEEK_GL_ERROR(func_name);
+   if (error == GL_NO_ERROR) {
+@@ -13803,7 +13813,7 @@ error::Error GLES2DecoderImpl::DoCompressedTexSubImage(
+                                decompressed_data.data());
+     }
+   } else {
+-    bool reset_base_level = workarounds().reset_base_level_for_astc_sub_image &&
++    bool reset_base_level = workarounds().reset_base_level_for_astc_image &&
+                             IsASTCFormat(format) && texture->base_level() != 0;
+     if (reset_base_level) {
+       api()->glTexParameteriFn(texture->target(), GL_TEXTURE_BASE_LEVEL, 0);
+diff --git a/gpu/command_buffer/tests/compressed_texture_test.cc b/gpu/command_buffer/tests/compressed_texture_test.cc
+index 1bd682119ae13ad7c504b7e93dfad7fc7206fdee..ab3027f19b61be09a9f821757ef32e8594e3bf73 100644
+--- a/gpu/command_buffer/tests/compressed_texture_test.cc
++++ b/gpu/command_buffer/tests/compressed_texture_test.cc
+@@ -8,11 +8,14 @@
+ #include <GLES3/gl3.h>
+ #include <stdint.h>
+ 
++#include <algorithm>
+ #include <array>
++#include <vector>
+ 
+ #include "base/compiler_specific.h"
+ #include "gpu/command_buffer/tests/gl_manager.h"
+ #include "gpu/command_buffer/tests/gl_test_utils.h"
++#include "gpu/config/gpu_driver_bug_workarounds.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ 
+ #define SHADER(src) #src
+@@ -35,10 +38,7 @@ static const auto kPalette = std::to_array<uint16_t>({
+     0xFFFF,                  // White.
+ });
+ static const unsigned kBlockSize = 4;
+-static const unsigned kPaletteSize =
+-    (kPalette.size() * sizeof(decltype(kPalette)::value_type)) /
+-    sizeof(kPalette[0]);
+-static const unsigned kTextureWidth = kBlockSize * kPaletteSize;
++static const unsigned kTextureWidth = kBlockSize * kPalette.size();
+ static const unsigned kTextureHeight = kBlockSize;
+ 
+ static const char* extension(GLenum format) {
+@@ -79,41 +79,39 @@ static GLuint LoadCompressedTexture(const void* data,
+ 
+ GLuint LoadTextureDXT1(bool alpha) {
+   const unsigned kStride = 4;
+-  uint16_t data[kStride * kPaletteSize];
+-  for (unsigned i = 0; i < kPaletteSize; ++i) {
++  std::array<uint16_t, kStride * kPalette.size()> data;
++  for (unsigned i = 0; i < kPalette.size(); ++i) {
+     // Each iteration defines a 4x4 block of texture.
+     unsigned j = kStride * i;
+-    UNSAFE_TODO(data[j++]) = kPalette[i];  // color_0.
+-    UNSAFE_TODO(data[j++]) = kPalette[i];  // color_1.
+-    UNSAFE_TODO(data[j++]) = kColor0;      // color index.
+-    UNSAFE_TODO(data[j++]) = kColor1;      // color index.
++    data[j++] = kPalette[i];  // color_0.
++    data[j++] = kPalette[i];  // color_1.
++    data[j++] = kColor0;      // color index.
++    data[j++] = kColor1;      // color index.
+   }
+   GLenum format = alpha ?
+       GL_COMPRESSED_RGBA_S3TC_DXT1_EXT : GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+-  return LoadCompressedTexture(
+-      data, sizeof(data), format, kTextureWidth, kTextureHeight);
++  return LoadCompressedTexture(data.data(), sizeof(data), format, kTextureWidth,
++                               kTextureHeight);
+ }
+ 
+ GLuint LoadTextureDXT3() {
+   const unsigned kStride = 8;
+   const uint16_t kOpaque = 0xFFFF;
+-  uint16_t data[kStride * kPaletteSize];
+-  for (unsigned i = 0; i < kPaletteSize; ++i) {
++  std::array<uint16_t, kStride * kPalette.size()> data;
++  for (unsigned i = 0; i < kPalette.size(); ++i) {
+     // Each iteration defines a 4x4 block of texture.
+     unsigned j = kStride * i;
+-    UNSAFE_TODO(data[j++]) = kOpaque;      // alpha row 0.
+-    UNSAFE_TODO(data[j++]) = kOpaque;      // alpha row 1.
+-    UNSAFE_TODO(data[j++]) = kOpaque;      // alpha row 2.
+-    UNSAFE_TODO(data[j++]) = kOpaque;      // alpha row 3.
+-    UNSAFE_TODO(data[j++]) = kPalette[i];  // color_0.
+-    UNSAFE_TODO(data[j++]) = kPalette[i];  // color_1.
+-    UNSAFE_TODO(data[j++]) = kColor0;      // color index.
+-    UNSAFE_TODO(data[j++]) = kColor1;      // color index.
++    data[j++] = kOpaque;      // alpha row 0.
++    data[j++] = kOpaque;      // alpha row 1.
++    data[j++] = kOpaque;      // alpha row 2.
++    data[j++] = kOpaque;      // alpha row 3.
++    data[j++] = kPalette[i];  // color_0.
++    data[j++] = kPalette[i];  // color_1.
++    data[j++] = kColor0;      // color index.
++    data[j++] = kColor1;      // color index.
+   }
+-  return LoadCompressedTexture(data,
+-                               sizeof(data),
+-                               GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,
+-                               kTextureWidth,
++  return LoadCompressedTexture(data.data(), sizeof(data),
++                               GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, kTextureWidth,
+                                kTextureHeight);
+ }
+ 
+@@ -121,23 +119,21 @@ GLuint LoadTextureDXT5() {
+   const unsigned kStride = 8;
+   const uint16_t kClear = 0x0000;
+   const uint16_t kAlpha7 = 0xFFFF;  // Opaque alpha index.
+-  uint16_t data[kStride * kPaletteSize];
+-  for (unsigned i = 0; i < kPaletteSize; ++i) {
++  std::array<uint16_t, kStride * kPalette.size()> data;
++  for (unsigned i = 0; i < kPalette.size(); ++i) {
+     // Each iteration defines a 4x4 block of texture.
+     unsigned j = kStride * i;
+-    UNSAFE_TODO(data[j++]) = kClear;       // alpha_0 | alpha_1.
+-    UNSAFE_TODO(data[j++]) = kAlpha7;      // alpha index.
+-    UNSAFE_TODO(data[j++]) = kAlpha7;      // alpha index.
+-    UNSAFE_TODO(data[j++]) = kAlpha7;      // alpha index.
+-    UNSAFE_TODO(data[j++]) = kPalette[i];  // color_0.
+-    UNSAFE_TODO(data[j++]) = kPalette[i];  // color_1.
+-    UNSAFE_TODO(data[j++]) = kColor0;      // color index.
+-    UNSAFE_TODO(data[j++]) = kColor1;      // color index.
++    data[j++] = kClear;       // alpha_0 | alpha_1.
++    data[j++] = kAlpha7;      // alpha index.
++    data[j++] = kAlpha7;      // alpha index.
++    data[j++] = kAlpha7;      // alpha index.
++    data[j++] = kPalette[i];  // color_0.
++    data[j++] = kPalette[i];  // color_1.
++    data[j++] = kColor0;      // color index.
++    data[j++] = kColor1;      // color index.
+   }
+-  return LoadCompressedTexture(data,
+-                               sizeof(data),
+-                               GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,
+-                               kTextureWidth,
++  return LoadCompressedTexture(data.data(), sizeof(data),
++                               GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, kTextureWidth,
+                                kTextureHeight);
+ }
+ 
+@@ -235,7 +231,7 @@ TEST_P(CompressedTextureTest, Draw) {
+   // Verify results.
+   int origin[] = {0, 0};
+   uint8_t expected_rgba[] = {0, 0, 0, 255};
+-  for (unsigned i = 0; i < kPaletteSize; ++i) {
++  for (unsigned i = 0; i < kPalette.size(); ++i) {
+     origin[0] = kBlockSize * i;
+     ToRGB888(kPalette[i], expected_rgba);
+     EXPECT_TRUE(GLTestHelper::CheckPixels(origin[0], origin[1], kBlockSize,
+@@ -255,17 +251,168 @@ INSTANTIATE_TEST_SUITE_P(Format,
+                          CompressedTextureTest,
+                          ::testing::ValuesIn(kFormats));
+ 
+-class CompressedTextureTestES3 : public ::testing::Test {
++class CompressedTextureTestES3 : public ::testing::TestWithParam<bool> {
+  protected:
+   void SetUp() override {
+     GLManager::Options options;
+     options.size = gfx::Size(kTextureWidth, kTextureHeight);
+     options.context_type = CONTEXT_TYPE_OPENGLES3;
+-    gl_.Initialize(options);
++    GpuDriverBugWorkarounds workarounds;
++    workarounds.reset_base_level_for_astc_image = GetParam();
++    gl_.InitializeWithWorkarounds(options, workarounds);
+   }
+ 
+   void TearDown() override { gl_.Destroy(); }
+ 
++  void UploadASTCLevel(GLenum target,
++                       GLenum format,
++                       GLint level,
++                       GLsizei width,
++                       GLsizei height,
++                       GLsizei block_width,
++                       GLsizei block_height,
++                       const std::array<uint8_t, 4>& color,
++                       bool use_sub_image) {
++    // Void-extent block for ASTC.
++    // Format: 0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++    // R_lo, R_hi, G_lo, G_hi, B_lo, B_hi, A_lo, A_hi
++    const std::array<uint8_t, 16> block = {
++        0xFC,     0xFD,     0xFF,     0xFF,     0xFF,     0xFF,
++        0xFF,     0xFF,     color[0], color[0], color[1], color[1],
++        color[2], color[2], color[3], color[3]};
++
++    GLsizei num_blocks_x = (width + block_width - 1) / block_width;
++    GLsizei num_blocks_y = (height + block_height - 1) / block_height;
++    GLsizei num_blocks = num_blocks_x * num_blocks_y;
++
++    std::vector<uint8_t> data;
++    data.reserve(num_blocks * 16);
++    for (GLsizei i = 0; i < num_blocks; ++i) {
++      data.insert(data.end(), block.begin(), block.end());
++    }
++
++    if (use_sub_image) {
++      glCompressedTexSubImage2D(target, level, 0, 0, width, height, format,
++                                static_cast<GLsizei>(data.size()), data.data());
++    } else {
++      glCompressedTexImage2D(target, level, format, width, height, 0,
++                             static_cast<GLsizei>(data.size()), data.data());
++    }
++    ASSERT_TRUE(GLTestHelper::CheckGLError("UploadASTCLevel", __LINE__));
++  }
++
++  void RunASTCCompressedWithBaseLevelTest(bool use_sub_image) {
++    if (!GLTestHelper::HasExtension("GL_KHR_texture_compression_astc_ldr")) {
++      return;
++    }
++
++    // Use shaders that match the proof-of-concept.
++    // They don't use vertex attributes, but gl_VertexID to generate a quad.
++    const char* kVS =
++        "#version 300 es\n"
++        "out vec2 uv;\n"
++        "void main() {\n"
++        "  vec2 p = vec2(gl_VertexID & 1, gl_VertexID >> 1);\n"
++        "  uv = p;\n"
++        "  gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);\n"
++        "}\n";
++
++    const char* kFS =
++        "#version 300 es\n"
++        "precision highp float;\n"
++        "uniform sampler2D t;\n"
++        "in vec2 uv;\n"
++        "out vec4 c;\n"
++        "void main() {\n"
++        "  c = texture(t, uv);\n"
++        "}\n";
++
++    GLuint program = GLTestHelper::LoadProgram(kVS, kFS);
++    ASSERT_NE(program, 0u);
++    glUseProgram(program);
++    GLint tex_location = glGetUniformLocation(program, "t");
++    ASSERT_NE(tex_location, -1);
++    glUniform1i(tex_location, 0);
++    ASSERT_TRUE(GLTestHelper::CheckGLError("Setup program", __LINE__));
++
++    constexpr std::array<uint8_t, 4> kBlack = {0, 0, 0, 255};
++    constexpr std::array<uint8_t, 4> kRed = {255, 0, 0, 255};
++    constexpr std::array<uint8_t, 4> kGreen = {0, 255, 0, 255};
++
++    // 8x5 ASTC format.
++    // This needs to be big enough, so at smallest level (=4), width >= kBlockWidth.
++    // This is to work around a driver bug: https://crbug.com/562185979.
++    GLenum format = GL_COMPRESSED_RGBA_ASTC_8x5_KHR;
++    constexpr GLsizei kWidth = 128;
++    constexpr GLsizei kHeight = 160;
++    constexpr GLsizei kLevels = 5;
++    constexpr GLsizei kBlockWidth = 8;
++    constexpr GLsizei kBlockHeight = 5;
++
++    // Loop multiple times to increase chances of hitting OOB write/crash if
++    // workaround fails. Keep textures alive to groom the heap.
++    constexpr int kIterations = 16;
++    std::vector<GLuint> textures(kIterations);
++    glGenTextures(kIterations, textures.data());
++
++    for (int i = 0; i < kIterations; ++i) {
++      glBindTexture(GL_TEXTURE_2D, textures[i]);
++
++      if (use_sub_image) {
++        glTexStorage2DEXT(GL_TEXTURE_2D, kLevels, format, kWidth, kHeight);
++        ASSERT_TRUE(GLTestHelper::CheckGLError("glTexStorage2D", __LINE__));
++      } else {
++        // We need to initialize all levels to work around a driver bug.
++        // https://crbug.com/556435507.
++        for (GLint level = 0; level < kLevels; ++level) {
++          GLsizei level_width = std::max(1, kWidth >> level);
++          GLsizei level_height = std::max(1, kHeight >> level);
++          UploadASTCLevel(GL_TEXTURE_2D, format, level, level_width,
++                          level_height, kBlockWidth, kBlockHeight, kBlack,
++                          /*use_sub_image=*/false);
++        }
++      }
++
++      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 4);
++      ASSERT_TRUE(
++          GLTestHelper::CheckGLError("glTexParameteri base level 4", __LINE__));
++
++      // Upload Red to level 4 (8x10).
++      UploadASTCLevel(GL_TEXTURE_2D, format, 4, 8, 10, kBlockWidth,
++                      kBlockHeight, kRed, use_sub_image);
++
++      // Upload Green to level 3 (16x20).
++      UploadASTCLevel(GL_TEXTURE_2D, format, 3, 16, 20, kBlockWidth,
++                      kBlockHeight, kGreen, use_sub_image);
++
++      // Draw. Since BASE_LEVEL is 4, it should sample from level 4 (Red).
++      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
++      glFinish();
++      ASSERT_TRUE(GLTestHelper::CheckGLError("Draw level 4", __LINE__));
++
++      EXPECT_TRUE(
++          GLTestHelper::CheckPixels(0, 0, 1, 1, 1, kRed.data(), nullptr));
++
++      // Change BASE_LEVEL to 3.
++      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 3);
++      ASSERT_TRUE(
++          GLTestHelper::CheckGLError("glTexParameteri base level 3", __LINE__));
++
++      // Draw again. Now it should sample from level 3 (Green).
++      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
++      glFinish();
++      ASSERT_TRUE(GLTestHelper::CheckGLError("Draw level 3", __LINE__));
++
++      EXPECT_TRUE(
++          GLTestHelper::CheckPixels(0, 0, 1, 1, 1, kGreen.data(), nullptr));
++    }
++
++    glDeleteTextures(kIterations, textures.data());
++    glDeleteProgram(program);
++  }
++
+  private:
+   GLManager gl_;
+ };
+@@ -273,84 +420,19 @@ class CompressedTextureTestES3 : public ::testing::Test {
+ // Test that compressed sub-image updates work when TEXTURE_BASE_LEVEL > 0.
+ // This is a workaround for a PowerVR driver bug where it miscomputes the
+ // offset.
+-TEST_F(CompressedTextureTestES3, ASTCCompressedSubImageWithBaseLevel) {
+-  if (!GLTestHelper::HasExtension("GL_KHR_texture_compression_astc_ldr")) {
+-    return;
+-  }
+-
+-  // Use shaders that match the proof-of-concept.
+-  // They don't use vertex attributes, but gl_VertexID to generate a quad.
+-  const char* kVS =
+-      "#version 300 es\n"
+-      "out vec2 uv;\n"
+-      "void main() {\n"
+-      "  vec2 p = vec2(gl_VertexID & 1, gl_VertexID >> 1);\n"
+-      "  uv = p;\n"
+-      "  gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);\n"
+-      "}\n";
+-
+-  const char* kFS =
+-      "#version 300 es\n"
+-      "precision highp float;\n"
+-      "uniform sampler2D t;\n"
+-      "in vec2 uv;\n"
+-      "out vec4 c;\n"
+-      "void main() {\n"
+-      "  c = texture(t, uv);\n"
+-      "}\n";
+-
+-  GLuint program = GLTestHelper::LoadProgram(kVS, kFS);
+-  ASSERT_NE(program, 0u);
+-  glUseProgram(program);
+-  GLint tex_location = glGetUniformLocation(program, "t");
+-  ASSERT_NE(tex_location, -1);
+-  glUniform1i(tex_location, 0);
+-  GLTestHelper::CheckGLError("Setup program", __LINE__);
+-
+-  // 8x5 ASTC format.
+-  GLenum format = GL_COMPRESSED_RGBA_ASTC_8x5_KHR;
+-  constexpr GLsizei kWidth = 8;
+-  constexpr GLsizei kHeight = 160;
+-  constexpr GLsizei kLevels = 5;
+-  std::vector<uint8_t> data(16, 0);
+-
+-  // Loop multiple times to increase chances of hitting OOB write/crash if
+-  // workaround fails. Keep textures alive to groom the heap.
+-  constexpr int kIterations = 16;
+-  std::vector<GLuint> textures(kIterations);
+-  glGenTextures(kIterations, textures.data());
+-
+-  for (int i = 0; i < kIterations; ++i) {
+-    glBindTexture(GL_TEXTURE_2D, textures[i]);
+-
+-    glTexStorage2DEXT(GL_TEXTURE_2D, kLevels, format, kWidth, kHeight);
+-    GLTestHelper::CheckGLError("glTexStorage2D", __LINE__);
+-
+-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+-                    GL_LINEAR_MIPMAP_NEAREST);
+-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 4);
+-    GLTestHelper::CheckGLError("glTexParameteri", __LINE__);
+-
+-    // Draw using the program that samples the texture.
+-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+-    glFinish();
+-    GLTestHelper::CheckGLError("Draw", __LINE__);
+-
+-    // Perform sub-image update to level 3.
+-    // 1x5 pixels is 1 block for 8x5 ASTC, which is 16 bytes.
+-    glCompressedTexSubImage2D(GL_TEXTURE_2D, 3, 0, 0, 1, 5, format,
+-                              static_cast<GLsizei>(data.size()), data.data());
+-    GLTestHelper::CheckGLError("glCompressedTexSubImage2D level 3", __LINE__);
+-
+-    // Also try level 4 (which is the base level)
+-    glCompressedTexSubImage2D(GL_TEXTURE_2D, 4, 0, 0, 1, 5, format,
+-                              static_cast<GLsizei>(data.size()), data.data());
+-    GLTestHelper::CheckGLError("glCompressedTexSubImage2D level 4", __LINE__);
+-  }
++TEST_P(CompressedTextureTestES3, ASTCCompressedSubImageWithBaseLevel) {
++  RunASTCCompressedWithBaseLevelTest(/*use_sub_image=*/true);
++}
+ 
+-  glDeleteTextures(kIterations, textures.data());
+-  glDeleteProgram(program);
++// Test that compressed image updates work when TEXTURE_BASE_LEVEL > 0.
++// This is a workaround for a PowerVR driver bug where it miscomputes the
++// offset.
++TEST_P(CompressedTextureTestES3, ASTCCompressedImageWithBaseLevel) {
++  RunASTCCompressedWithBaseLevelTest(/*use_sub_image=*/false);
+ }
+ 
++INSTANTIATE_TEST_SUITE_P(Workaround,
++                         CompressedTextureTestES3,
++                         ::testing::Bool());
++
+ }  // namespace gpu
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index 4039b5278817fc03ab1e40c9029bc91ada260bd0..fc04ac145bb5df8287d37fff5c2cfb8a2fbbc2b8 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3885,14 +3885,14 @@
+     },
+     {
+       "id": 483,
+-      "cr_bugs": [528131939],
+-      "description": "Reset texture base level before calling glCompressedTexSubImage2D for ASTC textures to work around PowerVR driver bug.",
++      "cr_bugs": [551708184],
++      "description": "Reset texture base level before calling glCompressedTexImage2D or glCompressedTexSubImage2D for ASTC textures to work around PowerVR driver bug.",
+       "os": {
+         "type": "android"
+       },
+       "gl_vendor": "Imagination.*",
+       "features": [
+-        "reset_base_level_for_astc_sub_image"
++        "reset_base_level_for_astc_image"
+       ]
+     },
+     {
+diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
+index cdc70dc90515461ce47b19f3e8ed22f6fca9773b..a672e5658fae1a8f2d8052e70f1ec91a9077ecae 100644
+--- a/gpu/config/gpu_workaround_list.txt
++++ b/gpu/config/gpu_workaround_list.txt
+@@ -122,7 +122,7 @@ reattach_texture_to_fbo_after_layer_increase
+ recreate_fbo_upon_flush
+ rely_on_implicit_sync_for_swap_buffers
+ remove_dynamic_indexing_of_swizzled_vector
+-reset_base_level_for_astc_sub_image
++reset_base_level_for_astc_image
+ reset_tex_storage_base_level
+ round_down_uniform_bind_buffer_range_size
+ scalarize_vec_and_mat_constructor_args

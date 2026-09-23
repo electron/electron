@@ -1,0 +1,117 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Tue, 22 Sep 2026 08:16:00 +0000
+Subject: [M150-LTS] Ensure CompoundImageBacking::GetGpuBacking() validates
+ latest content ID
+
+When multiple GPU backings exist (e.g. with dynamic backing allocation
+where the initial lazy GPU backing is resolved and rejected by
+SupportsAccess() before a compatible backing is dynamically allocated),
+GetGpuBacking() previously returned the first non-memory element in
+|elements_| regardless of its content_id_.
+
+Because CreateBackingFromBackingFactory() marks newly created GPU
+backings as cleared when a shared memory backing is present, calling
+CopyToGpuMemoryBuffer() or CopyToGpuMemoryBufferAsync() could select the
+uninitialized or stale GPU backing instead of the active backing holding
+latest_content_id_, copying uninitialized VRAM into shared memory.
+
+Update GetGpuBacking() to check HasLatestContent(element) so only a GPU
+backing holding the latest content is selected as the readback source,
+and guard against null gpu_backing dereferences in error logging when no
+GPU backing holds the latest content.
+
+To cover this, CreateSharedMemoryForTesting() takes an optional
+SharedImageFactoryRef. Supplying one makes the dynamic allocation branch
+of GetOrAllocateBacking() reachable from the unit test, so the
+regression test reproduces the bug entirely through the public API: a
+single ProduceSkia() call resolves the initial GPU element, rejects it
+via SupportsAccess(), and dynamically allocates a second element, and a
+Skia BeginScopedWriteAccess() then makes that second element the holder
+of the latest content. No test code mutates CompoundImageBacking state
+directly.
+
+SharedImageFactory itself needs no GL context here: its constructor
+returns early once GL is reported as disabled, and registering the
+existing TestSharedImageBackingFactory via
+RegisterSharedImageBackingFactoryForTesting() makes dynamic allocations
+produce TestImageBackings. That process-global GL override lives in a
+dedicated fixture so it applies only to these two tests.
+
+Bug: 537857253
+Change-Id: I24e319a5e3fb273618ca4c7edbc834329929e253
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8412944
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1699945}
+(cherry picked from commit 2f291ea16923b2f39b5b7154c0dfa321520f07f5)
+
+Electron adaptation notes (42-x-y):
+- The GetGpuBacking() / CopyToShm / CopyToShmAsync hunks (the actual fix)
+  merged verbatim.
+- CreateSharedMemoryForTesting() and compound_image_backing_unittest.cc: the
+  branch's test helper and TestImageBacking still take explicit
+  format/size/... parameters instead of SharedImageInfo, so the test-only
+  'shared_image_factory' parameter, its comment, and the new unit tests are
+  not carried (gpu_unittests is not built by Electron).
+
+diff --git a/gpu/command_buffer/service/shared_image/compound_image_backing.cc b/gpu/command_buffer/service/shared_image/compound_image_backing.cc
+index fe5803812328bbd8fe37fb36abb2eadee5665a75..c01a2f3f37beee413a5cbf1f1c57d6840a4b5b16 100644
+--- a/gpu/command_buffer/service/shared_image/compound_image_backing.cc
++++ b/gpu/command_buffer/service/shared_image/compound_image_backing.cc
+@@ -1199,8 +1199,12 @@ bool CompoundImageBacking::CopyToGpuMemoryBuffer() {
+   }
+ 
+   auto* gpu_backing = GetGpuBacking();
+-  if (!gpu_backing ||
+-      !copy_manager_->CopyImage(gpu_backing, shm_element.GetBacking())) {
++  if (!gpu_backing) {
++    LOG(ERROR) << "Failed to copy from GPU backing to shared memory: no GPU "
++                  "backing with latest content";
++    return false;
++  }
++  if (!copy_manager_->CopyImage(gpu_backing, shm_element.GetBacking())) {
+     LOG(ERROR) << "Failed to copy from GPU backing (" << gpu_backing->GetName()
+                << ") to shared memory";
+     return false;
+@@ -1228,8 +1232,8 @@ void CompoundImageBacking::CopyToGpuMemoryBufferAsync(
+ 
+   auto* gpu_backing = GetGpuBacking();
+   if (!gpu_backing) {
+-    LOG(ERROR) << "Failed to copy from GPU backing (" << gpu_backing->GetName()
+-               << ") to shared memory";
++    LOG(ERROR) << "Failed to copy from GPU backing to shared memory: no GPU "
++                  "backing with latest content";
+     std::move(callback).Run(false);
+     return;
+   }
+@@ -1727,11 +1731,12 @@ SharedImageBacking* CompoundImageBacking::GetOrAllocateBacking(
+ 
+ SharedImageBacking* CompoundImageBacking::GetGpuBacking() {
+   for (auto& element : elements_) {
+-    if (!element.access_streams.Has(SharedImageAccessStream::kMemory)) {
++    if (!element.access_streams.Has(SharedImageAccessStream::kMemory) &&
++        HasLatestContent(element) && element.GetBacking()) {
+       return element.GetBacking();
+     }
+   }
+-  LOG(ERROR) << "No GPU backing found.";
++  LOG(ERROR) << "No GPU backing with latest content found.";
+   return nullptr;
+ }
+ 
+diff --git a/gpu/command_buffer/service/shared_image/compound_image_backing.h b/gpu/command_buffer/service/shared_image/compound_image_backing.h
+index 1f0278a224cf1b0b6745c8683feea7138159edbb..fcec4e3b19ba88f56aeeb008b819700b1d09e0f1 100644
+--- a/gpu/command_buffer/service/shared_image/compound_image_backing.h
++++ b/gpu/command_buffer/service/shared_image/compound_image_backing.h
+@@ -401,8 +401,8 @@ class GPU_GLES2_EXPORT CompoundImageBacking
+   SharedImageBacking* GetOrAllocateBacking(SharedImageAccessStream stream,
+                                            const AccessParams& params);
+ 
+-  // Returns the gpu backing from the list of |element_| which has a shm and a
+-  // gpu backing.
++  // Returns the GPU backing that holds the latest content from |elements_|, or
++  // nullptr if no GPU backing holds the latest content.
+   SharedImageBacking* GetGpuBacking();
+ 
+   bool HasLatestContent(ElementHolder& element);

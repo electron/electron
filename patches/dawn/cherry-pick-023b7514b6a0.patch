@@ -1,0 +1,96 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: James Price <jrprice@google.com>
+Date: Wed, 26 Aug 2026 10:54:37 -0700
+Subject: [tint] Limit combined size of all private variables
+
+Excessive combined private variable size is causing problems for some
+drivers. Limit to 8MB for now, which is well above the minmax limit of
+8KB that WGSL requires for a single declaration.
+
+Fixed: 543141419
+Change-Id: I152d8f504185417b0ae9a954e3be42b40b15763f
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/336255
+Reviewed-by: dan sinclair <dsinclair@chromium.org>
+Auto-Submit: James Price <jrprice@google.com>
+Commit-Queue: James Price <jrprice@google.com>
+
+Electron adaptation notes (42-x-y):
+- This branch's Tint still has the monolithic core/ir/validator.cc (upstream
+  later split it into functional_validator.{cc,h}), so the new check is added
+  at the end of Validator::CheckVar() and the total_private_bytes_ counter is
+  added to class Validator in validator.cc, instead of functional_validator.*.
+- internal_limits.h: only kMaxCombinedPrivateVariableSize is added; the
+  surrounding upstream constants/comment changes are not on this branch.
+- validator_value_test.cc: the new test is inserted before
+  Var_HandleMissingBindingPoint; the neighbouring upstream tests do not exist
+  here. The check itself is unchanged from upstream.
+
+diff --git a/src/tint/lang/core/ir/validator.cc b/src/tint/lang/core/ir/validator.cc
+index a0ee08f9216697cedda8ec3b266760e76c5a6334..4cd8c3ff3a2cad0ef2069881fe28edb62c7cf3f6 100644
+--- a/src/tint/lang/core/ir/validator.cc
++++ b/src/tint/lang/core/ir/validator.cc
+@@ -1627,6 +1627,7 @@ class Validator {
+     core::ir::ReferencedModuleVars<const Module> referenced_module_vars_;
+     Hashset<OverrideId, 8> seen_override_ids_;
+     Hashset<std::string, 4> entry_point_names_;
++    uint64_t total_private_bytes_ = 0;
+     Hashset<ValidatedType, 16> validated_types_{};
+ };
+ 
+@@ -3623,6 +3624,15 @@ void Validator::CheckVar(const Var* var) {
+             }
+         }
+     }
++
++    if (mv->AddressSpace() == AddressSpace::kPrivate) {
++        total_private_bytes_ += mv->StoreType()->Size();
++        if (total_private_bytes_ > internal_limits::kMaxCombinedPrivateVariableSize) {
++            AddError(var) << "total size of private address-space variables exceeds "
++                          << internal_limits::kMaxCombinedPrivateVariableSize << " bytes";
++            return;
++        }
++    }
+ }
+ 
+ void Validator::CheckBlendSrc(BlendSrcContext& ctx,
+diff --git a/src/tint/lang/core/ir/validator_value_test.cc b/src/tint/lang/core/ir/validator_value_test.cc
+index 1eb575872956c13da82425e5988a382b5a393415..5a38793fce692a3b4933521a51ef4b1edfa92d91 100644
+--- a/src/tint/lang/core/ir/validator_value_test.cc
++++ b/src/tint/lang/core/ir/validator_value_test.cc
+@@ -420,6 +420,21 @@ TEST_F(IR_ValidatorTest, Var_Init_InvalidAddressSpace) {
+ )")) << res.Failure();
+ }
+ 
++TEST_F(IR_ValidatorTest, Var_CombinedPrivateSizeExceedsLimit) {
++    b.Append(mod.root_block, [&] {
++        for (uint32_t i = 0; i < 128; i++) {
++            b.Var(ty.ptr<private_>(ty.array<vec4u, 8000u>()));
++        }
++    });
++
++    auto res = ir::Validate(mod);
++    ASSERT_NE(res, Success);
++    EXPECT_THAT(
++        res.Failure().reason,
++        testing::HasSubstr("total size of private address-space variables exceeds 8388608 bytes"))
++        << res.Failure();
++}
++
+ TEST_F(IR_ValidatorTest, Var_HandleMissingBindingPoint) {
+     auto* v = b.Var(ty.ptr<handle, i32>());
+     mod.root_block->Append(v);
+diff --git a/src/tint/utils/internal_limits.h b/src/tint/utils/internal_limits.h
+index 005d21cddbd03c421d60474e3b0ec504b7154465..078d9ce29e05482256e094b9ae7c49a140cbbb49 100644
+--- a/src/tint/utils/internal_limits.h
++++ b/src/tint/utils/internal_limits.h
+@@ -53,6 +53,10 @@ constexpr int64_t kQuadSize = 4;
+ // A @size attribute maximum size
+ constexpr int64_t kMaxStructMemberPadding = 10 * 1024 * 1024;
+ 
++// Limits the combined size of all private variables in the shader.
++// The WGSL spec has a min-max for a single variable of 8KB, so this 8MB limit is well above that.
++constexpr int64_t kMaxCombinedPrivateVariableSize = 8LL * 1024 * 1024;
++
+ }  // namespace tint::internal_limits
+ 
+ #endif  // SRC_TINT_UTILS_INTERNAL_LIMITS_H_

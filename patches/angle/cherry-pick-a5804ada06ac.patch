@@ -1,0 +1,129 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zhenyao Mo <zmo@chromium.org>
+Date: Thu, 27 Aug 2026 13:17:43 -0700
+Subject: GL: Reset base level for ASTC compressed image uploads
+
+Rename ResetBaseLevelForASTCSubImage workaround to
+ResetBaseLevelForASTCImage, and apply it to glCompressedTexImage2D
+in addition to glCompressedTexSubImage2D. For ASTC textures when
+base_level > 0, base_level is reset to 0 before calling
+glCompressedTexImage2D or glCompressedTexSubImage2D and restored to
+its original value afterwards to work around a PowerVR driver bug.
+
+Bug: chromium:551708184
+Change-Id: Ia0218a2148ae007a15773fe7bb58b723f5159e9d
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8315907
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+
+Electron adaptation notes (42-x-y):
+- Applied on top of the picked prerequisite 'GL: reset base level to 0 for
+  ASTC uploads on PowerVR.' (cherry-pick-88229d73b7cf.patch).
+- renderergl_utils.cpp: whitespace-only context drift around the renamed
+  feature condition; resolved by hand.
+- src/tests/gl_tests/TextureTest.cpp: the branch's test file has diverged, so
+  the new test is not carried; the branch's file is kept. Test-only.
+
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index ce08496b1a34e78495692e042532fc89e1774aa5..73398ee43066d84243508fa49be92319d23b4efd 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -248,8 +248,8 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
+-    FeatureInfo resetBaseLevelForASTCSubImage = {
+-        "resetBaseLevelForASTCSubImage",
++    FeatureInfo resetBaseLevelForASTCImage = {
++        "resetBaseLevelForASTCImage",
+         FeatureCategory::OpenGLWorkarounds,
+         &members,
+     };
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index 79e02dc874d944b5b916b1a28a61199e7871a55b..1481afdf9491da3933b1b3948f713c01aa92d70d 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -300,13 +300,13 @@
+             "issue": "https://crbug.com/705865"
+         },
+         {
+-            "name": "reset_base_level_for_ASTC_sub_image",
++            "name": "reset_base_level_for_ASTC_image",
+             "category": "Workarounds",
+             "description": [
+-                "Reset texture base level before calling glCompressedTexSubImage2D for ASTC textures to ",
++                "Reset texture base level before calling glCompressedTexImage2D or glCompressedTexSubImage2D for ASTC textures to ",
+                 "work around PowerVR driver bug."
+             ],
+-            "issue": "https://crbug.com/528131939"
++            "issue": "https://crbug.com/551708184"
+         },
+         {
+             "name": "recreate_immutable_texture_on_base_level_increase",
+diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
+index cdc449865aed12602ad76c91ade001c538e0e629..5476f04a82961f5c0579564ab8c8dec26fcea76c 100644
+--- a/src/libANGLE/renderer/gl/TextureGL.cpp
++++ b/src/libANGLE/renderer/gl/TextureGL.cpp
+@@ -862,6 +862,13 @@ angle::Result TextureGL::setCompressedImage(const gl::Context *context,
+ 
+     stateManager->bindTexture(getType(), mTextureID);
+     ANGLE_TRY(stateManager->setPixelUnpackState(context, unpack));
++
++    const bool isASTC = gl::IsASTC2DFormat(internalFormat) || gl::IsASTC3DFormat(internalFormat);
++    if (features.resetBaseLevelForASTCImage.enabled && isASTC)
++    {
++        ANGLE_TRY(setBaseLevel(context, 0));
++    }
++
+     if (nativegl::UseTexImage2D(getType()))
+     {
+         ASSERT(size.depth == 1);
+@@ -916,7 +923,7 @@ angle::Result TextureGL::setCompressedSubImage(const gl::Context *context,
+     ANGLE_TRY(stateManager->setPixelUnpackState(context, unpack));
+ 
+     const bool isASTC = gl::IsASTC2DFormat(format) || gl::IsASTC3DFormat(format);
+-    if (features.resetBaseLevelForASTCSubImage.enabled && isASTC)
++    if (features.resetBaseLevelForASTCImage.enabled && isASTC)
+     {
+         ANGLE_TRY(setBaseLevel(context, 0));
+     }
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index 179afcfdc5ea7abad8a2a3cb07e3e443ee0eb692..7204cbbdec2cf20c793e943f0b55fb5beb650b0a 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2500,7 +2500,7 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+     ANGLE_FEATURE_CONDITION(features, resetTexImage2DBaseLevel,
+                             IsApple() && isIntel && GetMacOSVersion() >= OSVersion(10, 12, 4));
+ 
+-    ANGLE_FEATURE_CONDITION(features, resetBaseLevelForASTCSubImage, IsPowerVR(vendor));
++    ANGLE_FEATURE_CONDITION(features, resetBaseLevelForASTCImage, IsPowerVR(vendor));
+ 
+     ANGLE_FEATURE_CONDITION(features, recreateImmutableTextureOnBaseLevelIncrease,
+                             IsPowerVR(vendor));
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index b8040e1e9426a500ae94a9b3362fb3ddbebf775c..e52fb80059458c2bca6beb8d9aeabf36c162958a 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -301,7 +301,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::RemoveInvariantAndCentroidForESSL3, "removeInvariantAndCentroidForESSL3"},
+     {Feature::RequireGpuFamily2, "requireGpuFamily2"},
+     {Feature::RescopeGlobalVariables, "rescopeGlobalVariables"},
+-    {Feature::ResetBaseLevelForASTCSubImage, "resetBaseLevelForASTCSubImage"},
++    {Feature::ResetBaseLevelForASTCImage, "resetBaseLevelForASTCImage"},
+     {Feature::ResetSampleCoverageOnFBOChange, "resetSampleCoverageOnFBOChange"},
+     {Feature::ResetTexImage2DBaseLevel, "resetTexImage2DBaseLevel"},
+     {Feature::ResetTexStorage2DBaseLevel, "resetTexStorage2DBaseLevel"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index 92cf0f680a25b4cc9c6f703afe575dc5996159df..79761f9398eada8e09aff9bdce03f1d7041ef561 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -301,7 +301,7 @@ enum class Feature
+     RemoveInvariantAndCentroidForESSL3,
+     RequireGpuFamily2,
+     RescopeGlobalVariables,
+-    ResetBaseLevelForASTCSubImage,
++    ResetBaseLevelForASTCImage,
+     ResetSampleCoverageOnFBOChange,
+     ResetTexImage2DBaseLevel,
+     ResetTexStorage2DBaseLevel,

@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dave Tapuska <dtapuska@chromium.org>
+Date: Thu, 27 Aug 2026 09:49:18 -0700
+Subject: Prevent crash if WidgetBase is destroyed during GetTextInputType.
+
+During UpdateTextInputState and composition updates, calling
+GetTextInputType can result in the destruction of the WidgetBase. This
+CL adds WeakPtr checks immediately after GetTextInputType calls to
+ensure the widget is still alive before proceeding, preventing potential
+use-after-free crashes. A unit test is also added to verify this
+behavior.
+
+BUG=553129513
+
+Change-Id: Id77925e08581ef1b1d50f3b8404466e04c083ff3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8299776
+Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
+Reviewed-by: Vladimir Levin <vmpstr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1687328}
+
+Electron adaptation notes (42-x-y):
+- widget_base_input_handler_unittest.cc does not exist on this branch; the
+  test-only hunk is dropped. widget_base.cc merged unchanged.
+
+diff --git a/third_party/blink/renderer/platform/widget/widget_base.cc b/third_party/blink/renderer/platform/widget/widget_base.cc
+index c21afa7b70816a2a4b77377511e3ab1fccf79149..aa80296cdd9b9697150ff0c843982f126ee648c6 100644
+--- a/third_party/blink/renderer/platform/widget/widget_base.cc
++++ b/third_party/blink/renderer/platform/widget/widget_base.cc
+@@ -1140,7 +1140,11 @@ void WidgetBase::UpdateTextInputStateInternal(bool show_virtual_keyboard,
+       ime_event_guard_->set_show_virtual_keyboard(true);
+     return;
+   }
++  base::WeakPtr<WidgetBase> weak_this = weak_ptr_factory_.GetWeakPtr();
+   ui::TextInputType new_type = GetTextInputType();
++  if (!weak_this) {
++    return;
++  }
+   if (IsDateTimeInput(new_type))
+     return;  // Not considered as a text input field in WebKit/Chromium.
+ 
+@@ -1152,7 +1156,6 @@ void WidgetBase::UpdateTextInputStateInternal(bool show_virtual_keyboard,
+   std::optional<gfx::Rect> control_bounds;
+   std::optional<gfx::Rect> selection_bounds;
+   if (frame_widget) {
+-    base::WeakPtr<WidgetBase> weak_this = weak_ptr_factory_.GetWeakPtr();
+     new_info = frame_widget->TextInputInfo();
+     if (!weak_this) {
+       return;
+@@ -1335,7 +1338,13 @@ void WidgetBase::UpdateCompositionInfo(bool immediate_request) {
+   gfx::Range range;
+   Vector<gfx::Rect> character_bounds;
+ 
+-  if (GetTextInputType() == ui::TextInputType::TEXT_INPUT_TYPE_NONE) {
++  base::WeakPtr<WidgetBase> weak_this = weak_ptr_factory_.GetWeakPtr();
++  ui::TextInputType text_input_type = GetTextInputType();
++  if (!weak_this) {
++    return;
++  }
++
++  if (text_input_type == ui::TextInputType::TEXT_INPUT_TYPE_NONE) {
+     // Composition information is only available on editable node.
+     range = gfx::Range::InvalidRange();
+   } else {

@@ -1,0 +1,180 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alex Rudenko <alexrudenko@chromium.org>
+Date: Thu, 27 Aug 2026 04:29:05 -0700
+Subject: Disable overlay tools correctly
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Fixed: 553130481
+Change-Id: Ia15cc2d7b7a93103b20c0f4b77455403b3ee32e9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8304033
+Auto-Submit: Alex Rudenko <alexrudenko@chromium.org>
+Reviewed-by: Simon Zünd <szuend@chromium.org>
+Commit-Queue: Simon Zünd <szuend@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1687096}
+
+Electron adaptation notes (42-x-y):
+- This branch predates V8SessionHolder (upstream CL 8126504, a 35-file
+  refactor not carried here), so PausedInDebuggerTool keeps its raw
+  v8_inspector::V8InspectorSession* member/constructor parameter and
+  Dispose() clears it with '= nullptr' instead of '.reset()'. The
+  v8_session_holder.h include and the 'V8Session().get() -> V8Session()' call
+  site change are dropped accordingly. The fix's semantics (rename
+  OnAgentDisable to Dispose, invalidate the tool's WeakCellFactory, and call
+  Dispose() from ClearInspectTool) are unchanged.
+
+diff --git a/third_party/blink/renderer/core/inspector/inspect_tools.cc b/third_party/blink/renderer/core/inspector/inspect_tools.cc
+index 3dc46b27bf570dc34d0585f4aace30a4133c998a..43090252d30bac653caee9886eec5a5c495fd46f 100644
+--- a/third_party/blink/renderer/core/inspector/inspect_tools.cc
++++ b/third_party/blink/renderer/core/inspector/inspect_tools.cc
+@@ -888,8 +888,9 @@ void PausedInDebuggerTool::ExecuteOnV8Session(Action action) {
+   }
+ }
+ 
+-void PausedInDebuggerTool::OnAgentDisable() {
++void PausedInDebuggerTool::Dispose() {
+   v8_session_ = nullptr;
++  weak_factory_.Invalidate();
+ }
+ 
+ void PausedInDebuggerTool::Trace(Visitor* visitor) const {
+diff --git a/third_party/blink/renderer/core/inspector/inspect_tools.h b/third_party/blink/renderer/core/inspector/inspect_tools.h
+index 22a0e6e9d35291cc8a89c7b666fa4cc88537b571..c2229558e1cb18fdac3a651c119dbf42ee91e4fd 100644
+--- a/third_party/blink/renderer/core/inspector/inspect_tools.h
++++ b/third_party/blink/renderer/core/inspector/inspect_tools.h
+@@ -257,7 +257,7 @@ class PausedInDebuggerTool : public InspectTool {
+   void Dispatch(const ScriptValue& message,
+                 ExceptionState& exception_state) override;
+   String GetOverlayName() override;
+-  void OnAgentDisable() override;
++  void Dispose() override;
+   void ExecuteOnV8Session(Action action);
+ 
+   v8_inspector::V8InspectorSession* v8_session_;
+diff --git a/third_party/blink/renderer/core/inspector/inspector_overlay_agent.cc b/third_party/blink/renderer/core/inspector/inspector_overlay_agent.cc
+index 26db41d20192d3cd1c052c99c5e0ef61e97fcbf2..cb1bb0c7bf41396c822aeea96005ababb8151c6f 100644
+--- a/third_party/blink/renderer/core/inspector/inspector_overlay_agent.cc
++++ b/third_party/blink/renderer/core/inspector/inspector_overlay_agent.cc
+@@ -531,7 +531,7 @@ protocol::Response InspectorOverlayAgent::disable() {
+   persistent_tool_ = nullptr;
+   hinge_ = nullptr;
+   if (inspect_tool_) {
+-    inspect_tool_->OnAgentDisable();
++    inspect_tool_->Dispose();
+   }
+   PickTheRightTool();
+   SetNeedsUnbufferedInput(false);
+@@ -1696,6 +1696,15 @@ void InspectorOverlayAgent::EnsureEnableFrameOverlay() {
+ }
+ 
+ void InspectorOverlayAgent::ClearInspectTool() {
++  if (inspect_tool_) {
++    // Notify the outgoing tool that it is being uninstalled so that it drops
++    // its unowned reference to the V8 inspector session. Otherwise a
++    // PausedInDebuggerTool orphaned here can still be reached by a pending
++    // ExecuteOnV8Session task (bound through its WeakCell) and perform a
++    // virtual call through a raw v8_inspector::V8InspectorSession pointer
++    // that dangles once DevToolsSession::Detach() destroys the session.
++    inspect_tool_->Dispose();
++  }
+   inspect_tool_ = nullptr;
+   if (!hinge_) {
+     DisableFrameOverlay();
+diff --git a/third_party/blink/renderer/core/inspector/inspector_overlay_agent.h b/third_party/blink/renderer/core/inspector/inspector_overlay_agent.h
+index 1fb53d4d2af3d5de29ed59d0073c28b602407ac3..8f5fc8f8d6f81543ac144df3b3102224ebdd493e 100644
+--- a/third_party/blink/renderer/core/inspector/inspector_overlay_agent.h
++++ b/third_party/blink/renderer/core/inspector/inspector_overlay_agent.h
+@@ -119,7 +119,7 @@ class CORE_EXPORT InspectTool : public GarbageCollected<InspectTool> {
+   virtual void Trace(Visitor* visitor) const;
+   virtual bool HideOnHideHighlight();
+   virtual bool HideOnMouseMove();
+-  virtual void OnAgentDisable() {}
++  virtual void Dispose() {}
+ 
+  protected:
+   Member<InspectorOverlayAgent> overlay_;
+diff --git a/third_party/blink/web_tests/inspector-protocol/overlay/overlay-paused-resume-disconnect-expected.txt b/third_party/blink/web_tests/inspector-protocol/overlay/overlay-paused-resume-disconnect-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..d4ece75a6d9266c3b5519e5a09128f9fe6765b59
+--- /dev/null
++++ b/third_party/blink/web_tests/inspector-protocol/overlay/overlay-paused-resume-disconnect-expected.txt
+@@ -0,0 +1,8 @@
++Verifies that clearing inspect tool and disconnecting session after sending resume/stepOver in overlay does not cause use-after-free.
++Testing resume:
++Paused on debugger statement.
++Cleared inspect tool and disconnected session after resume.
++Testing stepOver:
++Paused on debugger statement.
++Cleared inspect tool and disconnected session after stepOver.
++
+diff --git a/third_party/blink/web_tests/inspector-protocol/overlay/overlay-paused-resume-disconnect.js b/third_party/blink/web_tests/inspector-protocol/overlay/overlay-paused-resume-disconnect.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..ef6edcbb4a52c31b38a3105d6032f97e2eb77dde
+--- /dev/null
++++ b/third_party/blink/web_tests/inspector-protocol/overlay/overlay-paused-resume-disconnect.js
+@@ -0,0 +1,64 @@
++(async function(/** @type {import('test_runner').TestRunner} */ testRunner) {
++  const {page, session, dp} = await testRunner.startHTML(
++      `
++    <!DOCTYPE html>
++    <script>
++      function pause() {
++        debugger;
++      }
++    </script>
++  `,
++      'Verifies that clearing inspect tool and disconnecting session after sending resume/stepOver in overlay does not cause use-after-free.');
++
++  testRunner.log('Testing resume:');
++  await dp.DOM.enable();
++  await dp.Overlay.enable();
++  await dp.Debugger.enable();
++
++  dp.Runtime.evaluate({expression: 'pause()'});
++  await dp.Debugger.oncePaused();
++  await dp.Overlay.setPausedInDebuggerMessage(
++      {message: 'Paused on debugger statement'});
++  testRunner.log('Paused on debugger statement.');
++
++  // Trigger 'resume' action via overlay host (posts ExecuteOnV8Session task)
++  // and immediately clear inspect tool and disconnect before the posted task
++  // executes.
++  session.evaluate(() => {
++    internals.evaluateInInspectorOverlay(`(function () {
++      window.InspectorOverlayHost.send('resume');
++    })()`);
++  });
++  dp.Overlay.setPausedInDebuggerMessage({});
++  await session.disconnect();
++  testRunner.log('Cleared inspect tool and disconnected session after resume.');
++
++  testRunner.log('Testing stepOver:');
++  const session2 = await page.createSession();
++  const dp2 = session2.protocol;
++
++  await dp2.DOM.enable();
++  await dp2.Overlay.enable();
++  await dp2.Debugger.enable();
++
++  dp2.Runtime.evaluate({expression: 'pause()'});
++  await dp2.Debugger.oncePaused();
++  await dp2.Overlay.setPausedInDebuggerMessage(
++      {message: 'Paused on debugger statement'});
++  testRunner.log('Paused on debugger statement.');
++
++  // Trigger 'stepOver' action via overlay host (posts ExecuteOnV8Session task)
++  // and immediately clear inspect tool and disconnect before the posted task
++  // executes.
++  session2.evaluate(() => {
++    internals.evaluateInInspectorOverlay(`(function () {
++      window.InspectorOverlayHost.send('stepOver');
++    })()`);
++  });
++  dp2.Overlay.setPausedInDebuggerMessage({});
++  await session2.disconnect();
++  testRunner.log(
++      'Cleared inspect tool and disconnected session after stepOver.');
++
++  testRunner.completeTest();
++});
