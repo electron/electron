@@ -17,7 +17,7 @@ const envNoAsar = process.env.ELECTRON_NO_ASAR && process.type !== 'browser' && 
 const isAsarDisabled = () => process.noAsar || envNoAsar;
 
 // realm.js is a script, not a module, so its loader exports have no type.
-const { internalBinding } = __non_webpack_require__('internal/bootstrap/realm') as {
+const { internalBinding } = require('internal/bootstrap/realm') as {
   internalBinding: (name: string) => any;
 };
 
@@ -49,21 +49,19 @@ const getOrCreateArchive = (archivePath: string) => {
   }
 };
 
-const { getValidatedPath, getOptions, getDirent, getStatsFromBinding } = __non_webpack_require__(
-  'internal/fs/utils'
-) as typeof import('@node/lib/internal/fs/utils');
+const { getValidatedPath, getOptions, getDirent, getStatsFromBinding } =
+  require('internal/fs/utils') as typeof import('@node/lib/internal/fs/utils');
 
-const { assignFunctionName } = __non_webpack_require__('internal/util') as typeof import('@node/lib/internal/util');
+const { assignFunctionName } = require('internal/util') as typeof import('@node/lib/internal/util');
 
-const { validateBoolean, validateFunction } = __non_webpack_require__(
-  'internal/validators'
-) as typeof import('@node/lib/internal/validators');
+const { validateBoolean, validateFunction } =
+  require('internal/validators') as typeof import('@node/lib/internal/validators');
 
-const { codes: errorCodes } = __non_webpack_require__('internal/errors') as typeof import('@node/lib/internal/errors');
+const { codes: errorCodes } = require('internal/errors') as typeof import('@node/lib/internal/errors');
 
 // In the renderer node internals use the node global URL but we do not set that to be
 // the global URL instance.  We need to do instanceof checks against the internal URL impl
-const { URL: NodeURL } = __non_webpack_require__('internal/url') as typeof import('@node/lib/internal/url');
+const { URL: NodeURL } = require('internal/url') as typeof import('node:url');
 
 type SplitPathResult = { isAsar: false } | { isAsar: true; asarPath: string; filePath: string };
 

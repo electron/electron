@@ -63,19 +63,11 @@ class CrashReporter implements Electron.CrashReporter {
   }
 
   getUploadToServer() {
-    if (process.type === 'browser') {
-      return binding.getUploadToServer();
-    } else {
-      throw new Error('getUploadToServer can only be called from the main process');
-    }
+    return binding.getUploadToServer();
   }
 
   setUploadToServer(uploadToServer: boolean) {
-    if (process.type === 'browser') {
-      return binding.setUploadToServer(uploadToServer);
-    } else {
-      throw new Error('setUploadToServer can only be called from the main process');
-    }
+    return binding.setUploadToServer(uploadToServer);
   }
 
   addExtraParameter(key: string, value: string) {

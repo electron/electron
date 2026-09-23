@@ -582,8 +582,7 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
       network_emulation_token_(base::UnguessableToken::Create()),
       network_emulation_client_id_(base::UnguessableToken::Create()),
       browser_context_{browser_context} {
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  data->AddDisposeObserver(this);
+  MicrotasksRunner::AddWrappableObserver(this);
   // Observe DownloadManager to get download notifications.
   browser_context->GetDownloadManager()->AddObserver(this);
 
@@ -1841,7 +1840,9 @@ void Session::New() {
 
 void Session::FillObjectTemplate(v8::Isolate* isolate,
                                  v8::Local<v8::ObjectTemplate> templ) {
-  gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
+  // gin_helper::ObjectTemplateBuilder so that a Session made inert at shutdown
+  // throws "Object has been destroyed" rather than gin's conversion error.
+  gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod("resolveHost", &Session::ResolveHost)
       .SetMethod("resolveProxy", &Session::ResolveProxy)
       .SetMethod("getCacheSize", &Session::GetCacheSize)
@@ -1943,9 +1944,7 @@ const char* Session::GetHumanReadableName() const {
   return "Electron / Session";
 }
 
-void Session::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  data->RemoveDisposeObserver(this);
+void Session::OnBeforeMicrotasksRunnerDispose() {
   Dispose();
   weak_factory_.Invalidate();
   browser_context_ = nullptr;

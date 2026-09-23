@@ -14,16 +14,14 @@ This module does not include a web interface. To view recorded traces, use
 ```js
 const { app, contentTracing } = require('electron')
 
-app.whenReady().then(() => {
-  (async () => {
-    await contentTracing.startRecording({
-      included_categories: ['*']
-    })
-    console.log('Tracing started')
-    await new Promise(resolve => setTimeout(resolve, 5000))
-    const path = await contentTracing.stopRecording()
-    console.log('Tracing data recorded to ' + path)
-  })()
+app.whenReady().then(async () => {
+  await contentTracing.startRecording({
+    included_categories: ['*']
+  })
+  console.log('Tracing started')
+  await new Promise((resolve) => setTimeout(resolve, 5000))
+  const path = await contentTracing.stopRecording()
+  console.log('Tracing data recorded to ' + path)
 })
 ```
 

@@ -21,8 +21,6 @@ class ErrorThrower {
   void ThrowError(std::string_view err_msg) const;
   void ThrowTypeError(std::string_view err_msg) const;
   void ThrowRangeError(std::string_view err_msg) const;
-  void ThrowReferenceError(std::string_view err_msg) const;
-  void ThrowSyntaxError(std::string_view err_msg) const;
 
   v8::Isolate* isolate() const;
 

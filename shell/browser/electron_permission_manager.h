@@ -83,7 +83,6 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   void SetProtectedUSBHandler(const ProtectedUSBHandler& handler);
   void SetBluetoothPairingHandler(const BluetoothPairingHandler& handler);
 
-  bool HasPermissionRequestHandler() const;
   bool HasPermissionCheckHandler() const;
 
   void CancelPendingRequests(content::WebContents* web_contents);

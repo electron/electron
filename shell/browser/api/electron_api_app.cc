@@ -75,6 +75,7 @@
 #include "shell/common/gin_converters/base_converter.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
@@ -753,10 +754,9 @@ void App::AllowCertificateError(
       electron::AdaptCallbackForRepeating(std::move(callback));
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  bool prevent_default = Emit(
-      "certificate-error", WebContents::FromOrCreate(isolate, web_contents),
-      request_url, net::ErrorToString(cert_error), ssl_info.cert,
-      adapted_callback, is_main_frame_request);
+  bool prevent_default = Emit("certificate-error", web_contents, request_url,
+                              net::ErrorToString(cert_error), ssl_info.cert,
+                              adapted_callback, is_main_frame_request);
 
   // Deny the certificate by default.
   if (!prevent_default)
@@ -787,8 +787,7 @@ base::OnceClosure App::SelectClientCertificate(
   // |web_contents| is null for requests that did not originate from a renderer
   // (e.g. net.fetch / utilityProcess); surface those with a null WebContents.
   v8::Local<v8::Value> web_contents_value =
-      web_contents ? WebContents::FromOrCreate(isolate, web_contents).ToV8()
-                   : v8::Null(isolate).As<v8::Value>();
+      gin::ConvertToV8(isolate, web_contents);
   bool prevent_default =
       Emit("select-client-certificate", web_contents_value,
            cert_request_info->host_and_port.ToString(), std::move(client_certs),
@@ -828,17 +827,23 @@ void App::BrowserChildProcessCrashed(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
   ChildProcessDisconnected(content::ChildProcessId::FromUnsafeValue(data.id));
-  BrowserChildProcessCrashedOrKilled(data, info);
+  EmitChildProcessGone(data, info);
 }
 
 void App::BrowserChildProcessKilled(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
   ChildProcessDisconnected(content::ChildProcessId::FromUnsafeValue(data.id));
-  BrowserChildProcessCrashedOrKilled(data, info);
+  EmitChildProcessGone(data, info);
 }
 
-void App::BrowserChildProcessCrashedOrKilled(
+void App::BrowserChildProcessLaunchFailed(
+    const content::ChildProcessData& data,
+    const content::ChildProcessTerminationInfo& info) {
+  EmitChildProcessGone(data, info);
+}
+
+void App::EmitChildProcessGone(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -847,6 +852,11 @@ void App::BrowserChildProcessCrashedOrKilled(
   details.Set("type", content::GetProcessTypeNameInEnglish(data.process_type));
   details.Set("reason", info.status);
   details.Set("exitCode", info.exit_code);
+#if BUILDFLAG(IS_WIN)
+  if (info.status == base::TERMINATION_STATUS_LAUNCH_FAILED) {
+    details.Set("systemErrorCode", static_cast<uint32_t>(info.last_error));
+  }
+#endif
   details.Set("serviceName", data.metrics_name);
   if (!data.name.empty()) {
     details.Set("name", data.name);
@@ -982,6 +992,8 @@ void App::SetDesktopName(const std::string& desktop_name) {
 #if BUILDFLAG(IS_LINUX)
   auto env = base::Environment::Create();
   env->SetVar("CHROME_DESKTOP", desktop_name);
+  // The Linux application name, and so the user agent, comes from this file.
+  InvalidateApplicationUserAgent();
 #endif
 }
 
@@ -2114,7 +2126,7 @@ void Initialize(v8::Local<v8::Object> exports,
   }
   dict.Set("app", app);
 #if BUILDFLAG(IS_LINUX)
-  // For desktop-name-spec.
+  // For desktop-name.spec.
   dict.SetMethod(
       "defaultDesktopName",
       base::BindRepeating([](std::optional<std::u16string> name) {

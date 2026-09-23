@@ -65,7 +65,7 @@ clipboard.write([
   new ClipboardItem({
     'text/plain': 'hello',
     'text/html': '<b>hello</b>',
-    'image/png': new Blob([png], { type: 'image/png' }),
+    'image/png': new Blob([new Uint8Array(png)], { type: 'image/png' }),
     'electron application/bookmark': {
       title: 'Electron',
       url: 'https://electronjs.org'
@@ -103,15 +103,12 @@ const { pathToFileURL } = require('node:url')
 // manager.
 clipboard.write([
   new ClipboardItem({
-    'text/uri-list': [
-      pathToFileURL('/path/to/first.txt').href,
-      pathToFileURL('/path/to/second.txt').href
-    ].join('\r\n')
+    'text/uri-list': [pathToFileURL('/path/to/first.txt').href, pathToFileURL('/path/to/second.txt').href].join('\r\n')
   })
 ])
 
 // Read the files currently on the clipboard.
-async function readFiles () {
+async function readFiles() {
   const [item] = await clipboard.read()
   if (item.types.includes('text/uri-list')) {
     const blob = await item.getType('text/uri-list')
@@ -152,7 +149,7 @@ Rejects when `type` is not present in
 ```js
 const { clipboard } = require('electron')
 
-async function dumpClipboard () {
+async function dumpClipboard() {
   const items = await clipboard.read()
   for (const item of items) {
     for (const type of item.types) {
@@ -174,7 +171,7 @@ Rejects when a bookmark is not available in the clipboard.
 ```js
 const { clipboard } = require('electron')
 
-async function dumpClipboard () {
+async function dumpClipboard() {
   const bookmarkType = 'electron application/bookmark'
   const items = await clipboard.read()
   for (const item of items) {
