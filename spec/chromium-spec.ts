@@ -881,6 +881,7 @@ describe('command line switches', () => {
         },
         sessionA
       );
+      await waitUntil(async () => (await innerSize(clientA, sessionA)) === '800x450');
       expect(await innerSize(clientA, sessionA)).to.equal('800x450');
 
       // Drop the TCP connection like a killed client process would.
