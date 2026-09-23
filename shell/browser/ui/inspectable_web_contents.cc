@@ -407,10 +407,6 @@ void InspectableWebContents::SetDelegate(
   delegate_ = delegate;
 }
 
-InspectableWebContentsDelegate* InspectableWebContents::GetDelegate() const {
-  return delegate_;
-}
-
 void InspectableWebContents::ReleaseWebContents() {
   web_contents_.release();
   WebContentsDestroyed();

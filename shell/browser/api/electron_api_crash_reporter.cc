@@ -51,15 +51,9 @@
 
 namespace {
 
-#if BUILDFLAG(IS_LINUX)
-std::map<std::string, std::string>& GetGlobalCrashKeysMutable() {
-  static base::NoDestructor<std::map<std::string, std::string>>
-      global_crash_keys;
-  return *global_crash_keys;
-}
-#endif  // BUILDFLAG(IS_LINUX)
-
+#if !IS_MAS_BUILD()
 bool g_crash_reporter_initialized = false;
+#endif
 
 }  // namespace
 
@@ -73,15 +67,7 @@ void NoOp() {}
 }  // namespace
 #endif
 
-bool IsCrashReporterEnabled() {
-  return g_crash_reporter_initialized;
-}
-
 #if BUILDFLAG(IS_LINUX)
-const std::map<std::string, std::string>& GetGlobalCrashKeys() {
-  return GetGlobalCrashKeysMutable();
-}
-
 namespace {
 
 bool GetClientIdPath(base::FilePath* path) {

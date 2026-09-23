@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/electron_api_protocol.h"
 
-#include <algorithm>
 #include <string_view>
 #include <vector>
 
@@ -23,7 +22,6 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
-#include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -210,14 +208,6 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
                          GetCodeCacheSchemes());
 }
 
-namespace {
-
-const char* const kBuiltinSchemes[] = {
-    "about", "file", "http", "https", "data", "filesystem",
-};
-
-}  // namespace
-
 Protocol::Protocol(ProtocolRegistry* protocol_registry)
     : protocol_registry_{protocol_registry} {}
 
@@ -307,25 +297,6 @@ bool Protocol::IsProtocolIntercepted(const std::string& scheme) {
   return protocol_registry_->FindIntercepted(scheme) != nullptr;
 }
 
-v8::Local<v8::Promise> Protocol::IsProtocolHandled(v8::Isolate* const isolate,
-                                                   const std::string& scheme) {
-  util::EmitWarning(isolate,
-                    "The protocol.isProtocolHandled API is deprecated, "
-                    "use protocol.isProtocolRegistered "
-                    "or protocol.isProtocolIntercepted instead.",
-                    "ProtocolDeprecateIsProtocolHandled");
-  return gin_helper::Promise<bool>::ResolvedPromise(
-      isolate, IsProtocolRegistered(scheme) || IsProtocolIntercepted(scheme) ||
-                   // The |isProtocolHandled| should return true for builtin
-                   // schemes, however with NetworkService it is impossible to
-                   // know which schemes are registered until a real network
-                   // request is sent.
-                   // So we have to test against a hard-coded builtin schemes
-                   // list make it work with old code. We should deprecate
-                   // this API with the new |isProtocolRegistered| API.
-                   std::ranges::contains(kBuiltinSchemes, scheme));
-}
-
 void Protocol::HandleOptionalCallback(gin::Arguments* args, Error error) {
   base::RepeatingCallback<void(v8::Local<v8::Value>)> callback;
   if (args->GetNext(&callback)) {
@@ -372,7 +343,6 @@ void Protocol::FillObjectTemplate(v8::Isolate* isolate,
                  &Protocol::RegisterProtocolFor<ProtocolType::kFree>)
       .SetMethod("unregisterProtocol", &Protocol::UnregisterProtocol)
       .SetMethod("isProtocolRegistered", &Protocol::IsProtocolRegistered)
-      .SetMethod("isProtocolHandled", &Protocol::IsProtocolHandled)
       .SetMethod("registerSource", &Protocol::RegisterSource)
       .SetMethod("unregisterSource", &Protocol::UnregisterSource)
       .SetMethod("getSource", &Protocol::GetSource)

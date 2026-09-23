@@ -896,29 +896,6 @@ v8::Local<v8::Value> FromFrameToken(gin_helper::ErrorThrower thrower,
                     WebFrameMain::From(thrower.isolate(), rfh));
 }
 
-v8::Local<v8::Value> FromIdIfExists(gin_helper::ErrorThrower thrower,
-                                    int render_process_id,
-                                    int render_frame_id) {
-  if (!electron::Browser::Get()->is_ready()) {
-    thrower.ThrowError("WebFrameMain is available only after app ready");
-    return v8::Null(thrower.isolate());
-  }
-  content::RenderFrameHost* rfh =
-      content::RenderFrameHost::FromID(render_process_id, render_frame_id);
-  return ToV8OrNull(thrower.isolate(), WebFrameMain::FromRenderFrameHost(rfh));
-}
-
-v8::Local<v8::Value> FromFtnIdIfExists(gin_helper::ErrorThrower thrower,
-                                       int frame_tree_node_id) {
-  if (!electron::Browser::Get()->is_ready()) {
-    thrower.ThrowError("WebFrameMain is available only after app ready");
-    return v8::Null(thrower.isolate());
-  }
-  return ToV8OrNull(thrower.isolate(),
-                    WebFrameMain::FromFrameTreeNodeId(
-                        content::FrameTreeNodeId(frame_tree_node_id)));
-}
-
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -929,8 +906,6 @@ void Initialize(v8::Local<v8::Object> exports,
                                isolate, context, &WebFrameMain::kWrapperInfo));
   dict.SetMethod("fromId", &FromID);
   dict.SetMethod("fromFrameToken", &FromFrameToken);
-  dict.SetMethod("_fromIdIfExists", &FromIdIfExists);
-  dict.SetMethod("_fromFtnIdIfExists", &FromFtnIdIfExists);
 }
 
 }  // namespace

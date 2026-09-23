@@ -153,8 +153,6 @@ class NativeWindowViews : public NativeWindow,
 
   bool IsVisibleOnAllWorkspaces() const override;
 
-  void SetGTKDarkThemeEnabled(bool use_dark_theme) override;
-
   content::DesktopMediaID GetDesktopMediaID() const override;
   gfx::AcceleratedWidget GetAcceleratedWidget() const override;
   NativeWindowHandle GetNativeWindowHandle() const override;
@@ -217,6 +215,7 @@ class NativeWindowViews : public NativeWindow,
  private:
   // Applies |menu_model| to the in-window menu bar.
   void SetRootViewMenu(ElectronMenuModel* menu_model);
+  void SetGTKDarkThemeEnabled(bool use_dark_theme);
   void set_overlay_button_color(std::optional<SkColor> color) {
     overlay_button_color_ = color;
   }

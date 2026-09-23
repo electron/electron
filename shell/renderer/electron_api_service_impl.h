@@ -51,7 +51,6 @@ class ElectronApiServiceImpl
                           blink::TransferableMessage message) override;
   void TakeHeapSnapshot(mojo::ScopedHandle file,
                         TakeHeapSnapshotCallback callback) override;
-  void ProcessPendingMessages();
 
   // mojom::ElectronFrame
   void SetStartupData(mojom::RendererStartupDataPtr data) override;
