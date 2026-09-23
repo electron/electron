@@ -1,6 +1,5 @@
 [
   "// NOTE: this file is used to disable tests in our test suite by their full title.",
-  "Menu module Menu.setApplicationMenu unsets a menu with null",
   "process module main process process.takeHeapSnapshot() returns true on success",
   "session module ses.cookies should set cookie for standard scheme",
   "webFrameMain module WebFrame.visibilityState should match window state",
