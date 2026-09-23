@@ -100,7 +100,6 @@ declare namespace Electron {
     getOwnerBrowserWindow(): Electron.BrowserWindow | null;
     getLastWebPreferences(): Electron.WebPreferences | null;
     _getProcessMemoryInfo(processId?: number): Electron.ProcessMemoryInfo;
-    _getPreloadScript(): Electron.PreloadScript | null;
     browserWindowOptions: BrowserWindowConstructorOptions;
     _windowOpenHandler: ((details: Electron.HandlerDetails) => any) | null;
     _callWindowOpenHandler(
@@ -151,7 +150,6 @@ declare namespace Electron {
   }
 
   interface WebFrame extends NodeJS.EventEmitter {
-    _isEvalAllowed(): boolean;
     getIsolatedWorlds(): number[];
     on(event: 'isolated-world-created', listener: (worldId: number) => void): this;
     once(event: 'isolated-world-created', listener: (worldId: number) => void): this;
@@ -405,16 +403,6 @@ declare namespace ElectronInternal {
 
   class WebContents extends Electron.WebContents {
     static create(opts?: Electron.WebPreferences): Electron.WebContents;
-  }
-
-  interface PreloadScript extends Electron.PreloadScript {
-    /**
-     * Whether the preload file's contents were read successfully. The actual
-     * contents stay on the C++ side (mojo-cached startup data) and are looked
-     * up by id from createPreloadScript() — they never become a V8 string.
-     */
-    hasContents?: boolean;
-    error?: Error;
   }
 }
 

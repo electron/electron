@@ -23,7 +23,6 @@ declare namespace NodeJS {
     isFakeLocationProviderEnabled(): boolean;
     isPrintingEnabled(): boolean;
     isPromptAPIEnabled(): boolean;
-    isExtensionsEnabled(): boolean;
     isComponentBuild(): boolean;
     isRunAsNodeEnabled(): boolean;
   }
@@ -56,12 +55,6 @@ declare namespace NodeJS {
       isNodeProcess: boolean
     ): void;
   };
-
-  interface EnvironmentBinding {
-    getVar(name: string): string | null;
-    hasVar(name: string): boolean;
-    setVar(name: string, value: string): boolean;
-  }
 
   type AsarFileInfo = {
     size: number;
@@ -183,8 +176,6 @@ declare namespace NodeJS {
     WebFrameMain: typeof Electron.WebFrameMain;
     fromId(processId: number, routingId: number): Electron.WebFrameMain | undefined;
     fromFrameToken(processId: number, frameToken: string): Electron.WebFrameMain | null;
-    _fromIdIfExists(processId: number, routingId: number): Electron.WebFrameMain | null;
-    _fromFtnIdIfExists(frameTreeNodeId: number): Electron.WebFrameMain | null;
   }
 
   interface InternalWebPreferences {
@@ -282,7 +273,6 @@ declare namespace NodeJS {
       getCrashdumpSignalFD(): number;
       getCrashpadHandlerPID(): number;
     };
-    _linkedBinding(name: 'electron_common_environment'): EnvironmentBinding;
     _linkedBinding(name: 'electron_common_events'): { EventEmitter: typeof import('events').EventEmitter };
     _linkedBinding(name: 'electron_common_features'): FeaturesBinding;
     _linkedBinding(name: 'electron_common_native_image'): { nativeImage: typeof Electron.NativeImage };
@@ -332,8 +322,6 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_web_view_manager'): WebViewManagerBinding;
     _linkedBinding(name: 'electron_browser_web_frame_main'): WebFrameMainBinding;
     _linkedBinding(name: 'electron_renderer_context_bridge'): {
-      executeInWorld(worldId: number, script: { func: Function; args?: any[] }): any;
-      exposeAPIInWorld(worldId: number, key: string, api: any): void;
       contextBridge: Electron.ContextBridge;
     };
     _linkedBinding(name: 'electron_renderer_crash_reporter'): Electron.CrashReporter;

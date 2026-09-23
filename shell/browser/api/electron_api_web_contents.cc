@@ -132,7 +132,6 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_web_contents_view.h"
-#include "shell/browser/preload_script.h"
 #include "shell/browser/renderer_startup_data.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/devtools_context_menu.h"
@@ -5493,17 +5492,6 @@ void WebContents::SetTemporaryZoomLevel(double level) {
   GetZoomController()->SetTemporaryZoomLevel(level);
 }
 
-std::optional<PreloadScript> WebContents::GetPreloadScript() const {
-  if (auto* web_preferences = WebContentsPreferences::From(web_contents())) {
-    if (auto preload = web_preferences->GetPreloadPath()) {
-      auto preload_script = PreloadScript{
-          "", PreloadScript::ScriptType::kWebFrame, preload.value()};
-      return preload_script;
-    }
-  }
-  return std::nullopt;
-}
-
 v8::Local<v8::Value> WebContents::GetLastWebPreferences(
     v8::Isolate* isolate) const {
   auto* web_preferences = WebContentsPreferences::From(web_contents());
@@ -6434,7 +6422,6 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setZoomMode", &WebContents::SetZoomMode)
       .SetMethod("getZoomMode", &WebContents::GetZoomMode)
       .SetMethod("getType", &WebContents::type)
-      .SetMethod("_getPreloadScript", &WebContents::GetPreloadScript)
       .SetMethod("getLastWebPreferences", &WebContents::GetLastWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
       .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
