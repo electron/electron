@@ -44,10 +44,6 @@ class PromiseBase {
   PromiseBase(PromiseBase&&);
   PromiseBase& operator=(PromiseBase&&);
 
-  // Helper for rejecting promise with error message.
-  static void RejectPromise(PromiseBase&& promise, std::string_view errmsg);
-
-  v8::Maybe<bool> Reject();
   v8::Maybe<bool> Reject(v8::Local<v8::Value> except);
   v8::Maybe<bool> RejectWithErrorMessage(std::string_view message);
   v8::Maybe<bool> Resolve();

@@ -1854,7 +1854,6 @@ session is persisted on disk.  For in memory sessions this returns `null`.
     * `indexedDB` - IndexedDB
     * `localStorage` - Local Storage
     * `serviceWorkers` - Service Workers
-    * `webSQL` - WebSQL
   * `origins` String[] (optional) - Clear data for only these origins. Cannot be used with `excludeOrigins`.
   * `excludeOrigins` String[] (optional) - Clear data for all origins except these ones. Cannot be used with `origins`.
   * `avoidClosingConnections` boolean (optional) - Skips deleting cookies that would close current network connections. (Default: `false`)

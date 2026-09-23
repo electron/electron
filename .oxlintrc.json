@@ -283,8 +283,6 @@
       "files": [
         "lib/renderer/**",
         "lib/worker/**",
-        "lib/preload_realm/**",
-        "lib/sandboxed_renderer/**",
         "lib/isolated_renderer/**"
       ],
       "rules": {

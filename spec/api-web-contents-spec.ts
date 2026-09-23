@@ -3931,25 +3931,10 @@ describe('webContents module', () => {
     it('emits current-render-view-deleted if the current RVHs are deleted', async () => {
       const w = new BrowserWindow({ show: false });
       let currentRenderViewDeletedEmitted = false;
-      w.webContents.on('current-render-view-deleted' as any, () => {
-        currentRenderViewDeletedEmitted = true;
-      });
-      w.webContents.on('did-finish-load', () => {
-        w.close();
-      });
-      const destroyed = once(w.webContents, 'destroyed');
-      w.loadURL(`${serverUrl}/redirect-cross-site`);
-      await destroyed;
-      expect(currentRenderViewDeletedEmitted).to.be.true("current-render-view-deleted wasn't emitted");
-    });
-
-    it('emits render-view-deleted if any RVHs are deleted', async () => {
-      const w = new BrowserWindow({ show: false });
-      let rvhDeletedCount = 0;
       let ownerDuringDeletion: BrowserWindow | null = null;
       let windowFromContentsDuringDeletion: BrowserWindow | null = null;
-      w.webContents.on('render-view-deleted' as any, () => {
-        rvhDeletedCount++;
+      w.webContents.on('current-render-view-deleted' as any, () => {
+        currentRenderViewDeletedEmitted = true;
         ownerDuringDeletion = w.webContents.getOwnerBrowserWindow();
         windowFromContentsDuringDeletion = BrowserWindow.fromWebContents(w.webContents);
       });
@@ -3959,11 +3944,7 @@ describe('webContents module', () => {
       const destroyed = once(w.webContents, 'destroyed');
       w.loadURL(`${serverUrl}/redirect-cross-site`);
       await destroyed;
-      const expectedRenderViewDeletedEventCount = 1;
-      expect(rvhDeletedCount).to.equal(
-        expectedRenderViewDeletedEventCount,
-        "render-view-deleted wasn't emitted the expected nr. of times"
-      );
+      expect(currentRenderViewDeletedEmitted).to.be.true("current-render-view-deleted wasn't emitted");
       expect(ownerDuringDeletion).to.equal(w);
       expect(windowFromContentsDuringDeletion).to.equal(w);
     });

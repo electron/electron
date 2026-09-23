@@ -106,7 +106,6 @@ class WebContentsZoomController
   // When true, the zoom mode persists across cross-document navigations
   // instead of resetting to ZOOM_MODE_DEFAULT.
   void SetPersistZoomMode(bool persist) { persist_zoom_mode_ = persist; }
-  bool persist_zoom_mode() const { return persist_zoom_mode_; }
 
   // Convenience method to get default zoom level. Implemented here for
   // inlining.

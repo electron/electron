@@ -24,11 +24,6 @@ int ElectronExtensionsRendererClient::GetLowestIsolatedWorldId() const {
   return WorldIDs::ISOLATED_WORLD_ID_EXTENSIONS;
 }
 
-bool ElectronExtensionsRendererClient::AllowPopup() {
-  // TODO(samuelmaddock):
-  return false;
-}
-
 void ElectronExtensionsRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
   dispatcher()->RunScriptsAtDocumentStart(render_frame);

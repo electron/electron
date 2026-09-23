@@ -102,13 +102,6 @@ v8::Maybe<bool> PromiseBase::Reject(v8::Local<v8::Value> except) {
   return GetInner()->Reject(settle_scope.context_, except);
 }
 
-v8::Maybe<bool> PromiseBase::Reject() {
-  if (!IsAlive())
-    return v8::Nothing<bool>();
-  SettleScope settle_scope{*this};
-  return GetInner()->Reject(settle_scope.context_, v8::Undefined(isolate()));
-}
-
 v8::Maybe<bool> PromiseBase::RejectWithErrorMessage(std::string_view errmsg) {
   if (!IsAlive())
     return v8::Nothing<bool>();
@@ -141,24 +134,6 @@ v8::Local<v8::Promise::Resolver> PromiseBase::GetInner() const {
 v8::Maybe<bool> PromiseBase::ResolveWith(v8::Local<v8::Value> value) {
   SettleScope settle_scope{*this};
   return GetInner()->Resolve(settle_scope.context_, value);
-}
-
-// static
-void PromiseBase::RejectPromise(PromiseBase&& promise,
-                                std::string_view errmsg) {
-  if (auto task_runner = GetTaskRunner()) {
-    task_runner->PostTask(
-        FROM_HERE, base::BindOnce(
-                       // Note that this callback can not take std::string_view,
-                       // as StringPiece only references string internally and
-                       // will blow when a temporary string is passed.
-                       [](PromiseBase&& promise, std::string str) {
-                         promise.RejectWithErrorMessage(str);
-                       },
-                       std::move(promise), std::string{errmsg}));
-  } else {
-    promise.RejectWithErrorMessage(errmsg);
-  }
 }
 
 // static

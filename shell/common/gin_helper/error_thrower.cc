@@ -28,14 +28,6 @@ void ErrorThrower::ThrowRangeError(const std::string_view err_msg) const {
   Throw(v8::Exception::RangeError, err_msg);
 }
 
-void ErrorThrower::ThrowReferenceError(const std::string_view err_msg) const {
-  Throw(v8::Exception::ReferenceError, err_msg);
-}
-
-void ErrorThrower::ThrowSyntaxError(const std::string_view err_msg) const {
-  Throw(v8::Exception::SyntaxError, err_msg);
-}
-
 void ErrorThrower::Throw(ErrorGenerator gen,
                          const std::string_view err_msg) const {
   v8::Isolate* isolate = this->isolate();

@@ -38,7 +38,6 @@
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/extended_web_contents_observer.h"
 #include "shell/browser/osr/osr_paint_event.h"
-#include "shell/browser/preload_script.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "shell/common/api/api.mojom-forward.h"
@@ -380,9 +379,6 @@ class WebContents final : public gin::Wrappable<WebContents>,
                       WindowOpenDisposition disposition,
                       const std::string& features,
                       const scoped_refptr<network::ResourceRequestBody>& body);
-
-  // Returns the preload script of current WebContents.
-  std::optional<PreloadScript> GetPreloadScript() const;
 
   // Returns the web preferences of current WebContents.
   v8::Local<v8::Value> GetLastWebPreferences(v8::Isolate* isolate) const;
@@ -733,8 +729,6 @@ class WebContents final : public gin::Wrappable<WebContents>,
   void Dispose();
   void DetachNativeCallbacks();
 
-  void OnElectronBrowserConnectionError();
-
   // Posted from PrimaryMainFrameRenderProcessGone(); see the comment there.
   void EmitRenderProcessGone(base::TerminationStatus status, int exit_code);
 
@@ -744,11 +738,6 @@ class WebContents final : public gin::Wrappable<WebContents>,
 
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
   OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
-
-  // Called when received a synchronous message from renderer to
-  // get the zoom level.
-  void OnGetZoomLevel(content::RenderFrameHost* frame_host,
-                      IPC::Message* reply_msg);
 
   void InitZoomController(content::WebContents* web_contents,
                           const gin_helper::Dictionary& options);
