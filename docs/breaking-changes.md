@@ -16,6 +16,21 @@ This document uses the following convention to categorize breaking changes:
 
 ## Breaking API Changes (46.0)
 
+### Behavior Changed: native modules that start libuv handles outside Node.js callbacks
+
+Electron notices work given to Node.js's libuv loop when a `setTimeout`,
+`setInterval`, `setImmediate` or `process.nextTick` is called, when a Chromium
+task ends, and when a microtask checkpoint runs. A native module that starts a
+libuv handle itself (`uv_timer_start()`, `uv_poll_start()`, `uv_spawn()` and
+so on) from its own OS callback on the main thread - a window procedure hook,
+a run loop observer or a GSource - or from JavaScript it calls from there with
+`napi_call_function()` or `v8::Function::Call()`, should follow it with
+`uv_async_send()` on a handle of its own, or enter that JavaScript through
+`napi_make_callback()`, so the loop runs it promptly. Handles started from
+Node.js callbacks, Node-API async work and thread-safe functions, or Chromium
+tasks are not affected, and neither are JavaScript timers and immediates
+wherever they are started.
+
 ### Behavior Changed: `utilityProcess` `child.kill()` no longer force-kills the child
 
 `child.kill()` used to send `SIGTERM` and then `SIGKILL` two seconds later if the
