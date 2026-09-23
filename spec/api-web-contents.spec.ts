@@ -4206,7 +4206,12 @@ describe('webContents module', () => {
 
   // Destroying webContents in its event listener is going to crash when
   // Electron is built in Debug mode.
-  describe('destroy()', () => {
+  describe('destroy()', function () {
+    // These tests are flaky on Windows CI and we don't know why, but their
+    // purpose is to make sure Electron does not crash so it is fine to retry
+    // them a few times.
+    this.retries(3);
+
     let server: http.Server;
     let serverUrl: string;
 
@@ -4246,11 +4251,6 @@ describe('webContents module', () => {
     ];
     for (const e of events) {
       it(`should not crash when invoked synchronously inside ${e.name} handler`, async function () {
-        // This test is flaky on Windows CI and we don't know why, but the
-        // purpose of this test is to make sure Electron does not crash so it
-        // is fine to retry this test for a few times.
-        this.retries(3);
-
         const contents = (webContents as typeof ElectronInternal.WebContents).create();
         const originalEmit = contents.emit.bind(contents);
         contents.emit = (...args) => {
