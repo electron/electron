@@ -3,10 +3,13 @@ From: Samuel Attard <sattard@salesforce.com>
 Date: Fri, 21 Oct 2022 16:29:06 -0700
 Subject: build: allow electron to use exec_script
 
-This is similar to the //build usecase so we're OK adding ourselves here
+This is similar to the //build usecase so we're OK adding ourselves here.
+
+//v8/gni/version_hash_salt.gni comes from our V8 patch that derives the
+code-cache salt from patches/v8 at gen time.
 
 diff --git a/.gn b/.gn
-index 488189e60c708880693387b6db385611c44f5fd5..caef3f23e65c8e99b1d983b61ad057cdebd28d05 100644
+index 488189e60c708880693387b6db385611c44f5fd5..7d8770211f964ab651699ccd749172abcf4ea666 100644
 --- a/.gn
 +++ b/.gn
 @@ -175,6 +175,31 @@ exec_script_allowlist =
@@ -15,7 +18,7 @@ index 488189e60c708880693387b6db385611c44f5fd5..caef3f23e65c8e99b1d983b61ad057cd
        "//third_party/dawn/third_party/meson/meson_target.gni",
 +
 +      "//electron/BUILD.gn",
-+      "//electron/build/args/all.gn",
++      "//v8/gni/version_hash_salt.gni",
 +      "//third_party/electron_node/deps/ada/unofficial.gni",
 +      "//third_party/electron_node/deps/base64/BUILD.gn",
 +      "//third_party/electron_node/deps/base64/unofficial.gni",
