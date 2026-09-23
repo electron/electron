@@ -279,6 +279,11 @@ class NativeWindowViews : public NativeWindow,
   // Maintain window placement.
   void MoveBehindTaskBarIfNeeded();
 
+  // Notify the widget that the size constraints changed, guarding against the
+  // transparency loss this causes for frameless (!thick_frame_) windows on
+  // Windows. See SetResizable / SetFullScreen.
+  void NotifySizeConstraintsChanged();
+
   RootView root_view_{this};
 
   // The view should be focused by default.
@@ -289,6 +294,12 @@ class NativeWindowViews : public NativeWindow,
   // resizable again. This is also used on Windows, to keep taskbar resize
   // events from resizing the window.
   extensions::SizeConstraints old_size_constraints_;
+
+  // A non-resizable window pins its min and max size to its current bounds (see
+  // SetBounds). While fullscreen those constraints are suspended so the window
+  // can fill the screen; this tracks that suspended state so SetBounds does not
+  // re-pin the lock until the window leaves fullscreen. See SetFullScreen.
+  bool fullscreen_size_constraints_suspended_ = false;
 
 #if BUILDFLAG(IS_LINUX)
   std::unique_ptr<GlobalMenuBarX11> global_menu_bar_;
