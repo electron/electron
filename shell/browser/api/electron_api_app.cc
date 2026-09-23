@@ -991,6 +991,8 @@ void App::SetDesktopName(const std::string& desktop_name) {
 #if BUILDFLAG(IS_LINUX)
   auto env = base::Environment::Create();
   env->SetVar("CHROME_DESKTOP", desktop_name);
+  // The Linux application name, and so the user agent, comes from this file.
+  InvalidateApplicationUserAgent();
 #endif
 }
 
