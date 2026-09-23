@@ -371,11 +371,6 @@ bool ElectronExtensionsBrowserClient::IsMinBrowserVersionSupported(
   return true;
 }
 
-void ElectronExtensionsBrowserClient::SetAPIClientForTest(
-    extensions::ExtensionsAPIClient* api_client) {
-  api_client_.reset(api_client);
-}
-
 void ElectronExtensionsBrowserClient::CreateExtensionWebContentsObserver(
     content::WebContents* web_contents) {
   extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(

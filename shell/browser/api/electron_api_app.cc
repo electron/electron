@@ -827,17 +827,23 @@ void App::BrowserChildProcessCrashed(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
   ChildProcessDisconnected(content::ChildProcessId::FromUnsafeValue(data.id));
-  BrowserChildProcessCrashedOrKilled(data, info);
+  EmitChildProcessGone(data, info);
 }
 
 void App::BrowserChildProcessKilled(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
   ChildProcessDisconnected(content::ChildProcessId::FromUnsafeValue(data.id));
-  BrowserChildProcessCrashedOrKilled(data, info);
+  EmitChildProcessGone(data, info);
 }
 
-void App::BrowserChildProcessCrashedOrKilled(
+void App::BrowserChildProcessLaunchFailed(
+    const content::ChildProcessData& data,
+    const content::ChildProcessTerminationInfo& info) {
+  EmitChildProcessGone(data, info);
+}
+
+void App::EmitChildProcessGone(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -846,6 +852,11 @@ void App::BrowserChildProcessCrashedOrKilled(
   details.Set("type", content::GetProcessTypeNameInEnglish(data.process_type));
   details.Set("reason", info.status);
   details.Set("exitCode", info.exit_code);
+#if BUILDFLAG(IS_WIN)
+  if (info.status == base::TERMINATION_STATUS_LAUNCH_FAILED) {
+    details.Set("systemErrorCode", static_cast<uint32_t>(info.last_error));
+  }
+#endif
   details.Set("serviceName", data.metrics_name);
   if (!data.name.empty()) {
     details.Set("name", data.name);
@@ -981,6 +992,8 @@ void App::SetDesktopName(const std::string& desktop_name) {
 #if BUILDFLAG(IS_LINUX)
   auto env = base::Environment::Create();
   env->SetVar("CHROME_DESKTOP", desktop_name);
+  // The Linux application name, and so the user agent, comes from this file.
+  InvalidateApplicationUserAgent();
 #endif
 }
 
@@ -2113,7 +2126,7 @@ void Initialize(v8::Local<v8::Object> exports,
   }
   dict.Set("app", app);
 #if BUILDFLAG(IS_LINUX)
-  // For desktop-name-spec.
+  // For desktop-name.spec.
   dict.SetMethod(
       "defaultDesktopName",
       base::BindRepeating([](std::optional<std::u16string> name) {

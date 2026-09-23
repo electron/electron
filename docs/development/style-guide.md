@@ -405,7 +405,7 @@ since that function wasn't changed, only how it may be used:
 
 ## Documentation translations
 
-See [electron/i18n](https://github.com/electron/i18n#readme)
+We crowdsource translations for our documentation via [Crowdin](https://crowdin.com/project/electron).
 
 [title-case]: https://apastyle.apa.org/style-grammar-guidelines/capitalization/title-case
 [sentence-case]: https://apastyle.apa.org/style-grammar-guidelines/capitalization/sentence-case

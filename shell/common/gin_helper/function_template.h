@@ -322,13 +322,6 @@ struct Dispatcher<ReturnType(ArgTypes...)> {
     gin::Arguments args(info);
     DispatchToCallbackImpl(&args);
   }
-
-  static void DispatchToCallbackForProperty(
-      v8::Local<v8::Name>,
-      const v8::PropertyCallbackInfo<v8::Value>& info) {
-    gin::Arguments args(info);
-    DispatchToCallbackImpl(&args);
-  }
 };
 
 // CreateFunctionTemplate creates a v8::FunctionTemplate that will create
@@ -365,26 +358,6 @@ v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(
                                                 holder->GetHandle(isolate)),
       v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kAllow);
   return tmpl;
-}
-
-// CreateDataPropertyCallback creates a v8::AccessorNameGetterCallback and
-// corresponding data value that will hold and execute the provided
-// base::RepeatingCallback, using automatic conversions similar to
-// |CreateFunctionTemplate|.
-//
-// It is expected that these will be passed to v8::Template::SetLazyDataProperty
-// or another similar function.
-template <typename Sig>
-std::pair<v8::AccessorNameGetterCallback, v8::Local<v8::Value>>
-CreateDataPropertyCallback(v8::Isolate* isolate,
-                           base::RepeatingCallback<Sig> callback,
-                           InvokerOptions invoker_options = {}) {
-  typedef CallbackHolder<Sig> HolderT;
-  HolderT* holder =
-      new HolderT(isolate, std::move(callback), std::move(invoker_options));
-  return {&Dispatcher<Sig>::DispatchToCallbackForProperty,
-          gin::ConvertToV8<v8::Local<v8::External>>(
-              isolate, holder->GetHandle(isolate))};
 }
 
 // Base template - used only for non-member function pointers. Other types

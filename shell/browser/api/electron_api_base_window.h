@@ -261,7 +261,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetAspectRatio(double aspect_ratio, gin::Arguments* args);
   void PreviewFile(const std::string& path, gin::Arguments* args);
   void CloseFilePreview();
-  void SetGTKDarkThemeEnabled(bool use_dark_theme);
 
   // Public getters of NativeWindow.
   v8::Local<v8::Value> GetContentView() const;

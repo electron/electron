@@ -240,7 +240,6 @@ OffScreenRenderWidgetHostView::~OffScreenRenderWidgetHostView() {
   DCHECK(!parent_host_view_);
   DCHECK(!popup_host_view_);
   DCHECK(!child_host_view_);
-  DCHECK(guest_host_views_.empty());
 }
 
 void OffScreenRenderWidgetHostView::ReleaseCompositor() {
@@ -458,14 +457,6 @@ void OffScreenRenderWidgetHostView::Destroy() {
         popup_host_view_->CancelWidget();
       if (child_host_view_)
         child_host_view_->CancelWidget();
-      if (!guest_host_views_.empty()) {
-        // Guest RWHVs will be destroyed when the associated RWHVGuest is
-        // destroyed. This parent RWHV may be destroyed first, so disassociate
-        // the guest RWHVs here without destroying them.
-        for (auto* guest_host_view : guest_host_views_)
-          guest_host_view->parent_host_view_ = nullptr;
-        guest_host_views_.clear();
-      }
       for (auto* proxy_view : proxy_views_)
         proxy_view->RemoveObserver();
       Hide();
@@ -551,8 +542,6 @@ void OffScreenRenderWidgetHostView::CancelWidget() {
       parent_host_view_->set_child_host_view(nullptr);
       parent_host_view_->ShowWithVisibility(
           content::PageVisibilityState::kVisible);
-    } else {
-      parent_host_view_->RemoveGuestHostView(this);
     }
     parent_host_view_ = nullptr;
   }
@@ -564,24 +553,9 @@ void OffScreenRenderWidgetHostView::CancelWidget() {
   }
 }
 
-void OffScreenRenderWidgetHostView::AddGuestHostView(
-    OffScreenRenderWidgetHostView* guest_host) {
-  guest_host_views_.insert(guest_host);
-}
-
-void OffScreenRenderWidgetHostView::RemoveGuestHostView(
-    OffScreenRenderWidgetHostView* guest_host) {
-  guest_host_views_.erase(guest_host);
-}
-
 void OffScreenRenderWidgetHostView::AddViewProxy(OffscreenViewProxy* proxy) {
   proxy->SetObserver(this);
   proxy_views_.insert(proxy);
-}
-
-void OffScreenRenderWidgetHostView::RemoveViewProxy(OffscreenViewProxy* proxy) {
-  proxy->RemoveObserver();
-  proxy_views_.erase(proxy);
 }
 
 void OffScreenRenderWidgetHostView::ProxyViewDestroyed(
@@ -826,28 +800,6 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
             base::BindOnce(&OffScreenRenderWidgetHostView::CancelWidget,
                            popup_host_view_->weak_ptr_factory_.GetWeakPtr()));
       }
-    } else if (!guest_host_views_.empty()) {
-      for (auto* guest_host_view : guest_host_views_) {
-        if (!guest_host_view->render_widget_host_ ||
-            !guest_host_view->render_widget_host_->GetView()) {
-          continue;
-        }
-        const gfx::Rect& guest_bounds =
-            guest_host_view->render_widget_host_->GetView()->GetViewBounds();
-        if (guest_bounds.Contains(mouse_wheel_event.PositionInWidget().x(),
-                                  mouse_wheel_event.PositionInWidget().y())) {
-          blink::WebMouseWheelEvent guest_mouse_wheel_event(mouse_wheel_event);
-          guest_mouse_wheel_event.SetPositionInWidget(
-              mouse_wheel_event.PositionInWidget().x() - guest_bounds.x(),
-              mouse_wheel_event.PositionInWidget().y() - guest_bounds.y());
-          guest_mouse_wheel_event.SetPositionInScreen(
-              guest_mouse_wheel_event.PositionInWidget().x(),
-              guest_mouse_wheel_event.PositionInWidget().y());
-
-          guest_host_view->SendMouseWheelEvent(guest_mouse_wheel_event);
-          return;
-        }
-      }
     }
   }
   if (!render_widget_host_)
@@ -861,9 +813,6 @@ void OffScreenRenderWidgetHostView::SetPainting(bool painting) {
   if (popup_host_view_) {
     popup_host_view_->SetPainting(painting);
   }
-
-  for (auto* guest_host_view : guest_host_views_)
-    guest_host_view->SetPainting(painting);
 
   if (video_consumer_) {
     video_consumer_->SetActive(is_painting());
@@ -892,9 +841,6 @@ void OffScreenRenderWidgetHostView::SetFrameRate(int frame_rate) {
   if (video_consumer_) {
     video_consumer_->SetFrameRate(this->frame_rate());
   }
-
-  for (auto* guest_host_view : guest_host_views_)
-    guest_host_view->SetFrameRate(frame_rate);
 }
 
 const viz::LocalSurfaceId& OffScreenRenderWidgetHostView::GetLocalSurfaceId()

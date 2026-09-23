@@ -1110,36 +1110,6 @@ void FileSystemAccessPermissionContext::RevokeActiveGrants(
   }
 }
 
-bool FileSystemAccessPermissionContext::OriginHasReadAccess(
-    const url::Origin& origin) {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-
-  auto it = active_permissions_map_.find(origin);
-  if (it != active_permissions_map_.end()) {
-    return std::ranges::any_of(it->second.read_grants, [&](const auto& grant) {
-      return grant.second->GetActivePermissionStatus() ==
-             PermissionStatus::GRANTED;
-    });
-  }
-
-  return false;
-}
-
-bool FileSystemAccessPermissionContext::OriginHasWriteAccess(
-    const url::Origin& origin) {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-
-  auto it = active_permissions_map_.find(origin);
-  if (it != active_permissions_map_.end()) {
-    return std::ranges::any_of(it->second.write_grants, [&](const auto& grant) {
-      return grant.second->GetActivePermissionStatus() ==
-             PermissionStatus::GRANTED;
-    });
-  }
-
-  return false;
-}
-
 void FileSystemAccessPermissionContext::NavigatedAwayFromOrigin(
     const url::Origin& origin) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);

@@ -85,7 +85,6 @@
   V(electron_browser_power_monitor)       \
   V(electron_browser_power_save_blocker)  \
   V(electron_browser_protocol)            \
-  V(electron_browser_printing)            \
   V(electron_browser_push_notifications)  \
   V(electron_browser_safe_storage)        \
   V(electron_browser_service_worker_main) \
@@ -109,7 +108,6 @@
   V(electron_common_asar)             \
   V(electron_common_command_line)     \
   V(electron_common_crashpad_support) \
-  V(electron_common_environment)      \
   V(electron_common_events)           \
   V(electron_common_features)         \
   V(electron_common_native_image)     \

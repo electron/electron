@@ -57,7 +57,6 @@ class InspectableWebContents
   content::WebContents* GetDevToolsWebContents() const;
 
   void SetDelegate(InspectableWebContentsDelegate* delegate);
-  InspectableWebContentsDelegate* GetDelegate() const;
   [[nodiscard]] bool is_guest() const { return is_guest_; }
   void ReleaseWebContents();
   void SetDevToolsWebContents(content::WebContents* devtools);

@@ -23,7 +23,6 @@ declare namespace NodeJS {
     isFakeLocationProviderEnabled(): boolean;
     isPrintingEnabled(): boolean;
     isPromptAPIEnabled(): boolean;
-    isExtensionsEnabled(): boolean;
     isComponentBuild(): boolean;
     isRunAsNodeEnabled(): boolean;
   }
@@ -37,6 +36,8 @@ declare namespace NodeJS {
     getHiddenValue<T>(obj: any, key: string): T;
     setHiddenValue<T>(obj: any, key: string, value: T): void;
     requestGarbageCollectionForTesting(): void;
+    requestGarbageCollectionForTesting(options: { execution: 'sync' }): void;
+    requestGarbageCollectionForTesting(options: { execution: 'async' }): Promise<void>;
     runUntilIdle(): void;
     triggerFatalErrorForTesting(): void;
     exitImmediately(code: number): never;
@@ -54,12 +55,6 @@ declare namespace NodeJS {
       isNodeProcess: boolean
     ): void;
   };
-
-  interface EnvironmentBinding {
-    getVar(name: string): string | null;
-    hasVar(name: string): boolean;
-    setVar(name: string, value: string): boolean;
-  }
 
   type AsarFileInfo = {
     size: number;
@@ -105,8 +100,6 @@ declare namespace NodeJS {
     isValidHeaderName: (headerName: string) => boolean;
     isValidHeaderValue: (headerValue: string) => boolean;
     fileURLToFilePath: (url: string) => string;
-    Net: any;
-    net: any;
     createURLLoader(options: CreateURLLoaderOptions): URLLoader;
     createWebSocket(options: CreateWebSocketOptions): WebSocketWrapper;
     resolveHost(host: string, options?: Electron.ResolveHostOptions): Promise<Electron.ResolvedHost>;
@@ -181,8 +174,6 @@ declare namespace NodeJS {
     WebFrameMain: typeof Electron.WebFrameMain;
     fromId(processId: number, routingId: number): Electron.WebFrameMain | undefined;
     fromFrameToken(processId: number, frameToken: string): Electron.WebFrameMain | null;
-    _fromIdIfExists(processId: number, routingId: number): Electron.WebFrameMain | null;
-    _fromFtnIdIfExists(frameTreeNodeId: number): Electron.WebFrameMain | null;
   }
 
   interface InternalWebPreferences {
@@ -280,7 +271,6 @@ declare namespace NodeJS {
       getCrashdumpSignalFD(): number;
       getCrashpadHandlerPID(): number;
     };
-    _linkedBinding(name: 'electron_common_environment'): EnvironmentBinding;
     _linkedBinding(name: 'electron_common_events'): { EventEmitter: typeof import('events').EventEmitter };
     _linkedBinding(name: 'electron_common_features'): FeaturesBinding;
     _linkedBinding(name: 'electron_common_native_image'): { nativeImage: typeof Electron.NativeImage };
@@ -292,7 +282,6 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_common_v8_util'): V8UtilBinding;
     _linkedBinding(name: 'electron_browser_app'): {
       app: Electron.App;
-      App: Function;
       defaultDesktopName(name: string | undefined): string;
     };
     _linkedBinding(name: 'electron_browser_auto_updater'): { autoUpdater: Electron.AutoUpdater };
@@ -330,43 +319,21 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_web_view_manager'): WebViewManagerBinding;
     _linkedBinding(name: 'electron_browser_web_frame_main'): WebFrameMainBinding;
     _linkedBinding(name: 'electron_renderer_context_bridge'): {
-      executeInWorld(worldId: number, script: { func: Function; args?: any[] }): any;
-      exposeAPIInWorld(worldId: number, key: string, api: any): void;
       contextBridge: Electron.ContextBridge;
     };
     _linkedBinding(name: 'electron_renderer_crash_reporter'): Electron.CrashReporter;
     _linkedBinding(name: 'electron_renderer_ipc'): IpcRendererBinding;
     _linkedBinding(name: 'electron_renderer_web_frame'): WebFrameBinding;
     _linkedBinding(name: 'electron_utility_parent_port'): { createParentPort(): ElectronInternal.ParentPort };
-    log: NodeJS.WriteStream['write'];
     activateUvLoop(): void;
 
-    // Additional events
-    once(event: 'document-start', listener: () => any): this;
-    once(event: 'document-end', listener: () => any): this;
-
-    // Additional properties
-    _serviceStartupScript: string;
-
     helperExecPath: string;
-    mainModule?: NodeJS.Module | undefined;
 
     appCodeLoaded?: () => void;
   }
 }
 
-declare namespace NodeJS {
-  interface Global {
-    require: NodeRequire;
-    module: NodeModule;
-    __filename: string;
-    __dirname: string;
-  }
-}
-
 declare interface Window {
-  ELECTRON_DISABLE_SECURITY_WARNINGS?: boolean;
-  ELECTRON_ENABLE_SECURITY_WARNINGS?: boolean;
   WebView: typeof ElectronInternal.WebViewElement;
   trustedTypes: TrustedTypePolicyFactory;
 }

@@ -30,10 +30,6 @@ bool IsPromptAPIEnabled() {
   return BUILDFLAG(ENABLE_PROMPT_API);
 }
 
-bool IsExtensionsEnabled() {
-  return BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS);
-}
-
 bool IsRunAsNodeEnabled() {
   return electron::fuses::IsRunAsNodeEnabled();
 }
@@ -60,7 +56,6 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isPromptAPIEnabled", &IsPromptAPIEnabled);
   dict.SetMethod("isComponentBuild", &IsComponentBuild);
   dict.SetMethod("isRunAsNodeEnabled", &IsRunAsNodeEnabled);
-  dict.SetMethod("isExtensionsEnabled", &IsExtensionsEnabled);
 }
 
 }  // namespace

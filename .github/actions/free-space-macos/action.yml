@@ -115,7 +115,21 @@ runs:
         # lipo off some huge binaries arm64 versions to save space
         strip_universal_deep $(xcode-select -p)/../SharedFrameworks
         # strip_arm_deep /System/Volumes/Data/Library/Developer/CommandLineTools/usr
-        sudo mdutil -a -i off
+        # Turning Spotlight indexing off only saves CPU during the build, so it is
+        # best-effort. `mdutil -a` exits 1 if any volume is still changing index
+        # level (kMDConfigSearchLevelTransitioning, seen on /System/Volumes/Preboot
+        # shortly after the runner boots). That normally clears within seconds, so
+        # retry briefly; if some volume stays stuck, settle for the two volumes the
+        # build actually uses and carry on either way.
+        spotlight_off=0
+        for attempt in 1 2 3; do
+          if sudo mdutil -a -i off; then spotlight_off=1; break; fi
+          sleep 5
+        done
+        if [ "$spotlight_off" = 0 ]; then
+          sudo mdutil -i off / || true
+          sudo mdutil -i off /System/Volumes/Data || true
+        fi
 
         # Delete the renamed directories in a detached process. The runner only
         # reaps orphaned processes when the job ends, and by then the deletes

@@ -292,8 +292,6 @@ class NativeWindow : public views::WidgetDelegate {
                            const std::string& display_name) {}
   virtual void CloseFilePreview() {}
 
-  virtual void SetGTKDarkThemeEnabled(bool use_dark_theme) {}
-
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }
@@ -478,8 +476,6 @@ class NativeWindow : public views::WidgetDelegate {
   [[nodiscard]] bool has_client_frame() const { return has_client_frame_; }
 
   [[nodiscard]] bool transparent() const { return transparent_; }
-
-  [[nodiscard]] bool is_closed() const { return is_closed_; }
 
   [[nodiscard]] bool enable_larger_than_screen() const {
     return enable_larger_than_screen_;
