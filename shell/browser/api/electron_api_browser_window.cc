@@ -64,6 +64,13 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   if (!web_preferences.Has(options::kShow))
     web_preferences.Set(options::kShow, true);
 
+  // Mark the contents as belonging to this window. SetOwnerWindow() only runs
+  // once the view below exists, so anything that needs to know about the
+  // association while the contents are still being created — a
+  // 'web-contents-created' listener calling openDevTools(), say — has to learn
+  // it from here.
+  web_preferences.SetHidden(options::kOwnedByWindow, true);
+
   // Creates the WebContentsView.
   gin_helper::Handle<WebContentsView> web_contents_view =
       WebContentsView::Create(isolate, web_preferences);

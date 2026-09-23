@@ -1433,6 +1433,28 @@ describe('webContents module', () => {
       return await w.webContents.executeJavaScript('({ width: window.innerWidth, height: window.innerHeight })');
     }
 
+    // Classify the dock side by which viewport axis shrank vs a devtools-closed
+    // baseline. Scale-independent because it compares the same page to itself.
+    function classifyDock(baseline: { width: number; height: number }, open: { width: number; height: number }) {
+      const widthShrank = open.width < baseline.width - 50;
+      const heightShrank = open.height < baseline.height - 50;
+      if (widthShrank && !heightShrank) return 'right'; // docked left/right
+      if (heightShrank && !widthShrank) return 'bottom'; // docked bottom
+      if (!widthShrank && !heightShrank) return 'none'; // detached / undocked
+      return 'both';
+    }
+
+    async function primeLastUsedDockState(w: BrowserWindow) {
+      const baseline = await getViewportSize(w);
+      const opened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'bottom', activate: false });
+      await opened;
+      await waitUntil(async () => classifyDock(baseline, await getViewportSize(w)) === 'bottom');
+      const closed = once(w.webContents, 'devtools-closed');
+      w.webContents.closeDevTools();
+      await closed;
+    }
+
     it('can show window with activation', async () => {
       const w = new BrowserWindow({ show: false });
       const focused = once(w, 'focus');
@@ -1570,6 +1592,155 @@ describe('webContents module', () => {
       await devtoolsClosed;
 
       expect(w.webContents.isDevToolsOpened()).to.be.false();
+    });
+
+    it('docks (not detached) when openDevTools() is called from web-contents-created', async () => {
+      // Example 1: open DevTools at WebContents creation time (owner_window still null).
+      app.once('web-contents-created', (_e, contents) => contents.openDevTools());
+      const w = new BrowserWindow({ show: true, width: 800, height: 600 });
+      await w.loadURL('about:blank');
+      await waitUntil(async () => w.webContents.isDevToolsOpened());
+
+      // Docking is applied asynchronously after 'devtools-opened', so wait for the
+      // viewport to actually give up space. getContentSize() is the undocked
+      // reference: DevTools inset the page, not the window's content area.
+      const [contentWidth, contentHeight] = w.getContentSize();
+      const undocked = { width: contentWidth, height: contentHeight };
+      await waitUntil(async () => {
+        const viewport = await getViewportSize(w);
+        return classifyDock(undocked, viewport) !== 'none';
+      });
+
+      const withDevTools = await getViewportSize(w);
+      const closed = once(w.webContents, 'devtools-closed');
+      w.webContents.closeDevTools();
+      await closed;
+      const baseline = await getViewportSize(w);
+
+      // Docked to some side => one axis was smaller while DevTools were open.
+      expect(classifyDock(baseline, withDevTools)).to.not.equal('none');
+    });
+
+    it('docks bottom (last-used) when openDevTools() is called from dom-ready', async () => {
+      const w = new BrowserWindow({ show: false, width: 800, height: 600 });
+      await w.loadURL('about:blank');
+      w.show();
+      await primeLastUsedDockState(w); // last-used = 'bottom'
+      const baseline = await getViewportSize(w);
+
+      const opened = once(w.webContents, 'devtools-opened');
+      w.webContents.once('dom-ready', () => w.webContents.openDevTools());
+      await w.loadURL('about:blank'); // reload triggers a fresh dom-ready
+      await opened;
+
+      await expect(
+        waitUntil(async () => classifyDock(baseline, await getViewportSize(w)) === 'bottom')
+      ).to.eventually.be.fulfilled();
+    });
+
+    it('docks bottom (last-used) when openDevTools() is called with an empty mode string', async () => {
+      const w = new BrowserWindow({ show: false, width: 800, height: 600 });
+      await w.loadURL('about:blank');
+      w.show();
+      await primeLastUsedDockState(w); // last-used = 'bottom'
+      const baseline = await getViewportSize(w);
+
+      const opened = once(w.webContents, 'devtools-opened');
+      // @ts-expect-error — '' is not part of the mode type; testing runtime behavior
+      w.webContents.openDevTools({ mode: '' });
+      await opened;
+
+      await expect(
+        waitUntil(async () => classifyDock(baseline, await getViewportSize(w)) === 'bottom')
+      ).to.eventually.be.fulfilled();
+    });
+
+    it('falls back to the right dock when given an invalid mode', async () => {
+      const w = new BrowserWindow({ show: false, width: 800, height: 600 });
+      await w.loadURL('about:blank');
+      w.show();
+
+      // Prime the persisted dock state with the wrong answer: an invalid mode must
+      // resolve to "right" outright, not fall back to whatever was last used.
+      const leftOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'left', activate: false });
+      await leftOpened;
+      const leftClosed = once(w.webContents, 'devtools-closed');
+      w.webContents.closeDevTools();
+      await leftClosed;
+
+      const opened = once(w.webContents, 'devtools-opened');
+      // @ts-expect-error — 'koala' is not a valid mode; resolved to "right" at runtime
+      w.webContents.openDevTools({ mode: 'koala' });
+      await opened;
+
+      // Read the side the DevTools frontend actually settled on, which it records as
+      // a class on its own <body>. The inspected page cannot answer this: 'left' and
+      // 'right' shrink the same axis by the same amount, and window.screenX reports
+      // the root window's position, not the page's offset inside it.
+      const devToolsWebContents = w.webContents.devToolsWebContents!;
+      const dockSides = ['right', 'left', 'bottom', 'undocked'];
+      const readDockSide = () =>
+        devToolsWebContents.executeJavaScript(
+          `(${JSON.stringify(dockSides)}).find((side) => document.body && document.body.classList.contains(side)) ?? null`
+        );
+
+      await waitUntil(() => devToolsWebContents.executeJavaScript('typeof DevToolsAPI !== "undefined"'));
+      await waitUntil(async () => (await readDockSide()) !== null);
+
+      expect(await readDockSide()).to.equal('right');
+    });
+
+    // Electron loads the DevTools frontend with can_dock=true only when it decided the
+    // contents may dock at all; a 'detach' open loads it with can_dock empty. Reading
+    // that back needs no layout to settle, and it is independent of which side was
+    // last used — 'undocked' still counts as dockable.
+    async function devToolsCanDock(contents: Electron.WebContents) {
+      // isDevToolsOpened() can already be true while devToolsWebContents is still
+      // null, and the frontend URL lands a moment later again — wait for both.
+      await waitUntil(() => !!contents.devToolsWebContents?.getURL());
+      return new URL(contents.devToolsWebContents!.getURL()).searchParams.get('can_dock') === 'true';
+    }
+
+    // `offscreen: true` overwrites the contents type, so an offscreen window does
+    // not report kBrowserWindow. These cover both call sites to make sure the dock
+    // decision comes from the window association and not from the type.
+    it('allows docking on an offscreen window when openDevTools() is called from web-contents-created', async () => {
+      app.once('web-contents-created', (_e, contents) => contents.openDevTools());
+      const w = new BrowserWindow({ show: false, width: 800, height: 600, webPreferences: { offscreen: true } });
+      await w.loadURL('about:blank');
+
+      expect(await devToolsCanDock(w.webContents)).to.be.true();
+    });
+
+    it('allows docking on an offscreen window when openDevTools() is called from dom-ready', async () => {
+      const w = new BrowserWindow({ show: false, width: 800, height: 600, webPreferences: { offscreen: true } });
+      await w.loadURL('about:blank');
+
+      const opened = once(w.webContents, 'devtools-opened');
+      w.webContents.once('dom-ready', () => w.webContents.openDevTools());
+      await w.loadURL('about:blank'); // reload triggers a fresh dom-ready
+      await opened;
+
+      expect(await devToolsCanDock(w.webContents)).to.be.true();
+    });
+
+    it('detaches when the contents belong to no window', async () => {
+      // A WebContentsView only gets an owner window once it is added to one, so
+      // an unattached one has none, permanently — docked DevTools would be
+      // embedded in a view that is in no widget, and nobody would see them.
+      const view = new WebContentsView();
+      await view.webContents.loadURL('about:blank');
+
+      const opened = once(view.webContents, 'devtools-opened');
+      view.webContents.openDevTools();
+      await opened;
+
+      expect(await devToolsCanDock(view.webContents)).to.be.false();
+
+      const destroyed = once(view.webContents, 'destroyed');
+      view.webContents.destroy(); // closeAllWindows() won't reach this one
+      await destroyed;
     });
   });
 
