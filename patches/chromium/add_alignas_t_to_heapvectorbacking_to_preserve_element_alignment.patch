@@ -1,0 +1,216 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keishi Hattori <keishi@google.com>
+Date: Wed, 12 Aug 2026 03:17:45 -0700
+Subject: Add alignas(T) to HeapVectorBacking to preserve element alignment
+
+When HeapVector allocates a backing store via HeapVectorBacking<T>, the
+wrapper class previously did not inherit the alignment requirement of
+element type T. Because HeapVectorBacking has no data members of type T,
+alignof(HeapVectorBacking<T>) evaluated to 4 bytes on 32-bit systems,
+even when T required 8-byte alignment (e.g. nested HeapVectors). This
+resulted in 4-byte aligned memory from Oilpan being cast to an 8-byte
+aligned type in ToArray(), triggering libc++ hardening aborts.
+
+Apply alignas(T) to HeapVectorBacking so that kWantedAlignment evaluates
+to the element type's required alignment in MakeGarbageCollected. Update
+GetAdditionalBytes() size assertion to reflect that empty class size now
+matches class alignment.
+
+Add compile-time alignment static assertions to heap_traits_test.cc and
+runtime backing store memory alignment unit tests to heap_test.cc
+(guarding 16-byte alignment tests to 64-bit targets where supported by
+cppgc) to prevent future regressions.
+
+Bug: 540446275
+Change-Id: I156c836bd1e3750168a5e947cc02da6bb2ea85de
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8179109
+Commit-Queue: Anton Bikineev <bikineev@chromium.org>
+Reviewed-by: Anton Bikineev <bikineev@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1677907}
+
+diff --git a/third_party/blink/renderer/platform/heap/collection_support/heap_vector_backing.h b/third_party/blink/renderer/platform/heap/collection_support/heap_vector_backing.h
+index 32a34f7e6b297f6b19410bf0222547e0eb5d8957..a2c61cbbbc0afeb4229f4f7b7bc445608b4a43c9 100644
+--- a/third_party/blink/renderer/platform/heap/collection_support/heap_vector_backing.h
++++ b/third_party/blink/renderer/platform/heap/collection_support/heap_vector_backing.h
+@@ -36,7 +36,7 @@ inline bool VTableInitialized(const void* object_payload) {
+ }  // namespace internal
+ 
+ template <typename T, typename Traits = VectorTraits<T>>
+-class HeapVectorBacking final
++class alignas(T) HeapVectorBacking final
+     : public GarbageCollected<HeapVectorBacking<T, Traits>> {
+  public:
+   using ClassType = HeapVectorBacking<T, Traits>;
+@@ -71,9 +71,12 @@ class HeapVectorBacking final
+ 
+  private:
+   static cppgc::AdditionalBytes GetAdditionalBytes(size_t wanted_array_size) {
+-    // HVB is an empty class that's purely used with inline storage. Since its
+-    // sizeof(HVB) == 1, we need to subtract its size to avoid wasting storage.
+-    static_assert(sizeof(ClassType) == 1, "Class declaration changed");
++    // HVB is an empty class that's purely used with inline storage. Since it
++    // has no fields, its size is solely determined by its alignment
++    // requirement. We subtract its size to avoid wasting storage during
++    // allocation.
++    static_assert(sizeof(ClassType) == alignof(ClassType),
++                  "Class declaration changed");
+     DCHECK_GE(wanted_array_size, sizeof(ClassType));
+     return cppgc::AdditionalBytes{wanted_array_size - sizeof(ClassType)};
+   }
+@@ -125,7 +128,8 @@ namespace internal {
+ template <typename T>
+ struct CompactionTraits<blink::HeapVectorBacking<T>> {
+   static constexpr bool SupportsCompaction() {
+-    return blink::HeapVectorBacking<T>::TraitsType::kCanMoveWithMemcpy;
++    return blink::HeapVectorBacking<T>::TraitsType::kCanMoveWithMemcpy &&
++           alignof(blink::HeapVectorBacking<T>) <= sizeof(void*);
+   }
+ };
+ }  // namespace internal
+@@ -191,7 +195,9 @@ struct TraceInCollectionTrait<kNoWeakHandling,
+ namespace cppgc {
+ 
+ // The space trait rewires allocations for HeapVector with `kCanMoveWithMemcpy`
+-// into a space supporting compaction.
++// and default (word-sized) alignment into a space supporting compaction.
++// Objects requiring larger alignment cannot be placed in compactable spaces and
++// must fall back to default non-compacting spaces.
+ template <typename T>
+   requires(blink::internal::CompactionTraits<
+            blink::HeapVectorBacking<T>>::SupportsCompaction())
+diff --git a/third_party/blink/renderer/platform/heap/heap_allocator_impl.h b/third_party/blink/renderer/platform/heap/heap_allocator_impl.h
+index c456d24f96560163e5e91a9b7f4d6b636dddcdf1..91a15a01a2b801046493e421e305b798136345fe 100644
+--- a/third_party/blink/renderer/platform/heap/heap_allocator_impl.h
++++ b/third_party/blink/renderer/platform/heap/heap_allocator_impl.h
+@@ -237,7 +237,8 @@ class PLATFORM_EXPORT HeapAllocator {
+                                  const T* const* backing_slot) {
+     using BackingType = HeapVectorBacking<T>;
+ 
+-    if constexpr (BackingType::TraitsType::kCanMoveWithMemcpy) {
++    if constexpr (internal::CompactionTraits<
++                      BackingType>::SupportsCompaction()) {
+       visitor->RegisterMovableReference(const_cast<const BackingType**>(
+           reinterpret_cast<const BackingType* const*>(backing_slot)));
+     }
+diff --git a/third_party/blink/renderer/platform/heap/test/heap_test.cc b/third_party/blink/renderer/platform/heap/test/heap_test.cc
+index 3e6bb0c28676d3760eb996635e44c11de54dd220..4f734f1bba40cb169e85b2e2001e2d8510200c35 100644
+--- a/third_party/blink/renderer/platform/heap/test/heap_test.cc
++++ b/third_party/blink/renderer/platform/heap/test/heap_test.cc
+@@ -3256,4 +3256,73 @@ TEST_F(HeapTest, ContainerAnnotationOnTinyBacking) {
+   vector.reserve(2);
+ }
+ 
++namespace {
++struct alignas(8) AlignedElement {
++  DISALLOW_NEW();
++
++ public:
++  uint64_t value = 0;
++};
++}  // namespace
++
++TEST_F(HeapTest, HeapVectorBackingAlignment) {
++  // Regression test: https://crbug.com/540446275
++  // Verify that Oilpan allocates properly aligned backing stores for elements
++  // requiring 8-byte alignment (even on 32-bit platforms where default
++  // alignment might otherwise be 4 bytes).
++  HeapVector<AlignedElement> vector;
++  vector.reserve(10);
++  EXPECT_LE(10u, vector.capacity());
++  EXPECT_TRUE(vector.data());
++  EXPECT_EQ(0u, reinterpret_cast<uintptr_t>(vector.data()) % 8u);
++}
++
++TEST_F(HeapTest, NestedHeapVectorAlignment) {
++  // Regression test: https://crbug.com/540446275
++  // Verify that nested HeapVectors maintain runtime memory alignment matching
++  // alignof(HeapVector<T>), preventing libc++ hardening alignment aborts.
++  HeapVector<HeapVector<Member<IntWrapper>>> nested_vector;
++  nested_vector.reserve(5);
++  EXPECT_LE(5u, nested_vector.capacity());
++  EXPECT_TRUE(nested_vector.data());
++  EXPECT_EQ(0u, reinterpret_cast<uintptr_t>(nested_vector.data()) %
++                    alignof(HeapVector<Member<IntWrapper>>));
++}
++
++#if defined(ARCH_CPU_64_BITS)
++struct alignas(16) OverAlignedElement {
++  DISALLOW_NEW();
++
++ public:
++  OverAlignedElement() = default;
++  explicit OverAlignedElement(IntWrapper* w) : wrapper(w) {}
++
++  Member<IntWrapper> wrapper;
++  void Trace(Visitor* visitor) const { visitor->Trace(wrapper); }
++};
++
++template <>
++struct VectorTraits<OverAlignedElement> : VectorTraitsBase<OverAlignedElement> {
++  static constexpr bool kCanClearUnusedSlotsWithMemset = true;
++  static constexpr bool kCanMoveWithMemcpy = true;
++};
++
++class OverAlignedVectorHolder
++    : public GarbageCollected<OverAlignedVectorHolder> {
++ public:
++  void Trace(Visitor* visitor) const { visitor->Trace(vector); }
++  HeapVector<OverAlignedElement> vector;
++};
++
++TEST_F(HeapTest, OverAlignedHeapVectorTracingAndGC) {
++  Persistent<OverAlignedVectorHolder> holder =
++      MakeGarbageCollected<OverAlignedVectorHolder>();
++  holder->vector.push_back(
++      OverAlignedElement(MakeGarbageCollected<IntWrapper>(42)));
++  TestSupportingGC::PreciselyCollectGarbage();
++  EXPECT_EQ(1u, holder->vector.size());
++  EXPECT_EQ(42, holder->vector[0].wrapper->Value());
++}
++#endif  // defined(ARCH_CPU_64_BITS)
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/heap/test/heap_traits_test.cc b/third_party/blink/renderer/platform/heap/test/heap_traits_test.cc
+index a8cfae2e1ecc5a98afbb36d7ff20eb801fee815f..4080a3734e6b861d1e21dadd3b97bce129297220 100644
+--- a/third_party/blink/renderer/platform/heap/test/heap_traits_test.cc
++++ b/third_party/blink/renderer/platform/heap/test/heap_traits_test.cc
+@@ -6,6 +6,8 @@
+ 
+ #include <type_traits>
+ #include <utility>
++
++#include "third_party/blink/renderer/platform/heap/collection_support/heap_vector_backing.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ #include "third_party/blink/renderer/platform/heap/member.h"
+ #include "third_party/blink/renderer/platform/wtf/vector.h"
+@@ -120,6 +122,30 @@ static_assert(
+                                       Member<GarbageCollectedStruct>>>>::value,
+     "GarbageCollectedStruct causes a HeapVector to be used");
+ 
++// HeapVectorBacking alignment inheritance
++struct alignas(8) AlignedStruct8 {
++  int a;
++};
++static_assert(alignof(HeapVectorBacking<AlignedStruct8>) == 8,
++              "HeapVectorBacking must inherit element alignment (8 bytes)");
++
++struct alignas(16) AlignedStruct16 {
++  int a;
++};
++static_assert(alignof(HeapVectorBacking<AlignedStruct16>) == 16,
++              "HeapVectorBacking must inherit element alignment (16 bytes)");
++
++static_assert(
++    std::is_same_v<cppgc::SpaceTrait<HeapVectorBacking<AlignedStruct8>>::Space,
++                   std::conditional_t<sizeof(void*) == 8,
++                                      CompactableHeapVectorBackingSpace,
++                                      void>>,
++    "8-byte aligned backings only use compactable space on 64-bit targets");
++static_assert(
++    std::is_same_v<cppgc::SpaceTrait<HeapVectorBacking<AlignedStruct16>>::Space,
++                   void>,
++    "16-byte aligned backings must fall back to default non-compactable space");
++
+ }  // namespace
+ 
+ }  // namespace blink
