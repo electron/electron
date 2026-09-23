@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "gin/object_template_builder.h"
+#include "shell/browser/api/electron_api_event_emitter.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
@@ -27,10 +28,16 @@ class EventEmitterMixin {
   // Returns true if event.preventDefault() was called during processing.
   template <typename... Args>
   bool Emit(const std::string_view name, Args&&... args) {
+    // Nobody is listening: don't create the Event, convert the arguments or
+    // enter JavaScript just for emit() to find that out.
+    if (!listeners_.MayObserve(name))
+      return false;
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
+      return false;
+    if (!LinkListeners(isolate, wrapper, name))
       return false;
     internal::Event* event = internal::Event::New(isolate);
     v8::Local<v8::Object> event_object =
@@ -43,10 +50,14 @@ class EventEmitterMixin {
   // this.emit(name, args...);
   template <typename... Args>
   void EmitWithoutEvent(const std::string_view name, Args&&... args) {
+    if (!listeners_.MayObserve(name))
+      return;
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
+      return;
+    if (!LinkListeners(isolate, wrapper, name))
       return;
     gin_helper::EmitEvent(isolate, wrapper, name, std::forward<Args>(args)...);
   }
@@ -75,6 +86,22 @@ class EventEmitterMixin {
     return gin::ObjectTemplateBuilder(isolate, class_name,
                                       constructor->InstanceTemplate());
   }
+
+ private:
+  // The first emit ties |listeners_| to the wrapper, after which it knows what
+  // is listened for. Returns whether |name| is still worth emitting.
+  bool LinkListeners(v8::Isolate* isolate,
+                     v8::Local<v8::Object> wrapper,
+                     std::string_view name) {
+    if (listeners_.linked())
+      return true;
+    listeners_.Link(isolate, wrapper);
+    return listeners_.MayObserve(name);
+  }
+
+  // The wrapper lives exactly as long as |this| does, so it never reaches a
+  // set that is gone.
+  electron::EventListenerSet listeners_;
 };
 
 }  // namespace gin_helper

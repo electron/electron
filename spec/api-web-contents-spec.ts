@@ -1828,6 +1828,19 @@ describe('webContents module', () => {
     });
   });
 
+  describe('input-event event', () => {
+    afterEach(closeAllWindows);
+
+    it('is emitted to a listener added after the page loaded', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+      const inputEvent = once(w.webContents, 'input-event') as Promise<[any, Electron.InputEvent]>;
+      w.webContents.sendInputEvent({ type: 'mouseMove', x: 10, y: 10 });
+      const [, input] = await inputEvent;
+      expect(input.type).to.equal('mouseMove');
+    });
+  });
+
   describe('before-input-event event', () => {
     afterEach(closeAllWindows);
     it('can prevent document keyboard events', async () => {

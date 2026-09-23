@@ -1,4 +1,3 @@
-import { EventEmitter } from 'events';
 import * as path from 'path';
 
 import type * as url from 'url';
@@ -9,7 +8,8 @@ const Module = require('module') as NodeJS.ModuleInternal;
 // Import common settings.
 require('@electron/internal/common/init');
 
-process._linkedBinding('electron_browser_event_emitter').setEventEmitterPrototype(EventEmitter.prototype);
+// Native emitters keep track of what is listened for on them.
+require('@electron/internal/common/native-emitter-prototype');
 
 // Don't quit on fatal error.
 process.on('uncaughtException', function (error) {

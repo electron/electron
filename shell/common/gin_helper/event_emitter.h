@@ -8,6 +8,7 @@
 #include <string_view>
 #include <utility>
 
+#include "shell/browser/api/electron_api_event_emitter.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/wrappable.h"
@@ -21,10 +22,16 @@ class EventEmitter : public gin_helper::Wrappable<T> {
   // this.emit(name, new Event(), args...);
   template <typename... Args>
   bool Emit(const std::string_view name, Args&&... args) {
+    // Nobody is listening: don't create the Event, convert the arguments or
+    // enter JavaScript just for emit() to find that out.
+    if (!listeners_.MayObserve(name))
+      return false;
     v8::Isolate* const isolate = this->isolate();
     v8::HandleScope handle_scope{isolate};
     v8::Local<v8::Object> wrapper = this->GetWrapper();
     if (wrapper.IsEmpty())
+      return false;
+    if (!LinkListeners(isolate, wrapper, name))
       return false;
     internal::Event* event = internal::Event::New(isolate);
     v8::Local<v8::Object> event_object =
@@ -39,10 +46,14 @@ class EventEmitter : public gin_helper::Wrappable<T> {
   // this.emit(name, args...);
   template <typename... Args>
   void EmitWithoutEvent(const std::string_view name, Args&&... args) {
+    if (!listeners_.MayObserve(name))
+      return;
     v8::Isolate* const isolate = this->isolate();
     v8::HandleScope handle_scope{isolate};
     v8::Local<v8::Object> wrapper = this->GetWrapper();
     if (wrapper.IsEmpty())
+      return;
+    if (!LinkListeners(isolate, wrapper, name))
       return;
     EmitEvent(isolate, wrapper, name, std::forward<Args>(args)...);
   }
@@ -53,6 +64,32 @@ class EventEmitter : public gin_helper::Wrappable<T> {
 
  protected:
   EventEmitter() = default;
+
+  // The wrapper can outlive |this|, and on() / off() on it must not reach a
+  // set that is gone.
+  ~EventEmitter() override {
+    if (!listeners_.linked())
+      return;
+    v8::Isolate* const isolate = this->isolate();
+    v8::HandleScope handle_scope{isolate};
+    v8::Local<v8::Object> wrapper = this->GetWrapper();
+    if (!wrapper.IsEmpty())
+      listeners_.Unlink(isolate, wrapper);
+  }
+
+ private:
+  // The first emit ties |listeners_| to the wrapper, after which it knows what
+  // is listened for. Returns whether |name| is still worth emitting.
+  bool LinkListeners(v8::Isolate* isolate,
+                     v8::Local<v8::Object> wrapper,
+                     std::string_view name) {
+    if (listeners_.linked())
+      return true;
+    listeners_.Link(isolate, wrapper);
+    return listeners_.MayObserve(name);
+  }
+
+  electron::EventListenerSet listeners_;
 };
 
 }  // namespace gin_helper
