@@ -1,0 +1,188 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Kosyakov <caseq@chromium.org>
+Date: Tue, 15 Sep 2026 09:28:58 -0700
+Subject: Roll inspector_protocol to 339e2b3abf429719b11c04143a9439ae7c1e33a1
+
+Bug: 553116160
+Change-Id: I3f65dd9666f853c764a8e58d63a4d2c049fae996
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8399625
+Auto-Submit: Andrey Kosyakov <caseq@chromium.org>
+Reviewed-by: Johannes Henkel <johannes@chromium.org>
+Commit-Queue: Johannes Henkel <johannes@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1698161}
+
+diff --git a/third_party/blink/renderer/core/inspector/protocol_parser_test.cc b/third_party/blink/renderer/core/inspector/protocol_parser_test.cc
+index 721441844d98006dace33d1042fd0b46a00fea6d..5770fc0919b848f34a2a6ee4bd7d04d9df3b840b 100644
+--- a/third_party/blink/renderer/core/inspector/protocol_parser_test.cc
++++ b/third_party/blink/renderer/core/inspector/protocol_parser_test.cc
+@@ -47,60 +47,13 @@ TEST(ProtocolParserTest, Reading) {
+   ASSERT_TRUE(root.get());
+   EXPECT_EQ(Value::TypeBoolean, root->type());
+ 
+-  // Embedded comment
++  // Comments are not allowed.
+   root = ParseJSON("40 /*/");
+   EXPECT_FALSE(root.get());
+-  root = ParseJSON("/* comment */null");
+-  ASSERT_TRUE(root.get());
+-  EXPECT_EQ(Value::TypeNull, root->type());
+   root = ParseJSON("40 /* comment */");
+-  ASSERT_TRUE(root.get());
+-  EXPECT_EQ(Value::TypeInteger, root->type());
+-  EXPECT_TRUE(root->asInteger(&int_val));
+-  EXPECT_EQ(40, int_val);
+-  root = ParseJSON("/**/ 40 /* multi-line\n comment */ // more comment");
+-  ASSERT_TRUE(root.get());
+-  EXPECT_EQ(Value::TypeInteger, root->type());
+-  EXPECT_TRUE(root->asInteger(&int_val));
+-  EXPECT_EQ(40, int_val);
++  EXPECT_FALSE(root.get());
+   root = ParseJSON("true // comment");
+-  ASSERT_TRUE(root.get());
+-  EXPECT_EQ(Value::TypeBoolean, root->type());
+-  root = ParseJSON("/* comment */\"sample string\"");
+-  ASSERT_TRUE(root.get());
+-  EXPECT_TRUE(root->asString(&str_val));
+-  EXPECT_EQ("sample string", str_val);
+-  root = ParseJSON("[1, /* comment, 2 ] */ \n 3]");
+-  ASSERT_TRUE(root.get());
+-  ListValue* list = ListValue::cast(root.get());
+-  ASSERT_TRUE(list);
+-  EXPECT_EQ(2u, list->size());
+-  tmp_value = list->at(0);
+-  ASSERT_TRUE(tmp_value);
+-  EXPECT_TRUE(tmp_value->asInteger(&int_val));
+-  EXPECT_EQ(1, int_val);
+-  tmp_value = list->at(1);
+-  ASSERT_TRUE(tmp_value);
+-  EXPECT_TRUE(tmp_value->asInteger(&int_val));
+-  EXPECT_EQ(3, int_val);
+-  root = ParseJSON("[1, /*a*/2, 3]");
+-  ASSERT_TRUE(root.get());
+-  list = ListValue::cast(root.get());
+-  ASSERT_TRUE(list);
+-  EXPECT_EQ(3u, list->size());
+-  root = ParseJSON("/* comment **/42");
+-  ASSERT_TRUE(root.get());
+-  EXPECT_EQ(Value::TypeInteger, root->type());
+-  EXPECT_TRUE(root->asInteger(&int_val));
+-  EXPECT_EQ(42, int_val);
+-  root = ParseJSON(
+-      "/* comment **/\n"
+-      "// */ 43\n"
+-      "44");
+-  ASSERT_TRUE(root.get());
+-  EXPECT_EQ(Value::TypeInteger, root->type());
+-  EXPECT_TRUE(root->asInteger(&int_val));
+-  EXPECT_EQ(44, int_val);
++  EXPECT_FALSE(root.get());
+ 
+   // Test number formats
+   root = ParseJSON("43");
+@@ -256,7 +209,7 @@ TEST(ProtocolParserTest, Reading) {
+   root = ParseJSON("[true, false, null]");
+   ASSERT_TRUE(root.get());
+   EXPECT_EQ(Value::TypeArray, root->type());
+-  list = ListValue::cast(root.get());
++  ListValue* list = ListValue::cast(root.get());
+   ASSERT_TRUE(list);
+   EXPECT_EQ(3U, list->size());
+ 
+diff --git a/third_party/inspector_protocol/crdtp/json.cc b/third_party/inspector_protocol/crdtp/json.cc
+index bc3b8a6d9093c77704f012bfef228d559fe3f79b..c7a96946e3d15329bb053414de92908907b1f298 100644
+--- a/third_party/inspector_protocol/crdtp/json.cc
++++ b/third_party/inspector_protocol/crdtp/json.cc
+@@ -606,74 +606,26 @@ class JsonParser {
+     return false;
+   }
+ 
+-  static bool SkipComment(const Char* start,
+-                          const Char* end,
+-                          const Char** comment_end) {
+-    if (start == end)
+-      return false;
+-
+-    if (*start != '/' || start + 1 >= end)
+-      return false;
+-    ++start;
+-
+-    if (*start == '/') {
+-      // Single line comment, read to newline.
+-      for (++start; start < end; ++start) {
+-        if (*start == '\n' || *start == '\r') {
+-          *comment_end = start + 1;
+-          return true;
+-        }
+-      }
+-      *comment_end = end;
+-      // Comment reaches end-of-input, which is fine.
+-      return true;
+-    }
+-
+-    if (*start == '*') {
+-      Char previous = '\0';
+-      // Block comment, read until end marker.
+-      for (++start; start < end; previous = *start++) {
+-        if (previous == '*' && *start == '/') {
+-          *comment_end = start + 1;
+-          return true;
+-        }
+-      }
+-      // Block comment must close before end-of-input.
+-      return false;
+-    }
+-
+-    return false;
+-  }
+-
+   static bool IsSpaceOrNewLine(Char c) {
+     // \v = vertial tab; \f = form feed page break.
+     return c == ' ' || c == '\n' || c == '\v' || c == '\f' || c == '\r' ||
+            c == '\t';
+   }
+ 
+-  static void SkipWhitespaceAndComments(const Char* start,
+-                                        const Char* end,
+-                                        const Char** whitespace_end) {
+-    while (start < end) {
+-      if (IsSpaceOrNewLine(*start)) {
+-        ++start;
+-      } else if (*start == '/') {
+-        const Char* comment_end = nullptr;
+-        if (!SkipComment(start, end, &comment_end))
+-          break;
+-        start = comment_end;
+-      } else {
+-        break;
+-      }
++  static void SkipWhitespace(const Char* start,
++                             const Char* end,
++                             const Char** whitespace_end) {
++    while (start < end && IsSpaceOrNewLine(*start)) {
++      ++start;
+     }
+     *whitespace_end = start;
+   }
+ 
+-  static Token ParseToken(const Char* start,
+-                          const Char* end,
+-                          const Char** tokenStart,
+-                          const Char** token_end) {
+-    SkipWhitespaceAndComments(start, end, tokenStart);
++  Token ParseToken(const Char* start,
++                   const Char* end,
++                   const Char** tokenStart,
++                   const Char** token_end) {
++    SkipWhitespace(start, end, tokenStart);
+     start = *tokenStart;
+ 
+     if (start == end)
+@@ -999,7 +951,7 @@ class JsonParser {
+         return;
+     }
+ 
+-    SkipWhitespaceAndComments(token_end, end, value_token_end);
++    SkipWhitespace(token_end, end, value_token_end);
+   }
+ 
+   void HandleError(Error error, const Char* pos) {

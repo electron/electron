@@ -1,0 +1,95 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Tseng <dtseng@google.com>
+Date: Tue, 18 Aug 2026 11:07:53 -0700
+Subject: [Extensions] Validate process authorization in
+ AutomationEventRouter::BindForRenderer
+
+This CL adds a check against ProcessMap and AutomationInfo in
+AutomationEventRouter::BindForRenderer. If the calling process is not
+hosting an enabled extension with automation permission, the request
+is rejected and the renderer process is terminated with a bad message.
+
+Fixed: 540265100
+TAG=agy
+CONV=0fba6596-b871-40d8-8ac4-a6d2854a4d9c
+
+Change-Id: I107134d7419d5b797a3068932972feb097bb3f9c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8259787
+Reviewed-by: Andrea Orru <andreaorru@chromium.org>
+Reviewed-by: Alexei Svitkine <asvitkine@chromium.org>
+Reviewed-by: Devlin Cronin <rdevlin.cronin@chromium.org>
+Commit-Queue: David Tseng <dtseng@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1681537}
+
+diff --git a/extensions/browser/api/automation_internal/automation_event_router.cc b/extensions/browser/api/automation_internal/automation_event_router.cc
+index 160691e3ccb25ecbe24851890a3bb05e665f7635..c4bb2ae3309b20ca8567e1599c03a60755a1926a 100644
+--- a/extensions/browser/api/automation_internal/automation_event_router.cc
++++ b/extensions/browser/api/automation_internal/automation_event_router.cc
+@@ -16,12 +16,15 @@
+ #include "build/chromeos_buildflags.h"
+ #include "extensions/browser/api/automation_internal/automation_internal_api_delegate.h"
+ #include "extensions/browser/api/extensions_api_client.h"
++#include "extensions/browser/bad_message.h"
+ #include "extensions/browser/event_router.h"
+ #include "extensions/browser/process_manager.h"
++#include "extensions/browser/process_map.h"
+ #include "extensions/browser/service_worker/worker_id.h"
+ #include "extensions/common/api/automation_internal.h"
+ #include "extensions/common/extension.h"
+ #include "extensions/common/extension_id.h"
++#include "extensions/common/manifest_handlers/automation.h"
+ #include "mojo/public/cpp/bindings/associated_remote.h"
+ #include "mojo/public/cpp/bindings/pending_associated_remote.h"
+ #include "ui/accessibility/ax_action_data.h"
+@@ -349,6 +352,27 @@ void AutomationEventRouter::BindForRenderer(
+     RenderProcessHostId render_process_id,
+     mojo::PendingAssociatedReceiver<
+         extensions::mojom::RendererAutomationRegistry> receiver) {
++  content::RenderProcessHost* host =
++      content::RenderProcessHost::FromID(render_process_id);
++  if (!host) {
++    return;
++  }
++
++  ProcessMap* process_map = ProcessMap::Get(host->GetBrowserContext());
++  const Extension* extension =
++      process_map
++          ? process_map->GetEnabledExtensionByProcessID(render_process_id)
++          : nullptr;
++
++  const AutomationInfo* automation_info =
++      extension ? AutomationInfo::Get(extension) : nullptr;
++
++  if (!automation_info) {
++    bad_message::ReceivedBadMessage(
++        host, bad_message::AER_INVALID_PROCESS_FOR_AUTOMATION_BINDING);
++    return;
++  }
++
+   AutomationEventRouter* router = AutomationEventRouter::GetInstance();
+   CHECK(router);
+ 
+diff --git a/extensions/browser/bad_message.h b/extensions/browser/bad_message.h
+index 276ff421b5f5fd8a61f0b4f7789d047c66cd20e0..96f53bd554342f187082867d48040f1f18350a42 100644
+--- a/extensions/browser/bad_message.h
++++ b/extensions/browser/bad_message.h
+@@ -77,6 +77,7 @@ enum BadMessageReason {
+   SWH_INVALID_SERVICE_WORKER_SCOPE = 37,
+   EMF_INVALID_MESSAGE_FROM_SANDBOXED_PROCESS = 38,
+   WRA_INVALID_EXTENSION_ID_FOR_PROCESS = 39,
++  AER_INVALID_PROCESS_FOR_AUTOMATION_BINDING = 43,
+   // Please add new elements here. The naming convention is abbreviated class
+   // name (e.g. ExtensionHost becomes EH) plus a unique description of the
+   // reason. After making changes, you MUST update histograms.xml by running:
+diff --git a/tools/metrics/histograms/metadata/stability/enums.xml b/tools/metrics/histograms/metadata/stability/enums.xml
+index 9124a1459cf16102f215689040de312511b5510f..6eaafc52f6163796be64d81375252c75fcf72301 100644
+--- a/tools/metrics/histograms/metadata/stability/enums.xml
++++ b/tools/metrics/histograms/metadata/stability/enums.xml
+@@ -576,6 +576,7 @@ Called by update_bad_message_reasons.py.-->
+   <int value="37" label="SWH_INVALID_SERVICE_WORKER_SCOPE"/>
+   <int value="38" label="EMF_INVALID_MESSAGE_FROM_SANDBOXED_PROCESS"/>
+   <int value="39" label="WRA_INVALID_EXTENSION_ID_FOR_PROCESS"/>
++  <int value="43" label="AER_INVALID_PROCESS_FOR_AUTOMATION_BINDING"/>
+ </enum>
+ 
+ <enum name="BadMessageReasonGuestView">

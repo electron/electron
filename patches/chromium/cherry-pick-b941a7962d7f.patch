@@ -1,0 +1,240 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Tue, 22 Sep 2026 04:03:37 +0000
+Subject: [M150-LTS] bluetooth: Fix reentrancy UAF during ShowPermissionPrompt
+
+When a renderer requests Bluetooth scanning via
+navigator.bluetooth.requestLEScan(), the browser service synchronously
+calls the embedder delegate's ShowBluetoothScanningPrompt() method.
+Displaying the desktop scanning prompt drops fullscreen, which can spin
+a nested message loop while exiting fullscreen mode across related tabs.
+
+During this nested message loop, pending IPCs (such as an iframe
+removal FrameDetach IPC) can be processed synchronously, destroying the
+requesting subframe's RenderFrameHostImpl and its associated service
+objects, including BluetoothDeviceScanningPromptController. When
+ShowBluetoothScanningPrompt() returns, assigning the prompt into
+prompt_ causes a heap-use-after-free write on the deleted controller.
+
+This CL captures a base::WeakPtr to the controller before calling
+ShowBluetoothScanningPrompt() and verifies liveness before accessing
+member fields.
+
+TAG=agy
+CONV=3182e656-edea-4b6d-aa62-f521ce8320bc
+
+Fixed: 554558320
+Change-Id: Ib1c051149c0bb4e4f1f9fdefb0a72db96573c3f0
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8310829
+Commit-Queue: Alvin Ji <alvinji@chromium.org>
+Reviewed-by: Matt Reynolds <mattreynolds@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1697624}
+(cherry picked from commit 45aabdf6e9e620f6ac0d2d720814f6236658ff1e)
+
+diff --git a/content/browser/bluetooth/advertisement_client.cc b/content/browser/bluetooth/advertisement_client.cc
+index 7e2bf39dd0118705a54292a23b37838d6bb153f7..04938c6759e18ea0d0a144dad9c99e60c628549a 100644
+--- a/content/browser/bluetooth/advertisement_client.cc
++++ b/content/browser/bluetooth/advertisement_client.cc
+@@ -12,6 +12,7 @@
+ #include "content/browser/bluetooth/bluetooth_blocklist.h"
+ #include "content/browser/bluetooth/bluetooth_metrics.h"
+ #include "content/browser/web_contents/web_contents_impl.h"
++#include "mojo/public/cpp/bindings/callback_helpers.h"
+ 
+ namespace content {
+ 
+@@ -49,9 +50,12 @@ WebBluetoothServiceImpl::WatchAdvertisementsClient::WatchAdvertisementsClient(
+         client_remote,
+     blink::WebBluetoothDeviceId device_id,
+     RequestCallback callback)
+-    : AdvertisementClient(service,
+-                          std::move(client_remote),
+-                          std::move(callback)),
++    : AdvertisementClient(
++          service,
++          std::move(client_remote),
++          mojo::WrapCallbackWithDefaultInvokeIfNotRun(
++              std::move(callback),
++              blink::mojom::WebBluetoothResult::WATCH_ADVERTISEMENTS_ABORTED)),
+       device_id_(device_id) {
+   DCHECK(device_id_.IsValid());
+ }
+@@ -91,9 +95,12 @@ WebBluetoothServiceImpl::ScanningClient::ScanningClient(
+         client_remote,
+     blink::mojom::WebBluetoothRequestLEScanOptionsPtr options,
+     RequestCallback callback)
+-    : AdvertisementClient(service,
+-                          std::move(client_remote),
+-                          std::move(callback)),
++    : AdvertisementClient(
++          service,
++          std::move(client_remote),
++          mojo::WrapCallbackWithDefaultInvokeIfNotRun(
++              std::move(callback),
++              blink::mojom::WebBluetoothResult::PROMPT_CANCELED)),
+       options_(std::move(options)) {
+   DCHECK(options_->filters.has_value() || options_->accept_all_advertisements);
+ }
+diff --git a/content/browser/bluetooth/advertisement_client.h b/content/browser/bluetooth/advertisement_client.h
+index 5e3893ba51c4df8109dc89731d8f930ce0d3d34d..1bb918a0e9a2beda3ad6335d84b5ee282ad00101 100644
+--- a/content/browser/bluetooth/advertisement_client.h
++++ b/content/browser/bluetooth/advertisement_client.h
+@@ -28,7 +28,9 @@ class WebBluetoothServiceImpl::AdvertisementClient {
+   bool is_connected() { return client_remote_.is_connected(); }
+ 
+   void RunCallback(blink::mojom::WebBluetoothResult result) {
+-    std::move(callback_).Run(result);
++    if (callback_) {
++      std::move(callback_).Run(result);
++    }
+   }
+ 
+  protected:
+diff --git a/content/browser/bluetooth/bluetooth_device_scanning_prompt_controller.cc b/content/browser/bluetooth/bluetooth_device_scanning_prompt_controller.cc
+index 590dd6fb4cc8f49aee9213f6a28e39bfe1bc3d80..6e455106b02c51397c4845f6c8ab7f4797aa78cf 100644
+--- a/content/browser/bluetooth/bluetooth_device_scanning_prompt_controller.cc
++++ b/content/browser/bluetooth/bluetooth_device_scanning_prompt_controller.cc
+@@ -34,13 +34,34 @@ void BluetoothDeviceScanningPromptController::ShowPermissionPrompt() {
+                               OnBluetoothScanningPromptEvent,
+                           weak_ptr_factory_.GetWeakPtr());
+ 
+-  if (auto* delegate = GetContentClient()->browser()->GetBluetoothDelegate()) {
+-    // non-active RFHs can't show UI elements like prompts to the user.
+-    if (!render_frame_host_->IsActive())
+-      return;
+-    prompt_ = delegate->ShowBluetoothScanningPrompt(
+-        &*render_frame_host_, std::move(prompt_event_handler));
++  // Non-active RFHs can't show UI elements like prompts to the user.
++  if (!render_frame_host_->IsActive()) {
++    return;
+   }
++
++  auto* delegate = GetContentClient()->browser()->GetBluetoothDelegate();
++  if (!delegate) {
++    return;
++  }
++
++  // The delegate's prompt implementation may spin a nested message loop (e.g.
++  // to drop fullscreen), during which the frame may be detached and the
++  // controller destroyed. In addition, the prompt event handler could be
++  // invoked synchronously. Check that the controller is still alive and that
++  // the event hasn't already been handled before assigning `prompt_`.
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
++  auto prompt = delegate->ShowBluetoothScanningPrompt(
++      &*render_frame_host_, std::move(prompt_event_handler));
++  if (!weak_this || prompt_event_received_) {
++    return;
++  }
++  // If the delegate fails to create a prompt or prompt UI is unsupported,
++  // cancel immediately so the request does not hang.
++  if (!prompt) {
++    OnBluetoothScanningPromptEvent(BluetoothScanningPrompt::Event::kCanceled);
++    return;
++  }
++  prompt_ = std::move(prompt);
+ }
+ 
+ void BluetoothDeviceScanningPromptController::OnBluetoothScanningPromptEvent(
+diff --git a/content/browser/bluetooth/web_bluetooth_service_impl_browsertest.cc b/content/browser/bluetooth/web_bluetooth_service_impl_browsertest.cc
+index 1148630e33179c723f4f522a0d4e30977ffcecc2..5f83170b8c161ff7bdac472aca9174b72451fd23 100644
+--- a/content/browser/bluetooth/web_bluetooth_service_impl_browsertest.cc
++++ b/content/browser/bluetooth/web_bluetooth_service_impl_browsertest.cc
+@@ -9,6 +9,7 @@
+ #include "base/functional/callback.h"
+ #include "base/memory/raw_ptr.h"
+ #include "base/run_loop.h"
++#include "base/test/bind.h"
+ #include "build/build_config.h"
+ #include "content/browser/bluetooth/bluetooth_adapter_factory_wrapper.h"
+ #include "content/browser/bluetooth/web_bluetooth_service_impl.h"
+@@ -158,14 +159,19 @@ class TestBluetoothDelegate : public BluetoothDelegate {
+     return std::make_unique<FakeBluetoothChooser>(event_handler,
+                                                   device_to_select_);
+   }
++  void set_show_bluetooth_scanning_prompt_callback(base::OnceClosure callback) {
++    show_bluetooth_scanning_prompt_callback_ = std::move(callback);
++  }
++
+   std::unique_ptr<BluetoothScanningPrompt> ShowBluetoothScanningPrompt(
+       RenderFrameHost* frame,
+       const BluetoothScanningPrompt::EventHandler& event_handler) override {
+     showed_bluetooth_scanning_prompt_ = true;
+     DCHECK_EQ(frame->GetLifecycleState(),
+               RenderFrameHost::LifecycleState::kActive);
+-    if (quit_on_scanning_prompt_)
+-      std::move(quit_on_scanning_prompt_).Run();
++    if (show_bluetooth_scanning_prompt_callback_) {
++      std::move(show_bluetooth_scanning_prompt_callback_).Run();
++    }
+     auto prompt =
+         std::make_unique<FakeBluetoothScanningPrompt>(std::move(event_handler));
+     prompt_ = prompt.get();
+@@ -195,7 +201,7 @@ class TestBluetoothDelegate : public BluetoothDelegate {
+     if (showed_bluetooth_scanning_prompt_)
+       return;
+     base::RunLoop run_loop;
+-    quit_on_scanning_prompt_ = run_loop.QuitClosure();
++    show_bluetooth_scanning_prompt_callback_ = run_loop.QuitClosure();
+     run_loop.Run();
+   }
+   void RunBluetoothScanningPromptEventCallback(
+@@ -214,8 +220,8 @@ class TestBluetoothDelegate : public BluetoothDelegate {
+ 
+  private:
+   std::string device_to_select_;
++  base::OnceClosure show_bluetooth_scanning_prompt_callback_;
+   raw_ptr<FakeBluetoothScanningPrompt, DanglingUntriaged> prompt_ = nullptr;
+-  base::OnceClosure quit_on_scanning_prompt_;
+   bool showed_bluetooth_scanning_prompt_ = false;
+   bool checked_allow_web_bluetooth_ = false;
+   bool block_globally_disabled_ = false;
+@@ -673,4 +679,49 @@ IN_PROC_BROWSER_TEST_F(WebBluetoothServiceImplFencedFramesBrowserTest,
+                               GetWebContents()->GetPrimaryMainFrame())));
+ }
+ 
++IN_PROC_BROWSER_TEST_F(WebBluetoothServiceImplBrowserTest,
++                       FrameDetachDuringShowBluetoothScanningPrompt) {
++  EXPECT_CALL(*adapter(), AddObserver(_)).Times(testing::AnyNumber());
++  EXPECT_CALL(*adapter(), RemoveObserver(_)).Times(testing::AnyNumber());
++
++  EXPECT_TRUE(NavigateToURL(
++      shell(), embedded_test_server()->GetURL("/simple_page.html")));
++
++  // Add an iframe and wait for it to load.
++  EXPECT_TRUE(ExecJs(GetWebContents(), R"(
++    new Promise(resolve => {
++      let iframe = document.createElement('iframe');
++      iframe.src = '/simple_page.html';
++      iframe.onload = resolve;
++      document.body.appendChild(iframe);
++    });
++  )"));
++
++  RenderFrameHost* child_rfh =
++      ChildFrameAt(GetWebContents()->GetPrimaryMainFrame(), 0);
++  ASSERT_TRUE(child_rfh);
++
++  GetBluetoothDelegate()->set_show_bluetooth_scanning_prompt_callback(
++      base::BindLambdaForTesting([this]() {
++        // Synchronously detach the iframe during ShowBluetoothScanningPrompt.
++        EXPECT_TRUE(ExecJs(GetWebContents(),
++                           "document.querySelector('iframe').remove();"));
++      }));
++
++  auto result = content::EvalJs(child_rfh, R"(
++    (async() => {
++      try {
++        await navigator.bluetooth.requestLEScan(
++            {acceptAllAdvertisements: true});
++        return "";
++      } catch(e) {
++        return `${e.name}: ${e.message}`;
++      }
++    })()
++  )");
++  EXPECT_THAT(result,
++              EvalJsResult::ErrorIs(testing::HasSubstr("RenderFrame deleted")));
++  EXPECT_TRUE(GetBluetoothDelegate()->showed_bluetooth_scanning_prompt());
++}
++
+ }  // namespace content

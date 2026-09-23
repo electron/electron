@@ -1,0 +1,101 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matthias Liedtke <mliedtke@chromium.org>
+Date: Wed, 16 Sep 2026 11:07:59 +0200
+Subject: [compiler] ISel: Fix VisitInt32Sub for 32-bit lhs
+
+Only skip zero-extension of lhs if it is guaranteed to be zero-extended
+already.
+
+Fixed: 560536731
+Bug: 562243479
+Change-Id: I76bdfa74e60dce43817da96832e5cc2e021c06f9
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8411046
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Matthias Liedtke <mliedtke@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#109855}
+
+diff --git a/src/compiler/backend/x64/instruction-selector-x64.cc b/src/compiler/backend/x64/instruction-selector-x64.cc
+index b14d9857f0126f6a4f098d11472e48e715c3703e..80c3e5ae9bbe0538c03c876be4c7add998ac6169 100644
+--- a/src/compiler/backend/x64/instruction-selector-x64.cc
++++ b/src/compiler/backend/x64/instruction-selector-x64.cc
+@@ -2269,10 +2269,10 @@ void InstructionSelector::VisitInt32Sub(OpIndex node) {
+   if (g.CanBeImmediate(right)) {
+     int32_t imm = g.GetImmediateIntegerValue(right);
+     if (imm == 0) {
+-      if (this->Get(left).outputs_rep()[0] ==
+-          RegisterRepresentation::Word32()) {
++      if (ZeroExtendsWord32ToWord64(left)) {
+         // {EmitIdentity} reuses the virtual register of the first input
+-        // for the output. This is exactly what we want here.
++        // for the output. This is only safe if it is known to zero-extend
++        // (as the int32 subtraction advertises itself as zero-extending.)
+         EmitIdentity(node);
+       } else {
+         // Emit "movl" for subtraction of 0.
+diff --git a/test/mjsunit/regress/wasm/regress-560536731.js b/test/mjsunit/regress/wasm/regress-560536731.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..57c3d561a7a230c50557a3a877672d44ee3fe999
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-560536731.js
+@@ -0,0 +1,61 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --wasm-tier-mask-for-testing=1
++
++d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
++
++let helperBuilder = new WasmModuleBuilder();
++let sig64_h =
++    helperBuilder.addType(makeSig([kWasmI64], [kWasmI64, kWasmI64, kWasmI64]));
++let sig32_h =
++    helperBuilder.addType(makeSig([kWasmI32], [kWasmI32, kWasmI32, kWasmI32]));
++
++helperBuilder.addFunction('prime', sig64_h)
++    .addBody([kExprLocalGet, 0, kExprLocalGet, 0, kExprLocalGet, 0])
++    .exportFunc();
++
++helperBuilder.addFunction('get', sig32_h)
++    .addBody([kExprLocalGet, 0, kExprLocalGet, 0, kExprLocalGet, 0])
++    .exportFunc();
++
++let helper = helperBuilder.instantiate({});
++
++let builder = new WasmModuleBuilder();
++let sig64 = builder.addType(makeSig([kWasmI64], [kWasmI64, kWasmI64, kWasmI64]));
++let sig32 = builder.addType(makeSig([kWasmI32], [kWasmI32, kWasmI32, kWasmI32]));
++let primeImport = builder.addImport('m', 'prime', sig64);
++let getImport = builder.addImport('m', 'get', sig32);
++
++builder.addFunction('test', makeSig([kWasmI64, kWasmI32, kWasmI32], [kWasmI64]))
++    .addLocals(kWasmI32, 1)
++    .addBody([
++      kExprLocalGet, 0,
++      kExprCallFunction, primeImport,
++      kExprDrop, kExprDrop, kExprDrop,
++      kExprLocalGet, 2,
++      kExprIf, kWasmVoid,
++        kExprLoop, kWasmVoid,
++          kExprLocalGet, 1,
++          kExprCallFunction, getImport,
++          kExprLocalGet, 3,
++          kExprI32Sub,
++          kExprI64UConvertI32,
++          kExprLocalGet, 2,
++          kExprI32Eqz,
++          kExprIf, kWasmVoid,
++            kExprLocalGet, 1,
++            kExprLocalSet, 3,
++            kExprBr, 1,
++          kExprEnd,
++          kExprReturn,
++        kExprEnd,
++      kExprEnd,
++      kExprI64Const, 42,
++    ])
++    .exportFunc();
++
++let instance = builder.instantiate({m: helper.exports});
++
++assertEquals(0x4d2n, instance.exports.test(0x133700000000n, 1234, 1));

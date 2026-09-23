@@ -1,0 +1,334 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Le Hoang Quyen <lehoangquyen@chromium.org>
+Date: Thu, 23 Jul 2026 03:10:48 -0700
+Subject: Graphite: Add Delegate interface and handle context loss in readback
+
+Refactor GraphiteSharedContext to use a Delegate interface instead
+of individual callback closures, and have DawnSharedContext implement
+it. Expose IsContextLost() on GraphiteSharedContext. In
+GraphiteImageReadPixels and RasterDecoderImpl::DoReadbackYUVImagePixels,
+gracefully handle context loss when readback callbacks are not completed
+instead of crashing.
+
+Bug: 537751400
+Change-Id: Ib32b99828c7d0c4204d38d5c5d0fe814bdf10320
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8130240
+Commit-Queue: Quyen Le <lehoangquyen@google.com>
+Reviewed-by: Colin Blundell <blundell@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1666962}
+
+Electron adaptation notes (43-x-y):
+Picked as a prerequisite for "Skip Graphite async read pixels callback
+when context is lost" (cherry-pick-b77d42d0e0c8.patch), which needs
+GraphiteSharedContext::Delegate / delegate_. Two context-only conflicts:
+the header keeps this branch's existing simulated_insert_status_ member
+next to the new delegate_, and dawn_context_provider.cc keeps this
+branch's features::kSkiaGraphiteMaxPendingRecordings.Get() accessor
+spelling. No semantic changes.
+
+diff --git a/gpu/command_buffer/service/copy_shared_image_helper.cc b/gpu/command_buffer/service/copy_shared_image_helper.cc
+index 31efea78502414d55ec2098fada38b7c4c9ed3c5..d48a516b40644750a81d71754a10ba60299335d2 100644
+--- a/gpu/command_buffer/service/copy_shared_image_helper.cc
++++ b/gpu/command_buffer/service/copy_shared_image_helper.cc
+@@ -669,6 +669,10 @@ bool GraphiteImageReadPixels(GraphiteSharedContext* graphite_shared_context,
+     return false;
+   }
+ 
++  if (!context.finished && graphite_shared_context->IsContextLost()) {
++    return false;
++  }
++
+   CHECK(context.finished);
+   if (!context.async_result) {
+     return false;
+diff --git a/gpu/command_buffer/service/dawn_context_provider.cc b/gpu/command_buffer/service/dawn_context_provider.cc
+index ecb3cf0c93654e8020b552e5f2ba62f6929a4eae..d01a6b067d4f2b10c5e111cc6f0f20ec979207c1 100644
+--- a/gpu/command_buffer/service/dawn_context_provider.cc
++++ b/gpu/command_buffer/service/dawn_context_provider.cc
+@@ -480,7 +480,8 @@ bool DawnContextProvider::DefaultValidateAdapterFn(wgpu::BackendType,
+ // Owns the dawn instance/adapter/device so that it's lifetime is not linked to
+ // a specific DawnContextProvider.
+ class DawnSharedContext : public base::RefCountedThreadSafe<DawnSharedContext>,
+-                          public base::trace_event::MemoryDumpProvider {
++                          public base::trace_event::MemoryDumpProvider,
++                          public GraphiteSharedContext::Delegate {
+  public:
+   DawnSharedContext(gl::ProgressReporter* progress_reporter,
+                     bool thread_safe_graphite_context);
+@@ -567,8 +568,12 @@ class DawnSharedContext : public base::RefCountedThreadSafe<DawnSharedContext>,
+   }
+ #endif
+ 
++  // GraphiteSharedContext::Delegate implementation:
++  void MarkContextLost(error::ContextLostReason reason) override;
++  bool IsContextLost() const override;
++  void FlushBackend() override;
++
+   std::optional<error::ContextLostReason> GetResetStatus() const;
+-  void MarkContextLost(error::ContextLostReason reason);
+ 
+   std::unique_ptr<GraphiteSharedContext> CreateGraphiteSharedContext(
+       const skgpu::graphite::ContextOptions& options,
+@@ -592,10 +597,8 @@ class DawnSharedContext : public base::RefCountedThreadSafe<DawnSharedContext>,
+     return std::make_unique<GraphiteSharedContext>(
+         std::move(graphite_context), use_shader_cache_shm_count, is_thread_safe,
+         features::kSkiaGraphiteMaxPendingRecordings.Get(),
+-        GetBackendFlushCallback(),
+         // DawnSharedContext is guaranteed to outlive GraphiteSharedContext.
+-        base::BindRepeating(&DawnSharedContext::MarkContextLost,
+-                            base::Unretained(this)));
++        this);
+   }
+ 
+   bool use_thread_safe_graphite_context() const {
+@@ -682,15 +685,6 @@ class DawnSharedContext : public base::RefCountedThreadSafe<DawnSharedContext>,
+ 
+   ~DawnSharedContext() override;
+ 
+-  GraphiteSharedContext::FlushCallback GetBackendFlushCallback() {
+-#if BUILDFLAG(IS_WIN)
+-    return base::BindRepeating(&DawnSharedContext::FlushD3D11CommandsIfDelayed,
+-                               base::Unretained(this));
+-#else
+-    return {};
+-#endif
+-  }
+-
+   void OnError(wgpu::ErrorType error_type, wgpu::StringView message);
+ 
+   void StoreInitLoggingMessage(std::string_view message) {
+@@ -1105,6 +1099,16 @@ void DawnSharedContext::MarkContextLost(error::ContextLostReason reason) {
+   }
+ }
+ 
++bool DawnSharedContext::IsContextLost() const {
++  return GetResetStatus().has_value();
++}
++
++void DawnSharedContext::FlushBackend() {
++#if BUILDFLAG(IS_WIN)
++  FlushD3D11CommandsIfDelayed();
++#endif
++}
++
+ void DawnSharedContext::OnError(wgpu::ErrorType error_type,
+                                 wgpu::StringView message) {
+ #if BUILDFLAG(IS_WIN)
+diff --git a/gpu/command_buffer/service/graphite_shared_context.cc b/gpu/command_buffer/service/graphite_shared_context.cc
+index 235c3275cede6fde354ea7429e703cd1c8df3120..09a1a1cc0129e0029387f18d6b5b277ebf7d87c7 100644
+--- a/gpu/command_buffer/service/graphite_shared_context.cc
++++ b/gpu/command_buffer/service/graphite_shared_context.cc
+@@ -245,13 +245,11 @@ GraphiteSharedContext::GraphiteSharedContext(
+     GpuProcessShmCount* use_shader_cache_shm_count,
+     bool is_thread_safe,
+     size_t max_pending_recordings,
+-    FlushCallback backend_flush_callback,
+-    MarkContextLostCallback mark_context_lost_callback)
++    Delegate* delegate)
+     : graphite_context_(std::move(graphite_context)),
+       use_shader_cache_shm_count_(use_shader_cache_shm_count),
+       max_pending_recordings_(max_pending_recordings),
+-      backend_flush_callback_(std::move(backend_flush_callback)),
+-      mark_context_lost_callback_(std::move(mark_context_lost_callback)) {
++      delegate_(delegate) {
+   DCHECK(graphite_context_);
+   if (is_thread_safe) {
+     lock_.emplace();
+@@ -260,6 +258,13 @@ GraphiteSharedContext::GraphiteSharedContext(
+ 
+ GraphiteSharedContext::~GraphiteSharedContext() = default;
+ 
++bool GraphiteSharedContext::IsContextLost() const {
++  if (delegate_) {
++    return delegate_->IsContextLost();
++  }
++  return false;
++}
++
+ skgpu::BackendApi GraphiteSharedContext::backend() const {
+   AutoLock auto_lock(this);
+   return graphite_context_->backend();
+@@ -360,10 +365,10 @@ bool GraphiteSharedContext::InsertRecordingImpl(
+     CHECK(simulating_insert_failure);
+   } else if (insert_status ==
+              skgpu::graphite::InsertStatus::kOutOfOrderRecording) {
+-    if (mark_context_lost_callback_) {
++    if (delegate_) {
+       // TODO(crbug.com/478211694): assume the reason of out of order is OOM for
+       // now.
+-      mark_context_lost_callback_.Run(error::kOutOfMemory);
++      delegate_->MarkContextLost(error::kOutOfMemory);
+     }
+   }
+ 
+@@ -422,8 +427,8 @@ void GraphiteSharedContext::SubmitAndFlushBackendImpl(
+     const skgpu::graphite::SubmitInfo& submit_info) {
+   CHECK(SubmitImpl(submit_info));
+ 
+-  if (backend_flush_callback_) {
+-    backend_flush_callback_.Run();
++  if (delegate_) {
++    delegate_->FlushBackend();
+   }
+ }
+ 
+diff --git a/gpu/command_buffer/service/graphite_shared_context.h b/gpu/command_buffer/service/graphite_shared_context.h
+index aa95e6c71ecb634c1d149880af494470686ce2ef..5230d7fe92e3fe5218e91b482b073eb4bd83e470 100644
+--- a/gpu/command_buffer/service/graphite_shared_context.h
++++ b/gpu/command_buffer/service/graphite_shared_context.h
+@@ -38,21 +38,23 @@ class GpuProcessShmCount;
+ // are equivalent to no-op.
+ class GPU_GLES2_EXPORT GraphiteSharedContext {
+  public:
++  class GPU_GLES2_EXPORT Delegate {
++   public:
++    virtual ~Delegate() = default;
++    virtual void FlushBackend() = 0;
++    virtual void MarkContextLost(error::ContextLostReason reason) = 0;
++    virtual bool IsContextLost() const = 0;
++  };
++
+   using SkImageReadPixelsCallback = base::OnceCallback<
+       void(void* ctx, std::unique_ptr<const SkSurface::AsyncReadResult>)>;
+ 
+-  using FlushCallback = base::RepeatingCallback<void()>;
+-  using MarkContextLostCallback =
+-      base::RepeatingCallback<void(error::ContextLostReason)>;
+-
+   GraphiteSharedContext(
+       std::unique_ptr<skgpu::graphite::Context> graphite_context,
+       GpuProcessShmCount* use_shader_cache_shm_count,
+       bool is_thread_safe,
+       size_t max_pending_recordings,
+-      FlushCallback backend_flush_callback = FlushCallback(),
+-      MarkContextLostCallback mark_context_lost_callback =
+-          MarkContextLostCallback());
++      Delegate* delegate = nullptr);
+ 
+   GraphiteSharedContext(const GraphiteSharedContext&) = delete;
+   GraphiteSharedContext(GraphiteSharedContext&&) = delete;
+@@ -63,6 +65,8 @@ class GPU_GLES2_EXPORT GraphiteSharedContext {
+ 
+   bool IsThreadSafe() const { return !!lock_; }
+ 
++  bool IsContextLost() const;
++
+   // Wrapper function implementations for skgpu::graphite:Context
+   skgpu::BackendApi backend() const;
+ 
+@@ -253,8 +257,7 @@ class GPU_GLES2_EXPORT GraphiteSharedContext {
+   const size_t max_pending_recordings_;
+   size_t num_pending_recordings_ = 0;
+ 
+-  FlushCallback backend_flush_callback_;
+-  MarkContextLostCallback mark_context_lost_callback_;
++  raw_ptr<Delegate> delegate_ = nullptr;
+ 
+   skgpu::graphite::InsertStatus simulated_insert_status_ =
+       skgpu::graphite::InsertStatus::kSuccess;
+diff --git a/gpu/command_buffer/service/graphite_shared_context_unittest.cc b/gpu/command_buffer/service/graphite_shared_context_unittest.cc
+index 834c451ada4ae8ad9f00ca7cd1eb813779e8a1c1..d76cdddbecc08600bc2d524a6fb4cd69a570f15a 100644
+--- a/gpu/command_buffer/service/graphite_shared_context_unittest.cc
++++ b/gpu/command_buffer/service/graphite_shared_context_unittest.cc
+@@ -33,14 +33,14 @@ class MockGpuProcessShmCount : public GpuProcessShmCount {
+   MOCK_METHOD(void, Decrement, (), (override));
+ };
+ 
+-class MockBackendFlushCallback {
++class MockDelegate : public GraphiteSharedContext::Delegate {
+  public:
+-  MOCK_METHOD(void, Flush, ());
+-};
+-
+-class MockMarkContextLostCallback {
+- public:
+-  MOCK_METHOD(void, MarkContextLost, (error::ContextLostReason reason));
++  MOCK_METHOD(void, FlushBackend, (), (override));
++  MOCK_METHOD(void,
++              MarkContextLost,
++              (error::ContextLostReason reason),
++              (override));
++  MOCK_METHOD(bool, IsContextLost, (), (const, override));
+ };
+ 
+ // Test fixture for GraphiteSharedContext with thread safety enabled.
+@@ -109,15 +109,11 @@ class GraphiteSharedContextTest : public testing::TestWithParam<bool> {
+         skgpu::graphite::ContextFactory::MakeDawn(backend_context,
+                                                   context_options),
+         &use_shader_cache_shm_count_, is_thread_safe(), kMaxPendingRecordings,
+-        base::BindRepeating(&MockBackendFlushCallback::Flush,
+-                            base::Unretained(&backend_flush_callback_)),
+-        base::BindRepeating(&MockMarkContextLostCallback::MarkContextLost,
+-                            base::Unretained(&mark_context_lost_callback_)));
++        &delegate_);
+   }
+ 
+   MockGpuProcessShmCount use_shader_cache_shm_count_;
+-  NiceMock<MockBackendFlushCallback> backend_flush_callback_;
+-  NiceMock<MockMarkContextLostCallback> mark_context_lost_callback_;
++  NiceMock<MockDelegate> delegate_;
+   std::unique_ptr<GraphiteSharedContext> graphite_shared_context_;
+   std::unique_ptr<base::Thread> secondary_thread_;
+ };
+@@ -227,7 +223,7 @@ TEST_P(GraphiteSharedContextTest, OutOfOrderRecording) {
+   graphite_shared_context_->insertRecording(info);
+ 
+   info.fRecording = recording1.get();
+-  EXPECT_CALL(mark_context_lost_callback_, MarkContextLost(testing::_)).Times(1);
++  EXPECT_CALL(delegate_, MarkContextLost(testing::_)).Times(1);
+   EXPECT_FALSE(graphite_shared_context_->insertRecording(info));
+ }
+ 
+@@ -260,7 +256,7 @@ TEST_P(GraphiteSharedContextTest, LowPendingRecordings) {
+   EXPECT_TRUE(recorder);
+ 
+   // No flush is expected if the number of pending recordings is low.
+-  EXPECT_CALL(backend_flush_callback_, Flush()).Times(0);
++  EXPECT_CALL(delegate_, FlushBackend()).Times(0);
+ 
+   for (size_t i = 0; i < kMaxPendingRecordings - 1; ++i) {
+     auto recording = recorder->snap();
+@@ -278,7 +274,7 @@ TEST_P(GraphiteSharedContextTest, MaxPendingRecordings) {
+   EXPECT_TRUE(recorder);
+ 
+   // Expect a flush when the number of pending recordings reaches the max.
+-  EXPECT_CALL(backend_flush_callback_, Flush()).Times(1);
++  EXPECT_CALL(delegate_, FlushBackend()).Times(1);
+ 
+   for (size_t i = 0; i < kMaxPendingRecordings; ++i) {
+     auto recording = recorder->snap();
+diff --git a/gpu/command_buffer/service/raster_decoder.cc b/gpu/command_buffer/service/raster_decoder.cc
+index fe8e42fca2ba47d781b009ef61d02399c14a7f74..cce71d8493d9a1bee525aa9224b1d4c091c27c7f 100644
+--- a/gpu/command_buffer/service/raster_decoder.cc
++++ b/gpu/command_buffer/service/raster_decoder.cc
+@@ -2657,6 +2657,7 @@ void RasterDecoderImpl::DoReadbackYUVImagePixelsINTERNAL(
+   // While this function indicates it's asynchronous, the DoFinish() call below
+   // ensures it completes synchronously.
+   YUVReadbackResult yuv_result;
++  bool is_context_lost = false;
+   if (graphite_shared_context()) {
+     // SkImage/SkSurface asyncRescaleAndReadPixels methods won't be implemented
+     // for Graphite. Instead the equivalent methods will be on Graphite Context.
+@@ -2665,6 +2666,8 @@ void RasterDecoderImpl::DoReadbackYUVImagePixelsINTERNAL(
+         src_rect, dst_size, SkImage::RescaleGamma::kSrc,
+         SkImage::RescaleMode::kRepeatedLinear,
+         base::BindOnce(&OnReadYUVImagePixelsDone), &yuv_result);
++    is_context_lost =
++        !yuv_result.finished && graphite_shared_context()->IsContextLost();
+   } else {
+     CHECK(gr_context());
+     sk_image->asyncRescaleAndReadPixelsYUV420(
+@@ -2688,9 +2691,10 @@ void RasterDecoderImpl::DoReadbackYUVImagePixelsINTERNAL(
+   }
+ 
+   // The call above will sync up gpu and CPU, resulting in callback being run
+-  // during DoFinish(). To prevent UAF make sure it indeed happened.
+-  CHECK(yuv_result.finished);
+-  if (!yuv_result.async_result) {
++  // during DoFinish(). To prevent UAF make sure it indeed happened or context
++  // was lost.
++  CHECK(yuv_result.finished || is_context_lost);
++  if (!yuv_result.async_result || is_context_lost) {
+     LOCAL_SET_GL_ERROR(GL_INVALID_OPERATION, "glReadbackYUVImagePixels",
+                        "Failed to read pixels from SkImage");
+     return;

@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dave Tapuska <dtapuska@chromium.org>
+Date: Thu, 27 Aug 2026 09:49:18 -0700
+Subject: Prevent crash if WidgetBase is destroyed during GetTextInputType.
+
+During UpdateTextInputState and composition updates, calling
+GetTextInputType can result in the destruction of the WidgetBase. This
+CL adds WeakPtr checks immediately after GetTextInputType calls to
+ensure the widget is still alive before proceeding, preventing potential
+use-after-free crashes. A unit test is also added to verify this
+behavior.
+
+BUG=553129513
+
+Change-Id: Id77925e08581ef1b1d50f3b8404466e04c083ff3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8299776
+Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
+Reviewed-by: Vladimir Levin <vmpstr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1687328}
+
+diff --git a/third_party/blink/renderer/platform/widget/input/widget_base_input_handler_unittest.cc b/third_party/blink/renderer/platform/widget/input/widget_base_input_handler_unittest.cc
+index 046b4e689b7adb3f38d83f7970c32ae23f209b34..ff298b13157ee8c7b04f5211a38c1dfd9ad1771f 100644
+--- a/third_party/blink/renderer/platform/widget/input/widget_base_input_handler_unittest.cc
++++ b/third_party/blink/renderer/platform/widget/input/widget_base_input_handler_unittest.cc
+@@ -36,6 +36,7 @@ class MockWidgetBaseClient : public StubWidgetBaseClient {
+               (const WebGestureEvent&, bool*),
+               (override));
+   MOCK_METHOD(void, WillHandleMouseEvent, (const WebMouseEvent&), (override));
++  MOCK_METHOD(WebTextInputType, GetTextInputType, (), (override));
+   const display::ScreenInfos& GetOriginalScreenInfos() override {
+     return screen_infos_;
+   }
+@@ -159,4 +160,14 @@ TEST_F(WidgetBaseInputHandlerTest, MouseEventDestroysWidget) {
+   EXPECT_TRUE(callback_run);
+ }
+ 
++TEST_F(WidgetBaseInputHandlerTest, UpdateTextInputStateDestroysWidget) {
++  EXPECT_CALL(client_, GetTextInputType()).WillOnce([&]() {
++    widget_base_->Shutdown(false);
++    widget_base_.reset();
++    return WebTextInputType::kWebTextInputTypeText;
++  });
++
++  widget_base_->UpdateTextInputState();
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/widget/widget_base.cc b/third_party/blink/renderer/platform/widget/widget_base.cc
+index d560915ee81b09505ecb77942c9c0101339b7d7c..39641f59262454a77a1e1ebd31a29950d109f0fc 100644
+--- a/third_party/blink/renderer/platform/widget/widget_base.cc
++++ b/third_party/blink/renderer/platform/widget/widget_base.cc
+@@ -1204,7 +1204,11 @@ void WidgetBase::UpdateTextInputStateInternal(bool show_virtual_keyboard,
+       ime_event_guard_->set_show_virtual_keyboard(true);
+     return;
+   }
++  base::WeakPtr<WidgetBase> weak_this = weak_ptr_factory_.GetWeakPtr();
+   ui::TextInputType new_type = GetTextInputType();
++  if (!weak_this) {
++    return;
++  }
+   if (IsDateTimeInput(new_type))
+     return;  // Not considered as a text input field in WebKit/Chromium.
+ 
+@@ -1216,7 +1220,6 @@ void WidgetBase::UpdateTextInputStateInternal(bool show_virtual_keyboard,
+   std::optional<gfx::Rect> control_bounds;
+   std::optional<gfx::Rect> selection_bounds;
+   if (frame_widget) {
+-    base::WeakPtr<WidgetBase> weak_this = weak_ptr_factory_.GetWeakPtr();
+     new_info = frame_widget->TextInputInfo();
+     if (!weak_this) {
+       return;
+@@ -1399,11 +1402,16 @@ void WidgetBase::UpdateCompositionInfo(bool immediate_request) {
+   gfx::Range range;
+   Vector<gfx::Rect> character_bounds;
+ 
+-  if (GetTextInputType() == ui::TextInputType::TEXT_INPUT_TYPE_NONE) {
++  base::WeakPtr<WidgetBase> weak_this = weak_ptr_factory_.GetWeakPtr();
++  ui::TextInputType text_input_type = GetTextInputType();
++  if (!weak_this) {
++    return;
++  }
++
++  if (text_input_type == ui::TextInputType::TEXT_INPUT_TYPE_NONE) {
+     // Composition information is only available on editable node.
+     range = gfx::Range::InvalidRange();
+   } else {
+-    base::WeakPtr<WidgetBase> weak_this = weak_ptr_factory_.GetWeakPtr();
+     GetCompositionRange(&range);
+     if (!weak_this) {
+       return;

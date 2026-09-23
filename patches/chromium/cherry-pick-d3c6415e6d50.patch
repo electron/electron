@@ -1,0 +1,456 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@google.com>
+Date: Tue, 22 Sep 2026 11:07:53 -0700
+Subject: [M152] Manage handler lifetime in AudioWorkletMessagingProxy
+
+Original change's description:
+> Manage handler lifetime in AudioWorkletMessagingProxy
+>
+> AudioWorkletMessagingProxy::CreateProcessor posts a task to the
+> AudioWorklet thread binding a scoped_refptr<AudioWorkletHandler>.
+> If the main-thread references to AudioWorkletNode and AudioContext are
+> released while this creation task is in-flight, the handler teardown
+> could be initiated from the worker thread when the task finishes.
+>
+> AudioHandler teardown and associated graph structure cleanup are
+> designed to execute on the main thread.
+>
+> This CL manages the handler lifetime in AudioWorkletMessagingProxy:
+> 1. AudioWorkletMessagingProxy retains a reference in
+>    pending_create_processor_handlers_ on the main thread while
+>    CreateProcessor is pending on the worklet thread.
+> 2. After processor creation completes on the worker thread, a completion
+>    task DidCreateProcessor transfers the handler reference back to the
+>    main thread.
+> 3. In DidCreateProcessor and WorkerThreadTerminated, pending handlers
+>    are released on the main thread under DeferredTaskHandler's graph lock
+>    to ensure orderly destruction.
+>
+> Bug: 559815527
+> Change-Id: I92b3bd433870f3e5a4b4d798098abb573a23b2f0
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8393082
+> Reviewed-by: Mahesh Kannan <kmaheshb@google.com>
+> Commit-Queue: Hongchan Choi <hongchan@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1699285}
+
+(cherry picked from commit d17f41658bfacf5bb47f6de9445bd3ef9a28674a)
+
+Bug: 563218950,559815527
+Change-Id: I92b3bd433870f3e5a4b4d798098abb573a23b2f0
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8427325
+Reviewed-by: Mahesh Kannan <kmaheshb@google.com>
+Commit-Queue: Hongchan Choi <hongchan@chromium.org>
+Reviewed-by: Hongchan Choi <hongchan@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7977@{#2709}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_context_test.cc b/third_party/blink/renderer/modules/webaudio/audio_context_test.cc
+index 09a7dd3809c8c7a88274feeb698f51a3e6c578c4..e14aa71505fd93810e8f9a24dd51a201bfce690e 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_context_test.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_context_test.cc
+@@ -30,6 +30,12 @@
+ #include "third_party/blink/public/platform/web_audio_sink_descriptor.h"
+ #include "third_party/blink/public/platform/web_runtime_features.h"
+ #include "third_party/blink/renderer/bindings/core/v8/v8_binding_for_testing.h"
++#include "third_party/blink/public/web/web_heap.h"
++#include "third_party/blink/renderer/bindings/core/v8/script_promise_tester.h"
++#include "third_party/blink/renderer/bindings/core/v8/serialization/serialized_script_value.h"
++#include "third_party/blink/renderer/bindings/core/v8/v8_binding_for_testing.h"
++#include "third_party/blink/renderer/bindings/core/v8/v8_worklet_options.h"
++#include "third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.h"
+ #include "third_party/blink/renderer/bindings/modules/v8/v8_audio_sink_options.h"
+ #include "third_party/blink/renderer/bindings/modules/v8/v8_union_audiocontextlatencycategory_double.h"
+ #include "third_party/blink/renderer/bindings/modules/v8/v8_union_audiocontextrendersizecategory_unsignedlong.h"
+@@ -38,11 +44,22 @@
+ #include "third_party/blink/renderer/core/frame/frame_test_helpers.h"
+ #include "third_party/blink/renderer/core/frame/local_dom_window.h"
+ #include "third_party/blink/renderer/core/frame/local_frame.h"
++#include "third_party/blink/renderer/core/messaging/message_channel.h"
++#include "third_party/blink/renderer/core/messaging/message_port.h"
++#include "third_party/blink/renderer/core/script/classic_script.h"
+ #include "third_party/blink/renderer/core/testing/page_test_base.h"
+ #include "third_party/blink/renderer/modules/mediastream/sub_capture_target.h"
+ #include "third_party/blink/renderer/modules/peerconnection/peer_connection_dependency_factory.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_playback_stats.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_playout_stats.h"
++#include "third_party/blink/renderer/modules/webaudio/audio_worklet.h"
++#include "third_party/blink/renderer/modules/webaudio/audio_worklet_global_scope.h"
++#include "third_party/blink/renderer/modules/webaudio/audio_worklet_handler.h"
++#include "third_party/blink/renderer/modules/webaudio/audio_worklet_messaging_proxy.h"
++#include "third_party/blink/renderer/modules/webaudio/audio_worklet_node.h"
++#include "third_party/blink/renderer/modules/webaudio/cross_thread_audio_worklet_processor_info.h"
++#include "third_party/blink/renderer/modules/webaudio/delay_node.h"
++#include "third_party/blink/renderer/modules/webaudio/media_stream_audio_destination_node.h"
+ #include "third_party/blink/renderer/modules/webaudio/realtime_audio_destination_node.h"
+ #include "third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
+@@ -1563,6 +1580,101 @@ TEST_F(AudioContextTest, AudioWorkletTerminatedOnClose) {
+   proxy->GetBackingWorkerThread()->WaitForShutdownForTesting();
+ }
+ 
++// Test that releasing the last reference to an AudioWorkletHandler during
++// CreateProcessor teardown safely executes on the main thread instead of
++// running ~AudioHandler on the AudioWorklet thread (which triggers
++// DCHECK(IsMainThread())).
++TEST_F(AudioContextTest, AudioWorkletCreateProcessorTeardownOnMainThread) {
++  AudioContextOptions* options = AudioContextOptions::Create();
++  AudioContext* audio_context = AudioContext::Create(
++      GetFrame().DomWindow(), options, ASSERT_NO_EXCEPTION);
++
++  ScriptState* script_state = ToScriptStateForMainWorld(&GetFrame());
++  ScriptState::Scope scope(script_state);
++
++  auto* audio_worklet = audio_context->audioWorklet();
++  audio_worklet->proxies_.push_back(audio_worklet->CreateGlobalScope());
++
++  auto* proxy = audio_worklet->GetMessagingProxy();
++  ASSERT_TRUE(proxy);
++
++  WorkerThread* worker_thread = proxy->GetBackingWorkerThread();
++  ASSERT_TRUE(worker_thread);
++
++  // Register dummy-processor in the AudioWorkletGlobalScope.
++  base::WaitableEvent registration_event;
++  PostCrossThreadTask(
++      *worker_thread->GetTaskRunner(TaskType::kMiscPlatformAPI), FROM_HERE,
++      CrossThreadBindOnce(
++          [](WorkerThread* thread, base::WaitableEvent* event) {
++            auto* global_scope =
++                To<AudioWorkletGlobalScope>(thread->GlobalScope());
++            ScriptState* script_state =
++                global_scope->ScriptController()->GetScriptState();
++            ScriptState::Scope scope(script_state);
++            String source_code =
++                "class DummyProcessor extends AudioWorkletProcessor {"
++                "  process() { return true; }"
++                "};"
++                "registerProcessor('dummy-processor', DummyProcessor);";
++            ClassicScript::CreateUnspecifiedScript(source_code)
++                ->RunScriptOnScriptState(script_state);
++            event->Signal();
++          },
++          CrossThreadUnretained(worker_thread),
++          CrossThreadUnretained(&registration_event)));
++  registration_event.Wait();
++
++  AudioWorkletNodeOptions* node_options = AudioWorkletNodeOptions::Create();
++  auto* node = MakeGarbageCollected<AudioWorkletNode>(
++      *audio_context, "dummy-processor", node_options,
++      Vector<CrossThreadAudioParamInfo>(), nullptr);
++  scoped_refptr<AudioWorkletHandler> handler =
++      WrapRefCounted(&static_cast<AudioWorkletHandler&>(node->Handler()));
++
++  auto* channel = MakeGarbageCollected<MessageChannel>(
++      audio_context->GetExecutionContext());
++  MessagePortChannel processor_port_channel = channel->port2()->Disentangle();
++
++  handler->MarkProcessorInactiveOnMainThread();
++
++  WeakPersistent<AudioWorkletNode> weak_node = node;
++
++  // Block the worker thread until the main thread has dropped all references.
++  base::WaitableEvent worker_block_event;
++  PostCrossThreadTask(
++      *worker_thread->GetTaskRunner(TaskType::kMiscPlatformAPI), FROM_HERE,
++      CrossThreadBindOnce([](base::WaitableEvent* event) { event->Wait(); },
++                          CrossThreadUnretained(&worker_block_event)));
++
++  // Dispatch CreateProcessor and drop all main thread references.
++  proxy->CreateProcessor(handler, std::move(processor_port_channel),
++                         SerializedScriptValue::NullValue());
++  EXPECT_EQ(proxy->pending_create_processor_handlers_.size(), 1u);
++  handler = nullptr;
++  node = nullptr;
++  WebHeap::CollectAllGarbageForTesting();
++  EXPECT_EQ(weak_node.Get(), nullptr);
++  audio_context->GetDeferredTaskHandler().ClearHandlersToBeDeleted();
++
++  // Unblock worker thread so CreateProcessor runs.
++  worker_block_event.Signal();
++
++  // Flush the worker thread task queue and run main thread tasks.
++  base::WaitableEvent wait_event;
++  PostCrossThreadTask(
++      *worker_thread->GetTaskRunner(TaskType::kMiscPlatformAPI), FROM_HERE,
++      CrossThreadBindOnce(&base::WaitableEvent::Signal,
++                          CrossThreadUnretained(&wait_event)));
++  wait_event.Wait();
++  test::RunPendingTasks();
++  EXPECT_TRUE(proxy->pending_create_processor_handlers_.empty());
++
++  DummyExceptionStateForTesting exception_state;
++  audio_context->closeContext(script_state, exception_state);
++  worker_thread->WaitForShutdownForTesting();
++}
++
+ TEST_F(AudioContextTest, ChannelCountRunning) {
+   // Changing the channel count on a running AudioContext should result in a
+   // running context and running platform destination.
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_worklet.h b/third_party/blink/renderer/modules/webaudio/audio_worklet.h
+index 6c3e3707bae65ef462fa79f291bb3809ca034b9d..99dd1cfc058fee394bb112b8a65e9368b161e4bb 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_worklet.h
++++ b/third_party/blink/renderer/modules/webaudio/audio_worklet.h
+@@ -61,6 +61,8 @@ class MODULES_EXPORT AudioWorklet final : public Worklet {
+ 
+  private:
+   FRIEND_TEST_ALL_PREFIXES(AudioContextTest, AudioWorkletTerminatedOnClose);
++  FRIEND_TEST_ALL_PREFIXES(AudioContextTest,
++                           AudioWorkletCreateProcessorTeardownOnMainThread);
+ 
+   // Implements Worklet
+   bool NeedsToCreateGlobalScope() final;
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.h b/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.h
+index d247a88c792a21739fc2eef36efcc2bd2097e278..aa68960115239338fbd6d3c2af89637ba2719daf 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.h
++++ b/third_party/blink/renderer/modules/webaudio/audio_worklet_handler.h
+@@ -9,6 +9,7 @@
+ #include "base/memory/weak_ptr.h"
+ #include "base/task/single_thread_task_runner.h"
+ #include "third_party/blink/renderer/bindings/modules/v8/v8_audio_worklet_node_options.h"
++#include "third_party/blink/renderer/modules/modules_export.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_node.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_param_map.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_worklet_processor_error_details.h"
+@@ -20,7 +21,7 @@ namespace blink {
+ class AudioNodeInput;
+ class AudioWorkletProcessor;
+ 
+-class AudioWorkletHandler final : public AudioHandler {
++class MODULES_EXPORT AudioWorkletHandler final : public AudioHandler {
+  public:
+   static scoped_refptr<AudioWorkletHandler> Create(
+       AudioNode&,
+@@ -47,6 +48,7 @@ class AudioWorkletHandler final : public AudioHandler {
+   void SetProcessorOnRenderThread(AudioWorkletProcessor*);
+ 
+   bool IsProcessorActive() { return is_processor_active_; }
++  void MarkProcessorInactiveOnMainThread();
+ 
+  private:
+   AudioWorkletHandler(
+@@ -64,8 +66,6 @@ class AudioWorkletHandler final : public AudioHandler {
+   void NotifyProcessorError(
+       const AudioWorkletProcessorErrorDetails& error_details);
+ 
+-  void MarkProcessorInactiveOnMainThread();
+-
+   const String name_;
+ 
+   double tail_time_ = std::numeric_limits<double>::infinity();
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_worklet_messaging_proxy.cc b/third_party/blink/renderer/modules/webaudio/audio_worklet_messaging_proxy.cc
+index c908093efdd969d37c68f4b6a96e5d829d73210b..f5783cdaec1115358cf5a3273d0e307b30c0b05c 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_worklet_messaging_proxy.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_worklet_messaging_proxy.cc
+@@ -19,10 +19,12 @@
+ #include "third_party/blink/renderer/modules/webaudio/audio_worklet_object_proxy.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_worklet_processor.h"
+ #include "third_party/blink/renderer/modules/webaudio/cross_thread_audio_worklet_processor_info.h"
++#include "third_party/blink/renderer/modules/webaudio/deferred_task_handler.h"
+ #include "third_party/blink/renderer/modules/webaudio/offline_audio_worklet_thread.h"
+ #include "third_party/blink/renderer/modules/webaudio/realtime_audio_worklet_thread.h"
+ #include "third_party/blink/renderer/modules/webaudio/semi_realtime_audio_worklet_thread.h"
+ #include "third_party/blink/renderer/platform/audio/audio_utilities.h"
++#include "third_party/blink/renderer/platform/heap/cross_thread_handle.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_copier_base.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_copier_public.h"
+ 
+@@ -33,20 +35,39 @@ AudioWorkletMessagingProxy::AudioWorkletMessagingProxy(
+     AudioWorklet* worklet)
+     : ThreadedWorkletMessagingProxy(execution_context), worklet_(worklet) {}
+ 
++AudioWorkletMessagingProxy::~AudioWorkletMessagingProxy() {
++  DCHECK(pending_create_processor_handlers_.empty());
++}
++
+ void AudioWorkletMessagingProxy::CreateProcessor(
+     scoped_refptr<AudioWorkletHandler> handler,
+     MessagePortChannel message_port_channel,
+     scoped_refptr<SerializedScriptValue> node_options) {
+   DCHECK(IsMainThread());
++  if (!GetWorkerThread()) {
++    return;
++  }
++  // Retain a reference on the main thread while processor creation is in
++  // flight on the worklet thread. This ensures the handler lifetime extends
++  // until the completion task returns to the main thread.
++  pending_create_processor_handlers_.insert(handler);
++  scoped_refptr<base::SingleThreadTaskRunner> main_thread_task_runner =
++      GetParentExecutionContextTaskRunners()->Get(TaskType::kInternalDefault);
++  String name = handler->Name();
+   PostCrossThreadTask(
+       *GetWorkerThread()->GetTaskRunner(TaskType::kMiscPlatformAPI), FROM_HERE,
+       CrossThreadBindOnce(
+           &AudioWorkletMessagingProxy::CreateProcessorOnRenderingThread,
+-          CrossThreadUnretained(GetWorkerThread()), handler, handler->Name(),
+-          std::move(message_port_channel), std::move(node_options)));
++          MakeCrossThreadWeakHandle(this),
++          std::move(main_thread_task_runner),
++          CrossThreadUnretained(GetWorkerThread()), std::move(handler),
++          std::move(name), std::move(message_port_channel),
++          std::move(node_options)));
+ }
+ 
+ void AudioWorkletMessagingProxy::CreateProcessorOnRenderingThread(
++    CrossThreadWeakHandle<AudioWorkletMessagingProxy> proxy_handle,
++    scoped_refptr<base::SingleThreadTaskRunner> main_thread_task_runner,
+     WorkerThread* worker_thread,
+     scoped_refptr<AudioWorkletHandler> handler,
+     const String& name,
+@@ -58,6 +79,57 @@ void AudioWorkletMessagingProxy::CreateProcessorOnRenderingThread(
+   AudioWorkletProcessor* processor = global_scope->CreateProcessor(
+       name, message_port_channel, std::move(node_options));
+   handler->SetProcessorOnRenderThread(processor);
++
++  // Transfer the handler reference back to the main thread in the completion
++  // task. This guarantees that if this was the last reference, destruction
++  // happens on the main thread rather than on this worker thread.
++  //
++  // Note that this reference is not the authoritative one:
++  // `pending_create_processor_handlers_` on the main thread holds a reference
++  // for the entire duration of the creation task. If this task is discarded
++  // (e.g. the task runner shuts down), the set entry still keeps the handler
++  // alive until `WorkerThreadTerminated()` releases it under the graph lock.
++  PostCrossThreadTask(
++      *main_thread_task_runner, FROM_HERE,
++      CrossThreadBindOnce(&AudioWorkletMessagingProxy::DidCreateProcessor,
++                          MakeUnwrappingCrossThreadWeakHandle(proxy_handle),
++                          std::move(handler)));
++}
++
++void AudioWorkletMessagingProxy::DidCreateProcessor(
++    scoped_refptr<AudioWorkletHandler> handler) {
++  DCHECK(IsMainThread());
++  // AudioHandler teardown and associated graph modifications must occur
++  // on the main thread under the graph lock. Releasing both the set entry
++  // and the passed parameter here ensures safe destruction if references
++  // dropped.
++  DeferredTaskHandler::GraphAutoLocker locker(
++      handler->GetDeferredTaskHandler());
++  pending_create_processor_handlers_.erase(handler);
++  handler = nullptr;
++}
++
++void AudioWorkletMessagingProxy::WorkerThreadTerminated() {
++  DCHECK(IsMainThread());
++  // Release any handlers whose processor creation was aborted by worker
++  // termination, ensuring their destruction occurs under the graph lock.
++  //
++  // A messaging proxy serves exactly one BaseAudioContext, so all pending
++  // handlers share a single DeferredTaskHandler. That lets one lock cover the
++  // release of the whole set.
++  if (!pending_create_processor_handlers_.empty()) {
++    auto& any_handler = *pending_create_processor_handlers_.begin();
++    DeferredTaskHandler* deferred_task_handler =
++        &any_handler->GetDeferredTaskHandler();
++    DeferredTaskHandler::GraphAutoLocker locker(*deferred_task_handler);
++    for (const auto& pending_handler : pending_create_processor_handlers_) {
++      DCHECK_EQ(&pending_handler->GetDeferredTaskHandler(),
++                deferred_task_handler);
++      pending_handler->MarkProcessorInactiveOnMainThread();
++    }
++    pending_create_processor_handlers_.clear();
++  }
++  ThreadedWorkletMessagingProxy::WorkerThreadTerminated();
+ }
+ 
+ void AudioWorkletMessagingProxy::SynchronizeWorkletProcessorInfoList(
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_worklet_messaging_proxy.h b/third_party/blink/renderer/modules/webaudio/audio_worklet_messaging_proxy.h
+index c068b42782efad39975324ecf6671b969ac07f18..cbb04398621d9885690a36f45d1dc7b0eab3e6a6 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_worklet_messaging_proxy.h
++++ b/third_party/blink/renderer/modules/webaudio/audio_worklet_messaging_proxy.h
+@@ -8,10 +8,17 @@
+ #include <memory>
+ #include <optional>
+ 
+-#include "base/time/time.h"
+ #include "base/gtest_prod_util.h"
++#include "base/memory/scoped_refptr.h"
++#include "base/time/time.h"
+ #include "third_party/blink/renderer/core/workers/threaded_worklet_messaging_proxy.h"
+ #include "third_party/blink/renderer/modules/modules_export.h"
++#include "third_party/blink/renderer/platform/heap/cross_thread_handle.h"
++#include "third_party/blink/renderer/platform/wtf/hash_set.h"
++
++namespace base {
++class SingleThreadTaskRunner;
++}  // namespace base
+ 
+ namespace blink {
+ 
+@@ -31,6 +38,7 @@ class MODULES_EXPORT AudioWorkletMessagingProxy final
+     : public ThreadedWorkletMessagingProxy {
+  public:
+   AudioWorkletMessagingProxy(ExecutionContext*, AudioWorklet*);
++  ~AudioWorkletMessagingProxy() override;
+ 
+   // Since the creation of AudioWorkletProcessor needs to be done in the
+   // different thread, this method is a wrapper for cross-thread task posting.
+@@ -41,12 +49,16 @@ class MODULES_EXPORT AudioWorkletMessagingProxy final
+   // Invokes AudioWorkletGlobalScope to create an instance of
+   // AudioWorkletProcessor.
+   static void CreateProcessorOnRenderingThread(
++      CrossThreadWeakHandle<AudioWorkletMessagingProxy>,
++      scoped_refptr<base::SingleThreadTaskRunner> main_thread_task_runner,
+       WorkerThread*,
+       scoped_refptr<AudioWorkletHandler>,
+       const String& name,
+       MessagePortChannel,
+       scoped_refptr<SerializedScriptValue> node_options);
+ 
++  void WorkerThreadTerminated() override;
++
+   // Invoked by AudioWorkletObjectProxy on AudioWorkletThread to fetch the
+   // information from AudioWorkletGlobalScope to AudioWorkletMessagingProxy
+   // after the script code evaluation. It copies the information about newly
+@@ -80,6 +92,13 @@ class MODULES_EXPORT AudioWorkletMessagingProxy final
+ 
+  private:
+   FRIEND_TEST_ALL_PREFIXES(AudioContextTest, AudioWorkletTerminatedOnClose);
++  FRIEND_TEST_ALL_PREFIXES(AudioContextTest,
++                           AudioWorkletCreateProcessorTeardownOnMainThread);
++
++  // Invoked on the main thread after processor creation completes on the
++  // worklet thread. Releases the retained handler reference under the graph
++  // lock.
++  void DidCreateProcessor(scoped_refptr<AudioWorkletHandler>);
+ 
+   // Implements ThreadedWorkletMessagingProxy.
+   std::unique_ptr<ThreadedWorkletObjectProxy> CreateObjectProxy(
+@@ -93,6 +112,13 @@ class MODULES_EXPORT AudioWorkletMessagingProxy final
+   // Each entry consists of processor name and associated AudioParam list.
+   HashMap<String, Vector<CrossThreadAudioParamInfo>> processor_info_map_;
+ 
++  // Tracks handlers awaiting processor creation on the worklet thread.
++  // Retaining a reference here guarantees that handler teardown and graph
++  // cleanup always execute on the main thread, even if the node is collected
++  // while creation is in flight.
++  HashSet<scoped_refptr<AudioWorkletHandler>>
++      pending_create_processor_handlers_;
++
+   Member<AudioWorklet> worklet_;
+ };
+ 
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_worklet_node.h b/third_party/blink/renderer/modules/webaudio/audio_worklet_node.h
+index d272746500af3f66f259f441bf2004c2212ae3e1..63ab9b3338ae39493f89d5841f73b0bbf0d2ac37 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_worklet_node.h
++++ b/third_party/blink/renderer/modules/webaudio/audio_worklet_node.h
+@@ -7,6 +7,7 @@
+ 
+ #include "base/memory/scoped_refptr.h"
+ #include "third_party/blink/renderer/bindings/modules/v8/v8_audio_worklet_node_options.h"
++#include "third_party/blink/renderer/modules/modules_export.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_node.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_param_map.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_worklet_handler.h"
+@@ -30,8 +31,9 @@ class ScriptState;
+ //               [Main Scope]                   |    [AudioWorkletGlobalScope]
+ //  AudioWorkletNode <-> AudioWorkletHandler <==|==>   AudioWorkletProcessor
+ //   (JS interface)       (Renderer access)     |      (V8 audio processing)
+-class AudioWorkletNode final : public AudioNode,
+-                               public ActiveScriptWrappable<AudioWorkletNode> {
++class MODULES_EXPORT AudioWorkletNode final
++    : public AudioNode,
++      public ActiveScriptWrappable<AudioWorkletNode> {
+   DEFINE_WRAPPERTYPEINFO();
+ 
+  public:

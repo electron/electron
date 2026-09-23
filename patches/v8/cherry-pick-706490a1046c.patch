@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Tue, 15 Sep 2026 16:01:53 +0200
+Subject: [M150-LTS][wasm] Fix race in SetWasmSourceMap
+
+Setting a source map lacked synchronization, so multiple threads
+trying to do that at the same time could clash. Fix that by
+adding a mutex guard.
+
+Fixed: 560406548
+Change-Id: Ib562b77429b3921ea7f0f81ae4882a7c9bbbc68d
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8412287
+Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
+Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
+Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+Commit-Queue: Matthias Liedtke <mliedtke@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#109844}
+(cherry picked from commit 695bea76a654b7f11bcfde1d898cf44716f83648)
+
+diff --git a/src/wasm/wasm-code-manager.cc b/src/wasm/wasm-code-manager.cc
+index 5e37b4a1c4732b5ade884ac492ebfd27dafb422a..70002aee8b722b7b6f838e64e35a0bc723a41b4f 100644
+--- a/src/wasm/wasm-code-manager.cc
++++ b/src/wasm/wasm-code-manager.cc
+@@ -315,7 +315,7 @@ void WasmCode::LogCode(Isolate* isolate, const char* source_url,
+       v8::Isolate* v8_isolate = reinterpret_cast<v8::Isolate*>(isolate);
+       Local<v8::String> source_map_str =
+           load_wasm_source_map(v8_isolate, external_url_string.c_str());
+-      native_module_->SetWasmSourceMap(
++      native_module_->SetWasmSourceMapIfUnset(
+           std::make_unique<WasmModuleSourceMap>(v8_isolate, source_map_str));
+     }
+   }
+@@ -1712,12 +1712,15 @@ bool NativeModule::HasCodeWithTier(uint32_t index, ExecutionTier tier) const {
+          code_table_[declared_function_index(module(), index)]->tier() == tier;
+ }
+ 
+-void NativeModule::SetWasmSourceMap(
++void NativeModule::SetWasmSourceMapIfUnset(
+     std::unique_ptr<WasmModuleSourceMap> source_map) {
++  base::RecursiveMutexGuard guard(&allocation_mutex_);
++  if (source_map_) return;
+   source_map_ = std::move(source_map);
+ }
+ 
+ WasmModuleSourceMap* NativeModule::GetWasmSourceMap() const {
++  base::RecursiveMutexGuard guard(&allocation_mutex_);
+   return source_map_.get();
+ }
+ 
+diff --git a/src/wasm/wasm-code-manager.h b/src/wasm/wasm-code-manager.h
+index 7413f8ac1ed4efa564848b099a3939341ff5d877..b64d7e75d11c5d61f25cdff41cdd7a1b71e7aeb1 100644
+--- a/src/wasm/wasm-code-manager.h
++++ b/src/wasm/wasm-code-manager.h
+@@ -731,7 +731,9 @@ class V8_EXPORT_PRIVATE NativeModule final {
+   bool HasCode(uint32_t index) const;
+   bool HasCodeWithTier(uint32_t index, ExecutionTier tier) const;
+ 
+-  void SetWasmSourceMap(std::unique_ptr<WasmModuleSourceMap> source_map);
++  // Protected by {allocation_mutex_}.
++  // Does nothing if {source_map_} is already populated.
++  void SetWasmSourceMapIfUnset(std::unique_ptr<WasmModuleSourceMap> source_map);
+   WasmModuleSourceMap* GetWasmSourceMap() const;
+ 
+   Address jump_table_start() const {
+@@ -1044,8 +1046,6 @@ class V8_EXPORT_PRIVATE NativeModule final {
+   // tasks can keep this alive.
+   std::shared_ptr<const WasmModule> module_;
+ 
+-  std::unique_ptr<WasmModuleSourceMap> source_map_;
+-
+   // Wire bytes, held in a shared_ptr so they can be kept alive by the
+   // {WireBytesStorage}, held by background compile tasks.
+   std::shared_ptr<base::OwnedVector<const uint8_t>> wire_bytes_;
+@@ -1121,6 +1121,8 @@ class V8_EXPORT_PRIVATE NativeModule final {
+   // mutex.
+   std::unique_ptr<DebugInfo> debug_info_;
+ 
++  std::unique_ptr<WasmModuleSourceMap> source_map_;
++
+   std::unique_ptr<NamesProvider> names_provider_;
+ 
+   DebugState debug_state_ = kNotDebugging;

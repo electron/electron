@@ -1,0 +1,255 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yoshisto Yanagisawa <yyanagisawa@chromium.org>
+Date: Thu, 17 Sep 2026 20:23:16 -0700
+Subject: [M150-LTS] service_worker: Handle reentrant operations during job
+ abort
+
+When aborting jobs in ServiceWorkerJobCoordinator, callbacks
+triggered during job abortion (e.g. status change notifications) may
+reentrantly interact with the job coordinator (such as registering new
+jobs or modifying job queues).
+
+This CL updates JobQueue::AbortAll() to pop elements before aborting
+them and updates ServiceWorkerJobCoordinator::Abort/AbortAll/FinishJob
+to avoid holding iterators across callbacks.
+
+TAG=agy
+CONV=3f6fe9f9-eaf8-40c0-adf4-50e10cf29294
+
+Bug: 548585299
+Change-Id: I4b34613bdc200a243d085cb2c676c77721ba70ab
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8255600
+Reviewed-by: Shunya Shishido <sisidovski@chromium.org>
+Commit-Queue: Shunya Shishido <sisidovski@chromium.org>
+Auto-Submit: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1682862}
+(cherry picked from commit c8a130f698277e100dcbb44cc606a616b5c1f4e1)
+
+diff --git a/content/browser/service_worker/service_worker_job_coordinator.cc b/content/browser/service_worker/service_worker_job_coordinator.cc
+index 32369e77e83202312ce3d0900ede84ee09546c2b..4e67526f314827d6bb90972ab0de2764dcdaf72d 100644
+--- a/content/browser/service_worker/service_worker_job_coordinator.cc
++++ b/content/browser/service_worker/service_worker_job_coordinator.cc
+@@ -45,8 +45,9 @@ void ServiceWorkerJobCoordinator::JobQueue::Pop(
+     ServiceWorkerRegisterJobBase* job) {
+   DCHECK(job == jobs_.front().get());
+   jobs_.pop_front();
+-  if (!jobs_.empty())
++  if (!jobs_.empty()) {
+     StartOneJob();
++  }
+ }
+ 
+ void ServiceWorkerJobCoordinator::JobQueue::StartOneJob() {
+@@ -55,9 +56,12 @@ void ServiceWorkerJobCoordinator::JobQueue::StartOneJob() {
+ }
+ 
+ void ServiceWorkerJobCoordinator::JobQueue::AbortAll() {
+-  for (const auto& job : jobs_)
++  while (!jobs_.empty()) {
++    std::unique_ptr<ServiceWorkerRegisterJobBase> job =
++        std::move(jobs_.front());
++    jobs_.pop_front();
+     job->Abort();
+-  jobs_.clear();
++  }
+ }
+ 
+ ServiceWorkerJobCoordinator::ServiceWorkerJobCoordinator(
+@@ -129,27 +133,38 @@ void ServiceWorkerJobCoordinator::Update(
+ 
+ void ServiceWorkerJobCoordinator::Abort(const GURL& scope,
+                                         const blink::StorageKey& key) {
+-  auto pending_jobs = job_queues_.find(UniqueRegistrationKey(scope, key));
+-  if (pending_jobs == job_queues_.end())
+-    return;
+-  pending_jobs->second.AbortAll();
+-  job_queues_.erase(pending_jobs);
++  UniqueRegistrationKey reg_key(scope, key);
++  while (true) {
++    auto pending_jobs = job_queues_.find(reg_key);
++    if (pending_jobs == job_queues_.end()) {
++      return;
++    }
++    JobQueue queue = std::move(pending_jobs->second);
++    job_queues_.erase(pending_jobs);
++    queue.AbortAll();
++  }
+ }
+ 
+ void ServiceWorkerJobCoordinator::AbortAll() {
+-  for (auto& job_pair : job_queues_)
+-    job_pair.second.AbortAll();
+-  job_queues_.clear();
++  while (!job_queues_.empty()) {
++    auto it = job_queues_.begin();
++    JobQueue queue = std::move(it->second);
++    job_queues_.erase(it);
++    queue.AbortAll();
++  }
+ }
+ 
+ void ServiceWorkerJobCoordinator::FinishJob(const GURL& scope,
+                                             const blink::StorageKey& key,
+                                             ServiceWorkerRegisterJobBase* job) {
+-  auto pending_jobs = job_queues_.find(UniqueRegistrationKey(scope, key));
++  UniqueRegistrationKey reg_key(scope, key);
++  auto pending_jobs = job_queues_.find(reg_key);
+   CHECK(pending_jobs != job_queues_.end()) << "Deleting non-existent job.";
+   pending_jobs->second.Pop(job);
+-  if (pending_jobs->second.empty())
++  pending_jobs = job_queues_.find(reg_key);
++  if (pending_jobs != job_queues_.end() && pending_jobs->second.empty()) {
+     job_queues_.erase(pending_jobs);
++  }
+ }
+ 
+ }  // namespace content
+diff --git a/content/browser/service_worker/service_worker_job_unittest.cc b/content/browser/service_worker/service_worker_job_unittest.cc
+index 6c8328f9311a1e59c3a4305cfc29d8c340e528d6..a4df083057da5a03c4ae40e1bb9fae0ee61ce852 100644
+--- a/content/browser/service_worker/service_worker_job_unittest.cc
++++ b/content/browser/service_worker/service_worker_job_unittest.cc
+@@ -15,6 +15,7 @@
+ #include "base/functional/callback_helpers.h"
+ #include "base/memory/raw_ptr.h"
+ #include "base/run_loop.h"
++#include "base/strings/stringprintf.h"
+ #include "base/test/bind.h"
+ #include "base/test/metrics/histogram_tester.h"
+ #include "base/test/scoped_feature_list.h"
+@@ -891,6 +892,136 @@ TEST_P(ServiceWorkerJobTest, AbortAll_RegUnreg) {
+   EXPECT_EQ(scoped_refptr<ServiceWorkerRegistration>(), registration);
+ }
+ 
++TEST_P(ServiceWorkerJobTest, AbortAll_ReentrantRegister) {
++  blink::mojom::ServiceWorkerRegistrationOptions options;
++  options.scope = GURL("https://www.example.com/");
++  const blink::StorageKey key = GetTestStorageKey(options.scope);
++
++  const int kNumJobs = 10;
++  std::vector<scoped_refptr<ServiceWorkerRegistration>> registrations(kNumJobs *
++                                                                      2);
++  base::RunLoop run_loop;
++  base::RepeatingClosure barrier_closure =
++      base::BarrierClosure(kNumJobs * 2, run_loop.QuitClosure());
++
++  auto reentrant_callback = base::BindRepeating(
++      [](ServiceWorkerJobCoordinator* coordinator,
++         const blink::mojom::ServiceWorkerRegistrationOptions& options,
++         const blink::StorageKey& key,
++         std::vector<scoped_refptr<ServiceWorkerRegistration>>* out_regs,
++         base::RepeatingClosure barrier, int num_jobs,
++         blink::ServiceWorkerStatusCode status,
++         const std::string& status_message,
++         ServiceWorkerRegistration* registration) {
++        EXPECT_EQ(blink::ServiceWorkerStatusCode::kErrorAbort, status);
++        for (int i = 0; i < num_jobs; ++i) {
++          GURL script_url(base::StringPrintf(
++              "https://www.example.com/reentrant_sw%d.js", i));
++          coordinator->Register(
++              script_url, options, key, CreateFetchClientSettingsObject(),
++              /*requesting_frame_id=*/GlobalRenderFrameHostId(),
++              /*ancestor_frame_type=*/
++              blink::mojom::AncestorFrameType::kNormalFrame,
++              SaveRegistration(blink::ServiceWorkerStatusCode::kErrorAbort,
++                               &(*out_regs)[num_jobs + i], barrier),
++              PolicyContainerPolicies());
++        }
++        barrier.Run();
++      },
++      job_coordinator(), options, key, &registrations, barrier_closure,
++      kNumJobs);
++
++  for (int i = 0; i < kNumJobs; ++i) {
++    GURL script_url(
++        base::StringPrintf("https://www.example.com/initial_sw%d.js", i));
++    ServiceWorkerRegisterJob::RegistrationCallback callback;
++    if (i == 0) {
++      callback = reentrant_callback;
++    } else {
++      callback = SaveRegistration(blink::ServiceWorkerStatusCode::kErrorAbort,
++                                  &registrations[i], barrier_closure);
++    }
++    job_coordinator()->Register(
++        script_url, options, key, CreateFetchClientSettingsObject(),
++        /*requesting_frame_id=*/GlobalRenderFrameHostId(),
++        /*ancestor_frame_type=*/blink::mojom::AncestorFrameType::kNormalFrame,
++        std::move(callback), PolicyContainerPolicies());
++  }
++
++  job_coordinator()->AbortAll();
++
++  run_loop.Run();
++
++  for (const auto& reg : registrations) {
++    EXPECT_EQ(scoped_refptr<ServiceWorkerRegistration>(), reg);
++  }
++}
++
++TEST_P(ServiceWorkerJobTest, AbortScope_ReentrantRegister) {
++  blink::mojom::ServiceWorkerRegistrationOptions options;
++  options.scope = GURL("https://www.example.com/");
++  const blink::StorageKey key = GetTestStorageKey(options.scope);
++
++  const int kNumJobs = 10;
++  std::vector<scoped_refptr<ServiceWorkerRegistration>> registrations(kNumJobs *
++                                                                      2);
++  base::RunLoop run_loop;
++  base::RepeatingClosure barrier_closure =
++      base::BarrierClosure(kNumJobs * 2, run_loop.QuitClosure());
++
++  auto reentrant_callback = base::BindRepeating(
++      [](ServiceWorkerJobCoordinator* coordinator,
++         const blink::mojom::ServiceWorkerRegistrationOptions& options,
++         const blink::StorageKey& key,
++         std::vector<scoped_refptr<ServiceWorkerRegistration>>* out_regs,
++         base::RepeatingClosure barrier, int num_jobs,
++         blink::ServiceWorkerStatusCode status,
++         const std::string& status_message,
++         ServiceWorkerRegistration* registration) {
++        EXPECT_EQ(blink::ServiceWorkerStatusCode::kErrorAbort, status);
++        for (int i = 0; i < num_jobs; ++i) {
++          GURL script_url(base::StringPrintf(
++              "https://www.example.com/reentrant_sw%d.js", i));
++          coordinator->Register(
++              script_url, options, key, CreateFetchClientSettingsObject(),
++              /*requesting_frame_id=*/GlobalRenderFrameHostId(),
++              /*ancestor_frame_type=*/
++              blink::mojom::AncestorFrameType::kNormalFrame,
++              SaveRegistration(blink::ServiceWorkerStatusCode::kErrorAbort,
++                               &(*out_regs)[num_jobs + i], barrier),
++              PolicyContainerPolicies());
++        }
++        barrier.Run();
++      },
++      job_coordinator(), options, key, &registrations, barrier_closure,
++      kNumJobs);
++
++  for (int i = 0; i < kNumJobs; ++i) {
++    GURL script_url(
++        base::StringPrintf("https://www.example.com/initial_sw%d.js", i));
++    ServiceWorkerRegisterJob::RegistrationCallback callback;
++    if (i == 0) {
++      callback = reentrant_callback;
++    } else {
++      callback = SaveRegistration(blink::ServiceWorkerStatusCode::kErrorAbort,
++                                  &registrations[i], barrier_closure);
++    }
++    job_coordinator()->Register(
++        script_url, options, key, CreateFetchClientSettingsObject(),
++        /*requesting_frame_id=*/GlobalRenderFrameHostId(),
++        /*ancestor_frame_type=*/blink::mojom::AncestorFrameType::kNormalFrame,
++        std::move(callback), PolicyContainerPolicies());
++  }
++
++  job_coordinator()->Abort(options.scope, key);
++
++  run_loop.Run();
++
++  for (const auto& reg : registrations) {
++    EXPECT_EQ(scoped_refptr<ServiceWorkerRegistration>(), reg);
++  }
++}
++
+ TEST_P(ServiceWorkerJobTest, AbortScope) {
+   GURL script_url("https://www.example.com/service_worker.js");
+   blink::mojom::ServiceWorkerRegistrationOptions options1;

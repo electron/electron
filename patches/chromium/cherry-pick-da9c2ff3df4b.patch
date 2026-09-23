@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Kosyakov <caseq@chromium.org>
+Date: Mon, 14 Sep 2026 20:09:16 -0700
+Subject: Improve JSON validation of CDP messages from renderer
+
+Fixed: 553116160
+Change-Id: I42324ac5add7f35dfa769b0f5f89c8a0ca517839
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8405728
+Commit-Queue: Andrey Kosyakov <caseq@chromium.org>
+Auto-Submit: Andrey Kosyakov <caseq@chromium.org>
+Reviewed-by: Johannes Henkel <johannes@chromium.org>
+Reviewed-by: Peter Kvitek <kvitekp@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1697766}
+
+diff --git a/content/browser/devtools/devtools_session.cc b/content/browser/devtools/devtools_session.cc
+index 8de773485576d1712280de9163fde9973e0cb0b9..c8982dd327acde15566fea17072d5c2bb2d661bd 100644
+--- a/content/browser/devtools/devtools_session.cc
++++ b/content/browser/devtools/devtools_session.cc
+@@ -784,6 +784,12 @@ bool DevToolsSession::ValidateMessage(const std::string& expected_session_id,
+     return false;
+   }
+   if (!is_cbor) {
++    // '\0' is definitely not allowed unescaped in JSON and is of particular
++    // concern since it is used as a framing character for sending JSON via
++    // the remote debugging pipe.
++    if (std::ranges::find(span_message, '\0') != span_message.end()) {
++      return false;
++    }
+     if (!crdtp::json::ConvertJSONToCBOR(span_message, &cbor_message).ok()) {
+       return false;  // Safely terminate renderer on malformed JSON
+     }

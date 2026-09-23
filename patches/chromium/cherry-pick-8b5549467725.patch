@@ -1,0 +1,181 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dana Fried <dfried@chromium.org>
+Date: Thu, 17 Sep 2026 10:24:44 -0700
+Subject: [Views] Harden FocusManager against callbacks during AdvanceFocus
+
+Now if any callback happens during AdvanceFocus that would cause the
+next view to be deleted, it should be handled gracefully.
+
+Fixed: 562242429
+Change-Id: Ia0c69027d491e9264369814110973ebe1389f84f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8426759
+Commit-Queue: Dana Fried <dfried@chromium.org>
+Reviewed-by: Mickey Burks <mickeyburks@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1699939}
+
+diff --git a/ui/views/focus/focus_manager.cc b/ui/views/focus/focus_manager.cc
+index e016d8ec67dcc0a00a15da1ab622571945c5b98a..eb9d5f196bc796f3f9d00adcfdd344993b7f4517 100644
+--- a/ui/views/focus/focus_manager.cc
++++ b/ui/views/focus/focus_manager.cc
+@@ -160,34 +160,39 @@ bool FocusManager::ContainsView(View* view) {
+ }
+ 
+ void FocusManager::AdvanceFocus(bool reverse) {
+-  View* v = GetNextFocusableView(focused_view_, nullptr, reverse, false);
++  ViewTracker v(GetNextFocusableView(focused_view_, nullptr, reverse, false));
+   // Note: Do not skip this next block when v == focused_view_.  If the user
+   // tabs past the last focusable element in a webpage, we'll get here, and if
+   // the TabContentsContainerView is the only focusable view (possible in
+   // fullscreen mode), we need to run this block in order to cycle around to the
+   // first element on the page.
+-  if (v) {
+-    views::View* focused_view = focused_view_;
+-    v->AboutToRequestFocusFromTabTraversal(reverse);
+-    // AboutToRequestFocusFromTabTraversal() may have changed focus. If it did,
+-    // don't change focus again.
+-    if (focused_view != focused_view_) {
+-      return;
+-    }
++  if (!v) {
++    return;
++  }
+ 
+-    // Note that GetNextFocusableView may have returned a View in a different
+-    // FocusManager.
+-    DCHECK(v->GetWidget());
+-    v->GetWidget()->GetFocusManager()->SetFocusedViewWithReason(
+-        v, FocusChangeReason::kFocusTraversal);
+-
+-    // When moving focus from a child widget to a top-level widget,
+-    // the top-level widget may report IsActive()==true because it's
+-    // active even though it isn't focused. Explicitly activate the
+-    // widget to ensure that case is handled.
+-    if (v->GetWidget()->GetFocusManager() != this) {
+-      v->GetWidget()->Activate();
+-    }
++  views::View* const focused_view = focused_view_;
++  v.view()->AboutToRequestFocusFromTabTraversal(reverse);
++  // AboutToRequestFocusFromTabTraversal() may have changed focus. If it did,
++  // don't change focus again.
++  if (!v || focused_view != focused_view_) {
++    return;
++  }
++
++  // Note that GetNextFocusableView may have returned a View in a different
++  // FocusManager.
++  DCHECK(v.view()->GetWidget());
++  v.view()->GetWidget()->GetFocusManager()->SetFocusedViewWithReason(
++      v.view(), FocusChangeReason::kFocusTraversal);
++  if (!v) {
++    return;
++  }
++
++  // When moving focus from a child widget to a top-level widget,
++  // the top-level widget may report IsActive()==true because it's
++  // active even though it isn't focused. Explicitly activate the
++  // widget to ensure that case is handled.
++  if (v.view()->GetWidget()->GetFocusManager() != this) {
++    v.view()->GetWidget()->Activate();
+   }
+ }
+ 
+@@ -354,12 +359,13 @@ void FocusManager::SetFocusedViewWithReason(View* view,
+   // Update the reason for the focus change (since this is checked by
+   // some listeners), then notify all listeners.
+   focus_change_reason_ = reason;
++  ViewTracker view_tracker(view);
+   focus_change_listeners_.Notify(&FocusChangeListener::OnWillChangeFocus,
+                                  focused_view_, view);
+ 
+   // Actions below like `Blur()` can destroy `focused_view_`.
+   ViewTracker old_focused_view_tracker(focused_view_);
+-  focused_view_ = view;
++  focused_view_ = view_tracker.view();
+   base::AutoReset<int> entrance_count_resetter(
+       &setting_focused_view_entrance_count_,
+       setting_focused_view_entrance_count_ + 1);
+diff --git a/ui/views/focus/focus_manager_unittest.cc b/ui/views/focus/focus_manager_unittest.cc
+index 9086d5d3a58d8c442fb4bd433d55250c0bc9c765..e28a50805517a345a2fe32172d7377bad4dcbc2d 100644
+--- a/ui/views/focus/focus_manager_unittest.cc
++++ b/ui/views/focus/focus_manager_unittest.cc
+@@ -18,6 +18,7 @@
+ #include "base/test/icu_test_util.h"
+ #include "base/test/run_until.h"
+ #include "build/build_config.h"
++#include "testing/gmock/include/gmock/gmock.h"
+ #include "ui/base/accelerators/accelerator.h"
+ #include "ui/base/accelerators/test_accelerator_target.h"
+ #include "ui/base/metadata/metadata_header_macros.h"
+@@ -1528,4 +1529,72 @@ TEST_F(RedirectToParentFocusManagerTest, NotProcessedAccelerator) {
+ 
+ #endif
+ 
++// Regression tests for crashes during callbacks.
++
++namespace {
++
++class MockFocusChangeListener : public FocusChangeListener {
++ public:
++  MockFocusChangeListener() = default;
++  ~MockFocusChangeListener() override = default;
++
++  MOCK_METHOD(void, OnWillChangeFocus, (View*, View*), (override));
++  MOCK_METHOD(void, OnDidChangeFocus, (View*, View*), (override));
++};
++
++}  // namespace
++
++TEST_F(FocusManagerTest,
++       ShouldNotCrashIfViewDestroyedDuringAdvance_WillChangeFocus) {
++  MockFocusChangeListener listener;
++
++  auto event_list = base::MakeRefCounted<FocusTestEventList>();
++  const int kView1ID = 1;
++  const int kView2ID = 2;
++  ViewTracker view1(GetContentsView()->AddChildView(
++      std::make_unique<SimpleTestView>(event_list, kView1ID)));
++  ViewTracker view2(GetContentsView()->AddChildView(
++      std::make_unique<SimpleTestView>(event_list, kView2ID)));
++  view1.view()->SetFocusBehavior(View::FocusBehavior::ALWAYS);
++  view2.view()->SetFocusBehavior(View::FocusBehavior::ALWAYS);
++  view1.view()->RequestFocus();
++  GetFocusManager()->AddFocusChangeListener(&listener);
++  EXPECT_CALL(listener, OnWillChangeFocus)
++      .WillOnce([this](View* prev, View* next) {
++        GetContentsView()->RemoveChildViewT(next);
++      });
++  GetFocusManager()->AdvanceFocus(false);
++  EXPECT_FALSE(view2);
++
++  GetFocusManager()->ClearFocus();
++  GetFocusManager()->RemoveFocusChangeListener(&listener);
++}
++
++TEST_F(FocusManagerTest,
++       ShouldNotCrashIfViewDestroyedDuringAdvance_DidChangeFocus) {
++  MockFocusChangeListener listener;
++
++  auto event_list = base::MakeRefCounted<FocusTestEventList>();
++  const int kView1ID = 1;
++  const int kView2ID = 2;
++  ViewTracker view1(GetContentsView()->AddChildView(
++      std::make_unique<SimpleTestView>(event_list, kView1ID)));
++  ViewTracker view2(GetContentsView()->AddChildView(
++      std::make_unique<SimpleTestView>(event_list, kView2ID)));
++  view1.view()->SetFocusBehavior(View::FocusBehavior::ALWAYS);
++  view2.view()->SetFocusBehavior(View::FocusBehavior::ALWAYS);
++  view1.view()->RequestFocus();
++  GetFocusManager()->AddFocusChangeListener(&listener);
++  EXPECT_CALL(listener, OnDidChangeFocus)
++      .WillOnce([this](View* prev, View* next) {
++        GetContentsView()->RemoveChildViewT(next);
++      });
++  EXPECT_CALL(listener, OnDidChangeFocus(testing::_, nullptr));
++  GetFocusManager()->AdvanceFocus(false);
++  EXPECT_FALSE(view2);
++
++  GetFocusManager()->ClearFocus();
++  GetFocusManager()->RemoveFocusChangeListener(&listener);
++}
++
+ }  // namespace views
