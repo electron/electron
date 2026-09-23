@@ -44,6 +44,7 @@
 #include "shell/common/api/api.mojom-forward.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
+#include "third_party/blink/public/mojom/css/preferred_color_scheme.mojom.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "v8/include/cppgc/persistent.h"
 
@@ -201,6 +202,12 @@ class WebContents final : public gin::Wrappable<WebContents>,
   bool GetBackgroundThrottling() const override;
 
   void SetBackgroundThrottling(bool allowed);
+  std::string GetColorScheme() const;
+  void SetColorScheme(gin::Arguments* args);
+  const std::optional<blink::mojom::PreferredColorScheme>&
+  preferred_color_scheme() const {
+    return preferred_color_scheme_;
+  }
   int32_t GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
   [[nodiscard]] Type type() const { return type_; }
@@ -889,6 +896,8 @@ class WebContents final : public gin::Wrappable<WebContents>,
       observers_;
 
   v8::TracedReference<v8::Value> pending_child_web_preferences_;
+
+  std::optional<blink::mojom::PreferredColorScheme> preferred_color_scheme_;
 
   bool offscreen_ = false;
 
