@@ -4,6 +4,8 @@ import type { BrowserWindow as BWT } from 'electron/main';
 const { BrowserWindow } = process._linkedBinding('electron_browser_window') as { BrowserWindow: typeof BWT };
 
 BrowserWindow.prototype._init = function (this: BWT) {
+  BaseWindow.prototype._init.call(this);
+
   // Avoid recursive require.
   const { app } = require('electron');
 

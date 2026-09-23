@@ -1,7 +1,48 @@
 import { TouchBar } from 'electron/main';
 import type { BaseWindow as TLWT } from 'electron/main';
 
+import { EventEmitter } from 'events';
+
 const { BaseWindow } = process._linkedBinding('electron_browser_base_window') as { BaseWindow: typeof TLWT };
+
+const onNewSwipeGestureListener = function (this: TLWT, event: string | symbol) {
+  if (event === 'swipe-gesture' && this.listenerCount(event) === 0) {
+    this._setSwipeGestureEnabled(true);
+  }
+};
+
+const onRemovedSwipeGestureListener = function (this: TLWT, event: string | symbol) {
+  if (event === 'swipe-gesture' && this.listenerCount(event) === 0) {
+    this._setSwipeGestureEnabled(false);
+  }
+};
+
+BaseWindow.prototype._init = function (this: TLWT) {
+  if (process.platform === 'darwin') {
+    EventEmitter.prototype.on.call(this, 'newListener', onNewSwipeGestureListener);
+    EventEmitter.prototype.on.call(this, 'removeListener', onRemovedSwipeGestureListener);
+  }
+};
+
+if (process.platform === 'darwin') {
+  BaseWindow.prototype.removeAllListeners = function (this: TLWT, event?: string | symbol) {
+    const clearAll = arguments.length === 0;
+    if (clearAll) {
+      EventEmitter.prototype.removeAllListeners.call(this);
+    } else {
+      EventEmitter.prototype.removeAllListeners.call(this, event);
+    }
+
+    if (clearAll || event === 'newListener') {
+      EventEmitter.prototype.on.call(this, 'newListener', onNewSwipeGestureListener);
+    }
+    if (clearAll || event === 'removeListener') {
+      EventEmitter.prototype.on.call(this, 'removeListener', onRemovedSwipeGestureListener);
+    }
+
+    return this;
+  };
+}
 
 BaseWindow.prototype.setTouchBar = function (touchBar) {
   (TouchBar as any)._setOnWindow(touchBar, this);
