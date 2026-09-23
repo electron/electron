@@ -22,18 +22,6 @@ WebFrameMain.prototype.send = function (channel, ...args) {
   }
 };
 
-WebFrameMain.prototype._sendInternal = function (channel, ...args) {
-  if (typeof channel !== 'string') {
-    throw new TypeError('Missing required channel argument');
-  }
-
-  try {
-    return this._send(true /* internal */, channel, args);
-  } catch (e) {
-    console.error('Error sending from webFrameMain: ', e);
-  }
-};
-
 export default {
   fromId,
   fromFrameToken

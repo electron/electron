@@ -100,8 +100,6 @@ declare namespace NodeJS {
     isValidHeaderName: (headerName: string) => boolean;
     isValidHeaderValue: (headerValue: string) => boolean;
     fileURLToFilePath: (url: string) => string;
-    Net: any;
-    net: any;
     createURLLoader(options: CreateURLLoaderOptions): URLLoader;
     createWebSocket(options: CreateWebSocketOptions): WebSocketWrapper;
     resolveHost(host: string, options?: Electron.ResolveHostOptions): Promise<Electron.ResolvedHost>;
@@ -284,7 +282,6 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_common_v8_util'): V8UtilBinding;
     _linkedBinding(name: 'electron_browser_app'): {
       app: Electron.App;
-      App: Function;
       defaultDesktopName(name: string | undefined): string;
     };
     _linkedBinding(name: 'electron_browser_auto_updater'): { autoUpdater: Electron.AutoUpdater };
@@ -328,35 +325,15 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_renderer_ipc'): IpcRendererBinding;
     _linkedBinding(name: 'electron_renderer_web_frame'): WebFrameBinding;
     _linkedBinding(name: 'electron_utility_parent_port'): { createParentPort(): ElectronInternal.ParentPort };
-    log: NodeJS.WriteStream['write'];
     activateUvLoop(): void;
 
-    // Additional events
-    once(event: 'document-start', listener: () => any): this;
-    once(event: 'document-end', listener: () => any): this;
-
-    // Additional properties
-    _serviceStartupScript: string;
-
     helperExecPath: string;
-    mainModule?: NodeJS.Module | undefined;
 
     appCodeLoaded?: () => void;
   }
 }
 
-declare namespace NodeJS {
-  interface Global {
-    require: NodeRequire;
-    module: NodeModule;
-    __filename: string;
-    __dirname: string;
-  }
-}
-
 declare interface Window {
-  ELECTRON_DISABLE_SECURITY_WARNINGS?: boolean;
-  ELECTRON_ENABLE_SECURITY_WARNINGS?: boolean;
   WebView: typeof ElectronInternal.WebViewElement;
   trustedTypes: TrustedTypePolicyFactory;
 }
