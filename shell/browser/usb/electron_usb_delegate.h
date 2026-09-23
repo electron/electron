@@ -60,6 +60,7 @@ class ElectronUsbDelegate : public content::UsbDelegate {
                                   const url::Origin& origin) override;
   void RevokeDevicePermissionWebInitiated(
       content::BrowserContext* browser_context,
+      content::RenderFrameHost* frame,
       const url::Origin& origin,
       const device::mojom::UsbDeviceInfo& device) override;
   const device::mojom::UsbDeviceInfo* GetDeviceInfo(

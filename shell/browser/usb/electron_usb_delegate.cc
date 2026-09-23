@@ -23,7 +23,6 @@
 #include "shell/browser/web_contents_permission_helper.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-#include "base/containers/fixed_flat_set.h"
 #include "chrome/common/chrome_features.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/guest_view/web_view/web_view_guest.h"
@@ -37,49 +36,6 @@ electron::UsbChooserContext* GetChooserContext(
     content::BrowserContext* browser_context) {
   return electron::UsbChooserContextFactory::GetForBrowserContext(
       browser_context);
-}
-
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-// These extensions can claim the smart card USB class and automatically gain
-// permissions for devices that have an interface with this class.
-constexpr auto kSmartCardPrivilegedExtensionIds =
-    base::MakeFixedFlatSet<std::string_view>({
-        // Smart Card Connector Extension and its Beta version, see
-        // crbug.com/1233881.
-        "khpfeaanjngmcnplbdlpegiifgpfgdco",
-        "mockcojkppdndnhgonljagclgpkjbkek",
-    });
-
-bool DeviceHasInterfaceWithClass(
-    const device::mojom::UsbDeviceInfo& device_info,
-    uint8_t interface_class) {
-  for (const auto& configuration : device_info.configurations) {
-    for (const auto& interface : configuration->interfaces) {
-      for (const auto& alternate : interface->alternates) {
-        if (alternate->class_code == interface_class)
-          return true;
-      }
-    }
-  }
-  return false;
-}
-#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-
-bool IsDevicePermissionAutoGranted(
-    const url::Origin& origin,
-    const device::mojom::UsbDeviceInfo& device_info) {
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  // Note: The `DeviceHasInterfaceWithClass()` call is made after checking the
-  // origin, since that method call is expensive.
-  if (origin.scheme() == extensions::kExtensionScheme &&
-      kSmartCardPrivilegedExtensionIds.contains(origin.host()) &&
-      DeviceHasInterfaceWithClass(device_info,
-                                  device::mojom::kUsbSmartCardClass)) {
-    return true;
-  }
-#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-
-  return false;
 }
 
 // The origin device permissions are scoped to: the requesting document's, or
@@ -125,6 +81,11 @@ class ElectronUsbDelegate::ContextObservation
         &content::UsbDelegate::Observer::OnDeviceManagerConnectionError);
   }
 
+  void OnPermissionRevoked(const url::Origin& origin) override {
+    observer_list_.Notify(&content::UsbDelegate::Observer::OnPermissionRevoked,
+                          origin);
+  }
+
   void OnBrowserContextShutdown() override {
     parent_->observations_.erase(browser_context_);
     // Return since `this` is now deleted.
@@ -161,7 +122,8 @@ void ElectronUsbDelegate::AdjustProtectedInterfaceClasses(
     std::vector<uint8_t>& classes) {
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context->GetPermissionControllerDelegate());
-  classes = permission_manager->CheckProtectedUSBClasses(classes);
+  classes = permission_manager->CheckProtectedUSBClasses(
+      classes, RequestingOrigin(frame, origin), frame);
 }
 
 std::unique_ptr<content::UsbChooser> ElectronUsbDelegate::RunChooser(
@@ -198,11 +160,13 @@ bool ElectronUsbDelegate::CanRequestDevicePermission(
 
 void ElectronUsbDelegate::RevokeDevicePermissionWebInitiated(
     content::BrowserContext* browser_context,
+    content::RenderFrameHost* frame,
     const url::Origin& origin,
     const device::mojom::UsbDeviceInfo& device) {
   auto* chooser_context = GetChooserContext(browser_context);
   if (chooser_context) {
-    chooser_context->RevokeDevicePermissionWebInitiated(origin, device);
+    chooser_context->RevokeDevicePermissionWebInitiated(
+        RequestingOrigin(frame, origin), device, frame);
   }
 }
 
@@ -220,13 +184,16 @@ bool ElectronUsbDelegate::HasDevicePermission(
     content::RenderFrameHost* frame,
     const url::Origin& origin,
     const device::mojom::UsbDeviceInfo& device_info) {
-  const url::Origin& requesting_origin = RequestingOrigin(frame, origin);
-  if (IsDevicePermissionAutoGranted(requesting_origin, device_info))
-    return true;
+  // Access to an already-granted device is subject to the same "usb"
+  // permission check as opening the chooser, so that denying the check for a
+  // document cuts off getDevices()/open() as well as requestDevice().
+  if (!CanRequestDevicePermission(browser_context, frame, origin))
+    return false;
 
   auto* chooser_context = GetChooserContext(browser_context);
   return chooser_context &&
-         chooser_context->HasDevicePermission(requesting_origin, device_info);
+         chooser_context->HasDevicePermission(RequestingOrigin(frame, origin),
+                                              device_info, frame);
 }
 
 void ElectronUsbDelegate::GetDevices(
