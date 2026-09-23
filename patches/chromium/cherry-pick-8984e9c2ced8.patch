@@ -1,0 +1,175 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Evan Stade <evanstade@microsoft.com>
+Date: Mon, 14 Sep 2026 18:36:19 -0700
+Subject: IDB: correctly handle SharedArrayBuffer as key.
+
+The spec says any "buffer source type" is a valid key, and that includes
+SharedArrayBuffer. This is in contrast to values, which use the
+structured serialization algorithm, which specifically bans SAB when
+serializing for storage.
+
+Bug: 558764482
+Change-Id: I790db66baf596154c3139cc6e9621b90f37d19b0
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8393497
+Commit-Queue: Evan Stade <evanstade@microsoft.com>
+Reviewed-by: Evan Stade <evanstade@microsoft.com>
+Reviewed-by: Nate Chapin <japhet@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1697719}
+
+diff --git a/third_party/blink/renderer/bindings/modules/v8/v8_binding_for_modules.cc b/third_party/blink/renderer/bindings/modules/v8/v8_binding_for_modules.cc
+index f303c9654ba9963552414c17a2d97dec01e507e3..9496f60a4f520cae2a58e0e9aeab8317c983f08b 100644
+--- a/third_party/blink/renderer/bindings/modules/v8/v8_binding_for_modules.cc
++++ b/third_party/blink/renderer/bindings/modules/v8/v8_binding_for_modules.cc
+@@ -47,6 +47,7 @@
+ #include "third_party/blink/renderer/core/frame/web_feature.h"
+ #include "third_party/blink/renderer/core/typed_arrays/dom_array_buffer.h"
+ #include "third_party/blink/renderer/core/typed_arrays/dom_array_buffer_view.h"
++#include "third_party/blink/renderer/core/typed_arrays/dom_shared_array_buffer.h"
+ #include "third_party/blink/renderer/modules/indexeddb/idb_any.h"
+ #include "third_party/blink/renderer/modules/indexeddb/idb_cursor.h"
+ #include "third_party/blink/renderer/modules/indexeddb/idb_cursor_with_value.h"
+@@ -57,6 +58,7 @@
+ #include "third_party/blink/renderer/modules/indexeddb/idb_value.h"
+ #include "third_party/blink/renderer/platform/instrumentation/tracing/trace_event.h"
+ #include "third_party/blink/renderer/platform/instrumentation/use_counter.h"
++#include "third_party/blink/renderer/platform/wtf/atomic_operations.h"
+ #include "third_party/blink/renderer/platform/wtf/math_extras.h"
+ #include "third_party/blink/renderer/platform/wtf/vector.h"
+ 
+@@ -106,19 +108,49 @@ static std::unique_ptr<IDBKey> CreateIDBKeyFromSimpleValue(
+             Vector<char>(base::as_chars(buffer->ByteSpan()))));
+   }
+ 
++  if (value->IsSharedArrayBuffer()) {
++    DOMSharedArrayBuffer* buffer =
++        NativeValueTraits<DOMSharedArrayBuffer>::NativeValue(isolate, value,
++                                                             exception_state);
++    if (exception_state.HadException()) {
++      return IDBKey::CreateInvalid();
++    }
++    base::span<uint8_t> shared_bytes = buffer->ByteSpanMaybeShared();
++    SCOPED_CRASH_KEY_NUMBER("CreateIDBKey", "ArrayBuffer", shared_bytes.size());
++    Vector<char> bytes(base::checked_cast<wtf_size_t>(shared_bytes.size()));
++    // SAFETY: `bytes` and `shared_bytes` have the same size.
++    UNSAFE_BUFFERS(AtomicReadMemcpy(bytes.data(), shared_bytes.data(),
++                                    shared_bytes.size()));
++    return IDBKey::CreateBinary(
++        base::MakeRefCounted<base::RefCountedData<Vector<char>>>(
++            std::move(bytes)));
++  }
++
+   if (value->IsArrayBufferView()) {
+     DOMArrayBufferView* view =
+         NativeValueTraits<MaybeShared<DOMArrayBufferView>>::NativeValue(
+             isolate, value, exception_state)
+             .Get();
+-    if (exception_state.HadException())
++    if (exception_state.HadException()) {
+       return IDBKey::CreateInvalid();
++    }
++    SCOPED_CRASH_KEY_NUMBER("CreateIDBKey", "ArrayBuffer", view->byteLength());
++    if (view->IsShared()) {
++      Vector<char> bytes(base::checked_cast<wtf_size_t>(view->byteLength()));
++      // SAFETY: `byteLength()` returns the number of bytes at
++      // `BaseAddressMaybeShared()`.
++      UNSAFE_BUFFERS(AtomicReadMemcpy(
++          bytes.data(), view->BaseAddressMaybeShared(), bytes.size()));
++      return IDBKey::CreateBinary(
++          base::MakeRefCounted<base::RefCountedData<Vector<char>>>(
++              std::move(bytes)));
++    }
++
+     if (view->buffer()->IsDetached()) {
+       exception_state.ThrowDOMException(DOMExceptionCode::kDataError,
+                                         "The viewed ArrayBuffer is detached.");
+       return IDBKey::CreateInvalid();
+     }
+-    SCOPED_CRASH_KEY_NUMBER("CreateIDBKey", "ArrayBuffer", view->byteLength());
+     return IDBKey::CreateBinary(
+         base::MakeRefCounted<base::RefCountedData<Vector<char>>>(
+             Vector<char>(base::as_chars(view->ByteSpan()))));
+diff --git a/third_party/blink/web_tests/external/wpt/IndexedDB/sharedarraybuffer-key.https.html b/third_party/blink/web_tests/external/wpt/IndexedDB/sharedarraybuffer-key.https.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..9de6a6f0a850c3fb9dba324647234c1d95f38024
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/IndexedDB/sharedarraybuffer-key.https.html
+@@ -0,0 +1,71 @@
++<!DOCTYPE html>
++<title>IndexedDB: SharedArrayBuffer keys</title>
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++<script src="resources/support.js"></script>
++<script>
++'use strict';
++
++const key_data = [1, 2, 3, 4];
++
++function create_object_store(t, db) {
++  db.createObjectStore('store');
++}
++
++function create_shared_buffer() {
++  const buffer = new SharedArrayBuffer(key_data.length);
++  const view = new Uint8Array(buffer);
++  view.set(key_data);
++  return {buffer, view};
++}
++
++function put_and_validate_key(t, db, key, view_on_sab, key_copy) {
++  assert_true(
++      self.crossOriginIsolated, 'The page should be cross-origin isolated');
++
++  // Put the SAB-backed key in the store.
++  const tx = db.transaction('store', 'readwrite');
++  const store = tx.objectStore('store');
++  const put_request = store.put('value', key);
++  put_request.onerror = t.unreached_func('put should succeed');
++
++  // Modifying the SAB after put should have no effect.
++  view_on_sab.fill(0);
++
++  // Reading the record back out of the key should work.
++  const get_request = store.get(key_copy);
++  get_request.onerror = t.unreached_func('get should succeed');
++  get_request.onsuccess = t.step_func(() => {
++    assert_equals(get_request.result, 'value');
++  });
++
++  tx.oncomplete = t.step_func_done();
++}
++
++indexeddb_test(
++    create_object_store,
++    (t, db) => {
++      const {buffer, view} = create_shared_buffer();
++      put_and_validate_key(
++          t, db, buffer, view, new Uint8Array(key_data));
++    },
++    'A SharedArrayBuffer can be used as an IndexedDB key');
++
++indexeddb_test(
++    create_object_store,
++    (t, db) => {
++      const {view} = create_shared_buffer();
++      put_and_validate_key(
++          t, db, view, view, new Uint8Array(key_data));
++    },
++    'A SharedArrayBuffer-backed view can be used as an IndexedDB key');
++
++indexeddb_test(
++    create_object_store,
++    (t, db) => {
++      const {buffer, view} = create_shared_buffer();
++      put_and_validate_key(
++          t, db, [buffer], view, [new Uint8Array(key_data)]);
++    },
++    'A SharedArrayBuffer in an array can be used as an IndexedDB key');
++</script>
+diff --git a/third_party/blink/web_tests/external/wpt/IndexedDB/sharedarraybuffer-key.https.html.headers b/third_party/blink/web_tests/external/wpt/IndexedDB/sharedarraybuffer-key.https.html.headers
+new file mode 100644
+index 0000000000000000000000000000000000000000..5f8621ef83660c66f0d037ea28fafefb558140f1
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/IndexedDB/sharedarraybuffer-key.https.html.headers
+@@ -0,0 +1,2 @@
++Cross-Origin-Embedder-Policy: require-corp
++Cross-Origin-Opener-Policy: same-origin
