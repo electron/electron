@@ -2884,7 +2884,7 @@ describe('BrowserWindow module', () => {
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
 
       {
-        const [, visibilityState, hidden] = await once(ipcMain, 'pong');
+        const [, visibilityState, hidden] = await once(w.webContents.ipc, 'pong');
         expect(visibilityState).to.equal('visible');
         expect(hidden).to.be.false('hidden');
       }
@@ -2892,7 +2892,7 @@ describe('BrowserWindow module', () => {
       w.hide();
 
       {
-        const [, visibilityState, hidden] = await once(ipcMain, 'pong');
+        const [, visibilityState, hidden] = await once(w.webContents.ipc, 'pong');
         expect(visibilityState).to.equal('hidden');
         expect(hidden).to.be.true('hidden');
       }
@@ -5548,7 +5548,7 @@ describe('BrowserWindow module', () => {
 
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
 
-      const [, visibilityState, hidden] = await once(ipcMain, 'pong');
+      const [, visibilityState, hidden] = await once(w.webContents.ipc, 'pong');
 
       expect(readyToShow).to.be.false('ready to show');
       expect(visibilityState).to.equal('visible');
@@ -5568,7 +5568,7 @@ describe('BrowserWindow module', () => {
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
 
       {
-        const [, visibilityState, hidden] = await once(ipcMain, 'pong');
+        const [, visibilityState, hidden] = await once(w.webContents.ipc, 'pong');
         expect(visibilityState).to.equal('visible');
         expect(hidden).to.be.false('hidden');
       }
@@ -5576,7 +5576,7 @@ describe('BrowserWindow module', () => {
       w.hide();
 
       {
-        const [, visibilityState, hidden] = await once(ipcMain, 'pong');
+        const [, visibilityState, hidden] = await once(w.webContents.ipc, 'pong');
         expect(visibilityState).to.equal('hidden');
         expect(hidden).to.be.true('hidden');
       }
@@ -5599,7 +5599,7 @@ describe('BrowserWindow module', () => {
       }
       w.hide();
       w.show();
-      const [, visibilityState] = await once(ipcMain, 'pong');
+      const [, visibilityState] = await once(w.webContents.ipc, 'pong');
       expect(visibilityState).to.equal('visible');
     });
 
@@ -5619,7 +5619,7 @@ describe('BrowserWindow module', () => {
       }
       w.hide();
       w.showInactive();
-      const [, visibilityState] = await once(ipcMain, 'pong');
+      const [, visibilityState] = await once(w.webContents.ipc, 'pong');
       expect(visibilityState).to.equal('visible');
     });
 
@@ -5635,7 +5635,7 @@ describe('BrowserWindow module', () => {
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
 
       {
-        const [, visibilityState, hidden] = await once(ipcMain, 'pong');
+        const [, visibilityState, hidden] = await once(w.webContents.ipc, 'pong');
         expect(visibilityState).to.equal('visible');
         expect(hidden).to.be.false('hidden');
       }
@@ -5643,7 +5643,7 @@ describe('BrowserWindow module', () => {
       w.minimize();
 
       {
-        const [, visibilityState, hidden] = await once(ipcMain, 'pong');
+        const [, visibilityState, hidden] = await once(w.webContents.ipc, 'pong');
         expect(visibilityState).to.equal('hidden');
         expect(hidden).to.be.true('hidden');
       }
@@ -5664,12 +5664,12 @@ describe('BrowserWindow module', () => {
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
 
       {
-        const [, visibilityState, hidden] = await once(ipcMain, 'pong');
+        const [, visibilityState, hidden] = await once(w.webContents.ipc, 'pong');
         expect(visibilityState).to.equal('visible');
         expect(hidden).to.be.false('hidden');
       }
 
-      ipcMain.once('pong', (event, visibilityState, hidden) => {
+      w.webContents.ipc.once('pong', (event, visibilityState, hidden) => {
         throw new Error(`Unexpected visibility change event. visibilityState: ${visibilityState} hidden: ${hidden}`);
       });
       try {
@@ -5683,7 +5683,7 @@ describe('BrowserWindow module', () => {
         w.show();
         await shown2;
       } finally {
-        ipcMain.removeAllListeners('pong');
+        w.webContents.ipc.removeAllListeners('pong');
       }
     });
   });

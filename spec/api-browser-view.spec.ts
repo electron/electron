@@ -6,7 +6,7 @@ import { once } from 'node:events';
 import * as path from 'node:path';
 
 import { ScreenCapture, hasCapturableScreen } from './lib/screen-helpers.ts';
-import { defer, ifit, startRemoteControlApp } from './lib/spec-helpers.ts';
+import { defer, ifit, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
 import { closeWindow } from './lib/window-helpers.ts';
 
 describe('BrowserView module', () => {
@@ -498,9 +498,12 @@ describe('BrowserView module', () => {
           </body>
         </html>
       `);
+      // The page can finish loading before the freshly shown window's
+      // visibility reaches the renderer; let that settle so only changes
+      // caused by addBrowserView() are counted.
+      await waitUntil(async () => (await view.webContents.executeJavaScript('document.visibilityState')) === 'visible');
       const query = 'document.visibilityChangeCount';
       const countBefore = await view.webContents.executeJavaScript(query);
-      expect(countBefore).to.equal(0);
 
       w.addBrowserView(view);
       w.addBrowserView(view);
