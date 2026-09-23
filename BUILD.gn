@@ -1118,15 +1118,18 @@ if (electron_use_resource_allowlist) {
   electron_resource_allowlist_file =
       "$target_gen_dir/electron_resource_allowlist.txt"
 
-  # TODO: on Windows this should extract from electron.exe.pdb instead of the
-  # inputs pseudo-link (and the executable must then stop depending on
-  # :packed_resources to avoid a dependency cycle).
-  generate_resource_allowlist("electron_resource_allowlist") {
-    deps = [ ":electron_resource_allowlist_inputs" ]
-    inputs = [
-      "$root_out_dir/libelectron_resource_allowlist_inputs$shlib_extension",
-    ]
-    output = electron_resource_allowlist_file
+  # On macOS this target is defined with the framework below.
+  if (!is_mac) {
+    # TODO: on Windows this should extract from electron.exe.pdb instead of the
+    # inputs pseudo-link (and the executable must then stop depending on
+    # :packed_resources to avoid a dependency cycle).
+    generate_resource_allowlist("electron_resource_allowlist") {
+      deps = [ ":electron_resource_allowlist_inputs" ]
+      inputs = [
+        "$root_out_dir/libelectron_resource_allowlist_inputs$shlib_extension",
+      ]
+      output = electron_resource_allowlist_file
+    }
   }
 }
 
@@ -1271,27 +1274,39 @@ if (is_mac) {
     }
   }
 
-  # Deps that determine the native code linked into the Electron Framework
-  # (all of Electron's native code lives in the framework on macOS, so its
-  # link inputs, not the app shim's, determine the reachable resource set).
-  # Shared with :electron_resource_allowlist_inputs below so the resource
-  # allowlist is computed from exactly the same link inputs as the shipped
-  # framework.
-  electron_framework_link_deps = [
-    ":electron_lib",
-    "//third_party/electron_node:libnode",
-  ]
-
   if (electron_use_resource_allowlist) {
-    # Pseudo-link sharing the Electron Framework's link inputs:
-    # --collect-inputs-only makes linker_driver.py skip the real link and
-    # write the list of link inputs instead. generate_resource_allowlist
-    # greps those inputs for ui::AllowlistedResource<id> markers.
-    shared_library("electron_resource_allowlist_inputs") {
-      ldflags = [ "--collect-inputs-only" ]
-      include_dirs = [ "." ]
-      sources = filenames.framework_sources
-      deps = electron_framework_link_deps
+    # Read the markers back from the linked framework's symbol table (the
+    # dSYM's copy when the framework itself is stripped). The locale paks that
+    # consume this reach the framework through bundle_deps, not the link, so
+    # there is no cycle.
+    if (enable_dsyms) {
+      _allowlist_binary = "$root_out_dir/$electron_framework_name.dSYM/Contents/Resources/DWARF/$electron_framework_name"
+    } else if (save_unstripped_output) {
+      _allowlist_binary = "$root_out_dir/$electron_framework_name.unstripped"
+    } else {
+      _allowlist_binary =
+          get_label_info(":electron_framework_shared_library",
+                         "target_out_dir") +
+          "/electron_framework_shared_library/$electron_framework_name"
+    }
+
+    action("electron_resource_allowlist") {
+      script = "build/mac_resource_allowlist.py"
+      deps = [ ":electron_framework+link_nested" ]
+      _nm = "//third_party/llvm-build/Release+Asserts/bin/llvm-nm"
+      inputs = [
+        _allowlist_binary,
+        _nm,
+      ]
+      outputs = [ electron_resource_allowlist_file ]
+      args = [
+        "--nm",
+        rebase_path(_nm, root_build_dir),
+        "--input",
+        rebase_path(_allowlist_binary, root_build_dir),
+        "--output",
+        rebase_path(electron_resource_allowlist_file, root_build_dir),
+      ]
     }
   }
 
@@ -1330,14 +1345,20 @@ if (is_mac) {
     if (!is_mas_build) {
       framework_contents += [ "Helpers" ]
     }
-    public_deps =
-        [ ":electron_framework_libraries" ] + electron_framework_link_deps
+    public_deps = [
+      ":electron_framework_libraries",
+      ":electron_lib",
+    ]
     deps = [
       ":electron_framework_libraries",
-      ":electron_framework_resources",
       ":electron_swiftshader_library",
       ":electron_xibs",
+      "//third_party/electron_node:libnode",
     ]
+
+    # bundle_deps reach the bundle but not the framework's link, which the
+    # locale paks in here depend on for the resource allowlist.
+    bundle_deps = [ ":electron_framework_resources" ]
     if (!is_mas_build) {
       deps += [ ":electron_crashpad_helper" ]
     }

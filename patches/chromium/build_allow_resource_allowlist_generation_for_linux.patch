@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sam@electronjs.org>
+Date: Sat, 30 May 2026 02:44:34 +0000
+Subject: build: allow resource allowlist generation for Linux
+
+The resource allowlist machinery (grit --allowlist-support plus
+tools/resources/generate_resource_allowlist.py) works on desktop Linux via
+the same linker-input scanning path Android uses, but the assert in
+gcc_toolchain.gni only permits android and win. Electron uses the allowlist
+on Linux to repack its locale .pak files with only the strings its binary
+references. (On macOS Electron reads the markers back from the linked
+framework's symbol table and needs no toolchain change.)
+
+Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/8360559.
+
+diff --git a/build/toolchain/gcc_toolchain.gni b/build/toolchain/gcc_toolchain.gni
+index ac7a5b84e93fd0bdf9eed224b2dd391621259636..68a744afb698cb4b62ff2830eac177f3460b48a9 100644
+--- a/build/toolchain/gcc_toolchain.gni
++++ b/build/toolchain/gcc_toolchain.gni
+@@ -42,7 +42,7 @@ if (enable_resource_allowlist_generation) {
+       !is_component_build,
+       "enable_resource_allowlist_generation=true requires is_component_build=false")
+   assert(
+-      target_os == "android" || target_os == "win",
++      target_os == "android" || target_os == "win" || target_os == "linux",
+       "enable_resource_allowlist_generation=true does not work for target_os=$target_os")
+ }
+ 
