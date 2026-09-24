@@ -1035,6 +1035,22 @@ describe('Menu module', function () {
     ]);
   });
 
+  describe('garbage collection', () => {
+    const v8Util = process._linkedBinding('electron_common_v8_util');
+
+    // Regression test for https://github.com/electron/electron/pull/50806: a
+    // Menu pinned itself from construction, so menus that were built but never
+    // shown (e.g. a replaced application menu) were never collected.
+    it('collects a menu that was never opened once it is unreferenced', async () => {
+      const weakMenu = (() => new WeakRef(Menu.buildFromTemplate([{ label: 'item' }])))();
+      for (let i = 0; i < 30 && weakMenu.deref(); i++) {
+        await v8Util.requestGarbageCollectionForTesting({ execution: 'async' });
+        await setTimeout();
+      }
+      expect(weakMenu.deref()).to.equal(undefined, 'menu was not collected');
+    });
+  });
+
   describe('Menu.setApplicationMenu', () => {
     beforeEach(() => {
       const menu = Menu.getApplicationMenu();
