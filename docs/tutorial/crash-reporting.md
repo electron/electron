@@ -194,15 +194,6 @@ window.crashContext.set('route', '/settings')
 window.crashContext.set('feature', 'image-editor')
 ```
 
-### Protect your users' privacy
-
-Crash reports leave the user's machine. Don't put personal data in annotations: no
-names, email addresses, file paths that contain user names, document contents or
-access tokens. Prefer IDs and categories (`feature: 'export'`, `accountType: 'team'`)
-over free text. The minidump itself contains parts of the crashed process's memory, so
-make sure your privacy policy covers crash reports, and let users opt out with
-`crashReporter.setUploadToServer(false)`.
-
 ## Reacting to crashes at runtime
 
 Minidumps are for diagnosing a crash later. To react when a process dies, for example to
