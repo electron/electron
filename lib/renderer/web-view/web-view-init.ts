@@ -16,8 +16,7 @@ export function webViewInit(webviewTag: boolean, isWebView: boolean) {
         require('@electron/internal/renderer/web-view/web-view-element') as typeof webViewElementModule;
       setupWebView({
         guestViewInternal,
-        allowGuestViewElementDefinition: webFrame.allowGuestViewElementDefinition,
-        setIsWebView: (iframe) => v8Util.setHiddenValue(iframe, 'isWebView', true)
+        allowGuestViewElementDefinition: webFrame.allowGuestViewElementDefinition
       });
     }
   }

@@ -117,8 +117,7 @@ declare namespace Electron {
     _clearHistory(): void;
     destroy(): void;
     // <webview>
-    attachToIframe(embedderWebContents: Electron.WebContents, embedderFrameToken: string): void;
-    detachFromOuterFrame(): void;
+    _getSurfaceEmbedToken(): string;
     setEmbedder(embedder: Electron.WebContents): void;
     viewInstanceId: number;
     _setOwnerWindow(w: BaseWindow | null): void;

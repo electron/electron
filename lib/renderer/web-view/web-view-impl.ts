@@ -14,7 +14,7 @@ const getNextId = function () {
 export interface WebViewImplHooks {
   readonly guestViewInternal: typeof guestViewInternalModule;
   readonly allowGuestViewElementDefinition: NodeJS.InternalWebFrame['allowGuestViewElementDefinition'];
-  readonly setIsWebView: (iframe: HTMLIFrameElement) => void;
+  readonly setIsWebView?: (iframe: HTMLIFrameElement) => void;
 }
 
 // Represents the internal state of the WebView node.
@@ -26,7 +26,7 @@ export class WebViewImpl {
   public internalInstanceId?: number;
   public viewInstanceId: number;
 
-  public internalElement: HTMLIFrameElement;
+  public internalElement: HTMLEmbedElement;
 
   public attributes: Map<string, WebViewAttribute>;
 
@@ -34,7 +34,7 @@ export class WebViewImpl {
     public webviewNode: HTMLElement,
     private hooks: WebViewImplHooks
   ) {
-    // Create internal iframe element.
+    // Create the internal plugin element that hosts the guest surface.
     this.internalElement = this.createInternalElement();
     const shadowRoot = this.webviewNode.attachShadow({ mode: 'open' });
     const style = shadowRoot.ownerDocument.createElement('style');
@@ -43,24 +43,18 @@ export class WebViewImpl {
     this.attributes = setupWebViewAttributes(this);
     this.viewInstanceId = getNextId();
     shadowRoot.appendChild(this.internalElement);
-
-    // Provide access to contentWindow.
-    Object.defineProperty(this.webviewNode, 'contentWindow', {
-      get: () => {
-        return this.internalElement.contentWindow;
-      },
-      enumerable: true
-    });
   }
 
+  // The guest is composited by a Surface Embed plugin. The plugin is only
+  // instantiated once the element has a |type|, which we set after the browser
+  // has created the guest and handed back its content id.
   createInternalElement() {
-    const iframeElement = document.createElement('iframe');
-    iframeElement.style.flex = '1 1 auto';
-    iframeElement.style.width = '100%';
-    iframeElement.style.border = '0';
-    // used by RendererClientBase::IsWebViewFrame
-    this.hooks.setIsWebView(iframeElement);
-    return iframeElement;
+    const embedElement = document.createElement('embed');
+    embedElement.style.flex = '1 1 auto';
+    embedElement.style.width = '100%';
+    embedElement.style.border = '0';
+    embedElement.tabIndex = 0;
+    return embedElement;
   }
 
   // Resets some state upon reattaching <webview> element to the DOM.
@@ -78,8 +72,8 @@ export class WebViewImpl {
     this.beforeFirstNavigation = true;
     (this.attributes.get(WEB_VIEW_ATTRIBUTES.PARTITION) as PartitionAttribute).validPartitionId = true;
 
-    // Since attachment swaps a local frame for a remote frame, we need our
-    // internal iframe element to be local again before we can reattach.
+    // A Surface Embed plugin cannot be re-pointed at a different guest, so
+    // start over with a fresh element for the next attach.
     const newFrame = this.createInternalElement();
     const oldFrame = this.internalElement;
     this.internalElement = newFrame;
@@ -106,9 +100,9 @@ export class WebViewImpl {
   createGuest() {
     this.internalInstanceId = getNextId();
     this.hooks.guestViewInternal
-      .createGuest(this.internalElement, this.internalInstanceId, this.buildParams())
-      .then((guestInstanceId) => {
-        this.attachGuestInstance(guestInstanceId);
+      .createGuest(this.internalInstanceId, this.buildParams())
+      .then(({ guestInstanceId, contentId }) => {
+        this.attachGuestInstance(guestInstanceId, contentId);
       });
   }
 
@@ -121,6 +115,19 @@ export class WebViewImpl {
       this.onLoadCommit(props);
     } else if (eventName === '-focus-change') {
       this.onFocusChange();
+    } else if (eventName === 'enter-html-full-screen') {
+      // Mirror element fullscreen into the embedder document, as Blink did for
+      // the cross-process <iframe> this element used to wrap.
+      if (!this.internalElement.matches(':fullscreen')) {
+        this.internalElement
+          .requestFullscreen()
+          .catch((e) => console.warn('webview: mirroring guest fullscreen failed', e));
+      }
+    } else if (eventName === 'leave-html-full-screen') {
+      const doc = this.webviewNode.ownerDocument;
+      if (doc.fullscreenElement === this.webviewNode || this.internalElement.matches(':fullscreen')) {
+        doc.exitFullscreen().catch(() => {});
+      }
     }
   }
 
@@ -157,7 +164,7 @@ export class WebViewImpl {
     return params;
   }
 
-  attachGuestInstance(guestInstanceId: number) {
+  attachGuestInstance(guestInstanceId: number, contentId: string) {
     if (guestInstanceId === -1) {
       this.dispatchEvent('destroyed');
       return;
@@ -171,13 +178,19 @@ export class WebViewImpl {
     }
 
     this.guestInstanceId = guestInstanceId;
+    // Setting |type| instantiates the Surface Embed plugin, which reads
+    // data-content-id and asks the browser to attach the guest.
+    this.internalElement.setAttribute('data-content-id', contentId);
+    this.internalElement.setAttribute('type', 'application/x-chromium-surface-embed');
   }
 }
 
 export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElement, hooks: WebViewImplHooks) => {
-  // Focusing the webview should move page focus to the underlying iframe.
-  WebViewElement.prototype.focus = function () {
-    this.contentWindow.focus();
+  // Focusing the webview moves page focus to the plugin element, which in turn
+  // focuses the guest.
+  WebViewElement.prototype.focus = function (this: ElectronInternal.WebViewElement) {
+    const internal = (this.shadowRoot?.querySelector('embed') ?? null) as HTMLElement | null;
+    if (internal) internal.focus();
   };
 
   // Forward proto.foo* method calls to WebViewImpl.foo*.

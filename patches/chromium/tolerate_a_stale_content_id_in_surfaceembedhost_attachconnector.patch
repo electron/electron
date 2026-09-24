@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Attard <sattard@anthropic.com>
+Date: Thu, 24 Sep 2026 19:47:18 +0000
+Subject: Tolerate a stale content id in SurfaceEmbedHost::AttachConnector
+
+The child WebContents may have been destroyed while the renderer was
+asynchronously creating the embed element. Upstream main already returns
+early here instead of CHECK-failing; this carries that behaviour until the
+next Chromium roll picks it up.
+
+diff --git a/components/surface_embed/browser/surface_embed_host.cc b/components/surface_embed/browser/surface_embed_host.cc
+index dbf87981d223eedc31e77e5294f1fb289b042472..271f176c38da4c84e509b1325f0fcb1f64fe2fc3 100644
+--- a/components/surface_embed/browser/surface_embed_host.cc
++++ b/components/surface_embed/browser/surface_embed_host.cc
+@@ -120,7 +120,11 @@ void SurfaceEmbedHost::AttachConnector(const base::UnguessableToken& content_id,
+   CHECK(!content_id.is_empty());
+   guest_contents::GuestContentsHandle* guest_handle =
+       guest_contents::GuestContentsHandle::FromID(content_id);
+-  CHECK(guest_handle);
++  if (!guest_handle) {
++    // The child may have been destroyed while the renderer was asynchronously
++    // creating the embed element. (Backport of the upstream main behaviour.)
++    return;
++  }
+ 
+   content::WebContents* web_contents_to_attach = guest_handle->web_contents();
+   CHECK(web_contents_to_attach);
