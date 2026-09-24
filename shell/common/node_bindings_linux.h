@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_NODE_BINDINGS_LINUX_H_
 #define ELECTRON_SHELL_COMMON_NODE_BINDINGS_LINUX_H_
 
+#include "base/files/scoped_file.h"
 #include "shell/common/node_bindings.h"
 
 namespace electron {
@@ -12,13 +13,14 @@ namespace electron {
 class NodeBindingsLinux : public NodeBindings {
  public:
   NodeBindingsLinux(BrowserEnvironment browser_env, uv_loop_t* loop);
+  ~NodeBindingsLinux() override;
 
  private:
   // NodeBindings
   void PollEvents(int timeout) override;
 
   // Epoll to poll for uv's backend fd.
-  int epoll_;
+  base::ScopedFD epoll_;
 };
 
 }  // namespace electron
