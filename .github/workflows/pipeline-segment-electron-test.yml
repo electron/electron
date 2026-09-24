@@ -351,8 +351,6 @@ jobs:
       shell: bash
       timeout-minutes: 60
       env:
-        MOCHA_REPORTER: mocha-multi-reporters
-        MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         DISPLAY: ':99.0'
         NPM_CONFIG_MSVS_VERSION: '2022'
@@ -397,11 +395,6 @@ jobs:
         # Run tests
         if [ "${{ inputs.target-platform }}" != "linux" ]; then
           echo "About to start tests"
-          if [ "${{ inputs.target-platform }}" = "win" ]; then
-            if [ "${{ inputs.target-arch }}" = "arm64" ]; then
-              export ELECTRON_FORCE_TEST_SUITE_EXIT="true"
-            fi
-          fi
           if [ "${{ inputs.is-ubsan }}" = "true" ]; then
             export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1:external_symbolizer_path=$PWD/../third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer"
             export MOCHA_TIMEOUT=180000
