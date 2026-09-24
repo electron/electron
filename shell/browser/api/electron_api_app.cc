@@ -2118,7 +2118,7 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict{isolate, exports};
   dict.Set("app", electron::api::App::Get());
 #if BUILDFLAG(IS_LINUX)
-  // For desktop-name-spec.
+  // For desktop-name.spec.
   dict.SetMethod(
       "defaultDesktopName",
       base::BindRepeating([](std::optional<std::u16string> name) {
