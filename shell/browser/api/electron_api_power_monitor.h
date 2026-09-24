@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_
 
+#include <memory>
+
 #include "base/power_monitor/power_observer.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
@@ -56,6 +58,9 @@ class PowerMonitor final : public gin::Wrappable<PowerMonitor>,
   PowerMonitor& operator=(const PowerMonitor&) = delete;
 
  private:
+  // Starts observing the system; nothing is observed until the first listener
+  // is added.
+  void Start();
 #if BUILDFLAG(IS_LINUX)
   void SetListeningForShutdown(bool);
 #endif
@@ -86,8 +91,9 @@ class PowerMonitor final : public gin::Wrappable<PowerMonitor>,
   std::unique_ptr<ui::SessionChangeObserver> session_change_observer_;
 #endif
 
+  bool started_ = false;
 #if BUILDFLAG(IS_LINUX)
-  PowerObserverLinux power_observer_linux_{this};
+  std::unique_ptr<PowerObserverLinux> power_observer_linux_;
 #endif
 };
 
