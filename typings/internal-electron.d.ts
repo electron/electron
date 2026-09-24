@@ -251,37 +251,6 @@ declare namespace Electron {
 }
 
 declare namespace ElectronInternal {
-  interface DesktopCapturer {
-    startHandling(
-      captureWindow: boolean,
-      captureScreen: boolean,
-      thumbnailSize: Electron.Size,
-      fetchWindowIcons: boolean,
-      persistent: boolean,
-      restoreToken: string
-    ): void;
-    _onerror?: (error: string) => void;
-    _onfinished?: (sources: Electron.DesktopCapturerSource[], fetchWindowIcons: boolean) => void;
-  }
-
-  interface GetSourcesOptions {
-    captureWindow: boolean;
-    captureScreen: boolean;
-    thumbnailSize: Electron.Size;
-    fetchWindowIcons: boolean;
-    persistent: boolean;
-    restoreToken: string;
-  }
-
-  interface GetSourcesResult {
-    id: string;
-    name: string;
-    thumbnail: Electron.NativeImage;
-    display_id: string;
-    restoreToken: string;
-    appIcon: Electron.NativeImage | null;
-  }
-
   interface IpcRendererInternal
     extends NodeJS.EventEmitter, Pick<Electron.IpcRenderer, 'send' | 'sendSync' | 'invoke'> {
     invoke<T>(channel: string, ...args: any[]): Promise<T>;
