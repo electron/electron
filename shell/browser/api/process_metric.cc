@@ -12,6 +12,7 @@
 #include <windows.h>
 
 #include <psapi.h>
+#include "base/win/access_token.h"
 #include "base/win/win_util.h"
 #endif
 
@@ -90,33 +91,12 @@ ProcessMemoryInfo ProcessMetric::GetMemoryInfo() const {
 }
 
 ProcessIntegrityLevel ProcessMetric::GetIntegrityLevel() const {
-  HANDLE token = nullptr;
-  if (!::OpenProcessToken(process.Handle(), TOKEN_QUERY, &token)) {
+  std::optional<base::win::AccessToken> token =
+      base::win::AccessToken::FromProcess(process.Handle());
+  if (!token)
     return ProcessIntegrityLevel::kUnknown;
-  }
 
-  base::win::ScopedHandle token_scoped(token);
-
-  DWORD token_info_length = 0;
-  if (::GetTokenInformation(token, TokenIntegrityLevel, nullptr, 0,
-                            &token_info_length) ||
-      ::GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
-    return ProcessIntegrityLevel::kUnknown;
-  }
-
-  auto token_label_bytes = std::make_unique<char[]>(token_info_length);
-  auto* token_label =
-      reinterpret_cast<TOKEN_MANDATORY_LABEL*>(token_label_bytes.get());
-  if (!::GetTokenInformation(token, TokenIntegrityLevel, token_label,
-                             token_info_length, &token_info_length)) {
-    return ProcessIntegrityLevel::kUnknown;
-  }
-
-  DWORD integrity_level = *::GetSidSubAuthority(
-      token_label->Label.Sid,
-      static_cast<DWORD>(*::GetSidSubAuthorityCount(token_label->Label.Sid) -
-                         1));
-
+  const DWORD integrity_level = token->IntegrityLevel();
   if (integrity_level >= SECURITY_MANDATORY_UNTRUSTED_RID &&
       integrity_level < SECURITY_MANDATORY_LOW_RID) {
     return ProcessIntegrityLevel::kUntrusted;
