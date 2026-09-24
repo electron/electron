@@ -68,6 +68,7 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/browser/relauncher.h"
+#include "shell/common/api/electron_api_command_line.h"
 #include "shell/common/application_info.h"
 #include "shell/common/callback_util.h"
 #include "shell/common/electron_command_line.h"
@@ -84,6 +85,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
@@ -557,6 +559,10 @@ void OnIconDataAvailable(gin_helper::Promise<gfx::Image> promise,
   }
 }
 
+#if !BUILDFLAG(IS_WIN)
+void SetAppUserModelIdNoOp() {}
+#endif
+
 }  // namespace
 
 App::App() {
@@ -754,12 +760,25 @@ void App::AllowCertificateError(
       electron::AdaptCallbackForRepeating(std::move(callback));
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  bool prevent_default = Emit("certificate-error", web_contents, request_url,
-                              net::ErrorToString(cert_error), ssl_info.cert,
-                              adapted_callback, is_main_frame_request);
+  gin_helper::internal::Event* event =
+      gin_helper::internal::Event::New(isolate);
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
+  std::string error = net::ErrorToString(cert_error);
+  v8::Local<v8::Value> cert = gin::ConvertToV8(isolate, ssl_info.cert);
+  v8::Local<v8::Value> callback_value =
+      gin::ConvertToV8(isolate, adapted_callback);
+  // The same event is emitted on the WebContents, then on app.
+  if (WebContents* api_web_contents = WebContents::From(web_contents)) {
+    api_web_contents->EmitWithoutEvent("certificate-error", event_object,
+                                       request_url, error, cert, callback_value,
+                                       is_main_frame_request);
+  }
+  EmitWithoutEvent("certificate-error", event_object, web_contents, request_url,
+                   error, cert, callback_value, is_main_frame_request);
 
   // Deny the certificate by default.
-  if (!prevent_default)
+  if (!event->GetDefaultPrevented())
     adapted_callback.Run(content::CERTIFICATE_REQUEST_RESULT_TYPE_DENY);
 }
 
@@ -784,19 +803,31 @@ base::OnceClosure App::SelectClientCertificate(
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  // |web_contents| is null for requests that did not originate from a renderer
-  // (e.g. net.fetch / utilityProcess); surface those with a null WebContents.
-  v8::Local<v8::Value> web_contents_value =
-      gin::ConvertToV8(isolate, web_contents);
-  bool prevent_default =
-      Emit("select-client-certificate", web_contents_value,
-           cert_request_info->host_and_port.ToString(), std::move(client_certs),
-           base::BindOnce(&OnClientCertificateSelected, isolate,
-                          shared_delegate, shared_identities));
+  gin_helper::internal::Event* event =
+      gin_helper::internal::Event::New(isolate);
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
+  std::string host_and_port = cert_request_info->host_and_port.ToString();
+  v8::Local<v8::Value> certs = gin::ConvertToV8(isolate, client_certs);
+  v8::Local<v8::Value> callback_value = gin::ConvertToV8(
+      isolate, base::BindOnce(&OnClientCertificateSelected, isolate,
+                              shared_delegate, shared_identities));
+  // The same event is emitted on the WebContents, then on app. |web_contents|
+  // is null for requests that did not originate from a renderer (e.g.
+  // net.fetch / utilityProcess); app surfaces those with a null WebContents.
+  WebContents* api_web_contents =
+      web_contents ? WebContents::From(web_contents) : nullptr;
+  if (api_web_contents) {
+    api_web_contents->EmitWithoutEvent("select-client-certificate",
+                                       event_object, host_and_port, certs,
+                                       callback_value);
+  }
+  EmitWithoutEvent("select-client-certificate", event_object, web_contents,
+                   host_and_port, certs, callback_value);
 
   // Default to first certificate from the platform store. The JS callback may
   // have already run synchronously and moved the identity out, so guard for it.
-  if (!prevent_default && (*shared_identities)[0]) {
+  if (!event->GetDefaultPrevented() && (*shared_identities)[0]) {
     scoped_refptr<net::X509Certificate> cert =
         (*shared_identities)[0]->certificate();
     net::ClientCertIdentity::SelfOwningAcquirePrivateKey(
@@ -1497,7 +1528,6 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
       pid_dict.Set("name", process_metric.second->name);
     }
 
-#if !BUILDFLAG(IS_LINUX)
     auto memory_info = process_metric.second->GetMemoryInfo();
 
     auto memory_dict = gin_helper::Dictionary::CreateEmpty(isolate);
@@ -1513,7 +1543,6 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
 #endif
 
     pid_dict.Set("memory", memory_dict);
-#endif
 
 #if BUILDFLAG(IS_MAC)
     pid_dict.Set("sandboxed", process_metric.second->IsSandboxed());
@@ -1784,8 +1813,16 @@ int DockBounce(gin::Arguments* args) {
   return request_id;
 }
 
-void DockSetMenu(electron::api::Menu* menu) {
+void App::DockSetMenu(electron::api::Menu* menu) {
   Browser::Get()->DockSetMenu(menu->model());
+  dock_menu_ = menu;
+}
+
+v8::Local<v8::Value> App::DockGetMenu(v8::Isolate* isolate) {
+  v8::Local<v8::Object> menu;
+  if (dock_menu_ && dock_menu_->GetWrapper(isolate).ToLocal(&menu))
+    return menu;
+  return v8::Null(isolate);
 }
 
 v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
@@ -1811,7 +1848,10 @@ v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
                        base::BindRepeating(&Browser::DockShow, browser));
     dock_obj.SetMethod("isVisible",
                        base::BindRepeating(&Browser::DockIsVisible, browser));
-    dock_obj.SetMethod("setMenu", &DockSetMenu);
+    dock_obj.SetMethod("setMenu", base::BindRepeating(&App::DockSetMenu,
+                                                      base::Unretained(this)));
+    dock_obj.SetMethod("getMenu", base::BindRepeating(&App::DockGetMenu,
+                                                      base::Unretained(this)));
     dock_obj.SetMethod("setIcon",
                        base::BindRepeating(&Browser::DockSetIcon, browser));
 
@@ -1920,9 +1960,82 @@ const gin::WrapperInfo* App::wrapper_info() const {
 
 void App::Trace(cppgc::Visitor* visitor) const {
   gin::Wrappable<App>::Trace(visitor);
+  visitor->Trace(command_line_);
+  visitor->Trace(client_cert_password_handler_);
 #if BUILDFLAG(IS_MAC)
   visitor->Trace(dock_);
+  visitor->Trace(dock_menu_);
 #endif
+}
+
+void App::SetClientCertRequestPasswordHandler(v8::Isolate* isolate,
+                                              v8::Local<v8::Value> handler) {
+  if (handler->IsFunction())
+    client_cert_password_handler_.Reset(isolate, handler.As<v8::Function>());
+  else
+    client_cert_password_handler_.Reset();
+}
+
+bool App::RequestClientCertPassword(
+    const std::string& hostname,
+    const std::string& token_name,
+    bool is_retry,
+    base::OnceCallback<void(const std::string&)> callback) {
+  if (client_cert_password_handler_.IsEmpty())
+    return false;
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  auto params = gin_helper::Dictionary::CreateEmpty(isolate);
+  params.Set("hostname", hostname);
+  params.Set("tokenName", token_name);
+  params.Set("isRetry", is_retry);
+  v8::Local<v8::Value> argv[] = {params.GetHandle()};
+  auto password_callback =
+      electron::AdaptCallbackForRepeating(std::move(callback));
+  v8::Local<v8::Object> wrapper;
+  v8::Local<v8::Value> result;
+  v8::Local<v8::Promise::Resolver> resolver;
+  if (!GetWrapper(isolate).ToLocal(&wrapper) ||
+      !node::MakeCallback(isolate, wrapper,
+                          client_cert_password_handler_.Get(isolate), 1, argv,
+                          {0, 0})
+           .ToLocal(&result) ||
+      !v8::Promise::Resolver::New(context).ToLocal(&resolver) ||
+      resolver->Resolve(context, result).IsNothing()) {
+    password_callback.Run(std::string());
+    return true;
+  }
+  auto on_password = base::BindRepeating(
+      [](const base::RepeatingCallback<void(const std::string&)>& callback,
+         gin::Arguments* args) {
+        std::string password;
+        args->GetNext(&password);
+        callback.Run(password);
+      },
+      password_callback);
+  auto on_rejected = base::BindRepeating(
+      [](const base::RepeatingCallback<void(const std::string&)>& callback) {
+        callback.Run(std::string());
+      },
+      password_callback);
+  if (resolver->GetPromise()
+          ->Then(context,
+                 gin::ConvertToV8(isolate, on_password).As<v8::Function>(),
+                 gin::ConvertToV8(isolate, on_rejected).As<v8::Function>())
+          .IsEmpty()) {
+    password_callback.Run(std::string());
+  }
+  return true;
+}
+
+v8::Local<v8::Value> App::GetCommandLine(v8::Isolate* isolate) {
+  if (command_line_.IsEmptyThreadSafe()) {
+    auto command_line = gin_helper::Dictionary::CreateEmpty(isolate);
+    FillCommandLine(&command_line);
+    command_line_.Reset(isolate, command_line.GetHandle());
+  }
+  return command_line_.Get(isolate);
 }
 
 gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
@@ -1937,6 +2050,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::SetVersion, browser))
       .SetMethod("getName", base::BindRepeating(&Browser::GetName, browser))
       .SetMethod("setName", base::BindRepeating(&Browser::SetName, browser))
+      .SetProperty("name", base::BindRepeating(&Browser::GetName, browser),
+                   base::BindRepeating(&Browser::SetName, browser))
       .SetMethod("isReady", base::BindRepeating(&Browser::is_ready, browser))
       .SetMethod("whenReady", base::BindRepeating(&Browser::WhenReady, browser))
       .SetMethod("addRecentDocument",
@@ -1945,7 +2060,9 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::ClearRecentDocuments, browser))
       .SetMethod("getRecentDocuments",
                  base::BindRepeating(&Browser::GetRecentDocuments, browser))
-#if BUILDFLAG(IS_WIN)
+#if !BUILDFLAG(IS_WIN)
+      .SetMethod("setAppUserModelId", &SetAppUserModelIdNoOp)
+#else
       .SetMethod("setAppUserModelId",
                  base::BindRepeating(&Browser::SetAppUserModelID, browser))
       .SetMethod("setToastActivatorCLSID",
@@ -1972,6 +2089,9 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::SetBadgeCount, browser))
       .SetMethod("getBadgeCount",
                  base::BindRepeating(&Browser::badge_count, browser))
+      .SetProperty("badgeCount",
+                   base::BindRepeating(&Browser::badge_count, browser),
+                   base::BindRepeating(&Browser::SetBadgeCount, browser))
       .SetMethod("getLoginItemSettings", &App::GetLoginItemSettings)
       .SetMethod("setLoginItemSettings",
                  base::BindRepeating(&Browser::SetLoginItemSettings, browser))
@@ -2046,6 +2166,9 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  &App::SetAccessibilitySupportFeatures)
       .SetMethod("setAccessibilitySupportEnabled",
                  &App::SetAccessibilitySupportEnabled)
+      .SetProperty("accessibilitySupportEnabled",
+                   &App::IsAccessibilitySupportEnabled,
+                   &App::SetAccessibilitySupportEnabled)
       .SetMethod("disableHardwareAcceleration",
                  &App::DisableHardwareAcceleration)
       .SetMethod("isHardwareAccelerationEnabled",
@@ -2069,6 +2192,11 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
 #endif
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)
+      .SetProperty("applicationMenu", &Menu::GetApplicationMenu,
+                   &Menu::SetApplicationMenuFromJS)
+      .SetProperty("commandLine", &App::GetCommandLine)
+      .SetMethod("setClientCertRequestPasswordHandler",
+                 &App::SetClientCertRequestPasswordHandler)
       .SetMethod("configureHostResolver", &ConfigureHostResolver)
       .SetMethod("enableSandbox", &App::EnableSandbox)
       .SetMethod("setProxy", &App::SetProxy)
