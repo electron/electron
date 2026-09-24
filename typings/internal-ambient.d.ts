@@ -256,8 +256,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_clipboard'): Electron.Clipboard;
     _linkedBinding(name: 'electron_browser_clipboard_item'): Electron.ClipboardItem;
     _linkedBinding(name: 'electron_browser_crash_reporter'): Electron.CrashReporter;
-    _linkedBinding(name: 'electron_browser_desktop_capturer'): {
-      createDesktopCapturer(): ElectronInternal.DesktopCapturer;
+    _linkedBinding(name: 'electron_browser_desktop_capturer'): Electron.DesktopCapturer & {
       isDisplayMediaSystemPickerAvailable(): boolean;
     };
     _linkedBinding(name: 'electron_browser_dialog'): Electron.Dialog;
