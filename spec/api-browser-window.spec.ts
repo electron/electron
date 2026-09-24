@@ -3890,6 +3890,22 @@ describe('BrowserWindow module', () => {
         });
         if (!captured) this.skip();
       });
+
+      // Regression test for https://github.com/electron/electron/pull/52577:
+      // the caption button container was not shown at all on Linux.
+      it('draws the overlay background and caption buttons', async function () {
+        const w = await showOverlayWindow({ color: '#0000ff', symbolColor: '#ffffff' });
+        const captured = await expectDisplayPixelsEventually((pixels) => {
+          const overlay = overlayPixels(pixels, w, capturedPageColor(pixels, w));
+          expect(overlay.fraction).to.be.above(0.1, 'overlay background was not drawn');
+          const [[overlayBackground]] = overlay.histogram;
+          const glyphPixels = overlay.histogram
+            .filter(([color]) => color !== overlayBackground)
+            .reduce((total, [, n]) => total + n, 0);
+          expect(glyphPixels).to.be.above(20, 'caption button symbols were not drawn');
+        });
+        if (!captured) this.skip();
+      });
     });
 
     const testWindowsOverlayHeight = async (size: any) => {
