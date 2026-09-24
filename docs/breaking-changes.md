@@ -18,18 +18,19 @@ This document uses the following convention to categorize breaking changes:
 
 ### Behavior Changed: native modules that start libuv handles outside Node.js callbacks
 
-Electron notices work given to Node.js's libuv loop when a `setTimeout`,
+Electron notices work given to Node.js's libuv loop when `setTimeout`,
 `setInterval`, `setImmediate` or `process.nextTick` is called, when a Chromium
-task ends, and when a microtask checkpoint runs. A native module that starts a
-libuv handle itself (`uv_timer_start()`, `uv_poll_start()`, `uv_spawn()` and
-so on) from its own OS callback on the main thread - a window procedure hook,
-a run loop observer or a GSource - or from JavaScript it calls from there with
-`napi_call_function()` or `v8::Function::Call()`, should follow it with
-`uv_async_send()` on a handle of its own, or enter that JavaScript through
-`napi_make_callback()`, so the loop runs it promptly. Handles started from
-Node.js callbacks, Node-API async work and thread-safe functions, or Chromium
-tasks are not affected, and neither are JavaScript timers and immediates
-wherever they are started.
+task ends, when a microtask checkpoint runs, and when a call from native code
+into JavaScript returns. A native module that starts a libuv handle itself
+(`uv_timer_start()`, `uv_poll_start()`, `uv_spawn()` and so on) from its own
+OS callback on the main thread - a window procedure hook, a run loop observer
+or a GSource - without calling into JavaScript should follow it with
+`uv_async_send()` on a handle of its own so the loop runs it promptly. Handles
+started from JavaScript, from Node.js or Node-API callbacks, async work and
+thread-safe functions, or from Chromium tasks are not affected. One narrow case
+remains for JavaScript: a socket, server or watcher (not a timer) started from
+a menu, tray or global shortcut handler while a synchronous dialog or a drag
+blocks another JavaScript frame is polled once that dialog or drag ends.
 
 ### Behavior Changed: `utilityProcess` `child.kill()` no longer force-kills the child
 
