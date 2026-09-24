@@ -175,16 +175,12 @@ runs:
         # The src cache has no gclient bookkeeping at the root; remove what this
         # one-dep sync wrote so later gclient runs do not see it.
         rm -f libclang.DEPS .gclient_entries .gclient_previous_sync_commits .gcs_entries
-    # TODO(clavin): Try fetching this with a one-dep gclient sync, as the
-    # libclang step above does.
     - name: Download nodejs
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
       run: |
         $nodedeps = e d gclient getdep --deps-file=src/DEPS -r src/third_party/node/win | ConvertFrom-JSON
         python3 src\third_party\depot_tools\download_from_google_storage.py --no_resume --no_auth --bucket chromium-nodejs -o src\third_party\node\win\node.exe $nodedeps.object_name
-    # TODO(clavin): Try fetching this with a one-dep gclient sync, as the
-    # libclang step above does.
     - name: Download clang-format
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
