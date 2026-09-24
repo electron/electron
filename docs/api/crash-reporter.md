@@ -37,7 +37,8 @@ and may change between versions of Electron.
 
 The `crashReporter` module is disabled in Mac App Store builds. Its methods can
 be called, but they do nothing: no crash reports are collected or uploaded,
-`getUploadedReports()` returns an empty array and `getUploadToServer()` returns
+[`getUploadedReports()`](#crashreportergetuploadedreports) returns an empty array and
+[`getUploadToServer()`](#crashreportergetuploadtoserver) returns
 `false`.
 
 On Windows, some crashes never reach an in-process crash handler, most notably
