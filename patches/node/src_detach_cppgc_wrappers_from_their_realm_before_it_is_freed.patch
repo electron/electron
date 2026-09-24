@@ -35,7 +35,7 @@ Cherry-picked from upstream commit c909c63be392b4c9ffdc2108e64371b9fa83e472;
 remove this patch once a Node.js release containing it is rolled in.
 
 diff --git a/src/cppgc_helpers-inl.h b/src/cppgc_helpers-inl.h
-index 68c70153b96cc3e62db1b5dc74ac4026fa306271..f81b087ad21a28ec2385cd0cfae3177a470a2850 100644
+index 0e52bf5a6f4837d0f4bfed83987c6903796fda55..745f2c0526fafc1079b94be875a9e5a519d3a794 100644
 --- a/src/cppgc_helpers-inl.h
 +++ b/src/cppgc_helpers-inl.h
 @@ -11,7 +11,6 @@ namespace node {
@@ -134,10 +134,10 @@ index ae7e45fbc26317a53207c267865ea4db553f5a8a..9424904c0ea82d14102a47a6f4915210
 -}
  }  // namespace node
 diff --git a/src/cppgc_helpers.h b/src/cppgc_helpers.h
-index b9153306b6cbc34d076c0eb5b32ecce3c5de98de..7baf7b11a68c2cbb83bd67a152be74a8533ecdb0 100644
+index fe6300a5d5d2d6602a84cbd33736c2133041d1b0..f1363d5da78f7a3603fb4502489ecf2ee3483fdb 100644
 --- a/src/cppgc_helpers.h
 +++ b/src/cppgc_helpers.h
-@@ -66,9 +66,9 @@ static_assert(
+@@ -47,9 +47,9 @@ class CppgcWrapperListNode;
   * cleanup relies on a living Node.js `Realm`, it should implement a
   * pattern like this:
   *
@@ -149,7 +149,7 @@ index b9153306b6cbc34d076c0eb5b32ecce3c5de98de..7baf7b11a68c2cbb83bd67a152be74a8
   *   }
   */
  class CppgcMixin : public cppgc::GarbageCollectedMixin, public MemoryRetainer {
-@@ -87,7 +87,7 @@ class CppgcMixin : public cppgc::GarbageCollectedMixin, public MemoryRetainer {
+@@ -68,7 +68,7 @@ class CppgcMixin : public cppgc::GarbageCollectedMixin, public MemoryRetainer {
  
    inline v8::Local<v8::Object> object() const;
    inline Environment* env() const;
@@ -158,7 +158,7 @@ index b9153306b6cbc34d076c0eb5b32ecce3c5de98de..7baf7b11a68c2cbb83bd67a152be74a8
    inline v8::Local<v8::Object> object(v8::Isolate* isolate) const {
      return traced_reference_.Get(isolate);
    }
-@@ -114,11 +114,7 @@ class CppgcMixin : public cppgc::GarbageCollectedMixin, public MemoryRetainer {
+@@ -95,11 +95,7 @@ class CppgcMixin : public cppgc::GarbageCollectedMixin, public MemoryRetainer {
    // destructor. Outside of Finalize(), subclasses should avoid calling
    // into JavaScript or perform any operation that can trigger garbage
    // collection during the destruction.
@@ -171,7 +171,7 @@ index b9153306b6cbc34d076c0eb5b32ecce3c5de98de..7baf7b11a68c2cbb83bd67a152be74a8
  
    // The default implementation of Clean() is a no-op. If subclasses wish
    // to perform cleanup that require a living Realm, they should
-@@ -129,10 +125,8 @@ class CppgcMixin : public cppgc::GarbageCollectedMixin, public MemoryRetainer {
+@@ -110,10 +106,8 @@ class CppgcMixin : public cppgc::GarbageCollectedMixin, public MemoryRetainer {
  
    inline ~CppgcMixin();
  
