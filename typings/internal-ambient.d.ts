@@ -277,7 +277,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_push_notifications'): { pushNotifications: Electron.PushNotifications };
     _linkedBinding(name: 'electron_browser_safe_storage'): { safeStorage: Electron.SafeStorage };
     _linkedBinding(name: 'electron_browser_session'): SessionBinding;
-    _linkedBinding(name: 'electron_browser_screen'): { createScreen(): Electron.Screen };
+    _linkedBinding(name: 'electron_browser_screen'): { screen: Electron.Screen };
     _linkedBinding(name: 'electron_browser_service_worker_main'): ServiceWorkerMainBinding;
     _linkedBinding(name: 'electron_browser_system_preferences'): { systemPreferences: Electron.SystemPreferences };
     _linkedBinding(name: 'electron_browser_tray'): { Tray: Electron.Tray };
