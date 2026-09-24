@@ -920,7 +920,7 @@ describe('<webview> tag', function () {
     });
     after(() => w.close());
 
-    ifit(hasCapturableScreen())('is transparent by default', async () => {
+    ifit(hasCapturableScreen())('is transparent by default', { tags: ['serial'] }, async () => {
       await loadWebView(w.webContents, {
         src: 'data:text/html,foo'
       });
@@ -929,7 +929,7 @@ describe('<webview> tag', function () {
       await capture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
     });
 
-    ifit(hasCapturableScreen())('remains transparent when set', async () => {
+    ifit(hasCapturableScreen())('remains transparent when set', { tags: ['serial'] }, async () => {
       await loadWebView(w.webContents, {
         src: 'data:text/html,foo',
         webpreferences: 'transparent=yes'
@@ -939,7 +939,7 @@ describe('<webview> tag', function () {
       await capture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
     });
 
-    ifit(hasCapturableScreen())('can disable transparency', async () => {
+    ifit(hasCapturableScreen())('can disable transparency', { tags: ['serial'] }, async () => {
       await loadWebView(w.webContents, {
         src: 'data:text/html,foo',
         webpreferences: 'transparent=no'
@@ -2459,10 +2459,10 @@ describe('<webview> tag', function () {
     });
 
     // FIXME: This test is flaking constantly on Linux and macOS.
-    xdescribe('<webview>.capturePage()', () => {
-      it('returns a Promise with a NativeImage', async function () {
-        this.retries(5);
+    xdescribe('<webview>.capturePage()', function () {
+      this.retries(5);
 
+      it('returns a Promise with a NativeImage', async function () {
         const src = 'data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E';
         await loadWebViewAndWaitForEvent(w, { src }, 'did-stop-loading');
 
@@ -2476,8 +2476,6 @@ describe('<webview> tag', function () {
       });
 
       it('returns a Promise with a NativeImage in the renderer', async function () {
-        this.retries(5);
-
         const src = 'data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E';
         await loadWebViewAndWaitForEvent(w, { src }, 'did-stop-loading');
 

@@ -824,7 +824,7 @@ describe('Menu module', function () {
     });
   });
 
-  describe('Menu.popup', () => {
+  describe('Menu.popup', { tags: ['serial'] }, () => {
     let w: BrowserWindow;
     let menu: Menu;
 
