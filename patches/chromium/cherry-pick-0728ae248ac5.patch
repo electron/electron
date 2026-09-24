@@ -30,10 +30,10 @@ Reviewed-by: Stefan Zager <szager@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1703748}
 
 diff --git a/third_party/blink/renderer/core/frame/local_frame_view.cc b/third_party/blink/renderer/core/frame/local_frame_view.cc
-index 17101ff15f934515e74a0d51b3400f3314dddcce..0ae3e7850b1c91808061c7dc9a150c03efb8ab21 100644
+index 0e1184ea8b3da24d3d9113c95f7c5361d7c75be3..84dfdbdab8e10718bf1e9b49a5f8f77277ae1168 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_view.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_view.cc
-@@ -2296,42 +2296,46 @@ void LocalFrameView::ScheduleVisualUpdateForPaintInvalidationIfNeeded() {
+@@ -2301,42 +2301,46 @@ void LocalFrameView::ScheduleVisualUpdateForPaintInvalidationIfNeeded() {
  }
  
  bool LocalFrameView::NotifyResizeObservers() {
@@ -93,7 +93,7 @@ index 17101ff15f934515e74a0d51b3400f3314dddcce..0ae3e7850b1c91808061c7dc9a150c03
  }
  
  bool LocalFrameView::LocalFrameTreeAllowsThrottling() const {
-@@ -2523,14 +2527,11 @@ void LocalFrameView::UpdateLifecyclePhasesInternal(
+@@ -2528,14 +2532,11 @@ void LocalFrameView::UpdateLifecyclePhasesInternal(
  
    auto old_force_commit_criteria = ForceCommitCriteria();
  
@@ -113,7 +113,7 @@ index 17101ff15f934515e74a0d51b3400f3314dddcce..0ae3e7850b1c91808061c7dc9a150c03
  
    // A LocalFrameView can be unthrottled at this point, but become throttled as
    // it advances through lifecycle stages. If that happens, it will prevent
-@@ -2545,8 +2546,8 @@ void LocalFrameView::UpdateLifecyclePhasesInternal(
+@@ -2550,8 +2551,8 @@ void LocalFrameView::UpdateLifecyclePhasesInternal(
  
    while (true) {
      for (LocalFrameView* frame_view : unthrottled_frame_views) {
@@ -124,7 +124,7 @@ index 17101ff15f934515e74a0d51b3400f3314dddcce..0ae3e7850b1c91808061c7dc9a150c03
        if (frame_view->GetFrame().IsAttached()) {
          frame_view->Lifecycle().EnsureStateAtMost(
              DocumentLifecycle::kVisualUpdatePending);
-@@ -2621,8 +2622,11 @@ void LocalFrameView::UpdateLifecyclePhasesInternal(
+@@ -2626,8 +2627,11 @@ void LocalFrameView::UpdateLifecyclePhasesInternal(
      bool needs_to_repeat_lifecycle = false;
  
      // ResizeObserver and post-layout IntersectionObserver observation
@@ -139,10 +139,10 @@ index 17101ff15f934515e74a0d51b3400f3314dddcce..0ae3e7850b1c91808061c7dc9a150c03
      // observations led to content-visibility intersection changing visibility
      // state synchronously (which happens on the first intersection
 diff --git a/third_party/blink/renderer/core/frame/local_frame_view_test.cc b/third_party/blink/renderer/core/frame/local_frame_view_test.cc
-index 150974f6b09d1d5a4b3f88f5587b8b432aeb5b64..21b33f295c085e473d88037f11c65e4f2268cc0c 100644
+index c9db5ae4245f91ee7aa8b839d028d8648dbda881..172b32168729792604fe9c5c55e8248f8aad1af3 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_view_test.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_view_test.cc
-@@ -1155,5 +1155,75 @@ TEST_F(LocalFrameViewPresentationTimeTest,
+@@ -1250,5 +1250,75 @@ TEST_F(LocalFrameViewPresentationTimeTest,
    histogram_tester.ExpectTotalCount(kHistogramName, 2);
  }
  

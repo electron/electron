@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "electron-claude[bot]"
+ <279139701+electron-claude[bot]@users.noreply.github.com>
+Date: Tue, 15 Sep 2026 06:49:06 +0000
+Subject: fix: allow embedder slots of non-API objects in snapshot
+ serialization
+
+https://chromium-review.googlesource.com/c/v8/v8/+/8362279 made JSObject
+embedder data slots hold CppHeapPointerHandles, so the serializer now
+visits them through VisitCppHeapPointer(). Its DCHECK only expects API
+wrapper objects there, but any JSObject with embedder fields reaches it,
+notably JSPromise when V8_PROMISE_INTERNAL_FIELD_COUNT > 0 (Node.js and
+Electron build with 1), which makes node_mksnapshot fail in DCHECK
+builds. Accept every map that may have embedder fields, matching what
+IterateJSObjectBodyImpl() visits.
+
+This should be upstreamed.
+
+diff --git a/src/snapshot/serializer.cc b/src/snapshot/serializer.cc
+index 9c5161c76e8cce7fe36767c31523465ef0c436c4..b5a5b2733f52aa3b4bf150b847bd9cb95c8e03c8 100644
+--- a/src/snapshot/serializer.cc
++++ b/src/snapshot/serializer.cc
+@@ -19,6 +19,7 @@
+ #include "src/objects/instance-type-checker.h"
+ #include "src/objects/instance-type.h"
+ #include "src/objects/js-array-buffer-inl.h"
++#include "src/objects/js-objects-inl.h"
+ #include "src/objects/map.h"
+ #include "src/objects/objects-body-descriptors-inl.h"
+ #include "src/objects/slots-inl.h"
+@@ -1142,8 +1143,8 @@ void Serializer::ObjectSerializer::VisitCppHeapPointer(
+   // We serialize the slot as initialized-but-unused slot.  The actual API
+   // wrapper serialization is implemented in
+   // `ContextSerializer::SerializeApiWrapperFields()`.
+-  DCHECK(IsJSApiWrapperObjectMap(object_->map()) || IsNativeContext(*object_) ||
+-         IsCppGCManagedBase(*object_) ||
++  DCHECK(JSObject::MayHaveEmbedderFields(object_->map()) ||
++         IsNativeContext(*object_) || IsCppGCManagedBase(*object_) ||
+          IsEmbedderDataArray(*object_));
+   static_assert(kCppHeapPointerSlotSize % kTaggedSize == 0);
+   sink_->Put(

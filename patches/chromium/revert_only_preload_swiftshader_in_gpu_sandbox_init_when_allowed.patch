@@ -22,7 +22,7 @@ https://chromium-review.googlesource.com/c/chromium/src/+/8286976; this
 patch can be dropped once that or an equivalent lands.
 
 diff --git a/gpu/ipc/service/gpu_init.cc b/gpu/ipc/service/gpu_init.cc
-index 1a3ee6b9285bb9cea28e2cf157b36d41b3b9cee0..aa5bf8475fdae4e6701c02dec1f0653d7f958066 100644
+index 2bdbe86d65165d0ead9fba47b7062721e3115d7c..69b6f815b3b902cf580f439e1165598dae1d764c 100644
 --- a/gpu/ipc/service/gpu_init.cc
 +++ b/gpu/ipc/service/gpu_init.cc
 @@ -680,17 +680,7 @@ bool GpuInit::InitializeAndStartSandbox(base::CommandLine* command_line,

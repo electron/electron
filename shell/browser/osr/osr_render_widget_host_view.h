@@ -129,7 +129,7 @@ class OffScreenRenderWidgetHostView
   void ImeCancelComposition() override {}
   void RenderProcessGone() override;
   void ShowWithVisibility(content::PageVisibilityState page_visibility) final;
-  void Destroy() override;
+  void DestroyImpl() override;
   void UpdateTooltipUnderCursor(const std::u16string&) override {}
   void OnUnconfirmedTapConvertedToTap() override {}
   input::CursorManager* GetCursorManager() override;
@@ -253,6 +253,9 @@ class OffScreenRenderWidgetHostView
   }
 
  private:
+  // content::RenderWidgetHostViewBase:
+  void CleanUpHostObservers() override;
+
   void ReleaseCompositor();
   void SetupFrameRate(bool force);
   void ResizeRootLayer(bool force);
