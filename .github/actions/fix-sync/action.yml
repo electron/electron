@@ -2,30 +2,36 @@ name: 'Fix Sync'
 description: 'Ensures proper binaries are in place'
 # This action is required to correct for differences between "gclient sync"
 # on Linux and the expected state on macOS/windows. This requires:
-# 1. Fixing Clang Install (wrong binary)
+# 1. Fixing Clang Install on Windows (wrong binary)
 # 2. Fixing esbuild (wrong binary)
-# 3. Fixing rustc (wrong binary)
+# 3. Fixing rustc on Windows (wrong binary)
 # 4. Fixing gn (wrong binary)
 # 5. Fix reclient (wrong binary)
-# 6. Fixing dsymutil (wrong binary)
-# 7. Ensuring we are using the correct ninja and adding it to PATH
-# 8. Fixing angle (wrong remote)
-# 9. Install windows toolchain on Windows
-# 10. Fix node binary on Windows
-# 11. Fix rc binary on Windows
-# 12. Fix clang-format binary on Windows
-# 13. Install the host typescript-go (tsc v7) binary on macOS
-# 14. Fixing the hermetic host Python binary
+# 6. Ensuring we are using the correct ninja and adding it to PATH
+# 7. Fixing angle (wrong remote)
+# 8. Install windows toolchain on Windows
+# 9. Fix node binary on Windows
+# 10. Fix rc binary on Windows
+# 11. Fix clang-format binary on Windows
+# 12. Fixing the hermetic host Python binary
+#
+# The macOS src cache is synced with host_os=mac and host_cpu=arm64, so every
+# dep and hook that DEPS selects by host vars (clang, rust, dsymutil,
+# typescript-go, ...) is already the right binary for the Apple Silicon
+# runners. What still needs fixing on macOS are CIPD packages whose
+# ${platform}/${arch} templates the cipd client expands on the Linux sync host.
+# The Windows cache is synced with host_os=linux, so it also needs the
+# host-selected tools replaced.
 inputs:
   target-platform:
     description: 'Target platform, should be linux, win, macos'
 runs:
   using: "composite"
   steps:
-    # These four fix-ups are independent downloads into different directories,
-    # so run them concurrently. Each one logs to its own file, which is printed
+    # These fix-ups are independent downloads into different directories, so
+    # run them concurrently. Each one logs to its own file, which is printed
     # once they finish; the step fails if any of them failed.
-    - name: Fix llvm, rustc, dsymutil and angle git
+    - name: Fix llvm, rustc and angle git
       if: ${{ inputs.target-platform != 'linux' }}
       shell: bash
       env:
@@ -47,18 +53,6 @@ runs:
           python3 src/tools/rust/update_rust.py
         }
 
-        fix_dsymutil() {
-          if [ "$TARGET_PLATFORM" != "macos" ]; then
-            return 0
-          fi
-          if [ "$TARGET_ARCH" == "arm64" ]; then
-            DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.arm64.sha1
-          else
-            DSYM_SHA_FILE=src/tools/clang/dsymutil/bin/dsymutil.x64.sha1
-          fi
-          python3 src/third_party/depot_tools/download_from_google_storage.py --no_resume --no_auth --bucket chromium-browser-clang -s $DSYM_SHA_FILE -o src/tools/clang/dsymutil/bin/dsymutil
-        }
-
         fix_angle_git() {
           cd src/third_party/angle
           rm -f .git/objects/info/alternates
@@ -71,7 +65,12 @@ runs:
           bash "$RETRY" git fetch
         }
 
-        TASKS="fix_llvm fix_rustc fix_dsymutil fix_angle_git"
+        # The macOS cache already holds the arm64 clang and rust toolchains
+        # (see the header comment), so only Windows replaces them here.
+        TASKS="fix_angle_git"
+        if [ "$TARGET_PLATFORM" == "win" ]; then
+          TASKS="fix_llvm fix_rustc $TASKS"
+        fi
         PIDS=""
         for task in $TASKS; do
           ( set -eo pipefail; $task ) > "$LOG_DIR/$task.log" 2>&1 &
@@ -112,20 +111,6 @@ runs:
         installation-dir: src/third_party/cpython3/host
         target-platform: ${{ inputs.target-platform }}
         package: infra/3pp/tools/cpython3/${platform}
-    # ts_library() runs the host tsgo binary (//third_party/typescript/tsgo.gni),
-    # which DEPS only fetches when host_os == "mac". The DEPS key and package
-    # are literal per-arch names (no CIPD ${platform} templating), so pick the
-    # directory from the runner arch.
-    # Refs https://chromium-review.googlesource.com/c/chromium/src/+/8104602
-    - name: Fix typescript-go (macOS)
-      if: ${{ inputs.target-platform == 'macos' }}
-      uses: ./src/electron/.github/actions/cipd-install
-      with:
-        dependency: typescript-go
-        deps-file: src/DEPS
-        installation-dir: src/third_party/typescript/${{ case(runner.arch == 'ARM64', 'mac-arm64', 'mac-amd64') }}/src
-        target-platform: ${{ inputs.target-platform }}
-        package: chromium/third_party/typescript/${{ case(runner.arch == 'ARM64', 'mac-arm64', 'mac-amd64') }}
     - name: Fix gn (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/cipd-install
