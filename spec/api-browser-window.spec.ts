@@ -1600,11 +1600,14 @@ describe('BrowserWindow module', () => {
 
       ifit(process.platform !== 'win32')('focuses a blurred window', async () => {
         {
-          const isBlurred = once(w, 'blur');
+          const isFocused = once(w, 'focus');
           const isShown = once(w, 'show');
           w.show();
-          w.blur();
           await isShown;
+          // blur() does nothing until the window has actually taken focus.
+          await isFocused;
+          const isBlurred = once(w, 'blur');
+          w.blur();
           await isBlurred;
         }
         expect(w.isFocused()).to.equal(false);
