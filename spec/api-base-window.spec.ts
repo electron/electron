@@ -337,6 +337,19 @@ describe('BaseWindow module', () => {
         expectBoundsEqual(w.getBounds(), fullBounds);
       });
 
+      it('keeps the current value of anything left out', () => {
+        w.setBounds({ x: 100, y: 120, width: 300, height: 200 });
+        w.setBounds({ width: 350 });
+        expectBoundsEqual(w.getBounds(), { x: 100, y: 120, width: 350, height: 200 });
+        w.setBounds({ y: 130 });
+        expectBoundsEqual(w.getBounds(), { x: 100, y: 130, width: 350, height: 200 });
+      });
+
+      it('throws when a field is not a number', () => {
+        expect(() => w.setBounds({ x: 'left' } as any)).to.throw(/conversion failure/);
+        expect(() => (w.setBounds as any)(null)).to.throw(/conversion failure/);
+      });
+
       it('rounds non-integer bounds', () => {
         w.setBounds({ x: 440.5, y: 225.1, width: 500.4, height: 400.9 });
 
