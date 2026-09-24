@@ -27,6 +27,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
+import { emittedUntil } from './lib/events-helpers.ts';
 import { ifit, ifdescribe, defer, itremote, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 import { PipeTransport } from './pipe-transport.ts';
