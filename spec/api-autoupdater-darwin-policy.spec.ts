@@ -15,7 +15,9 @@ import { ifdescribe } from './lib/spec-helpers.ts';
 // app, tampered payloads, JSON update mode and direct contents writes. The
 // update lifecycle itself is in api-autoupdater-darwin.spec.ts; the two files
 // share a harness and are split so that they can land on different CI shards.
-ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', function () {
+// The updater specs share ShipIt's per-app cache directory, so no two of them
+// can run at the same time.
+ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, function () {
   this.timeout(120000);
 
   const { logOnError, updaterIt } = setupUpdaterHarness();
