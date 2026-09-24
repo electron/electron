@@ -2,6 +2,8 @@ import { BaseWindow, View } from 'electron/main';
 
 import { expect } from 'chai';
 
+import * as fs from 'node:fs';
+
 import { closeWindow } from './lib/window-helpers.ts';
 
 describe('View', () => {
@@ -9,6 +11,37 @@ describe('View', () => {
   afterEach(async () => {
     await closeWindow(w as any);
     w = null as unknown as BaseWindow;
+  });
+
+  describe('setBounds', () => {
+    // setBounds() emits 'bounds-changed' synchronously from native code. A
+    // promise continuation queued before the call must not run inside it,
+    // whichever way the calling JS was entered.
+    const probe = () => {
+      const v = new View();
+      const order: string[] = [];
+      v.once('bounds-changed', () => order.push('bounds-changed'));
+      Promise.resolve().then(() => order.push('microtask'));
+      v.setBounds({ x: 0, y: 0, width: 7, height: 7 });
+      order.push('returned');
+      return new Promise<string[]>((resolve) => setImmediate(() => resolve(order)));
+    };
+    const expected = ['bounds-changed', 'returned', 'microtask'];
+
+    it('does not run pending microtasks re-entrantly (from a timer)', async () => {
+      const order = await new Promise<string[]>((resolve) => setTimeout(() => resolve(probe())));
+      expect(order).to.deep.equal(expected);
+    });
+
+    it('does not run pending microtasks re-entrantly (from a promise continuation)', async () => {
+      const order = await Promise.resolve().then(probe);
+      expect(order).to.deep.equal(expected);
+    });
+
+    it('does not run pending microtasks re-entrantly (from a libuv callback)', async () => {
+      const order = await new Promise<string[]>((resolve) => fs.stat(import.meta.filename, () => resolve(probe())));
+      expect(order).to.deep.equal(expected);
+    });
   });
 
   it('can be used as content view', () => {
