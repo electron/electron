@@ -3,14 +3,19 @@
 // found in the LICENSE file.
 
 #include <algorithm>
+#include <string>
 #include <vector>
 
+#include "base/command_line.h"
 #include "base/files/file_util.h"
 #include "base/functional/bind.h"
 #include "base/functional/callback.h"
 #include "base/logging.h"
 #include "base/run_loop.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
+#include "components/dbus/thread_linux/dbus_thread_linux.h"
+#include "components/dbus/xdg/portal.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/file_dialog.h"
@@ -20,6 +25,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "ui/shell_dialogs/select_file_dialog.h"
+#include "ui/shell_dialogs/select_file_dialog_linux_portal.h"
 #include "ui/shell_dialogs/select_file_policy.h"
 #include "ui/shell_dialogs/selected_file_info.h"
 
@@ -71,21 +77,60 @@ base::FilePath GetDefaultDialogPath(const DialogSettings& settings) {
   return electron::GetDefaultPath().Append(settings.default_path);
 }
 
+// Version 4 of org.freedesktop.portal.FileChooser adds the current_folder
+// option to OpenFile
+// (https://github.com/flatpak/xdg-desktop-portal/commit/71165a5); older portals
+// ignore defaultPath for open dialogs.
+constexpr uint32_t kPortalVersionWithOpenDialogDefaultPath = 4;
+constexpr char kXdgPortalRequiredVersionSwitch[] =
+    "xdg-portal-required-version";
+
+// Applies --xdg-portal-required-version once and returns the effective minimum
+// portal version (never below Chromium's built-in minimum of 3).
+uint32_t GetRequiredPortalVersion() {
+  static const uint32_t required_version = [] {
+    uint32_t version = 0;
+    const std::string value =
+        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
+            kXdgPortalRequiredVersionSwitch);
+    if (!value.empty() && !base::StringToUint(value, &version)) {
+      LOG(WARNING) << "Unable to parse --" << kXdgPortalRequiredVersionSwitch
+                   << "=" << value;
+    }
+    ui::SelectFileDialogLinuxPortal::SetRequiredPortalVersion(version);
+    return std::max(version, 3u);
+  }();
+  return required_version;
+}
+
 void LogIfNeededAboutUnsupportedPortalFeature(const DialogSettings& settings) {
-  if (!settings.default_path.empty() && IsPortalAvailable() &&
-      GetPortalVersion() < 4) {
-    LOG(INFO) << "Available portal version " << GetPortalVersion()
-              << " does not support defaultPath option, try the non-portal"
-              << " file chooser dialogs by launching with"
-              << " --xdg-portal-required-version";
-  }
+  const uint32_t required_version = GetRequiredPortalVersion();
+  if (settings.default_path.empty())
+    return;
+  dbus_xdg::RequestXdgDesktopPortal(
+      dbus_thread_linux::GetSharedSessionBus().get(),
+      base::BindOnce(
+          [](uint32_t required_version, uint32_t available_version) {
+            if (available_version >= required_version &&
+                available_version < kPortalVersionWithOpenDialogDefaultPath) {
+              LOG(INFO) << "Available portal version " << available_version
+                        << " does not support defaultPath option, try the"
+                        << " non-portal file chooser dialogs by launching"
+                        << " with --" << kXdgPortalRequiredVersionSwitch << "="
+                        << kPortalVersionWithOpenDialogDefaultPath;
+            }
+          },
+          required_version));
 }
 
 class FileChooserDialog : public ui::SelectFileDialog::Listener {
  public:
   enum class DialogType { OPEN, SAVE };
 
-  FileChooserDialog() { dialog_ = ui::SelectFileDialog::Create(this, nullptr); }
+  FileChooserDialog() {
+    GetRequiredPortalVersion();
+    dialog_ = ui::SelectFileDialog::Create(this, nullptr);
+  }
 
   ~FileChooserDialog() override = default;
 
