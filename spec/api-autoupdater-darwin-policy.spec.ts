@@ -13,7 +13,7 @@ import { ifdescribe } from './lib/spec-helpers.ts';
 
 // When Squirrel.Mac refuses or alters an update: version rules, a running
 // app, tampered payloads, JSON update mode and direct contents writes. The
-// update lifecycle itself is in api-autoupdater-darwin-spec.ts; the two files
+// update lifecycle itself is in api-autoupdater-darwin.spec.ts; the two files
 // share a harness and are split so that they can land on different CI shards.
 ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', function () {
   this.timeout(120000);
