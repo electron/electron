@@ -32,7 +32,7 @@ https://chromium-review.googlesource.com/c/chromium/src/+/8454983.
 This patch can be removed when that CL lands and rolls into Electron.
 
 diff --git a/gin/converter.cc b/gin/converter.cc
-index 04bfeb77157ea168de6a382852e7163e0f8d9949..4f5cfb4d9119b28fe32d1a67fc018dac54229dbd 100644
+index c4d0c2d332f2e09bfa411998abe4c172b135ca23..248d80ef778647ef56e63372eb5f038013d3b5e4 100644
 --- a/gin/converter.cc
 +++ b/gin/converter.cc
 @@ -8,7 +8,10 @@
@@ -46,7 +46,7 @@ index 04bfeb77157ea168de6a382852e7163e0f8d9949..4f5cfb4d9119b28fe32d1a67fc018dac
  #include "base/time/time.h"
  #include "v8/include/v8-array-buffer.h"
  #include "v8/include/v8-external.h"
-@@ -154,6 +157,22 @@ bool Converter<std::string>::FromV8(Isolate* isolate,
+@@ -155,6 +158,22 @@ bool Converter<std::string>::FromV8(Isolate* isolate,
    if (!val->IsString())
      return false;
    Local<String> str = Local<String>::Cast(val);
