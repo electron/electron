@@ -32,7 +32,6 @@
 #include "shell/browser/ui/win/jump_list.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
-#include "shell/common/command_line_util_win.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/login_item_settings_converter.h"
@@ -76,7 +75,7 @@ bool GetProtocolLaunchPath(gin::Arguments* args, std::wstring* exe) {
     return false;
   }
 
-  // Strip surrounding double quotes before re-quoting with AddQuoteForArg.
+  // Strip surrounding double quotes before re-quoting.
   if (exe->size() >= 2 && exe->front() == L'"' && exe->back() == L'"') {
     *exe = exe->substr(1, exe->size() - 2);
   }
@@ -84,14 +83,15 @@ bool GetProtocolLaunchPath(gin::Arguments* args, std::wstring* exe) {
   // Read in optional args arg
   std::vector<std::wstring> launch_args;
   if (args->GetNext(&launch_args) && !launch_args.empty()) {
-    std::wstring result = electron::AddQuoteForArg(*exe);
+    std::wstring result = base::CommandLine::QuoteForCommandLineToArgvW(*exe);
     for (const auto& arg : launch_args) {
       result += L' ';
-      result += electron::AddQuoteForArg(arg);
+      result += base::CommandLine::QuoteForCommandLineToArgvW(arg);
     }
     *exe = base::StrCat({result, L" \"%1\""});
   } else {
-    *exe = base::StrCat({electron::AddQuoteForArg(*exe), L" \"%1\""});
+    *exe = base::StrCat(
+        {base::CommandLine::QuoteForCommandLineToArgvW(*exe), L" \"%1\""});
   }
 
   return true;
@@ -159,17 +159,18 @@ bool FormatCommandLineString(std::wstring* exe,
     return false;
   }
 
-  // Strip surrounding double quotes before re-quoting with AddQuoteForArg.
+  // Strip surrounding double quotes before re-quoting.
   if (exe->size() >= 2 && exe->front() == L'"' && exe->back() == L'"') {
     *exe = exe->substr(1, exe->size() - 2);
   }
 
-  *exe = electron::AddQuoteForArg(*exe);
+  *exe = base::CommandLine::QuoteForCommandLineToArgvW(*exe);
 
   if (!launch_args.empty()) {
     for (const auto& arg : launch_args) {
       *exe += L' ';
-      *exe += electron::AddQuoteForArg(std::wstring(base::AsWStringView(arg)));
+      *exe += base::CommandLine::QuoteForCommandLineToArgvW(
+          std::wstring(base::AsWStringView(arg)));
     }
   }
 
