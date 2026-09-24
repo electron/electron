@@ -250,10 +250,13 @@ DeprecatedWrapperInfo* DeprecatedWrapperInfo::From(
     v8::Local<v8::Object> object) {
   if (object->InternalFieldCount() != kNumberOfInternalFields)
     return nullptr;
+  // A cppgc-managed gin::Wrappable has the same number of internal fields but
+  // leaves them null, keeping its native pointer on the unified heap instead,
+  // so the field can be null even though the count matched.
   DeprecatedWrapperInfo* info = static_cast<DeprecatedWrapperInfo*>(
       object->GetAlignedPointerFromInternalField(
           kWrapperInfoIndex, v8::kEmbedderDataTypeTagDefault));
-  return info->embedder == kEmbedderNativeGin ? info : nullptr;
+  return info && info->embedder == kEmbedderNativeGin ? info : nullptr;
 }
 
 }  // namespace gin
