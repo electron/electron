@@ -260,6 +260,7 @@ declare namespace NodeJS {
       isDisplayMediaSystemPickerAvailable(): boolean;
       getRestoreToken(sourceId: string): string;
     };
+    _linkedBinding(name: 'electron_browser_dialog'): Electron.Dialog;
     _linkedBinding(name: 'electron_browser_event_emitter'): { setEventEmitterPrototype(prototype: Object): void };
     _linkedBinding(name: 'electron_browser_ipc_dispatch'): {
       setup(objects: { ipcMain: NodeJS.EventEmitter; ipcMainInternal: NodeJS.EventEmitter }): void;
