@@ -119,7 +119,7 @@ describe('window.postMessage', () => {
   });
 });
 
-describe('focus handling', () => {
+describe('focus handling', { tags: ['serial'] }, () => {
   let webviewContents: WebContents;
   let w: BrowserWindow;
 
@@ -1354,7 +1354,7 @@ describe('chromium features', () => {
     });
   });
 
-  describe('File System API,', () => {
+  describe('File System API,', { tags: ['serial'] }, () => {
     let w: BrowserWindow | null = null;
 
     afterEach(async () => {
@@ -1858,7 +1858,7 @@ describe('chromium features', () => {
     });
   });
 
-  describe('File System Access permission scope', () => {
+  describe('File System Access permission scope', { tags: ['serial'] }, () => {
     // Pages obtain FileSystemHandles by pasting a file:// URI, the same way the
     // tests above do, so no picker is needed.
     const handlePage = `<!doctype html><body contenteditable tabindex="0">fsa<script>
@@ -3644,7 +3644,7 @@ describe('chromium features', () => {
     }
   });
 
-  describe('document.hasFocus', () => {
+  describe('document.hasFocus', { tags: ['serial'] }, () => {
     it('has correct value when multiple windows are opened', async () => {
       const w1 = new BrowserWindow({ show: true });
       const w2 = new BrowserWindow({ show: true });
@@ -4571,7 +4571,7 @@ describe('window.getScreenDetails', () => {
   });
 });
 
-describe('navigator.clipboard.read', () => {
+describe('navigator.clipboard.read', { tags: ['serial'] }, () => {
   let w: BrowserWindow;
   before(async () => {
     w = new BrowserWindow();
@@ -4619,7 +4619,7 @@ describe('navigator.clipboard.read', () => {
   });
 });
 
-describe('navigator.clipboard.write', () => {
+describe('navigator.clipboard.write', { tags: ['serial'] }, () => {
   let w: BrowserWindow;
   before(async () => {
     w = new BrowserWindow();
@@ -4718,7 +4718,7 @@ describe('pointer lock permission request', () => {
   });
 });
 
-describe('paste execCommand', () => {
+describe('paste execCommand', { tags: ['serial'] }, () => {
   const readClipboard = async (w: BrowserWindow) => {
     if (!w.webContents.isFocused()) {
       const focus = once(w.webContents, 'focus');

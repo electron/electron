@@ -95,7 +95,7 @@ const loadDraggableSubframe = async (w: BrowserWindow): Promise<void> => {
   `);
 };
 
-describe('draggable regions', function () {
+describe('draggable regions', { tags: ['serial'] }, function () {
   before(async function () {
     if (!robot || !robot.moveMouse || !hasCapturableScreen()) {
       this.skip();

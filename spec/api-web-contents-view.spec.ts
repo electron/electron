@@ -27,7 +27,9 @@ describe('WebContentsView', () => {
   });
 
   it('accepts existing webContents object', async () => {
-    const currentWebContentsCount = webContents.getAllWebContents().length;
+    // Compare against the set rather than a count: webContents left to the
+    // garbage collector by earlier tests may go away while this one runs.
+    const existingWebContents = new Set(webContents.getAllWebContents());
 
     const wc = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true });
     defer(() => wc.destroy());
@@ -38,8 +40,8 @@ describe('WebContentsView', () => {
     });
 
     expect(webContentsView.webContents).to.eq(wc);
-    expect(webContents.getAllWebContents().length).to.equal(
-      currentWebContentsCount + 1,
+    expect(webContents.getAllWebContents().filter((contents) => !existingWebContents.has(contents))).to.deep.equal(
+      [wc],
       'expected only single webcontents to be created'
     );
   });
@@ -459,7 +461,7 @@ describe('WebContentsView', () => {
   });
 
   describe('setBorderRadius', () => {
-    ifdescribe(hasCapturableScreen())('capture', () => {
+    ifdescribe(hasCapturableScreen())('capture', { tags: ['serial'] }, () => {
       let w: Electron.BaseWindow;
       let v: Electron.WebContentsView;
 
