@@ -81,6 +81,14 @@ class App final : public gin::Wrappable<App>,
 #endif
 
   base::FilePath GetAppPath() const;
+
+  // Asks the app's client certificate password handler for the password to
+  // unlock |token_name|. Returns false when no handler is set.
+  bool RequestClientCertPassword(
+      const std::string& hostname,
+      const std::string& token_name,
+      bool is_retry,
+      base::OnceCallback<void(const std::string&)> callback);
   void RenderProcessReady(content::RenderProcessHost* host);
   void RenderProcessExited(content::RenderProcessHost* host);
 
@@ -256,6 +264,10 @@ class App final : public gin::Wrappable<App>,
 
   v8::Local<v8::Value> GetCommandLine(v8::Isolate* isolate);
   v8::TracedReference<v8::Value> command_line_;
+
+  void SetClientCertRequestPasswordHandler(v8::Isolate* isolate,
+                                           v8::Local<v8::Value> handler);
+  v8::TracedReference<v8::Function> client_cert_password_handler_;
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   bool IsRunningUnderARM64Translation() const;

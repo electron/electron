@@ -85,6 +85,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
@@ -759,12 +760,25 @@ void App::AllowCertificateError(
       electron::AdaptCallbackForRepeating(std::move(callback));
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  bool prevent_default = Emit("certificate-error", web_contents, request_url,
-                              net::ErrorToString(cert_error), ssl_info.cert,
-                              adapted_callback, is_main_frame_request);
+  gin_helper::internal::Event* event =
+      gin_helper::internal::Event::New(isolate);
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
+  std::string error = net::ErrorToString(cert_error);
+  v8::Local<v8::Value> cert = gin::ConvertToV8(isolate, ssl_info.cert);
+  v8::Local<v8::Value> callback_value =
+      gin::ConvertToV8(isolate, adapted_callback);
+  // The same event is emitted on the WebContents, then on app.
+  if (WebContents* api_web_contents = WebContents::From(web_contents)) {
+    api_web_contents->EmitWithoutEvent("certificate-error", event_object,
+                                       request_url, error, cert, callback_value,
+                                       is_main_frame_request);
+  }
+  EmitWithoutEvent("certificate-error", event_object, web_contents, request_url,
+                   error, cert, callback_value, is_main_frame_request);
 
   // Deny the certificate by default.
-  if (!prevent_default)
+  if (!event->GetDefaultPrevented())
     adapted_callback.Run(content::CERTIFICATE_REQUEST_RESULT_TYPE_DENY);
 }
 
@@ -789,19 +803,31 @@ base::OnceClosure App::SelectClientCertificate(
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  // |web_contents| is null for requests that did not originate from a renderer
-  // (e.g. net.fetch / utilityProcess); surface those with a null WebContents.
-  v8::Local<v8::Value> web_contents_value =
-      gin::ConvertToV8(isolate, web_contents);
-  bool prevent_default =
-      Emit("select-client-certificate", web_contents_value,
-           cert_request_info->host_and_port.ToString(), std::move(client_certs),
-           base::BindOnce(&OnClientCertificateSelected, isolate,
-                          shared_delegate, shared_identities));
+  gin_helper::internal::Event* event =
+      gin_helper::internal::Event::New(isolate);
+  v8::Local<v8::Object> event_object =
+      event->GetWrapper(isolate).ToLocalChecked();
+  std::string host_and_port = cert_request_info->host_and_port.ToString();
+  v8::Local<v8::Value> certs = gin::ConvertToV8(isolate, client_certs);
+  v8::Local<v8::Value> callback_value = gin::ConvertToV8(
+      isolate, base::BindOnce(&OnClientCertificateSelected, isolate,
+                              shared_delegate, shared_identities));
+  // The same event is emitted on the WebContents, then on app. |web_contents|
+  // is null for requests that did not originate from a renderer (e.g.
+  // net.fetch / utilityProcess); app surfaces those with a null WebContents.
+  WebContents* api_web_contents =
+      web_contents ? WebContents::From(web_contents) : nullptr;
+  if (api_web_contents) {
+    api_web_contents->EmitWithoutEvent("select-client-certificate",
+                                       event_object, host_and_port, certs,
+                                       callback_value);
+  }
+  EmitWithoutEvent("select-client-certificate", event_object, web_contents,
+                   host_and_port, certs, callback_value);
 
   // Default to first certificate from the platform store. The JS callback may
   // have already run synchronously and moved the identity out, so guard for it.
-  if (!prevent_default && (*shared_identities)[0]) {
+  if (!event->GetDefaultPrevented() && (*shared_identities)[0]) {
     scoped_refptr<net::X509Certificate> cert =
         (*shared_identities)[0]->certificate();
     net::ClientCertIdentity::SelfOwningAcquirePrivateKey(
@@ -1935,10 +1961,72 @@ const gin::WrapperInfo* App::wrapper_info() const {
 void App::Trace(cppgc::Visitor* visitor) const {
   gin::Wrappable<App>::Trace(visitor);
   visitor->Trace(command_line_);
+  visitor->Trace(client_cert_password_handler_);
 #if BUILDFLAG(IS_MAC)
   visitor->Trace(dock_);
   visitor->Trace(dock_menu_);
 #endif
+}
+
+void App::SetClientCertRequestPasswordHandler(v8::Isolate* isolate,
+                                              v8::Local<v8::Value> handler) {
+  if (handler->IsFunction())
+    client_cert_password_handler_.Reset(isolate, handler.As<v8::Function>());
+  else
+    client_cert_password_handler_.Reset();
+}
+
+bool App::RequestClientCertPassword(
+    const std::string& hostname,
+    const std::string& token_name,
+    bool is_retry,
+    base::OnceCallback<void(const std::string&)> callback) {
+  if (client_cert_password_handler_.IsEmpty())
+    return false;
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  auto params = gin_helper::Dictionary::CreateEmpty(isolate);
+  params.Set("hostname", hostname);
+  params.Set("tokenName", token_name);
+  params.Set("isRetry", is_retry);
+  v8::Local<v8::Value> argv[] = {params.GetHandle()};
+  auto password_callback =
+      electron::AdaptCallbackForRepeating(std::move(callback));
+  v8::Local<v8::Object> wrapper;
+  v8::Local<v8::Value> result;
+  v8::Local<v8::Promise::Resolver> resolver;
+  if (!GetWrapper(isolate).ToLocal(&wrapper) ||
+      !node::MakeCallback(isolate, wrapper,
+                          client_cert_password_handler_.Get(isolate), 1, argv,
+                          {0, 0})
+           .ToLocal(&result) ||
+      !v8::Promise::Resolver::New(context).ToLocal(&resolver) ||
+      resolver->Resolve(context, result).IsNothing()) {
+    password_callback.Run(std::string());
+    return true;
+  }
+  auto on_password = base::BindRepeating(
+      [](const base::RepeatingCallback<void(const std::string&)>& callback,
+         gin::Arguments* args) {
+        std::string password;
+        args->GetNext(&password);
+        callback.Run(password);
+      },
+      password_callback);
+  auto on_rejected = base::BindRepeating(
+      [](const base::RepeatingCallback<void(const std::string&)>& callback) {
+        callback.Run(std::string());
+      },
+      password_callback);
+  if (resolver->GetPromise()
+          ->Then(context,
+                 gin::ConvertToV8(isolate, on_password).As<v8::Function>(),
+                 gin::ConvertToV8(isolate, on_rejected).As<v8::Function>())
+          .IsEmpty()) {
+    password_callback.Run(std::string());
+  }
+  return true;
 }
 
 v8::Local<v8::Value> App::GetCommandLine(v8::Isolate* isolate) {
@@ -2107,6 +2195,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetProperty("applicationMenu", &Menu::GetApplicationMenu,
                    &Menu::SetApplicationMenuFromJS)
       .SetProperty("commandLine", &App::GetCommandLine)
+      .SetMethod("setClientCertRequestPasswordHandler",
+                 &App::SetClientCertRequestPasswordHandler)
       .SetMethod("configureHostResolver", &ConfigureHostResolver)
       .SetMethod("enableSandbox", &App::EnableSandbox)
       .SetMethod("setProxy", &App::SetProxy)
