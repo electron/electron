@@ -24,32 +24,6 @@ WebContents.prototype.postMessage = function (...args) {
   return this.mainFrame.postMessage(...args);
 };
 
-WebContents.prototype.send = function (channel, ...args) {
-  if (typeof channel !== 'string') {
-    throw new TypeError('Missing required channel argument');
-  }
-
-  try {
-    return this._sendToMainFrame(false /* internal */, channel, args);
-  } catch (e) {
-    if (e instanceof TypeError) throw e;
-    console.error('Error sending from webContents: ', e);
-  }
-};
-
-WebContents.prototype._sendInternal = function (channel, ...args) {
-  if (typeof channel !== 'string') {
-    throw new TypeError('Missing required channel argument');
-  }
-
-  try {
-    return this._sendToMainFrame(true /* internal */, channel, args);
-  } catch (e) {
-    if (e instanceof TypeError) throw e;
-    console.error('Error sending from webContents: ', e);
-  }
-};
-
 function getWebFrame(contents: Electron.WebContents, frame: number | [number, number]) {
   let webFrame: Electron.WebFrameMain | undefined;
   if (typeof frame === 'number') {
@@ -234,20 +208,6 @@ const consoleMessageDeprecated = deprecate.warnOnceMessage(
 
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
-  const prefs = this.getLastWebPreferences() || {};
-  if (!prefs.nodeIntegration && prefs.preload != null && prefs.sandbox == null) {
-    deprecate.log(
-      "The default sandbox option for windows without nodeIntegration is changing. Presently, by default, when a window has a preload script, it defaults to being unsandboxed. In Electron 20, this default will be changing, and all windows that have nodeIntegration: false (which is the default) will be sandboxed by default. If your preload script doesn't use Node, no action is needed. If your preload script does use Node, either refactor it to move Node usage to the main process, or specify sandbox: false in your WebPreferences."
-    );
-  }
-  // Read off the ID at construction time, so that it's accessible even after
-  // the underlying C++ WebContents is destroyed.
-  const id = this.id;
-  Object.defineProperty(this, 'id', {
-    value: id,
-    writable: false
-  });
-
   this._windowOpenHandler = null;
 
   const ipc = new IpcMainImpl();
@@ -518,47 +478,6 @@ WebContents.prototype._init = function () {
     if (eventName === 'console-message' && !this.isDestroyed() && this.listenerCount('console-message') === 0) {
       this._setConsoleMessageObserved(false);
     }
-  });
-  // Properties
-
-  Object.defineProperty(this, 'audioMuted', {
-    get: () => this.isAudioMuted(),
-    set: (muted) => this.setAudioMuted(muted)
-  });
-
-  Object.defineProperty(this, 'userAgent', {
-    get: () => this.getUserAgent(),
-    set: (agent) => this.setUserAgent(agent)
-  });
-
-  Object.defineProperty(this, 'zoomLevel', {
-    get: () => this.getZoomLevel(),
-    set: (level) => this.setZoomLevel(level)
-  });
-
-  Object.defineProperty(this, 'zoomFactor', {
-    get: () => this.getZoomFactor(),
-    set: (factor) => this.setZoomFactor(factor)
-  });
-
-  Object.defineProperty(this, 'zoomMode', {
-    get: () => this.getZoomMode(),
-    set: (mode) => this.setZoomMode(mode)
-  });
-
-  Object.defineProperty(this, 'frameRate', {
-    get: () => this.getFrameRate(),
-    set: (rate) => this.setFrameRate(rate)
-  });
-
-  Object.defineProperty(this, 'backgroundThrottling', {
-    get: () => this.getBackgroundThrottling(),
-    set: (allowed) => this.setBackgroundThrottling(allowed)
-  });
-
-  Object.defineProperty(this, 'caretBrowsingEnabled', {
-    get: () => this.isCaretBrowsingEnabled(),
-    set: (enabled) => this.setCaretBrowsingEnabled(enabled)
   });
 };
 

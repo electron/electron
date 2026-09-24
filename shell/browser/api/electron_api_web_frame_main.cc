@@ -15,6 +15,7 @@
 #include "base/functional/callback_helpers.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
+#include "base/strings/strcat.h"
 #include "content/browser/renderer_host/frame_tree_node.h"         // nogncheck
 #include "content/browser/renderer_host/render_frame_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_process_host_impl.h"  // nogncheck
@@ -44,6 +45,7 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/v8_util.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -381,20 +383,71 @@ bool WebFrameMain::IsDestroyed() const {
   return render_frame_disposed_;
 }
 
-void WebFrameMain::Send(v8::Isolate* isolate,
-                        bool internal,
-                        const std::string& channel,
-                        v8::Local<v8::Value> args) {
+bool ReadIPCSendArguments(gin::Arguments* args,
+                          std::string_view source,
+                          std::string* channel,
+                          electron::SerializedValue* message) {
+  v8::Isolate* isolate = args->isolate();
+  v8::Local<v8::Value> channel_value;
+  if (!args->GetNext(&channel_value) || !channel_value->IsString()) {
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "Missing required channel argument");
+    return false;
+  }
+  *channel = gin::V8ToString(isolate, channel_value);
+  v8::LocalVector<v8::Value> rest(isolate);
+  v8::Local<v8::Value> next;
+  while (args->GetNext(&next))
+    rest.push_back(next);
+  v8::TryCatch try_catch(isolate);
+  if (!gin::ConvertFromV8(isolate,
+                          v8::Array::New(isolate, rest.data(), rest.size()),
+                          message)) {
+    // e.g. a DataCloneError for an argument that cannot be serialized.
+    std::string reason = "Failed to serialize arguments";
+    if (try_catch.HasCaught()) {
+      v8::Local<v8::String> exception;
+      if (try_catch.Exception()
+              ->ToString(isolate->GetCurrentContext())
+              .ToLocal(&exception)) {
+        reason = gin::V8ToString(isolate, exception);
+      }
+      try_catch.Reset();
+    }
+    WarnIPCSendFailed(isolate, source, reason);
+    return false;
+  }
+  return true;
+}
+
+void WarnIPCSendFailed(v8::Isolate* isolate,
+                       std::string_view source,
+                       std::string_view reason) {
+  util::EmitWarning(isolate,
+                    base::StrCat({"Error sending from ", source, ": ", reason}),
+                    "electron");
+}
+
+void WebFrameMain::Send(gin::Arguments* args) {
+  std::string channel;
   electron::SerializedValue message;
-  if (!gin::ConvertFromV8(isolate, args, &message)) {
-    isolate->ThrowException(v8::Exception::Error(
-        gin::StringToV8(isolate, "Failed to serialize arguments")));
+  if (!ReadIPCSendArguments(args, "webFrameMain", &channel, &message))
+    return;
+  DeliverMessage(args->isolate(), false, "webFrameMain", channel,
+                 std::move(message));
+}
+
+void WebFrameMain::DeliverMessage(v8::Isolate* isolate,
+                                  bool internal,
+                                  std::string_view source,
+                                  const std::string& channel,
+                                  electron::SerializedValue message) {
+  if (!HasRenderFrame()) {
+    WarnIPCSendFailed(
+        isolate, source,
+        "Render frame was disposed before WebFrameMain could be accessed");
     return;
   }
-
-  if (!CheckRenderFrame())
-    return;
-
   GetRendererApi()->Message(internal, channel, std::move(message));
 }
 
@@ -806,7 +859,7 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("saveVideoFrameAs", &WebFrameMain::SaveVideoFrameAs)
       .SetMethod("reload", &WebFrameMain::Reload)
       .SetMethod("isDestroyed", &WebFrameMain::IsDestroyed)
-      .SetMethod("_send", &WebFrameMain::Send)
+      .SetMethod("send", &WebFrameMain::Send)
       .SetMethod("_transferSharedTexture", &WebFrameMain::TransferSharedTexture)
       .SetMethod("postMessage", &WebFrameMain::PostMessage)
       .SetProperty("detached", &WebFrameMain::Detached)

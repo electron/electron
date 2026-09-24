@@ -44,19 +44,6 @@ declare namespace NodeJS {
     exitImmediately(code: number): never;
   }
 
-  type CrashReporterBinding = Omit<Electron.CrashReporter, 'start'> & {
-    start(
-      submitUrl: string,
-      uploadToServer: boolean,
-      ignoreSystemCrashHandler: boolean,
-      rateLimit: boolean,
-      compress: boolean,
-      globalExtra: Record<string, string>,
-      extra: Record<string, string>,
-      isNodeProcess: boolean
-    ): void;
-  };
-
   interface EnvironmentBinding {
     getVar(name: string): string | null;
     hasVar(name: string): boolean;
@@ -133,25 +120,6 @@ declare namespace NodeJS {
     on(eventName: 'closing', listener: (event: any) => void): this;
     on(eventName: 'close', listener: (event: any, wasClean: boolean, code: number, reason: string) => void): this;
     on(eventName: 'error', listener: (event: any) => void): this;
-  }
-
-  interface ActivationArgumentsInternal {
-    type: string;
-    arguments: string;
-    actionIndex?: number;
-    reply?: string;
-    userInputs?: Record<string, string>;
-  }
-
-  interface NotificationBinding {
-    isSupported(): boolean;
-    getHistory(): Promise<Electron.Notification[]>;
-    remove(id: string | string[]): void;
-    removeAll(): void;
-    removeGroup(groupId: string): void;
-    Notification: typeof Electron.Notification;
-    // Windows-only callback for cold-start notification activation
-    handleActivation?: (callback: (details: ActivationArgumentsInternal) => void) => void;
   }
 
   interface PowerMonitorBinding extends Electron.PowerMonitor {
@@ -300,7 +268,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_auto_updater'): { autoUpdater: Electron.AutoUpdater };
     _linkedBinding(name: 'electron_browser_clipboard'): Electron.Clipboard;
     _linkedBinding(name: 'electron_browser_clipboard_item'): Electron.ClipboardItem;
-    _linkedBinding(name: 'electron_browser_crash_reporter'): CrashReporterBinding;
+    _linkedBinding(name: 'electron_browser_crash_reporter'): Electron.CrashReporter;
     _linkedBinding(name: 'electron_browser_desktop_capturer'): {
       createDesktopCapturer(): ElectronInternal.DesktopCapturer;
       isDisplayMediaSystemPickerAvailable(): boolean;
@@ -313,11 +281,9 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_image_view'): { ImageView: any };
     _linkedBinding(name: 'electron_browser_in_app_purchase'): { inAppPurchase: Electron.InAppPurchase };
     _linkedBinding(name: 'electron_browser_menu'): { Menu: typeof Electron.Menu; MenuItem: typeof Electron.MenuItem };
-    _linkedBinding(name: 'electron_browser_message_port'): {
-      createPair(): { port1: Electron.MessagePortMain; port2: Electron.MessagePortMain };
-    };
+    _linkedBinding(name: 'electron_browser_message_port'): { MessageChannelMain: typeof Electron.MessageChannelMain };
     _linkedBinding(name: 'electron_browser_native_theme'): { nativeTheme: Electron.NativeTheme };
-    _linkedBinding(name: 'electron_browser_notification'): NotificationBinding;
+    _linkedBinding(name: 'electron_browser_notification'): { Notification: typeof Electron.Notification };
     _linkedBinding(name: 'electron_browser_power_monitor'): PowerMonitorBinding;
     _linkedBinding(name: 'electron_browser_power_save_blocker'): { powerSaveBlocker: Electron.PowerSaveBlocker };
     _linkedBinding(name: 'electron_browser_push_notifications'): { pushNotifications: Electron.PushNotifications };
