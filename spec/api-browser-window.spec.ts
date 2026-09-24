@@ -37,7 +37,13 @@ import * as nodeUrl from 'node:url';
 
 import { emittedUntil, emittedNTimes } from './lib/events-helpers.ts';
 import { randomString } from './lib/net-helpers.ts';
-import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers.ts';
+import {
+  type DisplayPixels,
+  HexColors,
+  ScreenCapture,
+  expectDisplayPixelsEventually,
+  hasCapturableScreen
+} from './lib/screen-helpers.ts';
 import {
   ifit,
   ifdescribe,
@@ -3819,6 +3825,73 @@ describe('BrowserWindow module', () => {
   });
 
   describe('"titleBarOverlay" option', () => {
+    // These read the overlay back off the X screen. Wayland has no screen
+    // capture without a portal, and other platforms draw native caption buttons
+    // whose pixels are not ours to predict.
+    ifdescribe(process.platform === 'linux' && !isWayland)('rendering', { tags: ['serial'] }, () => {
+      const overlayHeight = 30;
+      // A red page with a white marker square near the bottom left, so a capture
+      // can tell a painted page from a blank or stale window surface.
+      const pageURL =
+        'data:text/html,<body style="background: %23ff0000"><div style="position: absolute; ' +
+        'left: 20px; bottom: 20px; width: 40px; height: 40px; background: %23ffffff"></div></body>';
+      const showOverlayWindow = async (titleBarOverlay: Electron.TitleBarOverlay) => {
+        const { workArea } = screen.getPrimaryDisplay();
+        const w = new BrowserWindow({
+          x: workArea.x + 100,
+          y: workArea.y + 100,
+          width: 400,
+          height: 200,
+          backgroundColor: '#ff0000',
+          titleBarStyle: 'hidden',
+          titleBarOverlay: { height: overlayHeight, ...titleBarOverlay }
+        });
+        await w.loadURL(pageURL);
+        w.focus();
+        return w;
+      };
+      // Returns the page background colour as captured, after making sure the
+      // capture shows the painted page rather than whatever was there before.
+      const capturedPageColor = (pixels: DisplayPixels, w: BrowserWindow) => {
+        const { x, y, width, height } = w.getBounds();
+        const page = pixels.colorAt(x + width / 2, y + height - 40);
+        const marker = pixels.colorAt(x + 40, y + height - 40);
+        const outside = pixels.colorAt(x - 10, y - 10);
+        expect(page).to.not.equal(outside, 'page is not on screen yet');
+        expect(marker).to.not.equal(outside, 'page is not on screen yet');
+        expect(marker).to.not.equal(page, 'page has not painted yet');
+        return page;
+      };
+      // Hovered caption buttons get a translucent highlight, so colours within a
+      // short distance of the page colour still count as the page showing.
+      const showsPage = (color: string, pageColor: string) => {
+        const [r1, g1, b1] = color.split(',').map(Number);
+        const [r2, g2, b2] = pageColor.split(',').map(Number);
+        return Math.hypot(r1 - r2, g1 - g2, b1 - b2) < 60;
+      };
+      // Pixels across the overlay strip that are not showing the page, by colour.
+      const overlayPixels = (pixels: DisplayPixels, w: BrowserWindow, pageColor: string) => {
+        const { x, y, width } = w.getBounds();
+        const strip = { x: x + 4, y: y + 2, width: width - 8, height: overlayHeight - 4 };
+        const histogram = pixels.histogram(strip).filter(([color]) => !showsPage(color, pageColor));
+        const count = histogram.reduce((total, [, n]) => total + n, 0);
+        return { histogram, count, fraction: count / (strip.width * strip.height) };
+      };
+
+      // Regression test for https://github.com/electron/electron/pull/51017: a
+      // fully transparent colour was treated as unset and replaced by the
+      // default opaque one.
+      it('lets the page show through a fully transparent overlay color', async function () {
+        const w = await showOverlayWindow({ color: 'rgba(0, 0, 0, 0)', symbolColor: '#0000ff' });
+        const captured = await expectDisplayPixelsEventually((pixels) => {
+          const overlay = overlayPixels(pixels, w, capturedPageColor(pixels, w));
+          // Only the caption button glyphs should differ from the page.
+          expect(overlay.fraction).to.be.below(0.1, 'overlay background is not transparent');
+        });
+        if (!captured) this.skip();
+      });
+    });
+
     const testWindowsOverlayHeight = async (size: any) => {
       const w = new BrowserWindow({
         show: false,
