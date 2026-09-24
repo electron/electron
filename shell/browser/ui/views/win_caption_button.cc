@@ -42,11 +42,11 @@ WinCaptionButton::WinCaptionButton(PressedCallback callback,
 
 WinCaptionButton::~WinCaptionButton() = default;
 
-std::unique_ptr<WinIconPainter> WinCaptionButton::CreateIconPainter() {
+std::unique_ptr<Windows10IconPainter> WinCaptionButton::CreateIconPainter() {
   if (base::win::GetVersion() >= base::win::Version::WIN11) {
-    return std::make_unique<Win11IconPainter>();
+    return std::make_unique<Windows11IconPainter>();
   }
-  return std::make_unique<WinIconPainter>();
+  return std::make_unique<Windows10IconPainter>();
 }
 
 SkColor WinCaptionButton::GetBaseForegroundColor() const {

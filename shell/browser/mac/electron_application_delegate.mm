@@ -8,6 +8,7 @@
 
 #include "base/allocator/buildflags.h"
 #include "base/allocator/partition_allocator/src/partition_alloc/shim/allocator_shim.h"
+#include "base/apple/foundation_util.h"
 #include "base/functional/callback.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/string_number_conversions.h"
@@ -16,7 +17,6 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/mac/dict_util.h"
 #import "shell/browser/mac/electron_application.h"
-#include "shell/common/mac_util.h"
 
 #import <UserNotifications/UserNotifications.h>
 
@@ -181,7 +181,7 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
   // Resolve outstanding APNS promises created during registration attempts
   if (auto* push_notifications = electron::api::PushNotifications::Get()) {
     std::string encoded =
-        base::HexEncode(electron::util::as_byte_span(deviceToken));
+        base::HexEncode(base::apple::NSDataToSpan(deviceToken));
     push_notifications->ResolveAPNSPromiseSetWithToken(
         base::ToLowerASCII(encoded));
   }

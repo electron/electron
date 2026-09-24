@@ -6,6 +6,7 @@
 
 #include <windows.h>
 
+#include "base/command_line.h"
 #include "base/logging.h"
 #include "base/process/launch.h"
 #include "base/process/process_handle.h"
@@ -14,7 +15,6 @@
 #include "base/win/scoped_handle.h"
 #include "sandbox/win/src/nt_internals.h"
 #include "sandbox/win/src/win_utils.h"
-#include "shell/common/command_line_util_win.h"
 
 namespace relauncher::internal {
 
@@ -63,7 +63,7 @@ StringType ArgvToCommandLineString(const StringVector& argv) {
   for (const StringType& arg : argv) {
     if (!command_line.empty())
       command_line += L' ';
-    command_line += electron::AddQuoteForArg(arg);
+    command_line += base::CommandLine::QuoteForCommandLineToArgvW(arg);
   }
   return command_line;
 }
