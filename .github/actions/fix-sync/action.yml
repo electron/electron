@@ -13,6 +13,7 @@ description: 'Ensures proper binaries are in place'
 # 9. Fix rc binary on Windows
 # 10. Fix clang-format binary on Windows
 # 11. Fixing the hermetic host Python binary
+# 12. Fixing libclang on Windows (missing library)
 #
 # The macOS src cache is synced with host_os=mac and host_cpu=arm64, so every
 # dep and hook that DEPS selects by host vars (clang, rust, dsymutil,
@@ -154,12 +155,36 @@ runs:
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
       run: e d vpython3 src\build\vs_toolchain.py update --force
+    # V8's metagen loads libclang into the build's own Python, so it must be the
+    # package for this machine. The Windows cache is synced with host_os=linux,
+    # which leaves no Windows package at all. Re-fetch just this dep: a one-dep
+    # DEPS fed to gclient makes it select, verify and extract the object for the
+    # host it is actually running on.
+    - name: Fix libclang (Windows)
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: bash
+      run: |
+        DEP=src/third_party/llvm-libclang
+        OBJECTS=$(e d gclient getdep --deps-file=src/DEPS -r "$DEP" | tail -1)
+        cat > libclang.DEPS <<EOF
+        vars = {'non_git_source': 'True'}
+        deps = {'$DEP': {'dep_type': 'gcs', 'bucket': 'chromium-browser-clang', 'objects': $OBJECTS}}
+        EOF
+        rm -rf "$DEP"
+        e d gclient sync --spec="solutions=[{'name':'src','url':None,'deps_file':'../libclang.DEPS','managed':False}]"
+        # The src cache has no gclient bookkeeping at the root; remove what this
+        # one-dep sync wrote so later gclient runs do not see it.
+        rm -f libclang.DEPS .gclient_entries .gclient_previous_sync_commits .gcs_entries
+    # TODO(clavin): Try fetching this with a one-dep gclient sync, as the
+    # libclang step above does.
     - name: Download nodejs
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
       run: |
         $nodedeps = e d gclient getdep --deps-file=src/DEPS -r src/third_party/node/win | ConvertFrom-JSON
         python3 src\third_party\depot_tools\download_from_google_storage.py --no_resume --no_auth --bucket chromium-nodejs -o src\third_party\node\win\node.exe $nodedeps.object_name
+    # TODO(clavin): Try fetching this with a one-dep gclient sync, as the
+    # libclang step above does.
     - name: Download clang-format
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
