@@ -68,6 +68,7 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/browser/relauncher.h"
+#include "shell/common/api/electron_api_command_line.h"
 #include "shell/common/application_info.h"
 #include "shell/common/callback_util.h"
 #include "shell/common/electron_command_line.h"
@@ -556,6 +557,10 @@ void OnIconDataAvailable(gin_helper::Promise<gfx::Image> promise,
     promise.RejectWithErrorMessage("Failed to get file icon.");
   }
 }
+
+#if !BUILDFLAG(IS_WIN)
+void SetAppUserModelIdNoOp() {}
+#endif
 
 }  // namespace
 
@@ -1497,7 +1502,6 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
       pid_dict.Set("name", process_metric.second->name);
     }
 
-#if !BUILDFLAG(IS_LINUX)
     auto memory_info = process_metric.second->GetMemoryInfo();
 
     auto memory_dict = gin_helper::Dictionary::CreateEmpty(isolate);
@@ -1513,7 +1517,6 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
 #endif
 
     pid_dict.Set("memory", memory_dict);
-#endif
 
 #if BUILDFLAG(IS_MAC)
     pid_dict.Set("sandboxed", process_metric.second->IsSandboxed());
@@ -1784,8 +1787,16 @@ int DockBounce(gin::Arguments* args) {
   return request_id;
 }
 
-void DockSetMenu(electron::api::Menu* menu) {
+void App::DockSetMenu(electron::api::Menu* menu) {
   Browser::Get()->DockSetMenu(menu->model());
+  dock_menu_ = menu;
+}
+
+v8::Local<v8::Value> App::DockGetMenu(v8::Isolate* isolate) {
+  v8::Local<v8::Object> menu;
+  if (dock_menu_ && dock_menu_->GetWrapper(isolate).ToLocal(&menu))
+    return menu;
+  return v8::Null(isolate);
 }
 
 v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
@@ -1811,7 +1822,10 @@ v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
                        base::BindRepeating(&Browser::DockShow, browser));
     dock_obj.SetMethod("isVisible",
                        base::BindRepeating(&Browser::DockIsVisible, browser));
-    dock_obj.SetMethod("setMenu", &DockSetMenu);
+    dock_obj.SetMethod("setMenu", base::BindRepeating(&App::DockSetMenu,
+                                                      base::Unretained(this)));
+    dock_obj.SetMethod("getMenu", base::BindRepeating(&App::DockGetMenu,
+                                                      base::Unretained(this)));
     dock_obj.SetMethod("setIcon",
                        base::BindRepeating(&Browser::DockSetIcon, browser));
 
@@ -1920,9 +1934,20 @@ const gin::WrapperInfo* App::wrapper_info() const {
 
 void App::Trace(cppgc::Visitor* visitor) const {
   gin::Wrappable<App>::Trace(visitor);
+  visitor->Trace(command_line_);
 #if BUILDFLAG(IS_MAC)
   visitor->Trace(dock_);
+  visitor->Trace(dock_menu_);
 #endif
+}
+
+v8::Local<v8::Value> App::GetCommandLine(v8::Isolate* isolate) {
+  if (command_line_.IsEmptyThreadSafe()) {
+    auto command_line = gin_helper::Dictionary::CreateEmpty(isolate);
+    FillCommandLine(&command_line);
+    command_line_.Reset(isolate, command_line.GetHandle());
+  }
+  return command_line_.Get(isolate);
 }
 
 gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
@@ -1937,6 +1962,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::SetVersion, browser))
       .SetMethod("getName", base::BindRepeating(&Browser::GetName, browser))
       .SetMethod("setName", base::BindRepeating(&Browser::SetName, browser))
+      .SetProperty("name", base::BindRepeating(&Browser::GetName, browser),
+                   base::BindRepeating(&Browser::SetName, browser))
       .SetMethod("isReady", base::BindRepeating(&Browser::is_ready, browser))
       .SetMethod("whenReady", base::BindRepeating(&Browser::WhenReady, browser))
       .SetMethod("addRecentDocument",
@@ -1945,7 +1972,9 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::ClearRecentDocuments, browser))
       .SetMethod("getRecentDocuments",
                  base::BindRepeating(&Browser::GetRecentDocuments, browser))
-#if BUILDFLAG(IS_WIN)
+#if !BUILDFLAG(IS_WIN)
+      .SetMethod("setAppUserModelId", &SetAppUserModelIdNoOp)
+#else
       .SetMethod("setAppUserModelId",
                  base::BindRepeating(&Browser::SetAppUserModelID, browser))
       .SetMethod("setToastActivatorCLSID",
@@ -1972,6 +2001,9 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::SetBadgeCount, browser))
       .SetMethod("getBadgeCount",
                  base::BindRepeating(&Browser::badge_count, browser))
+      .SetProperty("badgeCount",
+                   base::BindRepeating(&Browser::badge_count, browser),
+                   base::BindRepeating(&Browser::SetBadgeCount, browser))
       .SetMethod("getLoginItemSettings", &App::GetLoginItemSettings)
       .SetMethod("setLoginItemSettings",
                  base::BindRepeating(&Browser::SetLoginItemSettings, browser))
@@ -2046,6 +2078,9 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  &App::SetAccessibilitySupportFeatures)
       .SetMethod("setAccessibilitySupportEnabled",
                  &App::SetAccessibilitySupportEnabled)
+      .SetProperty("accessibilitySupportEnabled",
+                   &App::IsAccessibilitySupportEnabled,
+                   &App::SetAccessibilitySupportEnabled)
       .SetMethod("disableHardwareAcceleration",
                  &App::DisableHardwareAcceleration)
       .SetMethod("isHardwareAccelerationEnabled",
@@ -2069,6 +2104,9 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
 #endif
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)
+      .SetProperty("applicationMenu", &Menu::GetApplicationMenu,
+                   &Menu::SetApplicationMenuFromJS)
+      .SetProperty("commandLine", &App::GetCommandLine)
       .SetMethod("configureHostResolver", &ConfigureHostResolver)
       .SetMethod("enableSandbox", &App::EnableSandbox)
       .SetMethod("setProxy", &App::SetProxy)

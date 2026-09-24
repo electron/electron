@@ -615,6 +615,7 @@ filenames = {
     "shell/common/api/crashpad_support.cc",
     "shell/common/api/electron_api_asar.cc",
     "shell/common/api/electron_api_command_line.cc",
+    "shell/common/api/electron_api_command_line.h",
     "shell/common/api/electron_api_events.cc",
     "shell/common/api/electron_api_native_image.cc",
     "shell/common/api/electron_api_native_image.h",
