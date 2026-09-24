@@ -115,9 +115,8 @@ The experimental `contentTracing.enableHeapProfiling()` API has been removed.
 Chromium removed the memlog implementation that backed this API and replaced it
 with a Perfetto heap-profiling data source. Pass `heap_profiler_options` to
 `contentTracing.startRecording()` to enable heap profiling for the duration of
-a trace. Heap-enabled recordings use the
-[Perfetto protobuf format](https://perfetto.dev/docs/reference/trace-packet-proto)
-rather than the legacy JSON trace format.
+a trace. Like all recordings, heap-enabled recordings use the
+[Perfetto protobuf format](https://perfetto.dev/docs/reference/trace-packet-proto).
 
 ```js
 await contentTracing.startRecording({
@@ -127,6 +126,18 @@ await contentTracing.startRecording({
   }
 })
 ```
+
+### Behavior Changed: `contentTracing` recordings use the Perfetto protobuf format
+
+`contentTracing.stopRecording()` used to write traces in the legacy JSON trace
+format unless heap profiling was enabled. It now always writes the
+[Perfetto protobuf format](https://perfetto.dev/docs/reference/trace-packet-proto),
+and the JSON format is no longer available. Open recordings in the
+[Perfetto UI](https://ui.perfetto.dev), or query them with Perfetto's
+[Trace Processor](https://perfetto.dev/docs/analysis/trace-processor). If you
+still need the legacy JSON format, Perfetto's
+[`traceconv`](https://perfetto.dev/docs/quickstart/traceconv) tool can convert
+a recording to it.
 
 ### Behavior Changed: screen capture requests are reported as `display-capture` in `setPermissionRequestHandler`
 

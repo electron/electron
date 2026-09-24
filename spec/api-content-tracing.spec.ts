@@ -10,16 +10,53 @@ import { performance } from 'node:perf_hooks';
 import { setTimeout } from 'node:timers/promises';
 import * as vm from 'node:vm';
 
-import { ifdescribe, waitUntil } from './lib/spec-helpers';
+import { ifdescribe, waitUntil } from './lib/spec-helpers.ts';
 
 // Test jobs do not include Chromium's source tree, so define the subset of the
-// Perfetto schema needed to identify native heap stack samples.
+// Perfetto schema these tests read. Field numbers match
+// third_party/perfetto/protos/perfetto/trace/.
 const perfettoTraceType = protobuf
   .parse(`
   syntax = "proto2";
   package perfetto.protos;
   message StackSample {}
+  message EventCategory {
+    optional uint64 iid = 1;
+    optional string name = 2;
+  }
+  message EventName {
+    optional uint64 iid = 1;
+    optional string name = 2;
+  }
+  message InternedData {
+    repeated EventCategory event_categories = 1;
+    repeated EventName event_names = 2;
+  }
+  message LegacyEvent {
+    optional int32 phase = 2;
+  }
+  message TrackEvent {
+    repeated uint64 category_iids = 3;
+    optional LegacyEvent legacy_event = 6;
+    optional int32 type = 9;
+    optional uint64 name_iid = 10;
+    optional uint64 track_uuid = 11;
+    repeated string categories = 22;
+    optional string name = 23;
+  }
+  message ChromeMetadata {
+    optional string name = 1;
+    optional string string_value = 2;
+  }
+  message ChromeEventBundle {
+    repeated ChromeMetadata metadata = 2;
+  }
   message TracePacket {
+    optional ChromeEventBundle chrome_events = 5;
+    optional uint32 trusted_packet_sequence_id = 10;
+    optional TrackEvent track_event = 11;
+    optional InternedData interned_data = 12;
+    optional uint32 sequence_flags = 13;
     optional StackSample stack_sample = 135;
   }
   message Trace {
@@ -27,6 +64,96 @@ const perfettoTraceType = protobuf
   }
 `)
   .root.lookupType('perfetto.protos.Trace');
+
+interface InternedEntry {
+  iid?: string;
+  name?: string;
+}
+
+interface PerfettoPacket {
+  chromeEvents?: { metadata?: Array<{ name?: string; stringValue?: string }> };
+  trustedPacketSequenceId?: number;
+  trackEvent?: {
+    categoryIids?: string[];
+    legacyEvent?: { phase?: number };
+    type?: number;
+    nameIid?: string;
+    trackUuid?: string;
+    categories?: string[];
+    name?: string;
+  };
+  internedData?: { eventCategories?: InternedEntry[]; eventNames?: InternedEntry[] };
+  sequenceFlags?: number;
+  stackSample?: unknown;
+}
+
+const readPerfettoTrace = (filePath: string) =>
+  perfettoTraceType.toObject(perfettoTraceType.decode(fs.readFileSync(filePath)), { longs: String }) as {
+    packet?: PerfettoPacket[];
+  };
+
+// TrackEvent.Type values.
+const TYPE_SLICE_BEGIN = 1;
+const TYPE_SLICE_END = 2;
+const TYPE_INSTANT = 3;
+// TracePacket.SequenceFlags.SEQ_INCREMENTAL_STATE_CLEARED.
+const SEQ_INCREMENTAL_STATE_CLEARED = 1;
+
+interface TraceEvent {
+  categories: string[];
+  name?: string;
+  type?: number;
+  phase?: string;
+  trackUuid?: string;
+}
+
+// Flattens the track events in a trace, resolving interned category and event
+// names. Interning is scoped to a packet sequence and is reset whenever a
+// packet clears the sequence's incremental state.
+const getTraceEvents = (filePath: string): TraceEvent[] => {
+  const interned = new Map<number, { categories: Map<string, string>; names: Map<string, string> }>();
+  const events: TraceEvent[] = [];
+  for (const packet of readPerfettoTrace(filePath).packet ?? []) {
+    const sequenceId = packet.trustedPacketSequenceId ?? 0;
+    if (!interned.has(sequenceId) || (packet.sequenceFlags ?? 0) & SEQ_INCREMENTAL_STATE_CLEARED) {
+      interned.set(sequenceId, { categories: new Map(), names: new Map() });
+    }
+    const state = interned.get(sequenceId)!;
+    for (const { iid, name } of packet.internedData?.eventCategories ?? []) {
+      if (iid !== undefined && name !== undefined) state.categories.set(iid, name);
+    }
+    for (const { iid, name } of packet.internedData?.eventNames ?? []) {
+      if (iid !== undefined && name !== undefined) state.names.set(iid, name);
+    }
+
+    const event = packet.trackEvent;
+    if (!event) continue;
+    // Category groups such as "node,node.environment" are split into their
+    // individual categories.
+    const categories = [
+      ...(event.categories ?? []),
+      ...(event.categoryIids ?? []).map((iid) => state.categories.get(iid) ?? '')
+    ].flatMap((category) => category.split(','));
+    const phase = event.legacyEvent?.phase;
+    events.push({
+      categories,
+      name: event.name ?? (event.nameIid !== undefined ? state.names.get(event.nameIid) : undefined),
+      type: event.type,
+      phase: phase !== undefined ? String.fromCharCode(phase) : undefined,
+      trackUuid: event.trackUuid
+    });
+  }
+  return events;
+};
+
+const hasCategory = (event: TraceEvent, category: string) => event.categories.includes(category);
+
+const getTraceMetadata = (filePath: string) =>
+  new Map(
+    (readPerfettoTrace(filePath).packet ?? [])
+      .flatMap((packet) => packet.chromeEvents?.metadata ?? [])
+      .map(({ name, stringValue }) => [name, stringValue] as const)
+  );
 
 // FIXME: The tests are skipped on linux arm64
 ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTracing', () => {
@@ -50,7 +177,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
   // path race on the final rename.
   let outputFilePath: string;
   beforeEach(() => {
-    outputFilePath = path.join(app.getPath('temp'), `electron-content-tracing-${randomUUID()}.json`);
+    outputFilePath = path.join(app.getPath('temp'), `electron-content-tracing-${randomUUID()}.pftrace`);
   });
   afterEach(() => {
     fs.rmSync(outputFilePath, { force: true });
@@ -91,8 +218,15 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
 
       // If the `excluded_categories` param above is not respected, categories
       // like `node,node.environment` will be included in the output.
-      const content = fs.readFileSync(outputFilePath).toString();
-      expect(content.includes('"cat":"node,node.environment"')).to.be.false();
+      const events = getTraceEvents(outputFilePath);
+      expect(events.some((event) => hasCategory(event, 'node.environment'))).to.be.false();
+    });
+
+    it('records the Perfetto protobuf format', async () => {
+      await record({}, outputFilePath);
+
+      expect(fs.readFileSync(outputFilePath)[0]).to.not.equal('{'.charCodeAt(0), 'output looks like JSON');
+      expect(readPerfettoTrace(outputFilePath).packet).to.be.an('array').that.is.not.empty('trace has no packets');
     });
 
     it('rejects invalid heap profiler options', () => {
@@ -148,19 +282,19 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
 
       expect(fs.existsSync(outputFilePath)).to.be.true('output exists');
 
-      // If the `categoryFilter` param above is not respected the file will
-      // contain actual trace events and be far larger. When the filter is
-      // respected the file only contains metadata, whose size grows slowly as
-      // Chromium adds fields, so keep generous headroom above that baseline.
       const fileSizeInKiloBytes = getFileSizeInKiloBytes(outputFilePath);
-      const expectedMaximumFileSize = 100; // Depends on a platform.
-
       expect(fileSizeInKiloBytes).to.be.above(0, `the trace output file is empty, check "${outputFilePath}"`);
-      expect(fileSizeInKiloBytes).to.be.below(
-        expectedMaximumFileSize,
-        `the trace output file is suspiciously large (${fileSizeInKiloBytes}KB),
-        check "${outputFilePath}"`
+
+      // If the `categoryFilter` param above is not respected the trace will
+      // contain events from other categories. Metadata events use the
+      // always-enabled `__metadata` category.
+      const expectedCategories = new Set(['__ThisIsANonexistentCategory__', '__metadata']);
+      const unexpectedCategories = new Set(
+        getTraceEvents(outputFilePath)
+          .flatMap((event) => event.categories)
+          .filter((category) => !expectedCategories.has(category))
       );
+      expect([...unexpectedCategories]).to.be.empty(`unexpected trace event categories, check "${outputFilePath}"`);
     });
   });
 
@@ -266,9 +400,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       await waitUntil(async () => (await contentTracing.getTraceBufferUsage()).percentage > 0);
 
       await contentTracing.stopRecording(outputFilePath);
-      const trace = perfettoTraceType.toObject(perfettoTraceType.decode(fs.readFileSync(outputFilePath))) as {
-        packet?: Array<{ stackSample?: unknown }>;
-      };
+      const trace = readPerfettoTrace(outputFilePath);
       expect(trace.packet?.some((packet) => packet.stackSample !== undefined)).to.be.true();
     });
 
@@ -289,11 +421,10 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
         }
       }
       const path = await contentTracing.stopRecording();
-      const data = fs.readFileSync(path, 'utf8');
-      const parsed = JSON.parse(data);
+      const events = getTraceEvents(path);
       expect(
-        parsed.traceEvents.some(
-          (x: any) => x.cat === 'disabled-by-default-v8.cpu_profiler' && x.name === 'ProfileChunk'
+        events.some(
+          (event) => hasCategory(event, 'disabled-by-default-v8.cpu_profiler') && event.name === 'ProfileChunk'
         )
       ).to.be.true();
     });
@@ -308,14 +439,14 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       performance.mark('test-trace-mark');
 
       const resultPath = await contentTracing.stopRecording();
-      const data = fs.readFileSync(resultPath, 'utf8');
-      const parsed = JSON.parse(data);
-
-      const markEvents = parsed.traceEvents.filter(
-        (x: any) => x.cat === 'node.perf.usertiming' && x.name === 'test-trace-mark'
+      const markEvents = getTraceEvents(resultPath).filter(
+        (event) => hasCategory(event, 'node.perf.usertiming') && event.name === 'test-trace-mark'
       );
       expect(markEvents).to.have.lengthOf.at.least(1, 'should have node.perf.usertiming events for performance.mark()');
-      expect(markEvents[0].ph).to.equal('I', 'performance.mark() should emit instant (I) phase events');
+      // Instants are typed events, or legacy events with the 'I' phase.
+      expect(markEvents[0].type === TYPE_INSTANT || markEvents[0].phase === 'I').to.be.true(
+        'performance.mark() should emit instant events'
+      );
     });
 
     it('captures performance.measure() as nestable async begin/end trace events', async function () {
@@ -329,14 +460,24 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       performance.measure('test-trace-measure', 'trace-measure-start', 'trace-measure-end');
 
       const resultPath = await contentTracing.stopRecording();
-      const data = fs.readFileSync(resultPath, 'utf8');
-      const parsed = JSON.parse(data);
+      const events = getTraceEvents(resultPath);
 
-      const measureEvents = parsed.traceEvents.filter(
-        (x: any) => x.cat === 'node.perf.usertiming' && x.name === 'test-trace-measure'
+      // Nestable async slices are typed begin/end events on an async track, or
+      // legacy events with the 'b'/'e' phases. Typed end events carry no name,
+      // so they are matched to the begin event by track.
+      const begin = events.find(
+        (event) =>
+          hasCategory(event, 'node.perf.usertiming') &&
+          event.name === 'test-trace-measure' &&
+          (event.type === TYPE_SLICE_BEGIN || event.phase === 'b')
       );
-      expect(measureEvents.some((x: any) => x.ph === 'b')).to.be.true('should have nestable async begin (b) event');
-      expect(measureEvents.some((x: any) => x.ph === 'e')).to.be.true('should have nestable async end (e) event');
+      expect(begin).to.not.be.undefined('should have a nestable async begin event');
+      const hasEnd = events.some(
+        (event) =>
+          (event.type === TYPE_SLICE_END && event.trackUuid === begin!.trackUuid) ||
+          (event.phase === 'e' && event.name === 'test-trace-measure')
+      );
+      expect(hasEnd).to.be.true('should have a nestable async end event');
     });
 
     it('captures node.fs.sync trace events for file operations', async function () {
@@ -347,12 +488,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       fs.readFileSync(import.meta.filename, 'utf8');
 
       const resultPath = await contentTracing.stopRecording();
-      const data = fs.readFileSync(resultPath, 'utf8');
-      const parsed = JSON.parse(data);
-
-      const fsEvents = parsed.traceEvents.filter(
-        (x: any) => typeof x.cat === 'string' && x.cat.includes('node.fs.sync')
-      );
+      const fsEvents = getTraceEvents(resultPath).filter((event) => hasCategory(event, 'node.fs.sync'));
       expect(fsEvents).to.have.lengthOf.at.least(1, 'should have node.fs.sync trace events');
     });
 
@@ -365,15 +501,10 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       await fs.promises.readFile(import.meta.filename, 'utf8');
 
       const resultPath = await contentTracing.stopRecording();
-      const data = fs.readFileSync(resultPath, 'utf8');
-      const parsed = JSON.parse(data);
+      const events = getTraceEvents(resultPath);
 
-      const asyncHooksEvents = parsed.traceEvents.filter(
-        (x: any) => typeof x.cat === 'string' && x.cat.includes('node.async_hooks')
-      );
-      const vmEvents = parsed.traceEvents.filter(
-        (x: any) => typeof x.cat === 'string' && x.cat.includes('node.vm.script')
-      );
+      const asyncHooksEvents = events.filter((event) => hasCategory(event, 'node.async_hooks'));
+      const vmEvents = events.filter((event) => hasCategory(event, 'node.vm.script'));
       expect(asyncHooksEvents).to.have.lengthOf.at.least(1, 'should have node.async_hooks events');
       expect(vmEvents).to.have.lengthOf.at.least(1, 'should have node.vm.script events');
     });
@@ -387,15 +518,10 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       await fs.promises.readFile(import.meta.filename, 'utf8');
 
       const resultPath = await contentTracing.stopRecording();
-      const data = fs.readFileSync(resultPath, 'utf8');
-      const parsed = JSON.parse(data);
+      const events = getTraceEvents(resultPath);
 
-      const syncEvents = parsed.traceEvents.filter(
-        (x: any) => typeof x.cat === 'string' && x.cat.includes('node.fs.sync')
-      );
-      const asyncEvents = parsed.traceEvents.filter(
-        (x: any) => typeof x.cat === 'string' && x.cat.includes('node.fs.async')
-      );
+      const syncEvents = events.filter((event) => hasCategory(event, 'node.fs.sync'));
+      const asyncEvents = events.filter((event) => hasCategory(event, 'node.fs.async'));
       expect(syncEvents).to.have.lengthOf.at.least(1, 'should have node.fs.sync events from wildcard pattern');
       expect(asyncEvents).to.have.lengthOf.at.least(1, 'should have node.fs.async events from wildcard pattern');
     });
@@ -403,20 +529,17 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
 
   describe('trace metadata', () => {
     // These are necessary to be able to symbolicate heap dumps with third_party/catapult/tracing/bin/symbolize_trace.
-    it('includes product version and OS arch metadata in JSON output', async () => {
+    it('includes product version and OS arch metadata', async () => {
       const config = {
         excluded_categories: ['*']
       };
       await record(config, outputFilePath);
 
-      const content = fs.readFileSync(outputFilePath).toString();
-      const parsed = JSON.parse(content);
-
-      expect(parsed.metadata).to.be.an('object');
-      expect(parsed.metadata['product-version']).to.be.a('string');
-      expect(parsed.metadata['product-version'].startsWith(process.versions.chrome)).to.be.true();
-      expect(parsed.metadata['os-arch']).to.be.a('string');
-      expect(parsed.metadata['os-arch']).to.not.be.empty();
+      const metadata = getTraceMetadata(outputFilePath);
+      const productVersion = metadata.get('product-version');
+      expect(productVersion).to.be.a('string');
+      expect(productVersion!.startsWith(process.versions.chrome)).to.be.true();
+      expect(metadata.get('os-arch')).to.be.a('string').that.is.not.empty();
     });
   });
 });
