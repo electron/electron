@@ -5767,20 +5767,29 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
   return handle;
 }
 
-void WebContents::SendToMainFrame(v8::Isolate* isolate,
-                                  bool internal,
-                                  const std::string& channel,
-                                  v8::Local<v8::Value> args) {
+void WebContents::Send(gin::Arguments* args) {
+  SendImpl(false, args);
+}
+
+void WebContents::SendInternal(gin::Arguments* args) {
+  SendImpl(true, args);
+}
+
+void WebContents::SendImpl(bool internal, gin::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  std::string channel;
+  electron::SerializedValue message;
+  if (!ReadIPCSendArguments(args, "webContents", &channel, &message))
+    return;
   content::RenderFrameHost* const rfh = web_contents()->GetPrimaryMainFrame();
   WebFrameMain* const frame = rfh ? WebFrameMain::From(isolate, rfh) : nullptr;
   if (!frame) {
-    // A TypeError, as calling send on a null mainFrame was, so the JS
-    // wrapper rethrows it rather than logging it.
-    isolate->ThrowException(v8::Exception::TypeError(
-        gin::StringToV8(isolate, "webContents has no main frame to send to")));
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "webContents has no main frame to send to");
     return;
   }
-  frame->Send(isolate, internal, channel, args);
+  frame->DeliverMessage(isolate, internal, "webContents", channel,
+                        std::move(message));
 }
 
 mojom::ElectronFrame* WebContents::MainFrameRenderer(
@@ -6488,7 +6497,8 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetProperty("mainFrame", &WebContents::MainFrame)
       .SetProperty("opener", &WebContents::Opener)
       .SetProperty("focusedFrame", &WebContents::FocusedFrame)
-      .SetMethod("_sendToMainFrame", &WebContents::SendToMainFrame)
+      .SetMethod("send", &WebContents::Send)
+      .SetMethod("_sendInternal", &WebContents::SendInternal)
       .SetMethod("_setOwnerWindow", &WebContents::SetOwnerBaseWindow)
       .Build();
 }

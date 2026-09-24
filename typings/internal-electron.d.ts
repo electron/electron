@@ -68,9 +68,6 @@ declare namespace Electron {
   }
 
   interface ServiceWorkerMain {
-    _send(internal: boolean, channel: string, args: any): void;
-    _startExternalRequest(hasTimeout: boolean): { id: string; ok: boolean };
-    _finishExternalRequest(uuid: string): void;
     _countExternalRequests(): number;
   }
 
@@ -101,8 +98,6 @@ declare namespace Electron {
       prefs: Partial<Electron.BrowserWindowConstructorOptions['webPreferences']> &
         Pick<Electron.BrowserWindowConstructorOptions, 'backgroundColor'>
     ): void;
-    _send(internal: boolean, channel: string, args: any): boolean;
-    _sendToMainFrame(internal: boolean, channel: string, args: any): void;
     _sendInternal(channel: string, ...args: any[]): void;
     _executeJavaScript(worldId: number, sources: Electron.WebSource[], hasUserGesture: boolean): Promise<any>;
     _init(): void;
@@ -130,7 +125,6 @@ declare namespace Electron {
   }
 
   interface WebFrameMain {
-    _send(internal: boolean, channel: string, args: any): void;
     _transferSharedTexture(transfer: any, textureId: string, args: any[]): Promise<Electron.SharedTextureSyncToken>;
     _lifecycleStateForTesting: string;
   }
