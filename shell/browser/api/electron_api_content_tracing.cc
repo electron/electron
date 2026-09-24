@@ -246,33 +246,27 @@ v8::Local<v8::Promise> StartTracing(v8::Isolate* isolate,
     return handle;
   }
 
-  auto* instance = TracingController::GetInstance();
+  auto* instance = content::TracingControllerImpl::GetInstance();
   if (instance->IsTracing()) {
     return gin_helper::Promise<void>::ResolvedPromise(isolate);
   }
 
-  auto done = base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
-                             std::move(promise));
-  bool started;
+  // Recordings always use the Perfetto protobuf format.
+  perfetto::TraceConfig perfetto_config = tracing::GetDefaultPerfettoConfig(
+      config.trace_config, /*privacy_filtering_enabled=*/false,
+      /*convert_to_legacy_json=*/false);
   if (config.heap_profiler_options) {
-    // A heap-profiling session records the raw protobuf trace, with the heap
-    // profiler added to the default data sources.
-    perfetto::TraceConfig perfetto_config = tracing::GetDefaultPerfettoConfig(
-        config.trace_config, /*privacy_filtering_enabled=*/false,
-        /*convert_to_legacy_json=*/false);
     AddHeapProfilingDataSource(config.trace_config,
                                *config.heap_profiler_options, &perfetto_config);
-    started =
-        content::TracingControllerImpl::GetInstance()
-            ->StartTracingWithPerfettoConfig(perfetto_config, std::move(done));
-  } else {
-    started = instance->StartTracing(config.trace_config, std::move(done));
   }
 
-  if (!started) {
-    // If StartTracing returns false, that means it didn't invoke its callback.
-    // Return an already-resolved promise and abandon the previous promise (it
-    // was std::move()d into the StartTracing callback and has been deleted by
+  if (!instance->StartTracingWithPerfettoConfig(
+          perfetto_config,
+          base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
+                         std::move(promise)))) {
+    // If StartTracingWithPerfettoConfig returns false, it didn't invoke its
+    // callback. Return an already-resolved promise and abandon the previous
+    // promise (it was std::move()d into the callback and has been deleted by
     // this point).
     return gin_helper::Promise<void>::ResolvedPromise(isolate);
   }
