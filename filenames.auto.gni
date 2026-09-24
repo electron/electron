@@ -822,7 +822,6 @@ auto_filenames = {
     "lib/browser/api/system-preferences.ts",
     "lib/common/api/net-client-request.ts",
     "lib/common/define-properties.ts",
-    "lib/common/deprecate.ts",
     "lib/common/init.ts",
     "lib/common/primordials.ts",
     "lib/utility/api/exports/electron.ts",
