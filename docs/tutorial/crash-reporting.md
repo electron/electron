@@ -305,45 +305,26 @@ download the archives for each version. For debuggers on Windows, see
 
 ### Example: symbolicating a minidump
 
-With [`minidump-stackwalk`](https://github.com/rust-minidump/rust-minidump/tree/main/minidump-stackwalk),
-you can point at the symbol server directly:
+The [`electron-minidump`](https://www.npmjs.com/package/electron-minidump) package
+symbolicates an Electron minidump in one step. It works out which Electron version the
+dump came from, downloads the matching symbols, and prints
+the stack of every thread:
 
 ```sh
-cargo install minidump-stackwalk
-minidump-stackwalk --symbols-url=https://symbols.electronjs.org /path/to/crash.dmp
+npx electron-minidump /path/to/crash.dmp
 ```
 
-Or download the Breakpad symbols archive for the matching release, extract it, and pass
-the directory of symbols to the tool. This works with Breakpad's own
-`minidump_stackwalk` as well:
+It runs on macOS and Linux, and can symbolicate dumps from any platform.
 
-```sh
-minidump_stackwalk /path/to/crash.dmp /path/to/electron-symbols
-```
-
-From Node.js, you can use the [`minidump`](https://github.com/electron/node-minidump)
-package, which bundles Breakpad's tools:
-
-```js @ts-nocheck
-const minidump = require('minidump')
-
-minidump.addSymbolPath('/path/to/electron-symbols')
-minidump.walkStack('/path/to/crash.dmp', (error, report) => {
-  if (error) throw error
-  console.log(report.toString())
-})
-```
-
-To find out which Electron version a report came from, read the `ver` field that was
-uploaded with it.
+If you also have symbols for your own native code, pass a directory containing all the
+Breakpad symbols to Breakpad's `minidump_stackwalk` tool instead.
 
 ### Symbols for your own code
 
 Electron's symbols only cover Electron's own binaries. If your app includes native Node.js
 modules or other native libraries, frames in those will stay unsymbolicated unless you
 also keep symbols for them. Generate Breakpad symbols for each binary you ship with
-Breakpad's `dump_syms` tool (or `minidump.dumpSymbol()` from the `minidump` package),
-and store them where your symbolication tool can find them. Keep them for every
+Breakpad's `dump_syms` tool, and store them where your symbolication tool can find them. Keep them for every
 version you release, since symbols only match the exact build they came from.
 
 ### macOS system crash reports
