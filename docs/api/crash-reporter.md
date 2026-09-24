@@ -88,14 +88,14 @@ changes:
     crashes directory, but not uploaded. Default is `true`.
   * `ignoreSystemCrashHandler` boolean (optional) _macOS_ _Linux_ - If true,
     crashes generated in the main process will not be forwarded to the system
-    crash handler. Default is `false`. This option has no effect on Windows.
+    crash handler. This option has no effect on Windows. Default is `false`.
   * `rateLimit` boolean (optional) - If true, limit the number of crashes
     uploaded to 1/hour. Crash reports over the limit are not uploaded, but are
     still stored on disk. Default is `false`.
   * `compress` boolean (optional) - If true, crash reports will be compressed
-    and uploaded with `Content-Encoding: gzip`. Default is `true`. Setting this
+    and uploaded with `Content-Encoding: gzip`. Setting this
     to `false` while `uploadToServer` is `true` is deprecated and logs a
-    deprecation warning.
+    deprecation warning. Default is `true`.
   * `extra` Record\<string, string\> (optional) - Extra string key/value
     annotations that will be sent along with crash reports that are generated
     in the main process. Only string values are supported. Crashes generated in
