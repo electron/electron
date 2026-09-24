@@ -4,10 +4,76 @@
 
 #include "shell/common/gin_converters/file_dialog_converter.h"
 
+#include <string_view>
+
+#include "base/containers/fixed_flat_map.h"
+#include "base/containers/map_util.h"
 #include "gin/dictionary.h"
 #include "shell/browser/api/electron_api_browser_window.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/native_window_converter.h"
+#include "shell/common/gin_converters/std_converter.h"
+
+namespace file_dialog {
+
+namespace {
+
+template <typename Map>
+int PropertiesFromV8(v8::Isolate* isolate,
+                     const std::vector<v8::Local<v8::Value>>& names,
+                     const Map& map) {
+  int properties = 0;
+  for (const auto& name : names) {
+    if (!name->IsString())
+      continue;
+    if (const int* flag = base::FindOrNull(map, gin::V8ToString(isolate, name)))
+      properties |= *flag;
+  }
+  return properties;
+}
+
+}  // namespace
+
+int OpenDialogPropertiesFromV8(v8::Isolate* isolate,
+                               const std::vector<v8::Local<v8::Value>>& names) {
+  static constexpr auto kFlags = base::MakeFixedFlatMap<std::string_view, int>({
+      {"openFile", OPEN_DIALOG_OPEN_FILE},
+      {"openDirectory", OPEN_DIALOG_OPEN_DIRECTORY},
+      {"multiSelections", OPEN_DIALOG_MULTI_SELECTIONS},
+      {"createDirectory", OPEN_DIALOG_CREATE_DIRECTORY},
+      {"showHiddenFiles", OPEN_DIALOG_SHOW_HIDDEN_FILES},
+      {"promptToCreate", OPEN_DIALOG_PROMPT_TO_CREATE},
+      {"noResolveAliases", OPEN_DIALOG_NO_RESOLVE_ALIASES},
+      {"treatPackageAsDirectory", OPEN_DIALOG_TREAT_PACKAGE_APP_AS_DIRECTORY},
+      {"dontAddToRecent", FILE_DIALOG_DONT_ADD_TO_RECENT},
+  });
+  return PropertiesFromV8(isolate, names, kFlags);
+}
+
+constexpr auto kSaveDialogFlags =
+    base::MakeFixedFlatMap<std::string_view, int>({
+        {"createDirectory", SAVE_DIALOG_CREATE_DIRECTORY},
+        {"showHiddenFiles", SAVE_DIALOG_SHOW_HIDDEN_FILES},
+        {"treatPackageAsDirectory", SAVE_DIALOG_TREAT_PACKAGE_APP_AS_DIRECTORY},
+        {"showOverwriteConfirmation", SAVE_DIALOG_SHOW_OVERWRITE_CONFIRMATION},
+        {"dontAddToRecent", SAVE_DIALOG_DONT_ADD_TO_RECENT},
+    });
+
+int SaveDialogPropertiesFromV8(v8::Isolate* isolate,
+                               const std::vector<v8::Local<v8::Value>>& names) {
+  return PropertiesFromV8(isolate, names, kSaveDialogFlags);
+}
+
+std::vector<std::string_view> SaveDialogPropertyNames(int properties) {
+  std::vector<std::string_view> names;
+  for (const auto& [name, flag] : kSaveDialogFlags) {
+    if (properties & flag)
+      names.push_back(name);
+  }
+  return names;
+}
+
+}  // namespace file_dialog
 
 namespace gin {
 
@@ -49,7 +115,11 @@ bool Converter<file_dialog::DialogSettings>::FromV8(
   dict.Get("nameFieldLabel", &(out->name_field_label));
   dict.Get("defaultPath", &(out->default_path));
   dict.Get("filters", &(out->filters));
-  dict.Get("properties", &(out->properties));
+  std::vector<v8::Local<v8::Value>> properties;
+  if (dict.Get("properties", &properties)) {
+    out->properties =
+        file_dialog::SaveDialogPropertiesFromV8(isolate, properties);
+  }
   dict.Get("showsTagField", &(out->shows_tag_field));
   dict.Get("securityScopedBookmarks", &(out->security_scoped_bookmarks));
   return true;
@@ -68,6 +138,7 @@ v8::Local<v8::Value> Converter<file_dialog::DialogSettings>::ToV8(
   dict.Set("nameFieldLabel", in.name_field_label);
   dict.Set("defaultPath", in.default_path);
   dict.Set("filters", in.filters);
+  dict.Set("properties", file_dialog::SaveDialogPropertyNames(in.properties));
   dict.Set("showsTagField", in.shows_tag_field);
   dict.Set("securityScopedBookmarks", in.security_scoped_bookmarks);
 

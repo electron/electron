@@ -150,11 +150,14 @@ struct Converter<network::mojom::ResolveHostParametersPtr> {
                      network::mojom::ResolveHostParametersPtr* out);
 };
 
-template <typename K, typename V>
-struct Converter<std::vector<std::pair<K, V>>> {
+// { name: value, ... } as ordered pairs, for HTTP header lists. (A full
+// specialization: a partial one on std::pair<K, V> would also capture other
+// vectors of pairs, such as file_dialog::Filters, in any file including this.)
+template <>
+struct Converter<std::vector<std::pair<std::string, std::string>>> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> value,
-                     std::vector<std::pair<K, V>>* out) {
+                     std::vector<std::pair<std::string, std::string>>* out) {
     if (!value->IsObject())
       return false;
     out->clear();
@@ -172,8 +175,8 @@ struct Converter<std::vector<std::pair<K, V>>> {
       v8::Local<v8::Value> v8value;
       if (!obj->Get(context, v8key).ToLocal(&v8value))
         return false;
-      K key;
-      V out_value;
+      std::string key;
+      std::string out_value;
       if (!ConvertFromV8(isolate, v8key, &key) ||
           !ConvertFromV8(isolate, v8value, &out_value))
         return false;
