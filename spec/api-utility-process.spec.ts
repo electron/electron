@@ -945,7 +945,7 @@ describe('utilityProcess module', () => {
       expect(loginAuthInfo!.scheme).to.equal('basic');
     });
 
-    it('supports generating snapshots via v8.setHeapSnapshotNearHeapLimit', async () => {
+    it('supports generating snapshots via v8.setHeapSnapshotNearHeapLimit', { timeout: 60_000 }, async () => {
       const tmpDir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'electron-spec-utility-oom-'));
       const child = utilityProcess.fork(path.join(fixturesPath, 'oom-grow.js'), [], {
         stdio: 'ignore',

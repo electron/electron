@@ -8,7 +8,7 @@ import { setTimeout } from 'node:timers/promises';
 
 import { ifdescribe, ifit } from './lib/spec-helpers.ts';
 
-describe('tray module', () => {
+describe('tray module', { tags: ['serial'] }, () => {
   let tray: Tray;
 
   beforeEach(() => {
