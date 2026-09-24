@@ -549,8 +549,10 @@ NodeBindings::NodeBindings(BrowserEnvironment browser_env, uv_loop_t* loop)
 
 NodeBindings::~NodeBindings() {
   StopPolling();
-  if (base::CurrentThread::IsSet())
+  if (base::CurrentThread::IsSet()) {
     base::CurrentThread::Get()->RemoveTaskObserver(this);
+    base::RunLoop::RemoveNestingObserverOnCurrentThread(this);
+  }
 
   if (embed_thread_prepared_) {
     uv_sem_destroy(&embed_sem_);
@@ -616,10 +618,13 @@ void NodeBindings::EnableDeadlineChecks(bool enable) {
   v8::Isolate* const isolate = uv_env_->isolate();
   v8::HandleScope handle_scope(isolate);
 
-  if (enable)
+  if (enable) {
     base::CurrentThread::Get()->AddTaskObserver(this);
-  else if (base::CurrentThread::IsSet())
+    base::RunLoop::AddNestingObserverOnCurrentThread(this);
+  } else if (base::CurrentThread::IsSet()) {
     base::CurrentThread::Get()->RemoveTaskObserver(this);
+    base::RunLoop::RemoveNestingObserverOnCurrentThread(this);
+  }
 
   // A worker's microtasks already run in a task observer registered before
   // this one, and a pooled worklet's queue can go away under its environment.
@@ -1259,6 +1264,10 @@ NodeBindings*& NodeBindings::MainThreadInstance() {
 }
 
 void NodeBindings::DidProcessTask(const base::PendingTask& pending_task) {
+  WakeupEmbedThreadIfLoopHasEarlierWork();
+}
+
+void NodeBindings::OnBeginNestedRunLoop() {
   WakeupEmbedThreadIfLoopHasEarlierWork();
 }
 

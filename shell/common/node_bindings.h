@@ -17,6 +17,7 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ptr_exclusion.h"
 #include "base/memory/weak_ptr.h"
+#include "base/run_loop.h"
 #include "base/task/task_observer.h"
 #include "base/types/to_address.h"
 #include "gin/public/context_holder.h"
@@ -130,7 +131,8 @@ struct UvHandleCompare {
   }
 };
 
-class NodeBindings : private base::TaskObserver {
+class NodeBindings : private base::TaskObserver,
+                     private base::RunLoop::NestingObserver {
  public:
   enum class BrowserEnvironment { kBrowser, kRenderer, kUtility, kWorker };
 
@@ -233,8 +235,9 @@ class NodeBindings : private base::TaskObserver {
   // (lib/common/init.ts); other handles are picked up by waking the embed
   // thread when the loop's next deadline moved earlier (libuv/libuv#3308),
   // checked after every task, nested ones included, after each microtask
-  // checkpoint, and, in the browser and utility processes, when a top-level
-  // call from native code into JS returns.
+  // checkpoint, when a nested run loop begins under a JS frame, and, in the
+  // browser and utility processes, when a top-level call from native code
+  // into JS returns.
   void EnableDeadlineChecks(bool enable);
   void WakeupEmbedThreadIfLoopHasEarlierWork();
   static void OnMicrotasksCompleted(v8::Isolate* isolate, void* self);
@@ -247,6 +250,8 @@ class NodeBindings : private base::TaskObserver {
   void WillProcessTask(const base::PendingTask& pending_task,
                        bool was_blocked_or_low_priority) override {}
   void DidProcessTask(const base::PendingTask& pending_task) override;
+  // base::RunLoop::NestingObserver
+  void OnBeginNestedRunLoop() override;
 
   // Which environment we are running.
   // "browser" / "renderer" / "worker" / "utility"; names process.type and
