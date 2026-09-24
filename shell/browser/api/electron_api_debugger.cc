@@ -128,7 +128,11 @@ class Debugger::AgentHostLifecycle final
       promise.RejectWithErrorMessage(error_message ? *error_message : "");
     } else {
       base::DictValue* result = dict.FindDict("result");
-      promise.Resolve(result ? std::move(*result) : base::DictValue());
+      if (result) {
+        promise.Resolve(*result);
+      } else {
+        promise.Resolve(base::DictValue());
+      }
     }
   }
 

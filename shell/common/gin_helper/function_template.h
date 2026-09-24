@@ -118,7 +118,7 @@ class CallbackHolder : public CallbackHolderBase {
                  InvokerOptions invoker_options)
       : CallbackHolderBase(isolate),
         callback(std::move(callback)),
-        invoker_options(std::move(invoker_options)) {}
+        invoker_options(invoker_options) {}
   CallbackHolder(const CallbackHolder&) = delete;
   CallbackHolder& operator=(const CallbackHolder&) = delete;
 

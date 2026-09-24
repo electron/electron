@@ -1636,7 +1636,7 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
       frame_host ? frame_host->GetRoutingID() : IPC::mojom::kRoutingIdNone,
       &next_id_,
       std::move(navigation_ui_data),
-      std::move(navigation_id),
+      navigation_id,
       std::move(proxied_receiver),
       std::move(target_factory_remote),
       std::move(header_client_receiver),

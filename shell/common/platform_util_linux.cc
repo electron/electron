@@ -258,7 +258,7 @@ class ShowItemHelper {
                        // Unretained is safe, the ShowItemHelper instance is
                        // never destroyed.
                        base::Unretained(this), full_path),
-        std::move(file_to_highlight), /*startup-id=*/"");
+        file_to_highlight, /*startup-id=*/"");
   }
 
   void ShowItemUsingFileManagerResponse(
@@ -315,7 +315,7 @@ bool XDGUtil(const std::vector<std::string>& argv,
     base::nix::CreateLaunchOptionsWithXdgActivation(base::BindOnce(
         [](base::RepeatingClosure quit_loop, base::LaunchOptions* options_out,
            base::LaunchOptions options) {
-          *options_out = std::move(options);
+          *options_out = options;
           std::move(quit_loop).Run();
         },
         std::move(quit_loop), &options));

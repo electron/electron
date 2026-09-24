@@ -203,7 +203,7 @@ bool NativeImage::TryConvertNativeImage(v8::Isolate* isolate,
 #if BUILDFLAG(IS_WIN)
       const auto img_path = base::WideToUTF8(icon_path.value());
 #else
-      const auto img_path = icon_path.value();
+      const auto& img_path = icon_path.value();
 #endif
       error_message = "Failed to load image from path '" + img_path + "'";
     }

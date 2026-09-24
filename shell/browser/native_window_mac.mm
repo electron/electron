@@ -1540,7 +1540,7 @@ bool NativeWindowMac::GetWindowButtonVisibility() const {
 
 void NativeWindowMac::SetWindowButtonPosition(
     std::optional<gfx::Point> position) {
-  traffic_light_position_ = std::move(position);
+  traffic_light_position_ = position;
   if (buttons_proxy_) {
     [buttons_proxy_ setMargin:traffic_light_position_];
     NotifyLayoutWindowControlsOverlay();
@@ -1591,8 +1591,7 @@ void NativeWindowMac::RefreshTouchBarItem(const std::string& item_id) {
 void NativeWindowMac::SetEscapeTouchBarItem(
     gin_helper::PersistentDictionary item) {
   if (touch_bar_ && [window_ touchBar])
-    [touch_bar_ setEscapeTouchBarItem:std::move(item)
-                          forTouchBar:[window_ touchBar]];
+    [touch_bar_ setEscapeTouchBarItem:item forTouchBar:[window_ touchBar]];
 }
 
 void NativeWindowMac::SelectPreviousTab() {

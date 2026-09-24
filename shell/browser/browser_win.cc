@@ -7,6 +7,8 @@
 #include <shlobj.h>
 #include <shobjidl.h>
 
+#include <utility>
+
 #include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/file_version_info.h"
@@ -630,7 +632,7 @@ void Browser::UpdateBadgeContents(
     const std::string& badge_alt_string) {
   SkBitmap badge;
   if (badge_content) {
-    std::string content = badge_content.value();
+    const std::string& content = badge_content.value();
     constexpr int kOverlayIconSize = 16;
     // This is the color used by the Windows 10 Badge API, for platform
     // consistency.
@@ -747,7 +749,7 @@ v8::Local<v8::Value> Browser::GetLoginItemSettings(
                       launch_items_hklm.end());
 
   settings.executable_will_launch_at_login = executable_will_launch_at_login;
-  settings.launch_items = launch_items;
+  settings.launch_items = std::move(launch_items);
   return gin::ConvertToV8(JavascriptEnvironment::GetIsolate(), settings);
 }
 

@@ -126,7 +126,7 @@ void FileSelectHelper::OnListFile(
 void FileSelectHelper::LaunchConfirmationDialog(
     const base::FilePath& path,
     std::vector<ui::SelectedFileInfo> selected_files) {
-  ConvertToFileChooserFileInfoList(std::move(selected_files));
+  ConvertToFileChooserFileInfoList(selected_files);
 }
 
 void FileSelectHelper::OnListDone(int error) {

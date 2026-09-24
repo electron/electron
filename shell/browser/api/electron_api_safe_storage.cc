@@ -231,7 +231,7 @@ v8::Local<v8::Promise> SafeStorage::encryptStringAsync(
     return handle;
   }
 
-  pending_encrypts_.emplace_back(std::move(promise), std::move(plaintext));
+  pending_encrypts_.emplace_back(std::move(promise), plaintext);
   return handle;
 }
 

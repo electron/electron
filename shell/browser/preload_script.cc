@@ -4,6 +4,8 @@
 
 #include "shell/browser/preload_script.h"
 
+#include <utility>
+
 #include "base/containers/fixed_flat_map.h"
 #include "base/files/file_path.h"
 #include "base/uuid.h"
@@ -64,7 +66,7 @@ bool Converter<PreloadScript>::FromV8(v8::Isolate* isolate,
     return false;
   }
   if (base::FilePath file_path; options.Get("filePath", &file_path)) {
-    out->file_path = file_path;
+    out->file_path = std::move(file_path);
   } else {
     return false;
   }
