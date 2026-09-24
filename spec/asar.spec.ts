@@ -11,7 +11,15 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 import { Worker } from 'node:worker_threads';
 
-import { defer, getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers.ts';
+import {
+  defer,
+  getRemoteContext,
+  ifdescribe,
+  ifit,
+  itremote,
+  spawnAndWait,
+  useRemoteContext
+} from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 const require = createRequire(import.meta.url);
@@ -25,6 +33,32 @@ describe('asar package', () => {
   afterEach(closeAllWindows);
 
   describe('asar protocol', () => {
+    // Regression test for https://github.com/electron/electron/pull/52283:
+    // contents used to be re-read from whatever file was at the archive's path,
+    // using offsets from the header read at startup, so replacing the archive
+    // under a running app served the wrong bytes or failed outright.
+    // Windows does not let the archive be renamed over while it is held open.
+    ifit(process.platform !== 'win32')(
+      'keeps serving the archive the app started with after it is replaced on disk',
+      async () => {
+        const appPath = path.join(fixtures, 'apps', 'asar-replace');
+        const initial = path.join(asarDir, 'a.asar');
+        const replacement = path.join(asarDir, 'web.asar');
+        const { code, stdout, stderr } = await spawnAndWait(
+          process.execPath,
+          [appPath, initial, replacement, 'file1'],
+          { timeout: 20000 }
+        );
+        const result = stdout.split('\n').find((line) => line.startsWith('{'));
+        expect(result, `exit code ${code}, stderr: ${stderr}`).to.be.a('string');
+        const { before, after } = JSON.parse(result!);
+        const expected = importedFs.readFileSync(path.join(initial, 'file1'), 'utf8');
+        expect(before).to.deep.equal({ ok: true, body: expected });
+        expect(after).to.deep.equal(before);
+        expect(code).to.equal(0);
+      }
+    );
+
     it('sets __dirname correctly', async function () {
       after(function () {
         ipcMain.removeAllListeners('dirname');
