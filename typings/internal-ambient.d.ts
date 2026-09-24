@@ -43,19 +43,6 @@ declare namespace NodeJS {
     exitImmediately(code: number): never;
   }
 
-  type CrashReporterBinding = Omit<Electron.CrashReporter, 'start'> & {
-    start(
-      submitUrl: string,
-      uploadToServer: boolean,
-      ignoreSystemCrashHandler: boolean,
-      rateLimit: boolean,
-      compress: boolean,
-      globalExtra: Record<string, string>,
-      extra: Record<string, string>,
-      isNodeProcess: boolean
-    ): void;
-  };
-
   type AsarFileInfo = {
     size: number;
     unpacked: boolean;
@@ -268,7 +255,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_auto_updater'): { autoUpdater: Electron.AutoUpdater };
     _linkedBinding(name: 'electron_browser_clipboard'): Electron.Clipboard;
     _linkedBinding(name: 'electron_browser_clipboard_item'): Electron.ClipboardItem;
-    _linkedBinding(name: 'electron_browser_crash_reporter'): CrashReporterBinding;
+    _linkedBinding(name: 'electron_browser_crash_reporter'): Electron.CrashReporter;
     _linkedBinding(name: 'electron_browser_desktop_capturer'): {
       createDesktopCapturer(): ElectronInternal.DesktopCapturer;
       isDisplayMediaSystemPickerAvailable(): boolean;
