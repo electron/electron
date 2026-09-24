@@ -1,0 +1,220 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Philip Rogers <pdr@chromium.org>
+Date: Wed, 23 Sep 2026 13:56:32 -0700
+Subject: Repeat lifecycle after ResizeObserver loop limit error event
+
+When a ResizeObserver reaches its delivery depth limit, we fire a loop
+limit error event. An onerror handler can run arbitrary script that
+invalidates another frame (e.g., an ancestor) while leaving its own
+frame clean, or invalidates layout or paint properties (e.g., text data
+or scroll offsets) without lowering DocumentLifecycle below
+kPrePaintClean. LocalFrameView::NotifyResizeObservers() previously
+returned false in these cases because it only checked whether its own
+DocumentLifecycle state remained >= kPrePaintClean.
+
+Return true from LocalFrameView::NotifyResizeObservers() whenever the
+loop limit error event is dispatched so that the lifecycle loop repeats
+to clean up any state dirtied by script. Because
+SetLoopLimitErrorDispatched(true) is set before returning, this repeats
+at most once per frame per lifecycle update. Also always call
+ClearObservations() when SkippedObservations() is true so that the
+repeat pass does not leave skipped_observations_ set at the end of the
+lifecycle update. Finally, clarify surrounding lifecycle loop comments.
+
+Fixed: 541952000
+Change-Id: I60233cba4c55b6fae00fde0a8fc7b804f780358a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8431509
+Auto-Submit: Philip Rogers <pdr@chromium.org>
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1703748}
+
+diff --git a/third_party/blink/renderer/core/frame/local_frame_view.cc b/third_party/blink/renderer/core/frame/local_frame_view.cc
+index e055a986af49faf600e78c8526dcb8d569d22e3e..230a21db4f28bd8264faf257f7e4d539c034252e 100644
+--- a/third_party/blink/renderer/core/frame/local_frame_view.cc
++++ b/third_party/blink/renderer/core/frame/local_frame_view.cc
+@@ -2249,42 +2249,46 @@ void LocalFrameView::ScheduleVisualUpdateForPaintInvalidationIfNeeded() {
+ }
+ 
+ bool LocalFrameView::NotifyResizeObservers() {
+-  // Return true if lifecycles need to be re-run
+   TRACE_EVENT0("blink,benchmark", "LocalFrameView::NotifyResizeObservers");
+ 
+   // Controller exists only if ResizeObserver was created.
+   ResizeObserverController* resize_controller =
+       ResizeObserverController::FromIfExists(*GetFrame().DomWindow());
+-  if (!resize_controller)
++  if (!resize_controller) {
+     return false;
++  }
+ 
+   size_t min_depth = resize_controller->GatherObservations();
+ 
++  bool needs_to_repeat_lifecycle = false;
+   if (min_depth != ResizeObserverController::kDepthBottom) {
+     resize_controller->DeliverObservations();
+-  } else {
+-    // Observation depth limit reached
+-    if (resize_controller->SkippedObservations() &&
+-        !resize_controller->IsLoopLimitErrorDispatched()) {
+-      resize_controller->ClearObservations();
++    // Delivering active observations can dirty state, and another pass is
++    // needed to gather any deeper observations and check for skipped
++    // observations.
++    needs_to_repeat_lifecycle = true;
++  } else if (resize_controller->SkippedObservations()) {
++    // Observation depth limit reached.
++    resize_controller->ClearObservations();
++    if (!resize_controller->IsLoopLimitErrorDispatched()) {
+       ErrorEvent* error = ErrorEvent::Create(
+           "ResizeObserver loop completed with undelivered notifications.",
+           CaptureSourceLocation(frame_->DomWindow()), nullptr);
+-      // We're using |SanitizeScriptErrors::kDoNotSanitize| as the error is made
+-      // by blink itself.
++      // We're using |SanitizeScriptErrors::kDoNotSanitize| as the error is
++      // made by blink itself.
+       // TODO(yhirano): Reconsider this.
+       frame_->DomWindow()->DispatchErrorEvent(
+           error, SanitizeScriptErrors::kDoNotSanitize);
+       // Ensure notifications will get delivered in next cycle.
+       ScheduleAnimation();
+       resize_controller->SetLoopLimitErrorDispatched(true);
++      // Dispatching the error event can run script that dirties state, so
++      // re-run the lifecycle.
++      needs_to_repeat_lifecycle = true;
+     }
+-    if (Lifecycle().GetState() >= DocumentLifecycle::kPrePaintClean)
+-      return false;
+   }
+ 
+-  // Lifecycle needs to be run again because Resize Observer affected layout
+-  return true;
++  return needs_to_repeat_lifecycle;
+ }
+ 
+ bool LocalFrameView::LocalFrameTreeAllowsThrottling() const {
+@@ -2472,14 +2476,11 @@ void LocalFrameView::UpdateLifecyclePhasesInternal(
+ 
+   auto old_force_commit_criteria = ForceCommitCriteria();
+ 
+-  // Run style, layout, compositing and prepaint lifecycle phases and deliver
+-  // resize observations if required. Resize observer callbacks/delegates have
+-  // the potential to dirty layout (until loop limit is reached) and therefore
+-  // the above lifecycle phases need to be re-run until the limit is reached
+-  // or no layout is pending.
+-  // Note that after ResizeObserver has settled, we also run intersection
+-  // observations that need to be delievered in post-layout. This process can
+-  // also dirty layout, which will run this loop again.
++  // Run style, layout, compositing, and prepaint lifecycle phases, followed by
++  // post-layout steps (such as post-layout intersection observations, resize
++  // observations, container query list notifications, and view transitions).
++  // Any of these steps can dirty style or layout and require repeating the
++  // lifecycle phases.
+ 
+   // A LocalFrameView can be unthrottled at this point, but become throttled as
+   // it advances through lifecycle stages. If that happens, it will prevent
+@@ -2494,8 +2495,8 @@ void LocalFrameView::UpdateLifecyclePhasesInternal(
+ 
+   while (true) {
+     for (LocalFrameView* frame_view : unthrottled_frame_views) {
+-      // RunResizeObserverSteps may run arbitrary script, which can cause a
+-      // frame to become detached.
++      // Steps in this loop (such as ResizeObserver and ContainerQueryList) may
++      // run arbitrary script, which can cause a frame to become detached.
+       if (frame_view->GetFrame().IsAttached()) {
+         frame_view->Lifecycle().EnsureStateAtMost(
+             DocumentLifecycle::kVisualUpdatePending);
+@@ -2577,8 +2578,11 @@ void LocalFrameView::UpdateLifecyclePhasesInternal(
+     bool needs_to_repeat_lifecycle = false;
+ 
+     // ResizeObserver and post-layout IntersectionObserver observation
+-    // deliveries may dirty style and layout. RunResizeObserverSteps will return
+-    // true if any observer ran that may have dirtied style or layout;
++    // deliveries may require repeating the lifecycle. RunResizeObserverSteps
++    // returns true if any resize observations were delivered or a loop limit
++    // error event was dispatched (requiring another pass to update any dirtied
++    // state, gather deeper observations, or check for skipped observations), or
++    // if anchor position fallback updates invalidated layout;
+     // RunPostLayoutIntersectionObserverSteps will return true if any
+     // observations led to content-visibility intersection changing visibility
+     // state synchronously (which happens on the first intersection
+diff --git a/third_party/blink/renderer/core/frame/local_frame_view_test.cc b/third_party/blink/renderer/core/frame/local_frame_view_test.cc
+index fa815f9b2604cc68f164b4584bb2df509b1254bc..911d23e41fc0838a5106cfe5671b4bdd53c2f607 100644
+--- a/third_party/blink/renderer/core/frame/local_frame_view_test.cc
++++ b/third_party/blink/renderer/core/frame/local_frame_view_test.cc
+@@ -1057,5 +1057,75 @@ TEST_F(LocalFrameViewPresentationTimeTest,
+   histogram_tester.ExpectTotalCount(kHistogramName, 2);
+ }
+ 
++TEST_F(LocalFrameViewSimTest, ResizeObserverErrorMutatesAncestorFrame) {
++  SimRequest main_resource("https://example.com/test.html", "text/html");
++  LoadURL("https://example.com/test.html");
++  main_resource.Complete(R"HTML(
++    <iframe srcdoc="
++      <div id='target' style='width: 10px'></div>
++      <script>
++        window.onerror = () => {
++          // Mutate style in the ancestor frame when the ResizeObserver loop
++          // limit error fires, while leaving this child frame clean.
++          parent.document.body.style.width = '200px';
++        };
++        new ResizeObserver(() => {
++          target.style.width = '20px';
++        }).observe(target);
++      </script>
++    "></iframe>
++  )HTML");
++  test::RunPendingTasks();
++  Compositor().BeginFrame();
++  EXPECT_EQ(GetDocument().Lifecycle().GetState(),
++            DocumentLifecycle::kPaintClean);
++}
++
++TEST_F(LocalFrameViewSimTest, ResizeObserverErrorMutatesAncestorFrameLayout) {
++  SimRequest main_resource("https://example.com/test.html", "text/html");
++  LoadURL("https://example.com/test.html");
++  main_resource.Complete(R"HTML(
++    <div id="text">hello</div>
++    <iframe srcdoc="
++      <div id='target' style='width: 10px'></div>
++      <script>
++        window.onerror = () => {
++          // Mutate text data in the ancestor frame (dirties layout without
++          // lowering DocumentLifecycle state below kPrePaintClean).
++          parent.document.getElementById('text').firstChild.data = 'world';
++        };
++        new ResizeObserver(() => {
++          target.style.width = '20px';
++        }).observe(target);
++      </script>
++    "></iframe>
++  )HTML");
++  test::RunPendingTasks();
++  Compositor().BeginFrame();
++  EXPECT_FALSE(GetDocument().View()->NeedsLayout());
++}
++
++TEST_F(LocalFrameViewSimTest, ResizeObserverErrorMutatesScrollOffset) {
++  SimRequest main_resource("https://example.com/test.html", "text/html");
++  LoadURL("https://example.com/test.html");
++  main_resource.Complete(R"HTML(
++    <div id="scroller" style="height: 100px; overflow: scroll;">
++      <div style="height: 500px;"></div>
++    </div>
++    <script>
++      window.onerror = () => {
++        scroller.scrollTop = 50;
++      };
++      new ResizeObserver(() => {
++        scroller.style.width = '20px';
++      }).observe(scroller);
++    </script>
++  )HTML");
++  test::RunPendingTasks();
++  Compositor().BeginFrame();
++  EXPECT_FALSE(
++      GetDocument().GetLayoutView()->DescendantNeedsPaintPropertyUpdate());
++}
++
+ }  // namespace
+ }  // namespace blink

@@ -145,8 +145,13 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   // Add file format picker.
   ElectronAccessoryView* accessoryView = [[ElectronAccessoryView alloc]
       initWithFrame:NSMakeRect(0.0, 0.0, 200, 32.0)];
-  NSTextField* label =
-      [[NSTextField alloc] initWithFrame:NSMakeRect(0, 0, 60, 22)];
+  NSRect labelFrame = NSMakeRect(0, 0, 60, 22);
+  NSRect popupButtonFrame = NSMakeRect(50.0, 2, 140, 22.0);
+  if (@available(macOS 26.0, *)) {
+    labelFrame.origin.y = 4;
+    popupButtonFrame.origin.y = 6;
+  }
+  NSTextField* label = [[NSTextField alloc] initWithFrame:labelFrame];
 
   [label setEditable:NO];
   [label setStringValue:@"Format:"];
@@ -155,8 +160,7 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   [label setDrawsBackground:NO];
 
   NSPopUpButton* popupButton =
-      [[NSPopUpButton alloc] initWithFrame:NSMakeRect(50.0, 2, 140, 22.0)
-                                 pullsDown:NO];
+      [[NSPopUpButton alloc] initWithFrame:popupButtonFrame pullsDown:NO];
   PopUpButtonHandler* popUpButtonHandler =
       [[PopUpButtonHandler alloc] initWithPanel:dialog
                                    andTypesList:file_types_list];

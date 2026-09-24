@@ -7,10 +7,10 @@
   failure: the spec runner exits with no summary and no JUnit file, and the whole
   shard goes red with nothing to point at. Collect what you need in the listener,
   and assert in the test body after `await`ing whatever you are waiting for.
-- Wait for the output you expect, not for `'exit'`. `utilityProcess` drops its
-  stdio listeners the moment the child exits, so a chunk still in the pipe when
-  `'exit'` fires is lost. Accumulate output until the expected pattern appears
-  (see `outputUntil` in `api-utility-process-spec.ts`), then assert on it.
+- Wait for the output you expect, not for `'exit'`. A chunk the child wrote
+  just before exiting can still be in the pipe when `'exit'` fires and only be
+  delivered afterwards. Accumulate output until the expected pattern appears
+  (see `outputUntil` in `api-utility-process.spec.ts`), then assert on it.
 - Don't assert on the first chunk from a pipe. stdout and stderr race, and a
   stray warning on stderr (a `net/dns` config warning, a GPU message) can land
   before the line you want. Match a pattern against the accumulated output.

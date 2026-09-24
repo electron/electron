@@ -52,7 +52,7 @@ that follow the W3C [web custom format proposal](https://github.com/w3c/editing/
 ```js
 const { clipboard, ClipboardItem } = require('electron')
 
-async function writeClipboard () {
+async function writeClipboard() {
   await clipboard.write([
     new ClipboardItem({
       'web application/x.my-app-clip': new Blob(['arbitrary payload'])
@@ -81,7 +81,7 @@ clipboard. The two clipboards are independent: writing via
 ```js
 const { clipboard } = require('electron')
 
-async function run () {
+async function run() {
   await clipboard.selection.writeText('Example string')
   console.log(await clipboard.selection.readText())
 }
@@ -103,7 +103,7 @@ API.
 ```js
 const { clipboard } = require('electron')
 
-async function readText () {
+async function readText() {
   await clipboard.writeText('hello i am a bit of text!')
   const text = await clipboard.readText()
   console.log(text)
@@ -125,7 +125,7 @@ API.
 ```js
 const { clipboard } = require('electron')
 
-async function writeClipboardText () {
+async function writeClipboardText() {
   await clipboard.writeText('hello i am a bit of text!')
 }
 
@@ -141,7 +141,7 @@ contents.
 ```js
 const { clipboard } = require('electron')
 
-async function dumpClipboard () {
+async function dumpClipboard() {
   const items = await clipboard.read()
   for (const item of items) {
     for (const type of item.types) {
@@ -169,7 +169,7 @@ const { clipboard, ClipboardItem, nativeImage } = require('electron')
 
 const png = nativeImage.createFromPath('/path/to/icon.png').toPNG()
 
-async function writeClipboard () {
+async function writeClipboard() {
   await clipboard.write([
     new ClipboardItem({
       'text/plain': 'hello',
@@ -198,7 +198,7 @@ custom format (`electron application/osclipboard;format="public/utf8-plain-text"
 ```js
 const { clipboard } = require('electron')
 
-async function check () {
+async function check() {
   const hasFormat = await clipboard.has('text/html')
   console.log(hasFormat)
   // 'true' or 'false'

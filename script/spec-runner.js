@@ -670,7 +670,7 @@ async function installSpecModules(dir) {
     }
     if (toolchainEnv === null) {
       // Not silent: the specs covering these fixtures are gated on this
-      // variable and report as skipped, see spec/node-spec.ts.
+      // variable and report as skipped, see spec/node.spec.ts.
       console.log(
         `${warn} No compiler on this host can build Electron's headers, not rebuilding native addon '${addon}'; its specs will be skipped`
       );

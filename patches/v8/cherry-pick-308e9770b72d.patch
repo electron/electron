@@ -1,0 +1,96 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Tue, 15 Sep 2026 16:01:53 +0200
+Subject: [M152] [wasm] Fix race in SetWasmSourceMap
+
+Original change's description:
+> [wasm] Fix race in SetWasmSourceMap
+>
+> Setting a source map lacked synchronization, so multiple threads
+> trying to do that at the same time could clash. Fix that by
+> adding a mutex guard.
+>
+> Fixed: 560406548
+> Change-Id: Ib562b77429b3921ea7f0f81ae4882a7c9bbbc68d
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8412287
+> Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
+> Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
+> Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+> Commit-Queue: Matthias Liedtke <mliedtke@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#109844}
+
+(cherry picked from commit 695bea76a654b7f11bcfde1d898cf44716f83648)
+
+Bug: 562784040,560406548
+Change-Id: Ib562b77429b3921ea7f0f81ae4882a7c9bbbc68d
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8427122
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.2@{#66}
+Cr-Branched-From: a8fe17c242678787f03a8a2b77424aa06cf865c4-refs/heads/15.2.124@{#1}
+Cr-Branched-From: 0e6ea09ef6f15ebd7f78555c0648c8b632ce3013-refs/heads/main@{#108894}
+
+diff --git a/src/wasm/wasm-code-manager.cc b/src/wasm/wasm-code-manager.cc
+index b29f25395a2fb8b57cb776659581e9795a50902e..cc10f58f428da8b4416b404aad21f08b09d4d9c2 100644
+--- a/src/wasm/wasm-code-manager.cc
++++ b/src/wasm/wasm-code-manager.cc
+@@ -431,7 +431,7 @@ void WasmCode::TryLoadSourceMap(Isolate* isolate) const {
+       load_wasm_source_map(v8_isolate, external_url_string.c_str());
+   if (source_map_str.IsEmpty()) return;
+ 
+-  native_module_->SetWasmSourceMap(
++  native_module_->SetWasmSourceMapIfUnset(
+       std::make_unique<WasmModuleSourceMap>(v8_isolate, source_map_str));
+ }
+ 
+@@ -1741,12 +1741,15 @@ bool NativeModule::HasCodeWithTier(uint32_t index, ExecutionTier tier) const {
+          code_table_[declared_function_index(module(), index)]->tier() == tier;
+ }
+ 
+-void NativeModule::SetWasmSourceMap(
++void NativeModule::SetWasmSourceMapIfUnset(
+     std::unique_ptr<WasmModuleSourceMap> source_map) {
++  base::RecursiveMutexGuard guard(&allocation_mutex_);
++  if (source_map_) return;
+   source_map_ = std::move(source_map);
+ }
+ 
+ WasmModuleSourceMap* NativeModule::GetWasmSourceMap() const {
++  base::RecursiveMutexGuard guard(&allocation_mutex_);
+   return source_map_.get();
+ }
+ 
+diff --git a/src/wasm/wasm-code-manager.h b/src/wasm/wasm-code-manager.h
+index d3a367b426a4c69f03fd8cfa08db5c5be9da7534..748400474e4d4533be14cceea9395262a640a45e 100644
+--- a/src/wasm/wasm-code-manager.h
++++ b/src/wasm/wasm-code-manager.h
+@@ -736,7 +736,9 @@ class V8_EXPORT_PRIVATE NativeModule final {
+   bool HasCode(uint32_t index) const;
+   bool HasCodeWithTier(uint32_t index, ExecutionTier tier) const;
+ 
+-  void SetWasmSourceMap(std::unique_ptr<WasmModuleSourceMap> source_map);
++  // Protected by {allocation_mutex_}.
++  // Does nothing if {source_map_} is already populated.
++  void SetWasmSourceMapIfUnset(std::unique_ptr<WasmModuleSourceMap> source_map);
+   WasmModuleSourceMap* GetWasmSourceMap() const V8_LIFETIME_BOUND;
+ 
+   Address jump_table_start() const {
+@@ -1052,8 +1054,6 @@ class V8_EXPORT_PRIVATE NativeModule final {
+   // tasks can keep this alive.
+   std::shared_ptr<const WasmModule> module_;
+ 
+-  std::unique_ptr<WasmModuleSourceMap> source_map_;
+-
+   // Wire bytes, held in a shared_ptr so they can be kept alive by the
+   // {WireBytesStorage}, held by background compile tasks.
+   std::shared_ptr<base::OwnedVector<const uint8_t>> wire_bytes_;
+@@ -1129,6 +1129,8 @@ class V8_EXPORT_PRIVATE NativeModule final {
+   // mutex.
+   std::unique_ptr<DebugInfo> debug_info_;
+ 
++  std::unique_ptr<WasmModuleSourceMap> source_map_;
++
+   std::unique_ptr<NamesProvider> names_provider_;
+ 
+   DebugState debug_state_ = kNotDebugging;
