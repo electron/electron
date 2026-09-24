@@ -1,5 +1,5 @@
-// Runs test bodies from spec/api-net-spec.ts (and one from
-// spec/api-app-spec.ts) inside a utility process. Each body arrives as source
+// Runs test bodies from spec/api-net.spec.ts (and one from
+// spec/api-app.spec.ts) inside a utility process. Each body arrives as source
 // text, so everything it refers to from those spec files' imports has to be in
 // scope here under the same name.
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -41,7 +41,7 @@ function fail(message) {
 }
 
 process.parentPort.on('message', async (e) => {
-  // Equivalent of beforeEach in spec/api-net-spec.ts
+  // Equivalent of beforeEach in spec/api-net.spec.ts
   respondNTimes.routeFailure = false;
 
   try {
@@ -58,7 +58,7 @@ process.parentPort.on('message', async (e) => {
     process.exit(1);
   }
 
-  // Equivalent of afterEach in spec/api-net-spec.ts
+  // Equivalent of afterEach in spec/api-net.spec.ts
   if (respondNTimes.routeFailure) {
     fail(
       'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
