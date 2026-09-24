@@ -12,6 +12,7 @@
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/function_template.h"
 #include "shell/common/gin_helper/locker.h"
+#include "shell/common/gin_helper/node_entry_scope.h"
 #include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8-context.h"
 #include "v8/include/v8-function.h"
@@ -51,6 +52,7 @@ struct V8FunctionInvoker<v8::Local<v8::Value>(ArgTypes...)> {
       return v8::Null(isolate);
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->GetCreationContextChecked(isolate);
+    NodeEntryScope node_scope(context, holder);
     v8::MicrotasksScope microtasks_scope(context,
                                          v8::MicrotasksScope::kRunMicrotasks);
     v8::Context::Scope context_scope(context);
@@ -76,6 +78,7 @@ struct V8FunctionInvoker<void(ArgTypes...)> {
       return;
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->GetCreationContextChecked(isolate);
+    NodeEntryScope node_scope(context, holder);
     v8::MicrotasksScope microtasks_scope(context,
                                          v8::MicrotasksScope::kRunMicrotasks);
     v8::Context::Scope context_scope(context);
@@ -100,6 +103,7 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
       return ret;
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->GetCreationContextChecked(isolate);
+    NodeEntryScope node_scope(context, holder);
     v8::MicrotasksScope microtasks_scope(context,
                                          v8::MicrotasksScope::kRunMicrotasks);
     v8::Context::Scope context_scope(context);

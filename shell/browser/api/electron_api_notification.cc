@@ -20,6 +20,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/node_entry_scope.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
@@ -429,6 +430,7 @@ void InvokeJsCallback(const electron::ActivationArguments& details) {
   v8::Context::Scope context_scope(context);
 
   v8::Local<v8::Function> callback = g_js_launch_callback->Get(isolate);
+  gin_helper::NodeEntryScope node_scope(context, callback);
   v8::Local<v8::Value> argv[] = {ActivationArgumentsToV8(isolate, details)};
 
   v8::TryCatch try_catch(isolate);

@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, net, protocol, session, type WebContents, webContents } from 'electron/main';
+import { BrowserWindow, ipcMain, net, protocol, session, type WebContents, webContents, View } from 'electron/main';
 
 import { expect } from 'chai';
 import { WebSocketServer } from 'ws';
@@ -92,6 +92,25 @@ describe('webRequest module', () => {
   describe('webRequest.onBeforeRequest', () => {
     afterEach(() => {
       ses.webRequest.onBeforeRequest(null);
+    });
+
+    it('runs ticks and microtasks queued by the listener when it returns, not inside a native call it makes', async () => {
+      // See the protocol.handle test of the same name: the listener is
+      // entered from native code and View.setBounds() emits synchronously.
+      const view = new View();
+      const order: string[] = [];
+      ses.webRequest.onBeforeRequest((details, callback) => {
+        if (details.url === `${defaultURL}order` && order.length === 0) {
+          view.once('bounds-changed', () => order.push('bounds-changed'));
+          process.nextTick(() => order.push('nextTick'));
+          Promise.resolve().then(() => order.push('microtask'));
+          view.setBounds({ x: 0, y: 0, width: 11, height: 11 });
+          order.push('listener returned');
+        }
+        callback({});
+      });
+      await ajax(`${defaultURL}order`);
+      expect(order).to.deep.equal(['bounds-changed', 'listener returned', 'nextTick', 'microtask']);
     });
 
     it('reports the origin that issued the request as details.initiatorOrigin', async () => {
