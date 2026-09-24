@@ -2,7 +2,7 @@
 
 ## Overview
 
-When a native crash happens in your app (a segfault in Chromium, a fatal V8 error, an
+When a native crash happens in your app (e.g. a segfault in Chromium, a fatal V8 error, an
 out-of-memory renderer, or a bug in a native Node.js module), there is no JavaScript
 exception to catch. Electron's [`crashReporter`](../api/crash-reporter.md) module
 captures these crashes as minidumps that you can collect, upload and turn back into
@@ -327,7 +327,7 @@ also keep symbols for them. Generate Breakpad symbols for each binary you ship w
 Breakpad's `dump_syms` tool, and store them where your symbolication tool can find them. Keep them for every
 version you release, since symbols only match the exact build they came from.
 
-### macOS system crash reports
+## macOS system crash reports
 
 When an app crashes on macOS, the system may also write a crash report (an `.ips` file,
 shown in the Console app) to `~/Library/Logs/DiagnosticReports`. For Electron's release
@@ -365,7 +365,7 @@ symbols) and group similar crashes. Many also offer SDKs that report JavaScript 
 alongside native crashes. Services with Electron support include:
 
 * [Sentry](https://docs.sentry.io/platforms/javascript/guides/electron/)
-* [BugSplat](https://www.bugsplat.com/docs/sdk/electron/)
+* [BugSplat](https://docs.bugsplat.com/integrations/desktop/electron)
 * [Backtrace](https://github.com/backtrace-labs/backtrace-javascript/tree/main/packages/electron) (part of Sauce Labs)
 * [Bugsnag](https://docs.bugsnag.com/platforms/electron/)
 

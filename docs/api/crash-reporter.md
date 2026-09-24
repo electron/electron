@@ -30,8 +30,8 @@ as Breakpad, so servers that accept Breakpad minidumps can receive Electron's
 crash reports.
 
 Crash reports are stored under the directory returned by
-`app.getPath('crashDumps')`. You can override it by calling
-`app.setPath('crashDumps', '/path/to/crashes')` before starting the crash
+[`app.getPath('crashDumps')`](app.md#appgetpathname). You can override it by calling
+[`app.setPath('crashDumps', '/path/to/crashes')`](app.md#appsetpathname-path) before starting the crash
 reporter. The layout of files inside this directory is an implementation detail
 and may change between versions of Electron.
 
