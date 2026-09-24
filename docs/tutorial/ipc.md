@@ -57,13 +57,13 @@ const path = require('node:path')
 
 // ...
 
-function handleSetTitle (event, title) {
+function handleSetTitle(event, title) {
   const webContents = event.sender
   const win = BrowserWindow.fromWebContents(webContents)
   win.setTitle(title)
 }
 
-function createWindow () {
+function createWindow() {
   const mainWindow = new BrowserWindow({
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')
@@ -189,14 +189,14 @@ const path = require('node:path')
 
 // ...
 
-async function handleFileOpen () {
+async function handleFileOpen() {
   const { canceled, filePaths } = await dialog.showOpenDialog({})
   if (!canceled) {
     return filePaths[0]
   }
 }
 
-function createWindow () {
+function createWindow() {
   const mainWindow = new BrowserWindow({
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')
@@ -384,7 +384,7 @@ const { app, BrowserWindow, Menu, ipcMain } = require('electron')
 
 const path = require('node:path')
 
-function createWindow () {
+function createWindow() {
   const mainWindow = new BrowserWindow({
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')
@@ -415,8 +415,6 @@ function createWindow () {
 
 For the purposes of the tutorial, it's important to note that the `click` handler
 sends a message (either `1` or `-1`) to the renderer process through the `update-counter` channel.
-
-<!-- eslint-skip -->
 
 ```js @ts-type={mainWindow:Electron.BrowserWindow}
 click: () => mainWindow.webContents.send('update-counter', -1)

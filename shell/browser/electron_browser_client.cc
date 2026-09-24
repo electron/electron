@@ -182,9 +182,9 @@
 #include "extensions/browser/event_router.h"
 #include "extensions/browser/extension_host.h"
 #include "extensions/browser/extension_navigation_throttle.h"
-#include "extensions/browser/extension_prefs.h"
 #include "extensions/browser/extension_protocols.h"
 #include "extensions/browser/extension_registry.h"
+#include "extensions/browser/extension_util.h"
 #include "extensions/browser/extensions_browser_client.h"
 #include "extensions/browser/guest_view/extensions_guest_view.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
@@ -199,7 +199,6 @@
 #include "extensions/common/mojom/event_router.mojom.h"
 #include "extensions/common/mojom/guest_view.mojom.h"
 #include "extensions/common/mojom/renderer_host.mojom.h"
-#include "extensions/common/switches.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #endif
@@ -210,6 +209,7 @@
 #endif
 
 #if BUILDFLAG(IS_MAC)
+#include "base/apple/foundation_util.h"
 #include "content/browser/mac_helpers.h"
 #include "content/public/browser/child_process_host.h"
 #endif
@@ -255,6 +255,15 @@ using content::BrowserThread;
 namespace electron {
 
 namespace {
+
+// A GPU cache directory under sessionData, or empty when that path is not
+// available, which content treats as caching being disabled.
+base::FilePath GpuCacheDirectory(base::FilePath::StringViewType name) {
+  base::FilePath session_data;
+  if (!base::PathService::Get(DIR_SESSION_DATA, &session_data))
+    return {};
+  return session_data.Append(name);
+}
 
 #if BUILDFLAG(ENABLE_PROMPT_API)
 const char kAIManagerUserDataKey[] = "ai_manager";
@@ -313,15 +322,6 @@ enum class RenderProcessHostPrivilege {
   kIsolated,
   kExtension,
 };
-
-// Copied from chrome/browser/extensions/extension_util.cc.
-bool AllowFileAccess(const std::string& extension_id,
-                     content::BrowserContext* context) {
-  return base::CommandLine::ForCurrentProcess()->HasSwitch(
-             extensions::switches::kDisableExtensionsFileAccessCheck) ||
-         extensions::ExtensionPrefs::Get(context)->AllowFileAccess(
-             extension_id);
-}
 
 RenderProcessHostPrivilege GetPrivilegeRequiredBySecurityPrincipal(
     const content::SecurityPrincipal& principal) {
@@ -438,13 +438,6 @@ content::WebContents* ElectronBrowserClient::GetWebContentsFromProcessID(
   // Certain render process will be created with no associated render view,
   // for example: ServiceWorker.
   return WebContentsPreferences::GetWebContentsFromProcessID(process_id);
-}
-
-content::SiteInstance* ElectronBrowserClient::GetSiteInstanceFromAffinity(
-    content::BrowserContext* browser_context,
-    const GURL& url,
-    content::RenderFrameHost* rfh) const {
-  return nullptr;
 }
 
 bool ElectronBrowserClient::IsRendererSubFrame(
@@ -804,7 +797,7 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
   //
   // Only the about:blank document needs this. A popup that navigates
   // (window.open(url)) does not run the preload on its initial document and
-  // gets a normal ElectronFrameStartup push at ReadyToCommitNavigation, so
+  // gets a normal ElectronFrame push at ReadyToCommitNavigation, so
   // building the data here for it would be pure waste.
   if (!target_url.is_empty() && !target_url.IsAboutBlank())
     return std::nullopt;
@@ -812,8 +805,6 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
   auto* web_contents =
       content::WebContents::FromRenderFrameHost(new_window_main_frame);
   if (!web_contents)
-    return std::nullopt;
-  if (!WebContentsPreferences::ShouldUseSandbox(web_contents))
     return std::nullopt;
 
   mojom::RendererStartupDataPtr data;
@@ -1208,6 +1199,28 @@ base::FilePath ElectronBrowserClient::GetDefaultDownloadDirectory() {
   return {};
 }
 
+// The GPU process asks the browser to persist the shaders it compiles for the
+// display compositor and for Skia, and to load them back on the next launch.
+// Content only does so for the caches whose directory the embedder provides;
+// without these the shaders were compiled again on every launch. The
+// directories sit next to the other Chromium caches under sessionData, which
+// like them has to be set before the app is ready.
+base::FilePath ElectronBrowserClient::GetShaderDiskCacheDirectory() {
+  return GpuCacheDirectory(FILE_PATH_LITERAL("ShaderCache"));
+}
+
+base::FilePath ElectronBrowserClient::GetGrShaderDiskCacheDirectory() {
+  return GpuCacheDirectory(FILE_PATH_LITERAL("GrShaderCache"));
+}
+
+base::FilePath ElectronBrowserClient::GetGraphiteDawnDiskCacheDirectory() {
+  return GpuCacheDirectory(FILE_PATH_LITERAL("GraphiteDawnCache"));
+}
+
+base::FilePath ElectronBrowserClient::GetGPUPersistentCacheDirectory() {
+  return GpuCacheDirectory(FILE_PATH_LITERAL("GPUPersistentCache"));
+}
+
 scoped_refptr<network::SharedURLLoaderFactory>
 ElectronBrowserClient::GetSystemSharedURLLoaderFactory() {
   if (!g_browser_process)
@@ -1424,7 +1437,8 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
   // ExtensionWebContentsObserver::RenderFrameCreated.
   extensions::Manifest::Type type = extension->GetType();
   if (type == extensions::Manifest::Type::kExtension &&
-      AllowFileAccess(extension->id(), web_contents->GetBrowserContext())) {
+      extensions::util::AllowFileAccess(extension->id(),
+                                        web_contents->GetBrowserContext())) {
     factories->emplace(url::kFileScheme,
                        FileURLLoaderFactory::Create(render_process_id));
   }
@@ -2141,13 +2155,31 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
 }
 
 #if BUILDFLAG(IS_MAC)
-std::string ElectronBrowserClient::GetChildProcessSuffix(int child_flags) {
-  if (child_flags ==
+base::FilePath ElectronBrowserClient::GetChildProcessPath(int child_flags) {
+  if (child_flags !=
       static_cast<int>(
           ElectronChildProcessHostFlags::kChildProcessHelperPlugin)) {
-    return kElectronMacHelperSuffixPlugin;
+    return base::FilePath();
   }
-  NOTREACHED() << "Unsupported child process flags: " << child_flags;
+  if (!base::apple::AmIBundled()) {
+    return base::FilePath();
+  }
+
+  base::FilePath child_path;
+  if (!base::PathService::Get(content::CHILD_PROCESS_EXE, &child_path)) {
+    return base::FilePath();
+  }
+
+  std::string child_base_name =
+      child_path.BaseName().value() + kElectronMacHelperSuffixPlugin;
+  return child_path.DirName()
+      .DirName()
+      .DirName()
+      .DirName()
+      .Append(child_base_name + ".app")
+      .Append("Contents")
+      .Append("MacOS")
+      .Append(child_base_name);
 }
 
 device::GeolocationSystemPermissionManager*

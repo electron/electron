@@ -10,7 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/command_line.h"
 #include "base/containers/fixed_flat_set.h"
 #include "base/strings/pattern.h"
 #include "base/types/expected.h"
@@ -18,14 +17,13 @@
 #include "components/url_formatter/url_fixer.h"
 #include "content/public/browser/navigation_entry.h"
 #include "extensions/browser/extension_api_frame_id_map.h"
-#include "extensions/browser/extension_prefs.h"
+#include "extensions/browser/extension_util.h"
 #include "extensions/common/error_utils.h"
 #include "extensions/common/extension_features.h"
 #include "extensions/common/feature_switch.h"
 #include "extensions/common/manifest_constants.h"
 #include "extensions/common/mojom/host_id.mojom.h"
 #include "extensions/common/permissions/permissions_data.h"
-#include "extensions/common/switches.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/extensions/electron_extension_tab_util.h"
 #include "shell/browser/native_window.h"
@@ -101,7 +99,7 @@ bool CanAccessPrivilegedTabFields(const Extension* extension,
 
 }  // namespace
 
-ExecuteCodeInTabFunction::ExecuteCodeInTabFunction() : execute_tab_id_(-1) {}
+ExecuteCodeInTabFunction::ExecuteCodeInTabFunction() = default;
 
 ExecuteCodeInTabFunction::~ExecuteCodeInTabFunction() = default;
 
@@ -283,12 +281,9 @@ ExtensionFunction::ResponseAction TabsQueryFunction::Run() {
   // Filter out webContents that don't belong to the current browser context.
   auto* bc = browser_context();
   auto all_contents = electron::api::WebContents::GetWebContentsList();
-  all_contents.remove_if([&bc](electron::api::WebContents* wc) {
-    return (bc != wc->web_contents()->GetBrowserContext());
-  });
-
-  for (auto* contents : all_contents) {
-    if (!contents || !contents->web_contents())
+  for (const auto& contents : all_contents) {
+    if (!contents || !contents->web_contents() ||
+        bc != contents->web_contents()->GetBrowserContext())
       continue;
 
     auto* wc = contents->web_contents();
@@ -528,13 +523,6 @@ GURL ResolvePossiblyRelativeURL(const std::string& url_string,
   return url;
 }
 
-bool AllowFileAccess(const ExtensionId& extension_id,
-                     content::BrowserContext* context) {
-  return base::CommandLine::ForCurrentProcess()->HasSwitch(
-             switches::kDisableExtensionsFileAccessCheck) ||
-         ExtensionPrefs::Get(context)->AllowFileAccess(extension_id);
-}
-
 base::expected<GURL, std::string> PrepareURLForNavigation(
     const std::string& url_string,
     const Extension* extension,
@@ -597,7 +585,7 @@ base::expected<GURL, std::string> PrepareURLForNavigation(
   // Don't let the extension navigate directly to file scheme pages, unless
   // they have file access.
   if (url.SchemeIsFile() &&
-      !AllowFileAccess(extension->id(), browser_context)) {
+      !util::AllowFileAccess(extension->id(), browser_context)) {
     const char kFileUrlsNotAllowedInExtensionNavigations[] =
         "Cannot navigate to a file URL without local file access.";
     return base::unexpected(kFileUrlsNotAllowedInExtensionNavigations);

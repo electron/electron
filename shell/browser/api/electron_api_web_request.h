@@ -241,9 +241,6 @@ class WebRequest final : public gin::Wrappable<WebRequest> {
 
   class RequestFilter {
    public:
-    RequestFilter(std::set<URLPattern>,
-                  std::set<URLPattern>,
-                  std::set<extensions::WebRequestResourceType>);
     RequestFilter(const RequestFilter&);
     RequestFilter();
     ~RequestFilter();

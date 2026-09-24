@@ -1,5 +1,3 @@
-import { MessagePortMain } from '@electron/internal/browser/message-port-main';
-
 import { EventEmitter } from 'events';
 import { Socket } from 'net';
 import { Duplex, PassThrough } from 'stream';
@@ -135,9 +133,8 @@ class ForkUtilityProcess extends EventEmitter implements Electron.UtilityProcess
     return this.#handle;
   }
 
-  postMessage(message: any, transfer?: MessagePortMain[]) {
+  postMessage(message: any, transfer?: Electron.MessagePortMain[]) {
     if (Array.isArray(transfer)) {
-      transfer = transfer.map((o: any) => (o instanceof MessagePortMain ? o._internalPort : o));
       return this.#handle?.postMessage(message, transfer);
     }
     return this.#handle?.postMessage(message);

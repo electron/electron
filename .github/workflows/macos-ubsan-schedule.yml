@@ -82,6 +82,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
+    cache-mode: read
     needs: [checkout-macos, build-siso-macos]
     with:
       build-runs-on: macos-15-xlarge

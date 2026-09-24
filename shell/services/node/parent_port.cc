@@ -7,11 +7,14 @@
 #include <utility>
 
 #include "base/no_destructor.h"
+#include "gin/arguments.h"
 #include "gin/data_object_builder.h"
 #include "gin/object_template_builder.h"
+#include "gin/per_context_data.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
@@ -53,9 +56,12 @@ void ParentPort::Initialize(blink::MessagePortDescriptor port) {
       base::BindOnce(&ParentPort::Close, base::Unretained(this)));
 }
 
-void ParentPort::PostMessage(v8::Local<v8::Value> message_value) {
+void ParentPort::PostMessage(gin::Arguments* args) {
   if (!connector_closed_ && connector_ && connector_->is_valid()) {
-    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    v8::Isolate* isolate = args->isolate();
+    // postMessage() with no argument posts undefined.
+    v8::Local<v8::Value> message_value = v8::Undefined(isolate);
+    args->GetNext(&message_value);
     blink::TransferableMessage transferable_message;
 
     if (!electron::SerializeV8Value(isolate, message_value,
@@ -121,16 +127,28 @@ bool ParentPort::Accept(mojo::Message* mojo_message) {
 
 // static
 ParentPort* ParentPort::Create(v8::Isolate* isolate) {
+  // The template is otherwise only made when the constructor is first used.
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  gin::PerContextData* data = gin::PerContextData::From(context);
+  if (data && data->GetObjectTemplate(&kWrapperInfo).IsEmpty())
+    GetConstructor(isolate, context, &kWrapperInfo);
   return ParentPort::GetInstance();
 }
 
 // static
-gin::ObjectTemplateBuilder ParentPort::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return gin::ObjectTemplateBuilder(isolate, GetClassName())
+v8::Local<v8::Value> ParentPort::New(gin_helper::ErrorThrower thrower) {
+  thrower.ThrowTypeError("Illegal constructor");
+  return v8::Undefined(thrower.isolate());
+}
+
+// static
+void ParentPort::FillObjectTemplate(v8::Isolate* isolate,
+                                    v8::Local<v8::ObjectTemplate> templ) {
+  gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
       .SetMethod("postMessage", &ParentPort::PostMessage)
       .SetMethod("start", &ParentPort::Start)
-      .SetMethod("pause", &ParentPort::Pause);
+      .SetMethod("pause", &ParentPort::Pause)
+      .Build();
 }
 
 const gin::WrapperInfo* ParentPort::wrapper_info() const {

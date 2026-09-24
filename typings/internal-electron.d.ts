@@ -6,13 +6,6 @@
  */
 
 declare namespace Electron {
-  enum ProcessType {
-    browser = 'browser',
-    renderer = 'renderer',
-    worker = 'worker',
-    utility = 'utility'
-  }
-
   interface App {
     setVersion(version: string): void;
     setDesktopName(name: string): void;
@@ -31,7 +24,6 @@ declare namespace Electron {
   type TouchBarItemType = NonNullable<Electron.TouchBarConstructorOptions['items']>[0];
 
   interface BaseWindow {
-    _init(): void;
     _touchBar: Electron.TouchBar | null;
     _setTouchBarItems: (items: TouchBarItemType[]) => void;
     _setEscapeTouchBarItem: (item: TouchBarItemType | {}) => void;
@@ -96,13 +88,10 @@ declare namespace Electron {
   }
 
   interface WebContents {
-    _awaitNextLoad(expectedUrl: string): Promise<void>;
-    _loadURL(url: string, options: ElectronInternal.LoadURLOptions): void;
     _setConsoleMessageObserved(observed: boolean): void;
     getOwnerBrowserWindow(): Electron.BrowserWindow | null;
     getLastWebPreferences(): Electron.WebPreferences | null;
     _getProcessMemoryInfo(processId?: number): Electron.ProcessMemoryInfo;
-    _getPreloadScript(): Electron.PreloadScript | null;
     browserWindowOptions: BrowserWindowConstructorOptions;
     _windowOpenHandler: ((details: Electron.HandlerDetails) => any) | null;
     _callWindowOpenHandler(
@@ -118,9 +107,9 @@ declare namespace Electron {
         Pick<Electron.BrowserWindowConstructorOptions, 'backgroundColor'>
     ): void;
     _send(internal: boolean, channel: string, args: any): boolean;
+    _sendToMainFrame(internal: boolean, channel: string, args: any): void;
     _sendInternal(channel: string, ...args: any[]): void;
-    _printToPDF(options: any): Promise<Buffer>;
-    _print(options: any, callback?: (success: boolean, failureReason: string) => void): void;
+    _executeJavaScript(worldId: number, sources: Electron.WebSource[], hasUserGesture: boolean): Promise<any>;
     _init(): void;
     _getNavigationEntryAtIndex(index: number): Electron.NavigationEntry | null;
     _getActiveIndex(): number;
@@ -134,7 +123,7 @@ declare namespace Electron {
     _goToIndex(index: number): void;
     _removeNavigationEntryAtIndex(index: number): boolean;
     _getHistory(): Electron.NavigationEntry[];
-    _restoreHistory(index: number, entries: Electron.NavigationEntry[]): void;
+    _restoreHistory(index: number, entries: Electron.NavigationEntry[]): Promise<void>;
     _clearHistory(): void;
     destroy(): void;
     // <webview>
@@ -147,15 +136,11 @@ declare namespace Electron {
 
   interface WebFrameMain {
     _send(internal: boolean, channel: string, args: any): void;
-    _sendInternal(channel: string, ...args: any[]): void;
-    _postMessage(channel: string, message: any, transfer?: any[]): void;
-    _printToPDF(options: any): Promise<Buffer>;
+    _transferSharedTexture(transfer: any, textureId: string, args: any[]): Promise<Electron.SharedTextureSyncToken>;
     _lifecycleStateForTesting: string;
   }
 
   interface WebFrame extends NodeJS.EventEmitter {
-    _isEvalAllowed(): boolean;
-    _setIsolatedWorldCreationCallback(callback: (worldId: number) => void): void;
     getIsolatedWorlds(): number[];
     on(event: 'isolated-world-created', listener: (worldId: number) => void): this;
     once(event: 'isolated-world-created', listener: (worldId: number) => void): this;
@@ -175,79 +160,29 @@ declare namespace Electron {
 
   type CreateWindowFunction = (options: BrowserWindowConstructorOptions) => WebContents;
 
+  namespace Menu {
+    function _roleDefaults(): Record<string, { label: string; accelerator?: string }>;
+  }
+
   interface Menu {
-    _init(): void;
-    _isCommandIdChecked(id: string): boolean;
-    _isCommandIdEnabled(id: string): boolean;
-    _shouldCommandIdWorkWhenHidden(id: string): boolean;
-    _isCommandIdVisible(id: string): boolean;
-    _getLabelForCommandId(id: string): string;
-    _getAccessibilityLabelForCommandId(id: string): string;
-    _getSecondaryLabelForCommandId(id: string): string;
-    _getIconForCommandId(id: string): string | Electron.NativeImage | null;
-    _getAcceleratorForCommandId(id: string, useDefaultAccelerator: boolean): Accelerator | undefined;
-    _shouldRegisterAcceleratorForCommandId(id: string): boolean;
-    _getSharingItemForCommandId(id: string): SharingItem | null;
-    _callMenuWillShow(): void;
-    _executeCommand(event: KeyboardEvent, id: number): void;
+    _activate(commandId: number): void;
     _menuWillShow(): void;
-    commandsMap: Record<string, MenuItem>;
-    groupsMap: Record<string, MenuItem[]>;
     getItemCount(): number;
     getIndexOfCommandId(commandId: number): number;
-    popupAt(
-      window: BaseWindow,
-      frame: WebFrameMain | undefined,
-      x: number,
-      y: number,
-      positioning: number,
-      sourceType: Required<Electron.PopupOptions>['sourceType'],
-      callback: () => void
-    ): void;
-    closePopupAt(id: number): void;
-    setSublabel(index: number, label: string): void;
-    setToolTip(index: number, tooltip: string): void;
-    setIcon(index: number, image: string | NativeImage): void;
-    setRole(index: number, role: string): void;
-    setCustomType(index: number, customType: string): void;
-    setBadge(index: number, badge: MenuItemBadge | null): void;
-    insertItem(index: number, commandId: number, label: string): void;
-    insertCheckItem(index: number, commandId: number, label: string): void;
-    insertRadioItem(index: number, commandId: number, label: string, groupId: number): void;
-    insertSeparator(index: number): void;
-    insertSubMenu(index: number, commandId: number, label: string, submenu?: Menu): void;
-    delegate?: any;
     _getAcceleratorTextAt(index: number): string;
   }
 
   interface MenuItem {
-    overrideReadOnlyProperty(property: string, value: any): void;
-    groupId: number;
-    getDefaultRoleAccelerator(): Accelerator | undefined;
-    getCheckStatus(): boolean;
     acceleratorWorksWhenHidden?: boolean;
-  }
-
-  interface ReplyChannel {
-    sendReply(value: any): void;
+    getDefaultRoleAccelerator(): Accelerator | undefined;
   }
 
   interface IpcMainEvent {
-    _replyChannel: ReplyChannel;
     frameTreeNodeId?: number;
   }
 
   interface IpcMainInvokeEvent {
-    _replyChannel: ReplyChannel;
     frameTreeNodeId?: number;
-  }
-
-  interface IpcMainServiceWorkerEvent {
-    _replyChannel: ReplyChannel;
-  }
-
-  interface IpcMainServiceWorkerInvokeEvent {
-    _replyChannel: ReplyChannel;
   }
 
   // Deprecated / undocumented BrowserWindow methods
@@ -317,22 +252,6 @@ declare namespace Electron {
       ) => void
     ): this;
     on(
-      event: '-ipc-message',
-      listener: (event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) => void
-    ): this;
-    on(
-      event: '-ipc-message-sync',
-      listener: (event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) => void
-    ): this;
-    on(
-      event: '-ipc-invoke',
-      listener: (event: Electron.IpcMainInvokeEvent, internal: boolean, channel: string, args: any[]) => void
-    ): this;
-    on(
-      event: '-ipc-ports',
-      listener: (event: Electron.IpcMainEvent, internal: boolean, channel: string, message: any, ports: any[]) => void
-    ): this;
-    on(
       event: '-run-dialog',
       listener: (
         info: {
@@ -347,9 +266,6 @@ declare namespace Electron {
     on(event: '-cancel-dialogs', listener: () => void): this;
     on(event: 'ready-to-show', listener: () => void): this;
     on(event: '-before-unload-fired', listener: (event: Electron.Event, proceed: boolean) => void): this;
-
-    on(event: '-window-visibility-change', listener: (visibilityState: 'hidden' | 'visible') => void): this;
-    removeListener(event: '-window-visibility-change', listener: (visibilityState: 'hidden' | 'visible') => void): this;
 
     once(event: 'destroyed', listener: (event: Electron.Event) => void): this;
   }
@@ -401,26 +317,6 @@ declare namespace ElectronInternal {
     once(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
   }
 
-  interface LoadURLOptions extends Electron.LoadURLOptions {
-    reloadIgnoringCache?: boolean;
-  }
-
-  interface WebContentsPrintOptions extends Electron.WebContentsPrintOptions {
-    mediaSize?: MediaSize;
-  }
-
-  type MediaSize = {
-    name: string;
-    custom_display_name: string;
-    height_microns: number;
-    width_microns: number;
-    imageable_area_left_microns?: number;
-    imageable_area_bottom_microns?: number;
-    imageable_area_right_microns?: number;
-    imageable_area_top_microns?: number;
-    is_default?: 'true';
-  };
-
   type PageSize = {
     width: number;
     height: number;
@@ -462,45 +358,4 @@ declare namespace ElectronInternal {
   class WebContents extends Electron.WebContents {
     static create(opts?: Electron.WebPreferences): Electron.WebContents;
   }
-
-  interface PreloadScript extends Electron.PreloadScript {
-    /**
-     * Whether the preload file's contents were read successfully. The actual
-     * contents stay on the C++ side (mojo-cached startup data) and are looked
-     * up by id from createPreloadScript() — they never become a V8 string.
-     */
-    hasContents?: boolean;
-    error?: Error;
-  }
-}
-
-declare namespace Chrome {
-  namespace Tabs {
-    // https://developer.chrome.com/docs/extensions/tabs#method-executeScript
-    interface ExecuteScriptDetails {
-      code?: string;
-      file?: string;
-      allFrames?: boolean;
-      frameId?: number;
-      matchAboutBlank?: boolean;
-      runAt?: 'document-start' | 'document-end' | 'document_idle';
-      cssOrigin: 'author' | 'user';
-    }
-
-    type ExecuteScriptCallback = (result: Array<any>) => void;
-
-    // https://developer.chrome.com/docs/extensions/tabs#method-sendMessage
-    interface SendMessageDetails {
-      frameId?: number;
-    }
-
-    type SendMessageCallback = (result: any) => void;
-  }
-}
-
-interface Global extends NodeJS.Global {
-  require: NodeRequire;
-  module: NodeModule;
-  __filename: string;
-  __dirname: string;
 }

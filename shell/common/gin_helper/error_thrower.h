@@ -21,8 +21,6 @@ class ErrorThrower {
   void ThrowError(std::string_view err_msg) const;
   void ThrowTypeError(std::string_view err_msg) const;
   void ThrowRangeError(std::string_view err_msg) const;
-  void ThrowReferenceError(std::string_view err_msg) const;
-  void ThrowSyntaxError(std::string_view err_msg) const;
 
   v8::Isolate* isolate() const;
 
@@ -31,7 +29,7 @@ class ErrorThrower {
                                                   v8::Local<v8::Value> options);
   void Throw(ErrorGenerator gen, std::string_view err_msg) const;
 
-  raw_ptr<v8::Isolate> isolate_ = {};
+  raw_ptr<v8::Isolate> isolate_ = nullptr;
 };
 
 }  // namespace gin_helper

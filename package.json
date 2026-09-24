@@ -8,20 +8,17 @@
     "@datadog/datadog-ci": "^5.17.0",
     "@electron/asar": "^4.3.0",
     "@electron/docs-parser": "^3.0.1",
-    "@electron/fiddle-core": "^2.0.1",
+    "@electron/fiddle-core": "^2.2.2",
     "@electron/github-app-auth": "^3.2.0",
-    "@electron/lint-roller": "^3.2.0",
+    "@electron/lint-roller": "^4.0.0",
     "@electron/typescript-definitions": "^9.2.0",
     "@hurdlegroup/robotjs": "^0.12.3",
     "@octokit/rest": "^22.0.1",
     "@sentry/cli": "3.6.2",
     "@types/minimist": "^1.2.5",
     "@types/node": "^24.9.0",
-    "@types/semver": "^7.5.8",
     "@types/stream-json": "^1.7.8",
     "@xmldom/xmldom": "^0.9.12",
-    "buffer": "^6.0.3",
-    "events": "^3.2.0",
     "folder-hash": "^4.1.2",
     "husky": "^9.1.7",
     "lint-staged": "^17.3.0",
@@ -31,16 +28,11 @@
     "oxfmt": "^0.42.0",
     "oxlint": "^1.80.0",
     "pre-flight": "^2.0.0",
-    "process": "^0.11.10",
+    "rolldown": "^1.2.8",
     "semver": "^7.6.3",
     "stream-json": "^1.9.1",
     "tap-xunit": "^2.4.1",
-    "ts-loader": "^8.0.2",
-    "ts-node": "6.2.0",
-    "typescript": "^5.8.3",
-    "url": "^0.11.4",
-    "webpack": "^5.104.1",
-    "webpack-cli": "^6.0.1",
+    "typescript": "^7.0.2",
     "yaml": "^2.8.1"
   },
   "private": true,
@@ -49,20 +41,21 @@
     "generate-version-json": "node script/generate-version-json.js",
     "lint": "node ./script/lint.js && npm run lint:fmt && npm run lint:docs && npm run lint:chromium-roller",
     "lint:js": "node ./script/lint.js --js",
-    "lint:fmt": "oxfmt --check \"{lib,spec,script,build,default_app,npm,typings}/**/*.{js,ts,mjs,cjs}\"",
-    "format": "oxfmt --write \"{lib,spec,script,build,default_app,npm,typings}/**/*.{js,ts,mjs,cjs}\"",
+    "lint:fmt": "oxfmt --check \"{lib,spec,script,build,default_app,npm,typings}/**/*.{js,ts,mjs,mts,cjs}\"",
+    "format": "oxfmt --write \"{lib,spec,script,build,default_app,npm,typings}/**/*.{js,ts,mjs,mts,cjs}\"",
     "lint:clang-format": "python3 script/run-clang-format.py -r -c shell/ || (echo \"\\nCode not formatted correctly.\" && exit 1)",
-    "lint:clang-tidy": "ts-node ./script/run-clang-tidy.ts",
+    "lint:clang-tidy": "node ./script/run-clang-tidy.mts",
     "lint:cpp": "node ./script/lint.js --cc",
     "lint:objc": "node ./script/lint.js --objc",
     "lint:py": "node ./script/lint.js --py",
     "lint:gn": "node ./script/lint.js --gn",
-    "lint:docs": "npm run lint:js-in-markdown && npm run create-typescript-definitions && npm run lint:ts-check-js-in-markdown && npm run lint:docs-fiddles && npm run lint:docs-relative-links && npm run lint:markdown && npm run lint:api-history",
-    "lint:docs-fiddles": "standard \"docs/fiddles/**/*.js\"",
+    "lint:docs": "npm run lint:js-in-markdown && npm run lint:fmt-in-markdown && npm run create-typescript-definitions && npm run lint:ts-check-js-in-markdown && npm run lint:docs-fiddles && npm run lint:docs-relative-links && npm run lint:markdown && npm run lint:api-history",
+    "lint:docs-fiddles": "oxlint docs/fiddles",
     "lint:docs-relative-links": "lint-roller-markdown-links --resource-root . --root docs \"**/*.md\"",
     "lint:markdown": "node ./script/lint.js --md",
     "lint:ts-check-js-in-markdown": "lint-roller-markdown-ts-check --root docs \"**/*.md\" --ignore \"breaking-changes.md\"",
-    "lint:js-in-markdown": "lint-roller-markdown-standard --root docs \"**/*.md\"",
+    "lint:js-in-markdown": "lint-roller-markdown-oxlint --root docs \"**/*.md\"",
+    "lint:fmt-in-markdown": "lint-roller-markdown-oxfmt --root docs \"**/*.md\" --config docs/.oxfmtrc.json",
     "lint:api-history": "lint-roller-markdown-api-history --root \"./docs/api/\" --schema \"./docs/api-history.schema.json\" --breaking-changes-file \"./docs/breaking-changes.md\" --check-placement --check-strings \"*.md\"",
     "lint:chromium-roller": "node ./script/lint-roller-chromium-changes.mjs",
     "create-api-json": "node script/create-api-json.mjs",
@@ -79,7 +72,8 @@
     "start": "node ./script/start.js",
     "test": "node ./script/spec-runner.js",
     "tsc": "tsc",
-    "webpack": "webpack"
+    "bundle": "node build/bundle/bundle.mjs",
+    "typecheck": "node build/bundle/typecheck.mjs"
   },
   "license": "MIT",
   "author": "Electron Community",
@@ -90,15 +84,15 @@
     "*": [
       "npm run lint:chromium-roller"
     ],
-    "*.{js,ts,mjs,cjs}": [
+    "*.{js,ts,mjs,mts,cjs}": [
       "oxfmt --write"
     ],
-    "*.{js,ts}": [
+    "*.{js,ts,mjs,mts}": [
       "node script/lint.js --js --fix --only --",
       "oxfmt --write"
     ],
-    "*.{js,ts,d.ts}": [
-      "ts-node script/gen-filenames.ts"
+    "*.{js,mjs,ts,mts,d.ts}": [
+      "node script/gen-filenames.mts"
     ],
     "*.{cc,mm,c,h}": [
       "python3 script/run-clang-format.py -r -c --fix"
@@ -114,12 +108,12 @@
       "node script/lint.js --py --fix --only --"
     ],
     "docs/api/**/*.md": [
-      "ts-node script/gen-filenames.ts",
+      "node script/gen-filenames.mts",
       "markdownlint-cli2 --config .autofix.markdownlint-cli2.jsonc --fix"
     ],
     "{*.patch,.patches}": [
       "node script/lint.js --patches --only --",
-      "ts-node script/check-patch-diff.ts"
+      "node script/check-patch-diff.mts"
     ],
     "DEPS": [
       "node script/gen-hunspell-filenames.js",
@@ -139,7 +133,7 @@
     "markdown-it@npm:14.1.0": "14.3.0",
     "serialize-javascript@npm:^6.0.2": "^7.0.5"
   },
-  "packageManager": "yarn@4.12.0",
+  "packageManager": "yarn@4.18.0",
   "workspaces": [
     ".github/workflows",
     "script/pgo",

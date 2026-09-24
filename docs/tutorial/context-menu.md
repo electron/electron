@@ -61,7 +61,7 @@ win.webContents.on('context-menu', (_event, params) => {
   // Whether the context is editable.
   if (params.isEditable) {
     menu.popup({
-    // highlight-next-line
+      // highlight-next-line
       frame: params.frame
     })
   }

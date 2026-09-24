@@ -199,13 +199,6 @@ WebRequest* ForObservedRequest(
 const gin::WrapperInfo WebRequest::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronWebRequest);
 
-WebRequest::RequestFilter::RequestFilter(
-    std::set<URLPattern> include_url_patterns,
-    std::set<URLPattern> exclude_url_patterns,
-    std::set<extensions::WebRequestResourceType> types)
-    : include_url_patterns_(std::move(include_url_patterns)),
-      exclude_url_patterns_(std::move(exclude_url_patterns)),
-      types_(std::move(types)) {}
 WebRequest::RequestFilter::RequestFilter(const RequestFilter&) = default;
 WebRequest::RequestFilter::RequestFilter() = default;
 WebRequest::RequestFilter::~RequestFilter() = default;

@@ -1,5 +1,3 @@
-/// <reference types="webpack/module" />
-
 declare const BUILDFLAG: (flag: boolean) => boolean;
 
 declare namespace NodeJS {
@@ -25,27 +23,21 @@ declare namespace NodeJS {
     isFakeLocationProviderEnabled(): boolean;
     isPrintingEnabled(): boolean;
     isPromptAPIEnabled(): boolean;
-    isExtensionsEnabled(): boolean;
     isComponentBuild(): boolean;
-  }
-
-  interface IpcRendererImpl {
-    send(internal: boolean, channel: string, args: any[]): void;
-    sendSync(internal: boolean, channel: string, args: any[]): any;
-    sendToHost(channel: string, args: any[]): void;
-    invoke<T>(internal: boolean, channel: string, args: any[]): Promise<{ error: string; result: T }>;
-    postMessage(channel: string, message: any, transferables: MessagePort[]): void;
+    isRunAsNodeEnabled(): boolean;
   }
 
   interface IpcRendererBinding {
-    createForRenderFrame(): IpcRendererImpl;
-    createForServiceWorker(): IpcRendererImpl;
+    ipcRenderer: Electron.IpcRenderer;
+    ipcRendererInternal: ElectronInternal.IpcRendererInternal;
   }
 
   interface V8UtilBinding {
     getHiddenValue<T>(obj: any, key: string): T;
     setHiddenValue<T>(obj: any, key: string, value: T): void;
     requestGarbageCollectionForTesting(): void;
+    requestGarbageCollectionForTesting(options: { execution: 'sync' }): void;
+    requestGarbageCollectionForTesting(options: { execution: 'async' }): Promise<void>;
     runUntilIdle(): void;
     triggerFatalErrorForTesting(): void;
     exitImmediately(code: number): never;
@@ -63,12 +55,6 @@ declare namespace NodeJS {
       isNodeProcess: boolean
     ): void;
   };
-
-  interface EnvironmentBinding {
-    getVar(name: string): string | null;
-    hasVar(name: string): boolean;
-    setVar(name: string, value: string): boolean;
-  }
 
   type AsarFileInfo = {
     size: number;
@@ -94,6 +80,7 @@ declare namespace NodeJS {
     getFileInfo(path: string): AsarFileInfo | false;
     stat(path: string): AsarFileStat | false;
     readdir(path: string): string[] | false;
+    readdirWithTypes(path: string): [names: string[], types: number[]] | false;
     realpath(path: string): string | false;
     copyFileOut(path: string): string | false;
     getFdAndValidateIntegrityLater(): number | -1;
@@ -102,15 +89,10 @@ declare namespace NodeJS {
   interface AsarBinding {
     Archive: { new (path: string): AsarArchive };
     createSentinelFd(): number | -1;
-    splitPath(path: string):
-      | {
-          isAsar: false;
-        }
-      | {
-          isAsar: true;
-          asarPath: string;
-          filePath: string;
-        };
+    // Length of the leading part of |path| that names an archive file, -1 if
+    // none, or -2 if |requireNormalized| and the path has "."/".."/empty
+    // components (normalize and ask again).
+    splitPath(path: string, requireNormalized: boolean): number;
   }
 
   interface NetBinding {
@@ -118,8 +100,6 @@ declare namespace NodeJS {
     isValidHeaderName: (headerName: string) => boolean;
     isValidHeaderValue: (headerValue: string) => boolean;
     fileURLToFilePath: (url: string) => string;
-    Net: any;
-    net: any;
     createURLLoader(options: CreateURLLoaderOptions): URLLoader;
     createWebSocket(options: CreateWebSocketOptions): WebSocketWrapper;
     resolveHost(host: string, options?: Electron.ResolveHostOptions): Promise<Electron.ResolvedHost>;
@@ -194,8 +174,6 @@ declare namespace NodeJS {
     WebFrameMain: typeof Electron.WebFrameMain;
     fromId(processId: number, routingId: number): Electron.WebFrameMain | undefined;
     fromFrameToken(processId: number, frameToken: string): Electron.WebFrameMain | null;
-    _fromIdIfExists(processId: number, routingId: number): Electron.WebFrameMain | null;
-    _fromFtnIdIfExists(frameTreeNodeId: number): Electron.WebFrameMain | null;
   }
 
   interface InternalWebPreferences {
@@ -293,14 +271,19 @@ declare namespace NodeJS {
       getCrashdumpSignalFD(): number;
       getCrashpadHandlerPID(): number;
     };
-    _linkedBinding(name: 'electron_common_environment'): EnvironmentBinding;
+    _linkedBinding(name: 'electron_common_events'): { EventEmitter: typeof import('events').EventEmitter };
     _linkedBinding(name: 'electron_common_features'): FeaturesBinding;
     _linkedBinding(name: 'electron_common_native_image'): { nativeImage: typeof Electron.NativeImage };
-    _linkedBinding(name: 'electron_common_shared_texture'): Electron.SharedTextureSubtle;
+    _linkedBinding(name: 'electron_common_shared_texture'): Electron.SharedTextureSubtle & {
+      setSharedTextureReceiver: Electron.SharedTexture['setSharedTextureReceiver'];
+    };
     _linkedBinding(name: 'electron_common_net'): NetBinding;
     _linkedBinding(name: 'electron_common_shell'): Electron.Shell;
     _linkedBinding(name: 'electron_common_v8_util'): V8UtilBinding;
-    _linkedBinding(name: 'electron_browser_app'): { app: Electron.App; App: Function };
+    _linkedBinding(name: 'electron_browser_app'): {
+      app: Electron.App;
+      defaultDesktopName(name: string | undefined): string;
+    };
     _linkedBinding(name: 'electron_browser_auto_updater'): { autoUpdater: Electron.AutoUpdater };
     _linkedBinding(name: 'electron_browser_clipboard'): Electron.Clipboard;
     _linkedBinding(name: 'electron_browser_clipboard_item'): Electron.ClipboardItem;
@@ -310,9 +293,13 @@ declare namespace NodeJS {
       isDisplayMediaSystemPickerAvailable(): boolean;
     };
     _linkedBinding(name: 'electron_browser_event_emitter'): { setEventEmitterPrototype(prototype: Object): void };
+    _linkedBinding(name: 'electron_browser_ipc_dispatch'): {
+      setup(objects: { ipcMain: NodeJS.EventEmitter; ipcMainInternal: NodeJS.EventEmitter }): void;
+    };
     _linkedBinding(name: 'electron_browser_global_shortcut'): { createGlobalShortcut(): Electron.GlobalShortcut };
     _linkedBinding(name: 'electron_browser_image_view'): { ImageView: any };
     _linkedBinding(name: 'electron_browser_in_app_purchase'): { inAppPurchase: Electron.InAppPurchase };
+    _linkedBinding(name: 'electron_browser_menu'): { Menu: typeof Electron.Menu; MenuItem: typeof Electron.MenuItem };
     _linkedBinding(name: 'electron_browser_message_port'): {
       createPair(): { port1: Electron.MessagePortMain; port2: Electron.MessagePortMain };
     };
@@ -327,43 +314,26 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_service_worker_main'): ServiceWorkerMainBinding;
     _linkedBinding(name: 'electron_browser_system_preferences'): { systemPreferences: Electron.SystemPreferences };
     _linkedBinding(name: 'electron_browser_tray'): { Tray: Electron.Tray };
-    _linkedBinding(name: 'electron_browser_view'): { View: Electron.View };
+    _linkedBinding(name: 'electron_browser_view'): { View: typeof Electron.View };
     _linkedBinding(name: 'electron_browser_web_contents_view'): { WebContentsView: typeof Electron.WebContentsView };
     _linkedBinding(name: 'electron_browser_web_view_manager'): WebViewManagerBinding;
     _linkedBinding(name: 'electron_browser_web_frame_main'): WebFrameMainBinding;
+    _linkedBinding(name: 'electron_renderer_context_bridge'): {
+      contextBridge: Electron.ContextBridge;
+    };
     _linkedBinding(name: 'electron_renderer_crash_reporter'): Electron.CrashReporter;
     _linkedBinding(name: 'electron_renderer_ipc'): IpcRendererBinding;
     _linkedBinding(name: 'electron_renderer_web_frame'): WebFrameBinding;
-    log: NodeJS.WriteStream['write'];
+    _linkedBinding(name: 'electron_utility_parent_port'): { createParentPort(): ElectronInternal.ParentPort };
     activateUvLoop(): void;
 
-    // Additional events
-    once(event: 'document-start', listener: () => any): this;
-    once(event: 'document-end', listener: () => any): this;
-
-    // Additional properties
-    _serviceStartupScript: string;
-    _getOrCreateArchive?: (path: string) => NodeJS.AsarArchive | null;
-
     helperExecPath: string;
-    mainModule?: NodeJS.Module | undefined;
 
     appCodeLoaded?: () => void;
   }
 }
 
-declare module NodeJS {
-  interface Global {
-    require: NodeRequire;
-    module: NodeModule;
-    __filename: string;
-    __dirname: string;
-  }
-}
-
 declare interface Window {
-  ELECTRON_DISABLE_SECURITY_WARNINGS?: boolean;
-  ELECTRON_ENABLE_SECURITY_WARNINGS?: boolean;
   WebView: typeof ElectronInternal.WebViewElement;
   trustedTypes: TrustedTypePolicyFactory;
 }

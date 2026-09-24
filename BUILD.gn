@@ -1,7 +1,6 @@
 import("//build/config/locales.gni")
 import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
-import("//components/os_crypt/sync/features.gni")
 import("//components/spellcheck/spellcheck_build_features.gni")
 import("//content/public/app/mac_helpers.gni")
 import("//content/public/common/features.gni")
@@ -19,13 +18,13 @@ import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/gni/snapshot_toolchain.gni")
 import("//v8/gni/v8.gni")
 import("build/asar.gni")
+import("build/bundle/bundle.gni")
 import("build/electron_paks.gni")
 import("build/extract_symbols.gni")
 import("build/js2c_toolchain.gni")
 import("build/npm.gni")
 import("build/templated_file.gni")
 import("build/tsc.gni")
-import("build/webpack/webpack.gni")
 import("buildflags/buildflags.gni")
 import("filenames.auto.gni")
 import("filenames.gni")
@@ -202,7 +201,8 @@ config("electron_lib_config") {
 # the repo-root write is a fixed shared path, instantiating this action in more
 # than one toolchain races two concurrent truncate-then-write generators on it.
 # Generate it once in the default toolchain and forward to that instance
-# everywhere else.
+# everywhere else. The lib/ type check only depends on source files, so there is
+# no point repeating it per toolchain either.
 if (current_toolchain == default_toolchain) {
   npm_action("build_electron_definitions") {
     script = "gn-typescript-definitions"
@@ -211,82 +211,72 @@ if (current_toolchain == default_toolchain) {
 
     outputs = [ "$target_gen_dir/tsc/typings/electron.d.ts" ]
   }
+
+  # Type checks lib/ against tsconfig.electron.json for the electron_bundle
+  # targets below, which only strip types.
+  npm_action("electron_lib_typecheck") {
+    deps = [ ":build_electron_definitions" ]
+
+    script = "typecheck"
+    inputs = auto_filenames.lib_typecheck_sources + [ "yarn.lock" ]
+    outputs = [ "$target_gen_dir/electron_lib_typecheck.stamp" ]
+    args = [
+      "--project",
+      rebase_path("tsconfig.electron.json"),
+      "--stamp",
+      rebase_path(outputs[0]),
+    ]
+  }
 } else {
   group("build_electron_definitions") {
     public_deps = [ ":build_electron_definitions($default_toolchain)" ]
   }
+
+  group("electron_lib_typecheck") {
+    public_deps = [ ":electron_lib_typecheck($default_toolchain)" ]
+  }
 }
 
-webpack_build("electron_browser_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_browser_bundle") {
+  bundle = "browser"
   inputs = auto_filenames.browser_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.browser.js"
   out_file = "$root_gen_dir/internal/electron/js2c/browser_init.js"
 }
 
-webpack_build("electron_renderer_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_renderer_bundle") {
+  bundle = "renderer"
   inputs = auto_filenames.renderer_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.renderer.js"
   out_file = "$root_gen_dir/internal/electron/js2c/renderer_init.js"
 }
 
-webpack_build("electron_worker_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_worker_bundle") {
+  bundle = "worker"
   inputs = auto_filenames.worker_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.worker.js"
   out_file = "$root_gen_dir/internal/electron/js2c/worker_init.js"
 }
 
-webpack_build("electron_sandboxed_renderer_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
-  inputs = auto_filenames.sandbox_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.sandboxed_renderer.js"
-  out_file = "$root_gen_dir/internal/electron/js2c/sandbox_bundle.js"
+electron_bundle("electron_webview_bundle") {
+  bundle = "webview"
+  inputs = auto_filenames.webview_bundle_deps
+  out_file = "$root_gen_dir/internal/electron/js2c/webview_bundle.js"
 }
 
-webpack_build("electron_isolated_renderer_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_isolated_renderer_bundle") {
+  bundle = "isolated_renderer"
   inputs = auto_filenames.isolated_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.isolated_renderer.js"
   out_file = "$root_gen_dir/internal/electron/js2c/isolated_bundle.js"
 }
 
-webpack_build("electron_node_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_node_bundle") {
+  bundle = "node"
   inputs = auto_filenames.node_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.node.js"
   out_file = "$root_gen_dir/internal/electron/js2c/node_init.js"
 }
 
-webpack_build("electron_utility_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_utility_bundle") {
+  bundle = "utility"
   inputs = auto_filenames.utility_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.utility.js"
   out_file = "$root_gen_dir/internal/electron/js2c/utility_init.js"
-}
-
-webpack_build("electron_preload_realm_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
-  inputs = auto_filenames.preload_realm_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.preload_realm.js"
-  out_file = "$root_gen_dir/internal/electron/js2c/preload_realm_bundle.js"
 }
 
 action("electron_js2c") {
@@ -294,10 +284,9 @@ action("electron_js2c") {
     ":electron_browser_bundle",
     ":electron_isolated_renderer_bundle",
     ":electron_node_bundle",
-    ":electron_preload_realm_bundle",
     ":electron_renderer_bundle",
-    ":electron_sandboxed_renderer_bundle",
     ":electron_utility_bundle",
+    ":electron_webview_bundle",
     ":electron_worker_bundle",
     "//third_party/electron_node:node_js2c($electron_js2c_toolchain)",
   ]
@@ -306,10 +295,9 @@ action("electron_js2c") {
     "$root_gen_dir/internal/electron/js2c/browser_init.js",
     "$root_gen_dir/internal/electron/js2c/isolated_bundle.js",
     "$root_gen_dir/internal/electron/js2c/node_init.js",
-    "$root_gen_dir/internal/electron/js2c/preload_realm_bundle.js",
     "$root_gen_dir/internal/electron/js2c/renderer_init.js",
-    "$root_gen_dir/internal/electron/js2c/sandbox_bundle.js",
     "$root_gen_dir/internal/electron/js2c/utility_init.js",
+    "$root_gen_dir/internal/electron/js2c/webview_bundle.js",
     "$root_gen_dir/internal/electron/js2c/worker_init.js",
   ]
 
@@ -331,10 +319,6 @@ action("generate_config_gypi") {
   script = "script/generate-config-gypi.py"
   inputs = [ "//third_party/electron_node/configure.py" ]
   args = rebase_path(outputs) + [ target_cpu ]
-
-  if (v8_cppgc_microtask_queue) {
-    args += [ "--v8-enable-cppgc-microtask-queue" ]
-  }
 }
 
 target_gen_default_app_js = "$target_gen_dir/js/default_app"
@@ -539,7 +523,6 @@ source_set("electron_lib") {
     "//components/omnibox/browser:buildflags",
     "//components/os_crypt/async/browser",
     "//components/os_crypt/async/browser:key_provider_interface",
-    "//components/os_crypt/sync",
     "//components/pref_registry",
     "//components/prefs",
     "//components/security_state/content",
@@ -592,6 +575,7 @@ source_set("electron_lib") {
     "//third_party/webrtc_overrides:webrtc_component",
     "//third_party/widevine/cdm:headers",
     "//third_party/zlib/google:zip",
+    "//tools/v8_context_snapshot:buildflags",
     "//ui/base:ozone_buildflags",
     "//ui/base/idle",
     "//ui/compositor",
@@ -905,10 +889,6 @@ source_set("electron_lib") {
   }
 
   sources += get_target_outputs(":electron_fuses")
-
-  if (allow_runtime_configurable_key_storage) {
-    defines += [ "ALLOW_RUNTIME_CONFIGURABLE_KEY_STORAGE" ]
-  }
 }
 
 # Host tool that emits a V8 code cache for a JS file, keyed to whichever V8
@@ -1138,15 +1118,18 @@ if (electron_use_resource_allowlist) {
   electron_resource_allowlist_file =
       "$target_gen_dir/electron_resource_allowlist.txt"
 
-  # TODO: on Windows this should extract from electron.exe.pdb instead of the
-  # inputs pseudo-link (and the executable must then stop depending on
-  # :packed_resources to avoid a dependency cycle).
-  generate_resource_allowlist("electron_resource_allowlist") {
-    deps = [ ":electron_resource_allowlist_inputs" ]
-    inputs = [
-      "$root_out_dir/libelectron_resource_allowlist_inputs$shlib_extension",
-    ]
-    output = electron_resource_allowlist_file
+  # On macOS this target is defined with the framework below.
+  if (!is_mac) {
+    # TODO: on Windows this should extract from electron.exe.pdb instead of the
+    # inputs pseudo-link (and the executable must then stop depending on
+    # :packed_resources to avoid a dependency cycle).
+    generate_resource_allowlist("electron_resource_allowlist") {
+      deps = [ ":electron_resource_allowlist_inputs" ]
+      inputs = [
+        "$root_out_dir/libelectron_resource_allowlist_inputs$shlib_extension",
+      ]
+      output = electron_resource_allowlist_file
+    }
   }
 }
 
@@ -1291,27 +1274,39 @@ if (is_mac) {
     }
   }
 
-  # Deps that determine the native code linked into the Electron Framework
-  # (all of Electron's native code lives in the framework on macOS, so its
-  # link inputs, not the app shim's, determine the reachable resource set).
-  # Shared with :electron_resource_allowlist_inputs below so the resource
-  # allowlist is computed from exactly the same link inputs as the shipped
-  # framework.
-  electron_framework_link_deps = [
-    ":electron_lib",
-    "//third_party/electron_node:libnode",
-  ]
-
   if (electron_use_resource_allowlist) {
-    # Pseudo-link sharing the Electron Framework's link inputs:
-    # --collect-inputs-only makes linker_driver.py skip the real link and
-    # write the list of link inputs instead. generate_resource_allowlist
-    # greps those inputs for ui::AllowlistedResource<id> markers.
-    shared_library("electron_resource_allowlist_inputs") {
-      ldflags = [ "--collect-inputs-only" ]
-      include_dirs = [ "." ]
-      sources = filenames.framework_sources
-      deps = electron_framework_link_deps
+    # Read the markers back from the linked framework's symbol table (the
+    # dSYM's copy when the framework itself is stripped). The locale paks that
+    # consume this reach the framework through bundle_deps, not the link, so
+    # there is no cycle.
+    if (enable_dsyms) {
+      _allowlist_binary = "$root_out_dir/$electron_framework_name.dSYM/Contents/Resources/DWARF/$electron_framework_name"
+    } else if (save_unstripped_output) {
+      _allowlist_binary = "$root_out_dir/$electron_framework_name.unstripped"
+    } else {
+      _allowlist_binary =
+          get_label_info(":electron_framework_shared_library",
+                         "target_out_dir") +
+          "/electron_framework_shared_library/$electron_framework_name"
+    }
+
+    action("electron_resource_allowlist") {
+      script = "build/mac_resource_allowlist.py"
+      deps = [ ":electron_framework+link_nested" ]
+      _nm = "//third_party/llvm-build/Release+Asserts/bin/llvm-nm"
+      inputs = [
+        _allowlist_binary,
+        _nm,
+      ]
+      outputs = [ electron_resource_allowlist_file ]
+      args = [
+        "--nm",
+        rebase_path(_nm, root_build_dir),
+        "--input",
+        rebase_path(_allowlist_binary, root_build_dir),
+        "--output",
+        rebase_path(electron_resource_allowlist_file, root_build_dir),
+      ]
     }
   }
 
@@ -1350,16 +1345,20 @@ if (is_mac) {
     if (!is_mas_build) {
       framework_contents += [ "Helpers" ]
     }
-    public_deps =
-        [ ":electron_framework_libraries" ] + electron_framework_link_deps
-    deps = [
+    public_deps = [ ":electron_lib" ]
+    deps = [ "//third_party/electron_node:libnode" ]
+
+    # bundle_deps reach the bundle but not the framework's link, which
+    # :electron_resource_allowlist (and through it :packed_resources) depends
+    # on; bundle_data on the link would leak to every consumer of the paks.
+    bundle_deps = [
       ":electron_framework_libraries",
       ":electron_framework_resources",
       ":electron_swiftshader_library",
       ":electron_xibs",
     ]
     if (!is_mas_build) {
-      deps += [ ":electron_crashpad_helper" ]
+      bundle_deps += [ ":electron_crashpad_helper" ]
     }
     info_plist = "shell/common/resources/mac/Info.plist"
 
@@ -1745,6 +1744,10 @@ if (is_mac) {
         "//components/crash/core/app:run_as_crashpad_handler",
       ]
 
+      # Ship the WER runtime exception helper next to the executable so that
+      # crashpad can register it; see :electron_wer.
+      data_deps += [ ":electron_wer" ]
+
       ldflags = [ "/DELAYLOAD:ffmpeg.dll" ]
 
       libs = [
@@ -1803,6 +1806,20 @@ if (is_mac) {
     }
   }
 
+  if (is_win) {
+    # Windows Error Reporting runtime exception helper module. WerFault.exe
+    # loads this DLL out-of-process for crashes that bypass crashpad's
+    # in-process handler (e.g. __fastfail / STATUS_STACK_BUFFER_OVERRUN) and
+    # it asks the crashpad handler to dump the crashed process. It is
+    # registered by ElectronCrashReporterClient::GetWerRuntimeExceptionModule
+    # as <exe name>_wer.dll.
+    copy("electron_wer") {
+      sources = [ "$root_out_dir/crashpad_wer.dll" ]
+      outputs = [ "$root_out_dir/${electron_project_name}_wer.dll" ]
+      deps = [ "//third_party/crashpad/crashpad/handler/win/wer:crashpad_wer" ]
+    }
+  }
+
   if (is_official_build) {
     if (is_linux) {
       _target_executable_suffix = ""
@@ -1844,6 +1861,10 @@ template("dist_zip") {
   action(target_name) {
     script = "//electron/build/zip.py"
     deps = [ ":$_runtime_deps_target" ]
+    if (defined(invoker.build_deps)) {
+      # Ordered before the zip without contributing to its runtime deps.
+      deps += invoker.build_deps
+    }
     forward_variables_from(invoker,
                            [
                              "outputs",
@@ -1905,10 +1926,7 @@ dist_zip("electron_dist_zip") {
   }
   deps = data_deps
   if (electron_use_resource_allowlist) {
-    # Build-order dep only (not data_deps): the check must pass before the
-    # dist zip is created, but its stamp output must not be packed into the
-    # zip's runtime deps.
-    deps += [ ":electron_resource_allowlist_check" ]
+    build_deps = [ ":electron_resource_allowlist_check" ]
   }
   outputs = [ "$root_build_dir/dist.zip" ]
 }

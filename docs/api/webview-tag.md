@@ -234,9 +234,9 @@ Special values `yes` and `1` are interpreted as `true`, while `no` and `0` are i
 
 Security-critical preferences cannot be used to make the guest less secure than
 its embedder. When the embedder has any of `contextIsolation`, `javascript`,
-`nodeIntegration`, `nodeIntegrationInWorker`, `sandbox`, `nodeIntegrationInSubFrames`
-or `enableWebSQL` set to its more secure value, the guest inherits that value and
-the corresponding `webpreferences` entry is ignored.
+`nodeIntegration`, `nodeIntegrationInWorker`, `sandbox` or `nodeIntegrationInSubFrames`
+set to its more secure value, the guest inherits that value and the corresponding
+`webpreferences` entry is ignored.
 
 ### `enableblinkfeatures`
 
@@ -612,11 +612,21 @@ Prints `webview`'s web page as PDF, Same as `webContents.printToPDF(options)`.
 
 ### `<webview>.capturePage([rect])`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/53813
+    description: "The image now has the page's device scale factor, so `image.getSize()` is in DIPs."
+    breaking-changes-header: behavior-changed-captured-page-images-have-the-pages-scale-factor
+```
+-->
+
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured.
 
 Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
 
 Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page.
+The image has the page's device scale factor (for offscreen rendering, `webPreferences.offscreen.deviceScaleFactor`), so `image.getSize()` is in DIPs and `image.toBitmap()` holds the full-resolution pixels.
 
 ### `<webview>.send(channel, ...args)`
 

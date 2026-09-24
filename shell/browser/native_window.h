@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "base/containers/queue.h"
+#include "base/functional/callback_helpers.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
@@ -149,8 +150,8 @@ class NativeWindow : public views::WidgetDelegate {
   virtual void SetClosable(bool closable) = 0;
   virtual bool IsClosable() const = 0;
   virtual void SetAlwaysOnTop(ui::ZOrderLevel z_order,
-                              const std::string& level = "floating",
-                              int relativeLevel = 0) = 0;
+                              const std::string& level,
+                              int relativeLevel) = 0;
   virtual ui::ZOrderLevel GetZOrderLevel() const = 0;
   virtual void Center() = 0;
   virtual void Invalidate() = 0;
@@ -223,10 +224,9 @@ class NativeWindow : public views::WidgetDelegate {
                               const std::string& description) = 0;
 
   // Workspace APIs.
-  virtual void SetVisibleOnAllWorkspaces(
-      bool visible,
-      bool visibleOnFullScreen = false,
-      bool skipTransformProcessType = false) = 0;
+  virtual void SetVisibleOnAllWorkspaces(bool visible,
+                                         bool visibleOnFullScreen,
+                                         bool skipTransformProcessType) = 0;
 
   virtual bool IsVisibleOnAllWorkspaces() const = 0;
 
@@ -291,8 +291,6 @@ class NativeWindow : public views::WidgetDelegate {
   virtual void PreviewFile(const std::string& path,
                            const std::string& display_name) {}
   virtual void CloseFilePreview() {}
-
-  virtual void SetGTKDarkThemeEnabled(bool use_dark_theme) {}
 
   base::WeakPtr<NativeWindow> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
@@ -428,12 +426,10 @@ class NativeWindow : public views::WidgetDelegate {
 
   bool IsTranslucent() const;
 
-  // Adds |source| to |background_throttling_sources_|, triggers update of
-  // background throttling state.
-  void AddBackgroundThrottlingSource(BackgroundThrottlingSource* source);
-  // Removes |source| to |background_throttling_sources_|, triggers update of
-  // background throttling state.
-  void RemoveBackgroundThrottlingSource(BackgroundThrottlingSource* source);
+  // Registers |source| in |background_throttling_sources_| and returns a token
+  // that unregisters it when reset or destroyed.
+  [[nodiscard]] base::ScopedClosureRunner RegisterBackgroundThrottlingSource(
+      BackgroundThrottlingSource* source);
   // Updates `ui::Compositor` background throttling state based on
   // |background_throttling_sources_|. If at least one of the sources disables
   // throttling, then throttling in the `ui::Compositor` will be disabled.
@@ -480,8 +476,6 @@ class NativeWindow : public views::WidgetDelegate {
   [[nodiscard]] bool has_client_frame() const { return has_client_frame_; }
 
   [[nodiscard]] bool transparent() const { return transparent_; }
-
-  [[nodiscard]] bool is_closed() const { return is_closed_; }
 
   [[nodiscard]] bool enable_larger_than_screen() const {
     return enable_larger_than_screen_;

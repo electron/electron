@@ -4,8 +4,8 @@
 
 #include "shell/browser/api/electron_api_crash_reporter.h"
 
-#include <limits>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -51,15 +51,9 @@
 
 namespace {
 
-#if BUILDFLAG(IS_LINUX)
-std::map<std::string, std::string>& GetGlobalCrashKeysMutable() {
-  static base::NoDestructor<std::map<std::string, std::string>>
-      global_crash_keys;
-  return *global_crash_keys;
-}
-#endif  // BUILDFLAG(IS_LINUX)
-
+#if !IS_MAS_BUILD()
 bool g_crash_reporter_initialized = false;
+#endif
 
 }  // namespace
 
@@ -73,15 +67,7 @@ void NoOp() {}
 }  // namespace
 #endif
 
-bool IsCrashReporterEnabled() {
-  return g_crash_reporter_initialized;
-}
-
 #if BUILDFLAG(IS_LINUX)
-const std::map<std::string, std::string>& GetGlobalCrashKeys() {
-  return GetGlobalCrashKeysMutable();
-}
-
 namespace {
 
 bool GetClientIdPath(base::FilePath* path) {
@@ -169,6 +155,10 @@ void Start(const std::string& submit_url,
 #elif BUILDFLAG(IS_WIN)
   for (const auto& pair : extra)
     electron::crash_keys::SetCrashKey(pair.first, pair.second);
+  // Make electron_wer.dll loadable by Windows Error Reporting for this user
+  // before crashpad registers it, so crashes that bypass the in-process
+  // handler (__fastfail etc.) still produce a minidump.
+  ElectronCrashReporterClient::RegisterWerHelperModuleForCurrentUser();
   base::FilePath user_data_dir;
   base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir);
   ::crash_reporter::InitializeCrashpadWithEmbeddedHandler(
@@ -189,16 +179,28 @@ void GetUploadedReports(
   std::move(callback).Run(v8::Array::New(isolate));
 }
 #else
-scoped_refptr<UploadList> CreateCrashUploadList() {
+// UploadList only loads asynchronously; this exposes the protected
+// synchronous reader for the deprecated sync getUploadedReports().
+template <typename T>
+class SyncUploadList final : public T {
+ public:
+  using T::LoadUploadList;
+  using T::T;
+
+ private:
+  ~SyncUploadList() override = default;
+};
+
+std::vector<std::unique_ptr<UploadList::UploadInfo>> LoadUploadedReports() {
+  electron::ScopedAllowBlockingForElectron allow_blocking;
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
-  return base::MakeRefCounted<CrashUploadListCrashpad>();
+  return base::MakeRefCounted<SyncUploadList<CrashUploadListCrashpad>>()
+      ->LoadUploadList();
 #else
   base::FilePath crash_dir_path;
   base::PathService::Get(electron::DIR_CRASH_DUMPS, &crash_dir_path);
   base::FilePath upload_log_path =
       crash_dir_path.AppendASCII(CrashUploadList::kReporterLogFilename);
-  scoped_refptr<UploadList> result =
-      base::MakeRefCounted<TextLogUploadList>(upload_log_path);
   // Crashpad keeps the records of C++ crashes (segfaults, etc) in its
   // internal database. The JavaScript error reporter writes JS error upload
   // records to the older text format. Combine the two to present a complete
@@ -206,33 +208,26 @@ scoped_refptr<UploadList> CreateCrashUploadList() {
   // TODO(nornagon): what is "The JavaScript error reporter", and do we care
   // about it?
   std::vector<scoped_refptr<UploadList>> uploaders = {
-      base::MakeRefCounted<CrashUploadListCrashpad>(), std::move(result)};
-  result = base::MakeRefCounted<CombiningUploadList>(std::move(uploaders));
-  return result;
+      base::MakeRefCounted<CrashUploadListCrashpad>(),
+      base::MakeRefCounted<TextLogUploadList>(upload_log_path)};
+  return base::MakeRefCounted<SyncUploadList<CombiningUploadList>>(
+             std::move(uploaders))
+      ->LoadUploadList();
 #endif  // BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
 }
 
 v8::Local<v8::Value> GetUploadedReports(v8::Isolate* isolate) {
-  auto list = CreateCrashUploadList();
-  // TODO(nornagon): switch to using Load() instead of LoadSync() once the
-  // synchronous version of getUploadedReports is deprecated so we can remove
-  // our patch.
-  {
-    electron::ScopedAllowBlockingForElectron allow_blocking;
-    list->LoadSync();
-  }
-
-  auto to_obj = [isolate](const UploadList::UploadInfo* upload) {
-    return gin::DataObjectBuilder{isolate}
-        .Set("date", upload->upload_time)
-        .Set("id", upload->upload_id)
-        .Build();
-  };
-
-  constexpr size_t kMaxUploadReportsToList = std::numeric_limits<size_t>::max();
-  return gin::ConvertToV8(
-      isolate,
-      base::ToVector(list->GetUploads(kMaxUploadReportsToList), to_obj));
+  // TODO(nornagon): switch to using UploadList::Load() once the synchronous
+  // version of getUploadedReports is removed.
+  auto to_obj =
+      [isolate](const std::unique_ptr<UploadList::UploadInfo>& upload) {
+        return gin::DataObjectBuilder{isolate}
+            .Set("date", upload->upload_time)
+            .Set("id", upload->upload_id)
+            .Build();
+      };
+  return gin::ConvertToV8(isolate,
+                          base::ToVector(LoadUploadedReports(), to_obj));
 }
 #endif
 

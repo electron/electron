@@ -2,13 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "shell/browser/api/electron_api_printing.h"
+
 #include "base/logging.h"
 #include "chrome/browser/browser_process.h"
 #include "gin/converter.h"
 #include "printing/buildflags/buildflags.h"
-#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/node_includes.h"
 #include "shell/common/thread_restrictions.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -69,25 +69,3 @@ v8::Local<v8::Promise> GetPrinterListAsync(v8::Isolate* isolate) {
 #endif
 
 }  // namespace electron::api
-
-namespace {
-
-#if BUILDFLAG(ENABLE_PRINTING)
-using electron::api::GetPrinterListAsync;
-#endif
-
-void Initialize(v8::Local<v8::Object> exports,
-                v8::Local<v8::Value> unused,
-                v8::Local<v8::Context> context,
-                void* priv) {
-  v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
-  gin_helper::Dictionary dict{isolate, exports};
-#if BUILDFLAG(ENABLE_PRINTING)
-  dict.SetMethod("getPrinterListAsync",
-                 base::BindRepeating(&GetPrinterListAsync));
-#endif
-}
-
-}  // namespace
-
-NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_printing, Initialize)

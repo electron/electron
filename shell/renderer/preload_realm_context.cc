@@ -14,6 +14,7 @@
 #include "shell/common/gin_helper/gin_embedders.h"
 #include "shell/common/js2c_bundle_ids.h"
 #include "shell/common/node_util.h"
+#include "shell/renderer/preload_environment.h"
 #include "shell/renderer/preload_utils.h"
 #include "shell/renderer/service_worker_data.h"
 #include "third_party/blink/renderer/bindings/core/v8/script_state_impl.h"  // nogncheck
@@ -165,17 +166,13 @@ class PreloadRealmLifetimeController
         isolate, context->GetMicrotaskQueue(),
         v8::MicrotasksScope::kDoNotRunMicrotasks);
 
-    v8::Local<v8::Object> binding = v8::Object::New(isolate);
-
-    gin_helper::Dictionary b(isolate, binding);
-    b.SetMethod("get", preload_utils::GetBinding);
     // The browser attached the service-worker preload set + process info to
     // this worker's EmbeddedWorkerStartParams (see
     // ContentBrowserClient::GetServiceWorkerStartupData); Chromium marshalled
     // it onto the worker thread with the rest of the start params, ordered
     // with worker creation. Deserialize and capture it once on the
-    // ServiceWorkerData so createPreloadScript can look up preload contents
-    // and code caches without marshaling them through V8.
+    // ServiceWorkerData so preload contents and code caches are looked up
+    // from it without marshaling them through V8.
     if (const std::optional<mojo_base::BigBuffer>& blob =
             service_worker_data_->proxy()->ElectronPreloadData()) {
       mojom::RendererStartupDataPtr data;
@@ -184,42 +181,33 @@ class PreloadRealmLifetimeController
         service_worker_data_->SetWorkerStartupData(std::move(data));
       }
     }
-    // No RenderFrame in the SW preload realm — no per-frame cache lookup or
-    // ship-back channel — but contents are still looked up from the captured
-    // worker startup data instead of crossing the V8 boundary.
-    b.SetMethod(
-        "createPreloadScript",
-        base::BindRepeating(&preload_utils::CreatePreloadScript, nullptr,
-                            base::Unretained(service_worker_data_.get())));
 
     gin_helper::Dictionary process = gin::Dictionary::CreateEmpty(isolate);
-    b.Set("process", process);
-
     ElectronBindings::BindProcess(isolate, &process, metrics_.get());
-
     process.SetMethod("uptime", preload_utils::Uptime);
     process.Set("argv", base::CommandLine::ForCurrentProcess()->argv());
-    process.SetReadOnly("pid", base::GetCurrentProcId());
-    process.SetReadOnly("sandboxed", true);
-    process.SetReadOnly("type", "service-worker");
-    process.SetReadOnly("contextIsolated", true);
+    process.Set("pid", base::GetCurrentProcId());
+    process.Set("sandboxed", true);
+    process.Set("type", "service-worker");
+    process.Set("contextIsolated", true);
 
-    v8::Local<v8::Value> startup_data;
-    if (!preload_utils::BuildStartupData(
-             isolate, service_worker_data_->worker_startup_data())
-             .ToLocal(&startup_data)) {
-      startup_data = v8::Null(isolate);
-    }
-    b.Set("startupData", startup_data);
+    // Create ipcRenderer up front so that messages from the browser have
+    // somewhere to go before a preload script asks for it.
+    preload_utils::GetBinding(
+        isolate, gin::StringToV8(isolate, "electron_renderer_ipc"));
 
-    v8::LocalVector<v8::String> preload_realm_bundle_params =
-        js2c::MakeBundleParams(isolate, js2c::kPreloadRealmBundleParams);
-
-    v8::LocalVector<v8::Value> preload_realm_bundle_args(isolate, {binding});
-
-    util::CompileAndCall(isolate, context, js2c::kPreloadRealmBundleId,
-                         &preload_realm_bundle_params,
-                         &preload_realm_bundle_args);
+    const mojom::RendererStartupDataPtr& startup_data =
+        service_worker_data_->worker_startup_data();
+    v8::Local<v8::Object> preload_process =
+        preload_environment::CreateProcessObject(context, process,
+                                                 startup_data);
+    v8::Local<v8::Object> electron_module =
+        preload_environment::CreateElectronModule(
+            context, preload_environment::Flavor::kServiceWorker);
+    preload_environment::RunPreloadScripts(
+        context, /*render_frame=*/nullptr, service_worker_data_.get(),
+        preload_process, electron_module,
+        preload_environment::Flavor::kServiceWorker, startup_data);
   }
 
   const blink::WeakMember<blink::ScriptState> initiator_script_state_;

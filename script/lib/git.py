@@ -29,39 +29,14 @@ UPSTREAM_HEAD = (
   _LEGACY_UPSTREAM_HEAD + '-' + hashlib.md5(SCRIPT_DIR.encode()).hexdigest()[:8]
 )
 
-def is_repo_root(path):
-  path_exists = os.path.exists(path)
-  if not path_exists:
-    return False
-
-  git_folder_path = os.path.join(path, '.git')
-  git_folder_exists = os.path.exists(git_folder_path)
-
-  return git_folder_exists
-
-
-def get_repo_root(path):
-  """Finds a closest ancestor folder which is a repo root."""
-  norm_path = os.path.normpath(path)
-  norm_path_exists = os.path.exists(norm_path)
-  if not norm_path_exists:
-    return None
-
-  if is_repo_root(norm_path):
-    return norm_path
-
-  parent_path = os.path.dirname(norm_path)
-
-  # Check if we're in the root folder already.
-  if parent_path == norm_path:
-    return None
-
-  return get_repo_root(parent_path)
-
-
 def am(repo, patch_data, threeway=False, directory=None, exclude=None,
     committer_name=None, committer_email=None, keep_cr=True,
     output_prefix=None):
+  if not patch_data:
+    sys.stderr.write(
+      f'{output_prefix or ""}No patches to apply in {repo}\n'
+    )
+    return
   # --keep-non-patch prevents stripping leading bracketed strings on the subject line
   args = ['--keep-non-patch']
   if threeway:

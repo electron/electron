@@ -57,7 +57,6 @@ class InspectableWebContents
   content::WebContents* GetDevToolsWebContents() const;
 
   void SetDelegate(InspectableWebContentsDelegate* delegate);
-  InspectableWebContentsDelegate* GetDelegate() const;
   [[nodiscard]] bool is_guest() const { return is_guest_; }
   void ReleaseWebContents();
   void SetDevToolsWebContents(content::WebContents* devtools);
@@ -274,6 +273,9 @@ class InspectableWebContents
                      bool reset_state) override;
 
   void SendMessageAck(int request_id, const base::Value* arg1);
+
+  // dock_state_ in the encoding of the frontend's currentDockState setting.
+  std::string DockStateSetting() const;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   void AddDevToolsExtensionsToClient();

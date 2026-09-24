@@ -67,25 +67,6 @@ bool Converter<ui::mojom::MenuSourceType>::FromV8(
 }
 
 // static
-v8::Local<v8::Value> Converter<blink::mojom::MenuItem::Type>::ToV8(
-    v8::Isolate* isolate,
-    const blink::mojom::MenuItem::Type& val) {
-  switch (val) {
-    case blink::mojom::MenuItem::Type::kCheckableOption:
-      return StringToV8(isolate, "checkbox");
-    case blink::mojom::MenuItem::Type::kGroup:
-      return StringToV8(isolate, "radio");
-    case blink::mojom::MenuItem::Type::kSeparator:
-      return StringToV8(isolate, "separator");
-    case blink::mojom::MenuItem::Type::kSubMenu:
-      return StringToV8(isolate, "submenu");
-    case blink::mojom::MenuItem::Type::kOption:
-    default:
-      return StringToV8(isolate, "normal");
-  }
-}
-
-// static
 v8::Local<v8::Value> Converter<ContextMenuParamsWithRenderFrameHost>::ToV8(
     v8::Isolate* isolate,
     const ContextMenuParamsWithRenderFrameHost& val) {
@@ -279,7 +260,11 @@ v8::Local<v8::Value> Converter<content::WebContents*>::ToV8(
     content::WebContents* val) {
   if (!val)
     return v8::Null(isolate);
-  return electron::api::WebContents::FromOrCreate(isolate, val).ToV8();
+  auto* contents = electron::api::WebContents::FromOrCreate(isolate, val);
+  v8::Local<v8::Object> wrapper;
+  if (!contents || !contents->GetWrapper(isolate).ToLocal(&wrapper))
+    return v8::Null(isolate);
+  return wrapper;
 }
 
 // static

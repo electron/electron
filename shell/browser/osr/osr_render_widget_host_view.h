@@ -189,10 +189,7 @@ class OffScreenRenderWidgetHostView
   bool InstallTransparency();
 
   void CancelWidget();
-  void AddGuestHostView(OffScreenRenderWidgetHostView* guest_host);
-  void RemoveGuestHostView(OffScreenRenderWidgetHostView* guest_host);
   void AddViewProxy(OffscreenViewProxy* proxy);
-  void RemoveViewProxy(OffscreenViewProxy* proxy);
   void ProxyViewDestroyed(OffscreenViewProxy* proxy) override;
 
   void OnPaint(const gfx::Rect& damage_rect,
@@ -272,7 +269,6 @@ class OffScreenRenderWidgetHostView
   raw_ptr<OffScreenRenderWidgetHostView> parent_host_view_ = nullptr;
   raw_ptr<OffScreenRenderWidgetHostView> popup_host_view_ = nullptr;
   raw_ptr<OffScreenRenderWidgetHostView> child_host_view_ = nullptr;
-  absl::flat_hash_set<OffScreenRenderWidgetHostView*> guest_host_views_;
   absl::flat_hash_set<OffscreenViewProxy*> proxy_views_;
 
   const bool transparent_;

@@ -15,6 +15,7 @@
 #include "base/numerics/safe_conversions.h"
 #include "base/process/process.h"
 #include "base/strings/strcat.h"
+#include "base/strings/string_util.h"
 #include "chrome/common/chrome_version.h"
 #include "content/public/renderer/render_frame.h"
 #include "crypto/hash.h"
@@ -142,6 +143,14 @@ v8::Local<v8::Value> CreatePreloadScript(
            .ToLocal(&body)) {
     return {};
   }
+  // V8 validates a code cache against the source but not against the
+  // parameter names. Name the parameters in a trailing comment so a persisted
+  // cache made for a different parameter list (an older Electron with the same
+  // V8) is rejected and rebuilt rather than run against this one.
+  body = v8::String::Concat(
+      isolate, body,
+      gin::StringToV8(isolate, "\n//# electronPreloadParameters=" +
+                                   base::JoinString(param_name_strings, ",")));
 
   std::unique_ptr<v8::ScriptCompiler::CachedData> cached_data;
   if (ps->code_cache) {
@@ -244,56 +253,20 @@ v8::Local<v8::Value> BuildVersions(v8::Isolate* isolate) {
 
 }  // namespace
 
-v8::MaybeLocal<v8::Value> BuildStartupData(
-    v8::Isolate* isolate,
-    const mojom::RendererStartupDataPtr& data) {
-  if (!data)
-    return {};
-
-  auto out = gin_helper::Dictionary::CreateEmpty(isolate);
-
-  // preloadScripts: [{ id, type, filePath, contents, error }]
-  v8::LocalVector<v8::Value> scripts(isolate);
-  scripts.reserve(data->preload_scripts.size());
-  for (const auto& ps : data->preload_scripts) {
-    auto entry = gin_helper::Dictionary::CreateEmpty(isolate);
-    entry.Set("id", ps->id);
-    entry.Set("filePath", ps->file_path);
-    // The contents are not marshaled to V8 — createPreloadScript() looks them
-    // up from the mojo-cached startup data by id, avoiding a ~150 KB heap
-    // allocation per preload per navigation. JS only needs to know whether
-    // there is anything to run.
-    base::span<const uint8_t> bytes = ps->contents;
-    entry.Set("hasContents", !bytes.empty());
-    // Match the legacy IPC handler shape: `error` is an Error object when the
-    // file read failed (the legacy path serialized the fs.readFile error
-    // through the IPC), and absent otherwise.
-    if (ps->error) {
-      entry.Set("error", v8::Local<v8::Value>(v8::Exception::Error(
-                             gin::StringToV8(isolate, *ps->error))));
-    }
-    scripts.push_back(entry.GetHandle());
-  }
-  out.Set("preloadScripts",
-          v8::Array::New(isolate, scripts.data(), scripts.size()));
-
-  // process: { arch, platform, env, version, versions, execPath } — same shape
-  // as the legacy BROWSER_SANDBOX_LOAD reply. arch/platform/version/versions
-  // are filled from this binary's compiled-in metadata instead of being
-  // shipped over the wire (they are identical in browser and renderer).
-  auto proc = gin_helper::Dictionary::CreateEmpty(isolate);
-  proc.Set("arch", node::per_process::metadata.arch);
-  proc.Set("platform", node::per_process::metadata.platform);
-  proc.Set("version", "v" + node::per_process::metadata.versions.node);
-  proc.Set("versions", BuildVersions(isolate));
+void SetProcessProperties(v8::Isolate* isolate,
+                          gin_helper::Dictionary* process,
+                          const mojom::RendererStartupDataPtr& data) {
+  process->Set("arch", node::per_process::metadata.arch);
+  process->Set("platform", node::per_process::metadata.platform);
+  process->Set("version", "v" + node::per_process::metadata.versions.node);
+  process->Set("versions", BuildVersions(isolate));
   auto env = gin_helper::Dictionary::CreateEmpty(isolate);
-  for (const auto& [k, v] : data->environment)
-    env.Set(k, v);
-  proc.Set("env", env);
-  proc.Set("execPath", data->helper_exec_path);
-  out.Set("process", proc);
-
-  return out.GetHandle();
+  if (data) {
+    for (const auto& [k, v] : data->environment)
+      env.Set(k, v);
+  }
+  process->Set("env", env);
+  process->Set("execPath", data ? data->helper_exec_path : std::string());
 }
 
 }  // namespace electron::preload_utils

@@ -232,6 +232,11 @@ JavascriptEnvironment::~JavascriptEnvironment() {
   DCHECK_NE(platform_, nullptr);
   v8::Isolate* isolate = this->isolate();
 
+  // PostMainMessageLoopRun() is skipped when startup fails early (e.g. no
+  // display), so dispose the runner here while the isolate is still alive.
+  if (microtasks_runner_)
+    DestroyMicrotasksRunner();
+
   {
     v8::HandleScope scope{isolate};
     isolate->GetCurrentContext()->Exit();
@@ -243,7 +248,6 @@ JavascriptEnvironment::~JavascriptEnvironment() {
   // Otherwise cppgc::internal::Sweeper::Start will try to request a task runner
   // from the NodePlatform with an already unregistered isolate.
   locker_.reset();
-  DCHECK(!microtasks_runner_);
   isolate_holder_.reset();
 
   platform_->UnregisterIsolate(isolate);
@@ -314,23 +318,18 @@ const node::SnapshotData* JavascriptEnvironment::NodeSnapshot() {
 void JavascriptEnvironment::CreateMicrotasksRunner() {
   DCHECK(!microtasks_runner_);
   microtasks_runner_ = std::make_unique<MicrotasksRunner>(isolate());
-  isolate_holder_->WillCreateMicrotasksRunner();
   base::CurrentThread::Get()->AddTaskObserver(microtasks_runner_.get());
 }
 
 void JavascriptEnvironment::DestroyMicrotasksRunner() {
   DCHECK(microtasks_runner_);
-  // Should be called before running gin_helper::CleanedUpAtExit::DoCleanup.
-  // This helps to signal wrappable finalizer callbacks to not act on freed
-  // parameters.
-  isolate_holder_->WillDestroyMicrotasksRunner();
   {
     v8::HandleScope scope{isolate()};
     gin_helper::CleanedUpAtExit::DoCleanup();
+    // After DoCleanup() so that observers created by JS that ran during it
+    // (e.g. a webContents 'destroyed' handler) are notified too.
+    microtasks_runner_->NotifyBeforeDispose();
   }
-  // After DoCleanup() so that observers created by JS that ran during it (e.g.
-  // a webContents 'destroyed' handler) are notified too.
-  gin::PerIsolateData::From(isolate())->NotifyBeforeMicrotasksRunnerDispose();
   base::CurrentThread::Get()->RemoveTaskObserver(microtasks_runner_.get());
   microtasks_runner_.reset();
 }

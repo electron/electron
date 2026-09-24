@@ -140,7 +140,6 @@ const WORKLOADS = [
 ];
 
 function log(...args) {
-  // eslint-disable-next-line no-console
   console.log('[pgo-benchmark]', ...args);
 }
 
@@ -156,25 +155,68 @@ async function sleep(ms) {
 // of failing one workload and moving on.
 const NAVIGATION_TIMEOUT_MS = 2 * 60 * 1000;
 
-async function loadURLWithTimeout(win, url) {
-  const load = win.loadURL(url);
-  // If the timeout wins the race the eventual loadURL rejection has no
+async function withTimeout(promise, timeoutMs, label) {
+  // If the timeout wins the race the eventual rejection of `promise` has no
   // listener; swallow it so it does not surface as an unhandled rejection.
-  load.catch(() => {});
+  promise.catch(() => {});
   let timer;
   try {
-    await Promise.race([
-      load,
+    return await Promise.race([
+      promise,
       new Promise((_resolve, reject) => {
-        timer = setTimeout(
-          () => reject(new Error(`navigation to ${url.slice(0, 80)} timed out after ${NAVIGATION_TIMEOUT_MS / 1000}s`)),
-          NAVIGATION_TIMEOUT_MS
-        );
+        timer = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs / 1000}s`)), timeoutMs);
       })
     ]);
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function loadURLWithTimeout(win, url) {
+  await withTimeout(win.loadURL(url), NAVIGATION_TIMEOUT_MS, `navigation to ${url.slice(0, 80)}`);
+}
+
+// executeJavaScript never settles if the renderer dies mid-evaluation: the
+// reply simply never arrives. Observed on the windows-x86 collect job, where a
+// renderer OOM 13 seconds into the network workload left the app awaiting its
+// driver script for 5+ hours until the CI step timeout - collect-profile.js
+// only retries once the app exits, so the retry loop never ran. Every page
+// evaluation therefore races against both a deadline and the diagnostics'
+// renderer-death signal (attachDiagnostics), so a dead renderer fails the
+// running workload instead of hanging collection.
+//
+// POLL_TIMEOUT_MS bounds the short state queries runWorkload polls with;
+// EVALUATE_GRACE_MS is how long past their own deadline the renderer-side
+// drivers (IPC, network) may run before they are presumed hung - their loops
+// await in-flight requests that have no timeout of their own.
+const POLL_TIMEOUT_MS = 30 * 1000;
+const EVALUATE_GRACE_MS = 60 * 1000;
+
+async function evaluateInPage(win, diag, script, timeoutMs, label) {
+  const racers = [win.webContents.executeJavaScript(script, true)];
+  if (diag) racers.push(diag.rendererDeath);
+  return withTimeout(Promise.race(racers), timeoutMs, label);
+}
+
+function describeRendererGone(details) {
+  return `renderer process gone (reason: ${details.reason}, exit code: ${details.exitCode})`;
+}
+
+// Failures caused by the renderer dying carry the render-process-gone details
+// so the run loop can tell a renderer death (which aborts the whole attempt -
+// see below) from a genuine workload failure. Every failure path in the
+// window-driven workloads goes through tagRendererDeath so a death that
+// surfaced indirectly (a failed navigation, a driver that never became
+// startable) is classified the same way as one caught directly.
+function rendererGoneError(details) {
+  const err = new Error(describeRendererGone(details));
+  err.rendererGone = details;
+  return err;
+}
+
+function tagRendererDeath(err, diag) {
+  if (diag && diag.rendererGone && !err.rendererGone) err.rendererGone = diag.rendererGone;
+  return err;
 }
 
 // ---------------------------------------------------------------------------
@@ -188,20 +230,31 @@ async function loadURLWithTimeout(win, url) {
 // ---------------------------------------------------------------------------
 
 function attachDiagnostics(win) {
+  let failRenderer;
   const diag = {
     consoleErrors: [],
     rendererGone: null,
     unresponsive: false,
+    // Rejects once the renderer dies; page evaluations race against it (see
+    // evaluateInPage). Re-armed by reset() because each workload's loadURL
+    // spawns a fresh renderer.
+    rendererDeath: null,
     reset() {
       this.consoleErrors = [];
       this.rendererGone = null;
       this.unresponsive = false;
+      this.rendererDeath = new Promise((_resolve, reject) => {
+        failRenderer = reject;
+      });
+      this.rendererDeath.catch(() => {});
     }
   };
+  diag.reset();
 
   win.webContents.on('render-process-gone', (_event, details) => {
     diag.rendererGone = details;
     log(`DIAGNOSTIC: renderer process gone: ${JSON.stringify(details)}`);
+    failRenderer(rendererGoneError(details));
   });
   win.webContents.on('unresponsive', () => {
     diag.unresponsive = true;
@@ -241,6 +294,9 @@ async function reportWorkloadFailure(win, workloadName, diag) {
 
   // Memory + DOM snapshot, best effort: a hung renderer may never respond,
   // so give it a strict deadline rather than hanging the collection further.
+  // A dead renderer cannot answer at all; skip the query so the abort is not
+  // delayed by the deadline.
+  if (diag.rendererGone) return;
   try {
     const state = await Promise.race([
       win.webContents.executeJavaScript(
@@ -281,11 +337,23 @@ async function runWorkload(win, workload, diag) {
   log(`starting workload: ${workload.name}`);
   if (diag) diag.reset();
   const startTime = Date.now();
+
+  // A dead renderer never answers a poll (the evaluation fails instantly via
+  // diag.rendererDeath and is swallowed as "page busy"), so without this the
+  // loops below would spin until the workload deadline - up to 45 minutes.
+  const throwIfRendererGone = async () => {
+    if (!diag || !diag.rendererGone) return;
+    await reportWorkloadFailure(win, workload.name, diag);
+    throw tagRendererDeath(
+      new Error(`workload ${workload.name} aborted: ${describeRendererGone(diag.rendererGone)}`),
+      diag
+    );
+  };
   try {
     await loadURLWithTimeout(win, workload.url);
   } catch (err) {
     if (diag) await reportWorkloadFailure(win, workload.name, diag);
-    throw err;
+    throw tagRendererDeath(err, diag);
   }
 
   // Install page-side error capture for failure diagnostics. Benchmark
@@ -294,7 +362,9 @@ async function runWorkload(win, workload, diag) {
   // happened during static page load (before this injection) are detected by
   // checking driver state flags where they exist.
   try {
-    await win.webContents.executeJavaScript(
+    await evaluateInPage(
+      win,
+      diag,
       `(() => {
         window.__pgoErrors = window.__pgoErrors || [];
         if (typeof allIsGood !== 'undefined' && !allIsGood) {
@@ -312,7 +382,8 @@ async function runWorkload(win, workload, diag) {
         });
         return true;
       })()`,
-      true
+      POLL_TIMEOUT_MS,
+      'error capture injection'
     );
   } catch {
     /* page busy - diagnostics only */
@@ -329,15 +400,16 @@ async function runWorkload(win, workload, diag) {
     let started = false;
     for (let i = 0; i < 300 && !started; i++) {
       await sleep(1000);
+      await throwIfRendererGone();
       try {
-        started = await win.webContents.executeJavaScript(workload.startExpr, true);
+        started = await evaluateInPage(win, diag, workload.startExpr, POLL_TIMEOUT_MS, 'start poll');
       } catch {
         /* page busy - retry */
       }
       if (!started && workload.startFailExpr) {
         let unstartable = false;
         try {
-          unstartable = await win.webContents.executeJavaScript(workload.startFailExpr, true);
+          unstartable = await evaluateInPage(win, diag, workload.startFailExpr, POLL_TIMEOUT_MS, 'start-fail poll');
         } catch {
           /* page busy - keep polling */
         }
@@ -346,7 +418,7 @@ async function runWorkload(win, workload, diag) {
     }
     if (!started) {
       if (diag) await reportWorkloadFailure(win, workload.name, diag);
-      throw new Error(`workload ${workload.name} never became startable`);
+      throw tagRendererDeath(new Error(`workload ${workload.name} never became startable`), diag);
     }
   }
 
@@ -354,6 +426,7 @@ async function runWorkload(win, workload, diag) {
   const deadline = Date.now() + workload.timeoutMin * 60 * 1000;
   while (Date.now() < deadline) {
     await sleep(5000);
+    await throwIfRendererGone();
     // Soft cap: treat a long-running benchmark as complete. Profile counters
     // accumulate continuously, so everything up to this point is kept.
     if (workload.softCapMs && Date.now() - startTime > workload.softCapMs) {
@@ -364,7 +437,7 @@ async function runWorkload(win, workload, diag) {
     }
     let done = false;
     try {
-      done = await win.webContents.executeJavaScript(workload.doneExpr, true);
+      done = await evaluateInPage(win, diag, workload.doneExpr, POLL_TIMEOUT_MS, 'completion poll');
     } catch {
       /* page busy running benchmark - retry */
     }
@@ -375,21 +448,21 @@ async function runWorkload(win, workload, diag) {
       let succeeded = true;
       if (workload.successExpr) {
         try {
-          succeeded = await win.webContents.executeJavaScript(workload.successExpr, true);
+          succeeded = await evaluateInPage(win, diag, workload.successExpr, POLL_TIMEOUT_MS, 'success poll');
         } catch {
           succeeded = false;
         }
       }
       if (!succeeded) {
         if (diag) await reportWorkloadFailure(win, workload.name, diag);
-        throw new Error(`workload ${workload.name} ended in an error state after ${elapsed}s`);
+        throw tagRendererDeath(new Error(`workload ${workload.name} ended in an error state after ${elapsed}s`), diag);
       }
       log(`finished workload: ${workload.name} in ${elapsed}s`);
       return { name: workload.name, ok: true, seconds: Number(elapsed) };
     }
   }
   if (diag) await reportWorkloadFailure(win, workload.name, diag);
-  throw new Error(`workload ${workload.name} timed out after ${workload.timeoutMin} minutes`);
+  throw tagRendererDeath(new Error(`workload ${workload.name} timed out after ${workload.timeoutMin} minutes`), diag);
 }
 
 // ---------------------------------------------------------------------------
@@ -644,7 +717,9 @@ async function runIpcBridgeWorkload(durationMs, maxCalls) {
     // The driver runs in the main world and calls across the bridge. Payload
     // sizes cover the spectrum apps use: small control messages, medium JSON
     // payloads, and large binary transfers.
-    result = await win.webContents.executeJavaScript(
+    result = await evaluateInPage(
+      win,
+      diag,
       `(async () => {
     const small = { id: 1, type: 'msg', body: 'hello world' };
     const medium = { rows: Array.from({ length: 200 }, (_, i) => ({ i, name: 'row-' + i, values: [i, i * 2, i * 3] })) };
@@ -677,11 +752,12 @@ async function runIpcBridgeWorkload(durationMs, maxCalls) {
     }
     return { bridgeCalls, ipcCalls };
   })()`,
-      true
+      durationMs + EVALUATE_GRACE_MS,
+      'ipc-contextbridge renderer driver'
     );
   } catch (err) {
     await reportWorkloadFailure(win, 'ipc-contextbridge', diag);
-    throw err;
+    throw tagRendererDeath(err, diag);
   } finally {
     win.destroy();
     ipcMain.removeHandler('pgo-ping');
@@ -709,8 +785,9 @@ async function runIpcBridgeWorkload(durationMs, maxCalls) {
 // to point at the collection CA (set by collect-profile.js).
 // ---------------------------------------------------------------------------
 
-async function runNetworkWorkload(win, durationMs, maxRequests) {
+async function runNetworkWorkload(win, diag, durationMs, maxRequests) {
   log('starting workload: network');
+  diag.reset();
   const startTime = Date.now();
   const isTls = BASE_URL.startsWith('https:');
   const wsUrl = BASE_URL.replace(/^http/, 'ws') + '/__pgo/ws';
@@ -718,9 +795,13 @@ async function runNetworkWorkload(win, durationMs, maxRequests) {
   // Renderer: parallel fetches + WebSocket echo. Runs for the first half of
   // the budget; the Node-side loop runs for the second half.
   const rendererBudget = Math.floor(durationMs / 2);
-  await loadURLWithTimeout(win, `${BASE_URL}/speedometer/`);
-  const rendererResult = await win.webContents.executeJavaScript(
-    `(async () => {
+  let rendererResult;
+  try {
+    await loadURLWithTimeout(win, `${BASE_URL}/speedometer/`);
+    rendererResult = await evaluateInPage(
+      win,
+      diag,
+      `(async () => {
     const deadline = Date.now() + ${rendererBudget};
     const maxRequests = ${maxRequests};
     let requests = 0;
@@ -768,8 +849,13 @@ async function runNetworkWorkload(win, durationMs, maxRequests) {
 
     return { requests, wsMessages };
   })()`,
-    true
-  );
+      rendererBudget + EVALUATE_GRACE_MS,
+      'network renderer driver'
+    );
+  } catch (err) {
+    await reportWorkloadFailure(win, 'network', diag);
+    throw tagRendererDeath(err, diag);
+  }
 
   // Main process: Node-side HTTPS/HTTP requests.
   let nodeRequests = 0;
@@ -847,7 +933,7 @@ app.whenReady().then(async () => {
     () => runAsyncChurnWorkload(ASYNC_CHURN_MAX_OPS),
     () => runPackagedAppWorkload(),
     () => runIpcBridgeWorkload(IPC_BRIDGE_TIMEOUT_MS, IPC_BRIDGE_MAX_CALLS),
-    () => runNetworkWorkload(win, NETWORK_TIMEOUT_MS, NETWORK_MAX_REQUESTS)
+    () => runNetworkWorkload(win, diag, NETWORK_TIMEOUT_MS, NETWORK_MAX_REQUESTS)
   ];
   let phaseNames = [
     ...WORKLOADS.map((w) => w.name),
@@ -875,13 +961,27 @@ app.whenReady().then(async () => {
   // remaining workloads is wasted work. On the final attempt the variable is
   // unset and the run continues past failures so the partial profile keeps
   // as much coverage as possible.
+  //
+  // A renderer death is the exception: it always aborts the attempt. The
+  // aborted workload already ran partway in every other process (browser,
+  // GPU, network service), so neither carrying on nor retrying it in place
+  // can yield a profile weighted like one complete run - the orchestrator
+  // discards this attempt's counters and relaunches from scratch.
+  let rendererDied = false;
   for (let i = 0; i < phases.length; i++) {
     try {
       results.push(await phases[i]());
     } catch (err) {
       log(`ERROR: ${err.message}`);
-      results.push({ name: phaseNames[i], ok: false, error: err.message });
+      const result = { name: phaseNames[i], ok: false, error: err.message };
+      if (err.rendererGone) result.rendererDeath = true;
+      results.push(result);
       exitCode = 1;
+      if (err.rendererGone) {
+        rendererDied = true;
+        log('aborting the attempt: a renderer died, so its profile is unusable; the orchestrator will discard it');
+        break;
+      }
       if (process.env.PGO_ABORT_ON_FAILURE) {
         log('aborting remaining workloads; the orchestrator will wipe profiles and relaunch');
         break;
@@ -891,6 +991,14 @@ app.whenReady().then(async () => {
 
   fs.writeFileSync(RESULTS_FILE, JSON.stringify(results, null, 2));
   log(`results written to ${RESULTS_FILE}`);
+
+  // A renderer death leaves nothing worth flushing, so skip the clean
+  // shutdown and exit non-zero: collect-profile.js treats a non-zero exit as
+  // a lost attempt regardless of the results file.
+  if (rendererDied) {
+    app.exit(1);
+    return;
+  }
 
   // Clean shutdown is what flushes the PGO counters from every process. Note
   // that app.quit() always exits 0 regardless of process.exitCode (app.exit()

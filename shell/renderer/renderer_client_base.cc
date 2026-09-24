@@ -38,6 +38,7 @@
 #include "shell/renderer/electron_api_service_impl.h"
 #include "shell/renderer/electron_autofill_agent.h"
 #include "shell/renderer/oom_stack_trace.h"
+#include "shell/renderer/security_warnings.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
@@ -348,6 +349,7 @@ void RendererClientBase::RenderFrameCreated(
   // Note: ElectronApiServiceImpl has to be created now to capture the
   // DidCreateDocumentElement event.
   new ElectronApiServiceImpl(render_frame, this);
+  MaybeAddSecurityWarnings(render_frame);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* dispatcher = extensions_renderer_client_->dispatcher();
@@ -391,10 +393,26 @@ void RendererClientBase::DidCreateScriptContext(
   RegisterOomStackTraceCallback(isolate);
 }
 
+bool RendererClientBase::HasScriptsToInject(
+    content::RenderFrame* render_frame) const {
+  return true;
+}
+
 void RendererClientBase::DidClearWindowObject(
     content::RenderFrame* render_frame) {
-  // Make sure every page will get a script context created.
-  render_frame->GetWebFrame()->ExecuteScript(blink::WebScriptSource("void 0"));
+  // Blink only creates a document's main-world script context once the page
+  // runs script. Preload scripts and Node.js have to run even in a document
+  // with no scripts of its own, so force the context for the frames Electron
+  // injects into (see ShouldLoadPreload()); leave every other frame alone.
+  const auto& prefs = render_frame->GetBlinkPreferences();
+  if ((render_frame->IsMainFrame() || prefs.node_integration_in_sub_frames ||
+       IsDevTools(render_frame) || IsDevToolsExtension(render_frame)) &&
+      HasScriptsToInject(render_frame)) {
+    blink::WebLocalFrame* web_frame = render_frame->GetWebFrame();
+    v8::HandleScope handle_scope(
+        web_frame->GetAgentGroupScheduler()->Isolate());
+    web_frame->MainWorldScriptContext();
+  }
 }
 
 bool RendererClientBase::OverrideCreatePlugin(

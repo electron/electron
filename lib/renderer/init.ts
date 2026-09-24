@@ -1,6 +1,5 @@
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 import type * as ipcRendererInternalModule from '@electron/internal/renderer/ipc-renderer-internal';
-import type * as ipcRendererUtilsModule from '@electron/internal/renderer/ipc-renderer-internal-utils';
 
 import * as path from 'path';
 import { pathToFileURL } from 'url';
@@ -30,9 +29,9 @@ Module._load = function (request: string) {
 // "Module.wrapper" we can force Node to use the old code path to wrap module
 // code with JavaScript.
 //
-// Note 3: We provide the equivalent extra variables internally through the
-// webpack ProvidePlugin in webpack.config.base.js.  If you add any extra
-// variables to this wrapper please ensure to update that plugin as well.
+// Note 3: We provide the equivalent extra variables internally by injecting
+// lib/common/node-globals.ts (see `inject` in build/bundle/bundle.mjs). If you
+// add any extra variables to this wrapper please ensure to update that as well.
 Module.wrapper = [
   '(function (exports, require, module, __filename, __dirname, process, global, Buffer) { ' +
     // By running the code in a new closure, it would be possible for the module
@@ -46,8 +45,6 @@ require('@electron/internal/common/init');
 
 const { ipcRendererInternal } =
   require('@electron/internal/renderer/ipc-renderer-internal') as typeof ipcRendererInternalModule;
-const ipcRendererUtils =
-  require('@electron/internal/renderer/ipc-renderer-internal-utils') as typeof ipcRendererUtilsModule;
 
 process.getProcessMemoryInfo = () => {
   return ipcRendererInternal.invoke<Electron.ProcessMemoryInfo>(IPC_MESSAGES.BROWSER_GET_PROCESS_MEMORY_INFO);
@@ -55,6 +52,7 @@ process.getProcessMemoryInfo = () => {
 
 // Process command line arguments.
 const { hasSwitch, getSwitchValue } = process._linkedBinding('electron_common_command_line');
+const v8Util = process._linkedBinding('electron_common_v8_util');
 const { mainFrame } = process._linkedBinding('electron_renderer_web_frame');
 
 const nodeIntegration = mainFrame.getWebPreference('nodeIntegration');
@@ -65,9 +63,8 @@ require('@electron/internal/renderer/common-init');
 
 if (nodeIntegration) {
   // Export node bindings to global.
-  const { makeRequireFunction } = __non_webpack_require__(
-    'internal/modules/helpers'
-  ) as typeof import('@node/lib/internal/modules/helpers');
+  const { makeRequireFunction } =
+    require('internal/modules/helpers') as typeof import('@node/lib/internal/modules/helpers');
   global.module = new Module('internal/electron/js2c/renderer_init');
   global.require = makeRequireFunction(global.module) as NodeRequire;
 
@@ -137,15 +134,15 @@ const onPreloadsLoaded = () => {
     delete (global as any).setImmediate;
     delete (global as any).clearImmediate;
     delete (global as any).global;
-    // eslint-disable-next-line n/no-deprecated-api
     delete (global as any).root;
-    // eslint-disable-next-line n/no-deprecated-api
     delete (global as any).GLOBAL;
   }
   appCodeLoaded!();
 };
 
-const { preloadPaths } = ipcRendererUtils.invokeSync<{ preloadPaths: string[] }>(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD);
+// Pushed by the browser ahead of this navigation; see
+// ElectronRendererClient::DidCreateScriptContext.
+const preloadPaths: string[] = v8Util.getHiddenValue(process, 'preloadPaths') ?? [];
 const cjsPreloads = preloadPaths.filter((p) => path.extname(p) !== '.mjs');
 const esmPreloads = preloadPaths.filter((p) => path.extname(p) === '.mjs');
 if (cjsPreloads.length) {
@@ -162,9 +159,8 @@ if (cjsPreloads.length) {
   }
 }
 if (esmPreloads.length) {
-  const { runEntryPointWithESMLoader } = __non_webpack_require__(
-    'internal/modules/run_main'
-  ) as typeof import('@node/lib/internal/modules/run_main');
+  const { runEntryPointWithESMLoader } =
+    require('internal/modules/run_main') as typeof import('@node/lib/internal/modules/run_main');
 
   runEntryPointWithESMLoader(async (cascadedLoader: any) => {
     // Load the preload scripts.

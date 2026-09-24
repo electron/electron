@@ -60,10 +60,10 @@ index 3e47a795e9f4d1e25fab5fefb3addf1ff3911f7c..55e19177b71b7dd157540eda6ce208fe
  
    void StartInputEventAckTimeoutForTesting() { StartInputEventAckTimeout(); }
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 94a3ee40f5594ce2aebe6aed5a1e4794008ecfa2..89e5684d92fb0174c1f0969f63daddd4b2af8e09 100644
+index 4f47b7a67327d9ee56f4ca6077e53dba53519d5c..4d6f62e3dfd8fb88784e8f39d4b333ad22ef3a78 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -867,8 +867,10 @@ void RenderWidgetHostImpl::WasHidden() {
+@@ -891,8 +891,10 @@ void RenderWidgetHostImpl::WasHidden() {
    // show goes through immediately.
    visual_properties_ack_pending_ = false;
  
@@ -77,10 +77,10 @@ index 94a3ee40f5594ce2aebe6aed5a1e4794008ecfa2..89e5684d92fb0174c1f0969f63daddd4
    // Show/Hide state is not sent to the renderer when it has requested for us to
    // wait until it requests them via Init().
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 25fa5e374e2d1ea91e9c4bb3034126ede9e5e991..9446f2346e3467249625c43fdb9f123e01662a3d 100644
+index a66d103c06de4dca6317c6e167cd1ec14a429b26..0b41953943aa4bc2ffba13fccb4472073bbd4fe8 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -11231,25 +11231,13 @@ void WebContentsImpl::RendererUnresponsive(
+@@ -11241,25 +11241,13 @@ void WebContentsImpl::RendererUnresponsive(
      base::RepeatingClosure hang_monitor_restarter) {
    OPTIONAL_TRACE_EVENT1("content", "WebContentsImpl::RendererUnresponsive",
                          "render_widget_host", render_widget_host);

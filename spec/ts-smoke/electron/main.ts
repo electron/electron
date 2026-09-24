@@ -1,4 +1,4 @@
-/* eslint-disable */
+/* oxlint-disable */
 
 import { crashReporter, nativeImage, shell } from 'electron/common';
 import {

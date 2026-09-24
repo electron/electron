@@ -31,7 +31,13 @@ mojom::RendererStartupDataPtr Build(content::BrowserContext* browser_context,
 // tuples with preload_code_cache so SetPreloadCodeCache writes from this
 // frame can be validated against exactly what was served. Reads preload
 // contents synchronously — call behind a ScopedAllowBlockingForElectron.
+// For a frame without the sandbox (Node.js integration) only the preload
+// paths are filled in: that renderer loads the files itself.
 mojom::RendererStartupDataPtr BuildForFrame(content::RenderFrameHost* rfh);
+
+// Whether |rfh| lives in a sandboxed renderer process (sandbox bundle) rather
+// than one with Node.js integration.
+bool IsFrameInSandboxedRenderer(content::RenderFrameHost* rfh);
 
 }  // namespace electron::renderer_startup_data
 

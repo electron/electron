@@ -49,8 +49,7 @@ and deeper operating system integrations. To get started, check out the
 
 :::note Let us know if something is missing!
 
-If you can't find what you are looking for, please let us know on [GitHub][] or in
-our [Discord server][discord]!
+If you can't find what you are looking for, please let us know on [GitHub][]!
 
 :::
 
@@ -62,7 +61,6 @@ into end users' hands.
 
 <!-- Link labels -->
 
-[discord]: https://discord.gg/electronjs
 [github]: https://github.com/electron/website/issues/new
 [how-to]: ./examples.md
 
