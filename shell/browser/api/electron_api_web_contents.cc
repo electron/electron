@@ -5771,6 +5771,20 @@ void WebContents::Send(gin::Arguments* args) {
   SendImpl(false, args);
 }
 
+void WebContents::PostMessage(v8::Isolate* isolate,
+                              const std::string& channel,
+                              v8::Local<v8::Value> message,
+                              std::optional<v8::Local<v8::Value>> transfer) {
+  content::RenderFrameHost* const rfh = web_contents()->GetPrimaryMainFrame();
+  WebFrameMain* const frame = rfh ? WebFrameMain::From(isolate, rfh) : nullptr;
+  if (!frame) {
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "webContents has no main frame to post to");
+    return;
+  }
+  frame->PostMessage(isolate, channel, message, std::move(transfer));
+}
+
 void WebContents::SendInternal(gin::Arguments* args) {
   SendImpl(true, args);
 }
@@ -6500,6 +6514,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetProperty<&WebContents::FocusedFrame>("focusedFrame")
       .SetMethod<&WebContents::Send>("send")
       .SetMethod<&WebContents::SendInternal>("_sendInternal")
+      .SetMethod<&WebContents::PostMessage>("postMessage")
       .SetMethod<&WebContents::SetOwnerBaseWindow>("_setOwnerWindow")
       .Build();
 }
