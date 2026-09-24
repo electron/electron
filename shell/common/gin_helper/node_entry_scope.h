@@ -13,13 +13,14 @@
 
 namespace gin_helper {
 
-// Put one of these on the stack before calling from native code into a JS
-// function. If nothing above it has entered JS through Node (callback scope
-// depth 0), it opens a node::InternalCallbackScope so that process.nextTick
-// callbacks and the microtask queue drain when the call returns, in that
-// order, as they do for every callback Node itself makes. If JS is already on
-// the stack it does nothing: the outermost scope owns the drain, and Node
-// skips it at depth > 1 anyway.
+// Put one of these on the stack, with |context| entered, before calling from
+// native code into a JS function. Where Node owns the microtask checkpoint
+// (kExplicit policy: the browser and utility processes) and nothing above it
+// has entered JS through Node (callback scope depth 0), it opens a
+// node::InternalCallbackScope so that process.nextTick callbacks and the
+// microtask queue drain when the call returns, in that order, as they do for
+// every callback Node itself makes. Otherwise it does nothing: an outer scope
+// owns the drain (Node skips it at depth > 1), or Blink's scoped policy does.
 class NodeEntryScope {
   STACK_ALLOCATED();
 
