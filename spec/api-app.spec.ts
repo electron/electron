@@ -2587,6 +2587,15 @@ describe('default behavior', () => {
       const result = await runTestApp('default-menu', '--null-menu');
       expect(result).to.equal(true);
     });
+
+    // Regression test for https://github.com/electron/electron/pull/50629: the
+    // Electron project links live in the default app now, not in the menu every
+    // app gets by default.
+    it('does not include a Help menu in the default menu', async () => {
+      const items: string[] = await runTestApp('default-menu', '--print-items');
+      expect(items).to.be.an('array').that.includes('windowmenu');
+      expect(items.map((item) => item.toLowerCase())).to.not.include('help');
+    });
   });
 
   describe('window-all-closed', () => {
