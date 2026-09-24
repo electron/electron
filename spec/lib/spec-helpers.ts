@@ -44,13 +44,19 @@ export const ciGpuArgs: string[] =
 type CleanupFunction = (() => void) | (() => Promise<void>);
 const cleanupFunctions: CleanupFunction[] = [];
 export async function runCleanupFunctions() {
-  for (const cleanup of cleanupFunctions) {
-    const r = cleanup();
-    if (r instanceof Promise) {
-      await r;
+  // Take the whole list up front: a cleanup that throws must not leave the
+  // rest behind to run (and throw) again after every later test.
+  const pending = cleanupFunctions.splice(0, cleanupFunctions.length);
+  const errors: unknown[] = [];
+  for (const cleanup of pending) {
+    try {
+      await cleanup();
+    } catch (error) {
+      errors.push(error);
     }
   }
-  cleanupFunctions.length = 0;
+  if (errors.length === 1) throw errors[0];
+  if (errors.length > 1) throw new AggregateError(errors, 'Several defer()-ed cleanup functions failed');
 }
 
 export function defer(f: CleanupFunction) {

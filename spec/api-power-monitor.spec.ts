@@ -18,7 +18,7 @@ import { ifdescribe, ifit, startRemoteControlApp } from './lib/spec-helpers.ts';
 
 const require = createRequire(import.meta.url);
 
-describe('powerMonitor', () => {
+describe('powerMonitor', { tags: ['serial'] }, () => {
   let logindMock: any, dbusMockPowerMonitor: any, getCalls: any, emitSignal: any, reset: any;
 
   ifdescribe(process.platform === 'linux' && process.env.DBUS_SYSTEM_BUS_ADDRESS != null)(
@@ -32,6 +32,9 @@ describe('powerMonitor', () => {
         getCalls = promisify(logindMock.GetCalls.bind(logindMock));
         emitSignal = promisify(logindMock.EmitSignal.bind(logindMock));
         reset = promisify(logindMock.Reset.bind(logindMock));
+        // The mock outlives this process; forget calls other Electron processes
+        // of the same test run have made so the counts below are ours alone.
+        await promisify(logindMock.ClearCalls.bind(logindMock))();
       });
 
       after(async () => {

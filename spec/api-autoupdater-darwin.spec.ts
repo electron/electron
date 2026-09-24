@@ -11,7 +11,9 @@ import type { RoutedResponse } from './lib/http-server-helpers.ts';
 // relaunching. The rules for refusing or altering an update are in
 // api-autoupdater-darwin-policy.spec.ts; the two files share a harness and
 // are split so that they can land on different CI shards.
-ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', function () {
+// The updater specs share ShipIt's per-app cache directory, so no two of them
+// can run at the same time.
+ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, function () {
   this.timeout(120000);
 
   const harness = setupUpdaterHarness();

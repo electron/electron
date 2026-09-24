@@ -6,7 +6,7 @@ import { once } from 'node:events';
 import * as path from 'node:path';
 
 import { ScreenCapture, hasCapturableScreen } from './lib/screen-helpers.ts';
-import { defer, ifit, startRemoteControlApp } from './lib/spec-helpers.ts';
+import { defer, ifit, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
 import { closeWindow } from './lib/window-helpers.ts';
 
 describe('BrowserView module', () => {
@@ -82,25 +82,29 @@ describe('BrowserView module', () => {
       }).not.to.throw();
     });
 
-    ifit(hasCapturableScreen())('sets the background color to transparent if none is set', async () => {
-      const display = screen.getPrimaryDisplay();
-      const WINDOW_BACKGROUND_COLOR = '#55ccbb';
+    ifit(hasCapturableScreen())(
+      'sets the background color to transparent if none is set',
+      { tags: ['serial'] },
+      async () => {
+        const display = screen.getPrimaryDisplay();
+        const WINDOW_BACKGROUND_COLOR = '#55ccbb';
 
-      w.show();
-      w.setBounds(display.bounds);
-      w.setBackgroundColor(WINDOW_BACKGROUND_COLOR);
-      await w.loadURL('data:text/html,<html></html>');
+        w.show();
+        w.setBounds(display.bounds);
+        w.setBackgroundColor(WINDOW_BACKGROUND_COLOR);
+        await w.loadURL('data:text/html,<html></html>');
 
-      view = new BrowserView();
-      view.setBounds(display.bounds);
-      w.setBrowserView(view);
-      await view.webContents.loadURL('data:text/html,hello there');
+        view = new BrowserView();
+        view.setBounds(display.bounds);
+        w.setBrowserView(view);
+        await view.webContents.loadURL('data:text/html,hello there');
 
-      const capture = ScreenCapture.forWindow(w);
-      await capture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
-    });
+        const capture = ScreenCapture.forWindow(w);
+        await capture.expectColorAtCenterMatches(WINDOW_BACKGROUND_COLOR);
+      }
+    );
 
-    ifit(hasCapturableScreen())('successfully applies the background color', async () => {
+    ifit(hasCapturableScreen())('successfully applies the background color', { tags: ['serial'] }, async () => {
       const WINDOW_BACKGROUND_COLOR = '#55ccbb';
       const VIEW_BACKGROUND_COLOR = '#ff00ff';
       const display = screen.getPrimaryDisplay();
@@ -494,9 +498,12 @@ describe('BrowserView module', () => {
           </body>
         </html>
       `);
+      // The page can finish loading before the freshly shown window's
+      // visibility reaches the renderer; let that settle so only changes
+      // caused by addBrowserView() are counted.
+      await waitUntil(async () => (await view.webContents.executeJavaScript('document.visibilityState')) === 'visible');
       const query = 'document.visibilityChangeCount';
       const countBefore = await view.webContents.executeJavaScript(query);
-      expect(countBefore).to.equal(0);
 
       w.addBrowserView(view);
       w.addBrowserView(view);

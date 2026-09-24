@@ -29,6 +29,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/node_util.h"
 #include "shell/common/process_util.h"
 #include "skia/ext/skia_utils_mac.h"
 
@@ -662,6 +663,14 @@ v8::Local<v8::Value> SystemPreferences::GetEffectiveAppearance(
 }
 
 bool SystemPreferences::AccessibilityDisplayShouldReduceTransparency() {
+  static bool warned = false;
+  if (!warned) {
+    warned = true;
+    util::EmitDeprecationWarning(
+        "'systemPreferences.accessibilityDisplayShouldReduceTransparency' is "
+        "deprecated and will be removed. Please use "
+        "'nativeTheme.prefersReducedTransparency' instead.");
+  }
   return [[NSWorkspace sharedWorkspace]
       accessibilityDisplayShouldReduceTransparency];
 }
