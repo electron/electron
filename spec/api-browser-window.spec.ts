@@ -6314,6 +6314,67 @@ describe('BrowserWindow module', () => {
     });
 
     describe('win.setParentWindow(parent)', () => {
+      ifdescribe(process.platform === 'darwin')('macOS child window level preservation', () => {
+        it('preserves an unfocusable panel level when first shown with a parent', async () => {
+          const parent = new BrowserWindow({ show: false });
+          const child = new BrowserWindow({ show: false, parent, type: 'panel', focusable: false });
+          child.setAlwaysOnTop(true, 'pop-up-menu');
+
+          parent.show();
+          await waitUntil(() => parent.isVisible());
+          expect(parent._getAlwaysOnTopLevel()).to.equal('normal');
+          expect(child._getAlwaysOnTopLevel()).to.equal('pop-up-menu');
+
+          child.showInactive();
+          await waitUntil(() => child.isVisible());
+          expect(child._getAlwaysOnTopLevel()).to.equal('pop-up-menu');
+          expect(parent._getAlwaysOnTopLevel()).to.equal('normal');
+          expect(child.getParentWindow()).to.equal(parent);
+        });
+
+        it('preserves both levels when attaching a visible child', async () => {
+          const parent = new BrowserWindow({ show: false });
+          const child = new BrowserWindow({ show: false, type: 'panel', focusable: false });
+          parent.setAlwaysOnTop(true, 'floating');
+          child.setAlwaysOnTop(true, 'pop-up-menu');
+
+          parent.show();
+          child.showInactive();
+          await waitUntil(() => parent.isVisible() && child.isVisible());
+          child.setParentWindow(parent);
+
+          expect(child.getParentWindow()).to.equal(parent);
+          expect(parent._getAlwaysOnTopLevel()).to.equal('floating');
+          expect(child._getAlwaysOnTopLevel()).to.equal('pop-up-menu');
+        });
+
+        it('retains a panel level after hide and show', async () => {
+          const parent = new BrowserWindow({ show: false });
+          const child = new BrowserWindow({ show: false, parent, type: 'panel', focusable: false });
+          parent.show();
+          await waitUntil(() => parent.isVisible());
+
+          for (const show of [() => child.show(), () => child.showInactive()]) {
+            show();
+            await waitUntil(() => child.isVisible());
+            expect(child._getAlwaysOnTopLevel()).to.equal('floating');
+            expect(parent._getAlwaysOnTopLevel()).to.equal('normal');
+            child.hide();
+            await waitUntil(() => !child.isVisible());
+          }
+        });
+
+        it('does not raise a normal child window', async () => {
+          const parent = new BrowserWindow({ show: false });
+          const child = new BrowserWindow({ show: false, parent });
+          parent.show();
+          child.show();
+          await waitUntil(() => parent.isVisible() && child.isVisible());
+          expect(parent._getAlwaysOnTopLevel()).to.equal('normal');
+          expect(child._getAlwaysOnTopLevel()).to.equal('normal');
+        });
+      });
+
       it('sets parent window', () => {
         const w = new BrowserWindow({ show: false });
         const c = new BrowserWindow({ show: false });
