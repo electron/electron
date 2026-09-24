@@ -92,7 +92,6 @@ class PromiseBase {
     explicit SettleScope(const PromiseBase& base);
     ~SettleScope();
 
-    v8::Isolate* const isolate_;
     v8::HandleScope handle_scope_;
     v8::Local<v8::Context> context_;
     v8::MicrotasksScope microtasks_scope_;
