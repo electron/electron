@@ -1454,6 +1454,26 @@ describe('webContents module', () => {
       expect(w.webContents.isDevToolsOpened()).to.be.true();
     });
 
+    const getDevToolsPreferences = (w: BrowserWindow) =>
+      w.webContents.devToolsWebContents!.executeJavaScript(
+        'new Promise((resolve) => InspectorFrontendHost.getPreferences(resolve))'
+      );
+
+    // Regression test for https://github.com/electron/electron/pull/50646: the
+    // dock mode used to be spliced into a script run in the DevTools frontend.
+    it('ignores a mode that is not a known dock state', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { partition: 'devtools-dock-state' } });
+      await w.loadURL('about:blank');
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'bottom"); globalThis.injectedByMode = true; ("' as any, activate: false });
+      await devtoolsOpened;
+      // getPreferences() round-trips through the same frontend host that would
+      // have run the injected script, so it has had its chance by now.
+      await getDevToolsPreferences(w);
+      const injected = await w.webContents.devToolsWebContents!.executeJavaScript('globalThis.injectedByMode');
+      expect(injected).to.equal(undefined);
+    });
+
     // Regression test for https://github.com/electron/electron/issues/52158.
     // The api::WebContents wrapping the DevTools WebContents is created as soon
     // as openDevTools() is called but only referenced again once the frontend
