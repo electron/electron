@@ -7906,8 +7906,8 @@ describe('BrowserWindow module', () => {
     let w: BrowserWindow;
     beforeEach(function () {
       w = new BrowserWindow({
-        width: 100,
-        height: 100,
+        width: 200,
+        height: 200,
         show: false,
         webPreferences: {
           backgroundThrottling: false,
@@ -7925,8 +7925,8 @@ describe('BrowserWindow module', () => {
       expect(data.isEmpty()).to.be.false('data is empty');
       const size = data.getSize();
       const scaleFactor = 1;
-      expect(size.width).to.be.closeTo(100 * scaleFactor, 2);
-      expect(size.height).to.be.closeTo(100 * scaleFactor, 2);
+      expect(size.width).to.be.closeTo(200 * scaleFactor, 2);
+      expect(size.height).to.be.closeTo(200 * scaleFactor, 2);
     });
 
     it('does not crash after navigation', () => {
@@ -8098,8 +8098,8 @@ describe('BrowserWindow module', () => {
 
     beforeEach(function () {
       w = new BrowserWindow({
-        width: 100,
-        height: 100,
+        width: 200,
+        height: 200,
         show: false,
         webPreferences: {
           backgroundThrottling: false,
@@ -8119,11 +8119,11 @@ describe('BrowserWindow module', () => {
       expect(data.isEmpty()).to.be.false('data is empty');
       expect(data.getScaleFactors()).to.deep.equal([scaleFactor]);
       const size = data.getSize();
-      expect(size.width).to.be.closeTo(100, 2);
-      expect(size.height).to.be.closeTo(100, 2);
+      expect(size.width).to.be.closeTo(200, 2);
+      expect(size.height).to.be.closeTo(200, 2);
       const pixels = nativeImage.createFromBuffer(data.toPNG()).getSize();
-      expect(pixels.width).to.be.closeTo(100 * scaleFactor, 2);
-      expect(pixels.height).to.be.closeTo(100 * scaleFactor, 2);
+      expect(pixels.width).to.be.closeTo(200 * scaleFactor, 2);
+      expect(pixels.height).to.be.closeTo(200 * scaleFactor, 2);
     });
 
     it('captures the page at the device scale factor', async () => {
@@ -8134,11 +8134,11 @@ describe('BrowserWindow module', () => {
 
       const full = await w.webContents.capturePage();
       expect(full.getScaleFactors()).to.deep.equal([scaleFactor]);
-      expect(full.getSize().width).to.be.closeTo(100, 2);
-      expect(full.getSize().height).to.be.closeTo(100, 2);
+      expect(full.getSize().width).to.be.closeTo(200, 2);
+      expect(full.getSize().height).to.be.closeTo(200, 2);
       const fullPixels = nativeImage.createFromBuffer(full.toPNG()).getSize();
-      expect(fullPixels.width).to.be.closeTo(100 * scaleFactor, 2);
-      expect(fullPixels.height).to.be.closeTo(100 * scaleFactor, 2);
+      expect(fullPixels.width).to.be.closeTo(200 * scaleFactor, 2);
+      expect(fullPixels.height).to.be.closeTo(200 * scaleFactor, 2);
       expect(full.toJPEG(90)).to.not.be.empty();
 
       const rect = await w.webContents.capturePage({ x: 0, y: 0, width: 50, height: 50 });
@@ -8151,8 +8151,8 @@ describe('BrowserWindow module', () => {
 
     it('captures the page at a device scale factor below 1', async () => {
       const small = new BrowserWindow({
-        width: 100,
-        height: 100,
+        width: 200,
+        height: 200,
         show: false,
         webPreferences: {
           backgroundThrottling: false,
@@ -8166,11 +8166,11 @@ describe('BrowserWindow module', () => {
 
       const full = await small.webContents.capturePage();
       expect(full.getScaleFactors()).to.deep.equal([0.5]);
-      expect(full.getSize().width).to.be.closeTo(100, 2);
-      expect(full.getSize().height).to.be.closeTo(100, 2);
+      expect(full.getSize().width).to.be.closeTo(200, 2);
+      expect(full.getSize().height).to.be.closeTo(200, 2);
       const pixels = nativeImage.createFromBuffer(full.toPNG()).getSize();
-      expect(pixels.width).to.be.closeTo(50, 2);
-      expect(pixels.height).to.be.closeTo(50, 2);
+      expect(pixels.width).to.be.closeTo(100, 2);
+      expect(pixels.height).to.be.closeTo(100, 2);
     });
 
     it('has correct screen and window sizes', async () => {
@@ -8184,15 +8184,15 @@ describe('BrowserWindow module', () => {
           resolve({ screenSize, outerSize, dpr });
         });
       `);
-      expect(sizes.screenSize).to.deep.equal([100, 100]);
-      expect(sizes.outerSize).to.deep.equal([100, 100]);
+      expect(sizes.screenSize).to.deep.equal([200, 200]);
+      expect(sizes.outerSize).to.deep.equal([200, 200]);
       expect(sizes.dpr).to.be.equal(scaleFactor);
     });
 
     it('has correct device screen size media query result', async () => {
       w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
       await once(w.webContents, 'dom-ready');
-      const query = `(device-width: ${100}px)`;
+      const query = `(device-width: ${200}px)`;
       const matches = await w.webContents.executeJavaScript(`
         new Promise((resolve) => {
           const mediaQuery = window.matchMedia('${query}');
