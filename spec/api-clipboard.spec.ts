@@ -8,7 +8,7 @@ import * as path from 'node:path';
 import { ifdescribe, ifit } from './lib/spec-helpers.ts';
 
 // FIXME(zcbenz): Clipboard tests are failing on WOA.
-ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard module', () => {
+ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard module', { tags: ['serial'] }, () => {
   const fixtures = path.resolve(import.meta.dirname, 'fixtures');
 
   describe('clipboard.readImage()', () => {

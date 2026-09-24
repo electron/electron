@@ -2,7 +2,7 @@ import { type Display, screen, desktopCapturer } from 'electron/main';
 
 import { expect } from 'chai';
 
-describe('screen module', () => {
+describe('screen module', { tags: ['serial'] }, () => {
   describe('methods reassignment', () => {
     it('works for a selected method', () => {
       const originalFunction = screen.getPrimaryDisplay;

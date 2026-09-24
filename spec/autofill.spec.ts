@@ -9,7 +9,7 @@ import { closeAllWindows } from './lib/window-helpers.ts';
 
 const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
-describe('autofill', () => {
+describe('autofill', { tags: ['serial'] }, () => {
   afterEach(closeAllWindows);
 
   it('can be selected via keyboard for a <datalist> with text type', async () => {
