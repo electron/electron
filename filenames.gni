@@ -722,6 +722,8 @@ filenames = {
     "shell/common/gin_helper/interned_strings.h",
     "shell/common/gin_helper/locker.cc",
     "shell/common/gin_helper/locker.h",
+    "shell/common/gin_helper/node_entry_scope.cc",
+    "shell/common/gin_helper/node_entry_scope.h",
     "shell/common/gin_helper/node_event_emitter.cc",
     "shell/common/gin_helper/node_event_emitter.h",
     "shell/common/gin_helper/object_builder.cc",
