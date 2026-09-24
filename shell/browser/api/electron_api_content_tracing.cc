@@ -17,7 +17,9 @@
 #include "base/task/thread_pool.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/trace_event/trace_config.h"
+#include "content/browser/tracing/tracing_controller_impl.h"  // nogncheck
 #include "content/public/browser/tracing_controller.h"
+#include "services/tracing/public/cpp/perfetto/perfetto_config.h"
 #include "services/tracing/public/cpp/perfetto/perfetto_data_source_names.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
@@ -27,6 +29,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "third_party/perfetto/include/perfetto/tracing/core/trace_config.h"
 #include "third_party/perfetto/protos/perfetto/config/chrome/sampling_heap_profiler.gen.h"
 #include "third_party/perfetto/protos/perfetto/config/trace_config.gen.h"
 
@@ -248,19 +251,25 @@ v8::Local<v8::Promise> StartTracing(v8::Isolate* isolate,
     return gin_helper::Promise<void>::ResolvedPromise(isolate);
   }
 
-  TracingController::StartTracingOptions options;
+  auto done = base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
+                             std::move(promise));
+  bool started;
   if (config.heap_profiler_options) {
-    options.output_format = TracingController::TraceDataFormat::kProtobuf;
-    options.perfetto_config_modifier =
-        base::BindOnce(&AddHeapProfilingDataSource, config.trace_config,
-                       *config.heap_profiler_options);
+    // A heap-profiling session records the raw protobuf trace, with the heap
+    // profiler added to the default data sources.
+    perfetto::TraceConfig perfetto_config = tracing::GetDefaultPerfettoConfig(
+        config.trace_config, /*privacy_filtering_enabled=*/false,
+        /*convert_to_legacy_json=*/false);
+    AddHeapProfilingDataSource(config.trace_config,
+                               *config.heap_profiler_options, &perfetto_config);
+    started =
+        content::TracingControllerImpl::GetInstance()
+            ->StartTracingWithPerfettoConfig(perfetto_config, std::move(done));
+  } else {
+    started = instance->StartTracing(config.trace_config, std::move(done));
   }
 
-  if (!instance->StartTracing(
-          config.trace_config,
-          base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
-                         std::move(promise)),
-          std::move(options))) {
+  if (!started) {
     // If StartTracing returns false, that means it didn't invoke its callback.
     // Return an already-resolved promise and abandon the previous promise (it
     // was std::move()d into the StartTracing callback and has been deleted by
