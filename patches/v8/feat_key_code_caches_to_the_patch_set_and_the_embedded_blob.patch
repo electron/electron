@@ -29,7 +29,7 @@ This adds two things:
 Both parts are suitable for upstreaming.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 3698b9b9724ec9425c5e57d395ae9d305841b7aa..b2d3bad6d186ab0fb57b93d895eda3f30d7ed5bb 100644
+index 9beb3544470137e4d343c2449603267a61b5d836..6a299d99f563a9e3f151174911c11cb87792a87b 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -20,6 +20,7 @@ import("//third_party/icu/config.gni")
@@ -40,7 +40,7 @@ index 3698b9b9724ec9425c5e57d395ae9d305841b7aa..b2d3bad6d186ab0fb57b93d895eda3f3
  
  if (is_clang) {
    import("//build/config/clang/clang.gni")
-@@ -1299,6 +1300,14 @@ enabled_external_defines =
+@@ -1304,6 +1305,14 @@ enabled_external_defines =
  disabled_external_defines =
      disabled_external_v8_defines + disabled_external_cppgc_defines
  

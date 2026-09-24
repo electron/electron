@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: clavin <clavin@electronjs.org>
+Date: Wed, 23 Sep 2026 23:05:21 -0700
+Subject: fix: allow any exit code in BrowserMainRunner::SetOverrideResultCode
+
+content only lets an embedder override a normal browser exit with a code
+at or above content::RESULT_CODE_LAST_CODE, so that it cannot be mistaken
+for one of content's own result codes. Electron's app.exit(code) passes
+an app-chosen code straight to the OS, so drop the check. The contract
+comment in browser_main_runner.h is left as upstream wrote it.
+
+This patch can be removed if upstream lets embedders set exit codes
+below RESULT_CODE_LAST_CODE.
+
+diff --git a/content/browser/browser_main_runner_impl.cc b/content/browser/browser_main_runner_impl.cc
+index 485e4cb4f764f3bbfa235f8c2edee1a95f311354..dbbcc0b130504bbd11871d12fa21b2f5a3867d5a 100644
+--- a/content/browser/browser_main_runner_impl.cc
++++ b/content/browser/browser_main_runner_impl.cc
+@@ -196,7 +196,6 @@ bool BrowserMainRunner::ExitedMainMessageLoop() {
+ 
+ // static
+ void BrowserMainRunner::SetOverrideResultCode(int code) {
+-  CHECK_GE(code, RESULT_CODE_LAST_CODE);
+   GetProcessResultCode() = code;
+ }
+ 

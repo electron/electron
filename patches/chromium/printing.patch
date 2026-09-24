@@ -251,7 +251,7 @@ index 21ea23304b7b4652c93a9dd2de1b4bbca83a32c8..ddca50d1369553523dd0e215d19e0d0e
  
  }  // namespace printing
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
-index 8335c2b4893952ff2d37f9582d79c05d6383226f..40839ab9aea5b8a4ab1ebda46de07299530a8b58 100644
+index 6acf5b006b7e2eafeda1c37dad21c989f9adc534..8eea22e03a3e6bd48b8303da7e82bc7232c1bbbc 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
 @@ -283,6 +283,8 @@ struct PrintWithParamsResultData {
@@ -264,10 +264,10 @@ index 8335c2b4893952ff2d37f9582d79c05d6383226f..40839ab9aea5b8a4ab1ebda46de07299
  
  enum PrintFailureReason {
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 53172b32dabe34c4ac5ea9a762f1882d16b71cbb..47f1c89dcfe8a802c1a9050cb6af79701d174423 100644
+index dc1dd6fe579d0b7517f34f94e960991ab22ee3f7..7d9dfe14bbdff1796af2c82d186311c26d4eecd2 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
-@@ -2411,6 +2411,7 @@ bool PrintRenderFrameHelper::PrintPagesNative(
+@@ -2464,6 +2464,7 @@ bool PrintRenderFrameHelper::PrintPagesNative(
      result->params = std::move(page_params);
      result->accessibility_tree = std::move(accessibility_tree);
      result->generate_document_outline = print_params.generate_document_outline;

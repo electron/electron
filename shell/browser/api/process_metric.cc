@@ -8,10 +8,20 @@
 #include <optional>
 #include <utility>
 
+#if BUILDFLAG(IS_LINUX)
+#include "base/files/file_util.h"
+#include "base/strings/string_number_conversions.h"
+#include "base/strings/string_split.h"
+#include "base/strings/string_util.h"
+#include "base/strings/stringprintf.h"
+#include "shell/common/thread_restrictions.h"
+#endif
+
 #if BUILDFLAG(IS_WIN)
 #include <windows.h>
 
 #include <psapi.h>
+#include "base/win/access_token.h"
 #include "base/win/win_util.h"
 #endif
 
@@ -90,33 +100,12 @@ ProcessMemoryInfo ProcessMetric::GetMemoryInfo() const {
 }
 
 ProcessIntegrityLevel ProcessMetric::GetIntegrityLevel() const {
-  HANDLE token = nullptr;
-  if (!::OpenProcessToken(process.Handle(), TOKEN_QUERY, &token)) {
+  std::optional<base::win::AccessToken> token =
+      base::win::AccessToken::FromProcess(process.Handle());
+  if (!token)
     return ProcessIntegrityLevel::kUnknown;
-  }
 
-  base::win::ScopedHandle token_scoped(token);
-
-  DWORD token_info_length = 0;
-  if (::GetTokenInformation(token, TokenIntegrityLevel, nullptr, 0,
-                            &token_info_length) ||
-      ::GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
-    return ProcessIntegrityLevel::kUnknown;
-  }
-
-  auto token_label_bytes = std::make_unique<char[]>(token_info_length);
-  auto* token_label =
-      reinterpret_cast<TOKEN_MANDATORY_LABEL*>(token_label_bytes.get());
-  if (!::GetTokenInformation(token, TokenIntegrityLevel, token_label,
-                             token_info_length, &token_info_length)) {
-    return ProcessIntegrityLevel::kUnknown;
-  }
-
-  DWORD integrity_level = *::GetSidSubAuthority(
-      token_label->Label.Sid,
-      static_cast<DWORD>(*::GetSidSubAuthorityCount(token_label->Label.Sid) -
-                         1));
-
+  const DWORD integrity_level = token->IntegrityLevel();
   if (integrity_level >= SECURITY_MANDATORY_UNTRUSTED_RID &&
       integrity_level < SECURITY_MANDATORY_LOW_RID) {
     return ProcessIntegrityLevel::kUntrusted;
@@ -165,6 +154,39 @@ bool ProcessMetric::IsSandboxed() const {
 #else
   return sandbox_check(process.Pid(), nullptr, 0) != 0;
 #endif
+}
+
+#elif BUILDFLAG(IS_LINUX)
+
+ProcessMemoryInfo ProcessMetric::GetMemoryInfo() const {
+  ProcessMemoryInfo result;
+
+  electron::ScopedAllowBlockingForElectron allow_blocking;
+  std::string status;
+  if (!base::ReadFileToString(
+          base::FilePath(base::StringPrintf("/proc/%d/status", process.Pid())),
+          &status)) {
+    return result;
+  }
+  base::StringPairs pairs;
+  base::SplitStringIntoKeyValuePairs(status, ':', '\n', &pairs);
+  for (const auto& [key, value] : pairs) {
+    size_t* field = nullptr;
+    if (key == "VmRSS")
+      field = &result.working_set_size;
+    else if (key == "VmHWM")
+      field = &result.peak_working_set_size;
+    else
+      continue;
+    std::vector<std::string_view> parts = base::SplitStringPiece(
+        value, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
+    size_t kb = 0;
+    if (parts.size() == 2 && parts[1] == "kB" &&
+        base::StringToSizeT(parts[0], &kb)) {
+      *field = kb << 10;
+    }
+  }
+  return result;
 }
 
 #endif  // BUILDFLAG(IS_MAC)

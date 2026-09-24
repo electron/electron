@@ -10,8 +10,9 @@ This CL adds support for the following features to //shell_dialogs:
 
 It also:
 * Changes XDG Portal implementation behavior to set default path regardless of dialog type.
-* XDG Portal implementation calls into //electron to perform version checks on the dbus thread
-  Refs https://github.com/electron/electron/issues/46652.
+* Lets the embedder raise the minimum XDG portal version through
+  SelectFileDialogLinuxPortal::SetRequiredPortalVersion(), which backs
+  Electron's --xdg-portal-required-version switch.
 
 This may be partially upstreamed to Chromium in the future.
 
@@ -244,10 +245,48 @@ index 61683d0eddb04c494ca5e650e7d556b44968ec49..0e39a83664fe12dc844f433e32e44605
  
  }  // namespace ui
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index cf60f909cb2bed76024e3393ca858df15d73d0df..189aa6236dcbd35e16674df385f7075eaf65ab74 100644
+index cf60f909cb2bed76024e3393ca858df15d73d0df..09b55af92c17c75177b4fd542cc69e9c6d203031 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-@@ -347,11 +347,14 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -4,6 +4,7 @@
+ 
+ #include "ui/shell_dialogs/select_file_dialog_linux_portal.h"
+ 
++#include <algorithm>
+ #include <string_view>
+ 
+ #include "base/check.h"
+@@ -43,7 +44,8 @@ namespace {
+ constexpr char kXdgPortalService[] = "org.freedesktop.portal.Desktop";
+ constexpr char kXdgPortalObject[] = "/org/freedesktop/portal/desktop";
+ 
+-constexpr int kXdgPortalRequiredVersion = 3;
++constexpr uint32_t kXdgPortalRequiredVersion = 3;
++uint32_t g_required_portal_version = kXdgPortalRequiredVersion;
+ 
+ constexpr char kFileChooserMethodOpenFile[] = "OpenFile";
+ constexpr char kFileChooserMethodSaveFile[] = "SaveFile";
+@@ -156,13 +158,18 @@ void SelectFileDialogLinuxPortal::SelectFileImpl(
+                      default_extension, std::move(caller_copy)));
+ }
+ 
++// static
++void SelectFileDialogLinuxPortal::SetRequiredPortalVersion(uint32_t version) {
++  g_required_portal_version = std::max(version, kXdgPortalRequiredVersion);
++}
++
+ void SelectFileDialogLinuxPortal::OnPortalAvailable(
+     std::u16string title,
+     base::FilePath default_path,
+     base::FilePath::StringType default_extension,
+     std::optional<GURL> caller,
+     uint32_t version) {
+-  if (version < kXdgPortalRequiredVersion) {
++  if (version < g_required_portal_version) {
+     gfx::NativeWindow owning_window = host_ ? host_->window() : nullptr;
+     if (auto* linux_ui = ui::LinuxUi::instance()) {
+       fallback_dialog_ = linux_ui->CreateSelectFileDialog(listener_, nullptr);
+@@ -347,11 +354,14 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
      const PortalFilterSet& filter_set) {
    dbus_xdg::Dictionary dict;
  
@@ -265,7 +304,7 @@ index cf60f909cb2bed76024e3393ca858df15d73d0df..189aa6236dcbd35e16674df385f7075e
        [[fallthrough]];
      case SelectFileDialog::SELECT_FOLDER:
      case SelectFileDialog::Type::SELECT_EXISTING_FOLDER:
-@@ -364,6 +367,11 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -364,6 +374,11 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
        break;
    }
  
@@ -277,3 +316,19 @@ index cf60f909cb2bed76024e3393ca858df15d73d0df..189aa6236dcbd35e16674df385f7075e
    if (!default_path.empty() && base::IsStringUTF8(default_path.value())) {
      if (default_path_exists) {
        // If this is an existing directory, navigate to that directory, with no
+diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.h b/ui/shell_dialogs/select_file_dialog_linux_portal.h
+index af224fd04ec1f763fbd7a1b367db530843741d10..99ddd971b4b13036b1906f35531f2c0288640507 100644
+--- a/ui/shell_dialogs/select_file_dialog_linux_portal.h
++++ b/ui/shell_dialogs/select_file_dialog_linux_portal.h
+@@ -41,6 +41,11 @@ class SHELL_DIALOGS_EXPORT SelectFileDialogLinuxPortal
+   SelectFileDialogLinuxPortal& operator=(
+       const SelectFileDialogLinuxPortal& other) = delete;
+ 
++  // Lets the embedder raise the minimum org.freedesktop.portal.FileChooser
++  // version below which the toolkit dialog is used instead. Values below the
++  // built-in minimum are ignored.
++  static void SetRequiredPortalVersion(uint32_t version);
++
+  protected:
+   ~SelectFileDialogLinuxPortal() override;
+ 

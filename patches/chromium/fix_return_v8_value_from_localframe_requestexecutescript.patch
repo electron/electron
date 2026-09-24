@@ -9,10 +9,10 @@ awaited promise result to that callback instead of dropping it.
 Refs https://bugs.chromium.org/p/chromium/issues/detail?id=1323953
 
 diff --git a/extensions/renderer/script_injection.cc b/extensions/renderer/script_injection.cc
-index b019a321f1445d92cb433fd9ffe41d3fe0eb8644..ec2efb4d04fe5f76c65418bfc03a5bdb40a09cf9 100644
+index 4c032bed25466e13a829ccbc0cd6637c9dee45d6..f996a314dca741a90063618f3326bde8b6638984 100644
 --- a/extensions/renderer/script_injection.cc
 +++ b/extensions/renderer/script_injection.cc
-@@ -9,6 +9,7 @@
+@@ -11,6 +11,7 @@
  
  #include "base/feature_list.h"
  #include "base/functional/bind.h"
@@ -20,7 +20,7 @@ index b019a321f1445d92cb433fd9ffe41d3fe0eb8644..ec2efb4d04fe5f76c65418bfc03a5bdb
  #include "base/lazy_instance.h"
  #include "base/memory/raw_ptr.h"
  #include "base/metrics/histogram_macros.h"
-@@ -327,6 +328,7 @@ void ScriptInjection::InjectJs(std::set<std::string>* executing_scripts,
+@@ -365,6 +366,7 @@ void ScriptInjection::InjectJs(std::set<std::string>* executing_scripts,
        blink::mojom::LoadEventBlockingOption::kBlock,
        base::BindOnce(&ScriptInjection::OnJsInjectionCompleted,
                       weak_ptr_factory_.GetWeakPtr()),
@@ -73,7 +73,7 @@ index cba373664bec3a32abad6fe0396bd67b53b7e67f..13284f693f406cea171e450af7784a44
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index ce332f97dd089cb155f9977158a2c6ed6544b923..c1278956cd2e25acdeaf1f210431225070e6e264 100644
+index 698ce38902d416963197f327b7979c79aee766d8..5bfe4ae008c99f42a53644bc17e014c9ea7664be 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
 @@ -3394,6 +3394,7 @@ void LocalFrame::RequestExecuteScript(
@@ -107,10 +107,10 @@ index c9f63eadd7bda3d9c5e73cdd856911167b3220ec..febaf3dc37ad4fd5addf187c857ecdaa
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption,
 diff --git a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-index d0b9b0815dbf3bbf39a4a1fbf9b886b45bac0da9..1a6d94940886b8fc0a1a42e8ab3c299746efb761 100644
+index 948b2c67ccdac3fcdfe0331fe34467b7a7ac52d9..51053b5f26ca428e843a744a19cb1be4a41aeef7 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-@@ -976,6 +976,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
+@@ -983,6 +983,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
              std::move(callback).Run(value ? std::move(*value) : base::Value());
            },
            std::move(callback)),

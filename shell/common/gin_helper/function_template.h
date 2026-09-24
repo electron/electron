@@ -18,6 +18,7 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "v8/include/cppgc/macros.h"
 #include "v8/include/v8-external.h"
+#include "v8/include/v8-isolate.h"
 #include "v8/include/v8-microtask-queue.h"
 #include "v8/include/v8-template.h"
 
@@ -252,6 +253,22 @@ struct ArgumentHolder<
   }
 };
 
+// Blink runs microtasks when the outermost MicrotasksScope closes (kScoped),
+// so a bound call in the renderer needs one. Where Node owns the checkpoint
+// (kExplicit: the browser and utility processes) a scope never runs anything
+// and every native-to-JS entry point already holds one, so skip it there,
+// along with the creation-context lookup it needs.
+class MaybeMicrotasksScope {
+  CPPGC_STACK_ALLOCATED();
+
+ public:
+  explicit MaybeMicrotasksScope(gin::Arguments* args);
+  ~MaybeMicrotasksScope();
+
+ private:
+  std::optional<v8::MicrotasksScope> scope_;
+};
+
 // Class template for converting arguments from JavaScript to C++ and running
 // the callback with them.
 template <typename IndicesType, typename... ArgTypes>
@@ -260,6 +277,8 @@ class Invoker;
 template <size_t... indices, typename... ArgTypes>
 class Invoker<std::index_sequence<indices...>, ArgTypes...>
     : public ArgumentHolder<indices, ArgTypes>... {
+  CPPGC_STACK_ALLOCATED();
+
  public:
   // Invoker<> inherits from ArgumentHolder<> for each argument.
   // C++ has always been strict about the class initialization order,
@@ -275,9 +294,8 @@ class Invoker<std::index_sequence<indices...>, ArgTypes...>
 
   template <typename ReturnType>
   void DispatchToCallback(
-      base::RepeatingCallback<ReturnType(ArgTypes...)> callback) {
-    v8::MicrotasksScope microtasks_scope(args_->GetHolderCreationContext(),
-                                         v8::MicrotasksScope::kRunMicrotasks);
+      const base::RepeatingCallback<ReturnType(ArgTypes...)>& callback) {
+    MaybeMicrotasksScope microtasks_scope(args_);
     args_->Return(
         callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...));
   }
@@ -285,14 +303,14 @@ class Invoker<std::index_sequence<indices...>, ArgTypes...>
   // In C++, you can declare the function foo(void), but you can't pass a void
   // expression to foo. As a result, we must specialize the case of Callbacks
   // that have the void return type.
-  void DispatchToCallback(base::RepeatingCallback<void(ArgTypes...)> callback) {
-    v8::MicrotasksScope microtasks_scope(args_->GetHolderCreationContext(),
-                                         v8::MicrotasksScope::kRunMicrotasks);
+  void DispatchToCallback(
+      const base::RepeatingCallback<void(ArgTypes...)>& callback) {
+    MaybeMicrotasksScope microtasks_scope(args_);
     callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...);
   }
 
  private:
-  raw_ptr<gin::Arguments> args_;
+  gin::Arguments* args_;
 };
 
 // DispatchToCallback converts all the JavaScript arguments to C++ types and

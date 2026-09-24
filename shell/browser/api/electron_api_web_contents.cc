@@ -5742,20 +5742,29 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
   return handle;
 }
 
-void WebContents::SendToMainFrame(v8::Isolate* isolate,
-                                  bool internal,
-                                  const std::string& channel,
-                                  v8::Local<v8::Value> args) {
+void WebContents::Send(gin::Arguments* args) {
+  SendImpl(false, args);
+}
+
+void WebContents::SendInternal(gin::Arguments* args) {
+  SendImpl(true, args);
+}
+
+void WebContents::SendImpl(bool internal, gin::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  std::string channel;
+  electron::SerializedValue message;
+  if (!ReadIPCSendArguments(args, "webContents", &channel, &message))
+    return;
   content::RenderFrameHost* const rfh = web_contents()->GetPrimaryMainFrame();
   WebFrameMain* const frame = rfh ? WebFrameMain::From(isolate, rfh) : nullptr;
   if (!frame) {
-    // A TypeError, as calling send on a null mainFrame was, so the JS
-    // wrapper rethrows it rather than logging it.
-    isolate->ThrowException(v8::Exception::TypeError(
-        gin::StringToV8(isolate, "webContents has no main frame to send to")));
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "webContents has no main frame to send to");
     return;
   }
-  frame->Send(isolate, internal, channel, args);
+  frame->DeliverMessage(isolate, internal, "webContents", channel,
+                        std::move(message));
 }
 
 mojom::ElectronFrame* WebContents::MainFrameRenderer(
@@ -6303,6 +6312,9 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
                  &WebContents::GetBackgroundThrottling)
       .SetMethod("setBackgroundThrottling",
                  &WebContents::SetBackgroundThrottling)
+      .SetProperty("backgroundThrottling",
+                   &WebContents::GetBackgroundThrottling,
+                   &WebContents::SetBackgroundThrottling)
       .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("getOSProcessId", &WebContents::GetOSProcessID)
       .SetMethod("clone", &WebContents::Clone)
@@ -6339,6 +6351,8 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
                  &WebContents::ForcefullyCrashRenderer)
       .SetMethod("setUserAgent", &WebContents::SetUserAgent)
       .SetMethod("getUserAgent", &WebContents::GetUserAgent)
+      .SetProperty("userAgent", &WebContents::GetUserAgent,
+                   &WebContents::SetUserAgent)
       .SetMethod("savePage", &WebContents::SavePage)
       .SetMethod("openDevTools", &WebContents::OpenDevTools)
       .SetMethod("closeDevTools", &WebContents::CloseDevTools)
@@ -6353,10 +6367,14 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setIgnoreMenuShortcuts", &WebContents::SetIgnoreMenuShortcuts)
       .SetMethod("setAudioMuted", &WebContents::SetAudioMuted)
       .SetMethod("isAudioMuted", &WebContents::IsAudioMuted)
+      .SetProperty("audioMuted", &WebContents::IsAudioMuted,
+                   &WebContents::SetAudioMuted)
       .SetMethod("isCurrentlyAudible", &WebContents::IsCurrentlyAudible)
       .SetMethod("setCaretBrowsingEnabled",
                  &WebContents::SetCaretBrowsingEnabled)
       .SetMethod("isCaretBrowsingEnabled", &WebContents::IsCaretBrowsingEnabled)
+      .SetProperty("caretBrowsingEnabled", &WebContents::IsCaretBrowsingEnabled,
+                   &WebContents::SetCaretBrowsingEnabled)
       .SetMethod("undo", &WebContents::Undo)
       .SetMethod("redo", &WebContents::Redo)
       .SetMethod("cut", &WebContents::Cut)
@@ -6389,13 +6407,21 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("isPainting", &WebContents::IsPainting)
       .SetMethod("setFrameRate", &WebContents::SetFrameRate)
       .SetMethod("getFrameRate", &WebContents::GetFrameRate)
+      .SetProperty("frameRate", &WebContents::GetFrameRate,
+                   &WebContents::SetFrameRate)
       .SetMethod("invalidate", &WebContents::Invalidate)
       .SetMethod("setZoomLevel", &WebContents::SetZoomLevel)
       .SetMethod("getZoomLevel", &WebContents::GetZoomLevel)
+      .SetProperty("zoomLevel", &WebContents::GetZoomLevel,
+                   &WebContents::SetZoomLevel)
       .SetMethod("setZoomFactor", &WebContents::SetZoomFactor)
       .SetMethod("getZoomFactor", &WebContents::GetZoomFactor)
+      .SetProperty("zoomFactor", &WebContents::GetZoomFactor,
+                   &WebContents::SetZoomFactor)
       .SetMethod("setZoomMode", &WebContents::SetZoomMode)
       .SetMethod("getZoomMode", &WebContents::GetZoomMode)
+      .SetProperty("zoomMode", &WebContents::GetZoomMode,
+                   &WebContents::SetZoomMode)
       .SetMethod("getType", &WebContents::type)
       .SetMethod("getLastWebPreferences", &WebContents::GetLastWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
@@ -6446,7 +6472,8 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetProperty("mainFrame", &WebContents::MainFrame)
       .SetProperty("opener", &WebContents::Opener)
       .SetProperty("focusedFrame", &WebContents::FocusedFrame)
-      .SetMethod("_sendToMainFrame", &WebContents::SendToMainFrame)
+      .SetMethod("send", &WebContents::Send)
+      .SetMethod("_sendInternal", &WebContents::SendInternal)
       .SetMethod("_setOwnerWindow", &WebContents::SetOwnerBaseWindow)
       .Build();
 }
@@ -6496,6 +6523,15 @@ void WebContents::InitializeJS(v8::Isolate* const isolate) {
   v8::Local<v8::Object> wrapper;
   if (!GetWrapper(isolate).ToLocal(&wrapper))
     return;
+  // An own data property, so it stays readable after the WebContents is
+  // destroyed.
+  wrapper
+      ->DefineOwnProperty(isolate->GetCurrentContext(),
+                          gin::StringToSymbol(isolate, "id"),
+                          v8::Integer::New(isolate, ID()),
+                          static_cast<v8::PropertyAttribute>(
+                              v8::ReadOnly | v8::DontEnum | v8::DontDelete))
+      .Check();
   // 'web-contents-created' used to be emitted from inside _init: same scope.
   node::CallbackScope callback_scope{isolate, wrapper,
                                      node::async_context{0, 0}};

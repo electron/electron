@@ -379,10 +379,10 @@ index ef33761a5794ac1bd157d1bff0d579735282edef..42effd7b5454284914ca86d48397e08d
  #if defined(USE_AURA) || BUILDFLAG(IS_MAC)
    // Assigns integer identifier to the |window| and returns its DesktopMediaID.
 diff --git a/media/capture/video_capture_types.h b/media/capture/video_capture_types.h
-index 53cf800e669c3b754036a681d3084fc35a4b1207..7527048c487af5840608cf23f6ab4103655c46e6 100644
+index 980690b69635fbc25093cc86a9ebdd5e8462665e..ee4a59f1c22f1d71ce03859455d47bee842d7faa 100644
 --- a/media/capture/video_capture_types.h
 +++ b/media/capture/video_capture_types.h
-@@ -376,6 +376,8 @@ struct CAPTURE_EXPORT VideoCaptureParams {
+@@ -377,6 +377,8 @@ struct CAPTURE_EXPORT VideoCaptureParams {
  
    // The request type of the capture source.
    CaptureSourceRequestType request_type = CaptureSourceRequestType::kUnknown;

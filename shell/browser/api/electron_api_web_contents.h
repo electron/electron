@@ -391,10 +391,10 @@ class WebContents final : public gin::Wrappable<WebContents>,
 
   // webContents.send(): resolves the primary main frame here rather than
   // via the mainFrame accessor, so a send crosses into C++ once.
-  void SendToMainFrame(v8::Isolate* isolate,
-                       bool internal,
-                       const std::string& channel,
-                       v8::Local<v8::Value> args);
+  // send(channel, ...args) to the main frame.
+  void Send(gin::Arguments* args);
+  void SendInternal(gin::Arguments* args);
+  void SendImpl(bool internal, gin::Arguments* args);
 
   // The main frame's renderer-side API, or null with |promise| rejected when
   // there is no live render frame.

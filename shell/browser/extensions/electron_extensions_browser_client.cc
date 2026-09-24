@@ -8,9 +8,7 @@
 #include <utility>
 
 #include "base/functional/bind.h"
-#include "base/path_service.h"
 #include "chrome/browser/extensions/chrome_url_request_util.h"
-#include "chrome/common/chrome_paths.h"
 #include "components/version_info/version_info.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
@@ -27,7 +25,6 @@
 #include "extensions/browser/updater/null_extension_cache.h"
 #include "extensions/browser/url_request_util.h"
 #include "extensions/common/features/feature_channel.h"
-#include "extensions/common/file_util.h"
 #include "extensions/common/manifest_constants.h"
 #include "extensions/common/manifest_handlers/chrome_url_overrides_handler.h"
 #include "extensions/common/manifest_handlers/devtools_page_handler.h"
@@ -175,29 +172,8 @@ base::FilePath ElectronExtensionsBrowserClient::GetBundleResourcePath(
     const network::ResourceRequest& request,
     const base::FilePath& extension_resources_path,
     int* resource_id) const {
-  *resource_id = 0;
-  base::FilePath chrome_resources_path;
-  if (!base::PathService::Get(chrome::DIR_RESOURCES, &chrome_resources_path))
-    return {};
-
-  // Since component extension resources are included in
-  // component_extension_resources.pak file in |chrome_resources_path|,
-  // calculate the extension |request_relative_path| against
-  // |chrome_resources_path|.
-  if (!chrome_resources_path.IsParent(extension_resources_path))
-    return {};
-
-  base::FilePath request_relative_path =
-      extensions::file_util::ExtensionURLToRelativeFilePath(request.url);
-  if (!ExtensionsBrowserClient::Get()
-           ->GetComponentExtensionResourceManager()
-           ->IsComponentExtensionResource(extension_resources_path,
-                                          request_relative_path, resource_id)) {
-    return {};
-  }
-  DCHECK_NE(0, *resource_id);
-
-  return request_relative_path;
+  return extensions::chrome_url_request_util::GetBundleResourcePath(
+      request, extension_resources_path, resource_id);
 }
 
 void ElectronExtensionsBrowserClient::LoadResourceFromResourceBundle(
