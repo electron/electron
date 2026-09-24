@@ -621,17 +621,18 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
-  gin_helper::Dictionary dict{isolate, exports};
-  dict.Set("Notification", Notification::GetConstructor(
-                               isolate, context, &Notification::kWrapperInfo));
-  dict.SetMethod("isSupported", &Notification::IsSupported);
+  v8::Local<v8::Function> constructor = Notification::GetConstructor(
+      isolate, context, &Notification::kWrapperInfo);
+  gin_helper::Dictionary statics{isolate, constructor};
+  statics.SetMethod("isSupported", &Notification::IsSupported);
 #if BUILDFLAG(IS_WIN)
-  dict.SetMethod("handleActivation", &Notification::HandleActivation);
+  statics.SetMethod("handleActivation", &Notification::HandleActivation);
 #endif
-  dict.SetMethod("getHistory", &Notification::GetHistory);
-  dict.SetMethod("remove", &Notification::Remove);
-  dict.SetMethod("removeAll", &Notification::RemoveAll);
-  dict.SetMethod("removeGroup", &Notification::RemoveGroup);
+  statics.SetMethod("getHistory", &Notification::GetHistory);
+  statics.SetMethod("remove", &Notification::Remove);
+  statics.SetMethod("removeAll", &Notification::RemoveAll);
+  statics.SetMethod("removeGroup", &Notification::RemoveGroup);
+  gin_helper::Dictionary{isolate, exports}.Set("Notification", constructor);
 }
 
 }  // namespace
