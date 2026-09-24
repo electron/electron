@@ -9,7 +9,7 @@ import type { RoutedResponse } from './lib/http-server-helpers.ts';
 
 // The update lifecycle: checking, downloading, staging, installing and
 // relaunching. The rules for refusing or altering an update are in
-// api-autoupdater-darwin-policy-spec.ts; the two files share a harness and
+// api-autoupdater-darwin-policy.spec.ts; the two files share a harness and
 // are split so that they can land on different CI shards.
 ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', function () {
   this.timeout(120000);
