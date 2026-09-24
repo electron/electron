@@ -2,7 +2,21 @@ const { ipcRenderer } = require('electron');
 
 const path = require('node:path');
 
-const { ops } = require(path.join(__dirname, 'ops.js'));
+const { ops, setOtherProcess } = require(path.join(__dirname, 'ops.js'));
+
+let touchSeq = 0;
+ipcRenderer.on('uv-wake:touch', (_e, file, delay) => {
+  window.setTimeout(() => require('node:fs').writeFileSync(file, String(++touchSeq)), delay);
+});
+ipcRenderer.on('uv-wake:connect', (_e, port) => {
+  require('node:net')
+    .connect(port, '127.0.0.1')
+    .on('error', () => {});
+});
+setOtherProcess({
+  touch: (file, delay) => ipcRenderer.send('uv-wake:touch', file, delay),
+  connect: (port) => ipcRenderer.send('uv-wake:connect', port)
+});
 
 // Blink's timer, which does not touch the uv loop.
 const blinkDelay = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));

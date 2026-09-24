@@ -343,35 +343,46 @@ void SimulatePowerEvent(gin_helper::ErrorThrower thrower,
 
 // Starts a libuv timer from a plain Chromium task with no JavaScript on the
 // stack, the way a native module hooked into the message loop would, and
-// resolves once the loop has run it.
-v8::Local<v8::Promise> StartUvTimerFromTask(v8::Isolate* isolate,
-                                            int delay_ms) {
-  gin_helper::Promise<void> promise(isolate);
-  v8::Local<v8::Promise> handle = promise.GetHandle();
+// calls |done| from the timer callback the way Node.js calls its own.
+struct UvTimerFromTask {
+  uv_timer_t timer;
+  raw_ptr<v8::Isolate> isolate;
+  v8::Global<v8::Function> done;
+};
+
+void StartUvTimerFromTask(v8::Isolate* isolate,
+                          int delay_ms,
+                          v8::Local<v8::Function> done) {
   uv_loop_t* loop = node::Environment::GetCurrent(isolate)->event_loop();
+  auto* state =
+      new UvTimerFromTask{{}, isolate, v8::Global<v8::Function>(isolate, done)};
+  state->timer.data = state;
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE,
       base::BindOnce(
-          [](uv_loop_t* loop, int delay_ms, gin_helper::Promise<void> promise) {
-            auto* timer = new uv_timer_t;
-            timer->data = new gin_helper::Promise<void>(std::move(promise));
+          [](uv_loop_t* loop, int delay_ms, UvTimerFromTask* state) {
             uv_update_time(loop);
-            uv_timer_init(loop, timer);
+            uv_timer_init(loop, &state->timer);
             uv_timer_start(
-                timer,
+                &state->timer,
                 [](uv_timer_t* timer) {
-                  std::unique_ptr<gin_helper::Promise<void>> promise(
-                      static_cast<gin_helper::Promise<void>*>(timer->data));
-                  promise->Resolve();
+                  auto* state = static_cast<UvTimerFromTask*>(timer->data);
+                  v8::Isolate* isolate = state->isolate;
+                  v8::HandleScope handle_scope(isolate);
+                  v8::Local<v8::Function> done = state->done.Get(isolate);
+                  v8::Local<v8::Context> context =
+                      done->GetCreationContextChecked(isolate);
+                  v8::Context::Scope context_scope(context);
+                  std::ignore = node::MakeCallback(isolate, context->Global(),
+                                                   done, 0, nullptr, {0, 0});
                   uv_close(reinterpret_cast<uv_handle_t*>(timer),
                            [](uv_handle_t* handle) {
-                             delete reinterpret_cast<uv_timer_t*>(handle);
+                             delete static_cast<UvTimerFromTask*>(handle->data);
                            });
                 },
                 delay_ms, 0);
           },
-          loop, delay_ms, std::move(promise)));
-  return handle;
+          loop, delay_ms, state));
 }
 
 // Runs a nested run loop that processes tasks for |ms| while the calling

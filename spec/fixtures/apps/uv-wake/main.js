@@ -6,9 +6,10 @@
 const { app, BrowserWindow, globalShortcut, ipcMain } = require('electron');
 
 const fs = require('node:fs');
+const net = require('node:net');
 const path = require('node:path');
 
-const { ops, cleanup } = require('./ops.js');
+const { ops, setOtherProcess, cleanup } = require('./ops.js');
 
 const arg = (name, fallback) => {
   const found = process.argv.find((a) => a.startsWith(`--${name}=`));
@@ -51,6 +52,20 @@ ipcMain.on('uv-wake:ping', () => {
   pendingPing = null;
   fn?.();
 });
+// Each process touches the other's watched file, or connects to the other's
+// port, on request, so the requester's loop is not woken by the asking.
+let touchSeq = 0;
+ipcMain.on('uv-wake:touch', (_e, file, delay) => {
+  setTimeout(() => fs.writeFileSync(file, String(++touchSeq)), delay);
+});
+ipcMain.on('uv-wake:connect', (_e, port) => {
+  net.connect(port, '127.0.0.1').on('error', () => {});
+});
+setOtherProcess({
+  touch: (file, delay) => w.webContents.send('uv-wake:touch', file, delay),
+  connect: (port) => w.webContents.send('uv-wake:connect', port)
+});
+
 ipcMain.on('uv-wake:send-key', () => {
   w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'A' });
   w.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'A' });

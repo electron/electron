@@ -21,48 +21,55 @@ const zlib = require('node:zlib');
 process.env.UV_WAKE_TMP ??= fs.mkdtempSync(path.join(os.tmpdir(), 'uv-wake-'));
 const watched = path.join(process.env.UV_WAKE_TMP, `watched-${process.type}`);
 fs.writeFileSync(watched, '0');
-let seq = 0;
+
+// The other process touches the watched file or connects to a port on
+// request, so that starting an op never wakes this process's loop itself.
+let other = { touch: () => {}, connect: () => {} };
 
 const ops = {
   'timers.setTimeout': { expect: 50, run: (done) => timers.setTimeout(done, 50) },
   'timers/promises.setTimeout': { expect: 50, deferred: true, run: (done) => timersP.setTimeout(50).then(done) },
-  'setTimeout from a promise continuation': {
+  // Unwrapped, so only a check after the microtask checkpoint notices it.
+  'timers/promises.setTimeout from a promise continuation': {
     expect: 50,
     deferred: true,
     continuation: true,
-    run: (done) => Promise.resolve().then(() => timers.setTimeout(done, 50))
+    run: (done) => Promise.resolve().then(() => timersP.setTimeout(50).then(done))
   },
   setImmediate: { run: (done) => setImmediate(done) },
   'timers/promises.setImmediate': { deferred: true, run: (done) => timersP.setImmediate().then(done) },
   'process.nextTick': { deferred: true, run: (done) => process.nextTick(done) },
   'fs.readFile': { run: (done, fail) => fs.readFile(__filename, (e) => (e ? fail(e) : done())) },
   'fs.promises.readFile': { deferred: true, run: (done, fail) => fs.promises.readFile(__filename).then(done, fail) },
+  // The other process writes the file (after a Blink-timed delay, so kqueue
+  // has the watcher by then), so only the watcher's own wake is measured.
   'fs.watch': {
-    // kqueue only reports changes made after the watcher reached the kernel,
-    // which happens on the loop's next poll, so write from inside the loop.
+    expect: 30,
     run: (done, fail) => {
       const w = fs.watch(watched, () => {
         w.close();
         done();
       });
       w.on('error', fail);
-      setImmediate(() => fs.writeFileSync(watched, String(++seq)));
+      other.touch(watched, 30);
     }
   },
   'crypto.pbkdf2': { run: (done, fail) => crypto.pbkdf2('pw', 'salt', 1, 16, 'sha256', (e) => (e ? fail(e) : done())) },
   // Completes through stream events, which are queued with process.nextTick.
   'zlib.deflate': { deferred: true, run: (done, fail) => zlib.deflate('x', (e) => (e ? fail(e) : done())) },
-  'net.listen+connect': {
-    deferred: true,
+  // listen() queues the socket's watcher synchronously and the connection
+  // arrives from the other process, so only a deadline check gets it polled.
+  'net.listen': {
     run: (done, fail) => {
-      const server = net.createServer((sock) => sock.end('x'));
-      server.on('error', fail);
-      server.listen(0, '127.0.0.1', () => {
-        const c = net.connect(server.address().port, '127.0.0.1');
-        c.on('error', fail);
-        c.on('data', () => {});
-        c.on('close', () => server.close(() => done()));
+      const server = net.createServer((sock) => {
+        sock.destroy();
+        server.close();
+        done();
       });
+      server.on('error', fail);
+      // Without a host, listen() binds synchronously and address() is set.
+      server.listen(0);
+      other.connect(server.address().port);
     }
   },
   'worker_threads.MessageChannel': {
@@ -93,11 +100,7 @@ const ops = {
 // task, with no JavaScript on the stack when it is started.
 try {
   const testing = process._linkedBinding('electron_common_testing');
-  ops['native uv_timer_start from a task'] = {
-    expect: 20,
-    deferred: true,
-    run: (done, fail) => testing.startUvTimerFromTask(20).then(done, fail)
-  };
+  ops['native uv_timer_start from a task'] = { expect: 20, run: (done) => testing.startUvTimerFromTask(20, done) };
 } catch {}
 
 for (const op of Object.values(ops)) {
@@ -105,4 +108,10 @@ for (const op of Object.values(ops)) {
   op.budget ??= 100;
 }
 
-module.exports = { ops, cleanup: () => fs.rmSync(process.env.UV_WAKE_TMP, { recursive: true, force: true }) };
+module.exports = {
+  ops,
+  setOtherProcess: (impl) => {
+    other = impl;
+  },
+  cleanup: () => fs.rmSync(process.env.UV_WAKE_TMP, { recursive: true, force: true })
+};
