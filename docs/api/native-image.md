@@ -285,6 +285,12 @@ Returns `Buffer` - A [Buffer][buffer] that contains the image's `PNG` encoded da
 
 Returns `Buffer` - A [Buffer][buffer] that contains the image's `JPEG` encoded data.
 
+#### `image.toWEBP(quality)`
+
+* `quality` Integer - Between 0 - 100.
+
+Returns `Buffer` - A [Buffer][buffer] that contains the image's `WebP` encoded data. The image is encoded from its 1x representation; if none exists, the available representation selected by `ImageSkia` is used without resizing. An empty image or an encoding failure returns an empty `Buffer`. Missing, non-number, non-finite, and fractional quality values throw `TypeError`; integers outside 0–100 throw `RangeError`. The underlying encoder chooses the compression mode, including at quality 100.
+
 #### `image.toBitmap([options])`
 
 <!--

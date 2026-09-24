@@ -100,6 +100,7 @@ describe('nativeImage module', () => {
       expect(empty.toBitmap()).to.be.empty();
       expect(empty.toBitmap({ scaleFactor: 2.0 })).to.be.empty();
       expect(empty.toJPEG(100)).to.be.empty();
+      expect(empty.toWEBP(100)).to.be.empty();
       expect(empty.toPNG()).to.be.empty();
       expect(empty.toPNG({ scaleFactor: 2.0 })).to.be.empty();
 
@@ -252,6 +253,106 @@ describe('nativeImage module', () => {
       const jpeg = image.toJPEG(90);
       expect(jpeg).to.not.be.empty();
       expect(nativeImage.createFromBuffer(jpeg).getSize()).to.deep.equal({ width: 8, height: 6 });
+    });
+  });
+
+  describe('toWEBP()', () => {
+    it('validates quality before encoding, including for empty images', () => {
+      for (const image of [nativeImage.createEmpty(), nativeImage.createFromPath(imageLogo.path)]) {
+        for (const quality of [undefined, null, '90', true, 50.5, NaN, Infinity, -Infinity, 90n, Object(90)]) {
+          expect(() => Reflect.apply(image.toWEBP, image, [quality])).to.throw(TypeError);
+        }
+        expect(() => Reflect.apply(image.toWEBP, image, [])).to.throw(TypeError);
+        for (const quality of [-1, 101, 1e10]) {
+          expect(() => image.toWEBP(quality)).to.throw(RangeError);
+        }
+        expect(image.toWEBP(-0)).to.be.instanceOf(Buffer);
+      }
+    });
+
+    it('encodes an image that only has a non-1x representation', () => {
+      const image = nativeImage.createFromBitmap(Buffer.alloc(8 * 6 * 4, 0xff), {
+        width: 8,
+        height: 6,
+        scaleFactor: 2
+      });
+      for (const quality of [0, 90, 100]) {
+        const webp = image.toWEBP(quality);
+        expect(webp.subarray(0, 4).toString()).to.equal('RIFF');
+        expect(webp.subarray(8, 12).toString()).to.equal('WEBP');
+      }
+    });
+
+    itremote('preserves image dimensions and transparency in renderer decoding', async () => {
+      const { nativeImage } = require('electron');
+      const source = document.createElement('canvas');
+      source.width = 96;
+      source.height = 32;
+      const sourceContext = source.getContext('2d')!;
+      sourceContext.fillStyle = 'rgba(255, 0, 0, 0.5)';
+      sourceContext.fillRect(32, 0, 32, 32);
+      sourceContext.fillStyle = '#00ff00';
+      sourceContext.fillRect(64, 0, 32, 32);
+      const image = nativeImage.createFromDataURL(source.toDataURL('image/png'));
+      const encoded = image.toWEBP(90);
+      const blob = new Blob([new Uint8Array(encoded)], { type: 'image/webp' });
+      const decoded = await createImageBitmap(blob);
+      expect(decoded.width).to.equal(96);
+      expect(decoded.height).to.equal(32);
+      const canvas = document.createElement('canvas');
+      canvas.width = decoded.width;
+      canvas.height = decoded.height;
+      const context = canvas.getContext('2d')!;
+      context.drawImage(decoded, 0, 0);
+      expect(context.getImageData(16, 16, 1, 1).data[3]).to.equal(0);
+      expect(context.getImageData(48, 16, 1, 1).data[3]).to.be.closeTo(128, 2);
+      const opaque = context.getImageData(80, 16, 1, 1).data;
+      expect(opaque[1]).to.be.closeTo(255, 8);
+      expect(opaque[3]).to.equal(255);
+      decoded.close();
+
+      const scaledImage = nativeImage.createFromBitmap(Buffer.alloc(8 * 6 * 4, 0xff), {
+        width: 8,
+        height: 6,
+        scaleFactor: 2
+      });
+      const scaledBlob = new Blob([new Uint8Array(scaledImage.toWEBP(90))], { type: 'image/webp' });
+      const scaledDecoded = await createImageBitmap(scaledBlob);
+      expect(scaledDecoded.width).to.equal(8);
+      expect(scaledDecoded.height).to.equal(6);
+      scaledDecoded.close();
+    });
+
+    itremote('encodes the 1x representation when multiple scales are present', async () => {
+      const { nativeImage } = require('electron');
+      const makePNG = (size: number, color: string) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const context = canvas.getContext('2d')!;
+        context.fillStyle = color;
+        context.fillRect(0, 0, size, size);
+        return canvas.toDataURL('image/png');
+      };
+      const image = nativeImage.createFromDataURL(makePNG(4, '#ff0000'));
+      image.addRepresentation({
+        scaleFactor: 2,
+        buffer: Buffer.from(makePNG(8, '#0000ff').split(',')[1], 'base64')
+      });
+
+      const blob = new Blob([new Uint8Array(image.toWEBP(90))], { type: 'image/webp' });
+      const decoded = await createImageBitmap(blob);
+      expect(decoded.width).to.equal(4);
+      expect(decoded.height).to.equal(4);
+      const canvas = document.createElement('canvas');
+      canvas.width = 4;
+      canvas.height = 4;
+      const context = canvas.getContext('2d')!;
+      context.drawImage(decoded, 0, 0);
+      const pixel = context.getImageData(2, 2, 1, 1).data;
+      expect(pixel[0]).to.be.closeTo(255, 8);
+      expect(pixel[2]).to.be.closeTo(0, 8);
+      decoded.close();
     });
   });
 

@@ -4,6 +4,7 @@
 
 #include "shell/common/api/electron_api_native_image.h"
 
+#include <cmath>
 #include <memory>
 #include <string>
 #include <utility>
@@ -40,6 +41,7 @@
 #include "ui/base/webui/web_ui_util.h"
 #include "ui/gfx/codec/jpeg_codec.h"
 #include "ui/gfx/codec/png_codec.h"
+#include "ui/gfx/codec/webp_codec.h"
 #include "ui/gfx/color_space.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/size.h"
@@ -306,6 +308,38 @@ v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
   if (!encoded_image)
     return NewEmptyBuffer(isolate);
   return electron::Buffer::Copy(isolate, *encoded_image).ToLocalChecked();
+}
+
+v8::Local<v8::Value> NativeImage::ToWEBP(gin::Arguments* args) {
+  auto* isolate = args->isolate();
+  v8::Local<v8::Value> raw_quality;
+  if (!args->GetNext(&raw_quality) || !raw_quality->IsNumber()) {
+    args->ThrowTypeError("quality must be a finite integer");
+    return v8::Undefined(isolate);
+  }
+
+  const double value = raw_quality.As<v8::Number>()->Value();
+  if (!std::isfinite(value) || std::trunc(value) != value) {
+    args->ThrowTypeError("quality must be a finite integer");
+    return v8::Undefined(isolate);
+  }
+  if (value < 0 || value > 100) {
+    isolate->ThrowException(v8::Exception::RangeError(
+        gin::StringToV8(isolate, "quality must be between 0 and 100")));
+    return v8::Undefined(isolate);
+  }
+
+  if (image_.IsEmpty())
+    return NewEmptyBuffer(isolate);
+
+  const SkBitmap bitmap =
+      image_.AsImageSkia().GetRepresentation(1.0f).GetBitmap();
+  const std::optional<std::vector<uint8_t>> encoded =
+      gfx::WebpCodec::Encode(bitmap, static_cast<int>(value));
+  if (!encoded)
+    return NewEmptyBuffer(isolate);
+
+  return electron::Buffer::Copy(isolate, *encoded).ToLocalChecked();
 }
 
 std::string NativeImage::ToDataURL(gin::Arguments* args) {
@@ -615,6 +649,7 @@ gin::ObjectTemplateBuilder NativeImage::GetObjectTemplateBuilder(
                                     constructor->InstanceTemplate())
       .SetMethod("toPNG", &NativeImage::ToPNG)
       .SetMethod("toJPEG", &NativeImage::ToJPEG)
+      .SetMethod("toWEBP", &NativeImage::ToWEBP)
       .SetMethod("toBitmap", &NativeImage::ToBitmap)
       .SetMethod("getBitmap", &NativeImage::GetBitmap)
       .SetMethod("getScaleFactors", &NativeImage::GetScaleFactors)

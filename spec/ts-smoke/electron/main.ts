@@ -1116,6 +1116,12 @@ console.log(window2.id);
 
 const image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
 console.log(image.getSize());
+const webp: Buffer = image.toWEBP(90);
+console.log(webp.length);
+// @ts-expect-error quality is required
+image.toWEBP();
+// @ts-expect-error quality must be a number
+image.toWEBP('90');
 
 const appIcon3 = new Tray(image);
 appIcon3.destroy();

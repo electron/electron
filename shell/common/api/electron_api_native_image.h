@@ -104,6 +104,7 @@ class NativeImage final : public gin::Wrappable<NativeImage> {
  private:
   v8::Local<v8::Value> ToPNG(gin::Arguments* args);
   v8::Local<v8::Value> ToJPEG(v8::Isolate* isolate, int quality);
+  v8::Local<v8::Value> ToWEBP(gin::Arguments* args);
   v8::Local<v8::Value> ToBitmap(gin::Arguments* args);
   std::vector<float> GetScaleFactors();
   v8::Local<v8::Value> GetBitmap(gin::Arguments* args);
