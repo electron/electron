@@ -5,7 +5,7 @@ import { expect } from 'chai';
 import { singleModifierCombinations, doubleModifierCombinations } from './lib/accelerator-helpers.ts';
 import { ifdescribe } from './lib/spec-helpers.ts';
 
-ifdescribe(process.platform !== 'win32')('globalShortcut module', () => {
+ifdescribe(process.platform !== 'win32')('globalShortcut module', { tags: ['serial'] }, () => {
   beforeEach(() => {
     globalShortcut.unregisterAll();
   });

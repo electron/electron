@@ -414,20 +414,24 @@ describe('webContents.setWindowOpenHandler', () => {
       expect(childWindow.webContents.isOffscreen()).to.be.true('Child window should be offscreen');
     });
 
-    ifit(hasCapturableScreen())('should not make child window background transparent', async () => {
-      browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'allow' }));
-      const didCreateWindow = once(browserWindow.webContents, 'did-create-window');
-      browserWindow.webContents.executeJavaScript("window.open('about:blank') && true");
-      const [childWindow] = await didCreateWindow;
-      const display = screen.getPrimaryDisplay();
-      childWindow.setBounds(display.bounds);
-      await childWindow.webContents.executeJavaScript(
-        "const meta = document.createElement('meta'); meta.name = 'color-scheme'; meta.content = 'dark'; document.head.appendChild(meta); true;"
-      );
-      const capture = ScreenCapture.forWindow(childWindow);
-      // color-scheme is set to dark so background should not be white
-      await capture.expectColorAtCenterDoesNotMatch(HexColors.WHITE);
-    });
+    ifit(hasCapturableScreen())(
+      'should not make child window background transparent',
+      { tags: ['serial'] },
+      async () => {
+        browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'allow' }));
+        const didCreateWindow = once(browserWindow.webContents, 'did-create-window');
+        browserWindow.webContents.executeJavaScript("window.open('about:blank') && true");
+        const [childWindow] = await didCreateWindow;
+        const display = screen.getPrimaryDisplay();
+        childWindow.setBounds(display.bounds);
+        await childWindow.webContents.executeJavaScript(
+          "const meta = document.createElement('meta'); meta.name = 'color-scheme'; meta.content = 'dark'; document.head.appendChild(meta); true;"
+        );
+        const capture = ScreenCapture.forWindow(childWindow);
+        // color-scheme is set to dark so background should not be white
+        await capture.expectColorAtCenterDoesNotMatch(HexColors.WHITE);
+      }
+    );
   });
 
   describe('custom window', () => {

@@ -26,7 +26,7 @@ function windowOwners(): Map<number, string> {
   return owners;
 }
 
-describe('inAppPurchase module', function () {
+describe('inAppPurchase module', { tags: ['serial'] }, function () {
   if (process.platform !== 'darwin') return;
 
   this.timeout(3 * 60 * 1000);

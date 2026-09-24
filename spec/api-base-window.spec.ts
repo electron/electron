@@ -263,7 +263,7 @@ describe('BaseWindow module', () => {
   });
 
   // Wayland does not allow focus and z-order to be controlled without user input
-  ifdescribe(!isWayland)('focus and blur', () => {
+  ifdescribe(!isWayland)('focus and blur', { tags: ['serial'] }, () => {
     let w: BaseWindow;
     beforeEach(() => {
       w = new BaseWindow({ show: false });
