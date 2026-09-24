@@ -17,7 +17,7 @@
 // code-cache key (source + params hash), so the build-time codecache
 // generator (electron_natives_codecache_main.cc) must compile each bundle
 // with the exact same params its runtime CompileAndCall site uses -- this
-// header keeps both sides in sync. spec/api-js2c-code-cache-spec.ts also
+// header keeps both sides in sync. spec/api-js2c-code-cache.spec.ts also
 // asserts every bundle's cache is consumed, catching any drift.
 namespace electron::js2c {
 
