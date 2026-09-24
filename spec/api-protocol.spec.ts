@@ -1,4 +1,4 @@
-import { protocol, webContents, type WebContents, session, BrowserWindow, ipcMain, net } from 'electron/main';
+import { protocol, webContents, type WebContents, session, BrowserWindow, ipcMain, net, View } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -1530,6 +1530,28 @@ describe('protocol module', () => {
 
   describe('handle', () => {
     afterEach(closeAllWindows);
+
+    it('runs ticks and microtasks queued by the handler when it returns, not inside a native call it makes', async () => {
+      // The handler is entered from native code. View.setBounds() emits
+      // 'bounds-changed' synchronously from C++; nothing the handler queued
+      // may run inside that call, and it must all have run, ticks first,
+      // by the time the handler has returned to native code.
+      const view = new View();
+      const order: string[] = [];
+      protocol.handle('test-scheme', () => {
+        view.once('bounds-changed', () => order.push('bounds-changed'));
+        process.nextTick(() => order.push('nextTick'));
+        Promise.resolve().then(() => order.push('microtask'));
+        view.setBounds({ x: 0, y: 0, width: 10 + order.length, height: 10 });
+        order.push('handler returned');
+        return new Response('ok');
+      });
+      defer(() => {
+        protocol.unhandle('test-scheme');
+      });
+      await net.fetch('test-scheme://order');
+      expect(order).to.deep.equal(['bounds-changed', 'handler returned', 'nextTick', 'microtask']);
+    });
 
     it('reports the origin that issued the request', async () => {
       // http-like is registered as standard + fetch-enabled in spec/index.js.
