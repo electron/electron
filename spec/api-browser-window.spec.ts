@@ -8295,6 +8295,54 @@ describe('BrowserWindow module', () => {
   describe('"transparent" option', { tags: ['serial'] }, () => {
     afterEach(closeAllWindows);
 
+    // Regression test for https://github.com/electron/electron/pull/50541: the
+    // frame painted an opaque border around transparent frameless windows on
+    // Linux. Reads the window back off the X screen, which Wayland does not
+    // allow without a portal.
+    ifit(process.platform === 'linux' && !isWayland)(
+      'draws nothing but the page for a transparent frameless window',
+      async function () {
+        const { workArea } = screen.getPrimaryDisplay();
+        const backdrop = new BrowserWindow({ ...workArea, frame: false, backgroundColor: '#0000ff' });
+        await backdrop.loadURL('about:blank');
+        const w = new BrowserWindow({
+          x: workArea.x + 100,
+          y: workArea.y + 100,
+          width: 300,
+          height: 200,
+          frame: false,
+          transparent: true
+        });
+        // Two marker squares of different colours, so a capture can tell the
+        // painted page from a blank or stale window surface.
+        await w.loadURL(
+          'data:text/html,<body style="background: transparent; margin: 0">' +
+            '<div style="position: absolute; left: 60px; top: 60px; width: 60px; height: 60px; background: %23ffffff"></div>' +
+            '<div style="position: absolute; left: 180px; top: 60px; width: 60px; height: 60px; background: %23ff0000"></div>' +
+            '</body>'
+        );
+        w.focus();
+        const captured = await expectDisplayPixelsEventually((pixels) => {
+          const { x, y, width, height } = w.getBounds();
+          const backdropColor = pixels.colorAt(x - 20, y - 20);
+          const whiteMarker = pixels.colorAt(x + 90, y + 90);
+          const redMarker = pixels.colorAt(x + 210, y + 90);
+          // Without a compositing manager the see-through parts read back as
+          // the window's own cleared pixels rather than the backdrop.
+          const seeThrough = pixels.colorAt(x + 20, y + 20);
+          expect(whiteMarker).to.not.equal(seeThrough, 'page has not painted yet');
+          expect(redMarker).to.not.equal(seeThrough, 'page has not painted yet');
+          expect(whiteMarker).to.not.equal(redMarker, 'page has not painted yet');
+          // Everything in and just around the window is a marker, the backdrop
+          // or see-through: no frame, border or shadow.
+          const around = { x: x - 5, y: y - 5, width: width + 10, height: height + 10 };
+          const colors = pixels.histogram(around).map(([color]) => color);
+          expect(colors).to.have.members([...new Set([backdropColor, seeThrough, whiteMarker, redMarker])]);
+        });
+        if (!captured) this.skip();
+      }
+    );
+
     ifit(process.platform !== 'linux')(
       'correctly returns isMaximized() when the window is maximized then minimized',
       async () => {
