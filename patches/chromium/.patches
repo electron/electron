@@ -190,3 +190,7 @@ cherry-pick-d17f41658bfa.patch
 cherry-pick-2f291ea16923.patch
 cherry-pick-8b5549467725.patch
 cherry-pick-069a204ae813.patch
+gin_derive_the_isolate_in_gin_arguments_instead_of_storing_it.patch
+gin_copy_ascii_one-byte_strings_out_directly_in.patch
+gin_take_the_callback_by_const_reference_in.patch
+gin_mark_invoker_as_stack_allocated_and_drop_raw_ptr_for_its.patch

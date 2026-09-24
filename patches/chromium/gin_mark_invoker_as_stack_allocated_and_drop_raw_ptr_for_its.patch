@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Attard <samuel.r.attard@gmail.com>
+Date: Thu, 24 Sep 2026 02:02:07 +0000
+Subject: gin: Mark Invoker as stack allocated and drop raw_ptr for its
+ Arguments
+
+Invoker is only constructed on the stack, in DispatchToCallbackImpl,
+and its args_ member points at the caller's stack-allocated Arguments.
+Mark Invoker CPPGC_STACK_ALLOCATED(), like the ArgumentHolder bases it
+inherits from, so that args_ can be a plain pointer per the raw_ptr
+guidance for pointers to stack objects.
+
+This removes one BackupRefPtr acquire and release per call to a
+gin-bound function. The effect on its own is small: 42.3 -> 41.6 ns per
+no-op call in a gin_unittests micro-benchmark (not part of this CL),
+Linux x64 release build.
+
+No behaviour change.
+
+Bug: None
+
+Cherry-picked from
+https://chromium-review.googlesource.com/c/chromium/src/+/8455902.
+This patch can be removed when that CL lands and rolls into Electron.
+
+diff --git a/gin/function_template.h b/gin/function_template.h
+index 19af32e0dc7b2c05d767bc6d54244c6c1c9ed8d2..79a3cf995c6f23ae71b895c95e01485ed09e99b7 100644
+--- a/gin/function_template.h
++++ b/gin/function_template.h
+@@ -12,7 +12,6 @@
+ 
+ #include "base/check.h"
+ #include "base/functional/callback.h"
+-#include "base/memory/raw_ptr.h"
+ #include "base/strings/strcat.h"
+ #include "gin/arguments.h"
+ #include "gin/converter.h"
+@@ -196,6 +195,8 @@ class Invoker;
+ template <size_t... indices, typename... ArgTypes>
+ class Invoker<std::index_sequence<indices...>, ArgTypes...>
+     : public ArgumentHolder<indices, ArgTypes>... {
++  CPPGC_STACK_ALLOCATED();
++
+  public:
+   // Invoker<> inherits from ArgumentHolder<> for each argument.
+   // C++ has always been strict about the class initialization order,
+@@ -229,7 +230,7 @@ class Invoker<std::index_sequence<indices...>, ArgTypes...>
+     return arg1 && And(args...);
+   }
+ 
+-  raw_ptr<Arguments> args_;
++  Arguments* args_;
+ };
+ 
+ // DispatchToCallback converts all the JavaScript arguments to C++ types and
