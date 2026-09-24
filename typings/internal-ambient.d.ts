@@ -46,6 +46,8 @@ declare namespace NodeJS {
     getHiddenValue<T>(obj: any, key: string): T;
     setHiddenValue<T>(obj: any, key: string, value: T): void;
     requestGarbageCollectionForTesting(): void;
+    requestGarbageCollectionForTesting(options: { execution: 'sync' }): void;
+    requestGarbageCollectionForTesting(options: { execution: 'async' }): Promise<void>;
     runUntilIdle(): void;
     triggerFatalErrorForTesting(): void;
     exitImmediately(code: number): never;
