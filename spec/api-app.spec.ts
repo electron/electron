@@ -1911,6 +1911,14 @@ describe('app module', () => {
     });
   });
 
+  describe('disableHardwareAcceleration() API', () => {
+    // Regression test for https://github.com/electron/electron/pull/51817.
+    it('appends the --disable-gpu switch', async () => {
+      const hasDisableGpuSwitch = await runTestApp('disable-hardware-acceleration');
+      expect(hasDisableGpuSwitch).to.equal(true);
+    });
+  });
+
   describe('getGPUFeatureStatus() API', () => {
     it('returns the graphic features statuses', () => {
       const features = app.getGPUFeatureStatus();
