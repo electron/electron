@@ -5,7 +5,7 @@ import * as path from 'node:path';
 
 import { ifdescribe } from './lib/spec-helpers.ts';
 
-// See deprecate-spec.ts for why this is require()d rather than imported.
+// See deprecate.spec.ts for why this is require()d rather than imported.
 const { defaultDesktopName }: typeof import('../lib/browser/desktop-name.ts') = createRequire(import.meta.url)(
   '../lib/browser/desktop-name.ts'
 );

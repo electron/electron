@@ -267,7 +267,7 @@ For tests that can't be cleanly guarded inline, add the whole file to `script/no
 
 **Behavioral differences (assertion updates, not skips)** — some errors just changed shape:
 
-- Creating a private key from an unsupported OKP (Ed448) JWK now throws `Invalid JWK OKP key` (previously `Invalid JWK data`); see nodejs/node#62499. Electron's `spec/node-spec.ts` assertion was loosened to `/Invalid JWK/`.
+- Creating a private key from an unsupported OKP (Ed448) JWK now throws `Invalid JWK OKP key` (previously `Invalid JWK data`); see nodejs/node#62499. Electron's `spec/node.spec.ts` assertion was loosened to `/Invalid JWK/`.
 
 When you do need to guard a test, prefer a precise capability check (e.g. `ciphers.includes('aes-128-ccm')`) over a blanket `process.features.openssl_is_boringssl` check where the feature can be probed directly.
 

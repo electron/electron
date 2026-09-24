@@ -16,7 +16,7 @@ import { createRequire } from 'node:module';
 import { ifit, ifdescribe } from './lib/spec-helpers.ts';
 import { closeAllWindows, cleanupWebContents } from './lib/window-helpers.ts';
 
-// See deprecate-spec.ts for why this is require()d rather than imported.
+// See deprecate.spec.ts for why this is require()d rather than imported.
 const { roleList }: typeof import('../lib/browser/api/menu-item-roles.ts') = createRequire(import.meta.url)(
   '../lib/browser/api/menu-item-roles.ts'
 );
