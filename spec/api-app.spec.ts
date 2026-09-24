@@ -1864,6 +1864,38 @@ describe('app module', () => {
   });
 
   describe('getAppMetrics() API', () => {
+    // Regression test for https://github.com/electron/electron/pull/50509:
+    // processes forked from the zygote kept the zygote's command line as their
+    // process title, so tools like ps showed every child as --type=zygote.
+    ifit(process.platform === 'linux')('lists child processes whose process titles carry their own type', async () => {
+      const w = new BrowserWindow({ show: false });
+      try {
+        await w.loadURL('about:blank');
+        const typeSwitches: Record<string, string> = {
+          GPU: '--type=gpu-process',
+          Tab: '--type=renderer',
+          Utility: '--type=utility'
+        };
+        const checked: string[] = [];
+        for (const metric of app.getAppMetrics()) {
+          const typeSwitch = typeSwitches[metric.type];
+          if (!typeSwitch) continue;
+          let cmdline = '';
+          try {
+            cmdline = fs.readFileSync(`/proc/${metric.pid}/cmdline`, 'latin1').replaceAll('\0', ' ').trim();
+          } catch {
+            // The process went away in the meantime.
+          }
+          if (!cmdline) continue;
+          expect(cmdline, `${metric.type} process ${metric.pid}`).to.include(typeSwitch);
+          checked.push(metric.type);
+        }
+        expect(checked).to.include('Tab');
+      } finally {
+        w.destroy();
+      }
+    });
+
     it('returns memory and cpu stats of all running electron processes', () => {
       const appMetrics = app.getAppMetrics();
       expect(appMetrics).to.be.an('array').and.have.lengthOf.at.least(1, 'App memory info object is not > 0');
