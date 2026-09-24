@@ -19,7 +19,10 @@ export const browserModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'inAppPurchase', loader: () => process._linkedBinding('electron_browser_in_app_purchase').inAppPurchase },
   { name: 'Menu', loader: () => require('./menu') },
   { name: 'MenuItem', loader: () => require('./menu-item') },
-  { name: 'MessageChannelMain', loader: () => require('./message-channel') },
+  {
+    name: 'MessageChannelMain',
+    loader: () => process._linkedBinding('electron_browser_message_port').MessageChannelMain
+  },
   { name: 'nativeTheme', loader: () => require('./native-theme') },
   { name: 'net', loader: () => require('./net') },
   { name: 'netLog', loader: () => require('./net-log') },

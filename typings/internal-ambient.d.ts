@@ -281,9 +281,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_image_view'): { ImageView: any };
     _linkedBinding(name: 'electron_browser_in_app_purchase'): { inAppPurchase: Electron.InAppPurchase };
     _linkedBinding(name: 'electron_browser_menu'): { Menu: typeof Electron.Menu; MenuItem: typeof Electron.MenuItem };
-    _linkedBinding(name: 'electron_browser_message_port'): {
-      createPair(): { port1: Electron.MessagePortMain; port2: Electron.MessagePortMain };
-    };
+    _linkedBinding(name: 'electron_browser_message_port'): { MessageChannelMain: typeof Electron.MessageChannelMain };
     _linkedBinding(name: 'electron_browser_native_theme'): { nativeTheme: Electron.NativeTheme };
     _linkedBinding(name: 'electron_browser_notification'): { Notification: typeof Electron.Notification };
     _linkedBinding(name: 'electron_browser_power_monitor'): PowerMonitorBinding;
