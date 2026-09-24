@@ -24,6 +24,7 @@ fs.writeFileSync(watched, '0');
 
 // The other process touches the watched file or connects to a port on
 // request, so that starting an op never wakes this process's loop itself.
+// Both export touchRepeatedly() for their side of it.
 let other = { touch: () => {}, connect: () => {} };
 
 const ops = {
@@ -41,17 +42,18 @@ const ops = {
   'process.nextTick': { deferred: true, run: (done) => process.nextTick(done) },
   'fs.readFile': { run: (done, fail) => fs.readFile(__filename, (e) => (e ? fail(e) : done())) },
   'fs.promises.readFile': { deferred: true, run: (done, fail) => fs.promises.readFile(__filename).then(done, fail) },
-  // The other process writes the file (after a Blink-timed delay, so kqueue
-  // has the watcher by then), so only the watcher's own wake is measured.
+  // The other process writes the file, repeatedly, since kqueue only reports
+  // writes made after the loop has registered the watcher; so this measures
+  // how soon the watcher reached the kernel. registers: see main.js.
   'fs.watch': {
-    expect: 30,
+    registers: process.platform === 'darwin',
     run: (done, fail) => {
       const w = fs.watch(watched, () => {
         w.close();
         done();
       });
       w.on('error', fail);
-      other.touch(watched, 30);
+      other.touch(watched);
     }
   },
   'crypto.pbkdf2': { run: (done, fail) => crypto.pbkdf2('pw', 'salt', 1, 16, 'sha256', (e) => (e ? fail(e) : done())) },
@@ -108,8 +110,20 @@ for (const op of Object.values(ops)) {
   op.budget ??= 100;
 }
 
+// Writes straight away and then every 10 ms for half a second, with libuv
+// timers, which each process's own loop serves on time.
+function touchRepeatedly(file) {
+  let n = 0;
+  const timer = setInterval(() => {
+    fs.writeFileSync(file, String(++n));
+    if (n === 50) clearInterval(timer);
+  }, 10);
+  fs.writeFileSync(file, String(n));
+}
+
 module.exports = {
   ops,
+  touchRepeatedly,
   setOtherProcess: (impl) => {
     other = impl;
   },

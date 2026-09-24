@@ -9,7 +9,7 @@ const fs = require('node:fs');
 const net = require('node:net');
 const path = require('node:path');
 
-const { ops, setOtherProcess, cleanup } = require('./ops.js');
+const { ops, touchRepeatedly, setOtherProcess, cleanup } = require('./ops.js');
 
 const arg = (name, fallback) => {
   const found = process.argv.find((a) => a.startsWith(`--${name}=`));
@@ -54,15 +54,12 @@ ipcMain.on('uv-wake:ping', () => {
 });
 // Each process touches the other's watched file, or connects to the other's
 // port, on request, so the requester's loop is not woken by the asking.
-let touchSeq = 0;
-ipcMain.on('uv-wake:touch', (_e, file, delay) => {
-  setTimeout(() => fs.writeFileSync(file, String(++touchSeq)), delay);
-});
+ipcMain.on('uv-wake:touch', (_e, file) => touchRepeatedly(file));
 ipcMain.on('uv-wake:connect', (_e, port) => {
   net.connect(port, '127.0.0.1').on('error', () => {});
 });
 setOtherProcess({
-  touch: (file, delay) => w.webContents.send('uv-wake:touch', file, delay),
+  touch: (file) => w.webContents.send('uv-wake:touch', file),
   connect: (port) => w.webContents.send('uv-wake:connect', port)
 });
 
@@ -137,10 +134,19 @@ const meta = { platform: process.platform, isolated };
 function runInBrowser(context, opName) {
   const op = ops[opName];
   // Node.js holds ticks and promise reactions while another of its callbacks is
-  // on the stack, and a bare call from native code runs no checkpoint at all.
+  // on the stack, a bare call from native code runs no checkpoint at all, and
+  // a handle that needs a loop run to reach the kernel, started from a native
+  // event while JavaScript blocks in a nested loop, waits for that loop to end
+  // (docs/breaking-changes.md).
   const nested = ['nested-loop', 'started-then-nested', 'native-event-in-nested-loop'].includes(context);
   const bareCall = context === 'native-addon-call' || context === 'native-shortcut';
-  if ((nested && op.deferred) || (bareCall && op.continuation)) return Promise.resolve('skipped');
+  if (
+    (nested && op.deferred) ||
+    (bareCall && op.continuation) ||
+    (context === 'native-event-in-nested-loop' && op.registers)
+  ) {
+    return Promise.resolve('skipped');
+  }
   return new Promise((resolve) => {
     let triggered = false;
     blinkDelay(watchdogMs).then(() => {
