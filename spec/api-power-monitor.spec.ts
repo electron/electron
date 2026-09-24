@@ -32,6 +32,9 @@ describe('powerMonitor', { tags: ['serial'] }, () => {
         getCalls = promisify(logindMock.GetCalls.bind(logindMock));
         emitSignal = promisify(logindMock.EmitSignal.bind(logindMock));
         reset = promisify(logindMock.Reset.bind(logindMock));
+        // The mock outlives this process; forget calls other Electron processes
+        // of the same test run have made so the counts below are ours alone.
+        await promisify(logindMock.ClearCalls.bind(logindMock))();
       });
 
       after(async () => {
