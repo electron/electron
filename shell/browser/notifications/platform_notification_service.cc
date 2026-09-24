@@ -4,8 +4,11 @@
 
 #include "shell/browser/notifications/platform_notification_service.h"
 
+#include "base/base64.h"
+#include "build/build_config.h"
 #include "content/public/browser/notification_event_dispatcher.h"
 #include "content/public/browser/render_process_host.h"
+#include "crypto/hash.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/notifications/notification.h"
 #include "shell/browser/notifications/notification_delegate.h"
@@ -41,6 +44,15 @@ void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
   } else {
     notification->Destroy();
   }
+}
+
+std::string GetPlatformNotificationId(const std::string& notification_id) {
+#if BUILDFLAG(IS_WIN)
+  // Windows toast tags are limited to 64 characters; this produces 44.
+  return base::Base64Encode(crypto::hash::Sha256(notification_id));
+#else
+  return notification_id;
+#endif
 }
 
 class NotificationDelegateImpl final : public electron::NotificationDelegate {
@@ -93,6 +105,9 @@ void PlatformNotificationService::DisplayNotification(
   if (!presenter)
     return;
 
+  const std::string platform_notification_id =
+      GetPlatformNotificationId(notification_id);
+
   // If a new notification is created with the same tag as an
   // existing one, replace the old notification with the new one.
   // The notification_id is generated from the tag, so the only way a
@@ -100,11 +115,13 @@ void PlatformNotificationService::DisplayNotification(
   // the same tag is already extant.
   //
   // See: https://notifications.spec.whatwg.org/#showing-a-notification
-  presenter->CloseNotificationWithId(notification_id);
+  presenter->CloseNotificationWithId(platform_notification_id);
 
+  // Chromium's event listeners are keyed by the original notification ID.
   auto* delegate = new NotificationDelegateImpl(notification_id);
 
-  auto notification = presenter->CreateNotification(delegate, notification_id);
+  auto notification =
+      presenter->CreateNotification(delegate, platform_notification_id);
   if (notification) {
     browser_client_->WebNotificationAllowed(
         render_frame_host,
@@ -119,7 +136,8 @@ void PlatformNotificationService::CloseNotification(
   auto* presenter = browser_client_->GetNotificationPresenter();
   if (!presenter)
     return;
-  presenter->CloseNotificationWithId(notification_id);
+  presenter->CloseNotificationWithId(
+      GetPlatformNotificationId(notification_id));
 }
 
 void PlatformNotificationService::GetDisplayedNotifications(
