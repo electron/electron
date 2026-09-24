@@ -16,6 +16,24 @@ This document uses the following convention to categorize breaking changes:
 
 ## Breaking API Changes (46.0)
 
+### Behavior Changed: `<webview>` is hosted through Surface Embed instead of an internal `<iframe>`
+
+The `webview` tag no longer wraps an `<iframe>` that is swapped for the guest's
+frame. The guest is an independent `WebContents` composited into the page by
+Chromium's Surface Embed plugin. The documented `<webview>` attributes, methods
+and events are unchanged. The observable differences are:
+
+* The undocumented `webview.contentWindow` property has been removed; there is
+  no window object for the guest in the embedder. Use `<webview>.send()` and
+  `ipcRenderer.sendToHost()` instead of `contentWindow.postMessage()`.
+* An embedder page whose Content Security Policy sets `object-src 'none'`
+  blocks the `webview` from displaying. Allow `object-src 'self'`.
+* `display: none;` on a `webview` now detaches the guest (it keeps running and
+  re-attaches without a reload when shown again). Use `visibility: hidden;` to
+  hide one temporarily.
+* Frames inside a `webview` are no longer reachable from the embedder's
+  `webContents.mainFrame.framesInSubtree`; use the guest's own `webContents`.
+
 ### Behavior Changed: `utilityProcess` `child.kill()` no longer force-kills the child
 
 `child.kill()` used to send `SIGTERM` and then `SIGKILL` two seconds later if the

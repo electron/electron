@@ -45,6 +45,7 @@
 #include "chrome/browser/ui/views/eye_dropper/eye_dropper.h"
 #include "chrome/common/pref_names.h"
 #include "components/embedder_support/user_agent_utils.h"
+#include "components/guest_contents/browser/guest_contents_handle.h"
 #include "components/input/input_constants.h"
 #include "components/input/input_router.h"
 #include "components/input/native_web_keyboard_event.h"
@@ -143,7 +144,6 @@
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/web_contents_zoom_controller.h"
-#include "shell/browser/web_view_guest_delegate.h"
 #include "shell/browser/web_view_manager.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/api/electron_api_native_image.h"
@@ -1446,6 +1446,12 @@ class WebContents::NativeLifecycle final
     if (auto* contents = contents_.Get())
       contents->DidFinishNavigation(navigation);
   }
+  void SurfaceEmbedChildWebContentsAttached(
+      content::WebContents* inner_web_contents,
+      content::RenderFrameHost* embedder_render_frame_host) override {
+    if (auto* guest = WebContents::From(inner_web_contents))
+      guest->OnAttachedToEmbedder();
+  }
   void WebContentsDestroyed() override {
     DisposeWebFrames();
     DetachCallbacks();
@@ -1602,10 +1608,6 @@ class WebContents::NativeLifecycle final
         host->GetWidget()->RemoveInputEventObserver(this);
     }
     background_throttling_registration_.RunAndReset();
-    // Stop observing the embedder's zoom controller before destroying the
-    // guest.
-    if (guest_delegate_)
-      guest_delegate_->WillDestroy();
   }
 
   void DisposeNative() {
@@ -1632,7 +1634,6 @@ class WebContents::NativeLifecycle final
     owner_window_ = nullptr;
     Observe(nullptr);
     fullscreen_frame_ = nullptr;
-    guest_delegate_.reset();
     exclusive_access_manager_.reset();
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
     script_executor_.reset();
@@ -1643,7 +1644,6 @@ class WebContents::NativeLifecycle final
   cppgc::WeakPersistent<WebContents> contents_;
   LoadURLPromises load_url_promises_;
   std::unique_ptr<InspectableWebContents> inspectable_web_contents_;
-  std::unique_ptr<WebViewGuestDelegate> guest_delegate_;
   std::unique_ptr<FrameSubscriber> frame_subscriber_;
   std::unique_ptr<ExclusiveAccessManager> exclusive_access_manager_ =
       std::make_unique<ExclusiveAccessManager>(this);
@@ -1809,29 +1809,26 @@ WebContents::WebContents(v8::Isolate* isolate,
 
   std::unique_ptr<content::WebContents> web_contents;
   if (is_guest()) {
-    scoped_refptr<content::SiteInstance> site_instance =
-        content::SiteInstance::CreateForURL(browser_context,
-                                            GURL("chrome-guest://fake-host"));
-    content::WebContents::CreateParams params{browser_context, site_instance};
-    native_lifecycle_->guest_delegate_ =
-        std::make_unique<WebViewGuestDelegate>(embedder->web_contents(), this);
-    params.guest_delegate = native_lifecycle_->guest_delegate_.get();
+    // A <webview> guest is an ordinary top-level WebContents owned by this
+    // object. The embedder renderer composites it through a Surface Embed
+    // plugin; see lib/renderer/web-view and SurfaceEmbedHost.
+    content::WebContents::CreateParams params{browser_context};
     params.enable_wake_locks = !disable_wake_locks;
+    web_contents = content::WebContents::Create(params);
+    guest_contents::GuestContentsHandle::CreateForWebContents(
+        web_contents.get());
 
-    if (embedder->IsOffScreen()) {
-      auto* view = new OffScreenWebContentsView(
-          false, offscreen_use_shared_texture_,
-          offscreen_shared_texture_pixel_format_,
-          offscreen_device_scale_factor_,
-          base::BindRepeating(&WebContents::OnPaint, WeakRef()));
-      params.view = view;
-      params.delegate_view = view;
-
-      web_contents = content::WebContents::Create(params);
-      view->SetWebContents(web_contents.get());
-    } else {
-      web_contents = content::WebContents::Create(params);
-    }
+    // Start from the embedder's renderer preferences (caret browsing, caret
+    // blink interval, selection colours, ...), as BrowserPluginGuest did for
+    // inner-WebContents guests, but keep the guest's own UA override and do
+    // not let drops navigate the guest.
+    blink::RendererPreferences* guest_prefs =
+        web_contents->GetMutableRendererPrefs();
+    blink::UserAgentOverride ua_override = guest_prefs->user_agent_override;
+    if (embedder)
+      *guest_prefs = *embedder->web_contents()->GetMutableRendererPrefs();
+    guest_prefs->user_agent_override = std::move(ua_override);
+    guest_prefs->can_accept_load_drops = false;
   } else if (IsOffScreen()) {
     // webPreferences does not have a transparent option, so if the window needs
     // to be transparent, that will be set at electron_api_browser_window.cc#L57
@@ -2672,6 +2669,11 @@ void WebContents::OnEnterFullscreenModeForTab(
 
   auto* source = content::WebContents::FromRenderFrameHost(requesting_frame);
   if (IsFullscreenForTabOrPending(source)) {
+    // An embedder whose <webview> guest went fullscreen is already in HTML
+    // fullscreen (see UpdateHtmlApiFullscreen) when its own plugin element
+    // requests fullscreen to mirror the guest; it has no fullscreen frame yet.
+    if (!native_lifecycle_->fullscreen_frame_)
+      native_lifecycle_->fullscreen_frame_ = requesting_frame;
     DCHECK_EQ(native_lifecycle_->fullscreen_frame_, source->GetFocusedFrame());
     return;
   }
@@ -2681,6 +2683,15 @@ void WebContents::OnEnterFullscreenModeForTab(
   native_lifecycle_->exclusive_access_manager_->fullscreen_controller()
       ->EnterFullscreenModeForTab(requesting_frame,
                                   FullscreenTabParams{options.display_id});
+
+  // A <webview> guest has no frame in the embedder document, so Blink cannot
+  // propagate element fullscreen across the boundary itself. Give the embedder
+  // activation so the <webview> element can requestFullscreen() on its plugin
+  // element when it receives 'enter-html-full-screen'.
+  if (is_guest() && embedder_ && embedder_->web_contents()) {
+    embedder_->web_contents()->GetPrimaryMainFrame()->NotifyUserActivation(
+        blink::mojom::UserActivationNotificationType::kInteraction);
+  }
 
   SetHtmlApiFullscreen(true);
 
@@ -5328,26 +5339,17 @@ void WebContents::OnCursorChanged(const ui::Cursor& cursor) {
   }
 }
 
-void WebContents::AttachToIframe(content::WebContents* embedder_web_contents,
-                                 std::string embedder_frame_token) {
-  auto token = base::Token::FromString(embedder_frame_token);
-  if (!token)
-    return;
-  auto unguessable_token =
-      base::UnguessableToken::Deserialize(token->high(), token->low());
-  if (!unguessable_token)
-    return;
-  auto frame_token = blink::LocalFrameToken(unguessable_token.value());
+std::string WebContents::GetSurfaceEmbedToken() {
+  auto* handle =
+      guest_contents::GuestContentsHandle::FromWebContents(web_contents());
+  return handle ? handle->id().ToString() : std::string();
+}
 
-  if (!native_lifecycle_->guest_delegate_)
-    return;
-
-  // For guest view based on OOPIF, the WebContents is released by the embedder
-  // frame.
-  native_lifecycle_->externally_owned_ = true;
+void WebContents::OnAttachedToEmbedder() {
+  // Keep the guest alive while it is embedded; guest-view-manager destroys it
+  // explicitly when the <webview> element goes away.
   keep_alive_ = this;
-  native_lifecycle_->guest_delegate_->AttachToIframe(embedder_web_contents,
-                                                     frame_token);
+  Emit("did-attach");
 }
 
 bool WebContents::IsOffScreen() const {
@@ -6424,8 +6426,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("beginFrameSubscription", &WebContents::BeginFrameSubscription)
       .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)
       .SetMethod("startDrag", &WebContents::StartDrag)
-      .SetMethod("attachToIframe", &WebContents::AttachToIframe)
-      .SetMethod("detachFromOuterFrame", &WebContents::DetachFromOuterFrame)
+      .SetMethod("_getSurfaceEmbedToken", &WebContents::GetSurfaceEmbedToken)
       .SetMethod("isOffscreen", &WebContents::IsOffScreen)
       .SetMethod("startPainting", &WebContents::StartPainting)
       .SetMethod("stopPainting", &WebContents::StopPainting)

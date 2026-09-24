@@ -109,7 +109,6 @@ class DraggableRegionDebugger;
 class ElectronBrowserContext;
 class InspectableWebContents;
 class WebContentsZoomController;
-class WebViewGuestDelegate;
 class NativeWindow;
 class OffScreenRenderWidgetHostView;
 class OffScreenWebContentsView;
@@ -341,9 +340,8 @@ class WebContents final : public gin::Wrappable<WebContents>,
 
   // Methods for creating <webview>.
   [[nodiscard]] bool is_guest() const { return type_ == Type::kWebView; }
-  void AttachToIframe(content::WebContents* embedder_web_contents,
-                      std::string embedder_frame_token);
-  void DetachFromOuterFrame();
+  std::string GetSurfaceEmbedToken();
+  void OnAttachedToEmbedder();
 
   // Methods for offscreen rendering
   bool IsOffScreen() const;

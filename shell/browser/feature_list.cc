@@ -13,6 +13,7 @@
 #include "base/feature_list.h"
 #include "base/metrics/field_trial.h"
 #include "components/spellcheck/common/spellcheck_features.h"
+#include "components/surface_embed/common/features.h"
 #include "content/public/common/content_features.h"
 #include "electron/buildflags/buildflags.h"
 #include "media/base/media_switches.h"
@@ -97,6 +98,11 @@ void InitializeFeatureList() {
   enable_features +=
       std::string(",") + features::kGlobalShortcutsPortalPreferredTrigger.name;
 #endif
+
+  // <webview> is implemented on top of Surface Embed, which is disabled by
+  // default before Chromium 156.
+  enable_features +=
+      std::string(",") + surface_embed::features::kSurfaceEmbed.name;
 
   std::string platform_specific_enable_features =
       EnablePlatformSpecificFeatures();

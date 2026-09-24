@@ -88,7 +88,6 @@ function makeLoadURLOptions(params: Record<string, any>) {
 const createGuest = function (
   embedder: Electron.WebContents,
   embedderFrame: Electron.WebFrameMain | null,
-  embedderFrameToken: string,
   elementInstanceId: number,
   params: Record<string, any>
 ) {
@@ -105,7 +104,7 @@ const createGuest = function (
 
   embedder.emit('will-attach-webview', event, webPreferences, params);
   if (event.defaultPrevented) {
-    return -1;
+    return { guestInstanceId: -1, contentId: '' };
   }
 
   const guest = (webContents as typeof ElectronInternal.WebContents).create({
@@ -191,7 +190,7 @@ const createGuest = function (
   if (oldGuestInstanceId != null) {
     const oldGuestInstance = guestInstances.get(oldGuestInstanceId);
     if (oldGuestInstance) {
-      oldGuestInstance.guest.detachFromOuterFrame();
+      detachGuest(embedder, oldGuestInstanceId!);
     }
   }
 
@@ -201,9 +200,10 @@ const createGuest = function (
   watchEmbedder(embedder);
 
   webViewManager.addGuest(guestInstanceId, embedder, guest, webPreferences);
-  guest.attachToIframe(embedder, embedderFrameToken);
 
-  return guestInstanceId;
+  // The renderer hands this id to its Surface Embed plugin, which asks the
+  // browser (SurfaceEmbedHost on the embedder frame) to attach the guest.
+  return { guestInstanceId, contentId: guest._getSurfaceEmbedToken() };
 };
 
 // Remove an guest-embedder relationship.
@@ -221,6 +221,12 @@ const detachGuest = function (embedder: Electron.WebContents, guestInstanceId: n
 
   const key = `${embedder.id}-${guestInstance.elementInstanceId}`;
   embedderElementsMap.delete(key);
+
+  // The guest is owned by the browser now rather than by the embedder's frame
+  // tree, so tear it down explicitly once its <webview> is gone.
+  if (!guestInstance.guest.isDestroyed()) {
+    guestInstance.guest.destroy();
+  }
 };
 
 // Once an embedder has had a guest attached we watch it for destruction to
@@ -286,8 +292,8 @@ const handleMessageSync = function (
 
 handleMessage(
   IPC_MESSAGES.GUEST_VIEW_MANAGER_CREATE_AND_ATTACH_GUEST,
-  function (event, embedderFrameToken: string, elementInstanceId: number, params) {
-    return createGuest(event.sender, event.senderFrame ?? null, embedderFrameToken, elementInstanceId, params);
+  function (event, elementInstanceId: number, params) {
+    return createGuest(event.sender, event.senderFrame ?? null, elementInstanceId, params);
   }
 );
 

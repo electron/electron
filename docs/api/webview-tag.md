@@ -74,12 +74,18 @@ and displays a "loading..." message during the load time:
 
 ## Internal implementation
 
-Under the hood `webview` is implemented with [Out-of-Process iframes (OOPIFs)](https://www.chromium.org/developers/design-documents/oop-iframes).
-The `webview` tag is essentially a custom element using shadow DOM to wrap an
-`iframe` element inside it.
+Under the hood the guest is an independent `WebContents` that the browser
+process owns, and the `webview` tag is a custom element whose shadow DOM holds
+an internal plugin element that Chromium's
+[Surface Embed](https://source.chromium.org/chromium/chromium/src/+/main:components/surface_embed/README.md)
+uses to composite the guest's surface and route input and focus to it. There is
+no frame relationship between the embedder page and the guest: the guest has no
+`window.parent`, the embedder has no `contentWindow` for it, and the two cannot
+`postMessage` each other. Use [`<webview>.send()`](#webviewsendchannel-args)
+and [`ipcRenderer.sendToHost()`](ipc-renderer.md#ipcrenderersendtohostchannel-args)
+to communicate.
 
-So the behavior of `webview` is very similar to a cross-domain `iframe`, as
-examples:
+In practice the behavior of `webview` is similar to a cross-domain `iframe`:
 
 * When clicking into a `webview`, the page focus will move from the embedder
   frame to `webview`.
@@ -89,10 +95,22 @@ examples:
 ## CSS Styling Notes
 
 Please note that the `webview` tag's style uses `display:flex;` internally to
-ensure the child `iframe` element fills the full height and width of its `webview`
+ensure the internal element fills the full height and width of its `webview`
 container when used with traditional and flexbox layouts. Please do not
 overwrite the default `display:flex;` CSS property, unless specifying
 `display:inline-flex;` for inline layout.
+
+Setting `display: none;` on a `webview` (or an ancestor) detaches the guest
+from the page; it keeps running and is re-attached, without reloading, when the
+element is displayed again. Prefer `visibility: hidden;` to hide a `webview`
+temporarily.
+
+## Content Security Policy
+
+The internal element is a plugin element, so an embedder page whose
+Content Security Policy sets `object-src 'none'` (directly or through
+`default-src 'none'`) prevents the `webview` from displaying its guest. Allow
+`object-src 'self'` on pages that use the `webview` tag.
 
 ## Tag Attributes
 

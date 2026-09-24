@@ -13,6 +13,7 @@
 #include "base/functional/callback_helpers.h"
 #include "base/strings/string_split.h"
 #include "components/network_hints/renderer/web_prescient_networking_impl.h"
+#include "components/surface_embed/renderer/create_plugin.h"
 #include "content/common/buildflags.h"
 #include "content/public/common/content_constants.h"
 #include "content/public/common/content_switches.h"
@@ -425,6 +426,12 @@ bool RendererClientBase::OverrideCreatePlugin(
     return true;
   }
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+
+  // <webview> hosts its guest in a Surface Embed plugin.
+  if (render_frame->GetBlinkPreferences().webview_tag &&
+      surface_embed::MaybeCreatePlugin(render_frame, params, plugin)) {
+    return true;
+  }
 
   if (params.mime_type.Utf8() == content::kBrowserPluginMimeType ||
       render_frame->GetBlinkPreferences().enable_plugins)

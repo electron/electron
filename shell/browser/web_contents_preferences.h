@@ -98,6 +98,7 @@ class WebContentsPreferences
   const base::Value* last_preference() const { return &last_web_preferences_; }
 
   bool IsOffscreen() const { return renderer_.offscreen; }
+  bool IsWebviewTagEnabled() const { return webview_tag_; }
   std::optional<SkColor> GetBackgroundColor() const {
     return background_color_;
   }

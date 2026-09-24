@@ -34,6 +34,8 @@
 #include "components/embedder_support/user_agent_utils.h"
 #include "components/net_log/chrome_net_log.h"
 #include "components/network_hints/common/network_hints.mojom.h"
+#include "components/surface_embed/browser/surface_embed_host.h"
+#include "components/surface_embed/common/surface_embed.mojom.h"
 #include "content/browser/keyboard_lock/keyboard_lock_service_impl.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
@@ -1735,6 +1737,25 @@ void ElectronBrowserClient::
     }
   }
 
+  // <webview> embeds its guest through Surface Embed. Only frames that were
+  // granted the webviewTag preference may bind the host interface.
+  associated_registry.AddInterface<surface_embed::mojom::SurfaceEmbedHost>(
+      base::BindRepeating(
+          [](content::RenderFrameHost* render_frame_host,
+             mojo::PendingAssociatedReceiver<
+                 surface_embed::mojom::SurfaceEmbedHost> receiver) {
+            auto* web_contents =
+                content::WebContents::FromRenderFrameHost(render_frame_host);
+            auto* prefs = web_contents
+                              ? WebContentsPreferences::From(web_contents)
+                              : nullptr;
+            if (!prefs || !prefs->IsWebviewTagEnabled())
+              return;
+            surface_embed::SurfaceEmbedHost::Create(render_frame_host,
+                                                    std::move(receiver));
+          },
+          &render_frame_host));
+
   associated_registry.AddInterface<mojom::ElectronWebContentsUtility>(
       base::BindRepeating(
           [](content::RenderFrameHost* render_frame_host,
@@ -2041,8 +2062,11 @@ void ElectronBrowserClient::GetAdditionalMappedFilesForChildProcess(
 
 bool ElectronBrowserClient::IsFullscreenAllowedForUnfocusedWebContents(
     content::WebContents* unfocused_web_contents) {
-  return static_cast<content::WebContentsImpl*>(unfocused_web_contents)
-      ->IsGuest();
+  // <webview> guests are embedded through Surface Embed; the embedder page may
+  // hold focus while script in the guest requests fullscreen.
+  auto* api_web_contents = api::WebContents::From(unfocused_web_contents);
+  return (api_web_contents && api_web_contents->is_guest()) ||
+         unfocused_web_contents->GetSurfaceEmbedConnector() != nullptr;
 }
 
 std::unique_ptr<content::LoginDelegate>
