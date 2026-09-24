@@ -8,32 +8,32 @@
 # label. Used by .github/workflows/pipeline-segment-electron-test.yml.
 #
 # Squirrel.Mac update lifecycle; unsigned-app cases only run on x64
-spec/api-autoupdater-darwin-spec.ts
+spec/api-autoupdater-darwin.spec.ts
 # Squirrel.Mac update policy (version rules, tampered payloads, JSON mode)
-spec/api-autoupdater-darwin-policy-spec.ts
+spec/api-autoupdater-darwin-policy.spec.ts
 # autoUpdater module API surface
-spec/api-auto-updater-spec.ts
+spec/api-auto-updater.spec.ts
 # Node.js startup snapshot captures process.arch and friends; native addons
-spec/node-spec.ts
+spec/node.spec.ts
 # js2c build-time V8 code cache and LoadBrowserProcessSpecificV8Snapshot
-spec/api-js2c-code-cache-spec.ts
+spec/api-js2c-code-cache.spec.ts
 # sandboxed preload V8 code cache; the largest window-level surface
-spec/api-browser-window-spec.ts
+spec/api-browser-window.spec.ts
 # codeCache for privileged custom protocols
-spec/api-protocol-spec.ts
+spec/api-protocol.spec.ts
 # wasm-eval CSP, WebAssembly streaming compilation, workers, heap snapshots
-spec/chromium-spec.ts
+spec/chromium.spec.ts
 # utility process Node isolate, ESM loading, heap snapshots near heap limit
-spec/api-utility-process-spec.ts
+spec/api-utility-process.spec.ts
 # heap statistics, memory info and takeHeapSnapshot
-spec/api-process-spec.ts
+spec/api-process.spec.ts
 # native module loading (compiled per arch) and uv_dlopen
-spec/modules-spec.ts
+spec/modules.spec.ts
 # child_process.execFile out of asar has a darwin x64-only case
-spec/asar-spec.ts
+spec/asar.spec.ts
 # runningUnderARM64Translation, x64-only recent-documents skip, sandbox options
-spec/api-app-spec.ts
+spec/api-app.spec.ts
 # crashpad minidumps and stack walking are architecture specific
-spec/api-crash-reporter-spec.ts
+spec/api-crash-reporter.spec.ts
 # renderer, main and node crash paths
-spec/crash-spec.ts
+spec/crash.spec.ts
