@@ -340,19 +340,19 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.SetMethod("start", &Start);
-  dict.SetMethod("getLastCrashReport", &GetLastCrashReport);
+  dict.SetMethod<&Start>("start");
+  dict.SetMethod<&GetLastCrashReport>("getLastCrashReport");
 #if IS_MAS_BUILD()
-  dict.SetMethod("addExtraParameter", &electron::api::crash_reporter::NoOp);
-  dict.SetMethod("removeExtraParameter", &electron::api::crash_reporter::NoOp);
+  dict.SetMethod<&electron::api::crash_reporter::NoOp>("addExtraParameter");
+  dict.SetMethod<&electron::api::crash_reporter::NoOp>("removeExtraParameter");
 #else
-  dict.SetMethod("addExtraParameter", &electron::crash_keys::SetCrashKey);
-  dict.SetMethod("removeExtraParameter", &electron::crash_keys::ClearCrashKey);
+  dict.SetMethod<&electron::crash_keys::SetCrashKey>("addExtraParameter");
+  dict.SetMethod<&electron::crash_keys::ClearCrashKey>("removeExtraParameter");
 #endif
-  dict.SetMethod("getParameters", &GetParameters);
-  dict.SetMethod("getUploadedReports", &GetUploadedReports);
-  dict.SetMethod("setUploadToServer", &SetUploadToServer);
-  dict.SetMethod("getUploadToServer", &GetUploadToServer);
+  dict.SetMethod<&GetParameters>("getParameters");
+  dict.SetMethod<&GetUploadedReports>("getUploadedReports");
+  dict.SetMethod<&SetUploadToServer>("setUploadToServer");
+  dict.SetMethod<&GetUploadToServer>("getUploadToServer");
 }
 
 }  // namespace

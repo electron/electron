@@ -1832,7 +1832,7 @@ v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
     // for the lifetime of "app"
     auto browser = base::Unretained(Browser::Get());
     auto dock_obj = gin_helper::Dictionary::CreateEmpty(isolate);
-    dock_obj.SetMethod("bounce", &DockBounce);
+    dock_obj.SetMethod<&DockBounce>("bounce");
     dock_obj.SetMethod(
         "cancelBounce",
         base::BindRepeating(&Browser::DockCancelBounce, browser));

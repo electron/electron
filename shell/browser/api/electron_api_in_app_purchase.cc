@@ -269,9 +269,9 @@ void Initialize(v8::Local<v8::Object> exports,
   in_app_purchase.GetHandle()
       ->SetPrototype(context, electron::GetEventEmitterPrototype(isolate))
       .Check();
-  in_app_purchase.SetMethod("purchaseProduct", &PurchaseProduct);
-  in_app_purchase.SetMethod("canMakePayments", &CanMakePayments);
-  in_app_purchase.SetMethod("getReceiptURL", &GetReceiptURL);
+  in_app_purchase.SetMethod<&PurchaseProduct>("purchaseProduct");
+  in_app_purchase.SetMethod<&CanMakePayments>("canMakePayments");
+  in_app_purchase.SetMethod<&GetReceiptURL>("getReceiptURL");
   dict.Set("inAppPurchase", in_app_purchase);
 #endif
 }

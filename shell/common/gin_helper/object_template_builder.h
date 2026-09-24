@@ -43,6 +43,32 @@ class ObjectTemplateBuilder {
                                    const T& callback) {
     return SetImpl(name, CallbackTraits<T>::CreateTemplate(isolate_, callback));
   }
+  // Naming the target as a template argument instead of passing it as a value
+  // lets the call go straight from V8 to it, with no callback object to store,
+  // unwrap and run through. Prefer it wherever the target is a plain function
+  // or member function; the overload above is still what a bound callback
+  // needs.
+  template <auto kTarget>
+  ObjectTemplateBuilder& SetMethod(const std::string_view name) {
+    return SetImpl(name, CreateDirectFunctionTemplate<kTarget>(isolate_));
+  }
+
+  // The compile-time forms of SetProperty below: an accessor is a call into
+  // C++ like any other, and this takes the callback object out of it.
+  template <auto kGetter>
+  ObjectTemplateBuilder& SetProperty(const std::string_view name) {
+    return SetPropertyImpl(name,
+                           CreateDirectFunctionTemplate<kGetter>(isolate_),
+                           v8::Local<v8::FunctionTemplate>());
+  }
+
+  template <auto kGetter, auto kSetter>
+  ObjectTemplateBuilder& SetProperty(const std::string_view name) {
+    return SetPropertyImpl(name,
+                           CreateDirectFunctionTemplate<kGetter>(isolate_),
+                           CreateDirectFunctionTemplate<kSetter>(isolate_));
+  }
+
   template <typename T>
   ObjectTemplateBuilder& SetProperty(const std::string_view name,
                                      const T& getter) {

@@ -828,10 +828,9 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
 
-  dict.SetMethod("updateMsix", base::BindRepeating(&UpdateMsix));
-  dict.SetMethod("registerPackage", base::BindRepeating(&RegisterPackage));
-  dict.SetMethod("registerRestartOnUpdate",
-                 base::BindRepeating(&RegisterRestartOnUpdate));
+  dict.SetMethod<&UpdateMsix>("updateMsix");
+  dict.SetMethod<&RegisterPackage>("registerPackage");
+  dict.SetMethod<&RegisterRestartOnUpdate>("registerRestartOnUpdate");
   dict.SetMethod("getPackageInfo",
                  base::BindRepeating([]() { return GetPackageInfo(); }));
 }
