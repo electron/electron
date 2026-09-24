@@ -60,6 +60,16 @@ class HoldersWithoutGin {
 
 }  // namespace
 
+MaybeMicrotasksScope::MaybeMicrotasksScope(gin::Arguments* args) {
+  if (args->isolate()->GetMicrotasksPolicy() !=
+      v8::MicrotasksPolicy::kExplicit) {
+    scope_.emplace(args->GetHolderCreationContext(),
+                   v8::MicrotasksScope::kRunMicrotasks);
+  }
+}
+
+MaybeMicrotasksScope::~MaybeMicrotasksScope() = default;
+
 CallbackHolderBase::DisposeObserver::DisposeObserver(
     gin::PerIsolateData* per_isolate_data,
     CallbackHolderBase* holder)
