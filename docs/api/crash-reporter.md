@@ -29,11 +29,11 @@ to monitor and report crashes. Crashpad uses the same
 as Breakpad, so servers that accept Breakpad minidumps can receive Electron's
 crash reports.
 
-Crash reports are stored in a directory underneath the app's user data
-directory, called `Crashpad`. You can get this directory with
-`app.getPath('crashDumps')`, and override it by calling
+Crash reports are stored under the directory returned by
+`app.getPath('crashDumps')`. You can override it by calling
 `app.setPath('crashDumps', '/path/to/crashes')` before starting the crash
-reporter.
+reporter. The layout of files inside this directory is an implementation detail
+and may change between versions of Electron.
 
 The `crashReporter` module is disabled in Mac App Store builds. Its methods can
 be called, but they do nothing: no crash reports are collected or uploaded,
@@ -105,13 +105,11 @@ changes:
     child process.
   * `globalExtra` Record\<string, string\> (optional) - Extra string key/value
     annotations that will be sent along with any crash reports generated in any
-    process. These annotations are passed to the crash handler when it starts
-    and cannot be changed once the crash reporter has been started. If a key is
-    present in both the global extra parameters and the process-specific extra
-    parameters, then the global one will take precedence. By default,
-    `_productName` and `_version` (the app version) are included, and `prod`
-    and `ver` (the Electron version) are always set by Electron. Global extra
-    parameters are not returned by
+    process. These annotations cannot be changed once the crash reporter has
+    been started. If a key is present in both the global extra parameters and
+    the process-specific extra parameters, then the global one will take
+    precedence. By default, `productName` and the app version are included, as
+    well as the Electron version. Global extra parameters are not returned by
     [`getParameters()`](#crashreportergetparameters).
 
 This method must be called before using any other `crashReporter` APIs. Once
@@ -178,14 +176,14 @@ changes:
 
 Returns [`CrashReport[]`](structures/crash-report.md):
 
-Returns the crash reports that Crashpad knows about. Each report contains the
-date it was uploaded and the ID that the crash server returned for it.
+Returns the crash reports stored on disk. Each report contains the date it was
+uploaded and the ID that the crash server returned for it.
 
 Despite the method's name, reports that have not been uploaded (for example
 because `uploadToServer` is `false`, the upload failed, or the report was rate
 limited) are included too. For those reports, `id` is an empty string and `date`
-is the Unix epoch (`new Date(0)`). To list only uploaded reports, filter out
-reports with an empty `id`.
+is not meaningful. To list only uploaded reports, filter out reports with an
+empty `id`.
 
 > [!NOTE]
 > This method is only available in the main process.
@@ -298,11 +296,8 @@ is gzip-compressed and sent with `Content-Encoding: gzip`.
 
 * `ver` string - The version of Electron.
 * `platform` string - e.g. 'win32'.
-* `ptype` string - The type of process that crashed, e.g. 'browser' (the main
-  process), 'renderer', 'gpu-process', 'utility' or 'node'.
-* `process_type` string - Same as `ptype`. Kept for backwards compatibility.
-* `guid` string - e.g. '5e1286fc-da97-479e-918b-6bfb0c3d1c72'. A random ID
-  for this installation that stays the same between runs.
+* `process_type` string - e.g. 'renderer', or 'browser' for the main process.
+* `guid` string - e.g. '5e1286fc-da97-479e-918b-6bfb0c3d1c72'.
 * `_version` string - The version in `package.json`.
 * `_productName` string - The product name in the `crashReporter` `options`
   object.
@@ -315,9 +310,8 @@ is gzip-compressed and sent with `Content-Encoding: gzip`.
 * All extra parameters of the process that crashed, set with the `extra`
   option (main process only) or `addExtraParameter`.
 
-Each parameter is sent as a single form field, with values truncated to 20320
-bytes. Other annotations recorded by Chromium, such as `pid` and `plat`, may
-also be included.
+Crashpad and Chromium may add other fields to the upload. These are not part
+of Electron's API and can change without notice, so don't rely on them.
 
 The body of the server's response is stored as the crash report's ID, and is
 returned in the `id` field by

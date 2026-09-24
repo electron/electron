@@ -17,31 +17,19 @@ Electron uses [Crashpad](https://chromium.googlesource.com/crashpad/crashpad/+/r
 the same crash reporting system as Chromium. When you call `crashReporter.start()` in the
 main process:
 
-1. Electron launches a separate Crashpad handler process. On macOS and Linux this is the
-   `chrome_crashpad_handler` binary that ships with Electron. On Windows, your app's own
-   executable is re-launched as the handler.
-2. Every Electron process registers with the handler. Child processes created after
-   `start()` is called (renderers, the GPU process, utility processes and Node.js child
-   processes) are monitored automatically.
-3. When a monitored process crashes, the handler reads the crashed process's memory from
-   the outside and writes a minidump (`.dmp`) file. This works even when the crashed
+1. Electron starts a separate crash handler process.
+2. Child processes created after `start()` is called (renderers, the GPU process, utility
+   processes and Node.js child processes) are monitored automatically.
+3. When a monitored process crashes, the handler writes a minidump: a snapshot of the
+   crashed process's threads, stacks and loaded modules. This works even when the crashed
    process is too broken to run any code of its own.
 4. If uploads are enabled, the handler sends the minidump to your `submitURL`, along with
-   the annotations (key/value metadata) that were set in the process when it crashed.
+   the annotations (key/value metadata) that were set when the process crashed.
 
-Minidumps are written to the directory returned by `app.getPath('crashDumps')`, which
-defaults to a folder called `Crashpad` inside `app.getPath('userData')`. Inside that
-directory, Crashpad keeps its own database:
-
-* On macOS and Linux, a report is written to `new/`, moved to `pending/` while it waits
-  to be uploaded, and ends up in `completed/` once it has been uploaded or skipped. Each
-  report is a single file named `<uuid>.dmp`.
-* On Windows, reports are stored as `<uuid>.dmp` files in `reports/`, and their state
-  is tracked in a `metadata` file.
-
-Treat this directory as Crashpad's private storage. You can read the `.dmp` files, but
-don't move or rename them while your app is running. To store reports somewhere else,
-call `app.setPath('crashDumps', path)` before calling `crashReporter.start()`.
+Crash reports are stored under the directory returned by `app.getPath('crashDumps')`. To
+store them somewhere else, call `app.setPath('crashDumps', path)` before calling
+`crashReporter.start()`. The layout of files inside this directory is an implementation
+detail and may change between versions of Electron, so don't depend on it.
 
 ## Setting up the crash reporter
 
@@ -112,9 +100,8 @@ with the [`contextBridge`](../api/context-bridge.md), as shown in the next secti
 
 A stack trace tells you where a crash happened. Annotations tell you what the app was
 doing at the time: which window was open, which feature was in use, which account type
-the user has. Crashpad reads the annotation values from the crashed process's memory at
-the moment of the crash, so what you get is whatever the value was when the process
-died.
+the user has. Annotation values are captured at the moment of the crash, so what you get
+is whatever the value was when the process died.
 
 ### Where annotations apply
 
@@ -138,7 +125,7 @@ Where you can set per-process values:
 | Main | `extra` in `crashReporter.start()`, or `crashReporter.addExtraParameter()` |
 | Renderer | `crashReporter.addExtraParameter()` in the preload script |
 | Node.js child process (`child_process.fork()`) | `process.crashReporter.addExtraParameter()` |
-| Utility process (`utilityProcess.fork()`) | No API. Only `globalExtra` and Electron's own annotations are sent. |
+| Utility process (`utilityProcess.fork()`) | No API. Only `globalExtra` values are sent. |
 
 `crashReporter.getParameters()` returns the current process's own parameters. It does not
 include `globalExtra`.
@@ -149,11 +136,6 @@ include `globalExtra`.
   process warning when you try to set one.
 * Values are strings of at most 20320 bytes. Longer values are truncated.
 * Limits are in bytes, not characters, so non-ASCII text uses up the limit faster.
-
-Each value is sent as a single form field. Versions of Electron before 16 split long
-values on Linux into `key__1`, `key__2` and so on. Current versions don't, but if your
-server also receives reports from old apps you may still need to join those fields
-back together.
 
 ### Keep annotations current
 
@@ -269,59 +251,43 @@ app.whenReady().then(() => {
 ### On your own server
 
 Crash reports are sent to `submitURL` as a `multipart/form-data` `POST`, gzip-compressed
-unless you set `compress: false`. Crashpad also adds `product`, `version` and `guid` to
-the URL's query string. The form contains:
+unless you set `compress: false`. The form contains:
 
 * `upload_file_minidump` - The minidump file.
-* `ptype` and `process_type` - The type of process that crashed, such as `browser` (the
-  main process), `renderer`, `gpu-process`, `utility` or `node`.
+* `process_type` - The type of process that crashed, such as `renderer`, or `browser`
+  for the main process.
 * `prod` - Always `Electron`.
 * `ver` - The Electron version.
 * `_productName` - The `productName` option, which defaults to `app.name`.
 * `_version` - Your app's version, from `app.getVersion()`.
-* `guid` - A random ID for this installation, which stays the same between runs.
+* `guid` - An ID for this installation.
 * `platform` - `win32`, `darwin` or `linux`.
 * Your `globalExtra` values and the crashed process's own parameters.
-* Other annotations recorded by Chromium, such as `pid` and `plat`.
+
+Crashpad and Chromium may add other fields. These aren't part of Electron's API and can
+change without notice, so don't rely on them. See
+[Crash Report Payload](../api/crash-reporter.md#crash-report-payload) for the full list
+of documented fields.
 
 Respond with a `200` status. The body of the response is stored as the report's ID, which
 `crashReporter.getUploadedReports()` returns, so you can use it to link a user's report
 to your server's record.
-
-Electron also sets its own annotations for some kinds of crash. Fatal V8 errors add
-`electron.v8-fatal.message` and `electron.v8-fatal.location`, and JavaScript
-out-of-memory crashes add `electron.v8-oom.*` keys, including the JavaScript stack
-(`electron.v8-oom.stack`) and heap statistics.
 
 Crashpad uses the Breakpad upload protocol, so any server that accepts Breakpad or
 Crashpad minidumps can receive Electron's reports.
 
 ### Collecting reports locally
 
-If you don't have a crash server, or you want to handle reports yourself, set
-`uploadToServer: false`. Minidumps are still written, and you can read them from the
-crash dumps directory. For example, to offer to attach recent reports to a bug report:
+If you set `uploadToServer: false`, crash reports are still written under
+`app.getPath('crashDumps')`, but they are not sent anywhere. This is useful while
+developing, or if you want to ask the user before sending anything: once they agree, call
+`crashReporter.setUploadToServer(true)`. Only crashes that happen after that are
+uploaded; reports written while uploads were disabled are not sent later.
 
-```js title='main.js'
-const { app, crashReporter } = require('electron')
-
-const fs = require('node:fs')
-const path = require('node:path')
-
-crashReporter.start({ uploadToServer: false })
-
-function getRecentMinidumps() {
-  const reportsDir = path.join(app.getPath('crashDumps'), process.platform === 'win32' ? 'reports' : 'completed')
-  try {
-    return fs
-      .readdirSync(reportsDir)
-      .filter((file) => file.endsWith('.dmp'))
-      .map((file) => path.join(reportsDir, file))
-  } catch {
-    return []
-  }
-}
-```
+Electron doesn't provide an API for reading minidump files from disk, and the layout of
+the crash dumps directory can change between versions. If you need the minidumps
+themselves, receive them with your own `submitURL` (which can be a server running on
+the same machine) instead of reading files from the directory.
 
 ## Symbolicating crash reports
 
@@ -332,22 +298,19 @@ architecture that crashed. This is called symbolication.
 
 ### Getting Electron's symbols
 
-Every [Electron release](https://github.com/electron/electron/releases) includes symbol
-files as release assets:
+Each [Electron release](https://github.com/electron/electron/releases) on GitHub ships
+symbol archives for every platform it supports:
 
-* `electron-vX.Y.Z-<platform>-<arch>-symbols.zip` - [Breakpad](https://chromium.googlesource.com/breakpad/breakpad/)
-  `.sym` files for all platforms. These are what most minidump tools use.
-* `electron-vX.Y.Z-darwin-<arch>-dsym.tar.xz` and `electron-vX.Y.Z-mas-<arch>-dsym.tar.xz` -
-  macOS dSYM bundles, for use with Apple's tools such as `atos` and `lldb`.
-* `electron-vX.Y.Z-win32-<arch>-pdb.zip` - Windows PDB files, for use with WinDbg and
-  Visual Studio.
-* `electron-vX.Y.Z-linux-<arch>-debug.zip` - Linux debug info, for use with `gdb`.
+* [Breakpad](https://chromium.googlesource.com/breakpad/breakpad/) symbols for all
+  platforms. These are what most minidump tools use.
+* dSYMs for macOS, for use with Apple's tools such as `atos` and `lldb`.
+* PDBs for Windows, for use with WinDbg and Visual Studio.
+* Debug info for Linux, for use with `gdb`.
 
-Breakpad symbols are also available from Electron's symbol server,
-`https://symbols.electronjs.org`, which uses the standard Breakpad layout
-(`<module>/<id>/<module>.sym`). Tools that can download Breakpad symbols over HTTP can
-use it directly, so you don't need to download the zip for each version. It also serves
-Windows PDBs; see [Setting Up Symbol Server in Debugger](../development/debugging-with-symbol-server.md).
+Electron also runs a symbol server at `https://symbols.electronjs.org`. Tools that
+support symbol servers can download the symbols they need from it, so you don't have to
+download the archives for each version. For debuggers on Windows, see
+[Setting Up Symbol Server in Debugger](../development/debugging-with-symbol-server.md).
 
 ### Example: symbolicating a minidump
 
@@ -359,12 +322,12 @@ cargo install minidump-stackwalk
 minidump-stackwalk --symbols-url=https://symbols.electronjs.org /path/to/crash.dmp
 ```
 
-Or download the matching `symbols.zip`, extract it, and use a local symbol directory.
-This works with Breakpad's own `minidump_stackwalk` as well:
+Or download the Breakpad symbols archive for the matching release, extract it, and pass
+the directory of symbols to the tool. This works with Breakpad's own
+`minidump_stackwalk` as well:
 
 ```sh
-unzip electron-v40.0.0-darwin-arm64-symbols.zip -d electron-symbols
-minidump_stackwalk /path/to/crash.dmp electron-symbols/breakpad_symbols
+minidump_stackwalk /path/to/crash.dmp /path/to/electron-symbols
 ```
 
 From Node.js, you can use the [`minidump`](https://github.com/electron/node-minidump)
@@ -373,7 +336,7 @@ package, which bundles Breakpad's tools:
 ```js @ts-nocheck
 const minidump = require('minidump')
 
-minidump.addSymbolPath('/path/to/electron-symbols/breakpad_symbols')
+minidump.addSymbolPath('/path/to/electron-symbols')
 minidump.walkStack('/path/to/crash.dmp', (error, report) => {
   if (error) throw error
   console.log(report.toString())
@@ -389,7 +352,7 @@ Electron's symbols only cover Electron's own binaries. If your app includes nati
 modules or other native libraries, frames in those will stay unsymbolicated unless you
 also keep symbols for them. Generate Breakpad symbols for each binary you ship with
 Breakpad's `dump_syms` tool (or `minidump.dumpSymbol()` from the `minidump` package),
-and store them in the same `<module>/<id>/<module>.sym` layout. Keep them for every
+and store them where your symbolication tool can find them. Keep them for every
 version you release, since symbols only match the exact build they came from.
 
 ### macOS system crash reports
@@ -414,7 +377,7 @@ For an `.ips` file, open it in the Console app and save the full text report, in
 the "Binary Images" section, first.
 
 You can also symbolicate individual addresses yourself with `atos` and the dSYM from the
-release assets. Take the load address of `Electron Framework` from the "Binary Images"
+matching release. Take the load address of `Electron Framework` from the "Binary Images"
 section and the frame's address from the stack:
 
 ```sh
