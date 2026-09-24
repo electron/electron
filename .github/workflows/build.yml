@@ -165,9 +165,15 @@ jobs:
       volumes:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
         - /var/run/sas:/var/run/sas
+    # This sync runs on a Linux x64 host, but every job that consumes the
+    # macOS src cache runs on an Apple Silicon runner, so describe that host
+    # to gclient: host_os picks the mac deps and hooks, host_cpu picks their
+    # arm64 variants (clang, rust, dsymutil, ...). CIPD packages templated on
+    # ${platform}/${arch} are still resolved by the cipd client on this Linux
+    # host; fix-sync swaps those in on the runner.
     env:
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=host_cpu=arm64'
     outputs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
     steps:
