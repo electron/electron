@@ -30,6 +30,8 @@ declare namespace NodeJS {
   interface IpcRendererBinding {
     ipcRenderer: Electron.IpcRenderer;
     ipcRendererInternal: ElectronInternal.IpcRendererInternal;
+    getProcessMemoryInfo(): Promise<Electron.ProcessMemoryInfo>;
+    reportPreloadError(preloadPath: string, error: unknown): void;
   }
 
   interface V8UtilBinding {
