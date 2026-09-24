@@ -297,3 +297,5 @@ cherry-pick-b77d42d0e0c8.patch
 cherry-pick-2f291ea16923.patch
 cherry-pick-8b5549467725.patch
 cherry-pick-0ac1a9c535c6.patch
+change_vector_modifications_counter_from_int64_t_to_uint32_t.patch
+add_alignas_t_to_heapvectorbacking_to_preserve_element_alignment.patch

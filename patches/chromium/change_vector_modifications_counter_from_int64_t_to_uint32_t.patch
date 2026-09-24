@@ -1,0 +1,112 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keishi Hattori <keishi@google.com>
+Date: Mon, 3 Aug 2026 23:53:30 -0700
+Subject: Change Vector modifications counter from int64_t to uint32_t
+
+Using int64_t for the modifications counter in VectorBufferBase elevated
+the alignof requirement of Vector to 8 bytes on 32-bit systems when
+DCHECK is enabled. Because HeapVectorBacking acts as a wrapper without
+inheriting element alignment, Oilpan allocates 4-byte aligned backing
+stores on 32-bit platforms. Casting this memory to an 8-byte aligned
+Vector pointer triggered libc++ hardening assertions during vector
+iteration.
+
+Change the modifications counter to uint32_t to restore 4-byte Vector
+alignment on 32-bit systems, matching Oilpan's default granularity and
+Blink's 32-bit container sizing design (wtf_size_t for capacity and
+size). For iterator invalidation, a 32-bit integer is wrap-safe as it
+requires 4.2 billion mutations during a single loop iteration to falsely
+match. Update UncheckedIterator and size assertions to adopt uint32_t.
+
+Electron: also takes the SameSizeAsVectorWithInlineCapacity inheritance
+change from https://crrev.com/c/7951919 so the Vector size assertions
+still hold with the smaller counter.
+
+Bug: 540446275
+Change-Id: I20c022395a1a56e8945d81b6f2c5f231dbf8f8a0
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8176251
+Reviewed-by: Kent Tamura <tkent@chromium.org>
+Commit-Queue: Keishi Hattori <keishi@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1673143}
+
+diff --git a/third_party/blink/renderer/platform/wtf/size_assertions.cc b/third_party/blink/renderer/platform/wtf/size_assertions.cc
+index 26608d1f3f26e5360879b1159fc67ec54a206432..d9fd75b44648157b239e1a7ed24269e17e2247d6 100644
+--- a/third_party/blink/renderer/platform/wtf/size_assertions.cc
++++ b/third_party/blink/renderer/platform/wtf/size_assertions.cc
+@@ -53,17 +53,31 @@ struct SameSizeAsVectorWithInlineCapacity;
+ 
+ template <typename T>
+ struct SameSizeAsVectorWithInlineCapacity<T, 0> {
++  // Declaring constructors and a destructor makes this struct non-POD under C++
++  // ABI rules, matching VectorBufferBase. Making the base struct non-POD allows
++  // derived classes to be smaller. Standard C++ rules forbid placing derived
++  // class members into the trailing padding of a POD base struct. This forces
++  // the compiler to place derived members after the padding and increases total
++  // size. By making this base struct non-POD, the compiler can pack derived
++  // members directly into trailing padding. This matches Vector's memory
++  // layout.
++  SameSizeAsVectorWithInlineCapacity() = default;
++  ~SameSizeAsVectorWithInlineCapacity();
++
+   void* buffer_pointer;
+   wtf_size_t capacity;
+   wtf_size_t size;
+ #if DCHECK_IS_ON()
+-  int64_t modifications;
++  // Using a 32-bit integer prevents Vector alignof() from becoming 8-bytes on
++  // 32-bit systems, avoiding memory alignment violations in HeapVector
++  // backing stores.
++  uint32_t modifications;
+ #endif
+ };
+ 
+ template <typename T, wtf_size_t inlineCapacity>
+-struct SameSizeAsVectorWithInlineCapacity {
+-  SameSizeAsVectorWithInlineCapacity<T, 0> base_capacity;
++struct SameSizeAsVectorWithInlineCapacity
++    : public SameSizeAsVectorWithInlineCapacity<T, 0> {
+ #if !defined(ANNOTATE_CONTIGUOUS_CONTAINER)
+   T inline_buffer[inlineCapacity];
+ #endif
+diff --git a/third_party/blink/renderer/platform/wtf/vector.h b/third_party/blink/renderer/platform/wtf/vector.h
+index 48bdd9224c2a62f7b252e11ef86b49eddd84ae14..379f83ae75783c599247d9ebab066e6824fec46f 100644
+--- a/third_party/blink/renderer/platform/wtf/vector.h
++++ b/third_party/blink/renderer/platform/wtf/vector.h
+@@ -488,7 +488,7 @@ class GC_PLUGIN_IGNORE("crbug.com/428987863") VectorBufferBase {
+   wtf_size_t capacity() const { return capacity_; }
+ 
+ #if DCHECK_IS_ON()
+-  int64_t Modifications() const { return modifications_; }
++  uint32_t Modifications() const { return modifications_; }
+   void RegisterModification() { modifications_++; }
+ #else
+   ALWAYS_INLINE void RegisterModification() {}
+@@ -583,7 +583,7 @@ class GC_PLUGIN_IGNORE("crbug.com/428987863") VectorBufferBase {
+   wtf_size_t capacity_;
+   wtf_size_t size_;
+ #if DCHECK_IS_ON()
+-  int64_t modifications_ = 0;
++  uint32_t modifications_ = 0;
+ #endif
+ 
+   struct ActiveIteratorCounter {
+@@ -1093,7 +1093,7 @@ class GC_PLUGIN_IGNORE("crbug.com/428987863") UncheckedIterator {
+   constexpr UncheckedIterator() = default;
+   explicit UncheckedIterator(T* cur) : current_(cur) {}
+ #if DCHECK_IS_ON()
+-  UncheckedIterator(T* cur, const int64_t* modifications_ptr)
++  UncheckedIterator(T* cur, const uint32_t* modifications_ptr)
+       : current_(cur),
+         modifications_ptr_(modifications_ptr),
+         captured_modifications_(modifications_ptr ? *modifications_ptr : 0) {}
+@@ -1279,8 +1279,8 @@ class GC_PLUGIN_IGNORE("crbug.com/428987863") UncheckedIterator {
+ 
+   T* current_ = nullptr;
+ #if DCHECK_IS_ON()
+-  const int64_t* modifications_ptr_ = nullptr;
+-  int64_t captured_modifications_ = 0;
++  const uint32_t* modifications_ptr_ = nullptr;
++  uint32_t captured_modifications_ = 0;
+ #elif BUILDFLAG(ENABLE_HEAP_VECTOR_ACTIVE_ITERATOR_CHECKS)
+   wtf_size_t* active_iterator_count_ = nullptr;
+ #endif
