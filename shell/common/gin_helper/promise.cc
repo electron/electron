@@ -5,6 +5,8 @@
 #include <string>
 #include <string_view>
 
+#include "base/functional/callback_helpers.h"
+#include "base/task/common/task_annotator.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/common/gin_helper/promise.h"
@@ -50,15 +52,24 @@ class PromiseHandle final : public cppgc::GarbageCollected<PromiseHandle>,
 };
 
 PromiseBase::SettleScope::SettleScope(const PromiseBase& base)
-    : isolate_{base.isolate()},
-      handle_scope_{isolate_},
+    : handle_scope_{base.isolate()},
       context_{base.GetContext()},
       microtasks_scope_(context_, v8::MicrotasksScope::kRunMicrotasks),
       context_scope_{context_} {}
 
+// The browser process runs microtasks explicitly: Node.js performs a
+// checkpoint when it returns from a libuv callback, and MicrotasksRunner
+// performs one after every task the UI thread runs. A promise settled from
+// anywhere else, such as an X11 reply or a native event that the message pump
+// dispatches itself, would leave its continuations queued until some
+// unrelated task happened to run. Post an empty task in that case so that the
+// checkpoint follows straight away.
 PromiseBase::SettleScope::~SettleScope() {
-  if (electron::IsBrowserProcess())
-    context_->GetMicrotaskQueue()->PerformCheckpoint(isolate_);
+  if (electron::IsBrowserProcess() &&
+      !base::TaskAnnotator::CurrentTaskForThread() &&
+      content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
+    content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE, base::DoNothing());
+  }
 }
 
 PromiseBase::PromiseBase(v8::Isolate* isolate)
