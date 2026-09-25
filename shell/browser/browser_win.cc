@@ -71,15 +71,19 @@ bool GetProcessExecPath(std::wstring* exe) {
   return true;
 }
 
+// Callers may pass an executable path either bare or wrapped in double quotes.
+void StripSurroundingQuotes(std::wstring* path) {
+  if (path->size() >= 2 && path->front() == L'"' && path->back() == L'"') {
+    *path = path->substr(1, path->size() - 2);
+  }
+}
+
 bool GetProtocolLaunchPath(gin::Arguments* args, std::wstring* exe) {
   if (!args->GetNext(exe) && !GetProcessExecPath(exe)) {
     return false;
   }
 
-  // Strip surrounding double quotes before re-quoting.
-  if (exe->size() >= 2 && exe->front() == L'"' && exe->back() == L'"') {
-    *exe = exe->substr(1, exe->size() - 2);
-  }
+  StripSurroundingQuotes(exe);
 
   // Read in optional args arg
   std::vector<std::wstring> launch_args;
@@ -160,11 +164,7 @@ bool FormatCommandLineString(std::wstring* exe,
     return false;
   }
 
-  // Strip surrounding double quotes before re-quoting.
-  if (exe->size() >= 2 && exe->front() == L'"' && exe->back() == L'"') {
-    *exe = exe->substr(1, exe->size() - 2);
-  }
-
+  StripSurroundingQuotes(exe);
   *exe = base::CommandLine::QuoteForCommandLineToArgvW(*exe);
 
   if (!launch_args.empty()) {
@@ -190,17 +190,10 @@ std::vector<LaunchItem> GetLoginItemSettingsHelper(
     const LoginItemSettings& options) {
   std::vector<LaunchItem> launch_items;
 
-  base::FilePath lookup_exe_path;
-  if (options.path.empty()) {
-    std::wstring process_exe_path;
-    GetProcessExecPath(&process_exe_path);
-    lookup_exe_path =
-        base::CommandLine::FromString(process_exe_path).GetProgram();
-  } else {
-    lookup_exe_path =
-        base::CommandLine::FromString(base::as_wcstr(options.path))
-            .GetProgram();
-  }
+  std::wstring lookup_exe_path = base::UTF16ToWide(options.path);
+  if (lookup_exe_path.empty())
+    GetProcessExecPath(&lookup_exe_path);
+  StripSurroundingQuotes(&lookup_exe_path);
 
   if (!lookup_exe_path.empty()) {
     while (it->Valid()) {
@@ -208,7 +201,7 @@ std::vector<LaunchItem> GetLoginItemSettingsHelper(
           base::CommandLine::FromString(it->Value());
       base::FilePath registry_launch_path = registry_launch_cmd.GetProgram();
       bool exe_match = base::FilePath::CompareEqualIgnoreCase(
-          lookup_exe_path.value(), registry_launch_path.value());
+          lookup_exe_path, registry_launch_path.value());
 
       // add launch item to vector if it has a matching path (case-insensitive)
       if (exe_match) {
