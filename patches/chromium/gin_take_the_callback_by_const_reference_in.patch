@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Attard <samuel.r.attard@gmail.com>
+Date: Thu, 24 Sep 2026 02:00:28 +0000
+Subject: gin: Take the callback by const reference in
+ Invoker::DispatchToCallback
+
+Invoker::DispatchToCallback took the base::RepeatingCallback by value,
+so every call to a gin-bound function copied and destroyed it: one
+atomic increment and one atomic decrement on the BindState refcount.
+The callback is owned by the CallbackHolder for the lifetime of the
+function template, so a const reference is enough.
+
+Measured with a gin_unittests micro-benchmark (not part of this CL)
+that calls a bound no-op void() 2e6 times from a JS loop, Linux x64
+release build: 42.3 -> 32.1 ns per call.
+
+No behaviour change.
+
+Bug: None
+
+Cherry-picked from
+https://chromium-review.googlesource.com/c/chromium/src/+/8455325.
+This patch can be removed when that CL lands and rolls into Electron.
+
+diff --git a/gin/function_template.h b/gin/function_template.h
+index 06c7ed637f5a7a60cf6251a20620df8c984f7402..19af32e0dc7b2c05d767bc6d54244c6c1c9ed8d2 100644
+--- a/gin/function_template.h
++++ b/gin/function_template.h
+@@ -209,7 +209,7 @@ class Invoker<std::index_sequence<indices...>, ArgTypes...>
+ 
+   template <typename ReturnType>
+   void DispatchToCallback(
+-      base::RepeatingCallback<ReturnType(ArgTypes...)> callback) {
++      const base::RepeatingCallback<ReturnType(ArgTypes...)>& callback) {
+     args_->Return(
+         callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...));
+   }
+@@ -217,7 +217,8 @@ class Invoker<std::index_sequence<indices...>, ArgTypes...>
+   // In C++, you can declare the function foo(void), but you can't pass a void
+   // expression to foo. As a result, we must specialize the case of Callbacks
+   // that have the void return type.
+-  void DispatchToCallback(base::RepeatingCallback<void(ArgTypes...)> callback) {
++  void DispatchToCallback(
++      const base::RepeatingCallback<void(ArgTypes...)>& callback) {
+     callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...);
+   }
+ 
