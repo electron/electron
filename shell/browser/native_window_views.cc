@@ -76,7 +76,6 @@
 
 #if BUILDFLAG(SUPPORTS_OZONE_X11)
 #include "shell/browser/ui/views/global_menu_bar_x11.h"
-#include "shell/browser/ui/x/event_disabler.h"
 #include "shell/browser/ui/x/x_window_utils.h"
 #include "ui/gfx/x/atom_cache.h"
 #include "ui/gfx/x/connection.h"
@@ -691,10 +690,7 @@ bool NativeWindowViews::IsEnabled() const {
 #if BUILDFLAG(IS_WIN)
   return ::IsWindowEnabled(GetAcceleratedWidget());
 #elif BUILDFLAG(IS_LINUX)
-  if (x11_util::IsX11())
-    return !event_disabler_.get();
-  NOTIMPLEMENTED();
-  return true;
+  return !enable_event_listening_;
 #endif
 }
 
@@ -728,17 +724,12 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
 #if BUILDFLAG(IS_WIN)
   ::EnableWindow(GetAcceleratedWidget(), enable);
 #else
-  if (x11_util::IsX11()) {
-    views::DesktopWindowTreeHostPlatform* tree_host =
-        views::DesktopWindowTreeHostLinux::GetHostForWidget(
-            GetAcceleratedWidget());
-    if (enable) {
-      tree_host->RemoveEventRewriter(event_disabler_.get());
-      event_disabler_.reset();
-    } else {
-      event_disabler_ = std::make_unique<EventDisabler>();
-      tree_host->AddEventRewriter(event_disabler_.get());
-    }
+  if (enable) {
+    enable_event_listening_.RunAndReset();
+  } else {
+    auto* tree_host = static_cast<views::DesktopWindowTreeHostLinux*>(
+        GetNativeWindow()->GetHost());
+    enable_event_listening_.ReplaceClosure(tree_host->DisableEventListening());
   }
 #endif
 }
