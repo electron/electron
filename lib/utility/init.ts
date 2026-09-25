@@ -1,5 +1,4 @@
 import LanguageModelUtility from '@electron/internal/utility/api/language-model-utility';
-import { ParentPort } from '@electron/internal/utility/parent-port';
 
 import { EventEmitter } from 'events';
 import { pathToFileURL } from 'url';
@@ -29,7 +28,9 @@ require('@electron/internal/common/init');
 
 process._linkedBinding('electron_browser_event_emitter').setEventEmitterPrototype(EventEmitter.prototype);
 
-const parentPort: ParentPort = new ParentPort();
+const parentPort: ElectronInternal.ParentPort = process
+  ._linkedBinding('electron_utility_parent_port')
+  .createParentPort();
 Object.defineProperty(process, 'parentPort', {
   enumerable: true,
   writable: false,

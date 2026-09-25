@@ -4,8 +4,10 @@
 
 #include "shell/browser/api/electron_api_crash_reporter.h"
 
+#include <algorithm>
 #include <limits>
 #include <map>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -13,6 +15,7 @@
 #include "base/containers/to_vector.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
+#include "base/strings/strcat.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/trace_event/trace_event.h"
 #include "chrome/common/chrome_paths.h"
@@ -21,13 +24,17 @@
 #include "electron/mas.h"
 #include "gin/converter.h"
 #include "gin/data_object_builder.h"
+#include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/time_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/process_util.h"
 #include "shell/common/thread_restrictions.h"
 
@@ -187,10 +194,12 @@ void Start(const std::string& submit_url,
 namespace {
 
 #if IS_MAS_BUILD()
-void GetUploadedReports(
-    v8::Isolate* isolate,
-    base::OnceCallback<void(v8::Local<v8::Value>)> callback) {
-  std::move(callback).Run(v8::Array::New(isolate));
+v8::Local<v8::Value> GetUploadedReports(v8::Isolate* isolate) {
+  return v8::Array::New(isolate);
+}
+
+v8::Local<v8::Value> GetLastCrashReport(v8::Isolate* isolate) {
+  return v8::Null(isolate);
 }
 #else
 scoped_refptr<UploadList> CreateCrashUploadList() {
@@ -216,29 +225,104 @@ scoped_refptr<UploadList> CreateCrashUploadList() {
 #endif  // BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
 }
 
-v8::Local<v8::Value> GetUploadedReports(v8::Isolate* isolate) {
+// TODO(nornagon): switch to using Load() instead of LoadSync() once the
+// synchronous version of getUploadedReports is deprecated so we can remove
+// our patch.
+scoped_refptr<UploadList> LoadCrashUploadList() {
   auto list = CreateCrashUploadList();
-  // TODO(nornagon): switch to using Load() instead of LoadSync() once the
-  // synchronous version of getUploadedReports is deprecated so we can remove
-  // our patch.
-  {
-    electron::ScopedAllowBlockingForElectron allow_blocking;
-    list->LoadSync();
-  }
+  electron::ScopedAllowBlockingForElectron allow_blocking;
+  list->LoadSync();
+  return list;
+}
 
-  auto to_obj = [isolate](const UploadList::UploadInfo* upload) {
-    return gin::DataObjectBuilder{isolate}
-        .Set("date", upload->upload_time)
-        .Set("id", upload->upload_id)
-        .Build();
-  };
+constexpr size_t kMaxUploadReportsToList = std::numeric_limits<size_t>::max();
 
-  constexpr size_t kMaxUploadReportsToList = std::numeric_limits<size_t>::max();
+v8::Local<v8::Object> ToReportObject(v8::Isolate* isolate,
+                                     const UploadList::UploadInfo* upload) {
+  return gin::DataObjectBuilder{isolate}
+      .Set("date", upload->upload_time)
+      .Set("id", upload->upload_id)
+      .Build();
+}
+
+v8::Local<v8::Value> GetUploadedReports(v8::Isolate* isolate) {
+  auto list = LoadCrashUploadList();
   return gin::ConvertToV8(
-      isolate,
-      base::ToVector(list->GetUploads(kMaxUploadReportsToList), to_obj));
+      isolate, base::ToVector(list->GetUploads(kMaxUploadReportsToList),
+                              [isolate](const auto* u) {
+                                return ToReportObject(isolate, u);
+                              }));
+}
+
+v8::Local<v8::Value> GetLastCrashReport(v8::Isolate* isolate) {
+  auto list = LoadCrashUploadList();
+  auto reports = list->GetUploads(kMaxUploadReportsToList);
+  auto last = std::ranges::max_element(
+      reports, {}, [](const auto* upload) { return upload->upload_time; });
+  if (last == reports.end())
+    return v8::Null(isolate);
+  return ToReportObject(isolate, *last);
 }
 #endif
+
+void Start(gin_helper::ErrorThrower thrower,
+           std::optional<gin_helper::Dictionary> maybe_options) {
+  gin_helper::Dictionary options = maybe_options.value_or(
+      gin_helper::Dictionary::CreateEmpty(thrower.isolate()));
+  std::string product_name = electron::Browser::Get()->GetName();
+  std::string company_name;
+  std::string submit_url;
+  std::map<std::string, std::string> extra;
+  std::map<std::string, std::string> global_extra;
+  bool ignore_system_crash_handler = false;
+  bool upload_to_server = true;
+  bool rate_limit = false;
+  bool compress = true;
+  // Reads options[key] if present; a value of the wrong type throws.
+  auto read = [&](std::string_view key, auto* out, std::string_view type) {
+    v8::Local<v8::Value> value;
+    if (!options.Get(key, &value) || value->IsUndefined() ||
+        gin::ConvertFromV8(thrower.isolate(), value, out)) {
+      return true;
+    }
+    thrower.ThrowTypeError(base::StrCat({key, " must be ", type}));
+    return false;
+  };
+  if (!read("productName", &product_name, "a string") ||
+      !read("companyName", &company_name, "a string") ||
+      !read("extra", &extra, "an object with string values") ||
+      !read("globalExtra", &global_extra, "an object with string values") ||
+      !read("ignoreSystemCrashHandler", &ignore_system_crash_handler,
+            "a boolean") ||
+      !read("submitURL", &submit_url, "a string") ||
+      !read("uploadToServer", &upload_to_server, "a boolean") ||
+      !read("rateLimit", &rate_limit, "a boolean") ||
+      !read("compress", &compress, "a boolean")) {
+    return;
+  }
+
+  if (upload_to_server && submit_url.empty()) {
+    thrower.ThrowError(
+        "submitURL must be specified when uploadToServer is true");
+    return;
+  }
+  if (upload_to_server && !compress) {
+    electron::util::EmitDeprecationWarning(
+        thrower.isolate(),
+        "Sending uncompressed crash reports is deprecated and will be removed "
+        "in a future version of Electron. Set { compress: true } to opt-in to "
+        "the new behavior. Crash reports will be uploaded gzipped, which most "
+        "crash reporting servers support.");
+  }
+  if (!company_name.empty())
+    global_extra.try_emplace("_companyName", company_name);
+  global_extra.try_emplace("_productName", product_name);
+  global_extra.try_emplace("_version", electron::Browser::Get()->GetVersion());
+
+  electron::api::crash_reporter::Start(submit_url, upload_to_server,
+                                       ignore_system_crash_handler, rate_limit,
+                                       compress, global_extra, extra, false);
+}
 
 void SetUploadToServer(bool upload) {
 #if !IS_MAS_BUILD()
@@ -268,7 +352,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.SetMethod("start", &electron::api::crash_reporter::Start);
+  dict.SetMethod("start", &Start);
+  dict.SetMethod("getLastCrashReport", &GetLastCrashReport);
 #if IS_MAS_BUILD()
   dict.SetMethod("addExtraParameter", &electron::api::crash_reporter::NoOp);
   dict.SetMethod("removeExtraParameter", &electron::api::crash_reporter::NoOp);

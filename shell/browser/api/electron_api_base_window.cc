@@ -30,6 +30,7 @@
 #include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/event_emitter_template.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/persistent_dictionary.h"
@@ -1288,9 +1289,21 @@ bool BaseWindow::IsWindowNameValid(const gin_helper::Dictionary& options,
 }
 
 // static
+v8::Local<v8::FunctionTemplate> BaseWindow::GetConstructorTemplate(
+    v8::Isolate* isolate) {
+  static bool created = false;
+  if (!created) {
+    created = true;
+    SetConstructor(isolate, base::BindRepeating(&BaseWindow::New));
+  }
+  return GetConstructor(isolate);
+}
+
+// static
 void BaseWindow::BuildPrototype(v8::Isolate* isolate,
                                 v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(gin::StringToV8(isolate, "BaseWindow"));
+  prototype->Inherit(gin_helper::internal::GetEventEmitterTemplate(isolate));
   gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("setContentView", &BaseWindow::SetContentView)
@@ -1312,6 +1325,8 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isMinimized", &BaseWindow::IsMinimized)
       .SetMethod("setFullScreen", &BaseWindow::SetFullScreen)
       .SetMethod("isFullScreen", &BaseWindow::IsFullscreen)
+      .SetProperty("fullScreen", &BaseWindow::IsFullscreen,
+                   &BaseWindow::SetFullScreen)
       .SetMethod("setBounds", &BaseWindow::SetBounds)
       .SetMethod("getBounds", &BaseWindow::GetBounds)
       .SetMethod("isNormal", &BaseWindow::IsNormal)
@@ -1331,16 +1346,27 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("moveTop", &BaseWindow::MoveTop)
       .SetMethod("setResizable", &BaseWindow::SetResizable)
       .SetMethod("isResizable", &BaseWindow::IsResizable)
+      .SetProperty("resizable", &BaseWindow::IsResizable,
+                   &BaseWindow::SetResizable)
       .SetMethod("setMovable", &BaseWindow::SetMovable)
       .SetMethod("isMovable", &BaseWindow::IsMovable)
+      .SetProperty("movable", &BaseWindow::IsMovable, &BaseWindow::SetMovable)
       .SetMethod("setMinimizable", &BaseWindow::SetMinimizable)
       .SetMethod("isMinimizable", &BaseWindow::IsMinimizable)
+      .SetProperty("minimizable", &BaseWindow::IsMinimizable,
+                   &BaseWindow::SetMinimizable)
       .SetMethod("setMaximizable", &BaseWindow::SetMaximizable)
       .SetMethod("isMaximizable", &BaseWindow::IsMaximizable)
+      .SetProperty("maximizable", &BaseWindow::IsMaximizable,
+                   &BaseWindow::SetMaximizable)
       .SetMethod("setFullScreenable", &BaseWindow::SetFullScreenable)
       .SetMethod("isFullScreenable", &BaseWindow::IsFullScreenable)
+      .SetProperty("fullScreenable", &BaseWindow::IsFullScreenable,
+                   &BaseWindow::SetFullScreenable)
       .SetMethod("setClosable", &BaseWindow::SetClosable)
       .SetMethod("isClosable", &BaseWindow::IsClosable)
+      .SetProperty("closable", &BaseWindow::IsClosable,
+                   &BaseWindow::SetClosable)
       .SetMethod("setAlwaysOnTop", &BaseWindow::SetAlwaysOnTop)
       .SetMethod("isAlwaysOnTop", &BaseWindow::IsAlwaysOnTop)
       .SetMethod("center", &BaseWindow::Center)
@@ -1348,31 +1374,42 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getPosition", &BaseWindow::GetPosition)
       .SetMethod("setTitle", &BaseWindow::SetTitle)
       .SetMethod("getTitle", &BaseWindow::GetTitle)
+      .SetProperty("title", &BaseWindow::GetTitle, &BaseWindow::SetTitle)
       .SetProperty("accessibleTitle", &BaseWindow::GetAccessibleTitle,
                    &BaseWindow::SetAccessibleTitle)
       .SetMethod("flashFrame", &BaseWindow::FlashFrame)
       .SetMethod("setSkipTaskbar", &BaseWindow::SetSkipTaskbar)
       .SetMethod("setSimpleFullScreen", &BaseWindow::SetSimpleFullScreen)
       .SetMethod("isSimpleFullScreen", &BaseWindow::IsSimpleFullScreen)
+      .SetProperty("simpleFullScreen", &BaseWindow::IsSimpleFullScreen,
+                   &BaseWindow::SetSimpleFullScreen)
       .SetMethod("setKiosk", &BaseWindow::SetKiosk)
       .SetMethod("isKiosk", &BaseWindow::IsKiosk)
+      .SetProperty("kiosk", &BaseWindow::IsKiosk, &BaseWindow::SetKiosk)
       .SetMethod("isTabletMode", &BaseWindow::IsTabletMode)
       .SetMethod("setBackgroundColor", &BaseWindow::SetBackgroundColor)
       .SetMethod("getBackgroundColor", &BaseWindow::GetBackgroundColor)
       .SetMethod("setHasShadow", &BaseWindow::SetHasShadow)
       .SetMethod("hasShadow", &BaseWindow::HasShadow)
+      .SetProperty("shadow", &BaseWindow::HasShadow, &BaseWindow::SetHasShadow)
       .SetMethod("setOpacity", &BaseWindow::SetOpacity)
       .SetMethod("getOpacity", &BaseWindow::GetOpacity)
       .SetMethod("setShape", &BaseWindow::SetShape)
       .SetMethod("setRepresentedFilename", &BaseWindow::SetRepresentedFilename)
       .SetMethod("getRepresentedFilename", &BaseWindow::GetRepresentedFilename)
+      .SetProperty("representedFilename", &BaseWindow::GetRepresentedFilename,
+                   &BaseWindow::SetRepresentedFilename)
       .SetMethod("setDocumentEdited", &BaseWindow::SetDocumentEdited)
       .SetMethod("isDocumentEdited", &BaseWindow::IsDocumentEdited)
+      .SetProperty("documentEdited", &BaseWindow::IsDocumentEdited,
+                   &BaseWindow::SetDocumentEdited)
       .SetMethod("setIgnoreMouseEvents", &BaseWindow::SetIgnoreMouseEvents)
       .SetMethod("setContentProtection", &BaseWindow::SetContentProtection)
       .SetMethod("isContentProtected", &BaseWindow::IsContentProtected)
       .SetMethod("setFocusable", &BaseWindow::SetFocusable)
       .SetMethod("isFocusable", &BaseWindow::IsFocusable)
+      .SetProperty("focusable", &BaseWindow::IsFocusable,
+                   &BaseWindow::SetFocusable)
       .SetMethod("setMenu", &BaseWindow::SetMenu)
       .SetMethod("removeMenu", &BaseWindow::RemoveMenu)
       .SetMethod("setParentWindow", &BaseWindow::SetParentWindow)
@@ -1384,6 +1421,9 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
                  &BaseWindow::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
                  &BaseWindow::IsVisibleOnAllWorkspaces)
+      .SetProperty("visibleOnAllWorkspaces",
+                   &BaseWindow::IsVisibleOnAllWorkspaces,
+                   &BaseWindow::SetVisibleOnAllWorkspaces)
 #if BUILDFLAG(IS_MAC)
       .SetMethod("invalidateShadow", &BaseWindow::InvalidateShadow)
       .SetMethod("_getAlwaysOnTopLevel", &BaseWindow::GetAlwaysOnTopLevel)
@@ -1424,8 +1464,12 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
 #endif
       .SetMethod("setAutoHideMenuBar", &BaseWindow::SetAutoHideMenuBar)
       .SetMethod("isMenuBarAutoHide", &BaseWindow::IsMenuBarAutoHide)
+      .SetProperty("autoHideMenuBar", &BaseWindow::IsMenuBarAutoHide,
+                   &BaseWindow::SetAutoHideMenuBar)
       .SetMethod("setMenuBarVisibility", &BaseWindow::SetMenuBarVisibility)
       .SetMethod("isMenuBarVisible", &BaseWindow::IsMenuBarVisible)
+      .SetProperty("menuBarVisible", &BaseWindow::IsMenuBarVisible,
+                   &BaseWindow::SetMenuBarVisibility)
       .SetMethod("setAspectRatio", &BaseWindow::SetAspectRatio)
       .SetMethod("previewFile", &BaseWindow::PreviewFile)
       .SetMethod("closeFilePreview", &BaseWindow::CloseFilePreview)
@@ -1470,10 +1514,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
-  BaseWindow::SetConstructor(isolate, base::BindRepeating(&BaseWindow::New));
-
   gin_helper::Dictionary constructor(isolate,
-                                     BaseWindow::GetConstructor(isolate)
+                                     BaseWindow::GetConstructorTemplate(isolate)
                                          ->GetFunction(context)
                                          .ToLocalChecked());
   constructor.SetMethod("fromId", &BaseWindow::FromWeakMapID);
