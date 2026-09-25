@@ -322,6 +322,31 @@ jobs:
         /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
           -f src/out/Default/Electron.app
 
+    # On GitHub-hosted Windows runners the agent's terminal window sits in the
+    # foreground and covers most of the desktop. Windows' native occlusion
+    # tracking then marks test windows beneath it as hidden, so they stop
+    # producing frames. Minimize it before the specs run.
+    - name: Minimize Runner Terminal Window (Windows)
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: pwsh
+      run: |
+        Add-Type -Namespace ElectronCI -Name User32 -MemberDefinition @'
+        [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+        [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
+        [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string cls, string title);
+        '@
+        foreach ($cls in 'ConsoleWindowClass', 'CASCADIA_HOSTING_WINDOW_CLASS') {
+          $h = [IntPtr]::Zero
+          while (($h = [ElectronCI.User32]::FindWindowEx([IntPtr]::Zero, $h, $cls, [NullString]::Value)) -ne [IntPtr]::Zero) {
+            if ([ElectronCI.User32]::IsWindowVisible($h) -and -not [ElectronCI.User32]::IsIconic($h)) {
+              # 6 = SW_MINIMIZE
+              [void][ElectronCI.User32]::ShowWindow($h, 6)
+              Write-Host ("Minimized {0} window 0x{1:X}" -f $cls, $h.ToInt64())
+            }
+          }
+        }
+
     - name: Run Electron Tests
       shell: bash
       timeout-minutes: 60
