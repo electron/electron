@@ -1953,6 +1953,8 @@ describe('BrowserWindow module', () => {
 
       it('throws when a field is not a number', () => {
         expect(() => w.setBounds({ x: 'left' } as any)).to.throw(/conversion failure/);
+        expect(() => w.setBounds({ x: NaN })).to.throw(/conversion failure/);
+        expect(() => w.setBounds({ width: Infinity })).to.throw(/conversion failure/);
         expect(() => (w.setBounds as any)(null)).to.throw(/conversion failure/);
       });
 
