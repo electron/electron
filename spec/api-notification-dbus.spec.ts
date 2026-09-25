@@ -140,7 +140,7 @@ ifdescribe(!skip)('Notification module (dbus)', { tags: ['serial'] }, () => {
         app_icon: '',
         title: 'title',
         body: 'body',
-        actions: ['default', 'View'],
+        actions: ['default', 'Show'],
         hints: {
           append: 'true',
           image_data: [
