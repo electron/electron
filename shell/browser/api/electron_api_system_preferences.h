@@ -156,30 +156,13 @@ class SystemPreferences final
   void Dispose();
 
 #if BUILDFLAG(IS_WIN)
-  // Static callback invoked when a message comes in to our messaging window.
-  static LRESULT CALLBACK WndProcStatic(HWND hwnd,
-                                        UINT message,
-                                        WPARAM wparam,
-                                        LPARAM lparam);
-
-  LRESULT CALLBACK WndProc(HWND hwnd,
-                           UINT message,
-                           WPARAM wparam,
-                           LPARAM lparam);
-
-  // The window class of |window_|.
-  ATOM atom_ = 0;
-
-  // The handle of the module that contains the window procedure of |window_|.
-  HMODULE instance_ = nullptr;
-
-  // The window used for processing events.
-  HWND window_ = nullptr;
+  void OnAccentColorChanged();
 
   std::string current_color_;
 
   // Color/high contrast mode change observer.
   base::CallbackListSubscription hwnd_subscription_;
+  base::CallbackListSubscription accent_color_subscription_;
 #endif
 #if BUILDFLAG(IS_LINUX)
   void OnNativeThemeUpdatedOnUI();

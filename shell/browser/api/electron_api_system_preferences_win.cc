@@ -2,7 +2,6 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include <iomanip>
 #include <string_view>
 
 #include <windows.devices.enumeration.h>
@@ -14,19 +13,14 @@
 #include "base/logging.h"
 #include "base/win/core_winrt_util.h"
 #include "base/win/windows_types.h"
-#include "base/win/wrapped_window_proc.h"
 #include "shell/common/color_util.h"
 #include "shell/common/process_util.h"
-#include "skia/ext/skia_utils_win.h"
-#include "ui/gfx/win/hwnd_util.h"
+#include "ui/color/win/accent_color_observer.h"
 #include "ui/gfx/win/singleton_hwnd.h"
 
 namespace electron {
 
 namespace {
-
-const wchar_t kSystemPreferencesWindowClass[] =
-    L"Electron_SystemPreferencesHostWindow";
 
 using ABI::Windows::Devices::Enumeration::DeviceAccessStatus;
 using ABI::Windows::Devices::Enumeration::DeviceClass;
@@ -77,20 +71,21 @@ std::string ConvertDeviceAccessStatus(DeviceAccessStatus value) {
 
 namespace api {
 
-std::string hexColorDWORDToRGBA(DWORD color) {
-  DWORD rgba = color << 8 | color >> 24;
-  std::ostringstream stream;
-  stream << std::hex << std::setw(8) << std::setfill('0') << rgba;
-  return stream.str();
-}
-
 std::string SystemPreferences::GetAccentColor() {
-  std::optional<DWORD> color = GetSystemAccentColor();
-
+  const std::optional<SkColor> color =
+      ui::AccentColorObserver::Get()->accent_color();
   if (!color.has_value())
     return "";
 
-  return ToRGBAHex(skia::COLORREFToSkColor(color.value()), false);
+  return ToRGBAHex(*color, false);
+}
+
+void SystemPreferences::OnAccentColorChanged() {
+  std::string new_color = GetAccentColor();
+  if (new_color == current_color_)
+    return;
+  current_color_ = new_color;
+  Emit("accent-color-changed", new_color);
 }
 
 std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
@@ -167,49 +162,11 @@ void SystemPreferences::InitializeWindow() {
     Browser::Get()->AddObserver(this);
   }
 
-  WNDCLASSEX window_class;
-  base::win::InitializeWindowClass(
-      kSystemPreferencesWindowClass,
-      &base::win::WrappedWindowProc<SystemPreferences::WndProcStatic>, 0, 0, 0,
-      nullptr, nullptr, nullptr, nullptr, nullptr, &window_class);
-  instance_ = window_class.hInstance;
-  atom_ = RegisterClassEx(&window_class);
-
-  // Create an offscreen window for receiving broadcast messages for the system
-  // colorization color.  Create a hidden WS_POPUP window instead of an
-  // HWND_MESSAGE window, because only top-level windows such as popups can
-  // receive broadcast messages like "WM_DWMCOLORIZATIONCOLORCHANGED".
-  window_ = CreateWindow(MAKEINTATOM(atom_), nullptr, WS_POPUP, 0, 0, 0, 0,
-                         nullptr, nullptr, instance_, nullptr);
-  gfx::CheckWindowCreated(window_, ::GetLastError());
-  gfx::SetWindowUserData(window_, this);
-}
-
-LRESULT CALLBACK SystemPreferences::WndProcStatic(HWND hwnd,
-                                                  UINT message,
-                                                  WPARAM wparam,
-                                                  LPARAM lparam) {
-  auto* msg_wnd = reinterpret_cast<SystemPreferences*>(
-      GetWindowLongPtr(hwnd, GWLP_USERDATA));
-  if (msg_wnd)
-    return msg_wnd->WndProc(hwnd, message, wparam, lparam);
-  else
-    return ::DefWindowProc(hwnd, message, wparam, lparam);
-}
-
-LRESULT CALLBACK SystemPreferences::WndProc(HWND hwnd,
-                                            UINT message,
-                                            WPARAM wparam,
-                                            LPARAM lparam) {
-  if (message == WM_DWMCOLORIZATIONCOLORCHANGED) {
-    DWORD new_color = static_cast<DWORD>(wparam);
-    std::string new_color_string = hexColorDWORDToRGBA(new_color);
-    if (new_color_string != current_color_) {
-      Emit("accent-color-changed", hexColorDWORDToRGBA(new_color));
-      current_color_ = new_color_string;
-    }
-  }
-  return ::DefWindowProc(hwnd, message, wparam, lparam);
+  auto* accent_color_observer = ui::AccentColorObserver::Get();
+  current_color_ = GetAccentColor();
+  accent_color_subscription_ =
+      accent_color_observer->Subscribe(base::BindRepeating(
+          &SystemPreferences::OnAccentColorChanged, base::Unretained(this)));
 }
 
 void SystemPreferences::OnWndProc(HWND hwnd,
@@ -235,16 +192,8 @@ void SystemPreferences::Dispose() {
     return;
 
   hwnd_subscription_ = {};
+  accent_color_subscription_ = {};
   Browser::Get()->RemoveObserver(this);
-  if (window_) {
-    gfx::SetWindowUserData(window_, nullptr);
-    DestroyWindow(window_);
-    window_ = nullptr;
-  }
-  if (atom_) {
-    UnregisterClass(MAKEINTATOM(atom_), instance_);
-    atom_ = 0;
-  }
 }
 
 }  // namespace api

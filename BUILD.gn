@@ -809,6 +809,7 @@ source_set("electron_lib") {
       "//components/crash/core/app:crash_export_thunks",
       "//components/os_crypt/async/browser:dpapi_key_provider",
       "//third_party/libxml:xml_writer",
+      "//ui/color:accent_color_observer",
       "//ui/wm",
       "//ui/wm/public",
     ]
