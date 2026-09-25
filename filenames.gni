@@ -112,6 +112,8 @@ filenames = {
     "shell/browser/ui/win/taskbar_host.h",
     "shell/browser/win/dark_mode.cc",
     "shell/browser/win/dark_mode.h",
+    "shell/browser/win/install_dir_access.cc",
+    "shell/browser/win/install_dir_access.h",
     "shell/common/api/electron_api_native_image_win.cc",
     "shell/common/application_info_win.cc",
     "shell/common/language_util_win.cc",
