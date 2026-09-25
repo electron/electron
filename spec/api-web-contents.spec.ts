@@ -33,6 +33,7 @@ import {
   isTestingBindingAvailable,
   startRemoteControlApp
 } from './lib/spec-helpers.ts';
+import { WebmGenerator } from './lib/video-helpers.js';
 import { cleanupWebContents, closeAllWindows } from './lib/window-helpers.ts';
 
 import type { AddressInfo } from 'node:net';
@@ -75,6 +76,15 @@ describe('webContents module', () => {
       const properties = Object.getOwnPropertyNames(w.webContents);
       expect(properties).to.include('ipc');
       expect(properties).to.include('navigationHistory');
+    });
+
+    it('throws when a method is called with a receiver of another native type', () => {
+      const w = new BrowserWindow({ show: false });
+      const isLoading = w.webContents.isLoading as () => boolean;
+      expect(() => isLoading.call(session.defaultSession)).to.throw(TypeError);
+      expect(() => isLoading.call(w)).to.throw(TypeError);
+      expect(() => isLoading.call({})).to.throw(TypeError);
+      expect(isLoading.call(w.webContents)).to.be.a('boolean');
     });
   });
 
@@ -1452,6 +1462,45 @@ describe('webContents module', () => {
       w.webContents.openDevTools({ mode: 'detach', activate: false });
       await devtoolsOpened;
       expect(w.webContents.isDevToolsOpened()).to.be.true();
+    });
+
+    const getDevToolsPreferences = (w: BrowserWindow) =>
+      w.webContents.devToolsWebContents!.executeJavaScript(
+        'new Promise((resolve) => InspectorFrontendHost.getPreferences(resolve))'
+      );
+
+    // Regression test for https://github.com/electron/electron/pull/50646: the
+    // dock mode used to be spliced into a script run in the DevTools frontend.
+    it('ignores a mode that is not a known dock state', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { partition: 'devtools-dock-state' } });
+      await w.loadURL('about:blank');
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'bottom"); globalThis.injectedByMode = true; ("' as any, activate: false });
+      await devtoolsOpened;
+      // getPreferences() round-trips through the same frontend host that would
+      // have run the injected script, so it has had its chance by now.
+      await getDevToolsPreferences(w);
+      const injected = await w.webContents.devToolsWebContents!.executeJavaScript('globalThis.injectedByMode');
+      expect(injected).to.equal(undefined);
+    });
+
+    // Regression test for https://github.com/electron/electron/pull/50807:
+    // reopening without a mode fell back to docking right instead of restoring
+    // the last dock state.
+    it('restores the undocked state when reopened without a mode', async () => {
+      // DevTools preferences live in the session, so keep the dock state this
+      // leaves behind away from the default one.
+      const w = new BrowserWindow({ show: false, webPreferences: { partition: 'devtools-dock-state' } });
+      await w.loadURL('about:blank');
+      w.webContents.openDevTools({ mode: 'undocked', activate: false });
+      await once(w.webContents, 'devtools-opened');
+      await getDevToolsPreferences(w);
+      w.webContents.closeDevTools();
+      await waitUntil(() => !w.webContents.isDevToolsOpened());
+      w.webContents.openDevTools();
+      await once(w.webContents, 'devtools-opened');
+      const { currentDockState } = await getDevToolsPreferences(w);
+      expect(JSON.parse(currentDockState)).to.equal('undocked');
     });
 
     // Regression test for https://github.com/electron/electron/issues/52158.
@@ -4635,6 +4684,129 @@ describe('webContents module', () => {
       expect(px[2]).to.equal(255);
       expect(px[1]).to.equal(0);
       expect(px[0]).to.equal(0);
+    });
+
+    describe('on a page nobody can see', () => {
+      // Counts requestAnimationFrame callbacks over half a second in |frame|
+      // (the main frame when omitted).
+      const framesInHalfSecond = (wc: Electron.WebContents, frame: Electron.WebFrameMain | null = wc.mainFrame) =>
+        frame!.executeJavaScript(`new Promise(resolve => {
+          let n = 0;
+          let id = requestAnimationFrame(function f () { n++; id = requestAnimationFrame(f); });
+          setTimeout(() => { cancelAnimationFrame(id); resolve(n); }, 500);
+        })`) as Promise<number>;
+      const visibilityState = (wc: Electron.WebContents, frame: Electron.WebFrameMain | null = wc.mainFrame) =>
+        frame!.executeJavaScript('document.visibilityState') as Promise<string>;
+      const stopsPainting = (wc: Electron.WebContents, frame?: Electron.WebFrameMain | null) =>
+        waitUntil(async () => (await framesInHalfSecond(wc, frame)) === 0, { timeout: 10000 });
+      const startsPainting = (wc: Electron.WebContents, frame?: Electron.WebFrameMain | null) =>
+        waitUntil(async () => (await framesInHalfSecond(wc, frame)) > 0, { timeout: 10000 });
+
+      // Regression test: re-enabling throttling on a hidden page used to leave
+      // the RenderWidgetHost shown (from the setBackgroundThrottling(false)
+      // call), so the page kept producing frames at full rate and reporting
+      // itself visible until the window's visibility next changed.
+      it('stops producing frames again once re-enabled', async () => {
+        const w = new BrowserWindow({ width: 300, height: 200, webPreferences: { backgroundThrottling: true } });
+        await w.loadURL('about:blank');
+        w.hide();
+        await stopsPainting(w.webContents);
+        expect(await visibilityState(w.webContents)).to.equal('hidden');
+        w.webContents.setBackgroundThrottling(false);
+        await startsPainting(w.webContents);
+        expect(await visibilityState(w.webContents)).to.equal('visible');
+        w.webContents.setBackgroundThrottling(true);
+        await stopsPainting(w.webContents);
+        expect(await visibilityState(w.webContents)).to.equal('hidden');
+      });
+
+      // Same, but with throttling disabled before the window is hidden (the
+      // hide is swallowed while disabled), and checking the page comes back to
+      // visible when the window is shown afterwards.
+      it('stops producing frames when re-enabled after a hide, and resumes when shown', async () => {
+        const w = new BrowserWindow({ width: 300, height: 200, webPreferences: { backgroundThrottling: true } });
+        await w.loadURL('about:blank');
+        w.webContents.setBackgroundThrottling(false);
+        w.hide();
+        await setTimeout(500);
+        expect(await framesInHalfSecond(w.webContents)).to.be.greaterThan(0);
+        expect(await visibilityState(w.webContents)).to.equal('visible');
+        w.webContents.setBackgroundThrottling(true);
+        await stopsPainting(w.webContents);
+        expect(await visibilityState(w.webContents)).to.equal('hidden');
+        w.show();
+        await startsPainting(w.webContents);
+        expect(await visibilityState(w.webContents)).to.equal('visible');
+      });
+
+      // Cross-process iframes have their own RenderWidgetHost; re-enabling
+      // throttling must hide those too, not just the main frame's.
+      it('stops a cross-site iframe producing frames once re-enabled', async () => {
+        let crossSiteUrl = '';
+        const server = http.createServer((req, res) => {
+          res.setHeader('Content-Type', 'text/html');
+          res.end(
+            req.url === '/child' ? '<body>child</body>' : `<iframe name="child" src="${crossSiteUrl}/child"></iframe>`
+          );
+        });
+        defer(() => server.close());
+        const serverUrl = (await listen(server)).url;
+        crossSiteUrl = serverUrl.replace('127.0.0.1', 'localhost');
+        // Disabled from the start so the iframe's widget is created with it.
+        const w = new BrowserWindow({ width: 300, height: 200, webPreferences: { backgroundThrottling: false } });
+        await w.loadURL(serverUrl);
+        const child = w.webContents.mainFrame.frames.find((f) => f.name === 'child')!;
+        expect(child.osProcessId).to.not.equal(w.webContents.mainFrame.osProcessId);
+        w.hide();
+        await setTimeout(500);
+        expect(await framesInHalfSecond(w.webContents, child)).to.be.greaterThan(0);
+        w.webContents.setBackgroundThrottling(true);
+        await stopsPainting(w.webContents, child);
+        expect(await visibilityState(w.webContents, child)).to.equal('hidden');
+        w.webContents.setBackgroundThrottling(false);
+        await startsPainting(w.webContents, child);
+        w.show();
+        await startsPainting(w.webContents, child);
+      });
+
+      // While throttling is disabled the page is reported visible; media must
+      // be told too, or a muted video paused for being in the background stays
+      // frozen on a page that otherwise renders.
+      it('resumes background-paused video while disabled', async () => {
+        const imageDataUrl = `data:image/webp;base64,${await fs.promises.readFile(path.join(fixturesPath, 'video-source-image.webp'), 'base64')}`;
+        const encoder = new WebmGenerator(15);
+        for (let i = 0; i < 30; i++) encoder.add(imageDataUrl);
+        const webm: Uint8Array = await new Promise((resolve) => encoder.compile(resolve));
+        const server = http.createServer((req, res) => {
+          if (req.url === '/video.webm') {
+            res.setHeader('Content-Type', 'video/webm');
+            res.end(webm);
+          } else {
+            res.setHeader('Content-Type', 'text/html');
+            res.end(`<video src="/video.webm" muted loop autoplay></video><script>
+              window.videoFrames = 0;
+              const v = document.querySelector('video');
+              (function count () { v.requestVideoFrameCallback(() => { window.videoFrames++; count(); }); })();
+            </script>`);
+          }
+        });
+        defer(() => server.close());
+        const w = new BrowserWindow({ width: 300, height: 200, webPreferences: { backgroundThrottling: true } });
+        await w.loadURL((await listen(server)).url);
+        const videoFramesInHalfSecond = async () => {
+          const before = await w.webContents.executeJavaScript('window.videoFrames');
+          await setTimeout(500);
+          return (await w.webContents.executeJavaScript('window.videoFrames')) - before;
+        };
+        await waitUntil(async () => (await videoFramesInHalfSecond()) > 0, { timeout: 10000 });
+        w.hide();
+        // Background video pausing kicks in a moment after the page is hidden.
+        await waitUntil(async () => (await videoFramesInHalfSecond()) === 0, { timeout: 15000 });
+        w.webContents.setBackgroundThrottling(false);
+        await waitUntil(async () => (await videoFramesInHalfSecond()) > 0, { timeout: 10000 });
+        w.webContents.setBackgroundThrottling(true);
+        await waitUntil(async () => (await videoFramesInHalfSecond()) === 0, { timeout: 15000 });
+      });
     });
   });
 

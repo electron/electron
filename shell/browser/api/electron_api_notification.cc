@@ -626,14 +626,14 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Local<v8::Function> constructor = Notification::GetConstructor(
       isolate, context, &Notification::kWrapperInfo);
   gin_helper::Dictionary statics{isolate, constructor};
-  statics.SetMethod("isSupported", &Notification::IsSupported);
+  statics.SetMethod<&Notification::IsSupported>("isSupported");
 #if BUILDFLAG(IS_WIN)
-  statics.SetMethod("handleActivation", &Notification::HandleActivation);
+  statics.SetMethod<&Notification::HandleActivation>("handleActivation");
 #endif
-  statics.SetMethod("getHistory", &Notification::GetHistory);
-  statics.SetMethod("remove", &Notification::Remove);
-  statics.SetMethod("removeAll", &Notification::RemoveAll);
-  statics.SetMethod("removeGroup", &Notification::RemoveGroup);
+  statics.SetMethod<&Notification::GetHistory>("getHistory");
+  statics.SetMethod<&Notification::Remove>("remove");
+  statics.SetMethod<&Notification::RemoveAll>("removeAll");
+  statics.SetMethod<&Notification::RemoveGroup>("removeGroup");
   gin_helper::Dictionary{isolate, exports}.Set("Notification", constructor);
 }
 

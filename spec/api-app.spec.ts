@@ -1864,6 +1864,38 @@ describe('app module', () => {
   });
 
   describe('getAppMetrics() API', () => {
+    // Regression test for https://github.com/electron/electron/pull/50509:
+    // processes forked from the zygote kept the zygote's command line as their
+    // process title, so tools like ps showed every child as --type=zygote.
+    ifit(process.platform === 'linux')('lists child processes whose process titles carry their own type', async () => {
+      const w = new BrowserWindow({ show: false });
+      try {
+        await w.loadURL('about:blank');
+        const typeSwitches: Record<string, string> = {
+          GPU: '--type=gpu-process',
+          Tab: '--type=renderer',
+          Utility: '--type=utility'
+        };
+        const checked: string[] = [];
+        for (const metric of app.getAppMetrics()) {
+          const typeSwitch = typeSwitches[metric.type];
+          if (!typeSwitch) continue;
+          let cmdline = '';
+          try {
+            cmdline = fs.readFileSync(`/proc/${metric.pid}/cmdline`, 'latin1').replaceAll('\0', ' ').trim();
+          } catch {
+            // The process went away in the meantime.
+          }
+          if (!cmdline) continue;
+          expect(cmdline, `${metric.type} process ${metric.pid}`).to.include(typeSwitch);
+          checked.push(metric.type);
+        }
+        expect(checked).to.include('Tab');
+      } finally {
+        w.destroy();
+      }
+    });
+
     it('returns memory and cpu stats of all running electron processes', () => {
       const appMetrics = app.getAppMetrics();
       expect(appMetrics).to.be.an('array').and.have.lengthOf.at.least(1, 'App memory info object is not > 0');
@@ -1908,6 +1940,81 @@ describe('app module', () => {
       }
 
       expect(types).to.include('Browser');
+    });
+  });
+
+  // Regression test for https://github.com/electron/electron/pull/52603:
+  // losing the display server connection went straight to LOG(FATAL).
+  ifdescribe(process.platform === 'linux')('when the X server goes away', () => {
+    // Starts a private X server for the app under test, so that it can be taken
+    // away without disturbing the one the spec runner is on. Resolves to
+    // undefined when no Xvfb is available.
+    const startXServer = async () => {
+      const xvfb = cp.spawn('Xvfb', ['-displayfd', '1', '-screen', '0', '640x480x24', '-nolisten', 'tcp'], {
+        stdio: ['ignore', 'pipe', 'ignore']
+      });
+      const kill = () => {
+        if (xvfb.exitCode === null && xvfb.signalCode === null) xvfb.kill('SIGKILL');
+      };
+      defer(kill);
+      let displayNumber = '';
+      xvfb.stdout!.on('data', (chunk) => {
+        displayNumber += chunk;
+      });
+      const gone = new Promise<void>((resolve) => {
+        xvfb.once('error', () => resolve());
+        xvfb.once('exit', () => resolve());
+      });
+      // Xvfb writes the display number and a newline once it accepts connections.
+      await Promise.race([gone, waitUntil(() => displayNumber.includes('\n'), { timeout: 10000 }).catch(() => {})]);
+      if (!displayNumber.includes('\n')) {
+        kill();
+        return undefined;
+      }
+      return { display: `:${displayNumber.trim()}`, kill };
+    };
+
+    it('exits instead of crashing', async function () {
+      const xServer = await startXServer();
+      if (!xServer) return this.skip();
+
+      const appPath = path.join(fixturesPath, 'apps', 'display-lost');
+      const child = cp.spawn(process.execPath, [appPath, '--ozone-platform=x11'], {
+        env: { ...process.env, DISPLAY: xServer.display, WAYLAND_DISPLAY: '', XDG_SESSION_TYPE: 'x11' }
+      });
+      defer(() => {
+        if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+      });
+      let output = '';
+      child.stdout.on('data', (chunk) => {
+        output += chunk;
+      });
+      child.stderr.on('data', (chunk) => {
+        output += chunk;
+      });
+      const closed = once(child, 'close');
+      await Promise.race([
+        waitUntil(() => output.includes('window-ready'), { timeout: 20000 }),
+        closed.then(() => {
+          expect(output).to.include('window-ready');
+        })
+      ]);
+
+      xServer.kill();
+      // Whichever of Ozone and GTK notices the dead connection first ends the
+      // process: Ozone through the app.exit(0) path, GTK with _exit(1). Neither
+      // is a crash.
+      const [code, signal] = await closed;
+      expect(signal, `killed by ${signal}\n${output}`).to.equal(null);
+      expect(code, output).to.be.oneOf([0, 1]);
+    });
+  });
+
+  describe('disableHardwareAcceleration() API', () => {
+    // Regression test for https://github.com/electron/electron/pull/51817.
+    it('appends the --disable-gpu switch', async () => {
+      const hasDisableGpuSwitch = await runTestApp('disable-hardware-acceleration');
+      expect(hasDisableGpuSwitch).to.equal(true);
     });
   });
 
@@ -2578,6 +2685,15 @@ describe('default behavior', () => {
     it('does not create the default menu if the app sets a null menu', async () => {
       const result = await runTestApp('default-menu', '--null-menu');
       expect(result).to.equal(true);
+    });
+
+    // Regression test for https://github.com/electron/electron/pull/50629: the
+    // Electron project links live in the default app now, not in the menu every
+    // app gets by default.
+    it('does not include a Help menu in the default menu', async () => {
+      const items: string[] = await runTestApp('default-menu', '--print-items');
+      expect(items).to.be.an('array').that.includes('windowmenu');
+      expect(items.map((item) => item.toLowerCase())).to.not.include('help');
     });
   });
 

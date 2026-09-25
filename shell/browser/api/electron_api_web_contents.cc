@@ -3833,10 +3833,26 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
   if (!rwh_impl)
     return;
 
-  rwh_impl->disable_hidden_ = !background_throttling_;
-  web_contents()->GetRenderViewHost()->SetSchedulerThrottling(allowed);
+  // HandleNewRenderFrame() applied the setting to every frame, so every local
+  // root (cross-process iframe) has its own widget and RenderView carrying it;
+  // update them all, but leave inner WebContents (guests) to their own setting.
+  rfh->ForEachRenderFrameHostWithAction(
+      [this, allowed](content::RenderFrameHost* frame) {
+        if (content::WebContents::FromRenderFrameHost(frame) != web_contents())
+          return content::RenderFrameHost::FrameIterationAction::kSkipChildren;
+        if (auto* view = frame->GetView()) {
+          if (auto* rwh = static_cast<content::RenderWidgetHostImpl*>(
+                  view->GetRenderWidgetHost())) {
+            rwh->disable_hidden_ = !allowed;
+          }
+        }
+        frame->GetRenderViewHost()->SetSchedulerThrottling(allowed);
+        return content::RenderFrameHost::FrameIterationAction::kContinue;
+      });
 
-  if (rwh_impl->IsHidden()) {
+  auto* rfh_impl = static_cast<content::RenderFrameHostImpl*>(rfh);
+  auto* rwhv_base = static_cast<content::RenderWidgetHostViewBase*>(rwhv);
+  if (!allowed && rwh_impl->IsHidden()) {
     // Un-hide through the view rather than calling
     // RenderWidgetHostImpl::WasShown() directly, so that the platform view
     // (and on macOS the BrowserCompositorMac / DelegatedFrameHost) also
@@ -3853,12 +3869,33 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
     // compositor state to keep in sync, and their ShowWithVisibility()
     // refuses to show a frame the embedder has hidden (display: none). Keep
     // the direct WasShown() for them so behavior there is unchanged.
-    auto* rwhv_base = static_cast<content::RenderWidgetHostViewBase*>(rwhv);
     if (rwhv_base->IsRenderWidgetHostViewChildFrame()) {
       rwh_impl->WasShown({});
     } else {
       rwhv_base->ShowWithVisibility(
           content::PageVisibilityState::kHiddenButPainting);
+    }
+    rfh_impl->SetVisibilityForChildViews(true);
+  } else if (allowed && !rwh_impl->IsHidden()) {
+    // Undo the above. While throttling was off the widgets were kept shown
+    // (by the branch above, or because disable_hidden_ swallowed a
+    // WasHidden()), and content only hides them again on the next visibility
+    // transition, so a page that is already hidden/occluded would keep
+    // producing frames. Mirror SetPrimaryMainFrameViewVisibility() for the
+    // current visibility; captured / PiP pages (kHiddenButPainting) stay.
+    auto* web_contents_impl =
+        static_cast<content::WebContentsImpl*>(web_contents());
+    if (web_contents_impl->GetPageVisibilityState() ==
+        content::PageVisibilityState::kHidden) {
+      if (rwhv_base->IsRenderWidgetHostViewChildFrame()) {
+        rwh_impl->WasHidden();
+      } else if (web_contents_impl->GetVisibility() ==
+                 content::Visibility::OCCLUDED) {
+        rwhv_base->WasOccluded();
+      } else {
+        rwhv_base->Hide();
+      }
+      rfh_impl->SetVisibilityForChildViews(false);
     }
   }
 }
@@ -5771,6 +5808,20 @@ void WebContents::Send(gin::Arguments* args) {
   SendImpl(false, args);
 }
 
+void WebContents::PostMessage(v8::Isolate* isolate,
+                              const std::string& channel,
+                              v8::Local<v8::Value> message,
+                              std::optional<v8::Local<v8::Value>> transfer) {
+  content::RenderFrameHost* const rfh = web_contents()->GetPrimaryMainFrame();
+  WebFrameMain* const frame = rfh ? WebFrameMain::From(isolate, rfh) : nullptr;
+  if (!frame) {
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "webContents has no main frame to post to");
+    return;
+  }
+  frame->PostMessage(isolate, channel, message, std::move(transfer));
+}
+
 void WebContents::SendInternal(gin::Arguments* args) {
   SendImpl(true, args);
 }
@@ -6331,175 +6382,177 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
   // gin::ObjectTemplateBuilder here to handle the fact that WebContents is
   // destroyable.
   gin_helper::ObjectTemplateBuilder(isolate, templ)
-      .SetMethod("destroy", &WebContents::Destroy)
-      .SetMethod("close", &WebContents::Close)
-      .SetMethod("getBackgroundThrottling",
-                 &WebContents::GetBackgroundThrottling)
-      .SetMethod("setBackgroundThrottling",
-                 &WebContents::SetBackgroundThrottling)
-      .SetProperty("backgroundThrottling",
-                   &WebContents::GetBackgroundThrottling,
-                   &WebContents::SetBackgroundThrottling)
-      .SetMethod("getProcessId", &WebContents::GetProcessID)
-      .SetMethod("getOSProcessId", &WebContents::GetOSProcessID)
-      .SetMethod("clone", &WebContents::Clone)
-      .SetMethod("_setConsoleMessageObserved",
-                 &WebContents::SetConsoleMessageObserved)
-      .SetMethod("loadURL", &WebContents::LoadURL)
-      .SetMethod("reload", &WebContents::Reload)
-      .SetMethod("reloadIgnoringCache", &WebContents::ReloadIgnoringCache)
-      .SetMethod("downloadURL", &WebContents::DownloadURL)
-      .SetMethod("getURL", &WebContents::GetURL)
-      .SetMethod("getTitle", &WebContents::GetTitle)
-      .SetMethod("isLoading", &WebContents::IsLoading)
-      .SetMethod("isLoadingMainFrame", &WebContents::IsLoadingMainFrame)
-      .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
-      .SetMethod("stop", &WebContents::Stop)
-      .SetMethod("_canGoBack", &WebContents::CanGoBack)
-      .SetMethod("_goBack", &WebContents::GoBack)
-      .SetMethod("_canGoForward", &WebContents::CanGoForward)
-      .SetMethod("_goForward", &WebContents::GoForward)
-      .SetMethod("_canGoToOffset", &WebContents::CanGoToOffset)
-      .SetMethod("_goToOffset", &WebContents::GoToOffset)
-      .SetMethod("_goToIndex", &WebContents::GoToIndex)
-      .SetMethod("_getActiveIndex", &WebContents::GetActiveIndex)
-      .SetMethod("_getNavigationEntryAtIndex",
-                 &WebContents::GetNavigationEntryAtIndex)
-      .SetMethod("_historyLength", &WebContents::GetHistoryLength)
-      .SetMethod("_removeNavigationEntryAtIndex",
-                 &WebContents::RemoveNavigationEntryAtIndex)
-      .SetMethod("_getHistory", &WebContents::GetHistory)
-      .SetMethod("_clearHistory", &WebContents::ClearHistory)
-      .SetMethod("_restoreHistory", &WebContents::RestoreHistory)
-      .SetMethod("isCrashed", &WebContents::IsCrashed)
-      .SetMethod("forcefullyCrashRenderer",
-                 &WebContents::ForcefullyCrashRenderer)
-      .SetMethod("setUserAgent", &WebContents::SetUserAgent)
-      .SetMethod("getUserAgent", &WebContents::GetUserAgent)
-      .SetProperty("userAgent", &WebContents::GetUserAgent,
-                   &WebContents::SetUserAgent)
-      .SetMethod("savePage", &WebContents::SavePage)
-      .SetMethod("openDevTools", &WebContents::OpenDevTools)
-      .SetMethod("closeDevTools", &WebContents::CloseDevTools)
-      .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
-      .SetMethod("isDevToolsFocused", &WebContents::IsDevToolsFocused)
-      .SetMethod("getDevToolsTitle", &WebContents::GetDevToolsTitle)
-      .SetMethod("setDevToolsTitle", &WebContents::SetDevToolsTitle)
-      .SetMethod("enableDeviceEmulation", &WebContents::EnableDeviceEmulation)
-      .SetMethod("disableDeviceEmulation", &WebContents::DisableDeviceEmulation)
-      .SetMethod("toggleDevTools", &WebContents::ToggleDevTools)
-      .SetMethod("inspectElement", &WebContents::InspectElement)
-      .SetMethod("setIgnoreMenuShortcuts", &WebContents::SetIgnoreMenuShortcuts)
-      .SetMethod("setAudioMuted", &WebContents::SetAudioMuted)
-      .SetMethod("isAudioMuted", &WebContents::IsAudioMuted)
-      .SetProperty("audioMuted", &WebContents::IsAudioMuted,
-                   &WebContents::SetAudioMuted)
-      .SetMethod("isCurrentlyAudible", &WebContents::IsCurrentlyAudible)
-      .SetMethod("setCaretBrowsingEnabled",
-                 &WebContents::SetCaretBrowsingEnabled)
-      .SetMethod("isCaretBrowsingEnabled", &WebContents::IsCaretBrowsingEnabled)
-      .SetProperty("caretBrowsingEnabled", &WebContents::IsCaretBrowsingEnabled,
-                   &WebContents::SetCaretBrowsingEnabled)
-      .SetMethod("undo", &WebContents::Undo)
-      .SetMethod("redo", &WebContents::Redo)
-      .SetMethod("cut", &WebContents::Cut)
-      .SetMethod("copy", &WebContents::Copy)
-      .SetMethod("centerSelection", &WebContents::CenterSelection)
-      .SetMethod("paste", &WebContents::Paste)
-      .SetMethod("pasteAndMatchStyle", &WebContents::PasteAndMatchStyle)
-      .SetMethod("delete", &WebContents::Delete)
-      .SetMethod("selectAll", &WebContents::SelectAll)
-      .SetMethod("unselect", &WebContents::Unselect)
-      .SetMethod("scrollToTop", &WebContents::ScrollToTopOfDocument)
-      .SetMethod("scrollToBottom", &WebContents::ScrollToBottomOfDocument)
-      .SetMethod("adjustSelection",
-                 &WebContents::AdjustSelectionByCharacterOffset)
-      .SetMethod("replace", &WebContents::Replace)
-      .SetMethod("replaceMisspelling", &WebContents::ReplaceMisspelling)
-      .SetMethod("findInPage", &WebContents::FindInPage)
-      .SetMethod("stopFindInPage", &WebContents::StopFindInPage)
-      .SetMethod("focus", &WebContents::Focus)
-      .SetMethod("isFocused", &WebContents::IsFocused)
-      .SetMethod("sendInputEvent", &WebContents::SendInputEvent)
-      .SetMethod("beginFrameSubscription", &WebContents::BeginFrameSubscription)
-      .SetMethod("endFrameSubscription", &WebContents::EndFrameSubscription)
-      .SetMethod("startDrag", &WebContents::StartDrag)
-      .SetMethod("attachToIframe", &WebContents::AttachToIframe)
-      .SetMethod("detachFromOuterFrame", &WebContents::DetachFromOuterFrame)
-      .SetMethod("isOffscreen", &WebContents::IsOffScreen)
-      .SetMethod("startPainting", &WebContents::StartPainting)
-      .SetMethod("stopPainting", &WebContents::StopPainting)
-      .SetMethod("isPainting", &WebContents::IsPainting)
-      .SetMethod("setFrameRate", &WebContents::SetFrameRate)
-      .SetMethod("getFrameRate", &WebContents::GetFrameRate)
-      .SetProperty("frameRate", &WebContents::GetFrameRate,
-                   &WebContents::SetFrameRate)
-      .SetMethod("invalidate", &WebContents::Invalidate)
-      .SetMethod("setZoomLevel", &WebContents::SetZoomLevel)
-      .SetMethod("getZoomLevel", &WebContents::GetZoomLevel)
-      .SetProperty("zoomLevel", &WebContents::GetZoomLevel,
-                   &WebContents::SetZoomLevel)
-      .SetMethod("setZoomFactor", &WebContents::SetZoomFactor)
-      .SetMethod("getZoomFactor", &WebContents::GetZoomFactor)
-      .SetProperty("zoomFactor", &WebContents::GetZoomFactor,
-                   &WebContents::SetZoomFactor)
-      .SetMethod("setZoomMode", &WebContents::SetZoomMode)
-      .SetMethod("getZoomMode", &WebContents::GetZoomMode)
-      .SetProperty("zoomMode", &WebContents::GetZoomMode,
-                   &WebContents::SetZoomMode)
-      .SetMethod("getType", &WebContents::type)
-      .SetMethod("getLastWebPreferences", &WebContents::GetLastWebPreferences)
-      .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
-      .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
-      .SetMethod("inspectSharedWorker", &WebContents::InspectSharedWorker)
-      .SetMethod("inspectSharedWorkerById",
-                 &WebContents::InspectSharedWorkerById)
-      .SetMethod("getAllSharedWorkers", &WebContents::GetAllSharedWorkers)
-      .SetMethod("print", &WebContents::Print)
-      .SetMethod("printToPDF", &WebContents::PrintToPDF)
-      .SetMethod("getPrintersAsync", &WebContents::GetPrintersAsync)
-      .SetMethod("_setNextChildWebPreferences",
-                 &WebContents::SetNextChildWebPreferences)
-      .SetMethod("addWorkSpace", &WebContents::AddWorkSpace)
-      .SetMethod("removeWorkSpace", &WebContents::RemoveWorkSpace)
-      .SetMethod("showDefinitionForSelection",
-                 &WebContents::ShowDefinitionForSelection)
-      .SetMethod("copyImageAt", &WebContents::CopyImageAt)
-      .SetMethod("capturePage", &WebContents::CapturePage)
-      .SetMethod("setEmbedder", &WebContents::SetEmbedder)
-      .SetMethod("setDevToolsWebContents", &WebContents::SetDevToolsWebContents)
-      .SetMethod("isBeingCaptured", &WebContents::IsBeingCaptured)
-      .SetMethod("setWebRTCIPHandlingPolicy",
-                 &WebContents::SetWebRTCIPHandlingPolicy)
-      .SetMethod("setWebRTCUDPPortRange", &WebContents::SetWebRTCUDPPortRange)
-      .SetMethod("getMediaSourceId", &WebContents::GetMediaSourceID)
-      .SetMethod("getOrCreateDevToolsTargetId",
-                 &WebContents::GetOrCreateDevToolsTargetId)
-      .SetMethod("getWebRTCIPHandlingPolicy",
-                 &WebContents::GetWebRTCIPHandlingPolicy)
-      .SetMethod("getWebRTCUDPPortRange", &WebContents::GetWebRTCUDPPortRange)
-      .SetMethod("takeHeapSnapshot", &WebContents::TakeHeapSnapshot)
-      .SetMethod("_executeJavaScript",
-                 &WebContents::ExecuteJavaScriptInRenderer)
-      .SetMethod("insertCSS", &WebContents::InsertCSS)
-      .SetMethod("removeInsertedCSS", &WebContents::RemoveInsertedCSS)
-      .SetMethod("insertText", &WebContents::InsertText)
-      .SetMethod("setVisualZoomLevelLimits",
-                 &WebContents::SetVisualZoomLevelLimits)
-      .SetMethod("setImageAnimationPolicy",
-                 &WebContents::SetImageAnimationPolicy)
-      .SetMethod("_getProcessMemoryInfo", &WebContents::GetProcessMemoryInfo)
-      .SetProperty("id", &WebContents::ID)
-      .SetProperty("session", &WebContents::Session)
-      .SetProperty("hostWebContents", &WebContents::HostWebContents)
-      .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
-      .SetProperty("debugger", &WebContents::Debugger)
-      .SetProperty("mainFrame", &WebContents::MainFrame)
-      .SetProperty("opener", &WebContents::Opener)
-      .SetProperty("focusedFrame", &WebContents::FocusedFrame)
-      .SetMethod("send", &WebContents::Send)
-      .SetMethod("_sendInternal", &WebContents::SendInternal)
-      .SetMethod("_setOwnerWindow", &WebContents::SetOwnerBaseWindow)
+      .SetMethod<&WebContents::Destroy>("destroy")
+      .SetMethod<&WebContents::Close>("close")
+      .SetMethod<&WebContents::GetBackgroundThrottling>(
+          "getBackgroundThrottling")
+      .SetMethod<&WebContents::SetBackgroundThrottling>(
+          "setBackgroundThrottling")
+      .SetProperty<&WebContents::GetBackgroundThrottling,
+                   &WebContents::SetBackgroundThrottling>(
+          "backgroundThrottling")
+      .SetMethod<&WebContents::GetProcessID>("getProcessId")
+      .SetMethod<&WebContents::GetOSProcessID>("getOSProcessId")
+      .SetMethod<&WebContents::Clone>("clone")
+      .SetMethod<&WebContents::SetConsoleMessageObserved>(
+          "_setConsoleMessageObserved")
+      .SetMethod<&WebContents::LoadURL>("loadURL")
+      .SetMethod<&WebContents::Reload>("reload")
+      .SetMethod<&WebContents::ReloadIgnoringCache>("reloadIgnoringCache")
+      .SetMethod<&WebContents::DownloadURL>("downloadURL")
+      .SetMethod<&WebContents::GetURL>("getURL")
+      .SetMethod<&WebContents::GetTitle>("getTitle")
+      .SetMethod<&WebContents::IsLoading>("isLoading")
+      .SetMethod<&WebContents::IsLoadingMainFrame>("isLoadingMainFrame")
+      .SetMethod<&WebContents::IsWaitingForResponse>("isWaitingForResponse")
+      .SetMethod<&WebContents::Stop>("stop")
+      .SetMethod<&WebContents::CanGoBack>("_canGoBack")
+      .SetMethod<&WebContents::GoBack>("_goBack")
+      .SetMethod<&WebContents::CanGoForward>("_canGoForward")
+      .SetMethod<&WebContents::GoForward>("_goForward")
+      .SetMethod<&WebContents::CanGoToOffset>("_canGoToOffset")
+      .SetMethod<&WebContents::GoToOffset>("_goToOffset")
+      .SetMethod<&WebContents::GoToIndex>("_goToIndex")
+      .SetMethod<&WebContents::GetActiveIndex>("_getActiveIndex")
+      .SetMethod<&WebContents::GetNavigationEntryAtIndex>(
+          "_getNavigationEntryAtIndex")
+      .SetMethod<&WebContents::GetHistoryLength>("_historyLength")
+      .SetMethod<&WebContents::RemoveNavigationEntryAtIndex>(
+          "_removeNavigationEntryAtIndex")
+      .SetMethod<&WebContents::GetHistory>("_getHistory")
+      .SetMethod<&WebContents::ClearHistory>("_clearHistory")
+      .SetMethod<&WebContents::RestoreHistory>("_restoreHistory")
+      .SetMethod<&WebContents::IsCrashed>("isCrashed")
+      .SetMethod<&WebContents::ForcefullyCrashRenderer>(
+          "forcefullyCrashRenderer")
+      .SetMethod<&WebContents::SetUserAgent>("setUserAgent")
+      .SetMethod<&WebContents::GetUserAgent>("getUserAgent")
+      .SetProperty<&WebContents::GetUserAgent, &WebContents::SetUserAgent>(
+          "userAgent")
+      .SetMethod<&WebContents::SavePage>("savePage")
+      .SetMethod<&WebContents::OpenDevTools>("openDevTools")
+      .SetMethod<&WebContents::CloseDevTools>("closeDevTools")
+      .SetMethod<&WebContents::IsDevToolsOpened>("isDevToolsOpened")
+      .SetMethod<&WebContents::IsDevToolsFocused>("isDevToolsFocused")
+      .SetMethod<&WebContents::GetDevToolsTitle>("getDevToolsTitle")
+      .SetMethod<&WebContents::SetDevToolsTitle>("setDevToolsTitle")
+      .SetMethod<&WebContents::EnableDeviceEmulation>("enableDeviceEmulation")
+      .SetMethod<&WebContents::DisableDeviceEmulation>("disableDeviceEmulation")
+      .SetMethod<&WebContents::ToggleDevTools>("toggleDevTools")
+      .SetMethod<&WebContents::InspectElement>("inspectElement")
+      .SetMethod<&WebContents::SetIgnoreMenuShortcuts>("setIgnoreMenuShortcuts")
+      .SetMethod<&WebContents::SetAudioMuted>("setAudioMuted")
+      .SetMethod<&WebContents::IsAudioMuted>("isAudioMuted")
+      .SetProperty<&WebContents::IsAudioMuted, &WebContents::SetAudioMuted>(
+          "audioMuted")
+      .SetMethod<&WebContents::IsCurrentlyAudible>("isCurrentlyAudible")
+      .SetMethod<&WebContents::SetCaretBrowsingEnabled>(
+          "setCaretBrowsingEnabled")
+      .SetMethod<&WebContents::IsCaretBrowsingEnabled>("isCaretBrowsingEnabled")
+      .SetProperty<&WebContents::IsCaretBrowsingEnabled,
+                   &WebContents::SetCaretBrowsingEnabled>(
+          "caretBrowsingEnabled")
+      .SetMethod<&WebContents::Undo>("undo")
+      .SetMethod<&WebContents::Redo>("redo")
+      .SetMethod<&WebContents::Cut>("cut")
+      .SetMethod<&WebContents::Copy>("copy")
+      .SetMethod<&WebContents::CenterSelection>("centerSelection")
+      .SetMethod<&WebContents::Paste>("paste")
+      .SetMethod<&WebContents::PasteAndMatchStyle>("pasteAndMatchStyle")
+      .SetMethod<&WebContents::Delete>("delete")
+      .SetMethod<&WebContents::SelectAll>("selectAll")
+      .SetMethod<&WebContents::Unselect>("unselect")
+      .SetMethod<&WebContents::ScrollToTopOfDocument>("scrollToTop")
+      .SetMethod<&WebContents::ScrollToBottomOfDocument>("scrollToBottom")
+      .SetMethod<&WebContents::AdjustSelectionByCharacterOffset>(
+          "adjustSelection")
+      .SetMethod<&WebContents::Replace>("replace")
+      .SetMethod<&WebContents::ReplaceMisspelling>("replaceMisspelling")
+      .SetMethod<&WebContents::FindInPage>("findInPage")
+      .SetMethod<&WebContents::StopFindInPage>("stopFindInPage")
+      .SetMethod<&WebContents::Focus>("focus")
+      .SetMethod<&WebContents::IsFocused>("isFocused")
+      .SetMethod<&WebContents::SendInputEvent>("sendInputEvent")
+      .SetMethod<&WebContents::BeginFrameSubscription>("beginFrameSubscription")
+      .SetMethod<&WebContents::EndFrameSubscription>("endFrameSubscription")
+      .SetMethod<&WebContents::StartDrag>("startDrag")
+      .SetMethod<&WebContents::AttachToIframe>("attachToIframe")
+      .SetMethod<&WebContents::DetachFromOuterFrame>("detachFromOuterFrame")
+      .SetMethod<&WebContents::IsOffScreen>("isOffscreen")
+      .SetMethod<&WebContents::StartPainting>("startPainting")
+      .SetMethod<&WebContents::StopPainting>("stopPainting")
+      .SetMethod<&WebContents::IsPainting>("isPainting")
+      .SetMethod<&WebContents::SetFrameRate>("setFrameRate")
+      .SetMethod<&WebContents::GetFrameRate>("getFrameRate")
+      .SetProperty<&WebContents::GetFrameRate, &WebContents::SetFrameRate>(
+          "frameRate")
+      .SetMethod<&WebContents::Invalidate>("invalidate")
+      .SetMethod<&WebContents::SetZoomLevel>("setZoomLevel")
+      .SetMethod<&WebContents::GetZoomLevel>("getZoomLevel")
+      .SetProperty<&WebContents::GetZoomLevel, &WebContents::SetZoomLevel>(
+          "zoomLevel")
+      .SetMethod<&WebContents::SetZoomFactor>("setZoomFactor")
+      .SetMethod<&WebContents::GetZoomFactor>("getZoomFactor")
+      .SetProperty<&WebContents::GetZoomFactor, &WebContents::SetZoomFactor>(
+          "zoomFactor")
+      .SetMethod<&WebContents::SetZoomMode>("setZoomMode")
+      .SetMethod<&WebContents::GetZoomMode>("getZoomMode")
+      .SetProperty<&WebContents::GetZoomMode, &WebContents::SetZoomMode>(
+          "zoomMode")
+      .SetMethod<&WebContents::type>("getType")
+      .SetMethod<&WebContents::GetLastWebPreferences>("getLastWebPreferences")
+      .SetMethod<&WebContents::GetOwnerBrowserWindow>("getOwnerBrowserWindow")
+      .SetMethod<&WebContents::InspectServiceWorker>("inspectServiceWorker")
+      .SetMethod<&WebContents::InspectSharedWorker>("inspectSharedWorker")
+      .SetMethod<&WebContents::InspectSharedWorkerById>(
+          "inspectSharedWorkerById")
+      .SetMethod<&WebContents::GetAllSharedWorkers>("getAllSharedWorkers")
+      .SetMethod<&WebContents::Print>("print")
+      .SetMethod<&WebContents::PrintToPDF>("printToPDF")
+      .SetMethod<&WebContents::GetPrintersAsync>("getPrintersAsync")
+      .SetMethod<&WebContents::SetNextChildWebPreferences>(
+          "_setNextChildWebPreferences")
+      .SetMethod<&WebContents::AddWorkSpace>("addWorkSpace")
+      .SetMethod<&WebContents::RemoveWorkSpace>("removeWorkSpace")
+      .SetMethod<&WebContents::ShowDefinitionForSelection>(
+          "showDefinitionForSelection")
+      .SetMethod<&WebContents::CopyImageAt>("copyImageAt")
+      .SetMethod<&WebContents::CapturePage>("capturePage")
+      .SetMethod<&WebContents::SetEmbedder>("setEmbedder")
+      .SetMethod<&WebContents::SetDevToolsWebContents>("setDevToolsWebContents")
+      .SetMethod<&WebContents::IsBeingCaptured>("isBeingCaptured")
+      .SetMethod<&WebContents::SetWebRTCIPHandlingPolicy>(
+          "setWebRTCIPHandlingPolicy")
+      .SetMethod<&WebContents::SetWebRTCUDPPortRange>("setWebRTCUDPPortRange")
+      .SetMethod<&WebContents::GetMediaSourceID>("getMediaSourceId")
+      .SetMethod<&WebContents::GetOrCreateDevToolsTargetId>(
+          "getOrCreateDevToolsTargetId")
+      .SetMethod<&WebContents::GetWebRTCIPHandlingPolicy>(
+          "getWebRTCIPHandlingPolicy")
+      .SetMethod<&WebContents::GetWebRTCUDPPortRange>("getWebRTCUDPPortRange")
+      .SetMethod<&WebContents::TakeHeapSnapshot>("takeHeapSnapshot")
+      .SetMethod<&WebContents::ExecuteJavaScriptInRenderer>(
+          "_executeJavaScript")
+      .SetMethod<&WebContents::InsertCSS>("insertCSS")
+      .SetMethod<&WebContents::RemoveInsertedCSS>("removeInsertedCSS")
+      .SetMethod<&WebContents::InsertText>("insertText")
+      .SetMethod<&WebContents::SetVisualZoomLevelLimits>(
+          "setVisualZoomLevelLimits")
+      .SetMethod<&WebContents::SetImageAnimationPolicy>(
+          "setImageAnimationPolicy")
+      .SetMethod<&WebContents::GetProcessMemoryInfo>("_getProcessMemoryInfo")
+      .SetProperty<&WebContents::ID>("id")
+      .SetProperty<&WebContents::Session>("session")
+      .SetProperty<&WebContents::HostWebContents>("hostWebContents")
+      .SetProperty<&WebContents::DevToolsWebContents>("devToolsWebContents")
+      .SetProperty<&WebContents::Debugger>("debugger")
+      .SetProperty<&WebContents::MainFrame>("mainFrame")
+      .SetProperty<&WebContents::Opener>("opener")
+      .SetProperty<&WebContents::FocusedFrame>("focusedFrame")
+      .SetMethod<&WebContents::Send>("send")
+      .SetMethod<&WebContents::SendInternal>("_sendInternal")
+      .SetMethod<&WebContents::PostMessage>("postMessage")
+      .SetMethod<&WebContents::SetOwnerBaseWindow>("_setOwnerWindow")
       .Build();
 }
 
@@ -6762,10 +6815,10 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict{isolate, exports};
   dict.Set("WebContents", WebContents::GetConstructor(
                               isolate, context, &WebContents::kWrapperInfo));
-  dict.SetMethod("fromId", &WebContentsFromID);
-  dict.SetMethod("fromFrame", &WebContentsFromFrame);
-  dict.SetMethod("fromDevToolsTargetId", &WebContentsFromDevToolsTargetID);
-  dict.SetMethod("getAllWebContents", &GetAllWebContentsAsV8);
+  dict.SetMethod<&WebContentsFromID>("fromId");
+  dict.SetMethod<&WebContentsFromFrame>("fromFrame");
+  dict.SetMethod<&WebContentsFromDevToolsTargetID>("fromDevToolsTargetId");
+  dict.SetMethod<&GetAllWebContentsAsV8>("getAllWebContents");
 }
 
 }  // namespace

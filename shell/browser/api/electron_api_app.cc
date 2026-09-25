@@ -21,6 +21,7 @@
 #include "base/functional/callback_helpers.h"
 #include "base/notimplemented.h"
 #include "base/path_service.h"
+#include "base/process/process.h"
 #include "base/system/sys_info.h"
 #include "base/values.h"
 #include "base/win/windows_version.h"
@@ -842,11 +843,11 @@ void App::OnGpuInfoUpdate() {
 }
 
 void App::BrowserChildProcessLaunchedAndConnected(
-    const content::ChildProcessData& data) {
-  ChildProcessLaunched(data.process_type,
-                       content::ChildProcessId::FromUnsafeValue(data.id),
-                       data.GetProcess().Handle(), data.metrics_name,
-                       base::UTF16ToUTF8(data.name));
+    const content::ChildProcessData& data,
+    const base::Process& process) {
+  ChildProcessLaunched(
+      data.process_type, content::ChildProcessId::FromUnsafeValue(data.id),
+      process.Handle(), data.metrics_name, base::UTF16ToUTF8(data.name));
 }
 
 void App::BrowserChildProcessHostDisconnected(
@@ -927,8 +928,23 @@ base::FilePath App::GetAppPath() const {
   return app_path_;
 }
 
+v8::Local<v8::String> App::GetNameString(v8::Isolate* isolate) {
+  return name_string_.Get(isolate, Browser::Get()->GetName());
+}
+
+v8::Local<v8::String> App::GetVersionString(v8::Isolate* isolate) {
+  return version_string_.Get(isolate, Browser::Get()->GetVersion());
+}
+
+v8::Local<v8::Value> App::GetAppPathValue(v8::Isolate* isolate) {
+  if (app_path_value_.IsEmpty())
+    app_path_value_.Reset(isolate, gin::ConvertToV8(isolate, app_path_));
+  return app_path_value_.Get(isolate);
+}
+
 void App::SetAppPath(const base::FilePath& app_path) {
   app_path_ = app_path;
+  app_path_value_.Reset();
 }
 
 void App::SetAppLogsPath(gin::Arguments* const args) {
@@ -1831,7 +1847,7 @@ v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
     // for the lifetime of "app"
     auto browser = base::Unretained(Browser::Get());
     auto dock_obj = gin_helper::Dictionary::CreateEmpty(isolate);
-    dock_obj.SetMethod("bounce", &DockBounce);
+    dock_obj.SetMethod<&DockBounce>("bounce");
     dock_obj.SetMethod(
         "cancelBounce",
         base::BindRepeating(&Browser::DockCancelBounce, browser));
@@ -1962,6 +1978,9 @@ void App::Trace(cppgc::Visitor* visitor) const {
   gin::Wrappable<App>::Trace(visitor);
   visitor->Trace(command_line_);
   visitor->Trace(client_cert_password_handler_);
+  visitor->Trace(name_string_);
+  visitor->Trace(version_string_);
+  visitor->Trace(app_path_value_);
 #if BUILDFLAG(IS_MAC)
   visitor->Trace(dock_);
   visitor->Trace(dock_menu_);
@@ -2044,13 +2063,12 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("quit", base::BindRepeating(&Browser::Quit, browser))
       .SetMethod("exit", base::BindRepeating(&Browser::Exit, browser))
       .SetMethod("focus", base::BindRepeating(&Browser::Focus, browser))
-      .SetMethod("getVersion",
-                 base::BindRepeating(&Browser::GetVersion, browser))
+      .SetMethod("getVersion", &App::GetVersionString)
       .SetMethod("setVersion",
                  base::BindRepeating(&Browser::SetVersion, browser))
-      .SetMethod("getName", base::BindRepeating(&Browser::GetName, browser))
+      .SetMethod("getName", &App::GetNameString)
       .SetMethod("setName", base::BindRepeating(&Browser::SetName, browser))
-      .SetProperty("name", base::BindRepeating(&Browser::GetName, browser),
+      .SetProperty("name", &App::GetNameString,
                    base::BindRepeating(&Browser::SetName, browser))
       .SetMethod("isReady", base::BindRepeating(&Browser::is_ready, browser))
       .SetMethod("whenReady", base::BindRepeating(&Browser::WhenReady, browser))
@@ -2142,7 +2160,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
 #endif
       .SetProperty("isPackaged", &App::IsPackaged)
       .SetMethod("setAppPath", &App::SetAppPath)
-      .SetMethod("getAppPath", &App::GetAppPath)
+      .SetMethod("getAppPath", &App::GetAppPathValue)
       .SetMethod("setPath", &App::SetPath)
       .SetMethod("getPath", &App::GetPath)
       .SetMethod("setAppLogsPath", &App::SetAppLogsPath)

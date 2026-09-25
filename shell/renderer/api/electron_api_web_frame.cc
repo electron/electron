@@ -357,48 +357,48 @@ class WebFrameRenderer final
   static void FillObjectTemplate(v8::Isolate* isolate,
                                  v8::Local<v8::ObjectTemplate> templ) {
     gin_helper::ObjectTemplateBuilder(isolate, templ)
-        .SetMethod("setName", &WebFrameRenderer::SetName)
-        .SetMethod("setZoomLevel", &WebFrameRenderer::SetZoomLevel)
-        .SetMethod("getZoomLevel", &WebFrameRenderer::GetZoomLevel)
-        .SetMethod("setZoomFactor", &WebFrameRenderer::SetZoomFactor)
-        .SetMethod("getZoomFactor", &WebFrameRenderer::GetZoomFactor)
-        .SetMethod("getWebPreference", &WebFrameRenderer::GetWebPreference)
+        .SetMethod<&WebFrameRenderer::SetName>("setName")
+        .SetMethod<&WebFrameRenderer::SetZoomLevel>("setZoomLevel")
+        .SetMethod<&WebFrameRenderer::GetZoomLevel>("getZoomLevel")
+        .SetMethod<&WebFrameRenderer::SetZoomFactor>("setZoomFactor")
+        .SetMethod<&WebFrameRenderer::GetZoomFactor>("getZoomFactor")
+        .SetMethod<&WebFrameRenderer::GetWebPreference>("getWebPreference")
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-        .SetMethod("isWordMisspelled", &WebFrameRenderer::IsWordMisspelled)
-        .SetMethod("getWordSuggestions", &WebFrameRenderer::GetWordSuggestions)
+        .SetMethod<&WebFrameRenderer::IsWordMisspelled>("isWordMisspelled")
+        .SetMethod<&WebFrameRenderer::GetWordSuggestions>("getWordSuggestions")
 #endif
-        .SetMethod("setVisualZoomLevelLimits",
-                   &WebFrameRenderer::SetVisualZoomLevelLimits)
-        .SetMethod("allowGuestViewElementDefinition",
-                   &RendererClientBase::AllowGuestViewElementDefinition)
-        .SetMethod("insertText", &WebFrameRenderer::InsertText)
-        .SetMethod("insertCSS", &WebFrameRenderer::InsertCSS)
-        .SetMethod("removeInsertedCSS", &WebFrameRenderer::RemoveInsertedCSS)
-        .SetMethod("executeJavaScript", &WebFrameRenderer::ExecuteJavaScript)
-        .SetMethod("executeJavaScriptInIsolatedWorld",
-                   &WebFrameRenderer::ExecuteJavaScriptInIsolatedWorld)
-        .SetMethod("getIsolatedWorlds", &WebFrameRenderer::GetIsolatedWorlds)
-        .SetMethod("setIsolatedWorldInfo",
-                   &WebFrameRenderer::SetIsolatedWorldInfo)
-        .SetMethod("getResourceUsage", &WebFrameRenderer::GetResourceUsage)
-        .SetMethod("clearCache", &WebFrameRenderer::ClearCache)
-        .SetMethod("setSpellCheckProvider",
-                   &WebFrameRenderer::SetSpellCheckProvider)
+        .SetMethod<&WebFrameRenderer::SetVisualZoomLevelLimits>(
+            "setVisualZoomLevelLimits")
+        .SetMethod<&RendererClientBase::AllowGuestViewElementDefinition>(
+            "allowGuestViewElementDefinition")
+        .SetMethod<&WebFrameRenderer::InsertText>("insertText")
+        .SetMethod<&WebFrameRenderer::InsertCSS>("insertCSS")
+        .SetMethod<&WebFrameRenderer::RemoveInsertedCSS>("removeInsertedCSS")
+        .SetMethod<&WebFrameRenderer::ExecuteJavaScript>("executeJavaScript")
+        .SetMethod<&WebFrameRenderer::ExecuteJavaScriptInIsolatedWorld>(
+            "executeJavaScriptInIsolatedWorld")
+        .SetMethod<&WebFrameRenderer::GetIsolatedWorlds>("getIsolatedWorlds")
+        .SetMethod<&WebFrameRenderer::SetIsolatedWorldInfo>(
+            "setIsolatedWorldInfo")
+        .SetMethod<&WebFrameRenderer::GetResourceUsage>("getResourceUsage")
+        .SetMethod<&WebFrameRenderer::ClearCache>("clearCache")
+        .SetMethod<&WebFrameRenderer::SetSpellCheckProvider>(
+            "setSpellCheckProvider")
         // Frame navigators
-        .SetMethod("findFrameByToken", &WebFrameRenderer::FindFrameByToken)
-        .SetMethod("findFrameByRoutingId",
-                   &WebFrameRenderer::FindFrameByRoutingId)
-        .SetMethod("getFrameForSelector",
-                   &WebFrameRenderer::GetFrameForSelector)
-        .SetMethod("findFrameByName", &WebFrameRenderer::FindFrameByName)
-        .SetMethod("_findFrameByWindow", &WebFrameRenderer::FindFrameByWindow)
-        .SetProperty("frameToken", &WebFrameRenderer::GetFrameToken)
-        .SetProperty("routingId", &WebFrameRenderer::GetRoutingId)
-        .SetProperty("opener", &WebFrameRenderer::GetOpener)
-        .SetProperty("parent", &WebFrameRenderer::GetFrameParent)
-        .SetProperty("top", &WebFrameRenderer::GetTop)
-        .SetProperty("firstChild", &WebFrameRenderer::GetFirstChild)
-        .SetProperty("nextSibling", &WebFrameRenderer::GetNextSibling)
+        .SetMethod<&WebFrameRenderer::FindFrameByToken>("findFrameByToken")
+        .SetMethod<&WebFrameRenderer::FindFrameByRoutingId>(
+            "findFrameByRoutingId")
+        .SetMethod<&WebFrameRenderer::GetFrameForSelector>(
+            "getFrameForSelector")
+        .SetMethod<&WebFrameRenderer::FindFrameByName>("findFrameByName")
+        .SetMethod<&WebFrameRenderer::FindFrameByWindow>("_findFrameByWindow")
+        .SetProperty<&WebFrameRenderer::GetFrameToken>("frameToken")
+        .SetProperty<&WebFrameRenderer::GetRoutingId>("routingId")
+        .SetProperty<&WebFrameRenderer::GetOpener>("opener")
+        .SetProperty<&WebFrameRenderer::GetFrameParent>("parent")
+        .SetProperty<&WebFrameRenderer::GetTop>("top")
+        .SetProperty<&WebFrameRenderer::GetFirstChild>("firstChild")
+        .SetProperty<&WebFrameRenderer::GetNextSibling>("nextSibling")
         .Build();
   }
   static const char* GetClassName() { return "WebFrame"; }
