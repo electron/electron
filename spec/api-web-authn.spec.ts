@@ -4,6 +4,7 @@ import { expect } from 'chai';
 
 import * as http from 'node:http';
 
+import { emittedUntil } from './lib/events-helpers.ts';
 import { ifdescribe, isTestingBindingAvailable } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
@@ -310,16 +311,13 @@ ifdescribe(process.platform !== 'win32' && isTestingBindingAvailable())(
       await closeAllWindows();
     });
 
-    const collectConsoleMessages = () => {
-      const messages: string[] = [];
-      w.webContents.on('console-message', (event) => {
-        messages.push(event.message);
-      });
-      return messages;
-    };
+    const pinUnsupportedWarning = () =>
+      emittedUntil(w.webContents, 'console-message', ({ message }: { message: string }) =>
+        message.includes('does not support WebAuthn PIN entry')
+      );
 
     it('rejects create() with NotAllowedError instead of crashing', async () => {
-      const messages = collectConsoleMessages();
+      const warned = pinUnsupportedWarning();
       const result = await w.webContents.executeJavaScript(`
         navigator.credentials.create({
           publicKey: {
@@ -339,11 +337,11 @@ ifdescribe(process.platform !== 'win32' && isTestingBindingAvailable())(
         )
       `);
       expect(result).to.deep.equal({ ok: false, name: 'NotAllowedError' });
-      expect(messages.some((m) => m.includes('does not support WebAuthn PIN entry'))).to.be.true();
+      await warned;
     });
 
     it('rejects get() with NotAllowedError instead of crashing', async () => {
-      const messages = collectConsoleMessages();
+      const warned = pinUnsupportedWarning();
       const result = await w.webContents.executeJavaScript(`
         navigator.credentials.get({
           publicKey: {
@@ -357,7 +355,7 @@ ifdescribe(process.platform !== 'win32' && isTestingBindingAvailable())(
         )
       `);
       expect(result).to.deep.equal({ ok: false, name: 'NotAllowedError' });
-      expect(messages.some((m) => m.includes('does not support WebAuthn PIN entry'))).to.be.true();
+      await warned;
     });
   }
 );
