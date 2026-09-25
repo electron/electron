@@ -6,7 +6,6 @@
 #include "shell/browser/ui/inspectable_web_contents.h"
 
 #include <algorithm>
-#include <array>
 #include <memory>
 #include <string_view>
 #include <utility>
@@ -142,19 +141,22 @@ void SetZoomLevelForWebContents(content::WebContents* web_contents,
 }
 
 double GetNextZoomLevel(double level, bool out) {
-  static constexpr std::array<double, 16U> kPresetFactors{
-      0.25, 0.333, 0.5,  0.666, 0.75, 0.9, 1.0, 1.1,
-      1.25, 1.5,   1.75, 2.0,   2.5,  3.0, 4.0, 5.0};
-  static constexpr size_t size = std::size(kPresetFactors);
-
+  // Step to the neighbouring preset (the same list the browser zoom menu
+  // uses), even when the current level sits between two presets. Compare
+  // factors rather than levels so a stored level for a rounded factor such as
+  // 0.333 counts as the 1/3 preset.
   const double factor = blink::ZoomLevelToZoomFactor(level);
-  for (size_t i = 0U; i < size; ++i) {
-    if (!blink::ZoomValuesEqual(kPresetFactors[i], factor))
-      continue;
-    if (out && i > 0U)
-      return blink::ZoomFactorToZoomLevel(kPresetFactors[i - 1U]);
-    if (!out && i + 1U < size)
-      return blink::ZoomFactorToZoomLevel(kPresetFactors[i + 1U]);
+  const base::span<const double> presets = blink::kPresetBrowserZoomFactors;
+  if (out) {
+    for (size_t i = presets.size(); i-- > 0;) {
+      if (presets[i] < factor && !blink::ZoomValuesEqual(presets[i], factor))
+        return blink::ZoomFactorToZoomLevel(presets[i]);
+    }
+  } else {
+    for (double preset : presets) {
+      if (preset > factor && !blink::ZoomValuesEqual(preset, factor))
+        return blink::ZoomFactorToZoomLevel(preset);
+    }
   }
   return level;
 }
