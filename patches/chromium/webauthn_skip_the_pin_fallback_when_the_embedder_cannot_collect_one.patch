@@ -1,0 +1,125 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Fri, 25 Sep 2026 08:57:38 +0000
+Subject: webauthn: skip the PIN fallback when the embedder cannot collect one
+
+FidoRequestHandlerBase::Observer documents that CollectPIN() is not
+called when SupportsPIN() returns false, and the request handlers pass
+SupportsPIN() into PINUVDispositionFor{MakeCredential,GetAssertion} so
+that a PIN-only path is never chosen for such observers.
+AuthTokenRequester did not get that information: when an authenticator
+with a PIN set reported internal user verification as locked (zero UV
+retries, or CTAP2_ERR_UV_BLOCKED), it fell back to PIN entry
+unconditionally and the handlers forwarded CollectPIN() to the observer.
+With content's default AuthenticatorRequestClientDelegate that is the
+NOTREACHED() in CollectPIN() and the browser process crashes.
+
+Add AuthTokenRequester::Options::can_collect_pin, set from the
+observer's SupportsPIN(), and when it is false fail with
+kPostTouchAuthenticatorInternalUVLock (or kPreTouchUnsatisfiableRequest
+if a PIN would be needed up front) instead of collecting a PIN. This is
+what already happens for authenticators that have no PIN set.
+
+This should be upstreamed; the patch can be removed once it lands and
+rolls into Electron.
+
+diff --git a/device/fido/auth_token_requester.cc b/device/fido/auth_token_requester.cc
+index e35e8f290c380d41026bd965e2a849c663c747de..6cf47f24b432bc70e76ccae30680b3c807ce2d45 100644
+--- a/device/fido/auth_token_requester.cc
++++ b/device/fido/auth_token_requester.cc
+@@ -77,6 +77,12 @@ void AuthTokenRequester::ObtainPINUVAuthToken() {
+     }
+   }
+ 
++  if (!options_.can_collect_pin) {
++    delegate_->HavePINUVAuthTokenResultForAuthenticator(
++        authenticator_, Result::kPreTouchUnsatisfiableRequest, std::nullopt);
++    return;
++  }
++
+   const ClientPinAvailability client_pin_availability =
+       authenticator_->Options().client_pin_availability;
+   switch (client_pin_availability) {
+@@ -123,8 +129,7 @@ void AuthTokenRequester::OnGetUVRetries(
+   if (response->retries == 0) {
+     // The authenticator was locked prior to calling
+     // ObtainTokenFromInternalUV(). Fall back to PIN if able.
+-    if (authenticator_->Options().client_pin_availability ==
+-        ClientPinAvailability::kSupportedAndPinSet) {
++    if (CanFallBackToPIN()) {
+       if (options_.skip_pin_touch) {
+         ObtainTokenFromPIN();
+         return;
+@@ -190,8 +195,7 @@ void AuthTokenRequester::OnGetUVToken(
+ 
+   if (status == CtapDeviceResponseCode::kCtap2ErrUvBlocked) {
+     // Fall back to PIN if able.
+-    if (authenticator_->Options().client_pin_availability ==
+-        ClientPinAvailability::kSupportedAndPinSet) {
++    if (CanFallBackToPIN()) {
+       internal_uv_locked_ = true;
+       ObtainTokenFromPIN();
+       return;
+@@ -384,4 +388,10 @@ void AuthTokenRequester::NotifyAuthenticatorSelectedAndFailWithResult(
+   }
+ }
+ 
++bool AuthTokenRequester::CanFallBackToPIN() const {
++  return options_.can_collect_pin &&
++         authenticator_->Options().client_pin_availability ==
++             ClientPinAvailability::kSupportedAndPinSet;
++}
++
+ }  // namespace device
+diff --git a/device/fido/auth_token_requester.h b/device/fido/auth_token_requester.h
+index ecdddd9c9168dfe1a237ffff9a62700eef9ae7b2..33dcbfc2149d6b9aa8606ac65c0a4b3c00bc9270 100644
+--- a/device/fido/auth_token_requester.h
++++ b/device/fido/auth_token_requester.h
+@@ -59,6 +59,12 @@ class COMPONENT_EXPORT(DEVICE_FIDO) AuthTokenRequester {
+     // internal_uv_locked indicates that internal user verification was already
+     // locked for the authenticator when building this AuthTokenRequester.
+     bool internal_uv_locked = false;
++
++    // can_collect_pin indicates whether the Delegate is able to collect a PIN
++    // from the user. If false, CollectPIN() is never invoked: a request that
++    // would need a PIN fails with kPreTouchUnsatisfiableRequest, and locked
++    // internal user verification does not fall back to PIN entry.
++    bool can_collect_pin = true;
+   };
+ 
+   class COMPONENT_EXPORT(DEVICE_FIDO) Delegate {
+@@ -155,6 +161,10 @@ class COMPONENT_EXPORT(DEVICE_FIDO) AuthTokenRequester {
+   bool NotifyAuthenticatorSelected();
+   void NotifyAuthenticatorSelectedAndFailWithResult(Result result);
+ 
++  // CanFallBackToPIN returns whether a PIN is set on the authenticator and the
++  // Delegate is able to collect it.
++  bool CanFallBackToPIN() const;
++
+   raw_ptr<Delegate> delegate_;
+   raw_ptr<FidoAuthenticator> authenticator_;
+ 
+diff --git a/device/fido/get_assertion_request_handler.cc b/device/fido/get_assertion_request_handler.cc
+index 56653859b9c297d6dbe1a03c4df2355f6f147d6c..e895d761f7a15a6d1a6ee2efefb1c470d0556c5a 100644
+--- a/device/fido/get_assertion_request_handler.cc
++++ b/device/fido/get_assertion_request_handler.cc
+@@ -568,6 +568,7 @@ void GetAssertionRequestHandler::ObtainPINUVAuthToken(
+   options.rp_id = request_.rp_id;
+   options.skip_pin_touch = skip_pin_touch;
+   options.internal_uv_locked = internal_uv_locked;
++  options.can_collect_pin = observer() && observer()->SupportsPIN();
+ 
+   auth_token_requester_map_.insert(
+       {authenticator, std::make_unique<AuthTokenRequester>(
+diff --git a/device/fido/make_credential_request_handler.cc b/device/fido/make_credential_request_handler.cc
+index 40d9794c4cb0da8dca0f8f94d10162e50a2d4b04..4a6ec02535c64be9bdcbe69bc54fe008b266b522 100644
+--- a/device/fido/make_credential_request_handler.cc
++++ b/device/fido/make_credential_request_handler.cc
+@@ -695,6 +695,7 @@ void MakeCredentialRequestHandler::ObtainPINUVAuthToken(
+   options.rp_id = request_.rp.id;
+   options.skip_pin_touch = skip_pin_touch;
+   options.internal_uv_locked = internal_uv_locked;
++  options.can_collect_pin = observer() && observer()->SupportsPIN();
+ 
+   auth_token_requester_map_.insert(
+       {authenticator, std::make_unique<AuthTokenRequester>(
