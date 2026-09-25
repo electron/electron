@@ -43,9 +43,17 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
     return docVisState === state;
   }
 
+  // On the Windows CI hosts another process's console window can end up
+  // above a newly shown test window, and Chromium's native occlusion tracker
+  // then reports the page as 'hidden'. Keep the window above everything there
+  // so the desktop's z-order cannot decide the outcome. macOS runs the
+  // occlusion specs below, which need a normal window level.
+  const alwaysOnTop = process.platform === 'win32';
+
   const itWithOptions = (name: string, options: BrowserWindowConstructorOptions, fn: Mocha.Func) => {
     it(name, async function (...args) {
       w = new BrowserWindow({
+        alwaysOnTop,
         ...options,
         paintWhenInitiallyHidden: false,
         webPreferences: {
@@ -62,6 +70,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
 
     it(name + ' with BaseWindow', async function (...args) {
       const baseWindow = new BaseWindow({
+        alwaysOnTop,
         ...options
       });
       const wcv = new WebContentsView({
