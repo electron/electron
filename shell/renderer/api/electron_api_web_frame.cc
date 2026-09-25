@@ -608,8 +608,10 @@ class WebFrameRenderer final
                              &render_frame))
       return;
 
-    blink::WebFrame* web_frame = render_frame->GetWebFrame();
-    web_frame->View()->SetDefaultPageScaleLimits(min_level, max_level);
+    blink::WebView* web_view = render_frame->GetWebFrame()->View();
+    web_view->SetDefaultPageScaleLimits(min_level, max_level);
+    // See ElectronApiServiceImpl::SetVisualZoomLevelLimits.
+    web_view->SetInitialPageScaleOverride(1.f);
   }
 
   void SetSpellCheckProvider(gin_helper::ErrorThrower thrower,
