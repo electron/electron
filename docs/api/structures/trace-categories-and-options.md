@@ -16,3 +16,5 @@
   The trace option will first be reset to the default option (`record_mode` set
   to `record-until-full`, `enable_sampling` and `enable_systrace`
   set to `false`) before options parsed from `traceOptions` are applied on it.
+* `heap_profiler_options` ([HeapProfilerOptions](heap-profiler-options.md)) (optional) -
+  enables native heap profiling for the duration of the trace.
