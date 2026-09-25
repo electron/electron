@@ -574,13 +574,13 @@ void Initialize(v8::Local<v8::Object> exports,
            electron::api::MenuItem::GetConstructor(
                isolate, context, &electron::api::MenuItem::kWrapperInfo));
   gin_helper::Dictionary statics(isolate, menu);
-  statics.SetMethod("buildFromTemplate", &Menu::BuildFromTemplate);
-  statics.SetMethod("setApplicationMenu", &Menu::SetApplicationMenuFromJS);
-  statics.SetMethod("getApplicationMenu", &Menu::GetApplicationMenu);
-  statics.SetMethod("_roleDefaults", &electron::api::menu_roles::Defaults);
+  statics.SetMethod<&Menu::BuildFromTemplate>("buildFromTemplate");
+  statics.SetMethod<&Menu::SetApplicationMenuFromJS>("setApplicationMenu");
+  statics.SetMethod<&Menu::GetApplicationMenu>("getApplicationMenu");
+  statics.SetMethod<&electron::api::menu_roles::Defaults>("_roleDefaults");
 #if BUILDFLAG(IS_MAC)
-  statics.SetMethod("sendActionToFirstResponder",
-                    &Menu::SendActionToFirstResponder);
+  statics.SetMethod<&Menu::SendActionToFirstResponder>(
+      "sendActionToFirstResponder");
 #endif
 }
 

@@ -184,7 +184,7 @@ class PreloadRealmLifetimeController
 
     gin_helper::Dictionary process = gin::Dictionary::CreateEmpty(isolate);
     ElectronBindings::BindProcess(isolate, &process, metrics_.get());
-    process.SetMethod("uptime", preload_utils::Uptime);
+    process.SetMethod<&preload_utils::Uptime>("uptime");
     process.Set("argv", base::CommandLine::ForCurrentProcess()->argv());
     process.Set("pid", base::GetCurrentProcId());
     process.Set("sandboxed", true);

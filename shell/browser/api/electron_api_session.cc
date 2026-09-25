@@ -1963,8 +1963,8 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("Session",
            Session::GetConstructor(isolate, context, &Session::kWrapperInfo));
-  dict.SetMethod("fromPartition", &FromPartition);
-  dict.SetMethod("fromPath", &FromPath);
+  dict.SetMethod<&FromPartition>("fromPartition");
+  dict.SetMethod<&FromPath>("fromPath");
 }
 
 }  // namespace
