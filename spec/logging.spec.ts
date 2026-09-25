@@ -136,6 +136,28 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
     expect(contents).to.match(/TEST_LOG/);
   });
 
+  it('also logs to stderr when ELECTRON_ALSO_LOG_TO_STDERR is set with a log file', async () => {
+    const logFilePath = path.join(app.getPath('temp'), 'test-log-file-' + randomUUID());
+    const rc = await startRemoteControlApp(['--enable-logging', '--log-file=' + logFilePath], {
+      env: { ...process.env, ELECTRON_ALSO_LOG_TO_STDERR: '1' }
+    });
+    const stderrComplete = new Promise<string>((resolve) => {
+      let stderr = '';
+      rc.process.stderr!.on('data', (chunk) => {
+        stderr += chunk.toString('utf8');
+      });
+      rc.process.on('close', () => resolve(stderr));
+    });
+    rc.remotely(() => {
+      process._linkedBinding('electron_common_testing').log(0, 'TEST_LOG');
+      setTimeout(() => {
+        require('electron').app.quit();
+      });
+    });
+    expect(await stderrComplete).to.match(/TEST_LOG/);
+    expect(await fs.readFile(logFilePath, 'utf8')).to.match(/TEST_LOG/);
+  });
+
   ifit(process.platform === 'win32')('child process logs to the given file when --log-file is passed', async () => {
     const logFilePath = path.join(app.getPath('temp'), 'test-log-file-' + randomUUID());
     const preloadPath = path.resolve(import.meta.dirname, 'fixtures', 'log-test.js');
