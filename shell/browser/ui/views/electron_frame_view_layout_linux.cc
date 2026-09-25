@@ -22,7 +22,10 @@ ElectronFrameViewLayoutLinux::ElectronFrameViewLayoutLinux(
 ElectronFrameViewLayoutLinux::~ElectronFrameViewLayoutLinux() = default;
 
 gfx::Insets ElectronFrameViewLayoutLinux::GetRestoredFrameBorderInsets() const {
-  if (window_->IsTranslucent())
+  // Without client-side shadows the base class falls back to a solid 4px
+  // border for resizing; frameless windows resize from an inside band instead
+  // (ElectronFrameViewLinux::ResizingBorderHitTest), so draw no border.
+  if (window_->IsTranslucent() || !supports_client_frame_shadow())
     return gfx::Insets();
 
   return FrameViewLayoutLinux::GetRestoredFrameBorderInsets();
