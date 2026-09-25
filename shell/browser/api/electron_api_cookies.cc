@@ -216,9 +216,6 @@ const std::string InclusionStatusToString(net::CookieInclusionStatus status) {
            {Reason::EXCLUDE_DOMAIN_NON_ASCII,
             "The cookie was set with a Domain attribute containing non ASCII "
             "characters."},
-           {Reason::EXCLUDE_THIRD_PARTY_BLOCKED_WITHIN_FIRST_PARTY_SET,
-            "The cookie is blocked by third-party cookie blocking but the two "
-            "sites are in the same First-Party Set"},
            {Reason::EXCLUDE_PORT_MISMATCH,
             "The cookie's source_port did not match the port of the request."},
            {Reason::EXCLUDE_SCHEME_MISMATCH,
