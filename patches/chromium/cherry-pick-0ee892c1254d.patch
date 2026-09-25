@@ -1,0 +1,532 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Tue, 1 Sep 2026 13:14:36 -0700
+Subject: GPU: add TexSubImage2D workaround for certain texture formats.
+
+Add a workaround for a bug in the handling of texture uploads of
+certain host-twiddled texture formats; use TexImage2D + TexSubImage2D
+instead of uploading the data in the TexImage2D call. Apply this
+workaround to PowerVR drivers.
+
+Bug: 553172761
+Change-Id: Ie28aa469e46a015927488176e8ceef0962056287
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8316468
+Auto-Submit: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: vikas soni <vikassoni@chromium.org>
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1690048}
+
+Electron adaptation notes (44-x-y):
+The new gpu_driver_bug_list.json entry (id 494) is appended after the
+entries this branch already carries instead of before them; the entry
+content is verbatim.
+
+diff --git a/gpu/BUILD.gn b/gpu/BUILD.gn
+index d56c5145ec100596275bf324329bf1fcf3e7f39d..4cf6cb230f19c780215525f5954f549edfdf30e8 100644
+--- a/gpu/BUILD.gn
++++ b/gpu/BUILD.gn
+@@ -249,6 +249,7 @@ test("gl_tests") {
+     "command_buffer/tests/gl_lose_context_chromium_unittest.cc",
+     "command_buffer/tests/gl_manager.cc",
+     "command_buffer/tests/gl_manager.h",
++    "command_buffer/tests/gl_npot_host_twiddled_texture_unittest.cc",
+     "command_buffer/tests/gl_object_bindings_unittest.cc",
+     "command_buffer/tests/gl_offscreen_surface_unittest.cc",
+     "command_buffer/tests/gl_oob_attrib_unittest.cc",
+diff --git a/gpu/command_buffer/service/texture_manager.cc b/gpu/command_buffer/service/texture_manager.cc
+index c7fc97c47c67cc49c2fa52dc3b4d5bdf6031accc..1d859ae7bfaa21941686b4abe4bd7781b0e05bf7 100644
+--- a/gpu/command_buffer/service/texture_manager.cc
++++ b/gpu/command_buffer/service/texture_manager.cc
+@@ -15,6 +15,7 @@
+ #include <tuple>
+ #include <utility>
+ 
++#include "base/bits.h"
+ #include "base/compiler_specific.h"
+ #include "base/containers/heap_array.h"
+ #include "base/format_macros.h"
+@@ -431,6 +432,13 @@ class ScopedMemTrackerChange {
+   uint32_t previous_size_;
+ };
+ 
++bool IsHostTwiddledFormat(GLenum internal_format, GLenum format, GLenum type) {
++  return (internal_format == GL_RGB10_A2 && format == GL_RGBA &&
++          type == GL_UNSIGNED_INT_2_10_10_10_REV) ||
++         (internal_format == GL_SRGB8_ALPHA8 && format == GL_RGBA &&
++          type == GL_UNSIGNED_BYTE);
++}
++
+ }  // namespace anonymous
+ 
+ DecoderTextureState::DecoderTextureState(
+@@ -448,7 +456,9 @@ DecoderTextureState::DecoderTextureState(
+       split_level_0_pbo_full_sub_image_2d(
+           workarounds.split_level_0_pbo_full_sub_image_2d),
+       upload_oversized_mip_levels_via_unpack_buffer(
+-          workarounds.upload_oversized_mip_levels_via_unpack_buffer) {}
++          workarounds.upload_oversized_mip_levels_via_unpack_buffer),
++      use_tex_sub_image_for_host_twiddled_npot_uploads(
++          workarounds.use_tex_sub_image_for_host_twiddled_npot_uploads) {}
+ 
+ TextureManager::DestructionObserver::DestructionObserver() = default;
+ 
+@@ -2968,13 +2978,21 @@ void TextureManager::ValidateAndDoTexSubImage(
+     uploaded = true;
+   }
+ 
++  GLenum internal_format = 0;
++  GLenum tex_type = 0;
++  texture->GetLevelType(args.target, args.level, &tex_type, &internal_format);
++
+   if (uploaded) {
+     // Upload was performed by one of the workarounds above.
+-  } else if (full_image && !texture->IsImmutable()) {
++  } else if (full_image && !texture->IsImmutable() &&
++             !(texture_state
++                   ->use_tex_sub_image_for_host_twiddled_npot_uploads &&
++               args.command_type ==
++                   DoTexSubImageArguments::CommandType::kTexSubImage2D &&
++               (!std::has_single_bit(static_cast<uint32_t>(args.width)) ||
++                !std::has_single_bit(static_cast<uint32_t>(args.height))) &&
++               IsHostTwiddledFormat(internal_format, args.format, args.type))) {
+     TRACE_EVENT0("gpu", "FullImage");
+-    GLenum internal_format;
+-    GLenum tex_type;
+-    texture->GetLevelType(args.target, args.level, &tex_type, &internal_format);
+     // NOTE: In OpenGL ES 2/3 border is always zero. If that changes we'll need
+     // to look it up.
+     if (args.command_type ==
+@@ -3428,57 +3446,73 @@ void TextureManager::DoTexImage(DecoderTextureState* texture_state,
+                    AdjustTexFormat(feature_info_.get(), args.format), args.type,
+                    args.pixels);
+     } else {
+-      bool handled = false;
+-      if (texture_state->upload_oversized_mip_levels_via_unpack_buffer &&
+-          args.target == GL_TEXTURE_2D && args.level > 0 &&
+-          !unpack_buffer_bound &&
+-          !(GLES2Util::GetChannelsForFormat(args.format) &
+-            (GLES2Util::kDepth | GLES2Util::kStencil))) {
+-        GLsizei level0_width = 0;
+-        GLsizei level0_height = 0;
+-        GLsizei level0_depth = 0;
+-        if (texture->GetLevelSize(args.target, 0, &level0_width, &level0_height,
+-                                  &level0_depth) &&
+-            level0_width > 0 && level0_height > 0) {
+-          const int slot_w = std::max(
+-              1, static_cast<int>(
+-                     std::bit_ceil(static_cast<uint32_t>(level0_width))) >>
+-                     args.level);
+-          const int slot_h = std::max(
+-              1, static_cast<int>(
+-                     std::bit_ceil(static_cast<uint32_t>(level0_height))) >>
+-                     args.level);
+-          if (args.width > slot_w || args.height > slot_h) {
+-            GLuint scratch = 0;
+-            glGenBuffersARB(1, &scratch);
+-            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, scratch);
+-            // Regardless of whether the user supplied data
+-            // (args.pixels != nullptr), the pixel unpack buffer must
+-            // be allocated with the expected amount of data.
+-            if (args.pixels_size > 0) {
+-              glBufferData(GL_PIXEL_UNPACK_BUFFER, args.pixels_size,
+-                           args.pixels, GL_STREAM_DRAW);
+-            }
+-            glTexImage2D(
+-                args.target, args.level,
+-                AdjustTexInternalFormat(feature_info_.get(),
+-                                        args.internal_format, args.type),
+-                args.width, args.height, args.border,
+-                AdjustTexFormat(feature_info_.get(), args.format), args.type,
+-                nullptr);
+-            glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+-            glDeleteBuffersARB(1, &scratch);
+-            handled = true;
+-          }
+-        }
+-      }
+-      if (!handled) {
++      if (texture_state->use_tex_sub_image_for_host_twiddled_npot_uploads &&
++          (args.pixels != nullptr || unpack_buffer_bound) &&
++          (!std::has_single_bit(static_cast<uint32_t>(args.width)) ||
++           !std::has_single_bit(static_cast<uint32_t>(args.height))) &&
++          IsHostTwiddledFormat(args.internal_format, args.format, args.type)) {
+         glTexImage2D(args.target, args.level,
+                      AdjustTexInternalFormat(feature_info_.get(),
+                                              args.internal_format, args.type),
+                      args.width, args.height, args.border,
+                      AdjustTexFormat(feature_info_.get(), args.format),
+-                     args.type, args.pixels);
++                     args.type, nullptr);
++        glTexSubImage2D(args.target, args.level, 0, 0, args.width, args.height,
++                        AdjustTexFormat(feature_info_.get(), args.format),
++                        args.type, args.pixels);
++      } else {
++        bool handled = false;
++        if (texture_state->upload_oversized_mip_levels_via_unpack_buffer &&
++            args.target == GL_TEXTURE_2D && args.level > 0 &&
++            !unpack_buffer_bound &&
++            !(GLES2Util::GetChannelsForFormat(args.format) &
++              (GLES2Util::kDepth | GLES2Util::kStencil))) {
++          GLsizei level0_width = 0;
++          GLsizei level0_height = 0;
++          GLsizei level0_depth = 0;
++          if (texture->GetLevelSize(args.target, 0, &level0_width,
++                                    &level0_height, &level0_depth) &&
++              level0_width > 0 && level0_height > 0) {
++            const int slot_w = std::max(
++                1, static_cast<int>(
++                       std::bit_ceil(static_cast<uint32_t>(level0_width))) >>
++                       args.level);
++            const int slot_h = std::max(
++                1, static_cast<int>(
++                       std::bit_ceil(static_cast<uint32_t>(level0_height))) >>
++                       args.level);
++            if (args.width > slot_w || args.height > slot_h) {
++              GLuint scratch = 0;
++              glGenBuffersARB(1, &scratch);
++              glBindBuffer(GL_PIXEL_UNPACK_BUFFER, scratch);
++              // Regardless of whether the user supplied data
++              // (args.pixels != nullptr), the pixel unpack buffer must
++              // be allocated with the expected amount of data.
++              if (args.pixels_size > 0) {
++                glBufferData(GL_PIXEL_UNPACK_BUFFER, args.pixels_size,
++                             args.pixels, GL_STREAM_DRAW);
++              }
++              glTexImage2D(
++                  args.target, args.level,
++                  AdjustTexInternalFormat(feature_info_.get(),
++                                          args.internal_format, args.type),
++                  args.width, args.height, args.border,
++                  AdjustTexFormat(feature_info_.get(), args.format), args.type,
++                  nullptr);
++              glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
++              glDeleteBuffersARB(1, &scratch);
++              handled = true;
++            }
++          }
++        }
++        if (!handled) {
++          glTexImage2D(args.target, args.level,
++                       AdjustTexInternalFormat(feature_info_.get(),
++                                               args.internal_format, args.type),
++                       args.width, args.height, args.border,
++                       AdjustTexFormat(feature_info_.get(), args.format),
++                       args.type, args.pixels);
++        }
+       }
+     }
+   }
+diff --git a/gpu/command_buffer/service/texture_manager.h b/gpu/command_buffer/service/texture_manager.h
+index 5b6fcb04ccbded3df0f1941ad4c22b3a8aeb0bf3..4b2a333f3a7baf2a25e65c59399f987df603675d 100644
+--- a/gpu/command_buffer/service/texture_manager.h
++++ b/gpu/command_buffer/service/texture_manager.h
+@@ -705,6 +705,7 @@ struct DecoderTextureState {
+   bool unpack_overlapping_rows_separately_unpack_buffer;
+   bool split_level_0_pbo_full_sub_image_2d;
+   bool upload_oversized_mip_levels_via_unpack_buffer;
++  bool use_tex_sub_image_for_host_twiddled_npot_uploads;
+ };
+ 
+ // This class keeps track of the textures and their sizes so we can do NPOT and
+diff --git a/gpu/command_buffer/tests/gl_npot_host_twiddled_texture_unittest.cc b/gpu/command_buffer/tests/gl_npot_host_twiddled_texture_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..ea0e6328659b4cdc1664b6e15fbd624bdba7678a
+--- /dev/null
++++ b/gpu/command_buffer/tests/gl_npot_host_twiddled_texture_unittest.cc
+@@ -0,0 +1,263 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include <GLES2/gl2.h>
++#include <GLES2/gl2ext.h>
++#include <GLES3/gl3.h>
++#include <stdint.h>
++
++#include <vector>
++
++#include "gpu/command_buffer/tests/gl_manager.h"
++#include "gpu/command_buffer/tests/gl_test_utils.h"
++#include "gpu/config/gpu_driver_bug_workarounds.h"
++#include "testing/gtest/include/gtest/gtest.h"
++
++namespace gpu {
++
++namespace {
++
++void BlitTexture(GLuint program) {
++  glUseProgram(program);
++  const GLuint kVertexPositionAttrib = 0;
++  const GLfloat kQuadVertices[] = {-1.0f, -1.0f, 1.0f,  -1.0f,
++                                   1.0f,  1.0f,  -1.0f, 1.0f};
++  GLuint buffer_id = 0;
++  glGenBuffers(1, &buffer_id);
++  glBindBuffer(GL_ARRAY_BUFFER, buffer_id);
++  glBufferData(GL_ARRAY_BUFFER, sizeof(kQuadVertices), kQuadVertices,
++               GL_STATIC_DRAW);
++
++  glEnableVertexAttribArray(kVertexPositionAttrib);
++  glVertexAttribPointer(kVertexPositionAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
++
++  GLuint sampler_handle = glGetUniformLocation(program, "u_sampler");
++  glUniform1i(sampler_handle, 0);
++
++  glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
++  EXPECT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++  glDisableVertexAttribArray(kVertexPositionAttrib);
++  glBindBuffer(GL_ARRAY_BUFFER, 0);
++  glDeleteBuffers(1, &buffer_id);
++}
++
++}  // namespace
++
++class GLNPOTHostTwiddledTextureTest : public testing::TestWithParam<bool> {
++ protected:
++  void SetUp() override {
++    GLManager::Options options;
++    options.context_type = CONTEXT_TYPE_OPENGLES3;
++    options.size = gfx::Size(256, 256);
++
++    GpuDriverBugWorkarounds workarounds;
++    workarounds.use_tex_sub_image_for_host_twiddled_npot_uploads = GetParam();
++    gl_.InitializeWithWorkarounds(options, workarounds);
++
++    if (!IsApplicable()) {
++      return;
++    }
++
++    gl_.MakeCurrent();
++
++    static const char* kVertexShader =
++        "attribute vec2 a_position;\n"
++        "varying mediump vec2 v_uv;\n"
++        "void main(void) {\n"
++        "  gl_Position = vec4(a_position, 0, 1);\n"
++        "  v_uv = 0.5 * (a_position + vec2(1, 1));\n"
++        "}\n";
++    static const char* kFragmentShader =
++        "precision mediump float;\n"
++        "uniform sampler2D u_sampler;\n"
++        "varying mediump vec2 v_uv;\n"
++        "void main(void) {\n"
++        "  gl_FragColor = texture2D(u_sampler, v_uv);\n"
++        "}\n";
++
++    program_ = GLTestHelper::LoadProgram(kVertexShader, kFragmentShader);
++    ASSERT_NE(0u, program_);
++    glBindAttribLocation(program_, 0, "a_position");
++    glLinkProgram(program_);
++
++    glGenFramebuffers(1, &fbo_);
++  }
++
++  void TearDown() override {
++    if (IsApplicable()) {
++      if (program_) {
++        glDeleteProgram(program_);
++      }
++      if (fbo_) {
++        glDeleteFramebuffers(1, &fbo_);
++      }
++    }
++    gl_.Destroy();
++  }
++
++  bool IsApplicable() const { return gl_.IsInitialized(); }
++
++  GLManager gl_;
++  GLuint program_ = 0;
++  GLuint fbo_ = 0;
++};
++
++INSTANTIATE_TEST_SUITE_P(GLNPOTHostTwiddledTextureTests,
++                         GLNPOTHostTwiddledTextureTest,
++                         ::testing::Bool());
++
++// Test that non-power-of-two uploads of RGB10_A2 with
++// UNSIGNED_INT_2_10_10_10_REV data succeed and verify texture contents.
++TEST_P(GLNPOTHostTwiddledTextureTest, RGB10A2) {
++  if (!IsApplicable()) {
++    return;
++  }
++
++  constexpr GLsizei kWidth = 65;
++  constexpr GLsizei kHeight = 64;
++
++  for (int iter = 0; iter < 50; ++iter) {
++    std::vector<uint32_t> data(kWidth * kHeight);
++    for (GLsizei y = 0; y < kHeight; ++y) {
++      for (GLsizei x = 0; x < kWidth; ++x) {
++        uint32_t r = ((x + iter) % 2 == 0) ? 0x3FF : 0;
++        uint32_t g = ((y + iter) % 2 == 0) ? 0x3FF : 0;
++        uint32_t b = ((x + y + iter) % 2 == 0) ? 0x3FF : 0;
++        uint32_t a = 3;  // 1.0 in 2-bit alpha
++        data[y * kWidth + x] = (r & 0x3FF) | ((g & 0x3FF) << 10) |
++                               ((b & 0x3FF) << 20) | ((a & 0x3) << 30);
++      }
++    }
++
++    GLuint tex = 0;
++    glGenTextures(1, &tex);
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
++
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB10_A2, kWidth, kHeight, 0, GL_RGBA,
++                 GL_UNSIGNED_INT_2_10_10_10_REV, data.data());
++    EXPECT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++    // Verify texture contents via FBO readback
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
++                           tex, 0);
++    EXPECT_EQ(static_cast<GLenum>(GL_FRAMEBUFFER_COMPLETE),
++              glCheckFramebufferStatus(GL_FRAMEBUFFER));
++
++    std::vector<uint8_t> readback(kWidth * kHeight * 4);
++    glReadPixels(0, 0, kWidth, kHeight, GL_RGBA, GL_UNSIGNED_BYTE,
++                 readback.data());
++    EXPECT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++    for (GLsizei y = 0; y < kHeight; ++y) {
++      for (GLsizei x = 0; x < kWidth; ++x) {
++        uint8_t expected_r = ((x + iter) % 2 == 0) ? 255 : 0;
++        uint8_t expected_g = ((y + iter) % 2 == 0) ? 255 : 0;
++        uint8_t expected_b = ((x + y + iter) % 2 == 0) ? 255 : 0;
++        uint8_t expected_a = 255;
++        size_t idx = (y * kWidth + x) * 4;
++        EXPECT_EQ(readback[idx], expected_r)
++            << "Mismatch at (" << x << ", " << y << ") on iter " << iter;
++        EXPECT_EQ(readback[idx + 1], expected_g)
++            << "Mismatch at (" << x << ", " << y << ") on iter " << iter;
++        EXPECT_EQ(readback[idx + 2], expected_b)
++            << "Mismatch at (" << x << ", " << y << ") on iter " << iter;
++        EXPECT_EQ(readback[idx + 3], expected_a)
++            << "Mismatch at (" << x << ", " << y << ") on iter " << iter;
++      }
++    }
++
++    // Also verify sampling via BlitTexture
++    glBindFramebuffer(GL_FRAMEBUFFER, 0);
++    glViewport(0, 0, 256, 256);
++    BlitTexture(program_);
++
++    glDeleteTextures(1, &tex);
++  }
++}
++
++// Test that non-power-of-two uploads of SRGB8_ALPHA8 with UNSIGNED_BYTE data
++// succeed and verify texture contents, including non-default unpack alignment
++// and skip pixels.
++TEST_P(GLNPOTHostTwiddledTextureTest, SRGB8Alpha8) {
++  if (!IsApplicable()) {
++    return;
++  }
++
++  constexpr GLsizei kWidth = 255;
++  constexpr GLsizei kHeight = 256;
++  constexpr GLint kSkipPixels = 1;
++  constexpr GLsizei kRowLength = kWidth + kSkipPixels;
++
++  for (int iter = 0; iter < 50; ++iter) {
++    std::vector<uint8_t> data(kHeight * kRowLength * 4);
++    for (size_t i = 0; i < data.size() / 4; ++i) {
++      data[i * 4] = static_cast<uint8_t>((i * 17 + iter * 3) % 256);
++      data[i * 4 + 1] = static_cast<uint8_t>((i * 31 + iter * 5 + 7) % 256);
++      data[i * 4 + 2] = static_cast<uint8_t>((i * 53 + iter * 11 + 13) % 256);
++      data[i * 4 + 3] = 255;
++    }
++
++    GLuint tex = 0;
++    glGenTextures(1, &tex);
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
++
++    glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
++    glPixelStorei(GL_UNPACK_ROW_LENGTH, kRowLength);
++    glPixelStorei(GL_UNPACK_SKIP_PIXELS, kSkipPixels);
++
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, kWidth, kHeight, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, data.data());
++    EXPECT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
++    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
++    glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
++
++    // Verify texture contents via FBO readback
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
++                           tex, 0);
++    EXPECT_EQ(static_cast<GLenum>(GL_FRAMEBUFFER_COMPLETE),
++              glCheckFramebufferStatus(GL_FRAMEBUFFER));
++
++    std::vector<uint8_t> readback(kWidth * kHeight * 4);
++    glReadPixels(0, 0, kWidth, kHeight, GL_RGBA, GL_UNSIGNED_BYTE,
++                 readback.data());
++    EXPECT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++    for (GLsizei y = 0; y < kHeight; ++y) {
++      for (GLsizei x = 0; x < kWidth; ++x) {
++        size_t src_idx = (y * kRowLength + x + kSkipPixels) * 4;
++        size_t dst_idx = (y * kWidth + x) * 4;
++        EXPECT_EQ(readback[dst_idx], data[src_idx])
++            << "Mismatch at (" << x << ", " << y << ") on iter " << iter;
++        EXPECT_EQ(readback[dst_idx + 1], data[src_idx + 1])
++            << "Mismatch at (" << x << ", " << y << ") on iter " << iter;
++        EXPECT_EQ(readback[dst_idx + 2], data[src_idx + 2])
++            << "Mismatch at (" << x << ", " << y << ") on iter " << iter;
++        EXPECT_EQ(readback[dst_idx + 3], data[src_idx + 3])
++            << "Mismatch at (" << x << ", " << y << ") on iter " << iter;
++      }
++    }
++
++    // Also verify sampling via BlitTexture
++    glBindFramebuffer(GL_FRAMEBUFFER, 0);
++    glViewport(0, 0, 256, 256);
++    BlitTexture(program_);
++
++    glDeleteTextures(1, &tex);
++  }
++}
++
++}  // namespace gpu
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index 19c85d29d3e527ce2e81ecfd79714315ed03ef9f..3b85876a0ae7521389561d08a42f997a982d922e 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3942,6 +3942,15 @@
+       "features": [
+         "reset_tex_storage_base_level"
+       ]
++    },
++    {
++      "id": 494,
++      "cr_bugs": [553172761],
++      "description": "For texture formats which would be twiddled on the host CPU, upload via TexSubImage2D instead of TexImage2D.",
++      "gl_vendor": "Imagination.*",
++      "features": [
++        "use_tex_sub_image_for_host_twiddled_npot_uploads"
++      ]
+     }
+   ]
+ }
+diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
+index 83b31393c5034e53f8873bde20b56fc1d6127f23..8b97ae88a8c15d6269adb5f5e65a82a4c95fbaf2 100644
+--- a/gpu/config/gpu_workaround_list.txt
++++ b/gpu/config/gpu_workaround_list.txt
+@@ -140,6 +140,7 @@ use_eqaa_storage_samples_2
+ use_first_valid_ref_for_av1_invalid_ref
+ use_gpu_driver_workaround_for_testing
+ use_non_zero_size_for_client_side_stream_buffers
++use_tex_sub_image_for_host_twiddled_npot_uploads
+ use_virtualized_gl_contexts
+ validate_max_per_stage_uniform_blocks_at_compile_time
+ wake_up_gpu_before_drawing

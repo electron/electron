@@ -1,0 +1,106 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mitsuru Oshima <oshima@chromium.org>
+Date: Wed, 26 Aug 2026 18:09:42 -0700
+Subject: aura: Block root window deletion in
+ WindowEventDispatcher::UpdateCapture
+
+Callers of UpdateCapture (such as DesktopCaptureClient or
+CaptureController) expect the root window and host to remain alive
+during capture updates. Synchronous destruction of the host/root
+window during OnCaptureLost() can lead to use-after-free.
+
+This CL adds a ScopedDeleteBlocker for the root window in
+WindowEventDispatcher::UpdateCapture to block re-entrant deletion of
+the root window and its host, and adds a regression test.
+
+Fixed=517661385
+TAG=agy
+CONV=fb9598b9-6723-4194-bd95-436415146211
+
+Change-Id: I0bf1e30bc818515a55914160c1952715fec68191
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8294739
+Commit-Queue: Mitsuru Oshima <oshima@chromium.org>
+Reviewed-by: Thomas Lukaszewicz <tluk@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1686824}
+
+diff --git a/ui/aura/window_event_dispatcher.cc b/ui/aura/window_event_dispatcher.cc
+index 991781143427a2a92cae3d8d386542e88da54129..67698da0fb42c180555e6357d4487291fa4a7b86 100644
+--- a/ui/aura/window_event_dispatcher.cc
++++ b/ui/aura/window_event_dispatcher.cc
+@@ -430,6 +430,9 @@ void WindowEventDispatcher::UpdateCapture(Window* old_capture,
+   if (mouse_moved_handler_ && !window()->Contains(mouse_moved_handler_))
+     mouse_moved_handler_ = nullptr;
+ 
++  // Block the deletion of the root window, its host thus this dispatcher.
++  Window::ScopedDeleteBlocker root_window_blocker(window());
++
+   std::unique_ptr<Window::ScopedDeleteBlocker> new_capture_blocker;
+   if (new_capture) {
+     new_capture_blocker =
+diff --git a/ui/aura/window_event_dispatcher_unittest.cc b/ui/aura/window_event_dispatcher_unittest.cc
+index 33e1c5e951467b58564db4fdeb93fe23311801af..6f88f910e50c425df66aa66af003f2ee3fc33b47 100644
+--- a/ui/aura/window_event_dispatcher_unittest.cc
++++ b/ui/aura/window_event_dispatcher_unittest.cc
+@@ -22,6 +22,7 @@
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "ui/aura/client/aura_constants.h"
+ #include "ui/aura/client/capture_client.h"
++#include "ui/aura/client/default_capture_client.h"
+ #include "ui/aura/client/event_client.h"
+ #include "ui/aura/client/focus_client.h"
+ #include "ui/aura/env.h"
+@@ -2613,6 +2614,22 @@ class DeleteOtherWindowOnCaptureLostDelegate : public test::TestWindowDelegate {
+   raw_ptr<Window> other_ = nullptr;
+ };
+ 
++class DeleteHostOnCaptureLostDelegate : public test::TestWindowDelegate {
++ public:
++  DeleteHostOnCaptureLostDelegate() = default;
++  ~DeleteHostOnCaptureLostDelegate() override = default;
++
++  void set_host(std::unique_ptr<WindowTreeHost> host) {
++    host_ = std::move(host);
++  }
++
++  // test::TestWindowDelegate:
++  void OnCaptureLost() override { host_.reset(); }
++
++ private:
++  std::unique_ptr<WindowTreeHost> host_;
++};
++
+ }  // namespace
+ 
+ // Verifies handling loss of capture by the capture window being hidden.
+@@ -2654,6 +2671,31 @@ TEST_F(WindowEventDispatcherDeathTest, DeleteNewCaptureDuringOnCaptureLost) {
+   EXPECT_DEATH(client::GetCaptureClient(root_window())->SetCapture(w2), "");
+ }
+ 
++// Verifies that deleting the host/root window during OnCaptureLost of the
++// capture window causes a crash (due to ScopedDeleteBlocker).
++TEST_F(WindowEventDispatcherDeathTest, DeleteHostDuringOnCaptureLost) {
++  DeleteHostOnCaptureLostDelegate delegate;
++  std::unique_ptr<WindowTreeHost> host = WindowTreeHost::Create(
++      ui::PlatformWindowInitProperties{gfx::Rect{100, 100}});
++  host->InitHost();
++  host->window()->Show();
++
++  client::DefaultCaptureClient capture_client(host->window());
++
++  Window* w = CreateNormalWindow(1, host->window(), &delegate);
++  delegate.set_host(std::move(host));
++
++  client::GetCaptureClient(w->GetRootWindow())->SetCapture(w);
++  EXPECT_EQ(w,
++            client::GetCaptureClient(w->GetRootWindow())->GetCaptureWindow());
++
++  // This will trigger UpdateCapture(w, nullptr).
++  // w's OnCaptureLost will attempt to delete the host, which should crash due
++  // to ScopedDeleteBlocker on the root window.
++  EXPECT_DEATH(client::GetCaptureClient(w->GetRootWindow())->ReleaseCapture(w),
++               "");
++}
++
+ namespace {
+ 
+ class RunLoopHandler : public ui::EventHandler {

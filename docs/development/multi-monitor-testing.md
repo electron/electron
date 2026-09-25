@@ -94,7 +94,7 @@ const display1 = virtualDisplay.create({ x: 0, y: 0, width: 1920, height: 1080 }
 const display2 = virtualDisplay.create({ x: 500, y: 0, width: 1920, height: 1080 })
 
 // macOS automatically repositions display2 to x: 1920 to prevent overlap
-const actualBounds = screen.getAllDisplays().map(d => d.bounds)
+const actualBounds = screen.getAllDisplays().map((d) => d.bounds)
 // Result: [{ x: 0, y: 0, width: 1920, height: 1080 }, { x: 1920, y: 0, width: 1920, height: 1080 }]
 ```
 

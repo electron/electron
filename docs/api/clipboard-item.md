@@ -103,22 +103,17 @@ const { pathToFileURL } = require('node:url')
 // manager.
 clipboard.write([
   new ClipboardItem({
-    'text/uri-list': [
-      pathToFileURL('/path/to/first.txt').href,
-      pathToFileURL('/path/to/second.txt').href
-    ].join('\r\n')
+    'text/uri-list': [pathToFileURL('/path/to/first.txt').href, pathToFileURL('/path/to/second.txt').href].join('\r\n')
   })
 ])
 
 // Read the files currently on the clipboard.
-async function readFiles () {
+async function readFiles() {
   const [item] = await clipboard.read()
   if (item.types.includes('text/uri-list')) {
     const blob = await item.getType('text/uri-list')
-    if (blob instanceof Blob) {
-      const uriList = await blob.text()
-      return uriList.split(/\r?\n/).filter(Boolean)
-    }
+    const uriList = await blob.text()
+    return uriList.split(/\r?\n/).filter(Boolean)
   }
   return []
 }
@@ -136,11 +131,11 @@ the platform clipboard currently makes available.
 
 ### Instance Methods
 
-#### `clipboardItem.getType(type)`
+#### `clipboardItem.getType<T extends string>(type)`
 
-* `type` string - mime type to retrieve.
+* `type` T - mime type to retrieve.
 
-Returns `Promise<Blob> | Promise<ClipboardBookmark>` - Resolves with the payload for the
+Returns `Promise<string extends T ? (Blob | ClipboardBookmark) : T extends 'electron application/bookmark' ? ClipboardBookmark : Blob>` - Resolves with the payload for the
 given MIME type. Modeled after the W3C
 [`ClipboardItem.getType`](https://developer.mozilla.org/en-US/docs/Web/API/ClipboardItem/getType)
 method. The promise resolves to a `Blob` for most MIME types; the one
@@ -152,7 +147,7 @@ Rejects when `type` is not present in
 ```js
 const { clipboard } = require('electron')
 
-async function dumpClipboard () {
+async function dumpClipboard() {
   const items = await clipboard.read()
   for (const item of items) {
     for (const type of item.types) {
@@ -174,7 +169,7 @@ Rejects when a bookmark is not available in the clipboard.
 ```js
 const { clipboard } = require('electron')
 
-async function dumpClipboard () {
+async function dumpClipboard() {
   const bookmarkType = 'electron application/bookmark'
   const items = await clipboard.read()
   for (const item of items) {

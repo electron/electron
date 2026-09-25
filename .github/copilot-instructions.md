@@ -81,7 +81,7 @@ When working on the `roller/chromium/main` branch for Chromium upgrades, use `e 
 
 - JS/TS files: kebab-case (`file-name.ts`)
 - C++ files: snake_case with `electron_api_` prefix (`electron_api_safe_storage.cc`)
-- Test files: `api-{module-name}-spec.ts` in `spec/`
+- Test files: `api-{module-name}.spec.ts` in `spec/`
 - Source file lists are maintained in `filenames.gni` (with platform-specific sections)
 
 ### JavaScript/TypeScript

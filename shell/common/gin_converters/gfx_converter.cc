@@ -6,9 +6,9 @@
 
 #include <string>
 
-#include "gin/data_object_builder.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/object_builder.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/color_space.h"
@@ -24,10 +24,10 @@ namespace gin {
 
 v8::Local<v8::Value> Converter<gfx::Point>::ToV8(v8::Isolate* isolate,
                                                  const gfx::Point& val) {
-  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-  dict.Set("x", val.x());
-  dict.Set("y", val.y());
-  return dict.GetHandle();
+  return gin_helper::ObjectBuilder(isolate)
+      .Set("x", val.x())
+      .Set("y", val.y())
+      .Build();
 }
 
 bool Converter<gfx::Point>::FromV8(v8::Isolate* isolate,
@@ -46,10 +46,10 @@ bool Converter<gfx::Point>::FromV8(v8::Isolate* isolate,
 
 v8::Local<v8::Value> Converter<gfx::PointF>::ToV8(v8::Isolate* isolate,
                                                   const gfx::PointF& val) {
-  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-  dict.Set("x", val.x());
-  dict.Set("y", val.y());
-  return dict.GetHandle();
+  return gin_helper::ObjectBuilder(isolate)
+      .Set("x", val.x())
+      .Set("y", val.y())
+      .Build();
 }
 
 bool Converter<gfx::PointF>::FromV8(v8::Isolate* isolate,
@@ -67,10 +67,10 @@ bool Converter<gfx::PointF>::FromV8(v8::Isolate* isolate,
 
 v8::Local<v8::Value> Converter<gfx::Size>::ToV8(v8::Isolate* isolate,
                                                 const gfx::Size& val) {
-  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-  dict.Set("width", val.width());
-  dict.Set("height", val.height());
-  return dict.GetHandle();
+  return gin_helper::ObjectBuilder(isolate)
+      .Set("width", val.width())
+      .Set("height", val.height())
+      .Build();
 }
 
 bool Converter<gfx::Size>::FromV8(v8::Isolate* isolate,
@@ -88,12 +88,12 @@ bool Converter<gfx::Size>::FromV8(v8::Isolate* isolate,
 
 v8::Local<v8::Value> Converter<gfx::Rect>::ToV8(v8::Isolate* isolate,
                                                 const gfx::Rect& val) {
-  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-  dict.Set("x", val.x());
-  dict.Set("y", val.y());
-  dict.Set("width", val.width());
-  dict.Set("height", val.height());
-  return dict.GetHandle();
+  return gin_helper::ObjectBuilder(isolate)
+      .Set("x", val.x())
+      .Set("y", val.y())
+      .Set("width", val.width())
+      .Set("height", val.height())
+      .Build();
 }
 
 bool Converter<gfx::Rect>::FromV8(v8::Isolate* isolate,
@@ -113,7 +113,7 @@ bool Converter<gfx::Rect>::FromV8(v8::Isolate* isolate,
 
 v8::Local<v8::Value> Converter<gfx::Insets>::ToV8(v8::Isolate* isolate,
                                                   const gfx::Insets& val) {
-  return gin::DataObjectBuilder(isolate)
+  return gin_helper::ObjectBuilder(isolate)
       .Set("top", val.top())
       .Set("left", val.left())
       .Set("bottom", val.bottom())
@@ -174,30 +174,30 @@ struct Converter<display::Display::TouchSupport> {
 v8::Local<v8::Value> Converter<display::Display>::ToV8(
     v8::Isolate* isolate,
     const display::Display& val) {
-  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-  dict.Set("accelerometerSupport", val.accelerometer_support());
-  dict.Set("bounds", val.bounds());
-  dict.Set("colorDepth", val.color_depth());
-  dict.Set("colorSpace", val.GetColorSpaces()
+  return gin_helper::ObjectBuilder(isolate)
+      .Set("accelerometerSupport", val.accelerometer_support())
+      .Set("bounds", val.bounds())
+      .Set("colorDepth", val.color_depth())
+      .Set("colorSpace", val.GetColorSpaces()
                              .GetRasterAndCompositeColorSpace(
                                  gfx::ContentColorUsage::kWideColorGamut)
-                             .ToString());
-  dict.Set("depthPerComponent", val.depth_per_component());
-  dict.Set("detected", val.detected());
-  dict.Set("displayFrequency", val.display_frequency());
-  dict.Set("id", val.id());
-  dict.Set("internal", val.IsInternal());
-  dict.Set("label", val.label());
-  dict.Set("maximumCursorSize", val.maximum_cursor_size());
-  dict.Set("monochrome", val.is_monochrome());
-  dict.Set("nativeOrigin", val.native_origin());
-  dict.Set("rotation", val.RotationAsDegree());
-  dict.Set("scaleFactor", val.device_scale_factor());
-  dict.Set("size", val.size());
-  dict.Set("workArea", val.work_area());
-  dict.Set("workAreaSize", val.work_area_size());
-  dict.Set("touchSupport", val.touch_support());
-  return dict.GetHandle();
+                             .ToString())
+      .Set("depthPerComponent", val.depth_per_component())
+      .Set("detected", val.detected())
+      .Set("displayFrequency", val.display_frequency())
+      .Set("id", val.id())
+      .Set("internal", val.IsInternal())
+      .Set("label", val.label())
+      .Set("maximumCursorSize", val.maximum_cursor_size())
+      .Set("monochrome", val.is_monochrome())
+      .Set("nativeOrigin", val.native_origin())
+      .Set("rotation", val.RotationAsDegree())
+      .Set("scaleFactor", val.device_scale_factor())
+      .Set("size", val.size())
+      .Set("workArea", val.work_area())
+      .Set("workAreaSize", val.work_area_size())
+      .Set("touchSupport", val.touch_support())
+      .Build();
 }
 
 v8::Local<v8::Value> Converter<gfx::ResizeEdge>::ToV8(

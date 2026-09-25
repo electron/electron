@@ -100,18 +100,12 @@ void ElectronSandboxedRendererClient::InitializeBindings(
 
   // The browser pushed the preload script set + process info via
   // ElectronFrameStartup, ordered ahead of the CommitNavigation that triggered
-  // this DidCreateScriptContext. The push always lands first (associated mojo
-  // ordering); the only documents that reach here without it are ones that
-  // ShouldLoadPreload() filters out (initial empty doc, webview frames), so
-  // the bundle never observes a null startupData in practice.
+  // this DidCreateScriptContext. DidCreateScriptContext() does not run the
+  // bundle for a document that has not received it, so it is present here.
   auto* api_service = ElectronApiServiceImpl::Get(render_frame);
-  v8::Local<v8::Value> startup_data;
-  if (!api_service ||
-      !preload_utils::BuildStartupData(isolate, api_service->startup_data())
-           .ToLocal(&startup_data)) {
-    startup_data = v8::Null(isolate);
-  }
-  b.Set("startupData", startup_data);
+  b.Set("startupData",
+        preload_utils::BuildStartupData(isolate, api_service->startup_data())
+            .ToLocalChecked());
 }
 
 void ElectronSandboxedRendererClient::RenderFrameCreated(
@@ -142,6 +136,18 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   // For devtools we still want to run the preload_bundle script
   // Or when nodeSupport is explicitly enabled in sub frames
   if (!ShouldLoadPreload(isolate, context, render_frame))
+    return;
+
+  // The browser pushes the startup data (preload scripts and process
+  // properties) right before it commits a navigation in this frame. A context
+  // can still be created on a document that was never committed: the initial
+  // empty document of a frame whose first navigation is pending or was
+  // cancelled, when DevTools (Runtime.enable) or webFrameMain.executeJavaScript
+  // touches it. There is nothing to run the bundle with there, so skip it; the
+  // document that commits afterwards gets its own context with the data in
+  // place.
+  auto* api_service = ElectronApiServiceImpl::Get(render_frame);
+  if (!api_service || !api_service->startup_data())
     return;
 
   injected_frames_.insert(render_frame);

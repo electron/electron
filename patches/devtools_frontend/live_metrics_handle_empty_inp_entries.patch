@@ -1,0 +1,267 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Barry Pollard <barrypollard@google.com>
+Date: Mon, 31 Aug 2026 13:12:55 +0100
+Subject: Live Metrics: Handle empty INP entries
+
+Web-vitals v6 can emit INP events without entries for small interactions
+after a bfcache restore or a soft navigation (to handle the fact that
+those navigations do not have `first-input` events as they will have
+been used up on the original hard navigation). See
+https://github.com/GoogleChrome/web-vitals/issues/724. DevTools
+currently expects entries so doesn't handle this well.
+
+This CL adds optional chaining to handle this. The entries aren't needed
+for these small interactions as they are only emitted on navigation, and
+the log is cleared on navigation so it's safe to clear them.
+
+Bug: 543499029
+Change-Id: I36364b9c130db26ef3ca34560214590d9b24e04e
+Fixed: 543499029
+Reviewed-on: https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/8300032
+Reviewed-by: Philip Pfaffe <pfaffe@chromium.org>
+Commit-Queue: Barry Pollard <barrypollard@chromium.org>
+Reviewed-by: Victor Porof <victorporof@chromium.org>
+Reviewed-by: Nikolay Vitkov <nvitkov@chromium.org>
+(cherry picked from commit 6a47f93393a72ca3ae77fdb0525296812d92f9a2)
+
+Backport notes for M152: spec.ts keeps this branch's named type imports
+from web-vitals.js, and the LiveMetrics.test.ts changes are omitted because
+they depend on intervening test additions that are not on this branch.
+
+diff --git a/front_end/models/live-metrics/LiveMetrics.ts b/front_end/models/live-metrics/LiveMetrics.ts
+index 022d3608a50b22144aaa3b4b958f1a3409520b6d..b2e383de3e84d73f8cd4779b88e709354de1b31b 100644
+--- a/front_end/models/live-metrics/LiveMetrics.ts
++++ b/front_end/models/live-metrics/LiveMetrics.ts
+@@ -351,12 +351,18 @@ export class LiveMetrics extends Common.ObjectWrapper.ObjectWrapper<EventTypes>
+           // Use our own "interactionId" rather than the Chrome/web-vitals
+           // provided one, so we can group events with same start time
+           // (e.g. `pointerup` and `click` are one interaction log entry)
+-          interactionId: `interaction-${webVitalsEvent.entryGroupId}-${webVitalsEvent.startTime}`,
++          interactionId: webVitalsEvent.entryGroupId !== undefined && webVitalsEvent.startTime !== undefined ?
++              `interaction-${webVitalsEvent.entryGroupId}-${webVitalsEvent.startTime}` :
++              undefined,
+         };
+         this.#inpValue = inpEvent;
+         break;
+       }
+       case 'InteractionEntry': {
++        if (webVitalsEvent.entryGroupId === undefined || webVitalsEvent.startTime === undefined) {
++          break;
++        }
++
+         const groupInteractions =
+             Platform.MapUtilities.getWithDefault(this.#interactionsByGroupId, webVitalsEvent.entryGroupId, () => []);
+ 
+@@ -389,7 +395,7 @@ export class LiveMetrics extends Common.ObjectWrapper.ObjectWrapper<EventTypes>
+         // We can get multiple instances of the first input interaction since web-vitals.js installs
+         // an extra listener for events of type `first-input`. This is a simple way to de-dupe those
+         // events without adding complexity to the injected code.
+-        if (!interaction.eventNames.includes(webVitalsEvent.eventName)) {
++        if (webVitalsEvent.eventName && !interaction.eventNames.includes(webVitalsEvent.eventName)) {
+           interaction.eventNames.push(webVitalsEvent.eventName);
+         }
+ 
+@@ -695,7 +701,7 @@ export interface LcpValue extends MetricValue {
+ 
+ export interface InpValue extends MetricValue {
+   subparts: Spec.InpSubparts;
+-  interactionId: InteractionId;
++  interactionId?: InteractionId;
+ }
+ 
+ export interface ClsValue extends MetricValue {
+diff --git a/front_end/models/live-metrics/web-vitals-injected/spec/spec.ts b/front_end/models/live-metrics/web-vitals-injected/spec/spec.ts
+index 84c912312d64b2391b68f549bf9c9cb87d14fcb5..5a8a9ed537ba39165436133ee8c5bdb670fd925c 100644
+--- a/front_end/models/live-metrics/web-vitals-injected/spec/spec.ts
++++ b/front_end/models/live-metrics/web-vitals-injected/spec/spec.ts
+@@ -2,7 +2,7 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+-import type {INPAttribution, Metric} from '../../../../third_party/web-vitals/web-vitals.js';
++import type {INPAttribution, INPMetricWithAttribution, Metric} from '../../../../third_party/web-vitals/web-vitals.js';
+ import type * as Trace from '../../../trace/trace.js';
+ 
+ export const EVENT_BINDING_NAME = '__chromium_devtools_metrics_reporter';
+@@ -50,8 +50,8 @@ export interface InpChangeEvent {
+   value: Trace.Types.Timing.Milli;
+   interactionType: INPAttribution['interactionType'];
+   subparts: InpSubparts;
+-  startTime: number;
+-  entryGroupId: InteractionEntryGroupId;
++  startTime?: number;
++  entryGroupId?: InteractionEntryGroupId;
+ }
+ 
+ // These object keys will be user visible
+@@ -96,10 +96,10 @@ export interface PerformanceLongAnimationFrameTimingJSON {
+ export interface InteractionEntryEvent {
+   name: 'InteractionEntry';
+   interactionType?: INPAttribution['interactionType'];
+-  eventName: string;
+-  entryGroupId: InteractionEntryGroupId;
+-  startTime: number;
+-  navigationId: number;
++  eventName?: string;
++  entryGroupId?: InteractionEntryGroupId;
++  startTime?: number;
++  navigationId?: number;
+   nextPaintTime?: number;
+   duration: Trace.Types.Timing.Milli;
+   subparts: InpSubparts;
+@@ -122,5 +122,57 @@ export interface ResetEvent {
+   navigationType?: NavigationType;
+ }
+ 
++export function limitScripts(loafs: PerformanceLongAnimationFrameTimingJSON[]):
++    PerformanceLongAnimationFrameTimingJSON[] {
++  return loafs.map(loaf => {
++    loaf.scripts = loaf.scripts.slice()
++                       .sort((a, b) => b.duration - a.duration)
++                       .slice(0, SCRIPTS_PER_LOAF_LIMIT)
++                       .sort((a, b) => a.startTime - b.startTime);
++    return loaf;
++  });
++}
++
++export function createInteractionEntryEvent(interaction: INPMetricWithAttribution): InteractionEntryEvent {
++  const event: InteractionEntryEvent = {
++    name: 'InteractionEntry',
++    duration: interaction.value as Trace.Types.Timing.Milli,
++    subparts: {
++      inputDelay: interaction.attribution.inputDelay as Trace.Types.Timing.Milli,
++      processingDuration: interaction.attribution.processingDuration as Trace.Types.Timing.Milli,
++      presentationDelay: interaction.attribution.presentationDelay as Trace.Types.Timing.Milli,
++    },
++    startTime: interaction.entries?.[0]?.startTime,
++    navigationId: interaction.navigationId,
++    entryGroupId: interaction.entries?.[0]?.interactionId as InteractionEntryGroupId | undefined,
++    nextPaintTime: interaction.attribution.nextPaintTime,
++    interactionType: interaction.attribution.interactionType,
++    eventName: interaction.entries?.[0]?.name,
++    // To limit the amount of events, just get the last 5 LoAFs
++    longAnimationFrameEntries: limitScripts(
++        interaction.attribution.longAnimationFrameEntries?.slice(-LOAF_LIMIT).map(loaf => loaf.toJSON()) ?? []),
++  };
++  const target = interaction.attribution.interactionTarget;
++  if (target) {
++    event.nodeIndex = Number(target);
++  }
++  return event;
++}
++
++export function createInpChangeEvent(metric: INPMetricWithAttribution): InpChangeEvent {
++  return {
++    name: 'INP',
++    value: metric.value as Trace.Types.Timing.Milli,
++    subparts: {
++      inputDelay: metric.attribution.inputDelay as Trace.Types.Timing.Milli,
++      processingDuration: metric.attribution.processingDuration as Trace.Types.Timing.Milli,
++      presentationDelay: metric.attribution.presentationDelay as Trace.Types.Timing.Milli,
++    },
++    startTime: metric.entries?.[0]?.startTime,
++    entryGroupId: metric.entries?.[0]?.interactionId as InteractionEntryGroupId | undefined,
++    interactionType: metric.attribution.interactionType,
++  };
++}
++
+ export type WebVitalsEvent =
+     LcpChangeEvent|ClsChangeEvent|InpChangeEvent|InteractionEntryEvent|LayoutShiftEvent|ResetEvent;
+diff --git a/front_end/models/live-metrics/web-vitals-injected/web-vitals-injected.ts b/front_end/models/live-metrics/web-vitals-injected/web-vitals-injected.ts
+index 47a6a4ed142bce0c11f50785e7e0cdfc7fc06bee..971262818ec3740deb94e2a34bb7398abf9a7d55 100644
+--- a/front_end/models/live-metrics/web-vitals-injected/web-vitals-injected.ts
++++ b/front_end/models/live-metrics/web-vitals-injected/web-vitals-injected.ts
+@@ -122,29 +122,6 @@ window.getNodeForIndex = (index: number): Node|undefined => {
+   return nodeList[index].deref();
+ };
+ 
+-function limitScripts(loafs: Spec.PerformanceLongAnimationFrameTimingJSON[]):
+-    Spec.PerformanceLongAnimationFrameTimingJSON[] {
+-  return loafs.map(loaf => {
+-    const longestScripts: Spec.PerformanceScriptTimingJSON[] = [];
+-    for (const script of loaf.scripts) {
+-      if (longestScripts.length < Spec.SCRIPTS_PER_LOAF_LIMIT) {
+-        longestScripts.push(script);
+-        continue;
+-      }
+-
+-      const shorterIndex = longestScripts.findIndex(s => s.duration < script.duration);
+-      if (shorterIndex === -1) {
+-        continue;
+-      }
+-
+-      longestScripts[shorterIndex] = script;
+-    }
+-    longestScripts.sort((a, b) => a.startTime - b.startTime);
+-    loaf.scripts = longestScripts;
+-    return loaf;
+-  });
+-}
+-
+ function isPrerendered(): boolean {
+   if (document.prerendering) {
+     return true;
+@@ -213,48 +190,11 @@ function initialize(): void {
+   }, {reportAllChanges: true, reportSoftNavs: window.devToolsReportSoftNavs});
+ 
+   function onEachInteraction(interaction: WebVitals.INPMetricWithAttribution): void {
+-    // Multiple `InteractionEntry` events can be emitted for the same `uniqueInteractionId`
+-    // However, it is easier to combine these entries in the DevTools client rather than in
+-    // this injected code.
+-    const event: Spec.InteractionEntryEvent = {
+-      name: 'InteractionEntry',
+-      duration: interaction.value as Trace.Types.Timing.Milli,
+-      subparts: {
+-        inputDelay: interaction.attribution.inputDelay as Trace.Types.Timing.Milli,
+-        processingDuration: interaction.attribution.processingDuration as Trace.Types.Timing.Milli,
+-        presentationDelay: interaction.attribution.presentationDelay as Trace.Types.Timing.Milli,
+-      },
+-      startTime: interaction.entries[0].startTime,
+-      navigationId: interaction.navigationId,
+-      entryGroupId: interaction.entries[0].interactionId as Spec.InteractionEntryGroupId,
+-      nextPaintTime: interaction.attribution.nextPaintTime,
+-      interactionType: interaction.attribution.interactionType,
+-      eventName: interaction.entries[0].name,
+-      // To limit the amount of events, just get the last 5 LoAFs
+-      longAnimationFrameEntries: limitScripts(
+-          interaction.attribution.longAnimationFrameEntries.slice(-Spec.LOAF_LIMIT).map(loaf => loaf.toJSON())),
+-    };
+-    const target = interaction.attribution.interactionTarget;
+-    if (target) {
+-      event.nodeIndex = Number(target);
+-    }
+-    sendEventToDevTools(event);
++    sendEventToDevTools(Spec.createInteractionEntryEvent(interaction));
+   }
+ 
+   onINP(metric => {
+-    const event: Spec.InpChangeEvent = {
+-      name: 'INP',
+-      value: metric.value as Trace.Types.Timing.Milli,
+-      subparts: {
+-        inputDelay: metric.attribution.inputDelay as Trace.Types.Timing.Milli,
+-        processingDuration: metric.attribution.processingDuration as Trace.Types.Timing.Milli,
+-        presentationDelay: metric.attribution.presentationDelay as Trace.Types.Timing.Milli,
+-      },
+-      startTime: metric.entries[0].startTime,
+-      entryGroupId: metric.entries[0].interactionId as Spec.InteractionEntryGroupId,
+-      interactionType: metric.attribution.interactionType,
+-    };
+-    sendEventToDevTools(event);
++    sendEventToDevTools(Spec.createInpChangeEvent(metric));
+   }, {
+     reportAllChanges: true,
+     durationThreshold: 0,
+diff --git a/front_end/panels/timeline/components/LiveMetricsView.ts b/front_end/panels/timeline/components/LiveMetricsView.ts
+index 9821915aef1acbad5858287f53e6db58704bbfd1..624256d6d3f9cc2b2ae1e1a9995dafabe945184a 100644
+--- a/front_end/panels/timeline/components/LiveMetricsView.ts
++++ b/front_end/panels/timeline/components/LiveMetricsView.ts
+@@ -558,7 +558,7 @@ function renderClsCard(input: ViewInput): Lit.LitTemplate {
+ function renderInpCard(input: ViewInput): Lit.LitTemplate {
+   const fieldData = input.cruxManager.getSelectedFieldMetricData('interaction_to_next_paint');
+   const subparts = input.inpValue?.subparts;
+-  const interaction = input.inpValue && input.interactions.get(input.inpValue.interactionId);
++  const interaction = input.inpValue?.interactionId ? input.interactions.get(input.inpValue.interactionId) : undefined;
+ 
+   // clang-format off
+   return html`

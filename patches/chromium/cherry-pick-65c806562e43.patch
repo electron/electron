@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ted Meyer <tmathmeyer@chromium.org>
+Date: Fri, 11 Sep 2026 14:30:54 -0700
+Subject: Add workaround for AV1 Issue in old iHD drivers
+
+This will disable AV1 HW decode for ~9% of all linux users in the last
+28 days according to UMA. This number represents 16% of all linux/intel
+users, and 21% of all linux/intel/iHD users.
+
+Fixed: 556576976
+Change-Id: I65d6137bea6e8233d45c5ca450070d4736bb962a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8384191
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+Auto-Submit: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1696620}
+
+Electron adaptation notes (44-x-y):
+gpu_driver_bug_list.json: the new id 500 entry is appended at the end of
+the list. Upstream context entries 498/499 (Mali workarounds) do not exist
+on this branch and are not added; the id 500 entry is verbatim.
+
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index 0a8d76c1505ff75afde07af44b9e67c3935a6b1c..033aac058169fb9511f175718209f73c50fa615b 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3951,6 +3951,22 @@
+       "features": [
+         "use_tex_sub_image_for_client_data_npot_uploads"
+       ]
++    },
++    {
++      "id": 500,
++      "cr_bugs": [556576976],
++      "description": "Older intel iHD drivers allocate too few tiles for AV1 decode, leading to potential memory corruption.",
++      "os": {
++        "type": "linux"
++      },
++      "vendor_id": "0x8086",
++      "driver_version": {
++        "op": "<",
++        "value": "23.2.4"
++      },
++      "features": [
++        "disable_accelerated_av1_decode"
++      ]
+     }
+   ]
+ }

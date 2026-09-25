@@ -5,9 +5,9 @@ import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { defer } from './spec-helpers';
+import { defer } from './spec-helpers.ts';
 
-const fixturesPath = path.resolve(__dirname, '..', 'fixtures', 'api', 'autoupdater', 'msix');
+const fixturesPath = path.resolve(import.meta.dirname, '..', 'fixtures', 'api', 'autoupdater', 'msix');
 const manifestFixturePath = path.resolve(fixturesPath, 'ElectronDevAppxManifest.xml');
 const installCertScriptPath = path.resolve(fixturesPath, 'install_test_cert.ps1');
 const powershellTimeout = 30_000;

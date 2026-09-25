@@ -1,9 +1,9 @@
-const { app, protocol } = require('electron');
+import { app, protocol } from 'electron';
 
-const childProcess = require('node:child_process');
-const fs = require('node:fs');
-const path = require('node:path');
-const v8 = require('node:v8');
+import * as childProcess from 'node:child_process';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as v8 from 'node:v8';
 
 const FAILURE_STATUS_KEY = 'Electron_Spec_Runner_Failures';
 
@@ -13,8 +13,6 @@ process.on('uncaughtException', (err) => {
   process.exit(1);
 });
 
-// Tell ts-node which tsconfig to use
-process.env.TS_NODE_PROJECT = path.resolve(__dirname, '../tsconfig.spec.json');
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 
 // Some Linux machines have broken hardware acceleration support.
@@ -43,9 +41,9 @@ app.commandLine.appendSwitch(
 app.commandLine.appendSwitch(
   'enable-features',
   [
-    // spec/api-web-frame-main-spec.ts
+    // spec/api-web-frame-main.spec.ts
     'DocumentPolicyIncludeJSCallStacksInCrashReports',
-    // spec/spellchecker-spec.ts - allows spellcheck without user gesture
+    // spec/spellchecker.spec.ts - allows spellcheck without user gesture
     // https://chromium-review.googlesource.com/c/chromium/src/+/7452579
     'UnrestrictSpellingAndGrammarForTesting'
   ].join(',')
@@ -200,9 +198,12 @@ async function killOrphanedElectronProcesses(suiteName) {
 app
   .whenReady()
   .then(async () => {
-    require('ts-node/register');
-
-    const argv = require('yargs')
+    // Test dependencies are import()ed from here on rather than at the top of
+    // the file, so that a missing or broken one fails the run through the
+    // handlers in this file instead of Electron's uncaught-exception dialog.
+    const { default: yargs } = await import('yargs');
+    const { hideBin } = await import('yargs/helpers');
+    const argv = yargs(hideBin(process.argv))
       .boolean('ci')
       .array('files')
       .string('g')
@@ -210,7 +211,6 @@ app
       .boolean('i')
       .alias('i', 'invert').argv;
 
-    const Mocha = require('mocha');
     const mochaOptions = {
       forbidOnly: process.env.CI
     };
@@ -233,10 +233,13 @@ app
     if (process.env.MOCHA_INVERT) {
       mochaOptions.invert = process.env.MOCHA_INVERT === 'true';
     }
+    const { default: Mocha } = await import('mocha');
     const mocha = new Mocha(mochaOptions);
 
     // Add a root hook on mocha to skip any tests that are disabled
-    const disabledTests = new Set(JSON.parse(fs.readFileSync(path.join(__dirname, 'disabled-tests.json'), 'utf8')));
+    const disabledTests = new Set(
+      JSON.parse(fs.readFileSync(path.join(import.meta.dirname, 'disabled-tests.json'), 'utf8'))
+    );
     mocha.suite.beforeEach(function () {
       // TODO(clavin): add support for disabling *suites* by title, not just tests
       if (disabledTests.has(this.currentTest?.fullTitle())) {
@@ -252,7 +255,7 @@ app
     // 1. test completes,
     // 2. `defer()`-ed methods run, in reverse order,
     // 3. regular `afterEach` hooks run.
-    const { runCleanupFunctions, isTestingBindingAvailable } = require('./lib/spec-helpers');
+    const { runCleanupFunctions, isTestingBindingAvailable } = await import('./lib/spec-helpers.ts');
     if (process.env.ELECTRON_REQUIRE_TESTING_BINDINGS === '1' && !isTestingBindingAvailable()) {
       throw new Error('Testing build expected, but testing bindings are unavailable');
     }
@@ -272,18 +275,40 @@ app
     if (!process.env.MOCHA_REPORTER) {
       mocha.ui('bdd').reporter('tap');
     }
+    // Accept an options object between the title and the function, as vitest
+    // does: `it(title, { timeout, retry, tags }, fn)`. `timeout` and `retry`
+    // map onto mocha's; `tags` only matter to the vitest runner.
+    mocha.suite.on('pre-require', (context) => {
+      const withOptions = (original) => {
+        if (typeof original !== 'function') return original;
+        const wrapped = function (title, options, fn) {
+          if (options === null || typeof options !== 'object') return original.apply(this, arguments);
+          const runnable = original.call(this, title, fn);
+          if (runnable && options.timeout !== undefined) runnable.timeout(options.timeout);
+          if (runnable && options.retry !== undefined) runnable.retries(options.retry);
+          return runnable;
+        };
+        for (const variant of ['only', 'skip']) {
+          if (typeof original[variant] === 'function') wrapped[variant] = withOptions(original[variant]);
+        }
+        return wrapped;
+      };
+      for (const name of ['describe', 'context', 'it', 'specify', 'xdescribe', 'xit']) {
+        context[name] = withOptions(context[name]);
+      }
+    });
     const mochaTimeout = process.env.MOCHA_TIMEOUT || 30000;
     mocha.timeout(mochaTimeout);
 
     if (argv.grep) mocha.grep(argv.grep);
     if (argv.invert) mocha.invert();
 
-    const baseElectronDir = path.resolve(__dirname, '..');
+    const baseElectronDir = path.resolve(import.meta.dirname, '..');
     const validTestPaths =
       argv.files &&
       argv.files.map((file) => (path.isAbsolute(file) ? path.relative(baseElectronDir, file) : path.normalize(file)));
     const filter = (file) => {
-      if (!/-spec\.[tj]s$/.test(file)) {
+      if (!/\.spec\.[tj]s$/.test(file)) {
         return false;
       }
 
@@ -301,8 +326,15 @@ app
       return true;
     };
 
-    const { getFiles } = require('./get-files');
-    const testFiles = await getFiles(__dirname, filter);
+    const { getFiles } = await import('./get-files.ts');
+    // The filter above only loads *.spec.ts, so a file still named *-spec.ts
+    // (e.g. from a PR opened before the rename) would silently never run.
+    const misnamed = await getFiles(import.meta.dirname, (file) => /-spec\.[cm]?[jt]sx?$/.test(file));
+    if (misnamed.length > 0) {
+      const names = misnamed.map((file) => path.relative(baseElectronDir, file)).join(', ');
+      throw new Error(`Spec files must be named *.spec.ts, rename: ${names}`);
+    }
+    const testFiles = await getFiles(import.meta.dirname, filter);
     for (const file of testFiles.sort()) {
       mocha.addFile(file);
     }
@@ -310,7 +342,8 @@ app
     if (validTestPaths && validTestPaths.length > 0 && testFiles.length === 0) {
       console.error('Test files were provided, but they did not match any searched files');
       console.error('provided file paths (relative to electron/):', validTestPaths);
-      process.exit(1);
+      // process.exit() only schedules a graceful app.exit() in the main process.
+      return process.exit(1);
     }
 
     const cb = () => {
@@ -326,14 +359,16 @@ app
     };
 
     // Set up chai in the correct order
-    const chai = require('chai');
-    chai.use(require('chai-as-promised'));
-    chai.use(require('dirty-chai'));
+    const chai = await import('chai');
+    chai.use((await import('chai-as-promised')).default);
+    chai.use((await import('dirty-chai')).default);
 
     // Show full object diff
     // https://github.com/chaijs/chai/issues/469
     chai.config.truncateThreshold = 0;
 
+    // Spec files are ES modules, which mocha can only load asynchronously.
+    await mocha.loadFilesAsync();
     const runner = mocha.run(cb);
 
     const RETRY_EVENT = Mocha?.Runner?.constants?.EVENT_TEST_RETRY || 'retry';
@@ -358,7 +393,7 @@ app
         timings[file] = (timings[file] || 0) + (Date.now() - started.get(suite)) / 1000;
       });
       runner.on('end', () => {
-        const artifactsDir = path.join(__dirname, 'artifacts');
+        const artifactsDir = path.join(import.meta.dirname, 'artifacts');
         fs.mkdirSync(artifactsDir, { recursive: true });
         fs.writeFileSync(
           path.join(artifactsDir, 'spec-timings.json'),
