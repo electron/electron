@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
 
+#include <functional>
 #include <optional>
 #include <type_traits>
 #include <utility>
@@ -302,6 +303,22 @@ class Invoker<std::index_sequence<indices...>, ArgTypes...>
     callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...);
   }
 
+  // Calls a plain function or member function pointer. For a member function
+  // the first converted argument is the receiver.
+  template <typename Target>
+  void DispatchToTarget(Target target) {
+    MaybeMicrotasksScope microtasks_scope(args_);
+    using ReturnType = decltype(std::invoke(
+        target, std::move(ArgumentHolder<indices, ArgTypes>::value)...));
+    if constexpr (std::is_void_v<ReturnType>) {
+      std::invoke(target,
+                  std::move(ArgumentHolder<indices, ArgTypes>::value)...);
+    } else {
+      args_->Return(std::invoke(
+          target, std::move(ArgumentHolder<indices, ArgTypes>::value)...));
+    }
+  }
+
  private:
   gin::Arguments* args_;
 };
@@ -335,126 +352,118 @@ struct Dispatcher<ReturnType(ArgTypes...)> {
   }
 };
 
-// Everything below dispatches to a target named at compile time, with no
-// callback object in between.
+// True for the targets that CreateFunctionTemplate<kTarget>() can dispatch to
+// directly: free functions and member functions.
+template <typename T>
+inline constexpr bool kIsFunctionOrMethodPointer =
+    std::is_member_function_pointer_v<T> ||
+    (std::is_pointer_v<T> && std::is_function_v<std::remove_pointer_t<T>>);
+
+// DirectDispatcher is the counterpart of Dispatcher for a target that is named
+// at compile time. There is no CallbackHolder to find and no callback to run:
+// the V8 callback converts the arguments and calls the target.
 //
-// The CreateFunctionTemplate path below stores a base::RepeatingCallback in a
-// heap holder and hands that holder to V8 as the function's data. Every call
-// then unwraps the data and runs the callback through two indirect calls, and
-// Run() takes a reference on the bind state for the duration. Naming the
-// target as a template argument removes all of that: V8's callback calls the
-// target directly, and the compiler can see through the whole thing.
+// The work is split in two so that targets with the same signature share
+// code: SignatureDispatcher<Target> converts the arguments and calls through
+// a Target passed at run time, and DirectDispatcher<kTarget> is the V8
+// callback, a thunk that hands it kTarget. Where a signature has a single
+// target the compiler folds the two together.
+template <typename Target,
+          bool is_method,
+          typename IndicesType,
+          typename... RunArgs>
+struct SignatureDispatcherImpl;
 
-inline constexpr InvokerOptions kNoHolderArgument = {};
-
-// Returns the native object the method was called on, or nullptr after
-// throwing. A destroyed object's wrapper does not convert, so the live path is
-// just the conversion; ThrowConversionError works out which message to give.
-template <typename Class>
-Class* GetReceiver(gin::Arguments* args) {
-  Class* self = nullptr;
-  if (!args->GetHolder(&self)) [[unlikely]] {
-    ThrowConversionError(args, {.holder_is_first_argument = true}, 0);
-    return nullptr;
-  }
-  return self;
-}
-
-// Converts the JavaScript arguments and runs |callable| with them. Unlike
-// Invoker above, the receiver is not one of the arguments.
-template <typename IndicesType, typename... ArgTypes>
-class DirectInvoker;
-
-template <size_t... indices, typename... ArgTypes>
-class DirectInvoker<std::index_sequence<indices...>, ArgTypes...>
-    : public ArgumentHolder<indices, ArgTypes>... {
-  CPPGC_STACK_ALLOCATED();
-
- public:
-  explicit DirectInvoker(gin::Arguments* args)
-      : ArgumentHolder<indices, ArgTypes>(args, kNoHolderArgument)...,
-        args_(args) {}
-
-  [[nodiscard]] bool IsOK() const {
-    return (... && ArgumentHolder<indices, ArgTypes>::ok);
-  }
-
-  template <typename Callable>
-  void Run(Callable&& callable) {
-    MaybeMicrotasksScope microtasks_scope(args_);
-    using ReturnType = decltype(callable(
-        std::move(ArgumentHolder<indices, ArgTypes>::value)...));
-    if constexpr (std::is_void_v<ReturnType>) {
-      callable(std::move(ArgumentHolder<indices, ArgTypes>::value)...);
-    } else {
-      args_->Return(
-          callable(std::move(ArgumentHolder<indices, ArgTypes>::value)...));
+template <typename Target,
+          bool is_method,
+          size_t... indices,
+          typename... RunArgs>
+struct SignatureDispatcherImpl<Target,
+                               is_method,
+                               std::index_sequence<indices...>,
+                               RunArgs...> {
+  static void Run(gin::Arguments* args, Target target) {
+    static constexpr InvokerOptions kOptions = {.holder_is_first_argument =
+                                                    is_method};
+    Invoker<std::index_sequence<indices...>, RunArgs...> invoker(args,
+                                                                 kOptions);
+    if (invoker.IsOK()) {
+      invoker.DispatchToTarget(target);
     }
   }
 
- private:
-  gin::Arguments* args_;
-};
-
-template <auto kTarget, typename Signature = decltype(kTarget)>
-struct DirectDispatcher;
-
-// A member function: the receiver comes from the JavaScript "this".
-template <auto kMethod, typename Class, typename ReturnType, typename... Args>
-struct DirectDispatcher<kMethod, ReturnType (Class::*)(Args...)> {
-  static void Call(const v8::FunctionCallbackInfo<v8::Value>& info) {
+  static void Run(const v8::FunctionCallbackInfo<v8::Value>& info,
+                  Target target) {
     gin::Arguments args(info);
-    Class* const self = GetReceiver<Class>(&args);
-    if (!self) [[unlikely]]
-      return;
-    DirectInvoker<std::index_sequence_for<Args...>, Args...> invoker(&args);
-    if (invoker.IsOK()) [[likely]] {
-      invoker.Run([self](auto&&... converted) -> decltype(auto) {
-        return (self->*kMethod)(
-            std::forward<decltype(converted)>(converted)...);
-      });
-    }
+    Run(&args, target);
   }
 };
 
-template <auto kMethod, typename Class, typename ReturnType, typename... Args>
-struct DirectDispatcher<kMethod, ReturnType (Class::*)(Args...) const> {
-  static void Call(const v8::FunctionCallbackInfo<v8::Value>& info) {
-    gin::Arguments args(info);
-    const Class* const self = GetReceiver<Class>(&args);
-    if (!self) [[unlikely]]
-      return;
-    DirectInvoker<std::index_sequence_for<Args...>, Args...> invoker(&args);
-    if (invoker.IsOK()) [[likely]] {
-      invoker.Run([self](auto&&... converted) -> decltype(auto) {
-        return (self->*kMethod)(
-            std::forward<decltype(converted)>(converted)...);
-      });
-    }
-  }
-};
+template <typename Target>
+struct SignatureDispatcher;
 
-// A free function: there is no receiver to unwrap.
-template <auto kFunction, typename ReturnType, typename... Args>
-struct DirectDispatcher<kFunction, ReturnType (*)(Args...)> {
-  static void Call(const v8::FunctionCallbackInfo<v8::Value>& info) {
-    gin::Arguments args(info);
-    DirectInvoker<std::index_sequence_for<Args...>, Args...> invoker(&args);
-    if (invoker.IsOK()) [[likely]] {
-      invoker.Run([](auto&&... converted) -> decltype(auto) {
-        return kFunction(std::forward<decltype(converted)>(converted)...);
-      });
-    }
-  }
-};
+template <typename R, typename... Args>
+struct SignatureDispatcher<R (*)(Args...)>
+    : SignatureDispatcherImpl<R (*)(Args...),
+                              false,
+                              std::index_sequence_for<Args...>,
+                              Args...> {};
 
-// Creates a template for |kTarget| with no data and no holder object.
+template <typename R, typename... Args>
+struct SignatureDispatcher<R (*)(Args...) noexcept>
+    : SignatureDispatcher<R (*)(Args...)> {};
+
+// For member functions the receiver is converted from the JavaScript `this`,
+// as ObjectTemplateBuilder has always done for member function pointers.
+template <typename C, typename R, typename... Args>
+struct SignatureDispatcher<R (C::*)(Args...)>
+    : SignatureDispatcherImpl<R (C::*)(Args...),
+                              true,
+                              std::index_sequence_for<C*, Args...>,
+                              C*,
+                              Args...> {};
+
+template <typename C, typename R, typename... Args>
+struct SignatureDispatcher<R (C::*)(Args...) const>
+    : SignatureDispatcherImpl<R (C::*)(Args...) const,
+                              true,
+                              std::index_sequence_for<const C*, Args...>,
+                              const C*,
+                              Args...> {};
+
+template <typename C, typename R, typename... Args>
+struct SignatureDispatcher<R (C::*)(Args...) noexcept>
+    : SignatureDispatcher<R (C::*)(Args...)> {};
+
+template <typename C, typename R, typename... Args>
+struct SignatureDispatcher<R (C::*)(Args...) const noexcept>
+    : SignatureDispatcher<R (C::*)(Args...) const> {};
+
 template <auto kTarget>
-v8::Local<v8::FunctionTemplate> CreateDirectFunctionTemplate(
-    v8::Isolate* isolate) {
+struct DirectDispatcher {
+  static void DispatchToTarget(
+      const v8::FunctionCallbackInfo<v8::Value>& info) {
+    SignatureDispatcher<decltype(kTarget)>::Run(info, kTarget);
+  }
+};
+
+// CreateFunctionTemplate for a function or member function that is known at
+// compile time:
+//
+//   gin_helper::CreateFunctionTemplate<&MyClass::Method>(isolate);
+//
+// No CallbackHolder is allocated and each call goes from V8 to the target
+// without unwrapping a holder or running a callback, so prefer this form
+// whenever the target is not a bound base::RepeatingCallback. A member
+// function always takes its receiver from the JavaScript `this` here, whereas
+// the callback form below only does so if |invoker_options| says so.
+template <auto kTarget>
+  requires(kIsFunctionOrMethodPointer<decltype(kTarget)>)
+v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(v8::Isolate* isolate) {
   return v8::FunctionTemplate::New(
-      isolate, &DirectDispatcher<kTarget>::Call, v8::Local<v8::Value>(),
-      v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kAllow);
+      isolate, &DirectDispatcher<kTarget>::DispatchToTarget,
+      v8::Local<v8::Value>(), v8::Local<v8::Signature>(), 0,
+      v8::ConstructorBehavior::kAllow);
 }
 
 // CreateFunctionTemplate creates a v8::FunctionTemplate that will create

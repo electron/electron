@@ -50,23 +50,21 @@ class ObjectTemplateBuilder {
   // needs.
   template <auto kTarget>
   ObjectTemplateBuilder& SetMethod(const std::string_view name) {
-    return SetImpl(name, CreateDirectFunctionTemplate<kTarget>(isolate_));
+    return SetImpl(name, CreateFunctionTemplate<kTarget>(isolate_));
   }
 
   // The compile-time forms of SetProperty below: an accessor is a call into
   // C++ like any other, and this takes the callback object out of it.
   template <auto kGetter>
   ObjectTemplateBuilder& SetProperty(const std::string_view name) {
-    return SetPropertyImpl(name,
-                           CreateDirectFunctionTemplate<kGetter>(isolate_),
+    return SetPropertyImpl(name, CreateFunctionTemplate<kGetter>(isolate_),
                            v8::Local<v8::FunctionTemplate>());
   }
 
   template <auto kGetter, auto kSetter>
   ObjectTemplateBuilder& SetProperty(const std::string_view name) {
-    return SetPropertyImpl(name,
-                           CreateDirectFunctionTemplate<kGetter>(isolate_),
-                           CreateDirectFunctionTemplate<kSetter>(isolate_));
+    return SetPropertyImpl(name, CreateFunctionTemplate<kGetter>(isolate_),
+                           CreateFunctionTemplate<kSetter>(isolate_));
   }
 
   template <typename T>

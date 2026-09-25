@@ -140,11 +140,11 @@ class Dictionary : public gin::Dictionary {
 
   // Naming the target as a template argument lets the call go straight from
   // V8 to it, with no callback object in between. See
-  // CreateDirectFunctionTemplate.
+  // CreateFunctionTemplate<kTarget>().
   template <auto kTarget>
   bool SetMethod(std::string_view key) {
     auto context = isolate()->GetCurrentContext();
-    auto templ = CreateDirectFunctionTemplate<kTarget>(isolate());
+    auto templ = CreateFunctionTemplate<kTarget>(isolate());
     return GetHandle()
         ->Set(context, MakeKey(key),
               templ->GetFunction(context).ToLocalChecked())
