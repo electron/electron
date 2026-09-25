@@ -50,12 +50,8 @@ bool Converter<gfx::Point>::FromV8(v8::Isolate* isolate,
   double x, y;
   if (!dict.Get("x", &x) || !dict.Get("y", &y))
     return false;
-  if (!FitsInInt(x) || !FitsInInt(y)) {
-    gin_helper::ErrorThrower(isolate).ThrowError(
-        "Error processing argument at index 0, conversion failure from " +
-        gin::V8ToString(isolate, val));
+  if (!FitsInInt(x) || !FitsInInt(y))
     return false;
-  }
   *out = gfx::Point(static_cast<int>(std::round(x)),
                     static_cast<int>(std::round(y)));
   return true;
@@ -124,13 +120,8 @@ bool Converter<gfx::Rect>::FromV8(v8::Isolate* isolate,
       !dict.Get("height", &height))
     return false;
 
-  if (!FitsInInt(x) || !FitsInInt(y) || !FitsInInt(width) ||
-      !FitsInInt(height)) {
-    gin_helper::ErrorThrower(isolate).ThrowError(
-        "Error processing argument at index 0, conversion failure from " +
-        gin::V8ToString(isolate, val));
+  if (!FitsInInt(x) || !FitsInInt(y) || !FitsInInt(width) || !FitsInInt(height))
     return false;
-  }
 
   *out = ToRoundedRect(gfx::RectF(x, y, width, height));
   return true;
@@ -162,12 +153,8 @@ bool Converter<gfx::Insets>::FromV8(v8::Isolate* isolate,
   if (!dict.Get("right", &right))
     return false;
   if (!FitsInInt(top) || !FitsInInt(left) || !FitsInInt(bottom) ||
-      !FitsInInt(right)) {
-    gin_helper::ErrorThrower(isolate).ThrowError(
-        "Error processing argument at index 0, conversion failure from " +
-        gin::V8ToString(isolate, val));
+      !FitsInInt(right))
     return false;
-  }
   *out = gfx::Insets::TLBR(top, left, bottom, right);
   return true;
 }
