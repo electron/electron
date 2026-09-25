@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "base/functional/callback_forward.h"
+#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "shell/browser/notifications/notification.h"
 
@@ -40,7 +41,9 @@ class NotificationPresenter {
   virtual void RemoveDeliveredNotificationsByGroupId(
       const std::string& group_id);
 
-  std::set<Notification*> notifications() const { return notifications_; }
+  const std::set<raw_ptr<Notification>>& notifications() const {
+    return notifications_;
+  }
 
   // disable copy
   NotificationPresenter(const NotificationPresenter&) = delete;
@@ -56,7 +59,7 @@ class NotificationPresenter {
 
   void RemoveNotification(Notification* notification);
 
-  std::set<Notification*> notifications_;
+  std::set<raw_ptr<Notification>> notifications_;
 };
 
 }  // namespace electron
