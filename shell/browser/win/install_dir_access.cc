@@ -9,11 +9,11 @@
 #include <optional>
 
 #include "base/base_paths.h"
-#include "base/files/file.h"
 #include "base/files/file_path.h"
 #include "base/logging.h"
 #include "base/path_service.h"
 #include "base/win/access_token.h"
+#include "base/win/security_descriptor.h"
 #include "base/win/security_util.h"
 #include "base/win/sid.h"
 #include "sandbox/win/src/restricted_token_utils.h"
@@ -22,9 +22,10 @@ namespace electron {
 
 namespace {
 
-// Opens |path| for reading while impersonating the initial token that
-// sandboxed children run with until they lower it, which is the token they
-// open their data files with.
+// Asks the kernel whether the initial token that sandboxed children run with
+// until they lower it (the token they open their data files with) may read
+// |path|. The token is only used for the access check; nothing impersonates
+// it.
 bool SandboxTokenCanRead(const base::FilePath& path) {
   std::optional<base::win::AccessToken> token = sandbox::CreateRestrictedToken(
       sandbox::USER_RESTRICTED_SAME_ACCESS, sandbox::INTEGRITY_LEVEL_LOW,
@@ -32,14 +33,15 @@ bool SandboxTokenCanRead(const base::FilePath& path) {
       /*lockdown_default_dacl=*/false, std::nullopt, std::nullopt);
   if (!token)
     return true;
-  if (!::SetThreadToken(nullptr, token->get()))
+  std::optional<base::win::SecurityDescriptor> descriptor =
+      base::win::SecurityDescriptor::FromFile(
+          path, OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION |
+                    DACL_SECURITY_INFORMATION | LABEL_SECURITY_INFORMATION);
+  if (!descriptor)
     return true;
-  base::File file(path, base::File::FLAG_OPEN | base::File::FLAG_READ);
-  const bool denied =
-      !file.IsValid() &&
-      file.error_details() == base::File::FILE_ERROR_ACCESS_DENIED;
-  ::RevertToSelf();
-  return !denied;
+  std::optional<base::win::AccessCheckResult> result = descriptor->AccessCheck(
+      *token, FILE_GENERIC_READ, base::win::SecurityObjectType::kFile);
+  return !result || result->access_status;
 }
 
 }  // namespace

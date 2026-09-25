@@ -13,9 +13,9 @@ namespace electron {
 // like an AppContainer and denies the children read access to the directory,
 // so every sandboxed child dies opening icudtl.dat. Per-user install
 // locations inherit such ACEs from other software; Program Files already
-// grants ALL APPLICATION PACKAGES. Probes the directory with the sandbox's
-// token before any child is launched and, if the probe is denied, adds an
-// inheritable read/execute ACE for ALL APPLICATION PACKAGES to it.
+// grants ALL APPLICATION PACKAGES. Runs an access check with the sandbox's
+// token before any child is launched and, if it is denied, adds an
+// inheritable read/execute ACE for ALL APPLICATION PACKAGES to the directory.
 void EnsureSandboxedProcessesCanReadInstallDir();
 
 }  // namespace electron
