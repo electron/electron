@@ -10,6 +10,8 @@ class ForkUtilityProcess extends EventEmitter implements Electron.UtilityProcess
   #handle: ElectronInternal.UtilityProcessWrapper | null;
   #stdout: Duplex | null = null;
   #stderr: Duplex | null = null;
+  #stdoutConnected = false;
+  #stderrConnected = false;
   constructor(modulePath: string, args?: string[], options?: Electron.ForkOptions) {
     super();
 
@@ -97,20 +99,24 @@ class ForkUtilityProcess extends EventEmitter implements Electron.UtilityProcess
           this.emit('exit', ...args);
         } finally {
           this.#handle = null;
-          if (this.#stdout) {
-            this.#stdout.removeAllListeners();
-            this.#stdout = null;
-          }
-          if (this.#stderr) {
-            this.#stderr.removeAllListeners();
-            this.#stderr = null;
-          }
+          // Leave the streams' listeners alone: output the child wrote just
+          // before exiting may still be in the pipe, and a connected stream
+          // ends on its own once that has been read. Only end the ones that
+          // never got connected, so their readers do not wait forever.
+          const stdout = this.#stdout;
+          const stderr = this.#stderr;
+          this.#stdout = null;
+          this.#stderr = null;
+          if (!this.#stdoutConnected) stdout?.end();
+          if (!this.#stderrConnected) stderr?.end();
         }
         return false;
       } else if (channel === 'stdout' && this.#stdout) {
+        this.#stdoutConnected = true;
         new Socket({ fd: args[0], readable: true }).pipe(this.#stdout);
         return true;
       } else if (channel === 'stderr' && this.#stderr) {
+        this.#stderrConnected = true;
         new Socket({ fd: args[0], readable: true }).pipe(this.#stderr);
         return true;
       } else {
