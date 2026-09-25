@@ -40,7 +40,7 @@ class AutofillAgent : private content::RenderFrameObserver,
   // content::RenderFrameObserver:
   void OnDestruct() override;
 
-  void DidChangeScrollOffset() override;
+  void DidChangeScrollOffset(blink::mojom::ScrollType) override;
   void FocusedElementChanged(const blink::WebElement&) override;
   void DidCompleteFocusChangeInFrame() override;
   void DidReceiveLeftMouseDownOrGestureTapInNode(

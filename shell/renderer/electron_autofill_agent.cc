@@ -82,7 +82,7 @@ void AutofillAgent::Shutdown() {
   weak_ptr_factory_.InvalidateWeakPtrs();
 }
 
-void AutofillAgent::DidChangeScrollOffset() {
+void AutofillAgent::DidChangeScrollOffset(blink::mojom::ScrollType) {
   HidePopup();
 }
 
