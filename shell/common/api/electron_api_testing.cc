@@ -28,6 +28,7 @@
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_switches.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/webauthn/electron_authenticator_request_client_delegate.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/callback_util.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -501,6 +502,11 @@ void InvokeFromNativeSourceForTesting(v8::Isolate* isolate,
 #endif
 }
 
+void SimulateWebAuthnUvLockedPinSecurityKey(bool enabled) {
+  electron::ElectronAuthenticatorRequestClientDelegate::
+      SetSimulateUvLockedPinSecurityKeyForTesting(enabled);
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -513,6 +519,8 @@ void Initialize(v8::Local<v8::Object> exports,
       "isPlatformCaretBrowsingEnabled");
   dict.SetMethod<&SimulateNetworkServiceCrash>("simulateNetworkServiceCrash");
   dict.SetMethod<&SimulatePowerEvent>("simulatePowerEvent");
+  dict.SetMethod<&SimulateWebAuthnUvLockedPinSecurityKey>(
+      "simulateWebAuthnUvLockedPinSecurityKey");
   dict.SetMethod<&HoldRepeatingCallbackForTesting>(
       "holdRepeatingCallbackForTesting");
   dict.SetMethod<&CopyHeldRepeatingCallbackForTesting>(

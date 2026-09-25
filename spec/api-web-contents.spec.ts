@@ -4687,6 +4687,21 @@ describe('webContents module', () => {
     });
 
     describe('on a page nobody can see', () => {
+      // The page is hidden on purpose with w.hide(), but the steps that expect
+      // frames from a shown window (the video baseline, the iframe baseline,
+      // resuming after w.show()) need it to be really visible. On the Windows
+      // CI hosts a newly shown window can land behind another process's
+      // console window, and the native occlusion tracker then keeps the page
+      // hidden, so keep the window above everything (as #54334 does for the
+      // visibility specs) and let only hide() decide what nobody can see.
+      const createWindow = (backgroundThrottling: boolean) =>
+        new BrowserWindow({
+          width: 300,
+          height: 200,
+          alwaysOnTop: true,
+          webPreferences: { backgroundThrottling }
+        });
+
       // Counts requestAnimationFrame callbacks over half a second in |frame|
       // (the main frame when omitted).
       const framesInHalfSecond = (wc: Electron.WebContents, frame: Electron.WebFrameMain | null = wc.mainFrame) =>
@@ -4707,7 +4722,7 @@ describe('webContents module', () => {
       // call), so the page kept producing frames at full rate and reporting
       // itself visible until the window's visibility next changed.
       it('stops producing frames again once re-enabled', async () => {
-        const w = new BrowserWindow({ width: 300, height: 200, webPreferences: { backgroundThrottling: true } });
+        const w = createWindow(true);
         await w.loadURL('about:blank');
         w.hide();
         await stopsPainting(w.webContents);
@@ -4724,7 +4739,7 @@ describe('webContents module', () => {
       // hide is swallowed while disabled), and checking the page comes back to
       // visible when the window is shown afterwards.
       it('stops producing frames when re-enabled after a hide, and resumes when shown', async () => {
-        const w = new BrowserWindow({ width: 300, height: 200, webPreferences: { backgroundThrottling: true } });
+        const w = createWindow(true);
         await w.loadURL('about:blank');
         w.webContents.setBackgroundThrottling(false);
         w.hide();
@@ -4753,7 +4768,7 @@ describe('webContents module', () => {
         const serverUrl = (await listen(server)).url;
         crossSiteUrl = serverUrl.replace('127.0.0.1', 'localhost');
         // Disabled from the start so the iframe's widget is created with it.
-        const w = new BrowserWindow({ width: 300, height: 200, webPreferences: { backgroundThrottling: false } });
+        const w = createWindow(false);
         await w.loadURL(serverUrl);
         const child = w.webContents.mainFrame.frames.find((f) => f.name === 'child')!;
         expect(child.osProcessId).to.not.equal(w.webContents.mainFrame.osProcessId);
@@ -4791,7 +4806,7 @@ describe('webContents module', () => {
           }
         });
         defer(() => server.close());
-        const w = new BrowserWindow({ width: 300, height: 200, webPreferences: { backgroundThrottling: true } });
+        const w = createWindow(true);
         await w.loadURL((await listen(server)).url);
         const videoFramesInHalfSecond = async () => {
           const before = await w.webContents.executeJavaScript('window.videoFrames');
