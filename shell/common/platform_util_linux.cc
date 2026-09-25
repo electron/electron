@@ -414,12 +414,27 @@ bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
   std::string trash = env->GetVar(ELECTRON_TRASH).value_or("");
   if (trash.empty()) {
     // Determine desktop environment and set accordingly.
-    const auto desktop_env(base::nix::GetDesktopEnvironment(env.get()));
-    if (desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE4 ||
-        desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE5) {
-      trash = "kioclient5";
-    } else if (desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE3) {
-      trash = "kioclient";
+    switch (base::nix::GetDesktopEnvironment(env.get())) {
+      case base::nix::DESKTOP_ENVIRONMENT_KDE4:
+      case base::nix::DESKTOP_ENVIRONMENT_KDE5:
+        trash = "kioclient5";
+        break;
+      case base::nix::DESKTOP_ENVIRONMENT_KDE3:
+      case base::nix::DESKTOP_ENVIRONMENT_KDE6:
+        trash = "kioclient";
+        break;
+      case base::nix::DESKTOP_ENVIRONMENT_OTHER:
+      case base::nix::DESKTOP_ENVIRONMENT_CINNAMON:
+      case base::nix::DESKTOP_ENVIRONMENT_DEEPIN:
+      case base::nix::DESKTOP_ENVIRONMENT_GNOME:
+      case base::nix::DESKTOP_ENVIRONMENT_PANTHEON:
+      case base::nix::DESKTOP_ENVIRONMENT_UKUI:
+      case base::nix::DESKTOP_ENVIRONMENT_UNITY:
+      case base::nix::DESKTOP_ENVIRONMENT_XFCE:
+      case base::nix::DESKTOP_ENVIRONMENT_LXQT:
+      case base::nix::DESKTOP_ENVIRONMENT_COSMIC:
+        // No DE-specific tool, falls through to `gio trash` below.
+        break;
     }
   }
 
