@@ -18,6 +18,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_switches.h"
+#include "shell/browser/webauthn/electron_authenticator_request_client_delegate.h"
 #include "shell/common/callback_util.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -285,6 +286,11 @@ v8::Local<v8::Promise> SettlePromiseOutsideTask(
   return handle;
 }
 
+void SimulateWebAuthnUvLockedPinSecurityKey(bool enabled) {
+  electron::ElectronAuthenticatorRequestClientDelegate::
+      SetSimulateUvLockedPinSecurityKeyForTesting(enabled);
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -296,6 +302,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isPlatformCaretBrowsingEnabled",
                  &IsPlatformCaretBrowsingEnabled);
   dict.SetMethod("simulateNetworkServiceCrash", &SimulateNetworkServiceCrash);
+  dict.SetMethod("simulateWebAuthnUvLockedPinSecurityKey",
+                 &SimulateWebAuthnUvLockedPinSecurityKey);
   dict.SetMethod("holdRepeatingCallbackForTesting",
                  &HoldRepeatingCallbackForTesting);
   dict.SetMethod("copyHeldRepeatingCallbackForTesting",
