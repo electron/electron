@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/logging.h"
 #include "base/memory/raw_ref.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/common/color_parser.h"
@@ -2008,42 +2009,46 @@ std::unique_ptr<views::FrameView> NativeWindowViews::CreateFrameView(
 #if BUILDFLAG(IS_WIN)
   return std::make_unique<WinFrameView>(this, widget);
 #else
-  if (!has_frame()) {
-    // With WCO enabled, use native-looking self-drawn caption buttons when
-    // the desktop environment supports them; otherwise the frame view falls
-    // back to vector-icon buttons.
-    std::unique_ptr<FreedesktopNavButtonProvider> freedesktop;
-    if (IsWindowControlsOverlayEnabled())
-      freedesktop = FreedesktopNavButtonProvider::CreateIfAvailable();
-    FreedesktopNavButtonProvider* freedesktop_provider = freedesktop.get();
-    std::unique_ptr<ui::NavButtonProvider> nav_button_provider =
-        std::move(freedesktop);
-    // The layout needs the raw provider pointer while the frame view takes
-    // ownership, so construct it first.
-    auto* layout =
-        new ElectronFrameViewLayoutLinux(this, nav_button_provider.get());
-    return std::make_unique<ElectronFrameViewLinux>(
-        this, widget, std::move(nav_button_provider), layout,
-        freedesktop_provider);
+  if (has_frame() && !has_client_frame())
+    return std::make_unique<NativeFrameView>(this, widget);
+
+  if (has_frame()) {
+    if (auto* linux_ui_theme = ui::LinuxUiTheme::GetForProfile(nullptr)) {
+      auto getter = base::BindRepeating(
+          [](ui::LinuxUiTheme* theme, bool tiled,
+             bool maximized) -> ui::WindowFrameProvider* {
+            return theme->GetWindowFrameProvider(ui::FrameType::kDefault,
+                                                 /*solid_frame=*/false, tiled,
+                                                 maximized);
+          },
+          base::Unretained(linux_ui_theme));
+      auto nav_button_provider =
+          linux_ui_theme->CreateNavButtonProvider(ui::FrameType::kDefault);
+      return std::make_unique<NativeFrameViewLinux>(
+          this, widget, std::move(nav_button_provider), std::move(getter));
+    }
+    // No toolkit (e.g. GTK failed to initialize) means nothing can draw a
+    // native title bar; fall back to the frameless client frame below.
+    LOG(WARNING) << "No Linux UI theme is available to draw window "
+                    "decorations; creating the window without a title bar.";
   }
 
-  if (has_client_frame()) {
-    auto* linux_ui_theme = ui::LinuxUiTheme::GetForProfile(nullptr);
-    auto getter = base::BindRepeating(
-        [](ui::LinuxUiTheme* theme, bool tiled,
-           bool maximized) -> ui::WindowFrameProvider* {
-          return theme->GetWindowFrameProvider(ui::FrameType::kDefault,
-                                               /*solid_frame=*/false, tiled,
-                                               maximized);
-        },
-        base::Unretained(linux_ui_theme));
-    auto nav_button_provider =
-        linux_ui_theme->CreateNavButtonProvider(ui::FrameType::kDefault);
-    return std::make_unique<NativeFrameViewLinux>(
-        this, widget, std::move(nav_button_provider), std::move(getter));
-  }
-
-  return std::make_unique<NativeFrameView>(this, widget);
+  // With WCO enabled, use native-looking self-drawn caption buttons when
+  // the desktop environment supports them; otherwise the frame view falls
+  // back to vector-icon buttons.
+  std::unique_ptr<FreedesktopNavButtonProvider> freedesktop;
+  if (IsWindowControlsOverlayEnabled())
+    freedesktop = FreedesktopNavButtonProvider::CreateIfAvailable();
+  FreedesktopNavButtonProvider* freedesktop_provider = freedesktop.get();
+  std::unique_ptr<ui::NavButtonProvider> nav_button_provider =
+      std::move(freedesktop);
+  // The layout needs the raw provider pointer while the frame view takes
+  // ownership, so construct it first.
+  auto* layout =
+      new ElectronFrameViewLayoutLinux(this, nav_button_provider.get());
+  return std::make_unique<ElectronFrameViewLinux>(
+      this, widget, std::move(nav_button_provider), layout,
+      freedesktop_provider);
 #endif
 }
 
