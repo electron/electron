@@ -928,15 +928,6 @@ base::FilePath App::GetAppPath() const {
   return app_path_;
 }
 
-v8::Local<v8::String> App::CachedString::Get(v8::Isolate* isolate,
-                                             std::string_view value) {
-  if (handle_.IsEmpty() || value_ != value) {
-    value_ = std::string(value);
-    handle_.Reset(isolate, gin::StringToV8(isolate, value_));
-  }
-  return handle_.Get(isolate);
-}
-
 v8::Local<v8::String> App::GetNameString(v8::Isolate* isolate) {
   return name_string_.Get(isolate, Browser::Get()->GetName());
 }

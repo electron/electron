@@ -7,7 +7,6 @@
 
 #include <memory>
 #include <string>
-#include <string_view>
 #include <vector>
 
 #include "base/containers/flat_map.h"
@@ -28,6 +27,7 @@
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/cached_string.h"
 #include "v8/include/cppgc/member.h"
 #include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8-traced-handle.h"
@@ -268,22 +268,12 @@ class App final : public gin::Wrappable<App>,
   v8::TracedReference<v8::Value> command_line_;
 
   // app.name, getName(), getVersion() and getAppPath() answer with a string
-  // that almost never changes, so keep the V8 string and hand the same one
-  // back until the value it was built from does change.
-  class CachedString {
-   public:
-    v8::Local<v8::String> Get(v8::Isolate* isolate, std::string_view value);
-    void Trace(cppgc::Visitor* visitor) const { visitor->Trace(handle_); }
-
-   private:
-    std::string value_;
-    v8::TracedReference<v8::String> handle_;
-  };
+  // that almost never changes, so hand the same V8 string back until it does.
   v8::Local<v8::String> GetNameString(v8::Isolate* isolate);
   v8::Local<v8::String> GetVersionString(v8::Isolate* isolate);
   v8::Local<v8::Value> GetAppPathValue(v8::Isolate* isolate);
-  CachedString name_string_;
-  CachedString version_string_;
+  gin_helper::CachedString name_string_;
+  gin_helper::CachedString version_string_;
   v8::TracedReference<v8::Value> app_path_value_;  // Reset by SetAppPath.
 
   void SetClientCertRequestPasswordHandler(v8::Isolate* isolate,
