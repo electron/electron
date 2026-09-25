@@ -1706,6 +1706,27 @@ describe('webContents module', () => {
       expect(confirmIsNative).to.be.true();
     });
 
+    it('steps zoom in and out through the browser zoom presets', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { partition: 'devtools-zoom' } });
+      await openDevTools(w);
+      const devtools = w.webContents.devToolsWebContents!;
+      const zoomPercent = () => Math.round(1.2 ** devtools.getZoomLevel() * 100);
+      const zoom = async (method: 'zoomIn' | 'zoomOut' | 'resetZoom', expected: number) => {
+        await devtools.executeJavaScript(`InspectorFrontendHost.${method}()`);
+        await waitUntil(() => zoomPercent() === expected, { timeout: 2000 }).catch(() => {
+          expect(zoomPercent()).to.equal(expected, `after ${method}()`);
+        });
+      };
+      expect(zoomPercent()).to.equal(100);
+      await zoom('zoomIn', 110);
+      await zoom('zoomIn', 125);
+      await zoom('zoomOut', 110);
+      await zoom('zoomOut', 100);
+      await zoom('zoomOut', 90);
+      await zoom('zoomOut', 80);
+      await zoom('resetZoom', 100);
+    });
+
     // Baseline for the setDevToolsWebContents() regression test below: the
     // managed (built-in) DevTools route via InspectableWebContents.
     it('routes context menu requests through the native menu path', async () => {
