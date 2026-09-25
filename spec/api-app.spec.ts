@@ -1945,6 +1945,31 @@ describe('app module', () => {
 
   // Regression test for https://github.com/electron/electron/pull/52603:
   // losing the display server connection went straight to LOG(FATAL).
+  ifdescribe(process.platform === 'linux')('GDK_BACKEND', () => {
+    const fixture = path.join(fixturesPath, 'apps', 'gdk-backend');
+    const run = async (env: NodeJS.ProcessEnv) => {
+      const child = cp.spawn(process.execPath, [fixture], { env, stdio: ['ignore', 'pipe', 'ignore'] });
+      defer(() => {
+        if (child.exitCode === null && child.signalCode === null) child.kill();
+      });
+      let out = '';
+      child.stdout.on('data', (chunk) => {
+        out += chunk;
+      });
+      await waitUntil(() => /GDK_BACKEND in child: .*\n/.test(out));
+      return out.match(/GDK_BACKEND in child: (.*)\n/)![1];
+    };
+
+    it('is not added to the environment that child processes inherit', async () => {
+      const { GDK_BACKEND: _, ...env } = process.env;
+      expect(await run(env)).to.equal('<unset>');
+    });
+
+    it('is left as the user set it', async () => {
+      expect(await run({ ...process.env, GDK_BACKEND: 'x11' })).to.equal('x11');
+    });
+  });
+
   ifdescribe(process.platform === 'linux')('when the X server goes away', () => {
     // Starts a private X server for the app under test, so that it can be taken
     // away without disturbing the one the spec runner is on. Resolves to
