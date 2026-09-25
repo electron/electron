@@ -417,7 +417,7 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 
 #if BUILDFLAG(IS_WIN)
   // Before the first sandboxed child (the GPU process) is launched.
-  EnsureSandboxedProcessesCanReadInstallDir();
+  CheckSandboxedProcessesCanReadInstallDir();
 #endif
 
   // Fetch the system locale for Electron.

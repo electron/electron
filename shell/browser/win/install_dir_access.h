@@ -11,12 +11,10 @@ namespace electron {
 // directory's ACL carries an ACE for any AppContainer package SID but none for
 // ALL APPLICATION PACKAGES, Windows evaluates that token's restricting SIDs
 // like an AppContainer and denies the children read access to the directory,
-// so every sandboxed child dies opening icudtl.dat. Per-user install
-// locations inherit such ACEs from other software; Program Files already
-// grants ALL APPLICATION PACKAGES. Runs an access check with the sandbox's
-// token before any child is launched and, if it is denied, adds an
-// inheritable read/execute ACE for ALL APPLICATION PACKAGES to the directory.
-void EnsureSandboxedProcessesCanReadInstallDir();
+// so every sandboxed child dies opening icudtl.dat. Checks for that before any
+// child is launched and aborts with a message that names the directory and the
+// missing ACL entry instead of a GPU process crash loop.
+void CheckSandboxedProcessesCanReadInstallDir();
 
 }  // namespace electron
 

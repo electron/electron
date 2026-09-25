@@ -14,8 +14,6 @@
 #include "base/path_service.h"
 #include "base/win/access_token.h"
 #include "base/win/security_descriptor.h"
-#include "base/win/security_util.h"
-#include "base/win/sid.h"
 #include "sandbox/win/src/restricted_token_utils.h"
 
 namespace electron {
@@ -46,30 +44,17 @@ bool SandboxTokenCanRead(const base::FilePath& path) {
 
 }  // namespace
 
-void EnsureSandboxedProcessesCanReadInstallDir() {
+void CheckSandboxedProcessesCanReadInstallDir() {
   base::FilePath assets_dir;
   if (!base::PathService::Get(base::DIR_ASSETS, &assets_dir))
     return;
-  const base::FilePath probe =
-      assets_dir.Append(FILE_PATH_LITERAL("icudtl.dat"));
-  if (SandboxTokenCanRead(probe))
-    return;
-
-  LOG(WARNING) << "Sandboxed processes cannot read " << assets_dir.value()
-               << " because its ACL has AppContainer entries without one for "
-                  "ALL APPLICATION PACKAGES; granting read access.";
-  const bool granted = base::win::GrantAccessToPath(
-      assets_dir,
-      base::win::Sid::FromKnownSidVector(
-          {base::win::WellKnownSid::kAllApplicationPackages}),
-      FILE_GENERIC_READ | FILE_GENERIC_EXECUTE,
-      CONTAINER_INHERIT_ACE | OBJECT_INHERIT_ACE, /*recursive=*/true);
-  if (!granted || !SandboxTokenCanRead(probe)) {
-    LOG(ERROR) << "Could not grant sandboxed processes read access to "
-               << assets_dir.value()
-               << ". GPU and renderer processes will fail to start; run "
-                  "`icacls \"<dir>\" /grant *S-1-15-2-1:(OI)(CI)(RX)` on it.";
-  }
+  LOG_IF(FATAL, !SandboxTokenCanRead(
+                    assets_dir.Append(FILE_PATH_LITERAL("icudtl.dat"))))
+      << "Sandboxed processes cannot read " << assets_dir.value()
+      << ": its ACL has an entry for an AppContainer package SID but none "
+         "for ALL APPLICATION PACKAGES, so Windows denies the sandbox token "
+         "access. Grant it with: icacls \""
+      << assets_dir.value() << "\" /grant *S-1-15-2-1:(OI)(CI)(RX)";
 }
 
 }  // namespace electron
