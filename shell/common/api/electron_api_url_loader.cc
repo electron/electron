@@ -747,9 +747,7 @@ SimpleURLLoaderWrapper* SimpleURLLoaderWrapper::Create(gin::Arguments* args) {
       request->destination = iter->second;
   }
 
-  if (base::FeatureList::IsEnabled(
-          network::features::kRestrictFrameDestinationsToNavigate) &&
-      (request->destination == network::mojom::RequestDestination::kDocument ||
+  if ((request->destination == network::mojom::RequestDestination::kDocument ||
        request->destination == network::mojom::RequestDestination::kFrame ||
        request->destination == network::mojom::RequestDestination::kIframe ||
        request->destination ==
