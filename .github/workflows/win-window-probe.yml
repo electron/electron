@@ -1,0 +1,578 @@
+# TEMPORARY diagnostic workflow: find which top-level window covers newly shown
+# Electron windows on the windows-x64 test runner (so Chromium's native
+# occlusion tracker reports them occluded) and check whether minimizing it
+# fixes document.visibilityState. Not meant to be merged.
+name: Windows Runner Window Probe
+
+on:
+  push:
+    branches:
+      - claude/win-runner-window-probe
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    # Same label the windows-x64 test jobs use (build.yml: test-runs-on).
+    runs-on: windows-latest
+    timeout-minutes: 40
+    env:
+      ELECTRON_PROBE_VERSION: v44.4.5
+    steps:
+      - name: Write probe files
+        shell: bash
+        run: |
+          base="$(cygpath -u "$RUNNER_TEMP")/probe"
+          mkdir -p "$base/app" "$base/out"
+
+          cat > "$base/probe.ps1" <<'PS1EOF'
+          param(
+            [string]$Action = 'enum',
+            [string]$Label = 'snap',
+            [string]$Target = '0',
+            [string]$Hwnds = '',
+            [int]$Cmd = 6
+          )
+          $ErrorActionPreference = 'Continue'
+          $OutDir = if ($env:PROBE_OUT) { $env:PROBE_OUT } else { Join-Path $env:RUNNER_TEMP 'probe\out' }
+          New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
+
+          $cs = @'
+          using System;
+          using System.Text;
+          using System.Runtime.InteropServices;
+          public static class PW {
+            [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left, Top, Right, Bottom; }
+            [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
+            [DllImport("user32.dll")] public static extern IntPtr GetTopWindow(IntPtr h);
+            [DllImport("user32.dll")] public static extern IntPtr GetWindow(IntPtr h, uint cmd);
+            [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
+            [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr h);
+            [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr h);
+            [DllImport("user32.dll")] public static extern bool IsZoomed(IntPtr h);
+            [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
+            [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr h, StringBuilder s, int n);
+            [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+            [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+            [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] public static extern IntPtr GetWindowLongPtr(IntPtr h, int i);
+            [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+            [DllImport("user32.dll")] public static extern IntPtr GetShellWindow();
+            [DllImport("user32.dll")] public static extern IntPtr GetDesktopWindow();
+            [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int c);
+            [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+            [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr h);
+            [DllImport("user32.dll")] public static extern bool GetLayeredWindowAttributes(IntPtr h, out uint key, out byte alpha, out uint flags);
+            [DllImport("user32.dll")] public static extern int GetSystemMetrics(int i);
+            [DllImport("user32.dll")] public static extern IntPtr OpenInputDesktop(uint f, bool inherit, uint access);
+            [DllImport("user32.dll")] public static extern IntPtr GetThreadDesktop(uint tid);
+            [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern bool GetUserObjectInformation(IntPtr h, int idx, StringBuilder buf, int len, out int needed);
+            [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();
+            [DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
+            [DllImport("kernel32.dll")] public static extern uint WTSGetActiveConsoleSessionId();
+            [DllImport("dwmapi.dll")] public static extern int DwmGetWindowAttribute(IntPtr h, int attr, out int val, int size);
+            public static string Text(IntPtr h) { var sb = new StringBuilder(512); GetWindowText(h, sb, 512); return sb.ToString(); }
+            public static string Cls(IntPtr h) { var sb = new StringBuilder(256); GetClassName(h, sb, 256); return sb.ToString(); }
+            public static int Cloaked(IntPtr h) { int v = 0; try { DwmGetWindowAttribute(h, 14, out v, 4); } catch { } return v; }
+            public static string DeskName(IntPtr d) { if (d == IntPtr.Zero) return "<null>"; var sb = new StringBuilder(256); int n; GetUserObjectInformation(d, 2, sb, 512, out n); return sb.ToString(); }
+          }
+          '@
+          try { if (-not ('PW' -as [type])) { Add-Type -TypeDefinition $cs } } catch { "Add-Type failed: $_"; exit 1 }
+          try { [void][PW]::SetProcessDPIAware() } catch { }
+
+          $procs = @{}
+          try { Get-CimInstance Win32_Process | ForEach-Object { $procs[[int]$_.ProcessId] = $_ } } catch { "Get-CimInstance failed: $_" }
+
+          function Get-Chain([int]$p) {
+            $s = @(); $i = 0
+            while ($p -and $i -lt 8) {
+              $x = $procs[[int]$p]
+              if (-not $x) { $s += "$p(gone)"; break }
+              $s += "$($x.Name)($p)"
+              $p = [int]$x.ParentProcessId; $i++
+            }
+            $s -join ' <- '
+          }
+
+          function Get-Flags([int64]$ex) {
+            $f = @()
+            if ($ex -band 0x8) { $f += 'TOPMOST' }
+            if ($ex -band 0x20) { $f += 'TRANSPARENT' }
+            if ($ex -band 0x80) { $f += 'TOOLWINDOW' }
+            if ($ex -band 0x40000) { $f += 'APPWINDOW' }
+            if ($ex -band 0x80000) { $f += 'LAYERED' }
+            if ($ex -band 0x200000) { $f += 'NOREDIRBMP' }
+            if ($ex -band 0x8000000) { $f += 'NOACTIVATE' }
+            $f -join '|'
+          }
+
+          function Get-WinInfo([IntPtr]$h, [int]$z, [IntPtr]$fg) {
+            $r = New-Object PW+RECT
+            [void][PW]::GetWindowRect($h, [ref]$r)
+            [uint32]$wpid = 0
+            [void][PW]::GetWindowThreadProcessId($h, [ref]$wpid)
+            $ex = [PW]::GetWindowLongPtr($h, -20).ToInt64()
+            $st = [PW]::GetWindowLongPtr($h, -16).ToInt64()
+            $alpha = ''
+            if ($ex -band 0x80000) {
+              [uint32]$k = 0; [byte]$a = 0; [uint32]$lf = 0
+              if ([PW]::GetLayeredWindowAttributes($h, [ref]$k, [ref]$a, [ref]$lf)) { $alpha = "alpha=$a lwaflags=$lf" } else { $alpha = 'alpha=n/a' }
+            }
+            $p = $procs[[int]$wpid]
+            [pscustomobject]@{
+              z = $z; hwnd = $h.ToInt64(); hex = ('0x{0:X}' -f $h.ToInt64())
+              visible = [PW]::IsWindowVisible($h); iconic = [PW]::IsIconic($h); zoomed = [PW]::IsZoomed($h)
+              cloaked = [PW]::Cloaked($h); topmost = [bool]($ex -band 0x8); foreground = ($h -eq $fg)
+              exstyle = ('0x{0:X}' -f $ex); style = ('0x{0:X}' -f $st); flags = (Get-Flags $ex); layered = $alpha
+              owner = ('0x{0:X}' -f [PW]::GetWindow($h, 4).ToInt64())
+              left = $r.Left; top = $r.Top; right = $r.Right; bottom = $r.Bottom
+              width = $r.Right - $r.Left; height = $r.Bottom - $r.Top
+              pid = [int]$wpid; process = $(if ($p) { $p.Name } else { '?' })
+              chain = (Get-Chain ([int]$wpid))
+              cmdline = $(if ($p -and $p.CommandLine) { $p.CommandLine } else { '' })
+              title = [PW]::Text($h); class = [PW]::Cls($h)
+            }
+          }
+
+          function Format-Win($w) {
+            $s = '[z={0,4}] {1} vis={2} cloak={3} icon={4} top={5} fg={6} ex={7} [{8}] {9} rect=({10},{11})-({12},{13}) {14}x{15} pid={16} {17}' -f `
+              $w.z, $w.hex, [int]$w.visible, $w.cloaked, [int]$w.iconic, [int]$w.topmost, [int]$w.foreground, $w.exstyle, $w.flags, $w.layered, `
+              $w.left, $w.top, $w.right, $w.bottom, $w.width, $w.height, $w.pid, $w.process
+            $s += "`n        title='$($w.title)' class='$($w.class)' owner=$($w.owner)"
+            $s += "`n        chain: $($w.chain)"
+            if ($w.cmdline) { $c = $w.cmdline; if ($c.Length -gt 400) { $c = $c.Substring(0, 400) + '...' }; $s += "`n        cmdline: $c" }
+            $s
+          }
+
+          function Get-VisibleWindows {
+            $fg = [PW]::GetForegroundWindow()
+            $list = @(); $z = 0
+            $h = [PW]::GetTopWindow([IntPtr]::Zero)
+            while ($h -ne [IntPtr]::Zero -and $z -lt 20000) {
+              if ([PW]::IsWindowVisible($h)) {
+                $w = Get-WinInfo $h $z $fg
+                if ($w.cloaked -eq 0) { $list += $w }
+              }
+              $h = [PW]::GetWindow($h, 2); $z++
+            }
+            "total top-level windows walked: $z" | Out-Host
+            $list
+          }
+
+          function Save-Shot([string]$label) {
+            try {
+              Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+              $vs = [System.Windows.Forms.SystemInformation]::VirtualScreen
+              $bmp = New-Object System.Drawing.Bitmap $vs.Width, $vs.Height
+              $g = [System.Drawing.Graphics]::FromImage($bmp)
+              $g.CopyFromScreen($vs.Left, $vs.Top, 0, 0, $bmp.Size)
+              $p = Join-Path $OutDir "shot-$label.png"
+              $bmp.Save($p, [System.Drawing.Imaging.ImageFormat]::Png)
+              $g.Dispose(); $bmp.Dispose()
+              "screenshot saved: $p ($($vs.Width)x$($vs.Height) at $($vs.Left),$($vs.Top))"
+            } catch { "screenshot FAILED: $_" }
+          }
+
+          function Show-Info {
+            "== identity =="
+            try { "whoami: $(whoami)" } catch { }
+            "PID=$PID SessionId=$((Get-Process -Id $PID).SessionId) ActiveConsoleSessionId=$([PW]::WTSGetActiveConsoleSessionId()) UserInteractive=$([Environment]::UserInteractive)"
+            "OS: $([Environment]::OSVersion.VersionString)"
+            try { (Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, BuildNumber | Format-List | Out-String).Trim() } catch { }
+            "ImageOS=$env:ImageOS ImageVersion=$env:ImageVersion RUNNER_NAME=$env:RUNNER_NAME RUNNER_ENVIRONMENT=$env:RUNNER_ENVIRONMENT"
+            "== sessions =="
+            try { (& query.exe session 2>&1 | Out-String) } catch { "query session failed: $_" }
+            try { (& query.exe user 2>&1 | Out-String) } catch { "query user failed: $_" }
+            "== desktops =="
+            try { $inp = [PW]::OpenInputDesktop(0, $false, 0x0001); "input desktop: $([PW]::DeskName($inp)) (handle=$inp; null means no access / locked / not interactive)" } catch { "OpenInputDesktop failed: $_" }
+            try { "thread desktop: $([PW]::DeskName([PW]::GetThreadDesktop([PW]::GetCurrentThreadId())))" } catch { }
+            "== screen =="
+            try {
+              Add-Type -AssemblyName System.Windows.Forms
+              [System.Windows.Forms.Screen]::AllScreens | ForEach-Object { "screen $($_.DeviceName) primary=$($_.Primary) bounds=$($_.Bounds) work=$($_.WorkingArea) bpp=$($_.BitsPerPixel)" }
+              "VirtualScreen=$([System.Windows.Forms.SystemInformation]::VirtualScreen)"
+            } catch { "screen query failed: $_" }
+            "SM_CXSCREEN=$([PW]::GetSystemMetrics(0)) SM_CYSCREEN=$([PW]::GetSystemMetrics(1)) SM_CMONITORS=$([PW]::GetSystemMetrics(80)) SM_REMOTESESSION=$([PW]::GetSystemMetrics(0x1000))"
+            "shell window: 0x{0:X}  desktop window: 0x{1:X}  foreground: 0x{2:X}" -f [PW]::GetShellWindow().ToInt64(), [PW]::GetDesktopWindow().ToInt64(), [PW]::GetForegroundWindow().ToInt64()
+            "== this step's console window =="
+            $cw = [PW]::GetConsoleWindow()
+            if ($cw -eq [IntPtr]::Zero) { "GetConsoleWindow: none" } else { Format-Win (Get-WinInfo $cw -1 ([PW]::GetForegroundWindow())) }
+            "parent chain of this pwsh: $(Get-Chain $PID)"
+            "== interesting processes (pid ppid session name :: cmdline) =="
+            $procs.Values | Where-Object { $_.Name -match '^(Runner\.|provisioner|conhost|cmd|pwsh|powershell|WindowsTerminal|OpenConsole|explorer|winlogon|LogonUI|dwm|node|electron|bash|sh)' } | Sort-Object ProcessId | ForEach-Object {
+              $c = "$($_.CommandLine)"; if ($c.Length -gt 300) { $c = $c.Substring(0, 300) + '...' }
+              '{0,6} ppid={1,6} s={2} {3} :: {4}' -f $_.ProcessId, $_.ParentProcessId, $_.SessionId, $_.Name, $c
+            }
+            "== services named like runner =="
+            try { Get-CimInstance Win32_Service | Where-Object { $_.Name -match 'runner|actions' -or $_.PathName -match 'Runner' } | ForEach-Object { "$($_.Name) state=$($_.State) start=$($_.StartMode) user=$($_.StartName) path=$($_.PathName)" } } catch { }
+            "== power / screensaver / lock =="
+            try { (& powercfg.exe /getactivescheme 2>&1 | Out-String).Trim() } catch { }
+            try { (& powercfg.exe /q SCHEME_CURRENT SUB_VIDEO 2>&1 | Out-String) } catch { }
+            foreach ($v in 'ScreenSaveActive', 'ScreenSaveTimeOut', 'ScreenSaverIsSecure', 'SCRNSAVE.EXE') {
+              try { $val = (Get-ItemProperty -Path 'HKCU:\Control Panel\Desktop' -Name $v -ErrorAction Stop).$v; "HKCU Desktop ${v}=$val" } catch { "HKCU Desktop ${v}=<unset>" }
+            }
+            try { "AutoAdminLogon=$((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon').AutoAdminLogon) DefaultUserName=$((Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon').DefaultUserName)" } catch { }
+            "LogonUI running (lock/logon screen): $([bool](Get-Process LogonUI -ErrorAction SilentlyContinue))"
+            try { "Console host default (DelegationConsole): $((Get-ItemProperty 'HKCU:\Console\%%Startup' -ErrorAction Stop).DelegationConsole)" } catch { "Console host default: <unset>" }
+          }
+
+          switch ($Action) {
+            'info' { Show-Info }
+            'shot' { Save-Shot $Label }
+            'enum' {
+              "===== ENUM [$Label] visible, non-cloaked top-level windows, top of z-order first ====="
+              $list = @(Get-VisibleWindows)
+              foreach ($w in $list) { Format-Win $w }
+              try { $list | ConvertTo-Json -Depth 3 | Set-Content -Path (Join-Path $OutDir "windows-$Label.json") -Encoding utf8 } catch { "json save failed: $_" }
+              $skipClasses = @('Shell_TrayWnd', 'Shell_SecondaryTrayWnd', 'Progman', 'WorkerW')
+              $consoleClasses = @('ConsoleWindowClass', 'CASCADIA_HOSTING_WINDOW_CLASS')
+              $cands = @()
+              if ($Target -ne '0') {
+                $t = $list | Where-Object { $_.hwnd -eq [int64]$Target } | Select-Object -First 1
+                if (-not $t) {
+                  "TARGET 0x{0:X} not found among visible windows" -f [int64]$Target
+                } else {
+                  "TARGET z=$($t.z) $($t.hex) '$($t.title)' rect=($($t.left),$($t.top))-($($t.right),$($t.bottom)) iconic=$($t.iconic) foreground=$($t.foreground)"
+                  foreach ($w in $list) {
+                    if ($w.z -ge $t.z) { break }
+                    if ($w.iconic) { continue }
+                    $overlap = ($w.left -lt $t.right) -and ($w.right -gt $t.left) -and ($w.top -lt $t.bottom) -and ($w.bottom -gt $t.top)
+                    if (-not $overlap) { continue }
+                    $covers = ($w.left -le $t.left) -and ($w.top -le $t.top) -and ($w.right -ge $t.right) -and ($w.bottom -ge $t.bottom)
+                    "  ABOVE+OVERLAPS target: z=$($w.z) $($w.hex) fullyCovers=$covers topmost=$($w.topmost) class='$($w.class)' title='$($w.title)' pid=$($w.pid) $($w.process) flags=[$($w.flags)] $($w.layered)"
+                    if ($w.title -like 'PROBE-*' -or $skipClasses -contains $w.class) { continue }
+                    $cands += $w.hwnd
+                  }
+                }
+              }
+              foreach ($w in $list) {
+                if ($consoleClasses -contains $w.class -and -not $w.iconic) { "  VISIBLE CONSOLE window: $($w.hex) class='$($w.class)' title='$($w.title)' pid=$($w.pid) chain=$($w.chain)"; $cands += $w.hwnd }
+              }
+              "CANDIDATES=$((@($cands | Select-Object -Unique)) -join ',')"
+            }
+            'show' {
+              foreach ($s in ($Hwnds -split ',' | Where-Object { $_ })) {
+                $h = [IntPtr]::new([int64]$s)
+                if (-not [PW]::IsWindow($h)) { "ShowWindow skip 0x{0:X}: not a window any more" -f [int64]$s; continue }
+                $before = "vis=$([int][PW]::IsWindowVisible($h)) icon=$([int][PW]::IsIconic($h))"
+                $ret = [PW]::ShowWindow($h, $Cmd)
+                Start-Sleep -Milliseconds 300
+                "ShowWindow(0x{0:X}, {1}) ret={2} before[{3}] after[vis={4} icon={5}] class='{6}' title='{7}'" -f [int64]$s, $Cmd, $ret, $before, [int][PW]::IsWindowVisible($h), [int][PW]::IsIconic($h), [PW]::Cls($h), [PW]::Text($h)
+              }
+            }
+            'startcmd' {
+              $p = Start-Process -FilePath cmd.exe -ArgumentList '/k', 'title PROBE_CMD_CONSOLE' -PassThru
+              "STARTED_PID=$($p.Id)"
+              $h = [IntPtr]::Zero
+              for ($i = 0; $i -lt 20 -and $h -eq [IntPtr]::Zero; $i++) {
+                Start-Sleep -Milliseconds 250
+                $p.Refresh(); $h = $p.MainWindowHandle
+              }
+              if ($h -eq [IntPtr]::Zero) {
+                # console windows usually report the client pid, but fall back to a title search
+                $fgw = [PW]::GetForegroundWindow()
+                $h = (Get-VisibleWindows | Where-Object { $_.title -like '*PROBE_CMD_CONSOLE*' } | Select-Object -First 1).hwnd
+                if ($h) { $h = [IntPtr]::new([int64]$h) } else { $h = [IntPtr]::Zero }
+              }
+              if ($h -ne [IntPtr]::Zero) {
+                "cmd console hwnd=0x{0:X} SetForegroundWindow={1} BringWindowToTop={2} foreground now=0x{3:X}" -f $h.ToInt64(), [PW]::SetForegroundWindow($h), [PW]::BringWindowToTop($h), [PW]::GetForegroundWindow().ToInt64()
+              } else { "cmd console window not found" }
+            }
+          }
+          PS1EOF
+
+          cat > "$base/fix.ps1" <<'FIXEOF'
+          # Minimize every visible console window on the desktop so it cannot
+          # cover (and occlude) windows the Electron tests show.
+          Add-Type -Namespace ProbeFix -Name User32 -MemberDefinition @'
+          [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+          [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
+          [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);
+          [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string cls, string title);
+          '@
+          foreach ($cls in 'ConsoleWindowClass', 'CASCADIA_HOSTING_WINDOW_CLASS') {
+            $h = [IntPtr]::Zero
+            while (($h = [ProbeFix.User32]::FindWindowEx([IntPtr]::Zero, $h, $cls, $null)) -ne [IntPtr]::Zero) {
+              if ([ProbeFix.User32]::IsWindowVisible($h) -and -not [ProbeFix.User32]::IsIconic($h)) {
+                [void][ProbeFix.User32]::ShowWindow($h, 6) # SW_MINIMIZE
+                Write-Host ("minimized {0} 0x{1:X}" -f $cls, $h.ToInt64())
+              }
+            }
+          }
+          FIXEOF
+
+          cat > "$base/app/package.json" <<'PKGEOF'
+          { "name": "win-window-probe", "version": "1.0.0", "main": "main.js" }
+          PKGEOF
+
+          cat > "$base/launcher.js" <<'LAUNCHEOF'
+          // Spawn Electron the way script/spec-runner.js does (default stdio
+          // pipes, --enable-logging) so child processes see the same stdio.
+          const { spawn } = require('node:child_process');
+          const [electronExe, appDir] = process.argv.slice(2);
+          const child = spawn(electronExe, [appDir, '--enable-logging'], { cwd: appDir, env: process.env });
+          child.stdout.pipe(process.stdout);
+          child.stderr.pipe(process.stderr);
+          child.on('error', (e) => { console.error('spawn error', e); process.exit(0); });
+          child.on('close', (code, signal) => { console.log(`electron exited code=${code} signal=${signal}`); process.exit(0); });
+          LAUNCHEOF
+
+          cat > "$base/app/main.js" <<'MAINEOF'
+          const { app, BrowserWindow, BaseWindow, WebContentsView, screen } = require('electron');
+          const { execFile } = require('node:child_process');
+          const fs = require('node:fs');
+          const path = require('node:path');
+
+          const OUT = process.env.PROBE_OUT;
+          const PS1 = process.env.PROBE_PS1;
+          const MODE = process.env.PROBE_MODE || 'full';
+          const logFile = path.join(OUT, `electron-${MODE}.log`);
+          const T0 = Date.now();
+          const results = [];
+
+          function log (...a) {
+            const s = `[+${((Date.now() - T0) / 1000).toFixed(1)}s] ` + a.map((x) => (typeof x === 'string' ? x : JSON.stringify(x))).join(' ');
+            console.log(s);
+            fs.appendFileSync(logFile, s + '\n');
+          }
+          const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+          function ps (...args) {
+            return new Promise((resolve) => {
+              execFile('pwsh', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', PS1, ...args],
+                { windowsHide: true, encoding: 'utf8', timeout: 180000, maxBuffer: 64 * 1024 * 1024 },
+                (err, stdout, stderr) => {
+                  const out = `----- [+${((Date.now() - T0) / 1000).toFixed(1)}s] ps ${args.join(' ')} -----\n` + (stdout || '') +
+                    (stderr ? '\nSTDERR: ' + stderr : '') + (err ? '\nERR: ' + err.message : '') + '\n';
+                  fs.appendFileSync(logFile, out);
+                  process.stdout.write(out);
+                  resolve(stdout || '');
+                });
+            });
+          }
+
+          const hwndOf = (win) => win.getNativeWindowHandle().readBigUInt64LE(0).toString();
+
+          function html (label, color) {
+            return 'data:text/html;charset=utf-8,' + encodeURIComponent(
+              `<!doctype html><title>PROBE-${label}</title>` +
+              `<body style="margin:0;background:${color};color:#fff;font:28px sans-serif;display:flex;align-items:center;justify-content:center;height:100vh">${label}` +
+              '<script>window.__vis=[[Date.now(),document.visibilityState]];' +
+              "document.addEventListener('visibilitychange',()=>window.__vis.push([Date.now(),document.visibilityState]));</script></body>");
+          }
+
+          const MEASURE = `new Promise((resolve) => {
+            let n = 0; const start = performance.now();
+            const tick = () => { n++; if (performance.now() - start < 500) requestAnimationFrame(tick); };
+            requestAnimationFrame(tick);
+            setTimeout(() => resolve({ visibilityState: document.visibilityState, raf500ms: n, history: window.__vis.map(([t, s]) => [t - ${T0}, s]) }), 700);
+          })`;
+
+          async function measure (wc) {
+            try {
+              return await Promise.race([wc.executeJavaScript(MEASURE), sleep(10000).then(() => ({ error: 'measure timed out after 10s' }))]);
+            } catch (e) { return { error: String(e) }; }
+          }
+
+          let setIndex = 0;
+          async function makeSet (tag) {
+            const wa = screen.getPrimaryDisplay().workArea;
+            const cx = wa.x + Math.round(wa.width / 2);
+            const y = wa.y + 40 + (setIndex++ % 3) * 190;
+            const bw = new BrowserWindow({ x: cx - 280, y, width: 260, height: 170, show: true, title: `PROBE-BW-${tag}` });
+            const base = new BaseWindow({ x: cx + 20, y, width: 260, height: 170, show: true, title: `PROBE-BASE-${tag}` });
+            const view = new WebContentsView();
+            base.contentView.addChildView(view);
+            const cb = base.getContentBounds();
+            view.setBounds({ x: 0, y: 0, width: cb.width, height: cb.height });
+            await Promise.all([bw.loadURL(html(`BW-${tag}`, '#c62828')), view.webContents.loadURL(html(`BASE-${tag}`, '#1565c0'))]);
+            log(`created set ${tag}: bw hwnd=${hwndOf(bw)} bounds=${JSON.stringify(bw.getBounds())} base hwnd=${hwndOf(base)} bounds=${JSON.stringify(base.getBounds())}`);
+            return { tag, bw, base, view };
+          }
+
+          async function report (step, set) {
+            const r = {
+              step,
+              set: set.tag,
+              bw: { isVisible: set.bw.isVisible(), isFocused: set.bw.isFocused(), ...(await measure(set.bw.webContents)) },
+              base: { isVisible: set.base.isVisible(), isFocused: set.base.isFocused(), ...(await measure(set.view.webContents)) }
+            };
+            results.push(r);
+            log('RESULT', r);
+            return r;
+          }
+
+          function candidatesFrom (out) {
+            const m = /^CANDIDATES=(.*)$/m.exec(out);
+            return m && m[1].trim() ? m[1].trim().split(',').filter(Boolean) : [];
+          }
+
+          function logMetrics () {
+            log('appMetrics', app.getAppMetrics().map((m) => ({ pid: m.pid, type: m.type, name: m.name, serviceName: m.serviceName })));
+          }
+
+          let cmdPid = 0;
+
+          async function full () {
+            const s1 = await makeSet('1');
+            await sleep(3000);
+            logMetrics();
+            await report('S0-startup', s1);
+            const e0 = await ps('-Action', 'enum', '-Label', 'S0-startup', '-Target', hwndOf(s1.base));
+            await ps('-Action', 'shot', '-Label', 'S0-startup');
+
+            await sleep(Math.max(0, 22000 - (Date.now() - T0)));
+            await report('S1-after-20s-idle', s1);
+            const sc = await ps('-Action', 'startcmd');
+            const m = /STARTED_PID=(\d+)/.exec(sc);
+            if (m) cmdPid = Number(m[1]);
+            await sleep(3000);
+            await report('S1-after-cmd-console-opened', s1);
+            const s2 = await makeSet('2');
+            await sleep(3000);
+            await report('S1-window-created-after-cmd', s2);
+            await report('S1-window-created-after-cmd', s1);
+            const e1a = await ps('-Action', 'enum', '-Label', 'S1-set2', '-Target', hwndOf(s2.base));
+            const e1b = await ps('-Action', 'enum', '-Label', 'S1-set1', '-Target', hwndOf(s1.base));
+            await ps('-Action', 'shot', '-Label', 'S1');
+
+            const cands = [...new Set([...candidatesFrom(e0), ...candidatesFrom(e1a), ...candidatesFrom(e1b)])];
+            log('candidate covering windows', cands);
+            for (const h of cands) {
+              await ps('-Action', 'show', '-Hwnds', h, '-Cmd', '6');
+              await sleep(2500);
+              await report(`S2-after-SW_MINIMIZE-${h}`, s1);
+              await report(`S2-after-SW_MINIMIZE-${h}`, s2);
+              await ps('-Action', 'shot', '-Label', `S2-min-${h}`);
+            }
+            if (cands.length) {
+              await ps('-Action', 'enum', '-Label', 'S2-all-minimized', '-Target', hwndOf(s2.base));
+              await ps('-Action', 'show', '-Hwnds', cands.join(','), '-Cmd', '9');
+              await sleep(2500);
+              await report('S3-after-SW_RESTORE-all', s1);
+              await report('S3-after-SW_RESTORE-all', s2);
+              await ps('-Action', 'show', '-Hwnds', cands.join(','), '-Cmd', '0');
+              await sleep(2500);
+              await report('S3-after-SW_HIDE-all', s1);
+              await report('S3-after-SW_HIDE-all', s2);
+              await ps('-Action', 'shot', '-Label', 'S3-hidden');
+              await ps('-Action', 'show', '-Hwnds', cands.join(','), '-Cmd', '6');
+              await sleep(1000);
+            }
+            const s3 = await makeSet('3');
+            await sleep(3000);
+            logMetrics();
+            await report('S4-window-created-after-candidates-minimized', s3);
+            const e4 = await ps('-Action', 'enum', '-Label', 'S4', '-Target', hwndOf(s3.base));
+            log('S4 remaining candidates', candidatesFrom(e4));
+            await ps('-Action', 'shot', '-Label', 'S4');
+          }
+
+          async function afterfix () {
+            const s1 = await makeSet('1');
+            await sleep(3000);
+            logMetrics();
+            await report('F0-startup', s1);
+            await ps('-Action', 'enum', '-Label', 'F0-startup', '-Target', hwndOf(s1.base));
+            await ps('-Action', 'shot', '-Label', 'F0-startup');
+            await sleep(Math.max(0, 22000 - (Date.now() - T0)));
+            await report('F1-after-20s-idle', s1);
+            const s2 = await makeSet('2');
+            await sleep(3000);
+            await report('F1-window-created-after-idle', s2);
+            await ps('-Action', 'enum', '-Label', 'F1', '-Target', hwndOf(s2.base));
+            await ps('-Action', 'shot', '-Label', 'F1');
+          }
+
+          app.on('window-all-closed', () => {});
+          setTimeout(() => { log('HARD TIMEOUT'); app.exit(3); }, 12 * 60 * 1000).unref();
+
+          app.whenReady().then(async () => {
+            log(`mode=${MODE} electron=${process.versions.electron} argv=${JSON.stringify(process.argv)}`);
+            try {
+              if (MODE === 'full') await full(); else await afterfix();
+            } catch (e) {
+              log('FATAL', e && e.stack ? e.stack : String(e));
+            } finally {
+              try { fs.writeFileSync(path.join(OUT, `results-${MODE}.json`), JSON.stringify(results, null, 2)); } catch {}
+              if (cmdPid) { try { process.kill(cmdPid); } catch {} }
+              log('SUMMARY', results.map((r) => `${r.step} set${r.set}: bw=${r.bw.visibilityState}/${r.bw.raf500ms} base=${r.base.visibilityState}/${r.base.raf500ms}`));
+              app.exit(0);
+            }
+          });
+          MAINEOF
+
+          ls -la "$base" "$base/app"
+
+      - name: System, session and screen info
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          & "$env:RUNNER_TEMP\probe\probe.ps1" -Action info 2>&1 | Tee-Object -FilePath "$env:RUNNER_TEMP\probe\out\info.log"
+
+      - name: Baseline window enumeration and screenshot
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $log = "$env:RUNNER_TEMP\probe\out\baseline.log"
+          & "$env:RUNNER_TEMP\probe\probe.ps1" -Action enum -Label baseline 2>&1 | Tee-Object -FilePath $log
+          & "$env:RUNNER_TEMP\probe\probe.ps1" -Action shot -Label baseline 2>&1 | Tee-Object -FilePath $log -Append
+
+      - name: Download Electron release
+        shell: pwsh
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          $v = $env:ELECTRON_PROBE_VERSION
+          $zip = "$env:RUNNER_TEMP\probe\electron.zip"
+          Invoke-WebRequest -Uri "https://github.com/electron/electron/releases/download/$v/electron-$v-win32-x64.zip" -OutFile $zip
+          Expand-Archive -Force $zip -DestinationPath "$env:RUNNER_TEMP\probe\electron"
+          Get-Item "$env:RUNNER_TEMP\probe\electron\electron.exe" | Format-List FullName, Length, VersionInfo
+
+      - name: Run Electron probe (z-order scenarios, minimize candidates)
+        shell: pwsh
+        continue-on-error: true
+        timeout-minutes: 15
+        run: |
+          $env:PROBE_OUT = "$env:RUNNER_TEMP\probe\out"
+          $env:PROBE_PS1 = "$env:RUNNER_TEMP\probe\probe.ps1"
+          $env:PROBE_MODE = 'full'
+          node "$env:RUNNER_TEMP\probe\launcher.js" "$env:RUNNER_TEMP\probe\electron\electron.exe" "$env:RUNNER_TEMP\probe\app" 2>&1 | Tee-Object -FilePath "$env:RUNNER_TEMP\probe\out\electron-full-stdout.log"
+
+      - name: Window enumeration after Electron exited
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $log = "$env:RUNNER_TEMP\probe\out\after-electron.log"
+          & "$env:RUNNER_TEMP\probe\probe.ps1" -Action enum -Label after-electron 2>&1 | Tee-Object -FilePath $log
+          & "$env:RUNNER_TEMP\probe\probe.ps1" -Action shot -Label after-electron 2>&1 | Tee-Object -FilePath $log -Append
+
+      - name: Apply candidate fix snippet (minimize console windows)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $log = "$env:RUNNER_TEMP\probe\out\fix.log"
+          "----- snippet -----" | Tee-Object -FilePath $log
+          Get-Content "$env:RUNNER_TEMP\probe\fix.ps1" | Tee-Object -FilePath $log -Append
+          "----- output -----" | Tee-Object -FilePath $log -Append
+          & "$env:RUNNER_TEMP\probe\fix.ps1" *>&1 | Tee-Object -FilePath $log -Append
+          & "$env:RUNNER_TEMP\probe\probe.ps1" -Action enum -Label after-fix 2>&1 | Tee-Object -FilePath $log -Append
+          & "$env:RUNNER_TEMP\probe\probe.ps1" -Action shot -Label after-fix 2>&1 | Tee-Object -FilePath $log -Append
+
+      - name: Run Electron probe again after the fix snippet
+        shell: pwsh
+        continue-on-error: true
+        timeout-minutes: 10
+        run: |
+          $env:PROBE_OUT = "$env:RUNNER_TEMP\probe\out"
+          $env:PROBE_PS1 = "$env:RUNNER_TEMP\probe\probe.ps1"
+          $env:PROBE_MODE = 'afterfix'
+          node "$env:RUNNER_TEMP\probe\launcher.js" "$env:RUNNER_TEMP\probe\electron\electron.exe" "$env:RUNNER_TEMP\probe\app" 2>&1 | Tee-Object -FilePath "$env:RUNNER_TEMP\probe\out\electron-afterfix-stdout.log"
+
+      - name: Upload probe output
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
+        with:
+          name: win-window-probe
+          path: ${{ runner.temp }}/probe/out
+          if-no-files-found: warn
