@@ -21,6 +21,7 @@
 #include "base/win/atl.h"
 #include "base/win/registry.h"
 #include "base/win/shlwapi.h"
+#include "base/win/shortcut.h"
 #include "base/win/windows_version.h"
 #include "chrome/browser/icon_manager.h"
 #include "electron/electron_version.h"
@@ -333,27 +334,6 @@ void GetApplicationInfoForProtocolUsingAssocQuery(
               app_display_name, std::move(promise));
 }
 
-std::string ResolveShortcut(const base::FilePath& lnk_path) {
-  std::string target_path;
-
-  CComPtr<IShellLink> shell_link;
-  if (SUCCEEDED(CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER,
-                                 IID_PPV_ARGS(&shell_link)))) {
-    CComPtr<IPersistFile> persist_file;
-    if (SUCCEEDED(shell_link->QueryInterface(IID_PPV_ARGS(&persist_file)))) {
-      if (SUCCEEDED(persist_file->Load(lnk_path.value().c_str(), STGM_READ))) {
-        WCHAR resolved_path[MAX_PATH];
-        if (SUCCEEDED(
-                shell_link->GetPath(resolved_path, MAX_PATH, nullptr, 0))) {
-          target_path = base::FilePath(resolved_path).MaybeAsASCII();
-        }
-      }
-    }
-  }
-
-  return target_path;
-}
-
 void Browser::AddRecentDocument(const base::FilePath& path) {
   CComPtr<IShellItem> item;
   HRESULT hr = SHCreateItemFromParsingName(path.value().c_str(), nullptr,
@@ -385,9 +365,10 @@ std::vector<std::string> Browser::GetRecentDocuments() {
 
     for (base::FilePath file = enumerator.Next(); !file.empty();
          file = enumerator.Next()) {
-      std::string resolved_path = ResolveShortcut(file);
-      if (!resolved_path.empty()) {
-        docs.push_back(resolved_path);
+      base::FilePath target;
+      if (base::win::ResolveShortcut(file, &target, nullptr) &&
+          !target.empty()) {
+        docs.push_back(target.AsUTF8Unsafe());
       }
     }
   }
