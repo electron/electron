@@ -30,10 +30,10 @@ index fcff902ca98c598659e4418f96b633eea2296fc8..9a63f8206823cec2a44d7477d8213541
  
    return ContentSettingsType::DEFAULT;
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index 31c80a1ed6f124c387754d0ae5e9a1d1140ae430..f9d53db8097703fe473772d29fb99b627a5e9f90 100644
+index 783cf0f1c202b020fc0d0f35c9e07313061a67e1..d2f7f0ce7085222a55ba81663058e63d0407f8bd 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
-@@ -98,9 +98,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
+@@ -99,9 +99,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
      case PermissionType::LOCAL_NETWORK_ACCESS:
      case PermissionType::LOCAL_NETWORK:
      case PermissionType::LOOPBACK_NETWORK:

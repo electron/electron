@@ -7,7 +7,7 @@ Electron does not support Profiles, so we need to patch it out of any
 code that we use.
 
 diff --git a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
-index dd48ee2a99aeeddad66c95e7c61b17580bb523e5..1d7fa6c4a7956b9a356e4203e8c61eb78a0037f4 100644
+index ba02974778b98b83456e79ba62a9d6b30680039c..fd2e7a592cdeca42393d2e3f9f2a0e6ccfc20f68 100644
 --- a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
 +++ b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
 @@ -46,6 +46,7 @@ namespace {
@@ -83,7 +83,7 @@ index 5dd1c5c85fe0785ea05ead8e2388c76f5503b9ae..c2ca9ca4ba2380a90e4a99912cd038cd
    auto* tab_interface = tabs::TabInterface::MaybeGetFromContents(web_contents);
    if (tab_interface && !tab_interface->IsInNormalWindow()) {
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index d2185014bf3a11a4e05f32ad71953e6cd59ec5cb..d31f90a2caa78a615b19290f8091f5404d827fa1 100644
+index d8a89a3a54e37c3e4046ef9a0eea36c590bda442..68cef18d8a3f5f3b56dbde26d248f5b245d03e8a 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
 @@ -25,8 +25,10 @@
@@ -108,7 +108,7 @@ index d2185014bf3a11a4e05f32ad71953e6cd59ec5cb..d31f90a2caa78a615b19290f8091f540
  }
  
  }  // namespace
-@@ -504,11 +509,13 @@ void SpellcheckService::InitForRenderer(content::RenderProcessHost* host) {
+@@ -505,11 +510,13 @@ void SpellcheckService::InitForRenderer(content::RenderProcessHost* host) {
        features::kInitialWebUIWithoutSpellCheck.Get()) {
      return;
    }

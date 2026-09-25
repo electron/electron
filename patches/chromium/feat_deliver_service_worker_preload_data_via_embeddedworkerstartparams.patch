@@ -33,10 +33,10 @@ index f1305b444c578b9d3f67470ddac1258c8a3cd903..67efc8609de5ff6316ef4348a474f09c
    if (policy_container_host_) {
      params->policy_container =
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index f306a051e7159e898cb91a558c6f6181139a8c3e..f2ae0a2ea7c78aba2ff296ed8696ae4b9d37f4da 100644
+index 88d6d4c5d5147f424c86cb7ef3f0841fd5d254ed..9ee79220dcdfb4edfba83903c185df992756ddee 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -825,6 +825,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
+@@ -836,6 +836,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
    return std::nullopt;
  }
  
@@ -51,10 +51,10 @@ index f306a051e7159e898cb91a558c6f6181139a8c3e..f2ae0a2ea7c78aba2ff296ed8696ae4b
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index b74d4266d7ed51c93297d70f83c444e7f41c1001..750101c919e89b84b0fa4b41fce28126cb5fcb8c 100644
+index 3ab8a0a0b30252e5382e96adf1d15e6caa1d4afa..6ae1c60ddb1c265ef9bc2221b869763ee0d987a1 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -1295,6 +1295,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1306,6 +1306,17 @@ class CONTENT_EXPORT ContentBrowserClient {
        RenderFrameHost* new_window_main_frame,
        const GURL& target_url);
  
@@ -193,10 +193,10 @@ index d5a652b33a00868054695da48cbeb0cca057faa1..d971a3437d35cc9cf45c3b5eb8f3646e
    const net::StorageAccessApiStatus parent_storage_access_api_status;
  
 diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.cc b/third_party/blink/renderer/core/workers/worker_global_scope.cc
-index 275a8e94fdf401e7430a28d0f741866ab29f814f..552038ee43382703af3ef4f538ffa4cd6fd59a67 100644
+index 32c00e338a044b52af9b851025f6a97934233bca..05db920886c35b6d7f49996542f86994991f31ae 100644
 --- a/third_party/blink/renderer/core/workers/worker_global_scope.cc
 +++ b/third_party/blink/renderer/core/workers/worker_global_scope.cc
-@@ -758,6 +758,9 @@ WorkerGlobalScope::WorkerGlobalScope(
+@@ -937,6 +937,9 @@ WorkerGlobalScope::WorkerGlobalScope(
            std::move(creation_params->top_level_frame_security_origin)) {
    // Workers should always maintain the default world of an isolate.
    CHECK(creation_params->is_default_world_of_isolate);
@@ -207,7 +207,7 @@ index 275a8e94fdf401e7430a28d0f741866ab29f814f..552038ee43382703af3ef4f538ffa4cd
    TRACE_EVENT_BEGIN(
        "blink.worker", "WorkerGlobalScope setup",
 diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.h b/third_party/blink/renderer/core/workers/worker_global_scope.h
-index 73e55fabee962da3831c992d7715de65a454fcd3..a53844ec36ca27a7f60ba56d6f962e4bfef66e1b 100644
+index c46068b29b4e12ed3fd0be9ccfe828d10754da56..b572e2c20ef64ff0bd7e9f86cf470796cfcfd163 100644
 --- a/third_party/blink/renderer/core/workers/worker_global_scope.h
 +++ b/third_party/blink/renderer/core/workers/worker_global_scope.h
 @@ -32,6 +32,7 @@
@@ -218,7 +218,7 @@ index 73e55fabee962da3831c992d7715de65a454fcd3..a53844ec36ca27a7f60ba56d6f962e4b
  #include "services/network/public/mojom/fetch_api.mojom-blink-forward.h"
  #include "third_party/blink/public/common/permissions_policy/document_policy.h"
  #include "third_party/blink/public/common/tokens/tokens.h"
-@@ -293,6 +294,12 @@ class CORE_EXPORT WorkerGlobalScope
+@@ -296,6 +297,12 @@ class CORE_EXPORT WorkerGlobalScope
      return top_level_frame_security_origin_.get();
    }
  
@@ -231,7 +231,7 @@ index 73e55fabee962da3831c992d7715de65a454fcd3..a53844ec36ca27a7f60ba56d6f962e4b
   protected:
    WorkerGlobalScope(std::unique_ptr<GlobalScopeCreationParams>,
                      WorkerThread*,
-@@ -407,6 +414,9 @@ class CORE_EXPORT WorkerGlobalScope
+@@ -438,6 +445,9 @@ class CORE_EXPORT WorkerGlobalScope
  
    const ukm::SourceId ukm_source_id_;
  

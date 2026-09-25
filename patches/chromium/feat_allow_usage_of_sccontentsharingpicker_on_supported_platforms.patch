@@ -7,7 +7,7 @@ This is implemented as a magic "window id" that instead of pulling an SCStream m
 instead farms out to the screen picker.
 
 diff --git a/content/browser/media/capture/desktop_capture_device_mac.cc b/content/browser/media/capture/desktop_capture_device_mac.cc
-index 120590a93bbc5a47e73c5d5515b7ad07b2364eb6..50a8b0dfe5400d1ab9da2893088583e4f815a140 100644
+index 99a8bde6a7b29bdd6c6e88959ae7bce1ce62cd65..9c02628b26da317f1f4130a3cf7fb9d1184650a6 100644
 --- a/content/browser/media/capture/desktop_capture_device_mac.cc
 +++ b/content/browser/media/capture/desktop_capture_device_mac.cc
 @@ -28,7 +28,7 @@ class DesktopCaptureDeviceMac : public IOSurfaceCaptureDeviceBase {
@@ -18,9 +18,9 @@ index 120590a93bbc5a47e73c5d5515b7ad07b2364eb6..50a8b0dfe5400d1ab9da2893088583e4
 +  void OnStart(std::optional<bool> use_native_picker) override {
      requested_format_ = capture_params().requested_format;
      requested_format_.pixel_format = media::PIXEL_FORMAT_NV12;
-     DCHECK_GT(requested_format_.frame_size.GetArea(), 0);
+     CHECK_GT(requested_format_.frame_size.GetArea(), 0,
 diff --git a/content/browser/media/capture/io_surface_capture_device_base_mac.cc b/content/browser/media/capture/io_surface_capture_device_base_mac.cc
-index f5be4eb6cb660ad87253846e84ceb8628a907330..bb44271de5d43d34374056ac6d20808e8be6fef2 100644
+index 80a17cba8e8f93c95a77098b9a104aee5ba00dba..a6ae971d68c62ab4de2a9605f42e7794c434e9aa 100644
 --- a/content/browser/media/capture/io_surface_capture_device_base_mac.cc
 +++ b/content/browser/media/capture/io_surface_capture_device_base_mac.cc
 @@ -20,7 +20,7 @@ void IOSurfaceCaptureDeviceBase::AllocateAndStart(
@@ -46,7 +46,7 @@ index 6d54c2bc01f32a0d987aadb8eb0684d0ec0444d4..40f64c7705427bbe3fa4e3c056519676
    // OnStop is called by StopAndDeAllocate.
    virtual void OnStop() = 0;
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index 4df67f6a7cb9d044d5865f53551471a53077a5eb..cd61d54472317b435b24c3638a8b3981f0ac18f8 100644
+index c869806df61f67d9115e6b099831b8bd6280de70..8256f0b61f6944b5781fdbabecf56efdc8fffb97 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
 @@ -31,6 +31,61 @@
@@ -192,10 +192,10 @@ index 4df67f6a7cb9d044d5865f53551471a53077a5eb..cd61d54472317b435b24c3638a8b3981
 +        [[SCContentSharingPicker sharedPicker] removeObserver:picker_helper_];
 +      }
 +    }
-     DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
+     CHECK(device_task_runner_->RunsTasksInCurrentSequence(),
+           base::NotFatalUntil::M160);
      if (pip_screen_capture_coordinator_proxy_) {
-       pip_screen_capture_coordinator_proxy_->RemoveObserver(this);
-@@ -382,7 +461,7 @@ void CreateStream(SCContentFilter* filter) {
+@@ -385,7 +464,7 @@ void CreateStream(SCContentFilter* filter) {
        return;
      }
  
@@ -204,7 +204,7 @@ index 4df67f6a7cb9d044d5865f53551471a53077a5eb..cd61d54472317b435b24c3638a8b3981
        // Update the content size. This step is neccessary when used together
        // with SCContentSharingPicker. If the Chrome picker is used, it will
        // change to retina resolution if applicable.
-@@ -391,6 +470,9 @@ void CreateStream(SCContentFilter* filter) {
+@@ -394,6 +473,9 @@ void CreateStream(SCContentFilter* filter) {
                      filter.contentRect.size.height * filter.pointPixelScale);
      }
  
@@ -214,7 +214,7 @@ index 4df67f6a7cb9d044d5865f53551471a53077a5eb..cd61d54472317b435b24c3638a8b3981
      gfx::RectF dest_rect_in_frame;
      actual_capture_format_ = capture_params().requested_format;
      actual_capture_format_.pixel_format = media::PIXEL_FORMAT_NV12;
-@@ -404,6 +486,7 @@ void CreateStream(SCContentFilter* filter) {
+@@ -407,6 +489,7 @@ void CreateStream(SCContentFilter* filter) {
      stream_ = [[SCStream alloc] initWithFilter:filter
                                   configuration:config
                                        delegate:helper_];
@@ -222,7 +222,7 @@ index 4df67f6a7cb9d044d5865f53551471a53077a5eb..cd61d54472317b435b24c3638a8b3981
      {
        NSError* error = nil;
        bool add_stream_output_result =
-@@ -563,7 +646,7 @@ void OnStreamError(NSError* _Nullable error) {
+@@ -570,7 +653,7 @@ void OnStreamError(NSError* _Nullable error) {
        if (fullscreen_module_) {
          fullscreen_module_->Reset();
        }
@@ -231,13 +231,14 @@ index 4df67f6a7cb9d044d5865f53551471a53077a5eb..cd61d54472317b435b24c3638a8b3981
      } else {
        std::string error_string =
            base::StrCat({"Stream delegate called didStopWithError: ",
-@@ -653,32 +736,41 @@ void OnStateChanged(
+@@ -664,33 +747,42 @@ void OnStateChanged(
    }
  
    // IOSurfaceCaptureDeviceBase:
 -  void OnStart() override {
 +  void OnStart(std::optional<bool> use_native_picker) override {
-     DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
+     CHECK(device_task_runner_->RunsTasksInCurrentSequence(),
+           base::NotFatalUntil::M160);
 -    if (filter_) {
 -      // SCContentSharingPicker is used where filter_ is set on creation.
 -      CreateStream(filter_);
@@ -294,8 +295,8 @@ index 4df67f6a7cb9d044d5865f53551471a53077a5eb..cd61d54472317b435b24c3638a8b3981
 +    [SCShareableContent getShareableContentWithCompletionHandler:handler];
    }
    void OnStop() override {
-     DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
-@@ -737,8 +829,7 @@ void ResetStreamTo(SCWindow* window) override {
+     CHECK(device_task_runner_->RunsTasksInCurrentSequence(),
+@@ -751,8 +843,7 @@ void ResetStreamTo(SCWindow* window) override {
  
   private:
    const DesktopMediaID source_;
@@ -305,7 +306,7 @@ index 4df67f6a7cb9d044d5865f53551471a53077a5eb..cd61d54472317b435b24c3638a8b3981
    StreamCallback stream_created_callback_;
    const scoped_refptr<base::SingleThreadTaskRunner> device_task_runner_;
  
-@@ -755,6 +846,10 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -769,6 +860,10 @@ void ResetStreamTo(SCWindow* window) override {
    // Helper class that acts as output and delegate for `stream_`.
    ScreenCaptureKitDeviceHelper* __strong helper_;
  
@@ -316,7 +317,7 @@ index 4df67f6a7cb9d044d5865f53551471a53077a5eb..cd61d54472317b435b24c3638a8b3981
    // This is used to detect when a captured presentation enters fullscreen mode.
    // If this happens, the module will call the ResetStreamTo function.
    std::unique_ptr<ScreenCaptureKitFullscreenModule> fullscreen_module_;
-@@ -769,6 +864,8 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -783,6 +878,8 @@ void ResetStreamTo(SCWindow* window) override {
    base::WeakPtrFactory<ScreenCaptureKitDeviceMac> weak_factory_{this};
  };
  
@@ -366,7 +367,7 @@ index 2b7decc56a4d72d7ef8af48056e08e4d562fddec..d8e23dbfe620304c2c4aa50622033823
                               std::move(receiver_on_io_thread)),
            std::move(after_start_capture_callback));
 diff --git a/content/public/browser/desktop_media_id.h b/content/public/browser/desktop_media_id.h
-index ef33761a5794ac1bd157d1bff0d579735282edef..42effd7b5454284914ca86d48397e08d382ade99 100644
+index 1b9ddbef4bac9a53659d20bd774207e1e88c6fbe..2286d92825752fe88e08b2fe7410e42d8b55d85d 100644
 --- a/content/public/browser/desktop_media_id.h
 +++ b/content/public/browser/desktop_media_id.h
 @@ -35,6 +35,8 @@ struct CONTENT_EXPORT DesktopMediaID {
@@ -379,13 +380,13 @@ index ef33761a5794ac1bd157d1bff0d579735282edef..42effd7b5454284914ca86d48397e08d
  #if defined(USE_AURA) || BUILDFLAG(IS_MAC)
    // Assigns integer identifier to the |window| and returns its DesktopMediaID.
 diff --git a/media/capture/video_capture_types.h b/media/capture/video_capture_types.h
-index 980690b69635fbc25093cc86a9ebdd5e8462665e..ee4a59f1c22f1d71ce03859455d47bee842d7faa 100644
+index 228fb4628d1d0f1fff83ab69af22290c8e4751d3..8e8aff9e0de45049507927f54e27d0b72ed98723 100644
 --- a/media/capture/video_capture_types.h
 +++ b/media/capture/video_capture_types.h
-@@ -377,6 +377,8 @@ struct CAPTURE_EXPORT VideoCaptureParams {
- 
-   // The request type of the capture source.
-   CaptureSourceRequestType request_type = CaptureSourceRequestType::kUnknown;
+@@ -384,6 +384,8 @@ struct CAPTURE_EXPORT VideoCaptureParams {
+   // streamed out of the device. Used for capture prevention, e.g. for protected
+   // content or by enterprise policy.
+   bool is_secure = false;
 +
 +  std::optional<bool> use_native_picker;
  };
