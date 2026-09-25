@@ -379,11 +379,41 @@ index 1b9ddbef4bac9a53659d20bd774207e1e88c6fbe..2286d92825752fe88e08b2fe7410e42d
  
  #if defined(USE_AURA) || BUILDFLAG(IS_MAC)
    // Assigns integer identifier to the |window| and returns its DesktopMediaID.
+diff --git a/media/capture/video_capture_types.cc b/media/capture/video_capture_types.cc
+index b4f428e1d41a365dc14c523d62fa2acfbccc5c45..2774f35d9cce6f2bd984aeb469692b716e137214 100644
+--- a/media/capture/video_capture_types.cc
++++ b/media/capture/video_capture_types.cc
+@@ -66,6 +66,14 @@ VideoCaptureParams::VideoCaptureParams()
+       resolution_change_policy(ResolutionChangePolicy::FIXED_RESOLUTION),
+       power_line_frequency(PowerLineFrequency::kDefault) {}
+ 
++VideoCaptureParams::VideoCaptureParams(const VideoCaptureParams& other) =
++    default;
++VideoCaptureParams::VideoCaptureParams(VideoCaptureParams&& other) = default;
++VideoCaptureParams& VideoCaptureParams::operator=(
++    const VideoCaptureParams& other) = default;
++VideoCaptureParams& VideoCaptureParams::operator=(VideoCaptureParams&& other) =
++    default;
++
+ bool VideoCaptureParams::IsValid() const {
+   return requested_format.IsValid() &&
+          resolution_change_policy >= ResolutionChangePolicy::FIXED_RESOLUTION &&
 diff --git a/media/capture/video_capture_types.h b/media/capture/video_capture_types.h
-index 228fb4628d1d0f1fff83ab69af22290c8e4751d3..8e8aff9e0de45049507927f54e27d0b72ed98723 100644
+index 228fb4628d1d0f1fff83ab69af22290c8e4751d3..0d192fd5f91d59c8d419756cd3c033d1a7fb1c12 100644
 --- a/media/capture/video_capture_types.h
 +++ b/media/capture/video_capture_types.h
-@@ -384,6 +384,8 @@ struct CAPTURE_EXPORT VideoCaptureParams {
+@@ -331,6 +331,10 @@ struct CAPTURE_EXPORT VideoCaptureParams {
+   };
+ 
+   VideoCaptureParams();
++  VideoCaptureParams(const VideoCaptureParams& other);
++  VideoCaptureParams(VideoCaptureParams&& other);
++  VideoCaptureParams& operator=(const VideoCaptureParams& other);
++  VideoCaptureParams& operator=(VideoCaptureParams&& other);
+ 
+   // Returns true if requested_format.IsValid() and all other values are within
+   // their expected ranges.
+@@ -384,6 +388,8 @@ struct CAPTURE_EXPORT VideoCaptureParams {
    // streamed out of the device. Used for capture prevention, e.g. for protected
    // content or by enterprise policy.
    bool is_secure = false;
