@@ -562,7 +562,9 @@ async function runTestUsingElectron(specDir, testName, shouldRerun, additionalAr
   }
   if (additionalArgs.includes('--files')) {
     argsToPass = argsToPass.filter(
-      (arg) => arg.toString().indexOf('--files') === -1 && arg.toString().indexOf('spec/') === -1
+      (arg) =>
+        arg.toString().startsWith('--log-file=') ||
+        (arg.toString().indexOf('--files') === -1 && arg.toString().indexOf('spec/') === -1)
     );
   }
   const runnerArgs = [`electron/${specDir}`, ...argsToPass, ...additionalArgs];
