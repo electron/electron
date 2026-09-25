@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/logging.h"
 #include "base/memory/raw_ref.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/common/color_parser.h"
@@ -79,7 +80,6 @@
 #include "shell/browser/ui/x/x_window_utils.h"
 #include "ui/gfx/x/atom_cache.h"
 #include "ui/gfx/x/connection.h"
-#include "ui/gfx/x/shape.h"
 #include "ui/gfx/x/xproto.h"
 #endif
 
@@ -94,6 +94,7 @@
 #include "shell/browser/ui/win/electron_desktop_window_tree_host_win.h"
 #include "shell/common/color_util.h"
 #include "skia/ext/skia_utils_win.h"
+#include "ui/color/win/accent_color_observer.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/win/msg_util.h"
 #endif
@@ -389,6 +390,10 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
 #endif
 
 #if BUILDFLAG(IS_WIN)
+  accent_color_subscription_ = ui::AccentColorObserver::Get()->Subscribe(
+      base::BindRepeating(&NativeWindowViews::OnSystemAccentColorChanged,
+                          base::Unretained(this)));
+
   if (!has_frame()) {
     // Set Window style so that we get a minimize and maximize animation when
     // frameless.
@@ -1408,27 +1413,20 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
     SetForwardMouseMessages(forward);
   }
 #else
-  if (x11_util::IsX11()) {
-    auto* connection = x11::Connection::Get();
-    if (ignore) {
-      x11::Rectangle r{0, 0, 1, 1};
-      connection->shape().Rectangles({
-          .operation = x11::Shape::So::Set,
-          .destination_kind = x11::Shape::Sk::Input,
-          .ordering = x11::ClipOrdering::YXBanded,
-          .destination_window =
-              static_cast<x11::Window>(GetAcceleratedWidget()),
-          .rectangles = {r},
-      });
-    } else {
-      connection->shape().Mask({
-          .operation = x11::Shape::So::Set,
-          .destination_kind = x11::Shape::Sk::Input,
-          .destination_window =
-              static_cast<x11::Window>(GetAcceleratedWidget()),
-          .source_bitmap = x11::Pixmap::None,
-      });
-    }
+  // The input region is owned by the tree host's frame-hint pass, which runs
+  // on every bounds, state and theme change; keep the flag there so those
+  // passes preserve it instead of resetting the region.
+  if (ignore_mouse_events_ == ignore)
+    return;
+  ignore_mouse_events_ = ignore;
+  if (auto* tree_host = static_cast<ElectronDesktopWindowTreeHostLinux*>(
+          views::DesktopWindowTreeHostLinux::GetHostForWidget(
+              GetAcceleratedWidget()))) {
+    tree_host->UpdateFrameHints();
+    // Wayland applies a new input region with the next surface commit; an
+    // idle window may not produce one for a while, so force a frame.
+    if (auto* compositor = tree_host->compositor())
+      compositor->ScheduleFullRedraw();
   }
 #endif
 }
@@ -2008,42 +2006,46 @@ std::unique_ptr<views::FrameView> NativeWindowViews::CreateFrameView(
 #if BUILDFLAG(IS_WIN)
   return std::make_unique<WinFrameView>(this, widget);
 #else
-  if (!has_frame()) {
-    // With WCO enabled, use native-looking self-drawn caption buttons when
-    // the desktop environment supports them; otherwise the frame view falls
-    // back to vector-icon buttons.
-    std::unique_ptr<FreedesktopNavButtonProvider> freedesktop;
-    if (IsWindowControlsOverlayEnabled())
-      freedesktop = FreedesktopNavButtonProvider::CreateIfAvailable();
-    FreedesktopNavButtonProvider* freedesktop_provider = freedesktop.get();
-    std::unique_ptr<ui::NavButtonProvider> nav_button_provider =
-        std::move(freedesktop);
-    // The layout needs the raw provider pointer while the frame view takes
-    // ownership, so construct it first.
-    auto* layout =
-        new ElectronFrameViewLayoutLinux(this, nav_button_provider.get());
-    return std::make_unique<ElectronFrameViewLinux>(
-        this, widget, std::move(nav_button_provider), layout,
-        freedesktop_provider);
+  if (has_frame() && !has_client_frame())
+    return std::make_unique<NativeFrameView>(this, widget);
+
+  if (has_frame()) {
+    if (auto* linux_ui_theme = ui::LinuxUiTheme::GetForProfile(nullptr)) {
+      auto getter = base::BindRepeating(
+          [](ui::LinuxUiTheme* theme, bool tiled,
+             bool maximized) -> ui::WindowFrameProvider* {
+            return theme->GetWindowFrameProvider(ui::FrameType::kDefault,
+                                                 /*solid_frame=*/false, tiled,
+                                                 maximized);
+          },
+          base::Unretained(linux_ui_theme));
+      auto nav_button_provider =
+          linux_ui_theme->CreateNavButtonProvider(ui::FrameType::kDefault);
+      return std::make_unique<NativeFrameViewLinux>(
+          this, widget, std::move(nav_button_provider), std::move(getter));
+    }
+    // No toolkit (e.g. GTK failed to initialize) means nothing can draw a
+    // native title bar; fall back to the frameless client frame below.
+    LOG(WARNING) << "No Linux UI theme is available to draw window "
+                    "decorations; creating the window without a title bar.";
   }
 
-  if (has_client_frame()) {
-    auto* linux_ui_theme = ui::LinuxUiTheme::GetForProfile(nullptr);
-    auto getter = base::BindRepeating(
-        [](ui::LinuxUiTheme* theme, bool tiled,
-           bool maximized) -> ui::WindowFrameProvider* {
-          return theme->GetWindowFrameProvider(ui::FrameType::kDefault,
-                                               /*solid_frame=*/false, tiled,
-                                               maximized);
-        },
-        base::Unretained(linux_ui_theme));
-    auto nav_button_provider =
-        linux_ui_theme->CreateNavButtonProvider(ui::FrameType::kDefault);
-    return std::make_unique<NativeFrameViewLinux>(
-        this, widget, std::move(nav_button_provider), std::move(getter));
-  }
-
-  return std::make_unique<NativeFrameView>(this, widget);
+  // With WCO enabled, use native-looking self-drawn caption buttons when
+  // the desktop environment supports them; otherwise the frame view falls
+  // back to vector-icon buttons.
+  std::unique_ptr<FreedesktopNavButtonProvider> freedesktop;
+  if (IsWindowControlsOverlayEnabled())
+    freedesktop = FreedesktopNavButtonProvider::CreateIfAvailable();
+  FreedesktopNavButtonProvider* freedesktop_provider = freedesktop.get();
+  std::unique_ptr<ui::NavButtonProvider> nav_button_provider =
+      std::move(freedesktop);
+  // The layout needs the raw provider pointer while the frame view takes
+  // ownership, so construct it first.
+  auto* layout =
+      new ElectronFrameViewLayoutLinux(this, nav_button_provider.get());
+  return std::make_unique<ElectronFrameViewLinux>(
+      this, widget, std::move(nav_button_provider), layout,
+      freedesktop_provider);
 #endif
 }
 

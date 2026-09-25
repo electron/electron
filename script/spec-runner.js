@@ -539,6 +539,8 @@ async function rerunFailedTests(specDir, testName) {
   }
 }
 
+let electronLaunchCount = 0;
+
 async function runTestUsingElectron(specDir, testName, shouldRerun, additionalArgs = []) {
   let exe;
   if (args.electronVersion) {
@@ -548,9 +550,21 @@ async function runTestUsingElectron(specDir, testName, shouldRerun, additionalAr
     exe = path.resolve(BASE, utils.getElectronExec());
   }
   let argsToPass = unknownArgs.slice(2);
+  // Each launch truncates the --log-file it is given, so give reruns their
+  // own file rather than let them wipe the log of the run that failed.
+  const launchIndex = electronLaunchCount++;
+  if (launchIndex > 0) {
+    argsToPass = argsToPass.map((arg) =>
+      String(arg).startsWith('--log-file=')
+        ? String(arg).replace(/(\.[^./\\]+)?$/, (ext) => `.rerun-${launchIndex}${ext}`)
+        : arg
+    );
+  }
   if (additionalArgs.includes('--files')) {
     argsToPass = argsToPass.filter(
-      (arg) => arg.toString().indexOf('--files') === -1 && arg.toString().indexOf('spec/') === -1
+      (arg) =>
+        arg.toString().startsWith('--log-file=') ||
+        (arg.toString().indexOf('--files') === -1 && arg.toString().indexOf('spec/') === -1)
     );
   }
   const runnerArgs = [`electron/${specDir}`, ...argsToPass, ...additionalArgs];

@@ -342,6 +342,31 @@ jobs:
         /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
           -f src/out/Default/Electron.app
 
+    # On GitHub-hosted Windows runners the agent's terminal window sits in the
+    # foreground and covers most of the desktop. Windows' native occlusion
+    # tracking then marks test windows beneath it as hidden, so they stop
+    # producing frames. Minimize it before the specs run.
+    - name: Minimize Runner Terminal Window (Windows)
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: pwsh
+      run: |
+        Add-Type -Namespace ElectronCI -Name User32 -MemberDefinition @'
+        [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+        [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
+        [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string cls, string title);
+        '@
+        foreach ($cls in 'ConsoleWindowClass', 'CASCADIA_HOSTING_WINDOW_CLASS') {
+          $h = [IntPtr]::Zero
+          while (($h = [ElectronCI.User32]::FindWindowEx([IntPtr]::Zero, $h, $cls, [NullString]::Value)) -ne [IntPtr]::Zero) {
+            if ([ElectronCI.User32]::IsWindowVisible($h) -and -not [ElectronCI.User32]::IsIconic($h)) {
+              # 6 = SW_MINIMIZE
+              [void][ElectronCI.User32]::ShowWindow($h, 6)
+              Write-Host ("Minimized {0} window 0x{1:X}" -f $cls, $h.ToInt64())
+            }
+          }
+        }
+
     - name: Run Electron Tests
       shell: bash
       timeout-minutes: 60
@@ -396,17 +421,25 @@ jobs:
         # Run tests
         if [ "$TARGET_PLATFORM" != "linux" ]; then
           echo "About to start tests"
+          LOGGING_ARGS=--enable-logging
           if [ "$TARGET_PLATFORM" = "win" ]; then
             if [ "$TARGET_ARCH" = "arm64" ]; then
               export ELECTRON_FORCE_TEST_SUITE_EXIT="true"
             fi
+            # Child processes can't write to our stderr pipe on Windows, and
+            # with plain --enable-logging each one opens a console window that
+            # can cover the test windows. Log to a file (uploaded with the test
+            # artifacts) and mirror the main process to stderr.
+            export ELECTRON_ALSO_LOG_TO_STDERR=1
+            mkdir -p spec/artifacts
+            LOGGING_ARGS="--enable-logging=file --log-file=$(pwd -W)/spec/artifacts/electron_debug.log"
           fi
           if [ "$IS_UBSAN" = "true" ]; then
             export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1:external_symbolizer_path=$PWD/../third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer"
             export MOCHA_TIMEOUT=180000
-            node script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
+            node script/yarn.js test --runners=main --trace-uncaught $LOGGING_ARGS --files $tests_files
           else
-            node script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
+            node script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught $LOGGING_ARGS --files $tests_files
           fi
         else
           chown :builduser .. && chmod g+w ..

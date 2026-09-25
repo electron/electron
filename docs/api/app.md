@@ -656,7 +656,8 @@ Returns `string` - The current application directory.
   * `videos` Directory for a user's videos.
   * `recent` Directory for the user's recent files (Windows only).
   * `logs` Directory for your app's log folder.
-  * `crashDumps` Directory where crash dumps are stored.
+  * `crashDumps` Directory where crash dumps are stored. See
+    [Crash Reporting](../tutorial/crash-reporting.md#what-happens-when-your-app-crashes).
 
 Returns `string` - A path to a special directory or file associated with `name`. On
 failure, an `Error` is thrown.

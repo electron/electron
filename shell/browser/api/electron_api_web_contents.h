@@ -394,6 +394,10 @@ class WebContents final : public gin::Wrappable<WebContents>,
   // send(channel, ...args) to the main frame.
   void Send(gin::Arguments* args);
   void SendInternal(gin::Arguments* args);
+  void PostMessage(v8::Isolate* isolate,
+                   const std::string& channel,
+                   v8::Local<v8::Value> message,
+                   std::optional<v8::Local<v8::Value>> transfer);
   void SendImpl(bool internal, gin::Arguments* args);
 
   // The main frame's renderer-side API, or null with |promise| rejected when
