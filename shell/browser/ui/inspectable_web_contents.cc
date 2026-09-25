@@ -138,19 +138,20 @@ void SetZoomLevelForWebContents(content::WebContents* web_contents,
 
 double GetNextZoomLevel(double level, bool out) {
   // Step to the neighbouring preset (the same list the browser zoom menu
-  // uses), even when the current level sits between two presets.
-  const base::span<const double> factors = blink::kPresetBrowserZoomFactors;
+  // uses), even when the current level sits between two presets. Compare
+  // factors rather than levels so a stored level for a rounded factor such as
+  // 0.333 counts as the 1/3 preset.
+  const double factor = blink::ZoomLevelToZoomFactor(level);
+  const base::span<const double> presets = blink::kPresetBrowserZoomFactors;
   if (out) {
-    for (size_t i = factors.size(); i-- > 0;) {
-      const double preset = blink::ZoomFactorToZoomLevel(factors[i]);
-      if (preset < level && !blink::ZoomValuesEqual(preset, level))
-        return preset;
+    for (size_t i = presets.size(); i-- > 0;) {
+      if (presets[i] < factor && !blink::ZoomValuesEqual(presets[i], factor))
+        return blink::ZoomFactorToZoomLevel(presets[i]);
     }
   } else {
-    for (double factor : factors) {
-      const double preset = blink::ZoomFactorToZoomLevel(factor);
-      if (preset > level && !blink::ZoomValuesEqual(preset, level))
-        return preset;
+    for (double preset : presets) {
+      if (preset > factor && !blink::ZoomValuesEqual(preset, factor))
+        return blink::ZoomFactorToZoomLevel(preset);
     }
   }
   return level;
