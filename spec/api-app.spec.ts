@@ -494,7 +494,8 @@ describe('app module', () => {
     const tempFiles = [
       path.join(fixturesPath, 'foo.txt'),
       path.join(fixturesPath, 'bar.txt'),
-      path.join(fixturesPath, 'baz.txt')
+      path.join(fixturesPath, 'baz.txt'),
+      path.join(fixturesPath, 'документ-文件.txt')
     ];
 
     afterEach(() => {
@@ -514,6 +515,12 @@ describe('app module', () => {
       app.addRecentDocument(tempFiles[0]);
       await setTimeout(2000);
       expect(app.getRecentDocuments()).to.include.members([tempFiles[0]]);
+    });
+
+    it('returns recent documents whose path is not ASCII', async () => {
+      app.addRecentDocument(tempFiles[3]);
+      await setTimeout(2000);
+      expect(app.getRecentDocuments()).to.include.members([tempFiles[3]]);
     });
 
     it('can clear recent documents', async () => {
