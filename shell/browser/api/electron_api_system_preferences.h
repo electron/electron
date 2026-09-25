@@ -15,6 +15,7 @@
 
 #if BUILDFLAG(IS_WIN)
 #include "base/callback_list.h"
+#include "base/memory/weak_ptr.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_observer.h"
 #endif
@@ -149,36 +150,23 @@ class SystemPreferences final
 
  private:
 #if BUILDFLAG(IS_WIN)
-  // Static callback invoked when a message comes in to our messaging window.
-  static LRESULT CALLBACK WndProcStatic(HWND hwnd,
-                                        UINT message,
-                                        WPARAM wparam,
-                                        LPARAM lparam);
-
-  LRESULT CALLBACK WndProc(HWND hwnd,
-                           UINT message,
-                           WPARAM wparam,
-                           LPARAM lparam);
-
-  // The window class of |window_|.
-  ATOM atom_;
-
-  // The handle of the module that contains the window procedure of |window_|.
-  HMODULE instance_;
-
-  // The window used for processing events.
-  HWND window_;
+  void OnSystemAccentColorChanged();
+  void OnAccentColorChanged();
 
   std::string current_color_;
 
   // Color/high contrast mode change observer.
   base::CallbackListSubscription hwnd_subscription_;
+  base::CallbackListSubscription accent_color_subscription_;
 #endif
 #if BUILDFLAG(IS_LINUX)
   void OnNativeThemeUpdatedOnUI();
 
   raw_ptr<ui::NativeTheme> ui_theme_;
   std::string current_accent_color_;
+#endif
+#if BUILDFLAG(IS_WIN)
+  base::WeakPtrFactory<SystemPreferences> weak_factory_{this};
 #endif
 };
 

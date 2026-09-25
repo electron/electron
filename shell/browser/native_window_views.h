@@ -21,6 +21,7 @@
 #include "ui/views/widget/widget_observer.h"
 
 #if BUILDFLAG(IS_WIN)
+#include "base/callback_list.h"
 #include "base/win/scoped_gdi_object.h"
 #include "content/public/browser/scoped_accessibility_mode.h"
 #include "shell/browser/ui/win/taskbar_host.h"
@@ -195,6 +196,7 @@ class NativeWindowViews : public NativeWindow,
       std::variant<std::monostate, bool, SkColor> accent_color) override;
   std::variant<bool, std::string> GetAccentColor() const override;
   void UpdateWindowAccentColor(bool active) override;
+  void OnSystemAccentColorChanged();
   TaskbarHost& taskbar_host() { return taskbar_host_; }
   void UpdateThickFrame();
   void SetLayered();
@@ -350,6 +352,10 @@ class NativeWindowViews : public NativeWindow,
   bool forwarding_mouse_messages_ = false;
   HWND legacy_window_ = nullptr;
   bool layered_ = false;
+
+  // Reapplies the frame colour when the system accent colour or the "show
+  // accent colour on title bars" setting changes.
+  base::CallbackListSubscription accent_color_subscription_;
 
   // Set to true if the window is always on top and behind the task bar.
   bool behind_task_bar_ = false;

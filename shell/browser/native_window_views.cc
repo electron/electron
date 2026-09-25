@@ -93,6 +93,7 @@
 #include "shell/browser/ui/win/electron_desktop_window_tree_host_win.h"
 #include "shell/common/color_util.h"
 #include "skia/ext/skia_utils_win.h"
+#include "ui/color/win/accent_color_observer.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/win/msg_util.h"
 #endif
@@ -388,6 +389,10 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
 #endif
 
 #if BUILDFLAG(IS_WIN)
+  accent_color_subscription_ = ui::AccentColorObserver::Get()->Subscribe(
+      base::BindRepeating(&NativeWindowViews::OnSystemAccentColorChanged,
+                          base::Unretained(this)));
+
   if (!has_frame()) {
     // Set Window style so that we get a minimize and maximize animation when
     // frameless.
