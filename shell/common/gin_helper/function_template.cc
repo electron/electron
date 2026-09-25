@@ -145,9 +145,16 @@ void ThrowConversionError(gin::Arguments* args,
                           const InvokerOptions& invoker_options,
                           size_t index) {
   if (index == 0 && invoker_options.holder_is_first_argument) {
-    // Failed to get the appropriate `this` object. This can happen if a
-    // method is invoked using Function.prototype.[call|apply] and passed an
-    // invalid (or null) `this` argument.
+    // Failed to get the appropriate `this` object. Either the native object
+    // behind it has been destroyed - its wrapper then no longer converts - or
+    // the method was invoked using Function.prototype.[call|apply] with an
+    // invalid (or null) `this` argument. Telling the two apart here, after
+    // the conversion has failed, keeps the check off every successful call.
+    v8::Local<v8::Object> holder;
+    if (args->GetHolder(&holder) && Destroyable::IsDestroyed(holder)) {
+      args->ThrowTypeError("Object has been destroyed");
+      return;
+    }
     std::string error =
         invoker_options.holder_type
             ? base::StrCat({"Illegal invocation: Function must be "

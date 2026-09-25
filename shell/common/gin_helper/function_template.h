@@ -210,14 +210,6 @@ struct ArgumentHolder {
   bool ok = false;
 
   ArgumentHolder(gin::Arguments* args, const InvokerOptions& invoker_options) {
-    v8::Local<v8::Object> holder;
-    if (index == 0 && invoker_options.holder_is_first_argument &&
-        args->GetHolder(&holder) &&
-        gin_helper::Destroyable::IsDestroyed(holder)) {
-      args->ThrowTypeError("Object has been destroyed");
-      return;
-    }
-
     ok = GetNextArgument(args, invoker_options, index == 0, &value);
     if (!ok) {
       ThrowConversionError(args, invoker_options, index);
@@ -356,17 +348,10 @@ struct Dispatcher<ReturnType(ArgTypes...)> {
 inline constexpr InvokerOptions kNoHolderArgument = {};
 
 // Returns the native object the method was called on, or nullptr after
-// throwing. The destroyed check has to come first: a destroyed wrapper has a
-// null first internal field and converting it would read through that.
+// throwing. A destroyed object's wrapper does not convert, so the live path is
+// just the conversion; ThrowConversionError works out which message to give.
 template <typename Class>
 Class* GetReceiver(gin::Arguments* args) {
-  v8::Local<v8::Object> holder;
-  if (args->GetHolder(&holder) && gin_helper::Destroyable::IsDestroyed(holder))
-      [[unlikely]] {
-    args->ThrowTypeError("Object has been destroyed");
-    return nullptr;
-  }
-
   Class* self = nullptr;
   if (!args->GetHolder(&self)) [[unlikely]] {
     ThrowConversionError(args, {.holder_is_first_argument = true}, 0);
