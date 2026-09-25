@@ -12,6 +12,7 @@
 #include <string>
 
 #include "base/memory/raw_ptr.h"
+#include "base/memory/weak_ptr.h"
 #include "base/no_destructor.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
@@ -250,7 +251,19 @@ class NativeWindowViews : public NativeWindow,
   void HandleSizeEvent(WPARAM w_param, LPARAM l_param);
   void ResetWindowControls();
   void SetRoundedCorners(bool rounded);
+  // Remembers a legacy window (Chrome_RenderWidgetHostHWND) reported by
+  // WM_PARENTNOTIFY, one per web content container.
+  void RememberLegacyWindow(HWND legacy_window);
+  // Adds or removes the mouse leave filter on every remembered legacy window,
+  // depending on whether mouse messages are being forwarded.
+  void UpdateLegacyWindowSubclasses();
   void SetForwardMouseMessages(bool forward);
+  // Records the cursor position reported by |MouseHookProc| and schedules a
+  // deferred dispatch into the aura window tree.
+  void OnForwardedMouseMove(const gfx::Point& screen_point);
+  // Dispatches the most recent forwarded cursor position, or the mouse leave
+  // that ends it, to the web contents.
+  void FlushForwardedMouseEvent();
   static LRESULT CALLBACK SubclassProc(HWND hwnd,
                                        UINT msg,
                                        WPARAM w_param,
@@ -339,8 +352,24 @@ class NativeWindowViews : public NativeWindow,
   static inline base::NoDestructor<absl::flat_hash_set<NativeWindowViews*>>
       forwarding_windows_;
   static HHOOK mouse_hook_;
+  // The legacy windows created inside this window, one per web content
+  // container. They are recreated on navigation and renderer crashes, and the
+  // replacements are reported through WM_PARENTNOTIFY.
+  absl::flat_hash_set<HWND> legacy_windows_;
   bool forwarding_mouse_messages_ = false;
-  HWND legacy_window_ = nullptr;
+
+  // Cursor position (physical pixels, relative to the client area) that the
+  // next dispatch should use. Empty while the cursor is outside the window.
+  std::optional<gfx::Point> pending_forwarded_point_;
+  // Last position the web contents was told about, dispatched as the position
+  // of the leave that closes a forwarding session.
+  gfx::Point last_forwarded_point_;
+  // Whether the aura tree currently believes the cursor is inside the window,
+  // seeded from the cursor when forwarding is enabled.
+  bool cursor_inside_window_ = false;
+  // Whether a deferred dispatch has already been scheduled.
+  bool forwarded_event_pending_ = false;
+
   bool layered_ = false;
 
   // Set to true if the window is always on top and behind the task bar.
@@ -391,6 +420,9 @@ class NativeWindowViews : public NativeWindow,
   gfx::Size widget_size_;
   double opacity_ = 1.0;
   bool widget_destroyed_ = false;
+
+  // Must be the last member.
+  base::WeakPtrFactory<NativeWindowViews> mouse_forwarding_weak_factory_{this};
 };
 
 }  // namespace electron

@@ -4,11 +4,13 @@
 
 #include "shell/browser/ui/win/electron_desktop_window_tree_host_win.h"
 
+#include "base/check.h"
 #include "base/win/windows_version.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/win/dark_mode.h"
+#include "ui/events/event.h"
 
 namespace electron {
 
@@ -171,6 +173,49 @@ bool ElectronDesktopWindowTreeHostWin::HandleMouseEvent(ui::MouseEvent* event) {
   }
 
   return views::DesktopWindowTreeHostWin::HandleMouseEvent(event);
+}
+
+void ElectronDesktopWindowTreeHostWin::DispatchSyntheticMouseMessage(
+    UINT message,
+    const gfx::Point& client_point) {
+  DCHECK(message == WM_MOUSEMOVE || message == WM_MOUSELEAVE);
+
+  // The aura tree only exists once the widget has been initialized; this is the
+  // same precondition |HandleTouchEvent| checks before calling SendEventToSink.
+  views::Widget* widget = GetWidget();
+  if (!widget || !widget->GetNativeView())
+    return;
+
+  HWND hwnd = GetAcceleratedWidget();
+  if (!hwnd)
+    return;
+
+  // Build the message the way Win32 would deliver it: |lParam| carries the
+  // position relative to the client area, |pt| the position on the desktop.
+  // |ui::MouseEvent| reads its |native_event()| back out of the message (for
+  // example Windows-only filtering in |CanRendererHandleEvent|), so the
+  // message must be a well formed one.
+  POINT desktop_point = client_point.ToPOINT();
+  ::ClientToScreen(hwnd, &desktop_point);
+
+  CHROME_MSG msg = {};
+  msg.hwnd = hwnd;
+  msg.message = message;
+  msg.wParam = 0;  // No virtual keys pressed for our purposes.
+  msg.lParam = MAKELPARAM(client_point.x(), client_point.y());
+  msg.time = ::GetTickCount();
+  msg.pt.x = desktop_point.x;
+  msg.pt.y = desktop_point.y;
+
+  // WindowEventDispatcher::OnEventFromSource() expects locations in raw
+  // (physical) pixels, which is exactly what the low level mouse hook reports,
+  // so no DIP conversion is needed here.
+  ui::MouseEvent event(msg);
+
+  // This is the same entry point a real WM_MOUSEMOVE takes, which means hit
+  // testing, draggable regions, capture and input event routing all behave as
+  // they would for an OS generated event.
+  SendEventToSink(&event);
 }
 
 bool ElectronDesktopWindowTreeHostWin::HandleIMEMessage(UINT message,
