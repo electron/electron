@@ -385,6 +385,47 @@ void StartUvTimerFromTask(v8::Isolate* isolate,
           loop, delay_ms, state));
 }
 
+// Starts listening on a loopback port with bare libuv calls from the calling
+// JavaScript frame, the way a native module's binding would, and calls |done|
+// from the connection callback. Returns the port for the other process to
+// connect to. Nothing here goes through Node.js, so only the embedder's own
+// deadline checks can get the socket polled.
+struct UvListenFromJs {
+  uv_tcp_t server;
+  raw_ptr<v8::Isolate> isolate;
+  v8::Global<v8::Function> done;
+};
+
+int StartUvListen(v8::Isolate* isolate, v8::Local<v8::Function> done) {
+  uv_loop_t* loop = node::Environment::GetCurrent(isolate)->event_loop();
+  auto* state =
+      new UvListenFromJs{{}, isolate, v8::Global<v8::Function>(isolate, done)};
+  state->server.data = state;
+  uv_tcp_init(loop, &state->server);
+  sockaddr_in addr;
+  uv_ip4_addr("127.0.0.1", 0, &addr);
+  uv_tcp_bind(&state->server, reinterpret_cast<const sockaddr*>(&addr), 0);
+  uv_listen(reinterpret_cast<uv_stream_t*>(&state->server), 1,
+            [](uv_stream_t* server, int status) {
+              auto* state = static_cast<UvListenFromJs*>(server->data);
+              v8::Isolate* isolate = state->isolate;
+              v8::HandleScope handle_scope(isolate);
+              v8::Local<v8::Function> done = state->done.Get(isolate);
+              v8::Local<v8::Context> context =
+                  done->GetCreationContextChecked(isolate);
+              v8::Context::Scope context_scope(context);
+              std::ignore = node::MakeCallback(isolate, context->Global(), done,
+                                               0, nullptr, {0, 0});
+              uv_close(reinterpret_cast<uv_handle_t*>(server),
+                       [](uv_handle_t* handle) {
+                         delete static_cast<UvListenFromJs*>(handle->data);
+                       });
+            });
+  int len = sizeof(addr);
+  uv_tcp_getsockname(&state->server, reinterpret_cast<sockaddr*>(&addr), &len);
+  return ntohs(addr.sin_port);
+}
+
 // Runs a nested run loop that processes tasks for |ms| while the calling
 // JavaScript frame stays on the stack, like a synchronous dialog does.
 void RunNestedLoopForTesting(int ms) {
@@ -495,6 +536,7 @@ void Initialize(v8::Local<v8::Object> exports,
       "commitPendingLocalStateWrites");
   dict.SetMethod<&ClearHeldPromiseForTesting>("clearHeldPromiseForTesting");
   dict.SetMethod<&StartUvTimerFromTask>("startUvTimerFromTask");
+  dict.SetMethod<&StartUvListen>("startUvListen");
   dict.SetMethod<&RunNestedLoopForTesting>("runNestedLoopForTesting");
   dict.SetMethod<&InvokeFromNativeSourceForTesting>(
       "invokeFromNativeSourceForTesting");
