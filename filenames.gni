@@ -453,6 +453,8 @@ filenames = {
     "shell/browser/metrics/electron_metrics_service_client.h",
     "shell/browser/microtasks_runner.cc",
     "shell/browser/microtasks_runner.h",
+    "shell/browser/native_peer.cc",
+    "shell/browser/native_peer.h",
     "shell/browser/native_window.cc",
     "shell/browser/native_window.h",
     "shell/browser/native_window_observer.h",

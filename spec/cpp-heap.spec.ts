@@ -735,6 +735,32 @@ describe('cpp heap', () => {
       expect(code).to.equal(0);
     });
 
+    it('does not crash when show() runs after its native peer is released at exit', async () => {
+      const rc = await startRemoteControlApp();
+      let stdout = '';
+      rc.process.stdout!.on('data', (chunk) => {
+        stdout += chunk;
+      });
+      await rc.remotely(async () => {
+        const { app, Notification, webContents } = require('electron');
+        // Shutdown releases native peers in reverse registration order, so the
+        // later Notification is released before the WebContents emits.
+        const contents = webContents.create();
+        const notification = new Notification({ title: 'cppgc', silent: true });
+        contents.on('destroyed', () => {
+          notification.show();
+          process.stdout.write('notification-show: returned\n');
+        });
+        (globalThis as any).contents = contents;
+        (globalThis as any).notification = notification;
+        setTimeout(() => app.quit());
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+      expect(stdout).to.contain('notification-show: returned');
+    });
+
     it('should record as node in heap snapshot while a JS reference is held', async () => {
       const { remotely } = await startRemoteControlApp(['--expose-internals']);
       const result = await remotely(
@@ -1360,6 +1386,73 @@ describe('cpp heap', () => {
   });
 
   describe('webContents module', () => {
+    it('rejects pending debugger commands after its wrapper is collected', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(async () => {
+        const { webContents } = require('electron');
+        const v8Util = process._linkedBinding('electron_common_v8_util');
+        const state = await (async () => {
+          const contents = webContents.create();
+          await contents.loadURL('about:blank');
+          contents.debugger.attach();
+          const pending = contents.debugger.sendCommand('Runtime.evaluate', {
+            expression: 'new Promise(() => {})',
+            awaitPromise: true
+          });
+          return { pending, debuggerRef: new WeakRef(contents.debugger) };
+        })();
+        let settled = 'pending';
+        state.pending.then(
+          () => {
+            settled = 'resolved';
+          },
+          (error: Error) => {
+            settled = error.message;
+          }
+        );
+        for (let attempt = 0; attempt < 30; ++attempt) {
+          if (settled !== 'pending') break;
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          v8Util.requestGarbageCollectionForTesting();
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        return { collected: !state.debuggerRef.deref(), settled };
+      });
+
+      expect(result).to.deep.equal({ collected: true, settled: 'target closed while handling command' });
+    });
+
+    it('emits debugger detach exactly once at exit', async () => {
+      const rc = await startRemoteControlApp();
+      let stdout = '';
+      rc.process.stdout!.on('data', (chunk) => {
+        stdout += chunk;
+      });
+      await rc.remotely(async () => {
+        const { app, webContents } = require('electron');
+        const contents = webContents.create();
+        await contents.loadURL('about:blank');
+        contents.debugger.attach();
+        contents.debugger.on('detach', (_event: unknown, reason: string) => {
+          let attach = 'did not throw';
+          try {
+            contents.debugger.attach();
+          } catch (error) {
+            attach = (error as Error).message;
+          }
+          process.stdout.write(`debugger-detach: ${reason}; attach: ${attach}\n`);
+        });
+        (globalThis as any).contents = contents;
+        setTimeout(() => app.quit());
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+      expect(stdout.match(/^debugger-detach: .*$/gm)).to.deep.equal([
+        'debugger-detach: target closed; attach: No target available'
+      ]);
+    });
+
     it('drops debugger protocol messages after its wrapper is collected', async () => {
       const { remotely } = await startRemoteControlApp(['--js-flags=--stress-incremental-marking']);
       const collected = await remotely(async () => {

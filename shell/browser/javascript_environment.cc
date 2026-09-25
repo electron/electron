@@ -25,6 +25,7 @@
 #include "gin/v8_initializer.h"
 #include "partition_alloc/partition_alloc_constants.h"
 #include "shell/browser/microtasks_runner.h"
+#include "shell/browser/native_peer.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -251,6 +252,10 @@ JavascriptEnvironment::~JavascriptEnvironment() {
   isolate_holder_.reset();
 
   platform_->UnregisterIsolate(isolate);
+
+  // Heap teardown destroys the remaining wrappers, which queue their released
+  // peers. Delete those peers now that no cppgc finalizer can be running.
+  NativePeerBase::DeleteQueuedPeersAfterIsolateDisposal();
 }
 
 v8::Isolate* JavascriptEnvironment::Initialize(
@@ -329,6 +334,9 @@ void JavascriptEnvironment::DestroyMicrotasksRunner() {
     // After DoCleanup() so that observers created by JS that ran during it
     // (e.g. a webContents 'destroyed' handler) are notified too.
     microtasks_runner_->NotifyBeforeDispose();
+    // Posted peer release tasks will not run after this point. Release the
+    // peers already queued while V8 can still run.
+    NativePeerBase::ReleaseQueuedPeersForShutdown();
   }
   base::CurrentThread::Get()->RemoveTaskObserver(microtasks_runner_.get());
   microtasks_runner_.reset();

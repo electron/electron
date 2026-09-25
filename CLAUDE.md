@@ -252,6 +252,18 @@ gh label list --repo electron/electron --search target/ --json name,color --jq '
 - Annotate intentionally untraced owned members that the Blink GC plugin cannot
   understand, such as Mojo remotes and receivers, with `GC_PLUGIN_IGNORE` and a
   specific justification.
+- Put native observer, client, and delegate registrations, native resources,
+  and independent V8 roots such as pending promises on a native peer derived
+  from `NativePeer<Wrapper>` (`shell/browser/native_peer.h`), not on the GC
+  wrapper. The wrapper holds the peer with `NativePeerBase::Deleter`, so peer
+  teardown never runs during sweeping; keep peer destructors inert and do all
+  teardown in `TearDownNative()`, reached only through `Release()`.
+- Native peers reach the wrapper only through `wrapper()`, which returns a
+  stack only borrow that roots the wrapper for the rest of the frame, including
+  across JavaScript and nested run loops. Bind it with `gin::WrapPersistent`
+  only when it must escape the frame. A non-empty borrow proves only
+  reachability, not native liveness. Refuse new native work unless
+  `is_active()`.
 
 **Linting:**
 
