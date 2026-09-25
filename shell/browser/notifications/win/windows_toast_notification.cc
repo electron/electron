@@ -13,6 +13,7 @@
 #include <shlobj.h>
 #include <wrl\wrappers\corewrappers.h>
 
+#include "base/base64.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/hash/hash.h"
 #include "base/logging.h"
@@ -25,6 +26,7 @@
 #include "base/task/thread_pool.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "crypto/hash.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/win/notification_presenter_win.h"
 #include "shell/browser/notifications/win/windows_toast_activator.h"
@@ -78,7 +80,10 @@ void DebugLog(std::string_view log_msg) {
 }
 
 std::wstring GetTag(const std::string_view notification_id) {
-  return base::UTF8ToWide(notification_id);
+  // The tag has a max length of 63 characters (plus null terminator).
+  // Base64Encode yields 44 chars.
+  return base::ASCIIToWide(
+      base::Base64Encode(crypto::hash::Sha256(notification_id)));
 }
 
 // See https://www.hresult.info for HRESULT error codes.
