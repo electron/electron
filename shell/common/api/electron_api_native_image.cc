@@ -659,17 +659,17 @@ void Initialize(v8::Local<v8::Object> exports,
   auto native_image = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("nativeImage", native_image);
 
-  native_image.SetMethod("createEmpty", &NativeImage::CreateEmpty);
-  native_image.SetMethod("createFromPath", &NativeImage::CreateFromPath);
-  native_image.SetMethod("createFromBitmap", &NativeImage::CreateFromBitmap);
-  native_image.SetMethod("createFromBuffer", &NativeImage::CreateFromBuffer);
-  native_image.SetMethod("createFromDataURL", &NativeImage::CreateFromDataURL);
-  native_image.SetMethod("createFromNamedImage",
-                         &NativeImage::CreateFromNamedImage);
-  native_image.SetMethod("createMenuSymbol", &NativeImage::CreateMenuSymbol);
+  native_image.SetMethod<&NativeImage::CreateEmpty>("createEmpty");
+  native_image.SetMethod<&NativeImage::CreateFromPath>("createFromPath");
+  native_image.SetMethod<&NativeImage::CreateFromBitmap>("createFromBitmap");
+  native_image.SetMethod<&NativeImage::CreateFromBuffer>("createFromBuffer");
+  native_image.SetMethod<&NativeImage::CreateFromDataURL>("createFromDataURL");
+  native_image.SetMethod<&NativeImage::CreateFromNamedImage>(
+      "createFromNamedImage");
+  native_image.SetMethod<&NativeImage::CreateMenuSymbol>("createMenuSymbol");
 #if !BUILDFLAG(IS_LINUX)
-  native_image.SetMethod("createThumbnailFromPath",
-                         &NativeImage::CreateThumbnailFromPath);
+  native_image.SetMethod<&NativeImage::CreateThumbnailFromPath>(
+      "createThumbnailFromPath");
 #endif
 }
 

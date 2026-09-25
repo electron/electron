@@ -851,33 +851,33 @@ WebFrameMain* WebFrameMain::From(v8::Isolate* isolate,
 void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
                                       v8::Local<v8::ObjectTemplate> templ) {
   gin_helper::ObjectTemplateBuilder(isolate, templ)
-      .SetMethod("executeJavaScript", &WebFrameMain::ExecuteJavaScript)
-      .SetMethod("collectJavaScriptCallStack",
-                 &WebFrameMain::CollectDocumentJSCallStack)
-      .SetMethod("printToPDF", &WebFrameMain::PrintToPDF)
-      .SetMethod("copyVideoFrameAt", &WebFrameMain::CopyVideoFrameAt)
-      .SetMethod("saveVideoFrameAs", &WebFrameMain::SaveVideoFrameAs)
-      .SetMethod("reload", &WebFrameMain::Reload)
-      .SetMethod("isDestroyed", &WebFrameMain::IsDestroyed)
-      .SetMethod("send", &WebFrameMain::Send)
-      .SetMethod("_transferSharedTexture", &WebFrameMain::TransferSharedTexture)
-      .SetMethod("postMessage", &WebFrameMain::PostMessage)
-      .SetProperty("detached", &WebFrameMain::Detached)
-      .SetProperty("frameTreeNodeId", &WebFrameMain::FrameTreeNodeID)
-      .SetProperty("name", &WebFrameMain::Name)
-      .SetProperty("frameToken", &WebFrameMain::FrameToken)
-      .SetProperty("osProcessId", &WebFrameMain::OSProcessID)
-      .SetProperty("processId", &WebFrameMain::ProcessID)
-      .SetProperty("routingId", &WebFrameMain::RoutingID)
-      .SetProperty("url", &WebFrameMain::URL)
-      .SetProperty("origin", &WebFrameMain::Origin)
-      .SetProperty("visibilityState", &WebFrameMain::VisibilityState)
-      .SetProperty("top", &WebFrameMain::Top)
-      .SetProperty("parent", &WebFrameMain::Parent)
-      .SetProperty("frames", &WebFrameMain::Frames)
-      .SetProperty("framesInSubtree", &WebFrameMain::FramesInSubtree)
-      .SetProperty("_lifecycleStateForTesting",
-                   &WebFrameMain::LifecycleStateForTesting)
+      .SetMethod<&WebFrameMain::ExecuteJavaScript>("executeJavaScript")
+      .SetMethod<&WebFrameMain::CollectDocumentJSCallStack>(
+          "collectJavaScriptCallStack")
+      .SetMethod<&WebFrameMain::PrintToPDF>("printToPDF")
+      .SetMethod<&WebFrameMain::CopyVideoFrameAt>("copyVideoFrameAt")
+      .SetMethod<&WebFrameMain::SaveVideoFrameAs>("saveVideoFrameAs")
+      .SetMethod<&WebFrameMain::Reload>("reload")
+      .SetMethod<&WebFrameMain::IsDestroyed>("isDestroyed")
+      .SetMethod<&WebFrameMain::Send>("send")
+      .SetMethod<&WebFrameMain::TransferSharedTexture>("_transferSharedTexture")
+      .SetMethod<&WebFrameMain::PostMessage>("postMessage")
+      .SetProperty<&WebFrameMain::Detached>("detached")
+      .SetProperty<&WebFrameMain::FrameTreeNodeID>("frameTreeNodeId")
+      .SetProperty<&WebFrameMain::Name>("name")
+      .SetProperty<&WebFrameMain::FrameToken>("frameToken")
+      .SetProperty<&WebFrameMain::OSProcessID>("osProcessId")
+      .SetProperty<&WebFrameMain::ProcessID>("processId")
+      .SetProperty<&WebFrameMain::RoutingID>("routingId")
+      .SetProperty<&WebFrameMain::URL>("url")
+      .SetProperty<&WebFrameMain::Origin>("origin")
+      .SetProperty<&WebFrameMain::VisibilityState>("visibilityState")
+      .SetProperty<&WebFrameMain::Top>("top")
+      .SetProperty<&WebFrameMain::Parent>("parent")
+      .SetProperty<&WebFrameMain::Frames>("frames")
+      .SetProperty<&WebFrameMain::FramesInSubtree>("framesInSubtree")
+      .SetProperty<&WebFrameMain::LifecycleStateForTesting>(
+          "_lifecycleStateForTesting")
       .Build();
 }
 
@@ -957,8 +957,8 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict{isolate, exports};
   dict.Set("WebFrameMain", WebFrameMain::GetConstructor(
                                isolate, context, &WebFrameMain::kWrapperInfo));
-  dict.SetMethod("fromId", &FromID);
-  dict.SetMethod("fromFrameToken", &FromFrameToken);
+  dict.SetMethod<&FromID>("fromId");
+  dict.SetMethod<&FromFrameToken>("fromFrameToken");
 }
 
 }  // namespace

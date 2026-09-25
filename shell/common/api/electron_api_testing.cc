@@ -340,34 +340,34 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("log", &Log);
-  dict.SetMethod("getLoggingDestination", &GetLoggingDestination);
-  dict.SetMethod("isPlatformCaretBrowsingEnabled",
-                 &IsPlatformCaretBrowsingEnabled);
-  dict.SetMethod("simulateNetworkServiceCrash", &SimulateNetworkServiceCrash);
-  dict.SetMethod("simulatePowerEvent", &SimulatePowerEvent);
-  dict.SetMethod("holdRepeatingCallbackForTesting",
-                 &HoldRepeatingCallbackForTesting);
-  dict.SetMethod("copyHeldRepeatingCallbackForTesting",
-                 &CopyHeldRepeatingCallbackForTesting);
-  dict.SetMethod("invokeHeldRepeatingCallbackForTesting",
-                 &InvokeHeldRepeatingCallbackForTesting);
-  dict.SetMethod("invokeCopiedRepeatingCallbackForTesting",
-                 &InvokeCopiedRepeatingCallbackForTesting);
-  dict.SetMethod("clearPrimaryHeldRepeatingCallbackForTesting",
-                 &ClearPrimaryHeldRepeatingCallbackForTesting);
-  dict.SetMethod("getHeldRepeatingCallbackCountForTesting",
-                 &GetHeldRepeatingCallbackCountForTesting);
-  dict.SetMethod("holdOnceCallbackForTesting", &HoldOnceCallbackForTesting);
-  dict.SetMethod("invokeHeldOnceCallbackForTesting",
-                 &InvokeHeldOnceCallbackForTesting);
-  dict.SetMethod("clearHeldCallbacksForTesting", &ClearHeldCallbacksForTesting);
-  dict.SetMethod("holdPromiseForTesting", &HoldPromiseForTesting);
-  dict.SetMethod("settlePromiseOutsideTask", &SettlePromiseOutsideTask);
-  dict.SetMethod("flushPendingWindowStateSaves", &FlushPendingWindowStateSaves);
-  dict.SetMethod("commitPendingLocalStateWrites",
-                 &CommitPendingLocalStateWrites);
-  dict.SetMethod("clearHeldPromiseForTesting", &ClearHeldPromiseForTesting);
+  dict.SetMethod<&Log>("log");
+  dict.SetMethod<&GetLoggingDestination>("getLoggingDestination");
+  dict.SetMethod<&IsPlatformCaretBrowsingEnabled>(
+      "isPlatformCaretBrowsingEnabled");
+  dict.SetMethod<&SimulateNetworkServiceCrash>("simulateNetworkServiceCrash");
+  dict.SetMethod<&SimulatePowerEvent>("simulatePowerEvent");
+  dict.SetMethod<&HoldRepeatingCallbackForTesting>(
+      "holdRepeatingCallbackForTesting");
+  dict.SetMethod<&CopyHeldRepeatingCallbackForTesting>(
+      "copyHeldRepeatingCallbackForTesting");
+  dict.SetMethod<&InvokeHeldRepeatingCallbackForTesting>(
+      "invokeHeldRepeatingCallbackForTesting");
+  dict.SetMethod<&InvokeCopiedRepeatingCallbackForTesting>(
+      "invokeCopiedRepeatingCallbackForTesting");
+  dict.SetMethod<&ClearPrimaryHeldRepeatingCallbackForTesting>(
+      "clearPrimaryHeldRepeatingCallbackForTesting");
+  dict.SetMethod<&GetHeldRepeatingCallbackCountForTesting>(
+      "getHeldRepeatingCallbackCountForTesting");
+  dict.SetMethod<&HoldOnceCallbackForTesting>("holdOnceCallbackForTesting");
+  dict.SetMethod<&InvokeHeldOnceCallbackForTesting>(
+      "invokeHeldOnceCallbackForTesting");
+  dict.SetMethod<&ClearHeldCallbacksForTesting>("clearHeldCallbacksForTesting");
+  dict.SetMethod<&HoldPromiseForTesting>("holdPromiseForTesting");
+  dict.SetMethod<&SettlePromiseOutsideTask>("settlePromiseOutsideTask");
+  dict.SetMethod<&FlushPendingWindowStateSaves>("flushPendingWindowStateSaves");
+  dict.SetMethod<&CommitPendingLocalStateWrites>(
+      "commitPendingLocalStateWrites");
+  dict.SetMethod<&ClearHeldPromiseForTesting>("clearHeldPromiseForTesting");
 }
 
 }  // namespace
