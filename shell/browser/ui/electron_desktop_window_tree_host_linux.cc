@@ -218,6 +218,9 @@ void ElectronDesktopWindowTreeHostLinux::SetOpacity(float opacity) {
 }
 
 void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
+  if (!platform_window())
+    return;
+
   const bool is_non_opaque = native_window_view_->IsTranslucent() ||
                              native_window_view_->GetOpacity() < 1.0;
 
@@ -234,14 +237,18 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
             gfx::ScaleToEnclosingRect(gfx::Rect(size), scale)});
       }
     }
-    SizeConstraintsChanged();
-    return;
+  } else {
+    views::DesktopWindowTreeHostLinux::UpdateFrameHints();
+    if (is_non_opaque && views::Widget::IsWindowCompositingSupported()) {
+      platform_window()->SetOpaqueRegion(std::vector<gfx::Rect>{});
+    }
   }
 
-  views::DesktopWindowTreeHostLinux::UpdateFrameHints();
-  if (is_non_opaque && views::Widget::IsWindowCompositingSupported()) {
-    platform_window()->SetOpaqueRegion(std::vector<gfx::Rect>{});
-  }
+  // setIgnoreMouseEvents(true): a 1x1 input region lets every click through
+  // to the window below (X11 input shape, Wayland wl_surface input region).
+  if (native_window_view_->ignore_mouse_events())
+    platform_window()->SetInputRegion(std::vector<gfx::Rect>{{0, 0, 1, 1}});
+
   SizeConstraintsChanged();
 }
 
