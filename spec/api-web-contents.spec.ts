@@ -82,7 +82,9 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false });
       const isLoading = w.webContents.isLoading as () => boolean;
       expect(() => isLoading.call(session.defaultSession)).to.throw(TypeError);
+      expect(() => isLoading.call(w)).to.throw(TypeError);
       expect(() => isLoading.call({})).to.throw(TypeError);
+      expect(isLoading.call(w.webContents)).to.be.a('boolean');
     });
   });
 

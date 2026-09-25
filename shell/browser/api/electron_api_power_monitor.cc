@@ -199,14 +199,11 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("createPowerMonitor",
-                 base::BindRepeating(&PowerMonitor::Create));
-  dict.SetMethod("getSystemIdleState",
-                 base::BindRepeating(&GetSystemIdleState));
-  dict.SetMethod("getCurrentThermalState",
-                 base::BindRepeating(&GetCurrentThermalState));
-  dict.SetMethod("getSystemIdleTime", base::BindRepeating(&GetSystemIdleTime));
-  dict.SetMethod("isOnBatteryPower", base::BindRepeating(&IsOnBatteryPower));
+  dict.SetMethod<&PowerMonitor::Create>("createPowerMonitor");
+  dict.SetMethod<&GetSystemIdleState>("getSystemIdleState");
+  dict.SetMethod<&GetCurrentThermalState>("getCurrentThermalState");
+  dict.SetMethod<&GetSystemIdleTime>("getSystemIdleTime");
+  dict.SetMethod<&IsOnBatteryPower>("isOnBatteryPower");
 }
 
 }  // namespace

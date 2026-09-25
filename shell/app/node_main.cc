@@ -340,19 +340,19 @@ int NodeMain() {
       node::SetIsolateUpForNode(isolate, isolate_settings);
 
       gin_helper::Dictionary process(isolate, env->process_object());
-      process.SetMethod("crash", &ElectronBindings::Crash);
+      process.SetMethod<&ElectronBindings::Crash>("crash");
 
       // Setup process.crashReporter in child node processes
       auto reporter = gin_helper::Dictionary::CreateEmpty(isolate);
-      reporter.SetMethod("getParameters", &GetParameters);
+      reporter.SetMethod<&GetParameters>("getParameters");
 #if IS_MAS_BUILD()
-      reporter.SetMethod("addExtraParameter", &SetCrashKeyStub);
-      reporter.SetMethod("removeExtraParameter", &ClearCrashKeyStub);
+      reporter.SetMethod<&SetCrashKeyStub>("addExtraParameter");
+      reporter.SetMethod<&ClearCrashKeyStub>("removeExtraParameter");
 #else
-      reporter.SetMethod("addExtraParameter",
-                         &electron::crash_keys::SetCrashKey);
-      reporter.SetMethod("removeExtraParameter",
-                         &electron::crash_keys::ClearCrashKey);
+      reporter.SetMethod<&electron::crash_keys::SetCrashKey>(
+          "addExtraParameter");
+      reporter.SetMethod<&electron::crash_keys::ClearCrashKey>(
+          "removeExtraParameter");
 #endif
 
       process.Set("crashReporter", reporter);

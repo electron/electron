@@ -52,15 +52,15 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("isBuiltinSpellCheckerEnabled", &IsBuiltinSpellCheckerEnabled);
-  dict.SetMethod("isPDFViewerEnabled", &IsPDFViewerEnabled);
-  dict.SetMethod("isFakeLocationProviderEnabled",
-                 &IsFakeLocationProviderEnabled);
-  dict.SetMethod("isPrintingEnabled", &IsPrintingEnabled);
-  dict.SetMethod("isPromptAPIEnabled", &IsPromptAPIEnabled);
-  dict.SetMethod("isComponentBuild", &IsComponentBuild);
-  dict.SetMethod("isRunAsNodeEnabled", &IsRunAsNodeEnabled);
-  dict.SetMethod("isExtensionsEnabled", &IsExtensionsEnabled);
+  dict.SetMethod<&IsBuiltinSpellCheckerEnabled>("isBuiltinSpellCheckerEnabled");
+  dict.SetMethod<&IsPDFViewerEnabled>("isPDFViewerEnabled");
+  dict.SetMethod<&IsFakeLocationProviderEnabled>(
+      "isFakeLocationProviderEnabled");
+  dict.SetMethod<&IsPrintingEnabled>("isPrintingEnabled");
+  dict.SetMethod<&IsPromptAPIEnabled>("isPromptAPIEnabled");
+  dict.SetMethod<&IsComponentBuild>("isComponentBuild");
+  dict.SetMethod<&IsRunAsNodeEnabled>("isRunAsNodeEnabled");
+  dict.SetMethod<&IsExtensionsEnabled>("isExtensionsEnabled");
 }
 
 }  // namespace

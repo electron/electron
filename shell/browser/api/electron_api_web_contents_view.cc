@@ -316,9 +316,9 @@ void WebContentsView::BuildPrototype(
     v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(gin::StringToV8(isolate, "WebContentsView"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("setBackgroundColor", &WebContentsView::SetBackgroundColor)
-      .SetMethod("setBorderRadius", &WebContentsView::SetBorderRadius)
-      .SetProperty("webContents", &WebContentsView::GetWebContents);
+      .SetMethod<&WebContentsView::SetBackgroundColor>("setBackgroundColor")
+      .SetMethod<&WebContentsView::SetBorderRadius>("setBorderRadius")
+      .SetProperty<&WebContentsView::GetWebContents>("webContents");
 }
 
 }  // namespace electron::api
