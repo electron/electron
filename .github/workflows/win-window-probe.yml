@@ -293,7 +293,7 @@ jobs:
           '@
           foreach ($cls in 'ConsoleWindowClass', 'CASCADIA_HOSTING_WINDOW_CLASS') {
             $h = [IntPtr]::Zero
-            while (($h = [ProbeFix.User32]::FindWindowEx([IntPtr]::Zero, $h, $cls, $null)) -ne [IntPtr]::Zero) {
+            while (($h = [ProbeFix.User32]::FindWindowEx([IntPtr]::Zero, $h, $cls, [NullString]::Value)) -ne [IntPtr]::Zero) {
               if ([ProbeFix.User32]::IsWindowVisible($h) -and -not [ProbeFix.User32]::IsIconic($h)) {
                 [void][ProbeFix.User32]::ShowWindow($h, 6) # SW_MINIMIZE
                 Write-Host ("minimized {0} 0x{1:X}" -f $cls, $h.ToInt64())
