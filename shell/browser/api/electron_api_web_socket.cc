@@ -207,7 +207,9 @@ void WebSocketWrapper::Start() {
       // Connection-Allowlist network restrictions apply.
       /*network_restrictions_id=*/network::GetNoOpNetworkRestrictionsId(),
       // No Local Network Access checks for browser-initiated WebSockets.
-      /*target_address_space=*/network::mojom::IPAddressSpace::kUnknown);
+      /*target_address_space=*/network::mojom::IPAddressSpace::kUnknown,
+      // Not bound to a specific network.
+      /*target_network=*/std::nullopt);
 }
 
 void WebSocketWrapper::OnMojoDisconnect() {
