@@ -1564,7 +1564,8 @@ Returns `boolean` - Whether [caret browsing](#contentscaretbrowsingenabled) is e
 Changes the zoom factor to the specified factor. Zoom factor is
 zoom percent divided by 100, so 300% = 3.0.
 
-The factor must be greater than 0.0.
+The factor must be greater than 0.0. Values outside the range Chromium can
+display (0.25 to 5.0) are clamped to it.
 
 #### `contents.getZoomFactor()`
 
@@ -1575,9 +1576,9 @@ Returns `number` - the current zoom factor.
 * `level` number - Zoom level.
 
 Changes the zoom level to the specified level. The original size is 0 and each
-increment above or below represents zooming 20% larger or smaller to default
-limits of 300% and 50% of original size, respectively. The formula for this is
-`scale := 1.2 ^ level`.
+increment above or below represents zooming 20% larger or smaller. The formula
+for this is `scale := 1.2 ^ level`, and the level is clamped to the range
+Chromium can display (25% to 500%, about -7.6 to 8.8).
 
 > [!NOTE]
 > The zoom policy at the Chromium level is same-origin, meaning that the
@@ -1595,7 +1596,8 @@ Returns `number` - the current zoom level.
 
 Returns `Promise<void>`
 
-Sets the maximum and minimum pinch-to-zoom level.
+Sets the maximum and minimum pinch-to-zoom level. The page keeps its normal
+scale until the user pinches; a `minimumLevel` below 1 only allows zooming out.
 
 > [!NOTE]
 > Visual zoom is disabled by default in Electron. To re-enable it, call:

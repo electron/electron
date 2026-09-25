@@ -3016,6 +3016,47 @@ describe('webContents module', () => {
     });
   });
 
+  describe('zoom limits', () => {
+    afterEach(closeAllWindows);
+
+    it('clamps setZoomLevel() and setZoomFactor() to the displayable range', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      try {
+        w.webContents.setZoomFactor(100);
+        expect(w.webContents.getZoomFactor()).to.be.closeTo(5, 0.001);
+        w.webContents.setZoomLevel(-100);
+        expect(w.webContents.getZoomFactor()).to.be.closeTo(0.25, 0.001);
+      } finally {
+        w.webContents.zoomLevel = 0;
+      }
+    });
+
+    it('lets the zoomIn role recover right after zooming out past the minimum', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      const menu = Menu.buildFromTemplate([{ role: 'zoomOut' }, { role: 'zoomIn' }]);
+      try {
+        for (let i = 0; i < 30; i++) menu.items[0].click(undefined, w, w.webContents);
+        expect(w.webContents.getZoomFactor()).to.be.closeTo(0.25, 0.001);
+        menu.items[1].click(undefined, w, w.webContents);
+        expect(w.webContents.getZoomFactor()).to.be.greaterThan(0.26);
+      } finally {
+        w.webContents.zoomLevel = 0;
+      }
+    });
+
+    it('does not shrink the page when the visual zoom minimum is below 1', async () => {
+      const w = new BrowserWindow({ show: false, width: 400, height: 400 });
+      await w.loadURL('about:blank');
+      await w.webContents.setVisualZoomLevelLimits(0.25, 3);
+      w.setSize(500, 500);
+      await setTimeout(200);
+      const scale = await w.webContents.executeJavaScript('window.visualViewport.scale');
+      expect(scale).to.equal(1);
+    });
+  });
+
   describe('webrtc ip policy api', () => {
     afterEach(closeAllWindows);
     it('can set and get webrtc ip policies', () => {
