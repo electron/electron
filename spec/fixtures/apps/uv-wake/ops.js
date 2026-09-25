@@ -110,15 +110,21 @@ for (const op of Object.values(ops)) {
   op.budget ??= 100;
 }
 
-// Writes straight away and then every 10 ms for half a second, with libuv
-// timers, which each process's own loop serves on time.
+// Writes straight away and then every 10 ms for half a second or until the
+// file's directory is gone, with libuv timers, which each process's own loop
+// serves on time.
 function touchRepeatedly(file) {
   let n = 0;
-  const timer = setInterval(() => {
-    fs.writeFileSync(file, String(++n));
-    if (n === 50) clearInterval(timer);
-  }, 10);
-  fs.writeFileSync(file, String(n));
+  const touch = () => {
+    try {
+      fs.writeFileSync(file, String(n));
+    } catch {
+      n = 50;
+    }
+    if (n++ >= 50) clearInterval(timer);
+  };
+  const timer = setInterval(touch, 10);
+  touch();
 }
 
 module.exports = {
