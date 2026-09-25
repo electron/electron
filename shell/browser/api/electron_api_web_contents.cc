@@ -3122,10 +3122,26 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
   if (!rwh_impl)
     return;
 
-  rwh_impl->disable_hidden_ = !background_throttling_;
-  web_contents()->GetRenderViewHost()->SetSchedulerThrottling(allowed);
+  // HandleNewRenderFrame() applied the setting to every frame, so every local
+  // root (cross-process iframe) has its own widget and RenderView carrying it;
+  // update them all, but leave inner WebContents (guests) to their own setting.
+  rfh->ForEachRenderFrameHostWithAction(
+      [this, allowed](content::RenderFrameHost* frame) {
+        if (content::WebContents::FromRenderFrameHost(frame) != web_contents())
+          return content::RenderFrameHost::FrameIterationAction::kSkipChildren;
+        if (auto* view = frame->GetView()) {
+          if (auto* rwh = static_cast<content::RenderWidgetHostImpl*>(
+                  view->GetRenderWidgetHost())) {
+            rwh->disable_hidden_ = !allowed;
+          }
+        }
+        frame->GetRenderViewHost()->SetSchedulerThrottling(allowed);
+        return content::RenderFrameHost::FrameIterationAction::kContinue;
+      });
 
-  if (rwh_impl->IsHidden()) {
+  auto* rfh_impl = static_cast<content::RenderFrameHostImpl*>(rfh);
+  auto* rwhv_base = static_cast<content::RenderWidgetHostViewBase*>(rwhv);
+  if (!allowed && rwh_impl->IsHidden()) {
     // Un-hide through the view rather than calling
     // RenderWidgetHostImpl::WasShown() directly, so that the platform view
     // (and on macOS the BrowserCompositorMac / DelegatedFrameHost) also
@@ -3142,12 +3158,33 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
     // compositor state to keep in sync, and their ShowWithVisibility()
     // refuses to show a frame the embedder has hidden (display: none). Keep
     // the direct WasShown() for them so behavior there is unchanged.
-    auto* rwhv_base = static_cast<content::RenderWidgetHostViewBase*>(rwhv);
     if (rwhv_base->IsRenderWidgetHostViewChildFrame()) {
       rwh_impl->WasShown({});
     } else {
       rwhv_base->ShowWithVisibility(
           content::PageVisibilityState::kHiddenButPainting);
+    }
+    rfh_impl->SetVisibilityForChildViews(true);
+  } else if (allowed && !rwh_impl->IsHidden()) {
+    // Undo the above. While throttling was off the widgets were kept shown
+    // (by the branch above, or because disable_hidden_ swallowed a
+    // WasHidden()), and content only hides them again on the next visibility
+    // transition, so a page that is already hidden/occluded would keep
+    // producing frames. Mirror SetPrimaryMainFrameViewVisibility() for the
+    // current visibility; captured / PiP pages (kHiddenButPainting) stay.
+    auto* web_contents_impl =
+        static_cast<content::WebContentsImpl*>(web_contents());
+    if (web_contents_impl->GetPageVisibilityState() ==
+        content::PageVisibilityState::kHidden) {
+      if (rwhv_base->IsRenderWidgetHostViewChildFrame()) {
+        rwh_impl->WasHidden();
+      } else if (web_contents_impl->GetVisibility() ==
+                 content::Visibility::OCCLUDED) {
+        rwhv_base->WasOccluded();
+      } else {
+        rwhv_base->Hide();
+      }
+      rfh_impl->SetVisibilityForChildViews(false);
     }
   }
 }
