@@ -116,28 +116,43 @@ index 0d1d81ec7d6b27891a5135961f4c630df82819df..325d2691357372b31df78781b6e453e2
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index ca627cba6cf4cfd84e33eabe8117143302476a3c..c288c4c16a320eae061a17420dfa39aaed2108d2 100644
+index ca627cba6cf4cfd84e33eabe8117143302476a3c..292c25f2a746aa883bea8a678e8e32c6745d81d8 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -2566,6 +2566,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
+@@ -615,6 +615,7 @@ WebViewImpl::WebViewImpl(
+   CoreInitializer::GetInstance().ProvideModulesToPage(
+       *page_, session_storage_namespace_id_);
+ 
++  browser_visibility_state_ = visibility;
+   SetVisibilityState(visibility, /*is_initial_state=*/true);
+   if (prerender_param) {
+     page_->SetIsPrerendering(true);
+@@ -2566,6 +2567,13 @@ void WebViewImpl::SetPageLifecycleStateInternal(
    TRACE_EVENT2("navigation", "WebViewImpl::SetPageLifecycleStateInternal",
                 "old_state", old_state, "new_state", new_state);
  
-+  // If backgroundThrottling is disabled, the page is always visible.
++  // If backgroundThrottling is disabled, the page is always visible. Remember
++  // what the browser asked for so it can be re-applied if throttling is
++  // allowed again while the page is still in that state.
++  browser_visibility_state_ = new_state->visibility;
 +  if (!scheduler_throttling_allowed_)
 +      new_state->visibility = mojom::blink::PageVisibilityState::kVisible;
 +
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -4278,10 +4282,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -4278,10 +4286,26 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
 +void WebViewImpl::SetSchedulerThrottling(bool allowed) {
 +  DCHECK(GetPage());
 +  scheduler_throttling_allowed_ = allowed;
-+  GetPage()->GetPageScheduler()->SetPageVisible(!allowed || GetVisibilityState() == mojom::blink::PageVisibilityState::kVisible);
++  // Re-apply the visibility the browser last reported: forced to kVisible
++  // while throttling is disallowed, back to the real state once it is allowed
++  // again. Without this, toggling the setting on a page that is already
++  // hidden only took effect at the next visibility change.
++  SetVisibilityState(browser_visibility_state_, /*is_initial_state=*/false);
 +}
 +
  void WebViewImpl::SetVisibilityState(
@@ -145,17 +160,16 @@ index ca627cba6cf4cfd84e33eabe8117143302476a3c..c288c4c16a320eae061a17420dfa39aa
      bool is_initial_state) {
    DCHECK(GetPage());
 +
-+  if (!scheduler_throttling_allowed_) {
-+    GetPage()->SetVisibilityState(mojom::blink::PageVisibilityState::kVisible, is_initial_state);
-+    GetPage()->GetPageScheduler()->SetPageVisible(true);
-+    return;
-+  }
++  // If backgroundThrottling is disabled, the page (and everything observing
++  // its visibility, e.g. media) is told it is visible.
++  if (!scheduler_throttling_allowed_)
++    visibility_state = mojom::blink::PageVisibilityState::kVisible;
 +
    GetPage()->SetVisibilityState(visibility_state, is_initial_state);
    // Do not throttle if the page should be painting.
    bool is_visible =
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index 8ef74cec51b3cd9ec8213dcdbf98e936362de108..2353be453353571088a70e77af216066ffcf607d 100644
+index 8ef74cec51b3cd9ec8213dcdbf98e936362de108..cf768e1a00d5e95523706354dacb8c5ad5503812 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
 @@ -443,6 +443,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
@@ -166,11 +180,15 @@ index 8ef74cec51b3cd9ec8213dcdbf98e936362de108..2353be453353571088a70e77af216066
    void SetVisibilityState(mojom::blink::PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    mojom::blink::PageVisibilityState GetVisibilityState() override;
-@@ -944,6 +945,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -944,6 +945,12 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    // If true, we send IPC messages when |preferred_size_| changes.
    bool send_preferred_size_changes_ = false;
  
 +  bool scheduler_throttling_allowed_ = true;
++  // The visibility most recently requested by the browser, before the
++  // |scheduler_throttling_allowed_| override is applied.
++  mojom::blink::PageVisibilityState browser_visibility_state_ =
++      mojom::blink::PageVisibilityState::kVisible;
 +
    // Whether the preferred size may have changed and |UpdatePreferredSize| needs
    // to be called.
