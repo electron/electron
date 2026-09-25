@@ -84,8 +84,7 @@ void CocoaNotification::Show(const NotificationOptions& options) {
 
     int i = 0;
     for (const auto& action : options.actions) {
-      NSString* showText =
-          l10n_util::GetNSString(IDS_MAC_NOTIFICATION_SHOW_BUTTON);
+      NSString* showText = l10n_util::GetNSString(IDS_NOTIFICATION_SHOW_BUTTON);
       NSString* actionText = action.text.empty()
                                  ? showText
                                  : base::SysUTF16ToNSString(action.text);

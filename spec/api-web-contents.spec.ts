@@ -1754,6 +1754,27 @@ describe('webContents module', () => {
       expect(confirmIsNative).to.be.true();
     });
 
+    it('steps zoom in and out through the browser zoom presets', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { partition: 'devtools-zoom' } });
+      await openDevTools(w);
+      const devtools = w.webContents.devToolsWebContents!;
+      const zoomPercent = () => Math.round(1.2 ** devtools.getZoomLevel() * 100);
+      const zoom = async (method: 'zoomIn' | 'zoomOut' | 'resetZoom', expected: number) => {
+        await devtools.executeJavaScript(`InspectorFrontendHost.${method}()`);
+        await waitUntil(() => zoomPercent() === expected, { timeout: 2000 }).catch(() => {
+          expect(zoomPercent()).to.equal(expected, `after ${method}()`);
+        });
+      };
+      expect(zoomPercent()).to.equal(100);
+      await zoom('zoomIn', 110);
+      await zoom('zoomIn', 125);
+      await zoom('zoomOut', 110);
+      await zoom('zoomOut', 100);
+      await zoom('zoomOut', 90);
+      await zoom('zoomOut', 80);
+      await zoom('resetZoom', 100);
+    });
+
     // Baseline for the setDevToolsWebContents() regression test below: the
     // managed (built-in) DevTools route via InspectableWebContents.
     it('routes context menu requests through the native menu path', async () => {
@@ -3194,6 +3215,47 @@ describe('webContents module', () => {
         zoomLevel = w.webContents.zoomLevel;
         expect(zoomLevel).to.equal(0);
       });
+    });
+  });
+
+  describe('zoom limits', () => {
+    afterEach(closeAllWindows);
+
+    it('clamps setZoomLevel() and setZoomFactor() to the displayable range', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      try {
+        w.webContents.setZoomFactor(100);
+        expect(w.webContents.getZoomFactor()).to.be.closeTo(5, 0.001);
+        w.webContents.setZoomLevel(-100);
+        expect(w.webContents.getZoomFactor()).to.be.closeTo(0.25, 0.001);
+      } finally {
+        w.webContents.zoomLevel = 0;
+      }
+    });
+
+    it('lets the zoomIn role recover right after zooming out past the minimum', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      const menu = Menu.buildFromTemplate([{ role: 'zoomOut' }, { role: 'zoomIn' }]);
+      try {
+        for (let i = 0; i < 30; i++) menu.items[0].click(undefined, w, w.webContents);
+        expect(w.webContents.getZoomFactor()).to.be.closeTo(0.25, 0.001);
+        menu.items[1].click(undefined, w, w.webContents);
+        expect(w.webContents.getZoomFactor()).to.be.greaterThan(0.26);
+      } finally {
+        w.webContents.zoomLevel = 0;
+      }
+    });
+
+    it('does not shrink the page when the visual zoom minimum is below 1', async () => {
+      const w = new BrowserWindow({ show: false, width: 400, height: 400 });
+      await w.loadURL('about:blank');
+      await w.webContents.setVisualZoomLevelLimits(0.25, 3);
+      w.setSize(500, 500);
+      await setTimeout(200);
+      const scale = await w.webContents.executeJavaScript('window.visualViewport.scale');
+      expect(scale).to.equal(1);
     });
   });
 

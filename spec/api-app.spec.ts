@@ -518,7 +518,8 @@ describe('app module', () => {
     const tempFiles = [
       path.join(fixturesPath, 'foo.txt'),
       path.join(fixturesPath, 'bar.txt'),
-      path.join(fixturesPath, 'baz.txt')
+      path.join(fixturesPath, 'baz.txt'),
+      path.join(fixturesPath, 'документ-文件.txt')
     ];
 
     afterEach(() => {
@@ -538,6 +539,12 @@ describe('app module', () => {
       app.addRecentDocument(tempFiles[0]);
       await setTimeout(2000);
       expect(app.getRecentDocuments()).to.include.members([tempFiles[0]]);
+    });
+
+    it('returns recent documents whose path is not ASCII', async () => {
+      app.addRecentDocument(tempFiles[3]);
+      await setTimeout(2000);
+      expect(app.getRecentDocuments()).to.include.members([tempFiles[3]]);
     });
 
     it('can clear recent documents', async () => {
@@ -811,16 +818,20 @@ describe('app module', () => {
       '/d'
     ];
 
+    const exeWithSpaces = path.join('C:\\Program Files', 'Electron Spec', 'app.exe');
+
     beforeEach(() => {
       app.setLoginItemSettings({ openAtLogin: false });
       app.setLoginItemSettings({ openAtLogin: false, path: updateExe, args: processStartArgs });
       app.setLoginItemSettings({ name: 'additionalEntry', openAtLogin: false });
+      app.setLoginItemSettings({ name: 'spacedEntry', openAtLogin: false });
     });
 
     afterEach(() => {
       app.setLoginItemSettings({ openAtLogin: false });
       app.setLoginItemSettings({ openAtLogin: false, path: updateExe, args: processStartArgs });
       app.setLoginItemSettings({ name: 'additionalEntry', openAtLogin: false });
+      app.setLoginItemSettings({ name: 'spacedEntry', openAtLogin: false });
     });
 
     ifit(!isWin)('sets and returns the app as a login item', () => {
@@ -967,6 +978,24 @@ describe('app module', () => {
 
       expect(openAtLoginFalseEnabledFalse.openAtLogin).to.equal(false);
       expect(openAtLoginFalseEnabledFalse.executableWillLaunchAtLogin).to.equal(false);
+    });
+
+    ifit(isWin)('finds launch items whose executable path contains spaces', () => {
+      app.setLoginItemSettings({ openAtLogin: true, name: 'spacedEntry', path: exeWithSpaces });
+      expect(app.getLoginItemSettings({ path: exeWithSpaces })).to.deep.equal({
+        openAtLogin: false,
+        wasOpenedAtLogin: false,
+        executableWillLaunchAtLogin: true,
+        launchItems: [
+          {
+            name: 'spacedEntry',
+            path: exeWithSpaces,
+            args: [],
+            scope: 'user',
+            enabled: true
+          }
+        ]
+      });
     });
 
     ifit(isWin)('allows you to pass a custom name', () => {
@@ -1945,6 +1974,31 @@ describe('app module', () => {
 
   // Regression test for https://github.com/electron/electron/pull/52603:
   // losing the display server connection went straight to LOG(FATAL).
+  ifdescribe(process.platform === 'linux')('GDK_BACKEND', () => {
+    const fixture = path.join(fixturesPath, 'apps', 'gdk-backend');
+    const run = async (env: NodeJS.ProcessEnv) => {
+      const child = cp.spawn(process.execPath, [fixture], { env, stdio: ['ignore', 'pipe', 'ignore'] });
+      defer(() => {
+        if (child.exitCode === null && child.signalCode === null) child.kill();
+      });
+      let out = '';
+      child.stdout.on('data', (chunk) => {
+        out += chunk;
+      });
+      await waitUntil(() => /GDK_BACKEND in child: .*\n/.test(out));
+      return out.match(/GDK_BACKEND in child: (.*)\n/)![1];
+    };
+
+    it('is not added to the environment that child processes inherit', async () => {
+      const { GDK_BACKEND: _, ...env } = process.env;
+      expect(await run(env)).to.equal('<unset>');
+    });
+
+    it('is left as the user set it', async () => {
+      expect(await run({ ...process.env, GDK_BACKEND: 'x11' })).to.equal('x11');
+    });
+  });
+
   ifdescribe(process.platform === 'linux')('when the X server goes away', () => {
     // Starts a private X server for the app under test, so that it can be taken
     // away without disturbing the one the spec runner is on. Resolves to
