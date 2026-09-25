@@ -845,27 +845,27 @@ void App::OnGpuInfoUpdate() {
 void App::BrowserChildProcessLaunchedAndConnected(
     const content::ChildProcessData& data,
     const base::Process& process) {
-  ChildProcessLaunched(
-      data.process_type, content::ChildProcessId::FromUnsafeValue(data.id),
-      process.Handle(), data.metrics_name, base::UTF16ToUTF8(data.name));
+  ChildProcessLaunched(data.process_type, data.GetChildProcessId(),
+                       process.Handle(), data.metrics_name,
+                       base::UTF16ToUTF8(data.name));
 }
 
 void App::BrowserChildProcessHostDisconnected(
     const content::ChildProcessData& data) {
-  ChildProcessDisconnected(content::ChildProcessId::FromUnsafeValue(data.id));
+  ChildProcessDisconnected(data.GetChildProcessId());
 }
 
 void App::BrowserChildProcessCrashed(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  ChildProcessDisconnected(content::ChildProcessId::FromUnsafeValue(data.id));
+  ChildProcessDisconnected(data.GetChildProcessId());
   EmitChildProcessGone(data, info);
 }
 
 void App::BrowserChildProcessKilled(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  ChildProcessDisconnected(content::ChildProcessId::FromUnsafeValue(data.id));
+  ChildProcessDisconnected(data.GetChildProcessId());
   EmitChildProcessGone(data, info);
 }
 
