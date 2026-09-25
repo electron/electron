@@ -484,19 +484,6 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       }
       return false;
     }
-    case WM_DWMCOLORIZATIONCOLORCHANGED: {
-      UpdateWindowAccentColor(IsActive());
-      return false;
-    }
-    case WM_SETTINGCHANGE: {
-      if (l_param) {
-        const wchar_t* setting_name = reinterpret_cast<const wchar_t*>(l_param);
-        std::wstring setting_str(setting_name);
-        if (setting_str == L"ImmersiveColorSet")
-          UpdateWindowAccentColor(IsActive());
-      }
-      return false;
-    }
     default: {
       return false;
     }
@@ -559,6 +546,10 @@ void NativeWindowViews::HandleSizeEvent(WPARAM w_param, LPARAM l_param) {
       break;
     }
   }
+}
+
+void NativeWindowViews::OnSystemAccentColorChanged() {
+  UpdateWindowAccentColor(IsActive());
 }
 
 void NativeWindowViews::UpdateWindowAccentColor(bool active) {

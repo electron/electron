@@ -13,10 +13,15 @@
 #include "base/logging.h"
 #include "base/win/core_winrt_util.h"
 #include "base/win/windows_types.h"
+#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
+#include "gin/persistent.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/color_util.h"
 #include "shell/common/process_util.h"
 #include "ui/color/win/accent_color_observer.h"
 #include "ui/gfx/win/singleton_hwnd.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace electron {
 
@@ -78,6 +83,18 @@ std::string SystemPreferences::GetAccentColor() {
     return "";
 
   return ToRGBAHex(*color, false);
+}
+
+void SystemPreferences::OnSystemAccentColorChanged() {
+  // Compare and emit from a fresh task rather than from inside the observer's
+  // notification, which runs app JS before the observer re-arms its registry
+  // watch.
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
+      base::BindOnce(&SystemPreferences::OnAccentColorChanged,
+                     gin::WrapPersistent(weak_factory_.GetWeakCell(
+                         isolate->GetCppHeap()->GetAllocationHandle()))));
 }
 
 void SystemPreferences::OnAccentColorChanged() {
@@ -162,11 +179,10 @@ void SystemPreferences::InitializeWindow() {
     Browser::Get()->AddObserver(this);
   }
 
-  auto* accent_color_observer = ui::AccentColorObserver::Get();
   current_color_ = GetAccentColor();
-  accent_color_subscription_ =
-      accent_color_observer->Subscribe(base::BindRepeating(
-          &SystemPreferences::OnAccentColorChanged, base::Unretained(this)));
+  accent_color_subscription_ = ui::AccentColorObserver::Get()->Subscribe(
+      base::BindRepeating(&SystemPreferences::OnSystemAccentColorChanged,
+                          base::Unretained(this)));
 }
 
 void SystemPreferences::OnWndProc(HWND hwnd,
@@ -193,6 +209,7 @@ void SystemPreferences::Dispose() {
 
   hwnd_subscription_ = {};
   accent_color_subscription_ = {};
+  weak_factory_.Invalidate();
   Browser::Get()->RemoveObserver(this);
 }
 
