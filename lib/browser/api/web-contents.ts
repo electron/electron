@@ -20,10 +20,6 @@ import '@electron/internal/browser/api/session';
 const binding = process._linkedBinding('electron_browser_web_contents');
 const { WebContents } = binding as { WebContents: { prototype: Electron.WebContents } };
 
-WebContents.prototype.postMessage = function (...args) {
-  return this.mainFrame.postMessage(...args);
-};
-
 function getWebFrame(contents: Electron.WebContents, frame: number | [number, number]) {
   let webFrame: Electron.WebFrameMain | undefined;
   if (typeof frame === 'number') {

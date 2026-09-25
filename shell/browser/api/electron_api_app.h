@@ -27,6 +27,7 @@
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/cached_string.h"
 #include "v8/include/cppgc/member.h"
 #include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8-traced-handle.h"
@@ -264,6 +265,15 @@ class App final : public gin::Wrappable<App>,
 
   v8::Local<v8::Value> GetCommandLine(v8::Isolate* isolate);
   v8::TracedReference<v8::Value> command_line_;
+
+  // app.name, getName(), getVersion() and getAppPath() answer with a string
+  // that almost never changes, so hand the same V8 string back until it does.
+  v8::Local<v8::String> GetNameString(v8::Isolate* isolate);
+  v8::Local<v8::String> GetVersionString(v8::Isolate* isolate);
+  v8::Local<v8::Value> GetAppPathValue(v8::Isolate* isolate);
+  gin_helper::CachedString name_string_;
+  gin_helper::CachedString version_string_;
+  v8::TracedReference<v8::Value> app_path_value_;  // Reset by SetAppPath.
 
   void SetClientCertRequestPasswordHandler(v8::Isolate* isolate,
                                            v8::Local<v8::Value> handler);

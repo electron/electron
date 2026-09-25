@@ -5,7 +5,9 @@
 #include "shell/browser/api/electron_api_base_window.h"
 
 #include <algorithm>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -37,6 +39,8 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
+#include "ui/gfx/geometry/rect_conversions.h"
+#include "ui/gfx/geometry/rect_f.h"
 
 #if defined(TOOLKIT_VIEWS)
 #include "shell/browser/native_window_views.h"
@@ -76,6 +80,21 @@ struct Converter<electron::TaskbarHost::ThumbarButton> {
 namespace electron::api {
 
 namespace {
+
+// Reads |key| into |out| when the dictionary has it. Returns false only when
+// it is there but is not a number.
+bool ReadCoordinate(gin_helper::Dictionary& dict,
+                    std::string_view key,
+                    std::optional<float>* out) {
+  v8::Local<v8::Value> field;
+  if (!dict.Get(key, &field) || field->IsUndefined())
+    return true;
+  float value = 0;
+  if (!gin::ConvertFromV8(dict.isolate(), field, &value))
+    return false;
+  *out = value;
+  return true;
+}
 
 #if !BUILDFLAG(IS_MAC)
 // Converts binary data to Buffer.
@@ -471,11 +490,30 @@ bool BaseWindow::IsFullscreen() const {
   return window_->IsFullscreen();
 }
 
-void BaseWindow::SetBounds(const gfx::Rect& bounds,
+void BaseWindow::SetBounds(v8::Local<v8::Object> partial,
                            gin::Arguments* const args) {
+  // Any of x, y, width and height may be left out and keeps its current
+  // value. The rounding is the same as gfx::Rect's converter.
+  gin_helper::Dictionary dict(args->isolate(), partial);
+  std::optional<float> x, y, width, height;
+  if (!ReadCoordinate(dict, "x", &x) || !ReadCoordinate(dict, "y", &y) ||
+      !ReadCoordinate(dict, "width", &width) ||
+      !ReadCoordinate(dict, "height", &height)) {
+    args->ThrowError();
+    return;
+  }
+  gfx::RectF bounds(window_->GetBounds());
+  if (x)
+    bounds.set_x(*x);
+  if (y)
+    bounds.set_y(*y);
+  if (width)
+    bounds.set_width(*width);
+  if (height)
+    bounds.set_height(*height);
   bool animate = false;
   args->GetNext(&animate);
-  window_->SetBounds(bounds, animate);
+  window_->SetBounds(gfx::ToRoundedRect(bounds), animate);
 }
 
 gfx::Rect BaseWindow::GetBounds() const {
