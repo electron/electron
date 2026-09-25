@@ -213,6 +213,9 @@ void ElectronDesktopWindowTreeHostLinux::OnDeviceScaleFactorChanged() {
 }
 
 void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
+  if (!platform_window())
+    return;
+
   auto* fvl = native_window_view_->GetFrameViewLinux();
   if (!fvl || !fvl->ShouldDrawRestoredFrameShadow()) {
     platform_window()->SetInputRegion(std::nullopt);
@@ -226,16 +229,20 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
             gfx::ScaleToEnclosingRect(gfx::Rect(size), scale)});
       }
     }
-    SizeConstraintsChanged();
-    return;
+  } else {
+    views::DesktopWindowTreeHostLinux::UpdateFrameHints();
+    // Clear the opaque region for translucent windows.
+    if (native_window_view_->IsTranslucent() &&
+        views::Widget::IsWindowCompositingSupported()) {
+      platform_window()->SetOpaqueRegion(std::vector<gfx::Rect>{});
+    }
   }
 
-  views::DesktopWindowTreeHostLinux::UpdateFrameHints();
-  // Clear the opaque region for translucent windows.
-  if (native_window_view_->IsTranslucent() &&
-      views::Widget::IsWindowCompositingSupported()) {
-    platform_window()->SetOpaqueRegion(std::vector<gfx::Rect>{});
-  }
+  // setIgnoreMouseEvents(true): a 1x1 input region lets every click through
+  // to the window below (X11 input shape, Wayland wl_surface input region).
+  if (native_window_view_->ignore_mouse_events())
+    platform_window()->SetInputRegion(std::vector<gfx::Rect>{{0, 0, 1, 1}});
+
   SizeConstraintsChanged();
 }
 

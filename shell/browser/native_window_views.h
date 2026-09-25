@@ -210,6 +210,9 @@ class NativeWindowViews : public NativeWindow,
 
 #if BUILDFLAG(IS_LINUX)
   views::FrameViewLinux* GetFrameViewLinux() const;
+  [[nodiscard]] bool ignore_mouse_events() const {
+    return ignore_mouse_events_;
+  }
 #endif
 
   [[nodiscard]] bool has_rounded_corners() const { return rounded_corner_; }
@@ -309,6 +312,10 @@ class NativeWindowViews : public NativeWindow,
 
   // This value is determined when the window is created.
   bool rounded_corner_ = true;
+
+#if BUILDFLAG(IS_LINUX)
+  bool ignore_mouse_events_ = false;
+#endif
 
 #if BUILDFLAG(IS_WIN)
 
