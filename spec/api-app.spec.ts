@@ -794,16 +794,20 @@ describe('app module', () => {
       '/d'
     ];
 
+    const exeWithSpaces = path.join('C:\\Program Files', 'Electron Spec', 'app.exe');
+
     beforeEach(() => {
       app.setLoginItemSettings({ openAtLogin: false });
       app.setLoginItemSettings({ openAtLogin: false, path: updateExe, args: processStartArgs });
       app.setLoginItemSettings({ name: 'additionalEntry', openAtLogin: false });
+      app.setLoginItemSettings({ name: 'spacedEntry', openAtLogin: false });
     });
 
     afterEach(() => {
       app.setLoginItemSettings({ openAtLogin: false });
       app.setLoginItemSettings({ openAtLogin: false, path: updateExe, args: processStartArgs });
       app.setLoginItemSettings({ name: 'additionalEntry', openAtLogin: false });
+      app.setLoginItemSettings({ name: 'spacedEntry', openAtLogin: false });
     });
 
     ifit(!isWin)('sets and returns the app as a login item', () => {
@@ -950,6 +954,24 @@ describe('app module', () => {
 
       expect(openAtLoginFalseEnabledFalse.openAtLogin).to.equal(false);
       expect(openAtLoginFalseEnabledFalse.executableWillLaunchAtLogin).to.equal(false);
+    });
+
+    ifit(isWin)('finds launch items whose executable path contains spaces', () => {
+      app.setLoginItemSettings({ openAtLogin: true, name: 'spacedEntry', path: exeWithSpaces });
+      expect(app.getLoginItemSettings({ path: exeWithSpaces })).to.deep.equal({
+        openAtLogin: false,
+        wasOpenedAtLogin: false,
+        executableWillLaunchAtLogin: true,
+        launchItems: [
+          {
+            name: 'spacedEntry',
+            path: exeWithSpaces,
+            args: [],
+            scope: 'user',
+            enabled: true
+          }
+        ]
+      });
     });
 
     ifit(isWin)('allows you to pass a custom name', () => {
