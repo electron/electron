@@ -436,7 +436,7 @@ index 7c2273d1d05b1cbca9b1cdbb00f184b6c4112d1c..caf138e704ab1bfd7a9df9f10ee6ff45
        event, GetFocusManager());
  }
 diff --git a/ui/views/focus/focus_manager.cc b/ui/views/focus/focus_manager.cc
-index 7bb61c04c755d672e77ac81b08508de83a865ef3..4dd98766448e5d3db2707352f7794361867e5a2f 100644
+index 7ed406743f15acbd16c7b4e73699c41c8ad72fec..610e15fb9ebff47403813ba03c36f5f72c406fa4 100644
 --- a/ui/views/focus/focus_manager.cc
 +++ b/ui/views/focus/focus_manager.cc
 @@ -48,6 +48,14 @@ FocusManager::~FocusManager() {
