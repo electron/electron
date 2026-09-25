@@ -320,7 +320,7 @@ jobs:
 
           cat > "$base/app/main.js" <<'MAINEOF'
           const { app, BrowserWindow, BaseWindow, WebContentsView, screen } = require('electron');
-          const { execFile } = require('node:child_process');
+          const { execFile, spawn } = require('node:child_process');
           const fs = require('node:fs');
           const path = require('node:path');
 
@@ -485,13 +485,47 @@ jobs:
             await ps('-Action', 'shot', '-Label', 'F1');
           }
 
+          // Late-suite mechanisms: a test window closing hands activation back to
+          // whatever is next in z-order, and a console child spawned without
+          // windowsHide opens a new (Windows Terminal) console window.
+          async function closeMode () {
+            const a = await makeSet('A');
+            await sleep(3000);
+            await report('C0-first-window', a);
+            await ps('-Action', 'enum', '-Label', `${MODE}-C0`, '-Target', hwndOf(a.base));
+            a.bw.destroy(); a.base.destroy();
+            await sleep(1500);
+            await ps('-Action', 'enum', '-Label', `${MODE}-C1-after-close`);
+            const b = await makeSet('B');
+            await sleep(3000);
+            await report('C1-window-created-after-previous-closed', b);
+            await ps('-Action', 'enum', '-Label', `${MODE}-C1`, '-Target', hwndOf(b.base));
+            await ps('-Action', 'shot', '-Label', `${MODE}-C1`);
+
+            const child = spawn('cmd.exe', ['/c', 'title PROBE_CHILD_CONSOLE && ping -n 20 127.0.0.1 >nul']);
+            child.on('error', (e) => log('child error', String(e)));
+            log(`spawned console child pid=${child.pid} (windowsHide=false, stdio pipes)`);
+            await sleep(3000);
+            await report('C2-existing-window-after-console-child-spawned', b);
+            await ps('-Action', 'enum', '-Label', `${MODE}-C2`, '-Target', hwndOf(b.base));
+            const c = await makeSet('C');
+            await sleep(3000);
+            await report('C2-window-created-while-console-child-open', c);
+            await ps('-Action', 'enum', '-Label', `${MODE}-C2-new`, '-Target', hwndOf(c.base));
+            await ps('-Action', 'shot', '-Label', `${MODE}-C2`);
+            try { child.kill(); } catch {}
+            await sleep(1500);
+            await report('C3-after-console-child-killed', b);
+            await report('C3-after-console-child-killed', c);
+          }
+
           app.on('window-all-closed', () => {});
           setTimeout(() => { log('HARD TIMEOUT'); app.exit(3); }, 12 * 60 * 1000).unref();
 
           app.whenReady().then(async () => {
             log(`mode=${MODE} electron=${process.versions.electron} argv=${JSON.stringify(process.argv)}`);
             try {
-              if (MODE === 'full') await full(); else await afterfix();
+              if (MODE === 'full') await full(); else if (MODE.startsWith('close')) await closeMode(); else await afterfix();
             } catch (e) {
               log('FATAL', e && e.stack ? e.stack : String(e));
             } finally {
@@ -529,23 +563,23 @@ jobs:
           Expand-Archive -Force $zip -DestinationPath "$env:RUNNER_TEMP\probe\electron"
           Get-Item "$env:RUNNER_TEMP\probe\electron\electron.exe" | Format-List FullName, Length, VersionInfo
 
-      - name: Run Electron probe (z-order scenarios, minimize candidates)
+      - name: Run Electron probe (close/console-child scenarios, before fix)
         shell: pwsh
         continue-on-error: true
         timeout-minutes: 15
         run: |
           $env:PROBE_OUT = "$env:RUNNER_TEMP\probe\out"
           $env:PROBE_PS1 = "$env:RUNNER_TEMP\probe\probe.ps1"
-          $env:PROBE_MODE = 'full'
-          node "$env:RUNNER_TEMP\probe\launcher.js" "$env:RUNNER_TEMP\probe\electron\electron.exe" "$env:RUNNER_TEMP\probe\app" 2>&1 | Tee-Object -FilePath "$env:RUNNER_TEMP\probe\out\electron-full-stdout.log"
+          $env:PROBE_MODE = 'close-prefix'
+          node "$env:RUNNER_TEMP\probe\launcher.js" "$env:RUNNER_TEMP\probe\electron\electron.exe" "$env:RUNNER_TEMP\probe\app" 2>&1 | Tee-Object -FilePath "$env:RUNNER_TEMP\probe\out\electron-close-prefix-stdout.log"
 
       - name: Window enumeration after Electron exited
         shell: pwsh
         continue-on-error: true
         run: |
-          $log = "$env:RUNNER_TEMP\probe\out\after-electron.log"
-          & "$env:RUNNER_TEMP\probe\probe.ps1" -Action enum -Label after-electron 2>&1 | Tee-Object -FilePath $log
-          & "$env:RUNNER_TEMP\probe\probe.ps1" -Action shot -Label after-electron 2>&1 | Tee-Object -FilePath $log -Append
+          $log = "$env:RUNNER_TEMP\probe\out\after-close-prefix.log"
+          & "$env:RUNNER_TEMP\probe\probe.ps1" -Action enum -Label after-close-prefix 2>&1 | Tee-Object -FilePath $log
+          & "$env:RUNNER_TEMP\probe\probe.ps1" -Action shot -Label after-close-prefix 2>&1 | Tee-Object -FilePath $log -Append
 
       - name: Apply candidate fix snippet (minimize console windows)
         shell: pwsh
@@ -559,15 +593,25 @@ jobs:
           & "$env:RUNNER_TEMP\probe\probe.ps1" -Action enum -Label after-fix 2>&1 | Tee-Object -FilePath $log -Append
           & "$env:RUNNER_TEMP\probe\probe.ps1" -Action shot -Label after-fix 2>&1 | Tee-Object -FilePath $log -Append
 
-      - name: Run Electron probe again after the fix snippet
+      - name: Run Electron probe (close/console-child scenarios, after fix)
         shell: pwsh
         continue-on-error: true
         timeout-minutes: 10
         run: |
           $env:PROBE_OUT = "$env:RUNNER_TEMP\probe\out"
           $env:PROBE_PS1 = "$env:RUNNER_TEMP\probe\probe.ps1"
-          $env:PROBE_MODE = 'afterfix'
-          node "$env:RUNNER_TEMP\probe\launcher.js" "$env:RUNNER_TEMP\probe\electron\electron.exe" "$env:RUNNER_TEMP\probe\app" 2>&1 | Tee-Object -FilePath "$env:RUNNER_TEMP\probe\out\electron-afterfix-stdout.log"
+          $env:PROBE_MODE = 'close-postfix'
+          node "$env:RUNNER_TEMP\probe\launcher.js" "$env:RUNNER_TEMP\probe\electron\electron.exe" "$env:RUNNER_TEMP\probe\app" 2>&1 | Tee-Object -FilePath "$env:RUNNER_TEMP\probe\out\electron-close-postfix-stdout.log"
+
+      - name: Run Electron probe (z-order scenarios, minimize candidates)
+        shell: pwsh
+        continue-on-error: true
+        timeout-minutes: 10
+        run: |
+          $env:PROBE_OUT = "$env:RUNNER_TEMP\probe\out"
+          $env:PROBE_PS1 = "$env:RUNNER_TEMP\probe\probe.ps1"
+          $env:PROBE_MODE = 'full'
+          node "$env:RUNNER_TEMP\probe\launcher.js" "$env:RUNNER_TEMP\probe\electron\electron.exe" "$env:RUNNER_TEMP\probe\app" 2>&1 | Tee-Object -FilePath "$env:RUNNER_TEMP\probe\out\electron-full-stdout.log"
 
       - name: Upload probe output
         if: always()
