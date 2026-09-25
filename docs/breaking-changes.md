@@ -20,17 +20,21 @@ This document uses the following convention to categorize breaking changes:
 
 Electron notices work given to Node.js's libuv loop when `setTimeout`,
 `setInterval`, `setImmediate` or `process.nextTick` is called, when a Chromium
-task ends, when a microtask checkpoint runs, and when a call from native code
-into JavaScript returns. A native module that starts a libuv handle itself
-(`uv_timer_start()`, `uv_poll_start()`, `uv_spawn()` and so on) from its own
-OS callback on the main thread - a window procedure hook, a run loop observer
-or a GSource - without calling into JavaScript should follow it with
-`uv_async_send()` on a handle of its own so the loop runs it promptly. Handles
-started from JavaScript, from Node.js or Node-API callbacks, async work and
-thread-safe functions, or from Chromium tasks are not affected. One narrow case
-remains for JavaScript: a socket, server or watcher (not a timer) started from
-a menu, tray or global shortcut handler while a synchronous dialog or a drag
-blocks another JavaScript frame is polled once that dialog or drag ends.
+task ends, when a microtask checkpoint runs, when a nested run loop begins, and
+when a call from native code into JavaScript returns. A native module that
+starts a libuv handle (`uv_timer_start()`, `uv_poll_start()`, `uv_spawn()` and
+so on) from its own OS callback on the main thread - a window procedure hook, a
+run loop observer or a GSource - rather than from a Node.js or Node-API
+callback should follow it with `uv_async_send()` on a handle of its own, or
+start it before or inside a call into JavaScript, so the loop runs it promptly.
+Handles started from Node.js or Node-API callbacks, async work and thread-safe
+functions, or Chromium tasks are not affected.
+
+For JavaScript, anything other than those four calls (a socket, a watcher,
+`dns.resolve()`, `timers/promises`, `socket.setTimeout()`) that a handler
+starts and then follows with a synchronous dialog on macOS or Windows, or that
+a menu, tray or global shortcut handler starts while a synchronous dialog or a
+drag is in progress on any platform, is serviced once that dialog or drag ends.
 
 ### Behavior Changed: `utilityProcess` `child.kill()` no longer force-kills the child
 
