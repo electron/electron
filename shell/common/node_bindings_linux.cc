@@ -20,7 +20,10 @@ NodeBindingsLinux::NodeBindingsLinux(BrowserEnvironment browser_env,
   epoll_ctl(epoll_.get(), EPOLL_CTL_ADD, backend_fd, &ev);
 }
 
-NodeBindingsLinux::~NodeBindingsLinux() = default;
+// The embed thread uses epoll_, so it has to be gone before the members are.
+NodeBindingsLinux::~NodeBindingsLinux() {
+  StopPolling();
+}
 
 void NodeBindingsLinux::PollEvents(int timeout) {
   int r;
