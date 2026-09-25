@@ -5,6 +5,8 @@
 #include "shell/browser/api/electron_api_base_window.h"
 
 #include <algorithm>
+#include <cmath>
+#include <limits>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -81,18 +83,21 @@ namespace electron::api {
 
 namespace {
 
-// Reads |key| into |out| when the dictionary has it. Returns false only when
-// it is there but is not a number.
+// Reads |key| into |out| when the dictionary has it. Returns false when it is
+// there but is not a finite number that fits in an int, the same values the
+// gfx::Rect converter rejects.
 bool ReadCoordinate(gin_helper::Dictionary& dict,
                     std::string_view key,
                     std::optional<float>* out) {
   v8::Local<v8::Value> field;
   if (!dict.Get(key, &field) || field->IsUndefined())
     return true;
-  float value = 0;
-  if (!gin::ConvertFromV8(dict.isolate(), field, &value))
+  double value = 0;
+  if (!gin::ConvertFromV8(dict.isolate(), field, &value) ||
+      !std::isfinite(value) || value < std::numeric_limits<int>::min() ||
+      value > std::numeric_limits<int>::max())
     return false;
-  *out = value;
+  *out = static_cast<float>(value);
   return true;
 }
 
