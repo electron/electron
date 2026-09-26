@@ -99,6 +99,7 @@
 #if BUILDFLAG(IS_WIN)
 #include "chrome/browser/win/chrome_select_file_dialog_factory.h"
 #include "components/os_crypt/async/browser/os_crypt_win.h"
+#include "shell/browser/win/install_dir_access.h"
 #include "ui/base/l10n/l10n_util_win.h"
 #include "ui/gfx/system_fonts_win.h"
 #include "ui/strings/grit/app_locale_settings.h"
@@ -413,6 +414,11 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   if (!views::LayoutProvider::Get()) {
     layout_provider_ = std::make_unique<views::LayoutProvider>();
   }
+
+#if BUILDFLAG(IS_WIN)
+  // Before the first sandboxed child (the GPU process) is launched.
+  CheckSandboxedProcessesCanReadInstallDir();
+#endif
 
   // Fetch the system locale for Electron.
 #if BUILDFLAG(IS_MAC)
