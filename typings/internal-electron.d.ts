@@ -101,6 +101,7 @@ declare namespace Electron {
     _setConsoleMessageObserved(observed: boolean): void;
     getOwnerBrowserWindow(): Electron.BrowserWindow | null;
     getLastWebPreferences(): Electron.WebPreferences | null;
+    _setVisualZoomLevelLimits(minimumLevel: number, maximumLevel: number): void;
     _getProcessMemoryInfo(processId?: number): Electron.ProcessMemoryInfo;
     _getPreloadScript(): Electron.PreloadScript | null;
     browserWindowOptions: BrowserWindowConstructorOptions;
