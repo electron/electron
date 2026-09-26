@@ -1,0 +1,380 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Attard <sattard@anthropic.com>
+Date: Mon, 21 Sep 2026 20:15:53 +0000
+Subject: fix: plumb the requesting frame through pointer lock requests
+
+Blink sends Element.requestPointerLock() to the browser over the
+WidgetInputHandlerHost of the requesting frame's local root, so the
+browser only learns which widget asked. Frames that share a process with
+their parent (same-site cross-origin iframes under site-per-process, or
+any iframe without site isolation) share that widget, which makes the
+request indistinguishable from one made by the local root document.
+
+Electron reports the requesting frame and origin to the app's permission
+request handler, so it needs the real frame. This passes the requesting
+frame's LocalFrameToken with the request, validates in WebContentsImpl
+that it names a live frame in the widget's process whose local root is
+that widget, records it next to pointer_lock_widget_ and exposes it via
+WebContentsImpl::GetPointerLockRequestingFrame().
+
+Chrome keys pointer lock on the top-level tab so it has not needed this;
+it could be proposed upstream alongside crbug.com/492211919 (the sandbox
+flag check has the same local-root-only limitation).
+
+diff --git a/components/input/input_router_client.h b/components/input/input_router_client.h
+index e835dc6c7c12cc1a4004a9e68d4009fbdcffac1b..6f9c2bf7096492443afab8ef3d0a4776e9115755 100644
+--- a/components/input/input_router_client.h
++++ b/components/input/input_router_client.h
+@@ -9,6 +9,7 @@
+ #include "components/input/event_with_latency_info.h"
+ #include "components/input/native_web_keyboard_event.h"
+ #include "third_party/blink/public/common/input/web_input_event.h"
++#include "third_party/blink/public/common/tokens/tokens.h"
+ #include "third_party/blink/public/mojom/input/input_event_result.mojom-shared.h"
+ #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
+ 
+@@ -92,6 +93,7 @@ class COMPONENT_EXPORT(INPUT) InputRouterClient {
+   virtual void SetAutoscrollSelectionActiveInMainFrame(
+       bool autoscroll_selection) = 0;
+   virtual void RequestMouseLock(
++      const blink::LocalFrameToken& requesting_frame,
+       bool from_user_gesture,
+       bool unadjusted_movement,
+       blink::mojom::WidgetInputHandlerHost::RequestMouseLockCallback
+diff --git a/components/input/input_router_impl.cc b/components/input/input_router_impl.cc
+index 51baeda2c2e35bb27cc12e1973e96fd047840615..ad497a826df405440b77a82247fe1bc260607370 100644
+--- a/components/input/input_router_impl.cc
++++ b/components/input/input_router_impl.cc
+@@ -435,11 +435,13 @@ void InputRouterImpl::SetAutoscrollSelectionActiveInMainFrame(
+   client_->SetAutoscrollSelectionActiveInMainFrame(autoscroll_selection);
+ }
+ 
+-void InputRouterImpl::RequestMouseLock(bool from_user_gesture,
+-                                       bool unadjusted_movement,
+-                                       RequestMouseLockCallback response) {
+-  client_->RequestMouseLock(from_user_gesture, unadjusted_movement,
+-                            std::move(response));
++void InputRouterImpl::RequestMouseLock(
++    const blink::LocalFrameToken& requesting_frame,
++    bool from_user_gesture,
++    bool unadjusted_movement,
++    RequestMouseLockCallback response) {
++  client_->RequestMouseLock(requesting_frame, from_user_gesture,
++                            unadjusted_movement, std::move(response));
+ }
+ 
+ void InputRouterImpl::SetMovementXYForTouchPoints(blink::WebTouchEvent* event) {
+diff --git a/components/input/input_router_impl.h b/components/input/input_router_impl.h
+index cd945e47898c7d574288afbd171d2f7afd70830f..bb218281bd42c230f55d4c00995e5677f11fa75a 100644
+--- a/components/input/input_router_impl.h
++++ b/components/input/input_router_impl.h
+@@ -108,7 +108,8 @@ class COMPONENT_EXPORT(INPUT) InputRouterImpl
+   void SetMouseCapture(bool capture) override;
+   void SetAutoscrollSelectionActiveInMainFrame(
+       bool autoscroll_selection) override;
+-  void RequestMouseLock(bool from_user_gesture,
++  void RequestMouseLock(const blink::LocalFrameToken& requesting_frame,
++                        bool from_user_gesture,
+                         bool unadjusted_movement,
+                         RequestMouseLockCallback response) override;
+   // Notifies touch action filter and touch event queue whether there are
+diff --git a/components/input/render_input_router.cc b/components/input/render_input_router.cc
+index abafa454cebab2063673b8f83dbce2d7f08dd2dc..add6a82ccbf8d07301013b22ad835cbc8657da0a 100644
+--- a/components/input/render_input_router.cc
++++ b/components/input/render_input_router.cc
+@@ -301,11 +301,13 @@ void RenderInputRouter::SetAutoscrollSelectionActiveInMainFrame(
+ }
+ 
+ void RenderInputRouter::RequestMouseLock(
++    const blink::LocalFrameToken& requesting_frame,
+     bool from_user_gesture,
+     bool unadjusted_movement,
+     InputRouterImpl::RequestMouseLockCallback response) {
+   render_input_router_client_->RequestMouseLock(
+-      from_user_gesture, unadjusted_movement, std::move(response));
++      requesting_frame, from_user_gesture, unadjusted_movement,
++      std::move(response));
+ }
+ 
+ gfx::Size RenderInputRouter::GetRootWidgetViewportSize() {
+diff --git a/components/input/render_input_router.h b/components/input/render_input_router.h
+index 55e19177b71b7dd157540eda6ce208feac8eda46..32f7d87f20e62a587725b6b7dc8d5588d9432399 100644
+--- a/components/input/render_input_router.h
++++ b/components/input/render_input_router.h
+@@ -104,6 +104,7 @@ class COMPONENT_EXPORT(INPUT) RenderInputRouter
+   void SetAutoscrollSelectionActiveInMainFrame(
+       bool autoscroll_selection) override;
+   void RequestMouseLock(
++      const blink::LocalFrameToken& requesting_frame,
+       bool from_user_gesture,
+       bool unadjusted_movement,
+       InputRouterImpl::RequestMouseLockCallback response) override;
+diff --git a/components/input/render_input_router_client.h b/components/input/render_input_router_client.h
+index 79e79a79538612af6d3f5ff7f3fc7c973afbd6bc..ac9d5889fd106d34325f8260235dd83dd20aea21 100644
+--- a/components/input/render_input_router_client.h
++++ b/components/input/render_input_router_client.h
+@@ -28,6 +28,7 @@ class COMPONENT_EXPORT(INPUT) RenderInputRouterClient {
+   virtual void SetAutoscrollSelectionActiveInMainFrame(
+       bool autoscroll_selection) = 0;
+   virtual void RequestMouseLock(
++      const blink::LocalFrameToken& requesting_frame,
+       bool from_user_gesture,
+       bool unadjusted_movement,
+       blink::mojom::WidgetInputHandlerHost::RequestMouseLockCallback
+diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
+index b6341ff8dc1e26dfcffa3a5110e4b556edc0f83d..3b43b418ef26e4fdec196288107ede5be2678870 100644
+--- a/content/browser/renderer_host/render_widget_host_delegate.h
++++ b/content/browser/renderer_host/render_widget_host_delegate.h
+@@ -21,6 +21,7 @@
+ #include "services/metrics/public/cpp/ukm_recorder.h"
+ #include "third_party/blink/public/common/input/web_input_event.h"
+ #include "third_party/blink/public/common/page/drag_operation.h"
++#include "third_party/blink/public/common/tokens/tokens.h"
+ #include "third_party/blink/public/mojom/frame/lifecycle.mojom.h"
+ #include "third_party/blink/public/mojom/input/input_handler.mojom-shared.h"
+ #include "third_party/blink/public/mojom/manifest/application_context.mojom.h"
+@@ -230,10 +231,13 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+ 
+   // Requests to lock the mouse. Once the request is approved or rejected,
+   // GotResponseToLockPointerRequest() will be called on the requesting render
+-  // widget host.
+-  virtual void RequestToLockPointer(RenderWidgetHostImpl* render_widget_host,
+-                                    bool user_gesture,
+-                                    bool last_unlocked_by_target) {}
++  // widget host. |requesting_frame| is the renderer-supplied token of the
++  // frame hosted by |render_widget_host| whose document asked for the lock.
++  virtual void RequestToLockPointer(
++      RenderWidgetHostImpl* render_widget_host,
++      const blink::LocalFrameToken& requesting_frame,
++      bool user_gesture,
++      bool last_unlocked_by_target) {}
+ 
+   virtual void UnlockPointer(RenderWidgetHostImpl* render_widget_host) {}
+ 
+diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
+index 5024a05f7cc2b2b0ca22e32952d1aef72e147ef4..c8e878c7b1465439647041d266fac604424b4d10 100644
+--- a/content/browser/renderer_host/render_widget_host_impl.cc
++++ b/content/browser/renderer_host/render_widget_host_impl.cc
+@@ -3553,6 +3553,7 @@ void RenderWidgetHostImpl::SetAutoscrollSelectionActiveInMainFrame(
+ }
+ 
+ void RenderWidgetHostImpl::RequestMouseLock(
++    const blink::LocalFrameToken& requesting_frame,
+     bool from_user_gesture,
+     bool unadjusted_movement,
+     input::InputRouterImpl::RequestMouseLockCallback response) {
+@@ -3589,7 +3590,7 @@ void RenderWidgetHostImpl::RequestMouseLock(
+     return;
+   }
+ 
+-  delegate_->RequestToLockPointer(this, from_user_gesture,
++  delegate_->RequestToLockPointer(this, requesting_frame, from_user_gesture,
+                                   is_last_unlocked_by_target_);
+   // We need to reset |is_last_unlocked_by_target_| here as we don't know
+   // request source in |LostPointerLock()|.
+diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
+index b5879712fb76e792124491fb511ef5aa7a421da2..395437bd1fb19b63608ca8f1586da27c3e02ba05 100644
+--- a/content/browser/renderer_host/render_widget_host_impl.h
++++ b/content/browser/renderer_host/render_widget_host_impl.h
+@@ -878,6 +878,7 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+   void SetAutoscrollSelectionActiveInMainFrame(
+       bool autoscroll_selection) override;
+   void RequestMouseLock(
++      const blink::LocalFrameToken& requesting_frame,
+       bool from_user_gesture,
+       bool unadjusted_movement,
+       input::InputRouterImpl::RequestMouseLockCallback response) override;
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 430184a187ef96a07ab85e7a4f4fe635f8b1a8b6..e7bd8bb1d1bef08e19d355de79cde62a861ec2c6 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -5299,6 +5299,7 @@ blink::mojom::ApplicationContext WebContentsImpl::GetApplicationContext()
+ 
+ void WebContentsImpl::RequestToLockPointer(
+     RenderWidgetHostImpl* render_widget_host,
++    const blink::LocalFrameToken& requesting_frame,
+     bool user_gesture,
+     bool last_unlocked_by_target) {
+   OPTIONAL_TRACE_EVENT1("content", "WebContentsImpl::RequestPointerLock",
+@@ -5326,9 +5327,19 @@ void WebContentsImpl::RequestToLockPointer(
+     }
+   }
+ 
++  // The renderer names the document that called requestPointerLock(). It must
++  // be a frame in the widget's process whose local root is that widget.
++  RenderFrameHostImpl* requesting_rfh = RenderFrameHostImpl::FromFrameToken(
++      render_widget_host->GetProcess()->GetID(), requesting_frame);
++  if (!requesting_rfh ||
++      requesting_rfh->GetRenderWidgetHost() != render_widget_host) {
++    widget_in_frame_tree = false;
++  }
++
+   WebContentsDelegate* delegate = GetFirstWebContentsDelegate();
+   if (widget_in_frame_tree && delegate) {
+     SetPointerLockWidgetInParentChain(render_widget_host);
++    pointer_lock_requesting_frame_id_ = requesting_rfh->GetGlobalId();
+     observers_.NotifyObservers(&WebContentsObserver::PointerLockRequested);
+     delegate->RequestPointerLock(this, user_gesture, last_unlocked_by_target);
+   } else {
+@@ -9832,9 +9843,22 @@ bool WebContentsImpl::HasPointerLockWidgetInParentChain() {
+   return false;
+ }
+ 
++RenderFrameHostImpl* WebContentsImpl::GetPointerLockRequestingFrame() {
++  if (!pointer_lock_widget_) {
++    return nullptr;
++  }
++  RenderFrameHostImpl* rfh =
++      RenderFrameHostImpl::FromID(pointer_lock_requesting_frame_id_);
++  return rfh && rfh->GetRenderWidgetHost() == pointer_lock_widget_ ? rfh
++                                                                   : nullptr;
++}
++
+ void WebContentsImpl::SetPointerLockWidgetInParentChain(
+     RenderWidgetHostImpl* widget) {
+   pointer_lock_widget_ = widget;
++  if (!widget) {
++    pointer_lock_requesting_frame_id_ = GlobalRenderFrameHostId();
++  }
+   if (auto* connector = GetSurfaceEmbedConnector()) {
+     static_cast<SurfaceEmbedConnectorImpl*>(connector)
+         ->SetPointerLockWidgetInParentChain(widget);
+diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
+index e1b1f3c7ecf9c09d290ae6dbcad19998e9df2881..18642501433a21478901c20379e6002357901adb 100644
+--- a/content/browser/web_contents/web_contents_impl.h
++++ b/content/browser/web_contents/web_contents_impl.h
+@@ -1209,6 +1209,7 @@ class CONTENT_EXPORT WebContentsImpl
+       base::RepeatingClosure hang_monitor_restarter) override;
+   void RendererResponsive(RenderWidgetHostImpl* render_widget_host) override;
+   void RequestToLockPointer(RenderWidgetHostImpl* render_widget_host,
++                            const blink::LocalFrameToken& requesting_frame,
+                             bool user_gesture,
+                             bool last_unlocked_by_target) override;
+   bool IsWaitingForPointerLockPrompt(
+@@ -1646,6 +1647,11 @@ class CONTENT_EXPORT WebContentsImpl
+     return pointer_lock_widget_;
+   }
+ 
++  // The frame whose document requested the pointer lock that is pending or
++  // held through |pointer_lock_widget_|, or nullptr if there is none or the
++  // frame has gone away.
++  RenderFrameHostImpl* GetPointerLockRequestingFrame();
++
+   const std::set<raw_ptr<RenderFrameHostImpl, SetExperimental>>&
+   fullscreen_frames_for_testing() const {
+     return fullscreen_frames_;
+@@ -2683,6 +2689,9 @@ class CONTENT_EXPORT WebContentsImpl
+   raw_ptr<RenderWidgetHostImpl, DanglingUntriaged> pointer_lock_widget_ =
+       nullptr;
+ 
++  // The frame within |pointer_lock_widget_| whose document asked for the lock.
++  GlobalRenderFrameHostId pointer_lock_requesting_frame_id_;
++
+   // Stores the RenderWidgetHost that currently holds a keyboard lock or nullptr
+   // if no RenderWidgetHost has the keyboard locked.
+   raw_ptr<RenderWidgetHostImpl, DanglingUntriaged> keyboard_lock_widget_ =
+diff --git a/third_party/blink/public/mojom/input/input_handler.mojom b/third_party/blink/public/mojom/input/input_handler.mojom
+index befc16c411a93fb554a6c11bc0df7723ae99b2f5..5ffdfdb5f11efe96ebcad3b730ef9521a7139171 100644
+--- a/third_party/blink/public/mojom/input/input_handler.mojom
++++ b/third_party/blink/public/mojom/input/input_handler.mojom
+@@ -21,6 +21,7 @@ import "third_party/blink/public/mojom/input/pointer_lock_result.mojom";
+ import "third_party/blink/public/mojom/input/stylus_writing_gesture.mojom";
+ import "third_party/blink/public/mojom/input/touch_event.mojom";
+ import "third_party/blink/public/mojom/selection_menu/selection_menu_behavior.mojom";
++import "third_party/blink/public/mojom/tokens/tokens.mojom";
+ import "ui/base/ime/mojom/ime_types.mojom";
+ import "ui/events/mojom/event.mojom";
+ import "ui/events/mojom/event_constants.mojom";
+@@ -298,6 +299,9 @@ interface WidgetInputHandlerHost {
+   // removing the cursor from view.  Mostly used by the Pointer Lock API.
+   // See https://www.w3.org/TR/pointerlock/ for more info. This call is
+   // also used by Pepper Flash.
++  // |requesting_frame| identifies the document in this widget's local root
++  // subtree that called requestPointerLock(), so the browser can attribute the
++  // request to that frame rather than to the local root.
+   // |from_user_gesture| indicates whether this request came from a user
+   // gesture or not.
+   // |unadjusted_movement| indicates whether the request asked for raw mouse
+@@ -307,7 +311,8 @@ interface WidgetInputHandlerHost {
+   // reason if not.
+   // |context| is one end of a mojo pipe that will stay connected as long as
+   // the mouse is locked. Is a NullRemote if |result| is not kSuccess.
+-  RequestMouseLock(bool from_user_gesture, bool unadjusted_movement)
++  RequestMouseLock(blink.mojom.LocalFrameToken requesting_frame,
++                   bool from_user_gesture, bool unadjusted_movement)
+       => (PointerLockResult result,
+           pending_remote<blink.mojom.PointerLockContext>? context);
+ };
+diff --git a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
+index 92114bd98e2480cf88abb8838d16b3bcd27a3a4b..f90c6711a0c44c02dc32c5671e98bca0b54da471 100644
+--- a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
++++ b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
+@@ -3574,6 +3574,7 @@ void WebFrameWidgetImpl::CancelComposition() {
+ }
+ 
+ void WebFrameWidgetImpl::RequestMouseLock(
++    const LocalFrameToken& requesting_frame,
+     bool has_transient_user_activation,
+     bool request_unadjusted_movement,
+     mojom::blink::WidgetInputHandlerHost::RequestMouseLockCallback callback) {
+@@ -3587,7 +3588,7 @@ void WebFrameWidgetImpl::RequestMouseLock(
+   // callback. It does share the same signature as the mojo definition
+   // for simplicity.
+   if (host) {
+-    host->RequestMouseLock(has_transient_user_activation,
++    host->RequestMouseLock(requesting_frame, has_transient_user_activation,
+                            request_unadjusted_movement, std::move(callback));
+   }
+ }
+diff --git a/third_party/blink/renderer/core/frame/web_frame_widget_impl.h b/third_party/blink/renderer/core/frame/web_frame_widget_impl.h
+index 390c25e6746eaa2c3bde284872399e7445dd2efa..a971cc71a1f60d2dc79f2049e07d647ab623eb93 100644
+--- a/third_party/blink/renderer/core/frame/web_frame_widget_impl.h
++++ b/third_party/blink/renderer/core/frame/web_frame_widget_impl.h
+@@ -331,6 +331,7 @@ class CORE_EXPORT WebFrameWidgetImpl
+   Vector<ui::mojom::blink::ImeTextSpanInfoPtr> GetImeTextSpansInfo(
+       const std::vector<ui::ImeTextSpan>& ime_text_spans) override;
+   void RequestMouseLock(
++      const LocalFrameToken& requesting_frame,
+       bool has_transient_user_activation,
+       bool request_unadjusted_movement,
+       mojom::blink::WidgetInputHandlerHost::RequestMouseLockCallback callback)
+diff --git a/third_party/blink/renderer/core/page/pointer_lock_controller.cc b/third_party/blink/renderer/core/page/pointer_lock_controller.cc
+index bb307c7fe3cea441362d8682e4d55283a04ff9f7..ac2e3b70ea428cd42addff87e0a1525ac128fcc5 100644
+--- a/third_party/blink/renderer/core/page/pointer_lock_controller.cc
++++ b/third_party/blink/renderer/core/page/pointer_lock_controller.cc
+@@ -58,6 +58,7 @@ bool PointerLockController::RequestPointerLock(Element* target,
+   }
+   LocalDOMWindow* window = To<LocalDOMWindow>(target->GetExecutionContext());
+   window->GetFrame()->GetWidgetForLocalRoot()->RequestMouseLock(
++      window->GetFrame()->GetLocalFrameToken(),
+       LocalFrame::HasTransientUserActivation(window->GetFrame()),
+       /*unadjusted_movement_requested=*/false,
+       blink::BindOnce(&PointerLockController::LockRequestCallback,
+@@ -172,6 +173,7 @@ void PointerLockController::RequestPointerLock(
+     // Subsequent steps are handled in the browser process.
+   } else {
+     window->GetFrame()->GetWidgetForLocalRoot()->RequestMouseLock(
++        window->GetFrame()->GetLocalFrameToken(),
+         LocalFrame::HasTransientUserActivation(window->GetFrame()),
+         unadjusted_movement_requested,
+         blink::BindOnce(&PointerLockController::LockRequestCallback,
+diff --git a/third_party/blink/renderer/platform/widget/frame_widget.h b/third_party/blink/renderer/platform/widget/frame_widget.h
+index 72a95a0819921184f04557187ef4540ae84580ad..825de20f8e5b1df865c5dedbccbbfd87005ee072 100644
+--- a/third_party/blink/renderer/platform/widget/frame_widget.h
++++ b/third_party/blink/renderer/platform/widget/frame_widget.h
+@@ -16,6 +16,7 @@
+ #include "cc/trees/layer_tree_host.h"
+ #include "mojo/public/mojom/base/text_direction.mojom-blink.h"
+ #include "services/viz/public/mojom/compositing/frame_sink_id.mojom-blink.h"
++#include "third_party/blink/public/common/tokens/tokens.h"
+ #include "third_party/blink/public/mojom/input/input_handler.mojom-blink.h"
+ #include "third_party/blink/public/mojom/manifest/application_context.mojom-blink.h"
+ #include "third_party/blink/public/mojom/manifest/display_mode.mojom-blink.h"
+@@ -272,6 +273,7 @@ class PLATFORM_EXPORT FrameWidget {
+   virtual gfx::RectF DIPsToBlinkSpace(const gfx::RectF& rect) = 0;
+ 
+   virtual void RequestMouseLock(
++      const LocalFrameToken& requesting_frame,
+       bool has_transient_user_activation,
+       bool request_unadjusted_movement,
+       mojom::blink::WidgetInputHandlerHost::RequestMouseLockCallback
