@@ -2979,6 +2979,19 @@ describe('webContents module', () => {
       }
     });
 
+    it('keeps the zoom level of a file: page across a fragment navigation', async () => {
+      const w = new BrowserWindow({ show: false });
+      try {
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        w.webContents.setZoomLevel(2);
+        await w.webContents.executeJavaScript("location.hash = 'section'; new Promise(r => setTimeout(r))");
+        expect(w.webContents.getURL()).to.match(/#section$/);
+        expect(w.webContents.getZoomLevel()).to.equal(2);
+      } finally {
+        w.webContents.setZoomLevel(0);
+      }
+    });
+
     it('can set the correct zoom level (properties)', async () => {
       const w = new BrowserWindow({ show: false });
       try {
