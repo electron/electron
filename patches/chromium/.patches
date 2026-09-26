@@ -219,3 +219,4 @@ cherry-pick-73795bd81fbd.patch
 cherry-pick-a3f9fa1ec680.patch
 cherry-pick-0728ae248ac5.patch
 fix_don_t_leave_gdk_backend_set_in_the_environment_after_gtk_init.patch
+fix_plumb_the_requesting_frame_through_pointer_lock_requests.patch
