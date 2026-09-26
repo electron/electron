@@ -41,6 +41,9 @@ class ElectronDesktopWindowTreeHostLinux
 
   bool SupportsClientFrameShadow() const;
 
+  // views::DesktopWindowTreeHostLinux:
+  void UpdateFrameHints() override;
+
  protected:
   // views::DesktopWindowTreeHostLinuxImpl:
   void OnWidgetInitDone() override;
@@ -66,7 +69,6 @@ class ElectronDesktopWindowTreeHostLinux
   void OnDeviceScaleFactorChanged() override;
 
   // views::DesktopWindowTreeHostLinux:
-  void UpdateFrameHints() override;
   void DispatchEvent(ui::Event* event) override;
   void AddAdditionalInitProperties(
       const views::Widget::InitParams& params,
