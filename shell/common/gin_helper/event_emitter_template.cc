@@ -35,6 +35,7 @@ v8::Local<v8::FunctionTemplate> GetEventEmitterTemplate(v8::Isolate* isolate) {
     CHECK(func_prototype.As<v8::Object>()
               ->SetPrototype(context, eventemitter_prototype)
               .ToChecked());
+    electron::InstallListenerTracking(context, func_prototype.As<v8::Object>());
 
     if (data)
       data->function_template.Reset(isolate, tmpl);

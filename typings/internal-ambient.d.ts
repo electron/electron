@@ -303,12 +303,7 @@ declare namespace NodeJS {
       createDesktopCapturer(): ElectronInternal.DesktopCapturer;
       isDisplayMediaSystemPickerAvailable(): boolean;
     };
-    _linkedBinding(name: 'electron_browser_event_emitter'): {
-      setEventEmitterPrototype(prototype: Object): void;
-      setEventObserved(emitter: Object, eventName: string, observed: boolean): void;
-      clearObservedEvents(emitter: Object): void;
-      observeAllEvents(emitter: Object): void;
-    };
+    _linkedBinding(name: 'electron_browser_event_emitter'): { setEventEmitterPrototype(prototype: Object): void };
     _linkedBinding(name: 'electron_browser_ipc_dispatch'): {
       setup(objects: { ipcMain: NodeJS.EventEmitter; ipcMainInternal: NodeJS.EventEmitter }): void;
     };

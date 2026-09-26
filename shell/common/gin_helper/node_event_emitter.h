@@ -46,6 +46,28 @@ bool EmitEvent(v8::Isolate* isolate,
                v8::Local<v8::Value> type,
                base::span<v8::Local<v8::Value>> args);
 
+// What a receiver's listener table holds for `type` after a change made by
+// one of the methods InstallListenerMethods() defines.
+enum class ListenerChange {
+  kObserved,       // `type` has at least one listener
+  kUnobserved,     // `type` has no listeners left
+  kUnobservedAll,  // no event has; `type` is undefined
+};
+using ListenerChangeCallback = void (*)(v8::Isolate* isolate,
+                                        v8::Local<v8::Object> emitter,
+                                        v8::Local<v8::Value> type,
+                                        ListenerChange change);
+
+// Defines native addListener / on / prependListener / removeListener / off /
+// removeAllListeners on `prototype`: the class above's own implementations,
+// which are generic over their receiver, so `prototype` can sit in front of
+// Node.js's EventEmitter.prototype and leave once(), emit() and the rest to
+// it. Each change one of them makes to a receiver's listener table is
+// reported to `callback` after the fact.
+void InstallListenerMethods(v8::Local<v8::Context> context,
+                            v8::Local<v8::Object> prototype,
+                            ListenerChangeCallback callback);
+
 }  // namespace gin_helper
 
 #endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_NODE_EVENT_EMITTER_H_

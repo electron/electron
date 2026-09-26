@@ -11,6 +11,7 @@
 #include "base/check.h"
 #include "base/no_destructor.h"
 #include "gin/converter.h"
+#include "shell/common/gin_helper/node_event_emitter.h"
 #include "shell/common/node_includes.h"
 #include "v8/include/v8.h"
 
@@ -95,11 +96,11 @@ DataProperty ReadDataProperty(v8::Isolate* isolate,
   return DataProperty::kUnknown;
 }
 
-// Whether |wrapper| gets its emit() from the registered prototype, with
-// nothing of its own in front of it, and Node's emit() behind that is still
-// the original. Anything else - an emit() assigned to the wrapper or to a
-// subclass, a patched EventEmitter.prototype.emit - sees every event whether
-// or not it has listeners.
+// Whether |wrapper| gets its emit() from Node's EventEmitter.prototype, with
+// nothing of its own in front of it, and that emit() is still the original.
+// Anything else - an emit() assigned to the wrapper or to a subclass, a
+// patched EventEmitter.prototype.emit - sees every event whether or not it
+// has listeners.
 bool InheritsOriginalEmit(v8::Isolate* isolate,
                           v8::Local<v8::Context> context,
                           v8::Local<v8::Object> wrapper) {
@@ -117,12 +118,8 @@ bool InheritsOriginalEmit(v8::Isolate* isolate,
       return false;
     v8::Local<v8::Object> holder = current.As<v8::Object>();
     if (holder->StrictEquals(registered)) {
-      // Node's own prototype is what the registered one inherits from.
-      v8::Local<v8::Value> node_prototype = holder->GetPrototype();
       v8::Local<v8::Value> emit;
-      return node_prototype->IsObject() &&
-             ReadDataProperty(isolate, context, node_prototype.As<v8::Object>(),
-                              EmitKey(isolate),
+      return ReadDataProperty(isolate, context, holder, EmitKey(isolate),
                               &emit) == DataProperty::kValue &&
              emit->StrictEquals(GetOriginalEmitReference()->Get(isolate));
     }
@@ -153,8 +150,8 @@ electron::EventListenerSet* ListenerSetOf(v8::Isolate* isolate,
       slot.As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault));
 }
 
-// setEventEmitterPrototype(prototype): the object every native emitter
-// inherits from, itself inheriting from Node's EventEmitter.prototype.
+// setEventEmitterPrototype(prototype): Node's EventEmitter.prototype, which
+// the prototype set up by InstallListenerTracking() inherits from.
 void SetEventEmitterPrototype(const v8::FunctionCallbackInfo<v8::Value>& info) {
   v8::Isolate* isolate = info.GetIsolate();
   if (info.Length() < 1 || !info[0]->IsObject()) {
@@ -166,42 +163,33 @@ void SetEventEmitterPrototype(const v8::FunctionCallbackInfo<v8::Value>& info) {
   v8::Local<v8::Object> prototype = info[0].As<v8::Object>();
   GetEventEmitterPrototypeReference()->Reset(isolate, prototype);
 
-  v8::Local<v8::Value> node_prototype = prototype->GetPrototype();
   v8::Local<v8::Value> emit;
-  if (node_prototype->IsObject() &&
-      ReadDataProperty(isolate, isolate->GetCurrentContext(),
-                       node_prototype.As<v8::Object>(), EmitKey(isolate),
-                       &emit) == DataProperty::kValue &&
+  if (ReadDataProperty(isolate, isolate->GetCurrentContext(), prototype,
+                       EmitKey(isolate), &emit) == DataProperty::kValue &&
       emit->IsFunction()) {
     GetOriginalEmitReference()->Reset(isolate, emit);
   }
 }
 
-// setEventObserved(emitter, name, observed)
-void SetEventObserved(const v8::FunctionCallbackInfo<v8::Value>& info) {
-  v8::Isolate* isolate = info.GetIsolate();
-  if (info.Length() < 3 || !info[1]->IsString())
+// gin_helper::ListenerChangeCallback for the prototype set up by
+// InstallListenerTracking(): the emitter's set follows its listener table.
+void OnListenerChange(v8::Isolate* isolate,
+                      v8::Local<v8::Object> emitter,
+                      v8::Local<v8::Value> type,
+                      gin_helper::ListenerChange change) {
+  electron::EventListenerSet* listeners = ListenerSetOf(isolate, emitter);
+  if (!listeners)
     return;
-  electron::EventListenerSet* listeners = ListenerSetOf(isolate, info[0]);
-  std::string name;
-  if (listeners && gin::ConvertFromV8(isolate, info[1], &name))
-    listeners->SetObserved(name, info[2]->IsTrue());
-}
-
-// clearObservedEvents(emitter)
-void ClearObservedEvents(const v8::FunctionCallbackInfo<v8::Value>& info) {
-  if (info.Length() < 1)
-    return;
-  if (auto* listeners = ListenerSetOf(info.GetIsolate(), info[0]))
+  if (change == gin_helper::ListenerChange::kUnobservedAll) {
     listeners->Clear();
-}
-
-// observeAllEvents(emitter)
-void ObserveAllEvents(const v8::FunctionCallbackInfo<v8::Value>& info) {
-  if (info.Length() < 1)
     return;
-  if (auto* listeners = ListenerSetOf(info.GetIsolate(), info[0]))
-    listeners->ObserveAll();
+  }
+  // Native code only emits events with string names.
+  std::string name;
+  if (type->IsString() && gin::ConvertFromV8(isolate, type, &name)) {
+    listeners->SetObserved(name,
+                           change == gin_helper::ListenerChange::kObserved);
+  }
 }
 
 void Initialize(v8::Local<v8::Object> exports,
@@ -210,9 +198,6 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   NODE_SET_METHOD(exports, "setEventEmitterPrototype",
                   &SetEventEmitterPrototype);
-  NODE_SET_METHOD(exports, "setEventObserved", &SetEventObserved);
-  NODE_SET_METHOD(exports, "clearObservedEvents", &ClearObservedEvents);
-  NODE_SET_METHOD(exports, "observeAllEvents", &ObserveAllEvents);
 }
 
 }  // namespace
@@ -222,6 +207,11 @@ namespace electron {
 v8::Local<v8::Object> GetEventEmitterPrototype(v8::Isolate* isolate) {
   CHECK(!GetEventEmitterPrototypeReference()->IsEmpty());
   return GetEventEmitterPrototypeReference()->Get(isolate);
+}
+
+void InstallListenerTracking(v8::Local<v8::Context> context,
+                             v8::Local<v8::Object> prototype) {
+  gin_helper::InstallListenerMethods(context, prototype, &OnListenerChange);
 }
 
 EventListenerSet::EventListenerSet() = default;

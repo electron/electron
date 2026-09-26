@@ -183,14 +183,16 @@ describe('native event emission', () => {
   });
 
   describe('a replaced emit()', () => {
-    it('on the instance still sees events without listeners', async () => {
-      const w = await loadWindow();
+    it('on the instance, before the emitter first emits, still sees events without listeners', async () => {
+      // How utilityProcess and powerMonitor route their native handle's events.
+      const w = new BrowserWindow({ show: false });
       const seen: (string | symbol)[] = [];
       const emit = w.webContents.emit;
       w.webContents.emit = function (this: Electron.WebContents, eventName: any, ...args: any[]) {
         seen.push(eventName);
         return emit.call(this, eventName, ...args);
       } as any;
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
       sendMouseMove(w);
       expect(seen).to.include('input-event');
     });

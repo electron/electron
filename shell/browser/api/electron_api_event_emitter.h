@@ -13,6 +13,7 @@
 namespace v8 {
 template <typename T>
 class Local;
+class Context;
 class Object;
 class Isolate;
 }  // namespace v8
@@ -21,15 +22,21 @@ namespace electron {
 
 v8::Local<v8::Object> GetEventEmitterPrototype(v8::Isolate* isolate);
 
+// Gives |prototype| - the one every native emitter of |context| inherits its
+// EventEmitter methods through - native on() / off() / removeAllListeners()
+// that keep each emitter's EventListenerSet up to date.
+void InstallListenerTracking(v8::Local<v8::Context> context,
+                             v8::Local<v8::Object> prototype);
+
 // The names of the events that JavaScript listens for on one native emitter,
 // kept in native memory so that deciding whether an event is worth emitting
 // costs a hash lookup and no call into V8.
 //
-// lib/common/native-emitter-prototype.ts keeps it up to date: every native
-// emitter inherits on() / off() / removeAllListeners() / ... from it, and
-// those report each change through the electron_browser_event_emitter binding.
-// Until the first emit has tied the set to its wrapper with Link() nothing is
-// known, and every event may be observed.
+// InstallListenerTracking() keeps it up to date: every native emitter
+// inherits on() / off() / removeAllListeners() from the prototype it sets up,
+// and those are native and report each change here. Until the first emit has
+// tied the set to its wrapper with Link() nothing is known, and every event
+// may be observed.
 class EventListenerSet {
  public:
   EventListenerSet();
@@ -58,7 +65,6 @@ class EventListenerSet {
   void Unlink(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
   void SetObserved(std::string_view name, bool observed);
-  void ObserveAll() { observe_all_ = true; }
   void Clear() { names_.clear(); }
 
  private:

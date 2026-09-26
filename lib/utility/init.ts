@@ -1,5 +1,6 @@
 import LanguageModelUtility from '@electron/internal/utility/api/language-model-utility';
 
+import { EventEmitter } from 'events';
 import { pathToFileURL } from 'url';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
@@ -25,8 +26,7 @@ v8Util.setHiddenValue(
 // Import common settings.
 require('@electron/internal/common/init');
 
-// Native emitters keep track of what is listened for on them.
-require('@electron/internal/common/native-emitter-prototype');
+process._linkedBinding('electron_browser_event_emitter').setEventEmitterPrototype(EventEmitter.prototype);
 
 const parentPort: ElectronInternal.ParentPort = process
   ._linkedBinding('electron_utility_parent_port')

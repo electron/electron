@@ -84,6 +84,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/event_emitter_template.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
@@ -2107,9 +2108,16 @@ void Initialize(v8::Local<v8::Object> exports,
   electron::api::App* app = electron::api::App::Get();
   v8::Local<v8::Object> wrapper;
   if (app->GetWrapper(isolate).ToLocal(&wrapper)) {
-    // app is an EventEmitter.
-    std::ignore = wrapper->SetPrototype(
-        context, electron::GetEventEmitterPrototype(isolate));
+    // app is an EventEmitter, through the same prototype as every other
+    // native emitter.
+    v8::Local<v8::Value> prototype;
+    if (gin_helper::internal::GetEventEmitterTemplate(isolate)
+            ->GetFunction(context)
+            .ToLocalChecked()
+            ->Get(context, gin::StringToSymbol(isolate, "prototype"))
+            .ToLocal(&prototype)) {
+      std::ignore = wrapper->SetPrototype(context, prototype);
+    }
   }
   dict.Set("app", app);
 #if BUILDFLAG(IS_LINUX)

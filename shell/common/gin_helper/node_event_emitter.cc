@@ -6,6 +6,7 @@
 
 #include <array>
 #include <cmath>
+#include <initializer_list>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -19,6 +20,7 @@
 #include "v8/include/v8-container.h"
 #include "v8/include/v8-context.h"
 #include "v8/include/v8-exception.h"
+#include "v8/include/v8-external.h"
 #include "v8/include/v8-function.h"
 #include "v8/include/v8-isolate.h"
 #include "v8/include/v8-object.h"
@@ -83,6 +85,9 @@ enum Slot {
   kKeyOn,
   kKeyPrependListener,
   kKeyRemoveAllListeners,
+  // v8::External holding a ListenerChangeCallback, for the methods
+  // InstallListenerMethods() defines; undefined for the class's own.
+  kListenerChangeCallback,
   kSlotCount,
 };
 
@@ -545,8 +550,9 @@ void InstanceFieldSetter(v8::Local<v8::Name> name,
 
 // -- max listener warning ----------------------------------------------------
 
-// Reported through console.warn(), as the `events` package did; there is no
-// process.emitWarning() in the contexts this runs in.
+// Reported through process.emitWarning() where there is one, as
+// lib/events.js does, and otherwise through console.warn(), as the `events`
+// package did.
 [[nodiscard]] bool WarnMaxListenersExceeded(const State& s,
                                             v8::Local<v8::Object> self,
                                             v8::Local<v8::Value> type,
@@ -568,6 +574,23 @@ void InstanceFieldSetter(v8::Local<v8::Name> name,
       !SetProp(s, warning, Intern(isolate, "count"),
                v8::Integer::NewFromUnsigned(isolate, existing->Length()))) {
     return false;
+  }
+  v8::Local<v8::Value> process, emit_warning;
+  if (!s.context()
+           ->Global()
+           ->Get(s.context(), Intern(isolate, "process"))
+           .ToLocal(&process)) {
+    return false;
+  }
+  if (process->IsObject()) {
+    if (!GetProp(s, process, Intern(isolate, "emitWarning"), &emit_warning))
+      return false;
+    if (emit_warning->IsFunction()) {
+      v8::Local<v8::Value> argv[] = {warning};
+      return !emit_warning.As<v8::Function>()
+                  ->Call(s.context(), process, 1, argv)
+                  .IsEmpty();
+    }
   }
   v8::Local<v8::Value> console, warn;
   if (!s.context()
@@ -891,11 +914,44 @@ bool AddListenerCore(const State& s,
   return true;
 }
 
+// Reports `change` for `type` on `self` to the ListenerChangeCallback the
+// state carries, if any.
+void NotifyListenerChange(const State& s,
+                          const Receiver& self,
+                          v8::Local<v8::Value> type,
+                          ListenerChange change) {
+  v8::Local<v8::Value> slot = s.Get(kListenerChangeCallback);
+  if (!slot->IsExternal())
+    return;
+  auto callback = reinterpret_cast<ListenerChangeCallback>(
+      slot.As<v8::External>()->Value(v8::kExternalPointerTypeTagDefault));
+  callback(s.isolate(), self.self(), type, change);
+}
+
+// Whether `self` has no listener for `type` left.
+[[nodiscard]] bool HasNoListeners(const State& s,
+                                  const Receiver& self,
+                                  v8::Local<v8::Value> type,
+                                  bool* out) {
+  v8::Local<v8::Value> events, listeners;
+  if (!self.GetEvents(s, &events))
+    return false;
+  if (!events->IsObject()) {
+    *out = true;
+    return true;
+  }
+  if (!GetProp(s, events, type, &listeners))
+    return false;
+  *out = listeners->IsUndefined();
+  return true;
+}
+
 void AddListener(const v8::FunctionCallbackInfo<v8::Value>& info) {
   State s(info);
   Receiver self;
   if (Receiver::From(s, info, "addListener", &self) &&
       AddListenerCore(s, self, info[0], info[1], /*prepend=*/false)) {
+    NotifyListenerChange(s, self, info[0], ListenerChange::kObserved);
     info.GetReturnValue().Set(self.self());
   }
 }
@@ -905,6 +961,7 @@ void PrependListener(const v8::FunctionCallbackInfo<v8::Value>& info) {
   Receiver self;
   if (Receiver::From(s, info, "prependListener", &self) &&
       AddListenerCore(s, self, info[0], info[1], /*prepend=*/true)) {
+    NotifyListenerChange(s, self, info[0], ListenerChange::kObserved);
     info.GetReturnValue().Set(self.self());
   }
 }
@@ -1122,10 +1179,18 @@ bool RemoveListenerCore(const State& s,
 void RemoveListener(const v8::FunctionCallbackInfo<v8::Value>& info) {
   State s(info);
   Receiver self;
-  if (Receiver::From(s, info, "removeListener", &self) &&
-      RemoveListenerCore(s, self, info[0], info[1])) {
-    info.GetReturnValue().Set(self.self());
+  if (!Receiver::From(s, info, "removeListener", &self) ||
+      !RemoveListenerCore(s, self, info[0], info[1])) {
+    return;
   }
+  if (s.Get(kListenerChangeCallback)->IsExternal()) {
+    bool none = false;
+    if (!HasNoListeners(s, self, info[0], &none))
+      return;
+    if (none)
+      NotifyListenerChange(s, self, info[0], ListenerChange::kUnobserved);
+  }
+  info.GetReturnValue().Set(self.self());
 }
 
 // -- removeAllListeners ------------------------------------------------------
@@ -1207,8 +1272,12 @@ bool RemoveAllListenersCore(const State& s,
 void RemoveAllListeners(const v8::FunctionCallbackInfo<v8::Value>& info) {
   State s(info);
   Receiver self;
+  const bool has_type = info.Length() > 0;
   if (Receiver::From(s, info, "removeAllListeners", &self) &&
-      RemoveAllListenersCore(s, self, info.Length() > 0, info[0])) {
+      RemoveAllListenersCore(s, self, has_type, info[0])) {
+    NotifyListenerChange(s, self, info[0],
+                         has_type ? ListenerChange::kUnobserved
+                                  : ListenerChange::kUnobservedAll);
     info.GetReturnValue().Set(self.self());
   }
 }
@@ -1360,12 +1429,11 @@ v8::Local<v8::FunctionTemplate> Method(v8::Isolate* isolate,
 
 }  // namespace
 
-v8::Local<v8::Function> CreateNodeEventEmitterConstructor(
-    v8::Local<v8::Context> context) {
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  v8::EscapableHandleScope handle_scope(isolate);
-  v8::Context::Scope context_scope(context);
+namespace {
 
+// The callback data object shared by every function created for `context`.
+v8::Local<v8::Object> CreateStateData(v8::Isolate* isolate,
+                                      v8::Local<v8::Context> context) {
   v8::Local<v8::ObjectTemplate> data_template =
       v8::ObjectTemplate::New(isolate);
   data_template->SetInternalFieldCount(kSlotCount);
@@ -1421,6 +1489,17 @@ v8::Local<v8::Function> CreateNodeEventEmitterConstructor(
                          Intern(isolate, "prependListener"));
   data->SetInternalField(kKeyRemoveAllListeners,
                          Intern(isolate, "removeAllListeners"));
+  return data;
+}
+
+}  // namespace
+
+v8::Local<v8::Function> CreateNodeEventEmitterConstructor(
+    v8::Local<v8::Context> context) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::EscapableHandleScope handle_scope(isolate);
+  v8::Context::Scope context_scope(context);
+  v8::Local<v8::Object> data = CreateStateData(isolate, context);
 
   v8::Local<v8::FunctionTemplate> ctor = v8::FunctionTemplate::New(
       isolate, Constructor, data, v8::Local<v8::Signature>(), 0);
@@ -1509,6 +1588,38 @@ v8::Local<v8::Function> CreateNodeEventEmitterConstructor(
   remember(kFnRemoveAllListeners, "removeAllListeners");
 
   return handle_scope.Escape(fn);
+}
+
+void InstallListenerMethods(v8::Local<v8::Context> context,
+                            v8::Local<v8::Object> prototype,
+                            ListenerChangeCallback callback) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope handle_scope(isolate);
+  v8::Context::Scope context_scope(context);
+  v8::Local<v8::Object> data = CreateStateData(isolate, context);
+  data->SetInternalField(
+      kListenerChangeCallback,
+      v8::External::New(isolate, reinterpret_cast<void*>(callback),
+                        v8::kExternalPointerTypeTagDefault));
+
+  // Same shape as on the class's prototype: plain enumerable data properties.
+  auto define = [&](Slot own, const char* name, v8::FunctionCallback method,
+                    int length, std::initializer_list<const char*> aliases) {
+    v8::Local<v8::Function> fn = Method(isolate, method, data, name, length)
+                                     ->GetFunction(context)
+                                     .ToLocalChecked();
+    CHECK(prototype->Set(context, Intern(isolate, name), fn).FromMaybe(false));
+    for (const char* alias : aliases)
+      CHECK(
+          prototype->Set(context, Intern(isolate, alias), fn).FromMaybe(false));
+    // For the direct-dispatch check when a method calls another.
+    data->SetInternalField(own, fn);
+  };
+  define(kFnAddListener, "addListener", AddListener, 2, {"on"});
+  define(kFnPrependListener, "prependListener", PrependListener, 2, {});
+  define(kFnRemoveListener, "removeListener", RemoveListener, 2, {"off"});
+  define(kFnRemoveAllListeners, "removeAllListeners", RemoveAllListeners, 1,
+         {});
 }
 
 v8::Local<v8::Function> GetNodeEventEmitterConstructor(
