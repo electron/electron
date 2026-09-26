@@ -4538,6 +4538,24 @@ void WebContents::SetImageAnimationPolicy(const std::string& new_policy) {
   web_contents()->OnWebPreferencesChanged();
 }
 
+// Persist the limits in WebPreferences so later navigations and new render
+// views keep them, and give them to the embedder too: a guest's pinch-zoom is
+// handled by the embedder's root compositor. The renderer is told separately
+// through webFrame for the current page.
+void WebContents::SetVisualZoomLevelLimits(double min_level, double max_level) {
+  if (auto* prefs = WebContentsPreferences::From(web_contents())) {
+    prefs->SetVisualZoomLevelLimits(min_level, max_level);
+    web_contents()->OnWebPreferencesChanged();
+  }
+  if (embedder_) {
+    if (auto* embedder_prefs =
+            WebContentsPreferences::From(embedder_->web_contents())) {
+      embedder_prefs->SetVisualZoomLevelLimits(min_level, max_level);
+      embedder_->web_contents()->OnWebPreferencesChanged();
+    }
+  }
+}
+
 void WebContents::SetBackgroundColor(std::optional<SkColor> maybe_color) {
   SkColor color = maybe_color.value_or((is_guest() && guest_transparent_) ||
                                                type_ == Type::kBrowserView
@@ -5277,6 +5295,8 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("takeHeapSnapshot", &WebContents::TakeHeapSnapshot)
       .SetMethod("setImageAnimationPolicy",
                  &WebContents::SetImageAnimationPolicy)
+      .SetMethod("_setVisualZoomLevelLimits",
+                 &WebContents::SetVisualZoomLevelLimits)
       .SetMethod("_getProcessMemoryInfo", &WebContents::GetProcessMemoryInfo)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
