@@ -885,23 +885,25 @@ describe('Menu module', function () {
       expect(y).to.equal(101);
     });
 
-    it('works with a given BrowserWindow, options and callback', (done) => {
-      const { x, y } = menu.popup({
-        window: w,
-        x: 100,
-        y: 101,
-        callback: () => done()
-      }) as unknown as { x: number; y: number };
+    it('works with a given BrowserWindow, options and callback', () =>
+      new Promise<void>((resolve) => {
+        const { x, y } = menu.popup({
+          window: w,
+          x: 100,
+          y: 101,
+          callback: () => resolve()
+        }) as unknown as { x: number; y: number };
 
-      expect(x).to.equal(100);
-      expect(y).to.equal(101);
-      menu.closePopup();
-    });
+        expect(x).to.equal(100);
+        expect(y).to.equal(101);
+        menu.closePopup();
+      }));
 
-    it('works with a given BrowserWindow, no options, and a callback', (done) => {
-      menu.popup({ window: w, callback: () => done() });
-      menu.closePopup();
-    });
+    it('works with a given BrowserWindow, no options, and a callback', () =>
+      new Promise<void>((resolve) => {
+        menu.popup({ window: w, callback: () => resolve() });
+        menu.closePopup();
+      }));
 
     it('prevents menu from getting garbage-collected when popuping', async () => {
       const menu = Menu.buildFromTemplate([{ role: 'paste' }]);
@@ -955,44 +957,49 @@ describe('Menu module', function () {
     // https://github.com/electron/electron/issues/35724
     // Maximizing window is enough to trigger the bug
     // FIXME(dsanders11): Test always passes on CI, even pre-fix
-    ifit(process.platform === 'linux' && !process.env.CI)('does not trigger issue #35724', (done) => {
-      const showAndCloseMenu = async () => {
-        await setTimeout(1000);
-        menu.popup({ window: w, x: 50, y: 50 });
-        await setTimeout(500);
-        const closed = once(menu, 'menu-will-close');
-        menu.closePopup();
-        await closed;
-      };
+    ifit(process.platform === 'linux' && !process.env.CI)(
+      'does not trigger issue #35724',
+      () =>
+        new Promise<void>((resolve, reject) => {
+          const done = (error?: unknown) => (error ? reject(error) : resolve());
+          const showAndCloseMenu = async () => {
+            await setTimeout(1000);
+            menu.popup({ window: w, x: 50, y: 50 });
+            await setTimeout(500);
+            const closed = once(menu, 'menu-will-close');
+            menu.closePopup();
+            await closed;
+          };
 
-      const failOnEvent = () => {
-        done(new Error('Menu closed prematurely'));
-      };
+          const failOnEvent = () => {
+            done(new Error('Menu closed prematurely'));
+          };
 
-      assert(!w.isVisible());
-      w.on('show', async () => {
-        assert(!w.isMaximized());
-        // Show the menu once, then maximize window
-        await showAndCloseMenu();
-        // NOTE - 'maximize' event never fires on CI for Linux
-        const maximized = once(w, 'maximize');
-        w.maximize();
-        await maximized;
+          assert(!w.isVisible());
+          w.on('show', async () => {
+            assert(!w.isMaximized());
+            // Show the menu once, then maximize window
+            await showAndCloseMenu();
+            // NOTE - 'maximize' event never fires on CI for Linux
+            const maximized = once(w, 'maximize');
+            w.maximize();
+            await maximized;
 
-        // Bug only seems to trigger programmatically after showing the menu once more
-        await showAndCloseMenu();
+            // Bug only seems to trigger programmatically after showing the menu once more
+            await showAndCloseMenu();
 
-        // Now ensure the menu stays open until we close it
-        await setTimeout(500);
-        menu.once('menu-will-close', failOnEvent);
-        menu.popup({ window: w, x: 50, y: 50 });
-        await setTimeout(1500);
-        menu.off('menu-will-close', failOnEvent);
-        menu.once('menu-will-close', () => done());
-        menu.closePopup();
-      });
-      w.show();
-    });
+            // Now ensure the menu stays open until we close it
+            await setTimeout(500);
+            menu.once('menu-will-close', failOnEvent);
+            menu.popup({ window: w, x: 50, y: 50 });
+            await setTimeout(1500);
+            menu.off('menu-will-close', failOnEvent);
+            menu.once('menu-will-close', () => done());
+            menu.closePopup();
+          });
+          w.show();
+        })
+    );
 
     const chunkSize = 10;
     let chunkCount = 0;

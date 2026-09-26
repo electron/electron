@@ -1856,31 +1856,35 @@ describe('asar package', function () {
         expect(err.code).to.equal('ENOENT');
       });
 
-      it('handles null for options', function (done) {
-        const p = path.join(asarDir, 'a.asar', 'dir1');
-        fs.readdir(p, null, function (err, dirs) {
-          try {
-            expect(err).to.be.null;
-            expect(dirs).to.deep.equal(['file1', 'file2', 'file3', 'link1', 'link2']);
-            done();
-          } catch (e) {
-            done(e);
-          }
-        });
-      });
+      it('handles null for options', () =>
+        new Promise<void>((resolve, reject) => {
+          const done = (error?: unknown) => (error ? reject(error) : resolve());
+          const p = path.join(asarDir, 'a.asar', 'dir1');
+          fs.readdir(p, null, function (err, dirs) {
+            try {
+              expect(err).to.be.null;
+              expect(dirs).to.deep.equal(['file1', 'file2', 'file3', 'link1', 'link2']);
+              done();
+            } catch (e) {
+              done(e);
+            }
+          });
+        }));
 
-      it('handles undefined for options', function (done) {
-        const p = path.join(asarDir, 'a.asar', 'dir1');
-        fs.readdir(p, undefined, function (err, dirs) {
-          try {
-            expect(err).to.be.null;
-            expect(dirs).to.deep.equal(['file1', 'file2', 'file3', 'link1', 'link2']);
-            done();
-          } catch (e) {
-            done(e);
-          }
-        });
-      });
+      it('handles undefined for options', () =>
+        new Promise<void>((resolve, reject) => {
+          const done = (error?: unknown) => (error ? reject(error) : resolve());
+          const p = path.join(asarDir, 'a.asar', 'dir1');
+          fs.readdir(p, undefined, function (err, dirs) {
+            try {
+              expect(err).to.be.null;
+              expect(dirs).to.deep.equal(['file1', 'file2', 'file3', 'link1', 'link2']);
+              done();
+            } catch (e) {
+              done(e);
+            }
+          });
+        }));
     });
 
     describe('fs.promises.readdir', function () {

@@ -49,11 +49,15 @@ describe('powerMonitor', { tags: ['serial'] }, () => {
         return cb;
       }
 
-      before((done) => {
-        logindMock.on('MethodCalled', onceMethodCalled(done));
-        // lazy load powerMonitor after we listen to MethodCalled mock signal
-        dbusMockPowerMonitor = require('electron').powerMonitor;
-      });
+      before(
+        () =>
+          new Promise<void>((resolve, reject) => {
+            const done = (error?: unknown) => (error ? reject(error) : resolve());
+            logindMock.on('MethodCalled', onceMethodCalled(done));
+            // lazy load powerMonitor after we listen to MethodCalled mock signal
+            dbusMockPowerMonitor = require('electron').powerMonitor;
+          })
+      );
 
       it('should call Inhibit to delay suspend once a listener is added', async () => {
         // No calls to dbus until a listener is added
@@ -140,12 +144,13 @@ describe('powerMonitor', { tags: ['serial'] }, () => {
         });
 
         describe('when PrepareForShutdown(true) signal is sent by logind', () => {
-          it('should emit "shutdown" event', (done) => {
-            dbusMockPowerMonitor.once('shutdown', () => {
-              done();
-            });
-            emitSignal('org.freedesktop.login1.Manager', 'PrepareForShutdown', 'b', [['b', true]]);
-          });
+          it('should emit "shutdown" event', () =>
+            new Promise<void>((resolve) => {
+              dbusMockPowerMonitor.once('shutdown', () => {
+                resolve();
+              });
+              emitSignal('org.freedesktop.login1.Manager', 'PrepareForShutdown', 'b', [['b', true]]);
+            }));
         });
       });
     }

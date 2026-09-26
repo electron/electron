@@ -39,15 +39,18 @@ describe('netLog module', () => {
     serverUrl = (await listen(server)).url;
   });
 
-  after((done) => {
-    for (const connection of connections) {
-      connection.destroy();
-    }
-    server.close(() => {
-      server = null as any;
-      done();
-    });
-  });
+  after(
+    () =>
+      new Promise<void>((resolve) => {
+        for (const connection of connections) {
+          connection.destroy();
+        }
+        server.close(() => {
+          server = null as any;
+          resolve();
+        });
+      })
+  );
 
   beforeEach(() => {
     expect(testNetLog().currentlyLogging, 'currently logging').to.be.false;

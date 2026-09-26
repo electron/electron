@@ -75,18 +75,21 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
     let httpServer: http.Server = null as any;
     let requests: RoutedRequest[] = [];
 
-    beforeEach((done) => {
-      requests = [];
-      server = createRoutedServer();
-      server.use((req, res, next) => {
-        requests.push(req);
-        next();
-      });
-      httpServer = server.listen(0, '127.0.0.1', () => {
-        port = (httpServer.address() as AddressInfo).port;
-        done();
-      });
-    });
+    beforeEach(
+      () =>
+        new Promise<void>((resolve) => {
+          requests = [];
+          server = createRoutedServer();
+          server.use((req, res, next) => {
+            requests.push(req);
+            next();
+          });
+          httpServer = server.listen(0, '127.0.0.1', () => {
+            port = (httpServer.address() as AddressInfo).port;
+            resolve();
+          });
+        })
+    );
 
     afterEach(async () => {
       if (httpServer) {

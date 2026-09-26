@@ -284,25 +284,26 @@ describe('webContents module', () => {
       }).to.throw('Missing required channel argument');
     });
 
-    it('does not block node async APIs when sent before document is ready', (done) => {
-      // Please reference https://github.com/electron/electron/issues/19368 if
-      // this test fails.
-      ipcMain.once('async-node-api-done', () => {
-        done();
-      });
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true,
-          sandbox: false,
-          contextIsolation: false
-        }
-      });
-      w.loadFile(path.join(fixturesPath, 'pages', 'send-after-node.html'));
-      setTimeout(50).then(() => {
-        w.webContents.send('test');
-      });
-    });
+    it('does not block node async APIs when sent before document is ready', () =>
+      new Promise<void>((resolve) => {
+        // Please reference https://github.com/electron/electron/issues/19368 if
+        // this test fails.
+        ipcMain.once('async-node-api-done', () => {
+          resolve();
+        });
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            sandbox: false,
+            contextIsolation: false
+          }
+        });
+        w.loadFile(path.join(fixturesPath, 'pages', 'send-after-node.html'));
+        setTimeout(50).then(() => {
+          w.webContents.send('test');
+        });
+      }));
   });
 
   ifdescribe(features.isPrintingEnabled())('webContents.print()', () => {
@@ -363,13 +364,14 @@ describe('webContents module', () => {
       }).to.throw('webContents.print(): Invalid optional callback provided.');
     });
 
-    it('fails when an invalid deviceName is passed', (done) => {
-      w.webContents.print({ deviceName: 'i-am-a-nonexistent-printer' }, (success, reason) => {
-        expect(success).to.equal(false);
-        expect(reason).to.match(/Invalid deviceName provided/);
-        done();
-      });
-    });
+    it('fails when an invalid deviceName is passed', () =>
+      new Promise<void>((resolve) => {
+        w.webContents.print({ deviceName: 'i-am-a-nonexistent-printer' }, (success, reason) => {
+          expect(success).to.equal(false);
+          expect(reason).to.match(/Invalid deviceName provided/);
+          resolve();
+        });
+      }));
 
     it('throws when an invalid pageSize is passed', () => {
       expect(() => {
@@ -3018,41 +3020,46 @@ describe('webContents module', () => {
       }
     });
 
-    it('can persist zoom level across navigation', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      let finalNavigation = false;
-      ipcMain.on('set-zoom', (e, host) => {
-        const zoomLevel = hostZoomMap[host];
-        if (!finalNavigation) w.webContents.zoomLevel = zoomLevel;
-        e.sender.send(`${host}-zoom-set`);
-      });
-      ipcMain.on('host1-zoom-level', (e) => {
-        try {
-          const zoomLevel = e.sender.getZoomLevel();
-          const expectedZoomLevel = hostZoomMap.host1;
-          expect(zoomLevel).to.equal(expectedZoomLevel);
-          if (finalNavigation) {
-            done();
-          } else {
-            w.loadURL(`${standardScheme}://host2`);
+    it('can persist zoom level across navigation', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: { nodeIntegration: true, contextIsolation: false }
+        });
+        let finalNavigation = false;
+        ipcMain.on('set-zoom', (e, host) => {
+          const zoomLevel = hostZoomMap[host];
+          if (!finalNavigation) w.webContents.zoomLevel = zoomLevel;
+          e.sender.send(`${host}-zoom-set`);
+        });
+        ipcMain.on('host1-zoom-level', (e) => {
+          try {
+            const zoomLevel = e.sender.getZoomLevel();
+            const expectedZoomLevel = hostZoomMap.host1;
+            expect(zoomLevel).to.equal(expectedZoomLevel);
+            if (finalNavigation) {
+              done();
+            } else {
+              w.loadURL(`${standardScheme}://host2`);
+            }
+          } catch (e) {
+            done(e);
           }
-        } catch (e) {
-          done(e);
-        }
-      });
-      ipcMain.once('host2-zoom-level', (e) => {
-        try {
-          const zoomLevel = e.sender.getZoomLevel();
-          const expectedZoomLevel = hostZoomMap.host2;
-          expect(zoomLevel).to.equal(expectedZoomLevel);
-          finalNavigation = true;
-          w.webContents.goBack();
-        } catch (e) {
-          done(e);
-        }
-      });
-      w.loadURL(`${standardScheme}://host1`);
-    });
+        });
+        ipcMain.once('host2-zoom-level', (e) => {
+          try {
+            const zoomLevel = e.sender.getZoomLevel();
+            const expectedZoomLevel = hostZoomMap.host2;
+            expect(zoomLevel).to.equal(expectedZoomLevel);
+            finalNavigation = true;
+            w.webContents.goBack();
+          } catch (e) {
+            done(e);
+          }
+        });
+        w.loadURL(`${standardScheme}://host1`);
+      }));
 
     it('can propagate zoom level across same session', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
@@ -3106,37 +3113,39 @@ describe('webContents module', () => {
       expect(zoomLevel1).to.not.equal(zoomLevel2);
     });
 
-    it('can persist when it contains iframe', (done) => {
-      const w = new BrowserWindow({ show: false });
-      const server = http.createServer((req, res) => {
-        setTimeout(200).then(() => {
-          res.end();
+    it('can persist when it contains iframe', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const w = new BrowserWindow({ show: false });
+        const server = http.createServer((req, res) => {
+          setTimeout(200).then(() => {
+            res.end();
+          });
         });
-      });
-      defer(() => {
-        server.close();
-      });
-      listen(server).then(({ url }) => {
-        const content = `<iframe src=${url}></iframe>`;
-        w.webContents.on('did-frame-finish-load', (e, isMainFrame) => {
-          if (!isMainFrame) {
-            try {
-              const zoomLevel = w.webContents.zoomLevel;
-              expect(zoomLevel).to.equal(2.0);
+        defer(() => {
+          server.close();
+        });
+        listen(server).then(({ url }) => {
+          const content = `<iframe src=${url}></iframe>`;
+          w.webContents.on('did-frame-finish-load', (e, isMainFrame) => {
+            if (!isMainFrame) {
+              try {
+                const zoomLevel = w.webContents.zoomLevel;
+                expect(zoomLevel).to.equal(2.0);
 
-              w.webContents.zoomLevel = 0;
-              done();
-            } catch (e) {
-              done(e);
+                w.webContents.zoomLevel = 0;
+                done();
+              } catch (e) {
+                done(e);
+              }
             }
-          }
+          });
+          w.webContents.on('dom-ready', () => {
+            w.webContents.zoomLevel = 2.0;
+          });
+          w.loadURL(`data:text/html,${content}`);
         });
-        w.webContents.on('dom-ready', () => {
-          w.webContents.zoomLevel = 2.0;
-        });
-        w.loadURL(`data:text/html,${content}`);
-      });
-    });
+      }));
 
     it('cannot propagate when used with webframe', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
@@ -4321,24 +4330,28 @@ describe('webContents module', () => {
     let server: http.Server;
     let serverUrl: string;
 
-    before((done) => {
-      server = http.createServer((request, response) => {
-        switch (request.url) {
-          case '/net-error':
-            response.destroy();
-            break;
-          case '/200':
-            response.end();
-            break;
-          default:
-            done(new Error('unsupported endpoint'));
-        }
-      });
-      listen(server).then(({ url }) => {
-        serverUrl = url;
-        done();
-      });
-    });
+    before(
+      () =>
+        new Promise<void>((resolve, reject) => {
+          const done = (error?: unknown) => (error ? reject(error) : resolve());
+          server = http.createServer((request, response) => {
+            switch (request.url) {
+              case '/net-error':
+                response.destroy();
+                break;
+              case '/200':
+                response.end();
+                break;
+              default:
+                done(new Error('unsupported endpoint'));
+            }
+          });
+          listen(server).then(({ url }) => {
+            serverUrl = url;
+            done();
+          });
+        })
+    );
 
     after(() => {
       server.close();
@@ -4372,39 +4385,42 @@ describe('webContents module', () => {
 
   describe('did-change-theme-color event', () => {
     afterEach(closeAllWindows);
-    it('is triggered with correct theme color', (done) => {
-      const w = new BrowserWindow({ show: true });
-      let count = 0;
-      w.webContents.on('did-change-theme-color', (e, color) => {
-        try {
-          if (count === 0) {
-            count += 1;
-            expect(color).to.equal('#FFEEDD');
-            w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
-          } else if (count === 1) {
-            expect(color).to.be.null;
-            done();
+    it('is triggered with correct theme color', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const w = new BrowserWindow({ show: true });
+        let count = 0;
+        w.webContents.on('did-change-theme-color', (e, color) => {
+          try {
+            if (count === 0) {
+              count += 1;
+              expect(color).to.equal('#FFEEDD');
+              w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+            } else if (count === 1) {
+              expect(color).to.be.null;
+              done();
+            }
+          } catch (e) {
+            done(e);
           }
-        } catch (e) {
-          done(e);
-        }
-      });
-      w.loadFile(path.join(fixturesPath, 'pages', 'theme-color.html'));
-    });
+        });
+        w.loadFile(path.join(fixturesPath, 'pages', 'theme-color.html'));
+      }));
   });
 
   describe('console-message event', () => {
     afterEach(closeAllWindows);
-    it('is triggered with correct log message', (done) => {
-      const w = new BrowserWindow({ show: true });
-      w.webContents.on('console-message', (e) => {
-        // Don't just assert as Chromium might emit other logs that we should ignore.
-        if (e.message === 'a') {
-          done();
-        }
-      });
-      w.loadFile(path.join(fixturesPath, 'pages', 'a.html'));
-    });
+    it('is triggered with correct log message', () =>
+      new Promise<void>((resolve) => {
+        const w = new BrowserWindow({ show: true });
+        w.webContents.on('console-message', (e) => {
+          // Don't just assert as Chromium might emit other logs that we should ignore.
+          if (e.message === 'a') {
+            resolve();
+          }
+        });
+        w.loadFile(path.join(fixturesPath, 'pages', 'a.html'));
+      }));
 
     describe('on a destroyed WebContents', () => {
       const destroyedWebContents = async (handler?: (...args: any[]) => void) => {
@@ -4480,63 +4496,67 @@ describe('webContents module', () => {
 
   describe('referrer', () => {
     afterEach(closeAllWindows);
-    it('propagates referrer information to new target=_blank windows', (done) => {
-      const w = new BrowserWindow({ show: false });
-      const server = http.createServer((req, res) => {
-        if (req.url === '/should_have_referrer') {
-          try {
-            expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
-            return done();
-          } catch (e) {
-            return done(e);
+    it('propagates referrer information to new target=_blank windows', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const w = new BrowserWindow({ show: false });
+        const server = http.createServer((req, res) => {
+          if (req.url === '/should_have_referrer') {
+            try {
+              expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
+              return done();
+            } catch (e) {
+              return done(e);
+            }
           }
-        }
-        res.end('<a id="a" href="/should_have_referrer" target="_blank">link</a>');
-      });
-      defer(() => {
-        server.close();
-      });
-      listen(server).then(({ url }) => {
-        w.webContents.once('did-finish-load', () => {
-          w.webContents.setWindowOpenHandler((details) => {
-            expect(details.referrer.url).to.equal(url + '/');
-            expect(details.referrer.policy).to.equal('strict-origin-when-cross-origin');
-            return { action: 'allow' };
-          });
-          w.webContents.executeJavaScript('a.click()');
+          res.end('<a id="a" href="/should_have_referrer" target="_blank">link</a>');
         });
-        w.loadURL(url);
-      });
-    });
+        defer(() => {
+          server.close();
+        });
+        listen(server).then(({ url }) => {
+          w.webContents.once('did-finish-load', () => {
+            w.webContents.setWindowOpenHandler((details) => {
+              expect(details.referrer.url).to.equal(url + '/');
+              expect(details.referrer.policy).to.equal('strict-origin-when-cross-origin');
+              return { action: 'allow' };
+            });
+            w.webContents.executeJavaScript('a.click()');
+          });
+          w.loadURL(url);
+        });
+      }));
 
-    it('propagates referrer information to windows opened with window.open', (done) => {
-      const w = new BrowserWindow({ show: false });
-      const server = http.createServer((req, res) => {
-        if (req.url === '/should_have_referrer') {
-          try {
-            expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
-            return done();
-          } catch (e) {
-            return done(e);
+    it('propagates referrer information to windows opened with window.open', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const w = new BrowserWindow({ show: false });
+        const server = http.createServer((req, res) => {
+          if (req.url === '/should_have_referrer') {
+            try {
+              expect(req.headers.referer).to.equal(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
+              return done();
+            } catch (e) {
+              return done(e);
+            }
           }
-        }
-        res.end('');
-      });
-      defer(() => {
-        server.close();
-      });
-      listen(server).then(({ url }) => {
-        w.webContents.once('did-finish-load', () => {
-          w.webContents.setWindowOpenHandler((details) => {
-            expect(details.referrer.url).to.equal(url + '/');
-            expect(details.referrer.policy).to.equal('strict-origin-when-cross-origin');
-            return { action: 'allow' };
-          });
-          w.webContents.executeJavaScript('window.open(location.href + "should_have_referrer")');
+          res.end('');
         });
-        w.loadURL(url);
-      });
-    });
+        defer(() => {
+          server.close();
+        });
+        listen(server).then(({ url }) => {
+          w.webContents.once('did-finish-load', () => {
+            w.webContents.setWindowOpenHandler((details) => {
+              expect(details.referrer.url).to.equal(url + '/');
+              expect(details.referrer.policy).to.equal('strict-origin-when-cross-origin');
+              return { action: 'allow' };
+            });
+            w.webContents.executeJavaScript('window.open(location.href + "should_have_referrer")');
+          });
+          w.loadURL(url);
+        });
+      }));
   });
 
   describe('webframe messages in sandboxed contents', () => {

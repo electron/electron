@@ -188,21 +188,22 @@ describe('WebContentsView', () => {
     return arr;
   }
 
-  it("doesn't crash when GCed during allocation", (done) => {
-    // oxlint-disable-next-line no-new
-    new WebContentsView();
-    setTimeout(() => {
-      // NB. the crash we're testing for is the lack of a current `v8::Context`
-      // when emitting an event in WebContents's destructor. V8 is inconsistent
-      // about whether or not there's a current context during garbage
-      // collection, and it seems that `v8Util.requestGarbageCollectionForTesting`
-      // causes a GC in which there _is_ a current context, so the crash isn't
-      // triggered. Thus, we force a GC by other means: namely, by allocating a
-      // bunch of stuff.
-      triggerGCByAllocation();
-      done();
-    });
-  });
+  it("doesn't crash when GCed during allocation", () =>
+    new Promise<void>((resolve) => {
+      // oxlint-disable-next-line no-new
+      new WebContentsView();
+      setTimeout(() => {
+        // NB. the crash we're testing for is the lack of a current `v8::Context`
+        // when emitting an event in WebContents's destructor. V8 is inconsistent
+        // about whether or not there's a current context during garbage
+        // collection, and it seems that `v8Util.requestGarbageCollectionForTesting`
+        // causes a GC in which there _is_ a current context, so the crash isn't
+        // triggered. Thus, we force a GC by other means: namely, by allocating a
+        // bunch of stuff.
+        triggerGCByAllocation();
+        resolve();
+      });
+    }));
 
   it('does not crash when closed via window.close()', async () => {
     const bw = new BrowserWindow();

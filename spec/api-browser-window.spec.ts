@@ -613,13 +613,14 @@ describe('BrowserWindow module', () => {
       const [, , , , isMainFrame] = await didFailLoad;
       expect(isMainFrame).to.equal(false);
     });
-    it('does not crash in did-fail-provisional-load handler', (done) => {
-      w.webContents.once('did-fail-provisional-load', () => {
+    it('does not crash in did-fail-provisional-load handler', () =>
+      new Promise<void>((resolve) => {
+        w.webContents.once('did-fail-provisional-load', () => {
+          w.loadURL('http://127.0.0.1:11111');
+          resolve();
+        });
         w.loadURL('http://127.0.0.1:11111');
-        done();
-      });
-      w.loadURL('http://127.0.0.1:11111');
-    });
+      }));
     it('should emit did-fail-load event for URL exceeding character limit', async () => {
       const data = Buffer.alloc(2 * 1024 * 1024).toString('base64');
       const didFailLoad = once(w.webContents, 'did-fail-load');
@@ -804,25 +805,27 @@ describe('BrowserWindow module', () => {
           w.close();
         });
 
-        it('can be prevented', (done) => {
-          let willNavigate = false;
-          w.webContents.once('will-navigate', (e) => {
-            willNavigate = true;
-            e.preventDefault();
-          });
-          w.webContents.on('did-stop-loading', () => {
-            if (willNavigate) {
-              // i.e. it shouldn't have had '?navigated' appended to it.
-              try {
-                expect(w.webContents.getURL().endsWith('will-navigate.html')).to.be.true;
-                done();
-              } catch (e) {
-                done(e);
+        it('can be prevented', () =>
+          new Promise<void>((resolve, reject) => {
+            const done = (error?: unknown) => (error ? reject(error) : resolve());
+            let willNavigate = false;
+            w.webContents.once('will-navigate', (e) => {
+              willNavigate = true;
+              e.preventDefault();
+            });
+            w.webContents.on('did-stop-loading', () => {
+              if (willNavigate) {
+                // i.e. it shouldn't have had '?navigated' appended to it.
+                try {
+                  expect(w.webContents.getURL().endsWith('will-navigate.html')).to.be.true;
+                  done();
+                } catch (e) {
+                  done(e);
+                }
               }
-            }
-          });
-          w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'));
-        });
+            });
+            w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'));
+          }));
 
         it('is triggered when navigating from file: to http:', async () => {
           await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
@@ -917,65 +920,70 @@ describe('BrowserWindow module', () => {
           server.close();
         });
 
-        it('allows the window to be closed from the event listener', (done) => {
-          w.webContents.once('will-frame-navigate', () => {
-            w.close();
-            done();
-          });
-          w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'));
-        });
+        it('allows the window to be closed from the event listener', () =>
+          new Promise<void>((resolve) => {
+            w.webContents.once('will-frame-navigate', () => {
+              w.close();
+              resolve();
+            });
+            w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'));
+          }));
 
-        it('can be prevented', (done) => {
-          let willNavigate = false;
-          w.webContents.once('will-frame-navigate', (e) => {
-            willNavigate = true;
-            e.preventDefault();
-          });
-          w.webContents.on('did-stop-loading', () => {
-            if (willNavigate) {
-              // i.e. it shouldn't have had '?navigated' appended to it.
-              try {
-                expect(w.webContents.getURL().endsWith('will-navigate.html')).to.be.true;
-                done();
-              } catch (e) {
-                done(e);
-              }
-            }
-          });
-          w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'));
-        });
-
-        it('can be prevented when navigating subframe', (done) => {
-          let willNavigate = false;
-          w.webContents.on(
-            'did-frame-navigate',
-            (_event, _url, _httpResponseCode, _httpStatusText, isMainFrame, frameProcessId, frameRoutingId) => {
-              if (isMainFrame) return;
-
-              w.webContents.once('will-frame-navigate', (e) => {
-                willNavigate = true;
-                e.preventDefault();
-              });
-
-              w.webContents.on('did-stop-loading', () => {
-                const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
-                expect(frame).to.not.be.undefined;
-                if (willNavigate) {
-                  // i.e. it shouldn't have had '?navigated' appended to it.
-                  try {
-                    expect(frame!.url.endsWith('/navigate-iframe-immediately')).to.be.true;
-                    done();
-                  } catch (e) {
-                    done(e);
-                  }
+        it('can be prevented', () =>
+          new Promise<void>((resolve, reject) => {
+            const done = (error?: unknown) => (error ? reject(error) : resolve());
+            let willNavigate = false;
+            w.webContents.once('will-frame-navigate', (e) => {
+              willNavigate = true;
+              e.preventDefault();
+            });
+            w.webContents.on('did-stop-loading', () => {
+              if (willNavigate) {
+                // i.e. it shouldn't have had '?navigated' appended to it.
+                try {
+                  expect(w.webContents.getURL().endsWith('will-navigate.html')).to.be.true;
+                  done();
+                } catch (e) {
+                  done(e);
                 }
-              });
-            }
-          );
-          w.loadURL(
-            `data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-iframe-immediately"></iframe>`
-          );
-        });
+              }
+            });
+            w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'));
+          }));
+
+        it('can be prevented when navigating subframe', () =>
+          new Promise<void>((resolve, reject) => {
+            const done = (error?: unknown) => (error ? reject(error) : resolve());
+            let willNavigate = false;
+            w.webContents.on(
+              'did-frame-navigate',
+              (_event, _url, _httpResponseCode, _httpStatusText, isMainFrame, frameProcessId, frameRoutingId) => {
+                if (isMainFrame) return;
+
+                w.webContents.once('will-frame-navigate', (e) => {
+                  willNavigate = true;
+                  e.preventDefault();
+                });
+
+                w.webContents.on('did-stop-loading', () => {
+                  const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
+                  expect(frame).to.not.be.undefined;
+                  if (willNavigate) {
+                    // i.e. it shouldn't have had '?navigated' appended to it.
+                    try {
+                      expect(frame!.url.endsWith('/navigate-iframe-immediately')).to.be.true;
+                      done();
+                    } catch (e) {
+                      done(e);
+                    }
+                  }
+                });
+              }
+            );
+            w.loadURL(
+              `data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-iframe-immediately"></iframe>`
+            );
+          }));
 
         it('is triggered when navigating from file: to http:', async () => {
           await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
@@ -1162,33 +1170,35 @@ describe('BrowserWindow module', () => {
           w.close();
         });
 
-        it('can be prevented', (done) => {
-          w.webContents.once('will-redirect', (event) => {
-            event.preventDefault();
-          });
-          w.webContents.on('will-navigate', (e, u) => {
-            expect(u).to.equal(`${url}/302`);
-          });
-          w.webContents.on('did-stop-loading', () => {
-            try {
-              expect(w.webContents.getURL()).to.equal(
-                `${url}/navigate-302`,
-                'url should not have changed after navigation event'
-              );
-              done();
-            } catch (e) {
-              done(e);
-            }
-          });
-          w.webContents.on('will-redirect', (e, u) => {
-            try {
-              expect(u).to.equal(`${url}/200`);
-            } catch (e) {
-              done(e);
-            }
-          });
-          w.loadURL(`${url}/navigate-302`);
-        });
+        it('can be prevented', () =>
+          new Promise<void>((resolve, reject) => {
+            const done = (error?: unknown) => (error ? reject(error) : resolve());
+            w.webContents.once('will-redirect', (event) => {
+              event.preventDefault();
+            });
+            w.webContents.on('will-navigate', (e, u) => {
+              expect(u).to.equal(`${url}/302`);
+            });
+            w.webContents.on('did-stop-loading', () => {
+              try {
+                expect(w.webContents.getURL()).to.equal(
+                  `${url}/navigate-302`,
+                  'url should not have changed after navigation event'
+                );
+                done();
+              } catch (e) {
+                done(e);
+              }
+            });
+            w.webContents.on('will-redirect', (e, u) => {
+              try {
+                expect(u).to.equal(`${url}/200`);
+              } catch (e) {
+                done(e);
+              }
+            });
+            w.loadURL(`${url}/navigate-302`);
+          }));
       });
 
       describe('ordering', () => {
@@ -2382,43 +2392,44 @@ describe('BrowserWindow module', () => {
           expect(w.isFullScreen()).to.equal(true);
         });
 
-        it('does not crash if maximized, minimized, then restored to maximized state', (done) => {
-          w.destroy();
-          w = new BrowserWindow({ show: false });
+        it('does not crash if maximized, minimized, then restored to maximized state', () =>
+          new Promise<void>((resolve) => {
+            w.destroy();
+            w = new BrowserWindow({ show: false });
 
-          w.show();
+            w.show();
 
-          let count = 0;
+            let count = 0;
 
-          w.on('maximize', () => {
-            if (count === 0) {
-              syncSetTimeout(() => {
-                w.minimize();
-              });
-            }
-            count++;
-          });
+            w.on('maximize', () => {
+              if (count === 0) {
+                syncSetTimeout(() => {
+                  w.minimize();
+                });
+              }
+              count++;
+            });
 
-          w.on('minimize', () => {
-            if (count === 1) {
-              syncSetTimeout(() => {
-                w.restore();
-              });
-            }
-            count++;
-          });
+            w.on('minimize', () => {
+              if (count === 1) {
+                syncSetTimeout(() => {
+                  w.restore();
+                });
+              }
+              count++;
+            });
 
-          w.on('restore', () => {
-            try {
-              throw new Error('hey!');
-            } catch (e: any) {
-              expect(e.message).to.equal('hey!');
-              done();
-            }
-          });
+            w.on('restore', () => {
+              try {
+                throw new Error('hey!');
+              } catch (e: any) {
+                expect(e.message).to.equal('hey!');
+                resolve();
+              }
+            });
 
-          w.maximize();
-        });
+            w.maximize();
+          }));
 
         it('checks normal bounds for maximized transparent window', async () => {
           w.destroy();
@@ -5848,95 +5859,100 @@ describe('BrowserWindow module', () => {
   });
 
   describe('beginFrameSubscription method', () => {
-    it('does not crash when callback returns nothing', (done) => {
-      const w = new BrowserWindow({ show: false });
-      let called = false;
-      w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'));
-      w.webContents.on('dom-ready', async () => {
-        await showWindowForWayland(w);
+    it('does not crash when callback returns nothing', () =>
+      new Promise<void>((resolve) => {
+        const w = new BrowserWindow({ show: false });
+        let called = false;
+        w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'));
+        w.webContents.on('dom-ready', async () => {
+          await showWindowForWayland(w);
 
-        w.webContents.beginFrameSubscription(function () {
-          // This callback might be called twice.
-          if (called) return;
-          called = true;
+          w.webContents.beginFrameSubscription(function () {
+            // This callback might be called twice.
+            if (called) return;
+            called = true;
 
-          // Pending endFrameSubscription to next tick can reliably reproduce
-          // a crash which happens when nothing is returned in the callback.
-          setTimeout().then(() => {
-            w.webContents.endFrameSubscription();
-            done();
+            // Pending endFrameSubscription to next tick can reliably reproduce
+            // a crash which happens when nothing is returned in the callback.
+            setTimeout().then(() => {
+              w.webContents.endFrameSubscription();
+              resolve();
+            });
           });
         });
-      });
-    });
+      }));
 
-    it('subscribes to frame updates', (done) => {
-      const w = new BrowserWindow({ show: false });
-      let called = false;
-      w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'));
-      w.webContents.on('dom-ready', async () => {
-        await showWindowForWayland(w);
+    it('subscribes to frame updates', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const w = new BrowserWindow({ show: false });
+        let called = false;
+        w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'));
+        w.webContents.on('dom-ready', async () => {
+          await showWindowForWayland(w);
 
-        w.webContents.beginFrameSubscription(function (data) {
-          // This callback might be called twice.
-          if (called) return;
-          called = true;
+          w.webContents.beginFrameSubscription(function (data) {
+            // This callback might be called twice.
+            if (called) return;
+            called = true;
 
-          try {
-            expect(data.constructor.name).to.equal('NativeImage');
-            expect(data.isEmpty(), 'data is empty').to.be.false;
-            done();
-          } catch (e) {
-            done(e);
-          } finally {
-            w.webContents.endFrameSubscription();
-          }
+            try {
+              expect(data.constructor.name).to.equal('NativeImage');
+              expect(data.isEmpty(), 'data is empty').to.be.false;
+              done();
+            } catch (e) {
+              done(e);
+            } finally {
+              w.webContents.endFrameSubscription();
+            }
+          });
         });
-      });
-    });
+      }));
 
-    it('subscribes to frame updates (only dirty rectangle)', (done) => {
-      const w = new BrowserWindow({ show: false });
-      let called = false;
-      let gotInitialFullSizeFrame = false;
-      const [contentWidth, contentHeight] = w.getContentSize();
-      w.webContents.on('did-finish-load', async () => {
-        await showWindowForWayland(w);
+    it('subscribes to frame updates (only dirty rectangle)', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const w = new BrowserWindow({ show: false });
+        let called = false;
+        let gotInitialFullSizeFrame = false;
+        const [contentWidth, contentHeight] = w.getContentSize();
+        w.webContents.on('did-finish-load', async () => {
+          await showWindowForWayland(w);
 
-        w.webContents.beginFrameSubscription(true, (image, rect) => {
-          if (image.isEmpty()) {
-            // Chromium sometimes sends a 0x0 frame at the beginning of the
-            // page load.
-            return;
-          }
-          if (rect.height === contentHeight && rect.width === contentWidth && !gotInitialFullSizeFrame) {
-            // The initial frame is full-size, but we're looking for a call
-            // with just the dirty-rect. The next frame should be a smaller
-            // rect.
-            gotInitialFullSizeFrame = true;
-            return;
-          }
-          // This callback might be called twice.
-          if (called) return;
-          // We asked for just the dirty rectangle, so we expect to receive a
-          // rect smaller than the full size.
-          // TODO(jeremy): this is failing on windows currently; investigate.
-          // assert(rect.width < contentWidth || rect.height < contentHeight)
-          called = true;
+          w.webContents.beginFrameSubscription(true, (image, rect) => {
+            if (image.isEmpty()) {
+              // Chromium sometimes sends a 0x0 frame at the beginning of the
+              // page load.
+              return;
+            }
+            if (rect.height === contentHeight && rect.width === contentWidth && !gotInitialFullSizeFrame) {
+              // The initial frame is full-size, but we're looking for a call
+              // with just the dirty-rect. The next frame should be a smaller
+              // rect.
+              gotInitialFullSizeFrame = true;
+              return;
+            }
+            // This callback might be called twice.
+            if (called) return;
+            // We asked for just the dirty rectangle, so we expect to receive a
+            // rect smaller than the full size.
+            // TODO(jeremy): this is failing on windows currently; investigate.
+            // assert(rect.width < contentWidth || rect.height < contentHeight)
+            called = true;
 
-          try {
-            const expectedSize = rect.width * rect.height * 4;
-            expect(image.toBitmap()).to.be.an.instanceOf(Buffer).with.lengthOf(expectedSize);
-            done();
-          } catch (e) {
-            done(e);
-          } finally {
-            w.webContents.endFrameSubscription();
-          }
+            try {
+              const expectedSize = rect.width * rect.height * 4;
+              expect(image.toBitmap()).to.be.an.instanceOf(Buffer).with.lengthOf(expectedSize);
+              done();
+            } catch (e) {
+              done(e);
+            } finally {
+              w.webContents.endFrameSubscription();
+            }
+          });
         });
-      });
-      w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'));
-    });
+        w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'));
+      }));
 
     it('throws error when subscriber is not well defined', () => {
       const w = new BrowserWindow({ show: false });
@@ -6278,17 +6294,18 @@ describe('BrowserWindow module', () => {
         expect(w.getChildWindows().length).to.equal(0);
       });
 
-      it('can handle parent window close with focus or blur events', (done) => {
-        const w = new BrowserWindow({ show: false });
-        const c = new BrowserWindow({ show: false, parent: w });
+      it('can handle parent window close with focus or blur events', () =>
+        new Promise<void>((resolve) => {
+          const w = new BrowserWindow({ show: false });
+          const c = new BrowserWindow({ show: false, parent: w });
 
-        c.on('closed', () => {
-          w.focus();
-          done();
-        });
+          c.on('closed', () => {
+            w.focus();
+            resolve();
+          });
 
-        w.close();
-      });
+          w.close();
+        }));
 
       ifit(process.platform === 'darwin')(
         'only shows the intended window when a child with siblings is shown',
@@ -7938,28 +7955,29 @@ describe('BrowserWindow module', () => {
     }
   );
 
-  it('reloading does not cause Node.js module API hangs after reload', (done) => {
-    const w = new BrowserWindow({
-      show: false,
-      webPreferences: {
-        nodeIntegration: true,
-        contextIsolation: false
-      }
-    });
+  it('reloading does not cause Node.js module API hangs after reload', () =>
+    new Promise<void>((resolve) => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
 
-    let count = 0;
-    ipcMain.on('async-node-api-done', () => {
-      if (count === 3) {
-        ipcMain.removeAllListeners('async-node-api-done');
-        done();
-      } else {
-        count++;
-        w.reload();
-      }
-    });
+      let count = 0;
+      ipcMain.on('async-node-api-done', () => {
+        if (count === 3) {
+          ipcMain.removeAllListeners('async-node-api-done');
+          resolve();
+        } else {
+          count++;
+          w.reload();
+        }
+      });
 
-    w.loadFile(path.join(fixtures, 'pages', 'send-after-node.html'));
-  });
+      w.loadFile(path.join(fixtures, 'pages', 'send-after-node.html'));
+    }));
 
   // TODO(codebytere): fix on Windows and Linux too
   ifdescribe(process.platform === 'darwin')('window.webContents initial paint', () => {

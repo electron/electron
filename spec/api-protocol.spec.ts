@@ -368,17 +368,19 @@ describe('protocol module', () => {
         expect(r.data).to.equal(text);
       });
 
-      it('can access request headers', (done) => {
-        protocol.registerHttpProtocol(protocolName, (request) => {
-          try {
-            expect(request).to.have.property('headers');
-            done();
-          } catch (e) {
-            done(e);
-          }
-        });
-        ajax(protocolName + '://fake-host').catch(() => {});
-      });
+      it('can access request headers', () =>
+        new Promise<void>((resolve, reject) => {
+          const done = (error?: unknown) => (error ? reject(error) : resolve());
+          protocol.registerHttpProtocol(protocolName, (request) => {
+            try {
+              expect(request).to.have.property('headers');
+              done();
+            } catch (e) {
+              done(e);
+            }
+          });
+          ajax(protocolName + '://fake-host').catch(() => {});
+        }));
     });
   }
 
@@ -856,17 +858,19 @@ describe('protocol module', () => {
       await expect(ajax('http://fake-host')).rejects.toThrow(Error);
     });
 
-    it('can access request headers', (done) => {
-      protocol.interceptHttpProtocol('http', (request) => {
-        try {
-          expect(request).to.have.property('headers');
-          done();
-        } catch (e) {
-          done(e);
-        }
-      });
-      ajax('http://fake-host').catch(() => {});
-    });
+    it('can access request headers', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        protocol.interceptHttpProtocol('http', (request) => {
+          try {
+            expect(request).to.have.property('headers');
+            done();
+          } catch (e) {
+            done(e);
+          }
+        });
+        ajax('http://fake-host').catch(() => {});
+      }));
   });
 
   describe('protocol.interceptStreamProtocol', () => {
@@ -1093,21 +1097,25 @@ describe('protocol module', () => {
       await requestReceived;
     });
 
-    it('can access files through the FileSystem API', (done) => {
-      const filePath = path.join(fixturesPath, 'pages', 'filesystem.html');
-      protocol.registerFileProtocol(standardScheme, (request, callback) => callback({ path: filePath }));
-      w.loadURL(origin);
-      ipcMain.once('file-system-error', (event, err) => done(err));
-      ipcMain.once('file-system-write-end', () => done());
-    });
+    it('can access files through the FileSystem API', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const filePath = path.join(fixturesPath, 'pages', 'filesystem.html');
+        protocol.registerFileProtocol(standardScheme, (request, callback) => callback({ path: filePath }));
+        w.loadURL(origin);
+        ipcMain.once('file-system-error', (event, err) => done(err));
+        ipcMain.once('file-system-write-end', () => done());
+      }));
 
-    it('registers secure, when {secure: true}', (done) => {
-      const filePath = path.join(fixturesPath, 'pages', 'cache-storage.html');
-      ipcMain.once('success', () => done());
-      ipcMain.once('failure', (event, err) => done(err));
-      protocol.registerFileProtocol(standardScheme, (request, callback) => callback({ path: filePath }));
-      w.loadURL(origin);
-    });
+    it('registers secure, when {secure: true}', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const filePath = path.join(fixturesPath, 'pages', 'cache-storage.html');
+        ipcMain.once('success', () => done());
+        ipcMain.once('failure', (event, err) => done(err));
+        protocol.registerFileProtocol(standardScheme, (request, callback) => callback({ path: filePath }));
+        w.loadURL(origin);
+      }));
   });
 
   describe('protocol.registerSchemesAsPrivileged cors-fetch', function () {
@@ -1611,28 +1619,29 @@ describe('protocol module', () => {
       expect(body).to.equal('hello https://foo/');
     });
 
-    it('receives requests to the existing file scheme', (done) => {
-      const filePath = path.join(import.meta.dirname, 'fixtures', 'pages', 'a.html');
+    it('receives requests to the existing file scheme', () =>
+      new Promise<void>((resolve) => {
+        const filePath = path.join(import.meta.dirname, 'fixtures', 'pages', 'a.html');
 
-      protocol.handle('file', (req) => {
-        let file;
-        if (process.platform === 'win32') {
-          file = `file:///${filePath.replaceAll('\\', '/')}`;
-        } else {
-          file = `file://${filePath}`;
-        }
+        protocol.handle('file', (req) => {
+          let file;
+          if (process.platform === 'win32') {
+            file = `file:///${filePath.replaceAll('\\', '/')}`;
+          } else {
+            file = `file://${filePath}`;
+          }
 
-        if (req.url === file) done();
-        return new Response(req.url);
-      });
+          if (req.url === file) resolve();
+          return new Response(req.url);
+        });
 
-      defer(() => {
-        protocol.unhandle('file');
-      });
+        defer(() => {
+          protocol.unhandle('file');
+        });
 
-      const w = new BrowserWindow();
-      w.loadFile(filePath);
-    });
+        const w = new BrowserWindow();
+        w.loadFile(filePath);
+      }));
 
     it('receives requests to an existing scheme when navigating', async () => {
       protocol.handle('https', (req) => new Response('hello ' + req.url));

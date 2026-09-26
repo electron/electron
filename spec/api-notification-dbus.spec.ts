@@ -105,21 +105,25 @@ ifdescribe(!skip)('Notification module (dbus)', { tags: ['serial'] }, () => {
       };
     }
 
-    before((done) => {
-      mock.on('MethodCalled', onMethodCalled(done));
-      // lazy load Notification after we listen to MethodCalled mock signal
-      Notification = require('electron').Notification;
-      const n = new Notification({
-        title: 'title',
-        subtitle: 'subtitle',
-        body: 'body',
-        icon: nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'notification_icon.png')),
-        replyPlaceholder: 'replyPlaceholder',
-        sound: 'sound',
-        closeButtonText: 'closeButtonText'
-      });
-      n.show();
-    });
+    before(
+      () =>
+        new Promise<void>((resolve, reject) => {
+          const done = (error?: unknown) => (error ? reject(error) : resolve());
+          mock.on('MethodCalled', onMethodCalled(done));
+          // lazy load Notification after we listen to MethodCalled mock signal
+          Notification = require('electron').Notification;
+          const n = new Notification({
+            title: 'title',
+            subtitle: 'subtitle',
+            body: 'body',
+            icon: nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'notification_icon.png')),
+            replyPlaceholder: 'replyPlaceholder',
+            sound: 'sound',
+            closeButtonText: 'closeButtonText'
+          });
+          n.show();
+        })
+    );
 
     it(`should call ${serviceName} to show notifications`, async () => {
       const calls = await getCalls();

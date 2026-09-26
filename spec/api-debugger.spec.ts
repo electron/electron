@@ -385,33 +385,34 @@ describe('debugger module', () => {
       w.webContents.debugger.detach();
     });
 
-    it('creates unique session id for each target', (done) => {
-      w.webContents.loadFile(path.join(import.meta.dirname, 'fixtures', 'sub-frames', 'debug-frames.html'));
-      w.webContents.debugger.attach();
-      let debuggerSessionId: string;
+    it('creates unique session id for each target', () =>
+      new Promise<void>((resolve) => {
+        w.webContents.loadFile(path.join(import.meta.dirname, 'fixtures', 'sub-frames', 'debug-frames.html'));
+        w.webContents.debugger.attach();
+        let debuggerSessionId: string;
 
-      w.webContents.debugger.on('message', (_event, ...args) => {
-        const [method, params, sessionId] = args;
-        if (method === 'Target.targetCreated') {
-          w.webContents.debugger
-            .sendCommand('Target.attachToTarget', { targetId: params.targetInfo.targetId, flatten: true })
-            .then((result) => {
-              debuggerSessionId = result.sessionId;
-              w.webContents.debugger.sendCommand('Debugger.enable', {}, result.sessionId);
+        w.webContents.debugger.on('message', (_event, ...args) => {
+          const [method, params, sessionId] = args;
+          if (method === 'Target.targetCreated') {
+            w.webContents.debugger
+              .sendCommand('Target.attachToTarget', { targetId: params.targetInfo.targetId, flatten: true })
+              .then((result) => {
+                debuggerSessionId = result.sessionId;
+                w.webContents.debugger.sendCommand('Debugger.enable', {}, result.sessionId);
 
-              // Ensure debugger finds a script to pause to possibly reduce flaky
-              // tests.
-              w.webContents.mainFrame.executeJavaScript('void 0;');
-            });
-        }
-        if (method === 'Debugger.scriptParsed') {
-          if (sessionId === debuggerSessionId) {
-            w.webContents.debugger.detach();
-            done();
+                // Ensure debugger finds a script to pause to possibly reduce flaky
+                // tests.
+                w.webContents.mainFrame.executeJavaScript('void 0;');
+              });
           }
-        }
-      });
-      w.webContents.debugger.sendCommand('Target.setDiscoverTargets', { discover: true });
-    });
+          if (method === 'Debugger.scriptParsed') {
+            if (sessionId === debuggerSessionId) {
+              w.webContents.debugger.detach();
+              resolve();
+            }
+          }
+        });
+        w.webContents.debugger.sendCommand('Target.setDiscoverTargets', { discover: true });
+      }));
   });
 });
