@@ -202,6 +202,7 @@
 #endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
+#include "ui/aura/client/focus_client.h"
 #include "ui/aura/window.h"
 #include "ui/gfx/font_render_params.h"
 #endif
@@ -4947,7 +4948,8 @@ void WebContents::RunJavaScriptDialog(content::WebContents* web_contents,
                   .Set("defaultPromptText", default_prompt_text)
                   .Build();
 
-  EmitWithoutEvent("-run-dialog", info, std::move(callback));
+  EmitWithoutEvent("-run-dialog", info,
+                   ResyncFocusAfterDialog(std::move(callback)));
 }
 
 void WebContents::RunBeforeUnloadDialog(content::WebContents* web_contents,
@@ -4962,8 +4964,43 @@ void WebContents::RunBeforeUnloadDialog(content::WebContents* web_contents,
                     url, true);
   }
 
-  std::move(callback).Run(default_prevented, std::u16string());
+  ResyncFocusAfterDialog(std::move(callback))
+      .Run(default_prevented, std::u16string());
 }
+
+// While a JavaScript dialog or beforeunload handler blocks the renderer,
+// RenderWidgetHostViewAura ignores focus gains, so a native dialog that hands
+// activation back to the window before its result is delivered leaves the
+// view focused in aura but blurred in Blink, and typed characters are dropped
+// until the window is deactivated again. Replay the focus after the result
+// has unblocked the renderer.
+content::JavaScriptDialogManager::DialogClosedCallback
+WebContents::ResyncFocusAfterDialog(DialogClosedCallback callback) {
+#if defined(USE_AURA)
+  return std::move(callback).Then(
+      base::BindOnce(&WebContents::ResyncViewFocus, WeakRef()));
+#else
+  return callback;
+#endif
+}
+
+#if defined(USE_AURA)
+void WebContents::ResyncViewFocus() {
+  if (is_guest() || !web_contents())
+    return;
+  auto* rwhv = web_contents()->GetRenderWidgetHostView();
+  if (!rwhv || !rwhv->HasFocus())
+    return;
+  auto* host =
+      static_cast<content::RenderWidgetHostImpl*>(rwhv->GetRenderWidgetHost());
+  if (!host || host->is_focused())
+    return;
+  if (auto* client = aura::client::GetFocusClient(rwhv->GetNativeView())) {
+    client->FocusWindow(nullptr);
+    rwhv->Focus();
+  }
+}
+#endif
 
 void WebContents::CancelDialogs(content::WebContents* web_contents,
                                 bool reset_state) {
