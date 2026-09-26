@@ -4728,25 +4728,30 @@ describe('navigator.clipboard.write', { tags: ['serial'] }, () => {
 });
 
 describe('pointer lock permission request', () => {
-  let server: http.Server;
-  let crossOriginUrl: string;
+  const servers: http.Server[] = [];
+  let serverUrl: string;
+  let otherPortUrl: string;
   before(async () => {
-    server = http.createServer((_req, res) => {
-      res.setHeader('content-type', 'text/html');
-      res.end('<!doctype html><body>frame</body>');
-    });
-    crossOriginUrl = (await listen(server)).url;
+    for (let i = 0; i < 2; i++) {
+      servers.push(
+        http.createServer((_req, res) => {
+          res.setHeader('content-type', 'text/html');
+          res.end('<!doctype html><body>frame</body>');
+        })
+      );
+    }
+    [serverUrl, otherPortUrl] = await Promise.all(servers.map(async (s) => (await listen(s)).url));
   });
-  after(() => server.close());
+  after(() => servers.forEach((s) => s.close()));
   afterEach(closeAllWindows);
 
-  it('is attributed to the frame that called requestPointerLock()', async () => {
+  const requestFromChildFrame = async (topUrl: string, childUrl: string) => {
     const ses = session.fromPartition(`pointer-lock-${Math.random()}`);
     const w = new BrowserWindow({ show: true, webPreferences: { session: ses } });
-    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    await w.loadURL(topUrl);
     await w.webContents.executeJavaScript(`new Promise((resolve) => {
       const f = document.createElement('iframe');
-      f.src = ${JSON.stringify(crossOriginUrl)};
+      f.src = ${JSON.stringify(childUrl)};
       f.onload = resolve;
       document.body.appendChild(f);
     })`);
@@ -4765,8 +4770,26 @@ describe('pointer lock permission request', () => {
     const request = requests.find((r) => r.permission === 'pointerLock');
     expect(request).to.exist();
     expect(request!.wc).to.equal(w.webContents);
-    expect(request!.details.requestingUrl).to.equal(`${crossOriginUrl}/`);
-    expect(request!.details.isMainFrame).to.equal(false);
+    return { iframe, details: request!.details };
+  };
+
+  it('is attributed to a cross-site frame that called requestPointerLock()', async () => {
+    const topUrl = url.pathToFileURL(path.join(fixturesPath, 'pages', 'blank.html')).href;
+    const { iframe, details } = await requestFromChildFrame(topUrl, serverUrl);
+    expect(iframe.processId).to.not.equal(iframe.top!.processId);
+    expect(details.requestingUrl).to.equal(`${serverUrl}/`);
+    expect(details.isMainFrame).to.equal(false);
+  });
+
+  it('is attributed to a same-site cross-origin frame that called requestPointerLock()', async () => {
+    // Same host, different port: cross-origin but same-site, so the child
+    // shares the top frame's process and widget.
+    const topUrl = `${serverUrl}/top`;
+    const childUrl = `${otherPortUrl}/child`;
+    const { iframe, details } = await requestFromChildFrame(topUrl, childUrl);
+    expect(iframe.processId).to.equal(iframe.top!.processId);
+    expect(details.requestingUrl).to.equal(childUrl);
+    expect(details.isMainFrame).to.equal(false);
   });
 });
 
