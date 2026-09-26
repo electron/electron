@@ -346,10 +346,18 @@ void WebContentsPermissionHelper::RequestKeyboardLockPermission(
     base::OnceCallback<void(content::WebContents*, bool, bool)> callback) {
   // navigator.keyboard.lock() is only honoured for the primary main frame;
   // content rejects it from any document that has a parent before we are
-  // asked (see KeyboardLockServiceImpl::RequestKeyboardLock).
+  // asked (see KeyboardLockServiceImpl::RequestKeyboardLock). The request
+  // only names a widget, so if that invariant ever stops holding we cannot
+  // tell which document asked: refuse rather than attribute it to the main
+  // frame.
+  content::RenderFrameHost* main_frame = web_contents_->GetPrimaryMainFrame();
+  if (static_cast<content::WebContentsImpl*>(web_contents_)
+          ->GetKeyboardLockWidget() != main_frame->GetRenderWidgetHost()) {
+    std::move(callback).Run(web_contents_, esc_key_locked, false);
+    return;
+  }
   RequestPermission(
-      web_contents_->GetPrimaryMainFrame(),
-      blink::PermissionType::KEYBOARD_LOCK,
+      main_frame, blink::PermissionType::KEYBOARD_LOCK,
       base::BindOnce(std::move(callback), web_contents_, esc_key_locked));
 }
 
