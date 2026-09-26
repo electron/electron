@@ -117,29 +117,31 @@ describe('TouchBar module', () => {
           touchBar.escapeItem = null;
         });
 
-        it('calls the callback on the items when a window interaction event fires', (done) => {
-          const button = new TouchBarButton({
-            label: 'bar',
-            click: () => {
-              done();
-            }
-          });
-          const touchBar = new TouchBar({ items: [button] });
-          window.setTouchBar(touchBar);
-          window.emit('-touch-bar-interaction', {}, (button as any).id);
-        });
+        it('calls the callback on the items when a window interaction event fires', () =>
+          new Promise<void>((resolve) => {
+            const button = new TouchBarButton({
+              label: 'bar',
+              click: () => {
+                resolve();
+              }
+            });
+            const touchBar = new TouchBar({ items: [button] });
+            window.setTouchBar(touchBar);
+            window.emit('-touch-bar-interaction', {}, (button as any).id);
+          }));
 
-        it('calls the callback on the escape item when a window interaction event fires', (done) => {
-          const button = new TouchBarButton({
-            label: 'bar',
-            click: () => {
-              done();
-            }
-          });
-          const touchBar = new TouchBar({ escapeItem: button });
-          window.setTouchBar(touchBar);
-          window.emit('-touch-bar-interaction', {}, (button as any).id);
-        });
+        it('calls the callback on the escape item when a window interaction event fires', () =>
+          new Promise<void>((resolve) => {
+            const button = new TouchBarButton({
+              label: 'bar',
+              click: () => {
+                resolve();
+              }
+            });
+            const touchBar = new TouchBar({ escapeItem: button });
+            window.setTouchBar(touchBar);
+            window.emit('-touch-bar-interaction', {}, (button as any).id);
+          }));
       });
     }
   });

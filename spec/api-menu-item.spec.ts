@@ -132,23 +132,25 @@ describe('MenuItems', () => {
   });
 
   describe('MenuItem.click', () => {
-    it('should be called with the item object passed', (done) => {
-      const menu = Menu.buildFromTemplate([
-        {
-          label: 'text',
-          click: (item) => {
-            try {
-              expect(item.constructor.name).to.equal('MenuItem');
-              expect(item.label).to.equal('text');
-              done();
-            } catch (e) {
-              done(e);
+    it('should be called with the item object passed', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const menu = Menu.buildFromTemplate([
+          {
+            label: 'text',
+            click: (item) => {
+              try {
+                expect(item.constructor.name).to.equal('MenuItem');
+                expect(item.label).to.equal('text');
+                done();
+              } catch (e) {
+                done(e);
+              }
             }
           }
-        }
-      ]);
-      menu._activate(menu.items[0].commandId);
-    });
+        ]);
+        menu._activate(menu.items[0].commandId);
+      }));
   });
 
   describe('MenuItem with checked/radio property', () => {

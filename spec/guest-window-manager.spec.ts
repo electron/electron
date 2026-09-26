@@ -20,34 +20,36 @@ describe('webContents.setWindowOpenHandler', () => {
 
     afterEach(closeAllWindows);
 
-    it('does not fire window creation events if the handler callback throws an error', (done) => {
-      const error = new Error('oh no');
-      const listeners = process.listeners('uncaughtException');
-      process.removeAllListeners('uncaughtException');
-      process.on('uncaughtException', (thrown) => {
-        try {
-          expect(thrown).to.equal(error);
-          done();
-        } catch (e) {
-          done(e);
-        } finally {
-          process.removeAllListeners('uncaughtException');
-          for (const listener of listeners) {
-            process.on('uncaughtException', listener);
+    it('does not fire window creation events if the handler callback throws an error', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const error = new Error('oh no');
+        const listeners = process.listeners('uncaughtException');
+        process.removeAllListeners('uncaughtException');
+        process.on('uncaughtException', (thrown) => {
+          try {
+            expect(thrown).to.equal(error);
+            done();
+          } catch (e) {
+            done(e);
+          } finally {
+            process.removeAllListeners('uncaughtException');
+            for (const listener of listeners) {
+              process.on('uncaughtException', listener);
+            }
           }
-        }
-      });
+        });
 
-      browserWindow.webContents.on('did-create-window', () => {
-        assert.fail('did-create-window should not be called with an overridden window.open');
-      });
+        browserWindow.webContents.on('did-create-window', () => {
+          assert.fail('did-create-window should not be called with an overridden window.open');
+        });
 
-      browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
+        browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
 
-      browserWindow.webContents.setWindowOpenHandler(() => {
-        throw error;
-      });
-    });
+        browserWindow.webContents.setWindowOpenHandler(() => {
+          throw error;
+        });
+      }));
 
     it('does not fire window creation events if the handler callback returns a bad result', async () => {
       const bad = new Promise((resolve) => {

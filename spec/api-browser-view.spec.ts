@@ -755,17 +755,18 @@ describe('BrowserView module', () => {
   });
 
   describe('window.open()', () => {
-    it('works in BrowserView', (done) => {
-      view = new BrowserView();
-      w.setBrowserView(view);
-      view.webContents.setWindowOpenHandler(({ url, frameName }) => {
-        expect(url).to.equal('http://host/');
-        expect(frameName).to.equal('host');
-        done();
-        return { action: 'deny' };
-      });
-      view.webContents.loadFile(path.join(fixtures, 'pages', 'window-open.html'));
-    });
+    it('works in BrowserView', () =>
+      new Promise<void>((resolve) => {
+        view = new BrowserView();
+        w.setBrowserView(view);
+        view.webContents.setWindowOpenHandler(({ url, frameName }) => {
+          expect(url).to.equal('http://host/');
+          expect(frameName).to.equal('host');
+          resolve();
+          return { action: 'deny' };
+        });
+        view.webContents.loadFile(path.join(fixtures, 'pages', 'window-open.html'));
+      }));
   });
 
   describe('BrowserView.capturePage(rect)', () => {

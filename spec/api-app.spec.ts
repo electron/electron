@@ -75,9 +75,12 @@ describe('app module', () => {
     secureUrl = (await listen(server)).url;
   });
 
-  after((done) => {
-    server.close(() => done());
-  });
+  after(
+    () =>
+      new Promise<void>((resolve) => {
+        server.close(() => resolve());
+      })
+  );
 
   describe('app.getVersion()', () => {
     it('returns the version field of package.json', () => {
@@ -563,51 +566,60 @@ describe('app module', () => {
     const socketPath =
       process.platform === 'win32' ? '\\\\.\\pipe\\electron-app-relaunch' : '/tmp/electron-app-relaunch';
 
-    beforeEach((done) => {
-      fs.unlink(socketPath, () => {
-        server = net.createServer();
-        server.listen(socketPath);
-        done();
-      });
-    });
+    beforeEach(
+      () =>
+        new Promise<void>((resolve) => {
+          fs.unlink(socketPath, () => {
+            server = net.createServer();
+            server.listen(socketPath);
+            resolve();
+          });
+        })
+    );
 
-    afterEach((done) => {
-      server!.close(() => {
-        if (process.platform === 'win32') {
-          done();
-        } else {
-          fs.unlink(socketPath, () => done());
-        }
-      });
-    });
+    afterEach(
+      () =>
+        new Promise<void>((resolve) => {
+          server!.close(() => {
+            if (process.platform === 'win32') {
+              resolve();
+            } else {
+              fs.unlink(socketPath, () => resolve());
+            }
+          });
+        })
+    );
 
-    it('relaunches the app', function (done) {
-      this.timeout(120000);
+    it('relaunches the app', function () {
+      return new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        this.timeout(120000);
 
-      let state = 'none';
-      server!.once('error', (error) => done(error));
-      server!.on('connection', (client) => {
-        client.once('data', (data) => {
-          if (String(data) === '--first' && state === 'none') {
-            state = 'first-launch';
-          } else if (String(data) === '--second' && state === 'first-launch') {
-            state = 'second-launch';
-          } else if (String(data) === '--third' && state === 'second-launch') {
-            done();
-          } else {
-            done(`Unexpected state: "${state}", data: "${data}"`);
+        let state = 'none';
+        server!.once('error', (error) => done(error));
+        server!.on('connection', (client) => {
+          client.once('data', (data) => {
+            if (String(data) === '--first' && state === 'none') {
+              state = 'first-launch';
+            } else if (String(data) === '--second' && state === 'first-launch') {
+              state = 'second-launch';
+            } else if (String(data) === '--third' && state === 'second-launch') {
+              done();
+            } else {
+              done(`Unexpected state: "${state}", data: "${data}"`);
+            }
+          });
+        });
+
+        const appPath = path.join(fixturesPath, 'api', 'relaunch');
+        const child = cp.spawn(process.execPath, [appPath, '--first']);
+        child.stdout.on('data', (c) => console.log(c.toString()));
+        child.stderr.on('data', (c) => console.log(c.toString()));
+        child.on('exit', (code, signal) => {
+          if (code !== 0) {
+            console.log(`Process exited with code "${code}" signal "${signal}"`);
           }
         });
-      });
-
-      const appPath = path.join(fixturesPath, 'api', 'relaunch');
-      const child = cp.spawn(process.execPath, [appPath, '--first']);
-      child.stdout.on('data', (c) => console.log(c.toString()));
-      child.stderr.on('data', (c) => console.log(c.toString()));
-      child.on('exit', (code, signal) => {
-        if (code !== 0) {
-          console.log(`Process exited with code "${code}" signal "${signal}"`);
-        }
       });
     });
   });
@@ -1497,20 +1509,23 @@ describe('app module', () => {
       });
     });
 
-    after(function (done) {
-      if (process.platform !== 'win32') {
-        done();
-      } else {
-        const protocolKey = new Winreg({
-          hive: Winreg.HKCU,
-          key: `\\Software\\Classes\\${protocol}`
-        });
+    after(
+      () =>
+        new Promise<void>((resolve) => {
+          if (process.platform !== 'win32') {
+            resolve();
+          } else {
+            const protocolKey = new Winreg({
+              hive: Winreg.HKCU,
+              key: `\\Software\\Classes\\${protocol}`
+            });
 
-        // The last test leaves the registry dirty,
-        // delete the protocol key for those of us who test at home
-        protocolKey.destroy(() => done());
-      }
-    });
+            // The last test leaves the registry dirty,
+            // delete the protocol key for those of us who test at home
+            protocolKey.destroy(() => resolve());
+          }
+        })
+    );
 
     beforeEach(() => {
       app.removeAsDefaultProtocolClient(protocol);
@@ -2174,82 +2189,92 @@ describe('app module', () => {
     const socketPath =
       process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox';
 
-    beforeEach(function (done) {
-      fs.unlink(socketPath, () => {
-        server = net.createServer();
-        server.listen(socketPath);
-        done();
-      });
-    });
+    beforeEach(
+      () =>
+        new Promise<void>((resolve) => {
+          fs.unlink(socketPath, () => {
+            server = net.createServer();
+            server.listen(socketPath);
+            resolve();
+          });
+        })
+    );
 
-    afterEach((done) => {
-      if (appProcess != null) appProcess.kill();
+    afterEach(
+      () =>
+        new Promise<void>((resolve) => {
+          if (appProcess != null) appProcess.kill();
 
-      if (server) {
-        server.close(() => {
-          if (process.platform === 'win32') {
-            done();
+          if (server) {
+            server.close(() => {
+              if (process.platform === 'win32') {
+                resolve();
+              } else {
+                fs.unlink(socketPath, () => resolve());
+              }
+            });
           } else {
-            fs.unlink(socketPath, () => done());
+            resolve();
           }
-        });
-      } else {
-        done();
-      }
-    });
+        })
+    );
 
     describe('when app.enableSandbox() is called', () => {
-      it('adds --enable-sandbox to all renderer processes', (done) => {
-        const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-        appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox'], { stdio: 'inherit' });
+      it('adds --enable-sandbox to all renderer processes', () =>
+        new Promise<void>((resolve, reject) => {
+          const done = (error?: unknown) => (error ? reject(error) : resolve());
+          const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
+          appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox'], { stdio: 'inherit' });
 
-        server.once('error', (error) => {
-          done(error);
-        });
-
-        server.on('connection', (client) => {
-          client.once('data', (data) => {
-            const argv = JSON.parse(data.toString());
-            expect(argv.sandbox).to.include('--enable-sandbox');
-            expect(argv.sandbox).to.not.include('--no-sandbox');
-
-            expect(argv.noSandbox).to.include('--enable-sandbox');
-            expect(argv.noSandbox).to.not.include('--no-sandbox');
-
-            expect(argv.noSandboxDevtools).to.equal(true);
-            expect(argv.sandboxDevtools).to.equal(true);
-
-            done();
+          server.once('error', (error) => {
+            done(error);
           });
-        });
-      });
+
+          server.on('connection', (client) => {
+            client.once('data', (data) => {
+              const argv = JSON.parse(data.toString());
+              expect(argv.sandbox).to.include('--enable-sandbox');
+              expect(argv.sandbox).to.not.include('--no-sandbox');
+
+              expect(argv.noSandbox).to.include('--enable-sandbox');
+              expect(argv.noSandbox).to.not.include('--no-sandbox');
+
+              expect(argv.noSandboxDevtools).to.equal(true);
+              expect(argv.sandboxDevtools).to.equal(true);
+
+              done();
+            });
+          });
+        }));
     });
 
     describe('when the app is launched with --enable-sandbox', () => {
-      it('adds --enable-sandbox to all renderer processes', (done) => {
-        const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-        appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox'], { stdio: 'inherit' });
+      it('adds --enable-sandbox to all renderer processes', () =>
+        new Promise<void>((resolve, reject) => {
+          const done = (error?: unknown) => (error ? reject(error) : resolve());
+          const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
+          appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox'], { stdio: 'inherit' });
 
-        server.once('error', (error) => {
-          done(error);
-        });
-
-        server.on('connection', (client) => {
-          client.once('data', (data) => {
-            const argv = JSON.parse(data.toString());
-            expect(argv.sandbox).to.include('--enable-sandbox');
-            expect(argv.sandbox).to.not.include('--no-sandbox');
-
-            expect(argv.noSandbox).to.include('--enable-sandbox');
-            expect(argv.noSandbox).to.not.include('--no-sandbox');
-
-            expect(argv.noSandboxDevtools).to.equal(true);
-            expect(argv.sandboxDevtools).to.equal(true);
-
-            done();
+          server.once('error', (error) => {
+            done(error);
           });
-        });
-      });
+
+          server.on('connection', (client) => {
+            client.once('data', (data) => {
+              const argv = JSON.parse(data.toString());
+              expect(argv.sandbox).to.include('--enable-sandbox');
+              expect(argv.sandbox).to.not.include('--no-sandbox');
+
+              expect(argv.noSandbox).to.include('--enable-sandbox');
+              expect(argv.noSandbox).to.not.include('--no-sandbox');
+
+              expect(argv.noSandboxDevtools).to.equal(true);
+              expect(argv.sandboxDevtools).to.equal(true);
+
+              done();
+            });
+          });
+        }));
     });
   });
 
