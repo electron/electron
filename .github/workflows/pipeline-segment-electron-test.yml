@@ -384,7 +384,17 @@ jobs:
         # Run tests
         if [ "${{ inputs.target-platform }}" != "linux" ]; then
           echo "About to start tests"
-          node script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
+          LOGGING_ARGS=--enable-logging
+          if [ "${{ inputs.target-platform }}" = "win" ]; then
+            # Child processes can't write to our stderr pipe on Windows, and
+            # with plain --enable-logging each one opens a console window that
+            # can cover the test windows. Log to a file (uploaded with the test
+            # artifacts) and mirror the main process to stderr.
+            export ELECTRON_ALSO_LOG_TO_STDERR=1
+            mkdir -p spec/artifacts
+            LOGGING_ARGS="--enable-logging=file --log-file=$(pwd -W)/spec/artifacts/electron_debug.log"
+          fi
+          node script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught $LOGGING_ARGS --files $tests_files
         else
           chown :builduser .. && chmod g+w ..
           chown -R :builduser . && chmod -R g+w .
