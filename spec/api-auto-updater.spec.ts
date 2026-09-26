@@ -1,14 +1,14 @@
 import { autoUpdater } from 'electron/main';
 
-import { expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 
 import { ifit, ifdescribe } from './lib/spec-helpers.ts';
 
-ifdescribe(!process.mas)('autoUpdater module', function () {
-  describe('checkForUpdates', function () {
-    ifit(process.platform === 'win32')('emits an error on Windows if the feed URL is not set', async function () {
+ifdescribe(!process.mas)('autoUpdater module', () => {
+  describe('checkForUpdates', () => {
+    ifit(process.platform === 'win32')('emits an error on Windows if the feed URL is not set', async () => {
       const errorEvent = once(autoUpdater, 'error') as Promise<[Error]>;
       autoUpdater.setFeedURL({ url: '' });
       autoUpdater.checkForUpdates();
@@ -22,14 +22,14 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
       expect(autoUpdater.getFeedURL()).to.equal('');
     });
 
-    ifit(process.platform === 'win32')('correctly fetches the previously set FeedURL', function () {
+    ifit(process.platform === 'win32')('correctly fetches the previously set FeedURL', () => {
       const updateURL = 'https://fake-update.electron.io';
       autoUpdater.setFeedURL({ url: updateURL });
       expect(autoUpdater.getFeedURL()).to.equal(updateURL);
     });
   });
 
-  describe('setFeedURL', function () {
+  describe('setFeedURL', () => {
     ifdescribe(process.platform === 'win32' || process.platform === 'darwin')('on Mac or Windows', () => {
       it('sets url successfully using old (url, headers) syntax', () => {
         const url = 'http://electronjs.org';
@@ -90,7 +90,7 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
   });
 
   describe('quitAndInstall', () => {
-    ifit(process.platform === 'win32')('emits an error on Windows when no update is available', async function () {
+    ifit(process.platform === 'win32')('emits an error on Windows when no update is available', async () => {
       const errorEvent = once(autoUpdater, 'error') as Promise<[Error]>;
       autoUpdater.quitAndInstall();
       const [error] = await errorEvent;

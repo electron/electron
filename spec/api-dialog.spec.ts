@@ -1,7 +1,7 @@
 import { app, dialog, BaseWindow, BrowserWindow } from 'electron/main';
 
 import * as dbus from 'dbus-native';
-import { expect } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
@@ -258,7 +258,7 @@ describe('dialog module', () => {
     () => {
       let dialogHelper: any;
 
-      before(() => {
+      beforeAll(() => {
         dialogHelper = require('@electron-ci/dialog-helper');
       });
 
@@ -1055,7 +1055,7 @@ describe('dialog module', () => {
     let getCalls: () => Promise<any[]>;
     let clearCalls: () => Promise<void>;
 
-    before(async () => {
+    beforeAll(async () => {
       bus = dbus.sessionBus();
       const service = bus.getService('org.freedesktop.portal.Desktop');
       const getInterface = promisify(service.getInterface.bind(service));
@@ -1064,7 +1064,7 @@ describe('dialog module', () => {
       clearCalls = promisify(mock.ClearCalls.bind(mock));
     });
 
-    after(() => {
+    afterAll(() => {
       bus?.connection.end();
     });
 
@@ -1144,7 +1144,7 @@ describe('dialog module', () => {
     () => {
       let dialogHelper: any;
 
-      before(() => {
+      beforeAll(() => {
         dialogHelper = require('@electron-ci/dialog-helper');
       });
 

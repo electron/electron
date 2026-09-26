@@ -1,6 +1,6 @@
 import { BrowserWindow, screen } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import { createRequire } from 'node:module';
@@ -95,12 +95,11 @@ const loadDraggableSubframe = async (w: BrowserWindow): Promise<void> => {
   `);
 };
 
-describe('draggable regions', { tags: ['serial'] }, function () {
-  before(async function () {
-    if (!robot || !robot.moveMouse || !hasCapturableScreen()) {
-      this.skip();
-    }
+// @ts-expect-error robot stays unassigned when the module cannot be loaded
+const canDrag = !!robot?.moveMouse && hasCapturableScreen();
 
+describe.runIf(canDrag)('draggable regions', { tags: ['serial'] }, () => {
+  beforeAll(async () => {
     // The first window may not properly receive events due to UI transitions or
     // focus management. To mitigate this, warm up with a test run.
     const w = new BrowserWindow(testWindowOpts);

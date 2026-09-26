@@ -1,4 +1,5 @@
 import psList from 'ps-list';
+import { afterAll, beforeAll, beforeEach, it } from 'vitest';
 
 import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
@@ -238,25 +239,27 @@ export function setupUpdaterHarness(): UpdaterHarness {
   let templateApp = '';
   const zipDirs: string[] = [];
 
-  before(async function () {
-    const result = getCodesignIdentity();
-    if (result === null) return; // beforeEach below skips every test
-    identity = result;
+  beforeAll(
+    async () => {
+      const result = getCodesignIdentity();
+      if (result === null) return; // beforeEach below skips every test
+      identity = result;
 
-    this.timeout(5 * 60 * 1000);
-    templateDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-update-spec-template-'));
-    templateApp = await copyMacOSFixtureApp(templateDir, null);
-    stripFrameworkSymbols(templateApp);
-    const signResult = await signApp(templateApp, identity);
-    if (signResult.code !== 0) {
-      throw new Error(`Failed to sign template app: ${signResult.out}`);
-    }
-  });
+      templateDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-update-spec-template-'));
+      templateApp = await copyMacOSFixtureApp(templateDir, null);
+      stripFrameworkSymbols(templateApp);
+      const signResult = await signApp(templateApp, identity);
+      if (signResult.code !== 0) {
+        throw new Error(`Failed to sign template app: ${signResult.out}`);
+      }
+    },
+    5 * 60 * 1000
+  );
 
-  beforeEach(function () {
+  beforeEach((ctx) => {
     const result = getCodesignIdentity();
     if (result === null) {
-      this.skip();
+      ctx.skip();
     } else {
       identity = result;
     }
@@ -593,10 +596,9 @@ export function setupUpdaterHarness(): UpdaterHarness {
   const updaterIt = (title: string, body: (ctx: TaskContext) => Promise<void>, { timeout = 120000 } = {}) => {
     const task: Task = { title, timeout, body, generation: 0, started: false, awaited: false };
     const index = tasks.push(task) - 1;
-    it(title, async function () {
+    it(title, { timeout: 30 * 60 * 1000 }, async () => {
       // Each run enforces its own budget from when it gets a slot, so this is
       // only a backstop in case the pool stops making progress.
-      this.timeout(30 * 60 * 1000);
       scheduleFrom(index);
       // Run now, ahead of the queue, if there is no lookahead run, this is a
       // retry, or --grep left ours queued behind tests that never ran.
@@ -607,26 +609,28 @@ export function setupUpdaterHarness(): UpdaterHarness {
   };
 
   // Registered before the template cleanup below, so it runs first.
-  after(async function () {
-    // With --grep, lookahead runs for tests that never executed may still be
-    // going; stop them, and make queued ones bail.
-    draining = true;
-    this.timeout(10 * 60 * 1000);
-    for (const task of tasks) task.controller?.abort(new Error('The suite finished before this run did'));
-    await Promise.allSettled([...inflight]);
-    // A stop that gave up on a slot (and retired it) may have left something
-    // running; every fixture app of this suite lives under this prefix.
-    for (const slot of pool.slots) cp.spawnSync('launchctl', ['remove', slot.shipItLabel]);
-    await killEverything([], pathPrefixes([path.resolve(os.tmpdir(), 'electron-update-spec-')]), KILL_WAIT_MS);
-    for (const slot of pool.slots) {
-      cp.spawnSync('defaults', ['delete', slot.bundleId]);
-      cp.spawnSync('defaults', ['delete', slot.shipItLabel, 'SQRLShipItInstallationAttempts']);
-      // Runs aborted just above may still be releasing their files.
-      await removeWithRetries(() => fs.promises.rm(slot.cacheDir, { recursive: true, force: true }), CLEANUP_WAIT_MS);
-    }
-  });
+  afterAll(
+    async () => {
+      // With --grep, lookahead runs for tests that never executed may still be
+      // going; stop them, and make queued ones bail.
+      draining = true;
+      for (const task of tasks) task.controller?.abort(new Error('The suite finished before this run did'));
+      await Promise.allSettled([...inflight]);
+      // A stop that gave up on a slot (and retired it) may have left something
+      // running; every fixture app of this suite lives under this prefix.
+      for (const slot of pool.slots) cp.spawnSync('launchctl', ['remove', slot.shipItLabel]);
+      await killEverything([], pathPrefixes([path.resolve(os.tmpdir(), 'electron-update-spec-')]), KILL_WAIT_MS);
+      for (const slot of pool.slots) {
+        cp.spawnSync('defaults', ['delete', slot.bundleId]);
+        cp.spawnSync('defaults', ['delete', slot.shipItLabel, 'SQRLShipItInstallationAttempts']);
+        // Runs aborted just above may still be releasing their files.
+        await removeWithRetries(() => fs.promises.rm(slot.cacheDir, { recursive: true, force: true }), CLEANUP_WAIT_MS);
+      }
+    },
+    10 * 60 * 1000
+  );
 
-  after(async () => {
+  afterAll(async () => {
     for (const dir of zipDirs) {
       cp.spawnSync('rm', ['-r', dir]);
     }

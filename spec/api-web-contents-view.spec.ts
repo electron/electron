@@ -1,6 +1,6 @@
 import { BaseWindow, BrowserWindow, View, WebContentsView, webContents, screen } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import { setTimeout as setTimeoutAsync } from 'node:timers/promises';

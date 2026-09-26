@@ -1,6 +1,6 @@
 import { net, session } from 'electron/main';
 
-import { expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { WebSocketServer, type WebSocket as WSWebSocket, type ServerOptions } from 'ws';
 
 import * as http from 'node:http';

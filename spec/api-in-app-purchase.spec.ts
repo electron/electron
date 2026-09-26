@@ -1,6 +1,6 @@
 import { inAppPurchase } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 
@@ -26,10 +26,8 @@ function windowOwners(): Map<number, string> {
   return owners;
 }
 
-describe('inAppPurchase module', { tags: ['serial'] }, function () {
+describe('inAppPurchase module', { tags: ['serial'], timeout: 3 * 60 * 1000 }, () => {
   if (process.platform !== 'darwin') return;
-
-  this.timeout(3 * 60 * 1000);
 
   // Without an App Store session StoreKit answers restoreCompletedTransactions()
   // with an Apple Account sign-in dialog, shown by a system agent, that nothing
@@ -40,18 +38,24 @@ describe('inAppPurchase module', { tags: ['serial'] }, function () {
     [...windowOwners()].filter(
       ([pid, executable]) => !ownersBefore.has(pid) && /^\/(System|usr\/libexec)\//.test(executable)
     );
-  before(() => {
-    ownersBefore = new Set(windowOwners().keys());
-  });
-  after(async () => {
-    // The dialog trails the call that caused it, so give it a moment to show.
-    await waitUntil(() => summoned().length > 0, { timeout: 3000 }).catch(() => {});
-    await waitUntil(() => {
-      const left = summoned();
-      for (const [pid] of left) process.kill(pid);
-      return left.length === 0;
-    });
-  });
+  beforeAll(
+    () => {
+      ownersBefore = new Set(windowOwners().keys());
+    },
+    3 * 60 * 1000
+  );
+  afterAll(
+    async () => {
+      // The dialog trails the call that caused it, so give it a moment to show.
+      await waitUntil(() => summoned().length > 0, { timeout: 3000 }).catch(() => {});
+      await waitUntil(() => {
+        const left = summoned();
+        for (const [pid] of left) process.kill(pid);
+        return left.length === 0;
+      });
+    },
+    3 * 60 * 1000
+  );
 
   it('canMakePayments() returns a boolean', () => {
     const canMakePayments = inAppPurchase.canMakePayments();

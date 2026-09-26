@@ -1,6 +1,6 @@
 import { BrowserWindow, session, utilityProcess, webFrameMain } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { on, once } from 'node:events';
 import * as path from 'node:path';

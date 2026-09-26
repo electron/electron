@@ -1,4 +1,4 @@
-import { expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as path from 'node:path';

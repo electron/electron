@@ -1,6 +1,6 @@
 import { app, contentTracing, type TraceConfig, type TraceCategoriesAndOptions } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
@@ -39,14 +39,8 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
     fs.rmSync(outputFilePath, { force: true });
   });
 
-  describe('startRecording', function () {
-    if (process.platform === 'win32' && process.arch === 'arm64') {
-      // WOA needs more time
-      this.timeout(10e3);
-    } else {
-      this.timeout(5e3);
-    }
-
+  // WOA needs more time
+  describe('startRecording', { timeout: process.platform === 'win32' && process.arch === 'arm64' ? 10e3 : 5e3 }, () => {
     const getFileSizeInKiloBytes = (filePath: string) => {
       const stats = fs.statSync(filePath);
       const fileSizeInBytes = stats.size;
@@ -105,50 +99,46 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
     });
   });
 
-  ifdescribe(process.platform !== 'linux')('stopRecording', function () {
-    if (process.platform === 'win32' && process.arch === 'arm64') {
-      // WOA needs more time
-      this.timeout(10e3);
-    } else {
-      this.timeout(5e3);
+  // WOA needs more time
+  ifdescribe(process.platform !== 'linux')(
+    'stopRecording',
+    { timeout: process.platform === 'win32' && process.arch === 'arm64' ? 10e3 : 5e3 },
+    () => {
+      // FIXME(samuelmaddock): this test regularly flakes
+      it.skip('does not crash on empty string', async () => {
+        const options = {
+          categoryFilter: '*',
+          traceOptions: 'record-until-full,enable-sampling'
+        };
+
+        await contentTracing.startRecording(options);
+        const path = await contentTracing.stopRecording('');
+        expect(path, 'result path').to.be.a('string').that.is.not.empty;
+        expect(fs.statSync(path).isFile(), 'output exists').to.be.true;
+      });
+
+      it('calls its callback with a result file path', async () => {
+        const resultFilePath = await record(/* options */ {}, outputFilePath);
+        expect(resultFilePath).to.be.a('string').and.be.equal(outputFilePath);
+      });
+
+      it('creates a temporary file when an empty string is passed', async () => {
+        const resultFilePath = await record(/* options */ {}, /* outputFilePath */ '');
+        expect(resultFilePath, 'result path').to.be.a('string').that.is.not.empty;
+      });
+
+      it('creates a temporary file when no path is passed', async () => {
+        const resultFilePath = await record(/* options */ {}, /* outputFilePath */ undefined);
+        expect(resultFilePath, 'result path').to.be.a('string').that.is.not.empty;
+      });
+
+      it('rejects if no trace is happening', async () => {
+        await expect(contentTracing.stopRecording()).rejects.toThrow('Failed to stop tracing - no trace in progress');
+      });
     }
+  );
 
-    // FIXME(samuelmaddock): this test regularly flakes
-    it.skip('does not crash on empty string', async () => {
-      const options = {
-        categoryFilter: '*',
-        traceOptions: 'record-until-full,enable-sampling'
-      };
-
-      await contentTracing.startRecording(options);
-      const path = await contentTracing.stopRecording('');
-      expect(path, 'result path').to.be.a('string').that.is.not.empty;
-      expect(fs.statSync(path).isFile(), 'output exists').to.be.true;
-    });
-
-    it('calls its callback with a result file path', async () => {
-      const resultFilePath = await record(/* options */ {}, outputFilePath);
-      expect(resultFilePath).to.be.a('string').and.be.equal(outputFilePath);
-    });
-
-    it('creates a temporary file when an empty string is passed', async function () {
-      const resultFilePath = await record(/* options */ {}, /* outputFilePath */ '');
-      expect(resultFilePath, 'result path').to.be.a('string').that.is.not.empty;
-    });
-
-    it('creates a temporary file when no path is passed', async function () {
-      const resultFilePath = await record(/* options */ {}, /* outputFilePath */ undefined);
-      expect(resultFilePath, 'result path').to.be.a('string').that.is.not.empty;
-    });
-
-    it('rejects if no trace is happening', async () => {
-      await expect(contentTracing.stopRecording()).rejects.toThrow('Failed to stop tracing - no trace in progress');
-    });
-  });
-
-  describe('getTraceBufferUsage', function () {
-    this.timeout(10e3);
-
+  describe('getTraceBufferUsage', { timeout: 10e3 }, () => {
     it('does not crash and returns valid usage data', async () => {
       await app.whenReady();
       await contentTracing.startRecording({
@@ -177,8 +167,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
   });
 
   describe('captured events', () => {
-    it('include V8 samples from the main process', async function () {
-      this.timeout(60000);
+    it('include V8 samples from the main process', { timeout: 60000 }, async () => {
       await contentTracing.startRecording({
         categoryFilter: 'disabled-by-default-v8.cpu_profiler',
         traceOptions: 'record-until-full'
@@ -205,7 +194,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
   });
 
   describe('node trace categories', () => {
-    it('captures performance.mark() as instant trace events', async function () {
+    it('captures performance.mark() as instant trace events', async () => {
       await contentTracing.startRecording({
         included_categories: ['node.perf.usertiming']
       });
@@ -223,7 +212,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       expect(markEvents[0].ph).to.equal('I', 'performance.mark() should emit instant (I) phase events');
     });
 
-    it('captures performance.measure() as nestable async begin/end trace events', async function () {
+    it('captures performance.measure() as nestable async begin/end trace events', async () => {
       await contentTracing.startRecording({
         included_categories: ['node.perf.usertiming']
       });
@@ -250,7 +239,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       ).to.be.true;
     });
 
-    it('captures node.fs.sync trace events for file operations', async function () {
+    it('captures node.fs.sync trace events for file operations', async () => {
       await contentTracing.startRecording({
         included_categories: ['node.fs.sync']
       });
@@ -267,7 +256,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       expect(fsEvents).to.have.lengthOf.at.least(1, 'should have node.fs.sync trace events');
     });
 
-    it('captures multiple node categories simultaneously', async function () {
+    it('captures multiple node categories simultaneously', async () => {
       await contentTracing.startRecording({
         included_categories: ['node.async_hooks', 'node.vm.script']
       });
@@ -289,7 +278,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       expect(vmEvents).to.have.lengthOf.at.least(1, 'should have node.vm.script events');
     });
 
-    it('captures events using wildcard category pattern node.fs.*', async function () {
+    it('captures events using wildcard category pattern node.fs.*', async () => {
       await contentTracing.startRecording({
         included_categories: ['node.fs.*']
       });

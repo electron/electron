@@ -1,6 +1,6 @@
 import { safeStorage } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -10,13 +10,13 @@ import * as path from 'node:path';
 import { ifdescribe } from './lib/spec-helpers.ts';
 
 describe('safeStorage module', () => {
-  before(() => {
+  beforeAll(() => {
     if (process.platform === 'linux') {
       safeStorage.setUsePlainTextEncryption(true);
     }
   });
 
-  after(async () => {
+  afterAll(async () => {
     const pathToEncryptedString = path.resolve(import.meta.dirname, 'fixtures', 'api', 'safe-storage', 'encrypted.txt');
     if (fs.existsSync(pathToEncryptedString)) {
       await fs.promises.rm(pathToEncryptedString, { force: true, recursive: true });

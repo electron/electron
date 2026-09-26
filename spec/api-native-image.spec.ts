@@ -1,6 +1,6 @@
 import { nativeImage } from 'electron/common';
 
-import { expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import * as fs from 'node:fs';
 import * as os from 'node:os';
@@ -57,7 +57,7 @@ describe('nativeImage module', () => {
         expect(templateImage.isMacTemplateImage).to.be.true;
       });
 
-      it('sets a template image', function () {
+      it('sets a template image', () => {
         const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
         expect(image.isMacTemplateImage).to.be.false;
 
@@ -75,7 +75,7 @@ describe('nativeImage module', () => {
         expect(templateImage.isTemplateImage()).to.be.true;
       });
 
-      it('sets a template image', function () {
+      it('sets a template image', () => {
         const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
         expect(image.isTemplateImage()).to.be.false;
 
@@ -315,7 +315,7 @@ describe('nativeImage module', () => {
       expect(image.getSize()).to.deep.equal({ width: 538, height: 190 });
     });
 
-    ifit(process.platform === 'darwin')('Gets an NSImage pointer on macOS', function () {
+    ifit(process.platform === 'darwin')('Gets an NSImage pointer on macOS', () => {
       const imagePath = `${path.join(fixturesPath, 'api')}${path.sep}..${path.sep}${path.join('assets', 'logo.png')}`;
       const image = nativeImage.createFromPath(imagePath);
       const nsimage = image.getNativeHandle();
@@ -327,15 +327,14 @@ describe('nativeImage module', () => {
       expect(allBytesAreNotNull);
     });
 
-    ifit(process.platform === 'win32')('loads images from .ico files on Windows', function () {
+    ifit(process.platform === 'win32')('loads images from .ico files on Windows', () => {
       const imagePath = path.join(fixturesPath, 'assets', 'icon.ico');
       const image = nativeImage.createFromPath(imagePath);
       expect(image.isEmpty()).to.be.false;
       expect(image.getSize()).to.deep.equal({ width: 256, height: 256 });
     });
 
-    ifdescribe(process.platform === 'win32')('when loading .ico files from ASAR archives', function () {
-      this.retries(0);
+    ifdescribe(process.platform === 'win32')('when loading .ico files from ASAR archives', { retry: 0 }, () => {
       const archivePath = path.join(fixturesPath, 'test.asar', 'icon.asar');
 
       // Packed cases use distinct members so a reverted implementation cannot reuse a stale extracted path.
@@ -418,22 +417,22 @@ describe('nativeImage module', () => {
       expect(image.isEmpty()).to.be.true;
     });
 
-    ifit(process.platform !== 'darwin')('returns empty on non-darwin platforms', function () {
+    ifit(process.platform !== 'darwin')('returns empty on non-darwin platforms', () => {
       const image = nativeImage.createFromNamedImage('NSActionTemplate');
       expect(image.isEmpty()).to.be.true;
     });
 
-    ifit(process.platform === 'darwin')('returns a valid image on darwin', function () {
+    ifit(process.platform === 'darwin')('returns a valid image on darwin', () => {
       const image = nativeImage.createFromNamedImage('NSActionTemplate');
       expect(image.isEmpty()).to.be.false;
     });
 
-    ifit(process.platform === 'darwin')('returns a valid named symbol on darwin', function () {
+    ifit(process.platform === 'darwin')('returns a valid named symbol on darwin', () => {
       const image = nativeImage.createFromNamedImage('atom');
       expect(image.isEmpty()).to.be.false;
     });
 
-    ifit(process.platform === 'darwin')('returns a valid named symbol with options on darwin', function () {
+    ifit(process.platform === 'darwin')('returns a valid named symbol with options on darwin', () => {
       const image = nativeImage.createFromNamedImage('atom', {
         weight: 'ultralight',
         scale: 'small',
@@ -442,7 +441,7 @@ describe('nativeImage module', () => {
       expect(image.isEmpty()).to.be.false;
     });
 
-    ifit(process.platform === 'darwin')('returns allows an HSL shift for a valid image on darwin', function () {
+    ifit(process.platform === 'darwin')('returns allows an HSL shift for a valid image on darwin', () => {
       const image = nativeImage.createFromNamedImage('NSActionTemplate', [0.5, 0.2, 0.8]);
       expect(image.isEmpty()).to.be.false;
     });
@@ -454,7 +453,7 @@ describe('nativeImage module', () => {
       expect(image.isEmpty()).to.be.true;
     });
 
-    ifit(process.platform === 'darwin')('returns a valid image on darwin', function () {
+    ifit(process.platform === 'darwin')('returns a valid image on darwin', () => {
       const image = nativeImage.createMenuSymbol('atom');
       expect(image.isEmpty()).to.be.false;
     });

@@ -1,6 +1,6 @@
 import type { BrowserWindow } from 'electron/main';
 
-import { chai } from 'vitest';
+import { afterAll, beforeAll, chai, describe, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
@@ -11,22 +11,12 @@ import * as url from 'node:url';
 import { stripVTControlCharacters } from 'node:util';
 import * as v8 from 'node:v8';
 
-import type { SuiteFunction, TestFunction } from 'mocha';
 import type * as http2 from 'node:http2';
 import type * as https from 'node:https';
 import type * as net from 'node:net';
 
-const addOnly = <T>(fn: Function): T => {
-  const wrapped = (...args: any[]) => {
-    return fn(...args);
-  };
-  (wrapped as any).only = wrapped;
-  (wrapped as any).skip = wrapped;
-  return wrapped as any;
-};
-
-export const ifit = (condition: boolean) => (condition ? it : addOnly<TestFunction>(it.skip));
-export const ifdescribe = (condition: boolean) => (condition ? describe : addOnly<SuiteFunction>(describe.skip));
+export const ifit = (condition: boolean) => (condition ? it : it.skip);
+export const ifdescribe = (condition: boolean) => (condition ? describe : describe.skip);
 
 export const isWayland =
   process.platform === 'linux' &&
@@ -285,10 +275,10 @@ export async function getRemoteContext() {
 }
 
 export function useRemoteContext(opts?: any) {
-  before(async () => {
+  beforeAll(async () => {
     remoteContext.unshift(await makeRemoteContext(opts));
   });
-  after(() => {
+  afterAll(() => {
     const w = remoteContext.shift();
     w!.close();
   });

@@ -1,6 +1,6 @@
 import { session, webContents, type WebContents } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { randomUUID } from 'node:crypto';
 import { on, once } from 'node:events';
@@ -18,7 +18,7 @@ describe('session.serviceWorkers', () => {
   let baseUrl: string;
   let w: WebContents;
 
-  before(async () => {
+  beforeAll(async () => {
     ses = session.fromPartition(partition);
     await ses.clearStorageData();
   });

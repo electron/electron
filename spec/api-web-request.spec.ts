@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain, net, protocol, session, type WebContents, webContents, View } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { WebSocketServer } from 'ws';
 
 import * as childProcess from 'node:child_process';
@@ -62,14 +62,14 @@ describe('webRequest module', () => {
     }
   );
 
-  before(async () => {
+  beforeAll(async () => {
     protocol.registerStringProtocol('cors', (req, cb) => cb(''));
     defaultURL = (await listen(server)).url + '/';
     http2URL = (await listen(h2server)).url + '/';
     console.log(http2URL);
   });
 
-  after(() => {
+  afterAll(() => {
     server.close();
     h2server.close();
     protocol.unregisterProtocol('cors');
@@ -77,13 +77,13 @@ describe('webRequest module', () => {
 
   let contents: WebContents;
   // NB. sandbox: true is used because it makes navigations much (~8x) faster.
-  before(async () => {
+  beforeAll(async () => {
     contents = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true });
     // const w = new BrowserWindow({webPreferences: {sandbox: true}})
     // contents = w.webContents
     await contents.loadFile(path.join(fixturesPath, 'pages', 'fetch.html'));
   });
-  after(() => contents.destroy());
+  afterAll(() => contents.destroy());
 
   async function ajax(url: string, options = {}) {
     return contents.executeJavaScript(`ajax("${url}", ${JSON.stringify(options)})`);
@@ -885,11 +885,11 @@ describe('webRequest module', () => {
     // Served from another process: these tests block the main process on purpose.
     let server: childProcess.ChildProcess;
     let serverURL: string;
-    before(async () => {
+    beforeAll(async () => {
       server = childProcess.fork(path.join(fixturesPath, 'api', 'web-request', 'server.js'));
       [{ url: serverURL }] = await once(server, 'message');
     });
-    after(() => server.kill());
+    afterAll(() => server.kill());
     afterEach(() => {
       ses.webRequest.onBeforeRequest(null);
       ses.webRequest.onHeadersReceived(null);

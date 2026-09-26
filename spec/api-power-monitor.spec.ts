@@ -7,7 +7,7 @@ import * as dbus from 'dbus-native';
 //
 // See https://pypi.python.org/pypi/python-dbusmock for more information about
 // python-dbusmock.
-import { expect } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import { createRequire } from 'node:module';
@@ -24,7 +24,7 @@ describe('powerMonitor', { tags: ['serial'] }, () => {
   ifdescribe(process.platform === 'linux' && process.env.DBUS_SYSTEM_BUS_ADDRESS != null)(
     'when powerMonitor module is loaded with dbus mock',
     () => {
-      before(async () => {
+      beforeAll(async () => {
         const systemBus = dbus.systemBus();
         const loginService = systemBus.getService('org.freedesktop.login1');
         const getInterface = promisify(loginService.getInterface.bind(loginService));
@@ -37,7 +37,7 @@ describe('powerMonitor', { tags: ['serial'] }, () => {
         await promisify(logindMock.ClearCalls.bind(logindMock))();
       });
 
-      after(async () => {
+      afterAll(async () => {
         await reset();
       });
 
@@ -49,7 +49,7 @@ describe('powerMonitor', { tags: ['serial'] }, () => {
         return cb;
       }
 
-      before(
+      beforeAll(
         () =>
           new Promise<void>((resolve, reject) => {
             const done = (error?: unknown) => (error ? reject(error) : resolve());
@@ -123,7 +123,7 @@ describe('powerMonitor', { tags: ['serial'] }, () => {
       });
 
       describe('when a listener is added to shutdown event', () => {
-        before(async () => {
+        beforeAll(async () => {
           const calls = await getCalls();
           expect(calls).to.be.an('array').that.has.lengthOf(2);
           dbusMockPowerMonitor.once('shutdown', () => {});
@@ -194,7 +194,7 @@ describe('powerMonitor', { tags: ['serial'] }, () => {
 
   describe('when powerMonitor module is loaded', () => {
     let powerMonitor: typeof Electron.powerMonitor;
-    before(() => {
+    beforeAll(() => {
       powerMonitor = require('electron').powerMonitor;
     });
     describe('powerMonitor.getSystemIdleState', () => {

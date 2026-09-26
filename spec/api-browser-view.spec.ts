@@ -1,6 +1,6 @@
 import { BrowserView, BrowserWindow, screen, session, webContents } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as path from 'node:path';
@@ -792,7 +792,7 @@ describe('BrowserView module', () => {
       expect(image.isEmpty()).to.equal(true);
     });
 
-    xit('resolves after the window is hidden and capturer count is non-zero', async () => {
+    it.skip('resolves after the window is hidden and capturer count is non-zero', async () => {
       view = new BrowserView({
         webPreferences: {
           backgroundThrottling: false

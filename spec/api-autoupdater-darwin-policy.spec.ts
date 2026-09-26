@@ -1,6 +1,6 @@
 import { autoUpdater } from 'electron';
 
-import { expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -17,9 +17,7 @@ import { ifdescribe } from './lib/spec-helpers.ts';
 // share a harness and are split so that they can land on different CI shards.
 // The updater specs share ShipIt's per-app cache directory, so no two of them
 // can run at the same time.
-ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, function () {
-  this.timeout(120000);
-
+ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'], timeout: 120000 }, () => {
   const { logOnError, updaterIt } = setupUpdaterHarness();
 
   describe('with update server', () => {

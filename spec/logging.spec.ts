@@ -1,6 +1,6 @@
 import { app } from 'electron';
 
-import { expect } from 'vitest';
+import { expect, it } from 'vitest';
 
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';

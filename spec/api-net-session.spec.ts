@@ -1,6 +1,6 @@
 import { net, session, BrowserWindow, type ClientRequestConstructorOptions } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import * as dns from 'node:dns';
 
@@ -14,14 +14,12 @@ describe('net module (session)', () => {
   beforeEach(() => {
     respondNTimes.routeFailure = false;
   });
-  afterEach(async function () {
+  afterEach(async (ctx) => {
     await session.defaultSession.clearCache();
-    if (respondNTimes.routeFailure && this.test) {
-      if (!this.test.isFailed()) {
-        throw new Error(
-          'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
-        );
-      }
+    if (respondNTimes.routeFailure && ctx.task.result?.state !== 'fail') {
+      throw new Error(
+        'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
+      );
     }
   });
 

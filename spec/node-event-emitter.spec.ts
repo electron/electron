@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { EventEmitter as NodeEventEmitter, once } from 'node:events';
 import * as path from 'node:path';

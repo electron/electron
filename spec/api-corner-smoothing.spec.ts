@@ -1,7 +1,7 @@
 import { type NativeImage, nativeImage } from 'electron/common';
 import { BrowserWindow } from 'electron/main';
 
-import { chai, expect } from 'vitest';
+import { afterEach, chai, describe, expect, it } from 'vitest';
 
 import * as path from 'node:path';
 

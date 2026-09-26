@@ -1,6 +1,6 @@
 import { app, BrowserWindow, Menu, session, net as electronNet, type WebContents, utilityProcess } from 'electron/main';
 
-import { assert, expect } from 'vitest';
+import { afterAll, afterEach, assert, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -50,7 +50,7 @@ describe('app module', () => {
   let secureUrl: string;
   const certPath = path.join(fixturesPath, 'certificates');
 
-  before(async () => {
+  beforeAll(async () => {
     const options = {
       key: fs.readFileSync(path.join(certPath, 'server.key')),
       cert: fs.readFileSync(path.join(certPath, 'server.pem')),
@@ -75,7 +75,7 @@ describe('app module', () => {
     secureUrl = (await listen(server)).url;
   });
 
-  after(
+  afterAll(
     () =>
       new Promise<void>((resolve) => {
         server.close(() => resolve());
@@ -263,7 +263,7 @@ describe('app module', () => {
       expect(code).to.equal(123);
     });
 
-    it('closes all windows', async function () {
+    it('closes all windows', async () => {
       const appPath = path.join(fixturesPath, 'api', 'exit-closes-all-windows-app');
       const electronPath = process.execPath;
 
@@ -319,7 +319,7 @@ describe('app module', () => {
       }
     );
 
-    ifit(['darwin', 'linux'].includes(process.platform))('exits gracefully', async function () {
+    ifit(['darwin', 'linux'].includes(process.platform))('exits gracefully', async () => {
       const electronPath = process.execPath;
       const appPath = path.join(fixturesPath, 'api', 'singleton');
       appProcess = cp.spawn(electronPath, [appPath]);
@@ -351,8 +351,7 @@ describe('app module', () => {
       expectedAdditionalData: unknown;
     }
 
-    it('prevents the second launch of app', async function () {
-      this.timeout(120000);
+    it('prevents the second launch of app', { timeout: 120000 }, async () => {
       const appPath = path.join(fixturesPath, 'api', 'singleton-data');
       const first = cp.spawn(process.execPath, [appPath]);
       await once(first.stdout, 'data');
@@ -364,7 +363,7 @@ describe('app module', () => {
       expect(code1).to.equal(0);
     });
 
-    it('returns true when setting non-existent user data folder', async function () {
+    it('returns true when setting non-existent user data folder', async () => {
       const appPath = path.join(fixturesPath, 'api', 'singleton-userdata');
       const instance = cp.spawn(process.execPath, [appPath]);
       const [code] = await once(instance, 'exit');
@@ -590,10 +589,9 @@ describe('app module', () => {
         })
     );
 
-    it('relaunches the app', function () {
+    it('relaunches the app', { timeout: 120000 }, () => {
       return new Promise<void>((resolve, reject) => {
         const done = (error?: unknown) => (error ? reject(error) : resolve());
-        this.timeout(120000);
 
         let state = 'none';
         server!.once('error', (error) => done(error));
@@ -640,13 +638,13 @@ describe('app module', () => {
     });
 
     describe('when denied', () => {
-      before(() => {
+      beforeAll(() => {
         app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
           callback(false);
         });
       });
 
-      after(() => {
+      afterAll(() => {
         app.removeAllListeners('certificate-error');
       });
 
@@ -778,26 +776,26 @@ describe('app module', () => {
 
     const expectedBadgeCount = 42;
 
-    after(() => {
+    afterAll(() => {
       app.badgeCount = 0;
     });
 
     ifdescribe(platformIsSupported)('on supported platform', () => {
       describe('with properties', () => {
-        it('sets a badge count', function () {
+        it('sets a badge count', () => {
           app.badgeCount = expectedBadgeCount;
           expect(app.badgeCount).to.equal(expectedBadgeCount);
         });
       });
 
       describe('with functions', () => {
-        it('sets a numerical badge count', function () {
+        it('sets a numerical badge count', () => {
           app.setBadgeCount(expectedBadgeCount);
           expect(app.getBadgeCount()).to.equal(expectedBadgeCount);
         });
         // A badge count is required on Linux; only macOS displays a plain
         // dot when no count is provided.
-        ifit(process.platform === 'darwin')('sets an non numeric (dot) badge count', function () {
+        ifit(process.platform === 'darwin')('sets an non numeric (dot) badge count', () => {
           app.setBadgeCount();
           // Badge count should be zero when non numeric (dot) is requested
           expect(app.getBadgeCount()).to.equal(0);
@@ -808,7 +806,7 @@ describe('app module', () => {
 
   ifdescribe(
     process.platform !== 'linux' && !process.mas && (process.platform !== 'darwin' || process.arch === 'arm64')
-  )('app.get/setLoginItemSettings API', function () {
+  )('app.get/setLoginItemSettings API', () => {
     const isMac = process.platform === 'darwin';
     const isWin = process.platform === 'win32';
 
@@ -1452,7 +1450,7 @@ describe('app module', () => {
   ifdescribe(process.platform !== 'linux')('select-client-certificate event', () => {
     let w: BrowserWindow;
 
-    before(function () {
+    beforeAll(() => {
       session.fromPartition('empty-certificate').setCertificateVerifyProc((req, cb) => {
         cb(0);
       });
@@ -1474,7 +1472,7 @@ describe('app module', () => {
       })
     );
 
-    after(() => session.fromPartition('empty-certificate').setCertificateVerifyProc(null));
+    afterAll(() => session.fromPartition('empty-certificate').setCertificateVerifyProc(null));
 
     it('can respond with empty certificate list', async () => {
       app.once('select-client-certificate', function (event, webContents, url, list, callback) {
@@ -1500,7 +1498,7 @@ describe('app module', () => {
     let Winreg: any;
     let classesKey: any;
 
-    before(function () {
+    beforeAll(() => {
       Winreg = require('winreg');
 
       classesKey = new Winreg({
@@ -1509,7 +1507,7 @@ describe('app module', () => {
       });
     });
 
-    after(
+    afterAll(
       () =>
         new Promise<void>((resolve) => {
           if (process.platform !== 'win32') {
@@ -1597,7 +1595,7 @@ describe('app module', () => {
     // TODO: Linux CI doesn't have registered http & https handlers
     ifit(!(process.env.CI && process.platform === 'linux') && !isWayland)(
       'returns application names for common protocols',
-      function () {
+      () => {
         // We can't expect particular app names here, but these protocols should
         // at least have _something_ registered. Except on our Linux CI
         // environment apparently.
@@ -1621,7 +1619,7 @@ describe('app module', () => {
       let xdgDir: string;
       let xdgDataHome: string;
       let xdgConfigHome: string;
-      before(() => {
+      beforeAll(() => {
         ({ xdgDir, xdgDataHome, xdgConfigHome } = makeXdgMockDirectories('electron-xdg-name-'));
         writeProtocolAssociation(
           xdgDataHome,
@@ -1633,7 +1631,7 @@ describe('app module', () => {
         );
       });
 
-      after(() => {
+      afterAll(() => {
         fs.rmSync(xdgDir, { recursive: true, force: true });
       });
 
@@ -1661,7 +1659,7 @@ describe('app module', () => {
     let xdgConfigHome: string;
     let xdgBinDir: string;
 
-    before(() => {
+    beforeAll(() => {
       if (process.platform !== 'linux') {
         return;
       }
@@ -1678,19 +1676,19 @@ describe('app module', () => {
       );
     });
 
-    after(() => {
+    afterAll(() => {
       if (process.platform === 'linux') {
         fs.rmSync(xdgDir, { recursive: true, force: true });
       }
     });
 
-    it('returns promise rejection for a bogus protocol', async function () {
+    it('returns promise rejection for a bogus protocol', async () => {
       await expect(app.getApplicationInfoForProtocol('bogus-protocol://')).rejects.toThrow(
         'Unable to retrieve installation path to app'
       );
     });
 
-    it('returns resolved promise with appPath, displayName and icon', async function () {
+    it('returns resolved promise with appPath, displayName and icon', async () => {
       if (process.platform === 'linux') {
         const appInfo = await spawnProtocolInfoWithXdgMock(`${mockScheme}://`, xdgDataHome, xdgConfigHome);
         expect(appInfo.name).to.equal(mockDisplayName);
@@ -2043,9 +2041,9 @@ describe('app module', () => {
       return { display: `:${displayNumber.trim()}`, kill };
     };
 
-    it('exits instead of crashing', async function () {
+    it('exits instead of crashing', async (ctx) => {
       const xServer = await startXServer();
-      if (!xServer) return this.skip();
+      if (!xServer) return ctx.skip();
 
       const appPath = path.join(fixturesPath, 'apps', 'display-lost');
       const child = cp.spawn(process.execPath, [appPath, '--ozone-platform=x11'], {
@@ -2140,23 +2138,23 @@ describe('app module', () => {
       /GPU access (?:not allowed|is disabled)/i.test(error.message) ||
       /Exiting GPU process due to errors during initialization/i.test(error.message);
 
-    it('succeeds with basic GPUInfo', async function () {
+    it('succeeds with basic GPUInfo', async (ctx) => {
       let gpuInfo;
       try {
         gpuInfo = await getGPUInfo('basic');
       } catch (error) {
-        if (isGpuUnavailable(error as Error)) return this.skip();
+        if (isGpuUnavailable(error as Error)) return ctx.skip();
         throw error;
       }
       await verifyBasicGPUInfo(gpuInfo);
     });
 
-    it('succeeds with complete GPUInfo', async function () {
+    it('succeeds with complete GPUInfo', async (ctx) => {
       let completeInfo;
       try {
         completeInfo = await getGPUInfo('complete');
       } catch (error) {
-        if (isGpuUnavailable(error as Error)) return this.skip();
+        if (isGpuUnavailable(error as Error)) return ctx.skip();
         throw error;
       }
       if (process.platform === 'linux') {
@@ -2328,7 +2326,7 @@ describe('app module', () => {
   });
 
   ifdescribe(process.platform === 'darwin')('dock APIs', { tags: ['serial'] }, () => {
-    after(async () => {
+    afterAll(async () => {
       await app.dock?.show();
     });
 
@@ -2381,7 +2379,7 @@ describe('app module', () => {
     });
 
     describe('dock.setBadge', () => {
-      after(() => {
+      afterAll(() => {
         app.dock?.setBadge('');
       });
 
@@ -2527,7 +2525,7 @@ describe('app module', () => {
   });
 
   describe('configureHostResolver', () => {
-    after(() => {
+    afterAll(() => {
       // Returns to the default configuration.
       app.configureHostResolver({});
     });
@@ -2807,7 +2805,7 @@ describe('default behavior', () => {
   describe('user agent fallback', () => {
     let initialValue: string;
 
-    before(() => {
+    beforeAll(() => {
       initialValue = app.userAgentFallback!;
     });
 
@@ -2833,7 +2831,7 @@ describe('default behavior', () => {
     let server: http.Server;
     let serverUrl: string;
 
-    before(async () => {
+    beforeAll(async () => {
       server = http.createServer((request, response) => {
         if (request.headers.authorization) {
           return response.end('ok');
@@ -2844,7 +2842,7 @@ describe('default behavior', () => {
       serverUrl = (await listen(server)).url;
     });
 
-    after(() => {
+    afterAll(() => {
       server.close();
     });
 

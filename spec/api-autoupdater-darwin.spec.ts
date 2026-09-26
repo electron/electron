@@ -1,4 +1,4 @@
-import { expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { setupUpdaterHarness, shouldRunUpdaterSpecs } from './lib/autoupdater-darwin-helpers.ts';
 import { copyMacOSFixtureApp, unsignApp } from './lib/codesign-helpers.ts';
@@ -13,9 +13,7 @@ import type { RoutedResponse } from './lib/http-server-helpers.ts';
 // are split so that they can land on different CI shards.
 // The updater specs share ShipIt's per-app cache directory, so no two of them
 // can run at the same time.
-ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, function () {
-  this.timeout(120000);
-
+ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'], timeout: 120000 }, () => {
   const harness = setupUpdaterHarness();
   const { launchApp, shallowSign, logOnError, updaterIt } = harness;
 
