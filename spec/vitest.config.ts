@@ -97,6 +97,7 @@ export default defineConfig({
     // A fresh Electron process per spec file.
     isolate: true,
     globals: false,
+    runner: './vitest/runner.ts',
     globalSetup: ['./vitest/global-setup.js'],
     setupFiles: ['./vitest/setup.ts'],
     // Show full object diffs in assertion errors (chaijs/chai#469).

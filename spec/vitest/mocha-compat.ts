@@ -12,9 +12,6 @@
 
 import * as vitest from 'vitest';
 
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-
 import type { SuiteOptions, TestContext, TestOptions } from 'vitest';
 
 const DEFAULT_TIMEOUT = Number(process.env.MOCHA_TIMEOUT) || 30_000;
@@ -54,17 +51,6 @@ function inheritedRetries(suite: SuiteContext | null): number {
   }
   return DEFAULT_RETRIES;
 }
-
-function fullTitle(suite: SuiteContext | null, title: string): string {
-  const parts = [title];
-  for (let s = suite; s && s !== rootSuite; s = s.parent) parts.unshift(s.title);
-  return parts.join(' ').trim();
-}
-
-// spec/disabled-tests.json lists tests to skip by their full mocha title.
-const disabledTests = new Set<string>(
-  JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '..', 'disabled-tests.json'), 'utf8'))
-);
 
 /**
  * What mocha binds as `this` inside tests and hooks.
@@ -180,12 +166,6 @@ async function runMochaStyle(
   explicitTimeout?: number,
   vitestSuite?: unknown
 ): Promise<void> {
-  // mocha starts every runnable from a fresh macrotask (Runner.immediately),
-  // which in Electron's main process gives Chromium's message loop a turn
-  // between one test's teardown and the next test's setup. vitest chains
-  // runnables through microtasks only; keep the turn, specs depend on it (a
-  // window destroyed in afterEach is really gone by the next beforeEach).
-  await new Promise<void>((resolve) => setImmediate(resolve));
   return new Promise<void>((resolve, reject) => {
     let timer: NodeJS.Timeout | undefined;
     let settled = false;
@@ -275,7 +255,7 @@ function makeIt(mode: 'run' | 'only' | 'skip') {
       vitest.it.todo(title);
       return chain;
     }
-    if (mode === 'skip' || disabledTests.has(fullTitle(suite, title))) {
+    if (mode === 'skip') {
       vitest.it.skip(title, testOptions, () => {});
       return chain;
     }
@@ -301,9 +281,6 @@ function makeDescribe(mode: 'run' | 'only' | 'skip') {
       const previous = currentSuite;
       currentSuite = suite;
       try {
-        // defer()-ed cleanup runs before the suite's own afterEach hooks, as
-        // it did under mocha (see runCleanupFunctions in spec-helpers).
-        vitest.afterEach(cleanupHook);
         const suiteThis: SuiteThis = {
           timeout(ms?: number) {
             if (ms === undefined) return inheritedTimeout(suite);
@@ -333,11 +310,6 @@ function makeDescribe(mode: 'run' | 'only' | 'skip') {
     if (mode === 'only') return vitest.describe.only(title, suiteOptions, factory);
     return vitest.describe(title, suiteOptions, factory);
   };
-}
-
-let cleanupHook: () => Promise<void> = async () => {};
-export function setCleanupHook(fn: () => Promise<void>) {
-  cleanupHook = fn;
 }
 
 type HookRegistrar = typeof vitest.beforeAll | typeof vitest.beforeEach;
