@@ -11,7 +11,7 @@ import {
 } from 'electron/main';
 
 import send from 'send';
-import { expect } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import * as ChildProcess from 'node:child_process';
 import { once } from 'node:events';
@@ -335,8 +335,7 @@ describe('session module', () => {
       });
     });
 
-    it('should survive an app restart for persistent partition', async function () {
-      this.timeout(60000);
+    it('should survive an app restart for persistent partition', { timeout: 60000 }, async () => {
       const appPath = path.join(fixtures, 'api', 'cookie-app');
 
       const runAppWithPhase = (phase: string) => {
@@ -1014,7 +1013,7 @@ describe('session module', () => {
     const scheme = 'cors-blob';
     const protocol = session.defaultSession.protocol;
     const url = `${scheme}://host`;
-    after(async () => {
+    afterAll(async () => {
       await protocol.unregisterProtocol(scheme);
     });
     afterEach(closeAllWindows);
@@ -1167,7 +1166,7 @@ describe('session module', () => {
     const scheme = 'cors-blob';
     const protocol = session.defaultSession.protocol;
     const url = `${scheme}://host`;
-    after(async () => {
+    afterAll(async () => {
       await protocol.unregisterProtocol(scheme);
     });
     afterEach(closeAllWindows);
@@ -1392,7 +1391,7 @@ describe('session module', () => {
     let port: number;
     let downloadServer: http.Server;
 
-    before(async () => {
+    beforeAll(async () => {
       downloadServer = http.createServer((req, res) => {
         res.writeHead(200, {
           'Content-Length': mockPDF.length,
@@ -1404,7 +1403,7 @@ describe('session module', () => {
       port = (await listen(downloadServer)).port;
     });
 
-    after(async () => {
+    afterAll(async () => {
       await new Promise((resolve) => downloadServer.close(resolve));
     });
 
@@ -1937,14 +1936,14 @@ describe('session module', () => {
     // requires a secure context.
     let server: http.Server;
     let serverUrl: string;
-    before(async () => {
+    beforeAll(async () => {
       server = http.createServer((req, res) => {
         res.setHeader('Content-Type', 'text/html');
         res.end('');
       });
       serverUrl = (await listen(server)).url;
     });
-    after(() => {
+    afterAll(() => {
       server.close();
     });
 

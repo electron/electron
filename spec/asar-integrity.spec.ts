@@ -2,7 +2,7 @@ import { createPackage, getRawHeader } from '@electron/asar';
 import { flipFuses, type FuseV1Config, FuseV1Options, FuseVersion } from '@electron/fuses';
 
 import { NtExecutable, NtExecutableResource, Resource } from 'resedit';
-import { expect } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import * as cp from 'node:child_process';
 import * as nodeCrypto from 'node:crypto';
@@ -94,9 +94,7 @@ async function embedAsarIntegrity(exePath: string, integrity: Record<string, { a
   await fs.promises.writeFile(exePath, Buffer.from(exe.generate()));
 }
 
-describe('fuses', function () {
-  this.timeout(120000);
-
+describe('fuses', { timeout: 120000 }, () => {
   let tmpDir: string;
   let appPath: string;
 
@@ -123,13 +121,13 @@ describe('fuses', function () {
         resetAdHocDarwinSignature: true,
         ...fuses
       });
-    });
+    }, 120000);
   };
 
   beforeEach(async () => {
     tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-asar-integrity-spec-'));
     appPath = await copyApp(tmpDir);
-  });
+  }, 120000);
 
   afterEach(async () => {
     for (let attempt = 0; attempt <= 3; attempt++) {
@@ -140,7 +138,7 @@ describe('fuses', function () {
         break;
       } catch {}
     }
-  });
+  }, 120000);
 
   // Layout of the archive used by fixtures/apps/asar-integrity-reads: a
   // multi-block entry (with a recognisable marker at the start of every 4MB
@@ -212,7 +210,7 @@ describe('fuses', function () {
           };
           await fs.promises.writeFile(infoPlistPath, plist.build(info));
         }
-      });
+      }, 120000);
 
       describe('when enabled', () => {
         ensureFusesBeforeEach({

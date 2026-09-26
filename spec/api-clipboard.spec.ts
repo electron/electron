@@ -1,7 +1,7 @@
 import { nativeImage } from 'electron/common';
 import { ClipboardItem, clipboard } from 'electron/main';
 
-import { expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { Buffer } from 'node:buffer';
 import * as path from 'node:path';

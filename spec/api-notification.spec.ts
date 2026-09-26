@@ -1,6 +1,6 @@
 import { Notification } from 'electron/main';
 
-import { expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 

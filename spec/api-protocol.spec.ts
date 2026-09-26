@@ -1,6 +1,6 @@
 import { protocol, webContents, type WebContents, session, BrowserWindow, ipcMain, net, View } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import * as ChildProcess from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -86,10 +86,10 @@ function deferPromise(): Promise<any> & { resolve: Function; reject: Function } 
 describe('protocol module', () => {
   let contents: WebContents;
   // NB. sandbox: true is used because it makes navigations much (~8x) faster.
-  before(() => {
+  beforeAll(() => {
     contents = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true });
   });
-  after(() => contents.destroy());
+  afterAll(() => contents.destroy());
 
   async function ajax(url: string, options = {}) {
     // Note that we need to do navigation every time after a protocol is
@@ -359,7 +359,7 @@ describe('protocol module', () => {
             res.end(text);
           }
         });
-        after(() => server.close());
+        afterAll(() => server.close());
         const { port } = await listen(server);
         const url = `${protocolName}://fake-host`;
         const redirectURL = `http://127.0.0.1:${port}/serverRedirect`;
@@ -811,7 +811,7 @@ describe('protocol module', () => {
     // FIXME(zcbenz): This test was passing because the test itself was wrong,
     // I don't know whether it ever passed before and we should take a look at
     // it in future.
-    xit('can send POST request', async () => {
+    it.skip('can send POST request', async () => {
       const server = http.createServer((req, res) => {
         let body = '';
         req.on('data', (chunk) => {
@@ -822,7 +822,7 @@ describe('protocol module', () => {
         });
         server.close();
       });
-      after(() => server.close());
+      afterAll(() => server.close());
       const { url } = await listen(server);
       interceptHttpProtocol('http', (request, callback) => {
         const data: Electron.ProtocolResponse = {
@@ -846,7 +846,7 @@ describe('protocol module', () => {
         expect(details.url).toBe('http://fake-host/');
         callback({ cancel: true });
       });
-      after(() => customSession.webRequest.onBeforeRequest(null));
+      afterAll(() => customSession.webRequest.onBeforeRequest(null));
 
       interceptHttpProtocol('http', (request, callback) => {
         callback({
@@ -1006,7 +1006,7 @@ describe('protocol module', () => {
   describe('protocol.registerSource', () => {
     // Uses the 'http-like' scheme registered as standard in spec/index.js.
     let root: string;
-    before(() => {
+    beforeAll(() => {
       root = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-protocol-source-'));
       fs.mkdirSync(path.join(root, 'dist', 'sub'), { recursive: true });
       fs.mkdirSync(path.join(root, 'assets'));
@@ -1020,7 +1020,7 @@ describe('protocol module', () => {
       fs.writeFileSync(path.join(root, 'assets', 'a.css'), 'p { color: red }');
       fs.writeFileSync(path.join(root, 'secret.txt'), 'outside every root');
     });
-    after(() => fs.rmSync(root, { recursive: true, force: true }));
+    afterAll(() => fs.rmSync(root, { recursive: true, force: true }));
     afterEach(async () => {
       if (protocol.isProtocolHandled('http-like')) protocol.unhandle('http-like');
       await closeAllWindows();
@@ -1319,7 +1319,7 @@ describe('protocol module', () => {
         });
       }
     });
-    after(() => protocol.unregisterProtocol(serviceWorkerScheme));
+    afterAll(() => protocol.unregisterProtocol(serviceWorkerScheme));
 
     it('should fail when registering invalid service worker', async () => {
       await contents.loadURL(`${serviceWorkerScheme}://${randomUUID()}.com`);
@@ -1417,7 +1417,7 @@ describe('protocol module', () => {
       }));
   });
 
-  describe('protocol.registerSchemesAsPrivileged cors-fetch', function () {
+  describe('protocol.registerSchemesAsPrivileged cors-fetch', () => {
     let w: BrowserWindow;
     beforeEach(async () => {
       w = new BrowserWindow({ show: false });
@@ -1699,13 +1699,13 @@ describe('protocol module', () => {
     }
   });
 
-  describe('protocol.registerSchemesAsPrivileged stream', async function () {
+  describe('protocol.registerSchemesAsPrivileged stream', async () => {
     const pagePath = path.join(fixturesPath, 'pages', 'video.html');
     const videoSourceImagePath = path.join(fixturesPath, 'video-source-image.webp');
     const videoPath = path.join(fixturesPath, 'video.webm');
     let w: BrowserWindow;
 
-    before(async () => {
+    beforeAll(async () => {
       // generate test video
       const imageBase64 = await fs.promises.readFile(videoSourceImagePath, 'base64');
       const imageDataUrl = `data:image/webp;base64,${imageBase64}`;
@@ -1720,11 +1720,11 @@ describe('protocol module', () => {
       });
     });
 
-    after(async () => {
+    afterAll(async () => {
       await fs.promises.unlink(videoPath);
     });
 
-    beforeEach(async function () {
+    beforeEach(async (ctx) => {
       w = new BrowserWindow({ show: false });
       await w.loadURL('about:blank');
       if (
@@ -1732,7 +1732,7 @@ describe('protocol module', () => {
           "document.createElement('video').canPlayType('video/webm; codecs=\"vp8.0\"')"
         ))
       ) {
-        this.skip();
+        ctx.skip();
       }
     });
 
@@ -1805,7 +1805,7 @@ describe('protocol module', () => {
     }
   });
 
-  describe('protocol.registerSchemesAsPrivileged codeCache', function () {
+  describe('protocol.registerSchemesAsPrivileged codeCache', () => {
     const appPath = path.join(fixturesPath, 'apps', 'refresh-page');
 
     let w: BrowserWindow;
@@ -2237,7 +2237,7 @@ describe('protocol module', () => {
       let server: http.Server;
       let base: string;
       let tmpDir: string;
-      before(async () => {
+      beforeAll(async () => {
         server = http.createServer((req, res) => {
           if (req.url === '/big') {
             res.writeHead(200, { 'content-length': String(big.length), 'x-upstream': 'yes' });
@@ -2270,7 +2270,7 @@ describe('protocol module', () => {
         tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-protocol-'));
         fs.writeFileSync(path.join(tmpDir, 'big.bin'), big);
       });
-      after(() => {
+      afterAll(() => {
         server.close();
         fs.rmSync(tmpDir, { recursive: true, force: true });
       });

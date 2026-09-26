@@ -1,6 +1,6 @@
 import { nativeTheme, BrowserWindow, ipcMain } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';

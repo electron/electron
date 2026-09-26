@@ -1,6 +1,6 @@
 import { globalShortcut } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { singleModifierCombinations, doubleModifierCombinations } from './lib/accelerator-helpers.ts';
 import { ifdescribe } from './lib/spec-helpers.ts';

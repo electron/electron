@@ -1,6 +1,6 @@
 import { BrowserWindow, webContents } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
@@ -1014,7 +1014,7 @@ describe('node feature', () => {
     });
 
     describe('isTTY', () => {
-      itremote("should match Node's TTY classification in the renderer", function () {
+      itremote("should match Node's TTY classification in the renderer", () => {
         const { isatty } = require('node:tty');
 
         expect(process.stdout.isTTY === true).toBe(isatty(1));
@@ -1142,7 +1142,7 @@ describe('node feature', () => {
     it('Fails for options disallowed by Node.js itself', () =>
       new Promise<void>((resolve, reject) => {
         const done = (error?: unknown) => (error ? reject(error) : resolve());
-        after(async () => {
+        afterAll(async () => {
           const [code, signal] = await exitPromise;
           expect(signal).toBe(null);
 
@@ -1183,7 +1183,7 @@ describe('node feature', () => {
 
     it('Disallows crypto-related options', () =>
       new Promise<void>((resolve) => {
-        after(() => {
+        afterAll(() => {
           child.kill();
         });
 
@@ -1271,13 +1271,13 @@ describe('node feature', () => {
     });
   });
 
-  ifdescribe(shouldRunCodesignTests)('NODE_OPTIONS in signed app', function () {
+  ifdescribe(shouldRunCodesignTests)('NODE_OPTIONS in signed app', () => {
     let identity = '';
 
-    beforeEach(function () {
+    beforeEach((ctx) => {
       const result = getCodesignIdentity();
       if (result === null) {
-        this.skip();
+        ctx.skip();
       } else {
         identity = result;
       }
@@ -1300,14 +1300,14 @@ describe('node feature', () => {
       });
     });
 
-    it('is disabled when invoked by alien binary in app bundle in ELECTRON_RUN_AS_NODE mode', async function () {
+    it('is disabled when invoked by alien binary in app bundle in ELECTRON_RUN_AS_NODE mode', async (ctx) => {
       await withTempDirectory(async (dir) => {
         const appPath = await copyMacOSFixtureApp(dir);
         await signApp(appPath, identity);
         // Find system node and copy it to app bundle.
         const nodePath = process.env.PATH?.split(path.delimiter).find((dir) => fs.existsSync(path.join(dir, 'node')));
         if (!nodePath) {
-          this.skip();
+          ctx.skip();
           return;
         }
         const alienBinary = path.join(appPath, 'Contents/MacOS/node');
@@ -1338,7 +1338,7 @@ describe('node feature', () => {
 
     it('Prohibits crypto-related flags in ELECTRON_RUN_AS_NODE mode', () =>
       new Promise<void>((resolve) => {
-        after(async () => {
+        afterAll(async () => {
           const [code, signal] = await exitPromise;
           expect(signal).toBe(null);
           expect(code).toBe(9);

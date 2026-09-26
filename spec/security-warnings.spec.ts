@@ -1,6 +1,6 @@
 import { BrowserWindow, type WebPreferences } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
@@ -25,7 +25,7 @@ describe('security warnings', () => {
   let useCsp = true;
   let serverUrl: string;
 
-  before(async () => {
+  beforeAll(async () => {
     // Create HTTP Server
     server = http.createServer(async (request, response) => {
       const uri = new URL(request.url!, `http://${request.headers.host}`).pathname!;
@@ -51,7 +51,7 @@ describe('security warnings', () => {
     serverUrl = `http://localhost2:${(await listen(server)).port}`;
   });
 
-  after(() => {
+  afterAll(() => {
     // Close server
     server.close();
     server = null as unknown as any;

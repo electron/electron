@@ -1,6 +1,6 @@
 import { app } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterAll, beforeAll, expect, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import * as fs from 'node:fs';
@@ -26,10 +26,10 @@ const snapshotHolder =
 
 ifdescribe(fs.existsSync(xcache) && !process.env.IS_UBSAN)('electron_xcache', () => {
   let tmp: string;
-  before(() => {
+  beforeAll(() => {
     tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-xcache-'));
   });
-  after(() => {
+  afterAll(() => {
     fs.rmSync(tmp, { recursive: true, force: true });
   });
 

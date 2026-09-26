@@ -1,6 +1,6 @@
 import { type Display, screen, desktopCapturer } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 describe('screen module', { tags: ['serial'] }, () => {
   describe('methods reassignment', () => {
@@ -60,7 +60,7 @@ describe('screen module', { tags: ['serial'] }, () => {
       expect(display).toBeTypeOf('object');
     });
 
-    it('has the correct non-object properties', function () {
+    it('has the correct non-object properties', () => {
       expect(display).toHaveProperty('accelerometerSupport', expect.any(String));
       expect(display).toHaveProperty('colorDepth', expect.any(Number));
       expect(display).toHaveProperty('colorSpace', expect.any(String));

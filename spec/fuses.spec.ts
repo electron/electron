@@ -1,4 +1,4 @@
-import { expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';

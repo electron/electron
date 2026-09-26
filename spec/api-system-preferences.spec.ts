@@ -1,6 +1,6 @@
 import { systemPreferences } from 'electron/main';
 
-import { expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { ifdescribe, ifit } from './lib/spec-helpers.ts';
 

@@ -11,7 +11,7 @@ import {
   type ServiceWorkersRunningStatusChangedEventParams
 } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { WebSocketServer } from 'ws';
 
 import { spawn } from 'node:child_process';
@@ -36,7 +36,7 @@ describe('chrome extensions', () => {
   let url: string;
   let port: number;
   let wss: WebSocketServer;
-  before(async () => {
+  beforeAll(async () => {
     server = http.createServer((req, res) => {
       if (req.url === '/cors') {
         res.setHeader('Access-Control-Allow-Origin', 'http://example.com');
@@ -55,7 +55,7 @@ describe('chrome extensions', () => {
 
     ({ port, url } = await listen(server));
   });
-  after(async () => {
+  afterAll(async () => {
     server.close();
     wss.close();
     await cleanupWebContents();
@@ -524,7 +524,7 @@ describe('chrome extensions', () => {
 
   describe('chrome.tabs', () => {
     let customSession: Session;
-    before(async () => {
+    beforeAll(async () => {
       customSession = session.fromPartition(`persist:${randomUUID()}`);
       await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
     });
@@ -870,7 +870,7 @@ describe('chrome extensions', () => {
 
           let server: http.Server;
           let port: number;
-          before(async () => {
+          beforeAll(async () => {
             server = http.createServer(async (_, res) => {
               try {
                 const content = await fs.readFile(contentPath, 'utf-8');
@@ -885,7 +885,7 @@ describe('chrome extensions', () => {
             ({ port } = await listen(server));
           });
 
-          after(() => {
+          afterAll(() => {
             server.close();
           });
 
@@ -1110,7 +1110,7 @@ describe('chrome extensions', () => {
       let customSession: Session;
       let w = null as unknown as BrowserWindow;
 
-      before(async () => {
+      beforeAll(async () => {
         customSession = session.fromPartition(`persist:${randomUUID()}`);
         await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-i18n', 'v3'));
       });
@@ -1203,7 +1203,7 @@ describe('chrome extensions', () => {
       let customSession: Session;
       let w = null as unknown as BrowserWindow;
 
-      before(async () => {
+      beforeAll(async () => {
         customSession = session.fromPartition(`persist:${randomUUID()}`);
         await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-action-fail'));
       });
@@ -1260,7 +1260,7 @@ describe('chrome extensions', () => {
       let customSession: Session;
       let w = null as unknown as BrowserWindow;
 
-      before(async () => {
+      beforeAll(async () => {
         customSession = session.fromPartition(`persist:${randomUUID()}`);
         await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-tabs', 'api-async'));
       });
@@ -1570,7 +1570,7 @@ describe('chrome extensions', () => {
       let customSession: Session;
       let w = null as unknown as BrowserWindow;
 
-      before(async () => {
+      beforeAll(async () => {
         customSession = session.fromPartition(`persist:${randomUUID()}`);
         await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-scripting'));
       });
@@ -1655,7 +1655,7 @@ describe('chrome extensions', () => {
       let driver: BrowserWindow;
       let victim: BrowserWindow;
 
-      before(async () => {
+      beforeAll(async () => {
         extSession = session.fromPartition(`persist:${randomUUID()}`);
         otherSession = session.fromPartition(`persist:${randomUUID()}`);
         await extSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'tabs-cross-session'));

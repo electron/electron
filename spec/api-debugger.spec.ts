@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as http from 'node:http';

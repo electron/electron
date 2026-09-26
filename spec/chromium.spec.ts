@@ -14,7 +14,7 @@ import {
   type MessageBoxOptions
 } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { WebSocket, WebSocketServer } from 'ws';
 
 import * as ChildProcess from 'node:child_process';
@@ -278,7 +278,7 @@ describe('cross origin isolation', () => {
   let server: http.Server;
   let serverUrl: string;
 
-  before(async () => {
+  beforeAll(async () => {
     server = http.createServer((_req, res) => {
       res.setHeader('Content-Type', 'text/html');
       res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
@@ -288,7 +288,7 @@ describe('cross origin isolation', () => {
     serverUrl = (await listen(server)).url;
   });
 
-  after(() => {
+  afterAll(() => {
     server.close();
   });
 
@@ -305,14 +305,14 @@ describe('web security', () => {
   afterEach(closeAllWindows);
   let server: http.Server;
   let serverUrl: string;
-  before(async () => {
+  beforeAll(async () => {
     server = http.createServer((req, res) => {
       res.setHeader('Content-Type', 'text/html');
       res.end('<body>');
     });
     serverUrl = (await listen(server)).url;
   });
-  after(() => {
+  afterAll(() => {
     server.close();
   });
 
@@ -794,7 +794,7 @@ describe('command line switches', () => {
       }
     });
 
-    it('clears device metrics overrides when a client disconnects without detaching', async function () {
+    it('clears device metrics overrides when a client disconnects without detaching', async () => {
       // A client dying without clearing its overrides used to leave the page
       // pinned at the emulated size forever.
       const appPath = path.join(fixturesPath, 'apps', 'remote-debugging-emulation');
@@ -1878,7 +1878,7 @@ describe('chromium features', () => {
     let serverB: http.Server;
     let urlA: string;
     let urlB: string;
-    before(async () => {
+    beforeAll(async () => {
       const handler = (_req: http.IncomingMessage, res: http.ServerResponse) => {
         res.setHeader('content-type', 'text/html');
         res.end(handlePage);
@@ -1888,7 +1888,7 @@ describe('chromium features', () => {
       urlA = (await listen(serverA)).url;
       urlB = (await listen(serverB)).url;
     });
-    after(() => {
+    afterAll(() => {
       serverA.close();
       serverB.close();
     });
@@ -2010,8 +2010,7 @@ describe('chromium features', () => {
       expect(restricted).toHaveLength(2);
     });
 
-    it('revokes active grants once no top-level document of the origin remains', async function () {
-      this.timeout(60000);
+    it('revokes active grants once no top-level document of the origin remains', { timeout: 60000 }, async () => {
       const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
       ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(true));
       const testFile = path.join(fixturesPath, 'file-system', 'test.txt');
@@ -2387,7 +2386,7 @@ describe('chromium features', () => {
     let server: http.Server;
     let serverUrl: string;
 
-    before(async () => {
+    beforeAll(async () => {
       server = http.createServer((req, res) => {
         let body = '';
         req.on('data', (chunk) => {
@@ -2400,7 +2399,7 @@ describe('chromium features', () => {
       });
       serverUrl = (await listen(server)).url;
     });
-    after(async () => {
+    afterAll(async () => {
       server.close();
       await closeAllWindows();
     });
@@ -2660,7 +2659,7 @@ describe('chromium features', () => {
     });
 
     // FIXME(nornagon): I'm not sure this ... ever was correct?
-    xit('inherit options of parent window', async () => {
+    it.skip('inherit options of parent window', async () => {
       const w = new BrowserWindow({ show: false, width: 123, height: 456 });
       w.loadFile(path.resolve(import.meta.dirname, 'fixtures', 'blank.html'));
       const url = `file://${fixturesPath}/pages/window-open-size.html`;
@@ -3453,7 +3452,7 @@ describe('chromium features', () => {
     ];
     const s = (url: string) => (url.startsWith('file') ? 'file://...' : url);
 
-    before(() => {
+    beforeAll(() => {
       protocol.registerFileProtocol(scheme, (request, callback) => {
         if (request.url.includes('blank')) {
           callback(`${fixturesPath}/pages/blank.html`);
@@ -3462,7 +3461,7 @@ describe('chromium features', () => {
         }
       });
     });
-    after(() => {
+    afterAll(() => {
       protocol.unregisterProtocol(scheme);
     });
     afterEach(closeAllWindows);
@@ -3562,7 +3561,7 @@ describe('chromium features', () => {
     describe('custom non standard schemes', () => {
       const protocolName = 'storage';
       let contents: WebContents;
-      before(() => {
+      beforeAll(() => {
         protocol.registerFileProtocol(protocolName, (request, callback) => {
           const parsedUrl = new URL(request.url);
           let filename;
@@ -3586,7 +3585,7 @@ describe('chromium features', () => {
         });
       });
 
-      after(() => {
+      afterAll(() => {
         protocol.unregisterProtocol(protocolName);
       });
 
@@ -3641,7 +3640,7 @@ describe('chromium features', () => {
       let server: http.Server;
       let serverUrl: string;
       let serverCrossSiteUrl: string;
-      before(async () => {
+      beforeAll(async () => {
         server = http.createServer((req, res) => {
           const respond = () => {
             if (req.url === '/redirect-cross-site') {
@@ -3660,7 +3659,7 @@ describe('chromium features', () => {
         serverCrossSiteUrl = serverUrl.replace('127.0.0.1', 'localhost');
       });
 
-      after(() => {
+      afterAll(() => {
         server.close();
         server = null as any;
       });
@@ -3909,14 +3908,14 @@ describe('chromium features', () => {
     // requires a secure context.
     let server: http.Server;
     let serverUrl: string;
-    before(async () => {
+    beforeAll(async () => {
       server = http.createServer((req, res) => {
         res.setHeader('Content-Type', 'text/html');
         res.end('');
       });
       serverUrl = (await listen(server)).url;
     });
-    after(() => {
+    afterAll(() => {
       server.close();
     });
 
@@ -4006,7 +4005,7 @@ describe('chromium features', () => {
   });
 
   describe('webgl', () => {
-    it('can be gotten as context in canvas', async function () {
+    it('can be gotten as context in canvas', async (ctx) => {
       const w = new BrowserWindow({
         show: false
       });
@@ -4017,7 +4016,7 @@ describe('chromium features', () => {
 
       if (isFallbackAdapter) {
         console.log('Skipping webgl test on fallback adapter');
-        this.skip();
+        ctx.skip();
       } else {
         const canWebglContextBeCreated = await w.webContents.executeJavaScript(`
           document.createElement('canvas').getContext('webgl') != null;
@@ -4085,10 +4084,10 @@ describe('chromium features', () => {
   });
 
   describe('Promise', () => {
-    before(() => {
+    beforeAll(() => {
       ipcMain.handle('ping', (e, arg) => arg);
     });
-    after(() => {
+    afterAll(() => {
       ipcMain.removeHandler('ping');
     });
     itremote('resolves correctly in Node.js calls', async () => {
@@ -4509,10 +4508,8 @@ describe('font fallback', () => {
     } // I think this depends on the distro? We don't specify a default.
   });
 
-  ifit(process.platform !== 'linux')(
-    'should fall back to Japanese font for sans-serif Japanese script',
-    async function () {
-      const html = `
+  ifit(process.platform !== 'linux')('should fall back to Japanese font for sans-serif Japanese script', async () => {
+    const html = `
     <html lang="ja-JP">
       <head>
         <meta charset="utf-8" />
@@ -4520,16 +4517,15 @@ describe('font fallback', () => {
       <body style="font-family: sans-serif">test 智史</body>
     </html>
     `;
-      const fonts = await getRenderedFonts(html);
-      expect(fonts).toBeInstanceOf(Array);
-      expect(fonts).toHaveLength(1);
-      if (process.platform === 'win32') {
-        expect(['Meiryo', 'Yu Gothic']).toContain(fonts[0].familyName);
-      } else if (process.platform === 'darwin') {
-        expect(fonts[0].familyName).toBe('Hiragino Kaku Gothic ProN');
-      }
+    const fonts = await getRenderedFonts(html);
+    expect(fonts).toBeInstanceOf(Array);
+    expect(fonts).toHaveLength(1);
+    if (process.platform === 'win32') {
+      expect(['Meiryo', 'Yu Gothic']).toContain(fonts[0].familyName);
+    } else if (process.platform === 'darwin') {
+      expect(fonts[0].familyName).toBe('Hiragino Kaku Gothic ProN');
     }
-  );
+  });
 });
 
 describe('iframe using HTML fullscreen API while window is OS-fullscreened', { tags: ['serial'] }, () => {
@@ -4654,7 +4650,7 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', { t
 
 describe('navigator.serial', () => {
   let w: BrowserWindow;
-  before(async () => {
+  beforeAll(async () => {
     w = new BrowserWindow({
       show: false
     });
@@ -4672,7 +4668,7 @@ describe('navigator.serial', () => {
 
   const notFoundError = "NotFoundError: Failed to execute 'requestPort' on 'Serial': No port selected by the user.";
 
-  after(closeAllWindows);
+  afterAll(closeAllWindows);
   afterEach(() => {
     session.defaultSession.setPermissionCheckHandler(null);
     session.defaultSession.removeAllListeners('select-serial-port');
@@ -4785,14 +4781,14 @@ describe('navigator.serial', () => {
 
 describe('window.getScreenDetails', () => {
   let w: BrowserWindow;
-  before(async () => {
+  beforeAll(async () => {
     w = new BrowserWindow({
       show: false
     });
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
   });
 
-  after(closeAllWindows);
+  afterAll(closeAllWindows);
   afterEach(() => {
     session.defaultSession.setPermissionRequestHandler(null);
   });
@@ -4836,7 +4832,7 @@ describe('window.getScreenDetails', () => {
 
 describe('navigator.clipboard.read', { tags: ['serial'] }, () => {
   let w: BrowserWindow;
-  before(async () => {
+  beforeAll(async () => {
     w = new BrowserWindow();
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
   });
@@ -4857,7 +4853,7 @@ describe('navigator.clipboard.read', { tags: ['serial'] }, () => {
     );
   };
 
-  after(closeAllWindows);
+  afterAll(closeAllWindows);
   afterEach(() => {
     session.defaultSession.setPermissionRequestHandler(null);
   });
@@ -4884,7 +4880,7 @@ describe('navigator.clipboard.read', { tags: ['serial'] }, () => {
 
 describe('navigator.clipboard.write', { tags: ['serial'] }, () => {
   let w: BrowserWindow;
-  before(async () => {
+  beforeAll(async () => {
     w = new BrowserWindow();
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
   });
@@ -4899,7 +4895,7 @@ describe('navigator.clipboard.write', { tags: ['serial'] }, () => {
     );
   };
 
-  after(closeAllWindows);
+  afterAll(closeAllWindows);
   afterEach(() => {
     session.defaultSession.setPermissionRequestHandler(null);
   });
@@ -4938,7 +4934,7 @@ describe('pointer lock permission request', { tags: ['serial'] }, () => {
   const servers: http.Server[] = [];
   let serverUrl: string;
   let otherPortUrl: string;
-  before(async () => {
+  beforeAll(async () => {
     for (let i = 0; i < 2; i++) {
       servers.push(
         http.createServer((_req, res) => {
@@ -4949,7 +4945,7 @@ describe('pointer lock permission request', { tags: ['serial'] }, () => {
     }
     [serverUrl, otherPortUrl] = await Promise.all(servers.map(async (s) => (await listen(s)).url));
   });
-  after(() => servers.forEach((s) => s.close()));
+  afterAll(() => servers.forEach((s) => s.close()));
   afterEach(closeAllWindows);
 
   const requestFromChildFrame = async (topUrl: string, childUrl: string) => {
@@ -5160,14 +5156,14 @@ describe('paste execCommand', { tags: ['serial'] }, () => {
     // A cross-origin iframe next to a main frame that the user just clicked in.
     let server: http.Server;
     let crossOriginUrl: string;
-    before(async () => {
+    beforeAll(async () => {
       server = http.createServer((_req, res) => {
         res.setHeader('content-type', 'text/html');
         res.end('<!doctype html><body contenteditable>frame</body>');
       });
       crossOriginUrl = (await listen(server)).url;
     });
-    after(() => server.close());
+    afterAll(() => server.close());
 
     const pasteIn = (frame: Electron.WebFrameMain) =>
       frame.executeJavaScript(
@@ -5252,14 +5248,14 @@ ifdescribe(process.platform !== 'linux')('navigator.setAppBadge/clearAppBadge', 
   }
 
   describe('in the renderer', () => {
-    before(async () => {
+    beforeAll(async () => {
       w = new BrowserWindow({
         show: false
       });
       await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
     });
 
-    after(async () => {
+    afterAll(async () => {
       app.badgeCount = 0;
       await closeAllWindows();
     });
@@ -5352,7 +5348,7 @@ ifdescribe(process.platform !== 'linux')('navigator.setAppBadge/clearAppBadge', 
 
 describe('navigator.bluetooth', () => {
   let w: BrowserWindow;
-  before(async () => {
+  beforeAll(async () => {
     w = new BrowserWindow({
       show: false,
       webPreferences: {
@@ -5362,7 +5358,7 @@ describe('navigator.bluetooth', () => {
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
   });
 
-  after(closeAllWindows);
+  afterAll(closeAllWindows);
 
   it('can request bluetooth devices', async () => {
     const bluetooth = await w.webContents.executeJavaScript(
@@ -5384,7 +5380,7 @@ describe('navigator.hid', () => {
   let w: BrowserWindow;
   let server: http.Server;
   let serverUrl: string;
-  before(async () => {
+  beforeAll(async () => {
     w = new BrowserWindow({
       show: false
     });
@@ -5414,7 +5410,7 @@ describe('navigator.hid', () => {
   const findValidDevice = (deviceList: Electron.HIDDevice[]) =>
     deviceList.find((device) => device.name && device.name !== '' && device.serialNumber && device.serialNumber !== '');
 
-  after(async () => {
+  afterAll(async () => {
     server.close();
     await closeAllWindows();
   });
@@ -5614,7 +5610,7 @@ describe('navigator.usb', () => {
   let w: BrowserWindow;
   let server: http.Server;
   let serverUrl: string;
-  before(async () => {
+  beforeAll(async () => {
     w = new BrowserWindow({
       show: false
     });
@@ -5646,7 +5642,7 @@ describe('navigator.usb', () => {
 
   const notFoundError = "NotFoundError: Failed to execute 'requestDevice' on 'USB': No device selected.";
 
-  after(async () => {
+  afterAll(async () => {
     server.close();
     await closeAllWindows();
   });
@@ -5832,7 +5828,7 @@ describe('iframe sandbox external protocols', () => {
   let w: BrowserWindow;
   let openExternalRequests: string[];
 
-  before(async () => {
+  beforeAll(async () => {
     server = http.createServer((req, res) => {
       res.setHeader('Content-Type', 'text/html');
       if (req.url === '/child') {
@@ -5845,7 +5841,7 @@ describe('iframe sandbox external protocols', () => {
     serverUrl = (await listen(server)).url;
   });
 
-  after(() => {
+  afterAll(() => {
     server.close();
   });
 
@@ -5923,7 +5919,7 @@ describe('external protocol permission attribution', () => {
   let trustedUrl: string;
   let untrustedUrl: string;
 
-  before(async () => {
+  beforeAll(async () => {
     untrusted = http.createServer((req, res) => {
       if (req.url!.startsWith('/slow-redirect')) {
         // Give the initiating iframe time to navigate away first.
@@ -5963,7 +5959,7 @@ describe('external protocol permission attribution', () => {
     trustedUrl = (await listen(trusted)).url;
   });
 
-  after(() => {
+  afterAll(() => {
     trusted.close();
     untrusted.close();
   });
@@ -6073,7 +6069,7 @@ describe('links opened into a new window', () => {
   let serverUrl: string;
   const requests: Record<string, http.IncomingHttpHeaders> = {};
 
-  before(async () => {
+  beforeAll(async () => {
     server = http.createServer((req, res) => {
       requests[req.url!] = req.headers;
       res.setHeader('Content-Type', 'text/html');
@@ -6089,7 +6085,7 @@ describe('links opened into a new window', () => {
     });
     serverUrl = (await listen(server)).url;
   });
-  after(() => server.close());
+  afterAll(() => server.close());
   afterEach(closeAllWindows);
 
   it('navigates the new window as the initiating document', async () => {
@@ -6135,7 +6131,7 @@ describe('iframe sandbox popups', () => {
       });
     </script>`;
 
-  before(async () => {
+  beforeAll(async () => {
     server = http.createServer((req, res) => {
       res.setHeader('Content-Type', 'text/html');
       if (req.url === '/child') {
@@ -6157,7 +6153,7 @@ describe('iframe sandbox popups', () => {
     serverUrl = (await listen(server)).url;
   });
 
-  after(() => {
+  afterAll(() => {
     server.close();
   });
 

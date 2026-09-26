@@ -1,6 +1,6 @@
 import { session, net } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import * as ChildProcess from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -25,7 +25,7 @@ describe('netLog module', () => {
   let serverUrl: string;
   const connections: Set<Socket> = new Set();
 
-  before(async () => {
+  beforeAll(async () => {
     server = http.createServer();
     server.on('connection', (connection) => {
       connections.add(connection);
@@ -39,7 +39,7 @@ describe('netLog module', () => {
     serverUrl = (await listen(server)).url;
   });
 
-  after(
+  afterAll(
     () =>
       new Promise<void>((resolve) => {
         for (const connection of connections) {

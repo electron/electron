@@ -1,4 +1,4 @@
-import { expect } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createRoutedServer, type RoutedRequest, type RoutedServer } from './lib/http-server-helpers.ts';
 import {
@@ -25,19 +25,17 @@ const MSIX_V1 = getMsixFixturePath('v1');
 const MSIX_V2 = getMsixFixturePath('v2');
 
 // We can only test the MSIX updater on Windows
-ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
-  this.timeout(120000);
-
-  before(async function () {
+ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', { timeout: 120000 }, () => {
+  beforeAll(async () => {
     await installMsixCertificate();
 
     const electronExec = getElectronExecutable();
     await registerExecutableWithIdentity(electronExec);
-  });
+  }, 120000);
 
-  after(async function () {
+  afterAll(async () => {
     await unregisterExecutableWithIdentity();
-  });
+  }, 120000);
 
   const launchApp = (executablePath: string, args: string[] = []) => {
     return spawn(executablePath, args);
@@ -88,7 +86,8 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
             port = (httpServer.address() as AddressInfo).port;
             resolve();
           });
-        })
+        }),
+      120000
     );
 
     afterEach(async () => {
@@ -102,7 +101,7 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
         });
       }
       await uninstallMsixPackage('com.electron.myapp');
-    });
+    }, 120000);
 
     it('should not update when no update is available', async () => {
       server.get('/update-check', (req, res) => {

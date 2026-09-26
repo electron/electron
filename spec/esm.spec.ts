@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron';
 
-import { expect } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import * as fs from 'node:fs';
 import { createRequire } from 'node:module';
@@ -91,7 +91,7 @@ describe('esm', () => {
   describe('import / require parity', () => {
     let results: Record<string, string[]> = {};
 
-    before(async () => {
+    beforeAll(async () => {
       const result = await runFixture(path.resolve(fixturePath, 'import-require-parity'));
       expect([0, 1], `fixture did not run to completion:\n${result.stderr}`).toContain(result.code);
       results = JSON.parse(result.stdout.split('\n').pop()!);

@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron/main';
 
-import { expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import * as path from 'node:path';
 

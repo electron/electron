@@ -1,4 +1,4 @@
-import { expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as path from 'node:path';
@@ -14,8 +14,7 @@ describe('cpp heap', () => {
       ['growth', 'does not retain templates linearly when creating images in a detached realm'],
       ['release', 'collects a detached realm and its callback holder after releasing the API and images']
     ]) {
-      it(description, async function () {
-        this.timeout(90_000);
+      it(description, { timeout: 90_000 }, async () => {
         const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
         await remotely(
           async (fixture: string, page: string, child: string, snapshotHelper: string, mode: string) => {
@@ -30,8 +29,7 @@ describe('cpp heap', () => {
       });
     }
 
-    it('does not retain contexts through cached templates after reload', async function () {
-      this.timeout(60_000);
+    it('does not retain contexts through cached templates after reload', { timeout: 60_000 }, async () => {
       const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
       const result = await remotely(
         async (page: string, heap: string) => {

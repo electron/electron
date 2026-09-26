@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain, type WebContents } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as http from 'node:http';
@@ -178,7 +178,7 @@ describe('webFrame module', () => {
   describe('api', () => {
     let w: WebContents;
     let win: BrowserWindow;
-    before(async () => {
+    beforeAll(async () => {
       win = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false, nodeIntegration: true } });
       await win.loadURL('data:text/html,<iframe name="test"></iframe>');
       w = win.webContents;
@@ -190,7 +190,7 @@ describe('webFrame module', () => {
       `);
     });
 
-    after(() => {
+    afterAll(() => {
       win.close();
       win = null as unknown as BrowserWindow;
     });
