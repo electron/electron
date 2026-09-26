@@ -173,7 +173,7 @@ const char* SystemPreferences::GetHumanReadableName() const {
 
 void SystemPreferences::Trace(cppgc::Visitor* visitor) const {
   gin::Wrappable<SystemPreferences>::Trace(visitor);
-#if BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
   visitor->Trace(weak_factory_);
 #endif
 }
