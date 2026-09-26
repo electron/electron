@@ -3205,6 +3205,39 @@ describe('webContents module', () => {
     });
   });
 
+  describe('webContents.setVisualZoomLevelLimits()', () => {
+    afterEach(closeAllWindows);
+
+    const pageScaleAfterPinchTo = async (w: BrowserWindow, scale: number) => {
+      await w.webContents.debugger.sendCommand('Emulation.setPageScaleFactor', { pageScaleFactor: scale });
+      return w.webContents.executeJavaScript('window.visualViewport.scale');
+    };
+
+    it('keeps the limits across navigations', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      w.webContents.debugger.attach();
+      expect(await pageScaleAfterPinchTo(w, 2)).to.equal(1);
+
+      await w.webContents.setVisualZoomLevelLimits(1, 3);
+      expect(await pageScaleAfterPinchTo(w, 2)).to.equal(2);
+
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      expect(await pageScaleAfterPinchTo(w, 2)).to.equal(2);
+      expect(await pageScaleAfterPinchTo(w, 5)).to.equal(3);
+    });
+
+    it('rejects invalid limits', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      await expect(w.webContents.setVisualZoomLevelLimits(0, 3)).to.eventually.be.rejectedWith(/positive numbers/);
+      await expect(w.webContents.setVisualZoomLevelLimits(3, 1)).to.eventually.be.rejectedWith(/positive numbers/);
+      await expect(w.webContents.setVisualZoomLevelLimits(Number.NaN, 3)).to.eventually.be.rejectedWith(
+        /positive numbers/
+      );
+    });
+  });
+
   describe('zoom limits', () => {
     afterEach(closeAllWindows);
 
