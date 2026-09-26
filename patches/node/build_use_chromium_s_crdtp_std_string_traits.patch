@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Shelley Vohr <shelley.vohr@gmail.com>
-Date: Thu, 26 Jun 2025 09:25:24 +0000
+From: Claude <noreply@anthropic.com>
+Date: Sat, 26 Sep 2026 03:07:17 +0000
 Subject: build: use Chromium's crdtp std::string traits
 
 Electron links Node against Chromium's //third_party/inspector_protocol:crdtp,
