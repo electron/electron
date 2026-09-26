@@ -12,7 +12,6 @@
 
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_map.h"
-#include "base/memory/ptr_util.h"
 #include "cc/base/switches.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents_user_data.h"
@@ -175,7 +174,6 @@ WebContentsPreferences::WebContentsPreferences(
     const gin_helper::Dictionary& web_preferences)
     : content::WebContentsUserData<WebContentsPreferences>(*web_contents),
       web_contents_(web_contents) {
-  web_contents->SetUserData(UserDataKey(), base::WrapUnique(this));
   Instances().push_back(this);
   SetFromDictionary(web_preferences);
 

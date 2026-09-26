@@ -1971,13 +1971,9 @@ void WebContents::InitWithSessionAndOptions(
   // Save the preferences in C++.
   // If there's already a WebContentsPreferences object, we created it as part
   // of the webContents.setWindowOpenHandler path, so don't overwrite it.
-  // WebContentsPreferences transfers ownership to WebContents in its
-  // constructor. NOLINTBEGIN(clang-analyzer-cplusplus.NewDeleteLeaks)
-  auto* web_preferences = WebContentsPreferences::From(web_contents());
-  if (!web_preferences)
-    web_preferences = new WebContentsPreferences(web_contents(), options);
+  auto* web_preferences = WebContentsPreferences::GetOrCreateForWebContents(
+      web_contents(), options);
   ignore_menu_shortcuts_ = web_preferences->ShouldIgnoreMenuShortcuts();
-  // NOLINTEND(clang-analyzer-cplusplus.NewDeleteLeaks)
   // Trigger re-calculation of webkit prefs.
   web_contents()->NotifyPreferencesChanged();
 
@@ -2237,7 +2233,7 @@ void WebContents::WebContentsCreatedWithFullParams(
   // content::WebContents that was just created for the child window. These
   // preferences will be picked up by the RenderWidgetHost via its call to the
   // delegate's OverrideWebkitPrefs.
-  new WebContentsPreferences(new_contents, dict);
+  WebContentsPreferences::CreateForWebContents(new_contents, dict);
 }
 
 bool WebContents::OnWillCreateWindow(
@@ -3923,7 +3919,7 @@ v8::Local<v8::Value> WebContents::Clone(v8::Isolate* isolate) {
   gin_helper::Dictionary pref_dict;
   gin::ConvertFromV8(isolate, gin::ConvertToV8(isolate, current_prefs),
                      &pref_dict);
-  new WebContentsPreferences(new_contents.get(), pref_dict);
+  WebContentsPreferences::CreateForWebContents(new_contents.get(), pref_dict);
 
   // Use CreateAndTake to properly take ownership of the cloned WebContents
   // and create a new wrapper with the appropriate type
