@@ -556,8 +556,11 @@ class WebFrameRenderer final
                              &render_frame))
       return;
 
-    blink::WebFrame* web_frame = render_frame->GetWebFrame();
-    web_frame->View()->SetDefaultPageScaleLimits(min_level, max_level);
+    blink::WebView* web_view = render_frame->GetWebFrame()->View();
+    web_view->SetDefaultPageScaleLimits(min_level, max_level);
+    // Without an explicit initial scale Blink starts the page at the minimum,
+    // so a minimum below 1 would shrink the page instead of only allowing it.
+    web_view->SetInitialPageScaleOverride(1.f);
   }
 
   void SetSpellCheckProvider(gin_helper::ErrorThrower thrower,
