@@ -1894,6 +1894,31 @@ describe('app module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'linux')('GDK_BACKEND', () => {
+    const fixture = path.join(fixturesPath, 'apps', 'gdk-backend');
+    const run = async (env: NodeJS.ProcessEnv) => {
+      const child = cp.spawn(process.execPath, [fixture], { env, stdio: ['ignore', 'pipe', 'ignore'] });
+      defer(() => {
+        if (child.exitCode === null && child.signalCode === null) child.kill();
+      });
+      let out = '';
+      child.stdout.on('data', (chunk) => {
+        out += chunk;
+      });
+      await waitUntil(() => /GDK_BACKEND in child: .*\n/.test(out));
+      return out.match(/GDK_BACKEND in child: (.*)\n/)![1];
+    };
+
+    it('is not added to the environment that child processes inherit', async () => {
+      const { GDK_BACKEND: _, ...env } = process.env;
+      expect(await run(env)).to.equal('<unset>');
+    });
+
+    it('is left as the user set it', async () => {
+      expect(await run({ ...process.env, GDK_BACKEND: 'x11' })).to.equal('x11');
+    });
+  });
+
   describe('getGPUFeatureStatus() API', () => {
     it('returns the graphic features statuses', () => {
       const features = app.getGPUFeatureStatus();
