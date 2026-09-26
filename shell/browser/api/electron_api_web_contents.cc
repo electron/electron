@@ -5522,8 +5522,8 @@ std::string WebContents::GetZoomMode() const {
   }
 }
 
-void WebContents::SetTemporaryZoomLevel(double level) {
-  GetZoomController()->SetTemporaryZoomLevel(level);
+double WebContents::SetTemporaryZoomLevel(double level) {
+  return GetZoomController()->SetTemporaryZoomLevel(level);
 }
 
 v8::Local<v8::Value> WebContents::GetLastWebPreferences(

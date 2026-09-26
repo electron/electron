@@ -492,7 +492,9 @@ class WebContents final : public gin::Wrappable<WebContents>,
 
   // mojom::ElectronWebContentsUtility
   void OnFirstNonEmptyLayout(content::RenderFrameHost* render_frame_host);
-  void SetTemporaryZoomLevel(double level);
+  // Returns the zoom level in effect after the call (see
+  // WebContentsZoomController::SetTemporaryZoomLevel).
+  double SetTemporaryZoomLevel(double level);
 
   void SetImageAnimationPolicy(const std::string& new_policy);
 
