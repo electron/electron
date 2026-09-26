@@ -6,12 +6,15 @@
 
 #include <windows.h>
 
+#include <algorithm>
+
 #include "base/command_line.h"
 #include "base/logging.h"
 #include "base/process/launch.h"
 #include "base/process/process_handle.h"
 #include "base/strings/strcat_win.h"
 #include "base/strings/string_number_conversions_win.h"
+#include "base/win/elevation_util.h"
 #include "base/win/scoped_handle.h"
 #include "sandbox/win/src/nt_internals.h"
 #include "sandbox/win/src/win_utils.h"
@@ -85,6 +88,14 @@ void RelauncherSynchronizeWithParent() {
 
 int LaunchProgram(const StringVector& relauncher_args,
                   const StringVector& argv) {
+  if (std::ranges::find(relauncher_args, kRelauncherDeElevateArg) !=
+      relauncher_args.end()) {
+    return base::win::RunDeElevated(
+               base::CommandLine::FromString(ArgvToCommandLineString(argv)))
+                   .has_value()
+               ? 0
+               : 1;
+  }
   base::LaunchOptions options;
   base::Process process =
       base::LaunchProcess(ArgvToCommandLineString(argv), options);

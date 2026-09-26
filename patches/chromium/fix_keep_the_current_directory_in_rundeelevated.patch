@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Sat, 26 Sep 2026 11:00:20 +0000
+Subject: fix: keep the current directory in RunDeElevated()
+
+RunDeElevated() launches the de-elevated process through
+CreateProcessWithTokenW() with a null lpCurrentDirectory. Unlike
+CreateProcess(), that call is serviced by the Secondary Logon service
+and the child does not inherit the caller's current directory; it
+starts in %SystemRoot%\System32, so a relative path on the relaunched
+command line resolves against the wrong directory. Pass the current
+directory explicitly, as RunDeElevatedNoWait() already does.
+
+Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/8468923
+
+diff --git a/base/win/elevation_util.cc b/base/win/elevation_util.cc
+index c24eaa1b949befd9202b289242fe6e37341311f5..f0a62c3abfadd2bba16ad6d75f060e4d5eccd2ac 100644
+--- a/base/win/elevation_util.cc
++++ b/base/win/elevation_util.cc
+@@ -117,13 +117,16 @@ expected<Process, DWORD> RunDeElevated(
+     return unexpected(::GetLastError());
+   }
+ 
++  // CreateProcessWithTokenW() does not inherit this process's current
++  // directory when lpCurrentDirectory is null; pass it explicitly.
++  const FilePath current_directory = PathService::CheckedGet(DIR_CURRENT);
+   StartupInformation startupinfo;
+   PROCESS_INFORMATION pi = {};
+   if (!::CreateProcessWithTokenW(duplicated_shell_token->get(), 0,
+                                  command_line.GetProgram().value().c_str(),
+                                  command_line.GetCommandLineString().data(), 0,
+-                                 nullptr, nullptr, startupinfo.startup_info(),
+-                                 &pi)) {
++                                 nullptr, current_directory.value().c_str(),
++                                 startupinfo.startup_info(), &pi)) {
+     return unexpected(::GetLastError());
+   }
+   ScopedProcessInformation process_info(pi);
