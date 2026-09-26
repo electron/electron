@@ -548,6 +548,35 @@ describe('webRequest module', () => {
       expect(data).to.equal('/header/received');
     });
 
+    it('skips invalid request headers and warns about them', async () => {
+      const warnings: string[] = [];
+      const onWarning = (warning: Error) => warnings.push(warning.message);
+      process.on('warning', onWarning);
+      defer(() => process.off('warning', onWarning));
+      ses.webRequest.onBeforeSendHeaders((details, callback) => {
+        callback({
+          requestHeaders: {
+            'X-Bad': 'oops\r\nX-Injected: 1',
+            ...details.requestHeaders,
+            Accept: '*/*;test/header'
+          }
+        });
+      });
+      const { data } = await ajax(defaultURL);
+      expect(data).to.equal('/header/received');
+      expect(warnings.some((message) => message.includes("'requestHeaders'") && message.includes('"X-Bad"'))).to.be.true(
+        'expected a warning naming the invalid header'
+      );
+    });
+
+    it('keeps the original request headers when requestHeaders cannot be converted', async () => {
+      ses.webRequest.onBeforeSendHeaders((details, callback) => {
+        callback({ requestHeaders: [] as any });
+      });
+      const { data } = await ajax(defaultURL, { headers: { Accept: '*/*;test/header' } });
+      expect(data).to.equal('/header/received');
+    });
+
     it('can change the request headers on a custom protocol redirect', async () => {
       protocol.registerStringProtocol('cors-blob', (req, callback) => {
         if (req.url === 'cors-blob://fake-host/redirect') {
@@ -740,6 +769,47 @@ describe('webRequest module', () => {
       });
       const { headers } = await ajax(defaultURL);
       expect(headers).to.to.have.property('custom', 'Changed');
+    });
+
+    it('skips invalid response headers, keeps the rest and warns about them', async () => {
+      const warnings: string[] = [];
+      const onWarning = (warning: Error) => warnings.push(warning.message);
+      process.on('warning', onWarning);
+      defer(() => process.off('warning', onWarning));
+      ses.webRequest.onHeadersReceived((details, callback) => {
+        callback({
+          responseHeaders: {
+            'X-Bad': ['oops\r\nX-Injected: 1'],
+            ...details.responseHeaders,
+            'X-Added': ['yes']
+          }
+        });
+      });
+      const { headers } = await ajax(defaultURL);
+      expect(headers).to.have.property('custom', 'Header');
+      expect(headers).to.have.property('x-added', 'yes');
+      expect(headers).to.not.have.property('x-bad');
+      expect(headers).to.not.have.property('x-injected');
+      expect(warnings.some((message) => message.includes("'responseHeaders'") && message.includes('"X-Bad"'))).to.be.true(
+        'expected a warning naming the invalid header'
+      );
+    });
+
+    it('keeps the original response headers when responseHeaders cannot be converted', async () => {
+      let error: unknown;
+      ses.webRequest.onHeadersReceived((details, callback) => {
+        try {
+          // A Symbol can't be converted to a string, which fails the whole
+          // conversion after 'X-Added' has already been read.
+          callback({ responseHeaders: { 'X-Added': ['yes'], 'X-Symbol': [Symbol('x')] } as any });
+        } catch (e) {
+          error = e;
+        }
+      });
+      const { headers } = await ajax(defaultURL);
+      expect(error).to.be.an.instanceOf(TypeError);
+      expect(headers).to.have.property('custom', 'Header');
+      expect(headers).to.not.have.property('x-added');
     });
 
     it('can change response origin', async () => {
