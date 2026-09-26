@@ -4,6 +4,9 @@
 
 #include "shell/browser/api/electron_api_web_contents_view.h"
 
+#include <memory>
+#include <utility>
+
 #include "base/functional/bind.h"
 #include "base/no_destructor.h"
 #include "base/task/sequenced_task_runner.h"
@@ -31,7 +34,21 @@
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/layout/flex_layout_types.h"
 #include "ui/views/view_class_properties.h"
+#include "ui/views/view_targeter.h"
+#include "ui/views/view_targeter_delegate.h"
 #include "ui/views/widget/widget.h"
+
+namespace {
+
+class IgnoreMouseEventsTargeterDelegate : public views::ViewTargeterDelegate {
+ public:
+  bool DoesIntersectRect(const views::View*,
+                         const gfx::Rect&) const override {
+    return false;
+  }
+};
+
+}  // namespace
 
 namespace electron::api {
 
@@ -88,6 +105,20 @@ void WebContentsView::SetBorderRadius(int radius) {
   ApplyBorderRadius();
 }
 
+void WebContentsView::SetIgnoreMouseEvents(bool ignore) {
+  if (!view() || ignore_mouse_events_ == ignore)
+    return;
+
+  ignore_mouse_events_ = ignore;
+  if (ignore) {
+    auto targeter = std::make_unique<views::ViewTargeter>(
+        std::make_unique<IgnoreMouseEventsTargeterDelegate>());
+    previous_event_targeter_ = view()->SetEventTargeter(std::move(targeter));
+  } else {
+    view()->SetEventTargeter(std::move(previous_event_targeter_));
+  }
+}
+
 void WebContentsView::ApplyBorderRadius() {
   if (auto* web_contents = GetLiveWebContents();
       border_radius().has_value() && web_contents && view()->GetWidget()) {
@@ -97,7 +128,7 @@ void WebContentsView::ApplyBorderRadius() {
 }
 
 int WebContentsView::NonClientHitTest(const gfx::Point& point) {
-  if (!view() || !view()->GetVisible())
+  if (!view() || !view()->GetVisible() || ignore_mouse_events_)
     return HTNOWHERE;
   if (auto* web_contents = GetLiveWebContents()) {
     auto* iwc = web_contents->inspectable_web_contents();
@@ -325,6 +356,7 @@ void WebContentsView::BuildPrototype(
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod<&WebContentsView::SetBackgroundColor>("setBackgroundColor")
       .SetMethod<&WebContentsView::SetBorderRadius>("setBorderRadius")
+      .SetMethod<&WebContentsView::SetIgnoreMouseEvents>("setIgnoreMouseEvents")
       .SetProperty<&WebContentsView::GetWebContents>("webContents");
 }
 

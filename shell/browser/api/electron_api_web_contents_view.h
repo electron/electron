@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_CONTENTS_VIEW_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_CONTENTS_VIEW_H_
 
+#include <memory>
 #include <optional>
 
 #include "content/public/browser/web_contents_observer.h"
@@ -19,6 +20,10 @@ class Dictionary;
 
 namespace electron {
 class NativeWindow;
+}
+
+namespace views {
+class ViewTargeter;
 }
 
 namespace electron::api {
@@ -46,6 +51,7 @@ class WebContentsView : public View,
   WebContents* GetWebContents();
   void SetBackgroundColor(std::optional<WrappedSkColor> color);
   void SetBorderRadius(int radius);
+  void SetIgnoreMouseEvents(bool ignore);
 
   int NonClientHitTest(const gfx::Point& point) override;
 
@@ -76,6 +82,8 @@ class WebContentsView : public View,
   void SendWindowControlsOverlay();
 
   cppgc::Persistent<api::WebContents> api_web_contents_;
+  std::unique_ptr<views::ViewTargeter> previous_event_targeter_;
+  bool ignore_mouse_events_ = false;
   base::WeakPtr<NativeWindow> observed_window_;
   bool window_controls_overlay_update_pending_ = false;
 

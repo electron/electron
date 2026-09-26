@@ -45,6 +45,19 @@ Process: [Main](../glossary.md#main-process)
 
 Creates a WebContentsView.
 
+### Instance Methods
+
+#### `view.setIgnoreMouseEvents(ignore)`
+
+* `ignore` boolean - Whether to ignore mouse input.
+
+When enabled, mouse input over this view is routed to a view beneath it in the
+same window. The view remains visible and can still receive keyboard input if it
+has focus. Calling this method with `false` restores normal mouse input.
+
+Unlike [`BaseWindow.setIgnoreMouseEvents`](base-window.md#winsetignoremouseeventsignore-options),
+this does not pass input to other windows or applications.
+
 ### Instance Properties
 
 Objects created with `new WebContentsView` have the following properties, in

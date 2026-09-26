@@ -3,11 +3,20 @@ import { BaseWindow, BrowserWindow, View, WebContentsView, webContents, screen }
 import { expect } from 'chai';
 
 import { once } from 'node:events';
+import { createRequire } from 'node:module';
 import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
 
 import { HexColors, ScreenCapture, hasCapturableScreen, nextFrameTime } from './lib/screen-helpers.ts';
 import { defer, ifdescribe, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
+
+const require = createRequire(import.meta.url);
+let robot: typeof import('@hurdlegroup/robotjs');
+try {
+  robot = require('@hurdlegroup/robotjs');
+} catch {
+  // Native mouse input is unavailable in some test environments.
+}
 
 describe('WebContentsView', () => {
   afterEach(async () => {
@@ -24,6 +33,70 @@ describe('WebContentsView', () => {
   it('can be instantiated with no webPreferences', () => {
     // oxlint-disable-next-line no-new
     new WebContentsView({});
+  });
+
+  describe('setIgnoreMouseEvents', { tags: ['serial'] }, function () {
+    before(function () {
+      if (!robot?.moveMouse || !hasCapturableScreen()) this.skip();
+    });
+
+    it('routes clicks to the view underneath and restores input without losing keyboard focus', async () => {
+      const workArea = screen.getPrimaryDisplay().workArea;
+      const w = new BaseWindow({
+        x: workArea.x + 40,
+        y: workArea.y + 40,
+        width: 280,
+        height: 180,
+        frame: false,
+        show: false
+      });
+      const bottom = new WebContentsView();
+      const top = new WebContentsView();
+      const bounds = { x: 0, y: 0, width: 280, height: 180 };
+      bottom.setBounds(bounds);
+      top.setBounds(bounds);
+      w.contentView.addChildView(bottom);
+      w.contentView.addChildView(top);
+
+      const page = `data:text/html,${encodeURIComponent(`
+        <script>
+          window.clicks = 0;
+          window.keys = 0;
+          addEventListener('click', () => window.clicks++);
+          addEventListener('keydown', () => window.keys++);
+        </script>
+      `)}`;
+      await Promise.all([bottom.webContents.loadURL(page), top.webContents.loadURL(page)]);
+      const shown = once(w, 'show');
+      w.show();
+      await shown;
+      w.focus();
+
+      const content = w.getContentBounds();
+      robot.moveMouse(content.x + 140, content.y + 90);
+      robot.mouseClick();
+      await expect(
+        waitUntil(async () => (await top.webContents.executeJavaScript('window.clicks')) === 1)
+      ).to.eventually.be.fulfilled();
+
+      top.setIgnoreMouseEvents(true);
+      robot.keyTap('a');
+      await expect(
+        waitUntil(async () => (await top.webContents.executeJavaScript('window.keys')) === 1)
+      ).to.eventually.be.fulfilled();
+      robot.mouseClick();
+      await expect(
+        waitUntil(async () => (await bottom.webContents.executeJavaScript('window.clicks')) === 1)
+      ).to.eventually.be.fulfilled();
+      expect(await top.webContents.executeJavaScript('window.clicks')).to.equal(1);
+
+      top.setIgnoreMouseEvents(false);
+      robot.mouseClick();
+      await expect(
+        waitUntil(async () => (await top.webContents.executeJavaScript('window.clicks')) === 2)
+      ).to.eventually.be.fulfilled();
+      expect(await bottom.webContents.executeJavaScript('window.clicks')).to.equal(1);
+    });
   });
 
   it('accepts existing webContents object', async () => {
