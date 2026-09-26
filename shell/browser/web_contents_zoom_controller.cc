@@ -4,6 +4,7 @@
 
 #include "shell/browser/web_contents_zoom_controller.h"
 
+#include <algorithm>
 #include <string>
 
 #include "content/public/browser/browser_thread.h"
@@ -67,6 +68,11 @@ void WebContentsZoomController::SetEmbedderZoomController(
 
 bool WebContentsZoomController::SetZoomLevel(double level) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  // The renderer only displays zoom within this range; storing a level outside
+  // it makes the reported level drift away from what is shown.
+  level = std::clamp(
+      level, blink::ZoomFactorToZoomLevel(blink::kMinimumBrowserZoomFactor),
+      blink::ZoomFactorToZoomLevel(blink::kMaximumBrowserZoomFactor));
   // Cannot zoom in disabled mode. Also, don't allow changing zoom level on
   // a crashed tab, an error page or an interstitial page.
   if (zoom_mode_ == ZOOM_MODE_DISABLED ||

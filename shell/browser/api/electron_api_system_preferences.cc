@@ -147,6 +147,8 @@ gin::ObjectTemplateBuilder SystemPreferences::GetObjectTemplateBuilder(
                  &SystemPreferences::IsSwipeTrackingFromScrollEventsEnabled)
       .SetMethod("getEffectiveAppearance",
                  &SystemPreferences::GetEffectiveAppearance)
+      .SetProperty("effectiveAppearance",
+                   &SystemPreferences::GetEffectiveAppearance)
       .SetMethod("getSystemColor", &SystemPreferences::GetSystemColor)
       .SetMethod("canPromptTouchID", &SystemPreferences::CanPromptTouchID)
       .SetMethod("promptTouchID", &SystemPreferences::PromptTouchID)
@@ -171,7 +173,7 @@ const char* SystemPreferences::GetHumanReadableName() const {
 
 void SystemPreferences::Trace(cppgc::Visitor* visitor) const {
   gin::Wrappable<SystemPreferences>::Trace(visitor);
-#if BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
   visitor->Trace(weak_factory_);
 #endif
 }

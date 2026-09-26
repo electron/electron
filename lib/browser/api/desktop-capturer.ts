@@ -1,4 +1,4 @@
-import { BrowserWindow } from 'electron/main';
+import { BaseWindow } from 'electron/main';
 
 const { createDesktopCapturer, isDisplayMediaSystemPickerAvailable } = process._linkedBinding(
   'electron_browser_desktop_capturer'
@@ -22,13 +22,13 @@ export { isDisplayMediaSystemPickerAvailable };
 export async function getSources(args: Electron.SourcesOptions) {
   if (!isValid(args)) throw new Error('Invalid options');
 
-  const resizableValues = new Map();
+  const resizableValues = new Map<number, boolean>();
   if (process.platform === 'darwin') {
     // Fix for bug in ScreenCaptureKit that modifies a window's styleMask the first time
     // it captures a non-resizable window. We record each non-resizable window's styleMask,
     // and we restore modified styleMasks later, after the screen capture.
-    for (const win of BrowserWindow.getAllWindows()) {
-      resizableValues.set([win.id], win.resizable);
+    for (const win of BaseWindow.getAllWindows()) {
+      resizableValues.set(win.id, win.resizable);
     }
   }
 
@@ -74,9 +74,10 @@ export async function getSources(args: Electron.SourcesOptions) {
       capturer = null;
 
       if (process.platform === 'darwin') {
-        for (const win of BrowserWindow.getAllWindows()) {
-          if (resizableValues.has(win.id)) {
-            win.resizable = resizableValues.get(win.id);
+        for (const win of BaseWindow.getAllWindows()) {
+          const resizable = resizableValues.get(win.id);
+          if (resizable !== undefined && win.resizable !== resizable) {
+            win.resizable = resizable;
           }
         }
       }

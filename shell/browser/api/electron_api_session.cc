@@ -1843,84 +1843,84 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
   // gin_helper::ObjectTemplateBuilder so that a Session made inert at shutdown
   // throws "Object has been destroyed" rather than gin's conversion error.
   gin_helper::ObjectTemplateBuilder(isolate, templ)
-      .SetMethod("resolveHost", &Session::ResolveHost)
-      .SetMethod("resolveProxy", &Session::ResolveProxy)
-      .SetMethod("getCacheSize", &Session::GetCacheSize)
-      .SetMethod("clearCache", &Session::ClearCache)
-      .SetMethod("clearStorageData", &Session::ClearStorageData)
-      .SetMethod("flushStorageData", &Session::FlushStorageData)
-      .SetMethod("setProxy", &Session::SetProxy)
-      .SetMethod("forceReloadProxyConfig", &Session::ForceReloadProxyConfig)
-      .SetMethod("setDownloadPath", &Session::SetDownloadPath)
-      .SetMethod("enableNetworkEmulation", &Session::EnableNetworkEmulation)
-      .SetMethod("disableNetworkEmulation", &Session::DisableNetworkEmulation)
-      .SetMethod("setCertificateVerifyProc", &Session::SetCertVerifyProc)
-      .SetMethod("setPermissionRequestHandler",
-                 &Session::SetPermissionRequestHandler)
-      .SetMethod("setPermissionCheckHandler",
-                 &Session::SetPermissionCheckHandler)
-      .SetMethod("_setDisplayMediaRequestHandler",
-                 &Session::SetDisplayMediaRequestHandler)
-      .SetMethod("setDevicePermissionHandler",
-                 &Session::SetDevicePermissionHandler)
-      .SetMethod("setUSBProtectedClassesHandler",
-                 &Session::SetUSBProtectedClassesHandler)
-      .SetMethod("setBluetoothPairingHandler",
-                 &Session::SetBluetoothPairingHandler)
-      .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)
-      .SetMethod("clearAuthCache", &Session::ClearAuthCache)
-      .SetMethod("allowNTLMCredentialsForDomains",
-                 &Session::AllowNTLMCredentialsForDomains)
-      .SetMethod("isPersistent", &Session::IsPersistent)
-      .SetMethod("setUserAgent", &Session::SetUserAgent)
-      .SetMethod("getUserAgent", &Session::GetUserAgent)
-      .SetMethod("setSSLConfig", &Session::SetSSLConfig)
-      .SetMethod("getBlobData", &Session::GetBlobData)
-      .SetMethod("downloadURL", &Session::DownloadURL)
-      .SetMethod("createInterruptedDownload",
-                 &Session::CreateInterruptedDownload)
-      .SetMethod("registerPreloadScript", &Session::RegisterPreloadScript)
-      .SetMethod("unregisterPreloadScript", &Session::UnregisterPreloadScript)
-      .SetMethod("getPreloadScripts", &Session::GetPreloadScripts)
-      .SetMethod("getSharedDictionaryUsageInfo",
-                 &Session::GetSharedDictionaryUsageInfo)
-      .SetMethod("getSharedDictionaryInfo", &Session::GetSharedDictionaryInfo)
-      .SetMethod("clearSharedDictionaryCache",
-                 &Session::ClearSharedDictionaryCache)
-      .SetMethod("clearSharedDictionaryCacheForIsolationKey",
-                 &Session::ClearSharedDictionaryCacheForIsolationKey)
+      .SetMethod<&Session::ResolveHost>("resolveHost")
+      .SetMethod<&Session::ResolveProxy>("resolveProxy")
+      .SetMethod<&Session::GetCacheSize>("getCacheSize")
+      .SetMethod<&Session::ClearCache>("clearCache")
+      .SetMethod<&Session::ClearStorageData>("clearStorageData")
+      .SetMethod<&Session::FlushStorageData>("flushStorageData")
+      .SetMethod<&Session::SetProxy>("setProxy")
+      .SetMethod<&Session::ForceReloadProxyConfig>("forceReloadProxyConfig")
+      .SetMethod<&Session::SetDownloadPath>("setDownloadPath")
+      .SetMethod<&Session::EnableNetworkEmulation>("enableNetworkEmulation")
+      .SetMethod<&Session::DisableNetworkEmulation>("disableNetworkEmulation")
+      .SetMethod<&Session::SetCertVerifyProc>("setCertificateVerifyProc")
+      .SetMethod<&Session::SetPermissionRequestHandler>(
+          "setPermissionRequestHandler")
+      .SetMethod<&Session::SetPermissionCheckHandler>(
+          "setPermissionCheckHandler")
+      .SetMethod<&Session::SetDisplayMediaRequestHandler>(
+          "_setDisplayMediaRequestHandler")
+      .SetMethod<&Session::SetDevicePermissionHandler>(
+          "setDevicePermissionHandler")
+      .SetMethod<&Session::SetUSBProtectedClassesHandler>(
+          "setUSBProtectedClassesHandler")
+      .SetMethod<&Session::SetBluetoothPairingHandler>(
+          "setBluetoothPairingHandler")
+      .SetMethod<&Session::ClearHostResolverCache>("clearHostResolverCache")
+      .SetMethod<&Session::ClearAuthCache>("clearAuthCache")
+      .SetMethod<&Session::AllowNTLMCredentialsForDomains>(
+          "allowNTLMCredentialsForDomains")
+      .SetMethod<&Session::IsPersistent>("isPersistent")
+      .SetMethod<&Session::SetUserAgent>("setUserAgent")
+      .SetMethod<&Session::GetUserAgent>("getUserAgent")
+      .SetMethod<&Session::SetSSLConfig>("setSSLConfig")
+      .SetMethod<&Session::GetBlobData>("getBlobData")
+      .SetMethod<&Session::DownloadURL>("downloadURL")
+      .SetMethod<&Session::CreateInterruptedDownload>(
+          "createInterruptedDownload")
+      .SetMethod<&Session::RegisterPreloadScript>("registerPreloadScript")
+      .SetMethod<&Session::UnregisterPreloadScript>("unregisterPreloadScript")
+      .SetMethod<&Session::GetPreloadScripts>("getPreloadScripts")
+      .SetMethod<&Session::GetSharedDictionaryUsageInfo>(
+          "getSharedDictionaryUsageInfo")
+      .SetMethod<&Session::GetSharedDictionaryInfo>("getSharedDictionaryInfo")
+      .SetMethod<&Session::ClearSharedDictionaryCache>(
+          "clearSharedDictionaryCache")
+      .SetMethod<&Session::ClearSharedDictionaryCacheForIsolationKey>(
+          "clearSharedDictionaryCacheForIsolationKey")
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-      .SetMethod("getSpellCheckerLanguages", &Session::GetSpellCheckerLanguages)
-      .SetMethod("setSpellCheckerLanguages", &Session::SetSpellCheckerLanguages)
-      .SetProperty("availableSpellCheckerLanguages",
-                   &spellcheck::SpellCheckLanguages)
-      .SetMethod("setSpellCheckerDictionaryDownloadURL",
-                 &SetSpellCheckerDictionaryDownloadURL)
-      .SetMethod("listWordsInSpellCheckerDictionary",
-                 &Session::ListWordsInSpellCheckerDictionary)
-      .SetMethod("addWordToSpellCheckerDictionary",
-                 &Session::AddWordToSpellCheckerDictionary)
-      .SetMethod("removeWordFromSpellCheckerDictionary",
-                 &Session::RemoveWordFromSpellCheckerDictionary)
-      .SetMethod("setSpellCheckerEnabled", &Session::SetSpellCheckerEnabled)
-      .SetMethod("isSpellCheckerEnabled", &Session::IsSpellCheckerEnabled)
-      .SetProperty("spellCheckerEnabled", &Session::IsSpellCheckerEnabled,
-                   &Session::SetSpellCheckerEnabled)
+      .SetMethod<&Session::GetSpellCheckerLanguages>("getSpellCheckerLanguages")
+      .SetMethod<&Session::SetSpellCheckerLanguages>("setSpellCheckerLanguages")
+      .SetProperty<&spellcheck::SpellCheckLanguages>(
+          "availableSpellCheckerLanguages")
+      .SetMethod<&SetSpellCheckerDictionaryDownloadURL>(
+          "setSpellCheckerDictionaryDownloadURL")
+      .SetMethod<&Session::ListWordsInSpellCheckerDictionary>(
+          "listWordsInSpellCheckerDictionary")
+      .SetMethod<&Session::AddWordToSpellCheckerDictionary>(
+          "addWordToSpellCheckerDictionary")
+      .SetMethod<&Session::RemoveWordFromSpellCheckerDictionary>(
+          "removeWordFromSpellCheckerDictionary")
+      .SetMethod<&Session::SetSpellCheckerEnabled>("setSpellCheckerEnabled")
+      .SetMethod<&Session::IsSpellCheckerEnabled>("isSpellCheckerEnabled")
+      .SetProperty<&Session::IsSpellCheckerEnabled,
+                   &Session::SetSpellCheckerEnabled>("spellCheckerEnabled")
 #endif
-      .SetMethod("preconnect", &Session::Preconnect)
-      .SetMethod("closeAllConnections", &Session::CloseAllConnections)
-      .SetMethod("getStoragePath", &Session::GetPath)
-      .SetMethod("setCodeCachePath", &Session::SetCodeCachePath)
-      .SetMethod("clearCodeCaches", &Session::ClearCodeCaches)
-      .SetMethod("clearData", &Session::ClearData)
-      .SetMethod("_registerLocalAIHandler", &Session::RegisterLocalAIHandler)
-      .SetProperty("cookies", &Session::Cookies)
-      .SetProperty("extensions", &Session::Extensions)
-      .SetProperty("netLog", &Session::NetLog)
-      .SetProperty("protocol", &Session::Protocol)
-      .SetProperty("serviceWorkers", &Session::ServiceWorkerContext)
-      .SetProperty("webRequest", &Session::WebRequest)
-      .SetProperty("storagePath", &Session::GetPath)
+      .SetMethod<&Session::Preconnect>("preconnect")
+      .SetMethod<&Session::CloseAllConnections>("closeAllConnections")
+      .SetMethod<&Session::GetPath>("getStoragePath")
+      .SetMethod<&Session::SetCodeCachePath>("setCodeCachePath")
+      .SetMethod<&Session::ClearCodeCaches>("clearCodeCaches")
+      .SetMethod<&Session::ClearData>("clearData")
+      .SetMethod<&Session::RegisterLocalAIHandler>("_registerLocalAIHandler")
+      .SetProperty<&Session::Cookies>("cookies")
+      .SetProperty<&Session::Extensions>("extensions")
+      .SetProperty<&Session::NetLog>("netLog")
+      .SetProperty<&Session::Protocol>("protocol")
+      .SetProperty<&Session::ServiceWorkerContext>("serviceWorkers")
+      .SetProperty<&Session::WebRequest>("webRequest")
+      .SetProperty<&Session::GetPath>("storagePath")
       .Build();
 }
 
@@ -1985,8 +1985,8 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("Session",
            Session::GetConstructor(isolate, context, &Session::kWrapperInfo));
-  dict.SetMethod("fromPartition", &FromPartition);
-  dict.SetMethod("fromPath", &FromPath);
+  dict.SetMethod<&FromPartition>("fromPartition");
+  dict.SetMethod<&FromPath>("fromPath");
 }
 
 }  // namespace

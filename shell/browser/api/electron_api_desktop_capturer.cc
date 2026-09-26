@@ -630,11 +630,11 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("createDesktopCapturer",
-                 &electron::api::DesktopCapturer::Create);
-  dict.SetMethod(
-      "isDisplayMediaSystemPickerAvailable",
-      &electron::api::DesktopCapturer::IsDisplayMediaSystemPickerAvailable);
+  dict.SetMethod<&electron::api::DesktopCapturer::Create>(
+      "createDesktopCapturer");
+  dict.SetMethod<
+      &electron::api::DesktopCapturer::IsDisplayMediaSystemPickerAvailable>(
+      "isDisplayMediaSystemPickerAvailable");
 }
 
 }  // namespace

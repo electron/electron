@@ -27,7 +27,10 @@
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/cached_string.h"
+#include "v8/include/cppgc/member.h"
 #include "v8/include/cppgc/persistent.h"
+#include "v8/include/v8-traced-handle.h"
 
 #if BUILDFLAG(USE_NSS_CERTS)
 #include "shell/browser/certificate_manager_model.h"
@@ -42,11 +45,6 @@ class Dictionary;
 class ErrorThrower;
 }  // namespace gin_helper
 
-namespace v8 {
-template <typename T>
-class TracedReference;
-}
-
 namespace electron {
 
 struct ProcessMetric;
@@ -56,6 +54,8 @@ enum class JumpListResult : int;
 #endif
 
 namespace api {
+
+class Menu;
 
 class App final : public gin::Wrappable<App>,
                   public ElectronBrowserClient::Delegate,
@@ -82,6 +82,14 @@ class App final : public gin::Wrappable<App>,
 #endif
 
   base::FilePath GetAppPath() const;
+
+  // Asks the app's client certificate password handler for the password to
+  // unlock |token_name|. Returns false when no handler is set.
+  bool RequestClientCertPassword(
+      const std::string& hostname,
+      const std::string& token_name,
+      bool is_retry,
+      base::OnceCallback<void(const std::string&)> callback);
   void RenderProcessReady(content::RenderProcessHost* host);
   void RenderProcessExited(content::RenderProcessHost* host);
 
@@ -165,7 +173,8 @@ class App final : public gin::Wrappable<App>,
 
   // content::BrowserChildProcessObserver:
   void BrowserChildProcessLaunchedAndConnected(
-      const content::ChildProcessData& data) override;
+      const content::ChildProcessData& data,
+      const base::Process& process) override;
   void BrowserChildProcessHostDisconnected(
       const content::ChildProcessData& data) override;
   void BrowserChildProcessCrashed(
@@ -249,8 +258,27 @@ class App final : public gin::Wrappable<App>,
   bool MoveToApplicationsFolder(gin_helper::ErrorThrower, gin::Arguments* args);
   bool IsInApplicationsFolder();
   v8::Local<v8::Value> GetDockAPI(v8::Isolate* isolate);
+  void DockSetMenu(electron::api::Menu* menu);
+  v8::Local<v8::Value> DockGetMenu(v8::Isolate* isolate);
   v8::TracedReference<v8::Value> dock_;
+  cppgc::Member<electron::api::Menu> dock_menu_;
 #endif
+
+  v8::Local<v8::Value> GetCommandLine(v8::Isolate* isolate);
+  v8::TracedReference<v8::Value> command_line_;
+
+  // app.name, getName(), getVersion() and getAppPath() answer with a string
+  // that almost never changes, so hand the same V8 string back until it does.
+  v8::Local<v8::String> GetNameString(v8::Isolate* isolate);
+  v8::Local<v8::String> GetVersionString(v8::Isolate* isolate);
+  v8::Local<v8::Value> GetAppPathValue(v8::Isolate* isolate);
+  gin_helper::CachedString name_string_;
+  gin_helper::CachedString version_string_;
+  v8::TracedReference<v8::Value> app_path_value_;  // Reset by SetAppPath.
+
+  void SetClientCertRequestPasswordHandler(v8::Isolate* isolate,
+                                           v8::Local<v8::Value> handler);
+  v8::TracedReference<v8::Function> client_cert_password_handler_;
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   bool IsRunningUnderARM64Translation() const;

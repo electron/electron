@@ -64,8 +64,10 @@ struct Converter<views::ProposedLayout> {
       return false;
     if (!dict.Get("size", &out->host_size))
       return false;
-    if (!dict.Get("layouts", &out->child_layouts))
+    std::vector<views::ChildLayout> layouts;
+    if (!dict.Get("layouts", &layouts))
       return false;
+    out->child_layouts.assign(layouts.begin(), layouts.end());
     return true;
   }
 };
@@ -603,17 +605,17 @@ void View::BuildPrototype(v8::Isolate* isolate,
                           v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(gin::StringToV8(isolate, "View"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("addChildView", &View::AddChildViewAt)
-      .SetMethod("removeChildView", &View::RemoveChildView)
-      .SetProperty("children", &View::GetChildren)
-      .SetMethod("setBounds", &View::SetBounds)
-      .SetMethod("getBounds", &View::GetBounds)
-      .SetMethod("setBackgroundColor", &View::SetBackgroundColor)
-      .SetMethod("setBorderRadius", &View::SetBorderRadius)
-      .SetMethod("setBackgroundBlur", &View::SetBackgroundBlur)
-      .SetMethod("setLayout", &View::SetLayout)
-      .SetMethod("setVisible", &View::SetVisible)
-      .SetMethod("getVisible", &View::GetVisible);
+      .SetMethod<&View::AddChildViewAt>("addChildView")
+      .SetMethod<&View::RemoveChildView>("removeChildView")
+      .SetProperty<&View::GetChildren>("children")
+      .SetMethod<&View::SetBounds>("setBounds")
+      .SetMethod<&View::GetBounds>("getBounds")
+      .SetMethod<&View::SetBackgroundColor>("setBackgroundColor")
+      .SetMethod<&View::SetBorderRadius>("setBorderRadius")
+      .SetMethod<&View::SetBackgroundBlur>("setBackgroundBlur")
+      .SetMethod<&View::SetLayout>("setLayout")
+      .SetMethod<&View::SetVisible>("setVisible")
+      .SetMethod<&View::GetVisible>("getVisible");
 }
 
 }  // namespace electron::api

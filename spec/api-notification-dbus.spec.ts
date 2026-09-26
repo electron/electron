@@ -25,7 +25,7 @@ const fixturesPath = path.join(import.meta.dirname, 'fixtures');
 
 const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRESS;
 
-ifdescribe(!skip)('Notification module (dbus)', () => {
+ifdescribe(!skip)('Notification module (dbus)', { tags: ['serial'] }, () => {
   let mock: any, Notification: any, getCalls: any, emitSignal: any, reset: any;
   const realAppName = app.name;
   const realAppVersion = app.getVersion();
@@ -136,7 +136,7 @@ ifdescribe(!skip)('Notification module (dbus)', () => {
         app_icon: '',
         title: 'title',
         body: 'body',
-        actions: ['default', 'View'],
+        actions: ['default', 'Show'],
         hints: {
           append: 'true',
           image_data: [

@@ -5,7 +5,9 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
 
+#include <functional>
 #include <optional>
+#include <type_traits>
 #include <utility>
 
 #include "base/functional/bind.h"
@@ -18,6 +20,7 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "v8/include/cppgc/macros.h"
 #include "v8/include/v8-external.h"
+#include "v8/include/v8-isolate.h"
 #include "v8/include/v8-microtask-queue.h"
 #include "v8/include/v8-template.h"
 
@@ -208,14 +211,6 @@ struct ArgumentHolder {
   bool ok = false;
 
   ArgumentHolder(gin::Arguments* args, const InvokerOptions& invoker_options) {
-    v8::Local<v8::Object> holder;
-    if (index == 0 && invoker_options.holder_is_first_argument &&
-        args->GetHolder(&holder) &&
-        gin_helper::Destroyable::IsDestroyed(holder)) {
-      args->ThrowTypeError("Object has been destroyed");
-      return;
-    }
-
     ok = GetNextArgument(args, invoker_options, index == 0, &value);
     if (!ok) {
       ThrowConversionError(args, invoker_options, index);
@@ -252,6 +247,22 @@ struct ArgumentHolder<
   }
 };
 
+// Blink runs microtasks when the outermost MicrotasksScope closes (kScoped),
+// so a bound call in the renderer needs one. Where Node owns the checkpoint
+// (kExplicit: the browser and utility processes) a scope never runs anything
+// and every native-to-JS entry point already holds one, so skip it there,
+// along with the creation-context lookup it needs.
+class MaybeMicrotasksScope {
+  CPPGC_STACK_ALLOCATED();
+
+ public:
+  explicit MaybeMicrotasksScope(gin::Arguments* args);
+  ~MaybeMicrotasksScope();
+
+ private:
+  std::optional<v8::MicrotasksScope> scope_;
+};
+
 // Class template for converting arguments from JavaScript to C++ and running
 // the callback with them.
 template <typename IndicesType, typename... ArgTypes>
@@ -260,6 +271,8 @@ class Invoker;
 template <size_t... indices, typename... ArgTypes>
 class Invoker<std::index_sequence<indices...>, ArgTypes...>
     : public ArgumentHolder<indices, ArgTypes>... {
+  CPPGC_STACK_ALLOCATED();
+
  public:
   // Invoker<> inherits from ArgumentHolder<> for each argument.
   // C++ has always been strict about the class initialization order,
@@ -275,9 +288,8 @@ class Invoker<std::index_sequence<indices...>, ArgTypes...>
 
   template <typename ReturnType>
   void DispatchToCallback(
-      base::RepeatingCallback<ReturnType(ArgTypes...)> callback) {
-    v8::MicrotasksScope microtasks_scope(args_->GetHolderCreationContext(),
-                                         v8::MicrotasksScope::kRunMicrotasks);
+      const base::RepeatingCallback<ReturnType(ArgTypes...)>& callback) {
+    MaybeMicrotasksScope microtasks_scope(args_);
     args_->Return(
         callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...));
   }
@@ -285,14 +297,30 @@ class Invoker<std::index_sequence<indices...>, ArgTypes...>
   // In C++, you can declare the function foo(void), but you can't pass a void
   // expression to foo. As a result, we must specialize the case of Callbacks
   // that have the void return type.
-  void DispatchToCallback(base::RepeatingCallback<void(ArgTypes...)> callback) {
-    v8::MicrotasksScope microtasks_scope(args_->GetHolderCreationContext(),
-                                         v8::MicrotasksScope::kRunMicrotasks);
+  void DispatchToCallback(
+      const base::RepeatingCallback<void(ArgTypes...)>& callback) {
+    MaybeMicrotasksScope microtasks_scope(args_);
     callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...);
   }
 
+  // Calls a plain function or member function pointer. For a member function
+  // the first converted argument is the receiver.
+  template <typename Target>
+  void DispatchToTarget(Target target) {
+    MaybeMicrotasksScope microtasks_scope(args_);
+    using ReturnType = decltype(std::invoke(
+        target, std::move(ArgumentHolder<indices, ArgTypes>::value)...));
+    if constexpr (std::is_void_v<ReturnType>) {
+      std::invoke(target,
+                  std::move(ArgumentHolder<indices, ArgTypes>::value)...);
+    } else {
+      args_->Return(std::invoke(
+          target, std::move(ArgumentHolder<indices, ArgTypes>::value)...));
+    }
+  }
+
  private:
-  raw_ptr<gin::Arguments> args_;
+  gin::Arguments* args_;
 };
 
 // DispatchToCallback converts all the JavaScript arguments to C++ types and
@@ -323,6 +351,120 @@ struct Dispatcher<ReturnType(ArgTypes...)> {
     DispatchToCallbackImpl(&args);
   }
 };
+
+// True for the targets that CreateFunctionTemplate<kTarget>() can dispatch to
+// directly: free functions and member functions.
+template <typename T>
+inline constexpr bool kIsFunctionOrMethodPointer =
+    std::is_member_function_pointer_v<T> ||
+    (std::is_pointer_v<T> && std::is_function_v<std::remove_pointer_t<T>>);
+
+// DirectDispatcher is the counterpart of Dispatcher for a target that is named
+// at compile time. There is no CallbackHolder to find and no callback to run:
+// the V8 callback converts the arguments and calls the target.
+//
+// The work is split in two so that targets with the same signature share
+// code: SignatureDispatcher<Target> converts the arguments and calls through
+// a Target passed at run time, and DirectDispatcher<kTarget> is the V8
+// callback, a thunk that hands it kTarget. Where a signature has a single
+// target the compiler folds the two together.
+template <typename Target,
+          bool is_method,
+          typename IndicesType,
+          typename... RunArgs>
+struct SignatureDispatcherImpl;
+
+template <typename Target,
+          bool is_method,
+          size_t... indices,
+          typename... RunArgs>
+struct SignatureDispatcherImpl<Target,
+                               is_method,
+                               std::index_sequence<indices...>,
+                               RunArgs...> {
+  static void Run(gin::Arguments* args, Target target) {
+    static constexpr InvokerOptions kOptions = {.holder_is_first_argument =
+                                                    is_method};
+    Invoker<std::index_sequence<indices...>, RunArgs...> invoker(args,
+                                                                 kOptions);
+    if (invoker.IsOK()) {
+      invoker.DispatchToTarget(target);
+    }
+  }
+
+  static void Run(const v8::FunctionCallbackInfo<v8::Value>& info,
+                  Target target) {
+    gin::Arguments args(info);
+    Run(&args, target);
+  }
+};
+
+template <typename Target>
+struct SignatureDispatcher;
+
+template <typename R, typename... Args>
+struct SignatureDispatcher<R (*)(Args...)>
+    : SignatureDispatcherImpl<R (*)(Args...),
+                              false,
+                              std::index_sequence_for<Args...>,
+                              Args...> {};
+
+template <typename R, typename... Args>
+struct SignatureDispatcher<R (*)(Args...) noexcept>
+    : SignatureDispatcher<R (*)(Args...)> {};
+
+// For member functions the receiver is converted from the JavaScript `this`,
+// as ObjectTemplateBuilder has always done for member function pointers.
+template <typename C, typename R, typename... Args>
+struct SignatureDispatcher<R (C::*)(Args...)>
+    : SignatureDispatcherImpl<R (C::*)(Args...),
+                              true,
+                              std::index_sequence_for<C*, Args...>,
+                              C*,
+                              Args...> {};
+
+template <typename C, typename R, typename... Args>
+struct SignatureDispatcher<R (C::*)(Args...) const>
+    : SignatureDispatcherImpl<R (C::*)(Args...) const,
+                              true,
+                              std::index_sequence_for<const C*, Args...>,
+                              const C*,
+                              Args...> {};
+
+template <typename C, typename R, typename... Args>
+struct SignatureDispatcher<R (C::*)(Args...) noexcept>
+    : SignatureDispatcher<R (C::*)(Args...)> {};
+
+template <typename C, typename R, typename... Args>
+struct SignatureDispatcher<R (C::*)(Args...) const noexcept>
+    : SignatureDispatcher<R (C::*)(Args...) const> {};
+
+template <auto kTarget>
+struct DirectDispatcher {
+  static void DispatchToTarget(
+      const v8::FunctionCallbackInfo<v8::Value>& info) {
+    SignatureDispatcher<decltype(kTarget)>::Run(info, kTarget);
+  }
+};
+
+// CreateFunctionTemplate for a function or member function that is known at
+// compile time:
+//
+//   gin_helper::CreateFunctionTemplate<&MyClass::Method>(isolate);
+//
+// No CallbackHolder is allocated and each call goes from V8 to the target
+// without unwrapping a holder or running a callback, so prefer this form
+// whenever the target is not a bound base::RepeatingCallback. A member
+// function always takes its receiver from the JavaScript `this` here, whereas
+// the callback form below only does so if |invoker_options| says so.
+template <auto kTarget>
+  requires(kIsFunctionOrMethodPointer<decltype(kTarget)>)
+v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(v8::Isolate* isolate) {
+  return v8::FunctionTemplate::New(
+      isolate, &DirectDispatcher<kTarget>::DispatchToTarget,
+      v8::Local<v8::Value>(), v8::Local<v8::Signature>(), 0,
+      v8::ConstructorBehavior::kAllow);
+}
 
 // CreateFunctionTemplate creates a v8::FunctionTemplate that will create
 // JavaScript functions that execute a provided C++ function or

@@ -20,6 +20,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/node_entry_scope.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
@@ -429,6 +430,7 @@ void InvokeJsCallback(const electron::ActivationArguments& details) {
   v8::Context::Scope context_scope(context);
 
   v8::Local<v8::Function> callback = g_js_launch_callback->Get(isolate);
+  gin_helper::NodeEntryScope node_scope(context, callback);
   v8::Local<v8::Value> argv[] = {ActivationArgumentsToV8(isolate, details)};
 
   v8::TryCatch try_catch(isolate);
@@ -621,17 +623,18 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
-  gin_helper::Dictionary dict{isolate, exports};
-  dict.Set("Notification", Notification::GetConstructor(
-                               isolate, context, &Notification::kWrapperInfo));
-  dict.SetMethod("isSupported", &Notification::IsSupported);
+  v8::Local<v8::Function> constructor = Notification::GetConstructor(
+      isolate, context, &Notification::kWrapperInfo);
+  gin_helper::Dictionary statics{isolate, constructor};
+  statics.SetMethod<&Notification::IsSupported>("isSupported");
 #if BUILDFLAG(IS_WIN)
-  dict.SetMethod("handleActivation", &Notification::HandleActivation);
+  statics.SetMethod<&Notification::HandleActivation>("handleActivation");
 #endif
-  dict.SetMethod("getHistory", &Notification::GetHistory);
-  dict.SetMethod("remove", &Notification::Remove);
-  dict.SetMethod("removeAll", &Notification::RemoveAll);
-  dict.SetMethod("removeGroup", &Notification::RemoveGroup);
+  statics.SetMethod<&Notification::GetHistory>("getHistory");
+  statics.SetMethod<&Notification::Remove>("remove");
+  statics.SetMethod<&Notification::RemoveAll>("removeAll");
+  statics.SetMethod<&Notification::RemoveGroup>("removeGroup");
+  gin_helper::Dictionary{isolate, exports}.Set("Notification", constructor);
 }
 
 }  // namespace

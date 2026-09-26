@@ -57,7 +57,7 @@ async function readUriListPaths(): Promise<string[] | undefined> {
     .map((uri) => fileURLToPath(uri));
 }
 
-describe('clipboard module', () => {
+describe('clipboard module', { tags: ['serial'] }, () => {
   const fixtures = path.resolve(import.meta.dirname, 'fixtures');
 
   describe('reading images via clipboard.read()', () => {

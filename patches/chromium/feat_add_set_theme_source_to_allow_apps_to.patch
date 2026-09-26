@@ -13,10 +13,10 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index e131113a7d5eeea02929ff037d898f1c2f281a43..1c5bc9402b148916353216d76dfbd68b9acb5c5d 100644
+index 64dc19f32a6824a251c167e1bac161d06a78d076..9e755118eb3933d849515676151147c96af4aeb0 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -505,6 +505,8 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
+@@ -514,6 +514,8 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
    }
  
    PreferredColorScheme preferred_color_scheme() const {
@@ -25,7 +25,7 @@ index e131113a7d5eeea02929ff037d898f1c2f281a43..1c5bc9402b148916353216d76dfbd68b
      return preferred_color_scheme_;
    }
    void set_preferred_color_scheme(PreferredColorScheme preferred_color_scheme) {
-@@ -539,6 +541,24 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
+@@ -548,6 +550,24 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
    size_t system_color_version() const { return system_color_version_; }
    void IncrementSystemColorVersion() { ++system_color_version_; }
  
@@ -50,7 +50,7 @@ index e131113a7d5eeea02929ff037d898f1c2f281a43..1c5bc9402b148916353216d76dfbd68b
   protected:
    explicit NativeTheme(SystemTheme system_theme = SystemTheme::kDefault);
    virtual ~NativeTheme();
-@@ -619,6 +639,7 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
+@@ -626,6 +646,7 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
        ColorProviderKey::UserColorSource::kAccent;
    base::TimeDelta caret_blink_interval_;
    size_t system_color_version_ = 0;

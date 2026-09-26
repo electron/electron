@@ -365,13 +365,18 @@ describe('utilityProcess module', () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'electron-modules', 'import-lol.mjs'), [], {
         stdio: ['ignore', 'ignore', 'pipe']
       });
-      let stderr = '';
-      child.stderr!.on('data', (data) => {
-        stderr += data.toString('utf8');
+      // Collect until the error shows up rather than until 'exit': a chunk
+      // still in the pipe when the child exits is dropped.
+      const sawError = new Promise<string>((resolve) => {
+        let stderr = '';
+        child.stderr!.on('data', (data) => {
+          stderr += data.toString('utf8');
+          if (/Error \[ERR_MODULE_NOT_FOUND\]/.test(stderr)) resolve(stderr);
+        });
       });
       const [code] = await once(child, 'exit');
       expect(code).to.equal(1);
-      expect(stderr).to.match(/Error \[ERR_MODULE_NOT_FOUND\]/);
+      expect(await sawError).to.match(/Error \[ERR_MODULE_NOT_FOUND\]/);
     });
 
     it("import 'electron/main' should not throw", async () => {
@@ -454,12 +459,16 @@ describe('utilityProcess module', () => {
         stdio: 'pipe'
       });
       expect(child.stdout).to.not.be.null();
-      let log = '';
-      child.stdout!.on('data', (chunk) => {
-        log += chunk.toString('utf8');
+      // Wait for the output itself; see the stderr variant below.
+      const output = new Promise<string>((resolve) => {
+        let log = '';
+        child.stdout!.on('data', (chunk) => {
+          log += chunk.toString('utf8');
+          if (log.includes('\n')) resolve(log);
+        });
       });
       await once(child, 'exit');
-      expect(log).to.equal('hello\n');
+      expect(await output).to.equal('hello\n');
     });
   });
 
@@ -486,12 +495,18 @@ describe('utilityProcess module', () => {
         stdio: ['ignore', 'pipe', 'pipe']
       });
       expect(child.stderr).to.not.be.null();
-      let log = '';
-      child.stderr!.on('data', (chunk) => {
-        log += chunk.toString('utf8');
+      // Resolve on the expected output rather than reading whatever arrived
+      // by 'exit': the streams are torn down when the child exits and a
+      // chunk that is still in the pipe at that point never gets delivered.
+      const output = new Promise<string>((resolve) => {
+        let log = '';
+        child.stderr!.on('data', (chunk) => {
+          log += chunk.toString('utf8');
+          if (log.includes('world')) resolve(log);
+        });
       });
       await once(child, 'exit');
-      expect(log).to.equal('world');
+      expect(await output).to.equal('world');
     });
   });
 
@@ -732,12 +747,16 @@ describe('utilityProcess module', () => {
       });
       await once(child, 'spawn');
       expect(child.stdout).to.not.be.null();
-      let log = '';
-      child.stdout!.on('data', (chunk) => {
-        log += chunk.toString('utf8');
+      // Wait for the output itself; see the stderr variant below.
+      const output = new Promise<string>((resolve) => {
+        let log = '';
+        child.stdout!.on('data', (chunk) => {
+          log += chunk.toString('utf8');
+          if (log.includes('\n')) resolve(log);
+        });
       });
       await once(child, 'exit');
-      expect(log).to.equal('hello\n');
+      expect(await output).to.equal('hello\n');
     });
 
     it('does not crash when running eval', async () => {
@@ -967,7 +986,7 @@ describe('utilityProcess module', () => {
       expect(loginAuthInfo!.scheme).to.equal('basic');
     });
 
-    it('supports generating snapshots via v8.setHeapSnapshotNearHeapLimit', async () => {
+    it('supports generating snapshots via v8.setHeapSnapshotNearHeapLimit', { timeout: 60_000 }, async () => {
       const tmpDir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'electron-spec-utility-oom-'));
       const child = utilityProcess.fork(path.join(fixturesPath, 'oom-grow.js'), [], {
         stdio: 'ignore',

@@ -5,7 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_HANDLE_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_HANDLE_H_
 
-#include "base/memory/raw_ptr.h"
+#include "base/memory/stack_allocated.h"
 #include "gin/converter.h"
 #include "v8/include/cppgc/type-traits.h"
 
@@ -21,6 +21,7 @@ class Handle {
   static_assert(!cppgc::IsGarbageCollectedTypeV<T>,
                 "gin_helper::Handle must not be used with cppgc "
                 "garbage-collected types. Use T* directly instead.");
+  STACK_ALLOCATED();
 
  public:
   Handle() : object_(nullptr) {}
@@ -41,7 +42,7 @@ class Handle {
 
  private:
   v8::Local<v8::Value> wrapper_;
-  raw_ptr<T> object_;
+  T* object_;
 };
 
 }  // namespace gin_helper

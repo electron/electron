@@ -7,8 +7,11 @@
 
 #include <utility>
 
+#include "base/functional/bind.h"
+#include "base/functional/callback.h"
+#include "base/location.h"
 #include "base/memory/scoped_refptr.h"
-#include "content/public/browser/browser_thread.h"
+#include "base/task/single_thread_task_runner.h"
 
 namespace dialog_thread {
 
@@ -16,34 +19,12 @@ namespace dialog_thread {
 using TaskRunner = scoped_refptr<base::SingleThreadTaskRunner>;
 TaskRunner CreateDialogTaskRunner();
 
-// Runs the |execute| in dialog thread and pass result to |done| in UI thread.
+// Runs |execute| on a dedicated dialog thread and passes its result to |done|
+// on the calling (UI) thread.
 template <typename R>
 void Run(base::OnceCallback<R()> execute, base::OnceCallback<void(R)> done) {
-  // dialogThread.postTask(() => {
-  //   r = execute()
-  //   uiThread.postTask(() => {
-  //     done(r)
-  //   }
-  // })
-  TaskRunner task_runner = CreateDialogTaskRunner();
-  task_runner->PostTask(
-      FROM_HERE,
-      base::BindOnce(
-          [](TaskRunner task_runner, base::OnceCallback<R()> execute,
-             base::OnceCallback<void(R)> done) {
-            R r = std::move(execute).Run();
-            content::GetUIThreadTaskRunner({})->PostTask(
-                FROM_HERE,
-                base::BindOnce(
-                    [](TaskRunner task_runner, base::OnceCallback<void(R)> done,
-                       R r) {
-                      std::move(done).Run(std::move(r));
-                      // Task runner will destroyed automatically after the
-                      // scope ends.
-                    },
-                    std::move(task_runner), std::move(done), std::move(r)));
-          },
-          std::move(task_runner), std::move(execute), std::move(done)));
+  CreateDialogTaskRunner()->PostTaskAndReplyWithResult(
+      FROM_HERE, std::move(execute), std::move(done));
 }
 
 // Adaptor to handle the |execute| that returns bool.

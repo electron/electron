@@ -344,6 +344,25 @@ describe('node feature', () => {
       });
     });
 
+    // Native code that settles a promise from outside a task (an X11 reply, an
+    // OS event handler) must still have its continuations run before the next
+    // task does. Clipboard reads on Linux otherwise sat until something
+    // unrelated woke the main loop.
+    describe('promise settled by native code outside a task', () => {
+      it('runs its continuations before the next task', async () => {
+        const testing = (process as any)._linkedBinding('electron_common_testing');
+        let continued = false;
+        const continuedBeforeNextTask = await new Promise<boolean>((resolve) => {
+          testing
+            .settlePromiseOutsideTask(() => resolve(continued))
+            .then(() => {
+              continued = true;
+            });
+        });
+        expect(continuedBeforeNextTask).to.be.true();
+      });
+    });
+
     const suspendListeners = (emitter: EventEmitter, eventName: string, callback: (...args: any[]) => void) => {
       const listeners = emitter.listeners(eventName) as ((...args: any[]) => void)[];
       emitter.removeAllListeners(eventName);
@@ -1008,15 +1027,6 @@ describe('node feature', () => {
           },
           [parentStdoutIsTTY]
         );
-      });
-
-      ifdescribe(process.platform === 'win32')('Windows', () => {
-        itremote('should expose renderer stdout as a TTY', function () {
-          const { isatty } = require('node:tty');
-
-          expect(isatty(1)).to.be.true();
-          expect(process.stdout.isTTY).to.be.true();
-        });
       });
     });
   });

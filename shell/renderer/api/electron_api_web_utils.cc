@@ -32,7 +32,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("getPathForFile", &electron::api::web_utils::GetPathForFile);
+  dict.SetMethod<&electron::api::web_utils::GetPathForFile>("getPathForFile");
 }
 
 }  // namespace
