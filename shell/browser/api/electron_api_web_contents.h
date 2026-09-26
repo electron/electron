@@ -462,6 +462,10 @@ class WebContents final : public ExclusiveAccessContext,
                              DialogClosedCallback callback) override;
   void CancelDialogs(content::WebContents* web_contents,
                      bool reset_state) override;
+  DialogClosedCallback ResyncFocusAfterDialog(DialogClosedCallback callback);
+#if defined(USE_AURA)
+  void ResyncViewFocus();
+#endif
 
   void SetBackgroundColor(std::optional<SkColor> color);
 
