@@ -138,11 +138,10 @@ WebContents.prototype.sendToFrame = function (frameId, channel, ...args) {
 };
 
 // Following methods are mapped to webFrame.
-const webFrameMethods = ['insertCSS', 'insertText', 'removeInsertedCSS', 'setVisualZoomLevelLimits'] as (
+const webFrameMethods = ['insertCSS', 'insertText', 'removeInsertedCSS'] as (
   | 'insertCSS'
   | 'insertText'
   | 'removeInsertedCSS'
-  | 'setVisualZoomLevelLimits'
 )[];
 
 for (const method of webFrameMethods) {
@@ -150,6 +149,27 @@ for (const method of webFrameMethods) {
     return ipcMainUtils.invokeInWebContents(this, IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, method, ...args);
   };
 }
+
+WebContents.prototype.setVisualZoomLevelLimits = function (minimumLevel: number, maximumLevel: number) {
+  if (
+    !Number.isFinite(minimumLevel) ||
+    !Number.isFinite(maximumLevel) ||
+    minimumLevel <= 0 ||
+    maximumLevel < minimumLevel
+  ) {
+    return Promise.reject(
+      new Error("'minimumLevel' and 'maximumLevel' must be positive numbers with minimumLevel <= maximumLevel")
+    );
+  }
+  this._setVisualZoomLevelLimits(minimumLevel, maximumLevel);
+  return ipcMainUtils.invokeInWebContents(
+    this,
+    IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD,
+    'setVisualZoomLevelLimits',
+    minimumLevel,
+    maximumLevel
+  );
+};
 
 const waitTillCanExecuteJavaScript = async (webContents: Electron.WebContents) => {
   if (webContents.getURL() && !webContents.isLoadingMainFrame()) return;
