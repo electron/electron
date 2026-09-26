@@ -8,6 +8,8 @@
 #include <utility>
 
 #include "base/atomic_sequence_num.h"
+#include "base/containers/fixed_flat_map.h"
+#include "base/containers/flat_map.h"
 #include "base/functional/bind.h"
 #include "base/memory/self_deleting.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -16,17 +18,22 @@
 #include "mojo/public/cpp/base/big_buffer.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
+#include "mojo/public/cpp/bindings/self_owned_receiver.h"
+#include "net/http/http_request_headers.h"
+#include "net/http/http_response_headers.h"
 #include "net/url_request/redirect_util.h"
 #include "services/network/public/cpp/http_request_headers_update_params.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/self_deleting_url_loader_factory.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
 #include "services/network/public/mojom/early_hints.mojom.h"
+#include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/electron_browser_context.h"
+#include "shell/browser/net/header_rules.h"
 #include "url/gurl.h"
 
 namespace electron {
@@ -81,6 +88,40 @@ WebRequestResourceType ResourceTypeOf(const network::ResourceRequest& request) {
   }
 }
 
+namespace {
+
+constexpr auto kResourceTypeNames =
+    base::MakeFixedFlatMap<std::string_view, WebRequestResourceType>({
+        {"cspReport", WebRequestResourceType::CSP_REPORT},
+        {"font", WebRequestResourceType::FONT},
+        {"image", WebRequestResourceType::IMAGE},
+        {"mainFrame", WebRequestResourceType::MAIN_FRAME},
+        {"media", WebRequestResourceType::MEDIA},
+        {"object", WebRequestResourceType::OBJECT},
+        {"ping", WebRequestResourceType::PING},
+        {"script", WebRequestResourceType::SCRIPT},
+        {"stylesheet", WebRequestResourceType::STYLESHEET},
+        {"subFrame", WebRequestResourceType::SUB_FRAME},
+        {"webSocket", WebRequestResourceType::WEB_SOCKET},
+        {"xhr", WebRequestResourceType::XHR},
+    });
+
+}  // namespace
+
+WebRequestResourceType ParseResourceTypeName(std::string_view name) {
+  auto it = kResourceTypeNames.find(name);
+  return it == kResourceTypeNames.end() ? WebRequestResourceType::OTHER
+                                        : it->second;
+}
+
+std::string_view ResourceTypeName(WebRequestResourceType type) {
+  for (const auto& [name, value] : kResourceTypeNames) {
+    if (value == type)
+      return name;
+  }
+  return "other";
+}
+
 InterceptState::InterceptState() = default;
 InterceptState::~InterceptState() = default;
 
@@ -124,6 +165,16 @@ InterceptState::Route InterceptState::RouteFor(
   if (observer_types_ & type_bit)
     return Route::kObserve;
   return Route::kDirect;
+}
+
+void InterceptState::SetHeaderRules(scoped_refptr<const HeaderRules> rules) {
+  base::AutoLock lock(lock_);
+  header_rules_ = std::move(rules);
+}
+
+scoped_refptr<const HeaderRules> InterceptState::header_rules() const {
+  base::AutoLock lock(lock_);
+  return header_rules_;
 }
 
 namespace {
@@ -298,7 +349,77 @@ void CreateObservedLoaderAndStart(
                                traffic_annotation);
 }
 
-class URLLoaderFactoryGate : public network::SelfDeletingURLLoaderFactory {
+// TrustedHeaderClient for a request the gate sent straight to the network:
+// applies the session's header rules to each leg, on the IO thread.
+class RuleHeaderClient : public network::mojom::TrustedHeaderClient {
+ public:
+  RuleHeaderClient(scoped_refptr<InterceptState> state,
+                   WebRequestResourceType type)
+      : state_(std::move(state)), type_(type) {}
+  ~RuleHeaderClient() override = default;
+
+  void OnBeforeSendHeaders(const GURL& url,
+                           const net::HttpRequestHeaders& headers,
+                           OnBeforeSendHeadersCallback callback) override {
+    url_ = url;
+    auto rules = state_->header_rules();
+    if ((!rules || !rules->has_request_rules()) && injected_.empty()) {
+      std::move(callback).Run(net::OK, std::nullopt, std::nullopt);
+      return;
+    }
+    net::HttpRequestHeaders modified = headers;
+    if (rules) {
+      rules->ApplyToRequest(url, type_, &modified, &injected_);
+    } else {
+      for (const auto& name : injected_)
+        modified.RemoveHeader(name);
+      injected_.clear();
+    }
+    std::move(callback).Run(net::OK, std::move(modified), std::nullopt);
+  }
+  void OnHeadersReceived(const std::string& headers,
+                         const net::IPEndPoint& remote_endpoint,
+                         const std::optional<net::SSLInfo>& ssl_info,
+                         OnHeadersReceivedCallback callback) override {
+    auto rules = state_->header_rules();
+    scoped_refptr<net::HttpResponseHeaders> modified;
+    if (rules && rules->has_response_rules()) {
+      modified = rules->ApplyToResponse(
+          url_, type_,
+          *base::MakeRefCounted<net::HttpResponseHeaders>(headers));
+    }
+    std::move(callback).Run(
+        net::OK,
+        modified ? std::optional<std::string>(modified->raw_headers())
+                 : std::nullopt,
+        std::nullopt);
+  }
+
+ private:
+  const scoped_refptr<InterceptState> state_;
+  const WebRequestResourceType type_;
+  GURL url_;
+  base::flat_set<std::string> injected_;
+};
+
+class NoOpHeaderClient : public network::mojom::TrustedHeaderClient {
+ public:
+  void OnBeforeSendHeaders(const GURL& url,
+                           const net::HttpRequestHeaders& headers,
+                           OnBeforeSendHeadersCallback callback) override {
+    std::move(callback).Run(net::OK, std::nullopt, std::nullopt);
+  }
+  void OnHeadersReceived(const std::string& headers,
+                         const net::IPEndPoint& remote_endpoint,
+                         const std::optional<net::SSLInfo>& ssl_info,
+                         OnHeadersReceivedCallback callback) override {
+    std::move(callback).Run(net::OK, std::nullopt, std::nullopt);
+  }
+};
+
+class URLLoaderFactoryGate
+    : public network::SelfDeletingURLLoaderFactory,
+      public network::mojom::TrustedURLLoaderHeaderClient {
  public:
   URLLoaderFactoryGate(
       scoped_refptr<InterceptState> state,
@@ -308,6 +429,10 @@ class URLLoaderFactoryGate : public network::SelfDeletingURLLoaderFactory {
       mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver,
       mojo::PendingRemote<network::mojom::URLLoaderFactory> target,
       mojo::PendingRemote<network::mojom::URLLoaderFactory> interceptor,
+      mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
+          header_client,
+      mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>
+          interceptor_header_client,
       base::SelfDeletingPassKey key)
       : network::SelfDeletingURLLoaderFactory(std::move(receiver), key),
         state_(std::move(state)),
@@ -316,6 +441,10 @@ class URLLoaderFactoryGate : public network::SelfDeletingURLLoaderFactory {
         frame_routing_id_(frame_routing_id),
         target_(std::move(target)),
         interceptor_(std::move(interceptor)) {
+    if (header_client) {
+      header_client_.Bind(std::move(header_client));
+      interceptor_header_client_.Bind(std::move(interceptor_header_client));
+    }
     target_.set_disconnect_handler(
         base::BindOnce(&URLLoaderFactoryGate::DisconnectReceiversAndDestroy,
                        base::Unretained(this)));
@@ -333,7 +462,18 @@ class URLLoaderFactoryGate : public network::SelfDeletingURLLoaderFactory {
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation)
       override {
-    switch (state_->RouteFor(request)) {
+    const auto route = state_->RouteFor(request);
+    if (header_client_.is_bound()) {
+      if (route == InterceptState::Route::kProxy) {
+        proxied_requests_.insert(request_id);
+      } else if (auto rules = state_->header_rules()) {
+        // The network service will ask OnLoaderCreated() for this request's
+        // TrustedHeaderClient; RuleHeaderClient answers it on this thread.
+        options |= network::mojom::kURLLoadOptionUseHeaderClient;
+        ruled_requests_[request_id] = ResourceTypeOf(request);
+      }
+    }
+    switch (route) {
       case InterceptState::Route::kProxy:
         interceptor_->CreateLoaderAndStart(std::move(loader), request_id,
                                            options, request, std::move(client),
@@ -353,8 +493,53 @@ class URLLoaderFactoryGate : public network::SelfDeletingURLLoaderFactory {
     }
   }
 
+  // network::mojom::TrustedURLLoaderHeaderClient:
+  void OnLoaderCreated(
+      int32_t request_id,
+      mojo::PendingReceiver<network::mojom::TrustedHeaderClient> receiver)
+      override {
+    if (proxied_requests_.contains(request_id)) {
+      interceptor_header_client_->OnLoaderCreated(request_id,
+                                                  std::move(receiver));
+      return;
+    }
+    auto it = ruled_requests_.find(request_id);
+    BindHeaderClient(it == ruled_requests_.end()
+                         ? std::nullopt
+                         : std::optional<WebRequestResourceType>(it->second),
+                     std::move(receiver));
+  }
+  void OnLoaderForCorsPreflightCreated(
+      const network::ResourceRequest& request,
+      mojo::PendingReceiver<network::mojom::TrustedHeaderClient> receiver)
+      override {
+    if (state_->RouteFor(request) == InterceptState::Route::kProxy) {
+      interceptor_header_client_->OnLoaderForCorsPreflightCreated(
+          request, std::move(receiver));
+      return;
+    }
+    BindHeaderClient(
+        state_->header_rules()
+            ? std::optional<WebRequestResourceType>(ResourceTypeOf(request))
+            : std::nullopt,
+        std::move(receiver));
+  }
+
  private:
   ~URLLoaderFactoryGate() override = default;
+
+  void BindHeaderClient(
+      std::optional<WebRequestResourceType> ruled_type,
+      mojo::PendingReceiver<network::mojom::TrustedHeaderClient> receiver) {
+    // Dropping the receiver would fail the request, so requests without rules
+    // get a client that changes nothing.
+    std::unique_ptr<network::mojom::TrustedHeaderClient> client;
+    if (ruled_type)
+      client = std::make_unique<RuleHeaderClient>(state_, *ruled_type);
+    else
+      client = std::make_unique<NoOpHeaderClient>();
+    mojo::MakeSelfOwnedReceiver(std::move(client), std::move(receiver));
+  }
 
   const scoped_refptr<InterceptState> state_;
   const base::WeakPtr<ElectronBrowserContext> browser_context_;
@@ -362,6 +547,14 @@ class URLLoaderFactoryGate : public network::SelfDeletingURLLoaderFactory {
   const int frame_routing_id_;
   mojo::Remote<network::mojom::URLLoaderFactory> target_;
   mojo::Remote<network::mojom::URLLoaderFactory> interceptor_;
+  mojo::Receiver<network::mojom::TrustedURLLoaderHeaderClient> header_client_{
+      this};
+  mojo::Remote<network::mojom::TrustedURLLoaderHeaderClient>
+      interceptor_header_client_;
+  // Renderer request ids the proxy handles / that carry a RuleHeaderClient;
+  // ids are unique for the lifetime of this (per-document) factory.
+  base::flat_set<int32_t> proxied_requests_;
+  base::flat_map<int32_t, WebRequestResourceType> ruled_requests_;
 };
 
 }  // namespace
@@ -406,7 +599,11 @@ void CreateURLLoaderFactoryGate(
     int frame_routing_id,
     mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver,
     mojo::PendingRemote<network::mojom::URLLoaderFactory> target,
-    mojo::PendingRemote<network::mojom::URLLoaderFactory> interceptor) {
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> interceptor,
+    mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
+        header_client,
+    mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>
+        interceptor_header_client) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   scoped_refptr<InterceptState> state(browser_context->intercept_state());
   auto weak_browser_context = browser_context->GetWeakPtr();
@@ -418,16 +615,21 @@ void CreateURLLoaderFactoryGate(
              int render_process_id, int frame_routing_id,
              mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver,
              mojo::PendingRemote<network::mojom::URLLoaderFactory> target,
-             mojo::PendingRemote<network::mojom::URLLoaderFactory>
-                 interceptor) {
+             mojo::PendingRemote<network::mojom::URLLoaderFactory> interceptor,
+             mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
+                 header_client,
+             mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>
+                 interceptor_header_client) {
             base::MakeSelfDeleting<URLLoaderFactoryGate>(
                 std::move(state), std::move(browser_context), render_process_id,
                 frame_routing_id, std::move(receiver), std::move(target),
-                std::move(interceptor));
+                std::move(interceptor), std::move(header_client),
+                std::move(interceptor_header_client));
           },
           std::move(state), std::move(weak_browser_context), render_process_id,
           frame_routing_id, std::move(receiver), std::move(target),
-          std::move(interceptor)));
+          std::move(interceptor), std::move(header_client),
+          std::move(interceptor_header_client)));
 }
 
 }  // namespace electron
