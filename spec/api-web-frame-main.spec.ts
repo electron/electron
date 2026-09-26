@@ -8,7 +8,7 @@ import {
   clipboard
 } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as http from 'node:http';
@@ -141,12 +141,12 @@ describe('webFrameMain module', () => {
       let serverA: Server;
       let serverB: Server;
 
-      before(async () => {
+      beforeAll(async () => {
         serverA = await createServer();
         serverB = await createServer();
       });
 
-      after(() => {
+      afterAll(() => {
         serverA.server.close();
         serverB.server.close();
       });
@@ -329,10 +329,10 @@ describe('webFrameMain module', () => {
     let server: Awaited<ReturnType<typeof createServer>>;
     let w: BrowserWindow;
 
-    before(async () => {
+    beforeAll(async () => {
       server = await createServer();
     });
-    after(() => {
+    afterAll(() => {
       server.server.close();
     });
     beforeEach(async () => {
@@ -552,14 +552,14 @@ describe('webFrameMain module', () => {
 
   describe('webFrameMain.collectJavaScriptCallStack', () => {
     let server: Server;
-    before(async () => {
+    beforeAll(async () => {
       server = await createServer({
         headers: {
           'Document-Policy': 'include-js-call-stacks-in-crash-reports'
         }
       });
     });
-    after(() => {
+    afterAll(() => {
       server.server.close();
     });
 
@@ -578,7 +578,7 @@ describe('webFrameMain module', () => {
     let serverUrl: string;
     let w: BrowserWindow;
 
-    before(async () => {
+    beforeAll(async () => {
       server = http.createServer((req, res) => {
         res.setHeader('Content-Type', 'text/html');
         if (req.url === '/frame') {
@@ -590,7 +590,7 @@ describe('webFrameMain module', () => {
       serverUrl = (await listen(server)).url;
     });
 
-    after(() => {
+    afterAll(() => {
       server.close();
     });
 

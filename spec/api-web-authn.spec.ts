@@ -1,6 +1,6 @@
 import { app, BrowserWindow, session } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import * as http from 'node:http';
 
@@ -105,7 +105,7 @@ ifdescribe(process.platform === 'darwin')('PublicKeyCredential.isUserVerifyingPl
   let serverUrl: string;
   let w: BrowserWindow;
 
-  before(async () => {
+  beforeAll(async () => {
     server = http.createServer((req, res) => {
       res.setHeader('Content-Type', 'text/html');
       res.end('<!doctype html><title>webauthn</title>');
@@ -115,7 +115,7 @@ ifdescribe(process.platform === 'darwin')('PublicKeyCredential.isUserVerifyingPl
     serverUrl = `http://localhost:${port}/`;
   });
 
-  after(() => {
+  afterAll(() => {
     server.close();
   });
 
@@ -159,7 +159,7 @@ ifdescribe(process.platform === 'darwin')("session 'select-webauthn-authenticato
   let serverUrl: string;
   let w: BrowserWindow;
 
-  before(async () => {
+  beforeAll(async () => {
     server = http.createServer((req, res) => {
       res.setHeader('Content-Type', 'text/html');
       res.end('<!doctype html><title>webauthn</title>');
@@ -169,7 +169,7 @@ ifdescribe(process.platform === 'darwin')("session 'select-webauthn-authenticato
     serverUrl = `http://localhost:${port}/`;
   });
 
-  after(() => {
+  afterAll(() => {
     server.close();
   });
 
@@ -296,7 +296,7 @@ describe("session 'select-webauthn-account' event", () => {
   let w: BrowserWindow;
   let authenticatorId: string;
 
-  before(async () => {
+  beforeAll(async () => {
     server = http.createServer((req, res) => {
       res.setHeader('Content-Type', 'text/html');
       res.end('<!doctype html><title>webauthn</title>');
@@ -306,7 +306,7 @@ describe("session 'select-webauthn-account' event", () => {
     serverUrl = `http://localhost:${port}/`;
   });
 
-  after(() => {
+  afterAll(() => {
     server.close();
   });
 
@@ -508,7 +508,7 @@ ifdescribe(process.platform !== 'win32' && isTestingBindingAvailable())(
     let w: BrowserWindow;
     let testing: any;
 
-    before(async () => {
+    beforeAll(async () => {
       testing = (process as any)._linkedBinding('electron_common_testing');
       server = http.createServer((req, res) => {
         res.setHeader('Content-Type', 'text/html');
@@ -519,7 +519,7 @@ ifdescribe(process.platform !== 'win32' && isTestingBindingAvailable())(
       serverUrl = `http://localhost:${port}/`;
     });
 
-    after(() => {
+    afterAll(() => {
       server.close();
     });
 

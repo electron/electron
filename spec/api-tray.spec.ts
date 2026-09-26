@@ -1,7 +1,7 @@
 import { nativeImage } from 'electron/common';
 import { Menu, Tray } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
@@ -84,7 +84,7 @@ describe('tray module', { tags: ['serial'] }, () => {
   });
 
   describe('tray.popUpContextMenu()', () => {
-    ifit(process.platform === 'win32')('can be called when menu is showing', async function () {
+    ifit(process.platform === 'win32')('can be called when menu is showing', async () => {
       tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Test' }]));
       const timeout = setTimeout();
       tray.popUpContextMenu();
@@ -124,7 +124,7 @@ describe('tray module', { tags: ['serial'] }, () => {
   });
 
   describe('tray.closeContextMenu()', () => {
-    ifit(process.platform === 'win32')('does not crash when called more than once', async function () {
+    ifit(process.platform === 'win32')('does not crash when called more than once', async () => {
       tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Test' }]));
       const timeout = setTimeout();
       tray.popUpContextMenu();
@@ -139,7 +139,7 @@ describe('tray module', { tags: ['serial'] }, () => {
       tray.destroy();
     });
 
-    ifit(process.platform !== 'linux')('returns a bounds object', function () {
+    ifit(process.platform !== 'linux')('returns a bounds object', () => {
       const bounds = tray.getBounds();
       expect(bounds).to.be.an('object').and.to.have.all.keys('x', 'y', 'width', 'height');
     });

@@ -1,7 +1,7 @@
 import { app } from 'electron/main';
 
 import Busboy from 'busboy';
-import { expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -139,7 +139,7 @@ function waitForNewFileInDir(dir: string): Promise<string[]> {
   });
 }
 
-ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashReporter module', function () {
+ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashReporter module', () => {
   describe('should send minidump', () => {
     it('when renderer crashes', async () => {
       const { port, waitForCrash } = await startServer();
@@ -270,10 +270,9 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       // Regression: base::circular_deque relocates elements on growth,
       // corrupting crashpad::Annotation's self-referential pointers and
       // causing missing crash keys or a hung handler. See crash_keys.cc.
-      it('does not corrupt the crashpad annotation list after deque reallocation', async function () {
+      it('does not corrupt the crashpad annotation list after deque reallocation', { timeout: 45000 }, async () => {
         // Tight timeout so a hanging handler fails fast instead of waiting
         // for the mocha default of 120s.
-        this.timeout(45000);
         const { port, waitForCrash } = await startServer();
         runCrashApp('renderer-dynamic-keys', port);
         const crash = await Promise.race([
@@ -337,20 +336,22 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
     });
 
     describe('OOM crash keys', () => {
-      it('reports OOM stack trace and heap statistics when renderer runs out of memory', async function () {
-        this.timeout(120000);
-        const { port, waitForCrash } = await startServer();
-        runCrashApp('renderer-oom', port, ['--js-flags=--max-old-space-size=128']);
-        const crash = await waitForCrash();
-        expect(crash.process_type).to.equal('renderer');
-        expect(crash['electron.v8-oom.stack']).to.be.a('string');
-        expect(crash['electron.v8-oom.stack']).to.include('oomTrigger');
-        expect(crash['electron.v8-oom.heap.used']).to.be.a('string');
-        expect(crash['electron.v8-oom.heap.limit']).to.be.a('string');
-      });
+      it(
+        'reports OOM stack trace and heap statistics when renderer runs out of memory',
+        { timeout: 120000 },
+        async () => {
+          const { port, waitForCrash } = await startServer();
+          runCrashApp('renderer-oom', port, ['--js-flags=--max-old-space-size=128']);
+          const crash = await waitForCrash();
+          expect(crash.process_type).to.equal('renderer');
+          expect(crash['electron.v8-oom.stack']).to.be.a('string');
+          expect(crash['electron.v8-oom.stack']).to.include('oomTrigger');
+          expect(crash['electron.v8-oom.heap.used']).to.be.a('string');
+          expect(crash['electron.v8-oom.heap.limit']).to.be.a('string');
+        }
+      );
 
-      it('captures the calling function on JSON.stringify OOM', async function () {
-        this.timeout(120000);
+      it('captures the calling function on JSON.stringify OOM', { timeout: 120000 }, async () => {
         const { port, waitForCrash } = await startServer();
         runCrashApp('renderer-oom-json', port, ['--js-flags=--max-old-space-size=128']);
         const crash = await waitForCrash();
@@ -359,8 +360,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
         expect(crash['electron.v8-oom.stack']).to.include('serializeData');
       });
 
-      it('captures OOM crash keys inside a web worker', async function () {
-        this.timeout(120000);
+      it('captures OOM crash keys inside a web worker', { timeout: 120000 }, async () => {
         const { port, waitForCrash } = await startServer();
         runCrashApp('renderer-oom-worker', port, ['--js-flags=--max-old-space-size=128']);
         const crash = await waitForCrash();

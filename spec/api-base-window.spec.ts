@@ -1,7 +1,7 @@
 import { nativeImage } from 'electron/common';
 import { BaseWindow, Menu, View, screen } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { type EventEmitter, once } from 'node:events';
 

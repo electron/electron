@@ -1,6 +1,6 @@
 import { ipcMain, BrowserWindow } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 
@@ -8,7 +8,7 @@ import { closeWindow } from './lib/window-helpers.ts';
 
 describe('ipcRenderer module', () => {
   let w: BrowserWindow;
-  before(async () => {
+  beforeAll(async () => {
     w = new BrowserWindow({
       show: false,
       webPreferences: {
@@ -20,7 +20,7 @@ describe('ipcRenderer module', () => {
     await w.loadURL('about:blank');
     w.webContents.on('console-message', (_event, ...args) => console.error(...args));
   });
-  after(async () => {
+  afterAll(async () => {
     await closeWindow(w);
     w = null as unknown as BrowserWindow;
   });

@@ -1,6 +1,6 @@
 import { BaseWindow, View } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import * as fs from 'node:fs';
 

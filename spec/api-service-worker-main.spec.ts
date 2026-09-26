@@ -1,6 +1,6 @@
 import { ipcMain, session, webContents as webContentsModule, type WebContents } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { once, on } from 'node:events';
 import * as fs from 'node:fs';

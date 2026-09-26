@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as importedFs from 'node:fs';
@@ -59,8 +59,8 @@ describe('asar package', () => {
       }
     );
 
-    it('sets __dirname correctly', async function () {
-      after(function () {
+    it('sets __dirname correctly', async () => {
+      afterAll(() => {
         ipcMain.removeAllListeners('dirname');
       });
 
@@ -80,8 +80,8 @@ describe('asar package', () => {
       expect(dirname).to.equal(path.dirname(p));
     });
 
-    it('loads script tag in html', async function () {
-      after(function () {
+    it('loads script tag in html', async () => {
+      afterAll(() => {
         ipcMain.removeAllListeners('ping');
       });
 
@@ -101,10 +101,8 @@ describe('asar package', () => {
       expect(message).to.equal('pong');
     });
 
-    it('loads video tag in html', async function () {
-      this.timeout(60000);
-
-      after(function () {
+    it('loads video tag in html', { timeout: 60000 }, async () => {
+      afterAll(() => {
         ipcMain.removeAllListeners('asar-video');
       });
 
@@ -219,23 +217,19 @@ describe('asar package', () => {
     });
   });
 
-  describe('worker threads', function () {
+  describe('worker threads', () => {
     // DISABLED-FIXME(#38192): only disabled for ASan.
-    ifit(!process.env.IS_ASAN)('should start worker thread from asar file', function (callback) {
+    ifit(!process.env.IS_ASAN)('should start worker thread from asar file', async () => {
       const p = path.join(asarDir, 'worker_threads.asar', 'worker.js');
       const w = new Worker(p);
 
-      w.on('error', (err) => callback(err));
-      w.on('message', (message) => {
-        expect(message).to.equal('ping');
-        w.terminate();
-
-        callback(null);
-      });
+      const [message] = await once(w, 'message');
+      expect(message).to.equal('ping');
+      await w.terminate();
     });
   });
 
-  describe('internals', function () {
+  describe('internals', () => {
     const asarBinding: NodeJS.AsarBinding = process._linkedBinding('electron_common_asar');
     const { splitPath } = asarBinding;
     const fs = importedFs;
@@ -312,7 +306,7 @@ describe('asar package', () => {
     let archiveInDirNamedAsar: string; // <tmp>/looks.asar/real.asar
     let bogusArchive: string; // <tmp>/plain/bogus.asar (a file that is not an archive)
 
-    before(function () {
+    beforeAll(() => {
       tmp = importedFs.realpathSync(importedFs.mkdtempSync(path.join(os.tmpdir(), 'electron-asar-internals-')));
       originalFs.mkdirSync(j(tmp, 'plain'));
       originalFs.mkdirSync(j(tmp, unicodeDir));
@@ -328,7 +322,7 @@ describe('asar package', () => {
       importedFs.writeFileSync(j(dirNamedAsar, 'plain.txt'), 'plain');
     });
 
-    after(function () {
+    afterAll(() => {
       try {
         originalFs.rmSync(tmp, { recursive: true, force: true });
       } catch (error: any) {
@@ -340,8 +334,8 @@ describe('asar package', () => {
       }
     });
 
-    describe('splitPath (native archive prefix detection)', function () {
-      it('finds the archive component and returns its length in JS string units', function () {
+    describe('splitPath (native archive prefix detection)', () => {
+      it('finds the archive component and returns its length in JS string units', () => {
         const cases: [string, number][] = [
           [j(archive, 'a.txt'), archive.length],
           [j(archive, 'dir', 'sub', 'deeper', 'd.txt'), archive.length],
@@ -359,7 +353,7 @@ describe('asar package', () => {
         }
       });
 
-      it('returns -1 for paths that are not inside an archive', function () {
+      it('returns -1 for paths that are not inside an archive', () => {
         for (const input of [
           j(tmp, 'plain'),
           j(tmp, 'plain', 'nope.txt'),
@@ -379,7 +373,7 @@ describe('asar package', () => {
         }
       });
 
-      it('leaves paths with control characters to the real filesystem, like Archive::New', function () {
+      it('leaves paths with control characters to the real filesystem, like Archive::New', () => {
         if (process.platform !== 'win32') {
           const odd = j(tmp, 'tab\there');
           originalFs.mkdirSync(odd);
@@ -394,13 +388,13 @@ describe('asar package', () => {
         );
       });
 
-      it('ignores non-string arguments', function () {
+      it('ignores non-string arguments', () => {
         for (const input of [undefined, null, 42, {}, Buffer.from(archive), [archive]]) {
           expect(splitPath(input as any, true)).to.equal(-1);
         }
       });
 
-      it('picks the deepest *.asar component that is not a directory on disk', function () {
+      it('picks the deepest *.asar component that is not a directory on disk', () => {
         // An entry named *.asar inside an archive cannot be a directory on
         // disk, so it becomes the archive path (and later fails to open):
         // nested archives are not supported, matching GetAsarArchivePath().
@@ -414,7 +408,7 @@ describe('asar package', () => {
         expect(() => fs.readFileSync(j(bogusArchive, 'x'))).to.throw(/Invalid package/);
       });
 
-      it('matches the extension case-insensitively, like base::FilePath', function () {
+      it('matches the extension case-insensitively, like base::FilePath', () => {
         const dir = j(tmp, 'plain');
         for (const name of ['x.ASAR', 'x.Asar', 'x.aSaR', '.asar', 'x.y.asar', '..asar']) {
           expect(splitPath(j(dir, name, 'f'), true), name).to.equal(j(dir, name).length);
@@ -424,7 +418,7 @@ describe('asar package', () => {
         }
       });
 
-      it('reports paths that need lexical normalization instead of guessing', function () {
+      it('reports paths that need lexical normalization instead of guessing', () => {
         const needs = [
           archive + sep + sep + 'a.txt',
           j(archive, '.', 'a.txt'),
@@ -448,7 +442,7 @@ describe('asar package', () => {
         expect(splitPath(j(archive, '...'), true)).to.equal(archive.length);
       });
 
-      it('handles relative paths against the current directory', function () {
+      it('handles relative paths against the current directory', () => {
         const cwd = process.cwd();
         try {
           process.chdir(j(tmp, 'plain'));
@@ -462,7 +456,7 @@ describe('asar package', () => {
         }
       });
 
-      it('re-evaluates a *.asar path once something exists there', function () {
+      it('re-evaluates a *.asar path once something exists there', () => {
         const laterDir = j(tmp, 'later-dir.asar');
         const laterFile = j(tmp, 'later-file.asar');
         // Nothing there yet: not a directory, so provisionally an archive path.
@@ -479,7 +473,7 @@ describe('asar package', () => {
         expect(fs.readFileSync(j(laterFile, 'a.txt'), 'utf8')).to.equal('alpha');
       });
 
-      it('gives stable answers under repetition and across many distinct prefixes', function () {
+      it('gives stable answers under repetition and across many distinct prefixes', () => {
         for (let i = 0; i < 1000; i++) {
           expect(splitPath(j(archive, 'dir', `f${i}`), true)).to.equal(archive.length);
         }
@@ -493,28 +487,28 @@ describe('asar package', () => {
       });
 
       if (process.platform === 'win32') {
-        it('accepts either separator on Windows', function () {
+        it('accepts either separator on Windows', () => {
           expect(splitPath(archive.replace(/\\/g, '/') + '/a.txt', false)).to.equal(archive.length);
           expect(splitPath(archive + '/dir\\b.txt', false)).to.equal(archive.length);
         });
       } else {
-        it('treats a backslash as an ordinary file name character on POSIX', function () {
+        it('treats a backslash as an ordinary file name character on POSIX', () => {
           expect(splitPath(archive + '\\a.txt', true)).to.equal(-1);
           expect(splitPath(j(tmp, 'plain', 'app.asar\\x', 'y'), true)).to.equal(-1);
         });
       }
     });
 
-    describe('Archive lookups', function () {
+    describe('Archive lookups', () => {
       let a: NodeJS.AsarArchive;
       const kFile = 1;
       const kDir = 2;
       const kLink = 3;
-      before(function () {
+      beforeAll(() => {
         a = new asarBinding.Archive(archive);
       });
 
-      it('stats files, directories and links without following the final link', function () {
+      it('stats files, directories and links without following the final link', () => {
         expect(a.stat('')).to.include({ type: kDir });
         expect(a.stat('a.txt')).to.include({ type: kFile, size: 5, executable: false });
         expect(a.stat('run.sh')).to.include({ type: kFile, executable: true });
@@ -532,7 +526,7 @@ describe('asar package', () => {
         expect(a.stat(j(unicodeDir, astralName))).to.include({ type: kFile, size: 6 });
       });
 
-      it('returns false for anything that does not resolve', function () {
+      it('returns false for anything that does not resolve', () => {
         for (const p of [
           'missing',
           j('dir', 'missing'),
@@ -555,7 +549,7 @@ describe('asar package', () => {
         expect(a.realpath('missing')).to.equal(false);
       });
 
-      it('walks through directory links in the middle of a path', function () {
+      it('walks through directory links in the middle of a path', () => {
         expect(a.stat(j('dir.lnk', 'b.txt'))).to.include({ type: kFile, size: 5 });
         expect(a.stat(j('dir.lnk', 'sub', 'c.txt'))).to.include({ type: kFile });
         expect(a.stat(j('dir', 'self.lnk', 'self.lnk', 'b.txt'))).to.include({ type: kFile });
@@ -563,7 +557,7 @@ describe('asar package', () => {
         expect(a.readdir(j('dir', 'self.lnk'))).to.deep.equal(a.readdir('dir'));
       });
 
-      it('tolerates leading, trailing and doubled separators', function () {
+      it('tolerates leading, trailing and doubled separators', () => {
         expect(a.stat(sep + 'a.txt')).to.include({ type: kFile, size: 5 });
         expect(a.stat('dir' + sep)).to.include({ type: kDir });
         expect(a.stat('dir' + sep + sep + 'b.txt')).to.include({ type: kFile });
@@ -571,7 +565,7 @@ describe('asar package', () => {
         expect(a.stat(sep)).to.include({ type: kDir });
       });
 
-      it('getFileInfo follows links to files and reports offsets in file order', function () {
+      it('getFileInfo follows links to files and reports offsets in file order', () => {
         const first = a.getFileInfo('a.txt');
         expect(first).to.include({ size: 5, unpacked: false, executable: false });
         expect(a.getFileInfo('file.lnk')).to.deep.equal(first);
@@ -585,7 +579,7 @@ describe('asar package', () => {
         expect(first && (first as any).integrity).to.equal(undefined);
       });
 
-      it('realpath resolves only the final component when it is a link', function () {
+      it('realpath resolves only the final component when it is a link', () => {
         expect(a.realpath('a.txt')).to.equal('a.txt');
         expect(a.realpath('file.lnk')).to.equal('a.txt');
         expect(a.realpath('chain.lnk')).to.equal('file.lnk');
@@ -595,7 +589,7 @@ describe('asar package', () => {
         expect(a.realpath('')).to.equal('');
       });
 
-      it('readdir lists entry names and readdirWithTypes agrees with stat', function () {
+      it('readdir lists entry names and readdirWithTypes agrees with stat', () => {
         const rootNames = a.readdir('');
         expect(rootNames).to.be.an('array').that.includes.members(['a.txt', 'dir', 'file.lnk', unicodeDir, '.hidden']);
         expect(rootNames).to.have.lengthOf(Object.keys(tree).length);
@@ -614,7 +608,7 @@ describe('asar package', () => {
         expect(a.readdirWithTypes(unicodeDir)).to.deep.equal([[unicodeName, astralName].sort(), [kFile, kFile]]);
       });
 
-      it('returns objects of a stable shape and fresh identity', function () {
+      it('returns objects of a stable shape and fresh identity', () => {
         const s1 = a.stat('a.txt');
         const s2 = a.stat('a.txt');
         expect(s1).to.deep.equal(s2);
@@ -631,7 +625,7 @@ describe('asar package', () => {
         expect(a.stat('a.txt')).to.include({ size: 5 });
       });
 
-      it('keeps answering correctly past the lookup memo limit', function () {
+      it('keeps answering correctly past the lookup memo limit', () => {
         for (let i = 0; i < 33 * 1024; i++) {
           if (a.stat(`missing-${i}`) !== false) throw new Error(`missing-${i} resolved`);
         }
@@ -640,7 +634,7 @@ describe('asar package', () => {
         expect(a.stat('missing-0')).to.equal(false);
       });
 
-      it('serves concurrent lookups from worker threads', async function () {
+      it('serves concurrent lookups from worker threads', async () => {
         const workerSource = `
           const { parentPort, workerData } = require('node:worker_threads');
           const fs = require('node:fs');
@@ -666,8 +660,8 @@ describe('asar package', () => {
       });
     });
 
-    describe('fs on archives in unusual locations', function () {
-      it('works under a non-ASCII directory and with non-ASCII entry names', function () {
+    describe('fs on archives in unusual locations', () => {
+      it('works under a non-ASCII directory and with non-ASCII entry names', () => {
         expect(fs.readFileSync(j(unicodeArchive, 'a.txt'), 'utf8')).to.equal('alpha');
         expect(fs.readFileSync(j(unicodeArchive, unicodeDir, unicodeName), 'utf8')).to.equal('unicode-content');
         expect(fs.readFileSync(j(unicodeArchive, unicodeDir, astralName), 'utf8')).to.equal('astral');
@@ -677,24 +671,24 @@ describe('asar package', () => {
         expect(fs.existsSync(j(unicodeArchive, unicodeDir, 'nope'))).to.equal(false);
       });
 
-      it('works when the archive extension is upper case', function () {
+      it('works when the archive extension is upper case', () => {
         expect(fs.readFileSync(j(upperArchive, 'dir', 'b.txt'), 'utf8')).to.equal('bravo');
         expect(fs.statSync(upperArchive).isDirectory()).to.equal(true);
       });
 
-      it('works for an archive inside a real directory named *.asar', function () {
+      it('works for an archive inside a real directory named *.asar', () => {
         expect(fs.readFileSync(j(archiveInDirNamedAsar, 'a.txt'), 'utf8')).to.equal('alpha');
         expect(fs.readFileSync(j(dirNamedAsar, 'plain.txt'), 'utf8')).to.equal('plain');
         expect(fs.readdirSync(dirNamedAsar)).to.have.members(['plain.txt', 'real.asar']);
       });
 
-      it('accepts Buffer and file: URL paths', function () {
+      it('accepts Buffer and file: URL paths', () => {
         expect(fs.readFileSync(Buffer.from(j(archive, 'a.txt')), 'utf8')).to.equal('alpha');
         expect(fs.readFileSync(url.pathToFileURL(j(archive, 'dir', 'b.txt')), 'utf8')).to.equal('bravo');
         expect(fs.existsSync(url.pathToFileURL(j(unicodeArchive, unicodeDir, astralName)) as any)).to.equal(true);
       });
 
-      it('accepts un-normalized paths into an archive', function () {
+      it('accepts un-normalized paths into an archive', () => {
         expect(fs.readFileSync([archive, 'dir', '.', '..', 'dir', 'b.txt'].join(sep), 'utf8')).to.equal('bravo');
         expect(fs.statSync(archive + sep + sep + 'dir' + sep + sep + 'b.txt' + sep).isFile()).to.equal(true);
         expect(fs.existsSync([archive, '..', 'app.asar', 'dir'].join(sep))).to.equal(true);
@@ -708,7 +702,7 @@ describe('asar package', () => {
         ]);
       });
 
-      it('module resolution accepts un-normalized lookup paths', function () {
+      it('module resolution accepts un-normalized lookup paths', () => {
         const sloppyDir = archive + sep + '.' + sep + 'dir' + sep;
         expect(require.resolve('./b.txt', { paths: [sloppyDir] })).to.equal(j(archive, 'dir', 'b.txt'));
         expect(require.resolve('./c.txt', { paths: [j(archive, 'dir', '..', 'dir', 'sub')] })).to.equal(
@@ -717,7 +711,7 @@ describe('asar package', () => {
         expect(() => require.resolve('./nope.txt', { paths: [sloppyDir] })).to.throw(/Cannot find module/);
       });
 
-      it('presents the archive root like a directory, with or without a trailing separator', function () {
+      it('presents the archive root like a directory, with or without a trailing separator', () => {
         expect(fs.statSync(archive).isDirectory()).to.equal(true);
         expect(fs.statSync(archive + sep).isDirectory()).to.equal(true);
         expect(fs.readdirSync(archive + sep)).to.deep.equal(fs.readdirSync(archive));
@@ -725,7 +719,7 @@ describe('asar package', () => {
         expect(inParent.find((d) => d.name === 'app.asar')!.isFile()).to.equal(true);
       });
 
-      it('produces Stats consistent with the entry', function () {
+      it('produces Stats consistent with the entry', () => {
         const st = fs.statSync(j(archive, 'run.sh'));
         expect(st.isFile()).to.equal(true);
         expect(st.mode & 0o111).to.not.equal(0);
@@ -746,7 +740,7 @@ describe('asar package', () => {
         expect(s1.isDirectory()).to.equal(false);
       });
 
-      it('realpath resolves the archive location once and reuses it', function () {
+      it('realpath resolves the archive location once and reuses it', () => {
         const linkDir = j(tmp, 'via-link');
         importedFs.symlinkSync(j(tmp, 'plain'), linkDir, 'dir');
         const viaLink = j(linkDir, 'app.asar');
@@ -788,7 +782,7 @@ function tempPath(): string {
   return '';
 }
 
-describe('asar package', function () {
+describe('asar package', () => {
   const fixtures = path.join(import.meta.dirname, 'fixtures');
   const asarDir = path.join(fixtures, 'test.asar');
   const fs = require('node:fs') as typeof importedFs; // dummy, to fool typescript
@@ -831,14 +825,14 @@ describe('asar package', function () {
     `
   });
 
-  describe('node api', function () {
-    itremote('supports paths specified as a Buffer', function () {
+  describe('node api', () => {
+    itremote('supports paths specified as a Buffer', () => {
       const file = Buffer.from(path.join(asarDir, 'a.asar', 'file1'));
       expect(fs.existsSync(file)).to.be.true;
     });
 
-    describe('fs.readFileSync', function () {
-      itremote('does not leak fd', function () {
+    describe('fs.readFileSync', () => {
+      itremote('does not leak fd', () => {
         let readCalls = 1;
         while (readCalls <= 10000) {
           fs.readFileSync(path.join(process.resourcesPath, 'default_app.asar', 'main.js'));
@@ -846,7 +840,7 @@ describe('asar package', function () {
         }
       });
 
-      itremote('reads a normal file', function () {
+      itremote('reads a normal file', () => {
         const file1 = path.join(asarDir, 'a.asar', 'file1');
         expect(fs.readFileSync(file1).toString().trim()).to.equal('file1');
         const file2 = path.join(asarDir, 'a.asar', 'file2');
@@ -855,33 +849,33 @@ describe('asar package', function () {
         expect(fs.readFileSync(file3).toString().trim()).to.equal('file3');
       });
 
-      itremote('reads from a empty file', function () {
+      itremote('reads from a empty file', () => {
         const file = path.join(asarDir, 'empty.asar', 'file1');
         const buffer = fs.readFileSync(file);
         expect(buffer).to.be.empty;
         expect(buffer.toString()).to.equal('');
       });
 
-      itremote('reads a linked file', function () {
+      itremote('reads a linked file', () => {
         const p = path.join(asarDir, 'a.asar', 'link1');
         expect(fs.readFileSync(p).toString().trim()).to.equal('file1');
       });
 
-      itremote('reads a file from linked directory', function () {
+      itremote('reads a file from linked directory', () => {
         const p1 = path.join(asarDir, 'a.asar', 'link2', 'file1');
         expect(fs.readFileSync(p1).toString().trim()).to.equal('file1');
         const p2 = path.join(asarDir, 'a.asar', 'link2', 'link2', 'file1');
         expect(fs.readFileSync(p2).toString().trim()).to.equal('file1');
       });
 
-      itremote('throws ENOENT error when can not find file', function () {
+      itremote('throws ENOENT error when can not find file', () => {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         expect(() => {
           fs.readFileSync(p);
         }).to.throw(/ENOENT/);
       });
 
-      itremote('passes ENOENT error to callback when can not find file', function () {
+      itremote('passes ENOENT error to callback when can not find file', () => {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         let async = false;
         fs.readFile(p, function (error) {
@@ -891,22 +885,22 @@ describe('asar package', function () {
         async = true;
       });
 
-      itremote('reads a normal file with unpacked files', function () {
+      itremote('reads a normal file with unpacked files', () => {
         const p = path.join(asarDir, 'unpack.asar', 'a.txt');
         expect(fs.readFileSync(p).toString().trim()).to.equal('a');
       });
 
-      itremote('reads a file in filesystem', function () {
+      itremote('reads a file in filesystem', () => {
         const p = path.resolve(asarDir, 'file');
         expect(fs.readFileSync(p).toString().trim()).to.equal('file');
       });
     });
 
-    describe('archives with self-referential link entries', function () {
+    describe('archives with self-referential link entries', () => {
       // Guard against a missing/renamed fixture silently passing the ENOENT
       // assertions below: a path inside a non-existent .asar would also throw
       // ENOENT. Assert the archive file itself is present first.
-      itremote('has the link-cycle fixtures on disk', function () {
+      itremote('has the link-cycle fixtures on disk', () => {
         // original-fs bypasses the asar wrapper so the archive file is stat'd
         // as a plain file rather than resolved as an archive root.
         const originalFs = require('original-fs') as typeof importedFs;
@@ -916,28 +910,28 @@ describe('asar package', function () {
         }
       });
 
-      itremote('throws instead of hanging on a self-linked file', function () {
+      itremote('throws instead of hanging on a self-linked file', () => {
         const p = path.join(fixtures, 'asar', 'cyclic-link.asar', 'a');
         expect(() => {
           fs.readFileSync(p);
         }).to.throw(/ENOENT/);
       });
 
-      itremote('throws instead of hanging on a two-node link cycle', function () {
+      itremote('throws instead of hanging on a two-node link cycle', () => {
         const p = path.join(fixtures, 'asar', 'cyclic-link2.asar', 'a');
         expect(() => {
           fs.readFileSync(p);
         }).to.throw(/ENOENT/);
       });
 
-      itremote('throws instead of hanging on a link that resolves through itself', function () {
+      itremote('throws instead of hanging on a link that resolves through itself', () => {
         const p = path.join(fixtures, 'asar', 'cyclic-dir-link.asar', 'a', 'b');
         expect(() => {
           fs.readFileSync(p);
         }).to.throw(/ENOENT/);
       });
 
-      itremote('reports the missing entry from statSync without hanging', function () {
+      itremote('reports the missing entry from statSync without hanging', () => {
         const p = path.join(fixtures, 'asar', 'cyclic-dir-link.asar', 'a', 'b');
         expect(() => {
           fs.statSync(p);
@@ -945,8 +939,8 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.readFile', function () {
-      itremote('reads a normal file', async function () {
+    describe('fs.readFile', () => {
+      itremote('reads a normal file', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const content = await new Promise((resolve, reject) =>
           fs.readFile(p, (err, content) => {
@@ -957,7 +951,7 @@ describe('asar package', function () {
         expect(String(content).trim()).to.equal('file1');
       });
 
-      itremote('reads from a empty file', async function () {
+      itremote('reads from a empty file', async () => {
         const p = path.join(asarDir, 'empty.asar', 'file1');
         const content = await new Promise((resolve, reject) =>
           fs.readFile(p, (err, content) => {
@@ -968,7 +962,7 @@ describe('asar package', function () {
         expect(String(content)).to.equal('');
       });
 
-      itremote('reads from a empty file with encoding', async function () {
+      itremote('reads from a empty file with encoding', async () => {
         const p = path.join(asarDir, 'empty.asar', 'file1');
         const content = await new Promise((resolve, reject) =>
           fs.readFile(p, (err, content) => {
@@ -979,7 +973,7 @@ describe('asar package', function () {
         expect(String(content)).to.equal('');
       });
 
-      itremote('reads a linked file', async function () {
+      itremote('reads a linked file', async () => {
         const p = path.join(asarDir, 'a.asar', 'link1');
         const content = await new Promise((resolve, reject) =>
           fs.readFile(p, (err, content) => {
@@ -990,7 +984,7 @@ describe('asar package', function () {
         expect(String(content).trim()).to.equal('file1');
       });
 
-      itremote('reads a file from linked directory', async function () {
+      itremote('reads a file from linked directory', async () => {
         const p = path.join(asarDir, 'a.asar', 'link2', 'link2', 'file1');
         const content = await new Promise((resolve, reject) =>
           fs.readFile(p, (err, content) => {
@@ -1001,52 +995,52 @@ describe('asar package', function () {
         expect(String(content).trim()).to.equal('file1');
       });
 
-      itremote('throws ENOENT error when can not find file', async function () {
+      itremote('throws ENOENT error when can not find file', async () => {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         const err = await new Promise<any>((resolve) => fs.readFile(p, resolve));
         expect(err.code).to.equal('ENOENT');
       });
     });
 
-    describe('fs.promises.readFile', function () {
-      itremote('reads a normal file', async function () {
+    describe('fs.promises.readFile', () => {
+      itremote('reads a normal file', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const content = await fs.promises.readFile(p);
         expect(String(content).trim()).to.equal('file1');
       });
 
-      itremote('reads from a empty file', async function () {
+      itremote('reads from a empty file', async () => {
         const p = path.join(asarDir, 'empty.asar', 'file1');
         const content = await fs.promises.readFile(p);
         expect(String(content)).to.equal('');
       });
 
-      itremote('reads from a empty file with encoding', async function () {
+      itremote('reads from a empty file with encoding', async () => {
         const p = path.join(asarDir, 'empty.asar', 'file1');
         const content = await fs.promises.readFile(p, 'utf8');
         expect(content).to.equal('');
       });
 
-      itremote('reads a linked file', async function () {
+      itremote('reads a linked file', async () => {
         const p = path.join(asarDir, 'a.asar', 'link1');
         const content = await fs.promises.readFile(p);
         expect(String(content).trim()).to.equal('file1');
       });
 
-      itremote('reads a file from linked directory', async function () {
+      itremote('reads a file from linked directory', async () => {
         const p = path.join(asarDir, 'a.asar', 'link2', 'link2', 'file1');
         const content = await fs.promises.readFile(p);
         expect(String(content).trim()).to.equal('file1');
       });
 
-      itremote('throws ENOENT error when can not find file', async function () {
+      itremote('throws ENOENT error when can not find file', async () => {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         await expectToThrowErrorWithCode(() => fs.promises.readFile(p), 'ENOENT');
       });
     });
 
-    describe('fs.copyFile', function () {
-      itremote('copies a normal file', async function () {
+    describe('fs.copyFile', () => {
+      itremote('copies a normal file', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const dest = tempPath();
         await new Promise<void>((resolve, reject) => {
@@ -1058,7 +1052,7 @@ describe('asar package', function () {
         expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true;
       });
 
-      itremote('copies a unpacked file', async function () {
+      itremote('copies a unpacked file', async () => {
         const p = path.join(asarDir, 'unpack.asar', 'a.txt');
         const dest = tempPath();
         await new Promise<void>((resolve, reject) => {
@@ -1071,15 +1065,15 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.promises.copyFile', function () {
-      itremote('copies a normal file', async function () {
+    describe('fs.promises.copyFile', () => {
+      itremote('copies a normal file', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const dest = tempPath();
         await fs.promises.copyFile(p, dest);
         expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true;
       });
 
-      itremote('copies a unpacked file', async function () {
+      itremote('copies a unpacked file', async () => {
         const p = path.join(asarDir, 'unpack.asar', 'a.txt');
         const dest = tempPath();
         await fs.promises.copyFile(p, dest);
@@ -1087,15 +1081,15 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.copyFileSync', function () {
-      itremote('copies a normal file', function () {
+    describe('fs.copyFileSync', () => {
+      itremote('copies a normal file', () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const dest = tempPath();
         fs.copyFileSync(p, dest);
         expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true;
       });
 
-      itremote('copies a unpacked file', function () {
+      itremote('copies a unpacked file', () => {
         const p = path.join(asarDir, 'unpack.asar', 'a.txt');
         const dest = tempPath();
         fs.copyFileSync(p, dest);
@@ -1103,8 +1097,8 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.cpSync', function () {
-      itremote('copies a normal file', function () {
+    describe('fs.cpSync', () => {
+      itremote('copies a normal file', () => {
         if (!fs.cpSync) return;
         const p = path.join(asarDir, 'a.asar', 'file1');
         const dest = tempPath();
@@ -1113,8 +1107,8 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.cp', function () {
-      itremote('copies a normal file', async function () {
+    describe('fs.cp', () => {
+      itremote('copies a normal file', async () => {
         if (!fs.cp) return;
         const p = path.join(asarDir, 'a.asar', 'file1');
         const dest = tempPath();
@@ -1125,8 +1119,8 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.promises.cp', function () {
-      itremote('copies a normal file', async function () {
+    describe('fs.promises.cp', () => {
+      itremote('copies a normal file', async () => {
         if (!fs.promises.cp) return;
         const p = path.join(asarDir, 'a.asar', 'file1');
         const dest = tempPath();
@@ -1135,14 +1129,14 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.lstatSync', function () {
-      itremote('handles path with trailing slash correctly', function () {
+    describe('fs.lstatSync', () => {
+      itremote('handles path with trailing slash correctly', () => {
         const p = path.join(asarDir, 'a.asar', 'link2', 'link2', 'file1');
         fs.lstatSync(p);
         fs.lstatSync(p + '/');
       });
 
-      itremote('returns information of root', function () {
+      itremote('returns information of root', () => {
         const p = path.join(asarDir, 'a.asar');
         const stats = fs.lstatSync(p);
         expect(stats.isFile()).to.be.false;
@@ -1151,7 +1145,7 @@ describe('asar package', function () {
         expect(stats.size).to.equal(0);
       });
 
-      itremote('returns stat properties with types matching a real file', function () {
+      itremote('returns stat properties with types matching a real file', () => {
         const asarStats = fs.lstatSync(path.join(asarDir, 'a.asar', 'file1'));
         const realStats = fs.lstatSync(path.join(fixtures, 'test.asar', 'a.asar'));
         for (const key of Object.keys(realStats) as (keyof typeof realStats)[]) {
@@ -1159,7 +1153,7 @@ describe('asar package', function () {
         }
       });
 
-      itremote('returns information of root with stats as bigint', function () {
+      itremote('returns information of root with stats as bigint', () => {
         const p = path.join(asarDir, 'a.asar');
         const stats = fs.lstatSync(p, { bigint: false });
         expect(stats.isFile()).to.be.false;
@@ -1168,7 +1162,7 @@ describe('asar package', function () {
         expect(stats.size).to.equal(0);
       });
 
-      itremote('returns information of a normal file', function () {
+      itremote('returns information of a normal file', () => {
         const ref2 = ['file1', 'file2', 'file3', path.join('dir1', 'file1'), path.join('link2', 'file1')];
         for (let j = 0, len = ref2.length; j < len; j++) {
           const file = ref2[j];
@@ -1181,7 +1175,7 @@ describe('asar package', function () {
         }
       });
 
-      itremote('returns information of a normal directory', function () {
+      itremote('returns information of a normal directory', () => {
         const ref2 = ['dir1', 'dir2', 'dir3'];
         for (let j = 0, len = ref2.length; j < len; j++) {
           const file = ref2[j];
@@ -1194,7 +1188,7 @@ describe('asar package', function () {
         }
       });
 
-      itremote('returns information of a linked file', function () {
+      itremote('returns information of a linked file', () => {
         const ref2 = ['link1', path.join('dir1', 'link1'), path.join('link2', 'link2')];
         for (let j = 0, len = ref2.length; j < len; j++) {
           const file = ref2[j];
@@ -1207,7 +1201,7 @@ describe('asar package', function () {
         }
       });
 
-      itremote('returns information of a linked directory', function () {
+      itremote('returns information of a linked directory', () => {
         const ref2 = ['link2', path.join('dir1', 'link2'), path.join('link2', 'link2')];
         for (let j = 0, len = ref2.length; j < len; j++) {
           const file = ref2[j];
@@ -1220,7 +1214,7 @@ describe('asar package', function () {
         }
       });
 
-      itremote('throws ENOENT error when can not find file', function () {
+      itremote('throws ENOENT error when can not find file', () => {
         const ref2 = ['file4', 'file5', path.join('dir1', 'file4')];
         for (let j = 0, len = ref2.length; j < len; j++) {
           const file = ref2[j];
@@ -1231,7 +1225,7 @@ describe('asar package', function () {
         }
       });
 
-      itremote('returns null when can not find file with throwIfNoEntry === false', function () {
+      itremote('returns null when can not find file with throwIfNoEntry === false', () => {
         const ref2 = ['file4', 'file5', path.join('dir1', 'file4')];
         for (let j = 0, len = ref2.length; j < len; j++) {
           const file = ref2[j];
@@ -1241,13 +1235,13 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.lstat', function () {
-      itremote('handles path with trailing slash correctly', async function () {
+    describe('fs.lstat', () => {
+      itremote('handles path with trailing slash correctly', async () => {
         const p = path.join(asarDir, 'a.asar', 'link2', 'link2', 'file1');
         await promisify(fs.lstat)(p + '/');
       });
 
-      itremote('returns information of root', async function () {
+      itremote('returns information of root', async () => {
         const p = path.join(asarDir, 'a.asar');
         const stats = await promisify(fs.lstat)(p);
         expect(stats.isFile()).to.be.false;
@@ -1256,7 +1250,7 @@ describe('asar package', function () {
         expect(stats.size).to.equal(0);
       });
 
-      itremote('returns information of root with stats as bigint', async function () {
+      itremote('returns information of root with stats as bigint', async () => {
         const p = path.join(asarDir, 'a.asar');
         const stats = await promisify(fs.lstat)(p, { bigint: false });
         expect(stats.isFile()).to.be.false;
@@ -1265,7 +1259,7 @@ describe('asar package', function () {
         expect(stats.size).to.equal(0);
       });
 
-      itremote('returns information of a normal file', async function () {
+      itremote('returns information of a normal file', async () => {
         const p = path.join(asarDir, 'a.asar', 'link2', 'file1');
         const stats = await promisify(fs.lstat)(p);
         expect(stats.isFile()).to.be.true;
@@ -1274,7 +1268,7 @@ describe('asar package', function () {
         expect(stats.size).to.equal(6);
       });
 
-      itremote('returns information of a normal directory', async function () {
+      itremote('returns information of a normal directory', async () => {
         const p = path.join(asarDir, 'a.asar', 'dir1');
         const stats = await promisify(fs.lstat)(p);
         expect(stats.isFile()).to.be.false;
@@ -1283,7 +1277,7 @@ describe('asar package', function () {
         expect(stats.size).to.equal(0);
       });
 
-      itremote('returns information of a linked file', async function () {
+      itremote('returns information of a linked file', async () => {
         const p = path.join(asarDir, 'a.asar', 'link2', 'link1');
         const stats = await promisify(fs.lstat)(p);
         expect(stats.isFile()).to.be.false;
@@ -1292,7 +1286,7 @@ describe('asar package', function () {
         expect(stats.size).to.equal(0);
       });
 
-      itremote('returns information of a linked directory', async function () {
+      itremote('returns information of a linked directory', async () => {
         const p = path.join(asarDir, 'a.asar', 'link2', 'link2');
         const stats = await promisify(fs.lstat)(p);
         expect(stats.isFile()).to.be.false;
@@ -1301,20 +1295,20 @@ describe('asar package', function () {
         expect(stats.size).to.equal(0);
       });
 
-      itremote('throws ENOENT error when can not find file', async function () {
+      itremote('throws ENOENT error when can not find file', async () => {
         const p = path.join(asarDir, 'a.asar', 'file4');
         const err = await new Promise<any>((resolve) => fs.lstat(p, resolve));
         expect(err.code).to.equal('ENOENT');
       });
     });
 
-    describe('fs.promises.lstat', function () {
-      itremote('handles path with trailing slash correctly', async function () {
+    describe('fs.promises.lstat', () => {
+      itremote('handles path with trailing slash correctly', async () => {
         const p = path.join(asarDir, 'a.asar', 'link2', 'link2', 'file1');
         await fs.promises.lstat(p + '/');
       });
 
-      itremote('returns information of root', async function () {
+      itremote('returns information of root', async () => {
         const p = path.join(asarDir, 'a.asar');
         const stats = await fs.promises.lstat(p);
         expect(stats.isFile()).to.be.false;
@@ -1323,7 +1317,7 @@ describe('asar package', function () {
         expect(stats.size).to.equal(0);
       });
 
-      itremote('returns information of root with stats as bigint', async function () {
+      itremote('returns information of root with stats as bigint', async () => {
         const p = path.join(asarDir, 'a.asar');
         const stats = await fs.promises.lstat(p, { bigint: false });
         expect(stats.isFile()).to.be.false;
@@ -1332,7 +1326,7 @@ describe('asar package', function () {
         expect(stats.size).to.equal(0);
       });
 
-      itremote('returns information of a normal file', async function () {
+      itremote('returns information of a normal file', async () => {
         const p = path.join(asarDir, 'a.asar', 'link2', 'file1');
         const stats = await fs.promises.lstat(p);
         expect(stats.isFile()).to.be.true;
@@ -1341,7 +1335,7 @@ describe('asar package', function () {
         expect(stats.size).to.equal(6);
       });
 
-      itremote('returns information of a normal directory', async function () {
+      itremote('returns information of a normal directory', async () => {
         const p = path.join(asarDir, 'a.asar', 'dir1');
         const stats = await fs.promises.lstat(p);
         expect(stats.isFile()).to.be.false;
@@ -1350,7 +1344,7 @@ describe('asar package', function () {
         expect(stats.size).to.equal(0);
       });
 
-      itremote('returns information of a linked file', async function () {
+      itremote('returns information of a linked file', async () => {
         const p = path.join(asarDir, 'a.asar', 'link2', 'link1');
         const stats = await fs.promises.lstat(p);
         expect(stats.isFile()).to.be.false;
@@ -1359,7 +1353,7 @@ describe('asar package', function () {
         expect(stats.size).to.equal(0);
       });
 
-      itremote('returns information of a linked directory', async function () {
+      itremote('returns information of a linked directory', async () => {
         const p = path.join(asarDir, 'a.asar', 'link2', 'link2');
         const stats = await fs.promises.lstat(p);
         expect(stats.isFile()).to.be.false;
@@ -1368,7 +1362,7 @@ describe('asar package', function () {
         expect(stats.size).to.equal(0);
       });
 
-      itremote('throws ENOENT error when can not find file', async function () {
+      itremote('throws ENOENT error when can not find file', async () => {
         const p = path.join(asarDir, 'a.asar', 'file4');
         await expectToThrowErrorWithCode(() => fs.promises.lstat(p), 'ENOENT');
       });
@@ -1630,8 +1624,8 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.readdirSync', function () {
-      itremote('reads dirs from root', function () {
+    describe('fs.readdirSync', () => {
+      itremote('reads dirs from root', () => {
         const p = path.join(asarDir, 'a.asar');
         const dirs = fs.readdirSync(p);
         expect(dirs).to.deep.equal(['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2', 'ping.js']);
@@ -1707,13 +1701,13 @@ describe('asar package', function () {
         ]);
       });
 
-      itremote('reads dirs from a normal dir', function () {
+      itremote('reads dirs from a normal dir', () => {
         const p = path.join(asarDir, 'a.asar', 'dir1');
         const dirs = fs.readdirSync(p);
         expect(dirs).to.deep.equal(['file1', 'file2', 'file3', 'link1', 'link2']);
       });
 
-      itremote('supports withFileTypes', function () {
+      itremote('supports withFileTypes', () => {
         const p = path.join(asarDir, 'a.asar');
         const dirs = fs.readdirSync(p, { withFileTypes: true });
         for (const dir of dirs) {
@@ -1724,7 +1718,7 @@ describe('asar package', function () {
         expect(names).to.deep.equal(['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2', 'ping.js']);
       });
 
-      itremote('supports withFileTypes for a deep directory', function () {
+      itremote('supports withFileTypes for a deep directory', () => {
         const p = path.join(asarDir, 'a.asar', 'dir3');
         const dirs = fs.readdirSync(p, { withFileTypes: true });
         for (const dir of dirs) {
@@ -1734,13 +1728,13 @@ describe('asar package', function () {
         expect(names).to.deep.equal(['file1', 'file2', 'file3']);
       });
 
-      itremote('reads dirs from a linked dir', function () {
+      itremote('reads dirs from a linked dir', () => {
         const p = path.join(asarDir, 'a.asar', 'link2', 'link2');
         const dirs = fs.readdirSync(p);
         expect(dirs).to.deep.equal(['file1', 'file2', 'file3', 'link1', 'link2']);
       });
 
-      itremote('throws ENOENT error when can not find file', function () {
+      itremote('throws ENOENT error when can not find file', () => {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         expect(() => {
           fs.readdirSync(p);
@@ -1748,7 +1742,7 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.readdir', function () {
+    describe('fs.readdir', () => {
       itremote('reads dirs from root', async () => {
         const p = path.join(asarDir, 'a.asar');
         const dirs = await promisify(fs.readdir)(p);
@@ -1887,8 +1881,8 @@ describe('asar package', function () {
         }));
     });
 
-    describe('fs.promises.readdir', function () {
-      itremote('reads dirs from root', async function () {
+    describe('fs.promises.readdir', () => {
+      itremote('reads dirs from root', async () => {
         const p = path.join(asarDir, 'a.asar');
         const dirs = await fs.promises.readdir(p);
         expect(dirs).to.deep.equal(['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2', 'ping.js']);
@@ -1964,7 +1958,7 @@ describe('asar package', function () {
         ]);
       });
 
-      itremote('supports withFileTypes', async function () {
+      itremote('supports withFileTypes', async () => {
         const p = path.join(asarDir, 'a.asar');
         const dirs = await fs.promises.readdir(p, { withFileTypes: true });
         for (const dir of dirs) {
@@ -1975,26 +1969,26 @@ describe('asar package', function () {
         expect(names).to.deep.equal(['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2', 'ping.js']);
       });
 
-      itremote('reads dirs from a normal dir', async function () {
+      itremote('reads dirs from a normal dir', async () => {
         const p = path.join(asarDir, 'a.asar', 'dir1');
         const dirs = await fs.promises.readdir(p);
         expect(dirs).to.deep.equal(['file1', 'file2', 'file3', 'link1', 'link2']);
       });
 
-      itremote('reads dirs from a linked dir', async function () {
+      itremote('reads dirs from a linked dir', async () => {
         const p = path.join(asarDir, 'a.asar', 'link2', 'link2');
         const dirs = await fs.promises.readdir(p);
         expect(dirs).to.deep.equal(['file1', 'file2', 'file3', 'link1', 'link2']);
       });
 
-      itremote('throws ENOENT error when can not find file', async function () {
+      itremote('throws ENOENT error when can not find file', async () => {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         await expectToThrowErrorWithCode(() => fs.promises.readdir(p), 'ENOENT');
       });
     });
 
-    describe('fs.globSync', function () {
-      itremote('supports withFileTypes with a cwd inside an asar archive', function () {
+    describe('fs.globSync', () => {
+      itremote('supports withFileTypes with a cwd inside an asar archive', () => {
         const cwd = path.join(asarDir, 'a.asar');
         const dirents = fs.globSync('*.js', { cwd, withFileTypes: true });
         expect(dirents).to.have.lengthOf(1);
@@ -2004,8 +1998,8 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.glob', function () {
-      itremote('supports withFileTypes with a cwd inside an asar archive', async function () {
+    describe('fs.glob', () => {
+      itremote('supports withFileTypes with a cwd inside an asar archive', async () => {
         const cwd = path.join(asarDir, 'a.asar');
         const dirents = await promisify(fs.glob)('*.js', { cwd, withFileTypes: true });
         expect(dirents).to.have.lengthOf(1);
@@ -2015,8 +2009,8 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.openSync', function () {
-      itremote('opens a normal/linked/under-linked-directory file', function () {
+    describe('fs.openSync', () => {
+      itremote('opens a normal/linked/under-linked-directory file', () => {
         const ref2 = ['file1', 'link1', path.join('link2', 'file1')];
         for (let j = 0, len = ref2.length; j < len; j++) {
           const file = ref2[j];
@@ -2029,7 +2023,7 @@ describe('asar package', function () {
         }
       });
 
-      itremote('throws ENOENT error when can not find file', function () {
+      itremote('throws ENOENT error when can not find file', () => {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         expect(() => {
           (fs.openSync as any)(p);
@@ -2037,8 +2031,8 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.open', function () {
-      itremote('opens a normal file', async function () {
+    describe('fs.open', () => {
+      itremote('opens a normal file', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const fd = await promisify(fs.open)(p, 'r');
         const buffer = Buffer.alloc(6);
@@ -2047,15 +2041,15 @@ describe('asar package', function () {
         await promisify(fs.close)(fd);
       });
 
-      itremote('throws ENOENT error when can not find file', async function () {
+      itremote('throws ENOENT error when can not find file', async () => {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         const err = await new Promise<any>((resolve) => fs.open(p, 'r', resolve));
         expect(err.code).to.equal('ENOENT');
       });
     });
 
-    describe('fs.promises.open', function () {
-      itremote('opens a normal file', async function () {
+    describe('fs.promises.open', () => {
+      itremote('opens a normal file', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const fh = await fs.promises.open(p, 'r');
         const buffer = Buffer.alloc(6);
@@ -2064,7 +2058,7 @@ describe('asar package', function () {
         await fh.close();
       });
 
-      itremote('throws ENOENT error when can not find file', async function () {
+      itremote('throws ENOENT error when can not find file', async () => {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         await expectToThrowErrorWithCode(() => fs.promises.open(p, 'r'), 'ENOENT');
       });
@@ -2076,8 +2070,8 @@ describe('asar package', function () {
     // symlink APIs.  Where a corresponding Node.js test exists
     // (test/parallel/test-fs-*), its expectations are mirrored here.
 
-    describe('fs.openSync (fd semantics)', function () {
-      itremote('returns a usable, closable file descriptor', function () {
+    describe('fs.openSync (fd semantics)', () => {
+      itremote('returns a usable, closable file descriptor', () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const fd = fs.openSync(p, 'r');
         expect(fd).to.be.a('number').that.is.greaterThan(2);
@@ -2086,7 +2080,7 @@ describe('asar package', function () {
         expect(() => fs.closeSync(fd)).to.throw(/EBADF/);
       });
 
-      itremote('accepts default, string and numeric read-only flags', function () {
+      itremote('accepts default, string and numeric read-only flags', () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         for (const flags of [
           undefined,
@@ -2103,13 +2097,13 @@ describe('asar package', function () {
         }
       });
 
-      itremote('accepts a mode argument', function () {
+      itremote('accepts a mode argument', () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const fd = fs.openSync(p, 'r', 0o644);
         fs.closeSync(fd);
       });
 
-      itremote('refuses to open a packed file for writing', function () {
+      itremote('refuses to open a packed file for writing', () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const writeFlags = [
           'w',
@@ -2132,14 +2126,14 @@ describe('asar package', function () {
         expect(fs.readFileSync(p).toString().trim()).to.equal('file1');
       });
 
-      itremote('throws EEXIST for O_CREAT | O_EXCL on an existing packed file', function () {
+      itremote('throws EEXIST for O_CREAT | O_EXCL on an existing packed file', () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         expect(() => fs.openSync(p, fs.constants.O_RDONLY | fs.constants.O_CREAT | fs.constants.O_EXCL)).to.throw(
           /EEXIST/
         );
       });
 
-      itremote('throws EISDIR when opening a directory', function () {
+      itremote('throws EISDIR when opening a directory', () => {
         expect(() => fs.openSync(path.join(asarDir, 'a.asar', 'dir1'), 'r')).to.throw(/EISDIR/);
         expect(() => fs.openSync(path.join(asarDir, 'a.asar'), 'r')).to.throw(/EISDIR/);
         // ...including through a symbolic link to a directory.
@@ -2147,7 +2141,7 @@ describe('asar package', function () {
         expect(() => fs.openSync(path.join(asarDir, 'a.asar', 'link2', 'link2'), 'r')).to.throw(/EISDIR/);
       });
 
-      itremote('opens files with an empty size', function () {
+      itremote('opens files with an empty size', () => {
         const fd = fs.openSync(path.join(asarDir, 'empty.asar', 'file1'), 'r');
         expect(fs.fstatSync(fd).size).to.equal(0);
         expect(fs.readSync(fd, Buffer.alloc(8), 0, 8, 0)).to.equal(0);
@@ -2155,7 +2149,7 @@ describe('asar package', function () {
         fs.closeSync(fd);
       });
 
-      itremote('opens unpacked files as regular files', function () {
+      itremote('opens unpacked files as regular files', () => {
         const originalFs = require('node:original-fs');
         const fd = fs.openSync(path.join(asarDir, 'unpack.asar', 'a.txt'), 'r');
         const stats = fs.fstatSync(fd);
@@ -2165,7 +2159,7 @@ describe('asar package', function () {
         fs.closeSync(fd);
       });
 
-      itremote('hands out a descriptor that is not usable outside of fs', function () {
+      itremote('hands out a descriptor that is not usable outside of fs', () => {
         // The number identifies the entry to fs only; it must never expose the
         // archive's bytes to code that reads the raw descriptor, and that code
         // should fail loudly rather than get data from the wrong offset.
@@ -2184,7 +2178,7 @@ describe('asar package', function () {
         fs.closeSync(fd);
       });
 
-      itremote('does not leak file descriptors', function () {
+      itremote('does not leak file descriptors', () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const first = fs.openSync(p, 'r');
         fs.closeSync(first);
@@ -2198,7 +2192,7 @@ describe('asar package', function () {
         expect(last).to.equal(first);
       });
 
-      itremote('gives every open its own file position', function () {
+      itremote('gives every open its own file position', () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const fd1 = fs.openSync(p, 'r');
         const fd2 = fs.openSync(p, 'r');
@@ -2215,8 +2209,8 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.open (callback forms)', function () {
-      itremote('supports (path, cb), (path, flags, cb) and (path, flags, mode, cb)', async function () {
+    describe('fs.open (callback forms)', () => {
+      itremote('supports (path, cb), (path, flags, cb) and (path, flags, mode, cb)', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const fds = [
           await new Promise<number>((resolve, reject) => fs.open(p, (e, fd) => (e ? reject(e) : resolve(fd)))),
@@ -2233,21 +2227,21 @@ describe('asar package', function () {
         }
       });
 
-      itremote('reports EACCES for write flags asynchronously', async function () {
+      itremote('reports EACCES for write flags asynchronously', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const err = await new Promise<any>((resolve) => fs.open(p, 'w', resolve));
         expect(err.code).to.equal('EACCES');
       });
 
-      itremote('reports EISDIR for directories asynchronously', async function () {
+      itremote('reports EISDIR for directories asynchronously', async () => {
         const err = await new Promise<any>((resolve) => fs.open(path.join(asarDir, 'a.asar', 'dir1'), 'r', resolve));
         expect(err.code).to.equal('EISDIR');
       });
     });
 
-    describe('fs.readSync / fs.read on packed files', function () {
+    describe('fs.readSync / fs.read on packed files', () => {
       // Mirrors test-fs-read.js.
-      itremote('reads into Buffers and Uint8Arrays with an explicit position', async function () {
+      itremote('reads into Buffers and Uint8Arrays with an explicit position', async () => {
         const fd = fs.openSync(path.join(asarDir, 'a.asar', 'file1'), 'r');
         const expected = Buffer.from('file1\n');
         for (const make of [() => Buffer.allocUnsafe(expected.length), () => new Uint8Array(expected.length)]) {
@@ -2264,7 +2258,7 @@ describe('asar package', function () {
         fs.closeSync(fd);
       });
 
-      itremote('returns 0 bytes when reading beyond the end of the file', async function () {
+      itremote('returns 0 bytes when reading beyond the end of the file', async () => {
         const fd = fs.openSync(path.join(asarDir, 'a.asar', 'file1'), 'r');
         expect(fs.readSync(fd, Buffer.alloc(1), 0, 1, 6)).to.equal(0);
         expect(fs.readSync(fd, Buffer.alloc(1), 0, 1, 0xffffffff + 1)).to.equal(0);
@@ -2275,7 +2269,7 @@ describe('asar package', function () {
         fs.closeSync(fd);
       });
 
-      itremote('clamps reads that run past the end of the entry', function () {
+      itremote('clamps reads that run past the end of the entry', () => {
         const fd = fs.openSync(path.join(asarDir, 'a.asar', 'file1'), 'r');
         const buffer = Buffer.alloc(100);
         expect(fs.readSync(fd, buffer, 0, 100, 4)).to.equal(2);
@@ -2285,7 +2279,7 @@ describe('asar package', function () {
         fs.closeSync(fd);
       });
 
-      itremote('honours a null position by using and advancing the file position', function () {
+      itremote('honours a null position by using and advancing the file position', () => {
         const fd = fs.openSync(path.join(asarDir, 'a.asar', 'file1'), 'r');
         const chunk = Buffer.alloc(2);
         const parts: string[] = [];
@@ -2304,7 +2298,7 @@ describe('asar package', function () {
         fs.closeSync(fd2);
       });
 
-      itremote('accepts a bigint position', function () {
+      itremote('accepts a bigint position', () => {
         const fd = fs.openSync(path.join(asarDir, 'a.asar', 'file1'), 'r');
         const buffer = Buffer.alloc(2);
         expect(fs.readSync(fd, buffer, 0, 2, 4n as any)).to.equal(2);
@@ -2313,7 +2307,7 @@ describe('asar package', function () {
       });
 
       // Mirrors test-fs-read-optional-params.js and test-fs-readSync-optional-params.js.
-      itremote('supports the options-object forms', async function () {
+      itremote('supports the options-object forms', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const expected = Buffer.from('file1\n');
         {
@@ -2362,7 +2356,7 @@ describe('asar package', function () {
       });
 
       // Mirrors test-fs-read-zero-length.js and test-fs-read-empty-buffer.js.
-      itremote('handles zero-length reads and rejects empty buffers like Node', async function () {
+      itremote('handles zero-length reads and rejects empty buffers like Node', async () => {
         const fd = fs.openSync(path.join(asarDir, 'a.asar', 'file1'), 'r');
         expect(fs.readSync(fd, Buffer.alloc(4), 0, 0, 0)).to.equal(0);
         const n = await new Promise<number>((resolve, reject) =>
@@ -2376,7 +2370,7 @@ describe('asar package', function () {
         fs.closeSync(fd);
       });
 
-      itremote('validates arguments like Node', function () {
+      itremote('validates arguments like Node', () => {
         const fd = fs.openSync(path.join(asarDir, 'a.asar', 'file1'), 'r');
         expect(() => (fs.read as any)(fd, Buffer.alloc(1), 0, 1, 0))
           .to.throw()
@@ -2390,7 +2384,7 @@ describe('asar package', function () {
         fs.closeSync(fd);
       });
 
-      itremote('reads a larger packed file back byte-for-byte in odd sized chunks', function () {
+      itremote('reads a larger packed file back byte-for-byte in odd sized chunks', () => {
         const p = path.join(asarDir, 'video.asar', 'video.mp4');
         const expected = fs.readFileSync(p);
         expect(expected.length).to.be.greaterThan(100000);
@@ -2409,8 +2403,8 @@ describe('asar package', function () {
     });
 
     // Mirrors test-fs-readv-sync.js / test-fs-readv.js / test-fs-readv-promises.js.
-    describe('fs.readvSync / fs.readv / FileHandle.readv on packed files', function () {
-      itremote('reads into an array of buffers with and without a position', async function () {
+    describe('fs.readvSync / fs.readv / FileHandle.readv on packed files', () => {
+      itremote('reads into an array of buffers with and without a position', async () => {
         const p = path.join(asarDir, 'video.asar', 'video.mp4');
         const expected = fs.readFileSync(p);
         const allocate = () => [
@@ -2464,7 +2458,7 @@ describe('asar package', function () {
         }
       });
 
-      itremote('skips zero-length buffers and clamps at the end of the entry like preadv', async function () {
+      itremote('skips zero-length buffers and clamps at the end of the entry like preadv', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1'); // 6 bytes: 'file1\n'
         {
           // Zero-length buffers do not stop the read, whether or not the tail is clamped.
@@ -2501,7 +2495,7 @@ describe('asar package', function () {
         }
       });
 
-      itremote('rejects invalid buffer arguments like Node', function () {
+      itremote('rejects invalid buffer arguments like Node', () => {
         const fd = fs.openSync(path.join(asarDir, 'a.asar', 'file1'), 'r');
         for (const wrong of [false, 'test', {}, [{}], ['sdf'], null, undefined]) {
           expect(() => (fs.readvSync as any)(fd, wrong, null))
@@ -2512,8 +2506,8 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.fstat on packed files', function () {
-      itremote('describes the entry', async function () {
+    describe('fs.fstat on packed files', () => {
+      itremote('describes the entry', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const fd = fs.openSync(p, 'r');
         const stats = fs.fstatSync(fd);
@@ -2536,7 +2530,7 @@ describe('asar package', function () {
         fs.closeSync(fd);
       });
 
-      itremote('reports executable entries as executable', function () {
+      itremote('reports executable entries as executable', () => {
         const fd = fs.openSync(path.join(asarDir, 'echo.asar', 'echo'), 'r');
         const stats = fs.fstatSync(fd);
         expect(stats.mode & 0o111).to.not.equal(0);
@@ -2546,7 +2540,7 @@ describe('asar package', function () {
         fs.closeSync(fd2);
       });
 
-      itremote('reports conventional permission bits for stat/lstat', function () {
+      itremote('reports conventional permission bits for stat/lstat', () => {
         const a = path.join(asarDir, 'a.asar');
         expect(fs.statSync(path.join(a, 'file1')).mode & 0o777).to.equal(0o644);
         expect(fs.statSync(path.join(asarDir, 'echo.asar', 'echo')).mode & 0o777).to.equal(0o755);
@@ -2558,8 +2552,8 @@ describe('asar package', function () {
     });
 
     // Mirrors test-fs-readfile-fd.js.
-    describe('fs.readFile / fs.readFileSync with a packed file descriptor', function () {
-      itremote('reads from the current file position', async function () {
+    describe('fs.readFile / fs.readFileSync with a packed file descriptor', () => {
+      itremote('reads from the current file position', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         {
           const fd = fs.openSync(p, 'r');
@@ -2588,7 +2582,7 @@ describe('asar package', function () {
         }
       });
 
-      itremote('reads an empty file through a descriptor', async function () {
+      itremote('reads an empty file through a descriptor', async () => {
         const fd = fs.openSync(path.join(asarDir, 'empty.asar', 'file1'), 'r');
         expect(fs.readFileSync(fd, 'utf8')).to.equal('');
         expect((await promisify(fs.readFile)(fd)).length).to.equal(0);
@@ -2596,8 +2590,8 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.close / fs.closeSync of packed file descriptors', function () {
-      itremote('closes and rejects further use', async function () {
+    describe('fs.close / fs.closeSync of packed file descriptors', () => {
+      itremote('closes and rejects further use', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const fd = fs.openSync(p, 'r');
         await promisify(fs.close)(fd);
@@ -2607,8 +2601,8 @@ describe('asar package', function () {
       });
     });
 
-    describe('fchmod / fchown / futimes on packed file descriptors', function () {
-      itremote('are refused so the archive itself cannot be modified through them', async function () {
+    describe('fchmod / fchown / futimes on packed file descriptors', () => {
+      itremote('are refused so the archive itself cannot be modified through them', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const fd = fs.openSync(p, 'r');
         expect(() => fs.fchmodSync(fd, 0o777)).to.throw(/EACCES/);
@@ -2635,8 +2629,8 @@ describe('asar package', function () {
 
     // Mirrors test-fs-read-stream.js, test-fs-read-stream-pos.js,
     // test-fs-read-stream-fd.js and test-fs-read-stream-file-handle.js.
-    describe('fs.createReadStream on packed files', function () {
-      itremote('streams a whole file, emitting open/ready/end/close', async function () {
+    describe('fs.createReadStream on packed files', () => {
+      itremote('streams a whole file, emitting open/ready/end/close', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const events: string[] = [];
         const stream = fs.createReadStream(p);
@@ -2660,7 +2654,7 @@ describe('asar package', function () {
         expect(events).to.deep.equal(['open', 'ready', 'end', 'close']);
       });
 
-      itremote('honours encoding, highWaterMark, start and end', async function () {
+      itremote('honours encoding, highWaterMark, start and end', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const read = (options: any) =>
           new Promise<any[]>((resolve, reject) => {
@@ -2681,7 +2675,7 @@ describe('asar package', function () {
         expect(Buffer.concat(await read({ start: 6 })).toString()).to.equal('');
       });
 
-      itremote('streams a larger file identically to readFileSync', async function () {
+      itremote('streams a larger file identically to readFileSync', async () => {
         const p = path.join(asarDir, 'video.asar', 'video.mp4');
         const expected = fs.readFileSync(p);
         for (const highWaterMark of [1024, 16 * 1024, 1024 * 1024]) {
@@ -2696,7 +2690,7 @@ describe('asar package', function () {
         }
       });
 
-      itremote('streams linked files and files in linked directories', async function () {
+      itremote('streams linked files and files in linked directories', async () => {
         for (const file of ['link1', path.join('link2', 'file1'), path.join('link2', 'link2', 'file1')]) {
           const content = await new Promise<Buffer>((resolve, reject) => {
             const chunks: Buffer[] = [];
@@ -2709,7 +2703,7 @@ describe('asar package', function () {
         }
       });
 
-      itremote('streams unpacked files', async function () {
+      itremote('streams unpacked files', async () => {
         const p = path.join(asarDir, 'unpack.asar', 'a.txt');
         const content = await new Promise<Buffer>((resolve, reject) => {
           const chunks: Buffer[] = [];
@@ -2721,7 +2715,7 @@ describe('asar package', function () {
         expect(content.equals(fs.readFileSync(p))).to.be.true;
       });
 
-      itremote('emits errors for missing files and directories', async function () {
+      itremote('emits errors for missing files and directories', async () => {
         const errorFor = (p: string) =>
           new Promise<any>((resolve) => {
             fs.createReadStream(p)
@@ -2732,7 +2726,7 @@ describe('asar package', function () {
         expect((await errorFor(path.join(asarDir, 'a.asar', 'dir1'))).code).to.equal('EISDIR');
       });
 
-      itremote('can be created from an already open packed fd', async function () {
+      itremote('can be created from an already open packed fd', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const fd = fs.openSync(p, 'r');
         const content = await new Promise<Buffer>((resolve, reject) => {
@@ -2758,7 +2752,7 @@ describe('asar package', function () {
         expect(() => fs.fstatSync(fd2)).to.throw(/EBADF/);
       });
 
-      itremote('can be created from a FileHandle', async function () {
+      itremote('can be created from a FileHandle', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const handle = await fs.promises.open(p, 'r');
         const content = await new Promise<Buffer>((resolve, reject) => {
@@ -2771,7 +2765,7 @@ describe('asar package', function () {
         expect(content.toString()).to.equal('file1\n');
       });
 
-      itremote('supports many concurrent streams of the same entry', async function () {
+      itremote('supports many concurrent streams of the same entry', async () => {
         const p = path.join(asarDir, 'video.asar', 'video.mp4');
         const expected = fs.readFileSync(p);
         const streams = [];
@@ -2789,7 +2783,7 @@ describe('asar package', function () {
         for (const content of await Promise.all(streams)) expect(content.equals(expected)).to.be.true;
       });
 
-      itremote('works with pipe()', async function () {
+      itremote('works with pipe()', async () => {
         const p = path.join(asarDir, 'video.asar', 'video.mp4');
         const os = require('node:os');
         const dest = path.join(os.tmpdir(), `asar-pipe-${process.pid}-${Date.now()}`);
@@ -2805,8 +2799,8 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.createWriteStream on packed files', function () {
-      itremote('fails with EACCES', async function () {
+    describe('fs.createWriteStream on packed files', () => {
+      itremote('fails with EACCES', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const err = await new Promise<any>((resolve) => {
           fs.createWriteStream(p).on('error', resolve).end('x');
@@ -2816,8 +2810,8 @@ describe('asar package', function () {
       });
     });
 
-    describe('write APIs on packed files', function () {
-      itremote('fail without touching the archive', async function () {
+    describe('write APIs on packed files', () => {
+      itremote('fail without touching the archive', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         expect(() => fs.writeFileSync(p, 'x')).to.throw(/EACCES/);
         expect(() => fs.appendFileSync(p, 'x')).to.throw(/EACCES/);
@@ -2831,8 +2825,8 @@ describe('asar package', function () {
 
     // Mirrors test-fs-promises-file-handle-read.js, -readFile.js, -stat.js,
     // -readLines.mjs, -stream.js, -close.js, -dispose.js and -chmod.js.
-    describe('fs.promises.open FileHandle on packed files', function () {
-      itremote('exposes a numeric fd and supports all read forms', async function () {
+    describe('fs.promises.open FileHandle on packed files', () => {
+      itremote('exposes a numeric fd and supports all read forms', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const handle = await fs.promises.open(p, 'r');
         expect(handle.fd).to.be.a('number').that.is.greaterThan(2);
@@ -2865,7 +2859,7 @@ describe('asar package', function () {
         await handle.close();
       });
 
-      itremote('supports readFile, stat and readLines', async function () {
+      itremote('supports readFile, stat and readLines', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const handle = await fs.promises.open(p, 'r');
         const stats = await handle.stat();
@@ -2887,7 +2881,7 @@ describe('asar package', function () {
         expect(lines.join('\n')).to.equal(fs.readFileSync(path.join(asarDir, 'a.asar', 'ping.js'), 'utf8').trimEnd());
       });
 
-      itremote('supports createReadStream and readableWebStream', async function () {
+      itremote('supports createReadStream and readableWebStream', async () => {
         const p = path.join(asarDir, 'video.asar', 'video.mp4');
         const expected = fs.readFileSync(p);
         const handle = await fs.promises.open(p, 'r');
@@ -2902,7 +2896,7 @@ describe('asar package', function () {
         await handle.close();
       });
 
-      itremote('stops routing a descriptor number as soon as close() is requested', async function () {
+      itremote('stops routing a descriptor number as soon as close() is requested', async () => {
         // FileHandle#close() runs close(2) on the threadpool; until then a real
         // file opened right after may be handed the same number. It must never
         // be served from the archive-backed reader.
@@ -2922,7 +2916,7 @@ describe('asar package', function () {
         }
       });
 
-      itremote('does not capture a descriptor number that was closed behind its back', async function () {
+      itremote('does not capture a descriptor number that was closed behind its back', async () => {
         // Something outside fs (a native FileHandle built on the number, a
         // handle moved to a worker, ...) can close a packed descriptor
         // without going through fs.close. Simulate that with original-fs and
@@ -2950,7 +2944,7 @@ describe('asar package', function () {
         }
       });
 
-      itremote('close semantics match Node', async function () {
+      itremote('close semantics match Node', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const handle = await fs.promises.open(p, 'r');
         await handle.close();
@@ -2964,7 +2958,7 @@ describe('asar package', function () {
         expect(disposable.fd).to.equal(-1);
       });
 
-      itremote('refuses metadata and write operations', async function () {
+      itremote('refuses metadata and write operations', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const handle = await fs.promises.open(p, 'r');
         await expectToThrowErrorWithCode(() => handle.chmod(0o777), 'EACCES');
@@ -2982,14 +2976,14 @@ describe('asar package', function () {
         expect(fs.readFileSync(p).toString().trim()).to.equal('file1');
       });
 
-      itremote('rejects write flags, missing files and directories', async function () {
+      itremote('rejects write flags, missing files and directories', async () => {
         await expectToThrowErrorWithCode(() => fs.promises.open(path.join(asarDir, 'a.asar', 'file1'), 'w'), 'EACCES');
         await expectToThrowErrorWithCode(() => fs.promises.open(path.join(asarDir, 'a.asar', 'file1'), 'a+'), 'EACCES');
         await expectToThrowErrorWithCode(() => fs.promises.open(path.join(asarDir, 'a.asar', 'dir1'), 'r'), 'EISDIR');
         await expectToThrowErrorWithCode(() => fs.promises.open(path.join(asarDir, 'a.asar', 'nope'), 'r'), 'ENOENT');
       });
 
-      itremote('opens unpacked files as regular handles', async function () {
+      itremote('opens unpacked files as regular handles', async () => {
         const originalFs = require('node:original-fs');
         const handle = await fs.promises.open(path.join(asarDir, 'unpack.asar', 'a.txt'), 'r');
         const stats = await handle.stat();
@@ -2997,7 +2991,7 @@ describe('asar package', function () {
         await handle.close();
       });
 
-      itremote('lets many handles coexist and be read concurrently', async function () {
+      itremote('lets many handles coexist and be read concurrently', async () => {
         const p = path.join(asarDir, 'video.asar', 'video.mp4');
         const expected = fs.readFileSync(p);
         const handles = await Promise.all(Array.from({ length: 40 }, () => fs.promises.open(p, 'r')));
@@ -3008,8 +3002,8 @@ describe('asar package', function () {
     });
 
     // Mirrors test-fs-copyfile.js.
-    describe('fs.copyFile flags and errors', function () {
-      itremote('honours COPYFILE_EXCL and overwrites otherwise', async function () {
+    describe('fs.copyFile flags and errors', () => {
+      itremote('honours COPYFILE_EXCL and overwrites otherwise', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const dest = tempPath();
         fs.copyFileSync(p, dest);
@@ -3028,7 +3022,7 @@ describe('asar package', function () {
         expect(() => fs.copyFileSync(p, dest, fs.constants.COPYFILE_FICLONE_FORCE)).to.throw(/ENOTSUP/);
       });
 
-      itremote('lets native fs decide about copy-on-write clones of unpacked files', function () {
+      itremote('lets native fs decide about copy-on-write clones of unpacked files', () => {
         const originalFs = require('node:original-fs');
         const unpacked = path.join(asarDir, 'unpack.asar', 'a.txt');
         const real = path.join(asarDir, 'unpack.asar.unpacked', 'a.txt');
@@ -3050,7 +3044,7 @@ describe('asar package', function () {
         if (fs.existsSync(viaAsar)) expect(fs.readFileSync(viaAsar).equals(fs.readFileSync(real))).to.be.true;
       });
 
-      itremote('validates the mode argument like Node', function () {
+      itremote('validates the mode argument like Node', () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         expect(() => fs.copyFileSync(p, tempPath(), 8))
           .to.throw()
@@ -3060,7 +3054,7 @@ describe('asar package', function () {
           .with.property('code', 'ERR_INVALID_ARG_TYPE');
       });
 
-      itremote('reports ENOENT / EISDIR for bad sources', async function () {
+      itremote('reports ENOENT / EISDIR for bad sources', async () => {
         expect(() => fs.copyFileSync(path.join(asarDir, 'a.asar', 'nope'), tempPath())).to.throw(/ENOENT/);
         expect(() => fs.copyFileSync(path.join(asarDir, 'a.asar', 'dir1'), tempPath())).to.throw(/EISDIR/);
         await expectToThrowErrorWithCode(
@@ -3073,7 +3067,7 @@ describe('asar package', function () {
         expect(err.code).to.equal('EISDIR');
       });
 
-      itremote('copies linked files, larger files and executable bits', async function () {
+      itremote('copies linked files, larger files and executable bits', async () => {
         const link = path.join(asarDir, 'a.asar', 'link1');
         const d1 = tempPath();
         fs.copyFileSync(link, d1);
@@ -3108,7 +3102,7 @@ describe('asar package', function () {
         }
       });
 
-      itremote('fails when the destination is inside an archive', async function () {
+      itremote('fails when the destination is inside an archive', async () => {
         const src = tempPath();
         fs.writeFileSync(src, 'x');
         expect(() => fs.copyFileSync(src, path.join(asarDir, 'a.asar', 'new-file'))).to.throw(/ENOTDIR|EACCES|ENOENT/);
@@ -3119,8 +3113,8 @@ describe('asar package', function () {
     });
 
     // Mirrors the test-fs-cp-* family (subset applicable to read-only sources).
-    describe('fs.cp / fs.cpSync / fs.promises.cp from archives', function () {
-      itremote('copies a directory tree recursively (sync, callback, promises)', async function () {
+    describe('fs.cp / fs.cpSync / fs.promises.cp from archives', () => {
+      itremote('copies a directory tree recursively (sync, callback, promises)', async () => {
         const src = path.join(asarDir, 'a.asar');
         const expectedTop = ['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2', 'ping.js'];
         for (const variant of ['sync', 'callback', 'promises']) {
@@ -3151,7 +3145,7 @@ describe('asar package', function () {
         }
       });
 
-      itremote('copies symlinks verbatim when asked, producing a self-contained tree', async function () {
+      itremote('copies symlinks verbatim when asked, producing a self-contained tree', async () => {
         const src = path.join(asarDir, 'a.asar');
         for (const variant of ['sync', 'promises']) {
           const dest = tempPath();
@@ -3171,7 +3165,7 @@ describe('asar package', function () {
         }
       });
 
-      itremote('requires recursive for directories', async function () {
+      itremote('requires recursive for directories', async () => {
         const src = path.join(asarDir, 'a.asar');
         // Node reports this as the ERR_FS_EISDIR system error (with EISDIR as its info code).
         expect(() => fs.cpSync(src, tempPath()))
@@ -3183,7 +3177,7 @@ describe('asar package', function () {
         expect(err.info.code).to.equal('EISDIR');
       });
 
-      itremote('honours errorOnExist and force', async function () {
+      itremote('honours errorOnExist and force', async () => {
         const src = path.join(asarDir, 'a.asar', 'file1');
         const dest = tempPath();
         fs.writeFileSync(dest, 'existing');
@@ -3219,7 +3213,7 @@ describe('asar package', function () {
         expect(fs.readFileSync(path.join(dir, 'dir1', 'file1')).toString()).to.equal('file1\n');
       });
 
-      itremote('applies filter functions', async function () {
+      itremote('applies filter functions', async () => {
         const src = path.join(asarDir, 'a.asar');
         const dest = tempPath();
         fs.cpSync(src, dest, { recursive: true, filter: (p: string) => !p.endsWith('file2') });
@@ -3236,7 +3230,7 @@ describe('asar package', function () {
         expect(fs.lstatSync(path.join(dest2, 'link2')).isSymbolicLink()).to.be.true;
       });
 
-      itremote('dereferences symlinks when asked', async function () {
+      itremote('dereferences symlinks when asked', async () => {
         const src = path.join(asarDir, 'a.asar');
         // Note: a.asar's directory links form a cycle (dir1/link2 -> dir1), so a
         // dereferencing copy of the whole tree cannot terminate (Node behaves
@@ -3255,7 +3249,7 @@ describe('asar package', function () {
         }
       });
 
-      itremote('errors on non-existent sources and file-to-directory mismatches', async function () {
+      itremote('errors on non-existent sources and file-to-directory mismatches', async () => {
         expect(() => fs.cpSync(path.join(asarDir, 'a.asar', 'nope'), tempPath())).to.throw(/ENOENT/);
         await expectToThrowErrorWithCode(
           () => fs.promises.cp(path.join(asarDir, 'a.asar', 'nope'), tempPath()),
@@ -3281,7 +3275,7 @@ describe('asar package', function () {
         );
       });
 
-      itremote('copies unpacked files and mixed archives', async function () {
+      itremote('copies unpacked files and mixed archives', async () => {
         const dest = tempPath();
         fs.cpSync(path.join(asarDir, 'unpack.asar'), dest, { recursive: true });
         expect(
@@ -3296,8 +3290,8 @@ describe('asar package', function () {
     });
 
     // Mirrors test-fs-opendir.js.
-    describe('fs.opendir / fs.opendirSync / fs.promises.opendir on archives', function () {
-      itremote('lists entries with correct types (sync)', function () {
+    describe('fs.opendir / fs.opendirSync / fs.promises.opendir on archives', () => {
+      itremote('lists entries with correct types (sync)', () => {
         const dir = fs.opendirSync(path.join(asarDir, 'a.asar'));
         expect(dir.path).to.equal(path.join(asarDir, 'a.asar'));
         const entries: Record<string, string> = {};
@@ -3333,7 +3327,7 @@ describe('asar package', function () {
           .with.property('code', 'ERR_DIR_CLOSED');
       });
 
-      itremote('lists entries via callbacks, promises and async iteration', async function () {
+      itremote('lists entries via callbacks, promises and async iteration', async () => {
         const p = path.join(asarDir, 'a.asar');
         const expected = fs.readdirSync(p).sort();
 
@@ -3369,7 +3363,7 @@ describe('asar package', function () {
         await expectToThrowErrorWithCode(() => dir4.read(), 'ERR_DIR_CLOSED');
       });
 
-      itremote('supports recursive iteration', async function () {
+      itremote('supports recursive iteration', async () => {
         const p = path.join(asarDir, 'a.asar');
         const dir = await fs.promises.opendir(p, { recursive: true });
         const found: string[] = [];
@@ -3389,7 +3383,7 @@ describe('asar package', function () {
         expect(foundSync.sort()).to.deep.equal(found.sort());
       });
 
-      itremote('lists sub directories, linked directories and empty archives', async function () {
+      itremote('lists sub directories, linked directories and empty archives', async () => {
         expect(
           Array.from({ length: 5 }, () => fs.opendirSync(path.join(asarDir, 'a.asar', 'dir1')).readSync()!.name).sort()
         ).to.deep.equal(['file1', 'file1', 'file1', 'file1', 'file1']);
@@ -3405,7 +3399,7 @@ describe('asar package', function () {
         empty.closeSync();
       });
 
-      itremote('supports the buffer and other name encodings', function () {
+      itremote('supports the buffer and other name encodings', () => {
         const dir = fs.opendirSync(path.join(asarDir, 'a.asar'), { encoding: 'buffer' as any });
         const dirent = dir.readSync()!;
         expect(Buffer.isBuffer(dirent.name)).to.be.true;
@@ -3423,7 +3417,7 @@ describe('asar package', function () {
         );
       });
 
-      itremote('reports ENOTDIR and ENOENT', async function () {
+      itremote('reports ENOTDIR and ENOENT', async () => {
         expect(() => fs.opendirSync(path.join(asarDir, 'a.asar', 'file1'))).to.throw(/ENOTDIR/);
         expect(() => fs.opendirSync(path.join(asarDir, 'a.asar', 'nope'))).to.throw(/ENOENT/);
         await expectToThrowErrorWithCode(() => fs.promises.opendir(path.join(asarDir, 'a.asar', 'file1')), 'ENOTDIR');
@@ -3435,8 +3429,8 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.readlink / fs.readlinkSync / fs.promises.readlink on archives', function () {
-      itremote('returns link targets relative to the link, like a real filesystem', async function () {
+    describe('fs.readlink / fs.readlinkSync / fs.promises.readlink on archives', () => {
+      itremote('returns link targets relative to the link, like a real filesystem', async () => {
         const a = path.join(asarDir, 'a.asar');
         // In this fixture every link points at a root entry (dir1/link1 -> /file1,
         // dir1/link2 -> /dir1), and asar stores targets relative to the archive
@@ -3465,7 +3459,7 @@ describe('asar package', function () {
         expect(fs.readFileSync(resolve(path.join(a, 'link2', 'link1'))).toString()).to.equal('file1\n');
       });
 
-      itremote('reports EINVAL for non-links and ENOENT for missing paths', async function () {
+      itremote('reports EINVAL for non-links and ENOENT for missing paths', async () => {
         const a = path.join(asarDir, 'a.asar');
         expect(() => fs.readlinkSync(path.join(a, 'file1'))).to.throw(/EINVAL/);
         expect(() => fs.readlinkSync(path.join(a, 'dir1'))).to.throw(/EINVAL/);
@@ -3476,8 +3470,8 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.stat follows symbolic links inside archives', function () {
-      itremote('reports the link target for stat and the link itself for lstat', async function () {
+    describe('fs.stat follows symbolic links inside archives', () => {
+      itremote('reports the link target for stat and the link itself for lstat', async () => {
         const a = path.join(asarDir, 'a.asar');
         for (const [link, expected] of [
           ['link1', 'file'],
@@ -3509,7 +3503,7 @@ describe('asar package', function () {
         await expectToThrowErrorWithCode(() => fs.promises.stat(path.join(a, 'nope')), 'ENOENT');
       });
 
-      itremote('resolves paths through symlinked directories for module loading', function () {
+      itremote('resolves paths through symlinked directories for module loading', () => {
         // require() relies on internalModuleStat, which must follow links to
         // recognise directories.
         expect(fs.readdirSync(path.join(asarDir, 'a.asar', 'link2'))).to.include('file1');
@@ -3518,8 +3512,8 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.stat / fs.lstat with bigint on archives', function () {
-      itremote('returns BigIntStats when requested', async function () {
+    describe('fs.stat / fs.lstat with bigint on archives', () => {
+      itremote('returns BigIntStats when requested', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const s = fs.statSync(p, { bigint: true });
         expect(typeof s.size).to.equal('bigint');
@@ -3542,8 +3536,8 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.exists on an invalid archive', function () {
-      itremote('reports false rather than an error object', async function () {
+    describe('fs.exists on an invalid archive', () => {
+      itremote('reports false rather than an error object', async () => {
         const p = path.join(asarDir, 'not-an-archive.asar', 'file');
         expect(fs.existsSync(p)).to.be.false;
         const exists = await new Promise((resolve) => fs.exists(p, resolve));
@@ -3551,8 +3545,8 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.readFileSync options handling', function () {
-      itremote('returns a Buffer for empty files when options is an object without an encoding', function () {
+    describe('fs.readFileSync options handling', () => {
+      itremote('returns a Buffer for empty files when options is an object without an encoding', () => {
         const p = path.join(asarDir, 'empty.asar', 'file1');
         expect(Buffer.isBuffer(fs.readFileSync(p, { flag: 'r' }))).to.be.true;
         expect(Buffer.isBuffer(fs.readFileSync(p, { encoding: null }))).to.be.true;
@@ -3560,8 +3554,8 @@ describe('asar package', function () {
       });
     });
 
-    describe('original-fs is not affected by the archive-aware fs overrides', function () {
-      itremote('treats archives as plain files through every fd, stream, copy and dir API', async function () {
+    describe('original-fs is not affected by the archive-aware fs overrides', () => {
+      itremote('treats archives as plain files through every fd, stream, copy and dir API', async () => {
         const originalFs = require('node:original-fs');
         const archive = path.join(asarDir, 'a.asar');
         const rawSize = originalFs.statSync(archive).size;
@@ -3647,30 +3641,30 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.mkdir', function () {
-      itremote('throws error when calling inside asar archive', async function () {
+    describe('fs.mkdir', () => {
+      itremote('throws error when calling inside asar archive', async () => {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         const err = await new Promise<any>((resolve) => fs.mkdir(p, resolve));
         expect(err.code).to.equal('ENOTDIR');
       });
     });
 
-    describe('fs.promises.mkdir', function () {
-      itremote('throws error when calling inside asar archive', async function () {
+    describe('fs.promises.mkdir', () => {
+      itremote('throws error when calling inside asar archive', async () => {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         await expectToThrowErrorWithCode(() => fs.promises.mkdir(p), 'ENOTDIR');
       });
     });
 
-    describe('fs.mkdirSync', function () {
-      itremote('throws error when calling inside asar archive', function () {
+    describe('fs.mkdirSync', () => {
+      itremote('throws error when calling inside asar archive', () => {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         expect(() => {
           fs.mkdirSync(p);
         }).to.throw(/ENOTDIR/);
       });
 
-      itremote('throws error when calling recursively inside asar archive', function () {
+      itremote('throws error when calling recursively inside asar archive', () => {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         expect(() => {
           fs.mkdirSync(p, { recursive: true });
@@ -3678,14 +3672,14 @@ describe('asar package', function () {
       });
     });
 
-    describe('fs.exists', function () {
-      itremote('handles an existing file', async function () {
+    describe('fs.exists', () => {
+      itremote('handles an existing file', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const exists = await new Promise((resolve) => fs.exists(p, resolve));
         expect(exists).to.be.true;
       });
 
-      itremote('handles a non-existent file', async function () {
+      itremote('handles a non-existent file', async () => {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         const exists = await new Promise((resolve) => fs.exists(p, resolve));
         expect(exists).to.be.false;
@@ -3697,94 +3691,94 @@ describe('asar package', function () {
         expect(exists).to.be.true;
       });
 
-      itremote('promisified version handles a non-existent file', async function () {
+      itremote('promisified version handles a non-existent file', async () => {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         const exists = await require('node:util').promisify(fs.exists)(p);
         expect(exists).to.be.false;
       });
     });
 
-    describe('fs.existsSync', function () {
-      itremote('handles an existing file', function () {
+    describe('fs.existsSync', () => {
+      itremote('handles an existing file', () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         expect(fs.existsSync(p)).to.be.true;
       });
 
-      itremote('handles a non-existent file', function () {
+      itremote('handles a non-existent file', () => {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         expect(fs.existsSync(p)).to.be.false;
       });
     });
 
-    describe('fs.access', function () {
-      itremote('accesses a normal file', async function () {
+    describe('fs.access', () => {
+      itremote('accesses a normal file', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         await promisify(fs.access)(p);
       });
 
-      itremote('throws an error when called with write mode', async function () {
+      itremote('throws an error when called with write mode', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const err = await new Promise<any>((resolve) => fs.access(p, fs.constants.R_OK | fs.constants.W_OK, resolve));
         expect(err.code).to.equal('EACCES');
       });
 
-      itremote('throws an error when called on non-existent file', async function () {
+      itremote('throws an error when called on non-existent file', async () => {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         const err = await new Promise<any>((resolve) => fs.access(p, fs.constants.R_OK | fs.constants.W_OK, resolve));
         expect(err.code).to.equal('ENOENT');
       });
 
-      itremote('allows write mode for unpacked files', async function () {
+      itremote('allows write mode for unpacked files', async () => {
         const p = path.join(asarDir, 'unpack.asar', 'a.txt');
         await promisify(fs.access)(p, fs.constants.R_OK | fs.constants.W_OK);
       });
     });
 
-    describe('fs.promises.access', function () {
-      itremote('accesses a normal file', async function () {
+    describe('fs.promises.access', () => {
+      itremote('accesses a normal file', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         await fs.promises.access(p);
       });
 
-      itremote('throws an error when called with write mode', async function () {
+      itremote('throws an error when called with write mode', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         await expectToThrowErrorWithCode(() => fs.promises.access(p, fs.constants.R_OK | fs.constants.W_OK), 'EACCES');
       });
 
-      itremote('throws an error when called on non-existent file', async function () {
+      itremote('throws an error when called on non-existent file', async () => {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         await expectToThrowErrorWithCode(() => fs.promises.access(p), 'ENOENT');
       });
 
-      itremote('allows write mode for unpacked files', async function () {
+      itremote('allows write mode for unpacked files', async () => {
         const p = path.join(asarDir, 'unpack.asar', 'a.txt');
         await fs.promises.access(p, fs.constants.R_OK | fs.constants.W_OK);
       });
     });
 
-    describe('fs.accessSync', function () {
-      itremote('accesses a normal file', function () {
+    describe('fs.accessSync', () => {
+      itremote('accesses a normal file', () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         expect(() => {
           fs.accessSync(p);
         }).to.not.throw();
       });
 
-      itremote('throws an error when called with write mode', function () {
+      itremote('throws an error when called with write mode', () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         expect(() => {
           fs.accessSync(p, fs.constants.R_OK | fs.constants.W_OK);
         }).to.throw(/EACCES/);
       });
 
-      itremote('throws an error when called on non-existent file', function () {
+      itremote('throws an error when called on non-existent file', () => {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         expect(() => {
           fs.accessSync(p);
         }).to.throw(/ENOENT/);
       });
 
-      itremote('allows write mode for unpacked files', function () {
+      itremote('allows write mode for unpacked files', () => {
         const p = path.join(asarDir, 'unpack.asar', 'a.txt');
         expect(() => {
           fs.accessSync(p, fs.constants.R_OK | fs.constants.W_OK);
@@ -3793,7 +3787,7 @@ describe('asar package', function () {
     });
 
     function generateSpecs(childProcess: string) {
-      describe(`${childProcess}.fork`, function () {
+      describe(`${childProcess}.fork`, () => {
         itremote(
           'opens a normal js file',
           async function (childProcess: string) {
@@ -3818,7 +3812,7 @@ describe('asar package', function () {
         );
       });
 
-      describe(`${childProcess}.exec`, function () {
+      describe(`${childProcess}.exec`, () => {
         itremote(
           'should not try to extract the command if there is a reference to a file inside an .asar',
           async function (childProcess: string) {
@@ -3831,7 +3825,7 @@ describe('asar package', function () {
         );
       });
 
-      describe(`${childProcess}.execSync`, function () {
+      describe(`${childProcess}.execSync`, () => {
         itremote(
           'should not try to extract the command if there is a reference to a file inside an .asar',
           async function (childProcess: string) {
@@ -3844,7 +3838,7 @@ describe('asar package', function () {
         );
       });
 
-      ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64')(`${childProcess}.execFile`, function () {
+      ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64')(`${childProcess}.execFile`, () => {
         itremote(
           'executes binaries',
           async function (childProcess: string) {
@@ -3884,8 +3878,8 @@ describe('asar package', function () {
     generateSpecs('child_process');
     generateSpecs('node:child_process');
 
-    describe('util.promisify', function () {
-      itremote('can promisify all fs functions', function () {
+    describe('util.promisify', () => {
+      itremote('can promisify all fs functions', () => {
         const originalFs = require('node:original-fs');
         const util = require('node:util');
 
@@ -3903,16 +3897,16 @@ describe('asar package', function () {
       });
     });
 
-    describe('process.noAsar', function () {
+    describe('process.noAsar', () => {
       const errorName = process.platform === 'win32' ? 'ENOENT' : 'ENOTDIR';
 
-      beforeEach(async function () {
+      beforeEach(async () => {
         return (await getRemoteContext()).webContents.executeJavaScript(`
           process.noAsar = true;
         `);
       });
 
-      afterEach(async function () {
+      afterEach(async () => {
         return (await getRemoteContext()).webContents.executeJavaScript(`
           process.noAsar = false;
         `);
@@ -3977,7 +3971,7 @@ describe('asar package', function () {
         [errorName]
       );
 
-      itremote('treats *.asar as normal file', function () {
+      itremote('treats *.asar as normal file', () => {
         const originalFs = require('node:original-fs');
         const asar = path.join(asarDir, 'a.asar');
         const content1 = fs.readFileSync(asar);
@@ -3988,7 +3982,7 @@ describe('asar package', function () {
         }).to.throw(/ENOTDIR/);
       });
 
-      itremote('is reset to its original value when execSync throws an error', function () {
+      itremote('is reset to its original value when execSync throws an error', () => {
         process.noAsar = false;
         expect(() => {
           require('node:child_process').execSync(path.join(__dirname, 'does-not-exist.txt'));
@@ -4043,36 +4037,36 @@ describe('asar package', function () {
     */
   });
 
-  describe('asar protocol', function () {
-    itremote('can request a file in package', async function () {
+  describe('asar protocol', () => {
+    itremote('can request a file in package', async () => {
       const p = path.resolve(asarDir, 'a.asar', 'file1');
       const response = await fetch('file://' + p);
       const data = await response.text();
       expect(data.trim()).to.equal('file1');
     });
 
-    itremote('can request a file in package with unpacked files', async function () {
+    itremote('can request a file in package with unpacked files', async () => {
       const p = path.resolve(asarDir, 'unpack.asar', 'a.txt');
       const response = await fetch('file://' + p);
       const data = await response.text();
       expect(data.trim()).to.equal('a');
     });
 
-    itremote('can request a linked file in package', async function () {
+    itremote('can request a linked file in package', async () => {
       const p = path.resolve(asarDir, 'a.asar', 'link2', 'link1');
       const response = await fetch('file://' + p);
       const data = await response.text();
       expect(data.trim()).to.equal('file1');
     });
 
-    itremote('can request a file in filesystem', async function () {
+    itremote('can request a file in filesystem', async () => {
       const p = path.resolve(asarDir, 'file');
       const response = await fetch('file://' + p);
       const data = await response.text();
       expect(data.trim()).to.equal('file');
     });
 
-    itremote('gets error when file is not found', async function () {
+    itremote('gets error when file is not found', async () => {
       const p = path.resolve(asarDir, 'a.asar', 'no-exist');
       try {
         const response = await fetch('file://' + p);
@@ -4083,8 +4077,8 @@ describe('asar package', function () {
     });
   });
 
-  describe('original-fs module', function () {
-    itremote('treats .asar as file', function () {
+  describe('original-fs module', () => {
+    itremote('treats .asar as file', () => {
       const file = path.join(asarDir, 'a.asar');
       const originalFs = require('node:original-fs');
       const stats = originalFs.statSync(file);
@@ -4126,27 +4120,27 @@ describe('asar package', function () {
       expect(fs.existsSync(deleteDir)).to.be.false;
     });
 
-    itremote('has the same APIs as fs', function () {
+    itremote('has the same APIs as fs', () => {
       expect(Object.keys(require('node:fs'))).to.deep.equal(Object.keys(require('node:original-fs')));
       expect(Object.keys(require('node:fs').promises)).to.deep.equal(Object.keys(require('node:original-fs').promises));
     });
   });
 
-  describe('graceful-fs module', function () {
-    itremote('recognize asar archives', function () {
+  describe('graceful-fs module', () => {
+    itremote('recognize asar archives', () => {
       const gfs = require('graceful-fs');
 
       const p = path.join(asarDir, 'a.asar', 'link1');
       expect(gfs.readFileSync(p).toString().trim()).to.equal('file1');
     });
-    itremote('does not touch global fs object', function () {
+    itremote('does not touch global fs object', () => {
       const gfs = require('graceful-fs');
       expect(fs.readdir).to.not.equal(gfs.readdir);
     });
   });
 
-  describe('native-image', function () {
-    itremote('reads image from asar archive', function () {
+  describe('native-image', () => {
+    itremote('reads image from asar archive', () => {
       const p = path.join(asarDir, 'logo.asar', 'logo.png');
       const logo = require('electron').nativeImage.createFromPath(p);
       expect(logo.getSize()).to.deep.equal({
@@ -4155,7 +4149,7 @@ describe('asar package', function () {
       });
     });
 
-    itremote('reads image from asar archive with unpacked files', function () {
+    itremote('reads image from asar archive with unpacked files', () => {
       const p = path.join(asarDir, 'unpack.asar', 'atom.png');
       const logo = require('electron').nativeImage.createFromPath(p);
       expect(logo.getSize()).to.deep.equal({

@@ -1,7 +1,7 @@
 import { nativeImage } from 'electron/common';
 import { BrowserWindow, ipcMain, type IpcMainInvokeEvent, MessageChannelMain, type WebContents } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { EventEmitter, once } from 'node:events';
 import * as http from 'node:http';
@@ -17,11 +17,11 @@ describe('ipc module', () => {
   describe('invoke', () => {
     let w: BrowserWindow;
 
-    before(async () => {
+    beforeAll(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       await w.loadURL('about:blank');
     });
-    after(async () => {
+    afterAll(async () => {
       w.destroy();
     });
 
@@ -217,7 +217,7 @@ describe('ipc module', () => {
     let w: BrowserWindow;
     const sizes = [0, 1, 65535, 65536, 65537, 256 * 1024 + 3, 3 * 1024 * 1024 + 1];
 
-    before(async () => {
+    beforeAll(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       await w.loadURL('about:blank');
       ipcMain.handle('echo-large', (_e, arg) => arg);
@@ -228,7 +228,7 @@ describe('ipc module', () => {
         e.sender.send('echo-large-reply', arg);
       });
     });
-    after(async () => {
+    afterAll(async () => {
       w.destroy();
       ipcMain.removeHandler('echo-large');
       ipcMain.removeAllListeners('echo-large-sync');
@@ -280,11 +280,11 @@ describe('ipc module', () => {
   describe('ordering', () => {
     let w: BrowserWindow;
 
-    before(async () => {
+    beforeAll(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       await w.loadURL('about:blank');
     });
-    after(async () => {
+    afterAll(async () => {
       w.destroy();
     });
 

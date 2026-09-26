@@ -11,7 +11,7 @@ import {
   Menu
 } from 'electron/main';
 
-import { assert, expect } from 'vitest';
+import { afterAll, afterEach, assert, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as fs from 'node:fs';
@@ -152,7 +152,7 @@ describe('webContents module', () => {
     });
   });
 
-  describe('will-prevent-unload event', function () {
+  describe('will-prevent-unload event', () => {
     afterEach(async () => {
       await closeAllWindows();
       await cleanupWebContents();
@@ -411,7 +411,7 @@ describe('webContents module', () => {
   // provisioned by script/spec-runner.js and exposed via
   // ELECTRON_TEST_PRINTER_NAME.
   // Self-skips when no such printer is available.
-  ifdescribe(features.isPrintingEnabled())('webContents.print() settings', function () {
+  ifdescribe(features.isPrintingEnabled())('webContents.print() settings', () => {
     let w: BrowserWindow;
     const deviceName = process.env.ELECTRON_TEST_PRINTER_NAME ?? null;
 
@@ -433,21 +433,18 @@ describe('webContents module', () => {
       }
     };
 
-    before(async function () {
-      this.timeout(30000);
-      if (!deviceName || !(await printerVisible(deviceName))) {
-        return this.skip();
-      }
-    });
+    let canPrint = false;
+    beforeAll(async () => {
+      canPrint = !!deviceName && (await printerVisible(deviceName));
+    }, 30000);
 
     beforeEach(() => {
       w = new BrowserWindow({ show: false });
     });
     afterEach(closeAllWindows);
 
-    it('resolves settings for a silent print with options', async function () {
-      this.timeout(60000);
-      if (!deviceName) return this.skip();
+    it('resolves settings for a silent print with options', { timeout: 60000 }, async (ctx) => {
+      if (!canPrint || !deviceName) return ctx.skip();
 
       await w.loadURL('data:text/html,<h1>print test</h1>');
 
@@ -460,7 +457,7 @@ describe('webContents module', () => {
       // Guard against environments where silent printing surfaces a native
       // dialog (which would block the callback) — skip rather than hang.
       const result = await Promise.race([printResult, setTimeout(30000).then(() => 'timeout' as const)]);
-      if (result === 'timeout') return this.skip();
+      if (result === 'timeout') return ctx.skip();
 
       const [success, failureReason] = result;
       // Regression guard for #52266: non-empty print settings must never again
@@ -519,14 +516,14 @@ describe('webContents module', () => {
       let server: http.Server;
       let serverUrl: string;
 
-      before(async () => {
+      beforeAll(async () => {
         server = http.createServer((request, response) => {
           response.end();
         });
         serverUrl = (await listen(server)).url;
       });
 
-      after(() => {
+      afterAll(() => {
         server.close();
       });
 
@@ -554,12 +551,12 @@ describe('webContents module', () => {
   describe('webContents.executeJavaScriptInIsolatedWorld', () => {
     let w: BrowserWindow;
 
-    before(async () => {
+    beforeAll(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
       await w.loadURL('about:blank');
     });
 
-    after(() => w.close());
+    afterAll(() => w.close());
 
     it('resolves the returned promise with the result', async () => {
       await w.webContents.executeJavaScriptInIsolatedWorld(999, [{ code: 'window.X = 123' }]);
@@ -580,7 +577,7 @@ describe('webContents module', () => {
     let w: BrowserWindow;
     let s: http.Server;
 
-    before(function () {
+    beforeAll(() => {
       session
         .fromPartition('loadurl-webcontents-spec')
         .setPermissionRequestHandler((webContents, permission, callback) => {
@@ -608,7 +605,7 @@ describe('webContents module', () => {
     });
     afterEach(closeAllWindows);
 
-    after(async () => {
+    afterAll(async () => {
       session.fromPartition('loadurl-webcontents-spec').setPermissionRequestHandler(null);
     });
 
@@ -1196,7 +1193,7 @@ describe('webContents module', () => {
       let server: http.Server;
       let serverUrl: string;
 
-      before(async () => {
+      beforeAll(async () => {
         server = http.createServer((req, res) => {
           res.setHeader('Content-Type', 'text/html');
           res.end(
@@ -1206,7 +1203,7 @@ describe('webContents module', () => {
         serverUrl = (await listen(server)).url;
       });
 
-      after(async () => {
+      afterAll(async () => {
         if (server) await new Promise((resolve) => server.close(resolve));
         server = null as any;
       });
@@ -2403,7 +2400,7 @@ describe('webContents module', () => {
     let server: http.Server;
     let serverUrl: string;
 
-    before(async () => {
+    beforeAll(async () => {
       server = http.createServer((req, res) => {
         res.setHeader('Content-Type', 'text/html');
         res.end('<title>clone</title>');
@@ -2411,7 +2408,7 @@ describe('webContents module', () => {
       serverUrl = (await listen(server)).url;
     });
 
-    after(() => {
+    afterAll(() => {
       server.close();
     });
 
@@ -2561,7 +2558,7 @@ describe('webContents module', () => {
     let server: http.Server;
     let serverUrl: string;
 
-    before(async () => {
+    beforeAll(async () => {
       server = http.createServer((req, res) => {
         res.setHeader('Content-Type', 'text/html');
         res.end('');
@@ -2569,7 +2566,7 @@ describe('webContents module', () => {
       serverUrl = (await listen(server)).url;
     });
 
-    after(() => {
+    afterAll(() => {
       server.close();
     });
 
@@ -2928,7 +2925,7 @@ describe('webContents module', () => {
       host3: 0.2
     };
 
-    before(() => {
+    beforeAll(() => {
       const protocol = session.defaultSession.protocol;
       protocol.registerStringProtocol(standardScheme, (request, callback) => {
         const response = `<script>
@@ -2942,7 +2939,7 @@ describe('webContents module', () => {
       });
     });
 
-    after(() => {
+    afterAll(() => {
       const protocol = session.defaultSession.protocol;
       protocol.unregisterProtocol(standardScheme);
     });
@@ -3173,7 +3170,7 @@ describe('webContents module', () => {
       let serverUrl: string;
       let crossSiteUrl: string;
 
-      before(async () => {
+      beforeAll(async () => {
         server = http.createServer((req, res) => {
           setTimeout().then(() => res.end('hey'));
         });
@@ -3181,7 +3178,7 @@ describe('webContents module', () => {
         crossSiteUrl = serverUrl.replace('127.0.0.1', 'localhost');
       });
 
-      after(() => {
+      afterAll(() => {
         server.close();
       });
 
@@ -3921,27 +3918,29 @@ describe('webContents module', () => {
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'A' });
     };
 
-    ifit(isTestingBindingAvailable())('is not emitted within a hang delay of a system resume', async function () {
-      this.timeout(70000);
-      const w = new BrowserWindow({ show: true });
-      await w.loadURL('about:blank');
-      let unresponsiveAt = 0;
-      w.webContents.once('unresponsive', () => {
-        unresponsiveAt = Date.now();
-      });
-      await hangAndPoke(w);
-      // Sleep and wake while the timeout is pending; it would fire ~6 s after
-      // this resume, which says nothing about the renderer.
-      await setTimeout(10000);
-      testing().simulatePowerEvent('suspend');
-      testing().simulatePowerEvent('resume');
-      const resumedAt = Date.now();
-      await once(w.webContents, 'unresponsive');
-      expect(unresponsiveAt - resumedAt).to.be.greaterThan(15000);
-    });
+    ifit(isTestingBindingAvailable())(
+      'is not emitted within a hang delay of a system resume',
+      { timeout: 70000 },
+      async () => {
+        const w = new BrowserWindow({ show: true });
+        await w.loadURL('about:blank');
+        let unresponsiveAt = 0;
+        w.webContents.once('unresponsive', () => {
+          unresponsiveAt = Date.now();
+        });
+        await hangAndPoke(w);
+        // Sleep and wake while the timeout is pending; it would fire ~6 s after
+        // this resume, which says nothing about the renderer.
+        await setTimeout(10000);
+        testing().simulatePowerEvent('suspend');
+        testing().simulatePowerEvent('resume');
+        const resumedAt = Date.now();
+        await once(w.webContents, 'unresponsive');
+        expect(unresponsiveAt - resumedAt).to.be.greaterThan(15000);
+      }
+    );
 
-    it('is not followed by responsive just because the window is hidden', async function () {
-      this.timeout(90000);
+    it('is not followed by responsive just because the window is hidden', { timeout: 90000 }, async () => {
       const w = new BrowserWindow({ show: true });
       await w.loadURL('about:blank');
       await hangAndPoke(w, 40000);
@@ -3960,8 +3959,7 @@ describe('webContents module', () => {
       expect(events).to.deep.equal(['unresponsive', 'responsive']);
     });
 
-    it('is emitted for a hang with no suspend involved', async function () {
-      this.timeout(40000);
+    it('is emitted for a hang with no suspend involved', { timeout: 40000 }, async () => {
       const w = new BrowserWindow({ show: true });
       await w.loadURL('about:blank');
       await hangAndPoke(w);
@@ -3974,7 +3972,7 @@ describe('webContents module', () => {
     let serverUrl: string;
     let crossSiteUrl: string;
 
-    before(async () => {
+    beforeAll(async () => {
       server = http.createServer((req, res) => {
         const respond = () => {
           if (req.url === '/redirect-cross-site') {
@@ -3997,7 +3995,7 @@ describe('webContents module', () => {
       crossSiteUrl = serverUrl.replace('127.0.0.1', 'localhost');
     });
 
-    after(() => {
+    afterAll(() => {
       server.close();
     });
 
@@ -4321,16 +4319,15 @@ describe('webContents module', () => {
 
   // Destroying webContents in its event listener is going to crash when
   // Electron is built in Debug mode.
-  describe('destroy()', function () {
+  describe('destroy()', { retry: 3 }, () => {
     // These tests are flaky on Windows CI and we don't know why, but their
     // purpose is to make sure Electron does not crash so it is fine to retry
     // them a few times.
-    this.retries(3);
 
     let server: http.Server;
     let serverUrl: string;
 
-    before(
+    beforeAll(
       () =>
         new Promise<void>((resolve, reject) => {
           const done = (error?: unknown) => (error ? reject(error) : resolve());
@@ -4353,7 +4350,7 @@ describe('webContents module', () => {
         })
     );
 
-    after(() => {
+    afterAll(() => {
       server.close();
     });
 
@@ -4369,7 +4366,7 @@ describe('webContents module', () => {
       { name: 'did-fail-load', url: '/net-error' }
     ];
     for (const e of events) {
-      it(`should not crash when invoked synchronously inside ${e.name} handler`, async function () {
+      it(`should not crash when invoked synchronously inside ${e.name} handler`, async () => {
         const contents = (webContents as typeof ElectronInternal.WebContents).create();
         const originalEmit = contents.emit.bind(contents);
         contents.emit = (...args) => {
@@ -5231,7 +5228,7 @@ describe('webContents module', () => {
 
   describe('PictureInPicture video', () => {
     afterEach(closeAllWindows);
-    it('works as expected', async function () {
+    it('works as expected', async () => {
       const w = new BrowserWindow({ webPreferences: { sandbox: true } });
 
       // TODO(codebytere): figure out why this workaround is needed and remove.
@@ -5295,7 +5292,7 @@ describe('webContents module', () => {
     let proxyServer: http.Server;
     let proxyServerPort: number;
 
-    before(async () => {
+    beforeAll(async () => {
       server = http.createServer((request, response) => {
         if (request.url === '/no-auth') {
           return response.end('ok');
@@ -5309,7 +5306,7 @@ describe('webContents module', () => {
       ({ port: serverPort, url: serverUrl } = await listen(server));
     });
 
-    before(async () => {
+    beforeAll(async () => {
       proxyServer = http.createServer((request, response) => {
         if (request.headers['proxy-authorization']) {
           response.writeHead(200, { 'Content-type': 'text/plain' });
@@ -5324,7 +5321,7 @@ describe('webContents module', () => {
       await session.defaultSession.clearAuthCache();
     });
 
-    after(() => {
+    afterAll(() => {
       server.close();
       proxyServer.close();
     });

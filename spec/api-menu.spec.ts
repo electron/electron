@@ -1,6 +1,6 @@
 import { BrowserWindow, Menu, MenuItem } from 'electron/main';
 
-import { assert, expect } from 'vitest';
+import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -13,7 +13,7 @@ import { closeWindow } from './lib/window-helpers.ts';
 
 const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
-describe('Menu module', function () {
+describe('Menu module', () => {
   it('sets the correct class name on the prototype', () => {
     expect(Menu.prototype.constructor.name).to.equal('Menu');
   });

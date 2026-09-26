@@ -20,7 +20,7 @@ import {
   type WebFrameMain
 } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import * as crypto from 'node:crypto';
@@ -272,7 +272,7 @@ describe('BrowserWindow module', () => {
       let server: http.Server;
       let url: string;
 
-      before(async () => {
+      beforeAll(async () => {
         server = http.createServer((request, response) => {
           switch (request.url) {
             case '/net-error':
@@ -299,7 +299,7 @@ describe('BrowserWindow module', () => {
         url = (await listen(server)).url;
       });
 
-      after(() => {
+      afterAll(() => {
         server.close();
       });
 
@@ -376,7 +376,7 @@ describe('BrowserWindow module', () => {
       expect(content).to.equal('close');
     });
 
-    it('should emit beforeunload event', async function () {
+    it('should emit beforeunload event', async () => {
       await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       w.webContents.executeJavaScript('window.close()', true);
       await once(w.webContents, '-before-unload-fired');
@@ -490,14 +490,14 @@ describe('BrowserWindow module', () => {
     let w: BrowserWindow;
     const scheme = 'other';
     const srcPath = path.join(fixtures, 'api');
-    before(() => {
+    beforeAll(() => {
       protocol.handle(scheme, (req) => {
         const reqURL = new URL(req.url);
         return net.fetch(nodeUrl.pathToFileURL(path.join(srcPath, reqURL.pathname)).toString());
       });
     });
 
-    after(() => {
+    afterAll(() => {
       protocol.unhandle(scheme);
     });
 
@@ -511,7 +511,7 @@ describe('BrowserWindow module', () => {
     let server: http.Server;
     let url: string;
     let postData = null as any;
-    before(async () => {
+    beforeAll(async () => {
       const filePath = path.join(fixtures, 'pages', 'a.html');
       const fileStats = fs.statSync(filePath);
       postData = [
@@ -557,7 +557,7 @@ describe('BrowserWindow module', () => {
       url = (await listen(server)).url;
     });
 
-    after(() => {
+    afterAll(() => {
       server.close();
     });
 
@@ -783,7 +783,7 @@ describe('BrowserWindow module', () => {
       describe('will-navigate event', () => {
         let server: http.Server;
         let url: string;
-        before(async () => {
+        beforeAll(async () => {
           server = http.createServer((req, res) => {
             if (req.url === '/navigate-top') {
               res.end('<a target=_top href="/">navigate _top</a>');
@@ -794,7 +794,7 @@ describe('BrowserWindow module', () => {
           url = (await listen(server)).url;
         });
 
-        after(() => {
+        afterAll(() => {
           server.close();
         });
 
@@ -893,7 +893,7 @@ describe('BrowserWindow module', () => {
       describe('will-frame-navigate event', () => {
         let server = null as unknown as http.Server;
         let url = null as unknown as string;
-        before(async () => {
+        beforeAll(async () => {
           server = http.createServer((req, res) => {
             if (req.url === '/navigate-top') {
               res.end('<a target=_top href="/">navigate _top</a>');
@@ -916,7 +916,7 @@ describe('BrowserWindow module', () => {
           url = (await listen(server)).url;
         });
 
-        after(() => {
+        afterAll(() => {
           server.close();
         });
 
@@ -1117,7 +1117,7 @@ describe('BrowserWindow module', () => {
       describe('will-redirect event', () => {
         let server: http.Server;
         let url: string;
-        before(async () => {
+        beforeAll(async () => {
           server = http.createServer((req, res) => {
             if (req.url === '/302') {
               res.setHeader('Location', '/200');
@@ -1132,7 +1132,7 @@ describe('BrowserWindow module', () => {
           url = (await listen(server)).url;
         });
 
-        after(() => {
+        afterAll(() => {
           server.close();
         });
         it('is emitted on redirects', async () => {
@@ -1214,7 +1214,7 @@ describe('BrowserWindow module', () => {
           'did-frame-navigate',
           'did-navigate'
         ];
-        before(async () => {
+        beforeAll(async () => {
           server = http.createServer((req, res) => {
             if (req.url === '/navigate') {
               res.end('<a href="/">navigate</a>');
@@ -1232,7 +1232,7 @@ describe('BrowserWindow module', () => {
           });
           url = (await listen(server)).url;
         });
-        after(() => {
+        afterAll(() => {
           server.close();
         });
         it('exposes a cross-origin iframe during navigation', async () => {
@@ -2970,10 +2970,10 @@ describe('BrowserWindow module', () => {
 
   describe('BrowserWindow.setProgressBar(progress)', () => {
     let w: BrowserWindow;
-    before(() => {
+    beforeAll(() => {
       w = new BrowserWindow({ show: false });
     });
-    after(async () => {
+    afterAll(async () => {
       await closeWindow(w);
       w = null as unknown as BrowserWindow;
     });
@@ -3892,19 +3892,19 @@ describe('BrowserWindow module', () => {
       // Regression test for https://github.com/electron/electron/pull/51017: a
       // fully transparent colour was treated as unset and replaced by the
       // default opaque one.
-      it('lets the page show through a fully transparent overlay color', async function () {
+      it('lets the page show through a fully transparent overlay color', async (ctx) => {
         const w = await showOverlayWindow({ color: 'rgba(0, 0, 0, 0)', symbolColor: '#0000ff' });
         const captured = await expectDisplayPixelsEventually((pixels) => {
           const overlay = overlayPixels(pixels, w, capturedPageColor(pixels, w));
           // Only the caption button glyphs should differ from the page.
           expect(overlay.fraction).to.be.below(0.1, 'overlay background is not transparent');
         });
-        if (!captured) this.skip();
+        if (!captured) ctx.skip();
       });
 
       // Regression test for https://github.com/electron/electron/pull/52577:
       // the caption button container was not shown at all on Linux.
-      it('draws the overlay background and caption buttons', async function () {
+      it('draws the overlay background and caption buttons', async (ctx) => {
         const w = await showOverlayWindow({ color: '#0000ff', symbolColor: '#ffffff' });
         const captured = await expectDisplayPixelsEventually((pixels) => {
           const overlay = overlayPixels(pixels, w, capturedPageColor(pixels, w));
@@ -3915,7 +3915,7 @@ describe('BrowserWindow module', () => {
             .reduce((total, [, n]) => total + n, 0);
           expect(glyphPixels).to.be.above(20, 'caption button symbols were not drawn');
         });
-        if (!captured) this.skip();
+        if (!captured) ctx.skip();
       });
     });
 
@@ -4330,11 +4330,11 @@ describe('BrowserWindow module', () => {
             expect(order).to.deep.equal(['a', 'b', 'window', 'a', 'b', 'window']);
           });
 
-          it(`runs preloads in a context created on the initial empty document (sandbox: ${sandbox})`, async function () {
+          it(`runs preloads in a context created on the initial empty document (sandbox: ${sandbox})`, async (ctx) => {
             // Only the Node.js renderer receives its preload list at frame
             // creation so far; the sandboxed one still needs a committed
             // navigation.
-            if (sandbox) return this.skip();
+            if (sandbox) return ctx.skip();
             const server = http.createServer((request, response) => {
               response.writeHead(302, { Location: '/elsewhere' });
               response.end();
@@ -4425,7 +4425,7 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    describe('session preload scripts', function () {
+    describe('session preload scripts', () => {
       const preloads = [
         path.join(fixtures, 'module', 'set-global-preload-1.js'),
         path.join(fixtures, 'module', 'set-global-preload-2.js'),
@@ -4568,7 +4568,7 @@ describe('BrowserWindow module', () => {
       // so learn that suffix once by producing a probe entry and reading the
       // name of the file it creates.
       let fileLockHash: string;
-      before(async () => {
+      beforeAll(async () => {
         const probePreload = path.join(os.tmpdir(), `preload-code-cache-probe-${crypto.randomUUID()}.js`);
         fs.copyFileSync(fixture, probePreload);
         const probeKey = crypto.createHash('sha256').update(`preload-${probePreload}`).digest('hex').toUpperCase();
@@ -4892,7 +4892,7 @@ describe('BrowserWindow module', () => {
       let server: http.Server;
       let serverUrl: string;
 
-      before(async () => {
+      beforeAll(async () => {
         server = http.createServer((request, response) => {
           switch (request.url) {
             case '/cross-site':
@@ -4905,7 +4905,7 @@ describe('BrowserWindow module', () => {
         serverUrl = (await listen(server)).url;
       });
 
-      after(() => {
+      afterAll(() => {
         server.close();
       });
 
@@ -5526,7 +5526,7 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  describe('beforeunload handler', function () {
+  describe('beforeunload handler', () => {
     let w: BrowserWindow;
     beforeEach(() => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
@@ -6742,14 +6742,14 @@ describe('BrowserWindow module', () => {
       let server: http.Server;
       let serverUrl: string;
 
-      before(async () => {
+      beforeAll(async () => {
         server = http.createServer((request, response) => {
           response.end();
         });
         serverUrl = (await listen(server)).url;
       });
 
-      after(() => {
+      afterAll(() => {
         server.close();
       });
 
@@ -8006,7 +8006,7 @@ describe('BrowserWindow module', () => {
 
   describe('offscreen rendering', () => {
     let w: BrowserWindow;
-    beforeEach(function () {
+    beforeEach(() => {
       w = new BrowserWindow({
         width: 100,
         height: 100,
@@ -8196,7 +8196,7 @@ describe('BrowserWindow module', () => {
     let w: BrowserWindow;
     const scaleFactor = 1.5;
 
-    beforeEach(function () {
+    beforeEach(() => {
       w = new BrowserWindow({
         width: 100,
         height: 100,
@@ -8312,7 +8312,7 @@ describe('BrowserWindow module', () => {
     // allow without a portal.
     ifit(process.platform === 'linux' && !isWayland)(
       'draws nothing but the page for a transparent frameless window',
-      async function () {
+      async (ctx) => {
         const { workArea } = screen.getPrimaryDisplay();
         const backdrop = new BrowserWindow({ ...workArea, frame: false, backgroundColor: '#0000ff' });
         await backdrop.loadURL('about:blank');
@@ -8350,7 +8350,7 @@ describe('BrowserWindow module', () => {
           const colors = pixels.histogram(around).map(([color]) => color);
           expect(colors).to.have.members([...new Set([backdropColor, seeThrough, whiteMarker, redMarker])]);
         });
-        if (!captured) this.skip();
+        if (!captured) ctx.skip();
       }
     );
 
@@ -8892,10 +8892,9 @@ describe('BrowserWindow module', () => {
 
       // The main-process busy-loop variant runs in a spawned fixture so the
       // spec runner main thread isn't blocked for 25 seconds.
-      it('should not save window bounds when main thread is busy', async function () {
+      it('should not save window bounds when main thread is busy', { timeout: 60000 }, async () => {
         // Fixture sleeps for 25s plus Electron startup overhead, so allow
         // headroom past mocha's 30s default.
-        this.timeout(60000);
         const appPath = path.join(fixturesPath, 'main-thread-busy');
         const appProcess = childProcess.spawn(process.execPath, [appPath]);
         const [code] = await once(appProcess, 'exit');

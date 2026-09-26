@@ -8,7 +8,7 @@ import {
   type MenuItemConstructorOptions
 } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 

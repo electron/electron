@@ -1,6 +1,6 @@
 import { screen, desktopCapturer, BrowserWindow } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
@@ -103,7 +103,7 @@ describe('desktopCapturer', { tags: ['serial'] }, () => {
   });
 
   // Linux doesn't return any window sources.
-  ifit(process.platform !== 'linux')('getMediaSourceId should match DesktopCapturerSource.id', async function () {
+  ifit(process.platform !== 'linux')('getMediaSourceId should match DesktopCapturerSource.id', async () => {
     const w2 = new BrowserWindow({ show: false, width: 100, height: 100, webPreferences: { contextIsolation: false } });
     const wShown = once(w2, 'show');
     const wFocused = once(w2, 'focus');
@@ -127,7 +127,7 @@ describe('desktopCapturer', { tags: ['serial'] }, () => {
   });
 
   // Linux doesn't return any window sources.
-  ifit(process.platform !== 'linux')('getSources should not incorrectly duplicate window_id', async function () {
+  ifit(process.platform !== 'linux')('getSources should not incorrectly duplicate window_id', async () => {
     const w2 = new BrowserWindow({ show: false, width: 100, height: 100, webPreferences: { contextIsolation: false } });
     const wShown = once(w2, 'show');
     const wFocused = once(w2, 'focus');
@@ -173,7 +173,7 @@ describe('desktopCapturer', { tags: ['serial'] }, () => {
   });
 
   // Linux doesn't return any window sources.
-  ifit(process.platform !== 'linux')('moveAbove should move the window at the requested place', async function () {
+  ifit(process.platform !== 'linux')('moveAbove should move the window at the requested place', async () => {
     // DesktopCapturer.getSources() is guaranteed to return in the correct
     // z-order from foreground to background.
     const MAX_WIN = 4;
@@ -259,14 +259,13 @@ describe('desktopCapturer', { tags: ['serial'] }, () => {
   });
 
   // Linux doesn't return any window sources.
-  ifdescribe(process.platform !== 'linux')('fetchWindowIcons', function () {
-    // Tests are sequentially dependent
-    this.bail(true);
+  // Tests are sequentially dependent.
+  ifdescribe(process.platform !== 'linux')('fetchWindowIcons', () => {
     let w: BrowserWindow;
     let testSource: Electron.DesktopCapturerSource | undefined;
     let appIcon: Electron.NativeImage | undefined;
 
-    before(async () => {
+    beforeAll(async () => {
       w = new BrowserWindow({
         width: 200,
         height: 200,
@@ -282,7 +281,7 @@ describe('desktopCapturer', { tags: ['serial'] }, () => {
       appIcon = testSource?.appIcon;
     });
 
-    after(() => {
+    afterAll(() => {
       if (w) w.destroy();
     });
 

@@ -1,6 +1,6 @@
 import { BaseWindow, BrowserWindow, app, ipcMain, nativeImage, sharedTexture } from 'electron';
 
-import { expect } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { randomUUID } from 'node:crypto';
 import * as path from 'node:path';
@@ -27,8 +27,7 @@ ifdescribe(!skip)('sharedTexture module', () => {
       }
     });
 
-    it('successfully imported and rendered with subtle api', async function () {
-      this.timeout(debugSpec ? 100000 : 10000);
+    it('successfully imported and rendered with subtle api', { timeout: debugSpec ? 100000 : 10000 }, async () => {
       type CapturedTextureHolder = {
         importedSubtle: Electron.SharedTextureImportedSubtle;
         texture: Electron.OffscreenSharedTexture;
@@ -262,61 +261,68 @@ ifdescribe(!skip)('sharedTexture module', () => {
       });
     };
 
-    it('successfully imported and rendered with managed api, without iframe', async () => {
-      return runSharedTextureManagedTest(false);
-    }).timeout(debugSpec ? 100000 : 10000);
+    it(
+      'successfully imported and rendered with managed api, without iframe',
+      { timeout: debugSpec ? 100000 : 10000 },
+      () => runSharedTextureManagedTest(false)
+    );
 
-    it('keeps subtle methods usable after the imported object is garbage collected', async function () {
-      this.timeout(debugSpec ? 100000 : 10000);
-      const v8Util = process._linkedBinding('electron_common_v8_util');
-      const setTimeoutAsync = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+    it(
+      'keeps subtle methods usable after the imported object is garbage collected',
+      { timeout: debugSpec ? 100000 : 10000 },
+      async () => {
+        const v8Util = process._linkedBinding('electron_common_v8_util');
+        const setTimeoutAsync = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-      const osr = new BrowserWindow({
-        width: 128,
-        height: 128,
-        show: debugSpec,
-        webPreferences: {
-          offscreen: {
-            useSharedTexture: true
+        const osr = new BrowserWindow({
+          width: 128,
+          height: 128,
+          show: debugSpec,
+          webPreferences: {
+            offscreen: {
+              useSharedTexture: true
+            }
           }
+        });
+        osr.webContents.setFrameRate(1);
+
+        const texture = await new Promise<Electron.OffscreenSharedTexture | null>((resolve) => {
+          osr.webContents.once('paint', (event: any) => resolve(event.texture ?? null));
+          osr.loadFile(osrPath);
+        });
+        if (!texture) {
+          console.error('No texture, GPU may be unavailable, skipping.');
+          return;
         }
-      });
-      osr.webContents.setFrameRate(1);
 
-      const texture = await new Promise<Electron.OffscreenSharedTexture | null>((resolve) => {
-        osr.webContents.once('paint', (event: any) => resolve(event.texture ?? null));
-        osr.loadFile(osrPath);
-      });
-      if (!texture) {
-        console.error('No texture, GPU may be unavailable, skipping.');
-        return;
-      }
+        // Retain only the method closures and let the returned object become unreachable.
+        const retained = (() => {
+          const imported = sharedTexture.subtle.importSharedTexture(texture.textureInfo);
+          return {
+            getFrameCreationSyncToken: imported.getFrameCreationSyncToken,
+            release: imported.release
+          };
+        })();
 
-      // Retain only the method closures and let the returned object become unreachable.
-      const retained = (() => {
-        const imported = sharedTexture.subtle.importSharedTexture(texture.textureInfo);
-        return {
-          getFrameCreationSyncToken: imported.getFrameCreationSyncToken,
-          release: imported.release
-        };
-      })();
-
-      for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 3; i++) {
+          await setTimeoutAsync(10);
+          v8Util.requestGarbageCollectionForTesting();
+        }
         await setTimeoutAsync(10);
-        v8Util.requestGarbageCollectionForTesting();
+
+        expect(retained.getFrameCreationSyncToken()).to.have.property('syncToken').that.is.a('string');
+        retained.release();
+        // A second release must be a no-op rather than a crash.
+        expect(() => retained.release()).to.not.throw();
+        expect(() => retained.getFrameCreationSyncToken()).to.throw(/released/);
+        texture.release();
       }
-      await setTimeoutAsync(10);
+    );
 
-      expect(retained.getFrameCreationSyncToken()).to.have.property('syncToken').that.is.a('string');
-      retained.release();
-      // A second release must be a no-op rather than a crash.
-      expect(() => retained.release()).to.not.throw();
-      expect(() => retained.getFrameCreationSyncToken()).to.throw(/released/);
-      texture.release();
-    });
-
-    it('successfully imported and rendered with managed api, with iframe', async () => {
-      return runSharedTextureManagedTest(true);
-    }).timeout(debugSpec ? 100000 : 10000);
+    it(
+      'successfully imported and rendered with managed api, with iframe',
+      { timeout: debugSpec ? 100000 : 10000 },
+      () => runSharedTextureManagedTest(true)
+    );
   });
 });

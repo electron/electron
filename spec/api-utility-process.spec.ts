@@ -1,7 +1,7 @@
 import { systemPreferences } from 'electron';
 import { BrowserWindow, MessageChannelMain, utilityProcess, app, session } from 'electron/main';
 
-import { expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';

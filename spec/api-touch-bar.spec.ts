@@ -1,6 +1,6 @@
 import { BaseWindow, BrowserWindow, TouchBar } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import * as path from 'node:path';
 

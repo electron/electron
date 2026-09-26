@@ -8,7 +8,7 @@ import {
   utilityProcess
 } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as fs from 'node:fs';
@@ -53,21 +53,20 @@ async function itUtility(name: string, fn?: Function, args?: { [key: string]: an
 }
 
 // oxlint-disable-next-line @typescript-eslint/no-unused-vars
-async function itIgnoringArgs(name: string, fn?: Mocha.Func | Mocha.AsyncFunc, args?: { [key: string]: any }) {
-  it(name, fn);
+function itIgnoringArgs(name: string, fn?: () => unknown, args?: { [key: string]: any }) {
+  if (fn) it(name, fn);
+  else it.todo(name);
 }
 
 describe('net module', () => {
   beforeEach(() => {
     respondNTimes.routeFailure = false;
   });
-  afterEach(async function () {
-    if (respondNTimes.routeFailure && this.test) {
-      if (!this.test.isFailed()) {
-        throw new Error(
-          'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
-        );
-      }
+  afterEach((ctx) => {
+    if (respondNTimes.routeFailure && ctx.task.result?.state !== 'fail') {
+      throw new Error(
+        'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
+      );
     }
   });
 
@@ -96,11 +95,11 @@ describe('net module', () => {
     }
   );
 
-  before(async () => {
+  beforeAll(async () => {
     http2URL = (await listen(h2server)).url + '/';
   });
 
-  after(() => {
+  afterAll(() => {
     h2server.close();
   });
 
@@ -2108,7 +2107,7 @@ describe('net module', () => {
     const certPath = path.join(fixturesPath, 'certificates');
     const ses = session.fromPartition('net-client-cert');
 
-    before(async () => {
+    beforeAll(async () => {
       ses.setCertificateVerifyProc((req, cb) => cb(0));
       const options = {
         key: fs.readFileSync(path.join(certPath, 'server.key')),
@@ -2132,7 +2131,7 @@ describe('net module', () => {
       secureUrl = (await listen(server)).url;
     });
 
-    after(async () => {
+    afterAll(async () => {
       ses.setCertificateVerifyProc(null);
       await new Promise<void>((resolve) => server.close(() => resolve()));
     });

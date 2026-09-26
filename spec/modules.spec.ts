@@ -1,6 +1,6 @@
 import { BrowserWindow, utilityProcess } from 'electron/main';
 
-import { expect } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
@@ -32,7 +32,7 @@ describe('modules support', () => {
         await w.webContents.executeJavaScript("{ require('@electron-ci/echo'); null }");
       });
 
-      it('can be required in node binary', async function () {
+      it('can be required in node binary', async () => {
         const child = childProcess.fork(path.join(fixtures, 'module', 'echo.js'));
         const [msg] = await once(child, 'message');
         expect(msg).to.equal('ok');
@@ -63,7 +63,7 @@ describe('modules support', () => {
         await w.webContents.executeJavaScript("{ require('@electron-ci/uv-dlopen'); null }");
       });
 
-      it('can be required in node binary', async function () {
+      it('can be required in node binary', async () => {
         const child = childProcess.fork(path.join(fixtures, 'module', 'uv-dlopen.js'));
         const [exitCode] = await once(child, 'exit');
         expect(exitCode).to.equal(0);

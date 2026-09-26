@@ -10,7 +10,7 @@ import { nativeImage } from 'electron/common';
 import { app } from 'electron/main';
 
 import * as dbus from 'dbus-native';
-import { expect } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import { createRequire } from 'node:module';
@@ -32,7 +32,7 @@ ifdescribe(!skip)('Notification module (dbus)', { tags: ['serial'] }, () => {
   const appName = 'api-notification-dbus-spec';
   const serviceName = 'org.freedesktop.Notifications';
 
-  before(async () => {
+  beforeAll(async () => {
     // init app
     app.name = appName;
     app.setDesktopName(`${appName}.desktop`);
@@ -62,7 +62,7 @@ ifdescribe(!skip)('Notification module (dbus)', { tags: ['serial'] }, () => {
     );
   });
 
-  after(async () => {
+  afterAll(async () => {
     // cleanup dbus
     if (reset) await reset();
     // cleanup app
@@ -105,7 +105,7 @@ ifdescribe(!skip)('Notification module (dbus)', { tags: ['serial'] }, () => {
       };
     }
 
-    before(
+    beforeAll(
       () =>
         new Promise<void>((resolve, reject) => {
           const done = (error?: unknown) => (error ? reject(error) : resolve());

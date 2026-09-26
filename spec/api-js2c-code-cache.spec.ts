@@ -1,6 +1,6 @@
 import { flipFuses, FuseV1Options, FuseVersion } from '@electron/fuses';
 
-import { expect } from 'vitest';
+import { afterEach, beforeEach, expect, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import * as fs from 'node:fs';
@@ -86,45 +86,47 @@ ifdescribe(isTestingBindingAvailable())('js2c build-time code cache', () => {
   });
 
   // A copied ASan build can't start (the sanitizer runtime isn't part of the dist).
-  ifdescribe(!process.env.IS_ASAN)('with the LoadBrowserProcessSpecificV8Snapshot fuse enabled', function () {
-    this.timeout(180000);
+  ifdescribe(!process.env.IS_ASAN)(
+    'with the LoadBrowserProcessSpecificV8Snapshot fuse enabled',
+    { timeout: 180000 },
+    () => {
+      let tmpDir: string;
+      let appPath: string;
 
-    let tmpDir: string;
-    let appPath: string;
-
-    beforeEach(async () => {
-      tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-js2c-fuse-spec-'));
-      appPath = await copyApp(tmpDir);
-      const assetsDir =
-        process.platform === 'darwin'
-          ? path.resolve(appPath, 'Contents/Frameworks/Electron Framework.framework/Resources')
-          : path.dirname(appPath);
-      const builtInBlob = fs.readdirSync(assetsDir).find((f) => /^v8_context_snapshot.*\.bin$/.test(f));
-      expect(builtInBlob, `no v8 context snapshot in ${assetsDir}`).to.be.a('string');
-      fs.copyFileSync(
-        path.resolve(assetsDir, builtInBlob!),
-        path.resolve(assetsDir, 'browser_v8_context_snapshot.bin')
-      );
-      await flipFuses(appPath, {
-        version: FuseVersion.V1,
-        resetAdHocDarwinSignature: true,
-        [FuseV1Options.LoadBrowserProcessSpecificV8Snapshot]: true
+      beforeEach(async () => {
+        tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-js2c-fuse-spec-'));
+        appPath = await copyApp(tmpDir);
+        const assetsDir =
+          process.platform === 'darwin'
+            ? path.resolve(appPath, 'Contents/Frameworks/Electron Framework.framework/Resources')
+            : path.dirname(appPath);
+        const builtInBlob = fs.readdirSync(assetsDir).find((f) => /^v8_context_snapshot.*\.bin$/.test(f));
+        expect(builtInBlob, `no v8 context snapshot in ${assetsDir}`).to.be.a('string');
+        fs.copyFileSync(
+          path.resolve(assetsDir, builtInBlob!),
+          path.resolve(assetsDir, 'browser_v8_context_snapshot.bin')
+        );
+        await flipFuses(appPath, {
+          version: FuseVersion.V1,
+          resetAdHocDarwinSignature: true,
+          [FuseV1Options.LoadBrowserProcessSpecificV8Snapshot]: true
+        });
       });
-    });
 
-    afterEach(async () => {
-      await originalFs.promises.rm(tmpDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
-    });
+      afterEach(async () => {
+        await originalFs.promises.rm(tmpDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
+      });
 
-    it('is still consumed in every process, the browser one included while its blob matches the built-in one', async () => {
-      const r = await runFixtureApp(
-        process.platform === 'darwin' ? path.resolve(appPath, 'Contents/MacOS/Electron') : appPath
-      );
-      expectConsumed(r.utility, 'internal/electron/js2c/utility_init');
-      expectConsumed(r.runAsNode, 'internal/electron/js2c/node_init');
-      for (const processType of ['browser', 'renderer', 'utility', 'runAsNode'] as const) {
-        expectNodeBuiltinsConsumed(r[processType], processType);
-      }
-    });
-  });
+      it('is still consumed in every process, the browser one included while its blob matches the built-in one', async () => {
+        const r = await runFixtureApp(
+          process.platform === 'darwin' ? path.resolve(appPath, 'Contents/MacOS/Electron') : appPath
+        );
+        expectConsumed(r.utility, 'internal/electron/js2c/utility_init');
+        expectConsumed(r.runAsNode, 'internal/electron/js2c/node_init');
+        for (const processType of ['browser', 'renderer', 'utility', 'runAsNode'] as const) {
+          expectNodeBuiltinsConsumed(r[processType], processType);
+        }
+      });
+    }
+  );
 });
