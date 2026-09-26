@@ -456,6 +456,9 @@ action("electron_fuses") {
     "$target_gen_dir/fuses.h",
     "$target_gen_dir/fuses.cc",
   ]
+  if (is_win) {
+    outputs += [ "$target_gen_dir/fuses_wire.cc" ]
+  }
 
   args = rebase_path(outputs)
 }
@@ -889,7 +892,10 @@ source_set("electron_lib") {
     ]
   }
 
-  sources += get_target_outputs(":electron_fuses")
+  sources += [
+    "$target_gen_dir/fuses.cc",
+    "$target_gen_dir/fuses.h",
+  ]
 }
 
 # Host tool that emits a V8 code cache for a JS file, keyed to whichever V8
@@ -1686,6 +1692,60 @@ if (is_mac) {
     }
   }
 
+  if (is_win) {
+    shared_library("electron_runtime") {
+      output_name = "main"
+      sources = [
+        "$target_gen_dir/win-resources/electron.rc",
+        "shell/app/electron_main_win.cc",
+        "shell/browser/resources/win/resource.h",
+      ]
+      include_dirs = [ "." ]
+      deps = electron_app_link_deps + [
+               ":packed_resources",
+               "//chrome/app:exit_code_watcher",
+               "//components/crash/core/app:run_as_crashpad_handler",
+             ]
+      deps -= [
+        ":electron_app_manifest",
+        "//content:sandbox_helper_win",
+      ]
+      configs -= [ "//build/config/compiler:thinlto_optimize_default" ]
+      configs += [
+        "//build/config/compiler:thinlto_optimize_max",
+        "//build/config/win:delayloads",
+      ]
+      ldflags = [ "/DELAYLOAD:ffmpeg.dll" ]
+      libs = [
+        "comctl32.lib",
+        "uiautomationcore.lib",
+        "wtsapi32.lib",
+      ]
+    }
+
+    action("electron_runtime_exports") {
+      script = "script/generate-runtime-exports.py"
+      deps = [ ":electron_runtime" ]
+      inputs = [
+        "$root_out_dir/main.dll",
+        "build/electron.def",
+      ]
+      outputs = [ "$target_gen_dir/electron_runtime.def" ]
+      args = rebase_path(inputs + outputs, root_build_dir)
+    }
+
+    electron_app_link_deps = []
+    electron_app_link_deps = [
+      ":electron_app_manifest",
+      ":electron_fuses",
+      ":electron_runtime_exports",
+      ":electron_win32_resources",
+      "//base",
+      "//content:sandbox_helper_win",
+      "//sandbox/win:common",
+    ]
+  }
+
   executable("electron_app") {
     output_name = electron_project_name
 
@@ -1698,7 +1758,10 @@ if (is_mac) {
     configs += [ "//build/config/compiler:thinlto_optimize_max" ]
 
     if (is_win) {
-      sources = [ "shell/app/electron_main_win.cc" ]
+      sources = [
+        "$target_gen_dir/fuses_wire.cc",
+        "shell/app/electron_loader_win.cc",
+      ]
     } else if (is_linux) {
       sources = [
         "shell/app/electron_main_linux.cc",
@@ -1712,6 +1775,9 @@ if (is_mac) {
 
     data = []
     data_deps = []
+    if (is_win) {
+      data_deps += [ ":electron_runtime" ]
+    }
 
     data += [ "$root_out_dir/resources.pak" ]
     data += [ "$root_out_dir/chrome_100_percent.pak" ]
@@ -1740,22 +1806,12 @@ if (is_mac) {
         "shell/browser/resources/win/resource.h",
       ]
 
-      deps += [
-        "//chrome/app:exit_code_watcher",
-        "//components/crash/core/app:run_as_crashpad_handler",
-      ]
-
       # Ship the WER runtime exception helper next to the executable so that
       # crashpad can register it; see :electron_wer.
       data_deps += [ ":electron_wer" ]
 
-      ldflags = [ "/DELAYLOAD:ffmpeg.dll" ]
-
-      libs = [
-        "comctl32.lib",
-        "uiautomationcore.lib",
-        "wtsapi32.lib",
-      ]
+      ldflags = [ "/DEF:" + rebase_path("$target_gen_dir/electron_runtime.def",
+                                        root_build_dir) ]
 
       configs -= [ "//build/config/win:console" ]
       configs += [
@@ -1781,10 +1837,9 @@ if (is_mac) {
       # file claims that the electron executable is in fact named "node.exe",
       # which is one of the executable names that node-gyp recognizes.
       # See https://github.com/nodejs/node-gyp/commit/52ceec3a6d15de3a8f385f43dbe5ecf5456ad07a
-      ldflags += [ "/DEF:" + rebase_path("build/electron.def", root_build_dir) ]
       inputs = [
         "shell/browser/resources/win/electron.ico",
-        "build/electron.def",
+        "$target_gen_dir/electron_runtime.def",
       ]
     }
     if (is_linux) {
@@ -1836,8 +1891,19 @@ if (is_mac) {
       deps = [ ":electron_app" ]
     }
 
+    if (is_win) {
+      extract_symbols("electron_runtime_symbols") {
+        binary = "$root_out_dir/main.dll"
+        symbol_dir = "$root_out_dir/breakpad_symbols"
+        deps = [ ":electron_runtime" ]
+      }
+    }
+
     group("electron_symbols") {
       deps = [ ":electron_app_symbols" ]
+      if (is_win) {
+        deps += [ ":electron_runtime_symbols" ]
+      }
     }
   }
 }
