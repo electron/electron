@@ -29,7 +29,7 @@ This adds two things:
 Both parts are suitable for upstreaming.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index a9bfee6a12af1673641686ff780a595b8fdf8cd6..306996681069ab0a80ece348115eada850efc06b 100644
+index 27d6b91c9f1bebe01b3513d215d34e1b5f976131..2c0babc99b58780e41d69c88a71a4547a31b493b 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -20,6 +20,7 @@ import("//third_party/icu/config.gni")
@@ -153,7 +153,7 @@ index 1bae3e72371a18a81e48bdc451e55bac58d86214..4585b0222b96e7af722515ac6433aa18
    // Calculate the V8 version string.
    static void GetString(base::Vector<char> str);
 diff --git a/src/wasm/wasm-serialization.cc b/src/wasm/wasm-serialization.cc
-index 83cd5af3dcb01cbb088edc9a28eae7ae9da4d6b5..7a636e982b5cace1d881855fca09d1fbf14ec681 100644
+index de8e70d82b0ff6ac6c66540d8ea4154cec56c6bd..5bc220a8327b71d1f37a9ce784afcba8f6f54617 100644
 --- a/src/wasm/wasm-serialization.cc
 +++ b/src/wasm/wasm-serialization.cc
 @@ -8,6 +8,7 @@

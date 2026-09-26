@@ -14,7 +14,7 @@ track down the source of this problem & figure out if we can fix it
 by changing something in Electron.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 0b8511efadf1ed96adfd07b4b47e89cd3cee11bd..5b226fc8d4c49ccaa4d5c57bc3f92e1c12fba14a 100644
+index 49c89967879ec9364399f9b74c14954dd9398a55..e81cefe4c480389c0bad27bfbad9e809652c73cd 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5781,7 +5781,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(

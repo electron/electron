@@ -67,10 +67,10 @@ index 15d59648317174e48993b3fd316f7160d3c4288b..c5c79c4a4dc07bfa1de782cb8d84df09
    return _headless_info.get();
  }
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index b5810dd1ec097695572682df59012419b736cc90..1058ba18be6de48bb1d459d49986df662fb070ce 100644
+index 03d588847bd61aa69512573ecd6c82709ecf18ac..ddfa05545e4b2f943f3323a948e665722ccd22b6 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -613,7 +613,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -614,7 +614,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    prevent_stale_content_after_hide_ = params->prevent_stale_content_after_hide;
    pending_restoration_data_ = params->state_restoration_data.Clone();
  
@@ -141,10 +141,10 @@ index c2cd7b0c5c2b137d0699f20bf30ae90974c14251..4c4290f0fa4b1b35eeff78cd711bcd76
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
-index 73b12b8962e37f0b6e42161fa466890434534ae2..237fb5e57c66cabe4ae00190801d1f48517c1e8d 100644
+index 8bae166f9d9f6e76c189e1300ad1547c62040edf..cc469a148e1813fcc8b306440f88faae22a7344e 100644
 --- a/ui/views/widget/widget.cc
 +++ b/ui/views/widget/widget.cc
-@@ -265,6 +265,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
+@@ -262,6 +262,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
    }
  }
  
@@ -163,7 +163,7 @@ index 73b12b8962e37f0b6e42161fa466890434534ae2..237fb5e57c66cabe4ae00190801d1f48
  void Widget::InitParams::SetParent(Widget* parent_widget) {
    SetParent(parent_widget->GetNativeView());
  }
-@@ -528,6 +540,7 @@ void Widget::Init(InitParams params) {
+@@ -529,6 +541,7 @@ void Widget::Init(InitParams params) {
  
    params.child |= (params.type == InitParams::TYPE_CONTROL);
    is_top_level_ = !params.child;
@@ -172,10 +172,10 @@ index 73b12b8962e37f0b6e42161fa466890434534ae2..237fb5e57c66cabe4ae00190801d1f48
  
    if (params.opacity == views::Widget::InitParams::WindowOpacity::kInferred &&
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index e338392773c103d5c762014188e3da24d8bc7054..57d6485592a2a345a5b7efc0a0e5553ed094247e 100644
+index b0896143e16f0fed556672d7c5645800d2c26a4e..f3b8a9b19a7f0af76ec3a4a5d9258fc92ae8caad 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
-@@ -330,6 +330,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -331,6 +331,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
      // case where |activatable| is |kDefault|.
      bool CanActivate() const;
  
@@ -187,7 +187,7 @@ index e338392773c103d5c762014188e3da24d8bc7054..57d6485592a2a345a5b7efc0a0e5553e
      // Returns the z-order level, based on the overriding |z_order| but also
      // taking into account special levels due to |type|.
      ui::ZOrderLevel EffectiveZOrderLevel() const;
-@@ -510,6 +515,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -511,6 +516,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
      // If true then the widget uses software compositing.
      bool force_software_compositing = false;
  
@@ -197,7 +197,7 @@ index e338392773c103d5c762014188e3da24d8bc7054..57d6485592a2a345a5b7efc0a0e5553e
      // If set, the window size will follow the content preferred size.
      bool autosize = false;
  
-@@ -1327,6 +1335,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1328,6 +1336,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // with it. TYPE_CONTROL and TYPE_TOOLTIP is not considered top level.
    bool is_top_level() const { return is_top_level_; }
  

@@ -17,7 +17,7 @@ IterateJSObjectBodyImpl() visits.
 This should be upstreamed.
 
 diff --git a/src/snapshot/serializer.cc b/src/snapshot/serializer.cc
-index cd3c2cd3b328e415e5dbb39206deba357b19cbe9..1dc97a5b6ec3f9a48280449c72e3ac3dfa7bdd6e 100644
+index 337fc8b243edbed8b6c687a206e87666135fe00a..a5618906659d665b9db9176cd4bcd77bd7a5e835 100644
 --- a/src/snapshot/serializer.cc
 +++ b/src/snapshot/serializer.cc
 @@ -19,6 +19,7 @@

@@ -597,7 +597,7 @@ index f0899f2c823dd77bdff63e1f9ae1d89ce1d85caa..fb1b88b359d4caa1b1162b9e4c4200e8
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index ad19a581d7fd503d4091ac5d1f5b3c1139387c7f..e361a64483478f02cbc48509a31179e0cebab12b 100644
+index a360316b8f0b1c4de98248bf2cb44b5a7ac3c272..8b55377d37778ec043c7169312f4b90fd6d551bf 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 @@ -40,6 +40,7 @@ struct RootCompositorFrameSinkParams {
