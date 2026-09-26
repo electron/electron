@@ -1,6 +1,6 @@
 import { BrowserWindow, session, ipcMain, app, type WebContents } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { once } from 'node:events';
 import * as http from 'node:http';
@@ -188,7 +188,7 @@ describe('<webview> tag', function () {
         }, { once: true });
         document.body.appendChild(webview);
       })`);
-      expect(error).to.be.null();
+      expect(error).to.be.null;
       expect(secondId).to.be.a('number');
       expect(secondId).to.not.equal(firstId);
     });
@@ -238,21 +238,21 @@ describe('<webview> tag', function () {
       {
         const [, visibilityState, hidden] = await once(ipcMain, 'pong');
         expect(visibilityState).to.equal('visible');
-        expect(hidden).to.be.false();
+        expect(hidden).to.be.false;
       }
 
       w.hide();
       {
         const [, visibilityState, hidden] = await once(ipcMain, 'pong');
         expect(visibilityState).to.equal('hidden');
-        expect(hidden).to.be.true();
+        expect(hidden).to.be.true;
       }
 
       w.show();
       {
         const [, visibilityState, hidden] = await once(ipcMain, 'pong');
         expect(visibilityState).to.equal('visible');
-        expect(hidden).to.be.false();
+        expect(hidden).to.be.false;
       }
     });
   });
@@ -419,7 +419,7 @@ describe('<webview> tag', function () {
       expect(zoomLevel).to.equal(1);
     });
 
-    it('maintains the zoom level for a given host in the same session after navigation', () => {
+    it('maintains the zoom level for a given host in the same session after navigation', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -437,7 +437,7 @@ describe('<webview> tag', function () {
 
       w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-change-persist-host.html'));
 
-      expect(zoomPromise).to.eventually.deep.equal({
+      await expect(zoomPromise).resolves.to.deep.equal({
         initialZoomLevel: 2,
         switchZoomLevel: 3,
         finalZoomLevel: 2
@@ -588,13 +588,13 @@ describe('<webview> tag', function () {
 
     ifit(process.platform !== 'darwin')('should make parent frame element fullscreen too (non-macOS)', async () => {
       const [w, webview] = await loadWebViewWindow();
-      expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.false();
+      expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.false;
 
       const parentFullscreen = once(ipcMain, 'fullscreenchange');
       await webview.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
       await parentFullscreen;
 
-      expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.true();
+      expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.true;
 
       const close = once(w, 'closed');
       w.close();
@@ -603,14 +603,14 @@ describe('<webview> tag', function () {
 
     ifit(process.platform === 'darwin')('should make parent frame element fullscreen too (macOS)', async () => {
       const [w, webview] = await loadWebViewWindow();
-      expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.false();
+      expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.false;
 
       const parentFullscreen = once(ipcMain, 'fullscreenchange');
       const enterHTMLFS = once(w.webContents, 'enter-html-full-screen');
       const leaveHTMLFS = once(w.webContents, 'leave-html-full-screen');
 
       await webview.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
-      expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.true();
+      expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.true;
 
       await webview.executeJavaScript('document.exitFullscreen()');
       await Promise.all([enterHTMLFS, leaveHTMLFS, parentFullscreen]);
@@ -631,7 +631,7 @@ describe('<webview> tag', function () {
       await webview.executeJavaScript('document.exitFullscreen()', true);
       await leaveFullScreen;
       await setTimeout();
-      expect(w.isFullScreen()).to.be.false();
+      expect(w.isFullScreen()).to.be.false;
 
       const close = once(w, 'closed');
       w.close();
@@ -648,7 +648,7 @@ describe('<webview> tag', function () {
       webview.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
       await leaveFullScreen;
       await setTimeout(1000);
-      expect(w.isFullScreen()).to.be.false();
+      expect(w.isFullScreen()).to.be.false;
 
       const close = once(w, 'closed');
       w.close();
@@ -757,7 +757,7 @@ describe('<webview> tag', function () {
       });
 
       const [, { windowOpenReturnedNull }] = await once(ipcMain, 'answer');
-      expect(windowOpenReturnedNull).to.be.true();
+      expect(windowOpenReturnedNull).to.be.true;
     });
 
     it('blocks accessing cross-origin frames', async () => {
@@ -1272,7 +1272,7 @@ describe('<webview> tag', function () {
           webpreferences: 'contextIsolation=no',
           src
         });
-        expect(JSON.parse(message).isProcessGlobalUndefined).to.be.true();
+        expect(JSON.parse(message).isProcessGlobalUndefined).to.be.true;
       });
 
       ifit(!process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
@@ -1789,7 +1789,7 @@ describe('<webview> tag', function () {
         );
 
         expect(title).to.equal('test');
-        expect(explicitSet).to.be.true();
+        expect(explicitSet).to.be.true;
       });
     });
 
@@ -1836,8 +1836,8 @@ describe('<webview> tag', function () {
         );
 
         expect(event.url).to.equal(`${url}/200`);
-        expect(event.isInPlace).to.be.false();
-        expect(event.isMainFrame).to.be.true();
+        expect(event.isInPlace).to.be.false;
+        expect(event.isMainFrame).to.be.true;
         expect(event.frameProcessId).to.be.a('number');
         expect(event.frameRoutingId).to.be.a('number');
       });
@@ -1867,7 +1867,7 @@ describe('<webview> tag', function () {
           'will-frame-navigate'
         );
         expect(url).to.equal('http://host/');
-        expect(isMainFrame).to.be.true();
+        expect(isMainFrame).to.be.true;
       });
 
       it('emits when a link within an iframe, which leads to outside of the page, is loaded', async () => {
@@ -2041,7 +2041,7 @@ describe('<webview> tag', function () {
         })`);
 
         expect(params.pageURL).to.equal(url);
-        expect(params.frame).to.be.undefined();
+        expect(params.frame).to.be.undefined;
         expect(params.x).to.be.a('number');
         expect(params.y).to.be.a('number');
       });
@@ -2274,16 +2274,16 @@ describe('<webview> tag', function () {
             const [e] = await waitForEvents(webview, 'ipc-message', 'did-stop-loading');
             expect(e.channel).to.equal('history');
             expect(e.args[0]).to.equal(1);
-            expect(webview.canGoBack()).to.be.false();
-            expect(webview.canGoForward()).to.be.false();
+            expect(webview.canGoBack()).to.be.false;
+            expect(webview.canGoForward()).to.be.false;
           }
 
           webview.src = `file://${fixtures}/pages/base-page.html`;
 
           await new Promise<void>((resolve) => webview.addEventListener('did-stop-loading', resolve, { once: true }));
 
-          expect(webview.canGoBack()).to.be.true();
-          expect(webview.canGoForward()).to.be.false();
+          expect(webview.canGoBack()).to.be.true;
+          expect(webview.canGoForward()).to.be.false;
 
           webview.goBack();
 
@@ -2291,16 +2291,16 @@ describe('<webview> tag', function () {
             const [e] = await waitForEvents(webview, 'ipc-message', 'did-stop-loading');
             expect(e.channel).to.equal('history');
             expect(e.args[0]).to.equal(2);
-            expect(webview.canGoBack()).to.be.false();
-            expect(webview.canGoForward()).to.be.true();
+            expect(webview.canGoBack()).to.be.false;
+            expect(webview.canGoForward()).to.be.true;
           }
 
           webview.goForward();
 
           await new Promise<void>((resolve) => webview.addEventListener('did-stop-loading', resolve, { once: true }));
 
-          expect(webview.canGoBack()).to.be.true();
-          expect(webview.canGoForward()).to.be.false();
+          expect(webview.canGoBack()).to.be.true;
+          expect(webview.canGoForward()).to.be.false;
         },
         [fixtures]
       );
@@ -2317,10 +2317,10 @@ describe('<webview> tag', function () {
         // Navigation must be triggered by a user gesture to make canGoBack() return true
         await w.executeJavaScript('webview.executeJavaScript(`history.pushState(null, "", "foo.html")`, true)');
 
-        expect(await w.executeJavaScript('webview.canGoBack()')).to.be.true();
+        expect(await w.executeJavaScript('webview.canGoBack()')).to.be.true;
 
         await w.executeJavaScript('webview.clearHistory()');
-        expect(await w.executeJavaScript('webview.canGoBack()')).to.be.false();
+        expect(await w.executeJavaScript('webview.canGoBack()')).to.be.false;
       });
     });
 
@@ -2439,7 +2439,7 @@ describe('<webview> tag', function () {
 
           const src = 'data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E';
           await loadWebView(w, { src });
-          await expect(w.executeJavaScript(`webview.printToPDF(${JSON.stringify(param)})`)).to.eventually.be.rejected();
+          await expect(w.executeJavaScript(`webview.printToPDF(${JSON.stringify(param)})`)).rejects.toThrow();
         }
       });
 
@@ -2448,7 +2448,7 @@ describe('<webview> tag', function () {
         await loadWebView(w, { src });
 
         const data = await w.executeJavaScript('webview.printToPDF({})');
-        expect(data).to.be.an.instanceof(Uint8Array).that.is.not.empty();
+        expect(data).to.be.an.instanceof(Uint8Array).that.is.not.empty;
       });
     });
 
@@ -2484,7 +2484,7 @@ describe('<webview> tag', function () {
         await loadWebViewAndWaitForEvent(w, { src }, 'did-stop-loading');
 
         const image = await w.executeJavaScript('webview.capturePage()');
-        expect(image.isEmpty()).to.be.false();
+        expect(image.isEmpty()).to.be.false;
 
         // Check the 25th byte in the PNG.
         // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
@@ -2525,7 +2525,7 @@ describe('<webview> tag', function () {
 
         // Its WebContents should be a DevTools.
         const devtools = webview2.getWebContents();
-        expect(devtools.getURL().startsWith('devtools://devtools')).to.be.true();
+        expect(devtools.getURL().startsWith('devtools://devtools')).to.be.true;
 
         const name = await devtools.executeJavaScript('InspectorFrontendHost.constructor.name');
         document.body.removeChild(webview2);

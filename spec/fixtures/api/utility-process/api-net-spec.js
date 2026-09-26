@@ -5,8 +5,6 @@
 /* oxlint-disable @typescript-eslint/no-unused-vars */
 const { app, net, protocol, session, utilityProcess } = require('electron/main');
 
-const chai = require('chai');
-
 const { once } = require('node:events');
 const fs = require('node:fs');
 const http = require('node:http');
@@ -29,12 +27,10 @@ const {
 } = require('../../../lib/net-helpers.ts');
 const { listen, defer, ifdescribe, isTestingBindingAvailable } = require('../../../lib/spec-helpers.ts');
 
-const { expect } = chai;
+const { expect } = require('../../../lib/vitest-cjs.cjs');
 const electronNet = net;
 
 v8.setFlagsFromString('--expose_gc');
-chai.use(require('chai-as-promised'));
-chai.use(require('dirty-chai'));
 
 function fail(message) {
   process.parentPort.postMessage({ ok: false, message });

@@ -1,6 +1,6 @@
 import { session, webContents, type WebContents } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { randomUUID } from 'node:crypto';
 import { on, once } from 'node:events';

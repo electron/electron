@@ -1,6 +1,6 @@
 import { BrowserView, BrowserWindow, screen, session, webContents } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { once } from 'node:events';
 import * as path from 'node:path';
@@ -58,7 +58,7 @@ describe('BrowserView module', () => {
     await wc.loadURL('about:blank');
 
     view = new BrowserView({ webContents: wc } as any);
-    expect(view.webContents === wc).to.be.true('view.webContents === wc');
+    expect(view.webContents === wc, 'view.webContents === wc').to.be.true;
 
     expect(view.webContents.getURL()).to.equal('about:blank');
   });
@@ -377,7 +377,7 @@ describe('BrowserView module', () => {
 
     it('returns null if none is set', () => {
       const view = w.getBrowserView();
-      expect(view).to.be.null('view');
+      expect(view, 'view').to.be.null;
     });
 
     it('throws if multiple BrowserViews are attached', () => {
@@ -425,7 +425,7 @@ describe('BrowserView module', () => {
     it('can handle BrowserView reparenting', async () => {
       view = new BrowserView();
 
-      expect(view.ownerWindow).to.be.null('ownerWindow');
+      expect(view.ownerWindow, 'ownerWindow').to.be.null;
 
       w.addBrowserView(view);
       view.webContents.loadURL('about:blank');
@@ -453,7 +453,7 @@ describe('BrowserView module', () => {
       const w2 = new BrowserWindow({ show: false });
       const view = new BrowserView();
 
-      expect(view.ownerWindow).to.be.null('ownerWindow');
+      expect(view.ownerWindow, 'ownerWindow').to.be.null;
       view.webContents.close();
       w2.addBrowserView(view);
       expect(view.ownerWindow).to.equal(w2);
@@ -466,7 +466,7 @@ describe('BrowserView module', () => {
     it('allows attaching a BrowserView with a previously-destroyed webContents', async () => {
       const view = new BrowserView();
 
-      expect(view.ownerWindow).to.be.null('ownerWindow');
+      expect(view.ownerWindow, 'ownerWindow').to.be.null;
       view.webContents.destroy();
       w.addBrowserView(view);
       expect(view.ownerWindow).to.equal(w);
@@ -483,7 +483,7 @@ describe('BrowserView module', () => {
       // z-order cannot decide the outcome.
       w.setAlwaysOnTop(true);
       w.show();
-      expect(w.isVisible()).to.be.true('w is visible');
+      expect(w.isVisible(), 'w is visible').to.be.true;
 
       const view = new BrowserView();
       const [width, height] = w.getSize();
@@ -616,16 +616,16 @@ describe('BrowserView module', () => {
   describe('BrowserView owning window', () => {
     it('points to owning window', () => {
       view = new BrowserView();
-      expect(view.webContents.getOwnerBrowserWindow()).to.be.null('owner browser window');
-      expect(view.ownerWindow).to.be.null('ownerWindow');
+      expect(view.webContents.getOwnerBrowserWindow(), 'owner browser window').to.be.null;
+      expect(view.ownerWindow, 'ownerWindow').to.be.null;
 
       w.setBrowserView(view);
       expect(view.webContents.getOwnerBrowserWindow()).to.equal(w);
       expect(view.ownerWindow).to.equal(w);
 
       w.setBrowserView(null);
-      expect(view.webContents.getOwnerBrowserWindow()).to.be.null('owner browser window');
-      expect(view.ownerWindow).to.be.null('ownerWindow');
+      expect(view.webContents.getOwnerBrowserWindow(), 'owner browser window').to.be.null;
+      expect(view.ownerWindow, 'ownerWindow').to.be.null;
     });
 
     it('works correctly when the webContents is destroyed', async () => {

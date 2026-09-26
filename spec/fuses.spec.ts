@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
@@ -55,7 +55,7 @@ ifdescribe(isTestingBindingAvailable())('fuses', () => {
         },
         path.join(import.meta.dirname, 'fixtures', 'pages', 'fetch.html')
       )
-    ).to.eventually.be.rejectedWith('Failed to fetch');
+    ).rejects.toThrow('Failed to fetch');
   });
 
   describe('cookie_encryption', () => {
@@ -100,8 +100,8 @@ ifdescribe(isTestingBindingAvailable())('fuses', () => {
       expect(result.cookieCount).to.equal(2);
       expect(result.testCookieValue).to.equal('encrypted_value_12345');
       expect(result.secureCookieValue).to.equal('secret_data_67890');
-      expect(result.secureCookieIsSecure).to.be.true();
-      expect(result.secureCookieIsHttpOnly).to.be.true();
+      expect(result.secureCookieIsSecure).to.be.true;
+      expect(result.secureCookieIsHttpOnly).to.be.true;
     });
 
     it('persists cookies across sessions when enabled', async () => {

@@ -1,6 +1,6 @@
 import { app, contentTracing, type TraceConfig, type TraceCategoriesAndOptions } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
@@ -58,7 +58,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       const config = {};
       await record(config, outputFilePath);
 
-      expect(fs.existsSync(outputFilePath)).to.be.true('output exists');
+      expect(fs.existsSync(outputFilePath), 'output exists').to.be.true;
 
       const fileSizeInKiloBytes = getFileSizeInKiloBytes(outputFilePath);
       expect(fileSizeInKiloBytes).to.be.above(0, `the trace output file is empty, check "${outputFilePath}"`);
@@ -75,7 +75,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       // If the `excluded_categories` param above is not respected, categories
       // like `node,node.environment` will be included in the output.
       const content = fs.readFileSync(outputFilePath).toString();
-      expect(content.includes('"cat":"node,node.environment"')).to.be.false();
+      expect(content.includes('"cat":"node,node.environment"')).to.be.false;
     });
 
     it('accepts "categoryFilter" and "traceOptions" as a config', async () => {
@@ -87,7 +87,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       };
       await record(config, outputFilePath);
 
-      expect(fs.existsSync(outputFilePath)).to.be.true('output exists');
+      expect(fs.existsSync(outputFilePath), 'output exists').to.be.true;
 
       // If the `categoryFilter` param above is not respected the file will
       // contain actual trace events and be far larger. When the filter is
@@ -122,8 +122,8 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
 
       await contentTracing.startRecording(options);
       const path = await contentTracing.stopRecording('');
-      expect(path).to.be.a('string').that.is.not.empty('result path');
-      expect(fs.statSync(path).isFile()).to.be.true('output exists');
+      expect(path, 'result path').to.be.a('string').that.is.not.empty;
+      expect(fs.statSync(path).isFile(), 'output exists').to.be.true;
     });
 
     it('calls its callback with a result file path', async () => {
@@ -133,16 +133,16 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
 
     it('creates a temporary file when an empty string is passed', async function () {
       const resultFilePath = await record(/* options */ {}, /* outputFilePath */ '');
-      expect(resultFilePath).to.be.a('string').that.is.not.empty('result path');
+      expect(resultFilePath, 'result path').to.be.a('string').that.is.not.empty;
     });
 
     it('creates a temporary file when no path is passed', async function () {
       const resultFilePath = await record(/* options */ {}, /* outputFilePath */ undefined);
-      expect(resultFilePath).to.be.a('string').that.is.not.empty('result path');
+      expect(resultFilePath, 'result path').to.be.a('string').that.is.not.empty;
     });
 
     it('rejects if no trace is happening', async () => {
-      await expect(contentTracing.stopRecording()).to.be.rejectedWith('Failed to stop tracing - no trace in progress');
+      await expect(contentTracing.stopRecording()).rejects.toThrow('Failed to stop tracing - no trace in progress');
     });
   });
 
@@ -200,7 +200,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
         parsed.traceEvents.some(
           (x: any) => x.cat === 'disabled-by-default-v8.cpu_profiler' && x.name === 'ProfileChunk'
         )
-      ).to.be.true();
+      ).to.be.true;
     });
   });
 
@@ -240,8 +240,14 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       const measureEvents = parsed.traceEvents.filter(
         (x: any) => x.cat === 'node.perf.usertiming' && x.name === 'test-trace-measure'
       );
-      expect(measureEvents.some((x: any) => x.ph === 'b')).to.be.true('should have nestable async begin (b) event');
-      expect(measureEvents.some((x: any) => x.ph === 'e')).to.be.true('should have nestable async end (e) event');
+      expect(
+        measureEvents.some((x: any) => x.ph === 'b'),
+        'should have nestable async begin (b) event'
+      ).to.be.true;
+      expect(
+        measureEvents.some((x: any) => x.ph === 'e'),
+        'should have nestable async end (e) event'
+      ).to.be.true;
     });
 
     it('captures node.fs.sync trace events for file operations', async function () {
@@ -319,9 +325,9 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
 
       expect(parsed.metadata).to.be.an('object');
       expect(parsed.metadata['product-version']).to.be.a('string');
-      expect(parsed.metadata['product-version'].startsWith(process.versions.chrome)).to.be.true();
+      expect(parsed.metadata['product-version'].startsWith(process.versions.chrome)).to.be.true;
       expect(parsed.metadata['os-arch']).to.be.a('string');
-      expect(parsed.metadata['os-arch']).to.not.be.empty();
+      expect(parsed.metadata['os-arch']).to.not.be.empty;
     });
   });
 });

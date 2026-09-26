@@ -1,6 +1,6 @@
 import { net, session } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 import { WebSocketServer, type WebSocket as WSWebSocket, type ServerOptions } from 'ws';
 
 import * as http from 'node:http';
@@ -92,7 +92,7 @@ describe('net.WebSocket', () => {
       expect(ws.readyState).to.equal(net.WebSocket.CLOSED);
       expect(closeEvent.code).to.equal(1000);
       expect(closeEvent.reason).to.equal('done');
-      expect(closeEvent.wasClean).to.be.true();
+      expect(closeEvent.wasClean).to.be.true;
     });
 
     it('reports the negotiated protocol', async () => {
@@ -136,7 +136,7 @@ describe('net.WebSocket', () => {
       expect(ws.readyState).to.equal(net.WebSocket.CLOSING);
       const e = await event<CloseEvent>(ws, 'close');
       expect(e.code).to.equal(1006);
-      expect(e.wasClean).to.be.false();
+      expect(e.wasClean).to.be.false;
     });
 
     it('validates close() arguments', async () => {
@@ -178,7 +178,7 @@ describe('net.WebSocket', () => {
       await event(ws, 'open');
       ws.send(Buffer.from([1, 2, 3, 4]));
       const e = await event<MessageEvent>(ws, 'message');
-      expect(Buffer.isBuffer(e.data)).to.be.true();
+      expect(Buffer.isBuffer(e.data)).to.be.true;
       expect([...e.data]).to.deep.equal([1, 2, 3, 4]);
       ws.close();
       await event(ws, 'close');
@@ -236,7 +236,7 @@ describe('net.WebSocket', () => {
       await event(ws, 'open');
       const e = await event<MessageEvent>(ws, 'message');
       expect((e.data as Buffer).length).to.equal(big.length);
-      expect((e.data as Buffer).equals(big)).to.be.true();
+      expect((e.data as Buffer).equals(big)).to.be.true;
       ws.close();
       await event(ws, 'close');
     });
@@ -373,7 +373,7 @@ describe('net.WebSocket', () => {
       const ws = new net.WebSocket(url, { session: ses });
       defer(() => ws.close());
       await event(ws, 'close');
-      expect(headers.cookie).to.be.undefined();
+      expect(headers.cookie).to.be.undefined;
     });
   });
 
@@ -408,7 +408,7 @@ describe('net.WebSocket', () => {
       };
       ws.onopen = () => {};
       await event(ws, 'close');
-      expect(firstCalled).to.be.false();
+      expect(firstCalled).to.be.false;
     });
   });
 });

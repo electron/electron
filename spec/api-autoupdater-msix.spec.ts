@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { createRoutedServer, type RoutedRequest, type RoutedServer } from './lib/http-server-helpers.ts';
 import {

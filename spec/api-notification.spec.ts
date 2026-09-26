@@ -1,6 +1,6 @@
 import { Notification } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { once } from 'node:events';
 
@@ -43,7 +43,7 @@ describe('Notification module', () => {
       body: 'body'
     });
 
-    expect(n.id).to.be.a('string').and.not.be.empty();
+    expect(n.id).to.be.a('string').and.not.be.empty;
     expect(n.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   });
 
@@ -215,13 +215,13 @@ describe('Notification module', () => {
       hasReply: true
     });
 
-    expect(n.silent).to.be.true('silent');
+    expect(n.silent, 'silent').to.be.true;
     n.silent = false;
-    expect(n.silent).to.be.false('silent');
+    expect(n.silent, 'silent').to.be.false;
 
-    expect(n.hasReply).to.be.true('has reply');
+    expect(n.hasReply, 'has reply').to.be.true;
     n.hasReply = false;
-    expect(n.hasReply).to.be.false('has reply');
+    expect(n.hasReply, 'has reply').to.be.false;
   });
 
   it('inits, gets and sets actions correctly', () => {
@@ -497,7 +497,7 @@ describe('Notification module', () => {
 
       const history = await Notification.getHistory();
       const found = history.find((item: any) => item.id === 'remove-test-id');
-      expect(found).to.be.undefined();
+      expect(found).to.be.undefined;
     });
 
     ifit(process.platform === 'darwin')('remove accepts an array of ids', async () => {
@@ -529,8 +529,8 @@ describe('Notification module', () => {
       const history = await Notification.getHistory();
       const found1 = history.find((item: any) => item.id === 'remove-array-1');
       const found2 = history.find((item: any) => item.id === 'remove-array-2');
-      expect(found1).to.be.undefined();
-      expect(found2).to.be.undefined();
+      expect(found1).to.be.undefined;
+      expect(found2).to.be.undefined;
     });
 
     ifit(process.platform === 'darwin')('removeAll removes all notifications', async () => {
@@ -551,7 +551,7 @@ describe('Notification module', () => {
 
       const history = await Notification.getHistory();
       const found = history.find((item: any) => item.id === 'remove-all-test');
-      expect(found).to.be.undefined();
+      expect(found).to.be.undefined;
     });
 
     ifit(process.platform === 'darwin')('removeGroup removes notifications by groupId', async () => {
@@ -593,8 +593,8 @@ describe('Notification module', () => {
       // while group-b notifications should be gone
       const foundB1 = history.find((item: any) => item.id === 'group-remove-1');
       const foundB2 = history.find((item: any) => item.id === 'group-remove-2');
-      expect(foundB1).to.be.undefined();
-      expect(foundB2).to.be.undefined();
+      expect(foundB1).to.be.undefined;
+      expect(foundB2).to.be.undefined;
 
       // Clean up
       Notification.removeAll();

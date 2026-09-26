@@ -10,8 +10,8 @@ import {
   type WebFrameMain
 } from 'electron/main';
 
-import { expect } from 'chai';
 import send from 'send';
+import { expect } from 'vitest';
 
 import * as ChildProcess from 'node:child_process';
 import { once } from 'node:events';
@@ -129,7 +129,7 @@ describe('session module', () => {
 
       await cookies.set({ url, value });
       const c = (await cookies.get({ url }))[0];
-      expect(c.name).to.be.empty();
+      expect(c.name).to.be.empty;
       expect(c.value).to.equal(value);
     });
 
@@ -139,7 +139,7 @@ describe('session module', () => {
         const value = 'hithere';
         await cookies.set({ url, value, sameSite });
         const c = (await cookies.get({ url }))[0];
-        expect(c.name).to.be.empty();
+        expect(c.name).to.be.empty;
         expect(c.value).to.equal(value);
         expect(c.sameSite).to.equal(sameSite);
       });
@@ -148,7 +148,7 @@ describe('session module', () => {
     it('fails to set cookies with samesite=garbage', async () => {
       const { cookies } = session.defaultSession;
       const value = 'hithere';
-      await expect(cookies.set({ url, value, sameSite: 'garbage' as any })).to.eventually.be.rejectedWith(
+      await expect(cookies.set({ url, value, sameSite: 'garbage' as any })).rejects.toThrow(
         "Failed to convert 'garbage' to an appropriate cookie same site value"
       );
     });
@@ -168,7 +168,7 @@ describe('session module', () => {
       const name = '1';
       const value = '1';
 
-      await expect(cookies.set({ url: '', name, value })).to.eventually.be.rejectedWith(
+      await expect(cookies.set({ url: '', name, value })).rejects.toThrow(
         'Failed to set cookie - The cookie was set with an invalid Domain attribute.'
       );
     });
@@ -178,7 +178,7 @@ describe('session module', () => {
       const name = '1';
       const value = '1';
 
-      await expect(cookies.set({ url: 'asdf', name, value })).to.eventually.be.rejectedWith(
+      await expect(cookies.set({ url: 'asdf', name, value })).rejects.toThrow(
         'Failed to set cookie - The cookie was set with an invalid Domain attribute.'
       );
     });
@@ -188,7 +188,7 @@ describe('session module', () => {
       const name = 'BadCookie';
       const value = 'test;test';
 
-      await expect(cookies.set({ url, name, value })).to.eventually.be.rejectedWith(
+      await expect(cookies.set({ url, name, value })).rejects.toThrow(
         'Failed to set cookie - The cookie contains ASCII control characters'
       );
     });
@@ -655,13 +655,13 @@ describe('session module', () => {
       const sharedDictionaryInfo = (await runApp('getSharedDictionaryInfo')) as Electron.SharedDictionaryInfo[];
 
       expect(sharedDictionaryInfo).to.have.lengthOf(1);
-      expect(sharedDictionaryInfo[0].match).to.not.be.undefined();
-      expect(sharedDictionaryInfo[0].hash).to.not.be.undefined();
-      expect(sharedDictionaryInfo[0].lastFetchTime).to.not.be.undefined();
-      expect(sharedDictionaryInfo[0].responseTime).to.not.be.undefined();
-      expect(sharedDictionaryInfo[0].expirationDuration).to.not.be.undefined();
-      expect(sharedDictionaryInfo[0].lastUsedTime).to.not.be.undefined();
-      expect(sharedDictionaryInfo[0].size).to.not.be.undefined();
+      expect(sharedDictionaryInfo[0].match).to.not.be.undefined;
+      expect(sharedDictionaryInfo[0].hash).to.not.be.undefined;
+      expect(sharedDictionaryInfo[0].lastFetchTime).to.not.be.undefined;
+      expect(sharedDictionaryInfo[0].responseTime).to.not.be.undefined;
+      expect(sharedDictionaryInfo[0].expirationDuration).to.not.be.undefined;
+      expect(sharedDictionaryInfo[0].lastUsedTime).to.not.be.undefined;
+      expect(sharedDictionaryInfo[0].size).to.not.be.undefined;
     });
 
     it('can clear shared dictionary cache', async () => {
@@ -929,7 +929,7 @@ describe('session module', () => {
 
     it('disallows configuring proxy settings with mode `invalid`', async () => {
       const config = { mode: 'invalid' as any };
-      await expect(customSession.setProxy(config)).to.eventually.be.rejectedWith(/Invalid mode/);
+      await expect(customSession.setProxy(config)).rejects.toThrow(/Invalid mode/);
     });
 
     it('reload proxy configuration', async () => {
@@ -985,7 +985,7 @@ describe('session module', () => {
         customSession.resolveHost('ipv4.localhost2', {
           queryType: 'AAAA'
         })
-      ).to.eventually.be.rejectedWith(/net::ERR_NAME_NOT_RESOLVED/);
+      ).rejects.toThrow(/net::ERR_NAME_NOT_RESOLVED/);
     });
 
     it('resolves ipv6.localhost2', async () => {
@@ -1001,13 +1001,11 @@ describe('session module', () => {
         customSession.resolveHost('notfound.localhost2', {
           queryType: 'A'
         })
-      ).to.eventually.be.rejectedWith(/net::ERR_NAME_NOT_RESOLVED/);
+      ).rejects.toThrow(/net::ERR_NAME_NOT_RESOLVED/);
     });
 
     it('fails to resolve notfound.localhost2', async () => {
-      await expect(customSession.resolveHost('notfound.localhost2')).to.eventually.be.rejectedWith(
-        /net::ERR_NAME_NOT_RESOLVED/
-      );
+      await expect(customSession.resolveHost('notfound.localhost2')).rejects.toThrow(/net::ERR_NAME_NOT_RESOLVED/);
     });
   });
 
@@ -1099,7 +1097,7 @@ describe('session module', () => {
               const uploadData = request.uploadData as any;
               const uuid: string = uploadData[1].blobUUID;
               const dataPipe = uploadData[1].dataPipe;
-              expect(dataPipe).to.be.ok();
+              expect(dataPipe).to.be.ok;
               onDataPipe(dataPipe);
               resolve({ uuid });
               callback('');
@@ -1130,7 +1128,7 @@ describe('session module', () => {
 
         const result = await session.defaultSession.getBlobData(uuid);
         expect(result.toString()).to.equal(postData);
-        expect(heldDataPipe).to.be.ok();
+        expect(heldDataPipe).to.be.ok;
       } finally {
         await protocol.unregisterProtocol(scheme);
       }
@@ -1150,7 +1148,7 @@ describe('session module', () => {
         await w.loadURL(url);
 
         const { uuid } = await postInfo;
-        expect(heldDataPipe).to.be.ok();
+        expect(heldDataPipe).to.be.ok;
         const weak = new WeakRef(heldDataPipe as object);
         heldDataPipe = null;
 
@@ -1252,7 +1250,7 @@ describe('session module', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
       await w.loadURL(serverUrl);
       expect(w.webContents.getTitle()).to.equal('hello');
-      expect(validate!).not.to.be.undefined();
+      expect(validate!).not.to.be.undefined;
       validate!();
     });
 
@@ -1275,14 +1273,14 @@ describe('session module', () => {
             'net::ERR_CERT_AUTHORITY_INVALID',
             'net::ERR_CERT_COMMON_NAME_INVALID'
           ]);
-          expect(isIssuedByKnownRoot).to.be.false();
+          expect(isIssuedByKnownRoot).to.be.false;
         };
         callback(-2);
       });
 
       const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
-      await expect(w.loadURL(serverUrl)).to.eventually.be.rejectedWith(/ERR_FAILED/);
-      expect(validate!).not.to.be.undefined();
+      await expect(w.loadURL(serverUrl)).rejects.toThrow(/ERR_FAILED/);
+      expect(validate!).not.to.be.undefined;
       validate!();
     });
 
@@ -1296,9 +1294,9 @@ describe('session module', () => {
       });
 
       const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
-      await expect(w.loadURL(serverUrl), 'first load').to.eventually.be.rejectedWith(/ERR_FAILED/);
+      await expect(w.loadURL(serverUrl), 'first load').rejects.toThrow(/ERR_FAILED/);
       await once(w.webContents, 'did-stop-loading');
-      await expect(w.loadURL(serverUrl + '/test'), 'second load').to.eventually.be.rejectedWith(/ERR_FAILED/);
+      await expect(w.loadURL(serverUrl + '/test'), 'second load').rejects.toThrow(/ERR_FAILED/);
       expect(numVerificationRequests).to.equal(1);
     });
 
@@ -1312,16 +1310,14 @@ describe('session module', () => {
       setTimeout().then(() => {
         ses2.setCertificateVerifyProc((opts, callback) => callback(0));
       });
-      await expect(
-        new Promise<void>((resolve, reject) => {
-          req.on('error', (err) => {
-            reject(err);
-          });
-          req.on('response', () => {
-            resolve();
-          });
-        })
-      ).to.eventually.be.fulfilled();
+      await new Promise<void>((resolve, reject) => {
+        req.on('error', (err) => {
+          reject(err);
+        });
+        req.on('response', () => {
+          resolve();
+        });
+      });
     });
   });
 
@@ -1370,14 +1366,14 @@ describe('session module', () => {
           request.end();
         });
       // the first time should throw due to unauthenticated
-      await expect(fetch(`http://127.0.0.1:${port}`)).to.eventually.be.rejected();
+      await expect(fetch(`http://127.0.0.1:${port}`)).rejects.toThrow();
       // passing the password should let us in
       expect(await fetch(`http://test:test@127.0.0.1:${port}`)).to.equal('authenticated');
       // subsequently, the credentials are cached
       expect(await fetch(`http://127.0.0.1:${port}`)).to.equal('authenticated');
       await ses.clearAuthCache();
       // once the cache is cleared, we should get an error again
-      await expect(fetch(`http://127.0.0.1:${port}`)).to.eventually.be.rejected();
+      await expect(fetch(`http://127.0.0.1:${port}`)).rejects.toThrow();
     });
   });
 
@@ -1995,7 +1991,7 @@ describe('session module', () => {
           audio: true,
         }, x => resolve({ok: x instanceof MediaStream}), e => reject({ok: false, message: e.message})))
       `);
-      expect(ok).to.be.true(message);
+      expect(ok, message).to.be.true;
     });
 
     it('successfully rejects when calling legacy getUserMedia', async () => {
@@ -2013,7 +2009,7 @@ describe('session module', () => {
           audio: true,
         }, x => resolve({ok: x instanceof MediaStream}), e => reject({ok: false, message: e.message})))
       `)
-      ).to.eventually.be.rejectedWith('Permission denied');
+      ).rejects.toThrow('Permission denied');
     });
   });
 
@@ -2103,7 +2099,7 @@ describe('session module', () => {
       const state = await readClipboardPermission(webFrameMain.fromId(frameProcessId, frameRoutingId));
       expect(state).to.equal('granted');
       expect(handlerDetails!.requestingUrl).to.equal(loadUrl);
-      expect(handlerDetails!.isMainFrame).to.be.false();
+      expect(handlerDetails!.isMainFrame).to.be.false;
       expect(handlerDetails!.embeddingOrigin).to.equal('file:///');
     });
 
@@ -2152,7 +2148,7 @@ describe('session module', () => {
         );
 
         expect(capturedOrigin).to.equal(iframeUrl);
-        expect(capturedIsMainFrame).to.be.false();
+        expect(capturedIsMainFrame).to.be.false;
         expect(capturedRequestingUrl).to.equal(iframeUrl);
         expect(capturedSecurityOrigin).to.equal(iframeUrl);
       } finally {
@@ -2200,10 +2196,10 @@ describe('session module', () => {
           const frame = webFrameMain.fromId(frameProcessId, frameRoutingId)!;
           await frame.executeJavaScript(`${api}.then(() => {}).catch(() => {});`, true);
 
-          expect(captured).to.not.be.undefined();
+          expect(captured).to.not.be.undefined;
           expect(captured!.origin).to.equal(iframeUrl);
           expect(captured!.webContents).to.equal(w.webContents);
-          expect(captured!.details.isMainFrame).to.be.false();
+          expect(captured!.details.isMainFrame).to.be.false;
           expect(captured!.details.requestingUrl).to.equal(iframeUrl);
           expect(captured!.details.securityOrigin).to.equal(iframeUrl);
         } finally {
@@ -2224,17 +2220,17 @@ describe('session module', () => {
 
       const ses = w.webContents.session;
 
-      expect(ses.isPersistent()).to.be.true();
+      expect(ses.isPersistent()).to.be.true;
     });
 
     it('returns persist: session as persistent', () => {
       const ses = session.fromPartition(`persist:${Math.random()}`);
-      expect(ses.isPersistent()).to.be.true();
+      expect(ses.isPersistent()).to.be.true;
     });
 
     it('returns temporary session as not persistent', () => {
       const ses = session.fromPartition(`${Math.random()}`);
-      expect(ses.isPersistent()).to.be.false();
+      expect(ses.isPersistent()).to.be.false;
     });
   });
 
@@ -2355,11 +2351,11 @@ describe('session module', () => {
         });
       }
 
-      await expect(request()).to.be.rejectedWith(/ERR_CERT_AUTHORITY_INVALID/);
+      await expect(request()).rejects.toThrow(/ERR_CERT_AUTHORITY_INVALID/);
       ses.setSSLConfig({
         disabledCipherSuites: [0x009c]
       });
-      await expect(request()).to.be.rejectedWith(/ERR_SSL_VERSION_OR_CIPHER_MISMATCH/);
+      await expect(request()).rejects.toThrow(/ERR_SSL_VERSION_OR_CIPHER_MISMATCH/);
     });
   });
 
@@ -2414,18 +2410,18 @@ describe('session module', () => {
       }
 
       // Data is in localStorage
-      await expect(queryData('localstorage')).to.eventually.equal('hello localstorage');
+      await expect(queryData('localstorage')).resolves.to.equal('hello localstorage');
       // Data is in indexedDB
-      await expect(queryData('indexeddb')).to.eventually.equal('hello indexeddb');
+      await expect(queryData('indexeddb')).resolves.to.equal('hello indexeddb');
 
       // Clear only indexedDB, not localStorage
       await session.clearData({ dataTypes: ['indexedDB'] });
 
       // The localStorage data should still be there
-      await expect(queryData('localstorage')).to.eventually.equal('hello localstorage');
+      await expect(queryData('localstorage')).resolves.to.equal('hello localstorage');
 
       // The indexedDB data should be gone
-      await expect(queryData('indexeddb')).to.eventually.be.undefined();
+      await expect(queryData('indexeddb')).resolves.toBeUndefined();
     });
 
     it('only clears the specified origins', async () => {
@@ -2534,12 +2530,12 @@ describe('session module', () => {
       );
       deferKillUtilityProcess(aiHandler);
       session.registerLocalAIHandler(aiHandler);
-      await expect(w.webContents.executeJavaScript('LanguageModel.create()')).to.eventually.be.fulfilled();
+      await w.webContents.executeJavaScript('LanguageModel.create()');
 
       session.registerLocalAIHandler(null);
       await expect(
         w.webContents.executeJavaScript('LanguageModel.create().catch(err => { throw err.message; })')
-      ).to.eventually.be.rejectedWith(/unable to create/);
+      ).rejects.toThrow(/unable to create/);
     });
 
     it('can re-register a new handler after clearing', async () => {
@@ -2562,7 +2558,7 @@ describe('session module', () => {
       deferKillUtilityProcess(aiHandler2);
       session.registerLocalAIHandler(aiHandler2);
       expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
-      await expect(w.webContents.executeJavaScript('LanguageModel.create()')).to.eventually.be.fulfilled();
+      await w.webContents.executeJavaScript('LanguageModel.create()');
     });
 
     it('throws when called with a non-UtilityProcess argument', () => {

@@ -1,6 +1,6 @@
 import { type Display, screen, desktopCapturer } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 describe('screen module', { tags: ['serial'] }, () => {
   describe('methods reassignment', () => {
@@ -8,7 +8,7 @@ describe('screen module', { tags: ['serial'] }, () => {
       const originalFunction = screen.getPrimaryDisplay;
       try {
         (screen as any).getPrimaryDisplay = () => null;
-        expect(screen.getPrimaryDisplay()).to.be.null();
+        expect(screen.getPrimaryDisplay()).to.be.null;
       } finally {
         screen.getPrimaryDisplay = originalFunction;
       }

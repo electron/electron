@@ -1,6 +1,6 @@
 import { systemPreferences } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { ifdescribe, ifit } from './lib/spec-helpers.ts';
 
@@ -14,7 +14,7 @@ describe('systemPreferences module', () => {
     });
     ifit(process.platform === 'win32')('should return a non-empty string', () => {
       const accentColor = systemPreferences.getAccentColor();
-      expect(accentColor).to.be.a('string').that.is.not.empty('accent color');
+      expect(accentColor, 'accent color').to.be.a('string').that.is.not.empty;
     });
   });
 
@@ -66,10 +66,10 @@ describe('systemPreferences module', () => {
   ifdescribe(process.platform === 'darwin')('systemPreferences.getUserDefault(key, type)', () => {
     it('returns values for known user defaults', () => {
       const locale = systemPreferences.getUserDefault('AppleLocale', 'string');
-      expect(locale).to.be.a('string').that.is.not.empty('locale');
+      expect(locale, 'locale').to.be.a('string').that.is.not.empty;
 
       const languages = systemPreferences.getUserDefault('AppleLanguages', 'array');
-      expect(languages).to.be.an('array').that.is.not.empty('languages');
+      expect(languages, 'languages').to.be.an('array').that.is.not.empty;
     });
 
     it('returns values for unknown user defaults', () => {
@@ -79,9 +79,8 @@ describe('systemPreferences module', () => {
       expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'double')).to.equal(0);
       expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'string')).to.equal('');
       expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'url')).to.equal('');
-      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'badtype' as any)).to.be.undefined(
-        'user default'
-      );
+      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'badtype' as any), 'user default').to.be
+        .undefined;
       expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'array')).to.deep.equal([]);
       expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'dictionary')).to.deep.equal({});
     });
@@ -263,13 +262,11 @@ describe('systemPreferences module', () => {
 
   ifdescribe(process.platform === 'darwin')('systemPreferences.promptTouchID(reason)', () => {
     it('rejects an empty reason', async () => {
-      await expect(systemPreferences.promptTouchID('')).to.eventually.be.rejectedWith('reason must be non-empty');
+      await expect(systemPreferences.promptTouchID('')).rejects.toThrow('reason must be non-empty');
     });
 
     it('rejects a reason that is not valid UTF-8', async () => {
-      await expect(systemPreferences.promptTouchID('\uD800')).to.eventually.be.rejectedWith(
-        'reason must be valid UTF-8'
-      );
+      await expect(systemPreferences.promptTouchID('\uD800')).rejects.toThrow('reason must be valid UTF-8');
     });
   });
 

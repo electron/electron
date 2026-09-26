@@ -1,6 +1,6 @@
 import { autoUpdater } from 'electron';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { randomUUID } from 'node:crypto';

@@ -1,6 +1,6 @@
 import { BrowserWindow, session, desktopCapturer } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as http from 'node:http';
 
@@ -56,10 +56,10 @@ describe('setDisplayMediaRequestHandler', () => {
     `,
       true
     );
-    expect(requestHandlerCalled).to.be.true();
-    expect(mediaRequest.videoRequested).to.be.true();
-    expect(mediaRequest.audioRequested).to.be.false();
-    expect(ok).to.be.true(message);
+    expect(requestHandlerCalled).to.be.true;
+    expect(mediaRequest.videoRequested).to.be.true;
+    expect(mediaRequest.audioRequested).to.be.false;
+    expect(ok, message).to.be.true;
   });
 
   // Process-level loopback audio capture (restrictOwnAudio / loopbackWithoutChrome)
@@ -100,8 +100,8 @@ describe('setDisplayMediaRequestHandler', () => {
       `,
           true
         );
-      expect(requestHandlerCalled).to.be.true();
-      expect(ok).to.be.true(message);
+      expect(requestHandlerCalled).to.be.true;
+      expect(ok, message).to.be.true;
       expect(audioTrackCount).to.equal(1);
       expect(audioDeviceId).to.equal('loopbackWithoutChrome');
       expect(restrictOwnAudioSetting).to.equal(true);
@@ -128,8 +128,8 @@ describe('setDisplayMediaRequestHandler', () => {
     `,
       true
     );
-    expect(requestHandlerCalled).to.be.true();
-    expect(ok).to.be.false();
+    expect(requestHandlerCalled).to.be.true;
+    expect(ok).to.be.false;
     expect(message).to.equal('Could not start video source');
   });
 
@@ -168,13 +168,13 @@ describe('setDisplayMediaRequestHandler', () => {
       true
     );
 
-    expect(requestHandlerCalled).to.be.true();
-    expect(mediaRequest.videoRequested).to.be.true();
-    expect(mediaRequest.audioRequested).to.be.false();
-    expect(ok).to.be.true();
+    expect(requestHandlerCalled).to.be.true;
+    expect(mediaRequest.videoRequested).to.be.true;
+    expect(mediaRequest.audioRequested).to.be.false;
+    expect(ok).to.be.true;
     expect(captureHandle.handle).to.be.a('string');
     expect(handleID).to.eq(captureHandle.handle);
-    expect(message).to.be.null();
+    expect(message).to.be.null;
   });
 
   const addIframe = async (w: BrowserWindow) => {
@@ -225,7 +225,7 @@ describe('setDisplayMediaRequestHandler', () => {
       'navigator.mediaDevices.getDisplayMedia({ video: true }).then(() => ({ ok: true }), (e) => ({ ok: false, message: e.message }))',
       true
     );
-    expect(ok).to.be.false();
+    expect(ok).to.be.false;
     expect(error).to.match(/destroyed/);
   });
 
@@ -252,8 +252,8 @@ describe('setDisplayMediaRequestHandler', () => {
       }, (e) => ({ ok: false, message: e.message }))`,
       true
     );
-    expect(message).to.be.null();
-    expect(ok).to.be.true();
+    expect(message).to.be.null;
+    expect(ok).to.be.true;
     expect(captureHandle.handle).to.equal('captured-tab');
     expect(captureHandle.origin).to.equal(new URL(serverUrl).origin);
   });
@@ -282,8 +282,8 @@ describe('setDisplayMediaRequestHandler', () => {
     `,
       true
     );
-    expect(requestHandlerCalled).to.be.true();
-    expect(ok).to.be.false();
+    expect(requestHandlerCalled).to.be.true;
+    expect(ok).to.be.false;
     expect(callbackError?.message).to.equal('Video was requested, but no video stream was provided');
   });
 
@@ -312,8 +312,8 @@ describe('setDisplayMediaRequestHandler', () => {
     `,
       true
     );
-    expect(requestHandlerCalled).to.be.true();
-    expect(ok).to.be.false();
+    expect(requestHandlerCalled).to.be.true;
+    expect(ok).to.be.false;
     expect(callbackError?.message).to.equal('Video was requested, but no video stream was provided');
   });
 
@@ -338,8 +338,8 @@ describe('setDisplayMediaRequestHandler', () => {
     `,
       true
     );
-    expect(requestHandlerCalled).to.be.true();
-    expect(ok).to.be.true();
+    expect(requestHandlerCalled).to.be.true;
+    expect(ok).to.be.true;
   });
 
   it('does not crash when providing no streams', async () => {
@@ -365,8 +365,8 @@ describe('setDisplayMediaRequestHandler', () => {
     `,
       true
     );
-    expect(requestHandlerCalled).to.be.true();
-    expect(ok).to.be.false();
+    expect(requestHandlerCalled).to.be.true;
+    expect(ok).to.be.false;
     expect(callbackError.message).to.equal('Video was requested, but no video stream was provided');
   });
 
@@ -390,8 +390,8 @@ describe('setDisplayMediaRequestHandler', () => {
     `,
       true
     );
-    expect(requestHandlerCalled).to.be.true();
-    expect(ok).to.be.false();
+    expect(requestHandlerCalled).to.be.true;
+    expect(ok).to.be.false;
     expect(message).to.equal('Could not start video source');
   });
 
@@ -408,7 +408,7 @@ describe('setDisplayMediaRequestHandler', () => {
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
     `);
-    expect(ok).to.be.true(message);
+    expect(ok, message).to.be.true;
   });
 
   it('works when calling getDisplayMedia with preferCurrentTab', async () => {
@@ -430,8 +430,8 @@ describe('setDisplayMediaRequestHandler', () => {
     `,
       true
     );
-    expect(requestHandlerCalled).to.be.true();
-    expect(ok).to.be.true(message);
+    expect(requestHandlerCalled).to.be.true;
+    expect(ok, message).to.be.true;
   });
 
   it('returns a MediaStream with BrowserCaptureMediaStreamTrack when the current tab is selected', async () => {
@@ -456,8 +456,8 @@ describe('setDisplayMediaRequestHandler', () => {
     `,
       true
     );
-    expect(requestHandlerCalled).to.be.true();
-    expect(ok).to.be.true(message);
+    expect(requestHandlerCalled).to.be.true;
+    expect(ok, message).to.be.true;
   });
 
   ifit(process.platform !== 'darwin')('can supply a screen response to preferCurrentTab', async () => {
@@ -480,8 +480,8 @@ describe('setDisplayMediaRequestHandler', () => {
     `,
       true
     );
-    expect(requestHandlerCalled).to.be.true();
-    expect(ok).to.be.true(message);
+    expect(requestHandlerCalled).to.be.true;
+    expect(ok, message).to.be.true;
   });
 
   it('can supply a frame response', async () => {
@@ -501,8 +501,8 @@ describe('setDisplayMediaRequestHandler', () => {
     `,
       true
     );
-    expect(requestHandlerCalled).to.be.true();
-    expect(ok).to.be.true(message);
+    expect(requestHandlerCalled).to.be.true;
+    expect(ok, message).to.be.true;
   });
 
   it('is not called when calling legacy getUserMedia', async () => {
@@ -518,7 +518,7 @@ describe('setDisplayMediaRequestHandler', () => {
         audio: true,
       }, x => resolve({ok: x instanceof MediaStream}), e => reject({ok: false, message: e.message})))
     `);
-    expect(ok).to.be.true(message);
+    expect(ok, message).to.be.true;
   });
 
   it('is not called when calling legacy getUserMedia with desktop capture constraint', async () => {
@@ -537,7 +537,7 @@ describe('setDisplayMediaRequestHandler', () => {
         },
       }, x => resolve({ok: x instanceof MediaStream}), e => reject({ok: false, message: e.message})))
     `);
-    expect(ok).to.be.true(message);
+    expect(ok, message).to.be.true;
   });
 
   it('works when calling getUserMedia without a media request handler', async () => {
@@ -549,7 +549,7 @@ describe('setDisplayMediaRequestHandler', () => {
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
     `);
-    expect(ok).to.be.true(message);
+    expect(ok, message).to.be.true;
   });
 
   it('works when calling legacy getUserMedia without a media request handler', async () => {
@@ -561,7 +561,7 @@ describe('setDisplayMediaRequestHandler', () => {
         audio: true,
       }, x => resolve({ok: x instanceof MediaStream}), e => reject({ok: false, message: e.message})))
     `);
-    expect(ok).to.be.true(message);
+    expect(ok, message).to.be.true;
   });
 
   it('throws an error when calling legacy getUserMedia with invalid chromeMediaSourceId', async () => {
@@ -577,7 +577,7 @@ describe('setDisplayMediaRequestHandler', () => {
         },
       }, x => resolve({ok: x instanceof MediaStream}), e => resolve({ ok: false, message: e.message })))
     `);
-    expect(ok).to.be.false();
+    expect(ok).to.be.false;
     expect(message).to.equal('Invalid state');
   });
 
@@ -589,7 +589,7 @@ describe('setDisplayMediaRequestHandler', () => {
     const sourceId = sourceWindow.webContents.getMediaSourceId(requestingWindow.webContents);
     const { ok, message, origin, videoTrackCount } = await captureWithTabSourceId(requestingWindow, sourceId);
 
-    expect(ok).to.be.true(message);
+    expect(ok, message).to.be.true;
     expect(origin).to.equal(new URL(serverUrl).origin);
     expect(videoTrackCount).to.equal(1);
   });
@@ -606,7 +606,7 @@ describe('setDisplayMediaRequestHandler', () => {
       }).then((stream) => { stream.getTracks().forEach((t) => t.stop()); return { ok: true }; },
               (e) => ({ ok: false, message: e.message }))
     `);
-    expect(ok).to.be.false();
+    expect(ok).to.be.false;
     expect(message).to.equal('Invalid state');
   });
 
@@ -623,7 +623,7 @@ describe('setDisplayMediaRequestHandler', () => {
     const sourceId = sourceWindow.webContents.getMediaSourceId(registeredRequesterWindow.webContents);
     const { ok, message, origin } = await captureWithTabSourceId(otherRequesterWindow, sourceId);
 
-    expect(ok).to.be.false();
+    expect(ok).to.be.false;
     expect(message).to.match(/Invalid state|Error starting tab capture/);
     expect(origin).to.equal(new URL(serverUrl).origin);
   });
@@ -645,7 +645,7 @@ describe('setDisplayMediaRequestHandler', () => {
     `,
       true
     );
-    expect(ok).to.be.false();
+    expect(ok).to.be.false;
     expect(message).to.equal('Not supported');
   });
 });

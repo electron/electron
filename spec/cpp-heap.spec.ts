@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { once } from 'node:events';
 import * as path from 'node:path';
@@ -2507,7 +2507,6 @@ describe('cpp heap', () => {
   describe('webFrame module', () => {
     itremote('does not leak WebFrameRenderer wrappers', async () => {
       const { webFrame } = require('electron');
-      const { expect } = require('chai');
       const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
 
       const refs: WeakRef<object>[] = (() => {

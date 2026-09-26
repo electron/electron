@@ -1,7 +1,7 @@
 import { BrowserWindow } from 'electron';
 import { app } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -99,14 +99,14 @@ describe('process module', () => {
         });
 
         const success = await invoke((filePath: string) => process.takeHeapSnapshot(filePath), filePath);
-        expect(success).to.be.true();
+        expect(success).to.be.true;
         const stats = fs.statSync(filePath);
         expect(stats.size).not.to.be.equal(0);
       });
 
       it('returns false on failure', async () => {
         const success = await invoke((filePath: string) => process.takeHeapSnapshot(filePath), '');
-        expect(success).to.be.false();
+        expect(success).to.be.false;
       });
     });
   }

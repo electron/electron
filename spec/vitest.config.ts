@@ -99,6 +99,8 @@ export default defineConfig({
     globals: false,
     globalSetup: ['./vitest/global-setup.js'],
     setupFiles: ['./vitest/setup.ts'],
+    // Show full object diffs in assertion errors (chaijs/chai#469).
+    chaiConfig: { truncateThreshold: 0 },
     // mocha-compat implements mocha's resettable timeouts itself.
     testTimeout: 0,
     hookTimeout: 0,

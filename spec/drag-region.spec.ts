@@ -1,6 +1,6 @@
 import { BrowserWindow, screen } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { once } from 'node:events';
 import { createRequire } from 'node:module';

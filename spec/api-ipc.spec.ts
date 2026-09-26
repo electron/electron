@@ -1,7 +1,7 @@
 import { nativeImage } from 'electron/common';
 import { BrowserWindow, ipcMain, type IpcMainInvokeEvent, MessageChannelMain, type WebContents } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { EventEmitter, once } from 'node:events';
 import * as http from 'node:http';
@@ -390,7 +390,7 @@ describe('ipc module', () => {
       const [ev, msg] = await p;
       expect(msg).to.equal('hi');
       expect(ev.ports).to.have.length(1);
-      expect(ev.senderFrame.parent).to.be.null();
+      expect(ev.senderFrame.parent).to.be.null;
       expect(ev.senderFrame.frameToken).to.equal(w.webContents.mainFrame.frameToken);
       const [port] = ev.ports;
       expect(port).to.be.an.instanceOf(EventEmitter);
@@ -640,8 +640,8 @@ describe('ipc module', () => {
     describe('MessageChannelMain', () => {
       it('can be created', () => {
         const { port1, port2 } = new MessageChannelMain();
-        expect(port1).not.to.be.null();
-        expect(port2).not.to.be.null();
+        expect(port1).not.to.be.null;
+        expect(port2).not.to.be.null;
       });
 
       it('should not throw when supported values are passed as message', () => {
@@ -1003,7 +1003,7 @@ describe('ipc module', () => {
       w.webContents.executeJavaScript("require('electron').ipcRenderer.send('test', 42)");
 
       // assert that they are delivered in the correct order
-      expect(await ipcReceived).to.be.false();
+      expect(await ipcReceived).to.be.false;
       await ipcMainReceived;
     });
 
@@ -1118,8 +1118,8 @@ describe('ipc module', () => {
       w.webContents.executeJavaScript("require('electron').ipcRenderer.send('test', 42)");
 
       // assert that they are delivered in the correct order
-      expect(await ipcReceived).to.be.false();
-      expect(await ipcWebContentsReceived).to.be.false();
+      expect(await ipcReceived).to.be.false;
+      expect(await ipcWebContentsReceived).to.be.false;
       await ipcMainReceived;
     });
 
@@ -1203,7 +1203,7 @@ describe('ipc module', () => {
       const onUnloadIpc = once(w.webContents.mainFrame.ipc, 'unload');
       w.loadURL(`http://127.0.0.1:${port}`); // cross-origin navigation
       const [{ senderFrame }] = await onUnloadIpc;
-      expect(senderFrame.detached).to.be.true();
+      expect(senderFrame.detached).to.be.true;
     });
   });
 

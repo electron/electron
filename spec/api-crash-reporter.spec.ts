@@ -1,7 +1,7 @@
 import { app } from 'electron/main';
 
 import Busboy from 'busboy';
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -146,7 +146,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       runCrashApp('renderer', port);
       const crash = await waitForCrash();
       checkCrash('renderer', crash);
-      expect(crash.mainProcessSpecific).to.be.undefined();
+      expect(crash.mainProcessSpecific).to.be.undefined;
     });
 
     it('when sandboxed renderer crashes', async () => {
@@ -154,7 +154,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       runCrashApp('sandboxed-renderer', port);
       const crash = await waitForCrash();
       checkCrash('renderer', crash);
-      expect(crash.mainProcessSpecific).to.be.undefined();
+      expect(crash.mainProcessSpecific).to.be.undefined;
     });
 
     // __fastfail crashes never reach crashpad's in-process handler; they are
@@ -185,8 +185,8 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       runCrashApp('node', port);
       const crash = await waitForCrash();
       checkCrash('node', crash);
-      expect(crash.mainProcessSpecific).to.be.undefined();
-      expect(crash.rendererSpecific).to.be.undefined();
+      expect(crash.mainProcessSpecific).to.be.undefined;
+      expect(crash.rendererSpecific).to.be.undefined;
     });
 
     it('when a node process inside a node process crashes', async () => {
@@ -194,8 +194,8 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       runCrashApp('node-fork', port);
       const crash = await waitForCrash();
       checkCrash('node', crash);
-      expect(crash.mainProcessSpecific).to.be.undefined();
-      expect(crash.rendererSpecific).to.be.undefined();
+      expect(crash.mainProcessSpecific).to.be.undefined;
+      expect(crash.rendererSpecific).to.be.undefined;
     });
 
     // Ensures that passing in crashpadHandlerPID flag for Linx child processes
@@ -252,9 +252,9 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
         runCrashApp('renderer', port, ['--set-extra-parameters-in-renderer']);
         const crash = await waitForCrash();
         checkCrash('renderer', crash);
-        expect(crash.mainProcessSpecific).to.be.undefined();
+        expect(crash.mainProcessSpecific).to.be.undefined;
         expect(crash.rendererSpecific).to.equal('rs');
-        expect(crash.addedThenRemoved).to.be.undefined();
+        expect(crash.addedThenRemoved).to.be.undefined;
       });
 
       it('when sandboxed renderer crashes', async () => {
@@ -262,9 +262,9 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
         runCrashApp('sandboxed-renderer', port, ['--set-extra-parameters-in-renderer']);
         const crash = await waitForCrash();
         checkCrash('renderer', crash);
-        expect(crash.mainProcessSpecific).to.be.undefined();
+        expect(crash.mainProcessSpecific).to.be.undefined;
         expect(crash.rendererSpecific).to.equal('rs');
-        expect(crash.addedThenRemoved).to.be.undefined();
+        expect(crash.addedThenRemoved).to.be.undefined;
       });
 
       // Regression: base::circular_deque relocates elements on growth,
@@ -297,7 +297,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
             missing.push(`dyn-key-${i}`);
           }
         }
-        expect(missing, `missing dynamic crash keys: ${missing.join(', ')}`).to.be.empty();
+        expect(missing, `missing dynamic crash keys: ${missing.join(', ')}`).to.be.empty;
       });
 
       it('contains v8 crash keys when a v8 crash occurs', async () => {
@@ -536,7 +536,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       const firstReport = await repeatedly(() =>
         remotely(() => require('electron').crashReporter.getLastCrashReport())
       );
-      expect(firstReport).to.not.be.null();
+      expect(firstReport).to.not.be.null;
       expect(firstReport.date).to.be.an.instanceOf(Date);
       expect(Date.now() - +firstReport.date).to.be.lessThan(30000);
     });
@@ -733,28 +733,24 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
           const { crashReporter } = require('electron');
           crashReporter.start({} as any);
         })
-      ).to.be.rejectedWith('submitURL must be specified when uploadToServer is true');
+      ).rejects.toThrow('submitURL must be specified when uploadToServer is true');
     });
 
     it('allows the submitURL option to be omitted when uploadToServer is false', async () => {
       const { remotely } = await startRemoteControlApp();
-      await expect(
-        remotely(() => {
-          const { crashReporter } = require('electron');
-          crashReporter.start({ uploadToServer: false } as any);
-        })
-      ).to.be.fulfilled();
+      await remotely(() => {
+        const { crashReporter } = require('electron');
+        crashReporter.start({ uploadToServer: false } as any);
+      });
     });
 
     it('can be called twice', async () => {
       const { remotely } = await startRemoteControlApp();
-      await expect(
-        remotely(() => {
-          const { crashReporter } = require('electron');
-          crashReporter.start({ submitURL: 'http://127.0.0.1' });
-          crashReporter.start({ submitURL: 'http://127.0.0.1' });
-        })
-      ).to.be.fulfilled();
+      await remotely(() => {
+        const { crashReporter } = require('electron');
+        crashReporter.start({ submitURL: 'http://127.0.0.1' });
+        crashReporter.start({ submitURL: 'http://127.0.0.1' });
+      });
     });
   });
 
@@ -766,7 +762,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
         require('electron').crashReporter.start({ submitURL: 'http://127.0.0.1' });
       });
       const uploadToServer = await remotely(() => require('electron').crashReporter.getUploadToServer());
-      expect(uploadToServer).to.be.true();
+      expect(uploadToServer).to.be.true;
     });
 
     it('returns false when uploadToServer is set to false in init', async () => {
@@ -775,7 +771,7 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
         require('electron').crashReporter.start({ submitURL: 'http://127.0.0.1', uploadToServer: false });
       });
       const uploadToServer = await remotely(() => require('electron').crashReporter.getUploadToServer());
-      expect(uploadToServer).to.be.false();
+      expect(uploadToServer).to.be.false;
     });
 
     it('is updated by setUploadToServer', async () => {
@@ -786,11 +782,11 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       await remotely(() => {
         require('electron').crashReporter.setUploadToServer(false);
       });
-      expect(await remotely(() => require('electron').crashReporter.getUploadToServer())).to.be.false();
+      expect(await remotely(() => require('electron').crashReporter.getUploadToServer())).to.be.false;
       await remotely(() => {
         require('electron').crashReporter.setUploadToServer(true);
       });
-      expect(await remotely(() => require('electron').crashReporter.getUploadToServer())).to.be.true();
+      expect(await remotely(() => require('electron').crashReporter.getUploadToServer())).to.be.true;
     });
   });
 

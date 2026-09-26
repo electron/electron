@@ -1,6 +1,6 @@
 import { BrowserWindow, utilityProcess } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
@@ -29,7 +29,7 @@ describe('modules support', () => {
           webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
         w.loadURL('about:blank');
-        await expect(w.webContents.executeJavaScript("{ require('@electron-ci/echo'); null }")).to.be.fulfilled();
+        await w.webContents.executeJavaScript("{ require('@electron-ci/echo'); null }");
       });
 
       it('can be required in node binary', async function () {
@@ -43,7 +43,7 @@ describe('modules support', () => {
         fs.copyFileSync(process.execPath, testExecPath);
         try {
           const fixture = path.join(fixtures, 'module', 'echo-renamed.js');
-          expect(fs.existsSync(fixture)).to.be.true();
+          expect(fs.existsSync(fixture)).to.be.true;
           const child = childProcess.spawnSync(testExecPath, [fixture]);
           expect(child.status).to.equal(0);
         } finally {
@@ -60,7 +60,7 @@ describe('modules support', () => {
           webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
         w.loadURL('about:blank');
-        await expect(w.webContents.executeJavaScript("{ require('@electron-ci/uv-dlopen'); null }")).to.be.fulfilled();
+        await w.webContents.executeJavaScript("{ require('@electron-ci/uv-dlopen'); null }");
       });
 
       it('can be required in node binary', async function () {
@@ -91,7 +91,7 @@ describe('modules support', () => {
           webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
         w.loadURL('about:blank');
-        await expect(w.webContents.executeJavaScript("{ require('electron/lol'); null }")).to.eventually.be.rejected();
+        await expect(w.webContents.executeJavaScript("{ require('electron/lol'); null }")).rejects.toThrow();
       });
 
       it("require('electron/lol') should throw in the utility process", async () => {
@@ -119,7 +119,7 @@ describe('modules support', () => {
           webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
         w.loadURL('about:blank');
-        await expect(w.webContents.executeJavaScript("{ require('electron'); null }")).to.be.fulfilled();
+        await w.webContents.executeJavaScript("{ require('electron'); null }");
       });
 
       it("require('electron/main') should not throw in the main process", () => {
@@ -134,7 +134,7 @@ describe('modules support', () => {
           webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
         w.loadURL('about:blank');
-        await expect(w.webContents.executeJavaScript("{ require('electron/main'); null }")).to.be.fulfilled();
+        await w.webContents.executeJavaScript("{ require('electron/main'); null }");
       });
 
       it("require('electron/main') should not throw in the utility process", async () => {
@@ -155,7 +155,7 @@ describe('modules support', () => {
           webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
         w.loadURL('about:blank');
-        await expect(w.webContents.executeJavaScript("{ require('electron/renderer'); null }")).to.be.fulfilled();
+        await w.webContents.executeJavaScript("{ require('electron/renderer'); null }");
       });
 
       it("require('electron/renderer') should not throw in the utility process", async () => {
@@ -176,7 +176,7 @@ describe('modules support', () => {
           webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
         w.loadURL('about:blank');
-        await expect(w.webContents.executeJavaScript("{ require('electron/common'); null }")).to.be.fulfilled();
+        await w.webContents.executeJavaScript("{ require('electron/common'); null }");
       });
 
       it("require('electron/common') should not throw in the utility process", async () => {
@@ -197,7 +197,7 @@ describe('modules support', () => {
           webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
         w.loadURL('about:blank');
-        await expect(w.webContents.executeJavaScript("{ require('electron/utility'); null }")).to.be.fulfilled();
+        await w.webContents.executeJavaScript("{ require('electron/utility'); null }");
       });
 
       it("require('electron/utility') should not throw in the utility process", async () => {
@@ -289,7 +289,7 @@ describe('modules support', () => {
         w.loadURL('about:blank');
         // Any module that only exists in the spec app's node_modules will do here;
         // this is checking that module.paths includes the app directory.
-        const result = await w.webContents.executeJavaScript('typeof require("dirty-chai")');
+        const result = await w.webContents.executeJavaScript('typeof require("busboy")');
         expect(result).to.equal('function');
       });
     });
@@ -297,7 +297,7 @@ describe('modules support', () => {
 
   describe('esm', () => {
     it('can load the built-in "electron" module via ESM import', async () => {
-      await expect(import('electron')).to.eventually.be.ok();
+      await expect(import('electron')).resolves.toBeTruthy();
     });
 
     it('the built-in "electron" module loaded via ESM import has the same exports as the CJS module', async () => {

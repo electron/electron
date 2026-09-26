@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { once } from 'node:events';
 import * as importedFs from 'node:fs';
@@ -121,7 +121,7 @@ describe('asar package', () => {
       w.loadFile(p);
       const [, message, error] = await once(ipcMain, 'asar-video');
       if (message === 'ended') {
-        expect(error).to.be.null();
+        expect(error).to.be.null;
       } else if (message === 'error') {
         throw new Error(error);
       }
@@ -804,8 +804,8 @@ describe('asar package', function () {
           error = e;
         }
 
-        const chai = require('chai')
-        chai.expect(error).to.have.property('code').which.equals(code);
+        const { expect } = require(${JSON.stringify(path.join(import.meta.dirname, 'lib', 'vitest-cjs.cjs'))})
+        expect(error).to.have.property('code').which.equals(code);
       }
 
       fs = require('node:fs')
@@ -834,7 +834,7 @@ describe('asar package', function () {
   describe('node api', function () {
     itremote('supports paths specified as a Buffer', function () {
       const file = Buffer.from(path.join(asarDir, 'a.asar', 'file1'));
-      expect(fs.existsSync(file)).to.be.true();
+      expect(fs.existsSync(file)).to.be.true;
     });
 
     describe('fs.readFileSync', function () {
@@ -858,7 +858,7 @@ describe('asar package', function () {
       itremote('reads from a empty file', function () {
         const file = path.join(asarDir, 'empty.asar', 'file1');
         const buffer = fs.readFileSync(file);
-        expect(buffer).to.be.empty();
+        expect(buffer).to.be.empty;
         expect(buffer.toString()).to.equal('');
       });
 
@@ -885,7 +885,7 @@ describe('asar package', function () {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         let async = false;
         fs.readFile(p, function (error) {
-          expect(async).to.be.true();
+          expect(async).to.be.true;
           expect(error).to.match(/ENOENT/);
         });
         async = true;
@@ -1055,7 +1055,7 @@ describe('asar package', function () {
             else resolve();
           });
         });
-        expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true();
+        expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true;
       });
 
       itremote('copies a unpacked file', async function () {
@@ -1067,7 +1067,7 @@ describe('asar package', function () {
             else resolve();
           });
         });
-        expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true();
+        expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true;
       });
     });
 
@@ -1076,14 +1076,14 @@ describe('asar package', function () {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const dest = tempPath();
         await fs.promises.copyFile(p, dest);
-        expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true();
+        expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true;
       });
 
       itremote('copies a unpacked file', async function () {
         const p = path.join(asarDir, 'unpack.asar', 'a.txt');
         const dest = tempPath();
         await fs.promises.copyFile(p, dest);
-        expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true();
+        expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true;
       });
     });
 
@@ -1092,14 +1092,14 @@ describe('asar package', function () {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const dest = tempPath();
         fs.copyFileSync(p, dest);
-        expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true();
+        expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true;
       });
 
       itremote('copies a unpacked file', function () {
         const p = path.join(asarDir, 'unpack.asar', 'a.txt');
         const dest = tempPath();
         fs.copyFileSync(p, dest);
-        expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true();
+        expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true;
       });
     });
 
@@ -1109,7 +1109,7 @@ describe('asar package', function () {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const dest = tempPath();
         fs.cpSync(p, dest);
-        expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true();
+        expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true;
       });
     });
 
@@ -1121,7 +1121,7 @@ describe('asar package', function () {
         await new Promise<void>((resolve, reject) => {
           fs.cp(p, dest, (err) => (err ? reject(err) : resolve()));
         });
-        expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true();
+        expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true;
       });
     });
 
@@ -1131,7 +1131,7 @@ describe('asar package', function () {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const dest = tempPath();
         await fs.promises.cp(p, dest);
-        expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true();
+        expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true;
       });
     });
 
@@ -1145,9 +1145,9 @@ describe('asar package', function () {
       itremote('returns information of root', function () {
         const p = path.join(asarDir, 'a.asar');
         const stats = fs.lstatSync(p);
-        expect(stats.isFile()).to.be.false();
-        expect(stats.isDirectory()).to.be.true();
-        expect(stats.isSymbolicLink()).to.be.false();
+        expect(stats.isFile()).to.be.false;
+        expect(stats.isDirectory()).to.be.true;
+        expect(stats.isSymbolicLink()).to.be.false;
         expect(stats.size).to.equal(0);
       });
 
@@ -1162,9 +1162,9 @@ describe('asar package', function () {
       itremote('returns information of root with stats as bigint', function () {
         const p = path.join(asarDir, 'a.asar');
         const stats = fs.lstatSync(p, { bigint: false });
-        expect(stats.isFile()).to.be.false();
-        expect(stats.isDirectory()).to.be.true();
-        expect(stats.isSymbolicLink()).to.be.false();
+        expect(stats.isFile()).to.be.false;
+        expect(stats.isDirectory()).to.be.true;
+        expect(stats.isSymbolicLink()).to.be.false;
         expect(stats.size).to.equal(0);
       });
 
@@ -1174,9 +1174,9 @@ describe('asar package', function () {
           const file = ref2[j];
           const p = path.join(asarDir, 'a.asar', file);
           const stats = fs.lstatSync(p);
-          expect(stats.isFile()).to.be.true();
-          expect(stats.isDirectory()).to.be.false();
-          expect(stats.isSymbolicLink()).to.be.false();
+          expect(stats.isFile()).to.be.true;
+          expect(stats.isDirectory()).to.be.false;
+          expect(stats.isSymbolicLink()).to.be.false;
           expect(stats.size).to.equal(6);
         }
       });
@@ -1187,9 +1187,9 @@ describe('asar package', function () {
           const file = ref2[j];
           const p = path.join(asarDir, 'a.asar', file);
           const stats = fs.lstatSync(p);
-          expect(stats.isFile()).to.be.false();
-          expect(stats.isDirectory()).to.be.true();
-          expect(stats.isSymbolicLink()).to.be.false();
+          expect(stats.isFile()).to.be.false;
+          expect(stats.isDirectory()).to.be.true;
+          expect(stats.isSymbolicLink()).to.be.false;
           expect(stats.size).to.equal(0);
         }
       });
@@ -1200,9 +1200,9 @@ describe('asar package', function () {
           const file = ref2[j];
           const p = path.join(asarDir, 'a.asar', file);
           const stats = fs.lstatSync(p);
-          expect(stats.isFile()).to.be.false();
-          expect(stats.isDirectory()).to.be.false();
-          expect(stats.isSymbolicLink()).to.be.true();
+          expect(stats.isFile()).to.be.false;
+          expect(stats.isDirectory()).to.be.false;
+          expect(stats.isSymbolicLink()).to.be.true;
           expect(stats.size).to.equal(0);
         }
       });
@@ -1213,9 +1213,9 @@ describe('asar package', function () {
           const file = ref2[j];
           const p = path.join(asarDir, 'a.asar', file);
           const stats = fs.lstatSync(p);
-          expect(stats.isFile()).to.be.false();
-          expect(stats.isDirectory()).to.be.false();
-          expect(stats.isSymbolicLink()).to.be.true();
+          expect(stats.isFile()).to.be.false;
+          expect(stats.isDirectory()).to.be.false;
+          expect(stats.isSymbolicLink()).to.be.true;
           expect(stats.size).to.equal(0);
         }
       });
@@ -1250,54 +1250,54 @@ describe('asar package', function () {
       itremote('returns information of root', async function () {
         const p = path.join(asarDir, 'a.asar');
         const stats = await promisify(fs.lstat)(p);
-        expect(stats.isFile()).to.be.false();
-        expect(stats.isDirectory()).to.be.true();
-        expect(stats.isSymbolicLink()).to.be.false();
+        expect(stats.isFile()).to.be.false;
+        expect(stats.isDirectory()).to.be.true;
+        expect(stats.isSymbolicLink()).to.be.false;
         expect(stats.size).to.equal(0);
       });
 
       itremote('returns information of root with stats as bigint', async function () {
         const p = path.join(asarDir, 'a.asar');
         const stats = await promisify(fs.lstat)(p, { bigint: false });
-        expect(stats.isFile()).to.be.false();
-        expect(stats.isDirectory()).to.be.true();
-        expect(stats.isSymbolicLink()).to.be.false();
+        expect(stats.isFile()).to.be.false;
+        expect(stats.isDirectory()).to.be.true;
+        expect(stats.isSymbolicLink()).to.be.false;
         expect(stats.size).to.equal(0);
       });
 
       itremote('returns information of a normal file', async function () {
         const p = path.join(asarDir, 'a.asar', 'link2', 'file1');
         const stats = await promisify(fs.lstat)(p);
-        expect(stats.isFile()).to.be.true();
-        expect(stats.isDirectory()).to.be.false();
-        expect(stats.isSymbolicLink()).to.be.false();
+        expect(stats.isFile()).to.be.true;
+        expect(stats.isDirectory()).to.be.false;
+        expect(stats.isSymbolicLink()).to.be.false;
         expect(stats.size).to.equal(6);
       });
 
       itremote('returns information of a normal directory', async function () {
         const p = path.join(asarDir, 'a.asar', 'dir1');
         const stats = await promisify(fs.lstat)(p);
-        expect(stats.isFile()).to.be.false();
-        expect(stats.isDirectory()).to.be.true();
-        expect(stats.isSymbolicLink()).to.be.false();
+        expect(stats.isFile()).to.be.false;
+        expect(stats.isDirectory()).to.be.true;
+        expect(stats.isSymbolicLink()).to.be.false;
         expect(stats.size).to.equal(0);
       });
 
       itremote('returns information of a linked file', async function () {
         const p = path.join(asarDir, 'a.asar', 'link2', 'link1');
         const stats = await promisify(fs.lstat)(p);
-        expect(stats.isFile()).to.be.false();
-        expect(stats.isDirectory()).to.be.false();
-        expect(stats.isSymbolicLink()).to.be.true();
+        expect(stats.isFile()).to.be.false;
+        expect(stats.isDirectory()).to.be.false;
+        expect(stats.isSymbolicLink()).to.be.true;
         expect(stats.size).to.equal(0);
       });
 
       itremote('returns information of a linked directory', async function () {
         const p = path.join(asarDir, 'a.asar', 'link2', 'link2');
         const stats = await promisify(fs.lstat)(p);
-        expect(stats.isFile()).to.be.false();
-        expect(stats.isDirectory()).to.be.false();
-        expect(stats.isSymbolicLink()).to.be.true();
+        expect(stats.isFile()).to.be.false;
+        expect(stats.isDirectory()).to.be.false;
+        expect(stats.isSymbolicLink()).to.be.true;
         expect(stats.size).to.equal(0);
       });
 
@@ -1317,54 +1317,54 @@ describe('asar package', function () {
       itremote('returns information of root', async function () {
         const p = path.join(asarDir, 'a.asar');
         const stats = await fs.promises.lstat(p);
-        expect(stats.isFile()).to.be.false();
-        expect(stats.isDirectory()).to.be.true();
-        expect(stats.isSymbolicLink()).to.be.false();
+        expect(stats.isFile()).to.be.false;
+        expect(stats.isDirectory()).to.be.true;
+        expect(stats.isSymbolicLink()).to.be.false;
         expect(stats.size).to.equal(0);
       });
 
       itremote('returns information of root with stats as bigint', async function () {
         const p = path.join(asarDir, 'a.asar');
         const stats = await fs.promises.lstat(p, { bigint: false });
-        expect(stats.isFile()).to.be.false();
-        expect(stats.isDirectory()).to.be.true();
-        expect(stats.isSymbolicLink()).to.be.false();
+        expect(stats.isFile()).to.be.false;
+        expect(stats.isDirectory()).to.be.true;
+        expect(stats.isSymbolicLink()).to.be.false;
         expect(stats.size).to.equal(0);
       });
 
       itremote('returns information of a normal file', async function () {
         const p = path.join(asarDir, 'a.asar', 'link2', 'file1');
         const stats = await fs.promises.lstat(p);
-        expect(stats.isFile()).to.be.true();
-        expect(stats.isDirectory()).to.be.false();
-        expect(stats.isSymbolicLink()).to.be.false();
+        expect(stats.isFile()).to.be.true;
+        expect(stats.isDirectory()).to.be.false;
+        expect(stats.isSymbolicLink()).to.be.false;
         expect(stats.size).to.equal(6);
       });
 
       itremote('returns information of a normal directory', async function () {
         const p = path.join(asarDir, 'a.asar', 'dir1');
         const stats = await fs.promises.lstat(p);
-        expect(stats.isFile()).to.be.false();
-        expect(stats.isDirectory()).to.be.true();
-        expect(stats.isSymbolicLink()).to.be.false();
+        expect(stats.isFile()).to.be.false;
+        expect(stats.isDirectory()).to.be.true;
+        expect(stats.isSymbolicLink()).to.be.false;
         expect(stats.size).to.equal(0);
       });
 
       itremote('returns information of a linked file', async function () {
         const p = path.join(asarDir, 'a.asar', 'link2', 'link1');
         const stats = await fs.promises.lstat(p);
-        expect(stats.isFile()).to.be.false();
-        expect(stats.isDirectory()).to.be.false();
-        expect(stats.isSymbolicLink()).to.be.true();
+        expect(stats.isFile()).to.be.false;
+        expect(stats.isDirectory()).to.be.false;
+        expect(stats.isSymbolicLink()).to.be.true;
         expect(stats.size).to.equal(0);
       });
 
       itremote('returns information of a linked directory', async function () {
         const p = path.join(asarDir, 'a.asar', 'link2', 'link2');
         const stats = await fs.promises.lstat(p);
-        expect(stats.isFile()).to.be.false();
-        expect(stats.isDirectory()).to.be.false();
-        expect(stats.isSymbolicLink()).to.be.true();
+        expect(stats.isFile()).to.be.false;
+        expect(stats.isDirectory()).to.be.false;
+        expect(stats.isSymbolicLink()).to.be.true;
         expect(stats.size).to.equal(0);
       });
 
@@ -1860,7 +1860,7 @@ describe('asar package', function () {
         const p = path.join(asarDir, 'a.asar', 'dir1');
         fs.readdir(p, null, function (err, dirs) {
           try {
-            expect(err).to.be.null();
+            expect(err).to.be.null;
             expect(dirs).to.deep.equal(['file1', 'file2', 'file3', 'link1', 'link2']);
             done();
           } catch (e) {
@@ -1873,7 +1873,7 @@ describe('asar package', function () {
         const p = path.join(asarDir, 'a.asar', 'dir1');
         fs.readdir(p, undefined, function (err, dirs) {
           try {
-            expect(err).to.be.null();
+            expect(err).to.be.null;
             expect(dirs).to.deep.equal(['file1', 'file2', 'file3', 'link1', 'link2']);
             done();
           } catch (e) {
@@ -2171,9 +2171,9 @@ describe('asar package', function () {
         const buffer = Buffer.alloc(16);
         expect(() => originalFs.readSync(fd, buffer, 0, 16, 0)).to.throw(/EBADF|EPERM|EACCES/);
         expect(() => originalFs.readSync(fd, buffer, 0, 16, null)).to.throw(/EBADF|EPERM|EACCES/);
-        expect(originalFs.fstatSync(fd).isFile()).to.be.false();
+        expect(originalFs.fstatSync(fd).isFile()).to.be.false;
         expect(originalFs.fstatSync(fd).size).to.not.equal(fs.fstatSync(fd).size);
-        expect(buffer.equals(Buffer.alloc(16))).to.be.true();
+        expect(buffer.equals(Buffer.alloc(16))).to.be.true;
         // ...while fs itself still serves the entry.
         expect(fs.readSync(fd, buffer, 0, 6, 0)).to.equal(6);
         expect(buffer.subarray(0, 6).toString()).to.equal('file1\n');
@@ -2249,13 +2249,13 @@ describe('asar package', function () {
         for (const make of [() => Buffer.allocUnsafe(expected.length), () => new Uint8Array(expected.length)]) {
           const bufferSync = make();
           expect(fs.readSync(fd, bufferSync, 0, expected.length, 0)).to.equal(expected.length);
-          expect(Buffer.from(bufferSync).equals(expected)).to.be.true();
+          expect(Buffer.from(bufferSync).equals(expected)).to.be.true;
           const bufferAsync = make();
           const bytesRead = await new Promise<number>((resolve, reject) =>
             fs.read(fd, bufferAsync, 0, expected.length, 0, (e, n) => (e ? reject(e) : resolve(n)))
           );
           expect(bytesRead).to.equal(expected.length);
-          expect(Buffer.from(bufferAsync).equals(expected)).to.be.true();
+          expect(Buffer.from(bufferAsync).equals(expected)).to.be.true;
         }
         fs.closeSync(fd);
       });
@@ -2318,11 +2318,11 @@ describe('asar package', function () {
           expect(fs.readSync(fd, buffer, { offset: 0, length: expected.length, position: 0 })).to.equal(
             expected.length
           );
-          expect(buffer.equals(expected)).to.be.true();
+          expect(buffer.equals(expected)).to.be.true;
           // The explicit position above did not move the file position.
           buffer.fill(0);
           expect(fs.readSync(fd, buffer, {})).to.equal(expected.length);
-          expect(buffer.equals(expected)).to.be.true();
+          expect(buffer.equals(expected)).to.be.true;
           expect(fs.readSync(fd, buffer, {})).to.equal(0);
           fs.closeSync(fd);
         }
@@ -2331,7 +2331,7 @@ describe('asar package', function () {
           const buffer = Buffer.alloc(expected.length);
           // cursor read via options without position
           expect(fs.readSync(fd, buffer, { offset: 0, length: expected.length })).to.equal(expected.length);
-          expect(buffer.equals(expected)).to.be.true();
+          expect(buffer.equals(expected)).to.be.true;
           fs.closeSync(fd);
         }
         for (const options of [undefined, null, {}, { offset: 0, position: 0 }]) {
@@ -2342,7 +2342,7 @@ describe('asar package', function () {
             else fs.read(fd, options as any, cb);
           });
           expect(bytesRead).to.equal(expected.length);
-          expect(buffer.subarray(0, bytesRead).equals(expected)).to.be.true();
+          expect(buffer.subarray(0, bytesRead).equals(expected)).to.be.true;
           fs.closeSync(fd);
         }
         {
@@ -2352,7 +2352,7 @@ describe('asar package', function () {
             fs.read(fd, buffer, { position: 0 }, (e, n) => (e ? reject(e) : resolve(n)))
           );
           expect(bytesRead).to.equal(expected.length);
-          expect(buffer.equals(expected)).to.be.true();
+          expect(buffer.equals(expected)).to.be.true;
           fs.closeSync(fd);
         }
       });
@@ -2400,7 +2400,7 @@ describe('asar package', function () {
         }
         fs.closeSync(fd);
         expect(read).to.equal(expected.length);
-        expect(out.equals(expected)).to.be.true();
+        expect(out.equals(expected)).to.be.true;
       });
     });
 
@@ -2418,7 +2418,7 @@ describe('asar package', function () {
           expect(fs.readvSync(fd, [Buffer.from('')], 0)).to.equal(0);
           const buffers = allocate();
           expect(fs.readvSync(fd, buffers, 0)).to.equal(expected.length);
-          expect(Buffer.concat(buffers).equals(expected)).to.be.true();
+          expect(Buffer.concat(buffers).equals(expected)).to.be.true;
           fs.closeSync(fd);
         }
         {
@@ -2426,7 +2426,7 @@ describe('asar package', function () {
           expect(fs.readvSync(fd, [Buffer.from('')])).to.equal(0);
           const buffers = allocate();
           expect(fs.readvSync(fd, buffers)).to.equal(expected.length);
-          expect(Buffer.concat(buffers).equals(expected)).to.be.true();
+          expect(Buffer.concat(buffers).equals(expected)).to.be.true;
           expect(fs.readvSync(fd, allocate())).to.equal(0);
           fs.closeSync(fd);
         }
@@ -2437,7 +2437,7 @@ describe('asar package', function () {
             fs.readv(fd, buffers, 0, (e, n) => (e ? reject(e) : resolve(n)))
           );
           expect(bytesRead).to.equal(expected.length);
-          expect(Buffer.concat(buffers).equals(expected)).to.be.true();
+          expect(Buffer.concat(buffers).equals(expected)).to.be.true;
           fs.closeSync(fd);
         }
         {
@@ -2447,7 +2447,7 @@ describe('asar package', function () {
             fs.readv(fd, buffers, (e, n) => (e ? reject(e) : resolve(n)))
           );
           expect(bytesRead).to.equal(expected.length);
-          expect(Buffer.concat(buffers).equals(expected)).to.be.true();
+          expect(Buffer.concat(buffers).equals(expected)).to.be.true;
           fs.closeSync(fd);
         }
         {
@@ -2455,7 +2455,7 @@ describe('asar package', function () {
           const buffers = allocate();
           const { bytesRead } = await handle.readv(buffers, 0);
           expect(bytesRead).to.equal(expected.length);
-          expect(Buffer.concat(buffers).equals(expected)).to.be.true();
+          expect(Buffer.concat(buffers).equals(expected)).to.be.true;
           await handle.close();
         }
       });
@@ -2513,9 +2513,9 @@ describe('asar package', function () {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const fd = fs.openSync(p, 'r');
         const stats = fs.fstatSync(fd);
-        expect(stats.isFile()).to.be.true();
-        expect(stats.isDirectory()).to.be.false();
-        expect(stats.isSymbolicLink()).to.be.false();
+        expect(stats.isFile()).to.be.true;
+        expect(stats.isDirectory()).to.be.false;
+        expect(stats.isSymbolicLink()).to.be.false;
         expect(stats.size).to.equal(6);
         expect(stats.mtime).to.be.an.instanceOf(Date);
         const bigint = fs.fstatSync(fd, { bigint: true });
@@ -2688,7 +2688,7 @@ describe('asar package', function () {
               .on('error', reject)
               .on('end', () => resolve(Buffer.concat(chunks)));
           });
-          expect(content.equals(expected)).to.be.true();
+          expect(content.equals(expected)).to.be.true;
         }
       });
 
@@ -2714,7 +2714,7 @@ describe('asar package', function () {
             .on('error', reject)
             .on('end', () => resolve(Buffer.concat(chunks)));
         });
-        expect(content.equals(fs.readFileSync(p))).to.be.true();
+        expect(content.equals(fs.readFileSync(p))).to.be.true;
       });
 
       itremote('emits errors for missing files and directories', async function () {
@@ -2782,7 +2782,7 @@ describe('asar package', function () {
             })
           );
         }
-        for (const content of await Promise.all(streams)) expect(content.equals(expected)).to.be.true();
+        for (const content of await Promise.all(streams)) expect(content.equals(expected)).to.be.true;
       });
 
       itremote('works with pipe()', async function () {
@@ -2796,7 +2796,7 @@ describe('asar package', function () {
             .on('error', reject)
             .on('finish', resolve);
         });
-        expect(fs.readFileSync(dest).equals(fs.readFileSync(p))).to.be.true();
+        expect(fs.readFileSync(dest).equals(fs.readFileSync(p))).to.be.true;
         fs.unlinkSync(dest);
       });
     });
@@ -2865,7 +2865,7 @@ describe('asar package', function () {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const handle = await fs.promises.open(p, 'r');
         const stats = await handle.stat();
-        expect(stats.isFile()).to.be.true();
+        expect(stats.isFile()).to.be.true;
         expect(stats.size).to.equal(6);
         expect((await handle.stat({ bigint: true })).size).to.equal(6n);
         expect((await handle.readFile()).toString()).to.equal('file1\n');
@@ -2891,7 +2891,7 @@ describe('asar package', function () {
         for await (const chunk of handle.createReadStream({ start: 10, end: 1009, autoClose: false })) {
           chunks.push(chunk);
         }
-        expect(Buffer.concat(chunks).equals(expected.subarray(10, 1010))).to.be.true();
+        expect(Buffer.concat(chunks).equals(expected.subarray(10, 1010))).to.be.true;
         let total = 0;
         for await (const chunk of handle.readableWebStream()) total += (chunk as Uint8Array).byteLength;
         expect(total).to.equal(expected.length);
@@ -2998,7 +2998,7 @@ describe('asar package', function () {
         const expected = fs.readFileSync(p);
         const handles = await Promise.all(Array.from({ length: 40 }, () => fs.promises.open(p, 'r')));
         const contents = await Promise.all(handles.map((h) => h.readFile()));
-        for (const c of contents) expect(c.equals(expected)).to.be.true();
+        for (const c of contents) expect(c.equals(expected)).to.be.true;
         await Promise.all(handles.map((h) => h.close()));
       });
     });
@@ -3043,7 +3043,7 @@ describe('asar package', function () {
         expect(outcome(() => fs.copyFileSync(unpacked, viaAsar, fs.constants.COPYFILE_FICLONE_FORCE))).to.equal(
           outcome(() => originalFs.copyFileSync(real, viaOriginal, fs.constants.COPYFILE_FICLONE_FORCE))
         );
-        if (fs.existsSync(viaAsar)) expect(fs.readFileSync(viaAsar).equals(fs.readFileSync(real))).to.be.true();
+        if (fs.existsSync(viaAsar)) expect(fs.readFileSync(viaAsar).equals(fs.readFileSync(real))).to.be.true;
       });
 
       itremote('validates the mode argument like Node', function () {
@@ -3078,10 +3078,10 @@ describe('asar package', function () {
         const big = path.join(asarDir, 'video.asar', 'video.mp4');
         const d2 = tempPath();
         await fs.promises.copyFile(big, d2);
-        expect(fs.readFileSync(d2).equals(fs.readFileSync(big))).to.be.true();
+        expect(fs.readFileSync(d2).equals(fs.readFileSync(big))).to.be.true;
         const d3 = tempPath();
         await promisify(fs.copyFile)(big, d3);
-        expect(fs.readFileSync(d3).equals(fs.readFileSync(big))).to.be.true();
+        expect(fs.readFileSync(d3).equals(fs.readFileSync(big))).to.be.true;
 
         if (process.platform !== 'win32') {
           const d4 = tempPath();
@@ -3126,24 +3126,23 @@ describe('asar package', function () {
           else await fs.promises.cp(src, dest, { recursive: true });
           expect(fs.readdirSync(dest).sort(), variant).to.deep.equal(expectedTop);
           for (const dir of ['dir1', 'dir2', 'dir3']) {
-            expect(fs.statSync(path.join(dest, dir)).isDirectory(), variant).to.be.true();
+            expect(fs.statSync(path.join(dest, dir)).isDirectory(), variant).to.be.true;
             for (const file of ['file1', 'file2', 'file3']) {
               expect(
                 fs.readFileSync(path.join(dest, dir, file)).equals(fs.readFileSync(path.join(src, dir, file))),
                 `${variant} ${dir}/${file}`
-              ).to.be.true();
+              ).to.be.true;
             }
           }
-          expect(
-            fs.readFileSync(path.join(dest, 'ping.js')).equals(fs.readFileSync(path.join(src, 'ping.js')))
-          ).to.be.true();
+          expect(fs.readFileSync(path.join(dest, 'ping.js')).equals(fs.readFileSync(path.join(src, 'ping.js')))).to.be
+            .true;
           // Like Node's cp of a real tree, symlinks are preserved and (without
           // verbatimSymlinks) made absolute, i.e. they point back into the archive.
-          expect(fs.lstatSync(path.join(dest, 'link1')).isSymbolicLink(), variant).to.be.true();
+          expect(fs.lstatSync(path.join(dest, 'link1')).isSymbolicLink(), variant).to.be.true;
           expect(fs.readlinkSync(path.join(dest, 'link1')), variant).to.equal(path.join(src, 'file1'));
-          expect(fs.lstatSync(path.join(dest, 'link2')).isSymbolicLink(), variant).to.be.true();
+          expect(fs.lstatSync(path.join(dest, 'link2')).isSymbolicLink(), variant).to.be.true;
           expect(fs.readlinkSync(path.join(dest, 'link2')), variant).to.equal(path.join(src, 'dir1'));
-          expect(fs.lstatSync(path.join(dest, 'dir1', 'link2')).isSymbolicLink(), variant).to.be.true();
+          expect(fs.lstatSync(path.join(dest, 'dir1', 'link2')).isSymbolicLink(), variant).to.be.true;
           expect(fs.readlinkSync(path.join(dest, 'dir1', 'link2')), variant).to.equal(path.join(src, 'dir1'));
         }
       });
@@ -3220,9 +3219,9 @@ describe('asar package', function () {
         const src = path.join(asarDir, 'a.asar');
         const dest = tempPath();
         fs.cpSync(src, dest, { recursive: true, filter: (p: string) => !p.endsWith('file2') });
-        expect(fs.existsSync(path.join(dest, 'file1'))).to.be.true();
-        expect(fs.existsSync(path.join(dest, 'file2'))).to.be.false();
-        expect(fs.existsSync(path.join(dest, 'dir1', 'file2'))).to.be.false();
+        expect(fs.existsSync(path.join(dest, 'file1'))).to.be.true;
+        expect(fs.existsSync(path.join(dest, 'file2'))).to.be.false;
+        expect(fs.existsSync(path.join(dest, 'dir1', 'file2'))).to.be.false;
         const dest2 = tempPath();
         await fs.promises.cp(src, dest2, {
           recursive: true,
@@ -3230,7 +3229,7 @@ describe('asar package', function () {
         });
         expect(fs.readdirSync(dest2).sort()).to.deep.equal(['file1', 'file2', 'file3', 'link1', 'link2', 'ping.js']);
         // Symlink to a filtered-out directory still gets created as a link.
-        expect(fs.lstatSync(path.join(dest2, 'link2')).isSymbolicLink()).to.be.true();
+        expect(fs.lstatSync(path.join(dest2, 'link2')).isSymbolicLink()).to.be.true;
       });
 
       itremote('dereferences symlinks when asked', async function () {
@@ -3242,7 +3241,7 @@ describe('asar package', function () {
           const single = tempPath();
           if (variant === 'sync') fs.cpSync(path.join(src, 'link1'), single, { dereference: true });
           else await fs.promises.cp(path.join(src, 'link1'), single, { dereference: true });
-          expect(fs.lstatSync(single).isFile(), variant).to.be.true();
+          expect(fs.lstatSync(single).isFile(), variant).to.be.true;
           expect(fs.readFileSync(single).toString(), variant).to.equal('file1\n');
 
           const dir = tempPath();
@@ -3283,12 +3282,12 @@ describe('asar package', function () {
         fs.cpSync(path.join(asarDir, 'unpack.asar'), dest, { recursive: true });
         expect(
           fs.readFileSync(path.join(dest, 'a.txt')).equals(fs.readFileSync(path.join(asarDir, 'unpack.asar', 'a.txt')))
-        ).to.be.true();
+        ).to.be.true;
         expect(
           fs
             .readFileSync(path.join(dest, 'atom.png'))
             .equals(fs.readFileSync(path.join(asarDir, 'unpack.asar', 'atom.png')))
-        ).to.be.true();
+        ).to.be.true;
       });
     });
 
@@ -3405,7 +3404,7 @@ describe('asar package', function () {
       itremote('supports the buffer and other name encodings', function () {
         const dir = fs.opendirSync(path.join(asarDir, 'a.asar'), { encoding: 'buffer' as any });
         const dirent = dir.readSync()!;
-        expect(Buffer.isBuffer(dirent.name)).to.be.true();
+        expect(Buffer.isBuffer(dirent.name)).to.be.true;
         dir.closeSync();
         const hex = fs.opendirSync(path.join(asarDir, 'a.asar'), { encoding: 'hex' as any });
         const names: string[] = [];
@@ -3446,7 +3445,7 @@ describe('asar package', function () {
         expect(await fs.promises.readlink(path.join(a, 'link1'))).to.equal('file1');
         expect(await promisify(fs.readlink)(path.join(a, 'link1'))).to.equal('file1');
         const asBuffer = fs.readlinkSync(path.join(a, 'link1'), 'buffer');
-        expect(Buffer.isBuffer(asBuffer)).to.be.true();
+        expect(Buffer.isBuffer(asBuffer)).to.be.true;
         expect(asBuffer.toString()).to.equal('file1');
         expect(fs.readlinkSync(path.join(a, 'link1'), { encoding: 'utf8' })).to.equal('file1');
         expect(fs.readlinkSync(path.join(a, 'link1'), 'hex')).to.equal(Buffer.from('file1').toString('hex'));
@@ -3492,15 +3491,15 @@ describe('asar package', function () {
             await fs.promises.stat(p),
             fs.statSync(p, { bigint: true })
           ]) {
-            expect(stats.isSymbolicLink(), link).to.be.false();
+            expect(stats.isSymbolicLink(), link).to.be.false;
             expect(stats.isFile(), link).to.equal(expected === 'file');
             expect(stats.isDirectory(), link).to.equal(expected === 'dir');
             if (expected === 'file') expect(Number(stats.size), link).to.equal(6);
           }
-          expect(fs.lstatSync(p).isSymbolicLink(), link).to.be.true();
-          expect((await fs.promises.lstat(p)).isSymbolicLink(), link).to.be.true();
+          expect(fs.lstatSync(p).isSymbolicLink(), link).to.be.true;
+          expect((await fs.promises.lstat(p)).isSymbolicLink(), link).to.be.true;
         }
-        expect(fs.statSync(path.join(a, 'link1'), { throwIfNoEntry: false })!.isFile()).to.be.true();
+        expect(fs.statSync(path.join(a, 'link1'), { throwIfNoEntry: false })!.isFile()).to.be.true;
         expect(fs.statSync(path.join(a, 'nope'), { throwIfNoEntry: false })).to.equal(null as any);
         expect(() => fs.statSync(path.join(a, 'nope'))).to.throw(/ENOENT/);
         await expectToThrowErrorWithCode(() => fs.promises.stat(path.join(a, 'nope')), 'ENOENT');
@@ -3511,7 +3510,7 @@ describe('asar package', function () {
         // recognise directories.
         expect(fs.readdirSync(path.join(asarDir, 'a.asar', 'link2'))).to.include('file1');
         expect(fs.readFileSync(path.join(asarDir, 'a.asar', 'link2', 'link2', 'file1')).toString()).to.equal('file1\n');
-        expect(fs.existsSync(path.join(asarDir, 'a.asar', 'link2', 'link1'))).to.be.true();
+        expect(fs.existsSync(path.join(asarDir, 'a.asar', 'link2', 'link1'))).to.be.true;
       });
     });
 
@@ -3523,9 +3522,9 @@ describe('asar package', function () {
         expect(s.size).to.equal(6n);
         expect(typeof s.mtimeMs).to.equal('bigint');
         expect(typeof s.mtimeNs).to.equal('bigint');
-        expect(s.isFile()).to.be.true();
-        expect(fs.lstatSync(path.join(asarDir, 'a.asar', 'link1'), { bigint: true }).isSymbolicLink()).to.be.true();
-        expect(fs.lstatSync(path.join(asarDir, 'a.asar', 'dir1'), { bigint: true }).isDirectory()).to.be.true();
+        expect(s.isFile()).to.be.true;
+        expect(fs.lstatSync(path.join(asarDir, 'a.asar', 'link1'), { bigint: true }).isSymbolicLink()).to.be.true;
+        expect(fs.lstatSync(path.join(asarDir, 'a.asar', 'dir1'), { bigint: true }).isDirectory()).to.be.true;
         expect((await fs.promises.stat(p, { bigint: true })).size).to.equal(6n);
         expect((await fs.promises.lstat(p, { bigint: true })).size).to.equal(6n);
         const cb = await new Promise<any>((resolve, reject) =>
@@ -3542,17 +3541,17 @@ describe('asar package', function () {
     describe('fs.exists on an invalid archive', function () {
       itremote('reports false rather than an error object', async function () {
         const p = path.join(asarDir, 'not-an-archive.asar', 'file');
-        expect(fs.existsSync(p)).to.be.false();
+        expect(fs.existsSync(p)).to.be.false;
         const exists = await new Promise((resolve) => fs.exists(p, resolve));
-        expect(exists).to.be.false();
+        expect(exists).to.be.false;
       });
     });
 
     describe('fs.readFileSync options handling', function () {
       itremote('returns a Buffer for empty files when options is an object without an encoding', function () {
         const p = path.join(asarDir, 'empty.asar', 'file1');
-        expect(Buffer.isBuffer(fs.readFileSync(p, { flag: 'r' }))).to.be.true();
-        expect(Buffer.isBuffer(fs.readFileSync(p, { encoding: null }))).to.be.true();
+        expect(Buffer.isBuffer(fs.readFileSync(p, { flag: 'r' }))).to.be.true;
+        expect(Buffer.isBuffer(fs.readFileSync(p, { encoding: null }))).to.be.true;
         expect(fs.readFileSync(p, { encoding: 'utf8' })).to.equal('');
       });
     });
@@ -3562,7 +3561,7 @@ describe('asar package', function () {
         const originalFs = require('node:original-fs');
         const archive = path.join(asarDir, 'a.asar');
         const rawSize = originalFs.statSync(archive).size;
-        expect(originalFs.statSync(archive).isFile()).to.be.true();
+        expect(originalFs.statSync(archive).isFile()).to.be.true;
         expect(rawSize).to.be.greaterThan(1000);
         const raw = originalFs.readFileSync(archive);
         expect(raw.length).to.equal(rawSize);
@@ -3573,7 +3572,7 @@ describe('asar package', function () {
         expect(originalFs.fstatSync(fd).size).to.equal(rawSize);
         const head = Buffer.alloc(16);
         expect(originalFs.readSync(fd, head, 0, 16, 0)).to.equal(16);
-        expect(head.equals(raw.subarray(0, 16))).to.be.true();
+        expect(head.equals(raw.subarray(0, 16))).to.be.true;
         expect(originalFs.readFileSync(fd).length).to.equal(rawSize);
         expect(originalFs.readvSync(fd, [Buffer.alloc(8)], 0)).to.equal(8);
         originalFs.closeSync(fd);
@@ -3591,7 +3590,7 @@ describe('asar package', function () {
             .on('error', reject)
             .on('end', () => resolve(Buffer.concat(chunks)));
         });
-        expect(streamed.equals(raw)).to.be.true();
+        expect(streamed.equals(raw)).to.be.true;
 
         // Paths "inside" the archive are just non-existent for original-fs.
         expect(() => originalFs.openSync(path.join(archive, 'file1'), 'r')).to.throw(/ENOTDIR|ENOENT/);
@@ -3606,16 +3605,16 @@ describe('asar package', function () {
         // Copies copy the archive file itself.
         const d1 = tempPath();
         originalFs.copyFileSync(archive, d1);
-        expect(originalFs.readFileSync(d1).equals(raw)).to.be.true();
+        expect(originalFs.readFileSync(d1).equals(raw)).to.be.true;
         const d2 = tempPath();
         await originalFs.promises.copyFile(archive, d2);
-        expect(originalFs.readFileSync(d2).equals(raw)).to.be.true();
+        expect(originalFs.readFileSync(d2).equals(raw)).to.be.true;
         const d3 = tempPath();
         originalFs.cpSync(archive, d3);
-        expect(originalFs.readFileSync(d3).equals(raw)).to.be.true();
+        expect(originalFs.readFileSync(d3).equals(raw)).to.be.true;
         const d4 = tempPath();
         await originalFs.promises.cp(archive, d4);
-        expect(originalFs.readFileSync(d4).equals(raw)).to.be.true();
+        expect(originalFs.readFileSync(d4).equals(raw)).to.be.true;
 
         // And a directory listing of the fixtures dir shows the archive as a file.
         const dir = originalFs.opendirSync(asarDir);
@@ -3624,11 +3623,11 @@ describe('asar package', function () {
         while ((dirent = dir.readSync()) !== null) {
           if (dirent.name === 'a.asar') {
             seen = true;
-            expect(dirent.isFile()).to.be.true();
+            expect(dirent.isFile()).to.be.true;
           }
         }
         dir.closeSync();
-        expect(seen).to.be.true();
+        expect(seen).to.be.true;
 
         // Writing through original-fs to a path that merely mentions .asar works.
         const scratch = path.join(
@@ -3679,37 +3678,37 @@ describe('asar package', function () {
       itremote('handles an existing file', async function () {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const exists = await new Promise((resolve) => fs.exists(p, resolve));
-        expect(exists).to.be.true();
+        expect(exists).to.be.true;
       });
 
       itremote('handles a non-existent file', async function () {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         const exists = await new Promise((resolve) => fs.exists(p, resolve));
-        expect(exists).to.be.false();
+        expect(exists).to.be.false;
       });
 
       itremote('promisified version handles an existing file', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
         const exists = await require('node:util').promisify(fs.exists)(p);
-        expect(exists).to.be.true();
+        expect(exists).to.be.true;
       });
 
       itremote('promisified version handles a non-existent file', async function () {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         const exists = await require('node:util').promisify(fs.exists)(p);
-        expect(exists).to.be.false();
+        expect(exists).to.be.false;
       });
     });
 
     describe('fs.existsSync', function () {
       itremote('handles an existing file', function () {
         const p = path.join(asarDir, 'a.asar', 'file1');
-        expect(fs.existsSync(p)).to.be.true();
+        expect(fs.existsSync(p)).to.be.true;
       });
 
       itremote('handles a non-existent file', function () {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
-        expect(fs.existsSync(p)).to.be.false();
+        expect(fs.existsSync(p)).to.be.false;
       });
     });
 
@@ -3966,10 +3965,10 @@ describe('asar package', function () {
         async function (errorName: string) {
           const file = path.join(asarDir, 'a.asar', 'file1');
           const dir = path.join(asarDir, 'a.asar', 'dir1');
-          await expect(fs.promises.readFile(file)).to.be.eventually.rejectedWith(Error, new RegExp(errorName));
-          await expect(fs.promises.lstat(file)).to.be.eventually.rejectedWith(Error, new RegExp(errorName));
-          await expect(fs.promises.realpath(file)).to.be.eventually.rejectedWith(Error, new RegExp(errorName));
-          await expect(fs.promises.readdir(dir)).to.be.eventually.rejectedWith(Error, new RegExp(errorName));
+          await expect(fs.promises.readFile(file)).rejects.toThrow(new RegExp(errorName));
+          await expect(fs.promises.lstat(file)).rejects.toThrow(new RegExp(errorName));
+          await expect(fs.promises.realpath(file)).rejects.toThrow(new RegExp(errorName));
+          await expect(fs.promises.readdir(dir)).rejects.toThrow(new RegExp(errorName));
         },
         [errorName]
       );
@@ -3990,7 +3989,7 @@ describe('asar package', function () {
         expect(() => {
           require('node:child_process').execSync(path.join(__dirname, 'does-not-exist.txt'));
         }).to.throw();
-        expect(process.noAsar).to.be.false();
+        expect(process.noAsar).to.be.false;
       });
     });
 
@@ -4004,7 +4003,7 @@ describe('asar package', function () {
         });
         forked.on('message', function (stats) {
           try {
-            expect(stats.isFile).to.be.true();
+            expect(stats.isFile).to.be.true;
             expect(stats.size).to.equal(3458);
             done();
           } catch (e) {
@@ -4028,7 +4027,7 @@ describe('asar package', function () {
         spawned.stdout.on('close', function () {
           try {
             const stats = JSON.parse(output);
-            expect(stats.isFile).to.be.true();
+            expect(stats.isFile).to.be.true;
             expect(stats.size).to.equal(3458);
             done();
           } catch (e) {
@@ -4085,7 +4084,7 @@ describe('asar package', function () {
       const file = path.join(asarDir, 'a.asar');
       const originalFs = require('node:original-fs');
       const stats = originalFs.statSync(file);
-      expect(stats.isFile()).to.be.true();
+      expect(stats.isFile()).to.be.true;
     });
 
     /*
@@ -4110,7 +4109,7 @@ describe('asar package', function () {
       const originalFs = require('node:original-fs');
       originalFs.rmdirSync(deleteDir, { recursive: true });
 
-      expect(fs.existsSync(deleteDir)).to.be.false();
+      expect(fs.existsSync(deleteDir)).to.be.false;
     });
 
     itremote('can recursively delete a directory with an asar file in itremote using promises.rmdir', async () => {
@@ -4120,7 +4119,7 @@ describe('asar package', function () {
       const originalFs = require('node:original-fs');
       await originalFs.promises.rmdir(deleteDir, { recursive: true });
 
-      expect(fs.existsSync(deleteDir)).to.be.false();
+      expect(fs.existsSync(deleteDir)).to.be.false;
     });
 
     itremote('has the same APIs as fs', function () {

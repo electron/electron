@@ -1,7 +1,7 @@
 import { systemPreferences } from 'electron';
 import { BrowserWindow, MessageChannelMain, utilityProcess, app, session } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
@@ -124,7 +124,7 @@ describe('utilityProcess module', () => {
       await once(child1, 'spawn');
       const child2 = utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
       await once(child2, 'exit');
-      expect(child1.kill()).to.be.true();
+      expect(child1.kill()).to.be.true;
       await once(child1, 'exit');
     });
 
@@ -297,7 +297,7 @@ describe('utilityProcess module', () => {
     it('with default serviceName', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'endless.js'));
       await once(child, 'spawn');
-      expect(child.pid).to.not.be.null();
+      expect(child.pid).to.not.be.null;
 
       await setImmediate();
 
@@ -311,7 +311,7 @@ describe('utilityProcess module', () => {
     it('with custom serviceName', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'endless.js'), [], { serviceName: 'Hello World!' });
       await once(child, 'spawn');
-      expect(child.pid).to.not.be.null();
+      expect(child.pid).to.not.be.null;
 
       await setImmediate();
 
@@ -329,7 +329,7 @@ describe('utilityProcess module', () => {
         serviceName: 'endless'
       });
       await once(child, 'spawn');
-      expect(child.kill()).to.be.true();
+      expect(child.kill()).to.be.true;
       const [code] = await once(child, 'exit');
       expect(code).to.equal(0);
     });
@@ -340,7 +340,7 @@ describe('utilityProcess module', () => {
       const [msg] = await once(child, 'message');
       expect(msg).to.equal('ready');
       const exit = once(child, 'exit');
-      expect(child.kill()).to.be.true();
+      expect(child.kill()).to.be.true;
       const [code] = await exit;
       expect(code).to.equal(42);
     });
@@ -352,7 +352,7 @@ describe('utilityProcess module', () => {
       const child = utilityProcess.fork(fixtureFile, [], {
         stdio: 'pipe'
       });
-      expect(child.stdout).to.not.be.null();
+      expect(child.stdout).to.not.be.null;
       let log = '';
       child.stdout!.on('data', (chunk) => {
         log += chunk.toString('utf8');
@@ -413,12 +413,12 @@ describe('utilityProcess module', () => {
 
     it('is undefined when child process fails to launch', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'does-not-exist.js'));
-      expect(child.pid).to.be.undefined();
+      expect(child.pid).to.be.undefined;
     });
 
     it('is undefined before the child process is spawned succesfully', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
-      expect(child.pid).to.be.undefined();
+      expect(child.pid).to.be.undefined;
       await once(child, 'spawn');
       child.kill();
     });
@@ -428,10 +428,10 @@ describe('utilityProcess module', () => {
       await once(child, 'spawn');
 
       expect(child).to.have.property('pid').that.is.a('number');
-      expect(child.kill()).to.be.true();
+      expect(child.kill()).to.be.true;
 
       await once(child, 'exit');
-      expect(child.pid).to.be.undefined();
+      expect(child.pid).to.be.undefined;
     });
   });
 
@@ -439,8 +439,8 @@ describe('utilityProcess module', () => {
     it('is null when child process launches with default stdio', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'));
       await once(child, 'spawn');
-      expect(child.stdout).to.be.null();
-      expect(child.stderr).to.be.null();
+      expect(child.stdout).to.be.null;
+      expect(child.stderr).to.be.null;
       await once(child, 'exit');
     });
 
@@ -449,8 +449,8 @@ describe('utilityProcess module', () => {
         stdio: 'ignore'
       });
       await once(child, 'spawn');
-      expect(child.stdout).to.be.null();
-      expect(child.stderr).to.be.null();
+      expect(child.stdout).to.be.null;
+      expect(child.stderr).to.be.null;
       await once(child, 'exit');
     });
 
@@ -458,7 +458,7 @@ describe('utilityProcess module', () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
         stdio: 'pipe'
       });
-      expect(child.stdout).to.not.be.null();
+      expect(child.stdout).to.not.be.null;
       // Wait for the output itself; see the stderr variant below.
       const output = new Promise<string>((resolve) => {
         let log = '';
@@ -476,8 +476,8 @@ describe('utilityProcess module', () => {
     it('is null when child process launches with default stdio', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'));
       await once(child, 'spawn');
-      expect(child.stdout).to.be.null();
-      expect(child.stderr).to.be.null();
+      expect(child.stdout).to.be.null;
+      expect(child.stderr).to.be.null;
       await once(child, 'exit');
     });
 
@@ -486,7 +486,7 @@ describe('utilityProcess module', () => {
         stdio: 'ignore'
       });
       await once(child, 'spawn');
-      expect(child.stderr).to.be.null();
+      expect(child.stderr).to.be.null;
       await once(child, 'exit');
     });
 
@@ -494,7 +494,7 @@ describe('utilityProcess module', () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
         stdio: ['ignore', 'pipe', 'pipe']
       });
-      expect(child.stderr).to.not.be.null();
+      expect(child.stderr).to.not.be.null;
       // Resolve on the expected output rather than reading whatever arrived
       // by 'exit': the streams are torn down when the child exits and a
       // chunk that is still in the pipe at that point never gets delivered.
@@ -519,7 +519,7 @@ describe('utilityProcess module', () => {
       const [data] = await once(child, 'message');
       expect(data).to.equal(result);
       const exit = once(child, 'exit');
-      expect(child.kill()).to.be.true();
+      expect(child.kill()).to.be.true;
       await exit;
     });
 
@@ -533,7 +533,7 @@ describe('utilityProcess module', () => {
       const [data] = await once(child, 'message');
       expect(data).to.equal('This message is queued');
       const exit = once(child, 'exit');
-      expect(child.kill()).to.be.true();
+      expect(child.kill()).to.be.true;
       await exit;
     });
 
@@ -544,7 +544,7 @@ describe('utilityProcess module', () => {
       const [data] = await once(child, 'message');
       expect(data).to.equal('caught-non-cloneable');
       const exit = once(child, 'exit');
-      expect(child.kill()).to.be.true();
+      expect(child.kill()).to.be.true;
       await exit;
     });
 
@@ -664,7 +664,7 @@ describe('utilityProcess module', () => {
       const [data] = await once(child, 'message');
       expect(data).to.equal(systemPreferences.getMediaAccessStatus('screen'));
       const exit = once(child, 'exit');
-      expect(child.kill()).to.be.true();
+      expect(child.kill()).to.be.true;
       await exit;
     });
 
@@ -688,7 +688,7 @@ describe('utilityProcess module', () => {
       expect(data).to.equal(result);
       // Cleanup.
       const exit = once(child, 'exit');
-      expect(child.kill()).to.be.true();
+      expect(child.kill()).to.be.true;
       await exit;
       await closeWindow(w);
     });
@@ -697,9 +697,9 @@ describe('utilityProcess module', () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'suid.js'));
       await once(child, 'spawn');
       const [data] = await once(child, 'message');
-      expect(data).to.not.be.empty();
+      expect(data).to.not.be.empty;
       const exit = once(child, 'exit');
-      expect(child.kill()).to.be.true();
+      expect(child.kill()).to.be.true;
       await exit;
     });
 
@@ -746,7 +746,7 @@ describe('utilityProcess module', () => {
         stdio: ['ignore', 'pipe', 'ignore']
       });
       await once(child, 'spawn');
-      expect(child.stdout).to.not.be.null();
+      expect(child.stdout).to.not.be.null;
       // Wait for the output itself; see the stderr variant below.
       const output = new Promise<string>((resolve) => {
         let log = '';
@@ -769,7 +769,7 @@ describe('utilityProcess module', () => {
       expect(data).to.equal(42);
       // Cleanup.
       const exit = once(child, 'exit');
-      expect(child.kill()).to.be.true();
+      expect(child.kill()).to.be.true;
       await exit;
     });
 
@@ -1011,9 +1011,9 @@ describe('utilityProcess module', () => {
         });
         await once(child, 'spawn');
         const [data] = await once(child, 'message');
-        expect(data).to.be.true();
+        expect(data).to.be.true;
         const exit = once(child, 'exit');
-        expect(child.kill()).to.be.true();
+        expect(child.kill()).to.be.true;
         await exit;
       }
       {
@@ -1023,9 +1023,9 @@ describe('utilityProcess module', () => {
         });
         await once(child, 'spawn');
         const [data] = await once(child, 'message');
-        expect(data).to.be.false();
+        expect(data).to.be.false;
         const exit = once(child, 'exit');
-        expect(child.kill()).to.be.true();
+        expect(child.kill()).to.be.true;
         await exit;
       }
     });
@@ -1045,7 +1045,7 @@ describe('utilityProcess module', () => {
       const [data] = await once(child, 'message');
       expect(data).to.equal(testMessage);
       const exit = once(child, 'exit');
-      expect(child.kill()).to.be.true();
+      expect(child.kill()).to.be.true;
       await exit;
     });
   });
@@ -1063,7 +1063,7 @@ describe('utilityProcess module', () => {
       await once(child, 'message');
       child.postMessage({ type: 'fetch', url: serverUrl });
       const [data] = await once(child, 'message');
-      expect(data.ok).to.be.true();
+      expect(data.ok).to.be.true;
       expect(data.body).to.equal('session-response');
       const exit = once(child, 'exit');
       child.kill();
@@ -1081,7 +1081,7 @@ describe('utilityProcess module', () => {
       await once(child, 'message');
       child.postMessage({ type: 'fetch', url: serverUrl });
       const [data] = await once(child, 'message');
-      expect(data.ok).to.be.true();
+      expect(data.ok).to.be.true;
       expect(data.body).to.equal('partition-response');
       const exit = once(child, 'exit');
       child.kill();
@@ -1113,7 +1113,7 @@ describe('utilityProcess module', () => {
         await once(child, 'message');
         child.postMessage({ type: 'fetch-cached', url: `${url}/cached` });
         const [data] = await once(child, 'message');
-        expect(data.ok).to.be.true();
+        expect(data.ok).to.be.true;
         expect(data.first.body).to.equal('response-1');
         expect(data.second.body).to.equal('response-1');
         expect(requestCount).to.equal(1);
@@ -1146,7 +1146,7 @@ describe('utilityProcess module', () => {
         await once(child, 'message');
         child.postMessage({ type: 'fetch-cached', url: `${url}/no-cache` });
         const [data] = await once(child, 'message');
-        expect(data.ok).to.be.true();
+        expect(data.ok).to.be.true;
         expect(data.first.body).to.equal('response-1');
         expect(data.second.body).to.equal('response-2');
         expect(requestCount).to.equal(2);
@@ -1182,7 +1182,7 @@ describe('utilityProcess module', () => {
         await once(child, 'message');
         child.postMessage({ type: 'fetch-cached', url: `${url}/nostore`, cacheMode: 'no-store' });
         const [data] = await once(child, 'message');
-        expect(data.ok).to.be.true();
+        expect(data.ok).to.be.true;
         expect(data.first.body).to.equal('response-1');
         expect(data.second.body).to.equal('response-2');
         expect(requestCount).to.equal(2);
@@ -1223,7 +1223,7 @@ describe('utilityProcess module', () => {
         await once(child, 'message');
         child.postMessage({ type: 'fetch-cached', url: `${url}/nocache`, cacheMode: 'no-cache' });
         const [data] = await once(child, 'message');
-        expect(data.ok).to.be.true();
+        expect(data.ok).to.be.true;
         expect(data.first.body).to.equal('response-1');
         expect(requestCount).to.equal(2);
         // First from network, second revalidated (not from cache)
@@ -1262,7 +1262,7 @@ describe('utilityProcess module', () => {
         await once(child, 'message');
         child.postMessage({ type: 'fetch-cached', url: `${url}/forcecache`, cacheMode: 'force-cache' });
         const [data] = await once(child, 'message');
-        expect(data.ok).to.be.true();
+        expect(data.ok).to.be.true;
         expect(data.first.body).to.equal('response-1');
         expect(data.second.body).to.equal('response-1');
         expect(requestCount).to.equal(1);
@@ -1302,7 +1302,7 @@ describe('utilityProcess module', () => {
         await once(child, 'message');
         child.postMessage({ type: 'fetch-cached', url: `${url}/reload`, cacheMode: 'reload' });
         const [data] = await once(child, 'message');
-        expect(data.ok).to.be.true();
+        expect(data.ok).to.be.true;
         expect(data.first.body).to.equal('response-1');
         expect(data.second.body).to.equal('response-2');
         expect(requestCount).to.equal(2);
@@ -1340,7 +1340,7 @@ describe('utilityProcess module', () => {
         await once(child1, 'message');
         child1.postMessage({ type: 'fetch', url: `${url}/cookies`, options: { credentials: 'include' } });
         const [data1] = await once(child1, 'message');
-        expect(data1.ok).to.be.true();
+        expect(data1.ok).to.be.true;
         expect(data1.body).to.include('testcookie=sess1value');
         const exit1 = once(child1, 'exit');
         child1.kill();
@@ -1353,7 +1353,7 @@ describe('utilityProcess module', () => {
         await once(child2, 'message');
         child2.postMessage({ type: 'fetch', url: `${url}/cookies`, options: { credentials: 'include' } });
         const [data2] = await once(child2, 'message');
-        expect(data2.ok).to.be.true();
+        expect(data2.ok).to.be.true;
         expect(data2.body).to.equal('none');
         const exit2 = once(child2, 'exit');
         child2.kill();
@@ -1382,7 +1382,7 @@ describe('utilityProcess module', () => {
         await once(child1, 'message');
         child1.postMessage({ type: 'fetch', url: `${url}/shared`, options: { credentials: 'include' } });
         const [data1] = await once(child1, 'message');
-        expect(data1.ok).to.be.true();
+        expect(data1.ok).to.be.true;
         expect(data1.body).to.include('shared=cookie123');
         const exit1 = once(child1, 'exit');
         child1.kill();
@@ -1395,7 +1395,7 @@ describe('utilityProcess module', () => {
         await once(child2, 'message');
         child2.postMessage({ type: 'fetch', url: `${url}/shared`, options: { credentials: 'include' } });
         const [data2] = await once(child2, 'message');
-        expect(data2.ok).to.be.true();
+        expect(data2.ok).to.be.true;
         expect(data2.body).to.include('shared=cookie123');
         const exit2 = once(child2, 'exit');
         child2.kill();
@@ -1419,7 +1419,7 @@ describe('utilityProcess module', () => {
       await once(child, 'message');
       child.postMessage({ type: 'fetch', url: serverUrl });
       const [data] = await once(child, 'message');
-      expect(data.ok).to.be.true();
+      expect(data.ok).to.be.true;
       expect(data.body).to.equal('precedence-ok');
       const exit = once(child, 'exit');
       child.kill();
@@ -1445,7 +1445,7 @@ describe('utilityProcess module', () => {
         await once(child, 'message');
         child.postMessage({ type: 'fetch', url: `${url}/webrequest` });
         const [data] = await once(child, 'message');
-        expect(data.ok).to.be.true();
+        expect(data.ok).to.be.true;
         expect(data.body).to.equal('header: intercepted');
         const exit = once(child, 'exit');
         child.kill();
@@ -1552,7 +1552,7 @@ describe('utilityProcess module', () => {
       expect(statusCode).to.equal(200);
       expect(loginAuthInfo!.realm).to.equal('Foo');
       expect(loginAuthInfo!.scheme).to.equal('basic');
-      expect(appLoginFired).to.be.false();
+      expect(appLoginFired).to.be.false;
     });
 
     it('resolves hosts using the session network context, not the default', async () => {
@@ -1578,7 +1578,7 @@ describe('utilityProcess module', () => {
         await once(child, 'message');
         child.postMessage({ type: 'fetch', url: 'http://non-existent-host.test:12345/path' });
         const [data] = await once(child, 'message');
-        expect(data.ok).to.be.true();
+        expect(data.ok).to.be.true;
         expect(data.body).to.equal('proxied:non-existent-host.test:12345');
         const exit = once(child, 'exit');
         child.kill();

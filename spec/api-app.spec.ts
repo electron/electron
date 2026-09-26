@@ -1,6 +1,6 @@
 import { app, BrowserWindow, Menu, session, net as electronNet, type WebContents, utilityProcess } from 'electron/main';
 
-import { assert, expect } from 'chai';
+import { assert, expect } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -228,7 +228,7 @@ describe('app module', () => {
 
         daemon.kill();
         const [code, signal] = await exited;
-        expect(signal).to.be.null();
+        expect(signal).to.be.null;
         expect(code).to.equal(0);
       });
     }
@@ -1219,7 +1219,7 @@ describe('app module', () => {
     it('setAccessibilitySupportFeatures can enable a subset of features', () => {
       app.setAccessibilitySupportEnabled(false);
       expect(app.isAccessibilitySupportEnabled()).to.equal(false);
-      expect(app.getAccessibilitySupportFeatures()).to.be.an('array').that.is.empty();
+      expect(app.getAccessibilitySupportFeatures()).to.be.an('array').that.is.empty;
 
       const subsetA = ['webContents', 'html'];
       app.setAccessibilitySupportFeatures(subsetA);
@@ -1323,7 +1323,7 @@ describe('app module', () => {
     } else {
       it('returns an assets path that is identical to the module path', () => {
         const assetsPath = app.getPath('assets');
-        expect(fs.existsSync(assetsPath)).to.be.true();
+        expect(fs.existsSync(assetsPath)).to.be.true;
         expect(assetsPath).to.equal(path.dirname(app.getPath('module')));
       });
     }
@@ -1375,9 +1375,9 @@ describe('app module', () => {
     it('does not create a new directory by default', () => {
       const badPath = path.join(import.meta.dirname, 'music');
 
-      expect(fs.existsSync(badPath)).to.be.false();
+      expect(fs.existsSync(badPath)).to.be.false;
       app.setPath('music', badPath);
-      expect(fs.existsSync(badPath)).to.be.false();
+      expect(fs.existsSync(badPath)).to.be.false;
 
       expect(() => {
         app.getPath(badPath as any);
@@ -1670,7 +1670,7 @@ describe('app module', () => {
     });
 
     it('returns promise rejection for a bogus protocol', async function () {
-      await expect(app.getApplicationInfoForProtocol('bogus-protocol://')).to.eventually.be.rejectedWith(
+      await expect(app.getApplicationInfoForProtocol('bogus-protocol://')).rejects.toThrow(
         'Unable to retrieve installation path to app'
       );
     });
@@ -1685,9 +1685,9 @@ describe('app module', () => {
       }
 
       const appInfo = await app.getApplicationInfoForProtocol('https://');
-      expect(appInfo.path).not.to.be.undefined();
-      expect(appInfo.name).not.to.be.undefined();
-      expect(appInfo.icon).not.to.be.undefined();
+      expect(appInfo.path).not.to.be.undefined;
+      expect(appInfo.name).not.to.be.undefined;
+      expect(appInfo.icon).not.to.be.undefined;
     });
 
     ifit(process.platform === 'linux')('resolves an executable name via PATH', async () => {
@@ -2164,7 +2164,7 @@ describe('app module', () => {
     it('fails for invalid info_type', () => {
       const invalidType = 'invalid';
       const expectedErrorMessage = "Invalid info type. Use 'basic' or 'complete'";
-      return expect(app.getGPUInfo(invalidType as any)).to.eventually.be.rejectedWith(expectedErrorMessage);
+      return expect(app.getGPUInfo(invalidType as any)).rejects.toThrow(expectedErrorMessage);
     });
   });
 
@@ -2392,7 +2392,7 @@ describe('app module', () => {
       });
 
       it('eventually fulfills', async () => {
-        await expect(app.dock?.show()).to.eventually.be.fulfilled.equal(undefined);
+        await expect(app.dock?.show()).resolves.to.equal(undefined);
       });
     });
   });
@@ -2404,7 +2404,7 @@ describe('app module', () => {
 
     it('becomes fulfilled if the app is already ready', async () => {
       expect(app.isReady()).to.equal(true);
-      await expect(app.whenReady()).to.be.eventually.fulfilled.equal(undefined);
+      await expect(app.whenReady()).resolves.to.equal(undefined);
     });
   });
 
@@ -2525,18 +2525,16 @@ describe('app module', () => {
 
     it('affects dns lookup behavior', async () => {
       // 1. resolve a domain name to check that things are working
-      await expect(
-        new Promise((resolve, reject) => {
-          electronNet
-            .request({
-              method: 'HEAD',
-              url: 'https://www.electronjs.org'
-            })
-            .on('response', resolve)
-            .on('error', reject)
-            .end();
-        })
-      ).to.eventually.be.fulfilled();
+      await new Promise((resolve, reject) => {
+        electronNet
+          .request({
+            method: 'HEAD',
+            url: 'https://www.electronjs.org'
+          })
+          .on('response', resolve)
+          .on('error', reject)
+          .end();
+      });
       // 2. change the host resolver configuration to something that will
       // always fail
       app.configureHostResolver({
@@ -2557,7 +2555,7 @@ describe('app module', () => {
             .on('error', reject)
             .end();
         })
-      ).to.eventually.be.rejectedWith(/ERR_NAME_NOT_RESOLVED/);
+      ).rejects.toThrow(/ERR_NAME_NOT_RESOLVED/);
     });
   });
 
@@ -2672,7 +2670,7 @@ describe('app module', () => {
 
     it('disallows configuring proxy settings with mode `invalid`', async () => {
       const config = { mode: 'invalid' as any };
-      await expect(app.setProxy(config)).to.eventually.be.rejectedWith(/Invalid mode/);
+      await expect(app.setProxy(config)).rejects.toThrow(/Invalid mode/);
     });
 
     it('impacts proxy for requests made from utility process', async () => {
@@ -2704,7 +2702,7 @@ describe('app module', () => {
       });
       child.postMessage({ fn: `(${fn})()` });
       const [data] = await once(child, 'message');
-      expect(data.ok).to.be.true(data.message);
+      expect(data.ok, data.message).to.be.true;
       // Cleanup.
       const [code] = await once(child, 'exit');
       expect(code).to.equal(0);
@@ -2836,12 +2834,12 @@ describe('default behavior', () => {
   describe('running under ARM64 translation', () => {
     it('does not throw an error', () => {
       if (process.platform === 'darwin' || process.platform === 'win32') {
-        expect(app.runningUnderARM64Translation).not.to.be.undefined();
+        expect(app.runningUnderARM64Translation).not.to.be.undefined;
         expect(() => {
           return app.runningUnderARM64Translation;
         }).not.to.throw();
       } else {
-        expect(app.runningUnderARM64Translation).to.be.undefined();
+        expect(app.runningUnderARM64Translation).to.be.undefined;
       }
     });
   });

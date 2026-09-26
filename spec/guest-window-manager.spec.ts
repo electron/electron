@@ -1,6 +1,6 @@
 import { BrowserWindow, screen } from 'electron';
 
-import { expect, assert } from 'chai';
+import { assert, expect } from 'vitest';
 
 import { once } from 'node:events';
 import * as http from 'node:http';
@@ -241,7 +241,7 @@ describe('webContents.setWindowOpenHandler', () => {
       `);
       await didNavigate;
 
-      expect(sameWindow).to.be.true('window.open with matching frame name should return the same window proxy');
+      expect(sameWindow, 'window.open with matching frame name should return the same window proxy').to.be.true;
       expect(handlerCallCount).to.equal(
         1,
         'setWindowOpenHandler should not be called when Blink resolves the named target'
@@ -368,7 +368,7 @@ describe('webContents.setWindowOpenHandler', () => {
       const url = `file://${nodePath.join('fixtures', 'pages', 'content.html')}`;
       browserWindow.webContents.executeJavaScript(`window.open('${JSON.stringify(url)}') && true`);
       const [childWindow] = await didCreateWindow;
-      expect(childWindow.webContents.isOffscreen()).to.be.true('Child window should be offscreen');
+      expect(childWindow.webContents.isOffscreen(), 'Child window should be offscreen').to.be.true;
     });
 
     it('can open an onscreen child window from an offscreen parent', async () => {
@@ -386,7 +386,7 @@ describe('webContents.setWindowOpenHandler', () => {
       const url = `file://${nodePath.join('fixtures', 'pages', 'content.html')}`;
       obw.webContents.executeJavaScript(`window.open('${JSON.stringify(url)}') && true`);
       const [childWindow] = await didCreateWindow;
-      expect(childWindow.webContents.isOffscreen()).to.be.false('Child window should not be offscreen');
+      expect(childWindow.webContents.isOffscreen(), 'Child window should not be offscreen').to.be.false;
     });
 
     it('can open an offscreen child window from an offscreen parent', async () => {
@@ -411,7 +411,7 @@ describe('webContents.setWindowOpenHandler', () => {
       const url = `file://${nodePath.join('fixtures', 'pages', 'content.html')}`;
       obw.webContents.executeJavaScript(`window.open('${JSON.stringify(url)}') && true`);
       const [childWindow] = await didCreateWindow;
-      expect(childWindow.webContents.isOffscreen()).to.be.true('Child window should be offscreen');
+      expect(childWindow.webContents.isOffscreen(), 'Child window should be offscreen').to.be.true;
     });
 
     ifit(hasCapturableScreen())(
@@ -619,7 +619,7 @@ describe('webContents.setWindowOpenHandler', () => {
       });
 
       await once(childWindow.webContents, 'ready-to-show');
-      await expect(childWindow.webContents.executeJavaScript('window.opener.document.title')).to.be.rejectedWith(
+      await expect(childWindow.webContents.executeJavaScript('window.opener.document.title')).rejects.toThrow(
         'Script failed to execute, this normally means an error was thrown. Check the renderer console for the error.'
       );
     });

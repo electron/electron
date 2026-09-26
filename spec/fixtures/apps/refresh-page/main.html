@@ -1,9 +1,9 @@
 <html>
 <body>
-  <!-- Use chai which has a large enough js file -->
-  <script src="chai.js"></script>
+  <!-- Any script large enough for V8 to bother caching its code -->
+  <script src="jquery.js"></script>
   <script>
-    chai.expect(1).to.equal(1);
+    window.jQuery.isArray([]);
   </script>
 </body>
 </html>

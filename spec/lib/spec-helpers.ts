@@ -1,6 +1,6 @@
 import type { BrowserWindow } from 'electron/main';
 
-import { AssertionError } from 'chai';
+import { chai } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
@@ -294,15 +294,15 @@ export function useRemoteContext(opts?: any) {
   });
 }
 
+// See vitest-cjs.cjs: the remote function runs in a CommonJS context.
+const vitestForRequire = path.join(import.meta.dirname, 'vitest-cjs.cjs');
+
 async function runRemote(type: 'skip' | 'none' | 'only', name: string, fn: Function, args?: any[]) {
   const wrapped = async () => {
     const w = await getRemoteContext();
     const { ok, message } = await w.webContents.executeJavaScript(`(async () => {
       try {
-        const chai = require('chai')
-        chai.use(require('chai-as-promised'))
-        chai.use(require('dirty-chai'))
-        const { expect } = chai
+        const { expect } = require(${JSON.stringify(vitestForRequire)})
         await (${fn})(...${JSON.stringify(args ?? [])})
         return {ok: true};
       } catch (e) {
@@ -310,7 +310,7 @@ async function runRemote(type: 'skip' | 'none' | 'only', name: string, fn: Funct
       }
     })()`);
     if (!ok) {
-      throw new AssertionError(message);
+      throw new chai.AssertionError(message);
     }
   };
 

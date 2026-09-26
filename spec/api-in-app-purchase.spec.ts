@@ -1,6 +1,6 @@
 import { inAppPurchase } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 
@@ -85,17 +85,17 @@ describe('inAppPurchase module', { tags: ['serial'] }, function () {
   ifdescribe(process.arch !== 'x64')('handles product purchases', () => {
     it('purchaseProduct() fails when buying invalid product', async () => {
       const success = await inAppPurchase.purchaseProduct('non-exist');
-      expect(success).to.be.false('failed to purchase non-existent product');
+      expect(success, 'failed to purchase non-existent product').to.be.false;
     });
 
     it('purchaseProduct() accepts optional (Integer) argument', async () => {
       const success = await inAppPurchase.purchaseProduct('non-exist', 1);
-      expect(success).to.be.false('failed to purchase non-existent product');
+      expect(success, 'failed to purchase non-existent product').to.be.false;
     });
 
     it('purchaseProduct() accepts optional (Object) argument', async () => {
       const success = await inAppPurchase.purchaseProduct('non-exist', { quantity: 1, username: 'username' });
-      expect(success).to.be.false('failed to purchase non-existent product');
+      expect(success, 'failed to purchase non-existent product').to.be.false;
     });
 
     it('getProducts() returns an empty list when getting invalid product', async () => {

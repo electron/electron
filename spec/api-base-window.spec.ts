@@ -1,7 +1,7 @@
 import { nativeImage } from 'electron/common';
 import { BaseWindow, Menu, View, screen } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { type EventEmitter, once } from 'node:events';
 
@@ -40,7 +40,7 @@ describe('BaseWindow module', () => {
 
     it('creates a hidden window when show is false', () => {
       const w = new BaseWindow({ show: false });
-      expect(w.isVisible()).to.be.false('is visible');
+      expect(w.isVisible(), 'is visible').to.be.false;
     });
 
     it('honors the width and height options', () => {
@@ -107,7 +107,7 @@ describe('BaseWindow module', () => {
         e.preventDefault();
       });
       w.close();
-      expect(w.isDestroyed()).to.be.false('window is destroyed');
+      expect(w.isDestroyed(), 'window is destroyed').to.be.false;
     });
   });
 
@@ -122,7 +122,7 @@ describe('BaseWindow module', () => {
       const closed = once(w, 'closed');
       w.destroy();
       await closed;
-      expect(w.isDestroyed()).to.be.true('window is not destroyed');
+      expect(w.isDestroyed(), 'window is not destroyed').to.be.true;
     });
   });
 
@@ -147,7 +147,7 @@ describe('BaseWindow module', () => {
     });
 
     it('returns null for a nonexistent id', () => {
-      expect(BaseWindow.fromId(314159)).to.be.null('window');
+      expect(BaseWindow.fromId(314159), 'window').to.be.null;
     });
   });
 
@@ -191,13 +191,13 @@ describe('BaseWindow module', () => {
 
     it('returns false for a normal window', () => {
       const w = new BaseWindow({ show: false });
-      expect(w.isModal()).to.be.false('isModal');
+      expect(w.isModal(), 'isModal').to.be.false;
     });
 
     it('returns true for a modal child window', () => {
       const parent = new BaseWindow({ show: false });
       const child = new BaseWindow({ show: false, parent, modal: true });
-      expect(child.isModal()).to.be.true('isModal');
+      expect(child.isModal(), 'isModal').to.be.true;
     });
   });
 
@@ -208,7 +208,7 @@ describe('BaseWindow module', () => {
       const parent = new BaseWindow({ show: false });
       const child = new BaseWindow({ show: false, parent });
       expect(child.getParentWindow()).to.equal(parent);
-      expect(parent.getParentWindow()).to.be.null('parent window');
+      expect(parent.getParentWindow(), 'parent window').to.be.null;
     });
 
     it('getChildWindows() returns the child windows', () => {
@@ -225,7 +225,7 @@ describe('BaseWindow module', () => {
       expect(w.getParentWindow()).to.equal(parent);
       expect(parent.getChildWindows()).to.deep.equal([w]);
       w.setParentWindow(null);
-      expect(w.getParentWindow()).to.be.null('parent window');
+      expect(w.getParentWindow(), 'parent window').to.be.null;
       expect(parent.getChildWindows()).to.have.lengthOf(0);
     });
   });
@@ -245,7 +245,7 @@ describe('BaseWindow module', () => {
         const show = once(w, 'show');
         w.show();
         await show;
-        expect(w.isVisible()).to.be.true('is visible');
+        expect(w.isVisible(), 'is visible').to.be.true;
       });
     });
 
@@ -257,7 +257,7 @@ describe('BaseWindow module', () => {
         const hidden = once(w, 'hide');
         w.hide();
         await hidden;
-        expect(w.isVisible()).to.be.false('is visible');
+        expect(w.isVisible(), 'is visible').to.be.false;
       });
     });
   });
@@ -278,21 +278,21 @@ describe('BaseWindow module', () => {
         const focused = once(w, 'focus');
         w.show();
         await focused;
-        expect(w.isFocused()).to.be.true('is focused');
+        expect(w.isFocused(), 'is focused').to.be.true;
       });
     });
 
     describe('BaseWindow.hide()', () => {
       it('should defocus the window', () => {
         w.hide();
-        expect(w.isFocused()).to.be.false('is focused');
+        expect(w.isFocused(), 'is focused').to.be.false;
       });
     });
 
     describe('BaseWindow.showInactive()', () => {
       it('should not focus on the window', () => {
         w.showInactive();
-        expect(w.isFocused()).to.be.false('is focused');
+        expect(w.isFocused(), 'is focused').to.be.false;
       });
     });
 
@@ -304,7 +304,7 @@ describe('BaseWindow module', () => {
         const blurred = once(w, 'blur');
         w.blur();
         await blurred;
-        expect(w.isFocused()).to.be.false('is focused');
+        expect(w.isFocused(), 'is focused').to.be.false;
       });
     });
 
@@ -541,11 +541,11 @@ describe('BaseWindow module', () => {
 
     it('returns true when the window is in normal state', async () => {
       const w = new BaseWindow({ show: false });
-      expect(w.isNormal()).to.be.true('isNormal');
+      expect(w.isNormal(), 'isNormal').to.be.true;
       const shown = once(w, 'show');
       w.show();
       await shown;
-      expect(w.isNormal()).to.be.true('isNormal');
+      expect(w.isNormal(), 'isNormal').to.be.true;
     });
   });
 
@@ -555,25 +555,25 @@ describe('BaseWindow module', () => {
     describe('resizable state', () => {
       it('can be set with the resizable constructor option', () => {
         const w = new BaseWindow({ show: false, resizable: false });
-        expect(w.resizable).to.be.false('resizable');
+        expect(w.resizable, 'resizable').to.be.false;
       });
 
       it('can be changed with the property', () => {
         const w = new BaseWindow({ show: false });
-        expect(w.resizable).to.be.true('resizable');
+        expect(w.resizable, 'resizable').to.be.true;
         w.resizable = false;
-        expect(w.resizable).to.be.false('resizable');
+        expect(w.resizable, 'resizable').to.be.false;
         w.resizable = true;
-        expect(w.resizable).to.be.true('resizable');
+        expect(w.resizable, 'resizable').to.be.true;
       });
 
       it('can be changed with the functions', () => {
         const w = new BaseWindow({ show: false });
-        expect(w.isResizable()).to.be.true('resizable');
+        expect(w.isResizable(), 'resizable').to.be.true;
         w.setResizable(false);
-        expect(w.isResizable()).to.be.false('resizable');
+        expect(w.isResizable(), 'resizable').to.be.false;
         w.setResizable(true);
-        expect(w.isResizable()).to.be.true('resizable');
+        expect(w.isResizable(), 'resizable').to.be.true;
       });
     });
 
@@ -588,11 +588,11 @@ describe('BaseWindow module', () => {
       it('can be changed with the setHasShadow method', () => {
         const w = new BaseWindow({ show: false });
         w.setHasShadow(false);
-        expect(w.hasShadow()).to.be.false('hasShadow');
+        expect(w.hasShadow(), 'hasShadow').to.be.false;
         w.setHasShadow(true);
-        expect(w.hasShadow()).to.be.true('hasShadow');
+        expect(w.hasShadow(), 'hasShadow').to.be.true;
         w.setHasShadow(false);
-        expect(w.hasShadow()).to.be.false('hasShadow');
+        expect(w.hasShadow(), 'hasShadow').to.be.false;
       });
     });
 
@@ -600,20 +600,20 @@ describe('BaseWindow module', () => {
       it('can be changed', () => {
         const w = new BaseWindow({ show: false });
         w.setFullScreenable(false);
-        expect(w.isFullScreenable()).to.be.false('isFullScreenable');
+        expect(w.isFullScreenable(), 'isFullScreenable').to.be.false;
         w.setFullScreenable(true);
-        expect(w.isFullScreenable()).to.be.true('isFullScreenable');
+        expect(w.isFullScreenable(), 'isFullScreenable').to.be.true;
       });
     });
 
     describe('enabled state', () => {
       it('can be changed with setEnabled', () => {
         const w = new BaseWindow({ show: false });
-        expect(w.isEnabled()).to.be.true('isEnabled');
+        expect(w.isEnabled(), 'isEnabled').to.be.true;
         w.setEnabled(false);
-        expect(w.isEnabled()).to.be.false('isEnabled');
+        expect(w.isEnabled(), 'isEnabled').to.be.false;
         w.setEnabled(true);
-        expect(w.isEnabled()).to.be.true('isEnabled');
+        expect(w.isEnabled(), 'isEnabled').to.be.true;
       });
     });
 
@@ -621,18 +621,18 @@ describe('BaseWindow module', () => {
       it('can be changed', () => {
         const w = new BaseWindow({ show: false });
         w.focusable = false;
-        expect(w.focusable).to.be.false('focusable');
+        expect(w.focusable, 'focusable').to.be.false;
         w.focusable = true;
-        expect(w.focusable).to.be.true('focusable');
+        expect(w.focusable, 'focusable').to.be.true;
       });
     });
 
     ifdescribe(process.platform === 'darwin')('excludedFromShownWindowsMenu state', () => {
       it('can be changed', () => {
         const w = new BaseWindow({ show: false });
-        expect(w.excludedFromShownWindowsMenu).to.be.false('excludedFromShownWindowsMenu');
+        expect(w.excludedFromShownWindowsMenu, 'excludedFromShownWindowsMenu').to.be.false;
         w.excludedFromShownWindowsMenu = true;
-        expect(w.excludedFromShownWindowsMenu).to.be.true('excludedFromShownWindowsMenu');
+        expect(w.excludedFromShownWindowsMenu, 'excludedFromShownWindowsMenu').to.be.true;
       });
     });
 
@@ -649,18 +649,18 @@ describe('BaseWindow module', () => {
       it('the getters return true and the setters are no-ops', () => {
         const w = new BaseWindow({ show: false });
         for (const state of ['minimizable', 'maximizable', 'closable', 'movable'] as const) {
-          expect(w[state]).to.be.true(state);
+          expect(w[state], state).to.be.true;
           w[state] = false;
-          expect(w[state]).to.be.true(state);
+          expect(w[state], state).to.be.true;
         }
         w.setMinimizable(false);
-        expect(w.isMinimizable()).to.be.true('isMinimizable');
+        expect(w.isMinimizable(), 'isMinimizable').to.be.true;
         w.setMaximizable(false);
-        expect(w.isMaximizable()).to.be.true('isMaximizable');
+        expect(w.isMaximizable(), 'isMaximizable').to.be.true;
         w.setClosable(false);
-        expect(w.isClosable()).to.be.true('isClosable');
+        expect(w.isClosable(), 'isClosable').to.be.true;
         w.setMovable(false);
-        expect(w.isMovable()).to.be.true('isMovable');
+        expect(w.isMovable(), 'isMovable').to.be.true;
       });
     });
   });
@@ -671,28 +671,28 @@ describe('BaseWindow module', () => {
     describe('autoHideMenuBar state', () => {
       it('can be set with the autoHideMenuBar constructor option', () => {
         const w = new BaseWindow({ show: false, autoHideMenuBar: true });
-        expect(w.autoHideMenuBar).to.be.true('autoHideMenuBar');
-        expect(w.isMenuBarAutoHide()).to.be.true('isMenuBarAutoHide');
+        expect(w.autoHideMenuBar, 'autoHideMenuBar').to.be.true;
+        expect(w.isMenuBarAutoHide(), 'isMenuBarAutoHide').to.be.true;
       });
 
       it('can be changed', () => {
         const w = new BaseWindow({ show: false });
-        expect(w.autoHideMenuBar).to.be.false('autoHideMenuBar');
+        expect(w.autoHideMenuBar, 'autoHideMenuBar').to.be.false;
         w.setAutoHideMenuBar(true);
-        expect(w.isMenuBarAutoHide()).to.be.true('isMenuBarAutoHide');
+        expect(w.isMenuBarAutoHide(), 'isMenuBarAutoHide').to.be.true;
         w.autoHideMenuBar = false;
-        expect(w.isMenuBarAutoHide()).to.be.false('isMenuBarAutoHide');
+        expect(w.isMenuBarAutoHide(), 'isMenuBarAutoHide').to.be.false;
       });
     });
 
     describe('menuBarVisible state', () => {
       it('can be changed', () => {
         const w = new BaseWindow({ show: false });
-        expect(w.menuBarVisible).to.be.true('menuBarVisible');
+        expect(w.menuBarVisible, 'menuBarVisible').to.be.true;
         w.setMenuBarVisibility(false);
-        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
+        expect(w.isMenuBarVisible(), 'isMenuBarVisible').to.be.false;
         w.setMenuBarVisibility(true);
-        expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
+        expect(w.isMenuBarVisible(), 'isMenuBarVisible').to.be.true;
       });
     });
 
@@ -721,11 +721,11 @@ describe('BaseWindow module', () => {
 
     it('sets the window as always on top', () => {
       const w = new BaseWindow({ show: false });
-      expect(w.isAlwaysOnTop()).to.be.false('isAlwaysOnTop');
+      expect(w.isAlwaysOnTop(), 'isAlwaysOnTop').to.be.false;
       w.setAlwaysOnTop(true);
-      expect(w.isAlwaysOnTop()).to.be.true('isAlwaysOnTop');
+      expect(w.isAlwaysOnTop(), 'isAlwaysOnTop').to.be.true;
       w.setAlwaysOnTop(false);
-      expect(w.isAlwaysOnTop()).to.be.false('isAlwaysOnTop');
+      expect(w.isAlwaysOnTop(), 'isAlwaysOnTop').to.be.false;
     });
 
     it('causes the right value to be emitted on `always-on-top-changed`', async () => {
@@ -733,7 +733,7 @@ describe('BaseWindow module', () => {
       const alwaysOnTopChanged = once(w, 'always-on-top-changed') as Promise<[any, boolean]>;
       w.setAlwaysOnTop(true);
       const [, alwaysOnTop] = await alwaysOnTopChanged;
-      expect(alwaysOnTop).to.be.true('alwaysOnTop');
+      expect(alwaysOnTop, 'alwaysOnTop').to.be.true;
     });
   });
 
@@ -774,18 +774,18 @@ describe('BaseWindow module', () => {
       const firstMessage = 0x0400;
       const secondMessage = 0x0401;
 
-      expect(w.isWindowMessageHooked(firstMessage)).to.be.false('first message is hooked');
+      expect(w.isWindowMessageHooked(firstMessage), 'first message is hooked').to.be.false;
       w.hookWindowMessage(firstMessage, () => {});
       w.hookWindowMessage(secondMessage, () => {});
-      expect(w.isWindowMessageHooked(firstMessage)).to.be.true('first message is hooked');
-      expect(w.isWindowMessageHooked(secondMessage)).to.be.true('second message is hooked');
+      expect(w.isWindowMessageHooked(firstMessage), 'first message is hooked').to.be.true;
+      expect(w.isWindowMessageHooked(secondMessage), 'second message is hooked').to.be.true;
 
       w.unhookWindowMessage(firstMessage);
-      expect(w.isWindowMessageHooked(firstMessage)).to.be.false('first message is hooked');
-      expect(w.isWindowMessageHooked(secondMessage)).to.be.true('second message is hooked');
+      expect(w.isWindowMessageHooked(firstMessage), 'first message is hooked').to.be.false;
+      expect(w.isWindowMessageHooked(secondMessage), 'second message is hooked').to.be.true;
 
       w.unhookAllWindowMessages();
-      expect(w.isWindowMessageHooked(secondMessage)).to.be.false('second message is hooked');
+      expect(w.isWindowMessageHooked(secondMessage), 'second message is hooked').to.be.false;
     });
 
     it('BaseWindow.setOverlayIcon() accepts an image and null', () => {
@@ -953,7 +953,7 @@ describe('BaseWindow module', () => {
       expect(() => {
         w.moveTop();
       }).to.not.throw();
-      expect(w.isFocused()).to.be.false('is focused');
+      expect(w.isFocused(), 'is focused').to.be.false;
     });
   });
 

@@ -1,6 +1,6 @@
 import { net, protocol } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as path from 'node:path';
 import * as url from 'node:url';
@@ -10,7 +10,7 @@ import { defer } from './lib/spec-helpers.ts';
 describe('net module custom protocols', () => {
   it('can request file:// URLs', async () => {
     const resp = await net.fetch(url.pathToFileURL(path.join(import.meta.dirname, 'fixtures', 'hello.txt')).toString());
-    expect(resp.ok).to.be.true();
+    expect(resp.ok).to.be.true;
     // trimRight instead of asserting the whole string to avoid line ending shenanigans on WOA
     expect((await resp.text()).trimRight()).to.equal('hello world');
   });
@@ -102,7 +102,7 @@ describe('net module custom protocols', () => {
     defer(() => {
       protocol.unregisterProtocol('electron-test');
     });
-    await expect(net.fetch('electron-test://redirect', { redirect: 'error' })).to.eventually.be.rejectedWith(
+    await expect(net.fetch('electron-test://redirect', { redirect: 'error' })).rejects.toThrow(
       "Attempted to redirect, but redirect policy was 'error'"
     );
   });
