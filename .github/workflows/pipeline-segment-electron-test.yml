@@ -343,8 +343,6 @@ jobs:
       shell: bash
       timeout-minutes: 60
       env:
-        MOCHA_REPORTER: mocha-multi-reporters
-        MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         DISPLAY: ':99.0'
         NPM_CONFIG_MSVS_VERSION: '2022'
@@ -392,9 +390,6 @@ jobs:
           if [ "${{ inputs.target-platform }}" = "win" ]; then
             if [ "${{ inputs.target-arch }}" = "x86" ]; then
               export npm_config_arch="ia32"
-            fi
-            if [ "${{ inputs.target-arch }}" = "arm64" ]; then
-              export ELECTRON_FORCE_TEST_SUITE_EXIT="true"
             fi
           fi
           node script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
