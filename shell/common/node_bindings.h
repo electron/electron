@@ -17,6 +17,8 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ptr_exclusion.h"
 #include "base/memory/weak_ptr.h"
+#include "base/run_loop.h"
+#include "base/task/task_observer.h"
 #include "base/types/to_address.h"
 #include "gin/public/context_holder.h"
 #include "shell/common/gin_helper/gin_embedders.h"
@@ -129,7 +131,8 @@ struct UvHandleCompare {
   }
 };
 
-class NodeBindings {
+class NodeBindings : private base::TaskObserver,
+                     private base::RunLoop::NestingObserver {
  public:
   enum class BrowserEnvironment { kBrowser, kRenderer, kUtility, kWorker };
 
@@ -150,7 +153,7 @@ class NodeBindings {
   // was never initialized.
   static void TearDownOncePerProcess();
 
-  virtual ~NodeBindings();
+  ~NodeBindings() override;
 
   // Setup V8, libuv.
   void Initialize(v8::Isolate* isolate, v8::Local<v8::Context> context);
@@ -196,7 +199,7 @@ class NodeBindings {
   void StopPolling();
 
   // Gets/sets the environment to wrap uv loop.
-  void set_uv_env(node::Environment* env) { uv_env_ = env; }
+  void set_uv_env(node::Environment* env);
   node::Environment* uv_env() const { return uv_env_; }
 
   [[nodiscard]] constexpr uv_loop_t* uv_loop() { return uv_loop_; }
@@ -212,18 +215,43 @@ class NodeBindings {
  protected:
   NodeBindings(BrowserEnvironment browser_env, uv_loop_t* loop);
 
-  // Called to poll events in new thread.
-  virtual void PollEvents() = 0;
+  // Called on the embed thread to wait for the loop's backend to become ready
+  // or |timeout| ms (-1 for no timeout), as computed by the main thread.
+  virtual void PollEvents(int timeout) = 0;
 
   // Make the main thread run libuv loop.
-  void WakeupMainThread();
+  void WakeupMainThread(uint64_t polling_generation);
 
   // Interrupt the PollEvents.
   void WakeupEmbedThread();
 
  private:
-  // Run the libuv loop for once.
-  void UvRunOnce();
+  // Run the libuv loop for once, unless polling was stopped since
+  // |polling_generation| started.
+  void UvRunOnce(uint64_t polling_generation);
+
+  // The loop only runs from UvRunOnce(). Timers and immediates started from
+  // JS anywhere else wake the embed thread through process.activateUvLoop()
+  // (lib/common/init.ts); other handles are picked up by waking the embed
+  // thread when the loop's next deadline moved earlier (libuv/libuv#3308),
+  // checked after every task, nested ones included, after each microtask
+  // checkpoint, when a nested run loop begins under a JS frame, and, in the
+  // browser and utility processes, when a top-level call from native code
+  // into JS returns.
+  void EnableDeadlineChecks(bool enable);
+  void WakeupEmbedThreadIfLoopHasEarlierWork();
+  static void OnMicrotasksCompleted(v8::Isolate* isolate, void* self);
+  static void OnCallCompleted(v8::Isolate* isolate);
+  // The browser or utility process's instance; v8::CallCompletedCallback
+  // carries no data pointer.
+  static NodeBindings*& MainThreadInstance();
+
+  // base::TaskObserver
+  void WillProcessTask(const base::PendingTask& pending_task,
+                       bool was_blocked_or_low_priority) override {}
+  void DidProcessTask(const base::PendingTask& pending_task) override;
+  // base::RunLoop::NestingObserver
+  void OnBeginNestedRunLoop() override;
 
   // Which environment we are running.
   // "browser" / "renderer" / "worker" / "utility"; names process.type and
@@ -281,6 +309,18 @@ class NodeBindings {
 
   // Semaphore to wait for main loop in the embed thread.
   uv_sem_t embed_sem_;
+
+  // uv_backend_timeout() as of the end of the last UvRunOnce(), for the embed
+  // thread's next PollEvents(). Handed over through |embed_sem_|.
+  int poll_timeout_ = -1;
+
+  // Loop time (uv_now() base) at which that PollEvents() times out; 0 while
+  // the embed thread is parked in UvRunOnce(), has been woken, or was handed
+  // a zero timeout. Main thread.
+  uint64_t poll_deadline_ = 0;
+
+  // Bumped by StopPolling(), which can also run underneath a UvRunOnce().
+  uint64_t polling_generation_ = 0;
 
   // Environment that to wrap the uv loop.
   raw_ptr<node::Environment> uv_env_ = nullptr;

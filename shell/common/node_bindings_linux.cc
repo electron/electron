@@ -17,19 +17,19 @@ NodeBindingsLinux::NodeBindingsLinux(BrowserEnvironment browser_env,
   struct epoll_event ev = {0};
   ev.events = EPOLLIN;
   ev.data.fd = backend_fd;
-  epoll_ctl(epoll_, EPOLL_CTL_ADD, backend_fd, &ev);
+  epoll_ctl(epoll_.get(), EPOLL_CTL_ADD, backend_fd, &ev);
 }
 
-void NodeBindingsLinux::PollEvents() {
-  auto* const event_loop = uv_loop();
+// The embed thread uses epoll_, so it has to be gone before the members are.
+NodeBindingsLinux::~NodeBindingsLinux() {
+  StopPolling();
+}
 
-  int timeout = uv_backend_timeout(event_loop);
-
-  // Wait for new libuv events.
+void NodeBindingsLinux::PollEvents(int timeout) {
   int r;
   do {
     struct epoll_event ev;
-    r = epoll_wait(epoll_, &ev, 1, timeout);
+    r = epoll_wait(epoll_.get(), &ev, 1, timeout);
   } while (r == -1 && errno == EINTR);
 }
 

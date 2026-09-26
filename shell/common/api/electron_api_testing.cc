@@ -5,6 +5,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <tuple>
 #include <utility>
 
 #include "base/command_line.h"
@@ -12,8 +13,12 @@
 #include "base/functional/callback.h"
 #include "base/logging.h"
 #include "base/memory/ptr_util.h"
+#include "base/memory/raw_ptr.h"
 #include "base/no_destructor.h"
 #include "base/power_monitor/power_monitor_source.h"
+#include "base/run_loop.h"
+#include "base/task/sequenced_task_runner.h"
+#include "base/time/time.h"
 #include "build/build_config.h"
 #include "chrome/browser/browser_process.h"
 #include "components/prefs/pref_service.h"
@@ -29,8 +34,10 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/uv_includes.h"
 #include "ui/accessibility/platform/ax_platform.h"
 #include "v8/include/v8.h"
 
@@ -335,6 +342,166 @@ void SimulatePowerEvent(gin_helper::ErrorThrower thrower,
     thrower.ThrowTypeError("unknown power event");
 }
 
+// Starts a libuv timer from a plain Chromium task with no JavaScript on the
+// stack, the way a native module hooked into the message loop would, and
+// calls |done| from the timer callback the way Node.js calls its own.
+struct UvTimerFromTask {
+  uv_timer_t timer;
+  raw_ptr<v8::Isolate> isolate;
+  v8::Global<v8::Function> done;
+};
+
+void StartUvTimerFromTask(v8::Isolate* isolate,
+                          int delay_ms,
+                          v8::Local<v8::Function> done) {
+  uv_loop_t* loop = node::Environment::GetCurrent(isolate)->event_loop();
+  auto* state =
+      new UvTimerFromTask{{}, isolate, v8::Global<v8::Function>(isolate, done)};
+  state->timer.data = state;
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE,
+      base::BindOnce(
+          [](uv_loop_t* loop, int delay_ms, UvTimerFromTask* state) {
+            uv_update_time(loop);
+            uv_timer_init(loop, &state->timer);
+            uv_timer_start(
+                &state->timer,
+                [](uv_timer_t* timer) {
+                  auto* state = static_cast<UvTimerFromTask*>(timer->data);
+                  v8::Isolate* isolate = state->isolate;
+                  v8::HandleScope handle_scope(isolate);
+                  v8::Local<v8::Function> done = state->done.Get(isolate);
+                  v8::Local<v8::Context> context =
+                      done->GetCreationContextChecked(isolate);
+                  v8::Context::Scope context_scope(context);
+                  std::ignore = node::MakeCallback(isolate, context->Global(),
+                                                   done, 0, nullptr, {0, 0});
+                  uv_close(reinterpret_cast<uv_handle_t*>(timer),
+                           [](uv_handle_t* handle) {
+                             delete static_cast<UvTimerFromTask*>(handle->data);
+                           });
+                },
+                delay_ms, 0);
+          },
+          loop, delay_ms, state));
+}
+
+// Starts listening on a loopback port with bare libuv calls from the calling
+// JavaScript frame, the way a native module's binding would, and calls |done|
+// from the connection callback. Returns the port for the other process to
+// connect to. Nothing here goes through Node.js, so only the embedder's own
+// deadline checks can get the socket polled.
+struct UvListenFromJs {
+  uv_tcp_t server;
+  raw_ptr<v8::Isolate> isolate;
+  v8::Global<v8::Function> done;
+};
+
+int StartUvListen(v8::Isolate* isolate, v8::Local<v8::Function> done) {
+  uv_loop_t* loop = node::Environment::GetCurrent(isolate)->event_loop();
+  auto* state =
+      new UvListenFromJs{{}, isolate, v8::Global<v8::Function>(isolate, done)};
+  state->server.data = state;
+  uv_tcp_init(loop, &state->server);
+  sockaddr_in addr;
+  uv_ip4_addr("127.0.0.1", 0, &addr);
+  uv_tcp_bind(&state->server, reinterpret_cast<const sockaddr*>(&addr), 0);
+  uv_listen(reinterpret_cast<uv_stream_t*>(&state->server), 1,
+            [](uv_stream_t* server, int status) {
+              auto* state = static_cast<UvListenFromJs*>(server->data);
+              v8::Isolate* isolate = state->isolate;
+              v8::HandleScope handle_scope(isolate);
+              v8::Local<v8::Function> done = state->done.Get(isolate);
+              v8::Local<v8::Context> context =
+                  done->GetCreationContextChecked(isolate);
+              v8::Context::Scope context_scope(context);
+              std::ignore = node::MakeCallback(isolate, context->Global(), done,
+                                               0, nullptr, {0, 0});
+              uv_close(reinterpret_cast<uv_handle_t*>(server),
+                       [](uv_handle_t* handle) {
+                         delete static_cast<UvListenFromJs*>(handle->data);
+                       });
+            });
+  int len = sizeof(addr);
+  uv_tcp_getsockname(&state->server, reinterpret_cast<sockaddr*>(&addr), &len);
+  return ntohs(addr.sin_port);
+}
+
+// Runs a nested run loop that processes tasks for |ms| while the calling
+// JavaScript frame stays on the stack, like a synchronous dialog does.
+void RunNestedLoopForTesting(int ms) {
+  base::RunLoop loop(base::RunLoop::Type::kNestableTasksAllowed);
+  base::SequencedTaskRunner::GetCurrentDefault()->PostDelayedTask(
+      FROM_HERE, loop.QuitClosure(), base::Milliseconds(ms));
+  loop.Run();
+}
+
+// Calls |fn| from a platform event source rather than a Chromium task, the
+// way a native event enters JS: through EventEmitter emit as Electron's own
+// events do, or through a bare v8::Function::Call as a native module calling
+// napi_call_function() from its own OS callback does.
+struct NativeSourceCall {
+  raw_ptr<v8::Isolate> isolate;
+  v8::Global<v8::Context> context;
+  v8::Global<v8::Function> fn;
+  bool via_emit;
+
+  static void Run(void* data) {
+    std::unique_ptr<NativeSourceCall> call(
+        static_cast<NativeSourceCall*>(data));
+    v8::Isolate* isolate = call->isolate;
+    v8::HandleScope handle_scope(isolate);
+    v8::Local<v8::Context> context = call->context.Get(isolate);
+    v8::Context::Scope context_scope(context);
+    v8::Local<v8::Function> fn = call->fn.Get(isolate);
+    if (call->via_emit) {
+      v8::Local<v8::Object> holder = v8::Object::New(isolate);
+      holder->Set(context, gin::StringToV8(isolate, "run"), fn).Check();
+      gin_helper::CallMethod(isolate, holder, "run");
+    } else {
+      v8::MicrotasksScope microtasks_scope(
+          context, v8::MicrotasksScope::kDoNotRunMicrotasks);
+      std::ignore = fn->Call(context, v8::Undefined(isolate), 0, nullptr);
+    }
+  }
+};
+
+#if BUILDFLAG(IS_WIN)
+NativeSourceCall* g_native_source_call = nullptr;
+
+void CALLBACK RunNativeSourceCall(HWND, UINT, UINT_PTR id, DWORD) {
+  ::KillTimer(nullptr, id);
+  NativeSourceCall::Run(std::exchange(g_native_source_call, nullptr));
+}
+#endif
+
+void InvokeFromNativeSourceForTesting(v8::Isolate* isolate,
+                                      v8::Local<v8::Function> fn,
+                                      bool via_emit) {
+  auto* call = new NativeSourceCall{
+      isolate, v8::Global<v8::Context>(isolate, isolate->GetCurrentContext()),
+      v8::Global<v8::Function>(isolate, fn), via_emit};
+#if BUILDFLAG(IS_LINUX)
+  g_idle_add(
+      [](gpointer data) {
+        NativeSourceCall::Run(data);
+        return G_SOURCE_REMOVE;
+      },
+      call);
+#elif BUILDFLAG(IS_MAC)
+  CFRunLoopTimerContext timer_context = {0, call, nullptr, nullptr, nullptr};
+  CFRunLoopTimerRef timer = CFRunLoopTimerCreate(
+      kCFAllocatorDefault, CFAbsoluteTimeGetCurrent(), 0, 0, 0,
+      [](CFRunLoopTimerRef, void* data) { NativeSourceCall::Run(data); },
+      &timer_context);
+  CFRunLoopAddTimer(CFRunLoopGetMain(), timer, kCFRunLoopCommonModes);
+  CFRelease(timer);
+#elif BUILDFLAG(IS_WIN)
+  g_native_source_call = call;
+  ::SetTimer(nullptr, 0, USER_TIMER_MINIMUM, &RunNativeSourceCall);
+#endif
+}
+
 void SimulateWebAuthnUvLockedPinSecurityKey(bool enabled) {
   electron::ElectronAuthenticatorRequestClientDelegate::
       SetSimulateUvLockedPinSecurityKeyForTesting(enabled);
@@ -376,6 +543,11 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod<&CommitPendingLocalStateWrites>(
       "commitPendingLocalStateWrites");
   dict.SetMethod<&ClearHeldPromiseForTesting>("clearHeldPromiseForTesting");
+  dict.SetMethod<&StartUvTimerFromTask>("startUvTimerFromTask");
+  dict.SetMethod<&StartUvListen>("startUvListen");
+  dict.SetMethod<&RunNestedLoopForTesting>("runNestedLoopForTesting");
+  dict.SetMethod<&InvokeFromNativeSourceForTesting>(
+      "invokeFromNativeSourceForTesting");
 }
 
 }  // namespace
