@@ -166,6 +166,22 @@ describe('debugger module', () => {
       w.webContents.debugger.detach();
     });
 
+    it('rejects a non-string value for a string parameter', async () => {
+      // Sends a number for Input.dispatchKeyEvent's optional `text` string param,
+      // which must reject rather than abort the browser process. See
+      // spec/fixtures/crash-cases/debugger-send-command-wrong-type.
+      w.webContents.loadURL('about:blank');
+      w.webContents.debugger.attach();
+
+      const promise = w.webContents.debugger.sendCommand('Input.dispatchKeyEvent', {
+        type: 'keyDown',
+        text: 1 as any
+      });
+      await expect(promise).to.be.eventually.rejected();
+
+      w.webContents.debugger.detach();
+    });
+
     it('handles valid unicode characters in message', async () => {
       server = http.createServer((req, res) => {
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
