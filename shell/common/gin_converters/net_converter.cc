@@ -199,11 +199,19 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
     net::HttpResponseHeaders* out) {
+  return FromV8(isolate, val, out, nullptr);
+}
+
+bool Converter<net::HttpResponseHeaders*>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    net::HttpResponseHeaders* out,
+    std::vector<std::string>* invalid_headers) {
   if (!val->IsObject()) {
     return false;
   }
 
-  auto addHeaderFromValue = [&isolate, &out](
+  auto addHeaderFromValue = [&isolate, &out, &invalid_headers](
                                 const std::string& key,
                                 const v8::Local<v8::Value>& localVal) {
     auto context = isolate->GetCurrentContext();
@@ -215,7 +223,11 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
     gin::ConvertFromV8(isolate, localStrVal, &value);
     if (!net::HttpUtil::IsValidHeaderName(key) ||
         !net::HttpUtil::IsValidHeaderValue(value)) {
-      return false;
+      if (invalid_headers &&
+          (invalid_headers->empty() || invalid_headers->back() != key)) {
+        invalid_headers->push_back(key);
+      }
+      return true;
     }
     out->AddHeader(key, value);
     return true;
@@ -272,6 +284,15 @@ v8::Local<v8::Value> Converter<net::HttpRequestHeaders>::ToV8(
 bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
                                                 v8::Local<v8::Value> val,
                                                 net::HttpRequestHeaders* out) {
+  return FromV8(isolate, val, out, nullptr);
+}
+
+// static
+bool Converter<net::HttpRequestHeaders>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    net::HttpRequestHeaders* out,
+    std::vector<std::string>* invalid_headers) {
   if (!val->IsObject() || val->IsArray() || val->IsFunction())
     return false;
   auto context = isolate->GetCurrentContext();
@@ -299,6 +320,8 @@ bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
     if (net::HttpUtil::IsValidHeaderName(key) &&
         net::HttpUtil::IsValidHeaderValue(value))
       out->SetHeader(key, std::move(value));
+    else if (invalid_headers)
+      invalid_headers->push_back(key);
   }
   return true;
 }

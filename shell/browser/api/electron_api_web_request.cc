@@ -9,9 +9,13 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include "base/containers/fixed_flat_map.h"
+#include "base/json/string_escape.h"
 #include "base/memory/raw_ptr.h"
+#include "base/strings/strcat.h"
+#include "base/strings/string_util.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
 #include "content/public/browser/web_contents.h"
@@ -210,6 +214,23 @@ CalculateOnBeforeSendHeadersDelta(const net::HttpRequestHeaders* old_headers,
   }
 
   return std::make_pair(modified_request_headers, deleted_request_headers);
+}
+
+void WarnInvalidHeaders(v8::Isolate* isolate,
+                        std::string_view property,
+                        const std::vector<std::string>& invalid_headers) {
+  if (invalid_headers.empty())
+    return;
+  std::vector<std::string> names;
+  names.reserve(invalid_headers.size());
+  for (const auto& name : invalid_headers)
+    names.push_back(base::GetQuotedJSONString(name));
+  util::EmitWarning(
+      isolate,
+      base::StrCat({"webRequest: ignoring header(s) with an invalid name or "
+                    "value in '",
+                    property, "': ", base::JoinString(names, ", ")}),
+      "electron");
 }
 
 WebRequest* ForObservedRequest(
@@ -501,6 +522,7 @@ void WebRequest::OnBeforeSendHeadersListenerResult(
 
   int result = net::OK;
   bool user_modified_headers = false;
+  bool conversion_failed = false;
   if (response->IsObject()) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     gin::Dictionary dict(isolate, response.As<v8::Object>());
@@ -512,17 +534,24 @@ void WebRequest::OnBeforeSendHeadersListenerResult(
     } else {
       v8::Local<v8::Value> value;
       if (dict.Get("requestHeaders", &value) && value->IsObject()) {
-        user_modified_headers = true;
-        gin::Converter<net::HttpRequestHeaders>::FromV8(isolate, value,
-                                                        &new_headers);
+        std::vector<std::string> invalid_headers;
+        if (gin::Converter<net::HttpRequestHeaders>::FromV8(
+                isolate, value, &new_headers, &invalid_headers)) {
+          user_modified_headers = true;
+          WarnInvalidHeaders(isolate, "requestHeaders", invalid_headers);
+        } else {
+          conversion_failed = true;
+        }
       }
     }
   }
 
-  // If the user passes |cancel|, |new_headers| should be nullptr.
+  // If the user passes |cancel|, or |requestHeaders| that could not be
+  // converted, |new_headers| should be nullptr.
   const auto updated_headers = CalculateOnBeforeSendHeadersDelta(
-      old_headers,
-      result == net::ERR_BLOCKED_BY_CLIENT ? nullptr : &new_headers);
+      old_headers, result == net::ERR_BLOCKED_BY_CLIENT || conversion_failed
+                       ? nullptr
+                       : &new_headers);
 
   // Leave |request.request_headers| unchanged if the user didn't modify it.
   if (user_modified_headers)
@@ -607,10 +636,13 @@ void WebRequest::OnHeadersReceivedListenerResult(
         status_line = request.status_line;
       v8::Local<v8::Value> value;
       if (dict.Get("responseHeaders", &value) && value->IsObject()) {
-        user_modified_headers = true;
         override_headers->ReplaceStatusLine(status_line);
-        gin::Converter<net::HttpResponseHeaders*>::FromV8(
-            isolate, value, override_headers.get());
+        std::vector<std::string> invalid_headers;
+        user_modified_headers =
+            gin::Converter<net::HttpResponseHeaders*>::FromV8(
+                isolate, value, override_headers.get(), &invalid_headers);
+        if (user_modified_headers)
+          WarnInvalidHeaders(isolate, "responseHeaders", invalid_headers);
       }
     }
   }
