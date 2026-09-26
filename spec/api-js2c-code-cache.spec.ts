@@ -1,6 +1,6 @@
 import { flipFuses, FuseV1Options, FuseVersion } from '@electron/fuses';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import * as fs from 'node:fs';

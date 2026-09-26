@@ -11,7 +11,7 @@ import {
   type ServiceWorkersRunningStatusChangedEventParams
 } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 import { WebSocketServer } from 'ws';
 
 import { spawn } from 'node:child_process';
@@ -86,7 +86,7 @@ describe('chrome extensions', () => {
         })
       })();
     `)
-    ).to.eventually.have.property('id');
+    ).resolves.to.have.property('id');
   });
 
   describe('Chrome Web Store origin', () => {
@@ -134,7 +134,7 @@ describe('chrome extensions', () => {
       expect(result)
         .to.be.a('string')
         .and.match(/^threw: |not supported/);
-      expect(w.webContents.isCrashed()).to.be.false();
+      expect(w.webContents.isCrashed()).to.be.false;
       // The browser process is still alive if we get here; do a round trip to be sure.
       expect(await w.webContents.executeJavaScript('1 + 1')).to.equal(2);
     });
@@ -214,7 +214,7 @@ describe('chrome extensions', () => {
 
     const extPath = path.join(fixtures, 'extensions', 'minimum-chrome-version');
     const load = customSession.extensions.loadExtension(extPath);
-    await expect(load).to.eventually.be.rejectedWith(
+    await expect(load).rejects.toThrow(
       `Loading extension at ${extPath} failed with: This extension requires Chromium version 999 or greater.`
     );
   });
@@ -228,7 +228,7 @@ describe('chrome extensions', () => {
     const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
     const extension = await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'ui-page'));
     await w.loadURL(`${extension.url}bare-page.html`);
-    await expect(fetch(w.webContents, `${url}/cors`)).to.not.be.rejectedWith(TypeError);
+    await fetch(w.webContents, `${url}/cors`);
   });
 
   it('loads an extension', async () => {
@@ -247,13 +247,13 @@ describe('chrome extensions', () => {
   it('does not crash when loading an extension with missing manifest', async () => {
     const customSession = session.fromPartition(`persist:${randomUUID()}`);
     const promise = customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'missing-manifest'));
-    await expect(promise).to.eventually.be.rejectedWith(/Manifest file is missing or unreadable/);
+    await expect(promise).rejects.toThrow(/Manifest file is missing or unreadable/);
   });
 
   it('does not crash when failing to load an extension', async () => {
     const customSession = session.fromPartition(`persist:${randomUUID()}`);
     const promise = customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'load-error'));
-    await expect(promise).to.eventually.be.rejected();
+    await expect(promise).rejects.toThrow();
   });
 
   it('serializes a loaded extension', async () => {
@@ -336,9 +336,9 @@ describe('chrome extensions', () => {
 
   it('loading an extension in a temporary session throws an error', async () => {
     const customSession = session.fromPartition(randomUUID());
-    await expect(
-      customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
-    ).to.eventually.be.rejectedWith('Extensions cannot be loaded in a temporary session');
+    await expect(customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'red-bg'))).rejects.toThrow(
+      'Extensions cannot be loaded in a temporary session'
+    );
   });
 
   describe('chrome.i18n', () => {
@@ -470,12 +470,12 @@ describe('chrome extensions', () => {
       it('can cancel http requests', async () => {
         await w.loadURL(url);
         await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
-        await expect(waitUntil(haveRejectedFetch)).to.eventually.be.fulfilled();
+        await waitUntil(haveRejectedFetch);
       });
 
       it('does not cancel http requests when no extension loaded', async () => {
         await w.loadURL(url);
-        await expect(fetch(w.webContents, url)).to.not.be.rejectedWith('Failed to fetch');
+        await fetch(w.webContents, url);
       });
     });
 
@@ -915,7 +915,7 @@ describe('chrome extensions', () => {
               frameEvents.map(async (frameEvent) => {
                 const [, isMainFrame, frameProcessId, frameRoutingId] = frameEvent;
                 const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
-                expect(frame).to.not.be.undefined();
+                expect(frame).to.not.be.undefined;
                 const result: any = await executeJavaScriptInFrame(
                   w.webContents,
                   frame!.frameToken,
@@ -1134,7 +1134,7 @@ describe('chrome extensions', () => {
         const [{ message: responseString }] = await once(w.webContents, 'console-message');
         const response = JSON.parse(responseString);
 
-        expect(response).to.be.an('array').that.is.not.empty('languages array is empty');
+        expect(response, 'languages array is empty').to.be.an('array').that.is.not.empty;
       });
 
       it('getUILanguage', async () => {
@@ -1395,7 +1395,7 @@ describe('chrome extensions', () => {
           w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
           const [{ message: responseString }] = await once(w.webContents, 'console-message');
           const response = JSON.parse(responseString);
-          expect(response).to.be.an('array').that.is.not.empty();
+          expect(response).to.be.an('array').that.is.not.empty;
           for (const tab of response) {
             expect(tab).not.to.have.property('url');
             expect(tab).not.to.have.property('title');
@@ -1500,9 +1500,9 @@ describe('chrome extensions', () => {
         it('can query for a tab with specific properties', async () => {
           await w.loadURL(url);
 
-          expect(w.webContents.isAudioMuted()).to.be.false('muted');
+          expect(w.webContents.isAudioMuted(), 'muted').to.be.false;
           w.webContents.setAudioMuted(true);
-          expect(w.webContents.isAudioMuted()).to.be.true('not muted');
+          expect(w.webContents.isAudioMuted(), 'not muted').to.be.true;
 
           const message = { method: 'query', args: [{ muted: true }] };
           w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
@@ -1632,7 +1632,7 @@ describe('chrome extensions', () => {
 
         const [{ message: responseString }] = await once(w.webContents, 'console-message');
         const response = JSON.parse(responseString);
-        expect(response.success).to.be.true();
+        expect(response.success).to.be.true;
 
         const bgAfter = await w.webContents.executeJavaScript('window.getComputedStyle(document.body).backgroundColor');
         expect(bgAfter).to.equal('rgb(255, 0, 0)');
@@ -1670,31 +1670,31 @@ describe('chrome extensions', () => {
 
       it('chrome.tabs.get cannot resolve a tab from another session', async () => {
         const sameSession = await callExtension('get', driver.webContents.id);
-        expect(sameSession.ok).to.be.true();
+        expect(sameSession.ok).to.be.true;
         expect(sameSession.result.id).to.equal(driver.webContents.id);
 
         const crossSession = await callExtension('get', victim.webContents.id);
-        expect(crossSession.ok).to.be.false();
+        expect(crossSession.ok).to.be.false;
         expect(crossSession.error).to.match(/No such tab|No tab with id/);
       });
 
       it('chrome.tabs.update cannot navigate a tab in another session', async () => {
         const before = victim.webContents.getURL();
         const crossSession = await callExtension('update', victim.webContents.id, [{ url }]);
-        expect(crossSession.ok).to.be.false();
+        expect(crossSession.ok).to.be.false;
         expect(crossSession.error).to.match(/No such tab|No tab with id/);
         expect(victim.webContents.getURL()).to.equal(before);
       });
 
       it('chrome.scripting.executeScript cannot target a tab in another session', async () => {
         const crossSession = await callExtension('executeScript', victim.webContents.id);
-        expect(crossSession.ok).to.be.false();
+        expect(crossSession.ok).to.be.false;
         expect(crossSession.error).to.match(/No tab with id/);
       });
 
       it('chrome.tabs.sendMessage cannot reach a tab in another session', async () => {
         const crossSession = await callExtension('sendMessage', victim.webContents.id, ['ping']);
-        expect(crossSession.ok).to.be.false();
+        expect(crossSession.ok).to.be.false;
       });
     });
   });

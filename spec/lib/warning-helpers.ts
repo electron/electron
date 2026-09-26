@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 type ExpectedWarningMessage = RegExp | string;
 

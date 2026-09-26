@@ -9,8 +9,8 @@
 import { nativeImage } from 'electron/common';
 import { app } from 'electron/main';
 
-import { expect } from 'chai';
 import * as dbus from 'dbus-native';
+import { expect } from 'vitest';
 
 import { once } from 'node:events';
 import { createRequire } from 'node:module';

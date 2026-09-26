@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { once } from 'node:events';
 import * as http from 'node:http';
@@ -30,17 +30,17 @@ describe('debugger module', () => {
       await w.webContents.loadURL('about:blank');
       w.webContents.openDevTools();
       w.webContents.debugger.attach();
-      expect(w.webContents.debugger.isAttached()).to.be.true();
+      expect(w.webContents.debugger.isAttached()).to.be.true;
     });
 
     it('fails when protocol version is not supported', () => {
       expect(() => w.webContents.debugger.attach('2.0')).to.throw();
-      expect(w.webContents.debugger.isAttached()).to.be.false();
+      expect(w.webContents.debugger.isAttached()).to.be.false;
     });
 
     it('attaches when no protocol version is specified', () => {
       w.webContents.debugger.attach();
-      expect(w.webContents.debugger.isAttached()).to.be.true();
+      expect(w.webContents.debugger.isAttached()).to.be.true;
     });
 
     it('throws when the webContents has been destroyed', async () => {
@@ -49,7 +49,7 @@ describe('debugger module', () => {
       await once(w.webContents, 'destroyed');
       await setTimeout(50);
       expect(() => dbg.attach()).to.throw('No target available');
-      expect(dbg.isAttached()).to.be.false();
+      expect(dbg.isAttached()).to.be.false;
     });
   });
 
@@ -60,7 +60,7 @@ describe('debugger module', () => {
       w.webContents.debugger.detach();
       const [, reason] = await detach;
       expect(reason).to.equal('target closed');
-      expect(w.webContents.debugger.isAttached()).to.be.false();
+      expect(w.webContents.debugger.isAttached()).to.be.false;
     });
 
     it("doesn't disconnect an active devtools session", async () => {
@@ -72,8 +72,8 @@ describe('debugger module', () => {
         w.webContents.debugger.detach();
       });
       await detach;
-      expect(w.webContents.debugger.isAttached()).to.be.false();
-      expect(w.devToolsWebContents.isDestroyed()).to.be.false();
+      expect(w.webContents.debugger.isAttached()).to.be.false;
+      expect(w.devToolsWebContents.isDestroyed()).to.be.false;
     });
 
     it('clears device metrics overrides left behind by the session', async () => {
@@ -135,7 +135,7 @@ describe('debugger module', () => {
       const params = { expression: '4+2' };
       const res = await w.webContents.debugger.sendCommand('Runtime.evaluate', params);
 
-      expect(res.wasThrown).to.be.undefined();
+      expect(res.wasThrown).to.be.undefined;
       expect(res.result.value).to.equal(6);
 
       w.webContents.debugger.detach();
@@ -152,7 +152,7 @@ describe('debugger module', () => {
       const params = { expression: '4+2' };
       const res = await w.webContents.debugger.sendCommand('Runtime.evaluate', params);
 
-      expect(res.wasThrown).to.be.undefined();
+      expect(res.wasThrown).to.be.undefined;
       expect(res.result.value).to.equal(6);
 
       w.webContents.debugger.detach();
@@ -183,7 +183,7 @@ describe('debugger module', () => {
       w.webContents.debugger.attach();
 
       const promise = w.webContents.debugger.sendCommand('Test');
-      await expect(promise).to.be.eventually.rejectedWith(Error, "'Test' wasn't found");
+      await expect(promise).rejects.toThrow("'Test' wasn't found");
 
       w.webContents.debugger.detach();
     });
@@ -271,7 +271,7 @@ describe('debugger module', () => {
           patterns: [{ resourceType: 'Document' }]
         });
 
-        await expect(w.loadURL(url)).to.eventually.be.fulfilled();
+        await w.loadURL(url);
         await Promise.all(continueRequests);
       } finally {
         w.webContents.debugger.off('message', onMessage);
@@ -380,8 +380,8 @@ describe('debugger module', () => {
       await w.webContents.debugger.sendCommand('Target.setDiscoverTargets', { discover: true });
       const [, method, params, sessionId] = await onMessage;
       expect(method).to.equal('Target.targetCreated');
-      expect(params.targetInfo.targetId).to.not.be.empty();
-      expect(sessionId).to.be.empty();
+      expect(params.targetInfo.targetId).to.not.be.empty;
+      expect(sessionId).to.be.empty;
       w.webContents.debugger.detach();
     });
 

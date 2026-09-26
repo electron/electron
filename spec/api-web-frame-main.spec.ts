@@ -8,7 +8,7 @@ import {
   clipboard
 } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { once } from 'node:events';
 import * as http from 'node:http';
@@ -102,7 +102,7 @@ describe('webFrameMain module', () => {
     });
 
     it('has no parent on top frame', () => {
-      expect(webFrame.parent).to.be.null();
+      expect(webFrame.parent).to.be.null;
     });
 
     it('can access immediate frame descendents', () => {
@@ -154,7 +154,7 @@ describe('webFrameMain module', () => {
       it('can access cross-origin frames', async () => {
         await w.loadURL(`${serverA.url}?frameSrc=${serverB.url}`);
         webFrame = w.webContents.mainFrame;
-        expect(webFrame.url.startsWith(serverA.url)).to.be.true();
+        expect(webFrame.url.startsWith(serverA.url)).to.be.true;
         expect(webFrame.frames[0].url).to.equal(serverB.url);
       });
     });
@@ -246,7 +246,7 @@ describe('webFrameMain module', () => {
 
       expect(webFrame.visibilityState).to.equal('visible');
       w.hide();
-      await expect(waitUntil(() => webFrame.visibilityState === 'hidden')).to.eventually.be.fulfilled();
+      await waitUntil(() => webFrame.visibilityState === 'hidden');
     });
   });
 
@@ -276,12 +276,12 @@ describe('webFrameMain module', () => {
       await w.loadFile(path.join(subframesPath, 'frame.html'));
       const webFrame = w.webContents.mainFrame;
       const p = () => webFrame.executeJavaScript('new Promise((r,e) => setTimeout(e("error!"), 500));');
-      await expect(p()).to.be.eventually.rejectedWith('error!');
+      await expect(p()).rejects.toThrow('error!');
       const errorTypes = new Set([Error, ReferenceError, EvalError, RangeError, SyntaxError, TypeError, URIError]);
       for (const error of errorTypes) {
-        await expect(
-          webFrame.executeJavaScript(`Promise.reject(new ${error.name}("Wamp-wamp"))`)
-        ).to.eventually.be.rejectedWith(/Error/);
+        await expect(webFrame.executeJavaScript(`Promise.reject(new ${error.name}("Wamp-wamp"))`)).rejects.toThrow(
+          /Error/
+        );
       }
     });
 
@@ -290,7 +290,7 @@ describe('webFrameMain module', () => {
       await w.loadFile(path.join(subframesPath, 'frame.html'));
       const webFrame = w.webContents.mainFrame;
       const p = () => webFrame.executeJavaScript('console.log(test)');
-      await expect(p()).to.be.eventually.rejectedWith(/ReferenceError/);
+      await expect(p()).rejects.toThrow(/ReferenceError/);
     });
   });
 
@@ -301,9 +301,9 @@ describe('webFrameMain module', () => {
       const webFrame = w.webContents.mainFrame;
 
       await webFrame.executeJavaScript('window.TEMP = 1', false);
-      expect(webFrame.reload()).to.be.true();
+      expect(webFrame.reload()).to.be.true;
       await once(w.webContents, 'dom-ready');
-      expect(await webFrame.executeJavaScript('window.TEMP', false)).to.be.null();
+      expect(await webFrame.executeJavaScript('window.TEMP', false)).to.be.null;
     });
   });
 
@@ -383,7 +383,7 @@ describe('webFrameMain module', () => {
       win.webContents.removeAllListeners('focus');
       win.webContents.removeAllListeners('blur');
       const duringSwap = seen.filter((s) => s.navigating);
-      expect(duringSwap, 'expected focus/blur to fire during the swap').to.not.be.empty();
+      expect(duringSwap, 'expected focus/blur to fire during the swap').to.not.be.empty;
       for (const s of duringSwap) {
         expect(s.frame).to.equal(mainFrame);
       }
@@ -450,8 +450,8 @@ describe('webFrameMain module', () => {
       const unloadPromise = onceUnload(w.webContents);
       await w.webContents.loadURL(server.crossOriginUrl);
       const { senderFrame, frameProcessId, processId } = await unloadPromise;
-      expect(senderFrame).to.not.be.null();
-      expect(senderFrame!.detached).to.be.true();
+      expect(senderFrame).to.not.be.null;
+      expect(senderFrame!.detached).to.be.true;
       expect(frameProcessId).to.equal(processId);
     });
 
@@ -466,7 +466,7 @@ describe('webFrameMain module', () => {
       const unloadPromise = onceUnload(w.webContents);
       const crossOriginPromise = w.webContents.loadURL(server.crossOriginUrl);
       const { senderFrame } = await unloadPromise;
-      expect(senderFrame!.detached).to.be.true();
+      expect(senderFrame!.detached).to.be.true;
       await crossOriginPromise;
       // The detached frame is not destroyed immediately, so wait until it is
       await waitUntil(() => senderFrame!.isDestroyed());
@@ -517,7 +517,7 @@ describe('webFrameMain module', () => {
 
   describe('webFrameMain.fromId', () => {
     it('returns undefined for unknown IDs', () => {
-      expect(webFrameMain.fromId(0, 0)).to.be.undefined();
+      expect(webFrameMain.fromId(0, 0)).to.be.undefined;
     });
 
     it('can find each frame from navigation events', async () => {
@@ -529,7 +529,7 @@ describe('webFrameMain module', () => {
 
       for (const [, isMainFrame, frameProcessId, frameRoutingId] of await didFrameFinishLoad) {
         const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
-        expect(frame).not.to.be.null();
+        expect(frame).not.to.be.null;
         expect(frame?.processId).to.be.equal(frameProcessId);
         expect(frame?.routingId).to.be.equal(frameRoutingId);
         expect(frame?.top === frame).to.be.equal(isMainFrame);
@@ -539,7 +539,7 @@ describe('webFrameMain module', () => {
 
   describe('webFrameMain.fromFrameToken', () => {
     it('returns null for unknown IDs', () => {
-      expect(webFrameMain.fromFrameToken(0, '')).to.be.null();
+      expect(webFrameMain.fromFrameToken(0, '')).to.be.null;
     });
 
     it('can find existing frame', async () => {
@@ -603,11 +603,11 @@ describe('webFrameMain module', () => {
 
       const iframe = w.webContents.mainFrame.frames[0];
       const data = await iframe.printToPDF({});
-      expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
+      expect(data).to.be.an.instanceof(Buffer).that.is.not.empty;
 
       const pdfInfo = await readPDF(data);
-      expect(containsText(pdfInfo.textContent, /This text lives in the iframe document/)).to.be.true();
-      expect(containsText(pdfInfo.textContent, /This text lives in the parent document/)).to.be.false();
+      expect(containsText(pdfInfo.textContent, /This text lives in the iframe document/)).to.be.true;
+      expect(containsText(pdfInfo.textContent, /This text lives in the parent document/)).to.be.false;
     });
 
     it('can print the main frame', async () => {
@@ -615,7 +615,7 @@ describe('webFrameMain module', () => {
 
       const data = await w.webContents.mainFrame.printToPDF({});
       const pdfInfo = await readPDF(data);
-      expect(containsText(pdfInfo.textContent, /This text lives in the parent document/)).to.be.true();
+      expect(containsText(pdfInfo.textContent, /This text lives in the parent document/)).to.be.true;
     });
 
     it('does not crash when called on multiple frames in parallel', async () => {
@@ -624,7 +624,7 @@ describe('webFrameMain module', () => {
       const frames = [w.webContents.mainFrame, ...w.webContents.mainFrame.frames];
       const results = await Promise.all(frames.map((frame) => frame.printToPDF({})));
       for (const data of results) {
-        expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
+        expect(data).to.be.an.instanceof(Buffer).that.is.not.empty;
       }
     });
 
@@ -632,7 +632,7 @@ describe('webFrameMain module', () => {
       await w.loadURL(serverUrl);
 
       const iframe = w.webContents.mainFrame.frames[0];
-      await expect(iframe.printToPDF({ landscape: [] as any })).to.eventually.be.rejected();
+      await expect(iframe.printToPDF({ landscape: [] as any })).rejects.toThrow();
     });
 
     it('rejects when the render frame is disposed', async () => {
@@ -641,7 +641,7 @@ describe('webFrameMain module', () => {
       const iframe = w.webContents.mainFrame.frames[0];
       w.webContents.destroy();
       await waitUntil(() => iframe.isDestroyed());
-      await expect(iframe.printToPDF({})).to.eventually.be.rejected();
+      await expect(iframe.printToPDF({})).rejects.toThrow();
     });
   });
 
@@ -693,7 +693,7 @@ describe('webFrameMain module', () => {
         point.y += framePosition.y;
       }
 
-      expect(await clipboardHasImageType()).to.be.false();
+      expect(await clipboardHasImageType()).to.be.false;
       // wait for video to load
       await frame.executeJavaScript(
         `(${() => {
@@ -728,7 +728,7 @@ describe('webFrameMain module', () => {
       const w = new BrowserWindow({ show: false });
       await w.webContents.loadFile(path.join(subframesPath, 'frame-with-frame.html'));
       const subframe = w.webContents.mainFrame.frames[0];
-      expect(subframe).to.exist();
+      expect(subframe).to.exist;
       await insertVideoInFrame(subframe);
       await copyVideoFrameInFrame(subframe);
       await waitUntil(clipboardHasImageType);
@@ -772,7 +772,7 @@ describe('webFrameMain module', () => {
 
       await w.webContents.loadURL(server.crossOriginUrl);
 
-      expect(frameCreatedEmitted).to.be.false();
+      expect(frameCreatedEmitted).to.be.false;
     });
   });
 

@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as dns from 'node:dns';
 import * as http from 'node:http';

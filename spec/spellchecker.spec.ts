@@ -1,6 +1,6 @@
 import { BrowserWindow, type Session, session } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
@@ -138,13 +138,13 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
 
         expect(await callWebFrameFn('isWordMisspelled("typography")')).to.equal(false);
         expect(await callWebFrameFn('isWordMisspelled("typograpy")')).to.equal(true);
-        expect(await callWebFrameFn('getWordSuggestions("typography")')).to.be.empty();
-        expect(await callWebFrameFn('getWordSuggestions("typograpy")')).to.not.be.empty();
+        expect(await callWebFrameFn('getWordSuggestions("typography")')).to.be.empty;
+        expect(await callWebFrameFn('getWordSuggestions("typograpy")')).to.not.be.empty;
       });
 
       describe('spellCheckerEnabled', () => {
         it('is enabled by default', async () => {
-          expect(w.webContents.session.spellCheckerEnabled).to.be.true();
+          expect(w.webContents.session.spellCheckerEnabled).to.be.true;
         });
 
         ifit(shouldRun)('can be dynamically changed', async () => {
@@ -156,7 +156,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
 
           w.webContents.session.spellCheckerEnabled = false;
           v8Util.runUntilIdle();
-          expect(w.webContents.session.spellCheckerEnabled).to.be.false();
+          expect(w.webContents.session.spellCheckerEnabled).to.be.false;
           // spellCheckerEnabled is sent to renderer asynchronously and there is
           // no event notifying when it is finished, so wait a little while to
           // ensure the setting has been changed in renderer.
@@ -165,7 +165,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
 
           w.webContents.session.spellCheckerEnabled = true;
           v8Util.runUntilIdle();
-          expect(w.webContents.session.spellCheckerEnabled).to.be.true();
+          expect(w.webContents.session.spellCheckerEnabled).to.be.true;
           await setTimeout(500);
           expect(await callWebFrameFn('isWordMisspelled("typograpy")')).to.equal(true);
         });

@@ -1,6 +1,6 @@
 import { BrowserWindow, type WebPreferences } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';

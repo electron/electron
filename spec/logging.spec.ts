@@ -1,6 +1,6 @@
 import { app } from 'electron';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
@@ -34,8 +34,8 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
       });
       return [require('electron').app.commandLine.hasSwitch('enable-logging'), !!process.env.ELECTRON_ENABLE_LOGGING];
     });
-    expect(hasLoggingSwitch).to.be.false();
-    expect(hasLoggingVar).to.be.false();
+    expect(hasLoggingSwitch).to.be.false;
+    expect(hasLoggingVar).to.be.false;
     const stderr = await stderrComplete;
     // stderr should include the sentinel but not the LOG() message.
     expect(stderr).to.match(/SENTINEL/);
@@ -97,7 +97,7 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
     await once(rc.process, 'exit');
     const logFilePath = path.join(userDataDir, 'electron_debug.log');
     const stat = await fs.stat(logFilePath);
-    expect(stat.isFile()).to.be.true();
+    expect(stat.isFile()).to.be.true;
     const contents = await fs.readFile(logFilePath, 'utf8');
     expect(contents).to.match(/TEST_LOG/);
   });
@@ -115,7 +115,7 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
     await once(rc.process, 'exit');
     const logFilePath = path.join(userDataDir, 'electron_debug.log');
     const stat = await fs.stat(logFilePath);
-    expect(stat.isFile()).to.be.true();
+    expect(stat.isFile()).to.be.true;
     const contents = await fs.readFile(logFilePath, 'utf8');
     expect(contents).to.match(/TEST_LOG/);
   });
@@ -131,7 +131,7 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
     });
     await once(rc.process, 'exit');
     const stat = await fs.stat(logFilePath);
-    expect(stat.isFile()).to.be.true();
+    expect(stat.isFile()).to.be.true;
     const contents = await fs.readFile(logFilePath, 'utf8');
     expect(contents).to.match(/TEST_LOG/);
   });
@@ -163,7 +163,7 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
     });
     await once(rc.process, 'exit');
     const stat = await fs.stat(logFilePath);
-    expect(stat.isFile()).to.be.true();
+    expect(stat.isFile()).to.be.true;
     const contents = await fs.readFile(logFilePath, 'utf8');
     expect(contents).to.match(/MAIN_PROCESS_TEST_LOG/);
     expect(contents).to.match(/CHILD_PROCESS_TEST_LOG/);
@@ -183,7 +183,7 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
     });
     await once(rc.process, 'exit');
     const stat = await fs.stat(logFilePath);
-    expect(stat.isFile()).to.be.true();
+    expect(stat.isFile()).to.be.true;
     const contents = await fs.readFile(logFilePath, 'utf8');
     expect(contents).to.match(/TEST_LOG/);
   });
@@ -203,7 +203,7 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
     });
     await once(rc.process, 'exit');
     const stat = await fs.stat(logFilePath);
-    expect(stat.isFile()).to.be.true();
+    expect(stat.isFile()).to.be.true;
     const contents = await fs.readFile(logFilePath, 'utf8');
     expect(contents).to.match(/EARLY_LOG/);
     expect(contents).to.match(/LATER_LOG/);

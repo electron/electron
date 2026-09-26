@@ -1,6 +1,6 @@
 import { protocol, webContents, type WebContents, session, BrowserWindow, ipcMain, net, View } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as ChildProcess from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -124,7 +124,7 @@ describe('protocol module', () => {
 
     it('sends error when callback is called with nothing', async () => {
       registerBufferProtocol(protocolName, (req, cb: any) => cb());
-      await expect(ajax(protocolName + '://fake-host')).to.eventually.be.rejected();
+      await expect(ajax(protocolName + '://fake-host')).rejects.toThrow();
     });
 
     it('does not crash when callback is called in next tick', async () => {
@@ -192,7 +192,7 @@ describe('protocol module', () => {
       it('fails when sending object other than string', async () => {
         const notAString = () => {};
         registerStringProtocol(protocolName, (request, callback) => callback(notAString as any));
-        await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
+        await expect(ajax(protocolName + '://fake-host')).rejects.toThrow();
       });
     });
   }
@@ -230,7 +230,7 @@ describe('protocol module', () => {
       if (name !== 'protocol.registerProtocol') {
         it('fails when sending string', async () => {
           registerBufferProtocol(protocolName, (request, callback) => callback(text as any));
-          await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
+          await expect(ajax(protocolName + '://fake-host')).rejects.toThrow();
         });
       }
     });
@@ -310,12 +310,12 @@ describe('protocol module', () => {
       it('fails when sending unexist-file', async () => {
         const fakeFilePath = path.join(fixturesPath, 'test.asar', 'a.asar', 'not-exist');
         registerFileProtocol(protocolName, (request, callback) => callback({ path: fakeFilePath }));
-        await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
+        await expect(ajax(protocolName + '://fake-host')).rejects.toThrow();
       });
 
       it('fails when sending unsupported content', async () => {
         registerFileProtocol(protocolName, (request, callback) => callback(new Date() as any));
-        await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
+        await expect(ajax(protocolName + '://fake-host')).rejects.toThrow();
       });
     });
   }
@@ -340,12 +340,12 @@ describe('protocol module', () => {
 
       it('fails when sending invalid url', async () => {
         registerHttpProtocol(protocolName, (request, callback) => callback({ url: 'url' }));
-        await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
+        await expect(ajax(protocolName + '://fake-host')).rejects.toThrow();
       });
 
       it('fails when sending unsupported content', async () => {
         registerHttpProtocol(protocolName, (request, callback) => callback(new Date() as any));
-        await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
+        await expect(ajax(protocolName + '://fake-host')).rejects.toThrow();
       });
 
       it('works when target URL redirects', async () => {
@@ -416,8 +416,8 @@ describe('protocol module', () => {
       const r = await w.webContents.executeJavaScript(`ajax("${protocolName}://fake-host", {})`);
       expect(r.data).to.equal(text);
 
-      expect(upstreamSeenByHandlingSession).to.be.true('upstream request did not go through the handling session');
-      expect(upstreamSeenByDefaultSession).to.be.false('upstream request went through the default session');
+      expect(upstreamSeenByHandlingSession, 'upstream request did not go through the handling session').to.be.true;
+      expect(upstreamSeenByDefaultSession, 'upstream request went through the default session').to.be.false;
     });
   });
 
@@ -462,7 +462,7 @@ describe('protocol module', () => {
           })
         );
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.be.empty('data');
+        expect(r.data, 'data').to.be.empty;
         expect(r.status).to.equal(204);
       });
 
@@ -631,7 +631,7 @@ describe('protocol module', () => {
           });
         });
 
-        await expect(ajax(protocolName + '://fake-host')).to.eventually.be.rejected();
+        await expect(ajax(protocolName + '://fake-host')).rejects.toThrow();
       });
 
       it('destroys response streams when aborted before completion', async () => {
@@ -705,13 +705,13 @@ describe('protocol module', () => {
   describe('protocol.isProtocolRegistered', () => {
     it('returns false when scheme is not registered', () => {
       const result = protocol.isProtocolRegistered('no-exist');
-      expect(result).to.be.false('no-exist: is handled');
+      expect(result, 'no-exist: is handled').to.be.false;
     });
 
     it('returns true for custom protocol', () => {
       registerStringProtocol(protocolName, (request, callback) => callback(''));
       const result = protocol.isProtocolRegistered(protocolName);
-      expect(result).to.be.true('custom protocol is handled');
+      expect(result, 'custom protocol is handled').to.be.true;
     });
   });
 
@@ -719,7 +719,7 @@ describe('protocol module', () => {
     it('returns true for intercepted protocol', () => {
       interceptStringProtocol('http', (request, callback) => callback(''));
       const result = protocol.isProtocolIntercepted('http');
-      expect(result).to.be.true('intercepted protocol is handled');
+      expect(result, 'intercepted protocol is handled').to.be.true;
     });
   });
 
@@ -746,7 +746,7 @@ describe('protocol module', () => {
 
     it('sends error when callback is called with nothing', async () => {
       interceptStringProtocol('http', (request, callback: any) => callback());
-      await expect(ajax('http://fake-host')).to.be.eventually.rejected();
+      await expect(ajax('http://fake-host')).rejects.toThrow();
     });
   });
 
@@ -853,7 +853,7 @@ describe('protocol module', () => {
           session: customSession
         });
       });
-      await expect(ajax('http://fake-host')).to.be.eventually.rejectedWith(Error);
+      await expect(ajax('http://fake-host')).rejects.toThrow(Error);
     });
 
     it('can access request headers', (done) => {
@@ -1022,7 +1022,7 @@ describe('protocol module', () => {
       await contents.loadURL(`${serviceWorkerScheme}://${randomUUID()}.com`);
       await expect(
         contents.executeJavaScript(`navigator.serviceWorker.register('${randomUUID()}.notjs', {scope: './'})`)
-      ).to.be.rejected();
+      ).rejects.toThrow();
     });
 
     it('should be able to register service worker for custom scheme', async () => {
@@ -1128,7 +1128,7 @@ describe('protocol module', () => {
       const url = `file://${fixturesPath}/assets/logo.png`;
       await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
       const ok = await w.webContents.executeJavaScript(`fetch(${JSON.stringify(url)}).then(r => r.ok)`);
-      expect(ok).to.be.true('response ok');
+      expect(ok, 'response ok').to.be.true;
     });
 
     it('allows CORS requests by default', async () => {
@@ -1207,7 +1207,7 @@ describe('protocol module', () => {
           })
         `);
         expect(body).to.not.equal(secret, 'http origin read no-cors:// body via XHR');
-        expect(errored).to.be.true();
+        expect(errored).to.be.true;
       });
 
       it('does not invoke the protocol handler for a blocked cross-origin CORS request', async () => {
@@ -1289,7 +1289,7 @@ describe('protocol module', () => {
             img.src = 'no-cors://host/logo.png';
           })
         `);
-        expect(ok).to.be.true();
+        expect(ok).to.be.true;
         expect(width).to.be.greaterThan(0);
       });
 
@@ -1599,7 +1599,7 @@ describe('protocol module', () => {
       const resp1 = await net.fetch('test-scheme://foo/');
       expect(resp1.status).to.equal(200);
       protocol.unhandle('test-scheme');
-      await expect(net.fetch('test-scheme://foo/')).to.eventually.be.rejectedWith(/ERR_UNKNOWN_URL_SCHEME/);
+      await expect(net.fetch('test-scheme://foo/')).rejects.toThrow(/ERR_UNKNOWN_URL_SCHEME/);
     });
 
     it('receives requests to the existing https scheme', async () => {
@@ -1684,8 +1684,8 @@ describe('protocol module', () => {
       const res = net.fetch('test-scheme://foo/', {
         signal: abortController.signal
       });
-      await expect(res).to.be.rejectedWith('This operation was aborted');
-      await expect(once(body, 'end')).to.be.rejectedWith('The operation was aborted');
+      await expect(res).rejects.toThrow('This operation was aborted');
+      await expect(once(body, 'end')).rejects.toThrow('The operation was aborted');
     });
 
     it('accepts urls with no hostname in non-standard schemes', async () => {
@@ -1737,7 +1737,7 @@ describe('protocol module', () => {
         const body = await net.fetch('app://foo:1234').then((r) => r.text());
         expect(body).to.equal('app://foo/');
       }
-      await expect(net.fetch('app://')).to.be.rejectedWith('Invalid URL');
+      await expect(net.fetch('app://')).rejects.toThrow('Invalid URL');
     });
 
     it('fails on URLs with a username', async () => {
@@ -1746,7 +1746,7 @@ describe('protocol module', () => {
       defer(() => {
         protocol.unhandle('http');
       });
-      await expect(contents.loadURL('http://x@foo:1234')).to.be.rejectedWith(/ERR_UNEXPECTED/);
+      await expect(contents.loadURL('http://x@foo:1234')).rejects.toThrow(/ERR_UNEXPECTED/);
     });
 
     it('normalizes http urls', async () => {
@@ -1765,7 +1765,7 @@ describe('protocol module', () => {
       defer(() => {
         protocol.unhandle('test-scheme');
       });
-      await expect(net.fetch('test-scheme://foo/')).to.eventually.be.rejectedWith('net::ERR_FAILED');
+      await expect(net.fetch('test-scheme://foo/')).rejects.toThrow('net::ERR_FAILED');
     });
 
     it('handles invalid protocol response status', async () => {
@@ -1776,7 +1776,7 @@ describe('protocol module', () => {
       defer(() => {
         protocol.unhandle('test-scheme');
       });
-      await expect(net.fetch('test-scheme://foo/')).to.be.rejectedWith('net::ERR_UNEXPECTED');
+      await expect(net.fetch('test-scheme://foo/')).rejects.toThrow('net::ERR_UNEXPECTED');
     });
 
     it('handles invalid protocol response statusText', async () => {
@@ -1787,7 +1787,7 @@ describe('protocol module', () => {
       defer(() => {
         protocol.unhandle('test-scheme');
       });
-      await expect(net.fetch('test-scheme://foo/')).to.be.rejectedWith('net::ERR_UNEXPECTED');
+      await expect(net.fetch('test-scheme://foo/')).rejects.toThrow('net::ERR_UNEXPECTED');
     });
 
     it('handles invalid protocol response header parameters', async () => {
@@ -1798,7 +1798,7 @@ describe('protocol module', () => {
       defer(() => {
         protocol.unhandle('test-scheme');
       });
-      await expect(net.fetch('test-scheme://foo/')).to.be.rejectedWith('net::ERR_UNEXPECTED');
+      await expect(net.fetch('test-scheme://foo/')).rejects.toThrow('net::ERR_UNEXPECTED');
     });
 
     it('handles invalid protocol response body parameters', async () => {
@@ -1809,7 +1809,7 @@ describe('protocol module', () => {
       defer(() => {
         protocol.unhandle('test-scheme');
       });
-      await expect(net.fetch('test-scheme://foo/')).to.be.rejectedWith('net::ERR_UNEXPECTED');
+      await expect(net.fetch('test-scheme://foo/')).rejects.toThrow('net::ERR_UNEXPECTED');
     });
 
     it('handles a synchronous error in the handler', async () => {
@@ -1819,7 +1819,7 @@ describe('protocol module', () => {
       defer(() => {
         protocol.unhandle('test-scheme');
       });
-      await expect(net.fetch('test-scheme://foo/')).to.be.rejectedWith('net::ERR_UNEXPECTED');
+      await expect(net.fetch('test-scheme://foo/')).rejects.toThrow('net::ERR_UNEXPECTED');
     });
 
     it('handles an asynchronous error in the handler', async () => {
@@ -1827,7 +1827,7 @@ describe('protocol module', () => {
       defer(() => {
         protocol.unhandle('test-scheme');
       });
-      await expect(net.fetch('test-scheme://foo/')).to.be.rejectedWith('net::ERR_UNEXPECTED');
+      await expect(net.fetch('test-scheme://foo/')).rejects.toThrow('net::ERR_UNEXPECTED');
     });
 
     it('correctly sets statusCode', async () => {
@@ -1957,7 +1957,7 @@ describe('protocol module', () => {
         expect(await small.text()).to.equal('small body');
         const large = await net.fetch('test-scheme://host/big');
         expect(large.headers.get('x-upstream')).to.equal('yes');
-        expect(Buffer.from(await large.arrayBuffer()).equals(big)).to.be.true();
+        expect(Buffer.from(await large.arrayBuffer()).equals(big)).to.be.true;
         const status = await net.fetch('test-scheme://host/status');
         expect(status.status).to.equal(404);
         expect(status.headers.get('x-reason')).to.equal('nope');
@@ -1976,7 +1976,7 @@ describe('protocol module', () => {
         expect(empty.status).to.equal(204);
         expect(await empty.text()).to.equal('');
         const large = await net.fetch('test-scheme://host/big');
-        expect(Buffer.from(await large.arrayBuffer()).equals(big)).to.be.true();
+        expect(Buffer.from(await large.arrayBuffer()).equals(big)).to.be.true;
       });
 
       it('delivers a decoded body for an encoded upstream response', async () => {
@@ -1994,7 +1994,7 @@ describe('protocol module', () => {
       it('relays file responses too', async () => {
         proxy(() => url.pathToFileURL(path.join(tmpDir, 'big.bin')).toString());
         const r = await net.fetch('test-scheme://host/whatever');
-        expect(Buffer.from(await r.arrayBuffer()).equals(big)).to.be.true();
+        expect(Buffer.from(await r.arrayBuffer()).equals(big)).to.be.true;
       });
 
       it('keeps working when the handler inspected the response without touching the body', async () => {
@@ -2005,7 +2005,7 @@ describe('protocol module', () => {
         });
         const r = await net.fetch('test-scheme://host/big');
         expect(r.headers.get('x-seen-status')).to.equal('200');
-        expect(Buffer.from(await r.arrayBuffer()).equals(big)).to.be.true();
+        expect(Buffer.from(await r.arrayBuffer()).equals(big)).to.be.true;
       });
 
       it('still relays through JS when the handler read, cloned or re-wrapped the body', async () => {
@@ -2033,7 +2033,7 @@ describe('protocol module', () => {
         const reader = r.body!.getReader();
         await reader.read();
         controller.abort();
-        await expect(reader.read()).to.eventually.be.rejected();
+        await expect(reader.read()).rejects.toThrow();
         const again = await net.fetch('test-scheme://host/small');
         expect(await again.text()).to.equal('small body');
       });
@@ -2266,7 +2266,7 @@ describe('protocol module', () => {
       contents.destroy();
       // Undo .destroy() for the next test
       contents = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true });
-      await expect(req.body!.getReader().read()).to.eventually.be.rejectedWith('net::ERR_FAILED');
+      await expect(req.body!.getReader().read()).rejects.toThrow('net::ERR_FAILED');
     });
 
     it('can bypass intercepeted protocol handlers', async () => {
@@ -2305,7 +2305,7 @@ describe('protocol module', () => {
       defer(() => {
         protocol.unhandle('app');
       });
-      await expect(net.fetch('app://foo/', { bypassCustomProtocolHandlers: true })).to.be.rejectedWith(
+      await expect(net.fetch('app://foo/', { bypassCustomProtocolHandlers: true })).rejects.toThrow(
         'net::ERR_UNKNOWN_URL_SCHEME'
       );
     });
@@ -2358,7 +2358,7 @@ describe('protocol module', () => {
       protocol.handle('cors', async (request) => {
         expect(request.body).to.be.an.instanceOf(webStream.ReadableStream);
         for await (const value of request.body as webStream.ReadableStream<Uint8Array>) {
-          expect(value).to.not.be.undefined();
+          expect(value).to.not.be.undefined;
         }
         return new Response(undefined, { status: 200 });
       });
@@ -2390,14 +2390,14 @@ describe('protocol module', () => {
         }).pipeThrough(new TextEncoderStream());
         return (await fetch('cors://url.invalid', { method: 'POST', body: stream, duplex: 'half' })).ok;
       })()`);
-      expect(ok).to.be.true();
+      expect(ok).to.be.true;
     });
 
     it('does not emit undefined chunks into the request body stream when uploading a file', async () => {
       protocol.handle('cors', async (request) => {
         expect(request.body).to.be.an.instanceOf(webStream.ReadableStream);
         for await (const value of request.body as webStream.ReadableStream<Uint8Array>) {
-          expect(value).to.not.be.undefined();
+          expect(value).to.not.be.undefined;
         }
         return new Response(undefined, { status: 200 });
       });
@@ -2422,7 +2422,7 @@ describe('protocol module', () => {
           formData.append("data", document.getElementById("file").files[0]);
           return (await fetch('cors://url.invalid', { method: 'POST', body: formData })).ok;
         })()`);
-        expect(ok).to.be.true();
+        expect(ok).to.be.true;
       } finally {
         debug.detach();
       }

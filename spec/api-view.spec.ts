@@ -1,6 +1,6 @@
 import { BaseWindow, View } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as fs from 'node:fs';
 
@@ -116,13 +116,13 @@ describe('View', () => {
   describe('view.getVisible|setVisible', () => {
     it('is visible by default', () => {
       const v = new View();
-      expect(v.getVisible()).to.be.true();
+      expect(v.getVisible()).to.be.true;
     });
 
     it('can be set to not visible', () => {
       const v = new View();
       v.setVisible(false);
-      expect(v.getVisible()).to.be.false();
+      expect(v.getVisible()).to.be.false;
     });
   });
 

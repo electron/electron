@@ -1,6 +1,6 @@
 import { nativeImage } from 'electron/common';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as fs from 'node:fs';
 import * as os from 'node:os';
@@ -51,36 +51,36 @@ describe('nativeImage module', () => {
     describe('with properties', () => {
       it('correctly recognizes a template image', () => {
         const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
-        expect(image.isMacTemplateImage).to.be.false();
+        expect(image.isMacTemplateImage).to.be.false;
 
         const templateImage = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo_Template.png'));
-        expect(templateImage.isMacTemplateImage).to.be.true();
+        expect(templateImage.isMacTemplateImage).to.be.true;
       });
 
       it('sets a template image', function () {
         const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
-        expect(image.isMacTemplateImage).to.be.false();
+        expect(image.isMacTemplateImage).to.be.false;
 
         image.isMacTemplateImage = true;
-        expect(image.isMacTemplateImage).to.be.true();
+        expect(image.isMacTemplateImage).to.be.true;
       });
     });
 
     describe('with functions', () => {
       it('correctly recognizes a template image', () => {
         const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
-        expect(image.isTemplateImage()).to.be.false();
+        expect(image.isTemplateImage()).to.be.false;
 
         const templateImage = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo_Template.png'));
-        expect(templateImage.isTemplateImage()).to.be.true();
+        expect(templateImage.isTemplateImage()).to.be.true;
       });
 
       it('sets a template image', function () {
         const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
-        expect(image.isTemplateImage()).to.be.false();
+        expect(image.isTemplateImage()).to.be.false;
 
         image.setTemplateImage(true);
-        expect(image.isTemplateImage()).to.be.true();
+        expect(image.isTemplateImage()).to.be.true;
       });
     });
   });
@@ -88,30 +88,30 @@ describe('nativeImage module', () => {
   describe('createEmpty()', () => {
     it('returns an empty image', async () => {
       const empty = nativeImage.createEmpty();
-      expect(empty.isEmpty()).to.be.true();
+      expect(empty.isEmpty()).to.be.true;
       expect(empty.getAspectRatio()).to.equal(1);
       expect(empty.toDataURL()).to.equal('data:image/png;base64,');
       expect(empty.toDataURL({ scaleFactor: 2.0 })).to.equal('data:image/png;base64,');
       expect(empty.getSize()).to.deep.equal({ width: 0, height: 0 });
       await expectDeprecationMessages(() => {
-        expect(empty.getBitmap()).to.be.empty();
-        expect(empty.getBitmap({ scaleFactor: 2.0 })).to.be.empty();
+        expect(empty.getBitmap()).to.be.empty;
+        expect(empty.getBitmap({ scaleFactor: 2.0 })).to.be.empty;
       }, 'getBitmap() is deprecated, use toBitmap() instead.');
-      expect(empty.toBitmap()).to.be.empty();
-      expect(empty.toBitmap({ scaleFactor: 2.0 })).to.be.empty();
-      expect(empty.toJPEG(100)).to.be.empty();
-      expect(empty.toPNG()).to.be.empty();
-      expect(empty.toPNG({ scaleFactor: 2.0 })).to.be.empty();
+      expect(empty.toBitmap()).to.be.empty;
+      expect(empty.toBitmap({ scaleFactor: 2.0 })).to.be.empty;
+      expect(empty.toJPEG(100)).to.be.empty;
+      expect(empty.toPNG()).to.be.empty;
+      expect(empty.toPNG({ scaleFactor: 2.0 })).to.be.empty;
 
       if (process.platform === 'darwin') {
-        expect(empty.getNativeHandle()).to.be.empty();
+        expect(empty.getNativeHandle()).to.be.empty;
       }
     });
   });
 
   describe('createFromBitmap(buffer, options)', () => {
     it('returns an empty image when the buffer is empty', () => {
-      expect(nativeImage.createFromBitmap(Buffer.from([]), { width: 0, height: 0 }).isEmpty()).to.be.true();
+      expect(nativeImage.createFromBitmap(Buffer.from([]), { width: 0, height: 0 }).isEmpty()).to.be.true;
     });
 
     it('returns an image created from the given buffer', () => {
@@ -139,12 +139,12 @@ describe('nativeImage module', () => {
 
   describe('createFromBuffer(buffer, options)', () => {
     it('returns an empty image when the buffer is empty', () => {
-      expect(nativeImage.createFromBuffer(Buffer.from([])).isEmpty()).to.be.true();
+      expect(nativeImage.createFromBuffer(Buffer.from([])).isEmpty()).to.be.true;
     });
 
     it('returns an empty image when the buffer is too small', () => {
       const image = nativeImage.createFromBuffer(Buffer.from([1, 2, 3, 4]), { width: 100, height: 100 });
-      expect(image.isEmpty()).to.be.true();
+      expect(image.isEmpty()).to.be.true;
     });
 
     it('returns an image created from the given buffer', () => {
@@ -152,7 +152,7 @@ describe('nativeImage module', () => {
 
       const imageB = nativeImage.createFromBuffer(imageA.toPNG());
       expect(imageB.getSize()).to.deep.equal({ width: 538, height: 190 });
-      expect(imageA.toBitmap().equals(imageB.toBitmap())).to.be.true();
+      expect(imageA.toBitmap().equals(imageB.toBitmap())).to.be.true;
 
       const imageC = nativeImage.createFromBuffer(imageA.toJPEG(100));
       expect(imageC.getSize()).to.deep.equal({ width: 538, height: 190 });
@@ -164,7 +164,7 @@ describe('nativeImage module', () => {
       expect(imageE.getSize()).to.deep.equal({ width: 100, height: 200 });
 
       const imageF = nativeImage.createFromBuffer(imageA.toBitmap());
-      expect(imageF.isEmpty()).to.be.true();
+      expect(imageF.isEmpty()).to.be.true;
 
       const imageG = nativeImage.createFromBuffer(imageA.toPNG(), { width: 100, height: 200 });
       expect(imageG.getSize()).to.deep.equal({ width: 538, height: 190 });
@@ -184,7 +184,7 @@ describe('nativeImage module', () => {
 
   describe('createFromDataURL(dataURL)', () => {
     it('returns an empty image from the empty string', () => {
-      expect(nativeImage.createFromDataURL('').isEmpty()).to.be.true();
+      expect(nativeImage.createFromDataURL('').isEmpty()).to.be.true;
     });
 
     it('returns an image created from the given string', () => {
@@ -192,7 +192,7 @@ describe('nativeImage module', () => {
         const imageFromPath = nativeImage.createFromBuffer(nativeImage.createFromPath(imageData.path).toPNG());
         const imageFromDataUrl = nativeImage.createFromDataURL(imageData.dataUrl!);
 
-        expect(imageFromDataUrl.isEmpty()).to.be.false();
+        expect(imageFromDataUrl.isEmpty()).to.be.false;
         expect(imageFromDataUrl.getSize()).to.deep.equal(imageFromPath.getSize());
         expect(imageFromDataUrl.toBitmap()).to.satisfy((bitmap: any) => imageFromPath.toBitmap().equals(bitmap));
         expect(imageFromDataUrl.toDataURL()).to.equal(imageFromPath.toDataURL());
@@ -226,7 +226,7 @@ describe('nativeImage module', () => {
       const imageTwo = nativeImage.createFromDataURL(imageOne.toDataURL());
       expect(imageTwo.getSize()).to.deep.equal({ width: imageData.width, height: imageData.height });
 
-      expect(imageOne.toBitmap().equals(imageTwo.toBitmap())).to.be.true();
+      expect(imageOne.toBitmap().equals(imageTwo.toBitmap())).to.be.true;
     });
 
     it('supports a scale factor', () => {
@@ -250,7 +250,7 @@ describe('nativeImage module', () => {
         scaleFactor: 2
       });
       const jpeg = image.toJPEG(90);
-      expect(jpeg).to.not.be.empty();
+      expect(jpeg).to.not.be.empty;
       expect(nativeImage.createFromBuffer(jpeg).getSize()).to.deep.equal({ width: 8, height: 6 });
     });
   });
@@ -270,7 +270,7 @@ describe('nativeImage module', () => {
       const imageC = nativeImage.createFromBuffer(imageB.toPNG());
       expect(imageC.getSize()).to.deep.equal({ width: imageData.width, height: imageData.height });
 
-      expect(imageB.toBitmap().equals(imageC.toBitmap())).to.be.true();
+      expect(imageB.toBitmap().equals(imageC.toBitmap())).to.be.true;
     });
 
     it('supports a scale factor', () => {
@@ -287,31 +287,31 @@ describe('nativeImage module', () => {
 
   describe('createFromPath(path)', () => {
     it('returns an empty image for invalid paths', () => {
-      expect(nativeImage.createFromPath('').isEmpty()).to.be.true();
-      expect(nativeImage.createFromPath('does-not-exist.png').isEmpty()).to.be.true();
-      expect(nativeImage.createFromPath('does-not-exist.ico').isEmpty()).to.be.true();
-      expect(nativeImage.createFromPath(import.meta.dirname).isEmpty()).to.be.true();
-      expect(nativeImage.createFromPath(import.meta.filename).isEmpty()).to.be.true();
+      expect(nativeImage.createFromPath('').isEmpty()).to.be.true;
+      expect(nativeImage.createFromPath('does-not-exist.png').isEmpty()).to.be.true;
+      expect(nativeImage.createFromPath('does-not-exist.ico').isEmpty()).to.be.true;
+      expect(nativeImage.createFromPath(import.meta.dirname).isEmpty()).to.be.true;
+      expect(nativeImage.createFromPath(import.meta.filename).isEmpty()).to.be.true;
     });
 
     it('loads images from paths relative to the current working directory', () => {
       const imagePath = path.relative('.', path.join(fixturesPath, 'assets', 'logo.png'));
       const image = nativeImage.createFromPath(imagePath);
-      expect(image.isEmpty()).to.be.false();
+      expect(image.isEmpty()).to.be.false;
       expect(image.getSize()).to.deep.equal({ width: 538, height: 190 });
     });
 
     it('loads images from paths with `.` segments', () => {
       const imagePath = `${path.join(fixturesPath)}${path.sep}.${path.sep}${path.join('assets', 'logo.png')}`;
       const image = nativeImage.createFromPath(imagePath);
-      expect(image.isEmpty()).to.be.false();
+      expect(image.isEmpty()).to.be.false;
       expect(image.getSize()).to.deep.equal({ width: 538, height: 190 });
     });
 
     it('loads images from paths with `..` segments', () => {
       const imagePath = `${path.join(fixturesPath, 'api')}${path.sep}..${path.sep}${path.join('assets', 'logo.png')}`;
       const image = nativeImage.createFromPath(imagePath);
-      expect(image.isEmpty()).to.be.false();
+      expect(image.isEmpty()).to.be.false;
       expect(image.getSize()).to.deep.equal({ width: 538, height: 190 });
     });
 
@@ -330,7 +330,7 @@ describe('nativeImage module', () => {
     ifit(process.platform === 'win32')('loads images from .ico files on Windows', function () {
       const imagePath = path.join(fixturesPath, 'assets', 'icon.ico');
       const image = nativeImage.createFromPath(imagePath);
-      expect(image.isEmpty()).to.be.false();
+      expect(image.isEmpty()).to.be.false;
       expect(image.getSize()).to.deep.equal({ width: 256, height: 256 });
     });
 
@@ -362,7 +362,7 @@ describe('nativeImage module', () => {
 
       const expectValidIcon = (relativePath: string) => {
         const image = nativeImage.createFromPath(path.join(archivePath, relativePath));
-        expect(image.isEmpty()).to.be.false();
+        expect(image.isEmpty()).to.be.false;
         expect(image.getSize()).to.deep.equal({ width: 256, height: 256 });
       };
 
@@ -376,20 +376,20 @@ describe('nativeImage module', () => {
 
       it('does not create temporary files for a missing ICO', () => {
         withIsolatedTempDirectory(() => {
-          expect(nativeImage.createFromPath(path.join(archivePath, 'missing.ico')).isEmpty()).to.be.true();
+          expect(nativeImage.createFromPath(path.join(archivePath, 'missing.ico')).isEmpty()).to.be.true;
         });
       });
 
       it('does not create temporary files for a missing ASAR archive', () => {
         withIsolatedTempDirectory(() => {
           const missingArchive = path.join(fixturesPath, 'test.asar', 'missing.asar');
-          expect(nativeImage.createFromPath(path.join(missingArchive, 'icon.ico')).isEmpty()).to.be.true();
+          expect(nativeImage.createFromPath(path.join(missingArchive, 'icon.ico')).isEmpty()).to.be.true;
         });
       });
 
       it('removes temporary files when a packed ICO is invalid', () => {
         withIsolatedTempDirectory(() => {
-          expect(nativeImage.createFromPath(path.join(archivePath, 'invalid.ico')).isEmpty()).to.be.true();
+          expect(nativeImage.createFromPath(path.join(archivePath, 'invalid.ico')).isEmpty()).to.be.true;
         });
       });
 
@@ -415,22 +415,22 @@ describe('nativeImage module', () => {
   describe('createFromNamedImage(name)', () => {
     it('returns empty for invalid options', () => {
       const image = nativeImage.createFromNamedImage('totally_not_real');
-      expect(image.isEmpty()).to.be.true();
+      expect(image.isEmpty()).to.be.true;
     });
 
     ifit(process.platform !== 'darwin')('returns empty on non-darwin platforms', function () {
       const image = nativeImage.createFromNamedImage('NSActionTemplate');
-      expect(image.isEmpty()).to.be.true();
+      expect(image.isEmpty()).to.be.true;
     });
 
     ifit(process.platform === 'darwin')('returns a valid image on darwin', function () {
       const image = nativeImage.createFromNamedImage('NSActionTemplate');
-      expect(image.isEmpty()).to.be.false();
+      expect(image.isEmpty()).to.be.false;
     });
 
     ifit(process.platform === 'darwin')('returns a valid named symbol on darwin', function () {
       const image = nativeImage.createFromNamedImage('atom');
-      expect(image.isEmpty()).to.be.false();
+      expect(image.isEmpty()).to.be.false;
     });
 
     ifit(process.platform === 'darwin')('returns a valid named symbol with options on darwin', function () {
@@ -439,24 +439,24 @@ describe('nativeImage module', () => {
         scale: 'small',
         pointSize: 24
       });
-      expect(image.isEmpty()).to.be.false();
+      expect(image.isEmpty()).to.be.false;
     });
 
     ifit(process.platform === 'darwin')('returns allows an HSL shift for a valid image on darwin', function () {
       const image = nativeImage.createFromNamedImage('NSActionTemplate', [0.5, 0.2, 0.8]);
-      expect(image.isEmpty()).to.be.false();
+      expect(image.isEmpty()).to.be.false;
     });
   });
 
   describe('createMenuSymbol(name)', () => {
     it('returns empty for invalid options', () => {
       const image = nativeImage.createMenuSymbol('totally_not_real');
-      expect(image.isEmpty()).to.be.true();
+      expect(image.isEmpty()).to.be.true;
     });
 
     ifit(process.platform === 'darwin')('returns a valid image on darwin', function () {
       const image = nativeImage.createMenuSymbol('atom');
-      expect(image.isEmpty()).to.be.false();
+      expect(image.isEmpty()).to.be.false;
     });
   });
 
@@ -492,8 +492,8 @@ describe('nativeImage module', () => {
     });
 
     it('returns an empty image when called on an empty image', () => {
-      expect(nativeImage.createEmpty().resize({ width: 1, height: 1 }).isEmpty()).to.be.true();
-      expect(nativeImage.createEmpty().resize({ width: 0, height: 0 }).isEmpty()).to.be.true();
+      expect(nativeImage.createEmpty().resize({ width: 1, height: 1 }).isEmpty()).to.be.true;
+      expect(nativeImage.createEmpty().resize({ width: 0, height: 0 }).isEmpty()).to.be.true;
     });
 
     it('supports a quality option', () => {
@@ -509,16 +509,16 @@ describe('nativeImage module', () => {
 
   describe('crop(bounds)', () => {
     it('returns an empty image when called on an empty image', () => {
-      expect(nativeImage.createEmpty().crop({ width: 1, height: 2, x: 0, y: 0 }).isEmpty()).to.be.true();
-      expect(nativeImage.createEmpty().crop({ width: 0, height: 0, x: 0, y: 0 }).isEmpty()).to.be.true();
+      expect(nativeImage.createEmpty().crop({ width: 1, height: 2, x: 0, y: 0 }).isEmpty()).to.be.true;
+      expect(nativeImage.createEmpty().crop({ width: 0, height: 0, x: 0, y: 0 }).isEmpty()).to.be.true;
     });
 
     it('returns an empty image when the bounds are invalid', () => {
       const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
-      expect(image.crop({ width: 0, height: 0, x: 0, y: 0 }).isEmpty()).to.be.true();
-      expect(image.crop({ width: -1, height: 10, x: 0, y: 0 }).isEmpty()).to.be.true();
-      expect(image.crop({ width: 10, height: -35, x: 0, y: 0 }).isEmpty()).to.be.true();
-      expect(image.crop({ width: 100, height: 100, x: 1000, y: 1000 }).isEmpty()).to.be.true();
+      expect(image.crop({ width: 0, height: 0, x: 0, y: 0 }).isEmpty()).to.be.true;
+      expect(image.crop({ width: -1, height: 10, x: 0, y: 0 }).isEmpty()).to.be.true;
+      expect(image.crop({ width: 10, height: -35, x: 0, y: 0 }).isEmpty()).to.be.true;
+      expect(image.crop({ width: 100, height: 100, x: 1000, y: 1000 }).isEmpty()).to.be.true;
     });
 
     it('returns a cropped image', () => {
@@ -527,7 +527,7 @@ describe('nativeImage module', () => {
       const cropB = image.crop({ width: 25, height: 64, x: 30, y: 40 });
       expect(cropA.getSize()).to.deep.equal({ width: 25, height: 64 });
       expect(cropB.getSize()).to.deep.equal({ width: 25, height: 64 });
-      expect(cropA.toPNG().equals(cropB.toPNG())).to.be.false();
+      expect(cropA.toPNG().equals(cropB.toPNG())).to.be.false;
     });
 
     it('toBitmap() returns a buffer of the right size', () => {
@@ -587,16 +587,14 @@ describe('nativeImage module', () => {
     it('throws when invalid size is passed', async () => {
       const badSize = { width: -1, height: -1 };
 
-      await expect(nativeImage.createThumbnailFromPath('path', badSize)).to.eventually.be.rejectedWith(
-        'size must not be empty'
-      );
+      await expect(nativeImage.createThumbnailFromPath('path', badSize)).rejects.toThrow('size must not be empty');
     });
 
     it('throws when a bad path is passed', async () => {
       const badPath = process.platform === 'win32' ? '\\hey\\hi\\hello' : '/hey/hi/hello';
       const goodSize = { width: 100, height: 100 };
 
-      await expect(nativeImage.createThumbnailFromPath(badPath, goodSize)).to.eventually.be.rejected();
+      await expect(nativeImage.createThumbnailFromPath(badPath, goodSize)).rejects.toThrow();
     });
 
     it('returns native image given valid params', async () => {
@@ -652,7 +650,7 @@ describe('nativeImage module', () => {
         height: 100
       });
 
-      expect(image.isEmpty()).to.be.true();
+      expect(image.isEmpty()).to.be.true;
     });
 
     it('supports adding a buffer representation for a scale factor', () => {
@@ -690,7 +688,7 @@ describe('nativeImage module', () => {
       // this one failed, so it shouldn't show up in the scale factors
       expect(image.getScaleFactors()).to.deep.equal([1, 2, 3]);
 
-      expect(image.isEmpty()).to.be.false();
+      expect(image.isEmpty()).to.be.false;
       expect(image.getSize()).to.deep.equal({ width: 1, height: 1 });
 
       expect(image.toDataURL({ scaleFactor: 1.0 })).to.equal(imageDataOne.dataUrl);
@@ -725,7 +723,7 @@ describe('nativeImage module', () => {
         dataURL: 'invalid'
       });
 
-      expect(image.isEmpty()).to.be.false();
+      expect(image.isEmpty()).to.be.false;
       expect(image.getSize()).to.deep.equal({ width: 1, height: 1 });
 
       expect(image.toDataURL({ scaleFactor: 1.0 })).to.equal(imageDataOne.dataUrl);

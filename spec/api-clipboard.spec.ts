@@ -1,7 +1,7 @@
 import { nativeImage } from 'electron/common';
 import { ClipboardItem, clipboard } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { Buffer } from 'node:buffer';
 import * as path from 'node:path';
@@ -76,7 +76,7 @@ describe('clipboard module', { tags: ['serial'] }, () => {
       clipboard.clear();
       await clipboard.writeText('Not an Image');
       const buffer = await readType('image/png');
-      expect(buffer).to.be.undefined();
+      expect(buffer).to.be.undefined;
     });
   });
 
@@ -99,25 +99,25 @@ describe('clipboard module', { tags: ['serial'] }, () => {
   describe('clipboard.has()', () => {
     it('resolves with true when the clipboard contains the format', async () => {
       await clipboard.writeText('has-format');
-      expect(await clipboard.has('text/plain')).to.be.true();
+      expect(await clipboard.has('text/plain')).to.be.true;
     });
 
     it('resolves with false when the clipboard does not contain the format', async () => {
       clipboard.clear();
-      expect(await clipboard.has('text/html')).to.be.false();
+      expect(await clipboard.has('text/html')).to.be.false;
     });
 
     it('resolves with true for a user-defined custom MIME type', async () => {
       const mime = 'web text/plain+electron-test';
       await clipboard.write([new ClipboardItem({ [mime]: new Blob([Buffer.from('x', 'utf8')]) })]);
-      expect(await clipboard.has(mime)).to.be.true();
+      expect(await clipboard.has(mime)).to.be.true;
     });
 
     it('resolves true with electron application/osclipboard;format="X" for a raw format X on write and read', async () => {
       const rawFormat = 'public/utf8-plain-text';
       const mime = `electron application/osclipboard;format="${rawFormat}"`;
       await clipboard.write([new ClipboardItem({ [mime]: new Blob([Buffer.from('x', 'utf8')]) })]);
-      expect(await clipboard.has(mime)).to.be.true();
+      expect(await clipboard.has(mime)).to.be.true;
     });
 
     it('returns a Promise (Chromium clipboard format enumeration is async)', () => {
@@ -259,7 +259,7 @@ describe('clipboard module', { tags: ['serial'] }, () => {
 
       const items = await clipboard.read();
       const item = items.find((i) => i.types.includes(mime));
-      expect(item, 'expected the custom MIME on the clipboard').to.exist();
+      expect(item, 'expected the custom MIME on the clipboard').to.exist;
 
       const blob = await item!.getType(mime);
       expect(blob).to.be.an.instanceOf(Blob);
@@ -458,7 +458,7 @@ describe('clipboard module', { tags: ['serial'] }, () => {
       await clipboard.write([new ClipboardItem({ [URI_LIST_MIME]: pathToFileURL(fileA).href })]);
       const items = await clipboard.read();
       const item = items.find((i) => i.types.includes(URI_LIST_MIME));
-      expect(item, 'expected text/uri-list on the clipboard').to.exist();
+      expect(item, 'expected text/uri-list on the clipboard').to.exist;
       const blob = (await item!.getType(URI_LIST_MIME)) as Blob;
       expect(blob).to.be.an.instanceOf(Blob);
       const paths = (await blob.text())
@@ -477,7 +477,7 @@ describe('clipboard module', { tags: ['serial'] }, () => {
 
     it('reports availability via clipboard.has()', async () => {
       await clipboard.write([new ClipboardItem({ [URI_LIST_MIME]: pathToFileURL(fileA).href })]);
-      expect(await clipboard.has(URI_LIST_MIME)).to.be.true();
+      expect(await clipboard.has(URI_LIST_MIME)).to.be.true;
     });
   });
 
@@ -509,7 +509,7 @@ describe('clipboard module', { tags: ['serial'] }, () => {
       await clipboard.selection!.write([new ClipboardItem({ [mime]: html })]);
       const items = await clipboard.selection!.read();
       const item = items.find((i) => i.types.includes(mime));
-      expect(item, 'expected text/html on selection clipboard').to.exist();
+      expect(item, 'expected text/html on selection clipboard').to.exist;
       const blob = (await item!.getType(mime)) as Blob;
       expect(Buffer.from(await blob.arrayBuffer()).toString('utf8')).to.equal(html);
     });
@@ -523,7 +523,7 @@ describe('clipboard module', { tags: ['serial'] }, () => {
 
     it('selection.has reports format availability', async () => {
       await clipboard.selection!.writeText('has-format');
-      expect(await clipboard.selection!.has('text/plain')).to.be.true();
+      expect(await clipboard.selection!.has('text/plain')).to.be.true;
     });
 
     it('selection.clear empties the selection clipboard without touching the system clipboard', async () => {
@@ -544,6 +544,6 @@ describe('clipboard module', { tags: ['serial'] }, () => {
   });
 
   ifit(process.platform !== 'linux')('does not expose clipboard.selection off Linux', () => {
-    expect(clipboard.selection).to.be.undefined();
+    expect(clipboard.selection).to.be.undefined;
   });
 });

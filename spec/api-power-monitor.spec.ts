@@ -1,3 +1,4 @@
+import * as dbus from 'dbus-native';
 // For these tests we use a fake DBus daemon to verify powerMonitor module
 // interaction with the system bus. This requires python-dbusmock installed and
 // running (with the DBUS_SYSTEM_BUS_ADDRESS environment variable set).
@@ -6,8 +7,7 @@
 //
 // See https://pypi.python.org/pypi/python-dbusmock for more information about
 // python-dbusmock.
-import { expect } from 'chai';
-import * as dbus from 'dbus-native';
+import { expect } from 'vitest';
 
 import { once } from 'node:events';
 import { createRequire } from 'node:module';

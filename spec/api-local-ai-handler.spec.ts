@@ -1,6 +1,6 @@
 import { BrowserWindow, session, utilityProcess, webFrameMain } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { on, once } from 'node:events';
 import * as path from 'node:path';
@@ -186,11 +186,11 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           w.webContents.executeJavaScript(
             `LanguageModel.create(${JSON.stringify(options)}).catch(err => { throw err.message; })`
           )
-        ).to.eventually.be.rejectedWith(message);
+        ).rejects.toThrow(message);
       } else {
         await expect(
           w.webContents.executeJavaScript('LanguageModel.create().catch(err => { throw err.message; })')
-        ).to.eventually.be.rejectedWith(message);
+        ).rejects.toThrow(message);
       }
     }
 
@@ -228,7 +228,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       aiHandler.kill();
       await once(aiHandler, 'exit');
 
-      await expect(promise).to.eventually.be.rejectedWith(/unable to create/);
+      await expect(promise).rejects.toThrow(/unable to create/);
     });
 
     it('rejects if the utility process dies without ever setting a handler', async () => {
@@ -243,7 +243,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       aiHandler.kill();
       await once(aiHandler, 'exit');
 
-      await expect(w.webContents.executeJavaScript('pending')).to.eventually.be.rejectedWith(/unable? to create/);
+      await expect(w.webContents.executeJavaScript('pending')).rejects.toThrow(/unable? to create/);
     });
 
     it('rejects if the handler gets unregistered during creation', async () => {
@@ -256,7 +256,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       w.webContents.session.registerLocalAIHandler(null);
 
-      await expect(promise).to.eventually.be.rejectedWith(/unable to create/);
+      await expect(promise).rejects.toThrow(/unable to create/);
     });
 
     it('creates a LanguageModel instance from a valid handler', async () => {
@@ -308,9 +308,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       }
 
       // The first window's create() should have been rejected (evicted from queue).
-      await expect(windows[0].webContents.executeJavaScript('success')).to.eventually.be.rejectedWith(
-        /unable to create/
-      );
+      await expect(windows[0].webContents.executeJavaScript('success')).rejects.toThrow(/unable to create/);
 
       // Set the handler so remaining pending bindings get flushed.
       await sendControllableMessage(aiHandler, { command: 'set-handler' });
@@ -365,10 +363,10 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           w.webContents.executeJavaScript(
             'LanguageModel.create({ signal: AbortSignal.timeout(500) }).catch(err => { throw err.message; })'
           )
-        ).to.eventually.be.rejectedWith(/signal timed out/);
+        ).rejects.toThrow(/signal timed out/);
       });
 
-      expect(message).not.null();
+      expect(message).not.null;
     });
 
     it('does not crash the handler when several pending create() calls are aborted', async () => {
@@ -388,7 +386,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       // The handler process must still be alive and responsive.
       await sendControllableMessage(aiHandler, { command: 'set-create', value: null });
-      expect(exited).to.be.false();
+      expect(exited).to.be.false;
       expect(await w.webContents.executeJavaScript('LanguageModel.create().then(() => "ok")')).to.equal('ok');
     });
 
@@ -411,13 +409,13 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           w.webContents.executeJavaScript(
             `LanguageModel.create().then(model => model.prompt(${JSON.stringify(prompt)}, ${JSON.stringify(options)})).catch(err => { throw err.message; })`
           )
-        ).to.eventually.be.rejectedWith(message);
+        ).rejects.toThrow(message);
       } else {
         await expect(
           w.webContents.executeJavaScript(
             `LanguageModel.create().then(model => model.prompt(${JSON.stringify(prompt)})).catch(err => { throw err.message; })`
           )
-        ).to.eventually.be.rejectedWith(message);
+        ).rejects.toThrow(message);
       }
     }
 
@@ -442,7 +440,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => { model.destroy(); return model.prompt("Test") }).catch(err => { throw err.message; })'
         )
-      ).to.eventually.be.rejectedWith(/has been destroyed/);
+      ).rejects.toThrow(/has been destroyed/);
     });
 
     it('rejects if the utility process dies during prompt', async () => {
@@ -458,7 +456,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       aiHandler.kill();
       await once(aiHandler, 'exit');
 
-      await expect(promise).to.eventually.be.rejectedWith(/has been destroyed/);
+      await expect(promise).rejects.toThrow(/has been destroyed/);
     });
 
     it('rejects if the handler gets unregistered during prompt', async () => {
@@ -473,7 +471,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       w.webContents.session.registerLocalAIHandler(null);
 
-      await expect(promise).to.eventually.be.rejectedWith(/has been destroyed/);
+      await expect(promise).rejects.toThrow(/has been destroyed/);
     });
 
     it('returns a string response from the handler', async () => {
@@ -558,10 +556,10 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           w.webContents.executeJavaScript(
             'LanguageModel.create().then(model => model.prompt("test", { signal: AbortSignal.timeout(500) })).catch(err => { throw err.message; })'
           )
-        ).to.eventually.be.rejectedWith(/signal timed out/);
+        ).rejects.toThrow(/signal timed out/);
       });
 
-      expect(message).not.null();
+      expect(message).not.null;
     });
 
     it('updates contextUsage after a prompt', async () => {
@@ -592,13 +590,13 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           w.webContents.executeJavaScript(
             `LanguageModel.create().then(async (model) => { const collect = ${collectStreamFn}; return collect(model.promptStreaming(${JSON.stringify(prompt)}, ${JSON.stringify(options)})); }).catch(err => { throw err.message; })`
           )
-        ).to.eventually.be.rejectedWith(message);
+        ).rejects.toThrow(message);
       } else {
         await expect(
           w.webContents.executeJavaScript(
             `LanguageModel.create().then(async (model) => { const collect = ${collectStreamFn}; return collect(model.promptStreaming(${JSON.stringify(prompt)})); }).catch(err => { throw err.message; })`
           )
-        ).to.eventually.be.rejectedWith(message);
+        ).rejects.toThrow(message);
       }
     }
 
@@ -629,7 +627,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         w.webContents.executeJavaScript(
           `LanguageModel.create().then(async (model) => { model.destroy(); const collect = ${collectStream}; return collect(model.promptStreaming("Test")); }).catch(err => { throw err.message; })`
         )
-      ).to.eventually.be.rejectedWith(/has been destroyed/);
+      ).rejects.toThrow(/has been destroyed/);
     });
 
     it('rejects if the utility process dies during prompt', async () => {
@@ -645,7 +643,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       aiHandler.kill();
       await once(aiHandler, 'exit');
 
-      await expect(promise).to.eventually.be.rejectedWith(/has been destroyed/);
+      await expect(promise).rejects.toThrow(/has been destroyed/);
     });
 
     it('rejects if the handler gets unregistered during prompt', async () => {
@@ -660,7 +658,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       w.webContents.session.registerLocalAIHandler(null);
 
-      await expect(promise).to.eventually.be.rejectedWith(/has been destroyed/);
+      await expect(promise).rejects.toThrow(/has been destroyed/);
     });
 
     it('returns a string response from the handler', async () => {
@@ -737,10 +735,10 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           w.webContents.executeJavaScript(
             `LanguageModel.create().then(async (model) => { const collect = ${collectStream}; return collect(model.promptStreaming("test", { signal: AbortSignal.timeout(500) })); }).catch(err => { throw err.message; })`
           )
-        ).to.eventually.be.rejectedWith(/signal timed out/);
+        ).rejects.toThrow(/signal timed out/);
       });
 
-      expect(message).not.null();
+      expect(message).not.null;
     });
 
     it('updates contextUsage after a prompt', async () => {
@@ -768,7 +766,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => model.append("Test")).catch(err => { throw err.message; })'
         )
-      ).to.eventually.be.rejectedWith(/error occurred/);
+      ).rejects.toThrow(/error occurred/);
     });
 
     it('rejects after the model has been destroyed', async () => {
@@ -778,7 +776,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => { model.destroy(); return model.append("Test") }).catch(err => { throw err.message; })'
         )
-      ).to.eventually.be.rejectedWith(/has been destroyed/);
+      ).rejects.toThrow(/has been destroyed/);
     });
 
     it('rejects if the utility process dies during append', async () => {
@@ -794,7 +792,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       aiHandler.kill();
       await once(aiHandler, 'exit');
 
-      await expect(promise).to.eventually.be.rejectedWith(/has been destroyed/);
+      await expect(promise).rejects.toThrow(/has been destroyed/);
     });
 
     it('rejects if the handler gets unregistered during append', async () => {
@@ -809,7 +807,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       w.webContents.session.registerLocalAIHandler(null);
 
-      await expect(promise).to.eventually.be.rejectedWith(/has been destroyed/);
+      await expect(promise).rejects.toThrow(/has been destroyed/);
     });
 
     it('appends a message without producing a response', async () => {
@@ -819,7 +817,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => model.append("Test")).catch(err => { throw err.message; })'
         )
-      ).to.be.undefined();
+      ).to.be.undefined;
     });
 
     it('plumbs the abort signal through', async () => {
@@ -831,10 +829,10 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           w.webContents.executeJavaScript(
             'LanguageModel.create().then(model => model.append("test", { signal: AbortSignal.timeout(500) })).catch(err => { throw err.message; })'
           )
-        ).to.eventually.be.rejectedWith(/signal timed out/);
+        ).rejects.toThrow(/signal timed out/);
       });
 
-      expect(message).not.null();
+      expect(message).not.null;
     });
 
     it('does not crash the handler when one of several pending append() calls is aborted', async () => {
@@ -859,7 +857,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       // The handler process must still be alive and responsive.
       await sendControllableMessage(aiHandler, { command: 'set-append-response', value: null });
-      expect(exited).to.be.false();
+      expect(exited).to.be.false;
     });
 
     it('updates contextUsage after append', async () => {
@@ -887,7 +885,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => model.measureContextUsage("Test")).catch(err => { throw err.message; })'
         )
-      ).to.eventually.be.rejectedWith(/usage cannot be calculated/);
+      ).rejects.toThrow(/usage cannot be calculated/);
     });
 
     it('rejects when handler promise rejects', async () => {
@@ -898,7 +896,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => model.measureContextUsage("Test")).catch(err => { throw err.message; })'
         )
-      ).to.eventually.be.rejectedWith(/usage cannot be calculated/);
+      ).rejects.toThrow(/usage cannot be calculated/);
     });
 
     it('rejects after the model has been destroyed', async () => {
@@ -908,7 +906,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => { model.destroy(); return model.measureContextUsage("Test") }).catch(err => { throw err.message; })'
         )
-      ).to.eventually.be.rejectedWith(/has been destroyed/);
+      ).rejects.toThrow(/has been destroyed/);
     });
 
     it('rejects if the utility process dies during call', async () => {
@@ -924,7 +922,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       aiHandler.kill();
       await once(aiHandler, 'exit');
 
-      await expect(promise).to.eventually.be.rejected();
+      await expect(promise).rejects.toThrow();
     });
 
     it('rejects if the handler gets unregistered during call', async () => {
@@ -939,7 +937,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       w.webContents.session.registerLocalAIHandler(null);
 
-      await expect(promise).to.eventually.be.rejected();
+      await expect(promise).rejects.toThrow();
     });
 
     it('returns the token count for the given input', async () => {
@@ -963,10 +961,10 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           w.webContents.executeJavaScript(
             'LanguageModel.create().then(model => model.measureContextUsage("test", { signal: AbortSignal.timeout(500) })).catch(err => { throw err.message; })'
           )
-        ).to.eventually.be.rejectedWith(/signal timed out/);
+        ).rejects.toThrow(/signal timed out/);
       });
 
-      expect(message).not.null();
+      expect(message).not.null;
     });
   });
 
@@ -979,7 +977,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => model.clone()).catch(err => { throw err.message; })'
         )
-      ).to.eventually.be.rejectedWith(/cannot be cloned/);
+      ).rejects.toThrow(/cannot be cloned/);
     });
 
     it('rejects when clone() promise rejects', async () => {
@@ -990,7 +988,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => model.clone()).catch(err => { throw err.message; })'
         )
-      ).to.eventually.be.rejectedWith(/cannot be cloned/);
+      ).rejects.toThrow(/cannot be cloned/);
     });
 
     it('rejects after the original model has been destroyed', async () => {
@@ -1000,7 +998,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         w.webContents.executeJavaScript(
           'LanguageModel.create().then(model => { model.destroy(); return model.clone(); }).catch(err => { throw err.message; })'
         )
-      ).to.eventually.be.rejectedWith(/has been destroyed/);
+      ).rejects.toThrow(/has been destroyed/);
     });
 
     it('rejects if the utility process dies during clone', async () => {
@@ -1016,7 +1014,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       aiHandler.kill();
       await once(aiHandler, 'exit');
 
-      await expect(promise).to.eventually.be.rejectedWith(/cannot be cloned/);
+      await expect(promise).rejects.toThrow(/cannot be cloned/);
     });
 
     it('rejects if the handler gets unregistered during clone', async () => {
@@ -1031,7 +1029,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       w.webContents.session.registerLocalAIHandler(null);
 
-      await expect(promise).to.eventually.be.rejectedWith(/cannot be cloned/);
+      await expect(promise).rejects.toThrow(/cannot be cloned/);
     });
 
     it('returns a new LanguageModel instance', async () => {
@@ -1067,10 +1065,10 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           w.webContents.executeJavaScript(
             'LanguageModel.create().then(model => model.clone({ signal: AbortSignal.timeout(500) })).catch(err => { throw err.message; })'
           )
-        ).to.eventually.be.rejectedWith(/signal timed out/);
+        ).rejects.toThrow(/signal timed out/);
       });
 
-      expect(message).not.null();
+      expect(message).not.null;
     });
   });
 
@@ -1083,10 +1081,10 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
           w.webContents.executeJavaScript(
             'LanguageModel.create().then(model => { model.destroy(); return model.prompt("Test"); }).catch(err => { throw err.message; })'
           )
-        ).to.eventually.be.rejectedWith(/has been destroyed/);
+        ).rejects.toThrow(/has been destroyed/);
       });
 
-      expect(message).not.null();
+      expect(message).not.null;
     });
 
     it('aborts any in-progress prompt calls', async () => {
@@ -1102,8 +1100,8 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
         await w.webContents.executeJavaScript('window._model.destroy()');
       });
 
-      await expect(promise).to.eventually.be.rejectedWith(/has been destroyed/);
-      expect(message).not.null();
+      await expect(promise).rejects.toThrow(/has been destroyed/);
+      expect(message).not.null;
     });
 
     it('aborts any in-progress append calls', async () => {
@@ -1121,8 +1119,8 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       await w.webContents.executeJavaScript('window._model.destroy()');
 
-      await expect(promise).to.eventually.be.rejectedWith(/has been destroyed/);
-      expect(message).not.null();
+      await expect(promise).rejects.toThrow(/has been destroyed/);
+      expect(message).not.null;
     });
 
     it('can be called multiple times without error', async () => {
@@ -1173,7 +1171,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       });
 
       expect(message.details).to.have.property('securityOrigin');
-      expect(message.details.securityOrigin).to.be.a('string').and.not.be.empty();
+      expect(message.details.securityOrigin).to.be.a('string').and.not.be.empty;
     });
 
     it('receives frameToken in the details object', async () => {
@@ -1184,7 +1182,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       });
 
       expect(message.details).to.have.property('frameToken');
-      expect(message.details.frameToken).to.be.a('string').and.not.be.empty();
+      expect(message.details.frameToken).to.be.a('string').and.not.be.empty;
       expect(message.details.frameToken).to.equal(w.webContents.mainFrame.frameToken);
     });
 
@@ -1209,7 +1207,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       const { frameToken, renderProcessId } = message.details;
       const frame = webFrameMain.fromFrameToken(renderProcessId, frameToken);
-      expect(frame).to.not.be.null();
+      expect(frame).to.not.be.null;
       expect(frame!.frameToken).to.equal(w.webContents.mainFrame.frameToken);
     });
 
@@ -1227,7 +1225,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await frameLoaded;
 
       const subframe = w.webContents.mainFrame.frames[0];
-      expect(subframe).to.not.be.undefined();
+      expect(subframe).to.not.be.undefined;
 
       // Trigger the Prompt API from within the iframe
       const message = await listenForMessage(aiHandler, 'handler-called', async () => {
@@ -1236,7 +1234,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       const { frameToken, renderProcessId } = message.details;
       const frame = webFrameMain.fromFrameToken(renderProcessId, frameToken);
-      expect(frame).to.not.be.null();
+      expect(frame).to.not.be.null;
 
       // The resolved frame is the iframe, not the main frame
       expect(frame!.frameToken).to.equal(subframe.frameToken);
@@ -1296,9 +1294,8 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       expect(
         await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Hi"))')
       ).to.equal('');
-      expect(
-        await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.append("Hi"))')
-      ).to.be.undefined();
+      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.append("Hi"))')).to.be
+        .undefined;
       expect(
         await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.measureContextUsage("Hi"))')
       ).to.equal(0);

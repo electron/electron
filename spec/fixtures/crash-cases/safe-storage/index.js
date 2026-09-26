@@ -1,6 +1,6 @@
 const { app, safeStorage } = require('electron');
 
-const { expect } = require('chai');
+const { expect } = require('../../../lib/vitest-cjs.cjs');
 
 async function expectRejection(promise, pattern) {
   let error;

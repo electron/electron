@@ -1,7 +1,7 @@
 import { app, dialog, BaseWindow, BrowserWindow } from 'electron/main';
 
-import { expect } from 'chai';
 import * as dbus from 'dbus-native';
+import { expect } from 'vitest';
 
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
@@ -381,11 +381,11 @@ describe('dialog module', () => {
           const info = dialogHelper.getDialogInfo(handle);
 
           expect(info.checkboxLabel).to.equal('Do not show again');
-          expect(info.checkboxChecked).to.be.false();
+          expect(info.checkboxChecked).to.be.false;
 
           dialogHelper.clickMessageBoxButton(handle, 0);
           const result = await p;
-          expect(result.checkboxChecked).to.be.false();
+          expect(result.checkboxChecked).to.be.false;
         });
 
         it('returns checkboxChecked as true when checkbox is initially checked', async () => {
@@ -402,11 +402,11 @@ describe('dialog module', () => {
           const info = dialogHelper.getDialogInfo(handle);
 
           expect(info.checkboxLabel).to.equal('Remember my choice');
-          expect(info.checkboxChecked).to.be.true();
+          expect(info.checkboxChecked).to.be.true;
 
           dialogHelper.clickMessageBoxButton(handle, 0);
           const result = await p;
-          expect(result.checkboxChecked).to.be.true();
+          expect(result.checkboxChecked).to.be.true;
         });
 
         it('can toggle checkbox and returns updated state', async () => {
@@ -423,16 +423,16 @@ describe('dialog module', () => {
 
           // Verify initially unchecked.
           let info = dialogHelper.getDialogInfo(handle);
-          expect(info.checkboxChecked).to.be.false();
+          expect(info.checkboxChecked).to.be.false;
 
           // Click the checkbox to check it.
           dialogHelper.clickCheckbox(handle);
           info = dialogHelper.getDialogInfo(handle);
-          expect(info.checkboxChecked).to.be.true();
+          expect(info.checkboxChecked).to.be.true;
 
           dialogHelper.clickMessageBoxButton(handle, 0);
           const result = await p;
-          expect(result.checkboxChecked).to.be.true();
+          expect(result.checkboxChecked).to.be.true;
         });
 
         it('strips access keys on macOS with normalizeAccessKeys', async () => {
@@ -545,7 +545,7 @@ describe('dialog module', () => {
           dialogHelper.cancelFileDialog(handle);
 
           const result = await p;
-          expect(result.canceled).to.be.true();
+          expect(result.canceled).to.be.true;
           expect(result.filePaths).to.have.lengthOf(0);
         });
 
@@ -590,9 +590,9 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.canChooseFiles).to.be.true();
-          expect(info.canChooseDirectories).to.be.false();
-          expect(info.allowsMultipleSelection).to.be.false();
+          expect(info.canChooseFiles).to.be.true;
+          expect(info.canChooseDirectories).to.be.false;
+          expect(info.allowsMultipleSelection).to.be.false;
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -607,9 +607,9 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.canChooseDirectories).to.be.true();
+          expect(info.canChooseDirectories).to.be.true;
           // openFile is not set, so canChooseFiles should be false
-          expect(info.canChooseFiles).to.be.false();
+          expect(info.canChooseFiles).to.be.false;
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -624,8 +624,8 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.canChooseFiles).to.be.true();
-          expect(info.canChooseDirectories).to.be.true();
+          expect(info.canChooseFiles).to.be.true;
+          expect(info.canChooseDirectories).to.be.true;
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -640,7 +640,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.allowsMultipleSelection).to.be.true();
+          expect(info.allowsMultipleSelection).to.be.true;
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -655,7 +655,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.showsHiddenFiles).to.be.true();
+          expect(info.showsHiddenFiles).to.be.true;
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -670,7 +670,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.showsHiddenFiles).to.be.false();
+          expect(info.showsHiddenFiles).to.be.false;
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -685,7 +685,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.resolvesAliases).to.be.false();
+          expect(info.resolvesAliases).to.be.false;
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -700,7 +700,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.resolvesAliases).to.be.true();
+          expect(info.resolvesAliases).to.be.true;
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -715,7 +715,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.treatsPackagesAsDirectories).to.be.true();
+          expect(info.treatsPackagesAsDirectories).to.be.true;
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -730,7 +730,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.canCreateDirectories).to.be.true();
+          expect(info.canCreateDirectories).to.be.true;
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -777,13 +777,13 @@ describe('dialog module', () => {
           expect(info.type).to.equal('open-dialog');
           expect(info.prompt).to.equal('Pick');
           expect(info.panelMessage).to.equal('Select items');
-          expect(info.canChooseFiles).to.be.true();
-          expect(info.canChooseDirectories).to.be.true();
-          expect(info.allowsMultipleSelection).to.be.true();
-          expect(info.showsHiddenFiles).to.be.true();
-          expect(info.canCreateDirectories).to.be.true();
-          expect(info.treatsPackagesAsDirectories).to.be.true();
-          expect(info.resolvesAliases).to.be.false();
+          expect(info.canChooseFiles).to.be.true;
+          expect(info.canChooseDirectories).to.be.true;
+          expect(info.allowsMultipleSelection).to.be.true;
+          expect(info.showsHiddenFiles).to.be.true;
+          expect(info.canCreateDirectories).to.be.true;
+          expect(info.treatsPackagesAsDirectories).to.be.true;
+          expect(info.resolvesAliases).to.be.false;
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -803,7 +803,7 @@ describe('dialog module', () => {
           dialogHelper.acceptFileDialog(handle);
 
           const result = await p;
-          expect(result.canceled).to.be.false();
+          expect(result.canceled).to.be.false;
           expect(result.filePaths).to.have.lengthOf(1);
           expect(result.filePaths[0]).to.equal(targetDir);
         });
@@ -824,7 +824,7 @@ describe('dialog module', () => {
           dialogHelper.cancelFileDialog(handle);
 
           const result = await p;
-          expect(result.canceled).to.be.true();
+          expect(result.canceled).to.be.true;
           expect(result.filePath).to.equal('');
         });
 
@@ -843,7 +843,7 @@ describe('dialog module', () => {
           dialogHelper.acceptFileDialog(handle);
 
           const result = await p;
-          expect(result.canceled).to.be.false();
+          expect(result.canceled).to.be.false;
           expect(result.filePath).to.equal(path.join(defaultDir, filename));
         });
 
@@ -932,7 +932,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.showsTagField).to.be.false();
+          expect(info.showsTagField).to.be.false;
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -945,7 +945,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.showsTagField).to.be.true();
+          expect(info.showsTagField).to.be.true;
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -960,7 +960,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.canCreateDirectories).to.be.true();
+          expect(info.canCreateDirectories).to.be.true;
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -975,7 +975,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.showsHiddenFiles).to.be.true();
+          expect(info.showsHiddenFiles).to.be.true;
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -988,7 +988,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.showsHiddenFiles).to.be.false();
+          expect(info.showsHiddenFiles).to.be.false;
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -1003,7 +1003,7 @@ describe('dialog module', () => {
           await waitForSheet(w);
           const handle = w.getNativeWindowHandle();
           const info = dialogHelper.getDialogInfo(handle);
-          expect(info.treatsPackagesAsDirectories).to.be.true();
+          expect(info.treatsPackagesAsDirectories).to.be.true;
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -1031,9 +1031,9 @@ describe('dialog module', () => {
           expect(info.nameFieldLabel).to.equal('File Name:');
           expect(info.nameFieldValue).to.equal('output.txt');
           expect(info.directory).to.equal(defaultDir);
-          expect(info.showsTagField).to.be.false();
-          expect(info.showsHiddenFiles).to.be.true();
-          expect(info.canCreateDirectories).to.be.true();
+          expect(info.showsTagField).to.be.false;
+          expect(info.showsHiddenFiles).to.be.true;
+          expect(info.canCreateDirectories).to.be.true;
 
           dialogHelper.cancelFileDialog(handle);
           await p;
@@ -1101,7 +1101,7 @@ describe('dialog module', () => {
         const { canceled } = await dialog.showSaveDialog({
           defaultPath: path.join(defaultDir, 'save-target.txt')
         });
-        expect(canceled).to.be.true();
+        expect(canceled).to.be.true;
 
         const options = getLoggedOptions(await getSingleCall('SaveFile'));
         expect(options.current_name).to.equal('save-target.txt');
@@ -1113,7 +1113,7 @@ describe('dialog module', () => {
         const { canceled } = await dialog.showSaveDialog({
           defaultPath: 'test.jpeg'
         });
-        expect(canceled).to.be.true();
+        expect(canceled).to.be.true;
 
         const options = getLoggedOptions(await getSingleCall('SaveFile'));
         expect(options.current_name).to.equal('test.jpeg');
@@ -1129,7 +1129,7 @@ describe('dialog module', () => {
           defaultPath: 'test.jpeg',
           properties: ['openFile']
         });
-        expect(canceled).to.be.true();
+        expect(canceled).to.be.true;
 
         const options = getLoggedOptions(await getSingleCall('OpenFile'));
         const currentFolder = getCurrentFolder(options);
@@ -1186,17 +1186,15 @@ describe('dialog module', () => {
         // A real button still closes the dialog and returns its index. The
         // dialog runs on a separate STA thread, so rather than a single click
         // with a fixed deadline, re-inject the click until the dialog
-        // acknowledges it by closing.
-        await expect(
-          waitUntil(
-            () => {
-              dialogHelper.clickMessageBoxButton(handle, 1);
-              return dialogHelper.getDialogInfo(handle).type === 'none';
-            },
-            { rate: 100 }
-          ),
-          'a valid button click did not close the dialog; is kIDStart in dialog_helper_win.cc in sync with message_box_win.cc ?'
-        ).to.eventually.be.fulfilled();
+        // acknowledges it by closing. If this times out, check that kIDStart
+        // in dialog_helper_win.cc is in sync with message_box_win.cc.
+        await waitUntil(
+          () => {
+            dialogHelper.clickMessageBoxButton(handle, 1);
+            return dialogHelper.getDialogInfo(handle).type === 'none';
+          },
+          { rate: 100 }
+        );
         const result = await p;
         expect(result.response).to.equal(1);
       });

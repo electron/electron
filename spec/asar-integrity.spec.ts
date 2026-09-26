@@ -1,8 +1,8 @@
 import { createPackage, getRawHeader } from '@electron/asar';
 import { flipFuses, type FuseV1Config, FuseV1Options, FuseVersion } from '@electron/fuses';
 
-import { expect } from 'chai';
 import { NtExecutable, NtExecutableResource, Resource } from 'resedit';
+import { expect } from 'vitest';
 
 import * as cp from 'node:child_process';
 import * as nodeCrypto from 'node:crypto';

@@ -1,6 +1,6 @@
 import { BrowserWindow, Menu, MenuItem } from 'electron/main';
 
-import { assert, expect } from 'chai';
+import { assert, expect } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -1061,13 +1061,13 @@ describe('Menu module', function () {
       const menu = Menu.buildFromTemplate([{ label: '1' }, { label: '2' }]);
 
       Menu.setApplicationMenu(menu);
-      expect(Menu.getApplicationMenu()).to.not.be.null('application menu');
+      expect(Menu.getApplicationMenu(), 'application menu').to.not.be.null;
     });
 
     it('unsets a menu with null', () => {
       Menu.setApplicationMenu(Menu.buildFromTemplate([{ label: '1' }]));
       Menu.setApplicationMenu(null);
-      expect(Menu.getApplicationMenu()).to.be.null('application menu');
+      expect(Menu.getApplicationMenu(), 'application menu').to.be.null;
     });
 
     ifit(process.platform !== 'darwin')('does not override menu visibility on startup', async () => {

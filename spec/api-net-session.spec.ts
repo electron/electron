@@ -1,6 +1,6 @@
 import { net, session, BrowserWindow, type ClientRequestConstructorOptions } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as dns from 'node:dns';
 
@@ -407,7 +407,7 @@ describe('net module (session)', () => {
           domain: 'wssss.iamabaddomain.fun',
           name: 'cookie1'
         })
-      ).to.eventually.be.rejectedWith(/The cookie was set with an invalid Domain attribute/);
+      ).rejects.toThrow(/The cookie was set with an invalid Domain attribute/);
     });
 
     it('should be able correctly filter out cookies that are session', async () => {
@@ -538,8 +538,8 @@ describe('net module (session)', () => {
 
         expect(response.statusCode).to.equal(200);
         await collectStreamBody(response);
-        expect(requestIsRedirected).to.be.true('The server should receive a request to the forward URL');
-        expect(requestIsIntercepted).to.be.true('The request should be intercepted by the webRequest module');
+        expect(requestIsRedirected, 'The server should receive a request to the forward URL').to.be.true;
+        expect(requestIsIntercepted, 'The request should be intercepted by the webRequest module').to.be.true;
       });
 
       it('should to able to create and intercept a request using a custom session object', async () => {
@@ -577,8 +577,8 @@ describe('net module (session)', () => {
         const response = await getResponse(urlRequest);
         expect(response.statusCode).to.equal(200);
         await collectStreamBody(response);
-        expect(requestIsRedirected).to.be.true('The server should receive a request to the forward URL');
-        expect(requestIsIntercepted).to.be.true('The request should be intercepted by the webRequest module');
+        expect(requestIsRedirected, 'The server should receive a request to the forward URL').to.be.true;
+        expect(requestIsIntercepted, 'The request should be intercepted by the webRequest module').to.be.true;
       });
 
       it('should to able to create and intercept a request using a custom partition name', async () => {
@@ -616,8 +616,8 @@ describe('net module (session)', () => {
         const response = await getResponse(urlRequest);
         expect(response.statusCode).to.equal(200);
         await collectStreamBody(response);
-        expect(requestIsRedirected).to.be.true('The server should receive a request to the forward URL');
-        expect(requestIsIntercepted).to.be.true('The request should be intercepted by the webRequest module');
+        expect(requestIsRedirected, 'The server should receive a request to the forward URL').to.be.true;
+        expect(requestIsIntercepted, 'The request should be intercepted by the webRequest module').to.be.true;
       });
 
       it('triggers webRequest handlers when bypassCustomProtocolHandlers', async () => {
@@ -702,7 +702,7 @@ describe('net module (session)', () => {
           cb({ cancel: true });
         });
 
-        await expect(net.fetch('https://foo')).to.eventually.be.rejectedWith('net::ERR_BLOCKED_BY_CLIENT');
+        await expect(net.fetch('https://foo')).rejects.toThrow('net::ERR_BLOCKED_BY_CLIENT');
       });
 
       it('triggers webRequest handlers for intercepted https', async () => {
@@ -715,7 +715,7 @@ describe('net module (session)', () => {
           session.defaultSession.protocol.unhandle('https');
         });
 
-        await expect(net.fetch('https://foo')).to.eventually.be.rejectedWith('net::ERR_BLOCKED_BY_CLIENT');
+        await expect(net.fetch('https://foo')).rejects.toThrow('net::ERR_BLOCKED_BY_CLIENT');
       });
 
       it('triggers webRequest handlers for file urls', async () => {
@@ -723,7 +723,7 @@ describe('net module (session)', () => {
           cb({ cancel: true });
         });
 
-        await expect(net.fetch('file://foo')).to.eventually.be.rejectedWith('net::ERR_BLOCKED_BY_CLIENT');
+        await expect(net.fetch('file://foo')).rejects.toThrow('net::ERR_BLOCKED_BY_CLIENT');
       });
 
       it('triggers webRequest handlers for intercepted file urls', async () => {
@@ -736,7 +736,7 @@ describe('net module (session)', () => {
           session.defaultSession.protocol.unhandle('file');
         });
 
-        await expect(net.fetch('file://foo')).to.eventually.be.rejectedWith('net::ERR_BLOCKED_BY_CLIENT');
+        await expect(net.fetch('file://foo')).rejects.toThrow('net::ERR_BLOCKED_BY_CLIENT');
       });
 
       it('triggers webRequest handlers for registered protocols', async () => {
@@ -749,7 +749,7 @@ describe('net module (session)', () => {
           session.defaultSession.protocol.unhandle('custom-protocol');
         });
 
-        await expect(net.fetch('custom-protocol://foo')).to.eventually.be.rejectedWith('net::ERR_BLOCKED_BY_CLIENT');
+        await expect(net.fetch('custom-protocol://foo')).rejects.toThrow('net::ERR_BLOCKED_BY_CLIENT');
       });
     });
   });

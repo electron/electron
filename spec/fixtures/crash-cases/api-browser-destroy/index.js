@@ -1,6 +1,6 @@
 const { app, BrowserWindow, BrowserView } = require('electron');
 
-const { expect } = require('chai');
+const { expect } = require('../../../lib/vitest-cjs.cjs');
 
 function createWindow() {
   // Create the browser window.

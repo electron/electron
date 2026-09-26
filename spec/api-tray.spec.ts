@@ -1,7 +1,7 @@
 import { nativeImage } from 'electron/common';
 import { Menu, Tray } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
@@ -52,14 +52,14 @@ describe('tray module', { tags: ['serial'] }, () => {
   ifdescribe(process.platform === 'darwin')('tray get/set ignoreDoubleClickEvents', () => {
     it('returns false by default', () => {
       const ignored = tray.getIgnoreDoubleClickEvents();
-      expect(ignored).to.be.false('ignored');
+      expect(ignored, 'ignored').to.be.false;
     });
 
     it('can be set to true', () => {
       tray.setIgnoreDoubleClickEvents(true);
 
       const ignored = tray.getIgnoreDoubleClickEvents();
-      expect(ignored).to.be.true('not ignored');
+      expect(ignored, 'not ignored').to.be.true;
     });
   });
 
@@ -76,10 +76,10 @@ describe('tray module', { tags: ['serial'] }, () => {
 
   describe('tray.destroy()', () => {
     it('destroys a tray', () => {
-      expect(tray.isDestroyed()).to.be.false('tray should not be destroyed');
+      expect(tray.isDestroyed(), 'tray should not be destroyed').to.be.false;
       tray.destroy();
 
-      expect(tray.isDestroyed()).to.be.true('tray should be destroyed');
+      expect(tray.isDestroyed(), 'tray should be destroyed').to.be.true;
     });
   });
 

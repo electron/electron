@@ -1,6 +1,6 @@
 import { BaseWindow, BrowserWindow, app, ipcMain, nativeImage, sharedTexture } from 'electron';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { randomUUID } from 'node:crypto';
 import * as path from 'node:path';

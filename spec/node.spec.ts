@@ -1,6 +1,6 @@
 import { BrowserWindow, webContents } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
@@ -246,7 +246,7 @@ describe('node feature', () => {
         // being set has become ineffective.
         const w = await getRemoteContext();
         const stdout = await w.webContents.executeJavaScript("require('child_process').execSync('sudo --help')");
-        expect(stdout).to.not.be.empty();
+        expect(stdout).to.not.be.empty;
       });
     });
   });
@@ -359,7 +359,7 @@ describe('node feature', () => {
               continued = true;
             });
         });
-        expect(continuedBeforeNextTask).to.be.true();
+        expect(continuedBeforeNextTask).to.be.true;
       });
     });
 
@@ -585,9 +585,9 @@ describe('node feature', () => {
     it('runs each same-process child window on a working loop of its own', async () => {
       const { w, errors } = await openWindow();
       const child = await openChild(w, 'base-page.html');
-      await expect(exerciseLoop(child.webContents)).to.eventually.deep.equal(loopWork);
+      await expect(exerciseLoop(child.webContents)).resolves.to.deep.equal(loopWork);
       const blankChild = await openChild(w, 'about:blank');
-      await expect(exerciseLoop(blankChild.webContents)).to.eventually.deep.equal(loopWork);
+      await expect(exerciseLoop(blankChild.webContents)).resolves.to.deep.equal(loopWork);
       expect(errors).to.deep.equal([]);
     });
 
@@ -598,10 +598,10 @@ describe('node feature', () => {
         const pending = exerciseLoop(child.webContents);
         w.webContents.reload();
         await once(w.webContents, 'did-finish-load');
-        await expect(pending).to.eventually.deep.equal(loopWork);
-        await expect(exerciseLoop(child.webContents)).to.eventually.deep.equal(loopWork);
+        await expect(pending).resolves.to.deep.equal(loopWork);
+        await expect(exerciseLoop(child.webContents)).resolves.to.deep.equal(loopWork);
       }
-      await expect(exerciseLoop(w.webContents)).to.eventually.deep.equal(loopWork);
+      await expect(exerciseLoop(w.webContents)).resolves.to.deep.equal(loopWork);
       expect(errors).to.deep.equal([]);
     });
 
@@ -764,7 +764,7 @@ describe('node feature', () => {
           stderr += chunk;
         });
         const [code, signal] = await once(child, 'close');
-        expect(signal, stderr).to.be.null();
+        expect(signal, stderr).to.be.null;
         expect(code, stderr).to.equal(0);
         expect(stdout.trim()).to.equal('ok');
       }
@@ -995,7 +995,7 @@ describe('node feature', () => {
     useRemoteContext();
 
     it('is a real Node stream', () => {
-      expect((process.stdout as any)._type).to.not.be.undefined();
+      expect((process.stdout as any)._type).to.not.be.undefined;
     });
 
     itremote('does not throw an exception when accessed', () => {
@@ -1039,13 +1039,13 @@ describe('node feature', () => {
     });
 
     itremote('returns null when read from', () => {
-      expect(process.stdin.read()).to.be.null();
+      expect(process.stdin.read()).to.be.null;
     });
   });
 
   describe('process.version', () => {
     itremote('should not have -pre', () => {
-      expect(process.version.endsWith('-pre')).to.be.false();
+      expect(process.version.endsWith('-pre')).to.be.false;
     });
   });
 
@@ -1368,7 +1368,7 @@ describe('node feature', () => {
       const fileHandle = await fs.promises.open(filePathForHandle, 'r');
 
       const file = await fs.promises.readFile(fileHandle, { encoding: 'utf8' });
-      expect(file).to.not.be.empty();
+      expect(file).to.not.be.empty;
       await fileHandle.close();
     });
   });
@@ -1520,8 +1520,8 @@ describe('node feature', () => {
 
       const [{ cmd, debuggerEnabled, success }] = await once(child, 'message');
       expect(cmd).to.equal('assert');
-      expect(debuggerEnabled).to.be.true();
-      expect(success).to.be.true();
+      expect(debuggerEnabled).to.be.true;
+      expect(success).to.be.true;
     });
   });
 

@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain, net, protocol, session, type WebContents, webContents, View } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 import { WebSocketServer } from 'ws';
 
 import * as childProcess from 'node:child_process';
@@ -124,7 +124,7 @@ describe('webRequest module', () => {
       // Top-level navigation started by the browser: no initiator.
       await w.loadURL(`${defaultURL}top`);
       const nav = seen.find((d) => d.url === `${defaultURL}top`);
-      expect(nav).to.exist();
+      expect(nav).to.exist;
       expect(nav!.initiatorOrigin).to.equal(undefined);
       // A cross-origin iframe's own subresource request is attributed to the
       // iframe's origin regardless of referrer policy.
@@ -140,7 +140,7 @@ describe('webRequest module', () => {
         `fetch(${JSON.stringify(defaultURL + 'fromframe')}, { referrerPolicy: 'no-referrer', mode: 'no-cors' }).then(() => true)`
       );
       const sub = seen.find((d) => d.url === `${defaultURL}fromframe`);
-      expect(sub).to.exist();
+      expect(sub).to.exist;
       expect(sub!.initiatorOrigin).to.equal(new URL(crossOrigin).origin);
       expect(sub!.referrer).to.equal('');
       expect(sub!.frame).to.equal(iframe);
@@ -155,13 +155,13 @@ describe('webRequest module', () => {
 
     it('can cancel the request', async () => {
       ses.webRequest.onBeforeRequest(cancel);
-      await expect(ajax(defaultURL)).to.eventually.be.rejected();
+      await expect(ajax(defaultURL)).rejects.toThrow();
     });
 
     it('matches all requests when no filters are defined', async () => {
       ses.webRequest.onBeforeRequest(cancel);
-      await expect(ajax(`${defaultURL}nofilter/test`)).to.eventually.be.rejected();
-      await expect(ajax(`${defaultURL}nofilter2/test`)).to.eventually.be.rejected();
+      await expect(ajax(`${defaultURL}nofilter/test`)).rejects.toThrow();
+      await expect(ajax(`${defaultURL}nofilter2/test`)).rejects.toThrow();
     });
 
     it('can filter URLs', async () => {
@@ -169,14 +169,14 @@ describe('webRequest module', () => {
       ses.webRequest.onBeforeRequest(filter, cancel);
       const { data } = await ajax(`${defaultURL}nofilter/test`);
       expect(data).to.equal('/nofilter/test');
-      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+      await expect(ajax(`${defaultURL}filter/test`)).rejects.toThrow();
     });
 
     it('can filter all URLs with syntax <all_urls>', async () => {
       const filter = { urls: ['<all_urls>'] };
       ses.webRequest.onBeforeRequest(filter, cancel);
-      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
-      await expect(ajax(`${defaultURL}nofilter/test`)).to.eventually.be.rejected();
+      await expect(ajax(`${defaultURL}filter/test`)).rejects.toThrow();
+      await expect(ajax(`${defaultURL}nofilter/test`)).rejects.toThrow();
     });
 
     it('can filter URLs with overlapping patterns of urls and excludeUrls', async () => {
@@ -196,13 +196,13 @@ describe('webRequest module', () => {
       expect((await ajax(`${defaultURL}filter/exclude1/test`)).data).to.equal('/filter/exclude1/test');
       expect((await ajax(`${defaultURL}filter/exclude2/test`)).data).to.equal('/filter/exclude2/test');
       // expect non-excluded URL to pass filter
-      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+      await expect(ajax(`${defaultURL}filter/test`)).rejects.toThrow();
     });
 
     it('can filter URLs with empty excludeUrls', async () => {
       const filter = { urls: [defaultURL + 'filter/*'], excludeUrls: [] };
       ses.webRequest.onBeforeRequest(filter, cancel);
-      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+      await expect(ajax(`${defaultURL}filter/test`)).rejects.toThrow();
     });
 
     it('can filter URLs and types', async () => {
@@ -210,7 +210,7 @@ describe('webRequest module', () => {
       ses.webRequest.onBeforeRequest(filter1, cancel);
       const { data } = await ajax(`${defaultURL}nofilter/test`);
       expect(data).to.equal('/nofilter/test');
-      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+      await expect(ajax(`${defaultURL}filter/test`)).rejects.toThrow();
 
       const filter2: Electron.WebRequestFilter = { urls: [defaultURL + 'filter/*'], types: ['stylesheet'] };
       ses.webRequest.onBeforeRequest(filter2, cancel);
@@ -228,7 +228,7 @@ describe('webRequest module', () => {
 
       expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
       expect((await ajax(`${defaultURL}exclude/test`)).data).to.equal('/exclude/test');
-      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+      await expect(ajax(`${defaultURL}filter/test`)).rejects.toThrow();
 
       const filter2: Electron.WebRequestFilter = {
         urls: [defaultURL + 'filter/*'],
@@ -269,7 +269,7 @@ describe('webRequest module', () => {
 
           return called;
         }, defaultURL);
-        expect(called).to.be.true();
+        expect(called).to.be.true;
       });
 
       it('will not call webRequest.onBeforeRequest for non-custom protocol URLs that do not match the filter', async () => {
@@ -298,7 +298,7 @@ describe('webRequest module', () => {
 
           return called;
         }, defaultURL);
-        expect(called).to.be.false();
+        expect(called).to.be.false;
       });
 
       it('will call webRequest.onBeforeRequest for custom protocol URLs with <all_urls> filter', async () => {
@@ -328,7 +328,7 @@ describe('webRequest module', () => {
           return { called, responseText };
         });
         expect(responseText).to.equal('success');
-        expect(called).to.be.true();
+        expect(called).to.be.true;
       });
 
       it('will not call webRequest.onBeforeRequest for custom protocol URLs that do not match the filter', async () => {
@@ -358,7 +358,7 @@ describe('webRequest module', () => {
           return { called, responseText };
         });
         expect(responseText).to.equal('success');
-        expect(called).to.be.false();
+        expect(called).to.be.false;
       });
     });
 
@@ -373,7 +373,7 @@ describe('webRequest module', () => {
         expect(details.url).to.be.a('string').that.is.equal(defaultURL);
         expect(details.method).to.be.a('string').that.is.equal('GET');
         expect(details.resourceType).to.be.a('string').that.is.equal('xhr');
-        expect(details.uploadData).to.be.undefined();
+        expect(details.uploadData).to.be.undefined;
         callback({});
       });
       const { data } = await ajax(defaultURL);
@@ -398,7 +398,7 @@ describe('webRequest module', () => {
           method: 'POST',
           body: qs.stringify(postData)
         })
-      ).to.eventually.be.rejected();
+      ).rejects.toThrow();
     });
 
     it('can redirect the request', async () => {
@@ -430,7 +430,7 @@ describe('webRequest module', () => {
         protocol: 'file',
         slashes: true
       });
-      await expect(ajax(fileURL)).to.eventually.be.rejected();
+      await expect(ajax(fileURL)).rejects.toThrow();
     });
 
     it('can handle a streaming upload', async () => {
@@ -601,7 +601,7 @@ describe('webRequest module', () => {
         callback({ requestHeaders: details.requestHeaders });
       });
       await ajax('cors://host');
-      expect(called).to.be.true();
+      expect(called).to.be.true;
     });
 
     it('does not crash on invalid header name or value', async () => {
@@ -619,8 +619,8 @@ describe('webRequest module', () => {
       const { data } = await ajax(defaultURL);
       const details = await sentHeaders;
 
-      expect(details.requestHeaders['Invalid Header']).to.be.undefined();
-      expect(details.requestHeaders['Valid-Header']).to.be.undefined();
+      expect(details.requestHeaders['Invalid Header']).to.be.undefined;
+      expect(details.requestHeaders['Valid-Header']).to.be.undefined;
       expect(details.requestHeaders['X-Good']).to.equal('good-value');
       expect(data).to.equal('/');
     });
@@ -669,7 +669,7 @@ describe('webRequest module', () => {
           slashes: true
         })
       );
-      expect(onSendHeadersCalled).to.be.true();
+      expect(onSendHeadersCalled).to.be.true;
     });
 
     it('can inject Proxy-Authorization header for net module requests', async () => {
@@ -694,7 +694,7 @@ describe('webRequest module', () => {
         });
 
         const response = await net.fetch(serverUrl, { bypassCustomProtocolHandlers: true });
-        expect(response.ok).to.be.true();
+        expect(response.ok).to.be.true;
         expect(receivedProxyAuth).to.equal(proxyAuthValue);
       } finally {
         server.close();
@@ -877,7 +877,7 @@ describe('webRequest module', () => {
       ses.webRequest.onErrorOccurred((details) => {
         expect(details.error).to.equal('net::ERR_BLOCKED_BY_CLIENT');
       });
-      await expect(ajax(defaultURL)).to.eventually.be.rejected();
+      await expect(ajax(defaultURL)).rejects.toThrow();
     });
   });
 
@@ -1103,7 +1103,7 @@ describe('webRequest module', () => {
       });
       const { url } = await listen(closed);
       const error = new Promise<string>((resolve) => ses.webRequest.onErrorOccurred((d) => resolve(d.error)));
-      await expect(ajax(`${url}/`)).to.eventually.be.rejected();
+      await expect(ajax(`${url}/`)).rejects.toThrow();
       expect(await error).to.match(/^net::ERR_/);
       closed.close();
     });

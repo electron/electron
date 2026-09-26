@@ -11,7 +11,7 @@ import {
   Menu
 } from 'electron/main';
 
-import { assert, expect } from 'chai';
+import { assert, expect } from 'vitest';
 
 import { once } from 'node:events';
 import * as fs from 'node:fs';
@@ -90,7 +90,7 @@ describe('webContents module', () => {
 
   describe('fromId()', () => {
     it('returns undefined for an unknown id', () => {
-      expect(webContents.fromId(12345)).to.be.undefined();
+      expect(webContents.fromId(12345)).to.be.undefined;
     });
   });
 
@@ -129,7 +129,7 @@ describe('webContents module', () => {
       } catch {
         errored = true;
       }
-      expect(errored).to.be.true();
+      expect(errored).to.be.true;
     });
   });
 
@@ -148,7 +148,7 @@ describe('webContents module', () => {
     });
 
     it('returns undefined for an unknown id', () => {
-      expect(webContents.fromDevToolsTargetId('nope')).to.be.undefined();
+      expect(webContents.fromDevToolsTargetId('nope')).to.be.undefined;
     });
   });
 
@@ -496,13 +496,13 @@ describe('webContents module', () => {
         expect(result).to.equal(expected);
       });
       it('rejects the returned promise if an async error is thrown', async () => {
-        await expect(w.webContents.executeJavaScript(badAsyncCode)).to.eventually.be.rejectedWith(expectedErrorMsg);
+        await expect(w.webContents.executeJavaScript(badAsyncCode)).rejects.toThrow(expectedErrorMsg);
       });
       it('rejects the returned promise with an error if an Error.prototype is thrown', async () => {
         for (const error of errorTypes) {
           await expect(
             w.webContents.executeJavaScript(`Promise.reject(new ${error.name}("Wamp-wamp"))`)
-          ).to.eventually.be.rejectedWith(error);
+          ).rejects.toThrow(error);
         }
       });
     });
@@ -568,9 +568,9 @@ describe('webContents module', () => {
     });
 
     it('rejects when worldId is not an integer', async () => {
-      await expect(
-        w.webContents.executeJavaScriptInIsolatedWorld('1234' as any, [{ code: '1+1' }])
-      ).to.eventually.be.rejectedWith(TypeError, 'worldId must be an integer');
+      await expect(w.webContents.executeJavaScriptInIsolatedWorld('1234' as any, [{ code: '1+1' }])).rejects.toThrow(
+        'worldId must be an integer'
+      );
     });
   });
 
@@ -611,17 +611,17 @@ describe('webContents module', () => {
     });
 
     it('resolves when done loading', async () => {
-      await expect(w.loadURL('about:blank')).to.eventually.be.fulfilled();
+      await w.loadURL('about:blank');
     });
 
     it('resolves when done loading a file URL', async () => {
-      await expect(w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'))).to.eventually.be.fulfilled();
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
     });
 
     it('resolves when navigating within the page', async () => {
       await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
       await setTimeout();
-      await expect(w.loadURL(w.getURL() + '#foo')).to.eventually.be.fulfilled();
+      await w.loadURL(w.getURL() + '#foo');
     });
 
     it('resolves after browser initiated navigation', async () => {
@@ -631,13 +631,11 @@ describe('webContents module', () => {
       });
 
       await w.loadFile(path.join(fixturesPath, 'pages', 'navigate_in_page_and_wait.html'));
-      expect(finishedLoading).to.be.true();
+      expect(finishedLoading).to.be.true;
     });
 
     it('rejects when failing to load a file URL', async () => {
-      await expect(w.loadURL('file:non-existent'))
-        .to.eventually.be.rejected()
-        .and.have.property('code', 'ERR_FILE_NOT_FOUND');
+      await expect(w.loadURL('file:non-existent')).rejects.toHaveProperty('code', 'ERR_FILE_NOT_FOUND');
     });
 
     // FIXME: Temporarily disable on WOA until
@@ -645,14 +643,15 @@ describe('webContents module', () => {
     ifit(!(process.platform === 'win32' && process.arch === 'arm64'))(
       'rejects when loading fails due to DNS not resolved',
       async () => {
-        await expect(w.loadURL('https://err.name.not.resolved'))
-          .to.eventually.be.rejected()
-          .and.have.property('code', 'ERR_NAME_NOT_RESOLVED');
+        await expect(w.loadURL('https://err.name.not.resolved')).rejects.toHaveProperty(
+          'code',
+          'ERR_NAME_NOT_RESOLVED'
+        );
       }
     );
 
     it('rejects when navigation is cancelled due to a bad scheme', async () => {
-      await expect(w.loadURL('bad-scheme://foo')).to.eventually.be.rejected().and.have.property('code', 'ERR_FAILED');
+      await expect(w.loadURL('bad-scheme://foo')).rejects.toHaveProperty('code', 'ERR_FAILED');
     });
 
     it('does not crash when loading a new URL with emulation settings set', async () => {
@@ -742,7 +741,7 @@ describe('webContents module', () => {
       } catch (e) {
         err = e;
       }
-      expect(err).not.to.be.null();
+      expect(err).not.to.be.null;
       expect(err.code).to.eql('ERR_FILE_NOT_FOUND');
       expect(err.errno).to.eql(-6);
       expect(err.url).to.eql(process.platform === 'win32' ? 'file://non-existent/' : 'file:///non-existent');
@@ -753,7 +752,7 @@ describe('webContents module', () => {
         /* never complete the request */
       });
       const { port } = await listen(s);
-      const p = expect(w.loadURL(`http://127.0.0.1:${port}`)).to.eventually.be.rejectedWith(Error, /ERR_ABORTED/);
+      const p = expect(w.loadURL(`http://127.0.0.1:${port}`)).rejects.toThrow(/ERR_ABORTED/);
       // load a different file before the first load completes, causing the
       // first load to be aborted.
       await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
@@ -801,16 +800,16 @@ describe('webContents module', () => {
       const main = w.loadURL(`http://127.0.0.1:${port}`);
       await p;
       resp.destroy(); // cause the main request to fail
-      await expect(main).to.eventually.be.rejected().and.have.property('errno', -355); // ERR_INCOMPLETE_CHUNKED_ENCODING
+      await expect(main).rejects.toHaveProperty('errno', -355); // ERR_INCOMPLETE_CHUNKED_ENCODING
     });
 
     it('subsequent load failures reject each time', async () => {
-      await expect(w.loadURL('file:non-existent')).to.eventually.be.rejected();
-      await expect(w.loadURL('file:non-existent')).to.eventually.be.rejected();
+      await expect(w.loadURL('file:non-existent')).rejects.toThrow();
+      await expect(w.loadURL('file:non-existent')).rejects.toThrow();
     });
 
     it('invalid URL load rejects', async () => {
-      await expect(w.loadURL('invalidURL')).to.eventually.be.rejected();
+      await expect(w.loadURL('invalidURL')).rejects.toThrow();
     });
   });
 
@@ -835,7 +834,7 @@ describe('webContents module', () => {
         const initialLength = w.webContents.navigationHistory.length();
         const wasRemoved = w.webContents.navigationHistory.removeEntryAtIndex(1); // Attempt to remove the second entry
         const newLength = w.webContents.navigationHistory.length();
-        expect(wasRemoved).to.be.true();
+        expect(wasRemoved).to.be.true;
         expect(newLength).to.equal(initialLength - 1);
       });
 
@@ -844,32 +843,32 @@ describe('webContents module', () => {
         await w.loadURL(urlPage2);
         const activeIndex = w.webContents.navigationHistory.getActiveIndex();
         const wasRemoved = w.webContents.navigationHistory.removeEntryAtIndex(activeIndex);
-        expect(wasRemoved).to.be.false();
+        expect(wasRemoved).to.be.false;
       });
 
       it('should return false given an invalid index larger than history length', async () => {
         await w.loadURL(urlPage1);
         const wasRemoved = w.webContents.navigationHistory.removeEntryAtIndex(5); // Index larger than history length
-        expect(wasRemoved).to.be.false();
+        expect(wasRemoved).to.be.false;
       });
 
       it('should return false given an invalid negative index', async () => {
         await w.loadURL(urlPage1);
         const wasRemoved = w.webContents.navigationHistory.removeEntryAtIndex(-1); // Negative index
-        expect(wasRemoved).to.be.false();
+        expect(wasRemoved).to.be.false;
       });
     });
 
     describe('navigationHistory.canGoBack and navigationHistory.goBack API', () => {
       it('should not be able to go back if history is empty', async () => {
-        expect(w.webContents.navigationHistory.canGoBack()).to.be.false();
+        expect(w.webContents.navigationHistory.canGoBack()).to.be.false;
       });
 
       it('should be able to go back if history is not empty', async () => {
         await w.loadURL(urlPage1);
         await w.loadURL(urlPage2);
         expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(1);
-        expect(w.webContents.navigationHistory.canGoBack()).to.be.true();
+        expect(w.webContents.navigationHistory.canGoBack()).to.be.true;
         w.webContents.navigationHistory.goBack();
         expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(0);
       });
@@ -921,7 +920,7 @@ describe('webContents module', () => {
 
         expect(w.webContents.navigationHistory.length()).to.equal(3);
         expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(2);
-        expect(w.webContents.navigationHistory.canGoBack()).to.be.true();
+        expect(w.webContents.navigationHistory.canGoBack()).to.be.true;
 
         const back = once(w.webContents, 'did-navigate-in-page');
         w.webContents.navigationHistory.goBack();
@@ -965,13 +964,13 @@ describe('webContents module', () => {
 
     describe('navigationHistory.canGoForward and navigationHistory.goForward API', () => {
       it('should not be able to go forward if history is empty', async () => {
-        expect(w.webContents.navigationHistory.canGoForward()).to.be.false();
+        expect(w.webContents.navigationHistory.canGoForward()).to.be.false;
       });
 
       it('should not be able to go forward if current index is same as history length', async () => {
         await w.loadURL(urlPage1);
         await w.loadURL(urlPage2);
-        expect(w.webContents.navigationHistory.canGoForward()).to.be.false();
+        expect(w.webContents.navigationHistory.canGoForward()).to.be.false;
       });
 
       it('should be able to go forward if history is not empty and active index is less than history length', async () => {
@@ -979,7 +978,7 @@ describe('webContents module', () => {
         await w.loadURL(urlPage2);
         w.webContents.navigationHistory.goBack();
         expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(0);
-        expect(w.webContents.navigationHistory.canGoForward()).to.be.true();
+        expect(w.webContents.navigationHistory.canGoForward()).to.be.true;
         w.webContents.navigationHistory.goForward();
         expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(1);
       });
@@ -997,15 +996,15 @@ describe('webContents module', () => {
 
     describe('navigationHistory.canGoToOffset(index) and navigationHistory.goToOffset(index) API', () => {
       it('should not be able to go to invalid offset', async () => {
-        expect(w.webContents.navigationHistory.canGoToOffset(-1)).to.be.false();
-        expect(w.webContents.navigationHistory.canGoToOffset(10)).to.be.false();
+        expect(w.webContents.navigationHistory.canGoToOffset(-1)).to.be.false;
+        expect(w.webContents.navigationHistory.canGoToOffset(10)).to.be.false;
       });
 
       it('should be able to go to valid negative offset', async () => {
         await w.loadURL(urlPage1);
         await w.loadURL(urlPage2);
         await w.loadURL(urlPage3);
-        expect(w.webContents.navigationHistory.canGoToOffset(-2)).to.be.true();
+        expect(w.webContents.navigationHistory.canGoToOffset(-2)).to.be.true;
         expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(2);
         w.webContents.navigationHistory.goToOffset(-2);
         expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(0);
@@ -1017,7 +1016,7 @@ describe('webContents module', () => {
         await w.loadURL(urlPage3);
 
         w.webContents.navigationHistory.goBack();
-        expect(w.webContents.navigationHistory.canGoToOffset(1)).to.be.true();
+        expect(w.webContents.navigationHistory.canGoToOffset(1)).to.be.true;
         expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(1);
         w.webContents.navigationHistory.goToOffset(1);
         expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(2);
@@ -1110,12 +1109,12 @@ describe('webContents module', () => {
       it('should return null given an invalid index larger than history length', async () => {
         await w.loadURL(urlPage1);
         const result = w.webContents.navigationHistory.getEntryAtIndex(5);
-        expect(result).to.be.null();
+        expect(result).to.be.null;
       });
       it('should return null given an invalid negative index', async () => {
         await w.loadURL(urlPage1);
         const result = w.webContents.navigationHistory.getEntryAtIndex(-1);
-        expect(result).to.be.null();
+        expect(result).to.be.null;
       });
     });
 
@@ -1360,14 +1359,14 @@ describe('webContents module', () => {
       window.focus();
       await Promise.all([windowFocused, devToolsBlurred]);
 
-      expect(devToolsWebContents.isFocused()).to.be.false();
+      expect(devToolsWebContents.isFocused()).to.be.false;
       const devToolsWebContentsFocused = once(devToolsWebContents, 'focus');
       const windowBlurred = once(window, 'blur');
       window.webContents.inspectElement(100, 100);
       await Promise.all([devToolsWebContentsFocused, windowBlurred]);
 
-      expect(devToolsWebContents.isFocused()).to.be.true();
-      expect(window.isFocused()).to.be.false();
+      expect(devToolsWebContents.isFocused()).to.be.true;
+      expect(window.isFocused()).to.be.false;
     });
   });
 
@@ -1380,7 +1379,7 @@ describe('webContents module', () => {
       w.webContents.setDevToolsWebContents(devtools.webContents);
       w.webContents.openDevTools();
       await promise;
-      expect(devtools.webContents.getURL().startsWith('devtools://devtools')).to.be.true();
+      expect(devtools.webContents.getURL().startsWith('devtools://devtools')).to.be.true;
       const result = await devtools.webContents.executeJavaScript('InspectorFrontendHost.constructor.name');
       expect(result).to.equal('InspectorFrontendHostImpl');
       devtools.destroy();
@@ -1396,8 +1395,8 @@ describe('webContents module', () => {
       const opened = once(w.webContents, 'devtools-opened');
       w.webContents.openDevTools({ mode: 'detach' });
       await opened;
-      expect(w.webContents.isDevToolsOpened()).to.be.true();
-      expect(w.webContents.devToolsWebContents).to.not.be.null();
+      expect(w.webContents.isDevToolsOpened()).to.be.true;
+      expect(w.webContents.devToolsWebContents).to.not.be.null;
     });
   });
 
@@ -1406,8 +1405,8 @@ describe('webContents module', () => {
     it('returns false when the window is hidden', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadURL('about:blank');
-      expect(w.isVisible()).to.be.false();
-      expect(w.webContents.isFocused()).to.be.false();
+      expect(w.isVisible()).to.be.false;
+      expect(w.webContents.isFocused()).to.be.false;
     });
   });
 
@@ -1428,11 +1427,11 @@ describe('webContents module', () => {
       let p = once(w.webContents, 'audio-state-changed');
       w.webContents.executeJavaScript('context.resume()');
       await p;
-      expect(w.webContents.isCurrentlyAudible()).to.be.true();
+      expect(w.webContents.isCurrentlyAudible()).to.be.true;
       p = once(w.webContents, 'audio-state-changed');
       w.webContents.executeJavaScript('oscillator.stop()');
       await p;
-      expect(w.webContents.isCurrentlyAudible()).to.be.false();
+      expect(w.webContents.isCurrentlyAudible()).to.be.false;
     });
   });
 
@@ -1448,12 +1447,12 @@ describe('webContents module', () => {
       const focused = once(w, 'focus');
       w.show();
       await focused;
-      expect(w.isFocused()).to.be.true();
+      expect(w.isFocused()).to.be.true;
       const blurred = once(w, 'blur');
       w.webContents.openDevTools({ mode: 'detach', activate: true });
       await Promise.all([once(w.webContents, 'devtools-opened'), once(w.webContents, 'devtools-focused')]);
       await blurred;
-      expect(w.isFocused()).to.be.false();
+      expect(w.isFocused()).to.be.false;
     });
 
     it('can show window without activation', async () => {
@@ -1461,7 +1460,7 @@ describe('webContents module', () => {
       const devtoolsOpened = once(w.webContents, 'devtools-opened');
       w.webContents.openDevTools({ mode: 'detach', activate: false });
       await devtoolsOpened;
-      expect(w.webContents.isDevToolsOpened()).to.be.true();
+      expect(w.webContents.isDevToolsOpened()).to.be.true;
     });
 
     const getDevToolsPreferences = (w: BrowserWindow) =>
@@ -1530,8 +1529,8 @@ describe('webContents module', () => {
       }
 
       const devtools = w.webContents.devToolsWebContents;
-      expect(devtools).to.not.be.null();
-      expect(devtools!.isDestroyed()).to.be.false();
+      expect(devtools).to.not.be.null;
+      expect(devtools!.isDestroyed()).to.be.false;
       // Exactly one WebContents (the DevTools one) was created, and it is the
       // one we ended up with.
       expect(created).to.deep.equal([devtools!.id]);
@@ -1553,12 +1552,10 @@ describe('webContents module', () => {
       w.webContents.openDevTools({ mode: 'right', activate: false });
       await devtoolsOpened;
 
-      await expect(
-        waitUntil(async () => {
-          const viewport = await getViewportSize(w);
-          return viewport.width < initial.width;
-        })
-      ).to.eventually.be.fulfilled();
+      await waitUntil(async () => {
+        const viewport = await getViewportSize(w);
+        return viewport.width < initial.width;
+      });
 
       const dockedRight = await getViewportSize(w);
       expect(dockedRight.width).to.be.lessThan(initial.width);
@@ -1568,12 +1565,10 @@ describe('webContents module', () => {
       w.webContents.closeDevTools();
       await devtoolsClosed;
 
-      await expect(
-        waitUntil(async () => {
-          const restoredViewport = await getViewportSize(w);
-          return restoredViewport.width === initial.width && restoredViewport.height === initial.height;
-        })
-      ).to.eventually.be.fulfilled();
+      await waitUntil(async () => {
+        const restoredViewport = await getViewportSize(w);
+        return restoredViewport.width === initial.width && restoredViewport.height === initial.height;
+      });
 
       const restoredViewport = await getViewportSize(w);
       expect(restoredViewport).to.deep.equal(initial);
@@ -1592,17 +1587,17 @@ describe('webContents module', () => {
       const devtoolsOpened = once(w.webContents, 'devtools-opened');
       w.webContents.openDevTools({ mode: 'detach', activate: true });
       await devtoolsOpened;
-      expect(w.webContents.isDevToolsOpened()).to.be.true();
+      expect(w.webContents.isDevToolsOpened()).to.be.true;
 
       const devtoolsClosed = once(w.webContents, 'devtools-closed');
       w.webContents.closeDevTools();
       await devtoolsClosed;
-      expect(w.webContents.isDevToolsOpened()).to.be.false();
+      expect(w.webContents.isDevToolsOpened()).to.be.false;
 
       const devtoolsOpened2 = once(w.webContents, 'devtools-opened');
       w.webContents.openDevTools({ mode: 'detach', activate: true });
       await devtoolsOpened2;
-      expect(w.webContents.isDevToolsOpened()).to.be.true();
+      expect(w.webContents.isDevToolsOpened()).to.be.true;
     });
 
     it('does not crash when closing DevTools immediately after opening', async () => {
@@ -1618,7 +1613,7 @@ describe('webContents module', () => {
       w.webContents.closeDevTools();
       await devtoolsClosed;
 
-      expect(w.webContents.isDevToolsOpened()).to.be.false();
+      expect(w.webContents.isDevToolsOpened()).to.be.false;
     });
   });
 
@@ -1629,7 +1624,7 @@ describe('webContents module', () => {
       const devtoolsOpened = once(w.webContents, 'devtools-opened');
       w.webContents.openDevTools({ mode: 'detach', activate: false });
       await devtoolsOpened;
-      expect(w.webContents.isDevToolsOpened()).to.be.true();
+      expect(w.webContents.isDevToolsOpened()).to.be.true;
       w.webContents.setDevToolsTitle('newTitle');
       expect(w.webContents.getDevToolsTitle()).to.equal('newTitle');
     });
@@ -1670,7 +1665,7 @@ describe('webContents module', () => {
       // the test runner being killed by a spawned process is the assertion;
       // additionally verify the renderer is still responsive.
       const alive = await w.webContents.executeJavaScript('true');
-      expect(alive).to.be.true();
+      expect(alive).to.be.true;
     });
 
     // On Linux without a DBus FileManager1 session, ShowItemInFolder falls
@@ -1692,7 +1687,7 @@ describe('webContents module', () => {
         await sendShowItemInFolder(w, target);
 
         const alive = await w.webContents.executeJavaScript('true');
-        expect(alive).to.be.true();
+        expect(alive).to.be.true;
       }
     );
   });
@@ -1739,7 +1734,7 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false });
       await openDevTools(w);
 
-      expect(await usesNativeShowContextMenu(w.webContents.devToolsWebContents!)).to.be.true();
+      expect(await usesNativeShowContextMenu(w.webContents.devToolsWebContents!)).to.be.true;
     });
 
     it('uses the native window.confirm implementation', async () => {
@@ -1751,7 +1746,7 @@ describe('webContents module', () => {
       const confirmIsNative = await w.webContents.devToolsWebContents!.executeJavaScript(
         'window.confirm.toString().includes("[native code]")'
       );
-      expect(confirmIsNative).to.be.true();
+      expect(confirmIsNative).to.be.true;
     });
 
     it('steps zoom in and out through the browser zoom presets', async () => {
@@ -1782,7 +1777,7 @@ describe('webContents module', () => {
       await openDevTools(w);
 
       const roundTripped = await devToolsMenuRequestRoundTrips(w.webContents.devToolsWebContents!);
-      expect(roundTripped).to.be.true();
+      expect(roundTripped).to.be.true;
     });
 
     describe('with setDevToolsWebContents()', () => {
@@ -1804,7 +1799,7 @@ describe('webContents module', () => {
         const devtools = new BrowserWindow({ show: false });
         await openCustomDevTools(w, devtools);
 
-        expect(await usesNativeShowContextMenu(devtools.webContents)).to.be.true();
+        expect(await usesNativeShowContextMenu(devtools.webContents)).to.be.true;
       });
 
       // Regression test for https://github.com/electron/electron/issues/51962:
@@ -1822,8 +1817,8 @@ describe('webContents module', () => {
         });
 
         const roundTripped = await devToolsMenuRequestRoundTrips(devtools.webContents);
-        expect(roundTripped).to.be.true();
-        expect(emittedContextMenu).to.be.false();
+        expect(roundTripped).to.be.true;
+        expect(emittedContextMenu).to.be.false;
       });
     });
   });
@@ -2054,9 +2049,9 @@ describe('webContents module', () => {
       expect(key).to.equal('a');
       expect(code).to.equal('KeyA');
       expect(keyCode).to.equal(65);
-      expect(shiftKey).to.be.false();
-      expect(ctrlKey).to.be.false();
-      expect(altKey).to.be.false();
+      expect(shiftKey).to.be.false;
+      expect(ctrlKey).to.be.false;
+      expect(altKey).to.be.false;
     });
 
     it('can send keydown events with modifiers', async () => {
@@ -2066,9 +2061,9 @@ describe('webContents module', () => {
       expect(key).to.equal('Z');
       expect(code).to.equal('KeyZ');
       expect(keyCode).to.equal(90);
-      expect(shiftKey).to.be.true();
-      expect(ctrlKey).to.be.true();
-      expect(altKey).to.be.false();
+      expect(shiftKey).to.be.true;
+      expect(ctrlKey).to.be.true;
+      expect(altKey).to.be.false;
     });
 
     it('can send keydown events with special keys', async () => {
@@ -2078,9 +2073,9 @@ describe('webContents module', () => {
       expect(key).to.equal('Tab');
       expect(code).to.equal('Tab');
       expect(keyCode).to.equal(9);
-      expect(shiftKey).to.be.false();
-      expect(ctrlKey).to.be.false();
-      expect(altKey).to.be.true();
+      expect(shiftKey).to.be.false;
+      expect(ctrlKey).to.be.false;
+      expect(altKey).to.be.true;
     });
 
     it('can send char events', async () => {
@@ -2091,9 +2086,9 @@ describe('webContents module', () => {
       expect(key).to.equal('a');
       expect(code).to.equal('KeyA');
       expect(keyCode).to.equal(65);
-      expect(shiftKey).to.be.false();
-      expect(ctrlKey).to.be.false();
-      expect(altKey).to.be.false();
+      expect(shiftKey).to.be.false;
+      expect(ctrlKey).to.be.false;
+      expect(altKey).to.be.false;
     });
 
     it('can correctly convert accelerators to key codes', async () => {
@@ -2119,9 +2114,9 @@ describe('webContents module', () => {
       expect(key).to.equal('Z');
       expect(code).to.equal('KeyZ');
       expect(keyCode).to.equal(90);
-      expect(shiftKey).to.be.true();
-      expect(ctrlKey).to.be.true();
-      expect(altKey).to.be.false();
+      expect(shiftKey).to.be.true;
+      expect(ctrlKey).to.be.true;
+      expect(altKey).to.be.false;
     });
   });
 
@@ -2192,8 +2187,8 @@ describe('webContents module', () => {
         const currentFocused = w.isFocused();
         const childFocused = child.isFocused();
         child.close();
-        expect(currentFocused).to.be.true();
-        expect(childFocused).to.be.false();
+        expect(currentFocused).to.be.true;
+        expect(childFocused).to.be.false;
       });
 
       it('does not crash when focusing a WebView webContents', async () => {
@@ -2229,7 +2224,7 @@ describe('webContents module', () => {
         await moveFocusToDevTools(w);
         const focusPromise = once(w.webContents, 'focus');
         w.webContents.focus();
-        await expect(focusPromise).to.eventually.be.fulfilled();
+        await focusPromise;
       });
     });
 
@@ -2241,7 +2236,7 @@ describe('webContents module', () => {
         w.webContents.focus();
         const blurPromise = once(w.webContents, 'blur');
         await moveFocusToDevTools(w);
-        await expect(blurPromise).to.eventually.be.fulfilled();
+        await blurPromise;
       });
     });
 
@@ -2253,9 +2248,9 @@ describe('webContents module', () => {
         await once(w, 'focus');
         await w.loadURL('about:blank');
         await moveFocusToDevTools(w);
-        expect(w.webContents.isFocused()).to.be.false();
+        expect(w.webContents.isFocused()).to.be.false;
         await w.loadURL('data:text/html,<body>test</body>');
-        expect(w.webContents.isFocused()).to.be.true();
+        expect(w.webContents.isFocused()).to.be.true;
       });
 
       it('does not focus the webContents on navigation when focusOnNavigation is false', async () => {
@@ -2268,9 +2263,9 @@ describe('webContents module', () => {
         await once(w, 'focus');
         await w.loadURL('about:blank');
         await moveFocusToDevTools(w);
-        expect(w.webContents.isFocused()).to.be.false();
+        expect(w.webContents.isFocused()).to.be.false;
         await w.loadURL('data:text/html,<body>test</body>');
-        expect(w.webContents.isFocused()).to.be.false();
+        expect(w.webContents.isFocused()).to.be.false;
       });
     });
   });
@@ -2436,7 +2431,7 @@ describe('webContents module', () => {
         show: false
       });
       const clonedContents = w.webContents.clone();
-      expect(clonedContents).to.not.be.undefined();
+      expect(clonedContents).to.not.be.undefined;
       expect(clonedContents).to.not.equal(w.webContents);
       await clonedContents.loadURL('about:blank');
       expect(clonedContents.getOSProcessId()).to.be.a('number').and.be.above(0);
@@ -2447,7 +2442,7 @@ describe('webContents module', () => {
         show: false
       });
       const clonedContents = w.webContents.clone();
-      expect(clonedContents).to.not.be.undefined();
+      expect(clonedContents).to.not.be.undefined;
 
       // Load the same URL in both original and cloned WebContents
       await w.webContents.loadURL(serverUrl);
@@ -2507,7 +2502,7 @@ describe('webContents module', () => {
       await setTimeout(100);
       expect(message).to.equal('message from original');
       const clonedContents = w.webContents.clone();
-      expect(clonedContents).to.not.be.undefined();
+      expect(clonedContents).to.not.be.undefined;
 
       await clonedContents.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
 
@@ -2534,13 +2529,13 @@ describe('webContents module', () => {
 
       // Clone the WebContents
       const clonedContents = w.webContents.clone();
-      expect(clonedContents).to.not.be.undefined();
+      expect(clonedContents).to.not.be.undefined;
 
       await clonedContents.loadURL('about:blank');
 
       // Both should not be destroyed initially
-      expect(w.webContents.isDestroyed()).to.be.false();
-      expect(clonedContents.isDestroyed()).to.be.false();
+      expect(w.webContents.isDestroyed()).to.be.false;
+      expect(clonedContents.isDestroyed()).to.be.false;
 
       const origWebContents = w.webContents;
 
@@ -2550,8 +2545,8 @@ describe('webContents module', () => {
       await setTimeout();
 
       // Original should be destroyed, but cloned should still be alive
-      expect(origWebContents.isDestroyed()).to.be.true();
-      expect(clonedContents.isDestroyed()).to.be.false();
+      expect(origWebContents.isDestroyed()).to.be.true;
+      expect(clonedContents.isDestroyed()).to.be.false;
 
       // Cloned WebContents should still be usable
       const url = clonedContents.getURL();
@@ -2584,7 +2579,7 @@ describe('webContents module', () => {
       const streamId = sourceWindow.webContents.getMediaSourceId(requesterWindow.webContents);
       const { ok, message, origin, videoTrackCount } = await captureWithTabSourceId(requesterWindow, streamId);
 
-      expect(streamId).to.be.a('string').that.is.not.empty();
+      expect(streamId).to.be.a('string').that.is.not.empty;
       expect(ok, message).to.equal(true);
       expect(origin).to.equal(new url.URL(serverUrl).origin);
       expect(videoTrackCount).to.equal(1);
@@ -2597,7 +2592,7 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false });
       await w.loadURL('about:blank');
       const devToolsId = w.webContents.getOrCreateDevToolsTargetId();
-      expect(devToolsId).to.be.a('string').that.is.not.empty();
+      expect(devToolsId).to.be.a('string').that.is.not.empty;
       // Verify it's the inverse of fromDevToolsTargetId
       expect(webContents.fromDevToolsTargetId(devToolsId)).to.equal(w.webContents);
     });
@@ -2608,7 +2603,7 @@ describe('webContents module', () => {
     it('is not empty by default', () => {
       const w = new BrowserWindow({ show: false });
       const userAgent = w.webContents.getUserAgent();
-      expect(userAgent).to.be.a('string').that.is.not.empty();
+      expect(userAgent).to.be.a('string').that.is.not.empty;
     });
 
     it('can set the user agent (functions)', () => {
@@ -2640,20 +2635,20 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false });
 
       w.webContents.setAudioMuted(true);
-      expect(w.webContents.isAudioMuted()).to.be.true();
+      expect(w.webContents.isAudioMuted()).to.be.true;
 
       w.webContents.setAudioMuted(false);
-      expect(w.webContents.isAudioMuted()).to.be.false();
+      expect(w.webContents.isAudioMuted()).to.be.false;
     });
 
     it('can set the audio mute level (functions)', () => {
       const w = new BrowserWindow({ show: false });
 
       w.webContents.audioMuted = true;
-      expect(w.webContents.audioMuted).to.be.true();
+      expect(w.webContents.audioMuted).to.be.true;
 
       w.webContents.audioMuted = false;
-      expect(w.webContents.audioMuted).to.be.false();
+      expect(w.webContents.audioMuted).to.be.false;
     });
   });
 
@@ -2665,17 +2660,17 @@ describe('webContents module', () => {
 
     it('defaults to false', () => {
       const w = new BrowserWindow({ show: false });
-      expect(w.webContents.caretBrowsingEnabled).to.be.false();
+      expect(w.webContents.caretBrowsingEnabled).to.be.false;
     });
 
     it('can be toggled via the property', () => {
       const w = new BrowserWindow({ show: false });
 
       w.webContents.caretBrowsingEnabled = true;
-      expect(w.webContents.caretBrowsingEnabled).to.be.true();
+      expect(w.webContents.caretBrowsingEnabled).to.be.true;
 
       w.webContents.caretBrowsingEnabled = false;
-      expect(w.webContents.caretBrowsingEnabled).to.be.false();
+      expect(w.webContents.caretBrowsingEnabled).to.be.false;
     });
 
     it('stays enabled when set to the same value repeatedly', () => {
@@ -2683,7 +2678,7 @@ describe('webContents module', () => {
 
       w.webContents.caretBrowsingEnabled = true;
       w.webContents.caretBrowsingEnabled = true;
-      expect(w.webContents.caretBrowsingEnabled).to.be.true();
+      expect(w.webContents.caretBrowsingEnabled).to.be.true;
     });
 
     // Test that repeated calls aren't incorrectly incrementing the underlying refcount
@@ -2695,7 +2690,7 @@ describe('webContents module', () => {
       w.webContents.caretBrowsingEnabled = true;
 
       w.webContents.caretBrowsingEnabled = false;
-      expect(w.webContents.caretBrowsingEnabled).to.be.false();
+      expect(w.webContents.caretBrowsingEnabled).to.be.false;
     });
 
     // Test that repeated calls aren't incorrectly decrementing the underlying refcount
@@ -2709,7 +2704,7 @@ describe('webContents module', () => {
       w.webContents.caretBrowsingEnabled = false;
 
       w.webContents.caretBrowsingEnabled = true;
-      expect(w.webContents.caretBrowsingEnabled).to.be.true();
+      expect(w.webContents.caretBrowsingEnabled).to.be.true;
     });
 
     it('persists across navigation', async () => {
@@ -2718,7 +2713,7 @@ describe('webContents module', () => {
 
       await w.loadURL('about:blank');
 
-      expect(w.webContents.caretBrowsingEnabled).to.be.true();
+      expect(w.webContents.caretBrowsingEnabled).to.be.true;
     });
 
     it('tracks each WebContents independently', () => {
@@ -2730,11 +2725,11 @@ describe('webContents module', () => {
 
       w1.webContents.caretBrowsingEnabled = false;
 
-      expect(w1.webContents.caretBrowsingEnabled).to.be.false();
-      expect(w2.webContents.caretBrowsingEnabled).to.be.true();
+      expect(w1.webContents.caretBrowsingEnabled).to.be.false;
+      expect(w2.webContents.caretBrowsingEnabled).to.be.true;
 
       w2.webContents.caretBrowsingEnabled = false;
-      expect(w2.webContents.caretBrowsingEnabled).to.be.false();
+      expect(w2.webContents.caretBrowsingEnabled).to.be.false;
     });
 
     it('can be enabled again after a WebContents is destroyed with it enabled', async () => {
@@ -2747,10 +2742,10 @@ describe('webContents module', () => {
 
       const w2 = new BrowserWindow({ show: false });
       w2.webContents.caretBrowsingEnabled = true;
-      expect(w2.webContents.caretBrowsingEnabled).to.be.true();
+      expect(w2.webContents.caretBrowsingEnabled).to.be.true;
 
       w2.webContents.caretBrowsingEnabled = false;
-      expect(w2.webContents.caretBrowsingEnabled).to.be.false();
+      expect(w2.webContents.caretBrowsingEnabled).to.be.false;
     });
 
     // These depend on a binding that is only available when DCHECK_IS_ON.
@@ -2759,50 +2754,50 @@ describe('webContents module', () => {
         const w1 = new BrowserWindow({ show: false });
         const w2 = new BrowserWindow({ show: false });
 
-        expect(platformCaretBrowsing()).to.be.false();
+        expect(platformCaretBrowsing()).to.be.false;
 
         w1.webContents.caretBrowsingEnabled = true;
         w2.webContents.caretBrowsingEnabled = true;
-        expect(platformCaretBrowsing()).to.be.true();
+        expect(platformCaretBrowsing()).to.be.true;
 
         w1.webContents.caretBrowsingEnabled = false;
-        expect(platformCaretBrowsing()).to.be.true();
+        expect(platformCaretBrowsing()).to.be.true;
 
         w2.webContents.caretBrowsingEnabled = false;
-        expect(platformCaretBrowsing()).to.be.false();
+        expect(platformCaretBrowsing()).to.be.false;
       });
 
       it('takes at most one reference per WebContents however often it is set', () => {
         const w = new BrowserWindow({ show: false });
 
-        expect(platformCaretBrowsing()).to.be.false();
+        expect(platformCaretBrowsing()).to.be.false;
 
         w.webContents.caretBrowsingEnabled = true;
         w.webContents.caretBrowsingEnabled = true;
         w.webContents.caretBrowsingEnabled = true;
-        expect(platformCaretBrowsing()).to.be.true();
+        expect(platformCaretBrowsing()).to.be.true;
 
         w.webContents.caretBrowsingEnabled = false;
-        expect(platformCaretBrowsing()).to.be.false();
+        expect(platformCaretBrowsing()).to.be.false;
       });
 
       it('is withdrawn once an enabled WebContents is destroyed', async () => {
         const w = new BrowserWindow({ show: false });
         const contents = w.webContents;
         contents.caretBrowsingEnabled = true;
-        expect(platformCaretBrowsing()).to.be.true();
+        expect(platformCaretBrowsing()).to.be.true;
 
         const destroyed = once(contents, 'destroyed');
         w.close();
         await destroyed;
 
-        expect(platformCaretBrowsing()).to.be.false();
+        expect(platformCaretBrowsing()).to.be.false;
       });
 
       it('is not left on by a will-destroy listener that re-enables caret browsing', async () => {
         const contents = (webContents as typeof ElectronInternal.WebContents).create();
 
-        expect(platformCaretBrowsing()).to.be.false();
+        expect(platformCaretBrowsing()).to.be.false;
 
         // will-destroy is emitted from the destructor, after it has released
         // this WebContents' reference, while the wrapper is still dispatchable.
@@ -2814,7 +2809,7 @@ describe('webContents module', () => {
         contents.destroy();
         await destroyed;
 
-        expect(platformCaretBrowsing()).to.be.false();
+        expect(platformCaretBrowsing()).to.be.false;
       });
     });
 
@@ -2877,7 +2872,7 @@ describe('webContents module', () => {
         const [, guest] = await created;
 
         expect(guest.getType()).to.equal('webview');
-        expect(guest.caretBrowsingEnabled).to.be.true();
+        expect(guest.caretBrowsingEnabled).to.be.true;
       });
 
       ifit(isTestingBindingAvailable())(
@@ -2890,15 +2885,15 @@ describe('webContents module', () => {
           w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
           const [, guest] = await created;
 
-          expect(guest.caretBrowsingEnabled).to.be.true();
+          expect(guest.caretBrowsingEnabled).to.be.true;
 
           // An inherited preference has to come with its own reference, otherwise
           // the guest keeps caret browsing on with nothing holding the count up.
           w.webContents.caretBrowsingEnabled = false;
-          expect(platformCaretBrowsing()).to.be.true();
+          expect(platformCaretBrowsing()).to.be.true;
 
           guest.caretBrowsingEnabled = false;
-          expect(platformCaretBrowsing()).to.be.false();
+          expect(platformCaretBrowsing()).to.be.false;
         }
       );
 
@@ -2910,8 +2905,8 @@ describe('webContents module', () => {
         w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
         const [, guest] = await created;
 
-        expect(guest.caretBrowsingEnabled).to.be.true();
-        expect(platformCaretBrowsing()).to.be.true();
+        expect(guest.caretBrowsingEnabled).to.be.true;
+        expect(platformCaretBrowsing()).to.be.true;
 
         // An attached guest's WebContents is owned by its embedder frame, so the
         // wrapper holding the reference is only deleted at garbage collection.
@@ -2919,7 +2914,7 @@ describe('webContents module', () => {
         w.close();
         await destroyed;
 
-        expect(platformCaretBrowsing()).to.be.false();
+        expect(platformCaretBrowsing()).to.be.false;
       });
     });
   });
@@ -3828,7 +3823,7 @@ describe('webContents module', () => {
       >;
       w.webContents.executeJavaScript('window.open("about:blank", undefined, "noopener")', true);
       const [childWindow] = await childPromise;
-      expect(childWindow.webContents.opener).to.be.null();
+      expect(childWindow.webContents.opener).to.be.null;
     });
     it('can get opener with a[target=_blank][rel=opener]', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
@@ -3866,7 +3861,7 @@ describe('webContents module', () => {
         true
       );
       const [childWindow] = await childPromise;
-      expect(childWindow.webContents.opener).to.be.null();
+      expect(childWindow.webContents.opener).to.be.null;
     });
   });
 
@@ -3886,7 +3881,7 @@ describe('webContents module', () => {
 
     it('is null before a url is committed', () => {
       const w = new BrowserWindow({ show: false });
-      expect(w.webContents.focusedFrame).to.be.null();
+      expect(w.webContents.focusedFrame).to.be.null;
     });
 
     it('is set when main frame is focused', async () => {
@@ -4013,7 +4008,7 @@ describe('webContents module', () => {
       const destroyed = once(w.webContents, 'destroyed');
       w.loadURL(`${serverUrl}/redirect-cross-site`);
       await destroyed;
-      expect(currentRenderViewDeletedEmitted).to.be.false('current-render-view-deleted was emitted');
+      expect(currentRenderViewDeletedEmitted, 'current-render-view-deleted was emitted').to.be.false;
     });
 
     it('does not emit current-render-view-deleted when speculative RVHs are deleted', async () => {
@@ -4036,7 +4031,7 @@ describe('webContents module', () => {
       childWindow!.webContents.removeListener('current-render-view-deleted' as any, renderViewDeletedHandler);
       parentWindow.close();
       await destroyed;
-      expect(currentRenderViewDeletedEmitted).to.be.false('child window was destroyed');
+      expect(currentRenderViewDeletedEmitted, 'child window was destroyed').to.be.false;
     });
 
     it('emits current-render-view-deleted if the current RVHs are deleted', async () => {
@@ -4055,7 +4050,7 @@ describe('webContents module', () => {
       const destroyed = once(w.webContents, 'destroyed');
       w.loadURL(`${serverUrl}/redirect-cross-site`);
       await destroyed;
-      expect(currentRenderViewDeletedEmitted).to.be.true("current-render-view-deleted wasn't emitted");
+      expect(currentRenderViewDeletedEmitted, "current-render-view-deleted wasn't emitted").to.be.true;
       expect(ownerDuringDeletion).to.equal(w);
       expect(windowFromContentsDuringDeletion).to.equal(w);
     });
@@ -4306,7 +4301,7 @@ describe('webContents module', () => {
             await setTimeout(1000);
             process.kill(victim, 'SIGKILL');
 
-            await expect(load).to.eventually.be.rejected();
+            await expect(load).rejects.toThrow();
             await w.webContents.loadURL('about:blank');
             expect(w.webContents.isCrashed()).to.equal(false);
           }
@@ -4387,7 +4382,7 @@ describe('webContents module', () => {
             expect(color).to.equal('#FFEEDD');
             w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
           } else if (count === 1) {
-            expect(color).to.be.null();
+            expect(color).to.be.null;
             done();
           }
         } catch (e) {
@@ -4419,7 +4414,7 @@ describe('webContents module', () => {
         const destroyed = once(wc, 'destroyed');
         w.destroy();
         await destroyed;
-        expect(wc.isDestroyed()).to.be.true();
+        expect(wc.isDestroyed()).to.be.true;
         return wc;
       };
 
@@ -4665,10 +4660,7 @@ describe('webContents module', () => {
 
       const badPath = path.join('i', 'am', 'a', 'super', 'bad', 'path');
       const promise = w.webContents.takeHeapSnapshot(badPath);
-      return expect(promise).to.be.eventually.rejectedWith(
-        Error,
-        `Failed to take heap snapshot with invalid file path ${badPath}`
-      );
+      return expect(promise).rejects.toThrow(`Failed to take heap snapshot with invalid file path ${badPath}`);
     });
 
     it('fails with invalid render process', async () => {
@@ -4683,10 +4675,7 @@ describe('webContents module', () => {
 
       w.webContents.destroy();
       const promise = w.webContents.takeHeapSnapshot(filePath);
-      return expect(promise).to.be.eventually.rejectedWith(
-        Error,
-        'Failed to take heap snapshot with nonexistent render frame'
-      );
+      return expect(promise).rejects.toThrow('Failed to take heap snapshot with nonexistent render frame');
     });
   });
 
@@ -4972,7 +4961,7 @@ describe('webContents module', () => {
       // These will hard crash in Chromium unless we type-check
       for (const [key, value] of Object.entries(badTypes)) {
         const param = { [key]: value };
-        await expect(w.webContents.printToPDF(param)).to.eventually.be.rejected();
+        await expect(w.webContents.printToPDF(param)).rejects.toThrow();
       }
     });
 
@@ -4989,7 +4978,7 @@ describe('webContents module', () => {
             right: 5
           }
         })
-      ).to.eventually.be.rejectedWith('margins must be less than or equal to pageSize');
+      ).rejects.toThrow('margins must be less than or equal to pageSize');
     });
 
     it('does not crash when called multiple times in parallel', async () => {
@@ -5002,7 +4991,7 @@ describe('webContents module', () => {
 
       const results = await Promise.all(promises);
       for (const data of results) {
-        expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
+        expect(data).to.be.an.instanceof(Buffer).that.is.not.empty;
       }
     });
 
@@ -5014,7 +5003,7 @@ describe('webContents module', () => {
       w.webContents.destroy();
 
       first.catch(() => {});
-      await expect(second).to.eventually.be.rejectedWith('Object has been destroyed');
+      await expect(second).rejects.toThrow('Object has been destroyed');
     });
 
     it('does not crash when called multiple times in sequence', async () => {
@@ -5027,7 +5016,7 @@ describe('webContents module', () => {
       }
 
       for (const data of results) {
-        expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
+        expect(data).to.be.an.instanceof(Buffer).that.is.not.empty;
       }
     });
 
@@ -5035,7 +5024,7 @@ describe('webContents module', () => {
       await w.loadURL('data:text/html,<h1>Hello, World!</h1>');
 
       const data = await w.webContents.printToPDF({});
-      expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
+      expect(data).to.be.an.instanceof(Buffer).that.is.not.empty;
     });
 
     type PageSizeString = Exclude<Required<Electron.PrintToPDFOptions>['pageSize'], Electron.Size>;
@@ -5068,8 +5057,8 @@ describe('webContents module', () => {
 
         const approxEq = (a: number, b: number, epsilon = 0.01) => Math.abs(a - b) <= epsilon;
 
-        expect(approxEq(width, paperFormats[format].width)).to.be.true();
-        expect(approxEq(height, paperFormats[format].height)).to.be.true();
+        expect(approxEq(width, paperFormats[format].width)).to.be.true;
+        expect(approxEq(height, paperFormats[format].height)).to.be.true;
       }
     });
 
@@ -5084,8 +5073,8 @@ describe('webContents module', () => {
 
       const pdfInfo = await readPDF(data);
 
-      expect(containsText(pdfInfo.textContent, /I'm a PDF header/)).to.be.true();
-      expect(containsText(pdfInfo.textContent, /I'm a PDF footer/)).to.be.true();
+      expect(containsText(pdfInfo.textContent, /I'm a PDF header/)).to.be.true;
+      expect(containsText(pdfInfo.textContent, /I'm a PDF footer/)).to.be.true;
     });
 
     it('in landscape mode', async () => {
@@ -5118,7 +5107,7 @@ describe('webContents module', () => {
     it('recovers after a prior call fails with an invalid page range', async () => {
       await w.loadURL('data:text/html,<h1>Hello, World!</h1>');
 
-      await expect(w.webContents.printToPDF({ pageRanges: '999' })).to.eventually.be.rejected();
+      await expect(w.webContents.printToPDF({ pageRanges: '999' })).rejects.toThrow();
 
       const data = await w.webContents.printToPDF({});
       const pdfInfo = await readPDF(data);
@@ -5130,7 +5119,7 @@ describe('webContents module', () => {
 
       const data = await w.webContents.printToPDF({});
       const pdfInfo = await readPDF(data);
-      expect(pdfInfo.markInfo).to.be.null();
+      expect(pdfInfo.markInfo).to.be.null;
     });
 
     it('can print same-origin iframes', async () => {
@@ -5138,7 +5127,7 @@ describe('webContents module', () => {
 
       const data = await w.webContents.printToPDF({});
       const pdfInfo = await readPDF(data);
-      expect(containsText(pdfInfo.textContent, /Virtual member functions/)).to.be.true();
+      expect(containsText(pdfInfo.textContent, /Virtual member functions/)).to.be.true;
     });
 
     // TODO(codebytere): OOPIF printing is disabled on Linux at the moment due to crashes.
@@ -5156,7 +5145,7 @@ describe('webContents module', () => {
 
       const data = await w.webContents.printToPDF({});
       const pdfInfo = await readPDF(data);
-      expect(containsText(pdfInfo.textContent, /This page is displayed in an iframe./)).to.be.true();
+      expect(containsText(pdfInfo.textContent, /This page is displayed in an iframe./)).to.be.true;
     });
 
     it('can generate tag data for PDFs', async () => {
@@ -5179,7 +5168,7 @@ describe('webContents module', () => {
       const data = await w.webContents.printToPDF({});
       const pdfInfo = await readPDF(data);
       expect(pdfInfo.numPages).to.equal(2);
-      expect(containsText(pdfInfo.textContent, /Cat: The Ideal Pet/)).to.be.true();
+      expect(containsText(pdfInfo.textContent, /Cat: The Ideal Pet/)).to.be.true;
     });
 
     it('from an existing pdf document in a WebView', async () => {
@@ -5216,7 +5205,7 @@ describe('webContents module', () => {
       const data = await webContents.printToPDF({});
       const pdfInfo = await readPDF(data);
       expect(pdfInfo.numPages).to.equal(2);
-      expect(containsText(pdfInfo.textContent, /Cat: The Ideal Pet/)).to.be.true();
+      expect(containsText(pdfInfo.textContent, /Cat: The Ideal Pet/)).to.be.true;
     });
   });
 
@@ -5237,7 +5226,7 @@ describe('webContents module', () => {
       );
 
       const result = await w.webContents.executeJavaScript('runTest(true)', true);
-      expect(result).to.be.true();
+      expect(result).to.be.true;
     });
   });
 
@@ -5335,7 +5324,7 @@ describe('webContents module', () => {
       const body = await w.webContents.executeJavaScript('document.documentElement.textContent');
       expect(body).to.equal(`Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`);
       expect(eventRequest.url).to.equal(serverUrl + '/');
-      expect(eventAuthInfo.isProxy).to.be.false();
+      expect(eventAuthInfo.isProxy).to.be.false;
       expect(eventAuthInfo.scheme).to.equal('basic');
       expect(eventAuthInfo.host).to.equal('127.0.0.1');
       expect(eventAuthInfo.port).to.equal(serverPort);
@@ -5359,7 +5348,7 @@ describe('webContents module', () => {
       const body = await w.webContents.executeJavaScript('document.documentElement.textContent');
       expect(body).to.equal(`Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`);
       expect(eventRequest.url).to.equal(`${serverUrl}/no-auth`);
-      expect(eventAuthInfo.isProxy).to.be.true();
+      expect(eventAuthInfo.isProxy).to.be.true;
       expect(eventAuthInfo.scheme).to.equal('basic');
       expect(eventAuthInfo.host).to.equal('127.0.0.1');
       expect(eventAuthInfo.port).to.equal(proxyServerPort);
@@ -5551,7 +5540,7 @@ describe('webContents module', () => {
       const destroyed = once(w, 'destroyed');
       w.close();
       await destroyed;
-      expect(w.isDestroyed()).to.be.true();
+      expect(w.isDestroyed()).to.be.true;
     });
 
     it('closes when close() is called after loading a page', async () => {
@@ -5560,7 +5549,7 @@ describe('webContents module', () => {
       const destroyed = once(w, 'destroyed');
       w.close();
       await destroyed;
-      expect(w.isDestroyed()).to.be.true();
+      expect(w.isDestroyed()).to.be.true;
     });
 
     it('can be GCed before loading a page', async () => {
@@ -5584,7 +5573,7 @@ describe('webContents module', () => {
       const closed = once(w, 'closed');
       w.webContents.close();
       await closed;
-      expect(w.isDestroyed()).to.be.true();
+      expect(w.isDestroyed()).to.be.true;
     });
 
     it('ignores beforeunload if waitForBeforeUnload not specified', async () => {
@@ -5597,7 +5586,7 @@ describe('webContents module', () => {
       const destroyed = once(w, 'destroyed');
       w.close();
       await destroyed;
-      expect(w.isDestroyed()).to.be.true();
+      expect(w.isDestroyed()).to.be.true;
     });
 
     it('runs beforeunload if waitForBeforeUnload is specified', async () => {
@@ -5607,7 +5596,7 @@ describe('webContents module', () => {
       const willPreventUnload = once(w, 'will-prevent-unload');
       w.close({ waitForBeforeUnload: true });
       await willPreventUnload;
-      expect(w.isDestroyed()).to.be.false();
+      expect(w.isDestroyed()).to.be.false;
     });
 
     it('overriding beforeunload prevention results in webcontents close', async () => {
@@ -5618,7 +5607,7 @@ describe('webContents module', () => {
       const destroyed = once(w, 'destroyed');
       w.close({ waitForBeforeUnload: true });
       await destroyed;
-      expect(w.isDestroyed()).to.be.true();
+      expect(w.isDestroyed()).to.be.true;
     });
   });
 

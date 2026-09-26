@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { once } from 'node:events';
 import * as http from 'node:http';
@@ -128,7 +128,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         );
         for (const result of isolatedGlobals) {
           if (webPreferences.contextIsolation === undefined || webPreferences.contextIsolation) {
-            expect(result).to.be.undefined();
+            expect(result).to.be.undefined;
           } else {
             expect(result).to.equal(true);
           }

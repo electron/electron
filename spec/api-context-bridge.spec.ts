@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -458,7 +458,7 @@ describe('contextBridge', () => {
           const obj = { foo: 1 };
           return root.example(obj, obj);
         });
-        expect(result).to.be.true();
+        expect(result).to.be.true;
       });
 
       it('should properly handle errors thrown in proxied functions', async () => {
@@ -1699,7 +1699,7 @@ describe('contextBridge', () => {
             // @ts-ignore
             return globalThis.result;
           }, 999);
-          expect(result).to.be.true();
+          expect(result).to.be.true;
         });
 
         it('safely clones returned objects', async () => {
@@ -1714,7 +1714,7 @@ describe('contextBridge', () => {
             // @ts-ignore
             return globalThis.safe;
           }, 999);
-          expect(result).to.be.true();
+          expect(result).to.be.true;
         });
 
         it('uses internal Function.prototype.toString', async () => {

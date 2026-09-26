@@ -14,7 +14,7 @@ import {
   type MessageBoxOptions
 } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 import { WebSocket, WebSocketServer } from 'ws';
 
 import * as ChildProcess from 'node:child_process';
@@ -536,7 +536,7 @@ describe('web security', () => {
               w.loadURL(
                 "data:text/html,<head><meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'self'; script-src 'self' 'unsafe-inline'\"></meta></head>"
               );
-              await expect(w.webContents.executeJavaScript('eval("true")')).to.be.rejected();
+              await expect(w.webContents.executeJavaScript('eval("true")')).rejects.toThrow();
             });
 
             it('does not prevent eval from running in executeJavaScript when there is no csp', async () => {
@@ -545,7 +545,7 @@ describe('web security', () => {
                 webPreferences: { sandbox, contextIsolation }
               });
               w.loadURL('data:text/html,');
-              expect(await w.webContents.executeJavaScript('eval("true")')).to.be.true();
+              expect(await w.webContents.executeJavaScript('eval("true")')).to.be.true;
             });
           });
         }
@@ -932,7 +932,7 @@ describe('command line switches', () => {
       });
       const stderr = await stderrComplete;
       expect(stderr).to.match(/Completed startup tracing to/);
-      expect(fs.existsSync(outputFilePath)).to.be.true('output exists');
+      expect(fs.existsSync(outputFilePath), 'output exists').to.be.true;
       expect(fs.statSync(outputFilePath).size).to.be.above(
         0,
         `the trace output file is empty, check "${outputFilePath}"`
@@ -1026,16 +1026,14 @@ describe('chromium features', () => {
 
       await w.webContents.executeJavaScript("document.getElementById('favDialog').showModal()", true);
       const open1 = await w.webContents.executeJavaScript("document.getElementById('favDialog').open");
-      expect(open1).to.be.true();
+      expect(open1).to.be.true;
 
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
       await setTimeout(1000);
-      await expect(
-        waitUntil(async () => {
-          return await w.webContents.executeJavaScript("document.getElementById('favDialog').open");
-        })
-      ).to.eventually.be.fulfilled();
-      expect(w.isFullScreen()).to.be.false();
+      await waitUntil(async () => {
+        return await w.webContents.executeJavaScript("document.getElementById('favDialog').open");
+      });
+      expect(w.isFullScreen()).to.be.false;
 
       // Test that with lock, with ESC:
       // - the window does not leave fullscreen
@@ -1060,17 +1058,15 @@ describe('chromium features', () => {
 
       await w.webContents.executeJavaScript("document.getElementById('favDialog').showModal()", true);
       const open2 = await w.webContents.executeJavaScript("document.getElementById('favDialog').open");
-      expect(open2).to.be.true();
+      expect(open2).to.be.true;
 
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
       await setTimeout(1000);
-      await expect(
-        waitUntil(async () => {
-          const openAfter2 = await w.webContents.executeJavaScript("document.getElementById('favDialog').open");
-          return openAfter2 === false;
-        })
-      ).to.eventually.be.fulfilled();
-      expect(w.isFullScreen()).to.be.true();
+      await waitUntil(async () => {
+        const openAfter2 = await w.webContents.executeJavaScript("document.getElementById('favDialog').open");
+        return openAfter2 === false;
+      });
+      expect(w.isFullScreen()).to.be.true;
     });
   });
 
@@ -1500,7 +1496,7 @@ describe('chromium features', () => {
         `,
           true
         );
-        expect(result).to.be.true();
+        expect(result).to.be.true;
         done();
       });
 
@@ -1556,7 +1552,7 @@ describe('chromium features', () => {
         `,
           true
         );
-        expect(result).to.be.true();
+        expect(result).to.be.true;
         done();
       });
 
@@ -1666,7 +1662,7 @@ describe('chromium features', () => {
         if (permission === 'fileSystem') {
           const { fileAccessType, isDirectory, filePath } = details;
           expect(['writable', 'readable']).to.contain(fileAccessType);
-          expect(isDirectory).to.be.false();
+          expect(isDirectory).to.be.false;
           expect(filePath).to.equal(testFile);
           calls++;
           return true;
@@ -1719,7 +1715,7 @@ describe('chromium features', () => {
         if (permission === 'fileSystem') {
           const { fileAccessType, isDirectory, filePath } = details;
           expect(fileAccessType).to.equal('readable');
-          expect(isDirectory).to.be.true();
+          expect(isDirectory).to.be.true;
           expect(filePath).to.equal(testDir);
           return false;
         }
@@ -1769,7 +1765,7 @@ describe('chromium features', () => {
         if (permission === 'fileSystem') {
           const { fileAccessType, isDirectory, filePath } = details;
           expect(fileAccessType).to.equal('readable');
-          expect(isDirectory).to.be.true();
+          expect(isDirectory).to.be.true;
           expect(filePath).to.equal(testDir);
           return true;
         }
@@ -1823,7 +1819,7 @@ describe('chromium features', () => {
         if (permission === 'fileSystem') {
           const { fileAccessType, isDirectory, filePath } = details;
           expect(fileAccessType).to.deep.equal('readable');
-          expect(isDirectory).to.be.false();
+          expect(isDirectory).to.be.false;
           expect(filePath).to.equal(testFile);
           return true;
         }
@@ -1935,7 +1931,7 @@ describe('chromium features', () => {
         true
       );
       expect(status).to.equal('SecurityError');
-      expect(requests).to.be.empty();
+      expect(requests).to.be.empty;
 
       // The same request from the top-level document reaches the handler.
       await pasteHandle(w, w.webContents.mainFrame, testFile);
@@ -2460,7 +2456,7 @@ describe('chromium features', () => {
         { b = window.open('about:blank', '', 'resizable=no,show=no'); null }
       `);
       const [, popup] = (await once(app, 'browser-window-created')) as [any, BrowserWindow];
-      expect(popup.isResizable()).to.be.true();
+      expect(popup.isResizable()).to.be.true;
     });
 
     // FIXME(zcbenz): This test is making the spec runner hang on exit on Windows.
@@ -2483,7 +2479,7 @@ describe('chromium features', () => {
         }
       })()`);
 
-        expect(eventData.isProcessGlobalUndefined).to.be.true();
+        expect(eventData.isProcessGlobalUndefined).to.be.true;
       }
     );
 
@@ -2532,7 +2528,7 @@ describe('chromium features', () => {
         contents.sendInputEvent({ type: 'mouseUp', clickCount: 1, x: 1, y: 1 });
         const [, window] = (await once(app, 'browser-window-created')) as [any, BrowserWindow];
         const preferences = window.webContents.getLastWebPreferences();
-        expect(preferences!.javascript).to.be.false();
+        expect(preferences!.javascript).to.be.false;
       }
     );
 
@@ -2734,23 +2730,23 @@ describe('chromium features', () => {
         b.close();
         return { eventData: e.data }
       })()`);
-      expect(eventData.isWebViewGlobalUndefined).to.be.true();
+      expect(eventData.isWebViewGlobalUndefined).to.be.true;
     });
 
     it('throws an exception when the arguments cannot be converted to strings', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
-      await expect(w.webContents.executeJavaScript("window.open('', { toString: null })")).to.eventually.be.rejected();
+      await expect(w.webContents.executeJavaScript("window.open('', { toString: null })")).rejects.toThrow();
 
-      await expect(w.webContents.executeJavaScript("window.open('', '', { toString: 3 })")).to.eventually.be.rejected();
+      await expect(w.webContents.executeJavaScript("window.open('', '', { toString: 3 })")).rejects.toThrow();
     });
 
     it('does not throw an exception when the features include webPreferences', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
-      await expect(
-        w.webContents.executeJavaScript("const b = window.open('', '', 'show=no,webPreferences='); b.close(); null")
-      ).to.eventually.be.fulfilled();
+      await w.webContents.executeJavaScript(
+        "const b = window.open('', '', 'show=no,webPreferences='); b.close(); null"
+      );
     });
   });
 
@@ -2808,7 +2804,7 @@ describe('chromium features', () => {
         }));
       `);
 
-      expect(sourceIsChild).to.be.true();
+      expect(sourceIsChild).to.be.true;
       expect(origin).to.equal('null');
     });
 
@@ -3140,7 +3136,7 @@ describe('chromium features', () => {
       const labels = await w.webContents.executeJavaScript(
         'navigator.mediaDevices.enumerateDevices().then(ds => ds.map(d => d.label))'
       );
-      expect(labels.some((l: any) => l)).to.be.true();
+      expect(labels.some((l: any) => l)).to.be.true;
     });
 
     it('does not return labels of enumerated devices when all permission denied', async () => {
@@ -3150,7 +3146,7 @@ describe('chromium features', () => {
       const labels = await w.webContents.executeJavaScript(
         'navigator.mediaDevices.enumerateDevices().then(ds => ds.map(d => d.label))'
       );
-      expect(labels.some((l: any) => l)).to.be.false();
+      expect(labels.some((l: any) => l)).to.be.false;
     });
 
     it('does not return labels of enumerated audio devices when permission denied', async () => {
@@ -3166,9 +3162,9 @@ describe('chromium features', () => {
       `
       );
       const audioDevices = devices.filter((d: any) => d.kind === 'audioinput');
-      expect(audioDevices.some((d: any) => d.label)).to.be.false();
+      expect(audioDevices.some((d: any) => d.label)).to.be.false;
       const videoDevices = devices.filter((d: any) => d.kind === 'videoinput');
-      expect(videoDevices.some((d: any) => d.label)).to.be.true();
+      expect(videoDevices.some((d: any) => d.label)).to.be.true;
     });
 
     it('does not return labels of enumerated video devices when permission denied', async () => {
@@ -3184,9 +3180,9 @@ describe('chromium features', () => {
       `
       );
       const audioDevices = devices.filter((d: any) => d.kind === 'audioinput');
-      expect(audioDevices.some((d: any) => d.label)).to.be.true();
+      expect(audioDevices.some((d: any) => d.label)).to.be.true;
       const videoDevices = devices.filter((d: any) => d.kind === 'videoinput');
-      expect(videoDevices.some((d: any) => d.label)).to.be.false();
+      expect(videoDevices.some((d: any) => d.label)).to.be.false;
     });
 
     it('returns the same device ids across reloads', async () => {
@@ -3245,7 +3241,7 @@ describe('chromium features', () => {
             }
           }
         }).then((stream) => stream.getVideoTracks())`);
-      expect(labels.some((l: any) => l)).to.be.true();
+      expect(labels.some((l: any) => l)).to.be.true;
     });
 
     it('fails with "not supported" for getDisplayMedia', async () => {
@@ -3255,7 +3251,7 @@ describe('chromium features', () => {
         'navigator.mediaDevices.getDisplayMedia({video: true}).then(s => ({ok: true}), e => ({ok: false, err: e.message}))',
         true
       );
-      expect(ok).to.be.false();
+      expect(ok).to.be.false;
       expect(err).to.equal('Not supported');
     });
 
@@ -3284,7 +3280,7 @@ describe('chromium features', () => {
         const w = new BrowserWindow({ show: false });
         await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
         const { ok, err } = await w.webContents.executeJavaScript(deviceGetUserMedia, true);
-        expect(ok).to.be.true(err);
+        expect(ok, err).to.be.true;
         expect(seen).to.have.lengthOf(1);
         expect(seen[0].permission).to.equal('media');
         expect(seen[0].mediaTypes).to.have.members(['audio', 'video']);
@@ -3296,7 +3292,7 @@ describe('chromium features', () => {
         const w = new BrowserWindow({ show: false });
         await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
         const { ok, err, kinds } = await w.webContents.executeJavaScript(desktopGetUserMedia, true);
-        expect(ok).to.be.true(err);
+        expect(ok, err).to.be.true;
         expect(kinds).to.deep.equal(['video']);
         expect(seen).to.have.lengthOf(1);
         expect(seen[0].permission).to.equal('display-capture');
@@ -3309,7 +3305,7 @@ describe('chromium features', () => {
         const w = new BrowserWindow({ show: false });
         await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
         const { ok, err } = await w.webContents.executeJavaScript(desktopGetUserMedia, true);
-        expect(ok).to.be.false();
+        expect(ok).to.be.false;
         expect(err).to.equal('Permission denied');
         expect(seen.map((r) => r.permission)).to.deep.equal(['display-capture']);
       });
@@ -3325,7 +3321,7 @@ describe('chromium features', () => {
         const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
         await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
         const { ok, err } = await w.webContents.executeJavaScript(getDisplayMedia, true);
-        expect(ok).to.be.true(err);
+        expect(ok, err).to.be.true;
         expect(requestsSeenByDisplayHandler).to.equal(1);
         expect(seen).to.have.lengthOf(1);
         expect(seen[0].permission).to.equal('display-capture');
@@ -3363,15 +3359,15 @@ describe('chromium features', () => {
           ok: boolean;
           err: string;
         };
-        expect(denied.ok).to.be.false();
+        expect(denied.ok).to.be.false;
         expect(denied.err).to.equal('Permission denied');
-        expect(seen).to.be.empty();
+        expect(seen).to.be.empty;
 
         const allowed = (await (await loadIframe('display-capture')).executeJavaScript(desktopGetUserMedia, true)) as {
           ok: boolean;
           err: string;
         };
-        expect(allowed.ok).to.be.true(allowed.err);
+        expect(allowed.ok, allowed.err).to.be.true;
         expect(seen.map((r) => r.permission)).to.deep.equal(['display-capture']);
       });
 
@@ -3386,9 +3382,9 @@ describe('chromium features', () => {
         const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
         await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
         const { ok, err } = await w.webContents.executeJavaScript(getDisplayMedia, true);
-        expect(ok).to.be.false();
+        expect(ok).to.be.false;
         expect(err).to.equal('Permission denied');
-        expect(displayHandlerCalled).to.be.false();
+        expect(displayHandlerCalled).to.be.false;
         expect(seen.map((r) => r.permission)).to.deep.equal(['display-capture']);
       });
     });
@@ -3462,7 +3458,7 @@ describe('chromium features', () => {
               const openedNull = await w.webContents.executeJavaScript(
                 `window.open(${JSON.stringify(child)}, "", "show=no,nodeIntegration=${nodeIntegration ? 'yes' : 'no'}") === null`
               );
-              expect(openedNull).to.be.true();
+              expect(openedNull).to.be.true;
               return;
             }
             const childOpenerLocation = await w.webContents.executeJavaScript(`new Promise(resolve => {
@@ -3474,7 +3470,7 @@ describe('chromium features', () => {
             if (openerAccessible) {
               expect(childOpenerLocation).to.be.a('string');
             } else {
-              expect(childOpenerLocation).to.be.null();
+              expect(childOpenerLocation).to.be.null;
             }
           });
         }
@@ -3520,7 +3516,7 @@ describe('chromium features', () => {
           if (openerAccessible) {
             expect(childOpenerLocation).to.be.a('string');
           } else {
-            expect(childOpenerLocation).to.be.null();
+            expect(childOpenerLocation).to.be.null;
           }
         });
       }
@@ -3706,7 +3702,7 @@ describe('chromium features', () => {
                 await w.webContents.executeJavaScript(`${storageName}.removeItem(${JSON.stringify(testKeyName)});`);
               }
             })()
-          ).to.eventually.be.rejected();
+          ).rejects.toThrow();
         });
       }
     });
@@ -3826,7 +3822,7 @@ describe('chromium features', () => {
           const pageExists = await w.webContents.executeJavaScript(
             `window.hasOwnProperty('chrome') && window.location.host === '${host}'`
           );
-          expect(pageExists).to.be.true();
+          expect(pageExists).to.be.true;
         });
       });
     }
@@ -3843,11 +3839,11 @@ describe('chromium features', () => {
       expect(webContents.getFocusedWebContents()?.id).to.equal(w2.webContents.id);
       let focus = false;
       focus = await w1.webContents.executeJavaScript('document.hasFocus()');
-      expect(focus).to.be.false();
+      expect(focus).to.be.false;
       focus = await w2.webContents.executeJavaScript('document.hasFocus()');
-      expect(focus).to.be.true();
+      expect(focus).to.be.true;
       focus = await w3.webContents.executeJavaScript('document.hasFocus()');
-      expect(focus).to.be.false();
+      expect(focus).to.be.false;
     });
   });
 
@@ -3896,7 +3892,7 @@ describe('chromium features', () => {
         const w = new BrowserWindow({ show: false });
         await w.loadURL(serverUrl);
         const platform = await w.webContents.executeJavaScript('navigator.userAgentData.platform');
-        expect(platform).not.to.be.empty();
+        expect(platform).not.to.be.empty;
       });
 
       it('when there is a session-wide UA override', async () => {
@@ -3905,7 +3901,7 @@ describe('chromium features', () => {
         const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
         await w.loadURL(serverUrl);
         const platform = await w.webContents.executeJavaScript('navigator.userAgentData.platform');
-        expect(platform).not.to.be.empty();
+        expect(platform).not.to.be.empty;
       });
 
       it('when there is a WebContents-specific UA override', async () => {
@@ -3913,7 +3909,7 @@ describe('chromium features', () => {
         w.webContents.setUserAgent('foo');
         await w.loadURL(serverUrl);
         const platform = await w.webContents.executeJavaScript('navigator.userAgentData.platform');
-        expect(platform).not.to.be.empty();
+        expect(platform).not.to.be.empty;
       });
 
       it('when there is a WebContents-specific UA override at load time', async () => {
@@ -3922,7 +3918,7 @@ describe('chromium features', () => {
           userAgent: 'foo'
         });
         const platform = await w.webContents.executeJavaScript('navigator.userAgentData.platform');
-        expect(platform).not.to.be.empty();
+        expect(platform).not.to.be.empty;
       });
     });
 
@@ -3993,7 +3989,7 @@ describe('chromium features', () => {
         const canWebglContextBeCreated = await w.webContents.executeJavaScript(`
           document.createElement('canvas').getContext('webgl') != null;
         `);
-        expect(canWebglContextBeCreated).to.be.true();
+        expect(canWebglContextBeCreated).to.be.true;
       }
     });
   });
@@ -4144,7 +4140,7 @@ describe('chromium features', () => {
         expect(info.dialogType).to.equal('confirm');
         cb(true, '');
         const result = await resultPromise;
-        expect(result).to.be.true();
+        expect(result).to.be.true;
       });
     });
 
@@ -4248,7 +4244,7 @@ describe('chromium features', () => {
           return Promise.resolve({ response: 0, checkboxChecked: false });
         };
         await w.webContents.executeJavaScript('alert("hi")');
-        expect(dialogWasShown).to.be.true();
+        expect(dialogWasShown).to.be.true;
 
         // Navigating back to the first origin means alerts are blocked again.
         w.loadURL('https://example1');
@@ -4274,7 +4270,7 @@ describe('chromium features', () => {
           return Promise.resolve({ response: 0, checkboxChecked: false });
         };
         await w.webContents.executeJavaScript('alert("hi")');
-        expect(dialogWasShown).to.be.true();
+        expect(dialogWasShown).to.be.true;
       });
     });
     describe('disableDialogs web preference', () => {
@@ -4319,7 +4315,7 @@ describe('chromium features', () => {
     itremote('reports on-device recognition as unavailable without killing the renderer', async () => {
       const options = { langs: ['en-US'], processLocally: true };
       expect(await (window as any).SpeechRecognition.available(options)).to.equal('unavailable');
-      expect(await (window as any).SpeechRecognition.install(options)).to.be.false();
+      expect(await (window as any).SpeechRecognition.install(options)).to.be.false;
     });
   });
 
@@ -4338,27 +4334,27 @@ describe('chromium features', () => {
       speechSynthesis.cancel();
       speechSynthesis.speak(utter);
       // paused state after speak()
-      expect(speechSynthesis.paused).to.be.false();
+      expect(speechSynthesis.paused).to.be.false;
       await new Promise((resolve) => {
         utter.onstart = resolve;
       });
       // paused state after start event
-      expect(speechSynthesis.paused).to.be.false();
+      expect(speechSynthesis.paused).to.be.false;
 
       speechSynthesis.pause();
       // paused state changes async, right before the pause event
-      expect(speechSynthesis.paused).to.be.false();
+      expect(speechSynthesis.paused).to.be.false;
       await new Promise((resolve) => {
         utter.onpause = resolve;
       });
-      expect(speechSynthesis.paused).to.be.true();
+      expect(speechSynthesis.paused).to.be.true;
 
       speechSynthesis.resume();
       await new Promise((resolve) => {
         utter.onresume = resolve;
       });
       // paused state after resume event
-      expect(speechSynthesis.paused).to.be.false();
+      expect(speechSynthesis.paused).to.be.false;
 
       await new Promise((resolve) => {
         utter.onend = resolve;
@@ -4376,12 +4372,12 @@ describe('chromium features', () => {
       w.webContents.setDevToolsWebContents(devtools.webContents);
       w.webContents.openDevTools();
       await devToolsOpened;
-      expect(devtools.webContents.getURL().startsWith('devtools://devtools')).to.be.true();
+      expect(devtools.webContents.getURL().startsWith('devtools://devtools')).to.be.true;
 
       const result = await devtools.webContents.executeJavaScript(`
         document.body.querySelector('link[href*=\\'//theme/colors.css\\']')?.getAttribute('href');
       `);
-      expect(result.startsWith('devtools://theme/colors.css?sets=ui,chrome')).to.be.true();
+      expect(result.startsWith('devtools://theme/colors.css?sets=ui,chrome')).to.be.true;
       const colorAccentResult = await devtools.webContents.executeJavaScript(`
         const style = getComputedStyle(document.body);
         style.getPropertyValue('--color-accent');
@@ -4420,7 +4416,7 @@ describe('chromium features', () => {
         },
         path.join(fixturesPath, 'chromium', 'long-animation-frame.html')
       );
-      expect(hasAttribution).to.be.true();
+      expect(hasAttribution).to.be.true;
     });
   });
 });
@@ -4542,18 +4538,16 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     await fullscreenChange;
 
     const fullscreenWidth = await w.webContents.executeJavaScript("document.querySelector('iframe').offsetWidth");
-    expect(fullscreenWidth > 0).to.be.true();
+    expect(fullscreenWidth > 0).to.be.true;
 
     await w.webContents.executeJavaScript(
       "document.querySelector('iframe').contentWindow.postMessage('exitFullscreen', '*')"
     );
 
-    await expect(
-      waitUntil(async () => {
-        const width = await w.webContents.executeJavaScript("document.querySelector('iframe').offsetWidth");
-        return width === 0;
-      })
-    ).to.eventually.be.fulfilled();
+    await waitUntil(async () => {
+      const width = await w.webContents.executeJavaScript("document.querySelector('iframe').offsetWidth");
+      return width === 0;
+    });
   });
 
   ifit(process.platform === 'darwin')('can fullscreen from out-of-process iframes (macOS)', async () => {
@@ -4564,19 +4558,17 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     await fullscreenChange;
 
     const fullscreenWidth = await w.webContents.executeJavaScript("document.querySelector('iframe').offsetWidth");
-    expect(fullscreenWidth > 0).to.be.true();
+    expect(fullscreenWidth > 0).to.be.true;
 
     await w.webContents.executeJavaScript(
       "document.querySelector('iframe').contentWindow.postMessage('exitFullscreen', '*')"
     );
     await once(w.webContents, 'leave-html-full-screen');
 
-    await expect(
-      waitUntil(async () => {
-        const width = await w.webContents.executeJavaScript("document.querySelector('iframe').offsetWidth");
-        return width === 0;
-      })
-    ).to.eventually.be.fulfilled();
+    await waitUntil(async () => {
+      const width = await w.webContents.executeJavaScript("document.querySelector('iframe').offsetWidth");
+      return width === 0;
+    });
 
     w.setFullScreen(false);
     await once(w, 'leave-full-screen');
@@ -4592,7 +4584,7 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     );
 
     const fullscreenWidth = await w.webContents.executeJavaScript("document.querySelector('iframe').offsetWidth");
-    expect(fullscreenWidth > 0).to.true();
+    expect(fullscreenWidth > 0).to.true;
 
     await w.webContents.executeJavaScript('document.exitFullscreen()');
     const width = await w.webContents.executeJavaScript("document.querySelector('iframe').offsetWidth");
@@ -4620,7 +4612,7 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
       })()`,
       true
     );
-    expect(fullscreenElementIsIframe).to.be.true('parent document fullscreenElement is the iframe');
+    expect(fullscreenElementIsIframe, 'parent document fullscreenElement is the iframe').to.be.true;
 
     await w.webContents.executeJavaScript('document.exitFullscreen()');
   });
@@ -4708,7 +4700,7 @@ describe('navigator.serial', () => {
     await getPorts();
     if (havePorts) {
       const grantedPorts = await w.webContents.executeJavaScript('navigator.serial.getPorts()');
-      expect(grantedPorts).to.not.be.empty();
+      expect(grantedPorts).to.not.be.empty;
     }
   });
 
@@ -4884,7 +4876,7 @@ describe('navigator.clipboard.write', { tags: ['serial'] }, () => {
 
   it('returns clipboard contents when a PermissionRequestHandler is not defined', async () => {
     const clipboard = await writeClipboard();
-    expect(clipboard).to.be.undefined();
+    expect(clipboard).to.be.undefined;
   });
 
   it('returns an error when permission denied', async () => {
@@ -4908,7 +4900,7 @@ describe('navigator.clipboard.write', { tags: ['serial'] }, () => {
       }
     });
     const clipboard = await writeClipboard();
-    expect(clipboard).to.be.undefined();
+    expect(clipboard).to.be.undefined;
   });
 });
 
@@ -4948,7 +4940,7 @@ describe('pointer lock permission request', () => {
     );
     expect(result).to.not.equal('locked');
     const request = requests.find((r) => r.permission === 'pointerLock');
-    expect(request).to.exist();
+    expect(request).to.exist;
     expect(request!.wc).to.equal(w.webContents);
     expect(request!.details.requestingUrl).to.equal(`${crossOriginUrl}/`);
     expect(request!.details.isMainFrame).to.equal(false);
@@ -5000,7 +4992,7 @@ describe('paste execCommand', { tags: ['serial'] }, () => {
     const text = 'Sync Clipboard Disabled by default';
     await clipboard.writeText(text);
     const paste = await readClipboard(w);
-    expect(paste).to.be.empty();
+    expect(paste).to.be.empty;
     expect(await clipboard.readText()).to.equal(text);
   });
 
@@ -5015,7 +5007,7 @@ describe('paste execCommand', { tags: ['serial'] }, () => {
     const text = 'Sync Clipboard Disabled by default permissions';
     await clipboard.writeText(text);
     const paste = await readClipboard(w);
-    expect(paste).to.be.empty();
+    expect(paste).to.be.empty;
     expect(await clipboard.readText()).to.equal(text);
   });
 
@@ -5036,7 +5028,7 @@ describe('paste execCommand', { tags: ['serial'] }, () => {
     const text = 'Sync Clipboard Disabled by permission denied';
     await clipboard.writeText(text);
     const paste = await readClipboard(w);
-    expect(paste).to.be.empty();
+    expect(paste).to.be.empty;
     expect(await clipboard.readText()).to.equal(text);
   });
 
@@ -5177,7 +5169,7 @@ describe('paste execCommand', { tags: ['serial'] }, () => {
       expect(await pasteIn(iframe)).to.equal('');
       // The iframe had no activation of its own, so the decision went to the
       // check handler, attributed to the iframe.
-      expect(checks).to.not.be.empty();
+      expect(checks).to.not.be.empty;
       for (const origin of checks) expect(origin).to.equal(`${crossOriginUrl}/`);
       expect(await clipboard.readText()).to.equal(text);
     });
@@ -5221,22 +5213,22 @@ ifdescribe(process.platform !== 'linux')('navigator.setAppBadge/clearAppBadge', 
     it('setAppBadge can set a numerical value', async () => {
       const result = await fireAppBadgeAction('set', expectedBadgeCount);
       expect(result).to.equal('success');
-      expect(waitForBadgeCount(expectedBadgeCount)).to.eventually.equal(expectedBadgeCount);
+      await expect(waitForBadgeCount(expectedBadgeCount)).resolves.to.equal(expectedBadgeCount);
     });
 
     it('setAppBadge can set an empty(dot) value', async () => {
       const result = await fireAppBadgeAction('set');
       expect(result).to.equal('success');
-      expect(waitForBadgeCount(0)).to.eventually.equal(0);
+      await expect(waitForBadgeCount(0)).resolves.to.equal(0);
     });
 
     it('clearAppBadge can clear a value', async () => {
       let result = await fireAppBadgeAction('set', expectedBadgeCount);
       expect(result).to.equal('success');
-      expect(waitForBadgeCount(expectedBadgeCount)).to.eventually.equal(expectedBadgeCount);
+      await expect(waitForBadgeCount(expectedBadgeCount)).resolves.to.equal(expectedBadgeCount);
       result = await fireAppBadgeAction('clear');
       expect(result).to.equal('success');
-      expect(waitForBadgeCount(0)).to.eventually.equal(0);
+      await expect(waitForBadgeCount(0)).resolves.to.equal(0);
     });
   });
 
@@ -5265,13 +5257,9 @@ ifdescribe(process.platform !== 'linux')('navigator.setAppBadge/clearAppBadge', 
           done(message);
         } else if (channel === 'response') {
           expect(message).to.equal('SUCCESS setting app badge');
-          expect(waitForBadgeCount(expectedBadgeCount)).to.eventually.equal(expectedBadgeCount);
-          session
-            .fromPartition('sw-file-scheme-spec')
-            .clearStorageData({
-              storages: ['serviceworkers']
-            })
-            .then(() => done());
+          waitForBadgeCount(expectedBadgeCount)
+            .then(() => session.fromPartition('sw-file-scheme-spec').clearStorageData({ storages: ['serviceworkers'] }))
+            .then(() => done(), done);
         }
       });
       w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
@@ -5284,18 +5272,14 @@ ifdescribe(process.platform !== 'linux')('navigator.setAppBadge/clearAppBadge', 
           w.webContents.reload();
         } else if (channel === 'setAppBadge') {
           expect(message).to.equal('SUCCESS setting app badge');
-          expect(waitForBadgeCount(expectedBadgeCount)).to.eventually.equal(expectedBadgeCount);
+          waitForBadgeCount(expectedBadgeCount).catch(done);
         } else if (channel === 'error') {
           done(message);
         } else if (channel === 'response') {
           expect(message).to.equal('SUCCESS clearing app badge');
-          expect(waitForBadgeCount(expectedBadgeCount)).to.eventually.equal(expectedBadgeCount);
-          session
-            .fromPartition('sw-file-scheme-spec')
-            .clearStorageData({
-              storages: ['serviceworkers']
-            })
-            .then(() => done());
+          waitForBadgeCount(0)
+            .then(() => session.fromPartition('sw-file-scheme-spec').clearStorageData({ storages: ['serviceworkers'] }))
+            .then(() => done(), done);
         }
       });
       w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
@@ -5393,7 +5377,7 @@ describe('navigator.hid', () => {
     });
     session.defaultSession.setPermissionCheckHandler(() => false);
     const device = await requestDevices();
-    expect(selectFired).to.be.false();
+    expect(selectFired).to.be.false;
     expect(device).to.equal('');
   });
 
@@ -5412,7 +5396,7 @@ describe('navigator.hid', () => {
       }
     });
     const device = await requestDevices();
-    expect(selectFired).to.be.true();
+    expect(selectFired).to.be.true;
     if (haveDevices) {
       expect(device).to.contain('[object HIDDevice]');
     } else {
@@ -5421,14 +5405,14 @@ describe('navigator.hid', () => {
     if (haveDevices) {
       // Verify that navigation will clear device permissions
       const grantedDevices = await w.webContents.executeJavaScript('navigator.hid.getDevices()');
-      expect(grantedDevices).to.not.be.empty();
+      expect(grantedDevices).to.not.be.empty;
       w.loadURL(serverUrl);
       const [, , , , , frameProcessId, frameRoutingId] = await once(w.webContents, 'did-frame-navigate');
       const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
-      expect(!!frame).to.be.true();
+      expect(!!frame).to.be.true;
       if (frame) {
         const grantedDevicesOnNewPage = await frame.executeJavaScript('navigator.hid.getDevices()');
-        expect(grantedDevicesOnNewPage).to.be.empty();
+        expect(grantedDevicesOnNewPage).to.be.empty;
       }
     }
   });
@@ -5453,10 +5437,10 @@ describe('navigator.hid', () => {
     });
     await w.webContents.executeJavaScript('navigator.hid.getDevices();', true);
     const device = await requestDevices();
-    expect(selectFired).to.be.true();
+    expect(selectFired).to.be.true;
     if (haveDevices) {
       expect(device).to.contain('[object HIDDevice]');
-      expect(gotDevicePerms).to.be.true();
+      expect(gotDevicePerms).to.be.true;
     } else {
       expect(device).to.equal('');
     }
@@ -5560,7 +5544,7 @@ describe('navigator.hid', () => {
     guest.executeJavaScript('navigator.hid.requestDevice({filters: []})', true).catch(() => {});
     await selectFired;
     await setTimeout();
-    expect(guest.isDestroyed()).to.be.true();
+    expect(guest.isDestroyed()).to.be.true;
   });
 });
 
@@ -5620,7 +5604,7 @@ describe('navigator.usb', () => {
 
     await sesWin.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
     const devices = await getDevices();
-    expect(devices).to.be.an('array').that.is.empty();
+    expect(devices).to.be.an('array').that.is.empty;
   });
 
   it('does not return a device if select-usb-device event is not defined', async () => {
@@ -5637,7 +5621,7 @@ describe('navigator.usb', () => {
     });
     session.defaultSession.setPermissionCheckHandler(() => false);
     const device = await requestDevices();
-    expect(selectFired).to.be.false();
+    expect(selectFired).to.be.false;
     expect(device).to.equal(notFoundError);
   });
 
@@ -5655,7 +5639,7 @@ describe('navigator.usb', () => {
       }
     });
     const device = await requestDevices();
-    expect(selectFired).to.be.true();
+    expect(selectFired).to.be.true;
     if (haveDevices) {
       expect(device).to.contain('[object USBDevice]');
     } else {
@@ -5664,14 +5648,14 @@ describe('navigator.usb', () => {
     if (haveDevices) {
       // Verify that navigation will clear device permissions
       const grantedDevices = await w.webContents.executeJavaScript('navigator.usb.getDevices()');
-      expect(grantedDevices).to.not.be.empty();
+      expect(grantedDevices).to.not.be.empty;
       w.loadURL(serverUrl);
       const [, , , , , frameProcessId, frameRoutingId] = await once(w.webContents, 'did-frame-navigate');
       const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
-      expect(!!frame).to.be.true();
+      expect(!!frame).to.be.true;
       if (frame) {
         const grantedDevicesOnNewPage = await frame.executeJavaScript('navigator.usb.getDevices()');
-        expect(grantedDevicesOnNewPage).to.be.empty();
+        expect(grantedDevicesOnNewPage).to.be.empty;
       }
     }
   });
@@ -5703,10 +5687,10 @@ describe('navigator.usb', () => {
     });
     await w.webContents.executeJavaScript('navigator.usb.getDevices();', true);
     const device = await requestDevices();
-    expect(selectFired).to.be.true();
+    expect(selectFired).to.be.true;
     if (haveDevices) {
       expect(device).to.contain('[object USBDevice]');
-      expect(gotDevicePerms).to.be.true();
+      expect(gotDevicePerms).to.be.true;
     } else {
       expect(device).to.equal(notFoundError);
     }
@@ -5766,7 +5750,7 @@ describe('navigator.usb', () => {
     guest.executeJavaScript('navigator.usb.requestDevice({filters: []})', true).catch(() => {});
     await selectFired;
     await setTimeout();
-    expect(guest.isDestroyed()).to.be.true();
+    expect(guest.isDestroyed()).to.be.true;
   });
 });
 
@@ -5820,7 +5804,7 @@ describe('iframe sandbox external protocols', () => {
     await w.loadURL(`${serverUrl}/?sandbox=${encodeURIComponent('allow-scripts')}`);
     const [{ message }] = await consoleMessage;
     expect(message).to.match(/external protocol blocked by sandbox/);
-    expect(openExternalRequests).to.be.empty();
+    expect(openExternalRequests).to.be.empty;
   });
 
   it('allows navigation to external protocol with allow-top-navigation-to-custom-protocols', async () => {
@@ -6054,7 +6038,7 @@ describe('links opened into a new window', () => {
     if (child.webContents.isLoading()) await once(child.webContents, 'did-finish-load');
     expect(details.url).to.equal(`${serverUrl}/popup`);
     // The clicking document is the initiator...
-    expect(details.initiator).to.exist();
+    expect(details.initiator).to.exist;
     expect(details.initiator.routingId).to.equal(w.webContents.mainFrame.routingId);
     // ...so the request is same-origin rather than a browser-typed load.
     expect(requests['/popup']['sec-fetch-site']).to.equal('same-origin');
@@ -6129,7 +6113,7 @@ describe('iframe sandbox popups', () => {
     });
     await w.loadURL(`${serverUrl}/?sandbox=${encodeURIComponent('allow-scripts')}`);
     await setTimeout(200);
-    expect(created).to.be.false();
+    expect(created).to.be.false;
   });
 
   it('invokes setWindowOpenHandler when allow-popups is set', async () => {

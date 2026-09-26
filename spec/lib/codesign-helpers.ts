@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';

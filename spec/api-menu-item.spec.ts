@@ -8,7 +8,7 @@ import {
   type MenuItemConstructorOptions
 } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { once } from 'node:events';
 
@@ -59,13 +59,11 @@ describe('MenuItems', () => {
       expect(item).to.have.property('sublabel').that.is.a('string').equal('goodbye');
       expect(item).to.have.property('accelerator').that.is.a('string').equal('CmdOrControl+Q');
       expect(item).to.have.property('click').that.is.a('function');
-      expect(item).to.have.property('enabled').that.is.a('boolean').and.is.true('item is enabled');
-      expect(item).to.have.property('visible').that.is.a('boolean').and.is.true('item is visible');
-      expect(item).to.have.property('checked').that.is.a('boolean').and.is.false('item is not checked');
-      expect(item)
-        .to.have.property('registerAccelerator')
-        .that.is.a('boolean')
-        .and.is.true('item can register accelerator');
+      expect(item, 'item is enabled').to.have.property('enabled').that.is.a('boolean').and.is.true;
+      expect(item, 'item is visible').to.have.property('visible').that.is.a('boolean').and.is.true;
+      expect(item, 'item is not checked').to.have.property('checked').that.is.a('boolean').and.is.false;
+      expect(item, 'item can register accelerator').to.have.property('registerAccelerator').that.is.a('boolean').and.is
+        .true;
       expect(item).to.have.property('type').that.is.a('string').equal('normal');
       expect(item).to.have.property('commandId').that.is.a('number');
       expect(item).to.have.property('toolTip').that.is.a('string');
@@ -162,9 +160,9 @@ describe('MenuItems', () => {
         }
       ]);
 
-      expect(menu.items[0].checked).to.be.false('menu item checked');
+      expect(menu.items[0].checked, 'menu item checked').to.be.false;
       menu._activate(menu.items[0].commandId);
-      expect(menu.items[0].checked).to.be.true('menu item checked');
+      expect(menu.items[0].checked, 'menu item checked').to.be.true;
     });
 
     it('clicking an radio item should always make checked property true', () => {
@@ -176,9 +174,9 @@ describe('MenuItems', () => {
       ]);
 
       menu._activate(menu.items[0].commandId);
-      expect(menu.items[0].checked).to.be.true('menu item checked');
+      expect(menu.items[0].checked, 'menu item checked').to.be.true;
       menu._activate(menu.items[0].commandId);
-      expect(menu.items[0].checked).to.be.true('menu item checked');
+      expect(menu.items[0].checked, 'menu item checked').to.be.true;
     });
 
     describe('MenuItem group properties', () => {
@@ -246,7 +244,7 @@ describe('MenuItems', () => {
           const groupId = (menu.items[g.begin!] as any).groupId;
 
           // groupId should be previously unused
-          // expect(usedGroupIds.has(groupId)).to.be.false('group id present')
+          // expect(usedGroupIds.has(groupId)).to.be.false
           expect(usedGroupIds).not.to.contain(groupId);
           usedGroupIds.add(groupId);
 
@@ -281,7 +279,7 @@ describe('MenuItems', () => {
       const item = new MenuItem({ role: 'asdfghjkl' as any });
 
       const canExecute = executeByRole(item.role as any, win, win.webContents);
-      expect(canExecute).to.be.false('can execute');
+      expect(canExecute, 'can execute').to.be.false;
     });
 
     it('executes roles with native role functions', () => {
@@ -289,7 +287,7 @@ describe('MenuItems', () => {
       const item = new MenuItem({ role: 'reload' });
 
       const canExecute = executeByRole(item.role as any, win, win.webContents);
-      expect(canExecute).to.be.true('can execute');
+      expect(canExecute, 'can execute').to.be.true;
     });
 
     it('execute roles with non-native role functions', () => {
@@ -297,7 +295,7 @@ describe('MenuItems', () => {
       const item = new MenuItem({ role: 'resetZoom' });
 
       const canExecute = executeByRole(item.role as any, win, win.webContents);
-      expect(canExecute).to.be.true('can execute');
+      expect(canExecute, 'can execute').to.be.true;
     });
 
     ifit(process.platform === 'win32')('does not execute minimize role when minimizable false', () => {
@@ -324,7 +322,7 @@ describe('MenuItems', () => {
       const item = new MenuItem({ label: 'item' });
 
       const commandId = item.commandId;
-      expect(commandId).to.not.be.undefined('command id');
+      expect(commandId, 'command id').to.not.be.undefined;
       expect(() => {
         item.commandId = `${commandId}-modified` as any;
       }).to.throw(/Cannot assign to read only property/);
@@ -364,7 +362,7 @@ describe('MenuItems', () => {
 
       for (const role of list) {
         const item = new MenuItem({ role: role as any });
-        expect(item.getDefaultRoleAccelerator()).to.be.undefined('default accelerator');
+        expect(item.getDefaultRoleAccelerator(), 'default accelerator').to.be.undefined;
       }
     });
 
@@ -543,14 +541,14 @@ describe('MenuItems', () => {
       await wcv.webContents.loadURL('about:blank');
 
       const opened = once(wcv.webContents, 'devtools-opened');
-      expect(executeByRole('toggleDevTools', w, wcv.webContents)).to.be.true();
+      expect(executeByRole('toggleDevTools', w, wcv.webContents)).to.be.true;
       await opened;
-      expect(wcv.webContents.isDevToolsOpened()).to.be.true();
+      expect(wcv.webContents.isDevToolsOpened()).to.be.true;
 
       const closed = once(wcv.webContents, 'devtools-closed');
       executeByRole('toggleDevTools', w, wcv.webContents);
       await closed;
-      expect(wcv.webContents.isDevToolsOpened()).to.be.false();
+      expect(wcv.webContents.isDevToolsOpened()).to.be.false;
     });
 
     it('toggles parent devtools when invoked with the devtools webContents', async () => {
@@ -562,15 +560,15 @@ describe('MenuItems', () => {
       const opened = once(wcv.webContents, 'devtools-opened');
       wcv.webContents.openDevTools({ mode: 'bottom' });
       await opened;
-      expect(wcv.webContents.isDevToolsOpened()).to.be.true();
+      expect(wcv.webContents.isDevToolsOpened()).to.be.true;
 
       const devToolsWc = wcv.webContents.devToolsWebContents!;
-      expect(devToolsWc).to.not.be.null();
+      expect(devToolsWc).to.not.be.null;
 
       const closed = once(wcv.webContents, 'devtools-closed');
-      expect(executeByRole('toggleDevTools', w, devToolsWc)).to.be.true();
+      expect(executeByRole('toggleDevTools', w, devToolsWc)).to.be.true;
       await closed;
-      expect(wcv.webContents.isDevToolsOpened()).to.be.false();
+      expect(wcv.webContents.isDevToolsOpened()).to.be.false;
     });
   });
 
@@ -596,7 +594,7 @@ describe('MenuItems', () => {
       await changeTitle(wcv);
 
       const didStartLoading = once(wcv.webContents, 'did-start-loading');
-      expect(executeByRole(role, w, wcv.webContents)).to.be.true();
+      expect(executeByRole(role, w, wcv.webContents)).to.be.true;
       await didStartLoading;
       await once(wcv.webContents, 'did-finish-load');
 
@@ -617,7 +615,7 @@ describe('MenuItems', () => {
       await opened;
 
       const didStartLoading = once(wcv.webContents, 'did-start-loading');
-      expect(executeByRole(role, w, wcv.webContents.devToolsWebContents!)).to.be.true();
+      expect(executeByRole(role, w, wcv.webContents.devToolsWebContents!)).to.be.true;
       await didStartLoading;
       await once(wcv.webContents, 'did-finish-load');
 
@@ -791,7 +789,7 @@ describe('MenuItems', () => {
 
     it('should have undefined badge when not set', () => {
       const item = new MenuItem({ label: 'test' });
-      expect(item.badge).to.be.undefined();
+      expect(item.badge).to.be.undefined;
     });
 
     it('should set badge on items added to a menu', () => {
@@ -810,11 +808,11 @@ describe('MenuItems', () => {
     it('should remove an existing badge', () => {
       const item = new MenuItem({ label: 'test', badge: { type: 'alerts', count: 3 } });
       item.badge = undefined;
-      expect(item.badge).to.be.undefined();
+      expect(item.badge).to.be.undefined;
 
       const menu = Menu.buildFromTemplate([{ label: 'test', badge: { type: 'none', content: 'New' } }]);
       menu.items[0].badge = undefined;
-      expect(menu.items[0].badge).to.be.undefined();
+      expect(menu.items[0].badge).to.be.undefined;
       menu.items[0].badge = { type: 'new-items', count: 2 };
       expect(menu.items[0].badge).to.deep.equal({ type: 'new-items', count: 2 });
     });
@@ -846,7 +844,7 @@ describe('MenuItems', () => {
       expect(() => {
         item.badge = { type: 'bogus' } as any;
       }).to.throw(/Invalid badge type/);
-      expect(item.badge).to.be.undefined();
+      expect(item.badge).to.be.undefined;
     });
   });
 });

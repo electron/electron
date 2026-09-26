@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { setupUpdaterHarness, shouldRunUpdaterSpecs } from './lib/autoupdater-darwin-helpers.ts';
 import { copyMacOSFixtureApp, unsignApp } from './lib/codesign-helpers.ts';

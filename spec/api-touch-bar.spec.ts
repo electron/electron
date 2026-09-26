@@ -1,6 +1,6 @@
 import { BaseWindow, BrowserWindow, TouchBar } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as path from 'node:path';
 
