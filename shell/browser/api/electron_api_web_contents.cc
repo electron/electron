@@ -5954,6 +5954,29 @@ v8::Local<v8::Promise> WebContents::SetVisualZoomLevelLimits(
     double max_level) {
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
+  if (!std::isfinite(min_level) || !std::isfinite(max_level) ||
+      min_level <= 0 || max_level < min_level) {
+    promise.RejectWithErrorMessage(
+        "'minimumLevel' and 'maximumLevel' must be positive numbers with "
+        "minimumLevel <= maximumLevel");
+    return handle;
+  }
+
+  // Persist the limits in WebPreferences so later navigations and new render
+  // views keep them, and give them to the embedder too: a guest's pinch-zoom
+  // is handled by the embedder's root compositor.
+  if (auto* prefs = WebContentsPreferences::From(web_contents())) {
+    prefs->SetVisualZoomLevelLimits(min_level, max_level);
+    web_contents()->OnWebPreferencesChanged();
+  }
+  if (embedder_) {
+    if (auto* embedder_prefs =
+            WebContentsPreferences::From(embedder_->web_contents())) {
+      embedder_prefs->SetVisualZoomLevelLimits(min_level, max_level);
+      embedder_->web_contents()->OnWebPreferencesChanged();
+    }
+  }
+
   if (auto* renderer = MainFrameRenderer(isolate, promise)) {
     renderer->SetVisualZoomLevelLimits(min_level, max_level,
                                        AckCallback(std::move(promise)));
