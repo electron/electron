@@ -6459,7 +6459,7 @@ describe('BrowserWindow module', () => {
         }
       });
 
-      ifdescribe(process.platform !== 'darwin' && !isWayland)('disabling parent windows', () => {
+      ifdescribe(process.platform !== 'darwin')('disabling parent windows', () => {
         it('can disable and enable a window', () => {
           const w = new BrowserWindow({ show: false });
           w.setEnabled(false);
