@@ -107,7 +107,6 @@
 #include "printing/buildflags/buildflags.h"
 #include "services/network/public/cpp/web_sandbox_flags.h"
 #include "services/network/public/mojom/web_sandbox_flags.mojom-shared.h"
-#include "services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/electron_api_browser_window.h"
@@ -5710,38 +5709,6 @@ void WebContents::CancelDialogs(content::WebContents* web_contents,
       gin::DataObjectBuilder(isolate).Set("resetState", reset_state).Build());
 }
 
-v8::Local<v8::Promise> WebContents::GetProcessMemoryInfo(gin::Arguments* args) {
-  v8::Isolate* isolate = args->isolate();
-  gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
-  v8::Local<v8::Promise> handle = promise.GetHandle();
-
-  // With a renderer process id, report that process, provided it hosts a frame
-  // of this WebContents; otherwise the primary main frame's process.
-  content::RenderProcessHost* process = nullptr;
-  int32_t process_id = 0;
-  if (args->GetNext(&process_id)) {
-    web_contents()->GetPrimaryMainFrame()->ForEachRenderFrameHost(
-        [&](content::RenderFrameHost* rfh) {
-          if (!process && rfh->GetProcess()->GetDeprecatedID() == process_id)
-            process = rfh->GetProcess();
-        });
-  } else if (auto* frame_host = web_contents()->GetPrimaryMainFrame()) {
-    process = frame_host->GetProcess();
-  }
-  if (!process || !process->GetProcess().IsValid()) {
-    promise.RejectWithErrorMessage("Failed to create memory dump");
-    return handle;
-  }
-
-  auto pid = process->GetProcess().Pid();
-  memory_instrumentation::MemoryInstrumentation::GetInstance()
-      ->RequestGlobalDumpForPid(
-          pid, std::vector<std::string>(),
-          base::BindOnce(&ElectronBindings::DidReceiveMemoryDump,
-                         std::move(promise), pid));
-  return handle;
-}
-
 v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
     v8::Isolate* isolate,
     const base::FilePath& file_path) {
@@ -6536,7 +6503,6 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
           "setVisualZoomLevelLimits")
       .SetMethod<&WebContents::SetImageAnimationPolicy>(
           "setImageAnimationPolicy")
-      .SetMethod<&WebContents::GetProcessMemoryInfo>("_getProcessMemoryInfo")
       .SetProperty<&WebContents::ID>("id")
       .SetProperty<&WebContents::Session>("session")
       .SetProperty<&WebContents::HostWebContents>("hostWebContents")
