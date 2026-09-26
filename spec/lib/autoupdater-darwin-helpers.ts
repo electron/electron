@@ -28,7 +28,7 @@ export const shouldRunUpdaterSpecs = shouldRunCodesignTests && !process.env.IS_U
 
 // How many fixture apps may be updating at once within one spec file; each
 // is about a core of codesign/ditto/ShipIt work. Set to 1 to run every test's
-// work inline, in mocha's order.
+// work inline, in declaration order.
 const CONCURRENCY = (() => {
   const fromEnv = parseInt(process.env.ELECTRON_SPEC_UPDATER_CONCURRENCY || '', 10);
   if (fromEnv > 0) return fromEnv;
@@ -106,7 +106,7 @@ class SlotPool {
 
   /**
    * A slot right now: a free one, or a fresh one. For a retry, which is the
-   * test mocha is blocked on; queueing it behind lookahead runs for tests
+   * test the runner is blocked on; queueing it behind lookahead runs for tests
    * that come later only adds their time to the failure.
    */
   acquireNow(): Slot {
@@ -187,7 +187,7 @@ type Task = {
   // Bumped per run so a queued run can tell it was superseded.
   generation: number;
   started: boolean;
-  // True once the mocha test has awaited a run, i.e. the next call is a retry.
+  // True once the test has awaited a run, i.e. the next call is a retry.
   awaited: boolean;
   // Stops the current run.
   controller?: AbortController;
@@ -220,7 +220,7 @@ export type UpdaterHarness = {
   /**
    * A test whose body runs in a slot with its own update server, up to
    * CONCURRENCY at a time. Tasks start in declaration order, so keep nested
-   * describes last (mocha runs them after the enclosing suite's own tests).
+   * describes last (they run after the enclosing suite's own tests).
    */
   updaterIt: (title: string, body: (ctx: TaskContext) => Promise<void>, opts?: { timeout?: number }) => void;
 };
@@ -407,7 +407,7 @@ export function setupUpdaterHarness(): UpdaterHarness {
   };
 
   // `updaterIt` bodies run up to CONCURRENCY at a time, each in its own
-  // slot with its own server; the mocha test just awaits its task.
+  // slot with its own server; the test just awaits its task.
   const pool = new SlotPool(Array.from({ length: CONCURRENCY }, (_, i) => makeSlot(i)));
   const tasks: Task[] = [];
   const inflight = new Set<Promise<void>>();
@@ -510,7 +510,7 @@ export function setupUpdaterHarness(): UpdaterHarness {
   const runTask = async (task: Task, generation: number, { jumpQueue = false } = {}) => {
     const budget = RUN_BUDGET_OVERRIDE_MS > 0 ? RUN_BUDGET_OVERRIDE_MS : task.timeout * RUN_BUDGET_MULTIPLIER;
     // A run's budget only starts once it has a slot. A retry is the test
-    // mocha is waiting on right now, so it gets one immediately rather than
+    // the runner is waiting on right now, so it gets one immediately rather than
     // queueing behind lookahead runs for tests that come later.
     const slot = jumpQueue ? pool.acquireNow() : await pool.acquire();
     if (draining || generation !== task.generation) {

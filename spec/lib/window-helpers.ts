@@ -61,10 +61,12 @@ export const closeWindow = async (
   }
 };
 
-export async function closeAllWindows(assertNotWindows = false) {
+// Takes no parameters on purpose: it is registered directly as an afterEach /
+// afterAll hook, and vitest hands hooks their context as the first argument.
+export async function closeAllWindows() {
   let windowsClosed = 0;
   for (const w of BaseWindow.getAllWindows()) {
-    await closeWindow(w, { assertNotWindows });
+    await closeWindow(w, { assertNotWindows: false });
     windowsClosed++;
   }
   return windowsClosed;

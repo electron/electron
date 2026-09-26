@@ -66,14 +66,17 @@ const maxWorkers =
   Number(process.env.ELECTRON_SPEC_WORKERS) || Math.min(8, Math.max(Math.min(2, cpus), Math.round(cpus / 3)));
 process.env.ELECTRON_SPEC_WORKERS = String(maxWorkers);
 
+// Per test and per hook; sanitizer builds raise it (ELECTRON_SPEC_TIMEOUT).
+const timeout = Number(process.env.ELECTRON_SPEC_TIMEOUT) || 30_000;
+
 const reporters: (string | [string, Record<string, unknown>] | SpecTimingsReporter)[] = ['default'];
 if (process.env.GITHUB_ACTIONS === 'true') {
   // Annotates failures on the PR; vitest only adds it by itself when no
   // reporters are configured.
   reporters.push('github-actions');
 }
-if (process.env.MOCHA_FILE) {
-  reporters.push(['junit', { outputFile: process.env.MOCHA_FILE, includeConsoleOutput: false }]);
+if (process.env.ELECTRON_SPEC_JUNIT_FILE) {
+  reporters.push(['junit', { outputFile: process.env.ELECTRON_SPEC_JUNIT_FILE, includeConsoleOutput: false }]);
 }
 // Per-file wall time for script/gen-spec-weights.js; skipped for filtered runs
 // so a rerun does not overwrite the full run's numbers.
@@ -99,15 +102,13 @@ export default defineConfig({
     globals: false,
     runner: './vitest/runner.ts',
     globalSetup: ['./vitest/global-setup.js'],
-    setupFiles: ['./vitest/setup.ts'],
     // Show full object diffs in assertion errors (chaijs/chai#469).
     chaiConfig: { truncateThreshold: 0 },
-    // mocha-compat implements mocha's resettable timeouts itself.
-    testTimeout: 0,
-    hookTimeout: 0,
-    // Run hooks in the order they were declared, as mocha did; the default
-    // ('stack') runs after* hooks in reverse, which would close windows before
-    // the defer()-ed cleanup that still needs them.
+    testTimeout: timeout,
+    hookTimeout: timeout,
+    // Run hooks in the order they were declared; the default ('stack') runs
+    // after* hooks in reverse, which would close windows before the
+    // defer()-ed cleanup that still needs them.
     sequence: { hooks: 'list' },
     // Electron takes a moment to quit; a slow worker stop is not a failure.
     teardownTimeout: 30_000,

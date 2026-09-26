@@ -46,9 +46,11 @@ name matches a pattern, run `npm run test -- -g=PATTERN`, replacing
 `PATTERN` with a regex. As an example: If you want to run only IPC tests, you
 would run `npm run test -- -g ipc`.
 
-The spec files use mocha's interface (`describe`, `it`, `before`, `after`,
-`this.timeout()`), provided on top of vitest by `spec/vitest/mocha-compat.ts`,
-and [chai](https://www.chaijs.com) assertions.
+Specs import `describe`, `it`, `expect` and the hooks from `vitest`; its
+`expect` accepts both chai-style chains (`expect(x).to.equal(y)`) and
+jest-style matchers. A few Electron specific behaviours (a macrotask between
+tests, `defer()` cleanup, `spec/disabled-tests.json`) live in
+`spec/vitest/runner.ts`.
 
 ## Node.js Smoke Tests
 
