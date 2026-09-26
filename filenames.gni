@@ -63,8 +63,6 @@ filenames = {
     "shell/browser/ui/views/global_menu_bar_registrar_x11.h",
     "shell/browser/ui/views/global_menu_bar_x11.cc",
     "shell/browser/ui/views/global_menu_bar_x11.h",
-    "shell/browser/ui/x/event_disabler.cc",
-    "shell/browser/ui/x/event_disabler.h",
     "shell/browser/ui/x/x_window_utils.cc",
     "shell/browser/ui/x/x_window_utils.h",
   ]

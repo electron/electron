@@ -11,6 +11,7 @@
 #include <optional>
 #include <string>
 
+#include "base/functional/callback_helpers.h"
 #include "base/memory/raw_ptr.h"
 #include "base/no_destructor.h"
 #include "shell/browser/ui/views/root_view.h"
@@ -40,10 +41,6 @@ namespace electron {
 
 #if BUILDFLAG(IS_LINUX)
 class GlobalMenuBarX11;
-#endif
-
-#if BUILDFLAG(SUPPORTS_OZONE_X11)
-class EventDisabler;
 #endif
 
 #if BUILDFLAG(IS_WIN)
@@ -294,11 +291,9 @@ class NativeWindowViews : public NativeWindow,
 
 #if BUILDFLAG(IS_LINUX)
   std::unique_ptr<GlobalMenuBarX11> global_menu_bar_;
-#endif
 
-#if BUILDFLAG(SUPPORTS_OZONE_X11)
-  // To disable the mouse events.
-  std::unique_ptr<EventDisabler> event_disabler_;
+  // Set while the window is disabled; running it re-enables event dispatch.
+  base::ScopedClosureRunner enable_event_listening_;
 #endif
 
   // The color to use as the theme and symbol colors respectively for WCO.
