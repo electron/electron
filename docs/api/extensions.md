@@ -144,8 +144,12 @@ See [official documentation](https://developer.chrome.com/docs/extensions/refere
 The following methods of `chrome.storage` are supported:
 
 - `chrome.storage.local`
+- `chrome.storage.sync` (partial support)
+  - stored on disk next to `chrome.storage.local` in a separate storage area
+    and subject to Chrome's `sync` quotas; data is **not** synced across
+    devices, matching Chrome with sync disabled.
 
-`chrome.storage.sync` and `chrome.storage.managed` are **not** supported.
+`chrome.storage.managed` is **not** supported.
 
 See [official documentation](https://developer.chrome.com/docs/extensions/reference/storage) for more information.
 
