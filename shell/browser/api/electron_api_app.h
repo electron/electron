@@ -221,6 +221,9 @@ class App final : public gin::Wrappable<App>,
   bool RequestSingleInstanceLock(gin::Arguments* args);
   void ReleaseSingleInstanceLock();
   bool Relaunch(gin::Arguments* args);
+#if BUILDFLAG(IS_WIN)
+  bool IsUnnecessarilyElevated();
+#endif
   void DisableHardwareAcceleration(gin_helper::ErrorThrower thrower);
   bool IsHardwareAccelerationEnabled();
   void DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower);

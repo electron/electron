@@ -102,6 +102,7 @@
 
 #if BUILDFLAG(IS_WIN)
 #include "base/strings/utf_string_conversions.h"
+#include "base/win/win_util.h"
 #include "shell/browser/notifications/win/windows_toast_activator.h"
 #include "shell/browser/ui/win/jump_list.h"
 #endif
@@ -1187,6 +1188,7 @@ bool App::Relaunch(gin::Arguments* js_args) {
   bool override_argv = false;
   base::FilePath exec_path;
   relauncher::StringVector args;
+  relauncher::StringVector relauncher_args;
 
   gin_helper::Dictionary options;
   if (js_args->GetNext(&options)) {
@@ -1194,12 +1196,18 @@ bool App::Relaunch(gin::Arguments* js_args) {
     bool has_args = options.Get("args", &args);
     if (has_exec_path || has_args)
       override_argv = true;
+#if BUILDFLAG(IS_WIN)
+    if (bool de_elevate = false;
+        options.Get("deElevate", &de_elevate) && de_elevate) {
+      relauncher_args.push_back(relauncher::internal::kRelauncherDeElevateArg);
+    }
+#endif
   }
 
   if (!override_argv) {
     const relauncher::StringVector& argv =
         electron::ElectronCommandLine::argv();
-    return relauncher::RelaunchApp(argv);
+    return relauncher::RelaunchApp(argv, relauncher_args);
   }
 
   relauncher::StringVector argv;
@@ -1215,8 +1223,14 @@ bool App::Relaunch(gin::Arguments* js_args) {
 
   argv.insert(argv.end(), args.begin(), args.end());
 
-  return relauncher::RelaunchApp(argv);
+  return relauncher::RelaunchApp(argv, relauncher_args);
 }
+
+#if BUILDFLAG(IS_WIN)
+bool App::IsUnnecessarilyElevated() {
+  return base::win::UserAccountIsUnnecessarilyElevated();
+}
+#endif
 
 void App::DisableHardwareAcceleration(gin_helper::ErrorThrower thrower) {
   if (Browser::Get()->is_ready()) {
@@ -2157,6 +2171,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::SetUserTasks, browser))
       .SetMethod("getJumpListSettings", &App::GetJumpListSettings)
       .SetMethod("setJumpList", &App::SetJumpList)
+      .SetMethod("isUnnecessarilyElevated", &App::IsUnnecessarilyElevated)
 #endif
       .SetProperty("isPackaged", &App::IsPackaged)
       .SetMethod("setAppPath", &App::SetAppPath)
