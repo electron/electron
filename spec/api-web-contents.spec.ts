@@ -185,6 +185,29 @@ describe('webContents module', () => {
       await once(view.webContents, 'will-prevent-unload');
     });
 
+    // The beforeunload prompt blocks the renderer; a window that is
+    // re-activated while blocked used to keep aura focus without Blink focus.
+    ifit(process.platform === 'win32')(
+      'keeps the page focused when the window is re-activated while the prompt is pending',
+      async () => {
+        const w = new BrowserWindow({ show: true });
+        await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+        w.webContents.focus();
+        const other = new BrowserWindow({ show: true });
+        w.focus();
+        w.webContents.once('will-prevent-unload', () => {
+          other.focus();
+          w.focus();
+        });
+        // A navigation only prompts after a user gesture; close() always does.
+        w.close();
+        await once(w.webContents, 'will-prevent-unload');
+        await setTimeout(100);
+        expect(w.webContents.isFocused()).to.equal(true);
+        expect(await w.webContents.executeJavaScript('document.hasFocus()')).to.equal(true);
+      }
+    );
+
     it('supports calling preventDefault on will-prevent-unload events in a BrowserWindow', async () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('will-prevent-unload', (event) => event.preventDefault());
