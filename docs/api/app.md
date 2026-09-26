@@ -545,7 +545,7 @@ and `will-quit` events will not be emitted.
   * `execPath` string (optional)
   * `deElevate` boolean (optional) _Windows_ - Start the new instance with the
     user's normal token instead of the current elevated one. See
-    [`app.isUnnecessarilyElevated()`](#appisunnecessarilyelevated-windows).
+    [`app.canDeElevate()`](#appcandeelevate-windows).
 
 Relaunches the app when the current instance exits.
 
@@ -570,13 +570,14 @@ app.relaunch({ args: process.argv.slice(1).concat(['--relaunch']) })
 app.exit(0)
 ```
 
-### `app.isUnnecessarilyElevated()` _Windows_
+### `app.canDeElevate()` _Windows_
 
 Returns `boolean` - `true` when the app runs with a full administrator token
-while UAC is enabled, for example because it was started with "Run as
-administrator", from an elevated installer or from an elevated shell. It is
-`false` for the built-in Administrator account and when UAC is turned off,
-where no filtered token exists to switch to.
+while UAC is enabled (for example because it was started with "Run as
+administrator", from an elevated installer or from an elevated shell), so that
+a filtered, non-elevated token exists to relaunch with. It is `false` when the
+app is not elevated, for the built-in Administrator account, and when UAC is
+turned off.
 
 Chromium's sandbox cannot always launch child processes from an elevated
 browser process, and code that was not written to run elevated should not.
@@ -586,7 +587,7 @@ token before doing anything else:
 ```js
 const { app } = require('electron')
 
-if (process.platform === 'win32' && app.isUnnecessarilyElevated()) {
+if (process.platform === 'win32' && app.canDeElevate()) {
   app.relaunch({ deElevate: true })
   app.exit(0)
 }

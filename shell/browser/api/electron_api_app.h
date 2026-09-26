@@ -222,7 +222,7 @@ class App final : public gin::Wrappable<App>,
   void ReleaseSingleInstanceLock();
   bool Relaunch(gin::Arguments* args);
 #if BUILDFLAG(IS_WIN)
-  bool IsUnnecessarilyElevated();
+  bool CanDeElevate();
 #endif
   void DisableHardwareAcceleration(gin_helper::ErrorThrower thrower);
   bool IsHardwareAccelerationEnabled();

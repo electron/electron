@@ -1227,7 +1227,7 @@ bool App::Relaunch(gin::Arguments* js_args) {
 }
 
 #if BUILDFLAG(IS_WIN)
-bool App::IsUnnecessarilyElevated() {
+bool App::CanDeElevate() {
   return base::win::UserAccountIsUnnecessarilyElevated();
 }
 #endif
@@ -2171,7 +2171,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::SetUserTasks, browser))
       .SetMethod("getJumpListSettings", &App::GetJumpListSettings)
       .SetMethod("setJumpList", &App::SetJumpList)
-      .SetMethod("isUnnecessarilyElevated", &App::IsUnnecessarilyElevated)
+      .SetMethod("canDeElevate", &App::CanDeElevate)
 #endif
       .SetProperty("isPackaged", &App::IsPackaged)
       .SetMethod("setAppPath", &App::SetAppPath)
