@@ -10,6 +10,7 @@
 #include <optional>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/uuid.h"
 
 inline constexpr GUID GUID_DEFAULT = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
@@ -50,7 +51,7 @@ class NotifyIconHost {
   UINT next_icon_id_ = 1;
 
   // List containing all active NotifyIcons.
-  NotifyIcons notify_icons_;
+  std::vector<raw_ptr<NotifyIcon>> notify_icons_;
 
   // The window class of |window_|.
   ATOM atom_ = 0;

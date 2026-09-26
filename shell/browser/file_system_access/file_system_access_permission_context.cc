@@ -250,7 +250,7 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
                       const content::PathInfo& path_info,
                       HandleType handle_type,
                       GrantType type,
-                      UserAction user_action)
+                      AccessTrigger access_trigger)
       : context_{std::move(context)},
         origin_{origin},
         handle_type_{handle_type},
@@ -564,7 +564,7 @@ FileSystemAccessPermissionContext::GetReadPermissionGrant(
     const url::Origin& origin,
     const content::PathInfo& path_info,
     HandleType handle_type,
-    UserAction user_action) {
+    AccessTrigger access_trigger) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   // operator[] might insert a new OriginState in |active_permissions_map_|,
   // but that is exactly what we want.
@@ -584,7 +584,7 @@ FileSystemAccessPermissionContext::GetReadPermissionGrant(
   if (creating_new_grant) {
     grant = base::MakeRefCounted<PermissionGrantImpl>(
         weak_factory_.GetWeakPtr(), origin, path_info, handle_type,
-        GrantType::kRead, user_action);
+        GrantType::kRead, access_trigger);
     existing_grant = grant.get();
   } else {
     grant = existing_grant;
@@ -596,20 +596,21 @@ FileSystemAccessPermissionContext::GetReadPermissionGrant(
       AncestorHasActivePermission(origin, path_info.path, GrantType::kRead)) {
     grant->SetStatus(PermissionStatus::GRANTED);
   } else {
-    switch (user_action) {
-      case UserAction::kOpen:
-      case UserAction::kSave:
+    switch (access_trigger) {
+      case AccessTrigger::kOpen:
+      case AccessTrigger::kSave:
         // Open and Save dialog only grant read access for individual files.
         if (handle_type == HandleType::kDirectory) {
           break;
         }
         [[fallthrough]];
-      case UserAction::kDragAndDrop:
+      case AccessTrigger::kDragAndDrop:
         // Drag&drop grants read access for all handles.
         grant->SetStatus(PermissionStatus::GRANTED);
         break;
-      case UserAction::kLoadFromStorage:
-      case UserAction::kNone:
+      case AccessTrigger::kLoadFromStorage:
+      case AccessTrigger::kProgrammaticRead:
+      case AccessTrigger::kProgrammaticWrite:
         break;
     }
   }
@@ -622,7 +623,7 @@ FileSystemAccessPermissionContext::GetWritePermissionGrant(
     const url::Origin& origin,
     const content::PathInfo& path_info,
     HandleType handle_type,
-    UserAction user_action) {
+    AccessTrigger access_trigger) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   // operator[] might insert a new OriginState in |active_permissions_map_|,
   // but that is exactly what we want.
@@ -642,7 +643,7 @@ FileSystemAccessPermissionContext::GetWritePermissionGrant(
   if (creating_new_grant) {
     grant = base::MakeRefCounted<PermissionGrantImpl>(
         weak_factory_.GetWeakPtr(), origin, path_info, handle_type,
-        GrantType::kWrite, user_action);
+        GrantType::kWrite, access_trigger);
     existing_grant = grant.get();
   } else {
     grant = existing_grant;
@@ -654,15 +655,16 @@ FileSystemAccessPermissionContext::GetWritePermissionGrant(
       AncestorHasActivePermission(origin, path_info.path, GrantType::kWrite)) {
     grant->SetStatus(PermissionStatus::GRANTED);
   } else {
-    switch (user_action) {
-      case UserAction::kSave:
+    switch (access_trigger) {
+      case AccessTrigger::kSave:
         // Only automatically grant write access for save dialogs.
         grant->SetStatus(PermissionStatus::GRANTED);
         break;
-      case UserAction::kOpen:
-      case UserAction::kDragAndDrop:
-      case UserAction::kLoadFromStorage:
-      case UserAction::kNone:
+      case AccessTrigger::kOpen:
+      case AccessTrigger::kDragAndDrop:
+      case AccessTrigger::kLoadFromStorage:
+      case AccessTrigger::kProgrammaticRead:
+      case AccessTrigger::kProgrammaticWrite:
         break;
     }
   }
@@ -698,7 +700,7 @@ void FileSystemAccessPermissionContext::ConfirmSensitiveEntryAccess(
     const url::Origin& origin,
     const content::PathInfo& path_info,
     HandleType handle_type,
-    UserAction user_action,
+    AccessTrigger access_trigger,
     content::GlobalRenderFrameHostId frame_id,
     base::OnceCallback<void(SensitiveEntryResult)> callback) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -710,7 +712,7 @@ void FileSystemAccessPermissionContext::ConfirmSensitiveEntryAccess(
   restricted_path_callbacks_.emplace(request_id, std::move(callback));
   auto after_blocklist_check_callback = base::BindOnce(
       &FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist,
-      GetWeakPtr(), request_id, origin, path_info, handle_type, user_action,
+      GetWeakPtr(), request_id, origin, path_info, handle_type, access_trigger,
       frame_id);
   CheckPathAgainstBlocklist(path_info, handle_type,
                             std::move(after_blocklist_check_callback));
@@ -797,12 +799,13 @@ void FileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
     const url::Origin& origin,
     const content::PathInfo& path_info,
     HandleType handle_type,
-    UserAction user_action,
+    AccessTrigger access_trigger,
     content::GlobalRenderFrameHostId frame_id,
     bool should_block) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
-  if (user_action == UserAction::kNone) {
+  if (access_trigger == AccessTrigger::kProgrammaticRead ||
+      access_trigger == AccessTrigger::kProgrammaticWrite) {
     auto result = should_block ? SensitiveEntryResult::kAbort
                                : SensitiveEntryResult::kAllowed;
     RunRestrictedPathCallback(request_id, result);

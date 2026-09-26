@@ -248,7 +248,8 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
                                          LPARAM lparam) {
   if (message == taskbar_created_message_) {
     // We need to reset all of our icons because the taskbar went away.
-    std::ranges::for_each(notify_icons_, [](auto* icon) { icon->ResetIcon(); });
+    std::ranges::for_each(notify_icons_,
+                          [](NotifyIcon* icon) { icon->ResetIcon(); });
     return TRUE;
   } else if (message == kNotifyIconMessage) {
     NotifyIcon* win_icon = nullptr;

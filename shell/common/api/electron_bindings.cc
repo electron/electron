@@ -99,7 +99,7 @@ void ElectronBindings::ActivateUVLoop(v8::Isolate* isolate) {
 // static
 void ElectronBindings::OnCallNextTick(uv_async_t* handle) {
   auto* self = static_cast<ElectronBindings*>(handle->data);
-  for (auto* env : self->pending_next_ticks_) {
+  for (node::Environment* env : self->pending_next_ticks_) {
     gin_helper::Locker locker(env->isolate());
     v8::Context::Scope context_scope(env->context());
     v8::HandleScope handle_scope(env->isolate());

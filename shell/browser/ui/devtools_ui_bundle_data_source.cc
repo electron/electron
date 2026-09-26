@@ -117,6 +117,14 @@ bool BundledDataSource::ShouldServeMimeTypeAsContentTypeHeader() {
   return true;
 }
 
+bool BundledDataSource::ShouldServiceRequest(
+    const GURL& url,
+    content::BrowserContext* browser_context,
+    int render_process_id) {
+  // URL data sources are only served to devtools:// when they opt in.
+  return url.SchemeIs(content::kChromeDevToolsScheme);
+}
+
 void BundledDataSource::StartBundledDataRequest(const std::string& path,
                                                 GotDataCallback callback) {
   std::string filename = PathWithoutParams(path);

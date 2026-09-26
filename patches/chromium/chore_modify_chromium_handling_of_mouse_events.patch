@@ -34,10 +34,10 @@ index cc3f9bc9383f8272a5cd95b1f2ac56529d86e493..5ca29b84cdaf42ef516ef819ae32b230
  
  class ScrollEvent;
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 654d04d759b0653565d37920e32a3b85da1032af..3607f9a5ddddc11042919465cd4bfe076beadbf1 100644
+index ed0c400ec66dae2b7b900533f5e43915823211a5..5a86c375bea0cd8baaaa159ea01ffc97850d52b5 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -1536,6 +1536,10 @@ HBRUSH DesktopWindowTreeHostWin::GetBackgroundPaintBrush() {
+@@ -1545,6 +1545,10 @@ HBRUSH DesktopWindowTreeHostWin::GetBackgroundPaintBrush() {
    return background_paint_brush_;
  }
  
@@ -114,10 +114,10 @@ index 4715a7d9f2e845f9ffc8e84a6d7dc4a9d3483393..513a4a0942a4bd1372034f4f94129c8a
          delegate_->ShowCustomSystemMenu(gfx::Point(screen_point));
        }
 diff --git a/ui/views/win/hwnd_message_handler_delegate.h b/ui/views/win/hwnd_message_handler_delegate.h
-index 6a9767f895adf318dae4343b99a751ec12e9b103..067518e2db262667cd01988025fc950700560760 100644
+index be3ec89c4e0145d9c3c26e024a46be01f46465c4..5d30b432ab4358428afdd5f93826c7044dba1049 100644
 --- a/ui/views/win/hwnd_message_handler_delegate.h
 +++ b/ui/views/win/hwnd_message_handler_delegate.h
-@@ -262,6 +262,10 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {
+@@ -264,6 +264,10 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {
    // if the default should be used.
    virtual HBRUSH GetBackgroundPaintBrush() = 0;
  

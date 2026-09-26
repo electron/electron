@@ -50,6 +50,7 @@ PATHS_TO_SKIP = [
   'pyproto',
   # Skip because these are outputs that we don't need.
   'resources/inspector',
+  'gen/third_party/blink/public/devtools_protocol/types',
   'gen/third_party/chromium-bidi/src',
   'gen/third_party/devtools-frontend/src',
   'gen/ui/webui',

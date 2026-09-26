@@ -8,6 +8,7 @@
 #include <list>
 #include <memory>
 
+#include "base/memory/raw_ptr.h"
 #include "base/process/process_metrics.h"
 #include "services/resource_coordinator/public/mojom/memory_instrumentation/memory_instrumentation.mojom-forward.h"
 #include "shell/common/node_bindings.h"
@@ -78,7 +79,7 @@ class ElectronBindings {
   static void OnCallNextTick(uv_async_t* handle);
 
   UvHandle<uv_async_t> call_next_tick_async_;
-  std::list<node::Environment*> pending_next_ticks_;
+  std::list<raw_ptr<node::Environment>> pending_next_ticks_;
   std::unique_ptr<base::ProcessMetrics> metrics_;
 };
 

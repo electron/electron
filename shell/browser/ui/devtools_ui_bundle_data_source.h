@@ -31,6 +31,9 @@ class BundledDataSource : public content::URLDataSource {
   bool ShouldAddContentSecurityPolicy() override;
   bool ShouldDenyXFrameOptions() override;
   bool ShouldServeMimeTypeAsContentTypeHeader() override;
+  bool ShouldServiceRequest(const GURL& url,
+                            content::BrowserContext* browser_context,
+                            int render_process_id) override;
 
   void StartBundledDataRequest(const std::string& path,
                                GotDataCallback callback);

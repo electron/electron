@@ -28,8 +28,8 @@ base::WeakPtr<Notification> NotificationPresenter::CreateNotification(
 }
 
 void NotificationPresenter::RemoveNotification(Notification* notification) {
-  if (const auto nh = notifications_.extract(notification))
-    delete nh.value();
+  if (notifications_.erase(notification))
+    delete notification;
 }
 
 void NotificationPresenter::CloseNotificationWithId(
