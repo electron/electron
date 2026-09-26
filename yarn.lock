@@ -1683,13 +1683,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/mocha@npm:^7.0.2":
-  version: 7.0.2
-  resolution: "@types/mocha@npm:7.0.2"
-  checksum: 10c0/52b4e6a461214ed9e880659dd49d59107e06bdda5b0d5ebf62ee2d052a08cead04bb0ba041be3dd0ce17dee04ff414b638ba4a3068cc4d2ace980fefe3412e2a
-  languageName: node
-  linkType: hard
-
 "@types/ms@npm:*":
   version: 0.7.31
   resolution: "@types/ms@npm:0.7.31"
@@ -2420,7 +2413,6 @@ __metadata:
     "@electron-ci/virtual-display": "npm:*"
     "@electron/fuses": "npm:^2.1.2"
     "@types/busboy": "npm:^1.5.4"
-    "@types/mocha": "npm:^7.0.2"
     "@types/send": "npm:^1.2.0"
     "@types/ws": "npm:^8.18.1"
     busboy: "npm:^1.6.0"

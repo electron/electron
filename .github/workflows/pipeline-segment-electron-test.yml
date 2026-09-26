@@ -431,7 +431,7 @@ jobs:
           fi
           if [ "$IS_UBSAN" = "true" ]; then
             export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1:external_symbolizer_path=$PWD/../third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer"
-            export MOCHA_TIMEOUT=180000
+            export ELECTRON_SPEC_TIMEOUT=180000
             node script/yarn.js test --runners=main --trace-uncaught $LOGGING_ARGS --files $tests_files
           else
             node script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught $LOGGING_ARGS --files $tests_files
@@ -454,14 +454,14 @@ jobs:
             export NSS_DISABLE_ARENA_FREE_LIST=1
             export NSS_DISABLE_UNLOAD=1
             export LLVM_SYMBOLIZER_PATH=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer
-            export MOCHA_TIMEOUT=180000
+            export ELECTRON_SPEC_TIMEOUT=180000
             echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
             cd electron
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
           elif [ "$IS_UBSAN" == "true" ]; then
             cd ..
             export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1:external_symbolizer_path=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer"
-            export MOCHA_TIMEOUT=180000
+            export ELECTRON_SPEC_TIMEOUT=180000
             cd electron
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
           else

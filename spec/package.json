@@ -17,7 +17,6 @@
     "@electron-ci/virtual-display": "*",
     "@electron/fuses": "^2.1.2",
     "@types/busboy": "^1.5.4",
-    "@types/mocha": "^7.0.2",
     "@types/send": "^1.2.0",
     "@types/ws": "^8.18.1",
     "busboy": "^1.6.0",
