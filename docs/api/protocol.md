@@ -201,7 +201,7 @@ See the MDN docs for [`Request`](https://developer.mozilla.org/en-US/docs/Web/AP
 Removes a protocol handler registered with `protocol.handle` or a source
 registered with `protocol.registerSource`.
 
-### `protocol.registerSource(scheme, source)`
+### `protocol.registerSource(scheme, source)` _Experimental_
 
 * `scheme` string - a custom scheme registered with `protocol.registerSchemesAsPrivileged`.
 * `source` [ProtocolSource](structures/protocol-source.md)
@@ -252,7 +252,7 @@ A scheme has either a handler or a source; `protocol.unhandle` removes either,
 and `protocol.isProtocolHandled` reports both. `webRequest` listeners apply to
 these requests as to any other.
 
-### `protocol.getSource(scheme)`
+### `protocol.getSource(scheme)` _Experimental_
 
 * `scheme` string
 
