@@ -80,7 +80,6 @@
 #include "shell/browser/ui/x/x_window_utils.h"
 #include "ui/gfx/x/atom_cache.h"
 #include "ui/gfx/x/connection.h"
-#include "ui/gfx/x/shape.h"
 #include "ui/gfx/x/xproto.h"
 #endif
 
@@ -1415,27 +1414,20 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
     SetForwardMouseMessages(forward);
   }
 #else
-  if (x11_util::IsX11()) {
-    auto* connection = x11::Connection::Get();
-    if (ignore) {
-      x11::Rectangle r{0, 0, 1, 1};
-      connection->shape().Rectangles({
-          .operation = x11::Shape::So::Set,
-          .destination_kind = x11::Shape::Sk::Input,
-          .ordering = x11::ClipOrdering::YXBanded,
-          .destination_window =
-              static_cast<x11::Window>(GetAcceleratedWidget()),
-          .rectangles = {r},
-      });
-    } else {
-      connection->shape().Mask({
-          .operation = x11::Shape::So::Set,
-          .destination_kind = x11::Shape::Sk::Input,
-          .destination_window =
-              static_cast<x11::Window>(GetAcceleratedWidget()),
-          .source_bitmap = x11::Pixmap::None,
-      });
-    }
+  // The input region is owned by the tree host's frame-hint pass, which runs
+  // on every bounds, state and theme change; keep the flag there so those
+  // passes preserve it instead of resetting the region.
+  if (ignore_mouse_events_ == ignore)
+    return;
+  ignore_mouse_events_ = ignore;
+  if (auto* tree_host = static_cast<ElectronDesktopWindowTreeHostLinux*>(
+          views::DesktopWindowTreeHostLinux::GetHostForWidget(
+              GetAcceleratedWidget()))) {
+    tree_host->UpdateFrameHints();
+    // Wayland applies a new input region with the next surface commit; an
+    // idle window may not produce one for a while, so force a frame.
+    if (auto* compositor = tree_host->compositor())
+      compositor->ScheduleFullRedraw();
   }
 #endif
 }
