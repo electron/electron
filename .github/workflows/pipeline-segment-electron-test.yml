@@ -371,8 +371,6 @@ jobs:
       shell: bash
       timeout-minutes: 60
       env:
-        MOCHA_REPORTER: mocha-multi-reporters
-        MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
         ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         DISPLAY: ':99.0'
         NPM_CONFIG_MSVS_VERSION: '2022'
@@ -423,9 +421,6 @@ jobs:
           echo "About to start tests"
           LOGGING_ARGS=--enable-logging
           if [ "$TARGET_PLATFORM" = "win" ]; then
-            if [ "$TARGET_ARCH" = "arm64" ]; then
-              export ELECTRON_FORCE_TEST_SUITE_EXIT="true"
-            fi
             # Child processes can't write to our stderr pipe on Windows, and
             # with plain --enable-logging each one opens a console window that
             # can cover the test windows. Log to a file (uploaded with the test

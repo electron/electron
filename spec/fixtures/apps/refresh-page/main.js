@@ -25,8 +25,8 @@ app.once('ready', async () => {
 
   protocol.handle('atom', (request) => {
     let { pathname } = new URL(request.url);
-    if (pathname === '/mocha.js') {
-      pathname = path.resolve(__dirname, '../../../node_modules/mocha/mocha.js');
+    if (pathname === '/chai.js') {
+      pathname = path.resolve(__dirname, '../../../node_modules/chai/chai.js');
     } else {
       pathname = path.join(__dirname, pathname);
     }
