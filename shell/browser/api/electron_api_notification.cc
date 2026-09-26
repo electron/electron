@@ -14,7 +14,6 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/javascript_environment.h"
-#include "shell/browser/microtasks_runner.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
@@ -78,56 +77,89 @@ namespace electron::api {
 gin::WrapperInfo Notification::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronNotification);
 
-class NotificationDelegateProxy final : public electron::NotificationDelegate,
-                                        public MicrotasksRunner::Observer {
+class Notification::PlatformLifecycle final
+    : public NativePeer<Notification>,
+      public electron::NotificationDelegate {
  public:
-  explicit NotificationDelegateProxy(Notification* notification)
-      : notification_(notification) {
-    MicrotasksRunner::AddObserver(this);
+  PlatformLifecycle(Notification* notification, bool is_restored)
+      : NativePeer<Notification>(notification), is_restored_(is_restored) {
+    StartObservingShutdown();
   }
 
-  ~NotificationDelegateProxy() override {
-    MicrotasksRunner::RemoveObserver(this);
+  electron::Notification* platform_notification() const {
+    return notification_.get();
   }
 
-  void OnBeforeMicrotasksRunnerDispose() override { notification_.Clear(); }
+  // Returns null once teardown has begun, so a released peer is never handed
+  // to the presenter as a delegate.
+  electron::Notification* CreatePlatformNotification(
+      electron::NotificationPresenter* presenter,
+      const std::string& id) {
+    if (!is_active())
+      return nullptr;
+    notification_ = presenter->CreateNotification(this, id);
+    return notification_.get();
+  }
 
+  base::WeakPtr<electron::Notification> TakePlatformNotification() {
+    base::WeakPtr<electron::Notification> notification = notification_;
+    notification_.reset();
+    return notification;
+  }
+
+  // electron::NotificationDelegate:
   void NotificationAction(int action_index, int selection_index) override {
-    if (auto* notification = notification_.Get())
+    if (auto notification = wrapper())
       notification->NotificationAction(action_index, selection_index);
   }
 
   void NotificationClick() override {
-    if (auto* notification = notification_.Get())
+    if (auto notification = wrapper())
       notification->NotificationClick();
   }
 
   void NotificationReplied(const std::string& reply) override {
-    if (auto* notification = notification_.Get())
+    if (auto notification = wrapper())
       notification->NotificationReplied(reply);
   }
 
   void NotificationDisplayed() override {
-    if (auto* notification = notification_.Get())
+    if (auto notification = wrapper())
       notification->NotificationDisplayed();
   }
 
   void NotificationClosed(const std::string& reason) override {
-    if (auto* notification = notification_.Get())
+    if (auto notification = wrapper())
       notification->NotificationClosed(reason);
   }
 
   void NotificationFailed(const std::string& error) override {
-    if (auto* notification = notification_.Get())
+    if (auto notification = wrapper())
       notification->NotificationFailed(error);
   }
 
  private:
-  cppgc::WeakPersistent<Notification> notification_;
+  ~PlatformLifecycle() override = default;
+
+  // NativePeer:
+  void TearDownNative() override {
+    base::WeakPtr<electron::Notification> notification =
+        TakePlatformNotification();
+    if (!notification)
+      return;
+    notification->set_delegate(nullptr);
+    if (is_restored_)
+      notification->Destroy();
+  }
+
+  const bool is_restored_;
+  base::WeakPtr<electron::Notification> notification_;
 };
 
 Notification::Notification(gin::Arguments* args)
-    : delegate_(std::make_unique<NotificationDelegateProxy>(this)) {
+    : platform_lifecycle_(NativePeer<Notification>::Create<PlatformLifecycle>(
+          this,
+          /*is_restored=*/false)) {
   presenter_ = static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
                    ->GetNotificationPresenter();
 
@@ -163,20 +195,11 @@ Notification::Notification(const NotificationInfo& info)
       body_(base::UTF8ToUTF16(info.body)),
       is_restored_(true),
       presenter_(nullptr),
-      delegate_(std::make_unique<NotificationDelegateProxy>(this)) {}
+      platform_lifecycle_(NativePeer<Notification>::Create<PlatformLifecycle>(
+          this,
+          /*is_restored=*/true)) {}
 
-Notification::~Notification() {
-  if (notification_) {
-    notification_->set_delegate(nullptr);
-    // For restored notifications, destroy the platform notification to remove
-    // it from the presenter's set. The platform-level is_restored_ flag ensures
-    // this won't remove the notification from Notification Center.
-    // For normal notifications, Close() is called before destruction which
-    // already cleans up, so notification_ will be null here.
-    if (is_restored_)
-      notification_->Destroy();
-  }
-}
+Notification::~Notification() = default;
 
 // static
 Notification* Notification::New(gin_helper::ErrorThrower thrower,
@@ -325,8 +348,8 @@ void Notification::NotificationClosed(const std::string& reason) {
 }
 
 void Notification::Close() {
-  auto notification = notification_;
-  notification_.reset();
+  base::WeakPtr<electron::Notification> notification =
+      platform_lifecycle_->TakePlatformNotification();
 
   if (!notification) {
     return;
@@ -351,11 +374,12 @@ void Notification::Show() {
 
   Close();
   // A 'close' listener may have re-entered Show() and already created one.
-  if (notification_)
+  if (platform_lifecycle_->platform_notification())
     return;
   if (presenter_) {
-    notification_ = presenter_->CreateNotification(delegate_.get(), id_);
-    if (notification_) {
+    electron::Notification* notification =
+        platform_lifecycle_->CreatePlatformNotification(presenter_, id_);
+    if (notification) {
       electron::NotificationOptions options;
       options.title = title_;
       options.subtitle = subtitle_;
@@ -373,7 +397,7 @@ void Notification::Show() {
       options.toast_xml = toast_xml_;
       options.group_id = group_id_;
       options.group_title = group_title_;
-      notification_->Show(options);
+      notification->Show(options);
     }
   }
 }
@@ -497,15 +521,17 @@ v8::Local<v8::Promise> Notification::GetHistory(v8::Isolate* isolate) {
           const auto& info = notifications[i];
 
           // The API object is cppgc owned, while the presenter owns the
-          // platform notification. A WeakPtr links API to platform; the
-          // platform points to a proxy whose WeakPersistent target is cleared
-          // when cppgc finds the API object unreachable.
+          // platform notification. The API object's native peer links to the
+          // platform notification and is its delegate; the peer's
+          // WeakPersistent target is cleared when cppgc finds the API object
+          // unreachable.
           auto* notif = cppgc::MakeGarbageCollected<Notification>(
               isolate->GetCppHeap()->GetAllocationHandle(), info);
-          notif->notification_ =
-              presenter->CreateNotification(notif->delegate_.get(), notif->id_);
-          if (notif->notification_)
-            notif->notification_->Restore();
+          if (electron::Notification* platform_notification =
+                  notif->platform_lifecycle_->CreatePlatformNotification(
+                      presenter, notif->id_)) {
+            platform_notification->Restore();
+          }
 
           v8::Local<v8::Object> wrapper =
               notif->GetWrapper(isolate).ToLocalChecked();

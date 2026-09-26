@@ -8,10 +8,10 @@
 #include <memory>
 #include <string>
 
-#include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/browser/native_peer.h"
 
 namespace content {
 class DevToolsAgentHost;
@@ -58,7 +58,7 @@ class Debugger final : public gin::Wrappable<Debugger>,
   void Detach();
   v8::Local<v8::Promise> SendCommand(gin::Arguments* args);
 
-  std::unique_ptr<AgentHostLifecycle, base::OnTaskRunnerDeleter>
+  std::unique_ptr<AgentHostLifecycle, NativePeerBase::Deleter>
       agent_host_lifecycle_;
 };
 
