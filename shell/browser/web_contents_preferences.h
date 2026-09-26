@@ -43,8 +43,6 @@ class WebContentsPreferences
   // renderer sandboxed regardless of per-WC webPreferences.
   static bool ShouldUseSandbox(content::WebContents* web_contents);
 
-  WebContentsPreferences(content::WebContents* web_contents,
-                         const gin_helper::Dictionary& web_preferences);
   ~WebContentsPreferences() override;
 
   // disable copy
@@ -91,6 +89,9 @@ class WebContentsPreferences
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;
   friend class ElectronBrowserClient;
+
+  WebContentsPreferences(content::WebContents* web_contents,
+                         const gin_helper::Dictionary& web_preferences);
 
   // Get WebContents according to process ID.
   static content::WebContents* GetWebContentsFromProcessID(
