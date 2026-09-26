@@ -920,10 +920,6 @@ class WebContents final : public gin::Wrappable<WebContents>,
   const scoped_refptr<base::SequencedTaskRunner> file_task_runner_ =
       base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()});
 
-#if BUILDFLAG(ENABLE_PRINTING)
-  const scoped_refptr<base::TaskRunner> print_task_runner_;
-#endif
-
   // Track navigation state in order to avoid potential re-entrancy crashes
   // in LoadURL. Checked by LoadURL to reject re-entrant navigation attempts.
   bool is_safe_to_delete_ = true;
