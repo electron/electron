@@ -5,7 +5,7 @@ import { expect } from 'chai';
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
 
-import { ifdescribe, ifit } from './lib/spec-helpers.ts';
+import { ifdescribe, ifit, isWayland } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 function getSourceTypes(): ('window' | 'screen')[] {
@@ -24,6 +24,45 @@ describe('desktopCapturer', { tags: ['serial'] }, () => {
   it('throws an error for invalid options', async () => {
     const promise = desktopCapturer.getSources(['window', 'screen'] as any);
     await expect(promise).to.be.eventually.rejectedWith(Error, 'Invalid options');
+  });
+
+  it('throws an error for an unknown persistMode', async () => {
+    const promise = desktopCapturer.getSources({ types: getSourceTypes(), persistMode: 'forever' as any });
+    await expect(promise).to.be.eventually.rejectedWith(Error, 'Invalid options');
+  });
+
+  it('throws an error for a non-string restoreToken', async () => {
+    const promise = desktopCapturer.getSources({ types: getSourceTypes(), restoreToken: 42 as any });
+    await expect(promise).to.be.eventually.rejectedWith(Error, 'Invalid options');
+  });
+
+  it('accepts persistMode and restoreToken and returns a restoreToken for each source', async () => {
+    const sources = await desktopCapturer.getSources({
+      types: getSourceTypes(),
+      thumbnailSize: { width: 0, height: 0 },
+      persistMode: 'transient',
+      restoreToken: ''
+    });
+    expect(sources).to.be.an('array').that.is.not.empty();
+    for (const source of sources) {
+      expect(source.restoreToken).to.be.a('string');
+      if (!isWayland) expect(source.restoreToken).to.be.empty();
+    }
+  });
+
+  it('ignores a restoreToken that is not a portal token', async () => {
+    const sources = await desktopCapturer.getSources({
+      types: getSourceTypes(),
+      thumbnailSize: { width: 0, height: 0 },
+      persistMode: 'persistent',
+      restoreToken: 'not-a-real-token'
+    });
+    expect(sources).to.be.an('array').that.is.not.empty();
+  });
+
+  it('getRestoreToken returns an empty string for a source that has no token', () => {
+    expect(desktopCapturer.getRestoreToken('window:0:0')).to.equal('');
+    expect(desktopCapturer.getRestoreToken('not-a-source-id')).to.equal('');
   });
 
   it('does not throw an error when called more than once (regression)', async () => {

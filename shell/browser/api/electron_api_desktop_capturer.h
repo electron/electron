@@ -26,16 +26,23 @@ class DesktopCapturer final : public gin::Wrappable<DesktopCapturer> {
 
     // Whether or not this source should provide an icon.
     bool fetch_icon = false;
+
+    // ScreenCast portal restore token; empty when the source has none.
+    std::string restore_token;
   };
 
   static DesktopCapturer* Create(v8::Isolate* isolate);
 
   static bool IsDisplayMediaSystemPickerAvailable();
 
+  static std::string GetRestoreToken(const std::string& source_id);
+
   void StartHandling(bool capture_window,
                      bool capture_screen,
                      const gfx::Size& thumbnail_size,
-                     bool fetch_window_icons);
+                     bool fetch_window_icons,
+                     bool persistent,
+                     const std::string& restore_token);
 
   // gin::Wrappable
   static const gin::WrapperInfo kWrapperInfo;
