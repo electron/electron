@@ -23,7 +23,7 @@ import * as url from 'node:url';
 import * as vm from 'node:vm';
 
 import { captureWithTabSourceId } from './lib/media-helpers.ts';
-import { containsText, readPDF } from './lib/pdf-helpers.ts';
+import { containsText, readPDF, readPDFs } from './lib/pdf-helpers.ts';
 import {
   ifdescribe,
   defer,
@@ -5131,16 +5131,22 @@ describe('webContents module', () => {
 
       await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
 
-      for (const format of Object.keys(paperFormats) as PageSizeString[]) {
-        const data = await w.webContents.printToPDF({ pageSize: format });
+      const formats = Object.keys(paperFormats) as PageSizeString[];
+      const pdfs = [];
+      for (const format of formats) {
+        pdfs.push(await w.webContents.printToPDF({ pageSize: format }));
+      }
 
-        const pdfInfo = await readPDF(data);
+      // Parse every PDF in one pdf.js subprocess: one Electron launch per
+      // format is enough to push this test past its timeout on slow CI hosts.
+      const pdfInfos = await readPDFs(pdfs);
 
+      const approxEq = (a: number, b: number, epsilon = 0.01) => Math.abs(a - b) <= epsilon;
+
+      for (const [i, format] of formats.entries()) {
         // page.view is [top, left, width, height].
-        const width = pdfInfo.view[2] / 72;
-        const height = pdfInfo.view[3] / 72;
-
-        const approxEq = (a: number, b: number, epsilon = 0.01) => Math.abs(a - b) <= epsilon;
+        const width = pdfInfos[i].view[2] / 72;
+        const height = pdfInfos[i].view[3] / 72;
 
         expect(approxEq(width, paperFormats[format].width)).to.be.true();
         expect(approxEq(height, paperFormats[format].height)).to.be.true();
