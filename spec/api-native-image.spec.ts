@@ -3,6 +3,7 @@ import { BrowserWindow } from 'electron/main';
 
 import { expect } from 'chai';
 
+import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -184,6 +185,77 @@ describe('nativeImage module', () => {
     });
   });
 
+  describe('createFromBufferAsync(buffer, options)', () => {
+    useRemoteContext({ webPreferences: { contextIsolation: false, nodeIntegration: true } });
+
+    it('resolves with an empty image when the buffer cannot be decoded', async () => {
+      expect((await nativeImage.createFromBufferAsync(Buffer.from([]))).isEmpty()).to.be.true();
+
+      const tooSmall = await nativeImage.createFromBufferAsync(Buffer.from([1, 2, 3, 4]), { width: 100, height: 100 });
+      expect(tooSmall.isEmpty()).to.be.true();
+
+      const logo = nativeImage.createFromPath(imageLogo.path);
+      expect((await nativeImage.createFromBufferAsync(logo.toBitmap())).isEmpty()).to.be.true();
+    });
+
+    it('decodes the same image as createFromBuffer()', async () => {
+      const logo = nativeImage.createFromPath(imageLogo.path);
+      const size = { width: imageLogo.width, height: imageLogo.height };
+      const inputs: [Buffer, Electron.CreateFromBufferOptions?][] = [
+        [logo.toPNG()],
+        [logo.toJPEG(100)],
+        [logo.toBitmap(), size],
+        [logo.toBitmap(), { width: 100, height: 200 }],
+        [logo.toPNG(), { width: 100, height: 200 }],
+        [logo.toBitmap(), { ...size, scaleFactor: 2.0 }]
+      ];
+
+      for (const [buffer, options] of inputs) {
+        const expected = nativeImage.createFromBuffer(buffer, options);
+        const actual = await nativeImage.createFromBufferAsync(buffer, options);
+        const scaleFactor = options?.scaleFactor ?? 1.0;
+        expect(actual.getSize()).to.deep.equal(expected.getSize());
+        expect(actual.getScaleFactors()).to.deep.equal(expected.getScaleFactors());
+        expect(actual.toBitmap({ scaleFactor }).equals(expected.toBitmap({ scaleFactor }))).to.be.true();
+      }
+    });
+
+    it('is not affected by changes to the buffer after the call', async () => {
+      const png = nativeImage.createFromPath(imageLogo.path).toPNG();
+      const expected = nativeImage.createFromBuffer(png).toBitmap();
+
+      const pending = nativeImage.createFromBufferAsync(png);
+      png.fill(0);
+
+      expect((await pending).toBitmap().equals(expected)).to.be.true();
+    });
+
+    it('resolves with an image that accepts more representations', async () => {
+      const image = await nativeImage.createFromBufferAsync(nativeImage.createFromPath(image1x1.path).toPNG());
+      image.addRepresentation({ scaleFactor: 2.0, dataURL: image2x2.dataUrl });
+      expect(image.getScaleFactors()).to.deep.equal([1, 2]);
+    });
+
+    it('rejects on invalid arguments', async () => {
+      await expect(nativeImage.createFromBufferAsync(null as any)).to.be.rejectedWith('buffer must be a node Buffer');
+      await expect(nativeImage.createFromBufferAsync([12, 14, 124, 12] as any)).to.be.rejectedWith(
+        'buffer must be a node Buffer'
+      );
+    });
+
+    itremote(
+      'round-trips through the async codecs in the renderer',
+      async (path: string) => {
+        const { nativeImage } = require('electron');
+        const image = nativeImage.createFromPath(path);
+        const decoded = await nativeImage.createFromBufferAsync(await image.toPNGAsync());
+        expect((await decoded.toBitmapAsync()).equals(image.toBitmap())).to.equal(true);
+        expect(await image.toJPEGAsync(90)).to.not.be.empty();
+      },
+      [imageLogo.path]
+    );
+  });
+
   describe('createFromDataURL(dataURL)', () => {
     it('returns an empty image from the empty string', () => {
       expect(nativeImage.createFromDataURL('').isEmpty()).to.be.true();
@@ -257,6 +329,36 @@ describe('nativeImage module', () => {
     });
   });
 
+  describe('toJPEGAsync()', () => {
+    ifit(process.platform !== 'darwin')('resolves with the same data as toJPEG()', async () => {
+      const image = nativeImage.createFromPath(imageLogo.path);
+      expect((await image.toJPEGAsync(90)).equals(image.toJPEG(90))).to.be.true();
+      expect((await image.toJPEGAsync(10)).equals(image.toJPEG(10))).to.be.true();
+    });
+
+    it('resolves with a decodable JPEG', async () => {
+      const jpeg = await nativeImage.createFromPath(imageLogo.path).toJPEGAsync(90);
+      expect(nativeImage.createFromBuffer(jpeg).getSize()).to.deep.equal({
+        width: imageLogo.width,
+        height: imageLogo.height
+      });
+    });
+
+    it('encodes an image that only has a non-1x representation', async () => {
+      const image = nativeImage.createFromBitmap(Buffer.alloc(8 * 6 * 4, 0xff), {
+        width: 8,
+        height: 6,
+        scaleFactor: 2
+      });
+      const jpeg = await image.toJPEGAsync(90);
+      expect(nativeImage.createFromBuffer(jpeg).getSize()).to.deep.equal({ width: 8, height: 6 });
+    });
+
+    it('resolves with an empty buffer for an empty image', async () => {
+      expect(await nativeImage.createEmpty().toJPEGAsync(90)).to.be.empty();
+    });
+  });
+
   describe('toPNG()', () => {
     it('returns a buffer at 1x scale factor by default', () => {
       const imageData = imageLogo;
@@ -284,6 +386,116 @@ describe('nativeImage module', () => {
 
       const imageFromBufferTwo = nativeImage.createFromBuffer(image.toPNG({ scaleFactor: 2.0 }), { scaleFactor: 2.0 });
       expect(imageFromBufferTwo.getSize()).to.deep.equal({ width: imageData.width / 2, height: imageData.height / 2 });
+    });
+  });
+
+  describe('toPNGAsync()', () => {
+    it('resolves with the same pixels as toPNG()', async () => {
+      const image = nativeImage.createFromPath(imageLogo.path);
+      for (const options of [undefined, { scaleFactor: 1.0 }, { scaleFactor: 2.0 }]) {
+        const actual = nativeImage.createFromBuffer(await image.toPNGAsync(options));
+        const expected = nativeImage.createFromBuffer(image.toPNG(options));
+        expect(actual.getSize()).to.deep.equal(expected.getSize());
+        expect(actual.toBitmap().equals(expected.toBitmap())).to.be.true();
+      }
+    });
+
+    it('encodes the image as it was when the method was called', async () => {
+      const image = nativeImage.createFromPath(image1x1.path);
+      const pending = image.toPNGAsync({ scaleFactor: 2.0 });
+      image.addRepresentation({ scaleFactor: 2.0, dataURL: image2x2.dataUrl });
+      expect(nativeImage.createFromBuffer(await pending).getSize()).to.deep.equal({ width: 1, height: 1 });
+    });
+
+    it('encodes an image that only has a non-1x representation', async () => {
+      const image = nativeImage.createFromBitmap(Buffer.alloc(8 * 6 * 4, 0xff), {
+        width: 8,
+        height: 6,
+        scaleFactor: 2
+      });
+      const expected = image.toPNG();
+      expect(expected).to.not.be.empty();
+      expect((await image.toPNGAsync()).equals(expected)).to.be.true();
+    });
+
+    it('resolves with an empty buffer for an empty image', async () => {
+      expect(await nativeImage.createEmpty().toPNGAsync()).to.be.empty();
+    });
+  });
+
+  describe('toBitmapAsync()', () => {
+    it('resolves with the same data as toBitmap()', async () => {
+      const image = nativeImage.createFromPath(imageLogo.path);
+      for (const options of [undefined, { scaleFactor: 1.0 }, { scaleFactor: 2.0 }]) {
+        expect((await image.toBitmapAsync(options)).equals(image.toBitmap(options))).to.be.true();
+      }
+    });
+
+    it('converts to the requested color space', async () => {
+      const image = nativeImage.createFromPath(imageColorSpaceP3.path);
+      const colorSpace = { primaries: 'p3', transfer: 'srgb', matrix: 'rgb', range: 'full' } as const;
+      const converted = await image.toBitmapAsync({ colorSpace });
+      expect(converted.equals(image.toBitmap({ colorSpace }))).to.be.true();
+      expect(converted.equals(image.toBitmap())).to.be.false();
+    });
+
+    it('resolves with an empty buffer for an empty image', async () => {
+      expect(await nativeImage.createEmpty().toBitmapAsync()).to.be.empty();
+    });
+  });
+
+  describe('async codecs in a context without a Node.js environment', () => {
+    afterEach(closeAllWindows);
+
+    it('reject from the encoders in a sandboxed preload', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true,
+          contextIsolation: false,
+          preload: path.join(fixturesPath, 'module', 'preload-electron.js')
+        }
+      });
+      await w.loadURL('about:blank');
+
+      const codes = await w.webContents.executeJavaScript(`{
+        const image = window.electron.nativeImage.createFromBitmap(new Uint8Array(4), { width: 1, height: 1 });
+        Promise.allSettled([image.toPNGAsync(), image.toJPEGAsync(90), image.toBitmapAsync()]).then((results) =>
+          results.map((result) => result.reason?.code)
+        );
+      }`);
+      expect(codes).to.deep.equal(Array(3).fill('ERR_BUFFER_CONTEXT_NOT_AVAILABLE'));
+    });
+
+    it('do not crash the renderer when the page reloads while they run', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { contextIsolation: false, nodeIntegration: true }
+      });
+      let gone = false;
+      w.webContents.once('render-process-gone', () => {
+        gone = true;
+      });
+      await w.loadURL('about:blank');
+
+      const reloaded = once(w.webContents, 'did-finish-load');
+      await w.webContents.executeJavaScript(`{
+        const { nativeImage } = require('electron');
+        const size = { width: 3000, height: 3000 };
+        const pixels = Buffer.alloc(size.width * size.height * 4, 0x7f);
+        const image = nativeImage.createFromBitmap(pixels, size);
+        nativeImage.createFromBufferAsync(pixels, size);
+        image.toPNGAsync();
+        image.toJPEGAsync(90);
+        image.toBitmapAsync();
+        location.reload();
+      }`);
+      await reloaded;
+
+      expect(
+        await w.webContents.executeJavaScript('new Promise((resolve) => setTimeout(resolve, 1000, 1 + 1))')
+      ).to.equal(2);
+      expect(gone).to.be.false();
     });
   });
 

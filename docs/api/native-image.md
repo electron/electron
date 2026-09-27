@@ -186,6 +186,22 @@ Returns `NativeImage`
 
 Creates a new `NativeImage` instance from `buffer`. Tries to decode as PNG or JPEG first.
 
+### `nativeImage.createFromBufferAsync(buffer[, options])`
+
+* `buffer` [Buffer][buffer]
+* `options` Object (optional)
+  * `width` Integer (optional) - Required for bitmap buffers.
+  * `height` Integer (optional) - Required for bitmap buffers.
+  * `scaleFactor` Number (optional) - Defaults to 1.0.
+
+Returns `Promise<NativeImage>` - fulfilled with the image that
+[`nativeImage.createFromBuffer`](#nativeimagecreatefrombufferbuffer-options) would return
+for the same arguments, which is empty if `buffer` could not be decoded.
+
+Decodes `buffer` on a background thread instead of the calling thread, except in the main
+process before the app's `ready` event. `buffer` is copied before this method returns, so
+later changes to it do not affect the result.
+
 ### `nativeImage.createFromDataURL(dataURL)`
 
 * `dataURL` string
@@ -284,11 +300,36 @@ The following methods are available on instances of the `NativeImage` class:
 
 Returns `Buffer` - A [Buffer][buffer] that contains the image's `PNG` encoded data.
 
+#### `image.toPNGAsync([options])`
+
+* `options` Object (optional)
+  * `scaleFactor` Number (optional) - Defaults to 1.0.
+
+Returns `Promise<Buffer>` - fulfilled with a [Buffer][buffer] that contains the image's
+`PNG` encoded data.
+
+Encodes the image on a background thread instead of the calling thread, except in the main
+process before the app's `ready` event. On macOS the bytes can differ from those of
+[`image.toPNG`](#imagetopngoptions), which can use the system encoder. Rejects in a context
+without Node.js integration, such as a sandboxed preload script.
+
 #### `image.toJPEG(quality)`
 
 * `quality` Integer - Between 0 - 100.
 
 Returns `Buffer` - A [Buffer][buffer] that contains the image's `JPEG` encoded data.
+
+#### `image.toJPEGAsync(quality)`
+
+* `quality` Integer - Between 0 - 100.
+
+Returns `Promise<Buffer>` - fulfilled with a [Buffer][buffer] that contains the image's
+`JPEG` encoded data.
+
+Encodes the image on a background thread instead of the calling thread, except in the main
+process before the app's `ready` event. On macOS the bytes can differ from those of
+[`image.toJPEG`](#imagetojpegquality), which can use the system encoder. Rejects in a context
+without Node.js integration, such as a sandboxed preload script.
 
 #### `image.toBitmap([options])`
 
@@ -309,6 +350,20 @@ changes:
 
 Returns `Buffer` - A [Buffer][buffer] that contains a copy of the image's raw bitmap pixel
 data.
+
+#### `image.toBitmapAsync([options])`
+
+* `options` Object (optional)
+  * `scaleFactor` Number (optional) - Defaults to 1.0.
+  * `colorSpace` [ColorSpace](structures/color-space.md) (optional) - The target color space
+    for the output pixel data. Defaults to sRGB.
+
+Returns `Promise<Buffer>` - fulfilled with a [Buffer][buffer] that contains a copy of the
+image's raw bitmap pixel data.
+
+Converts the pixel data on a background thread instead of the calling thread, except in the
+main process before the app's `ready` event. Rejects in a context without Node.js
+integration, such as a sandboxed preload script.
 
 #### `image.toDataURL([options])`
 
