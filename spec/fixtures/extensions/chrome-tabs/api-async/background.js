@@ -1,5 +1,7 @@
 /* global chrome */
 
+let lastReload = null;
+
 const handleRequest = async (request, sender, sendResponse) => {
   const { method, args = [] } = request;
   const tabId = sender.tab.id;
@@ -45,9 +47,18 @@ const handleRequest = async (request, sender, sendResponse) => {
     }
 
     case 'reload': {
-      chrome.tabs.reload(tabId).then(() => {
-        sendResponse({ status: 'reloaded' });
-      });
+      // The reply below is addressed to the document being reloaded and may be
+      // dropped once the reload commits; keep the result for getReloadStatus.
+      lastReload = chrome.tabs.reload(tabId).then(
+        () => ({ status: 'reloaded' }),
+        (error) => ({ error: error.message })
+      );
+      lastReload.then(sendResponse);
+      break;
+    }
+
+    case 'getReloadStatus': {
+      sendResponse(lastReload ? await lastReload : { error: 'reload was not called' });
       break;
     }
 
