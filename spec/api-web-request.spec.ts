@@ -564,9 +564,9 @@ describe('webRequest module', () => {
       });
       const { data } = await ajax(defaultURL);
       expect(data).to.equal('/header/received');
-      expect(warnings.some((message) => message.includes("'requestHeaders'") && message.includes('"X-Bad"'))).to.be.true(
-        'expected a warning naming the invalid header'
-      );
+      expect(
+        warnings.some((message) => message.includes("'requestHeaders'") && message.includes('"X-Bad"'))
+      ).to.be.true('expected a warning naming the invalid header');
     });
 
     it('keeps the original request headers when requestHeaders cannot be converted', async () => {
@@ -790,9 +790,9 @@ describe('webRequest module', () => {
       expect(headers).to.have.property('x-added', 'yes');
       expect(headers).to.not.have.property('x-bad');
       expect(headers).to.not.have.property('x-injected');
-      expect(warnings.some((message) => message.includes("'responseHeaders'") && message.includes('"X-Bad"'))).to.be.true(
-        'expected a warning naming the invalid header'
-      );
+      expect(
+        warnings.some((message) => message.includes("'responseHeaders'") && message.includes('"X-Bad"'))
+      ).to.be.true('expected a warning naming the invalid header');
     });
 
     it('keeps the original response headers when responseHeaders cannot be converted', async () => {
