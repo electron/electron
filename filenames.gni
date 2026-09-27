@@ -63,8 +63,6 @@ filenames = {
     "shell/browser/ui/views/global_menu_bar_registrar_x11.h",
     "shell/browser/ui/views/global_menu_bar_x11.cc",
     "shell/browser/ui/views/global_menu_bar_x11.h",
-    "shell/browser/ui/x/event_disabler.cc",
-    "shell/browser/ui/x/event_disabler.h",
     "shell/browser/ui/x/x_window_utils.cc",
     "shell/browser/ui/x/x_window_utils.h",
   ]
@@ -112,6 +110,8 @@ filenames = {
     "shell/browser/ui/win/taskbar_host.h",
     "shell/browser/win/dark_mode.cc",
     "shell/browser/win/dark_mode.h",
+    "shell/browser/win/install_dir_access.cc",
+    "shell/browser/win/install_dir_access.h",
     "shell/common/api/electron_api_native_image_win.cc",
     "shell/common/application_info_win.cc",
     "shell/common/language_util_win.cc",

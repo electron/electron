@@ -210,6 +210,7 @@
 #endif
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
+#include "ui/aura/client/focus_client.h"
 #include "ui/aura/window.h"
 #include "ui/gfx/font_render_params.h"
 #endif
@@ -1971,13 +1972,9 @@ void WebContents::InitWithSessionAndOptions(
   // Save the preferences in C++.
   // If there's already a WebContentsPreferences object, we created it as part
   // of the webContents.setWindowOpenHandler path, so don't overwrite it.
-  // WebContentsPreferences transfers ownership to WebContents in its
-  // constructor. NOLINTBEGIN(clang-analyzer-cplusplus.NewDeleteLeaks)
-  auto* web_preferences = WebContentsPreferences::From(web_contents());
-  if (!web_preferences)
-    web_preferences = new WebContentsPreferences(web_contents(), options);
+  auto* web_preferences = WebContentsPreferences::GetOrCreateForWebContents(
+      web_contents(), options);
   ignore_menu_shortcuts_ = web_preferences->ShouldIgnoreMenuShortcuts();
-  // NOLINTEND(clang-analyzer-cplusplus.NewDeleteLeaks)
   // Trigger re-calculation of webkit prefs.
   web_contents()->NotifyPreferencesChanged();
 
@@ -2237,7 +2234,7 @@ void WebContents::WebContentsCreatedWithFullParams(
   // content::WebContents that was just created for the child window. These
   // preferences will be picked up by the RenderWidgetHost via its call to the
   // delegate's OverrideWebkitPrefs.
-  new WebContentsPreferences(new_contents, dict);
+  WebContentsPreferences::CreateForWebContents(new_contents, dict);
 }
 
 bool WebContents::OnWillCreateWindow(
@@ -3923,7 +3920,7 @@ v8::Local<v8::Value> WebContents::Clone(v8::Isolate* isolate) {
   gin_helper::Dictionary pref_dict;
   gin::ConvertFromV8(isolate, gin::ConvertToV8(isolate, current_prefs),
                      &pref_dict);
-  new WebContentsPreferences(new_contents.get(), pref_dict);
+  WebContentsPreferences::CreateForWebContents(new_contents.get(), pref_dict);
 
   // Use CreateAndTake to properly take ownership of the cloned WebContents
   // and create a new wrapper with the appropriate type
@@ -5687,7 +5684,8 @@ void WebContents::RunJavaScriptDialog(content::WebContents* web_contents,
                   .Set("defaultPromptText", default_prompt_text)
                   .Build();
 
-  EmitWithoutEvent("-run-dialog", info, std::move(callback));
+  EmitWithoutEvent("-run-dialog", info,
+                   ResyncFocusAfterDialog(std::move(callback)));
 }
 
 void WebContents::RunBeforeUnloadDialog(content::WebContents* web_contents,
@@ -5702,8 +5700,43 @@ void WebContents::RunBeforeUnloadDialog(content::WebContents* web_contents,
                     url, true);
   }
 
-  std::move(callback).Run(default_prevented, std::u16string());
+  ResyncFocusAfterDialog(std::move(callback))
+      .Run(default_prevented, std::u16string());
 }
+
+// While a JavaScript dialog or beforeunload handler blocks the renderer,
+// RenderWidgetHostViewAura ignores focus gains, so a native dialog that hands
+// activation back to the window before its result is delivered leaves the
+// view focused in aura but blurred in Blink, and typed characters are dropped
+// until the window is deactivated again. Replay the focus after the result
+// has unblocked the renderer.
+content::JavaScriptDialogManager::DialogClosedCallback
+WebContents::ResyncFocusAfterDialog(DialogClosedCallback callback) {
+#if defined(USE_AURA)
+  return std::move(callback).Then(
+      base::BindOnce(&WebContents::ResyncViewFocus, WeakRef()));
+#else
+  return callback;
+#endif
+}
+
+#if defined(USE_AURA)
+void WebContents::ResyncViewFocus() {
+  if (is_guest() || !web_contents())
+    return;
+  auto* rwhv = web_contents()->GetRenderWidgetHostView();
+  if (!rwhv || !rwhv->HasFocus())
+    return;
+  auto* host =
+      static_cast<content::RenderWidgetHostImpl*>(rwhv->GetRenderWidgetHost());
+  if (!host || host->is_focused())
+    return;
+  if (auto* client = aura::client::GetFocusClient(rwhv->GetNativeView())) {
+    client->FocusWindow(nullptr);
+    rwhv->Focus();
+  }
+}
+#endif
 
 void WebContents::CancelDialogs(content::WebContents* web_contents,
                                 bool reset_state) {
@@ -5958,6 +5991,29 @@ v8::Local<v8::Promise> WebContents::SetVisualZoomLevelLimits(
     double max_level) {
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
+  if (!std::isfinite(min_level) || !std::isfinite(max_level) ||
+      min_level <= 0 || max_level < min_level) {
+    promise.RejectWithErrorMessage(
+        "'minimumLevel' and 'maximumLevel' must be positive numbers with "
+        "minimumLevel <= maximumLevel");
+    return handle;
+  }
+
+  // Persist the limits in WebPreferences so later navigations and new render
+  // views keep them, and give them to the embedder too: a guest's pinch-zoom
+  // is handled by the embedder's root compositor.
+  if (auto* prefs = WebContentsPreferences::From(web_contents())) {
+    prefs->SetVisualZoomLevelLimits(min_level, max_level);
+    web_contents()->OnWebPreferencesChanged();
+  }
+  if (embedder_) {
+    if (auto* embedder_prefs =
+            WebContentsPreferences::From(embedder_->web_contents())) {
+      embedder_prefs->SetVisualZoomLevelLimits(min_level, max_level);
+      embedder_->web_contents()->OnWebPreferencesChanged();
+    }
+  }
+
   if (auto* renderer = MainFrameRenderer(isolate, promise)) {
     renderer->SetVisualZoomLevelLimits(min_level, max_level,
                                        AckCallback(std::move(promise)));

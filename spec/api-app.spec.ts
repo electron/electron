@@ -2261,12 +2261,17 @@ describe('app module', () => {
     });
   });
 
-  ifdescribe(process.platform === 'darwin')('app isActive API', () => {
+  // Activation, hiding and the dock are per-machine state on macOS.
+  ifdescribe(process.platform === 'darwin')('app isActive API', { tags: ['serial'] }, () => {
     describe('app.isActive', () => {
       afterEach(closeAllWindows);
 
       it('returns true when the app becomes active', async () => {
-        expect(app.isActive()).to.equal(false);
+        // A freshly started process may already be the active app.
+        if (app.isActive()) {
+          app.hide();
+          await waitUntil(() => !app.isActive());
+        }
 
         const w = new BrowserWindow({
           width: 200,
@@ -2276,7 +2281,7 @@ describe('app module', () => {
 
         w.show();
 
-        await expect(waitUntil(() => app.isActive())).to.eventually.be.fulfilled();
+        await waitUntil(() => app.isActive());
 
         w.close();
         app.hide();
@@ -2284,20 +2289,20 @@ describe('app module', () => {
     });
   });
 
-  ifdescribe(process.platform === 'darwin')('app hide and show API', () => {
+  ifdescribe(process.platform === 'darwin')('app hide and show API', { tags: ['serial'] }, () => {
     describe('app.isHidden', () => {
       it('returns true when the app is hidden', async () => {
         app.hide();
-        await expect(waitUntil(() => app.isHidden())).to.eventually.be.fulfilled();
+        await waitUntil(() => app.isHidden());
       });
       it('returns false when the app is shown', async () => {
         app.show();
-        await expect(waitUntil(() => !app.isHidden())).to.eventually.be.fulfilled();
+        await waitUntil(() => !app.isHidden());
       });
     });
   });
 
-  ifdescribe(process.platform === 'darwin')('dock APIs', () => {
+  ifdescribe(process.platform === 'darwin')('dock APIs', { tags: ['serial'] }, () => {
     after(async () => {
       await app.dock?.show();
     });

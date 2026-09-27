@@ -75,6 +75,7 @@ class BrowserWindow : public BaseWindow,
 
  private:
   // Helpers.
+  bool FocusIsInAnotherView();
   WebContents* GetLiveWebContents() const;
 
   v8::Global<v8::Value> web_contents_;

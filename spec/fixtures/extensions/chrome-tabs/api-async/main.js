@@ -36,7 +36,11 @@ const testMap = {
     });
   },
   reload() {
-    chrome.runtime.sendMessage({ method: 'reload' }, (response) => {
+    // The reply may never arrive: this document is replaced by the reload.
+    chrome.runtime.sendMessage({ method: 'reload' }).catch(() => {});
+  },
+  getReloadStatus() {
+    chrome.runtime.sendMessage({ method: 'getReloadStatus' }, (response) => {
       console.log(JSON.stringify(response));
     });
   },
