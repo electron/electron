@@ -99,6 +99,17 @@ describe('WebContentsView', () => {
         waitUntil(async () => (await top.webContents.executeJavaScript('window.clicks')) === 2)
       ).to.eventually.be.fulfilled();
       expect(await bottom.webContents.executeJavaScript('window.clicks')).to.equal(1);
+
+      await top.webContents.loadURL(
+        `data:text/html,${encodeURIComponent(`
+        <style>html, body { width: 100%; height: 100%; margin: 0; app-region: drag; }</style>
+      `)}`
+      );
+      top.setIgnoreMouseEvents(true);
+      robot.mouseClick();
+      await expect(
+        waitUntil(async () => (await bottom.webContents.executeJavaScript('window.clicks')) === 2)
+      ).to.eventually.be.fulfilled();
     });
   });
 
