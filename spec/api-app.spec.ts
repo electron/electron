@@ -2262,13 +2262,25 @@ describe('app module', () => {
   });
 
   // Activation, hiding and the dock are per-machine state on macOS.
+  //
+  // A spec worker can start out as the active app without having shown a
+  // window: macOS hands it activation when the spec process before it quits.
+  // app.hide() from that inherited state can be ignored for good, so take
+  // activation through a window of our own first and only then hide.
+  const activateThroughOwnWindow = async () => {
+    const w = new BrowserWindow({ width: 200, height: 200, show: false });
+    w.show();
+    await waitUntil(() => app.isActive() && w.isFocused());
+    await closeWindow(w);
+  };
+
   ifdescribe(process.platform === 'darwin')('app isActive API', { tags: ['serial'] }, () => {
     describe('app.isActive', () => {
       afterEach(closeAllWindows);
 
       it('returns true when the app becomes active', async () => {
-        // A freshly started process may already be the active app.
         if (app.isActive()) {
+          await activateThroughOwnWindow();
           app.hide();
           await waitUntil(() => !app.isActive());
         }
@@ -2292,6 +2304,9 @@ describe('app module', () => {
   ifdescribe(process.platform === 'darwin')('app hide and show API', { tags: ['serial'] }, () => {
     describe('app.isHidden', () => {
       it('returns true when the app is hidden', async () => {
+        if (app.isActive() && !app.isHidden()) {
+          await activateThroughOwnWindow();
+        }
         app.hide();
         await waitUntil(() => app.isHidden());
       });
