@@ -67,6 +67,9 @@ describe('WebContentsView', () => {
         </script>
       `)}`;
       await Promise.all([bottom.webContents.loadURL(page), top.webContents.loadURL(page)]);
+      // Native mouse input must reach this window even if another process has
+      // placed a window above it while the serial specs are running.
+      w.setAlwaysOnTop(true);
       const shown = once(w, 'show');
       w.show();
       await shown;
