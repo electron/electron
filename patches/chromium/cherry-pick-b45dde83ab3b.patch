@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Le Hoang Quyen <lehoangquyen@chromium.org>
+Date: Tue, 25 Aug 2026 01:13:47 -0700
+Subject: GpuPersistentCache: Don't treat all errors as permanent in init
+
+Forward the actual TransactionError returned from
+PersistentCache::Bind to HandlePersistentCacheError instead of treating
+all errors as permanent. Also add logging to HandlePersistentCacheError.
+
+Bug: 460078995
+Change-Id: I83e59d7eaa6b03c3908bdf248dd140e21fa5668b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8276872
+Commit-Queue: Quyen Le <lehoangquyen@google.com>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1685351}
+
+diff --git a/gpu/command_buffer/service/gpu_persistent_cache.cc b/gpu/command_buffer/service/gpu_persistent_cache.cc
+index ca978d842e703b3f77e597a48909d2f866ee820e..e6dc79b5a5b555d0d1231e603409da830b83abfa 100644
+--- a/gpu/command_buffer/service/gpu_persistent_cache.cc
++++ b/gpu/command_buffer/service/gpu_persistent_cache.cc
+@@ -134,6 +134,7 @@ std::string GetHistogramName(std::string_view prefix, std::string_view metric) {
+ NOINLINE NOOPT void HandlePersistentCacheError(
+     GpuProcessShmCount* use_shader_cache_shm_count,
+     persistent_cache::TransactionError error) {
++  LOG(ERROR) << "Persistent cache error: " << static_cast<int>(error);
+   switch (error) {
+     case persistent_cache::TransactionError::kPermanent:
+       if (use_shader_cache_shm_count) {
+@@ -433,11 +434,8 @@ void GpuPersistentCache::InitializeCache(
+       auto cache,
+       persistent_cache::PersistentCache::Bind(
+           persistent_cache::Client::kShaderCache, std::move(pending_backend)),
+-      [use_shader_cache_shm_count](persistent_cache::TransactionError error) {
+-        // Treat any failure to bind to the cache as a permanent error.
+-        HandlePersistentCacheError(
+-            &use_shader_cache_shm_count->data,
+-            persistent_cache::TransactionError::kPermanent);
++      [&](persistent_cache::TransactionError error) {
++        HandlePersistentCacheError(&use_shader_cache_shm_count->data, error);
+       });
+ 
+   disk_cache_ = base::MakeRefCounted<DiskCache>(
