@@ -63,8 +63,6 @@ filenames = {
     "shell/browser/ui/views/global_menu_bar_registrar_x11.h",
     "shell/browser/ui/views/global_menu_bar_x11.cc",
     "shell/browser/ui/views/global_menu_bar_x11.h",
-    "shell/browser/ui/x/event_disabler.cc",
-    "shell/browser/ui/x/event_disabler.h",
     "shell/browser/ui/x/x_window_utils.cc",
     "shell/browser/ui/x/x_window_utils.h",
   ]
@@ -681,6 +679,8 @@ filenames = {
     "shell/common/gin_converters/usb_device_info_converter.h",
     "shell/common/gin_converters/value_converter.cc",
     "shell/common/gin_converters/value_converter.h",
+    "shell/common/gin_helper/cached_string.cc",
+    "shell/common/gin_helper/cached_string.h",
     "shell/common/gin_helper/callback.cc",
     "shell/common/gin_helper/callback.h",
     "shell/common/gin_helper/cleaned_up_at_exit.cc",

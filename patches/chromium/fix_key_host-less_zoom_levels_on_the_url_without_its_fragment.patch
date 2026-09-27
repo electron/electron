@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Fri, 25 Sep 2026 13:23:15 +0000
+Subject: fix: key host-less zoom levels on the URL without its fragment
+
+HostZoomMap keys per-host zoom levels by net::GetHostOrSpecFromURL() of
+the frame's last committed URL, which is the full spec when the URL has
+no host (file:, data:, about:). A same-document navigation that only
+changes the fragment on such a page therefore changed the key: the
+stored level was no longer found, GetZoomLevel() reported the default
+while the renderer kept the old zoom factor, and the next zoom step was
+computed from the default. Strip the fragment in
+GetURLForRenderFrameHostPtr(), which every zoom-keying call site goes
+through.
+
+Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/8467669
+
+diff --git a/content/browser/host_zoom_map_impl.cc b/content/browser/host_zoom_map_impl.cc
+index c321160361ca8ad9bce5f1bd583231825a87e030..1d231545f72a37fb64cc71da17e3b3141496bdf7 100644
+--- a/content/browser/host_zoom_map_impl.cc
++++ b/content/browser/host_zoom_map_impl.cc
+@@ -55,8 +55,12 @@ GURL GetURLForRenderFrameHostPtr(const RenderFrameHost* rfh) {
+   // If a user lands on an error page, and then modifies the zoom level, it
+   // should be attributed to the error-page host and not the page they were
+   // trying to reach.
+-  return rfh->IsErrorDocument() ? GURL(kUnreachableWebDataURL)
+-                                : rfh->GetLastCommittedURL();
++  if (rfh->IsErrorDocument()) {
++    return GURL(kUnreachableWebDataURL);
++  }
++  // Zoom levels for URLs without a host are keyed by spec; drop the fragment
++  // so that same-document navigations keep the key.
++  return rfh->GetLastCommittedURL().GetWithoutRef();
+ }
+ 
+ std::string GetHostFromProcessFrame(RenderFrameHostImpl* rfh) {
+diff --git a/content/public/browser/host_zoom_map.h b/content/public/browser/host_zoom_map.h
+index f108e3f467b1daea59c1b398c5a28bb071c3e17a..b38ff7eaaa3a3daa73993a442f96a5f2e4f31aaf 100644
+--- a/content/public/browser/host_zoom_map.h
++++ b/content/public/browser/host_zoom_map.h
+@@ -61,13 +61,14 @@ class HostZoomMap {
+ 
+   typedef std::vector<ZoomLevelChange> ZoomLevelVector;
+ 
+-  // Gets the last committed URL for the RenderFrameHost, or
+-  // kUnreachableWebDataURL if it's on an error page.
++  // Gets the URL that zoom levels for the RenderFrameHost are keyed on: its
++  // last committed URL without the fragment, or kUnreachableWebDataURL if
++  // it's on an error page.
+   CONTENT_EXPORT static GURL GetURLForRenderFrameHost(
+       GlobalRenderFrameHostId rfh_id);
+ 
+-  // Gets the last committed URL for the WebContent's primary main frame
+-  // RenderFrameHost, or kUnreachableWebDataURL if it's on an error page.
++  // Same as GetURLForRenderFrameHost() for the WebContents' primary main
++  // frame.
+   CONTENT_EXPORT static GURL GetURLForWebContents(WebContents* web_contents);
+ 
+   CONTENT_EXPORT static HostZoomMap* GetDefaultForBrowserContext(

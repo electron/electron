@@ -907,14 +907,14 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.SetMethod("importSharedTexture",
-                 &electron::api::shared_texture::ImportSharedTexture);
-  dict.SetMethod("finishTransferSharedTexture",
-                 &electron::api::shared_texture::FinishTransferSharedTexture);
+  dict.SetMethod<&electron::api::shared_texture::ImportSharedTexture>(
+      "importSharedTexture");
+  dict.SetMethod<&electron::api::shared_texture::FinishTransferSharedTexture>(
+      "finishTransferSharedTexture");
   // Renderer: the callback ElectronApiServiceImpl::ReceiveSharedTexture()
   // hands textures sent with sharedTexture.sendSharedTexture() to.
-  dict.SetMethod("setSharedTextureReceiver",
-                 &electron::api::shared_texture::SetSharedTextureReceiver);
+  dict.SetMethod<&electron::api::shared_texture::SetSharedTextureReceiver>(
+      "setSharedTextureReceiver");
 }
 
 }  // namespace

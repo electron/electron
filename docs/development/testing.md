@@ -32,10 +32,23 @@ app (surprise!) that can be found in the `spec` folder. Note that it has
 its own `package.json` and that its dependencies are therefore not defined
 in the top-level `package.json`.
 
-To run only specific tests matching a pattern, run `npm run test --
--g=PATTERN`, replacing the `PATTERN` with a regex that matches the tests
-you would like to run. As an example: If you want to run only IPC tests, you
+The suite is driven by [vitest](https://vitest.dev): the `vitest` CLI runs
+under Node.js and starts several instances of the `spec` app, each of which
+runs one spec file at a time in Electron's main process. Suites that need the
+machine to themselves (window focus, the clipboard, the screen, global
+shortcuts) are declared with `describe(title, { tags: ['serial'] }, fn)` and
+run one at a time after everything else has finished. Set
+`ELECTRON_SPEC_WORKERS` to change how many Electron processes run at once.
+
+To run only some spec files, pass them with `--files`:
+`npm run test -- --files spec/api-app.spec.ts`. To run only tests whose
+name matches a pattern, run `npm run test -- -g=PATTERN`, replacing
+`PATTERN` with a regex. As an example: If you want to run only IPC tests, you
 would run `npm run test -- -g ipc`.
+
+The spec files use mocha's interface (`describe`, `it`, `before`, `after`,
+`this.timeout()`), provided on top of vitest by `spec/vitest/mocha-compat.ts`,
+and [chai](https://www.chaijs.com) assertions.
 
 ## Node.js Smoke Tests
 

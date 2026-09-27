@@ -16,11 +16,13 @@
 #include "base/no_destructor.h"
 #include "base/process/process_handle.h"
 #include "base/strings/utf_string_conversions.h"
+#include "grit/electron_resources.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/ui/gtk_util.h"
 #include "shell/common/application_info.h"
 #include "shell/common/platform_util.h"
 #include "third_party/skia/include/core/SkBitmap.h"
+#include "ui/base/l10n/l10n_util.h"
 
 namespace electron {
 
@@ -129,7 +131,9 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
   // the notification to display as a modal dialog box.
   if (NotifierSupportsActions()) {
     GetLibNotifyLoader().notify_notification_add_action(
-        notification_, "default", "View", OnNotificationView, this, nullptr);
+        notification_, "default",
+        l10n_util::GetStringUTF8(IDS_NOTIFICATION_SHOW_BUTTON).c_str(),
+        OnNotificationView, this, nullptr);
   }
 
   NotifyUrgency urgency = NOTIFY_URGENCY_NORMAL;

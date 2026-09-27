@@ -4,7 +4,8 @@ import { expect } from 'chai';
 
 import * as http from 'node:http';
 
-import { ifdescribe } from './lib/spec-helpers.ts';
+import { emittedUntil } from './lib/events-helpers.ts';
+import { ifdescribe, isTestingBindingAvailable } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 import type { AddressInfo } from 'node:net';
@@ -492,3 +493,92 @@ describe("session 'select-webauthn-account' event", () => {
     expect(result.name).to.equal('NotAllowedError');
   });
 });
+
+// https://github.com/electron/electron/issues/54317: a security key whose
+// built-in user verification is locked makes Chromium fall back to asking the
+// embedder for the key's PIN, which Electron has no UI for. The request must
+// reject instead of taking the browser process down. Windows routes WebAuthn
+// through the OS API, which owns the PIN prompt, so the fallback never reaches
+// Electron there.
+ifdescribe(process.platform !== 'win32' && isTestingBindingAvailable())(
+  'WebAuthn request that needs a security key PIN',
+  () => {
+    let server: http.Server;
+    let serverUrl: string;
+    let w: BrowserWindow;
+    let testing: any;
+
+    before(async () => {
+      testing = (process as any)._linkedBinding('electron_common_testing');
+      server = http.createServer((req, res) => {
+        res.setHeader('Content-Type', 'text/html');
+        res.end('<!doctype html><title>webauthn</title>');
+      });
+      await new Promise<void>((resolve) => server.listen(0, 'localhost', resolve));
+      const { port } = server.address() as AddressInfo;
+      serverUrl = `http://localhost:${port}/`;
+    });
+
+    after(() => {
+      server.close();
+    });
+
+    beforeEach(async () => {
+      testing.simulateWebAuthnUvLockedPinSecurityKey(true);
+      w = new BrowserWindow({ show: false });
+      await w.loadURL(serverUrl);
+    });
+
+    afterEach(async () => {
+      testing.simulateWebAuthnUvLockedPinSecurityKey(false);
+      await closeAllWindows();
+    });
+
+    const pinUnsupportedWarning = () =>
+      emittedUntil(w.webContents, 'console-message', ({ message }: { message: string }) =>
+        message.includes('does not support WebAuthn PIN entry')
+      );
+
+    it('rejects create() with NotAllowedError instead of crashing', async () => {
+      const warned = pinUnsupportedWarning();
+      const result = await w.webContents.executeJavaScript(`
+        navigator.credentials.create({
+          publicKey: {
+            rp: { id: 'localhost', name: 'Electron Spec' },
+            user: {
+              id: new TextEncoder().encode('user-1'),
+              name: 'alice@example.com',
+              displayName: 'Alice'
+            },
+            challenge: new Uint8Array(32),
+            pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+            authenticatorSelection: { userVerification: 'discouraged' }
+          }
+        }).then(
+          c => ({ ok: true, id: c.id }),
+          e => ({ ok: false, name: e.name })
+        )
+      `);
+      expect(result).to.deep.equal({ ok: false, name: 'NotAllowedError' });
+      await warned;
+    });
+
+    it('rejects get() with NotAllowedError instead of crashing', async () => {
+      const warned = pinUnsupportedWarning();
+      const result = await w.webContents.executeJavaScript(`
+        navigator.credentials.get({
+          publicKey: {
+            rpId: 'localhost',
+            challenge: new Uint8Array(32),
+            userVerification: 'preferred'
+          }
+        }).then(
+          c => ({ ok: true, id: c.id }),
+          e => ({ ok: false, name: e.name })
+        )
+      `);
+      expect(result).to.deep.equal({ ok: false, name: 'NotAllowedError' });
+      await warned;
+    });
+  }
+);

@@ -33,6 +33,7 @@ import {
   isTestingBindingAvailable,
   startRemoteControlApp
 } from './lib/spec-helpers.ts';
+import { WebmGenerator } from './lib/video-helpers.js';
 import { cleanupWebContents, closeAllWindows } from './lib/window-helpers.ts';
 
 import type { AddressInfo } from 'node:net';
@@ -75,6 +76,15 @@ describe('webContents module', () => {
       const properties = Object.getOwnPropertyNames(w.webContents);
       expect(properties).to.include('ipc');
       expect(properties).to.include('navigationHistory');
+    });
+
+    it('throws when a method is called with a receiver of another native type', () => {
+      const w = new BrowserWindow({ show: false });
+      const isLoading = w.webContents.isLoading as () => boolean;
+      expect(() => isLoading.call(session.defaultSession)).to.throw(TypeError);
+      expect(() => isLoading.call(w)).to.throw(TypeError);
+      expect(() => isLoading.call({})).to.throw(TypeError);
+      expect(isLoading.call(w.webContents)).to.be.a('boolean');
     });
   });
 
@@ -192,6 +202,29 @@ describe('webContents module', () => {
       w.close();
       await once(view.webContents, 'will-prevent-unload');
     });
+
+    // The beforeunload prompt blocks the renderer; a window that is
+    // re-activated while blocked used to keep aura focus without Blink focus.
+    ifit(process.platform === 'win32')(
+      'keeps the page focused when the window is re-activated while the prompt is pending',
+      async () => {
+        const w = new BrowserWindow({ show: true });
+        await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+        w.webContents.focus();
+        const other = new BrowserWindow({ show: true });
+        w.focus();
+        w.webContents.once('will-prevent-unload', () => {
+          other.focus();
+          w.focus();
+        });
+        // A navigation only prompts after a user gesture; close() always does.
+        w.close();
+        await once(w.webContents, 'will-prevent-unload');
+        await setTimeout(100);
+        expect(w.webContents.isFocused()).to.equal(true);
+        expect(await w.webContents.executeJavaScript('document.hasFocus()')).to.equal(true);
+      }
+    );
 
     it('supports calling preventDefault on will-prevent-unload events in a BrowserWindow', async () => {
       const w = new BrowserWindow({ show: false });
@@ -1283,9 +1316,18 @@ describe('webContents module', () => {
 
         // PageState is committed:
         // 1) When the page receives an unload event
-        // 2) During periodic serialization of page state
+        // 2) During periodic serialization of page state (1s visible, 5s hidden)
         // To not wait randomly for the second option, we'll trigger another load
         await w.loadURL(urlPage3);
+
+        // The form page is unloaded in its old renderer process, which sends its
+        // final PageState to the browser only when it handles the Unload IPC. That
+        // is not ordered with page 3's did-finish-load (a different process), so
+        // wait until the saved entry actually carries the edited value. Form state
+        // is serialized as UTF-16 (mojo_base.mojom.String16) inside the PageState.
+        const hasFormValue = (pageState?: string) =>
+          !!pageState && Buffer.from(pageState, 'base64').includes(Buffer.from('Hi!', 'utf16le'));
+        await waitUntil(() => hasFormValue(w.webContents.navigationHistory.getEntryAtIndex(2)?.pageState));
 
         // Save the navigation state
         const entries = w.webContents.navigationHistory.getAllEntries();
@@ -1294,16 +1336,12 @@ describe('webContents module', () => {
         w.close();
         w = new BrowserWindow();
 
-        const formValue = await new Promise<string>((resolve) => {
-          w.webContents.once('dom-ready', () =>
-            resolve(w.webContents.executeJavaScript('document.querySelector("input").value'))
-          );
-
-          // Restore the navigation history
-          return w.webContents.navigationHistory.restore({ index: 2, entries });
-        });
-
-        await waitUntil(() => formValue === 'Hi!');
+        // restore() resolves on did-finish-load, by which point blink has
+        // restored the form controls (FormController::RestoreImmediately runs
+        // before the load event).
+        await w.webContents.navigationHistory.restore({ index: 2, entries });
+        const formValue = await w.webContents.executeJavaScript('document.querySelector("input").value');
+        expect(formValue).to.equal('Hi!');
       });
 
       it('should handle invalid base64 pageState', async () => {
@@ -1815,6 +1853,27 @@ describe('webContents module', () => {
         'window.confirm.toString().includes("[native code]")'
       );
       expect(confirmIsNative).to.be.true();
+    });
+
+    it('steps zoom in and out through the browser zoom presets', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { partition: 'devtools-zoom' } });
+      await openDevTools(w);
+      const devtools = w.webContents.devToolsWebContents!;
+      const zoomPercent = () => Math.round(1.2 ** devtools.getZoomLevel() * 100);
+      const zoom = async (method: 'zoomIn' | 'zoomOut' | 'resetZoom', expected: number) => {
+        await devtools.executeJavaScript(`InspectorFrontendHost.${method}()`);
+        await waitUntil(() => zoomPercent() === expected, { timeout: 2000 }).catch(() => {
+          expect(zoomPercent()).to.equal(expected, `after ${method}()`);
+        });
+      };
+      expect(zoomPercent()).to.equal(100);
+      await zoom('zoomIn', 110);
+      await zoom('zoomIn', 125);
+      await zoom('zoomOut', 110);
+      await zoom('zoomOut', 100);
+      await zoom('zoomOut', 90);
+      await zoom('zoomOut', 80);
+      await zoom('resetZoom', 100);
     });
 
     // Baseline for the setDevToolsWebContents() regression test below: the
@@ -3021,6 +3080,19 @@ describe('webContents module', () => {
       }
     });
 
+    it('keeps the zoom level of a file: page across a fragment navigation', async () => {
+      const w = new BrowserWindow({ show: false });
+      try {
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        w.webContents.setZoomLevel(2);
+        await w.webContents.executeJavaScript("location.hash = 'section'; new Promise(r => setTimeout(r))");
+        expect(w.webContents.getURL()).to.match(/#section$/);
+        expect(w.webContents.getZoomLevel()).to.equal(2);
+      } finally {
+        w.webContents.setZoomLevel(0);
+      }
+    });
+
     it('can set the correct zoom level (properties)', async () => {
       const w = new BrowserWindow({ show: false });
       try {
@@ -3244,6 +3316,80 @@ describe('webContents module', () => {
         zoomLevel = w.webContents.zoomLevel;
         expect(zoomLevel).to.equal(0);
       });
+    });
+  });
+
+  describe('webContents.setVisualZoomLevelLimits()', () => {
+    afterEach(closeAllWindows);
+
+    const pageScaleAfterPinchTo = async (w: BrowserWindow, scale: number) => {
+      await w.webContents.debugger.sendCommand('Emulation.setPageScaleFactor', { pageScaleFactor: scale });
+      return w.webContents.executeJavaScript('window.visualViewport.scale');
+    };
+
+    it('keeps the limits across navigations', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      w.webContents.debugger.attach();
+      expect(await pageScaleAfterPinchTo(w, 2)).to.equal(1);
+
+      await w.webContents.setVisualZoomLevelLimits(1, 3);
+      expect(await pageScaleAfterPinchTo(w, 2)).to.equal(2);
+
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      expect(await pageScaleAfterPinchTo(w, 2)).to.equal(2);
+      expect(await pageScaleAfterPinchTo(w, 5)).to.equal(3);
+    });
+
+    it('rejects invalid limits', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      await expect(w.webContents.setVisualZoomLevelLimits(0, 3)).to.eventually.be.rejectedWith(/positive numbers/);
+      await expect(w.webContents.setVisualZoomLevelLimits(3, 1)).to.eventually.be.rejectedWith(/positive numbers/);
+      await expect(w.webContents.setVisualZoomLevelLimits(Number.NaN, 3)).to.eventually.be.rejectedWith(
+        /positive numbers/
+      );
+    });
+  });
+
+  describe('zoom limits', () => {
+    afterEach(closeAllWindows);
+
+    it('clamps setZoomLevel() and setZoomFactor() to the displayable range', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      try {
+        w.webContents.setZoomFactor(100);
+        expect(w.webContents.getZoomFactor()).to.be.closeTo(5, 0.001);
+        w.webContents.setZoomLevel(-100);
+        expect(w.webContents.getZoomFactor()).to.be.closeTo(0.25, 0.001);
+      } finally {
+        w.webContents.zoomLevel = 0;
+      }
+    });
+
+    it('lets the zoomIn role recover right after zooming out past the minimum', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      const menu = Menu.buildFromTemplate([{ role: 'zoomOut' }, { role: 'zoomIn' }]);
+      try {
+        for (let i = 0; i < 30; i++) menu.items[0].click(undefined, w, w.webContents);
+        expect(w.webContents.getZoomFactor()).to.be.closeTo(0.25, 0.001);
+        menu.items[1].click(undefined, w, w.webContents);
+        expect(w.webContents.getZoomFactor()).to.be.greaterThan(0.26);
+      } finally {
+        w.webContents.zoomLevel = 0;
+      }
+    });
+
+    it('does not shrink the page when the visual zoom minimum is below 1', async () => {
+      const w = new BrowserWindow({ show: false, width: 400, height: 400 });
+      await w.loadURL('about:blank');
+      await w.webContents.setVisualZoomLevelLimits(0.25, 3);
+      w.setSize(500, 500);
+      await setTimeout(200);
+      const scale = await w.webContents.executeJavaScript('window.visualViewport.scale');
+      expect(scale).to.equal(1);
     });
   });
 
@@ -4747,6 +4893,144 @@ describe('webContents module', () => {
       expect(px[2]).to.equal(255);
       expect(px[1]).to.equal(0);
       expect(px[0]).to.equal(0);
+    });
+
+    describe('on a page nobody can see', () => {
+      // The page is hidden on purpose with w.hide(), but the steps that expect
+      // frames from a shown window (the video baseline, the iframe baseline,
+      // resuming after w.show()) need it to be really visible. On the Windows
+      // CI hosts a newly shown window can land behind another process's
+      // console window, and the native occlusion tracker then keeps the page
+      // hidden, so keep the window above everything (as #54334 does for the
+      // visibility specs) and let only hide() decide what nobody can see.
+      const createWindow = (backgroundThrottling: boolean) =>
+        new BrowserWindow({
+          width: 300,
+          height: 200,
+          alwaysOnTop: true,
+          webPreferences: { backgroundThrottling }
+        });
+
+      // Counts requestAnimationFrame callbacks over half a second in |frame|
+      // (the main frame when omitted).
+      const framesInHalfSecond = (wc: Electron.WebContents, frame: Electron.WebFrameMain | null = wc.mainFrame) =>
+        frame!.executeJavaScript(`new Promise(resolve => {
+          let n = 0;
+          let id = requestAnimationFrame(function f () { n++; id = requestAnimationFrame(f); });
+          setTimeout(() => { cancelAnimationFrame(id); resolve(n); }, 500);
+        })`) as Promise<number>;
+      const visibilityState = (wc: Electron.WebContents, frame: Electron.WebFrameMain | null = wc.mainFrame) =>
+        frame!.executeJavaScript('document.visibilityState') as Promise<string>;
+      const stopsPainting = (wc: Electron.WebContents, frame?: Electron.WebFrameMain | null) =>
+        waitUntil(async () => (await framesInHalfSecond(wc, frame)) === 0, { timeout: 10000 });
+      const startsPainting = (wc: Electron.WebContents, frame?: Electron.WebFrameMain | null) =>
+        waitUntil(async () => (await framesInHalfSecond(wc, frame)) > 0, { timeout: 10000 });
+
+      // Regression test: re-enabling throttling on a hidden page used to leave
+      // the RenderWidgetHost shown (from the setBackgroundThrottling(false)
+      // call), so the page kept producing frames at full rate and reporting
+      // itself visible until the window's visibility next changed.
+      it('stops producing frames again once re-enabled', async () => {
+        const w = createWindow(true);
+        await w.loadURL('about:blank');
+        w.hide();
+        await stopsPainting(w.webContents);
+        expect(await visibilityState(w.webContents)).to.equal('hidden');
+        w.webContents.setBackgroundThrottling(false);
+        await startsPainting(w.webContents);
+        expect(await visibilityState(w.webContents)).to.equal('visible');
+        w.webContents.setBackgroundThrottling(true);
+        await stopsPainting(w.webContents);
+        expect(await visibilityState(w.webContents)).to.equal('hidden');
+      });
+
+      // Same, but with throttling disabled before the window is hidden (the
+      // hide is swallowed while disabled), and checking the page comes back to
+      // visible when the window is shown afterwards.
+      it('stops producing frames when re-enabled after a hide, and resumes when shown', async () => {
+        const w = createWindow(true);
+        await w.loadURL('about:blank');
+        w.webContents.setBackgroundThrottling(false);
+        w.hide();
+        await setTimeout(500);
+        expect(await framesInHalfSecond(w.webContents)).to.be.greaterThan(0);
+        expect(await visibilityState(w.webContents)).to.equal('visible');
+        w.webContents.setBackgroundThrottling(true);
+        await stopsPainting(w.webContents);
+        expect(await visibilityState(w.webContents)).to.equal('hidden');
+        w.show();
+        await startsPainting(w.webContents);
+        expect(await visibilityState(w.webContents)).to.equal('visible');
+      });
+
+      // Cross-process iframes have their own RenderWidgetHost; re-enabling
+      // throttling must hide those too, not just the main frame's.
+      it('stops a cross-site iframe producing frames once re-enabled', async () => {
+        let crossSiteUrl = '';
+        const server = http.createServer((req, res) => {
+          res.setHeader('Content-Type', 'text/html');
+          res.end(
+            req.url === '/child' ? '<body>child</body>' : `<iframe name="child" src="${crossSiteUrl}/child"></iframe>`
+          );
+        });
+        defer(() => server.close());
+        const serverUrl = (await listen(server)).url;
+        crossSiteUrl = serverUrl.replace('127.0.0.1', 'localhost');
+        // Disabled from the start so the iframe's widget is created with it.
+        const w = createWindow(false);
+        await w.loadURL(serverUrl);
+        const child = w.webContents.mainFrame.frames.find((f) => f.name === 'child')!;
+        expect(child.osProcessId).to.not.equal(w.webContents.mainFrame.osProcessId);
+        w.hide();
+        await setTimeout(500);
+        expect(await framesInHalfSecond(w.webContents, child)).to.be.greaterThan(0);
+        w.webContents.setBackgroundThrottling(true);
+        await stopsPainting(w.webContents, child);
+        expect(await visibilityState(w.webContents, child)).to.equal('hidden');
+        w.webContents.setBackgroundThrottling(false);
+        await startsPainting(w.webContents, child);
+        w.show();
+        await startsPainting(w.webContents, child);
+      });
+
+      // While throttling is disabled the page is reported visible; media must
+      // be told too, or a muted video paused for being in the background stays
+      // frozen on a page that otherwise renders.
+      it('resumes background-paused video while disabled', async () => {
+        const imageDataUrl = `data:image/webp;base64,${await fs.promises.readFile(path.join(fixturesPath, 'video-source-image.webp'), 'base64')}`;
+        const encoder = new WebmGenerator(15);
+        for (let i = 0; i < 30; i++) encoder.add(imageDataUrl);
+        const webm: Uint8Array = await new Promise((resolve) => encoder.compile(resolve));
+        const server = http.createServer((req, res) => {
+          if (req.url === '/video.webm') {
+            res.setHeader('Content-Type', 'video/webm');
+            res.end(webm);
+          } else {
+            res.setHeader('Content-Type', 'text/html');
+            res.end(`<video src="/video.webm" muted loop autoplay></video><script>
+              window.videoFrames = 0;
+              const v = document.querySelector('video');
+              (function count () { v.requestVideoFrameCallback(() => { window.videoFrames++; count(); }); })();
+            </script>`);
+          }
+        });
+        defer(() => server.close());
+        const w = createWindow(true);
+        await w.loadURL((await listen(server)).url);
+        const videoFramesInHalfSecond = async () => {
+          const before = await w.webContents.executeJavaScript('window.videoFrames');
+          await setTimeout(500);
+          return (await w.webContents.executeJavaScript('window.videoFrames')) - before;
+        };
+        await waitUntil(async () => (await videoFramesInHalfSecond()) > 0, { timeout: 10000 });
+        w.hide();
+        // Background video pausing kicks in a moment after the page is hidden.
+        await waitUntil(async () => (await videoFramesInHalfSecond()) === 0, { timeout: 15000 });
+        w.webContents.setBackgroundThrottling(false);
+        await waitUntil(async () => (await videoFramesInHalfSecond()) > 0, { timeout: 10000 });
+        w.webContents.setBackgroundThrottling(true);
+        await waitUntil(async () => (await videoFramesInHalfSecond()) === 0, { timeout: 15000 });
+      });
     });
   });
 

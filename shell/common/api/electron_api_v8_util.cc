@@ -157,16 +157,16 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("getHiddenValue", &GetHiddenValue);
-  dict.SetMethod("setHiddenValue", &SetHiddenValue);
-  dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
-  dict.SetMethod("requestGarbageCollectionForTesting",
-                 &RequestGarbageCollectionForTesting);
-  dict.SetMethod("triggerFatalErrorForTesting", &TriggerFatalErrorForTesting);
-  dict.SetMethod("runUntilIdle", &RunUntilIdle);
-  dict.SetMethod("exitImmediately", &ExitImmediately);
+  dict.SetMethod<&GetHiddenValue>("getHiddenValue");
+  dict.SetMethod<&SetHiddenValue>("setHiddenValue");
+  dict.SetMethod<&TakeHeapSnapshot>("takeHeapSnapshot");
+  dict.SetMethod<&RequestGarbageCollectionForTesting>(
+      "requestGarbageCollectionForTesting");
+  dict.SetMethod<&TriggerFatalErrorForTesting>("triggerFatalErrorForTesting");
+  dict.SetMethod<&RunUntilIdle>("runUntilIdle");
+  dict.SetMethod<&ExitImmediately>("exitImmediately");
 #if DCHECK_IS_ON()
-  dict.SetMethod("getJs2cCodeCacheStatus", &GetJs2cCodeCacheStatus);
+  dict.SetMethod<&GetJs2cCodeCacheStatus>("getJs2cCodeCacheStatus");
 #endif
 }
 

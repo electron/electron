@@ -186,7 +186,7 @@
       <message name="IDS_MAC_NOTIFICATION_INLINE_REPLY_BUTTON" desc="Label for the inline reply button inside a macOS notification.">
         Reply
       </message>
-      <message name="IDS_MAC_NOTIFICATION_SHOW_BUTTON" desc="Label for the default action button inside a macOS notification.">
+      <message name="IDS_NOTIFICATION_SHOW_BUTTON" desc="Label for the default action button of a notification.">
         Show
       </message>
     </messages>

@@ -32,13 +32,13 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict{isolate, exports};
 #if IS_MAS_BUILD()
-  dict.SetMethod("addExtraParameter", &SetCrashKeyStub);
-  dict.SetMethod("removeExtraParameter", &ClearCrashKeyStub);
+  dict.SetMethod<&SetCrashKeyStub>("addExtraParameter");
+  dict.SetMethod<&ClearCrashKeyStub>("removeExtraParameter");
 #else
-  dict.SetMethod("addExtraParameter", &electron::crash_keys::SetCrashKey);
-  dict.SetMethod("removeExtraParameter", &electron::crash_keys::ClearCrashKey);
+  dict.SetMethod<&electron::crash_keys::SetCrashKey>("addExtraParameter");
+  dict.SetMethod<&electron::crash_keys::ClearCrashKey>("removeExtraParameter");
 #endif
-  dict.SetMethod("getParameters", &GetParameters);
+  dict.SetMethod<&GetParameters>("getParameters");
 }
 
 }  // namespace

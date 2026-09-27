@@ -169,7 +169,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("createParentPort", &electron::ParentPort::Create);
+  dict.SetMethod<&electron::ParentPort::Create>("createParentPort");
 }
 
 }  // namespace

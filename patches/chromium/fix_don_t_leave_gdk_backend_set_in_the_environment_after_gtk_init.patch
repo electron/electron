@@ -1,0 +1,95 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Fri, 25 Sep 2026 13:17:40 +0000
+Subject: fix: don't leave GDK_BACKEND set in the environment after GTK init
+
+GtkUiPlatformX11 and GtkUiPlatformWayland set GDK_BACKEND in their
+constructors so that gtk_init() picks the backend matching Ozone, and
+never restore it, so every process launched afterwards (xdg-open for
+shell.openExternal, child_process, utility processes) inherits it and
+GTK applications started that way are forced onto the browser's
+backend. Set it through a ScopedEnvironmentVariableOverride around
+GtkInitFromCommandLine() instead, as is already done for GDK_GL.
+
+Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/8468407
+
+diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
+index 7d02b055578ee2be1fb2396000408460d95ae901..f6aef0912cf19a0674de3e0dae1cd2b937922271 100644
+--- a/ui/gtk/gtk_ui.cc
++++ b/ui/gtk/gtk_ui.cc
+@@ -161,6 +161,17 @@ gfx::FontRenderParams GetGtkFontRenderParams() {
+   return params;
+ }
+ 
++const char* GdkBackendName(ui::LinuxUiBackend backend) {
++  switch (backend) {
++    case ui::LinuxUiBackend::kX11:
++      return "x11";
++    case ui::LinuxUiBackend::kWayland:
++      return "wayland";
++    default:
++      return nullptr;
++  }
++}
++
+ std::unique_ptr<GtkUiPlatform> CreateGtkUiPlatform(ui::LinuxUiBackend backend) {
+   switch (backend) {
+     case ui::LinuxUiBackend::kStub:
+@@ -365,10 +376,18 @@ bool GtkUi::Initialize() {
+   if (!GtkCheckVersion(4) && !env->HasVar(kGdkGl)) {
+     disable_gdk_gl_probe.emplace(kGdkGl, "disable");
+   }
++  // GDK_BACKEND takes precedence over gdk_set_allowed_backends(), so force it
++  // to the platform's backend while GDK opens the display, and restore it
++  // afterwards for the same reason as GDK_GL.
++  std::optional<base::ScopedEnvironmentVariableOverride> gdk_backend;
++  if (const char* name = GdkBackendName(backend)) {
++    gdk_backend.emplace("GDK_BACKEND", name);
++  }
+   // gtk_init_check() modifies argv, so make a copy first.
+   CmdLineArgs cmd_line = CopyCmdLine(*base::CommandLine::ForCurrentProcess());
+   const bool initialized =
+       GtkInitFromCommandLine(&cmd_line.argc, cmd_line.argv.data());
++  gdk_backend.reset();
+   disable_gdk_gl_probe.reset();
+   if (!initialized) {
+     return false;
+diff --git a/ui/gtk/wayland/gtk_ui_platform_wayland.cc b/ui/gtk/wayland/gtk_ui_platform_wayland.cc
+index 60049a3cd66beb36e35201d3843281e769430486..ba27dcfa9fa679563dde6899c263d85c34a7e2c5 100644
+--- a/ui/gtk/wayland/gtk_ui_platform_wayland.cc
++++ b/ui/gtk/wayland/gtk_ui_platform_wayland.cc
+@@ -5,7 +5,6 @@
+ #include "ui/gtk/wayland/gtk_ui_platform_wayland.h"
+ 
+ #include "base/command_line.h"
+-#include "base/environment.h"
+ #include "base/functional/bind.h"
+ #include "base/functional/callback.h"
+ #include "base/logging.h"
+@@ -23,9 +22,6 @@ namespace gtk {
+ 
+ GtkUiPlatformWayland::GtkUiPlatformWayland() {
+   gdk_set_allowed_backends("wayland");
+-  // GDK_BACKEND takes precedence over gdk_set_allowed_backends(), so override
+-  // it to ensure we get the wayland backend.
+-  base::Environment::Create()->SetVar("GDK_BACKEND", "wayland");
+ }
+ 
+ GtkUiPlatformWayland::~GtkUiPlatformWayland() = default;
+diff --git a/ui/gtk/x/gtk_ui_platform_x11.cc b/ui/gtk/x/gtk_ui_platform_x11.cc
+index f0a64d82e15dbbaf4030796bde61e084fb716ae8..a59c7970196b2033435e02a2499a11c94590ad67 100644
+--- a/ui/gtk/x/gtk_ui_platform_x11.cc
++++ b/ui/gtk/x/gtk_ui_platform_x11.cc
+@@ -24,12 +24,6 @@ namespace gtk {
+ 
+ GtkUiPlatformX11::GtkUiPlatformX11() : connection_(*x11::Connection::Get()) {
+   gdk_set_allowed_backends("x11");
+-  auto env = base::Environment::Create();
+-
+-  // GDK_BACKEND takes precedence over gdk_set_allowed_backends(), so override
+-  // it to ensure we get the x11 backend.
+-  env->SetVar("GDK_BACKEND", "x11");
+-
+   x11::InitXlib();
+ }
+ 

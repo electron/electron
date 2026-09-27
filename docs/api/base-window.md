@@ -1421,7 +1421,7 @@ Makes the window ignore all mouse events.
 
 All mouse events happened in this window will be passed to the window below
 this window, but if this window has focus, it will still receive keyboard
-events.
+events. On Linux this is supported on both X11 and Wayland.
 
 #### `win.setContentProtection(enable)` _macOS_ _Windows_
 

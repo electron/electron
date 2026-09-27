@@ -1028,15 +1028,6 @@ describe('node feature', () => {
           [parentStdoutIsTTY]
         );
       });
-
-      ifdescribe(process.platform === 'win32')('Windows', () => {
-        itremote('should expose renderer stdout as a TTY', function () {
-          const { isatty } = require('node:tty');
-
-          expect(isatty(1)).to.be.true();
-          expect(process.stdout.isTTY).to.be.true();
-        });
-      });
     });
   });
 

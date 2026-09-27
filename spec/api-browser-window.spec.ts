@@ -1621,6 +1621,35 @@ describe('BrowserWindow module', () => {
         expect(w.isFocused()).to.equal(true);
       });
 
+      ifit(process.platform !== 'darwin')(
+        'keeps focus in a child WebContentsView when the window regains focus',
+        async () => {
+          const shown = once(w, 'focus');
+          w.show();
+          await shown;
+          await w.loadURL('about:blank');
+          const child = new WebContentsView();
+          w.contentView.addChildView(child);
+          child.setBounds({ x: 0, y: 0, width: 200, height: 200 });
+          await child.webContents.loadURL('about:blank');
+          child.webContents.focus();
+          expect(child.webContents.isFocused()).to.equal(true);
+
+          const other = new BrowserWindow({ show: false });
+          const blurred = once(w, 'blur');
+          other.show();
+          await blurred;
+          expect(child.webContents.isFocused()).to.equal(false);
+
+          const refocused = once(w, 'focus');
+          w.focus();
+          await refocused;
+          expect(child.webContents.isFocused()).to.equal(true);
+          expect(w.webContents.isFocused()).to.equal(false);
+          other.destroy();
+        }
+      );
+
       ifit(process.platform !== 'linux')('acquires focus status from the other windows', async () => {
         const w1 = new BrowserWindow({ show: false });
         const w2 = new BrowserWindow({ show: false });
@@ -6509,7 +6538,7 @@ describe('BrowserWindow module', () => {
         }
       });
 
-      ifdescribe(process.platform !== 'darwin' && !isWayland)('disabling parent windows', () => {
+      ifdescribe(process.platform !== 'darwin')('disabling parent windows', () => {
         it('can disable and enable a window', () => {
           const w = new BrowserWindow({ show: false });
           w.setEnabled(false);
