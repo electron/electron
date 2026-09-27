@@ -12,6 +12,7 @@
 #include "base/task/sequenced_task_runner.h"
 #include "base/timer/elapsed_timer.h"
 #include "content/public/browser/render_frame_host.h"
+#include "content/public/browser/web_contents.h"
 #include "gin/data_object_builder.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
@@ -37,6 +38,10 @@
 #include "ui/views/view_targeter.h"
 #include "ui/views/view_targeter_delegate.h"
 #include "ui/views/widget/widget.h"
+
+#if defined(USE_AURA)
+#include "ui/aura/scoped_window_event_targeting_blocker.h"
+#endif
 
 namespace {
 
@@ -69,6 +74,7 @@ WebContentsView::WebContentsView(v8::Isolate* isolate,
 }
 
 WebContentsView::~WebContentsView() {
+  SetIgnoreMouseEvents(false);
   StopObservingWindow();
   if (auto* web_contents = GetLiveWebContents())
     web_contents->Destroy();
@@ -114,7 +120,21 @@ void WebContentsView::SetIgnoreMouseEvents(bool ignore) {
     auto targeter = std::make_unique<views::ViewTargeter>(
         std::make_unique<IgnoreMouseEventsTargeterDelegate>());
     previous_event_targeter_ = view()->SetEventTargeter(std::move(targeter));
+#if defined(USE_AURA)
+    // The renderer is hosted in its own aura::Window. A Views targeter on
+    // the wrapper alone does not prevent that native child from taking input.
+    if (auto* web_contents = GetLiveWebContents()) {
+      if (auto* native_view = web_contents->web_contents()->GetNativeView()) {
+        native_event_targeting_blocker_ =
+            std::make_unique<aura::ScopedWindowEventTargetingBlocker>(
+                native_view);
+      }
+    }
+#endif
   } else {
+#if defined(USE_AURA)
+    native_event_targeting_blocker_.reset();
+#endif
     view()->SetEventTargeter(std::move(previous_event_targeter_));
   }
 }
@@ -163,6 +183,9 @@ int WebContentsView::NonClientHitTest(const gfx::Point& point) {
 }
 
 void WebContentsView::WebContentsDestroyed() {
+#if defined(USE_AURA)
+  native_event_targeting_blocker_.reset();
+#endif
   api_web_contents_ = nullptr;
 }
 

@@ -26,6 +26,12 @@ namespace views {
 class ViewTargeter;
 }
 
+#if defined(USE_AURA)
+namespace aura {
+class ScopedWindowEventTargetingBlocker;
+}
+#endif
+
 namespace electron::api {
 
 class WebContents;
@@ -83,6 +89,10 @@ class WebContentsView : public View,
 
   cppgc::Persistent<api::WebContents> api_web_contents_;
   std::unique_ptr<views::ViewTargeter> previous_event_targeter_;
+#if defined(USE_AURA)
+  std::unique_ptr<aura::ScopedWindowEventTargetingBlocker>
+      native_event_targeting_blocker_;
+#endif
   bool ignore_mouse_events_ = false;
   base::WeakPtr<NativeWindow> observed_window_;
   bool window_controls_overlay_update_pending_ = false;
