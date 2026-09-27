@@ -768,8 +768,13 @@ jobs:
           --field base="$BASE_BRANCH" \
           --field body="$(cat /tmp/pr-body.md)" --jq .html_url)
         PR_NUMBER="${PR_URL##*/}"
-        gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" \
-          --field "labels[]=semver/none" > /dev/null
+        labels=(--field "labels[]=semver/none")
+        # Every supported release branch gets its own profile update PR from
+        # its own run, so the main PR must never be backported.
+        if [ "$BASE_BRANCH" = "main" ]; then
+          labels+=(--field "labels[]=no-backport")
+        fi
+        gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" "${labels[@]}" > /dev/null
         echo "## Profile Update PR" >> $GITHUB_STEP_SUMMARY
         echo "$PR_URL" >> $GITHUB_STEP_SUMMARY
 
