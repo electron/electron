@@ -30,7 +30,6 @@
 #include "net/base/net_errors.h"
 #include "net/http/http_util.h"
 #include "net/url_request/redirect_util.h"
-#include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
