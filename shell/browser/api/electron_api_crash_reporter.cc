@@ -327,6 +327,8 @@ void Start(gin_helper::ErrorThrower thrower,
 void SetUploadToServer(bool upload) {
 #if !IS_MAS_BUILD()
   ElectronCrashReporterClient::Get()->SetCollectStatsConsent(upload);
+  // Reads the consent set above back through IsRunningUnattended().
+  crash_reporter::SetUploadConsent(upload);
 #endif
 }
 
