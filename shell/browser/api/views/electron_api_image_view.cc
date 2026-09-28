@@ -37,7 +37,7 @@ void ImageView::BuildPrototype(v8::Isolate* isolate,
                                v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(gin::StringToV8(isolate, "ImageView"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("setImage", &ImageView::SetImage);
+      .SetMethod<&ImageView::SetImage>("setImage");
 }
 
 }  // namespace electron::api

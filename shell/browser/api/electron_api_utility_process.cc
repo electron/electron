@@ -709,7 +709,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("_fork", &electron::api::UtilityProcessWrapper::Create);
+  dict.SetMethod<&electron::api::UtilityProcessWrapper::Create>("_fork");
 }
 
 }  // namespace

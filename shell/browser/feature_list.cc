@@ -35,6 +35,10 @@
 #include "ui/base/ui_base_features.h"
 #endif
 
+#if BUILDFLAG(IS_WIN)
+#include "ui/views/views_features.h"
+#endif
+
 namespace electron {
 
 void InitializeFeatureList() {
@@ -79,6 +83,12 @@ void InitializeFeatureList() {
   // See https://bit.ly/31yqMJR.: Access is denied. (0x5)
   disable_features +=
       std::string(",") + sandbox::policy::features::kNetworkServiceSandbox.name;
+
+  // Off upstream so Chromium's own Picture-in-Picture windows stay visible in
+  // remote sessions; that also makes setContentProtection(true) a no-op there.
+  enable_features +=
+      std::string(",") +
+      views::features::kAllowWindowCaptureExclusionInRemoteSessions.name;
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)

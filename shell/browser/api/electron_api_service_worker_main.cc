@@ -351,14 +351,14 @@ void ServiceWorkerMain::FillObjectTemplate(
     v8::Isolate* isolate,
     v8::Local<v8::ObjectTemplate> templ) {
   gin_helper::ObjectTemplateBuilder(isolate, templ)
-      .SetMethod("send", &ServiceWorkerMain::Send)
-      .SetMethod("startTask", &ServiceWorkerMain::StartTask)
-      .SetMethod("isDestroyed", &ServiceWorkerMain::IsDestroyed)
-      .SetMethod("_countExternalRequests",
-                 &ServiceWorkerMain::CountExternalRequestsForTest)
-      .SetProperty("versionId", &ServiceWorkerMain::VersionID)
-      .SetProperty("scope", &ServiceWorkerMain::ScopeURL)
-      .SetProperty("scriptURL", &ServiceWorkerMain::ScriptURL)
+      .SetMethod<&ServiceWorkerMain::Send>("send")
+      .SetMethod<&ServiceWorkerMain::StartTask>("startTask")
+      .SetMethod<&ServiceWorkerMain::IsDestroyed>("isDestroyed")
+      .SetMethod<&ServiceWorkerMain::CountExternalRequestsForTest>(
+          "_countExternalRequests")
+      .SetProperty<&ServiceWorkerMain::VersionID>("versionId")
+      .SetProperty<&ServiceWorkerMain::ScopeURL>("scope")
+      .SetProperty<&ServiceWorkerMain::ScriptURL>("scriptURL")
       .Build();
 }
 

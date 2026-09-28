@@ -8,6 +8,7 @@
 
 #include "base/base_switches.h"
 #include "base/command_line.h"
+#include "base/dcheck_is_on.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/logging.h"
@@ -97,8 +98,11 @@ DetermineLoggingDestination(const base::CommandLine& command_line,
   if (!enable_logging)
     return {LOG_NONE, false};
 
+  // Testing builds can mirror a log file to stderr, so that the main process
+  // keeps logging to the terminal while child processes, which on Windows
+  // cannot share its stderr, log to the file.
   bool also_log_to_stderr = false;
-#if !defined(NDEBUG)
+#if DCHECK_IS_ON()
   if (std::optional<std::string> also_log_to_stderr_str =
           base::Environment::Create()->GetVar("ELECTRON_ALSO_LOG_TO_STDERR"))
     also_log_to_stderr = !also_log_to_stderr_str->empty();

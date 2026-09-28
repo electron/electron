@@ -235,6 +235,77 @@ export class ScreenCapture {
   private target: CaptureTarget;
 }
 
+export interface DisplayPixels {
+  /** Colour at a point in screen coordinates, as an opaque `r,g,b` string. */
+  colorAt: (x: number, y: number) => string;
+  /** Colours found in `rect`, most frequent first, with their pixel counts. */
+  histogram: (rect: Electron.Rectangle) => [color: string, count: number][];
+}
+
+/**
+ * Capture the primary display once and read pixels out of it in screen
+ * coordinates. Returns `undefined` when the display cannot be captured.
+ *
+ * Unlike `ScreenCapture` this hands back raw pixels and makes no assumption
+ * about colour fidelity: a 16-bit X screen (as used by the Linux CI runners)
+ * does not round-trip exact RGB values, so callers should compare captured
+ * colours with each other rather than with constants.
+ */
+export async function captureDisplayPixels(): Promise<DisplayPixels | undefined> {
+  const display = screen.getPrimaryDisplay();
+  const { bounds } = display;
+  if (bounds.width === 0 || bounds.height === 0 || display.scaleFactor !== 1) return undefined;
+  const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: display.size });
+  const source = sources.find((s) => s.display_id === display.id.toString()) ?? sources[0];
+  if (!source || source.thumbnail.isEmpty()) return undefined;
+  const { width, height } = source.thumbnail.getSize();
+  if (width !== bounds.width || height !== bounds.height) return undefined;
+  const bitmap = source.thumbnail.toBitmap();
+  const colorAt = (screenX: number, screenY: number) => {
+    const x = screenX - bounds.x;
+    const y = screenY - bounds.y;
+    if (x < 0 || y < 0 || x >= width || y >= height) {
+      throw new RangeError(`(${screenX}, ${screenY}) is outside of the primary display`);
+    }
+    const i = (y * width + x) * 4;
+    return `${bitmap[i + 2]},${bitmap[i + 1]},${bitmap[i]}`;
+  };
+  const histogram = (rect: Electron.Rectangle) => {
+    const counts = new Map<string, number>();
+    for (let y = rect.y; y < rect.y + rect.height; y++) {
+      for (let x = rect.x; x < rect.x + rect.width; x++) {
+        const color = colorAt(x, y);
+        counts.set(color, (counts.get(color) ?? 0) + 1);
+      }
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  };
+  return { colorAt, histogram };
+}
+
+/**
+ * Keep capturing the primary display until `check` stops throwing chai
+ * assertion errors or `timeout` ms have passed, then let the last error out.
+ * Resolves `false` without running `check` if the display cannot be captured.
+ */
+export async function expectDisplayPixelsEventually(
+  check: (pixels: DisplayPixels) => void,
+  timeout = 5000
+): Promise<boolean> {
+  const expiration = Date.now() + timeout;
+  while (true) {
+    const pixels = await captureDisplayPixels();
+    if (!pixels) return false;
+    try {
+      check(pixels);
+      return true;
+    } catch (error) {
+      if (!(error instanceof AssertionError) || Date.now() > expiration) throw error;
+    }
+    await nextFrameTime();
+  }
+}
+
 /**
  * Whether the current VM has a valid screen which can be used to capture.
  *

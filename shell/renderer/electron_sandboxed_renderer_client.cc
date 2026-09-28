@@ -51,7 +51,7 @@ void ElectronSandboxedRendererClient::SetUpPreloadEnvironment(
   auto process = gin_helper::Dictionary::CreateEmpty(isolate);
   ElectronBindings::BindProcess(isolate, &process, metrics_.get());
   BindProcess(isolate, &process, render_frame);
-  process.SetMethod("uptime", preload_utils::Uptime);
+  process.SetMethod<&preload_utils::Uptime>("uptime");
   process.Set("argv", base::CommandLine::ForCurrentProcess()->argv());
   process.Set("pid", base::GetCurrentProcId());
   process.Set("sandboxed", true);
@@ -124,7 +124,7 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
       render_frame->GetBlinkPreferences();
   if (prefs.webview_tag && render_frame->IsMainFrame()) {
     auto binding = gin_helper::Dictionary::CreateEmpty(isolate);
-    binding.SetMethod("get", preload_utils::GetBinding);
+    binding.SetMethod<&preload_utils::GetBinding>("get");
     binding.Set("contextIsolated", prefs.context_isolation);
     v8::LocalVector<v8::String> params =
         js2c::MakeBundleParams(isolate, js2c::kWebViewBundleParams);

@@ -221,7 +221,8 @@ static_library("chrome") {
     ]
     public_deps += [
       "//components/dbus",
-      "//ui/linux:dark_mode_manager",
+      "//components/dbus/menu",
+      "//ui/linux:portal_settings",
     ]
     if (use_aura && use_dbus) {
       sources += [

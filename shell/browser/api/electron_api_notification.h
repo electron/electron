@@ -13,6 +13,7 @@
 #include "build/build_config.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/browser/native_peer.h"
 #include "shell/browser/notifications/notification.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/common/gin_helper/constructible.h"
@@ -27,8 +28,6 @@ class ErrorThrower;
 }  // namespace gin_helper
 
 namespace electron::api {
-
-class NotificationDelegateProxy;
 
 class Notification final : public gin::Wrappable<Notification>,
                            public gin_helper::EventEmitterMixin<Notification>,
@@ -75,7 +74,7 @@ class Notification final : public gin::Wrappable<Notification>,
   explicit Notification(const NotificationInfo& info);
 
  private:
-  friend class NotificationDelegateProxy;
+  class PlatformLifecycle;
 
   void NotificationAction(int action_index, int selection_index);
   void NotificationClick();
@@ -140,8 +139,8 @@ class Notification final : public gin::Wrappable<Notification>,
 
   raw_ptr<electron::NotificationPresenter> presenter_;
 
-  base::WeakPtr<electron::Notification> notification_;
-  std::unique_ptr<NotificationDelegateProxy> delegate_;
+  std::unique_ptr<PlatformLifecycle, NativePeerBase::Deleter>
+      platform_lifecycle_;
 };
 
 }  // namespace electron::api

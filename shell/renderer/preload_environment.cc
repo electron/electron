@@ -235,7 +235,7 @@ v8::Local<v8::Object> CreateProcessObject(
   // Like Node.js's --expose-internals: lets the tests reach internal bindings.
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           "unsafely-expose-electron-internals-for-testing")) {
-    dict.SetMethod("_linkedBinding", &preload_utils::GetBinding);
+    dict.SetMethod<&preload_utils::GetBinding>("_linkedBinding");
   }
 
   gin_helper::Dictionary(isolate, context->Global())

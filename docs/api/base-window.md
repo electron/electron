@@ -1421,7 +1421,9 @@ Makes the window ignore all mouse events.
 
 All mouse events happened in this window will be passed to the window below
 this window, but if this window has focus, it will still receive keyboard
-events.
+events. On Linux this is supported on both X11 and Wayland. On X11 the X server
+has applied the window's new input shape when the call returns; on Wayland the
+new input region is applied with the window's next frame.
 
 #### `win.setContentProtection(enable)` _macOS_ _Windows_
 
@@ -1433,6 +1435,21 @@ On macOS it sets the NSWindow's sharingType to NSWindowSharingNone.
 On Windows it calls SetWindowDisplayAffinity with `WDA_EXCLUDEFROMCAPTURE`.
 For Windows 10 version 2004 and up the window will be removed from capture entirely,
 older Windows versions behave as if `WDA_MONITOR` is applied capturing a black window.
+The change takes effect with the next desktop composition, not when the call returns, so a
+capture started immediately afterwards can still contain the window.
+
+Protection also applies in a Windows remote session. A Remote Desktop client still
+shows the window to the remote user, but remote access software that works by
+capturing the desktop cannot. To leave windows unprotected in remote sessions
+instead, disable the `AllowWindowCaptureExclusionInRemoteSessions` Chromium feature
+at the start of your main script. `win.isContentProtected()` still returns `true`
+in that case.
+
+```js
+const { app } = require('electron')
+
+app.commandLine.appendSwitch('disable-features', 'AllowWindowCaptureExclusionInRemoteSessions')
+```
 
 #### `win.isContentProtected()` _macOS_ _Windows_
 

@@ -170,10 +170,6 @@
     "channel": "stable",
     "extension_types": ["extension", "legacy_packaged_app"]
   },
-  "proxy": {
-    "channel": "stable",
-    "extension_types": ["extension", "legacy_packaged_app"]
-  },
   "readingList": {
     "channel": "stable",
     "extension_types": ["extension"],

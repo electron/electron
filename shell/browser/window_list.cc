@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include "base/containers/to_vector.h"
+#include "base/memory/raw_ptr.h"
 #include "base/no_destructor.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list_observer.h"
@@ -14,7 +15,7 @@
 namespace {
 
 template <typename T>
-auto ConvertToWeakPtrVector(const std::vector<T*>& raw_ptrs) {
+auto ConvertToWeakPtrVector(const std::vector<raw_ptr<T>>& raw_ptrs) {
   return base::ToVector(raw_ptrs, [](T* t) { return t->GetWeakPtr(); });
 }
 
@@ -34,7 +35,8 @@ WindowList* WindowList::GetInstance() {
 
 // static
 WindowList::WindowVector WindowList::GetWindows() {
-  return GetInstance()->windows_;
+  const auto& windows = GetInstance()->windows_;
+  return WindowVector(windows.begin(), windows.end());
 }
 
 // static
@@ -46,13 +48,13 @@ bool WindowList::IsEmpty() {
 void WindowList::AddWindow(NativeWindow* window) {
   DCHECK(window);
   // Push |window| on the appropriate list instance.
-  WindowVector& windows = GetInstance()->windows_;
+  auto& windows = GetInstance()->windows_;
   windows.push_back(window);
 }
 
 // static
 void WindowList::RemoveWindow(NativeWindow* window) {
-  WindowVector& windows = GetInstance()->windows_;
+  auto& windows = GetInstance()->windows_;
   std::erase(windows, window);
 
   if (windows.empty())

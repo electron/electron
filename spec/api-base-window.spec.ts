@@ -337,11 +337,38 @@ describe('BaseWindow module', () => {
         expectBoundsEqual(w.getBounds(), fullBounds);
       });
 
+      it('keeps the current value of anything left out', () => {
+        w.setBounds({ x: 100, y: 120, width: 300, height: 200 });
+        w.setBounds({ width: 350 });
+        expectBoundsEqual(w.getBounds(), { x: 100, y: 120, width: 350, height: 200 });
+        w.setBounds({ y: 130 });
+        expectBoundsEqual(w.getBounds(), { x: 100, y: 130, width: 350, height: 200 });
+      });
+
+      it('throws when a field is not a number', () => {
+        expect(() => w.setBounds({ x: 'left' } as any)).to.throw(/conversion failure/);
+        expect(() => (w.setBounds as any)(null)).to.throw(/conversion failure/);
+      });
+
       it('rounds non-integer bounds', () => {
         w.setBounds({ x: 440.5, y: 225.1, width: 500.4, height: 400.9 });
 
         const bounds = w.getBounds();
         expect(bounds).to.deep.equal({ x: 441, y: 225, width: 500, height: 401 });
+      });
+
+      it('throws on non-finite or out-of-range bounds', () => {
+        const before = w.getBounds();
+        const bad = [
+          { x: Number.NaN, y: 0, width: 100, height: 100 },
+          { x: Number.POSITIVE_INFINITY, y: 0, width: 100, height: 100 },
+          { x: Number.NEGATIVE_INFINITY, y: 0, width: 100, height: 100 },
+          { x: -1e10, y: -1e10, width: 100, height: 100 }
+        ];
+        for (const bounds of bad) {
+          expect(() => w.setBounds(bounds)).to.throw(/conversion failure/);
+        }
+        expectBoundsEqual(w.getBounds(), before);
       });
 
       it('does not emit the resize event for move-only changes', async () => {
@@ -464,6 +491,20 @@ describe('BaseWindow module', () => {
         w.setContentBounds(bounds);
         await new Promise(setImmediate);
         expectBoundsEqual(w.getContentBounds(), bounds);
+      });
+
+      it('throws on non-finite or out-of-range bounds', () => {
+        const before = w.getBounds();
+        const bad = [
+          { x: Number.NaN, y: 0, width: 100, height: 100 },
+          { x: Number.POSITIVE_INFINITY, y: 0, width: 100, height: 100 },
+          { x: Number.NEGATIVE_INFINITY, y: 0, width: 100, height: 100 },
+          { x: -1e10, y: -1e10, width: 100, height: 100 }
+        ];
+        for (const bounds of bad) {
+          expect(() => w.setContentBounds(bounds)).to.throw(/conversion failure/);
+        }
+        expectBoundsEqual(w.getBounds(), before);
       });
     });
 

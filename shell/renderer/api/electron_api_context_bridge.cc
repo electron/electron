@@ -1223,18 +1223,18 @@ void Initialize(v8::Local<v8::Object> exports,
 
   // The `contextBridge` module of 'electron'.
   auto context_bridge = gin_helper::Dictionary::CreateEmpty(isolate);
-  context_bridge.SetMethod("exposeInMainWorld", &ExposeInMainWorld);
-  context_bridge.SetMethod("exposeInIsolatedWorld", &ExposeInIsolatedWorld);
-  context_bridge.SetMethod("executeInMainWorld", &ExecuteInMainWorld);
+  context_bridge.SetMethod<&ExposeInMainWorld>("exposeInMainWorld");
+  context_bridge.SetMethod<&ExposeInIsolatedWorld>("exposeInIsolatedWorld");
+  context_bridge.SetMethod<&ExecuteInMainWorld>("executeInMainWorld");
 #if DCHECK_IS_ON()
   // Test-only access to the main-world override helpers.
   auto internal = gin_helper::Dictionary::CreateEmpty(isolate);
-  internal.SetMethod("overrideGlobalValueFromIsolatedWorld",
-                     &OverrideGlobalValueFromIsolatedWorld);
-  internal.SetMethod("overrideGlobalValueWithDynamicPropsFromIsolatedWorld",
-                     &OverrideGlobalValueWithDynamicPropsFromIsolatedWorld);
-  internal.SetMethod("overrideGlobalPropertyFromIsolatedWorld",
-                     &OverrideGlobalPropertyFromIsolatedWorld);
+  internal.SetMethod<&OverrideGlobalValueFromIsolatedWorld>(
+      "overrideGlobalValueFromIsolatedWorld");
+  internal.SetMethod<&OverrideGlobalValueWithDynamicPropsFromIsolatedWorld>(
+      "overrideGlobalValueWithDynamicPropsFromIsolatedWorld");
+  internal.SetMethod<&OverrideGlobalPropertyFromIsolatedWorld>(
+      "overrideGlobalPropertyFromIsolatedWorld");
   context_bridge.Set("internalContextBridge", internal);
 #endif
   dict.Set("contextBridge", context_bridge);

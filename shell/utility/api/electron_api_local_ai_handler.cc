@@ -60,8 +60,8 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   electron::api::local_ai_handler::GetModuleObject().Reset(isolate, exports);
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("setPromptAPIHandler",
-                 &electron::api::local_ai_handler::SetPromptAPIHandler);
+  dict.SetMethod<&electron::api::local_ai_handler::SetPromptAPIHandler>(
+      "setPromptAPIHandler");
 }
 
 }  // namespace

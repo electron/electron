@@ -5,12 +5,15 @@
 #include "shell/browser/webauthn/electron_authenticator_request_client_delegate.h"
 
 #include <algorithm>
+#include <iterator>
 #include <string>
 #include <utility>
 
 #include "base/base64url.h"
 #include "base/containers/span.h"
 #include "base/functional/bind.h"
+#include "base/location.h"
+#include "base/task/sequenced_task_runner.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
 #include "device/fido/authenticator_get_assertion_response.h"
@@ -28,12 +31,21 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+#include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "shell/browser/webauthn/electron_authenticator_request_delegate.h"
 #include "shell/browser/webauthn/electron_platform_passkeys_discovery.h"
-#include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
 #include "url/origin.h"
+#endif
+
+#if DCHECK_IS_ON()
+#include "base/memory/scoped_refptr.h"
+#include "device/fido/fido_device_discovery.h"
+#include "device/fido/public/fido_constants.h"
+#include "device/fido/virtual_ctap2_device.h"
+#include "device/fido/virtual_fido_device.h"
+#include "device/fido/virtual_fido_device_authenticator.h"
 #endif
 
 namespace electron {
@@ -71,7 +83,60 @@ bool IsSameOriginWithAncestors(content::RenderFrameHost* frame) {
 }
 #endif
 
+#if DCHECK_IS_ON()
+bool g_simulate_uv_locked_pin_security_key = false;
+
+// Yields one virtual CTAP 2.1 security key in the state reported in
+// https://github.com/electron/electron/issues/54317: built-in user verification
+// is configured but has no retries left and a PIN is set, so Chromium reads
+// the retry counts and then falls back to collecting the PIN.
+class UvLockedPinSecurityKeyDiscovery final
+    : public device::FidoDeviceDiscovery {
+ public:
+  UvLockedPinSecurityKeyDiscovery()
+      : device::FidoDeviceDiscovery(device::FidoTransportProtocol::kInternal) {}
+
+ private:
+  void StartInternal() override {
+    auto state = base::MakeRefCounted<device::VirtualFidoDevice::State>();
+    state->transport = device::FidoTransportProtocol::kInternal;
+    state->fingerprints_enrolled = true;
+    state->uv_retries = 0;
+    state->pin = "123456";
+
+    device::VirtualCtap2Device::Config config;
+    config.ctap2_versions = {std::begin(device::kCtap2Versions2_1),
+                             std::end(device::kCtap2Versions2_1)};
+    config.is_platform_authenticator = true;
+    config.internal_uv_support = true;
+    config.pin_support = true;
+    config.pin_uv_auth_token_support = true;
+    config.always_uv = true;
+
+    // GetAssertion probes platform authenticators for matching credentials
+    // before dispatch, which only the virtual authenticator wrapper answers.
+    AddAuthenticator(std::make_unique<device::VirtualFidoDeviceAuthenticator>(
+        std::make_unique<device::VirtualCtap2Device>(std::move(state),
+                                                     config)));
+    base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+        FROM_HERE,
+        base::BindOnce(&UvLockedPinSecurityKeyDiscovery::NotifyDiscoveryStarted,
+                       weak_factory_.GetWeakPtr(), /*success=*/true));
+  }
+
+  base::WeakPtrFactory<UvLockedPinSecurityKeyDiscovery> weak_factory_{this};
+};
+#endif
+
 }  // namespace
+
+#if DCHECK_IS_ON()
+// static
+void ElectronAuthenticatorRequestClientDelegate::
+    SetSimulateUvLockedPinSecurityKeyForTesting(bool enabled) {
+  g_simulate_uv_locked_pin_security_key = enabled;
+}
+#endif
 
 ElectronAuthenticatorRequestClientDelegate::
     ElectronAuthenticatorRequestClientDelegate(
@@ -203,6 +268,10 @@ void ElectronAuthenticatorRequestClientDelegate::
     CancelPendingAccountSelection() {
   pending_responses_.clear();
   select_account_callback_.Reset();
+  CancelRequest();
+}
+
+void ElectronAuthenticatorRequestClientDelegate::CancelRequest() {
   if (cancel_callback_) {
     std::move(cancel_callback_).Run();
   }
@@ -408,10 +477,38 @@ void ElectronAuthenticatorRequestClientDelegate::OnAuthenticatorSelected(
   }
 }
 
-#if BUILDFLAG(IS_MAC)
+void ElectronAuthenticatorRequestClientDelegate::CollectPIN(
+    CollectPINOptions options,
+    base::OnceCallback<void(std::u16string)> provide_pin_cb) {
+  // SupportsPIN() is false, so Chromium never plans to use a PIN, but it still
+  // ends up here when a security key's built-in user verification is locked or
+  // gets blocked mid-request and the key has a PIN to fall back to. There is no
+  // PIN prompt, so fail the request rather than hit the default NOTREACHED().
+  if (auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_)) {
+    rfh->AddMessageToConsole(
+        blink::mojom::ConsoleMessageLevel::kWarning,
+        "The security key needs its PIN to continue, but Electron does not "
+        "support WebAuthn PIN entry "
+        "(https://github.com/electron/electron/issues/24573). The request "
+        "was cancelled.");
+  }
+  // This runs inside the FIDO device's response handling, which cancelling
+  // destroys, so cancel from a fresh task.
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE,
+      base::BindOnce(&ElectronAuthenticatorRequestClientDelegate::CancelRequest,
+                     weak_factory_.GetWeakPtr()));
+}
+
 std::vector<std::unique_ptr<device::FidoDiscoveryBase>>
 ElectronAuthenticatorRequestClientDelegate::CreatePlatformDiscoveries() {
   std::vector<std::unique_ptr<device::FidoDiscoveryBase>> discoveries;
+#if DCHECK_IS_ON()
+  if (g_simulate_uv_locked_pin_security_key) {
+    discoveries.push_back(std::make_unique<UvLockedPinSecurityKeyDiscovery>());
+  }
+#endif
+#if BUILDFLAG(IS_MAC)
   if (ElectronWebAuthenticationDelegate::IsPlatformPasskeysEnabled()) {
     auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
     if (rfh && IsSameOriginWithAncestors(rfh)) {
@@ -428,8 +525,8 @@ ElectronAuthenticatorRequestClientDelegate::CreatePlatformDiscoveries() {
           "the Touch ID authenticator supports iframes.");
     }
   }
+#endif
   return discoveries;
 }
-#endif
 
 }  // namespace electron
