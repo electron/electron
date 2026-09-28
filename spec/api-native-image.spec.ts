@@ -1,4 +1,5 @@
 import { nativeImage } from 'electron/common';
+import { BrowserWindow } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -8,6 +9,7 @@ import * as path from 'node:path';
 
 import { ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers.ts';
 import { expectDeprecationMessages } from './lib/warning-helpers.ts';
+import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('nativeImage module', () => {
   const fixturesPath = path.join(import.meta.dirname, 'fixtures');
@@ -740,5 +742,44 @@ describe('nativeImage module', () => {
       expect(image.toDataURL({ scaleFactor: 1.0 })).to.equal(imageDataOne.dataUrl);
       expect(image.toDataURL({ scaleFactor: 2.0 })).to.equal(imageDataTwo.dataUrl);
     });
+  });
+
+  describe('in a context without a Node.js environment', () => {
+    afterEach(closeAllWindows);
+
+    const calls = ['toPNG()', 'toJPEG(100)', 'toBitmap()', 'getBitmap()'];
+    if (process.platform === 'darwin') calls.push('getNativeHandle()');
+
+    for (const call of calls) {
+      it(`${call} throws instead of crashing the renderer`, async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            contextIsolation: false,
+            preload: path.join(fixturesPath, 'module', 'preload-electron.js')
+          }
+        });
+        await w.loadURL('about:blank');
+
+        const codes = await w.webContents.executeJavaScript(`
+          const { nativeImage } = window.electron;
+          [
+            nativeImage.createEmpty(),
+            nativeImage.createFromBitmap(new Uint8Array(4), { width: 1, height: 1 })
+          ].map((image) => {
+            try {
+              image.${call};
+              return 'did not throw';
+            } catch (error) {
+              return error.code;
+            }
+          });
+        `);
+
+        const code = 'ERR_BUFFER_CONTEXT_NOT_AVAILABLE';
+        expect(codes).to.deep.equal([code, code]);
+      });
+    }
   });
 });
