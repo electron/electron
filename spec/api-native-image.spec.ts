@@ -3,11 +3,12 @@ import { BrowserWindow } from 'electron/main';
 
 import { expect } from 'chai';
 
+import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers.ts';
+import { ifdescribe, ifit, itremote, startRemoteControlApp, useRemoteContext } from './lib/spec-helpers.ts';
 import { expectDeprecationMessages } from './lib/warning-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
@@ -108,6 +109,21 @@ describe('nativeImage module', () => {
       if (process.platform === 'darwin') {
         expect(empty.getNativeHandle()).to.be.empty();
       }
+    });
+
+    it('does not crash on exit after getting its size', async () => {
+      const rc = await startRemoteControlApp();
+      const exited = once(rc.process, 'exit');
+      const size = await rc.remotely(() => {
+        const { app, nativeImage } = require('electron');
+        const size = nativeImage.createEmpty().getSize();
+        setTimeout(() => app.quit());
+        return size;
+      });
+
+      expect(size).to.deep.equal({ width: 0, height: 0 });
+      const [code, signal] = await exited;
+      expect({ code, signal }).to.deep.equal({ code: 0, signal: null });
     });
   });
 
