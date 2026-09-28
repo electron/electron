@@ -129,10 +129,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index f66384f2728dd2903d9fc058ad81a07e290f1496..f6081d04db4d9849074de4dae9c634b369043aa6 100644
+index e656bc9dbeca38e0828f1cfca47a62de2797ebbb..e2ff01b3d3cc8329958f13b92305d2da36446337 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -1044,6 +1044,7 @@ if (is_clang_or_gcc) {
+@@ -1045,6 +1045,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -1220,7 +1220,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index d46420af18423a1967f2bddeb6928ae7dc889011..054b21d63d12b0972a8178c129c3b6cd770092da 100644
+index 51cb749d82788d57796d47b8600781ffeed4f129..a5bbaef7fbabd485c99a5649fb0fb519f214cd5d 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -652,6 +652,7 @@ static_library("test_support") {
@@ -1248,7 +1248,7 @@ index d46420af18423a1967f2bddeb6928ae7dc889011..054b21d63d12b0972a8178c129c3b6cd
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3416,6 +3420,7 @@ test("content_unittests") {
+@@ -3417,6 +3421,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -2165,10 +2165,10 @@ index 9423a2891552e8df3ea5b05c720ab11795c4b92d..610c479ef03759d3082b42d7a402cbea
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 78a13bb60b25b5fe64117af9a3619cec32fd51eb..821467818ec05e309c9bde36a7ce7cc58f944d4f 100644
+index c8161436a00e6d8820dbd099e183c7d42c0184db..992a2f7e9ea1fa7f680dd2f26fd646d7572d8903 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -365,6 +365,13 @@ component("base") {
+@@ -366,6 +366,13 @@ component("base") {
      ]
    }
  
@@ -2182,7 +2182,7 @@ index 78a13bb60b25b5fe64117af9a3619cec32fd51eb..821467818ec05e309c9bde36a7ce7cc5
    if (is_ios) {
      sources += [
        "device_form_factor_ios.mm",
-@@ -521,6 +528,12 @@ component("base") {
+@@ -522,6 +529,12 @@ component("base") {
      "//url",
    ]
  
