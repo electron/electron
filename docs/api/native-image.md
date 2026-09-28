@@ -188,6 +188,13 @@ Creates a new `NativeImage` instance from `buffer`. Tries to decode as PNG or JP
 
 ### `nativeImage.createFromBufferAsync(buffer[, options])`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/54494
+```
+-->
+
 * `buffer` [Buffer][buffer]
 * `options` Object (optional)
   * `width` Integer (optional) - Required for bitmap buffers.
@@ -302,6 +309,13 @@ Returns `Buffer` - A [Buffer][buffer] that contains the image's `PNG` encoded da
 
 #### `image.toPNGAsync([options])`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/54494
+```
+-->
+
 * `options` Object (optional)
   * `scaleFactor` Number (optional) - Defaults to 1.0.
 
@@ -320,6 +334,13 @@ without Node.js integration, such as a sandboxed preload script.
 Returns `Buffer` - A [Buffer][buffer] that contains the image's `JPEG` encoded data.
 
 #### `image.toJPEGAsync(quality)`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/54494
+```
+-->
 
 * `quality` Integer - Between 0 - 100.
 
@@ -352,6 +373,13 @@ Returns `Buffer` - A [Buffer][buffer] that contains a copy of the image's raw bi
 data.
 
 #### `image.toBitmapAsync([options])`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/54494
+```
+-->
 
 * `options` Object (optional)
   * `scaleFactor` Number (optional) - Defaults to 1.0.
