@@ -21,6 +21,7 @@
 #include "base/functional/callback_helpers.h"
 #include "base/notimplemented.h"
 #include "base/path_service.h"
+#include "base/process/process.h"
 #include "base/system/sys_info.h"
 #include "base/values.h"
 #include "base/win/windows_version.h"
@@ -842,11 +843,11 @@ void App::OnGpuInfoUpdate() {
 }
 
 void App::BrowserChildProcessLaunchedAndConnected(
-    const content::ChildProcessData& data) {
-  ChildProcessLaunched(data.process_type,
-                       content::ChildProcessId::FromUnsafeValue(data.id),
-                       data.GetProcess().Handle(), data.metrics_name,
-                       base::UTF16ToUTF8(data.name));
+    const content::ChildProcessData& data,
+    const base::Process& process) {
+  ChildProcessLaunched(
+      data.process_type, content::ChildProcessId::FromUnsafeValue(data.id),
+      process.Handle(), data.metrics_name, base::UTF16ToUTF8(data.name));
 }
 
 void App::BrowserChildProcessHostDisconnected(

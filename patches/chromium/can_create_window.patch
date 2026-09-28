@@ -12,10 +12,10 @@ that the new window is created in its own BrowsingInstance (and process).
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 03f6ac683fea3ee35e90476ff2b860d85c08acbc..6950b4bfa78399ec481f17c0f82dd83f36acf9b5 100644
+index 13a2167bd88bc453677381d55ca252758aa7a235..a7d38b913ddf1666f79e58a4680a5b1f81637837 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -10659,6 +10659,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10627,6 +10627,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -23,7 +23,7 @@ index 03f6ac683fea3ee35e90476ff2b860d85c08acbc..6950b4bfa78399ec481f17c0f82dd83f
            effective_transient_activation_state, params->opener_suppressed,
            &no_javascript_access);
  
-@@ -10669,6 +10670,11 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10637,6 +10638,11 @@ void RenderFrameHostImpl::CreateNewWindow(
      return;
    }
  
@@ -36,10 +36,10 @@ index 03f6ac683fea3ee35e90476ff2b860d85c08acbc..6950b4bfa78399ec481f17c0f82dd83f
    // important to do this before we return from the |opener_suppressed| case
    // below.
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index aa808c95f33ed712f42dd6f6ac765b703a282604..6975ee5b7ea90af6178b9519ba7366c3fa80cd44 100644
+index 649c13a5fa6c8c7b3dccd355d58f5465406e1faa..befce87fbad6daabfd3d765634b4e81355cc06ad 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5707,6 +5707,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5719,6 +5719,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    create_params.initially_hidden = renderer_started_hidden;
    create_params.initial_popup_url = params.target_url;
  
@@ -50,7 +50,7 @@ index aa808c95f33ed712f42dd6f6ac765b703a282604..6975ee5b7ea90af6178b9519ba7366c3
    // Even though all codepaths leading here are in response to a renderer
    // trying to open a new window, if the new window ends up in a different
    // browsing instance, then the RenderViewHost, RenderWidgetHost,
-@@ -5761,6 +5765,13 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5773,6 +5777,13 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // Sets the newly created WebContents WindowOpenDisposition.
    new_contents_impl->original_window_open_disposition_ = params.disposition;
  
@@ -64,7 +64,7 @@ index aa808c95f33ed712f42dd6f6ac765b703a282604..6975ee5b7ea90af6178b9519ba7366c3
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -5802,13 +5813,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5814,13 +5825,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -188,10 +188,10 @@ index 5c742e16bccee876a8d2fece35276cdb3e7b912c..6e0b5ea45c6589231b3f7488f5bc918a
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 41e0154e5dbe1fe711fc5fed7cb730f62f1a825f..0b7b0d1842fde0cf1411ac9fc64e7206ee822c70 100644
+index b844982e7506b3ae26a6b18f17845ef8a587a372..4dc83601584c056ee3f1ef4500e86f6307bb85c3 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -7151,6 +7151,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -7155,6 +7155,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
    params->started_by_ad =
        GetWebFrame()->IsAdFrame() || GetWebFrame()->IsAdScriptInStack();
  

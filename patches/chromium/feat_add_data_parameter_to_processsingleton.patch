@@ -360,7 +360,7 @@ index 5e7a66aafbbe6c388ac0ec780ef1eb0994bb3976..f1ac6b53fdabbcb5df53589be32c5a7f
      if (!kill_unresponsive || !KillProcessByLockPath(true))
        return PROFILE_IN_USE;
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 53fdcaf36552091e0b03297ee0d524b729cf8324..59dd345b19c7c812919c211b76aceec1bf067f8e 100644
+index 03c73912d8731bdb0f435b83bb9e496e6c605b76..7118b8d13c970ce0a801b36e66193a3f87e9b121 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -9,6 +9,7 @@
