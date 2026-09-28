@@ -2088,6 +2088,47 @@ describe('<webview> tag', function () {
         },
         [fixtures]
       );
+
+      // https://github.com/electron/electron/issues/54199
+      itremote(
+        'wraps past the last match when the embedder also contains an iframe',
+        async (fixtures: string) => {
+          const iframe = document.createElement('iframe');
+          iframe.srcdoc = '<p>embedder frame</p>';
+          await new Promise((resolve) => {
+            iframe.addEventListener('load', resolve, { once: true });
+            document.body.appendChild(iframe);
+          });
+
+          const webview = new WebView();
+          const didFinishLoad = new Promise((resolve) =>
+            webview.addEventListener('did-finish-load', resolve, { once: true })
+          );
+          webview.src = `file://${fixtures}/pages/content.html`;
+          document.body.appendChild(webview);
+          webview.focus();
+          await didFinishLoad;
+
+          const activeMatchOrdinal = [];
+          for (let i = 0; i < 4; i++) {
+            const foundInPage = new Promise<any>((resolve) =>
+              webview.addEventListener('found-in-page', resolve, { once: true })
+            );
+            const requestId = webview.findInPage('virtual');
+            const event = await foundInPage;
+
+            expect(event.result.requestId).to.equal(requestId);
+            expect(event.result.matches).to.equal(3);
+            activeMatchOrdinal.push(event.result.activeMatchOrdinal);
+          }
+
+          expect(activeMatchOrdinal).to.deep.equal([1, 2, 3, 1]);
+          webview.stopFindInPage('clearSelection');
+          webview.remove();
+          iframe.remove();
+        },
+        [fixtures]
+      );
     });
 
     describe('will-attach-webview event', () => {
