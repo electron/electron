@@ -73,6 +73,7 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "base/nix/xdg_util.h"
+#include "ui/gfx/switches.h"
 #include "ui/linux/display_server_utils.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
 #include "v8/include/v8.h"
@@ -80,6 +81,7 @@
 
 #if BUILDFLAG(IS_OZONE)
 #include "ui/ozone/public/ozone_platform.h"
+#include "ui/ozone/public/ozone_switches.h"
 #endif  // BUILDFLAG(IS_OZONE)
 
 #if !IS_MAS_BUILD()
@@ -96,6 +98,31 @@ namespace electron {
 namespace {
 
 constexpr std::string_view kRelauncherProcess = "relauncher";
+
+#if BUILDFLAG(IS_LINUX)
+// Chromium picks the display server from XDG_SESSION_TYPE alone, which a login
+// manager may not set. If only one shows up where the X11 and Wayland clients
+// look for theirs, pick that one and leave nothing for Chromium to decide.
+void PickOnlyAvailableDisplayServer(base::CommandLine* command_line) {
+  if (command_line->HasSwitch(::switches::kOzonePlatform))
+    return;
+  auto env = base::Environment::Create();
+  auto get = [&](base::cstring_view name) {
+    return env->GetVar(name).value_or("");
+  };
+  const bool has_x11 = !get("DISPLAY").empty() ||
+                       command_line->HasSwitch(::switches::kX11Display);
+  const bool has_wayland =
+      !get("WAYLAND_SOCKET").empty() || !get("WAYLAND_DISPLAY").empty() ||
+      (!get("XDG_RUNTIME_DIR").empty() &&
+       base::PathExists(
+           base::FilePath(get("XDG_RUNTIME_DIR")).Append("wayland-0")));
+  if (has_x11 != has_wayland) {
+    command_line->AppendSwitchASCII(::switches::kOzonePlatform,
+                                    has_x11 ? "x11" : "wayland");
+  }
+}
+#endif
 
 constexpr base::cstring_view kElectronDisableSandbox{
     "ELECTRON_DISABLE_SANDBOX"};
@@ -369,6 +396,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
     // Initialize Ozone platform and add required feature flags as per
     // platform's properties.
 #if BUILDFLAG(IS_LINUX)
+    PickOnlyAvailableDisplayServer(command_line);
     ui::SetOzonePlatformForLinuxIfNeeded(*command_line);
 #endif
     ui::OzonePlatform::PreSandboxStartup();

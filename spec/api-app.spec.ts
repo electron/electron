@@ -1999,6 +1999,61 @@ describe('app module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'linux')('display server selection', () => {
+    let runtimeDir: string;
+    beforeEach(() => {
+      runtimeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-runtime-dir-'));
+    });
+    afterEach(() => fs.rmSync(runtimeDir, { recursive: true, force: true }));
+
+    const pick = async (vars: NodeJS.ProcessEnv, ...args: string[]) => {
+      const env: NodeJS.ProcessEnv = { ...process.env, XDG_RUNTIME_DIR: runtimeDir };
+      for (const name of ['DISPLAY', 'WAYLAND_DISPLAY', 'WAYLAND_SOCKET', 'XDG_SESSION_TYPE']) delete env[name];
+      const child = cp.spawn(process.execPath, [path.join(fixturesPath, 'api', 'ozone-platform'), ...args], {
+        env: { ...env, ...vars },
+        stdio: ['ignore', 'pipe', 'ignore']
+      });
+      defer(() => {
+        if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+      });
+      let out = '';
+      child.stdout.on('data', (chunk) => {
+        out += chunk;
+      });
+      await once(child, 'close');
+      return out;
+    };
+
+    it('picks Wayland when only Wayland is available', async () => {
+      expect(await pick({ WAYLAND_DISPLAY: 'wayland-1' })).to.equal('wayland');
+      expect(await pick({ WAYLAND_SOCKET: '99' })).to.equal('wayland');
+      fs.writeFileSync(path.join(runtimeDir, 'wayland-0'), '');
+      expect(await pick({})).to.equal('wayland');
+    });
+
+    it('picks X11 when only X11 is available', async () => {
+      expect(await pick({ DISPLAY: ':99', XDG_SESSION_TYPE: 'wayland' })).to.equal('x11');
+      expect(await pick({ XDG_SESSION_TYPE: 'wayland' }, '--display=:99')).to.equal('x11');
+    });
+
+    it('treats an empty variable as unset', async () => {
+      expect(await pick({ DISPLAY: '', WAYLAND_DISPLAY: 'wayland-1' })).to.equal('wayland');
+      expect(await pick({ DISPLAY: ':99', WAYLAND_DISPLAY: '', XDG_SESSION_TYPE: 'wayland' })).to.equal('x11');
+    });
+
+    it('goes by XDG_SESSION_TYPE when both or neither are available', async () => {
+      const both = { DISPLAY: ':99', WAYLAND_DISPLAY: 'wayland-1' };
+      expect(await pick({ ...both, XDG_SESSION_TYPE: 'wayland' })).to.equal('wayland');
+      expect(await pick(both)).to.equal('x11');
+      expect(await pick({ XDG_SESSION_TYPE: 'wayland' })).to.equal('wayland');
+      expect(await pick({})).to.equal('x11');
+    });
+
+    it('does not override --ozone-platform', async () => {
+      expect(await pick({ WAYLAND_DISPLAY: 'wayland-1' }, '--ozone-platform=x11')).to.equal('x11');
+    });
+  });
+
   ifdescribe(process.platform === 'linux')('when the X server goes away', () => {
     // Starts a private X server for the app under test, so that it can be taken
     // away without disturbing the one the spec runner is on. Resolves to
