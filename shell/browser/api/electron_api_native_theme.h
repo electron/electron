@@ -6,10 +6,10 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NATIVE_THEME_H_
 
 #include "base/memory/raw_ptr.h"
-#include "gin/per_isolate_data.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/browser/microtasks_runner.h"
 #include "ui/native_theme/native_theme.h"
 #include "ui/native_theme/native_theme_observer.h"
 
@@ -21,7 +21,6 @@ namespace electron::api {
 
 class NativeTheme final : public gin::Wrappable<NativeTheme>,
                           public gin_helper::EventEmitterMixin<NativeTheme>,
-                          public gin::PerIsolateData::DisposeObserver,
                           private ui::NativeThemeObserver {
  public:
   static NativeTheme* Create(v8::Isolate* isolate);
@@ -35,10 +34,7 @@ class NativeTheme final : public gin::Wrappable<NativeTheme>,
   const char* GetHumanReadableName() const override;
   void Trace(cppgc::Visitor* visitor) const override;
 
-  // gin::PerIsolateData::DisposeObserver
-  void OnBeforeDispose(v8::Isolate* isolate) override {}
-  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override;
-  void OnDisposed() override {}
+  void OnBeforeMicrotasksRunnerDispose();
 
   // disable copy
   NativeTheme(const NativeTheme&) = delete;

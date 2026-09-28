@@ -17,16 +17,14 @@
 // code-cache key (source + params hash), so the build-time codecache generator
 // (electron_natives_codecache_main.cc) must compile each bundle with the exact
 // same params its runtime CompileAndCall site uses -- this header keeps both
-// sides in sync. spec/api-js2c-code-cache-spec.ts also asserts every bundle's
+// sides in sync. spec/api-js2c-code-cache.spec.ts also asserts every bundle's
 // cache is consumed, catching any drift.
 namespace electron::js2c {
 
-inline constexpr char kSandboxBundleId[] =
-    "internal/electron/js2c/sandbox_bundle";
+inline constexpr char kWebViewBundleId[] =
+    "internal/electron/js2c/webview_bundle";
 inline constexpr char kIsolatedBundleId[] =
     "internal/electron/js2c/isolated_bundle";
-inline constexpr char kPreloadRealmBundleId[] =
-    "internal/electron/js2c/preload_realm_bundle";
 inline constexpr char kNodeInitId[] = "internal/electron/js2c/node_init";
 inline constexpr char kBrowserInitId[] = "internal/electron/js2c/browser_init";
 inline constexpr char kRendererInitId[] =
@@ -36,12 +34,10 @@ inline constexpr char kWorkerInitId[] = "internal/electron/js2c/worker_init";
 
 // Wrapper function parameter names for the bundles compiled via
 // util::CompileAndCall.
-inline constexpr std::array<std::string_view, 1> kSandboxBundleParams = {
+inline constexpr std::array<std::string_view, 1> kWebViewBundleParams = {
     "binding"};
 inline constexpr std::array<std::string_view, 1> kIsolatedBundleParams = {
     "isolatedApi"};
-inline constexpr std::array<std::string_view, 1> kPreloadRealmBundleParams = {
-    "binding"};
 // node_init and the <process type>_init bundles: Node's process object and
 // its internal require.
 inline constexpr std::array<std::string_view, 2> kInitBundleParams = {

@@ -31,7 +31,7 @@ class ElectronNSSCryptoModuleDelegate
   ~ElectronNSSCryptoModuleDelegate() override;
 
   void RequestPasswordOnUIThread(const std::string& token_name, bool retry);
-  void OnPassword(gin::Arguments* args);
+  void OnPassword(const std::string& password);
 
   net::HostPortPair server_;
   base::WaitableEvent event_;

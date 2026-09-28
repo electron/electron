@@ -205,6 +205,7 @@ std::string Browser::GetVersion() const {
 
 void Browser::SetVersion(const std::string& version) {
   OverriddenApplicationVersion() = version;
+  InvalidateApplicationUserAgent();
 }
 
 std::string Browser::GetName() const {
@@ -216,6 +217,7 @@ std::string Browser::GetName() const {
 
 void Browser::SetName(const std::string& name) {
   OverriddenApplicationName() = name;
+  InvalidateApplicationUserAgent();
 }
 
 bool Browser::OpenFile(const std::string& file_path) {

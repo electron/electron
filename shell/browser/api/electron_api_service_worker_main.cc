@@ -16,15 +16,18 @@
 #include "content/browser/service_worker/service_worker_version.h"  // nogncheck
 #include "gin/object_template_builder.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
+#include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_converters/blink_converter.h"
+#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/serialized_value_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
@@ -132,23 +135,63 @@ mojom::ElectronRenderer* ServiceWorkerMain::GetRendererApi() {
   return remote_.get();
 }
 
-void ServiceWorkerMain::Send(v8::Isolate* isolate,
-                             bool internal,
-                             const std::string& channel,
-                             v8::Local<v8::Value> args) {
+void ServiceWorkerMain::Send(gin::Arguments* args) {
+  std::string channel;
   electron::SerializedValue message;
-  if (!gin::ConvertFromV8(isolate, args, &message)) {
-    isolate->ThrowException(v8::Exception::Error(
-        gin::StringToV8(isolate, "Failed to serialize arguments")));
+  if (!ReadIPCSendArguments(args, "ServiceWorkerMain", &channel, &message))
     return;
-  }
 
   auto* renderer_api_remote = GetRendererApi();
   if (!renderer_api_remote) {
     return;
   }
 
-  renderer_api_remote->Message(internal, channel, std::move(message));
+  renderer_api_remote->Message(false, channel, std::move(message));
+}
+
+v8::Local<v8::Value> ServiceWorkerMain::StartTask(v8::Isolate* isolate) {
+  gin_helper::ErrorThrower thrower(isolate);
+  if (version_destroyed_) {
+    thrower.ThrowTypeError("ServiceWorkerMain is destroyed");
+    return {};
+  }
+
+  // TODO(samuelmaddock): maybe make timeout configurable in the future
+  auto request_uuid = base::Uuid::GenerateRandomV4();
+  content::ServiceWorkerExternalRequestResult start_result =
+      service_worker_context_->StartingExternalRequest(
+          version_id_,
+          content::ServiceWorkerExternalRequestTimeoutType::kDoesNotTimeout,
+          request_uuid);
+  if (start_result != content::ServiceWorkerExternalRequestResult::kOk) {
+    thrower.ThrowError("Unable to start service worker task.");
+    return {};
+  }
+
+  auto task = gin_helper::Dictionary::CreateEmpty(isolate);
+  // The task references this ServiceWorkerMain so that end() can be called for
+  // as long as the task is alive; end() itself only holds it weakly.
+  v8::Local<v8::Object> wrapper;
+  if (GetWrapper(isolate).ToLocal(&wrapper)) {
+    task.GetHandle()
+        ->SetPrivate(isolate->GetCurrentContext(),
+                     v8::Private::ForApi(
+                         isolate, gin::StringToV8(isolate, "serviceWorker")),
+                     wrapper)
+        .Check();
+  }
+  task.Set(
+      "end",
+      gin::ConvertToV8(
+          isolate, base::BindRepeating(
+                       [](const cppgc::WeakPersistent<ServiceWorkerMain>& self,
+                          const std::string& uuid, v8::Isolate* isolate) {
+                         if (self)
+                           self->FinishExternalRequest(isolate, uuid);
+                       },
+                       cppgc::WeakPersistent<ServiceWorkerMain>(this),
+                       request_uuid.AsLowercaseString())));
+  return task.GetHandle();
 }
 
 void ServiceWorkerMain::InvalidateVersionInfo() {
@@ -200,34 +243,6 @@ bool ServiceWorkerMain::IsDestroyed() const {
 const blink::StorageKey ServiceWorkerMain::GetStorageKey() {
   const GURL& scope = version_info_ ? version_info()->scope : GURL::EmptyGURL();
   return blink::StorageKey::CreateFirstParty(url::Origin::Create(scope));
-}
-
-gin_helper::Dictionary ServiceWorkerMain::StartExternalRequest(
-    v8::Isolate* isolate,
-    bool has_timeout) {
-  auto details = gin_helper::Dictionary::CreateEmpty(isolate);
-
-  if (version_destroyed_) {
-    isolate->ThrowException(v8::Exception::TypeError(
-        gin::StringToV8(isolate, "ServiceWorkerMain is destroyed")));
-    return details;
-  }
-
-  auto request_uuid = base::Uuid::GenerateRandomV4();
-  auto timeout_type =
-      has_timeout
-          ? content::ServiceWorkerExternalRequestTimeoutType::kDefault
-          : content::ServiceWorkerExternalRequestTimeoutType::kDoesNotTimeout;
-
-  content::ServiceWorkerExternalRequestResult start_result =
-      service_worker_context_->StartingExternalRequest(
-          version_id_, timeout_type, request_uuid);
-
-  details.Set("id", request_uuid.AsLowercaseString());
-  details.Set("ok",
-              start_result == content::ServiceWorkerExternalRequestResult::kOk);
-
-  return details;
 }
 
 void ServiceWorkerMain::FinishExternalRequest(v8::Isolate* isolate,
@@ -336,17 +351,14 @@ void ServiceWorkerMain::FillObjectTemplate(
     v8::Isolate* isolate,
     v8::Local<v8::ObjectTemplate> templ) {
   gin_helper::ObjectTemplateBuilder(isolate, templ)
-      .SetMethod("_send", &ServiceWorkerMain::Send)
-      .SetMethod("isDestroyed", &ServiceWorkerMain::IsDestroyed)
-      .SetMethod("_startExternalRequest",
-                 &ServiceWorkerMain::StartExternalRequest)
-      .SetMethod("_finishExternalRequest",
-                 &ServiceWorkerMain::FinishExternalRequest)
-      .SetMethod("_countExternalRequests",
-                 &ServiceWorkerMain::CountExternalRequestsForTest)
-      .SetProperty("versionId", &ServiceWorkerMain::VersionID)
-      .SetProperty("scope", &ServiceWorkerMain::ScopeURL)
-      .SetProperty("scriptURL", &ServiceWorkerMain::ScriptURL)
+      .SetMethod<&ServiceWorkerMain::Send>("send")
+      .SetMethod<&ServiceWorkerMain::StartTask>("startTask")
+      .SetMethod<&ServiceWorkerMain::IsDestroyed>("isDestroyed")
+      .SetMethod<&ServiceWorkerMain::CountExternalRequestsForTest>(
+          "_countExternalRequests")
+      .SetProperty<&ServiceWorkerMain::VersionID>("versionId")
+      .SetProperty<&ServiceWorkerMain::ScopeURL>("scope")
+      .SetProperty<&ServiceWorkerMain::ScriptURL>("scriptURL")
       .Build();
 }
 

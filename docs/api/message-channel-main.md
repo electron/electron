@@ -15,8 +15,6 @@ Process: [Main](../glossary.md#main-process)
 
 Example:
 
-<!-- eslint-disable import/order -->
-
 ```js
 // Main process
 const { BrowserWindow, MessageChannelMain } = require('electron')

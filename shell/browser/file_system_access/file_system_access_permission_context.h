@@ -55,19 +55,19 @@ class FileSystemAccessPermissionContext
   GetReadPermissionGrant(const url::Origin& origin,
                          const content::PathInfo& path,
                          HandleType handle_type,
-                         UserAction user_action) override;
+                         AccessTrigger access_trigger) override;
 
   scoped_refptr<content::FileSystemAccessPermissionGrant>
   GetWritePermissionGrant(const url::Origin& origin,
                           const content::PathInfo& path,
                           HandleType handle_type,
-                          UserAction user_action) override;
+                          AccessTrigger access_trigger) override;
 
   void ConfirmSensitiveEntryAccess(
       const url::Origin& origin,
       const content::PathInfo& path,
       HandleType handle_type,
-      UserAction user_action,
+      AccessTrigger access_trigger,
       content::GlobalRenderFrameHostId frame_id,
       base::OnceCallback<void(SensitiveEntryResult)> callback) override;
 
@@ -116,9 +116,6 @@ class FileSystemAccessPermissionContext
   void RevokeActiveGrants(const url::Origin& origin,
                           const base::FilePath& file_path = base::FilePath());
 
-  bool OriginHasReadAccess(const url::Origin& origin);
-  bool OriginHasWriteAccess(const url::Origin& origin);
-
   // Called by FileSystemAccessWebContentsHelper when a top-level frame was
   // navigated away from `origin` to some other origin.
   void NavigatedAwayFromOrigin(const url::Origin& origin);
@@ -153,7 +150,7 @@ class FileSystemAccessPermissionContext
                                     const url::Origin& origin,
                                     const content::PathInfo& path,
                                     HandleType handle_type,
-                                    UserAction user_action,
+                                    AccessTrigger access_trigger,
                                     content::GlobalRenderFrameHostId frame_id,
                                     bool should_block);
 

@@ -1,0 +1,8 @@
+{
+  // Lets editors pick up the spec compiler options (ESM, .ts extension imports)
+  // for files under spec/; CI checks ../tsconfig.spec.json directly.
+  "extends": "../tsconfig.spec.json",
+  "compilerOptions": {
+    "rootDir": ".."
+  }
+}

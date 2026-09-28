@@ -283,8 +283,6 @@
       "files": [
         "lib/renderer/**",
         "lib/worker/**",
-        "lib/preload_realm/**",
-        "lib/sandboxed_renderer/**",
         "lib/isolated_renderer/**"
       ],
       "rules": {
@@ -351,6 +349,20 @@
       "rules": {
         "no-only-tests/no-only-tests": "error",
         "no-floating-spec-helpers/no-floating-spec-helpers": "error"
+      }
+    },
+    {
+      // Specs run straight from source with Node's type stripping, which leaves
+      // imports untouched: a type imported without `type` fails at load time.
+      "files": [
+        "spec/**/*.ts"
+      ],
+      "rules": {
+        "typescript/consistent-type-imports": [
+          "error",
+          { "fixStyle": "inline-type-imports", "disallowTypeAnnotations": false }
+        ],
+        "typescript/no-import-type-side-effects": "error"
       }
     },
     {

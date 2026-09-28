@@ -6,10 +6,10 @@ Checks: 'clang-analyzer-core.*,
          clang-analyzer-osx.*,
          clang-analyzer-security.*,
          clang-analyzer-unix.*,
+         -bugprone-forward-declaration-namespace,
          -clang-analyzer-core.CallAndMessage,
          -clang-analyzer-security.PointerSub'
-# Only report diagnostics in the file being checked, not in the headers it
-# includes. Chromium's headers would otherwise flood every run.
-HeaderFilterRegex: ''
+# Only report header diagnostics in Electron's headers
+HeaderFilterRegex: '^(\.\./)*electron/'
 InheritParentConfig: true
 ...

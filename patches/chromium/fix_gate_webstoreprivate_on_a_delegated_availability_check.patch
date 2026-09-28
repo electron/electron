@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: clavin <clavin@electronjs.org>
+Date: Fri, 25 Sep 2026 13:29:42 -0700
+Subject: fix: gate webstorePrivate on a delegated availability check
+
+The Chrome Web Store branch of the core webstorePrivate feature exposes
+the API to web pages on that origin, but the browser-side implementation
+requires an embedder-provided WebstorePrivateAPIDelegate that Electron
+does not have. Require a delegated availability check on that branch, as
+the testing branch already does. Electron never registers one, so the
+feature fails closed in every context.
+
+Electron previously did this by overriding the feature from its own
+_api_features.json, which relied on later registrations replacing
+earlier ones. Generated features are now immutable, so the override has
+to be made in the core definition.
+
+diff --git a/extensions/common/api/_api_features.json b/extensions/common/api/_api_features.json
+index 740ee61eb4acc8e357b02f360e8d86a5fc02562c..ef30964159df7be9d8b3216a9d0b5ad77227b024 100644
+--- a/extensions/common/api/_api_features.json
++++ b/extensions/common/api/_api_features.json
+@@ -987,6 +987,10 @@
+   "webstorePrivate": [{
+     "channel": "stable",
+     "contexts": ["web_page"],
++    // Electron has no WebstorePrivateAPIDelegate and never registers a
++    // delegated availability check, so gating this branch like the testing
++    // one below makes the feature fail closed in every context.
++    "requires_delegated_availability_check": true,
+     "matches": ["https://chromewebstore.google.com/*"]
+   }, {
+     // Used for webstore testing. See comment in

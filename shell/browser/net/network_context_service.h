@@ -15,10 +15,6 @@
 
 class CookieEncryptionProviderImpl;
 
-namespace base {
-class FilePath;
-}  // namespace base
-
 namespace content {
 class BrowserContext;
 }  // namespace content
@@ -43,11 +39,6 @@ class NetworkContextService : public KeyedService {
           cert_verifier_creation_params);
 
  private:
-  // Creates parameters for the NetworkContext.
-  network::mojom::NetworkContextParamsPtr CreateNetworkContextParams(
-      bool in_memory,
-      const base::FilePath& path);
-
   raw_ptr<ElectronBrowserContext> browser_context_;
   ProxyConfigMonitor proxy_config_monitor_;
   std::unique_ptr<CookieEncryptionProviderImpl> cookie_encryption_provider_;

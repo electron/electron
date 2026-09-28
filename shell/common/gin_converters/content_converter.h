@@ -11,7 +11,6 @@
 #include "content/public/common/stop_find_action.h"
 #include "gin/converter.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
-#include "third_party/blink/public/mojom/choosers/popup_menu.mojom.h"
 #include "ui/base/mojom/menu_source_type.mojom-forward.h"
 
 namespace content {
@@ -32,12 +31,6 @@ struct ContextMenuParamsWithRenderFrameHost {
 };
 
 namespace gin {
-
-template <>
-struct Converter<blink::mojom::MenuItem::Type> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const blink::mojom::MenuItem::Type& val);
-};
 
 template <>
 struct Converter<ContextMenuParamsWithRenderFrameHost> {

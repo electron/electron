@@ -55,7 +55,9 @@ There are a few style guidelines that aren't covered by the linter rules:
   purposes.
 * No nesting lists more than 2 levels (due to the markdown renderer).
 * All `js` and `javascript` code blocks are linted with
-[standard-markdown](https://www.npmjs.com/package/standard-markdown).
+  [oxlint](https://oxc.rs/docs/guide/usage/linter) and formatted with
+  [oxfmt](https://oxc.rs/docs/guide/usage/formatter) as part of `npm run lint:docs`;
+  `npm run lint:fmt-in-markdown -- --fix` reformats them.
 * For unordered lists, use asterisks instead of dashes.
 
 ## Picking words
@@ -403,7 +405,7 @@ since that function wasn't changed, only how it may be used:
 
 ## Documentation translations
 
-See [electron/i18n](https://github.com/electron/i18n#readme)
+We crowdsource translations for our documentation via [Crowdin](https://crowdin.com/project/electron).
 
 [title-case]: https://apastyle.apa.org/style-grammar-guidelines/capitalization/title-case
 [sentence-case]: https://apastyle.apa.org/style-grammar-guidelines/capitalization/sentence-case

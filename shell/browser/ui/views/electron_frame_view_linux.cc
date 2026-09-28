@@ -10,9 +10,9 @@
 #include "base/functional/callback_helpers.h"
 #include "base/i18n/rtl.h"
 #include "base/time/time.h"
+#include "chrome/browser/ui/views/frame/caption_button_placeholder_container.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
-#include "shell/browser/ui/views/caption_button_placeholder_container.h"
 #include "shell/browser/ui/views/electron_frame_view_layout_linux.h"
 #include "shell/browser/ui/views/freedesktop_nav_button_provider.h"
 #include "ui/base/hit_test.h"
@@ -275,8 +275,7 @@ void ElectronFrameViewLinux::UpdateButtonColors() {
 
   // Apply custom WCO overlay colors if set.
   const bool active = ShouldPaintAsActive();
-  const SkColor symbol_color =
-      window_->overlay_symbol_color().value_or(SkColor());
+  const std::optional<SkColor> symbol_color = window_->overlay_symbol_color();
   const std::optional<SkColor> background_color =
       window_->overlay_button_color();
   // Frame color is used for blending, force it to be opaque
@@ -292,8 +291,11 @@ void ElectronFrameViewLinux::UpdateButtonColors() {
     auto* frame_caption_button =
         static_cast<views::FrameCaptionButton*>(button);
     frame_caption_button->SetPaintAsActive(active);
-    frame_caption_button->SetButtonColor(symbol_color);
+    // The icon color comes from whichever setter ran last, so set the frame
+    // color first and let an explicit symbol color override it.
     frame_caption_button->SetBackgroundColor(frame_color);
+    if (symbol_color.has_value())
+      frame_caption_button->SetIconColor(*symbol_color);
   }
 }
 

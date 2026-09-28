@@ -88,8 +88,7 @@ const gin::WrapperInfo GlobalShortcut::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronGlobalShortcut);
 
 GlobalShortcut::GlobalShortcut(v8::Isolate* isolate) {
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  data->AddDisposeObserver(this);
+  MicrotasksRunner::AddWrappableObserver(this);
 }
 
 GlobalShortcut::~GlobalShortcut() = default;
@@ -403,9 +402,7 @@ const char* GlobalShortcut::GetHumanReadableName() const {
   return "Electron / GlobalShortcut";
 }
 
-void GlobalShortcut::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-  data->RemoveDisposeObserver(this);
+void GlobalShortcut::OnBeforeMicrotasksRunnerDispose() {
   Dispose();
 }
 
@@ -419,8 +416,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("createGlobalShortcut",
-                 base::BindRepeating(&electron::api::GlobalShortcut::Create));
+  dict.SetMethod<&electron::api::GlobalShortcut::Create>(
+      "createGlobalShortcut");
 }
 
 }  // namespace

@@ -22,11 +22,11 @@
 #include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/thread_pool.h"
+#include "base/win/scoped_hstring.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/win/notification_presenter_win.h"
 #include "shell/browser/notifications/win/windows_toast_activator.h"
-#include "shell/browser/win/scoped_hstring.h"
 #include "shell/common/application_info.h"
 #include "third_party/libxml/chromium/xml_writer.h"
 #include "ui/base/l10n/l10n_util_win.h"
@@ -178,10 +178,8 @@ bool WindowsToastNotification::Initialize() {
   if (FAILED(hr))
     Windows::Foundation::Initialize(RO_INIT_MULTITHREADED);
 
-  ScopedHString toast_manager_str(
+  auto toast_manager_str = base::win::ScopedHString::Create(
       RuntimeClass_Windows_UI_Notifications_ToastNotificationManager);
-  if (!toast_manager_str.success())
-    return false;
 
   if (!toast_manager_) {
     toast_manager_ = new ComPtr<
@@ -189,7 +187,7 @@ bool WindowsToastNotification::Initialize() {
   }
 
   if (FAILED(Windows::Foundation::GetActivationFactory(
-          toast_manager_str, toast_manager_->ReleaseAndGetAddressOf())))
+          toast_manager_str.get(), toast_manager_->ReleaseAndGetAddressOf())))
     return false;
 
   if (!toast_notifier_) {
@@ -204,14 +202,14 @@ bool WindowsToastNotification::Initialize() {
         (*toast_manager_)
             ->CreateToastNotifier(toast_notifier_->ReleaseAndGetAddressOf()));
   } else {
-    ScopedHString app_id;
-    if (!GetAppUserModelID(&app_id))
+    base::win::ScopedHString app_id = GetAppUserModelID();
+    if (!app_id.is_valid())
       return false;
 
     return SUCCEEDED(
         (*toast_manager_)
             ->CreateToastNotifierWithId(
-                app_id, toast_notifier_->ReleaseAndGetAddressOf()));
+                app_id.get(), toast_notifier_->ReleaseAndGetAddressOf()));
   }
 }
 
@@ -363,17 +361,12 @@ bool WindowsToastNotification::CreateToastNotification(
     scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner,
     ComPtr<ABI::Windows::UI::Notifications::IToastNotification>*
         toast_notification) {
-  ScopedHString toast_str(
+  auto toast_str = base::win::ScopedHString::Create(
       RuntimeClass_Windows_UI_Notifications_ToastNotification);
-  if (!toast_str.success()) {
-    PostNotificationFailedToUIThread(
-        weak_notification, "Creating ScopedHString failed", ui_task_runner);
-    return false;
-  }
 
   ComPtr<winui::Notifications::IToastNotificationFactory> toast_factory;
-  HRESULT hr =
-      Windows::Foundation::GetActivationFactory(toast_str, &toast_factory);
+  HRESULT hr = Windows::Foundation::GetActivationFactory(toast_str.get(),
+                                                         &toast_factory);
   if (FAILED(hr)) {
     std::string err =
         base::StrCat({"WinAPI: GetActivationFactory failed, ERROR ",
@@ -408,11 +401,11 @@ bool WindowsToastNotification::CreateToastNotification(
   // Use provided group_id if non-empty, otherwise fall back to default
   std::wstring group_str =
       options.group_id.empty() ? kGroup : base::UTF8ToWide(options.group_id);
-  ScopedHString group(group_str);
+  auto group = base::win::ScopedHString::Create(group_str);
   DebugLog(
       base::StrCat({"Setting group: ", base::WideToUTF8(group_str),
                     options.group_id.empty() ? " (default)" : " (custom)"}));
-  hr = toast2->put_Group(group);
+  hr = toast2->put_Group(group.get());
   if (FAILED(hr)) {
     std::string err = base::StrCat(
         {"WinAPI: Setting group failed, ERROR ", FailureResultToString(hr)});
@@ -422,10 +415,10 @@ bool WindowsToastNotification::CreateToastNotification(
   }
 
   std::wstring tag_str = GetTag(notification_id);
-  ScopedHString tag(tag_str);
+  auto tag = base::win::ScopedHString::Create(tag_str);
   DebugLog(base::StrCat({"Setting tag: ", base::WideToUTF8(tag_str),
                          " (from id: ", notification_id, ")"}));
-  hr = toast2->put_Tag(tag);
+  hr = toast2->put_Tag(tag.get());
   if (FAILED(hr)) {
     std::string err = base::StrCat(
         {"WinAPI: Setting tag failed, ERROR ", FailureResultToString(hr)});
@@ -552,19 +545,20 @@ void WindowsToastNotification::Remove() {
   if (FAILED(toast_manager2->get_History(&notification_history)))
     return;
 
-  ScopedHString app_id;
-  if (!GetAppUserModelID(&app_id))
+  base::win::ScopedHString app_id = GetAppUserModelID();
+  if (!app_id.is_valid())
     return;
 
   // Use stored group_id if set, otherwise fall back to default
   std::wstring group_str =
       group_id_.empty() ? kGroup : base::UTF8ToWide(group_id_);
-  ScopedHString group(group_str);
+  auto group = base::win::ScopedHString::Create(group_str);
   std::wstring tag_str = GetTag(notification_id());
-  ScopedHString tag(tag_str);
+  auto tag = base::win::ScopedHString::Create(tag_str);
   DebugLog(base::StrCat({"Removing with group: ", base::WideToUTF8(group_str),
                          ", tag: ", base::WideToUTF8(tag_str)}));
-  notification_history->RemoveGroupedTagWithId(tag, group, app_id);
+  notification_history->RemoveGroupedTagWithId(tag.get(), group.get(),
+                                               app_id.get());
 }
 
 void WindowsToastNotification::Dismiss() {
@@ -831,25 +825,23 @@ std::vector<ActivationUserInput> ExtractUserInputs(IInspectable* args) {
     ComPtr<IKeyValuePair<HSTRING, IInspectable*>> kvp;
     if (FAILED(iter->get_Current(&kvp)) || !kvp)
       break;
-    ScopedHString key_hs;
+    // A Receiver only hands its value to the ScopedHString when the temporary
+    // is destroyed at the end of the statement, so it must not share a full
+    // expression with is_valid().
+    base::win::ScopedHString key_hs(nullptr);
+    HRESULT key_hr =
+        kvp->get_Key(base::win::ScopedHString::Receiver(key_hs).get());
     ComPtr<IInspectable> value;
-    if (SUCCEEDED(kvp->get_Key(key_hs.Receive())) &&
-        SUCCEEDED(kvp->get_Value(&value)) && key_hs.success() && value) {
-      ComPtr<IPropertyValue> prop;
-      ScopedHString value_hs;
-      if (SUCCEEDED(value.As(&prop)) && prop &&
-          SUCCEEDED(prop->GetString(value_hs.Receive())) &&
-          value_hs.success()) {
-        UINT32 key_len = 0;
-        UINT32 val_len = 0;
-        const wchar_t* key_raw = WindowsGetStringRawBuffer(key_hs, &key_len);
-        const wchar_t* val_raw = WindowsGetStringRawBuffer(value_hs, &val_len);
-        ActivationUserInput ui;
-        if (key_raw && key_len)
-          ui.key.assign(key_raw, key_len);
-        if (val_raw && val_len)
-          ui.value.assign(val_raw, val_len);
-        inputs.push_back(std::move(ui));
+    ComPtr<IPropertyValue> prop;
+    if (SUCCEEDED(key_hr) && key_hs.is_valid() &&
+        SUCCEEDED(kvp->get_Value(&value)) && value &&
+        SUCCEEDED(value.As(&prop)) && prop) {
+      base::win::ScopedHString value_hs(nullptr);
+      HRESULT value_hr =
+          prop->GetString(base::win::ScopedHString::Receiver(value_hs).get());
+      if (SUCCEEDED(value_hr) && value_hs.is_valid()) {
+        inputs.push_back({.key = std::wstring(key_hs.Get()),
+                          .value = std::wstring(value_hs.Get())});
       }
     }
     if (FAILED(iter->MoveNext(&has_current)))
@@ -868,14 +860,11 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
   if (args) {
     ComPtr<winui::Notifications::IToastActivatedEventArgs> activated_args;
     if (SUCCEEDED(args->QueryInterface(IID_PPV_ARGS(&activated_args)))) {
-      ScopedHString args_hs;
-      if (SUCCEEDED(activated_args->get_Arguments(args_hs.Receive())) &&
-          args_hs.success()) {
-        UINT32 len = 0;
-        const wchar_t* raw = WindowsGetStringRawBuffer(args_hs, &len);
-        if (raw && len)
-          arguments_w.assign(raw, len);
-      }
+      base::win::ScopedHString args_hs(nullptr);
+      HRESULT args_hr = activated_args->get_Arguments(
+          base::win::ScopedHString::Receiver(args_hs).get());
+      if (SUCCEEDED(args_hr) && args_hs.is_valid())
+        arguments_w = std::wstring(args_hs.Get());
     }
   }
 

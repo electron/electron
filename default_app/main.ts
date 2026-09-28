@@ -74,7 +74,7 @@ if (option.modules.length > 0) {
   (Module as any)._preloadModules(option.modules);
 }
 
-// See lib/browser/desktop-name.ts
+// See DefaultDesktopName() in shell/browser/app_package.cc
 function defaultDesktopName(name: string | undefined): string {
   const slug =
     name &&

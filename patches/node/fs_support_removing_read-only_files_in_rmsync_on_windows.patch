@@ -1,0 +1,139 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "Sparsh :)" <76697238+SparshGarg999@users.noreply.github.com>
+Date: Tue, 8 Sep 2026 10:23:09 +0530
+Subject: fs: support removing read-only files in rmSync on Windows
+
+On Windows, libc++ std::filesystem::remove and remove_all do not
+automatically clear the read-only attribute before deleting a file
+(unlike MSVC STL). This causes fs.rmSync to fail with EPERM when
+trying to remove read-only files in environments where Node.js is
+built using clang libc++ (such as Electron).
+
+This commit introduces a Windows-specific helper
+ClearReadOnlyAttributeW which clears the FILE_ATTRIBUTE_READONLY
+attribute recursively (or for a single file) when
+operation_not_permitted is returned, allowing rmSync to
+successfully delete read-only files/folders.
+
+Fixes: https://github.com/nodejs/node/issues/64374
+
+Signed-off-by: SparshGarg999 <sparshgarg999@gmail.com>
+PR-URL: https://github.com/nodejs/node/pull/64453
+Fixes: https://github.com/nodejs/node/issues/64374
+Reviewed-By: Stefan Stojanovic <stefan.stojanovic@janeasystems.com>
+(cherry picked from commit 2987a5965f1f5c6d9f0023406389c57002e63629)
+
+diff --git a/src/node_file.cc b/src/node_file.cc
+index d995103234649e9ac2c4dd9fbcc7869a483cc855..e6b22eebaf07589ab0ad17a49067e65078fe9376 100644
+--- a/src/node_file.cc
++++ b/src/node_file.cc
+@@ -1750,6 +1750,41 @@ static void RMDir(const FunctionCallbackInfo<Value>& args) {
+   }
+ }
+ 
++#ifdef _WIN32
++static void ClearReadOnlyAttributeWHelper(const wchar_t* path) {
++  DWORD attrs = GetFileAttributesW(path);
++  if (attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_READONLY)) {
++    SetFileAttributesW(path, attrs & ~FILE_ATTRIBUTE_READONLY);
++  }
++}
++
++static void ClearReadOnlyAttributeW(const std::filesystem::path& path,
++                                    bool recursive) {
++  std::error_code ec;
++  auto file_status = std::filesystem::symlink_status(path, ec);
++  if (ec) return;
++
++  if (recursive &&
++      file_status.type() == std::filesystem::file_type::directory) {
++    for (const auto& entry : std::filesystem::recursive_directory_iterator(
++             path,
++             std::filesystem::directory_options::skip_permission_denied,
++             ec)) {
++      std::error_code entry_ec;
++      auto entry_status = entry.symlink_status(entry_ec);
++      if (entry_ec) continue;
++      if (entry_status.type() != std::filesystem::file_type::symlink) {
++        ClearReadOnlyAttributeWHelper(entry.path().c_str());
++      }
++    }
++  }
++
++  if (file_status.type() != std::filesystem::file_type::symlink) {
++    ClearReadOnlyAttributeWHelper(path.c_str());
++  }
++}
++#endif
++
+ static void RmSync(const FunctionCallbackInfo<Value>& args) {
+   Environment* env = Environment::GetCurrent(args);
+   Isolate* isolate = env->isolate();
+@@ -1797,6 +1832,9 @@ static void RmSync(const FunctionCallbackInfo<Value>& args) {
+   };
+ 
+   int i = 1;
++#ifdef _WIN32
++  bool cleared_readonly = false;
++#endif
+ 
+   while (maxRetries >= 0) {
+     if (recursive) {
+@@ -1805,6 +1843,22 @@ static void RmSync(const FunctionCallbackInfo<Value>& args) {
+       std::filesystem::remove(file_path, error);
+     }
+ 
++#ifdef _WIN32
++    // On Windows, libc++ does not clear the read-only attribute before
++    // removing a file (unlike MSVC STL which does). Attempt to clear it
++    // manually when we get EPERM (operation_not_permitted) so that read-only
++    // files can be deleted, matching the behavior of official Node.js builds.
++    if (error == std::errc::operation_not_permitted && !cleared_readonly) {
++      cleared_readonly = true;
++      ClearReadOnlyAttributeW(file_path, recursive);
++      if (recursive) {
++        std::filesystem::remove_all(file_path, error);
++      } else {
++        std::filesystem::remove(file_path, error);
++      }
++    }
++#endif  // _WIN32
++
+     if (!error || error == std::errc::no_such_file_or_directory) {
+       return;
+     } else if (!can_omit_error(error)) {
+diff --git a/test/parallel/test-fs-rm.js b/test/parallel/test-fs-rm.js
+index b15118fc9aa0d63688cdac07e8004f452d86d08e..6a2607ad57ece1e9a0b82dded7bf46bb722e18d9 100644
+--- a/test/parallel/test-fs-rm.js
++++ b/test/parallel/test-fs-rm.js
+@@ -632,3 +632,30 @@ if (isGitPresent) {
+     }
+   }
+ }
++
++{
++  // Test that rmSync can delete read-only files (and directories containing read-only files recursively)
++  const dirname = nextDirPath();
++  const filePath = path.join(dirname, 'readonly-file.txt');
++  const recursiveDir = path.join(dirname, 'subdir');
++  const recursiveFilePath = path.join(recursiveDir, 'readonly-nested.txt');
++
++  fs.mkdirSync(recursiveDir, { recursive: true });
++  fs.writeFileSync(filePath, 'hello');
++  fs.writeFileSync(recursiveFilePath, 'world');
++
++  // Make files read-only
++  fs.chmodSync(filePath, 0o444);
++  fs.chmodSync(recursiveFilePath, 0o444);
++
++  // rmSync without recursive option on a file
++  fs.rmSync(filePath);
++  assert.strictEqual(fs.existsSync(filePath), false);
++
++  // rmSync with recursive option on a directory containing a read-only file
++  fs.rmSync(recursiveDir, { recursive: true });
++  assert.strictEqual(fs.existsSync(recursiveDir), false);
++
++  // Clean up parent directory
++  fs.rmSync(dirname, { recursive: true, force: true });
++}

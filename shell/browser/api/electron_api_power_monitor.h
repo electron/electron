@@ -13,9 +13,21 @@
 #include "shell/browser/lib/power_observer_linux.h"
 #endif
 
+#if BUILDFLAG(IS_WIN)
+#include <memory>
+
+#include "base/win/windows_types.h"
+#endif
+
 namespace gin {
 class ObjectTemplateBuilder;
 }  // namespace gin
+
+#if BUILDFLAG(IS_WIN)
+namespace ui {
+class SessionChangeObserver;
+}  // namespace ui
+#endif
 
 namespace electron::api {
 
@@ -69,28 +81,9 @@ class PowerMonitor final : public gin::Wrappable<PowerMonitor>,
   void OnSpeedLimitChange(int speed_limit) override;
 
 #if BUILDFLAG(IS_WIN)
-  // Static callback invoked when a message comes in to our messaging window.
-  static LRESULT CALLBACK WndProcStatic(HWND hwnd,
-                                        UINT message,
-                                        WPARAM wparam,
-                                        LPARAM lparam);
+  void OnSessionChange(WPARAM wparam, const bool* is_current_session);
 
-  LRESULT CALLBACK WndProc(HWND hwnd,
-                           UINT message,
-                           WPARAM wparam,
-                           LPARAM lparam);
-
-  // The window class of |window_|.
-  ATOM atom_;
-
-  // The handle of the module that contains the window procedure of |window_|.
-  HMODULE instance_;
-
-  // The window used for processing events.
-  HWND window_;
-
-  // Handle returned by RegisterSuspendResumeNotification.
-  HPOWERNOTIFY power_notify_handle_ = nullptr;
+  std::unique_ptr<ui::SessionChangeObserver> session_change_observer_;
 #endif
 
 #if BUILDFLAG(IS_LINUX)

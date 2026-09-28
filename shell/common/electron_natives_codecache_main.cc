@@ -48,10 +48,8 @@ struct Bundle {
 // the node service's utility process.
 std::vector<Bundle> BundlesForFlavor(std::string_view flavor,
                                      bool from_node_snapshot) {
-  const Bundle kSandbox{js2c::kSandboxBundleId, js2c::kSandboxBundleParams};
+  const Bundle kWebView{js2c::kWebViewBundleId, js2c::kWebViewBundleParams};
   const Bundle kIsolated{js2c::kIsolatedBundleId, js2c::kIsolatedBundleParams};
-  const Bundle kPreloadRealm{js2c::kPreloadRealmBundleId,
-                             js2c::kPreloadRealmBundleParams};
   const Bundle kNodeInit{js2c::kNodeInitId, js2c::kInitBundleParams};
   const Bundle kBrowserInit{js2c::kBrowserInitId, js2c::kInitBundleParams};
   const Bundle kRendererInit{js2c::kRendererInitId, js2c::kInitBundleParams};
@@ -59,7 +57,7 @@ std::vector<Bundle> BundlesForFlavor(std::string_view flavor,
   const Bundle kWorkerInit{js2c::kWorkerInitId, js2c::kInitBundleParams};
 
   if (flavor == "sandbox")
-    return {kSandbox, kIsolated, kPreloadRealm};
+    return {kWebView, kIsolated};
   if (flavor == "renderer")
     return {kRendererInit, kNodeInit, kIsolated};
   if (flavor == "browser" && from_node_snapshot)

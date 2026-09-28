@@ -83,13 +83,13 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
 
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("isOnline", &IsOnline);
-  dict.SetMethod("isValidHeaderName", &IsValidHeaderName);
-  dict.SetMethod("isValidHeaderValue", &IsValidHeaderValue);
-  dict.SetMethod("createURLLoader", &SimpleURLLoaderWrapper::Create);
-  dict.SetMethod("createWebSocket", &WebSocketWrapper::Create);
-  dict.SetMethod("fileURLToFilePath", &FileURLToFilePath);
-  dict.SetMethod("resolveHost", &ResolveHost);
+  dict.SetMethod<&IsOnline>("isOnline");
+  dict.SetMethod<&IsValidHeaderName>("isValidHeaderName");
+  dict.SetMethod<&IsValidHeaderValue>("isValidHeaderValue");
+  dict.SetMethod<&SimpleURLLoaderWrapper::Create>("createURLLoader");
+  dict.SetMethod<&WebSocketWrapper::Create>("createWebSocket");
+  dict.SetMethod<&FileURLToFilePath>("fileURLToFilePath");
+  dict.SetMethod<&ResolveHost>("resolveHost");
 }
 
 }  // namespace

@@ -71,12 +71,10 @@ Notifications can be displayed directly from the renderer process with the
 
 ```js title='Renderer Process'
 const NOTIFICATION_TITLE = 'Title'
-const NOTIFICATION_BODY =
-  'Notification from the Renderer process. Click to log to console.'
+const NOTIFICATION_BODY = 'Notification from the Renderer process. Click to log to console.'
 const CLICK_MESSAGE = 'Notification clicked'
 
-new Notification(NOTIFICATION_TITLE, { body: NOTIFICATION_BODY }).onclick =
-  () => console.log(CLICK_MESSAGE)
+new Notification(NOTIFICATION_TITLE, { body: NOTIFICATION_BODY }).onclick = () => console.log(CLICK_MESSAGE)
 ```
 
 Here's a full example that you can open with Electron Fiddle:

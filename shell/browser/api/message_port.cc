@@ -12,6 +12,7 @@
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
 #include "gin/object_template_builder.h"
+#include "gin/per_context_data.h"
 #include "gin/persistent.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -44,8 +45,19 @@ MessagePort::~MessagePort() {
 
 // static
 MessagePort* MessagePort::Create(v8::Isolate* isolate) {
+  // The template is otherwise only made when the constructor is first used.
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  gin::PerContextData* data = gin::PerContextData::From(context);
+  if (data && data->GetObjectTemplate(&kWrapperInfo).IsEmpty())
+    GetConstructor(isolate, context, &kWrapperInfo);
   return cppgc::MakeGarbageCollected<MessagePort>(
       isolate->GetCppHeap()->GetAllocationHandle());
+}
+
+// static
+v8::Local<v8::Value> MessagePort::New(gin_helper::ErrorThrower thrower) {
+  thrower.ThrowTypeError("Illegal constructor");
+  return v8::Undefined(thrower.isolate());
 }
 
 bool MessagePort::IsEntangled() const {
@@ -284,12 +296,14 @@ bool MessagePort::Accept(mojo::Message* mojo_message) {
   return true;
 }
 
-gin::ObjectTemplateBuilder MessagePort::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return gin::ObjectTemplateBuilder(isolate, GetClassName())
+// static
+void MessagePort::FillObjectTemplate(v8::Isolate* isolate,
+                                     v8::Local<v8::ObjectTemplate> templ) {
+  gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
       .SetMethod("postMessage", &MessagePort::PostMessage)
       .SetMethod("start", &MessagePort::Start)
-      .SetMethod("close", &MessagePort::Close);
+      .SetMethod("close", &MessagePort::Close)
+      .Build();
 }
 
 const gin::WrapperInfo* MessagePort::wrapper_info() const {
@@ -311,7 +325,15 @@ namespace {
 
 using electron::MessagePort;
 
-v8::Local<v8::Value> CreatePair(v8::Isolate* isolate) {
+// new MessageChannelMain(): a pair of entangled ports as |port1| and |port2|.
+void MessageChannelMainNew(const v8::FunctionCallbackInfo<v8::Value>& info) {
+  v8::Isolate* isolate = info.GetIsolate();
+  gin_helper::ErrorThrower thrower(isolate);
+  if (!info.IsConstructCall()) {
+    thrower.ThrowTypeError(
+        "Class constructor MessageChannelMain cannot be invoked without 'new'");
+    return;
+  }
   auto* port1 = MessagePort::Create(isolate);
   auto* port2 = MessagePort::Create(isolate);
   blink::MessagePortDescriptorPair pipe;
@@ -321,12 +343,12 @@ v8::Local<v8::Value> CreatePair(v8::Isolate* isolate) {
   v8::Local<v8::Object> wrapper2;
   if (!port1->GetWrapper(isolate).ToLocal(&wrapper1) ||
       !port2->GetWrapper(isolate).ToLocal(&wrapper2)) {
-    return {};
+    thrower.ThrowError("Failed to create MessageChannelMain");
+    return;
   }
-  return gin::DataObjectBuilder(isolate)
-      .Set("port1", wrapper1)
-      .Set("port2", wrapper2)
-      .Build();
+  gin_helper::Dictionary channel(isolate, info.This());
+  channel.Set("port1", wrapper1);
+  channel.Set("port2", wrapper2);
 }
 
 void Initialize(v8::Local<v8::Object> exports,
@@ -334,8 +356,12 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
+  v8::Local<v8::FunctionTemplate> constructor =
+      v8::FunctionTemplate::New(isolate, &MessageChannelMainNew);
+  constructor->SetClassName(gin::StringToV8(isolate, "MessageChannelMain"));
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("createPair", &CreatePair);
+  dict.Set("MessageChannelMain",
+           constructor->GetFunction(context).ToLocalChecked());
 }
 
 }  // namespace

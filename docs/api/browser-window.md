@@ -515,6 +515,9 @@ operations will be done via it.
 See the [`webContents` documentation](web-contents.md) for its methods and
 events.
 
+> [!NOTE]
+> Reading this property throws `Object has been destroyed` once the window has been destroyed; see [`win.isDestroyed()`](base-window.md#winisdestroyed).
+
 #### `win.id` _Readonly_
 
 A `Integer` property representing the unique ID of the window. Each ID is unique among all `BrowserWindow` instances of the entire Electron application.
@@ -1314,10 +1317,12 @@ const { BrowserWindow } = require('electron')
 const win = new BrowserWindow()
 
 win.loadURL('http://localhost:8000/post', {
-  postData: [{
-    type: 'rawData',
-    bytes: Buffer.from('hello=world')
-  }],
+  postData: [
+    {
+      type: 'rawData',
+      bytes: Buffer.from('hello=world')
+    }
+  ],
   extraHeaders: 'Content-Type: application/x-www-form-urlencoded'
 })
 ```
@@ -1619,7 +1624,9 @@ Makes the window ignore all mouse events.
 
 All mouse events happened in this window will be passed to the window below
 this window, but if this window has focus, it will still receive keyboard
-events.
+events. On Linux this is supported on both X11 and Wayland. On X11 the X server
+has applied the window's new input shape when the call returns; on Wayland the
+new input region is applied with the window's next frame.
 
 #### `win.setContentProtection(enable)` _macOS_ _Windows_
 
@@ -1630,6 +1637,21 @@ Prevents the window contents from being captured by other apps.
 On Windows, it calls [`SetWindowDisplayAffinity`](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity) with `WDA_EXCLUDEFROMCAPTURE`.
 For Windows 10 version 2004 and up the window will be removed from capture entirely,
 older Windows versions behave as if `WDA_MONITOR` is applied capturing a black window.
+The change takes effect with the next desktop composition, not when the call returns, so a
+capture started immediately afterwards can still contain the window.
+
+Protection also applies in a Windows remote session. A Remote Desktop client still
+shows the window to the remote user, but remote access software that works by
+capturing the desktop cannot. To leave windows unprotected in remote sessions
+instead, disable the `AllowWindowCaptureExclusionInRemoteSessions` Chromium feature
+at the start of your main script. `win.isContentProtected()` still returns `true`
+in that case.
+
+```js
+const { app } = require('electron')
+
+app.commandLine.appendSwitch('disable-features', 'AllowWindowCaptureExclusionInRemoteSessions')
+```
 
 On macOS, it sets the `NSWindow`'s
 [`sharingType`](https://developer.apple.com/documentation/appkit/nswindow/sharingtype-swift.property?language=objc)

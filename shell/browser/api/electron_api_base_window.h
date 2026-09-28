@@ -50,6 +50,10 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
+  // The constructor's template, created on first use; BrowserWindow inherits
+  // from it.
+  static v8::Local<v8::FunctionTemplate> GetConstructorTemplate(
+      v8::Isolate* isolate);
 
   // Clears window state from the Local State JSON file in
   // app.getPath('userData') via PrefService.
@@ -76,6 +80,9 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   // Creating independent BaseWindow instance.
   BaseWindow(gin::Arguments* args, const gin_helper::Dictionary& options);
   ~BaseWindow() override;
+
+  // gin_helper::WrappableBase:
+  void OnWrapped(v8::Isolate* isolate) override;
 
   // TrackableObject:
   void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper) override;
@@ -144,7 +151,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsMinimized() const;
   void SetFullScreen(bool fullscreen);
   bool IsFullscreen() const;
-  void SetBounds(const gfx::Rect& bounds, gin::Arguments* args);
+  void SetBounds(v8::Local<v8::Object> bounds, gin::Arguments* args);
   gfx::Rect GetBounds() const;
   void SetSize(int width, int height, gin::Arguments* args);
   std::array<int, 2U> GetSize() const;
@@ -254,7 +261,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetAspectRatio(double aspect_ratio, gin::Arguments* args);
   void PreviewFile(const std::string& path, gin::Arguments* args);
   void CloseFilePreview();
-  void SetGTKDarkThemeEnabled(bool use_dark_theme);
 
   // Public getters of NativeWindow.
   v8::Local<v8::Value> GetContentView() const;

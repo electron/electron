@@ -72,7 +72,6 @@ export const asyncMethods = new Set([
   'send',
   'sendToFrame',
   'sendInputEvent',
-  'setLayoutZoomLevelLimits',
   'setVisualZoomLevelLimits',
   'print',
   'printToPDF'

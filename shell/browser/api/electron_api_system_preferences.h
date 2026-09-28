@@ -8,10 +8,10 @@
 #include <string>
 
 #include "base/values.h"
-#include "gin/per_isolate_data.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/browser/microtasks_runner.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "base/callback_list.h"
@@ -40,8 +40,7 @@ enum class NotificationCenterKind {
 
 class SystemPreferences final
     : public gin::Wrappable<SystemPreferences>,
-      public gin_helper::EventEmitterMixin<SystemPreferences>,
-      public gin::PerIsolateData::DisposeObserver
+      public gin_helper::EventEmitterMixin<SystemPreferences>
 #if BUILDFLAG(IS_WIN)
     ,
       public BrowserObserver
@@ -62,10 +61,7 @@ class SystemPreferences final
   const char* GetHumanReadableName() const override;
   void Trace(cppgc::Visitor* visitor) const override;
 
-  // gin::PerIsolateData::DisposeObserver
-  void OnBeforeDispose(v8::Isolate* isolate) override {}
-  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override;
-  void OnDisposed() override {}
+  void OnBeforeMicrotasksRunnerDispose();
 
   std::string GetAccentColor();
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)
@@ -156,36 +152,22 @@ class SystemPreferences final
   void Dispose();
 
 #if BUILDFLAG(IS_WIN)
-  // Static callback invoked when a message comes in to our messaging window.
-  static LRESULT CALLBACK WndProcStatic(HWND hwnd,
-                                        UINT message,
-                                        WPARAM wparam,
-                                        LPARAM lparam);
-
-  LRESULT CALLBACK WndProc(HWND hwnd,
-                           UINT message,
-                           WPARAM wparam,
-                           LPARAM lparam);
-
-  // The window class of |window_|.
-  ATOM atom_ = 0;
-
-  // The handle of the module that contains the window procedure of |window_|.
-  HMODULE instance_ = nullptr;
-
-  // The window used for processing events.
-  HWND window_ = nullptr;
+  void OnSystemAccentColorChanged();
+  void OnAccentColorChanged();
 
   std::string current_color_;
 
   // Color/high contrast mode change observer.
   base::CallbackListSubscription hwnd_subscription_;
+  base::CallbackListSubscription accent_color_subscription_;
 #endif
 #if BUILDFLAG(IS_LINUX)
   void OnNativeThemeUpdatedOnUI();
 
   raw_ptr<ui::NativeTheme> ui_theme_;
   std::string current_accent_color_;
+#endif
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
   gin::WeakCellFactory<SystemPreferences> weak_factory_{this};
 #endif
 };

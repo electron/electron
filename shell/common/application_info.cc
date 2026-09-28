@@ -7,6 +7,7 @@
 #include "base/i18n/rtl.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_util.h"
+#include "base/synchronization/lock.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_version.h"
 #include "components/embedder_support/user_agent_utils.h"
@@ -33,8 +34,9 @@ std::string GetPossiblyOverriddenApplicationName() {
   return GetApplicationName();
 }
 
-std::string GetApplicationUserAgent() {
-  // Construct user agent string.
+namespace {
+
+std::string BuildApplicationUserAgent() {
   Browser* browser = Browser::Get();
   std::string name, user_agent;
   if (!base::RemoveChars(browser->GetName(), " ", &name))
@@ -48,6 +50,51 @@ std::string GetApplicationUserAgent() {
         name, browser->GetVersion(), CHROME_VERSION_STRING);
   }
   return embedder_support::BuildUserAgentFromProduct(user_agent);
+}
+
+base::Lock& UserAgentLock() {
+  static base::NoDestructor<base::Lock> lock;
+  return *lock;
+}
+
+std::string& CachedUserAgent() {
+  static base::NoDestructor<std::string> cached;
+  return *cached;
+}
+
+// Bumped by every invalidation, so a value built from inputs that have since
+// changed is not stored.
+uint64_t& UserAgentGeneration() {
+  static uint64_t generation = 0;
+  return generation;
+}
+
+}  // namespace
+
+std::string GetApplicationUserAgent() {
+  // Built once; invalidated when the name or version it is built from changes.
+  uint64_t generation;
+  {
+    base::AutoLock guard{UserAgentLock()};
+    if (!CachedUserAgent().empty())
+      return CachedUserAgent();
+    generation = UserAgentGeneration();
+  }
+
+  std::string built = BuildApplicationUserAgent();
+
+  base::AutoLock guard{UserAgentLock()};
+  if (UserAgentGeneration() != generation)
+    return built;  // Already stale: hand it back but do not keep it.
+  if (CachedUserAgent().empty())
+    CachedUserAgent() = std::move(built);
+  return CachedUserAgent();
+}
+
+void InvalidateApplicationUserAgent() {
+  base::AutoLock guard{UserAgentLock()};
+  CachedUserAgent().clear();
+  ++UserAgentGeneration();
 }
 
 bool IsAppRTL() {

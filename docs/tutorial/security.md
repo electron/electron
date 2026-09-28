@@ -291,22 +291,20 @@ const { session } = require('electron')
 
 const { URL } = require('node:url')
 
-session
-  .defaultSession
-  .setPermissionRequestHandler((webContents, permission, callback) => {
-    const parsedUrl = new URL(webContents.getURL())
+session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+  const parsedUrl = new URL(webContents.getURL())
 
-    if (permission === 'notifications') {
-      // Approves the permissions request
-      callback(true)
-    }
+  if (permission === 'notifications') {
+    // Approves the permissions request
+    callback(true)
+  }
 
-    // Verify URL
-    if (parsedUrl.protocol !== 'https:' || parsedUrl.host !== 'example.com') {
-      // Denies the permissions request
-      return callback(false)
-    }
-  })
+  // Verify URL
+  if (parsedUrl.protocol !== 'https:' || parsedUrl.host !== 'example.com') {
+    // Denies the permissions request
+    return callback(false)
+  }
+})
 ```
 
 Note: `session.defaultSession` is only available after `app.whenReady` is called.
@@ -395,7 +393,7 @@ session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
   callback({
     responseHeaders: {
       ...details.responseHeaders,
-      'Content-Security-Policy': ['default-src \'none\'']
+      'Content-Security-Policy': ["default-src 'none'"]
     }
   })
 })
@@ -770,7 +768,7 @@ ipcMain.handle('get-secrets', (e) => {
   return getSecrets()
 })
 
-function validateSender (frame) {
+function validateSender(frame) {
   // Validate the frame's origin against an allowlist. Use the origin, not the
   // URL: about:blank, blob: and sandboxed documents have URLs that do not
   // identify who controls them, and the frame may be null if it has gone away.

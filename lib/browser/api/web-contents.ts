@@ -4,36 +4,21 @@ import {
   parseContentTypeFormat
 } from '@electron/internal/browser/guest-window-manager';
 import { IpcMainImpl } from '@electron/internal/browser/ipc-main-impl';
-import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { parseFeatures } from '@electron/internal/browser/parse-features-string';
 import * as deprecate from '@electron/internal/common/deprecate';
-import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
-import { app, session, webFrameMain, dialog } from 'electron/main';
+import { app, webFrameMain, dialog } from 'electron/main';
 import type { BrowserWindowConstructorOptions, MessageBoxOptions, NavigationEntry } from 'electron/main';
 
 import * as path from 'path';
 import * as url from 'url';
-
-// session is not used here, the purpose is to make sure session is initialized
-// before the webContents module.
-session;
+// session is not used here, the purpose of the import is to make sure session
+// is initialized before the webContents module.
+import '@electron/internal/browser/api/session';
 
 // JavaScript implementations of WebContents.
 const binding = process._linkedBinding('electron_browser_web_contents');
 const { WebContents } = binding as { WebContents: { prototype: Electron.WebContents } };
-
-WebContents.prototype.postMessage = function (...args) {
-  return this.mainFrame.postMessage(...args);
-};
-
-WebContents.prototype.send = function (channel, ...args) {
-  return this.mainFrame.send(channel, ...args);
-};
-
-WebContents.prototype._sendInternal = function (channel, ...args) {
-  return this.mainFrame._sendInternal(channel, ...args);
-};
 
 function getWebFrame(contents: Electron.WebContents, frame: number | [number, number]) {
   let webFrame: Electron.WebFrameMain | undefined;
@@ -56,20 +41,6 @@ WebContents.prototype.sendToFrame = function (frameId, channel, ...args) {
   return true;
 };
 
-// Following methods are mapped to webFrame.
-const webFrameMethods = ['insertCSS', 'insertText', 'removeInsertedCSS', 'setVisualZoomLevelLimits'] as (
-  | 'insertCSS'
-  | 'insertText'
-  | 'removeInsertedCSS'
-  | 'setVisualZoomLevelLimits'
-)[];
-
-for (const method of webFrameMethods) {
-  WebContents.prototype[method] = function (...args: any[]): Promise<any> {
-    return ipcMainUtils.invokeInWebContents(this, IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, method, ...args);
-  };
-}
-
 const waitTillCanExecuteJavaScript = async (webContents: Electron.WebContents) => {
   if (webContents.getURL() && !webContents.isLoadingMainFrame()) return;
 
@@ -84,24 +55,12 @@ const waitTillCanExecuteJavaScript = async (webContents: Electron.WebContents) =
 // WebContents has been loaded.
 WebContents.prototype.executeJavaScript = async function (code, hasUserGesture) {
   await waitTillCanExecuteJavaScript(this);
-  return ipcMainUtils.invokeInWebContents(
-    this,
-    IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD,
-    'executeJavaScript',
-    String(code),
-    !!hasUserGesture
-  );
+  return this._executeJavaScript(0, [{ code: String(code) }], !!hasUserGesture);
 };
 WebContents.prototype.executeJavaScriptInIsolatedWorld = async function (worldId, code, hasUserGesture) {
+  if (!Number.isInteger(worldId)) throw new TypeError('worldId must be an integer');
   await waitTillCanExecuteJavaScript(this);
-  return ipcMainUtils.invokeInWebContents(
-    this,
-    IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD,
-    'executeJavaScriptInIsolatedWorld',
-    worldId,
-    code,
-    !!hasUserGesture
-  );
+  return this._executeJavaScript(worldId, code, !!hasUserGesture);
 };
 
 WebContents.prototype.loadFile = function (filePath, options = {}) {
@@ -245,20 +204,6 @@ const consoleMessageDeprecated = deprecate.warnOnceMessage(
 
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
-  const prefs = this.getLastWebPreferences() || {};
-  if (!prefs.nodeIntegration && prefs.preload != null && prefs.sandbox == null) {
-    deprecate.log(
-      "The default sandbox option for windows without nodeIntegration is changing. Presently, by default, when a window has a preload script, it defaults to being unsandboxed. In Electron 20, this default will be changing, and all windows that have nodeIntegration: false (which is the default) will be sandboxed by default. If your preload script doesn't use Node, no action is needed. If your preload script does use Node, either refactor it to move Node usage to the main process, or specify sandbox: false in your WebPreferences."
-    );
-  }
-  // Read off the ID at construction time, so that it's accessible even after
-  // the underlying C++ WebContents is destroyed.
-  const id = this.id;
-  Object.defineProperty(this, 'id', {
-    value: id,
-    writable: false
-  });
-
   this._windowOpenHandler = null;
 
   const ipc = new IpcMainImpl();
@@ -525,51 +470,10 @@ WebContents.prototype._init = function () {
       if (!this.isDestroyed()) this._setConsoleMessageObserved(true);
     }
   });
-  this.on('removeListener' as any, (eventName: string | symbol) => {
+  (this as NodeJS.EventEmitter).on('removeListener', (eventName: string | symbol) => {
     if (eventName === 'console-message' && !this.isDestroyed() && this.listenerCount('console-message') === 0) {
       this._setConsoleMessageObserved(false);
     }
-  });
-  // Properties
-
-  Object.defineProperty(this, 'audioMuted', {
-    get: () => this.isAudioMuted(),
-    set: (muted) => this.setAudioMuted(muted)
-  });
-
-  Object.defineProperty(this, 'userAgent', {
-    get: () => this.getUserAgent(),
-    set: (agent) => this.setUserAgent(agent)
-  });
-
-  Object.defineProperty(this, 'zoomLevel', {
-    get: () => this.getZoomLevel(),
-    set: (level) => this.setZoomLevel(level)
-  });
-
-  Object.defineProperty(this, 'zoomFactor', {
-    get: () => this.getZoomFactor(),
-    set: (factor) => this.setZoomFactor(factor)
-  });
-
-  Object.defineProperty(this, 'zoomMode', {
-    get: () => this.getZoomMode(),
-    set: (mode) => this.setZoomMode(mode)
-  });
-
-  Object.defineProperty(this, 'frameRate', {
-    get: () => this.getFrameRate(),
-    set: (rate) => this.setFrameRate(rate)
-  });
-
-  Object.defineProperty(this, 'backgroundThrottling', {
-    get: () => this.getBackgroundThrottling(),
-    set: (allowed) => this.setBackgroundThrottling(allowed)
-  });
-
-  Object.defineProperty(this, 'caretBrowsingEnabled', {
-    get: () => this.isCaretBrowsingEnabled(),
-    set: (enabled) => this.setCaretBrowsingEnabled(enabled)
   });
 };
 

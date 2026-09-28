@@ -78,7 +78,7 @@ Node.js's HTTP stack.
 Example:
 
 ```js
-async function example () {
+async function example() {
   const response = await net.fetch('https://my.app')
   if (response.ok) {
     const body = await response.json()

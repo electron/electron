@@ -15,6 +15,10 @@ namespace content {
 class RenderFrame;
 }
 
+namespace gin_helper {
+class Dictionary;
+}
+
 namespace electron {
 class ServiceWorkerData;
 }
@@ -42,15 +46,12 @@ v8::Local<v8::Value> CreatePreloadScript(
 
 double Uptime();
 
-// Converts the startup data the browser delivered (via ElectronFrameStartup
-// for frames, or EmbeddedWorkerStartParams for service workers) into the
-// `{ preloadScripts, process }` shape that
-// lib/sandboxed_renderer/init.ts and lib/preload_realm/init.ts expect — the
-// same shape the legacy BROWSER_SANDBOX_LOAD sync IPC returned. Returns an
-// empty MaybeLocal when |data| is null.
-v8::MaybeLocal<v8::Value> BuildStartupData(
-    v8::Isolate* isolate,
-    const mojom::RendererStartupDataPtr& data);
+// Adds the process information the browser sent (and this binary's own
+// arch/platform/version metadata) to a sandboxed preload's `process` object:
+// arch, platform, version, versions, env and execPath.
+void SetProcessProperties(v8::Isolate* isolate,
+                          gin_helper::Dictionary* process,
+                          const mojom::RendererStartupDataPtr& data);
 
 }  // namespace electron::preload_utils
 

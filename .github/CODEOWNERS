@@ -13,10 +13,9 @@ DEPS                                    @electron/wg-upgrades
 /script/release                         @electron/wg-releases
 
 # Security WG
-/lib/browser/devtools.ts                @electron/wg-security
 /lib/browser/guest-view-manager.ts      @electron/wg-security
 /lib/browser/rpc-server.ts              @electron/wg-security
-/lib/renderer/security-warnings.ts      @electron/wg-security
+/shell/renderer/security_warnings.*      @electron/wg-security
 
 # Infra WG
 /.claude/                               @electron/wg-infra

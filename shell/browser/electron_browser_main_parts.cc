@@ -23,9 +23,9 @@
 #include "chrome/browser/icon_manager.h"
 #include "chrome/browser/ui/color/chrome_color_mixers.h"
 #include "chrome/common/chrome_switches.h"
-#include "content/browser/browser_main_loop.h"  // nogncheck
 #include "content/public/browser/browser_child_process_host_delegate.h"
 #include "content/public/browser/browser_child_process_host_iterator.h"
+#include "content/public/browser/browser_main_runner.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_data.h"
@@ -42,6 +42,7 @@
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/electron_main_delegate.h"
 #include "shell/browser/api/electron_api_utility_process.h"
+#include "shell/browser/app_package.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/electron_browser_client.h"
@@ -54,6 +55,8 @@
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/logging.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
@@ -86,16 +89,17 @@
 #include "ui/base/ime/linux/linux_input_method_context_factory.h"
 #include "ui/gtk/gtk_compat.h"  // nogncheck
 #include "ui/gtk/gtk_util.h"    // nogncheck
-#include "ui/linux/dark_mode_manager_linux.h"
 #include "ui/linux/linux_ui.h"
 #include "ui/linux/linux_ui_factory.h"
 #include "ui/linux/linux_ui_getter.h"
+#include "ui/linux/portal_settings_linux.h"
 #include "ui/ozone/public/ozone_platform.h"
 #endif
 
 #if BUILDFLAG(IS_WIN)
 #include "chrome/browser/win/chrome_select_file_dialog_factory.h"
 #include "components/os_crypt/async/browser/os_crypt_win.h"
+#include "shell/browser/win/install_dir_access.h"
 #include "ui/base/l10n/l10n_util_win.h"
 #include "ui/gfx/system_fonts_win.h"
 #include "ui/strings/grit/app_locale_settings.h"
@@ -261,7 +265,7 @@ bool ElectronBrowserMainParts::SetExitCode(int code) {
   if (!exit_code_)
     return false;
 
-  content::BrowserMainLoop::GetInstance()->SetResultCode(code);
+  content::BrowserMainRunner::SetOverrideResultCode(code);
   *exit_code_ = code;
   return true;
 }
@@ -343,6 +347,24 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   // Add Electron extended APIs.
   electron_bindings_->BindTo(isolate, node_env_->process_object());
 
+  // Find the app and apply its package.json; lib/browser/init.ts loads the
+  // entry script from what is left here.
+  if (std::optional<AppPackage> package = LoadAppPackage()) {
+    v8::Local<v8::Context> env_context = node_env_->context();
+    gin_helper::Dictionary app_package = gin::Dictionary::CreateEmpty(isolate);
+    app_package.Set("path", package->path);
+    app_package.Set("main", package->main);
+    app_package.Set("esm", package->esm);
+    if (!package->v8_flags.empty())
+      app_package.Set("v8Flags", package->v8_flags);
+    env_context->Global()
+        ->SetPrivate(env_context,
+                     v8::Private::ForApi(
+                         isolate, gin::StringToSymbol(isolate, "appPackage")),
+                     gin::ConvertToV8(isolate, app_package))
+        .Check();
+  }
+
   // Create explicit microtasks runner.
   js_env_->CreateMicrotasksRunner();
 
@@ -392,6 +414,11 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   if (!views::LayoutProvider::Get()) {
     layout_provider_ = std::make_unique<views::LayoutProvider>();
   }
+
+#if BUILDFLAG(IS_WIN)
+  // Before the first sandboxed child (the GPU process) is launched.
+  CheckSandboxedProcessesCanReadInstallDir();
+#endif
 
   // Fetch the system locale for Electron.
 #if BUILDFLAG(IS_MAC)
@@ -516,7 +543,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
 
   // source theme changes from system settings, including settings portal:
   // https://flatpak.github.io/xdg-desktop-portal/#gdbus-org.freedesktop.portal.Settings
-  dark_mode_manager_ = std::make_unique<ui::DarkModeManagerLinux>();
+  portal_settings_ = std::make_unique<ui::PortalSettingsLinux>();
 
   ui::LinuxUi::SetInstance(linux_ui);
 
@@ -689,7 +716,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
            content::PROCESS_TYPE_UTILITY);
        !it.Done(); ++it) {
     if (it.GetDelegate()->GetServiceName() == node::mojom::NodeService::Name_) {
-      auto& process = it.GetData().GetProcess();
+      const base::Process& process = it.GetProcess();
       if (!process.IsValid())
         continue;
       auto* utility_process_wrapper =

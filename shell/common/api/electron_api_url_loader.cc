@@ -30,7 +30,6 @@
 #include "net/base/net_errors.h"
 #include "net/http/http_util.h"
 #include "net/url_request/redirect_util.h"
-#include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
@@ -653,14 +652,11 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
     const auto* const protocol_registry =
         ProtocolRegistry::FromBrowserContext(browser_context_);
 
-    if (const auto* const protocol_handler =
-            protocol_registry->FindRegistered(scheme)) {
+    if (auto factory = protocol_registry->CreateRegisteredFactory(scheme)) {
       return browser_context_->InterceptURLLoaderFactory(
           network::SharedURLLoaderFactory::Create(
               std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-                  ElectronURLLoaderFactory::Create(
-                      protocol_handler->first, protocol_handler->second,
-                      browser_context_->GetWeakPtr()))));
+                  std::move(factory))));
     }
   }
 
@@ -747,9 +743,7 @@ SimpleURLLoaderWrapper* SimpleURLLoaderWrapper::Create(gin::Arguments* args) {
       request->destination = iter->second;
   }
 
-  if (base::FeatureList::IsEnabled(
-          network::features::kRestrictFrameDestinationsToNavigate) &&
-      (request->destination == network::mojom::RequestDestination::kDocument ||
+  if ((request->destination == network::mojom::RequestDestination::kDocument ||
        request->destination == network::mojom::RequestDestination::kFrame ||
        request->destination == network::mojom::RequestDestination::kIframe ||
        request->destination ==

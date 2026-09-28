@@ -84,8 +84,7 @@ void CocoaNotification::Show(const NotificationOptions& options) {
 
     int i = 0;
     for (const auto& action : options.actions) {
-      NSString* showText =
-          l10n_util::GetNSString(IDS_MAC_NOTIFICATION_SHOW_BUTTON);
+      NSString* showText = l10n_util::GetNSString(IDS_NOTIFICATION_SHOW_BUTTON);
       NSString* actionText = action.text.empty()
                                  ? showText
                                  : base::SysUTF16ToNSString(action.text);
@@ -292,14 +291,14 @@ void CocoaNotification::NotificationReplied(const std::string& reply) {
 
 void CocoaNotification::NotificationActivated(int actionIndex) {
   if (delegate())
-    delegate()->NotificationAction(actionIndex);
+    delegate()->NotificationAction(actionIndex, -1);
 
   this->LogAction("button clicked");
 }
 
 void CocoaNotification::NotificationDismissed() {
   if (delegate())
-    delegate()->NotificationClosed();
+    delegate()->NotificationClosed("");
 
   this->LogAction("dismissed");
 }

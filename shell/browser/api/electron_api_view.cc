@@ -17,6 +17,7 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/event_emitter_template.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
@@ -63,8 +64,10 @@ struct Converter<views::ProposedLayout> {
       return false;
     if (!dict.Get("size", &out->host_size))
       return false;
-    if (!dict.Get("layouts", &out->child_layouts))
+    std::vector<views::ChildLayout> layouts;
+    if (!dict.Get("layouts", &layouts))
       return false;
+    out->child_layouts.assign(layouts.begin(), layouts.end());
     return true;
   }
 };
@@ -566,13 +569,23 @@ gin_helper::WrappableBase* View::New(gin::Arguments* args) {
 }
 
 // static
-v8::Local<v8::Function> View::GetConstructor(v8::Isolate* isolate) {
-  static base::NoDestructor<v8::Global<v8::Function>> constructor;
-  if (constructor.get()->IsEmpty()) {
-    constructor->Reset(isolate, gin_helper::CreateConstructor<View>(
-                                    isolate, base::BindRepeating(&View::New)));
+v8::Local<v8::FunctionTemplate> View::GetConstructorTemplate(
+    v8::Isolate* isolate) {
+  static base::NoDestructor<v8::Global<v8::FunctionTemplate>> tmpl;
+  if (tmpl->IsEmpty()) {
+    tmpl->Reset(isolate,
+                gin_helper::CreateConstructorTemplate<View>(
+                    isolate, base::BindRepeating(&View::New),
+                    gin_helper::internal::GetEventEmitterTemplate(isolate)));
   }
-  return v8::Local<v8::Function>::New(isolate, *constructor.get());
+  return v8::Local<v8::FunctionTemplate>::New(isolate, *tmpl);
+}
+
+// static
+v8::Local<v8::Function> View::GetConstructor(v8::Isolate* isolate) {
+  return GetConstructorTemplate(isolate)
+      ->GetFunction(isolate->GetCurrentContext())
+      .ToLocalChecked();
 }
 
 // static
@@ -592,17 +605,17 @@ void View::BuildPrototype(v8::Isolate* isolate,
                           v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(gin::StringToV8(isolate, "View"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("addChildView", &View::AddChildViewAt)
-      .SetMethod("removeChildView", &View::RemoveChildView)
-      .SetProperty("children", &View::GetChildren)
-      .SetMethod("setBounds", &View::SetBounds)
-      .SetMethod("getBounds", &View::GetBounds)
-      .SetMethod("setBackgroundColor", &View::SetBackgroundColor)
-      .SetMethod("setBorderRadius", &View::SetBorderRadius)
-      .SetMethod("setBackgroundBlur", &View::SetBackgroundBlur)
-      .SetMethod("setLayout", &View::SetLayout)
-      .SetMethod("setVisible", &View::SetVisible)
-      .SetMethod("getVisible", &View::GetVisible);
+      .SetMethod<&View::AddChildViewAt>("addChildView")
+      .SetMethod<&View::RemoveChildView>("removeChildView")
+      .SetProperty<&View::GetChildren>("children")
+      .SetMethod<&View::SetBounds>("setBounds")
+      .SetMethod<&View::GetBounds>("getBounds")
+      .SetMethod<&View::SetBackgroundColor>("setBackgroundColor")
+      .SetMethod<&View::SetBorderRadius>("setBorderRadius")
+      .SetMethod<&View::SetBackgroundBlur>("setBackgroundBlur")
+      .SetMethod<&View::SetLayout>("setLayout")
+      .SetMethod<&View::SetVisible>("setVisible")
+      .SetMethod<&View::GetVisible>("getVisible");
 }
 
 }  // namespace electron::api

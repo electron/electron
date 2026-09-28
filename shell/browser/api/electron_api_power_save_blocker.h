@@ -45,7 +45,8 @@ class PowerSaveBlocker final : public gin::Wrappable<PowerSaveBlocker> {
   device::mojom::WakeLock* GetWakeLock();
 
   // Current wake lock level.
-  device::mojom::WakeLockType current_lock_type_;
+  device::mojom::WakeLockType current_lock_type_ =
+      device::mojom::WakeLockType::kPreventAppSuspension;
 
   // Whether the wake lock is currently active.
   bool is_wake_lock_active_ = false;

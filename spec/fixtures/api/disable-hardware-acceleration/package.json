@@ -1,0 +1,4 @@
+{
+  "name": "electron-test-disable-hardware-acceleration",
+  "main": "main.js"
+}

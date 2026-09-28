@@ -2,7 +2,7 @@
 //
 // IMPORTANT: the line number of the `throw` below is asserted by the spec.
 // If you edit this file, update the expected line number in
-// api-browser-window-spec.ts ("preload script stack traces").
+// api-browser-window.spec.ts ("preload script stack traces").
 const { ipcRenderer } = require('electron');
 try {
   throw new Error('preload-stack-trace-marker'); // <-- line 8

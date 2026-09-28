@@ -5,7 +5,6 @@
 #include "content/public/browser/render_widget_host_view.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/ui/cocoa/event_dispatching_window.h"
-#include "shell/browser/web_contents_preferences.h"
 #include "ui/base/cocoa/command_dispatcher.h"
 #include "ui/base/cocoa/nsmenu_additions.h"
 #include "ui/base/cocoa/nsmenuitem_additions.h"
@@ -42,9 +41,7 @@ bool WebContents::PlatformHandleKeyboardEvent(
       event.GetType() == input::NativeWebKeyboardEvent::Type::kChar)
     return false;
 
-  // Check if the webContents has preferences and to ignore shortcuts
-  auto* web_preferences = WebContentsPreferences::From(source);
-  if (web_preferences && web_preferences->ShouldIgnoreMenuShortcuts())
+  if (ShouldIgnoreMenuShortcutsFor(source))
     return false;
 
   NSEvent* ns_event = event.os_event.Get();

@@ -11,7 +11,9 @@
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/message.h"
+#include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gc_plugin.h"
+#include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
 #include "third_party/blink/public/common/messaging/message_port_channel.h"
 #include "third_party/blink/public/common/messaging/message_port_descriptor.h"
@@ -21,19 +23,29 @@ namespace gin {
 class Arguments;
 }  // namespace gin
 
+namespace gin_helper {
+class ErrorThrower;
+}  // namespace gin_helper
+
 namespace mojo {
 class Connector;
 }  // namespace mojo
 
 namespace electron {
 
-// A non-blink version of blink::MessagePort.
+// A non-blink version of blink::MessagePort; MessagePortMain in JS.
 class MessagePort final : public gin::Wrappable<MessagePort>,
+                          public gin_helper::EventEmitterMixin<MessagePort>,
+                          public gin_helper::Constructible<MessagePort>,
                           private mojo::MessageReceiver {
  public:
   MessagePort();
   ~MessagePort() override;
   static MessagePort* Create(v8::Isolate* isolate);
+  // gin_helper::Constructible; not constructible from JavaScript.
+  static v8::Local<v8::Value> New(gin_helper::ErrorThrower thrower);
+  static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
+  static const char* GetClassName() { return "MessagePortMain"; }
 
   void PostMessage(gin::Arguments* args);
   void Start();
@@ -59,9 +71,6 @@ class MessagePort final : public gin::Wrappable<MessagePort>,
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
-  static const char* GetClassName() { return "MessagePort"; }
-  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
   const gin::WrapperInfo* wrapper_info() const override;
   const char* GetHumanReadableName() const override;
   void Trace(cppgc::Visitor* visitor) const override;

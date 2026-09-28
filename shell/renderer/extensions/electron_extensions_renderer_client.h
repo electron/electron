@@ -29,8 +29,6 @@ class ElectronExtensionsRendererClient
   bool IsIncognitoProcess() const override;
   int GetLowestIsolatedWorldId() const override;
 
-  bool AllowPopup();
-
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame);
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame);
   void RunScriptsAtDocumentIdle(content::RenderFrame* render_frame);

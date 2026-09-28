@@ -9,6 +9,7 @@
 #include <string>
 #include <string_view>
 
+#include "build/build_config.h"
 #include "ui/base/clipboard/clipboard_buffer.h"
 #include "ui/base/clipboard/clipboard_format_type.h"
 #include "v8/include/cppgc/persistent.h"
@@ -111,7 +112,9 @@ class Clipboard {
 
   // The macOS find pasteboard is a separate pasteboard and the backing
   // Cocoa API is synchronous, so these stay synchronous as well.
+#if BUILDFLAG(IS_MAC)
   static std::u16string ReadFindText();
+#endif
   static void WriteFindText(const std::u16string& text);
 };
 

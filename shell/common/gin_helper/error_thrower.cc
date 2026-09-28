@@ -13,7 +13,7 @@ namespace gin_helper {
 v8::Isolate* ErrorThrower::isolate() const {
   // Callers should prefer to specify the isolate in the constructor,
   // since GetCurrent() uses atomic loads and is thus a bit costly to invoke
-  return isolate_ ? isolate_.get() : v8::Isolate::GetCurrent();
+  return isolate_ ? isolate_ : v8::Isolate::GetCurrent();
 }
 
 void ErrorThrower::ThrowError(const std::string_view err_msg) const {
@@ -26,14 +26,6 @@ void ErrorThrower::ThrowTypeError(const std::string_view err_msg) const {
 
 void ErrorThrower::ThrowRangeError(const std::string_view err_msg) const {
   Throw(v8::Exception::RangeError, err_msg);
-}
-
-void ErrorThrower::ThrowReferenceError(const std::string_view err_msg) const {
-  Throw(v8::Exception::ReferenceError, err_msg);
-}
-
-void ErrorThrower::ThrowSyntaxError(const std::string_view err_msg) const {
-  Throw(v8::Exception::SyntaxError, err_msg);
 }
 
 void ErrorThrower::Throw(ErrorGenerator gen,

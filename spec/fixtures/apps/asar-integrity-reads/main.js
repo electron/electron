@@ -21,7 +21,7 @@ const exact = path.join(archive, 'exact.bin');
 const small = path.join(archive, 'small.bin');
 
 const BLOCK = 4 * 1024 * 1024;
-// Must match the generator in asar-integrity-spec.ts.
+// Must match the generator in asar-integrity.spec.ts.
 const MULTI_SIZE = 2 * BLOCK + 1024 * 1024 + 5;
 const EXACT_SIZE = BLOCK;
 const SMALL_SIZE = 1000;

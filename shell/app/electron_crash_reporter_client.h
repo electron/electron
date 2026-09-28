@@ -62,11 +62,10 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
 
   bool GetCollectStatsConsent() override;
 
-  bool GetShouldRateLimit() override;
-  bool GetShouldCompressUploads() override;
+  bool ShouldRateLimitUploads() override;
+  bool ShouldCompressUploads() override;
 
-  void GetProcessSimpleAnnotations(
-      std::map<std::string, std::string>* annotations) override;
+  std::map<std::string, std::string> GetExtraProcessAnnotations() override;
 
 #if BUILDFLAG(IS_MAC)
   bool ReportingIsEnforcedByPolicy(bool* breakpad_enabled) override;

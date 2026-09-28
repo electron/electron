@@ -78,14 +78,17 @@ void InvokeNew(const base::RepeatingCallback<Sig>& factory,
 
 }  // namespace internal
 
-// Create a FunctionTemplate that can be "new"ed in JavaScript.
+// Create a FunctionTemplate that can be "new"ed in JavaScript, optionally
+// inheriting from |parent| so instances have its prototype in their chain.
 // It is user's responsibility to ensure this function is called for one type
 // only ONCE in the program's whole lifetime, otherwise we would have memory
 // leak.
 template <typename T, typename Sig>
-v8::Local<v8::Function> CreateConstructor(
+v8::Local<v8::FunctionTemplate> CreateConstructorTemplate(
     v8::Isolate* isolate,
-    const base::RepeatingCallback<Sig>& func) {
+    const base::RepeatingCallback<Sig>& func,
+    v8::Local<v8::FunctionTemplate> parent =
+        v8::Local<v8::FunctionTemplate>()) {
 #ifndef NDEBUG
   static bool called = false;
   CHECK(!called) << "CreateConstructor can only be called for one type once";
@@ -94,8 +97,21 @@ v8::Local<v8::Function> CreateConstructor(
   v8::Local<v8::FunctionTemplate> templ = gin_helper::CreateFunctionTemplate(
       isolate, base::BindRepeating(&internal::InvokeNew<Sig>, func));
   templ->InstanceTemplate()->SetInternalFieldCount(1);
+  if (!parent.IsEmpty())
+    templ->Inherit(parent);
   T::BuildPrototype(isolate, templ);
-  return templ->GetFunction(isolate->GetCurrentContext()).ToLocalChecked();
+  return templ;
+}
+
+template <typename T, typename Sig>
+v8::Local<v8::Function> CreateConstructor(
+    v8::Isolate* isolate,
+    const base::RepeatingCallback<Sig>& func,
+    v8::Local<v8::FunctionTemplate> parent =
+        v8::Local<v8::FunctionTemplate>()) {
+  return CreateConstructorTemplate<T>(isolate, func, parent)
+      ->GetFunction(isolate->GetCurrentContext())
+      .ToLocalChecked();
 }
 
 }  // namespace gin_helper

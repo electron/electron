@@ -1,19 +1,20 @@
-import { BrowserWindow } from 'electron/main';
+import type { BrowserWindow } from 'electron/main';
 
 import { AssertionError } from 'chai';
-import { SuiteFunction, TestFunction } from 'mocha';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
 import * as http from 'node:http';
-import * as http2 from 'node:http2';
-import * as https from 'node:https';
-import * as net from 'node:net';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 import { stripVTControlCharacters } from 'node:util';
 import * as v8 from 'node:v8';
+
+import type { SuiteFunction, TestFunction } from 'mocha';
+import type * as http2 from 'node:http2';
+import type * as https from 'node:https';
+import type * as net from 'node:net';
 
 const addOnly = <T>(fn: Function): T => {
   const wrapped = (...args: any[]) => {
@@ -33,16 +34,29 @@ export const isWayland =
     !!process.env.WAYLAND_DISPLAY ||
     process.argv.includes('--ozone-platform=wayland'));
 
+// macos-x64 CI runner VMs have no Metal-capable GPU, and SwiftShader's Vulkan
+// backend fails to initialize there too, so every GPU process launch fails
+// until Chromium falls back to software compositing with GL disabled. Start
+// spawned apps in that end state directly so they skip the failed launches.
+export const ciGpuArgs: string[] =
+  process.env.CI && process.platform === 'darwin' && process.arch === 'x64' ? ['--disable-gpu'] : [];
+
 type CleanupFunction = (() => void) | (() => Promise<void>);
 const cleanupFunctions: CleanupFunction[] = [];
 export async function runCleanupFunctions() {
-  for (const cleanup of cleanupFunctions) {
-    const r = cleanup();
-    if (r instanceof Promise) {
-      await r;
+  // Take the whole list up front: a cleanup that throws must not leave the
+  // rest behind to run (and throw) again after every later test.
+  const pending = cleanupFunctions.splice(0, cleanupFunctions.length);
+  const errors: unknown[] = [];
+  for (const cleanup of pending) {
+    try {
+      await cleanup();
+    } catch (error) {
+      errors.push(error);
     }
   }
-  cleanupFunctions.length = 0;
+  if (errors.length === 1) throw errors[0];
+  if (errors.length > 1) throw new AggregateError(errors, 'Several defer()-ed cleanup functions failed');
 }
 
 export function defer(f: CleanupFunction) {
@@ -93,8 +107,15 @@ class RemoteControlApp {
 }
 
 export async function startRemoteControlApp(extraArgs: string[] = [], options?: childProcess.SpawnOptionsWithoutStdio) {
-  const appPath = path.join(__dirname, '..', 'fixtures', 'apps', 'remote-control');
-  const appProcess = childProcess.spawn(process.execPath, [appPath, ...extraArgs], options);
+  const appPath = path.join(import.meta.dirname, '..', 'fixtures', 'apps', 'remote-control');
+  const appProcess = childProcess.spawn(process.execPath, [appPath, ...ciGpuArgs, ...extraArgs], options);
+  // Register cleanup before awaiting the port so a stalled startup that trips
+  // mocha's timeout doesn't leak the child into the in-job retry.
+  defer(() => {
+    if (appProcess.exitCode === null && appProcess.signalCode === null) {
+      appProcess.kill('SIGINT');
+    }
+  });
   appProcess.stderr.on('data', (d) => {
     process.stderr.write(d);
   });
@@ -105,9 +126,6 @@ export async function startRemoteControlApp(extraArgs: string[] = [], options?: 
         resolve(Number(m[1]));
       }
     });
-  });
-  defer(() => {
-    appProcess.kill('SIGINT');
   });
   return new RemoteControlApp(appProcess, port);
 }
@@ -241,6 +259,10 @@ export async function repeatedly<T>(fn: () => Promise<T>, opts?: { until?: (x: T
 }
 
 async function makeRemoteContext(opts?: any) {
+  // Resolved here rather than with a top-level import so that this file stays
+  // loadable in a utility process (see fixtures/api/utility-process/api-net-spec.js),
+  // whose 'electron/main' has no BrowserWindow export.
+  const { BrowserWindow } = await import('electron/main');
   const { webPreferences, setup, url = 'about:blank', ...rest } = opts ?? {};
   const w = new BrowserWindow({
     show: false,
@@ -277,10 +299,10 @@ async function runRemote(type: 'skip' | 'none' | 'only', name: string, fn: Funct
     const w = await getRemoteContext();
     const { ok, message } = await w.webContents.executeJavaScript(`(async () => {
       try {
-        const chai_1 = require('chai')
-        const promises_1 = require('node:timers/promises')
-        chai_1.use(require('chai-as-promised'))
-        chai_1.use(require('dirty-chai'))
+        const chai = require('chai')
+        chai.use(require('chai-as-promised'))
+        chai.use(require('dirty-chai'))
+        const { expect } = chai
         await (${fn})(...${JSON.stringify(args ?? [])})
         return {ok: true};
       } catch (e) {

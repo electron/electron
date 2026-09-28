@@ -155,9 +155,6 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
   // if the file chooser operation shouldn't proceed.
   bool AbortIfWebContentsDestroyed();
 
-  void SetFileSelectListenerForTesting(
-      scoped_refptr<content::FileSelectListener> listener);
-
   // Helper method to get allowed extensions for select file dialog from
   // the specified accept types as defined in the spec:
   //   http://whatwg.org/html/number-state.html#attr-input-accept
@@ -165,14 +162,6 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
   // beginning with a period (.).
   static std::unique_ptr<ui::SelectFileDialog::FileTypeInfo>
   GetFileTypesFromAcceptType(const std::vector<std::u16string>& accept_types);
-
-  // Check the accept type is valid. It is expected to be all lower case with
-  // no whitespace.
-  static bool IsAcceptTypeValid(const std::string& accept_type);
-
-  // Get a sanitized filename suitable for use as a default filename.
-  static base::FilePath GetSanitizedFileName(
-      const base::FilePath& suggested_path);
 
   // The RenderFrameHost and WebContents for the page showing a file dialog
   // (may only be one such dialog).
@@ -188,10 +177,12 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
 
   // The type of file dialog last shown. This is SELECT_NONE if an
   // instance is created through the public EnumerateDirectory().
-  ui::SelectFileDialog::Type dialog_type_;
+  ui::SelectFileDialog::Type dialog_type_ =
+      ui::SelectFileDialog::SELECT_OPEN_FILE;
 
   // The mode of file dialog last shown.
-  blink::mojom::FileChooserParams::Mode dialog_mode_;
+  blink::mojom::FileChooserParams::Mode dialog_mode_ =
+      blink::mojom::FileChooserParams::Mode::kOpen;
 
   // The enumeration root directory for EnumerateDirectory() and
   // RunFileChooser with kUploadFolder.

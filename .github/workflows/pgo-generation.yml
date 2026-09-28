@@ -100,7 +100,7 @@ jobs:
         - /var/run/sas:/var/run/sas
     env:
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=host_cpu=arm64'
     outputs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
     steps:
@@ -671,7 +671,7 @@ jobs:
         name: pgo-v8-builtins-profiles
         path: profiles
     - name: Azure Login
-      uses: azure/login@7ddb5af1ef8758cf1353cf3b42f940aee27ba21c
+      uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906
       with:
         client-id: ${{ secrets.AZURE_OIDC_CLIENT_ID }}
         tenant-id: ${{ secrets.AZURE_OIDC_TENANT_ID }}
@@ -768,8 +768,13 @@ jobs:
           --field base="$BASE_BRANCH" \
           --field body="$(cat /tmp/pr-body.md)" --jq .html_url)
         PR_NUMBER="${PR_URL##*/}"
-        gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" \
-          --field "labels[]=semver/none" > /dev/null
+        labels=(--field "labels[]=semver/none")
+        # Every supported release branch gets its own profile update PR from
+        # its own run, so the main PR must never be backported.
+        if [ "$BASE_BRANCH" = "main" ]; then
+          labels+=(--field "labels[]=no-backport")
+        fi
+        gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" "${labels[@]}" > /dev/null
         echo "## Profile Update PR" >> $GITHUB_STEP_SUMMARY
         echo "$PR_URL" >> $GITHUB_STEP_SUMMARY
 

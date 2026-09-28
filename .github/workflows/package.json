@@ -5,7 +5,7 @@
   "type": "module",
   "dependencies": {
     "@actions/cache": "^5.2.0",
-    "@electron/fiddle-core": "^2.0.1",
+    "@electron/fiddle-core": "^2.2.2",
     "mdast-util-from-markdown": "^2.0.0",
     "semver": "^7.7.2",
     "unist-util-select": "^5.1.0",

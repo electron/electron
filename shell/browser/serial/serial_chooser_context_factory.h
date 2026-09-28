@@ -24,16 +24,16 @@ class SerialChooserContextFactory : public BrowserContextKeyedServiceFactory {
       content::BrowserContext* context);
   static SerialChooserContextFactory* GetInstance();
 
+  // disable copy
+  SerialChooserContextFactory(const SerialChooserContextFactory&) = delete;
+  SerialChooserContextFactory& operator=(const SerialChooserContextFactory&) =
+      delete;
+
  private:
   friend base::NoDestructor<SerialChooserContextFactory>;
 
   SerialChooserContextFactory();
   ~SerialChooserContextFactory() override;
-
-  // disable copy
-  SerialChooserContextFactory(const SerialChooserContextFactory&) = delete;
-  SerialChooserContextFactory& operator=(const SerialChooserContextFactory&) =
-      delete;
 
   // BrowserContextKeyedServiceFactory methods:
   std::unique_ptr<KeyedService> BuildServiceInstanceForBrowserContext(

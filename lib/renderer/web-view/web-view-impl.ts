@@ -26,8 +26,6 @@ export class WebViewImpl {
   public internalInstanceId?: number;
   public viewInstanceId: number;
 
-  // on* Event handlers.
-  public on: Record<string, any> = {};
   public internalElement: HTMLIFrameElement;
 
   public attributes: Map<string, WebViewAttribute>;
@@ -126,27 +124,6 @@ export class WebViewImpl {
     }
   }
 
-  // Adds an 'on<event>' property on the webview, which can be used to set/unset
-  // an event handler.
-  setupEventProperty(eventName: string) {
-    const propertyName = `on${eventName.toLowerCase()}`;
-    return Object.defineProperty(this.webviewNode, propertyName, {
-      get: () => {
-        return this.on[propertyName];
-      },
-      set: (value) => {
-        if (this.on[propertyName]) {
-          this.webviewNode.removeEventListener(eventName, this.on[propertyName]);
-        }
-        this.on[propertyName] = value;
-        if (value) {
-          return this.webviewNode.addEventListener(eventName, value);
-        }
-      },
-      enumerable: true
-    });
-  }
-
   // Updates state upon loadcommit.
   onLoadCommit(props: Record<string, any>) {
     const oldValue = this.webviewNode.getAttribute(WEB_VIEW_ATTRIBUTES.SRC);
@@ -166,10 +143,6 @@ export class WebViewImpl {
       this.hasFocus = hasFocus;
       this.dispatchEvent(hasFocus ? 'focus' : 'blur');
     }
-  }
-
-  onAttach(storagePartitionId: number) {
-    return this.attributes.get(WEB_VIEW_ATTRIBUTES.PARTITION)!.setValue(storagePartitionId);
   }
 
   buildParams() {

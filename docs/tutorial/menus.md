@@ -98,7 +98,7 @@ submenu, which aligns items horizontally (available on macOS 14 and above)
 > [!TIP]
 > Adjacent `radio` items are at the same level of submenu and not divided by a separator.
 >
-> ```js
+> ```json5
 > [
 >   { type: 'radio', label: 'Adjacent 1' },
 >   { type: 'radio', label: 'Adjacent 2' },
@@ -236,7 +236,7 @@ positioning keywords is used.
 
 Template:
 
-```js
+```json5
 [
   { id: '1', label: 'one' },
   { id: '2', label: 'two' },
@@ -256,7 +256,7 @@ Menu:
 
 Template:
 
-```js
+```json5
 [
   { id: '1', label: 'one' },
   { type: 'separator' },
@@ -280,7 +280,7 @@ Menu:
 
 Template:
 
-```js
+```json5
 [
   { id: '1', label: 'one', after: ['3'] },
   { id: '2', label: 'two', before: ['1'] },
@@ -306,8 +306,11 @@ To add visual aid to your menus, you can use the `icon` property to assign image
 const { nativeImage } = require('electron/common')
 const { MenuItem } = require('electron/main')
 
-// highlight-next-line
-const green = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAACOSURBVHgBpZLRDYAgEEOrEzgCozCCGzkCbKArOIlugJvgoRAUNcLRpvGH19TkgFQWkqIohhK8UEaKwKcsOg/+WR1vX+AlA74u6q4FqgCOSzwsGHCwbKliAF89Cv89tWmOT4VaVMoVbOBrdQUz+FrD6XItzh4LzYB1HFJ9yrEkZ4l+wvcid9pTssh4UKbPd+4vED2Nd54iAAAAAElFTkSuQmCC')
+// highlight-start
+const green = nativeImage.createFromDataURL(
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAACOSURBVHgBpZLRDYAgEEOrEzgCozCCGzkCbKArOIlugJvgoRAUNcLRpvGH19TkgFQWkqIohhK8UEaKwKcsOg/+WR1vX+AlA74u6q4FqgCOSzwsGHCwbKliAF89Cv89tWmOT4VaVMoVbOBrdQUz+FrD6XItzh4LzYB1HFJ9yrEkZ4l+wvcid9pTssh4UKbPd+4vED2Nd54iAAAAAElFTkSuQmCC'
+)
+// highlight-end
 
 const item = new MenuItem({
   label: 'Green Circle',
@@ -328,7 +331,9 @@ const item = new MenuItem({
   label: 'Log Message',
   // highlight-next-line
   sublabel: 'This will use the console.log utility',
-  click: () => { console.log('Logging via menu...') }
+  click: () => {
+    console.log('Logging via menu...')
+  }
 })
 ```
 

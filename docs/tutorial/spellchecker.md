@@ -43,10 +43,12 @@ myWindow.webContents.on('context-menu', (event, params) => {
 
   // Add each spelling suggestion
   for (const suggestion of params.dictionarySuggestions) {
-    menu.append(new MenuItem({
-      label: suggestion,
-      click: () => myWindow.webContents.replaceMisspelling(suggestion)
-    }))
+    menu.append(
+      new MenuItem({
+        label: suggestion,
+        click: () => myWindow.webContents.replaceMisspelling(suggestion)
+      })
+    )
   }
 
   // Allow users to add the misspelled word to the dictionary

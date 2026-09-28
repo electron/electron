@@ -160,9 +160,6 @@ class ElectronExtensionsBrowserClient
       const extensions::Extension* extension) const override;
   extensions::SafeBrowsingDelegate* GetSafeBrowsingDelegate() override;
 
-  // Sets the API client.
-  void SetAPIClientForTest(extensions::ExtensionsAPIClient* api_client);
-
  private:
   // Support for extension APIs.
   std::unique_ptr<extensions::ExtensionsAPIClient> api_client_;

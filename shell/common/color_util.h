@@ -20,8 +20,10 @@
 // ease of use in gin converters.
 struct WrappedSkColor {
   WrappedSkColor() = default;
+  // NOLINTNEXTLINE(google-explicit-constructor)
   WrappedSkColor(SkColor c) : value(c) {}  // NOLINT(runtime/explicit)
   SkColor value;
+  // NOLINTNEXTLINE(google-explicit-constructor)
   operator SkColor() const { return value; }
 };
 
@@ -38,7 +40,6 @@ std::string ToRGBHex(SkColor color);
 std::string ToRGBAHex(SkColor color, bool include_hash = true);
 
 #if BUILDFLAG(IS_WIN)
-std::optional<DWORD> GetSystemAccentColor();
 SkColor GetSysSkColor(int which);
 #endif
 

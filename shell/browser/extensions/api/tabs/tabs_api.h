@@ -34,7 +34,7 @@ class ExecuteCodeInTabFunction : public ExecuteCodeFunction {
 
  private:
   // Id of tab which executes code.
-  int execute_tab_id_;
+  int execute_tab_id_ = -1;
 };
 
 class TabsExecuteScriptFunction : public ExecuteCodeInTabFunction {

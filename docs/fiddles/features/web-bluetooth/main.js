@@ -27,7 +27,7 @@ function createWindow () {
     }
   })
 
-  ipcMain.on('cancel-bluetooth-request', (event) => {
+  ipcMain.on('cancel-bluetooth-request', () => {
     selectBluetoothCallback('')
   })
 

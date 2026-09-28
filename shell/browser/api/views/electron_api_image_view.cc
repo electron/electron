@@ -37,7 +37,7 @@ void ImageView::BuildPrototype(v8::Isolate* isolate,
                                v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(gin::StringToV8(isolate, "ImageView"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("setImage", &ImageView::SetImage);
+      .SetMethod<&ImageView::SetImage>("setImage");
 }
 
 }  // namespace electron::api
@@ -52,8 +52,10 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.Set("ImageView", gin_helper::CreateConstructor<ImageView>(
-                            isolate, base::BindRepeating(&ImageView::New)));
+  dict.Set("ImageView",
+           gin_helper::CreateConstructor<ImageView>(
+               isolate, base::BindRepeating(&ImageView::New),
+               electron::api::View::GetConstructorTemplate(isolate)));
 }
 
 }  // namespace
