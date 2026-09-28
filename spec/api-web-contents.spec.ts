@@ -16,6 +16,7 @@ import { assert, expect } from 'chai';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
+import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
@@ -37,6 +38,8 @@ import { WebmGenerator } from './lib/video-helpers.js';
 import { cleanupWebContents, closeAllWindows } from './lib/window-helpers.ts';
 
 import type { AddressInfo } from 'node:net';
+
+const require = createRequire(import.meta.url);
 
 const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 const features = process._linkedBinding('electron_common_features');
