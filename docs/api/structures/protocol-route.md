@@ -15,4 +15,6 @@
   * `index` string (optional) - File served for a URL whose path ends in `/`.
     Defaults to `index.html`; an empty string disables it.
   * `headers` Record\<string, string\> (optional) - Response headers added to
-    every file served by this route.
+    every file served by this route. Headers computed by the file loader,
+    including `Content-Type`, `Content-Length`, and `Content-Range`, will
+    override these supplied values.
