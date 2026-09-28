@@ -8,7 +8,7 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 46cc28571e190ef036e8ade4dab3b8786534230d..2005faae0d136869ccf05d474431fc9f0ad63667 100644
+index 1c82e0754cd5231c36f5048062e4a3aef73950f3..23dcecc9b099376da841d9f440c0b5b30da7d3f9 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -91,11 +91,13 @@
@@ -25,7 +25,7 @@ index 46cc28571e190ef036e8ade4dab3b8786534230d..2005faae0d136869ccf05d474431fc9f
  #include "components/tabs/public/tab_interface.h"
  #if BUILDFLAG(ENABLE_PLATFORM_APPS)
  #include "extensions/browser/extension_registry.h"  // nogncheck
-@@ -341,216 +343,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
+@@ -341,217 +343,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
  }
  #endif
  
@@ -88,6 +88,10 @@ index 46cc28571e190ef036e8ade4dab3b8786534230d..2005faae0d136869ccf05d474431fc9f
 -      // And limit access to ~/.gnupg as well.
 -      BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".gnupg"),
 -                                BlockType::kBlockAllChildren),
+-      // Block write access to */.git/hooks, see crbug.com/465668234 and
+-      // crbug.com/553115714.
+-      BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/hooks"),
+-                              BlockType::kBlockWrite),
 -#if BUILDFLAG(IS_WIN)
 -      // Some Windows specific directories to block, basically all apps, the
 -      // operating system itself, as well as configuration data for apps.
@@ -111,9 +115,6 @@ index 46cc28571e190ef036e8ade4dab3b8786534230d..2005faae0d136869ccf05d474431fc9f
 -      // directory, but not whole directories.
 -      BlockPath::CreateRelative(base::DIR_IE_INTERNET_CACHE,
 -                                BlockType::kBlockNestedDirectories),
--      // Block */.git/hooks on Windows, see crbug.com/465668234.
--      BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/hooks"),
--                              BlockType::kBlockWrite),
 -#endif
 -#if BUILDFLAG(IS_MAC)
 -      // Similar Mac specific blocks.
@@ -246,7 +247,7 @@ index 46cc28571e190ef036e8ade4dab3b8786534230d..2005faae0d136869ccf05d474431fc9f
  
  // Checks if `path` should be blocked by the `rules`.
  // The BlockType of the nearest ancestor of a path to check is what
-@@ -1546,16 +1342,6 @@ struct ChromeFileSystemAccessPermissionContext::OriginState {
+@@ -1548,16 +1343,6 @@ struct ChromeFileSystemAccessPermissionContext::OriginState {
    std::unique_ptr<base::RetainingOneShotTimer> cleanup_timer;
  };
  
@@ -263,7 +264,7 @@ index 46cc28571e190ef036e8ade4dab3b8786534230d..2005faae0d136869ccf05d474431fc9f
  ChromeFileSystemAccessPermissionContext::
      ChromeFileSystemAccessPermissionContext(content::BrowserContext* context,
                                              const base::Clock* clock)
-@@ -1574,7 +1360,7 @@ ChromeFileSystemAccessPermissionContext::
+@@ -1576,7 +1361,7 @@ ChromeFileSystemAccessPermissionContext::
  #if BUILDFLAG(IS_ANDROID)
    one_time_permissions_tracker_.Observe(
        OneTimePermissionsTrackerFactory::GetForBrowserContext(context));
@@ -272,7 +273,7 @@ index 46cc28571e190ef036e8ade4dab3b8786534230d..2005faae0d136869ccf05d474431fc9f
    auto* provider = web_app::WebAppProvider::GetForWebApps(
        Profile::FromBrowserContext(profile_));
    if (provider) {
-@@ -3054,7 +2840,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
+@@ -3056,7 +2841,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
    one_time_permissions_tracker_.Reset();
  }
  
@@ -281,7 +282,7 @@ index 46cc28571e190ef036e8ade4dab3b8786534230d..2005faae0d136869ccf05d474431fc9f
  void ChromeFileSystemAccessPermissionContext::OnWebAppInstalled(
      const webapps::AppId& app_id) {
    if (!base::FeatureList::IsEnabled(
-@@ -3412,11 +3198,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3414,11 +3199,7 @@ bool ChromeFileSystemAccessPermissionContext::
          HandleType handle_type,
          UserAction user_action,
          GrantType grant_type) {
@@ -294,7 +295,7 @@ index 46cc28571e190ef036e8ade4dab3b8786534230d..2005faae0d136869ccf05d474431fc9f
    if (!base::FeatureList::IsEnabled(
            features::kFileSystemAccessPersistentPermissions)) {
      return false;
-@@ -3467,6 +3249,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3469,6 +3250,7 @@ bool ChromeFileSystemAccessPermissionContext::
  
    return false;
  #endif  // BUILDFLAG(IS_ANDROID)
@@ -303,7 +304,7 @@ index 46cc28571e190ef036e8ade4dab3b8786534230d..2005faae0d136869ccf05d474431fc9f
  
  std::vector<FileRequestData> ChromeFileSystemAccessPermissionContext::
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 955504d06b2879cdab83ae22f6528e42266b6457..ced0a2fa4451581575772e9fa5ce9f0c34fd1436 100644
+index 955504d06b2879cdab83ae22f6528e42266b6457..180450520ad7699feffa42ab7bd42d5b8525cd51 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -10,10 +10,13 @@
@@ -328,7 +329,7 @@ index 955504d06b2879cdab83ae22f6528e42266b6457..ced0a2fa4451581575772e9fa5ce9f0c
  #include "components/enterprise/buildflags/buildflags.h"
  #include "components/permissions/features.h"
  #include "components/permissions/object_permission_context_base.h"
-@@ -470,6 +474,221 @@ class ChromeFileSystemAccessPermissionContext
+@@ -470,6 +474,222 @@ class ChromeFileSystemAccessPermissionContext
    bool IsPathInDowngradedReadPathsForTesting(const url::Origin& origin,
                                               const base::FilePath& path) const;
  
@@ -395,6 +396,10 @@ index 955504d06b2879cdab83ae22f6528e42266b6457..ced0a2fa4451581575772e9fa5ce9f0c
 +        // And limit access to ~/.gnupg as well.
 +        BlockPath::CreateRelative(base::DIR_HOME, FILE_PATH_LITERAL(".gnupg"),
 +                                  BlockType::kBlockAllChildren),
++        // Block write access to */.git/hooks, see crbug.com/465668234 and
++        // crbug.com/553115714.
++        BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/hooks"),
++                                BlockType::kBlockWrite),
 +  #if BUILDFLAG(IS_WIN)
 +        // Some Windows specific directories to block, basically all apps, the
 +        // operating system itself, as well as configuration data for apps.
@@ -418,9 +423,6 @@ index 955504d06b2879cdab83ae22f6528e42266b6457..ced0a2fa4451581575772e9fa5ce9f0c
 +        // directory, but not whole directories.
 +        BlockPath::CreateRelative(base::DIR_IE_INTERNET_CACHE,
 +                                  BlockType::kBlockNestedDirectories),
-+        // Block */.git/hooks on Windows, see crbug.com/465668234.
-+        BlockPath::CreateSuffix(FILE_PATH_LITERAL(".git/hooks"),
-+                                BlockType::kBlockWrite),
 +  #endif
 +  #if BUILDFLAG(IS_MAC)
 +        // Similar Mac specific blocks.
