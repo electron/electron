@@ -1201,9 +1201,18 @@ This method can be used to clear these artifacts when, for example, performing a
 
 Sets whether the window should have a shadow.
 
+On Windows this has no effect. The drop shadow is drawn by DWM from the window
+styles (`WS_CAPTION` / `WS_THICKFRAME`), and Windows exposes no per-window DWM
+attribute to toggle it. To remove the shadow on Windows, set `thickFrame` to
+`false`, which also removes resizing, Snap Layouts, and Aero Shake. On Linux
+the shadow is drawn by CSD and is likewise not directly toggleable at runtime.
+
 #### `win.hasShadow()`
 
 Returns `boolean` - Whether the window has a shadow.
+
+On Windows this returns the value that was last set, not the window's actual
+state, because nothing on that platform reads it back.
 
 #### `win.setOpacity(opacity)` _Windows_ _macOS_
 

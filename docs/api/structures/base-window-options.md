@@ -66,7 +66,7 @@
   be resized larger than screen. Only relevant for macOS, as other OSes
   allow larger-than-screen windows by default. Default is `false`.
 * `backgroundColor` string (optional) - The window's background color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. Alpha in #AARRGGBB format is supported if `transparent` is set to `true`. Default is `#FFF` (white). See [win.setBackgroundColor](../browser-window.md#winsetbackgroundcolorbackgroundcolor) for more information.
-* `hasShadow` boolean (optional) - Whether window should have a shadow. Default is `true`.
+* `hasShadow` boolean (optional) - Whether window should have a shadow. Default is `true`. Not supported on Windows, where the shadow is drawn by DWM and cannot be toggled; set `thickFrame` to `false` instead. See [`win.setHasShadow`](../base-window.md#winsethasshadowhasshadow).
 * `opacity` number (optional) _macOS_ _Windows_ - Set the initial opacity of
   the window, between 0.0 (fully transparent) and 1.0 (fully opaque). This
   is only implemented on Windows and macOS.
