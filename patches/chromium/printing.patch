@@ -64,10 +64,10 @@ index bb7a4f4ff71cdbd98461feeac00cea5949d260c8..9931e0875e25ffb2f55db7f3cfa48ed3
  
  content::WebContents* GetWebContents(content::GlobalRenderFrameHostId rfh_id) {
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 485685731508290d88c141566f6feac1132d7b8e..db58c1b34bd4e5860aa37b92c451c7cde90792ec 100644
+index b673362fe80dd0752e5cde56ffeba32dc0b32879..f7266ed712d05f036500ef3dba01b5dd3ce12fc7 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
-@@ -30,7 +30,6 @@
+@@ -31,7 +31,6 @@
  #include "chrome/browser/printing/print_job_manager.h"
  #include "chrome/browser/printing/print_view_manager_common.h"
  #include "chrome/browser/printing/printer_query.h"
@@ -75,7 +75,7 @@ index 485685731508290d88c141566f6feac1132d7b8e..db58c1b34bd4e5860aa37b92c451c7cd
  #include "chrome/browser/ui/webui/print_preview/printer_handler.h"
  #include "chrome/common/pref_names.h"
  #include "chrome/grit/generated_resources.h"
-@@ -42,6 +41,7 @@
+@@ -43,6 +42,7 @@
  #include "components/printing/common/print.mojom.h"
  #include "components/printing/common/print_params.h"
  #include "components/services/print_compositor/public/cpp/print_service_mojo_types.h"
@@ -83,7 +83,7 @@ index 485685731508290d88c141566f6feac1132d7b8e..db58c1b34bd4e5860aa37b92c451c7cd
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/browser_thread.h"
  #include "content/public/browser/global_routing_id.h"
-@@ -139,9 +139,9 @@ PrintViewManagerBase::PrintViewManagerBase(content::WebContents* web_contents)
+@@ -140,9 +140,9 @@ PrintViewManagerBase::PrintViewManagerBase(content::WebContents* web_contents)
      : PrintManager(web_contents),
        queue_(g_browser_process->print_job_manager()->queue()) {
    DCHECK(queue_);
@@ -96,7 +96,7 @@ index 485685731508290d88c141566f6feac1132d7b8e..db58c1b34bd4e5860aa37b92c451c7cd
  }
  
  PrintViewManagerBase::~PrintViewManagerBase() {
-@@ -248,7 +248,7 @@ void PrintViewManagerBase::PrintDocument(
+@@ -249,7 +249,7 @@ void PrintViewManagerBase::PrintDocument(
      const gfx::Size& page_size,
      const gfx::Rect& content_area,
      const gfx::Point& offsets) {
@@ -105,7 +105,7 @@ index 485685731508290d88c141566f6feac1132d7b8e..db58c1b34bd4e5860aa37b92c451c7cd
    if (content_analysis_before_printing_document_) {
      std::move(content_analysis_before_printing_document_)
          .Run(print_data, page_size, content_area, offsets);
-@@ -339,7 +339,7 @@ void PrintViewManagerBase::StartLocalPrintJob(
+@@ -340,7 +340,7 @@ void PrintViewManagerBase::StartLocalPrintJob(
      PrinterHandler::PrintCallback callback) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
  
@@ -114,7 +114,7 @@ index 485685731508290d88c141566f6feac1132d7b8e..db58c1b34bd4e5860aa37b92c451c7cd
    // Populating `content_analysis_before_printing_document_` if needed should be
    // done first in this function's workflow, this way other code can check if
    // content analysis is going to happen and delay starting `print_job_` to
-@@ -568,7 +568,7 @@ void PrintViewManagerBase::GetDefaultPrintSettings(
+@@ -569,7 +569,7 @@ void PrintViewManagerBase::GetDefaultPrintSettings(
  
  #if BUILDFLAG(ENABLE_OOP_PRINTING)
    if (ShouldPrintJobOop() &&
@@ -123,7 +123,7 @@ index 485685731508290d88c141566f6feac1132d7b8e..db58c1b34bd4e5860aa37b92c451c7cd
        !analyzing_content_ &&
  #endif
        !query_with_ui_client_id().has_value()) {
-@@ -596,7 +596,7 @@ void PrintViewManagerBase::GetDefaultPrintSettings(
+@@ -597,7 +597,7 @@ void PrintViewManagerBase::GetDefaultPrintSettings(
  
    // Sometimes it is desired to get the PDF settings as opposed to the settings
    // of the default system print driver.
@@ -132,7 +132,7 @@ index 485685731508290d88c141566f6feac1132d7b8e..db58c1b34bd4e5860aa37b92c451c7cd
    bool want_pdf_settings = analyzing_content_;
  #else
    bool want_pdf_settings = false;
-@@ -646,7 +646,7 @@ void PrintViewManagerBase::ScriptedPrint(mojom::ScriptedPrintParamsPtr params,
+@@ -636,7 +636,7 @@ void PrintViewManagerBase::ScriptedPrint(mojom::ScriptedPrintParamsPtr params,
      return;
    }
  #endif
@@ -141,7 +141,7 @@ index 485685731508290d88c141566f6feac1132d7b8e..db58c1b34bd4e5860aa37b92c451c7cd
    std::optional<enterprise_connectors::ContentAnalysisDelegate::Data>
        scanning_data = enterprise_data_protection::GetPrintAnalysisData(
            web_contents(), enterprise_data_protection::PrintScanningContext::
-@@ -916,7 +916,7 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -906,7 +906,7 @@ void PrintViewManagerBase::ReleasePrintJob() {
      // Ensure that any residual registration of printing client is released.
      // This might be necessary in some abnormal cases, such as the associated
      // render process having terminated.
@@ -150,7 +150,7 @@ index 485685731508290d88c141566f6feac1132d7b8e..db58c1b34bd4e5860aa37b92c451c7cd
      if (!analyzing_content_) {
        UnregisterSystemPrintClient();
      }
-@@ -999,7 +999,7 @@ bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
+@@ -989,7 +989,7 @@ bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
      return false;
    }
  
@@ -159,7 +159,7 @@ index 485685731508290d88c141566f6feac1132d7b8e..db58c1b34bd4e5860aa37b92c451c7cd
    // Don't start printing if enterprise checks are being performed to check if
    // printing is allowed, or if content analysis is going to take place right
    // before starting `print_job_`.
-@@ -1155,7 +1155,7 @@ void PrintViewManagerBase::CompleteScriptedPrint(
+@@ -1145,7 +1145,7 @@ void PrintViewManagerBase::CompleteScriptedPrint(
                       std::move(callback_wrapper)));
  }
  
@@ -264,10 +264,10 @@ index 6acf5b006b7e2eafeda1c37dad21c989f9adc534..8eea22e03a3e6bd48b8303da7e82bc72
  
  enum PrintFailureReason {
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index dc1dd6fe579d0b7517f34f94e960991ab22ee3f7..7d9dfe14bbdff1796af2c82d186311c26d4eecd2 100644
+index c78be1606c7c574714dd57162fe49ab6414c8a5c..24936ea1ee262bc893bc81ce009ded2bf5034bb4 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
-@@ -2464,6 +2464,7 @@ bool PrintRenderFrameHelper::PrintPagesNative(
+@@ -2463,6 +2463,7 @@ bool PrintRenderFrameHelper::PrintPagesNative(
      result->params = std::move(page_params);
      result->accessibility_tree = std::move(accessibility_tree);
      result->generate_document_outline = print_params.generate_document_outline;
