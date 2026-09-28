@@ -14,10 +14,10 @@ Reviewed-by: Mickey Burks <mickeyburks@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1699939}
 
 diff --git a/ui/views/focus/focus_manager.cc b/ui/views/focus/focus_manager.cc
-index 96b7d4306e37d78d6a6071903bbafa9b51ccde32..09ad51d776d5a68ed6d9777d91e180e476d75cb1 100644
+index 28afaa27ad42e8dbcd4ef9b8a2c0bcdfb150be84..be7a995288625705295cfec15f53aeb28fe9bcd9 100644
 --- a/ui/views/focus/focus_manager.cc
 +++ b/ui/views/focus/focus_manager.cc
-@@ -160,34 +160,39 @@ bool FocusManager::ContainsView(View* view) {
+@@ -158,34 +158,39 @@ bool FocusManager::ContainsView(View* view) {
  }
  
  void FocusManager::AdvanceFocus(bool reverse) {
@@ -79,7 +79,7 @@ index 96b7d4306e37d78d6a6071903bbafa9b51ccde32..09ad51d776d5a68ed6d9777d91e180e4
    }
  }
  
-@@ -354,12 +359,13 @@ void FocusManager::SetFocusedViewWithReason(View* view,
+@@ -352,12 +357,13 @@ void FocusManager::SetFocusedViewWithReason(View* view,
    // Update the reason for the focus change (since this is checked by
    // some listeners), then notify all listeners.
    focus_change_reason_ = reason;

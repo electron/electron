@@ -12,7 +12,7 @@ Remove this patch once https://issues.chromium.org/issues/542981236 is
 fixed.
 
 diff --git a/build/toolchain/gcc_toolchain.gni b/build/toolchain/gcc_toolchain.gni
-index 78c1d0fcfd80b137d770a0064c4ffdf241f7a950..ed085954b928974f34894b42fdbfaf9735b1d1f3 100644
+index 3dba2acb87698c631022c30b4acb92715ff02e9e..612864d0dc5732f4aae74c35f7ac69e5cf7c9a97 100644
 --- a/build/toolchain/gcc_toolchain.gni
 +++ b/build/toolchain/gcc_toolchain.gni
 @@ -18,13 +18,13 @@ declare_args() {

@@ -7,10 +7,10 @@ By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This
 to have a dedicated browser process v8 snapshot defined by the file `browser_v8_context_snapshot.bin`.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index c757c0de8239b7490d72175a5f031b4feb7be358..ae6689fc28a2bacdd3266526c06c3cde12d4783a 100644
+index 92ab96d48ce1419d2af33390b0a5b5e2ef745ea2..a02cb5918b60fb5c0149e044d93e327950cc809a 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -275,8 +275,13 @@ std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
+@@ -276,8 +276,13 @@ std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
  
  #endif
  
@@ -25,7 +25,7 @@ index c757c0de8239b7490d72175a5f031b4feb7be358..ae6689fc28a2bacdd3266526c06c3cde
  #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
    base::FileDescriptorStore& file_descriptor_store =
        base::FileDescriptorStore::GetInstance();
-@@ -1028,7 +1033,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
+@@ -1029,7 +1034,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
  
  #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
    if (delegate_->ShouldLoadV8Snapshot(process_type)) {

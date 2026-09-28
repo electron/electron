@@ -10,10 +10,10 @@ This patch should be proposed upstream.
 Ref: https://chromium-review.googlesource.com/c/chromium/src/+/7237910 "7237910: Remove g_gtk_ui global"
 
 diff --git a/extensions/renderer/script_injection.cc b/extensions/renderer/script_injection.cc
-index 9cd68d1eb598f7cae6ee54d3bb91d657b3570304..ec2efb4d04fe5f76c65418bfc03a5bdb40a09cf9 100644
+index 81ef667b543876277cab59afef523550365348d7..f996a314dca741a90063618f3326bde8b6638984 100644
 --- a/extensions/renderer/script_injection.cc
 +++ b/extensions/renderer/script_injection.cc
-@@ -9,6 +9,7 @@
+@@ -11,6 +11,7 @@
  
  #include "base/feature_list.h"
  #include "base/functional/bind.h"

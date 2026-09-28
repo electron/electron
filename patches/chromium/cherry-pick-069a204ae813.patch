@@ -131,10 +131,10 @@ index a567a04869bcfb32a94a71c0ccebb6ecef3c6418..b68069c29c22b2dbf46205202af90fe1
                                   GLsizei width,
                                   GLsizei height,
 diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
-index 1b7162e2f579112cc24d460c10ae9e69a4486597..0fd8d860d7be3087508f52bc8c98366935a57873 100644
+index 1d613d859ecc6f999f8312a20b3af96d55e9189b..e8e1e9aa778ba7f7a427e10cea0538fc019cbe35 100644
 --- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
 +++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
-@@ -13308,15 +13308,20 @@ error::Error GLES2DecoderImpl::DoCompressedTexImage(
+@@ -13335,15 +13335,20 @@ error::Error GLES2DecoderImpl::DoCompressedTexImage(
          if (texture->GetLevelSize(target, 0, &level0_width, &level0_height,
                                    &level0_depth) &&
              level0_width > 0 && level0_height > 0) {
@@ -165,7 +165,7 @@ index 1b7162e2f579112cc24d460c10ae9e69a4486597..0fd8d860d7be3087508f52bc8c983669
              api()->glGenBuffersARBFn(1, &scratch);
              api()->glBindBufferFn(GL_PIXEL_UNPACK_BUFFER, scratch);
 diff --git a/gpu/command_buffer/tests/gl_texture_unittest.cc b/gpu/command_buffer/tests/gl_texture_unittest.cc
-index 5c27242cf73b11ab6976ed91984da557a918f925..a858a54d9d658c07a9c94bf2654c8fb031266b29 100644
+index 4568e4f2bc673002a48071bc3f7792cad964b13f..c43cff7e329765c8cb091614ae6bd2ffcc72a28e 100644
 --- a/gpu/command_buffer/tests/gl_texture_unittest.cc
 +++ b/gpu/command_buffer/tests/gl_texture_unittest.cc
 @@ -13,6 +13,7 @@

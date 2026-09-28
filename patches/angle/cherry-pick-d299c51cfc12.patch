@@ -17,7 +17,7 @@ Commit-Queue: Geoff Lang <geofflang@chromium.org>
 Reviewed-by: Zhenyao Mo <zmo@chromium.org>
 
 diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
-index cd3b9dcb78d517c3913f2268e9a66d5b86170695..64376622223272109e1ead5f119745b0c4489bc7 100644
+index 73d8c9692e9b4d2610894a890f7fd1bd5b7222a2..714855db55b8d05abd60ca8619aa2c5e29887061 100644
 --- a/src/libANGLE/renderer/gl/TextureGL.cpp
 +++ b/src/libANGLE/renderer/gl/TextureGL.cpp
 @@ -849,23 +849,31 @@ angle::Result TextureGL::setCompressedImage(const gl::Context *context,
@@ -69,10 +69,10 @@ index cd3b9dcb78d517c3913f2268e9a66d5b86170695..64376622223272109e1ead5f119745b0
          nativegl::GetCompressedTexImageFormat(functions, features, internalFormat);
  
 diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
-index 3e7f85122f83d6d890473fbdee1bc21fa77dff5f..0ebb88fed76811389a2f2298f6f57127cff41e55 100644
+index 59ccf3c2e867863b66e2eaf14d7072568d9fdb53..bbd3b5cf2b4e603142c711c70153b5de36c83299 100644
 --- a/src/tests/gl_tests/TextureTest.cpp
 +++ b/src/tests/gl_tests/TextureTest.cpp
-@@ -24683,6 +24683,104 @@ TEST_P(Texture2DTestES3_OversizedMipLevels, CompressedASTC)
+@@ -24800,6 +24800,104 @@ TEST_P(Texture2DTestES3_OversizedMipLevels, CompressedASTC)
      EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth() / 4, getWindowHeight() / 4, GLColor::green);
  }
  

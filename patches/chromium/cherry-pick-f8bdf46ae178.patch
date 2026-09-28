@@ -21,10 +21,10 @@ Commit-Queue: Will Harris <wfh@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1698665}
 
 diff --git a/third_party/blink/renderer/bindings/bindings.gni b/third_party/blink/renderer/bindings/bindings.gni
-index affc516827340bdebabf520ea8daccc4a0524b0b..9ef25142a7265c0653a28e6a6bd1321d15d21e1b 100644
+index 173d65c9513f047bb33e5f86faf96d6ff1ba4934..957b6d76f2fde26c4973b4150d4d53e9dc69aed0 100644
 --- a/third_party/blink/renderer/bindings/bindings.gni
 +++ b/third_party/blink/renderer/bindings/bindings.gni
-@@ -233,6 +233,7 @@ bindings_unittest_files = get_path_info(
+@@ -234,6 +234,7 @@ bindings_unittest_files = get_path_info(
            "core/v8/module_record_test.cc",
            "core/v8/native_value_traits_impl_test.cc",
            "core/v8/native_value_traits_test.cc",

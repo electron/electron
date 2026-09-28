@@ -18,10 +18,10 @@ Commit-Queue: Zhenyao Mo <zmo@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1699003}
 
 diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
-index 2bb685b6e552e7332cf1331955ebbf75af29ae10..1b7162e2f579112cc24d460c10ae9e69a4486597 100644
+index e4523170fcbc8b34e3a4f5ce3984356eb74fb223..1d613d859ecc6f999f8312a20b3af96d55e9189b 100644
 --- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
 +++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
-@@ -12467,7 +12467,7 @@ bool GLES2DecoderImpl::ClearCompressedTextureLevel(Texture* texture,
+@@ -12552,7 +12552,7 @@ bool GLES2DecoderImpl::ClearCompressedTextureLevel(Texture* texture,
      // Add extra scope to destroy zero and the object it owns right
      // after its usage.
      auto zero = base::HeapArray<char>::WithSize(bytes_required);
@@ -30,7 +30,7 @@ index 2bb685b6e552e7332cf1331955ebbf75af29ae10..1b7162e2f579112cc24d460c10ae9e69
                              IsASTCFormat(format) && texture->base_level() != 0;
      api()->glBindTextureFn(texture->target(), texture->service_id());
      if (reset_base_level) {
-@@ -12533,7 +12533,7 @@ bool GLES2DecoderImpl::ClearCompressedTextureLevel3D(Texture* texture,
+@@ -12618,7 +12618,7 @@ bool GLES2DecoderImpl::ClearCompressedTextureLevel3D(Texture* texture,
      // Add extra scope to destroy zero and the object it owns right
      // after its usage.
      auto zero = base::HeapArray<char>::WithSize(bytes_required);
@@ -39,7 +39,7 @@ index 2bb685b6e552e7332cf1331955ebbf75af29ae10..1b7162e2f579112cc24d460c10ae9e69
                              IsASTCFormat(format) && texture->base_level() != 0;
      api()->glBindTextureFn(texture->target(), texture->service_id());
      if (reset_base_level) {
-@@ -13291,6 +13291,12 @@ error::Error GLES2DecoderImpl::DoCompressedTexImage(
+@@ -13376,6 +13376,12 @@ error::Error GLES2DecoderImpl::DoCompressedTexImage(
            format_info->decompressed_type, decompressed_data.data());
      }
    } else {
@@ -52,7 +52,7 @@ index 2bb685b6e552e7332cf1331955ebbf75af29ae10..1b7162e2f579112cc24d460c10ae9e69
      if (dimension == ContextState::k2D) {
        bool handled = false;
        if (workarounds().upload_oversized_mip_levels_via_unpack_buffer &&
-@@ -13338,6 +13344,10 @@ error::Error GLES2DecoderImpl::DoCompressedTexImage(
+@@ -13423,6 +13429,10 @@ error::Error GLES2DecoderImpl::DoCompressedTexImage(
        api()->glCompressedTexImage3DFn(target, level, internal_format, width,
                                        height, depth, border, image_size, data);
      }
@@ -63,7 +63,7 @@ index 2bb685b6e552e7332cf1331955ebbf75af29ae10..1b7162e2f579112cc24d460c10ae9e69
    }
    GLenum error = LOCAL_PEEK_GL_ERROR(func_name);
    if (error == GL_NO_ERROR) {
-@@ -13742,7 +13752,7 @@ error::Error GLES2DecoderImpl::DoCompressedTexSubImage(
+@@ -13827,7 +13837,7 @@ error::Error GLES2DecoderImpl::DoCompressedTexSubImage(
                                 decompressed_data.data());
      }
    } else {
@@ -73,7 +73,7 @@ index 2bb685b6e552e7332cf1331955ebbf75af29ae10..1b7162e2f579112cc24d460c10ae9e69
      if (reset_base_level) {
        api()->glTexParameteriFn(texture->target(), GL_TEXTURE_BASE_LEVEL, 0);
 diff --git a/gpu/command_buffer/tests/compressed_texture_test.cc b/gpu/command_buffer/tests/compressed_texture_test.cc
-index c3a0b1dda4b9cc111464854445020b355c775d87..173b172566e0bdba54d44f5f8dfa5cdc7fd3601d 100644
+index 07393fb818454c550eec277576fb660d34daee4a..ab3027f19b61be09a9f821757ef32e8594e3bf73 100644
 --- a/gpu/command_buffer/tests/compressed_texture_test.cc
 +++ b/gpu/command_buffer/tests/compressed_texture_test.cc
 @@ -8,11 +8,14 @@
@@ -91,7 +91,7 @@ index c3a0b1dda4b9cc111464854445020b355c775d87..173b172566e0bdba54d44f5f8dfa5cdc
  #include "testing/gtest/include/gtest/gtest.h"
  
  #define SHADER(src) #src
-@@ -255,17 +258,168 @@ INSTANTIATE_TEST_SUITE_P(Format,
+@@ -248,17 +251,168 @@ INSTANTIATE_TEST_SUITE_P(Format,
                           CompressedTextureTest,
                           ::testing::ValuesIn(kFormats));
  
@@ -262,7 +262,7 @@ index c3a0b1dda4b9cc111464854445020b355c775d87..173b172566e0bdba54d44f5f8dfa5cdc
   private:
    GLManager gl_;
  };
-@@ -273,137 +427,19 @@ class CompressedTextureTestES3 : public ::testing::Test {
+@@ -266,137 +420,19 @@ class CompressedTextureTestES3 : public ::testing::Test {
  // Test that compressed sub-image updates work when TEXTURE_BASE_LEVEL > 0.
  // This is a workaround for a PowerVR driver bug where it miscomputes the
  // offset.
@@ -413,7 +413,7 @@ index c3a0b1dda4b9cc111464854445020b355c775d87..173b172566e0bdba54d44f5f8dfa5cdc
 +
  }  // namespace gpu
 diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
-index d3664b969039d54886f404ba5c3bf6cbe9aa2ade..333883c3ad49f58ff24428aed985559455e67a89 100644
+index 13d82259da64a634380c9a2f791b18e4cad9e94e..f4d3cdec355f844829e442f3239a2364723b2a08 100644
 --- a/gpu/config/gpu_driver_bug_list.json
 +++ b/gpu/config/gpu_driver_bug_list.json
 @@ -3766,14 +3766,14 @@
@@ -435,11 +435,11 @@ index d3664b969039d54886f404ba5c3bf6cbe9aa2ade..333883c3ad49f58ff24428aed9855594
      },
      {
 diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
-index 76d258ba839e3698a18cf4d2c732c941fe23c692..caf3c186adafbb1da496e6a457f69f3e13d6d733 100644
+index e57a0c2ab3701b4e0a3773006ace9b1233d266ff..060e5ed0898f6ece233b5ce20e9b1defa9b3c0b2 100644
 --- a/gpu/config/gpu_workaround_list.txt
 +++ b/gpu/config/gpu_workaround_list.txt
-@@ -122,7 +122,7 @@ reattach_texture_to_fbo_after_layer_increase
- recreate_fbo_upon_flush
+@@ -123,7 +123,7 @@ recreate_fbo_upon_flush
+ recreate_mipmap_levels_before_generate
  rely_on_implicit_sync_for_swap_buffers
  remove_dynamic_indexing_of_swizzled_vector
 -reset_base_level_for_astc_sub_image

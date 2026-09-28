@@ -40,10 +40,10 @@ Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#109909}
 
 diff --git a/src/execution/frames.cc b/src/execution/frames.cc
-index b76ee73369064a39ead01ab8a19b2822c9e74ce9..7e95a184ac3e906927717fa5012382a48e8b7086 100644
+index 329e0bb86f9935f0d508f6fdeda146c534d25e90..51055f12e0ccbac3689fb6723e55fe82772b4ff5 100644
 --- a/src/execution/frames.cc
 +++ b/src/execution/frames.cc
-@@ -3975,7 +3975,13 @@ Address WasmLiftoffSetupFrame::CallingPC() const {
+@@ -3976,7 +3976,13 @@ Address WasmLiftoffSetupFrame::CallingPC() const {
  
  void WasmLiftoffSetupFrame::ComputeCallerState(State* state) const {
    TypedFrame::ComputeCallerState(state);
@@ -59,10 +59,10 @@ index b76ee73369064a39ead01ab8a19b2822c9e74ce9..7e95a184ac3e906927717fa5012382a4
  
  void WasmLiftoffSetupFrame::Iterate(RootVisitor* v) const {
 diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
-index 75f794ee5ba266747a772a5800b7412fa026c745..333df22f9a54a2c52980f98401d77a96d822127f 100644
+index 0b9882c5b75cda01a179242e77315b2c7990d366..6826fb42c15cb4dae8f17643ebb529656d2269f3 100644
 --- a/test/mjsunit/mjsunit.status
 +++ b/test/mjsunit/mjsunit.status
-@@ -3300,6 +3300,7 @@
+@@ -3297,6 +3297,7 @@
    'regress/wasm/regress-392928805': [SKIP],
    'regress/wasm/regress-406043349': [SKIP],
    'regress/wasm/regress-413963387': [SKIP],
