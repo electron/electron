@@ -1,6 +1,6 @@
 import { BrowserWindow, type Session, session } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
@@ -14,9 +14,10 @@ import { closeWindow } from './lib/window-helpers.ts';
 const features = process._linkedBinding('electron_common_features');
 const v8Util = process._linkedBinding('electron_common_v8_util');
 
-ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () {
-  this.timeout((process.env.IS_ASAN ? 200 : 20) * 1000);
+// Loading the dictionaries is slow under ASan.
+const timeout = (process.env.IS_ASAN ? 200 : 20) * 1000;
 
+ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', { timeout }, () => {
   let w: BrowserWindow;
 
   async function rightClick() {
@@ -61,10 +62,10 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
     }
   });
   let serverUrl: string;
-  before(async () => {
+  beforeAll(async () => {
     serverUrl = (await listen(server)).url;
-  });
-  after(() => server.close());
+  }, timeout);
+  afterAll(() => server.close(), timeout);
 
   const fixtures = path.resolve(import.meta.dirname, 'fixtures');
   const preload = path.join(fixtures, 'module', 'preload-electron.js');
@@ -84,11 +85,11 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
         w.webContents.session.setSpellCheckerDictionaryDownloadURL(serverUrl);
         w.webContents.session.setSpellCheckerLanguages(['en-US']);
         await w.loadFile(path.resolve(import.meta.dirname, './fixtures/chromium/spellchecker.html'));
-      });
+      }, timeout);
 
       afterEach(async () => {
         await closeWindow(w);
-      });
+      }, timeout);
 
       // Context menu test can not run on Windows or Linux (https://github.com/electron/electron/pull/48657 broke linux).
       const shouldRun = process.platform !== 'win32' && process.platform !== 'linux';
@@ -138,13 +139,13 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
 
         expect(await callWebFrameFn('isWordMisspelled("typography")')).to.equal(false);
         expect(await callWebFrameFn('isWordMisspelled("typograpy")')).to.equal(true);
-        expect(await callWebFrameFn('getWordSuggestions("typography")')).to.be.empty();
-        expect(await callWebFrameFn('getWordSuggestions("typograpy")')).to.not.be.empty();
+        expect(await callWebFrameFn('getWordSuggestions("typography")')).to.be.empty;
+        expect(await callWebFrameFn('getWordSuggestions("typograpy")')).to.not.be.empty;
       });
 
       describe('spellCheckerEnabled', () => {
         it('is enabled by default', async () => {
-          expect(w.webContents.session.spellCheckerEnabled).to.be.true();
+          expect(w.webContents.session.spellCheckerEnabled).to.be.true;
         });
 
         ifit(shouldRun)('can be dynamically changed', async () => {
@@ -156,7 +157,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
 
           w.webContents.session.spellCheckerEnabled = false;
           v8Util.runUntilIdle();
-          expect(w.webContents.session.spellCheckerEnabled).to.be.false();
+          expect(w.webContents.session.spellCheckerEnabled).to.be.false;
           // spellCheckerEnabled is sent to renderer asynchronously and there is
           // no event notifying when it is finished, so wait a little while to
           // ensure the setting has been changed in renderer.
@@ -165,7 +166,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
 
           w.webContents.session.spellCheckerEnabled = true;
           v8Util.runUntilIdle();
-          expect(w.webContents.session.spellCheckerEnabled).to.be.true();
+          expect(w.webContents.session.spellCheckerEnabled).to.be.true;
           await setTimeout(500);
           expect(await callWebFrameFn('isWordMisspelled("typograpy")')).to.equal(true);
         });
@@ -177,14 +178,14 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
         beforeEach(async () => {
           // ensure a new session runs on each test run
           ses = session.fromPartition(`persist:customdictionary-test-${Date.now()}`);
-        });
+        }, timeout);
 
         afterEach(async () => {
           if (ses) {
             await ses.clearStorageData();
             ses = null as any;
           }
-        });
+        }, timeout);
 
         describe('ses.listWordsFromSpellCheckerDictionary', () => {
           it('should successfully list words in custom dictionary', async () => {

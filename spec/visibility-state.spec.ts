@@ -7,7 +7,7 @@ import {
   WebContentsView
 } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterEach, beforeAll, expect, it } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -22,7 +22,7 @@ import { closeAllWindows } from './lib/window-helpers.ts';
 ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
   let w: BaseWindow & { webContents: WebContents };
 
-  before(() => {
+  beforeAll(() => {
     for (const checkWin of BaseWindow.getAllWindows()) {
       console.log('WINDOW EXISTS BEFORE TEST STARTED:', checkWin.title, checkWin.id);
     }
@@ -50,8 +50,13 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
   // occlusion specs below, which need a normal window level.
   const alwaysOnTop = process.platform === 'win32';
 
-  const itWithOptions = (name: string, options: BrowserWindowConstructorOptions, fn: Mocha.Func) => {
-    it(name, async function (...args) {
+  const itWithOptions = (
+    name: string,
+    options: BrowserWindowConstructorOptions,
+    fn: () => unknown,
+    testOptions: { timeout?: number } = {}
+  ) => {
+    it(name, testOptions, async () => {
       w = new BrowserWindow({
         alwaysOnTop,
         ...options,
@@ -65,10 +70,10 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
       if (options.show && process.platform === 'darwin') {
         await once(w, 'show');
       }
-      await Promise.resolve(fn.apply(this, args));
+      await fn();
     });
 
-    it(name + ' with BaseWindow', async function (...args) {
+    it(name + ' with BaseWindow', testOptions, async () => {
       const baseWindow = new BaseWindow({
         alwaysOnTop,
         ...options
@@ -81,13 +86,13 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
       if (options.show && process.platform === 'darwin') {
         await once(w, 'show');
       }
-      await Promise.resolve(fn.apply(this, args));
+      await fn();
     });
   };
 
   itWithOptions('should be visible when the window is initially shown by default', {}, async () => {
     load();
-    await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
+    await waitUntil(async () => await haveVisibilityState('visible'));
   });
 
   itWithOptions(
@@ -97,7 +102,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
     },
     async () => {
       load();
-      await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
+      await waitUntil(async () => await haveVisibilityState('visible'));
     }
   );
 
@@ -108,7 +113,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
     },
     async () => {
       load();
-      await expect(waitUntil(async () => await haveVisibilityState('hidden'))).to.eventually.be.fulfilled();
+      await waitUntil(async () => await haveVisibilityState('hidden'));
     }
   );
 
@@ -120,7 +125,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
     async () => {
       w.show();
       load();
-      await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
+      await waitUntil(async () => await haveVisibilityState('visible'));
     }
   );
 
@@ -132,33 +137,33 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
     async () => {
       w.hide();
       load();
-      await expect(waitUntil(async () => await haveVisibilityState('hidden'))).to.eventually.be.fulfilled();
+      await waitUntil(async () => await haveVisibilityState('hidden'));
     }
   );
 
   itWithOptions('should be toggle between visible and hidden as the window is hidden and shown', {}, async () => {
     load();
-    await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
+    await waitUntil(async () => await haveVisibilityState('visible'));
     w.hide();
-    await expect(waitUntil(async () => await haveVisibilityState('hidden'))).to.eventually.be.fulfilled();
+    await waitUntil(async () => await haveVisibilityState('hidden'));
     w.show();
-    await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
+    await waitUntil(async () => await haveVisibilityState('visible'));
   });
 
   itWithOptions('should become hidden when a window is minimized', {}, async () => {
     load();
-    await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
+    await waitUntil(async () => await haveVisibilityState('visible'));
     w.minimize();
-    await expect(waitUntil(async () => await haveVisibilityState('hidden'))).to.eventually.be.fulfilled();
+    await waitUntil(async () => await haveVisibilityState('hidden'));
   });
 
   itWithOptions('should become visible when a window is restored', {}, async () => {
     load();
-    await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
+    await waitUntil(async () => await haveVisibilityState('visible'));
     w.minimize();
-    await expect(waitUntil(async () => await haveVisibilityState('hidden'))).to.eventually.be.fulfilled();
+    await waitUntil(async () => await haveVisibilityState('hidden'));
     w.restore();
-    await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
+    await waitUntil(async () => await haveVisibilityState('visible'));
   });
 
   ifdescribe(process.platform === 'darwin')('on platforms that support occlusion detection', () => {
@@ -201,7 +206,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
           height: 200
         });
         load();
-        await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
+        await waitUntil(async () => await haveVisibilityState('visible'));
       }
     );
 
@@ -221,7 +226,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
           height: 200
         });
         load();
-        await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
+        await waitUntil(async () => await haveVisibilityState('visible'));
       }
     );
 
@@ -233,18 +238,18 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
         width: 50,
         height: 50
       },
-      async function () {
-        this.timeout(240000);
+      async () => {
         load();
-        await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
+        await waitUntil(async () => await haveVisibilityState('visible'));
         makeOtherWindow({
           x: 0,
           y: 0,
           width: 300,
           height: 300
         });
-        await expect(waitUntil(async () => await haveVisibilityState('hidden'))).to.eventually.be.fulfilled();
-      }
+        await waitUntil(async () => await haveVisibilityState('hidden'));
+      },
+      { timeout: 240000 }
     );
 
     // https://github.com/electron/electron/issues/51718
@@ -258,7 +263,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
       },
       async () => {
         load();
-        await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
+        await waitUntil(async () => await haveVisibilityState('visible'));
 
         const overlay = new BrowserWindow({
           x: 50,

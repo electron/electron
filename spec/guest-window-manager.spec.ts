@@ -1,6 +1,6 @@
 import { BrowserWindow, screen } from 'electron';
 
-import { expect, assert } from 'chai';
+import { afterAll, afterEach, assert, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as http from 'node:http';
@@ -20,34 +20,36 @@ describe('webContents.setWindowOpenHandler', () => {
 
     afterEach(closeAllWindows);
 
-    it('does not fire window creation events if the handler callback throws an error', (done) => {
-      const error = new Error('oh no');
-      const listeners = process.listeners('uncaughtException');
-      process.removeAllListeners('uncaughtException');
-      process.on('uncaughtException', (thrown) => {
-        try {
-          expect(thrown).to.equal(error);
-          done();
-        } catch (e) {
-          done(e);
-        } finally {
-          process.removeAllListeners('uncaughtException');
-          for (const listener of listeners) {
-            process.on('uncaughtException', listener);
+    it('does not fire window creation events if the handler callback throws an error', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const error = new Error('oh no');
+        const listeners = process.listeners('uncaughtException');
+        process.removeAllListeners('uncaughtException');
+        process.on('uncaughtException', (thrown) => {
+          try {
+            expect(thrown).to.equal(error);
+            done();
+          } catch (e) {
+            done(e);
+          } finally {
+            process.removeAllListeners('uncaughtException');
+            for (const listener of listeners) {
+              process.on('uncaughtException', listener);
+            }
           }
-        }
-      });
+        });
 
-      browserWindow.webContents.on('did-create-window', () => {
-        assert.fail('did-create-window should not be called with an overridden window.open');
-      });
+        browserWindow.webContents.on('did-create-window', () => {
+          assert.fail('did-create-window should not be called with an overridden window.open');
+        });
 
-      browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
+        browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
 
-      browserWindow.webContents.setWindowOpenHandler(() => {
-        throw error;
-      });
-    });
+        browserWindow.webContents.setWindowOpenHandler(() => {
+          throw error;
+        });
+      }));
 
     it('does not fire window creation events if the handler callback returns a bad result', async () => {
       const bad = new Promise((resolve) => {
@@ -241,7 +243,7 @@ describe('webContents.setWindowOpenHandler', () => {
       `);
       await didNavigate;
 
-      expect(sameWindow).to.be.true('window.open with matching frame name should return the same window proxy');
+      expect(sameWindow, 'window.open with matching frame name should return the same window proxy').to.be.true;
       expect(handlerCallCount).to.equal(
         1,
         'setWindowOpenHandler should not be called when Blink resolves the named target'
@@ -368,7 +370,7 @@ describe('webContents.setWindowOpenHandler', () => {
       const url = `file://${nodePath.join('fixtures', 'pages', 'content.html')}`;
       browserWindow.webContents.executeJavaScript(`window.open('${JSON.stringify(url)}') && true`);
       const [childWindow] = await didCreateWindow;
-      expect(childWindow.webContents.isOffscreen()).to.be.true('Child window should be offscreen');
+      expect(childWindow.webContents.isOffscreen(), 'Child window should be offscreen').to.be.true;
     });
 
     it('can open an onscreen child window from an offscreen parent', async () => {
@@ -386,7 +388,7 @@ describe('webContents.setWindowOpenHandler', () => {
       const url = `file://${nodePath.join('fixtures', 'pages', 'content.html')}`;
       obw.webContents.executeJavaScript(`window.open('${JSON.stringify(url)}') && true`);
       const [childWindow] = await didCreateWindow;
-      expect(childWindow.webContents.isOffscreen()).to.be.false('Child window should not be offscreen');
+      expect(childWindow.webContents.isOffscreen(), 'Child window should not be offscreen').to.be.false;
     });
 
     it('can open an offscreen child window from an offscreen parent', async () => {
@@ -411,7 +413,7 @@ describe('webContents.setWindowOpenHandler', () => {
       const url = `file://${nodePath.join('fixtures', 'pages', 'content.html')}`;
       obw.webContents.executeJavaScript(`window.open('${JSON.stringify(url)}') && true`);
       const [childWindow] = await didCreateWindow;
-      expect(childWindow.webContents.isOffscreen()).to.be.true('Child window should be offscreen');
+      expect(childWindow.webContents.isOffscreen(), 'Child window should be offscreen').to.be.true;
     });
 
     ifit(hasCapturableScreen())(
@@ -440,7 +442,7 @@ describe('webContents.setWindowOpenHandler', () => {
     let server: http.Server;
     let url: string;
 
-    before(async () => {
+    beforeAll(async () => {
       server = http.createServer((request, response) => {
         switch (request.url) {
           case '/index':
@@ -463,7 +465,7 @@ describe('webContents.setWindowOpenHandler', () => {
       url = (await listen(server)).url;
     });
 
-    after(() => {
+    afterAll(() => {
       server.close();
     });
 
@@ -619,7 +621,7 @@ describe('webContents.setWindowOpenHandler', () => {
       });
 
       await once(childWindow.webContents, 'ready-to-show');
-      await expect(childWindow.webContents.executeJavaScript('window.opener.document.title')).to.be.rejectedWith(
+      await expect(childWindow.webContents.executeJavaScript('window.opener.document.title')).rejects.toThrow(
         'Script failed to execute, this normally means an error was thrown. Check the renderer console for the error.'
       );
     });

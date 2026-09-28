@@ -1,6 +1,6 @@
 import { BaseWindow, BrowserWindow, View, WebContentsView, webContents, screen } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
@@ -133,7 +133,7 @@ describe('WebContentsView', () => {
     const destroyed = once(wc, 'destroyed');
     wc.executeJavaScript('window.close()');
     await destroyed;
-    expect(wc.isDestroyed()).to.be.true();
+    expect(wc.isDestroyed()).to.be.true;
     v.removeChildView(wcv);
   });
 
@@ -188,21 +188,22 @@ describe('WebContentsView', () => {
     return arr;
   }
 
-  it("doesn't crash when GCed during allocation", (done) => {
-    // oxlint-disable-next-line no-new
-    new WebContentsView();
-    setTimeout(() => {
-      // NB. the crash we're testing for is the lack of a current `v8::Context`
-      // when emitting an event in WebContents's destructor. V8 is inconsistent
-      // about whether or not there's a current context during garbage
-      // collection, and it seems that `v8Util.requestGarbageCollectionForTesting`
-      // causes a GC in which there _is_ a current context, so the crash isn't
-      // triggered. Thus, we force a GC by other means: namely, by allocating a
-      // bunch of stuff.
-      triggerGCByAllocation();
-      done();
-    });
-  });
+  it("doesn't crash when GCed during allocation", () =>
+    new Promise<void>((resolve) => {
+      // oxlint-disable-next-line no-new
+      new WebContentsView();
+      setTimeout(() => {
+        // NB. the crash we're testing for is the lack of a current `v8::Context`
+        // when emitting an event in WebContents's destructor. V8 is inconsistent
+        // about whether or not there's a current context during garbage
+        // collection, and it seems that `v8Util.requestGarbageCollectionForTesting`
+        // causes a GC in which there _is_ a current context, so the crash isn't
+        // triggered. Thus, we force a GC by other means: namely, by allocating a
+        // bunch of stuff.
+        triggerGCByAllocation();
+        resolve();
+      });
+    }));
 
   it('does not crash when closed via window.close()', async () => {
     const bw = new BrowserWindow();
@@ -222,7 +223,7 @@ describe('WebContentsView', () => {
     wc.loadURL('data:text/html,<script>window.close()</script>');
 
     const open = await dto;
-    expect(open).to.be.false();
+    expect(open).to.be.false;
   });
 
   it('can be fullscreened', async () => {
@@ -234,7 +235,7 @@ describe('WebContentsView', () => {
     const enterFullScreen = once(w, 'enter-full-screen');
     await v.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
     await enterFullScreen;
-    expect(w.isFullScreen()).to.be.true('isFullScreen');
+    expect(w.isFullScreen(), 'isFullScreen').to.be.true;
   });
 
   it('can be added as a child of another View', async () => {
@@ -306,7 +307,7 @@ describe('WebContentsView', () => {
       const v = new WebContentsView();
       w.setContentView(v);
       await v.webContents.loadURL('about:blank');
-      await expect(waitUntil(async () => await haveVisibilityState(v, 'visible'))).to.eventually.be.fulfilled();
+      await waitUntil(async () => await haveVisibilityState(v, 'visible'));
       const p = v.webContents.executeJavaScript(
         'new Promise(resolve => document.addEventListener("visibilitychange", resolve))'
       );
@@ -342,7 +343,7 @@ describe('WebContentsView', () => {
       const v = new WebContentsView();
       w.setContentView(v);
       await v.webContents.loadURL('about:blank');
-      await expect(waitUntil(async () => await haveVisibilityState(v, 'visible'))).to.eventually.be.fulfilled();
+      await waitUntil(async () => await haveVisibilityState(v, 'visible'));
 
       const p = v.webContents.executeJavaScript(
         'new Promise(resolve => document.addEventListener("visibilitychange", () => resolve(document.visibilityState)))'
@@ -381,18 +382,18 @@ describe('WebContentsView', () => {
       await v1.webContents.loadURL('about:blank');
       await v2.webContents.loadURL('about:blank');
 
-      await expect(waitUntil(async () => await haveVisibilityState(v1, 'hidden'))).to.eventually.be.fulfilled();
-      await expect(waitUntil(async () => await haveVisibilityState(v2, 'hidden'))).to.eventually.be.fulfilled();
+      await waitUntil(async () => await haveVisibilityState(v1, 'hidden'));
+      await waitUntil(async () => await haveVisibilityState(v2, 'hidden'));
 
       w.show();
 
-      await expect(waitUntil(async () => await haveVisibilityState(v1, 'visible'))).to.eventually.be.fulfilled();
-      await expect(waitUntil(async () => await haveVisibilityState(v2, 'visible'))).to.eventually.be.fulfilled();
+      await waitUntil(async () => await haveVisibilityState(v1, 'visible'));
+      await waitUntil(async () => await haveVisibilityState(v2, 'visible'));
 
       w.hide();
 
-      await expect(waitUntil(async () => await haveVisibilityState(v1, 'hidden'))).to.eventually.be.fulfilled();
-      await expect(waitUntil(async () => await haveVisibilityState(v2, 'hidden'))).to.eventually.be.fulfilled();
+      await waitUntil(async () => await haveVisibilityState(v1, 'hidden'));
+      await waitUntil(async () => await haveVisibilityState(v2, 'hidden'));
     });
 
     it('tracks visibility independently when a child WebContentsView is hidden via setVisible', async () => {
@@ -410,18 +411,18 @@ describe('WebContentsView', () => {
       await v1.webContents.loadURL('about:blank');
       await v2.webContents.loadURL('about:blank');
 
-      await expect(waitUntil(async () => await haveVisibilityState(v1, 'visible'))).to.eventually.be.fulfilled();
-      await expect(waitUntil(async () => await haveVisibilityState(v2, 'visible'))).to.eventually.be.fulfilled();
+      await waitUntil(async () => await haveVisibilityState(v1, 'visible'));
+      await waitUntil(async () => await haveVisibilityState(v2, 'visible'));
 
       v1.setVisible(false);
 
-      await expect(waitUntil(async () => await haveVisibilityState(v1, 'hidden'))).to.eventually.be.fulfilled();
+      await waitUntil(async () => await haveVisibilityState(v1, 'hidden'));
       // v2 should remain visible while v1 is hidden
       expect(await v2.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
 
       v1.setVisible(true);
 
-      await expect(waitUntil(async () => await haveVisibilityState(v1, 'visible'))).to.eventually.be.fulfilled();
+      await waitUntil(async () => await haveVisibilityState(v1, 'visible'));
     });
 
     it('fires a single visibilitychange event per show/hide transition', async () => {
@@ -438,13 +439,13 @@ describe('WebContentsView', () => {
       `);
 
       w.show();
-      await expect(waitUntil(async () => await haveVisibilityState(v, 'visible'))).to.eventually.be.fulfilled();
+      await waitUntil(async () => await haveVisibilityState(v, 'visible'));
 
       // Give any delayed/queued occlusion updates time to fire.
       await setTimeoutAsync(1500);
 
       w.hide();
-      await expect(waitUntil(async () => await haveVisibilityState(v, 'hidden'))).to.eventually.be.fulfilled();
+      await waitUntil(async () => await haveVisibilityState(v, 'hidden'));
 
       await setTimeoutAsync(1500);
 
@@ -469,12 +470,10 @@ describe('WebContentsView', () => {
       v.setBounds({ x: 0, y: 0, width: 400, height: 300 });
       await v.webContents.loadURL('about:blank');
       v.setBounds({ x: 0, y: 0, width: 500, height: 400 });
-      await expect(
-        waitUntil(async () => {
-          const size = await v.webContents.executeJavaScript('[innerWidth, innerHeight]');
-          return size[0] === 500 && size[1] === 400;
-        })
-      ).to.eventually.be.fulfilled();
+      await waitUntil(async () => {
+        const size = await v.webContents.executeJavaScript('[innerWidth, innerHeight]');
+        return size[0] === 500 && size[1] === 400;
+      });
     });
 
     it('resizes the page after the view is removed from a window', async () => {
@@ -485,12 +484,10 @@ describe('WebContentsView', () => {
       await v.webContents.loadURL('about:blank');
       w.contentView.removeChildView(v);
       v.setBounds({ x: 0, y: 0, width: 500, height: 400 });
-      await expect(
-        waitUntil(async () => {
-          const size = await v.webContents.executeJavaScript('[innerWidth, innerHeight]');
-          return size[0] === 500 && size[1] === 400;
-        })
-      ).to.eventually.be.fulfilled();
+      await waitUntil(async () => {
+        const size = await v.webContents.executeJavaScript('[innerWidth, innerHeight]');
+        return size[0] === 500 && size[1] === 400;
+      });
     });
   });
 
@@ -587,9 +584,9 @@ describe('WebContentsView', () => {
       const devToolsFocused = once(v.webContents, 'devtools-focused');
       v.webContents.openDevTools({ mode: 'right' });
       await devToolsFocused;
-      expect(v.webContents.isFocused()).to.be.false();
+      expect(v.webContents.isFocused()).to.be.false;
       await v.webContents.loadURL('data:text/html,<body>test</body>');
-      expect(v.webContents.isFocused()).to.be.true();
+      expect(v.webContents.isFocused()).to.be.true;
     });
 
     it('does not focus the webContents on navigation when focusOnNavigation is false', async () => {
@@ -605,9 +602,9 @@ describe('WebContentsView', () => {
       const devToolsFocused = once(v.webContents, 'devtools-focused');
       v.webContents.openDevTools({ mode: 'right' });
       await devToolsFocused;
-      expect(v.webContents.isFocused()).to.be.false();
+      expect(v.webContents.isFocused()).to.be.false;
       await v.webContents.loadURL('data:text/html,<body>test</body>');
-      expect(v.webContents.isFocused()).to.be.false();
+      expect(v.webContents.isFocused()).to.be.false;
     });
   });
 });

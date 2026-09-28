@@ -1,8 +1,6 @@
 import { safeStorage } from 'electron/main';
 
-import * as chai from 'chai';
-import { expect } from 'chai';
-import chaiAsPromised from 'chai-as-promised';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -11,16 +9,14 @@ import * as path from 'node:path';
 
 import { ifdescribe } from './lib/spec-helpers.ts';
 
-chai.use(chaiAsPromised);
-
 describe('safeStorage module', () => {
-  before(() => {
+  beforeAll(() => {
     if (process.platform === 'linux') {
       safeStorage.setUsePlainTextEncryption(true);
     }
   });
 
-  after(async () => {
+  afterAll(async () => {
     const pathToEncryptedString = path.resolve(import.meta.dirname, 'fixtures', 'api', 'safe-storage', 'encrypted.txt');
     if (fs.existsSync(pathToEncryptedString)) {
       await fs.promises.rm(pathToEncryptedString, { force: true, recursive: true });
@@ -122,12 +118,12 @@ describe('safeStorage module', () => {
 
     it('unencrypted input should reject', async () => {
       const plaintextBuffer = Buffer.from('I am unencoded!', 'utf-8');
-      await expect(safeStorage.decryptStringAsync(plaintextBuffer)).to.be.rejectedWith(Error);
+      await expect(safeStorage.decryptStringAsync(plaintextBuffer)).rejects.toThrow(Error);
     });
 
     it('non-buffer input should reject', async () => {
       const notABuffer = {} as any;
-      await expect(safeStorage.decryptStringAsync(notABuffer)).to.be.rejectedWith(Error);
+      await expect(safeStorage.decryptStringAsync(notABuffer)).rejects.toThrow(Error);
     });
   });
 

@@ -333,7 +333,7 @@ async function runElectronTests() {
     try {
       console.info('\nRunning:', description);
       if (testResultsDir) {
-        process.env.MOCHA_FILE = path.join(testResultsDir, `test-results-${runnerId}.xml`);
+        process.env.ELECTRON_SPEC_JUNIT_FILE = path.join(testResultsDir, `test-results-${runnerId}.xml`);
       }
       await run();
     } catch (err) {
@@ -370,12 +370,12 @@ async function asyncSpawn(exe, runnerArgs, env = process.env) {
 }
 
 function parseJUnitXML(specDir) {
-  if (!fs.existsSync(process.env.MOCHA_FILE)) {
-    console.error('JUnit XML file not found:', process.env.MOCHA_FILE);
+  if (!fs.existsSync(process.env.ELECTRON_SPEC_JUNIT_FILE)) {
+    console.error('JUnit XML file not found:', process.env.ELECTRON_SPEC_JUNIT_FILE);
     return [];
   }
 
-  const xmlContent = fs.readFileSync(process.env.MOCHA_FILE, 'utf8');
+  const xmlContent = fs.readFileSync(process.env.ELECTRON_SPEC_JUNIT_FILE, 'utf8');
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
 
@@ -460,8 +460,8 @@ async function rerunFailedTests(specDir, testName) {
   }
 
   // Save off the original junit xml file
-  if (fs.existsSync(process.env.MOCHA_FILE)) {
-    fs.copyFileSync(process.env.MOCHA_FILE, `${process.env.MOCHA_FILE}.save`);
+  if (fs.existsSync(process.env.ELECTRON_SPEC_JUNIT_FILE)) {
+    fs.copyFileSync(process.env.ELECTRON_SPEC_JUNIT_FILE, `${process.env.ELECTRON_SPEC_JUNIT_FILE}.save`);
   }
 
   console.log(`\n📊 Found ${failedTests.length} failed test(s):`);
@@ -513,8 +513,8 @@ async function rerunFailedTests(specDir, testName) {
   console.log(`Still failing: ${results.failed}`);
 
   // Restore the original junit xml file
-  if (fs.existsSync(`${process.env.MOCHA_FILE}.save`)) {
-    fs.renameSync(`${process.env.MOCHA_FILE}.save`, process.env.MOCHA_FILE);
+  if (fs.existsSync(`${process.env.ELECTRON_SPEC_JUNIT_FILE}.save`)) {
+    fs.renameSync(`${process.env.ELECTRON_SPEC_JUNIT_FILE}.save`, process.env.ELECTRON_SPEC_JUNIT_FILE);
   }
 
   if (results.failed === 0) {
@@ -527,19 +527,17 @@ async function rerunFailedTests(specDir, testName) {
 
 let electronLaunchCount = 0;
 
-// The runner used to launch `electron spec/ <args>` and let the spec app (a
-// mocha runner) interpret the arguments. It now launches the vitest CLI, which
-// starts the Electron processes itself (spec/vitest/electron-pool.ts), so the
-// arguments the spec app understood are translated here: `--files` becomes
-// vitest's file filters, `-g`/`--grep` (and `-i`/`--invert`) its test name
-// pattern, and anything else is treated as a command line switch for the
-// Electron workers, as before.
+// Launches the vitest CLI, which starts the Electron processes itself
+// (spec/vitest/electron-pool.ts). The runner's own arguments are translated:
+// `--files` becomes vitest's file filters, `-g`/`--grep` (and `-i`/`--invert`)
+// its test name pattern, and anything else is treated as a command line
+// switch for the Electron workers.
 function toVitestInvocation(exe, specDir, runnerArgs) {
   const specRoot = path.resolve(__dirname, '..', specDir);
   const files = [];
   const electronArgs = [];
-  let grep = process.env.MOCHA_GREP || null;
-  let invert = process.env.MOCHA_INVERT === 'true';
+  let grep = null;
+  let invert = false;
   for (let i = 0; i < runnerArgs.length; i++) {
     const arg = String(runnerArgs[i]);
     const takeValue = () => (arg.includes('=') ? arg.slice(arg.indexOf('=') + 1) : String(runnerArgs[++i]));

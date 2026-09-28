@@ -8,7 +8,7 @@ import {
   utilityProcess
 } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as fs from 'node:fs';
@@ -45,7 +45,7 @@ async function itUtility(name: string, fn?: Function, args?: { [key: string]: an
       child.postMessage({ fn: '(() => {})()', args });
     }
     const [data] = await once(child, 'message');
-    expect(data.ok).to.be.true(data.message);
+    expect(data.ok, data.message).to.be.true;
     // Cleanup.
     const [code] = await once(child, 'exit');
     expect(code).to.equal(0);
@@ -53,21 +53,20 @@ async function itUtility(name: string, fn?: Function, args?: { [key: string]: an
 }
 
 // oxlint-disable-next-line @typescript-eslint/no-unused-vars
-async function itIgnoringArgs(name: string, fn?: Mocha.Func | Mocha.AsyncFunc, args?: { [key: string]: any }) {
-  it(name, fn);
+function itIgnoringArgs(name: string, fn?: () => unknown, args?: { [key: string]: any }) {
+  if (fn) it(name, fn);
+  else it.todo(name);
 }
 
 describe('net module', () => {
   beforeEach(() => {
     respondNTimes.routeFailure = false;
   });
-  afterEach(async function () {
-    if (respondNTimes.routeFailure && this.test) {
-      if (!this.test.isFailed()) {
-        throw new Error(
-          'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
-        );
-      }
+  afterEach((ctx) => {
+    if (respondNTimes.routeFailure && ctx.task.result?.state !== 'fail') {
+      throw new Error(
+        'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
+      );
     }
   });
 
@@ -96,11 +95,11 @@ describe('net module', () => {
     }
   );
 
-  before(async () => {
+  beforeAll(async () => {
     http2URL = (await listen(h2server)).url + '/';
   });
 
-  after(() => {
+  afterAll(() => {
     h2server.close();
   });
 
@@ -280,7 +279,7 @@ describe('net module', () => {
         expect(receivedRequest.headers['content-length']).to.equal(undefined);
         expect(response.statusCode).to.equal(200);
         const received = await collectStreamBodyBuffer(response);
-        expect(sent.equals(received)).to.be.true();
+        expect(sent.equals(received)).to.be.true;
         expect(chunkIndex).to.be.equal(chunkCount);
       });
 
@@ -379,7 +378,7 @@ describe('net module', () => {
             cb();
           });
           const response = await getResponse(request);
-          expect(loginEventEmitted).to.be.false('unexpected login event');
+          expect(loginEventEmitted, 'unexpected login event').to.be.false;
           expect(response.statusCode).to.equal(401);
           expect(response.headers['www-authenticate']).to.equal('Basic realm="Foo"');
         });
@@ -415,8 +414,8 @@ describe('net module', () => {
           requestError = error;
         });
         await Promise.all([closePromise, finishPromise]);
-        expect(responseError).to.be.undefined();
-        expect(requestError).to.be.undefined();
+        expect(responseError).to.be.undefined;
+        expect(requestError).to.be.undefined;
       });
 
       test('request/response objects should emit error events when the connection is lost mid-body', async () => {
@@ -794,7 +793,7 @@ describe('net module', () => {
               origin: serverUrl
             });
             urlRequest.setHeader('sec-fetch-dest', dest);
-            await expect(getResponse(urlRequest)).to.be.rejectedWith(
+            await expect(getResponse(urlRequest)).rejects.toThrow(
               "sec-fetch-dest of 'document', 'frame', 'iframe' or 'fencedframe' requires sec-fetch-mode 'navigate'"
             );
           },
@@ -819,8 +818,8 @@ describe('net module', () => {
         urlRequest.write('');
         urlRequest.end();
         await aborted;
-        expect(requestReceivedByServer).to.be.false('Unexpected request event');
-        expect(responseEventEmitted).to.be.false('Unexpected response event');
+        expect(requestReceivedByServer, 'Unexpected request event').to.be.false;
+        expect(responseEventEmitted, 'Unexpected response event').to.be.false;
       });
 
       test('it should be able to abort an HTTP request before request end', async () => {
@@ -853,9 +852,9 @@ describe('net module', () => {
         urlRequest.chunkedEncoding = true;
         urlRequest.write(randomString(kOneKiloByte));
         await p;
-        expect(responseEventEmitted).to.be.false('Unexpected response event');
-        expect(finishEventEmitted).to.be.false('Unexpected finish event');
-        expect(unexpectedError).to.be.undefined('Unexpected error event');
+        expect(responseEventEmitted, 'Unexpected response event').to.be.false;
+        expect(finishEventEmitted, 'Unexpected finish event').to.be.false;
+        expect(unexpectedError, 'Unexpected error event').to.be.undefined;
         expect(requestReceivedByServer).to.equal(true);
         expect(requestAbortEventEmitted).to.equal(true);
       });
@@ -893,7 +892,7 @@ describe('net module', () => {
         const aborted = once(urlRequest, 'abort');
         urlRequest.abort();
         await aborted;
-        await expect(pendingRead).to.eventually.be.rejectedWith('ERR_FAILED');
+        await expect(pendingRead).rejects.toThrow('ERR_FAILED');
       });
 
       it('should preserve the request error when settling a pending upload stream read', async () => {
@@ -924,7 +923,7 @@ describe('net module', () => {
         urlRequest.write('hello');
         await reached;
 
-        const readError = expect(pendingRead).to.eventually.be.rejectedWith('ERR_FAILED');
+        const readError = expect(pendingRead).rejects.toThrow('ERR_FAILED');
         failRequest!();
         await readError;
       });
@@ -1007,7 +1006,7 @@ describe('net module', () => {
         const writeError = await writeCompleted;
         expect(writeError).to.be.an.instanceOf(Error);
         expect(writeError!.message).to.contain('ERR_ABORTED');
-        expect(unexpectedError).to.be.undefined('Unexpected error event');
+        expect(unexpectedError, 'Unexpected error event').to.be.undefined;
       });
 
       test('it should be able to abort an HTTP request after request end and before response', async () => {
@@ -1038,8 +1037,8 @@ describe('net module', () => {
         });
         urlRequest.end(randomString(kOneKiloByte));
         await once(urlRequest, 'abort');
-        expect(responseEventEmitted).to.be.false('Unexpected response event');
-        expect(unexpectedError).to.be.undefined('Unexpected error event');
+        expect(responseEventEmitted, 'Unexpected response event').to.be.false;
+        expect(unexpectedError, 'Unexpected error event').to.be.undefined;
         expect(requestFinishEventEmitted).to.equal(true);
         expect(requestReceivedByServer).to.equal(true);
       });
@@ -1083,13 +1082,13 @@ describe('net module', () => {
         });
         urlRequest.end(randomString(kOneKiloByte));
         await once(urlRequest, 'abort');
-        expect(unexpectedError).to.be.undefined('Unexpected error event');
-        expect(requestFinishEventEmitted).to.be.true('request should emit "finish" event');
-        expect(requestReceivedByServer).to.be.true('request should be received by the server');
-        expect(requestResponseEventEmitted).to.be.true('"response" event should be emitted');
+        expect(unexpectedError, 'Unexpected error event').to.be.undefined;
+        expect(requestFinishEventEmitted, 'request should emit "finish" event').to.be.true;
+        expect(requestReceivedByServer, 'request should be received by the server').to.be.true;
+        expect(requestResponseEventEmitted, '"response" event should be emitted').to.be.true;
         expect(responseStatusCode).to.equal(200);
-        expect(responseEndEventEmitted).to.be.false('Unexpected end event');
-        expect(responseCloseEventEmitted).to.be.true('response should emit "close" event');
+        expect(responseEndEventEmitted, 'Unexpected end event').to.be.false;
+        expect(responseCloseEventEmitted, 'response should emit "close" event').to.be.true;
       });
 
       test('abort event should be emitted at most once', async () => {
@@ -1120,10 +1119,10 @@ describe('net module', () => {
         });
         urlRequest.end(randomString(kOneKiloByte));
         await once(urlRequest, 'abort');
-        expect(responseEventEmitted).to.be.false('Unexpected response event');
-        expect(unexpectedError).to.be.undefined('Unexpected error event');
-        expect(requestFinishEventEmitted).to.be.true('request should emit "finish" event');
-        expect(requestReceivedByServer).to.be.true('request should be received by server');
+        expect(responseEventEmitted, 'Unexpected response event').to.be.false;
+        expect(unexpectedError, 'Unexpected error event').to.be.undefined;
+        expect(requestFinishEventEmitted, 'request should emit "finish" event').to.be.true;
+        expect(requestReceivedByServer, 'request should be received by server').to.be.true;
         expect(abortsEmitted).to.equal(1, 'request should emit exactly 1 "abort" event');
       });
 
@@ -1234,7 +1233,7 @@ describe('net module', () => {
           responseEventEmitted = true;
         });
         await once(urlRequest, 'abort');
-        expect(responseEventEmitted).to.be.false('Unexpected response');
+        expect(responseEventEmitted, 'Unexpected response').to.be.false;
       });
 
       test('should not follow redirect when mode is error', async () => {
@@ -1343,8 +1342,8 @@ describe('net module', () => {
         const [netResponse] = await responsePromise;
         expect(netResponse.statusCode).to.equal(200);
         await collectStreamBody(netResponse);
-        expect(netRequestReceived).to.be.true('net request received');
-        expect(netRequestEnded).to.be.true('net request ended');
+        expect(netRequestReceived, 'net request received').to.be.true;
+        expect(netRequestEnded, 'net request ended').to.be.true;
         expect(receivedBodyData).to.equal(bodyData);
       });
 
@@ -1892,7 +1891,7 @@ describe('net module', () => {
             response.end('test');
           });
           const resp = await net.fetch(serverUrl);
-          expect(resp.ok).to.be.true();
+          expect(resp.ok).to.be.true;
           expect(await resp.text()).to.equal('test');
         });
 
@@ -1950,7 +1949,7 @@ describe('net module', () => {
 
         test('should reject promise on DNS failure', async () => {
           const r = net.fetch('https://i.do.not.exist');
-          await expect(r).to.be.rejectedWith(/ERR_NAME_NOT_RESOLVED/);
+          await expect(r).rejects.toThrow(/ERR_NAME_NOT_RESOLVED/);
         });
 
         test('should follow a redirect to another http origin', async () => {
@@ -1973,7 +1972,7 @@ describe('net module', () => {
             res.setHeader('Location', 'file:///');
             res.end();
           });
-          await expect(net.fetch(serverUrl)).to.be.rejectedWith(/ERR_UNSAFE_REDIRECT/);
+          await expect(net.fetch(serverUrl)).rejects.toThrow(/ERR_UNSAFE_REDIRECT/);
         });
 
         test('should reject a redirect from http to data:', async () => {
@@ -1982,7 +1981,7 @@ describe('net module', () => {
             res.setHeader('Location', 'data:text/plain,hello');
             res.end();
           });
-          await expect(net.fetch(serverUrl)).to.be.rejectedWith(/ERR_UNSAFE_REDIRECT/);
+          await expect(net.fetch(serverUrl)).rejects.toThrow(/ERR_UNSAFE_REDIRECT/);
         });
 
         test('should reject a redirect from http to about:', async () => {
@@ -1991,7 +1990,7 @@ describe('net module', () => {
             res.setHeader('Location', 'about:blank');
             res.end();
           });
-          await expect(net.fetch(serverUrl)).to.be.rejectedWith(/ERR_UNSAFE_REDIRECT/);
+          await expect(net.fetch(serverUrl)).rejects.toThrow(/ERR_UNSAFE_REDIRECT/);
         });
 
         test('should reject a redirect from http to blob:', async () => {
@@ -2000,7 +1999,7 @@ describe('net module', () => {
             res.setHeader('Location', 'blob:https://example.com/00000000-0000-0000-0000-000000000000');
             res.end();
           });
-          await expect(net.fetch(serverUrl)).to.be.rejectedWith(/ERR_UNSAFE_REDIRECT/);
+          await expect(net.fetch(serverUrl)).rejects.toThrow(/ERR_UNSAFE_REDIRECT/);
         });
 
         test('should reject body promise when stream fails', async () => {
@@ -2010,7 +2009,7 @@ describe('net module', () => {
           });
           const r = await net.fetch(serverUrl);
           expect(r.status).to.equal(200);
-          await expect(r.text()).to.be.rejectedWith(/ERR_INCOMPLETE_CHUNKED_ENCODING/);
+          await expect(r.text()).rejects.toThrow(/ERR_INCOMPLETE_CHUNKED_ENCODING/);
         });
       });
     });
@@ -2029,7 +2028,7 @@ describe('net module', () => {
           net.resolveHost('ipv4.localhost2', {
             queryType: 'AAAA'
           })
-        ).to.eventually.be.rejectedWith(/net::ERR_NAME_NOT_RESOLVED/);
+        ).rejects.toThrow(/net::ERR_NAME_NOT_RESOLVED/);
       });
 
       test('resolves ipv6.localhost2', async () => {
@@ -2045,13 +2044,11 @@ describe('net module', () => {
           net.resolveHost('notfound.localhost2', {
             queryType: 'A'
           })
-        ).to.eventually.be.rejectedWith(/net::ERR_NAME_NOT_RESOLVED/);
+        ).rejects.toThrow(/net::ERR_NAME_NOT_RESOLVED/);
       });
 
       test('fails to resolve notfound.localhost2', async () => {
-        await expect(net.resolveHost('notfound.localhost2')).to.eventually.be.rejectedWith(
-          /net::ERR_NAME_NOT_RESOLVED/
-        );
+        await expect(net.resolveHost('notfound.localhost2')).rejects.toThrow(/net::ERR_NAME_NOT_RESOLVED/);
       });
     });
   }
@@ -2089,7 +2086,7 @@ describe('net module', () => {
                 expectedPriority = expectedPriority ? expectedPriority + ', i' : 'i';
               }
               if (expectedPriority === '') {
-                expect(data.headers.priority).to.be.undefined();
+                expect(data.headers.priority).to.be.undefined;
               } else {
                 expect(data.headers.priority).to.be.a('string').and.equal(expectedPriority);
               }
@@ -2110,7 +2107,7 @@ describe('net module', () => {
     const certPath = path.join(fixturesPath, 'certificates');
     const ses = session.fromPartition('net-client-cert');
 
-    before(async () => {
+    beforeAll(async () => {
       ses.setCertificateVerifyProc((req, cb) => cb(0));
       const options = {
         key: fs.readFileSync(path.join(certPath, 'server.key')),
@@ -2134,7 +2131,7 @@ describe('net module', () => {
       secureUrl = (await listen(server)).url;
     });
 
-    after(async () => {
+    afterAll(async () => {
       ses.setCertificateVerifyProc(null);
       await new Promise<void>((resolve) => server.close(() => resolve()));
     });
@@ -2172,7 +2169,7 @@ describe('net module', () => {
         // The event only fires if the platform cert store has matching
         // identities; when it does, webContents must be null for net requests.
         if (eventWebContents !== 'unset') {
-          expect(eventWebContents).to.be.null();
+          expect(eventWebContents).to.be.null;
         }
       } finally {
         app.removeListener('select-client-certificate', handler);
@@ -2191,7 +2188,7 @@ describe('net module', () => {
         response.end('first');
       });
       const firstResponse = await net.fetch(serverUrl);
-      expect(firstResponse.ok).to.be.true();
+      expect(firstResponse.ok).to.be.true;
       expect(await firstResponse.text()).to.equal('first');
 
       await binding.simulateNetworkServiceCrash();
@@ -2204,7 +2201,7 @@ describe('net module', () => {
         response.end('second');
       });
       const secondResponse = await net.fetch(secondServerUrl);
-      expect(secondResponse.ok).to.be.true();
+      expect(secondResponse.ok).to.be.true;
       expect(await secondResponse.text()).to.equal('second');
     });
 
@@ -2219,7 +2216,7 @@ describe('net module', () => {
       });
       child.postMessage({ type: 'fetch', url: firstServerUrl });
       const [firstResult] = await once(child, 'message');
-      expect(firstResult.ok).to.be.true();
+      expect(firstResult.ok).to.be.true;
       expect(firstResult.body).to.equal('utility-first');
 
       await binding.simulateNetworkServiceCrash();
@@ -2233,7 +2230,7 @@ describe('net module', () => {
       });
       child.postMessage({ type: 'fetch', url: secondServerUrl });
       const [secondResult] = await once(child, 'message');
-      expect(secondResult.ok).to.be.true();
+      expect(secondResult.ok).to.be.true;
       expect(secondResult.body).to.equal('utility-second');
 
       child.kill();

@@ -1,6 +1,6 @@
 import { ipcMain, BrowserWindow } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 
@@ -8,7 +8,7 @@ import { closeWindow } from './lib/window-helpers.ts';
 
 describe('ipcRenderer module', () => {
   let w: BrowserWindow;
-  before(async () => {
+  beforeAll(async () => {
     w = new BrowserWindow({
       show: false,
       webPreferences: {
@@ -20,7 +20,7 @@ describe('ipcRenderer module', () => {
     await w.loadURL('about:blank');
     w.webContents.on('console-message', (_event, ...args) => console.error(...args));
   });
-  after(async () => {
+  afterAll(async () => {
     await closeWindow(w);
     w = null as unknown as BrowserWindow;
   });
@@ -57,7 +57,7 @@ describe('ipcRenderer module', () => {
       }`);
       const [, received] = await once(ipcMain, 'message');
       expect(received).to.be.an.instanceOf(Uint8Array);
-      expect(Buffer.from(data).equals(received)).to.be.true();
+      expect(Buffer.from(data).equals(received)).to.be.true;
     });
 
     it('throws when sending objects with DOM class prototypes', async () => {
@@ -66,7 +66,7 @@ describe('ipcRenderer module', () => {
         const { ipcRenderer } = require('electron')
         ipcRenderer.send('message', document.location)
       }`)
-      ).to.eventually.be.rejected();
+      ).rejects.toThrow();
     });
 
     it('does not crash when sending external objects', async () => {
@@ -80,7 +80,7 @@ describe('ipcRenderer module', () => {
 
         ipcRenderer.send('message', stream)
       }`)
-      ).to.eventually.be.rejected();
+      ).rejects.toThrow();
     });
 
     it('can send objects that both reference the same object', async () => {

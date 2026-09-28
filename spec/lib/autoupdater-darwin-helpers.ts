@@ -1,4 +1,5 @@
 import psList from 'ps-list';
+import { afterAll, beforeAll, beforeEach, it } from 'vitest';
 
 import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
@@ -27,7 +28,7 @@ export const shouldRunUpdaterSpecs = shouldRunCodesignTests && !process.env.IS_U
 
 // How many fixture apps may be updating at once within one spec file; each
 // is about a core of codesign/ditto/ShipIt work. Set to 1 to run every test's
-// work inline, in mocha's order.
+// work inline, in declaration order.
 const CONCURRENCY = (() => {
   const fromEnv = parseInt(process.env.ELECTRON_SPEC_UPDATER_CONCURRENCY || '', 10);
   if (fromEnv > 0) return fromEnv;
@@ -105,7 +106,7 @@ class SlotPool {
 
   /**
    * A slot right now: a free one, or a fresh one. For a retry, which is the
-   * test mocha is blocked on; queueing it behind lookahead runs for tests
+   * test the runner is blocked on; queueing it behind lookahead runs for tests
    * that come later only adds their time to the failure.
    */
   acquireNow(): Slot {
@@ -186,7 +187,7 @@ type Task = {
   // Bumped per run so a queued run can tell it was superseded.
   generation: number;
   started: boolean;
-  // True once the mocha test has awaited a run, i.e. the next call is a retry.
+  // True once the test has awaited a run, i.e. the next call is a retry.
   awaited: boolean;
   // Stops the current run.
   controller?: AbortController;
@@ -219,7 +220,7 @@ export type UpdaterHarness = {
   /**
    * A test whose body runs in a slot with its own update server, up to
    * CONCURRENCY at a time. Tasks start in declaration order, so keep nested
-   * describes last (mocha runs them after the enclosing suite's own tests).
+   * describes last (they run after the enclosing suite's own tests).
    */
   updaterIt: (title: string, body: (ctx: TaskContext) => Promise<void>, opts?: { timeout?: number }) => void;
 };
@@ -238,25 +239,27 @@ export function setupUpdaterHarness(): UpdaterHarness {
   let templateApp = '';
   const zipDirs: string[] = [];
 
-  before(async function () {
-    const result = getCodesignIdentity();
-    if (result === null) return; // beforeEach below skips every test
-    identity = result;
+  beforeAll(
+    async () => {
+      const result = getCodesignIdentity();
+      if (result === null) return; // beforeEach below skips every test
+      identity = result;
 
-    this.timeout(5 * 60 * 1000);
-    templateDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-update-spec-template-'));
-    templateApp = await copyMacOSFixtureApp(templateDir, null);
-    stripFrameworkSymbols(templateApp);
-    const signResult = await signApp(templateApp, identity);
-    if (signResult.code !== 0) {
-      throw new Error(`Failed to sign template app: ${signResult.out}`);
-    }
-  });
+      templateDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-update-spec-template-'));
+      templateApp = await copyMacOSFixtureApp(templateDir, null);
+      stripFrameworkSymbols(templateApp);
+      const signResult = await signApp(templateApp, identity);
+      if (signResult.code !== 0) {
+        throw new Error(`Failed to sign template app: ${signResult.out}`);
+      }
+    },
+    5 * 60 * 1000
+  );
 
-  beforeEach(function () {
+  beforeEach((ctx) => {
     const result = getCodesignIdentity();
     if (result === null) {
-      this.skip();
+      ctx.skip();
     } else {
       identity = result;
     }
@@ -404,7 +407,7 @@ export function setupUpdaterHarness(): UpdaterHarness {
   };
 
   // `updaterIt` bodies run up to CONCURRENCY at a time, each in its own
-  // slot with its own server; the mocha test just awaits its task.
+  // slot with its own server; the test just awaits its task.
   const pool = new SlotPool(Array.from({ length: CONCURRENCY }, (_, i) => makeSlot(i)));
   const tasks: Task[] = [];
   const inflight = new Set<Promise<void>>();
@@ -507,7 +510,7 @@ export function setupUpdaterHarness(): UpdaterHarness {
   const runTask = async (task: Task, generation: number, { jumpQueue = false } = {}) => {
     const budget = RUN_BUDGET_OVERRIDE_MS > 0 ? RUN_BUDGET_OVERRIDE_MS : task.timeout * RUN_BUDGET_MULTIPLIER;
     // A run's budget only starts once it has a slot. A retry is the test
-    // mocha is waiting on right now, so it gets one immediately rather than
+    // the runner is waiting on right now, so it gets one immediately rather than
     // queueing behind lookahead runs for tests that come later.
     const slot = jumpQueue ? pool.acquireNow() : await pool.acquire();
     if (draining || generation !== task.generation) {
@@ -593,10 +596,9 @@ export function setupUpdaterHarness(): UpdaterHarness {
   const updaterIt = (title: string, body: (ctx: TaskContext) => Promise<void>, { timeout = 120000 } = {}) => {
     const task: Task = { title, timeout, body, generation: 0, started: false, awaited: false };
     const index = tasks.push(task) - 1;
-    it(title, async function () {
+    it(title, { timeout: 30 * 60 * 1000 }, async () => {
       // Each run enforces its own budget from when it gets a slot, so this is
       // only a backstop in case the pool stops making progress.
-      this.timeout(30 * 60 * 1000);
       scheduleFrom(index);
       // Run now, ahead of the queue, if there is no lookahead run, this is a
       // retry, or --grep left ours queued behind tests that never ran.
@@ -607,26 +609,28 @@ export function setupUpdaterHarness(): UpdaterHarness {
   };
 
   // Registered before the template cleanup below, so it runs first.
-  after(async function () {
-    // With --grep, lookahead runs for tests that never executed may still be
-    // going; stop them, and make queued ones bail.
-    draining = true;
-    this.timeout(10 * 60 * 1000);
-    for (const task of tasks) task.controller?.abort(new Error('The suite finished before this run did'));
-    await Promise.allSettled([...inflight]);
-    // A stop that gave up on a slot (and retired it) may have left something
-    // running; every fixture app of this suite lives under this prefix.
-    for (const slot of pool.slots) cp.spawnSync('launchctl', ['remove', slot.shipItLabel]);
-    await killEverything([], pathPrefixes([path.resolve(os.tmpdir(), 'electron-update-spec-')]), KILL_WAIT_MS);
-    for (const slot of pool.slots) {
-      cp.spawnSync('defaults', ['delete', slot.bundleId]);
-      cp.spawnSync('defaults', ['delete', slot.shipItLabel, 'SQRLShipItInstallationAttempts']);
-      // Runs aborted just above may still be releasing their files.
-      await removeWithRetries(() => fs.promises.rm(slot.cacheDir, { recursive: true, force: true }), CLEANUP_WAIT_MS);
-    }
-  });
+  afterAll(
+    async () => {
+      // With --grep, lookahead runs for tests that never executed may still be
+      // going; stop them, and make queued ones bail.
+      draining = true;
+      for (const task of tasks) task.controller?.abort(new Error('The suite finished before this run did'));
+      await Promise.allSettled([...inflight]);
+      // A stop that gave up on a slot (and retired it) may have left something
+      // running; every fixture app of this suite lives under this prefix.
+      for (const slot of pool.slots) cp.spawnSync('launchctl', ['remove', slot.shipItLabel]);
+      await killEverything([], pathPrefixes([path.resolve(os.tmpdir(), 'electron-update-spec-')]), KILL_WAIT_MS);
+      for (const slot of pool.slots) {
+        cp.spawnSync('defaults', ['delete', slot.bundleId]);
+        cp.spawnSync('defaults', ['delete', slot.shipItLabel, 'SQRLShipItInstallationAttempts']);
+        // Runs aborted just above may still be releasing their files.
+        await removeWithRetries(() => fs.promises.rm(slot.cacheDir, { recursive: true, force: true }), CLEANUP_WAIT_MS);
+      }
+    },
+    10 * 60 * 1000
+  );
 
-  after(async () => {
+  afterAll(async () => {
     for (const dir of zipDirs) {
       cp.spawnSync('rm', ['-r', dir]);
     }

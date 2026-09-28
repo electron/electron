@@ -1,6 +1,6 @@
 import { app, BrowserWindow, session } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import * as http from 'node:http';
 
@@ -105,7 +105,7 @@ ifdescribe(process.platform === 'darwin')('PublicKeyCredential.isUserVerifyingPl
   let serverUrl: string;
   let w: BrowserWindow;
 
-  before(async () => {
+  beforeAll(async () => {
     server = http.createServer((req, res) => {
       res.setHeader('Content-Type', 'text/html');
       res.end('<!doctype html><title>webauthn</title>');
@@ -115,7 +115,7 @@ ifdescribe(process.platform === 'darwin')('PublicKeyCredential.isUserVerifyingPl
     serverUrl = `http://localhost:${port}/`;
   });
 
-  after(() => {
+  afterAll(() => {
     server.close();
   });
 
@@ -140,7 +140,7 @@ ifdescribe(process.platform === 'darwin')('PublicKeyCredential.isUserVerifyingPl
   it('returns true when platformPasskeys is enabled', async () => {
     configureWebAuthn({ platformPasskeys: true });
     const result = await queryIsUVPAA();
-    expect(result).to.be.true();
+    expect(result).to.be.true;
   });
 
   it('does not report platform passkeys when the feature is disabled', async () => {
@@ -159,7 +159,7 @@ ifdescribe(process.platform === 'darwin')("session 'select-webauthn-authenticato
   let serverUrl: string;
   let w: BrowserWindow;
 
-  before(async () => {
+  beforeAll(async () => {
     server = http.createServer((req, res) => {
       res.setHeader('Content-Type', 'text/html');
       res.end('<!doctype html><title>webauthn</title>');
@@ -169,7 +169,7 @@ ifdescribe(process.platform === 'darwin')("session 'select-webauthn-authenticato
     serverUrl = `http://localhost:${port}/`;
   });
 
-  after(() => {
+  afterAll(() => {
     server.close();
   });
 
@@ -237,8 +237,8 @@ ifdescribe(process.platform === 'darwin')("session 'select-webauthn-authenticato
       )
     `);
 
-    expect(result.ok).to.be.true();
-    expect(eventFired).to.be.false();
+    expect(result.ok).to.be.true;
+    expect(eventFired).to.be.false;
   });
 
   it('does not interfere with assertion when both touchID and platformPasskeys are configured', async () => {
@@ -285,7 +285,7 @@ ifdescribe(process.platform === 'darwin')("session 'select-webauthn-authenticato
       )
     `);
 
-    expect(result.ok).to.be.true();
+    expect(result.ok).to.be.true;
     expect(result.id).to.equal(credentialId);
   });
 });
@@ -296,7 +296,7 @@ describe("session 'select-webauthn-account' event", () => {
   let w: BrowserWindow;
   let authenticatorId: string;
 
-  before(async () => {
+  beforeAll(async () => {
     server = http.createServer((req, res) => {
       res.setHeader('Content-Type', 'text/html');
       res.end('<!doctype html><title>webauthn</title>');
@@ -306,7 +306,7 @@ describe("session 'select-webauthn-account' event", () => {
     serverUrl = `http://localhost:${port}/`;
   });
 
-  after(() => {
+  afterAll(() => {
     server.close();
   });
 
@@ -406,8 +406,8 @@ describe("session 'select-webauthn-account' event", () => {
         e => ({ ok: false, name: e.name, message: e.message })
       )
     `);
-    expect(result.ok).to.be.true();
-    expect(result.id).to.be.a('string').and.not.be.empty();
+    expect(result.ok).to.be.true;
+    expect(result.id).to.be.a('string').and.not.be.empty;
   });
 
   // Pick byte sequences that exercise the URL-safe base64 alphabet — '?' and
@@ -432,14 +432,14 @@ describe("session 'select-webauthn-account' event", () => {
 
     const result = await getAssertion();
 
-    expect(received).to.exist();
+    expect(received).to.exist;
     expect(received.relyingPartyId).to.equal('localhost');
     expect(received.accounts).to.have.lengthOf(2);
     const names = received.accounts.map((a: any) => a.name).sort();
     expect(names).to.deep.equal(['alice@example.com', 'bob@example.com']);
     const bob = received.accounts.find((a: any) => a.name === 'bob@example.com');
     expect(bob.displayName).to.equal('Bob');
-    expect(bob.credentialId).to.be.a('string').and.not.be.empty();
+    expect(bob.credentialId).to.be.a('string').and.not.be.empty;
 
     // Both credentialId and userHandle must be URL-safe base64 (no '+', '/'
     // or padding) so the values are byte-for-byte comparable to what the
@@ -451,7 +451,7 @@ describe("session 'select-webauthn-account' event", () => {
 
     // The strong invariant: the credentialId surfaced via the main-process
     // event is the same string the renderer sees as PublicKeyCredential.id.
-    expect(result.ok).to.be.true();
+    expect(result.ok).to.be.true;
     expect(result.id).to.equal(bob.credentialId);
     expect(result.userHandle).to.equal(bob.userHandle);
   });
@@ -465,7 +465,7 @@ describe("session 'select-webauthn-account' event", () => {
     });
 
     const result = await getAssertion();
-    expect(result.ok).to.be.false();
+    expect(result.ok).to.be.false;
     expect(result.name).to.equal('NotAllowedError');
   });
 
@@ -478,7 +478,7 @@ describe("session 'select-webauthn-account' event", () => {
     });
 
     const result = await getAssertion();
-    expect(result.ok).to.be.false();
+    expect(result.ok).to.be.false;
     expect(result.name).to.equal('NotAllowedError');
   });
 
@@ -489,7 +489,7 @@ describe("session 'select-webauthn-account' event", () => {
     expect(w.webContents.session.listenerCount('select-webauthn-account')).to.equal(0);
 
     const result = await getAssertion();
-    expect(result.ok).to.be.false();
+    expect(result.ok).to.be.false;
     expect(result.name).to.equal('NotAllowedError');
   });
 });
@@ -508,7 +508,7 @@ ifdescribe(process.platform !== 'win32' && isTestingBindingAvailable())(
     let w: BrowserWindow;
     let testing: any;
 
-    before(async () => {
+    beforeAll(async () => {
       testing = (process as any)._linkedBinding('electron_common_testing');
       server = http.createServer((req, res) => {
         res.setHeader('Content-Type', 'text/html');
@@ -519,7 +519,7 @@ ifdescribe(process.platform !== 'win32' && isTestingBindingAvailable())(
       serverUrl = `http://localhost:${port}/`;
     });
 
-    after(() => {
+    afterAll(() => {
       server.close();
     });
 
