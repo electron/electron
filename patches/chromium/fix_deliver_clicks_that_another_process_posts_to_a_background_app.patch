@@ -17,7 +17,7 @@ This patch can be removed once
 https://chromium-review.googlesource.com/c/chromium/src/+/8470994 lands.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 9d7dc65d28a9f8c5f87b3980ca81ab3d3dcded8b..c079dfb4a437c590f28f4c971293cadcfef4b354 100644
+index 9be2749716cd21399dc89abada6e1cef489f9f16..641c711d0f0a8f1fb2915fe0c47a09fab5424253 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -872,6 +872,15 @@ - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
