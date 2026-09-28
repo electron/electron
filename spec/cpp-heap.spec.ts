@@ -1446,7 +1446,7 @@ describe('cpp heap', () => {
         setTimeout(() => app.quit());
       });
 
-      const [code] = await once(rc.process, 'exit');
+      const [code] = await once(rc.process, 'close');
       expect(code).to.equal(0);
       expect(stdout.match(/^debugger-detach: .*$/gm)).to.deep.equal([
         'debugger-detach: target closed; attach: No target available'
