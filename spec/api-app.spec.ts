@@ -2036,8 +2036,9 @@ describe('app module', () => {
       expect(await pick({ XDG_SESSION_TYPE: 'wayland' }, '--display=:99')).to.equal('x11');
     });
 
-    it('treats an empty variable as unset', async () => {
+    it('does not count an empty variable as a display', async () => {
       expect(await pick({ DISPLAY: '', WAYLAND_DISPLAY: 'wayland-1' })).to.equal('wayland');
+      fs.writeFileSync(path.join(runtimeDir, 'wayland-0'), '');
       expect(await pick({ DISPLAY: ':99', WAYLAND_DISPLAY: '', XDG_SESSION_TYPE: 'wayland' })).to.equal('x11');
     });
 

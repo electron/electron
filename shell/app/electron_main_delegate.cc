@@ -107,16 +107,18 @@ void PickOnlyAvailableDisplayServer(base::CommandLine* command_line) {
   if (command_line->HasSwitch(::switches::kOzonePlatform))
     return;
   auto env = base::Environment::Create();
-  auto get = [&](base::cstring_view name) {
-    return env->GetVar(name).value_or("");
-  };
-  const bool has_x11 = !get("DISPLAY").empty() ||
+  const bool has_x11 = !env->GetVar("DISPLAY").value_or("").empty() ||
                        command_line->HasSwitch(::switches::kX11Display);
-  const bool has_wayland =
-      !get("WAYLAND_SOCKET").empty() || !get("WAYLAND_DISPLAY").empty() ||
-      (!get("XDG_RUNTIME_DIR").empty() &&
-       base::PathExists(
-           base::FilePath(get("XDG_RUNTIME_DIR")).Append("wayland-0")));
+  // libwayland goes by the first of these that is set, even if it is empty.
+  const bool has_wayland = [&] {
+    if (auto socket = env->GetVar("WAYLAND_SOCKET"))
+      return !socket->empty();
+    if (auto display = env->GetVar("WAYLAND_DISPLAY"))
+      return !display->empty();
+    auto dir = env->GetVar("XDG_RUNTIME_DIR");
+    return dir && !dir->empty() &&
+           base::PathExists(base::FilePath(*dir).Append("wayland-0"));
+  }();
   if (has_x11 != has_wayland) {
     command_line->AppendSwitchASCII(::switches::kOzonePlatform,
                                     has_x11 ? "x11" : "wayland");

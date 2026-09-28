@@ -209,9 +209,10 @@ Sets the display server to use: `x11`, `wayland`, or `headless` for none.
 Without this flag, Electron looks for both display servers. X11 counts as
 available if `DISPLAY` is set or `--display` is passed. Wayland counts as
 available if `WAYLAND_DISPLAY` or `WAYLAND_SOCKET` is set, or if
-`XDG_RUNTIME_DIR` contains a `wayland-0` socket. If only one is available,
-Electron uses it. Otherwise it uses Wayland when `XDG_SESSION_TYPE` is
-`wayland`, and X11 in every other case.
+`XDG_RUNTIME_DIR` contains a `wayland-0` socket. A variable set to an empty
+string makes its display server count as unavailable. If only one is
+available, Electron uses it. Otherwise it uses Wayland when `XDG_SESSION_TYPE`
+is `wayland`, and X11 in every other case.
 
 ### --proxy-bypass-list=`hosts`
 
