@@ -23,8 +23,10 @@ const isCI = !!process.env.CI;
 // Suites tagged 'serial' need the machine to themselves (window focus, the
 // clipboard, global shortcuts, the screen, ...). Everything else runs first,
 // spread over several Electron processes; the serial suites then run one file
-// at a time with nothing else going on. A file only takes part in the serial
-// phase if it mentions the tag at all, so most files start Electron once.
+// at a time with nothing else going on, each worker starting only once every
+// earlier one has exited (`exclusive` in vitest/electron-pool.ts). A file only
+// takes part in the serial phase if it mentions the tag at all, so most files
+// start Electron once.
 const SERIAL_TAG = 'serial';
 const specFiles = fs.readdirSync(specDir).filter((file) => /\.spec\.[tj]s$/.test(file));
 // Only *.spec.ts is picked up; a file still named the old way (*-spec.ts, e.g.
@@ -135,6 +137,9 @@ export default defineConfig({
         extends: true,
         test: {
           name: SERIAL_TAG,
+          // Also wait for earlier workers, including the parallel phase's, to
+          // have quit: vitest does not.
+          pool: electronPool({ electronPath, specDir, electronArgs, exclusive: true }),
           // An empty list would fall back to the root include.
           include: serialFiles.length ? serialFiles : ['.none'],
           ...({ tagsFilter: [SERIAL_TAG] } as object),
