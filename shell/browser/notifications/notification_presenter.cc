@@ -41,7 +41,13 @@ void NotificationPresenter::CloseNotificationWithId(
   if (it != notifications_.end()) {
     Notification* notification = (*it);
     notification->Dismiss();
-    notifications_.erase(notification);
+    // Dismiss() may already have destroyed |notification|. Look it up by
+    // address rather than erasing by key, which would construct a raw_ptr
+    // from a possibly-freed pointer.
+    if (auto found = notifications_.find(notification);
+        found != notifications_.end()) {
+      notifications_.erase(found);
+    }
   }
 }
 

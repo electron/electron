@@ -32,8 +32,6 @@ class NotifyIconHost {
   void Remove(NotifyIcon* notify_icon);
 
  private:
-  typedef std::vector<NotifyIcon*> NotifyIcons;
-
   // Static callback invoked when a message comes in to our messaging window.
   static LRESULT CALLBACK WndProcStatic(HWND hwnd,
                                         UINT message,
