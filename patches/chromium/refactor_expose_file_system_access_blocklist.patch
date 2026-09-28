@@ -304,7 +304,7 @@ index 1c82e0754cd5231c36f5048062e4a3aef73950f3..23dcecc9b099376da841d9f440c0b5b3
  
  std::vector<FileRequestData> ChromeFileSystemAccessPermissionContext::
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 955504d06b2879cdab83ae22f6528e42266b6457..180450520ad7699feffa42ab7bd42d5b8525cd51 100644
+index 05ee182cf840bc925697a2bfa3d1c281579296c4..158590bb0393f670f08c381c99f5095649cbcdd5 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -10,10 +10,13 @@

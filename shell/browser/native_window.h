@@ -517,7 +517,7 @@ class NativeWindow : public views::WidgetDelegate {
   FullScreenTransitionType fullscreen_transition_type_ =
       FullScreenTransitionType::kNone;
 
-  std::list<NativeWindow*> child_windows_;
+  std::list<raw_ptr<NativeWindow>> child_windows_;
 
  private:
   static bool PlatformHasClientFrame();
@@ -580,7 +580,7 @@ class NativeWindow : public views::WidgetDelegate {
 
   bool is_transitioning_fullscreen_ = false;
 
-  std::list<DraggableRegionProvider*> draggable_region_providers_;
+  std::list<raw_ptr<DraggableRegionProvider>> draggable_region_providers_;
 
   // Observers of this window.
   base::ObserverList<NativeWindowObserver,

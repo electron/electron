@@ -10,10 +10,10 @@ Electron needs this constructor, namely for gin_helper::Constructible
 objects.
 
 diff --git a/gin/object_template_builder.cc b/gin/object_template_builder.cc
-index 4033b8ac80d28d5e7af3cd57b8670922a72f84cf..b07da3a191cd0424fe76ee762de091a9ec24d5a4 100644
+index d54f546de556b133200cc5b05cfaa2321fe1db53..a64d68ae59c404016f2519cee295f0eac23ef722 100644
 --- a/gin/object_template_builder.cc
 +++ b/gin/object_template_builder.cc
-@@ -143,6 +143,13 @@ ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate* isolate,
+@@ -144,6 +144,13 @@ ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate* isolate,
                      "constructor"))),
        template_(constructor_template_->InstanceTemplate()) {}
  
@@ -24,20 +24,20 @@ index 4033b8ac80d28d5e7af3cd57b8670922a72f84cf..b07da3a191cd0424fe76ee762de091a9
 +  template_->SetInternalFieldCount(kNumberOfInternalFields);
 +}
 +
- ObjectTemplateBuilder::ObjectTemplateBuilder(
-     const ObjectTemplateBuilder& other) = default;
- 
+ ObjectTemplateBuilder& ObjectTemplateBuilder::SetImpl(
+     const std::string_view& name,
+     v8::Local<v8::Data> val) {
 diff --git a/gin/object_template_builder.h b/gin/object_template_builder.h
-index c633282925cb0652f5b205d6b600c3af078c4bfe..3dfe60f83bf18f2fe0ad625a4e82a8621f100efe 100644
+index 8c22f65cda9eee442f1a3765ccf8e4d848a73a8e..0c13b9dcc7489087afa0fec9eb36143b1fb4da06 100644
 --- a/gin/object_template_builder.h
 +++ b/gin/object_template_builder.h
-@@ -48,6 +48,9 @@ class GIN_EXPORT ObjectTemplateBuilder {
+@@ -50,6 +50,9 @@ class GIN_EXPORT ObjectTemplateBuilder {
   public:
    explicit ObjectTemplateBuilder(v8::Isolate* isolate);
    ObjectTemplateBuilder(v8::Isolate* isolate, const char* type_name);
 +  ObjectTemplateBuilder(v8::Isolate* isolate,
 +                        const char* type_name,
 +                        v8::Local<v8::ObjectTemplate> tmpl);
-   ObjectTemplateBuilder(const ObjectTemplateBuilder& other);
-   ~ObjectTemplateBuilder();
  
+   // It's against Google C++ style to return a non-const ref, but we take some
+   // poetic license here in order that all calls to Set() can be via the '.'
