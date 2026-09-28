@@ -16,7 +16,7 @@ This change is meant to be upstreamed to devtools-frontend; the patch can be
 dropped once an equivalent change has landed there.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 4755b262a7f57c83fc078a9be5d0a030927cb7a3..b8589451a3f89f40bd472b3497241977deccf652 100644
+index aa118c1d9bc54e99818630f66fed919eb688ae9b..a2bc21a8270766e09201a35e125d90cdc05ed7bb 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -12,6 +12,18 @@ import("./third_party/blink/public/public_features.gni")
