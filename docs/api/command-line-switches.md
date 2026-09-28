@@ -204,15 +204,35 @@ Used to avoid node initialization crash when the nul device is disabled on Windo
 
 ### --ozone-platform=`platform` _Linux_
 
-Sets the display server to use: `x11`, `wayland`, or `headless` for none.
+Forces Electron to use a specific display backend instead of choosing one
+automatically. `platform` can be:
 
-Without this flag, Electron looks for both display servers. X11 counts as
-available if `DISPLAY` is set or `--display` is passed. Wayland counts as
-available if `WAYLAND_DISPLAY` or `WAYLAND_SOCKET` is set, or if
-`XDG_RUNTIME_DIR` contains a `wayland-0` socket. A variable set to an empty
-string makes its display server count as unavailable. If only one is
-available, Electron uses it. Otherwise it uses Wayland when `XDG_SESSION_TYPE`
-is `wayland`, and X11 in every other case.
+* `x11` - Connect to an X server (this includes XWayland).
+* `wayland` - Connect to a Wayland compositor as a native Wayland client.
+* `headless` - Don't connect to any display server. No windows are shown on
+  screen, which is useful for automated testing and CI.
+
+For example, `my-app --ozone-platform=x11` runs the app under XWayland on a
+Wayland desktop.
+
+This switch must be passed on the command line (for example in a `.desktop`
+file or launcher script). Setting it with `app.commandLine.appendSwitch` does
+not work, because the display backend is chosen before your app's main script
+runs.
+
+When this switch is not passed, Electron picks a backend at startup:
+
+1. It checks which display servers it can reach.
+   * X11 is reachable if `DISPLAY` is set to a non-empty value or `--display`
+     is passed.
+   * Wayland is reachable if a Wayland connection is configured. Electron checks
+     `WAYLAND_SOCKET`, then `WAYLAND_DISPLAY`, then whether `XDG_RUNTIME_DIR`
+     contains `wayland-0`, the same order libwayland uses. Only the first of
+     these that is set is considered, so an empty `WAYLAND_DISPLAY` marks
+     Wayland as unreachable even if `wayland-0` exists.
+2. If exactly one display server is reachable, Electron uses it.
+3. If both or neither are reachable, Electron uses Wayland when
+   `XDG_SESSION_TYPE` is `wayland`, and X11 otherwise.
 
 ### --proxy-bypass-list=`hosts`
 
