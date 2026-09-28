@@ -1415,10 +1415,14 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
           views::DesktopWindowTreeHostLinux::GetHostForWidget(
               GetAcceleratedWidget()))) {
     tree_host->UpdateFrameHints();
-    // Wayland applies a new input region with the next surface commit; an
-    // idle window may not produce one for a while, so force a frame.
-    if (auto* compositor = tree_host->compositor())
+    if (x11_util::IsX11()) {
+      // Round-trip so the server has applied the input shape on return.
+      x11::Connection::Get()->Sync();
+    } else if (auto* compositor = tree_host->compositor()) {
+      // Wayland applies a new input region with the next surface commit; an
+      // idle window may not produce one for a while, so force a frame.
       compositor->ScheduleFullRedraw();
+    }
   }
 #endif
 }
