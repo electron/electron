@@ -44,7 +44,7 @@ function spawn(cmd: string, args: string[], opts: any = {}) {
     out += chunk.toString();
   });
   return new Promise<SpawnResult>((resolve) => {
-    child.on('exit', (code, signal) => {
+    child.on('close', (code, signal) => {
       resolve({
         code,
         signal,

@@ -46,8 +46,8 @@ class InternedStringCache final : public gin::PerIsolateData::DisposeObserver {
   }
 
   // gin::PerIsolateData::DisposeObserver
-  void OnBeforeDispose(v8::Isolate* isolate) override { strings_.clear(); }
-  void OnDisposed() override { Detach(); }
+  void OnBeforeDispose(v8::Isolate* isolate) override { Detach(); }
+  void OnDisposed() override {}
 
  private:
   void Detach() {
@@ -66,7 +66,7 @@ class InternedStringCache final : public gin::PerIsolateData::DisposeObserver {
 
 InternedStringCache& CacheForThisThread() {
   // Never destroyed: it is a registered dispose observer, and the entries are
-  // released when the isolate reports disposal anyway.
+  // released before the isolate is disposed.
   thread_local base::NoDestructor<InternedStringCache> cache;
   return *cache;
 }

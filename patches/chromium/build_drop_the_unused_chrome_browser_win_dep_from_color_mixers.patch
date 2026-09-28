@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: clavin <clavin@electronjs.org>
+Date: Fri, 25 Sep 2026 13:59:50 -0700
+Subject: build: drop the unused //chrome/browser/win dep from color mixers
+
+The Windows native color mixer does not include anything from
+//chrome/browser/win; the dependency is left over from moving
+titlebar_config.h there. On Windows it pulls //chrome/browser/profiles
+into Electron's link, whose ProfileKeyedServiceFactory then collides with
+the one Electron provides for its spellchecker.
+
+diff --git a/chrome/browser/ui/color/BUILD.gn b/chrome/browser/ui/color/BUILD.gn
+index 19f6961c64e8c347c1559e556400b6995e4c2f79..32cb96eb50f736fef46bf4d2e11cdfa914c68ff9 100644
+--- a/chrome/browser/ui/color/BUILD.gn
++++ b/chrome/browser/ui/color/BUILD.gn
+@@ -79,7 +79,6 @@ source_set("mixers") {
+   if (is_win) {
+     sources += [ "win/native_chrome_color_mixer_win.cc" ]
+     deps += [
+-      "//chrome/browser/win",
+       "//ui/base",
+       "//ui/color:accent_color_observer",
+       "//ui/native_theme",

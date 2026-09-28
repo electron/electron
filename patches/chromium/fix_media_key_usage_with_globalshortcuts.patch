@@ -11,10 +11,10 @@ counter to the design of globalShortcuts, and so we need to instead
 use `ui::MediaKeysListener`.
 
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
-index 885e248ce02046d4f64f1aa44aa4c44265f9eecd..671a6a0c44fd2f7b3c3cf4eb63c5d478552c76cd 100644
+index 9f532919895d135fcce15be3cd79b4460535b479..dfe2bffe603c69da8bc5e5e61ea501deb0675c86 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
 +++ b/content/browser/media/media_keys_listener_manager_impl.cc
-@@ -81,7 +81,11 @@ bool MediaKeysListenerManagerImpl::StartWatchingMediaKey(
+@@ -82,7 +82,11 @@ bool MediaKeysListenerManagerImpl::StartWatchingMediaKey(
        CanActiveMediaSessionControllerReceiveEvents();
  
    // Tell the underlying MediaKeysListener to listen for the key.
@@ -27,9 +27,9 @@ index 885e248ce02046d4f64f1aa44aa4c44265f9eecd..671a6a0c44fd2f7b3c3cf4eb63c5d478
        !media_keys_listener_->StartWatchingMediaKey(key_code)) {
      return false;
    }
-@@ -355,6 +359,20 @@ void MediaKeysListenerManagerImpl::StartListeningForMediaKeysIfNecessary() {
+@@ -360,6 +364,20 @@ void MediaKeysListenerManagerImpl::StartListeningForMediaKeysIfNecessary() {
          this, ui::MediaKeysListener::Scope::kGlobal);
-     DCHECK(media_keys_listener_);
+     CHECK(media_keys_listener_, base::NotFatalUntil::M160);
    }
 +
 +#if BUILDFLAG(IS_MAC)
@@ -41,7 +41,7 @@ index 885e248ce02046d4f64f1aa44aa4c44265f9eecd..671a6a0c44fd2f7b3c3cf4eb63c5d478
 +  if (!media_keys_listener_) {
 +    media_keys_listener_ = ui::MediaKeysListener::Create(
 +        this, ui::MediaKeysListener::Scope::kGlobal);
-+    DCHECK(media_keys_listener_);
++    CHECK(media_keys_listener_, base::NotFatalUntil::M160);
 +  }
 +#endif
 +

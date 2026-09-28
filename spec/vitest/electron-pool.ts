@@ -25,6 +25,12 @@ export interface ElectronPoolOptions {
    * The Electron path and its arguments are appended.
    */
   launcher?: string[];
+  /**
+   * Start a worker only once every Electron process this pool started before
+   * it has exited, so the worker has the machine to itself (the 'serial'
+   * project).
+   */
+  exclusive?: boolean;
 }
 
 const SIGKILL_TIMEOUT = 5_000;
@@ -35,6 +41,14 @@ const START_TIMEOUT = 3 * 60_000;
 const FLUSH_TIMEOUT = 5_000;
 
 let nextWorkerId = 1;
+
+// Exit of every Electron worker started so far that has not exited yet. vitest
+// starts stopping a finished file's worker but does not wait for it before
+// giving the next file to a new one ("Runner terminations are started but not
+// awaited until the end of full run"), so maxWorkers: 1 alone still lets a
+// worker overlap the previous file's, and the parallel phase's, quitting
+// Electron processes.
+const liveWorkers = new Set<Promise<void>>();
 
 export function electronPool(poolOptions: ElectronPoolOptions): PoolRunnerInitializer {
   return {
@@ -50,6 +64,7 @@ class ElectronPoolWorker implements PoolWorker {
   cacheFs = true;
 
   private child: childProcess.ChildProcess | undefined;
+  private stopped = false;
   private readonly errors = new EventEmitter();
   private readonly env: Partial<NodeJS.ProcessEnv>;
   private readonly stdout: NodeJS.WritableStream;
@@ -87,6 +102,15 @@ class ElectronPoolWorker implements PoolWorker {
   async start(): Promise<void> {
     if (this.child) return;
 
+    if (this.electron.exclusive) {
+      // stop() SIGKILLs a worker that has not quit after SIGKILL_TIMEOUT, so
+      // this wait is bounded.
+      await Promise.all(liveWorkers);
+      // stop() may have been called while waiting (a cancelled run); starting
+      // Electron now would leave it running with nobody to stop it.
+      if (this.stopped) throw new Error('The Electron spec worker was stopped before it started.');
+    }
+
     const env: NodeJS.ProcessEnv = {
       ...this.env,
       ELECTRON_SPEC_WORKER_ID: String(this.id)
@@ -118,6 +142,13 @@ class ElectronPoolWorker implements PoolWorker {
     });
     this.child = child;
     child.on('error', this.emitError);
+    const exited = new Promise<void>((resolve) => {
+      child.once('exit', () => resolve());
+      // A child that failed to spawn never emits 'exit'.
+      child.once('error', () => child.pid === undefined && resolve());
+    });
+    liveWorkers.add(exited);
+    exited.then(() => liveWorkers.delete(exited));
 
     // The logger streams are shared by every worker; one worker ending must
     // not end them for the others.
@@ -172,6 +203,7 @@ class ElectronPoolWorker implements PoolWorker {
   }
 
   async stop(): Promise<void> {
+    this.stopped = true;
     const child = this.child;
     if (!child) return;
     this.child = undefined;

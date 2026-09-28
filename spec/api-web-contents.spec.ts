@@ -203,6 +203,29 @@ describe('webContents module', () => {
       await once(view.webContents, 'will-prevent-unload');
     });
 
+    // The beforeunload prompt blocks the renderer; a window that is
+    // re-activated while blocked used to keep aura focus without Blink focus.
+    ifit(process.platform === 'win32')(
+      'keeps the page focused when the window is re-activated while the prompt is pending',
+      async () => {
+        const w = new BrowserWindow({ show: true });
+        await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+        w.webContents.focus();
+        const other = new BrowserWindow({ show: true });
+        w.focus();
+        w.webContents.once('will-prevent-unload', () => {
+          other.focus();
+          w.focus();
+        });
+        // A navigation only prompts after a user gesture; close() always does.
+        w.close();
+        await once(w.webContents, 'will-prevent-unload');
+        await setTimeout(100);
+        expect(w.webContents.isFocused()).to.equal(true);
+        expect(await w.webContents.executeJavaScript('document.hasFocus()')).to.equal(true);
+      }
+    );
+
     it('supports calling preventDefault on will-prevent-unload events in a BrowserWindow', async () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('will-prevent-unload', (event) => event.preventDefault());
@@ -1220,9 +1243,18 @@ describe('webContents module', () => {
 
         // PageState is committed:
         // 1) When the page receives an unload event
-        // 2) During periodic serialization of page state
+        // 2) During periodic serialization of page state (1s visible, 5s hidden)
         // To not wait randomly for the second option, we'll trigger another load
         await w.loadURL(urlPage3);
+
+        // The form page is unloaded in its old renderer process, which sends its
+        // final PageState to the browser only when it handles the Unload IPC. That
+        // is not ordered with page 3's did-finish-load (a different process), so
+        // wait until the saved entry actually carries the edited value. Form state
+        // is serialized as UTF-16 (mojo_base.mojom.String16) inside the PageState.
+        const hasFormValue = (pageState?: string) =>
+          !!pageState && Buffer.from(pageState, 'base64').includes(Buffer.from('Hi!', 'utf16le'));
+        await waitUntil(() => hasFormValue(w.webContents.navigationHistory.getEntryAtIndex(2)?.pageState));
 
         // Save the navigation state
         const entries = w.webContents.navigationHistory.getAllEntries();
@@ -1231,16 +1263,12 @@ describe('webContents module', () => {
         w.close();
         w = new BrowserWindow();
 
-        const formValue = await new Promise<string>((resolve) => {
-          w.webContents.once('dom-ready', () =>
-            resolve(w.webContents.executeJavaScript('document.querySelector("input").value'))
-          );
-
-          // Restore the navigation history
-          return w.webContents.navigationHistory.restore({ index: 2, entries });
-        });
-
-        await waitUntil(() => formValue === 'Hi!');
+        // restore() resolves on did-finish-load, by which point blink has
+        // restored the form controls (FormController::RestoreImmediately runs
+        // before the load event).
+        await w.webContents.navigationHistory.restore({ index: 2, entries });
+        const formValue = await w.webContents.executeJavaScript('document.querySelector("input").value');
+        expect(formValue).to.equal('Hi!');
       });
 
       it('should handle invalid base64 pageState', async () => {
