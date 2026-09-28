@@ -64,6 +64,11 @@ class RendererClientBase : public content::ContentRendererClient
                                         v8::Local<v8::Context> context,
                                         content::RenderFrame* render_frame) = 0;
   virtual void DidClearWindowObject(content::RenderFrame* render_frame);
+
+  // Whether Electron has anything to set up in the script contexts of
+  // |render_frame| (preload scripts, Node.js, the <webview> element). When it
+  // does not, no context or isolated world is created on the frame's behalf.
+  virtual bool HasScriptsToInject(content::RenderFrame* render_frame) const;
   virtual void SetupMainWorldOverrides(v8::Isolate* isolate,
                                        v8::Local<v8::Context> context,
                                        content::RenderFrame* render_frame);
@@ -96,6 +101,14 @@ class RendererClientBase : public content::ContentRendererClient
                       v8::Local<v8::Context> context,
                       content::RenderFrame* render_frame) const;
 
+  // Whether Electron sets up its renderer API (and runs preload scripts) for
+  // documents in this frame: the main frame, DevTools, or any frame when
+  // nodeIntegrationInSubFrames is on, but never a <webview>'s placeholder
+  // iframe.
+  bool ShouldLoadPreload(v8::Isolate* isolate,
+                         v8::Local<v8::Context> context,
+                         content::RenderFrame* render_frame) const;
+
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   SpellCheck* GetSpellCheck() { return spellcheck_.get(); }
 #endif
@@ -104,10 +117,6 @@ class RendererClientBase : public content::ContentRendererClient
   void BindProcess(v8::Isolate* isolate,
                    gin_helper::Dictionary* process,
                    content::RenderFrame* render_frame);
-
-  bool ShouldLoadPreload(v8::Isolate* isolate,
-                         v8::Local<v8::Context> context,
-                         content::RenderFrame* render_frame) const;
 
   // content::ContentRendererClient:
   void RenderThreadStarted() override;

@@ -73,6 +73,11 @@ on:
         required: false
         type: boolean
         default: false
+      full-macos-tests:
+        description: 'Run the whole spec suite on every macOS test leg; see pipeline-segment-electron-test.yml'
+        required: false
+        type: boolean
+        default: true
 
 concurrency:
   group: electron-build-and-tidy-and-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref_protected == true && github.run_id || github.ref }}
@@ -122,6 +127,7 @@ jobs:
       target-platform: ${{ inputs.target-platform }}
       test-runs-on: ${{ inputs.test-runs-on }}
       test-container: ${{ inputs.test-container }}
+      full-macos-tests: ${{ inputs.full-macos-tests }}
       is-asan: ${{ inputs.is-asan }}
       enable-ssh: ${{ inputs.enable-ssh }}
     secrets: inherit

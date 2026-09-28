@@ -1087,6 +1087,21 @@ app.whenReady().then(() => {
       console.log(type, 'url' in payload ? payload.url : payload.size);
     }
   }
+
+  // `getType` narrows its result from the MIME type argument: a bookmark for
+  // the bookmark MIME type, a Blob for any other literal MIME type, and the
+  // union when the MIME type is not known statically.
+  const [firstItem] = items;
+  const bookmark: Electron.ClipboardBookmark = await firstItem.getType('electron application/bookmark');
+  console.log(bookmark.title, bookmark.url);
+  const html: Blob = await firstItem.getType('text/html');
+  console.log(html.size);
+  const mimeType: string = firstItem.types[0];
+  const unknownPayload = await firstItem.getType(mimeType);
+  const eitherPayload: Blob | Electron.ClipboardBookmark = unknownPayload;
+  // @ts-expect-error A MIME type that is not a literal may resolve to a ClipboardBookmark
+  const notNarrowed: Blob = unknownPayload;
+  console.log(eitherPayload, notNarrowed);
 })();
 
 // crash-reporter

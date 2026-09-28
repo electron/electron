@@ -7,6 +7,7 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "base/process/process_handle.h"
@@ -15,6 +16,7 @@
 #include "content/public/browser/global_routing_id.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
+#include "mojo/public/cpp/bindings/associated_remote.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "printing/buildflags/buildflags.h"
@@ -24,6 +26,7 @@
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
+#include "shell/common/serialized_value.h"
 #include "third_party/blink/public/mojom/page/page_visibility_state.mojom-forward.h"
 
 class GURL;
@@ -44,6 +47,19 @@ class Promise;
 
 namespace electron::api {
 
+// Reads (channel, ...args) for a send() call. Throws a TypeError and returns
+// false when |channel| is not a string; emits a warning naming |source| and
+// returns false when the arguments cannot be serialized.
+bool ReadIPCSendArguments(gin::Arguments* args,
+                          std::string_view source,
+                          std::string* channel,
+                          electron::SerializedValue* message);
+
+// Reports a send() that could not be delivered from |source|.
+void WarnIPCSendFailed(v8::Isolate* isolate,
+                       std::string_view source,
+                       std::string_view reason);
+
 class WebContents;
 
 // Bindings for accessing frames from the main process.
@@ -53,6 +69,17 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
  public:
   // Create a new WebFrameMain and return the V8 wrapper of it.
   static WebFrameMain* New(v8::Isolate* isolate);
+
+  static constexpr char kFrameDisposedError[] =
+      "Render frame was disposed before the request completed";
+
+  // A mojom::ElectronFrame reply callback of the (success, value, error)
+  // shape: resolves |promise| with the deserialized value, rejects it with the
+  // value or with an Error carrying |error|, or rejects it if the renderer
+  // goes away before replying.
+  static base::OnceCallback<
+      void(bool, electron::SerializedValue, const std::string&)>
+  BindPromiseToReply(gin_helper::Promise<v8::Local<v8::Value>> promise);
 
   static WebFrameMain* From(v8::Isolate* isolate,
                             content::RenderFrameHost* render_frame_host);
@@ -83,6 +110,14 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   WebFrameMain(const WebFrameMain&) = delete;
   WebFrameMain& operator=(const WebFrameMain&) = delete;
 
+  // Delivers an IPC message to this frame, warning rather than throwing when
+  // the render frame is gone.
+  void DeliverMessage(v8::Isolate* isolate,
+                      bool internal,
+                      std::string_view source,
+                      const std::string& channel,
+                      electron::SerializedValue message);
+
  private:
   friend class WebContents;
 
@@ -102,6 +137,8 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   void UpdateRenderFrameHost(content::RenderFrameHost* rfh);
 
   const mojo::Remote<mojom::ElectronRenderer>& GetRendererApi();
+  // Null when there is no live render frame. Ordered with navigation.
+  mojom::ElectronFrame* GetFrameApi();
   void MaybeSetupMojoConnection();
   void TeardownMojoConnection();
   void OnRendererConnectionError();
@@ -114,19 +151,21 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   // prior to accessing it.
   bool CheckRenderFrame() const;
 
+  v8::Local<v8::Promise> TransferSharedTexture(v8::Isolate* isolate,
+                                               v8::Local<v8::Value> transfer,
+                                               const std::string& texture_id,
+                                               v8::Local<v8::Value> args);
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* args,
                                            const std::u16string& code);
-#if BUILDFLAG(ENABLE_PRINTING)
-  v8::Local<v8::Promise> PrintToPDF(const base::Value& settings);
-#endif
+  v8::Local<v8::Promise> PrintToPDF(gin::Arguments* args);
   void CopyVideoFrameAt(int x, int y);
   void SaveVideoFrameAs(int x, int y);
   bool Reload();
   bool IsDestroyed() const;
-  void Send(v8::Isolate* isolate,
-            bool internal,
-            const std::string& channel,
-            v8::Local<v8::Value> args);
+  // send(channel, ...args). A missing channel throws; a message that cannot
+  // be serialized or delivered is reported as a warning.
+  void Send(gin::Arguments* args);
+
   void PostMessage(v8::Isolate* isolate,
                    const std::string& channel,
                    v8::Local<v8::Value> message_value,
@@ -163,6 +202,10 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
       "process.")
   mojo::Remote<mojom::ElectronRenderer> renderer_api_;
   mojo::PendingReceiver<mojom::ElectronRenderer> pending_receiver_;
+  GC_PLUGIN_IGNORE(
+      "Context tracking of the renderer remote is not needed in the browser "
+      "process.")
+  mojo::AssociatedRemote<mojom::ElectronFrame> frame_api_;
 
   content::FrameTreeNodeId frame_tree_node_id_;
   content::GlobalRenderFrameHostToken frame_token_;

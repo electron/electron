@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Sepez <tsepez@google.com>
+Date: Tue, 8 Sep 2026 13:35:07 -0700
+Subject: Copy MCC record count in OpenJPEG tile setup
+
+In opj_j2k_copy_default_tcp_and_create_tcd(), copy m_nb_mcc_records
+from the default tile coding parameters along with m_nb_max_mcc_records.
+
+TAG=agy
+CONV=a534277b-a66b-488e-ab0a-8833cb8e63ea
+
+Bug: 541707261
+Change-Id: Ic9b58719dd662e067751e141782d629e93149bc6
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/157011
+Commit-Queue: Tom Sepez <tsepez@chromium.org>
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+
+diff --git a/third_party/libopenjpeg/0052-opj_j2k_copy_default_mcc_records.patch b/third_party/libopenjpeg/0052-opj_j2k_copy_default_mcc_records.patch
+new file mode 100644
+index 0000000000000000000000000000000000000000..986354f8a21dbe0e8271117e902e1f4a2f2a8114
+--- /dev/null
++++ b/third_party/libopenjpeg/0052-opj_j2k_copy_default_mcc_records.patch
+@@ -0,0 +1,12 @@
++diff --git a/third_party/libopenjpeg/j2k.c b/third_party/libopenjpeg/j2k.c
++index 1fb83f8b5f..2835adbbb4 100644
++--- a/third_party/libopenjpeg/j2k.c
+++++ b/third_party/libopenjpeg/j2k.c
++@@ -9306,6 +9306,7 @@ static OPJ_BOOL opj_j2k_copy_default_tcp_and_create_tcd(opj_j2k_t * p_j2k,
++         }
++         memcpy(l_tcp->m_mcc_records, l_default_tcp->m_mcc_records, l_mcc_records_size);
++         l_tcp->m_nb_max_mcc_records = l_default_tcp->m_nb_max_mcc_records;
+++        l_tcp->m_nb_mcc_records = l_default_tcp->m_nb_mcc_records;
++
++         /* Copy the mcc record data from dflt_tile_cp to the current tile*/
++         l_src_mcc_rec = l_default_tcp->m_mcc_records;
+diff --git a/third_party/libopenjpeg/README.pdfium b/third_party/libopenjpeg/README.pdfium
+index 2823e66e0ce0bd692bebfdc9e0f54c57829f5796..c0650c69af3cea22302d3568019eb28d8c9ef98a 100644
+--- a/third_party/libopenjpeg/README.pdfium
++++ b/third_party/libopenjpeg/README.pdfium
+@@ -37,6 +37,7 @@ Local Modifications:
+ 0049-dwt_neon_5-3_idwt.patch: Cherry-pick https://github.com/uclouvain/openjpeg/pull/1630
+ 0050-opj_pi_initialise_encode_overflow.patch: Cherry-pick https://github.com/uclouvain/openjpeg/pull/1619
+ 0051-opj_j2k_copy_default_double_free.patch: Fix a double free.
++0052-opj_j2k_copy_default_mcc_records.patch: Fix MCC records count.
+ 
+ Note:
+ 
+diff --git a/third_party/libopenjpeg/j2k.c b/third_party/libopenjpeg/j2k.c
+index 1fb83f8b5f640c6c9c1c3d54fb09ae5f6ee53e9d..2835adbbb46a78317e7484288e4b857639cfa3fc 100644
+--- a/third_party/libopenjpeg/j2k.c
++++ b/third_party/libopenjpeg/j2k.c
+@@ -9306,6 +9306,7 @@ static OPJ_BOOL opj_j2k_copy_default_tcp_and_create_tcd(opj_j2k_t * p_j2k,
+         }
+         memcpy(l_tcp->m_mcc_records, l_default_tcp->m_mcc_records, l_mcc_records_size);
+         l_tcp->m_nb_max_mcc_records = l_default_tcp->m_nb_max_mcc_records;
++        l_tcp->m_nb_mcc_records = l_default_tcp->m_nb_mcc_records;
+ 
+         /* Copy the mcc record data from dflt_tile_cp to the current tile*/
+         l_src_mcc_rec = l_default_tcp->m_mcc_records;

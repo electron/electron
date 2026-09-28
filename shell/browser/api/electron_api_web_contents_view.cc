@@ -245,9 +245,10 @@ gin_helper::Handle<WebContentsView> WebContentsView::Create(
 v8::Local<v8::Function> WebContentsView::GetConstructor(v8::Isolate* isolate) {
   static base::NoDestructor<v8::Global<v8::Function>> constructor;
   if (constructor.get()->IsEmpty()) {
-    constructor->Reset(
-        isolate, gin_helper::CreateConstructor<WebContentsView>(
-                     isolate, base::BindRepeating(&WebContentsView::New)));
+    constructor->Reset(isolate,
+                       gin_helper::CreateConstructor<WebContentsView>(
+                           isolate, base::BindRepeating(&WebContentsView::New),
+                           View::GetConstructorTemplate(isolate)));
   }
   return v8::Local<v8::Function>::New(isolate, *constructor.get());
 }
@@ -315,9 +316,9 @@ void WebContentsView::BuildPrototype(
     v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(gin::StringToV8(isolate, "WebContentsView"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("setBackgroundColor", &WebContentsView::SetBackgroundColor)
-      .SetMethod("setBorderRadius", &WebContentsView::SetBorderRadius)
-      .SetProperty("webContents", &WebContentsView::GetWebContents);
+      .SetMethod<&WebContentsView::SetBackgroundColor>("setBackgroundColor")
+      .SetMethod<&WebContentsView::SetBorderRadius>("setBorderRadius")
+      .SetProperty<&WebContentsView::GetWebContents>("webContents");
 }
 
 }  // namespace electron::api

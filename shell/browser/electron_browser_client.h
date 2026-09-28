@@ -241,6 +241,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::unique_ptr<content::BrowserMainParts> CreateBrowserMainParts(
       bool /* is_integration_test */) override;
   base::FilePath GetDefaultDownloadDirectory() override;
+  base::FilePath GetShaderDiskCacheDirectory() override;
+  base::FilePath GetGrShaderDiskCacheDirectory() override;
+  base::FilePath GetGraphiteDawnDiskCacheDirectory() override;
+  base::FilePath GetGPUPersistentCacheDirectory() override;
   scoped_refptr<network::SharedURLLoaderFactory>
   GetSystemSharedURLLoaderFactory() override;
   void OnNetworkServiceCreated(

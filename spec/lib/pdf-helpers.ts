@@ -3,7 +3,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-const pdfReaderPath = path.resolve(__dirname, '..', 'fixtures', 'api', 'pdf-reader.mjs');
+const pdfReaderPath = path.resolve(import.meta.dirname, '..', 'fixtures', 'api', 'pdf-reader.mjs');
 
 // Parses a printToPDF result buffer with pdf.js in a subprocess and returns
 // info about the document and its first page.

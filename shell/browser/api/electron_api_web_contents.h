@@ -41,6 +41,7 @@
 #include "shell/browser/preload_script.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
+#include "shell/common/api/api.mojom-forward.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
@@ -82,6 +83,7 @@ class Arguments;
 
 namespace gin_helper {
 class Dictionary;
+class PromiseBase;
 class ErrorThrower;
 template <typename T>
 class Handle;
@@ -250,7 +252,6 @@ class WebContents final : public ExclusiveAccessContext,
   void ForcefullyCrashRenderer();
   void SetUserAgent(const std::string& user_agent);
   std::string GetUserAgent();
-  void InsertCSS(const std::string& css);
   v8::Local<v8::Promise> SavePage(const base::FilePath& full_file_path,
                                   const content::SavePageType& save_type);
   void OpenDevTools(gin::Arguments* args);
@@ -279,11 +280,11 @@ class WebContents final : public ExclusiveAccessContext,
   // 'web-contents-created'.
   void InitializeJS(v8::Isolate* isolate);
 
-#if BUILDFLAG(ENABLE_PRINTING)
   void Print(gin::Arguments* args);
-  // Print current page as PDF.
-  v8::Local<v8::Promise> PrintToPDF(const base::Value& settings);
-#endif
+  // Print current page as PDF. Static (with the WebContents as holder) so
+  // that a destroyed WebContents gets a rejection rather than a throw.
+  static v8::Local<v8::Promise> PrintToPDF(gin::Arguments* args);
+  static v8::Local<v8::Promise> GetPrintersAsync(v8::Isolate* isolate);
 
   void SetNextChildWebPreferences(const gin_helper::Dictionary);
 
@@ -397,6 +398,35 @@ class WebContents final : public ExclusiveAccessContext,
   // Notifies the web page that there is user interaction.
   void NotifyUserActivation();
 
+  // webContents.send(): resolves the primary main frame here rather than
+  // via the mainFrame accessor, so a send crosses into C++ once.
+  // send(channel, ...args) to the main frame.
+  void Send(gin::Arguments* args);
+  void SendInternal(gin::Arguments* args);
+  void PostMessage(v8::Isolate* isolate,
+                   const std::string& channel,
+                   v8::Local<v8::Value> message,
+                   std::optional<v8::Local<v8::Value>> transfer);
+  void SendImpl(bool internal, gin::Arguments* args);
+
+  // The main frame's renderer-side API, or null with |promise| rejected when
+  // there is no live render frame.
+  mojom::ElectronFrame* MainFrameRenderer(v8::Isolate* isolate,
+                                          gin_helper::PromiseBase& promise);
+  v8::Local<v8::Promise> ExecuteJavaScriptInRenderer(
+      v8::Isolate* isolate,
+      int world_id,
+      const std::vector<gin_helper::Dictionary>& sources,
+      bool has_user_gesture);
+  v8::Local<v8::Promise> InsertCSS(gin::Arguments* args,
+                                   const std::string& css);
+  v8::Local<v8::Promise> RemoveInsertedCSS(v8::Isolate* isolate,
+                                           const std::u16string& key);
+  v8::Local<v8::Promise> InsertText(v8::Isolate* isolate,
+                                    const std::string& text);
+  v8::Local<v8::Promise> SetVisualZoomLevelLimits(v8::Isolate* isolate,
+                                                  double min_level,
+                                                  double max_level);
   v8::Local<v8::Promise> TakeHeapSnapshot(v8::Isolate* isolate,
                                           const base::FilePath& file_path);
   v8::Local<v8::Promise> GetProcessMemoryInfo(gin::Arguments* args);
@@ -500,6 +530,10 @@ class WebContents final : public ExclusiveAccessContext,
                              DialogClosedCallback callback) override;
   void CancelDialogs(content::WebContents* web_contents,
                      bool reset_state) override;
+  DialogClosedCallback ResyncFocusAfterDialog(DialogClosedCallback callback);
+#if defined(USE_AURA)
+  void ResyncViewFocus();
+#endif
 
   void SetBackgroundColor(std::optional<SkColor> color);
 
@@ -842,6 +876,9 @@ class WebContents final : public ExclusiveAccessContext,
 
   [[nodiscard]] bool CanGoToIndex(int index) const;
 
+  [[nodiscard]] static bool ShouldIgnoreMenuShortcutsFor(
+      content::WebContents* source);
+
   cppgc::Persistent<api::Session> session_;
   v8::Global<v8::Value> devtools_web_contents_;
   cppgc::Persistent<api::Debugger> debugger_;
@@ -872,6 +909,8 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Whether background throttling is disabled.
   bool background_throttling_ = true;
+
+  bool ignore_menu_shortcuts_ = false;
 
   // Kept by JS while 'console-message' has listeners.
   bool console_message_observed_ = false;

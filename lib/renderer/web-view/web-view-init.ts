@@ -1,23 +1,8 @@
-import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
-import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import type * as guestViewInternalModule from '@electron/internal/renderer/web-view/guest-view-internal';
 import type * as webViewElementModule from '@electron/internal/renderer/web-view/web-view-element';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
 const { mainFrame: webFrame } = process._linkedBinding('electron_renderer_web_frame');
-
-function handleFocusBlur() {
-  // Note that while Chromium content APIs have observer for focus/blur, they
-  // unfortunately do not work for webview.
-
-  window.addEventListener('focus', () => {
-    ipcRendererInternal.send(IPC_MESSAGES.GUEST_VIEW_MANAGER_FOCUS_CHANGE, true);
-  });
-
-  window.addEventListener('blur', () => {
-    ipcRendererInternal.send(IPC_MESSAGES.GUEST_VIEW_MANAGER_FOCUS_CHANGE, false);
-  });
-}
 
 export function webViewInit(webviewTag: boolean, isWebView: boolean) {
   // Don't allow recursive `<webview>`.
@@ -35,10 +20,5 @@ export function webViewInit(webviewTag: boolean, isWebView: boolean) {
         setIsWebView: (iframe) => v8Util.setHiddenValue(iframe, 'isWebView', true)
       });
     }
-  }
-
-  if (isWebView) {
-    // Report focus/blur events of webview to browser.
-    handleFocusBlur();
   }
 }

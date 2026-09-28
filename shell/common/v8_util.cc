@@ -11,7 +11,7 @@
 
 #include "base/base_switches.h"
 #include "base/containers/heap_array.h"
-#include "base/memory/raw_ptr.h"
+#include "base/memory/stack_allocated.h"
 #include "gin/converter.h"
 #include "mojo/public/cpp/base/big_buffer.h"
 #include "shell/common/api/electron_api_native_image.h"
@@ -44,6 +44,8 @@ constexpr uint8_t kVersionTag = 0xFF;
 }  // namespace
 
 class V8Serializer : public v8::ValueSerializer::Delegate {
+  STACK_ALLOCATED();
+
  public:
   explicit V8Serializer(v8::Isolate* isolate)
       : isolate_(isolate), serializer_(isolate, this) {}
@@ -183,7 +185,7 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
     serializer_.WriteUint32(blink_version);
   }
 
-  raw_ptr<v8::Isolate> isolate_;
+  v8::Isolate* isolate_;
   std::vector<uint8_t> heap_;
   mojo_base::BigBuffer transport_;
   size_t capacity_ = 0;
@@ -192,6 +194,8 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
 };
 
 class V8Deserializer : public v8::ValueDeserializer::Delegate {
+  STACK_ALLOCATED();
+
  public:
   V8Deserializer(v8::Isolate* isolate, base::span<const uint8_t> data)
       : isolate_(isolate),
@@ -293,7 +297,7 @@ class V8Deserializer : public v8::ValueDeserializer::Delegate {
     return api::NativeImage::Create(isolate, image);
   }
 
-  raw_ptr<v8::Isolate> isolate_;
+  v8::Isolate* isolate_;
   v8::ValueDeserializer deserializer_;
 };
 

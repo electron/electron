@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lukasz Anforowicz <lukasza@chromium.org>
+Date: Mon, 14 Sep 2026 15:01:30 -0700
+Subject: [M154] [orb] Add `text/pdf` to the `opaque-blocklisted-never-sniffed`
+ list.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> [orb] Add `text/pdf` to the `opaque-blocklisted-never-sniffed` list.
+>
+> ORB already protects `application/pdf` so this should be a reasonable
+> change. It should have no web-visible change in behavior, except if
+> images/video/etc are labeled as `text/pdf` (which seems unlikely in
+> practice).
+>
+> This CL can be seen as a follow-up to https://crbug.com/40774340 which
+> implemented support for recognizing `text/pdf` as a PDF document.
+> https://github.com/annevk/orb/pull/46 corresponds to this change.
+>
+> Fixed: 560039872
+> Bug: 40774340
+> Change-Id: I09505eddfea8a85944cc3e6f7dcfd83f7efb5507
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8400027
+> Reviewed-by: Charlie Reis <creis@chromium.org>
+> Commit-Queue: Łukasz Anforowicz <lukasza@chromium.org>
+> Auto-Submit: Łukasz Anforowicz <lukasza@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1696707}
+
+(cherry picked from commit 0d54ca082631dcb2520240e6dcd4771464f74e77)
+
+Bug: 560484636,560039872,40774340
+Change-Id: I09505eddfea8a85944cc3e6f7dcfd83f7efb5507
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8393665
+Reviewed-by: Charlie Reis <creis@chromium.org>
+Commit-Queue: Łukasz Anforowicz <lukasza@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8037@{#1108}
+Cr-Branched-From: e10b20e60f162e7ad88e4930833695a54f4e15fb-refs/heads/main@{#1689415}
+
+diff --git a/services/network/orb/orb_mimetypes.cc b/services/network/orb/orb_mimetypes.cc
+index f35e3ee2c3fc3c7094200594d78a6392b0817e84..6927f9eff1b1705cf79a999199f18e67f8aa71da 100644
+--- a/services/network/orb/orb_mimetypes.cc
++++ b/services/network/orb/orb_mimetypes.cc
+@@ -142,6 +142,7 @@ const auto& GetNeverSniffedMimeTypes() {
+       "application/vnd.spreadsheet-openxml",
+       "application/vnd.wordprocessing-openxml",
+       "text/csv",
++      "text/pdf",
+       // Block signed documents to protect (potentially sensitive) unencrypted
+       // body of the signed document.  There should be no need to block
+       // encrypted documents (e.g. `multipart/encrypted` nor
+diff --git a/services/network/orb/orb_mimetypes_unittest.cc b/services/network/orb/orb_mimetypes_unittest.cc
+index 5373a3999e4955cc2c7b5da355f0736b1702d02b..5d7657e86ae560a762f7747dcdb3e5e5c4fc7f94 100644
+--- a/services/network/orb/orb_mimetypes_unittest.cc
++++ b/services/network/orb/orb_mimetypes_unittest.cc
+@@ -81,6 +81,7 @@ TEST(CrossOriginReadBlockingTest, GetCanonicalMimeType) {
+       {"multipart/byteranges", MimeType::kNeverSniffed},
+       {"multipart/signed", MimeType::kNeverSniffed},
+       {"text/csv", MimeType::kNeverSniffed},
++      {"text/pdf", MimeType::kNeverSniffed},
+       {"text/event-stream", MimeType::kNeverSniffed},
+   };
+ 

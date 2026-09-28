@@ -98,6 +98,12 @@ jobs:
       run: |
         cd src/electron
         node script/yarn.js tsc -p tsconfig.script.json
+    - name: Run Spec Typechecker
+      shell: bash
+      run: |
+        # Relies on the electron.d.ts that `lint:docs` generated in Run Lint.
+        cd src/electron
+        node script/yarn.js tsc -p tsconfig.spec.json
     - name: Check GHA Workflows
       shell: bash
       run: |

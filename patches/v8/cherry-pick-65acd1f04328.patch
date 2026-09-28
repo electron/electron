@@ -1,0 +1,118 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Lehmann <dlehmann@chromium.org>
+Date: Thu, 17 Sep 2026 12:09:13 +0200
+Subject: Reland "[wasm] Don't authenticate LiftoffSetupFrame calling PC"
+
+This is a reland of commit 3640a862c8e6638fe42235df945b29003d000bd2
+
+Skip the new regression test under `sandbox_hardware_support` in
+mjsunit.status, as it uses `console.profile()` which is unsupported
+with PKU on Linux kernels older than 6.12 (crbug.com/429173713).
+
+Original change's description:
+> [wasm] Don't authenticate LiftoffSetupFrame calling PC
+>
+> Generate_WasmLiftoffFrameSetup sets the WASM_LIFTOFF_SETUP frame marker
+> a few instructions before it signs and spills the calling PC. A profiler
+> tick in that window sees a correctly typed frame whose calling PC slot
+> is still unsigned, and ComputeCallerState() authenticated it, which
+> aborts on arm64 with control flow integrity.
+>
+> Read the slot unauthenticated instead. It only serves as a lookup key in
+> HasTaggedOutgoingParams(), never as a branch target.
+>
+> Bug: 560536735
+> Fixed: 562455563
+
+TAG=agy
+CONV=b2d96b5c-8e0b-4e74-8be9-54627a91f304
+
+Bug: 560536735
+Change-Id: I878562ab376eee8ca6c52accb4e3905bb6ffc266
+Fixed: 562455563
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8420943
+Auto-Submit: Daniel Lehmann <dlehmann@chromium.org>
+Commit-Queue: Matthias Liedtke <mliedtke@chromium.org>
+Owners-Override: Matthias Liedtke <mliedtke@chromium.org>
+Reviewed-by: Jakob Kummerow <jkummerow@chromium.org>
+Commit-Queue: Daniel Lehmann <dlehmann@chromium.org>
+Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#109909}
+
+diff --git a/src/execution/frames.cc b/src/execution/frames.cc
+index b76ee73369064a39ead01ab8a19b2822c9e74ce9..7e95a184ac3e906927717fa5012382a48e8b7086 100644
+--- a/src/execution/frames.cc
++++ b/src/execution/frames.cc
+@@ -3975,7 +3975,13 @@ Address WasmLiftoffSetupFrame::CallingPC() const {
+ 
+ void WasmLiftoffSetupFrame::ComputeCallerState(State* state) const {
+   TypedFrame::ComputeCallerState(state);
+-  state->callee_pc = CallingPC();
++  // Unlike {CallingPC}, which only runs at safepoints, this can run on a
++  // profiler tick: the setup builtin sets the frame marker a few instructions
++  // before it signs and spills the calling PC, so the slot can still be
++  // unsigned here. Don't authenticate it; {callee_pc} is only a lookup key,
++  // never a branch target.
++  state->callee_pc = unauthenticated_pc(reinterpret_cast<Address*>(
++      fp() + WasmLiftoffSetupFrameConstants::kCallingPCOffset));
+ }
+ 
+ void WasmLiftoffSetupFrame::Iterate(RootVisitor* v) const {
+diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
+index 75f794ee5ba266747a772a5800b7412fa026c745..333df22f9a54a2c52980f98401d77a96d822127f 100644
+--- a/test/mjsunit/mjsunit.status
++++ b/test/mjsunit/mjsunit.status
+@@ -3300,6 +3300,7 @@
+   'regress/wasm/regress-392928805': [SKIP],
+   'regress/wasm/regress-406043349': [SKIP],
+   'regress/wasm/regress-413963387': [SKIP],
++  'regress/wasm/regress-562455563': [SKIP],
+   'wasm/interrupt-worker-with-perf': [SKIP],
+   'wasm/liftoff-trap-handler': [SKIP],
+   'wasm/log-code-after-post-message': [SKIP],
+diff --git a/test/mjsunit/regress/wasm/regress-562455563.js b/test/mjsunit/regress/wasm/regress-562455563.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..28f82f984a59b7acc7a1a9cbba26fde79a6a5482
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-562455563.js
+@@ -0,0 +1,40 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --cpu-profiler-sampling-interval=1
++
++d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
++
++// Profile while many Wasm functions run the Liftoff feedback vector setup
++// builtin for the first time. That builtin sets the WASM_LIFTOFF_SETUP frame
++// marker a few instructions before it spills its calling PC, and a tick landing
++// in that window used to abort on arm64 with control flow integrity.
++
++const kNumFunctions = 100;
++
++const builder = new WasmModuleBuilder();
++const $sig_v_v = builder.addType(kSig_v_v);
++// Callee of the unreachable call below, which is what makes the functions
++// require a feedback vector in the first place.
++const $dummy = builder.addFunction('dummy', $sig_v_v).addBody([]);
++
++let main_body = [];
++for (let i = 0; i < kNumFunctions; i++) {
++  const callee = builder.addFunction(undefined, $sig_v_v).addBody([
++    kExprI32Const, 0,
++    kExprIf, kWasmVoid,
++      // An unreachable call nevertheless requires a feedback vector entry.
++      kExprCallFunction, $dummy.index,
++    kExprEnd,
++  ]);
++  main_body.push(kExprCallFunction, ...wasmUnsignedLeb(callee.index));
++}
++builder.addFunction('main', $sig_v_v).exportFunc().addBody(main_body);
++
++const instance = builder.instantiate();
++
++// Note: no {console.profileEnd()}, which would dump the profile into a
++// "v8.prof" file in the current working directory.
++console.profile();
++instance.exports.main();

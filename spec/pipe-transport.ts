@@ -10,7 +10,7 @@ export class PipeTransport {
     pipeRead.on('data', (buffer) => this._dispatch(buffer));
   }
 
-  send(message: Object) {
+  send(message: object) {
     this._pipeWrite!.write(JSON.stringify(message));
     this._pipeWrite!.write('\0');
   }

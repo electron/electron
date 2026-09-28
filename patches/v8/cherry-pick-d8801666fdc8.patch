@@ -1,0 +1,114 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Mon, 14 Sep 2026 19:51:48 +0200
+Subject: [wasm] Fix LiftoffSetupFrame iteration
+
+In the particular combination of:
+(1) a JS function inlining a Wasm wrapper,
+(2) the first called Wasm function tail-calling another,
+(3) that second Wasm function lazily allocating its feedback vector,
+(4) and that allocation causing a GC,
+we must make sure that we visit the parameters on the stack correctly.
+
+Fixed: 560536735
+Change-Id: If529dbccd1adf9af382918bbf93007ad5e079dea
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8404431
+Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+Reviewed-by: Daniel Lehmann <dlehmann@chromium.org>
+Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
+Commit-Queue: Daniel Lehmann <dlehmann@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#109824}
+
+diff --git a/src/execution/frames.cc b/src/execution/frames.cc
+index 496c91d4ee73c3526baec264f390cd430a548022..b76ee73369064a39ead01ab8a19b2822c9e74ce9 100644
+--- a/src/execution/frames.cc
++++ b/src/execution/frames.cc
+@@ -3973,6 +3973,11 @@ Address WasmLiftoffSetupFrame::CallingPC() const {
+       fp() + WasmLiftoffSetupFrameConstants::kCallingPCOffset));
+ }
+ 
++void WasmLiftoffSetupFrame::ComputeCallerState(State* state) const {
++  TypedFrame::ComputeCallerState(state);
++  state->callee_pc = CallingPC();
++}
++
+ void WasmLiftoffSetupFrame::Iterate(RootVisitor* v) const {
+   FullObjectSlot spilled_instance_slot(&Memory<Address>(
+       fp() + WasmLiftoffSetupFrameConstants::kInstanceSpillOffset));
+diff --git a/src/execution/frames.h b/src/execution/frames.h
+index 78da70ad89e78f7e0a3a8c3a71874a3d3dc961a5..f7662c656feaa03a77425428b2b069192e9a65bc 100644
+--- a/src/execution/frames.h
++++ b/src/execution/frames.h
+@@ -1637,6 +1637,8 @@ class WasmLiftoffSetupFrame : public TypedFrame {
+  protected:
+   inline explicit WasmLiftoffSetupFrame(StackFrameIteratorBase* iterator);
+ 
++  void ComputeCallerState(State* state) const override;
++
+  private:
+   friend class StackFrameIteratorBase;
+ };
+diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
+index 79d55c1b533bb2942329a518be312dfcfce2fd96..75f794ee5ba266747a772a5800b7412fa026c745 100644
+--- a/test/mjsunit/mjsunit.status
++++ b/test/mjsunit/mjsunit.status
+@@ -2766,6 +2766,7 @@
+   'regress/wasm/regress-455832038': [SKIP],
+   'regress/wasm/regress-483269968': [SKIP],
+   'regress/wasm/regress-543901836': [SKIP],
++  'regress/wasm/regress-560536735': [SKIP],
+   'compiler/regress-347724915': [SKIP],
+   'regress/regress-crbug-418520151': [SKIP],
+   'regress/regress-535000102': [SKIP],
+diff --git a/test/mjsunit/regress/wasm/regress-560536735.js b/test/mjsunit/regress/wasm/regress-560536735.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..569637fd54865a06bc095ef3ba47411fadb6062e
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-560536735.js
+@@ -0,0 +1,46 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
++
++let builder = new WasmModuleBuilder();
++let $dummy = builder.addFunction('dummy', kSig_v_v).addBody([]);
++let $t = builder.addType(makeSig(Array(8).fill(kWasmI64), []));
++let $func = builder.addFunction("func", $t).addBody([
++  kExprI32Const, 0,
++  kExprIf, kWasmVoid,
++    // An unreachable call nevertheless requires a feedback vector entry.
++    kExprCallFunction, $dummy.index,
++  kExprEnd,
++]);
++builder.addFunction("main", kSig_v_i).exportFunc().addBody([
++  kExprLocalGet, 0,
++  kExprI32Const, 0,
++  kExprI32Eq,
++  kExprIf, kWasmVoid,
++    ...Array(8).fill(wasmI64Const(0x424242424241n)).flat(),
++    // A tail call means that the LiftoffFrameSetup builtin will appear to
++    // have been called directly by the JS function.
++    kExprReturnCall, $func.index,
++  kExprEnd,
++]);
++
++let instance = builder.instantiate();
++let main = instance.exports.main;
++
++// We need a JS function that inlines the JS-to-Wasm wrapper.
++function call_main(i) {
++  return main(i);
++}
++%PrepareFunctionForOptimization(call_main);
++for (let i = 0; i < 10; i++) call_main(1);
++%OptimizeFunctionOnNextCall(call_main);
++call_main(1);
++
++// Passing 0 to call_main causes "func" to get called, and therefore allocate
++// its feedback vector. A full newspace makes this allocation trigger GC.
++%SimulateNewspaceFull();
++call_main(0);

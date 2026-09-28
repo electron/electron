@@ -27,9 +27,9 @@ class WebContents;
 // microtasks run once afterwards, as they did with the JS trampoline.
 namespace electron::ipc_dispatch {
 
-// Whether lib/browser/ipc-dispatch.ts has registered ipcMain,
-// ipcMainInternal and MessagePortMain. IPC that arrives earlier is dropped
-// (nothing could be listening yet).
+// Whether lib/browser/ipc-dispatch.ts has registered ipcMain and
+// ipcMainInternal. IPC that arrives earlier is dropped (nothing could be
+// listening yet).
 bool IsReady();
 
 // Frame IPC.

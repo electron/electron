@@ -4,117 +4,21 @@ import {
   parseContentTypeFormat
 } from '@electron/internal/browser/guest-window-manager';
 import { IpcMainImpl } from '@electron/internal/browser/ipc-main-impl';
-import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { parseFeatures } from '@electron/internal/browser/parse-features-string';
-import { printToPDF } from '@electron/internal/browser/print-to-pdf';
 import * as deprecate from '@electron/internal/common/deprecate';
-import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
-import { app, session, webFrameMain, dialog } from 'electron/main';
+import { app, webFrameMain, dialog } from 'electron/main';
 import type { BrowserWindowConstructorOptions, MessageBoxOptions, NavigationEntry } from 'electron/main';
 
 import * as path from 'path';
 import * as url from 'url';
-
-// session is not used here, the purpose is to make sure session is initialized
-// before the webContents module.
-// eslint-disable-next-line no-unused-expressions
-session;
-
-// Stock page sizes
-const PDFPageSizes: Record<string, ElectronInternal.MediaSize> = {
-  Letter: {
-    custom_display_name: 'Letter',
-    height_microns: 279400,
-    name: 'NA_LETTER',
-    width_microns: 215900
-  },
-  Legal: {
-    custom_display_name: 'Legal',
-    height_microns: 355600,
-    name: 'NA_LEGAL',
-    width_microns: 215900
-  },
-  Tabloid: {
-    height_microns: 431800,
-    name: 'NA_LEDGER',
-    width_microns: 279400,
-    custom_display_name: 'Tabloid'
-  },
-  A0: {
-    custom_display_name: 'A0',
-    height_microns: 1189000,
-    name: 'ISO_A0',
-    width_microns: 841000
-  },
-  A1: {
-    custom_display_name: 'A1',
-    height_microns: 841000,
-    name: 'ISO_A1',
-    width_microns: 594000
-  },
-  A2: {
-    custom_display_name: 'A2',
-    height_microns: 594000,
-    name: 'ISO_A2',
-    width_microns: 420000
-  },
-  A3: {
-    custom_display_name: 'A3',
-    height_microns: 420000,
-    name: 'ISO_A3',
-    width_microns: 297000
-  },
-  A4: {
-    custom_display_name: 'A4',
-    height_microns: 297000,
-    name: 'ISO_A4',
-    is_default: 'true',
-    width_microns: 210000
-  },
-  A5: {
-    custom_display_name: 'A5',
-    height_microns: 210000,
-    name: 'ISO_A5',
-    width_microns: 148000
-  },
-  A6: {
-    custom_display_name: 'A6',
-    height_microns: 148000,
-    name: 'ISO_A6',
-    width_microns: 105000
-  }
-} as const;
-
-// The minimum micron size Chromium accepts is that where:
-// Per printing/units.h:
-//  * kMicronsPerInch - Length of an inch in 0.001mm unit.
-//  * kPointsPerInch - Length of an inch in CSS's 1pt unit.
-//
-// Formula: (kPointsPerInch / kMicronsPerInch) * size >= 1
-//
-// Practically, this means microns need to be > 352 microns.
-// We therefore need to verify this or it will silently fail.
-const isValidCustomPageSize = (width: number, height: number) => {
-  return [width, height].every((x) => x > 352);
-};
+// session is not used here, the purpose of the import is to make sure session
+// is initialized before the webContents module.
+import '@electron/internal/browser/api/session';
 
 // JavaScript implementations of WebContents.
 const binding = process._linkedBinding('electron_browser_web_contents');
-const printing = process._linkedBinding('electron_browser_printing');
 const { WebContents } = binding as { WebContents: { prototype: Electron.WebContents } };
-
-WebContents.prototype.postMessage = function (...args) {
-  return this.mainFrame.postMessage(...args);
-};
-
-WebContents.prototype.send = function (channel, ...args) {
-  return this.mainFrame.send(channel, ...args);
-};
-
-WebContents.prototype._sendInternal = function (channel, ...args) {
-  return this.mainFrame._sendInternal(channel, ...args);
-};
 
 function getWebFrame(contents: Electron.WebContents, frame: number | [number, number]) {
   let webFrame: Electron.WebFrameMain | undefined;
@@ -137,20 +41,6 @@ WebContents.prototype.sendToFrame = function (frameId, channel, ...args) {
   return true;
 };
 
-// Following methods are mapped to webFrame.
-const webFrameMethods = ['insertCSS', 'insertText', 'removeInsertedCSS', 'setVisualZoomLevelLimits'] as (
-  | 'insertCSS'
-  | 'insertText'
-  | 'removeInsertedCSS'
-  | 'setVisualZoomLevelLimits'
-)[];
-
-for (const method of webFrameMethods) {
-  WebContents.prototype[method] = function (...args: any[]): Promise<any> {
-    return ipcMainUtils.invokeInWebContents(this, IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, method, ...args);
-  };
-}
-
 const waitTillCanExecuteJavaScript = async (webContents: Electron.WebContents) => {
   if (webContents.getURL() && !webContents.isLoadingMainFrame()) return;
 
@@ -165,98 +55,12 @@ const waitTillCanExecuteJavaScript = async (webContents: Electron.WebContents) =
 // WebContents has been loaded.
 WebContents.prototype.executeJavaScript = async function (code, hasUserGesture) {
   await waitTillCanExecuteJavaScript(this);
-  return ipcMainUtils.invokeInWebContents(
-    this,
-    IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD,
-    'executeJavaScript',
-    String(code),
-    !!hasUserGesture
-  );
+  return this._executeJavaScript(0, [{ code: String(code) }], !!hasUserGesture);
 };
 WebContents.prototype.executeJavaScriptInIsolatedWorld = async function (worldId, code, hasUserGesture) {
+  if (!Number.isInteger(worldId)) throw new TypeError('worldId must be an integer');
   await waitTillCanExecuteJavaScript(this);
-  return ipcMainUtils.invokeInWebContents(
-    this,
-    IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD,
-    'executeJavaScriptInIsolatedWorld',
-    worldId,
-    code,
-    !!hasUserGesture
-  );
-};
-
-WebContents.prototype.printToPDF = async function (options) {
-  return printToPDF(this, options);
-};
-
-// TODO(codebytere): deduplicate argument sanitization by moving rest of
-// print param logic into new file shared between printToPDF and print
-WebContents.prototype.print = function (options: ElectronInternal.WebContentsPrintOptions = {}, callback) {
-  if (typeof options !== 'object' || options == null) {
-    throw new TypeError('webContents.print(): Invalid print settings specified.');
-  }
-
-  const { pageSize, usePrinterDefaultPageSize } = options;
-
-  if (usePrinterDefaultPageSize !== undefined && pageSize !== undefined) {
-    throw new Error('usePrinterDefaultPageSize cannot be combined with pageSize');
-  }
-
-  if (typeof pageSize === 'string' && PDFPageSizes[pageSize]) {
-    const mediaSize = PDFPageSizes[pageSize];
-    options.mediaSize = {
-      ...mediaSize,
-      imageable_area_left_microns: 0,
-      imageable_area_bottom_microns: 0,
-      imageable_area_right_microns: mediaSize.width_microns,
-      imageable_area_top_microns: mediaSize.height_microns
-    };
-  } else if (typeof pageSize === 'object') {
-    if (!pageSize.height || !pageSize.width) {
-      throw new Error('height and width properties are required for pageSize');
-    }
-
-    // Dimensions in Microns - 1 meter = 10^6 microns
-    const height = Math.ceil(pageSize.height);
-    const width = Math.ceil(pageSize.width);
-    if (!isValidCustomPageSize(width, height)) {
-      throw new RangeError('height and width properties must be minimum 352 microns.');
-    }
-
-    options.mediaSize = {
-      name: 'CUSTOM',
-      custom_display_name: 'Custom',
-      height_microns: height,
-      width_microns: width,
-      imageable_area_left_microns: 0,
-      imageable_area_bottom_microns: 0,
-      imageable_area_right_microns: width,
-      imageable_area_top_microns: height
-    };
-  } else if (pageSize !== undefined) {
-    throw new Error(`Unsupported pageSize: ${pageSize}`);
-  }
-
-  if (this._print) {
-    if (callback) {
-      this._print(options, callback);
-    } else {
-      this._print(options);
-    }
-  } else {
-    console.error('Error: Printing feature is disabled.');
-  }
-};
-
-WebContents.prototype.getPrintersAsync = async function () {
-  // TODO(nornagon): this API has nothing to do with WebContents and should be
-  // moved.
-  if (printing.getPrinterListAsync) {
-    return printing.getPrinterListAsync();
-  } else {
-    console.error('Error: Printing feature is disabled.');
-    return [];
-  }
+  return this._executeJavaScript(worldId, code, !!hasUserGesture);
 };
 
 WebContents.prototype.loadFile = function (filePath, options = {}) {
@@ -400,20 +204,6 @@ const consoleMessageDeprecated = deprecate.warnOnceMessage(
 
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
-  const prefs = this.getLastWebPreferences() || {};
-  if (!prefs.nodeIntegration && prefs.preload != null && prefs.sandbox == null) {
-    deprecate.log(
-      "The default sandbox option for windows without nodeIntegration is changing. Presently, by default, when a window has a preload script, it defaults to being unsandboxed. In Electron 20, this default will be changing, and all windows that have nodeIntegration: false (which is the default) will be sandboxed by default. If your preload script doesn't use Node, no action is needed. If your preload script does use Node, either refactor it to move Node usage to the main process, or specify sandbox: false in your WebPreferences."
-    );
-  }
-  // Read off the ID at construction time, so that it's accessible even after
-  // the underlying C++ WebContents is destroyed.
-  const id = this.id;
-  Object.defineProperty(this, 'id', {
-    value: id,
-    writable: false
-  });
-
   this._windowOpenHandler = null;
 
   const ipc = new IpcMainImpl();
@@ -684,47 +474,6 @@ WebContents.prototype._init = function () {
     if (eventName === 'console-message' && !this.isDestroyed() && this.listenerCount('console-message') === 0) {
       this._setConsoleMessageObserved(false);
     }
-  });
-  // Properties
-
-  Object.defineProperty(this, 'audioMuted', {
-    get: () => this.isAudioMuted(),
-    set: (muted) => this.setAudioMuted(muted)
-  });
-
-  Object.defineProperty(this, 'userAgent', {
-    get: () => this.getUserAgent(),
-    set: (agent) => this.setUserAgent(agent)
-  });
-
-  Object.defineProperty(this, 'zoomLevel', {
-    get: () => this.getZoomLevel(),
-    set: (level) => this.setZoomLevel(level)
-  });
-
-  Object.defineProperty(this, 'zoomFactor', {
-    get: () => this.getZoomFactor(),
-    set: (factor) => this.setZoomFactor(factor)
-  });
-
-  Object.defineProperty(this, 'zoomMode', {
-    get: () => this.getZoomMode(),
-    set: (mode) => this.setZoomMode(mode)
-  });
-
-  Object.defineProperty(this, 'frameRate', {
-    get: () => this.getFrameRate(),
-    set: (rate) => this.setFrameRate(rate)
-  });
-
-  Object.defineProperty(this, 'backgroundThrottling', {
-    get: () => this.getBackgroundThrottling(),
-    set: (allowed) => this.setBackgroundThrottling(allowed)
-  });
-
-  Object.defineProperty(this, 'caretBrowsingEnabled', {
-    get: () => this.isCaretBrowsingEnabled(),
-    set: (enabled) => this.setCaretBrowsingEnabled(enabled)
   });
 };
 

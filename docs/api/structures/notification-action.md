@@ -32,11 +32,13 @@ app.whenReady().then(() => {
   const items = ['One', 'Two', 'Three']
   const n = new Notification({
     title: 'Choose an option',
-    actions: [{
-      type: 'selection',
-      text: 'Apply',
-      items
-    }]
+    actions: [
+      {
+        type: 'selection',
+        text: 'Apply',
+        items
+      }
+    ]
   })
 
   n.on('action', (e) => {

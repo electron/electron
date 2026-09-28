@@ -1,8 +1,12 @@
 <script>
-  navigator.webkitGetUserMedia({ audio: true, video: true }, function(mediaStream) {
-
-  }, function(err) {
-    console.log(err)
-    require('electron').ipcRenderer.send('message', err.name);
+  const { ipcRenderer } = require('electron');
+  ipcRenderer.on('start-capture', async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+      for (const track of stream.getTracks()) track.stop();
+      ipcRenderer.send('media-permission-test-result', 'success');
+    } catch (err) {
+      ipcRenderer.send('media-permission-test-result', err.name);
+    }
   });
 </script>

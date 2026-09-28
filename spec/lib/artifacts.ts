@@ -1,9 +1,9 @@
 import { randomBytes } from 'node:crypto';
-import fs = require('node:fs/promises');
-import path = require('node:path');
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 
 const IS_CI = !!process.env.CI;
-const ARTIFACT_DIR = path.join(__dirname, '..', 'artifacts');
+const ARTIFACT_DIR = path.join(import.meta.dirname, '..', 'artifacts');
 
 async function ensureArtifactDir(): Promise<void> {
   if (!IS_CI) {

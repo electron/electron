@@ -8,7 +8,7 @@ rendering with the viz compositor by way of a custom HostDisplayClient
 and LayeredWindowUpdater.
 
 diff --git a/components/viz/host/host_display_client.cc b/components/viz/host/host_display_client.cc
-index 65e6d28734051dc6ba0201b7b09a91ac733e3ff9..f8d66e68f7fdb4944a667ec10ba227fa62af7728 100644
+index 65e6d28734051dc6ba0201b7b09a91ac733e3ff9..ea6c92624466dbfdec21880632d8a265776a9d9f 100644
 --- a/components/viz/host/host_display_client.cc
 +++ b/components/viz/host/host_display_client.cc
 @@ -50,9 +50,9 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
@@ -28,9 +28,9 @@ index 65e6d28734051dc6ba0201b7b09a91ac733e3ff9..f8d66e68f7fdb4944a667ec10ba227fa
        std::make_unique<LayeredWindowUpdaterImpl>(widget_, std::move(receiver));
 +
 +#else
-+  CHECK(false) << "Chromium is calling CreateLayeredWindowUpdater for non-OSR "
-+                  "windows on POSIX platforms, something is wrong with "
-+                  "Electron's OSR implementation.";
++  // Outside Windows only Electron's offscreen display client provides a
++  // LayeredWindowUpdater; drop the request for any other window.
++  DLOG(ERROR) << "CreateLayeredWindowUpdater called for a non-OSR window";
 +#endif
  }
 +

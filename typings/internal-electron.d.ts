@@ -17,11 +17,6 @@ declare namespace Electron {
     setVersion(version: string): void;
     setDesktopName(name: string): void;
     setAppPath(path: string | null): void;
-    _clientCertRequestPasswordHandler: ((params: ClientCertRequestParams) => Promise<string>) | null;
-    on(
-      event: '-client-certificate-request-password',
-      listener: (event: Event<ClientCertRequestParams>, callback: (password: string) => void) => Promise<void>
-    ): this;
   }
 
   interface AutoUpdater {
@@ -31,7 +26,6 @@ declare namespace Electron {
   type TouchBarItemType = NonNullable<Electron.TouchBarConstructorOptions['items']>[0];
 
   interface BaseWindow {
-    _init(): void;
     _touchBar: Electron.TouchBar | null;
     _setTouchBarItems: (items: TouchBarItemType[]) => void;
     _setEscapeTouchBarItem: (item: TouchBarItemType | {}) => void;
@@ -81,9 +75,6 @@ declare namespace Electron {
   }
 
   interface ServiceWorkerMain {
-    _send(internal: boolean, channel: string, args: any): void;
-    _startExternalRequest(hasTimeout: boolean): { id: string; ok: boolean };
-    _finishExternalRequest(uuid: string): void;
     _countExternalRequests(): number;
   }
 
@@ -116,10 +107,8 @@ declare namespace Electron {
       prefs: Partial<Electron.BrowserWindowConstructorOptions['webPreferences']> &
         Pick<Electron.BrowserWindowConstructorOptions, 'backgroundColor'>
     ): void;
-    _send(internal: boolean, channel: string, args: any): boolean;
     _sendInternal(channel: string, ...args: any[]): void;
-    _printToPDF(options: any): Promise<Buffer>;
-    _print(options: any, callback?: (success: boolean, failureReason: string) => void): void;
+    _executeJavaScript(worldId: number, sources: Electron.WebSource[], hasUserGesture: boolean): Promise<any>;
     _init(): void;
     _getNavigationEntryAtIndex(index: number): Electron.NavigationEntry | null;
     _getActiveIndex(): number;
@@ -145,16 +134,12 @@ declare namespace Electron {
   }
 
   interface WebFrameMain {
-    _send(internal: boolean, channel: string, args: any): void;
-    _sendInternal(channel: string, ...args: any[]): void;
-    _postMessage(channel: string, message: any, transfer?: any[]): void;
-    _printToPDF(options: any): Promise<Buffer>;
+    _transferSharedTexture(transfer: any, textureId: string, args: any[]): Promise<Electron.SharedTextureSyncToken>;
     _lifecycleStateForTesting: string;
   }
 
   interface WebFrame extends NodeJS.EventEmitter {
     _isEvalAllowed(): boolean;
-    _setIsolatedWorldCreationCallback(callback: (worldId: number) => void): void;
     getIsolatedWorlds(): number[];
     on(event: 'isolated-world-created', listener: (worldId: number) => void): this;
     once(event: 'isolated-world-created', listener: (worldId: number) => void): this;
@@ -175,7 +160,6 @@ declare namespace Electron {
   type CreateWindowFunction = (options: BrowserWindowConstructorOptions) => WebContents;
 
   namespace Menu {
-    function _applicationMenuWasSet(): boolean;
     function _roleDefaults(): Record<string, { label: string; accelerator?: string }>;
   }
 
@@ -368,22 +352,6 @@ declare namespace ElectronInternal {
   interface LoadURLOptions extends Electron.LoadURLOptions {
     reloadIgnoringCache?: boolean;
   }
-
-  interface WebContentsPrintOptions extends Electron.WebContentsPrintOptions {
-    mediaSize?: MediaSize;
-  }
-
-  type MediaSize = {
-    name: string;
-    custom_display_name: string;
-    height_microns: number;
-    width_microns: number;
-    imageable_area_left_microns?: number;
-    imageable_area_bottom_microns?: number;
-    imageable_area_right_microns?: number;
-    imageable_area_top_microns?: number;
-    is_default?: 'true';
-  };
 
   type PageSize = {
     width: number;

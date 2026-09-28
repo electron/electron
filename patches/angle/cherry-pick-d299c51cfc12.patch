@@ -1,0 +1,179 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Tue, 15 Sep 2026 19:06:34 -0700
+Subject: GL: revise size checks for compressed texture workarounds.
+
+For the previous upload_oversized_mip_levels_via_unpack_buffer
+workaround, compute compressed texture sizes in blocks rather than
+pixels to be more correct. Add a regression test for oversized ASTC
+mipmap uploads which ensures they don't crash.
+
+Bug: chromium:556435507
+Change-Id: I760af244cb9eed1fef50021657f7c39f8b5c029e
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8415754
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Auto-Submit: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+
+diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
+index cd3b9dcb78d517c3913f2268e9a66d5b86170695..64376622223272109e1ead5f119745b0c4489bc7 100644
+--- a/src/libANGLE/renderer/gl/TextureGL.cpp
++++ b/src/libANGLE/renderer/gl/TextureGL.cpp
+@@ -849,23 +849,31 @@ angle::Result TextureGL::setCompressedImage(const gl::Context *context,
+     size_t level             = static_cast<size_t>(index.getLevelIndex());
+     ASSERT(TextureTargetToType(target) == getType());
+ 
++    const gl::InternalFormat &originalInternalFormatInfo =
++        gl::GetSizedInternalFormatInfo(internalFormat);
++
+     // Oversized nonzero-level definitions may cause driver issues during immediate software
+     // texture upload when level 0 is already defined. Stage them through a scratch unpack buffer
+     // so the driver handles the upload safely.
+     if (features.uploadOversizedMipLevelsViaUnpackBuffer.enabled &&
+         getType() == gl::TextureType::_2D && level > 0 &&
+         context->getState().getTargetBuffer(gl::BufferBinding::PixelUnpack) == nullptr &&
+-        gl::GetSizedInternalFormatInfo(internalFormat).depthBits == 0 &&
+-        gl::GetSizedInternalFormatInfo(internalFormat).stencilBits == 0)
++        originalInternalFormatInfo.depthBits == 0 && originalInternalFormatInfo.stencilBits == 0)
+     {
+         const gl::ImageDesc &level0 = mState.getImageDesc(gl::TextureTarget::_2D, 0);
+         if (level0.size.width != 0 && level0.size.height != 0)
+         {
+-            const int slotW =
+-                std::max(1, static_cast<int>(gl::ceilPow2(level0.size.width)) >> level);
+-            const int slotH =
+-                std::max(1, static_cast<int>(gl::ceilPow2(level0.size.height)) >> level);
+-            if (size.width > slotW || size.height > slotH)
++            const int blockWidth =
++                std::max(1, static_cast<int>(originalInternalFormatInfo.compressedBlockWidth));
++            const int blockHeight =
++                std::max(1, static_cast<int>(originalInternalFormatInfo.compressedBlockHeight));
++            const int expectedWidth   = std::max(1, level0.size.width >> level);
++            const int expectedHeight  = std::max(1, level0.size.height >> level);
++            const int expectedBlocksX = (expectedWidth + blockWidth - 1) / blockWidth;
++            const int expectedBlocksY = (expectedHeight + blockHeight - 1) / blockHeight;
++            const int incomingBlocksX = (size.width + blockWidth - 1) / blockWidth;
++            const int incomingBlocksY = (size.height + blockHeight - 1) / blockHeight;
++            if (incomingBlocksX > expectedBlocksX || incomingBlocksY > expectedBlocksY)
+             {
+                 return setImageViaScratchUnpackBuffer(context, target, level, internalFormat, size,
+                                                       /*format=*/GL_NONE, /*type=*/GL_NONE, unpack,
+@@ -874,8 +882,6 @@ angle::Result TextureGL::setCompressedImage(const gl::Context *context,
+         }
+     }
+ 
+-    const gl::InternalFormat &originalInternalFormatInfo =
+-        gl::GetSizedInternalFormatInfo(internalFormat);
+     nativegl::CompressedTexImageFormat compressedTexImageFormat =
+         nativegl::GetCompressedTexImageFormat(functions, features, internalFormat);
+ 
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index 3e7f85122f83d6d890473fbdee1bc21fa77dff5f..0ebb88fed76811389a2f2298f6f57127cff41e55 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -24683,6 +24683,104 @@ TEST_P(Texture2DTestES3_OversizedMipLevels, CompressedASTC)
+     EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth() / 4, getWindowHeight() / 4, GLColor::green);
+ }
+ 
++// Test that defining an oversized nonzero mip level (level 0 257x257, level 1 256x256) on an
++// ASTC 12x12 compressed texture does not crash during the level 1 upload.
++TEST_P(Texture2DTestES3_OversizedMipLevels, CompressedASTC12x12_256x256)
++{
++    const bool hasAstcLdr = IsGLExtensionEnabled("GL_KHR_texture_compression_astc_ldr");
++    const bool hasAstcOes = IsGLExtensionEnabled("GL_OES_texture_compression_astc");
++    ANGLE_SKIP_TEST_IF(!hasAstcLdr && !hasAstcOes);
++
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // ASTC void-extent solid color block: 16 bytes per block.
++    constexpr uint8_t kAstcBlock[16] = {0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++                                        0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF};
++
++    // Level 0: 257x257. In 12x12 blocks: ceil(257/12) = 22 blocks per axis.
++    constexpr int kLevel0Width     = 257;
++    constexpr int kLevel0Height    = 257;
++    constexpr size_t kLevel0Blocks = 22 * 22;
++    constexpr size_t kLevel0Bytes  = kLevel0Blocks * 16;
++    std::vector<uint8_t> level0Data(kLevel0Bytes);
++    for (size_t b = 0; b < kLevel0Blocks; ++b)
++    {
++        memcpy(&level0Data[b * 16], kAstcBlock, 16);
++    }
++    glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_12x12_KHR, kLevel0Width,
++                           kLevel0Height, 0, static_cast<GLsizei>(kLevel0Bytes), level0Data.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Level 1: 256x256. In 12x12 blocks: ceil(256/12) = 22 blocks per axis.
++    constexpr int kLevel1Width     = 256;
++    constexpr int kLevel1Height    = 256;
++    constexpr size_t kLevel1Blocks = 22 * 22;
++    constexpr size_t kLevel1Bytes  = kLevel1Blocks * 16;
++    std::vector<uint8_t> level1Data(kLevel1Bytes);
++    for (size_t b = 0; b < kLevel1Blocks; ++b)
++    {
++        memcpy(&level1Data[b * 16], kAstcBlock, 16);
++    }
++    glCompressedTexImage2D(GL_TEXTURE_2D, 1, GL_COMPRESSED_RGBA_ASTC_12x12_KHR, kLevel1Width,
++                           kLevel1Height, 0, static_cast<GLsizei>(kLevel1Bytes), level1Data.data());
++    ASSERT_GL_NO_ERROR();
++
++    glFinish();
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that defining an oversized nonzero mip level (level 0 257x257, level 1 192x192) on an
++// ASTC 12x12 compressed texture does not crash during the level 1 upload.
++TEST_P(Texture2DTestES3_OversizedMipLevels, CompressedASTC12x12_192x192)
++{
++    const bool hasAstcLdr = IsGLExtensionEnabled("GL_KHR_texture_compression_astc_ldr");
++    const bool hasAstcOes = IsGLExtensionEnabled("GL_OES_texture_compression_astc");
++    ANGLE_SKIP_TEST_IF(!hasAstcLdr && !hasAstcOes);
++
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // ASTC void-extent solid color block: 16 bytes per block.
++    constexpr uint8_t kAstcBlock[16] = {0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++                                        0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF};
++
++    // Level 0: 257x257. In 12x12 blocks: ceil(257/12) = 22 blocks per axis.
++    constexpr int kLevel0Width     = 257;
++    constexpr int kLevel0Height    = 257;
++    constexpr size_t kLevel0Blocks = 22 * 22;
++    constexpr size_t kLevel0Bytes  = kLevel0Blocks * 16;
++    std::vector<uint8_t> level0Data(kLevel0Bytes);
++    for (size_t b = 0; b < kLevel0Blocks; ++b)
++    {
++        memcpy(&level0Data[b * 16], kAstcBlock, 16);
++    }
++    glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_12x12_KHR, kLevel0Width,
++                           kLevel0Height, 0, static_cast<GLsizei>(kLevel0Bytes), level0Data.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Level 1: 192x192. In 12x12 blocks: ceil(192/12) = 16 blocks per axis.
++    constexpr int kLevel1Width     = 192;
++    constexpr int kLevel1Height    = 192;
++    constexpr size_t kLevel1Blocks = 16 * 16;
++    constexpr size_t kLevel1Bytes  = kLevel1Blocks * 16;
++    std::vector<uint8_t> level1Data(kLevel1Bytes);
++    for (size_t b = 0; b < kLevel1Blocks; ++b)
++    {
++        memcpy(&level1Data[b * 16], kAstcBlock, 16);
++    }
++    glCompressedTexImage2D(GL_TEXTURE_2D, 1, GL_COMPRESSED_RGBA_ASTC_12x12_KHR, kLevel1Width,
++                           kLevel1Height, 0, static_cast<GLsizei>(kLevel1Bytes), level1Data.data());
++    ASSERT_GL_NO_ERROR();
++
++    glFinish();
++    ASSERT_GL_NO_ERROR();
++}
++
+ // Test that defining an oversized nonzero mip level on a DXT compressed texture succeeds and
+ // renders correctly.
+ TEST_P(Texture2DTestES3_OversizedMipLevels, CompressedDXT)

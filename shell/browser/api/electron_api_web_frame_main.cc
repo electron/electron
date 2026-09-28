@@ -4,14 +4,18 @@
 
 #include "shell/browser/api/electron_api_web_frame_main.h"
 
+#include "mojo/public/cpp/bindings/callback_helpers.h"
+
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "base/containers/map_util.h"
 #include "base/feature_list.h"
+#include "base/functional/callback_helpers.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
+#include "base/strings/strcat.h"
 #include "content/browser/renderer_host/frame_tree_node.h"         // nogncheck
 #include "content/browser/renderer_host/render_frame_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_process_host_impl.h"  // nogncheck
@@ -21,6 +25,7 @@
 #include "content/public/common/isolated_world_ids.h"
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
+#include "mojo/public/cpp/bindings/callback_helpers.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/message_port.h"
@@ -40,6 +45,7 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/v8_util.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -315,19 +321,35 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
   return handle;
 }
 
+v8::Local<v8::Promise> WebFrameMain::PrintToPDF(gin::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
 #if BUILDFLAG(ENABLE_PRINTING)
-v8::Local<v8::Promise> WebFrameMain::PrintToPDF(const base::Value& settings) {
-  if (!HasRenderFrame()) {
-    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
-    v8::Local<v8::Promise> handle = promise.GetHandle();
-    promise.RejectWithErrorMessage(
-        "Render frame was disposed before WebFrameMain could be accessed");
-    return handle;
-  }
-  return PrintFrameToPDF(render_frame_host(), settings);
-}
+  v8::Local<v8::Value> options;
+  args->GetNext(&options);
+  // Jobs queue per frame tree, keyed by its top frame (or this one if that is
+  // already gone).
+  const int frame_tree =
+      HasRenderFrame()
+          ? render_frame_host()->GetMainFrame()->GetFrameTreeNodeId().value()
+          : FrameTreeNodeID().value();
+  return electron::PrintToPDF(
+      isolate, frame_tree,
+      base::BindRepeating(
+          [](cppgc::WeakPersistent<WebFrameMain> self)
+              -> content::RenderFrameHost* {
+            return self && self->HasRenderFrame() ? self->render_frame_host()
+                                                  : nullptr;
+          },
+          cppgc::WeakPersistent<WebFrameMain>(this)),
+      {"Render frame was disposed before WebFrameMain could be accessed"},
+      options);
+#else
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  promise.RejectWithErrorMessage("Printing feature is disabled");
+  return handle;
 #endif
+}
 
 void WebFrameMain::CopyVideoFrameAt(int x, int y) {
   if (!CheckRenderFrame())
@@ -361,20 +383,71 @@ bool WebFrameMain::IsDestroyed() const {
   return render_frame_disposed_;
 }
 
-void WebFrameMain::Send(v8::Isolate* isolate,
-                        bool internal,
-                        const std::string& channel,
-                        v8::Local<v8::Value> args) {
+bool ReadIPCSendArguments(gin::Arguments* args,
+                          std::string_view source,
+                          std::string* channel,
+                          electron::SerializedValue* message) {
+  v8::Isolate* isolate = args->isolate();
+  v8::Local<v8::Value> channel_value;
+  if (!args->GetNext(&channel_value) || !channel_value->IsString()) {
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "Missing required channel argument");
+    return false;
+  }
+  *channel = gin::V8ToString(isolate, channel_value);
+  v8::LocalVector<v8::Value> rest(isolate);
+  v8::Local<v8::Value> next;
+  while (args->GetNext(&next))
+    rest.push_back(next);
+  v8::TryCatch try_catch(isolate);
+  if (!gin::ConvertFromV8(isolate,
+                          v8::Array::New(isolate, rest.data(), rest.size()),
+                          message)) {
+    // e.g. a DataCloneError for an argument that cannot be serialized.
+    std::string reason = "Failed to serialize arguments";
+    if (try_catch.HasCaught()) {
+      v8::Local<v8::String> exception;
+      if (try_catch.Exception()
+              ->ToString(isolate->GetCurrentContext())
+              .ToLocal(&exception)) {
+        reason = gin::V8ToString(isolate, exception);
+      }
+      try_catch.Reset();
+    }
+    WarnIPCSendFailed(isolate, source, reason);
+    return false;
+  }
+  return true;
+}
+
+void WarnIPCSendFailed(v8::Isolate* isolate,
+                       std::string_view source,
+                       std::string_view reason) {
+  util::EmitWarning(isolate,
+                    base::StrCat({"Error sending from ", source, ": ", reason}),
+                    "electron");
+}
+
+void WebFrameMain::Send(gin::Arguments* args) {
+  std::string channel;
   electron::SerializedValue message;
-  if (!gin::ConvertFromV8(isolate, args, &message)) {
-    isolate->ThrowException(v8::Exception::Error(
-        gin::StringToV8(isolate, "Failed to serialize arguments")));
+  if (!ReadIPCSendArguments(args, "webFrameMain", &channel, &message))
+    return;
+  DeliverMessage(args->isolate(), false, "webFrameMain", channel,
+                 std::move(message));
+}
+
+void WebFrameMain::DeliverMessage(v8::Isolate* isolate,
+                                  bool internal,
+                                  std::string_view source,
+                                  const std::string& channel,
+                                  electron::SerializedValue message) {
+  if (!HasRenderFrame()) {
+    WarnIPCSendFailed(
+        isolate, source,
+        "Render frame was disposed before WebFrameMain could be accessed");
     return;
   }
-
-  if (!CheckRenderFrame())
-    return;
-
   GetRendererApi()->Message(internal, channel, std::move(message));
 }
 
@@ -410,8 +483,77 @@ void WebFrameMain::MaybeSetupMojoConnection() {
   }
 }
 
+// static
+base::OnceCallback<void(bool, electron::SerializedValue, const std::string&)>
+WebFrameMain::BindPromiseToReply(
+    gin_helper::Promise<v8::Local<v8::Value>> promise) {
+  auto [on_reply, on_drop] = base::SplitOnceCallback(base::BindOnce(
+      [](gin_helper::Promise<v8::Local<v8::Value>> promise, bool replied,
+         bool success, electron::SerializedValue result,
+         const std::string& error) {
+        if (!replied) {
+          promise.RejectWithErrorMessage(kFrameDisposedError);
+          return;
+        }
+        if (!success && !error.empty()) {
+          promise.RejectWithErrorMessage(error);
+          return;
+        }
+        v8::Isolate* isolate = promise.isolate();
+        v8::HandleScope handle_scope(isolate);
+        v8::Context::Scope context_scope(promise.GetContext());
+        v8::Local<v8::Value> value = gin::ConvertToV8(isolate, result);
+        if (success)
+          promise.Resolve(value);
+        else
+          promise.Reject(value);
+      },
+      std::move(promise)));
+  return mojo::WrapCallbackWithDropHandler(
+      base::BindOnce(std::move(on_reply), true),
+      base::BindOnce(std::move(on_drop), false, false,
+                     electron::SerializedValue(), std::string()));
+}
+
+v8::Local<v8::Promise> WebFrameMain::TransferSharedTexture(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> transfer,
+    const std::string& texture_id,
+    v8::Local<v8::Value> args) {
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  electron::SerializedValue serialized_transfer, serialized_args;
+  if (!electron::SerializeV8Value(isolate, transfer, &serialized_transfer) ||
+      !electron::SerializeV8Value(isolate, args, &serialized_args)) {
+    promise.RejectWithErrorMessage("Failed to serialize arguments");
+    return handle;
+  }
+  mojom::ElectronFrame* frame = GetFrameApi();
+  if (!frame) {
+    promise.RejectWithErrorMessage(
+        "Render frame was disposed before WebFrameMain could be accessed");
+    return handle;
+  }
+  frame->ReceiveSharedTexture(std::move(serialized_transfer), texture_id,
+                              std::move(serialized_args),
+                              BindPromiseToReply(std::move(promise)));
+  return handle;
+}
+
+mojom::ElectronFrame* WebFrameMain::GetFrameApi() {
+  if (!HasRenderFrame() || !render_frame_host()->IsRenderFrameLive())
+    return nullptr;
+  if (!frame_api_ || !frame_api_.is_connected()) {
+    frame_api_.reset();
+    render_frame_host()->GetRemoteAssociatedInterfaces()->GetInterface(
+        &frame_api_);
+  }
+  return frame_api_.get();
+}
+
 void WebFrameMain::TeardownMojoConnection() {
   renderer_api_.reset();
+  frame_api_.reset();
   pending_receiver_.reset();
 }
 
@@ -709,34 +851,33 @@ WebFrameMain* WebFrameMain::From(v8::Isolate* isolate,
 void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
                                       v8::Local<v8::ObjectTemplate> templ) {
   gin_helper::ObjectTemplateBuilder(isolate, templ)
-      .SetMethod("executeJavaScript", &WebFrameMain::ExecuteJavaScript)
-      .SetMethod("collectJavaScriptCallStack",
-                 &WebFrameMain::CollectDocumentJSCallStack)
-#if BUILDFLAG(ENABLE_PRINTING)
-      .SetMethod("_printToPDF", &WebFrameMain::PrintToPDF)
-#endif
-      .SetMethod("copyVideoFrameAt", &WebFrameMain::CopyVideoFrameAt)
-      .SetMethod("saveVideoFrameAs", &WebFrameMain::SaveVideoFrameAs)
-      .SetMethod("reload", &WebFrameMain::Reload)
-      .SetMethod("isDestroyed", &WebFrameMain::IsDestroyed)
-      .SetMethod("_send", &WebFrameMain::Send)
-      .SetMethod("_postMessage", &WebFrameMain::PostMessage)
-      .SetProperty("detached", &WebFrameMain::Detached)
-      .SetProperty("frameTreeNodeId", &WebFrameMain::FrameTreeNodeID)
-      .SetProperty("name", &WebFrameMain::Name)
-      .SetProperty("frameToken", &WebFrameMain::FrameToken)
-      .SetProperty("osProcessId", &WebFrameMain::OSProcessID)
-      .SetProperty("processId", &WebFrameMain::ProcessID)
-      .SetProperty("routingId", &WebFrameMain::RoutingID)
-      .SetProperty("url", &WebFrameMain::URL)
-      .SetProperty("origin", &WebFrameMain::Origin)
-      .SetProperty("visibilityState", &WebFrameMain::VisibilityState)
-      .SetProperty("top", &WebFrameMain::Top)
-      .SetProperty("parent", &WebFrameMain::Parent)
-      .SetProperty("frames", &WebFrameMain::Frames)
-      .SetProperty("framesInSubtree", &WebFrameMain::FramesInSubtree)
-      .SetProperty("_lifecycleStateForTesting",
-                   &WebFrameMain::LifecycleStateForTesting)
+      .SetMethod<&WebFrameMain::ExecuteJavaScript>("executeJavaScript")
+      .SetMethod<&WebFrameMain::CollectDocumentJSCallStack>(
+          "collectJavaScriptCallStack")
+      .SetMethod<&WebFrameMain::PrintToPDF>("printToPDF")
+      .SetMethod<&WebFrameMain::CopyVideoFrameAt>("copyVideoFrameAt")
+      .SetMethod<&WebFrameMain::SaveVideoFrameAs>("saveVideoFrameAs")
+      .SetMethod<&WebFrameMain::Reload>("reload")
+      .SetMethod<&WebFrameMain::IsDestroyed>("isDestroyed")
+      .SetMethod<&WebFrameMain::Send>("send")
+      .SetMethod<&WebFrameMain::TransferSharedTexture>("_transferSharedTexture")
+      .SetMethod<&WebFrameMain::PostMessage>("postMessage")
+      .SetProperty<&WebFrameMain::Detached>("detached")
+      .SetProperty<&WebFrameMain::FrameTreeNodeID>("frameTreeNodeId")
+      .SetProperty<&WebFrameMain::Name>("name")
+      .SetProperty<&WebFrameMain::FrameToken>("frameToken")
+      .SetProperty<&WebFrameMain::OSProcessID>("osProcessId")
+      .SetProperty<&WebFrameMain::ProcessID>("processId")
+      .SetProperty<&WebFrameMain::RoutingID>("routingId")
+      .SetProperty<&WebFrameMain::URL>("url")
+      .SetProperty<&WebFrameMain::Origin>("origin")
+      .SetProperty<&WebFrameMain::VisibilityState>("visibilityState")
+      .SetProperty<&WebFrameMain::Top>("top")
+      .SetProperty<&WebFrameMain::Parent>("parent")
+      .SetProperty<&WebFrameMain::Frames>("frames")
+      .SetProperty<&WebFrameMain::FramesInSubtree>("framesInSubtree")
+      .SetProperty<&WebFrameMain::LifecycleStateForTesting>(
+          "_lifecycleStateForTesting")
       .Build();
 }
 
@@ -839,10 +980,10 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict{isolate, exports};
   dict.Set("WebFrameMain", WebFrameMain::GetConstructor(
                                isolate, context, &WebFrameMain::kWrapperInfo));
-  dict.SetMethod("fromId", &FromID);
-  dict.SetMethod("fromFrameToken", &FromFrameToken);
-  dict.SetMethod("_fromIdIfExists", &FromIdIfExists);
-  dict.SetMethod("_fromFtnIdIfExists", &FromFtnIdIfExists);
+  dict.SetMethod<&FromID>("fromId");
+  dict.SetMethod<&FromFrameToken>("fromFrameToken");
+  dict.SetMethod<&FromIdIfExists>("_fromIdIfExists");
+  dict.SetMethod<&FromFtnIdIfExists>("_fromFtnIdIfExists");
 }
 
 }  // namespace

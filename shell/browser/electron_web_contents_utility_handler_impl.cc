@@ -4,6 +4,7 @@
 
 #include "shell/browser/electron_web_contents_utility_handler_impl.h"
 
+#include <optional>
 #include <utility>
 
 #include "content/public/browser/browser_context.h"
@@ -13,6 +14,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/native_window.h"
 #include "shell/browser/preload_code_cache.h"
 #include "third_party/blink/public/mojom/permissions/permission_status.mojom.h"
 
@@ -59,6 +61,40 @@ void ElectronWebContentsUtilityHandlerImpl::SetTemporaryZoomLevel(
   if (api_web_contents) {
     api_web_contents->SetTemporaryZoomLevel(level);
   }
+}
+
+void ElectronWebContentsUtilityHandlerImpl::NotifyGuestFocusChange(bool focus) {
+  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
+  if (api_web_contents && api_web_contents->is_guest())
+    api_web_contents->Emit("-focus-change", focus);
+}
+
+void ElectronWebContentsUtilityHandlerImpl::GetFrameRoutingIdDeprecated(
+    const blink::LocalFrameToken& frame_token,
+    GetFrameRoutingIdDeprecatedCallback callback) {
+  content::RenderFrameHost* rfh = content::RenderFrameHost::FromFrameToken(
+      content::GlobalRenderFrameHostToken(render_frame_host_token_.child_id,
+                                          frame_token));
+  std::move(callback).Run(rfh ? rfh->GetRoutingID() : 0);
+}
+
+void ElectronWebContentsUtilityHandlerImpl::GetFrameTokenDeprecated(
+    int32_t routing_id,
+    GetFrameTokenDeprecatedCallback callback) {
+  content::RenderFrameHost* rfh = content::RenderFrameHost::FromID(
+      render_frame_host_token_.child_id, routing_id);
+  std::move(callback).Run(rfh ? std::make_optional(rfh->GetFrameToken())
+                              : std::nullopt);
+}
+
+void ElectronWebContentsUtilityHandlerImpl::CloseWindow() {
+  // Only the top-level document may close its window, as in the HTML spec.
+  content::RenderFrameHost* rfh = GetRenderFrameHost();
+  if (!rfh || rfh->GetParentOrOuterDocument())
+    return;
+  api::WebContents* api_web_contents = api::WebContents::From(web_contents());
+  if (api_web_contents && api_web_contents->owner_window())
+    api_web_contents->owner_window()->Close();
 }
 
 void ElectronWebContentsUtilityHandlerImpl::SetPreloadCodeCache(

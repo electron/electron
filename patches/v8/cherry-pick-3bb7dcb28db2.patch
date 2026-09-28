@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eric Leese <leese@chromium.org>
+Date: Tue, 15 Sep 2026 01:56:22 -0700
+Subject: Fix catch prediction check in Promise.race
+
+When the debugger is active, Promise.race marks rejections by setting kPromiseHandledBySymbol on thenResult. The condition incorrectly verified that promise was a JSPromise rather than checking thenResult. (Compare to promise-any.tq or promise-all.tq.)
+
+(cherry picked from commit 74b6f1e09576864c1a367891a21bc4cd5251f626)
+
+Fixed: 562325547
+Bug: 560121552
+Change-Id: I9340a97bbe06d72e4368781df51c965f6542b5aa
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8408313
+Commit-Queue: Eric Leese <leese@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Auto-Submit: Eric Leese <leese@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#109839}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8407029
+Cr-Commit-Position: refs/branch-heads/15.5@{#1}
+Cr-Branched-From: 17abeb50acb4563e253edebd0db09062d39c8c91-refs/heads/15.5.35@{#1}
+Cr-Branched-From: 9f9b3ebe0a8137c2a344d1a84536068231af632f-refs/heads/main@{#109811}
+
+diff --git a/src/builtins/promise-race.tq b/src/builtins/promise-race.tq
+index 4e3b9529b5e8be8f34570c6c8d3b6825af6488ff..53fd8b3bd8432a99a7cc1ad682ce76c6695d6c97 100644
+--- a/src/builtins/promise-race.tq
++++ b/src/builtins/promise-race.tq
+@@ -85,7 +85,7 @@ transitioning javascript builtin PromiseRace(
+ 
+         // For catch prediction, mark that rejections here are semantically
+         // handled by the combined Promise.
+-        if (IsDebugActive() && Is<JSPromise>(promise)) deferred {
++        if (IsDebugActive() && Is<JSPromise>(thenResult)) deferred {
+             SetPropertyStrict(
+                 context, thenResult, kPromiseHandledBySymbol, promise);
+           }

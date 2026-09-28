@@ -13,7 +13,7 @@ namespace gin_helper {
 v8::Isolate* ErrorThrower::isolate() const {
   // Callers should prefer to specify the isolate in the constructor,
   // since GetCurrent() uses atomic loads and is thus a bit costly to invoke
-  return isolate_ ? isolate_.get() : v8::Isolate::GetCurrent();
+  return isolate_ ? isolate_ : v8::Isolate::GetCurrent();
 }
 
 void ErrorThrower::ThrowError(const std::string_view err_msg) const {

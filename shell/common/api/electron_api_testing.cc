@@ -2,20 +2,28 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 
 #include "base/command_line.h"
 #include "base/dcheck_is_on.h"
+#include "base/functional/callback.h"
 #include "base/logging.h"
+#include "base/memory/ptr_util.h"
 #include "base/no_destructor.h"
 #include "base/power_monitor/power_monitor_source.h"
+#include "build/build_config.h"
 #include "chrome/browser/browser_process.h"
 #include "components/prefs/pref_service.h"
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
+#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_switches.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/webauthn/electron_authenticator_request_client_delegate.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/callback_util.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -25,6 +33,14 @@
 #include "shell/common/node_includes.h"
 #include "ui/accessibility/platform/ax_platform.h"
 #include "v8/include/v8.h"
+
+#if BUILDFLAG(IS_LINUX)
+#include <glib.h>
+#elif BUILDFLAG(IS_MAC)
+#include <CoreFoundation/CoreFoundation.h>
+#elif BUILDFLAG(IS_WIN)
+#include <windows.h>
+#endif
 
 #if DCHECK_IS_ON()
 namespace {
@@ -243,6 +259,67 @@ void ClearHeldPromiseForTesting() {
   GetHeldPromise().reset();
 }
 
+// Settles a promise from a native event source callback, the way an X11 reply
+// or an OS event handler would: on the UI thread, but not from inside a task.
+// Once it has, |after_settle| is posted as an ordinary task, so a test can
+// check that the promise's continuations ran before that task did.
+struct SettleOutsideTask {
+  gin_helper::Promise<void> promise;
+  base::OnceClosure after_settle;
+
+  static void Run(std::unique_ptr<SettleOutsideTask> self) {
+    self->promise.Resolve();
+    content::GetUIThreadTaskRunner({})->PostTask(FROM_HERE,
+                                                 std::move(self->after_settle));
+  }
+
+#if BUILDFLAG(IS_LINUX)
+  static gboolean OnIdle(gpointer data) {
+    Run(base::WrapUnique(static_cast<SettleOutsideTask*>(data)));
+    return G_SOURCE_REMOVE;
+  }
+#elif BUILDFLAG(IS_MAC)
+  static void OnTimer(CFRunLoopTimerRef timer, void* info) {
+    Run(base::WrapUnique(static_cast<SettleOutsideTask*>(info)));
+    CFRunLoopTimerInvalidate(timer);
+    CFRelease(timer);
+  }
+#elif BUILDFLAG(IS_WIN)
+  static SettleOutsideTask*& Pending() {
+    static SettleOutsideTask* pending = nullptr;
+    return pending;
+  }
+  static void CALLBACK OnTimer(HWND, UINT, UINT_PTR id, DWORD) {
+    ::KillTimer(nullptr, id);
+    if (auto* self = std::exchange(Pending(), nullptr))
+      Run(base::WrapUnique(self));
+  }
+#endif
+};
+
+v8::Local<v8::Promise> SettlePromiseOutsideTask(
+    v8::Isolate* isolate,
+    base::OnceClosure after_settle) {
+  auto state = std::make_unique<SettleOutsideTask>(SettleOutsideTask{
+      gin_helper::Promise<void>(isolate), std::move(after_settle)});
+  v8::Local<v8::Promise> handle = state->promise.GetHandle();
+#if BUILDFLAG(IS_LINUX)
+  g_idle_add(&SettleOutsideTask::OnIdle, state.release());
+#elif BUILDFLAG(IS_MAC)
+  CFRunLoopTimerContext context = {0, state.release(), nullptr, nullptr,
+                                   nullptr};
+  CFRunLoopTimerRef timer =
+      CFRunLoopTimerCreate(kCFAllocatorDefault, CFAbsoluteTimeGetCurrent(), 0,
+                           0, 0, &SettleOutsideTask::OnTimer, &context);
+  CFRunLoopAddTimer(CFRunLoopGetMain(), timer, kCFRunLoopCommonModes);
+#elif BUILDFLAG(IS_WIN)
+  CHECK(!SettleOutsideTask::Pending());
+  SettleOutsideTask::Pending() = state.release();
+  ::SetTimer(nullptr, 0, USER_TIMER_MINIMUM, &SettleOutsideTask::OnTimer);
+#endif
+  return handle;
+}
+
 // Reaches the protected PowerMonitorSource::ProcessPowerEvent().
 struct PowerEventInjector : base::PowerMonitorSource {
   static void Inject(PowerEvent event) { ProcessPowerEvent(event); }
@@ -258,39 +335,47 @@ void SimulatePowerEvent(gin_helper::ErrorThrower thrower,
     thrower.ThrowTypeError("unknown power event");
 }
 
+void SimulateWebAuthnUvLockedPinSecurityKey(bool enabled) {
+  electron::ElectronAuthenticatorRequestClientDelegate::
+      SetSimulateUvLockedPinSecurityKeyForTesting(enabled);
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("log", &Log);
-  dict.SetMethod("getLoggingDestination", &GetLoggingDestination);
-  dict.SetMethod("isPlatformCaretBrowsingEnabled",
-                 &IsPlatformCaretBrowsingEnabled);
-  dict.SetMethod("simulateNetworkServiceCrash", &SimulateNetworkServiceCrash);
-  dict.SetMethod("simulatePowerEvent", &SimulatePowerEvent);
-  dict.SetMethod("holdRepeatingCallbackForTesting",
-                 &HoldRepeatingCallbackForTesting);
-  dict.SetMethod("copyHeldRepeatingCallbackForTesting",
-                 &CopyHeldRepeatingCallbackForTesting);
-  dict.SetMethod("invokeHeldRepeatingCallbackForTesting",
-                 &InvokeHeldRepeatingCallbackForTesting);
-  dict.SetMethod("invokeCopiedRepeatingCallbackForTesting",
-                 &InvokeCopiedRepeatingCallbackForTesting);
-  dict.SetMethod("clearPrimaryHeldRepeatingCallbackForTesting",
-                 &ClearPrimaryHeldRepeatingCallbackForTesting);
-  dict.SetMethod("getHeldRepeatingCallbackCountForTesting",
-                 &GetHeldRepeatingCallbackCountForTesting);
-  dict.SetMethod("holdOnceCallbackForTesting", &HoldOnceCallbackForTesting);
-  dict.SetMethod("invokeHeldOnceCallbackForTesting",
-                 &InvokeHeldOnceCallbackForTesting);
-  dict.SetMethod("clearHeldCallbacksForTesting", &ClearHeldCallbacksForTesting);
-  dict.SetMethod("holdPromiseForTesting", &HoldPromiseForTesting);
-  dict.SetMethod("flushPendingWindowStateSaves", &FlushPendingWindowStateSaves);
-  dict.SetMethod("commitPendingLocalStateWrites",
-                 &CommitPendingLocalStateWrites);
-  dict.SetMethod("clearHeldPromiseForTesting", &ClearHeldPromiseForTesting);
+  dict.SetMethod<&Log>("log");
+  dict.SetMethod<&GetLoggingDestination>("getLoggingDestination");
+  dict.SetMethod<&IsPlatformCaretBrowsingEnabled>(
+      "isPlatformCaretBrowsingEnabled");
+  dict.SetMethod<&SimulateNetworkServiceCrash>("simulateNetworkServiceCrash");
+  dict.SetMethod<&SimulatePowerEvent>("simulatePowerEvent");
+  dict.SetMethod<&SimulateWebAuthnUvLockedPinSecurityKey>(
+      "simulateWebAuthnUvLockedPinSecurityKey");
+  dict.SetMethod<&HoldRepeatingCallbackForTesting>(
+      "holdRepeatingCallbackForTesting");
+  dict.SetMethod<&CopyHeldRepeatingCallbackForTesting>(
+      "copyHeldRepeatingCallbackForTesting");
+  dict.SetMethod<&InvokeHeldRepeatingCallbackForTesting>(
+      "invokeHeldRepeatingCallbackForTesting");
+  dict.SetMethod<&InvokeCopiedRepeatingCallbackForTesting>(
+      "invokeCopiedRepeatingCallbackForTesting");
+  dict.SetMethod<&ClearPrimaryHeldRepeatingCallbackForTesting>(
+      "clearPrimaryHeldRepeatingCallbackForTesting");
+  dict.SetMethod<&GetHeldRepeatingCallbackCountForTesting>(
+      "getHeldRepeatingCallbackCountForTesting");
+  dict.SetMethod<&HoldOnceCallbackForTesting>("holdOnceCallbackForTesting");
+  dict.SetMethod<&InvokeHeldOnceCallbackForTesting>(
+      "invokeHeldOnceCallbackForTesting");
+  dict.SetMethod<&ClearHeldCallbacksForTesting>("clearHeldCallbacksForTesting");
+  dict.SetMethod<&HoldPromiseForTesting>("holdPromiseForTesting");
+  dict.SetMethod<&SettlePromiseOutsideTask>("settlePromiseOutsideTask");
+  dict.SetMethod<&FlushPendingWindowStateSaves>("flushPendingWindowStateSaves");
+  dict.SetMethod<&CommitPendingLocalStateWrites>(
+      "commitPendingLocalStateWrites");
+  dict.SetMethod<&ClearHeldPromiseForTesting>("clearHeldPromiseForTesting");
 }
 
 }  // namespace

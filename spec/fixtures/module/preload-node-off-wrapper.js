@@ -1,3 +1,3 @@
-setImmediate(function () {
+setTimeout(function () {
   require('./preload-required-module');
 });

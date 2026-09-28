@@ -74,9 +74,9 @@ void ElectronBindings::BindTo(v8::Isolate* isolate,
   gin_helper::Dictionary dict(isolate, process);
   BindProcess(isolate, &dict, metrics_.get());
 
-  dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
+  dict.SetMethod<&TakeHeapSnapshot>("takeHeapSnapshot");
 #if BUILDFLAG(IS_POSIX)
-  dict.SetMethod("setFdLimit", &base::IncreaseFdLimitTo);
+  dict.SetMethod<&base::IncreaseFdLimitTo>("setFdLimit");
 #endif
   dict.SetMethod("activateUvLoop",
                  base::BindRepeating(&ElectronBindings::ActivateUVLoop,

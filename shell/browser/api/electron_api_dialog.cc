@@ -91,17 +91,17 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("showMessageBoxSync", &ShowMessageBoxSync);
-  dict.SetMethod("showMessageBox", &ShowMessageBox);
-  dict.SetMethod("_closeMessageBox", &electron::CloseMessageBox);
-  dict.SetMethod("showErrorBox", &electron::ShowErrorBox);
-  dict.SetMethod("showOpenDialogSync", &ShowOpenDialogSync);
-  dict.SetMethod("showOpenDialog", &ShowOpenDialog);
-  dict.SetMethod("showSaveDialogSync", &ShowSaveDialogSync);
-  dict.SetMethod("showSaveDialog", &ShowSaveDialog);
+  dict.SetMethod<&ShowMessageBoxSync>("showMessageBoxSync");
+  dict.SetMethod<&ShowMessageBox>("showMessageBox");
+  dict.SetMethod<&electron::CloseMessageBox>("_closeMessageBox");
+  dict.SetMethod<&electron::ShowErrorBox>("showErrorBox");
+  dict.SetMethod<&ShowOpenDialogSync>("showOpenDialogSync");
+  dict.SetMethod<&ShowOpenDialog>("showOpenDialog");
+  dict.SetMethod<&ShowSaveDialogSync>("showSaveDialogSync");
+  dict.SetMethod<&ShowSaveDialog>("showSaveDialog");
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
-  dict.SetMethod("showCertificateTrustDialog",
-                 &certificate_trust::ShowCertificateTrust);
+  dict.SetMethod<&certificate_trust::ShowCertificateTrust>(
+      "showCertificateTrustDialog");
 #endif
 }
 

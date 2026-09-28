@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "shell/browser/api/electron_api_printing.h"
+
 #include "base/logging.h"
 #include "chrome/browser/browser_process.h"
 #include "gin/converter.h"

@@ -10,8 +10,18 @@
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/connector.h"
 #include "mojo/public/cpp/bindings/message.h"
+#include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gc_plugin.h"
+#include "shell/common/gin_helper/constructible.h"
 #include "third_party/blink/public/common/messaging/message_port_descriptor.h"
+
+namespace gin {
+class Arguments;
+}  // namespace gin
+
+namespace gin_helper {
+class ErrorThrower;
+}  // namespace gin_helper
 
 namespace v8 {
 template <class T>
@@ -27,10 +37,16 @@ namespace electron {
 // process lifetime by a leaked cppgc::Persistent root, so it is never
 // garbage collected.
 class ParentPort final : public gin::Wrappable<ParentPort>,
+                         public gin_helper::EventEmitterMixin<ParentPort>,
+                         public gin_helper::Constructible<ParentPort>,
                          private mojo::MessageReceiver {
  public:
   static ParentPort* GetInstance();
   static ParentPort* Create(v8::Isolate* isolate);
+  // gin_helper::Constructible; not constructible from JavaScript.
+  static v8::Local<v8::Value> New(gin_helper::ErrorThrower thrower);
+  static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
+  static const char* GetClassName() { return "ParentPort"; }
 
   ParentPort(const ParentPort&) = delete;
   ParentPort& operator=(const ParentPort&) = delete;
@@ -41,16 +57,13 @@ class ParentPort final : public gin::Wrappable<ParentPort>,
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
-  static const char* GetClassName() { return "ParentPort"; }
-  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
   const gin::WrapperInfo* wrapper_info() const override;
   const char* GetHumanReadableName() const override;
 
   void Close();
 
  private:
-  void PostMessage(v8::Local<v8::Value> message_value);
+  void PostMessage(gin::Arguments* args);
   void Start();
   void Pause();
 

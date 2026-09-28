@@ -42,15 +42,17 @@ export const closeWindow = async (
   await ensureWindowIsClosed(window);
 
   if (assertNotWindows) {
-    let windows = BaseWindow.getAllWindows();
+    const windows = BaseWindow.getAllWindows();
     if (windows.length > 0) {
       setTimeout(async () => {
         // Wait until next tick to assert that all windows have been closed.
-        windows = BaseWindow.getAllWindows();
+        // Only look at the windows that were open when closeWindow() was
+        // called: by now the next test may already have created its own.
+        const leftover = windows.filter((win) => !win.isDestroyed());
         try {
-          expect(windows).to.have.lengthOf(0);
+          expect(leftover).to.have.lengthOf(0);
         } finally {
-          for (const win of windows) {
+          for (const win of leftover) {
             await ensureWindowIsClosed(win);
           }
         }

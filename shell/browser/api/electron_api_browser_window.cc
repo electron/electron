@@ -22,6 +22,8 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "ui/gl/gpu_switching_manager.h"
+#include "ui/views/focus/focus_manager.h"
+#include "ui/views/widget/widget.h"
 
 namespace electron::api {
 
@@ -182,8 +184,10 @@ void BrowserWindow::OnWindowBlur() {
 }
 
 void BrowserWindow::OnWindowFocus() {
-  // focus/blur events might be emitted while closing window.
-  if (api_web_contents_) {
+  // focus/blur events might be emitted while closing window. When the views
+  // focus manager already restored focus to another view in this window (a
+  // child WebContentsView the user clicked into), leave it there.
+  if (api_web_contents_ && !FocusIsInAnotherView()) {
     web_contents()->RestoreFocus();
 #if !BUILDFLAG(IS_MAC)
     if (!api_web_contents_->IsDevToolsOpened())
@@ -192,6 +196,17 @@ void BrowserWindow::OnWindowFocus() {
   }
 
   BaseWindow::OnWindowFocus();
+}
+
+bool BrowserWindow::FocusIsInAnotherView() {
+#if BUILDFLAG(IS_MAC)
+  return false;
+#else
+  auto* focus_manager = window()->widget()->GetFocusManager();
+  auto* focused = focus_manager ? focus_manager->GetFocusedView() : nullptr;
+  auto* primary = window()->primary_web_contents_view();
+  return focused && primary && !primary->Contains(focused);
+#endif
 }
 
 void BrowserWindow::OnWindowIsKeyChanged(bool is_key) {
@@ -336,9 +351,9 @@ void BrowserWindow::BuildPrototype(v8::Isolate* isolate,
                                    v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(gin::StringToV8(isolate, "BrowserWindow"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("focusOnWebView", &BrowserWindow::FocusOnWebView)
-      .SetMethod("blurWebView", &BrowserWindow::BlurWebView)
-      .SetProperty("webContents", &BrowserWindow::GetWebContents);
+      .SetMethod<&BrowserWindow::FocusOnWebView>("focusOnWebView")
+      .SetMethod<&BrowserWindow::BlurWebView>("blurWebView")
+      .SetProperty<&BrowserWindow::GetWebContents>("webContents");
 }
 
 // static
@@ -366,7 +381,8 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict{isolate, exports};
   dict.Set("BrowserWindow",
            gin_helper::CreateConstructor<BrowserWindow>(
-               isolate, base::BindRepeating(&BrowserWindow::New)));
+               isolate, base::BindRepeating(&BrowserWindow::New),
+               electron::api::BaseWindow::GetConstructorTemplate(isolate)));
 }
 
 }  // namespace

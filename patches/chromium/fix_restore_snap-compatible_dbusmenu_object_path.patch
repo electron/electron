@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nelson Gill <ngill@slack-corp.com>
+Date: Fri, 18 Sep 2026 09:53:32 -0700
+Subject: fix: restore snap-compatible dbusmenu object path
+
+The StatusNotifierItem multiplexer refactor in
+https://crrev.com/c/8043132 changed the dbusmenu object path from
+/com/canonical/dbusmenu to /org/chromium/DbusMenu.
+
+Under snap strict confinement the unity7 interface grants dbusmenu
+access only on the /com/canonical/dbusmenu path. Traffic on
+/org/chromium/DbusMenu is silently dropped by AppArmor, so the
+desktop environment panel never receives the menu layout and the tray
+context menu is non-functional for every snap-confined application.
+
+The bus name half of this problem was already fixed upstream in
+https://crrev.com/c/8337991. This patch fixes the remaining dbusmenu
+path half.
+
+/com/canonical/dbusmenu is the conventional path used by libdbusmenu
+and expected by all StatusNotifierWatcher implementations. The SNI
+specification does not mandate a specific dbusmenu object path, so
+either works outside of snap confinement.
+
+This patch can be removed once snapd ships support for the new path
+(https://github.com/canonical/snapd/pull/17415) and sufficient
+adoption time has passed.
+
+Upstream snapd bug: https://bugs.launchpad.net/snapd/+bug/2161950
+
+diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
+index 756f5127309519a8049afadb58db60447bd5dfe8..921472e161f7766000e1c1f60ed043258d268e86 100644
+--- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
++++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
+@@ -72,7 +72,7 @@ const char kInterfaceStatusNotifierWatcher[] = "org.kde.StatusNotifierWatcher";
+ // Object paths.
+ const char kPathStatusNotifierItem[] = "/StatusNotifierItem";
+ const char kPathStatusNotifierWatcher[] = "/StatusNotifierWatcher";
+-const char kPathDbusMenu[] = "/org/chromium/DbusMenu";
++const char kPathDbusMenu[] = "/com/canonical/dbusmenu";
+ 
+ // Methods.
+ const char kMethodNameHasOwner[] = "NameHasOwner";

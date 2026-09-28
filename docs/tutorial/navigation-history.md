@@ -77,7 +77,7 @@ A common flow is that you want to restore the history of a webContents - for ins
 const firstWindow = new BrowserWindow()
 
 // Later, you want a second window to have the same history and navigation position
-async function restore () {
+async function restore() {
   const entries = firstWindow.webContents.navigationHistory.getAllEntries()
   const index = firstWindow.webContents.navigationHistory.getActiveIndex()
 

@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 26 Sep 2026 03:07:17 +0000
+Subject: build: use Chromium's crdtp std::string traits
+
+Electron links Node against Chromium's //third_party/inspector_protocol:crdtp,
+which already defines crdtp::ProtocolTypeTraits<std::string> in
+crdtp/chromium/protocol_traits.cc. A second definition in node_string.cc
+either fails to link with a duplicate symbol error or, if the signatures are
+made to differ, becomes an ODR violation: the inline crdtp templates that
+call these traits get merged across Node and Chromium, and content can end up
+calling Node's version, which CHECKs on a wrong-typed value instead of
+reporting a protocol error.
+
+Drop Node's definitions and reuse Chromium's, keeping the declaration
+identical to Chromium's.
+
+diff --git a/src/inspector/node_string.cc b/src/inspector/node_string.cc
+index e2148e954217b9b999e9713e95f1a115ccf7d657..3c12ebb7bb909ca6e0c722f5dcb44318c50d9d1f 100644
+--- a/src/inspector/node_string.cc
++++ b/src/inspector/node_string.cc
+@@ -6,28 +6,6 @@
+ 
+ namespace crdtp {
+ 
+-bool ProtocolTypeTraits<std::string>::Deserialize(DeserializerState* state,
+-                                                  std::string* value) {
+-  if (state->tokenizer()->TokenTag() == cbor::CBORTokenTag::STRING8) {
+-    span<uint8_t> cbor_span = state->tokenizer()->GetString8();
+-    value->assign(reinterpret_cast<const char*>(cbor_span.data()),
+-                  cbor_span.size());
+-    return true;
+-  }
+-  CHECK(state->tokenizer()->TokenTag() == cbor::CBORTokenTag::STRING16);
+-  span<uint8_t> utf16le = state->tokenizer()->GetString16WireRep();
+-
+-  value->assign(node::inspector::protocol::StringUtil::fromUTF16LE(
+-      reinterpret_cast<const uint16_t*>(utf16le.data()),
+-      utf16le.size() / sizeof(uint16_t)));
+-  return true;
+-}
+-
+-void ProtocolTypeTraits<std::string>::Serialize(const std::string& value,
+-                                                std::vector<uint8_t>* bytes) {
+-  cbor::EncodeString8(SpanFrom(value), bytes);
+-}
+-
+ bool ProtocolTypeTraits<node::inspector::protocol::Binary>::Deserialize(
+     DeserializerState* state, node::inspector::protocol::Binary* value) {
+   CHECK(state->tokenizer()->TokenTag() == cbor::CBORTokenTag::BINARY);
+diff --git a/src/inspector/node_string.h b/src/inspector/node_string.h
+index bcdedaa2ae4ab1d3267d7a1347f15e0405261277..aa98b408ea2a7b91473061d5f2678fdc7ca7af84 100644
+--- a/src/inspector/node_string.h
++++ b/src/inspector/node_string.h
+@@ -16,8 +16,10 @@ class Binary;
+ 
+ namespace crdtp {
+ 
++// Defined by Chromium's crdtp/chromium/protocol_traits.cc, which Electron links
++// in, so the specialization has one definition.
+ template <>
+-struct ProtocolTypeTraits<std::string> {
++struct CRDTP_EXPORT ProtocolTypeTraits<std::string> {
+   static bool Deserialize(DeserializerState* state, std::string* value);
+   static void Serialize(const std::string& value, std::vector<uint8_t>* bytes);
+ };

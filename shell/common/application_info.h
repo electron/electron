@@ -25,6 +25,10 @@ std::string GetApplicationVersion();
 // Returns the user agent of Electron.
 std::string GetApplicationUserAgent();
 
+// Drops the cached user agent so that the next caller rebuilds it. Call this
+// whenever something the user agent is built from changes.
+void InvalidateApplicationUserAgent();
+
 bool IsAppRTL();
 
 #if BUILDFLAG(IS_WIN)

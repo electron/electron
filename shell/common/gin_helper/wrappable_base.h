@@ -51,6 +51,10 @@ class WrappableBase {
   // This method should only be called by classes using Constructor.
   virtual void InitWith(v8::Isolate* isolate, v8::Local<v8::Object> wrapper);
 
+  // Called by InitWith once GetWrapper() works, before the wrapper's JS _init
+  // (if it has one) runs.
+  virtual void OnWrapped(v8::Isolate* isolate) {}
+
   // Helper to init with arguments.
   void InitWithArgs(const gin::Arguments* args);
 

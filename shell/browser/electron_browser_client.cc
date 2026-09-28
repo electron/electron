@@ -257,6 +257,15 @@ namespace electron {
 
 namespace {
 
+// A GPU cache directory under sessionData, or empty when that path is not
+// available, which content treats as caching being disabled.
+base::FilePath GpuCacheDirectory(base::FilePath::StringViewType name) {
+  base::FilePath session_data;
+  if (!base::PathService::Get(DIR_SESSION_DATA, &session_data))
+    return {};
+  return session_data.Append(name);
+}
+
 #if BUILDFLAG(ENABLE_PROMPT_API)
 const char kAIManagerUserDataKey[] = "ai_manager";
 #endif  // BUILDFLAG(ENABLE_PROMPT_API)
@@ -805,7 +814,7 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
   //
   // Only the about:blank document needs this. A popup that navigates
   // (window.open(url)) does not run the preload on its initial document and
-  // gets a normal ElectronFrameStartup push at ReadyToCommitNavigation, so
+  // gets a normal ElectronFrame push at ReadyToCommitNavigation, so
   // building the data here for it would be pure waste.
   if (!target_url.is_empty() && !target_url.IsAboutBlank())
     return std::nullopt;
@@ -1205,6 +1214,28 @@ base::FilePath ElectronBrowserClient::GetDefaultDownloadDirectory() {
   if (base::PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &download_path))
     return download_path;
   return {};
+}
+
+// The GPU process asks the browser to persist the shaders it compiles for the
+// display compositor and for Skia, and to load them back on the next launch.
+// Content only does so for the caches whose directory the embedder provides;
+// without these the shaders were compiled again on every launch. The
+// directories sit next to the other Chromium caches under sessionData, which
+// like them has to be set before the app is ready.
+base::FilePath ElectronBrowserClient::GetShaderDiskCacheDirectory() {
+  return GpuCacheDirectory(FILE_PATH_LITERAL("ShaderCache"));
+}
+
+base::FilePath ElectronBrowserClient::GetGrShaderDiskCacheDirectory() {
+  return GpuCacheDirectory(FILE_PATH_LITERAL("GrShaderCache"));
+}
+
+base::FilePath ElectronBrowserClient::GetGraphiteDawnDiskCacheDirectory() {
+  return GpuCacheDirectory(FILE_PATH_LITERAL("GraphiteDawnCache"));
+}
+
+base::FilePath ElectronBrowserClient::GetGPUPersistentCacheDirectory() {
+  return GpuCacheDirectory(FILE_PATH_LITERAL("GPUPersistentCache"));
 }
 
 scoped_refptr<network::SharedURLLoaderFactory>

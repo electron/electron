@@ -3,7 +3,7 @@
   "compilerOptions": {
     "rootDir": "default_app",
     "module": "ESNext",
-    "moduleResolution": "node"
+    "moduleResolution": "bundler"
   },
   "include": [
     "default_app",

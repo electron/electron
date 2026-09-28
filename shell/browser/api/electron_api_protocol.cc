@@ -390,8 +390,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.Set("Protocol",
            electron::api::Protocol::GetConstructor(
                isolate, context, &electron::api::Protocol::kWrapperInfo));
-  dict.SetMethod("registerSchemesAsPrivileged", &RegisterSchemesAsPrivileged);
-  dict.SetMethod("getStandardSchemes", &electron::api::GetStandardSchemes);
+  dict.SetMethod<&RegisterSchemesAsPrivileged>("registerSchemesAsPrivileged");
+  dict.SetMethod<&electron::api::GetStandardSchemes>("getStandardSchemes");
 }
 
 }  // namespace
