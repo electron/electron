@@ -14,6 +14,7 @@ import { expect } from 'chai';
 import send from 'send';
 
 import * as ChildProcess from 'node:child_process';
+import { X509Certificate } from 'node:crypto';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -22,7 +23,15 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { parseBasicAuth } from './lib/net-helpers.ts';
-import { defer, deferKillUtilityProcess, ifit, listen, waitUntil } from './lib/spec-helpers.ts';
+import {
+  defer,
+  deferKillUtilityProcess,
+  ifdescribe,
+  ifit,
+  isTestingBindingAvailable,
+  listen,
+  waitUntil
+} from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('session module', () => {
@@ -1204,6 +1213,72 @@ describe('session module', () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL(url);
     });
+  });
+
+  ifdescribe(isTestingBindingAvailable())('certificate conversion', () => {
+    let convertCertificate: (chain: Buffer[]) => Electron.Certificate;
+    let leaf: X509Certificate;
+    let intermediate: X509Certificate;
+    let root: X509Certificate;
+
+    before(() => {
+      convertCertificate = process._linkedBinding('electron_common_testing').convertCertificateForTesting;
+      const certPath = path.join(fixtures, 'certificates');
+      leaf = new X509Certificate(fs.readFileSync(path.join(certPath, 'server.pem')));
+      intermediate = new X509Certificate(fs.readFileSync(path.join(certPath, 'intermediateCA.pem')));
+      root = new X509Certificate(fs.readFileSync(path.join(certPath, 'rootCA.pem')));
+    });
+
+    it('converts a certificate without intermediates', () => {
+      const certificate = convertCertificate([leaf.raw]);
+      expect(certificate.data).to.equal(leaf.toString());
+      expect(certificate.subjectName).to.equal('localhost');
+      expect(certificate.issuerName).to.equal('Intermediate CA');
+      expect(certificate).not.to.have.property('issuerCert');
+    });
+
+    it('preserves a valid issuer chain', () => {
+      const certificate = convertCertificate([leaf.raw, intermediate.raw, root.raw]);
+      expect(certificate).to.deep.equal({
+        ...convertCertificate([leaf.raw]),
+        issuerCert: {
+          ...convertCertificate([intermediate.raw]),
+          issuerCert: convertCertificate([root.raw])
+        }
+      });
+    });
+
+    it('preserves an intermediate with UTF-8 in a PrintableString', () => {
+      // Re-encode the intermediate's subject CN as a PrintableString containing
+      // UTF-8, which Chromium accepts for client certificate chains.
+      const utf8Cn = Buffer.from('0c0f', 'hex');
+      const original = Buffer.concat([utf8Cn, Buffer.from('Intermediate CA')]);
+      const offset = intermediate.raw.indexOf(original);
+      expect(offset).to.be.greaterThan(-1);
+      const patched = Buffer.from(intermediate.raw);
+      const replacement = Buffer.concat([Buffer.from('130f', 'hex'), Buffer.from('Intermediate é')]);
+      expect(replacement.length).to.equal(original.length);
+      replacement.copy(patched, offset);
+
+      const certificate = convertCertificate([leaf.raw, patched, root.raw]);
+      expect(certificate.issuerCert.subjectName).to.equal('Intermediate é');
+      expect(certificate.issuerCert.issuerCert).to.deep.equal(convertCertificate([root.raw]));
+    });
+
+    for (const [name, malformed] of [
+      ['empty', Buffer.alloc(0)],
+      ['invalid DER', Buffer.from('not a certificate')]
+    ] as const) {
+      it(`omits an ${name} first intermediate without crashing`, () => {
+        const certificate = convertCertificate([leaf.raw, malformed, root.raw]);
+        expect(certificate).to.deep.equal(convertCertificate([leaf.raw]));
+      });
+
+      it(`preserves the valid prefix before an ${name} later intermediate`, () => {
+        const certificate = convertCertificate([leaf.raw, intermediate.raw, malformed, root.raw]);
+        expect(certificate).to.deep.equal(convertCertificate([leaf.raw, intermediate.raw]));
+      });
+    }
   });
 
   describe('ses.setCertificateVerifyProc(callback)', () => {
