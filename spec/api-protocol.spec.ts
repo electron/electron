@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
+import * as originalFs from 'node:original-fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as qs from 'node:querystring';
@@ -1111,18 +1112,68 @@ describe('protocol module', () => {
       expect(await bad.text()).to.equal('');
     });
 
-    ifit(process.platform !== 'win32')('does not follow a symlink out of the root', async () => {
-      fs.symlinkSync(path.join(root, 'secret.txt'), path.join(root, 'dist', 'link.txt'));
-      fs.symlinkSync(root, path.join(root, 'dist', 'up'));
+    it('does not follow a symlink or junction out of the root', async () => {
+      fs.symlinkSync(root, path.join(root, 'dist', 'up'), 'junction');
+      fs.symlinkSync(path.join(fixturesPath, 'test.asar'), path.join(root, 'dist', 'ext'), 'junction');
+      if (process.platform !== 'win32') {
+        fs.symlinkSync(path.join(root, 'secret.txt'), path.join(root, 'dist', 'link.txt'));
+      }
       try {
         register();
         expect(await get('http-like://bundle/link.txt')).to.match(/ERR_FILE_NOT_FOUND/);
         expect(await get('http-like://bundle/up/secret.txt')).to.match(/ERR_FILE_NOT_FOUND/);
+        expect(await get('http-like://bundle/ext/a.asar/file1')).to.match(/ERR_FILE_NOT_FOUND/);
         expect(await get('http-like://bundle/up/dist/data.json')).to.deep.include({ status: 200 });
       } finally {
-        fs.unlinkSync(path.join(root, 'dist', 'link.txt'));
+        fs.rmSync(path.join(root, 'dist', 'link.txt'), { force: true });
         fs.unlinkSync(path.join(root, 'dist', 'up'));
+        fs.unlinkSync(path.join(root, 'dist', 'ext'));
       }
+    });
+
+    it('serves a root that is itself reached through a link', async () => {
+      fs.symlinkSync(path.join(root, 'dist'), path.join(root, 'dist-link'), 'junction');
+      try {
+        protocol.registerSource('http-like', {
+          routes: [{ source: { type: 'directory', root: path.join(root, 'dist-link') } }]
+        });
+        expect(await get('http-like://x/data.json')).to.deep.include({ status: 200 });
+      } finally {
+        fs.unlinkSync(path.join(root, 'dist-link'));
+      }
+    });
+
+    ifit(process.platform !== 'win32')(
+      'does not follow a symlink out of the root through an asar archive',
+      async () => {
+        const asarDir = path.join(fixturesPath, 'test.asar');
+        const dist = path.join(root, 'dist');
+        fs.symlinkSync(path.join(asarDir, 'a.asar'), path.join(dist, 'out.asar'));
+        originalFs.copyFileSync(path.join(asarDir, 'a.asar'), path.join(dist, 'in.asar'));
+        originalFs.copyFileSync(path.join(asarDir, 'unpack.asar'), path.join(dist, 'unpack.asar'));
+        fs.mkdirSync(path.join(dist, 'unpack.asar.unpacked'));
+        fs.symlinkSync(path.join(root, 'secret.txt'), path.join(dist, 'unpack.asar.unpacked', 'a.txt'));
+        fs.copyFileSync(
+          path.join(asarDir, 'unpack.asar.unpacked', 'atom.png'),
+          path.join(dist, 'unpack.asar.unpacked', 'atom.png')
+        );
+        try {
+          register();
+          expect(await get('http-like://bundle/out.asar/file1')).to.match(/ERR_FILE_NOT_FOUND/);
+          expect(await get('http-like://bundle/in.asar/file1')).to.deep.include({ status: 200, body: 'file1\n' });
+          expect(await get('http-like://bundle/unpack.asar/a.txt')).to.match(/ERR_FILE_NOT_FOUND/);
+          expect(await get('http-like://bundle/unpack.asar/atom.png')).to.deep.include({ status: 200 });
+        } finally {
+          for (const name of ['out.asar', 'in.asar', 'unpack.asar']) originalFs.unlinkSync(path.join(dist, name));
+          fs.rmSync(path.join(dist, 'unpack.asar.unpacked'), { recursive: true });
+        }
+      }
+    );
+
+    it('matches hosts case-insensitively and only as a whole', async () => {
+      register();
+      expect(await get('http-like://BUNDLE/data.json')).to.deep.include({ status: 200 });
+      expect(await get('http-like://sub.bundle/data.json')).to.match(/ERR_FILE_NOT_FOUND/);
     });
 
     ifit(process.platform !== 'win32')('serves files larger than 4 GiB', async () => {
@@ -1212,9 +1263,22 @@ describe('protocol module', () => {
       bad({ routes: [{ match: { host: 'x' } }] }, /source/);
       bad({ routes: [{ source: { type: 'url', root } }] }, /directory/);
       bad({ routes: [{ source: { type: 'directory', root: 'relative/dir' } }] }, /absolute/);
-      bad({ routes: [{ match: { path: 'nope' }, source: { type: 'directory', root } }] }, /start with/);
-      bad({ routes: [{ source: { type: 'directory', root, index: '../x' } }] }, /file name/);
-      bad({ routes: [{ source: { type: 'directory', root, headers: { 'Bad\nName': 'x' } } }] }, /header/);
+      const dir = { type: 'directory', root };
+      for (const match of ['bundle', () => true, new URL('http-like://bundle/')]) {
+        bad({ routes: [{ match, source: dir }] }, /match/);
+      }
+      for (const host of [42, '', '*.example.com', 'a b', 'bundle:80', () => true]) {
+        bad({ routes: [{ match: { host }, source: dir }] }, /match\.host/);
+      }
+      for (const prefix of ['nope', ['/x/'], '/a b/', '/a/../b/']) {
+        bad({ routes: [{ match: { path: prefix }, source: dir }] }, /match\.path/);
+      }
+      for (const index of ['../x', false]) {
+        bad({ routes: [{ source: { ...dir, index } }] }, /index/);
+      }
+      for (const headers of [{ 'Bad\nName': 'x' }, ['x'], new Headers({ a: 'b' })]) {
+        bad({ routes: [{ source: { ...dir, headers } }] }, /header/);
+      }
       expect(() => protocol.registerSource('https', { routes: [{ source: { type: 'directory', root } }] })).to.throw(
         /built-in/
       );

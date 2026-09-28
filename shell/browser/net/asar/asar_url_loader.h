@@ -19,15 +19,15 @@ class PendingRemote;
 namespace asar {
 
 // Serves a file: request. Files inside asar archives are read by this loader;
-// other files go to Chromium's file loader, unless `plain_files_root` is set,
-// in which case this loader reads them too provided they resolve (symlinks
-// included) to a file under that directory.
+// other files go to Chromium's file loader. With `root` set this loader reads
+// both, and only files that are under that directory once symlinks and
+// junctions are resolved. `root` itself must already be resolved.
 void CreateAsarURLLoader(
     const network::ResourceRequest& request,
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     scoped_refptr<net::HttpResponseHeaders> extra_response_headers,
-    const base::FilePath& plain_files_root = base::FilePath());
+    const base::FilePath& root = base::FilePath());
 
 }  // namespace asar
 

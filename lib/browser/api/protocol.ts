@@ -206,6 +206,27 @@ Protocol.prototype.unhandle = function (this: Electron.Protocol, scheme: string)
   }
 };
 
+// The native converter drops what it cannot represent (functions, the state of
+// class instances), which would then read as an omitted, wider setting.
+function assertPlainData(value: unknown, name: string) {
+  if (typeof value === 'string' || value === undefined) return;
+  const proto = typeof value === 'object' && value !== null ? Object.getPrototypeOf(value) : undefined;
+  if (proto !== Object.prototype && proto !== Array.prototype && proto !== null) {
+    throw new TypeError(`${name} must be a string, an array or a plain object`);
+  }
+  for (const [key, child] of Object.entries(value as object)) assertPlainData(child, `${name}.${key}`);
+}
+
+const { registerSource } = Protocol.prototype;
+Protocol.prototype.registerSource = function (
+  this: Electron.Protocol,
+  scheme: string,
+  source: Electron.ProtocolSource
+) {
+  assertPlainData(source, 'source');
+  return registerSource.call(this, scheme, source);
+};
+
 Protocol.prototype.isProtocolHandled = function (this: Electron.Protocol, scheme: string) {
   const isRegistered = isBuiltInScheme(scheme) ? this.isProtocolIntercepted : this.isProtocolRegistered;
   return isRegistered.call(this, scheme) || this.getSource(scheme) !== null;

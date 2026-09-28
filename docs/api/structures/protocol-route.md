@@ -2,10 +2,11 @@
 
 * `match` Object (optional) - Which URLs on the scheme this route serves. A
   route without `match` serves every URL.
-  * `host` string (optional) - Host to match, for standard schemes. Omit to
-    match any host.
-  * `path` string (optional) - Path prefix to match, starting with `/`.
-    Defaults to `/`.
+  * `host` string (optional) - Host name to match, for standard schemes. It is
+    compared with the URL's host as a whole, case-insensitively; there is no
+    wildcard or subdomain matching. Omit to match any host.
+  * `path` string (optional) - Path prefix to match, starting with `/` and
+    written as it appears in a URL (percent-encoded). Defaults to `/`.
 * `source` Object - What the matched URLs are served from.
   * `type` string - Must be `directory`.
   * `root` string - Absolute path of the directory. The part of the URL's path
