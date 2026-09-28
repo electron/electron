@@ -51,7 +51,7 @@ index 6f081c26ca4cffe76104eae5a4130a81a93a539d..7da4c199de1d2721a2e6ba9cb10ba0bc
    bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
  
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index fbbc68caa6b776b17a50a4fbc33044047c8f9e1a..5e7a66aafbbe6c388ac0ec780ef1eb0994bb3976 100644
+index 9a83a1d2d2f9bf68ac8b832744b34fbe00ca724e..6e42d6a1bfe1cab905a4dc8927f6f169ef20da52 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -55,6 +55,7 @@
@@ -79,7 +79,7 @@ index fbbc68caa6b776b17a50a4fbc33044047c8f9e1a..5e7a66aafbbe6c388ac0ec780ef1eb09
  #include "chrome/browser/ui/dialogs/process_singleton_dialog_linux.h"
  #endif
  
-@@ -355,6 +357,8 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
+@@ -357,6 +359,8 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
  bool DisplayProfileInUseError(const base::FilePath& lock_path,
                                const std::string& hostname,
                                int pid) {
@@ -88,7 +88,7 @@ index fbbc68caa6b776b17a50a4fbc33044047c8f9e1a..5e7a66aafbbe6c388ac0ec780ef1eb09
    // Ensure there is an instance of ResourceBundle that is initialized for
    // localized string resource accesses.
    ui::ScopedStartupResourceBundle ensure_startup_resource_bundle;
-@@ -377,6 +381,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
+@@ -379,6 +383,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
  #else
    NOTREACHED();
  #endif
@@ -96,7 +96,7 @@ index fbbc68caa6b776b17a50a4fbc33044047c8f9e1a..5e7a66aafbbe6c388ac0ec780ef1eb09
  }
  
  bool IsChromeProcess(pid_t pid) {
-@@ -389,6 +394,21 @@ bool IsChromeProcess(pid_t pid) {
+@@ -391,6 +396,21 @@ bool IsChromeProcess(pid_t pid) {
                base::FilePath(chrome::kBrowserProcessExecutableName));
  }
  
@@ -118,7 +118,7 @@ index fbbc68caa6b776b17a50a4fbc33044047c8f9e1a..5e7a66aafbbe6c388ac0ec780ef1eb09
  // A helper class to hold onto a socket.
  class ScopedSocket {
   public:
-@@ -775,6 +795,10 @@ ProcessSingleton::~ProcessSingleton() {
+@@ -778,6 +798,10 @@ ProcessSingleton::~ProcessSingleton() {
    if (watcher_) {
      watcher_->OnEminentProcessSingletonDestruction();
    }
@@ -129,7 +129,7 @@ index fbbc68caa6b776b17a50a4fbc33044047c8f9e1a..5e7a66aafbbe6c388ac0ec780ef1eb09
  }
  
  ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
-@@ -1039,11 +1063,32 @@ bool ProcessSingleton::Create() {
+@@ -1042,11 +1066,32 @@ bool ProcessSingleton::Create() {
    // Create the socket file somewhere in /tmp which is usually mounted as a
    // normal filesystem. Some network filesystems (notably AFS) are screwy and
    // do not support Unix domain sockets.
@@ -165,7 +165,7 @@ index fbbc68caa6b776b17a50a4fbc33044047c8f9e1a..5e7a66aafbbe6c388ac0ec780ef1eb09
    int dir_mode = 0;
    CHECK(base::GetPosixFilePermissions(socket_dir_.GetPath(), &dir_mode) &&
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index c35bcb658b3ff598cc35f8af770b4a7425e46486..03c73912d8731bdb0f435b83bb9e496e6c605b76 100644
+index 7671e78815ae39310f4916abbdb4c5a06a65fc08..83f8698e402e06e87767b975d0fe0da2b8b4a024 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -30,7 +30,9 @@
@@ -197,21 +197,7 @@ index c35bcb658b3ff598cc35f8af770b4a7425e46486..03c73912d8731bdb0f435b83bb9e496e
  }
  
  // Function was copied from Process::Terminate.
-@@ -245,8 +252,12 @@ base::File CreateLockFileWithTimeout(const base::FilePath& lock_file_path,
-           lock_file_path.value().c_str(), GENERIC_WRITE, FILE_SHARE_READ,
-           nullptr, CREATE_ALWAYS,
-           FILE_ATTRIBUTE_NORMAL | FILE_FLAG_DELETE_ON_CLOSE, nullptr);
-+      // Capture the error before leaving the scope: the TRACE_EVENT0
-+      // destructor that runs at the end of this block can reset the thread's
-+      // last-error code to ERROR_SUCCESS. Reading it afterwards and passing 0
-+      // to base::File::OSErrorToFileError() trips a DCHECK.
-+      error = ::GetLastError();
-     }
--    error = ::GetLastError();
- 
-     if (lock_file_handle != INVALID_HANDLE_VALUE) {
-       LOG_IF(WARNING, error == ERROR_ALREADY_EXISTS)
-@@ -329,11 +340,14 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -330,11 +337,14 @@ bool ProcessSingleton::EscapeVirtualization(
  }
  
  ProcessSingleton::ProcessSingleton(
@@ -227,7 +213,7 @@ index c35bcb658b3ff598cc35f8af770b4a7425e46486..03c73912d8731bdb0f435b83bb9e496e
        user_data_dir_(user_data_dir),
        should_kill_remote_process_callback_(
            base::BindRepeating(&DisplayShouldKillMessageBox)) {}
-@@ -447,7 +461,7 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
+@@ -448,7 +458,7 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
  bool ProcessSingleton::Create() {
    TRACE_EVENT0("startup", "ProcessSingleton::Create");
  
@@ -236,7 +222,7 @@ index c35bcb658b3ff598cc35f8af770b4a7425e46486..03c73912d8731bdb0f435b83bb9e496e
  
    remote_window_ = FindRunningChromeWindow(user_data_dir_);
    if (!remote_window_ && !EscapeVirtualization(user_data_dir_)) {
-@@ -456,7 +470,7 @@ bool ProcessSingleton::Create() {
+@@ -457,7 +467,7 @@ bool ProcessSingleton::Create() {
      // access. As documented, it's clearer to NOT request ownership on creation
      // since it isn't guaranteed we will get it. It is better to create it
      // without ownership and explicitly get the ownership afterward.
@@ -245,7 +231,7 @@ index c35bcb658b3ff598cc35f8af770b4a7425e46486..03c73912d8731bdb0f435b83bb9e496e
      if (!only_me.is_valid()) {
        DPLOG(FATAL) << "CreateMutex failed";
        return false;
-@@ -487,6 +501,17 @@ bool ProcessSingleton::Create() {
+@@ -488,6 +498,17 @@ bool ProcessSingleton::Create() {
              window_.CreateNamed(base::BindRepeating(&ProcessLaunchNotification,
                                                      notification_callback_),
                                  user_data_dir_.value());

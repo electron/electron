@@ -93,7 +93,10 @@ DownloadItem::~DownloadItem() {
   if (download_item_) {
     // Destroyed by either garbage collection or destroy().
     download_item_->RemoveObserver(this);
-    download_item_->Remove();
+    auto* download_item = download_item_.get();
+    download_item_ = nullptr;
+    // Remove() synchronously deletes the native item.
+    download_item->Remove();
   }
 }
 
