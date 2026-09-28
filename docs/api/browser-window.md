@@ -1637,6 +1637,21 @@ Prevents the window contents from being captured by other apps.
 On Windows, it calls [`SetWindowDisplayAffinity`](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity) with `WDA_EXCLUDEFROMCAPTURE`.
 For Windows 10 version 2004 and up the window will be removed from capture entirely,
 older Windows versions behave as if `WDA_MONITOR` is applied capturing a black window.
+The change takes effect with the next desktop composition, not when the call returns, so a
+capture started immediately afterwards can still contain the window.
+
+Protection also applies in a Windows remote session. A Remote Desktop client still
+shows the window to the remote user, but remote access software that works by
+capturing the desktop cannot. To leave windows unprotected in remote sessions
+instead, disable the `AllowWindowCaptureExclusionInRemoteSessions` Chromium feature
+at the start of your main script. `win.isContentProtected()` still returns `true`
+in that case.
+
+```js
+const { app } = require('electron')
+
+app.commandLine.appendSwitch('disable-features', 'AllowWindowCaptureExclusionInRemoteSessions')
+```
 
 On macOS, it sets the `NSWindow`'s
 [`sharingType`](https://developer.apple.com/documentation/appkit/nswindow/sharingtype-swift.property?language=objc)
