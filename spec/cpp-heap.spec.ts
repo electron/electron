@@ -756,7 +756,7 @@ describe('cpp heap', () => {
         setTimeout(() => app.quit());
       });
 
-      const [code] = await once(rc.process, 'exit');
+      const [code] = await once(rc.process, 'close');
       expect(code).to.equal(0);
       expect(stdout).to.contain('notification-show: returned');
     });
