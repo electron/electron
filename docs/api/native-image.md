@@ -272,6 +272,11 @@ _This class is not exported from the `'electron'` module. It is only available a
 
 The following methods are available on instances of the `NativeImage` class:
 
+> [!NOTE]
+> The methods that return a `Buffer` throw an error when called from a context without a
+> Node.js environment, such as a [sandboxed](../tutorial/sandbox.md) preload script.
+> `image.toDataURL()` works in every context.
+
 #### `image.toPNG([options])`
 
 * `options` Object (optional)
