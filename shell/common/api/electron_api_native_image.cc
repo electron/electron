@@ -145,8 +145,12 @@ base::win::ScopedGDIObject<HICON> ReadICOFromPath(int size,
 }
 #endif
 
-[[nodiscard]] v8::Local<v8::Value> NewEmptyBuffer(v8::Isolate* isolate) {
-  return node::Buffer::New(isolate, 0).ToLocalChecked();
+// Returns an empty handle with an exception pending if the current context has
+// no Node.js environment to create a Buffer in, as in a sandboxed preload.
+[[nodiscard]] v8::Local<v8::Value> ToBuffer(v8::Isolate* isolate,
+                                            base::span<const uint8_t> bytes) {
+  return electron::Buffer::Copy(isolate, bytes)
+      .FromMaybe(v8::Local<v8::Value>());
 }
 
 }  // namespace
@@ -261,7 +265,7 @@ v8::Local<v8::Value> NativeImage::ToPNG(gin::Arguments* args) {
     const scoped_refptr<base::RefCountedMemory> png = image_.As1xPNGBytes();
     const base::span<const uint8_t> png_span = *png;
     if (!png_span.empty())
-      return electron::Buffer::Copy(isolate, png_span).ToLocalChecked();
+      return ToBuffer(isolate, png_span);
   }
 
   const SkBitmap bitmap =
@@ -269,9 +273,9 @@ v8::Local<v8::Value> NativeImage::ToPNG(gin::Arguments* args) {
   const std::optional<std::vector<uint8_t>> encoded =
       gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, false);
   if (!encoded.has_value())
-    return NewEmptyBuffer(isolate);
+    return ToBuffer(isolate, {});
 
-  return electron::Buffer::Copy(isolate, *encoded).ToLocalChecked();
+  return ToBuffer(isolate, *encoded);
 }
 
 v8::Local<v8::Value> NativeImage::ToBitmap(gin::Arguments* args) {
@@ -289,19 +293,22 @@ v8::Local<v8::Value> NativeImage::ToBitmap(gin::Arguments* args) {
   const auto dst_info = SkImageInfo::MakeN32Premul(
       src.dimensions(), color_space.ToSkColorSpace());
   const size_t dst_n_bytes = dst_info.computeMinByteSize();
-  auto dst_buf = v8::ArrayBuffer::New(isolate, dst_n_bytes);
+  v8::Local<v8::Object> dst_buf;
+  if (!node::Buffer::New(isolate, dst_n_bytes).ToLocal(&dst_buf))
+    return {};
 
-  if (!src.readPixels(dst_info, dst_buf->Data(), dst_info.minRowBytes(), 0, 0))
-    return NewEmptyBuffer(isolate);
-  return node::Buffer::New(isolate, dst_buf, 0, dst_n_bytes).ToLocalChecked();
+  if (!src.readPixels(dst_info, node::Buffer::Data(dst_buf),
+                      dst_info.minRowBytes(), 0, 0))
+    return ToBuffer(isolate, {});
+  return dst_buf;
 }
 
 v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
   const std::optional<std::vector<uint8_t>> encoded_image =
       gfx::JPEG1xEncodedDataFromImage(image_, quality);
   if (!encoded_image)
-    return NewEmptyBuffer(isolate);
-  return electron::Buffer::Copy(isolate, *encoded_image).ToLocalChecked();
+    return ToBuffer(isolate, {});
+  return ToBuffer(isolate, *encoded_image);
 }
 
 std::string NativeImage::ToDataURL(gin::Arguments* args) {
@@ -328,11 +335,10 @@ v8::Local<v8::Value> NativeImage::GetNativeHandle(
   v8::Isolate* const isolate = thrower.isolate();
 #if BUILDFLAG(IS_MAC)
   if (IsEmpty())
-    return NewEmptyBuffer(isolate);
+    return ToBuffer(isolate, {});
 
   NSImage* ptr = image_.AsNSImage();
-  return electron::Buffer::Copy(isolate, base::byte_span_from_ref(ptr))
-      .ToLocalChecked();
+  return ToBuffer(isolate, base::byte_span_from_ref(ptr));
 #else
   thrower.ThrowError("Not implemented");
   return v8::Undefined(isolate);
