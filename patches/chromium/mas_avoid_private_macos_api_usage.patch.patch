@@ -1005,7 +1005,7 @@ index d42b3b58b63c7b4179b49c2d5ac73892f5a70cf3..7aaba0f0262fbb63746718a29572bd75
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 28bf94249d688ff40cc3255a83c93ef8a1de27b1..2b3c8878fe583fb0217fe8967793aa19c3642f94 100644
+index db736f75c3288e23b50505eca823623cae74d9c2..6a2735d60f1da016e8ced4627e722650fa45c69c 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -382,6 +382,7 @@ source_set("browser") {
@@ -1220,7 +1220,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index f7db997538700eb73278e9bacfd74b3b72406f11..10b2564a4398bb8f3afb41d8aa7e1267b00bf165 100644
+index d46420af18423a1967f2bddeb6928ae7dc889011..054b21d63d12b0972a8178c129c3b6cd770092da 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -652,6 +652,7 @@ static_library("test_support") {
@@ -1248,7 +1248,7 @@ index f7db997538700eb73278e9bacfd74b3b72406f11..10b2564a4398bb8f3afb41d8aa7e1267
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3412,6 +3416,7 @@ test("content_unittests") {
+@@ -3416,6 +3420,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -2333,7 +2333,7 @@ index b9e05b289bbb5c97da3169d23e0c83c240cedaa2..17c04a307be0b6f957770083b13f30bc
    // Query the display's refresh rate. To get a float number such as 59.95Hz,
    // use 1.0/screen.minimumRefreshInterval instead of
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 5e08b6a549e507714c69b48b543c21128340af7a..8a45f20b441c3794800e8cb84771387c42361acb 100644
+index e531371761afb5647f1d4eab8beddd9ea2e4ec8f..9d1e95a402a16051a4e96b0d27015a1b4995aa59 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -285,6 +285,8 @@ component("gfx") {
@@ -2384,7 +2384,7 @@ index 65ae8170664d15c7884261812400d0ed638a681d..86c937f1e6d03b88803a2ca80abff19c
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index b24722211c012d09ddf4ca68184fc4e4f895fb0a..cdb0eae7bcf2dc08db5ce426ca3995b525cdd6d2 100644
+index 968bd702e654a263f5e9b87bcee57c7125b904cd..9698af5d4b665e207592d87e7451a537560e9c2d 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -789,6 +789,8 @@ component("views") {
