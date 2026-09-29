@@ -2,8 +2,25 @@
 
 import mmap
 from pathlib import Path
+import re
 import struct
 import sys
+
+
+def read_direct_exports(contents):
+  # Accept only bare export names to avoid misinterpreting other DEF syntax.
+  lines = [line.split(';', 1)[0].strip() for line in contents.splitlines()]
+  lines = [line for line in lines if line]
+  if (len(lines) < 3 or not re.fullmatch(r'NAME\s+[A-Za-z0-9_.-]+', lines[0])
+      or lines[1] != 'EXPORTS'):
+    raise ValueError('Expected NAME followed by a nonempty EXPORTS section')
+  exports = set()
+  for name in lines[2:]:
+    if (not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', name)
+        or name in {'NAME', 'EXPORTS'} or name in exports):
+      raise ValueError(f'Unsupported or duplicate direct export: {name}')
+    exports.add(name)
+  return exports
 
 
 def read_exports(data):
@@ -63,9 +80,11 @@ def main():
   with runtime.open('rb') as file:
     with mmap.mmap(file.fileno(), 0, access=mmap.ACCESS_READ) as data:
       exports = read_exports(data)
-  contents = base_def.read_text().rstrip() + '\n\nEXPORTS\n'
+  contents = base_def.read_text(encoding='utf-8').rstrip() + '\n'
+  direct_exports = read_direct_exports(contents)
   for name in exports:
-    contents += f'  "{name}"="{runtime.stem}.{name}"\n'
+    if name not in direct_exports:
+      contents += f'  "{name}"="{runtime.stem}.{name}"\n'
   output.write_text(contents, encoding='utf-8')
 
 
