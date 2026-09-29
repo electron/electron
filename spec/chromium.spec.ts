@@ -4946,12 +4946,20 @@ describe('pointer lock permission request', () => {
       requests.push({ wc, permission, details });
       callback(false);
     });
-    w.webContents.focus();
+    // content rejects the request with WrongDocumentError, without consulting
+    // the permission handler, unless the widget has focus. Focus arrives
+    // asynchronously on macOS, so wait for it.
+    if (!w.webContents.isFocused()) {
+      const focus = once(w.webContents, 'focus');
+      w.webContents.focus();
+      await focus;
+    }
     const result = await iframe.executeJavaScript(
       "document.body.requestPointerLock().then(() => 'locked', (e) => e.name)",
       true
     );
-    expect(result).to.not.equal('locked');
+    // A request denied by the permission handler rejects with SecurityError.
+    expect(result).to.equal('SecurityError');
     const request = requests.find((r) => r.permission === 'pointerLock');
     expect(request).to.exist();
     expect(request!.wc).to.equal(w.webContents);
