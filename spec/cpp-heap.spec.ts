@@ -950,6 +950,50 @@ describe('cpp heap', () => {
       expect(result).to.deep.equal({ destroyed: false, anyCollected: true });
     });
 
+    it('gives an adopted webContents to the view that adopted it', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(async () => {
+        const { View, WebContentsView } = require('electron');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+        const collect = async () => {
+          for (let i = 0; i < 5; ++i) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        };
+
+        const parent = new View();
+        const first = new WebContentsView();
+        const webContents = first.webContents;
+        parent.addChildView(first);
+        const adopted = (() => {
+          const second = new WebContentsView({ webContents });
+          parent.addChildView(second);
+          return new WeakRef(second);
+        })();
+
+        await collect();
+        const whileRetained = {
+          destroyed: webContents.isDestroyed(),
+          children: parent.children.length
+        };
+        parent.removeChildView(adopted.deref()!);
+        for (let i = 0; i < 30 && !webContents.isDestroyed(); ++i) await collect();
+        const afterRelease = {
+          collected: !adopted.deref(),
+          destroyed: webContents.isDestroyed(),
+          children: parent.children.length
+        };
+        return { whileRetained, afterRelease, firstInParent: parent.children[0] === first };
+      });
+      expect(result).to.deep.equal({
+        whileRetained: { destroyed: false, children: 2 },
+        afterRelease: { collected: true, destroyed: true, children: 0 },
+        firstInParent: false
+      });
+    });
+
     it('does not crash on exit with live views', async () => {
       const rc = await startRemoteControlApp();
       const exited = once(rc.process, 'exit');

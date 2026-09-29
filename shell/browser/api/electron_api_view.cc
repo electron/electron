@@ -8,7 +8,6 @@
 #include <limits>
 #include <memory>
 #include <string>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -215,20 +214,18 @@ const gin::WrapperInfo View::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronView);
 
 View::Host::Host(View* wrapper, std::unique_ptr<views::View> view)
-    : NativePeer<View>(wrapper), owned_view_(std::move(view)) {
-  owned_view_->set_owned_by_client(views::View::OwnedByClientPassKey{});
-  owned_view_->AddObserver(this);
-  StartObservingShutdown();
-}
-
-View::Host::Host(View* wrapper, views::View* view)
-    : NativePeer<View>(wrapper), unowned_view_(view) {
-  unowned_view_->set_owned_by_client(views::View::OwnedByClientPassKey{});
-  unowned_view_->AddObserver(this);
+    : NativePeer<View>(wrapper), view_(std::move(view)) {
+  view_->set_owned_by_client(views::View::OwnedByClientPassKey{});
+  view_->AddObserver(this);
   StartObservingShutdown();
 }
 
 View::Host::~Host() = default;
+
+// static
+void View::Host::SetOwnedByClient(views::View* view) {
+  view->set_owned_by_client(views::View::OwnedByClientPassKey{});
+}
 
 views::ProposedLayout View::Host::CalculateProposedLayout(
     const views::SizeBounds& size_bounds) {
@@ -241,17 +238,12 @@ views::ProposedLayout View::Host::CalculateProposedLayout(
 
 void View::Host::TearDownNative() {
   weak_factory_.InvalidateWeakPtrs();
-  views::View* view = this->view();
-  if (!view)
+  if (!view_)
     return;
-  view->RemoveObserver(this);
-  if (!owned_view_) {
-    unowned_view_ = nullptr;
-    return;
-  }
-  if (views::View* parent = view->parent())
-    parent->RemoveChildView(view);
-  owned_view_.reset();
+  view_->RemoveObserver(this);
+  if (views::View* parent = view_->parent())
+    parent->RemoveChildView(view_.get());
+  view_.reset();
 }
 
 void View::Host::OnViewBoundsChanged(views::View* observed_view) {
@@ -259,24 +251,10 @@ void View::Host::OnViewBoundsChanged(views::View* observed_view) {
     api_view->OnBoundsChanged();
 }
 
-void View::Host::OnViewIsDeleting(views::View* observed_view) {
-  DCHECK_EQ(observed_view, view());
-  StopObservingView();
-}
-
 void View::Host::OnChildViewRemoved(views::View* observed_view,
                                     views::View* child) {
   if (auto api_view = wrapper())
     api_view->OnChildViewRemoved(child);
-}
-
-void View::Host::StopObservingView() {
-  views::View* view = this->view();
-  if (!view)
-    return;
-  view->RemoveObserver(this);
-  std::ignore = owned_view_.release();
-  unowned_view_ = nullptr;
 }
 
 View::ChildEntry::ChildEntry(View* view, ChildEntry* next)
@@ -306,6 +284,14 @@ void View::SetHost(std::unique_ptr<Host, NativePeerBase::Deleter> host) {
 
 views::View* View::view() const {
   return host_ ? host_->view() : nullptr;
+}
+
+bool View::IsUsable() const {
+  return true;
+}
+
+views::View* View::live_view() const {
+  return host_ && host_->is_active() && IsUsable() ? host_->view() : nullptr;
 }
 
 size_t View::GetChildCount() const {
@@ -347,15 +333,11 @@ View::ChildEntry* View::TakeChildEntry(views::View* child_view) {
 void View::AddChildViewAt(gin_helper::ErrorThrower thrower,
                           View* child,
                           std::optional<size_t> maybe_index) {
-  // TODO(nornagon): !view is only for supporting the weird case of
-  // WebContentsView's view being deleted when the underlying WebContents is
-  // destroyed (on non-Mac). We should fix that so that WebContentsView always
-  // has a View, possibly a wrapper view around the underlying platform View.
-  views::View* view = this->view();
+  views::View* view = live_view();
   if (!view)
     return;
 
-  views::View* child_view = child->view();
+  views::View* child_view = child->live_view();
   if (!child_view) {
     thrower.ThrowError("Can't add a destroyed child view to a parent view");
     return;
@@ -374,11 +356,12 @@ void View::AddChildViewAt(gin_helper::ErrorThrower thrower,
   // This matches the behavior of View::AddChildViewAtImpl and
   // otherwise will CHECK if the same view is added multiple times.
   if (child_view->parent() == view) {
-    view->ReorderChildView(child_view, index);
-    // Keep the existing entry, and with it the wrapper that added this native
-    // view, even if |child| is another wrapper for it.
+    // Stay among the JavaScript children, which come before any native child
+    // of a subclass, such as a WebContentsView's page.
+    const size_t last = count - 1;
+    view->ReorderChildView(child_view, std::min(index, last));
     if (ChildEntry* entry = TakeChildEntry(child_view))
-      InsertChildEntry(entry, std::min(index, count - 1));
+      InsertChildEntry(entry, std::min(index, last));
     return;
   }
 
@@ -399,7 +382,7 @@ void View::AddChildViewAt(gin_helper::ErrorThrower thrower,
 }
 
 void View::RemoveChildView(View* child) {
-  views::View* view = this->view();
+  views::View* view = live_view();
   if (!view)
     return;
 
@@ -427,7 +410,7 @@ void View::OnBoundsChanged() {
 }
 
 ui::Layer* View::GetLayer() {
-  views::View* view = this->view();
+  views::View* view = live_view();
   if (!view)
     return nullptr;
 
@@ -471,7 +454,7 @@ void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
   if (duration < 0)
     duration = 0;
 
-  views::View* view = this->view();
+  views::View* view = live_view();
   if (!view)
     return;
 
@@ -542,14 +525,14 @@ void View::SetBounds(const gfx::Rect& bounds, gin::Arguments* const args) {
 }
 
 gfx::Rect View::GetBounds() const {
-  views::View* view = this->view();
+  views::View* view = live_view();
   if (!view)
     return {};
   return view->bounds();
 }
 
 void View::SetLayout(v8::Isolate* isolate, v8::Local<v8::Object> value) {
-  views::View* view = this->view();
+  views::View* view = live_view();
   if (!view)
     return;
   gin_helper::Dictionary dict(isolate, value);
@@ -626,7 +609,7 @@ v8::Local<v8::Value> View::GetChildren(v8::Isolate* isolate) {
 }
 
 void View::SetBackgroundColor(std::optional<WrappedSkColor> color) {
-  views::View* view = this->view();
+  views::View* view = live_view();
   if (!view)
     return;
   view->SetBackground(color ? views::CreateSolidBackground({*color}) : nullptr);
@@ -638,7 +621,7 @@ void View::SetBorderRadius(int radius) {
 }
 
 void View::ApplyBorderRadius() {
-  views::View* view = this->view();
+  views::View* view = live_view();
   if (!border_radius_.has_value() || !view)
     return;
 
@@ -666,7 +649,7 @@ void View::ApplyBorderRadius() {
 }
 
 void View::SetBackgroundBlur(int blur_radius) {
-  if (!view())
+  if (!live_view())
     return;
 
   if (blur_radius < 0)
@@ -681,12 +664,12 @@ void View::SetBackgroundBlur(int blur_radius) {
 }
 
 void View::SetVisible(bool visible) {
-  if (views::View* view = this->view())
+  if (views::View* view = live_view())
     view->SetVisible(visible);
 }
 
 bool View::GetVisible() const {
-  views::View* view = this->view();
+  views::View* view = live_view();
   return view ? view->GetVisible() : false;
 }
 
