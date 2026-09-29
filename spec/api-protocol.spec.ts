@@ -953,7 +953,7 @@ describe('protocol module', () => {
         process.stderr.write(data);
         stderr += data;
       });
-      const [code] = await once(appProcess, 'exit');
+      const [code] = await once(appProcess, 'close');
       if (code !== 0) {
         console.log('Exit code : ', code);
         console.log('stdout : ', stdout);
