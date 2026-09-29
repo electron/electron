@@ -7,14 +7,21 @@ import { ciGpuArgs, defer } from './spec-helpers.ts';
 
 const pdfReaderPath = path.resolve(import.meta.dirname, '..', 'fixtures', 'api', 'pdf-reader.mjs');
 
-// Parses a printToPDF result buffer with pdf.js in a subprocess and returns
-// info about the document and its first page.
-export const readPDF = async (data: any) => {
+// Parses printToPDF result buffers with pdf.js in a single subprocess and
+// returns info about each document and its first page. Each subprocess is a
+// full Electron launch, so tests that check several PDFs should parse them in
+// one call rather than one readPDF() per buffer.
+export const readPDFs = async (datas: any[]) => {
   const tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'e-spec-printtopdf-'));
-  const pdfPath = path.resolve(tmpDir, 'test.pdf');
-  await fs.promises.writeFile(pdfPath, data);
+  const pdfPaths = await Promise.all(
+    datas.map(async (data, i) => {
+      const pdfPath = path.resolve(tmpDir, `test-${i}.pdf`);
+      await fs.promises.writeFile(pdfPath, data);
+      return pdfPath;
+    })
+  );
 
-  const result = cp.spawn(process.execPath, [pdfReaderPath, pdfPath, ...ciGpuArgs], {
+  const result = cp.spawn(process.execPath, [pdfReaderPath, ...pdfPaths, ...ciGpuArgs], {
     stdio: 'pipe'
   });
   // Register cleanup right away so a hung PDF read doesn't leak the child
@@ -42,12 +49,17 @@ export const readPDF = async (data: any) => {
   }
   try {
     // pdf.js may print polyfill warnings ahead of the JSON line.
-    return JSON.parse(Buffer.concat(stdout).toString().trim().split('\n').pop()!);
+    return JSON.parse(Buffer.concat(stdout).toString().trim().split('\n').pop()!) as any[];
   } catch (err) {
     console.error('Error parsing PDF file:', err);
     console.error('Raw output:', Buffer.concat(stdout).toString().trim());
     throw err;
   }
+};
+
+export const readPDF = async (data: any) => {
+  const [pdfInfo] = await readPDFs([data]);
+  return pdfInfo;
 };
 
 export const containsText = (items: any[], text: RegExp) => {
