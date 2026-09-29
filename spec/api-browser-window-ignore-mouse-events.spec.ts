@@ -270,6 +270,15 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       above.setIgnoreMouseEvents(true);
 
       await glide(OUTSIDE, inWindow(TARGET_CENTER));
+      // Where the OS can say, make sure the click lands in the window below
+      // rather than in whatever else might cover the point (on CI a system
+      // window once did, and the click launched an app from it).
+      if (canHitTest) {
+        const p = toScreen(inWindow(TARGET_CENTER));
+        await waitUntilAt(p, 'the window below being hit tested under the ignoring window', () =>
+          mouse.isWindowAtPoint(below.getNativeWindowHandle(), p.x, p.y)
+        );
+      }
       await mouse.click();
       await waitUntilAt(
         toScreen(inWindow(TARGET_CENTER)),
