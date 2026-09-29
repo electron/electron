@@ -4317,7 +4317,7 @@ describe('font fallback', () => {
   );
 });
 
-describe('iframe using HTML fullscreen API while window is OS-fullscreened', () => {
+describe('iframe using HTML fullscreen API while window is OS-fullscreened', { tags: ['serial'] }, () => {
   const fullscreenChildHtml = fs.promises.readFile(path.join(fixturesPath, 'pages', 'fullscreen-oopif.html'));
   let w: BrowserWindow;
   let server: http.Server;
