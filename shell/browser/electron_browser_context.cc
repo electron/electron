@@ -815,6 +815,21 @@ class SystemPickerRequest
     stream_devices_set.stream_devices.emplace_back(
         blink::mojom::StreamDevices::New());
     stream_devices_set.stream_devices[0]->video_device = video_device;
+    if (request_.audio_type != blink::mojom::MediaStreamType::NO_SERVICE) {
+      // Same system loopback choice Chrome makes for a shared screen
+      // (GetAudioDeviceId in desktop_capture_devices_util.cc).
+      std::string audio_id =
+          request_.restrict_own_audio
+              ? media::AudioDeviceDescription::kLoopbackWithoutChromeId
+          : request_.disable_local_echo ||
+                  request_.suppress_local_audio_playback
+              ? media::AudioDeviceDescription::kLoopbackWithMuteDeviceId
+              : media::AudioDeviceDescription::kLoopbackInputDeviceId;
+      blink::MediaStreamDevice audio_device(request_.audio_type, audio_id,
+                                            "System audio");
+      audio_device.display_media_info = video_device.display_media_info.Clone();
+      stream_devices_set.stream_devices[0]->audio_device = audio_device;
+    }
     ClearPending();
     std::move(callback_).Run(stream_devices_set,
                              blink::mojom::MediaStreamRequestResult::OK,
