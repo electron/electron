@@ -865,9 +865,6 @@ class WebContents final : public gin::Wrappable<WebContents>,
 
   int32_t id_;
 
-  // Request id used for findInPage request.
-  uint32_t find_in_page_request_id_ = 0;
-
   // Whether background throttling is disabled.
   bool background_throttling_ = true;
 
