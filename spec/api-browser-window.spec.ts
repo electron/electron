@@ -7426,7 +7426,7 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    ifdescribe(process.platform === 'darwin')('fullscreen state', () => {
+    ifdescribe(process.platform === 'darwin')('fullscreen state', { tags: ['serial'] }, () => {
       it('should not cause a crash if called when exiting fullscreen', async () => {
         const w = new BrowserWindow();
 
