@@ -17,7 +17,6 @@ import { ifdescribe } from './lib/spec-helpers.ts';
 
 const require = createRequire(import.meta.url);
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const plist = require('plist');
 
 const bufferReplace = (haystack: Buffer, needle: string, replacement: string, throwOnMissing = true): Buffer => {

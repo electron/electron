@@ -1,5 +1,3 @@
-/* eslint-disable */
-
 import { crashReporter, nativeImage, shell } from 'electron/common';
 import { ipcRenderer, webFrame } from 'electron/renderer';
 

@@ -52,7 +52,7 @@ async function itUtility(name: string, fn?: Function, args?: { [key: string]: an
   });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// oxlint-disable-next-line @typescript-eslint/no-unused-vars
 async function itIgnoringArgs(name: string, fn?: Mocha.Func | Mocha.AsyncFunc, args?: { [key: string]: any }) {
   it(name, fn);
 }

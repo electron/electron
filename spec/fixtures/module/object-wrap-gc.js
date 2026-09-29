@@ -12,7 +12,7 @@ v8.setFlagsFromString('--expose-gc');
 
 function churn() {
   for (let i = 0; i < 1000; i++) {
-    // eslint-disable-next-line no-new
+    // oxlint-disable-next-line no-new
     new Wrapped();
   }
 }

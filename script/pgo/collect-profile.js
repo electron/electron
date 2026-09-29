@@ -55,7 +55,6 @@ function parseArgs(argv) {
 }
 
 function log(...args) {
-  // eslint-disable-next-line no-console
   console.log('[collect-profile]', ...args);
 }
 

@@ -9,7 +9,7 @@ const SRC_DIR = path.resolve(ELECTRON_DIR, '..');
 
 const CHROMIUM_VERSION_DEPS_REGEX = /chromium_version':\n +'(.+?)',/m;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+// oxlint-disable-next-line @typescript-eslint/no-unused-vars
 const pass = styleText('green', '✓');
 const fail = styleText('red', '✗');
 

@@ -88,7 +88,6 @@ export async function getSources(args: Electron.SourcesOptions) {
 
   capturer._onerror = (error: string) => {
     stopRunning();
-    // eslint-disable-next-line prefer-promise-reject-errors
     rejectGetSources(error);
   };
 
