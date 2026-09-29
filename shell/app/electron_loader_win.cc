@@ -16,9 +16,30 @@
 #include "base/win/pe_image.h"
 #include "content/public/app/sandbox_helper_win.h"
 #include "electron/fuses.h"
+#include "sandbox/policy/mojom/sandbox.mojom.h"
+#include "sandbox/policy/sandbox_type.h"
+#include "sandbox/policy/switches.h"
 #include "sandbox/win/src/sandbox_types.h"
 
 namespace {
+
+bool ShouldInitializeSandboxInfo(const base::CommandLine& command_line) {
+  const auto process_type =
+      command_line.GetSwitchValueASCII(sandbox::policy::switches::kProcessType);
+  if (process_type.empty())
+    return true;
+
+  // The sandbox type parser only accepts Content child process types on Windows.
+  if (process_type != sandbox::policy::switches::kRendererProcess &&
+      process_type != sandbox::policy::switches::kGpuProcess &&
+      process_type != sandbox::policy::switches::kUtilityProcess) {
+    return false;
+  }
+
+  // FeatureList is not initialized yet, so use the command-line sandbox type.
+  return sandbox::policy::SandboxTypeFromCommandLine(command_line) !=
+         sandbox::mojom::Sandbox::kNoSandbox;
+}
 
 class RuntimePreReader : public base::PlatformThread::Delegate {
  public:
@@ -50,7 +71,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t*, int) {
       executable_dir.Append(FILE_PATH_LITERAL("main.dll"));
 
   sandbox::SandboxInterfaceInfo sandbox_info = {nullptr};
-  content::InitializeSandboxInfo(&sandbox_info);
+  if (ShouldInitializeSandboxInfo(*base::CommandLine::ForCurrentProcess()))
+    content::InitializeSandboxInfo(&sandbox_info);
 
   // Keep the runtime loaded through CRT shutdown, including addon destructors.
   HMODULE runtime = ::LoadLibraryExW(
