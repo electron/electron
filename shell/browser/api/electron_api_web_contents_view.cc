@@ -10,7 +10,7 @@
 
 #include "base/functional/bind.h"
 #include "base/memory/weak_ptr.h"
-#include "base/supports_user_data.h"
+#include "base/scoped_observation.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/timer/elapsed_timer.h"
 #include "content/public/browser/render_frame_host.h"
@@ -35,9 +35,14 @@
 #include "shell/common/options_switches.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/base/hit_test.h"
+#include "ui/base/metadata/metadata_header_macros.h"
+#include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/gfx/geometry/rounded_corners_f.h"
+#include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/layout/flex_layout_types.h"
 #include "ui/views/view_class_properties.h"
+#include "ui/views/view_observer.h"
+#include "ui/views/view_tracker.h"
 #include "ui/views/widget/widget.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/cppgc/persistent.h"
@@ -47,19 +52,79 @@ namespace electron::api {
 
 namespace {
 
-// Records which WebContentsViewHost owns a WebContents' view. A new
-// WebContentsView can adopt a webContents whose previous view has been
-// collected but whose native peer has not been released yet; only the owner
-// clears the view's bounds callback, and destroys the webContents, when it is
-// released.
-struct ViewOwnerClaim : public base::SupportsUserData::Data {
-  explicit ViewOwnerClaim(base::WeakPtr<WebContentsViewHost> owner)
-      : owner(std::move(owner)) {}
+// The native view of a WebContentsView. It holds the webContents'
+// InspectableWebContentsView, which the webContents owns and deletes with
+// itself, so that the WebContentsView keeps one native view, and its place in
+// the view tree, for its whole life. The inspectable view fills it and stays
+// its last child. Child views added from JavaScript go before it, where they
+// went when they were added to the inspectable view itself.
+class WebContentsContainerView : public views::View,
+                                 public views::ViewObserver {
+  METADATA_HEADER(WebContentsContainerView, views::View)
 
-  base::WeakPtr<WebContentsViewHost> owner;
+ public:
+  WebContentsContainerView() {
+    // Lets a flex layout in the parent size the view, as it did the
+    // inspectable view.
+    SetProperty(
+        views::kFlexBehaviorKey,
+        views::FlexSpecification(views::MinimumFlexSizeRule::kScaleToMinimum,
+                                 views::MaximumFlexSizeRule::kUnbounded));
+    GetViewAccessibility().SetIsIgnored(true);
+  }
+
+  void TakeInspectableView(InspectableWebContentsView* inspectable_view) {
+    // Layouts set from JavaScript arrange only the JavaScript children.
+    inspectable_view->SetProperty(views::kViewIgnoredByLayoutKey, true);
+    AddChildViewRaw(static_cast<views::View*>(inspectable_view));
+    inspectable_view->SetBoundsRect(GetLocalBounds());
+    inspectable_view_.SetView(inspectable_view);
+    inspectable_view_deleting_ = false;
+    inspectable_view_observation_.Reset();
+    inspectable_view_observation_.Observe(inspectable_view);
+  }
+
+  // The inspectable view, while it is still here. Null once another
+  // WebContentsView has adopted the webContents, or the webContents has
+  // deleted it.
+  InspectableWebContentsView* GetOwnedInspectableView() {
+    views::View* view = inspectable_view_.view();
+    return view && view->parent() == this
+               ? static_cast<InspectableWebContentsView*>(view)
+               : nullptr;
+  }
+
+  // Whether |child| is the inspectable view and was removed because the
+  // webContents is deleting it, rather than because another WebContentsView
+  // adopted the webContents.
+  bool IsInspectableViewBeingDeleted(const views::View* child) const {
+    return inspectable_view_deleting_ && child == inspectable_view_.view();
+  }
+
+  // views::View:
+  void Layout(PassKey) override {
+    LayoutSuperclass<views::View>(this);
+    if (InspectableWebContentsView* view = GetOwnedInspectableView())
+      view->SetBoundsRect(GetLocalBounds());
+  }
+
+ private:
+  // views::ViewObserver:
+  void OnViewHierarchyWillBeDeleted(views::View* observed_view) override {
+    inspectable_view_deleting_ = true;
+  }
+  void OnViewIsDeleting(views::View* observed_view) override {
+    inspectable_view_observation_.Reset();
+  }
+
+  views::ViewTracker inspectable_view_;
+  bool inspectable_view_deleting_ = false;
+  base::ScopedObservation<views::View, views::ViewObserver>
+      inspectable_view_observation_{this};
 };
 
-const void* const kViewOwnerClaimKey = &kViewOwnerClaimKey;
+BEGIN_METADATA(WebContentsContainerView)
+END_METADATA
 
 }  // namespace
 
@@ -91,6 +156,8 @@ class WebContentsViewHost final : public View::Host,
   // views::ViewObserver:
   void OnViewAddedToWidget(views::View* observed_view) override;
   void OnViewRemovedFromWidget(views::View* observed_view) override;
+  void OnChildViewRemoved(views::View* observed_view,
+                          views::View* child) override;
 
   // content::WebContentsObserver:
   void WebContentsDestroyed() override;
@@ -99,7 +166,9 @@ class WebContentsViewHost final : public View::Host,
   void UpdateWindowControlsOverlay(const gfx::Rect& bounding_rect) override;
 
   WebContents* GetLiveWebContents() const;
-  bool IsViewOwner() const;
+  WebContentsContainerView* container() const;
+  InspectableWebContentsView* GetOwnedInspectableView() const;
+  void RemoveFromParent();
   void StopObservingWindow();
   void UnregisterDraggableRegionProvider();
   void OnContentsBoundsChanging();
@@ -121,22 +190,17 @@ class WebContentsViewHost final : public View::Host,
 
 WebContentsViewHost::WebContentsViewHost(WebContentsView* wrapper,
                                          WebContents* web_contents)
-    : View::Host(wrapper, web_contents->inspectable_web_contents()->GetView()),
+    : View::Host(wrapper, std::make_unique<WebContentsContainerView>()),
       content::WebContentsObserver(web_contents->web_contents()),
       api_web_contents_(web_contents) {
   InspectableWebContentsView* inspectable_view =
       web_contents->inspectable_web_contents()->GetView();
+  SetOwnedByClient(inspectable_view);
+  container()->TakeInspectableView(inspectable_view);
   // See OnContentsBoundsChanging().
   inspectable_view->SetBoundsChangedCallback(
       base::BindRepeating(&WebContentsViewHost::OnContentsBoundsChanging,
                           weak_factory_.GetWeakPtr()));
-  inspectable_view->SetProperty(
-      views::kFlexBehaviorKey,
-      views::FlexSpecification(views::MinimumFlexSizeRule::kScaleToMinimum,
-                               views::MaximumFlexSizeRule::kUnbounded));
-  web_contents->web_contents()->SetUserData(
-      kViewOwnerClaimKey,
-      std::make_unique<ViewOwnerClaim>(weak_factory_.GetWeakPtr()));
 }
 
 WebContentsViewHost::~WebContentsViewHost() = default;
@@ -150,28 +214,22 @@ void WebContentsViewHost::TearDownNative() {
   UnregisterDraggableRegionProvider();
   window_controls_overlay_update_pending_ = false;
 
-  const bool is_owner = IsViewOwner();
-  if (is_owner) {
-    web_contents()->RemoveUserData(kViewOwnerClaimKey);
-    if (views::View* view = this->view()) {
-      static_cast<InspectableWebContentsView*>(view)->SetBoundsChangedCallback(
-          base::RepeatingClosure());
-    }
-  }
+  InspectableWebContentsView* inspectable_view = GetOwnedInspectableView();
+  if (inspectable_view)
+    inspectable_view->SetBoundsChangedCallback(base::RepeatingClosure());
   cppgc::Persistent<WebContents> web_contents_to_destroy;
-  if (is_owner && destroy_web_contents_on_release_)
+  if (inspectable_view && destroy_web_contents_on_release_)
     web_contents_to_destroy = GetLiveWebContents();
 
   weak_factory_.InvalidateWeakPtrs();
   Observe(nullptr);
   api_web_contents_.Clear();
   View::Host::TearDownNative();
-
   // A WebContentsView owns its webContents, unless another WebContentsView
-  // has adopted it since. The claim is gone once checked, so dispose now
-  // rather than in a later task that could destroy a webContents adopted in
-  // between. This runs from the peer release task, never from a Chromium
-  // callback on this WebContents.
+  // has adopted it since and so taken the inspectable view into its own
+  // container. Dispose now rather than in a later task, which could destroy a
+  // webContents adopted in between. This runs from the peer release task,
+  // never from a Chromium callback on this WebContents.
   if (web_contents_to_destroy)
     web_contents_to_destroy->DestroyNow();
 }
@@ -184,13 +242,18 @@ WebContents* WebContentsViewHost::GetLiveWebContents() const {
              : nullptr;
 }
 
-bool WebContentsViewHost::IsViewOwner() const {
-  content::WebContents* contents = web_contents();
-  if (!contents)
-    return false;
-  auto* claim =
-      static_cast<ViewOwnerClaim*>(contents->GetUserData(kViewOwnerClaimKey));
-  return claim && claim->owner.get() == this;
+WebContentsContainerView* WebContentsViewHost::container() const {
+  return static_cast<WebContentsContainerView*>(view());
+}
+
+InspectableWebContentsView* WebContentsViewHost::GetOwnedInspectableView()
+    const {
+  return view() ? container()->GetOwnedInspectableView() : nullptr;
+}
+
+void WebContentsViewHost::RemoveFromParent() {
+  if (views::View* view = this->view(); view && view->parent())
+    view->parent()->RemoveChildView(view);
 }
 
 void WebContentsViewHost::RegisterDraggableRegionProvider(
@@ -210,30 +273,22 @@ void WebContentsViewHost::UnregisterDraggableRegionProvider() {
 }
 
 void WebContentsViewHost::ApplyBorderRadius(std::optional<int> radius) {
-  WebContents* web_contents = GetLiveWebContents();
-  views::View* view = this->view();
-  if (!radius.has_value() || !web_contents || !view || !view->GetWidget())
+  InspectableWebContentsView* inspectable_view = GetOwnedInspectableView();
+  if (!radius.has_value() || !inspectable_view || !view()->GetWidget())
     return;
-  web_contents->inspectable_web_contents()->GetView()->SetCornerRadii(
-      gfx::RoundedCornersF(radius.value()));
+  inspectable_view->SetCornerRadii(gfx::RoundedCornersF(radius.value()));
 }
 
 int WebContentsViewHost::NonClientHitTest(const gfx::Point& point) {
-  views::View* view = this->view();
-  if (!view || !view->GetVisible())
+  InspectableWebContentsView* inspectable_view = GetOwnedInspectableView();
+  if (!inspectable_view || !view()->GetVisible())
     return HTNOWHERE;
   if (auto* web_contents = GetLiveWebContents()) {
-    auto* iwc = web_contents->inspectable_web_contents();
-    if (!iwc)
-      return HTNOWHERE;
     // Convert the point to the contents view's coordinate space rather than
     // the InspectableWebContentsView's coordinate space, because the draggable
     // region is relative to the web content area. When DevTools is docked
     // (e.g. to the left), the contents view is offset within the parent,
     // so we need to account for that offset.
-    auto* inspectable_view = iwc->GetView();
-    if (!inspectable_view)
-      return HTNOWHERE;
     auto* contents_view = inspectable_view->GetContentsView();
     gfx::Point local_point(point);
     views::View::ConvertPointFromWidget(contents_view, &local_point);
@@ -258,11 +313,21 @@ void WebContentsViewHost::WebContentsDestroyed() {
   api_web_contents_.Clear();
   if (auto api_view = wrapper())
     AsWebContentsView(api_view)->OnWebContentsDestroyed();
+  RemoveFromParent();
+}
+
+void WebContentsViewHost::OnChildViewRemoved(views::View* observed_view,
+                                             views::View* child) {
+  View::Host::OnChildViewRemoved(observed_view, child);
+  if (container()->IsInspectableViewBeingDeleted(child))
+    RemoveFromParent();
 }
 
 void WebContentsViewHost::OnViewAddedToWidget(views::View* observed_view) {
   DCHECK_EQ(observed_view, view());
 
+  if (!GetOwnedInspectableView())
+    return;
   NativeWindow* native_window =
       NativeWindow::FromWidget(observed_view->GetWidget());
   if (!native_window)
@@ -331,7 +396,7 @@ void WebContentsViewHost::SendWindowControlsOverlay() {
   window_controls_overlay_update_pending_ = false;
   WebContents* api_web_contents = GetLiveWebContents();
   views::View* view = this->view();
-  if (!api_web_contents || !observed_window_ || !view)
+  if (!api_web_contents || !observed_window_ || !GetOwnedInspectableView())
     return;
   const auto bounding_rect = observed_window_->GetWindowControlsOverlayRect();
   if (!bounding_rect)
@@ -380,6 +445,10 @@ WebContents* WebContentsView::GetLiveWebContents() const {
 
 void WebContentsView::OnWebContentsDestroyed() {
   api_web_contents_ = nullptr;
+}
+
+bool WebContentsView::IsUsable() const {
+  return GetLiveWebContents();
 }
 
 void WebContentsView::SetBackgroundColor(std::optional<WrappedSkColor> color) {
