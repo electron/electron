@@ -115,15 +115,23 @@ if len(sys.argv) == 4:
   with open(sys.argv[3], 'w') as f:
     f.write(wire_impl)
   header = header.replace('extern const volatile char kFuseWire[];',
-                          'extern const volatile char kFuseWire[];\n'
-                          'void SetFuseWire(const volatile char* wire);')
+                          f'extern const volatile char kFuseWire[{len(SENTINEL) + 2 + len(fuses)}];\n'
+                          'bool SetFuseWire(const volatile char* wire);')
   impl = impl[:wire_start] + """namespace {
 const volatile char* g_fuse_wire = nullptr;
+constexpr char kFuseWireHeader[] = { {header} };
 }  // namespace
 
-void SetFuseWire(const volatile char* wire) {
+bool SetFuseWire(const volatile char* wire) {
+  for (unsigned int i = 0; i < sizeof(kFuseWireHeader); ++i) {
+    if (wire[i] != kFuseWireHeader[i])
+      return false;
+  }
   g_fuse_wire = wire;
+  return true;
 }""" + impl[wire_end:]
+  impl = impl.replace('{header}',
+                      hex_arr(SENTINEL) + ',' + c_hex(fuse_version) + ',' + c_hex(len(fuses)))
   impl = impl.replace('return kFuseWire[', 'return g_fuse_wire[')
 
 with open(sys.argv[1], 'w') as f:

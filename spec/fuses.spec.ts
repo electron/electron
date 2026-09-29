@@ -26,6 +26,27 @@ ifdescribe(process.platform === 'win32')('fuses Windows executable configuration
     if (tempDir) fs.rmSync(tempDir, { recursive: true, force: true, maxRetries: 5 });
   });
 
+  it('rejects an executable with an invalid fuse sentinel', () => {
+    const original = fs.readFileSync(executable);
+    const offset = original.indexOf('dL7pKGdnNz796PbbjQWNKmHXBZaB9tsX');
+    expect(offset).to.be.greaterThan(-1);
+    const invalid = Buffer.from(original);
+    invalid[offset] ^= 0xff;
+    try {
+      fs.writeFileSync(executable, invalid);
+      const result = spawnSync(executable, ['-e', 'console.log("unexpected")'], {
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', NODE_OPTIONS: '' },
+        encoding: 'utf8',
+        timeout: 30000
+      });
+      expect(result.error).to.equal(undefined);
+      expect(result.status, result.stderr).to.equal(13); // ERROR_INVALID_DATA
+      expect(result.stdout).not.to.include('unexpected');
+    } finally {
+      fs.writeFileSync(executable, original);
+    }
+  });
+
   it('reads a fuse patched in the executable from the runtime DLL', async () => {
     const options = {
       env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', NODE_OPTIONS: '-e 0' },
