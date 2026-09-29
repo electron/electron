@@ -1738,6 +1738,8 @@ if (is_mac) {
       ":electron_win32_resources",
       "//base",
       "//content:sandbox_helper_win",
+      "//sandbox/policy",
+      "//sandbox/policy/mojom",
       "//sandbox/win:common",
     ]
   }
