@@ -1,0 +1,390 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zhenyao Mo <zmo@chromium.org>
+Date: Fri, 18 Sep 2026 16:23:51 -0700
+Subject: gpu: Fix ScopedBufferReattacher backbuffer restoration
+
+In the validating GLES2 decoder (GLES2DecoderImpl), client framebuffer
+0 is tracked as null in bound_read_framebuffer / bound_draw_framebuffer,
+but is backed in the GL driver by the emulated backbuffer service ID
+returned by GetBackbufferServiceId() (non-zero for offscreen contexts
+and surfaces with backing FBOs), not raw driver FBO 0.
+
+All canonical framebuffer binding restoration paths (DoBindFramebuffer,
+RestoreCurrentFramebufferBindings, RestoreFramebufferBindings) map null
+tracked bindings to GetBackbufferServiceId(). However, the driver
+workaround helper ScopedBufferReattacher had two issues:
+
+1. Its destructor mapped null tracked framebuffer bindings to raw driver
+   FBO 0 instead of GetBackbufferServiceId(). When triggered by an
+   unbound FBO while client FBO 0 was bound (under workarounds
+   reattach_fbo_depth_stencil_on_reallocation or
+   reattach_texture_to_fbo_after_layer_increase), ~ScopedBufferReattacher
+   left the driver bound to raw FBO 0 while the state tracker believed
+   the emulated backbuffer was bound. Subsequent operations such as
+   CheckFramebufferValid(nullptr) would then issue pending lazy
+   backbuffer clears (backbuffer_needs_clear_bits_) against driver FBO 0
+   instead of the backbuffer while unconditionally disarming the clear
+   bits.
+2. Initialize() bound detached FBO service IDs in the driver to detach
+   textures/renderbuffers without restoring the previous FBO bindings
+   before returning. For commands like DoCopyTexImage2D where
+   ScopedBufferReattacher is constructed before
+   CheckBoundReadFramebufferValid() and glCopyTexImage2D(), this left
+   the detached FBO bound in the driver during command execution.
+
+Fix both issues by extracting ScopedBufferReattacher::RestoreBindings(),
+which maps null tracked read/draw FBOs to GetBackbufferServiceId(), and
+calling it at the end of both Initialize() (when attachments are
+detached) and ~ScopedBufferReattacher(). Add unit tests verifying that
+both shared and separate read/draw emulated backbuffer bindings are
+properly restored across Initialize(), CopyTexImage2D lazy clears, and
+destruction.
+
+Bug: 559737160
+Change-Id: Id887b92bd2699ab2ae870db55d2e8a55059e3fa1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8422647
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Auto-Submit: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1701196}
+
+Electron adaptation notes (44-x-y):
+gles2_cmd_decoder.cc: the helper is still named ScopedDepthStencilReattacher
+on this branch (main renamed it to ScopedBufferReattacher in CL 8177601,
+which is not on M152), so the new RestoreBindings() definition uses the
+branch's class name. No other change.
+
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index 95ec27ff68ee440fb1e4caced6dd6e91227a9ea6..f4555fbb0b24690fd094c76b3a7c4771cbb1c803 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -2577,6 +2577,7 @@ class ScopedDepthStencilReattacher {
+   };
+ 
+   void Initialize();
++  void RestoreBindings();
+ 
+   raw_ptr<GLES2DecoderImpl> decoder_;
+   raw_ptr<TextureRef> texture_ref_ = nullptr;
+@@ -2671,6 +2672,10 @@ void ScopedDepthStencilReattacher::Initialize() {
+           GL_FRAMEBUFFER, attachment_point, GL_RENDERBUFFER, 0);
+     }
+   }
++
++  if (!saved_attachments_.empty()) {
++    RestoreBindings();
++  }
+ }
+ 
+ ScopedDepthStencilReattacher::~ScopedDepthStencilReattacher() {
+@@ -2707,13 +2712,25 @@ ScopedDepthStencilReattacher::~ScopedDepthStencilReattacher() {
+     }
+   }
+ 
+-  // Restore bindings.
++  RestoreBindings();
++}
++
++void ScopedDepthStencilReattacher::RestoreBindings() {
++  // Restore bindings. A null tracked framebuffer means the client has the
++  // default framebuffer bound, which on this decoder is the emulated
++  // backbuffer, not driver FBO 0 (see RestoreCurrentFramebufferBindings and
++  // RestoreFramebufferBindings). Restoring raw FBO 0 here desyncs the driver
++  // binding from the tracked state and lets the pending backbuffer clear
++  // (backbuffer_needs_clear_bits_) be consumed against the wrong framebuffer.
+   if (old_read_fbo_ == old_draw_fbo_) {
+-    GLuint service_id = old_read_fbo_ ? old_read_fbo_->service_id() : 0;
++    GLuint service_id = old_read_fbo_ ? old_read_fbo_->service_id()
++                                      : decoder_->GetBackbufferServiceId();
+     decoder_->api()->glBindFramebufferEXTFn(GL_FRAMEBUFFER, service_id);
+   } else {
+-    GLuint read_id = old_read_fbo_ ? old_read_fbo_->service_id() : 0;
+-    GLuint draw_id = old_draw_fbo_ ? old_draw_fbo_->service_id() : 0;
++    GLuint read_id = old_read_fbo_ ? old_read_fbo_->service_id()
++                                   : decoder_->GetBackbufferServiceId();
++    GLuint draw_id = old_draw_fbo_ ? old_draw_fbo_->service_id()
++                                   : decoder_->GetBackbufferServiceId();
+     decoder_->api()->glBindFramebufferEXTFn(GL_READ_FRAMEBUFFER, read_id);
+     decoder_->api()->glBindFramebufferEXTFn(GL_DRAW_FRAMEBUFFER, draw_id);
+   }
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_framebuffers.cc b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_framebuffers.cc
+index 2404a0bf705d65fb5dccbb3d042fcbbb2860c314..58df5f434ba126b8c1beb8c15ed22f548b39c518 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_framebuffers.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_framebuffers.cc
+@@ -4319,6 +4319,275 @@ TEST_P(GLES3DecoderManualInitTest,
+   }
+ }
+ 
++TEST_P(GLES3DecoderManualInitTest,
++       ScopedBufferReattacherRestoresEmulatedBackbuffer) {
++  InitState init;
++  init.gl_version = "OpenGL ES 3.0";
++  init.context_type = CONTEXT_TYPE_OPENGLES3;
++  GpuDriverBugWorkarounds workarounds;
++  workarounds.reattach_fbo_depth_stencil_on_reallocation = true;
++  InitDecoderWithWorkarounds(init, workarounds);
++
++  const GLuint kEmulatedBackbufferServiceId = 7;
++  scoped_refptr<GLSurfaceMock> other_surface(new GLSurfaceMock);
++  EXPECT_CALL(*other_surface.get(), GetBackingFramebufferObject())
++      .WillRepeatedly(Return(kEmulatedBackbufferServiceId));
++  EXPECT_CALL(*other_surface.get(), GetSize())
++      .WillRepeatedly(Return(gfx::Size(kBackBufferWidth, kBackBufferHeight)));
++  EXPECT_CALL(*gl_, BindFramebufferEXT(GL_READ_FRAMEBUFFER,
++                                       kEmulatedBackbufferServiceId))
++      .Times(1)
++      .RetiresOnSaturation();
++  EXPECT_CALL(*gl_, BindFramebufferEXT(GL_DRAW_FRAMEBUFFER,
++                                       kEmulatedBackbufferServiceId))
++      .Times(1)
++      .RetiresOnSaturation();
++  decoder_->SetSurface(other_surface);
++
++  // Attach depth texture to an FBO, then bind client FBO 0 (emulated
++  // backbuffer).
++  DoBindTexture(GL_TEXTURE_2D, client_texture_id_, kServiceTextureId);
++  DoTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, 4, 4, 0,
++               GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, 0, 0);
++  DoBindFramebuffer(GL_FRAMEBUFFER, client_framebuffer_id_,
++                    kServiceFramebufferId);
++  DoFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
++                         client_texture_id_, kServiceTextureId, 0, GL_NO_ERROR);
++  DoBindFramebuffer(GL_FRAMEBUFFER, 0, kEmulatedBackbufferServiceId);
++
++  // Case 1: Both read and draw FBOs are tracked-null (client FBO 0).
++  // Reallocating the depth texture must restore kEmulatedBackbufferServiceId
++  // (not raw FBO 0) in both Initialize() and ~ScopedBufferReattacher().
++  // This is testing the implementation of cmds::TexImage2D.
++  {
++    ::testing::InSequence sequence;
++    // Initialize() detaches from kServiceFramebufferId and restores backbuffer.
++    EXPECT_CALL(*gl_, BindFramebufferEXT(GL_FRAMEBUFFER, kServiceFramebufferId))
++        .Times(1)
++        .RetiresOnSaturation();
++    EXPECT_CALL(*gl_,
++                FramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
++                                        GL_TEXTURE_2D, 0, 0))
++        .Times(1)
++        .RetiresOnSaturation();
++    EXPECT_CALL(
++        *gl_, BindFramebufferEXT(GL_FRAMEBUFFER, kEmulatedBackbufferServiceId))
++        .Times(1)
++        .RetiresOnSaturation();
++
++    // TexImage2D executes.
++    EXPECT_CALL(*gl_, GetError())
++        .WillOnce(Return(GL_NO_ERROR))
++        .RetiresOnSaturation();
++    EXPECT_CALL(*gl_, TexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, 8, 8,
++                                 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, _))
++        .Times(1)
++        .RetiresOnSaturation();
++    EXPECT_CALL(*gl_, GetError())
++        .WillOnce(Return(GL_NO_ERROR))
++        .RetiresOnSaturation();
++
++    // ~ScopedBufferReattacher() reattaches and restores backbuffer.
++    EXPECT_CALL(*gl_, BindFramebufferEXT(GL_FRAMEBUFFER, kServiceFramebufferId))
++        .Times(1)
++        .RetiresOnSaturation();
++    EXPECT_CALL(*gl_,
++                FramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
++                                        GL_TEXTURE_2D, kServiceTextureId, 0))
++        .Times(1)
++        .RetiresOnSaturation();
++    EXPECT_CALL(
++        *gl_, BindFramebufferEXT(GL_FRAMEBUFFER, kEmulatedBackbufferServiceId))
++        .Times(1)
++        .RetiresOnSaturation();
++
++    cmds::TexImage2D cmd;
++    cmd.Init(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, 8, 8, GL_DEPTH_COMPONENT,
++             GL_UNSIGNED_SHORT, 0, 0);
++    EXPECT_EQ(error::kNoError, ExecuteCmd(cmd));
++    EXPECT_EQ(GL_NO_ERROR, GetGLError());
++  }
++
++  // Case 2: Separate read and draw bindings (read = client FBO 0, draw = user
++  // FBO). Must restore GL_READ_FRAMEBUFFER to kEmulatedBackbufferServiceId and
++  // GL_DRAW_FRAMEBUFFER to kServiceFramebufferId.
++  // This is testing the implementation of cmds::TexImage2D.
++  DoBindFramebuffer(GL_DRAW_FRAMEBUFFER, client_framebuffer_id_,
++                    kServiceFramebufferId);
++  {
++    ::testing::InSequence sequence;
++    EXPECT_CALL(*gl_, BindFramebufferEXT(GL_FRAMEBUFFER, kServiceFramebufferId))
++        .Times(1)
++        .RetiresOnSaturation();
++    EXPECT_CALL(*gl_,
++                FramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
++                                        GL_TEXTURE_2D, 0, 0))
++        .Times(1)
++        .RetiresOnSaturation();
++    EXPECT_CALL(*gl_, BindFramebufferEXT(GL_READ_FRAMEBUFFER,
++                                         kEmulatedBackbufferServiceId))
++        .Times(1)
++        .RetiresOnSaturation();
++    EXPECT_CALL(*gl_,
++                BindFramebufferEXT(GL_DRAW_FRAMEBUFFER, kServiceFramebufferId))
++        .Times(1)
++        .RetiresOnSaturation();
++
++    EXPECT_CALL(*gl_, GetError())
++        .WillOnce(Return(GL_NO_ERROR))
++        .RetiresOnSaturation();
++    EXPECT_CALL(*gl_, TexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, 4, 4,
++                                 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_SHORT, _))
++        .Times(1)
++        .RetiresOnSaturation();
++    EXPECT_CALL(*gl_, GetError())
++        .WillOnce(Return(GL_NO_ERROR))
++        .RetiresOnSaturation();
++
++    EXPECT_CALL(*gl_, BindFramebufferEXT(GL_FRAMEBUFFER, kServiceFramebufferId))
++        .Times(1)
++        .RetiresOnSaturation();
++    EXPECT_CALL(*gl_,
++                FramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
++                                        GL_TEXTURE_2D, kServiceTextureId, 0))
++        .Times(1)
++        .RetiresOnSaturation();
++    EXPECT_CALL(*gl_, BindFramebufferEXT(GL_READ_FRAMEBUFFER,
++                                         kEmulatedBackbufferServiceId))
++        .Times(1)
++        .RetiresOnSaturation();
++    EXPECT_CALL(*gl_,
++                BindFramebufferEXT(GL_DRAW_FRAMEBUFFER, kServiceFramebufferId))
++        .Times(1)
++        .RetiresOnSaturation();
++
++    cmds::TexImage2D cmd;
++    cmd.Init(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, 4, 4, GL_DEPTH_COMPONENT,
++             GL_UNSIGNED_SHORT, 0, 0);
++    EXPECT_EQ(error::kNoError, ExecuteCmd(cmd));
++    EXPECT_EQ(GL_NO_ERROR, GetGLError());
++  }
++}
++
++TEST_P(GLES3DecoderManualInitTest,
++       ScopedBufferReattacherCopyTexImage2DPreservesBackbufferBinding) {
++  InitState init;
++  init.gl_version = "OpenGL ES 3.0";
++  init.context_type = CONTEXT_TYPE_OPENGLES3;
++  init.has_alpha = true;
++  GpuDriverBugWorkarounds workarounds;
++  workarounds.reattach_texture_to_fbo_after_layer_increase = true;
++  InitDecoderWithWorkarounds(init, workarounds);
++
++  const GLuint kEmulatedBackbufferServiceId = 7;
++  scoped_refptr<GLSurfaceMock> other_surface(new GLSurfaceMock);
++  EXPECT_CALL(*other_surface.get(), GetBackingFramebufferObject())
++      .WillRepeatedly(Return(kEmulatedBackbufferServiceId));
++  EXPECT_CALL(*other_surface.get(), GetSize())
++      .WillRepeatedly(Return(gfx::Size(kBackBufferWidth, kBackBufferHeight)));
++  EXPECT_CALL(*gl_, BindFramebufferEXT(GL_READ_FRAMEBUFFER,
++                                       kEmulatedBackbufferServiceId))
++      .Times(1)
++      .RetiresOnSaturation();
++  EXPECT_CALL(*gl_, BindFramebufferEXT(GL_DRAW_FRAMEBUFFER,
++                                       kEmulatedBackbufferServiceId))
++      .Times(1)
++      .RetiresOnSaturation();
++  decoder_->SetSurface(other_surface);
++
++  // Attach a cube map texture face to an unbound FBO.
++  DoBindTexture(GL_TEXTURE_CUBE_MAP, client_texture_id_, kServiceTextureId);
++  DoTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGBA, 4, 4, 0, GL_RGBA,
++               GL_UNSIGNED_BYTE, 0, 0);
++  DoBindFramebuffer(GL_FRAMEBUFFER, client_framebuffer_id_,
++                    kServiceFramebufferId);
++  DoFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
++                         GL_TEXTURE_CUBE_MAP_POSITIVE_X, client_texture_id_,
++                         kServiceTextureId, 0, GL_NO_ERROR);
++  DoBindFramebuffer(GL_FRAMEBUFFER, 0, kEmulatedBackbufferServiceId);
++
++  // Invalidate client FBO 0 so that backbuffer_needs_clear_bits_ is armed.
++  const GLsizei count = 1;
++  GLenum attachments[] = {GL_COLOR_EXT};
++  EXPECT_CALL(*gl_, InvalidateFramebuffer(GL_FRAMEBUFFER, count, _)).Times(0);
++  auto& invalidate_cmd =
++      *GetImmediateAs<cmds::InvalidateFramebufferImmediate>();
++  invalidate_cmd.Init(GL_FRAMEBUFFER, count, attachments);
++  EXPECT_EQ(error::kNoError,
++            ExecuteImmediateCmd(invalidate_cmd, sizeof(attachments)));
++  EXPECT_EQ(GL_NO_ERROR, GetGLError());
++
++  // Calling CopyTexImage2D on the cube map face triggers ScopedBufferReattacher
++  // in Initialize(). It must restore kEmulatedBackbufferServiceId before
++  // CheckBoundReadFramebufferValid runs the lazy backbuffer security clear.
++  {
++    ::testing::InSequence sequence;
++    // 1. Initialize() detaches from kServiceFramebufferId and restores
++    // kEmulatedBackbufferServiceId.
++    EXPECT_CALL(*gl_, BindFramebufferEXT(GL_FRAMEBUFFER, kServiceFramebufferId))
++        .Times(1)
++        .RetiresOnSaturation();
++    EXPECT_CALL(*gl_,
++                FramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
++                                        GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, 0))
++        .Times(1)
++        .RetiresOnSaturation();
++    EXPECT_CALL(
++        *gl_, BindFramebufferEXT(GL_FRAMEBUFFER, kEmulatedBackbufferServiceId))
++        .Times(1)
++        .RetiresOnSaturation();
++
++    // 2. CheckBoundReadFramebufferValid performs the lazy backbuffer clear
++    // (while kEmulatedBackbufferServiceId is bound).
++    EXPECT_CALL(*gl_, ClearColor(0, 0, 0, 1.0f)).Times(1).RetiresOnSaturation();
++    SetupExpectationsForColorMask(true, true, true, true);
++    EXPECT_CALL(*gl_, ClearStencil(0)).Times(1).RetiresOnSaturation();
++    SetupExpectationsForStencilMask(GLES2Decoder::kDefaultStencilMask,
++                                    GLES2Decoder::kDefaultStencilMask);
++    EXPECT_CALL(*gl_, ClearDepth(1.0f)).Times(1).RetiresOnSaturation();
++    SetupExpectationsForDepthMask(true);
++    SetupExpectationsForEnableDisable(GL_SCISSOR_TEST, false);
++    EXPECT_CALL(*gl_, Clear(GL_COLOR_BUFFER_BIT))
++        .Times(1)
++        .RetiresOnSaturation();
++    SetupExpectationsForRestoreClearState(0.0f, 0.0f, 0.0f, 0.0f, 0, 1.0f,
++                                          false, 0, 0, kBackBufferWidth,
++                                          kBackBufferHeight);
++
++    // 3. CopyTexImage2D executes against the backbuffer.
++    EXPECT_CALL(*gl_, GetError())
++        .WillOnce(Return(GL_NO_ERROR))
++        .RetiresOnSaturation();
++    EXPECT_CALL(*gl_, CopyTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0,
++                                     GL_RGBA8, 0, 0, 4, 4, 0))
++        .Times(1)
++        .RetiresOnSaturation();
++    EXPECT_CALL(*gl_, GetError())
++        .WillOnce(Return(GL_NO_ERROR))
++        .RetiresOnSaturation();
++
++    // 4. ~ScopedBufferReattacher() reattaches and restores
++    // kEmulatedBackbufferServiceId.
++    EXPECT_CALL(*gl_, BindFramebufferEXT(GL_FRAMEBUFFER, kServiceFramebufferId))
++        .Times(1)
++        .RetiresOnSaturation();
++    EXPECT_CALL(*gl_, FramebufferTexture2DEXT(
++                          GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
++                          GL_TEXTURE_CUBE_MAP_POSITIVE_X, kServiceTextureId, 0))
++        .Times(1)
++        .RetiresOnSaturation();
++    EXPECT_CALL(
++        *gl_, BindFramebufferEXT(GL_FRAMEBUFFER, kEmulatedBackbufferServiceId))
++        .Times(1)
++        .RetiresOnSaturation();
++
++    cmds::CopyTexImage2D cmd;
++    cmd.Init(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGBA, 0, 0, 4, 4);
++    EXPECT_EQ(error::kNoError, ExecuteCmd(cmd));
++    EXPECT_EQ(GL_NO_ERROR, GetGLError());
++  }
++}
++
+ // TODO(gman): PixelStorei
+ 
+ }  // namespace gles2
