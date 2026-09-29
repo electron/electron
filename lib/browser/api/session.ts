@@ -74,7 +74,7 @@ Session.prototype.setDisplayMediaRequestHandler = function (handler, opts) {
 
       if (process.platform === 'linux') {
         const source = await getPortalSystemPickerSource();
-        return callback(source ? { video: source } : {});
+        return callback(source ? { video: source } : null);
       }
     }
 
