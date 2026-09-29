@@ -40,7 +40,9 @@ v8::MaybeLocal<v8::Promise> OnDynamicImport(v8::Local<v8::Context> context,
                                             v8::Local<v8::Data>,
                                             v8::Local<v8::Value>,
                                             v8::Local<v8::String>,
+#if V8_MAJOR_VERSION >= 13
                                             v8::ModuleImportPhase,
+#endif
                                             v8::Local<v8::FixedArray>) {
   ++dynamic_import_count;
   v8::Local<v8::Promise::Resolver> resolver =
@@ -61,7 +63,11 @@ void RegisterEmbedderCallbacks(
   isolate->RequestInterrupt(OnInterrupt, nullptr);
   if (args.Length() == 0 || args[0]->BooleanValue(isolate))
     isolate->SetUseCounterCallback(OnUseCounter);
+#if V8_MAJOR_VERSION >= 13
   isolate->SetHostImportModuleWithPhaseDynamicallyCallback(OnDynamicImport);
+#else
+  isolate->SetHostImportModuleDynamicallyCallback(OnDynamicImport);
+#endif
   isolate->SetHostInitializeImportMetaObjectCallback(OnImportMeta);
 }
 
