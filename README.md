@@ -93,6 +93,9 @@ Info on reporting bugs, getting help, finding third-party tools and sample apps,
 and more can be found on the [Community page](https://www.electronjs.org/community).
 
 ## License
+I think this would be a very useful addition for Electron apps on macOS. `⌘E` and the `NSPasteboardNameFind` pasteboard are standard parts of the macOS search workflow, and supporting them would make Electron applications feel much more native.
+
+It would be especially helpful if Electron could provide a simple API or built-in behavior for reading from and writing to the Find pasteboard, so individual applications wouldn't each need to implement native macOS integration themselves.
 
 [MIT](https://github.com/electron/electron/blob/main/LICENSE)
 
