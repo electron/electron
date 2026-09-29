@@ -24,6 +24,7 @@ import {
   ifdescribe,
   ifit,
   itremote,
+  spawnAndWait,
   startRemoteControlApp,
   useRemoteContext
 } from './lib/spec-helpers.ts';
@@ -769,6 +770,59 @@ describe('node feature', () => {
         expect(stdout.trim()).to.equal('ok');
       }
     );
+
+    ifit(!process.env.ELECTRON_SKIP_ELECTRON_HEADER_ADDON_SPECS)(
+      'runs V8 embedder callbacks from an uninstrumented addon',
+      async () => {
+        const child = childProcess.spawn(
+          process.execPath,
+          [path.join(fixtures, 'module', 'v8-embedder-callbacks.js')],
+          {
+            env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+            stdio: ['ignore', 'pipe', 'pipe']
+          }
+        );
+        let stdout = '';
+        let stderr = '';
+        child.stdout.setEncoding('utf8');
+        child.stderr.setEncoding('utf8');
+        child.stdout.on('data', (chunk) => {
+          stdout += chunk;
+        });
+        child.stderr.on('data', (chunk) => {
+          stderr += chunk;
+        });
+        const [code, signal] = await once(child, 'close');
+        expect(signal, stderr).to.be.null();
+        expect(code, stderr).to.equal(0);
+        expect(stdout.trim()).to.equal('ok');
+      }
+    );
+
+    const cfiAddonBoundaryModes = [
+      'main',
+      'renderer-main-world',
+      'renderer-isolated-world',
+      'renderer-web-worker',
+      'node-worker',
+      'utility',
+      'utility-node-worker'
+    ];
+    for (const mode of cfiAddonBoundaryModes) {
+      ifit(
+        process.platform === 'linux' && process.arch === 'x64' && !process.env.ELECTRON_SKIP_ELECTRON_HEADER_ADDON_SPECS
+      )(`runs uninstrumented addon callbacks in the ${mode} environment`, async () => {
+        const appPath = path.join(fixtures, 'apps', 'cfi-addon-boundaries');
+        const result = await spawnAndWait(process.execPath, [appPath, mode, '--js-flags=--expose-gc'], {
+          env: process.env,
+          timeout: 60000
+        });
+        expect(result.signal, result.stderr).to.be.null();
+        expect(result.code, result.stderr).to.equal(0);
+        expect(result.stdout).to.include(`CFI_ADDON_BOUNDARY_OK:${mode}`);
+        expect(result.stderr).not.to.match(/control flow integrity|UndefinedBehaviorSanitizer/);
+      });
+    }
   });
 
   describe('message loop in renderer', () => {

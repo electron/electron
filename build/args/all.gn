@@ -59,12 +59,6 @@ allow_runtime_configurable_key_storage = true
 # Ref: https://source.chromium.org/chromium/chromium/src/+/45fba672185aae233e75d6ddc81ea1e0b30db050:v8/BUILD.gn;l=357
 enable_cet_shadow_stack = false
 
-# For similar reasons, disable CFI, which is not well supported in V8.
-# Chromium doesn't have any problems with this because they do not run
-# V8 in the browser process.
-# Ref: https://source.chromium.org/chromium/chromium/src/+/45fba672185aae233e75d6ddc81ea1e0b30db050:v8/BUILD.gn;l=281
-is_cfi = false
-
 # TODO: fix this once sysroots have been updated.
 use_qt5 = false
 use_qt6 = false

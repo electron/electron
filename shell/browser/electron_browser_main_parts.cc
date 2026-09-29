@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "base/command_line.h"
+#include "base/compiler_specific.h"
 #include "base/feature_list.h"
 #include "base/i18n/rtl.h"
 #include "base/no_destructor.h"
@@ -220,6 +221,14 @@ void* SystemFontConfigSymbol(const char* name) {
   return lib ? dlsym(lib, name) : nullptr;
 }
 
+DISABLE_CFI_ICALL
+void CallSystemFontConfig(const char* name) {
+  if (auto function =
+          reinterpret_cast<int (*)()>(SystemFontConfigSymbol(name))) {
+    function();
+  }
+}
+
 // Pango >= 1.52 calls FcInit() from its own thread while the main thread does
 // the same during GTK init, corrupting FontConfig state (pango#784). Doing it
 // once beforehand makes both later calls no-ops.
@@ -227,10 +236,7 @@ class SystemFontConfigInit : public base::PlatformThread::Delegate {
  public:
   void ThreadMain() override {
     base::PlatformThread::SetName("SystemFontConfigInit");
-    if (auto fc_init =
-            reinterpret_cast<int (*)()>(SystemFontConfigSymbol("FcInit"))) {
-      fc_init();
-    }
+    CallSystemFontConfig("FcInit");
   }
 };
 
@@ -384,10 +390,7 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 #if BUILDFLAG(IS_LINUX)
   // Reload if the app's main script changed the FontConfig environment.
   if (fontconfig_env != SnapshotFontConfigEnv()) {
-    if (auto fc_reinit = reinterpret_cast<int (*)()>(
-            SystemFontConfigSymbol("FcInitReinitialize"))) {
-      fc_reinit();
-    }
+    CallSystemFontConfig("FcInitReinitialize");
   }
 #endif
 
