@@ -1,1 +1,2 @@
 fix_fall_back_to_the_x11_capturer_when_pipewire_fails_to_start.patch
+pipewire_capturer_keep_the_persist_mode_with_the_restore_token.patch
