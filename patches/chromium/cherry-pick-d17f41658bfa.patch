@@ -31,21 +31,22 @@ Commit-Queue: Hongchan Choi <hongchan@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1699285}
 
 diff --git a/third_party/blink/renderer/modules/webaudio/audio_context_test.cc b/third_party/blink/renderer/modules/webaudio/audio_context_test.cc
-index 9122f977e5d7e908334223b5e949aa12ff89b6b9..764d9b5412dfde080d2c9c6fbc4acd688b97066a 100644
+index 2bc5ac166d81d2866c8712eabf3e90cef1ac6170..f174043fbe62891f7fe6028f8b6bef5c4e8ef92e 100644
 --- a/third_party/blink/renderer/modules/webaudio/audio_context_test.cc
 +++ b/third_party/blink/renderer/modules/webaudio/audio_context_test.cc
-@@ -28,8 +28,10 @@
+@@ -29,9 +29,11 @@
  #include "third_party/blink/public/platform/web_runtime_features.h"
  #include "third_party/blink/public/web/web_heap.h"
  #include "third_party/blink/renderer/bindings/core/v8/script_promise_tester.h"
 +#include "third_party/blink/renderer/bindings/core/v8/serialization/serialized_script_value.h"
  #include "third_party/blink/renderer/bindings/core/v8/v8_binding_for_testing.h"
+ #include "third_party/blink/renderer/bindings/core/v8/v8_dom_exception.h"
  #include "third_party/blink/renderer/bindings/core/v8/v8_worklet_options.h"
 +#include "third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.h"
  #include "third_party/blink/renderer/bindings/modules/v8/v8_audio_sink_options.h"
  #include "third_party/blink/renderer/bindings/modules/v8/v8_union_audiocontextlatencycategory_double.h"
  #include "third_party/blink/renderer/bindings/modules/v8/v8_union_audiocontextrendersizecategory_unsignedlong.h"
-@@ -38,14 +40,20 @@
+@@ -41,7 +43,9 @@
  #include "third_party/blink/renderer/core/frame/frame_test_helpers.h"
  #include "third_party/blink/renderer/core/frame/local_dom_window.h"
  #include "third_party/blink/renderer/core/frame/local_frame.h"
@@ -53,8 +54,9 @@ index 9122f977e5d7e908334223b5e949aa12ff89b6b9..764d9b5412dfde080d2c9c6fbc4acd68
  #include "third_party/blink/renderer/core/messaging/message_port.h"
 +#include "third_party/blink/renderer/core/script/classic_script.h"
  #include "third_party/blink/renderer/core/testing/page_test_base.h"
+ #include "third_party/blink/renderer/core/timing/performance.h"
  #include "third_party/blink/renderer/core/workers/worker_thread.h"
- #include "third_party/blink/renderer/modules/mediastream/sub_capture_target.h"
+@@ -49,7 +53,11 @@
  #include "third_party/blink/renderer/modules/peerconnection/peer_connection_dependency_factory.h"
  #include "third_party/blink/renderer/modules/webaudio/audio_playback_stats.h"
  #include "third_party/blink/renderer/modules/webaudio/audio_worklet.h"
@@ -66,7 +68,7 @@ index 9122f977e5d7e908334223b5e949aa12ff89b6b9..764d9b5412dfde080d2c9c6fbc4acd68
  #include "third_party/blink/renderer/modules/webaudio/delay_node.h"
  #include "third_party/blink/renderer/modules/webaudio/media_stream_audio_destination_node.h"
  #include "third_party/blink/renderer/modules/webaudio/offline_audio_context.h"
-@@ -1498,6 +1506,101 @@ TEST_F(AudioContextTest, AudioWorkletTerminatedOnClose) {
+@@ -1555,6 +1563,101 @@ TEST_F(AudioContextTest, AudioWorkletTerminatedOnClose) {
    proxy->GetBackingWorkerThread()->WaitForShutdownForTesting();
  }
  

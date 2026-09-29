@@ -233,21 +233,20 @@ bool ElectronCrashReporterClient::ReportingIsEnforcedByPolicy(
 }
 #endif
 
-bool ElectronCrashReporterClient::GetShouldRateLimit() {
+bool ElectronCrashReporterClient::ShouldRateLimitUploads() {
   return rate_limit_;
 }
 
-bool ElectronCrashReporterClient::GetShouldCompressUploads() {
+bool ElectronCrashReporterClient::ShouldCompressUploads() {
   return compress_uploads_;
 }
 
-void ElectronCrashReporterClient::GetProcessSimpleAnnotations(
-    std::map<std::string, std::string>* annotations) {
-  for (auto&& pair : global_annotations_) {
-    (*annotations)[pair.first] = pair.second;
-  }
-  (*annotations)["prod"] = ELECTRON_PRODUCT_NAME;
-  (*annotations)["ver"] = ELECTRON_VERSION_STRING;
+std::map<std::string, std::string>
+ElectronCrashReporterClient::GetExtraProcessAnnotations() {
+  std::map<std::string, std::string> annotations = global_annotations_;
+  annotations["prod"] = ELECTRON_PRODUCT_NAME;
+  annotations["ver"] = ELECTRON_VERSION_STRING;
+  return annotations;
 }
 
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC)

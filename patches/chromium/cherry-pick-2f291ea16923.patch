@@ -46,7 +46,7 @@ Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1699945}
 
 diff --git a/gpu/command_buffer/service/shared_image/compound_image_backing.cc b/gpu/command_buffer/service/shared_image/compound_image_backing.cc
-index 18285b129630f08a2543827bfc2d56608b2284c3..0b316c70cca8e83a7fde250c845f6557f4498330 100644
+index f66e51870ad90084309b90e60b8cbb76f6d2efa1..b161a65f5fe5948038ee74cbfe75e119a6a9d510 100644
 --- a/gpu/command_buffer/service/shared_image/compound_image_backing.cc
 +++ b/gpu/command_buffer/service/shared_image/compound_image_backing.cc
 @@ -1105,7 +1105,8 @@ CompoundImageBacking::CreateSharedMemoryForTesting(
@@ -114,7 +114,7 @@ index 18285b129630f08a2543827bfc2d56608b2284c3..0b316c70cca8e83a7fde250c845f6557
  }
  
 diff --git a/gpu/command_buffer/service/shared_image/compound_image_backing.h b/gpu/command_buffer/service/shared_image/compound_image_backing.h
-index 45e8e7d516b8fb1629d42c9d8c9ac550c6a35b52..675cbf98a604723348c7423f2a909b38bd477b5a 100644
+index 84509c816cdd9c90f1f320dbd0ed46f2b5212532..5ee0cf8ef149b81327ed912aa823b3940e5a0640 100644
 --- a/gpu/command_buffer/service/shared_image/compound_image_backing.h
 +++ b/gpu/command_buffer/service/shared_image/compound_image_backing.h
 @@ -356,12 +356,17 @@ class GPU_GLES2_EXPORT CompoundImageBacking
@@ -148,7 +148,7 @@ index 45e8e7d516b8fb1629d42c9d8c9ac550c6a35b52..675cbf98a604723348c7423f2a909b38
  
    bool HasLatestContent(ElementHolder& element);
 diff --git a/gpu/command_buffer/service/shared_image/compound_image_backing_unittest.cc b/gpu/command_buffer/service/shared_image/compound_image_backing_unittest.cc
-index c088b6ea6bfce927880535f2352e23b2acda3920..d8ed50392b3ae46995765ab5d881535c66921876 100644
+index 043dfd30dcd5b497dbbd857fb9fe81ca967de637..8611eb30ad1e14cdc21e76c4eb56eff0da5586e8 100644
 --- a/gpu/command_buffer/service/shared_image/compound_image_backing_unittest.cc
 +++ b/gpu/command_buffer/service/shared_image/compound_image_backing_unittest.cc
 @@ -7,6 +7,8 @@

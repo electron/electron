@@ -17,7 +17,7 @@ TODO(codebytere): figure out how to properly wait for paint-hold instead
 (carried over from feature_list.cc).
 
 diff --git a/components/input/render_input_router.cc b/components/input/render_input_router.cc
-index 2ba1163cfff96afae075d061c7e758bf37af2fc4..ee0b70ccbaa1c39622e6361811e295458f1beef6 100644
+index f6a35a61c842ef4601c65ad28ac80f6af93c26ea..ad5df469ca97195fa18fbdafaae0a06329009bec 100644
 --- a/components/input/render_input_router.cc
 +++ b/components/input/render_input_router.cc
 @@ -31,6 +31,7 @@
@@ -41,10 +41,10 @@ index 2ba1163cfff96afae075d061c7e758bf37af2fc4..ee0b70ccbaa1c39622e6361811e29545
      // If we filter a GSB for paint holding, we'd like to receive a new one -
      // see IsWheelScrollInProgress. Note that we leave is_in_gesture_scroll_ set
 diff --git a/third_party/blink/common/features.cc b/third_party/blink/common/features.cc
-index 1b540df4b888599dda357f7ef723a7651d37d9a0..3d64f83370900259ac06c61a7b3eea989e2ec263 100644
+index 43eedb1c1215667d1b4a5359193cbe3f3b36c3d9..29a486746be1cc10b9a2e7609b9f5e9428d9a681 100644
 --- a/third_party/blink/common/features.cc
 +++ b/third_party/blink/common/features.cc
-@@ -574,6 +574,11 @@ BASE_FEATURE(kDisableArrayBufferSizeLimitsForTesting,
+@@ -572,6 +572,11 @@ BASE_FEATURE(kDisableArrayBufferSizeLimitsForTesting,
  BASE_FEATURE(kDiscardInputEventsToRecentlyMovedFrames,
               base::FEATURE_DISABLED_BY_DEFAULT);
  
@@ -57,10 +57,10 @@ index 1b540df4b888599dda357f7ef723a7651d37d9a0..3d64f83370900259ac06c61a7b3eea98
  // Performance Panel, which (when clicked) call into a DevTools extension.
  BASE_FEATURE(kEnableDevtoolsDeepLinkViaExtensibilityApi,
 diff --git a/third_party/blink/public/common/features.h b/third_party/blink/public/common/features.h
-index 4c593c261c340922fd0459268ef68c01722d8a7d..b7b959d307e997fd485bf8e0e98cd79403c4bd12 100644
+index 9adbe779ab23dd755fd81f9c8e0ea2596ca07342..f90e5776da674136450e6ff286ce8e08fb72e0bd 100644
 --- a/third_party/blink/public/common/features.h
 +++ b/third_party/blink/public/common/features.h
-@@ -410,6 +410,8 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
+@@ -406,6 +406,8 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
  BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
      kDiscardInputEventsToRecentlyMovedFrames);
  

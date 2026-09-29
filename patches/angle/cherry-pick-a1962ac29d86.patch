@@ -49,7 +49,7 @@ index f6ae7ef627ffb62cfc236954c8bba79fd03309d8..ee4a40b7bae44daa9f2be270120b67e7
              "issue": "http://crbug.com/553172761"
          }
 diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
-index 62c194014a04cc0b7b2870ba4d1a45e641ecf613..dd75bc80c3d19aa00a1ec4c749fdf43b7596ff24 100644
+index 02d9d39081c8f51fad3e19a2fcefe681e8a8c671..7f5b170d45555f2092e68a9470829b60b8262690 100644
 --- a/src/libANGLE/renderer/gl/TextureGL.cpp
 +++ b/src/libANGLE/renderer/gl/TextureGL.cpp
 @@ -113,13 +113,6 @@ LevelInfoGL GetLevelInfo(const angle::FeaturesGL &features,
@@ -80,10 +80,10 @@ index 62c194014a04cc0b7b2870ba4d1a45e641ecf613..dd75bc80c3d19aa00a1ec4c749fdf43b
              ANGLE_GL_TRY_ALWAYS_CHECK(
                  context, functions->texImage2D(
 diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
-index bfcaf1f60cf7c9e24f307332f0008114396acd5d..748410ce099fcfb8a9b0d5ad3806d2d3f98310cc 100644
+index 615a7718896e19cdb491f606d17d2bd8dd22b4af..13ff8c97a9ff18c9a818b04d5cb0642475c31dbe 100644
 --- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
 +++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
-@@ -2780,7 +2780,7 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+@@ -2782,7 +2782,7 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
                              IsPowerVR(vendor) && IsAndroid());
  
      // crbug.com/553172761
@@ -93,10 +93,10 @@ index bfcaf1f60cf7c9e24f307332f0008114396acd5d..748410ce099fcfb8a9b0d5ad3806d2d3
  
      // Mac Intel drivers are unable to allocate buffers larger than ~1gb
 diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
-index 5966835b6f8b442d6ac491002f5c934e51785bcf..a2e569d6651f5b8eba71c3933150134b81b921cf 100644
+index 17d8ab3e72ca522b83016ef9abfd67f62b2c4963..a92e4e8342346af0c3f6a045ed8ff554b03a2578 100644
 --- a/src/tests/gl_tests/TextureTest.cpp
 +++ b/src/tests/gl_tests/TextureTest.cpp
-@@ -24696,12 +24696,12 @@ TEST_P(Texture2DTestES3_OversizedMipLevels, CompressedDXT)
+@@ -24813,12 +24813,12 @@ TEST_P(Texture2DTestES3_OversizedMipLevels, CompressedDXT)
      EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth() / 4, getWindowHeight() / 4, GLColor::green);
  }
  
@@ -111,7 +111,7 @@ index 5966835b6f8b442d6ac491002f5c934e51785bcf..a2e569d6651f5b8eba71c3933150134b
  {
      constexpr GLsizei kWidth  = 65;
      constexpr GLsizei kHeight = 64;
-@@ -24767,7 +24767,7 @@ TEST_P(Texture2DTestES3_NPOTHostTwiddledTexture, RGB10A2)
+@@ -24884,7 +24884,7 @@ TEST_P(Texture2DTestES3_NPOTHostTwiddledTexture, RGB10A2)
  
  // Test that non-power-of-two uploads of SRGB8_ALPHA8 with UNSIGNED_BYTE data succeed and
  // verify texture contents, including non-default unpack alignment and skip pixels.
@@ -120,7 +120,7 @@ index 5966835b6f8b442d6ac491002f5c934e51785bcf..a2e569d6651f5b8eba71c3933150134b
  {
      constexpr GLsizei kWidth    = 255;
      constexpr GLsizei kHeight   = 256;
-@@ -25089,11 +25089,11 @@ ANGLE_INSTANTIATE_TEST_ES3_AND(
+@@ -25206,11 +25206,11 @@ ANGLE_INSTANTIATE_TEST_ES3_AND(
      ES3_OPENGL().enable(Feature::UploadOversizedMipLevelsViaUnpackBuffer),
      ES3_OPENGLES().enable(Feature::UploadOversizedMipLevelsViaUnpackBuffer));
  
@@ -137,10 +137,10 @@ index 5966835b6f8b442d6ac491002f5c934e51785bcf..a2e569d6651f5b8eba71c3933150134b
  GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TextureSizeLimitTest);
  ANGLE_INSTANTIATE_TEST(TextureSizeLimitTest,
 diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
-index 4c8d47c2336aa415ef3879c9644bc463a20d5706..abe5de9d0f7bc125435686077931431b24c414fd 100644
+index 1e6c5368185835b2404ebe437bd273a68e7472ee..15187b8fd5d622c16b6b494da07c9c96d30d0ee6 100644
 --- a/util/autogen/angle_features_autogen.cpp
 +++ b/util/autogen/angle_features_autogen.cpp
-@@ -524,7 +524,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+@@ -528,7 +528,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
      {Feature::UseStencilTestEnableDynamicState, "useStencilTestEnableDynamicState"},
      {Feature::UseSystemMemoryForConstantBuffers, "useSystemMemoryForConstantBuffers"},
      {Feature::UseTempForNonZeroBaseLevelGenMipmapUsingCopyImageSubData, "useTempForNonZeroBaseLevelGenMipmapUsingCopyImageSubData"},
@@ -150,10 +150,10 @@ index 4c8d47c2336aa415ef3879c9644bc463a20d5706..abe5de9d0f7bc125435686077931431b
      {Feature::UseVertexInputBindingStrideDynamicState, "useVertexInputBindingStrideDynamicState"},
      {Feature::UseVkEventForBufferBarrier, "useVkEventForBufferBarrier"},
 diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
-index 5dfce3eaa5420af3318aaa45bf5d0447c2776582..f36324b60854d1ee283bf1d4025e34f8d3d7867e 100644
+index 1ab53a60249738110713f173c7ee148833284fd6..7cd51664272931211af4ca1a90df9ee60fd70cc9 100644
 --- a/util/autogen/angle_features_autogen.h
 +++ b/util/autogen/angle_features_autogen.h
-@@ -524,7 +524,7 @@ enum class Feature
+@@ -528,7 +528,7 @@ enum class Feature
      UseStencilTestEnableDynamicState,
      UseSystemMemoryForConstantBuffers,
      UseTempForNonZeroBaseLevelGenMipmapUsingCopyImageSubData,

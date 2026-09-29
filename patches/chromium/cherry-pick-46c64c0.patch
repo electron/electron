@@ -21,7 +21,7 @@ Reviewed-by: Antonio Sartori <antoniosartori@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1699587}
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl.cc b/content/browser/renderer_host/navigation_controller_impl.cc
-index b728821d581817b747f7127d5dfe31ec3f8a787b..82a5d4389c4756bb5bfabcfed18290e2a16375bd 100644
+index e5888868c9ef2d64a85bcf31675f665c086e077c..1f6889074977cec1808123f4a5428c2dae5a12eb 100644
 --- a/content/browser/renderer_host/navigation_controller_impl.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl.cc
 @@ -4781,7 +4781,7 @@ NavigationControllerImpl::CreateNavigationRequestFromLoadParams(
@@ -43,10 +43,10 @@ index b728821d581817b747f7127d5dfe31ec3f8a787b..82a5d4389c4756bb5bfabcfed18290e2
    if (common_params->url.IsAboutSrcdoc()) {
      // TODO(wjmaclean): initialize this in NavigationRequest's constructor
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 071ca31da57247c7181465e459f3983755c2f73d..aef707c6db30715ac6bc7359e4e7ac6aaa754182 100644
+index 032a90d0a74712ed02ca7f3ee525b39e720c601f..7a652e8a8156f351835e31d00ca7eea57f05104a 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -1404,7 +1404,7 @@ std::unique_ptr<NavigationRequest> NavigationRequest::CreateRendererInitiated(
+@@ -1405,7 +1405,7 @@ std::unique_ptr<NavigationRequest> NavigationRequest::CreateRendererInitiated(
            /*lcpp_hint=*/nullptr, blink::CreateDefaultRendererContentSettings(),
            /*visited_link_salt=*/std::nullopt,
            /*local_surface_id=*/std::nullopt,
@@ -55,7 +55,7 @@ index 071ca31da57247c7181465e459f3983755c2f73d..aef707c6db30715ac6bc7359e4e7ac6a
            /*should_skip_screenshot=*/false,
            /*force_new_document_sequence_number=*/false,
            /*navigation_metrics_token=*/base::UnguessableToken::Create(),
-@@ -1578,7 +1578,7 @@ NavigationRequest::CreateForSynchronousRendererCommit(
+@@ -1579,7 +1579,7 @@ NavigationRequest::CreateForSynchronousRendererCommit(
            /*lcpp_hint=*/nullptr, blink::CreateDefaultRendererContentSettings(),
            /*visited_link_salt=*/std::nullopt,
            /*local_surface_id=*/std::nullopt,
@@ -65,10 +65,10 @@ index 071ca31da57247c7181465e459f3983755c2f73d..aef707c6db30715ac6bc7359e4e7ac6a
            /*force_new_document_sequence_number=*/false,
            /*navigation_metrics_token=*/base::UnguessableToken::Create(),
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index e6ae90c29b82a8353aa52dbd5407946a1167d5d7..abbdcc87ecb629b96bf50afdcbae5fe912a7a3c9 100644
+index 6d908de253338039fcc0b6618b6e0c18aacca2b2..f8a9ee3a3c6c42f917f493165fb5a249e67589d9 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -20669,51 +20669,6 @@ void RenderFrameHostImpl::GetBoundInterfacesForTesting(
+@@ -20726,51 +20726,6 @@ void RenderFrameHostImpl::GetBoundInterfacesForTesting(
        out);
  }
  
@@ -121,10 +121,10 @@ index e6ae90c29b82a8353aa52dbd5407946a1167d5d7..abbdcc87ecb629b96bf50afdcbae5fe9
  RenderFrameHostImpl::CreateAutoPipReasonCallback() {
    return base::BindRepeating(
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index 5fc1498bc06f891c3d1ce3b936218898870a930f..0bb1a27756fc102541ba11be331fce14df7c6276 100644
+index 7e846e4f47d8016a0fdbf08201a2baf593704678..1bc90a71f57b3fdd7332748191588966b8c66ac8 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
-@@ -331,10 +331,6 @@ typedef base::RepeatingCallback<
+@@ -334,10 +334,6 @@ typedef base::RepeatingCallback<
      void(RenderFrameHostImpl*, ax::mojom::Event, int)>
      AccessibilityCallbackForTesting;
  
@@ -135,7 +135,7 @@ index 5fc1498bc06f891c3d1ce3b936218898870a930f..0bb1a27756fc102541ba11be331fce14
  class CONTENT_EXPORT RenderFrameHostImpl
      : public RenderFrameHost,
        public base::SupportsUserData,
-@@ -3338,15 +3334,8 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -3143,15 +3139,8 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // this instance's AXNodeIdDelegate implementation.
    size_t GetAxUniqueIdCountForTesting() const { return ax_unique_ids_.size(); }
  

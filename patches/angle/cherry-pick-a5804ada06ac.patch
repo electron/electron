@@ -54,7 +54,7 @@ index ee4a40b7bae44daa9f2be270120b67e713ba9b53..82506cfa4546204e7d514e8f5bdf8b2e
          {
              "name": "recreate_immutable_texture_on_base_level_increase",
 diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
-index dd75bc80c3d19aa00a1ec4c749fdf43b7596ff24..cd3b9dcb78d517c3913f2268e9a66d5b86170695 100644
+index 7f5b170d45555f2092e68a9470829b60b8262690..73d8c9692e9b4d2610894a890f7fd1bd5b7222a2 100644
 --- a/src/libANGLE/renderer/gl/TextureGL.cpp
 +++ b/src/libANGLE/renderer/gl/TextureGL.cpp
 @@ -881,6 +881,13 @@ angle::Result TextureGL::setCompressedImage(const gl::Context *context,
@@ -81,7 +81,7 @@ index dd75bc80c3d19aa00a1ec4c749fdf43b7596ff24..cd3b9dcb78d517c3913f2268e9a66d5b
          ANGLE_TRY(setBaseLevel(context, 0));
      }
 diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
-index 748410ce099fcfb8a9b0d5ad3806d2d3f98310cc..438e74245582d0dffae42dc814794a4e392e35ce 100644
+index 13ff8c97a9ff18c9a818b04d5cb0642475c31dbe..558a8721cdce46a90d935aed99d292fb6adf124e 100644
 --- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
 +++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
 @@ -2403,7 +2403,7 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
@@ -94,10 +94,10 @@ index 748410ce099fcfb8a9b0d5ad3806d2d3f98310cc..438e74245582d0dffae42dc814794a4e
                              IsPowerVR(vendor));
      ANGLE_FEATURE_CONDITION(features, resetTexStorage2DBaseLevel, IsPowerVR(vendor));
 diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
-index a2e569d6651f5b8eba71c3933150134b81b921cf..3e7f85122f83d6d890473fbdee1bc21fa77dff5f 100644
+index a92e4e8342346af0c3f6a045ed8ff554b03a2578..59ccf3c2e867863b66e2eaf14d7072568d9fdb53 100644
 --- a/src/tests/gl_tests/TextureTest.cpp
 +++ b/src/tests/gl_tests/TextureTest.cpp
-@@ -12355,15 +12355,57 @@ TEST_P(Texture2DTestES3, ASTCDecodeModeDrawTexture)
+@@ -12472,15 +12472,57 @@ TEST_P(Texture2DTestES3, ASTCDecodeModeDrawTexture)
      }
  }
  
@@ -162,7 +162,7 @@ index a2e569d6651f5b8eba71c3933150134b81b921cf..3e7f85122f83d6d890473fbdee1bc21f
  out vec2 uv;
  void main()
  {
-@@ -12372,7 +12414,7 @@ void main()
+@@ -12489,7 +12531,7 @@ void main()
      gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
  })";
  
@@ -171,7 +171,7 @@ index a2e569d6651f5b8eba71c3933150134b81b921cf..3e7f85122f83d6d890473fbdee1bc21f
  precision highp float;
  uniform sampler2D t;
  in vec2 uv;
-@@ -12382,85 +12424,96 @@ void main()
+@@ -12499,85 +12541,96 @@ void main()
      c = texture(t, uv);
  })";
  
@@ -335,7 +335,7 @@ index a2e569d6651f5b8eba71c3933150134b81b921cf..3e7f85122f83d6d890473fbdee1bc21f
  }
  
  // Test that the selected decode precision is actually used for texture decoding.
-@@ -25095,6 +25148,9 @@ ANGLE_INSTANTIATE_TEST_ES3_AND(
+@@ -25212,6 +25265,9 @@ ANGLE_INSTANTIATE_TEST_ES3_AND(
      ES3_OPENGL().enable(Feature::UseTexSubImageForClientDataNpotUploads),
      ES3_OPENGLES().enable(Feature::UseTexSubImageForClientDataNpotUploads));
  
@@ -346,10 +346,10 @@ index a2e569d6651f5b8eba71c3933150134b81b921cf..3e7f85122f83d6d890473fbdee1bc21f
  ANGLE_INSTANTIATE_TEST(TextureSizeLimitTest,
                         ES2_D3D11().enable(Feature::LimitMaxTextureBytesTo1MB),
 diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
-index abe5de9d0f7bc125435686077931431b24c414fd..c45ec9f8a7661e4d49be777c61f0fa98ef305a73 100644
+index 15187b8fd5d622c16b6b494da07c9c96d30d0ee6..d8d24f3d5f837d20bb23196d52046338e44fb303 100644
 --- a/util/autogen/angle_features_autogen.cpp
 +++ b/util/autogen/angle_features_autogen.cpp
-@@ -313,7 +313,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+@@ -315,7 +315,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
      {Feature::RemoveInvariantAndCentroidForESSL3, "removeInvariantAndCentroidForESSL3"},
      {Feature::RequireGpuFamily2, "requireGpuFamily2"},
      {Feature::RescopeGlobalVariables, "rescopeGlobalVariables"},
@@ -359,10 +359,10 @@ index abe5de9d0f7bc125435686077931431b24c414fd..c45ec9f8a7661e4d49be777c61f0fa98
      {Feature::ResetTexImage2DBaseLevel, "resetTexImage2DBaseLevel"},
      {Feature::ResetTexStorage2DBaseLevel, "resetTexStorage2DBaseLevel"},
 diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
-index f36324b60854d1ee283bf1d4025e34f8d3d7867e..4cd8d66e2c666da15cdbaff825c8fc7f3c10b4bc 100644
+index 7cd51664272931211af4ca1a90df9ee60fd70cc9..a06aa6648f3f0a6f431fb45e4484e7c347ca2bda 100644
 --- a/util/autogen/angle_features_autogen.h
 +++ b/util/autogen/angle_features_autogen.h
-@@ -313,7 +313,7 @@ enum class Feature
+@@ -315,7 +315,7 @@ enum class Feature
      RemoveInvariantAndCentroidForESSL3,
      RequireGpuFamily2,
      RescopeGlobalVariables,

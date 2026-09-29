@@ -15,10 +15,10 @@ Commit-Queue: Matthias Liedtke <mliedtke@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#109855}
 
 diff --git a/src/compiler/backend/x64/instruction-selector-x64.cc b/src/compiler/backend/x64/instruction-selector-x64.cc
-index f6162dc26fcf56559a2ef0b844788ae52e214a14..5716fe1dd80a72fc72e165b406bfa2befeb45d06 100644
+index 6add50e5894578930bfbb36365b4173ea5ac6ba2..af76d6991e42eb4b42f694657c79bee8033fac1f 100644
 --- a/src/compiler/backend/x64/instruction-selector-x64.cc
 +++ b/src/compiler/backend/x64/instruction-selector-x64.cc
-@@ -2271,10 +2271,10 @@ void InstructionSelector::VisitInt32Sub(OpIndex node) {
+@@ -2272,10 +2272,10 @@ void InstructionSelector::VisitInt32Sub(OpIndex node) {
    if (g.CanBeImmediate(right)) {
      int32_t imm = g.GetImmediateIntegerValue(right);
      if (imm == 0) {

@@ -75,10 +75,10 @@ index 7e2bf39dd0118705a54292a23b37838d6bb153f7..04938c6759e18ea0d0a144dad9c99e60
    DCHECK(options_->filters.has_value() || options_->accept_all_advertisements);
  }
 diff --git a/content/browser/bluetooth/advertisement_client.h b/content/browser/bluetooth/advertisement_client.h
-index 5e3893ba51c4df8109dc89731d8f930ce0d3d34d..1bb918a0e9a2beda3ad6335d84b5ee282ad00101 100644
+index 2d9afa1f7d0a2578f1d0b728d4a29634a22c37c5..976de0ae718f7c0dccabef8376e75e141bbe8e31 100644
 --- a/content/browser/bluetooth/advertisement_client.h
 +++ b/content/browser/bluetooth/advertisement_client.h
-@@ -28,7 +28,9 @@ class WebBluetoothServiceImpl::AdvertisementClient {
+@@ -29,7 +29,9 @@ class WebBluetoothServiceImpl::AdvertisementClient {
    bool is_connected() { return client_remote_.is_connected(); }
  
    void RunCallback(blink::mojom::WebBluetoothResult result) {

@@ -33,7 +33,7 @@ Commit-Queue: Charlie Reis <creis@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1699247}
 
 diff --git a/content/browser/bad_message.h b/content/browser/bad_message.h
-index 03bc80189bc2cbfb67a31cd20d6f10684973c49f..6ba399bd0a343b7d06f5a3e1e0706ae7b8f9a6d4 100644
+index af993c2932a591991544ad6443d4dc4cb9cefa95..a2a43561e7741a374d1e4eeb25a8149aff2758be 100644
 --- a/content/browser/bad_message.h
 +++ b/content/browser/bad_message.h
 @@ -397,8 +397,8 @@ enum BadMessageReason {
@@ -186,10 +186,10 @@ index 9cca5d3303a32cd1e8835a08982c8fc864547ed1..075de9646a046360bce65ab794d67a1b
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index abbdcc87ecb629b96bf50afdcbae5fe912a7a3c9..fc4d1d9f4c43a7785daddea6b0cbd930278f654c 100644
+index f8a9ee3a3c6c42f917f493165fb5a249e67589d9..871ea0049dea53653504ad77c06568fd9d9be418 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -13819,6 +13819,18 @@ bool RenderFrameHostImpl::IsStorageAccessRestricted() {
+@@ -13811,6 +13811,18 @@ bool RenderFrameHostImpl::IsStorageAccessRestricted() {
  void RenderFrameHostImpl::BindBlobUrlStoreAssociatedReceiver(
      mojo::PendingAssociatedReceiver<blink::mojom::BlobURLStore> receiver) {
    CHECK_CURRENTLY_ON(BrowserThread::UI);
@@ -208,7 +208,7 @@ index abbdcc87ecb629b96bf50afdcbae5fe912a7a3c9..fc4d1d9f4c43a7785daddea6b0cbd930
  
    auto* storage_partition_impl =
        static_cast<StoragePartitionImpl*>(GetStoragePartition());
-@@ -13862,6 +13874,16 @@ void RenderFrameHostImpl::BindBlobUrlStoreAssociatedReceiver(
+@@ -13854,6 +13866,16 @@ void RenderFrameHostImpl::BindBlobUrlStoreAssociatedReceiver(
  void RenderFrameHostImpl::BindBlobUrlStoreReceiver(
      mojo::PendingReceiver<blink::mojom::BlobURLStore> receiver) {
    CHECK_CURRENTLY_ON(BrowserThread::UI);
@@ -226,10 +226,10 @@ index abbdcc87ecb629b96bf50afdcbae5fe912a7a3c9..fc4d1d9f4c43a7785daddea6b0cbd930
    auto* storage_partition_impl =
        static_cast<StoragePartitionImpl*>(GetStoragePartition());
 diff --git a/third_party/blink/common/features.cc b/third_party/blink/common/features.cc
-index 3d64f83370900259ac06c61a7b3eea989e2ec263..33cca4981eb42bd1c963286846580db14f32a3ed 100644
+index 29a486746be1cc10b9a2e7609b9f5e9428d9a681..5b5da8c8f1715f29c3afeba2664a9068c3d72bc3 100644
 --- a/third_party/blink/common/features.cc
 +++ b/third_party/blink/common/features.cc
-@@ -589,6 +589,10 @@ BASE_FEATURE(kEnableDevtoolsDeepLinkViaExtensibilityApi,
+@@ -587,6 +587,10 @@ BASE_FEATURE(kEnableDevtoolsDeepLinkViaExtensibilityApi,
  BASE_FEATURE(kEnforceNoopenerOnBlobURLNavigation,
               base::FEATURE_ENABLED_BY_DEFAULT);
  
@@ -241,10 +241,10 @@ index 3d64f83370900259ac06c61a7b3eea989e2ec263..33cca4981eb42bd1c963286846580db1
               base::FEATURE_DISABLED_BY_DEFAULT);
  
 diff --git a/third_party/blink/public/common/features.h b/third_party/blink/public/common/features.h
-index b7b959d307e997fd485bf8e0e98cd79403c4bd12..407bda606533a158c8d495f1154ef15596192302 100644
+index f90e5776da674136450e6ff286ce8e08fb72e0bd..8d4500ebab48063adc6a9d3354bf49bb3414f3ff 100644
 --- a/third_party/blink/public/common/features.h
 +++ b/third_party/blink/public/common/features.h
-@@ -416,6 +416,7 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
+@@ -412,6 +412,7 @@ BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(
      kEnableDevtoolsDeepLinkViaExtensibilityApi);
  
  BLINK_COMMON_EXPORT BASE_DECLARE_FEATURE(kEnforceNoopenerOnBlobURLNavigation);
@@ -420,7 +420,7 @@ index 1463601d899229df01c8fdbabe1a33a7e8bf852e..daa3986e12fda0ef3ed697bdcf222c1f
  }
  
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index c1278956cd2e25acdeaf1f210431225070e6e264..3b32fcaf3a3ce4332e3ba0441d583a71c214830e 100644
+index 5bfe4ae008c99f42a53644bc17e014c9ea7664be..16ef083653ea901d0d08c4686f5cfe1327b7c236 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
 @@ -4342,6 +4342,10 @@ void LocalFrame::WriteIntoTrace(perfetto::TracedValue ctx) const {
@@ -471,7 +471,7 @@ index 6659b0a84b3152b85dbed734c0068420fc5cd8df..bfd06b6c9483a81d25dc25fb186d3961
        blob_url_store_pending_remote_;
  };
 diff --git a/tools/metrics/histograms/metadata/stability/enums.xml b/tools/metrics/histograms/metadata/stability/enums.xml
-index 80f16b46a8b319aa4e7953495f760b43e2d06fa3..0db1e7dba8d778532c79b4394b7be9c82824ae86 100644
+index 24c9dfa829fadbfcfaa22332cb54ff1fefef96a2..fd17864cd2361ab16da484420379f79133f2189d 100644
 --- a/tools/metrics/histograms/metadata/stability/enums.xml
 +++ b/tools/metrics/histograms/metadata/stability/enums.xml
 @@ -549,10 +549,8 @@ Called by update_bad_message_reasons.py.-->

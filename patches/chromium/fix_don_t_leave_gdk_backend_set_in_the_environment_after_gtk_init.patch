@@ -14,10 +14,10 @@ GtkInitFromCommandLine() instead, as is already done for GDK_GL.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/8468407
 
 diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
-index 7c1861c59c7c03c31087de8580c4b3eed0d0cd6c..e822a1c78c7acef99440e7b79933c516dde7b821 100644
+index 7d02b055578ee2be1fb2396000408460d95ae901..f6aef0912cf19a0674de3e0dae1cd2b937922271 100644
 --- a/ui/gtk/gtk_ui.cc
 +++ b/ui/gtk/gtk_ui.cc
-@@ -160,6 +160,17 @@ gfx::FontRenderParams GetGtkFontRenderParams() {
+@@ -161,6 +161,17 @@ gfx::FontRenderParams GetGtkFontRenderParams() {
    return params;
  }
  
@@ -35,7 +35,7 @@ index 7c1861c59c7c03c31087de8580c4b3eed0d0cd6c..e822a1c78c7acef99440e7b79933c516
  std::unique_ptr<GtkUiPlatform> CreateGtkUiPlatform(ui::LinuxUiBackend backend) {
    switch (backend) {
      case ui::LinuxUiBackend::kStub:
-@@ -362,10 +373,18 @@ bool GtkUi::Initialize() {
+@@ -365,10 +376,18 @@ bool GtkUi::Initialize() {
    if (!GtkCheckVersion(4) && !env->HasVar(kGdkGl)) {
      disable_gdk_gl_probe.emplace(kGdkGl, "disable");
    }

@@ -20,10 +20,10 @@ Commit-Queue: Daniel Lehmann <dlehmann@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#109824}
 
 diff --git a/src/execution/frames.cc b/src/execution/frames.cc
-index 496c91d4ee73c3526baec264f390cd430a548022..b76ee73369064a39ead01ab8a19b2822c9e74ce9 100644
+index 9241e8eaa2a06319444d807ef0f784fa130f8485..329e0bb86f9935f0d508f6fdeda146c534d25e90 100644
 --- a/src/execution/frames.cc
 +++ b/src/execution/frames.cc
-@@ -3973,6 +3973,11 @@ Address WasmLiftoffSetupFrame::CallingPC() const {
+@@ -3974,6 +3974,11 @@ Address WasmLiftoffSetupFrame::CallingPC() const {
        fp() + WasmLiftoffSetupFrameConstants::kCallingPCOffset));
  }
  
@@ -49,10 +49,10 @@ index 78da70ad89e78f7e0a3a8c3a71874a3d3dc961a5..f7662c656feaa03a77425428b2b06919
    friend class StackFrameIteratorBase;
  };
 diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
-index 79d55c1b533bb2942329a518be312dfcfce2fd96..75f794ee5ba266747a772a5800b7412fa026c745 100644
+index 022628055624503249e0d0ca287cfd8259ab446b..0b9882c5b75cda01a179242e77315b2c7990d366 100644
 --- a/test/mjsunit/mjsunit.status
 +++ b/test/mjsunit/mjsunit.status
-@@ -2766,6 +2766,7 @@
+@@ -2945,6 +2945,7 @@
    'regress/wasm/regress-455832038': [SKIP],
    'regress/wasm/regress-483269968': [SKIP],
    'regress/wasm/regress-543901836': [SKIP],

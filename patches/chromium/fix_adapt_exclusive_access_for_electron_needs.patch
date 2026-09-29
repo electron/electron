@@ -154,10 +154,10 @@ index 1e0d6650245c12c2320a7cbc5157d8e24bc45b76..5451864c5768d68d53a6cb23c6de4f3a
    if (!weak_ptr) {
      return;
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.h b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
-index 902872e60f6bfaf3e81d306ae2ce4d9b606c5b7b..f61a308c2d261f2fd8fdb6db867e9de52a9e7882 100644
+index 35b8dac847f55042ed84c60e112184d9a30c5f40..2e307957e9305f273660bcd61fe993f9f3dae597 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.h
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.h
-@@ -273,7 +273,7 @@ class FullscreenController : public ExclusiveAccessControllerBase {
+@@ -277,7 +277,7 @@ class FullscreenController : public ExclusiveAccessControllerBase {
    // Set of parameters used to enter fullscreen
    std::optional<FullscreenTabParams> fullscreen_parameters_;
  
