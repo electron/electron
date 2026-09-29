@@ -924,7 +924,7 @@ describe('cpp heap', () => {
         const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
 
         const previousViews: WeakRef<Electron.WebContentsView>[] = [];
-        let view: Electron.WebContentsView | null = new WebContentsView();
+        let view: Electron.WebContentsView | null = new WebContentsView() as Electron.WebContentsView;
         previousViews.push(new WeakRef(view));
         const webContents = view.webContents;
         for (let i = 0; i < 20; ++i) {
@@ -932,7 +932,7 @@ describe('cpp heap', () => {
           // task, before the collected view's native peer is released.
           view = null;
           v8Util.requestGarbageCollectionForTesting();
-          view = new WebContentsView({ webContents });
+          view = new WebContentsView({ webContents }) as Electron.WebContentsView;
           previousViews.push(new WeakRef(view));
           await new Promise((resolve) => setTimeout(resolve, 0));
           if (webContents.isDestroyed()) break;

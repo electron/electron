@@ -1,4 +1,5 @@
-import { BaseWindow, ImageView, nativeImage, View, WebContentsView } from 'electron/main';
+import { nativeImage } from 'electron/common';
+import { BaseWindow, ImageView, View, WebContentsView } from 'electron/main';
 
 import { expect } from 'chai';
 
