@@ -239,6 +239,8 @@ v8::Local<v8::Value> GetUploadedReports(v8::Isolate* isolate) {
 void SetUploadToServer(bool upload) {
 #if !IS_MAS_BUILD()
   ElectronCrashReporterClient::Get()->SetCollectStatsConsent(upload);
+  // Reads the consent set above back through IsRunningUnattended().
+  crash_reporter::SetUploadConsent(upload);
 #endif
 }
 

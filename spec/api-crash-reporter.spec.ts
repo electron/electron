@@ -87,7 +87,9 @@ const startServer = async () => {
       const reportId = Math.random().toString(16).split('.')[1].padStart(16, '0');
       res.end(reportId, async () => {
         req.socket.destroy();
-        emitter.emit('crash', { ...fields, ...files });
+        const crash = { ...fields, ...files } as CrashInfo;
+        crashes.push(crash);
+        emitter.emit('crash', crash);
       });
     });
     req.pipe(busboy);
@@ -462,6 +464,20 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
     // wait a sec in case the crash reporter is about to upload a crash
     await setTimeout(1000);
     expect(getCrashes()).to.have.length(0);
+  });
+
+  ifit(!isWindowsOnArm)('should not send a minidump when setUploadToServer(false) is called after start', async () => {
+    const { port, getCrashes } = await startServer();
+    await runCrashApp('main', port, ['--set-upload-to-server=false']);
+    await setTimeout(2000);
+    expect(getCrashes()).to.have.length(0);
+  });
+
+  ifit(!isWindowsOnArm)('should send a minidump when setUploadToServer(true) is called after start', async () => {
+    const { port, waitForCrash } = await startServer();
+    runCrashApp('main', port, ['--no-upload', '--set-upload-to-server=true']);
+    const crash = await waitForCrash();
+    checkCrash('browser', crash);
   });
 
   describe('getUploadedReports', () => {
