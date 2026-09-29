@@ -103,6 +103,8 @@ const ops = {
 try {
   const testing = process._linkedBinding('electron_common_testing');
   ops['native uv_timer_start from a task'] = { expect: 20, run: (done) => testing.startUvTimerFromTask(20, done) };
+  // A handle with no deadline and no watcher, started with no JS on the stack.
+  ops['native uv_check_start from a task'] = { run: (done) => testing.startUvCheckFromTask(done) };
   // uv_listen() straight from the calling frame; the other process connects.
   ops['native uv_listen'] = { registers: true, run: (done) => other.connect(testing.startUvListen(done)) };
 } catch {}
