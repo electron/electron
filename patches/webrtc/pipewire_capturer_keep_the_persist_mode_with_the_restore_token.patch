@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shelley Vohr <shelley.vohr@gmail.com>
-Date: Mon, 28 Sep 2026 21:53:14 +0000
+Date: Tue, 29 Sep 2026 17:29:19 +0000
 Subject: PipeWire capturer: keep the persist mode with the restore token
 
 BaseCapturerPipeWire always asks the ScreenCast portal for
@@ -27,6 +27,11 @@ use and says to continue with the one Start returns.
 xdg-desktop-portal 1.18 returns the same string, so keeping the first
 one has not mattered there.
 
+The enum moves from ScreenCastPortal to
+modules/portal/screencast_persist_mode.h, with
+ScreenCastPortal::PersistMode kept as an alias, so that
+restore_token_manager.h does not have to include screencast_portal.h.
+
 An embedder can seed an entry with kPersistent (and a token saved from
 an earlier run, if it has one) under a SourceId, either a new one from
 GetUnusedId() or the one a capturer reports in GetSourceList(), call
@@ -48,10 +53,10 @@ Backport of https://webrtc-review.googlesource.com/c/src/+/505860.
 This patch can be removed once that CL rolls into Chromium.
 
 diff --git a/modules/desktop_capture/BUILD.gn b/modules/desktop_capture/BUILD.gn
-index 203ae5274524a4502866320268d831b9030c218e..a14dd0d2764b8cb7d6aedf83fdfe9a89357e10b7 100644
+index 203ae5274524a4502866320268d831b9030c218e..5247ec01c5fabb6750f8c5fabce6fc570014b77c 100644
 --- a/modules/desktop_capture/BUILD.gn
 +++ b/modules/desktop_capture/BUILD.gn
-@@ -139,6 +139,16 @@ if (rtc_include_tests) {
+@@ -139,6 +139,17 @@ if (rtc_include_tests) {
    }
  
    if ((is_linux || is_chromeos) && rtc_use_pipewire) {
@@ -62,13 +67,14 @@ index 203ae5274524a4502866320268d831b9030c218e..a14dd0d2764b8cb7d6aedf83fdfe9a89
 +        ":desktop_capture",
 +        ":primitives",
 +        "../../test:test_support",
++        "../portal",
 +      ]
 +    }
 +
      rtc_test("shared_screencast_stream_test") {
        testonly = true
  
-@@ -517,6 +527,9 @@ if (rtc_include_tests) {
+@@ -517,6 +528,9 @@ if (rtc_include_tests) {
        ":screen_capturer_helper_unittest",
        ":test_utils_unittest",
      ]
@@ -110,14 +116,14 @@ index 7e64c86d84285bd3c68de57cc8fc998abd34a9ee..ae6f04fc9b75862e076a0c6ce70e2567
  
    is_portal_open_ = true;
 diff --git a/modules/desktop_capture/linux/wayland/restore_token_manager.cc b/modules/desktop_capture/linux/wayland/restore_token_manager.cc
-index 101a5af4b391ac16e1552d292139c1f138e7ff65..3f740a3df6e3cdbe91fcb2a31637460b5b8132e7 100644
+index 101a5af4b391ac16e1552d292139c1f138e7ff65..e53f03e711df73deb34a9b1233b0ba96d2d3c62a 100644
 --- a/modules/desktop_capture/linux/wayland/restore_token_manager.cc
 +++ b/modules/desktop_capture/linux/wayland/restore_token_manager.cc
 @@ -13,6 +13,7 @@
  #include <string>
  
  #include "modules/desktop_capture/desktop_capturer.h"
-+#include "modules/desktop_capture/linux/wayland/screencast_portal.h"
++#include "modules/portal/screencast_persist_mode.h"
  #include "rtc_base/synchronization/mutex.h"
  
  namespace webrtc {
@@ -130,7 +136,7 @@ index 101a5af4b391ac16e1552d292139c1f138e7ff65..3f740a3df6e3cdbe91fcb2a31637460b
 +void RestoreTokenManager::AddToken(
 +    DesktopCapturer::SourceId id,
 +    const std::string& token,
-+    ScreenCastPortal::PersistMode persist_mode) {
++    xdg_portal::ScreenCastPersistMode persist_mode) {
    MutexLock lock(&mutex_);
 -  restore_tokens_.insert({id, token});
 +  restore_tokens_[id] = {.token = token, .persist_mode = persist_mode};
@@ -148,14 +154,14 @@ index 101a5af4b391ac16e1552d292139c1f138e7ff65..3f740a3df6e3cdbe91fcb2a31637460b
  
  DesktopCapturer::SourceId RestoreTokenManager::GetUnusedId() {
 diff --git a/modules/desktop_capture/linux/wayland/restore_token_manager.h b/modules/desktop_capture/linux/wayland/restore_token_manager.h
-index 120a4b2fe84e4cbe67fbbe4d1d73704faf021dc6..1f4172e8cc6ea91f19d3f9b4b418e8a724c26d7c 100644
+index 120a4b2fe84e4cbe67fbbe4d1d73704faf021dc6..fd3c75436f427367077d7e04c28a5170133d6cf9 100644
 --- a/modules/desktop_capture/linux/wayland/restore_token_manager.h
 +++ b/modules/desktop_capture/linux/wayland/restore_token_manager.h
 @@ -15,20 +15,40 @@
  #include <unordered_map>
  
  #include "modules/desktop_capture/desktop_capturer.h"
-+#include "modules/desktop_capture/linux/wayland/screencast_portal.h"
++#include "modules/portal/screencast_persist_mode.h"
  #include "rtc_base/synchronization/mutex.h"
 +#include "rtc_base/system/rtc_export.h"
  #include "rtc_base/thread_annotations.h"
@@ -167,14 +173,14 @@ index 120a4b2fe84e4cbe67fbbe4d1d73704faf021dc6..1f4172e8cc6ea91f19d3f9b4b418e8a7
 +// ScreenCast portal restore token for that source, so that another capturer
 +// selecting the same SourceId can restore the session without showing the
 +// portal dialog again. An embedder that keeps tokens across runs can seed an
-+// entry with PersistMode::kPersistent, select that SourceId before Start() and
-+// read the token back after the capture has started.
++// entry with ScreenCastPersistMode::kPersistent, select that SourceId before
++// Start() and read the token back after the capture has started.
 +class RTC_EXPORT RestoreTokenManager {
   public:
 +  struct Entry {
 +    std::string token;
-+    ScreenCastPortal::PersistMode persist_mode =
-+        ScreenCastPortal::PersistMode::kTransient;
++    xdg_portal::ScreenCastPersistMode persist_mode =
++        xdg_portal::ScreenCastPersistMode::kTransient;
 +  };
 +
    RestoreTokenManager(const RestoreTokenManager& manager) = delete;
@@ -189,8 +195,8 @@ index 120a4b2fe84e4cbe67fbbe4d1d73704faf021dc6..1f4172e8cc6ea91f19d3f9b4b418e8a7
 +  // may be empty to only request `persist_mode` for `id`.
 +  void AddToken(DesktopCapturer::SourceId id,
 +                const std::string& token,
-+                ScreenCastPortal::PersistMode persist_mode =
-+                    ScreenCastPortal::PersistMode::kTransient);
++                xdg_portal::ScreenCastPersistMode persist_mode =
++                    xdg_portal::ScreenCastPersistMode::kTransient);
 +  Entry GetEntry(DesktopCapturer::SourceId id);
  
    // Returns a source ID which does not have any token associated with it yet.
@@ -206,7 +212,7 @@ index 120a4b2fe84e4cbe67fbbe4d1d73704faf021dc6..1f4172e8cc6ea91f19d3f9b4b418e8a7
  
 diff --git a/modules/desktop_capture/linux/wayland/restore_token_manager_unittest.cc b/modules/desktop_capture/linux/wayland/restore_token_manager_unittest.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..2e28d77d2089c4749af6a685c44a22f45f389674
+index 0000000000000000000000000000000000000000..70869707a6a3d135dcd24acea26abfb3238183ae
 --- /dev/null
 +++ b/modules/desktop_capture/linux/wayland/restore_token_manager_unittest.cc
 @@ -0,0 +1,48 @@
@@ -223,12 +229,12 @@ index 0000000000000000000000000000000000000000..2e28d77d2089c4749af6a685c44a22f4
 +#include "modules/desktop_capture/linux/wayland/restore_token_manager.h"
 +
 +#include "modules/desktop_capture/desktop_capturer.h"
-+#include "modules/desktop_capture/linux/wayland/screencast_portal.h"
++#include "modules/portal/screencast_persist_mode.h"
 +#include "test/gtest.h"
 +
 +namespace webrtc {
 +
-+using PersistMode = ScreenCastPortal::PersistMode;
++using PersistMode = xdg_portal::ScreenCastPersistMode;
 +
 +TEST(RestoreTokenManagerTest, UnknownIdIsTransientWithoutToken) {
 +  RestoreTokenManager& manager = RestoreTokenManager::GetInstance();
@@ -259,10 +265,40 @@ index 0000000000000000000000000000000000000000..2e28d77d2089c4749af6a685c44a22f4
 +
 +}  // namespace webrtc
 diff --git a/modules/desktop_capture/linux/wayland/screencast_portal.h b/modules/desktop_capture/linux/wayland/screencast_portal.h
-index 27b01a42f648b9622fa742f53ebf26a66718b27b..64e724d76733a06d24236def567a7ccf4df6823c 100644
+index 27b01a42f648b9622fa742f53ebf26a66718b27b..c21460090e52ff3b89feb4a272fb17d57c2255c4 100644
 --- a/modules/desktop_capture/linux/wayland/screencast_portal.h
 +++ b/modules/desktop_capture/linux/wayland/screencast_portal.h
-@@ -125,6 +125,7 @@ class RTC_EXPORT ScreenCastPortal
+@@ -24,6 +24,7 @@
+ #include "modules/portal/pipewire_utils.h"
+ #include "modules/portal/portal_guard.h"
+ #include "modules/portal/portal_request_response.h"
++#include "modules/portal/screencast_persist_mode.h"
+ #include "modules/portal/xdg_session_details.h"
+ #include "rtc_base/system/rtc_export.h"
+ 
+@@ -57,20 +58,7 @@ class RTC_EXPORT ScreenCastPortal
+     kMetadata = 0b100
+   };
+ 
+-  // Values are set based on persist mode property in
+-  // xdg-desktop-portal/screencast
+-  // https://github.com/flatpak/xdg-desktop-portal/blob/main/data/org.freedesktop.portal.ScreenCast.xml
+-  enum class PersistMode : uint32_t {
+-    // Do not allow to restore stream
+-    kDoNotPersist = 0b00,
+-    // The restore token is valid as long as the application is alive. It's
+-    // stored in memory and revoked when the application closes its DBus
+-    // connection
+-    kTransient = 0b01,
+-    // The restore token is stored in disk and is valid until the user manually
+-    // revokes it
+-    kPersistent = 0b10
+-  };
++  using PersistMode = xdg_portal::ScreenCastPersistMode;
+ 
+   // Interface that must be implemented by the ScreenCastPortal consumers.
+   class PortalNotifier {
+@@ -125,6 +113,7 @@ class RTC_EXPORT ScreenCastPortal
  
    // ScreenCast specific methods for stream restoration
    void SetPersistMode(ScreenCastPortal::PersistMode mode);
@@ -270,3 +306,58 @@ index 27b01a42f648b9622fa742f53ebf26a66718b27b..64e724d76733a06d24236def567a7ccf
    void SetRestoreToken(const std::string& token);
    std::string RestoreToken() const;
  
+diff --git a/modules/portal/BUILD.gn b/modules/portal/BUILD.gn
+index d9c53b9d237c8f1f527ab404bb22c2e1897046c8..7fa6ae078ef7dec8d04fbe19f0a18f9f2801c86b 100644
+--- a/modules/portal/BUILD.gn
++++ b/modules/portal/BUILD.gn
+@@ -101,6 +101,7 @@ if ((is_linux || is_chromeos) && rtc_use_pipewire) {
+       "portal_request_response.h",
+       "scoped_glib.cc",
+       "scoped_glib.h",
++      "screencast_persist_mode.h",
+       "xdg_desktop_portal_utils.cc",
+       "xdg_desktop_portal_utils.h",
+       "xdg_session_details.h",
+diff --git a/modules/portal/screencast_persist_mode.h b/modules/portal/screencast_persist_mode.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..1d89c4bc17797691c4dccfea572d843e7cbb10c1
+--- /dev/null
++++ b/modules/portal/screencast_persist_mode.h
+@@ -0,0 +1,37 @@
++/*
++ *  Copyright 2026 The WebRTC project authors. All Rights Reserved.
++ *
++ *  Use of this source code is governed by a BSD-style license
++ *  that can be found in the LICENSE file in the root of the source
++ *  tree. An additional intellectual property rights grant can be found
++ *  in the file PATENTS.  All contributing project authors may
++ *  be found in the AUTHORS file in the root of the source tree.
++ */
++
++#ifndef MODULES_PORTAL_SCREENCAST_PERSIST_MODE_H_
++#define MODULES_PORTAL_SCREENCAST_PERSIST_MODE_H_
++
++#include <cstdint>
++
++namespace webrtc {
++namespace xdg_portal {
++
++// Values are set based on persist mode property in
++// xdg-desktop-portal/screencast
++// https://github.com/flatpak/xdg-desktop-portal/blob/main/data/org.freedesktop.portal.ScreenCast.xml
++enum class ScreenCastPersistMode : uint32_t {
++  // Do not allow to restore stream
++  kDoNotPersist = 0b00,
++  // The restore token is valid as long as the application is alive. It's
++  // stored in memory and revoked when the application closes its DBus
++  // connection
++  kTransient = 0b01,
++  // The restore token is stored in disk and is valid until the user manually
++  // revokes it
++  kPersistent = 0b10
++};
++
++}  // namespace xdg_portal
++}  // namespace webrtc
++
++#endif  // MODULES_PORTAL_SCREENCAST_PERSIST_MODE_H_

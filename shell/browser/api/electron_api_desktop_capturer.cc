@@ -58,7 +58,7 @@
 #if defined(WEBRTC_USE_PIPEWIRE)
 #include "base/uuid.h"
 #include "third_party/webrtc/modules/desktop_capture/linux/wayland/restore_token_manager.h"
-#include "third_party/webrtc/modules/desktop_capture/linux/wayland/screencast_portal.h"
+#include "third_party/webrtc/modules/portal/screencast_persist_mode.h"
 #endif
 
 namespace {
@@ -176,8 +176,8 @@ std::unique_ptr<ThumbnailCapturer> WrapCapturer(
         base::Uuid::ParseCaseInsensitive(restore_token).is_valid();
     webrtc::RestoreTokenManager::GetInstance().AddToken(
         sources[0].id, is_uuid ? restore_token : std::string(),
-        persistent ? webrtc::ScreenCastPortal::PersistMode::kPersistent
-                   : webrtc::ScreenCastPortal::PersistMode::kTransient);
+        persistent ? webrtc::xdg_portal::ScreenCastPersistMode::kPersistent
+                   : webrtc::xdg_portal::ScreenCastPersistMode::kTransient);
     capturer->SelectSource(sources[0].id);
   }
 #endif
