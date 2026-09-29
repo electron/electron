@@ -2,6 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <string_view>
 #include <utility>
 
 #include "shell/app/electron_library_main.h"
@@ -16,12 +17,28 @@
 #include "content/public/app/content_main.h"
 #include "electron/fuses.h"
 #include "shell/app/electron_main_delegate.h"
+#include "shell/app/electron_prefetch_mac.h"
 #include "shell/app/node_main.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/uv_includes.h"
 
+namespace {
+
+bool HasProcessTypeSwitch(int argc, char* argv[]) {
+  for (int i = 1; i < argc; ++i) {
+    // SAFETY: the OS guarantees that argv holds argc entries.
+    if (std::string_view(UNSAFE_BUFFERS(argv[i])).starts_with("--type="))
+      return true;
+  }
+  return false;
+}
+
+}  // namespace
+
 int ElectronMain(int argc, char* argv[]) {
+  if (!HasProcessTypeSwitch(argc, argv))
+    electron::PrefetchFrameworkFilesIfCold();
   argv = uv_setup_args(argc, argv);
   base::CommandLine::Init(argc, argv);
   electron::ElectronCommandLine::Init(argc, argv);

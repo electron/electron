@@ -15,6 +15,10 @@
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
 
+#if BUILDFLAG(IS_WIN)
+#include "ui/base/win/session_change_observer.h"
+#endif
+
 namespace gin {
 
 template <>

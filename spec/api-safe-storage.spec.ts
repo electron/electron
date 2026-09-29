@@ -174,7 +174,7 @@ describe('safeStorage module', () => {
           output += data;
         });
 
-        const [code] = await once(relaunchedAppProcess, 'exit');
+        const [code] = await once(relaunchedAppProcess, 'close');
 
         if (!output.includes('plaintext')) {
           console.log(code, output);

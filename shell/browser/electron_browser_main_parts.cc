@@ -89,16 +89,17 @@
 #include "ui/base/ime/linux/linux_input_method_context_factory.h"
 #include "ui/gtk/gtk_compat.h"  // nogncheck
 #include "ui/gtk/gtk_util.h"    // nogncheck
-#include "ui/linux/dark_mode_manager_linux.h"
 #include "ui/linux/linux_ui.h"
 #include "ui/linux/linux_ui_factory.h"
 #include "ui/linux/linux_ui_getter.h"
+#include "ui/linux/portal_settings_linux.h"
 #include "ui/ozone/public/ozone_platform.h"
 #endif
 
 #if BUILDFLAG(IS_WIN)
 #include "chrome/browser/win/chrome_select_file_dialog_factory.h"
 #include "components/os_crypt/async/browser/os_crypt_win.h"
+#include "shell/browser/win/install_dir_access.h"
 #include "ui/base/l10n/l10n_util_win.h"
 #include "ui/gfx/system_fonts_win.h"
 #include "ui/strings/grit/app_locale_settings.h"
@@ -414,6 +415,11 @@ int ElectronBrowserMainParts::PreCreateThreads() {
     layout_provider_ = std::make_unique<views::LayoutProvider>();
   }
 
+#if BUILDFLAG(IS_WIN)
+  // Before the first sandboxed child (the GPU process) is launched.
+  CheckSandboxedProcessesCanReadInstallDir();
+#endif
+
   // Fetch the system locale for Electron.
 #if BUILDFLAG(IS_MAC)
   fake_browser_process_->SetSystemLocale(GetCurrentSystemLocale());
@@ -537,7 +543,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
 
   // source theme changes from system settings, including settings portal:
   // https://flatpak.github.io/xdg-desktop-portal/#gdbus-org.freedesktop.portal.Settings
-  dark_mode_manager_ = std::make_unique<ui::DarkModeManagerLinux>();
+  portal_settings_ = std::make_unique<ui::PortalSettingsLinux>();
 
   ui::LinuxUi::SetInstance(linux_ui);
 

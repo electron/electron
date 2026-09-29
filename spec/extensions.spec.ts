@@ -1407,16 +1407,21 @@ describe('chrome extensions', () => {
       it('reload', async () => {
         await w.loadURL(url);
 
+        const finish = once(w.webContents, 'did-finish-load');
         const message = { method: 'reload' };
         w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+        await finish;
 
+        // chrome.tabs.reload() replaces the document that sent the 'reload'
+        // message, so the reply to that message races the navigation commit and
+        // is dropped when the commit wins. Ask the reloaded document instead.
         const consoleMessage = once(w.webContents, 'console-message');
-        const finish = once(w.webContents, 'did-finish-load');
+        const statusMessage = { method: 'getReloadStatus' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(statusMessage)}', '*')`);
 
-        await Promise.all([consoleMessage, finish]).then(([[{ message: responseString }]]) => {
-          const response = JSON.parse(responseString);
-          expect(response.status).to.equal('reloaded');
-        });
+        const [{ message: responseString }] = await consoleMessage;
+        const response = JSON.parse(responseString);
+        expect(response.status).to.equal('reloaded');
       });
 
       describe('update', () => {

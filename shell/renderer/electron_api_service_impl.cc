@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "gin/converter.h"
+#include "mojo/public/cpp/platform/platform_handle.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "shell/common/api/electron_api_shared_texture.h"
 #include "shell/common/gin_converters/blink_converter.h"
@@ -252,14 +253,14 @@ void ElectronApiServiceImpl::TakeHeapSnapshot(
 
   ScopedAllowBlockingForElectron allow_blocking;
 
-  base::ScopedPlatformFile platform_file;
-  if (mojo::UnwrapPlatformFile(std::move(file), &platform_file) !=
-      MOJO_RESULT_OK) {
+  mojo::PlatformHandle platform_handle =
+      mojo::UnwrapPlatformHandle(std::move(file));
+  if (!platform_handle.is_valid()) {
     LOG(ERROR) << "Unable to get the file handle from mojo.";
     std::move(callback).Run(false);
     return;
   }
-  base::File base_file(std::move(platform_file));
+  base::File base_file(platform_handle.TakePlatformFile());
 
   v8::Isolate* isolate = frame->GetAgentGroupScheduler()->Isolate();
   bool success = electron::TakeHeapSnapshot(isolate, &base_file);
@@ -327,8 +328,11 @@ void ElectronApiServiceImpl::SetVisualZoomLevelLimits(
     double min_level,
     double max_level,
     SetVisualZoomLevelLimitsCallback callback) {
-  render_frame()->GetWebFrame()->View()->SetDefaultPageScaleLimits(min_level,
-                                                                   max_level);
+  blink::WebView* web_view = render_frame()->GetWebFrame()->View();
+  web_view->SetDefaultPageScaleLimits(min_level, max_level);
+  // Without an explicit initial scale Blink starts the page at the minimum,
+  // so a minimum below 1 would shrink the page instead of only allowing it.
+  web_view->SetInitialPageScaleOverride(1.f);
   std::move(callback).Run();
 }
 

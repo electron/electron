@@ -112,7 +112,7 @@ describe('debugger module', () => {
         (globalThis as any).contents = contents;
         setImmediate(() => app.quit());
       });
-      const [code] = await once(rc.process, 'exit');
+      const [code] = await once(rc.process, 'close');
       expect(code).to.equal(0);
       expect(stdout).to.contain('debugger-detach: target closed');
     });
@@ -184,6 +184,22 @@ describe('debugger module', () => {
 
       const promise = w.webContents.debugger.sendCommand('Test');
       await expect(promise).to.be.eventually.rejectedWith(Error, "'Test' wasn't found");
+
+      w.webContents.debugger.detach();
+    });
+
+    it('rejects a non-string value for a string parameter', async () => {
+      // Sends a number for Input.dispatchKeyEvent's optional `text` string param,
+      // which must reject rather than abort the browser process. See
+      // spec/fixtures/crash-cases/debugger-send-command-wrong-type.
+      w.webContents.loadURL('about:blank');
+      w.webContents.debugger.attach();
+
+      const promise = w.webContents.debugger.sendCommand('Input.dispatchKeyEvent', {
+        type: 'keyDown',
+        text: 1 as any
+      });
+      await expect(promise).to.be.eventually.rejected();
 
       w.webContents.debugger.detach();
     });
