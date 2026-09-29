@@ -12,7 +12,7 @@ would themselves get Node integration (the main frame, or any frame with
 node_integration_in_sub_frames) hand it to their workers.
 
 diff --git a/third_party/blink/renderer/core/workers/dedicated_worker.cc b/third_party/blink/renderer/core/workers/dedicated_worker.cc
-index fb38a6694dc535889c1695199c2831799200719c..f6cf7ff64d113bba318fc1bfa8d02b4c43cd92a4 100644
+index d3f34ef2e8b21bef0a83d314003cd9d38b2d18ae..2c027c4eda25ebfdb8c54f76744f5bc2b64bfe58 100644
 --- a/third_party/blink/renderer/core/workers/dedicated_worker.cc
 +++ b/third_party/blink/renderer/core/workers/dedicated_worker.cc
 @@ -37,6 +37,7 @@
@@ -23,7 +23,7 @@ index fb38a6694dc535889c1695199c2831799200719c..f6cf7ff64d113bba318fc1bfa8d02b4c
  #include "third_party/blink/renderer/core/inspector/inspector_trace_events.h"
  #include "third_party/blink/renderer/core/inspector/main_thread_debugger.h"
  #include "third_party/blink/renderer/core/loader/document_loader.h"
-@@ -551,6 +552,17 @@ DedicatedWorker::CreateGlobalScopeCreationParams(
+@@ -552,6 +553,17 @@ DedicatedWorker::CreateGlobalScopeCreationParams(
      auto* frame = window->GetFrame();
      parent_devtools_token = frame->GetDevToolsFrameToken();
      settings = std::make_unique<WorkerSettings>(frame->GetSettings());
@@ -124,7 +124,7 @@ index 45c60dd2c44b05fdd279f759069383479823c7f2..33a2a0337efb9a46293e11d0d09b3fc1
    GenericFontFamilySettings generic_font_family_settings_;
  };
 diff --git a/third_party/blink/renderer/core/workers/worklet_global_scope.cc b/third_party/blink/renderer/core/workers/worklet_global_scope.cc
-index 9e4968b36e6324793c0bcc104caf7899359beb8c..1caf8d05b585ed5d9c986f684059c7740f031379 100644
+index c1cd4d778f3193c786ca3a5ce3dfe6b1ae55d7c6..17121252144838cc6b65f2f36461b5e9c76e7dd8 100644
 --- a/third_party/blink/renderer/core/workers/worklet_global_scope.cc
 +++ b/third_party/blink/renderer/core/workers/worklet_global_scope.cc
 @@ -32,6 +32,7 @@
@@ -147,10 +147,10 @@ index 9e4968b36e6324793c0bcc104caf7899359beb8c..1caf8d05b585ed5d9c986f684059c774
    DCHECK((thread_type_ == ThreadType::kMainThread && frame_) ||
           (thread_type_ == ThreadType::kOffMainThread && worker_thread_));
 diff --git a/third_party/blink/renderer/core/workers/worklet_global_scope.h b/third_party/blink/renderer/core/workers/worklet_global_scope.h
-index 285326d9d74fda6a725258e91c88ed4037a7ec0b..6659b0a84b3152b85dbed734c0068420fc5cd8df 100644
+index 0b71a8444f6b69f3661247b0fd77eee6071a8bbc..bfd06b6c9483a81d25dc25fb186d39613968b198 100644
 --- a/third_party/blink/renderer/core/workers/worklet_global_scope.h
 +++ b/third_party/blink/renderer/core/workers/worklet_global_scope.h
-@@ -141,6 +141,13 @@ class CORE_EXPORT WorkletGlobalScope : public WorkerOrWorkletGlobalScope {
+@@ -143,6 +143,13 @@ class CORE_EXPORT WorkletGlobalScope : public WorkerOrWorkletGlobalScope {
    // Returns the WorkletToken that uniquely identifies this worklet.
    virtual WorkletToken GetWorkletToken() const = 0;
  
@@ -164,7 +164,7 @@ index 285326d9d74fda6a725258e91c88ed4037a7ec0b..6659b0a84b3152b85dbed734c0068420
    // Returns the ExecutionContextToken that uniquely identifies the parent
    // context that created this worklet. Note that this will always be a
    // LocalFrameToken.
-@@ -209,6 +216,11 @@ class CORE_EXPORT WorkletGlobalScope : public WorkerOrWorkletGlobalScope {
+@@ -211,6 +218,11 @@ class CORE_EXPORT WorkletGlobalScope : public WorkerOrWorkletGlobalScope {
    // TODO(crbug.com/1206150): We need a spec for this capability.
    const bool parent_is_isolated_context_;
  

@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/observer_list.h"
 
 namespace electron {
@@ -53,7 +54,7 @@ class WindowList {
   [[nodiscard]] static base::ObserverList<WindowListObserver>& GetObservers();
 
   // A vector of the windows in this list, in the order they were added.
-  WindowVector windows_;
+  std::vector<raw_ptr<NativeWindow>> windows_;
 
   static WindowList* instance_;
 };

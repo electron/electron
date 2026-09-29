@@ -8,10 +8,10 @@ Subject: desktop_media_list.patch
 * Ensure "OnRefreshComplete()" even if there are no items in the list
 
 diff --git a/chrome/browser/media/webrtc/desktop_media_list.h b/chrome/browser/media/webrtc/desktop_media_list.h
-index 9a4e06d24b829ba51bf5c925e7a7290da6fad4f0..09895ccfa99999e6e0ea24a3190d3f429ee40344 100644
+index c6fb99a6ced5730a4a79089065d317f43a95fc3b..78bd7629aecddc426174e82c9e92793f5f16e3a8 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list.h
-@@ -108,7 +108,8 @@ class DesktopMediaList {
+@@ -111,7 +111,8 @@ class DesktopMediaList {
    // once per DesktopMediaList instance.  It should not be called after
    // StartUpdating(), and StartUpdating() should not be called until |callback|
    // has been called.
@@ -22,7 +22,7 @@ index 9a4e06d24b829ba51bf5c925e7a7290da6fad4f0..09895ccfa99999e6e0ea24a3190d3f42
    virtual int GetSourceCount() const = 0;
    virtual const Source& GetSource(int index) const = 0;
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index 1f25e8321301b0a5cd8703b8a4e9ec840fc0331b..f95b2230135dbcd6b19a31215d4f10be3481148c 100644
+index 9029ec72e6145a97a32bee33b646957f49d1bc0e..d8d86836ec5a323e587386389f43c570851d8455 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
 @@ -70,12 +70,12 @@ void DesktopMediaListBase::StartUpdating(DesktopMediaListObserver* observer) {
@@ -41,10 +41,10 @@ index 1f25e8321301b0a5cd8703b8a4e9ec840fc0331b..f95b2230135dbcd6b19a31215d4f10be
  
  int DesktopMediaListBase::GetSourceCount() const {
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.h b/chrome/browser/media/webrtc/desktop_media_list_base.h
-index de56c9b94f92e9abf69b1d4894e5d386cad6d3cd..f8955ef7cc43b1854b29841ed65260a1966a4b19 100644
+index 8f2b941f361fa26cb294c86304c37a2838274c33..1f264e8ba6c99941b31457f183c50530c13061c8 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.h
-@@ -39,7 +39,7 @@ class DesktopMediaListBase : public DesktopMediaList {
+@@ -37,7 +37,7 @@ class DesktopMediaListBase : public DesktopMediaList {
    void SetThumbnailSize(const gfx::Size& thumbnail_size) override;
    void SetViewDialogWindowId(content::DesktopMediaID dialog_id) override;
    void StartUpdating(DesktopMediaListObserver* observer) override;
