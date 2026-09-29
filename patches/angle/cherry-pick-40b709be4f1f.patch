@@ -1,0 +1,255 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kai Ninomiya <kainino@chromium.org>
+Date: Thu, 17 Sep 2026 06:08:28 +0000
+Subject: Add round_up_3d_texture_size_to_POT_for_limit for PowerVR
+
+PowerVR drivers have an issue which seems to be specific to 3D textures
+where they round up NPOT sizes to POT sizes before doing some size math.
+
+Bug: chromium:551673541
+Change-Id: I64a1efb7a1afb8021f80a3be3aef0f8a733104ae
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8424039
+Auto-Submit: Kai Ninomiya <kainino@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index 53de31945963c43d18649f2d31615dd36d5ba16f..c05b4eb70dc80320f57c8797a4c1f39ef6e5df54 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -290,6 +290,12 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo roundUp3dTextureSizeToPOTForLimit = {
++        "roundUp3dTextureSizeToPOTForLimit",
++        FeatureCategory::OpenGLWorkarounds,
++        &members,
++    };
++
+     FeatureInfo adjustSrcDstRegionForBlitFramebuffer = {
+         "adjustSrcDstRegionForBlitFramebuffer",
+         FeatureCategory::OpenGLWorkarounds,
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index c7d066c308f8b8cc8b39871a3db0f5454b261463..44bbfe5d0e7933e67d2dd5d9a7a552a7fe88cdbf 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -361,6 +361,15 @@
+             ],
+             "issue": "http://crbug.com/927470"
+         },
++        {
++            "name": "round_up_3d_texture_size_to_POT_for_limit",
++            "category": "Workarounds",
++            "description": [
++                "Round up 3D texture dimensions to nearest power of two before checking image allocation ",
++                "size limits to prevent mishandling of large 3D textures on older PowerVR drivers."
++            ],
++            "issue": "http://crbug.com/551673541"
++        },
+         {
+             "name": "adjust_src_dst_region_for_BlitFramebuffer",
+             "category": "Workarounds",
+diff --git a/src/libANGLE/Caps.h b/src/libANGLE/Caps.h
+index 27df7443a3dfc1dca65bbd7b773391e9e28ab865..5e6c8f4704999b4037ad0103d899d09d5aa5b105 100644
+--- a/src/libANGLE/Caps.h
++++ b/src/libANGLE/Caps.h
+@@ -161,6 +161,9 @@ struct Limitations
+     // bytes-per-pixel. 1.25Gb is chosen as a conservative limit to allow for backends to expand
+     // textures formats up to 3x and still stay within 32-bit sizes.
+     size_t maxTextureBytes = 1280 * 1024 * 1024;
++
++    // Workaround for PowerVR Rogue drivers that round up 3D texture dimensions to POT internally.
++    bool roundUp3DTextureSizeToPOTForLimit = false;
+ };
+ 
+ struct TypePrecision
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index 7fff47c1e729dd16943dee0c069656fd56a9f589..53440f2d7c336005919b406e16bd1846685337f3 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2202,6 +2202,11 @@ void GenerateCaps(const FunctionsGL *functions,
+     {
+         limitations->maxBufferBytes = 1 << 30;
+     }
++
++    if (features.roundUp3dTextureSizeToPOTForLimit.enabled)
++    {
++        limitations->roundUp3DTextureSizeToPOTForLimit = true;
++    }
+ }
+ 
+ bool GetSystemInfoVendorIDAndDeviceID(const FunctionsGL *functions,
+@@ -2416,6 +2421,8 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+     ANGLE_FEATURE_CONDITION(features, disableMSAASampleCount1, isHuaweiMaleoon);
+     ANGLE_FEATURE_CONDITION(features, limitMax3dArrayTextureSizeTo1024,
+                             isIntelLinuxLessThanKernelVersion5);
++    ANGLE_FEATURE_CONDITION(features, roundUp3dTextureSizeToPOTForLimit,
++                            isPowerVRDriver && powerVRVersion < (std::array<int, 2>{26, 2}));
+ 
+     ANGLE_FEATURE_CONDITION(features, allowClearForRobustResourceInit, IsApple());
+ 
+diff --git a/src/libANGLE/validationES.cpp b/src/libANGLE/validationES.cpp
+index 831ffea35b01d63dac44feddbded10fd9c8df514..de8de400a475ae48143b7283f911f27cbd142ed4 100644
+--- a/src/libANGLE/validationES.cpp
++++ b/src/libANGLE/validationES.cpp
+@@ -1280,6 +1280,20 @@ bool ValidImageDataSize(const Context *context,
+     return true;
+ }
+ 
++Extents RoundImageAllocationExtentIfNeeded(const Context *context,
++                                           GLsizei width,
++                                           GLsizei height,
++                                           GLsizei depth)
++{
++    if (context->getLimitations().roundUp3DTextureSizeToPOTForLimit && depth > 1)
++    {
++        return Extents(gl::clampCast<GLsizei>(gl::ceilPow2(width)),
++                       gl::clampCast<GLsizei>(gl::ceilPow2(height)),
++                       gl::clampCast<GLsizei>(gl::ceilPow2(depth)));
++    }
++    return Extents(width, height, depth);
++}
++
+ bool ValidImageAllocationSize(const Context *context,
+                               angle::EntryPoint entryPoint,
+                               GLsizei width,
+@@ -1290,7 +1304,8 @@ bool ValidImageAllocationSize(const Context *context,
+ {
+     const InternalFormat &formatInfo = GetSizedInternalFormatInfo(sizedInternalFormat);
+     GLuint allocationSize            = 0;
+-    if (!formatInfo.computeImageSize(Extents(width, height, depth), samples, &allocationSize) ||
++    Extents extents = RoundImageAllocationExtentIfNeeded(context, width, height, depth);
++    if (!formatInfo.computeImageSize(extents, samples, &allocationSize) ||
+         allocationSize > context->getLimitations().maxTextureBytes)
+     {
+         ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kTextureSizeLimitation);
+@@ -8196,8 +8211,9 @@ bool ValidateTexStorage(const Context *context,
+     // Make sure computeImageSize sets expectedImageSize.
+     GLuint expectedImageSize = std::numeric_limits<GLuint>::max();
+     {
+-        const bool isSizeValid = internalFormatInfo.computeImageSize(Extents(width, height, depth),
+-                                                                     0, &expectedImageSize);
++        Extents extents = RoundImageAllocationExtentIfNeeded(context, width, height, depth);
++        const bool isSizeValid =
++            internalFormatInfo.computeImageSize(extents, 0, &expectedImageSize);
+         if (ANGLE_UNLIKELY(!isSizeValid ||
+                            expectedImageSize > context->getLimitations().maxTextureBytes))
+         {
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index 44cde487aec683f0c13b4ed0e5e6f48bd4f12464..75be6b2f92804b14cfbc81ac46f870822109d782 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -23833,6 +23833,64 @@ TEST_P(Texture2DTestES3, ClearMidRenderPassThenSample)
+     ASSERT_GL_NO_ERROR();
+ }
+ 
++class Texture3DSizeLimitPOTRoundUpTest : public ANGLETest<>
++{
++  protected:
++    Texture3DSizeLimitPOTRoundUpTest() = default;
++};
++
++// Test that 3D texture dimensions are rounded up to power of two when checking size limits.
++TEST_P(Texture3DSizeLimitPOTRoundUpTest, RGB565)
++{
++    // 64x64x64 * sizeof(RGB565) is <= 1 MiB.
++    {
++        GLTexture tex;
++        glBindTexture(GL_TEXTURE_3D, tex);
++        glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB565, 64, 64, 64, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5,
++                     nullptr);
++        EXPECT_GL_NO_ERROR();
++    }
++    {
++        GLTexture texStorage;
++        glBindTexture(GL_TEXTURE_3D, texStorage);
++        glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGB565, 64, 64, 64);
++        EXPECT_GL_NO_ERROR();
++    }
++
++    // 65x65x65 * sizeof(RGB565) is still <= 1 MiB, but when rounded up becomes
++    // 128x128x128 * sizeof(RGB565) which is > 1MiB.
++    {
++        GLTexture tex;
++        glBindTexture(GL_TEXTURE_3D, tex);
++        glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB565, 65, 65, 65, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5,
++                     nullptr);
++        EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++    }
++    {
++        GLTexture texStorage;
++        glBindTexture(GL_TEXTURE_3D, texStorage);
++        glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGB565, 65, 65, 65);
++        EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++    }
++
++    // The workaround does not apply to 2D textures.
++    // 724x724x1 * sizeof(RGB565) is <= 1MiB, but rounded up would be
++    // 1024x1024x1 * sizeof(RGB565) which is > 1MiB.
++    {
++        GLTexture tex2D;
++        glBindTexture(GL_TEXTURE_2D, tex2D);
++        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB565, 724, 724, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5,
++                     nullptr);
++        EXPECT_GL_NO_ERROR();
++    }
++    {
++        GLTexture tex2DStorage;
++        glBindTexture(GL_TEXTURE_2D, tex2DStorage);
++        glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB565, 724, 724);
++        EXPECT_GL_NO_ERROR();
++    }
++}
++
+ class Texture2DTestES3_NonZeroBaseLevelGenMipmaps : public Texture2DTestES3
+ {};
+ 
+@@ -24588,8 +24646,21 @@ ANGLE_INSTANTIATE_TEST(TextureSizeLimitTest,
+                        ES2_VULKAN().enable(Feature::LimitMaxTextureBytesTo1MB),
+                        ES3_VULKAN().enable(Feature::LimitMaxTextureBytesTo1MB),
+                        ES2_OPENGL().enable(Feature::LimitMaxTextureBytesTo1MB),
+-                       ES3_OPENGL().enable(Feature::LimitMaxTextureBytesTo1MB),
++                       ES3_OPENGL()
++                           .enable(Feature::LimitMaxTextureBytesTo1MB)
++                           .disable(Feature::RoundUp3dTextureSizeToPOTForLimit),
+                        ES2_OPENGLES().enable(Feature::LimitMaxTextureBytesTo1MB),
+-                       ES3_OPENGLES().enable(Feature::LimitMaxTextureBytesTo1MB));
++                       ES3_OPENGLES()
++                           .enable(Feature::LimitMaxTextureBytesTo1MB)
++                           .disable(Feature::RoundUp3dTextureSizeToPOTForLimit));
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture3DSizeLimitPOTRoundUpTest);
++ANGLE_INSTANTIATE_TEST(Texture3DSizeLimitPOTRoundUpTest,
++                       ES3_OPENGL()
++                           .enable(Feature::LimitMaxTextureBytesTo1MB)
++                           .enable(Feature::RoundUp3dTextureSizeToPOTForLimit),
++                       ES3_OPENGLES()
++                           .enable(Feature::LimitMaxTextureBytesTo1MB)
++                           .enable(Feature::RoundUp3dTextureSizeToPOTForLimit));
+ 
+ }  // anonymous namespace
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index 19df1c695acb085d0d8458de0e53fcc65f79274e..97ffd038d748842708e3fe0b43698ec7e4a59214 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -322,6 +322,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::RGBA4IsNotSupportedForColorRendering, "RGBA4IsNotSupportedForColorRendering"},
+     {Feature::RGBDXT1TexturesSampleZeroAlpha, "RGBDXT1TexturesSampleZeroAlpha"},
+     {Feature::RoundOutputAfterDithering, "roundOutputAfterDithering"},
++    {Feature::RoundUp3dTextureSizeToPOTForLimit, "roundUp3dTextureSizeToPOTForLimit"},
+     {Feature::SanitizeAMDGPURendererString, "sanitizeAMDGPURendererString"},
+     {Feature::ScalarizeVecAndMatConstructorArgs, "scalarizeVecAndMatConstructorArgs"},
+     {Feature::SelectViewInGeometryShader, "selectViewInGeometryShader"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index 15296408e9fe63ebf8546d31d8175706269e264c..6c1775e0f2625dd314396c0a09bb2604b2f0a53f 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -322,6 +322,7 @@ enum class Feature
+     RGBA4IsNotSupportedForColorRendering,
+     RGBDXT1TexturesSampleZeroAlpha,
+     RoundOutputAfterDithering,
++    RoundUp3dTextureSizeToPOTForLimit,
+     SanitizeAMDGPURendererString,
+     ScalarizeVecAndMatConstructorArgs,
+     SelectViewInGeometryShader,

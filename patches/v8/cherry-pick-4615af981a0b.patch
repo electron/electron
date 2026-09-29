@@ -1,0 +1,100 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Fri, 25 Sep 2026 11:37:13 +0200
+Subject: [interpreter] Check max_arguments stack space before Sparkplug OSR
+
+InterpreterEntryTrampoline only checks BytecodeArray::frame_size_ on
+function entry because Ignition call helpers check stack space before
+pushing outgoing call arguments. Sparkplug, by contrast, relies on
+BaselineOutOfLinePrologue pre-checking BytecodeArray::max_frame_size()
+(frame_size_ + max_arguments_) at function entry and pushes outgoing
+arguments at call sites without a stack check. When a function entered
+in Ignition near the stack limit OSRs into Sparkplug inside a loop,
+InterpreterOnStackReplacement_ToBaseline bypasses the baseline prologue,
+allowing subsequent calls with many arguments to push past real_jslimit
+and real_climit.
+
+In InterpreterAssembler::OnStackReplacement, verify that there is enough
+remaining stack space for max_arguments_ before tail-calling
+InterpreterOnStackReplacement_ToBaseline, continuing the loop in
+Ignition if not.
+
+TAG=agy
+CONV=8ac6e096-bff0-46cd-8db3-1f8046c78ca3
+
+Fixed: 563716534
+Change-Id: I4fca55df3627b1e36a7e57cc2c4a9655b2abbfcd
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8460873
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Auto-Submit: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110091}
+
+diff --git a/src/interpreter/interpreter-assembler.cc b/src/interpreter/interpreter-assembler.cc
+index 074f82763ea9d5110e1bfff1eddf7ac83440cf83..b8fbf96e0b946df6a7d14b35b352dec39177dc54 100644
+--- a/src/interpreter/interpreter-assembler.cc
++++ b/src/interpreter/interpreter-assembler.cc
+@@ -1599,12 +1599,40 @@ void InterpreterAssembler::OnStackReplacement(
+ 
+   BIND(&osr_to_sparkplug);
+   {
++    Label skip_osr_to_sparkplug(this);
++    // InterpreterEntryTrampoline only checks BytecodeArray::frame_size_,
++    // whereas baseline code requires BytecodeArray::max_frame_size()
++    // (frame_size_ + max_arguments_) so it can push outgoing call arguments
++    // without a stack check. Since frame_size_ is already allocated in the
++    // current interpreter frame, verify that there is enough remaining stack
++    // space for max_arguments_ before OSRing into baseline code.
++    //
++    // If there isn't enough space, we skip OSR and stay in the interpreter
++    // rather than throwing a StackOverflow here: exception handler lookup in
++    // the interpreter is keyed by bytecode offset, so throwing at JumpLoop
++    // could be caught by an inner try-catch wrapping the loop (and the call
++    // requiring max_arguments_ might not even be reached). Skipping means we
++    // will re-check on subsequent backedge interrupts while near the stack
++    // limit, which is an acceptable cost for this edge case.
++    TNode<Uint16T> max_arguments = LoadObjectField<Uint16T>(
++        BytecodeArrayTaggedPointer(), offsetof(BytecodeArray, max_arguments_));
++    TNode<UintPtrT> max_arguments_bytes =
++        TimesSystemPointerSize(ChangeUint32ToWord(max_arguments));
++    TNode<UintPtrT> stack_limit =
++        Load<UintPtrT>(IsolateField(IsolateFieldId::kRealJsLimit));
++    GotoIfNot(
++        StackPointerGreaterThan(IntPtrAdd(stack_limit, max_arguments_bytes)),
++        &skip_osr_to_sparkplug);
++
+     // We already compiled the baseline code, so we don't need to handle failed
+     // compilation as in the Ignition -> Turbofan case. Therefore we can just
+     // tailcall to the OSR builtin.
+     SaveBytecodeOffset();
+     TailCallBuiltin(Builtin::kInterpreterOnStackReplacement_ToBaseline,
+                     context);
++
++    BIND(&skip_osr_to_sparkplug);
++    JumpBackward(relative_jump);
+   }
+ }
+ 
+diff --git a/test/mjsunit/regress/regress-563716534.js b/test/mjsunit/regress/regress-563716534.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..45c80b201750b877da31d5c5209b6bf9ccb5aacc
+--- /dev/null
++++ b/test/mjsunit/regress/regress-563716534.js
+@@ -0,0 +1,17 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --no-concurrent-sparkplug --stack-size=100
++
++const many_char_codes = new Array(11000).fill(48).join(",");
++const loop_then_large_call = new Function(`
++  for (let i = 0; i < 50; i++) {
++    if (i === 49) return String.fromCharCode(${many_char_codes});
++  }
++`);
++
++try {
++  loop_then_large_call();
++} catch (e) {
++}

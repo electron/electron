@@ -1,0 +1,291 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Wed, 23 Sep 2026 10:50:28 -0700
+Subject: [M152] media: Validate frame and texture format in MFVEA GPU readback
+
+Original change's description:
+> media: Validate frame and texture format in MFVEA GPU readback
+>
+> In MediaFoundationVideoEncodeAccelerator::CopyInputSampleBufferFromGpu,
+> GPU textures are read back to CPU memory via gpu::CopyD3D11TexToMem.
+> This path only supports NV12 textures and copies NV12 bytes.
+>
+> Previously, neither the frame's pixel format nor the texture's DXGI
+> format were validated in CopyInputSampleBufferFromGpu when scaling was
+> skipped. Additionally, the buffer allocation and advertised length were
+> derived from frame->format() rather than the actual copied NV12 size.
+>
+> Change-Id: I9e350b03097126a3ce43cf5dfc6030b39b4a4b30
+> Fixed: 563351482
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8435965
+> Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+> Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+> Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+> Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1702292}
+
+(cherry picked from commit f424973cf00b08c815d50cdff42e756a150b5d89)
+
+Bug: 565213245,563351482
+Change-Id: I9e350b03097126a3ce43cf5dfc6030b39b4a4b30
+
+diff --git a/media/base/win/mf_helpers.cc b/media/base/win/mf_helpers.cc
+index 00e115a2ab7b8a748d3736df2caa4ae2ffd8facc..aa18cc2937b6fd1117cc6a18cd18372770cfe7b0 100644
+--- a/media/base/win/mf_helpers.cc
++++ b/media/base/win/mf_helpers.cc
+@@ -981,8 +981,6 @@ Microsoft::WRL::ComPtr<IMFSample> CreateSampleFromTexture(
+ HRESULT GenerateSampleFromVideoFrame(
+     const VideoFrame* frame,
+     DXGIDeviceManager* dxgi_device_manager,
+-    bool use_dxgi_buffer,
+-    Microsoft::WRL::ComPtr<ID3D11Texture2D>* staging_texture,
+     DWORD buffer_alignment,
+     IMFSample** sample_out) {
+   // A shared image sample for a non-mappable SharedImage cannot be created
+@@ -1022,36 +1020,8 @@ HRESULT GenerateSampleFromVideoFrame(
+     RETURN_ON_HR_FAILURE(
+         hr, "Failed to open shared D3D texture from GMB handle", hr);
+ 
+-    if (use_dxgi_buffer) {
+-      hr = InitializeSampleFromTexture(frame, input_texture.Get(), sample);
+-      RETURN_ON_HR_FAILURE(hr, "Failed to initialize sample from texture", hr);
+-    } else {
+-      Microsoft::WRL::ComPtr<IMFMediaBuffer> input_buffer;
+-      size_t allocation_size =
+-          VideoFrame::AllocationSize(frame->format(), frame->coded_size());
+-      hr = MFCreateAlignedMemoryBuffer(
+-          allocation_size,
+-          buffer_alignment == 0 ? buffer_alignment : buffer_alignment - 1,
+-          &input_buffer);
+-      RETURN_ON_HR_FAILURE(
+-          hr, "Failed to create memory buffer for input sample", hr);
+-
+-      MediaBufferScopedPointer scoped_buffer(input_buffer.Get());
+-      bool copy_succeeded =
+-          gpu::CopyD3D11TexToMem(input_texture.Get(), scoped_buffer.as_span(),
+-                                 d3d_device.Get(), staging_texture);
+-      if (!copy_succeeded) {
+-        LOG(ERROR) << "Failed to copy sample to memory.";
+-        return E_FAIL;
+-      }
+-
+-      size_t copied_bytes = frame->visible_rect().width() *
+-                            frame->visible_rect().height() * 3 / 2;
+-      hr = input_buffer->SetCurrentLength(copied_bytes);
+-      RETURN_ON_HR_FAILURE(hr, "Failed to set current buffer length", hr);
+-      hr = sample->AddBuffer(input_buffer.Get());
+-      RETURN_ON_HR_FAILURE(hr, "Failed to add buffer to sample", hr);
+-    }
++    hr = InitializeSampleFromTexture(frame, input_texture.Get(), sample);
++    RETURN_ON_HR_FAILURE(hr, "Failed to initialize sample from texture", hr);
+   } else {
+     size_t allocation_size = VideoFrame::AllocationSize(
+         frame->format(), frame->visible_rect().size());
+diff --git a/media/base/win/mf_helpers.h b/media/base/win/mf_helpers.h
+index 73db391fd074a00e42c79b937dbc3dc140c901f1..8572e20f27b7717d86138660f87566503e8a6b30 100644
+--- a/media/base/win/mf_helpers.h
++++ b/media/base/win/mf_helpers.h
+@@ -224,13 +224,11 @@ MEDIA_EXPORT Microsoft::WRL::ComPtr<IMFSample> CreateSampleFromTexture(
+     Microsoft::WRL::ComPtr<ID3D11Texture2D> input_texture,
+     bool need_perform_copy);
+ 
+-// Converts `frame` into an IMFSample, using an underlying D3D texture,
+-// reading back from the GPU, or copying the frame contents as necessary.
++// Converts `frame` into an IMFSample, using an underlying D3D texture
++// or copying the frame contents as necessary.
+ MEDIA_EXPORT HRESULT GenerateSampleFromVideoFrame(
+     const media::VideoFrame* frame,
+     DXGIDeviceManager* dxgi_device_manager,
+-    bool use_dxgi_buffer,
+-    Microsoft::WRL::ComPtr<ID3D11Texture2D>* staging_texture,
+     DWORD buffer_alignment,
+     IMFSample** sample_out);
+ 
+diff --git a/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc b/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
+index af335d22e13e6d292904336524de1a13931ecb42..ea748fd6e03d6f2746b95b34aa33ec2c7a3cdeb4 100644
+--- a/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
++++ b/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
+@@ -2276,6 +2276,13 @@ HRESULT MediaFoundationVideoEncodeAccelerator::CopyInputSampleBufferFromGpu(
+   DCHECK(dxgi_device_manager_);
+   auto& input_sample = input.input_sample;
+ 
++  if (frame->format() != PIXEL_FORMAT_NV12) {
++    LOG(ERROR) << "Format mismatch: frame format "
++               << VideoPixelFormatToString(frame->format())
++               << " is not PIXEL_FORMAT_NV12";
++    return E_INVALIDARG;
++  }
++
+   auto d3d_device = dxgi_device_manager_->GetDevice();
+   if (!d3d_device) {
+     LOG(ERROR) << "Failed to get device from MF DXGI device manager";
+@@ -2309,6 +2316,13 @@ HRESULT MediaFoundationVideoEncodeAccelerator::CopyInputSampleBufferFromGpu(
+   // Check if we need to scale the input texture
+   D3D11_TEXTURE2D_DESC input_desc = {};
+   input_texture->GetDesc(&input_desc);
++
++  if (input_desc.Format != DXGI_FORMAT_NV12) {
++    LOG(ERROR) << "Format mismatch: source format " << input_desc.Format
++               << " is not DXGI_FORMAT_NV12";
++    return E_INVALIDARG;
++  }
++
+   gfx::Size texture_size(input_desc.Width, input_desc.Height);
+   ComD3D11Texture2D sample_texture;
+   if (texture_size != input_visible_size_ ||
+@@ -2327,10 +2341,10 @@ HRESULT MediaFoundationVideoEncodeAccelerator::CopyInputSampleBufferFromGpu(
+   MFT_INPUT_STREAM_INFO input_stream_info;
+   hr = encoder_->GetInputStreamInfo(input_stream_id_, &input_stream_info);
+   RETURN_ON_HR_FAILURE(hr, "Couldn't get input stream info", hr);
++  const size_t allocation_size =
++      VideoFrame::AllocationSize(PIXEL_FORMAT_NV12, input_visible_size_);
+   hr = MFCreateAlignedMemoryBuffer(
+-      input_stream_info.cbSize
+-          ? input_stream_info.cbSize
+-          : VideoFrame::AllocationSize(frame->format(), input_visible_size_),
++      std::max(static_cast<size_t>(input_stream_info.cbSize), allocation_size),
+       input_stream_info.cbAlignment == 0 ? input_stream_info.cbAlignment
+                                          : input_stream_info.cbAlignment - 1,
+       &input_buffer);
+@@ -2345,8 +2359,7 @@ HRESULT MediaFoundationVideoEncodeAccelerator::CopyInputSampleBufferFromGpu(
+     LOG(ERROR) << "Failed to copy sample to memory.";
+     return E_FAIL;
+   }
+-  size_t copied_bytes =
+-      VideoFrame::AllocationSize(frame->format(), input_visible_size_);
++  const size_t copied_bytes = allocation_size;
+   hr = input_buffer->SetCurrentLength(copied_bytes);
+   RETURN_ON_HR_FAILURE(hr, "Failed to set current buffer length", hr);
+ 
+diff --git a/media/gpu/windows/media_foundation_video_encode_accelerator_win.h b/media/gpu/windows/media_foundation_video_encode_accelerator_win.h
+index 09da8489d436ed71204657fcfcf1b91d1e4f83c1..0d27d38402f4a450300bdbd3eedcf79f98a13774 100644
+--- a/media/gpu/windows/media_foundation_video_encode_accelerator_win.h
++++ b/media/gpu/windows/media_foundation_video_encode_accelerator_win.h
+@@ -117,6 +117,10 @@ class MEDIA_GPU_EXPORT MediaFoundationVideoEncodeAccelerator
+       const gfx::Size& input_visible_size,
+       scoped_refptr<DXGIDeviceManager> dxgi_device_manager);
+ 
++  void SetDxgiResourceMappingRequiredForTesting(bool required) {
++    dxgi_resource_mapping_required_ = required;
++  }
++
+  private:
+   // Holds output buffers coming from the client ready to be filled.
+   struct BitstreamBufferRef;
+diff --git a/media/gpu/windows/media_foundation_video_encode_accelerator_win_unittest.cc b/media/gpu/windows/media_foundation_video_encode_accelerator_win_unittest.cc
+index a2bf2a13b4a77ff6655dc7e69b7d01a616b84d06..cd43a14331353d3232ec7a3999fe4a3fb2d7f1d7 100644
+--- a/media/gpu/windows/media_foundation_video_encode_accelerator_win_unittest.cc
++++ b/media/gpu/windows/media_foundation_video_encode_accelerator_win_unittest.cc
+@@ -153,6 +153,8 @@ class TestMediaFoundationVideoEncodeAccelerator
+     : public MediaFoundationVideoEncodeAccelerator {
+  public:
+   using MediaFoundationVideoEncodeAccelerator::InitializeForTesting;
++  using MediaFoundationVideoEncodeAccelerator::
++      SetDxgiResourceMappingRequiredForTesting;
+ 
+   TestMediaFoundationVideoEncodeAccelerator(
+       const gpu::GpuPreferences& gpu_preferences,
+@@ -451,6 +453,90 @@ TEST_F(MediaFoundationVideoEncodeAcceleratorKeyedMutexTimeoutTest,
+   task_environment_.RunUntilIdle();
+ }
+ 
++// Tests that when dxgi_resource_mapping_required_ is true, a frame whose
++// format is not NV12 is rejected rather than disclosing uninitialized memory.
++TEST_F(MediaFoundationVideoEncodeAcceleratorKeyedMutexTimeoutTest,
++       RejectFrameOnDxgiResourceMappingFrameFormatMismatch) {
++  encoder_->SetDxgiResourceMappingRequiredForTesting(true);
++
++  gfx::Size input_visible_size(1280, 720);
++  auto test_sii = base::MakeRefCounted<gpu::TestSharedImageInterface>();
++  gfx::GpuMemoryBufferHandle gmb_handle{gfx::DXGIHandle::CreateFakeForTest()};
++  const auto si_usage = gpu::SHARED_IMAGE_USAGE_CPU_WRITE_ONLY |
++                        gpu::SHARED_IMAGE_USAGE_DISPLAY_READ;
++
++  auto shared_image = test_sii->CreateSharedImage(
++      {viz::SinglePlaneFormat::kBGRA_8888, input_visible_size,
++       gfx::ColorSpace(), gpu::SharedImageUsageSet(si_usage),
++       "MediaFoundationVideoEncodeAcceleratorTest"},
++      gpu::kNullSurfaceHandle, gfx::BufferUsage::GPU_READ,
++      std::move(gmb_handle));
++
++  scoped_refptr<VideoFrame> frame = VideoFrame::WrapMappableSharedImage(
++      std::move(shared_image), test_sii->GenVerifiedSyncToken(),
++      base::NullCallback(), gfx::Rect(input_visible_size), input_visible_size,
++      base::TimeDelta());
++  ASSERT_TRUE(frame);
++  EXPECT_EQ(frame->format(), PIXEL_FORMAT_ARGB);
++
++  VideoEncoder::EncodeOptions options(false);
++  EXPECT_CALL(client_, NotifyErrorStatus(Property(
++                           &EncoderStatus::code,
++                           EncoderStatus::Codes::kEncoderFailedEncode)));
++
++  encoder_->Encode(frame, options);
++}
++
++// Tests that when dxgi_resource_mapping_required_ is true, a frame backed by a
++// texture whose DXGI format is not NV12 is rejected rather than disclosing
++// uninitialized memory.
++TEST_F(MediaFoundationVideoEncodeAcceleratorKeyedMutexTimeoutTest,
++       RejectFrameOnDxgiResourceMappingTextureFormatMismatch) {
++  encoder_->SetDxgiResourceMappingRequiredForTesting(true);
++
++  auto mock_texture =
++      Microsoft::WRL::Make<MockD3D11Texture2D>(mock_d3d11_device_);
++
++  D3D11_TEXTURE2D_DESC desc = {};
++  gfx::Size input_visible_size(1280, 720);
++  desc.Width = input_visible_size.width();
++  desc.Height = input_visible_size.height();
++  desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
++  EXPECT_CALL(*mock_texture.Get(), GetDesc(_))
++      .WillRepeatedly([desc](D3D11_TEXTURE2D_DESC* pDesc) { *pDesc = desc; });
++
++  EXPECT_CALL(*mock_d3d11_device_.Get(), OpenSharedResource1(_, _, _))
++      .WillOnce([&mock_texture](HANDLE, REFIID riid, void** ppv) {
++        return mock_texture.CopyTo(riid, ppv);
++      });
++
++  auto test_sii = base::MakeRefCounted<gpu::TestSharedImageInterface>();
++  gfx::GpuMemoryBufferHandle gmb_handle{gfx::DXGIHandle::CreateFakeForTest()};
++  const auto si_usage = gpu::SHARED_IMAGE_USAGE_CPU_WRITE_ONLY |
++                        gpu::SHARED_IMAGE_USAGE_DISPLAY_READ;
++
++  auto shared_image = test_sii->CreateSharedImage(
++      {viz::MultiPlaneFormat::kNV12, input_visible_size, gfx::ColorSpace(),
++       gpu::SharedImageUsageSet(si_usage),
++       "MediaFoundationVideoEncodeAcceleratorTest"},
++      gpu::kNullSurfaceHandle, gfx::BufferUsage::GPU_READ,
++      std::move(gmb_handle));
++
++  scoped_refptr<VideoFrame> frame = VideoFrame::WrapMappableSharedImage(
++      std::move(shared_image), test_sii->GenVerifiedSyncToken(),
++      base::NullCallback(), gfx::Rect(input_visible_size), input_visible_size,
++      base::TimeDelta());
++  ASSERT_TRUE(frame);
++  EXPECT_EQ(frame->format(), PIXEL_FORMAT_NV12);
++
++  VideoEncoder::EncodeOptions options(false);
++  EXPECT_CALL(client_, NotifyErrorStatus(Property(
++                           &EncoderStatus::code,
++                           EncoderStatus::Codes::kEncoderFailedEncode)));
++
++  encoder_->Encode(frame, options);
++}
++
+ INSTANTIATE_TEST_SUITE_P(All,
+                          MediaFoundationVideoEncodeAcceleratorAlignmentTest,
+                          ::testing::Values(PIXEL_FORMAT_NV12,
+diff --git a/media/gpu/windows/mf_video_processor_accelerator.cc b/media/gpu/windows/mf_video_processor_accelerator.cc
+index 450bb487888ff1ebe5a74a6fb75e6bf2c6e8cdaf..042af81b5168d3d7539dc4f1fd935e0ebd1dd594 100644
+--- a/media/gpu/windows/mf_video_processor_accelerator.cc
++++ b/media/gpu/windows/mf_video_processor_accelerator.cc
+@@ -179,7 +179,7 @@ HRESULT MediaFoundationVideoProcessorAccelerator::Convert(
+ 
+   ComMFSample sample;
+   HRESULT hr = GenerateSampleFromVideoFrame(
+-      frame.get(), dxgi_device_manager_.get(), true, nullptr, 0, &sample);
++      frame.get(), dxgi_device_manager_.get(), 0, &sample);
+   RETURN_ON_HR_FAILURE(hr, L"Couldn't generate MF sample from VideoFrame", hr);
+ 
+   // The video processor will internally acquire the keyed mutex for the

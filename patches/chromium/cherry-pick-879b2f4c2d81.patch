@@ -1,0 +1,225 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tommy Steimel <steimel@chromium.org>
+Date: Thu, 17 Sep 2026 14:23:17 -0700
+Subject: Prevent WidgetFadeAnimator UAF if a FadeIn is synchronously canceled
+
+When showing a widget in WidgetFadeAnimator::FadeIn(), native visibility
+notifications or observer callbacks can run synchronously. If an
+observer destroys the animator or cancels the animation re-entrantly,
+WidgetFadeAnimator continues executing on a freed or cancelled instance
+once Show()/ShowInactive() returns, causing a UAF.
+
+This CL:
+1. Adds a base::WeakPtr check in WidgetFadeAnimator::FadeIn() after
+   showing the widget, ensuring the animator is still alive and still
+   fading in before accessing member state and starting the animation.
+2. Moves `++fade_in_calls_count_` in
+   PictureInPictureWidgetFadeAnimator::AnimateShowWindow() before the
+   call to FadeIn() so that no member state is read if the animator
+   was reset or destroyed during FadeIn().
+3. Adds regression unit tests in widget_fade_animator_unittest and
+   picture_in_picture_widget_fade_animator_unittest.
+
+Bug: 562174487
+Change-Id: Iade6bad08172099d5ea24dad2e2947474d1fc1e6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8412520
+Commit-Queue: Tommy Steimel <steimel@chromium.org>
+Reviewed-by: Keren Zhu <kerenzhu@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1700133}
+
+diff --git a/chrome/browser/picture_in_picture/picture_in_picture_widget_fade_animator.cc b/chrome/browser/picture_in_picture/picture_in_picture_widget_fade_animator.cc
+index 4b0db5d91a024b7806e4b233c71a4ed7c9062f5a..896796d5ecac516f7f798c75d1489a9d34299f04 100644
+--- a/chrome/browser/picture_in_picture/picture_in_picture_widget_fade_animator.cc
++++ b/chrome/browser/picture_in_picture/picture_in_picture_widget_fade_animator.cc
+@@ -30,8 +30,8 @@ void PictureInPictureWidgetFadeAnimator::AnimateShowWindow(
+   fade_animator_->set_fade_in_duration(base::Milliseconds(kFadeInDurationMs));
+   fade_animator_->set_show_type(show_type);
+ 
+-  fade_animator_->FadeIn();
+   ++fade_in_calls_count_;
++  fade_animator_->FadeIn();
+ }
+ 
+ void PictureInPictureWidgetFadeAnimator::CancelAndReset() {
+diff --git a/chrome/browser/picture_in_picture/picture_in_picture_widget_fade_animator_unittest.cc b/chrome/browser/picture_in_picture/picture_in_picture_widget_fade_animator_unittest.cc
+index 2e3db6c4f47e1103efec8dd3e77d69b68aa7751a..63c9d865eb7620cceae187e9762b2cfb78906f86 100644
+--- a/chrome/browser/picture_in_picture/picture_in_picture_widget_fade_animator_unittest.cc
++++ b/chrome/browser/picture_in_picture/picture_in_picture_widget_fade_animator_unittest.cc
+@@ -4,12 +4,14 @@
+ 
+ #include "chrome/browser/picture_in_picture/picture_in_picture_widget_fade_animator.h"
+ 
++#include "base/memory/raw_ptr.h"
+ #include "base/test/task_environment.h"
+ #include "ui/compositor/layer.h"
+ #include "ui/gfx/scoped_animation_duration_scale_mode.h"
+ #include "ui/views/animation/widget_fade_animator.h"
+ #include "ui/views/test/views_test_base.h"
+ #include "ui/views/widget/widget.h"
++#include "ui/views/widget/widget_observer.h"
+ 
+ namespace {
+ 
+@@ -261,3 +263,38 @@ TEST_F(
+       PictureInPictureWidgetFadeAnimator::WidgetShowType::kShowActive);
+   EXPECT_EQ(1, fade_animator()->GetFadeInCallsCountForTesting());
+ }
++
++namespace {
++
++class ResetAnimatorOnVisibilityChangeObserver : public views::WidgetObserver {
++ public:
++  explicit ResetAnimatorOnVisibilityChangeObserver(
++      PictureInPictureWidgetFadeAnimator* fade_animator)
++      : fade_animator_(fade_animator) {}
++
++  void OnWidgetVisibilityChanged(views::Widget* widget, bool visible) override {
++    if (visible && fade_animator_) {
++      fade_animator_->CancelAndReset();
++    }
++  }
++
++ private:
++  raw_ptr<PictureInPictureWidgetFadeAnimator> fade_animator_;
++};
++
++}  // namespace
++
++TEST_F(PictureInPictureWidgetFadeAnimatorTest,
++       CancelAndResetDuringAnimateShowWindowDoesNotCrash) {
++  ResetAnimatorOnVisibilityChangeObserver observer(fade_animator());
++  widget()->AddObserver(&observer);
++
++  fade_animator()->AnimateShowWindow(
++      widget(),
++      PictureInPictureWidgetFadeAnimator::WidgetShowType::kShowInactive);
++
++  EXPECT_EQ(nullptr, fade_animator()->GetWidgetFadeAnimatorForTesting());
++  EXPECT_EQ(1, fade_animator()->GetFadeInCallsCountForTesting());
++
++  widget()->RemoveObserver(&observer);
++}
+diff --git a/ui/views/animation/widget_fade_animator.cc b/ui/views/animation/widget_fade_animator.cc
+index 92669bf7e254982dc12f9b6dcc273bb2a4b29cb9..b1f5755ecac55b5bf2372e9f8c2e0c3cc131ed17 100644
+--- a/ui/views/animation/widget_fade_animator.cc
++++ b/ui/views/animation/widget_fade_animator.cc
+@@ -31,6 +31,7 @@ void WidgetFadeAnimator::FadeIn(int slide_distance,
+   // Widgets cannot be shown when visible and fully transparent.
+   widget_->SetOpacity(0.01f);
+ 
++  base::WeakPtr<WidgetFadeAnimator> weak_this = weak_factory_.GetWeakPtr();
+   switch (show_type_) {
+     case WidgetShowType::kNone:
+       break;
+@@ -42,6 +43,12 @@ void WidgetFadeAnimator::FadeIn(int slide_distance,
+       break;
+   }
+ 
++  // Showing the widget can synchronously invoke native or observer callbacks
++  // that might destroy this animator or cancel the animation.
++  if (!weak_this || !IsFadingIn()) {
++    return;
++  }
++
+   SetBoundsForSliding(slide_distance, slide_direction);
+   fade_animation_.Start();
+ }
+diff --git a/ui/views/animation/widget_fade_animator.h b/ui/views/animation/widget_fade_animator.h
+index cb65023d1d01a4e1ab7f32e1488349b139374db4..0f0892bb840adda81fdf1860941aa023d98b502b 100644
+--- a/ui/views/animation/widget_fade_animator.h
++++ b/ui/views/animation/widget_fade_animator.h
+@@ -8,6 +8,7 @@
+ #include "base/callback_list.h"
+ #include "base/functional/callback_forward.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "base/scoped_observation.h"
+ #include "base/time/time.h"
+ #include "build/build_config.h"
+@@ -153,6 +154,8 @@ class VIEWS_EXPORT WidgetFadeAnimator : public AnimationDelegateViews,
+ 
+   base::RepeatingCallbackList<FadeCompleteCallbackSignature>
+       fade_complete_callbacks_;
++
++  base::WeakPtrFactory<WidgetFadeAnimator> weak_factory_{this};
+ };
+ 
+ }  // namespace views
+diff --git a/ui/views/animation/widget_fade_animator_unittest.cc b/ui/views/animation/widget_fade_animator_unittest.cc
+index e7fd7c0675e3214480f1de89cb4e41b7911db6a8..d0a095d67156b6908463bda7117e6b515ed4e8e7 100644
+--- a/ui/views/animation/widget_fade_animator_unittest.cc
++++ b/ui/views/animation/widget_fade_animator_unittest.cc
+@@ -7,6 +7,7 @@
+ #include <memory>
+ 
+ #include "base/i18n/rtl.h"
++#include "base/memory/raw_ptr.h"
+ #include "base/test/bind.h"
+ #include "base/time/time.h"
+ #include "ui/gfx/animation/animation_test_api.h"
+@@ -417,4 +418,65 @@ TEST_F(WidgetFadeAnimatorTest, FadeInShowTypeNone) {
+   EXPECT_FALSE(widget_->IsVisible());
+ }
+ 
++namespace {
++
++class DestroysAnimatorOnVisibilityChangeObserver : public WidgetObserver {
++ public:
++  explicit DestroysAnimatorOnVisibilityChangeObserver(
++      std::unique_ptr<WidgetFadeAnimator>* animator)
++      : animator_(animator) {}
++
++  void OnWidgetVisibilityChanged(Widget* widget, bool visible) override {
++    if (visible && *animator_) {
++      animator_->reset();
++    }
++  }
++
++ private:
++  raw_ptr<std::unique_ptr<WidgetFadeAnimator>> animator_;
++};
++
++class CancelsAnimatorOnVisibilityChangeObserver : public WidgetObserver {
++ public:
++  explicit CancelsAnimatorOnVisibilityChangeObserver(
++      WidgetFadeAnimator* animator)
++      : animator_(animator) {}
++
++  void OnWidgetVisibilityChanged(Widget* widget, bool visible) override {
++    if (visible && animator_) {
++      animator_->CancelFadeIn();
++    }
++  }
++
++ private:
++  raw_ptr<WidgetFadeAnimator> animator_;
++};
++
++}  // namespace
++
++TEST_F(WidgetFadeAnimatorTest, DestroyingAnimatorDuringFadeInDoesNotCrash) {
++  auto animator = std::make_unique<WidgetFadeAnimator>(widget_.get());
++  DestroysAnimatorOnVisibilityChangeObserver observer(&animator);
++  widget_->AddObserver(&observer);
++
++  // Showing the widget triggers OnWidgetVisibilityChanged synchronously,
++  // destroying `animator`. This should safely return without crashing or UAF.
++  animator->FadeIn();
++  EXPECT_EQ(nullptr, animator);
++
++  widget_->RemoveObserver(&observer);
++}
++
++TEST_F(WidgetFadeAnimatorTest, CancellingAnimatorDuringFadeInDoesNotCrash) {
++  CancelsAnimatorOnVisibilityChangeObserver observer(delegate_.get());
++  widget_->AddObserver(&observer);
++
++  // Cancelling the animation synchronously during widget show should not
++  // cause the animation to resume.
++  delegate_->FadeIn();
++  EXPECT_FALSE(delegate_->IsFadingIn());
++
++  widget_->RemoveObserver(&observer);
++}
++
+ }  // namespace views

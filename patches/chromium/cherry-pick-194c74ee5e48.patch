@@ -1,0 +1,261 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rakina Zata Amni <rakina@chromium.org>
+Date: Mon, 28 Sep 2026 00:35:10 -0700
+Subject: [M152] Validate opaque origins on synchronous about:blank commits
+
+Original change's description:
+> Validate opaque origins on synchronous about:blank commits
+>
+> Before the first navigation in a frame, the browser sets the last
+> committed origin in SetOriginDependentStateOfNewFrame(). For synchronous
+> about:blank commits, the origin reported by the renderer in
+> DidCommitProvisionalLoadParams should agree with this browser-derived
+> value.
+>
+> The existing check in DidCommitNavigationInternal() only covered the
+> case where the renderer reports a non-opaque origin, and when the
+> browser-derived origin was opaque it passed an empty GURL to
+> Origin::CanBeDerivedFrom(), which DCHECKs on invalid URLs. It also
+> accepted any opaque origin from the renderer, allowing the
+> browser-derived origin to be silently replaced.
+>
+> This change branches on whether the browser-derived origin is opaque.
+> When it is, the renderer-reported origin must also be opaque with a
+> matching precursor; the nonce is not yet compared because the browser
+> and renderer can still derive different nonces for popups opened from
+> CSP-sandboxed documents with allow-popups-to-escape-sandbox. When it is
+> not opaque, the existing CanBeDerivedFrom() check is applied (now always
+> with a valid URL), and the "became opaque" case remains allowed for the
+> same popup scenario.
+>
+> TAG=agy
+> CONV=5c1f3f18-89f3-4682-8400-f86fd31c0142
+>
+> Bug: 498793976
+> Change-Id: I8db9b9f842660126984682f6340b417741e50e44
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8181529
+> Reviewed-by: Will Harris <wfh@chromium.org>
+> Reviewed-by: Charlie Reis <creis@chromium.org>
+> Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1697688}
+
+(cherry picked from commit 2ddf8c2004f3fe43573fb900ce5cccd2fc660c52)
+
+Bug: 566047184,498793976
+Change-Id: I8db9b9f842660126984682f6340b417741e50e44
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8461950
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7977@{#2744}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/content/browser/bad_message.h b/content/browser/bad_message.h
+index 8fa9c07158f4a562acf5611e9f6050d2a82a5373..7f31b5dfeacde877f67b8ba7517f1decf9e8915e 100644
+--- a/content/browser/bad_message.h
++++ b/content/browser/bad_message.h
+@@ -374,7 +374,7 @@ enum BadMessageReason {
+   RFHI_WEBMCP_DUPLICATE_BIND = 346,
+   RFHI_WEBMCP_DUPLICATE_SET_RECEIVER = 347,
+   RFHI_WEBMCP_EXPOSED_UNTRUSTWORTHY_ORIGIN = 348,
+-  RFHI_SYNCHONOUS_COMMIT_ORIGIN_MISMATCH = 349,
++  RFHI_SYNCHRONOUS_COMMIT_ORIGIN_MISMATCH = 349,
+   RFHI_WEBMCP_INVALID_TOOL_OWNER = 350,
+   NR_BAD_ORIGIN_HEADER = 351,
+   RFH_DID_COMMIT_NAVIGATION_WHILE_BFCACHED = 352,
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index c805f09d8ccf0f27bf075ce2e55b753b4ac6bc62..a5eee9312d7c84475c15b67a027ff2b4d3c00da6 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -15924,8 +15924,16 @@ bool RenderFrameHostImpl::ValidateURLAndOrigin(
+       navigation_request
+           ? navigation_request->GetUrlInfo().embedder_isolation_info
+           : EmbedderIsolationInfo::CreateNone();
++  // Use `is_sandboxed` from `navigation_request` (if provided) to represent the
++  // newly committing document's sandbox state (which can differ from this
++  // RFH's active document sandbox state prior to commit, e.g. due to CSP
++  // sandbox response headers). When there is no `navigation_request` (e.g.,
++  // synchronous about:blank commits), fall back to the frame's active sandbox
++  // flags.
+   bool is_sandboxed =
+-      navigation_request && navigation_request->GetUrlInfo().is_sandboxed;
++      navigation_request
++          ? navigation_request->GetUrlInfo().is_sandboxed
++          : IsSandboxed(network::mojom::WebSandboxFlags::kOrigin);
+ 
+   // Attempts to commit certain off-limits URL should be caught more strictly
+   // than our FilterURL checks.  If a renderer violates this policy, it
+@@ -16314,12 +16322,38 @@ bool RenderFrameHostImpl::DidCommitNavigationInternal(
+     if (is_synchronous_about_blank_commit &&
+         params->origin.scheme() != url::kFileScheme &&
+         (!frame_tree_->is_guest() ||
+-         !base::FeatureList::IsEnabled(features::kGuestViewMPArch)) &&
+-        !params->origin.opaque() &&
+-        !params->origin.CanBeDerivedFrom(last_committed_origin_.GetURL())) {
+-      bad_message::ReceivedBadMessage(
+-          GetProcess(), bad_message::RFHI_SYNCHONOUS_COMMIT_ORIGIN_MISMATCH);
+-      return false;
++         !base::FeatureList::IsEnabled(features::kGuestViewMPArch))) {
++      bool origin_matches = false;
++      if (last_committed_origin_.opaque()) {
++        // When the browser-derived origin is opaque, the renderer-reported
++        // origin must also be opaque with a matching precursor.
++        // TODO(crbug.com/486082219): Compare origin nonces as well once nonces
++        // are synchronized for popups opened from CSP-sandboxed documents with
++        // allow-popups-to-escape-sandbox.
++        origin_matches =
++            params->origin.opaque() &&
++            params->origin.GetTupleOrPrecursorTupleIfOpaque() ==
++                last_committed_origin_.GetTupleOrPrecursorTupleIfOpaque();
++      } else if (params->origin.opaque()) {
++        // The browser-derived origin is not opaque but the renderer-reported
++        // one is. This can legitimately (but incorrectly) happen for popups
++        // opened from CSP-sandboxed documents with
++        // allow-popups-to-escape-sandbox, where the browser sees no sandbox
++        // flags on the frame but the renderer still inherits CSP sandbox flags
++        // for the document.
++        // TODO(crbug.com/486082219): Remove this handling once the incorrect
++        // case above can no longer happen and browser & renderer origins are
++        // always consistent.
++        origin_matches = true;
++      } else {
++        origin_matches =
++            params->origin.CanBeDerivedFrom(last_committed_origin_.GetURL());
++      }
++      if (!origin_matches) {
++        bad_message::ReceivedBadMessage(
++            GetProcess(), bad_message::RFHI_SYNCHRONOUS_COMMIT_ORIGIN_MISMATCH);
++        return false;
++      }
+     }
+ 
+     // Fill the redirect chain for the NavigationRequest. Since this is only for
+diff --git a/content/browser/security_exploit_browsertest.cc b/content/browser/security_exploit_browsertest.cc
+index 40ff3541929055e623c6200aca10850a28b3c178..f78bfabdce1d0b9aee282c49dcd93a8fb919bb60 100644
+--- a/content/browser/security_exploit_browsertest.cc
++++ b/content/browser/security_exploit_browsertest.cc
+@@ -4208,6 +4208,40 @@ class DidCommitParamsOriginReplacer : public DidCommitNavigationInterceptor {
+   url::Origin origin_override_;
+ };
+ 
++// Interceptor that replaces the origin in DidCommitProvisionalLoadParams with
++// the specified value for synchronous about:blank commits, which arrive without
++// a NavigationRequest.
++class SyncAboutBlankCommitOriginReplacer
++    : public DidCommitNavigationInterceptor {
++ public:
++  SyncAboutBlankCommitOriginReplacer(WebContents* web_contents,
++                                     url::Origin origin_override)
++      : DidCommitNavigationInterceptor(web_contents),
++        origin_override_(std::move(origin_override)) {}
++
++  SyncAboutBlankCommitOriginReplacer(
++      const SyncAboutBlankCommitOriginReplacer&) = delete;
++  SyncAboutBlankCommitOriginReplacer& operator=(
++      const SyncAboutBlankCommitOriginReplacer&) = delete;
++
++  ~SyncAboutBlankCommitOriginReplacer() override = default;
++
++ protected:
++  bool WillProcessDidCommitNavigation(
++      RenderFrameHost* render_frame_host,
++      NavigationRequest* navigation_request,
++      mojom::DidCommitProvisionalLoadParamsPtr* params,
++      mojom::DidCommitProvisionalLoadInterfaceParamsPtr*) override {
++    if (!navigation_request && (*params)->url.IsAboutBlank()) {
++      (*params)->origin = origin_override_;
++    }
++    return true;
++  }
++
++ private:
++  url::Origin origin_override_;
++};
++
+ }  // namespace
+ 
+ IN_PROC_BROWSER_TEST_F(SecurityExploitBrowserTest, MismatchedOriginToCommit) {
+@@ -4227,6 +4261,70 @@ IN_PROC_BROWSER_TEST_F(SecurityExploitBrowserTest, MismatchedOriginToCommit) {
+   EXPECT_EQ(bad_message::RFH_ORIGIN_TO_COMMIT_MISMATCH, kill_waiter.Wait());
+ }
+ 
++// Verify that a sandboxed iframe's synchronous about:blank commit rejects a
++// non-opaque origin when an opaque origin is expected.
++IN_PROC_BROWSER_TEST_F(SecurityExploitBrowserTest,
++                       SandboxedIframeSyncCommitWithNonOpaqueOrigin) {
++  GURL main_url(embedded_test_server()->GetURL("a.com", "/title1.html"));
++  EXPECT_TRUE(NavigateToURL(shell(), main_url));
++
++  FrameTreeNode* root = static_cast<WebContentsImpl*>(shell()->web_contents())
++                            ->GetPrimaryFrameTree()
++                            .root();
++  url::Origin parent_origin =
++      root->current_frame_host()->GetLastCommittedOrigin();
++  EXPECT_FALSE(parent_origin.opaque());
++
++  // Set up an interceptor that modifies the about:blank commit's origin to
++  // test robustness against invalid origin reporting from the renderer.
++  SyncAboutBlankCommitOriginReplacer replacer(shell()->web_contents(),
++                                              parent_origin);
++  RenderProcessHostBadIpcMessageWaiter kill_waiter(
++      root->current_frame_host()->GetProcess());
++
++  // Create a sandboxed iframe with src="about:blank". The renderer performs a
++  // synchronous about:blank commit whose origin is modified above.
++  ExecuteScriptAsync(root,
++                     "var iframe = document.createElement('iframe');"
++                     "iframe.sandbox = '';"
++                     "iframe.src = 'about:blank';"
++                     "document.body.appendChild(iframe);");
++
++  EXPECT_EQ(bad_message::RFHI_SYNCHRONOUS_COMMIT_ORIGIN_MISMATCH,
++            kill_waiter.Wait());
++}
++
++// Verify that a sandboxed iframe's synchronous about:blank commit rejects an
++// opaque origin whose precursor does not match the expected precursor.
++IN_PROC_BROWSER_TEST_F(SecurityExploitBrowserTest,
++                       SandboxedIframeSyncCommitWithMismatchedOpaqueOrigin) {
++  GURL main_url(embedded_test_server()->GetURL("a.com", "/title1.html"));
++  EXPECT_TRUE(NavigateToURL(shell(), main_url));
++
++  FrameTreeNode* root = static_cast<WebContentsImpl*>(shell()->web_contents())
++                            ->GetPrimaryFrameTree()
++                            .root();
++
++  // Set up an interceptor that modifies the about:blank commit's origin to an
++  // opaque origin with no precursor, testing error handling when precursors do
++  // not match.
++  SyncAboutBlankCommitOriginReplacer replacer(shell()->web_contents(),
++                                              url::Origin());
++  RenderProcessHostBadIpcMessageWaiter kill_waiter(
++      root->current_frame_host()->GetProcess());
++
++  // Create a sandboxed iframe with src="about:blank". The renderer performs a
++  // synchronous about:blank commit whose origin is modified above.
++  ExecuteScriptAsync(root,
++                     "var iframe = document.createElement('iframe');"
++                     "iframe.sandbox = '';"
++                     "iframe.src = 'about:blank';"
++                     "document.body.appendChild(iframe);");
++
++  EXPECT_EQ(bad_message::RFHI_SYNCHRONOUS_COMMIT_ORIGIN_MISMATCH,
++            kill_waiter.Wait());
++}
++
+ // Ensure that the renderer is terminated if it sends an OpenURL IPC with an
+ // invalid SWITCH_TO_TAB disposition.
+ IN_PROC_BROWSER_TEST_F(SecurityExploitBrowserTest, OpenURLInvalidDisposition) {
+diff --git a/tools/metrics/histograms/metadata/stability/enums.xml b/tools/metrics/histograms/metadata/stability/enums.xml
+index f3a224ec4af10ee54d05a2cf8b77243abea20ef1..b915b720d37d485846379461467cd0de792ad95a 100644
+--- a/tools/metrics/histograms/metadata/stability/enums.xml
++++ b/tools/metrics/histograms/metadata/stability/enums.xml
+@@ -520,7 +520,7 @@ Called by update_bad_message_reasons.py.-->
+   <int value="346" label="RFHI_WEBMCP_DUPLICATE_BIND"/>
+   <int value="347" label="RFHI_WEBMCP_DUPLICATE_SET_RECEIVER"/>
+   <int value="348" label="RFHI_WEBMCP_EXPOSED_UNTRUSTWORTHY_ORIGIN"/>
+-  <int value="349" label="RFHI_SYNCHONOUS_COMMIT_ORIGIN_MISMATCH"/>
++  <int value="349" label="RFHI_SYNCHRONOUS_COMMIT_ORIGIN_MISMATCH"/>
+   <int value="350" label="RFHI_WEBMCP_INVALID_TOOL_OWNER"/>
+   <int value="351" label="NR_BAD_ORIGIN_HEADER"/>
+   <int value="352" label="RFH_DID_COMMIT_NAVIGATION_WHILE_BFCACHED"/>
