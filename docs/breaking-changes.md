@@ -19,11 +19,17 @@ This document uses the following convention to categorize breaking changes:
 ### Behavior Changed: `useSystemPicker` offers either screens or windows
 
 On macOS 15+, `session.setDisplayMediaRequestHandler(handler, { useSystemPicker: true })`
-now opens the same system picker Chrome uses. That picker offers screens or
-windows, not both: it offers windows when the page calls
-`getDisplayMedia({ video: { displaySurface: 'window' } })` and screens
-otherwise. Previously it offered windows, applications and screens together.
-The captured track's `deviceId` also changes format.
+now opens the same system picker Chrome uses:
+
+* The picker offers screens or windows, not both: windows when the page calls
+  `getDisplayMedia({ video: { displaySurface: 'window' } })`, screens otherwise.
+  Previously it offered windows, applications and screens together.
+* When the page also asks for audio, the stream now includes system audio,
+  unless the page opts out. Previously the stream was video only. See
+  [`ses.setDisplayMediaRequestHandler`](api/session.md#sessetdisplaymediarequesthandlerhandler-opts).
+* The video track reports the picked kind: a screen now reports
+  `displaySurface: 'monitor'` instead of `'window'`. Its `deviceId` also
+  changes format.
 
 ### Behavior Changed: `utilityProcess` `child.kill()` no longer force-kills the child
 

@@ -1206,6 +1206,15 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
 
 #### `ses.setDisplayMediaRequestHandler(handler[, opts])`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/51243
+    description: "`useSystemPicker` offers either screens or windows, and can include system audio"
+    breaking-changes-header: behavior-changed-usesystempicker-offers-either-screens-or-windows
+```
+-->
+
 * `handler` Function | null
   * `request` Object
     * `frame` [WebFrameMain](web-frame-main.md) | null - Frame that is requesting access to media.
@@ -1250,6 +1259,8 @@ windows when the page calls `getDisplayMedia({ video: { displaySurface: 'window'
 for audio, the stream includes system audio unless the page opts out with `systemAudio: 'exclude'` (screens) or
 `windowAudio: 'exclude'` (windows). `windowAudio: 'window'` gets no audio, since per-window audio isn't supported. This needs the `NSAudioCaptureUsageDescription` Info.plist key, as
 described in [`desktopCapturer`](desktop-capturer.md#macos-versions-142-or-higher).
+`getDisplayMedia()` rejects with `NotAllowedError` if the user cancels the picker, or if the page calls it again
+while the picker is still open.
 
 ```js
 const { session, desktopCapturer } = require('electron')
