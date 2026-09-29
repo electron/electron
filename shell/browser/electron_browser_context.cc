@@ -815,14 +815,13 @@ class SystemPickerRequest
     stream_devices_set.stream_devices.emplace_back(
         blink::mojom::StreamDevices::New());
     stream_devices_set.stream_devices[0]->video_device = video_device;
-    if (request_.audio_type != blink::mojom::MediaStreamType::NO_SERVICE) {
-      // Same system loopback choice Chrome makes for a shared screen
+    if (GrantsSystemAudio()) {
+      // Same loopback device Chrome picks for a system-audio share
       // (GetAudioDeviceId in desktop_capture_devices_util.cc).
       std::string audio_id =
           request_.restrict_own_audio
               ? media::AudioDeviceDescription::kLoopbackWithoutChromeId
-          : request_.disable_local_echo ||
-                  request_.suppress_local_audio_playback
+          : request_.suppress_local_audio_playback
               ? media::AudioDeviceDescription::kLoopbackWithMuteDeviceId
               : media::AudioDeviceDescription::kLoopbackInputDeviceId;
       blink::MediaStreamDevice audio_device(request_.audio_type, audio_id,
@@ -834,6 +833,17 @@ class SystemPickerRequest
     std::move(callback_).Run(stream_devices_set,
                              blink::mojom::MediaStreamRequestResult::OK,
                              nullptr);
+  }
+
+  // Chrome's GetWindowCaptureAudioType, minus per-app "window" audio: that
+  // needs the window's pid, which the picker doesn't expose.
+  bool GrantsSystemAudio() const {
+    if (request_.audio_type == blink::mojom::MediaStreamType::NO_SERVICE)
+      return false;
+    if (type_ == content::DesktopMediaID::TYPE_SCREEN)
+      return !request_.exclude_system_audio;
+    return request_.window_audio_preference ==
+           blink::mojom::WindowAudioPreference::kSystem;
   }
 
   void Fail(blink::mojom::MediaStreamRequestResult result) {

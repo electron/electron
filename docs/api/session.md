@@ -1227,7 +1227,9 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
       * `audio` String | [WebFrameMain](web-frame-main.md) (optional) - If
         a string is specified, can be `loopback` or `loopbackWithMute`.
         Specifying a loopback device will capture system audio, and is
-        currently only supported on Windows. If a WebFrameMain is specified,
+        supported on Windows and on macOS 14.2 and later (see
+        [`desktopCapturer`](desktop-capturer.md#macos-versions-142-or-higher)).
+        If a WebFrameMain is specified,
         will capture audio from the `webContents` that contains that frame.
       * `enableLocalEcho` Boolean (optional) - If `audio` is a [WebFrameMain](web-frame-main.md)
          and this is set to `true`, then local playback of audio will not be muted (e.g. using `MediaRecorder`
@@ -1245,7 +1247,9 @@ access to.
 This option is experimental, and currently available for MacOS 15+ only. If the system picker is available and `useSystemPicker`
 is set to `true`, the handler will not be invoked. The system picker offers either windows or screens, not both: it offers
 windows when the page calls `getDisplayMedia({ video: { displaySurface: 'window' } })` and screens otherwise. If the page also asks
-for audio, the stream includes system audio.
+for audio, the stream includes system audio unless the page opts out with `systemAudio: 'exclude'` (screens) or
+`windowAudio: 'exclude'` (windows). `windowAudio: 'window'` gets no audio, since per-window audio isn't supported. This needs the `NSAudioCaptureUsageDescription` Info.plist key, as
+described in [`desktopCapturer`](desktop-capturer.md#macos-versions-142-or-higher).
 
 ```js
 const { session, desktopCapturer } = require('electron')
