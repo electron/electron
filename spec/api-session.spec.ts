@@ -349,7 +349,7 @@ describe('session module', () => {
           appProcess.stdout.on('data', (data) => {
             output += data;
           });
-          appProcess.on('exit', () => {
+          appProcess.on('close', () => {
             resolve(output.replaceAll(/(\r\n|\n|\r)/gm, ''));
           });
         });
@@ -613,7 +613,7 @@ describe('session module', () => {
         appProcess.stdout.on('data', (data) => {
           output += data;
         });
-        appProcess.on('exit', () => {
+        appProcess.on('close', () => {
           const trimmedOutput = output.replaceAll(/(\r\n|\n|\r)/gm, '');
 
           try {

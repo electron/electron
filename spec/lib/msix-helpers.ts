@@ -145,7 +145,7 @@ export function spawn(cmd: string, args: string[], opts: any = {}): Promise<{ co
     out += chunk.toString();
   });
   return new Promise<{ code: number; out: string }>((resolve) => {
-    child.on('exit', (code, signal) => {
+    child.on('close', (code, signal) => {
       expect(signal).to.equal(null);
       resolve({
         code: code!,
