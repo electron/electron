@@ -94,6 +94,8 @@ changes:
   - pr-url: https://github.com/electron/electron/pull/16427
     description: "This method now returns a Promise instead of using a callback function."
     breaking-changes-header: api-changed-callback-based-versions-of-promisified-apis
+  - pr-url: https://github.com/electron/electron/pull/54550
+    description: "Added the `persistMode` and `restoreToken` options."
 ```
 -->
 
@@ -109,13 +111,14 @@ changes:
     the type screen.
   * `persistMode` string (optional) _Linux_ _Experimental_ - Can be `transient` or `persistent`.
     How long the source the user picks in the system picker can be reopened without showing the
-    picker again. `transient`, the default, lasts until the app exits. `persistent` lasts across
-    launches until the user revokes it; store the returned source's `restoreToken` to use it on a
-    later launch. See [Restoring a source on Wayland](#restoring-a-source-on-wayland).
+    picker again. `transient`, the default, lasts at most until the app exits. `persistent` lasts
+    across launches until the user revokes it; store the returned source's `restoreToken` to use
+    it on a later launch. See [Restoring a source on Wayland](#restoring-a-source-on-wayland).
   * `restoreToken` string (optional) _Linux_ _Experimental_ - A `restoreToken` from an earlier
     call. If the system still honors it, the promise resolves with that source and no picker is
     shown. A token that is malformed, revoked or names a source that no longer exists is ignored
-    and the picker is shown as if no token was passed.
+    and the picker is shown as if no token was passed. Pass `persistMode: 'persistent'` with a
+    persistent token every time: restoring it as `transient` ends the persistent grant.
 
 Returns `Promise<DesktopCapturerSource[]>` - Resolves with an array of [`DesktopCapturerSource`](structures/desktop-capturer-source.md) objects, each `DesktopCapturerSource` represents a screen or an individual window that can be captured.
 
@@ -125,6 +128,13 @@ Returns `Promise<DesktopCapturerSource[]>` - Resolves with an array of [`Desktop
 > * Capturing the screen contents requires user consent on macOS 10.15 Catalina or higher, which can detected by [`systemPreferences.getMediaAccessStatus`][].
 
 ### `desktopCapturer.getRestoreToken(sourceId)` _Linux_ _Experimental_
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/54550
+```
+-->
 
 * `sourceId` string - The `id` of a [`DesktopCapturerSource`](structures/desktop-capturer-source.md).
 
