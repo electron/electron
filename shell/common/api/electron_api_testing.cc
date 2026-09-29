@@ -401,30 +401,27 @@ void StartUvCheckFromTask(v8::Isolate* isolate, v8::Local<v8::Function> done) {
       new UvCheckFromTask{{}, isolate, v8::Global<v8::Function>(isolate, done)};
   state->check.data = state;
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
-      FROM_HERE, base::BindOnce(
-                     [](uv_loop_t* loop, UvCheckFromTask* state) {
-                       uv_check_init(loop, &state->check);
-                       uv_check_start(&state->check, [](uv_check_t* check) {
-                         auto* state =
-                             static_cast<UvCheckFromTask*>(check->data);
-                         v8::Isolate* isolate = state->isolate;
-                         v8::HandleScope handle_scope(isolate);
-                         v8::Local<v8::Function> done =
-                             state->done.Get(isolate);
-                         v8::Local<v8::Context> context =
-                             done->GetCreationContextChecked(isolate);
-                         v8::Context::Scope context_scope(context);
-                         std::ignore =
-                             node::MakeCallback(isolate, context->Global(),
-                                                done, 0, nullptr, {0, 0});
-                         uv_close(reinterpret_cast<uv_handle_t*>(check),
-                                  [](uv_handle_t* handle) {
-                                    delete static_cast<UvCheckFromTask*>(
-                                        handle->data);
-                                  });
+      FROM_HERE,
+      base::BindOnce(
+          [](uv_loop_t* loop, UvCheckFromTask* state) {
+            uv_check_init(loop, &state->check);
+            uv_check_start(&state->check, [](uv_check_t* check) {
+              auto* state = static_cast<UvCheckFromTask*>(check->data);
+              v8::Isolate* isolate = state->isolate;
+              v8::HandleScope handle_scope(isolate);
+              v8::Local<v8::Function> done = state->done.Get(isolate);
+              v8::Local<v8::Context> context =
+                  done->GetCreationContextChecked(isolate);
+              v8::Context::Scope context_scope(context);
+              std::ignore = node::MakeCallback(isolate, context->Global(), done,
+                                               0, nullptr, {0, 0});
+              uv_close(reinterpret_cast<uv_handle_t*>(check),
+                       [](uv_handle_t* handle) {
+                         delete static_cast<UvCheckFromTask*>(handle->data);
                        });
-                     },
-                     loop, state));
+            });
+          },
+          loop, state));
 }
 
 // Starts listening on a loopback port with bare libuv calls from the calling
