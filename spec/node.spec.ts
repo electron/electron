@@ -400,7 +400,7 @@ describe('node feature', () => {
         appProcess.stdout!.on('data', out);
         appProcess.stderr!.on('data', out);
 
-        await once(appProcess, 'exit');
+        await once(appProcess, 'close');
         expect(/UnhandledPromiseRejectionWarning/.test(output)).to.equal(true);
         const matches = output.match(/Error: oops/gm);
         expect(matches).to.have.lengthOf(1);
@@ -417,7 +417,7 @@ describe('node feature', () => {
         appProcess.stdout!.on('data', out);
         appProcess.stderr!.on('data', out);
 
-        const [code] = await once(appProcess, 'exit');
+        const [code] = await once(appProcess, 'close');
         expect(code).to.equal(0);
         expect(/UnhandledPromiseRejectionWarning/.test(output)).to.equal(false);
         const matches = output.match(/Error: oops/gm);
@@ -867,7 +867,7 @@ describe('node feature', () => {
           }
         });
       }).catch(() => {});
-      const [code] = await once(rc.process, 'exit');
+      const [code] = await once(rc.process, 'close');
       expect(code).to.equal(99);
       expect(stdout).to.match(
         /RangeError \[ERR_OUT_OF_RANGE\]: The value of "code" is out of range. It must be an integer./
@@ -899,7 +899,7 @@ describe('node feature', () => {
           }
         });
       }).catch(() => {});
-      const [code] = await once(rc.process, 'exit');
+      const [code] = await once(rc.process, 'close');
       expect(code).to.equal(99);
       expect(stdout).to.match(/TypeError \[ERR_INVALID_ARG_TYPE\]/);
     });
@@ -1082,7 +1082,7 @@ describe('node feature', () => {
 
       child.stderr.on('data', listener);
       child.stdout.on('data', listener);
-      child.on('exit', () => {
+      child.on('close', () => {
         if (!success) {
           cleanup();
           done(new Error(`Unexpected output: ${output.toString()}`));
@@ -1347,7 +1347,7 @@ describe('node feature', () => {
 
       child.stderr.on('data', listener);
       child.stdout.on('data', listener);
-      await once(child, 'exit');
+      await once(child, 'close');
       cleanup();
       if (/^Debugger listening on ws:/m.test(output)) {
         expect(output.trim()).to.contain(':17364', 'should be listening on port 17364');
@@ -1366,7 +1366,7 @@ describe('node feature', () => {
       };
       child.stderr.on('data', listener);
       child.stdout.on('data', listener);
-      await once(child, 'exit');
+      await once(child, 'close');
       if (output.trim().startsWith('Debugger listening on ws://')) {
         throw new Error('Inspector was started when it should not have been');
       }
@@ -1504,7 +1504,7 @@ describe('node feature', () => {
       child.stdout.on('data', (data) => {
         output += data;
       });
-      const [code] = await once(child, 'exit');
+      const [code] = await once(child, 'close');
       expect(output).to.equal('ok');
       expect(code).to.equal(0);
     });
