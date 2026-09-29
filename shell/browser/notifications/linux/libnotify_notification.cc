@@ -55,7 +55,12 @@ bool NotifierSupportsActions() {
   return HasCapability("actions");
 }
 
+#if defined(__clang__)
+using GetActivationTokenFunc = const char* (*)(NotifyNotification*)
+    [[clang::cfi_unchecked_callee]];
+#else
 using GetActivationTokenFunc = const char* (*)(NotifyNotification*);
+#endif
 GetActivationTokenFunc g_get_activation_token = nullptr;
 
 void log_and_clear_error(GError* error, const char* context) {

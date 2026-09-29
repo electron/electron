@@ -1,3 +1,4 @@
+import("//build/config/clang/clang.gni")
 import("//build/config/locales.gni")
 import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
@@ -82,6 +83,7 @@ if (is_linux) {
 
   generate_library_loader("libnotify_loader") {
     name = "LibNotifyLoader"
+    cfi_unchecked_callee = true
     output_h = "libnotify_loader.h"
     output_cc = "libnotify_loader.cc"
     header = "<libnotify/notify.h>"
@@ -2061,6 +2063,51 @@ action("libcxx_objects_zip") {
 
 group("electron") {
   public_deps = [ ":electron_app" ]
+  if (is_linux && target_cpu == "x64" && is_cfi && use_cfi_icall &&
+      use_thin_lto) {
+    public_deps += [ ":verify_cfi_callback_boundaries" ]
+  }
+}
+
+if (is_linux && target_cpu == "x64" && is_cfi && use_cfi_icall &&
+    use_thin_lto) {
+  action("verify_cfi_callback_boundaries") {
+    script = "build/cfi/verify_callback_boundaries.py"
+    deps = [
+      "//third_party/electron_node/deps/uv",
+      "//v8",
+    ]
+
+    _v8_ninja_file = "$root_out_dir/obj/v8/v8_base_without_compiler.ninja"
+    _libuv_archive =
+        "$root_out_dir/obj/third_party/electron_node/deps/uv/libuv.a"
+    _manifest = "build/cfi/ir_callback_manifest.txt"
+    inputs = [
+      _libuv_archive,
+      _manifest,
+    ]
+    outputs = [ "$target_gen_dir/verify_cfi_callback_boundaries.stamp" ]
+    depfile = "$target_gen_dir/verify_cfi_callback_boundaries.d"
+    args = [
+      "--clang",
+      rebase_path("$clang_base_path/bin/clang", root_build_dir),
+      "--llvm-ar",
+      rebase_path("$clang_base_path/bin/llvm-ar", root_build_dir),
+      "--build-dir",
+      ".",
+      "--ninja-objects",
+      "v8=" + rebase_path(_v8_ninja_file, root_build_dir) +
+          "::phony/v8/v8_base_without_compiler.linkdeps",
+      "--thin-archive",
+      "libuv=" + rebase_path(_libuv_archive, root_build_dir),
+      "--manifest",
+      rebase_path(_manifest, root_build_dir),
+      "--stamp",
+      rebase_path(outputs[0], root_build_dir),
+      "--depfile",
+      rebase_path(depfile, root_build_dir),
+    ]
+  }
 }
 
 ##### node_headers

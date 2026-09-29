@@ -49,6 +49,7 @@
 
 #include <algorithm>
 
+#include "base/compiler_specific.h"
 #include "base/memory/raw_ptr_exclusion.h"
 
 // MemorySanitizer intercepts these functions to track `environ`; leave them
@@ -241,6 +242,9 @@ void RemoveEntries(const char* name, size_t name_len) {
 
 extern "C" {
 
+// These glibc functions are resolved through dlsym(RTLD_NEXT), so their
+// indirect calls cannot be checked by CFI.
+DISABLE_CFI_ICALL
 __attribute__((visibility("default"))) int setenv(const char* name,
                                                   const char* value,
                                                   int replace) noexcept {
@@ -274,6 +278,7 @@ __attribute__((visibility("default"))) int setenv(const char* name,
   return 0;
 }
 
+DISABLE_CFI_ICALL
 __attribute__((visibility("default"))) int unsetenv(const char* name) noexcept {
   if (const GlibcFunctions* glibc = GetGlibcFunctionsIfSafe()) {
     return glibc->unsetenv(name);
@@ -287,6 +292,7 @@ __attribute__((visibility("default"))) int unsetenv(const char* name) noexcept {
   return 0;
 }
 
+DISABLE_CFI_ICALL
 __attribute__((visibility("default"))) int putenv(char* string) noexcept {
   if (const GlibcFunctions* glibc = GetGlibcFunctionsIfSafe()) {
     return glibc->putenv(string);
@@ -310,6 +316,7 @@ __attribute__((visibility("default"))) int putenv(char* string) noexcept {
   return 0;
 }
 
+DISABLE_CFI_ICALL
 __attribute__((visibility("default"))) int clearenv() noexcept {
   if (const GlibcFunctions* glibc = GetGlibcFunctionsIfSafe()) {
     return glibc->clearenv();
