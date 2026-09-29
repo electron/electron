@@ -169,7 +169,7 @@ export async function spawn(cmd: string, args: string[], opts: any = {}): Promis
   child.stderr.on('data', (chunk: Buffer) => {
     out += chunk.toString();
   });
-  const [code, signal] = await once(child, 'exit');
+  const [code, signal] = await once(child, 'close');
   expect(signal).to.equal(null);
   return { code, out };
 }

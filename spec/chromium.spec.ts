@@ -592,7 +592,7 @@ describe('command line switches', () => {
         stderr += data;
       });
 
-      const [code, signal] = await once(appProcess, 'exit');
+      const [code, signal] = await once(appProcess, 'close');
       if (code !== 0) {
         throw new Error(`Process exited with code "${code}" signal "${signal}" output "${output}" stderr "${stderr}"`);
       }
@@ -968,7 +968,7 @@ describe('chromium features', () => {
       fpsProcess.stdout.on('data', (data) => {
         output += data;
       });
-      await once(fpsProcess, 'exit');
+      await once(fpsProcess, 'close');
 
       expect(output).to.include(fps.join(','));
     });
@@ -983,7 +983,7 @@ describe('chromium features', () => {
       fpsProcess.stdout.on('data', (data) => {
         output += data;
       });
-      await once(fpsProcess, 'exit');
+      await once(fpsProcess, 'close');
 
       expect(output).to.include(fps.join(','));
     });
