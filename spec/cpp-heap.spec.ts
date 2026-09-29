@@ -808,6 +808,170 @@ describe('cpp heap', () => {
     });
   });
 
+  describe('View module', () => {
+    it('should record as node in heap snapshot while a JS reference is held', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { View } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          (globalThis as any).viewRef = new View();
+          const state = recordState();
+          const present = containsRetainingPath(state.snapshot, ['Electron / View']);
+          const isPersistentRooted = containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / View']);
+          return present && !isPersistentRooted;
+        },
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true);
+    });
+
+    it('releases a View whose layout callback captures it', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const released = await remotely(async () => {
+        const { View } = require('electron');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const refs = (() => {
+          const parent = new View();
+          const child = new View();
+          parent.addChildView(child);
+          parent.setLayout({
+            calculateProposedLayout: () => ({
+              size: { width: 10, height: 10 },
+              layouts: [{ view: parent.children[0], bounds: { x: 0, y: 0, width: 10, height: 10 } }]
+            })
+          });
+          parent.setBounds({ x: 0, y: 0, width: 20, height: 20 });
+          return { parent: new WeakRef(parent), child: new WeakRef(child) };
+        })();
+
+        for (let i = 0; i < 30; ++i) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          v8Util.requestGarbageCollectionForTesting();
+          if (!refs.parent.deref() && !refs.child.deref()) return true;
+        }
+        return false;
+      });
+      expect(released).to.equal(true, 'a layout callback that captures its View must not keep it alive');
+    });
+
+    it('keeps child views alive through their parent', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(async () => {
+        const { View } = require('electron');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const parent = new View();
+        (globalThis as any).parentView = parent;
+        const childRef = (() => {
+          const child = new View();
+          parent.addChildView(child);
+          return new WeakRef(child);
+        })();
+
+        for (let i = 0; i < 10; ++i) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          v8Util.requestGarbageCollectionForTesting();
+        }
+        return { count: parent.children.length, same: childRef.deref() === parent.children[0] };
+      });
+      expect(result).to.deep.equal({ count: 1, same: true });
+    });
+
+    it('gives a window content view created before View is loaded the View prototype', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const result = await remotely(async () => {
+        const electron = require('electron');
+        const w = new electron.BaseWindow({ show: false });
+        const contentView = w.contentView;
+        const { View } = electron;
+        const ok = contentView instanceof View && Object.getPrototypeOf(contentView) === View.prototype;
+        w.destroy();
+        return ok;
+      });
+      expect(result).to.equal(true);
+    });
+
+    it('destroys the webContents of a collected WebContentsView', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(async () => {
+        const { WebContentsView } = require('electron');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const state = (() => {
+          const view = new WebContentsView();
+          return { webContents: view.webContents, view: new WeakRef(view) };
+        })();
+
+        for (let i = 0; i < 30; ++i) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          v8Util.requestGarbageCollectionForTesting();
+          if (state.webContents.isDestroyed()) break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        return { collected: !state.view.deref(), destroyed: state.webContents.isDestroyed() };
+      });
+      expect(result).to.deep.equal({ collected: true, destroyed: true });
+    });
+
+    it('does not destroy a webContents adopted before its previous view is released', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(async () => {
+        const { WebContentsView } = require('electron');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const previousViews: WeakRef<Electron.WebContentsView>[] = [];
+        let view: Electron.WebContentsView | null = new WebContentsView();
+        previousViews.push(new WeakRef(view));
+        const webContents = view.webContents;
+        for (let i = 0; i < 20; ++i) {
+          // Collect the previous view and adopt its webContents in the same
+          // task, before the collected view's native peer is released.
+          view = null;
+          v8Util.requestGarbageCollectionForTesting();
+          view = new WebContentsView({ webContents });
+          previousViews.push(new WeakRef(view));
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          if (webContents.isDestroyed()) break;
+        }
+        for (let i = 0; i < 5; ++i) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          v8Util.requestGarbageCollectionForTesting();
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        const destroyed = webContents.isDestroyed();
+        const anyCollected = previousViews.some((ref) => ref.deref() === undefined);
+        if (!destroyed) webContents.destroy();
+        return { destroyed, anyCollected };
+      });
+      expect(result).to.deep.equal({ destroyed: false, anyCollected: true });
+    });
+
+    it('does not crash on exit with live views', async () => {
+      const rc = await startRemoteControlApp();
+      const exited = once(rc.process, 'exit');
+      await rc.remotely(async () => {
+        const { app, BaseWindow, ImageView, View, WebContentsView } = require('electron');
+        const w = new BaseWindow({ show: false });
+        const container = new View();
+        const webContentsView = new WebContentsView();
+        container.addChildView(new ImageView());
+        container.addChildView(webContentsView);
+        container.setLayout({
+          calculateProposedLayout: () => ({ size: { width: 0, height: 0 }, layouts: [] })
+        });
+        w.contentView.addChildView(container);
+        (globalThis as any).views = { w, container, detached: new View() };
+        setTimeout(() => app.quit());
+      });
+      const [code] = await exited;
+      expect(code).to.equal(0);
+    });
+  });
+
   describe('MessagePort module', () => {
     it('should be rooted while a started port is entangled', async () => {
       const { remotely } = await startRemoteControlApp(['--expose-internals']);
@@ -1753,8 +1917,8 @@ describe('cpp heap', () => {
             v8Util.requestGarbageCollectionForTesting();
           }
           const retained = ref.deref() === view.webContents && !view.webContents.isDestroyed();
-          const rooted = containsRetainingPath(recordState().snapshot, [
-            'C++ Persistent roots',
+          const retainedByView = containsRetainingPath(recordState().snapshot, [
+            'Electron / WebContentsView',
             'Electron / WebContents'
           ]);
           const destroyed = once(view.webContents, 'destroyed', { signal: AbortSignal.timeout(10000) });
@@ -1766,14 +1930,14 @@ describe('cpp heap', () => {
             v8Util.requestGarbageCollectionForTesting();
             if (!ref.deref()) break;
           }
-          return { retained, rooted, released: !ref.deref() };
+          return { retained, retainedByView, released: !ref.deref() };
         },
         path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
         path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
 
       expect(result.retained).to.equal(true);
-      expect(result.rooted).to.equal(true);
+      expect(result.retainedByView).to.equal(true);
       expect(result.released).to.equal(true);
     });
 

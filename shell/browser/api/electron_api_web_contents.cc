@@ -2156,6 +2156,12 @@ void WebContents::Destroy() {
   }
 }
 
+void WebContents::DestroyNow() {
+  if (disposing_ || destroyed_)
+    return;
+  Dispose();
+}
+
 void WebContents::Close(std::optional<gin_helper::Dictionary> options) {
   bool dispatch_beforeunload = false;
   if (options)
