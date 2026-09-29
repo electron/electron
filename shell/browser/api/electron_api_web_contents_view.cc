@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "base/functional/bind.h"
+#include "base/functional/callback.h"
 #include "base/memory/weak_ptr.h"
 #include "base/scoped_observation.h"
 #include "base/task/sequenced_task_runner.h"
@@ -101,7 +102,19 @@ class WebContentsContainerView : public views::View,
     return inspectable_view_deleting_ && child == inspectable_view_.view();
   }
 
+  // Invoked when this view's bounds have changed, including a move that keeps
+  // its size, but before its children (and therefore the page's
+  // RenderWidgetHostView) have been laid out to match.
+  void SetBoundsChangedCallback(base::RepeatingClosure callback) {
+    bounds_changed_callback_ = std::move(callback);
+  }
+
   // views::View:
+  void OnBoundsChanged(const gfx::Rect& previous_bounds) override {
+    if (bounds_changed_callback_)
+      bounds_changed_callback_.Run();
+  }
+
   void Layout(PassKey) override {
     LayoutSuperclass<views::View>(this);
     if (InspectableWebContentsView* view = GetOwnedInspectableView())
@@ -119,6 +132,7 @@ class WebContentsContainerView : public views::View,
 
   views::ViewTracker inspectable_view_;
   bool inspectable_view_deleting_ = false;
+  base::RepeatingClosure bounds_changed_callback_;
   base::ScopedObservation<views::View, views::ViewObserver>
       inspectable_view_observation_{this};
 };
@@ -198,7 +212,7 @@ WebContentsViewHost::WebContentsViewHost(WebContentsView* wrapper,
   SetOwnedByClient(inspectable_view);
   container()->TakeInspectableView(inspectable_view);
   // See OnContentsBoundsChanging().
-  inspectable_view->SetBoundsChangedCallback(
+  container()->SetBoundsChangedCallback(
       base::BindRepeating(&WebContentsViewHost::OnContentsBoundsChanging,
                           weak_factory_.GetWeakPtr()));
 }
@@ -214,11 +228,8 @@ void WebContentsViewHost::TearDownNative() {
   UnregisterDraggableRegionProvider();
   window_controls_overlay_update_pending_ = false;
 
-  InspectableWebContentsView* inspectable_view = GetOwnedInspectableView();
-  if (inspectable_view)
-    inspectable_view->SetBoundsChangedCallback(base::RepeatingClosure());
   cppgc::Persistent<WebContents> web_contents_to_destroy;
-  if (inspectable_view && destroy_web_contents_on_release_)
+  if (GetOwnedInspectableView() && destroy_web_contents_on_release_)
     web_contents_to_destroy = GetLiveWebContents();
 
   weak_factory_.InvalidateWeakPtrs();
@@ -356,10 +367,11 @@ void WebContentsViewHost::OnViewRemovedFromWidget(views::View* observed_view) {
   UnregisterDraggableRegionProvider();
 }
 
-// Our bounds changed and the RenderWidgetHostView is about to be resized to
-// match. Push the re-clipped overlay rect now so that it rides along with the
-// resize in a single VisualProperties update, rather than trailing it (where it
-// could sit behind the resize's pending ack).
+// Our bounds changed, by a move or a resize, and on a resize the
+// RenderWidgetHostView is about to be resized to match. Push the re-clipped
+// overlay rect now so that it rides along with the resize in a single
+// VisualProperties update, rather than trailing it (where it could sit behind
+// the resize's pending ack).
 void WebContentsViewHost::OnContentsBoundsChanging() {
   if (HasLivePage())
     SendWindowControlsOverlay();
