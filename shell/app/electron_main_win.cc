@@ -9,6 +9,7 @@
 #include <tchar.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <memory>
 #include <string>
@@ -17,6 +18,7 @@
 #include "base/at_exit.h"
 #include "base/debug/alias.h"
 #include "base/i18n/icu_util.h"
+#include "base/logging.h"
 #include "base/process/process.h"
 #include "base/strings/cstring_view.h"
 #include "base/win/atl.h"  // ensures that ATL statics like `_AtlWinModule` are initialized (it's an issue in static debug build)
@@ -48,6 +50,24 @@ const char kNodeService[] = "node.mojom.NodeService";
   size_t required_size = 0;
   getenv_s(&required_size, nullptr, 0, name.c_str());
   return required_size != 0;
+}
+
+bool IsFuseWireInExecutableImage(const volatile char* wire) {
+  MEMORY_BASIC_INFORMATION region;
+  constexpr DWORD kReadable = PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY |
+                              PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE |
+                              PAGE_EXECUTE_WRITECOPY;
+  if (!::VirtualQuery(const_cast<const char*>(wire), &region, sizeof(region)) ||
+      region.State != MEM_COMMIT ||
+      region.AllocationBase != ::GetModuleHandle(nullptr) ||
+      !(region.Protect & kReadable) || (region.Protect & PAGE_GUARD)) {
+    return false;
+  }
+
+  // The static wire must fit entirely in this readable region.
+  const auto offset = reinterpret_cast<uintptr_t>(wire) -
+                      reinterpret_cast<uintptr_t>(region.BaseAddress);
+  return sizeof(electron::fuses::kFuseWire) <= region.RegionSize - offset;
 }
 
 }  // namespace
@@ -93,7 +113,11 @@ extern "C" __declspec(dllexport) int ElectronMain(
     HINSTANCE instance,
     sandbox::SandboxInterfaceInfo* sandbox_info,
     const volatile char* fuse_wire) {
-  electron::fuses::SetFuseWire(fuse_wire);
+  if (!IsFuseWireInExecutableImage(fuse_wire) ||
+      !electron::fuses::SetFuseWire(fuse_wire)) {
+    LOG(ERROR) << "Invalid Electron fuse configuration";
+    return ERROR_INVALID_DATA;
+  }
 #if defined(ARCH_CPU_32_BITS)
   enum class FiberStatus { kConvertFailed, kCreateFiberFailed, kSuccess };
   FiberStatus fiber_status = FiberStatus::kSuccess;
