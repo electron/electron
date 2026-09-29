@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Le Hoang Quyen <lehoangquyen@chromium.org>
+Date: Thu, 10 Sep 2026 23:37:38 +0800
+Subject: Reland "m152: D3D11: fixing robust init for self copy same mip lvl"
+
+This is a reland of commit e7f6ee33d17574a2ac344e2b74daa3dd6e5c7ec3
+
+What's changed:
+- Fixing compilation error by wrapping destIndex in gl::OwnImageIndex.
+
+Original change's description:
+> m152: D3D11: fixing robust init for self copy same mip lvl
+>
+> When performing a glCopyTexImage2D self-copy on the same mip level
+> with a source rectangle fully out of bounds of the framebuffer,
+> handleCopyImageSelfCopyRedefine checked ClipRectangle and returned
+> early after redefining the destination texture.
+>
+> This early return bypassed the call to initializeContents(), leaving
+> the newly resized destination texture uninitialized with stale or
+> undefined contents while the front-end marked the image initialized.
+>
+> This patch calls initializeContents() prior to the early return when
+> robust resource initialization or WebGL is enabled, ensuring that
+> fully out-of-bounds self-copies are properly zero-initialized. Also
+> removes the test skip expectation for the
+> Texture2DTestES3RobustInit.CopyTexImageOutOfBoundsSelf test on
+> Win D3D11.
+>
+> Bug: chromium:556789073
+> Fixed: chromium:561874521
+> Change-Id: I03b5f6c6f7fc15dfc4696808b35f9d5f8ed44195
+> Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8387697
+> Auto-Submit: Quyen Le <lehoangquyen@google.com>
+> Commit-Queue: Quyen Le <lehoangquyen@google.com>
+> Reviewed-by: Kenneth Russell <kbr@chromium.org>
+> (cherry picked from commit c2b3395143b5b0ae3f74bd120ad5e7f1fbd9318a)
+> Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8439858
+> Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+Bug: chromium:556789073
+Change-Id: Iefebd524e198449a07001a03137c0f2ee471b686
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8465322
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Quyen Le <lehoangquyen@google.com>
+
+diff --git a/src/libANGLE/renderer/d3d/TextureD3D.cpp b/src/libANGLE/renderer/d3d/TextureD3D.cpp
+index a42207548992d3d51d5a2ca1f4f6730326a6c93d..72a7eba1b81f99871fb3ffb740f4804669fc108e 100644
+--- a/src/libANGLE/renderer/d3d/TextureD3D.cpp
++++ b/src/libANGLE/renderer/d3d/TextureD3D.cpp
+@@ -137,6 +137,10 @@ angle::Result TextureD3D::handleCopyImageSelfCopyRedefine(
+     {
+         // We won't be copying, but redefine the destination texture in case sourceArea is larger
+         ANGLE_TRY(redefineDest(destExtents));
++        if (context->isWebGL() || context->isRobustResourceInitEnabled())
++        {
++            ANGLE_TRY(initializeContents(context, GL_NONE, gl::OwnImageIndex(destIndex)));
++        }
+         return angle::Result::Continue;
+     }
+ 

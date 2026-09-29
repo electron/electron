@@ -1,0 +1,177 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Wed, 23 Sep 2026 15:05:30 -0700
+Subject: [skia] Update Ganesh flush calls to propagate success
+
+Ganesh's flush now reports success, so update call sites to include that
+in their `success` results that were already being propagated up.
+Additionaly, raster_decoder's SetCleared() logic is unified now between
+Ganesh and Graphite to only mark the shared image as cleared after the
+flush is successful.
+
+Bug: 561994362
+Fixed: 561994362
+Change-Id: I8dbe91d8f6481af4542ff8f4023811efa6966f87
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8449772
+Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+Reviewed-by: Kyle Charbonneau <kylechar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1703817}
+
+Electron adaptation notes (43-x-y):
+M150 has no deferred should_clear_shared_image_ path in RasterDecoderImpl and SharedContextState::FlushWriteAccess() returns void, so the fix was ported by: adding should_clear_shared_image_ and marking the SharedImage cleared in DoEndRasterCHROMIUM() only when FlushWriteAccess() reports success; making FlushWriteAccess() return bool (Graphite: FlushGraphiteRecorder() result); removing the early representation->SetCleared() in WebGPUDecoderImpl::ClearSharedImageWithSkia() (upstream already only marks cleared after the submit) and returning the flush result from UploadContentsToSkia() as upstream does.
+
+diff --git a/gpu/command_buffer/service/raster_decoder.cc b/gpu/command_buffer/service/raster_decoder.cc
+index 7a73792f658aeefe5a07f569ceb108aa8d9f2eb8..4d3a7ee4d5656ab42addc4a557d4d5ae8cecdac8 100644
+--- a/gpu/command_buffer/service/raster_decoder.cc
++++ b/gpu/command_buffer/service/raster_decoder.cc
+@@ -899,6 +899,7 @@ class RasterDecoderImpl final : public RasterDecoder,
+   std::unique_ptr<SkiaImageRepresentation> shared_image_;
+   std::unique_ptr<SkiaImageRepresentation::ScopedWriteAccess>
+       scoped_shared_image_write_;
++  bool should_clear_shared_image_ = false;
+ 
+   std::unique_ptr<RasterImageRepresentation> shared_image_raster_;
+   std::unique_ptr<RasterImageRepresentation::ScopedWriteAccess>
+@@ -2978,9 +2979,10 @@ void RasterDecoderImpl::DoBeginRasterCHROMIUM(GLfloat r,
+   // incorrect.
+   if (needs_clear) {
+     raster_canvas_->drawColor(sk_color_4f, SkBlendMode::kSrc);
+-    shared_image_->SetCleared();
++    // Remember that we can mark the shared image as cleared if the deferred
++    // GPU work is flushed successfully.
++    should_clear_shared_image_ = true;
+   }
+-  DCHECK(shared_image_->IsCleared());
+ }
+ 
+ scoped_refptr<Buffer> RasterDecoderImpl::GetShmBuffer(uint32_t shm_id) {
+@@ -3160,7 +3162,8 @@ void RasterDecoderImpl::DoEndRasterCHROMIUM() {
+     // scoped_shared_image_write_ can be nullptr if sk_surface_ was set by
+     // SetUpForRasterCHROMIUMForTest.
+     if (scoped_shared_image_write_) {
+-      shared_context_state_->FlushWriteAccess(scoped_shared_image_write_.get());
++      bool success = shared_context_state_->FlushWriteAccess(
++          scoped_shared_image_write_.get());
+       // Flushing surface will cause vulkan command buffer to be recorded with
+       // image layout transitions as necessary. Transitioning layout back to
+       // desired need to be happening after.
+@@ -3170,6 +3173,9 @@ void RasterDecoderImpl::DoEndRasterCHROMIUM() {
+           scoped_shared_image_write_->NeedGraphiteContextSubmit();
+       shared_context_state_->SubmitIfNecessary(std::move(end_semaphores_),
+                                                need_graphite_submit);
++      if (success && should_clear_shared_image_) {
++        shared_image_->SetCleared();
++      }
+     } else {
+       DCHECK(end_semaphores_.empty());
+     }
+@@ -3180,6 +3186,7 @@ void RasterDecoderImpl::DoEndRasterCHROMIUM() {
+   scoped_shared_image_write_.reset();
+   shared_image_.reset();
+   paint_op_shared_image_provider_.reset();
++  should_clear_shared_image_ = false;
+ 
+   // Test only path for SetUpForRasterCHROMIUMForTest.
+   sk_surface_for_testing_.reset();
+diff --git a/gpu/command_buffer/service/shared_context_state.cc b/gpu/command_buffer/service/shared_context_state.cc
+index d1a7528433fa2a5ca0f2a31c4f156dc5149a78ed..eb06e463447b4efe7c62011765de7b8bbfd5d366 100644
+--- a/gpu/command_buffer/service/shared_context_state.cc
++++ b/gpu/command_buffer/service/shared_context_state.cc
+@@ -840,22 +840,24 @@ bool SharedContextState::FlushAndSubmit(bool sync_to_cpu) {
+                                           : skgpu::graphite::SyncToCpu::kNo);
+     return flush_succeeded;
+   } else if (gr_context()) {
+-    gr_context()->flush();
+-    return gr_context()->submit(sync_to_cpu ? GrSyncCpu::kYes : GrSyncCpu::kNo);
++    return gr_context()
++        ->flushAndSubmit(sync_to_cpu ? GrSyncCpu::kYes : GrSyncCpu::kNo)
++        .fSuccess;
+   }
+   return true;
+ }
+ 
+-void SharedContextState::FlushWriteAccess(
++bool SharedContextState::FlushWriteAccess(
+     SkiaImageRepresentation::ScopedWriteAccess* access) {
+   static int flush_count = 0;
+   const base::TimeTicks start = base::TimeTicks::Now();
++  bool success = true;
+   if (graphite_shared_context()) {
+     // The only way to flush GPU work with Graphite is to snap and insert a
+     // recording here. It's also necessary to submit before dropping the scoped
+     // access since we want the Dawn texture to be alive on submit, but that's
+     // handled in SubmitIfNecessary.
+-    FlushGraphiteRecorder();
++    success = FlushGraphiteRecorder();
+   } else {
+     if (access->HasBackendSurfaceEndState()) {
+       access->ApplyBackendSurfaceEndState();
+@@ -866,7 +868,7 @@ void SharedContextState::FlushWriteAccess(
+       for (int plane_index = 0; plane_index < num_planes; plane_index++) {
+         auto* surface = access->surface(plane_index);
+         DCHECK(surface);
+-        skgpu::ganesh::Flush(surface);
++        success &= skgpu::ganesh::Flush(surface).fSuccess;
+       }
+     }
+   }
+@@ -876,6 +878,7 @@ void SharedContextState::FlushWriteAccess(
+         "GPU.RasterDecoder.TimeToFlush", base::TimeTicks::Now() - start,
+         base::Microseconds(1), base::Seconds(1), 100);
+   }
++  return success;
+ }
+ 
+ bool SharedContextState::SubmitIfNecessary(
+diff --git a/gpu/command_buffer/service/shared_context_state.h b/gpu/command_buffer/service/shared_context_state.h
+index 322b918e933b1464db3c637ff86a26b153582fff..c9e3a82c46e5ac6b9d4e5d155afcc74e947a8bf4 100644
+--- a/gpu/command_buffer/service/shared_context_state.h
++++ b/gpu/command_buffer/service/shared_context_state.h
+@@ -148,7 +148,7 @@ class GPU_GLES2_EXPORT SharedContextState
+ 
+   bool FlushAndSubmit(bool sync_to_cpu);
+   bool FlushGraphiteRecorder();
+-  void FlushWriteAccess(SkiaImageRepresentation::ScopedWriteAccess* access);
++  bool FlushWriteAccess(SkiaImageRepresentation::ScopedWriteAccess* access);
+   bool SubmitIfNecessary(std::vector<GrBackendSemaphore> signal_semaphores,
+                          bool need_graphite_submit);
+ 
+diff --git a/gpu/command_buffer/service/webgpu_decoder_impl.cc b/gpu/command_buffer/service/webgpu_decoder_impl.cc
+index 0f52496d2ebeab5045bd8b8237c03f3bd51d1cb7..f20c675003623c9b190ca29b1bf976d56df216cb 100644
+--- a/gpu/command_buffer/service/webgpu_decoder_impl.cc
++++ b/gpu/command_buffer/service/webgpu_decoder_impl.cc
+@@ -891,7 +891,7 @@ class WebGPUDecoderImpl final : public WebGPUDecoder {
+       // It's ok to pass in empty GrFlushInfo here since SignalSemaphores()
+       // will populate it with semaphores and call GrDirectContext::flush.
+       if (shared_context_state_->gr_context()) {
+-        skgpu::ganesh::Flush(surface);
++        success = skgpu::ganesh::Flush(surface).fSuccess;
+       } else {
+         DCHECK(shared_context_state_->graphite_shared_context());
+         DCHECK(shared_context_state_->gpu_main_graphite_recorder());
+@@ -905,7 +905,7 @@ class WebGPUDecoderImpl final : public WebGPUDecoder {
+ 
+       SignalSemaphores(std::move(end_semaphores));
+ 
+-      return true;
++      return success;
+     }
+ 
+     void WaitForSemaphores(std::vector<GrBackendSemaphore> semaphores) {
+@@ -2480,12 +2480,14 @@ bool WebGPUDecoderImpl::ClearSharedImageWithSkia(const Mailbox& mailbox) {
+     clear_color = {0, 0, 0, 0};
+   }
+   canvas->drawColor(clear_color, SkBlendMode::kSrc);
+-  representation->SetCleared();
+ 
+   // It's ok to pass in empty GrFlushInfo here since SignalSemaphores()
+   // will populate it with semaphores and call GrDirectContext::flush.
+   if (shared_context_state_->gr_context()) {
+-    skgpu::ganesh::Flush(surface);
++    if (!skgpu::ganesh::Flush(surface).fSuccess) {
++      DLOG(ERROR) << "ClearSharedImage: skgpu::ganesh::Flush failed";
++      return false;
++    }
+   } else {
+     DCHECK(shared_context_state_->graphite_shared_context());
+     DCHECK(shared_context_state_->gpu_main_graphite_recorder());

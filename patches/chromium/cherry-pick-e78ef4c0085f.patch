@@ -1,0 +1,219 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Tue, 29 Sep 2026 02:45:34 +0000
+Subject: [M150-LTS] Check for GL driver errors before marking SharedImage
+ cleared in RasterDecoder
+
+In Ganesh-GL, Skia's texture upload path does not check glGetError()
+and may report success even when an underlying GL driver
+under memory pressure drops texture uploads and latches GL_OUT_OF_MEMORY.
+If an uncleared SharedImage is uploaded under these conditions, it could
+be falsely marked cleared and subsequently read back, exposing
+uninitialized texture memory.
+
+This CL:
+1. Adds DrainGLErrors(gl::GLApi* gl_api) to gpu/command_buffer/service/gl_utils.h
+   to drain driver error queues and return the first encountered error.
+2. Drains and verifies GL driver errors before marking the destination
+   SharedImage cleared in both DoWritePixelsINTERNAL and WritePixelsYUV
+   when running on Ganesh-GL without context loss. If a GL error occurs,
+   the upload fails and the SharedImage remains uncleared.
+
+TAG=agy
+CONV=ce4f2943-8656-4843-9fb6-351b575b6034
+
+Bug: 562042411
+Change-Id: Ifb68f72b16dbfe0bb6df2dd8915d20dc47865c8d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8419764
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Commit-Queue: Jonathan Ross <jonross@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1702073}
+(cherry picked from commit d399d25e394d5c50d10ce8e63effd39ba4a365a2)
+
+diff --git a/gpu/command_buffer/service/copy_shared_image_helper.cc b/gpu/command_buffer/service/copy_shared_image_helper.cc
+index d48a516b40644750a81d71754a10ba60299335d2..57ce9f77fd6e2c37c7fa2a2386bf3e3501bfbe9e 100644
+--- a/gpu/command_buffer/service/copy_shared_image_helper.cc
++++ b/gpu/command_buffer/service/copy_shared_image_helper.cc
+@@ -13,6 +13,7 @@
+ #include "base/types/expected.h"
+ #include "base/types/expected_macros.h"
+ #include "gpu/command_buffer/common/mailbox.h"
++#include "gpu/command_buffer/service/gl_utils.h"
+ #include "gpu/command_buffer/service/graphite_shared_context.h"
+ #include "gpu/command_buffer/service/shared_context_state.h"
+ #include "gpu/command_buffer/service/shared_image/shared_image_factory.h"
+@@ -791,6 +792,15 @@ base::expected<void, GLError> CopySharedImageHelper::WritePixelsYUV(
+   auto* gr_context = shared_context_state_->gr_context();
+   const bool need_graphite_submit =
+       dest_scoped_access->NeedGraphiteContextSubmit();
++  const bool check_gl_upload_errors = !dest_shared_image->IsCleared() &&
++                                      shared_context_state_->GrContextIsGL() &&
++                                      !shared_context_state_->context_lost();
++  gl::GLApi* const gl_api =
++      check_gl_upload_errors ? gl::g_current_gl_context : nullptr;
++  if (gl_api) {
++    DrainGLErrors(gl_api);
++  }
++
+   for (int plane = 0; plane < dest_format.NumberOfPlanes(); plane++) {
+     bool written = false;
+     if (gr_context) {
+@@ -827,6 +837,14 @@ base::expected<void, GLError> CopySharedImageHelper::WritePixelsYUV(
+                                            need_graphite_submit);
+ 
+   if (!dest_shared_image->IsCleared()) {
++    if (gl_api) {
++      GLenum error = DrainGLErrors(gl_api);
++      if (error != GL_NO_ERROR) {
++        return base::unexpected(
++            GLError(error, "WritePixelsYUV",
++                    "GL driver reported an error during texture upload"));
++      }
++    }
+     dest_shared_image->SetClearedRect(gfx::Rect(src_width, src_height));
+   }
+   return base::ok();
+diff --git a/gpu/command_buffer/service/gl_utils.h b/gpu/command_buffer/service/gl_utils.h
+index b68069c29c22b2dbf46205202af90fe18d611563..cf2d4c0f883fb54a2474550e4cc5acca61699548 100644
+--- a/gpu/command_buffer/service/gl_utils.h
++++ b/gpu/command_buffer/service/gl_utils.h
+@@ -183,6 +183,18 @@ bool IsCompressedTextureFormat(GLenum internal_format);
+ Texture* CreateGLES2TextureWithLightRef(GLuint service_id, GLenum target);
+ 
+ }  // namespace gles2
++
++// Drains all GL errors from `gl_api` and returns the first error encountered,
++// or GL_NO_ERROR if there were no errors.
++inline GLenum DrainGLErrors(gl::GLApi* gl_api) {
++  GLenum error = gl_api->glGetErrorFn();
++  GLenum first_error = error;
++  while (error != GL_NO_ERROR) {
++    error = gl_api->glGetErrorFn();
++  }
++  return first_error;
++}
++
+ }  // namespace gpu
+ 
+ #endif  // GPU_COMMAND_BUFFER_SERVICE_GL_UTILS_H_
+diff --git a/gpu/command_buffer/service/raster_decoder.cc b/gpu/command_buffer/service/raster_decoder.cc
+index cce71d8493d9a1bee525aa9224b1d4c091c27c7f..7a73792f658aeefe5a07f569ceb108aa8d9f2eb8 100644
+--- a/gpu/command_buffer/service/raster_decoder.cc
++++ b/gpu/command_buffer/service/raster_decoder.cc
+@@ -2007,6 +2007,15 @@ void RasterDecoderImpl::DoWritePixelsINTERNAL(GLint x_offset,
+     return;
+   }
+ 
++  const bool check_gl_upload_errors = !dest_shared_image->IsCleared() &&
++                                      shared_context_state_->GrContextIsGL() &&
++                                      !WasContextLost();
++  gl::GLApi* const gl_api =
++      check_gl_upload_errors ? gl::g_current_gl_context : nullptr;
++  if (gl_api) {
++    DrainGLErrors(gl_api);
++  }
++
+   // Try a direct texture upload without using SkSurface.
+   if (gfx::Size(src_width, src_height) == dest_shared_image->size() &&
+       x_offset == 0 && y_offset == 0 &&
+@@ -2018,12 +2027,27 @@ void RasterDecoderImpl::DoWritePixelsINTERNAL(GLint x_offset,
+       DoWritePixelsINTERNALDirectTextureUpload(
+           dest_shared_image.get(), src_info, pixel_data, row_bytes)) {
+     if (!dest_shared_image->IsCleared()) {
++      if (gl_api) {
++        GLenum error = DrainGLErrors(gl_api);
++        if (error != GL_NO_ERROR) {
++          LOCAL_SET_GL_ERROR(
++              error, "glWritePixels",
++              "GL driver reported an error during texture upload");
++          return;
++        }
++      }
+       dest_shared_image->SetClearedRect(
+           gfx::Rect(src_info.width(), src_info.height()));
+     }
+     return;
+   }
+ 
++  // If direct upload was skipped or failed, drain any errors from the attempt
++  // before proceeding with the SkSurface fallback.
++  if (gl_api) {
++    DrainGLErrors(gl_api);
++  }
++
+   std::vector<GrBackendSemaphore> begin_semaphores;
+   std::vector<GrBackendSemaphore> end_semaphores;
+ 
+@@ -2067,6 +2091,14 @@ void RasterDecoderImpl::DoWritePixelsINTERNAL(GLint x_offset,
+       dest_scoped_access->NeedGraphiteContextSubmit());
+ 
+   if (!dest_shared_image->IsCleared()) {
++    if (gl_api) {
++      GLenum error = DrainGLErrors(gl_api);
++      if (error != GL_NO_ERROR) {
++        LOCAL_SET_GL_ERROR(error, "glWritePixels",
++                           "GL driver reported an error during texture upload");
++        return;
++      }
++    }
+     dest_shared_image->SetClearedRect(
+         gfx::Rect(x_offset, y_offset, src_width, src_height));
+   }
+diff --git a/gpu/command_buffer/service/shared_image/egl_image_backing.cc b/gpu/command_buffer/service/shared_image/egl_image_backing.cc
+index 583148a2c1382651610c10a303d3e3def13b7f24..f8bbc6a01014f64bf75996b4590e3bbdac958550 100644
+--- a/gpu/command_buffer/service/shared_image/egl_image_backing.cc
++++ b/gpu/command_buffer/service/shared_image/egl_image_backing.cc
+@@ -486,8 +486,7 @@ EGLImageBacking::GenEGLImageSiblings(base::span<const uint8_t> pixel_data) {
+       // GenEGLImageSibling is attributable to the storage call. Silently
+       // squelching these errors is unfortunate, but is done in order to mirror
+       // other allocation checks done in the command decoder.
+-      while (api->glGetErrorFn() != GL_NO_ERROR) {
+-      }
++      DrainGLErrors(api);
+       for (int plane = 0; plane < num_planes; plane++) {
+         gl::ScopedEGLImage egl_image =
+             GenEGLImageSibling(pixel_data, service_ids, plane);
+diff --git a/gpu/command_buffer/service/shared_image/gl_texture_holder.cc b/gpu/command_buffer/service/shared_image/gl_texture_holder.cc
+index c4a9c4163eba8be1d8567d147ea7952d4febe9a9..67fc70cc65e5c0675dd945fce0abe5afd9ccb6f4 100644
+--- a/gpu/command_buffer/service/shared_image/gl_texture_holder.cc
++++ b/gpu/command_buffer/service/shared_image/gl_texture_holder.cc
+@@ -9,6 +9,7 @@
+ #include "base/bits.h"
+ #include "base/memory/raw_ptr.h"
+ #include "build/build_config.h"
++#include "gpu/command_buffer/service/gl_utils.h"
+ #include "gpu/command_buffer/service/shared_context_state.h"
+ #include "gpu/command_buffer/service/shared_image/gl_repack_utils.h"
+ #include "gpu/command_buffer/service/shared_image/shared_image_gl_utils.h"
+@@ -194,8 +195,7 @@ void GLTextureHolder::Initialize(
+   // below is attributable to the storage call. Silently squelching
+   // these errors is unfortunate, but is done in order to mirror other
+   // allocation checks done in the command decoder.
+-  while (api->glGetErrorFn() != GL_NO_ERROR) {
+-  }
++  DrainGLErrors(api);
+ 
+   // Initialize the texture storage/image parameters and upload initial pixels
+   // if available.
+diff --git a/gpu/command_buffer/service/shared_image/gl_texture_image_backing.cc b/gpu/command_buffer/service/shared_image/gl_texture_image_backing.cc
+index 6b2e4df65e23eefe76a2b995c221e7b17b911cf8..ee3945b3794f3f07bd810d52f2165b6c7abd7e16 100644
+--- a/gpu/command_buffer/service/shared_image/gl_texture_image_backing.cc
++++ b/gpu/command_buffer/service/shared_image/gl_texture_image_backing.cc
+@@ -17,6 +17,7 @@
+ #include "gpu/command_buffer/common/shared_image_info.h"
+ #include "gpu/command_buffer/common/shared_image_usage.h"
+ #include "gpu/command_buffer/service/context_state.h"
++#include "gpu/command_buffer/service/gl_utils.h"
+ #include "gpu/command_buffer/service/gles2_cmd_decoder.h"
+ #include "gpu/command_buffer/service/shared_context_state.h"
+ #include "gpu/command_buffer/service/shared_image/shared_image_factory.h"
+@@ -502,8 +503,7 @@ void GLTextureImageBacking::InitializeGLTexture(
+   // unfortunate, but is done in order to mirror other allocation checks done in
+   // the command decoder.
+   gl::GLApi* const api = gl::g_current_gl_context;
+-  while (api->glGetErrorFn() != GL_NO_ERROR) {
+-  }
++  DrainGLErrors(api);
+ 
+   const std::string debug_label =
+       "GLSharedImage_" + SharedImageBacking::debug_label();
