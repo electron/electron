@@ -599,6 +599,9 @@ DesktopCapturer* DesktopCapturer::Create(v8::Isolate* isolate) {
 bool DesktopCapturer::IsDisplayMediaSystemPickerAvailable() {
   return false;
 }
+
+// static
+void DesktopCapturer::ExcludeContentProtectedWindowsFromSystemPicker() {}
 #endif
 
 gin::ObjectTemplateBuilder DesktopCapturer::GetObjectTemplateBuilder(

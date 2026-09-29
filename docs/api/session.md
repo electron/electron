@@ -1243,7 +1243,8 @@ access to.
 
 `useSystemPicker` allows an application to use the system picker instead of providing a specific video source from `getSources`.
 This option is experimental, and currently available for MacOS 15+ only. If the system picker is available and `useSystemPicker`
-is set to `true`, the handler will not be invoked.
+is set to `true`, the handler will not be invoked. The system picker offers either windows or screens, not both: it offers
+windows when the page calls `getDisplayMedia({ video: { displaySurface: 'window' } })` and screens otherwise.
 
 ```js
 const { session, desktopCapturer } = require('electron')

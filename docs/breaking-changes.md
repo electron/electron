@@ -16,6 +16,15 @@ This document uses the following convention to categorize breaking changes:
 
 ## Breaking API Changes (46.0)
 
+### Behavior Changed: `useSystemPicker` offers either screens or windows
+
+On macOS 15+, `session.setDisplayMediaRequestHandler(handler, { useSystemPicker: true })`
+now opens the same system picker Chrome uses. That picker offers screens or
+windows, not both: it offers windows when the page calls
+`getDisplayMedia({ video: { displaySurface: 'window' } })` and screens
+otherwise. Previously it offered windows, applications and screens together.
+The captured track's `deviceId` also changes format.
+
 ### Behavior Changed: `utilityProcess` `child.kill()` no longer force-kills the child
 
 `child.kill()` used to send `SIGTERM` and then `SIGKILL` two seconds later if the

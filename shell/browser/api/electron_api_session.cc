@@ -950,10 +950,17 @@ void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
 }
 
 void Session::SetDisplayMediaRequestHandler(v8::Isolate* isolate,
-                                            v8::Local<v8::Value> val) {
+                                            v8::Local<v8::Value> val,
+                                            gin::Arguments* args) {
+  bool use_system_picker = false;
+  gin_helper::Dictionary opts;
+  if (args->GetNext(&opts)) {
+    opts.Get("useSystemPicker", &use_system_picker);
+  }
+
   if (val->IsNull()) {
     browser_context_->SetDisplayMediaRequestHandler(
-        DisplayMediaRequestHandler());
+        DisplayMediaRequestHandler(), use_system_picker);
     return;
   }
   DisplayMediaRequestHandler handler;
@@ -962,7 +969,7 @@ void Session::SetDisplayMediaRequestHandler(v8::Isolate* isolate,
         "Display media request handler must be null or a function");
     return;
   }
-  browser_context_->SetDisplayMediaRequestHandler(handler);
+  browser_context_->SetDisplayMediaRequestHandler(handler, use_system_picker);
 }
 
 void Session::SetDevicePermissionHandler(v8::Local<v8::Value> val,
@@ -1860,7 +1867,7 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod<&Session::SetPermissionCheckHandler>(
           "setPermissionCheckHandler")
       .SetMethod<&Session::SetDisplayMediaRequestHandler>(
-          "_setDisplayMediaRequestHandler")
+          "setDisplayMediaRequestHandler")
       .SetMethod<&Session::SetDevicePermissionHandler>(
           "setDevicePermissionHandler")
       .SetMethod<&Session::SetUSBProtectedClassesHandler>(
