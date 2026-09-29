@@ -74,3 +74,6 @@ cherry-pick-a5804ada06ac.patch
 cherry-pick-24d17c398128.patch
 cherry-pick-a1962ac29d86.patch
 cherry-pick-d299c51cfc12.patch
+reland_m152_d3d11_fixing_robust_init_for_self_copy_same_mip_lvl.patch
+limit_max_image_allocation_size_to_1gb.patch
+m154_add_round_up_3d_texture_size_to_pot_for_limit_for_powervr.patch

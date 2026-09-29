@@ -1,0 +1,124 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Wed, 16 Sep 2026 14:57:57 +0200
+Subject: [M150] [turboshaft] Fix load elimination when map changes in a loop
+
+Original change's description:
+> [turboshaft] Fix load elimination when map changes in a loop
+>
+> When an object's map changes inside a loop (e.g. via an in-object property
+> addition) or maps are wiped by a call/allocation,
+> LateLoadEliminationAnalyzer's merge_maps must detect the discrepancy
+> between the forward-edge snapshot and the backedge snapshot and trigger
+> a loop revisit.
+>
+> Previously, merge_maps lacked a loop revisit check. Because alias
+> analysis in pass 1 used the optimistic (stale) forward-edge map, stores
+> through aliased pointers failed to invalidate loads, leaving memory
+> snapshots identical on both edges and preventing merge_memory from
+> detecting the need for a revisit.
+>
+> This CL adds the missing loop_needs_revisit check in merge_maps and
+> cleans up the redundant predecessor map snapshot filtering.
+>
+> TAG=agy
+> CONV=da17fd52-5094-4a27-b768-97cf84ff9eff
+>
+> Fixed: 556908674
+> Change-Id: Ie7838faee3e3f99b2bced71a93e79319500a807e
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8352970
+> Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+> Reviewed-by: Jakob Kummerow <jkummerow@chromium.org>
+> Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#109907}
+
+(cherry picked from commit 1aaed11297edb3e3dea3c45e17f70b175de7d626)
+
+Bug: 566932037,556908674
+Change-Id: Ie7838faee3e3f99b2bced71a93e79319500a807e
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8483852
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.0@{#93}
+Cr-Branched-From: 0c6c73eea6994260f0a1d88469708360ea60c660-refs/heads/15.0.245@{#1}
+Cr-Branched-From: 03d64f40934c058cd1c6d7e5cead5b757a4faedd-refs/heads/main@{#107679}
+
+diff --git a/src/compiler/turboshaft/late-load-elimination-reducer.cc b/src/compiler/turboshaft/late-load-elimination-reducer.cc
+index e682dd670c6796759329dcd677d493f129ea1d13..a2633b9d2109218cf904e324370b0a5c15a0486c 100644
+--- a/src/compiler/turboshaft/late-load-elimination-reducer.cc
++++ b/src/compiler/turboshaft/late-load-elimination-reducer.cc
+@@ -734,13 +734,7 @@ bool LateLoadEliminationAnalyzer::BeginBlock(const Block* block) {
+       // edge of the inner loop should reflect this restriction.
+       predecessor_alias_snapshots_.push_back(pred_snapshots->alias_snapshot);
+       predecessor_memory_snapshots_.push_back(pred_snapshots->memory_snapshot);
+-      if (p->NeighboringPredecessor() != nullptr || !block->IsLoop() ||
+-          block->LastPredecessor() != p) {
+-        // We only add a MapSnapshot predecessor for non-backedge predecessor.
+-        // This is because maps coming from inside of the loop may be wrong
+-        // until a specific check has been executed.
+-        predecessor_maps_snapshots_.push_back(pred_snapshots->maps_snapshot);
+-      }
++      predecessor_maps_snapshots_.push_back(pred_snapshots->maps_snapshot);
+     }
+   }
+ 
+@@ -773,10 +767,14 @@ bool LateLoadEliminationAnalyzer::BeginBlock(const Block* block) {
+       if (is_empty(pred)) {
+         // One of the predecessors doesn't have maps for this object, so we have
+         // to assume that this object could have any map.
+-        return MapMaskAndOr{};
++        minmax = MapMaskAndOr{};
++        break;
+       }
+       minmax = CombineMinMax(minmax, pred);
+     }
++    if (for_loop_revisit && minmax != predecessors[kForwardEdgeOffset]) {
++      loop_needs_revisit = true;
++    }
+     return minmax;
+   };
+   object_maps_.StartNewSnapshot(base::VectorOf(predecessor_maps_snapshots_),
+diff --git a/test/mjsunit/turboshaft/regress-556908674.js b/test/mjsunit/turboshaft/regress-556908674.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..554fc54a4568bd8b1c655c9155e66674bf12afca
+--- /dev/null
++++ b/test/mjsunit/turboshaft/regress-556908674.js
+@@ -0,0 +1,37 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --turbofan --no-turboshaft-loop-unrolling
++
++function f(o1, o2, n) {
++  if (n) {
++    let w = o1;
++    w.p;
++  } else {
++    let w = o1;
++    w.p;
++  }
++
++  let x = o1.p;
++  let b = o2;
++  let total = 0;
++  for (let i = 0; i < 10; i++) {
++    b.p = i;
++    total += o1.p;
++    if (i === 2) {
++      o1.q = 5;
++      b = o1;
++    }
++  }
++  return total + x;
++}
++
++%PrepareFunctionForOptimization(f);
++f({p: 7}, {p: 7, r: 1}, 0);
++f({p: 7}, {p: 7, r: 1}, 1);
++%OptimizeFunctionOnNextCall(f);
++
++let res = f({p: 7}, {p: 7, r: 1}, 0);
++assertEquals(70, res);
++assertOptimized(f);

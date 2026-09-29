@@ -13,3 +13,6 @@ cherry-pick-32a0be6bd641.patch
 cherry-pick-dcc7969cb586.patch
 cherry-pick-292e993b4a84.patch
 cherry-pick-023b7514b6a0.patch
+gl_use_blit_for_unsupported_glreadpixels_formats_pt_1.patch
+gl_add_compute_blit_for_sint_and_uint_texture_formats.patch
+gl_fix_compute_blit_encoding_for_rg11b10ufloat_t2b_copies.patch

@@ -1,0 +1,1281 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kai Ninomiya <kainino@chromium.org>
+Date: Thu, 17 Sep 2026 06:08:28 +0000
+Subject: [M154] Add round_up_3d_texture_size_to_POT_for_limit for PowerVR
+
+Original change's description:
+> Add round_up_3d_texture_size_to_POT_for_limit for PowerVR
+>
+> PowerVR drivers have an issue which seems to be specific to 3D textures
+> where they round up NPOT sizes to POT sizes before doing some size math.
+>
+> Bug: chromium:551673541
+> Change-Id: I64a1efb7a1afb8021f80a3be3aef0f8a733104ae
+> Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8424039
+> Auto-Submit: Kai Ninomiya <kainino@chromium.org>
+> Commit-Queue: Geoff Lang <geofflang@chromium.org>
+> Reviewed-by: Geoff Lang <geofflang@chromium.org>
+
+(cherry picked from commit 40b709be4f1f62cab5fac9d888cd5e8b9259d068)
+
+Bug: chromium:566047416,chromium:551673541
+Change-Id: I64a1efb7a1afb8021f80a3be3aef0f8a733104ae
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8455670
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Kai Ninomiya <kainino@chromium.org>
+
+Electron adaptation notes (42-x-y):
+Applied on top of the 'Limit max image allocation size to 1GB'
+prerequisite. Limitations::maxTextureBytes stays at the prerequisite's 1
+GB value (upstream later raised it to 1.25 GB); only the
+roundUp3DTextureSizeToPOTForLimit member was added. The
+ValidateTexStorage() hunk was dropped because that function does not
+exist on this branch; the branch's TexStorage validation paths call
+ValidImageAllocationSize(), which carries the rounding.
+
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index 28deb49683ffcbf7d4a43c319ac18d2f6e03fc78..2fa706795eee137b2a388b80aac140f916c6cc12 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -284,6 +284,12 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo roundUp3dTextureSizeToPOTForLimit = {
++        "roundUp3dTextureSizeToPOTForLimit",
++        FeatureCategory::OpenGLWorkarounds,
++        &members,
++    };
++
+     FeatureInfo adjustSrcDstRegionForBlitFramebuffer = {
+         "adjustSrcDstRegionForBlitFramebuffer",
+         FeatureCategory::OpenGLWorkarounds,
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index dd7caef8e26e3540cd536c7c6048b8e6d47edc65..73e588c5cc8de3acbcb78f7a4c5e335d6f96467b 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -352,6 +352,15 @@
+             ],
+             "issue": "http://crbug.com/927470"
+         },
++        {
++            "name": "round_up_3d_texture_size_to_POT_for_limit",
++            "category": "Workarounds",
++            "description": [
++                "Round up 3D texture dimensions to nearest power of two before checking image allocation ",
++                "size limits to prevent mishandling of large 3D textures on older PowerVR drivers."
++            ],
++            "issue": "http://crbug.com/551673541"
++        },
+         {
+             "name": "adjust_src_dst_region_for_BlitFramebuffer",
+             "category": "Workarounds",
+diff --git a/src/libANGLE/Caps.h b/src/libANGLE/Caps.h
+index b79a856182350a41be77e49e766b859ef311ef6b..1bfa827e240447a5db2f4f1ccf82b51f093fcbd0 100644
+--- a/src/libANGLE/Caps.h
++++ b/src/libANGLE/Caps.h
+@@ -176,6 +176,9 @@ struct Limitations
+     // bytes-per-pixel. 1Gb is chosen as a conservative limit to allow for backends to expand
+     // textures formats up to 4x and still stay within 32-bit sizes.
+     size_t maxTextureBytes = 1 * 1024 * 1024 * 1024;
++
++    // Workaround for PowerVR Rogue drivers that round up 3D texture dimensions to POT internally.
++    bool roundUp3DTextureSizeToPOTForLimit = false;
+ };
+ 
+ struct TypePrecision
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index 23a3fb55d257fc3111de08999b4dc8c56a025b29..f55943e70e9035fe7173b92641a6f4ae843d24aa 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2274,6 +2274,11 @@ void GenerateCaps(const FunctionsGL *functions,
+     {
+         limitations->maxBufferBytes = 1 << 30;
+     }
++
++    if (features.roundUp3dTextureSizeToPOTForLimit.enabled)
++    {
++        limitations->roundUp3DTextureSizeToPOTForLimit = true;
++    }
+ }
+ 
+ bool GetSystemInfoVendorIDAndDeviceID(const FunctionsGL *functions,
+@@ -2481,6 +2486,8 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+     ANGLE_FEATURE_CONDITION(features, disableMSAASampleCount1, isHuaweiMaleoon);
+     ANGLE_FEATURE_CONDITION(features, limitMax3dArrayTextureSizeTo1024,
+                             isIntelLinuxLessThanKernelVersion5);
++    ANGLE_FEATURE_CONDITION(features, roundUp3dTextureSizeToPOTForLimit,
++                            isPowerVRDriver && powerVRVersion < (std::array<int, 2>{26, 2}));
+ 
+     ANGLE_FEATURE_CONDITION(features, allowClearForRobustResourceInit, IsApple());
+ 
+diff --git a/src/libANGLE/validationES.cpp b/src/libANGLE/validationES.cpp
+index 4fc4d0edf5fe849e7c6f676667e311cdb7f6d6e3..37c3b4bc2b9e947e440876ef968500bdd44efc14 100644
+--- a/src/libANGLE/validationES.cpp
++++ b/src/libANGLE/validationES.cpp
+@@ -1461,6 +1461,20 @@ bool ValidImageDataSize(const Context *context,
+     return true;
+ }
+ 
++Extents RoundImageAllocationExtentIfNeeded(const Context *context,
++                                           GLsizei width,
++                                           GLsizei height,
++                                           GLsizei depth)
++{
++    if (context->getLimitations().roundUp3DTextureSizeToPOTForLimit && depth > 1)
++    {
++        return Extents(gl::clampCast<GLsizei>(gl::ceilPow2(width)),
++                       gl::clampCast<GLsizei>(gl::ceilPow2(height)),
++                       gl::clampCast<GLsizei>(gl::ceilPow2(depth)));
++    }
++    return Extents(width, height, depth);
++}
++
+ bool ValidImageAllocationSize(const Context *context,
+                               angle::EntryPoint entryPoint,
+                               GLsizei width,
+@@ -1471,7 +1485,8 @@ bool ValidImageAllocationSize(const Context *context,
+ {
+     const InternalFormat &formatInfo = GetSizedInternalFormatInfo(sizedInternalFormat);
+     GLuint allocationSize            = 0;
+-    if (!formatInfo.computeImageSize(Extents(width, height, depth), samples, &allocationSize) ||
++    Extents extents = RoundImageAllocationExtentIfNeeded(context, width, height, depth);
++    if (!formatInfo.computeImageSize(extents, samples, &allocationSize) ||
+         allocationSize > context->getLimitations().maxTextureBytes)
+     {
+         ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kTextureSizeLimitation);
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index 66ec587c13345bbae7ff228580f7493d05f98a00..5bd69d46478e114f5f08ae2e6415b5e705d1066f 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -22662,6 +22662,1082 @@ TEST_P(TextureSizeLimitTest, CompressedASTC)
+     runCompressedTest(GL_COMPRESSED_RGBA_ASTC_5x5_KHR, 5, 5, 16);
+ }
+ 
++<<<<<<< HEAD
++=======
++// Test that textures allocated as a copy destination are validated for size
++TEST_P(TextureSizeLimitTest, CopyTextureCHROMIUM)
++{
++    ANGLE_SKIP_TEST_IF(getClientMajorVersion() < 3);
++    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_CHROMIUM_copy_texture"));
++
++    constexpr GLenum kSourceFormat        = GL_RGBA;
++    constexpr GLenum kSourceType          = GL_UNSIGNED_BYTE;
++    constexpr GLenum kDestType            = GL_FLOAT;
++    constexpr GLuint kSourceBytesPerPixel = 4;
++    constexpr GLuint kOneMB               = 1 << 20;
++    constexpr GLuint pixels               = kOneMB / kSourceBytesPerPixel;
++    ASSERT_EQ(kOneMB % kSourceBytesPerPixel, 0u);
++
++    GLuint validWidth2D  = static_cast<GLuint>(std::floor(std::sqrt(pixels)));
++    GLuint validHeight2D = validWidth2D;
++    ASSERT_LE(validWidth2D * validHeight2D * kSourceBytesPerPixel, kOneMB);
++
++    // Source is a valid size.
++    GLTexture sourceTex;
++    glBindTexture(GL_TEXTURE_2D, sourceTex);
++    glTexImage2D(GL_TEXTURE_2D, 0, kSourceFormat, validWidth2D, validHeight2D, 0, kSourceFormat,
++                 kSourceType, nullptr);
++    EXPECT_GL_NO_ERROR();
++
++    // Dest is an invalid size due to floating point format
++    GLTexture destTex;
++    glBindTexture(GL_TEXTURE_2D, destTex);
++    glCopyTextureCHROMIUM(sourceTex, 0, GL_TEXTURE_2D, destTex, 0, kSourceFormat, kDestType, false,
++                          false, false);
++    EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++}
++
++// Test clearing texture that was previously used mid-render-pass, then sampling from it.
++TEST_P(Texture2DTestES3, ClearMidRenderPassThenSample)
++{
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_2D, texture);
++    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 2, 2);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Use the image as a framebuffer attachment to put it in a non-transfer non-sample layout.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
++
++    ANGLE_GL_PROGRAM(init, essl1_shaders::vs::Simple(), essl1_shaders::fs::UniformColor());
++    glUseProgram(init);
++    GLint colorLoc = glGetUniformLocation(init, angle::essl1_shaders::ColorUniform());
++    ASSERT_NE(colorLoc, -1);
++
++    glUniform4f(colorLoc, 1, 0, 0, 1);
++    drawQuad(init, essl1_shaders::PositionAttrib(), 0);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++
++    // Switch to the default framebuffer and start a render pass.  The program that samples from the
++    // texture is used such that between the draws, there is neither a program nor a texture change
++    // that could cause texture bindings to be reprocessed.
++    glBindFramebuffer(GL_FRAMEBUFFER, 0);
++    ANGLE_GL_PROGRAM(drawTexture, essl1_shaders::vs::Texture2D(), essl1_shaders::fs::Texture2D());
++    drawQuad(drawTexture, essl1_shaders::PositionAttrib(), 0);
++
++    // Clear the texture, ideally without a framebuffer change:
++    if (IsGLExtensionEnabled("GL_EXT_clear_texture"))
++    {
++        glClearTexImageEXT(texture, 0, GL_RGBA, GL_UNSIGNED_BYTE, &GLColor::blue);
++    }
++    else
++    {
++        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++        glClearColor(0, 0, 1, 1);
++        glClear(GL_COLOR_BUFFER_BIT);
++        glBindFramebuffer(GL_FRAMEBUFFER, 0);
++    }
++
++    glEnable(GL_BLEND);
++    glBlendFunc(GL_ONE, GL_ONE);
++
++    // Sample from it
++    drawQuad(drawTexture, essl1_shaders::PositionAttrib(), 0);
++
++    // Verify results
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::magenta);
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::blue);
++    ASSERT_GL_NO_ERROR();
++}
++
++class Texture3DSizeLimitPOTRoundUpTest : public ANGLETest<>
++{
++  protected:
++    Texture3DSizeLimitPOTRoundUpTest() = default;
++};
++
++// Test that 3D texture dimensions are rounded up to power of two when checking size limits.
++TEST_P(Texture3DSizeLimitPOTRoundUpTest, RGB565)
++{
++    // 64x64x64 * sizeof(RGB565) is <= 1 MiB.
++    {
++        GLTexture tex;
++        glBindTexture(GL_TEXTURE_3D, tex);
++        glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB565, 64, 64, 64, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5,
++                     nullptr);
++        EXPECT_GL_NO_ERROR();
++    }
++    {
++        GLTexture texStorage;
++        glBindTexture(GL_TEXTURE_3D, texStorage);
++        glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGB565, 64, 64, 64);
++        EXPECT_GL_NO_ERROR();
++    }
++
++    // 65x65x65 * sizeof(RGB565) is still <= 1 MiB, but when rounded up becomes
++    // 128x128x128 * sizeof(RGB565) which is > 1MiB.
++    {
++        GLTexture tex;
++        glBindTexture(GL_TEXTURE_3D, tex);
++        glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB565, 65, 65, 65, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5,
++                     nullptr);
++        EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++    }
++    {
++        GLTexture texStorage;
++        glBindTexture(GL_TEXTURE_3D, texStorage);
++        glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGB565, 65, 65, 65);
++        EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++    }
++
++    // The workaround does not apply to 2D textures.
++    // 724x724x1 * sizeof(RGB565) is <= 1MiB, but rounded up would be
++    // 1024x1024x1 * sizeof(RGB565) which is > 1MiB.
++    {
++        GLTexture tex2D;
++        glBindTexture(GL_TEXTURE_2D, tex2D);
++        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB565, 724, 724, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5,
++                     nullptr);
++        EXPECT_GL_NO_ERROR();
++    }
++    {
++        GLTexture tex2DStorage;
++        glBindTexture(GL_TEXTURE_2D, tex2DStorage);
++        glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB565, 724, 724);
++        EXPECT_GL_NO_ERROR();
++    }
++}
++
++class Texture2DTestES3_NonZeroBaseLevelGenMipmaps : public Texture2DTestES3
++{};
++
++// Test that performing an upload after draw, and glGenerateMipmap
++// with non-zero base level, does not crash.
++TEST_P(Texture2DTestES3_NonZeroBaseLevelGenMipmaps, UploadAfterDrawShouldNotCrash)
++{
++    for (int k = 0; k < 4; ++k)
++    {
++        GLTexture tex;
++        glBindTexture(GL_TEXTURE_2D, tex);
++        glTexStorage2D(GL_TEXTURE_2D, 12, GL_RGBA8, 3, 2048);
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++        drawQuad(mProgram, "position", 0.5f);
++        glFinish();
++
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 10);
++        glGenerateMipmap(GL_TEXTURE_2D);
++        glFinish();
++        EXPECT_GL_NO_ERROR();
++
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++        std::vector<uint8_t> data(1 * 1024 * 4, 0x41);
++        glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, 1, 1024, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
++        EXPECT_GL_NO_ERROR();
++    }
++}
++
++// Test that generating mipmaps with non-zero base level preserves texture contents across all mip
++// levels.
++TEST_P(Texture2DTestES3_NonZeroBaseLevelGenMipmaps, VerifyMipmapContents)
++{
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_2D, texture);
++
++    // Allocate 6 levels (levels 0 to 5) for a 32x32 immutable RGBA8 texture.
++    glTexStorage2D(GL_TEXTURE_2D, 6, GL_RGBA8, 32, 32);
++
++    // Set base level to 1 and max level to 4.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 4);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Upload different data (e.g. solid blue) to level 0 (32x32).
++    std::vector<GLColor> level0Data(32 * 32, GLColor::blue);
++    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 32, 32, GL_RGBA, GL_UNSIGNED_BYTE, level0Data.data());
++
++    // Upload distinct data (solid cyan) to level 5 (1x1) to verify it is untouched.
++    std::vector<GLColor> level5Data(1 * 1, GLColor::cyan);
++    glTexSubImage2D(GL_TEXTURE_2D, 5, 0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, level5Data.data());
++
++    // Upload a square 2x2 checkerboard pattern to level 1 (16x16).
++    // Top-left: Red, Top-right: Green, Bottom-left: Yellow, Bottom-right: Magenta.
++    std::vector<GLColor> level1Data(16 * 16);
++    for (int y = 0; y < 16; ++y)
++    {
++        for (int x = 0; x < 16; ++x)
++        {
++            if (x < 8 && y < 8)
++            {
++                level1Data[y * 16 + x] = GLColor::red;
++            }
++            else if (x >= 8 && y < 8)
++            {
++                level1Data[y * 16 + x] = GLColor::green;
++            }
++            else if (x < 8 && y >= 8)
++            {
++                level1Data[y * 16 + x] = GLColor::yellow;
++            }
++            else
++            {
++                level1Data[y * 16 + x] = GLColor::magenta;
++            }
++        }
++    }
++    glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, 16, 16, GL_RGBA, GL_UNSIGNED_BYTE, level1Data.data());
++
++    // Generate mipmaps with base level = 1 and max level = 4.
++    glGenerateMipmap(GL_TEXTURE_2D);
++    ASSERT_GL_NO_ERROR();
++
++    // Verify that the four colors are preserved correctly in each quadrant up to max level (level
++    // 4).
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++
++    for (int level = 1; level <= 4; ++level)
++    {
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, level);
++        ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++        int dim  = 32 >> level;  // level 1: 16, level 2: 8, level 3: 4, level 4: 2
++        int half = dim / 2;
++
++        // Top-left quadrant (Red)
++        EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++        EXPECT_PIXEL_COLOR_EQ(half - 1, half - 1, GLColor::red);
++
++        // Top-right quadrant (Green)
++        EXPECT_PIXEL_COLOR_EQ(half, 0, GLColor::green);
++        EXPECT_PIXEL_COLOR_EQ(dim - 1, half - 1, GLColor::green);
++
++        // Bottom-left quadrant (Yellow)
++        EXPECT_PIXEL_COLOR_EQ(0, half, GLColor::yellow);
++        EXPECT_PIXEL_COLOR_EQ(half - 1, dim - 1, GLColor::yellow);
++
++        // Bottom-right quadrant (Magenta)
++        EXPECT_PIXEL_COLOR_EQ(half, half, GLColor::magenta);
++        EXPECT_PIXEL_COLOR_EQ(dim - 1, dim - 1, GLColor::magenta);
++    }
++
++    // At the end of the test, verify that level 0's contents and level 5's contents were preserved.
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::blue);
++    EXPECT_PIXEL_COLOR_EQ(15, 15, GLColor::blue);
++    EXPECT_PIXEL_COLOR_EQ(31, 31, GLColor::blue);
++
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 5);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::cyan);
++
++    EXPECT_GL_NO_ERROR();
++}
++
++class Texture2DTestES3_ResetTexStorage2DBaseLevel : public Texture2DBaseMaxTestES3
++{};
++
++// Test TexStorage2D on a texture that already has non-zero TEXTURE_BASE_LEVEL set.
++TEST_P(Texture2DTestES3_ResetTexStorage2DBaseLevel, TexStorage2DWithNonZeroBaseLevel)
++{
++    // http://anglebug.com/551573368
++    ANGLE_SKIP_TEST_IF(IsD3D());
++
++    constexpr uint32_t kBaseLevel          = 1;
++    const GLColor kNewMipColors[kMipCount] = {
++        GLColor::yellow,
++        GLColor::cyan,
++        GLColor::white,
++        GLColor(127u, 127u, 127u, 255u),
++    };
++
++    initTest(false);
++
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, kBaseLevel);
++
++    glTexStorage2D(GL_TEXTURE_2D, kMipCount, GL_RGBA8, kMip0Size, kMip0Size);
++    std::array<GLColor, getTotalMipDataSize(kMip0Size)> mipData;
++    fillMipData(mipData.data(), kMip0Size, kNewMipColors);
++    for (size_t mip = 0; mip < kMipCount; ++mip)
++    {
++        glTexSubImage2D(GL_TEXTURE_2D, static_cast<GLint>(mip), 0, 0, kMip0Size >> mip,
++                        kMip0Size >> mip, GL_RGBA, GL_UNSIGNED_BYTE,
++                        mipData.data() + getMipDataOffset(kMip0Size, mip));
++    }
++
++    // Test that all enabled mips have the expected data
++    for (uint32_t lod = kBaseLevel; lod < kMipCount; ++lod)
++    {
++        setLodUniform(lod - kBaseLevel);
++        drawQuad(mProgram, essl3_shaders::PositionAttrib(), 0.5f);
++        EXPECT_PIXEL_COLOR_EQ(0, 0, kNewMipColors[lod]);
++    }
++
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++    for (uint32_t lod = 0; lod < kBaseLevel; ++lod)
++    {
++        setLodUniform(lod);
++        drawQuad(mProgram, essl3_shaders::PositionAttrib(), 0.5f);
++        EXPECT_PIXEL_COLOR_EQ(0, 0, kNewMipColors[lod]);
++    }
++}
++
++class Texture2DTestES3_OversizedMipLevels : public Texture2DTestES3
++{
++  protected:
++    Texture2DTestES3_OversizedMipLevels() : Texture2DTestES3() {}
++
++    void testSetUp() override
++    {
++        Texture2DTestES3::testSetUp();
++        setUpProgram();
++        glUseProgram(mProgram);
++        glUniform1i(mTexture2DUniformLocation, 0);
++        glActiveTexture(GL_TEXTURE0);
++    }
++};
++
++// Test that defining an oversized nonzero mip level on an uncompressed texture succeeds and
++// renders correctly.
++TEST_P(Texture2DTestES3_OversizedMipLevels, Uncompressed)
++{
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Upload Level 0: 64x64 solid red.
++    constexpr int kLevel0Width  = 64;
++    constexpr int kLevel0Height = 64;
++    std::vector<GLColor> redData(kLevel0Width * kLevel0Height, GLColor::red);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kLevel0Width, kLevel0Height, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, redData.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Upload Level 1: 128x128 solid green (oversized relative to Level 0).
++    constexpr int kLevel1Width  = 128;
++    constexpr int kLevel1Height = 128;
++    std::vector<GLColor> greenData(kLevel1Width * kLevel1Height, GLColor::green);
++    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA8, kLevel1Width, kLevel1Height, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, greenData.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Verify Level 0 sampling.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth(), getWindowHeight(), GLColor::red);
++
++    // Verify Level 1 sampling.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth(), getWindowHeight(), GLColor::green);
++}
++
++// Test that defining an oversized nonzero mip level on an ETC compressed texture succeeds and
++// renders correctly.
++TEST_P(Texture2DTestES3_OversizedMipLevels, CompressedETC)
++{
++    const bool hasEtcExt = IsGLExtensionEnabled("GL_OES_compressed_ETC2_RGB8_texture");
++    const int clientVer  = getClientMajorVersion();
++    ANGLE_SKIP_TEST_IF(!hasEtcExt && clientVer < 3);
++
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // ETC2 RGB8: 8 bytes per 4x4 block.
++    // Level 0: 64x64 (256 blocks = 2048 bytes) solid red.
++    // Byte 0 = 0xFF (R1=15, R2=15), Bytes 1..7 = 0x00. Decodes to (255, 2, 2, 255).
++    constexpr int kLevel0Width     = 64;
++    constexpr int kLevel0Height    = 64;
++    constexpr size_t kLevel0Blocks = (kLevel0Width / 4) * (kLevel0Height / 4);
++    constexpr size_t kLevel0Bytes  = kLevel0Blocks * 8;
++    std::vector<uint8_t> redEtcData(kLevel0Bytes, 0);
++    for (size_t b = 0; b < kLevel0Blocks; ++b)
++    {
++        redEtcData[b * 8 + 0] = 0xFF;
++    }
++    glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB8_ETC2, kLevel0Width, kLevel0Height,
++                           0, static_cast<GLsizei>(kLevel0Bytes), redEtcData.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Level 1: 128x128 (1024 blocks = 8192 bytes) solid green.
++    // Byte 1 = 0xFF (G1=15, G2=15), Bytes 0, 2..7 = 0x00. Decodes to (2, 255, 2, 255).
++    constexpr int kLevel1Width     = 128;
++    constexpr int kLevel1Height    = 128;
++    constexpr size_t kLevel1Blocks = (kLevel1Width / 4) * (kLevel1Height / 4);
++    constexpr size_t kLevel1Bytes  = kLevel1Blocks * 8;
++    std::vector<uint8_t> greenEtcData(kLevel1Bytes, 0);
++    for (size_t b = 0; b < kLevel1Blocks; ++b)
++    {
++        greenEtcData[b * 8 + 1] = 0xFF;
++    }
++    glCompressedTexImage2D(GL_TEXTURE_2D, 1, GL_COMPRESSED_RGB8_ETC2, kLevel1Width, kLevel1Height,
++                           0, static_cast<GLsizei>(kLevel1Bytes), greenEtcData.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Verify Level 0 sampling.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth(), getWindowHeight(), GLColor(255, 2, 2, 255));
++
++    // Verify Level 1 sampling.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
++    drawQuad(mProgram, "position", 0.5f);
++    // Bugs in the PowerVR driver prevent full redefinition of oversized compressed mip levels
++    // when level 0 is already defined, because the driver restricts compressed level 1 storage
++    // to the slot allocated by the level 0 chain. Check only the lower-left quadrant of the
++    // rendered output.
++    EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth() / 4, getWindowHeight() / 4,
++                         GLColor(2, 255, 2, 255));
++}
++
++// Test that defining an oversized nonzero mip level on an ASTC compressed texture succeeds and
++// renders correctly.
++TEST_P(Texture2DTestES3_OversizedMipLevels, CompressedASTC)
++{
++    const bool hasAstcLdr = IsGLExtensionEnabled("GL_KHR_texture_compression_astc_ldr");
++    const bool hasAstcOes = IsGLExtensionEnabled("GL_OES_texture_compression_astc");
++    ANGLE_SKIP_TEST_IF(!hasAstcLdr && !hasAstcOes);
++
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // ASTC 4x4 void-extent solid color blocks: 16 bytes per block.
++    // Red void-extent block: {0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00,
++    // 0x00, 0x00, 0x00, 0xFF, 0xFF} Green void-extent block: {0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF,
++    // 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF}
++    constexpr uint8_t kAstcRedBlock[16]   = {0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++                                             0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF};
++    constexpr uint8_t kAstcGreenBlock[16] = {0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++                                             0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF};
++
++    // Level 0: 64x64 (256 blocks = 4096 bytes) solid red.
++    constexpr int kLevel0Width     = 64;
++    constexpr int kLevel0Height    = 64;
++    constexpr size_t kLevel0Blocks = (kLevel0Width / 4) * (kLevel0Height / 4);
++    constexpr size_t kLevel0Bytes  = kLevel0Blocks * 16;
++    std::vector<uint8_t> redAstcData(kLevel0Bytes);
++    for (size_t b = 0; b < kLevel0Blocks; ++b)
++    {
++        memcpy(&redAstcData[b * 16], kAstcRedBlock, 16);
++    }
++    glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_4x4_KHR, kLevel0Width,
++                           kLevel0Height, 0, static_cast<GLsizei>(kLevel0Bytes),
++                           redAstcData.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Level 1: 128x128 (1024 blocks = 16384 bytes) solid green.
++    constexpr int kLevel1Width     = 128;
++    constexpr int kLevel1Height    = 128;
++    constexpr size_t kLevel1Blocks = (kLevel1Width / 4) * (kLevel1Height / 4);
++    constexpr size_t kLevel1Bytes  = kLevel1Blocks * 16;
++    std::vector<uint8_t> greenAstcData(kLevel1Bytes);
++    for (size_t b = 0; b < kLevel1Blocks; ++b)
++    {
++        memcpy(&greenAstcData[b * 16], kAstcGreenBlock, 16);
++    }
++    glCompressedTexImage2D(GL_TEXTURE_2D, 1, GL_COMPRESSED_RGBA_ASTC_4x4_KHR, kLevel1Width,
++                           kLevel1Height, 0, static_cast<GLsizei>(kLevel1Bytes),
++                           greenAstcData.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Verify Level 0 sampling.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth(), getWindowHeight(), GLColor::red);
++
++    // Verify Level 1 sampling.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
++    drawQuad(mProgram, "position", 0.5f);
++    // Bugs in the PowerVR driver prevent full redefinition of oversized compressed mip levels
++    // when level 0 is already defined, because the driver restricts compressed level 1 storage
++    // to the slot allocated by the level 0 chain. Check only the lower-left quadrant of the
++    // rendered output.
++    EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth() / 4, getWindowHeight() / 4, GLColor::green);
++}
++
++// Test that defining an oversized nonzero mip level (level 0 257x257, level 1 256x256) on an
++// ASTC 12x12 compressed texture does not crash during the level 1 upload.
++TEST_P(Texture2DTestES3_OversizedMipLevels, CompressedASTC12x12_256x256)
++{
++    const bool hasAstcLdr = IsGLExtensionEnabled("GL_KHR_texture_compression_astc_ldr");
++    const bool hasAstcOes = IsGLExtensionEnabled("GL_OES_texture_compression_astc");
++    ANGLE_SKIP_TEST_IF(!hasAstcLdr && !hasAstcOes);
++
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // ASTC void-extent solid color block: 16 bytes per block.
++    constexpr uint8_t kAstcBlock[16] = {0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++                                        0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF};
++
++    // Level 0: 257x257. In 12x12 blocks: ceil(257/12) = 22 blocks per axis.
++    constexpr int kLevel0Width     = 257;
++    constexpr int kLevel0Height    = 257;
++    constexpr size_t kLevel0Blocks = 22 * 22;
++    constexpr size_t kLevel0Bytes  = kLevel0Blocks * 16;
++    std::vector<uint8_t> level0Data(kLevel0Bytes);
++    for (size_t b = 0; b < kLevel0Blocks; ++b)
++    {
++        memcpy(&level0Data[b * 16], kAstcBlock, 16);
++    }
++    glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_12x12_KHR, kLevel0Width,
++                           kLevel0Height, 0, static_cast<GLsizei>(kLevel0Bytes), level0Data.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Level 1: 256x256. In 12x12 blocks: ceil(256/12) = 22 blocks per axis.
++    constexpr int kLevel1Width     = 256;
++    constexpr int kLevel1Height    = 256;
++    constexpr size_t kLevel1Blocks = 22 * 22;
++    constexpr size_t kLevel1Bytes  = kLevel1Blocks * 16;
++    std::vector<uint8_t> level1Data(kLevel1Bytes);
++    for (size_t b = 0; b < kLevel1Blocks; ++b)
++    {
++        memcpy(&level1Data[b * 16], kAstcBlock, 16);
++    }
++    glCompressedTexImage2D(GL_TEXTURE_2D, 1, GL_COMPRESSED_RGBA_ASTC_12x12_KHR, kLevel1Width,
++                           kLevel1Height, 0, static_cast<GLsizei>(kLevel1Bytes), level1Data.data());
++    ASSERT_GL_NO_ERROR();
++
++    glFinish();
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that defining an oversized nonzero mip level (level 0 257x257, level 1 192x192) on an
++// ASTC 12x12 compressed texture does not crash during the level 1 upload.
++TEST_P(Texture2DTestES3_OversizedMipLevels, CompressedASTC12x12_192x192)
++{
++    const bool hasAstcLdr = IsGLExtensionEnabled("GL_KHR_texture_compression_astc_ldr");
++    const bool hasAstcOes = IsGLExtensionEnabled("GL_OES_texture_compression_astc");
++    ANGLE_SKIP_TEST_IF(!hasAstcLdr && !hasAstcOes);
++
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // ASTC void-extent solid color block: 16 bytes per block.
++    constexpr uint8_t kAstcBlock[16] = {0xFC, 0xFD, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
++                                        0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF};
++
++    // Level 0: 257x257. In 12x12 blocks: ceil(257/12) = 22 blocks per axis.
++    constexpr int kLevel0Width     = 257;
++    constexpr int kLevel0Height    = 257;
++    constexpr size_t kLevel0Blocks = 22 * 22;
++    constexpr size_t kLevel0Bytes  = kLevel0Blocks * 16;
++    std::vector<uint8_t> level0Data(kLevel0Bytes);
++    for (size_t b = 0; b < kLevel0Blocks; ++b)
++    {
++        memcpy(&level0Data[b * 16], kAstcBlock, 16);
++    }
++    glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_ASTC_12x12_KHR, kLevel0Width,
++                           kLevel0Height, 0, static_cast<GLsizei>(kLevel0Bytes), level0Data.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Level 1: 192x192. In 12x12 blocks: ceil(192/12) = 16 blocks per axis.
++    constexpr int kLevel1Width     = 192;
++    constexpr int kLevel1Height    = 192;
++    constexpr size_t kLevel1Blocks = 16 * 16;
++    constexpr size_t kLevel1Bytes  = kLevel1Blocks * 16;
++    std::vector<uint8_t> level1Data(kLevel1Bytes);
++    for (size_t b = 0; b < kLevel1Blocks; ++b)
++    {
++        memcpy(&level1Data[b * 16], kAstcBlock, 16);
++    }
++    glCompressedTexImage2D(GL_TEXTURE_2D, 1, GL_COMPRESSED_RGBA_ASTC_12x12_KHR, kLevel1Width,
++                           kLevel1Height, 0, static_cast<GLsizei>(kLevel1Bytes), level1Data.data());
++    ASSERT_GL_NO_ERROR();
++
++    glFinish();
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that defining an oversized nonzero mip level on a DXT compressed texture succeeds and
++// renders correctly.
++TEST_P(Texture2DTestES3_OversizedMipLevels, CompressedDXT)
++{
++    const bool hasDxt1  = IsGLExtensionEnabled("GL_EXT_texture_compression_dxt1");
++    const bool hasS3tc  = IsGLExtensionEnabled("GL_EXT_texture_compression_s3tc");
++    const bool hasAngle = IsGLExtensionEnabled("GL_ANGLE_texture_compression_dxt1");
++    ANGLE_SKIP_TEST_IF(!hasDxt1 && !hasS3tc && !hasAngle);
++
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // DXT1: 8 bytes per 4x4 block.
++    // Red block: {0x00, 0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
++    // Green block: {0xE0, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
++    constexpr uint8_t kDxtRedBlock[8]   = {0x00, 0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
++    constexpr uint8_t kDxtGreenBlock[8] = {0xE0, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
++
++    // Level 0: 64x64 (256 blocks = 2048 bytes) solid red.
++    constexpr int kLevel0Width     = 64;
++    constexpr int kLevel0Height    = 64;
++    constexpr size_t kLevel0Blocks = (kLevel0Width / 4) * (kLevel0Height / 4);
++    constexpr size_t kLevel0Bytes  = kLevel0Blocks * 8;
++    std::vector<uint8_t> redDxtData(kLevel0Bytes);
++    for (size_t b = 0; b < kLevel0Blocks; ++b)
++    {
++        memcpy(&redDxtData[b * 8], kDxtRedBlock, 8);
++    }
++    glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, kLevel0Width,
++                           kLevel0Height, 0, static_cast<GLsizei>(kLevel0Bytes), redDxtData.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Level 1: 128x128 (1024 blocks = 8192 bytes) solid green.
++    constexpr int kLevel1Width     = 128;
++    constexpr int kLevel1Height    = 128;
++    constexpr size_t kLevel1Blocks = (kLevel1Width / 4) * (kLevel1Height / 4);
++    constexpr size_t kLevel1Bytes  = kLevel1Blocks * 8;
++    std::vector<uint8_t> greenDxtData(kLevel1Bytes);
++    for (size_t b = 0; b < kLevel1Blocks; ++b)
++    {
++        memcpy(&greenDxtData[b * 8], kDxtGreenBlock, 8);
++    }
++    glCompressedTexImage2D(GL_TEXTURE_2D, 1, GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, kLevel1Width,
++                           kLevel1Height, 0, static_cast<GLsizei>(kLevel1Bytes),
++                           greenDxtData.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Verify Level 0 sampling.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth(), getWindowHeight(), GLColor::red);
++
++    // Verify Level 1 sampling.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
++    drawQuad(mProgram, "position", 0.5f);
++    // Bugs in the PowerVR driver prevent full redefinition of oversized compressed mip levels
++    // when level 0 is already defined, because the driver restricts compressed level 1 storage
++    // to the slot allocated by the level 0 chain. Check only the lower-left quadrant of the
++    // rendered output.
++    EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth() / 4, getWindowHeight() / 4, GLColor::green);
++}
++
++class Texture2DTestES3_NPOTClientDataTexture : public Texture2DTestES3
++{};
++
++// Test that non-power-of-two uploads of RGB10_A2 with UNSIGNED_INT_2_10_10_10_REV data succeed and
++// verify texture contents.
++TEST_P(Texture2DTestES3_NPOTClientDataTexture, RGB10A2)
++{
++    constexpr GLsizei kWidth  = 65;
++    constexpr GLsizei kHeight = 64;
++
++    for (int iter = 0; iter < 50; ++iter)
++    {
++        std::vector<uint32_t> data(kWidth * kHeight);
++        for (GLsizei y = 0; y < kHeight; ++y)
++        {
++            for (GLsizei x = 0; x < kWidth; ++x)
++            {
++                uint32_t r = ((x + iter) % 2 == 0) ? 0x3FF : 0;
++                uint32_t g = ((y + iter) % 2 == 0) ? 0x3FF : 0;
++                uint32_t b = ((x + y + iter) % 2 == 0) ? 0x3FF : 0;
++                uint32_t a = 3;  // 1.0 in 2-bit alpha
++                data[y * kWidth + x] =
++                    (r & 0x3FF) | ((g & 0x3FF) << 10) | ((b & 0x3FF) << 20) | ((a & 0x3) << 30);
++            }
++        }
++
++        GLTexture tex;
++        glBindTexture(GL_TEXTURE_2D, tex);
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
++
++        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB10_A2, kWidth, kHeight, 0, GL_RGBA,
++                     GL_UNSIGNED_INT_2_10_10_10_REV, data.data());
++        ASSERT_GL_NO_ERROR();
++
++        // Verify texture contents via FBO readback
++        GLFramebuffer fbo;
++        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
++        ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++        std::vector<GLColor> readback(kWidth * kHeight);
++        glReadPixels(0, 0, kWidth, kHeight, GL_RGBA, GL_UNSIGNED_BYTE, readback.data());
++        ASSERT_GL_NO_ERROR();
++
++        for (GLsizei y = 0; y < kHeight; ++y)
++        {
++            for (GLsizei x = 0; x < kWidth; ++x)
++            {
++                GLubyte expectedR = ((x + iter) % 2 == 0) ? 255 : 0;
++                GLubyte expectedG = ((y + iter) % 2 == 0) ? 255 : 0;
++                GLubyte expectedB = ((x + y + iter) % 2 == 0) ? 255 : 0;
++                GLubyte expectedA = 255;
++                GLColor expected(expectedR, expectedG, expectedB, expectedA);
++                EXPECT_EQ(readback[y * kWidth + x], expected)
++                    << "Mismatch at (" << x << ", " << y << ") on iter " << iter;
++            }
++        }
++
++        // Also verify sampling via drawQuad
++        glBindFramebuffer(GL_FRAMEBUFFER, 0);
++        glViewport(0, 0, getWindowWidth(), getWindowHeight());
++        drawQuad(mProgram, "position", 0.5f);
++        ASSERT_GL_NO_ERROR();
++    }
++}
++
++// Test that non-power-of-two uploads of SRGB8_ALPHA8 with UNSIGNED_BYTE data succeed and
++// verify texture contents, including non-default unpack alignment and skip pixels.
++TEST_P(Texture2DTestES3_NPOTClientDataTexture, SRGB8Alpha8)
++{
++    constexpr GLsizei kWidth    = 255;
++    constexpr GLsizei kHeight   = 256;
++    constexpr GLint kSkipPixels = 1;
++
++    for (int iter = 0; iter < 50; ++iter)
++    {
++        // Buffer needs kHeight * kWidth + kSkipPixels pixels when UNPACK_ROW_LENGTH is 0.
++        std::vector<GLColor> data(kHeight * kWidth + kSkipPixels);
++        for (size_t i = 0; i < data.size(); ++i)
++        {
++            GLubyte r = static_cast<GLubyte>((i * 17 + iter * 3) % 256);
++            GLubyte g = static_cast<GLubyte>((i * 31 + iter * 5 + 7) % 256);
++            GLubyte b = static_cast<GLubyte>((i * 53 + iter * 11 + 13) % 256);
++            GLubyte a = 255;
++            data[i]   = GLColor(r, g, b, a);
++        }
++
++        GLTexture tex;
++        glBindTexture(GL_TEXTURE_2D, tex);
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
++
++        glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
++        glPixelStorei(GL_UNPACK_SKIP_PIXELS, kSkipPixels);
++
++        glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, kWidth, kHeight, 0, GL_RGBA,
++                     GL_UNSIGNED_BYTE, data.data());
++        ASSERT_GL_NO_ERROR();
++
++        glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
++        glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0);
++
++        // Verify texture contents via FBO readback
++        GLFramebuffer fbo;
++        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
++        ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++        std::vector<GLColor> readback(kWidth * kHeight);
++        glReadPixels(0, 0, kWidth, kHeight, GL_RGBA, GL_UNSIGNED_BYTE, readback.data());
++        ASSERT_GL_NO_ERROR();
++
++        for (GLsizei y = 0; y < kHeight; ++y)
++        {
++            for (GLsizei x = 0; x < kWidth; ++x)
++            {
++                GLColor expected = data[y * kWidth + x + kSkipPixels];
++                EXPECT_EQ(readback[y * kWidth + x], expected)
++                    << "Mismatch at (" << x << ", " << y << ") on iter " << iter;
++            }
++        }
++
++        // Also verify sampling via drawQuad
++        glBindFramebuffer(GL_FRAMEBUFFER, 0);
++        glViewport(0, 0, getWindowWidth(), getWindowHeight());
++        drawQuad(mProgram, "position", 0.5f);
++        ASSERT_GL_NO_ERROR();
++    }
++}
++
++// Test that robust init via nullptr-upload to texture after invalidating an image with emulated
++// alpha works.
++TEST_P(Texture2DTestES3RobustInit, InvalidateEmulatedAlphaThenInitViaEmptyUpload)
++{
++    constexpr uint32_t kWidth  = 5;
++    constexpr uint32_t kHeight = 7;
++
++    // Create an RGB texture, which often has an emulated alpha channel.
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_2D, texture);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, kWidth, kHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
++
++    // Draw into it, then invalidate it.  On some configurations, this may stage a clear to the
++    // texture so that the emulated alpha channel has valid values.
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), essl3_shaders::fs::Red());
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.0f);
++    constexpr GLenum kInvalidate[] = {GL_COLOR_ATTACHMENT0};
++    glInvalidateFramebuffer(GL_FRAMEBUFFER, 1, kInvalidate);
++
++    // Redefine the texture with no data.  This causes it to robust-init.
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, kWidth, kHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
++
++    // Verify the texture is cleared.
++    EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, GLColor::black);
++}
++
++#define ES2_EMULATE_COPY_TEX_IMAGE_VIA_SUB()             \
++    ES2_OPENGL().enable(Feature::EmulateCopyTexImage2D), \
++        ES2_OPENGLES().enable(Feature::EmulateCopyTexImage2D)
++#define ES3_EMULATE_COPY_TEX_IMAGE_VIA_SUB()             \
++    ES3_OPENGL().enable(Feature::EmulateCopyTexImage2D), \
++        ES3_OPENGLES().enable(Feature::EmulateCopyTexImage2D)
++#define ES2_EMULATE_COPY_TEX_IMAGE()                                      \
++    ES2_OPENGL().enable(Feature::EmulateCopyTexImage2DFromRenderbuffers), \
++        ES2_OPENGLES().enable(Feature::EmulateCopyTexImage2DFromRenderbuffers)
++#define ES3_EMULATE_COPY_TEX_IMAGE()                                      \
++    ES3_OPENGL().enable(Feature::EmulateCopyTexImage2DFromRenderbuffers), \
++        ES3_OPENGLES().enable(Feature::EmulateCopyTexImage2DFromRenderbuffers)
++ANGLE_INSTANTIATE_TEST_ES2_AND(Texture2DTest,
++                               ES2_EMULATE_COPY_TEX_IMAGE_VIA_SUB(),
++                               ES2_EMULATE_COPY_TEX_IMAGE(),
++                               ES2_OPENGLES().enable(Feature::ForcePassthroughShaders));
++ANGLE_INSTANTIATE_TEST_ES2(TextureCubeTest);
++ANGLE_INSTANTIATE_TEST_ES2(Texture2DTestWithDrawScale);
++ANGLE_INSTANTIATE_TEST_ES2(Sampler2DAsFunctionParameterTest);
++ANGLE_INSTANTIATE_TEST_ES2(SamplerArrayTest);
++ANGLE_INSTANTIATE_TEST_ES2(SamplerArrayAsFunctionParameterTest);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DTestES3);
++ANGLE_INSTANTIATE_TEST_ES3_AND(Texture2DTestES3,
++                               ES3_VULKAN().enable(Feature::AllocateNonZeroMemory),
++                               ES3_VULKAN().enable(Feature::ForceFallbackFormat),
++                               ES3_VULKAN_SWIFTSHADER().enable(Feature::PreferBGR565ToRGB565));
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DMemoryTestES3);
++ANGLE_INSTANTIATE_TEST_ES3(Texture2DMemoryTestES3);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DTestES3YUV);
++ANGLE_INSTANTIATE_TEST_ES3_AND(Texture2DTestES3YUV,
++                               ES3_VULKAN().enable(Feature::PreferLinearFilterForYUV),
++                               ES3_VULKAN().enable(Feature::DisableProgramCaching));
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DTestES3RobustInit);
++ANGLE_INSTANTIATE_TEST_ES3_AND(
++    Texture2DTestES3RobustInit,
++    ES3_D3D11_WARP(),
++    ES3_VULKAN().enable(Feature::PreferSkippingInvalidateForEmulatedFormats),
++    ES3_VULKAN().disable(Feature::PreferSkippingInvalidateForEmulatedFormats));
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DTestES3PBO);
++ANGLE_INSTANTIATE_TEST_ES3_AND(Texture2DTestES3PBO,
++                               ES3_OPENGL().enable(Feature::SplitLevel0PboFullSubImage2D),
++                               ES3_OPENGLES().enable(Feature::SplitLevel0PboFullSubImage2D));
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DTestES3Foveation);
++ANGLE_INSTANTIATE_TEST_ES3_AND(
++    Texture2DTestES3Foveation,
++    ES3_VULKAN().enable(Feature::GenerateFragmentShadingRateAttchementWithCpu));
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DTestES31Foveation);
++ANGLE_INSTANTIATE_TEST_ES31_AND(
++    Texture2DTestES31Foveation,
++    ES31_VULKAN().enable(Feature::GenerateFragmentShadingRateAttchementWithCpu));
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DTestES31PPO);
++ANGLE_INSTANTIATE_TEST_ES31(Texture2DTestES31PPO);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DBaseMaxTestES3);
++ANGLE_INSTANTIATE_TEST_ES3(Texture2DBaseMaxTestES3);
++
++ANGLE_INSTANTIATE_TEST_ES2(Texture3DTestES2);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture3DTestES3);
++ANGLE_INSTANTIATE_TEST_ES3(Texture3DTestES3);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture3DIncreaseDepthTestES3);
++ANGLE_INSTANTIATE_TEST_ES3_AND(
++    Texture3DIncreaseDepthTestES3,
++    ES3_OPENGL().enable(Feature::RecreateTextureOnTexImage3dDepthIncrease),
++    ES3_OPENGLES().enable(Feature::RecreateTextureOnTexImage3dDepthIncrease));
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DIntegerAlpha1TestES3);
++ANGLE_INSTANTIATE_TEST_ES3(Texture2DIntegerAlpha1TestES3);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DUnsignedIntegerAlpha1TestES3);
++ANGLE_INSTANTIATE_TEST_ES3(Texture2DUnsignedIntegerAlpha1TestES3);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(ShadowSamplerPlusSampler3DTestES3);
++ANGLE_INSTANTIATE_TEST_ES3(ShadowSamplerPlusSampler3DTestES3);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(SamplerTypeMixTestES3);
++ANGLE_INSTANTIATE_TEST_ES3(SamplerTypeMixTestES3);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DArrayTestES3);
++ANGLE_INSTANTIATE_TEST_ES3(Texture2DArrayTestES3);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DArrayTestES3_ReattachTextureToFbo);
++ANGLE_INSTANTIATE_TEST_ES3_AND(
++    Texture2DArrayTestES3_ReattachTextureToFbo,
++    ES3_OPENGL().enable(Feature::ReattachTextureToFboAfterLayerIncrease),
++    ES3_OPENGL().disable(Feature::ReattachTextureToFboAfterLayerIncrease),
++    ES3_OPENGLES().enable(Feature::ReattachTextureToFboAfterLayerIncrease),
++    ES3_OPENGLES().disable(Feature::ReattachTextureToFboAfterLayerIncrease),
++    ES3_VULKAN().enable(Feature::ReattachTextureToFboAfterLayerIncrease),
++    ES3_VULKAN().disable(Feature::ReattachTextureToFboAfterLayerIncrease));
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TextureSizeTextureArrayTest);
++ANGLE_INSTANTIATE_TEST_ES3(TextureSizeTextureArrayTest);
++
++ANGLE_INSTANTIATE_TEST_ES2(SamplerInStructTest);
++ANGLE_INSTANTIATE_TEST_ES2(SamplerInStructAsFunctionParameterTest);
++ANGLE_INSTANTIATE_TEST_ES2(SamplerInStructArrayAsFunctionParameterTest);
++ANGLE_INSTANTIATE_TEST_ES2(SamplerInNestedStructAsFunctionParameterTest);
++ANGLE_INSTANTIATE_TEST_ES2(SamplerInStructAndOtherVariableTest);
++ANGLE_INSTANTIATE_TEST_ES2(TextureAnisotropyTest);
++ANGLE_INSTANTIATE_TEST_ES2_AND(TextureBorderClampTest,
++                               ES2_VULKAN_SWIFTSHADER().enable(Feature::PreferBGR565ToRGB565));
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TextureBorderClampTestES3);
++ANGLE_INSTANTIATE_TEST_ES3(TextureBorderClampTestES3);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TextureBorderClampTestES31);
++ANGLE_INSTANTIATE_TEST_ES31(TextureBorderClampTestES31);
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TextureBorderClampTestES32);
++ANGLE_INSTANTIATE_TEST_ES32(TextureBorderClampTestES32);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TextureBorderClampIntegerTestES3);
++ANGLE_INSTANTIATE_TEST_ES3(TextureBorderClampIntegerTestES3);
++
++ANGLE_INSTANTIATE_TEST_ES2_AND_ES3(TextureMirrorClampToEdgeTest);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TextureMirrorClampToEdgeTestES3);
++ANGLE_INSTANTIATE_TEST_ES3(TextureMirrorClampToEdgeTestES3);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TextureMirrorClampToEdgeIntegerTestES3);
++ANGLE_INSTANTIATE_TEST_ES3(TextureMirrorClampToEdgeIntegerTestES3);
++
++ANGLE_INSTANTIATE_TEST_ES2(TextureLimitsTest);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DNorm16TestES3);
++ANGLE_INSTANTIATE_TEST_ES3_AND(
++    Texture2DNorm16TestES3,
++    ES3_OPENGL().enable(Feature::ReadPixelsUsingImplementationColorReadFormatForNorm16),
++    ES3_OPENGLES().enable(Feature::ReadPixelsUsingImplementationColorReadFormatForNorm16));
++
++ANGLE_INSTANTIATE_TEST_ES2_AND_ES3_AND(Texture2DRGTest,
++                                       ES2_EMULATE_COPY_TEX_IMAGE_VIA_SUB(),
++                                       ES3_EMULATE_COPY_TEX_IMAGE_VIA_SUB(),
++                                       ES2_EMULATE_COPY_TEX_IMAGE(),
++                                       ES3_EMULATE_COPY_TEX_IMAGE());
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DFloatTestES3);
++ANGLE_INSTANTIATE_TEST_ES3(Texture2DFloatTestES3);
++
++ANGLE_INSTANTIATE_TEST_ES2(Texture2DFloatTestES2);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TextureCubeTestES3);
++ANGLE_INSTANTIATE_TEST_ES3(TextureCubeTestES3);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TextureDefaultTextureTest);
++ANGLE_INSTANTIATE_TEST_ES3(TextureDefaultTextureTest);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TextureCubeTestES32);
++ANGLE_INSTANTIATE_TEST_ES32(TextureCubeTestES32);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DIntegerTestES3);
++ANGLE_INSTANTIATE_TEST_ES3(Texture2DIntegerTestES3);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TextureCubeIntegerTestES3);
++ANGLE_INSTANTIATE_TEST_ES3(TextureCubeIntegerTestES3);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TextureCubeIntegerEdgeTestES3);
++ANGLE_INSTANTIATE_TEST_ES3(TextureCubeIntegerEdgeTestES3);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DIntegerProjectiveOffsetTestES3);
++ANGLE_INSTANTIATE_TEST_ES3(Texture2DIntegerProjectiveOffsetTestES3);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DArrayIntegerTestES3);
++ANGLE_INSTANTIATE_TEST_ES3(Texture2DArrayIntegerTestES3);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture3DIntegerTestES3);
++ANGLE_INSTANTIATE_TEST_ES3(Texture3DIntegerTestES3);
++
++ANGLE_INSTANTIATE_TEST_ES2_AND_ES3(Texture2DDepthTest);
++ANGLE_INSTANTIATE_TEST_ES2_AND_ES3(PBOCompressedTextureTest);
++ANGLE_INSTANTIATE_TEST_ES2_AND_ES3(ETC1CompressedTextureTest);
++ANGLE_INSTANTIATE_TEST_ES3(PBOCompressedTexture3DTest);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TextureBufferTestES31);
++ANGLE_INSTANTIATE_TEST_ES31(TextureBufferTestES31);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TextureBufferTestES32);
++ANGLE_INSTANTIATE_TEST_ES32(TextureBufferTestES32);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TextureTestES31);
++ANGLE_INSTANTIATE_TEST_ES31(TextureTestES31);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(CopyImageTestES31);
++ANGLE_INSTANTIATE_TEST_ES31(CopyImageTestES31);
++
++ANGLE_INSTANTIATE_TEST_ES3(TextureChangeStorageUploadTest);
++
++ANGLE_INSTANTIATE_TEST_ES3(ExtraSamplerCubeShadowUseTest);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DDepthStencilTestES3);
++ANGLE_INSTANTIATE_TEST_ES3_AND(Texture2DDepthStencilTestES3,
++                               ES3_VULKAN().enable(Feature::ForceFallbackFormat));
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(RGBTextureBufferTestES31);
++ANGLE_INSTANTIATE_TEST_ES31(RGBTextureBufferTestES31);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(MultisampleTexture2DTestES31);
++ANGLE_INSTANTIATE_TEST_ES31(MultisampleTexture2DTestES31);
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DTestES3_NonZeroBaseLevelGenMipmaps);
++ANGLE_INSTANTIATE_TEST_ES3_AND(
++    Texture2DTestES3_NonZeroBaseLevelGenMipmaps,
++    ES3_OPENGL().enable(Feature::UseTempForNonZeroBaseLevelGenMipmapUsingCopyImageSubData),
++    ES3_OPENGLES().enable(Feature::UseTempForNonZeroBaseLevelGenMipmapUsingCopyImageSubData));
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DTestES3_ResetTexStorage2DBaseLevel);
++ANGLE_INSTANTIATE_TEST_ES3_AND(Texture2DTestES3_ResetTexStorage2DBaseLevel,
++                               ES3_OPENGL().enable(Feature::ResetTexStorage2DBaseLevel),
++                               ES3_OPENGL().disable(Feature::ResetTexStorage2DBaseLevel),
++                               ES3_OPENGLES().enable(Feature::ResetTexStorage2DBaseLevel),
++                               ES3_OPENGLES().disable(Feature::ResetTexStorage2DBaseLevel));
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DTestES3_OversizedMipLevels);
++ANGLE_INSTANTIATE_TEST_ES3_AND(
++    Texture2DTestES3_OversizedMipLevels,
++    ES3_OPENGL().enable(Feature::UploadOversizedMipLevelsViaUnpackBuffer),
++    ES3_OPENGLES().enable(Feature::UploadOversizedMipLevelsViaUnpackBuffer));
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DTestES3_NPOTClientDataTexture);
++ANGLE_INSTANTIATE_TEST_ES3_AND(
++    Texture2DTestES3_NPOTClientDataTexture,
++    ES3_OPENGL().enable(Feature::UseTexSubImageForClientDataNpotUploads),
++    ES3_OPENGLES().enable(Feature::UseTexSubImageForClientDataNpotUploads));
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(ASTCCompressedWithBaseLevelTest);
++ANGLE_INSTANTIATE_TEST_ES3(ASTCCompressedWithBaseLevelTest);
++
++>>>>>>> [M154] Add round_up_3d_texture_size_to_POT_for_limit for PowerVR
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TextureSizeLimitTest);
+ ANGLE_INSTANTIATE_TEST(TextureSizeLimitTest,
+                        ES2_D3D11().enable(Feature::LimitMaxTextureBytesTo1MB),
+@@ -22671,8 +23747,21 @@ ANGLE_INSTANTIATE_TEST(TextureSizeLimitTest,
+                        ES2_VULKAN().enable(Feature::LimitMaxTextureBytesTo1MB),
+                        ES3_VULKAN().enable(Feature::LimitMaxTextureBytesTo1MB),
+                        ES2_OPENGL().enable(Feature::LimitMaxTextureBytesTo1MB),
+-                       ES3_OPENGL().enable(Feature::LimitMaxTextureBytesTo1MB),
++                       ES3_OPENGL()
++                           .enable(Feature::LimitMaxTextureBytesTo1MB)
++                           .disable(Feature::RoundUp3dTextureSizeToPOTForLimit),
+                        ES2_OPENGLES().enable(Feature::LimitMaxTextureBytesTo1MB),
+-                       ES3_OPENGLES().enable(Feature::LimitMaxTextureBytesTo1MB));
++                       ES3_OPENGLES()
++                           .enable(Feature::LimitMaxTextureBytesTo1MB)
++                           .disable(Feature::RoundUp3dTextureSizeToPOTForLimit));
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture3DSizeLimitPOTRoundUpTest);
++ANGLE_INSTANTIATE_TEST(Texture3DSizeLimitPOTRoundUpTest,
++                       ES3_OPENGL()
++                           .enable(Feature::LimitMaxTextureBytesTo1MB)
++                           .enable(Feature::RoundUp3dTextureSizeToPOTForLimit),
++                       ES3_OPENGLES()
++                           .enable(Feature::LimitMaxTextureBytesTo1MB)
++                           .enable(Feature::RoundUp3dTextureSizeToPOTForLimit));
+ 
+ }  // anonymous namespace
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index 1772a72daa8af2c089fd15c4c295af7f9a3d4e90..3fbfb1eec9f3ce62176e9c4372828218c0548219 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -315,6 +315,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::RGBA4IsNotSupportedForColorRendering, "RGBA4IsNotSupportedForColorRendering"},
+     {Feature::RGBDXT1TexturesSampleZeroAlpha, "RGBDXT1TexturesSampleZeroAlpha"},
+     {Feature::RoundOutputAfterDithering, "roundOutputAfterDithering"},
++    {Feature::RoundUp3dTextureSizeToPOTForLimit, "roundUp3dTextureSizeToPOTForLimit"},
+     {Feature::SanitizeAMDGPURendererString, "sanitizeAMDGPURendererString"},
+     {Feature::ScalarizeVecAndMatConstructorArgs, "scalarizeVecAndMatConstructorArgs"},
+     {Feature::SelectViewInGeometryShader, "selectViewInGeometryShader"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index 18fdfa1783fa57a4d075740da2d83e144eaaae81..823f853c63d5ee926beda41f2ad1164a43910573 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -315,6 +315,7 @@ enum class Feature
+     RGBA4IsNotSupportedForColorRendering,
+     RGBDXT1TexturesSampleZeroAlpha,
+     RoundOutputAfterDithering,
++    RoundUp3dTextureSizeToPOTForLimit,
+     SanitizeAMDGPURendererString,
+     ScalarizeVecAndMatConstructorArgs,
+     SelectViewInGeometryShader,

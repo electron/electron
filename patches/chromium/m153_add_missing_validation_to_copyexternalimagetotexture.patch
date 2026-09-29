@@ -1,0 +1,270 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kai Ninomiya <kainino@chromium.org>
+Date: Tue, 22 Sep 2026 11:23:23 -0700
+Subject: [M153] Add missing validation to copyExternalImageToTexture
+
+Original change's description:
+> Add missing validation to copyExternalImageToTexture
+>
+> copyExternalImageToTexture would ignore certain errors in
+> CreateExternalTexture (via CopyFromVideoElement which was incorrectly
+> pretending to be infallible).
+>
+> Refactor several error-prone patterns so this is easier to do correctly
+> in the future.
+>
+> Fixed: 560062638
+> Change-Id: I321c3a4256f8a14d4ddd505da2afb3f25ece7fab
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8415995
+> Reviewed-by: Brandon Jones <bajones@chromium.org>
+> Commit-Queue: Kai Ninomiya <kainino@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1699109}
+
+(cherry picked from commit 8f0b2682984207138b06e0a90c962e34376b89d1)
+
+Fixed: 562783667
+Bug: 560062638
+Change-Id: I321c3a4256f8a14d4ddd505da2afb3f25ece7fab
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8427487
+Commit-Queue: Kai Ninomiya <kainino@chromium.org>
+Reviewed-by: Brandon Jones <bajones@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8010@{#1619}
+Cr-Branched-From: 86cee6df69e0463a839c0cc8435c9d4c259434d3-refs/heads/main@{#1681091}
+
+Electron adaptation notes (42-x-y):
+On this branch CreateExternalTexture() takes a
+media::PaintCanvasVideoRenderer* and uses
+RecyclableCanvasResource/CanvasResource instead of
+WebGpuSharedImageWrapperLease; the std::optional<ExternalTexture>
+return, the `if (!mailbox_texture) return {};` check and the bool-
+returning CopyFromVideoElement() were applied on that code.
+GPUQueue::copyExternalImageToTexture passes `source` by value here
+(source. instead of source->). The branch-only
+CopyFromCanvasSourceImage() declaration in gpu_queue.h was kept.
+
+diff --git a/third_party/blink/renderer/modules/webgpu/external_texture_helper.cc b/third_party/blink/renderer/modules/webgpu/external_texture_helper.cc
+index 858f92ffbacf8b35f8003b3c98dd09e178450cb6..671c04c6673c1f8cd3bc4223f65e7c39ed97e25b 100644
+--- a/third_party/blink/renderer/modules/webgpu/external_texture_helper.cc
++++ b/third_party/blink/renderer/modules/webgpu/external_texture_helper.cc
+@@ -207,7 +207,7 @@ ExternalTextureSource GetExternalTextureSourceFromVideoFrame(
+   return source;
+ }
+ 
+-ExternalTexture CreateExternalTexture(
++std::optional<ExternalTexture> CreateExternalTexture(
+     GPUDevice* device,
+     PredefinedColorSpace dst_predefined_color_space,
+     scoped_refptr<media::VideoFrame> media_video_frame,
+@@ -229,8 +229,6 @@ ExternalTexture CreateExternalTexture(
+     src_color_space = gfx::ColorSpace::CreateREC709();
+   }
+ 
+-  ExternalTexture external_texture = {};
+-
+   // TODO(crbug.com/1306753): Use SharedImageProducer and CompositeSharedImage
+   // rather than check 'is_webgpu_compatible'.
+   bool device_support_zero_copy =
+@@ -337,18 +335,18 @@ ExternalTexture CreateExternalTexture(
+     external_texture_desc.dstTransferFunctionParameters =
+         color_space_conversion_constants.dst_transfer_constants.data();
+ 
+-    external_texture.wgpu_external_texture =
+-        device->GetHandle().CreateExternalTexture(&external_texture_desc);
+-
+-    external_texture.mailbox_texture = std::move(mailbox_texture);
+-    external_texture.is_zero_copy = true;
+-    return external_texture;
++    return ExternalTexture{
++        .wgpu_external_texture =
++            device->GetHandle().CreateExternalTexture(&external_texture_desc),
++        .mailbox_texture = std::move(mailbox_texture),
++        .is_zero_copy = true,
++    };
+   }
+   // If the context is lost, the resource provider would be invalid.
+   auto context_provider_wrapper = SharedGpuContext::ContextProviderWrapper();
+   if (!context_provider_wrapper ||
+       context_provider_wrapper->ContextProvider().IsContextLost()) {
+-    return external_texture;
++    return {};
+   }
+ 
+   // In 0-copy path, uploading shares the whole frame into dawn and apply
+@@ -407,7 +405,7 @@ ExternalTexture CreateExternalTexture(
+       device->GetDawnControlClient()->GetOrCreateCanvasResource(
+           format, natural_size, resource_color_space, kPremul_SkAlphaType);
+   if (!recyclable_canvas_resource) {
+-    return external_texture;
++    return {};
+   }
+ 
+   CanvasNon2DResourceProviderSharedImage* resource_provider =
+@@ -462,6 +460,9 @@ ExternalTexture CreateExternalTexture(
+           device->GetDawnControlClient(), device->GetHandle(),
+           wgpu::TextureUsage::TextureBinding, canvas_resource->GetSharedImage(),
+           canvas_resource->sync_token(), std::move(recyclable_canvas_resource));
++  if (!mailbox_texture) {
++    return {};
++  }
+ 
+   wgpu::TextureViewDescriptor view_desc = {};
+   wgpu::TextureView plane0 =
+@@ -485,11 +486,12 @@ ExternalTexture CreateExternalTexture(
+   external_texture_desc.dstTransferFunctionParameters =
+       color_space_conversion_constants.dst_transfer_constants.data();
+ 
+-  external_texture.wgpu_external_texture =
+-      device->GetHandle().CreateExternalTexture(&external_texture_desc);
+-  external_texture.mailbox_texture = std::move(mailbox_texture);
+-
+-  return external_texture;
++  return ExternalTexture{
++      .wgpu_external_texture =
++          device->GetHandle().CreateExternalTexture(&external_texture_desc),
++      .mailbox_texture = std::move(mailbox_texture),
++      .is_zero_copy = false,
++  };
+ }
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/webgpu/external_texture_helper.h b/third_party/blink/renderer/modules/webgpu/external_texture_helper.h
+index 2478526f89f3313664e4e1136d519c4d510c7c55..08893249a2608e5dc20f54ff0eb45166ad650a65 100644
+--- a/third_party/blink/renderer/modules/webgpu/external_texture_helper.h
++++ b/third_party/blink/renderer/modules/webgpu/external_texture_helper.h
+@@ -65,7 +65,7 @@ ExternalTextureSource GetExternalTextureSourceFromVideoFrame(
+     VideoFrame* frame,
+     ExceptionState& exception_state);
+ 
+-ExternalTexture CreateExternalTexture(
++std::optional<ExternalTexture> CreateExternalTexture(
+     GPUDevice* device,
+     PredefinedColorSpace dst_predefined_color_space,
+     scoped_refptr<media::VideoFrame> media_video_frame,
+diff --git a/third_party/blink/renderer/modules/webgpu/gpu_external_texture.cc b/third_party/blink/renderer/modules/webgpu/gpu_external_texture.cc
+index 6586a232281155e8b142677787f65829bd5ab3cf..ba70d7d2625e9864bcad033f5955bafb3a5dea66 100644
+--- a/third_party/blink/renderer/modules/webgpu/gpu_external_texture.cc
++++ b/third_party/blink/renderer/modules/webgpu/gpu_external_texture.cc
+@@ -175,12 +175,10 @@ GPUExternalTexture* GPUExternalTexture::CreateImpl(
+     return nullptr;
+   }
+ 
+-  ExternalTexture external_texture =
++  std::optional<ExternalTexture> external_texture =
+       CreateExternalTexture(cache->device(), dst_predefined_color_space,
+                             media_video_frame, video_renderer);
+-
+-  if (external_texture.wgpu_external_texture == nullptr ||
+-      external_texture.mailbox_texture == nullptr) {
++  if (!external_texture) {
+     exception_state.ThrowDOMException(DOMExceptionCode::kOperationError,
+                                       "Failed to import texture from video");
+     return nullptr;
+@@ -188,8 +186,8 @@ GPUExternalTexture* GPUExternalTexture::CreateImpl(
+ 
+   GPUExternalTexture* gpu_external_texture =
+       MakeGarbageCollected<GPUExternalTexture>(
+-          cache, std::move(external_texture.wgpu_external_texture),
+-          external_texture.mailbox_texture, external_texture.is_zero_copy,
++          cache, std::move(external_texture->wgpu_external_texture),
++          external_texture->mailbox_texture, external_texture->is_zero_copy,
+           media_video_frame->metadata().read_lock_fences_enabled,
+           media_video_frame_unique_id, webgpu_desc->label());
+ 
+diff --git a/third_party/blink/renderer/modules/webgpu/gpu_queue.cc b/third_party/blink/renderer/modules/webgpu/gpu_queue.cc
+index ec178c6a5ed3edbc11bf6d3dfbc47aaa31231831..ff611699d54ba88508e08c37ac1e745cbcc23d6c 100644
+--- a/third_party/blink/renderer/modules/webgpu/gpu_queue.cc
++++ b/third_party/blink/renderer/modules/webgpu/gpu_queue.cc
+@@ -743,10 +743,15 @@ void GPUQueue::copyExternalImageToTexture(
+     // Use display size which is based on natural size but considering
+     // transformation metadata.
+     wgpu::Extent2D video_frame_display_size = {source.width, source.height};
+-    CopyFromVideoElement(
+-        source.external_texture_source, video_frame_display_size,
+-        origin_in_external_image, dawn_copy_size, dawn_destination,
+-        destination->premultipliedAlpha(), color_space, copyImage->flipY());
++    if (!CopyFromVideoElement(
++            source.external_texture_source, video_frame_display_size,
++            origin_in_external_image, dawn_copy_size, dawn_destination,
++            destination->premultipliedAlpha(), color_space,
++            copyImage->flipY())) {
++      exception_state.ThrowDOMException(
++          DOMExceptionCode::kOperationError,
++          "Failed to copy content from video element.");
++    }
+     return;
+   }
+ 
+@@ -921,7 +926,7 @@ void GPUQueue::CopyElementImageToTextureInternal(
+   }
+ }
+ 
+-void GPUQueue::CopyFromVideoElement(
++bool GPUQueue::CopyFromVideoElement(
+     const ExternalTextureSource source,
+     const wgpu::Extent2D& video_frame_natural_size,
+     const wgpu::Origin2D& origin,
+@@ -934,9 +939,12 @@ void GPUQueue::CopyFromVideoElement(
+ 
+   // Create External Texture with dst color space. No color space conversion
+   // happens during copy step.
+-  ExternalTexture external_texture =
++  std::optional<ExternalTexture> external_texture =
+       CreateExternalTexture(device_, dst_color_space, source.media_video_frame,
+                             source.video_renderer);
++  if (!external_texture) {
++    return false;
++  }
+ 
+   wgpu::CopyTextureForBrowserOptions options = {
+       // Extracting contents from HTMLVideoElement (e.g.
+@@ -952,17 +960,19 @@ void GPUQueue::CopyFromVideoElement(
+   options.flipY = flipY;
+ 
+   wgpu::ImageCopyExternalTexture src = {
+-      .externalTexture = external_texture.wgpu_external_texture,
++      .externalTexture = external_texture->wgpu_external_texture,
+       .origin = {origin.x, origin.y},
+       .naturalSize = video_frame_natural_size,
+   };
+   GetHandle().CopyExternalTextureForBrowser(&src, &destination, &copy_size,
+                                             &options);
+ 
+-  if (external_texture.is_zero_copy &&
++  if (external_texture->is_zero_copy &&
+       source.media_video_frame->metadata().read_lock_fences_enabled) {
+-    ReferenceUntilGPUIsFinished(std::move(external_texture.mailbox_texture));
++    ReferenceUntilGPUIsFinished(std::move(external_texture->mailbox_texture));
+   }
++
++  return true;
+ }
+ 
+ void GPUQueue::ReferenceUntilGPUIsFinished(
+diff --git a/third_party/blink/renderer/modules/webgpu/gpu_queue.h b/third_party/blink/renderer/modules/webgpu/gpu_queue.h
+index 16dde87e836d31a9b3c431c09e954bb5fa4dca25..7b69199b1b7e79cba02f189d630f77b0e8c7e016 100644
+--- a/third_party/blink/renderer/modules/webgpu/gpu_queue.h
++++ b/third_party/blink/renderer/modules/webgpu/gpu_queue.h
+@@ -106,14 +106,15 @@ class GPUQueue : public DawnObject<wgpu::Queue> {
+   bool IsValidDestinationTexture(GPUImageCopyTextureTagged* destination,
+                                  wgpu::TexelCopyTextureInfo& dawn_destination,
+                                  ExceptionState& exception_state);
+-  void CopyFromVideoElement(const ExternalTextureSource source,
+-                            const wgpu::Extent2D& video_frame_natural_size,
+-                            const wgpu::Origin2D& origin,
+-                            const wgpu::Extent3D& copy_size,
+-                            const wgpu::TexelCopyTextureInfo& destination,
+-                            bool dst_premultiplied_alpha,
+-                            PredefinedColorSpace dst_color_space,
+-                            bool flipY);
++  [[nodiscard]] bool CopyFromVideoElement(
++      const ExternalTextureSource source,
++      const wgpu::Extent2D& video_frame_natural_size,
++      const wgpu::Origin2D& origin,
++      const wgpu::Extent3D& copy_size,
++      const wgpu::TexelCopyTextureInfo& destination,
++      bool dst_premultiplied_alpha,
++      PredefinedColorSpace dst_color_space,
++      bool flipY);
+   bool CopyFromCanvasSourceImage(StaticBitmapImage* image,
+                                  const wgpu::Origin2D& origin,
+                                  const wgpu::Extent3D& copy_size,
