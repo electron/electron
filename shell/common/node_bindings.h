@@ -318,6 +318,10 @@ class NodeBindings : private base::TaskObserver,
   // the embed thread is parked in UvRunOnce(), has been woken, or was handed
   // a zero timeout. Main thread.
   uint64_t poll_deadline_ = 0;
+  // uv_loop_->active_handles when that PollEvents() was armed. A handle
+  // started since then wakes it too: a bare uv_prepare_t or uv_check_t moves
+  // no deadline.
+  unsigned int poll_active_handles_ = 0;
 
   // Bumped by StopPolling(), which can also run underneath a UvRunOnce().
   uint64_t polling_generation_ = 0;
