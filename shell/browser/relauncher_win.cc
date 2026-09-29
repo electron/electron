@@ -15,6 +15,7 @@
 #include "base/strings/strcat_win.h"
 #include "base/strings/string_number_conversions_win.h"
 #include "base/win/elevation_util.h"
+#include "base/win/scoped_com_initializer.h"
 #include "base/win/scoped_handle.h"
 #include "sandbox/win/src/nt_internals.h"
 #include "sandbox/win/src/win_utils.h"
@@ -90,9 +91,11 @@ int LaunchProgram(const StringVector& relauncher_args,
                   const StringVector& argv) {
   if (std::ranges::find(relauncher_args, kRelauncherDeElevateArg) !=
       relauncher_args.end()) {
-    return base::win::RunDeElevated(
-               base::CommandLine::FromString(ArgvToCommandLineString(argv)))
-                   .has_value()
+    // Goes through the desktop's IShellDispatch2, which starts the app with
+    // the shell's token and this process's current directory.
+    base::win::ScopedCOMInitializer com;
+    return SUCCEEDED(base::win::RunDeElevatedNoWait(
+               base::CommandLine::FromString(ArgvToCommandLineString(argv))))
                ? 0
                : 1;
   }
