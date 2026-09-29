@@ -4727,7 +4727,7 @@ describe('navigator.clipboard.write', { tags: ['serial'] }, () => {
   });
 });
 
-describe('pointer lock permission request', () => {
+describe('pointer lock permission request', { tags: ['serial'] }, () => {
   const servers: http.Server[] = [];
   let serverUrl: string;
   let otherPortUrl: string;
