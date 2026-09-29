@@ -45,7 +45,7 @@ Reviewed-by: Kenneth Russell <kbr@chromium.org>
 Commit-Queue: Quyen Le <lehoangquyen@google.com>
 
 diff --git a/src/libANGLE/renderer/d3d/TextureD3D.cpp b/src/libANGLE/renderer/d3d/TextureD3D.cpp
-index 56fc1468fa6cdde829dfd34edb18a41ec5577613..cfecaaf08371ce01a9377c475c2d4b905f973eb5 100644
+index 56fc1468fa6cdde829dfd34edb18a41ec5577613..ebb06a3d9de74e32805d244279317b36e4ecb33c 100644
 --- a/src/libANGLE/renderer/d3d/TextureD3D.cpp
 +++ b/src/libANGLE/renderer/d3d/TextureD3D.cpp
 @@ -137,6 +137,10 @@ angle::Result TextureD3D::handleCopyImageSelfCopyRedefine(
@@ -54,7 +54,7 @@ index 56fc1468fa6cdde829dfd34edb18a41ec5577613..cfecaaf08371ce01a9377c475c2d4b90
          ANGLE_TRY(redefineDest(destExtents));
 +        if (context->isWebGL() || context->isRobustResourceInitEnabled())
 +        {
-+            ANGLE_TRY(initializeContents(context, GL_NONE, gl::OwnImageIndex(destIndex)));
++            ANGLE_TRY(initializeContents(context, GL_NONE, destIndex));
 +        }
          return angle::Result::Continue;
      }
