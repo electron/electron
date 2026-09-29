@@ -8,6 +8,25 @@ import * as path from 'node:path';
 import { copyApp } from './lib/fs-helpers.ts';
 import { ifdescribe } from './lib/spec-helpers.ts';
 
+function readDirectExports(file: string): Set<string> {
+  const lines = fs
+    .readFileSync(file, 'utf8')
+    .split(/\r?\n/)
+    .map((line) => line.split(';')[0].trim())
+    .filter(Boolean);
+  if (lines.length < 3 || !/^NAME\s+[A-Za-z0-9_.-]+$/.test(lines[0]) || lines[1] !== 'EXPORTS') {
+    throw new Error('Expected NAME followed by a nonempty EXPORTS section');
+  }
+  const exports = new Set<string>();
+  for (const name of lines.slice(2)) {
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name) || name === 'NAME' || name === 'EXPORTS' || exports.has(name)) {
+      throw new Error(`Unsupported or duplicate direct export: ${name}`);
+    }
+    exports.add(name);
+  }
+  return exports;
+}
+
 // Inspect the linked images, including the forwarder RVA rather than only the
 // names in the generated DEF file.
 function readPeExports(file: string): Map<string, string | null> {
@@ -67,56 +86,20 @@ ifdescribe(process.platform === 'win32')('Windows runtime DLL', function () {
   it('preserves named runtime exports with explicit direct-export exceptions', () => {
     const runtimeExports = readPeExports(path.join(path.dirname(process.execPath), 'main.dll'));
     const executableExports = readPeExports(process.execPath);
-    // Shared static dependencies also export these symbols directly from the EXE.
-    // They may be direct exports or forwarders; all other symbols must forward.
-    const allowedDirectExports = new Set([
-      'Cr_z_adler32',
-      'Cr_z_adler32_combine',
-      'Cr_z_adler32_combine64',
-      'Cr_z_adler32_z',
-      'Cr_z_crc32',
-      'Cr_z_crc32_combine',
-      'Cr_z_crc32_combine64',
-      'Cr_z_crc32_combine_gen',
-      'Cr_z_crc32_combine_gen64',
-      'Cr_z_crc32_combine_op',
-      'Cr_z_crc32_z',
-      'Cr_z_deflate',
-      'Cr_z_deflateBound',
-      'Cr_z_deflateBound_z',
-      'Cr_z_deflateCopy',
-      'Cr_z_deflateEnd',
-      'Cr_z_deflateGetDictionary',
-      'Cr_z_deflateInit2_',
-      'Cr_z_deflateInit_',
-      'Cr_z_deflateParams',
-      'Cr_z_deflatePending',
-      'Cr_z_deflatePrime',
-      'Cr_z_deflateReset',
-      'Cr_z_deflateResetKeep',
-      'Cr_z_deflateSetDictionary',
-      'Cr_z_deflateSetHeader',
-      'Cr_z_deflateTune',
-      'Cr_z_deflateUsed',
-      'Cr_z_get_crc_table',
-      'Cr_z_zError',
-      'Cr_z_zlibCompileFlags',
-      'Cr_z_zlibVersion',
-      'GetHandleVerifier',
-      'IsSandboxedProcess'
-    ]);
+    // These must use the EXE's static dependencies, not the DLL's separate state.
+    const requiredDirectExports = readDirectExports(path.join(import.meta.dirname, '..', 'build', 'electron.def'));
     for (const prefix of ['node_', 'napi_', 'uv_']) {
       const names = (exports: Map<string, string | null>) =>
         [...exports.keys()].filter((name) => name.startsWith(prefix)).sort();
       expect(names(runtimeExports).length, prefix).to.be.greaterThan(0);
       expect(names(executableExports), prefix).to.deep.equal(names(runtimeExports));
     }
+    for (const name of requiredDirectExports) {
+      expect(executableExports.get(name), name).to.equal(null);
+    }
     for (const name of runtimeExports.keys()) {
-      const target = executableExports.get(name);
-      if (target === null) {
-        expect(allowedDirectExports.has(name), `Unexpected direct export: ${name}`).to.equal(true);
-      } else {
-        expect(target, name).to.equal(`main.${name}`);
+      if (!requiredDirectExports.has(name)) {
+        expect(executableExports.get(name), name).to.equal(`main.${name}`);
       }
     }
   });
