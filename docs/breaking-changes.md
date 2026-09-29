@@ -26,7 +26,19 @@ starts a libuv handle (`uv_timer_start()`, `uv_poll_start()`, `uv_spawn()` and
 so on) from its own OS callback on the main thread - a window procedure hook, a
 run loop observer or a GSource - rather than from a Node.js or Node-API
 callback should follow it with `uv_async_send()` on a handle of its own, or
-start it before or inside a call into JavaScript, so the loop runs it promptly.
+start it before or inside a call into JavaScript, so the loop runs it promptly:
+
+```c
+// Once, on the loop thread; unreferenced so it does not keep the loop alive.
+static uv_async_t wake;
+uv_async_init(loop, &wake, NULL);
+uv_unref((uv_handle_t*)&wake);
+
+// In the module's own window procedure hook, run loop observer or GSource:
+uv_timer_start(&timer, on_timeout, 100, 0);
+uv_async_send(&wake);
+```
+
 Handles started from Node.js or Node-API callbacks, async work and thread-safe
 functions, or Chromium tasks are not affected.
 
