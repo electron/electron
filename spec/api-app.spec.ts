@@ -253,7 +253,7 @@ describe('app module', () => {
           output += data;
         });
       }
-      const [code] = await once(appProcess, 'exit');
+      const [code] = await once(appProcess, 'close');
 
       if (process.platform !== 'win32') {
         expect(output).to.include('Exit event with code: 123');
@@ -284,7 +284,7 @@ describe('app module', () => {
         appProcess.stderr!.on('data', (data) => {
           stderr += data;
         });
-        const [code, signal] = await once(appProcess, 'exit');
+        const [code, signal] = await once(appProcess, 'close');
         appProcess = null;
         const message = `run ${i}: code=${code} signal=${signal}\n${stderr}`;
         expect(signal).to.equal(null, message);
@@ -2032,7 +2032,7 @@ describe('app module', () => {
       appProcess.stderr.on('data', (data) => {
         errorData += data;
       });
-      const [exitCode] = await once(appProcess, 'exit');
+      const [exitCode] = await once(appProcess, 'close');
       if (exitCode === 0) {
         try {
           const [, json] = /HERE COMES THE JSON: (.+) AND THERE IT WAS/.exec(gpuInfoData)!;
