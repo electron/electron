@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Xu Junwei <xujw89@gmail.com>
+Date: Thu, 17 Sep 2026 07:48:47 -0700
+Subject: =?UTF-8?q?[mac]=20PowerMonitorDeviceSource=EF=BC=9AHandle=20IOReg?=
+ =?UTF-8?q?isterForSystemPower=20failure?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+IORegisterForSystemPower() can fail and return MACH_PORT_NULL. Avoid
+dereferencing the null notification port, which otherwise crashes during
+initialization.
+
+Continue initializing the independent battery and thermal monitors after
+registration fails. PowerSuspendObserver implementations will not
+receive suspend or resume events in this case. Only clean up the IOKit
+notification resources after successful registration.
+
+Bug: 562777834
+Change-Id: I8191ebd4b8c17410338880fe9a4a3a1201c640c8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8424840
+Reviewed-by: Hewro Hewei <ihewro@chromium.org>
+Commit-Queue: Hewro Hewei <ihewro@chromium.org>
+Reviewed-by: Greg Thompson <grt@chromium.org>
+Auto-Submit: 徐俊伟 <xujw89@gmail.com>
+Cr-Commit-Position: refs/heads/main@{#1699800}
+
+diff --git a/base/power_monitor/power_monitor_device_source_mac.mm b/base/power_monitor/power_monitor_device_source_mac.mm
+index 925be3f0a089d49369edaf323436a599378d9e87..3680ebff400323f4c6deb316c01f9e7342c0a804 100644
+--- a/base/power_monitor/power_monitor_device_source_mac.mm
++++ b/base/power_monitor/power_monitor_device_source_mac.mm
+@@ -58,13 +58,18 @@
+       this,
+       mac::ScopedIONotificationPortRef::Receiver(notification_port_).get(),
+       &SystemPowerEventCallback, &notifier_);
+-  DCHECK_NE(power_manager_port_, IO_OBJECT_NULL);
+ 
+-  // Add the sleep/wake notification event source to the runloop.
+-  CFRunLoopAddSource(
+-      CFRunLoopGetCurrent(),
+-      IONotificationPortGetRunLoopSource(notification_port_.get()),
+-      kCFRunLoopCommonModes);
++  // Registration failure means PowerSuspendObserver implementations will not
++  // receive suspend/resume events. Continue with degraded functionality
++  // rather than crashing; the battery and thermal monitors do not depend on
++  // this registration.
++  if (power_manager_port_ != MACH_PORT_NULL) {
++    // Add the sleep/wake notification event source to the runloop.
++    CFRunLoopAddSource(
++        CFRunLoopGetCurrent(),
++        IONotificationPortGetRunLoopSource(notification_port_.get()),
++        kCFRunLoopCommonModes);
++  }
+ 
+   battery_level_provider_ = BatteryLevelProvider::Create();
+   // Get the initial battery power status and register for all
+@@ -81,18 +86,21 @@
+ }
+ 
+ void PowerMonitorDeviceSource::PlatformDestroy() {
+-  CFRunLoopRemoveSource(
+-      CFRunLoopGetCurrent(),
+-      IONotificationPortGetRunLoopSource(notification_port_.get()),
+-      kCFRunLoopCommonModes);
+-
+-  // Deregister for system power notifications.
+-  IODeregisterForSystemPower(&notifier_);
+-
+-  // Close the connection to the IOPMrootDomain that was opened in
+-  // PlatformInit().
+-  IOServiceClose(power_manager_port_);
+-  power_manager_port_ = IO_OBJECT_NULL;
++  // The notification resources are valid only if registration succeeded.
++  if (power_manager_port_ != MACH_PORT_NULL) {
++    CFRunLoopRemoveSource(
++        CFRunLoopGetCurrent(),
++        IONotificationPortGetRunLoopSource(notification_port_.get()),
++        kCFRunLoopCommonModes);
++
++    // Deregister for system power notifications.
++    IODeregisterForSystemPower(&notifier_);
++
++    // Close the connection to the IOPMrootDomain that was opened in
++    // PlatformInit().
++    IOServiceClose(power_manager_port_);
++    power_manager_port_ = MACH_PORT_NULL;
++  }
+ }
+ 
+ PowerStateObserver::BatteryPowerStatus
