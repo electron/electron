@@ -361,18 +361,18 @@ jobs:
           }
         }
 
-    # The windows-11-arm image shows Windows' first sign-in "Choose privacy
-    # settings for your device" window full screen, above even topmost
-    # windows, so real mouse input (spec/fixtures/native-addon/mouse-input)
-    # clicks it instead of the windows under test. Close it and keep it from
-    # coming back. It is hosted by CloudExperienceHost (WWAHost.exe), started
-    # by UserOOBEBroker.exe. With it gone the Start menu was seen open over
-    # the test area, so close it with Escape if it is open (stopping
-    # StartMenuExperienceHost instead made Chromium's occlusion tracking
-    # report other specs' windows as hidden). Then minimize every other
-    # visible top level window
-    # the image left open (a System Properties dialog, the runner's terminal)
-    # and log what the OS hit tests on screen.
+    # The windows-11-arm image has not finished its first sign-in and leaves
+    # windows over the test area: real mouse input
+    # (spec/fixtures/native-addon/mouse-input) clicks them instead of the
+    # windows under test, and Chromium's native occlusion tracking reports
+    # test windows beneath them as hidden. Close the privacy settings window
+    # (WWAHost.exe, started by UserOOBEBroker.exe) and keep it from coming
+    # back, close the Start menu with Escape (stopping its host made the
+    # occlusion tracking misreport), close or minimize the other windows left
+    # open, and log what the OS hit tests on screen. The image also keeps
+    # relaunching `wsl.exe --update` in a new terminal window that takes the
+    # foreground about every 90 seconds: stop the running one and keep
+    # minimizing any that follow while the specs run.
     - name: Dismiss first sign-in windows (Windows)
       if: ${{ inputs.target-platform == 'win' }}
       timeout-minutes: 5
@@ -481,31 +481,8 @@ jobs:
           $proc = (Get-Process -Id $procId -ErrorAction SilentlyContinue).ProcessName
           Write-Host ("Window at ({0},{1}): class '{2}' title '{3}' process {4} ({5})" -f $p.X, $p.Y, $cls, $title, $proc, $procId)
         }
-        # Diagnostic: with the Start menu closed, api-web-contents-view.spec.ts
-        # sees freshly shown windows as hidden (occluded) on windows-11-arm.
-        # Log what could explain that (display and screen saver timeouts, WSL
-        # and terminal processes) and sample the foreground window and any
-        # window above Electron's while the specs run (printed after them).
-        try {
-          foreach ($q in @('SUB_VIDEO VIDEOIDLE', 'SUB_SLEEP STANDBYIDLE')) {
-            Write-Host "powercfg $q`: $((powercfg /q SCHEME_CURRENT $q.Split(' ') | Select-String 'Current (AC|DC) Power Setting Index') -join '; ')"
-          }
-          Write-Host "powercfg /requests:`n$(powercfg /requests | Out-String)"
-          $desktop = Get-ItemProperty 'HKCU:\Control Panel\Desktop'
-          Write-Host "Screen saver: active '$($desktop.ScreenSaveActive)' timeout '$($desktop.ScreenSaveTimeOut)' exe '$($desktop.'SCRNSAVE.EXE')'"
-          $names = 'wsl.exe', 'wslhost.exe', 'wslservice.exe', 'WindowsTerminal.exe', 'OpenConsole.exe', 'conhost.exe'
-          Get-CimInstance Win32_Process | Where-Object { $names -contains $_.Name } |
-            Format-Table -AutoSize -Wrap ProcessId, ParentProcessId, CreationDate, CommandLine | Out-String -Width 300 | Write-Host
-        } catch {
-          Write-Host "Diagnostics failed: $_"
-        }
-        # windows-11-arm keeps running `wsl.exe --update --confirm
-        # --prompt-before-exit`, relaunching it about every 90 seconds, each
-        # time in a new Windows Terminal window that takes the foreground over
-        # the test area for about a minute; Chromium's occlusion tracking then
-        # reports Electron's windows beneath it as hidden. Log who launches it,
-        # stop it (and its launcher when that is a script host outside this
-        # step's own ancestry), and let the sampler minimize any that return.
+        # Stop the running WSL update, and its launcher when that is a script
+        # host outside this step's own ancestry.
         try {
           $ancestors = @()
           $cur = Get-CimInstance Win32_Process -Filter "ProcessId=$PID"
@@ -528,21 +505,21 @@ jobs:
         } catch {
           Write-Host "Stopping the WSL update failed: $_"
         }
-        $sampler = Join-Path $env:GITHUB_WORKSPACE 'src\electron\script\actions\occlusion-sampler.ps1'
-        $log = Join-Path $env:RUNNER_TEMP 'occlusion-sampler.log'
-        $empty = Join-Path $env:RUNNER_TEMP 'occlusion-sampler.in'
+        $minimizer = Join-Path $env:GITHUB_WORKSPACE 'src\electron\script\actions\minimize-wsl-terminals.ps1'
+        $log = Join-Path $env:RUNNER_TEMP 'minimize-wsl-terminals.log'
+        $empty = Join-Path $env:RUNNER_TEMP 'minimize-wsl-terminals.in'
         New-Item -ItemType File -Force -Path $empty | Out-Null
-        # Keep the step's own output pipes out of the sampler, so the runner
-        # does not wait on it to finish the step.
+        # Keep the step's output pipes out of the background minimizer, so
+        # the runner does not wait for it to exit.
         Add-Type -Namespace ElectronCI -Name Handles -MemberDefinition @'
         [DllImport("kernel32.dll")] public static extern IntPtr GetStdHandle(int n);
         [DllImport("kernel32.dll")] public static extern bool SetHandleInformation(IntPtr h, int mask, int flags);
         '@
         foreach ($n in -10, -11, -12) { [void][ElectronCI.Handles]::SetHandleInformation([ElectronCI.Handles]::GetStdHandle($n), 1, 0) }
         Start-Process powershell.exe -NoNewWindow -RedirectStandardInput $empty -RedirectStandardOutput "$log.out" -RedirectStandardError "$log.err" `
-          -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $sampler, '-Log', $log, '-Seconds', '3600'
+          -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $minimizer, '-Log', $log, '-Seconds', '3600'
         for ($i = 0; $i -lt 30 -and -not (Test-Path $log); $i++) { Start-Sleep -Seconds 1 }
-        if (Test-Path $log) { Get-Content $log | Write-Host } else { Write-Host "Sampler did not start: $(Get-Content -Raw "$log.err" -ErrorAction SilentlyContinue)" }
+        if (Test-Path $log) { Get-Content $log | Write-Host } else { Write-Host "WSL terminal minimizer did not start: $(Get-Content -Raw "$log.err" -ErrorAction SilentlyContinue)" }
 
     - name: Run Electron Tests
       shell: bash
@@ -645,12 +622,12 @@ jobs:
             fi
           fi
         fi
-    - name: Print window occlusion samples (Windows)
+    - name: Print minimized WSL terminals (Windows)
       if: ${{ always() && inputs.target-platform == 'win' }}
       continue-on-error: true
       shell: pwsh
       run: |
-        $log = Join-Path $env:RUNNER_TEMP 'occlusion-sampler.log'
+        $log = Join-Path $env:RUNNER_TEMP 'minimize-wsl-terminals.log'
         foreach ($f in "$log.err", "$log.out", $log) {
           if (Test-Path $f) { Write-Host "--- $f"; Get-Content $f | Write-Host }
         }
