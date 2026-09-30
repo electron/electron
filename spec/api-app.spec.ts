@@ -325,42 +325,39 @@ describe('app module', () => {
       expectedAdditionalData: unknown;
     }
 
-    // Fails naming what never happened, rather than waiting out the test's
-    // own timeout.
-    async function within<T>(promise: Promise<T>, what: string, ms = 30000): Promise<T> {
-      let timer: NodeJS.Timeout | undefined;
-      const timedOut = new Promise<never>((_resolve, reject) => {
-        timer = globalThis.setTimeout(() => reject(new Error(`${what} within ${ms}ms`)), ms);
-      });
-      try {
-        return await Promise.race([promise, timedOut]);
-      } finally {
-        globalThis.clearTimeout(timer);
-      }
-    }
-
     it('prevents the second launch of app', async function () {
       this.timeout(120000);
       const appPath = path.join(fixturesPath, 'api', 'singleton-data');
-      // The two copies quit within milliseconds of each other, so listen for
-      // both exits before either can happen: an 'exit' emitted before once()
-      // is called is lost, and the test would wait for it until it timed out.
+      // The two copies quit within milliseconds of each other, so record each
+      // exit as soon as the copy is spawned: an 'exit' emitted before a
+      // listener is attached is lost, and the test would wait for it until it
+      // timed out.
       const first = cp.spawn(process.execPath, [appPath]);
-      const firstExited = once(first, 'exit');
-      defer(() => {
-        first.kill();
+      let firstCode: number | null = null;
+      first.on('exit', (code) => {
+        firstCode = code;
       });
-      await within(once(first.stdout, 'data'), 'first instance did not start');
+      defer(() => {
+        if (first.exitCode === null && first.signalCode === null) first.kill();
+      });
+      let firstOutput = '';
+      first.stdout.on('data', (data) => {
+        firstOutput += data;
+      });
+      await waitUntil(() => firstOutput.length > 0, { timeout: 30000 });
       // Start second app when received output.
       const second = cp.spawn(process.execPath, [appPath]);
-      const secondExited = once(second, 'exit');
-      defer(() => {
-        second.kill();
+      let secondCode: number | null = null;
+      second.on('exit', (code) => {
+        secondCode = code;
       });
-      const [code2] = await within(secondExited, 'second instance did not exit');
-      expect(code2).to.equal(1);
-      const [code1] = await within(firstExited, 'first instance did not exit after the second launch');
-      expect(code1).to.equal(0);
+      defer(() => {
+        if (second.exitCode === null && second.signalCode === null) second.kill();
+      });
+      await waitUntil(() => secondCode !== null, { timeout: 30000 });
+      expect(secondCode).to.equal(1);
+      await waitUntil(() => firstCode !== null, { timeout: 30000 });
+      expect(firstCode).to.equal(0);
     });
 
     it('returns true when setting non-existent user data folder', async function () {
