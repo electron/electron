@@ -315,6 +315,54 @@ napi_value IsWindowAtPoint(napi_env env, napi_callback_info info) {
                                ::GetAncestor(hit, GA_ROOT) == hwnd));
 }
 
+// describeWindowAtPoint(x, y): what ::WindowFromPoint() hit tests at the
+// physical screen point, for failure messages: the top level window's class,
+// title, owning process and extended style.
+napi_value DescribeWindowAtPoint(napi_env env, napi_callback_info info) {
+  size_t argc = 2;
+  napi_value args[2];
+  NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
+  int32_t x = 0, y = 0;
+  if (argc < 2 || !GetInt32Arg(env, args[0], &x) ||
+      !GetInt32Arg(env, args[1], &y)) {
+    napi_throw_type_error(env, nullptr,
+                          "describeWindowAtPoint(x, y) expects two integers");
+    return nullptr;
+  }
+  napi_value result;
+  NAPI_CALL(env, napi_create_object(env, &result));
+  POINT point = {x, y};
+  HWND hit = ::WindowFromPoint(point);
+  if (!hit)
+    return result;
+  HWND root = ::GetAncestor(hit, GA_ROOT);
+  if (!root)
+    root = hit;
+  SetInt(env, result, "hwnd", reinterpret_cast<intptr_t>(root));
+  wchar_t text[256] = {0};
+  if (::GetClassNameW(root, text, 256))
+    SetString(env, result, "className", WideToUtf8(text));
+  text[0] = 0;
+  ::GetWindowTextW(root, text, 256);
+  SetString(env, result, "title", WideToUtf8(text));
+  const LONG ex_style = ::GetWindowLongW(root, GWL_EXSTYLE);
+  SetInt(env, result, "exStyle", ex_style);
+  SetBool(env, result, "topmost", (ex_style & WS_EX_TOPMOST) != 0);
+  DWORD pid = 0;
+  ::GetWindowThreadProcessId(root, &pid);
+  SetInt(env, result, "pid", pid);
+  SetBool(env, result, "ownProcess", pid == ::GetCurrentProcessId());
+  HANDLE process = ::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+  if (process) {
+    wchar_t image[MAX_PATH] = {0};
+    DWORD size = MAX_PATH;
+    if (::QueryFullProcessImageNameW(process, 0, image, &size))
+      SetString(env, result, "process", WideToUtf8(image));
+    ::CloseHandle(process);
+  }
+  return result;
+}
+
 // getDiagnostics(): everything needed to tell from a CI log whether real input
 // injection can work on this machine.
 napi_value GetDiagnostics(napi_env env, napi_callback_info info) {
@@ -418,6 +466,8 @@ napi_value Init(napi_env env, napi_value exports) {
        napi_default, nullptr},
       {"isWindowAtPoint", nullptr, IsWindowAtPoint, nullptr, nullptr, nullptr,
        napi_default, nullptr},
+      {"describeWindowAtPoint", nullptr, DescribeWindowAtPoint, nullptr,
+       nullptr, nullptr, napi_default, nullptr},
       {"getDiagnostics", nullptr, GetDiagnostics, nullptr, nullptr, nullptr,
        napi_default, nullptr},
   };

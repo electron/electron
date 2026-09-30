@@ -20,5 +20,7 @@ module.exports = {
   wheel: (delta, horizontal = false) => binding.wheel(delta, horizontal).then(check('wheel')),
   getCursorPos: binding.getCursorPos,
   isWindowAtPoint: binding.isWindowAtPoint,
+  // Windows only; elsewhere returns null.
+  describeWindowAtPoint: binding.describeWindowAtPoint ?? (() => null),
   getDiagnostics: binding.getDiagnostics
 };
