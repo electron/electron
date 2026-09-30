@@ -499,6 +499,35 @@ jobs:
         } catch {
           Write-Host "Diagnostics failed: $_"
         }
+        # windows-11-arm keeps running `wsl.exe --update --confirm
+        # --prompt-before-exit`, relaunching it about every 90 seconds, each
+        # time in a new Windows Terminal window that takes the foreground over
+        # the test area for about a minute; Chromium's occlusion tracking then
+        # reports Electron's windows beneath it as hidden. Log who launches it,
+        # stop it (and its launcher when that is a script host outside this
+        # step's own ancestry), and let the sampler minimize any that return.
+        try {
+          $ancestors = @()
+          $cur = Get-CimInstance Win32_Process -Filter "ProcessId=$PID"
+          while ($cur -and $ancestors.Count -lt 10) { $ancestors += $cur.ProcessId; $cur = Get-CimInstance Win32_Process -Filter "ProcessId=$($cur.ParentProcessId)" }
+          $scriptHosts = 'powershell.exe', 'pwsh.exe', 'cmd.exe', 'wscript.exe', 'cscript.exe'
+          Get-CimInstance Win32_Process -Filter "Name='wsl.exe'" | Where-Object { $_.CommandLine -match '--update' } | ForEach-Object {
+            Write-Host "WSL update $($_.ProcessId): $($_.CommandLine)"
+            $parent = Get-CimInstance Win32_Process -Filter "ProcessId=$($_.ParentProcessId)"
+            $p = $parent
+            for ($i = 0; $p -and $i -lt 4; $i++) {
+              Write-Host "  launched by $($p.ProcessId) $($p.Name): $($p.CommandLine)"
+              $p = Get-CimInstance Win32_Process -Filter "ProcessId=$($p.ParentProcessId)"
+            }
+            if ($parent -and $scriptHosts -contains $parent.Name -and $ancestors -notcontains $parent.ProcessId) {
+              Write-Host "  stopping launcher $($parent.ProcessId)"
+              Stop-Process -Id $parent.ProcessId -Force -ErrorAction SilentlyContinue
+            }
+            Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+          }
+        } catch {
+          Write-Host "Stopping the WSL update failed: $_"
+        }
         $sampler = Join-Path $env:GITHUB_WORKSPACE 'src\electron\script\actions\occlusion-sampler.ps1'
         $log = Join-Path $env:RUNNER_TEMP 'occlusion-sampler.log'
         $empty = Join-Path $env:RUNNER_TEMP 'occlusion-sampler.in'
