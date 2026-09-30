@@ -29,6 +29,7 @@ type MouseInput = {
   click(button?: 'left' | 'right' | 'middle'): Promise<unknown>;
   getCursorPos(): { x?: number; y?: number; error?: number };
   isWindowAtPoint(handle: Buffer, x: number, y: number): boolean;
+  describeWindowAtPoint(x: number, y: number): Record<string, unknown> | null;
   getDiagnostics(): { available?: boolean; sendInputProbeSent?: number; inputDesktop?: string } & Record<
     string,
     unknown
@@ -180,6 +181,18 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       }
     };
 
+    // Waits for |condition|; on timeout fails with what the OS hit tests at
+    // the physical screen point |p|, since the usual cause is another window
+    // covering ours.
+    const waitUntilAt = async (p: Electron.Point, what: string, condition: () => boolean | Promise<boolean>) => {
+      try {
+        await waitUntil(condition);
+      } catch {
+        const atPoint = JSON.stringify(mouse.describeWindowAtPoint(p.x, p.y));
+        throw new Error(`${what} did not happen; window at ${JSON.stringify(p)}: ${atPoint}`);
+      }
+    };
+
     const createWindow = async (options: Electron.BrowserWindowConstructorOptions = {}) => {
       const w = new BrowserWindow({ ...BOUNDS, frame: false, show: false, useContentSize: true, ...options });
       await w.loadURL(PAGE);
@@ -232,7 +245,9 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       w.showInactive();
       const p = toScreen(inWindow(TARGET_CENTER));
       // Also confirms the window is on screen before it starts ignoring.
-      await waitUntil(() => mouse.isWindowAtPoint(w.getNativeWindowHandle(), p.x, p.y));
+      await waitUntilAt(p, 'hit testing the window before it ignores', () =>
+        mouse.isWindowAtPoint(w.getNativeWindowHandle(), p.x, p.y)
+      );
       w.setIgnoreMouseEvents(true, { forward: canForward });
       // Synchronous on both: Windows changes the extended style in place, and
       // on X11 the new input shape is applied when the call returns.
@@ -256,7 +271,11 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
 
       await glide(OUTSIDE, inWindow(TARGET_CENTER));
       await mouse.click();
-      await waitUntil(async () => (await count(below, 'mousedown')) > 0);
+      await waitUntilAt(
+        toScreen(inWindow(TARGET_CENTER)),
+        'a mousedown in the window below',
+        async () => (await count(below, 'mousedown')) > 0
+      );
       expect(await count(above, 'mousedown')).to.equal(0);
     });
 
