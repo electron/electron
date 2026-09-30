@@ -24,8 +24,7 @@ a linear scan of the parent's children, so this does not change the cost.
 
 Fixes: https://github.com/electron/electron/issues/54199
 
-This is a //content bug and is being proposed upstream. The patch can be
-removed once the equivalent change lands in Chromium.
+Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/8470272
 
 diff --git a/content/browser/find_request_manager.cc b/content/browser/find_request_manager.cc
 index 9fbcd519dc4963e6977237db791d6a323eca2905..6f1c2550b2d8e3724ca4f2502c84c0be58fb25cb 100644
