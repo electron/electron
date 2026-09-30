@@ -1,11 +1,13 @@
-// Real (SendInput based) mouse input for specs. Windows only, see
-// src/main.cc. Coordinates are physical screen pixels: convert DIPs with
-// screen.dipToScreenPoint() first.
+// Real OS level mouse input for specs: SendInput() on Windows
+// (src/main_win.cc), CGEventPost() on macOS (src/impl_mac.cc) and XTEST on
+// Linux X11 (src/impl_linux.cc). Coordinates are what the platform's input
+// APIs use: physical screen pixels on Windows and X11 (convert DIPs with
+// screen.dipToScreenPoint() first), points (DIPs) on macOS.
 const binding = require('../build/Release/mouse_input.node');
 
 const check = (what) => (result) => {
   if (result.sent !== result.expected) {
-    throw new Error(`SendInput(${what}) injected ${result.sent}/${result.expected} events, GetLastError() = ${result.error}`);
+    throw new Error(`mouse-input ${what}: injected ${result.sent}/${result.expected} events, error ${result.error}`);
   }
   return result;
 };
