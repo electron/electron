@@ -129,7 +129,7 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index e656bc9dbeca38e0828f1cfca47a62de2797ebbb..e2ff01b3d3cc8329958f13b92305d2da36446337 100644
+index 1ebb57cfe6fd9cfec5c5b440149f77b21e841afb..673b445a551c09fd7942ae01de7b6e85f1feec8b 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 @@ -1045,6 +1045,7 @@ if (is_clang_or_gcc) {
@@ -1005,7 +1005,7 @@ index d42b3b58b63c7b4179b49c2d5ac73892f5a70cf3..7aaba0f0262fbb63746718a29572bd75
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 3162721b67d5b744c2c1d7021656a862eea2c2c5..960c72787c2abdfed8579d8366d93e24ea3e3392 100644
+index 5b7fc354e3396b2ba6c9efdce9541010af6a28f6..4f95f876d48a77055ee46ca43fcaf970360bc809 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -382,6 +382,7 @@ source_set("browser") {
@@ -1817,10 +1817,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 056bd22809479eac64251cfc67f37336c4438424..3e44e4956ea18f87bdc919bc72d2db63566c30d7 100644
+index d6c6a7b5a30f52ca17bf17a490bf8af6410b8c2c..108132eb23eceb4c36afc4b818b106c6349fcbe3 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -444,6 +444,7 @@ component("core") {
+@@ -445,6 +445,7 @@ component("core") {
      "//ui/gfx/geometry",
      "//ui/gfx/geometry:geometry_skia",
      "//ui/strings",
@@ -1899,18 +1899,18 @@ index 94afefcee81b87c05bf9b1199d90d3d4b5ea84a6..3e3aaea0ec6c8fad0d90a931d269af3a
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm b/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
-index 8736e0be60194803cac6737f567cafe4a9200116..bd8e1d349402d41b7558be71b82f0aa49aaad0f7 100644
+index 93f6eb62e3648119315300be026fe6b9fccfa4f4..b9f7423e515217cf32202722ea62b02f0145c279 100644
 --- a/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
 +++ b/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
-@@ -38,6 +38,7 @@
+@@ -37,6 +37,7 @@
+ #include "base/apple/bridging.h"
  #include "base/apple/foundation_util.h"
  #include "base/apple/scoped_cftyperef.h"
- #include "base/numerics/safe_conversions.h"
 +#include "electron/mas.h"
  #include "third_party/blink/renderer/platform/fonts/font_cache.h"
  #include "third_party/blink/renderer/platform/fonts/font_selection_types.h"
  #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
-@@ -61,8 +62,10 @@
+@@ -60,8 +61,10 @@
  // We don't need localized variation axis name, so we can use
  // `CTFontCopyVariationAxesInternal()` instead.
  // Request for public API: FB13788219.
@@ -1921,7 +1921,7 @@ index 8736e0be60194803cac6737f567cafe4a9200116..bd8e1d349402d41b7558be71b82f0aa4
  
  namespace blink {
  
-@@ -470,12 +473,16 @@ void ClampVariationValuesToFontAcceptableRange(
+@@ -418,12 +421,16 @@ void ClampVariationValuesToFontAcceptableRange(
    // we are enabling it only on MacOS 13+ because these are our benchmarking
    // platforms.
    NSArray* all_axes;
@@ -2165,10 +2165,10 @@ index 9423a2891552e8df3ea5b05c720ab11795c4b92d..610c479ef03759d3082b42d7a402cbea
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index c8161436a00e6d8820dbd099e183c7d42c0184db..992a2f7e9ea1fa7f680dd2f26fd646d7572d8903 100644
+index 0c60d955d51d899ceced2fe3d6483913e7160db4..6ce33e05e71c9941a76f1b9de22f2faf51550947 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -366,6 +366,13 @@ component("base") {
+@@ -367,6 +367,13 @@ component("base") {
      ]
    }
  
@@ -2182,7 +2182,7 @@ index c8161436a00e6d8820dbd099e183c7d42c0184db..992a2f7e9ea1fa7f680dd2f26fd646d7
    if (is_ios) {
      sources += [
        "device_form_factor_ios.mm",
-@@ -522,6 +529,12 @@ component("base") {
+@@ -523,6 +530,12 @@ component("base") {
      "//url",
    ]
  

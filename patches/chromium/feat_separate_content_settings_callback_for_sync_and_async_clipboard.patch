@@ -34,10 +34,10 @@ index 867fc205aaa787cb05c56f8c1fa6d63e2b2ed92f..97567b79069538e23115fc274c10b8a4
    }
  
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index bdf54ce0cda80440cefa46d0045fe56d562bac9d..783cf0f1c202b020fc0d0f35c9e07313061a67e1 100644
+index 96d653a82111de11be05205117436d8b260d0af1..47e723a87b62df4aac21ebbaa5974994ed0c6b5d 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
-@@ -99,7 +99,8 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
+@@ -100,7 +100,8 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
      case PermissionType::LOCAL_NETWORK_ACCESS:
      case PermissionType::LOCAL_NETWORK:
      case PermissionType::LOOPBACK_NETWORK:
@@ -130,7 +130,7 @@ index 36410ff29d9c82e59f93fbb82968064bd330dfde..6c3f994e0b184f78bd9442002bb4dfae
    virtual void PassiveInsecureContentFound(const WebURL&) {}
  
 diff --git a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-index 2168cf7675cf43cf3a925033cd9282e173edd88b..ab4f4841f370ef533e6adefd53011acffebabf0e 100644
+index 6706ec4868c8575aa02870f19ccaa5b5b1efd1a3..f98032a0455e96a42b800b1ac564ed3cf753bc6d 100644
 --- a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 +++ b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 @@ -151,7 +151,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
@@ -142,7 +142,7 @@ index 2168cf7675cf43cf3a925033cd9282e173edd88b..ab4f4841f370ef533e6adefd53011acf
  }
  
  bool ClipboardCommands::CanWriteClipboard(LocalFrame& frame,
-@@ -383,7 +383,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
+@@ -379,7 +379,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
      return true;
    }
    return frame->GetContentSettingsClient() &&
