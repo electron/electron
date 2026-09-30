@@ -12,6 +12,7 @@
     "@electron-ci/echo": "*",
     "@electron-ci/external-ab": "*",
     "@electron-ci/is-valid-window": "*",
+    "@electron-ci/mouse-input": "*",
     "@electron-ci/object-wrap": "*",
     "@electron-ci/uv-dlopen": "*",
     "@electron-ci/virtual-display": "*",
