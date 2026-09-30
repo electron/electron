@@ -368,7 +368,9 @@ jobs:
     # coming back. It is hosted by CloudExperienceHost (WWAHost.exe), started
     # by UserOOBEBroker.exe. With it gone the Start menu was seen open over
     # the test area, so close that too (StartMenuExperienceHost restarts with
-    # the menu closed), then log what the OS hit tests on screen.
+    # the menu closed). Then minimize every other visible top level window
+    # the image left open (a System Properties dialog, the runner's terminal)
+    # and log what the OS hit tests on screen.
     - name: Dismiss first sign-in windows (Windows)
       if: ${{ inputs.target-platform == 'win' }}
       # Best effort: if the window stays up, the specs report what covers
@@ -404,7 +406,42 @@ jobs:
         [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint pid);
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder s, int n);
         [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder s, int n);
+        public delegate bool EnumProc(IntPtr hWnd, IntPtr lParam);
+        [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc cb, IntPtr lParam);
+        [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
+        [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);
+        [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int cmd);
+        [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr w, IntPtr l);
+        [DllImport("dwmapi.dll")] public static extern int DwmGetWindowAttribute(IntPtr hWnd, int attr, out int value, int size);
+        // Minimizes (dialogs: closes) visible, uncloaked top level windows
+        // other than the shell's desktop and taskbar. Returns what it did.
+        public static System.Collections.Generic.List<string> ClearDesktop() {
+          var log = new System.Collections.Generic.List<string>();
+          var keep = new System.Collections.Generic.HashSet<string> { "Progman", "WorkerW", "Shell_TrayWnd", "Shell_SecondaryTrayWnd" };
+          EnumWindows((h, l) => {
+            if (!IsWindowVisible(h) || IsIconic(h)) return true;
+            int cloaked = 0;
+            if (DwmGetWindowAttribute(h, 14, out cloaked, 4) == 0 && cloaked != 0) return true;
+            var cls = new System.Text.StringBuilder(256);
+            var title = new System.Text.StringBuilder(256);
+            GetClassName(h, cls, 256);
+            GetWindowText(h, title, 256);
+            if (keep.Contains(cls.ToString())) return true;
+            uint pid;
+            GetWindowThreadProcessId(h, out pid);
+            string proc = "?";
+            try { proc = System.Diagnostics.Process.GetProcessById((int)pid).ProcessName; } catch {}
+            bool dialog = cls.ToString() == "#32770";
+            if (dialog) PostMessage(h, 0x0010, IntPtr.Zero, IntPtr.Zero);  // WM_CLOSE
+            else ShowWindow(h, 6);  // SW_MINIMIZE
+            log.Add(string.Format("{0} class '{1}' title '{2}' process {3} ({4})", dialog ? "Closed" : "Minimized", cls, title, proc, pid));
+            return true;
+          }, IntPtr.Zero);
+          return log;
+        }
         '@
+        [ElectronCI.HitTest]::ClearDesktop() | ForEach-Object { Write-Host $_ }
+        Start-Sleep -Seconds 2
         foreach ($xy in @(@(300, 300), @(512, 384))) {
           $p = New-Object ElectronCI.HitTest+POINT
           $p.X = $xy[0]; $p.Y = $xy[1]
