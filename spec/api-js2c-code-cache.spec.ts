@@ -34,7 +34,7 @@ async function runFixtureApp(execPath: string): Promise<Result> {
       child.kill('SIGKILL');
       reject(new Error('fixture app timed out\n' + stdout));
     }, 90000);
-    child.on('exit', (code) => {
+    child.on('close', (code) => {
       clearTimeout(to);
       if (code !== 0) reject(new Error(`fixture app exited ${code}\n${stdout}`));
       else resolve(stdout);

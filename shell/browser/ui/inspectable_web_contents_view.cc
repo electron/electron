@@ -198,9 +198,10 @@ void InspectableWebContentsView::CloseDevTools() {
                            : devtools_window_->GetWindowBoundsInScreen();
     inspectable_web_contents()->SaveDevToolsBounds(save_bounds);
 
-    devtools_window_.reset();
+    // The widget owns both the view and its delegate.
     devtools_window_web_view_ = nullptr;
     devtools_window_delegate_ = nullptr;
+    devtools_window_.reset();
   } else {
     devtools_web_view_->SetVisible(false);
     devtools_web_view_->SetWebContents(nullptr);

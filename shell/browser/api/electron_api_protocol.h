@@ -6,7 +6,9 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_PROTOCOL_H_
 
 #include <string>
+
 #include <vector>
+#include "base/values.h"
 
 #include "base/memory/raw_ptr.h"
 #include "gin/wrappable.h"
@@ -74,6 +76,12 @@ class Protocol final : public gin::Wrappable<Protocol>,
                          const ProtocolHandler& handler);
   bool UnregisterProtocol(const std::string& scheme, gin::Arguments* args);
   bool IsProtocolRegistered(const std::string& scheme);
+  void RegisterSource(gin_helper::ErrorThrower thrower,
+                      const std::string& scheme,
+                      const base::DictValue& options);
+  bool UnregisterSource(const std::string& scheme);
+  v8::Local<v8::Value> GetSource(v8::Isolate* isolate,
+                                 const std::string& scheme);
 
   Error InterceptProtocol(ProtocolType type,
                           const std::string& scheme,
