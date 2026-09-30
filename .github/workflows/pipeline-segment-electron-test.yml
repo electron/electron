@@ -361,6 +361,36 @@ jobs:
           }
         }
 
+    # The windows-11-arm image shows Windows' first sign-in "Choose privacy
+    # settings for your device" window full screen, above even topmost
+    # windows, so real mouse input (spec/fixtures/native-addon/mouse-input)
+    # clicks it instead of the windows under test. Close it and keep it from
+    # coming back. It is hosted by CloudExperienceHost (WWAHost.exe), started
+    # by UserOOBEBroker.exe.
+    - name: Dismiss first sign-in privacy window (Windows)
+      if: ${{ inputs.target-platform == 'win' }}
+      # Best effort: if the window stays up, the specs report what covers
+      # them (describeWindowAtPoint) rather than failing here.
+      continue-on-error: true
+      shell: pwsh
+      run: |
+        $policy = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\OOBE'
+        New-Item -Path $policy -Force | Out-Null
+        Set-ItemProperty -Path $policy -Name DisablePrivacyExperience -Type DWord -Value 1
+        $engagement = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement'
+        New-Item -Path $engagement -Force | Out-Null
+        Set-ItemProperty -Path $engagement -Name ScoobeSystemSettingEnabled -Type DWord -Value 0
+        $windows = { Get-Process | Where-Object { $_.MainWindowHandle -ne 0 } | Format-Table -AutoSize Id, ProcessName, MainWindowTitle | Out-String }
+        Write-Host "Processes with windows before:`n$(& $windows)"
+        foreach ($name in 'UserOOBEBroker', 'WWAHost') {
+          Get-Process -Name $name -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host ("Stopping {0} ({1}): '{2}'" -f $_.ProcessName, $_.Id, $_.MainWindowTitle)
+            Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
+          }
+        }
+        Start-Sleep -Seconds 2
+        Write-Host "Processes with windows after:`n$(& $windows)"
+
     - name: Run Electron Tests
       shell: bash
       timeout-minutes: 60
