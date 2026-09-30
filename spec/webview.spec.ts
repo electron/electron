@@ -2416,13 +2416,14 @@ describe('<webview> tag', function () {
           preferCSSPageSize: 'no'
         };
 
+        await loadWebView(w, { src: 'data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E' });
+
         // These will hard crash in Chromium unless we type-check
         for (const [key, value] of Object.entries(badTypes)) {
           const param = { [key]: value };
-
-          const src = 'data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E';
-          await loadWebView(w, { src });
-          await expect(w.executeJavaScript(`webview.printToPDF(${JSON.stringify(param)})`)).to.eventually.be.rejected();
+          await expect(
+            w.executeJavaScript(`webview.printToPDF(${JSON.stringify(param)})`)
+          ).to.eventually.be.rejectedWith(key);
         }
       });
 
