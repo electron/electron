@@ -54,7 +54,7 @@ index a75058e37a740be83dfb619c0bc4b2ec14794712..e90d43ea59d6608d9f248ecb739322c7
      if (mouse_event_callback.Run(mouse_event)) {
        return;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index b6b20ca26860a09f0dfa56dc406566a800b8f115..b3d556e18ea33cea219c5f9b8942f8b8deb89703 100644
+index 2c2449a853410654ca4268304ae7a221eb7aefbe..074de9073a4457f3cfae98ba60b63dec89c092dd 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4809,6 +4809,12 @@ void WebContentsImpl::RenderWidgetWasResized(
@@ -71,7 +71,7 @@ index b6b20ca26860a09f0dfa56dc406566a800b8f115..b3d556e18ea33cea219c5f9b8942f8b8
                                            const gfx::PointF& client_pt) {
    if (delegate_) {
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 9b070ad769f9037969d60c7def87485da30c28ea..7edc6294459b9c4156c6f8d00e9798c463317cdc 100644
+index 470a1af6b2495b805ee4b0d22f05c37778066776..13b73bce4b40acb83478330ff02a59bc06612ba8 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -1173,6 +1173,7 @@ class CONTENT_EXPORT WebContentsImpl
