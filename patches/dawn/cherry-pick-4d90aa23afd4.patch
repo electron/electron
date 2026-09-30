@@ -1,0 +1,932 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shrek Shao <shrekshao@google.com>
+Date: Thu, 17 Sep 2026 14:03:27 -0700
+Subject: [gl] Add compute blit for Sint and Uint texture formats
+
+This CL:
+- Adds toggles UseBlitForUintTextureToBufferCopy and
+  UseBlitForSintTextureToBufferCopy, enabled by default on OpenGLES.
+- Implements compute shader blits for integer (Uint and Sint) textures
+  in BlitTextureToBuffer.
+- Routes integer formats to compute shader blits on OpenGLES except
+  RGBA32Uint and RGBA32Sint, which are the only integer formats
+  guaranteed by the OpenGL ES 3.1 spec to be supported by glReadPixels
+  with matching data layout.
+- Bypasses compute shader blit for integer cube textures in compat mode.
+  In WGSL, texture_cube<u32> and texture_cube<i32> do not support
+  textureSampleLevel or textureLoad, and textureGather only operates on
+  mip level 0 for a single component. Therefore, integer cube textures
+  fall back to glReadPixels via FramebufferTexture2D for each cube face.
+- Expands CopyTests_T2B and CopyTests_T2B_Compat format parameters to
+  cover integer formats.
+
+Bug: 556959073, 562077184
+Change-Id: Ica78ec08b6702ea386c7d95e36b5f2fd43a1b02b
+TAG=agy
+CONV=8a0c15f2-fbb5-4cb0-bd81-240982407cd0
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/340755
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Shrek Shao <shrekshao@google.com>
+
+Electron adaptation notes (43-x-y):
+Toggles.h/.cpp: the Uint/Sint toggles were inserted without the unrelated VulkanSplitBufferTextureCopyForArrayLayers / GLUseArrayLengthFromImmediate neighbours that M150 lacks. BlitTextureToBuffer.cpp: M150 has no C++ Params struct at the insertion point, so only the new kEncode* constants were inserted there. CommandBufferGL.cpp: texture->GetHandle() and static_cast are used to match M150, and CheckFramebufferComplete() (not present on M150) was replaced by an inline glCheckFramebufferStatus() check that fails the copy the same way.
+
+diff --git a/src/dawn/native/BlitTextureToBuffer.cpp b/src/dawn/native/BlitTextureToBuffer.cpp
+index 8e347394326e01517f0761f0f3864f748d4abcc6..9193058eee554aa5d1bdf9f64d3b5305475ea642 100644
+--- a/src/dawn/native/BlitTextureToBuffer.cpp
++++ b/src/dawn/native/BlitTextureToBuffer.cpp
+@@ -128,7 +128,15 @@ constexpr std::string_view kFloatTextureCube = DAWN_MULTILINE(  //
+     @group(0) @binding(0) var src_tex : texture_cube<f32>;
+ );
+ 
+-constexpr std::string_view kUintTexture = DAWN_MULTILINE(
++constexpr std::string_view kUintTexture1D = DAWN_MULTILINE(
++    fn textureLoadGeneral(tex: texture_1d<u32>, coords: vec3u, level: u32) -> vec4<u32> {
++        //
++        return textureLoad(tex, coords.x, level);
++    }
++    @group(0) @binding(0) var src_tex : texture_1d<u32>;
++);
++
++constexpr std::string_view kUintTexture2D = DAWN_MULTILINE(
+     fn textureLoadGeneral(tex: texture_2d<u32>, coords: vec3u, level: u32) -> vec4<u32> {
+         //
+         return textureLoad(tex, coords.xy, level);
+@@ -136,7 +144,7 @@ constexpr std::string_view kUintTexture = DAWN_MULTILINE(
+     @group(0) @binding(0) var src_tex : texture_2d<u32>;
+ );
+ 
+-constexpr std::string_view kUintTextureArray = DAWN_MULTILINE(
++constexpr std::string_view kUintTexture2DArray = DAWN_MULTILINE(
+     fn textureLoadGeneral(tex: texture_2d_array<u32>, coords: vec3u, level: u32) -> vec4<u32> {
+         //
+         return textureLoad(tex, coords.xy, coords.z, level);
+@@ -144,6 +152,14 @@ constexpr std::string_view kUintTextureArray = DAWN_MULTILINE(
+     @group(0) @binding(0) var src_tex : texture_2d_array<u32>;
+ );
+ 
++constexpr std::string_view kUintTexture3D = DAWN_MULTILINE(
++    fn textureLoadGeneral(tex: texture_3d<u32>, coords: vec3u, level: u32) -> vec4<u32> {
++        //
++        return textureLoad(tex, coords, level);
++    }
++    @group(0) @binding(0) var src_tex : texture_3d<u32>;
++);
++
+ // textureSampleLevel doesn't support texture_cube<u32>
+ // Use textureGather as a workaround.
+ // Always choose the texel with the smallest coord (stored in w component).
+@@ -157,6 +173,58 @@ constexpr std::string_view kUintTextureCube = DAWN_MULTILINE(
+     @group(0) @binding(0) var src_tex : texture_cube<u32>;
+ );
+ 
++constexpr std::string_view kSintTexture1D = DAWN_MULTILINE(
++    fn textureLoadGeneral(tex: texture_1d<i32>, coords: vec3u, level: u32) -> vec4<i32> {
++        //
++        return textureLoad(tex, coords.x, level);
++    }
++    @group(0) @binding(0) var src_tex : texture_1d<i32>;
++);
++
++constexpr std::string_view kSintTexture2D = DAWN_MULTILINE(
++    fn textureLoadGeneral(tex: texture_2d<i32>, coords: vec3u, level: u32) -> vec4<i32> {
++        //
++        return textureLoad(tex, coords.xy, level);
++    }
++    @group(0) @binding(0) var src_tex : texture_2d<i32>;
++);
++
++constexpr std::string_view kSintTexture2DArray = DAWN_MULTILINE(
++    fn textureLoadGeneral(tex: texture_2d_array<i32>, coords: vec3u, level: u32) -> vec4<i32> {
++        //
++        return textureLoad(tex, coords.xy, coords.z, level);
++    }
++    @group(0) @binding(0) var src_tex : texture_2d_array<i32>;
++);
++
++constexpr std::string_view kSintTexture3D = DAWN_MULTILINE(
++    fn textureLoadGeneral(tex: texture_3d<i32>, coords: vec3u, level: u32) -> vec4<i32> {
++        //
++        return textureLoad(tex, coords, level);
++    }
++    @group(0) @binding(0) var src_tex : texture_3d<i32>;
++);
++
++constexpr std::string_view kTexelVector4F32 = DAWN_MULTILINE(
++    alias TexelVector4 = vec4f;
++);
++constexpr std::string_view kTexelVector4U32 = DAWN_MULTILINE(
++    alias TexelVector4 = vec4<u32>;
++);
++constexpr std::string_view kTexelVector4I32 = DAWN_MULTILINE(
++    alias TexelVector4 = vec4<i32>;
++);
++
++constexpr std::string_view kTexelVector2F32 = DAWN_MULTILINE(
++    alias TexelVector2 = vec2f;
++);
++constexpr std::string_view kTexelVector2U32 = DAWN_MULTILINE(
++    alias TexelVector2 = vec2<u32>;
++);
++constexpr std::string_view kTexelVector2I32 = DAWN_MULTILINE(
++    alias TexelVector2 = vec2<i32>;
++);
++
+ constexpr std::string_view kEncodeRGBA8UnormInU32 = DAWN_MULTILINE(
+     fn encodeVectorInU32General(v: vec4f) -> u32 {
+         //
+@@ -171,6 +239,20 @@ constexpr std::string_view kEncodeRGBA8SnormInU32 = DAWN_MULTILINE(
+     }
+ );
+ 
++constexpr std::string_view kEncodeRGBA8UintInU32 = DAWN_MULTILINE(
++    fn encodeVectorInU32General(v: vec4<u32>) -> u32 {
++        //
++        return pack4xU8(v);
++    }
++);
++
++constexpr std::string_view kEncodeRGBA8SintInU32 = DAWN_MULTILINE(
++    fn encodeVectorInU32General(v: vec4<i32>) -> u32 {
++        //
++        return pack4xI8(v);
++    }
++);
++
+ // Storing and swizzling bgra8unorm texel values and convert to u32.
+ constexpr std::string_view kEncodeBGRA8UnormInU32 = DAWN_MULTILINE(
+     fn encodeVectorInU32General(v: vec4f) -> u32 {
+@@ -186,6 +268,27 @@ constexpr std::string_view kEncodeRG16FloatInU32 = DAWN_MULTILINE(
+     }
+ );
+ 
++constexpr std::string_view kEncodeRG16UintInU32 = DAWN_MULTILINE(
++    fn encodeVectorInU32General(v: vec2<u32>) -> u32 {
++        //
++        return (v.x & 0xffffu) | ((v.y & 0xffffu) << 16u);
++    }
++);
++
++constexpr std::string_view kEncodeRG16SintInU32 = DAWN_MULTILINE(
++    fn encodeVectorInU32General(v: vec2<i32>) -> u32 {
++        //
++        return (bitcast<u32>(v.x) & 0xffffu) | ((bitcast<u32>(v.y) & 0xffffu) << 16u);
++    }
++);
++
++constexpr std::string_view kEncodeRGB10A2UintInU32 = DAWN_MULTILINE(
++    fn encodeVectorInU32General(v: vec4<u32>) -> u32 {
++        //
++        return (v.r & 0x3ffu) | ((v.g & 0x3ffu) << 10u) | ((v.b & 0x3ffu) << 20u) | ((v.a & 0x3u) << 30u);
++    }
++);
++
+ // Each thread is responsible for reading (packTexelCount) texel and packing them into a 4-byte u32.
+ constexpr std::string_view kCommonHead = DAWN_MULTILINE(  //
+     struct Params {
+@@ -372,9 +475,9 @@ constexpr std::string_view kNonMultipleOf4OffsetStart = DAWN_MULTILINE(
+ constexpr std::string_view kPackR8ToU32 = DAWN_MULTILINE(
+         // Result bits to store into dst_buf
+         var result: u32 = 0u;
+-        // Storing xnorm8 texel values
+-        // later called by pack4x8xnorm to convert to u32.
+-        var v: vec4<f32>;
++        // Storing texel values
++        // later called by encodeVectorInU32General to convert to u32.
++        var v: TexelVector4;
+ 
+         // dstBuf value is used for starting part.
+         var mask: u32 = 0xffffffffu;
+@@ -510,9 +613,9 @@ constexpr std::string_view kPackR8ToU32 = DAWN_MULTILINE(
+ constexpr std::string_view kPackRG8ToU32 = DAWN_MULTILINE(
+         // Result bits to store into dst_buf
+         var result: u32 = 0u;
+-        // Storing snorm8 texel values
+-        // later called by pack4x8xnorm to convert to u32.
+-        var v: vec4<f32>;
++        // Storing texel values
++        // later called by encodeVectorInU32General to convert to u32.
++        var v: TexelVector4;
+ 
+         // dstBuf value is used for starting part.
+         var mask: u32 = 0xffffffffu;
+@@ -545,9 +648,9 @@ constexpr std::string_view kPackRG8ToU32 = DAWN_MULTILINE(
+ constexpr std::string_view kPackR16ToU32 = DAWN_MULTILINE(
+         // Result bits to store into dst_buf
+         var result: u32 = 0u;
+-        // Storing half texel values
+-        // later called by pack2x16unorm to convert to u32.
+-        var v: vec2f;
++        // Storing half/integer texel values
++        // later called by encodeVectorInU32General to convert to u32.
++        var v: TexelVector2;
+ 
+         // dstBuf value is used for starting part.
+         var mask: u32 = 0xffffffffu;
+@@ -574,13 +677,13 @@ constexpr std::string_view kPackR16ToU32 = DAWN_MULTILINE(
+ );
+ 
+ constexpr std::string_view kPackRG16ToU32 = DAWN_MULTILINE(  //
+-        let v: vec2f = textureLoadGeneral(src_tex, coord0, params.mipLevel).rg;
++        let v = textureLoadGeneral(src_tex, coord0, params.mipLevel).rg;
+         let result = encodeVectorInU32General(v);
+ );
+ 
+ // Load RGBA16 and pack to 2 uint4_t
+ constexpr std::string_view kLoadRGBA16ToU32 = DAWN_MULTILINE(
+-        let v: vec4f = textureLoadGeneral(src_tex, coord0, params.mipLevel);
++        let v = textureLoadGeneral(src_tex, coord0, params.mipLevel);
+         // dstOffset is based on 8 bytes so we need to multiply by 2 to get uint32 offset.
+         let uintOffset = dstOffset << 1;
+         dst_buf[uintOffset] = encodeVectorInU32General(v.rg);
+@@ -723,6 +826,47 @@ constexpr std::string_view kLoadRGBA32Float = DAWN_MULTILINE(  //
+         dst_buf[uintOffset + 3u] = v.a;
+ );
+ 
++constexpr std::string_view kLoadR32Uint = DAWN_MULTILINE(  //
++        dst_buf[dstOffset] = textureLoadGeneral(src_tex, coord0, params.mipLevel).r;
++);
++constexpr std::string_view kLoadR32Sint = DAWN_MULTILINE(  //
++        dst_buf[dstOffset] = bitcast<u32>(textureLoadGeneral(src_tex, coord0, params.mipLevel).r);
++);
++constexpr std::string_view kLoadRG32Uint =
++    DAWN_MULTILINE(
++        let v = textureLoadGeneral(src_tex, coord0, params.mipLevel);
++        // dstOffset is based on 8 bytes so we need to multiply by 2.
++        let uintOffset = dstOffset << 1;
++        dst_buf[uintOffset] = v.r;
++        dst_buf[uintOffset + 1u] = v.g;
++);
++constexpr std::string_view kLoadRG32Sint =
++    DAWN_MULTILINE(
++        let v = textureLoadGeneral(src_tex, coord0, params.mipLevel);
++        // dstOffset is based on 8 bytes so we need to multiply by 2.
++        let uintOffset = dstOffset << 1;
++        dst_buf[uintOffset] = bitcast<u32>(v.r);
++        dst_buf[uintOffset + 1u] = bitcast<u32>(v.g);
++);
++constexpr std::string_view kLoadRGBA32Uint = DAWN_MULTILINE(  //
++        let v = textureLoadGeneral(src_tex, coord0, params.mipLevel);
++        // dstOffset is based on 16 bytes so we need to multiply by 4.
++        let uintOffset = dstOffset << 2;
++        dst_buf[uintOffset] = v.r;
++        dst_buf[uintOffset + 1u] = v.g;
++        dst_buf[uintOffset + 2u] = v.b;
++        dst_buf[uintOffset + 3u] = v.a;
++);
++constexpr std::string_view kLoadRGBA32Sint = DAWN_MULTILINE(  //
++        let v = textureLoadGeneral(src_tex, coord0, params.mipLevel);
++        // dstOffset is based on 16 bytes so we need to multiply by 4.
++        let uintOffset = dstOffset << 2;
++        dst_buf[uintOffset] = bitcast<u32>(v.r);
++        dst_buf[uintOffset + 1u] = bitcast<u32>(v.g);
++        dst_buf[uintOffset + 2u] = bitcast<u32>(v.b);
++        dst_buf[uintOffset + 3u] = bitcast<u32>(v.a);
++);
++
+ ResultOrError<Ref<ComputePipelineBase>> GetOrCreateTextureToBufferPipeline(
+     DeviceBase* device,
+     const TextureCopy& src,
+@@ -769,10 +913,10 @@ ResultOrError<Ref<ComputePipelineBase>> GetOrCreateTextureToBufferPipeline(
+         switch (viewDimension) {
+             // Stencil cannot have e1D texture.
+             case wgpu::TextureViewDimension::e2D:
+-                shader += kUintTexture;
++                shader += kUintTexture2D;
+                 break;
+             case wgpu::TextureViewDimension::e2DArray:
+-                shader += kUintTextureArray;
++                shader += kUintTexture2DArray;
+                 break;
+             case wgpu::TextureViewDimension::Cube:
+                 shader += kCubeCoordCommon;
+@@ -782,6 +926,42 @@ ResultOrError<Ref<ComputePipelineBase>> GetOrCreateTextureToBufferPipeline(
+                 DAWN_UNREACHABLE();
+         }
+     };
++    auto AppendUintTextureHead = [&]() {
++        switch (viewDimension) {
++            case wgpu::TextureViewDimension::e1D:
++                shader += kUintTexture1D;
++                break;
++            case wgpu::TextureViewDimension::e2D:
++                shader += kUintTexture2D;
++                break;
++            case wgpu::TextureViewDimension::e2DArray:
++                shader += kUintTexture2DArray;
++                break;
++            case wgpu::TextureViewDimension::e3D:
++                shader += kUintTexture3D;
++                break;
++            default:
++                DAWN_UNREACHABLE();
++        }
++    };
++    auto AppendSintTextureHead = [&]() {
++        switch (viewDimension) {
++            case wgpu::TextureViewDimension::e1D:
++                shader += kSintTexture1D;
++                break;
++            case wgpu::TextureViewDimension::e2D:
++                shader += kSintTexture2D;
++                break;
++            case wgpu::TextureViewDimension::e2DArray:
++                shader += kSintTexture2DArray;
++                break;
++            case wgpu::TextureViewDimension::e3D:
++                shader += kSintTexture3D;
++                break;
++            default:
++                DAWN_UNREACHABLE();
++        }
++    };
+ 
+     switch (format.format) {
+         case wgpu::TextureFormat::R8Snorm:
+@@ -789,6 +969,7 @@ ResultOrError<Ref<ComputePipelineBase>> GetOrCreateTextureToBufferPipeline(
+             AppendFloatTextureHead();
+             shader += kDstBufferU32;
+             shader += format.IsSnorm() ? kEncodeRGBA8SnormInU32 : kEncodeRGBA8UnormInU32;
++            shader += kTexelVector4F32;
+             shader += kCommonHead;
+             shader += kNonMultipleOf4OffsetStart;
+             shader += kPackR8ToU32;
+@@ -800,6 +981,7 @@ ResultOrError<Ref<ComputePipelineBase>> GetOrCreateTextureToBufferPipeline(
+             AppendFloatTextureHead();
+             shader += kDstBufferU32;
+             shader += format.IsSnorm() ? kEncodeRGBA8SnormInU32 : kEncodeRGBA8UnormInU32;
++            shader += kTexelVector4F32;
+             shader += kCommonHead;
+             shader += kNonMultipleOf4OffsetStart;
+             shader += kPackRG8ToU32;
+@@ -817,6 +999,70 @@ ResultOrError<Ref<ComputePipelineBase>> GetOrCreateTextureToBufferPipeline(
+             shader += kCommonEnd;
+             textureSampleType = wgpu::TextureSampleType::Float;
+             break;
++        case wgpu::TextureFormat::R8Uint:
++            AppendUintTextureHead();
++            shader += kDstBufferU32;
++            shader += kEncodeRGBA8UintInU32;
++            shader += kTexelVector4U32;
++            shader += kCommonHead;
++            shader += kNonMultipleOf4OffsetStart;
++            shader += kPackR8ToU32;
++            shader += kCommonEnd;
++            textureSampleType = wgpu::TextureSampleType::Uint;
++            break;
++        case wgpu::TextureFormat::R8Sint:
++            AppendSintTextureHead();
++            shader += kDstBufferU32;
++            shader += kEncodeRGBA8SintInU32;
++            shader += kTexelVector4I32;
++            shader += kCommonHead;
++            shader += kNonMultipleOf4OffsetStart;
++            shader += kPackR8ToU32;
++            shader += kCommonEnd;
++            textureSampleType = wgpu::TextureSampleType::Sint;
++            break;
++        case wgpu::TextureFormat::RG8Uint:
++            AppendUintTextureHead();
++            shader += kDstBufferU32;
++            shader += kEncodeRGBA8UintInU32;
++            shader += kTexelVector4U32;
++            shader += kCommonHead;
++            shader += kNonMultipleOf4OffsetStart;
++            shader += kPackRG8ToU32;
++            shader += kCommonEnd;
++            textureSampleType = wgpu::TextureSampleType::Uint;
++            break;
++        case wgpu::TextureFormat::RG8Sint:
++            AppendSintTextureHead();
++            shader += kDstBufferU32;
++            shader += kEncodeRGBA8SintInU32;
++            shader += kTexelVector4I32;
++            shader += kCommonHead;
++            shader += kNonMultipleOf4OffsetStart;
++            shader += kPackRG8ToU32;
++            shader += kCommonEnd;
++            textureSampleType = wgpu::TextureSampleType::Sint;
++            break;
++        case wgpu::TextureFormat::RGBA8Uint:
++            AppendUintTextureHead();
++            shader += kDstBufferU32;
++            shader += kEncodeRGBA8UintInU32;
++            shader += kCommonHead;
++            shader += kCommonStart;
++            shader += kPackRGBAToU32;
++            shader += kCommonEnd;
++            textureSampleType = wgpu::TextureSampleType::Uint;
++            break;
++        case wgpu::TextureFormat::RGBA8Sint:
++            AppendSintTextureHead();
++            shader += kDstBufferU32;
++            shader += kEncodeRGBA8SintInU32;
++            shader += kCommonHead;
++            shader += kCommonStart;
++            shader += kPackRGBAToU32;
++            shader += kCommonEnd;
++            textureSampleType = wgpu::TextureSampleType::Sint;
++            break;
+         case wgpu::TextureFormat::BGRA8Unorm:
+             AppendFloatTextureHead();
+             shader += kDstBufferU32;
+@@ -847,22 +1093,153 @@ ResultOrError<Ref<ComputePipelineBase>> GetOrCreateTextureToBufferPipeline(
+             shader += kCommonEnd;
+             textureSampleType = wgpu::TextureSampleType::Float;
+             break;
++        case wgpu::TextureFormat::RGB10A2Uint:
++            AppendUintTextureHead();
++            shader += kDstBufferU32;
++            shader += kEncodeRGB10A2UintInU32;
++            shader += kCommonHead;
++            shader += kCommonStart;
++            shader += kPackRGBAToU32;
++            shader += kCommonEnd;
++            textureSampleType = wgpu::TextureSampleType::Uint;
++            break;
+         case wgpu::TextureFormat::R16Float:
++            AppendFloatTextureHead();
++            shader += kDstBufferU32;
++            shader += kEncodeRG16FloatInU32;
++            shader += kTexelVector2F32;
++            shader += kCommonHead;
++            shader += kNonMultipleOf4OffsetStart;
++            shader += kPackR16ToU32;
++            shader += kCommonEnd;
++            textureSampleType = wgpu::TextureSampleType::UnfilterableFloat;
++            break;
+         case wgpu::TextureFormat::RG16Float:
+             AppendFloatTextureHead();
+             shader += kDstBufferU32;
+             shader += kEncodeRG16FloatInU32;
+             shader += kCommonHead;
+-            if (format.format == wgpu::TextureFormat::R16Float) {
+-                shader += kNonMultipleOf4OffsetStart;
+-                shader += kPackR16ToU32;
+-            } else {
+-                shader += kCommonStart;
+-                shader += kPackRG16ToU32;
+-            }
++            shader += kCommonStart;
++            shader += kPackRG16ToU32;
+             shader += kCommonEnd;
+             textureSampleType = wgpu::TextureSampleType::UnfilterableFloat;
+             break;
++        case wgpu::TextureFormat::R16Uint:
++            AppendUintTextureHead();
++            shader += kDstBufferU32;
++            shader += kEncodeRG16UintInU32;
++            shader += kTexelVector2U32;
++            shader += kCommonHead;
++            shader += kNonMultipleOf4OffsetStart;
++            shader += kPackR16ToU32;
++            shader += kCommonEnd;
++            textureSampleType = wgpu::TextureSampleType::Uint;
++            break;
++        case wgpu::TextureFormat::RG16Uint:
++            AppendUintTextureHead();
++            shader += kDstBufferU32;
++            shader += kEncodeRG16UintInU32;
++            shader += kCommonHead;
++            shader += kCommonStart;
++            shader += kPackRG16ToU32;
++            shader += kCommonEnd;
++            textureSampleType = wgpu::TextureSampleType::Uint;
++            break;
++        case wgpu::TextureFormat::R16Sint:
++            AppendSintTextureHead();
++            shader += kDstBufferU32;
++            shader += kEncodeRG16SintInU32;
++            shader += kTexelVector2I32;
++            shader += kCommonHead;
++            shader += kNonMultipleOf4OffsetStart;
++            shader += kPackR16ToU32;
++            shader += kCommonEnd;
++            textureSampleType = wgpu::TextureSampleType::Sint;
++            break;
++        case wgpu::TextureFormat::RG16Sint:
++            AppendSintTextureHead();
++            shader += kDstBufferU32;
++            shader += kEncodeRG16SintInU32;
++            shader += kCommonHead;
++            shader += kCommonStart;
++            shader += kPackRG16ToU32;
++            shader += kCommonEnd;
++            textureSampleType = wgpu::TextureSampleType::Sint;
++            break;
++        case wgpu::TextureFormat::RGBA16Uint:
++            AppendUintTextureHead();
++            shader += kDstBufferU32;
++            shader += kEncodeRG16UintInU32;
++            shader += kCommonHead;
++            shader += kCommonStart;
++            shader += kLoadRGBA16ToU32;
++            shader += "}";
++            textureSampleType = wgpu::TextureSampleType::Uint;
++            break;
++        case wgpu::TextureFormat::RGBA16Sint:
++            AppendSintTextureHead();
++            shader += kDstBufferU32;
++            shader += kEncodeRG16SintInU32;
++            shader += kCommonHead;
++            shader += kCommonStart;
++            shader += kLoadRGBA16ToU32;
++            shader += "}";
++            textureSampleType = wgpu::TextureSampleType::Sint;
++            break;
++        case wgpu::TextureFormat::R32Uint:
++            AppendUintTextureHead();
++            shader += kDstBufferU32;
++            shader += kCommonHead;
++            shader += kCommonStart;
++            shader += kLoadR32Uint;
++            shader += "}";
++            textureSampleType = wgpu::TextureSampleType::Uint;
++            break;
++        case wgpu::TextureFormat::R32Sint:
++            AppendSintTextureHead();
++            shader += kDstBufferU32;
++            shader += kCommonHead;
++            shader += kCommonStart;
++            shader += kLoadR32Sint;
++            shader += "}";
++            textureSampleType = wgpu::TextureSampleType::Sint;
++            break;
++        case wgpu::TextureFormat::RG32Uint:
++            AppendUintTextureHead();
++            shader += kDstBufferU32;
++            shader += kCommonHead;
++            shader += kCommonStart;
++            shader += kLoadRG32Uint;
++            shader += "}";
++            textureSampleType = wgpu::TextureSampleType::Uint;
++            break;
++        case wgpu::TextureFormat::RG32Sint:
++            AppendSintTextureHead();
++            shader += kDstBufferU32;
++            shader += kCommonHead;
++            shader += kCommonStart;
++            shader += kLoadRG32Sint;
++            shader += "}";
++            textureSampleType = wgpu::TextureSampleType::Sint;
++            break;
++        case wgpu::TextureFormat::RGBA32Uint:
++            AppendUintTextureHead();
++            shader += kDstBufferU32;
++            shader += kCommonHead;
++            shader += kCommonStart;
++            shader += kLoadRGBA32Uint;
++            shader += "}";
++            textureSampleType = wgpu::TextureSampleType::Uint;
++            break;
++        case wgpu::TextureFormat::RGBA32Sint:
++            AppendSintTextureHead();
++            shader += kDstBufferU32;
++            shader += kCommonHead;
++            shader += kCommonStart;
++            shader += kLoadRGBA32Sint;
++            shader += "}";
++            textureSampleType = wgpu::TextureSampleType::Sint;
++            break;
+         case wgpu::TextureFormat::RGBA16Float:
+             AppendFloatTextureHead();
+             shader += kDstBufferU32;
+@@ -1043,6 +1420,25 @@ bool IsFormatSupportedByTextureToBufferBlit(wgpu::TextureFormat format) {
+         case wgpu::TextureFormat::R32Float:
+         case wgpu::TextureFormat::RG32Float:
+         case wgpu::TextureFormat::RGBA32Float:
++        case wgpu::TextureFormat::R8Uint:
++        case wgpu::TextureFormat::R8Sint:
++        case wgpu::TextureFormat::RG8Uint:
++        case wgpu::TextureFormat::RG8Sint:
++        case wgpu::TextureFormat::RGBA8Uint:
++        case wgpu::TextureFormat::RGBA8Sint:
++        case wgpu::TextureFormat::R16Uint:
++        case wgpu::TextureFormat::R16Sint:
++        case wgpu::TextureFormat::RG16Uint:
++        case wgpu::TextureFormat::RG16Sint:
++        case wgpu::TextureFormat::RGBA16Uint:
++        case wgpu::TextureFormat::RGBA16Sint:
++        case wgpu::TextureFormat::R32Uint:
++        case wgpu::TextureFormat::R32Sint:
++        case wgpu::TextureFormat::RG32Uint:
++        case wgpu::TextureFormat::RG32Sint:
++        case wgpu::TextureFormat::RGBA32Uint:
++        case wgpu::TextureFormat::RGBA32Sint:
++        case wgpu::TextureFormat::RGB10A2Uint:
+         case wgpu::TextureFormat::Depth16Unorm:
+         case wgpu::TextureFormat::Depth24Plus:
+         case wgpu::TextureFormat::Depth32Float:
+diff --git a/src/dawn/native/Buffer.cpp b/src/dawn/native/Buffer.cpp
+index 75e7688372582410c42606b3428c75b2fcb03da9..c11d9028a75f1b3b716799477020dec913030363 100644
+--- a/src/dawn/native/Buffer.cpp
++++ b/src/dawn/native/Buffer.cpp
+@@ -193,6 +193,8 @@ wgpu::BufferUsage ComputeInternalBufferUsages(const DeviceBase* device,
+             device->IsToggleEnabled(Toggle::UseBlitForBGRA8UnormTextureToBufferCopy) ||
+             device->IsToggleEnabled(Toggle::UseBlitForNonRGBAUnormTextureToBufferCopy) ||
+             device->IsToggleEnabled(Toggle::UseBlitForNonRGBAFloatTextureToBufferCopy) ||
++            device->IsToggleEnabled(Toggle::UseBlitForUintTextureToBufferCopy) ||
++            device->IsToggleEnabled(Toggle::UseBlitForSintTextureToBufferCopy) ||
+             device->IsToggleEnabled(Toggle::UseBlitForRGB9E5UfloatTextureCopy) ||
+             device->IsToggleEnabled(Toggle::UseBlitForRG11B10UfloatTextureCopy) ||
+             device->IsToggleEnabled(Toggle::UseBlitForFloat16TextureCopy) ||
+diff --git a/src/dawn/native/CommandEncoder.cpp b/src/dawn/native/CommandEncoder.cpp
+index d0cae238806fd460536fdd7744c12fbb3b102d37..a8c174ff9e30ac1a8be57b172e972ff3d6161ba6 100644
+--- a/src/dawn/native/CommandEncoder.cpp
++++ b/src/dawn/native/CommandEncoder.cpp
+@@ -1091,10 +1091,12 @@ MaybeError EncodeTimestampsToNanosecondsConversion(CommandEncoder* encoder,
+                                                 paramsBuffer.Get());
+ }
+ 
+-bool ShouldUseTextureToBufferBlit(const DeviceBase* device,
++bool ShouldUseTextureToBufferBlit(const TextureBase* texture,
+                                   const Format& format,
+                                   const Aspect& aspect,
+                                   const Extent3D& copySize) {
++    const DeviceBase* device = texture->GetDevice();
++
+     // Noop copy, do not use blit.
+     if (copySize.width == 0 || copySize.height == 0 || copySize.depthOrArrayLayers == 0) {
+         return false;
+@@ -1122,6 +1124,48 @@ bool ShouldUseTextureToBufferBlit(const DeviceBase* device,
+         device->IsToggleEnabled(Toggle::UseBlitForNonRGBAFloatTextureToBufferCopy)) {
+         return true;
+     }
++    // Uint
++    if ((format.format == wgpu::TextureFormat::R8Uint ||
++         format.format == wgpu::TextureFormat::RG8Uint ||
++         format.format == wgpu::TextureFormat::RGBA8Uint ||
++         format.format == wgpu::TextureFormat::R16Uint ||
++         format.format == wgpu::TextureFormat::RG16Uint ||
++         format.format == wgpu::TextureFormat::RGBA16Uint ||
++         format.format == wgpu::TextureFormat::R32Uint ||
++         format.format == wgpu::TextureFormat::RG32Uint ||
++         format.format == wgpu::TextureFormat::RGB10A2Uint) &&
++        device->IsToggleEnabled(Toggle::UseBlitForUintTextureToBufferCopy)) {
++        // Compat mode GL (no flexible texture views) forces a cube texture to be bound as
++        // texture_cube<T>. The compute blit path can use textureGather in WGSL for int texture and
++        // has no support for mip level, so cannot use blit.
++        // TODO(crbug.com/562077184): Uint/Sint cube textures in compat therefore fall back to
++        // the glReadPixels path in the GL backend, whose format/type support is not guaranteed by
++        // the GLES spec for all integer formats.
++        if (!device->HasFlexibleTextureViews() &&
++            texture->GetCompatibilityTextureBindingViewDimension() ==
++                wgpu::TextureViewDimension::Cube) {
++            return false;
++        }
++        return true;
++    }
++    // Sint
++    if ((format.format == wgpu::TextureFormat::R8Sint ||
++         format.format == wgpu::TextureFormat::RG8Sint ||
++         format.format == wgpu::TextureFormat::RGBA8Sint ||
++         format.format == wgpu::TextureFormat::R16Sint ||
++         format.format == wgpu::TextureFormat::RG16Sint ||
++         format.format == wgpu::TextureFormat::RGBA16Sint ||
++         format.format == wgpu::TextureFormat::R32Sint ||
++         format.format == wgpu::TextureFormat::RG32Sint) &&
++        device->IsToggleEnabled(Toggle::UseBlitForSintTextureToBufferCopy)) {
++        // Same limitation as for Uint above.
++        if (!device->HasFlexibleTextureViews() &&
++            texture->GetCompatibilityTextureBindingViewDimension() ==
++                wgpu::TextureViewDimension::Cube) {
++            return false;
++        }
++        return true;
++    }
+     // RGB9E5Ufloat
+     if (format.format == wgpu::TextureFormat::RGB9E5Ufloat &&
+         device->IsToggleEnabled(Toggle::UseBlitForRGB9E5UfloatTextureCopy)) {
+@@ -1895,7 +1939,7 @@ void CommandEncoder::APICopyTextureToBuffer(const TexelCopyTextureInfo* sourceOr
+             auto aspect = ConvertAspect(format, source.aspect);
+ 
+             // Workaround to use compute pass to emulate texture to buffer copy
+-            if (ShouldUseTextureToBufferBlit(GetDevice(), format, aspect, *copySize)) {
++            if (ShouldUseTextureToBufferBlit(source.texture, format, aspect, *copySize)) {
+                 // This function might create new resources. Need to lock the Device.
+                 // TODO(crbug.com/dawn/1618): In future, all temp resources should be created at
+                 // Command Submit time, so the locking would be removed from here at that point.
+diff --git a/src/dawn/native/Texture.cpp b/src/dawn/native/Texture.cpp
+index e59b3380489db1f3090c0017b225e5d2adf37ffe..a2a186b958eab281e73a0b9f67204b2ded5c8f47 100644
+--- a/src/dawn/native/Texture.cpp
++++ b/src/dawn/native/Texture.cpp
+@@ -573,6 +573,31 @@ bool CopySrcNeedsInternalTextureBindingUsage(const DeviceBase* device, const For
+         device->IsToggleEnabled(Toggle::UseBlitForNonRGBAFloatTextureToBufferCopy)) {
+         return true;
+     }
++    // Uint
++    if ((format.format == wgpu::TextureFormat::R8Uint ||
++         format.format == wgpu::TextureFormat::RG8Uint ||
++         format.format == wgpu::TextureFormat::RGBA8Uint ||
++         format.format == wgpu::TextureFormat::R16Uint ||
++         format.format == wgpu::TextureFormat::RG16Uint ||
++         format.format == wgpu::TextureFormat::RGBA16Uint ||
++         format.format == wgpu::TextureFormat::R32Uint ||
++         format.format == wgpu::TextureFormat::RG32Uint ||
++         format.format == wgpu::TextureFormat::RGB10A2Uint) &&
++        device->IsToggleEnabled(Toggle::UseBlitForUintTextureToBufferCopy)) {
++        return true;
++    }
++    // Sint
++    if ((format.format == wgpu::TextureFormat::R8Sint ||
++         format.format == wgpu::TextureFormat::RG8Sint ||
++         format.format == wgpu::TextureFormat::RGBA8Sint ||
++         format.format == wgpu::TextureFormat::R16Sint ||
++         format.format == wgpu::TextureFormat::RG16Sint ||
++         format.format == wgpu::TextureFormat::RGBA16Sint ||
++         format.format == wgpu::TextureFormat::R32Sint ||
++         format.format == wgpu::TextureFormat::RG32Sint) &&
++        device->IsToggleEnabled(Toggle::UseBlitForSintTextureToBufferCopy)) {
++        return true;
++    }
+     // RGB9E5Ufloat
+     if (format.format == wgpu::TextureFormat::RGB9E5Ufloat &&
+         device->IsToggleEnabled(Toggle::UseBlitForRGB9E5UfloatTextureCopy)) {
+diff --git a/src/dawn/native/Toggles.cpp b/src/dawn/native/Toggles.cpp
+index d0af7fa56528512db51675ab1544cf38b8222114..f6d6def79479a62cd49993c075885d189e7e3adf 100644
+--- a/src/dawn/native/Toggles.cpp
++++ b/src/dawn/native/Toggles.cpp
+@@ -506,6 +506,16 @@ static constexpr ToggleEnumAndInfoList kToggleNameAndInfoList = {{
+       "Use a blit instead of a copy command to copy non-RGBA float textures to a buffer. "
+       "Workaround for OpenGLES.",
+       "https://issues.chromium.org/issues/556959073", ToggleStage::Device}},
++    {Toggle::UseBlitForUintTextureToBufferCopy,
++     {"use_blit_for_uint_texture_to_buffer_copy",
++      "Use a blit instead of a copy command to copy uint textures to a buffer. "
++      "Workaround for OpenGLES.",
++      "https://issues.chromium.org/issues/556959073", ToggleStage::Device}},
++    {Toggle::UseBlitForSintTextureToBufferCopy,
++     {"use_blit_for_sint_texture_to_buffer_copy",
++      "Use a blit instead of a copy command to copy sint textures to a buffer. "
++      "Workaround for OpenGLES.",
++      "https://issues.chromium.org/issues/556959073", ToggleStage::Device}},
+     {Toggle::GLUseArrayLengthFromUniform,
+      {"gl_use_array_length_from_uniform",
+       "Use arrayLengthFromUniform transform to replace arrayLength() function calls of dynamic "
+diff --git a/src/dawn/native/Toggles.h b/src/dawn/native/Toggles.h
+index 45b5bfd947f465e6bd667457a00fde7abea5b238..e0910bb004eea8ca2d817629a7fdee390909ee92 100644
+--- a/src/dawn/native/Toggles.h
++++ b/src/dawn/native/Toggles.h
+@@ -128,6 +128,8 @@ enum class Toggle {
+     UseBlitForB2T,
+     UseBlitForNonRGBAUnormTextureToBufferCopy,
+     UseBlitForNonRGBAFloatTextureToBufferCopy,
++    UseBlitForUintTextureToBufferCopy,
++    UseBlitForSintTextureToBufferCopy,
+     GLUseArrayLengthFromUniform,
+     D3D11DisableCPUUploadBuffers,
+     UseT2B2TForSRGBTextureCopy,
+diff --git a/src/dawn/native/opengl/CommandBufferGL.cpp b/src/dawn/native/opengl/CommandBufferGL.cpp
+index ce889334111474b05908e7b5e52c046052bf5be4..458e91322d45fe43c3f5704229379a71a5e6676a 100644
+--- a/src/dawn/native/opengl/CommandBufferGL.cpp
++++ b/src/dawn/native/opengl/CommandBufferGL.cpp
+@@ -1010,6 +1010,55 @@ MaybeError CommandBuffer::Execute(const OpenGLFunctions& gl) {
+                             DAWN_ASSERT(texture->GetArrayLayers() == 6);
+                             const uint64_t bytesPerImage =
+                                 blockInfo.ToBytes(dst.blocksPerRow * dst.rowsPerImage);
++                            // Integer (Uint/Sint) cube textures cannot take the compute blit path
++                            // in compat mode (see ShouldUseTextureToBufferBlit() in
++                            // CommandEncoder.cpp. Since glReadPixels might not support such
++                            // format/type, query GL_IMPLEMENTATION_COLOR_READ_FORMAT/TYPE first.
++                            // These are queried from the currently bound read framebuffer, so
++                            // attach the first face and check upfront, before doing any readback,
++                            // to fail the copy loudly instead of returning garbage.
++                            // TODO(crbug.com/562077184): revisit when query for all formats are
++                            // implemented.
++                            const bool isIntegerColor =
++                                src.aspect == Aspect::Color &&
++                                (formatInfo.GetAspectInfo(Aspect::Color).baseType ==
++                                     TextureComponentType::Uint ||
++                                 formatInfo.GetAspectInfo(Aspect::Color).baseType ==
++                                     TextureComponentType::Sint);
++                            // RGBA32Uint/RGBA32Sint are skipped: RGBA_INTEGER + UNSIGNED_INT/INT is
++                            // the only integer format/type combination the GLES spec guarantees
++                            // glReadPixels to support, so no query is needed for them.
++                            const bool isGuaranteedReadFormat =
++                                formatInfo.format == wgpu::TextureFormat::RGBA32Uint ||
++                                formatInfo.format == wgpu::TextureFormat::RGBA32Sint;
++                            if (isIntegerColor && !isGuaranteedReadFormat) {
++                                GLenum firstCubeMapTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X +
++                                                            static_cast<uint32_t>(src.origin.z);
++                                DAWN_GL_TRY(
++                                    gl, FramebufferTexture2D(
++                                            GL_READ_FRAMEBUFFER, glAttachment, firstCubeMapTarget,
++                                            texture->GetHandle(), src.mipLevel));
++                                GLenum fbStatus = gl.CheckFramebufferStatus(GL_READ_FRAMEBUFFER);
++                                DAWN_INTERNAL_ERROR_IF(
++                                    fbStatus != GL_FRAMEBUFFER_COMPLETE,
++                                    "glCheckFramebufferStatus returned 0x%04X.", fbStatus);
++
++                                GLint implFormat = 0;
++                                GLint implType = 0;
++                                DAWN_GL_TRY(gl, GetIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT,
++                                                            &implFormat));
++                                DAWN_GL_TRY(
++                                    gl, GetIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE, &implType));
++                                DAWN_INTERNAL_ERROR_IF(
++                                    static_cast<GLenum>(implFormat) != glFormat ||
++                                        static_cast<GLenum>(implType) != glType,
++                                    "glReadPixels of an integer cube texture requires "
++                                    "format/type (%#x, %#x) but the implementation only supports "
++                                    "(%#x, %#x).",
++                                    glFormat, glType, static_cast<GLenum>(implFormat),
++                                    static_cast<GLenum>(implType));
++                            }
++
+                             for (TexelCount z{0}; z < copySize.depthOrArrayLayers; ++z) {
+                                 GLenum cubeMapTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X +
+                                                        static_cast<uint32_t>(z + src.origin.z);
+diff --git a/src/dawn/native/opengl/PhysicalDeviceGL.cpp b/src/dawn/native/opengl/PhysicalDeviceGL.cpp
+index cb789598e2c293b20131527872c18f3a2ccddf13..85a46f2c434b36ffa40db92088a8ca97e599bdc9 100644
+--- a/src/dawn/native/opengl/PhysicalDeviceGL.cpp
++++ b/src/dawn/native/opengl/PhysicalDeviceGL.cpp
+@@ -484,6 +484,8 @@ void PhysicalDevice::SetupBackendDeviceToggles(dawn::platform::Platform* platfor
+         deviceToggles->Default(Toggle::UseBlitForNonRGBAUnormTextureToBufferCopy, true);
+         deviceToggles->Default(Toggle::UseBlitForNonRGBAFloatTextureToBufferCopy, true);
+         deviceToggles->Default(Toggle::UseBlitForFloat16TextureCopy, true);
++        deviceToggles->Default(Toggle::UseBlitForUintTextureToBufferCopy, true);
++        deviceToggles->Default(Toggle::UseBlitForSintTextureToBufferCopy, true);
+     }
+ 
+     // Use compute shader blit to emulate rg11b10ufloat texture to buffer copies if not color
+diff --git a/src/dawn/tests/end2end/CopyTests.cpp b/src/dawn/tests/end2end/CopyTests.cpp
+index 562382ff108ae139de733939bf680c39989c98ed..ba531b149ef17136999702355255c4ea8931290e 100644
+--- a/src/dawn/tests/end2end/CopyTests.cpp
++++ b/src/dawn/tests/end2end/CopyTests.cpp
+@@ -2219,31 +2219,36 @@ DAWN_INSTANTIATE_TEST_P(
+ 
+         wgpu::TextureFormat::RGBA8Unorm,
+ 
++        // Also covers OpenGL compat Toggle::UseBlitForUintTextureToBufferCopy and
++        // Toggle::UseBlitForSintTextureToBufferCopy
+         wgpu::TextureFormat::R8Uint,
+         wgpu::TextureFormat::R8Sint,
+-
++        wgpu::TextureFormat::RG8Uint,
++        wgpu::TextureFormat::RG8Sint,
++        wgpu::TextureFormat::RGBA8Uint,
++        wgpu::TextureFormat::RGBA8Sint,
+         wgpu::TextureFormat::R16Uint,
+         wgpu::TextureFormat::R16Sint,
+-        wgpu::TextureFormat::R16Float,
+-
+         wgpu::TextureFormat::RG16Uint,
+         wgpu::TextureFormat::RG16Sint,
+-        wgpu::TextureFormat::RG16Float,
+-
++        wgpu::TextureFormat::RGBA16Uint,
++        wgpu::TextureFormat::RGBA16Sint,
+         wgpu::TextureFormat::R32Uint,
+         wgpu::TextureFormat::R32Sint,
++        wgpu::TextureFormat::RG32Uint,
++        wgpu::TextureFormat::RG32Sint,
++        wgpu::TextureFormat::RGB10A2Uint,
++
++        wgpu::TextureFormat::RGBA32Uint,
++        wgpu::TextureFormat::RGBA32Sint,
+ 
+         // Also covers OpenGL compat Toggle::UseBlitForNonRGBAFloatTextureToBufferCopy
++        wgpu::TextureFormat::R16Float,
++        wgpu::TextureFormat::RG16Float,
+         wgpu::TextureFormat::R32Float,
+         wgpu::TextureFormat::RG32Float,
+ 
+-        wgpu::TextureFormat::RG32Uint,
+-        wgpu::TextureFormat::RG32Sint,
+-
+-        wgpu::TextureFormat::RGBA16Uint,
+-        wgpu::TextureFormat::RGBA16Sint,
+         wgpu::TextureFormat::RGBA16Float,
+-
+         wgpu::TextureFormat::RGBA32Float,
+ 
+         wgpu::TextureFormat::RGB10A2Unorm,
+@@ -2437,6 +2442,28 @@ DAWN_INSTANTIATE_TEST_P(CopyTests_T2B_Compat,
+ 
+                             // Testing OpenGL compat Toggle::UseBlitForRGB9E5UfloatTextureCopy
+                             wgpu::TextureFormat::RGB9E5Ufloat,
++
++                            // Testing OpenGL compat Toggle::UseBlitForUintTextureToBufferCopy and
++                            // Toggle::UseBlitForSintTextureToBufferCopy
++                            wgpu::TextureFormat::R8Uint,
++                            wgpu::TextureFormat::R8Sint,
++                            wgpu::TextureFormat::RG8Uint,
++                            wgpu::TextureFormat::RG8Sint,
++                            wgpu::TextureFormat::RGBA8Uint,
++                            wgpu::TextureFormat::RGBA8Sint,
++
++                            wgpu::TextureFormat::R16Sint,
++                            wgpu::TextureFormat::RG16Sint,
++                            wgpu::TextureFormat::RGBA16Sint,
++
++                            wgpu::TextureFormat::R32Uint,
++                            wgpu::TextureFormat::R32Sint,
++                            wgpu::TextureFormat::RG32Uint,
++                            wgpu::TextureFormat::RG32Sint,
++                            wgpu::TextureFormat::RGBA32Uint,
++                            wgpu::TextureFormat::RGBA32Sint,
++
++                            wgpu::TextureFormat::RGB10A2Uint,
+                         });
+ 
+ // Test that copying an entire texture with 256-byte aligned dimensions works

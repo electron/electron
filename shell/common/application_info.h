@@ -7,11 +7,11 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "shell/browser/win/scoped_hstring.h"
-#endif
-
 #include <string>
+
+#if BUILDFLAG(IS_WIN)
+#include "base/win/scoped_hstring.h"
+#endif
 
 namespace electron {
 
@@ -29,7 +29,7 @@ bool IsAppRTL();
 
 #if BUILDFLAG(IS_WIN)
 PCWSTR GetRawAppUserModelID();
-bool GetAppUserModelID(ScopedHString* app_id);
+base::win::ScopedHString GetAppUserModelID();
 void SetAppUserModelID(const std::wstring& name);
 bool IsRunningInDesktopBridge();
 PCWSTR GetAppToastActivatorCLSID();

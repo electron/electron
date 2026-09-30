@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: kylechar <kylechar@chromium.org>
+Date: Thu, 17 Sep 2026 08:35:24 -0700
+Subject: Limit ExternalVkImageBacking usage
+
+Don't allow creation of ExternalVkImageBacking for a client provided
+buffer outside of Fuchsia. This functionality was not intended to be
+used.
+
+Bug: 562004351
+Change-Id: If4b17f94dfde8fed1ed24f340cf13ef08cb7c7a8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8415592
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Commit-Queue: Kyle Charbonneau <kylechar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1699830}
+
+diff --git a/gpu/command_buffer/service/shared_image/external_vk_image_backing_factory.cc b/gpu/command_buffer/service/shared_image/external_vk_image_backing_factory.cc
+index c6ecbb3cf02af69a6c94baa409cbd447ee186aa2..918cb1e307321776382abc1d237691317f62a541 100644
+--- a/gpu/command_buffer/service/shared_image/external_vk_image_backing_factory.cc
++++ b/gpu/command_buffer/service/shared_image/external_vk_image_backing_factory.cc
+@@ -118,6 +118,12 @@ bool IsFormatSupported(viz::SharedImageFormat format,
+       return false;
+     }
+   }
++
++  // Don't allow creating for a client provided GMB outside of Fuchsia. That is
++  // handled by OzoneImageBacking instead.
++  if (gmb_type != gfx::GpuMemoryBufferType::EMPTY_BUFFER) {
++    return false;
++  }
+ #endif
+ 
+   if (format.is_multi_plane()) {

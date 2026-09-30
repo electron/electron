@@ -1,0 +1,166 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Tue, 22 Sep 2026 15:08:23 +0200
+Subject: [M150] [maps] Avoid strict function map transition when own props are
+ disabled
+
+Original change's description:
+> [maps] Avoid strict function map transition when own props are disabled
+>
+> When V8_FUNCTION_ARGUMENTS_CALLER_ARE_OWN_PROPS is disabled, strict and
+> sloppy function maps have identical own descriptors, making
+> Map::EquivalentToForTransition return true between them. If
+> Map::AsLanguageMode connects a strict function initial map to the sloppy
+> initial map via strict_function_transition_symbol, MapUpdater can walk
+> across this special transition onto the sloppy root map without
+> replaying the strict transition, returning a target map from the sloppy
+> branch whose GetBackPointer() does not match the receiver map.
+>
+> Return initial_map directly in Map::AsLanguageMode when
+> V8_FUNCTION_ARGUMENTS_CALLER_ARE_OWN_PROPS is disabled, and add an
+> SBXCHECK_EQ in LookupIterator::IsCacheableTransition verifying that the
+> transition map's backpointer matches the store target's map.
+>
+> TAG=agy
+> CONV=1a03ba8f-372d-4c1f-959d-485be0eb8a0a
+>
+> Fixed: 559266114
+> Change-Id: I7a6ebd407a8bd30544c88a7b0b7ad37c4447f710
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8440578
+> Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+> Auto-Submit: Igor Sheludko <ishell@chromium.org>
+> Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#110024}
+
+(cherry picked from commit a81b3eb9dec61f930956a02c183c8463cc89ea54)
+
+Bug: 566957511,559266114
+Change-Id: I7a6ebd407a8bd30544c88a7b0b7ad37c4447f710
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8481592
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.0@{#94}
+Cr-Branched-From: 0c6c73eea6994260f0a1d88469708360ea60c660-refs/heads/15.0.245@{#1}
+Cr-Branched-From: 03d64f40934c058cd1c6d7e5cead5b757a4faedd-refs/heads/main@{#107679}
+
+diff --git a/src/objects/lookup-inl.h b/src/objects/lookup-inl.h
+index f1603763286f45b9230cfd762b9c4bcd4c94ab35..e6b647e6e846cf2304226114d9425a733605fc8e 100644
+--- a/src/objects/lookup-inl.h
++++ b/src/objects/lookup-inl.h
+@@ -308,10 +308,17 @@ bool LookupIterator::ExtendingNonExtensible(DirectHandle<JSReceiver> receiver) {
+ 
+ bool LookupIterator::IsCacheableTransition() {
+   DCHECK_EQ(TRANSITION, state_);
+-  return IsPropertyCell(*transition_) ||
+-         (transition_map()->is_dictionary_map() &&
+-          !GetStoreTarget<JSReceiver>()->HasFastProperties()) ||
+-         IsMap(transition_map()->GetBackPointer());
++  if (IsPropertyCell(*transition_) ||
++      (transition_map()->is_dictionary_map() &&
++       !GetStoreTarget<JSReceiver>()->HasFastProperties())) {
++    return true;
++  }
++  Tagged<Object> back_pointer = transition_map()->GetBackPointer();
++  if (IsMap(back_pointer)) {
++    CHECK_EQ(back_pointer, GetStoreTarget<JSReceiver>()->map());
++    return true;
++  }
++  return false;
+ }
+ 
+ // static
+diff --git a/src/objects/map.cc b/src/objects/map.cc
+index a1f6d032ee582c3438558733d8f3b126473ebe00..ee6912c2e8cd1e110c5d5b609c8faef2ead97b7a 100644
+--- a/src/objects/map.cc
++++ b/src/objects/map.cc
+@@ -1868,6 +1868,9 @@ DirectHandle<Map> Map::AsLanguageMode(
+     Isolate* isolate, DirectHandle<Map> initial_map,
+     DirectHandle<SharedFunctionInfo> shared_info) {
+   DCHECK(InstanceTypeChecker::IsJSFunction(initial_map->instance_type()));
++#ifndef V8_FUNCTION_ARGUMENTS_CALLER_ARE_OWN_PROPS
++  return initial_map;
++#else
+   // Initial map for sloppy mode function is stored in the function
+   // constructor. Initial maps for strict mode are cached as special transitions
+   // using |strict_function_transition_symbol| as a key.
+@@ -1903,6 +1906,7 @@ DirectHandle<Map> Map::AsLanguageMode(
+                            SPECIAL_TRANSITION);
+   }
+   return map;
++#endif  // !V8_FUNCTION_ARGUMENTS_CALLER_ARE_OWN_PROPS
+ }
+ 
+ Handle<Map> Map::CopyForElementsTransition(Isolate* isolate,
+diff --git a/test/mjsunit/es6/classes-subclass-builtins.js b/test/mjsunit/es6/classes-subclass-builtins.js
+index c6a6fda9c189e30c7c219a0a1120e64e1b2da28e..aa5caae1366e4e46eab738316ba14f3034841784 100644
+--- a/test/mjsunit/es6/classes-subclass-builtins.js
++++ b/test/mjsunit/es6/classes-subclass-builtins.js
+@@ -118,9 +118,13 @@ function checkPrototypeChain(object, constructors) {
+   var sloppy_func1 = new A("return 312;");
+   assertTrue(%HaveSameMap(sloppy_func, sloppy_func1));
+ 
+-  // Strict function
++  // Strict function.
++  // When V8_FUNCTION_ARGUMENTS_CALLER_ARE_OWN_PROPS is disabled, strict and
++  // sloppy functions have the same descriptors and share the derived initial
++  // map.
+   var strict_func = new A("'use strict'; " + source);
+-  assertFalse(%HaveSameMap(strict_func, sloppy_func));
++  assertEquals(!sloppy_func.hasOwnProperty("arguments"),
++               %HaveSameMap(strict_func, sloppy_func));
+   CheckFunction(strict_func, false);
+ 
+   var strict_func1 = new A("'use strict'; return 312;");
+@@ -627,9 +631,12 @@ function TestMapSetSubclassing(container, is_map) {
+   var sloppy_func1 = new A("yield 312;");
+   assertTrue(%HaveSameMap(sloppy_func, sloppy_func1));
+ 
+-  // Strict generator function
++  // Strict generator function.
++  // When V8_FUNCTION_ARGUMENTS_CALLER_ARE_OWN_PROPS is disabled, strict and
++  // sloppy functions share the derived initial map.
+   var strict_func = new A("'use strict'; " + source);
+-  assertFalse(%HaveSameMap(strict_func, sloppy_func));
++  assertEquals(!sloppy_func.hasOwnProperty("arguments"),
++               %HaveSameMap(strict_func, sloppy_func));
+   CheckFunction(strict_func, false);
+ 
+   var strict_func1 = new A("'use strict'; yield 312;");
+diff --git a/test/mjsunit/regress/regress-559266114.js b/test/mjsunit/regress/regress-559266114.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..6896a598f520c77782f8d15dbb60d10a3046bfbb
+--- /dev/null
++++ b/test/mjsunit/regress/regress-559266114.js
+@@ -0,0 +1,31 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++function NewTarget() {}
++NewTarget.prototype = new Proxy({}, {});
++
++function makeFn(body, x, y) {
++  const fn = Reflect.construct(Function, [body], NewTarget);
++  fn.x = x;
++  if (y) fn.y = y;
++  return fn;
++}
++
++class Base {
++  constructor(o) { return o; }
++}
++
++class DefineY extends Base {
++  y = 1.1;
++}
++
++for (let i = 0; i < 15; i++) new DefineY({});
++
++let strictWithY = makeFn('"use strict"', 42, 42);
++let strictWithX = makeFn('"use strict"', 42);
++let sloppyWithY = makeFn('', 2.3, 2.3);
++let cachedTransition = new DefineY(makeFn('"use strict"', 42));
++let victim = new DefineY(makeFn('"use strict"', 42));
++victim.x = 13.37;
++assertEquals(13.37, victim.x);
