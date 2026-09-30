@@ -239,3 +239,4 @@ cherry-pick-194c74ee5e48.patch
 cherry-pick-564bdde2ce69.patch
 cherry-pick-5a8114db13d5.patch
 fix_find-in-page_frame_traversal_across_inner_webcontents.patch
+cherry-pick-69403d85b78b.patch
