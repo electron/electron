@@ -15,7 +15,8 @@ TraverseNext() goes iframe -> outer delegate frame -> (no sibling, wrap)
 embedder main frame -> iframe -> ... and never reaches the guest. When
 the find session is owned by the guest WebContents none of those frames
 pass CheckFrame(), so FindRequestManager::Traverse() never returns and
-the browser main thread spins.
+the browser main thread spins. TraversePrevious() has the mirror cycle
+when the <iframe> follows the guest.
 
 Always derive siblings from GetChildren(GetAncestor(rfh)) so the three
 helpers agree on one tree. RenderFrameHostImpl::NextSibling() is itself
@@ -27,18 +28,16 @@ This is a //content bug and is being proposed upstream. The patch can be
 removed once the equivalent change lands in Chromium.
 
 diff --git a/content/browser/find_request_manager.cc b/content/browser/find_request_manager.cc
-index 9fbcd519dc4963e6977237db791d6a323eca2905..f742d19f8e3f187ef2915f1caf8a445cfd2518b5 100644
+index 9fbcd519dc4963e6977237db791d6a323eca2905..6f1c2550b2d8e3724ca4f2502c84c0be58fb25cb 100644
 --- a/content/browser/find_request_manager.cc
 +++ b/content/browser/find_request_manager.cc
-@@ -83,13 +83,11 @@ RenderFrameHostImpl* GetAncestor(RenderFrameHostImpl* rfh) {
+@@ -83,13 +83,9 @@ RenderFrameHostImpl* GetAncestor(RenderFrameHostImpl* rfh) {
  }
  
  // Returns the previous sibling RenderFrameHostImpl of |rfh|, if one exists,
 -// or nullptr otherwise.
-+// or nullptr otherwise. |rfh| or its sibling may be in another WebContents, so
-+// siblings are always taken from GetChildren() of the ancestor rather than
-+// from RenderFrameHostImpl::PreviousSibling(), which would return the outer
-+// delegate frame of an inner WebContents instead of its main frame.
++// or nullptr otherwise. Siblings come from GetChildren() so that an inner
++// WebContents is its main frame here too, not its outer delegate frame.
  RenderFrameHostImpl* GetPreviousSibling(RenderFrameHostImpl* rfh) {
 -  if (rfh->PreviousSibling()) {
 -    return rfh->PreviousSibling()->current_frame_host();
@@ -48,13 +47,12 @@ index 9fbcd519dc4963e6977237db791d6a323eca2905..f742d19f8e3f187ef2915f1caf8a445c
    if (RenderFrameHostImpl* parent = GetAncestor(rfh)) {
      auto children = GetChildren(parent);
      auto it = std::ranges::find(children, rfh);
-@@ -104,12 +102,9 @@ RenderFrameHostImpl* GetPreviousSibling(RenderFrameHostImpl* rfh) {
+@@ -104,12 +100,8 @@ RenderFrameHostImpl* GetPreviousSibling(RenderFrameHostImpl* rfh) {
  }
  
  // Returns the next sibling RenderFrameHostImpl of |rfh|, if one exists, or
 -// nullptr otherwise.
-+// nullptr otherwise. See GetPreviousSibling() for why this does not use
-+// RenderFrameHostImpl::NextSibling().
++// nullptr otherwise. See GetPreviousSibling().
  RenderFrameHostImpl* GetNextSibling(RenderFrameHostImpl* rfh) {
 -  if (rfh->NextSibling())
 -    return rfh->NextSibling()->current_frame_host();
