@@ -278,6 +278,20 @@ jobs:
             fi
     - name: Add Depot Tools to PATH
       run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
+    # The real mouse input specs (spec/fixtures/native-addon/mouse-input) load
+    # libXtst at runtime. The x64 build image ships it; the arm64 test image
+    # does not. Runs after the parallel group so it cannot race the CUPS
+    # step's apt-get for the dpkg lock.
+    - name: Install libXtst runtime (linux)
+      if: ${{ inputs.target-platform == 'linux' }}
+      run: |
+        if ldconfig -p | grep -q 'libXtst\.so\.6'; then
+          echo "libXtst.so.6 already present"
+        else
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update -y
+          apt-get install -y --no-install-recommends libxtst6
+        fi
     - name: Restore Generated Artifacts
       run: ./src/electron/script/actions/restore-artifacts.sh
     - name: Unzip Dist (win)
