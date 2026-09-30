@@ -367,8 +367,10 @@ jobs:
     # clicks it instead of the windows under test. Close it and keep it from
     # coming back. It is hosted by CloudExperienceHost (WWAHost.exe), started
     # by UserOOBEBroker.exe. With it gone the Start menu was seen open over
-    # the test area, so close that too (StartMenuExperienceHost restarts with
-    # the menu closed). Then minimize every other visible top level window
+    # the test area, so close it with Escape if it is open (stopping
+    # StartMenuExperienceHost instead made Chromium's occlusion tracking
+    # report other specs' windows as hidden). Then minimize every other
+    # visible top level window
     # the image left open (a System Properties dialog, the runner's terminal)
     # and log what the OS hit tests on screen.
     - name: Dismiss first sign-in windows (Windows)
@@ -393,11 +395,6 @@ jobs:
           }
         }
         Start-Sleep -Seconds 2
-        Get-Process -Name StartMenuExperienceHost -ErrorAction SilentlyContinue | ForEach-Object {
-          Write-Host ("Stopping {0} ({1}) to close the Start menu" -f $_.ProcessName, $_.Id)
-          Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
-        }
-        Start-Sleep -Seconds 2
         Write-Host "Processes with windows after:`n$(& $windows)"
         Add-Type -Namespace ElectronCI -Name HitTest -MemberDefinition @'
         [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X; public int Y; }
@@ -413,6 +410,21 @@ jobs:
         [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int cmd);
         [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr w, IntPtr l);
         [DllImport("dwmapi.dll")] public static extern int DwmGetWindowAttribute(IntPtr hWnd, int attr, out int value, int size);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindow(string cls, string title);
+        [DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
+        // Whether the Start menu is showing: its CoreWindow always exists but
+        // is cloaked while the menu is closed.
+        public static string StartMenuState() {
+          IntPtr h = FindWindow("Windows.UI.Core.CoreWindow", "Start");
+          if (h == IntPtr.Zero) return "absent";
+          int cloaked = 0;
+          DwmGetWindowAttribute(h, 14, out cloaked, 4);
+          return (IsWindowVisible(h) && cloaked == 0) ? "open" : "closed";
+        }
+        public static void PressEscape() {
+          keybd_event(0x1B, 0, 0, UIntPtr.Zero);
+          keybd_event(0x1B, 0, 2, UIntPtr.Zero);  // KEYEVENTF_KEYUP
+        }
         // Minimizes (dialogs: closes) visible, uncloaked top level windows
         // other than the shell's desktop and taskbar. Returns what it did.
         public static System.Collections.Generic.List<string> ClearDesktop() {
@@ -440,8 +452,21 @@ jobs:
           return log;
         }
         '@
-        [ElectronCI.HitTest]::ClearDesktop() | ForEach-Object { Write-Host $_ }
-        Start-Sleep -Seconds 2
+        $start = [ElectronCI.HitTest]::StartMenuState()
+        Write-Host "Start menu: $start"
+        if ($start -eq 'open') {
+          [ElectronCI.HitTest]::PressEscape()
+          Start-Sleep -Seconds 1
+          Write-Host "Start menu after Escape: $([ElectronCI.HitTest]::StartMenuState())"
+        }
+        # Closing a dialog can reveal another (System Properties leaves its
+        # Performance Options behind), so repeat until nothing is left.
+        for ($pass = 1; $pass -le 3; $pass++) {
+          $done = [ElectronCI.HitTest]::ClearDesktop()
+          $done | ForEach-Object { Write-Host "Pass ${pass}: $_" }
+          Start-Sleep -Seconds 1
+          if ($done.Count -eq 0) { break }
+        }
         foreach ($xy in @(@(300, 300), @(512, 384))) {
           $p = New-Object ElectronCI.HitTest+POINT
           $p.X = $xy[0]; $p.Y = $xy[1]
