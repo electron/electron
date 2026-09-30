@@ -263,6 +263,10 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       // acceptFirstMouse: macOS only delivers a click that activates an
       // inactive window when the window asks for it.
       const below = await createWindow({ acceptFirstMouse: true });
+      // Topmost like the window above it (which is shown later, so stays on
+      // top of it), so that no ordinary window can come between them and
+      // take the click: on windows-11-arm the runner's terminal once did.
+      below.setAlwaysOnTop(true);
       below.showInactive();
       const above = await createWindow();
       above.setAlwaysOnTop(true);
