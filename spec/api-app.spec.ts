@@ -325,16 +325,41 @@ describe('app module', () => {
       expectedAdditionalData: unknown;
     }
 
+    // Fails naming what never happened, rather than waiting out the test's
+    // own timeout.
+    async function within<T>(promise: Promise<T>, what: string, ms = 30000): Promise<T> {
+      let timer: NodeJS.Timeout | undefined;
+      const timedOut = new Promise<never>((_resolve, reject) => {
+        timer = globalThis.setTimeout(() => reject(new Error(`${what} within ${ms}ms`)), ms);
+      });
+      try {
+        return await Promise.race([promise, timedOut]);
+      } finally {
+        globalThis.clearTimeout(timer);
+      }
+    }
+
     it('prevents the second launch of app', async function () {
       this.timeout(120000);
       const appPath = path.join(fixturesPath, 'api', 'singleton-data');
+      // The two copies quit within milliseconds of each other, so listen for
+      // both exits before either can happen: an 'exit' emitted before once()
+      // is called is lost, and the test would wait for it until it timed out.
       const first = cp.spawn(process.execPath, [appPath]);
-      await once(first.stdout, 'data');
+      const firstExited = once(first, 'exit');
+      defer(() => {
+        first.kill();
+      });
+      await within(once(first.stdout, 'data'), 'first instance did not start');
       // Start second app when received output.
       const second = cp.spawn(process.execPath, [appPath]);
-      const [code2] = await once(second, 'exit');
+      const secondExited = once(second, 'exit');
+      defer(() => {
+        second.kill();
+      });
+      const [code2] = await within(secondExited, 'second instance did not exit');
       expect(code2).to.equal(1);
-      const [code1] = await once(first, 'exit');
+      const [code1] = await within(firstExited, 'first instance did not exit after the second launch');
       expect(code1).to.equal(0);
     });
 
