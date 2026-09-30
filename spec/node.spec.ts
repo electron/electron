@@ -1581,7 +1581,7 @@ describe('Node.js startup snapshot', () => {
     delete values.constants.crypto.defaultCipherList;
     return values;
   };
-  // eslint-disable-next-line no-eval
+  // oxlint-disable-next-line no-eval
   const fromThisProcess = () => comparable(eval(collect));
 
   const fromFreshEnvironment = async () => {

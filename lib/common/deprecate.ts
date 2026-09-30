@@ -97,7 +97,7 @@ export function removeProperty<T extends Object, K extends keyof T & string>(
   onlyForValues?: any[]
 ): T {
   // if the property's already been removed, warn about it
-  // eslint-disable-next-line no-proto
+  // oxlint-disable-next-line no-proto
   const info = Object.getOwnPropertyDescriptor((object as any).__proto__, removedName);
   if (!info) {
     log(`Unable to remove property '${removedName}' from an object that lacks it.`);

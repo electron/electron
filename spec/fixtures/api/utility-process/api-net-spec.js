@@ -2,7 +2,7 @@
 // spec/api-app.spec.ts) inside a utility process. Each body arrives as source
 // text, so everything it refers to from those spec files' imports has to be in
 // scope here under the same name.
-/* eslint-disable @typescript-eslint/no-unused-vars */
+/* oxlint-disable @typescript-eslint/no-unused-vars */
 const { app, net, protocol, session, utilityProcess } = require('electron/main');
 
 const chai = require('chai');
@@ -47,11 +47,11 @@ process.parentPort.on('message', async (e) => {
   try {
     if (e.data.args) {
       for (const [key, value] of Object.entries(e.data.args)) {
-        // eslint-disable-next-line no-eval
+        // oxlint-disable-next-line no-eval
         eval(`var ${key} = value;`);
       }
     }
-    // eslint-disable-next-line no-eval
+    // oxlint-disable-next-line no-eval
     await eval(e.data.fn);
   } catch (err) {
     fail(`${err}`);

@@ -23,12 +23,12 @@ const isWindows20H1OrLater = () => {
 type CrashInfo = {
   prod: string;
   ver: string;
-  process_type: string; // eslint-disable-line camelcase
+  process_type: string;
   ptype: string;
   platform: string;
   _productName: string;
   _version: string;
-  upload_file_minidump: Buffer; // eslint-disable-line camelcase
+  upload_file_minidump: Buffer;
   guid: string;
   mainProcessSpecific: 'mps' | undefined;
   rendererSpecific: 'rs' | undefined;

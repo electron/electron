@@ -129,7 +129,7 @@ describe('Notification module', () => {
 
   ifit(process.platform === 'win32')('throws when id exceeds 64 characters', () => {
     expect(() => {
-      // eslint-disable-next-line no-new
+      // oxlint-disable-next-line no-new
       new Notification({
         id: 'a'.repeat(65),
         title: 'title',
@@ -140,7 +140,7 @@ describe('Notification module', () => {
 
   ifit(process.platform === 'win32')('throws when groupId exceeds 64 characters', () => {
     expect(() => {
-      // eslint-disable-next-line no-new
+      // oxlint-disable-next-line no-new
       new Notification({
         groupId: 'a'.repeat(65),
         title: 'title',
@@ -151,7 +151,7 @@ describe('Notification module', () => {
 
   ifit(process.platform === 'win32')('throws when groupTitle is set without groupId', () => {
     expect(() => {
-      // eslint-disable-next-line no-new
+      // oxlint-disable-next-line no-new
       new Notification({
         groupTitle: 'My Group',
         title: 'title',

@@ -11,7 +11,7 @@ const wasi = new WASI({ version: 'preview1', returnOnExit: true });
 const memory = new WebAssembly.Memory({ initial: 1 });
 wasi.finalizeBindings({ exports: { memory } }, { memory });
 
-// eslint-disable-next-line no-new-func
+// oxlint-disable-next-line no-new-func
 const run = new Function(
   'wasiImport',
   `

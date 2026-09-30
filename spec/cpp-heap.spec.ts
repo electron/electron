@@ -554,7 +554,7 @@ describe('cpp heap', () => {
       await rc.remotely(
         async (fixturesDir: string, setupWorker: string) => {
           const { app } = require('electron');
-          // eslint-disable-next-line no-eval
+          // oxlint-disable-next-line no-eval
           const setup = eval('(' + setupWorker + ')');
           const ctx = await setup(fixturesDir);
 
@@ -577,7 +577,7 @@ describe('cpp heap', () => {
           const { recordState } = require(heap);
           const { containsRetainingPath } = require(snapshotHelper);
           const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
-          // eslint-disable-next-line no-eval
+          // oxlint-disable-next-line no-eval
           const setup = eval('(' + setupWorker + ')');
           const ctx = await setup(fixturesDir);
 
@@ -613,7 +613,7 @@ describe('cpp heap', () => {
           const { recordState } = require(heap);
           const { containsRetainingPath } = require(snapshotHelper);
           const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
-          // eslint-disable-next-line no-eval
+          // oxlint-disable-next-line no-eval
           const setup = eval('(' + setupWorker + ')');
           const ctx = await setup(fixturesDir);
 
