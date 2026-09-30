@@ -4391,7 +4391,7 @@ uint32_t WebContents::FindInPage(gin::Arguments* const args) {
     return 0;
   }
 
-  uint32_t request_id = ++find_in_page_request_id_;
+  uint32_t request_id = 0;
   gin_helper::Dictionary dict;
   auto options = blink::mojom::FindOptions::New();
   if (args->GetNext(&dict)) {
@@ -4400,8 +4400,10 @@ uint32_t WebContents::FindInPage(gin::Arguments* const args) {
     dict.Get("findNext", &options->new_session);
   }
 
-  web_contents()->Find(request_id, search_text, std::move(options),
-                       /*skip_delay=*/false);
+  web_contents()->Find(search_text, std::move(options), /*skip_delay=*/false,
+                       [&request_id](int allocated_request_id) {
+                         request_id = allocated_request_id;
+                       });
   return request_id;
 }
 
