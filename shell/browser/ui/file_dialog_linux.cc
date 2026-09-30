@@ -10,6 +10,7 @@
 #include "base/functional/bind.h"
 #include "base/functional/callback.h"
 #include "base/logging.h"
+#include "base/memory/stack_allocated.h"
 #include "base/run_loop.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
@@ -260,6 +261,9 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
   DialogType type_;
   scoped_refptr<ui::SelectFileDialog> dialog_;
   base::OnceCallback<void(gin_helper::Dictionary)> callback_;
+  // gin::Dictionary is STACK_ALLOCATED(), but Promise<T> only names T as its
+  // resolve type and never stores one.
+  STACK_ALLOCATED_IGNORE("Promise<T> does not store a T")
   gin_helper::Promise<gin_helper::Dictionary> promise_;
 };
 

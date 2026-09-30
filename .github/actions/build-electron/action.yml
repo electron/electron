@@ -196,6 +196,21 @@ runs:
           echo "Skipping build-stats.mjs upload because DD_API_KEY is not set"
         fi
         node electron/script/build-stats.mjs $BUILD_STATS_ARGS || true
+    - name: Dump macOS memory pressure diagnostics
+      if: ${{ failure() && inputs.target-platform == 'macos' }}
+      shell: bash
+      run: |
+        set +e
+        echo "::group::vm_stat / swap"
+        sysctl vm.swapusage
+        vm_stat
+        echo "::endgroup::"
+        echo "::group::kernel memorystatus / jetsam (last 45m)"
+        log show --last 45m --style compact --predicate 'process == "kernel" AND (eventMessage CONTAINS "memorystatus" OR eventMessage CONTAINS "jetsam")' | tail -n 100
+        echo "::endgroup::"
+        echo "::group::esbuild process mentions (last 45m)"
+        log show --last 45m --style compact --predicate 'eventMessage CONTAINS "esbuild"' | tail -n 50
+        echo "::endgroup::"
     - name: Build Electron (Windows) ${{ inputs.step-suffix }}
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell

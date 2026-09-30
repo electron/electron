@@ -403,7 +403,7 @@ void NativeWindowMac::Close() {
   RemoveChildFromParentWindow();
 
   while (!child_windows_.empty()) {
-    auto* child = child_windows_.back();
+    NativeWindow* child = child_windows_.back();
     child->RemoveChildFromParentWindow();
   }
 
@@ -434,7 +434,7 @@ void NativeWindowMac::CloseImmediately() {
   RemoveChildFromParentWindow();
 
   while (!child_windows_.empty()) {
-    auto* child = child_windows_.back();
+    NativeWindow* child = child_windows_.back();
     child->RemoveChildFromParentWindow();
   }
 
@@ -660,7 +660,7 @@ void NativeWindowMac::RemoveChildFromParentWindow() {
 }
 
 void NativeWindowMac::AttachChildren() {
-  for (auto* child : child_windows_) {
+  for (NativeWindow* child : child_windows_) {
     if (!static_cast<NativeWindowMac*>(child)->wants_to_be_visible())
       continue;
 
@@ -680,7 +680,7 @@ void NativeWindowMac::DetachChildren() {
   // Hide all children before hiding/minimizing the window.
   // NativeWidgetNSWindowBridge::NotifyVisibilityChangeDown()
   // will DCHECK otherwise.
-  for (auto* child : child_windows_) {
+  for (NativeWindow* child : child_windows_) {
     [child->GetNativeWindow().GetNativeNSWindow() orderOut:nil];
   }
 }

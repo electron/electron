@@ -112,7 +112,7 @@ describe('debugger module', () => {
         (globalThis as any).contents = contents;
         setImmediate(() => app.quit());
       });
-      const [code] = await once(rc.process, 'exit');
+      const [code] = await once(rc.process, 'close');
       expect(code).to.equal(0);
       expect(stdout).to.contain('debugger-detach: target closed');
     });

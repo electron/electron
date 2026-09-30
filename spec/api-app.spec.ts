@@ -252,7 +252,7 @@ describe('app module', () => {
           output += data;
         });
       }
-      const [code] = await once(appProcess, 'exit');
+      const [code] = await once(appProcess, 'close');
 
       if (process.platform !== 'win32') {
         expect(output).to.include('Exit event with code: 123');
@@ -283,7 +283,7 @@ describe('app module', () => {
         appProcess.stderr!.on('data', (data) => {
           stderr += data;
         });
-        const [code, signal] = await once(appProcess, 'exit');
+        const [code, signal] = await once(appProcess, 'close');
         appProcess = null;
         const message = `run ${i}: code=${code} signal=${signal}\n${stderr}`;
         expect(signal).to.equal(null, message);
@@ -307,7 +307,7 @@ describe('app module', () => {
         appProcess.stderr!.on('data', (data) => {
           stderr += data;
         });
-        const [code, signal] = await once(appProcess, 'exit');
+        const [code, signal] = await once(appProcess, 'close');
         appProcess = null;
         const message = `code=${code} signal=${signal}\n${stderr}`;
         expect(signal).to.equal(null, message);
@@ -351,14 +351,36 @@ describe('app module', () => {
     it('prevents the second launch of app', async function () {
       this.timeout(120000);
       const appPath = path.join(fixturesPath, 'api', 'singleton-data');
+      // The two copies quit within milliseconds of each other, so record each
+      // exit as soon as the copy is spawned: an 'exit' emitted before a
+      // listener is attached is lost, and the test would wait for it until it
+      // timed out.
       const first = cp.spawn(process.execPath, [appPath]);
-      await once(first.stdout, 'data');
+      let firstCode: number | null = null;
+      first.on('exit', (code) => {
+        firstCode = code;
+      });
+      defer(() => {
+        if (first.exitCode === null && first.signalCode === null) first.kill();
+      });
+      let firstOutput = '';
+      first.stdout.on('data', (data) => {
+        firstOutput += data;
+      });
+      await waitUntil(() => firstOutput.length > 0, { timeout: 30000 });
       // Start second app when received output.
       const second = cp.spawn(process.execPath, [appPath]);
-      const [code2] = await once(second, 'exit');
-      expect(code2).to.equal(1);
-      const [code1] = await once(first, 'exit');
-      expect(code1).to.equal(0);
+      let secondCode: number | null = null;
+      second.on('exit', (code) => {
+        secondCode = code;
+      });
+      defer(() => {
+        if (second.exitCode === null && second.signalCode === null) second.kill();
+      });
+      await waitUntil(() => secondCode !== null, { timeout: 30000 });
+      expect(secondCode).to.equal(1);
+      await waitUntil(() => firstCode !== null, { timeout: 30000 });
+      expect(firstCode).to.equal(0);
     });
 
     it('returns true when setting non-existent user data folder', async function () {
@@ -2093,7 +2115,7 @@ describe('app module', () => {
       appProcess.stderr.on('data', (data) => {
         errorData += data;
       });
-      const [exitCode] = await once(appProcess, 'exit');
+      const [exitCode] = await once(appProcess, 'close');
       if (exitCode === 0) {
         try {
           const [, json] = /HERE COMES THE JSON: (.+) AND THERE IT WAS/.exec(gpuInfoData)!;
@@ -2262,13 +2284,25 @@ describe('app module', () => {
   });
 
   // Activation, hiding and the dock are per-machine state on macOS.
+  //
+  // A spec worker can start out as the active app without having shown a
+  // window: macOS hands it activation when the spec process before it quits.
+  // app.hide() from that inherited state can be ignored for good, so take
+  // activation through a window of our own first and only then hide.
+  const activateThroughOwnWindow = async () => {
+    const w = new BrowserWindow({ width: 200, height: 200, show: false });
+    w.show();
+    await waitUntil(() => app.isActive() && w.isFocused());
+    await closeWindow(w);
+  };
+
   ifdescribe(process.platform === 'darwin')('app isActive API', { tags: ['serial'] }, () => {
     describe('app.isActive', () => {
       afterEach(closeAllWindows);
 
       it('returns true when the app becomes active', async () => {
-        // A freshly started process may already be the active app.
         if (app.isActive()) {
+          await activateThroughOwnWindow();
           app.hide();
           await waitUntil(() => !app.isActive());
         }
@@ -2292,6 +2326,9 @@ describe('app module', () => {
   ifdescribe(process.platform === 'darwin')('app hide and show API', { tags: ['serial'] }, () => {
     describe('app.isHidden', () => {
       it('returns true when the app is hidden', async () => {
+        if (app.isActive() && !app.isHidden()) {
+          await activateThroughOwnWindow();
+        }
         app.hide();
         await waitUntil(() => app.isHidden());
       });

@@ -592,7 +592,7 @@ describe('command line switches', () => {
         stderr += data;
       });
 
-      const [code, signal] = await once(appProcess, 'exit');
+      const [code, signal] = await once(appProcess, 'close');
       if (code !== 0) {
         throw new Error(`Process exited with code "${code}" signal "${signal}" output "${output}" stderr "${stderr}"`);
       }
@@ -968,7 +968,7 @@ describe('chromium features', () => {
       fpsProcess.stdout.on('data', (data) => {
         output += data;
       });
-      await once(fpsProcess, 'exit');
+      await once(fpsProcess, 'close');
 
       expect(output).to.include(fps.join(','));
     });
@@ -983,7 +983,7 @@ describe('chromium features', () => {
       fpsProcess.stdout.on('data', (data) => {
         output += data;
       });
-      await once(fpsProcess, 'exit');
+      await once(fpsProcess, 'close');
 
       expect(output).to.include(fps.join(','));
     });
@@ -4502,7 +4502,7 @@ describe('font fallback', () => {
   );
 });
 
-describe('iframe using HTML fullscreen API while window is OS-fullscreened', () => {
+describe('iframe using HTML fullscreen API while window is OS-fullscreened', { tags: ['serial'] }, () => {
   const fullscreenChildHtml = fs.promises.readFile(path.join(fixturesPath, 'pages', 'fullscreen-oopif.html'));
   let w: BrowserWindow;
   let server: http.Server;
@@ -4912,7 +4912,7 @@ describe('navigator.clipboard.write', { tags: ['serial'] }, () => {
   });
 });
 
-describe('pointer lock permission request', () => {
+describe('pointer lock permission request', { tags: ['serial'] }, () => {
   const servers: http.Server[] = [];
   let serverUrl: string;
   let otherPortUrl: string;
@@ -4946,12 +4946,20 @@ describe('pointer lock permission request', () => {
       requests.push({ wc, permission, details });
       callback(false);
     });
-    w.webContents.focus();
+    // content rejects the request with WrongDocumentError, without consulting
+    // the permission handler, unless the widget has focus. Focus arrives
+    // asynchronously on macOS, so wait for it.
+    if (!w.webContents.isFocused()) {
+      const focus = once(w.webContents, 'focus');
+      w.webContents.focus();
+      await focus;
+    }
     const result = await iframe.executeJavaScript(
       "document.body.requestPointerLock().then(() => 'locked', (e) => e.name)",
       true
     );
-    expect(result).to.not.equal('locked');
+    // A request denied by the permission handler rejects with SecurityError.
+    expect(result).to.equal('SecurityError');
     const request = requests.find((r) => r.permission === 'pointerLock');
     expect(request).to.exist();
     expect(request!.wc).to.equal(w.webContents);
