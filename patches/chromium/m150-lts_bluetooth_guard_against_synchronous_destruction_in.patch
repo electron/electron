@@ -1,0 +1,205 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Tue, 29 Sep 2026 03:16:48 +0000
+Subject: [M150-LTS] bluetooth: Guard against synchronous destruction in
+ RequestDeviceImpl
+
+In WebBluetoothServiceImpl::RequestDeviceImpl, resetting
+device_chooser_controller_ synchronously closes any open chooser bubble
+widget. In topologies where widget closure and the resulting focus or
+activation observer fan-out synchronously destroy the hosting
+WebContents, WebBluetoothServiceImpl is destroyed.
+
+This CL adds a base::WeakPtr liveness check after resetting
+device_chooser_controller_ in RequestDeviceImpl before accessing members
+of this, matching the pattern in sibling document services.
+Additionally, adds DisableDanglingPtrDetection to web_bluetooth_service_
+and render_frame_host_ in BluetoothDeviceChooserController since
+chooser_ destruction during member destruction may synchronously destroy
+the hosting WebContents.
+
+TAG=agy
+CONV=dcfecb6a-b053-4247-8094-f7ad5b33ea16
+
+Bug: 556926296
+Change-Id: Ifad5b98dea0f50a6a67a398b985ea7fe3edabb29
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8372502
+Commit-Queue: Alvin Ji <alvinji@chromium.org>
+Reviewed-by: Matt Reynolds <mattreynolds@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1699328}
+(cherry picked from commit bf3ee8d084678a53557bcacc22406970e1db479b)
+
+Electron adaptation notes (42-x-y):
+Test-only conflict in web_bluetooth_service_impl_unittest.cc (the
+TestBluetoothDelegate::RunBluetoothChooser context differs on this
+branch); resolved by taking the upstream hunk. No source adaptation.
+
+diff --git a/content/browser/bluetooth/bluetooth_device_chooser_controller.h b/content/browser/bluetooth/bluetooth_device_chooser_controller.h
+index a9a9dbbd68faf6fff58a58355670db4eedf70758..8eaa297849c3fdb69cb3862a8c0f90149b9959f2 100644
+--- a/content/browser/bluetooth/bluetooth_device_chooser_controller.h
++++ b/content/browser/bluetooth/bluetooth_device_chooser_controller.h
+@@ -154,10 +154,15 @@ class CONTENT_EXPORT BluetoothDeviceChooserController final {
+ 
+   // The adapter used to get existing devices and start a discovery session.
+   scoped_refptr<device::BluetoothAdapter> adapter_;
+-  // The WebBluetoothServiceImpl that owns this instance.
+-  raw_ptr<WebBluetoothServiceImpl> web_bluetooth_service_;
+-  // The RenderFrameHost that owns web_bluetooth_service_.
+-  raw_ref<RenderFrameHost> render_frame_host_;
++  // The WebBluetoothServiceImpl that owns this instance, and the
++  // RenderFrameHost that owns `web_bluetooth_service_`.
++  // Destroying `chooser_` during member destruction may synchronously destroy
++  // the hosting WebContents and therefore both `web_bluetooth_service_` and
++  // `render_frame_host_`. This is safe because neither is accessed after
++  // `chooser_` is destroyed.
++  raw_ptr<WebBluetoothServiceImpl, DisableDanglingPtrDetection>
++      web_bluetooth_service_;
++  raw_ref<RenderFrameHost, DisableDanglingPtrDetection> render_frame_host_;
+ 
+   BluetoothDeviceRequestPromptInfo prompt_info_;
+ 
+diff --git a/content/browser/bluetooth/web_bluetooth_service_impl.cc b/content/browser/bluetooth/web_bluetooth_service_impl.cc
+index 534f529107e8963dbc48fd9f133a79dd6d5fbb7a..66e755dc0db7cf6da32289d516237635df1ec1b2 100644
+--- a/content/browser/bluetooth/web_bluetooth_service_impl.cc
++++ b/content/browser/bluetooth/web_bluetooth_service_impl.cc
+@@ -1660,13 +1660,15 @@ void WebBluetoothServiceImpl::RequestDeviceImpl(
+     return;
+   }
+ 
+-  // Calls to requestDevice() require user activation (user gestures).  We
+-  // should close any opened chooser when a duplicate requestDevice call is
+-  // made with the same user activation or when any gesture occurs outside
+-  // of the opened chooser. This does not happen on all platforms so we
+-  // don't DCHECK that the old one is closed.  We destroy the old chooser
+-  // before constructing the new one to make sure they can't conflict.
++  // Close any opened chooser before constructing a new one. Destroying the
++  // chooser UI may trigger activation observers that synchronously destroy the
++  // hosting WebContents (and therefore `this`). Guard with a WeakPtr.
++  base::WeakPtr<WebBluetoothServiceImpl> weak_this =
++      weak_ptr_factory_.GetWeakPtr();
+   device_chooser_controller_.reset();
++  if (!weak_this) {
++    return;
++  }
+ 
+   device_chooser_controller_ =
+       std::make_unique<BluetoothDeviceChooserController>(
+diff --git a/content/browser/bluetooth/web_bluetooth_service_impl.h b/content/browser/bluetooth/web_bluetooth_service_impl.h
+index 2b37b9667769573a8e7b517de160a849cd98b162..a0f882eecb72355a852d336df50a815c878043ca 100644
+--- a/content/browser/bluetooth/web_bluetooth_service_impl.h
++++ b/content/browser/bluetooth/web_bluetooth_service_impl.h
+@@ -138,6 +138,8 @@ class CONTENT_EXPORT WebBluetoothServiceImpl
+ 
+   FRIEND_TEST_ALL_PREFIXES(WebBluetoothServiceImplTest,
+                            DestroyedDuringRequestDevice);
++  FRIEND_TEST_ALL_PREFIXES(WebBluetoothServiceImplTest,
++                           DestroyedDuringRequestDeviceReset);
+   FRIEND_TEST_ALL_PREFIXES(WebBluetoothServiceImplTest,
+                            DestroyedDuringRequestScanningStart);
+   FRIEND_TEST_ALL_PREFIXES(WebBluetoothServiceImplTest, PermissionAllowed);
+diff --git a/content/browser/bluetooth/web_bluetooth_service_impl_unittest.cc b/content/browser/bluetooth/web_bluetooth_service_impl_unittest.cc
+index e11eb6ca3295d3ea9e70806fa52e8f6f1180da7b..32c254d518ea99ee6bd14e73ee6c94c59706a4f5 100644
+--- a/content/browser/bluetooth/web_bluetooth_service_impl_unittest.cc
++++ b/content/browser/bluetooth/web_bluetooth_service_impl_unittest.cc
+@@ -333,8 +333,30 @@ class FakeBluetoothCharacteristic
+   ErrorCallback deferred_start_notification_error_callback_;
+ };
+ 
++class WebContentsDestroyingChooser : public BluetoothChooser {
++ public:
++  explicit WebContentsDestroyingChooser(base::OnceClosure on_destroy)
++      : on_destroy_(std::move(on_destroy)) {}
++  WebContentsDestroyingChooser(const WebContentsDestroyingChooser&) = delete;
++  WebContentsDestroyingChooser& operator=(const WebContentsDestroyingChooser&) =
++      delete;
++  ~WebContentsDestroyingChooser() override {
++    if (on_destroy_) {
++      std::move(on_destroy_).Run();
++    }
++  }
++
++ private:
++  base::OnceClosure on_destroy_;
++};
++
+ class TestBluetoothDelegate : public BluetoothDelegate {
+  public:
++  using RunBluetoothChooserCallback =
++      base::RepeatingCallback<std::unique_ptr<BluetoothChooser>(
++          RenderFrameHost*,
++          const BluetoothChooser::EventHandler&)>;
++
+   TestBluetoothDelegate() = default;
+   ~TestBluetoothDelegate() override = default;
+   TestBluetoothDelegate(const TestBluetoothDelegate&) = delete;
+@@ -344,8 +366,17 @@ class TestBluetoothDelegate : public BluetoothDelegate {
+   std::unique_ptr<BluetoothChooser> RunBluetoothChooser(
+       RenderFrameHost* frame,
+       const BluetoothChooser::EventHandler& event_handler) override {
++    if (run_bluetooth_chooser_callback_) {
++      return run_bluetooth_chooser_callback_.Run(frame, event_handler);
++    }
+     return nullptr;
+   }
++
++  void set_run_bluetooth_chooser_callback(
++      RunBluetoothChooserCallback callback) {
++    run_bluetooth_chooser_callback_ = std::move(callback);
++  }
++
+   std::unique_ptr<BluetoothScanningPrompt> ShowBluetoothScanningPrompt(
+       RenderFrameHost* frame,
+       const BluetoothScanningPrompt::EventHandler& event_handler) override {
+@@ -433,6 +464,7 @@ class TestBluetoothDelegate : public BluetoothDelegate {
+   bool has_device_permission_ = false;
+   raw_ptr<FakeBluetoothScanningPrompt, AcrossTasksDanglingUntriaged> prompt_ =
+       nullptr;
++  RunBluetoothChooserCallback run_bluetooth_chooser_callback_;
+ };
+ 
+ class TestContentBrowserClient : public ContentBrowserClient {
+@@ -764,6 +796,44 @@ TEST_F(WebBluetoothServiceImplTest, DestroyedDuringRequestDevice) {
+   loop.RunUntilIdle();
+ }
+ 
++TEST_F(WebBluetoothServiceImplTest, DestroyedDuringRequestDeviceReset) {
++  browser_client_.bluetooth_delegate()->set_run_bluetooth_chooser_callback(
++      base::BindLambdaForTesting(
++          [this](RenderFrameHost* frame,
++                 const BluetoothChooser::EventHandler& event_handler)
++              -> std::unique_ptr<BluetoothChooser> {
++            return std::make_unique<WebContentsDestroyingChooser>(
++                base::BindLambdaForTesting([this]() {
++                  service_ptr_ = nullptr;
++                  DeleteContents();
++                }));
++          }));
++
++  // Initial RequestDevice call opens the chooser.
++  auto options1 = blink::mojom::WebBluetoothRequestDeviceOptions::New();
++  options1->accept_all_devices = true;
++  TestFuture<WebBluetoothResult, blink::mojom::WebBluetoothDevicePtr> future1;
++  service_ptr_->RequestDevice(std::move(options1), future1.GetCallback());
++
++  // A duplicate or subsequent RequestDevice call while the chooser is open
++  // triggers device_chooser_controller_.reset(). In topologies where widget
++  // closure destroys the hosting WebContents, WebBluetoothServiceImpl is
++  // destroyed. Ensure this returns cleanly without UAF.
++  auto options2 = blink::mojom::WebBluetoothRequestDeviceOptions::New();
++  options2->accept_all_devices = true;
++  TestFuture<WebBluetoothResult, blink::mojom::WebBluetoothDevicePtr> future2;
++  service_ptr_->RequestDevice(std::move(options2), future2.GetCallback());
++
++  // The first request was cancelled during chooser closure.
++  ASSERT_TRUE(future1.IsReady());
++  EXPECT_EQ(future1.Get<0>(), WebBluetoothResult::CHOOSER_CANCELLED);
++  EXPECT_FALSE(future1.Get<1>());
++
++  // The second request bailed out due to synchronous destruction; its
++  // callback was dropped without running.
++  EXPECT_FALSE(future2.IsReady());
++}
++
+ TEST_F(WebBluetoothServiceImplTest, PermissionAllowed) {
+   blink::mojom::WebBluetoothLeScanFilterPtr filter = CreateScanFilter("a", "b");
+   std::optional<WebBluetoothServiceImpl::ScanFilters> filters;

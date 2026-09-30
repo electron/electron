@@ -1,0 +1,1072 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Wed, 8 Apr 2026 17:26:15 -0400
+Subject: Limit max image allocation size to 1GB.
+
+This limit matches the Vulkan backend and Mesa's MAX_TEXTURE_MBYTES.
+
+Covered entry points:
+glTexImage2D
+glCompressedTexImage2D
+glTexStorage2DEXT
+glTexStorage2D
+glTexImage3D
+glTexStorage3D
+glTexStorage3DEXT
+glRenderbufferStorage
+glRenderbufferStorageMultisample
+glRenderbufferStorageMultisampleEXT
+glTexStorage2DMultisample
+glTexStorage2DMultisampleANGLE
+glTexStorage3DMultisample
+
+Fixed: angleproject:485900022
+Change-Id: I60978b6296ca0512d4720279868f8965a0a3292d
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7738926
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+
+Electron adaptation notes (42-x-y):
+Prerequisite for the following PowerVR 3D texture fix: introduces
+Limitations::maxTextureBytes and ValidImageAllocationSize(), which that
+fix modifies. Cherry-picked from ANGLE main 6bbde839bd (Change-Id
+I60978b6296ca0512d4720279868f8965a0a3292d). Conflicts were limited to
+tests (ReadPixelsTest.cpp, TextureTest.cpp; both sides kept) and the
+autogen feature-name lists. Note that this adds a 1 GB per-texture
+allocation limit on the GL/D3D backends that M148 ANGLE did not have.
+
+diff --git a/include/platform/autogen/FrontendFeatures_autogen.h b/include/platform/autogen/FrontendFeatures_autogen.h
+index 0f25e21f713472250b44e78c653db1eb4e81eae2..6ea22a9773aa09ade2f45b248fc8f13b1f5608af 100644
+--- a/include/platform/autogen/FrontendFeatures_autogen.h
++++ b/include/platform/autogen/FrontendFeatures_autogen.h
+@@ -207,6 +207,18 @@ struct FrontendFeatures : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo limitMaxBufferBytesTo1MB = {
++        "limitMaxBufferBytesTo1MB",
++        FeatureCategory::FrontendFeatures,
++        &members,
++    };
++
++    FeatureInfo limitMaxTextureBytesTo1MB = {
++        "limitMaxTextureBytesTo1MB",
++        FeatureCategory::FrontendFeatures,
++        &members,
++    };
++
+ };
+ 
+ inline FrontendFeatures::FrontendFeatures()  = default;
+diff --git a/include/platform/frontend_features.json b/include/platform/frontend_features.json
+index 8c99f4753a61f9e0c0a429c761b7352ca3671f1f..49bc8586fab3940f4540a0f15d4bc83cdd498300 100644
+--- a/include/platform/frontend_features.json
++++ b/include/platform/frontend_features.json
+@@ -249,6 +249,20 @@
+                 "Force every context into debug mode as if EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR was used."
+             ],
+             "issue": "https://anglebug.com/423956139"
++        },
++        {
++            "name": "limit_max_buffer_bytes_to_1MB",
++            "category": "Features",
++            "description": [
++                "Force a max buffer size of 1MB for testing."
++            ]
++        },
++        {
++            "name": "limit_max_texture_bytes_to_1MB",
++            "category": "Features",
++            "description": [
++                "Force a max image size of 1MB for testing."
++            ]
+         }
+     ]
+ }
+diff --git a/src/libANGLE/Caps.h b/src/libANGLE/Caps.h
+index 7bcf3913a3be1790cb96d52f559017d0fecc29b0..b79a856182350a41be77e49e766b859ef311ef6b 100644
+--- a/src/libANGLE/Caps.h
++++ b/src/libANGLE/Caps.h
+@@ -170,7 +170,12 @@ struct Limitations
+ 
+     // Size limit for buffers. GL_INVALID_OPERATION should be generated if trying to allocate a
+     // buffer larger than this limit.
+-    GLsizeiptr bufferSizeLimit = std::numeric_limits<GLsizeiptr>::max();
++    size_t maxBufferBytes = std::numeric_limits<GLsizeiptr>::max();
++
++    // Maximum texture allocation size. Calculated by multiplying texture dimensions by
++    // bytes-per-pixel. 1Gb is chosen as a conservative limit to allow for backends to expand
++    // textures formats up to 4x and still stay within 32-bit sizes.
++    size_t maxTextureBytes = 1 * 1024 * 1024 * 1024;
+ };
+ 
+ struct TypePrecision
+diff --git a/src/libANGLE/Context.cpp b/src/libANGLE/Context.cpp
+index b821c74a246ccbce942ddd67a053586e708f96cb..050cbd6c2d6294e60f471f639067aa6bdb9b73df 100644
+--- a/src/libANGLE/Context.cpp
++++ b/src/libANGLE/Context.cpp
+@@ -4186,7 +4186,19 @@ void Context::initCaps()
+     *caps      = mImplementation->getNativeCaps();
+ 
+     // Update limitations before evaluating extension support
+-    *mState.getMutableLimitations() = mImplementation->getNativeLimitations();
++    {
++        gl::Limitations implementationLimitations = mImplementation->getNativeLimitations();
++
++        if (mDisplay->getFrontendFeatures().limitMaxBufferBytesTo1MB.enabled)
++        {
++            implementationLimitations.maxBufferBytes = 1 << 20;
++        }
++        if (mDisplay->getFrontendFeatures().limitMaxTextureBytesTo1MB.enabled)
++        {
++            implementationLimitations.maxTextureBytes = 1 << 20;
++        }
++        *mState.getMutableLimitations() = implementationLimitations;
++    }
+ 
+     // TODO (http://anglebug.com/42264543): mSupportedExtensions should not be modified here
+     mSupportedExtensions = generateSupportedExtensions();
+diff --git a/src/libANGLE/ErrorStrings.h b/src/libANGLE/ErrorStrings.h
+index 2822ff205ce95844ca55e6399d1a5bb8d5674e15..01c5260c6f171b545cb9b4f76287310e25414c4c 100644
+--- a/src/libANGLE/ErrorStrings.h
++++ b/src/libANGLE/ErrorStrings.h
+@@ -68,7 +68,7 @@ inline constexpr const char *kBufferNotMappable = "Attempted to map buffer objec
+ inline constexpr const char *kBufferNotMapped = "Buffer is not mapped.";
+ inline constexpr const char *kBufferNotUpdatable = "Buffer is not updatable.";
+ inline constexpr const char *kBufferOffsetOverflow = "Buffer offset overflow.";
+-inline constexpr const char *kBufferSizeLimitation = "Buffer size is too large (artificial limitation).";
++inline constexpr const char *kBufferSizeLimitation = "Buffer total allocation size is too large.";
+ inline constexpr const char *kBufferTextureNotAllowed = "Buffer textures are not allowed.";
+ inline constexpr const char *kCannotPopDefaultDebugGroup = "Cannot pop the default debug group.";
+ inline constexpr const char *kClientBufferInvalid = "Size must not exceed the size of clientbuffer.";
+@@ -622,6 +622,7 @@ inline constexpr const char *kTextureNotBound = "A texture must be bound.";
+ inline constexpr const char *kTextureNotPow2 = "The texture is a non-power-of-two texture.";
+ inline constexpr const char *kTextureRectangleNotSupported = "Context does not support GL_ANGLE_texture_rectangle.";
+ inline constexpr const char *kTextureAttachmentSamplesMismatch = "Samples value must be the same for all texture attachments";
++inline constexpr const char *kTextureSizeLimitation = "Texture total allocation size is too large.";
+ inline constexpr const char *kTextureSizeTooSmall = "Texture dimensions must all be greater than zero.";
+ inline constexpr const char *kTextureStorageCompressionExtensionRequired = "GL_EXT_texture_storage_compression not enabled.";
+ inline constexpr const char *kTextureTargetInvalidForCopyImage = "Texture target is TEXTURE_BUFFER or does not match the type of the texture.";
+diff --git a/src/libANGLE/formatutils.cpp b/src/libANGLE/formatutils.cpp
+index 65ccefb7689f0181d3121fc0c4c5372a2949cfbe..0bbb5caadaba195851144efeadd3cdc4b481aa64 100644
+--- a/src/libANGLE/formatutils.cpp
++++ b/src/libANGLE/formatutils.cpp
+@@ -1970,6 +1970,25 @@ bool InternalFormat::computeCompressedImageSize(const Extents &size, GLuint *res
+     return CheckedMathResult(bytes, resultOut);
+ }
+ 
++bool InternalFormat::computeImageSize(const Extents &size, GLsizei samples, GLuint *resultOut) const
++{
++    if (paletted || compressed)
++    {
++        ASSERT(samples == 0);
++        return computeCompressedImageSize(size, resultOut);
++    }
++    else
++    {
++        ASSERT(samples >= 0);
++        CheckedNumeric<GLuint> checkedImageSize(size.width);
++        checkedImageSize *= size.height;
++        checkedImageSize *= size.depth;
++        checkedImageSize *= pixelBytes;
++        checkedImageSize *= std::max(samples, 1);
++        return CheckedMathResult(checkedImageSize, resultOut);
++    }
++}
++
+ std::pair<GLuint, GLuint> InternalFormat::getCompressedImageMinBlocks() const
+ {
+     GLuint minBlockWidth  = 0;
+diff --git a/src/libANGLE/formatutils.h b/src/libANGLE/formatutils.h
+index 127361a5abd34975b0c896ab7ace607a594600ed..a747088fa0428e46477c230367f20865519cca18 100644
+--- a/src/libANGLE/formatutils.h
++++ b/src/libANGLE/formatutils.h
+@@ -208,6 +208,10 @@ struct InternalFormat
+ 
+     [[nodiscard]] bool computeCompressedImageSize(const Extents &size, GLuint *resultOut) const;
+ 
++    [[nodiscard]] bool computeImageSize(const Extents &size,
++                                        GLsizei samples,
++                                        GLuint *resultOut) const;
++
+     [[nodiscard]] std::pair<GLuint, GLuint> getCompressedImageMinBlocks() const;
+ 
+     [[nodiscard]] bool computeSkipBytes(GLenum formatType,
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index f7093b52d22e938f5a38797f8a15a941e2492159..23a3fb55d257fc3111de08999b4dc8c56a025b29 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2272,7 +2272,7 @@ void GenerateCaps(const FunctionsGL *functions,
+ 
+     if (features.limitMaxBufferSizeTo1gb.enabled)
+     {
+-        limitations->bufferSizeLimit = 1 << 30;
++        limitations->maxBufferBytes = 1 << 30;
+     }
+ }
+ 
+diff --git a/src/libANGLE/renderer/vulkan/vk_caps_utils.cpp b/src/libANGLE/renderer/vulkan/vk_caps_utils.cpp
+index 3aaa0d224473f9b73faf4d3133c7cca569d811ff..694b3a836df155ee8d381101d706774199ea9c39 100644
+--- a/src/libANGLE/renderer/vulkan/vk_caps_utils.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_caps_utils.cpp
+@@ -1509,6 +1509,10 @@ void Renderer::ensureCapsInitialized() const
+     // GL_OES_compressed_paletted_texture
+     mNativeExtensions.compressedPalettedTextureOES = true;
+ 
++    // Limits for texture and buffer allocations
++    mNativeLimitations.maxBufferBytes  = static_cast<size_t>(mMaxMemoryAllocationSize);
++    mNativeLimitations.maxTextureBytes = static_cast<size_t>(mMaxMemoryAllocationSize);
++
+     // Log any missing extensions required for GLES 3.2.
+     LogMissingExtensionsForGLES32(mNativeExtensions);
+ }
+diff --git a/src/libANGLE/validationES.cpp b/src/libANGLE/validationES.cpp
+index c872bcc1c4d7e4c4bd17db7f31b1a4df6e487849..4fc4d0edf5fe849e7c6f676667e311cdb7f6d6e3 100644
+--- a/src/libANGLE/validationES.cpp
++++ b/src/libANGLE/validationES.cpp
+@@ -1461,6 +1461,26 @@ bool ValidImageDataSize(const Context *context,
+     return true;
+ }
+ 
++bool ValidImageAllocationSize(const Context *context,
++                              angle::EntryPoint entryPoint,
++                              GLsizei width,
++                              GLsizei height,
++                              GLsizei depth,
++                              GLsizei samples,
++                              GLenum sizedInternalFormat)
++{
++    const InternalFormat &formatInfo = GetSizedInternalFormatInfo(sizedInternalFormat);
++    GLuint allocationSize            = 0;
++    if (!formatInfo.computeImageSize(Extents(width, height, depth), samples, &allocationSize) ||
++        allocationSize > context->getLimitations().maxTextureBytes)
++    {
++        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kTextureSizeLimitation);
++        return false;
++    }
++
++    return true;
++}
++
+ bool ValidQueryType(const Context *context, QueryType queryType)
+ {
+     switch (queryType)
+@@ -1698,6 +1718,13 @@ bool ValidateRenderbufferStorageParametersBase(const Context *context,
+         return false;
+     }
+ 
++    if (!ValidImageAllocationSize(context, entryPoint, width, height, 1, samples,
++                                  formatInfo.sizedInternalFormat))
++    {
++        // error already generated.
++        return false;
++    }
++
+     RenderbufferID id = context->getState().getRenderbufferId();
+     if (id.value == 0)
+     {
+@@ -3962,6 +3989,13 @@ bool ValidateCopyTexImageParametersBase(const Context *context,
+             ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kResourceMaxTextureSize);
+             return false;
+         }
++
++        if (!ValidImageAllocationSize(context, entryPoint, width, height, 1, 0,
++                                      formatInfo.sizedInternalFormat))
++        {
++            // Error already generated
++            return false;
++        }
+     }
+ 
+     // Do not leak the previous texture format for non-subImage case.
+@@ -8090,7 +8124,8 @@ bool ValidateTexStorageMultisample(const Context *context,
+                                    GLsizei samples,
+                                    GLint internalFormat,
+                                    GLsizei width,
+-                                   GLsizei height)
++                                   GLsizei height,
++                                   GLsizei depth)
+ {
+     const Caps &caps = context->getCaps();
+     if (width > caps.max2DTextureSize || height > caps.max2DTextureSize)
+@@ -8139,6 +8174,14 @@ bool ValidateTexStorageMultisample(const Context *context,
+         ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kImmutableTextureBound);
+         return false;
+     }
++
++    if (!ValidImageAllocationSize(context, entryPoint, width, height, depth, samples,
++                                  internalFormat))
++    {
++        // Error already generated.
++        return false;
++    }
++
+     return true;
+ }
+ 
+@@ -8163,7 +8206,7 @@ bool ValidateTexStorage2DMultisampleBase(const Context *context,
+     }
+ 
+     return ValidateTexStorageMultisample(context, entryPoint, target, samples, internalFormat,
+-                                         width, height);
++                                         width, height, 1);
+ }
+ 
+ bool ValidateTexStorage3DMultisampleBase(const Context *context,
+@@ -8194,7 +8237,7 @@ bool ValidateTexStorage3DMultisampleBase(const Context *context,
+     }
+ 
+     return ValidateTexStorageMultisample(context, entryPoint, target, samples, internalformat,
+-                                         width, height);
++                                         width, height, depth);
+ }
+ 
+ bool ValidateGetTexLevelParameterBase(const Context *context,
+diff --git a/src/libANGLE/validationES.h b/src/libANGLE/validationES.h
+index 6ea676730bd934f89c26abf0810fc4cc246368e5..7a7bcf6cca7c6311827a3769ae2e1ee7a79cf1a8 100644
+--- a/src/libANGLE/validationES.h
++++ b/src/libANGLE/validationES.h
+@@ -87,6 +87,13 @@ bool ValidImageDataSize(const Context *context,
+                         GLenum type,
+                         const void *pixels,
+                         GLsizei imageSize);
++bool ValidImageAllocationSize(const Context *context,
++                              angle::EntryPoint entryPoint,
++                              GLsizei width,
++                              GLsizei height,
++                              GLsizei depth,
++                              GLsizei samples,
++                              GLenum sizedInternalFormat);
+ 
+ bool ValidQueryType(const Context *context, QueryType queryType);
+ 
+@@ -707,7 +714,8 @@ bool ValidateTexStorageMultisample(const Context *context,
+                                    GLsizei samples,
+                                    GLint internalFormat,
+                                    GLsizei width,
+-                                   GLsizei height);
++                                   GLsizei height,
++                                   GLsizei depth);
+ 
+ bool ValidateTexStorage2DMultisampleBase(const Context *context,
+                                          angle::EntryPoint entryPoint,
+diff --git a/src/libANGLE/validationES2.cpp b/src/libANGLE/validationES2.cpp
+index 7fd05908ccc7f5f448f144ac9e0d27ddf36c8389..75989935bcf4257d42b886e06cbe63788d173993 100644
+--- a/src/libANGLE/validationES2.cpp
++++ b/src/libANGLE/validationES2.cpp
+@@ -1743,6 +1743,15 @@ bool ValidateES2TexImageParametersBase(const Context *context,
+             ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kTextureIsImmutable);
+             return false;
+         }
++
++        const gl::InternalFormat &internalFormatInfo =
++            gl::GetInternalFormatInfo(internalformat, type);
++        if (!ValidImageAllocationSize(context, entryPoint, width, height, 1, 0,
++                                      internalFormatInfo.sizedInternalFormat))
++        {
++            // Error already generated
++            return false;
++        }
+     }
+ 
+     // From GL_CHROMIUM_color_buffer_float_rgb[a]:
+@@ -1871,6 +1880,12 @@ bool ValidateES2TexStorageParametersBase(const Context *context,
+         }
+     }
+ 
++    if (!ValidImageAllocationSize(context, entryPoint, width, height, 1, 0, internalformat))
++    {
++        // Error already generated.
++        return false;
++    }
++
+     switch (internalformat)
+     {
+         case GL_DEPTH_COMPONENT16:
+@@ -3635,7 +3650,7 @@ bool ValidateBufferData(const Context *context,
+     }
+ 
+     const Limitations &limitations = context->getLimitations();
+-    if (size > limitations.bufferSizeLimit)
++    if (static_cast<size_t>(size) > limitations.maxBufferBytes)
+     {
+         ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kBufferSizeLimitation);
+         return false;
+diff --git a/src/libANGLE/validationES3.cpp b/src/libANGLE/validationES3.cpp
+index e2bf2db5b3ef2c50214c644b55ba78f7d878c57d..287c79d2a95cdc0059f31ca576c783a9648d5db3 100644
+--- a/src/libANGLE/validationES3.cpp
++++ b/src/libANGLE/validationES3.cpp
+@@ -733,6 +733,16 @@ bool ValidateES3TexImageParametersBase(const Context *context,
+             return false;
+         }
+     }
++    else
++    {
++        // Validate total image size on non-sub image calls
++        if (!ValidImageAllocationSize(context, entryPoint, width, height, depth, 0,
++                                      actualFormatInfo.sizedInternalFormat))
++        {
++            // Error already generated
++            return false;
++        }
++    }
+ 
+     GLenum sizeCheckFormat = isSubImage ? format : internalformat;
+     if (!ValidImageDataSize(context, entryPoint, texType, width, height, depth, sizeCheckFormat,
+@@ -1571,6 +1581,12 @@ bool ValidateES3TexStorageParametersBase(const Context *context,
+         return false;
+     }
+ 
++    if (!ValidImageAllocationSize(context, entryPoint, width, height, depth, 0, internalformat))
++    {
++        // Error already generated.
++        return false;
++    }
++
+     return true;
+ }
+ 
+@@ -3257,7 +3273,7 @@ bool ValidateCopyBufferSubData(const Context *context,
+     }
+ 
+     const Limitations &limitations = context->getLimitations();
+-    if (size > limitations.bufferSizeLimit)
++    if (static_cast<size_t>(size) > limitations.maxBufferBytes)
+     {
+         ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kBufferSizeLimitation);
+         return false;
+diff --git a/src/libANGLE/validationESEXT.cpp b/src/libANGLE/validationESEXT.cpp
+index 56e0678165d13c08c58b1fbd2166dec19980af84..94ffac7da4a3b388842f51eca51be6a7982460f5 100644
+--- a/src/libANGLE/validationESEXT.cpp
++++ b/src/libANGLE/validationESEXT.cpp
+@@ -2788,7 +2788,7 @@ bool ValidateBufferStorageEXT(const Context *context,
+     }
+ 
+     const Limitations &limitations = context->getLimitations();
+-    if (size > limitations.bufferSizeLimit)
++    if (static_cast<size_t>(size) > limitations.maxBufferBytes)
+     {
+         ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kBufferSizeLimitation);
+         return false;
+@@ -2914,7 +2914,7 @@ bool ValidateBufferStorageExternalEXT(const Context *context,
+     }
+ 
+     const Limitations &limitations = context->getLimitations();
+-    if (size > limitations.bufferSizeLimit)
++    if (static_cast<size_t>(size) > limitations.maxBufferBytes)
+     {
+         ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kBufferSizeLimitation);
+         return false;
+diff --git a/src/tests/gl_tests/BPTCCompressedTextureTest.cpp b/src/tests/gl_tests/BPTCCompressedTextureTest.cpp
+index 7368a8579338b9d7fc6d3530c056df6ebb9a519c..3e547fcb2a7828fddb8cc857394fefff05396653 100644
+--- a/src/tests/gl_tests/BPTCCompressedTextureTest.cpp
++++ b/src/tests/gl_tests/BPTCCompressedTextureTest.cpp
+@@ -486,9 +486,9 @@ TEST_P(BPTCCompressedTextureTestES3WebGL, DeferredInit3DOverflow)
+     }
+     GLenum err = glGetError();
+     // Allow GL_OUT_OF_MEMORY as the texture is large.
+-    ASSERT_TRUE(err == GL_NO_ERROR || err == GL_OUT_OF_MEMORY);
++    ASSERT_TRUE(err == GL_NO_ERROR || err == GL_OUT_OF_MEMORY || err == GL_INVALID_OPERATION);
+ 
+-    if (err != GL_OUT_OF_MEMORY)
++    if (err != GL_OUT_OF_MEMORY && err != GL_INVALID_OPERATION)
+     {
+         // Trigger deferred initialization by updating a small sub-region.
+         std::vector<GLubyte> data(16, 0);
+diff --git a/src/tests/gl_tests/ReadPixelsTest.cpp b/src/tests/gl_tests/ReadPixelsTest.cpp
+index 3cf1179bd78b0ef366f84af657cbc3598e61b5d8..0ac8ffd85de4ad6dd305972cd5a2d58ce761eab6 100644
+--- a/src/tests/gl_tests/ReadPixelsTest.cpp
++++ b/src/tests/gl_tests/ReadPixelsTest.cpp
+@@ -66,6 +66,50 @@ TEST_P(ReadPixelsTest, OutOfBounds)
+     }
+ }
+ 
++// Test readPixels with a large texture to verify no overflow in pitch calculations.
++TEST_P(ReadPixelsTest, LargeTexture)
++{
++    // Need ES3 for RGBA32F
++    ANGLE_SKIP_TEST_IF(getClientMajorVersion() < 3);
++
++    GLint maxTextureSize;
++    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
++    ANGLE_SKIP_TEST_IF(maxTextureSize < 16384);
++
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 16384, 8193, 0, GL_RGBA, GL_FLOAT, nullptr);
++    GLenum err = glGetError();
++    ANGLE_SKIP_TEST_IF(err == GL_OUT_OF_MEMORY || err == GL_INVALID_OPERATION);
++    EXPECT_GL_NO_ERROR();
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
++    EXPECT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    // Clear the row at 8192 to a specific color.
++    glEnable(GL_SCISSOR_TEST);
++    glScissor(0, 8192, 16384, 1);
++    glClearColor(0.5f, 0.5f, 0.5f, 0.5f);
++    glClear(GL_COLOR_BUFFER_BIT);
++    glDisable(GL_SCISSOR_TEST);
++
++    ANGLE_SKIP_TEST_IF(glGetError() == GL_OUT_OF_MEMORY);
++    EXPECT_GL_NO_ERROR();
++
++    // Call gl.readPixels(0, 8192, 16384, 1, gl.RGBA, gl.FLOAT, outputBuffer).
++    std::vector<float> data(16384 * 4);
++    glReadPixels(0, 8192, 16384, 1, GL_RGBA, GL_FLOAT, data.data());
++    ANGLE_SKIP_TEST_IF(glGetError() == GL_OUT_OF_MEMORY);
++    EXPECT_GL_NO_ERROR();
++
++    for (size_t i = 0; i < 16384 * 4; ++i)
++    {
++        EXPECT_EQ(0.5f, data[i]);
++    }
++}
++
+ class ReadPixelsPBONVTest : public ReadPixelsTest
+ {
+   protected:
+diff --git a/src/tests/gl_tests/TextureRectangleTest.cpp b/src/tests/gl_tests/TextureRectangleTest.cpp
+index d0498ad9e6f3d23b193ab08fdb9134fdb68b46b2..5b07409c3effa209638cb434ea5f39d5fe2bb568 100644
+--- a/src/tests/gl_tests/TextureRectangleTest.cpp
++++ b/src/tests/gl_tests/TextureRectangleTest.cpp
+@@ -76,7 +76,8 @@ TEST_P(TextureRectangleTest, TexImage2D)
+         glTexImage2D(GL_TEXTURE_RECTANGLE_ANGLE, 0, GL_RGBA, maxSize, maxSize, 0, GL_RGBA,
+                      GL_UNSIGNED_BYTE, nullptr);
+         GLenum error = glGetError();
+-        ASSERT_TRUE(error == GL_NO_ERROR || error == GL_OUT_OF_MEMORY);
++        ASSERT_TRUE(error == GL_NO_ERROR || error == GL_OUT_OF_MEMORY ||
++                    error == GL_INVALID_OPERATION);
+     }
+ 
+     // Defining a texture of the max size is allowed
+@@ -167,7 +168,8 @@ TEST_P(TextureRectangleTest, TexStorage2D)
+         glBindTexture(GL_TEXTURE_RECTANGLE_ANGLE, tex);
+         TexStorage2D(GL_TEXTURE_RECTANGLE_ANGLE, 1, GL_RGBA8, maxSize, maxSize);
+         GLenum error = glGetError();
+-        ASSERT_TRUE(error == GL_NO_ERROR || error == GL_OUT_OF_MEMORY);
++        ASSERT_TRUE(error == GL_NO_ERROR || error == GL_OUT_OF_MEMORY ||
++                    error == GL_INVALID_OPERATION);
+     }
+ 
+     // Defining a texture of the max size is disallowed
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index 78072262661c546829db05cd0d421c513598e770..66ec587c13345bbae7ff228580f7493d05f98a00 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -5873,7 +5873,7 @@ void Texture2DTest::testTextureSizeError()
+     glBindTexture(GL_TEXTURE_2D, texture);
+     FillLevel(0, max2DSize, max2DSize, GLColor::red, false, false);
+     GLenum err  = glGetError();
+-    bool passed = (err == GL_NO_ERROR || err == GL_OUT_OF_MEMORY);
++    bool passed = (err == GL_NO_ERROR || err == GL_OUT_OF_MEMORY || err == GL_INVALID_OPERATION);
+     ASSERT_TRUE(passed);
+ }
+ 
+@@ -16285,6 +16285,7 @@ TEST_P(TextureCubeTestES32, ValidateCubeMapArrayTexSubImageGreaterThanSizeLimit)
+ 
+     glTexImage3D(GL_TEXTURE_CUBE_MAP_ARRAY, 0, GL_RGBA, maxCubeTextureSize, maxCubeTextureSize, 6,
+                  0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++    ANGLE_SKIP_TEST_IF(glGetError() == GL_INVALID_OPERATION);
+     ASSERT_GL_NO_ERROR();
+ 
+     // TexSubImage3D can take unequal values for width and height for cube map arrays. However, they
+@@ -22219,6 +22220,447 @@ ANGLE_INSTANTIATE_TEST_ES3_AND(
+     Texture2DTestES3_OversizedMipLevels,
+     ES3_OPENGL().enable(Feature::UploadOversizedMipLevelsViaUnpackBuffer),
+     ES3_OPENGLES().enable(Feature::UploadOversizedMipLevelsViaUnpackBuffer));
++class TextureSizeLimitTest : public ANGLETest<>
++{
++  protected:
++    TextureSizeLimitTest() {}
++
++    void runTest(GLenum internalFormat, GLenum format, GLenum type, GLuint bytesPerPixel)
++    {
++        const GLuint kOneMB = 1 << 20;
++        GLuint pixels       = kOneMB / bytesPerPixel;
++        ASSERT_EQ(kOneMB % bytesPerPixel, 0u);
++
++        GLuint validWidth2D  = static_cast<GLuint>(std::floor(std::sqrt(pixels)));
++        GLuint validHeight2D = validWidth2D;
++        ASSERT_LE(validWidth2D * validHeight2D * bytesPerPixel, kOneMB);
++
++        GLuint invalidWidth2D  = static_cast<GLuint>(std::ceil(std::sqrt(pixels + 1)));
++        GLuint invalidHeight2D = invalidWidth2D;
++        ASSERT_GT(invalidWidth2D * invalidHeight2D * bytesPerPixel, kOneMB);
++
++        GLuint validWidth3D  = static_cast<GLuint>(std::floor(std::cbrt(pixels)));
++        GLuint validHeight3D = validWidth3D;
++        GLuint validDepth3D  = validWidth3D;
++        ASSERT_LE(validWidth3D * validHeight3D * validDepth3D * bytesPerPixel, kOneMB);
++
++        GLuint invalidWidth3D  = static_cast<GLuint>(std::ceil(std::cbrt(pixels + 1)));
++        GLuint invalidHeight3D = invalidWidth3D;
++        GLuint invalidDepth3D  = invalidWidth3D;
++        ASSERT_GT(invalidWidth3D * invalidHeight3D * invalidDepth3D * bytesPerPixel, kOneMB);
++
++        GLenum texImageInternalFormat = internalFormat;
++        if (getClientMajorVersion() == 2)
++        {
++            texImageInternalFormat = format;
++        }
++
++        bool es2DepthStencil = getClientMajorVersion() == 2 &&
++                               (format == GL_DEPTH_STENCIL || format == GL_DEPTH_COMPONENT ||
++                                format == GL_STENCIL_INDEX);
++
++        {
++            {
++                GLTexture tex;
++                glBindTexture(GL_TEXTURE_2D, tex);
++                glTexImage2D(GL_TEXTURE_2D, 0, texImageInternalFormat, validWidth2D, validHeight2D,
++                             0, format, type, nullptr);
++                EXPECT_GL_NO_ERROR();
++            }
++            {
++                GLTexture tex;
++                glBindTexture(GL_TEXTURE_2D, tex);
++                glTexImage2D(GL_TEXTURE_2D, 0, texImageInternalFormat, invalidWidth2D,
++                             invalidHeight2D, 0, format, type, nullptr);
++                EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++            }
++
++            if (!es2DepthStencil)
++            {
++                for (unsigned int faceIdx = 0; faceIdx < 6; faceIdx++)
++                {
++                    GLTexture texCube;
++                    glBindTexture(GL_TEXTURE_CUBE_MAP, texCube);
++                    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + faceIdx, 0,
++                                 texImageInternalFormat, validWidth2D, validHeight2D, 0, format,
++                                 type, nullptr);
++                    EXPECT_GL_NO_ERROR();
++                }
++
++                for (unsigned int faceIdx = 0; faceIdx < 6; faceIdx++)
++                {
++                    GLTexture texCube;
++                    glBindTexture(GL_TEXTURE_CUBE_MAP, texCube);
++                    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + faceIdx, 0,
++                                 texImageInternalFormat, invalidWidth2D, invalidHeight2D, 0, format,
++                                 type, nullptr);
++                    EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++                }
++            }
++        }
++
++        if (EnsureGLExtensionEnabled("GL_EXT_texture_storage"))
++        {
++            {
++                GLTexture texStorageEXT;
++                glBindTexture(GL_TEXTURE_2D, texStorageEXT);
++                glTexStorage2DEXT(GL_TEXTURE_2D, 1, internalFormat, validWidth2D, validHeight2D);
++                EXPECT_GL_NO_ERROR();
++            }
++
++            {
++                GLTexture texStorageEXTFail;
++                glBindTexture(GL_TEXTURE_2D, texStorageEXTFail);
++                glTexStorage2DEXT(GL_TEXTURE_2D, 1, internalFormat, invalidWidth2D,
++                                  invalidHeight2D);
++                EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++            }
++
++            if (!es2DepthStencil)
++            {
++                {
++                    GLTexture texStorageEXTCubeMap;
++                    glBindTexture(GL_TEXTURE_CUBE_MAP, texStorageEXTCubeMap);
++                    glTexStorage2DEXT(GL_TEXTURE_CUBE_MAP, 1, internalFormat, validWidth2D,
++                                      validHeight2D);
++                    EXPECT_GL_NO_ERROR();
++                }
++
++                {
++                    GLTexture texStorageEXTFailCubeMap;
++                    glBindTexture(GL_TEXTURE_CUBE_MAP, texStorageEXTFailCubeMap);
++                    glTexStorage2DEXT(GL_TEXTURE_CUBE_MAP, 1, internalFormat, invalidWidth2D,
++                                      invalidHeight2D);
++                    EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++                }
++            }
++        }
++
++        if (getClientMajorVersion() >= 3)
++        {
++            {
++                GLTexture texStorage;
++                glBindTexture(GL_TEXTURE_2D, texStorage);
++                glTexStorage2D(GL_TEXTURE_2D, 1, internalFormat, validWidth2D, validHeight2D);
++                EXPECT_GL_NO_ERROR();
++            }
++
++            {
++                GLTexture texStorageFail;
++                glBindTexture(GL_TEXTURE_2D, texStorageFail);
++                glTexStorage2D(GL_TEXTURE_2D, 1, internalFormat, invalidWidth2D, invalidHeight2D);
++                EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++            }
++
++            if (format != GL_DEPTH_STENCIL && format != GL_DEPTH_COMPONENT)
++            {
++                {
++                    GLTexture tex3D;
++                    glBindTexture(GL_TEXTURE_3D, tex3D);
++                    glTexImage3D(GL_TEXTURE_3D, 0, internalFormat, validWidth3D, validHeight3D,
++                                 validDepth3D, 0, format, type, nullptr);
++                    EXPECT_GL_NO_ERROR();
++                }
++                {
++                    GLTexture tex3D;
++                    glBindTexture(GL_TEXTURE_3D, tex3D);
++
++                    glTexImage3D(GL_TEXTURE_3D, 0, internalFormat, invalidWidth3D, invalidHeight3D,
++                                 invalidDepth3D, 0, format, type, nullptr);
++                    EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++                }
++
++                {
++                    GLTexture texStorage3D;
++                    glBindTexture(GL_TEXTURE_3D, texStorage3D);
++                    glTexStorage3D(GL_TEXTURE_3D, 1, internalFormat, validWidth3D, validHeight3D,
++                                   validDepth3D);
++                    EXPECT_GL_NO_ERROR();
++                }
++
++                {
++                    GLTexture texStorage3DFail;
++                    glBindTexture(GL_TEXTURE_3D, texStorage3DFail);
++                    glTexStorage3D(GL_TEXTURE_3D, 1, internalFormat, invalidWidth3D,
++                                   invalidHeight3D, invalidDepth3D);
++                    EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++                }
++
++                if (EnsureGLExtensionEnabled("GL_EXT_texture_storage") &&
++                    EnsureGLExtensionEnabled("GL_OES_texture_3D"))
++                {
++                    {
++                        GLTexture texStorage3DEXT;
++                        glBindTexture(GL_TEXTURE_3D, texStorage3DEXT);
++                        glTexStorage3DEXT(GL_TEXTURE_3D, 1, internalFormat, validWidth3D,
++                                          validHeight3D, validDepth3D);
++                        EXPECT_GL_NO_ERROR();
++                    }
++
++                    {
++                        GLTexture texStorage3DEXTFail;
++                        glBindTexture(GL_TEXTURE_3D, texStorage3DEXTFail);
++                        glTexStorage3DEXT(GL_TEXTURE_3D, 1, internalFormat, invalidWidth3D,
++                                          invalidHeight3D, invalidDepth3D);
++                        EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++                    }
++                }
++            }
++        }
++
++        if (EnsureGLExtensionEnabled("GL_ANGLE_texture_multisample"))
++        {
++            {
++                GLTexture texStorage2DMultisample;
++                glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texStorage2DMultisample);
++                glTexStorage2DMultisampleANGLE(GL_TEXTURE_2D_MULTISAMPLE, 1, internalFormat,
++                                               validWidth2D, validHeight2D, GL_TRUE);
++                EXPECT_GL_NO_ERROR();
++            }
++            {
++                GLTexture texStorage2DMultisampleFail;
++                glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texStorage2DMultisampleFail);
++                glTexStorage2DMultisampleANGLE(GL_TEXTURE_2D_MULTISAMPLE, 2, internalFormat,
++                                               validWidth2D, validHeight2D, GL_TRUE);
++                EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++            }
++        }
++
++        if (EnsureGLExtensionEnabled("GL_OES_texture_storage_multisample_2d_array"))
++        {
++            {
++                GLTexture texStorage3DMultisample;
++                glBindTexture(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, texStorage3DMultisample);
++                glTexStorage3DMultisampleOES(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, 1, internalFormat,
++                                             validWidth3D, validHeight3D, validDepth3D, GL_TRUE);
++                EXPECT_GL_NO_ERROR();
++            }
++            {
++                GLTexture texStorage3DMultisampleFail;
++                glBindTexture(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, texStorage3DMultisampleFail);
++                glTexStorage3DMultisampleOES(GL_TEXTURE_2D_MULTISAMPLE_ARRAY, 2, internalFormat,
++                                             validWidth3D, validHeight3D, validDepth3D, GL_TRUE);
++                EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++            }
++        }
++    }
++
++    void runCompressedTest(GLenum internalFormat,
++                           GLuint pixelsPerBlockWidth,
++                           GLuint pixelsPerBlockHeight,
++                           GLuint blockBytes)
++    {
++        const GLuint kOneMB = 1 << 20;
++        GLuint blocks       = kOneMB / blockBytes;
++        ASSERT_EQ(kOneMB % blockBytes, 0u);
++
++        GLuint validWidth2D =
++            static_cast<GLuint>(std::floor(std::sqrt(blocks))) * pixelsPerBlockWidth;
++        GLuint validHeight2D =
++            static_cast<GLuint>(std::floor(std::sqrt(blocks))) * pixelsPerBlockHeight;
++        GLuint validImageSize = (validWidth2D / pixelsPerBlockWidth) *
++                                (validHeight2D / pixelsPerBlockHeight) * blockBytes;
++        ASSERT_LE(validImageSize, kOneMB);
++        std::vector<uint8_t> validData(validImageSize, 0);
++
++        GLuint invalidWidth2D =
++            static_cast<GLuint>(std::ceil(std::sqrt(blocks + 1))) * pixelsPerBlockWidth;
++        GLuint invalidHeight2D =
++            static_cast<GLuint>(std::ceil(std::sqrt(blocks + 1))) * pixelsPerBlockHeight;
++        GLuint invalidImageSize = (invalidWidth2D / pixelsPerBlockWidth) *
++                                  (invalidHeight2D / pixelsPerBlockHeight) * blockBytes;
++        ASSERT_GT(invalidImageSize, kOneMB);
++        std::vector<uint8_t> invalidData(invalidImageSize, 0);
++
++        {
++            {
++                GLTexture tex;
++                glBindTexture(GL_TEXTURE_2D, tex);
++                glCompressedTexImage2D(GL_TEXTURE_2D, 0, internalFormat, validWidth2D,
++                                       validHeight2D, 0, validImageSize, validData.data());
++                EXPECT_GL_NO_ERROR();
++            }
++            {
++                GLTexture tex;
++                glBindTexture(GL_TEXTURE_2D, tex);
++                glCompressedTexImage2D(GL_TEXTURE_2D, 0, internalFormat, invalidWidth2D,
++                                       invalidHeight2D, 0, invalidImageSize, invalidData.data());
++                EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++            }
++        }
++
++        if (EnsureGLExtensionEnabled("GL_EXT_texture_storage"))
++        {
++            {
++                GLTexture texStorageEXT;
++                glBindTexture(GL_TEXTURE_2D, texStorageEXT);
++                glTexStorage2DEXT(GL_TEXTURE_2D, 1, internalFormat, validWidth2D, validHeight2D);
++                EXPECT_GL_NO_ERROR();
++            }
++
++            {
++                GLTexture texStorageEXTFail;
++                glBindTexture(GL_TEXTURE_2D, texStorageEXTFail);
++                glTexStorage2DEXT(GL_TEXTURE_2D, 1, internalFormat, invalidWidth2D,
++                                  invalidHeight2D);
++                EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++            }
++        }
++
++        if (getClientMajorVersion() >= 3)
++        {
++            {
++                GLTexture texStorage;
++                glBindTexture(GL_TEXTURE_2D, texStorage);
++                glTexStorage2D(GL_TEXTURE_2D, 1, internalFormat, validWidth2D, validHeight2D);
++                EXPECT_GL_NO_ERROR();
++            }
++
++            {
++                GLTexture texStorageFail;
++                glBindTexture(GL_TEXTURE_2D, texStorageFail);
++                glTexStorage2D(GL_TEXTURE_2D, 1, internalFormat, invalidWidth2D, invalidHeight2D);
++                EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++            }
++        }
++    }
++
++    void runRenderbufferTest(GLenum sizedInternalFormat, GLuint bytesPerPixel)
++    {
++        const GLuint kOneMB = 1 << 20;
++        GLuint pixels       = kOneMB / bytesPerPixel;
++        ASSERT_EQ(kOneMB % bytesPerPixel, 0u);
++
++        GLuint validWidth2D  = static_cast<GLuint>(std::floor(std::sqrt(pixels)));
++        GLuint validHeight2D = validWidth2D;
++        ASSERT_LE(validWidth2D * validHeight2D * bytesPerPixel, kOneMB);
++
++        GLuint invalidWidth2D  = static_cast<GLuint>(std::ceil(std::sqrt(pixels + 1)));
++        GLuint invalidHeight2D = invalidWidth2D;
++        ASSERT_GT(invalidWidth2D * invalidHeight2D * bytesPerPixel, kOneMB);
++
++        {
++            {
++                GLRenderbuffer rb;
++                glBindRenderbuffer(GL_RENDERBUFFER, rb);
++                glRenderbufferStorage(GL_RENDERBUFFER, sizedInternalFormat, validWidth2D,
++                                      validHeight2D);
++                EXPECT_GL_NO_ERROR();
++            }
++            {
++                GLRenderbuffer rb;
++                glBindRenderbuffer(GL_RENDERBUFFER, rb);
++                glRenderbufferStorage(GL_RENDERBUFFER, sizedInternalFormat, invalidWidth2D,
++                                      invalidHeight2D);
++                EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++            }
++        }
++
++        if (getClientMajorVersion() >= 3)
++        {
++            {
++                GLRenderbuffer rb;
++                glBindRenderbuffer(GL_RENDERBUFFER, rb);
++                glRenderbufferStorageMultisample(GL_RENDERBUFFER, 1, sizedInternalFormat,
++                                                 validWidth2D, validHeight2D);
++                EXPECT_GL_NO_ERROR();
++            }
++            {
++                GLRenderbuffer rb;
++                glBindRenderbuffer(GL_RENDERBUFFER, rb);
++                glRenderbufferStorageMultisample(GL_RENDERBUFFER, 2, sizedInternalFormat,
++                                                 validWidth2D, validHeight2D);
++                EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++            }
++        }
++        else if (EnsureGLExtensionEnabled("GL_ANGLE_framebuffer_multisample"))
++        {
++            {
++                GLRenderbuffer rb;
++                glBindRenderbuffer(GL_RENDERBUFFER, rb);
++                glRenderbufferStorageMultisampleANGLE(GL_RENDERBUFFER, 1, sizedInternalFormat,
++                                                      validWidth2D, validHeight2D);
++                EXPECT_GL_NO_ERROR();
++            }
++            {
++                GLRenderbuffer rb;
++                glBindRenderbuffer(GL_RENDERBUFFER, rb);
++                glRenderbufferStorageMultisampleANGLE(GL_RENDERBUFFER, 2, sizedInternalFormat,
++                                                      validWidth2D, validHeight2D);
++                EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++            }
++        }
++
++        if (EnsureGLExtensionEnabled("GL_EXT_multisampled_render_to_texture"))
++        {
++            {
++                GLRenderbuffer rb;
++                glBindRenderbuffer(GL_RENDERBUFFER, rb);
++                glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER, 1, sizedInternalFormat,
++                                                    validWidth2D, validHeight2D);
++                EXPECT_GL_NO_ERROR();
++            }
++            {
++                GLRenderbuffer rb;
++                glBindRenderbuffer(GL_RENDERBUFFER, rb);
++                glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER, 2, sizedInternalFormat,
++                                                    validWidth2D, validHeight2D);
++                EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++            }
++        }
++    }
++};
++
++// Test texture allocation size limits with RGBA8
++TEST_P(TextureSizeLimitTest, RGBA8)
++{
++    runTest(GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, 4);
++    runRenderbufferTest(GL_RGBA8, 4);
++}
++
++// Test texture allocation size limits with RGB565
++TEST_P(TextureSizeLimitTest, RGB565)
++{
++    runTest(GL_RGB565, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, 2);
++    runRenderbufferTest(GL_RGB565, 2);
++}
++
++// Test texture allocation size limits with RGBA16F
++TEST_P(TextureSizeLimitTest, RGBA16F)
++{
++    ANGLE_SKIP_TEST_IF(getClientMajorVersion() < 3);
++    runTest(GL_RGBA16F, GL_RGBA, GL_HALF_FLOAT, 8);
++}
++
++// Test texture allocation size limits with RGBA32F
++TEST_P(TextureSizeLimitTest, RGBA32F)
++{
++    ANGLE_SKIP_TEST_IF(getClientMajorVersion() < 3);
++    runTest(GL_RGBA32F, GL_RGBA, GL_FLOAT, 16);
++}
++
++// Test texture allocation size limits with D24S8
++TEST_P(TextureSizeLimitTest, Depth24Stencil8)
++{
++    ANGLE_SKIP_TEST_IF(getClientMajorVersion() < 3 &&
++                       !EnsureGLExtensionEnabled("GL_OES_packed_depth_stencil"));
++    runTest(GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, 4);
++    runRenderbufferTest(GL_DEPTH24_STENCIL8, 4);
++}
++
++// Test texture allocation size limits with DXT5
++TEST_P(TextureSizeLimitTest, CompressedDXT5)
++{
++    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_EXT_texture_compression_s3tc"));
++    runCompressedTest(GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, 4, 4, 16);
++}
++
++// Test texture allocation size limits with ASTC5X5
++TEST_P(TextureSizeLimitTest, CompressedASTC)
++{
++    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_KHR_texture_compression_astc_ldr"));
++    runCompressedTest(GL_COMPRESSED_RGBA_ASTC_5x5_KHR, 5, 5, 16);
++}
+ 
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TextureSizeLimitTest);
+ ANGLE_INSTANTIATE_TEST(TextureSizeLimitTest,
+diff --git a/src/tests/gl_tests/TransformFeedbackTest.cpp b/src/tests/gl_tests/TransformFeedbackTest.cpp
+index f7d5196f86d8f7be6135fa0f96062c8714e79533..4c058c4d1e49818783eae997e13cb9485ce8b112 100644
+--- a/src/tests/gl_tests/TransformFeedbackTest.cpp
++++ b/src/tests/gl_tests/TransformFeedbackTest.cpp
+@@ -2805,7 +2805,7 @@ TEST_P(TransformFeedbackTest, BufferOutOfMemory)
+ 
+     // It's not spec guaranteed to return OOM here.
+     GLenum err = glGetError();
+-    EXPECT_TRUE(err == GL_NO_ERROR || err == GL_OUT_OF_MEMORY);
++    EXPECT_TRUE(err == GL_NO_ERROR || err == GL_OUT_OF_MEMORY || err == GL_INVALID_OPERATION);
+ 
+     glBeginTransformFeedback(GL_POINTS);
+     glDrawArrays(GL_POINTS, 0, 5);
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index 74e90d666fd76b3331973e32f76a64d09e19ac63..1772a72daa8af2c089fd15c4c295af7f9a3d4e90 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -236,11 +236,13 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::IsVertexSyncDeferred, "isVertexSyncDeferred"},
+     {Feature::KeepBufferShadowCopy, "keepBufferShadowCopy"},
+     {Feature::LimitMax3dArrayTextureSizeTo1024, "limitMax3dArrayTextureSizeTo1024"},
++    {Feature::LimitMaxBufferBytesTo1MB, "limitMaxBufferBytesTo1MB"},
+     {Feature::LimitMaxBufferSizeTo1gb, "limitMaxBufferSizeTo1gb"},
+     {Feature::LimitMaxColorTargetBitsForTesting, "limitMaxColorTargetBitsForTesting"},
+     {Feature::LimitMaxDrawBuffersForTesting, "limitMaxDrawBuffersForTesting"},
+     {Feature::LimitMaxMSAASamplesTo4, "limitMaxMSAASamplesTo4"},
+     {Feature::LimitMaxStorageBufferSize, "limitMaxStorageBufferSize"},
++    {Feature::LimitMaxTextureBytesTo1MB, "limitMaxTextureBytesTo1MB"},
+     {Feature::LimitOutputVaryingsTo256AtCompileTime, "limitOutputVaryingsTo256AtCompileTime"},
+     {Feature::LimitSampleCountTo2, "limitSampleCountTo2"},
+     {Feature::LimitWebglMaxTextureSizeTo4096, "limitWebglMaxTextureSizeTo4096"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index 4d3a6f4706f855c30063a91af9c83a72818b50ea..18fdfa1783fa57a4d075740da2d83e144eaaae81 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -236,11 +236,13 @@ enum class Feature
+     IsVertexSyncDeferred,
+     KeepBufferShadowCopy,
+     LimitMax3dArrayTextureSizeTo1024,
++    LimitMaxBufferBytesTo1MB,
+     LimitMaxBufferSizeTo1gb,
+     LimitMaxColorTargetBitsForTesting,
+     LimitMaxDrawBuffersForTesting,
+     LimitMaxMSAASamplesTo4,
+     LimitMaxStorageBufferSize,
++    LimitMaxTextureBytesTo1MB,
+     LimitOutputVaryingsTo256AtCompileTime,
+     LimitSampleCountTo2,
+     LimitWebglMaxTextureSizeTo4096,

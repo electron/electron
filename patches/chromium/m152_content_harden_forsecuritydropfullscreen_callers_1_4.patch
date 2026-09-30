@@ -1,0 +1,521 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jordan Bayles <jophba@chromium.org>
+Date: Tue, 22 Sep 2026 16:44:15 -0700
+Subject: [M152] content: Harden ForSecurityDropFullscreen callers (1/4)
+
+Original change's description:
+> content: Harden ForSecurityDropFullscreen callers (1/4)
+>
+> WebContents::ForSecurityDropFullscreen() drops fullscreen across the
+> opener chain. On some platforms and configurations, exiting fullscreen
+> spins a nested message loop or synchronously runs event handlers, which
+> can destroy the initiating RenderFrameHost, reset the delegate, or close
+> the browser window out from under the caller.
+>
+> This CL hardens the //content callers:
+>
+> * EnumerateDirectory() revalidates the initiating frame after the drop.
+>   The pre-existing absl::Cleanup answers the FileSelectListener on every
+>   early return, so the renderer's reply callback is not leaked on this
+>   new bail-out path; the browsertest now asserts that explicitly. The
+>   frame pointer is also typed as RenderFrameHostImpl* so that a WeakPtr
+>   can be taken, and the non-null invariant its sole caller guarantees is
+>   now spelled out with a CHECK.
+> * ShowCreatedWindow() retrieves the delegate after dropping fullscreen,
+>   and null-checks it in case the drop reset it.
+> * ViewSource(), SetWindowRect(), MoveWindowTo() and ResizeWindowTo()
+>   null-check the delegate before using it.
+>
+> Part 1 of a four-part audit of ForSecurityDropFullscreen callers:
+>   1/4 //content (this CL)
+>   2/4 //chrome mechanical caller hardening
+>   3/4 device chooser bubble
+>   4/4 cast dialog
+> A follow-up will add a continuation-based API (DropFullscreenAndThen) so
+> that callers cannot get this wrong by construction.
+>
+> TAG=agy
+> CONV=295b160f-d3d8-4d61-8821-75fd7227c588
+>
+> Fixed: 560867085
+> Change-Id: I0c514f7a998b2d7f8202142e38a8d88cd0370801
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8411781
+> Commit-Queue: Jordan Bayles <jophba@chromium.org>
+> Reviewed-by: Nasko Oskov <nasko@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1703065}
+
+(cherry picked from commit e30ba4987800783f96080ee66d0236d36c4f82a8)
+
+Bug: 566047502,560867085
+Change-Id: I0c514f7a998b2d7f8202142e38a8d88cd0370801
+
+Electron adaptation notes (42-x-y):
+WebContentsImpl::MoveWindowTo()/ResizeWindowTo() do not exist on this
+branch, so those two hunks were dropped. The branch already carried a
+weak-frame guard in ViewSource() (from an earlier backport) at the old
+call site; it was removed in favour of the upstream block at its new,
+earlier position. Browser test conflicts (includes and new tests) were
+taken from upstream.
+
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 038703e8c671964c7492981f9b5e400dd7b391b7..79a70a2019f40bf9fe79c9108b082bf04039566e 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -5852,10 +5852,6 @@ WebContents* WebContentsImpl::ShowCreatedWindow(
+ 
+   WebContentsImpl* created = owned_created->contents.get();
+ 
+-  // This uses the delegate for the WebContents where the window was created
+-  // from, to control how to show the newly created window.
+-  WebContentsDelegate* delegate = GetDelegate();
+-
+   // Individual members of |window_features.bounds| may be 0 to indicate that
+   // the window.open() feature string did not specify a value. This code does
+   // not distinguish between an unspecified value and 0.
+@@ -5872,7 +5868,11 @@ WebContents* WebContentsImpl::ShowCreatedWindow(
+     return nullptr;
+   }
+ 
+-  // The delegate can be null in tests.
++  // This uses the delegate for the WebContents where the window was created
++  // from, to control how to show the newly created window.
++  // The delegate can be null in tests, or reset if dropping fullscreen executed
++  // event handlers.
++  WebContentsDelegate* delegate = GetDelegate();
+   if (!delegate) {
+     return nullptr;
+   }
+@@ -8294,6 +8294,20 @@ void WebContentsImpl::ViewSource(RenderFrameHostImpl* frame) {
+     return;
+   }
+ 
++  // Any new WebContents opened while this WebContents is in fullscreen can be
++  // used to confuse the user, so drop fullscreen. Dropping fullscreen can run
++  // event handlers synchronously, which may reset `delegate_` or detach
++  // `frame`. Dropping fullscreen before reading NavigationEntries also avoids
++  // holding pointers across the nested message loop.
++  base::WeakPtr<RenderFrameHostImpl> weak_frame = frame->GetWeakPtr();
++  if (!ForSecurityDropFullscreen(/*display_id=*/display::kInvalidDisplayId) ||
++      !delegate_) {
++    return;
++  }
++  if (!weak_frame) {
++    return;
++  }
++
+   // Use the last committed entry, since the pending entry hasn't loaded yet and
+   // won't be copied into the cloned tab.
+   NavigationEntryImpl* last_committed_entry =
+@@ -8308,15 +8322,6 @@ void WebContentsImpl::ViewSource(RenderFrameHostImpl* frame) {
+     return;
+   }
+ 
+-  // Any new WebContents opened while this WebContents is in fullscreen can be
+-  // used to confuse the user, so drop fullscreen.
+-  base::WeakPtr<RenderFrameHostImpl> weak_frame = frame->GetWeakPtr();
+-  if (!ForSecurityDropFullscreen(/*display_id=*/display::kInvalidDisplayId)) {
+-    return;
+-  }
+-  if (!weak_frame) {
+-    return;
+-  }
+ 
+   // We intentionally don't share the SiteInstance with the original frame so
+   // that view source has a consistent process model and always ends up in a new
+@@ -8546,12 +8551,15 @@ void WebContentsImpl::OnPageScaleFactorChanged(PageImpl& source) {
+ 
+ void WebContentsImpl::EnumerateDirectory(
+     base::WeakPtr<FileChooserImpl> file_chooser,
+-    RenderFrameHost* render_frame_host,
++    RenderFrameHostImpl* render_frame_host,
+     scoped_refptr<FileChooserImpl::FileSelectListenerImpl> listener,
+     const base::FilePath& directory_path) {
+   OPTIONAL_TRACE_EVENT2("content", "WebContentsImpl::EnumerateDirectory",
+                         "render_frame_host", render_frame_host,
+                         "directory_path", directory_path);
++  // The sole caller, FileChooserImpl::EnumerateChosenDirectory(), returns
++  // early if its frame is gone, and dereferences it on the way here.
++  CHECK(render_frame_host);
+   absl::Cleanup cancel_chooser = [&listener] {
+     listener->FileSelectionCanceled();
+   };
+@@ -8569,10 +8577,13 @@ void WebContentsImpl::EnumerateDirectory(
+   }
+ 
+   // Any explicit focusing of another window while this WebContents is in
+-  // fullscreen can be used to confuse the user, so drop fullscreen.
++  // fullscreen can be used to confuse the user, so drop fullscreen. Dropping
++  // fullscreen can run event handlers synchronously, which may detach the
++  // frame that asked for the directory listing.
++  base::WeakPtr<RenderFrameHostImpl> weak_rfh = render_frame_host->GetWeakPtr();
+   auto blocker =
+       ForSecurityDropFullscreen(/*display_id=*/display::kInvalidDisplayId);
+-  if (!blocker) {
++  if (!blocker || !weak_rfh || !weak_rfh->IsActive()) {
+     return;
+   }
+   listener->SetFullscreenBlock(std::move(*blocker));
+@@ -9816,7 +9827,7 @@ void WebContentsImpl::SetWindowRect(const gfx::Rect& new_bounds) {
+   // Only drop fullscreen on the specific destination display, which is known.
+   // This supports sites using cross-screen window management capabilities to
+   // retain fullscreen and place a window on another screen.
+-  if (!ForSecurityDropFullscreen(display_id)) {
++  if (!ForSecurityDropFullscreen(display_id) || !delegate_) {
+     return;
+   }
+ 
+diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
+index b6110376336d25a455b3fff1b969ce43aae9eac4..fa0d40872dc96f2d78b764cdb1f1c1529b3a1cf5 100644
+--- a/content/browser/web_contents/web_contents_impl.h
++++ b/content/browser/web_contents/web_contents_impl.h
+@@ -1488,7 +1488,7 @@ class CONTENT_EXPORT WebContentsImpl
+   // directory.
+   void EnumerateDirectory(
+       base::WeakPtr<FileChooserImpl> file_chooser,
+-      RenderFrameHost* render_frame_host,
++      RenderFrameHostImpl* render_frame_host,
+       scoped_refptr<FileChooserImpl::FileSelectListenerImpl> listener,
+       const base::FilePath& directory_path);
+ 
+diff --git a/content/browser/web_contents/web_contents_impl_browsertest.cc b/content/browser/web_contents/web_contents_impl_browsertest.cc
+index 10c4e803c676ad56e9d19d47fb4b8e5017e149fa..108f3473a3d2dd6477ca16194fa11906599224a5 100644
+--- a/content/browser/web_contents/web_contents_impl_browsertest.cc
++++ b/content/browser/web_contents/web_contents_impl_browsertest.cc
+@@ -53,6 +53,9 @@
+ #include "content/browser/renderer_host/render_widget_host_view_base.h"
+ #include "content/browser/renderer_host/render_widget_host_view_child_frame.h"
+ #include "content/browser/renderer_host/text_input_manager.h"
++#include "content/browser/surface_embed/surface_embed_connector_impl.h"
++#include "content/browser/web_contents/file_chooser_impl.h"
++#include "content/browser/web_contents/web_contents_impl.h"
+ #include "content/browser/web_contents/web_contents_view.h"
+ #include "content/common/content_navigation_policy.h"
+ #include "content/common/frame.mojom-test-utils.h"
+@@ -117,6 +120,8 @@
+ #include "services/network/public/cpp/features.h"
+ #include "services/network/public/mojom/web_client_hints_types.mojom.h"
+ #include "testing/gmock/include/gmock/gmock.h"
++#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/abseil-cpp/absl/cleanup/cleanup.h"
+ #include "third_party/blink/public/common/client_hints/client_hints.h"
+ #include "third_party/blink/public/common/features.h"
+ #include "third_party/blink/public/common/page/page_zoom.h"
+@@ -8606,4 +8611,318 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
+   EXPECT_FALSE(popup_rwh);
+ }
+ 
++class DestroyTargetOnFullscreenExitDelegate : public WebContentsDelegate {
++ public:
++  DestroyTargetOnFullscreenExitDelegate(WebContentsDelegate* original_delegate,
++                                        Shell* target_to_destroy)
++      : original_delegate_(original_delegate),
++        target_to_destroy_(target_to_destroy) {}
++
++  void ExitFullscreenModeForTab(WebContents* web_contents) override {
++    if (target_to_destroy_) {
++      target_to_destroy_->Close();
++      target_to_destroy_ = nullptr;
++    }
++    if (original_delegate_) {
++      original_delegate_->ExitFullscreenModeForTab(web_contents);
++    }
++  }
++
++  FullscreenState GetFullscreenState(
++      const WebContents* web_contents) const override {
++    if (original_delegate_) {
++      return original_delegate_->GetFullscreenState(web_contents);
++    }
++    return FullscreenState();
++  }
++
++  bool IsFullscreenForTabOrPending(const WebContents* web_contents) override {
++    if (original_delegate_) {
++      return original_delegate_->IsFullscreenForTabOrPending(web_contents);
++    }
++    return false;
++  }
++
++ private:
++  raw_ptr<WebContentsDelegate> original_delegate_;
++  raw_ptr<Shell, DisableDanglingPtrDetection> target_to_destroy_;
++};
++
++IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
++                       ForSecurityDropFullscreenUAF) {
++  ASSERT_TRUE(embedded_test_server()->Start());
++  GURL url(embedded_test_server()->GetURL("/title1.html"));
++  EXPECT_TRUE(NavigateToURL(shell(), url));
++
++  WebContentsImpl* opener_contents =
++      static_cast<WebContentsImpl*>(shell()->web_contents());
++
++  ShellAddedObserver new_shell_observer;
++  EXPECT_TRUE(ExecJs(opener_contents, "window.open('about:blank', 'popup')"));
++  Shell* popup_shell = new_shell_observer.GetShell();
++  WebContentsImpl* popup_contents =
++      static_cast<WebContentsImpl*>(popup_shell->web_contents());
++
++  EXPECT_EQ(opener_contents,
++            popup_contents->GetFirstWebContentsInLiveOriginalOpenerChain());
++
++  FullscreenWebContentsObserver observer(
++      opener_contents, opener_contents->GetPrimaryMainFrame());
++  EXPECT_TRUE(ExecJs(opener_contents->GetPrimaryMainFrame(),
++                     "document.body.webkitRequestFullscreen();"));
++  observer.Wait();
++  EXPECT_TRUE(opener_contents->IsFullscreen());
++
++  DestroyTargetOnFullscreenExitDelegate intercepting_delegate(
++      opener_contents->GetDelegate(), popup_shell);
++  opener_contents->SetDelegate(&intercepting_delegate);
++
++  base::WeakPtr<WebContents> weak_popup = popup_contents->GetWeakPtr();
++
++  auto blocker = popup_contents->ForSecurityDropFullscreen(
++      /*display_id=*/display::kInvalidDisplayId);
++
++  EXPECT_EQ(weak_popup, nullptr);
++  EXPECT_FALSE(blocker.has_value());
++
++  if (opener_contents) {
++    opener_contents->SetDelegate(shell());
++  }
++}
++
++// Simulates a delegate that removes an iframe synchronously upon exiting
++// fullscreen.
++class DetachFrameOnFullscreenExitDelegate : public WebContentsDelegate {
++ public:
++  DetachFrameOnFullscreenExitDelegate(WebContentsDelegate* original_delegate,
++                                      WebContents* target_contents)
++      : original_delegate_(original_delegate),
++        target_contents_(target_contents) {}
++
++  void ExitFullscreenModeForTab(WebContents* web_contents) override {
++    if (target_contents_) {
++      EXPECT_TRUE(ExecJs(target_contents_,
++                         "document.querySelector('iframe').remove();"));
++      target_contents_ = nullptr;
++    }
++    if (original_delegate_) {
++      original_delegate_->ExitFullscreenModeForTab(web_contents);
++    }
++  }
++
++  FullscreenState GetFullscreenState(
++      const WebContents* web_contents) const override {
++    if (original_delegate_) {
++      return original_delegate_->GetFullscreenState(web_contents);
++    }
++    return FullscreenState();
++  }
++
++  bool IsFullscreenForTabOrPending(const WebContents* web_contents) override {
++    if (original_delegate_) {
++      return original_delegate_->IsFullscreenForTabOrPending(web_contents);
++    }
++    return false;
++  }
++
++ private:
++  raw_ptr<WebContentsDelegate> original_delegate_;
++  raw_ptr<WebContents, DisableDanglingPtrDetection> target_contents_;
++};
++
++IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
++                       RunJavaScriptDialogFrameDetachOnFullscreenExit) {
++  ASSERT_TRUE(embedded_test_server()->Start());
++  GURL url(embedded_test_server()->GetURL("/title1.html"));
++  EXPECT_TRUE(NavigateToURL(shell(), url));
++
++  WebContentsImpl* opener_contents =
++      static_cast<WebContentsImpl*>(shell()->web_contents());
++
++  ShellAddedObserver new_shell_observer;
++  EXPECT_TRUE(ExecJs(opener_contents, "window.open('about:blank', 'popup')"));
++  Shell* popup_shell = new_shell_observer.GetShell();
++  WebContentsImpl* popup_contents =
++      static_cast<WebContentsImpl*>(popup_shell->web_contents());
++
++  EXPECT_EQ(opener_contents,
++            popup_contents->GetFirstWebContentsInLiveOriginalOpenerChain());
++
++  FullscreenWebContentsObserver observer(
++      opener_contents, opener_contents->GetPrimaryMainFrame());
++  EXPECT_TRUE(ExecJs(opener_contents->GetPrimaryMainFrame(),
++                     "document.body.webkitRequestFullscreen();"));
++  observer.Wait();
++  EXPECT_TRUE(opener_contents->IsFullscreen());
++
++  EXPECT_TRUE(ExecJs(popup_contents, R"(
++    new Promise(resolve => {
++      let iframe = document.createElement('iframe');
++      iframe.src = 'about:blank';
++      iframe.onload = resolve;
++      document.body.appendChild(iframe);
++    });
++  )"));
++
++  RenderFrameHostImpl* child_rfh = static_cast<RenderFrameHostImpl*>(
++      ChildFrameAt(popup_contents->GetPrimaryMainFrame(), 0));
++  ASSERT_TRUE(child_rfh);
++
++  base::WeakPtr<RenderFrameHostImpl> weak_child_rfh = child_rfh->GetWeakPtr();
++
++  DetachFrameOnFullscreenExitDelegate intercepting_delegate(
++      opener_contents->GetDelegate(), popup_contents);
++  opener_contents->SetDelegate(&intercepting_delegate);
++
++  popup_contents->RunJavaScriptDialog(
++      child_rfh, u"test message", u"default prompt",
++      JAVASCRIPT_DIALOG_TYPE_ALERT,
++      /*disable_third_party_subframe_suppresion=*/false, base::DoNothing());
++
++  EXPECT_EQ(weak_child_rfh, nullptr);
++
++  if (opener_contents) {
++    opener_contents->SetDelegate(shell());
++  }
++}
++
++IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
++                       RunBeforeUnloadConfirmFrameDetachOnFullscreenExit) {
++  ASSERT_TRUE(embedded_test_server()->Start());
++  GURL url(embedded_test_server()->GetURL("/title1.html"));
++  EXPECT_TRUE(NavigateToURL(shell(), url));
++
++  WebContentsImpl* opener_contents =
++      static_cast<WebContentsImpl*>(shell()->web_contents());
++
++  ShellAddedObserver new_shell_observer;
++  EXPECT_TRUE(ExecJs(opener_contents, "window.open('about:blank', 'popup')"));
++  Shell* popup_shell = new_shell_observer.GetShell();
++  WebContentsImpl* popup_contents =
++      static_cast<WebContentsImpl*>(popup_shell->web_contents());
++
++  EXPECT_EQ(opener_contents,
++            popup_contents->GetFirstWebContentsInLiveOriginalOpenerChain());
++
++  FullscreenWebContentsObserver observer(
++      opener_contents, opener_contents->GetPrimaryMainFrame());
++  EXPECT_TRUE(ExecJs(opener_contents->GetPrimaryMainFrame(),
++                     "document.body.webkitRequestFullscreen();"));
++  observer.Wait();
++  EXPECT_TRUE(opener_contents->IsFullscreen());
++
++  EXPECT_TRUE(ExecJs(popup_contents, R"(
++    new Promise(resolve => {
++      let iframe = document.createElement('iframe');
++      iframe.src = 'about:blank';
++      iframe.onload = resolve;
++      document.body.appendChild(iframe);
++    });
++  )"));
++
++  RenderFrameHostImpl* child_rfh = static_cast<RenderFrameHostImpl*>(
++      ChildFrameAt(popup_contents->GetPrimaryMainFrame(), 0));
++  ASSERT_TRUE(child_rfh);
++
++  base::WeakPtr<RenderFrameHostImpl> weak_child_rfh = child_rfh->GetWeakPtr();
++
++  DetachFrameOnFullscreenExitDelegate intercepting_delegate(
++      opener_contents->GetDelegate(), popup_contents);
++  opener_contents->SetDelegate(&intercepting_delegate);
++
++  popup_contents->RunBeforeUnloadConfirm(child_rfh, /*is_reload=*/false,
++                                         base::DoNothing());
++
++  EXPECT_EQ(weak_child_rfh, nullptr);
++
++  if (opener_contents) {
++    opener_contents->SetDelegate(shell());
++  }
++}
++
++// Tracks whether FileSelectionCanceled() was called.
++class CancellationTrackingFileSelectListener
++    : public FileChooserImpl::FileSelectListenerImpl {
++ public:
++  CancellationTrackingFileSelectListener()
++      : FileSelectListenerImpl(/*owner=*/nullptr) {}
++
++  bool was_canceled() const { return was_canceled_; }
++
++  // FileChooserImpl::FileSelectListenerImpl:
++  void FileSelectionCanceled() override {
++    was_canceled_ = true;
++    FileSelectListenerImpl::FileSelectionCanceled();
++  }
++
++ protected:
++  ~CancellationTrackingFileSelectListener() override = default;
++
++ private:
++  bool was_canceled_ = false;
++};
++
++IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
++                       EnumerateDirectoryFrameDetachOnFullscreenExit) {
++  ASSERT_TRUE(embedded_test_server()->Start());
++  GURL url(embedded_test_server()->GetURL("/title1.html"));
++  EXPECT_TRUE(NavigateToURL(shell(), url));
++
++  WebContentsImpl* opener_contents =
++      static_cast<WebContentsImpl*>(shell()->web_contents());
++
++  ShellAddedObserver new_shell_observer;
++  EXPECT_TRUE(ExecJs(opener_contents, "window.open('about:blank', 'popup')"));
++  Shell* popup_shell = new_shell_observer.GetShell();
++  WebContentsImpl* popup_contents =
++      static_cast<WebContentsImpl*>(popup_shell->web_contents());
++
++  EXPECT_EQ(opener_contents,
++            popup_contents->GetFirstWebContentsInLiveOriginalOpenerChain());
++
++  FullscreenWebContentsObserver observer(
++      opener_contents, opener_contents->GetPrimaryMainFrame());
++  EXPECT_TRUE(ExecJs(opener_contents->GetPrimaryMainFrame(),
++                     "document.body.webkitRequestFullscreen();"));
++  observer.Wait();
++  EXPECT_TRUE(opener_contents->IsFullscreen());
++
++  EXPECT_TRUE(ExecJs(popup_contents, R"(
++    new Promise(resolve => {
++      let iframe = document.createElement('iframe');
++      iframe.src = 'about:blank';
++      iframe.onload = resolve;
++      document.body.appendChild(iframe);
++    });
++  )"));
++
++  RenderFrameHostImpl* child_rfh = static_cast<RenderFrameHostImpl*>(
++      ChildFrameAt(popup_contents->GetPrimaryMainFrame(), 0));
++  ASSERT_TRUE(child_rfh);
++
++  base::WeakPtr<RenderFrameHostImpl> weak_child_rfh = child_rfh->GetWeakPtr();
++
++  DetachFrameOnFullscreenExitDelegate intercepting_delegate(
++      opener_contents->GetDelegate(), popup_contents);
++  opener_contents->SetDelegate(&intercepting_delegate);
++  // `intercepting_delegate` lives on the stack, so it must be detached before
++  // this scope ends no matter how the test exits.
++  absl::Cleanup restore_delegate = [opener_contents, shell = shell()] {
++    opener_contents->SetDelegate(shell);
++  };
++
++  auto listener =
++      base::MakeRefCounted<CancellationTrackingFileSelectListener>();
++  // EnumerateDirectory() calls ForSecurityDropFullscreen() to prevent
++  // fullscreen spoofing. Because `opener_contents` is in the opener chain of
++  // `popup_contents` and is currently in fullscreen,
++  // ForSecurityDropFullscreen() asks `opener_contents` to exit fullscreen.
++  popup_contents->EnumerateDirectory(nullptr, child_rfh, listener,
++                                     base::FilePath());
++
++  EXPECT_EQ(weak_child_rfh, nullptr);
++  // Ensure the listener is answered to avoid leaking the Mojo callback.
++  EXPECT_TRUE(listener->was_canceled());
++}
++
+ }  // namespace content

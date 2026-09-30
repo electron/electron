@@ -1,0 +1,240 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Greg Thompson <grt@chromium.org>
+Date: Thu, 24 Sep 2026 01:37:45 -0700
+Subject: [M152] ipcz: Correct transport trust and handle ownership for
+ elevated peers
+
+Original change's description:
+> ipcz: Correct transport trust and handle ownership for elevated peers
+>
+> Invitation::Accept previously marked its transport toward the broker
+> with is_peer_trusted=true unconditionally. When the acceptor is
+> elevated, the broker is less privileged than the acceptor and should not
+> be implicitly marked as trusted. Accept now sets is_peer_trusted based
+> on whether the acceptor is elevated.
+>
+> Additionally, Transport::DecodeHandle now verifies that a broker peer is
+> at least as privileged as the local endpoint (i.e., the local endpoint
+> is not elevated relative to the broker) before accepting recipient-owned
+> handles. Transport::SerializeObject is also updated to encode handles as
+> kSender when the peer is elevated, allowing the more privileged peer to
+> handle duplication.
+>
+> TAG=agy
+> CONV=8d028134-aff6-4d3b-8bf4-242a5e547742
+>
+> Bug: 517312707
+> Change-Id: I2967947a9a859f56eb596a22635083105a778c57
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8362500
+> Commit-Queue: Greg Thompson <grt@chromium.org>
+> Reviewed-by: Alex Gough <ajgo@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1694674}
+
+(cherry picked from commit 96c6f3b7f8db8f0e61991ed84c3efcd777d44428)
+
+Bug: 559511098,517312707
+Change-Id: I2967947a9a859f56eb596a22635083105a778c57
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8444637
+Commit-Queue: Greg Thompson <grt@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7977@{#2727}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/mojo/core/ipcz_driver/invitation.cc b/mojo/core/ipcz_driver/invitation.cc
+index 69ec2887f86e5ec39afaa5d51f2de3c92b8ff1f8..0814de89bcf440d7887b9c17213d8d02ab347b98 100644
+--- a/mojo/core/ipcz_driver/invitation.cc
++++ b/mojo/core/ipcz_driver/invitation.cc
+@@ -76,6 +76,8 @@ size_t GetAttachmentIndex(base::span<const uint8_t> name) {
+ struct TransportOptions {
+   bool is_peer_trusted = false;
+   bool is_trusted_by_peer = false;
++  bool is_peer_elevated = false;
++  bool is_elevated = false;
+   bool leak_channel_on_shutdown = false;
+ };
+ 
+@@ -101,6 +103,8 @@ IpczDriverHandle CreateTransportForMojoEndpoint(
+   transport->set_leak_channel_on_shutdown(options.leak_channel_on_shutdown);
+   transport->set_is_peer_trusted(options.is_peer_trusted);
+   transport->set_is_trusted_by_peer(options.is_trusted_by_peer);
++  transport->set_is_peer_elevated(options.is_peer_elevated);
++  transport->set_is_elevated(options.is_elevated);
+   return ObjectBase::ReleaseAsHandle(std::move(transport));
+ }
+ 
+@@ -302,7 +306,11 @@ MojoResult Invitation::Send(
+       {.source = config.is_broker ? Transport::kBroker : Transport::kNonBroker,
+        .destination = is_isolated ? Transport::kBroker : Transport::kNonBroker},
+       *transport_endpoint,
+-      {.is_peer_trusted = is_peer_elevated, .is_trusted_by_peer = true},
++      {
++          .is_peer_trusted = is_peer_elevated,
++          .is_trusted_by_peer = true,
++          .is_peer_elevated = is_peer_elevated,
++      },
+       std::move(remote_process), error_handler, error_handler_context,
+       remote_process_trust);
+   if (transport == IPCZ_INVALID_DRIVER_HANDLE) {
+@@ -414,8 +422,12 @@ MojoHandle Invitation::Accept(
+        .destination = Transport::kBroker},
+       *transport_endpoint,
+       {
+-          .is_peer_trusted = true,
++          // An elevated process is more privileged than the inviting broker, so
++          // it does not implicitly trust that broker. The broker on the other
++          // hand trusts the elevated process.
++          .is_peer_trusted = !is_elevated,
+           .is_trusted_by_peer = is_elevated,
++          .is_elevated = is_elevated,
+           .leak_channel_on_shutdown = leak_transport,
+       });
+   if (transport == IPCZ_INVALID_DRIVER_HANDLE) {
+diff --git a/mojo/core/ipcz_driver/transport.cc b/mojo/core/ipcz_driver/transport.cc
+index 831a7734ccd7ac4afb10070abe33d368f037202e..84fbcb02aa6d844e6a32527f372f37d2f49ac3b6 100644
+--- a/mojo/core/ipcz_driver/transport.cc
++++ b/mojo/core/ipcz_driver/transport.cc
+@@ -201,11 +201,16 @@ std::optional<PlatformHandle> DecodeHandle(HandleData data,
+   }
+ 
+   if (handle_owner == HandleOwner::kRecipient) {
+-    if (from_transport.destination_type() != Transport::kBroker &&
+-        !from_transport.is_peer_trusted() && !remote_process.is_current()) {
+-      // Do not trust non-broker endpoints to send handles which already belong
+-      // to us, unless the transport is explicitly marked as trustworthy (e.g.
+-      // is connected to a known elevated process.)
++    // Only accept handles which the peer claims to have already duplicated into
++    // this process if the peer is at least as privileged as this end. An
++    // elevated process does not accept recipient-owned handles from an
++    // untrusted broker. A broker is otherwise implicitly at least as privileged
++    // as its peers.
++    const bool is_peer_at_least_as_privileged =
++        from_transport.is_peer_trusted() ||
++        (from_transport.destination_type() == Transport::kBroker &&
++         !from_transport.is_elevated());
++    if (!is_peer_at_least_as_privileged && !remote_process.is_current()) {
+       return std::nullopt;
+     }
+     // Verify that this is a handle to a valid object. We do not yet know the
+@@ -474,8 +479,13 @@ IpczResult Transport::SerializeObject(ObjectBase& object,
+   header.reserved[1] = 0;
+   header.reserved[2] = 0;
+ 
++  // Handles are pre-duplicated into the recipient's process only when this end
++  // of the transport is at least as privileged as the recipient (so the
++  // recipient will accept them) and a handle to the recipient's process is
++  // available. When the peer is elevated it is more privileged than this end,
++  // so handles are sent as-is for the peer to duplicate.
+   const HandleOwner handle_owner =
+-      remote_process_.IsValid() &&
++      remote_process_.IsValid() && !is_peer_elevated() &&
+               (source_type() == kBroker || is_trusted_by_peer())
+           ? HandleOwner::kRecipient
+           : HandleOwner::kSender;
+diff --git a/mojo/core/ipcz_driver/transport.h b/mojo/core/ipcz_driver/transport.h
+index 54b87dd9eb5b2e31069d1b88c806019194d1dcb3..f3ca85fb124a9c13d675d3431903050afac5fab3 100644
+--- a/mojo/core/ipcz_driver/transport.h
++++ b/mojo/core/ipcz_driver/transport.h
+@@ -99,6 +99,12 @@ class MOJO_SYSTEM_IMPL_EXPORT Transport : public Object<Transport>,
+   void set_is_trusted_by_peer(bool trusted) { is_trusted_by_peer_ = trusted; }
+   bool is_trusted_by_peer() const { return is_trusted_by_peer_; }
+ 
++  void set_is_peer_elevated(bool elevated) { is_peer_elevated_ = elevated; }
++  bool is_peer_elevated() const { return is_peer_elevated_; }
++
++  void set_is_elevated(bool elevated) { is_elevated_ = elevated; }
++  bool is_elevated() const { return is_elevated_; }
++
+   // Indicates whether the remote peer on this transport is trusted as a source
+   // of privileged objects (e.g. HandleOwner::kRecipient handles or
+   // broker-destined transports). A non-broker implicitly trusts its broker;
+@@ -234,6 +240,16 @@ class MOJO_SYSTEM_IMPL_EXPORT Transport : public Object<Transport>,
+   // meaningless on platforms other than Windows.
+   bool is_trusted_by_peer_ = false;
+ 
++  // Indicates whether the remote transport endpoint is running in an elevated
++  // process relative to this endpoint. On Windows, handles cannot be
++  // pre-duplicated into an elevated process by a less-privileged process.
++  bool is_peer_elevated_ = false;
++
++  // Indicates whether this endpoint is running in an elevated process relative
++  // to the remote endpoint. On Windows, an elevated process does not accept
++  // recipient-owned handles from a less-privileged broker.
++  bool is_elevated_ = false;
++
+   // Indicates whether the remote process is "untrusted" in Mojo parlance,
+   // meaning this Transport restricts what kinds of objects can be transferred
+   // from this end (kTrusted or kUntrusted on Windows, kUntracked elsewhere.)
+diff --git a/mojo/core/ipcz_driver/transport_test.cc b/mojo/core/ipcz_driver/transport_test.cc
+index 204ab134d2fc87678b6e6f81c8ec1f18bbc4b3d1..9db9247d55a2e88ef811b30a6d71283fba89bed6 100644
+--- a/mojo/core/ipcz_driver/transport_test.cc
++++ b/mojo/core/ipcz_driver/transport_test.cc
+@@ -828,6 +828,68 @@ TEST_F(MojoIpczTransportTest, InvalidHandleUntrusted) {
+       });
+ }
+ 
++DEFINE_TEST_CLIENT_TEST_WITH_PIPE(RecipientHandleFromUntrustedBrokerClient,
++                                  MojoIpczTransportTest,
++                                  h) {
++  // This client is connected to a broker but is running in an elevated process
++  // relative to that broker (as is the case for an elevated process accepting
++  // an invitation), so it must not accept handles which the broker claims to
++  // already belong to this client.
++  scoped_refptr<Transport> transport = ReceiveTransport(h);
++  transport->set_is_elevated(true);
++  transport->set_is_trusted_by_peer(true);
++
++  TransportListener listener(*transport);
++
++  // Hold a local handle which the deserializer must not adopt.
++  HANDLE event = ::CreateEvent(nullptr, FALSE, FALSE, nullptr);
++  ASSERT_NE(event, nullptr);
++
++  TestMessage message = listener.WaitForNextMessage();
++  // Substitute the local handle for the one encoded by the host. The host
++  // encoded the message with handles owned by the recipient.
++  uint64_t value = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(event));
++  base::span(message.bytes)
++      .subspan(Transport::FirstHandleOffsetForTesting())
++      .first<sizeof(uint64_t)>()
++      .copy_from(base::byte_span_from_ref(value));
++
++  scoped_refptr<ObjectBase> object;
++  const IpczResult result = transport->DeserializeObject(
++      base::span(message.bytes), base::span(message.handles), object);
++  EXPECT_EQ(result, IPCZ_RESULT_INVALID_ARGUMENT);
++  EXPECT_FALSE(object);
++
++  // The local handle must still be live and owned solely by this scope.
++  EXPECT_TRUE(::SetEvent(event));
++  ::CloseHandle(event);
++
++  TestMessage("done").Transmit(*transport);
++  EXPECT_EQ(MOJO_RESULT_OK, MojoClose(h));
++}
++
++TEST_F(MojoIpczTransportTest, RecipientHandleFromUntrustedBroker) {
++  RunTestClientWithController(
++      "RecipientHandleFromUntrustedBrokerClient", [&](ClientController& c) {
++        scoped_refptr<Transport> transport =
++            CreateAndSendTransport(c.pipe(), c.process());
++
++        TransportListener listener(*transport);
++
++        // Serialize a wrapped handle. With a known remote process and a broker
++        // source, handles are encoded as already owned by the recipient. The
++        // client substitutes its own local handle value before deserializing.
++        base::win::ScopedHandle handle(
++            ::CreateEvent(nullptr, FALSE, FALSE, nullptr));
++        auto wrapper = base::MakeRefCounted<WrappedPlatformHandle>(
++            PlatformHandle(std::move(handle)));
++        SerializeObjectFor(*transport, std::move(wrapper)).Transmit(*transport);
++
++        EXPECT_EQ("done", listener.WaitForNextMessage().as_string());
++        listener.WaitForDisconnect();
++      });
++}
++
+ DEFINE_TEST_CLIENT_TEST_WITH_PIPE(TransmitThreadClient,
+                                   MojoIpczTransportTest,
+                                   h) {

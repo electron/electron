@@ -1,0 +1,176 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kai Ninomiya <kainino@chromium.org>
+Date: Thu, 17 Sep 2026 12:44:58 -0700
+Subject: Add round_up_3d_texture_size_to_pot_for_limit workaround for PowerVR
+
+PowerVR drivers have an issue which seems to be specific to 3D textures
+where they round up NPOT sizes to POT sizes before doing some size math.
+
+Just do this for all PowerVR drivers because we don't know the driver
+version where it's fixed, and this workaround is only for the validating
+command decoder.
+
+Bug: 551673541
+Change-Id: Ia6fe56f84ada7f91942253211f3156718e71dc6b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8421322
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Kai Ninomiya <kainino@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1700049}
+
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index 573483861ba9825edff5559c6f9af7f9846280e7..4dde261459e2dfca563cb08eed47607c49f08ad9 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -16549,25 +16549,35 @@ void GLES2DecoderImpl::TexStorageImpl(GLenum target,
+     PixelStoreParams params;
+     params.alignment = 1;
+     for (int ii = 0; ii < levels; ++ii) {
++      GLsizei pessimized_level_width = level_width;
++      GLsizei pessimized_level_height = level_height;
++      GLsizei pessimized_level_depth = level_depth;
++      if (workarounds().round_up_3d_texture_size_to_pot_for_limit &&
++          (target == GL_TEXTURE_3D || depth > 1)) {
++        pessimized_level_width = static_cast<GLsizei>(
++            std::bit_ceil(static_cast<uint32_t>(level_width)));
++        pessimized_level_height = static_cast<GLsizei>(
++            std::bit_ceil(static_cast<uint32_t>(level_height)));
++        pessimized_level_depth = static_cast<GLsizei>(
++            std::bit_ceil(static_cast<uint32_t>(level_depth)));
++      }
+       uint32_t size;
+       if (is_compressed_format) {
+         GLsizei level_size;
+         if (!GetCompressedTexSizeInBytes(
+-                function_name, level_width, level_height, level_depth,
+-                internal_format, &level_size, error_state_.get())) {
+-          // GetCompressedTexSizeInBytes() already generates a GL error.
++                function_name, pessimized_level_width, pessimized_level_height,
++                pessimized_level_depth, internal_format, &level_size,
++                error_state_.get())) {
++          // GetCompressedTexSizeInBytes() already generated a GL error
++          // (e.g. in the case of overflow, GL_INVALID_VALUE).
+           return;
+         }
+         size = static_cast<uint32_t>(level_size);
+       } else {
+-        if (!GLES2Util::ComputeImageDataSizesES3(level_width,
+-                                                 level_height,
+-                                                 level_depth,
+-                                                 format, type,
+-                                                 params,
+-                                                 &size,
+-                                                 nullptr, nullptr,
+-                                                 nullptr, nullptr)) {
++        if (!GLES2Util::ComputeImageDataSizesES3(
++                pessimized_level_width, pessimized_level_height,
++                pessimized_level_depth, format, type, params, &size, nullptr,
++                nullptr, nullptr, nullptr)) {
+           LOCAL_SET_GL_ERROR(
+               GL_OUT_OF_MEMORY, function_name, "dimensions too large");
+           return;
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc
+index fe8cc11c42b6f0212c5867e5f2f21c4cfb5d7be3..51de266a1a5ed83c792f94575d09f2b27bc8489f 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc
+@@ -3869,6 +3869,45 @@ TEST_P(GLES3DecoderManualInitTest, ResetTexStorageBaseLevelWorkaround) {
+   EXPECT_EQ(error::kNoError, ExecuteCmd(storage_cmd));
+ }
+ 
++TEST_P(GLES3DecoderManualInitTest,
++       RoundUp3DTextureSizeToPOTForLimitWorkaround) {
++  InitState init;
++  init.gl_version = "OpenGL ES 3.0";
++  init.has_alpha = true;
++  init.has_depth = true;
++  init.context_type = CONTEXT_TYPE_OPENGLES3;
++  GpuDriverBugWorkarounds workarounds;
++  workarounds.round_up_3d_texture_size_to_pot_for_limit = true;
++  InitDecoderWithWorkarounds(init, workarounds);
++
++  DoBindTexture(GL_TEXTURE_3D, client_texture_id_, kServiceTextureId);
++
++  // 600 * 600 * 600 * 4 bytes is ~864MB, which fits in uint32_t.
++  // But rounded up to POT (1024 * 1024 * 1024 * 4 bytes = 4GB), it overflows
++  // uint32_t and should generate GL_OUT_OF_MEMORY.
++  cmds::TexStorage3D cmd;
++  cmd.Init(GL_TEXTURE_3D, 1, GL_RGBA8, 600, 600, 600);
++  EXPECT_EQ(error::kNoError, ExecuteCmd(cmd));
++  EXPECT_EQ(GL_OUT_OF_MEMORY, GetGLError());
++
++  // A size whose POT-rounded dimensions fit in uint32_t should succeed.
++  EXPECT_CALL(*gl_, GenTextures(1, _))
++      .WillOnce(SetArgPointee<1>(kNewServiceId))
++      .RetiresOnSaturation();
++  GenHelper<cmds::GenTexturesImmediate>(kNewClientId);
++  DoBindTexture(GL_TEXTURE_3D, kNewClientId, kNewServiceId);
++  EXPECT_CALL(*gl_, TexStorage3D(GL_TEXTURE_3D, 1, GL_RGBA8, 600, 600, 512))
++      .Times(1)
++      .RetiresOnSaturation();
++  EXPECT_CALL(*gl_, GetError())
++      .WillOnce(Return(GL_NO_ERROR))
++      .WillOnce(Return(GL_NO_ERROR))
++      .RetiresOnSaturation();
++  cmd.Init(GL_TEXTURE_3D, 1, GL_RGBA8, 600, 600, 512);
++  EXPECT_EQ(error::kNoError, ExecuteCmd(cmd));
++  EXPECT_EQ(GL_NO_ERROR, GetGLError());
++}
++
+ TEST_P(GLES3DecoderTest, TexImage3DValidArgs) {
+   const GLenum kTarget = GL_TEXTURE_3D;
+   const GLint kLevel = 2;
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index fc04ac145bb5df8287d37fff5c2cfb8a2fbbc2b8..4fb3d932d47ab78c56655b12e5d3b196ff9e6524 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3940,6 +3940,16 @@
+       "features": [
+         "disable_accelerated_av1_decode"
+       ]
++    },
++    {
++      "id": 501,
++      "description": "Older PowerVR drivers mishandle large 3D NPOT sizes in texStorage3D",
++      "cr_bugs": [551673541],
++      "gl_vendor": "Imagination.*",
++      "gl_renderer": "PowerVR.*",
++      "features": [
++        "round_up_3d_texture_size_to_pot_for_limit"
++      ]
+     }
+   ]
+ }
+diff --git a/gpu/config/gpu_driver_bug_list_unittest.cc b/gpu/config/gpu_driver_bug_list_unittest.cc
+index 1a5dc6cd0467fd797bea9edb1affbb14e6f6fbbc..cfd507843dffc49613ede08c170c7c1d673e8585 100644
+--- a/gpu/config/gpu_driver_bug_list_unittest.cc
++++ b/gpu/config/gpu_driver_bug_list_unittest.cc
+@@ -42,6 +42,17 @@ TEST_F(GpuDriverBugListTest, CurrentListForImagination) {
+       GpuControlList::kOsAndroid, "4.1", gpu_info);
+   EXPECT_EQ(1u, bugs.count(USE_CLIENT_SIDE_ARRAYS_FOR_STREAM_BUFFERS));
+ }
++
++TEST_F(GpuDriverBugListTest, CurrentListForPowerVRRogue) {
++  std::unique_ptr<GpuDriverBugList> list = GpuDriverBugList::Create();
++  GPUInfo gpu_info;
++  gpu_info.gl_vendor = "Imagination Technologies";
++  gpu_info.gl_renderer = "PowerVR Rogue GE8322";
++  gpu_info.gl_version = "OpenGL ES 3.2";
++  std::set<int> bugs =
++      list->MakeDecision(GpuControlList::kOsAndroid, "14.0", gpu_info, {});
++  EXPECT_EQ(1u, bugs.count(ROUND_UP_3D_TEXTURE_SIZE_TO_POT_FOR_LIMIT));
++}
+ #endif  // BUILDFLAG(IS_ANDROID)
+ 
+ TEST_F(GpuDriverBugListTest, AppendSingleWorkaround) {
+diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
+index a672e5658fae1a8f2d8052e70f1ec91a9077ecae..d63ea5a63975b366fd7d81d50598a95ce5031f18 100644
+--- a/gpu/config/gpu_workaround_list.txt
++++ b/gpu/config/gpu_workaround_list.txt
+@@ -125,6 +125,7 @@ remove_dynamic_indexing_of_swizzled_vector
+ reset_base_level_for_astc_image
+ reset_tex_storage_base_level
+ round_down_uniform_bind_buffer_range_size
++round_up_3d_texture_size_to_pot_for_limit
+ scalarize_vec_and_mat_constructor_args
+ split_level_0_pbo_full_sub_image_2d
+ supports_two_yuv_hardware_overlays

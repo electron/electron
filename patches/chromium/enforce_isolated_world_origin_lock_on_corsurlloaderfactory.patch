@@ -1,0 +1,288 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Takashi Toyoshima <toyoshim@chromium.org>
+Date: Tue, 15 Sep 2026 23:50:58 -0700
+Subject: Enforce isolated_world_origin lock on CorsURLLoaderFactory
+
+Previously, CorsURLLoaderFactory validated request_initiator against
+request_initiator_origin_lock_, but did not bind or validate
+request.isolated_world_origin against a specific origin lock when
+ignore_isolated_world_origin was false. This could allow a compromised
+renderer using a privileged factory to spoof arbitrary extension origins
+via isolated_world_origin to bypass CORS/ORB or forge Sec- headers.
+
+This CL introduces isolated_world_origin_lock in
+network.mojom.URLLoaderFactoryParams and enforces origin locking:
+1. In CorsURLLoaderFactory::IsValidRequest, if
+   ignore_isolated_world_origin_ is true (normal web page factories),
+   any provided request.isolated_world_origin is normalized to nullopt,
+   ensuring downstream checks (e.g. ShouldAllowUnsafeHeaders) and
+   CorsURLLoader cannot be spoofed.
+2. If ignore_isolated_world_origin_ is false (privileged isolated world
+   factories), any non-empty request.isolated_world_origin must match
+   isolated_world_origin_lock_. A mismatch from a renderer process
+   triggers mojo::ReportBadMessage.
+3. Guarded by the kEnforceIsolatedWorldOriginLock kill-switch feature.
+
+Bug: 554038924
+Change-Id: Ie6f3f7f6837428df66cb13f2fc1cb5982e4dd89c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8402138
+Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+Commit-Queue: Takashi Toyoshima <toyoshim@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1698684}
+
+Electron adaptation notes (42-x-y):
+features.cc/.h conflicted only on context (newer unrelated features
+absent on this branch); only kEnforceIsolatedWorldOriginLock was added.
+Unit test conflicts were resolved by keeping the branch's test code.
+IsValidRequest() still takes a const ResourceRequest& on this branch (the
+upstream constness change predates the fix but is not on M148); the
+parameter was made non-const in the header and definition so the new
+`request.isolated_world_origin = std::nullopt` reset compiles. Its only
+caller already passes a mutable ResourceRequest.
+
+diff --git a/content/browser/url_loader_factory_params_helper.cc b/content/browser/url_loader_factory_params_helper.cc
+index 8547456e98241f2f9ed6f9dcf4b3942bb3dfa92c..5ce277aabc5ce5f7cea14cd78f52ae2be2e41c7f 100644
+--- a/content/browser/url_loader_factory_params_helper.cc
++++ b/content/browser/url_loader_factory_params_helper.cc
+@@ -123,6 +123,10 @@ network::mojom::URLLoaderFactoryParamsPtr CreateParams(
+       process->GetBrowserContext(), origin, is_for_isolated_world,
+       is_for_service_worker, params.get());
+ 
++  if (is_for_isolated_world && !params->ignore_isolated_world_origin) {
++    params->isolated_world_origin_lock = origin;
++  }
++
+   params->cookie_observer = std::move(cookie_observer);
+   params->trust_token_observer = std::move(trust_token_observer);
+   params->shared_dictionary_observer = std::move(shared_dictionary_observer);
+diff --git a/services/network/cors/cors_url_loader_factory.cc b/services/network/cors/cors_url_loader_factory.cc
+index bf02d6663b47413e47ebfe9ae4ba5799787f69ae..1ead3b2b73caa3c162e4de3867d6cd367ec54d07 100644
+--- a/services/network/cors/cors_url_loader_factory.cc
++++ b/services/network/cors/cors_url_loader_factory.cc
+@@ -117,6 +117,18 @@ base::debug::CrashKeyString* GetRequestInitiatorOriginLockCrashKey() {
+   return crash_key;
+ }
+ 
++base::debug::CrashKeyString* GetIsolatedWorldOriginLockCrashKey() {
++  static auto* crash_key = base::debug::AllocateCrashKeyString(
++      "isolated_world_origin_lock", base::debug::CrashKeySize::Size256);
++  return crash_key;
++}
++
++base::debug::CrashKeyString* GetIsolatedWorldOriginCrashKey() {
++  static auto* crash_key = base::debug::AllocateCrashKeyString(
++      "isolated_world_origin", base::debug::CrashKeySize::Size256);
++  return crash_key;
++}
++
+ bool IsTrustedNavigationRequestFromSecureContext(
+     const ResourceRequest& request) {
+   if (!request.trusted_params) {
+@@ -223,6 +235,9 @@ CorsURLLoaderFactory::CorsURLLoaderFactory(
+       process_id_(params->process_id),
+       request_initiator_origin_lock_(params->request_initiator_origin_lock),
+       ignore_isolated_world_origin_(params->ignore_isolated_world_origin),
++      isolated_world_origin_lock_(params->ignore_isolated_world_origin
++                                      ? std::nullopt
++                                      : params->isolated_world_origin_lock),
+       trust_token_issuance_policy_(params->trust_token_issuance_policy),
+       trust_token_redemption_policy_(params->trust_token_redemption_policy),
+       isolation_info_(params->isolation_info),
+@@ -257,6 +272,12 @@ CorsURLLoaderFactory::CorsURLLoaderFactory(
+   DCHECK(process_id_);
+   DCHECK_EQ(net::IsolationInfo::RequestType::kOther,
+             params->isolation_info.request_type());
++  if (params->ignore_isolated_world_origin &&
++      params->isolated_world_origin_lock.has_value()) {
++    mojo::ReportBadMessage(
++        "CorsURLLoaderFactory: isolated_world_origin_lock set when "
++        "ignore_isolated_world_origin is true");
++  }
+   if (context_->url_request_context()->bound_network() !=
+       net::handles::kInvalidNetworkHandle) {
+     // CorsURLLoaderFactories bound to a network allow CORS preflight load
+@@ -583,7 +604,7 @@ bool CorsURLLoaderFactory::IsCorsPreflighLoadOptionAllowed() const {
+ }
+ 
+ bool CorsURLLoaderFactory::IsValidRequest(
+-    const ResourceRequest& request,
++    ResourceRequest& request,
+     uint32_t options,
+     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation) {
+   if (request.url.SchemeIs(url::kDataScheme)) {
+@@ -858,6 +879,32 @@ bool CorsURLLoaderFactory::IsValidRequest(
+       return false;
+   }
+ 
++  if (ignore_isolated_world_origin_) {
++    // Normal web frame factories ignore isolated world origins. Clear any
++    // spoofed isolated_world_origin from the renderer so that downstream checks
++    // (e.g. ShouldAllowUnsafeHeaders) and CorsURLLoader do not see it.
++    request.isolated_world_origin = std::nullopt;
++  } else if (!process_id_.is_browser() && request.isolated_world_origin &&
++             base::FeatureList::IsEnabled(
++                 features::kEnforceIsolatedWorldOriginLock)) {
++    if (!isolated_world_origin_lock_ ||
++        !isolated_world_origin_lock_->IsSameOriginWith(
++            *request.isolated_world_origin)) {
++      url::debug::ScopedOriginCrashKey initiator_origin_lock_crash_key(
++          GetRequestInitiatorOriginLockCrashKey(),
++          base::OptionalToPtr(request_initiator_origin_lock_));
++      url::debug::ScopedOriginCrashKey isolated_origin_lock_crash_key(
++          GetIsolatedWorldOriginLockCrashKey(),
++          base::OptionalToPtr(isolated_world_origin_lock_));
++      url::debug::ScopedOriginCrashKey isolated_origin_crash_key(
++          GetIsolatedWorldOriginCrashKey(),
++          base::OptionalToPtr(request.isolated_world_origin));
++      mojo::ReportBadMessage(
++          "CorsURLLoaderFactory: isolated_world_origin lock mismatch");
++      return false;
++    }
++  }
++
+   if (!IsValidCorsExemptHeaders(*context_->cors_exempt_header_list(),
+                                 request.cors_exempt_headers)) {
+     return false;
+diff --git a/services/network/cors/cors_url_loader_factory.h b/services/network/cors/cors_url_loader_factory.h
+index fb44c6f46d55fa7ff09b8eb0421182e16f0583de..19740481635ed5ec80677860ea277d3dfdf8bff2 100644
+--- a/services/network/cors/cors_url_loader_factory.h
++++ b/services/network/cors/cors_url_loader_factory.h
+@@ -107,6 +107,9 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CorsURLLoaderFactory final
+   const std::optional<url::Origin>& request_initiator_origin_lock() const {
+     return request_initiator_origin_lock_;
+   }
++  const std::optional<url::Origin>& isolated_world_origin_lock() const {
++    return isolated_world_origin_lock_;
++  }
+ 
+   mojom::CrossOriginEmbedderPolicyReporter* coep_reporter() {
+     return coep_reporter_ ? coep_reporter_.get() : nullptr;
+@@ -159,7 +162,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CorsURLLoaderFactory final
+   void DestroyCorsURLLoader(CorsURLLoader* loader);
+ 
+   bool IsValidRequest(
+-      const ResourceRequest& request,
++      ResourceRequest& request,
+       uint32_t options,
+       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation);
+ 
+@@ -201,6 +204,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CorsURLLoaderFactory final
+   const OriginatingProcessId process_id_;
+   const std::optional<url::Origin> request_initiator_origin_lock_;
+   const bool ignore_isolated_world_origin_;
++  const std::optional<url::Origin> isolated_world_origin_lock_;
+   const mojom::TrustTokenOperationPolicyVerdict trust_token_issuance_policy_;
+   const mojom::TrustTokenOperationPolicyVerdict trust_token_redemption_policy_;
+   net::IsolationInfo isolation_info_;
+diff --git a/services/network/cors/cors_url_loader_test_util.cc b/services/network/cors/cors_url_loader_test_util.cc
+index f52c4fb6e031555486f46533ae2b789e88b9823a..66b43b0b46348aacb02c769d8faf4a8d51111dc7 100644
+--- a/services/network/cors/cors_url_loader_test_util.cc
++++ b/services/network/cors/cors_url_loader_test_util.cc
+@@ -135,6 +135,7 @@ CorsURLLoaderTestBase::ResetFactoryParams::ResetFactoryParams() {
+   mojom::URLLoaderFactoryParams params;
+   is_trusted = params.is_trusted;
+   ignore_isolated_world_origin = params.ignore_isolated_world_origin;
++  isolated_world_origin_lock = params.isolated_world_origin_lock;
+   client_security_state = std::move(params.client_security_state);
+ 
+   mojom::URLLoaderFactoryOverride factory_override;
+@@ -291,6 +292,8 @@ void CorsURLLoaderTestBase::ResetFactory(std::optional<url::Origin> initiator,
+   factory_params->is_orb_enabled = !process_id.is_browser();
+   factory_params->ignore_isolated_world_origin =
+       params.ignore_isolated_world_origin;
++  factory_params->isolated_world_origin_lock =
++      params.isolated_world_origin_lock;
+   factory_params->factory_override = mojom::URLLoaderFactoryOverride::New();
+   factory_params->factory_override->overriding_factory =
+       test_url_loader_factory_receiver_->BindNewPipeAndPassRemote();
+diff --git a/services/network/cors/cors_url_loader_test_util.h b/services/network/cors/cors_url_loader_test_util.h
+index 5a58b4d5bcad2d796387cda31401723ea4567707..8e2237efc626859424124428a3d5c4b7c7f69c5e 100644
+--- a/services/network/cors/cors_url_loader_test_util.h
++++ b/services/network/cors/cors_url_loader_test_util.h
+@@ -34,6 +34,7 @@
+ #include "services/network/resource_scheduler/resource_scheduler.h"
+ #include "services/network/test/test_url_loader_network_observer.h"
+ #include "testing/gtest/include/gtest/gtest.h"
++#include "url/origin.h"
+ 
+ class GURL;
+ 
+@@ -150,6 +151,7 @@ class CorsURLLoaderTestBase : public testing::Test {
+     // Members of `mojom::URLLoaderFactoryParams`.
+     bool is_trusted;
+     bool ignore_isolated_world_origin;
++    std::optional<url::Origin> isolated_world_origin_lock;
+     mojom::ClientSecurityStatePtr client_security_state;
+ 
+     // Member of `mojom::URLLoaderFactoryOverride`.
+diff --git a/services/network/cors/cors_url_loader_unittest.cc b/services/network/cors/cors_url_loader_unittest.cc
+index 1e944a4c76d0ab4254e6389fcf0b4d339dd02bae..5953ff1be367c833671281087b0c4049a7aa627d 100644
+--- a/services/network/cors/cors_url_loader_unittest.cc
++++ b/services/network/cors/cors_url_loader_unittest.cc
+@@ -1292,6 +1292,7 @@ TEST_F(CorsURLLoaderTest, OriginAccessList_IsolatedWorldOrigin) {
+ 
+   ResetFactoryParams factory_params;
+   factory_params.ignore_isolated_world_origin = false;
++  factory_params.isolated_world_origin_lock = isolated_world_origin;
+   ResetFactory(main_world_origin, kRendererProcessId, factory_params);
+ 
+   AddAllowListEntryForOrigin(isolated_world_origin, url.GetScheme(),
+@@ -1337,6 +1338,7 @@ TEST_F(CorsURLLoaderTest, OriginAccessList_IsolatedWorldOrigin_Redirect) {
+ 
+   ResetFactoryParams factory_params;
+   factory_params.ignore_isolated_world_origin = false;
++  factory_params.isolated_world_origin_lock = isolated_world_origin;
+   ResetFactory(main_world_origin, kRendererProcessId, factory_params);
+ 
+   AddAllowListEntryForOrigin(isolated_world_origin, url.GetScheme(),
+diff --git a/services/network/public/cpp/features.cc b/services/network/public/cpp/features.cc
+index 857ae4f2f13ff7f18b67a25901912827be9e4301..1f13d8873ce737d6a111109380c2ed3c23623242 100644
+--- a/services/network/public/cpp/features.cc
++++ b/services/network/public/cpp/features.cc
+@@ -649,4 +649,6 @@ BASE_FEATURE_PARAM(base::TimeDelta,
+                    "initial_doh_probe_timeout",
+                    base::Seconds(5));
+ 
++BASE_FEATURE(kEnforceIsolatedWorldOriginLock, base::FEATURE_ENABLED_BY_DEFAULT);
++
+ }  // namespace network::features
+diff --git a/services/network/public/cpp/features.h b/services/network/public/cpp/features.h
+index 7d0e85f6739ffdc16c270277e0ac1b2e594975fd..d4efba7d7a3770c1b5a8d83aaca1afb3d55fd229 100644
+--- a/services/network/public/cpp/features.h
++++ b/services/network/public/cpp/features.h
+@@ -438,6 +438,12 @@ BASE_DECLARE_FEATURE(kDelayInitialDohProbeTimeout);
+ COMPONENT_EXPORT(NETWORK_CPP_FLAGS_AND_SWITCHES)
+ BASE_DECLARE_FEATURE_PARAM(base::TimeDelta, kDelayInitialDohProbeTimeoutParam);
+ 
++// When enabled, validates that ResourceRequest::isolated_world_origin matches
++// URLLoaderFactoryParams::isolated_world_origin_lock when
++// ignore_isolated_world_origin is false.
++COMPONENT_EXPORT(NETWORK_CPP_FLAGS_AND_SWITCHES)
++BASE_DECLARE_FEATURE(kEnforceIsolatedWorldOriginLock);
++
+ }  // namespace network::features
+ 
+ #endif  // SERVICES_NETWORK_PUBLIC_CPP_FEATURES_H_
+diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
+index f3f98c86bb08b0fe229d5dd57b30a696d6ad5952..450b62661498127cc28fefc8e9fa6fd7ca26657d 100644
+--- a/services/network/public/mojom/network_context.mojom
++++ b/services/network/public/mojom/network_context.mojom
+@@ -830,6 +830,17 @@ struct URLLoaderFactoryParams {
+   // field once Chrome Platform Apps are gone.
+   bool ignore_isolated_world_origin = true;
+ 
++  // The origin of the isolated world that is permitted to use this factory.
++  // When `ignore_isolated_world_origin` is false, requests with an
++  // `isolated_world_origin` that does not match this lock will be rejected
++  // with a bad message report.
++  // Setting this field when `ignore_isolated_world_origin` is true is invalid
++  // and will also result in a bad message report.
++  //
++  // TODO(crbug.com/40137011): Remove `isolated_world_origin_lock` once Chrome
++  // Platform Apps are gone and `ignore_isolated_world_origin` is removed.
++  url.mojom.Origin? isolated_world_origin_lock;
++
+   // Indicate whether a request is not from web page ( probably from chrome
+   // extension background page ).
+   bool unsafe_non_webby_initiator = false;

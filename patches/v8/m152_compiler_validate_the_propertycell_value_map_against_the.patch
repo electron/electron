@@ -1,0 +1,237 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Linke <jgruber@chromium.org>
+Date: Tue, 15 Sep 2026 09:06:56 +0200
+Subject: [M152] [compiler] Validate the PropertyCell value map against the
+ live value
+
+Original change's description:
+> [compiler] Validate the PropertyCell value map against the live value
+>
+> PropertyCellData::Cache snapshots a global property cell's value, and
+> the HeapObjectData constructor it reaches snapshots that value's map
+> later. Between the two, StoreGlobalIC_PropertyCellCase can replace a
+> kConstantType cell's value with another object of the same map, which
+> leaves the cell details untouched and frees the replaced object to
+> transition. Both details reads in Cache then agree while the recorded
+> map describes an object the cell no longer holds.
+>
+> ReduceGlobalAccess feeds that map into the LoadField on the live cell,
+> so optimized code could read a packed-double array's storage as tagged
+> pointers. GlobalPropertyDependency checked the cell type and the
+> read-only bit, StableMapDependency checked the recorded map's stability,
+> and both stayed valid while describing different objects.
+>
+> Record the value map in GlobalPropertyDependency for kConstantType cells
+> and check it against the cell's live value before installing the code.
+> The map comes from the same broker snapshot the consumers read, so
+> reused snapshots are covered. Maglev and Turbolev take the same
+> dependency from their load and store paths, and are fixed along with
+> TurboFan.
+>
+> Fixed: 560233248
+> Change-Id: Ic992a203ae6e3973bf518cb87489d892ec0661e7
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8398508
+> Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
+> Auto-Submit: Jakob Linke <jgruber@chromium.org>
+> Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#109836}
+
+(cherry picked from commit dd0f8f20b696604962000ea5f805fc3db78286e1)
+
+Bug: 563218211,560233248
+Change-Id: Ic992a203ae6e3973bf518cb87489d892ec0661e7
+
+diff --git a/src/compiler/compilation-dependencies.cc b/src/compiler/compilation-dependencies.cc
+index 37678ec050b1dbe83be91cfddeab581f7f9cb429..88054deed0ac3470053929dc2f0643dacf4d2c27 100644
+--- a/src/compiler/compilation-dependencies.cc
++++ b/src/compiler/compilation-dependencies.cc
+@@ -871,11 +871,12 @@ class FieldConstnessDependency final : public CompilationDependency {
+ class GlobalPropertyDependency final : public CompilationDependency {
+  public:
+   GlobalPropertyDependency(PropertyCellRef cell, PropertyCellType type,
+-                           bool read_only)
++                           bool read_only, OptionalMapRef value_map)
+       : CompilationDependency(kGlobalProperty),
+         cell_(cell),
+         type_(type),
+-        read_only_(read_only) {
++        read_only_(read_only),
++        value_map_(value_map) {
+     DCHECK_EQ(type_, cell_.property_details().cell_type());
+     DCHECK_EQ(read_only_, cell_.property_details().IsReadOnly());
+   }
+@@ -888,8 +889,24 @@ class GlobalPropertyDependency final : public CompilationDependency {
+         *(broker->isolate()->factory()->property_cell_hole_value())) {
+       return false;
+     }
+-    return type_ == cell->property_details().cell_type() &&
+-           read_only_ == cell->property_details().IsReadOnly();
++    if (type_ != cell->property_details().cell_type() ||
++        read_only_ != cell->property_details().IsReadOnly()) {
++      return false;
++    }
++    // A same-map store can replace the value between the broker's read of the
++    // value and its read of the value's map. The replaced object can then
++    // transition without changing the cell details, and the recorded map stays
++    // stable, so neither existing check catches it.
++    if (value_map_.has_value()) {
++      DisallowGarbageCollection no_gc;
++      Tagged<Object> value = cell->value();
++      if (!IsHeapObject(value) ||
++          Cast<HeapObject>(value)->map() != *value_map_->object()) {
++        TRACE_BROKER_MISSING(broker, "Value map change detected in " << cell);
++        return false;
++      }
++    }
++    return true;
+   }
+   void Install(JSHeapBroker* broker, PendingDependencies* deps) const override {
+     SLOW_DCHECK(IsValid(broker));
+@@ -899,11 +916,16 @@ class GlobalPropertyDependency final : public CompilationDependency {
+  private:
+   size_t Hash() const override {
+     ObjectRef::Hash h;
+-    return base::hash_combine(h(cell_), static_cast<int>(type_), read_only_);
++    return base::hash_combine(h(cell_), static_cast<int>(type_), read_only_,
++                              value_map_.has_value() ? h(*value_map_) : 0);
+   }
+ 
+   bool Equals(const CompilationDependency* that) const override {
+     const GlobalPropertyDependency* const zat = that->AsGlobalProperty();
++    if (value_map_.has_value() != zat->value_map_.has_value()) return false;
++    if (value_map_.has_value() && !value_map_->equals(*zat->value_map_)) {
++      return false;
++    }
+     return cell_.equals(zat->cell_) && type_ == zat->type_ &&
+            read_only_ == zat->read_only_;
+   }
+@@ -911,6 +933,8 @@ class GlobalPropertyDependency final : public CompilationDependency {
+   const PropertyCellRef cell_;
+   const PropertyCellType type_;
+   const bool read_only_;
++  // Snapshotted value map for kConstantType heap objects; empty otherwise.
++  const OptionalMapRef value_map_;
+ };
+ 
+ class ContextCellDependency final : public CompilationDependency {
+@@ -1292,7 +1316,15 @@ CompilationDependencies::FieldConstnessDependencyOffTheRecord(
+ void CompilationDependencies::DependOnGlobalProperty(PropertyCellRef cell) {
+   PropertyCellType type = cell.property_details().cell_type();
+   bool read_only = cell.property_details().IsReadOnly();
+-  RecordDependency(zone_->New<GlobalPropertyDependency>(cell, type, read_only));
++  // Read the map through the broker so validation checks the same map the
++  // compiler used.
++  OptionalMapRef value_map;
++  if (type == PropertyCellType::kConstantType) {
++    ObjectRef value = cell.value(broker_);
++    if (value.IsHeapObject()) value_map = value.AsHeapObject().map(broker_);
++  }
++  RecordDependency(
++      zone_->New<GlobalPropertyDependency>(cell, type, read_only, value_map));
+ }
+ 
+ bool CompilationDependencies::DependOnContextCell(ContextRef script_context,
+diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
+index eb7429e32a153c710962140f0af1912103e9de44..51efe1aaa318ff297bebb08c649c59fd1fc3de0f 100644
+--- a/test/mjsunit/mjsunit.status
++++ b/test/mjsunit/mjsunit.status
+@@ -431,9 +431,16 @@
+   'regress/regress-2249': [SKIP],
+   'regress/regress-3709': [SKIP],
+   'regress/regress-4121': [SKIP],
++<<<<<<< HEAD   (5ee640fbbdff31ae3411dc1d16192f03ba3c34b9 Version 15.2.124.34)
+   'regress/regress-6989': [SKIP],
+   'compare-known-objects-slow': [SKIP],
+   'compiler/array-multiple-receiver-maps': [SKIP],
++||||||| BASE   (dda532107fc6b527d8f0c26e8a7e3dc75c59c0e4 [compiler] Mix the RefsMap hash)
++=======
++  # --concurrent-recompilation-delay sleeps before the compile starts, so the
++  # test's cell rotation finishes before the broker reads the cell.
++  'regress/regress-crbug-560233248': [SKIP],
++>>>>>>> CHANGE (dd0f8f20b696604962000ea5f805fc3db78286e1 [compiler] Validate the PropertyCell value map against the l)
+   # Tests taking too long
+   'regress/regress-1122': [SKIP],
+   'regress/regress-353551': [SKIP],
+diff --git a/test/mjsunit/regress/regress-crbug-560233248.js b/test/mjsunit/regress/regress-crbug-560233248.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..c1d7b97410fc3adb5686e8021cfcda0f7d4d8c0f
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-560233248.js
+@@ -0,0 +1,77 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --no-turbolev
++
++// Replace and transition a global cell's value between the compiler's value
++// and map reads, leaving the compiler with the replaced object's map.
++
++const template = [1.125, 1.125, 1.125];
++const marker = {};
++
++// The named property keeps these arrays off the shared array maps, so the
++// object-elements map below stays stable. slice() copies without an allocation
++// site, so transitioning a copy does not generalize later copies.
++function mkDouble() { const a = template.slice(); a.tag = 0; return a; }
++function transition(a) { a[1] = marker; return a; }
++
++// Bring the cell to kConstantType and warm the store IC's property cell case.
++// From here on, storing a same-map value does not change the cell details.
++gl = mkDouble();
++function set(x) { gl = x; }
++for (let i = 0; i < 100; i++) set(mkDouble());
++
++const objElements = transition(mkDouble());
++
++const kPoolSize = 500;
++function mkPool() {
++  const pool = [];
++  for (let i = 0; i < kPoolSize; i++) pool.push(mkDouble());
++  return pool;
++}
++// Rotate the cell through same-map arrays, transitioning each one as soon as
++// it leaves the cell.
++function rotate(pool) {
++  let prev = mkDouble();
++  for (let i = 0; i < kPoolSize; i++) {
++    const t = pool[i];
++    set(t);
++    transition(prev);
++    prev = t;
++  }
++  set(mkDouble());
++}
++
++for (let j = 0; j < 10; j++) {
++  // Each attempt needs fresh functions: the element access must only ever see
++  // the object-elements map, and one read through gl would make it
++  // polymorphic. The interpolated j keeps the compilation cache from reusing
++  // the script.
++  const [get, read] = Function(`
++      function get(a, real) {
++        if (real) return a[0];
++        return ${j};
++      }
++      return [get, function read(real) { return get(gl, real); }];`)();
++  %PrepareFunctionForOptimization(get);
++  %PrepareFunctionForOptimization(read);
++  for (let i = 0; i < 5; i++) {
++    get(objElements, true);
++    get(objElements, false);
++    read(false);
++  }
++
++  // Only stores made during the compile can hit the window between the
++  // broker's two reads, so fill the pool first and start rotating as soon as
++  // the job is dispatched.
++  const pool = mkPool();
++  %OptimizeFunctionOnNextCall(read, "concurrent");
++  read(false);
++  rotate(pool);
++  %WaitForBackgroundOptimization();
++  %FinalizeOptimization();
++  // gl holds a packed-double array, so this must produce its double element.
++  // The stale map made this load read that double as a tagged pointer.
++  assertEquals(1.125, read(true));
++}
