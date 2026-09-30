@@ -1225,20 +1225,17 @@ describe('webContents module', () => {
         // Fill out the form on the page
         await w.webContents.executeJavaScript('document.querySelector("input").value = "Hi!";');
 
-        // PageState is committed:
-        // 1) When the page receives an unload event
-        // 2) During periodic serialization of page state (1s visible, 5s hidden)
-        // To not wait randomly for the second option, we'll trigger another load
-        await w.loadURL(urlPage3);
-
-        // The form page is unloaded in its old renderer process, which sends its
-        // final PageState to the browser only when it handles the Unload IPC. That
-        // is not ordered with page 3's did-finish-load (a different process), so
-        // wait until the saved entry actually carries the edited value. Form state
-        // is serialized as UTF-16 (mojo_base.mojom.String16) inside the PageState.
+        // Wait for the renderer's delayed PageState sync (1s visible, 5s hidden)
+        // while the form page is still current. The update sent on unload is
+        // racy: the browser only briefly waits for the old frame to unload.
+        // Form state is serialized as UTF-16 inside the PageState.
         const hasFormValue = (pageState?: string) =>
           !!pageState && Buffer.from(pageState, 'base64').includes(Buffer.from('Hi!', 'utf16le'));
-        await waitUntil(() => hasFormValue(w.webContents.navigationHistory.getEntryAtIndex(2)?.pageState));
+        await waitUntil(() => hasFormValue(w.webContents.navigationHistory.getEntryAtIndex(2)?.pageState), {
+          timeout: 20000
+        });
+
+        await w.loadURL(urlPage3);
 
         // Save the navigation state
         const entries = w.webContents.navigationHistory.getAllEntries();
