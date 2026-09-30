@@ -367,6 +367,7 @@ jobs:
     # and log what the OS hit tests on screen.
     - name: Dismiss first sign-in windows (Windows)
       if: ${{ inputs.target-platform == 'win' }}
+      timeout-minutes: 5
       # Best effort: if the window stays up, the specs report what covers
       # them (describeWindowAtPoint) rather than failing here.
       continue-on-error: true
@@ -472,6 +473,39 @@ jobs:
           $proc = (Get-Process -Id $procId -ErrorAction SilentlyContinue).ProcessName
           Write-Host ("Window at ({0},{1}): class '{2}' title '{3}' process {4} ({5})" -f $p.X, $p.Y, $cls, $title, $proc, $procId)
         }
+        # Diagnostic: with the Start menu closed, api-web-contents-view.spec.ts
+        # sees freshly shown windows as hidden (occluded) on windows-11-arm.
+        # Log what could explain that (display and screen saver timeouts, WSL
+        # and terminal processes) and sample the foreground window and any
+        # window above Electron's while the specs run (printed after them).
+        try {
+          foreach ($q in @('SUB_VIDEO VIDEOIDLE', 'SUB_SLEEP STANDBYIDLE')) {
+            Write-Host "powercfg $q`: $((powercfg /q SCHEME_CURRENT $q.Split(' ') | Select-String 'Current (AC|DC) Power Setting Index') -join '; ')"
+          }
+          Write-Host "powercfg /requests:`n$(powercfg /requests | Out-String)"
+          $desktop = Get-ItemProperty 'HKCU:\Control Panel\Desktop'
+          Write-Host "Screen saver: active '$($desktop.ScreenSaveActive)' timeout '$($desktop.ScreenSaveTimeOut)' exe '$($desktop.'SCRNSAVE.EXE')'"
+          $names = 'wsl.exe', 'wslhost.exe', 'wslservice.exe', 'WindowsTerminal.exe', 'OpenConsole.exe', 'conhost.exe'
+          Get-CimInstance Win32_Process | Where-Object { $names -contains $_.Name } |
+            Format-Table -AutoSize -Wrap ProcessId, ParentProcessId, CreationDate, CommandLine | Out-String -Width 300 | Write-Host
+        } catch {
+          Write-Host "Diagnostics failed: $_"
+        }
+        $sampler = Join-Path $env:GITHUB_WORKSPACE 'src\electron\script\actions\occlusion-sampler.ps1'
+        $log = Join-Path $env:RUNNER_TEMP 'occlusion-sampler.log'
+        $empty = Join-Path $env:RUNNER_TEMP 'occlusion-sampler.in'
+        New-Item -ItemType File -Force -Path $empty | Out-Null
+        # Keep the step's own output pipes out of the sampler, so the runner
+        # does not wait on it to finish the step.
+        Add-Type -Namespace ElectronCI -Name Handles -MemberDefinition @'
+        [DllImport("kernel32.dll")] public static extern IntPtr GetStdHandle(int n);
+        [DllImport("kernel32.dll")] public static extern bool SetHandleInformation(IntPtr h, int mask, int flags);
+        '@
+        foreach ($n in -10, -11, -12) { [void][ElectronCI.Handles]::SetHandleInformation([ElectronCI.Handles]::GetStdHandle($n), 1, 0) }
+        Start-Process powershell.exe -NoNewWindow -RedirectStandardInput $empty -RedirectStandardOutput "$log.out" -RedirectStandardError "$log.err" `
+          -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $sampler, '-Log', $log, '-Seconds', '3600'
+        for ($i = 0; $i -lt 30 -and -not (Test-Path $log); $i++) { Start-Sleep -Seconds 1 }
+        if (Test-Path $log) { Get-Content $log | Write-Host } else { Write-Host "Sampler did not start: $(Get-Content -Raw "$log.err" -ErrorAction SilentlyContinue)" }
 
     - name: Run Electron Tests
       shell: bash
@@ -570,6 +604,15 @@ jobs:
             
           fi
         fi
+    - name: Print window occlusion samples (Windows)
+      if: ${{ always() && inputs.target-platform == 'win' }}
+      continue-on-error: true
+      shell: pwsh
+      run: |
+        $log = Join-Path $env:RUNNER_TEMP 'occlusion-sampler.log'
+        foreach ($f in "$log.err", "$log.out", $log) {
+          if (Test-Path $f) { Write-Host "--- $f"; Get-Content $f | Write-Host }
+        }
     - name: Verify custom mksnapshot blobs reach the main process
       # electron-mksnapshot / LoadBrowserProcessSpecificV8Snapshot users replace
       # the V8 snapshot blobs; check on one native leg that a build's own
