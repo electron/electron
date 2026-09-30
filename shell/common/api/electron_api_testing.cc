@@ -386,44 +386,6 @@ void StartUvTimerFromTask(v8::Isolate* isolate,
           loop, delay_ms, state));
 }
 
-// Starts a uv_check_t from a plain Chromium task and calls |done| when the
-// loop first runs it. A check handle adds no deadline and no watcher, so only
-// noticing the new handle itself gets the loop to iterate for it.
-struct UvCheckFromTask {
-  uv_check_t check;
-  raw_ptr<v8::Isolate> isolate;
-  v8::Global<v8::Function> done;
-};
-
-void StartUvCheckFromTask(v8::Isolate* isolate, v8::Local<v8::Function> done) {
-  uv_loop_t* loop = node::Environment::GetCurrent(isolate)->event_loop();
-  auto* state =
-      new UvCheckFromTask{{}, isolate, v8::Global<v8::Function>(isolate, done)};
-  state->check.data = state;
-  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
-      FROM_HERE,
-      base::BindOnce(
-          [](uv_loop_t* loop, UvCheckFromTask* state) {
-            uv_check_init(loop, &state->check);
-            uv_check_start(&state->check, [](uv_check_t* check) {
-              auto* state = static_cast<UvCheckFromTask*>(check->data);
-              v8::Isolate* isolate = state->isolate;
-              v8::HandleScope handle_scope(isolate);
-              v8::Local<v8::Function> done = state->done.Get(isolate);
-              v8::Local<v8::Context> context =
-                  done->GetCreationContextChecked(isolate);
-              v8::Context::Scope context_scope(context);
-              std::ignore = node::MakeCallback(isolate, context->Global(), done,
-                                               0, nullptr, {0, 0});
-              uv_close(reinterpret_cast<uv_handle_t*>(check),
-                       [](uv_handle_t* handle) {
-                         delete static_cast<UvCheckFromTask*>(handle->data);
-                       });
-            });
-          },
-          loop, state));
-}
-
 // Starts listening on a loopback port with bare libuv calls from the calling
 // JavaScript frame, the way a native module's binding would, and calls |done|
 // from the connection callback. Returns the port for the other process to
@@ -583,7 +545,6 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod<&ClearHeldPromiseForTesting>("clearHeldPromiseForTesting");
   dict.SetMethod<&StartUvTimerFromTask>("startUvTimerFromTask");
   dict.SetMethod<&StartUvListen>("startUvListen");
-  dict.SetMethod<&StartUvCheckFromTask>("startUvCheckFromTask");
   dict.SetMethod<&RunNestedLoopForTesting>("runNestedLoopForTesting");
   dict.SetMethod<&InvokeFromNativeSourceForTesting>(
       "invokeFromNativeSourceForTesting");

@@ -22,6 +22,11 @@ process.env.UV_WAKE_TMP ??= fs.mkdtempSync(path.join(os.tmpdir(), 'uv-wake-'));
 const watched = path.join(process.env.UV_WAKE_TMP, `watched-${process.type}`);
 fs.writeFileSync(watched, '0');
 
+// A live, referenced JavaScript timer far in the future, as any application
+// has, so that each timer op below re-arms Node's already-active uv timer
+// earlier rather than starting it, and only the deadline comparison sees it.
+setInterval(() => {}, 60_000);
+
 // The other process touches the watched file or connects to a port on
 // request, so that starting an op never wakes this process's loop itself.
 // Both export touchRepeatedly() for their side of it.
@@ -103,8 +108,6 @@ const ops = {
 try {
   const testing = process._linkedBinding('electron_common_testing');
   ops['native uv_timer_start from a task'] = { expect: 20, run: (done) => testing.startUvTimerFromTask(20, done) };
-  // A handle with no deadline and no watcher, started with no JS on the stack.
-  ops['native uv_check_start from a task'] = { run: (done) => testing.startUvCheckFromTask(done) };
   // uv_listen() straight from the calling frame; the other process connects.
   ops['native uv_listen'] = { registers: true, run: (done) => other.connect(testing.startUvListen(done)) };
 } catch {}

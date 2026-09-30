@@ -1244,7 +1244,6 @@ void NodeBindings::UvRunOnce(uint64_t polling_generation) {
   poll_deadline_ = poll_timeout_ < 0    ? std::numeric_limits<uint64_t>::max()
                    : poll_timeout_ == 0 ? 0
                                         : uv_now(uv_loop_) + poll_timeout_;
-  poll_active_handles_ = uv_loop_->active_handles;
   uv_sem_post(&embed_sem_);
 }
 
@@ -1283,9 +1282,7 @@ void NodeBindings::WakeupEmbedThreadIfLoopHasEarlierWork() {
   // passed on the loop clock it may still be asleep (the loop clock counts
   // system sleep on macOS, and a poll can overshoot), so wake it anyway.
   const uint64_t now = uv_now(uv_loop_);
-  const bool in_time =
-      timeout < 0 || (now < poll_deadline_ && now + timeout >= poll_deadline_);
-  if (in_time && uv_loop_->active_handles <= poll_active_handles_)
+  if (timeout < 0 || (now < poll_deadline_ && now + timeout >= poll_deadline_))
     return;
   poll_deadline_ = 0;
   WakeupEmbedThread();
