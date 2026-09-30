@@ -42,7 +42,7 @@ function late(cases: Case[]) {
 // Node's loop only runs when Electron's embed thread notices it has work. These
 // start uv-backed operations from every kind of JS entry an otherwise idle
 // process has and check each completes about as fast as it would in Node.
-describe('uv loop integration', function () {
+describe('uv loop integration', { tags: ['serial'] }, function () {
   this.timeout(5 * 60 * 1000);
 
   it('completes uv work started from an idle browser process and nodeIntegration renderer on time', async () => {
