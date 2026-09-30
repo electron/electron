@@ -446,6 +446,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@electron-ci/mouse-input@npm:*, @electron-ci/mouse-input@workspace:spec/fixtures/native-addon/mouse-input":
+  version: 0.0.0-use.local
+  resolution: "@electron-ci/mouse-input@workspace:spec/fixtures/native-addon/mouse-input"
+  languageName: unknown
+  linkType: soft
+
 "@electron-ci/object-wrap@npm:*, @electron-ci/object-wrap@workspace:spec/fixtures/native-addon/object-wrap":
   version: 0.0.0-use.local
   resolution: "@electron-ci/object-wrap@workspace:spec/fixtures/native-addon/object-wrap"
@@ -3791,6 +3797,7 @@ __metadata:
     "@electron-ci/echo": "npm:*"
     "@electron-ci/external-ab": "npm:*"
     "@electron-ci/is-valid-window": "npm:*"
+    "@electron-ci/mouse-input": "npm:*"
     "@electron-ci/object-wrap": "npm:*"
     "@electron-ci/osr-gpu": "npm:*"
     "@electron-ci/uv-dlopen": "npm:*"
