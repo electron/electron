@@ -2,6 +2,7 @@ import { nativeTheme, BrowserWindow, ipcMain } from 'electron/main';
 
 import { expect } from 'chai';
 
+import * as cp from 'node:child_process';
 import { once } from 'node:events';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
@@ -88,6 +89,21 @@ describe('nativeTheme module', () => {
       if (originalSystemIsDark) await changePromise;
       expect(await getPrefersColorSchemeIsDark(w)).to.equal(originalSystemIsDark);
       w.close();
+    });
+
+    it('goes back to dark when set to system under --force-dark-mode', async () => {
+      const fixture = path.resolve(import.meta.dirname, 'fixtures', 'api', 'force-dark-mode');
+      const child = cp.spawn(process.execPath, [fixture, '--force-dark-mode']);
+      let output = '';
+      child.stdout.on('data', (chunk) => {
+        output += chunk;
+      });
+      await once(child, 'close');
+      expect(JSON.parse(output)).to.deep.equal([
+        ['system', true],
+        ['light', false],
+        ['system', true]
+      ]);
     });
   });
 
