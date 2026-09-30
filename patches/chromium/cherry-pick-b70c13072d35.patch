@@ -163,7 +163,7 @@ index dc0ffe62018f7d32f6900287a95b3273244775f5..cf416e9215bea86d9d47b1f300bd1fcb
    // name (e.g. ExtensionHost becomes EH) plus a unique description of the
    // reason. After making changes, you MUST update histograms.xml by running:
 diff --git a/tools/metrics/histograms/metadata/stability/enums.xml b/tools/metrics/histograms/metadata/stability/enums.xml
-index 296c32978d4371cdbc61ea54bea48bc3678da1a2..f3a224ec4af10ee54d05a2cf8b77243abea20ef1 100644
+index 864fa4c6fed2f0b662661bcb0aeb3444805321e9..b915b720d37d485846379461467cd0de792ad95a 100644
 --- a/tools/metrics/histograms/metadata/stability/enums.xml
 +++ b/tools/metrics/histograms/metadata/stability/enums.xml
 @@ -592,6 +592,7 @@ Called by update_bad_message_reasons.py.-->

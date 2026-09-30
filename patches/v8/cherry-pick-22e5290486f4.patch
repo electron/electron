@@ -23,7 +23,7 @@ Reviewed-by: Jakob Kummerow <jkummerow@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#109922}
 
 diff --git a/src/objects/lookup-inl.h b/src/objects/lookup-inl.h
-index 9981d2c86f2cd3cfc7403a19db2a64dcc7ba9e1e..faa484be687090a07fe31b241c263b2aa66335e9 100644
+index 4c2ecd19249ceae1715e75c36dff75e8ed1700f9..51a9b94427daff6c964af809901a52616b6ab8c3 100644
 --- a/src/objects/lookup-inl.h
 +++ b/src/objects/lookup-inl.h
 @@ -289,6 +289,13 @@ bool LookupIterator::ExtendingNonExtensible(DirectHandle<JSReceiver> receiver) {
