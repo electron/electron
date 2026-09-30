@@ -110,7 +110,7 @@ index 5618036a81731188aacfe8a6adc05ff09563927a..4318f285934560490ad57b04d63b846f
                                   GLsizei width,
                                   GLsizei height,
 diff --git a/gpu/command_buffer/service/gl_utils.h b/gpu/command_buffer/service/gl_utils.h
-index a567a04869bcfb32a94a71c0ccebb6ecef3c6418..b68069c29c22b2dbf46205202af90fe18d611563 100644
+index 70b0c90b8bf78241f4539686df8a317372b9f78c..cf2d4c0f883fb54a2474550e4cc5acca61699548 100644
 --- a/gpu/command_buffer/service/gl_utils.h
 +++ b/gpu/command_buffer/service/gl_utils.h
 @@ -21,6 +21,7 @@
