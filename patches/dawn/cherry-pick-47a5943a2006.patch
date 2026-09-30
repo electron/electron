@@ -1,0 +1,383 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shrek Shao <shrekshao@google.com>
+Date: Mon, 14 Sep 2026 16:52:50 -0700
+Subject: [gl] Use blit for unsupported glReadPixels formats pt 1
+
+Under OpenGL ES, glReadPixels only guarantees a limited
+set of format/type combinations. Mostly format = GL_RGBA.
+Reading formats like R8Unorm, RG8Unorm with native format/type pair
+with glReadPixels is not guaranteed to succeed.
+
+This CL add toggles to emulate these copies with compute blits, for
+formats with existing blit implementation:
+- UseBlitForNonRGBAUnormTextureToBufferCopy
+- UseBlitForNonRGBAFloatTextureToBufferCopy
+
+Enable these toggles by default on the OpenGLES backend.
+
+Bug: 556959073
+Change-Id: Idc24c5736bbacc9176d34920946055b9ba332625
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/340475
+Commit-Queue: Shrek Shao <shrekshao@google.com>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+
+Electron adaptation notes (43-x-y):
+M150 Dawn still derives isFloat32Renderable/isFloat16Renderable/isRG11B10UfloatRenderable from GL_EXT_color_buffer_float and has no VulkanSplitBufferTextureCopyForArrayLayers toggle. The two new toggles and the OpenGL ES defaults block were added; the existing renderable-based defaults for RG11B10Ufloat/Float16/Float32 were kept instead of upstream's DAWN_CHECK plus unconditional false defaults (upstream's temporary RG11B10Ufloat=false is superseded by part 3 of this series).
+
+diff --git a/src/dawn/native/Buffer.cpp b/src/dawn/native/Buffer.cpp
+index b91140df533ec7cc9b022b53cfdeb6db250b1e9e..75e7688372582410c42606b3428c75b2fcb03da9 100644
+--- a/src/dawn/native/Buffer.cpp
++++ b/src/dawn/native/Buffer.cpp
+@@ -191,6 +191,8 @@ wgpu::BufferUsage ComputeInternalBufferUsages(const DeviceBase* device,
+             device->IsToggleEnabled(Toggle::UseBlitForStencilTextureToBufferCopy) ||
+             device->IsToggleEnabled(Toggle::UseBlitForSnormTextureToBufferCopy) ||
+             device->IsToggleEnabled(Toggle::UseBlitForBGRA8UnormTextureToBufferCopy) ||
++            device->IsToggleEnabled(Toggle::UseBlitForNonRGBAUnormTextureToBufferCopy) ||
++            device->IsToggleEnabled(Toggle::UseBlitForNonRGBAFloatTextureToBufferCopy) ||
+             device->IsToggleEnabled(Toggle::UseBlitForRGB9E5UfloatTextureCopy) ||
+             device->IsToggleEnabled(Toggle::UseBlitForRG11B10UfloatTextureCopy) ||
+             device->IsToggleEnabled(Toggle::UseBlitForFloat16TextureCopy) ||
+diff --git a/src/dawn/native/CommandEncoder.cpp b/src/dawn/native/CommandEncoder.cpp
+index c68db77f2d07c898b3fddd8fa8806b33a153ee3b..d0cae238806fd460536fdd7744c12fbb3b102d37 100644
+--- a/src/dawn/native/CommandEncoder.cpp
++++ b/src/dawn/native/CommandEncoder.cpp
+@@ -1109,6 +1109,19 @@ bool ShouldUseTextureToBufferBlit(const DeviceBase* device,
+         device->IsToggleEnabled(Toggle::UseBlitForBGRA8UnormTextureToBufferCopy)) {
+         return true;
+     }
++    // Non-RGBA unorm
++    // TODO(crbug.com/561669028): *16Unorm also need to use blit for T2B copy on OpenGL
++    if ((format.format == wgpu::TextureFormat::R8Unorm ||
++         format.format == wgpu::TextureFormat::RG8Unorm) &&
++        device->IsToggleEnabled(Toggle::UseBlitForNonRGBAUnormTextureToBufferCopy)) {
++        return true;
++    }
++    // Non-RGBA float
++    if ((format.format == wgpu::TextureFormat::R32Float ||
++         format.format == wgpu::TextureFormat::RG32Float) &&
++        device->IsToggleEnabled(Toggle::UseBlitForNonRGBAFloatTextureToBufferCopy)) {
++        return true;
++    }
+     // RGB9E5Ufloat
+     if (format.format == wgpu::TextureFormat::RGB9E5Ufloat &&
+         device->IsToggleEnabled(Toggle::UseBlitForRGB9E5UfloatTextureCopy)) {
+diff --git a/src/dawn/native/Texture.cpp b/src/dawn/native/Texture.cpp
+index a329ad5981f2370a0c8238f77fdc6f38aa8bedd8..e59b3380489db1f3090c0017b225e5d2adf37ffe 100644
+--- a/src/dawn/native/Texture.cpp
++++ b/src/dawn/native/Texture.cpp
+@@ -561,6 +561,18 @@ bool CopySrcNeedsInternalTextureBindingUsage(const DeviceBase* device, const For
+         device->IsToggleEnabled(Toggle::UseBlitForBGRA8UnormTextureToBufferCopy)) {
+         return true;
+     }
++    // Non-RGBA unorm
++    if ((format.format == wgpu::TextureFormat::R8Unorm ||
++         format.format == wgpu::TextureFormat::RG8Unorm) &&
++        device->IsToggleEnabled(Toggle::UseBlitForNonRGBAUnormTextureToBufferCopy)) {
++        return true;
++    }
++    // Non-RGBA float
++    if ((format.format == wgpu::TextureFormat::R32Float ||
++         format.format == wgpu::TextureFormat::RG32Float) &&
++        device->IsToggleEnabled(Toggle::UseBlitForNonRGBAFloatTextureToBufferCopy)) {
++        return true;
++    }
+     // RGB9E5Ufloat
+     if (format.format == wgpu::TextureFormat::RGB9E5Ufloat &&
+         device->IsToggleEnabled(Toggle::UseBlitForRGB9E5UfloatTextureCopy)) {
+diff --git a/src/dawn/native/Toggles.cpp b/src/dawn/native/Toggles.cpp
+index ea6b3f482d086eef135446dfc7a2e1f44ceb3966..d0af7fa56528512db51675ab1544cf38b8222114 100644
+--- a/src/dawn/native/Toggles.cpp
++++ b/src/dawn/native/Toggles.cpp
+@@ -496,6 +496,16 @@ static constexpr ToggleEnumAndInfoList kToggleNameAndInfoList = {{
+       "Use a shader based blit instead of a copy command to copy a buffer to a texture with "
+       "supported format.",
+       "https://crbug.com/dawn/348653642", ToggleStage::Device}},
++    {Toggle::UseBlitForNonRGBAUnormTextureToBufferCopy,
++     {"use_blit_for_non_rgba_unorm_texture_to_buffer_copy",
++      "Use a blit instead of a copy command to copy non-RGBA unorm textures to a buffer. "
++      "Workaround for OpenGLES.",
++      "https://issues.chromium.org/issues/556959073", ToggleStage::Device}},
++    {Toggle::UseBlitForNonRGBAFloatTextureToBufferCopy,
++     {"use_blit_for_non_rgba_float_texture_to_buffer_copy",
++      "Use a blit instead of a copy command to copy non-RGBA float textures to a buffer. "
++      "Workaround for OpenGLES.",
++      "https://issues.chromium.org/issues/556959073", ToggleStage::Device}},
+     {Toggle::GLUseArrayLengthFromUniform,
+      {"gl_use_array_length_from_uniform",
+       "Use arrayLengthFromUniform transform to replace arrayLength() function calls of dynamic "
+diff --git a/src/dawn/native/Toggles.h b/src/dawn/native/Toggles.h
+index 1aa52072c54d1295eed3929750f45c456e5935c2..45b5bfd947f465e6bd667457a00fde7abea5b238 100644
+--- a/src/dawn/native/Toggles.h
++++ b/src/dawn/native/Toggles.h
+@@ -126,6 +126,8 @@ enum class Toggle {
+     UseBlitForFloat32TextureCopy,
+     UseBlitForT2B,
+     UseBlitForB2T,
++    UseBlitForNonRGBAUnormTextureToBufferCopy,
++    UseBlitForNonRGBAFloatTextureToBufferCopy,
+     GLUseArrayLengthFromUniform,
+     D3D11DisableCPUUploadBuffers,
+     UseT2B2TForSRGBTextureCopy,
+diff --git a/src/dawn/native/opengl/PhysicalDeviceGL.cpp b/src/dawn/native/opengl/PhysicalDeviceGL.cpp
+index b5979597292e96bd0a74a39294f1f5b96487955c..cb789598e2c293b20131527872c18f3a2ccddf13 100644
+--- a/src/dawn/native/opengl/PhysicalDeviceGL.cpp
++++ b/src/dawn/native/opengl/PhysicalDeviceGL.cpp
+@@ -474,9 +474,18 @@ void PhysicalDevice::SetupBackendDeviceToggles(dawn::platform::Platform* platfor
+     // For OpenGL ES, use compute shader blit to emulate bgra8unorm texture to buffer copies.
+     deviceToggles->Default(Toggle::UseBlitForBGRA8UnormTextureToBufferCopy, !supportsBGRARead);
+ 
+-    // For OpenGL ES, use compute shader blit to emulate rgb9e5ufloat texture to buffer copies.
++    // For OpenGL ES, use compute shader blit to emulate rgb9e5ufloat texture to buffer copies if
++    // not color-renderable.
+     deviceToggles->Default(Toggle::UseBlitForRGB9E5UfloatTextureCopy, gl.GetVersion().IsES());
+ 
++    // For OpenGL ES, use compute shader blit to emulate texture to buffer copies to work around
++    // glReadPixels not guaranteed support for certain format/type combinations.
++    if (gl.GetVersion().IsES()) {
++        deviceToggles->Default(Toggle::UseBlitForNonRGBAUnormTextureToBufferCopy, true);
++        deviceToggles->Default(Toggle::UseBlitForNonRGBAFloatTextureToBufferCopy, true);
++        deviceToggles->Default(Toggle::UseBlitForFloat16TextureCopy, true);
++    }
++
+     // Use compute shader blit to emulate rg11b10ufloat texture to buffer copies if not color
+     // renderable.
+     deviceToggles->Default(Toggle::UseBlitForRG11B10UfloatTextureCopy, !isRG11B10UfloatRenderable);
+diff --git a/src/dawn/tests/end2end/BufferZeroInitTests.cpp b/src/dawn/tests/end2end/BufferZeroInitTests.cpp
+index c172099258ecfab9101642a17b307bdc10eb7214..7926041d68b45d6e310da4ee3f3c3c176780df64 100644
+--- a/src/dawn/tests/end2end/BufferZeroInitTests.cpp
++++ b/src/dawn/tests/end2end/BufferZeroInitTests.cpp
+@@ -147,8 +147,12 @@ class BufferZeroInitTest : public DawnTest {
+         wgpu::CommandBuffer commandBuffer = encoder.Finish();
+ 
+         // TODO(b/513631768): SetInitialized is now skipped for use_blit_for_t2b path.
++        // Blit is also used for the R32Float format when
++        // use_blit_for_non_rgba_float_texture_to_buffer_copy is enabled.
+         uint32_t expectedLazyClearCount = spec.lazyClearCount;
+-        if (expectedLazyClearCount == 0u && (HasToggleEnabled("use_blit_for_t2b"))) {
++        if (expectedLazyClearCount == 0u &&
++            (HasToggleEnabled("use_blit_for_t2b") ||
++             HasToggleEnabled("use_blit_for_non_rgba_float_texture_to_buffer_copy"))) {
+             expectedLazyClearCount = 1u;
+         }
+ 
+diff --git a/src/dawn/tests/end2end/CopyTests.cpp b/src/dawn/tests/end2end/CopyTests.cpp
+index 32b9883cbd939be01c7bc5c9b3759ea75d3747b5..562382ff108ae139de733939bf680c39989c98ed 100644
+--- a/src/dawn/tests/end2end/CopyTests.cpp
++++ b/src/dawn/tests/end2end/CopyTests.cpp
+@@ -193,6 +193,10 @@ class CopyTests {
+             case wgpu::TextureFormat::RG16Float:
+             case wgpu::TextureFormat::RGBA16Float:
+                 return GetExpectedTextureData16Float(layout);
++            case wgpu::TextureFormat::R32Float:
++            case wgpu::TextureFormat::RG32Float:
++            case wgpu::TextureFormat::RGBA32Float:
++                return GetExpectedTextureData32Float(layout);
+             case wgpu::TextureFormat::RGB9E5Ufloat:
+                 return GetExpectedTextureDataRGB9E5Ufloat(layout);
+             case wgpu::TextureFormat::RG11B10Ufloat:
+@@ -257,6 +261,56 @@ class CopyTests {
+         return textureData;
+     }
+ 
++    // Special function to generate test data for *32Float to avoid NaNs and subnormals
++    // that can be canonicalized or flushed to zero by shaders on some GPUs (e.g. Mali).
++    static std::vector<uint8_t> GetExpectedTextureData32Float(
++        const utils::TextureDataCopyLayout& layout) {
++        // These are some known 4-byte float values that are normal floats (non-NaN, non-subnormal)
++        // and always preserve their exact byte representation across texture load and store.
++        constexpr auto goodBytes = std::to_array<uint8_t>({
++            0x11, 0x22, 0x33, 0x3F,  // ~0.7
++            0x55, 0x66, 0x77, 0x40,  // ~3.86
++            0x99, 0xAA, 0xBB, 0x41,  // ~23.45
++            0x12, 0x34, 0x56, 0x42,  // ~53.55
++            0x78, 0x9A, 0xBC, 0x43,  // ~377.2
++            0xDE, 0xF0, 0x12, 0x44,  // ~587.7
++            0x34, 0x56, 0x78, 0x3E,  // ~0.24
++            0x90, 0x12, 0x34, 0xBF,  // ~ -0.7
++            0x56, 0x78, 0x9A, 0xC0,  // ~ -4.8
++            0xAB, 0xCD, 0xEF, 0xC1,  // ~ -29.9
++            0x10, 0x20, 0x30, 0x40,  // ~2.75
++            0x40, 0x50, 0x60, 0x41,  // ~14.02
++            0x70, 0x80, 0x90, 0x42,  // ~72.25
++            0x21, 0x43, 0x65, 0x43,  // ~229.26
++            0x87, 0xA9, 0xCB, 0x44,  // ~1629.3
++            0xED, 0x0F, 0x2E, 0x3E,  // ~0.17
++        });
++        constexpr uint32_t formatByteSize = 4;
++        constexpr uint32_t numGoodValues = goodBytes.size() / formatByteSize;
++        uint32_t bytesPerTexelBlock = layout.bytesPerRow / layout.texelBlocksPerRow;
++        uint32_t channelsPerTexel = bytesPerTexelBlock / formatByteSize;
++        std::vector<uint8_t> textureData(layout.byteLength);
++        for (uint32_t layer = 0; layer < layout.mipSize.depthOrArrayLayers; ++layer) {
++            const uint32_t byteOffsetPerSlice = layout.bytesPerImage * layer;
++            for (uint32_t y = 0; y < layout.mipSize.height; ++y) {
++                for (uint32_t x = 0; x < layout.mipSize.width; ++x) {
++                    for (uint32_t c = 0; c < channelsPerTexel; ++c) {
++                        uint32_t o = byteOffsetPerSlice + y * layout.bytesPerRow +
++                                     x * bytesPerTexelBlock + c * formatByteSize;
++                        uint32_t idx =
++                            formatByteSize *
++                            ((x * channelsPerTexel + c + 1 + (layer + 1) * y) % numGoodValues);
++                        textureData[o + 0] = goodBytes[idx + 0];
++                        textureData[o + 1] = goodBytes[idx + 1];
++                        textureData[o + 2] = goodBytes[idx + 2];
++                        textureData[o + 3] = goodBytes[idx + 3];
++                    }
++                }
++            }
++        }
++        return textureData;
++    }
++
+     // Special function to generate test data for RGB9E5Ufloat to workaround nonunique encoding
+     // issue.
+     static std::vector<uint8_t> GetExpectedTextureDataRGB9E5Ufloat(
+@@ -472,9 +526,12 @@ class CopyTests_T2B : public CopyTests_WithFormatParam {
+ 
+         auto format = GetParam().mTextureFormat;
+ 
+-        // TODO(crbug.com/dawn/2294): diagnose BGRA T2B failures on Pixel 4 OpenGLES
+-        DAWN_SUPPRESS_TEST_IF(format == wgpu::TextureFormat::BGRA8Unorm && IsOpenGLES() &&
+-                              IsAndroid() && IsQualcomm());
++        // TODO(crbug.com/dawn/2294): diagnose T2B failures on Pixel 4 OpenGLES
++        DAWN_SUPPRESS_TEST_IF((format == wgpu::TextureFormat::BGRA8Unorm ||
++                               format == wgpu::TextureFormat::R16Float ||
++                               format == wgpu::TextureFormat::RG16Float ||
++                               format == wgpu::TextureFormat::RGBA16Float) &&
++                              IsOpenGLES() && IsAndroid() && IsQualcomm());
+ 
+         // TODO(dawn:1913): Many float formats tests failing for Metal backend on Mac Intel.
+         DAWN_SUPPRESS_TEST_IF((format == wgpu::TextureFormat::R32Float ||
+@@ -2144,57 +2201,65 @@ TEST_P(CopyTests_T2B, Texture3DMipUnaligned) {
+     }
+ }
+ 
+-DAWN_INSTANTIATE_TEST_P(CopyTests_T2B,
+-                        {D3D11Backend(), D3D11Backend({"d3d11_disable_map_on_default_buffers"}),
+-                         D3D12Backend(), MetalBackend(), OpenGLBackend(), OpenGLESBackend(),
+-                         OpenGLESBackend({"gl_defer"}), VulkanBackend(),
+-                         VulkanBackend({"use_blit_for_snorm_texture_to_buffer_copy",
+-                                        "use_blit_for_bgra8unorm_texture_to_buffer_copy"}),
+-                         WebGPUBackend()},
+-                        {
+-                            wgpu::TextureFormat::R8Unorm,
+-                            wgpu::TextureFormat::RG8Unorm,
+-                            wgpu::TextureFormat::RGBA8Unorm,
++DAWN_INSTANTIATE_TEST_P(
++    CopyTests_T2B,
++    {D3D11Backend(), D3D11Backend({"d3d11_disable_map_on_default_buffers"}), D3D12Backend(),
++     MetalBackend(), OpenGLBackend(), OpenGLESBackend(), OpenGLESBackend({"gl_defer"}),
++     VulkanBackend(),
++     VulkanBackend({"use_blit_for_snorm_texture_to_buffer_copy",
++                    "use_blit_for_bgra8unorm_texture_to_buffer_copy"}),
++     WebGPUBackend()},
++    {
++        // Note: The formats below provide general T2B copy coverage across backends, and
++        // also record coverage for OpenGL compat toggles:
+ 
+-                            wgpu::TextureFormat::R8Uint,
+-                            wgpu::TextureFormat::R8Sint,
++        // Also covers OpenGL compat Toggle::UseBlitForNonRGBAUnormTextureToBufferCopy
++        wgpu::TextureFormat::R8Unorm,
++        wgpu::TextureFormat::RG8Unorm,
+ 
+-                            wgpu::TextureFormat::R16Uint,
+-                            wgpu::TextureFormat::R16Sint,
+-                            wgpu::TextureFormat::R16Float,
++        wgpu::TextureFormat::RGBA8Unorm,
+ 
+-                            wgpu::TextureFormat::RG16Uint,
+-                            wgpu::TextureFormat::RG16Sint,
+-                            wgpu::TextureFormat::RG16Float,
++        wgpu::TextureFormat::R8Uint,
++        wgpu::TextureFormat::R8Sint,
+ 
+-                            wgpu::TextureFormat::R32Uint,
+-                            wgpu::TextureFormat::R32Sint,
+-                            wgpu::TextureFormat::R32Float,
++        wgpu::TextureFormat::R16Uint,
++        wgpu::TextureFormat::R16Sint,
++        wgpu::TextureFormat::R16Float,
+ 
+-                            wgpu::TextureFormat::RG32Float,
+-                            wgpu::TextureFormat::RG32Uint,
+-                            wgpu::TextureFormat::RG32Sint,
++        wgpu::TextureFormat::RG16Uint,
++        wgpu::TextureFormat::RG16Sint,
++        wgpu::TextureFormat::RG16Float,
+ 
+-                            wgpu::TextureFormat::RGBA16Uint,
+-                            wgpu::TextureFormat::RGBA16Sint,
+-                            wgpu::TextureFormat::RGBA16Float,
++        wgpu::TextureFormat::R32Uint,
++        wgpu::TextureFormat::R32Sint,
+ 
+-                            wgpu::TextureFormat::RGBA32Float,
++        // Also covers OpenGL compat Toggle::UseBlitForNonRGBAFloatTextureToBufferCopy
++        wgpu::TextureFormat::R32Float,
++        wgpu::TextureFormat::RG32Float,
+ 
+-                            wgpu::TextureFormat::RGB10A2Unorm,
+-                            wgpu::TextureFormat::RG11B10Ufloat,
++        wgpu::TextureFormat::RG32Uint,
++        wgpu::TextureFormat::RG32Sint,
+ 
+-                            // Testing OpenGL compat Toggle::UseBlitForRGB9E5UfloatTextureCopy
+-                            wgpu::TextureFormat::RGB9E5Ufloat,
++        wgpu::TextureFormat::RGBA16Uint,
++        wgpu::TextureFormat::RGBA16Sint,
++        wgpu::TextureFormat::RGBA16Float,
+ 
+-                            // Testing OpenGL compat Toggle::UseBlitForSnormTextureToBufferCopy
+-                            wgpu::TextureFormat::R8Snorm,
+-                            wgpu::TextureFormat::RG8Snorm,
+-                            wgpu::TextureFormat::RGBA8Snorm,
++        wgpu::TextureFormat::RGBA32Float,
+ 
+-                            // Testing OpenGL compat Toggle::UseBlitForBGRA8UnormTextureToBufferCopy
+-                            wgpu::TextureFormat::BGRA8Unorm,
+-                        });
++        wgpu::TextureFormat::RGB10A2Unorm,
++        wgpu::TextureFormat::RG11B10Ufloat,
++
++        // Also covers OpenGL compat Toggle::UseBlitForRGB9E5UfloatTextureCopy
++        wgpu::TextureFormat::RGB9E5Ufloat,
++
++        // Also covers OpenGL compat Toggle::UseBlitForSnormTextureToBufferCopy
++        wgpu::TextureFormat::R8Snorm,
++        wgpu::TextureFormat::RG8Snorm,
++        wgpu::TextureFormat::RGBA8Snorm,
++
++        // Also covers OpenGL compat Toggle::UseBlitForBGRA8UnormTextureToBufferCopy
++        wgpu::TextureFormat::BGRA8Unorm,
++    });
+ 
+ class CopyTests_T2B_No_Format_Param : public CopyTests, public DawnTest {};
+ 
+@@ -3311,6 +3376,8 @@ TEST_P(CopyTests_T2T, CopyFromNonZeroMipLevelWithTexelBlockSizeLessThan4Bytes) {
+     DAWN_SUPPRESS_TEST_IF(IsImgTec());
+     // TODO(crbug.com/473582006): [Capture] issue calling ResolveDeferredExpectationsNow.
+     DAWN_SUPPRESS_TEST_IF(IsCaptureReplayCheckingEnabled());
++    // TODO(crbug.com/dawn/2294): diagnose T2B failures on Pixel 4 OpenGLES
++    DAWN_SUPPRESS_TEST_IF(IsOpenGLES() && IsAndroid() && IsQualcomm());
+ 
+     constexpr std::array<wgpu::TextureFormat, 11> kFormats = {
+         {wgpu::TextureFormat::RG8Sint, wgpu::TextureFormat::RG8Uint, wgpu::TextureFormat::RG8Snorm,
+diff --git a/src/dawn/tests/end2end/NonzeroTextureCreationTests.cpp b/src/dawn/tests/end2end/NonzeroTextureCreationTests.cpp
+index bd214b76b52321916c8df4c9f97459ab5370ff78..24654eded33dbb3602cc9a68e5499f38cd3cfa35 100644
+--- a/src/dawn/tests/end2end/NonzeroTextureCreationTests.cpp
++++ b/src/dawn/tests/end2end/NonzeroTextureCreationTests.cpp
+@@ -120,6 +120,12 @@ class NonzeroTextureCreationTests : public DawnTestWithParams<Params> {
+         // TODO(dawn:1844): Work around this by clearing layers one by one on Intel.
+         DAWN_SUPPRESS_TEST_IF(IsD3D11() && IsIntel() && GetParam().mDepthOrArrayLayers > 6);
+ 
++        // TODO(crbug.com/556959073): BlitTextureToBuffer cube sampling fails on Pixel 10 OpenGLES
++        // for RG8Unorm small mips.
++        DAWN_SUPPRESS_TEST_IF(IsImgTec() && IsOpenGLES() &&
++                              GetParam().mFormat == wgpu::TextureFormat::RG8Unorm &&
++                              GetParam().mDepthOrArrayLayers == 6 && GetParam().mMip >= 2);
++
+         wgpu::TextureDescriptor descriptor;
+         descriptor.dimension = GetParam().mDimension;
+         descriptor.size.width = kSize;
