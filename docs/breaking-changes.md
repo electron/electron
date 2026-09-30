@@ -40,7 +40,9 @@ uv_async_send(&wake);
 ```
 
 Handles started from Node.js or Node-API callbacks, async work and thread-safe
-functions, or Chromium tasks are not affected.
+functions, or Chromium tasks are not affected. A `uv_prepare_t` or
+`uv_check_t` on its own runs when the loop next iterates, as in Node.js; pair
+it with a `uv_idle_t` or the `uv_async_send()` above if it has to run at once.
 
 For JavaScript, anything other than those four calls (a socket, a watcher,
 `dns.resolve()`, `timers/promises`, `socket.setTimeout()`) that a handler
