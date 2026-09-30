@@ -1215,7 +1215,8 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
     * `audioRequested` Boolean - true if the web content requested an audio stream.
     * `userGesture` Boolean - Whether a user gesture was active when this request was triggered.
   * `callback` Function
-    * `streams` Object
+    * `streams` Object | null - Pass `null` to deny the request, which rejects
+      the `getDisplayMedia()` promise with an `AbortError`.
       * `video` Object | [WebFrameMain](web-frame-main.md) (optional)
         * `id` String - The id of the stream being granted. This will usually
           come from a [DesktopCapturerSource](structures/desktop-capturer-source.md)
@@ -1249,10 +1250,17 @@ const { session, desktopCapturer } = require('electron')
 
 session.defaultSession.setDisplayMediaRequestHandler(
   (request, callback) => {
-    desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
-      // Grant access to the first screen found.
-      callback({ video: sources[0] })
-    })
+    desktopCapturer.getSources({ types: ['screen'] }).then(
+      (sources) => {
+        // Grant access to the first screen found.
+        callback({ video: sources[0] })
+      },
+      () => {
+        // Deny the request if no sources could be retrieved, for example
+        // when the user cancels the PipeWire picker on Linux.
+        callback(null)
+      }
+    )
     // Use the system picker if available.
     // Note: this is currently experimental. If the system picker
     // is available, it will be used and the media request handler
