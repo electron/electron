@@ -27,7 +27,7 @@ Fixes: https://github.com/electron/electron/issues/54199
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/8470272
 
 diff --git a/content/browser/find_request_manager.cc b/content/browser/find_request_manager.cc
-index 9fbcd519dc4963e6977237db791d6a323eca2905..6f1c2550b2d8e3724ca4f2502c84c0be58fb25cb 100644
+index 04697138aedcc9ecccb947950291d95f157a56bf..3101b58869ef33b4c6963a28311fe16a4005d8c9 100644
 --- a/content/browser/find_request_manager.cc
 +++ b/content/browser/find_request_manager.cc
 @@ -83,13 +83,9 @@ RenderFrameHostImpl* GetAncestor(RenderFrameHostImpl* rfh) {
