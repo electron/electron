@@ -35,6 +35,7 @@ public static class OcclusionSampler {
   [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW")] static extern bool SystemParametersInfo(uint action, uint param, out int value, uint winIni);
   [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr h, int attr, out int value, int size);
   [DllImport("kernel32.dll")] static extern uint GetTickCount();
+  [DllImport("user32.dll")] static extern bool ShowWindow(IntPtr h, int cmd);
   [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] static extern IntPtr GetModuleHandle(string name);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern ushort RegisterClassEx(ref WNDCLASSEX c);
   [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern IntPtr CreateWindowEx(int exStyle, string cls, string name, uint style, int x, int y, int w, int h, IntPtr parent, IntPtr menu, IntPtr inst, IntPtr param);
@@ -114,6 +115,24 @@ public static class OcclusionSampler {
     return true;
   }
 
+  // The windows-11-arm image keeps relaunching `wsl.exe --update` in a new
+  // Windows Terminal window that takes the foreground and covers most of the
+  // desktop, so Chromium's occlusion tracking reports Electron's windows
+  // beneath it as hidden. Minimize such windows as soon as they show up.
+  static void MinimizeWslWindow(IntPtr h) {
+    if (!IsWindowVisible(h) || IsIconic(h)) return;
+    var cls = new StringBuilder(64);
+    GetClassName(h, cls, 64);
+    string c = cls.ToString();
+    if (c != "CASCADIA_HOSTING_WINDOW_CLASS" && c != "ConsoleWindowClass") return;
+    var title = new StringBuilder(256);
+    GetWindowText(h, title, 256);
+    if (title.ToString().IndexOf("wsl.exe", StringComparison.OrdinalIgnoreCase) < 0) return;
+    string desc = Describe(h, true);
+    ShowWindow(h, 6);  // SW_MINIMIZE
+    Log("minimized " + desc);
+  }
+
   // The occluding non-Electron windows above the topmost Electron window,
   // top first, and how many Electron windows could be occluded.
   static string Snapshot(out int electronWindows) {
@@ -121,6 +140,7 @@ public static class OcclusionSampler {
     int count = 0;
     bool reachedElectron = false;
     EnumWindows(delegate (IntPtr h, IntPtr l) {
+      MinimizeWslWindow(h);
       if (!CanOcclude(h)) return true;
       uint pid;
       GetWindowThreadProcessId(h, out pid);
