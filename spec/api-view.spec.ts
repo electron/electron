@@ -288,6 +288,7 @@ describe('View', () => {
     afterEach(closeAllWindows);
 
     it('does not throw when toggled on a view', () => {
+      w = new BaseWindow({ show: false });
       const v = new View();
       expect(() => v.setInteractive(false)).to.not.throw();
       expect(() => v.setInteractive(true)).to.not.throw();
