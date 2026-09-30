@@ -129,10 +129,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index f66384f2728dd2903d9fc058ad81a07e290f1496..f6081d04db4d9849074de4dae9c634b369043aa6 100644
+index e656bc9dbeca38e0828f1cfca47a62de2797ebbb..e2ff01b3d3cc8329958f13b92305d2da36446337 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -1044,6 +1044,7 @@ if (is_clang_or_gcc) {
+@@ -1045,6 +1045,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -1005,7 +1005,7 @@ index d42b3b58b63c7b4179b49c2d5ac73892f5a70cf3..7aaba0f0262fbb63746718a29572bd75
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index db736f75c3288e23b50505eca823623cae74d9c2..6a2735d60f1da016e8ced4627e722650fa45c69c 100644
+index 3162721b67d5b744c2c1d7021656a862eea2c2c5..960c72787c2abdfed8579d8366d93e24ea3e3392 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -382,6 +382,7 @@ source_set("browser") {
@@ -1220,7 +1220,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index d46420af18423a1967f2bddeb6928ae7dc889011..054b21d63d12b0972a8178c129c3b6cd770092da 100644
+index 51cb749d82788d57796d47b8600781ffeed4f129..a5bbaef7fbabd485c99a5649fb0fb519f214cd5d 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -652,6 +652,7 @@ static_library("test_support") {
@@ -1248,7 +1248,7 @@ index d46420af18423a1967f2bddeb6928ae7dc889011..054b21d63d12b0972a8178c129c3b6cd
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3416,6 +3420,7 @@ test("content_unittests") {
+@@ -3417,6 +3421,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1899,7 +1899,7 @@ index 94afefcee81b87c05bf9b1199d90d3d4b5ea84a6..3e3aaea0ec6c8fad0d90a931d269af3a
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm b/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
-index 90a7bbac8b2a3d2d8eb2c41e77859d8c3dc1451e..1f1a2857878e5162778fb1f248d0c5d1b7c9ba06 100644
+index 8736e0be60194803cac6737f567cafe4a9200116..bd8e1d349402d41b7558be71b82f0aa49aaad0f7 100644
 --- a/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
 +++ b/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
 @@ -38,6 +38,7 @@
@@ -1921,7 +1921,7 @@ index 90a7bbac8b2a3d2d8eb2c41e77859d8c3dc1451e..1f1a2857878e5162778fb1f248d0c5d1
  
  namespace blink {
  
-@@ -488,12 +491,16 @@ void ClampVariationValuesToFontAcceptableRange(
+@@ -470,12 +473,16 @@ void ClampVariationValuesToFontAcceptableRange(
    // we are enabling it only on MacOS 13+ because these are our benchmarking
    // platforms.
    NSArray* all_axes;
@@ -2165,10 +2165,10 @@ index 9423a2891552e8df3ea5b05c720ab11795c4b92d..610c479ef03759d3082b42d7a402cbea
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 78a13bb60b25b5fe64117af9a3619cec32fd51eb..821467818ec05e309c9bde36a7ce7cc58f944d4f 100644
+index c8161436a00e6d8820dbd099e183c7d42c0184db..992a2f7e9ea1fa7f680dd2f26fd646d7572d8903 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -365,6 +365,13 @@ component("base") {
+@@ -366,6 +366,13 @@ component("base") {
      ]
    }
  
@@ -2182,7 +2182,7 @@ index 78a13bb60b25b5fe64117af9a3619cec32fd51eb..821467818ec05e309c9bde36a7ce7cc5
    if (is_ios) {
      sources += [
        "device_form_factor_ios.mm",
-@@ -521,6 +528,12 @@ component("base") {
+@@ -522,6 +529,12 @@ component("base") {
      "//url",
    ]
  
@@ -2303,7 +2303,7 @@ index cf4c30f417f9a7689f02ceec3b9326e9ca9989b7..ed8059a069757b5d0ce4fd8b0925e89d
      deps += [ "//build:ios_buildflags" ]
    }
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index b9e05b289bbb5c97da3169d23e0c83c240cedaa2..17c04a307be0b6f957770083b13f30bc9d246b8b 100644
+index 618217772a2fa38077ca0913dc017ecc6a702142..f06c9cf5bd3d841935d4e7353e7040272d51abb4 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
 @@ -29,6 +29,7 @@
@@ -2333,10 +2333,10 @@ index b9e05b289bbb5c97da3169d23e0c83c240cedaa2..17c04a307be0b6f957770083b13f30bc
    // Query the display's refresh rate. To get a float number such as 59.95Hz,
    // use 1.0/screen.minimumRefreshInterval instead of
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index e531371761afb5647f1d4eab8beddd9ea2e4ec8f..9d1e95a402a16051a4e96b0d27015a1b4995aa59 100644
+index 9da1b204644c16ddb35f3348316b59de5ca405b4..2982287d9349b7097b36314a38ba9b6bf3f48c63 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -285,6 +285,8 @@ component("gfx") {
+@@ -286,6 +286,8 @@ component("gfx") {
        "CoreGraphics.framework",
        "CoreText.framework",
      ]

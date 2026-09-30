@@ -22,6 +22,9 @@ namespace electron {
 namespace {
 
 struct QueueState {
+  // Non-trivial so NoDestructor accepts it when DCHECKs are off.
+  ~QueueState() {}  // NOLINT(modernize-use-equals-default)
+
   SEQUENCE_CHECKER(sequence_checker);
   bool release_scheduled = false;
   bool shutdown_started = false;
