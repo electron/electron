@@ -15,15 +15,40 @@
       'conditions': [
         ['OS=="win"', {
           'sources': [
-            'src/main.cc',
+            'src/main_win.cc',
           ],
           'libraries': [
             'user32.lib',
             'advapi32.lib',
           ],
         }],
-        # Windows only; the specs using it do not run elsewhere.
-        ['OS!="win"', {
+        ['OS=="mac"', {
+          'sources': [
+            'src/impl.h',
+            'src/impl_mac.cc',
+            'src/main_posix.cc',
+          ],
+          'libraries': [
+            '$(SDKROOT)/System/Library/Frameworks/ApplicationServices.framework',
+          ],
+          'xcode_settings': {
+            # CGPreflightPostEventAccess() is macOS 10.15+.
+            'MACOSX_DEPLOYMENT_TARGET': '11.0',
+          },
+        }],
+        # X11 only. libX11 and libXtst are dlopen()ed, so no X11 development
+        # headers or link time dependencies are needed.
+        ['OS=="linux"', {
+          'sources': [
+            'src/impl.h',
+            'src/impl_linux.cc',
+            'src/main_posix.cc',
+          ],
+          'libraries': [
+            '-ldl',
+          ],
+        }],
+        ['OS not in ["win", "mac", "linux"]', {
           'type': 'none',
         }],
       ],
