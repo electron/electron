@@ -366,8 +366,10 @@ jobs:
     # windows, so real mouse input (spec/fixtures/native-addon/mouse-input)
     # clicks it instead of the windows under test. Close it and keep it from
     # coming back. It is hosted by CloudExperienceHost (WWAHost.exe), started
-    # by UserOOBEBroker.exe.
-    - name: Dismiss first sign-in privacy window (Windows)
+    # by UserOOBEBroker.exe. With it gone the Start menu was seen open over
+    # the test area, so close that too (StartMenuExperienceHost restarts with
+    # the menu closed), then log what the OS hit tests on screen.
+    - name: Dismiss first sign-in windows (Windows)
       if: ${{ inputs.target-platform == 'win' }}
       # Best effort: if the window stays up, the specs report what covers
       # them (describeWindowAtPoint) rather than failing here.
@@ -389,7 +391,33 @@ jobs:
           }
         }
         Start-Sleep -Seconds 2
+        Get-Process -Name StartMenuExperienceHost -ErrorAction SilentlyContinue | ForEach-Object {
+          Write-Host ("Stopping {0} ({1}) to close the Start menu" -f $_.ProcessName, $_.Id)
+          Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
+        }
+        Start-Sleep -Seconds 2
         Write-Host "Processes with windows after:`n$(& $windows)"
+        Add-Type -Namespace ElectronCI -Name HitTest -MemberDefinition @'
+        [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X; public int Y; }
+        [DllImport("user32.dll")] public static extern IntPtr WindowFromPoint(POINT p);
+        [DllImport("user32.dll")] public static extern IntPtr GetAncestor(IntPtr hWnd, uint flags);
+        [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint pid);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder s, int n);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder s, int n);
+        '@
+        foreach ($xy in @(@(300, 300), @(512, 384))) {
+          $p = New-Object ElectronCI.HitTest+POINT
+          $p.X = $xy[0]; $p.Y = $xy[1]
+          $h = [ElectronCI.HitTest]::GetAncestor([ElectronCI.HitTest]::WindowFromPoint($p), 2)
+          $cls = New-Object System.Text.StringBuilder 256
+          $title = New-Object System.Text.StringBuilder 256
+          [void][ElectronCI.HitTest]::GetClassName($h, $cls, 256)
+          [void][ElectronCI.HitTest]::GetWindowText($h, $title, 256)
+          [uint32]$procId = 0
+          [void][ElectronCI.HitTest]::GetWindowThreadProcessId($h, [ref]$procId)
+          $proc = (Get-Process -Id $procId -ErrorAction SilentlyContinue).ProcessName
+          Write-Host ("Window at ({0},{1}): class '{2}' title '{3}' process {4} ({5})" -f $p.X, $p.Y, $cls, $title, $proc, $procId)
+        }
 
     - name: Run Electron Tests
       shell: bash
