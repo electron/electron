@@ -9,14 +9,19 @@
 
 #include "base/command_line.h"
 #include "base/dcheck_is_on.h"
+#include "base/feature_list.h"
 #include "base/functional/callback.h"
 #include "base/logging.h"
 #include "base/memory/ptr_util.h"
+#include "base/metrics/histogram_base.h"
+#include "base/metrics/histogram_samples.h"
+#include "base/metrics/statistics_recorder.h"
 #include "base/no_destructor.h"
 #include "base/power_monitor/power_monitor_source.h"
 #include "build/build_config.h"
 #include "chrome/browser/browser_process.h"
 #include "components/prefs/pref_service.h"
+#include "components/unexportable_keys/features.h"
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -162,6 +167,23 @@ std::string GetLoggingDestination() {
 
 bool IsPlatformCaretBrowsingEnabled() {
   return ui::AXPlatform::GetInstance().IsCaretBrowsingEnabled();
+}
+
+// Whether mock software keys for Device Bound Sessions are in effect, as
+// opposed to merely requested on the command line.
+bool IsBoundSessionSoftwareKeysEnabled() {
+  return base::FeatureList::IsEnabled(
+      unexportable_keys::
+          kEnableBoundSessionCredentialsSoftwareKeysForManualTesting);
+}
+
+// Returns how many samples the browser process has recorded to the named
+// histogram. Histograms are per process, so this tells a test whether work was
+// done here rather than in another process such as the network service.
+int GetHistogramTotalCount(const std::string& name) {
+  base::HistogramBase* histogram =
+      base::StatisticsRecorder::FindHistogram(name);
+  return histogram ? histogram->SnapshotSamples()->TotalCount() : 0;
 }
 
 v8::Local<v8::Promise> SimulateNetworkServiceCrash(v8::Isolate* isolate) {
@@ -350,6 +372,9 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod<&GetLoggingDestination>("getLoggingDestination");
   dict.SetMethod<&IsPlatformCaretBrowsingEnabled>(
       "isPlatformCaretBrowsingEnabled");
+  dict.SetMethod<&IsBoundSessionSoftwareKeysEnabled>(
+      "isBoundSessionSoftwareKeysEnabled");
+  dict.SetMethod<&GetHistogramTotalCount>("getHistogramTotalCount");
   dict.SetMethod<&SimulateNetworkServiceCrash>("simulateNetworkServiceCrash");
   dict.SetMethod<&SimulatePowerEvent>("simulatePowerEvent");
   dict.SetMethod<&SimulateWebAuthnUvLockedPinSecurityKey>(

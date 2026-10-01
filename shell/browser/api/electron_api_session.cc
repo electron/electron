@@ -142,7 +142,11 @@ struct ClearStorageDataOptions {
 uint32_t GetStorageMask(const std::vector<std::string>& storage_types) {
   static constexpr auto Lookup =
       base::MakeFixedFlatMap<std::string_view, uint32_t>(
-          {{"cookies", StoragePartition::REMOVE_DATA_MASK_COOKIES},
+          {// Device bound sessions restore the cookies they are bound to, so
+           // they have to go whenever those cookies are cleared.
+           {"cookies",
+            StoragePartition::REMOVE_DATA_MASK_COOKIES |
+                StoragePartition::REMOVE_DATA_MASK_DEVICE_BOUND_SESSIONS},
            {"filesystem", StoragePartition::REMOVE_DATA_MASK_FILE_SYSTEMS},
            {"indexdb", StoragePartition::REMOVE_DATA_MASK_INDEXEDDB},
            {"localstorage", StoragePartition::REMOVE_DATA_MASK_LOCAL_STORAGE},
@@ -170,7 +174,8 @@ constexpr auto kDataTypeLookup =
         {"backgroundFetch", BrowsingDataRemover::DATA_TYPE_BACKGROUND_FETCH},
         {"cache", BrowsingDataRemover::DATA_TYPE_CACHE |
                       BrowsingDataRemover::DATA_TYPE_CACHE_STORAGE},
-        {"cookies", BrowsingDataRemover::DATA_TYPE_COOKIES},
+        {"cookies", BrowsingDataRemover::DATA_TYPE_COOKIES |
+                        BrowsingDataRemover::DATA_TYPE_DEVICE_BOUND_SESSIONS},
         {"downloads", BrowsingDataRemover::DATA_TYPE_DOWNLOADS},
         {"fileSystems", BrowsingDataRemover::DATA_TYPE_FILE_SYSTEMS},
         {"indexedDB", BrowsingDataRemover::DATA_TYPE_INDEXED_DB},
