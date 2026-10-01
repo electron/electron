@@ -26,10 +26,10 @@ hook called before the new RenderFrame is created so it can be picked up
 by RenderFrameCreated() on the same call stack.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index cc5f70a0cca0d4581aff772030b0594ffb0b513a..4decebaf9ced9c81fc014e158948cdfa11796524 100644
+index f2d0d74a1495452f6f9acfac19bb34dbf07ecb84..32d72be47102e3593eb89d60a200f1f43c2be2ae 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -10850,7 +10850,12 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10824,7 +10824,12 @@ void RenderFrameHostImpl::CreateNewWindow(
        new_main_rfh->GetSiteInstance()->browsing_instance_token(),
        delegate_->GetColorProviderColorMaps(),
        /*widget_screen_rect=*/std::nullopt,
@@ -71,7 +71,7 @@ index 66c36cedacc93897e1bf51bee5181eeed3e310ee..02e1b5b8b417016a53ec6554d046c333
  
  // A per-navigation interface passed along with the BeginNavigation call, used
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index a9fa17dc5b6beca96153dac295f2bcad4b2192b2..88d6d4c5d5147f424c86cb7ef3f0841fd5d254ed 100644
+index 55bfcd124ccac18b124c5da7063d9bcc9abd3682..6398da27f7e0ac6b453fef835c4d7996cb728d6e 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -829,6 +829,13 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -89,7 +89,7 @@ index a9fa17dc5b6beca96153dac295f2bcad4b2192b2..88d6d4c5d5147f424c86cb7ef3f0841f
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 99d973e43e0a483378986b31b4a1832476ca9ef6..3ab8a0a0b30252e5382e96adf1d15e6caa1d4afa 100644
+index 1d27113fa94ad377931be3dfead5997c4116a919..5e9b3b174305f31fe5600939541d8b65fb5740bf 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -61,6 +61,7 @@

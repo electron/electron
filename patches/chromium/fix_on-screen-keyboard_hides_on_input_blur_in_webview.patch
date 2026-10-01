@@ -9,10 +9,10 @@ focus node change via TextInputManager.
 chromium-bug: https://crbug.com/1369605
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 63aed76572f59e441c8d76a0e33ae7ad04f69a47..cd8f8a1ac8971559bac8b65c498c104bb92f6d7a 100644
+index 19ca97408c265159b1d33b6c93dcff222c84c0fd..02aeecfec89096d7c5751272fb28c057f7e4a501 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -3824,6 +3824,12 @@ void RenderWidgetHostViewAura::OnTextSelectionChanged(
+@@ -3832,6 +3832,12 @@ void RenderWidgetHostViewAura::OnTextSelectionChanged(
    }
  }
  
@@ -26,10 +26,10 @@ index 63aed76572f59e441c8d76a0e33ae7ad04f69a47..cd8f8a1ac8971559bac8b65c498c104b
      RenderWidgetHostViewAura* popup_child_host_view) {
    popup_child_host_view_ = popup_child_host_view;
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.h b/content/browser/renderer_host/render_widget_host_view_aura.h
-index 09955d46ae93f93e26bd3d940482ab8936d2e7dd..fdf2d0fffe65ed8e31799ef05f482f23fb539334 100644
+index bfbbb6868674021a4a4ff72e1f08deaba9d8f339..e57bc593cf08d5018d32d5118767bcc37ad2804c 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.h
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.h
-@@ -686,6 +686,8 @@ class CONTENT_EXPORT RenderWidgetHostViewAura
+@@ -689,6 +689,8 @@ class CONTENT_EXPORT RenderWidgetHostViewAura
        RenderWidgetHostViewBase* updated_view) override;
    void OnTextSelectionChanged(TextInputManager* text_input_mangager,
                                RenderWidgetHostViewBase* updated_view) override;

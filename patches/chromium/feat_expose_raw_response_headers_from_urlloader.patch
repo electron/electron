@@ -76,7 +76,7 @@ index 2c6b978631affb4ced4189af52001f84346b2d4b..66c9cfa97030123eafcb6287ed66fdee
        network::ResourceRequest::TrustedParams::EnabledClientHints>&
    enabled_client_hints(
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index b3ea7e70d7436238448f6f41ca8865a844290e69..9d7fe063c87a9c76a9ff655fa272c0086eb49116 100644
+index 54a18f27c5409bd5893e2dda988581519cb8ca86..5b462dca6277dd542d56344e45d9e41709a7d3a9 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
 @@ -111,6 +111,9 @@ struct TrustedUrlRequestParams {
@@ -112,10 +112,10 @@ index d166641ee2492f3e6afdf23c936ae8738cb3848c..5b444e70af843c2f319264de9ef7f506
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 729337bbde095d2be4ec50b479306054b372076c..5be66910a71c6300e19c2426c9e471922dbe2087 100644
+index 77842b54b76464e7d51fa2e1611ee4188866aeec..17c7cab592e651c365e8b6b36bd1ebaf742f974a 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -371,6 +371,9 @@ URLLoader::URLLoader(
+@@ -372,6 +372,9 @@ URLLoader::URLLoader(
                                    mojo::SimpleWatcher::ArmingPolicy::MANUAL,
                                    TaskRunner(request.priority)),
        per_factory_orb_state_(context.GetMutableOrbState()),
@@ -125,7 +125,7 @@ index 729337bbde095d2be4ec50b479306054b372076c..5be66910a71c6300e19c2426c9e47192
        devtools_request_id_(request.devtools_request_id),
        options_(PopulateOptions(options,
                                 factory_params_->is_orb_enabled,
-@@ -570,7 +573,7 @@ void URLLoader::SetUpUrlRequestCallbacks(
+@@ -571,7 +574,7 @@ void URLLoader::SetUpUrlRequestCallbacks(
          &URLLoader::IsSharedDictionaryReadAllowed, base::Unretained(this)));
    }
  
@@ -134,7 +134,7 @@ index 729337bbde095d2be4ec50b479306054b372076c..5be66910a71c6300e19c2426c9e47192
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1165,6 +1168,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1172,6 +1175,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
