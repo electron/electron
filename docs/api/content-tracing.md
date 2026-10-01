@@ -4,8 +4,9 @@
 
 Process: [Main](../glossary.md#main-process)
 
-This module does not include a web interface. To view recorded traces, use
-[trace viewer][], available at `chrome://tracing` in Chrome.
+This module does not include a web interface. Traces are recorded in the
+[Perfetto protobuf format][perfetto trace format]; to view them, open them in
+the [Perfetto UI][].
 
 > [!NOTE]
 > You should not use this module until the `ready` event of the app
@@ -84,6 +85,9 @@ changes:
     breaking-changes-header: api-changed-callback-based-versions-of-promisified-apis
   - pr-url: https://github.com/electron/electron/pull/18411
     description: "The `resultFilePath` parameter is now optional."
+  - pr-url: https://github.com/electron/electron/pull/53349
+    description: "Trace data is now written in the Perfetto protobuf format. The legacy JSON format is no longer supported."
+    breaking-changes-header: behavior-changed-contenttracing-recordings-use-the-perfetto-protobuf-format
 ```
 -->
 
@@ -102,6 +106,8 @@ pending trace data.
 Trace data will be written into `resultFilePath`. If `resultFilePath` is empty
 or not provided, trace data will be written to a temporary file, and the path
 will be returned in the promise.
+
+Trace data is written in the [Perfetto protobuf format][perfetto trace format].
 
 ### `contentTracing.getTraceBufferUsage()`
 
@@ -122,4 +128,5 @@ Returns `Promise<Object>` - Resolves with an object containing the `value` and `
 Get the maximum usage across processes of trace buffer as a percentage of the
 full state.
 
-[trace viewer]: https://chromium.googlesource.com/catapult/+/HEAD/tracing/README.md
+[Perfetto UI]: https://ui.perfetto.dev
+[perfetto trace format]: https://perfetto.dev/docs/reference/trace-packet-proto
