@@ -81,6 +81,38 @@ $ ../../electron/script/git-export-patches -o ../../electron/patches/node
 
 Note that `git-import-patches` will mark the commit that was `HEAD` when it was run as `refs/patches/upstream-head` (and a checkout-specific `refs/patches/upstream-head-<hash>` so that gclient worktrees sharing a `.git/refs` directory don't clobber each other). This lets you keep track of which commits are from Electron patches (those that come after `refs/patches/upstream-head`) and which commits are in upstream (those before `refs/patches/upstream-head`).
 
+### V8 serialized bytecode compatibility
+
+V8 includes its embedder string in the version hash used to validate JavaScript
+code caches and serialized WebAssembly modules. Electron's common GN arguments
+automatically set `v8_embedder_string` to `-electron.<fingerprint>`. No release time bump is required.
+
+The fingerprint identifies the net committed source changes between the patched
+V8 `HEAD` produced by sync and the revision pinned by Chromium's `DEPS`. It
+includes changed paths, Git normalized content
+identities and file modes, including additions and deletions. Patch filenames,
+descriptions, authors and commit history are not inputs. Reordering, splitting or
+re-exporting patches preserves the fingerprint when the resulting source is
+identical. Actual source changes invalidate caches conservatively, even when
+they are ABI-compatible.
+
+Uncommitted local edits do not change the fingerprint. Compatibility between
+cached code from differently modified development builds is outside this
+mechanism's scope, clear local caches when testing such changes.
+
+Local builds derive the fingerprint directly from the synced V8 Git checkout
+without writing sidecar files. CI source caches deliberately omit V8 Git
+metadata, so cache creation records the same Git derived fingerprint in
+`v8/.electron-patch-fingerprint.json` before stripping it. Restored caches verify
+the pinned V8 revision, patch series provenance and fingerprint schema before
+using that identity. Missing or stale metadata fails generation rather than
+substituting a weaker cache key.
+
+Changes to the fingerprint algorithm or cached metadata schema must also bump
+the source cache versions in `script/generate-deps-hash.js`. This is only needed
+when changing the compatibility mechanism itself, not for V8 rolls, patch
+updates or releases.
+
 #### Resolving conflicts
 
 When updating an upstream dependency, patches may fail to apply cleanly. Often, the conflict can be resolved automatically by git with a 3-way merge. You can instruct `git-import-patches` to use the 3-way merge algorithm by passing the `-3` argument:

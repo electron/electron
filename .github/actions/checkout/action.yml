@@ -162,6 +162,10 @@ runs:
     shell: bash
     run: |
       node src/electron/script/patches-stats.mjs --upload-stats || true
+  - name: Record V8 patch fingerprint for the source cache
+    if: ${{ steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache == 'true' }}
+    shell: bash
+    run: python3 src/electron/script/v8-patch-fingerprint.py --write-ci-cache
   # delete all .git directories under src/ except for
   # third_party/angle/ and third_party/dawn/ because of build time generation of files
   # gen/angle/commit.h depends on third_party/angle/.git/HEAD
