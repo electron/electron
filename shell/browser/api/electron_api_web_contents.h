@@ -420,7 +420,6 @@ class WebContents final : public gin::Wrappable<WebContents>,
                                                   double max_level);
   v8::Local<v8::Promise> TakeHeapSnapshot(v8::Isolate* isolate,
                                           const base::FilePath& file_path);
-  v8::Local<v8::Promise> GetProcessMemoryInfo(gin::Arguments* args);
 
   // content::WebContentsDelegate:
   bool HandleContextMenu(content::RenderFrameHost& render_frame_host,

@@ -61,12 +61,43 @@ struct Converter<base::PowerThermalObserver::DeviceThermalState> {
 
 }  // namespace gin
 
+namespace {
+
+ui::IdleState GetSystemIdleState(v8::Isolate* isolate, int idle_threshold) {
+  if (idle_threshold > 0) {
+    return ui::CalculateIdleState(idle_threshold);
+  } else {
+    isolate->ThrowException(v8::Exception::TypeError(gin::StringToV8(
+        isolate, "Invalid idle threshold, must be greater than 0")));
+    return ui::IDLE_STATE_UNKNOWN;
+  }
+}
+
+int GetSystemIdleTime() {
+  return ui::CalculateIdleTime();
+}
+
+bool IsOnBatteryPower() {
+  return base::PowerMonitor::GetInstance()->IsOnBatteryPower();
+}
+
+base::PowerThermalObserver::DeviceThermalState GetCurrentThermalState() {
+  return base::PowerMonitor::GetInstance()->GetCurrentThermalState();
+}
+
+}  // namespace
+
 namespace electron::api {
 
 const gin::WrapperInfo PowerMonitor::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronPowerMonitor);
 
-PowerMonitor::PowerMonitor() {
+PowerMonitor::PowerMonitor() = default;
+
+void PowerMonitor::Start() {
+  if (started_)
+    return;
+  started_ = true;
   auto* power_monitor = base::PowerMonitor::GetInstance();
   power_monitor->AddPowerStateObserver(this);
   power_monitor->AddPowerSuspendObserver(this);
@@ -74,10 +105,15 @@ PowerMonitor::PowerMonitor() {
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   InitPlatformSpecificMonitors();
+#elif BUILDFLAG(IS_LINUX)
+  power_observer_linux_ = std::make_unique<PowerObserverLinux>(
+      static_cast<base::PowerSuspendObserver*>(this));
 #endif
 }
 
 PowerMonitor::~PowerMonitor() {
+  if (!started_)
+    return;
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   DestroyPlatformSpecificMonitors();
 #endif
@@ -133,12 +169,14 @@ void PowerMonitor::OnSpeedLimitChange(int speed_limit) {
 
 #if BUILDFLAG(IS_LINUX)
 void PowerMonitor::SetListeningForShutdown(bool is_listening) {
+  Start();
   if (is_listening) {
     // unretained is OK because we own power_observer_linux_
-    power_observer_linux_.SetShutdownHandler(base::BindRepeating(
+    power_observer_linux_->SetShutdownHandler(base::BindRepeating(
         &PowerMonitor::ShouldShutdown, base::Unretained(this)));
   } else {
-    power_observer_linux_.SetShutdownHandler(base::RepeatingCallback<bool()>());
+    power_observer_linux_->SetShutdownHandler(
+        base::RepeatingCallback<bool()>());
   }
 }
 #endif
@@ -154,8 +192,14 @@ gin::ObjectTemplateBuilder PowerMonitor::GetObjectTemplateBuilder(
   auto builder =
       gin_helper::EventEmitterMixin<PowerMonitor>::GetObjectTemplateBuilder(
           isolate);
+  builder.SetMethod("getSystemIdleState", &GetSystemIdleState)
+      .SetMethod("getSystemIdleTime", &GetSystemIdleTime)
+      .SetMethod("getCurrentThermalState", &GetCurrentThermalState)
+      .SetMethod("isOnBatteryPower", &IsOnBatteryPower)
+      .SetProperty("onBatteryPower", &IsOnBatteryPower);
+  builder.SetMethod("_start", &PowerMonitor::Start);
 #if BUILDFLAG(IS_LINUX)
-  builder.SetMethod("setListeningForShutdown",
+  builder.SetMethod("_setListeningForShutdown",
                     &PowerMonitor::SetListeningForShutdown);
 #endif
   return builder;
@@ -175,39 +219,13 @@ namespace {
 
 using electron::api::PowerMonitor;
 
-ui::IdleState GetSystemIdleState(v8::Isolate* isolate, int idle_threshold) {
-  if (idle_threshold > 0) {
-    return ui::CalculateIdleState(idle_threshold);
-  } else {
-    isolate->ThrowException(v8::Exception::TypeError(gin::StringToV8(
-        isolate, "Invalid idle threshold, must be greater than 0")));
-    return ui::IDLE_STATE_UNKNOWN;
-  }
-}
-
-int GetSystemIdleTime() {
-  return ui::CalculateIdleTime();
-}
-
-bool IsOnBatteryPower() {
-  return base::PowerMonitor::GetInstance()->IsOnBatteryPower();
-}
-
-base::PowerThermalObserver::DeviceThermalState GetCurrentThermalState() {
-  return base::PowerMonitor::GetInstance()->GetCurrentThermalState();
-}
-
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod<&PowerMonitor::Create>("createPowerMonitor");
-  dict.SetMethod<&GetSystemIdleState>("getSystemIdleState");
-  dict.SetMethod<&GetCurrentThermalState>("getCurrentThermalState");
-  dict.SetMethod<&GetSystemIdleTime>("getSystemIdleTime");
-  dict.SetMethod<&IsOnBatteryPower>("isOnBatteryPower");
+  dict.Set("powerMonitor", PowerMonitor::Create(isolate));
 }
 
 }  // namespace

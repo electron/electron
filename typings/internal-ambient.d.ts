@@ -30,6 +30,8 @@ declare namespace NodeJS {
   interface IpcRendererBinding {
     ipcRenderer: Electron.IpcRenderer;
     ipcRendererInternal: ElectronInternal.IpcRendererInternal;
+    getProcessMemoryInfo(): Promise<Electron.ProcessMemoryInfo>;
+    reportPreloadError(preloadPath: string, error: unknown): void;
   }
 
   interface V8UtilBinding {
@@ -114,8 +116,8 @@ declare namespace NodeJS {
   }
 
   interface PowerMonitorBinding extends Electron.PowerMonitor {
-    createPowerMonitor(): PowerMonitorBinding;
-    setListeningForShutdown(listening: boolean): void;
+    _start(): void;
+    _setListeningForShutdown(listening: boolean): void;
   }
 
   interface ServiceWorkerMainBinding {
@@ -256,10 +258,10 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_clipboard'): Electron.Clipboard;
     _linkedBinding(name: 'electron_browser_clipboard_item'): Electron.ClipboardItem;
     _linkedBinding(name: 'electron_browser_crash_reporter'): Electron.CrashReporter;
-    _linkedBinding(name: 'electron_browser_desktop_capturer'): {
-      createDesktopCapturer(): ElectronInternal.DesktopCapturer;
+    _linkedBinding(name: 'electron_browser_desktop_capturer'): Electron.DesktopCapturer & {
       isDisplayMediaSystemPickerAvailable(): boolean;
     };
+    _linkedBinding(name: 'electron_browser_dialog'): Electron.Dialog;
     _linkedBinding(name: 'electron_browser_event_emitter'): { setEventEmitterPrototype(prototype: Object): void };
     _linkedBinding(name: 'electron_browser_ipc_dispatch'): {
       setup(objects: { ipcMain: NodeJS.EventEmitter; ipcMainInternal: NodeJS.EventEmitter }): void;
@@ -271,12 +273,12 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_message_port'): { MessageChannelMain: typeof Electron.MessageChannelMain };
     _linkedBinding(name: 'electron_browser_native_theme'): { nativeTheme: Electron.NativeTheme };
     _linkedBinding(name: 'electron_browser_notification'): { Notification: typeof Electron.Notification };
-    _linkedBinding(name: 'electron_browser_power_monitor'): PowerMonitorBinding;
+    _linkedBinding(name: 'electron_browser_power_monitor'): { powerMonitor: PowerMonitorBinding };
     _linkedBinding(name: 'electron_browser_power_save_blocker'): { powerSaveBlocker: Electron.PowerSaveBlocker };
     _linkedBinding(name: 'electron_browser_push_notifications'): { pushNotifications: Electron.PushNotifications };
     _linkedBinding(name: 'electron_browser_safe_storage'): { safeStorage: Electron.SafeStorage };
     _linkedBinding(name: 'electron_browser_session'): SessionBinding;
-    _linkedBinding(name: 'electron_browser_screen'): { createScreen(): Electron.Screen };
+    _linkedBinding(name: 'electron_browser_screen'): { screen: Electron.Screen };
     _linkedBinding(name: 'electron_browser_service_worker_main'): ServiceWorkerMainBinding;
     _linkedBinding(name: 'electron_browser_system_preferences'): { systemPreferences: Electron.SystemPreferences };
     _linkedBinding(name: 'electron_browser_tray'): { Tray: Electron.Tray };
