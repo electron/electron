@@ -271,7 +271,9 @@ declare namespace ElectronInternal {
       captureWindow: boolean,
       captureScreen: boolean,
       thumbnailSize: Electron.Size,
-      fetchWindowIcons: boolean
+      fetchWindowIcons: boolean,
+      persistent: boolean,
+      restoreToken: string
     ): void;
     _onerror?: (error: string) => void;
     _onfinished?: (sources: Electron.DesktopCapturerSource[], fetchWindowIcons: boolean) => void;
@@ -282,6 +284,8 @@ declare namespace ElectronInternal {
     captureScreen: boolean;
     thumbnailSize: Electron.Size;
     fetchWindowIcons: boolean;
+    persistent: boolean;
+    restoreToken: string;
   }
 
   interface GetSourcesResult {
@@ -289,6 +293,7 @@ declare namespace ElectronInternal {
     name: string;
     thumbnail: Electron.NativeImage;
     display_id: string;
+    restoreToken: string;
     appIcon: Electron.NativeImage | null;
   }
 
