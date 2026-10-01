@@ -499,6 +499,7 @@ source_set("electron_lib") {
     "chromium_src:chrome_spellchecker",
     "shell/common:mojo",
     "shell/common:plugin",
+    "shell/common:v8_code_cache_test_helpers",
     "shell/common:web_contents_utility",
     "shell/services/node/public/mojom",
     "//base:base_static",
@@ -2059,8 +2060,22 @@ action("libcxx_objects_zip") {
   args = rebase_path(outputs)
 }
 
+if (is_debug || dcheck_always_on) {
+  # Test runners receive these assets rather than a full V8 checkout.
+  copy("v8_code_cache_spec_assets") {
+    sources = [
+      "//v8/LICENSE",
+      "//v8/test/mjsunit/wasm/wasm-module-builder.js",
+    ]
+    outputs = [ "$root_gen_dir/electron/v8-code-cache/{{source_file_part}}" ]
+  }
+}
+
 group("electron") {
   public_deps = [ ":electron_app" ]
+  if (is_debug || dcheck_always_on) {
+    data_deps = [ ":v8_code_cache_spec_assets" ]
+  }
 }
 
 ##### node_headers

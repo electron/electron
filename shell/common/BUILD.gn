@@ -1,5 +1,22 @@
 import("//mojo/public/tools/bindings/mojom.gni")
 
+source_set("v8_code_cache_test_helpers") {
+  sources = [
+    "v8_code_cache_test_helpers.cc",
+    "v8_code_cache_test_helpers.h",
+  ]
+  include_dirs = [
+    "//electron",
+    "//v8",
+  ]
+  configs += [ "//v8:external_config" ]
+  deps = [
+    "//base:debugging_buildflags",
+    "//v8",
+    "//v8:v8_libbase",
+  ]
+}
+
 source_set("serialized_value") {
   sources = [
     "serialized_value.cc",
