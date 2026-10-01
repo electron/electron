@@ -64,6 +64,9 @@ class WebContentsView final : public View {
  private:
   friend class WebContentsViewHost;
 
+  // View:
+  bool IsUsable() const override;
+
   WebContentsViewHost* web_contents_view_host() const;
   WebContents* GetLiveWebContents() const;
   void OnWebContentsDestroyed();
