@@ -143,7 +143,8 @@ class ElectronUsbDelegate::ContextObservation
   const raw_ptr<ElectronUsbDelegate> parent_;
 
   // Safe because `this` is destroyed when the context is lost.
-  const raw_ptr<content::BrowserContext> browser_context_;
+  const raw_ptr<content::BrowserContext, LeakedDanglingUntriaged>
+      browser_context_;
 
   base::ScopedObservation<UsbChooserContext, UsbChooserContext::DeviceObserver>
       device_observation_{this};
