@@ -100,8 +100,18 @@ Uncommitted local edits do not change the fingerprint. Compatibility between
 cached code from differently modified development builds is outside this
 mechanism's scope, clear local caches when testing such changes.
 
-Fingerprint generation requires a synced V8 Git checkout and writes no
-persistent sidecar files.
+Local builds derive the fingerprint directly from the synced V8 Git checkout
+without writing sidecar files. CI source caches deliberately omit V8 Git
+metadata, so cache creation records the same Git derived fingerprint in
+`v8/.electron-patch-fingerprint.json` before stripping it. Restored caches verify
+the pinned V8 revision, patch series provenance and fingerprint schema before
+using that identity. Missing or stale metadata fails generation rather than
+substituting a weaker cache key.
+
+Changes to the fingerprint algorithm or cached metadata schema must also bump
+the source cache versions in `script/generate-deps-hash.js`. This is only needed
+when changing the compatibility mechanism itself, not for V8 rolls, patch
+updates or releases.
 
 #### Resolving conflicts
 
