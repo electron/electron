@@ -5,9 +5,5 @@ cppgc_support_stackstartmarker_on_msvc.patch
 cherry-pick-b74028b55c.patch
 cherry-pick-22e5290486f4.patch
 feat_key_code_caches_to_the_patch_set_and_the_embedded_blob.patch
-cherry-pick-47f4c140e77e.patch
-cherry-pick-1318ccb4ac2b.patch
 cherry-pick-79c84a5e7569.patch
-cherry-pick-510bad566959.patch
-cherry-pick-a548b49ac382.patch
 cherry-pick-4615af981a0b.patch
