@@ -52,7 +52,7 @@ The browser-side checks, the blink feature flag, local_frame.cc and
 worklet_global_scope.* hunks are verbatim upstream.
 
 diff --git a/content/browser/bad_message.h b/content/browser/bad_message.h
-index a3fa183d014838cf78093a2c54ad786019b574a2..8fa9c07158f4a562acf5611e9f6050d2a82a5373 100644
+index dfcd75d04a9151e0db9b874ed3be279fbe433f66..7f31b5dfeacde877f67b8ba7517f1decf9e8915e 100644
 --- a/content/browser/bad_message.h
 +++ b/content/browser/bad_message.h
 @@ -391,6 +391,8 @@ enum BadMessageReason {
@@ -203,7 +203,7 @@ index 8e96df818ac4a7ee2af2f62d30817ca6aeb45f9c..d75587b44903e39deec12343b7c58c7a
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 8561e057a47c914b9be9a632aa63ad74d0a1c657..c805f09d8ccf0f27bf075ce2e55b753b4ac6bc62 100644
+index 53dee3f395e4a4c4f72b05d7fd384e51c977d58d..a5eee9312d7c84475c15b67a027ff2b4d3c00da6 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -13550,6 +13550,19 @@ bool RenderFrameHostImpl::IsFullCookieAccessAllowed() {
@@ -411,7 +411,7 @@ index 47ceea11ec9db6b67cef6945d165f46c868f4ca5..dfc393c0893c72f04f5501bb5b2a8982
        blob_url_store_pending_remote_;
  };
 diff --git a/tools/metrics/histograms/metadata/stability/enums.xml b/tools/metrics/histograms/metadata/stability/enums.xml
-index 60262a8cd66f804ebd111f84f48262acf518681d..296c32978d4371cdbc61ea54bea48bc3678da1a2 100644
+index 43865bb2391ed83723661530a1a479ca40bf4cfb..864fa4c6fed2f0b662661bcb0aeb3444805321e9 100644
 --- a/tools/metrics/histograms/metadata/stability/enums.xml
 +++ b/tools/metrics/histograms/metadata/stability/enums.xml
 @@ -541,6 +541,8 @@ Called by update_bad_message_reasons.py.-->
