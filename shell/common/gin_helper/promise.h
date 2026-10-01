@@ -10,7 +10,6 @@
 #include <type_traits>
 #include <utility>
 
-#include "base/memory/raw_ptr.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/task/task_runner.h"
 #include "shell/common/gin_converters/std_converter.h"
@@ -70,7 +69,7 @@ class PromiseBase {
   v8::Local<v8::Context> GetContext() const;
   v8::Local<v8::Promise> GetHandle() const;
 
-  v8::Isolate* isolate() const { return isolate_; }
+  v8::Isolate* isolate() const { return v8::Isolate::TryGetCurrent(); }
 
  protected:
   static scoped_refptr<base::TaskRunner> GetTaskRunner();
@@ -94,7 +93,6 @@ class PromiseBase {
     v8::Context::Scope context_scope_;
   };
 
-  raw_ptr<v8::Isolate> isolate_;
   cppgc::Persistent<PromiseHandle> handle_;
 };
 
