@@ -240,7 +240,7 @@ bool ParseBlobAt(std::string_view data, size_t offset, BlobInfo* info) {
 }
 
 // Every V8 snapshot blob for `version` in `data`: a bare blob file, or a
-// binary that embeds one (the Node startup snapshot in electron / electron.exe
+// binary that embeds one (the Node startup snapshot in electron / main.dll
 // / "Electron Framework").
 std::vector<BlobInfo> FindBlobs(std::string_view data,
                                 const std::string& version) {
@@ -330,7 +330,7 @@ void Usage() {
          "from: a bare blob\n"
          "                      (v8_context_snapshot[.<arch>].bin) or a binary "
          "embedding one\n"
-         "                      (electron, electron.exe, 'Electron Framework' "
+         "                      (electron, main.dll, 'Electron Framework' "
          "-> "
          "its Node startup\n"
          "                      snapshot). Any OS/arch; must match this tool's "

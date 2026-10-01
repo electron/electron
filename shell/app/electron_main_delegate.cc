@@ -67,8 +67,10 @@
 #if BUILDFLAG(IS_WIN)
 #include <windows.h>
 
+#include "base/win/current_module.h"
 #include "base/win/win_util.h"
 #include "chrome/child/v8_crashpad_support_win.h"
+#include "ui/base/resource/resource_bundle_win.h"
 #endif
 
 #if BUILDFLAG(IS_LINUX)
@@ -309,6 +311,10 @@ void ElectronMainDelegate::PreSandboxStartup() {
 
 #if !IS_MAS_BUILD()
   crash_reporter::InitializeCrashKeys();
+#endif
+
+#if BUILDFLAG(IS_WIN)
+  ui::SetResourcesDataDLL(CURRENT_MODULE());
 #endif
 
   // Initialize ResourceBundle which handles files loaded from external
