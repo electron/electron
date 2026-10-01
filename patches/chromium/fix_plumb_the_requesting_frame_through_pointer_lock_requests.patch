@@ -22,18 +22,18 @@ it could be proposed upstream alongside crbug.com/492211919 (the sandbox
 flag check has the same local-root-only limitation).
 
 diff --git a/components/input/input_router_client.h b/components/input/input_router_client.h
-index 861d0180f892bcdd15627f8ca0baac31c2063e27..75cfd93a2f05bfee2e356cdda168732fb1eb18f3 100644
+index cb1bf9e36afd47e22a7957e0c822014c75c617b0..25e72a9e95b98322b39ee6f83564af4c276f1131 100644
 --- a/components/input/input_router_client.h
 +++ b/components/input/input_router_client.h
-@@ -10,6 +10,7 @@
+@@ -12,6 +12,7 @@
  #include "components/input/event_with_latency_info.h"
  #include "components/input/native_web_keyboard_event.h"
  #include "third_party/blink/public/common/input/web_input_event.h"
 +#include "third_party/blink/public/common/tokens/tokens.h"
  #include "third_party/blink/public/mojom/input/input_event_result.mojom-shared.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
- 
-@@ -93,6 +94,7 @@ class COMPONENT_EXPORT(INPUT) InputRouterClient {
+ #include "ui/gfx/geometry/vector2d_f.h"
+@@ -99,6 +100,7 @@ class COMPONENT_EXPORT(INPUT) InputRouterClient {
    virtual void SetAutoscrollSelectionActiveInMainFrame(
        bool autoscroll_selection) = 0;
    virtual void RequestMouseLock(
