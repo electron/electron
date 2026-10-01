@@ -2147,6 +2147,9 @@ group("testing_build") {
     ":electron_mksnapshot_zip",
     ":node_headers",
   ]
+  if (is_debug || dcheck_always_on) {
+    data_deps = [ ":v8_code_cache_spec_assets" ]
+  }
   if (!is_mas_build) {
     public_deps += [ ":electron_xcache_zip" ]
   }
