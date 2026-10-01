@@ -220,12 +220,6 @@ cherry-pick-b280dcea4871.patch
 cherry-pick-05b44a448820.patch
 cherry-pick-cb7ce881d745.patch
 cherry-pick-d3af0ad932ca.patch
-cherry-pick-b5a375accc12.patch
-cherry-pick-282c8b95af83.patch
-cherry-pick-ef6ecad70a04.patch
-cherry-pick-648496c1b066.patch
-cherry-pick-b5559b26c2f3.patch
-cherry-pick-194c74ee5e48.patch
 cherry-pick-564bdde2ce69.patch
 cherry-pick-5a8114db13d5.patch
 fix_find-in-page_frame_traversal_across_inner_webcontents.patch
