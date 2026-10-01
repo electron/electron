@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
 #define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
 
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -58,6 +59,11 @@ struct Converter<net::HttpResponseHeaders*> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      net::HttpResponseHeaders* out);
+
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     net::HttpResponseHeaders* out,
+                     std::vector<std::string>* invalid_headers);
 };
 
 template <>
@@ -67,6 +73,11 @@ struct Converter<net::HttpRequestHeaders> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      net::HttpRequestHeaders* out);
+
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     net::HttpRequestHeaders* out,
+                     std::vector<std::string>* invalid_headers);
 };
 
 template <>
