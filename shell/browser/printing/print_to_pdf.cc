@@ -269,8 +269,8 @@ struct PdfJob {
   PdfRequest request;
 };
 
-// Serialises printToPDF jobs per frame tree. Jobs in different trees run
-// concurrently.
+// Serialises print() and printToPDF() jobs per frame tree; they share the
+// renderer's print helper. Jobs in different trees run concurrently.
 class PdfQueue {
  public:
   static PdfQueue& Get() {
@@ -278,9 +278,15 @@ class PdfQueue {
     return *queue;
   }
 
-  void Add(int frame_tree, std::unique_ptr<PdfJob> job) {
-    base::circular_deque<std::unique_ptr<PdfJob>>& jobs = queues_[frame_tree];
-    jobs.push_back(std::move(job));
+  // One of the two is set.
+  struct Entry {
+    std::unique_ptr<PdfJob> pdf;
+    PrintJob print;
+  };
+
+  void Add(int frame_tree, Entry entry) {
+    base::circular_deque<Entry>& jobs = queues_[frame_tree];
+    jobs.push_back(std::move(entry));
     if (jobs.size() == 1)
       PostStart(frame_tree);
   }
@@ -310,6 +316,7 @@ class PdfQueue {
              scoped_refptr<base::RefCountedMemory> data) {
       std::exchange(queue_, nullptr)->Finish(frame_tree_, result, data);
     }
+    void Done() { std::exchange(queue_, nullptr)->Pop(frame_tree_); }
 
    private:
     raw_ptr<PdfQueue> queue_;  // process-lifetime
@@ -317,7 +324,14 @@ class PdfQueue {
   };
 
   void Start(int frame_tree) {
-    PdfJob& job = *queues_[frame_tree].front();
+    Entry& entry = queues_[frame_tree].front();
+    if (entry.print) {
+      std::move(entry.print)
+          .Run(base::BindOnce(&Completion::Done,
+                              std::make_unique<Completion>(this, frame_tree)));
+      return;
+    }
+    PdfJob& job = *entry.pdf;
     content::RenderFrameHost* rfh = job.frame.Run();
     if (!rfh) {
       v8::Isolate* isolate = job.promise.isolate();
@@ -369,7 +383,10 @@ class PdfQueue {
   void Finish(int frame_tree,
               std::optional<print_to_pdf::PdfPrintResult> result,
               scoped_refptr<base::RefCountedMemory> data) {
-    PdfJob& job = *queues_[frame_tree].front();
+    Entry& entry = queues_[frame_tree].front();
+    if (!entry.pdf)
+      return Pop(frame_tree);
+    PdfJob& job = *entry.pdf;
     if (!result) {
       // Dropped un-run: leave the promise unsettled, as before.
     } else if (*result != print_to_pdf::PdfPrintResult::kPrintSuccess) {
@@ -405,10 +422,14 @@ class PdfQueue {
         base::BindOnce(&PdfQueue::Start, base::Unretained(this), frame_tree));
   }
 
-  std::map<int, base::circular_deque<std::unique_ptr<PdfJob>>> queues_;
+  std::map<int, base::circular_deque<Entry>> queues_;
 };
 
 }  // namespace
+
+void EnqueuePrintJob(int frame_tree, PrintJob job) {
+  PdfQueue::Get().Add(frame_tree, {.print = std::move(job)});
+}
 
 v8::Local<v8::Promise> PrintToPDF(v8::Isolate* isolate,
                                   int frame_tree,
@@ -433,7 +454,7 @@ v8::Local<v8::Promise> PrintToPDF(v8::Isolate* isolate,
     return handle;
   }
   job->request = std::move(*request);
-  PdfQueue::Get().Add(frame_tree, std::move(job));
+  PdfQueue::Get().Add(frame_tree, {.pdf = std::move(job)});
   return handle;
 }
 

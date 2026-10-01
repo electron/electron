@@ -17,6 +17,7 @@
           'sources': [
             'src/main.cc',
             'src/dialog_helper_mac.mm',
+            'src/print_dialog_watcher_mac.mm',
           ],
           'libraries': [
             '$(SDKROOT)/System/Library/Frameworks/AppKit.framework',
@@ -29,6 +30,7 @@
           'sources': [
             'src/main.cc',
             'src/dialog_helper_win.cc',
+            'src/print_dialog_watcher_win.cc',
           ],
         }],
         ['OS not in ["mac", "win"]', {
