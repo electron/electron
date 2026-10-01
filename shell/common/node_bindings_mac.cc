@@ -16,20 +16,15 @@ NodeBindingsMac::NodeBindingsMac(BrowserEnvironment browser_env,
                                  uv_loop_t* loop)
     : NodeBindings(browser_env, loop) {}
 
-void NodeBindingsMac::PollEvents() {
-  auto* const event_loop = uv_loop();
-  // uv_backend_timeout returns milliseconds or -1 for infinite wait.
-  const int backend_fd = uv_backend_fd(event_loop);
-  const int timeout_ms = uv_backend_timeout(event_loop);  // -1 => infinite
-
+void NodeBindingsMac::PollEvents(int timeout) {
   struct pollfd pfd;
-  pfd.fd = backend_fd;
+  pfd.fd = uv_backend_fd(uv_loop());
   pfd.events = POLLIN;
   pfd.revents = 0;
 
   int r;
   do {
-    r = poll(&pfd, 1, timeout_ms);
+    r = poll(&pfd, 1, timeout);
   } while (r == -1 && errno == EINTR);
 }
 
