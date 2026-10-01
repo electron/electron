@@ -52,6 +52,11 @@ describe('esm', () => {
       expect(result.code).to.equal(0);
     });
 
+    it('should settle the async nativeImage methods in top-level await', async () => {
+      const result = await runFixture(path.resolve(fixturePath, 'native-image-async-top-level-await.mjs'));
+      expect(result.code).to.equal(0);
+    });
+
     it('should allow use of dynamic import', async () => {
       const result = await runFixture(path.resolve(fixturePath, 'dynamic.mjs'));
       expect(result.code).to.equal(0);

@@ -68,6 +68,9 @@ class NativeImage final : public gin::Wrappable<NativeImage> {
   static NativeImage* CreateFromBuffer(gin_helper::ErrorThrower thrower,
                                        v8::Local<v8::Value> buffer,
                                        gin::Arguments* args);
+  static v8::Local<v8::Promise> CreateFromBufferAsync(
+      v8::Local<v8::Value> buffer,
+      gin::Arguments* args);
   static NativeImage* CreateFromDataURL(v8::Isolate* isolate, const GURL& url);
   static NativeImage* CreateFromNamedImage(gin::Arguments* args,
                                            std::string name);
@@ -105,6 +108,9 @@ class NativeImage final : public gin::Wrappable<NativeImage> {
   v8::Local<v8::Value> ToPNG(gin::Arguments* args);
   v8::Local<v8::Value> ToJPEG(v8::Isolate* isolate, int quality);
   v8::Local<v8::Value> ToBitmap(gin::Arguments* args);
+  v8::Local<v8::Promise> ToPNGAsync(gin::Arguments* args);
+  v8::Local<v8::Promise> ToJPEGAsync(v8::Isolate* isolate, int quality);
+  v8::Local<v8::Promise> ToBitmapAsync(gin::Arguments* args);
   std::vector<float> GetScaleFactors();
   v8::Local<v8::Value> GetBitmap(gin::Arguments* args);
   v8::Local<v8::Value> GetNativeHandle(gin_helper::ErrorThrower thrower);
