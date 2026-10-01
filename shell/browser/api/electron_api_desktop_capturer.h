@@ -32,6 +32,10 @@ class DesktopCapturer final : public gin::Wrappable<DesktopCapturer> {
 
   static bool IsDisplayMediaSystemPickerAvailable();
 
+  // Keeps windows with content protection (NSWindowSharingNone) out of the
+  // next system picker session.
+  static void ExcludeContentProtectedWindowsFromSystemPicker();
+
   void StartHandling(bool capture_window,
                      bool capture_screen,
                      const gfx::Size& thumbnail_size,
