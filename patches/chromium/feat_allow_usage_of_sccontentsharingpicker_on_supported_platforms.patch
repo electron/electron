@@ -327,10 +327,10 @@ index c869806df61f67d9115e6b099831b8bd6280de70..8256f0b61f6944b5781fdbabecf56efd
  
  // Although ScreenCaptureKit is available in 12.3 there were some bugs that
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index 2b7decc56a4d72d7ef8af48056e08e4d562fddec..d8e23dbfe620304c2c4aa50622033823c080ef2d 100644
+index 5a8818515c11dba057426224da3537634eddae68..e28f82f070f9019974b20754984f9a031638635d 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-@@ -322,8 +322,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -320,8 +320,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
          break;
        }
  
@@ -348,7 +348,7 @@ index 2b7decc56a4d72d7ef8af48056e08e4d562fddec..d8e23dbfe620304c2c4aa50622033823
          // For the other capturers, when a bug reports the type of capture it's
          // easy enough to determine which capturer was used, but it's a little
          // fuzzier with window capture.
-@@ -339,6 +347,8 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -337,6 +345,8 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
        }
  #endif  // defined(USE_AURA) || BUILDFLAG(IS_MAC)
  
@@ -357,12 +357,12 @@ index 2b7decc56a4d72d7ef8af48056e08e4d562fddec..d8e23dbfe620304c2c4aa50622033823
        // All cases other than tab capture or Aura desktop/window capture.
        TRACE_EVENT_INSTANT(TRACE_DISABLED_BY_DEFAULT("video_and_image_capture"),
                            "UsingDesktopCapturer");
-@@ -361,7 +371,7 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -359,7 +369,7 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
        start_capture_closure = base::BindOnce(
            &InProcessVideoCaptureDeviceLauncher::
                DoStartDesktopCaptureOnDeviceThread,
--          base::Unretained(this), desktop_id, params,
-+          base::Unretained(this), desktop_id, updated_params,
+-          native_screen_capture_picker_, desktop_id, params,
++          native_screen_capture_picker_, desktop_id, updated_params,
            CreateDeviceClient(buffer_type, max_buffer_count, std::move(receiver),
                               std::move(receiver_on_io_thread)),
            std::move(after_start_capture_callback));
