@@ -8,21 +8,26 @@ node_module_version = 150
 node_openssl_path = "//third_party/boringssl"
 
 v8_promise_internal_field_count = 1
-v8_embedder_string = "-electron.0"
 
-# Salt the hash V8 uses to key code caches and serialized wasm modules with a
-# fingerprint of the patches we apply on top of the V8 release. Release
-# branches cherry-pick V8 fixes without changing V8's own version number, so
-# without this a build with a different patch set would still accept (and
-# mis-link) serialized code written by the previous release. V8 hashes these
-# files at `gn gen` time and re-runs gn whenever one of them changes.
-_v8_patch_dir = "//electron/patches/v8"
-v8_version_hash_salt_files = [ "$_v8_patch_dir/.patches" ]
-foreach(_patch, read_file("$_v8_patch_dir/.patches", "list lines")) {
-  if (_patch != "") {
-    v8_version_hash_salt_files += [ "$_v8_patch_dir/$_patch" ]
-  }
+# Args are evaluated before GN installs its script interpreter. Invoke the
+# hermetic Python executable directly to generate the ordinary V8 argument.
+_v8_fingerprint_python = "//third_party/cpython3/host/bin/python3"
+if (getenv("OS") == "Windows_NT") {
+  _v8_fingerprint_python += ".exe"
 }
+_v8_fingerprint_script = "//electron/script/v8-patch-fingerprint.py"
+_v8_fingerprint_inputs = exec_script(_v8_fingerprint_python,
+                                     [
+                                       rebase_path(_v8_fingerprint_script),
+                                       "--inputs",
+                                     ],
+                                     "json",
+                                     [ _v8_fingerprint_script ])
+v8_embedder_string =
+    exec_script(_v8_fingerprint_python,
+                [ rebase_path(_v8_fingerprint_script) ],
+                "trim string",
+                _v8_fingerprint_inputs + [ _v8_fingerprint_script ])
 
 # TODO: this breaks mksnapshot
 v8_enable_snapshot_native_code_counters = false
