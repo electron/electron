@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 66e2d0450518803f1531470045ffadc1412c497f..52441ace4782477ca88fd6e9e9d1ee7bc51a6bbf 100644
+index 52a52754b6714ea5489726b66b2695c58eabdc06..645a62aaf6b6a6357d088d866f0f49dc5862a3a2 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -191,6 +191,11 @@
@@ -147,7 +147,7 @@ index 66e2d0450518803f1531470045ffadc1412c497f..52441ace4782477ca88fd6e9e9d1ee7b
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2897,6 +3013,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2902,6 +3018,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
      cert_verifier = std::make_unique<net::CachingCertVerifier>(
          std::make_unique<net::CoalescingCertVerifier>(
              std::move(cert_verifier)));
@@ -159,7 +159,7 @@ index 66e2d0450518803f1531470045ffadc1412c497f..52441ace4782477ca88fd6e9e9d1ee7b
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index ff3c2a037b5b2441d7c82c540cb0dcb7415bf5a6..5679ca0e1626777ad7dfaec8ebbd5f72f62c1369 100644
+index c2525a0ded03760c5a22e7473ccc1d552a30c1e2..2c817b9cf621de51bb83ca4ebc1d6897504023c3 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -128,6 +128,7 @@ class SimpleUrlPatternMatcher;
@@ -179,7 +179,7 @@ index ff3c2a037b5b2441d7c82c540cb0dcb7415bf5a6..5679ca0e1626777ad7dfaec8ebbd5f72
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -1091,6 +1094,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -1098,6 +1101,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  

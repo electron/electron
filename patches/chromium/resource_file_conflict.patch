@@ -52,7 +52,7 @@ Some alternatives to this patch:
 None of these options seems like a substantial maintainability win over this patch to me (@nornagon).
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 2f3a079c29cc806d8b62446bdf2f1d84c54810c6..d5151be8e409ad09840af42465d96a5241e83f35 100644
+index 3203ffcdd79cf57f74651284a1e6f31fd43acd52..51e27a939404a6a73b63db13ed72603f2ce610de 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
 @@ -1749,7 +1749,7 @@ group("extra_resources") {
