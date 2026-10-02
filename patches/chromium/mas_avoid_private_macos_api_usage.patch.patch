@@ -843,7 +843,7 @@ index 6f02db406326ba00fec8007b19a638b6c3354a55..15d59648317174e48993b3fd316f7160
  
  - (NSWindow*)rootWindow {
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index b3158b7bbd6f28ff871c3eb89cbffb4c35c2cde1..04212cca2e9aa4ba25582780d878dcf72d6f73b9 100644
+index 5ac36cb359f6961cdfb1e32720683ab5fcb1d65f..d540d13aca9c63c5f7bcc51a9dd4f134c24b1004 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -886,7 +886,7 @@ index b3158b7bbd6f28ff871c3eb89cbffb4c35c2cde1..04212cca2e9aa4ba25582780d878dcf7
  }
  
  // Returns the display that the specified window is on.
-@@ -830,10 +838,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -822,10 +830,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -971,7 +971,7 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 52b8a9393f488f28ad789905bbf70fa93b333a63..feb4f26927027f291744199b74ec1beddb0f9df0 100644
+index da8d56053e6583457a6fde9aa8bd42f5825c86ef..5290c0be45600e34d6f5fe32c60cd52019596029 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -34,6 +34,7 @@
@@ -982,7 +982,7 @@ index 52b8a9393f488f28ad789905bbf70fa93b333a63..feb4f26927027f291744199b74ec1bed
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2475,15 +2476,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2486,15 +2487,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -1126,7 +1126,7 @@ index f99512647a6dbced1120427adc6e181e73e27b00..d30f09f8eb3932f6e8de382faac5dfc1
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 2de3b57c60c138dce27b33927f1ce40736b83310..3a816f9e9ae2dda0b039eb47ac0bfe8aa3882ba7 100644
+index 2e1af512e770c9bee1b3d3c430f5537e0193f069..aeca39edb1bfd856c5a5722155097dfb13eb4f65 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -280,6 +280,7 @@ source_set("common") {
@@ -1220,7 +1220,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 1d103a087e2cf545d96b31be9d5d4f90ac468182..85d462492d26975eccdf3c8a3cbd70e66af64560 100644
+index ec9d6dc603a28b97e7ce671644932c3fc68d9245..cb1b0026b63c9c6917c1ce38c2c6cdd7d91e82c1 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -652,6 +652,7 @@ static_library("test_support") {
@@ -1248,7 +1248,7 @@ index 1d103a087e2cf545d96b31be9d5d4f90ac468182..85d462492d26975eccdf3c8a3cbd70e6
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3420,6 +3424,7 @@ test("content_unittests") {
+@@ -3421,6 +3425,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1817,7 +1817,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index d9310883704495adbe4fb54042543dce27433757..483c57d9f2a7b74f0ca6c2396b590bb009149213 100644
+index 2504ba2c78a1608845b1c76ed2d0b6b56ee9b379..80e1a06e8a0163b92cecd94c3a02e7118027aca2 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -446,6 +446,7 @@ component("core") {
@@ -1982,7 +1982,7 @@ index 0cd9d96de17609451543c2ecec0d4e59c63c60f9..cf87c704194b246a801f55d9e231c4d4
    // The root CALayer to display the current frame. This does not change
    // over the lifetime of the object.
 diff --git a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
-index 6aa1a4732087204e9ae2af7d892316588cfbf33c..b71a9cab764aa901f1e0eb572e0dd2a73bb844a1 100644
+index 93cc4151a829a0f6e001731a24cb5a87569121ac..b7e13096b37151de48ee5703e2aac76de6513839 100644
 --- a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
 +++ b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
 @@ -11,6 +11,7 @@
@@ -2009,23 +2009,21 @@ index 6aa1a4732087204e9ae2af7d892316588cfbf33c..b71a9cab764aa901f1e0eb572e0dd2a7
  }
  
  void CALayerTreeCoordinator::CommitPresentedFrameToCA(
-@@ -222,6 +225,7 @@
+@@ -222,11 +225,13 @@
    if (has_resized_since_last_swap_) {
      // Create a new CAContext for the new size. This allows new frame update at
      // the new size to be atomic with things like resizing the NSWindow.
 +#if !IS_MAS_BUILD()
-     if (base::FeatureList::IsEnabled(features::kCATransactionV2) &&
+     if (base::FeatureList::IsEnabled(features::kCAContextFenceOnResize) &&
          allow_remote_layers_) {
        params.ca_context_fence_mach_port.reset([ca_context_ createFencePort]);
-@@ -231,6 +235,7 @@
-       root_ca_layer_ = nil;
-       current_tree = nullptr;
+       [ca_context_ setFencePort:params.ca_context_fence_mach_port.get()];
      }
 +#endif  // !IS_MAS_BUILD()
      has_resized_since_last_swap_ = false;
    }
  #endif
-@@ -253,10 +258,13 @@
+@@ -249,10 +254,13 @@
      TRACE_EVENT_INSTANT("test_gpu", "SwapBuffers", "GLImpl",
                          static_cast<int>(gl::GetGLImplementation()), "width",
                          pixel_size_.width());
@@ -2041,7 +2039,7 @@ index 6aa1a4732087204e9ae2af7d892316588cfbf33c..b71a9cab764aa901f1e0eb572e0dd2a7
        if (io_surface) {
          DCHECK(!allow_remote_layers_);
 diff --git a/ui/accelerated_widget_mac/display_ca_layer_tree.mm b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-index 62017c5dbf1bab59204d53138c4c857c0d640d0b..fa619c2c7653f49aefa78b655a64c48321c21201 100644
+index b20c2d410c6848a5041d14322e834818e3f175e7..2575c23d4909651bf568480c2173d1b213dcd31f 100644
 --- a/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 +++ b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 @@ -12,6 +12,7 @@
@@ -2052,7 +2050,7 @@ index 62017c5dbf1bab59204d53138c4c857c0d640d0b..fa619c2c7653f49aefa78b655a64c483
  #include "ui/base/cocoa/animation_utils.h"
  #include "ui/base/cocoa/remote_layer_api.h"
  #include "ui/base/ui_base_features.h"
-@@ -139,6 +140,7 @@ - (void)setContentsChanged;
+@@ -122,6 +123,7 @@ - (void)setContentsChanged;
  }
  
  void DisplayCALayerTree::GotCALayerFrame(uint32_t ca_context_id) {
@@ -2060,7 +2058,7 @@ index 62017c5dbf1bab59204d53138c4c857c0d640d0b..fa619c2c7653f49aefa78b655a64c483
    // Early-out if the remote layer has not changed.
    if (remote_layer_.contextId == ca_context_id) {
      return;
-@@ -168,6 +170,9 @@ - (void)setContentsChanged;
+@@ -151,6 +153,9 @@ - (void)setContentsChanged;
      [io_surface_layer_ removeFromSuperlayer];
      io_surface_layer_ = nil;
    }
@@ -2333,7 +2331,7 @@ index 618217772a2fa38077ca0913dc017ecc6a702142..f06c9cf5bd3d841935d4e7353e704027
    // Query the display's refresh rate. To get a float number such as 59.95Hz,
    // use 1.0/screen.minimumRefreshInterval instead of
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 9da1b204644c16ddb35f3348316b59de5ca405b4..2982287d9349b7097b36314a38ba9b6bf3f48c63 100644
+index 6927db7d4a5d4d81658ff6b81269113b25949f47..c7816052d396ac50987a2a70c37f242903c0cfa8 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -286,6 +286,8 @@ component("gfx") {
