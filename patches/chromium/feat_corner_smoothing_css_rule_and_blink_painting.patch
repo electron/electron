@@ -33,20 +33,20 @@ index 78e5b2eb93c36a7ee5ea3987ccc5cb0623388719..83fcced85a6689bd06d95c6344e1c30f
      // per page visit for each CSS histogram being logged on the blink side and the
      // browser side.
 diff --git a/third_party/blink/renderer/build/scripts/core/css/css_properties.py b/third_party/blink/renderer/build/scripts/core/css/css_properties.py
-index 7c8fb238bcd489ee3f7707c19411e15b5c43c557..3c68c0aae79d07244adb31c00ddc9d8715e8d3a4 100755
+index 41e4f4a6492a54cb066864dcdef396bf7d6e1f0e..1074ad42a021bb393b6afd3e7b0363437eb3a7de 100755
 --- a/third_party/blink/renderer/build/scripts/core/css/css_properties.py
 +++ b/third_party/blink/renderer/build/scripts/core/css/css_properties.py
-@@ -348,7 +348,7 @@ class CSSProperties(object):
+@@ -417,7 +417,7 @@ class CSSProperties(object):
                  name_without_leading_dash = name_without_leading_dash[1:]
              internal_visited_order = 1
              if name_without_leading_dash.startswith(
--                    'internal-visited-'
-+                    'internal-'
+-                'internal-visited-'
++                'internal-'
              ) or name_without_leading_dash.startswith(
-                     'internal-forced-visited-'):
-                 internal_visited_order = 0
+                 'internal-forced-visited-'
+             ):
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index 921749040e6da3f962c7cab23df1fd11d59354cc..a516c6eec867916b00a7b21cab0d647a1cd6535d 100644
+index 4928027e536308d18f4bb9e85dda3f8aae003b9d..c130fd0ecbd15a290dc6a230bea95f53e6e6e3e2 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
 @@ -10323,6 +10323,27 @@
@@ -133,7 +133,7 @@ index a776c8e3ebe1a769d9520decce5516a48c74b78f..31530399ca2a967a87b740c26b9423c6
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index 9f7f69c8bdbf456c9c3fe81a4cacb7ef6243740d..c026ab1c44b5aff9add671454e1d28500dcfa02b 100644
+index 28ab094b4f12bf96979fedadf7d0006b4a22a3d1..d82c06a2069cdec3554c82115b0226651df24292 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 @@ -4266,6 +4266,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
@@ -204,7 +204,7 @@ index b721dd3809c0b6c89574a515bac32d397a1bfb09..750a3603bd18680228220b831709d327
      return result;
    }
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index 16f50eb0c5ec2e4b8691ebbdb39120e07ef1c4da..d78049d372cacee6a91d56879fdfa85075d3c9fa 100644
+index a39631a3610dfef0b60d76715d51dc7d93b56416..ef28c911d536041e5058e51e503333807700d419 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
 @@ -1758,6 +1758,8 @@ component("platform") {
@@ -315,7 +315,7 @@ index c68eabb5ba5842cb07df1d97e205c3d96d405a4f..e9e1114f60b1ae02c2e511b6568cee92
  
    auto draw_as_single_path = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index aadf02124a89147ce828a37e2ae60b20f870807b..143d4e6d74ce22201f3a66c237364adbbb2f4b09 100644
+index d714ea8e17ad6d7db88a80015b812f59daee023a..60eb994121c3ea668c2b5c57b3557fa105408ac2 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -237,6 +237,10 @@
