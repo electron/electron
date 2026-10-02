@@ -14,8 +14,12 @@ namespace electron {
 NotificationPresenter::NotificationPresenter() = default;
 
 NotificationPresenter::~NotificationPresenter() {
-  for (Notification* notification : notifications_)
+  while (!notifications_.empty()) {
+    auto it = notifications_.begin();
+    Notification* notification = *it;
+    notifications_.erase(it);
     delete notification;
+  }
 }
 
 base::WeakPtr<Notification> NotificationPresenter::CreateNotification(
