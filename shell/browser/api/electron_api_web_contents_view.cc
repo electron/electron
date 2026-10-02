@@ -11,6 +11,7 @@
 #include "base/no_destructor.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/timer/elapsed_timer.h"
+#include "build/build_config.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
 #include "gin/data_object_builder.h"
@@ -137,6 +138,18 @@ void WebContentsView::SetIgnoreMouseEvents(bool ignore) {
 #endif
     view()->SetEventTargeter(std::move(previous_event_targeter_));
   }
+#if BUILDFLAG(IS_MAC)
+  ApplyIgnoreMouseEvents();
+#endif
+}
+
+void WebContentsView::RenderFrameHostChanged(
+    content::RenderFrameHost* old_host,
+    content::RenderFrameHost* new_host) {
+#if BUILDFLAG(IS_MAC)
+  if (ignore_mouse_events_)
+    ApplyIgnoreMouseEvents();
+#endif
 }
 
 void WebContentsView::ApplyBorderRadius() {
@@ -207,6 +220,10 @@ void WebContentsView::OnViewAddedToWidget(views::View* observed_view) {
   observed_window_ = native_window->GetWeakPtr();
   native_window->AddObserver(this);
   ApplyBorderRadius();
+#if BUILDFLAG(IS_MAC)
+  if (ignore_mouse_events_)
+    ApplyIgnoreMouseEvents();
+#endif
   if (HasLivePage())
     ScheduleWindowControlsOverlayUpdate();
 }

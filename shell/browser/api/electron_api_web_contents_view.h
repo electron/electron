@@ -68,6 +68,8 @@ class WebContentsView : public View,
 
   // content::WebContentsObserver:
   void WebContentsDestroyed() override;
+  void RenderFrameHostChanged(content::RenderFrameHost* old_host,
+                              content::RenderFrameHost* new_host) override;
 
   // views::ViewObserver
   void OnViewAddedToWidget(views::View* view) override;
@@ -80,6 +82,7 @@ class WebContentsView : public View,
   static gin_helper::WrappableBase* New(gin::Arguments* args);
 
   WebContents* GetLiveWebContents() const;
+  void ApplyIgnoreMouseEvents();
   void ApplyBorderRadius();
   void StopObservingWindow();
   void OnContentsBoundsChanging();
