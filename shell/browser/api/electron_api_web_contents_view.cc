@@ -320,6 +320,9 @@ int WebContentsViewHost::NonClientHitTest(const gfx::Point& point) {
   InspectableWebContentsView* inspectable_view = GetOwnedInspectableView();
   if (!inspectable_view || !view()->GetVisible())
     return HTNOWHERE;
+  if (auto api_view = wrapper())
+    if (!api_view->GetInteractive())
+      return HTNOWHERE;
   if (auto* web_contents = GetLiveWebContents()) {
     // Convert the point to the contents view's coordinate space rather than
     // the InspectableWebContentsView's coordinate space, because the draggable
