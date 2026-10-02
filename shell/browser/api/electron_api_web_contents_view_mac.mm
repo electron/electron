@@ -7,8 +7,9 @@
 
 #import <Cocoa/Cocoa.h>
 #include <objc/runtime.h>
+#include <string>
 
-#include "base/no_destructor.h"
+#include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 
 namespace {
@@ -36,19 +37,20 @@ Class GetOrCreateNonInteractiveSubclass(Class base_class) {
   if (Class existing = objc_lookUpClass(subclass_name.c_str()))
     return existing;
 
+  // Look this up before allocating the class pair so that bailing out on a
+  // missing method doesn't leave an allocated-but-unregistered class behind.
+  Method hit_test = class_getInstanceMethod(base_class, @selector(hitTest:));
+  if (!hit_test)
+    return nil;
+
   Class subclass = objc_allocateClassPair(base_class, subclass_name.c_str(), 0);
   if (!subclass)
     return nil;
 
-  // Match the real -hitTest: type encoding rather than hardcoding one.
-  Method hit_test = class_getInstanceMethod(base_class, @selector(hitTest:));
   class_addMethod(subclass, @selector(hitTest:),
                   reinterpret_cast<IMP>(NonInteractiveHitTest),
                   method_getTypeEncoding(hit_test));
 
-  // -class must keep reporting the original class so any code doing class
-  // checks, and KVO's own isa games, don't observe our substitution.
-  // This mirrors what KVO does for its dynamic subclasses.
   class_addMethod(subclass, @selector(class),
                   imp_implementationWithBlock(^Class(id _self) {
                     return base_class;
@@ -59,35 +61,27 @@ Class GetOrCreateNonInteractiveSubclass(Class base_class) {
   return subclass;
 }
 
-// Tracks each view's true class so we can restore it exactly.
-std::map<NSView*, Class>& OriginalClasses() {
-  static base::NoDestructor<std::map<NSView*, Class>> instance;
-  return *instance;
+bool IsNonInteractive(NSView* view) {
+  const char* name = class_getName(object_getClass(view));
+  return base::EndsWith(name,
+                        kSubclassSuffix);  // from base/strings/string_util.h
 }
 
 void SetViewHitTestable(NSView* view, bool hit_testable) {
-  auto& originals = OriginalClasses();
-  auto it = originals.find(view);
-  const bool currently_swizzled = it != originals.end();
+  Class current = object_getClass(view);
+  const bool currently_swizzled = IsNonInteractive(view);
 
   if (hit_testable) {
-    if (!currently_swizzled)
-      return;
-    object_setClass(view, it->second);
-    originals.erase(it);
+    if (currently_swizzled)
+      object_setClass(view, class_getSuperclass(current));
     return;
   }
 
   if (currently_swizzled)
     return;
 
-  // object_getClass(), not -class: we need the real isa, which may already be
-  // a KVO subclass we must subclass in turn rather than clobber.
-  Class original = object_getClass(view);
-  if (Class subclass = GetOrCreateNonInteractiveSubclass(original)) {
+  if (Class subclass = GetOrCreateNonInteractiveSubclass(current))
     object_setClass(view, subclass);
-    originals[view] = original;
-  }
 }
 
 }  // namespace

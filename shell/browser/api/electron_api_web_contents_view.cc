@@ -129,7 +129,7 @@ void WebContentsView::ApplyBorderRadius() {
 }
 
 int WebContentsView::NonClientHitTest(const gfx::Point& point) {
-  if (!view() || !view()->GetVisible())
+  if (!view() || !view()->GetVisible() || !GetInteractive())
     return HTNOWHERE;
   if (auto* web_contents = GetLiveWebContents()) {
     auto* iwc = web_contents->inspectable_web_contents();
