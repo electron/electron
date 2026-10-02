@@ -441,7 +441,7 @@ index 18a070048449b2fb56996241c9cebc565f59dee9..9f77589c95ceb47b98fa9b8068c43aad
      // Whether or not to bind viz::mojom::Gpu to the utility process.
      bool allowed_gpu_;
 diff --git a/content/browser/service_host/utility_sandbox_delegate.cc b/content/browser/service_host/utility_sandbox_delegate.cc
-index ec1e131ac584e71370845730557bd6959f03734c..ba0f7880f18d554bdd88b743ccc19b6f7d9f50d8 100644
+index 845171e88ef7e848ef65aa8aee3d66bf55afac18..1b7492eb0ac51d4a68d80e0a087c2c4d744d6803 100644
 --- a/content/browser/service_host/utility_sandbox_delegate.cc
 +++ b/content/browser/service_host/utility_sandbox_delegate.cc
 @@ -39,17 +39,19 @@ UtilitySandboxedProcessLauncherDelegate::
@@ -468,7 +468,7 @@ index ec1e131ac584e71370845730557bd6959f03734c..ba0f7880f18d554bdd88b743ccc19b6f
  #if DCHECK_IS_ON()
    bool supported_sandbox_type =
        sandbox_type_ == sandbox::mojom::Sandbox::kNoSandbox ||
-@@ -117,11 +119,28 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
+@@ -119,11 +121,28 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
    return sandbox_type_;
  }
  
@@ -499,7 +499,7 @@ index ec1e131ac584e71370845730557bd6959f03734c..ba0f7880f18d554bdd88b743ccc19b6f
  
  #if BUILDFLAG(USE_ZYGOTE)
  ZygoteCommunication* UtilitySandboxedProcessLauncherDelegate::GetZygote() {
-@@ -204,6 +223,15 @@ UtilitySandboxedProcessLauncherDelegate::GetProcessRequirement() {
+@@ -206,6 +225,15 @@ UtilitySandboxedProcessLauncherDelegate::GetProcessRequirement() {
  
    return std::nullopt;
  }
