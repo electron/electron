@@ -139,18 +139,18 @@ export default class BrowserView {
     if (widthDelta || heightDelta) {
       this.#webContentsView.setBounds({
         ...newViewBounds,
-        width: newViewBounds.width + widthDelta,
-        height: newViewBounds.height + heightDelta
+        width: Math.max(0, newViewBounds.width + widthDelta),
+        height: Math.max(0, newViewBounds.height + heightDelta)
       });
     }
 
     if (this.#autoHorizontalProportion) {
-      newViewBounds.width = newBounds.width / this.#autoHorizontalProportion.width;
+      newViewBounds.width = Math.max(0, newBounds.width / this.#autoHorizontalProportion.width);
       newViewBounds.x = newBounds.width / this.#autoHorizontalProportion.left;
     }
 
     if (this.#autoVerticalProportion) {
-      newViewBounds.height = newBounds.height / this.#autoVerticalProportion.height;
+      newViewBounds.height = Math.max(0, newBounds.height / this.#autoVerticalProportion.height);
       newViewBounds.y = newBounds.y / this.#autoVerticalProportion.top;
     }
 

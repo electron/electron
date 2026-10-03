@@ -279,6 +279,28 @@ describe('BrowserView module', () => {
         height: 100
       });
     });
+
+    it('does not produce negative dimensions when window is shrunk below view size', () => {
+      view = new BrowserView();
+      view.setAutoResize({ width: true, height: true });
+      w.addBrowserView(view);
+      view.setBounds({ x: 0, y: 50, width: 400, height: 350 });
+      w.setSize(400, 50);
+      const bounds = view.getBounds();
+      expect(bounds.width).to.be.at.least(0);
+      expect(bounds.height).to.be.at.least(0);
+    });
+
+    it('does not produce negative dimensions when window is shrunk with proportional resize', () => {
+      view = new BrowserView();
+      view.setAutoResize({ horizontal: true, vertical: true });
+      w.addBrowserView(view);
+      view.setBounds({ x: 50, y: 50, width: 300, height: 300 });
+      w.setSize(100, 100);
+      const bounds = view.getBounds();
+      expect(bounds.width).to.be.at.least(0);
+      expect(bounds.height).to.be.at.least(0);
+    });
   });
 
   describe('BrowserView.setBounds()', () => {

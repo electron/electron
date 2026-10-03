@@ -34,6 +34,9 @@ namespace electron {
 
 namespace {
 
+constexpr UINT_PTR kLegacyWindowSubclassId = 1;
+constexpr UINT_PTR kForwardMouseMessagesSubclassId = 2;
+
 void SetWindowBorderAndCaptionColor(HWND hwnd, COLORREF color, bool has_frame) {
   HRESULT result;
   if (has_frame) {
@@ -443,8 +446,11 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
         // This is used when forwarding mouse messages. We only cache the first
         // occurrence (the webview window) because dev tools also cause this
         // message to be sent.
+        auto child = reinterpret_cast<HWND>(l_param);
+        SetWindowSubclass(child, SubclassProc, kLegacyWindowSubclassId,
+                          reinterpret_cast<DWORD_PTR>(this));
         if (!legacy_window_) {
-          legacy_window_ = reinterpret_cast<HWND>(l_param);
+          legacy_window_ = child;
         }
       }
       return false;
@@ -660,8 +666,11 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
 
     // Subclassing is used to fix some issues when forwarding mouse messages;
     // see comments in |SubclassProc|.
-    SetWindowSubclass(legacy_window_, SubclassProc, 1,
-                      reinterpret_cast<DWORD_PTR>(this));
+    if (legacy_window_) {
+      SetWindowSubclass(legacy_window_, SubclassProc,
+                        kForwardMouseMessagesSubclassId,
+                        reinterpret_cast<DWORD_PTR>(this));
+    }
 
     if (!mouse_hook_) {
       mouse_hook_ = SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, nullptr, 0);
@@ -670,7 +679,10 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
     forwarding_mouse_messages_ = false;
     forwarding_windows_->erase(this);
 
-    RemoveWindowSubclass(legacy_window_, SubclassProc, 1);
+    if (legacy_window_) {
+      RemoveWindowSubclass(legacy_window_, SubclassProc,
+                           kForwardMouseMessagesSubclassId);
+    }
 
     if (forwarding_windows_->empty()) {
       // If UnhookWindowsHookEx fails, the hook is still installed in the
@@ -700,6 +712,18 @@ LRESULT CALLBACK NativeWindowViews::SubclassProc(HWND hwnd,
                                                  DWORD_PTR ref_data) {
   auto* window = reinterpret_cast<NativeWindowViews*>(ref_data);
   switch (msg) {
+    case WM_NCHITTEST: {
+      if (window) {
+        HWND parent = window->GetAcceleratedWidget();
+        if (parent && ::IsWindow(parent)) {
+          LRESULT hit = ::SendMessage(parent, WM_NCHITTEST, w_param, l_param);
+          if (hit != HTCLIENT && hit != HTNOWHERE) {
+            return HTTRANSPARENT;
+          }
+        }
+      }
+      break;
+    }
     case WM_MOUSELEAVE: {
       // When input is forwarded to underlying windows, this message is posted.
       // If not handled, it interferes with Chromium logic, causing for example
@@ -711,9 +735,13 @@ LRESULT CALLBACK NativeWindowViews::SubclassProc(HWND hwnd,
       // the messages. As to why this is caught for the legacy window and not
       // the actual browser window is simply that the legacy window somehow
       // makes use of these events; posting to the main window didn't work.
-      if (window->forwarding_mouse_messages_) {
+      if (window && window->forwarding_mouse_messages_) {
         return 0;
       }
+      break;
+    }
+    case WM_NCDESTROY: {
+      RemoveWindowSubclass(hwnd, SubclassProc, subclass_id);
       break;
     }
   }
