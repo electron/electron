@@ -1101,16 +1101,6 @@ class WebContents::NativeLifecycle final
       return contents->SaveFrame(url, referrer, frame);
     return false;
   }
-  void FindReply(content::WebContents* source,
-                 int request_id,
-                 int matches,
-                 const gfx::Rect& selection,
-                 int active_match,
-                 bool final_update) override {
-    if (auto* contents = contents_.Get())
-      contents->FindReply(source, request_id, matches, selection, active_match,
-                          final_update);
-  }
   void RequestPointerLock(content::WebContents* source,
                           bool user_gesture,
                           bool last_unlocked_by_target) override {
@@ -1447,6 +1437,15 @@ class WebContents::NativeLifecycle final
   void DidFinishNavigation(content::NavigationHandle* navigation) override {
     if (auto* contents = contents_.Get())
       contents->DidFinishNavigation(navigation);
+  }
+  void DidReceiveFindReply(int request_id,
+                           int matches,
+                           const gfx::Rect& selection,
+                           int active_match,
+                           bool final_update) override {
+    if (auto* contents = contents_.Get())
+      contents->DidReceiveFindReply(request_id, matches, selection,
+                                    active_match, final_update);
   }
   void WebContentsDestroyed() override {
     DisposeWebFrames();
@@ -2819,12 +2818,11 @@ void WebContents::OnReadAvailableTypes(
   Emit("context-menu", event_data);
 }
 
-void WebContents::FindReply(content::WebContents* web_contents,
-                            int request_id,
-                            int number_of_matches,
-                            const gfx::Rect& selection_rect,
-                            int active_match_ordinal,
-                            bool final_update) {
+void WebContents::DidReceiveFindReply(int request_id,
+                                      int number_of_matches,
+                                      const gfx::Rect& selection_rect,
+                                      int active_match_ordinal,
+                                      bool final_update) {
   if (!final_update)
     return;
 
@@ -5826,8 +5824,7 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
       electron_renderer->BindNewPipeAndPassReceiver());
   auto* raw_ptr = electron_renderer.get();
   (*raw_ptr)->TakeHeapSnapshot(
-      mojo::WrapPlatformHandle(mojo::PlatformHandle(
-          base::ScopedPlatformFile(file.TakePlatformFile()))),
+      mojo::PlatformHandle(base::ScopedPlatformFile(file.TakePlatformFile())),
       base::BindOnce(
           [](mojo::Remote<mojom::ElectronRenderer>* ep,
              gin_helper::Promise<void> promise, bool success) {

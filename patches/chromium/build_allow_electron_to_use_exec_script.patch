@@ -9,10 +9,10 @@ This is similar to the //build usecase so we're OK adding ourselves here.
 code-cache salt from patches/v8 at gen time.
 
 diff --git a/.gn b/.gn
-index 4806f1ebdabc2d3bb8f57a29790ec239d40c2458..5abdfd6ad37feb15b829876e978b1457c3053974 100644
+index 84c68fbae243a60a676b0234cf850331adbb87d9..7f3316d37e4188e3c3a28d68aa2bc8a28891dfbd 100644
 --- a/.gn
 +++ b/.gn
-@@ -461,6 +461,31 @@ exec_script_allowlist =
+@@ -460,6 +460,31 @@ exec_script_allowlist =
        # script. exec_script only happens when the checkout_mesa gclient arg is
        # set. If/when a 'proper' GN build for Mesa exists, this can be removed.
        "//third_party/dawn/third_party/meson/meson_target.gni",

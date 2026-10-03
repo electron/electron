@@ -8,7 +8,7 @@ respond to the first mouse click in their window, which is desirable for some
 kinds of utility windows. Similarly for `disableAutoHideCursor`.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 5b05de02f0ca0225d6bc1be9e219bce38cbff5d3..d42b3b58b63c7b4179b49c2d5ac73892f5a70cf3 100644
+index e375936a688a781fca010cd02da1ff41cbf3870b..da8d56053e6583457a6fde9aa8bd42f5825c86ef 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -191,6 +191,11 @@ void ExtractUnderlines(NSAttributedString* string,
@@ -34,7 +34,7 @@ index 5b05de02f0ca0225d6bc1be9e219bce38cbff5d3..d42b3b58b63c7b4179b49c2d5ac73892
    // Enable "click-through" if mouse clicks are accepted in inactive windows.
    return
        [self acceptsMouseEventsOption] > AcceptMouseEvents::kWhenInActiveWindow;
-@@ -1503,6 +1512,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
+@@ -1514,6 +1523,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
                                eventType == NSEventTypeKeyDown &&
                                !(modifierFlags & NSEventModifierFlagCommand);
  

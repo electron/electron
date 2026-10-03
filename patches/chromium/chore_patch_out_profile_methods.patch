@@ -7,7 +7,7 @@ Electron does not support Profiles, so we need to patch it out of any
 code that we use.
 
 diff --git a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
-index 48bb7a201df0fd5688405c178329d537fdf920bf..5923c08717b65beed7e16d3396cf567db4925fd7 100644
+index ba02974778b98b83456e79ba62a9d6b30680039c..fd2e7a592cdeca42393d2e3f9f2a0e6ccfc20f68 100644
 --- a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
 +++ b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
 @@ -46,6 +46,7 @@ namespace {
@@ -43,7 +43,7 @@ index 48bb7a201df0fd5688405c178329d537fdf920bf..5923c08717b65beed7e16d3396cf567d
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(chrome_pdf::features::kPdfXfaSupport);
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index 5dd1c5c85fe0785ea05ead8e2388c76f5503b9ae..c2ca9ca4ba2380a90e4a99912cd038cdd6db9c4c 100644
+index 435d133f0d66ef7a9aee93d0b5f64b4afd2e40a1..977c1377c081c2ff580faafce3b87d79478d84da 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
 @@ -16,7 +16,6 @@
@@ -68,7 +68,7 @@ index 5dd1c5c85fe0785ea05ead8e2388c76f5503b9ae..c2ca9ca4ba2380a90e4a99912cd038cd
  }
  
  bool IsPdfInk2AnnotationsEnabled(content::BrowserContext* context) {
-@@ -507,11 +509,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
+@@ -509,11 +511,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
      }
    }
  
