@@ -185,7 +185,7 @@ index f3c132412ca87c3abda84cf91434a9f7d874cb35..c615390ea3d0bc57b39af463ead589a3
        bool unadjusted_movement,
        input::InputRouterImpl::RequestMouseLockCallback response) override;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index dc1a62f8e3a5348bac4fa214a1160bc7417796bf..61dc709241c07140edf41902c6ee7654b8658625 100644
+index 2274f76ecb9727e2217d65f7dcf67f5a4259a51a..4063297d855b4e828f952ffb648c1f3926bb77e5 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5504,6 +5504,7 @@ blink::mojom::ApplicationContext WebContentsImpl::GetApplicationContext()
@@ -216,7 +216,7 @@ index dc1a62f8e3a5348bac4fa214a1160bc7417796bf..61dc709241c07140edf41902c6ee7654
      observers_.NotifyObservers(&WebContentsObserver::PointerLockRequested);
      delegate->RequestPointerLock(this, user_gesture, last_unlocked_by_target);
    } else {
-@@ -10173,9 +10184,22 @@ bool WebContentsImpl::HasPointerLockWidgetInParentChain() {
+@@ -10170,9 +10181,22 @@ bool WebContentsImpl::HasPointerLockWidgetInParentChain() {
    return false;
  }
  
@@ -240,7 +240,7 @@ index dc1a62f8e3a5348bac4fa214a1160bc7417796bf..61dc709241c07140edf41902c6ee7654
      static_cast<SurfaceEmbedConnectorImpl*>(connector)
          ->SetPointerLockWidgetInParentChain(widget);
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index d13b35920779bc17356c9302695b05c88733bba5..499d04c80a42352dd74e3785ac3717d2dc66c8f1 100644
+index 0be6a6e4e37ae95913e3532d6540633aa3da30e8..e48339a37126e36561dff863db630fffb29cf745 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -1232,6 +1232,7 @@ class CONTENT_EXPORT WebContentsImpl
