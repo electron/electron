@@ -67,7 +67,7 @@ index 15d59648317174e48993b3fd316f7160d3c4288b..c5c79c4a4dc07bfa1de782cb8d84df09
    return _headless_info.get();
  }
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index d540d13aca9c63c5f7bcc51a9dd4f134c24b1004..45f414f20d05f7f4be2b3a7ca2b6bf4d06e9e732 100644
+index f9712a9b05fd5a689b8845064031153f6ba0545a..6ccd3d3783d1e5a6d0f64bec0166a6692d1259fe 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -613,7 +613,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -141,7 +141,7 @@ index 9391ec2ed99803e8d9547157ac79d0695a5a0dda..8d20c748e4fbfd6816892f69ba752fb0
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
-index 8bae166f9d9f6e76c189e1300ad1547c62040edf..cc469a148e1813fcc8b306440f88faae22a7344e 100644
+index 5ab33a3e3a2969a1acb2bc619200d4feae814a40..53fe50f39826e8b5e4608b12b7b171e72a644e6f 100644
 --- a/ui/views/widget/widget.cc
 +++ b/ui/views/widget/widget.cc
 @@ -262,6 +262,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
@@ -172,7 +172,7 @@ index 8bae166f9d9f6e76c189e1300ad1547c62040edf..cc469a148e1813fcc8b306440f88faae
  
    if (params.opacity == views::Widget::InitParams::WindowOpacity::kInferred &&
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index c4f7edc56ca1a5cb55d85e64012bdc09ecd28d2e..bede9359b18bc165deac372b288107d7a3ae11b0 100644
+index 0ca8a1679f8c95e68ffb35f63634ba17603c74e2..526fc704b7edbab9179a1e9038b462c6dcc1e4f6 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
 @@ -331,6 +331,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
@@ -209,7 +209,7 @@ index c4f7edc56ca1a5cb55d85e64012bdc09ecd28d2e..bede9359b18bc165deac372b288107d7
    // True if the window size will follow the content preferred size.
    bool is_autosized() const { return is_autosized_; }
  
-@@ -1824,6 +1837,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1825,6 +1838,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // If true, the mouse is currently down.
    bool is_mouse_button_pressed_ = false;
  

@@ -50,10 +50,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index e370b2e6ab4f3686ac43cc5a2f9503fcb872d1f2..eb08ab9a121a754bca67904e7834b36ee87fb3b0 100644
+index e269f3a0bee06dec36300af0ea2a2181f597011a..8269fa4f6f687bb5bfe758992bc4ee8b0db25ef5 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1153,6 +1153,7 @@ component("base") {
+@@ -1154,6 +1154,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -129,10 +129,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index 1ebb57cfe6fd9cfec5c5b440149f77b21e841afb..673b445a551c09fd7942ae01de7b6e85f1feec8b 100644
+index 93470014129c5b20fa076c0200f2661c7a1df7dd..62236733e5ec7e3b8ffa98c3e0e244c8de9ab333 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -1045,6 +1045,7 @@ if (is_clang_or_gcc) {
+@@ -1049,6 +1049,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -843,7 +843,7 @@ index 6f02db406326ba00fec8007b19a638b6c3354a55..15d59648317174e48993b3fd316f7160
  
  - (NSWindow*)rootWindow {
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 5ac36cb359f6961cdfb1e32720683ab5fcb1d65f..d540d13aca9c63c5f7bcc51a9dd4f134c24b1004 100644
+index bb9177fc59064641c9535ba7c3281d73ef66b0fb..f9712a9b05fd5a689b8845064031153f6ba0545a 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -1005,7 +1005,7 @@ index da8d56053e6583457a6fde9aa8bd42f5825c86ef..5290c0be45600e34d6f5fe32c60cd520
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 01a44e12c3c7caa15791d828ed9bfd7cbb14f03a..16ddc5905b20d7b969646f78af46d7b973af430f 100644
+index a4e335cacb1ac1064968a0b2a21e4ebd780c3eae..1cbc543961deb7021ef5df70799530ec8cffd503 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -382,6 +382,7 @@ source_set("browser") {
@@ -1281,10 +1281,10 @@ index 4ad1cf42d7a4ab65fe1ac512e5887beddea3b59c..6b1efa6ded54315f58a5275287f8a88b
  
    if (is_mac) {
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 4f7dbbc8f46922d1e8fe975eb12c73cea9f71b1b..e686813116bc5351da4b23bce043c8c78e1f87d5 100644
+index 8940cda1ea6211df84da098078a1f90c66666013..335e42c54e5d6a9f591065519443e99c8bc49b91 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
-@@ -41,7 +41,9 @@
+@@ -40,7 +40,9 @@
  #include "device/bluetooth/bluetooth_discovery_session_outcome.h"
  #include "device/bluetooth/bluetooth_socket_mac.h"
  #include "device/bluetooth/public/cpp/bluetooth_address.h"
@@ -1294,7 +1294,7 @@ index 4f7dbbc8f46922d1e8fe975eb12c73cea9f71b1b..e686813116bc5351da4b23bce043c8c7
  extern "C" {
  // Undocumented IOBluetooth Preference API [1]. Used by `blueutil` [2] and
  // `Karabiner` [3] to programmatically control the Bluetooth state. Calling the
-@@ -55,6 +57,7 @@
+@@ -54,6 +56,7 @@
  // [4] https://support.apple.com/kb/PH25091
  void IOBluetoothPreferenceSetControllerPowerState(int state);
  }
@@ -1302,18 +1302,18 @@ index 4f7dbbc8f46922d1e8fe975eb12c73cea9f71b1b..e686813116bc5351da4b23bce043c8c7
  
  namespace device {
  class BluetoothDevicesConnectListenerBridge;
-@@ -249,8 +252,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
- BluetoothAdapterMac::BluetoothAdapterMac()
+@@ -237,8 +240,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
      : controller_state_function_(
-           base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState)),
+           base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
+                               base::Unretained(this))),
 +#if !IS_MAS_BUILD()
        power_state_function_(
            base::BindRepeating(IOBluetoothPreferenceSetControllerPowerState)),
 +#endif
        device_paired_status_callback_(
-           base::BindRepeating(&IsDeviceSystemPaired)) {}
- 
-@@ -457,8 +462,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+           base::BindRepeating(&IsDeviceSystemPaired)) {
+ }
+@@ -399,8 +404,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
@@ -1817,7 +1817,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 2504ba2c78a1608845b1c76ed2d0b6b56ee9b379..80e1a06e8a0163b92cecd94c3a02e7118027aca2 100644
+index 2eba470fe28c627ffc9348afcec75ab4b7a8ef21..88899a80c35e96cda08481bda18855c7d23bdb05 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -446,6 +446,7 @@ component("core") {
@@ -1899,18 +1899,18 @@ index 94afefcee81b87c05bf9b1199d90d3d4b5ea84a6..3e3aaea0ec6c8fad0d90a931d269af3a
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm b/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
-index 93f6eb62e3648119315300be026fe6b9fccfa4f4..b9f7423e515217cf32202722ea62b02f0145c279 100644
+index 809f68a88ab7e4bfe4c349521061435c6b958833..7b25ac250a374ce854968a6277f3e72be0dece1a 100644
 --- a/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
 +++ b/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
-@@ -37,6 +37,7 @@
- #include "base/apple/bridging.h"
+@@ -41,6 +41,7 @@
  #include "base/apple/foundation_util.h"
  #include "base/apple/scoped_cftyperef.h"
+ #include "base/numerics/byte_conversions.h"
 +#include "electron/mas.h"
  #include "third_party/blink/renderer/platform/fonts/font_cache.h"
  #include "third_party/blink/renderer/platform/fonts/font_selection_types.h"
  #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
-@@ -60,8 +61,10 @@
+@@ -64,8 +65,10 @@
  // We don't need localized variation axis name, so we can use
  // `CTFontCopyVariationAxesInternal()` instead.
  // Request for public API: FB13788219.
@@ -1921,7 +1921,7 @@ index 93f6eb62e3648119315300be026fe6b9fccfa4f4..b9f7423e515217cf32202722ea62b02f
  
  namespace blink {
  
-@@ -418,12 +421,16 @@ void ClampVariationValuesToFontAcceptableRange(
+@@ -497,12 +500,16 @@ void ClampVariationValuesToFontAcceptableRange(
    // we are enabling it only on MacOS 13+ because these are our benchmarking
    // platforms.
    NSArray* all_axes;
@@ -1939,10 +1939,10 @@ index 93f6eb62e3648119315300be026fe6b9fccfa4f4..b9f7423e515217cf32202722ea62b02f
      return;
    }
 diff --git a/ui/accelerated_widget_mac/BUILD.gn b/ui/accelerated_widget_mac/BUILD.gn
-index eb90cda4852ca7dc0932cc77801f6b4d62c5624d..2b2dedabfc75548cb46227905035cdc6a4ed681e 100644
+index daa300a59ab92b1af2dadfa37d42f9d85951aa38..1377a290136a82516c27ea54b97624513a5c1207 100644
 --- a/ui/accelerated_widget_mac/BUILD.gn
 +++ b/ui/accelerated_widget_mac/BUILD.gn
-@@ -84,6 +84,7 @@ component("accelerated_widget_mac") {
+@@ -85,6 +85,7 @@ component("accelerated_widget_mac") {
      "//ui/gfx",
      "//ui/gfx/geometry",
      "//ui/gl",
@@ -2382,10 +2382,10 @@ index 65ae8170664d15c7884261812400d0ed638a681d..86c937f1e6d03b88803a2ca80abff19c
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 68ead73ecf2ba5becd88adacb893576fd1d09137..038ac64cd56691c886f3bb68d346737735b13d12 100644
+index 4b93fb6b10d7f5c1059abdd60fa0e51d699c3e8f..2674e1d0a8aea68b8d3583414f12ff1d53297514 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -789,6 +789,8 @@ component("views") {
+@@ -791,6 +791,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -2394,7 +2394,7 @@ index 68ead73ecf2ba5becd88adacb893576fd1d09137..038ac64cd56691c886f3bb68d3467377
    }
  
    if (is_win) {
-@@ -1208,6 +1210,8 @@ source_set("test_support") {
+@@ -1210,6 +1212,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
