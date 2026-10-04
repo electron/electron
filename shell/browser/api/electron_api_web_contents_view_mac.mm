@@ -72,8 +72,10 @@ void SetViewHitTestable(NSView* view, bool hit_testable) {
   const bool currently_swizzled = IsNonInteractive(view);
 
   if (hit_testable) {
-    if (currently_swizzled)
-      object_setClass(view, class_getSuperclass(current));
+    if (currently_swizzled) {
+      if (Class superclass = class_getSuperclass(current))
+        object_setClass(view, superclass);
+    }
     return;
   }
 
