@@ -216,7 +216,7 @@ class PreloadRealmLifetimeController
   blink::Member<blink::ScriptState> shadow_realm_script_state_;
 
   std::unique_ptr<base::ProcessMetrics> metrics_;
-  raw_ptr<ServiceWorkerData> service_worker_data_;
+  raw_ptr<ServiceWorkerData, DanglingUntriaged> service_worker_data_;
 
   GC_PLUGIN_IGNORE(
       "Intentional GC root to keep this object alive until the context is "

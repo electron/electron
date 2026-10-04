@@ -1412,8 +1412,9 @@ void NativeWindowMac::SetVibrancy(const std::string& type, int duration) {
     auto cleanupHandler = ^{
       if (vibrant_native_view_host_ != nullptr) {
         // Transfers ownership back to caller in the form of a unique_ptr which
-        // is subsequently deleted.
-        rootView->RemoveChildViewT(vibrant_native_view_host_);
+        // is deleted after the non-owning pointer has been cleared.
+        auto vibrant_native_view_host =
+            rootView->RemoveChildViewT(vibrant_native_view_host_);
         vibrant_native_view_host_ = nullptr;
       }
 
