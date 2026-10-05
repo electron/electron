@@ -167,13 +167,18 @@ PipeWire supports a single capture for both screens and windows. If you request 
 #### Restoring a source on Wayland
 
 On Wayland the source is chosen in the system's own picker, which `desktopCapturer.getSources`
-shows on every call. To let the user pick once and keep capturing the same screen or window on
-later launches, pass `persistMode: 'persistent'`, store the source's restore token, and pass it
-back as `restoreToken` next time. Electron does not store tokens itself. A token names a screen or
+shows on every call. To let the user pick once and capture that choice again on later launches,
+pass `persistMode: 'persistent'`, store the source's restore token, and pass it back as
+`restoreToken` next time. Electron does not store tokens itself. A token names a screen or
 window the user already agreed to share, so keep it somewhere private to the app, for example
 encrypted with [`safeStorage`](safe-storage.md). If the user has revoked the grant, the screen or
 window no longer exists, or the stored value is not a valid token, it is ignored and the picker is
 shown again.
+
+How a token is matched to a source is up to the desktop environment. GNOME and KDE remember a
+window by its app and title, and restore the open window of that app whose title is closest, so a
+token can resolve to a different window of the same app. If no title is close enough the picker is
+shown.
 
 With a valid token nothing asks the user before capture starts. Show the user what is being
 shared, and let them choose something else by calling `desktopCapturer.getSources` again without
@@ -207,11 +212,18 @@ app.whenReady().then(() => {
   let sourceId
 
   session.defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
-    const [source] = await desktopCapturer.getSources({
-      types: ['screen', 'window'],
-      persistMode: 'persistent',
-      restoreToken: await readToken()
-    })
+    let source
+    try {
+      [source] = await desktopCapturer.getSources({
+        types: ['screen', 'window'],
+        persistMode: 'persistent',
+        restoreToken: await readToken()
+      })
+    } catch {
+      // The user closed the picker without choosing anything.
+      callback(null)
+      return
+    }
     sourceId = source.id
     await writeToken(source.restoreToken)
     callback({ video: source })
