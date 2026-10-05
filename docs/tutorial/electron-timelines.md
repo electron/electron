@@ -12,8 +12,8 @@ This document focuses on the release cadence and version support policy.
 [Electron's Release Schedule](https://releases.electronjs.org/schedule) lists a schedule of Electron major releases showing key milestones including alpha, beta, and stable release dates, as well as end-of-life dates and dependency versions.
 
 > [!IMPORTANT]
-> Electron's official support policy is the latest 3 stable releases. Our stable
-> release and end-of-life dates are determined by Chromium, and may be subject to
+> Electron's official support policy is the latest 3 stable releases. Our beta,
+> stable, and end-of-life dates are determined by Chromium, and may be subject to
 > change. While we try to keep our planned release and end-of-life dates frequently
 > updated here, future dates may change if affected by upstream scheduling changes,
 > and may not always be accurately reflected.
@@ -49,9 +49,12 @@ gantt
 
 * Alphas are generally less stable than beta releases. The cutoff between the two
   corresponds to when the underlying Chromium version enters Chrome's Beta channel.
-* The `-alpha.1`, `-beta.1`, and `stable` dates are our solid release dates.
+* The `-alpha.1` and `stable` dates are our solid release dates.
+* `-beta.1` is released automatically once the release branch has caught up to that
+  Chromium version. This is usually the scheduled date, but can be a few days later
+  if our Chromium roll is behind.
 * We strive for weekly alpha/beta releases, but we often release more than scheduled.
-* All dates are our goals but there may be reasons for adjusting the stable deadline, such as security bugs.
+* All dates are our goals but there may be reasons for adjusting them, such as security bugs.
 
 **Historical changes:**
 
