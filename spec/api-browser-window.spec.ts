@@ -1737,6 +1737,78 @@ describe('BrowserWindow module', () => {
 
         expect(activeApp()).to.equal('Finder');
       });
+
+      ifit(
+        process.platform === 'darwin' && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS
+      )('does not activate the app when clicking an inactive panel', async function () {
+        // This requires the mouse-input native addon because sendInputEvent()
+        // bypasses AppKit and cannot exercise the window server's activation
+        // behavior.
+        const mouse = require('@electron-ci/mouse-input');
+        const originalCursor = mouse.getCursorPos();
+        const getActiveAppOsa =
+          'tell application "System Events" to get the name of the first process whose frontmost is true';
+        const activeApp = () => childProcess.execSync(`osascript -e '${getActiveAppOsa}'`).toString().trim();
+
+        try {
+          // The regular test window would otherwise become the app's front
+          // window when Finder activates Electron again.
+          w.destroy();
+          const { workArea } = screen.getPrimaryDisplay();
+          w = new BrowserWindow({
+            type: 'panel',
+            acceptFirstMouse: true,
+            focusable: false,
+            show: false,
+            x: workArea.x + 40,
+            y: workArea.y + 40,
+            width: 200,
+            height: 200
+          });
+          await w.loadURL(`data:text/html,${encodeURIComponent(`
+            <script>
+              window.receivedMouseDown = false
+              document.addEventListener('mousedown', () => { window.receivedMouseDown = true })
+            </script>
+            <button>Click me</button>
+          `)}`);
+          w.showInactive();
+
+          const target = { x: workArea.x + 80, y: workArea.y + 80 };
+          await mouse.move(target.x, target.y);
+          try {
+            await waitUntil(() => {
+              const cursor = mouse.getCursorPos();
+              return cursor.x === target.x && cursor.y === target.y;
+            }, { timeout: 2000 });
+          } catch {
+            const reason = `real mouse input is unavailable: ${JSON.stringify(mouse.getDiagnostics())}`;
+            if (process.env.CI) throw new Error(reason);
+            console.warn(`Skipping inactive panel click spec. ${reason}`);
+            this.skip();
+          }
+
+          const isInactive: Promise<unknown> = app.isActive()
+            ? once(app, 'did-resign-active')
+            : Promise.resolve();
+          childProcess.execSync('osascript -e \'tell application "Finder" to activate\'');
+          await isInactive;
+          await waitUntil(() => activeApp() === 'Finder');
+
+          await mouse.click();
+          await waitUntil(() => w.webContents.executeJavaScript('window.receivedMouseDown'));
+          // Give AppKit a turn to process an erroneous activation after the
+          // mousedown has reached Chromium.
+          await setTimeout(100);
+          expect(app.isActive()).to.equal(false);
+          expect(activeApp()).to.equal('Finder');
+        } finally {
+          if (originalCursor.x !== undefined && originalCursor.y !== undefined) {
+            await mouse.move(originalCursor.x, originalCursor.y);
+          }
+          app.focus();
+        }
+      });
     });
 
     // TODO(RaisinTen): Make this work on Windows too.
