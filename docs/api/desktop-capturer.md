@@ -212,9 +212,9 @@ app.whenReady().then(() => {
   let sourceId
 
   session.defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
-    let source
+    let sources
     try {
-      [source] = await desktopCapturer.getSources({
+      sources = await desktopCapturer.getSources({
         types: ['screen', 'window'],
         persistMode: 'persistent',
         restoreToken: await readToken()
@@ -224,6 +224,7 @@ app.whenReady().then(() => {
       callback(null)
       return
     }
+    const [source] = sources
     sourceId = source.id
     await writeToken(source.restoreToken)
     callback({ video: source })
