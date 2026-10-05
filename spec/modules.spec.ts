@@ -98,16 +98,14 @@ describe('modules support', () => {
         const child = utilityProcess.fork(path.join(utilityProcessFixturesPath, 'require-lol.js'), [], {
           stdio: ['ignore', 'ignore', 'pipe']
         });
-        const sawError = new Promise<string>((resolve) => {
-          let stderr = '';
-          child.stderr!.on('data', (data) => {
-            stderr += data.toString('utf8');
-            if (/Cannot find module 'electron\/lol'/.test(stderr)) resolve(stderr);
-          });
+        let stderr = '';
+        child.stderr!.on('data', (data) => {
+          stderr += data.toString('utf8');
         });
-        const [code] = await once(child, 'exit');
+        // Process exit can precede the last pipe read, especially on Windows.
+        const [[code]] = await Promise.all([once(child, 'exit'), once(child.stderr!, 'end')]);
         expect(code).to.equal(1);
-        expect(await sawError).to.match(/Cannot find module 'electron\/lol'/);
+        expect(stderr).to.match(/Cannot find module 'electron\/lol'/);
       });
 
       it("require('electron') should not throw in the main process", () => {
