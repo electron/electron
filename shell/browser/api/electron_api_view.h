@@ -147,6 +147,7 @@ class View : public gin::Wrappable<View>,
   cppgc::Member<ChildEntry> first_child_;
   v8::TracedReference<v8::Function> layout_callback_;
   std::optional<int> border_radius_;
+  bool interactive_ = true;
   std::unique_ptr<Host, NativePeerBase::Deleter> host_;
 };
 
@@ -183,8 +184,6 @@ class View::Host : public NativePeer<View>, public views::ViewObserver {
   std::unique_ptr<views::View> view_;
 
   base::WeakPtrFactory<Host> weak_factory_{this};
-
-  bool interactive_ = true;
 };
 
 }  // namespace electron::api
