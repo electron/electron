@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 5 Oct 2026 09:32:09 +0000
+Subject: [Linux] Don't abort when the NetworkMonitor portal's bus is lost
+
+Since https://crrev.com/c/8261571, losing a D-Bus connection is fatal
+only for a dbus::Bus without Options::disconnected_callback.
+https://crrev.com/c/8448270 landed just before it and creates a private
+session bus in PortalMonitorImpl without that option, which did not
+exist yet. So when the session bus goes away, that bus's thread still
+hits LOG(FATAL), racing the session end that the shared bus's callback
+starts.
+
+Set the callback. Without a bus there is no portal, so report that the
+way OnNameOwnerChanged() does when the portal goes away.
+
+Also update a comment that names a function 8261571 renamed.
+
+Tested by killing a private dbus-daemon under content_shell: it aborted
+in Bus::OnConnectionDisconnected() on the portal bus's thread 5 of 5
+times before, and never after.
+
+Bug: 537480522
+
+Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/8512441;
+remove this patch when it rolls in.
+
+diff --git a/net/base/network_change_notifier_linux_portal.cc b/net/base/network_change_notifier_linux_portal.cc
+index c20c000306954707e7cd20f0e1789e6db927d7ec..31a028857fb5a58e7d60bf0f90cf89bcc7579d3e 100644
+--- a/net/base/network_change_notifier_linux_portal.cc
++++ b/net/base/network_change_notifier_linux_portal.cc
+@@ -58,7 +58,7 @@ class PortalMonitorImpl : public NetworkChangeNotifierLinux::PortalMonitor {
+       // 2. In unit test suites (e.g. `net_unittests`), cross-platform tests
+       //    call `NetworkChangeNotifier::CreateIfNeeded()` across sequential
+       //    `TaskEnvironment`s without calling
+-      //    `dbus_thread_linux::ShutdownOnDBusThreadAndBlock()`. Using
++      //    `dbus_thread_linux::Shutdown()`. Using
+       //    process-global D-Bus singletons retains a stale origin `TaskRunner`
+       //    from the first test's destroyed `TaskEnvironment`. Owning a private
+       //    bus here and shutting it down in `~PortalMonitorImpl()` ties the
+@@ -73,6 +73,11 @@ class PortalMonitorImpl : public NetworkChangeNotifierLinux::PortalMonitor {
+       options.dbus_task_runner = base::ThreadPool::CreateSingleThreadTaskRunner(
+           {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
+           base::SingleThreadTaskRunnerThreadMode::DEDICATED);
++      // `dbus::Bus` aborts the process without this. Losing the bus means
++      // losing the portal, so handle it like the portal going away.
++      options.disconnected_callback = base::BindOnce(
++          &PortalMonitorImpl::OnNameOwnerChanged,
++          weak_ptr_factory_.GetWeakPtr(), std::string(), std::string());
+       bus_ = base::MakeRefCounted<dbus::Bus>(std::move(options));
+     } else {
+       bus_->AssertOnOriginThread();
