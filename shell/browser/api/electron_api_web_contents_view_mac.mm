@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/api/electron_api_web_contents_view.h"
+#include "shell/browser/api/electron_api_web_contents_view_host.h"
 
 #import <Cocoa/Cocoa.h>
 #include <objc/runtime.h>
@@ -90,7 +91,7 @@ void SetViewHitTestable(NSView* view, bool hit_testable) {
 
 namespace electron::api {
 
-void WebContentsView::ApplyInteractive() {
+void WebContentsViewHost::ApplyInteractive(bool interactive) {
   if (!api_web_contents_ || !api_web_contents_->web_contents())
     return;
 
@@ -99,7 +100,7 @@ void WebContentsView::ApplyInteractive() {
   if (!content_view)
     return;
 
-  SetViewHitTestable(content_view, GetInteractive());
+  SetViewHitTestable(content_view, interactive);
 }
 
 }  // namespace electron::api
