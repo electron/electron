@@ -20,6 +20,7 @@
 #include "content/public/browser/web_contents_observer.h"
 #include "gin/data_object_builder.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/api/electron_api_web_contents_view_host.h"
 #include "shell/browser/draggable_region_provider.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
@@ -147,66 +148,6 @@ END_METADATA
 
 }  // namespace
 
-class WebContentsViewHost final : public View::Host,
-                                  public content::WebContentsObserver,
-                                  public NativeWindowObserver,
-                                  public DraggableRegionProvider {
- public:
-  WebContentsViewHost(WebContentsView* wrapper, WebContents* web_contents);
-
-  void RegisterDraggableRegionProvider(NativeWindow* window);
-  void ApplyBorderRadius(std::optional<int> radius);
-
-  // DraggableRegionProvider:
-  int NonClientHitTest(const gfx::Point& point) override;
-
- private:
-  ~WebContentsViewHost() override;
-
-  // The wrapper of a WebContentsViewHost is always a WebContentsView.
-  static WebContentsView* AsWebContentsView(const WrapperRef<View>& api_view) {
-    return static_cast<WebContentsView*>(api_view.operator->());
-  }
-
-  // NativePeer:
-  void OnShutdown() override;
-  void TearDownNative() override;
-
-  // views::ViewObserver:
-  void OnViewAddedToWidget(views::View* observed_view) override;
-  void OnViewRemovedFromWidget(views::View* observed_view) override;
-  void OnChildViewRemoved(views::View* observed_view,
-                          views::View* child) override;
-
-  // content::WebContentsObserver:
-  void WebContentsDestroyed() override;
-
-  // NativeWindowObserver:
-  void UpdateWindowControlsOverlay(const gfx::Rect& bounding_rect) override;
-
-  WebContents* GetLiveWebContents() const;
-  WebContentsContainerView* container() const;
-  InspectableWebContentsView* GetOwnedInspectableView() const;
-  void RemoveFromParent();
-  void StopObservingWindow();
-  void UnregisterDraggableRegionProvider();
-  void OnContentsBoundsChanging();
-  bool HasLivePage();
-  void ScheduleWindowControlsOverlayUpdate();
-  void SendWindowControlsOverlay();
-
-  // The wrapper holds the strong edge. This one lets the host destroy
-  // the WebContents after the wrapper has been collected.
-  cppgc::WeakPersistent<WebContents> api_web_contents_;
-  base::WeakPtr<NativeWindow> observed_window_;
-  base::WeakPtr<NativeWindow> draggable_region_window_;
-  bool window_controls_overlay_update_pending_ = false;
-  // Cleared at shutdown, where the WebContents disposes itself.
-  bool destroy_web_contents_on_release_ = true;
-
-  base::WeakPtrFactory<WebContentsViewHost> weak_factory_{this};
-};
-
 WebContentsViewHost::WebContentsViewHost(WebContentsView* wrapper,
                                          WebContents* web_contents)
     : View::Host(wrapper, std::make_unique<WebContentsContainerView>()),
@@ -288,13 +229,8 @@ void WebContentsViewHost::UnregisterDraggableRegionProvider() {
   draggable_region_window_ = nullptr;
 }
 
-void WebContentsView::SetInteractive(bool interactive) {
-  View::SetInteractive(interactive);
-  ApplyInteractive();
-}
-
 #if !BUILDFLAG(IS_MAC)
-void WebContentsView::ApplyInteractive() {
+void WebContentsViewHost::ApplyInteractive(bool interactive) {
   if (!api_web_contents_ || !api_web_contents_->web_contents())
     return;
 
@@ -302,8 +238,8 @@ void WebContentsView::ApplyInteractive() {
   if (gfx::NativeView native_view =
           api_web_contents_->web_contents()->GetNativeView()) {
     native_view->SetEventTargetingPolicy(
-        GetInteractive() ? aura::EventTargetingPolicy::kTargetAndDescendants
-                         : aura::EventTargetingPolicy::kNone);
+        interactive ? aura::EventTargetingPolicy::kTargetAndDescendants
+                    : aura::EventTargetingPolicy::kNone);
   }
 #endif
 }
@@ -383,9 +319,10 @@ void WebContentsViewHost::OnViewAddedToWidget(views::View* observed_view) {
   StopObservingWindow();
   observed_window_ = native_window->GetWeakPtr();
   native_window->AddObserver(this);
-  if (auto api_view = wrapper())
+  if (auto api_view = wrapper()) {
     ApplyBorderRadius(api_view->border_radius());
-    ApplyInteractive();
+    ApplyInteractive(api_view->GetInteractive());
+  }
   if (HasLivePage())
     ScheduleWindowControlsOverlayUpdate();
 }
@@ -510,6 +447,11 @@ void WebContentsView::SetBackgroundColor(std::optional<WrappedSkColor> color) {
 void WebContentsView::SetBorderRadius(int radius) {
   View::SetBorderRadius(radius);
   web_contents_view_host()->ApplyBorderRadius(border_radius());
+}
+
+void WebContentsView::SetInteractive(bool interactive) {
+  View::SetInteractive(interactive);
+  web_contents_view_host()->ApplyInteractive(View::GetInteractive());
 }
 
 void WebContentsView::RegisterDraggableRegionProvider(NativeWindow* window) {
