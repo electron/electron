@@ -51,7 +51,8 @@ gantt
   corresponds to when the underlying Chromium version enters Chrome's
   [Beta channel](https://www.chromium.org/getting-involved/dev-channel/), where Google
   tests each Chrome version for about four weeks before releasing it to stable.
-* The `-alpha.1` and `stable` dates are our solid release dates.
+* `-alpha.1` and stable releases are published on the dates listed in the schedule.
+  The prereleases in between, including `-beta.1`, don't have fixed dates.
 * `-beta.1` is released automatically once the release branch has caught up to that
   Chromium version. This is usually the scheduled date, but it can be a few days
   later if we haven't yet updated the release branch to that Chromium version.
