@@ -48,7 +48,9 @@ gantt
 **Notes:**
 
 * Alphas are generally less stable than beta releases. The cutoff between the two
-  corresponds to when the underlying Chromium version enters Chrome's Beta channel.
+  corresponds to when the underlying Chromium version enters Chrome's
+  [Beta channel](https://www.chromium.org/getting-involved/dev-channel/), where Google
+  tests each Chrome version for about four weeks before releasing it to stable.
 * The `-alpha.1` and `stable` dates are our solid release dates.
 * `-beta.1` is released automatically once the release branch has caught up to that
   Chromium version. This is usually the scheduled date, but it can be a few days
