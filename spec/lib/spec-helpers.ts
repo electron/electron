@@ -244,6 +244,23 @@ export function waitUntil(callback: () => boolean | Promise<boolean>, opts: { ra
   })();
 }
 
+// Resolves to whether `weak`'s target is collected within `attempts` full GCs.
+// Each GC runs from a fresh task without scanning the native stack,
+// so a stale pointer left on the stack cannot keep a C++-backed wrapper alive
+// (see RequestGarbageCollectionForTesting in electron_api_v8_util.cc).
+// The pause between attempts gives native teardown a chance to drop its references.
+export async function waitForCollection(weak: WeakRef<object>, attempts = 30) {
+  const v8Util = process._linkedBinding('electron_common_v8_util');
+  for (let i = 0; i < attempts; ++i) {
+    await v8Util.requestGarbageCollectionForTesting({ execution: 'async' });
+    if (weak.deref() === undefined) {
+      return true;
+    }
+    await setTimeout(10);
+  }
+  return false;
+}
+
 export async function repeatedly<T>(fn: () => Promise<T>, opts?: { until?: (x: T) => boolean; timeLimit?: number }) {
   const { until = (x: T) => !!x, timeLimit = 10000 } = opts ?? {};
   const begin = Date.now();

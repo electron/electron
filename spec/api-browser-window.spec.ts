@@ -51,7 +51,8 @@ import {
   listen,
   waitUntil,
   isWayland,
-  isTestingBindingAvailable
+  isTestingBindingAvailable,
+  waitForCollection
 } from './lib/spec-helpers.ts';
 import { closeWindow, closeAllWindows } from './lib/window-helpers.ts';
 
@@ -8136,8 +8137,6 @@ describe('BrowserWindow module', () => {
     });
 
     describe('shared texture', () => {
-      const v8Util = process._linkedBinding('electron_common_v8_util');
-
       it('does not crash when release() is called after the texture is garbage collected', async () => {
         const sw = new BrowserWindow({
           width: 100,
@@ -8167,14 +8166,7 @@ describe('BrowserWindow module', () => {
         const weakTexture = new WeakRef(event.texture);
         event.texture = undefined;
 
-        // Force GC until the texture object is collected.
-        let collected = false;
-        for (let i = 0; i < 30 && !collected; ++i) {
-          await setTimeout();
-          v8Util.requestGarbageCollectionForTesting();
-          collected = weakTexture.deref() === undefined;
-        }
-        expect(collected).to.be.true('texture should be garbage collected');
+        expect(await waitForCollection(weakTexture)).to.be.true('texture should be garbage collected');
 
         // This should return safely and not crash the main process.
         expect(() => staleRelease()).to.not.throw();

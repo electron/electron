@@ -2,6 +2,7 @@
 // silently skips the wait (and any assertion inside it).
 const MUST_AWAIT = new Set([
   'waitUntil',
+  'waitForCollection',
   'repeatedly',
   'closeWindow',
   'closeAllWindows',

@@ -14,7 +14,7 @@ import { setImmediate } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 
 import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers.ts';
-import { deferKillUtilityProcess, ifit, listen, startRemoteControlApp } from './lib/spec-helpers.ts';
+import { deferKillUtilityProcess, ifit, listen, startRemoteControlApp, waitForCollection } from './lib/spec-helpers.ts';
 import { closeWindow } from './lib/window-helpers.ts';
 
 const require = createRequire(import.meta.url);
@@ -255,21 +255,10 @@ describe('utilityProcess module', () => {
     });
 
     it('does not keep stale observers for crashed processes without JS references', async () => {
-      const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
       const logExpectedCrash = (phase: string) => {
         console.error(
           `[expected crash] utilityProcess regression forcing ${phase} crash; signal 11 + backtrace expected`
         );
-      };
-      const waitForCollection = async (weakChild: WeakRef<ReturnType<typeof utilityProcess.fork>>) => {
-        for (let i = 0; i < 30; ++i) {
-          await setImmediate();
-          v8Util.requestGarbageCollectionForTesting();
-          if (weakChild.deref() === undefined) {
-            return true;
-          }
-        }
-        return false;
       };
 
       const name = 'Node Utility Process';
