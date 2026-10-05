@@ -25,10 +25,8 @@ namespace electron::api {
 gin::WrapperInfo NativeTheme::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronNativeTheme);
 
-NativeTheme::NativeTheme(v8::Isolate* isolate,
-                         ui::NativeTheme* ui_theme,
-                         ui::NativeTheme* web_theme)
-    : ui_theme_(ui_theme), web_theme_(web_theme) {
+NativeTheme::NativeTheme(v8::Isolate* isolate, ui::NativeTheme* ui_theme)
+    : ui_theme_(ui_theme) {
   ui_theme_->AddObserver(this);
   gin::PerIsolateData::From(isolate)->AddDisposeObserver(this);
 #if BUILDFLAG(IS_WIN)
@@ -70,27 +68,35 @@ void NativeTheme::OnNativeThemeUpdated(ui::NativeTheme* theme) {
                          isolate->GetCppHeap()->GetAllocationHandle()))));
 }
 
-void NativeTheme::SetThemeSource(ui::NativeTheme::ThemeSource override) {
-  ui_theme_->set_theme_source(override);
-  web_theme_->set_theme_source(override);
+void NativeTheme::SetThemeSource(ThemeSource override) {
+  theme_source_ = override;
 #if BUILDFLAG(IS_MAC)
-  // Update the macOS appearance setting for this new override value
+  // Chromium reads the system value from NSApp's appearance, so set that first.
   UpdateMacOSAppearanceForOverrideValue(override);
 #endif
+  switch (override) {
+    case ThemeSource::kForcedDark:
+      ui::NativeTheme::SetPreferredColorSchemeOverride(
+          ui::NativeTheme::PreferredColorScheme::kDark);
+      break;
+    case ThemeSource::kForcedLight:
+      ui::NativeTheme::SetPreferredColorSchemeOverride(
+          ui::NativeTheme::PreferredColorScheme::kLight);
+      break;
+    case ThemeSource::kSystem:
+      ui::NativeTheme::SetPreferredColorSchemeOverride(
+          system_color_scheme_override_);
+      break;
+  }
   // TODO(MarshallOfSound): Update all existing browsers windows to use GTK dark
   // theme
 }
 
-ui::NativeTheme::ThemeSource NativeTheme::GetThemeSource() const {
-  return ui_theme_->theme_source();
+NativeTheme::ThemeSource NativeTheme::GetThemeSource() const {
+  return theme_source_;
 }
 
 bool NativeTheme::ShouldUseDarkColors() {
-  auto theme_source = GetThemeSource();
-  if (theme_source == ui::NativeTheme::ThemeSource::kForcedLight)
-    return false;
-  if (theme_source == ui::NativeTheme::ThemeSource::kForcedDark)
-    return true;
   return ui_theme_->preferred_color_scheme() ==
          ui::NativeTheme::PreferredColorScheme::kDark;
 }
@@ -143,8 +149,7 @@ NativeTheme* NativeTheme::Create(v8::Isolate* isolate) {
     return cppgc::Persistent<NativeTheme>(
         cppgc::MakeGarbageCollected<NativeTheme>(
             isolate->GetCppHeap()->GetAllocationHandle(), isolate,
-            ui::NativeTheme::GetInstanceForNativeUi(),
-            ui::NativeTheme::GetInstanceForWeb()));
+            ui::NativeTheme::GetInstanceForNativeUi()));
   }());
   return instance->Get();
 }
@@ -204,32 +209,32 @@ void Initialize(v8::Local<v8::Object> exports,
 
 namespace gin {
 
-v8::Local<v8::Value> Converter<ui::NativeTheme::ThemeSource>::ToV8(
+v8::Local<v8::Value> Converter<NativeTheme::ThemeSource>::ToV8(
     v8::Isolate* isolate,
-    const ui::NativeTheme::ThemeSource& val) {
+    const NativeTheme::ThemeSource& val) {
   switch (val) {
-    case ui::NativeTheme::ThemeSource::kForcedDark:
+    case NativeTheme::ThemeSource::kForcedDark:
       return ConvertToV8(isolate, "dark");
-    case ui::NativeTheme::ThemeSource::kForcedLight:
+    case NativeTheme::ThemeSource::kForcedLight:
       return ConvertToV8(isolate, "light");
-    case ui::NativeTheme::ThemeSource::kSystem:
+    case NativeTheme::ThemeSource::kSystem:
     default:
       return ConvertToV8(isolate, "system");
   }
 }
 
-bool Converter<ui::NativeTheme::ThemeSource>::FromV8(
+bool Converter<NativeTheme::ThemeSource>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
-    ui::NativeTheme::ThemeSource* out) {
+    NativeTheme::ThemeSource* out) {
   std::string theme_source;
   if (ConvertFromV8(isolate, val, &theme_source)) {
     if (theme_source == "dark") {
-      *out = ui::NativeTheme::ThemeSource::kForcedDark;
+      *out = NativeTheme::ThemeSource::kForcedDark;
     } else if (theme_source == "light") {
-      *out = ui::NativeTheme::ThemeSource::kForcedLight;
+      *out = NativeTheme::ThemeSource::kForcedLight;
     } else if (theme_source == "system") {
-      *out = ui::NativeTheme::ThemeSource::kSystem;
+      *out = NativeTheme::ThemeSource::kSystem;
     } else {
       return false;
     }
