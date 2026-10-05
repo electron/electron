@@ -3,12 +3,16 @@ import { BaseWindow, BrowserWindow, View, WebContentsView, webContents, screen, 
 import { expect } from 'chai';
 
 import { once } from 'node:events';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
 
 import { HexColors, ScreenCapture, hasCapturableScreen, nextFrameTime } from './lib/screen-helpers.ts';
 import { defer, ifdescribe, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
+
+const require = createRequire(import.meta.url);
+const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
 // Try to load robotjs
 let robot: typeof import('@hurdlegroup/robotjs');
@@ -695,7 +699,8 @@ describe('WebContentsView', () => {
       });
       w.contentView.addChildView(bottom);
       bottom.setBounds({ x: 0, y: 0, width: 400, height: 400 });
-      await bottom.webContents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'click.html'), {
+
+      await bottom.webContents.loadFile(path.join(fixturesPath, 'pages', 'click.html'), {
         query: { id: 'bottom' }
       });
 
@@ -704,7 +709,7 @@ describe('WebContentsView', () => {
       });
       w.contentView.addChildView(top);
       top.setBounds({ x: 0, y: 0, width: 400, height: 400 });
-      await top.webContents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'click.html'), { query: { id: 'top' } });
+      await top.webContents.loadFile(path.join(fixturesPath, 'pages', 'click.html'), { query: { id: 'top' } });
       top.setInteractive(false);
 
       w.focus();
