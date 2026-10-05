@@ -4,64 +4,179 @@
 
 #include "shell/browser/api/electron_api_web_contents_view.h"
 
+#include <memory>
+#include <optional>
+#include <utility>
+
 #include "base/functional/bind.h"
-#include "base/no_destructor.h"
+#include "base/memory/weak_ptr.h"
+#include "base/supports_user_data.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/timer/elapsed_timer.h"
 #include "content/public/browser/render_frame_host.h"
+#include "content/public/browser/web_contents.h"
+#include "content/public/browser/web_contents_observer.h"
 #include "gin/data_object_builder.h"
 #include "shell/browser/api/electron_api_web_contents.h"
-#include "shell/browser/browser.h"
+#include "shell/browser/draggable_region_provider.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/native_window_observer.h"
 #include "shell/browser/ui/draggable_region_debugger.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
-#include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/base/hit_test.h"
 #include "ui/gfx/geometry/rounded_corners_f.h"
-#include "ui/views/controls/webview/webview.h"
 #include "ui/views/layout/flex_layout_types.h"
 #include "ui/views/view_class_properties.h"
 #include "ui/views/widget/widget.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/cppgc/persistent.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace electron::api {
 
-WebContentsView::WebContentsView(v8::Isolate* isolate,
-                                 WebContents* web_contents)
-    : View(web_contents->inspectable_web_contents()->GetView()),
+namespace {
+
+// Records which WebContentsViewHost owns a WebContents' view. A new
+// WebContentsView can adopt a webContents whose previous view has been
+// collected but whose native peer has not been released yet; only the owner
+// clears the view's bounds callback, and destroys the webContents, when it is
+// released.
+struct ViewOwnerClaim : public base::SupportsUserData::Data {
+  explicit ViewOwnerClaim(base::WeakPtr<WebContentsViewHost> owner)
+      : owner(std::move(owner)) {}
+
+  base::WeakPtr<WebContentsViewHost> owner;
+};
+
+const void* const kViewOwnerClaimKey = &kViewOwnerClaimKey;
+
+}  // namespace
+
+class WebContentsViewHost final : public View::Host,
+                                  public content::WebContentsObserver,
+                                  public NativeWindowObserver,
+                                  public DraggableRegionProvider {
+ public:
+  WebContentsViewHost(WebContentsView* wrapper, WebContents* web_contents);
+
+  void RegisterDraggableRegionProvider(NativeWindow* window);
+  void ApplyBorderRadius(std::optional<int> radius);
+
+  // DraggableRegionProvider:
+  int NonClientHitTest(const gfx::Point& point) override;
+
+ private:
+  ~WebContentsViewHost() override;
+
+  // The wrapper of a WebContentsViewHost is always a WebContentsView.
+  static WebContentsView* AsWebContentsView(const WrapperRef<View>& api_view) {
+    return static_cast<WebContentsView*>(api_view.operator->());
+  }
+
+  // NativePeer:
+  void OnShutdown() override;
+  void TearDownNative() override;
+
+  // views::ViewObserver:
+  void OnViewAddedToWidget(views::View* observed_view) override;
+  void OnViewRemovedFromWidget(views::View* observed_view) override;
+
+  // content::WebContentsObserver:
+  void WebContentsDestroyed() override;
+
+  // NativeWindowObserver:
+  void UpdateWindowControlsOverlay(const gfx::Rect& bounding_rect) override;
+
+  WebContents* GetLiveWebContents() const;
+  bool IsViewOwner() const;
+  void StopObservingWindow();
+  void UnregisterDraggableRegionProvider();
+  void OnContentsBoundsChanging();
+  bool HasLivePage();
+  void ScheduleWindowControlsOverlayUpdate();
+  void SendWindowControlsOverlay();
+
+  // The wrapper holds the strong edge. This one lets the host destroy
+  // the WebContents after the wrapper has been collected.
+  cppgc::WeakPersistent<WebContents> api_web_contents_;
+  base::WeakPtr<NativeWindow> observed_window_;
+  base::WeakPtr<NativeWindow> draggable_region_window_;
+  bool window_controls_overlay_update_pending_ = false;
+  // Cleared at shutdown, where the WebContents disposes itself.
+  bool destroy_web_contents_on_release_ = true;
+
+  base::WeakPtrFactory<WebContentsViewHost> weak_factory_{this};
+};
+
+WebContentsViewHost::WebContentsViewHost(WebContentsView* wrapper,
+                                         WebContents* web_contents)
+    : View::Host(wrapper, web_contents->inspectable_web_contents()->GetView()),
+      content::WebContentsObserver(web_contents->web_contents()),
       api_web_contents_(web_contents) {
-  set_delete_view(false);
+  InspectableWebContentsView* inspectable_view =
+      web_contents->inspectable_web_contents()->GetView();
   // See OnContentsBoundsChanging().
-  web_contents->inspectable_web_contents()->GetView()->SetBoundsChangedCallback(
-      base::BindRepeating(&WebContentsView::OnContentsBoundsChanging,
+  inspectable_view->SetBoundsChangedCallback(
+      base::BindRepeating(&WebContentsViewHost::OnContentsBoundsChanging,
                           weak_factory_.GetWeakPtr()));
-  view()->SetProperty(
+  inspectable_view->SetProperty(
       views::kFlexBehaviorKey,
       views::FlexSpecification(views::MinimumFlexSizeRule::kScaleToMinimum,
                                views::MaximumFlexSizeRule::kUnbounded));
-  Observe(web_contents->web_contents());
+  web_contents->web_contents()->SetUserData(
+      kViewOwnerClaimKey,
+      std::make_unique<ViewOwnerClaim>(weak_factory_.GetWeakPtr()));
 }
 
-WebContentsView::~WebContentsView() {
+WebContentsViewHost::~WebContentsViewHost() = default;
+
+void WebContentsViewHost::OnShutdown() {
+  destroy_web_contents_on_release_ = false;
+}
+
+void WebContentsViewHost::TearDownNative() {
   StopObservingWindow();
-  if (auto* web_contents = GetLiveWebContents())
-    web_contents->Destroy();
+  UnregisterDraggableRegionProvider();
+  window_controls_overlay_update_pending_ = false;
+
+  const bool is_owner = IsViewOwner();
+  if (is_owner) {
+    web_contents()->RemoveUserData(kViewOwnerClaimKey);
+    if (views::View* view = this->view()) {
+      static_cast<InspectableWebContentsView*>(view)->SetBoundsChangedCallback(
+          base::RepeatingClosure());
+    }
+  }
+  cppgc::Persistent<WebContents> web_contents_to_destroy;
+  if (is_owner && destroy_web_contents_on_release_)
+    web_contents_to_destroy = GetLiveWebContents();
+
+  weak_factory_.InvalidateWeakPtrs();
+  Observe(nullptr);
+  api_web_contents_.Clear();
+  View::Host::TearDownNative();
+
+  // A WebContentsView owns its webContents, unless another WebContentsView
+  // has adopted it since. The claim is gone once checked, so dispose now
+  // rather than in a later task that could destroy a webContents adopted in
+  // between. This runs from the peer release task, never from a Chromium
+  // callback on this WebContents.
+  if (web_contents_to_destroy)
+    web_contents_to_destroy->DestroyNow();
 }
 
-WebContents* WebContentsView::GetWebContents() {
-  return api_web_contents_.Get();
-}
-
-WebContents* WebContentsView::GetLiveWebContents() const {
+WebContents* WebContentsViewHost::GetLiveWebContents() const {
   WebContents* web_contents = api_web_contents_.Get();
   return web_contents && !web_contents->IsDestroyed() &&
                  web_contents->web_contents()
@@ -69,35 +184,43 @@ WebContents* WebContentsView::GetLiveWebContents() const {
              : nullptr;
 }
 
-void WebContentsView::SetBackgroundColor(std::optional<WrappedSkColor> color) {
-  View::SetBackgroundColor(color);
-  if (auto* web_contents = GetLiveWebContents()) {
-    web_contents->SetBackgroundColor(color);
-    // Also update the web preferences object otherwise the view will be reset
-    // on the next load URL call
-    auto* web_preferences =
-        WebContentsPreferences::From(web_contents->web_contents());
-    if (web_preferences) {
-      web_preferences->SetBackgroundColor(color);
-    }
-  }
+bool WebContentsViewHost::IsViewOwner() const {
+  content::WebContents* contents = web_contents();
+  if (!contents)
+    return false;
+  auto* claim =
+      static_cast<ViewOwnerClaim*>(contents->GetUserData(kViewOwnerClaimKey));
+  return claim && claim->owner.get() == this;
 }
 
-void WebContentsView::SetBorderRadius(int radius) {
-  View::SetBorderRadius(radius);
-  ApplyBorderRadius();
+void WebContentsViewHost::RegisterDraggableRegionProvider(
+    NativeWindow* window) {
+  if (!is_active() || !window)
+    return;
+  if (draggable_region_window_.get() != window)
+    UnregisterDraggableRegionProvider();
+  window->AddDraggableRegionProvider(this);
+  draggable_region_window_ = window->GetWeakPtr();
 }
 
-void WebContentsView::ApplyBorderRadius() {
-  if (auto* web_contents = GetLiveWebContents();
-      border_radius().has_value() && web_contents && view()->GetWidget()) {
-    auto* view = web_contents->inspectable_web_contents()->GetView();
-    view->SetCornerRadii(gfx::RoundedCornersF(border_radius().value()));
-  }
+void WebContentsViewHost::UnregisterDraggableRegionProvider() {
+  if (NativeWindow* window = draggable_region_window_.get())
+    window->RemoveDraggableRegionProvider(this);
+  draggable_region_window_ = nullptr;
 }
 
-int WebContentsView::NonClientHitTest(const gfx::Point& point) {
-  if (!view() || !view()->GetVisible())
+void WebContentsViewHost::ApplyBorderRadius(std::optional<int> radius) {
+  WebContents* web_contents = GetLiveWebContents();
+  views::View* view = this->view();
+  if (!radius.has_value() || !web_contents || !view || !view->GetWidget())
+    return;
+  web_contents->inspectable_web_contents()->GetView()->SetCornerRadii(
+      gfx::RoundedCornersF(radius.value()));
+}
+
+int WebContentsViewHost::NonClientHitTest(const gfx::Point& point) {
+  views::View* view = this->view();
+  if (!view || !view->GetVisible())
     return HTNOWHERE;
   if (auto* web_contents = GetLiveWebContents()) {
     auto* iwc = web_contents->inspectable_web_contents();
@@ -131,14 +254,17 @@ int WebContentsView::NonClientHitTest(const gfx::Point& point) {
   return HTNOWHERE;
 }
 
-void WebContentsView::WebContentsDestroyed() {
-  api_web_contents_ = nullptr;
+void WebContentsViewHost::WebContentsDestroyed() {
+  api_web_contents_.Clear();
+  if (auto api_view = wrapper())
+    AsWebContentsView(api_view)->OnWebContentsDestroyed();
 }
 
-void WebContentsView::OnViewAddedToWidget(views::View* observed_view) {
+void WebContentsViewHost::OnViewAddedToWidget(views::View* observed_view) {
   DCHECK_EQ(observed_view, view());
 
-  NativeWindow* native_window = NativeWindow::FromWidget(view()->GetWidget());
+  NativeWindow* native_window =
+      NativeWindow::FromWidget(observed_view->GetWidget());
   if (!native_window)
     return;
   WebContents* web_contents = GetLiveWebContents();
@@ -148,37 +274,33 @@ void WebContentsView::OnViewAddedToWidget(views::View* observed_view) {
   // We don't need to call SetOwnerWindow(nullptr) in OnViewRemovedFromWidget
   // because that's handled in the WebContents dtor called prior.
   web_contents->SetOwnerWindow(native_window);
-  native_window->AddDraggableRegionProvider(this);
+  RegisterDraggableRegionProvider(native_window);
   StopObservingWindow();
   observed_window_ = native_window->GetWeakPtr();
   native_window->AddObserver(this);
-  ApplyBorderRadius();
+  if (auto api_view = wrapper())
+    ApplyBorderRadius(api_view->border_radius());
   if (HasLivePage())
     ScheduleWindowControlsOverlayUpdate();
 }
 
-void WebContentsView::OnViewRemovedFromWidget(views::View* observed_view) {
+void WebContentsViewHost::OnViewRemovedFromWidget(views::View* observed_view) {
   DCHECK_EQ(observed_view, view());
 
   StopObservingWindow();
-
-  NativeWindow* native_window = NativeWindow::FromWidget(view()->GetWidget());
-  if (!native_window)
-    return;
-
-  native_window->RemoveDraggableRegionProvider(this);
+  UnregisterDraggableRegionProvider();
 }
 
 // Our bounds changed and the RenderWidgetHostView is about to be resized to
 // match. Push the re-clipped overlay rect now so that it rides along with the
 // resize in a single VisualProperties update, rather than trailing it (where it
 // could sit behind the resize's pending ack).
-void WebContentsView::OnContentsBoundsChanging() {
+void WebContentsViewHost::OnContentsBoundsChanging() {
   if (HasLivePage())
     SendWindowControlsOverlay();
 }
 
-bool WebContentsView::HasLivePage() {
+bool WebContentsViewHost::HasLivePage() {
   // Before the first navigation there is nothing to update; the window
   // notifies us again from WebContents::DidFinishNavigation.
   return observed_window_ && web_contents() &&
@@ -188,80 +310,138 @@ bool WebContentsView::HasLivePage() {
 // NativeWindowObserver. This fires from inside the frame view's layout, before
 // the client area (and so this view) has been laid out, so defer until the
 // current layout pass has finished to avoid clipping against stale bounds.
-void WebContentsView::UpdateWindowControlsOverlay(
+void WebContentsViewHost::UpdateWindowControlsOverlay(
     const gfx::Rect& bounding_rect) {
   ScheduleWindowControlsOverlayUpdate();
 }
 
-void WebContentsView::ScheduleWindowControlsOverlayUpdate() {
+void WebContentsViewHost::ScheduleWindowControlsOverlayUpdate() {
   if (window_controls_overlay_update_pending_)
     return;
   window_controls_overlay_update_pending_ = true;
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
-      FROM_HERE, base::BindOnce(&WebContentsView::SendWindowControlsOverlay,
+      FROM_HERE, base::BindOnce(&WebContentsViewHost::SendWindowControlsOverlay,
                                 weak_factory_.GetWeakPtr()));
 }
 
 // The overlay rect is relative to the window's content area. Translate it
 // into this view's coordinates so that views which only partially cover (or
 // don't cover) the titlebar report the right env(titlebar-area-*) values.
-void WebContentsView::SendWindowControlsOverlay() {
+void WebContentsViewHost::SendWindowControlsOverlay() {
   window_controls_overlay_update_pending_ = false;
   WebContents* api_web_contents = GetLiveWebContents();
-  if (!api_web_contents || !observed_window_)
+  views::View* view = this->view();
+  if (!api_web_contents || !observed_window_ || !view)
     return;
   const auto bounding_rect = observed_window_->GetWindowControlsOverlayRect();
   if (!bounding_rect)
     return;
   views::View* window_view = observed_window_->GetContentsView();
-  if (!window_view || !window_view->Contains(view()))
+  if (!window_view || !window_view->Contains(view))
     return;
 
   gfx::Rect local_rect =
-      views::View::ConvertRectToTarget(window_view, view(), *bounding_rect);
-  local_rect.Intersect(view()->GetLocalBounds());
+      views::View::ConvertRectToTarget(window_view, view, *bounding_rect);
+  local_rect.Intersect(view->GetLocalBounds());
   api_web_contents->web_contents()->UpdateWindowControlsOverlay(local_rect);
 }
 
-void WebContentsView::StopObservingWindow() {
+void WebContentsViewHost::StopObservingWindow() {
   if (observed_window_)
     observed_window_->RemoveObserver(this);
   observed_window_ = nullptr;
 }
 
+const gin::WrapperInfo WebContentsView::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronView);
+
+WebContentsView::WebContentsView(WebContents* web_contents)
+    : View(DeferHost{}), api_web_contents_(web_contents) {
+  SetHost(NativePeer<View>::Create<WebContentsViewHost>(this, web_contents));
+}
+
+WebContentsView::~WebContentsView() = default;
+
+WebContentsViewHost* WebContentsView::web_contents_view_host() const {
+  return static_cast<WebContentsViewHost*>(host());
+}
+
+WebContents* WebContentsView::GetWebContents() {
+  return api_web_contents_.Get();
+}
+
+WebContents* WebContentsView::GetLiveWebContents() const {
+  WebContents* web_contents = api_web_contents_.Get();
+  return web_contents && !web_contents->IsDestroyed() &&
+                 web_contents->web_contents()
+             ? web_contents
+             : nullptr;
+}
+
+void WebContentsView::OnWebContentsDestroyed() {
+  api_web_contents_ = nullptr;
+}
+
+void WebContentsView::SetBackgroundColor(std::optional<WrappedSkColor> color) {
+  View::SetBackgroundColor(color);
+  if (auto* web_contents = GetLiveWebContents()) {
+    web_contents->SetBackgroundColor(color);
+    // Also update the web preferences object otherwise the view will be reset
+    // on the next load URL call
+    auto* web_preferences =
+        WebContentsPreferences::From(web_contents->web_contents());
+    if (web_preferences) {
+      web_preferences->SetBackgroundColor(color);
+    }
+  }
+}
+
+void WebContentsView::SetBorderRadius(int radius) {
+  View::SetBorderRadius(radius);
+  web_contents_view_host()->ApplyBorderRadius(border_radius());
+}
+
+void WebContentsView::RegisterDraggableRegionProvider(NativeWindow* window) {
+  web_contents_view_host()->RegisterDraggableRegionProvider(window);
+}
+
+void WebContentsView::Trace(cppgc::Visitor* visitor) const {
+  View::Trace(visitor);
+  visitor->Trace(api_web_contents_);
+}
+
+const gin::WrapperInfo* WebContentsView::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* WebContentsView::GetHumanReadableName() const {
+  return "Electron / WebContentsView";
+}
+
 // static
-gin_helper::Handle<WebContentsView> WebContentsView::Create(
+WebContentsView* WebContentsView::Create(
     v8::Isolate* isolate,
     const gin_helper::Dictionary& web_preferences) {
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   v8::Local<v8::Value> arg = gin::DataObjectBuilder(isolate)
                                  .Set("webPreferences", web_preferences)
                                  .Build();
-  v8::Local<v8::Object> web_contents_view_obj;
-  if (GetConstructor(isolate)
-          ->NewInstance(context, 1, &arg)
-          .ToLocal(&web_contents_view_obj)) {
-    gin_helper::Handle<WebContentsView> web_contents_view;
-    if (gin::ConvertFromV8(isolate, web_contents_view_obj, &web_contents_view))
-      return web_contents_view;
+  v8::Local<v8::Function> constructor =
+      gin_helper::Constructible<WebContentsView>::GetConstructor(isolate,
+                                                                 context);
+  v8::Local<v8::Object> obj;
+  WebContentsView* web_contents_view = nullptr;
+  if (!constructor.IsEmpty() &&
+      constructor->NewInstance(context, 1, &arg).ToLocal(&obj)) {
+    gin::ConvertFromV8(isolate, obj, &web_contents_view);
   }
-  return {};
+  return web_contents_view;
 }
 
 // static
-v8::Local<v8::Function> WebContentsView::GetConstructor(v8::Isolate* isolate) {
-  static base::NoDestructor<v8::Global<v8::Function>> constructor;
-  if (constructor.get()->IsEmpty()) {
-    constructor->Reset(isolate,
-                       gin_helper::CreateConstructor<WebContentsView>(
-                           isolate, base::BindRepeating(&WebContentsView::New),
-                           View::GetConstructorTemplate(isolate)));
-  }
-  return v8::Local<v8::Function>::New(isolate, *constructor.get());
-}
-
-// static
-gin_helper::WrappableBase* WebContentsView::New(gin::Arguments* const args) {
+WebContentsView* WebContentsView::New(gin::Arguments* const args) {
+  if (!gin_helper::ThrowIfNotConstructCall(args))
+    return nullptr;
   v8::Isolate* const isolate = args->isolate();
   gin_helper::Dictionary web_preferences;
   v8::Local<v8::Value> existing_web_contents_value;
@@ -311,18 +491,16 @@ gin_helper::WrappableBase* WebContentsView::New(gin::Arguments* const args) {
   auto* web_contents =
       WebContents::CreateFromWebPreferences(isolate, web_preferences);
 
-  // Constructor call.
-  auto* view = new WebContentsView{isolate, web_contents};
-  view->InitWithArgs(args);
+  auto* view = cppgc::MakeGarbageCollected<WebContentsView>(
+      isolate->GetCppHeap()->GetAllocationHandle(), web_contents);
+  gin_helper::BindToConstructCall(args, view);
   return view;
 }
 
 // static
-void WebContentsView::BuildPrototype(
-    v8::Isolate* isolate,
-    v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "WebContentsView"));
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+void WebContentsView::FillObjectTemplate(v8::Isolate* isolate,
+                                         v8::Local<v8::ObjectTemplate> templ) {
+  gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod<&WebContentsView::SetBackgroundColor>("setBackgroundColor")
       .SetMethod<&WebContentsView::SetBorderRadius>("setBorderRadius")
       .SetProperty<&WebContentsView::GetWebContents>("webContents");
@@ -340,7 +518,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.Set("WebContentsView", WebContentsView::GetConstructor(isolate));
+  dict.Set("WebContentsView",
+           gin_helper::Constructible<WebContentsView>::GetConstructor(isolate,
+                                                                      context));
 }
 
 }  // namespace

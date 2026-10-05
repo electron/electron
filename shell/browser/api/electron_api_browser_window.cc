@@ -17,7 +17,6 @@
 #include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
@@ -67,13 +66,13 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     web_preferences.Set(options::kShow, true);
 
   // Creates the WebContentsView.
-  gin_helper::Handle<WebContentsView> web_contents_view =
+  WebContentsView* web_contents_view =
       WebContentsView::Create(isolate, web_preferences);
-  DCHECK(web_contents_view.get());
-  window()->AddDraggableRegionProvider(web_contents_view.get());
+  CHECK(web_contents_view);
+  web_contents_view->RegisterDraggableRegionProvider(window());
   window()->InitPrimaryWebContentsView(
       static_cast<InspectableWebContentsView*>(web_contents_view->view()));
-  web_contents_view_.Reset(isolate, web_contents_view.ToV8());
+  web_contents_view_ = web_contents_view;
 
   // Save a reference of the WebContents.
   auto* web_contents = web_contents_view->GetWebContents();

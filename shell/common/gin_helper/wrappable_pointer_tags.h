@@ -52,11 +52,13 @@ enum ElectronWrappablePointerTag : uint16_t {
   kElectronSystemPreferences,       // electron::api::SystemPreferences
   kElectronTray,                    // electron::api::Tray
   kElectronUtilityProcess,          // electron::api::UtilityProcessWrapper
-  kElectronWebContents,             // electron::api::WebContents
-  kElectronWebFrameMain,            // electron::api::WebFrameMain
-  kElectronWebFrameRenderer,        // (anonymous) WebFrameRenderer
-  kElectronWebRequest,              // electron::api::WebRequest
-  kElectronWebSocket,               // electron::api::WebSocketWrapper
+  kElectronView,         // electron::api::View and its subclasses ImageView and
+                         // WebContentsView
+  kElectronWebContents,  // electron::api::WebContents
+  kElectronWebFrameMain,      // electron::api::WebFrameMain
+  kElectronWebFrameRenderer,  // (anonymous) WebFrameRenderer
+  kElectronWebRequest,        // electron::api::WebRequest
+  kElectronWebSocket,         // electron::api::WebSocketWrapper
   kLastElectronPointerTag = kElectronWebSocket,
 };
 
