@@ -49,7 +49,7 @@ gantt
 
 * Alphas are generally less stable than beta releases. The cutoff between the two
   corresponds to when the underlying Chromium version enters Chrome's
-  [Beta channel](https://www.chromium.org/getting-involved/dev-channel/), where Google
+  [Beta channel](https://www.chromium.org/getting-involved/chrome-release-channels/), where Google
   tests each Chrome version for about four weeks before releasing it to stable.
 * `-alpha.1` and stable releases are published on the dates listed in the schedule.
   The prereleases in between, including `-beta.1`, don't have fixed dates.
