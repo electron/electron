@@ -59,7 +59,7 @@ index 709b7c9ed8e9e6375ab29e02840509d07d34de64..552179d1b93a9914af889fdf9377cbbf
  }
  
 diff --git a/content/browser/notifications/blink_notification_service_impl.h b/content/browser/notifications/blink_notification_service_impl.h
-index 89edc47028e80170bcc0f11a0f27d30067d1ef6c..313bbe4f1815c7e2042d4a4600f922031727d274 100644
+index 89edc47028e80170bcc0f11a0f27d30067d1ef6c..3655e3167bf91d8397251e20b7890968fc299c6c 100644
 --- a/content/browser/notifications/blink_notification_service_impl.h
 +++ b/content/browser/notifications/blink_notification_service_impl.h
 @@ -44,6 +44,7 @@ class CONTENT_EXPORT BlinkNotificationServiceImpl
@@ -74,7 +74,7 @@ index 89edc47028e80170bcc0f11a0f27d30067d1ef6c..313bbe4f1815c7e2042d4a4600f92203
    raw_ptr<PlatformNotificationContextImpl, DanglingUntriaged>
        notification_context_;
  
-+  raw_ptr<RenderFrameHost> render_frame_host_;
++  raw_ptr<RenderFrameHost, DanglingUntriaged> render_frame_host_;
    raw_ptr<BrowserContext> browser_context_;
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;

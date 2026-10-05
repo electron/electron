@@ -45,8 +45,10 @@ Notification::Notification(NotificationDelegate* delegate,
     : delegate_(delegate), presenter_(presenter) {}
 
 Notification::~Notification() {
-  if (delegate())
-    delegate()->NotificationDestroyed();
+  auto* delegate = delegate_.get();
+  delegate_ = nullptr;
+  if (delegate)
+    delegate->NotificationDestroyed();
 }
 
 void Notification::NotificationClicked() {

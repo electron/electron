@@ -191,6 +191,10 @@ class WebContents final : public gin::Wrappable<WebContents>,
   void Trace(cppgc::Visitor* visitor) const override;
 
   void Destroy();
+  // Like Destroy(), but disposes before returning. Only call it from a task of
+  // its own, where no Chromium callback for this WebContents can be on the
+  // stack. Destroy() defers disposal for that reason.
+  void DestroyNow();
   void Close(std::optional<gin_helper::Dictionary> options);
   bool IsDestroyed() const { return destroyed_; }
   cppgc::Persistent<gin::WeakCell<WebContents>> WeakRef();
@@ -864,9 +868,6 @@ class WebContents final : public gin::Wrappable<WebContents>,
   bool guest_transparent_ = true;
 
   int32_t id_;
-
-  // Request id used for findInPage request.
-  uint32_t find_in_page_request_id_ = 0;
 
   // Whether background throttling is disabled.
   bool background_throttling_ = true;

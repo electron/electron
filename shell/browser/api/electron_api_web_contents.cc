@@ -2156,6 +2156,12 @@ void WebContents::Destroy() {
   }
 }
 
+void WebContents::DestroyNow() {
+  if (disposing_ || destroyed_)
+    return;
+  Dispose();
+}
+
 void WebContents::Close(std::optional<gin_helper::Dictionary> options) {
   bool dispatch_beforeunload = false;
   if (options)
@@ -5112,7 +5118,6 @@ uint32_t WebContents::FindInPage(gin::Arguments* const args) {
     return 0;
   }
 
-  uint32_t request_id = ++find_in_page_request_id_;
   gin_helper::Dictionary dict;
   auto options = blink::mojom::FindOptions::New();
   if (args->GetNext(&dict)) {
@@ -5121,8 +5126,11 @@ uint32_t WebContents::FindInPage(gin::Arguments* const args) {
     dict.Get("findNext", &options->new_session);
   }
 
-  web_contents()->Find(request_id, search_text, std::move(options),
-                       /*skip_delay=*/false);
+  // The request id is allocated by content's FindRequestManager and delivered
+  // synchronously through the callback before Find() returns.
+  uint32_t request_id = 0;
+  web_contents()->Find(search_text, std::move(options), /*skip_delay=*/false,
+                       [&request_id](int id) { request_id = id; });
   return request_id;
 }
 

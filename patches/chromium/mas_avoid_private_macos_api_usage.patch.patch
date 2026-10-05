@@ -1005,7 +1005,7 @@ index d42b3b58b63c7b4179b49c2d5ac73892f5a70cf3..7aaba0f0262fbb63746718a29572bd75
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index db736f75c3288e23b50505eca823623cae74d9c2..6a2735d60f1da016e8ced4627e722650fa45c69c 100644
+index 3162721b67d5b744c2c1d7021656a862eea2c2c5..960c72787c2abdfed8579d8366d93e24ea3e3392 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -382,6 +382,7 @@ source_set("browser") {
@@ -1899,7 +1899,7 @@ index 94afefcee81b87c05bf9b1199d90d3d4b5ea84a6..3e3aaea0ec6c8fad0d90a931d269af3a
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm b/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
-index 90a7bbac8b2a3d2d8eb2c41e77859d8c3dc1451e..1f1a2857878e5162778fb1f248d0c5d1b7c9ba06 100644
+index 8736e0be60194803cac6737f567cafe4a9200116..bd8e1d349402d41b7558be71b82f0aa49aaad0f7 100644
 --- a/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
 +++ b/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
 @@ -38,6 +38,7 @@
@@ -1921,7 +1921,7 @@ index 90a7bbac8b2a3d2d8eb2c41e77859d8c3dc1451e..1f1a2857878e5162778fb1f248d0c5d1
  
  namespace blink {
  
-@@ -488,12 +491,16 @@ void ClampVariationValuesToFontAcceptableRange(
+@@ -470,12 +473,16 @@ void ClampVariationValuesToFontAcceptableRange(
    // we are enabling it only on MacOS 13+ because these are our benchmarking
    // platforms.
    NSArray* all_axes;
@@ -2303,7 +2303,7 @@ index cf4c30f417f9a7689f02ceec3b9326e9ca9989b7..ed8059a069757b5d0ce4fd8b0925e89d
      deps += [ "//build:ios_buildflags" ]
    }
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index b9e05b289bbb5c97da3169d23e0c83c240cedaa2..17c04a307be0b6f957770083b13f30bc9d246b8b 100644
+index 618217772a2fa38077ca0913dc017ecc6a702142..f06c9cf5bd3d841935d4e7353e7040272d51abb4 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
 @@ -29,6 +29,7 @@
@@ -2333,10 +2333,10 @@ index b9e05b289bbb5c97da3169d23e0c83c240cedaa2..17c04a307be0b6f957770083b13f30bc
    // Query the display's refresh rate. To get a float number such as 59.95Hz,
    // use 1.0/screen.minimumRefreshInterval instead of
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index e531371761afb5647f1d4eab8beddd9ea2e4ec8f..9d1e95a402a16051a4e96b0d27015a1b4995aa59 100644
+index 9da1b204644c16ddb35f3348316b59de5ca405b4..2982287d9349b7097b36314a38ba9b6bf3f48c63 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -285,6 +285,8 @@ component("gfx") {
+@@ -286,6 +286,8 @@ component("gfx") {
        "CoreGraphics.framework",
        "CoreText.framework",
      ]
