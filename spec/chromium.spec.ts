@@ -1038,6 +1038,7 @@ describe('chromium features', () => {
       expect(open1).to.be.true();
 
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+      w.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
       await setTimeout(1000);
       await expect(
         waitUntil(async () => {
@@ -1072,6 +1073,7 @@ describe('chromium features', () => {
       expect(open2).to.be.true();
 
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+      w.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
       await setTimeout(1000);
       await expect(
         waitUntil(async () => {
