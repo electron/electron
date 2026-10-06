@@ -8,7 +8,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { singleModifierCombinations } from './lib/accelerator-helpers.ts';
-import { defer, ifit } from './lib/spec-helpers.ts';
+import { defer, ifit, waitForCollection } from './lib/spec-helpers.ts';
 import { closeWindow } from './lib/window-helpers.ts';
 
 const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
@@ -1036,18 +1036,12 @@ describe('Menu module', function () {
   });
 
   describe('garbage collection', () => {
-    const v8Util = process._linkedBinding('electron_common_v8_util');
-
     // Regression test for https://github.com/electron/electron/pull/50806: a
     // Menu pinned itself from construction, so menus that were built but never
     // shown (e.g. a replaced application menu) were never collected.
     it('collects a menu that was never opened once it is unreferenced', async () => {
       const weakMenu = (() => new WeakRef(Menu.buildFromTemplate([{ label: 'item' }])))();
-      for (let i = 0; i < 30 && weakMenu.deref(); i++) {
-        await v8Util.requestGarbageCollectionForTesting({ execution: 'async' });
-        await setTimeout();
-      }
-      expect(weakMenu.deref()).to.equal(undefined, 'menu was not collected');
+      expect(await waitForCollection(weakMenu)).to.equal(true, 'menu was not collected');
     });
   });
 

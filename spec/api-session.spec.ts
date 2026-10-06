@@ -22,7 +22,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { parseBasicAuth } from './lib/net-helpers.ts';
-import { defer, deferKillUtilityProcess, ifit, listen, waitUntil } from './lib/spec-helpers.ts';
+import { defer, deferKillUtilityProcess, ifit, listen, waitForCollection, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('session module', () => {
@@ -1074,13 +1074,6 @@ describe('session module', () => {
         return rejected;
       });
 
-    const waitForGarbageCollection = (weak: WeakRef<object>) =>
-      waitUntil(() => {
-        v8Util.requestGarbageCollectionForTesting();
-        v8Util.runUntilIdle();
-        return weak.deref() === undefined;
-      });
-
     const makeContent = (url: string, postData: string) => `<html>
                        <script>
                        let fd = new FormData();
@@ -1154,7 +1147,7 @@ describe('session module', () => {
         const weak = new WeakRef(heldDataPipe as object);
         heldDataPipe = null;
 
-        await waitForGarbageCollection(weak);
+        expect(await waitForCollection(weak)).to.equal(true, 'data pipe was not collected');
         await waitForBlobDataRejection(uuid);
       } finally {
         await protocol.unregisterProtocol(scheme);
