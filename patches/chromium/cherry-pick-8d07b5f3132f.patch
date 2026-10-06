@@ -1,0 +1,77 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lei Zhang <thestig@chromium.org>
+Date: Fri, 2 Oct 2026 12:17:46 -0700
+Subject: [M152] [PDF] Avoid using invalid destination handle in PDFiumEngine
+
+Original change's description:
+> [PDF] Avoid using invalid destination handle in PDFiumEngine
+>
+> Page loading can trigger JS that invalidates a destination handle that
+> PDFiumEngine::GetNamedDestination() uses. Avoid this potential problem
+> by first using the destination handle to retrieve all the necessary
+> information, before accessing the page that may invalidate the handle.
+> Add comments to warn about the potential handle lifetime issues.
+>
+> Bug: 567873463
+> Change-Id: Ibda2e22f4ff1653793903a3ff2e58017700f3e03
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8497287
+> Commit-Queue: Lei Zhang <thestig@chromium.org>
+> Reviewed-by: Tom Sepez <tsepez@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1709111}
+
+(cherry picked from commit 4b49db22352c860eed4aa69f35518503e0a76af1)
+
+Bug: 568626542,567873463
+Change-Id: Ibda2e22f4ff1653793903a3ff2e58017700f3e03
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8507536
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7977@{#2776}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/pdf/pdfium/pdfium_engine.cc b/pdf/pdfium/pdfium_engine.cc
+index 699fab03cf3125c222817839ce454cffefe4368d..1ea998bda6168de2c632b9758175a728ad3b65ea 100644
+--- a/pdf/pdfium/pdfium_engine.cc
++++ b/pdf/pdfium/pdfium_engine.cc
+@@ -631,6 +631,9 @@ std::string GetXYZParamsString(FPDF_DEST dest, PDFiumPage* page) {
+     return xyz_params;
+   }
+ 
++  // WARNING: Do not use `dest` below this point, as `page` access can
++  // invalidate it.
++
+   // Generate a string of the parameters
+   if (has_x_coord) {
+     // Handle out-of-range PDF coordinates and convert PDF coordinates to screen
+@@ -3126,21 +3129,23 @@ std::optional<PDFiumEngine::NamedDestination> PDFiumEngine::GetNamedDestination(
+   }
+ 
+   NamedDestination result;
+-  result.page = page;
+   unsigned long view_int =
+       FPDFDest_GetView(dest, &result.num_params, result.params.data());
+-
+-  // FPDFDest_GetView() gets the PDF coordinates directly from the PDF document.
+-  // The PDF coordinates need to be transformed into screen coordinates before
+-  // getting sent to the viewport.
++  result.page = page;
++  result.view = ConvertViewIntToViewString(view_int);
+   PDFiumPage* page_ptr = pages_[page].get();
+-  ParamsTransformPageToScreen(view_int, page_ptr, result.params);
+ 
+   if (view_int == PDFDEST_VIEW_XYZ) {
+     result.xyz_params = GetXYZParamsString(dest, page_ptr);
+   }
+ 
+-  result.view = ConvertViewIntToViewString(view_int);
++  // WARNING: Do not use `dest` below this point, as GetXYZParamsString() may
++  // have invalidated it. Or ParamsTransformPageToScreen() may invalidate it.
++
++  // FPDFDest_GetView() gets the PDF coordinates directly from the PDF document.
++  // The PDF coordinates need to be transformed into screen coordinates before
++  // getting sent to the viewport.
++  ParamsTransformPageToScreen(view_int, page_ptr, result.params);
+   return result;
+ }
+ 

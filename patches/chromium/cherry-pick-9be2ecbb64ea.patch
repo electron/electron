@@ -1,0 +1,206 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rakina Zata Amni <rakina@chromium.org>
+Date: Tue, 6 Oct 2026 01:21:31 -0700
+Subject: [M152] Post task for PrepareToLeaveBackForwardCache callback
+
+Original change's description:
+> Post task for PrepareToLeaveBackForwardCache callback
+>
+> When a FrameTree shuts down, FrameTree::Shutdown() calls
+> ClearRFHsPendingShutdown() on each FrameTreeNode before resetting
+> ongoing NavigationRequests.
+>
+> Destroying a pending-delete RenderFrameHostImpl can destroy its
+> RenderViewHostImpl. If that RenderViewHostImpl had an unanswered
+> SetPageLifecycleState Mojo message from
+> RenderViewHostImpl::PrepareToLeaveBackForwardCache(), destroying the
+> RenderViewHostImpl invokes the default Mojo response callback via
+> mojo::WrapCallbackWithDefaultInvokeIfNotRun(). When an in-flight
+> BackForwardCache restore NavigationRequest is waiting on that
+> callback in BackForwardCacheImpl::WillCommitNavigationToCachedEntry(),
+> the callback synchronously commits the restore during
+> FrameTree::Shutdown(), causing
+> RenderFrameHostManager::UnloadOldFrame() to insert into
+> pending_delete_hosts_ while std::set::clear() is iterating over it.
+>
+> Fix this by:
+> 1. Wrapping the callback in
+>    RenderViewHostImpl::PrepareToLeaveBackForwardCache() with
+>    base::BindPostTaskToCurrentDefault() so that destroying a
+>    RenderViewHostImpl (e.g. during shutdown or on an unload timeout)
+>    never synchronously triggers a BackForwardCache restore commit in
+>    the middle of ~RenderFrameHostImpl() / ~RenderViewHostImpl().
+> 2. Swapping pending_delete_hosts_ into a local set in
+>    RenderFrameHostManager::ClearRFHsPendingShutdown() before clearing
+>    it, and asserting that pending_delete_hosts_ remains empty
+>    afterward.
+>
+> TAG=agy
+> CONV=0a6e1b34-3eb6-4c7f-b0e4-e0f83dc8c7f9
+>
+> Bug: 567160164
+> Change-Id: I1314f61f2bac3fe755ddd63efe04e8fc385dcc23
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8484672
+> Commit-Queue: Alex Moshchuk <alexmos@chromium.org>
+> Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+> Auto-Submit: Rakina Zata Amni <rakina@chromium.org>
+> Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1708547}
+
+(cherry picked from commit 3fe46caac0d380ee0c289b428c8f6773b085c774)
+
+Bug: 568625883,567160164
+Change-Id: I1314f61f2bac3fe755ddd63efe04e8fc385dcc23
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8513139
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7977@{#2795}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/content/browser/renderer_host/render_frame_host_manager.cc b/content/browser/renderer_host/render_frame_host_manager.cc
+index f7e764d88308e428f07fb1771c4567210b189230..83e27f457f6fcafea3ddd70181fb561791cc7072 100644
+--- a/content/browser/renderer_host/render_frame_host_manager.cc
++++ b/content/browser/renderer_host/render_frame_host_manager.cc
+@@ -1633,7 +1633,14 @@ void RenderFrameHostManager::RestorePage(
+ }
+ 
+ void RenderFrameHostManager::ClearRFHsPendingShutdown() {
+-  pending_delete_hosts_.clear();
++  // Move the pending-delete RenderFrameHosts to a local set before destroying
++  // them so that `pending_delete_hosts_` is already empty while their
++  // destructors run, and verify that nothing re-entrantly adds new entries to
++  // `pending_delete_hosts_` during destruction (see https://crbug.com/567160164).
++  RFHPendingDeleteSet pending_delete_hosts;
++  pending_delete_hosts_.swap(pending_delete_hosts);
++  pending_delete_hosts.clear();
++  CHECK(pending_delete_hosts_.empty());
+ }
+ 
+ void RenderFrameHostManager::ClearWebUIInstances() {
+diff --git a/content/browser/renderer_host/render_frame_host_manager_unittest.cc b/content/browser/renderer_host/render_frame_host_manager_unittest.cc
+index 49b3f28431eb30f04b8602a97c5fb573e1fbbb69..655d680201e6747ddc155930c71c5cce613ff011 100644
+--- a/content/browser/renderer_host/render_frame_host_manager_unittest.cc
++++ b/content/browser/renderer_host/render_frame_host_manager_unittest.cc
+@@ -61,6 +61,7 @@
+ #include "content/public/test/scoped_web_ui_controller_factory_registration.h"
+ #include "content/public/test/test_content_browser_client.h"
+ #include "content/public/test/test_content_client.h"
++#include "content/public/test/test_navigation_observer.h"
+ #include "content/public/test/test_utils.h"
+ #include "content/test/mock_widget_input_handler.h"
+ #include "content/test/navigation_simulator_impl.h"
+@@ -3957,6 +3958,7 @@ class RenderFrameHostManagerTestWithBackForwardCache
+       public WebContentsDelegate {
+  public:
+   RenderFrameHostManagerTestWithBackForwardCache() {
++    IsolateAllSitesForTesting(base::CommandLine::ForCurrentProcess());
+     scoped_feature_list_.InitWithFeaturesAndParameters(
+         GetDefaultEnabledBackForwardCacheFeaturesForTesting(
+             /*ignore_outstanding_network_request=*/false),
+@@ -4456,6 +4458,77 @@ TEST_P(RenderFrameHostManagerAdTaggingSignalTest, RemoteGrandchildAdTagSignal) {
+   ExpectAdSubframeSignalForFrameProxy(proxy_to_main_frame, true);
+ }
+ 
++// Tests that destroying a WebContents while a BackForwardCache restore is
++// waiting on a SetPageLifecycleState reply from a RenderViewHost owned by a
++// pending-delete RenderFrameHost does not commit the restore during
++// FrameTree::Shutdown(). Regression test for crbug.com/567160164.
++TEST_P(RenderFrameHostManagerTestWithBackForwardCache,
++       ShutdownDuringBFCacheRestoreWithPendingDeleteRFH) {
++  const GURL kUrl1("http://a.com/");
++  const GURL kUrl2("http://b.com/");
++  const GURL kUrl3("http://c.com/");
++
++  contents()->SetDelegate(this);
++
++  // 1. Navigate to kUrl1 and disable proactive BrowsingInstance swap so that
++  // `rfh1` stays in `pending_delete_hosts_` in the same BrowsingInstance when
++  // navigating to kUrl2.
++  contents()->NavigateAndCommit(kUrl1);
++  TestRenderFrameHost* rfh1 = contents()->GetPrimaryMainFrame();
++  RenderViewHostImpl* rvh1 = rfh1->render_view_host();
++  RenderViewHostDeletedObserver rvh1_deleted_observer(rvh1);
++  rfh1->DisableProactiveBrowsingInstanceSwapForTesting();
++
++  // 2. Navigate to kUrl2 (same BrowsingInstance) while dropping the unload ACK
++  // for `rfh1`. `rfh1` is now pending deletion on the root
++  // RenderFrameHostManager, and `rfh2` has a proxy to `rfh1`'s
++  // SiteInstanceGroup.
++  auto nav2 =
++      NavigationSimulatorImpl::CreateRendererInitiated(kUrl2, rfh1);
++  nav2->set_drop_unload_ack(true);
++  nav2->Commit();
++  TestRenderFrameHost* rfh2 = contents()->GetPrimaryMainFrame();
++  ASSERT_NE(rfh1, rfh2);
++  ASSERT_FALSE(rvh1_deleted_observer.deleted());
++  ASSERT_TRUE(rfh1->GetSiteInstance()->IsRelatedSiteInstance(
++      rfh2->GetSiteInstance()));
++  EXPECT_TRUE(rfh1->IsPendingDeletion());
++
++  // 3. Navigate to kUrl3 (cross-BrowsingInstance). `rfh2` enters
++  // BackForwardCache and its StoredPage tracks both `rfh2`'s RVH and `rvh1`.
++  contents()->NavigateAndCommit(kUrl3);
++  EXPECT_TRUE(rfh2->IsInBackForwardCache());
++
++  // 4. Rebind `rvh1`'s PageBroadcast to an unanswered receiver so that its
++  // `SetPageLifecycleState` reply remains pending until `rvh1` is destroyed.
++  mojo::AssociatedRemote<blink::mojom::PageBroadcast> broadcast_remote;
++  auto unanswered_receiver =
++      broadcast_remote.BindNewEndpointAndPassDedicatedReceiver();
++  rvh1->BindPageBroadcast(broadcast_remote.Unbind());
++
++  // 5. Start a BackForwardCache restore navigation to kUrl2. `rfh2`'s RVH
++  // replies to `SetPageLifecycleState`, while `rvh1`'s reply remains pending.
++  TestNavigationObserver back_nav_observer(
++      contents(), /*expected_number_of_navigations=*/1,
++      MessageLoopRunner::QuitMode::IMMEDIATE,
++      /*ignore_uncommitted_navigations=*/false);
++  auto back_navigation =
++      NavigationSimulatorImpl::CreateHistoryNavigation(-1, contents(), false);
++  back_navigation->Start();
++  base::RunLoop().RunUntilIdle();
++
++  FrameTreeNode* root = contents()->GetPrimaryFrameTree().root();
++  ASSERT_TRUE(root->navigation_request());
++  EXPECT_TRUE(root->navigation_request()->IsServedFromBackForwardCache());
++
++  // 6. Destroy the WebContents (calling FrameTree::Shutdown()). This must
++  // abort the in-flight NavigationRequest rather than synchronously committing
++  // the BFCache restore inside Shutdown().
++  DeleteContents();
++  EXPECT_EQ(kUrl2, back_nav_observer.last_navigation_url());
++  EXPECT_FALSE(back_nav_observer.last_navigation_succeeded());
++}
++
+ INSTANTIATE_TEST_SUITE_P(All,
+                          RenderFrameHostManagerTest,
+                          testing::ValuesIn(RenderDocumentFeatureLevelValues()));
+diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
+index 45eca36fd49fb701138afd4e314cc9a077eec6c5..2aa2ee63be627abb9ad2efab0816e1a8ba7bcf89 100644
+--- a/content/browser/renderer_host/render_view_host_impl.cc
++++ b/content/browser/renderer_host/render_view_host_impl.cc
+@@ -29,6 +29,7 @@
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/supports_user_data.h"
+ #include "base/system/sys_info.h"
++#include "base/task/bind_post_task.h"
+ #include "base/time/time.h"
+ #include "base/trace_event/trace_event.h"
+ #include "base/trace_event/typed_macros.h"
+@@ -664,9 +665,13 @@ void RenderViewHostImpl::PrepareToLeaveBackForwardCache(
+     base::OnceClosure done_cb) {
+   // We wrap `done_cb` in a default invoke because if this RenderViewHostImpl
+   // disappears we still need to call `done_cb` otherwise the navigation
+-  // will be blocked indefinitely.
++  // will be blocked indefinitely. We also post a task so that if `done_cb` is
++  // invoked from the destructor of this RenderViewHostImpl (e.g., on an unload
++  // timeout or during shutdown), the BackForwardCache restore does not commit
++  // synchronously in the middle of ~RenderFrameHostImpl / ~RenderViewHostImpl.
+   page_lifecycle_state_manager_->SetIsLeavingBackForwardCache(
+-      mojo::WrapCallbackWithDefaultInvokeIfNotRun(std::move(done_cb)));
++      mojo::WrapCallbackWithDefaultInvokeIfNotRun(
++          base::BindPostTaskToCurrentDefault(std::move(done_cb))));
+ }
+ 
+ void RenderViewHostImpl::LeaveBackForwardCache(

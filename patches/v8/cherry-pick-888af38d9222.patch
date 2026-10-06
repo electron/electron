@@ -1,0 +1,191 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Simon=20Z=C3=BCnd?= <szuend@chromium.org>
+Date: Wed, 30 Sep 2026 11:03:20 +0000
+Subject: [M152] [debug] Step into function when OOM break fires at function
+ entry
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When the inspector's near-heap-limit callback requests an OOM break and
+the interrupt fires at the function-entry stack check of a function or
+eval, the function's context has not been created and pushed yet.
+Pausing there makes the ScopeIterator observe an inconsistent context
+chain and trips a DCHECK.
+
+Handle kOOM breaks at function entry the same way as scheduled breaks:
+step into the function and pause at the first breakable position after
+the prologue. The original break reasons are preserved across the step
+so the pause is still reported as OOM.
+
+Also extend the ScopeIterator::NeedsContext invariant check to eval
+scopes.
+
+(cherry picked from commit 7075c436f40149aabd8b9ab8ad187f260450a1f4)
+
+Bug: 566404364
+Fixed: 568627053
+Change-Id: I8b58cd0cb8bdeab4385b4d68182642ab53e31df5
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8480873
+Reviewed-by: Yang Guo <yangguo@chromium.org>
+Auto-Submit: Simon Zünd <szuend@chromium.org>
+Commit-Queue: Simon Zünd <szuend@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#110193}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8512239
+Commit-Queue: Yang Guo <yangguo@chromium.org>
+Cr-Commit-Position: refs/branch-heads/15.2@{#84}
+Cr-Branched-From: a8fe17c242678787f03a8a2b77424aa06cf865c4-refs/heads/15.2.124@{#1}
+Cr-Branched-From: 0e6ea09ef6f15ebd7f78555c0648c8b632ce3013-refs/heads/main@{#108894}
+
+diff --git a/src/debug/debug-scopes.cc b/src/debug/debug-scopes.cc
+index 5b83562318cf553d372fa505abc908efde35f656..9952c84bbafb3e9553e16b6b375fda646edcafb6 100644
+--- a/src/debug/debug-scopes.cc
++++ b/src/debug/debug-scopes.cc
+@@ -461,7 +461,9 @@ bool ScopeIterator::NeedsContext() const {
+   // context should the function need one. In that case the function has already
+   // pushed the context and we are good.
+   CHECK_IMPLIES(needs_context && current_scope_ == closure_scope_ &&
+-                    current_scope_->is_function_scope() && !function_.is_null(),
++                    (current_scope_->is_function_scope() ||
++                     current_scope_->is_eval_scope()) &&
++                    !function_.is_null(),
+                 function_->context() != *context_);
+ 
+   return needs_context;
+diff --git a/src/debug/debug.cc b/src/debug/debug.cc
+index b239a5c433f1a3703db6e37d93f801513a76f137..d98c28c3422389ca268b38d5ad7aa01c5b44a9f4 100644
+--- a/src/debug/debug.cc
++++ b/src/debug/debug.cc
+@@ -480,7 +480,7 @@ void Debug::ThreadInit() {
+   base::Relaxed_Store(&thread_local_.current_debug_scope_,
+                       static_cast<base::AtomicWord>(0));
+   thread_local_.break_on_next_function_call_ = false;
+-  thread_local_.scheduled_break_on_next_function_call_ = false;
++  thread_local_.scheduled_break_on_next_function_call_ = {};
+   UpdateHookOnFunctionCall();
+   thread_local_.muted_function_ = Smi::zero();
+   thread_local_.muted_position_ = -1;
+@@ -687,8 +687,9 @@ void Debug::Break(JavaScriptFrame* frame,
+   if (!break_points_hit.is_null() || break_on_next_function_call() ||
+       scheduled_break) {
+     StepAction lastStepAction = last_step_action();
+-    debug::BreakReasons break_reasons;
+-    if (scheduled_break) {
++    debug::BreakReasons break_reasons =
++        thread_local_.scheduled_break_on_next_function_call_;
++    if (shouldPauseAfterInstrumentation) {
+       break_reasons.Add(debug::BreakReason::kScheduled);
+     }
+     // If it's a debugger statement, add the reason and then mute the location
+@@ -1673,7 +1674,7 @@ void Debug::ClearStepping() {
+   thread_local_.last_frame_count_ = -1;
+   thread_local_.target_frame_count_ = -1;
+   thread_local_.break_on_next_function_call_ = false;
+-  thread_local_.scheduled_break_on_next_function_call_ = false;
++  thread_local_.scheduled_break_on_next_function_call_ = {};
+   clear_restart_frame();
+   UpdateHookOnFunctionCall();
+ }
+@@ -2915,14 +2916,15 @@ void Debug::HandleDebugBreak(IgnoreBreakMode ignore_break_mode,
+                                         LazyDeoptimizeReason::kDebugger);
+       }
+ 
+-      // kScheduled breaks are triggered by the stack check. While we could
+-      // pause here, the JSFunction didn't have time yet to create and push
+-      // it's context. Instead, we step into the function and pause at the
++      // kScheduled and kOOM breaks are triggered by the stack check. While we
++      // could pause here, the JSFunction didn't have time yet to create and
++      // push its context. Instead, we step into the function and pause at the
+       // first official breakable position.
+       // This behavior mirrors "BreakOnNextFunctionCall".
+-      if (break_reasons.contains(v8::debug::BreakReason::kScheduled) &&
++      if ((break_reasons.contains(v8::debug::BreakReason::kScheduled) ||
++           break_reasons.contains(v8::debug::BreakReason::kOOM)) &&
+           BreakLocation::IsPausedInJsFunctionEntry(frame)) {
+-        thread_local_.scheduled_break_on_next_function_call_ = true;
++        thread_local_.scheduled_break_on_next_function_call_.Add(break_reasons);
+         PrepareStepIn(function);
+         return;
+       }
+diff --git a/src/debug/debug.h b/src/debug/debug.h
+index c2d02feb073c69fec0ce6841d7e10a73fb19d580..3fa982b99bf2092edeacba3483eade4427585076 100644
+--- a/src/debug/debug.h
++++ b/src/debug/debug.h
+@@ -464,7 +464,7 @@ class V8_EXPORT_PRIVATE Debug {
+   }
+ 
+   bool scheduled_break_on_function_call() const {
+-    return thread_local_.scheduled_break_on_next_function_call_;
++    return !thread_local_.scheduled_break_on_next_function_call_.empty();
+   }
+ 
+   bool IsRestartFrameScheduled() const {
+@@ -672,10 +672,10 @@ class V8_EXPORT_PRIVATE Debug {
+     // debugger to break on next function call.
+     bool break_on_next_function_call_;
+ 
+-    // This flag is true when we break via stack check (BreakReason::kScheduled)
+-    // We don't stay paused there but instead "step in" to the function similar
+-    // to what "BreakOnNextFunctionCall" does.
+-    bool scheduled_break_on_next_function_call_;
++    // Non-empty when we break via stack check (BreakReason::kScheduled or
++    // BreakReason::kOOM). We don't stay paused there but instead "step in" to
++    // the function similar to what "BreakOnNextFunctionCall" does.
++    v8::debug::BreakReasons scheduled_break_on_next_function_call_;
+ 
+     // Frame ID for the frame that needs to be restarted. StackFrameId::NO_ID
+     // otherwise. The unwinder uses the id to restart execution in this frame
+diff --git a/test/inspector/debugger/pause-on-oom-in-eval-expected.txt b/test/inspector/debugger/pause-on-oom-in-eval-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..cddc096dbbfc3fc268614ce49371c8e1c0a8acff
+--- /dev/null
++++ b/test/inspector/debugger/pause-on-oom-in-eval-expected.txt
+@@ -0,0 +1,2 @@
++Tests that an OOM break triggered at the entry of a top-level strict eval pauses inside the eval
++reason: OOM
+diff --git a/test/inspector/debugger/pause-on-oom-in-eval.js b/test/inspector/debugger/pause-on-oom-in-eval.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..dbbfb202ddea0e401067c61761f1bb45d7964f80
+--- /dev/null
++++ b/test/inspector/debugger/pause-on-oom-in-eval.js
+@@ -0,0 +1,40 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --max-old-space-size=16
++
++const {session, contextGroup, Protocol} = InspectorTest.start(
++    'Tests that an OOM break triggered at the entry of a top-level strict ' +
++    'eval pauses inside the eval');
++
++Protocol.Debugger.onPaused(async message => {
++  InspectorTest.log(`reason: ${message.params.reason}`);
++  await Protocol.Debugger.evaluateOnCallFrame({
++    callFrameId: message.params.callFrames[0].callFrameId,
++    expression: 'arr = []; stop = true;'
++  });
++  Protocol.Debugger.resume();
++});
++
++(async function test() {
++  await Protocol.Debugger.enable();
++  // The loop body only allocates before entering the eval, so the OOM
++  // interrupt requested by the near-heap-limit callback fires at the
++  // function-entry stack check of the eval, i.e. before the eval context is
++  // pushed. The eval is called from the top level of the script so that the
++  // current context is the script context, whose ScopeInfo shares its unique
++  // ID with the eval scope.
++  await Protocol.Runtime.evaluate({
++    expression: `
++      'use strict';
++      let arr = [];
++      let stop = false;
++      while (!stop) {
++        arr.push(new Array(10000).fill(0));
++        eval('let x = 1; function inner() { return x; }');
++      }
++      //# sourceURL=test.js`
++  });
++  InspectorTest.completeTest();
++})();

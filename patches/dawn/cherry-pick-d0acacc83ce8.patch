@@ -1,0 +1,236 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: dan sinclair <dsinclair@chromium.org>
+Date: Tue, 1 Sep 2026 12:13:41 -0700
+Subject: Fix issue with emit_continue block maintenance.
+
+The `emit_continuing_` callback in the printers is currently maintained
+through a TINT_SCOPED_ASSIGNMENT. This will store the old value away and
+put a new one in place. This works up until the point when you assign a
+function pointer while executing the outer function pointer. The act of
+copying away does a move/destroy of the current function, which is being
+executed.
+
+If this shows up as an issue depends on how the compiler structures the
+functions and other surrounding code. This has only been reproducible on
+certain printers under ASAN with a GCC build.
+
+Fixed: 554992296
+Change-Id: If96d213ac9605871e5e84ec673fcd1df82c2642f
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/338575
+Reviewed-by: Kai Ninomiya <kainino@chromium.org>
+Reviewed-by: James Price <jrprice@google.com>
+Commit-Queue: dan sinclair <dsinclair@chromium.org>
+
+diff --git a/src/tint/lang/glsl/writer/printer/printer.cc b/src/tint/lang/glsl/writer/printer/printer.cc
+index 0844afd84f7a952dfff7c257d5a091ffdc940cad..4bca3dad9ef8353ecb7d0fb578ad2a6352d755bf 100644
+--- a/src/tint/lang/glsl/writer/printer/printer.cc
++++ b/src/tint/lang/glsl/writer/printer/printer.cc
+@@ -27,8 +27,10 @@
+ 
+ #include "src/tint/lang/glsl/writer/printer/printer.h"
+ 
++#include <memory>
+ #include <string>
+ #include <utility>
++#include <vector>
+ 
+ #include "src/tint/lang/core/constant/splat.h"
+ #include "src/tint/lang/core/enums.h"
+@@ -218,7 +220,7 @@ class Printer : public tint::TextGenerator {
+         struct_to_padding_struct_ids_;
+ 
+     /// Block to emit for a continuing
+-    std::function<void()> emit_continuing_;
++    std::vector<std::unique_ptr<std::function<void()>>> emit_continuing_;
+ 
+     /// @returns `true` if @p ident should be renamed
+     bool ShouldRename(std::string_view ident) {
+@@ -496,8 +498,9 @@ class Printer : public tint::TextGenerator {
+     void EmitDiscard() { Line() << "discard;"; }
+ 
+     void EmitContinue(const core::ir::Continue* c) {
+-        if (emit_continuing_) {
+-            emit_continuing_();
++        if (!emit_continuing_.empty()) {
++            auto fn = emit_continuing_.back().get();
++            (*fn)();
+         }
+         if (c->Block() != c->Loop()->Body()) {
+             Line() << "continue;";
+@@ -517,18 +520,17 @@ class Printer : public tint::TextGenerator {
+         //   }
+         // }
+ 
+-        auto emit_continuing = [&] {
+-            Line() << "{";
+-            {
+-                const ScopedIndent si(current_buffer_);
+-                EmitBlock(l->Continuing());
+-            }
+-            Line() << "}";
+-        };
+-        TINT_SCOPED_ASSIGNMENT(emit_continuing_, emit_continuing);
+-
+         Line() << "{";
+         {
++            emit_continuing_.push_back(std::make_unique<std::function<void()>>([&] {
++                Line() << "{";
++                {
++                    const ScopedIndent si(current_buffer_);
++                    EmitBlock(l->Continuing());
++                }
++                Line() << "}";
++            }));
++
+             ScopedIndent init(current_buffer_);
+             EmitBlock(l->Initializer());
+ 
+@@ -538,6 +540,8 @@ class Printer : public tint::TextGenerator {
+                 EmitBlock(l->Body());
+             }
+             Line() << "}";
++
++            emit_continuing_.pop_back();
+         }
+         Line() << "}";
+     }
+diff --git a/src/tint/lang/hlsl/writer/printer/printer.cc b/src/tint/lang/hlsl/writer/printer/printer.cc
+index 28f20a53b917573f657d2ab4479a257ddff8365f..700e5bf46bbd8301f65eac1176fff1672303d332 100644
+--- a/src/tint/lang/hlsl/writer/printer/printer.cc
++++ b/src/tint/lang/hlsl/writer/printer/printer.cc
+@@ -210,7 +210,7 @@ class Printer : public tint::TextGenerator {
+     const core::ir::Block* current_block_ = nullptr;
+ 
+     /// Block to emit for a continuing
+-    std::function<void()> emit_continuing_;
++    std::vector<std::unique_ptr<std::function<void()>>> emit_continuing_;
+ 
+     /// `true` if the linalg.h header has been included.
+     bool linalg_included = false;
+@@ -493,8 +493,9 @@ class Printer : public tint::TextGenerator {
+     }
+ 
+     void EmitContinue(const core::ir::Continue* c) {
+-        if (emit_continuing_) {
+-            emit_continuing_();
++        if (!emit_continuing_.empty()) {
++            auto fn = emit_continuing_.back().get();
++            (*fn)();
+         }
+         if (c->Block() != c->Loop()->Body()) {
+             Line() << "continue;";
+@@ -557,20 +558,19 @@ class Printer : public tint::TextGenerator {
+                 Line() << "while(true) {";
+             }
+ 
+-            auto emit_continuing = [&] {
+-                if (uses_for_loop_update) {
+-                    return;
+-                }
+-                Line() << "{";
+-                {
+-                    const ScopedIndent si(current_buffer_);
+-                    EmitBlock(l->Continuing());
+-                }
+-                Line() << "}";
+-            };
+-            TINT_SCOPED_ASSIGNMENT(emit_continuing_, emit_continuing);
+-
+             {
++                emit_continuing_.push_back(std::make_unique<std::function<void()>>([&] {
++                    if (uses_for_loop_update) {
++                        return;
++                    }
++                    Line() << "{";
++                    {
++                        const ScopedIndent si(current_buffer_);
++                        EmitBlock(l->Continuing());
++                    }
++                    Line() << "}";
++                }));
++
+                 const ScopedIndent si(current_buffer_);
+                 if (has_loop_condition) {
+                     EmitBlock(l->Body(), [&analysis](const core::ir::Instruction* inst) {
+@@ -579,6 +579,8 @@ class Printer : public tint::TextGenerator {
+                 } else {
+                     EmitBlock(l->Body());
+                 }
++
++                emit_continuing_.pop_back();
+             }
+             Line() << "}";
+         }
+diff --git a/src/tint/lang/msl/writer/printer/printer.cc b/src/tint/lang/msl/writer/printer/printer.cc
+index 2faddeefe83fd498de04011e384d506ee56c40b4..72395d65ae870661a94d0c79344b813c05cedf39 100644
+--- a/src/tint/lang/msl/writer/printer/printer.cc
++++ b/src/tint/lang/msl/writer/printer/printer.cc
+@@ -30,8 +30,10 @@
+ #include <atomic>
+ #include <cstddef>
+ #include <cstdint>
++#include <memory>
+ #include <string>
+ #include <utility>
++#include <vector>
+ 
+ #include "src/tint/lang/core/constant/splat.h"
+ #include "src/tint/lang/core/constant/string.h"
+@@ -198,7 +200,7 @@ class Printer : public tint::TextGenerator {
+     std::string array_template_name_;
+ 
+     /// Block to emit for a continuing
+-    std::function<void()> emit_continuing_;
++    std::vector<std::unique_ptr<std::function<void()>>> emit_continuing_;
+ 
+     /// @returns the name of the templated `tint_array` helper type, generating it if needed
+     const std::string& ArrayTemplateName() {
+@@ -720,8 +722,9 @@ class Printer : public tint::TextGenerator {
+     }
+ 
+     void EmitContinue(const core::ir::Continue* c) {
+-        if (emit_continuing_) {
+-            emit_continuing_();
++        if (!emit_continuing_.empty()) {
++            auto fn = emit_continuing_.back().get();
++            (*fn)();
+         }
+         if (c->Block() != c->Loop()->Body()) {
+             Line() << "continue;";
+@@ -739,18 +742,17 @@ class Printer : public tint::TextGenerator {
+         //   }
+         // }
+ 
+-        auto emit_continuing = [&] {
+-            Line() << "{";
+-            {
+-                const ScopedIndent si(current_buffer_);
+-                EmitBlock(l->Continuing());
+-            }
+-            Line() << "}";
+-        };
+-        TINT_SCOPED_ASSIGNMENT(emit_continuing_, emit_continuing);
+-
+         Line() << "{";
+         {
++            emit_continuing_.push_back(std::make_unique<std::function<void()>>([&] {
++                Line() << "{";
++                {
++                    const ScopedIndent si(current_buffer_);
++                    EmitBlock(l->Continuing());
++                }
++                Line() << "}";
++            }));
++
+             ScopedIndent init(current_buffer_);
+             EmitBlock(l->Initializer());
+ 
+@@ -760,6 +762,8 @@ class Printer : public tint::TextGenerator {
+                 EmitBlock(l->Body());
+             }
+             Line() << "}";
++
++            emit_continuing_.pop_back();
+         }
+         Line() << "}";
+     }

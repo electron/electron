@@ -1,0 +1,323 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Tue, 1 Sep 2026 16:21:05 -0400
+Subject: Fix missing texture type match validation in MSRTT
+
+Bug: chromium:547343108
+Change-Id: I72f6e7702aa26aaf336eb190ae73c45518b475c5
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8340208
+Commit-Queue: Amirali Abdolrashidi <abdolrashidi@google.com>
+Auto-Submit: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Amirali Abdolrashidi <abdolrashidi@google.com>
+
+diff --git a/src/libANGLE/validationES2.cpp b/src/libANGLE/validationES2.cpp
+index d0ba15e35c86519b1d93fd02d19aacaf445e0b8a..68939b0007412d42280e8e9dc645a3aee67d9907 100644
+--- a/src/libANGLE/validationES2.cpp
++++ b/src/libANGLE/validationES2.cpp
+@@ -835,6 +835,113 @@ bool ValidateWebGLName(const Context *context, angle::EntryPoint entryPoint, con
+     return true;
+ }
+ 
++bool ValidateFramebufferTexture2DTarget(const Context *context,
++                                        angle::EntryPoint entryPoint,
++                                        Texture *tex,
++                                        TextureTarget textarget,
++                                        GLint level)
++{
++    const Caps &caps = context->getCaps();
++
++    switch (textarget)
++    {
++        case TextureTarget::_2D:
++        {
++            if (level > log2(caps.max2DTextureSize))
++            {
++                ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidMipLevel);
++                return false;
++            }
++            if (tex->getType() != TextureType::_2D)
++            {
++                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidTextureTarget);
++                return false;
++            }
++        }
++        break;
++
++        case TextureTarget::Rectangle:
++        {
++            if (level != 0)
++            {
++                ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidMipLevel);
++                return false;
++            }
++            if (tex->getType() != TextureType::Rectangle)
++            {
++                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kTextureTargetMismatch);
++                return false;
++            }
++        }
++        break;
++
++        case TextureTarget::CubeMapNegativeX:
++        case TextureTarget::CubeMapNegativeY:
++        case TextureTarget::CubeMapNegativeZ:
++        case TextureTarget::CubeMapPositiveX:
++        case TextureTarget::CubeMapPositiveY:
++        case TextureTarget::CubeMapPositiveZ:
++        {
++            if (level > log2(caps.maxCubeMapTextureSize))
++            {
++                ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidMipLevel);
++                return false;
++            }
++            if (tex->getType() != TextureType::CubeMap)
++            {
++                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kTextureTargetMismatch);
++                return false;
++            }
++        }
++        break;
++
++        case TextureTarget::_2DMultisample:
++        {
++            if (context->getClientVersion() < ES_3_1 &&
++                !context->getExtensions().textureMultisampleANGLE)
++            {
++                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION,
++                                       kMultisampleTextureExtensionOrES31Required);
++                return false;
++            }
++
++            if (level != 0)
++            {
++                ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kLevelNotZero);
++                return false;
++            }
++            if (tex->getType() != TextureType::_2DMultisample)
++            {
++                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kTextureTargetMismatch);
++                return false;
++            }
++        }
++        break;
++
++        case TextureTarget::External:
++        {
++            if (!context->getExtensions().YUVTargetEXT)
++            {
++                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kYUVTargetExtensionRequired);
++                return false;
++            }
++
++            if (tex->getType() != TextureType::External)
++            {
++                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kTextureTargetMismatch);
++                return false;
++            }
++        }
++        break;
++
++        default:
++            ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidTextureTarget);
++            return false;
++    }
++
++    return true;
++}
++
+ bool ValidateSrcBlendFunc(const PrivateState &state,
+                           ErrorSet *errors,
+                           angle::EntryPoint entryPoint,
+@@ -5522,108 +5629,15 @@ bool ValidateFramebufferTexture2D(const Context *context,
+         Texture *tex = context->getTexture(texture);
+         ASSERT(tex);
+ 
+-        const Caps &caps = context->getCaps();
+-
+-        switch (textarget)
++        if (!ValidateFramebufferTexture2DTarget(context, entryPoint, tex, textarget, level))
+         {
+-            case TextureTarget::_2D:
+-            {
+-                if (level > log2(caps.max2DTextureSize))
+-                {
+-                    ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidMipLevel);
+-                    return false;
+-                }
+-                if (tex->getType() != TextureType::_2D)
+-                {
+-                    ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidTextureTarget);
+-                    return false;
+-                }
+-            }
+-            break;
+-
+-            case TextureTarget::Rectangle:
+-            {
+-                if (level != 0)
+-                {
+-                    ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidMipLevel);
+-                    return false;
+-                }
+-                if (tex->getType() != TextureType::Rectangle)
+-                {
+-                    ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kTextureTargetMismatch);
+-                    return false;
+-                }
+-            }
+-            break;
+-
+-            case TextureTarget::CubeMapNegativeX:
+-            case TextureTarget::CubeMapNegativeY:
+-            case TextureTarget::CubeMapNegativeZ:
+-            case TextureTarget::CubeMapPositiveX:
+-            case TextureTarget::CubeMapPositiveY:
+-            case TextureTarget::CubeMapPositiveZ:
+-            {
+-                if (level > log2(caps.maxCubeMapTextureSize))
+-                {
+-                    ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kInvalidMipLevel);
+-                    return false;
+-                }
+-                if (tex->getType() != TextureType::CubeMap)
+-                {
+-                    ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kTextureTargetMismatch);
+-                    return false;
+-                }
+-            }
+-            break;
+-
+-            case TextureTarget::_2DMultisample:
+-            {
+-                if (context->getClientVersion() < ES_3_1 &&
+-                    !context->getExtensions().textureMultisampleANGLE)
+-                {
+-                    ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION,
+-                                           kMultisampleTextureExtensionOrES31Required);
+-                    return false;
+-                }
+-
+-                if (level != 0)
+-                {
+-                    ANGLE_VALIDATION_ERROR(GL_INVALID_VALUE, kLevelNotZero);
+-                    return false;
+-                }
+-                if (tex->getType() != TextureType::_2DMultisample)
+-                {
+-                    ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kTextureTargetMismatch);
+-                    return false;
+-                }
+-            }
+-            break;
+-
+-            case TextureTarget::External:
+-            {
+-                if (!context->getExtensions().YUVTargetEXT)
+-                {
+-                    ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kYUVTargetExtensionRequired);
+-                    return false;
+-                }
+-
+-                if (attachment != GL_COLOR_ATTACHMENT0)
+-                {
+-                    ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidAttachment);
+-                    return false;
+-                }
+-
+-                if (tex->getType() != TextureType::External)
+-                {
+-                    ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kTextureTargetMismatch);
+-                    return false;
+-                }
+-            }
+-            break;
++            return false;
++        }
+ 
+-            default:
+-                ANGLE_VALIDATION_ERROR(GL_INVALID_ENUM, kInvalidTextureTarget);
+-                return false;
++        if (textarget == TextureTarget::External && attachment != GL_COLOR_ATTACHMENT0)
++        {
++            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidAttachment);
++            return false;
+         }
+     }
+ 
+@@ -6078,19 +6092,28 @@ bool ValidateFramebufferTexture2DMultisampleEXT(const Context *context,
+         return false;
+     }
+ 
+-    // EXT_multisampled_render_to_texture returns INVALID_OPERATION when a sample number higher than
+-    // the maximum sample number supported by this format is passed.
+-    // The getMaxSamples method is only guaranteed to be valid when the context is ES3.
+-    if (texture.value != 0 && context->getClientVersion() >= ES_3_0)
++    if (texture.value != 0)
+     {
+-        Texture *tex                  = context->getTexture(texture);
+-        GLenum sizedInternalFormat    = tex->getFormat(textarget, level).info->sizedInternalFormat;
+-        const TextureCaps &formatCaps = context->getTextureCaps().get(sizedInternalFormat);
+-        if (static_cast<GLuint>(samples) > formatCaps.sampleCounts.getMaxSamples())
++        Texture *tex = context->getTexture(texture);
++
++        if (!ValidateFramebufferTexture2DTarget(context, entryPoint, tex, textarget, level))
+         {
+-            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kSamplesOutOfRange);
+             return false;
+         }
++
++        // EXT_multisampled_render_to_texture returns INVALID_OPERATION when a sample number higher
++        // than the maximum sample number supported by this format is passed.
++        // The getMaxSamples method is only guaranteed to be valid when the context is ES3.
++        if (context->getClientVersion() >= ES_3_0)
++        {
++            GLenum sizedInternalFormat = tex->getFormat(textarget, level).info->sizedInternalFormat;
++            const TextureCaps &formatCaps = context->getTextureCaps().get(sizedInternalFormat);
++            if (static_cast<GLuint>(samples) > formatCaps.sampleCounts.getMaxSamples())
++            {
++                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kSamplesOutOfRange);
++                return false;
++            }
++        }
+     }
+ 
+     // Unless EXT_multisampled_render_to_texture2 is enabled, only color attachment 0 can be used.
+diff --git a/src/tests/gl_tests/MultisampledRenderToTextureTest.cpp b/src/tests/gl_tests/MultisampledRenderToTextureTest.cpp
+index 9353a6816214ff42a1cdfbc2bc50f827e3aa702c..1a41debc3611925343e017d32cf3f9a946575b78 100644
+--- a/src/tests/gl_tests/MultisampledRenderToTextureTest.cpp
++++ b/src/tests/gl_tests/MultisampledRenderToTextureTest.cpp
+@@ -329,6 +329,19 @@ TEST_P(MSRTTTest, Texture2DParameterCheck)
+         assertErrorIfNotMSRTT2(GL_INVALID_ENUM);
+     }
+ 
++    // Attachment not 2D texture
++    GLTexture cube;
++    glBindTexture(GL_TEXTURE_CUBE_MAP, cube);
++    for (GLenum face = 0; face < 6; face++)
++    {
++        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, GL_RGBA, 64, 64, 0, GL_RGBA,
++                     GL_UNSIGNED_BYTE, nullptr);
++        ASSERT_GL_NO_ERROR();
++    }
++    glFramebufferTexture2DMultisampleEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, cube,
++                                         0, 4);
++    ASSERT_GL_ERROR(GL_INVALID_OPERATION);
++
+     // Target not framebuffer
+     glFramebufferTexture2DMultisampleEXT(GL_RENDERBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                                          texture, 0, 4);
+@@ -424,6 +437,14 @@ TEST_P(MSRTTTest, TextureCubeMapParameterCheck)
+         // the next larger sample count supported by the implementation"
+         EXPECT_GE(param, 4);
+     }
++
++    // Attachment not cubemap texture
++    GLTexture notcube;
++    glBindTexture(GL_TEXTURE_2D, notcube);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 64, 64, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++    glFramebufferTexture2DMultisampleEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
++                                         GL_TEXTURE_CUBE_MAP_POSITIVE_X, notcube, 0, 4);
++    ASSERT_GL_ERROR(GL_INVALID_OPERATION);
+ }
+ 
+ // Checking for framebuffer completeness using extension methods.

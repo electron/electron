@@ -1,0 +1,191 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jonathan Ross <jonross@chromium.org>
+Date: Thu, 1 Oct 2026 08:02:33 -0700
+Subject: [M152] Harden
+ RenderWidgetHostViewEventHandler::FinishImeCompositionSession
+
+Original change's description:
+> Harden RenderWidgetHostViewEventHandler::FinishImeCompositionSession
+>
+> FinishImeCompositionSession() on mouse press and gesture tap during
+> active IME composition is re-entrant to OS input methods.
+>
+> These synchronous callouts can pump messages or cause focus changes that
+> re-entrantly destroy the view or its window.
+>
+> Bug: 561891645
+> Change-Id: Ide2361ce3be241bba1debc08930089c6092e1738
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8443460
+> Commit-Queue: Jonathan Ross <jonross@chromium.org>
+> Reviewed-by: Kartar Singh <kartarsingh@google.com>
+> Cr-Commit-Position: refs/heads/main@{#1706078}
+
+(cherry picked from commit 61f3d8549e0babaa156e8573067f2fd5db627319)
+
+Bug: 567399063,561891645
+Change-Id: Ide2361ce3be241bba1debc08930089c6092e1738
+
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8486506
+Reviewed-by: Kartar Singh <kartarsingh@google.com>
+Commit-Queue: Jonathan Ross <jonross@chromium.org>
+Reviewed-by: Jonathan Ross <jonross@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7977@{#2764}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc b/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
+index ef1b0a593e961484ac1544ae12c0a7de9fd6b6d5..e00a0054f42572135cbd82e770be2ae4f0960adb 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
++++ b/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
+@@ -7034,6 +7034,13 @@ class DestroyingMockInputMethod : public ui::MockInputMethod {
+     }
+   }
+ 
++  void CancelComposition(const ui::TextInputClient* client) override {
++    ui::MockInputMethod::CancelComposition(client);
++    if (on_cancel_composition_) {
++      std::move(on_cancel_composition_).Run();
++    }
++  }
++
+   void set_on_caret_bounds_changed(base::OnceClosure closure) {
+     on_caret_bounds_changed_ = std::move(closure);
+   }
+@@ -7047,10 +7054,15 @@ class DestroyingMockInputMethod : public ui::MockInputMethod {
+     on_set_virtual_keyboard_visibility_if_enabled_ = std::move(closure);
+   }
+ 
++  void set_on_cancel_composition(base::OnceClosure closure) {
++    on_cancel_composition_ = std::move(closure);
++  }
++
+  private:
+   base::OnceClosure on_caret_bounds_changed_;
+   base::OnceClosure on_text_input_type_changed_;
+   base::OnceClosure on_set_virtual_keyboard_visibility_if_enabled_;
++  base::OnceClosure on_cancel_composition_;
+ };
+ 
+ class RenderWidgetHostViewAuraReentrantDestructionIME
+@@ -7173,6 +7185,56 @@ TEST_F(RenderWidgetHostViewAuraReentrantDestructionIME,
+   GetTextInputManager(view_.get())->UpdateTextInputState(view_.get(), state);
+ }
+ 
++// When a mouse press occurs during active composition,
++// RenderWidgetHostViewEventHandler::OnMouseEvent calls
++// FinishImeCompositionSession(), which triggers
++// GetInputMethod()->CancelComposition(this). If the IME callout re-entrantly
++// destroys the view (e.g. by pumping a message loop on Windows TSF),
++// OnMouseEvent must not touch freed memory or cleared pointers.
++TEST_F(RenderWidgetHostViewAuraReentrantDestructionIME,
++       DestroyDuringFinishImeCompositionSessionOnMousePressed) {
++  InitViewForFrame(nullptr);
++  ParentHostView(view_, parent_view_);
++  ASSERT_EQ(static_cast<ui::InputMethod*>(input_method_.get()),
++            GetInputMethod());
++
++  input_method_->set_on_cancel_composition(base::BindLambdaForTesting([&]() {
++    widget_host_ = nullptr;
++    view_.ExtractAsDangling()->Destroy();
++  }));
++
++  FakeRenderWidgetHostViewAura* target_view = view_.get();
++  ui::MouseEvent mouse_press(ui::EventType::kMousePressed, gfx::Point(10, 10),
++                             gfx::Point(10, 10), ui::EventTimeForNow(),
++                             ui::EF_LEFT_MOUSE_BUTTON,
++                             ui::EF_LEFT_MOUSE_BUTTON);
++  target_view->OnMouseEvent(&mouse_press);
++}
++
++// When a gesture tap occurs during active composition,
++// RenderWidgetHostViewEventHandler::OnGestureEvent calls
++// FinishImeCompositionSession(), which triggers
++// GetInputMethod()->CancelComposition(this). If the IME callout re-entrantly
++// destroys the view, OnGestureEvent must not touch freed memory or cleared
++// pointers.
++TEST_F(RenderWidgetHostViewAuraReentrantDestructionIME,
++       DestroyDuringFinishImeCompositionSessionOnGestureTap) {
++  InitViewForFrame(nullptr);
++  ParentHostView(view_, parent_view_);
++  ASSERT_EQ(static_cast<ui::InputMethod*>(input_method_.get()),
++            GetInputMethod());
++
++  input_method_->set_on_cancel_composition(base::BindLambdaForTesting([&]() {
++    widget_host_ = nullptr;
++    view_.ExtractAsDangling()->Destroy();
++  }));
++
++  FakeRenderWidgetHostViewAura* target_view = view_.get();
++  ui::GestureEventDetails tap_details(ui::EventType::kGestureTap);
++  ui::GestureEvent gesture_tap(10, 10, 0, ui::EventTimeForNow(), tap_details);
++  target_view->OnGestureEvent(&gesture_tap);
++}
++
+ #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_CHROMEOS)
+ class MockVirtualKeyboardController final
+     : public ui::VirtualKeyboardController {
+diff --git a/content/browser/renderer_host/render_widget_host_view_event_handler.cc b/content/browser/renderer_host/render_widget_host_view_event_handler.cc
+index 36dcb04e400fa7bac58d5b8aa89151707a9666a1..0de09e162bb4b16f84a90a29c5b70505f343ee1d 100644
+--- a/content/browser/renderer_host/render_widget_host_view_event_handler.cc
++++ b/content/browser/renderer_host/render_widget_host_view_event_handler.cc
+@@ -375,7 +375,11 @@ void RenderWidgetHostViewEventHandler::OnMouseEvent(ui::MouseEvent* event) {
+       // Confirm existing composition text on mouse press, to make sure
+       // the input caret won't be moved with an ongoing composition text.
+       if (event->type() == ui::EventType::kMousePressed) {
++        auto weak_this = weak_ptr_factory_.GetWeakPtr();
+         FinishImeCompositionSession();
++        if (!weak_this || !window_ || !host_) {
++          return;
++        }
+       }
+ 
+       blink::WebMouseEvent mouse_event = ui::MakeWebMouseEvent(*event);
+@@ -557,7 +561,11 @@ void RenderWidgetHostViewEventHandler::OnGestureEvent(ui::GestureEvent* event) {
+   // Confirm existing composition text on TAP gesture, to make sure the input
+   // caret won't be moved with an ongoing composition text.
+   if (event->type() == ui::EventType::kGestureTap) {
++    auto weak_this = weak_ptr_factory_.GetWeakPtr();
+     FinishImeCompositionSession();
++    if (!weak_this || !window_ || !host_) {
++      return;
++    }
+   }
+ 
+   blink::WebGestureEvent gesture = ui::MakeWebGestureEvent(*event);
+@@ -675,8 +683,15 @@ void RenderWidgetHostViewEventHandler::FinishImeCompositionSession() {
+   // call to finish composition text should be made through the RWHVA itself
+   // otherwise the following call to cancel composition will lead to an extra
+   // IPC for finishing the ongoing composition (see https://crbug.com/723024).
++  if (!host_view_ || !host_view_->GetTextInputClient()) {
++    return;
++  }
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
+   host_view_->GetTextInputClient()->ConfirmCompositionText(
+       /* keep_selection */ true);
++  if (!weak_this || !window_ || !host_) {
++    return;
++  }
+   host_view_->ImeCancelComposition();
+ }
+ 
+diff --git a/content/browser/renderer_host/render_widget_host_view_event_handler.h b/content/browser/renderer_host/render_widget_host_view_event_handler.h
+index 57108b19736f360ae6837c8a1c6cc1e60a2afe8d..2734f1ecb2fffb4d02332d7619e5a222c127975f 100644
+--- a/content/browser/renderer_host/render_widget_host_view_event_handler.h
++++ b/content/browser/renderer_host/render_widget_host_view_event_handler.h
+@@ -11,6 +11,7 @@
+ #include "base/containers/flat_set.h"
+ #include "base/gtest_prod_util.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "build/build_config.h"
+ #include "components/input/native_web_keyboard_event.h"
+ #include "content/browser/renderer_host/input/mouse_wheel_phase_handler.h"
+@@ -318,6 +319,9 @@ class CONTENT_EXPORT RenderWidgetHostViewEventHandler
+ 
+   // Used to identify pointing device that can fire fling events.
+   base::flat_set<int> fling_capable_device_ids_;
++
++  base::WeakPtrFactory<RenderWidgetHostViewEventHandler> weak_ptr_factory_{
++      this};
+ };
+ 
+ }  // namespace content

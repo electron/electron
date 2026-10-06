@@ -1,0 +1,211 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sangbaek Park <sangbaekpark@chromium.org>
+Date: Wed, 2 Sep 2026 08:32:34 -0700
+Subject: media: Check IsCleared in VideoImageRepresentation read access
+
+VideoImageRepresentation::BeginScopedReadAccess() was missing an
+IsCleared() check before granting read access to the underlying
+SharedImage backing. When hardware video encoders consume an uncleared
+SharedImage created without initial pixel data, uninitialized GPU
+memory could potentially be encoded and returned in the bitstream to a
+compromised renderer.
+
+This CL adds an unconditional IsCleared() check to
+VideoImageRepresentation::BeginScopedReadAccess(), matching sibling read
+representations (Skia, Overlay). It also corrects the AccessMode passed
+to ScopedAccessBase in VideoImageRepresentation::ScopedReadAccess from
+kWrite to kRead.
+
+A new unit test is added to SharedImageRepresentationTest to ensure
+uncleared SharedImages cannot be read via VideoImageRepresentation, and
+existing tests are updated with SetCleared().
+
+Bug: 553118338
+Change-Id: I26a41b6579230d2c2854dcf6eaba25665a3b2e71
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8298633
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Commit-Queue: Sangbaek Park <sangbaekpark@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1690766}
+
+diff --git a/gpu/command_buffer/service/shared_image/d3d_image_backing_factory_unittest.cc b/gpu/command_buffer/service/shared_image/d3d_image_backing_factory_unittest.cc
+index 3195ec79c3258f09748674cf24879de031e56dd5..8a73e12474423a047c9ee6e9fda479fe353b45fe 100644
+--- a/gpu/command_buffer/service/shared_image/d3d_image_backing_factory_unittest.cc
++++ b/gpu/command_buffer/service/shared_image/d3d_image_backing_factory_unittest.cc
+@@ -2288,6 +2288,7 @@ TEST_P(D3DImageBackingFactoryTest, CanProduceVideoForExternalDevice) {
+       shared_image_manager_.Register(std::move(owned_backing),
+                                      memory_type_tracker_.get());
+   ASSERT_TRUE(shared_image_ref);
++  shared_image_ref->SetCleared();
+ 
+   Microsoft::WRL::ComPtr<ID3D11Device> d3d11_device;
+   UINT creation_flags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
+diff --git a/gpu/command_buffer/service/shared_image/gl_texture_image_backing_factory_unittest.cc b/gpu/command_buffer/service/shared_image/gl_texture_image_backing_factory_unittest.cc
+index 13f10505e03fc8d17989a86be5fb55c41b1b82ca..98fcca28ba4026dd296053156ce1252751c46bd1 100644
+--- a/gpu/command_buffer/service/shared_image/gl_texture_image_backing_factory_unittest.cc
++++ b/gpu/command_buffer/service/shared_image/gl_texture_image_backing_factory_unittest.cc
+@@ -379,6 +379,7 @@ TEST_F(GLTextureImageBackingFactoryTest, ProduceVideo) {
+   ASSERT_TRUE(backing);
+   std::unique_ptr<SharedImageRepresentationFactoryRef> shared_image =
+       shared_image_manager_.Register(std::move(backing), &memory_type_tracker_);
++  shared_image->SetCleared();
+ 
+   Microsoft::WRL::ComPtr<ID3D11Device> d3d11_device;
+   UINT creation_flags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
+diff --git a/gpu/command_buffer/service/shared_image/shared_image_representation.cc b/gpu/command_buffer/service/shared_image/shared_image_representation.cc
+index 38c9308933477f58b30ef50bae9181ff25acda1a..1d203eb036eb7b6aca2fbef59a2c6d972e9b13a5 100644
+--- a/gpu/command_buffer/service/shared_image/shared_image_representation.cc
++++ b/gpu/command_buffer/service/shared_image/shared_image_representation.cc
+@@ -1220,7 +1220,7 @@ VideoImageRepresentation::BeginScopedWriteAccess() {
+ VideoImageRepresentation::ScopedReadAccess::ScopedReadAccess(
+     base::PassKey<VideoImageRepresentation> /* pass_key */,
+     VideoImageRepresentation* representation)
+-    : ScopedAccessBase(representation, AccessMode::kWrite) {}
++    : ScopedAccessBase(representation, AccessMode::kRead) {}
+ 
+ VideoImageRepresentation::ScopedReadAccess::~ScopedReadAccess() {
+   representation()->EndReadAccess();
+@@ -1228,6 +1228,13 @@ VideoImageRepresentation::ScopedReadAccess::~ScopedReadAccess() {
+ 
+ std::unique_ptr<VideoImageRepresentation::ScopedReadAccess>
+ VideoImageRepresentation::BeginScopedReadAccess() {
++  if (!IsCleared()) {
++    LOG(ERROR)
++        << "Attempt to read from an uninitialized SharedImage. debug_label: "
++        << debug_label();
++    return nullptr;
++  }
++
+   if (!BeginReadAccess()) {
+     return nullptr;
+   }
+diff --git a/gpu/command_buffer/service/shared_image/shared_image_representation_unittest.cc b/gpu/command_buffer/service/shared_image/shared_image_representation_unittest.cc
+index 77415822374386a837c59f49e800023861ecf20e..9e3bfabd36731387d0077bc0582ec36ebd096e55 100644
+--- a/gpu/command_buffer/service/shared_image/shared_image_representation_unittest.cc
++++ b/gpu/command_buffer/service/shared_image/shared_image_representation_unittest.cc
+@@ -262,4 +262,34 @@ TEST_F(SharedImageRepresentationTest, OverlayClearing) {
+   EXPECT_TRUE(representation->IsCleared());
+ }
+ 
++TEST_F(SharedImageRepresentationTest, VideoClearing) {
++  auto representation = manager_.ProduceVideo({}, mailbox_, tracker_.get());
++  EXPECT_FALSE(representation->IsCleared());
++
++  // We should not be able to begin read access.
++  {
++    auto scoped_access = representation->BeginScopedReadAccess();
++    EXPECT_FALSE(scoped_access);
++  }
++  EXPECT_FALSE(representation->IsCleared());
++
++  // We should be able to begin write access when uncleared.
++  {
++    auto scoped_access = representation->BeginScopedWriteAccess();
++    EXPECT_TRUE(scoped_access);
++  }
++  EXPECT_FALSE(representation->IsCleared());
++
++  // Clear the SharedImage.
++  representation->SetCleared();
++  EXPECT_TRUE(representation->IsCleared());
++
++  // We can now begin read access.
++  {
++    auto scoped_access = representation->BeginScopedReadAccess();
++    EXPECT_TRUE(scoped_access);
++  }
++  EXPECT_TRUE(representation->IsCleared());
++}
++
+ }  // namespace gpu
+diff --git a/gpu/command_buffer/service/shared_image/test_image_backing.cc b/gpu/command_buffer/service/shared_image/test_image_backing.cc
+index 71fdabe012e523ef288d6c5b2048d4b8dd6d59b7..5fcebb833e6f7cdb42dc27e9ab622f523499e171 100644
+--- a/gpu/command_buffer/service/shared_image/test_image_backing.cc
++++ b/gpu/command_buffer/service/shared_image/test_image_backing.cc
+@@ -365,6 +365,13 @@ std::unique_ptr<OverlayImageRepresentation> TestImageBacking::ProduceOverlay(
+                                                           tracker);
+ }
+ 
++std::unique_ptr<VideoImageRepresentation> TestImageBacking::ProduceVideo(
++    SharedImageManager* manager,
++    MemoryTypeTracker* tracker,
++    VideoDevice device) {
++  return std::make_unique<TestVideoImageRepresentation>(manager, this, tracker);
++}
++
+ bool TestOverlayImageRepresentation::BeginReadAccess(
+     gfx::GpuFenceHandle& acquire_fence) {
+   return true;
+@@ -386,4 +393,29 @@ bool TestOverlayImageRepresentation::IsInUseByWindowServer() const {
+ }
+ #endif  // BUILDFLAG(IS_APPLE)
+ 
++bool TestVideoImageRepresentation::BeginWriteAccess() {
++  return true;
++}
++
++void TestVideoImageRepresentation::EndWriteAccess() {}
++
++bool TestVideoImageRepresentation::BeginReadAccess() {
++  return true;
++}
++
++void TestVideoImageRepresentation::EndReadAccess() {}
++
++#if BUILDFLAG(IS_WIN)
++D3D11TextureAndArrayIndex TestVideoImageRepresentation::GetD3D11Texture()
++    const {
++  return {nullptr, 0};
++}
++#endif
++
++#if BUILDFLAG(IS_ANDROID)
++AHardwareBuffer* TestVideoImageRepresentation::GetAHardwareBuffer() const {
++  return nullptr;
++}
++#endif
++
+ }  // namespace gpu
+diff --git a/gpu/command_buffer/service/shared_image/test_image_backing.h b/gpu/command_buffer/service/shared_image/test_image_backing.h
+index 5bbdabae11e920379b946b43af05dfbe5f6b0899..470d4770a35a362a3b173c163e76842b14712138 100644
+--- a/gpu/command_buffer/service/shared_image/test_image_backing.h
++++ b/gpu/command_buffer/service/shared_image/test_image_backing.h
+@@ -93,6 +93,10 @@ class TestImageBacking : public SharedImageBacking {
+   std::unique_ptr<OverlayImageRepresentation> ProduceOverlay(
+       SharedImageManager* manager,
+       MemoryTypeTracker* tracker) override;
++  std::unique_ptr<VideoImageRepresentation> ProduceVideo(
++      SharedImageManager* manager,
++      MemoryTypeTracker* tracker,
++      VideoDevice device) override;
+ 
+  private:
+   std::vector<raw_ptr<gles2::Texture>> textures_;
+@@ -136,6 +140,28 @@ class TestOverlayImageRepresentation : public OverlayImageRepresentation {
+ #endif  // BUILDFLAG(IS_APPLE)
+ };
+ 
++class TestVideoImageRepresentation : public VideoImageRepresentation {
++ public:
++  TestVideoImageRepresentation(SharedImageManager* manager,
++                               SharedImageBacking* backing,
++                               MemoryTypeTracker* tracker)
++      : VideoImageRepresentation(manager, backing, tracker) {}
++
++ private:
++  bool BeginWriteAccess() override;
++  void EndWriteAccess() override;
++  bool BeginReadAccess() override;
++  void EndReadAccess() override;
++
++#if BUILDFLAG(IS_WIN)
++  D3D11TextureAndArrayIndex GetD3D11Texture() const override;
++#endif
++
++#if BUILDFLAG(IS_ANDROID)
++  AHardwareBuffer* GetAHardwareBuffer() const override;
++#endif
++};
++
+ }  // namespace gpu
+ 
+ #endif  // GPU_COMMAND_BUFFER_SERVICE_SHARED_IMAGE_TEST_IMAGE_BACKING_H_

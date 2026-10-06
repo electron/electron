@@ -1,0 +1,115 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Tue, 22 Sep 2026 14:51:59 -0400
+Subject: [M152] [ganesh] Drop unique refs in GrThreadSafeCache when flush
+ tasks fail
+
+Original change's description:
+> [ganesh] Drop unique refs in GrThreadSafeCache when flush tasks fail
+>
+> If any render task fails to execute (or instantiation/preFlush fails),
+> GrThreadSafeCache entries published ahead of rendering during the flush
+> (such as lazy-view blur masks) may point to textures that were never
+> initialized. Drop all uniquely-held entries in the thread-safe cache on
+> failing flushes so subsequent draws do not consume uninitialized
+> textures.
+>
+> Bug: 561987051
+> Fixed: 561987051
+> Change-Id: Idff93c3c7ab6480c56f727831d04f7202204c0fd
+> Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1368937
+> Reviewed-by: Robert Phillips <robertphillips@google.com>
+> Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+
+(cherry picked from commit 409081ee128bce31d6b7cfa1dadab4a0750cdcc0)
+
+Bug: 566046883,561987051,561987051
+Change-Id: Idff93c3c7ab6480c56f727831d04f7202204c0fd
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1373337
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/src/gpu/ganesh/GrDrawingManager.cpp b/src/gpu/ganesh/GrDrawingManager.cpp
+index 4de8af0758b3f56434bd1dbb027eb488beb0bbea..348e07187f681c855956342205c0ecbee9fd9528 100644
+--- a/src/gpu/ganesh/GrDrawingManager.cpp
++++ b/src/gpu/ganesh/GrDrawingManager.cpp
+@@ -46,6 +46,7 @@
+ #include "src/gpu/ganesh/GrTextureProxy.h"
+ #include "src/gpu/ganesh/GrTextureResolveManager.h"
+ #include "src/gpu/ganesh/GrTextureResolveRenderTask.h"
++#include "src/gpu/ganesh/GrThreadSafeCache.h"
+ #include "src/gpu/ganesh/GrTracing.h"
+ #include "src/gpu/ganesh/GrTransferFromRenderTask.h"
+ #include "src/gpu/ganesh/GrWaitRenderTask.h"
+@@ -214,6 +215,18 @@ GrDirectContext::FlushResult GrDrawingManager::flush(SkSpan<GrSurfaceProxy*> pro
+     }
+     this->removeRenderTasks();
+ 
++    // If any render task failed to execute (or instantiation/preFlush failed), GrThreadSafeCache
++    // entries that were published ahead of rendering during this flush (e.g. a blur mask) may now
++    // point at textures that will never be initialized. Without clearing the cache here, subsequent
++    // draws using the same key will see the unitialized texture and assume it's valid. This only
++    // runs on failing flushes, which are already catastrophic for rendering, so re-creating a few
++    // cached resources afterwards is an acceptable cost.
++    if (!executionResult.fAllTasksSuccessful) {
++        // NOTE: passing a null resource cache means to drop all unique refs, not just enough to
++        // get under a cache's budget.
++        fContext->priv().threadSafeCache()->dropUniqueRefs(/*resourceCache=*/nullptr);
++    }
++
+     GrDirectContext::FlushResult flushResult = gpu->executeFlushInfo(proxies, access, info,
+                                                                      std::move(timerQuery),
+                                                                      newState);
+diff --git a/tests/GrThreadSafeCacheTest.cpp b/tests/GrThreadSafeCacheTest.cpp
+index 880a28644f5aa8cfe9ec0ca3b1fc3312dbfc6d10..c580bcf1f06da4610fbb9530317b4ea6c7a84ab6 100644
+--- a/tests/GrThreadSafeCacheTest.cpp
++++ b/tests/GrThreadSafeCacheTest.cpp
+@@ -1005,7 +1005,8 @@ DEF_GANESH_TEST_FOR_RENDERING_CONTEXTS(GrThreadSafeCache4_5Verts,
+ //            its lazy proxy, life goes on
+ static void test_4_75(GrDirectContext* dContext, skiatest::Reporter* reporter,
+                       TestHelper::addAccessFP addAccess,
+-                      TestHelper::checkFP check) {
++                      TestHelper::checkFP check,
++                      bool failureClearsProxyCache) {
+ 
+     TestHelper helper(dContext);
+ 
+@@ -1022,10 +1023,14 @@ static void test_4_75(GrDirectContext* dContext, skiatest::Reporter* reporter,
+     dContext->flush();
+     dContext->submit(GrSyncCpu::kYes);
+ 
+-    REPORTER_ASSERT(reporter, (helper.*check)(helper.liveCanvas(), kImageWH,
+-                                              /*hits*/ 0, /*misses*/ 1, /*refs*/ 0, kNoID));
++    int expectedCacheEntries = failureClearsProxyCache ? 0 : 1;
++    // The flush will fail, which will empty the thread safe cache (b/561987051). The Stats
++    // aren't reset, but we shouldn't find an entry anymore so expect check() to fail.
++    REPORTER_ASSERT(reporter, failureClearsProxyCache !=
++            (helper.*check)(helper.liveCanvas(), kImageWH,
++                            /*hits*/ 0, /*misses*/ 1, /*refs*/ 0, kNoID));
++    REPORTER_ASSERT(reporter, helper.numCacheEntries() == expectedCacheEntries);
+ 
+-    REPORTER_ASSERT(reporter, helper.numCacheEntries() == 1);
+     REPORTER_ASSERT(reporter, helper.stats()->fNumLazyCreations == 1);
+     REPORTER_ASSERT(reporter, helper.stats()->fNumHWCreations == 0);
+     REPORTER_ASSERT(reporter, helper.stats()->fNumSWCreations == 0);
+@@ -1036,7 +1041,8 @@ DEF_GANESH_TEST_FOR_RENDERING_CONTEXTS(GrThreadSafeCache4_75View,
+                                        ctxInfo,
+                                        CtsEnforcement::kNever) {
+     test_4_75(ctxInfo.directContext(), reporter,
+-              &TestHelper::addViewAccess, &TestHelper::checkView);
++              &TestHelper::addViewAccess, &TestHelper::checkView,
++              /*failureClearsProxyCache=*/true);
+ }
+ 
+ DEF_GANESH_TEST_FOR_RENDERING_CONTEXTS(GrThreadSafeCache4_75Verts,
+@@ -1044,7 +1050,8 @@ DEF_GANESH_TEST_FOR_RENDERING_CONTEXTS(GrThreadSafeCache4_75Verts,
+                                        ctxInfo,
+                                        CtsEnforcement::kNever) {
+     test_4_75(ctxInfo.directContext(), reporter,
+-              &TestHelper::addVertAccess, &TestHelper::checkVert);
++              &TestHelper::addVertAccess, &TestHelper::checkVert,
++              /*failureClearsProxyCache=*/false);
+ }
+ 
+ // Case 5: ensure that expanding the map works (esp. wrt custom data)

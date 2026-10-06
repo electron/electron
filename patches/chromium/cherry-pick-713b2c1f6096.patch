@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Mon, 5 Oct 2026 14:20:07 -0700
+Subject: [M152] Fix bugs during TextTrackContainer::UpdateDisplay
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> Fix bugs during TextTrackContainer::UpdateDisplay
+>
+> In TextTrackContainer::UpdateDisplay, active_cues was held as a const
+> reference to CueTimeline::currently_active_cues_.
+>
+> During cue->UpdateDisplay(*this), cue display boxes are appended to
+> TextTrackContainer. If a cue box was previously focused, reparenting it
+> fires synchronous blur/focusout events. If an event handler executes
+> video.load(), CueTimeline::OnReadyStateReset() deactivates cues and
+> clears currently_active_cues_, freeing the vector storage while the loop
+> is iterating over it.
+>
+> Fixed: 567936270
+> Change-Id: I8ea6c48cbfd73d0ebf5b0349a6d697b334ffcc1b
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8496591
+> Commit-Queue: Fredrik Söderquist <fs@opera.com>
+> Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+> Reviewed-by: Fredrik Söderquist <fs@opera.com>
+> Cr-Commit-Position: refs/heads/main@{#1708776}
+
+(cherry picked from commit 5829dbe567675baf235c5e0635976ff198de62b1)
+
+Bug: 569045728,567936270
+Change-Id: I8ea6c48cbfd73d0ebf5b0349a6d697b334ffcc1b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8501308
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7977@{#2786}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/third_party/blink/renderer/core/html/track/text_track_container.cc b/third_party/blink/renderer/core/html/track/text_track_container.cc
+index ebaf165fc14bb673cc9535a289ea93625b4ac1c4..185dc07ae2ea7bc73391827dc60c716ed83cabc9 100644
+--- a/third_party/blink/renderer/core/html/track/text_track_container.cc
++++ b/third_party/blink/renderer/core/html/track/text_track_container.cc
+@@ -190,7 +190,9 @@ void TextTrackContainer::UpdateDisplay(HTMLMediaElement& media_element,
+   // 7. Let cues be an empty list of text track cues.
+   // 8. For each track track in tracks, append to cues all the cues from
+   // track's list of cues that have their text track cue active flag set.
+-  const CueList& active_cues = video.GetCueTimeline().CurrentlyActiveCues();
++  // Note: Copy the list so that synchronous script (e.g. blur events on
++  // reparenting display boxes) cannot invalidate the iteration buffer.
++  const CueList active_cues = video.GetCueTimeline().CurrentlyActiveCues();
+ 
+   // 9. If reset is false, then, for each text track cue cue in cues: if cue's
+   // text track cue display state has a set of CSS boxes, then add those boxes
+@@ -209,11 +211,19 @@ void TextTrackContainer::UpdateDisplay(HTMLMediaElement& media_element,
+   for (const auto& active_cue : active_cues) {
+     TextTrackCue* cue = active_cue.Data();
+ 
+-    DCHECK(cue->IsActive());
+-    if (!cue->track() || !cue->track()->IsRendered() || !cue->IsActive())
++    // Cues may have been deactivated or removed if synchronous script ran
++    // during a previous iteration (e.g., via video.load()).
++    if (!cue->IsActive() || !cue->track() || !cue->track()->IsRendered()) {
+       continue;
++    }
+ 
+     cue->UpdateDisplay(*this);
++
++    // Recheck IsActive() in case UpdateDisplay() synchronously ran script
++    // that deactivated cues.
++    if (!cue->IsActive()) {
++      continue;
++    }
+     cue->UpdatePastAndFutureNodes(movie_time);
+   }
+ 
+diff --git a/third_party/blink/web_tests/wpt_internal/html/semantics/embedded-content/media-elements/track/track-element/track-update-display-blur.html b/third_party/blink/web_tests/wpt_internal/html/semantics/embedded-content/media-elements/track/track-element/track-update-display-blur.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..722fc2850dbed760f524b2d35b587becc8981e21
+--- /dev/null
++++ b/third_party/blink/web_tests/wpt_internal/html/semantics/embedded-content/media-elements/track/track-element/track-update-display-blur.html
+@@ -0,0 +1,26 @@
++<!DOCTYPE html>
++<title>Ensure modifying video readyState / loading while updating cue display does not crash</title>
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++<video controls></video>
++<script>
++async_test(function(t) {
++    const video = document.querySelector("video");
++    const track = video.addTextTrack("captions", "test", "en");
++    track.mode = "showing";
++
++    const cue1 = new VTTCue(0, 10, "cue 1");
++    const cue2 = new VTTCue(0, 10, "cue 2");
++    track.addCue(cue1);
++    track.addCue(cue2);
++
++    // Initial render layout update or seeking triggers UpdateDisplay.
++    // Changing playback / loading resets the active cues.
++    video.currentTime = 1;
++    video.load();
++
++    t.step_timeout(() => {
++        t.done();
++    }, 100);
++});
++</script>

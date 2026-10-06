@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Thu, 1 Oct 2026 14:31:57 -0700
+Subject: [M152] Fix bugs in MultiBuffer::OnDataProviderEvent when Prune
+ empties UrlData
+
+Original change's description:
+> Fix bugs in MultiBuffer::OnDataProviderEvent when Prune empties UrlData
+>
+> In MultiBuffer::OnDataProviderEvent(), move Prune() after writer_index_
+> is updated and SuggestProviderState() is evaluated. Previously, Prune()
+> could empty data_ and call UrlData::OnEmpty(), dropping UrlIndex's last
+> reference to UrlData and destroying MultiBuffer before
+> writer_index_.find(pos) was executed.
+>
+> Fixed: 566347711
+>
+> Change-Id: I9389d473e0bc3c4523d6132ece32a74633c8cb76
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8489395
+> Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+> Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+> Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1708523}
+
+(cherry picked from commit 79d7e8374c0056a4e55583ab5b836371cacfb12f)
+
+Bug: 568217693,566347711
+Change-Id: I9389d473e0bc3c4523d6132ece32a74633c8cb76
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8498878
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7977@{#2768}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/third_party/blink/renderer/platform/media/multi_buffer.cc b/third_party/blink/renderer/platform/media/multi_buffer.cc
+index c5cf4b52a38726158027c54f2a84df37a47d251d..1846dcefef5c5863509ad9bda00d813187d2de1a 100644
+--- a/third_party/blink/renderer/platform/media/multi_buffer.cc
++++ b/third_party/blink/renderer/platform/media/multi_buffer.cc
+@@ -427,7 +427,6 @@ void MultiBuffer::OnDataProviderEvent(DataProvider* provider_tmp) {
+         present_.find(start_pos).interval();
+     NotifyAvailableRange(expanded_range, expanded_range);
+     lru_->IncrementDataSize(blocks_added);
+-    Prune(static_cast<size_t>(blocks_added) * kMaxFreesPerAdd + 1);
+   } else {
+     // Make sure to give progress reports even when there
+     // aren't any new blocks yet.
+@@ -454,6 +453,13 @@ void MultiBuffer::OnDataProviderEvent(DataProvider* provider_tmp) {
+         break;
+     }
+   }
++
++  if (pos > start_pos) {
++    // Prune must run after writer_index_ is updated above, since ReleaseBlocks
++    // may invoke OnEmpty() and drop the UrlIndex reference to the owning
++    // UrlData.
++    Prune(static_cast<size_t>(blocks_added) * kMaxFreesPerAdd + 1);
++  }
+ }
+ 
+ void MultiBuffer::MergeFrom(MultiBuffer* other) {
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+index c245eb392ddf0d6ca21684401fec23b6a50acd30..88c20ef0547f49b33e90ae16a9b12c7ba5006c7d 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+@@ -464,4 +464,23 @@ TEST_F(ResourceMultiBufferDataProviderTest, AllowGzip) {
+   StopWhenLoad();
+ }
+ 
++TEST_F(ResourceMultiBufferDataProviderTest,
++       PruneEmptiesUrlDataDuringDidReceiveData) {
++  Initialize(kHttpUrl, 0);
++  url_data_->Use();
++  Start();
++  PartialResponse(0, 100, 1024);
++
++  // Drop the test's reference so `url_index_` holds the sole reference to
++  // `UrlData`. Since there is no active `MultiBufferReader`, `GlobalLRU` max
++  // size is 0 and blocks are unpinned. Receiving a full block will cause
++  // `OnDataProviderEvent` to prune all blocks and invoke `UrlData::OnEmpty()`,
++  // which must not destroy `UrlData` / `MultiBuffer` while still on the stack.
++  ResourceMultiBufferDataProvider* loader = loader_.ExtractAsDangling();
++  url_data_ = nullptr;
++
++  std::string data_str(1, 'a');
++  loader->DidReceiveData(data_str);
++}
++
+ }  // namespace blink
