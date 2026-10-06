@@ -169,10 +169,12 @@ bool ShouldBlockAccessToPath(
   DCHECK(!path.empty());
   DCHECK(path.IsAbsolute());
 
-  path = ChromeFileSystemAccessPermissionContext::NormalizeFilePath(path);
+  path = ChromeFileSystemAccessPermissionContext::NormalizeFilePathForBlocklist(
+      path, /*should_normalize_file_path=*/true);
   for (auto& rule : extra_rules) {
     rule.path =
-        ChromeFileSystemAccessPermissionContext::NormalizeFilePath(rule.path);
+        ChromeFileSystemAccessPermissionContext::NormalizeFilePathForBlocklist(
+            rule.path, /*should_normalize_file_path=*/true);
   }
 
 #if BUILDFLAG(IS_WIN)
