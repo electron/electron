@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Baron <dbaron@chromium.org>
+Date: Thu, 1 Oct 2026 04:43:36 -0700
+Subject: [M156] Reland "Avoid dangling reference in
+ HTMLAnchorElementBase::NavigateToHyperlink."
+
+Original change's description:
+> Reland "Avoid dangling reference in HTMLAnchorElementBase::NavigateToHyperlink."
+>
+> This is a reland of commit 280ca3161bda00f116803a7064aba3ce91a7d59e
+> with the addition of a new change to LeakExpectations.
+>
+> Original change's description:
+> > Avoid dangling reference in HTMLAnchorElementBase::NavigateToHyperlink.
+> >
+> > Fixed: 565674529
+> > Change-Id: Ia3248d945dc01328e8f354ec28d7cfcadafb87f3
+> > Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8464608
+> > Auto-Submit: David Baron <dbaron@chromium.org>
+> > Commit-Queue: David Baron <dbaron@chromium.org>
+> > Reviewed-by: Joey Arhar <jarhar@chromium.org>
+> > Commit-Queue: Joey Arhar <jarhar@chromium.org>
+> > Cr-Commit-Position: refs/heads/main@{#1706396}
+>
+> Fixed: 565674529
+> Bug: 567487270
+> Change-Id: I3011a6ac54d8228f8a52601b324b7054a4aa2c9e
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8480519
+> Auto-Submit: David Baron <dbaron@chromium.org>
+> Commit-Queue: Joey Arhar <jarhar@chromium.org>
+> Reviewed-by: Joey Arhar <jarhar@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1707303}
+
+(cherry picked from commit 29c3240bc3b593965b5f78522cdf5c64562fee9e)
+
+Bug: 568217759,565674529,567487270
+Change-Id: I3011a6ac54d8228f8a52601b324b7054a4aa2c9e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8496610
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#109}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/third_party/blink/web_tests/LeakExpectations b/third_party/blink/web_tests/LeakExpectations
+index 815b05848d53b722320bc487a31b009a30f06055..8946db3c35dcd1d2dd276d09937c2871614eb4d4 100644
+--- a/third_party/blink/web_tests/LeakExpectations
++++ b/third_party/blink/web_tests/LeakExpectations
+@@ -62,3 +62,5 @@ crbug.com/422282936 external/wpt/css/css-overflow/root-scroll-button.html [ Fail
+ crbug.com/532874152 external/wpt/html/semantics/document-metadata/the-link-element/link-error-handler-triggers-abort-crash.html [ Crash ]
+ 
+ crbug.com/424246290 external/wpt/payment-handler/same-object-attributes.https.html [ Pass Failure ]
++
++crbug.com/567487270 external/wpt/trusted-types/navigate-to-javascript-url-009-crash.html [ Crash ]

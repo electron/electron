@@ -1,0 +1,201 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tommi <tommi@webrtc.org>
+Date: Tue, 29 Sep 2026 17:54:50 +0200
+Subject: [M156] Keep transceiver MID in sync with its channel
+
+Original change's description:
+> Keep transceiver MID in sync with its channel
+>
+> When applying a local description, a transceiver could be matched to an
+> m= section by its index even if it was already associated with a
+> different MID. The channel of the transceiver keeps using the MID it was
+> created for, so the two could get out of sync.
+>
+> - Only match transceivers that are not yet associated by m= section
+>   index.
+> - Route transport changes to a transceiver based on the MID of its
+>   channel.
+>
+> Bug: chromium:567160162
+> Change-Id: Ic9f29b66a8f9f181fd414009f5c1e5cebfa9ca54
+> Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/506421
+> Commit-Queue: Tomas Gunnarsson <tommi@webrtc.org>
+> Reviewed-by: Stefan Holmer <stefan@webrtc.org>
+> Cr-Commit-Position: refs/heads/main@{#48768}
+
+(cherry picked from commit 7a25e1c85a0af15cae8a2d55bf02e5610bf1af53)
+
+Bug: chromium:567160162
+Fixed: chromium:569046146
+Change-Id: Ic9f29b66a8f9f181fd414009f5c1e5cebfa9ca54
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/507101
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Tomas Gunnarsson <tommi@webrtc.org>
+Cr-Commit-Position: refs/branch-heads/8078@{#2}
+Cr-Branched-From: 3225248425fe2b3cafe389465b94ebc24968d9ba-refs/heads/main@{#48737}
+
+diff --git a/pc/peer_connection.cc b/pc/peer_connection.cc
+index bf604d787804fd4fdcb0480ade684ffa957fce86..ea49e5caf9709eec2cf165bcbd68199bdf00d254 100644
+--- a/pc/peer_connection.cc
++++ b/pc/peer_connection.cc
+@@ -3127,7 +3127,10 @@ bool PeerConnection::OnTransportChanged(
+     for (const auto& transceiver :
+          rtp_manager()->transceivers()->UnsafeList()) {
+       auto internal = transceiver->internal();
+-      if (internal->mid() == mid) {
++      // Match on the MID that the channel was created for rather than on the
++      // transceiver's current MID. The channel is bound to the transport of
++      // that MID and must be notified when that transport changes.
++      if (internal->channel_mid() == mid) {
+         ret = internal->SetRtpTransport(rtp_transport);
+       }
+     }
+diff --git a/pc/rtp_transceiver.cc b/pc/rtp_transceiver.cc
+index b951403842a4ad1c1e4d1ab6e5d8e05612226035..6d5c39e6c90919e392b168751206124274acf5d4 100644
+--- a/pc/rtp_transceiver.cc
++++ b/pc/rtp_transceiver.cc
+@@ -1579,6 +1579,11 @@ absl::string_view RtpTransceiver::channel_transport_name() const {
+   return channel_->transport_name();
+ }
+ 
++absl::string_view RtpTransceiver::channel_mid() const {
++  RTC_DCHECK_RUN_ON(context()->network_thread());
++  return channel_ ? absl::string_view(channel_->mid()) : absl::string_view();
++}
++
+ MediaSendChannelInterface* RtpTransceiver::media_send_channel() {
+   RTC_DCHECK_RUN_ON(thread_);
+   return channel_ ? channel_->media_send_channel() : nullptr;
+diff --git a/pc/rtp_transceiver.h b/pc/rtp_transceiver.h
+index 3dca197bc3d1a75d50cb2d0e207651b814b6d9a1..a215bc9b35b6503824d0a97c7692b809fea0a7aa 100644
+--- a/pc/rtp_transceiver.h
++++ b/pc/rtp_transceiver.h
+@@ -428,6 +428,10 @@ class RtpTransceiver : public RtpTransceiverInterface {
+   const std::vector<StreamParams>& channel_local_streams() const;
+   const std::vector<StreamParams>& channel_remote_streams() const;
+   absl::string_view channel_transport_name() const;
++  // Returns the MID that the channel was created for, or an empty string if
++  // there is no channel. The channel stays bound to the transport of this MID
++  // for its lifetime. Must be called on the network thread.
++  absl::string_view channel_mid() const;
+ 
+   // Accessors for media channels. These return null if there is no channel.
+   MediaSendChannelInterface* media_send_channel();
+diff --git a/pc/sdp_offer_answer.cc b/pc/sdp_offer_answer.cc
+index 5cf98d1a3c50af12a19ddabfb6d69f8c83062c89..d624d81f34877c28015e28fb6d3c29ea436f682b 100644
+--- a/pc/sdp_offer_answer.cc
++++ b/pc/sdp_offer_answer.cc
+@@ -4787,7 +4787,10 @@ SdpOfferAnswerHandler::AssociateTransceiver(
+     // mapping between transceivers and m= section indices established when
+     // creating the offer.
+     if (!transceiver) {
+-      transceiver = transceivers()->FindByMLineIndex(mline_index);
++      // Only consider transceivers that are not yet associated. The channel of
++      // an associated transceiver stays bound to the MID it was created for
++      // (and to the transport of that MID), so the MID must not change.
++      transceiver = transceivers()->FindUnassociatedByMLineIndex(mline_index);
+     }
+     if (!transceiver) {
+       // This may happen normally when media sections are rejected.
+diff --git a/pc/sdp_offer_answer_unittest.cc b/pc/sdp_offer_answer_unittest.cc
+index 82bda925510e0417690692278edd2d677211154c..cb5ad604d97ca14df71cac00fb6df1974ab7dd51 100644
+--- a/pc/sdp_offer_answer_unittest.cc
++++ b/pc/sdp_offer_answer_unittest.cc
+@@ -2388,6 +2388,62 @@ TEST_F(SdpOfferAnswerTest, StoppedTransceiverHasNoChannel) {
+   EXPECT_FALSE(has_channel);
+ }
+ 
++// Verifies that a munged local re-offer can not change the MID of a
++// transceiver that is already associated with an m= section.
++TEST_F(SdpOfferAnswerTest, RejectsMidChangeOfAssociatedTransceiver) {
++  auto caller = CreatePeerConnection();
++  auto callee = CreatePeerConnection();
++
++  // Negotiate without BUNDLE so that each m= section gets its own transport.
++  auto negotiate = [&] {
++    auto offer = caller->CreateOffer();
++    ASSERT_THAT(offer, NotNull());
++    offer->description()->RemoveGroupByName(GROUP_TYPE_BUNDLE);
++    ASSERT_TRUE(caller->SetLocalDescription(offer->Clone()));
++    ASSERT_TRUE(callee->SetRemoteDescription(std::move(offer)));
++    auto answer = callee->CreateAnswerAndSetAsLocal();
++    ASSERT_THAT(answer, NotNull());
++    ASSERT_TRUE(caller->SetRemoteDescription(std::move(answer)));
++  };
++
++  auto set_mid = [](SessionDescriptionInterface* sdesc, size_t index,
++                    absl::string_view mid) {
++    SessionDescription* desc = sdesc->description();
++    desc->contents()[index].set_mid(mid);
++    desc->transport_infos()[index].content_name = std::string(mid);
++  };
++
++  caller->AddTransceiver(MediaType::AUDIO);
++  scoped_refptr<RtpTransceiverInterface> stopped_transceiver =
++      caller->AddTransceiver(MediaType::AUDIO);
++  ASSERT_NO_FATAL_FAILURE(negotiate());
++
++  // Reject the second m= section in both the local and remote descriptions.
++  ASSERT_TRUE(stopped_transceiver->StopStandard().ok());
++  ASSERT_NO_FATAL_FAILURE(negotiate());
++  ASSERT_THAT(caller->pc()->GetTransceivers(), SizeIs(1));
++
++  // A new transceiver recycles the rejected m= section and gets associated
++  // with it (and gets a channel) by a local offer.
++  scoped_refptr<RtpTransceiverInterface> recycled_transceiver =
++      caller->AddTransceiver(MediaType::AUDIO);
++  auto offer = caller->CreateOffer();
++  ASSERT_THAT(offer, NotNull());
++  ASSERT_THAT(offer->description()->contents(), SizeIs(2));
++  offer->description()->RemoveGroupByName(GROUP_TYPE_BUNDLE);
++  ASSERT_TRUE(caller->SetLocalDescription(std::move(offer)));
++  const std::optional<std::string> recycled_mid = recycled_transceiver->mid();
++  ASSERT_TRUE(recycled_mid.has_value());
++
++  // Munged re-offer that changes the MID of the recycled m= section.
++  auto renamed_offer = caller->CreateOffer();
++  ASSERT_THAT(renamed_offer, NotNull());
++  renamed_offer->description()->RemoveGroupByName(GROUP_TYPE_BUNDLE);
++  set_mid(renamed_offer.get(), 1, "renamed");
++  EXPECT_FALSE(caller->SetLocalDescription(std::move(renamed_offer)));
++  EXPECT_EQ(recycled_transceiver->mid(), recycled_mid);
++}
++
+ TEST_F(SdpOfferAnswerTest, SubsequentOfferDoesNotAddSctpInit) {
+   auto pc1 = CreatePeerConnection("WebRTC-Sctp-Snap/Enabled/");
+   auto pc2 = CreatePeerConnection("WebRTC-Sctp-Snap/Enabled/");
+diff --git a/pc/transceiver_list.cc b/pc/transceiver_list.cc
+index f2abe486ad637d212c2ed0e5c205afd44808dae3..49654de3eead270e213a72baf342c85813b26693 100644
+--- a/pc/transceiver_list.cc
++++ b/pc/transceiver_list.cc
+@@ -85,11 +85,12 @@ RtpTransceiverProxyRefPtr TransceiverList::FindByMid(
+   return nullptr;
+ }
+ 
+-RtpTransceiverProxyRefPtr TransceiverList::FindByMLineIndex(
++RtpTransceiverProxyRefPtr TransceiverList::FindUnassociatedByMLineIndex(
+     size_t mline_index) const {
+   RTC_DCHECK_RUN_ON(&sequence_checker_);
+   for (const auto& transceiver : transceivers_) {
+-    if (transceiver->internal()->mline_index() == mline_index) {
++    RtpTransceiver* internal = transceiver->internal();
++    if (!internal->mid() && internal->mline_index() == mline_index) {
+       return transceiver;
+     }
+   }
+diff --git a/pc/transceiver_list.h b/pc/transceiver_list.h
+index 5136449a928b15bc634da79252b0d946ee7fad1a..a30ed99b3b774c5e3d408db7a4c7209a3b9b9710 100644
+--- a/pc/transceiver_list.h
++++ b/pc/transceiver_list.h
+@@ -127,7 +127,10 @@ class TransceiverList {
+   RtpTransceiverProxyRefPtr FindBySender(
+       scoped_refptr<RtpSenderInterface> sender) const;
+   RtpTransceiverProxyRefPtr FindByMid(absl::string_view mid) const;
+-  RtpTransceiverProxyRefPtr FindByMLineIndex(size_t mline_index) const;
++  // Returns the transceiver that is not yet associated with an m= section
++  // (i.e. has no MID) and has been assigned `mline_index` by CreateOffer.
++  RtpTransceiverProxyRefPtr FindUnassociatedByMLineIndex(
++      size_t mline_index) const;
+ 
+   // Find or create the stable state for a transceiver.
+   TransceiverStableState* StableState(RtpTransceiverProxyRefPtr transceiver) {
