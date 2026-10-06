@@ -1,0 +1,596 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Evan Stade <evanstade@microsoft.com>
+Date: Fri, 2 Oct 2026 15:44:58 -0700
+Subject: [M154] Generate Blob UUID in browser process
+
+Original change's description:
+> Generate Blob UUID in browser process
+>
+> This should generally be less exploitable than trusting the renderer to
+> generate UUIDs, even if we were to spot fix the browser UAF.
+>
+> This is intended as a relatively simple, non-disruptive fix (aside from
+> updating a fair number of tests). A longer term fix involves removing
+> UUID altogether, or hiding it from the renderer, but there are several
+> uses of blob UUID that are not easily removed (crbug.com/40529364),
+> particularly in extensions APIs.
+>
+> Bug: 560470099,559793873
+> Change-Id: Idf5d92e6d6201d4b8b8af797bee6103eebb81bef
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8406427
+> Commit-Queue: Evan Stade <evanstade@microsoft.com>
+> Reviewed-by: Jeremy Roman <jbroman@chromium.org>
+> Reviewed-by: Alex Gough <ajgo@chromium.org>
+> Reviewed-by: Fergal Daly <fergal@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1701129}
+
+(cherry picked from commit a73219eb4cb139df9b7e79ef8507d3078a97b27e)
+
+Bug: 564597370,560470099,559793873
+Change-Id: Idf5d92e6d6201d4b8b8af797bee6103eebb81bef
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8480851
+Commit-Queue: Evan Stade <evanstade@microsoft.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8037@{#1762}
+Cr-Branched-From: e10b20e60f162e7ad88e4930833695a54f4e15fb-refs/heads/main@{#1689415}
+
+Electron adaptation notes (42-x-y): wtf/uuid.h on this branch names the
+helper CreateCanonicalUUIDString() (upstream later renamed it to
+CreateCanonicalUuidString()); the one remaining call in blob_data.cc uses the
+branch name. Test-only hunks in blob_registry_impl_unittest.cc and
+web_frame_test.cc conflicted with unrelated test drift and were dropped;
+Electron does not build those tests.
+
+diff --git a/storage/browser/blob/blob_registry_impl.cc b/storage/browser/blob/blob_registry_impl.cc
+index 7e2b6c3ef80acfa8b34133851ecc5614fd028789..6f4a2e02b446918c6551ee58832f917e5d84f956 100644
+--- a/storage/browser/blob/blob_registry_impl.cc
++++ b/storage/browser/blob/blob_registry_impl.cc
+@@ -12,6 +12,7 @@
+ #include "base/functional/callback_helpers.h"
+ #include "base/memory/raw_ptr.h"
+ #include "base/task/sequenced_task_runner.h"
++#include "base/uuid.h"
+ #include "storage/browser/blob/blob_builder_from_stream.h"
+ #include "storage/browser/blob/blob_data_builder.h"
+ #include "storage/browser/blob/blob_impl.h"
+@@ -511,20 +512,14 @@ void BlobRegistryImpl::Bind(
+ 
+ void BlobRegistryImpl::Register(
+     mojo::PendingReceiver<blink::mojom::Blob> blob,
+-    const std::string& uuid,
+     const std::string& content_type,
+     const std::string& content_disposition,
+     std::vector<blink::mojom::DataElementPtr> elements,
+     RegisterCallback callback) {
+-  if (!context_) {
+-    std::move(callback).Run();
+-    return;
+-  }
++  const std::string uuid = base::Uuid::GenerateRandomV4().AsLowercaseString();
+ 
+-  if (uuid.empty() || context_->registry().HasEntry(uuid) ||
+-      blobs_under_construction_.contains(uuid)) {
+-    receivers_.ReportBadMessage(
+-        "Invalid UUID passed to BlobRegistry::Register");
++  if (!context_) {
++    std::move(callback).Run(uuid);
+     return;
+   }
+ 
+@@ -540,7 +535,7 @@ void BlobRegistryImpl::Register(
+             uuid, content_type, content_disposition,
+             BlobStatus::ERR_REFERENCED_FILE_UNAVAILABLE);
+         BlobImpl::Create(std::move(handle), std::move(blob));
+-        std::move(callback).Run();
++        std::move(callback).Run(uuid);
+         return;
+       }
+     }
+@@ -559,7 +554,7 @@ void BlobRegistryImpl::Register(
+ 
+   blobs_under_construction_[uuid]->StartTransportation(std::move(blob_impl));
+ 
+-  std::move(callback).Run();
++  std::move(callback).Run(uuid);
+ }
+ 
+ void BlobRegistryImpl::RegisterFromStream(
+diff --git a/storage/browser/blob/blob_registry_impl.h b/storage/browser/blob/blob_registry_impl.h
+index 79d3a207e484731392bb27312f8aab355bd50019..7e1f9fe8d1e2aea924b3aedf4a02fc50919afb6d 100644
+--- a/storage/browser/blob/blob_registry_impl.h
++++ b/storage/browser/blob/blob_registry_impl.h
+@@ -51,7 +51,6 @@ class COMPONENT_EXPORT(STORAGE_BROWSER) BlobRegistryImpl
+             std::unique_ptr<Delegate> delegate);
+ 
+   void Register(mojo::PendingReceiver<blink::mojom::Blob> blob,
+-                const std::string& uuid,
+                 const std::string& content_type,
+                 const std::string& content_disposition,
+                 std::vector<blink::mojom::DataElementPtr> elements,
+diff --git a/third_party/blink/public/mojom/blob/blob_registry.mojom b/third_party/blink/public/mojom/blob/blob_registry.mojom
+index 5a97e1b6ec595766273c636afdc5543cf92d898c..88bb66e66726d684c428ae52eefaaf891c9b09f6 100644
+--- a/third_party/blink/public/mojom/blob/blob_registry.mojom
++++ b/third_party/blink/public/mojom/blob/blob_registry.mojom
+@@ -26,11 +26,11 @@ interface ProgressClient {
+ interface BlobRegistry {
+   // Registers a new blob with the blob registry.
+   // TODO(crbug.com/974616): Make this method non-sync and get rid of the UUID
+-  // parameter once enough of the rest of the system doesn't rely on the UUID
++  // return value once enough of the rest of the system doesn't rely on the UUID
+   // anymore.
+-  [Sync] Register(pending_receiver<blink.mojom.Blob> blob, string uuid,
++  [Sync] Register(pending_receiver<blink.mojom.Blob> blob,
+                   string content_type, string content_disposition,
+-                  array<DataElement> elements) => ();
++                  array<DataElement> elements) => (string uuid);
+ 
+   // Creates a new blob out of a data pipe.
+   // |length_hint| is only used as a hint, to decide if the blob should be
+diff --git a/third_party/blink/public/mojom/blob/file_backed_blob_factory.mojom b/third_party/blink/public/mojom/blob/file_backed_blob_factory.mojom
+index fdf0e95a38ea123dbd8fb5893c83ba4fab6c5466..e6a35ea844b7957f6263d2c59abf64877b39d719 100644
+--- a/third_party/blink/public/mojom/blob/file_backed_blob_factory.mojom
++++ b/third_party/blink/public/mojom/blob/file_backed_blob_factory.mojom
+@@ -12,6 +12,7 @@ import "third_party/blink/public/mojom/blob/data_element.mojom";
+ // This interface is channel-associated (for frames).
+ interface FileBackedBlobFactory {
+     // Registers a file backed blob.
++    // TODO(crbug.com/40529364): get rid of UUID parameter.
+     RegisterBlob(pending_receiver<blink.mojom.Blob> blob, string uuid,
+         string content_type,
+         blink.mojom.DataElementFile file);
+diff --git a/third_party/blink/renderer/DEPS b/third_party/blink/renderer/DEPS
+index 13af4ddcaeaa41af0f6c38cc4af40a68f2ae9aea..8c7bd1b7f20a515e4b4b978761a6931693b833e9 100644
+--- a/third_party/blink/renderer/DEPS
++++ b/third_party/blink/renderer/DEPS
+@@ -74,6 +74,7 @@ include_rules = [
+     "+base/test/scoped_feature_list.h",
+     "+base/test/test_simple_task_runner.h",
+     "+base/thread_annotations.h",
++    "+base/threading/sequence_bound.h",
+     "+base/threading/thread_checker.h",
+     "+base/time/default_tick_clock.h",
+     "+base/time/tick_clock.h",
+diff --git a/third_party/blink/renderer/bindings/core/v8/serialization/serialized_script_value_test.cc b/third_party/blink/renderer/bindings/core/v8/serialization/serialized_script_value_test.cc
+index 00f336ea3510ed3e3a8e2cb46dce50a00c839a59..b941d003c9fbc5c88cfdc819fb66ebbc641de10a 100644
+--- a/third_party/blink/renderer/bindings/core/v8/serialization/serialized_script_value_test.cc
++++ b/third_party/blink/renderer/bindings/core/v8/serialization/serialized_script_value_test.cc
+@@ -15,6 +15,7 @@
+ #include "third_party/blink/renderer/core/html/canvas/image_data.h"
+ #include "third_party/blink/renderer/core/testing/file_backed_blob_factory_test_helper.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
++#include "third_party/blink/renderer/platform/blob/testing/fake_blob_registry.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ #include "third_party/blink/renderer/platform/testing/task_environment.h"
+ #include "third_party/blink/renderer/platform/testing/unit_test_helpers.h"
+@@ -159,6 +160,7 @@ TEST(SerializedScriptValueTest, UserSelectedFile) {
+ 
+ TEST(SerializedScriptValueTest, FileConstructorFile) {
+   test::TaskEnvironment task_environment;
++  ScopedFakeBlobRegistry blob_registry;
+   V8TestingScope scope;
+   scoped_refptr<BlobDataHandle> blob_data_handle = BlobDataHandle::Create();
+   auto* original_file = MakeGarbageCollected<File>(
+diff --git a/third_party/blink/renderer/bindings/core/v8/serialization/v8_script_value_serializer_test.cc b/third_party/blink/renderer/bindings/core/v8/serialization/v8_script_value_serializer_test.cc
+index 1cf26ef4f2b49bce46b05ce2dadeb98ce26746e0..95acd815cc7fd0ec1dfd552f5ec90c4a5ce68a1f 100644
+--- a/third_party/blink/renderer/bindings/core/v8/serialization/v8_script_value_serializer_test.cc
++++ b/third_party/blink/renderer/bindings/core/v8/serialization/v8_script_value_serializer_test.cc
+@@ -68,6 +68,7 @@
+ #include "third_party/blink/renderer/core/testing/file_backed_blob_factory_test_helper.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
+ #include "third_party/blink/renderer/platform/blob/blob_data.h"
++#include "third_party/blink/renderer/platform/blob/testing/fake_blob_registry.h"
+ #include "third_party/blink/renderer/platform/file_metadata.h"
+ #include "third_party/blink/renderer/platform/graphics/unaccelerated_static_bitmap_image.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+@@ -1631,6 +1632,7 @@ TEST(V8ScriptValueSerializerTest, TransferOffscreenCanvas) {
+ 
+ TEST(V8ScriptValueSerializerTest, RoundTripBlob) {
+   test::TaskEnvironment task_environment;
++  ScopedFakeBlobRegistry blob_registry;
+   V8TestingScope scope;
+   const char kHelloWorld[] = "Hello world!";
+   Blob* blob = Blob::Create(
+@@ -1666,6 +1668,7 @@ TEST(V8ScriptValueSerializerTest, DecodeBlobWithoutHandles) {
+ 
+ TEST(V8ScriptValueSerializerTest, RoundTripBlobIndex) {
+   test::TaskEnvironment task_environment;
++  ScopedFakeBlobRegistry blob_registry;
+   V8TestingScope scope;
+   const char kHelloWorld[] = "Hello world!";
+   Blob* blob = Blob::Create(
+@@ -1758,6 +1761,7 @@ TEST(V8ScriptValueSerializerTest, RoundTripFileNative) {
+ 
+ TEST(V8ScriptValueSerializerTest, RoundTripFileBackedByBlob) {
+   test::TaskEnvironment task_environment;
++  ScopedFakeBlobRegistry blob_registry;
+   V8TestingScope scope;
+   const base::Time kModificationTime = base::Time::UnixEpoch();
+   scoped_refptr<BlobDataHandle> blob_data_handle = BlobDataHandle::Create();
+@@ -1796,6 +1800,7 @@ TEST(V8ScriptValueSerializerTest, RoundTripFileNativeSnapshot) {
+ 
+ TEST(V8ScriptValueSerializerTest, RoundTripFileNonNativeSnapshot) {
+   test::TaskEnvironment task_environment;
++  ScopedFakeBlobRegistry blob_registry;
+   // Preserving behavior, filesystem URL is not preserved across cloning.
+   KURL url("filesystem:http://example.com/isolated/hash/non-native-file");
+   V8TestingScope scope;
+diff --git a/third_party/blink/renderer/core/fetch/fetch_data_loader_test.cc b/third_party/blink/renderer/core/fetch/fetch_data_loader_test.cc
+index 64f87698f6929bff306dd33af27945d20f818c60..5f4578f6367d927cad56fca6d841971e19e15e75 100644
+--- a/third_party/blink/renderer/core/fetch/fetch_data_loader_test.cc
++++ b/third_party/blink/renderer/core/fetch/fetch_data_loader_test.cc
+@@ -114,24 +114,13 @@ class FetchDataLoaderTest : public testing::Test {
+ class FetchDataLoaderBlobTest : public FetchDataLoaderTest {
+  public:
+   FetchDataLoaderBlobTest()
+-      : fake_task_runner_(base::MakeRefCounted<scheduler::FakeTaskRunner>()),
+-        blob_registry_receiver_(
+-            &fake_blob_registry_,
+-            blob_registry_remote_.BindNewPipeAndPassReceiver()) {
+-    BlobDataHandle::SetBlobRegistryForTesting(blob_registry_remote_.get());
+-  }
+-
+-  ~FetchDataLoaderBlobTest() override {
+-    BlobDataHandle::SetBlobRegistryForTesting(nullptr);
+-  }
++      : fake_task_runner_(base::MakeRefCounted<scheduler::FakeTaskRunner>()) {}
+ 
+  protected:
+   scoped_refptr<scheduler::FakeTaskRunner> fake_task_runner_;
+ 
+  private:
+-  FakeBlobRegistry fake_blob_registry_;
+-  mojo::Remote<mojom::blink::BlobRegistry> blob_registry_remote_;
+-  mojo::Receiver<mojom::blink::BlobRegistry> blob_registry_receiver_;
++  ScopedFakeBlobRegistry blob_registry_;
+ };
+ 
+ ACTION_P(QUITLOOP, loop) {
+diff --git a/third_party/blink/renderer/core/fetch/form_data_bytes_consumer_test.cc b/third_party/blink/renderer/core/fetch/form_data_bytes_consumer_test.cc
+index 8431aeb3534abab25981b5e9b8f3ca0883090204..c1bcfe8a4531796a4fa4bbee1fd306164b1eaaf8 100644
+--- a/third_party/blink/renderer/core/fetch/form_data_bytes_consumer_test.cc
++++ b/third_party/blink/renderer/core/fetch/form_data_bytes_consumer_test.cc
+@@ -218,19 +218,12 @@ class FormDataBytesConsumerTest : public PageTestBase {
+         .SetBinderForTesting(mojom::FileUtilitiesHost::Name_,
+                              base::BindRepeating(&FileUtilitiesHostImpl::Bind));
+ 
+-    auto fake_blob_registry = std::make_unique<FakeBlobRegistry>(
++    blob_registry_ = std::make_unique<ScopedFakeBlobRegistry>(
+         /*support_binary_blob_bodies=*/true);
+-    mojo::MakeSelfOwnedReceiver(
+-        std::move(fake_blob_registry),
+-        blob_registry_remote_.BindNewPipeAndPassReceiver(),
+-        Platform::Current()->GetIOTaskRunner());
+-    BlobDataHandle::SetBlobRegistryForTesting(blob_registry_remote_.get());
+ 
+     CHECK(scoped_temp_dir_.CreateUniqueTempDir());
+   }
+-  void TearDown() override {
+-    BlobDataHandle::SetBlobRegistryForTesting(nullptr);
+-  }
++  void TearDown() override { blob_registry_.reset(); }
+ 
+   void AppendFile(scoped_refptr<EncodedFormData> data, String content) {
+     base::FilePath file_path;
+@@ -269,7 +262,7 @@ class FormDataBytesConsumerTest : public PageTestBase {
+ 
+  private:
+   std::unique_ptr<FileBackedBlobFactoryTestHelper> file_factory_helper_;
+-  mojo::Remote<mojom::blink::BlobRegistry> blob_registry_remote_;
++  std::unique_ptr<ScopedFakeBlobRegistry> blob_registry_;
+   base::ScopedTempDir scoped_temp_dir_;
+ };
+ 
+diff --git a/third_party/blink/renderer/core/fileapi/file_test.cc b/third_party/blink/renderer/core/fileapi/file_test.cc
+index cef630ac944717a6761510cbe488f51a90b51693..80608db896450260ab38d9c289689b052b65a326 100644
+--- a/third_party/blink/renderer/core/fileapi/file_test.cc
++++ b/third_party/blink/renderer/core/fileapi/file_test.cc
+@@ -20,7 +20,9 @@
+ #include "third_party/blink/renderer/core/dom/document.h"
+ #include "third_party/blink/renderer/core/frame/local_frame.h"
+ #include "third_party/blink/renderer/core/testing/null_execution_context.h"
++#include "third_party/blink/renderer/platform/blob/blob_data.h"
+ #include "third_party/blink/renderer/platform/blob/testing/fake_blob.h"
++#include "third_party/blink/renderer/platform/blob/testing/fake_blob_registry.h"
+ #include "third_party/blink/renderer/platform/file_metadata.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cross_thread_task.h"
+@@ -354,8 +356,9 @@ TEST(FileTest, fileSystemFileWithoutNativeSnapshot) {
+   EXPECT_EQ(url, file->FileSystemURL());
+ }
+ 
+-TEST(FileTest, hsaSameSource) {
++TEST(FileTest, HasSameSource) {
+   test::TaskEnvironment task_environment;
++  ScopedFakeBlobRegistry blob_registry;
+   ScopedNullExecutionContext context;
+   auto* const native_file_a1 = MakeGarbageCollected<File>(
+       &context.GetExecutionContext(), "/native/pathA");
+@@ -404,6 +407,7 @@ TEST(FileTest, hsaSameSource) {
+ 
+ TEST(FileTest, createForFileSystem) {
+   test::TaskEnvironment task_environment;
++  ScopedFakeBlobRegistry blob_registry;
+   V8TestingScope scope(KURL("http://example.com"));
+   Document& document = scope.GetDocument();
+   base::RunLoop run_loop;
+diff --git a/third_party/blink/renderer/modules/cache_storage/cache_test.cc b/third_party/blink/renderer/modules/cache_storage/cache_test.cc
+index 20a9ccc19923e15424450534bddbcca76e84191f..b10d11320321802938dff9ee78c9eedd78c2a415 100644
+--- a/third_party/blink/renderer/modules/cache_storage/cache_test.cc
++++ b/third_party/blink/renderer/modules/cache_storage/cache_test.cc
+@@ -47,6 +47,7 @@
+ #include "third_party/blink/renderer/core/testing/page_test_base.h"
+ #include "third_party/blink/renderer/modules/cache_storage/cache_storage_blob_client_list.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
++#include "third_party/blink/renderer/platform/blob/testing/fake_blob_registry.h"
+ #include "third_party/blink/renderer/platform/testing/unit_test_helpers.h"
+ 
+ using blink::mojom::CacheStorageError;
+@@ -375,6 +376,7 @@ class CacheStorageTest : public PageTestBase {
+   std::unique_ptr<ErrorCacheForTests> cache_;
+   std::unique_ptr<mojo::AssociatedReceiver<mojom::blink::CacheStorageCache>>
+       receiver_;
++  ScopedFakeBlobRegistry blob_registry_;
+ };
+ 
+ V8RequestInfo* RequestToRequestInfo(Request* value) {
+diff --git a/third_party/blink/renderer/modules/indexeddb/idb_request_test.cc b/third_party/blink/renderer/modules/indexeddb/idb_request_test.cc
+index ef47e68a4687eacad2776ce7c6a5ee5f4ad75e51..9e82c4cb5c44bc5fd9972366554bdcbcd5228d86 100644
+--- a/third_party/blink/renderer/modules/indexeddb/idb_request_test.cc
++++ b/third_party/blink/renderer/modules/indexeddb/idb_request_test.cc
+@@ -319,8 +319,6 @@ class BackendDatabaseWithMockedClose
+ class IDBRequestTest : public testing::Test {
+  protected:
+   void SetUp() override {
+-    BlobDataHandle::SetBlobRegistryForTesting(blob_registry_remote_.get());
+-
+     url_loader_mock_factory_ = URLLoaderMockFactory::GetSingletonInstance();
+     WebURLResponse response;
+     response.SetCurrentRequestUrl(KURL("blob:"));
+@@ -330,7 +328,6 @@ class IDBRequestTest : public testing::Test {
+ 
+   void TearDown() override {
+     url_loader_mock_factory_->UnregisterAllURLsAndClearMemoryCache();
+-    BlobDataHandle::SetBlobRegistryForTesting(nullptr);
+   }
+ 
+   void BuildTransaction(V8TestingScope& scope,
+@@ -454,10 +451,8 @@ class IDBRequestTest : public testing::Test {
+ 
+   // Setup the blob registry to test get all requests that include results with
+   // IDB values wrapped in a blob.
+-  FakeBlobRegistry fake_blob_registry_{/*support_binary_blob_bodies=*/true};
+-  mojo::Remote<mojom::blink::BlobRegistry> blob_registry_remote_;
+-  mojo::Receiver<mojom::blink::BlobRegistry> blob_registry_receiver_{
+-      &fake_blob_registry_, blob_registry_remote_.BindNewPipeAndPassReceiver()};
++  ScopedFakeBlobRegistry fake_blob_registry_{
++      /*support_binary_blob_bodies=*/true};
+ 
+   static constexpr int64_t kTransactionId = 1234;
+   static constexpr int64_t kStoreId = 5678;
+diff --git a/third_party/blink/renderer/modules/webshare/navigator_share_test.cc b/third_party/blink/renderer/modules/webshare/navigator_share_test.cc
+index 5ce395a46f04ab2fa9cf0b70244bb7de837e2bb2..db03fdeacea403dff00a74d4c877b7d1f4a4c2d2 100644
+--- a/third_party/blink/renderer/modules/webshare/navigator_share_test.cc
++++ b/third_party/blink/renderer/modules/webshare/navigator_share_test.cc
+@@ -20,6 +20,7 @@
+ #include "third_party/blink/renderer/core/frame/local_frame.h"
+ #include "third_party/blink/renderer/core/testing/dummy_page_holder.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
++#include "third_party/blink/renderer/platform/blob/testing/fake_blob_registry.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ #include "third_party/blink/renderer/platform/instrumentation/use_counter.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/memory_cache.h"
+@@ -141,6 +142,7 @@ class NavigatorShareTest : public testing::Test {
+   v8::HandleScope handle_scope_;
+   v8::Local<v8::Context> context_;
+   v8::Context::Scope context_scope_;
++  ScopedFakeBlobRegistry blob_registry_;
+ };
+ 
+ TEST_F(NavigatorShareTest, ShareText) {
+diff --git a/third_party/blink/renderer/platform/blob/blob_data.cc b/third_party/blink/renderer/platform/blob/blob_data.cc
+index e5fc31734a01beabbf3cbe1a618239b3c3439a69..7454e8461b72c97315270f50e26fddd8f4a08cc5 100644
+--- a/third_party/blink/renderer/platform/blob/blob_data.cc
++++ b/third_party/blink/renderer/platform/blob/blob_data.cc
+@@ -287,23 +287,20 @@ scoped_refptr<BlobDataHandle> BlobDataHandle::Create(
+ }
+ 
+ BlobDataHandle::BlobDataHandle()
+-    : uuid_(CreateCanonicalUUIDString()),
+-      size_(0),
+-      is_single_unknown_size_file_(false) {
++    : size_(0), is_single_unknown_size_file_(false) {
+   GetThreadSpecificRegistry()->Register(
+-      blob_remote_.InitWithNewPipeAndPassReceiver(), uuid_, "", "", {});
++      blob_remote_.InitWithNewPipeAndPassReceiver(), "", "", {}, &uuid_);
+ }
+ 
+ BlobDataHandle::BlobDataHandle(std::unique_ptr<BlobData> data, uint64_t size)
+-    : uuid_(CreateCanonicalUUIDString()),
+-      type_(data->ContentType()),
++    : type_(data->ContentType()),
+       size_(size),
+       is_single_unknown_size_file_(data->IsSingleUnknownSizeFile()) {
+   auto elements = data->ReleaseElements();
+   TRACE_EVENT0("Blob", "Registry::RegisterBlob");
+   GetThreadSpecificRegistry()->Register(
+-      blob_remote_.InitWithNewPipeAndPassReceiver(), uuid_,
+-      type_.IsNull() ? "" : type_, "", std::move(elements));
++      blob_remote_.InitWithNewPipeAndPassReceiver(),
++      type_.IsNull() ? "" : type_, "", std::move(elements), &uuid_);
+ }
+ 
+ BlobDataHandle::BlobDataHandle(
+@@ -312,12 +309,12 @@ BlobDataHandle::BlobDataHandle(
+     const String& content_type,
+     uint64_t size,
+     bool synchronous_register)
+-    : uuid_(CreateCanonicalUUIDString()),
+-      type_(content_type),
++    : type_(content_type),
+       size_(size),
+       is_single_unknown_size_file_(size ==
+                                    std::numeric_limits<uint64_t>::max()) {
+   if (file_backed_blob_factory) {
++    uuid_ = CreateCanonicalUUIDString();
+     if (synchronous_register) {
+       file_backed_blob_factory->RegisterBlobSync(
+           blob_remote_.InitWithNewPipeAndPassReceiver(), uuid_,
+@@ -335,8 +332,8 @@ BlobDataHandle::BlobDataHandle(
+     elements.push_back(DataElement::NewFile(std::move(file_element)));
+     TRACE_EVENT0("Blob", "Registry::RegisterBlob");
+     GetThreadSpecificRegistry()->Register(
+-        blob_remote_.InitWithNewPipeAndPassReceiver(), uuid_,
+-        type_.IsNull() ? "" : type_, "", std::move(elements));
++        blob_remote_.InitWithNewPipeAndPassReceiver(),
++        type_.IsNull() ? "" : type_, "", std::move(elements), &uuid_);
+   }
+ }
+ 
+diff --git a/third_party/blink/renderer/platform/blob/blob_data.h b/third_party/blink/renderer/platform/blob/blob_data.h
+index 1091acd2418f8f1344bc41b9435fa08bc279dce1..ba5cdfdabde77c7e6a6e64d85fdfe303d8e51696 100644
+--- a/third_party/blink/renderer/platform/blob/blob_data.h
++++ b/third_party/blink/renderer/platform/blob/blob_data.h
+@@ -197,6 +197,7 @@ class PLATFORM_EXPORT BlobDataHandle
+     return base::AdoptRef(new BlobDataHandle(uuid, type, size));
+   }
+ 
++  // For reinflation from IPC.
+   static scoped_refptr<BlobDataHandle> Create(
+       const String& uuid,
+       const String& type,
+@@ -246,7 +247,7 @@ class PLATFORM_EXPORT BlobDataHandle
+ 
+   // This UUID is deprecated and should not be used to reference the blob in the
+   // backend (BlobRegistry). TODO(crbug.com/40529364): remove.
+-  const String uuid_;
++  String uuid_;
+   const String type_;
+   const uint64_t size_;
+   const bool is_single_unknown_size_file_;
+diff --git a/third_party/blink/renderer/platform/blob/testing/fake_blob_registry.cc b/third_party/blink/renderer/platform/blob/testing/fake_blob_registry.cc
+index 1f6e712a25563b695cb0446afb4f93e1470adf7f..2d31ebfd55837449c3a2383edd13343647167a7a 100644
+--- a/third_party/blink/renderer/platform/blob/testing/fake_blob_registry.cc
++++ b/third_party/blink/renderer/platform/blob/testing/fake_blob_registry.cc
+@@ -6,12 +6,15 @@
+ 
+ #include "base/notimplemented.h"
+ #include "base/run_loop.h"
+-#include "base/task/single_thread_task_runner.h"
++#include "base/task/sequenced_task_runner.h"
++#include "base/task/thread_pool.h"
+ #include "mojo/public/cpp/bindings/remote.h"
+ #include "mojo/public/cpp/bindings/self_owned_receiver.h"
+ #include "third_party/blink/public/mojom/blob/data_element.mojom-blink.h"
++#include "third_party/blink/renderer/platform/blob/blob_data.h"
+ #include "third_party/blink/renderer/platform/blob/testing/fake_blob.h"
+ #include "third_party/blink/renderer/platform/wtf/functional.h"
++#include "third_party/blink/renderer/platform/wtf/uuid.h"
+ 
+ namespace {
+ namespace mojob = ::blink::mojom::blink;
+@@ -132,16 +135,31 @@ class FakeBlobRegistry::DataPipeDrainerClient
+   uint64_t length_ = 0;
+ };
+ 
+-FakeBlobRegistry::FakeBlobRegistry(bool support_binary_blob_bodies)
+-    : support_binary_blob_bodies_(support_binary_blob_bodies) {}
++FakeBlobRegistry::FakeBlobRegistry(
++    bool support_binary_blob_bodies,
++    mojo::PendingReceiver<mojom::blink::BlobRegistry> receiver)
++    : support_binary_blob_bodies_(support_binary_blob_bodies),
++      receiver_(this, std::move(receiver)) {}
+ FakeBlobRegistry::~FakeBlobRegistry() = default;
+ 
++ScopedFakeBlobRegistry::ScopedFakeBlobRegistry(bool support_binary_blob_bodies)
++    : registry_(base::ThreadPool::CreateSequencedTaskRunner({}),
++                support_binary_blob_bodies,
++                remote_.BindNewPipeAndPassReceiver()) {
++  registry_.FlushPostedTasksForTesting();
++  BlobDataHandle::SetBlobRegistryForTesting(remote_.get());
++}
++
++ScopedFakeBlobRegistry::~ScopedFakeBlobRegistry() {
++  BlobDataHandle::SetBlobRegistryForTesting(nullptr);
++}
++
+ void FakeBlobRegistry::Register(mojo::PendingReceiver<mojom::blink::Blob> blob,
+-                                const String& uuid,
+                                 const String& content_type,
+                                 const String& content_disposition,
+                                 Vector<mojom::blink::DataElementPtr> elements,
+                                 RegisterCallback callback) {
++  const String uuid = CreateCanonicalUuidString();
+   Vector<mojom::blink::DataElementPtr> body_elements;
+   if (support_binary_blob_bodies_) {
+     body_elements = std::move(elements);
+@@ -153,11 +171,11 @@ void FakeBlobRegistry::Register(mojo::PendingReceiver<mojom::blink::Blob> blob,
+   // DataElementReader will delete itself when it creates FakeBlob.
+   DataElementReader* element_reader =
+       new DataElementReader(std::move(blob), uuid, std::move(body_elements));
+-  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
++  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+       FROM_HERE,
+       BindOnce(&DataElementReader::CreateFakeBlob, Unretained(element_reader)));
+ 
+-  std::move(callback).Run();
++  std::move(callback).Run(uuid);
+ }
+ 
+ void FakeBlobRegistry::RegisterFromStream(
+diff --git a/third_party/blink/renderer/platform/blob/testing/fake_blob_registry.h b/third_party/blink/renderer/platform/blob/testing/fake_blob_registry.h
+index 8d5e3b3074fc9465772caa8ae6c3b3e91d3fb8c7..75668ea0242fb35fa9e1b2abe7851d5a734f47ce 100644
+--- a/third_party/blink/renderer/platform/blob/testing/fake_blob_registry.h
++++ b/third_party/blink/renderer/platform/blob/testing/fake_blob_registry.h
+@@ -5,6 +5,9 @@
+ #ifndef THIRD_PARTY_BLINK_RENDERER_PLATFORM_BLOB_TESTING_FAKE_BLOB_REGISTRY_H_
+ #define THIRD_PARTY_BLINK_RENDERER_PLATFORM_BLOB_TESTING_FAKE_BLOB_REGISTRY_H_
+ 
++#include "base/threading/sequence_bound.h"
++#include "mojo/public/cpp/bindings/receiver.h"
++#include "mojo/public/cpp/bindings/remote.h"
+ #include "mojo/public/cpp/system/data_pipe_drainer.h"
+ #include "third_party/blink/public/mojom/blob/blob_registry.mojom-blink.h"
+ 
+@@ -15,7 +18,9 @@ namespace blink {
+ // FakeBlob instance with the correct uuid.
+ class FakeBlobRegistry : public mojom::blink::BlobRegistry {
+  public:
+-  explicit FakeBlobRegistry(bool support_binary_blob_bodies = false);
++  explicit FakeBlobRegistry(
++      bool support_binary_blob_bodies = false,
++      mojo::PendingReceiver<mojom::blink::BlobRegistry> receiver = {});
+   ~FakeBlobRegistry() override;
+ 
+   struct Registration {
+@@ -28,7 +33,6 @@ class FakeBlobRegistry : public mojom::blink::BlobRegistry {
+ 
+  private:
+   void Register(mojo::PendingReceiver<mojom::blink::Blob>,
+-                const String& uuid,
+                 const String& content_type,
+                 const String& content_disposition,
+                 Vector<mojom::blink::DataElementPtr> elements,
+@@ -50,6 +54,22 @@ class FakeBlobRegistry : public mojom::blink::BlobRegistry {
+   // `Register()` to create fake blobs with binary bodies.  Not implemented for
+   // `RegisterFromStream()` or any other type of body content.
+   bool support_binary_blob_bodies_ = false;
++  mojo::Receiver<mojom::blink::BlobRegistry> receiver_{this};
++};
++
++class ScopedFakeBlobRegistry {
++ public:
++  explicit ScopedFakeBlobRegistry(bool support_binary_blob_bodies = false);
++  ~ScopedFakeBlobRegistry();
++
++  ScopedFakeBlobRegistry(const ScopedFakeBlobRegistry&) = delete;
++  ScopedFakeBlobRegistry& operator=(const ScopedFakeBlobRegistry&) = delete;
++
++ private:
++  mojo::Remote<mojom::blink::BlobRegistry> remote_;
++  // The blob registry is normally in another process, so operating it on a
++  // different sequenced/thread is a closer simulation of production.
++  base::SequenceBound<FakeBlobRegistry> registry_;
+ };
+ 
+ }  // namespace blink

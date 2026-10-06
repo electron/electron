@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Mon, 28 Sep 2026 17:24:58 -0700
+Subject: Reinsert PatternData into pattern map after reconstruction
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+LayoutSVGResourcePattern::pattern_map_ can be cleared while executing
+BuildPatternData, so be sure it reinsert the newly-created pattern
+data rather than using the (possibly stale) previous hash table
+AddResult.
+
+Fixed: 565742179
+Change-Id: Iad113e3101920adf4b56da4805b4a46ebf681730
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8464440
+Reviewed-by: Fredrik Söderquist <fs@opera.com>
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1706535}
+
+Electron adaptation notes (42-x-y):
+  - M148 has no PatternData::paint_flags member and BuildPatternData() takes
+    only the reference box, so the paint_flags comparison/reset and the
+    paint_flags argument from the upstream hunk are omitted. The map
+    lookup/reinsert logic (find, build, Set) is otherwise verbatim.
+
+diff --git a/third_party/blink/renderer/core/layout/svg/layout_svg_resource_pattern.cc b/third_party/blink/renderer/core/layout/svg/layout_svg_resource_pattern.cc
+index 90c2de36d0841d00a50d105e6bdf55489cf511da..d44549831e9f10f96c34c39592a9a88e03075119 100644
+--- a/third_party/blink/renderer/core/layout/svg/layout_svg_resource_pattern.cc
++++ b/third_party/blink/renderer/core/layout/svg/layout_svg_resource_pattern.cc
+@@ -188,10 +188,15 @@ bool LayoutSVGResourcePattern::ApplyShader(
+   NOT_DESTROYED();
+   ClearInvalidationMask();
+ 
+-  std::unique_ptr<PatternData>& pattern_data =
+-      pattern_map_.insert(&client, nullptr).stored_value->value;
+-  if (!pattern_data)
+-    pattern_data = BuildPatternData(reference_box);
++  auto iter = pattern_map_.find(&client);
++  PatternData* pattern_data =
++      (iter == pattern_map_.end() ? nullptr : iter->value.get());
++  if (!pattern_data) {
++    auto new_pattern_data = BuildPatternData(reference_box);
++    pattern_data = new_pattern_data.get();
++    CHECK(pattern_data);
++    pattern_map_.Set(&client, std::move(new_pattern_data));
++  }
+ 
+   if (!pattern_data->pattern)
+     return false;

@@ -1,0 +1,101 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Mon, 5 Oct 2026 17:05:36 -0700
+Subject: [M150] Fix bugs in
+ ResourceMultiBufferDataProvider::DidReceiveResponse
+
+Original change's description:
+> Fix bugs in ResourceMultiBufferDataProvider::DidReceiveResponse
+>
+> In ResourceMultiBufferDataProvider::DidReceiveResponse(), check a
+> WeakPtr across old_url_data->RedirectTo(destination_url_data).
+>
+> RedirectTo() synchronously notifies MultiBufferDataSource, which can
+> reset reader_ and delete the active ResourceMultiBufferDataProvider when
+> the redirect destination already has sufficient cached data and
+> cancel_on_defer_ is set.
+>
+> Fixed: 566824998
+> Change-Id: I193b4ffd5427aa0673773a5ec0747adad7fc3953
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8488169
+> Commit-Queue: Thomas Guilbert <tguilbert@chromium.org>
+> Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+> Reviewed-by: Thomas Guilbert <tguilbert@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1708261}
+
+(cherry picked from commit 61ef27611dc69f16b6fe899c8b90a80330ac88df)
+
+Bug: 568560529,566824998
+Change-Id: I193b4ffd5427aa0673773a5ec0747adad7fc3953
+
+diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc
+index 7895f4ea49c2d0ffd25d48fb5b9d81a349b83bec..4919966146aff5be2ce3338320fa0f67992a5cb3 100644
+--- a/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc
++++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc
+@@ -2194,4 +2194,50 @@ TEST_F(MultiBufferDataSourceTest, FactoryCreationDefault) {
+                                                   UrlData::kNormal));
+ }
+ 
++TEST_F(MultiBufferDataSourceTest, Http_RedirectToCachedUrlWithStopPreloading) {
++  // Populate the cache for `kHttpDifferentPathUrl` with 2 blocks (64KB), which
++  // exceeds the METADATA preload_high threshold (48KB).
++  Initialize(kHttpDifferentPathUrl, true);
++  EXPECT_CALL(host_, SetTotalBytes(response_generator_->content_length()));
++  Respond(response_generator_->Generate206(0));
++  EXPECT_CALL(host_, AddBufferedByteRange(0, kDataSize));
++  ReceiveData(kDataSize);
++  EXPECT_CALL(host_, AddBufferedByteRange(0, kDataSize * 2));
++  ReceiveData(kDataSize);
++  Stop();
++
++  // Initialize a new data source for `kHttpUrl` with METADATA preload and
++  // receive less than one full block (1024 bytes) so `init_cb_` stays pending
++  // while `loading_` becomes true. Calling `StopPreloading()` then sets
++  // `cancel_on_defer_` without resetting `reader_`. When the partial-data retry
++  // redirects to the already-cached `kHttpDifferentPathUrl`, `RedirectTo()`
++  // synchronously resets `reader_` and deletes
++  // `ResourceMultiBufferDataProvider` while `DidReceiveResponse` is still on
++  // the stack.
++  set_preload(MultiBufferDataSource::METADATA);
++  Initialize(kHttpUrl, false);
++  Respond(response_generator_->Generate206(0));
++  EXPECT_CALL(host_, AddBufferedByteRange(0, 1024));
++  ReceiveData(1024);
++  data_source_->StopPreloading();
++  ASSERT_TRUE(active_loader());
++
++  base::RunLoop run_loop;
++  data_provider()->DidFinishLoading();
++  data_provider()->RunOnStart(run_loop.QuitClosure());
++  run_loop.Run();
++
++  WebURL redir_url{KURL(kHttpDifferentPathUrl)};
++  WebURLResponse redirect_response{KURL(kHttpUrl)};
++  redirect_response.SetHttpStatusCode(307);
++  data_provider()->WillFollowRedirect(redir_url, redirect_response);
++
++  EXPECT_CALL(host_, AddBufferedByteRange(0, kDataSize * 2))
++      .Times(testing::AtLeast(1));
++  Respond(response_generator_->Generate206(0));
++
++  EXPECT_FALSE(loading());
++  Stop();
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+index 95cc5bde18ed79f2a4e6fc1d0d1138b0c41bd5d5..82641e28c4439548e916527348e63d87de6e6132 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+@@ -374,7 +374,11 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+     // Call callback to let upstream users know about the transfer.
+     // This will merge the data from the two multibuffers and
+     // cause clients to start using the new UrlData.
++    auto weak_this = weak_factory_.GetWeakPtr();
+     old_url_data->RedirectTo(destination_url_data);
++    if (!weak_this) {
++      return;  // "this" may be deleted now.
++    }
+   }
+ 
+   if (do_fail) {

@@ -1,0 +1,131 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stephen Chenney <schenney@chromium.org>
+Date: Fri, 25 Sep 2026 20:00:30 -0700
+Subject: [HiC] Disallow external SVG content referenced by href
+
+Several SVG elements support href attributes to obtain the
+implementation of the element from a template. When the
+referencing element is inside the canvas subtree, and the
+referenced element is outside we must disallow the outer
+element because it does not have privacy protections in
+place for style-based privacy control, such as visited link
+color.
+
+Fix the problem for <pattern>, <linearGradient> and <radialGradient>
+and add tests. Other elements that support this form of referencing
+have been audited. A test has been added for chained <use> elements,
+which is not a problem due to the implementation of <use> cloning
+the external content into the subtree. The <set> element uses the
+attribute changed pathway so changes to href through that mechanism
+are also protected.
+
+Finally, the number of SVG privacy tests is large enough to justify
+moving them to a sub-directory.
+
+Fixed: 553147154
+Change-Id: I91d780134a32454ef4fb1adf7c03548a3a54dc23
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8455562
+Commit-Queue: Stephen Chenney <schenney@chromium.org>
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1705420}
+
+Electron adaptation notes (42-x-y):
+  - Only the three renderer source files are picked. The upstream WPT
+    additions/renames under third_party/blink/web_tests/ are omitted because
+    the privacy/svg/ directory layout they target does not exist on M148 and
+    Electron does not run them.
+
+diff --git a/third_party/blink/renderer/core/svg/svg_linear_gradient_element.cc b/third_party/blink/renderer/core/svg/svg_linear_gradient_element.cc
+index a831ec92f15b7d6c62442572742bd34b2ffad042..78c0d27a228fe763eb8233b516982fad84bcb88f 100644
+--- a/third_party/blink/renderer/core/svg/svg_linear_gradient_element.cc
++++ b/third_party/blink/renderer/core/svg/svg_linear_gradient_element.cc
+@@ -111,6 +111,7 @@ LinearGradientAttributes SVGLinearGradientElement::CollectGradientAttributes()
+ 
+   VisitedSet visited;
+   const SVGGradientElement* current = this;
++  bool is_in_canvas_subtree = IsInCanvasSubtree();
+ 
+   LinearGradientAttributes attributes;
+   while (true) {
+@@ -120,12 +121,17 @@ LinearGradientAttributes SVGLinearGradientElement::CollectGradientAttributes()
+ 
+     current = current->ReferencedElement();
+ 
+-    // Ignore the referenced gradient element if it is not attached.
+-    if (!current || !current->GetLayoutObject())
++    // Ignore the referenced gradient element if it is not attached or if we
++    // are following a reference chain that started inside the canvas subtree
++    // and an element outside the subtree is found.
++    if (!current || !current->GetLayoutObject() ||
++        (is_in_canvas_subtree && !current->IsInCanvasSubtree())) {
+       break;
++    }
+     // Cycle detection.
+-    if (visited.Contains(current))
++    if (visited.Contains(current)) {
+       break;
++    }
+   }
+ 
+   // Fill out any ("complex") empty fields with values from this element (where
+diff --git a/third_party/blink/renderer/core/svg/svg_pattern_element.cc b/third_party/blink/renderer/core/svg/svg_pattern_element.cc
+index caeac0c3420ce3bbf13a73980b801261f86e8778..f042a3ecb2cecb5199585cd768e4d6184303915b 100644
+--- a/third_party/blink/renderer/core/svg/svg_pattern_element.cc
++++ b/third_party/blink/renderer/core/svg/svg_pattern_element.cc
+@@ -225,6 +225,7 @@ const SVGPatternElement* SVGPatternElement::ReferencedElement() const {
+ PatternAttributes SVGPatternElement::CollectPatternAttributes() const {
+   HeapHashSet<Member<const SVGPatternElement>> processed_patterns;
+   const SVGPatternElement* current = this;
++  bool is_in_canvas_subtree = IsInCanvasSubtree();
+ 
+   PatternAttributes attributes;
+   while (true) {
+@@ -235,12 +236,17 @@ PatternAttributes SVGPatternElement::CollectPatternAttributes() const {
+     // from that element to override values this pattern didn't set.
+     current = current->ReferencedElement();
+ 
+-    // Ignore the referenced pattern element if it is not attached.
+-    if (!current || !current->GetLayoutObject())
++    // Ignore the referenced pattern element if it is not attached or if we
++    // are following a reference chain that started inside the canvas subtree
++    // and an element outside the subtree is found.
++    if (!current || !current->GetLayoutObject() ||
++        (is_in_canvas_subtree && !current->IsInCanvasSubtree())) {
+       break;
++    }
+     // Cycle detection.
+-    if (processed_patterns.Contains(current))
++    if (processed_patterns.Contains(current)) {
+       break;
++    }
+   }
+ 
+   // Fill out any ("complex") empty fields with values from this element (where
+diff --git a/third_party/blink/renderer/core/svg/svg_radial_gradient_element.cc b/third_party/blink/renderer/core/svg/svg_radial_gradient_element.cc
+index 3f03182e04cc5711cf12fbb365f10a50510059ce..d5e57da5bb992f5f1b0c61e5fb837d8e4b0f4b50 100644
+--- a/third_party/blink/renderer/core/svg/svg_radial_gradient_element.cc
++++ b/third_party/blink/renderer/core/svg/svg_radial_gradient_element.cc
+@@ -129,6 +129,7 @@ RadialGradientAttributes SVGRadialGradientElement::CollectGradientAttributes()
+ 
+   VisitedSet visited;
+   const SVGGradientElement* current = this;
++  bool is_in_canvas_subtree = IsInCanvasSubtree();
+ 
+   RadialGradientAttributes attributes;
+   while (true) {
+@@ -137,9 +138,13 @@ RadialGradientAttributes SVGRadialGradientElement::CollectGradientAttributes()
+     visited.insert(current);
+ 
+     current = current->ReferencedElement();
+-    // Ignore the referenced gradient element if it is not attached.
+-    if (!current || !current->GetLayoutObject())
++    // Ignore the referenced gradient element if it is not attached or if we
++    // are following a reference chain that started inside the canvas subtree
++    // and an element outside the subtree is found.
++    if (!current || !current->GetLayoutObject() ||
++        (is_in_canvas_subtree && !current->IsInCanvasSubtree())) {
+       break;
++    }
+     // Cycle detection.
+     if (visited.Contains(current))
+       break;

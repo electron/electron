@@ -122,6 +122,8 @@ constexpr base::TimeDelta kPermissionRevocationTimeout = base::Seconds(5);
   });
 }
 
+// Returns true if the path is a Universal Naming Convention (UNC) path pointing
+// to a local system path, device namespace, or WSL loopback redirector.
 bool MaybeIsLocalUNCPath(const base::FilePath& path) {
   if (!path.IsNetwork()) {
     return false;
@@ -136,6 +138,10 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
   if (components.size() >= 2 &&
       (base::FilePath::CompareEqualIgnoreCase(components[1],
                                               FILE_PATH_LITERAL("localhost")) ||
+       base::FilePath::CompareEqualIgnoreCase(
+           components[1], FILE_PATH_LITERAL("wsl.localhost")) ||
+       base::FilePath::CompareEqualIgnoreCase(
+           components[1], FILE_PATH_LITERAL("wsl.localhost.")) ||
        components[1] == FILE_PATH_LITERAL("127.0.0.1") ||
        components[1] == FILE_PATH_LITERAL(".") ||
        components[1] == FILE_PATH_LITERAL("?") ||
@@ -165,10 +171,12 @@ bool ShouldBlockAccessToPath(
   DCHECK(!path.empty());
   DCHECK(path.IsAbsolute());
 
-  path = ChromeFileSystemAccessPermissionContext::NormalizeFilePath(path);
+  path = ChromeFileSystemAccessPermissionContext::NormalizeFilePathForBlocklist(
+      path, /*should_normalize_file_path=*/true);
   for (auto& rule : extra_rules) {
     rule.path =
-        ChromeFileSystemAccessPermissionContext::NormalizeFilePath(rule.path);
+        ChromeFileSystemAccessPermissionContext::NormalizeFilePathForBlocklist(
+            rule.path, /*should_normalize_file_path=*/true);
   }
 
 #if BUILDFLAG(IS_WIN)

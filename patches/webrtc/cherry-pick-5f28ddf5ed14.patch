@@ -1,0 +1,92 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tommi <tommi@webrtc.org>
+Date: Fri, 25 Sep 2026 11:12:56 +0200
+Subject: [M150] Ensure stopped transceivers do not hold a channel
+
+Original change's description:
+> Ensure stopped transceivers do not hold a channel
+>
+> Make sure that a transceiver that has been stopped does not get a
+> channel during negotiation, and that any channel is cleared before a
+> stopped transceiver is removed from the transceiver list.
+>
+> Bug: chromium:565742177
+> Change-Id: I63251adef97c03644d499ad95baa244033f6678e
+> Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/505661
+> Commit-Queue: Tomas Gunnarsson <tommi@webrtc.org>
+> Reviewed-by: Stefan Holmer <stefan@webrtc.org>
+> Cr-Commit-Position: refs/heads/main@{#48722}
+
+(cherry picked from commit 82df4ce4226de25e1682351d7ba2e9bf9a198790)
+
+Using `No-try` due to infra problems on ios.
+
+No-try: true
+Bug: chromium:565742177
+Fixed: chromium:568535220
+Change-Id: I63251adef97c03644d499ad95baa244033f6678e
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/507620
+Reviewed-by: Stefan Holmer <stefan@webrtc.org>
+Commit-Queue: Tomas Gunnarsson <tommi@webrtc.org>
+Cr-Commit-Position: refs/branch-heads/7871@{#4}
+Cr-Branched-From: b1dde843dc4388c62a66f8ca903e795463b04075-refs/heads/main@{#47863}
+
+Electron adaptation notes (42-x-y): test-only hunks (pc/BUILD.gn test
+target deps, sdp_offer_answer_unittest.cc) conflicted with unrelated test
+drift and were dropped; the sdp_offer_answer.cc change is unmodified.
+
+diff --git a/pc/sdp_offer_answer.cc b/pc/sdp_offer_answer.cc
+index 7a9348071f59111cbf23cc0619008c8ac298c7d6..91f9d84c32aa1486dd0a05c76680600dd69db294 100644
+--- a/pc/sdp_offer_answer.cc
++++ b/pc/sdp_offer_answer.cc
+@@ -2403,7 +2403,8 @@ void SdpOfferAnswerHandler::ApplyRemoteDescriptionUpdateTransceiverState(
+       // direction.
+       transceiver->set_current_direction(local_direction);
+       // 2.2.8.1.11.[3-6]: Set the transport internal slots.
+-      if (transceiver->mid()) {
++      // A stopped transceiver has no channel and therefore no transport.
++      if (transceiver->mid() && !transceiver->stopped()) {
+         auto it = dtls_transports_by_mid.find(*transceiver->mid());
+         RTC_DCHECK(it != dtls_transports_by_mid.end());
+         transceiver->SetTransport(it->second.transport,
+@@ -4269,7 +4270,8 @@ RTCError SdpOfferAnswerHandler::UpdateTransceiverChannel(
+   TRACE_EVENT0("webrtc", "SdpOfferAnswerHandler::UpdateTransceiverChannel");
+   RTC_DCHECK(IsUnifiedPlan());
+   RTC_DCHECK(transceiver);
+-  if (content.rejected) {
++  // A stopped transceiver must not have a channel.
++  if (content.rejected || transceiver->internal()->stopped()) {
+     if (transceiver->internal()->HasChannel()) {
+       transceiver->internal()->ClearChannel();
+     }
+@@ -5363,6 +5365,10 @@ void SdpOfferAnswerHandler::RemoveStoppedTransceivers() {
+   }
+   // Traverse a copy of the transceiver list.
+   auto transceiver_list = transceivers()->List();
++  // Batched channel teardown for removed transceivers. The tasks run at the
++  // end of this function while `transceiver_list` still holds references.
++  ScopedOperationsBatcher network_teardown_tasks(context_->network_thread());
++  ScopedOperationsBatcher worker_tasks(context_->worker_thread());
+   for (auto transceiver : transceiver_list) {
+     // 3.2.10.1.1: If transceiver is stopped, associated with an m= section
+     //             and the associated m= section is rejected in
+@@ -5388,8 +5394,19 @@ void SdpOfferAnswerHandler::RemoveStoppedTransceivers() {
+       RTC_LOG(LS_INFO)
+           << "Dropping stopped transceiver that was never associated";
+     }
++    // Make sure the channel is cleared before the transceiver is removed.
++    if (transceiver->internal()->HasChannel()) {
++      network_teardown_tasks.Add(
++          transceiver->internal()->GetClearChannelNetworkTask());
++      worker_tasks.Add(transceiver->internal()->GetDeleteChannelWorkerTask(
++          /*stop_senders=*/false));
++    }
+     transceivers()->Remove(transceiver);
+   }
++  RTCError error = network_teardown_tasks.Run();
++  RTC_DCHECK(error.ok());
++  error = worker_tasks.Run();
++  RTC_DCHECK(error.ok());
+ }
+ 
+ void SdpOfferAnswerHandler::RemoveUnusedChannels(

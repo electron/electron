@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Wed, 2 Sep 2026 16:34:57 -0400
+Subject: Vulkan: Fix robust-init when OOB-self-image-copying
+
+The front-end has logic to initialize the destination texture when the
+target of glCopyTexImage2D is out of bounds of the source framebuffer.
+This is not done when the destination is the same as the source however,
+as that would clear the source before the copy.  This robust-init is
+done by the backend in the specific case that's not done by the
+front-end.
+
+Bug: chromium:550302121
+Change-Id: I4ed3de79dde184b9881746c5d8d87a6c1ef18176
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8342030
+Commit-Queue: Amirali Abdolrashidi <abdolrashidi@google.com>
+Auto-Submit: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Amirali Abdolrashidi <abdolrashidi@google.com>
+
+Electron adaptation notes (42-x-y): the upstream TextureVk.cpp hunk refers
+to an owner-index helper (ownIndex / TextureState::toOwnerIndex()) that does
+not exist on this branch; TextureVk::copyImage()'s `index` here is already
+the texture's own image index and is used directly. Test-only hunks in
+angle_end2end_tests_expectations.txt were dropped.
+
+diff --git a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+index 78ee26ac407a4c96e7f7b22089afb7b9f6fa05b7..183f4a9f3a4d765e753d3bcf1fb2e7a8906a7dfb 100644
+--- a/src/libANGLE/renderer/vulkan/TextureVk.cpp
++++ b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+@@ -1432,6 +1432,22 @@ angle::Result TextureVk::copyImage(const gl::Context *context,
+ 
+     if (isSelfCopy)
+     {
++        // The front-end is unable to stage a robust init clear during self-copies because that
++        // would clear the source (which is the same as destination) before the copy.  That has to
++        // be done by the front-end.
++        if ((context->isWebGL() || contextVk->isRobustResourceInitEnabled()) &&
++            sourceArea != clippedSourceArea)
++        {
++            const gl::ImageDesc &desc = mState.getImageDesc(index);
++            const vk::Format &format =
++                contextVk->getRenderer()->getFormat(desc.format.info->sizedInternalFormat);
++
++            ASSERT(mImage);
++            ANGLE_TRY(mImage->stageRobustResourceClearWithFormat(
++                contextVk, index, desc.size, format.getIntendedFormat(),
++                format.getActualImageFormat(getRequiredFormatSupport())));
++        }
++
+         if (!hasCopyArea)
+         {
+             return angle::Result::Continue;
