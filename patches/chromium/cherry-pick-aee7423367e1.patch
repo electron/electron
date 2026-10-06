@@ -1,0 +1,526 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stephen Chenney <schenney@chromium.org>
+Date: Wed, 30 Sep 2026 13:25:49 -0700
+Subject: [M152] [HiC] Disallow external SVG content referenced by href
+
+Original change's description:
+> [HiC] Disallow external SVG content referenced by href
+>
+> Several SVG elements support href attributes to obtain the
+> implementation of the element from a template. When the
+> referencing element is inside the canvas subtree, and the
+> referenced element is outside we must disallow the outer
+> element because it does not have privacy protections in
+> place for style-based privacy control, such as visited link
+> color.
+>
+> Fix the problem for <pattern>, <linearGradient> and <radialGradient>
+> and add tests. Other elements that support this form of referencing
+> have been audited. A test has been added for chained <use> elements,
+> which is not a problem due to the implementation of <use> cloning
+> the external content into the subtree. The <set> element uses the
+> attribute changed pathway so changes to href through that mechanism
+> are also protected.
+>
+> Finally, the number of SVG privacy tests is large enough to justify
+> moving them to a sub-directory.
+>
+> Fixed: 553147154
+> Change-Id: I91d780134a32454ef4fb1adf7c03548a3a54dc23
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8455562
+> Commit-Queue: Stephen Chenney <schenney@chromium.org>
+> Reviewed-by: Stefan Zager <szager@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1705420}
+
+(cherry picked from commit eb2cbc0600c148e761f9dbd9ff191cf20576d6ff)
+
+Bug: 567528172,553147154
+Change-Id: I91d780134a32454ef4fb1adf7c03548a3a54dc23
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8489492
+Reviewed-by: Stephen Chenney <schenney@chromium.org>
+Reviewed-by: Philip Rogers <pdr@chromium.org>
+Commit-Queue: Stephen Chenney <schenney@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7977@{#2757}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/third_party/blink/renderer/core/svg/svg_linear_gradient_element.cc b/third_party/blink/renderer/core/svg/svg_linear_gradient_element.cc
+index a831ec92f15b7d6c62442572742bd34b2ffad042..78c0d27a228fe763eb8233b516982fad84bcb88f 100644
+--- a/third_party/blink/renderer/core/svg/svg_linear_gradient_element.cc
++++ b/third_party/blink/renderer/core/svg/svg_linear_gradient_element.cc
+@@ -111,6 +111,7 @@ LinearGradientAttributes SVGLinearGradientElement::CollectGradientAttributes()
+ 
+   VisitedSet visited;
+   const SVGGradientElement* current = this;
++  bool is_in_canvas_subtree = IsInCanvasSubtree();
+ 
+   LinearGradientAttributes attributes;
+   while (true) {
+@@ -120,12 +121,17 @@ LinearGradientAttributes SVGLinearGradientElement::CollectGradientAttributes()
+ 
+     current = current->ReferencedElement();
+ 
+-    // Ignore the referenced gradient element if it is not attached.
+-    if (!current || !current->GetLayoutObject())
++    // Ignore the referenced gradient element if it is not attached or if we
++    // are following a reference chain that started inside the canvas subtree
++    // and an element outside the subtree is found.
++    if (!current || !current->GetLayoutObject() ||
++        (is_in_canvas_subtree && !current->IsInCanvasSubtree())) {
+       break;
++    }
+     // Cycle detection.
+-    if (visited.Contains(current))
++    if (visited.Contains(current)) {
+       break;
++    }
+   }
+ 
+   // Fill out any ("complex") empty fields with values from this element (where
+diff --git a/third_party/blink/renderer/core/svg/svg_pattern_element.cc b/third_party/blink/renderer/core/svg/svg_pattern_element.cc
+index 14e9650ade2dd9ba203a4aaab9cb6ab40d68181c..605269a4115354ba66b29efe7fe3e087879e8109 100644
+--- a/third_party/blink/renderer/core/svg/svg_pattern_element.cc
++++ b/third_party/blink/renderer/core/svg/svg_pattern_element.cc
+@@ -224,6 +224,7 @@ const SVGPatternElement* SVGPatternElement::ReferencedElement() const {
+ PatternAttributes SVGPatternElement::CollectPatternAttributes() const {
+   HeapHashSet<Member<const SVGPatternElement>> processed_patterns;
+   const SVGPatternElement* current = this;
++  bool is_in_canvas_subtree = IsInCanvasSubtree();
+ 
+   PatternAttributes attributes;
+   while (true) {
+@@ -234,12 +235,17 @@ PatternAttributes SVGPatternElement::CollectPatternAttributes() const {
+     // from that element to override values this pattern didn't set.
+     current = current->ReferencedElement();
+ 
+-    // Ignore the referenced pattern element if it is not attached.
+-    if (!current || !current->GetLayoutObject())
++    // Ignore the referenced pattern element if it is not attached or if we
++    // are following a reference chain that started inside the canvas subtree
++    // and an element outside the subtree is found.
++    if (!current || !current->GetLayoutObject() ||
++        (is_in_canvas_subtree && !current->IsInCanvasSubtree())) {
+       break;
++    }
+     // Cycle detection.
+-    if (processed_patterns.Contains(current))
++    if (processed_patterns.Contains(current)) {
+       break;
++    }
+   }
+ 
+   // Fill out any ("complex") empty fields with values from this element (where
+diff --git a/third_party/blink/renderer/core/svg/svg_radial_gradient_element.cc b/third_party/blink/renderer/core/svg/svg_radial_gradient_element.cc
+index 3f03182e04cc5711cf12fbb365f10a50510059ce..d5e57da5bb992f5f1b0c61e5fb837d8e4b0f4b50 100644
+--- a/third_party/blink/renderer/core/svg/svg_radial_gradient_element.cc
++++ b/third_party/blink/renderer/core/svg/svg_radial_gradient_element.cc
+@@ -129,6 +129,7 @@ RadialGradientAttributes SVGRadialGradientElement::CollectGradientAttributes()
+ 
+   VisitedSet visited;
+   const SVGGradientElement* current = this;
++  bool is_in_canvas_subtree = IsInCanvasSubtree();
+ 
+   RadialGradientAttributes attributes;
+   while (true) {
+@@ -137,9 +138,13 @@ RadialGradientAttributes SVGRadialGradientElement::CollectGradientAttributes()
+     visited.insert(current);
+ 
+     current = current->ReferencedElement();
+-    // Ignore the referenced gradient element if it is not attached.
+-    if (!current || !current->GetLayoutObject())
++    // Ignore the referenced gradient element if it is not attached or if we
++    // are following a reference chain that started inside the canvas subtree
++    // and an element outside the subtree is found.
++    if (!current || !current->GetLayoutObject() ||
++        (is_in_canvas_subtree && !current->IsInCanvasSubtree())) {
+       break;
++    }
+     // Cycle detection.
+     if (visited.Contains(current))
+       break;
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg/svg-linear-gradient-href-outside-subtree-ignored.tentative.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg/svg-linear-gradient-href-outside-subtree-ignored.tentative.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..9d0f150c186422e91f2bc4c51e3523d6678c9eca
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg/svg-linear-gradient-href-outside-subtree-ignored.tentative.html
+@@ -0,0 +1,63 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>drawElementImage does not use SVG resources from outside the subtree</title>
++  <script src='/resources/testharness.js'></script>
++  <script src='/resources/testharnessreport.js'></script>
++  <script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
++  <style>
++    a {
++      color: blue;
++    }
++    a:visited {
++      color: red;
++    }
++    canvas {
++      background-color: green;
++    }
++  </style>
++</head>
++<body>
++  <a href="">
++    <svg width="0" height="0">
++      <defs>
++        <linearGradient id="grad-outside">
++          <stop offset="0" stop-color="currentColor"/>
++          <stop offset="1" stop-color="currentColor"/>
++        </linearGradient>
++      </defs>
++    </svg>
++  </a>
++
++  <canvas id="canvas" width="100" height="100" layoutsubtree>
++    <div id="child">
++      <svg width="100" height="100">
++        <linearGradient id="grad-inside" href="#grad-outside"></linearGradient>
++        <rect x="0" y="0" width="100" height="100" fill="url(#grad-inside)"/>
++      </svg>
++    </div>
++  </canvas>
++
++  <script>
++    window.onload = () => {
++      promise_test(async function(t) {
++        await waitForCanvasPaint(canvas);
++
++        var context = canvas.getContext("2d");
++
++        context.fillStyle = 'green';
++        context.fillRect(0, 0, 100, 100);
++
++        // Draw the element image
++        context.drawElementImage(child, 0, 0);
++
++        // The canvas should ignore the gradient and use transparent black.
++        let pixel = context.getImageData(50, 50, 1, 1).data;
++        assert_false(pixel[0] > 0, "The canvas should not use the gradient.");
++        assert_true(pixel[1] > 0, "The canvas should not use the gradient.");
++        assert_false(pixel[2] > 0, "The canvas should not use the gradient.");
++      });
++    };
++  </script>
++</body>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg/svg-pattern-href-outside-subtree-ignored.tentative.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg/svg-pattern-href-outside-subtree-ignored.tentative.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..ba2b251ca0042aaabcb6e8df9ab1876564621853
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg/svg-pattern-href-outside-subtree-ignored.tentative.html
+@@ -0,0 +1,56 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>drawElementImage does not use SVG patterns outside the subtree</title>
++  <link rel="help" href="https://github.com/WICG/html-in-canvas">
++  <script src='/resources/testharness.js'></script>
++  <script src='/resources/testharnessreport.js'></script>
++  <script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
++</head>
++<body>
++  <svg width="0" height="0">
++    <defs>
++      <pattern id="pattern-outer" patternUnits="userSpaceOnUse" viewBox="0 0 100 100" width="100" height="100">
++        <image href="/images/red-100x100.png" x="0" y="0" width="100" height="100" preserveAspectRatio="none"/>
++      </pattern>
++    </defs>
++  </svg>
++
++  <canvas id="canvas" width="100" height="100" layoutsubtree>
++    <svg id=child width="100" height="100">
++      <pattern id="pattern-inner" href="#pattern-outer"></pattern>
++      <rect x="0" y="0" width="100" height="100" fill="url(#pattern-inner)"/>
++    </svg>
++  </canvas>
++
++  <script>
++    window.onload = () => {
++      promise_test(async function(t) {
++        const preloadImage = (url) => new Promise((resolve, reject) => {
++          const img = new Image();
++          img.onload = () => resolve(img);
++          img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
++          img.src = url;
++        });
++
++        const imageEl = document.querySelector('#pattern-outer image');
++        await Promise.all([
++          preloadImage(imageEl.getAttribute('href')),
++        ]);
++
++        await waitForCanvasPaint(canvas);
++        var ctx = canvas.getContext('2d');
++        ctx.fillStyle = 'green';
++        ctx.fillRect(0, 0, 100, 100);
++        ctx.drawElementImage(child, 0, 0);
++
++        // The canvas should ignore the gradient and use transparent black.
++        let pixel = ctx.getImageData(50, 50, 1, 1).data;
++        assert_false(pixel[0] > 0, "The canvas should not use the pattern.");
++        assert_true(pixel[1] > 0, "The canvas should not use the pattern.");
++        assert_false(pixel[2] > 0, "The canvas should not use the pattern.");
++      });
++    }
++  </script>
++</body>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg/svg-radial-gradient-href-outside-subtree-ignored.tentative.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg/svg-radial-gradient-href-outside-subtree-ignored.tentative.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..5d809ecbe49fb9c0fabeb113eaf861de6251c438
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg/svg-radial-gradient-href-outside-subtree-ignored.tentative.html
+@@ -0,0 +1,63 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>drawElementImage does not use SVG resources from outside the subtree</title>
++  <script src='/resources/testharness.js'></script>
++  <script src='/resources/testharnessreport.js'></script>
++  <script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
++  <style>
++    a {
++      color: blue;
++    }
++    a:visited {
++      color: red;
++    }
++    canvas {
++      background-color: green;
++    }
++  </style>
++</head>
++<body>
++  <a href="">
++    <svg width="0" height="0">
++      <defs>
++        <radialGradient id="grad-outside">
++          <stop offset="0" stop-color="currentColor"/>
++          <stop offset="1" stop-color="currentColor"/>
++        </radialGradient>
++      </defs>
++    </svg>
++  </a>
++
++  <canvas id="canvas" width="100" height="100" layoutsubtree>
++    <div id="child">
++      <svg width="100" height="100">
++        <radialGradient id="grad-inside" href="#grad-outside"></radialGradient>
++        <rect x="0" y="0" width="100" height="100" fill="url(#grad-inside)"/>
++      </svg>
++    </div>
++  </canvas>
++
++  <script>
++    window.onload = () => {
++      promise_test(async function(t) {
++        await waitForCanvasPaint(canvas);
++
++        var context = canvas.getContext("2d");
++
++        context.fillStyle = 'green';
++        context.fillRect(0, 0, 100, 100);
++
++        // Draw the element image
++        context.drawElementImage(child, 0, 0);
++
++        // The canvas should ignore the gradient and use transparent black.
++        let pixel = context.getImageData(50, 50, 1, 1).data;
++        assert_false(pixel[0] > 0, "The canvas should not use the gradient.");
++        assert_true(pixel[1] > 0, "The canvas should not use the gradient.");
++        assert_false(pixel[2] > 0, "The canvas should not use the gradient.");
++      });
++    };
++  </script>
++</body>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg/svg-use-chained-outside-subtree-images-ignored.tentative.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg/svg-use-chained-outside-subtree-images-ignored.tentative.https.sub.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..3ed571bceee7c8d3918d3058cb0e1934385c4d6a
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg/svg-use-chained-outside-subtree-images-ignored.tentative.https.sub.html
+@@ -0,0 +1,58 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>drawElementImage does not use cross-origin SVG use content from outside the subtree</title>
++  <link rel="help" href="https://github.com/WICG/html-in-canvas">
++  <link rel="author" href="mailto:schenney@chromium.org">
++  <script src='/resources/testharness.js'></script>
++  <script src='/resources/testharnessreport.js'></script>
++  <script src='/html/canvas/resources/canvas-tests.js'></script>
++  <script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
++  <style>
++    #link {
++      fill: green;
++      stroke: lightgreen;
++    }
++    #link:visited {
++      fill: red;
++      stroke: lightred;
++    }
++  </style>
++</head>
++<body>
++  <svg width=0 height=0>
++    <defs>
++      <g id=group>
++        <rect fill=green x=0 y=0 width=100 height=200 />
++        <image id=sameOrigin href="https://{{location[host]}}/images/green-100x100.png" x=10 y=10 height=100 width=100 />
++        <image id=crossOrigin href="https://{{hosts[alt][www]}}:{{ports[https][0]}}/images/red-100x100.png" x=0 y=100 height=100 width=100 />
++      </g>
++    </defs>
++  </svg>
++  <canvas id=canvas width=100 height=200 layoutsubtree>
++    <svg id=child x=0 y=0 width=100 height=200>
++      <use id="chained" x=0 y=0  href="#group" />
++      <use x=0 y=0  href="#chained" />
++    </svg>
++  </canvas>
++
++  <script>
++    window.onload = () => {
++      promise_test(async function(t) {
++        await waitForCanvasPaint(canvas);
++        const context = canvas.getContext("2d");
++        context.drawElementImage(document.getElementById("child"), 0, 0);
++
++        // Fetch all pixel data once to avoid multiple slow readbacks.
++        const imgData = context.getImageData(0, 0, canvas.width, canvas.height);
++
++        let pixel = _getPixelFromImageData(imgData, 50, 50);
++        assert_array_equals(pixel, [0, 255, 0, 255], "Same origin should draw");
++
++        pixel = _getPixelFromImageData(imgData, 50, 150);
++        assert_array_equals(pixel, [0, 128, 0, 255], "Cross origin should not draw");
++      });
++    }
++  </script>
++</body>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg/svg-use-outside-subtree-images-ignored.tentative.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg/svg-use-outside-subtree-images-ignored.tentative.https.sub.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..b54d08232eb31273f6d2d2b8035f3583af795071
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg/svg-use-outside-subtree-images-ignored.tentative.https.sub.html
+@@ -0,0 +1,57 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>drawElementImage does not use cross-origin SVG use content from outside the subtree</title>
++  <link rel="help" href="https://github.com/WICG/html-in-canvas">
++  <link rel="author" href="mailto:schenney@chromium.org">
++  <script src='/resources/testharness.js'></script>
++  <script src='/resources/testharnessreport.js'></script>
++  <script src='/html/canvas/resources/canvas-tests.js'></script>
++  <script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
++  <style>
++    #link {
++      fill: green;
++      stroke: lightgreen;
++    }
++    #link:visited {
++      fill: red;
++      stroke: lightred;
++    }
++  </style>
++</head>
++<body>
++  <svg width=0 height=0>
++    <defs>
++      <g id=group>
++        <rect fill=green x=0 y=0 width=100 height=200 />
++        <image id=sameOrigin href="https://{{location[host]}}/images/green-100x100.png" x=10 y=10 height=100 width=100 />
++        <image id=crossOrigin href="https://{{hosts[alt][www]}}:{{ports[https][0]}}/images/red-100x100.png" x=0 y=100 height=100 width=100 />
++      </g>
++    </defs>
++  </svg>
++  <canvas id=canvas width=100 height=200 layoutsubtree>
++    <svg id=child x=0 y=0 width=100 height=200>
++      <use x=0 y=0  href="#group" />
++    </svg>
++  </canvas>
++
++  <script>
++    window.onload = () => {
++      promise_test(async function(t) {
++        await waitForCanvasPaint(canvas);
++        const context = canvas.getContext("2d");
++        context.drawElementImage(document.getElementById("child"), 0, 0);
++
++        // Fetch all pixel data once to avoid multiple slow readbacks.
++        const imgData = context.getImageData(0, 0, canvas.width, canvas.height);
++
++        let pixel = _getPixelFromImageData(imgData, 50, 50);
++        assert_array_equals(pixel, [0, 255, 0, 255], "Same origin should draw");
++
++        pixel = _getPixelFromImageData(imgData, 50, 150);
++        assert_array_equals(pixel, [0, 128, 0, 255], "Cross origin should not draw");
++      });
++    }
++  </script>
++</body>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/visited-link/visited-link-svg-use-chained-outside-subtree-ignored.tentative.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/visited-link/visited-link-svg-use-chained-outside-subtree-ignored.tentative.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..96b1c6743999fa0a593762bacdb6ea7557b914cf
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/visited-link/visited-link-svg-use-chained-outside-subtree-ignored.tentative.html
+@@ -0,0 +1,54 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>drawElementImage does not leak visited colors in SVG use content from outside the subtree</title>
++  <link rel="help" href="https://github.com/WICG/html-in-canvas">
++  <link rel="author" href="mailto:schenney@chromium.org">
++  <script src='/resources/testharness.js'></script>
++  <script src='/resources/testharnessreport.js'></script>
++  <script src='/html/canvas/resources/canvas-tests.js'></script>
++  <script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
++  <style>
++    #link {
++      fill: green;
++      stroke: lightgreen;
++    }
++    #link:visited {
++      fill: red;
++      stroke: lightred;
++    }
++  </style>
++</head>
++<body>
++  <svg width="0" height="0">
++    <defs>
++      <a id=link href="">
++        <rect x=10 y=10 width=80 height=80 stroke-width=10 />
++      </a>
++    </defs>
++  </svg>
++  <canvas id=canvas width="100" height="200" layoutsubtree>
++    <svg id="child" x=0 y=0 width=100 height=100>
++      <use id="chained" x=0 y=0  href="#link" />
++      <use x=0 y=0  href="#chained" />
++    </svg>
++  </canvas>
++
++  <script>
++    window.onload = () => {
++      promise_test(async function(t) {
++        await waitForCanvasPaint(canvas);
++        const context = canvas.getContext("2d");
++        context.drawElementImage(document.getElementById("child"), 0, 0);
++
++        // Fetch all pixel data once to avoid multiple slow readbacks.
++        const imgData = context.getImageData(0, 0, canvas.width, canvas.height);
++
++        // Visited link colors should not be used
++        pixel = _getPixelFromImageData(imgData, 50, 50);
++        assert_array_equals(pixel, [0, 128, 0, 255], "Unvisited color should be used");
++      });
++    }
++  </script>
++</body>
++</html>

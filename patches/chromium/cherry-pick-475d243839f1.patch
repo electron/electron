@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Tue, 29 Sep 2026 11:37:56 -0700
+Subject: [M152] Reinsert PatternData into pattern map after reconstruction
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> Reinsert PatternData into pattern map after reconstruction
+>
+> LayoutSVGResourcePattern::pattern_map_ can be cleared while executing
+> BuildPatternData, so be sure it reinsert the newly-created pattern
+> data rather than using the (possibly stale) previous hash table
+> AddResult.
+>
+> Fixed: 565742179
+> Change-Id: Iad113e3101920adf4b56da4805b4a46ebf681730
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8464440
+> Reviewed-by: Fredrik Söderquist <fs@opera.com>
+> Commit-Queue: Stefan Zager <szager@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1706535}
+
+(cherry picked from commit dedbd3f9dee8a579418b56c9a37c643873aafe1c)
+
+Bug: 567398704,565742179
+Change-Id: Iad113e3101920adf4b56da4805b4a46ebf681730
+
+diff --git a/third_party/blink/renderer/core/layout/svg/layout_svg_resource_pattern.cc b/third_party/blink/renderer/core/layout/svg/layout_svg_resource_pattern.cc
+index 85e5ccb1d04943c961fdf92136c25194f36a39f7..a32a54a30d4fecb0b8893f3180e389ae3737a247 100644
+--- a/third_party/blink/renderer/core/layout/svg/layout_svg_resource_pattern.cc
++++ b/third_party/blink/renderer/core/layout/svg/layout_svg_resource_pattern.cc
+@@ -192,14 +192,18 @@ bool LayoutSVGResourcePattern::ApplyShader(
+   NOT_DESTROYED();
+   ClearInvalidationMask();
+ 
+-  std::unique_ptr<PatternData>& pattern_data =
+-      pattern_map_.insert(&client, nullptr).stored_value->value;
++  auto iter = pattern_map_.find(&client);
++  PatternData* pattern_data =
++      (iter == pattern_map_.end() ? nullptr : iter->value.get());
+   if (pattern_data && pattern_data->paint_flags != paint_flags) {
+-    pattern_data.reset();
++    pattern_data = nullptr;
+   }
+ 
+   if (!pattern_data) {
+-    pattern_data = BuildPatternData(reference_box, paint_flags);
++    auto new_pattern_data = BuildPatternData(reference_box, paint_flags);
++    pattern_data = new_pattern_data.get();
++    CHECK(pattern_data);
++    pattern_map_.Set(&client, std::move(new_pattern_data));
+     pattern_data->paint_flags = paint_flags;
+   }
+ 
