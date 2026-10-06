@@ -1,0 +1,191 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: wangra <wangra@google.com>
+Date: Wed, 9 Sep 2026 20:20:22 -0400
+Subject: D3D11: Backup texture storage contents on base level changes
+
+Preserve subresource data when recreating texture storage on base level
+change or release, preventing fast-path texture contents from being
+dropped and avoiding uninitialized memory disclosure under robust
+initialization.
+
+Test:
+    angle_end2end_tests --gtest_filter="SetBaseLevelPreservesFastPathSubImageData"
+Bug: b/553117809, b/561613771
+Change-Id: I4d688fa799e9ca48d1c4bd90216dd4b301726dc4
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8377969
+Commit-Queue: Ran Wang <wangra@google.com>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+
+Electron adaptation notes (42-x-y): TextureD3D::releaseTexStorage() on this
+branch takes a single gl::TexLevelMask rather than a per-cube-face
+gl::CubeFaceArray<gl::TexLevelMask>; the any-mask check and the per-image copy
+test use that flat mask. Test-only hunks in TextureTest.cpp were dropped.
+
+diff --git a/src/libANGLE/renderer/d3d/TextureD3D.cpp b/src/libANGLE/renderer/d3d/TextureD3D.cpp
+index 8d945800da87baea37b94ab85b59d8c5e8c61565..d8c262fedceccae7166240184f60ea9d3f41bea9 100644
+--- a/src/libANGLE/renderer/d3d/TextureD3D.cpp
++++ b/src/libANGLE/renderer/d3d/TextureD3D.cpp
+@@ -323,6 +323,39 @@ bool TextureD3D::shouldUseSetData(const gl::ImageIndex &index, const ImageD3D *i
+     return (mTexStorage && !internalFormat.compressed);
+ }
+ 
++bool TextureD3D::isImageSubresourceMatchingStorage(const gl::ImageIndex &index,
++                                                   const ImageD3D *image,
++                                                   int storageWidth0,
++                                                   int storageHeight0,
++                                                   int storageDepth0,
++                                                   GLenum storageFormat,
++                                                   size_t storageLevels) const
++{
++    if (!image)
++    {
++        return false;
++    }
++
++    if (index.getLevelIndex() < 0 || index.getLevelIndex() >= static_cast<int>(storageLevels))
++    {
++        return false;
++    }
++
++    if (mState.getType() == gl::TextureType::_2DArray && index.getLayerIndex() >= storageDepth0)
++    {
++        return false;
++    }
++
++    const int storageWidth  = std::max(1, storageWidth0 >> index.getLevelIndex());
++    const int storageHeight = std::max(1, storageHeight0 >> index.getLevelIndex());
++    const int storageDepth  = (mState.getType() == gl::TextureType::_3D)
++                                  ? std::max(1, storageDepth0 >> index.getLevelIndex())
++                                  : 1;
++
++    return image->getWidth() == storageWidth && image->getHeight() == storageHeight &&
++           image->getDepth() == storageDepth && image->getInternalFormat() == storageFormat;
++}
++
+ angle::Result TextureD3D::setImageImpl(const gl::Context *context,
+                                        const gl::ImageIndex &index,
+                                        GLenum type,
+@@ -835,27 +868,43 @@ angle::Result TextureD3D::setBaseLevel(const gl::Context *context, GLuint baseLe
+         (newStorageWidth != oldStorageWidth || newStorageHeight != oldStorageHeight ||
+          newStorageDepth != oldStorageDepth || newStorageFormat != oldStorageFormat))
+     {
+-        markAllImagesDirty();
++        // Iterate over all images and backup contents from texture storage before it is released.
++        // We need to copy for both:
++        // 1. Render targets: GPU rendering modified the storage directly.
++        // 2. Fast-path uploads: TextureStorage11::setData wrote pixel data directly to the GPU
++        //    texture without creating an Image11 staging buffer (leaving the image clean and
++        //    unassociated). If storage is destroyed without backing this up, subsequent storage
++        //    recreation will not re-upload the data, leading to uninitialized memory reads.
++        const size_t storageLevels = mTexStorage->getLevelCount();
+ 
+-        // Iterate over all images, and backup the content if it's been used as a render target. The
+-        // D3D11 backend can automatically restore images on storage destroy, but it only works for
+-        // images that have been associated with the texture storage before, which is insufficient
+-        // here.
+-        if (mTexStorage->isRenderTarget())
++        gl::ImageIndexIterator iterator = imageIterator();
++        while (iterator.hasNext())
+         {
+-            gl::ImageIndexIterator iterator = imageIterator();
+-            while (iterator.hasNext())
++            const gl::ImageIndex index = iterator.next();
++            ImageD3D *image            = getImage(index);
++
++            RenderTargetD3D *renderTarget = nullptr;
++            if (mTexStorage->isRenderTarget())
+             {
+-                const gl::ImageIndex index    = iterator.next();
+-                RenderTargetD3D *renderTarget = nullptr;
+                 ANGLE_TRY(mTexStorage->findRenderTarget(context, index, &renderTarget));
+-                if (renderTarget)
+-                {
+-                    ANGLE_TRY(getImage(index)->copyFromTexStorage(context, index, mTexStorage));
+-                }
++            }
++
++            const bool dimensionsMatch = isImageSubresourceMatchingStorage(
++                index, image, oldStorageWidth, oldStorageHeight, oldStorageDepth,
++                static_cast<GLenum>(oldStorageFormat), storageLevels);
++
++            const bool hasNoStagingCopy =
++                image && !image->isDirty() &&
++                mState.getImageDesc(index).initState == gl::InitState::Initialized;
++
++            if (dimensionsMatch && (renderTarget || hasNoStagingCopy))
++            {
++                ANGLE_TRY(image->copyFromTexStorage(context, index, mTexStorage));
+             }
+         }
+ 
++        markAllImagesDirty();
++
+         ANGLE_TRY(releaseTexStorage(context, gl::TexLevelMask()));
+     }
+ 
+@@ -887,7 +936,7 @@ angle::Result TextureD3D::releaseTexStorage(const gl::Context *context,
+         return angle::Result::Continue;
+     }
+ 
+-    if (mTexStorage->isRenderTarget())
++    if (copyStorageToImagesMask.any())
+     {
+         const GLenum storageFormat = getBaseLevelInternalFormat();
+         const size_t storageLevels = mTexStorage->getLevelCount();
+@@ -897,13 +946,11 @@ angle::Result TextureD3D::releaseTexStorage(const gl::Context *context,
+         {
+             const gl::ImageIndex index = iterator.next();
+             ImageD3D *image            = getImage(index);
+-            const int storageWidth     = std::max(1, getLevelZeroWidth() >> index.getLevelIndex());
+-            const int storageHeight    = std::max(1, getLevelZeroHeight() >> index.getLevelIndex());
+-            if (image && isImageComplete(index) && image->getWidth() == storageWidth &&
+-                image->getHeight() == storageHeight &&
+-                image->getInternalFormat() == storageFormat &&
+-                index.getLevelIndex() < static_cast<int>(storageLevels) &&
+-                copyStorageToImagesMask[index.getLevelIndex()])
++            const bool dimensionsMatch = isImageSubresourceMatchingStorage(
++                index, image, getLevelZeroWidth(), getLevelZeroHeight(), getBaseLevelStorageDepth(),
++                storageFormat, storageLevels);
++
++            if (dimensionsMatch && copyStorageToImagesMask[index.getLevelIndex()])
+             {
+                 ANGLE_TRY(image->copyFromTexStorage(context, index, mTexStorage));
+             }
+diff --git a/src/libANGLE/renderer/d3d/TextureD3D.h b/src/libANGLE/renderer/d3d/TextureD3D.h
+index 3774c152883dc86065ed51524c8458eabdf56328..271d58a4e4f794f7c3973f6959db33c80fc9623d 100644
+--- a/src/libANGLE/renderer/d3d/TextureD3D.h
++++ b/src/libANGLE/renderer/d3d/TextureD3D.h
+@@ -229,6 +229,13 @@ class TextureD3D : public TextureImpl, public angle::ObserverInterface
+     virtual angle::Result updateStorage(const gl::Context *context) = 0;
+ 
+     bool shouldUseSetData(const gl::ImageIndex &index, const ImageD3D *image) const;
++    bool isImageSubresourceMatchingStorage(const gl::ImageIndex &index,
++                                           const ImageD3D *image,
++                                           int storageWidth0,
++                                           int storageHeight0,
++                                           int storageDepth0,
++                                           GLenum storageFormat,
++                                           size_t storageLevels) const;
+ 
+     angle::Result generateMipmapUsingImages(const gl::Context *context, const GLuint maxLevel);
+ 
+diff --git a/src/libANGLE/renderer/d3d/d3d11/Image11.cpp b/src/libANGLE/renderer/d3d/d3d11/Image11.cpp
+index f25ff486088034b6c5b703eb0ad21c86dc5b8725..935fb0077babd878808b4daa506972ec945d3e26 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/Image11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/Image11.cpp
+@@ -374,8 +374,12 @@ angle::Result Image11::copyFromTexStorage(const gl::Context *context,
+     ANGLE_TRY(storage11->getSubresourceIndex(context, imageIndex, &subresourceIndex));
+ 
+     gl::Box sourceBox(0, 0, 0, mWidth, mHeight, mDepth);
+-    return copyWithoutConversion(context, gl::Offset(), sourceBox, *textureHelper,
+-                                 subresourceIndex);
++    ANGLE_TRY(
++        copyWithoutConversion(context, gl::Offset(), sourceBox, *textureHelper, subresourceIndex));
++
++    disassociateStorage();
++
++    return angle::Result::Continue;
+ }
+ 
+ angle::Result Image11::copyFromFramebuffer(const gl::Context *context,

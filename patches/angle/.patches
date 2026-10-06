@@ -78,3 +78,11 @@ reland_m152_d3d11_fixing_robust_init_for_self_copy_same_mip_lvl.patch
 limit_max_image_allocation_size_to_1gb.patch
 m154_add_round_up_3d_texture_size_to_pot_for_limit_for_powervr.patch
 gl_change_mipmap_workaround_from_flush_to_forcefullyflush.patch
+cherry-pick-803dfde1e22e.patch
+cherry-pick-f9c580915985.patch
+cherry-pick-ac048ffcee48.patch
+cherry-pick-5aaa642831a2.patch
+cherry-pick-17c57c6066ac.patch
+cherry-pick-ad72ad15e2c8.patch
+cherry-pick-819e8c405b13.patch
+cherry-pick-7c4ce32df88b.patch

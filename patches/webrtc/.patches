@@ -7,3 +7,5 @@ cherry-pick-52de8e0bd243.patch
 cherry-pick-f3931994406c.patch
 cherry-pick-5a7e0ff57a52.patch
 m152_harden_payload_capacity_and_reduction_checks_in_rtp.patch
+cherry-pick-5f28ddf5ed14.patch
+cherry-pick-e1991d7f7bd0.patch

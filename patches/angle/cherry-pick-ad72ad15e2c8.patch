@@ -1,0 +1,140 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: wangra <wangra@google.com>
+Date: Thu, 10 Sep 2026 18:03:27 -0400
+Subject: D3D11: Fix stale swizzle cache on robust resource init
+
+Restricts swizzle generation to defined mip levels and invalidates the
+swizzle cache when texture storage levels are cleared during robust
+resource initialization, mipmap generation, or compressed copies.
+
+Test:
+angle_end2end_tests --gtest_filter="*UndefinedMipCachedThenInitialized*"
+Bug: b/553881031
+Change-Id: I7112a4c0d255a9aacd4022cbeb8e3d658390f559
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8394097
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Ran Wang <wangra@google.com>
+
+Electron adaptation notes (42-x-y): test-only hunks in
+RobustResourceInitTest.cpp were dropped; the production changes are
+unmodified.
+
+diff --git a/src/libANGLE/renderer/d3d/TextureD3D.cpp b/src/libANGLE/renderer/d3d/TextureD3D.cpp
+index d8c262fedceccae7166240184f60ea9d3f41bea9..d0d5c8fe7c81e938900c2ccb9032346a58c41355 100644
+--- a/src/libANGLE/renderer/d3d/TextureD3D.cpp
++++ b/src/libANGLE/renderer/d3d/TextureD3D.cpp
+@@ -1039,6 +1039,8 @@ angle::Result TextureD3D::initializeContents(const gl::Context *context,
+             image->markClean();
+         }
+ 
++        mTexStorage->markLevelDirty(index.getLevelIndex());
++
+         return angle::Result::Continue;
+     }
+ 
+diff --git a/src/libANGLE/renderer/d3d/TextureStorage.h b/src/libANGLE/renderer/d3d/TextureStorage.h
+index 75ba9bb498bbd0bbe12406a8034c72aade91d366..fdfc56b26c3d77d62fad906855c5573692618e08 100644
+--- a/src/libANGLE/renderer/d3d/TextureStorage.h
++++ b/src/libANGLE/renderer/d3d/TextureStorage.h
+@@ -81,6 +81,9 @@ class TextureStorage : public angle::Subject
+ 
+     virtual void invalidateTextures() {}
+ 
++    virtual void markLevelDirty(int mipLevel) {}
++    virtual void markDirty() {}
++
+     // Called by outer object when label has changed via KHR_debug extension
+     void setLabel(const std::string &newLabel);
+ 
+diff --git a/src/libANGLE/renderer/d3d/d3d11/Renderer11.cpp b/src/libANGLE/renderer/d3d/d3d11/Renderer11.cpp
+index a24fbc52f7d797b3d57f6682aaa33875f62da1fc..082edc967a55cce67750b717924a2cb99995adf4 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/Renderer11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/Renderer11.cpp
+@@ -2914,6 +2914,8 @@ angle::Result Renderer11::copyCompressedTexture(const gl::Context *context,
+     mDeviceContext->CopySubresourceRegion(destResource->get(), destSubresource, 0, 0, 0,
+                                           sourceResource->get(), sourceSubresource, nullptr);
+ 
++    destStorage11->markLevelDirty(destLevel);
++
+     return angle::Result::Continue;
+ }
+ 
+@@ -3366,6 +3368,12 @@ angle::Result Renderer11::generateMipmapUsingD3D(const gl::Context *context,
+ 
+     mDeviceContext->GenerateMips(srv->get());
+ 
++    for (size_t level = textureState.getEffectiveBaseLevel() + 1;
++         level <= textureState.getEffectiveMaxLevel(); ++level)
++    {
++        storage11->markLevelDirty(static_cast<int>(level));
++    }
++
+     return angle::Result::Continue;
+ }
+ 
+diff --git a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
+index e269b283334e6ce1c476400a91a2690d7fd7c139..b0062195b22f73c751e8cae9c1924123de2c780b 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
+@@ -260,7 +260,7 @@ angle::Result TextureStorage11::getSRVForSampler(const gl::Context *context,
+ 
+     if (swizzleRequired)
+     {
+-        verifySwizzleExists(GetEffectiveSwizzle(textureState));
++        verifySwizzleExists(GetEffectiveSwizzle(textureState), effectiveBaseLevel, mipLevels);
+     }
+ 
+     // We drop the stencil when sampling from the SRV if three conditions hold:
+@@ -508,7 +508,10 @@ angle::Result TextureStorage11::generateSwizzles(const gl::Context *context,
+                                                  const gl::TextureState &textureState)
+ {
+     gl::SwizzleState swizzleTarget = GetEffectiveSwizzle(textureState);
+-    for (int level = 0; level < getLevelCount(); level++)
++    const int baseLevel            = static_cast<int>(textureState.getEffectiveBaseLevel());
++    const int maxLevel =
++        std::min(static_cast<int>(textureState.getEffectiveMaxLevel()), getLevelCount() - 1);
++    for (int level = baseLevel; level <= maxLevel; level++)
+     {
+         // Check if the swizzle for this level is out of date
+         if (mSwizzleCache[level] != swizzleTarget)
+@@ -806,9 +809,11 @@ angle::Result TextureStorage11::generateMipmap(const gl::Context *context,
+                                 false);
+ }
+ 
+-void TextureStorage11::verifySwizzleExists(const gl::SwizzleState &swizzleState)
++void TextureStorage11::verifySwizzleExists(const gl::SwizzleState &swizzleState,
++                                           unsigned int baseLevel,
++                                           unsigned int mipLevels)
+ {
+-    for (unsigned int level = 0; level < mMipLevels; level++)
++    for (unsigned int level = baseLevel; level < baseLevel + mipLevels; level++)
+     {
+         ASSERT(mSwizzleCache[level] == swizzleState);
+     }
+diff --git a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.h b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.h
+index c535ba483335526c227db5d990acb6cebff44b77..6ffae31f45f4689fed264860b39628719ba221f9 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.h
++++ b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.h
+@@ -62,8 +62,8 @@ class TextureStorage11 : public TextureStorage
+                                const d3d11::SharedSRV **outSRV);
+     angle::Result generateSwizzles(const gl::Context *context,
+                                    const gl::TextureState &textureState);
+-    void markLevelDirty(int mipLevel);
+-    void markDirty();
++    void markLevelDirty(int mipLevel) override;
++    void markDirty() override;
+ 
+     angle::Result updateSubresourceLevel(const gl::Context *context,
+                                          const TextureHelper11 &texture,
+@@ -195,7 +195,9 @@ class TextureStorage11 : public TextureStorage
+                                             const TextureHelper11 &texture,
+                                             d3d11::SharedUAV *outUAV) = 0;
+ 
+-    void verifySwizzleExists(const gl::SwizzleState &swizzleState);
++    void verifySwizzleExists(const gl::SwizzleState &swizzleState,
++                             unsigned int baseLevel,
++                             unsigned int mipLevels);
+ 
+     // Clear all cached non-swizzle SRVs and invalidate the swizzle cache.
+     void clearSRVCache();

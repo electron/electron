@@ -59,3 +59,6 @@ m152_wasm_deopt_fix_wasm_deopt_data_checks_prevent.patch
 m150_maps_avoid_strict_function_map_transition_when_own_props_are.patch
 m152_maglev_only_materialize_hole_nans_as_the_hole_in.patch
 m150_modules_fix_partial_scc_linking_failure.patch
+cherry-pick-a1b0c976e208.patch
+cherry-pick-ff59612bfbd2.patch
+cherry-pick-5995d2853f51.patch

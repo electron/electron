@@ -1,0 +1,88 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Anthony Vallee-Dubois <anthonyvd@google.com>
+Date: Fri, 4 Sep 2026 12:53:28 -0700
+Subject: Make fontconfig global config creation synchronous
+
+Async initialization was introduced in crrev.com/1255274 as a
+performance improvement. Although fontconfig is generally thread-safe,
+it is unsafe to use the library in the middle of initialization. See the
+details and PoC in Issue 547065823.
+
+This CL reverts fontconfig init to being synchronous to avoid this race.
+
+Bug: 41496758,547065823
+Change-Id: Ie5563115f9e453305ffbe98bd7ae6c99ebdebad3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8310116
+Reviewed-by: Etienne Bergeron <etienneb@chromium.org>
+Commit-Queue: Anthony Vallee-Dubois <anthonyvd@chromium.org>
+Reviewed-by: Thomas Anderson <thomasanderson@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1692682}
+
+diff --git a/ui/gfx/font_util.cc b/ui/gfx/font_util.cc
+index 5c438981b22f89edc940bbd2b8300a73fb678f33..6e0e2985da35d2faeac03d382e7fe64b0138e205 100644
+--- a/ui/gfx/font_util.cc
++++ b/ui/gfx/font_util.cc
+@@ -26,8 +26,11 @@ void InitializeFonts() {
+   // the long delay the user would have seen on first rendering.
+ 
+ #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+-  // Early initialize FontConfig.
+-  InitializeGlobalFontConfigAsync();
++  // Ensures the config is created on this thread. It's generally safe to send
++  // concurrent match requests to fontconfig, but it's unsafe to send match
++  // requests concurrently to fontconfig initialization.
++  FcConfig* config = GetGlobalFontConfig();
++  DCHECK(config);
+ #endif  // BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+ 
+ #if BUILDFLAG(IS_WIN)
+diff --git a/ui/gfx/linux/fontconfig_util.cc b/ui/gfx/linux/fontconfig_util.cc
+index 996fceb35876573600ed0a59f4de02c48602e3d5..6956b3e43d91eb2a87afd4e959edf86e373fd2da 100644
+--- a/ui/gfx/linux/fontconfig_util.cc
++++ b/ui/gfx/linux/fontconfig_util.cc
+@@ -10,8 +10,6 @@
+ #include "base/environment.h"
+ #include "base/memory/raw_ptr.h"
+ #include "base/no_destructor.h"
+-#include "base/task/thread_pool.h"
+-#include "base/task/thread_pool/thread_pool_instance.h"
+ #include "ui/gfx/font_render_params.h"
+ 
+ #if BUILDFLAG(IS_CHROMEOS)
+@@ -206,18 +204,6 @@ bool GetFontConfigPropertyAsBool(FcPattern* pattern, const char* property) {
+ 
+ }  // namespace
+ 
+-void InitializeGlobalFontConfigAsync() {
+-  if (base::ThreadPoolInstance::Get()) {
+-    base::ThreadPool::PostTask(
+-        FROM_HERE,
+-        {base::MayBlock(), base::TaskPriority::USER_BLOCKING,
+-         base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN},
+-        base::BindOnce([]() { GlobalFontConfig::GetInstance(); }));
+-  } else {
+-    GlobalFontConfig::GetInstance();
+-  }
+-}
+-
+ FcConfig* GetGlobalFontConfig() {
+   return GlobalFontConfig::GetInstance()->Get();
+ }
+diff --git a/ui/gfx/linux/fontconfig_util.h b/ui/gfx/linux/fontconfig_util.h
+index 616c7172229e7250a5756767f01aee8bb8ad81aa..83381db06ca110b3c9ff0ac6c56e0bdd0b37ddda 100644
+--- a/ui/gfx/linux/fontconfig_util.h
++++ b/ui/gfx/linux/fontconfig_util.h
+@@ -18,13 +18,6 @@ struct FcPatternDeleter {
+ };
+ using ScopedFcPattern = std::unique_ptr<FcPattern, FcPatternDeleter>;
+ 
+-// Initializes FontConfig on a worker thread if a thread pool instance is
+-// available, otherwise initializes FontConfig in a blocking fashion on the
+-// calling thread.  If this function is not called, the first call to
+-// GetGlobalFontConfig() will implicitly initialize FontConfig.  Can be called
+-// on any thread.
+-COMPONENT_EXPORT(GFX) void InitializeGlobalFontConfigAsync();
+-
+ // Retrieve the global font config. Must be called on the main thread.
+ COMPONENT_EXPORT(GFX) FcConfig* GetGlobalFontConfig();
+ COMPONENT_EXPORT(GFX) void OverrideGlobalFontConfigForTesting(FcConfig* config);

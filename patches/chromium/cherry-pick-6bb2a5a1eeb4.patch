@@ -1,0 +1,254 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Noam Rosenthal <nrosenthal@chromium.org>
+Date: Thu, 1 Oct 2026 19:47:45 -0700
+Subject: [M150-LTS][parser] Store stable element identity in adoption agency
+ Bookmark
+
+Previously, HTMLFormattingElementList::Bookmark stored a raw interior
+Entry* pointer into the HeapVector<Entry> entries_ buffer.
+During HTMLTreeBuilder::CallTheAdoptionAgency(), DOM operations (such
+as reparenting the furthest-block in step 4.14) can synchronously
+dispatch events when subtrees are detached, notably the pagehide event
+on an iframe. An event listener could then call document.write(),
+re-entering the parser and appending to active formatting elements.
+This would reallocate the HeapVector and leave the Bookmark's raw
+interior pointer dangling, leading to a UAF / use-after-poison write
+when SwapTo() resumes.
+This CL fixes the issue by:
+1. Changing Bookmark to store a stable Element* reference instead of
+   an interior Entry* pointer into HeapVector storage.
+2. Updating SwapTo() to resolve elements dynamically via ReverseFind(),
+   failing closed safely if re-entrant script cleared or modified the
+   list.
+3. Removing the step 4.13.4 bookmark-regeneration workaround that
+   existed purely to work around Entry* vector shifts.
+4. Validating that formatting_element and furthest_block remain in
+   OpenElements() after step 4.14 DOM insertion before continuing.
+5. Adding a regression crashtest for re-entrant document.write() via
+   iframe pagehide.
+
+Fixed: 557729858
+Change-Id: I337a48aa7c0ad1d7fc0c08380b7df4864cb1cc39
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8363808
+Reviewed-by: Mason Freed <masonf@chromium.org>
+Commit-Queue: Noam Rosenthal <nrosenthal@google.com>
+Cr-Commit-Position: refs/heads/main@{#1693910}
+(cherry picked from commit fd4e928e7b3e5e2e11528a587c4330a1852192cb)
+
+diff --git a/third_party/blink/renderer/core/html/parser/html_formatting_element_list.cc b/third_party/blink/renderer/core/html/parser/html_formatting_element_list.cc
+index 9654d555db82c91fa04c5e76252adec184088882..85dc408d45d31bcc5cbb1cf747296b5cf633a7de 100644
+--- a/third_party/blink/renderer/core/html/parser/html_formatting_element_list.cc
++++ b/third_party/blink/renderer/core/html/parser/html_formatting_element_list.cc
+@@ -67,24 +67,26 @@ HTMLFormattingElementList::Entry* HTMLFormattingElementList::Find(
+ 
+ HTMLFormattingElementList::Bookmark HTMLFormattingElementList::BookmarkFor(
+     Element* element) {
+-  wtf_size_t index = entries_.ReverseFind(element);
+-  DCHECK_NE(index, kNotFound);
+-  return Bookmark(&at(index));
++  DCHECK(Contains(element));
++  return Bookmark(element);
+ }
+ 
+ void HTMLFormattingElementList::SwapTo(Element* old_element,
+                                        HTMLStackItem* new_item,
+                                        const Bookmark& bookmark) {
+-  DCHECK(Contains(old_element));
+   DCHECK(!Contains(new_item->GetElement()));
+   if (!bookmark.HasBeenMoved()) {
+-    DCHECK(bookmark.Mark()->GetElement() == old_element);
+-    bookmark.Mark()->ReplaceElement(new_item);
++    wtf_size_t index = entries_.ReverseFind(old_element);
++    if (index == kNotFound) {
++      return;
++    }
++    entries_[index].ReplaceElement(new_item);
+     return;
+   }
+-  size_t index = bookmark.Mark() - First();
+-  SECURITY_DCHECK(index < size());
+-  entries_.insert(static_cast<wtf_size_t>(index + 1), new_item);
++  wtf_size_t mark_index = entries_.ReverseFind(bookmark.Mark());
++  if (mark_index != kNotFound) {
++    entries_.insert(mark_index + 1, new_item);
++  }
+   Remove(old_element);
+ }
+ 
+diff --git a/third_party/blink/renderer/core/html/parser/html_formatting_element_list.h b/third_party/blink/renderer/core/html/parser/html_formatting_element_list.h
+index e01d778000a22f85079a0960e1a922e7819e46ca..cf3b41fdd06a4d89fff54b3906c037f2b4bf234a 100644
+--- a/third_party/blink/renderer/core/html/parser/html_formatting_element_list.h
++++ b/third_party/blink/renderer/core/html/parser/html_formatting_element_list.h
+@@ -83,19 +83,19 @@ class HTMLFormattingElementList {
+     STACK_ALLOCATED();
+ 
+    public:
+-    explicit Bookmark(Entry* entry) : has_been_moved_(false), mark_(entry) {}
++    explicit Bookmark(Element* element) : mark_(element) {}
+ 
+-    void MoveToAfter(Entry* before) {
++    void MoveToAfter(Element* before) {
+       has_been_moved_ = true;
+       mark_ = before;
+     }
+ 
+     bool HasBeenMoved() const { return has_been_moved_; }
+-    Entry* Mark() const { return mark_; }
++    Element* Mark() const { return mark_; }
+ 
+    private:
+-    bool has_been_moved_;
+-    Entry* mark_;
++    bool has_been_moved_ = false;
++    Element* mark_ = nullptr;
+   };
+ 
+   bool IsEmpty() const { return !size(); }
+@@ -125,8 +125,6 @@ class HTMLFormattingElementList {
+ #endif
+ 
+  private:
+-  Entry* First() { return &at(0); }
+-
+   // http://www.whatwg.org/specs/web-apps/current-work/multipage/parsing.html#list-of-active-formatting-elements
+   // These functions enforce the "Noah's Ark" condition, which removes redundant
+   // mis-nested elements.
+diff --git a/third_party/blink/renderer/core/html/parser/html_tree_builder.cc b/third_party/blink/renderer/core/html/parser/html_tree_builder.cc
+index 83c4ea23dd8261341cc00cdd84e2fd47587d20f4..0bad7f1fb40778c3d5b47e1031888948f2af7f1f 100644
+--- a/third_party/blink/renderer/core/html/parser/html_tree_builder.cc
++++ b/third_party/blink/renderer/core/html/parser/html_tree_builder.cc
+@@ -1780,19 +1780,7 @@ void HTMLTreeBuilder::CallTheAdoptionAgency(AtomicHTMLToken* token) {
+         // 4.13.4
+         if (inner_loop_counter > kInnerIterationLimit &&
+             node_in_active_formatting_elements) {
+-          DCHECK(bookmark.Mark());
+-          // Cache the bookmark's element to regenerate it after the removal.
+-          Element* bookmark_element = bookmark.Mark()->GetElement();
+-          bool has_been_moved = bookmark.HasBeenMoved();
+           tree_.ActiveFormattingElements()->Remove(node->GetElement());
+-          bookmark =
+-              tree_.ActiveFormattingElements()->BookmarkFor(bookmark_element);
+-          if (has_been_moved) {
+-            // BookmarkFor creates a 'before' bookmark; if the original was
+-            // moved, we must explicitly convert it back to an 'after' bookmark
+-            // relative to its current mark.
+-            bookmark.MoveToAfter(bookmark.Mark());
+-          }
+           // Set to false so the subsequent step (4.13.5) removes the node from
+           // the stack of open elements and continues the inner loop.
+           node_in_active_formatting_elements = false;
+@@ -1813,7 +1801,7 @@ void HTMLTreeBuilder::CallTheAdoptionAgency(AtomicHTMLToken* token) {
+ 
+         // 4.13.7
+         if (last_node == furthest_block) {
+-          bookmark.MoveToAfter(node_entry);
++          bookmark.MoveToAfter(node->GetElement());
+         }
+         // 4.13.8
+         tree_.Reparent(node, last_node);
+@@ -1849,7 +1837,7 @@ void HTMLTreeBuilder::CallTheAdoptionAgency(AtomicHTMLToken* token) {
+ 
+         // 9.8
+         if (last_node == furthest_block) {
+-          bookmark.MoveToAfter(node_entry);
++          bookmark.MoveToAfter(node->GetElement());
+         }
+         // 9.9
+         tree_.Reparent(node, last_node);
+@@ -1859,6 +1847,10 @@ void HTMLTreeBuilder::CallTheAdoptionAgency(AtomicHTMLToken* token) {
+     }
+     // 4.14
+     tree_.InsertAlreadyParsedChild(common_ancestor, last_node);
++    if (!tree_.OpenElements()->Contains(formatting_element) ||
++        !tree_.OpenElements()->Contains(furthest_block->GetElement())) {
++      return;
++    }
+     // 4.15
+     HTMLStackItem* new_item =
+         tree_.CreateElementFromSavedToken(formatting_element_item);
+diff --git a/third_party/blink/web_tests/external/wpt/html/syntax/parsing/crashtests/adoption-agency-custom-furthest-block.html b/third_party/blink/web_tests/external/wpt/html/syntax/parsing/crashtests/adoption-agency-custom-furthest-block.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..c0ad099417743e68575acccac7f1986f40a09d9e
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/syntax/parsing/crashtests/adoption-agency-custom-furthest-block.html
+@@ -0,0 +1,46 @@
++<!DOCTYPE html>
++<html>
++<meta charset="utf-8">
++<title>Adoption agency algorithm with custom furthest-block element</title>
++<link rel="help" href="https://issues.chromium.org/issues/557729858">
++<link rel="help" href="https://html.spec.whatwg.org/multipage/parsing.html#adoption-agency-algorithm">
++<script>
++// Reparenting the furthest-block element during AAA step 4.14 synchronously
++// runs custom element connectedCallbacks. Calling document.write() within the
++// callback re-enters the parser, appending new formatting elements and forcing
++// the HeapVector to reallocate.
++
++let connections = 0;
++customElements.define("x-div", class extends HTMLDivElement {
++  connectedCallback() {
++    // Connection #1 occurs on initial parse/insertion under <b>.
++    // Connection #2 occurs when AAA step 4.14 reparents furthest_block
++    // into common_ancestor, at which point Bookmark has already been captured.
++    if (++connections !== 2) return;
++
++    // Re-enter the parser and append 14 formatting elements to the AFE.
++    // The second group includes an attribute ('a') to bypass the Noah's Ark
++    // rule, which would otherwise discard duplicate formatting elements.
++    // Growing from 3 to 17 entries exceeds the existing vector capacity (16),
++    // forcing a HeapVector reallocation that invalidates the Bookmark pointer.
++    document.write(
++      "<big><code><em><font><s><small><strike><strong><tt><u>" +
++      "<big a><code a><em a><font a>"
++    );
++  }
++}, {extends: "div"});
++
++// 1. "<b><i>": Push 2 formatting elements to the AFE.
++// 2. "<marquee>": Appends an AFE marker.
++// 3. 10 formatting elements: Grow the AFE HeapVector capacity to 16.
++// 4. "</marquee>": Pops elements up to the marker, leaving 2 elements in the AFE
++//    while preserving the allocated capacity of 16.
++// 5. "<b>": Pushes a 3rd element to the AFE.
++// 6. "<div is=x-div>": Parsed as a child of <b> (connection #1).
++// 7. "</b>": Triggers AAA for <b> with <div is=x-div> as furthest_block.
++document.write(
++  "<b><i><marquee><big><code><em><font><s><small><strike><strong><tt><u>" +
++  "</marquee><b><div is=x-div></b>"
++);
++</script>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/html/syntax/parsing/crashtests/adoption-agency-pagehide-reentrant-write.html b/third_party/blink/web_tests/external/wpt/html/syntax/parsing/crashtests/adoption-agency-pagehide-reentrant-write.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..04962b2eec4d21db8233c0b124a011265a4f9546
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/syntax/parsing/crashtests/adoption-agency-pagehide-reentrant-write.html
+@@ -0,0 +1,28 @@
++<!DOCTYPE html>
++<html>
++<meta charset="utf-8">
++<title>Adoption agency algorithm reentrancy via iframe pagehide</title>
++<link rel="help" href="https://issues.chromium.org/issues/558144311">
++<link rel="help" href="https://issues.chromium.org/issues/557729858">
++<link rel="help" href="https://html.spec.whatwg.org/multipage/parsing.html#adoption-agency-algorithm">
++<script>
++// Reparenting the furthest-block element (<div>) during AAA step 4.14 detaches
++// its subtree, synchronously firing onpagehide on <iframe id=ifr>.
++// The re-entrant document.write() appends 14 formatting elements (using unique
++// attributes to bypass Noah's Ark eviction), growing the active formatting
++// elements list from 3 to 17 entries. This exceeds the vector capacity (16),
++// forcing a HeapVector reallocation that invalidates the Bookmark pointer
++// before SwapTo() resumes at step 4.18.
++document.write(
++  "<b><i><marquee><big><code><em><font><s><small><strike><strong><tt><u>" +
++  "</marquee><b><div><iframe id=ifr></iframe><script>" +
++  "document.getElementById('ifr').contentWindow.onpagehide = () => {" +
++  "  document.write(" +
++  "    '<big><code><em><font><s><small><strike><strong><tt><u>' +" +
++  "    '<big a><code a><em a><font a>'" +
++  "  );" +
++  "};" +
++  "<\/script></b>"
++);
++</script>
++</html>

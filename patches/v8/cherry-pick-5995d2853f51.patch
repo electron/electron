@@ -1,0 +1,124 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Omer Katz <omerkatz@chromium.org>
+Date: Wed, 30 Sep 2026 17:31:34 +0200
+Subject: [M150-LTS][heap] Fix GetHash for JSWeakRef weak handling in Scavenger
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+For JSReceiver objects, we get the hash through a properties object.
+We could have a JSReceiver unregister token that's dead, but its
+properties object is still live. In that case, getting the hash for the
+token will try to check the properties object map, but the map can be a
+forwarding pointer.
+
+The forwarding pointer wasn't previously resolved since scavenger never
+visited the token object.
+
+Fix by resolving forwarding pointer if we observe them during weakness
+clearing.
+
+Bug: 567538973
+Change-Id: I9c9ef717a2bacb958f297fd2e75ea0736c05f316
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8494173
+Reviewed-by: Dominik Inführ <dinfuehr@chromium.org>
+Commit-Queue: Omer Katz <omerkatz@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110209}
+(cherry picked from commit 55dcff77d1bd944c6d026f7b02e33d49e9f069c6)
+
+Electron adaptation notes (42-x-y): V8 14.8 has no src/objects/map-word.h (MapWord is declared in src/objects/objects.h, already included by js-objects.cc), so that #include is dropped. No other changes.
+
+diff --git a/src/objects/js-objects.cc b/src/objects/js-objects.cc
+index fe16019d85257ba5bb32e3636ddd7e2a85596fa4..ff3a4fe5e33636e0d1aa9d9c15a75809bc23fc86 100644
+--- a/src/objects/js-objects.cc
++++ b/src/objects/js-objects.cc
+@@ -849,23 +849,31 @@ int GetIdentityHashHelper(Tagged<JSReceiver> object) {
+     return Smi::ToInt(properties);
+   }
+ 
+-  if (IsPropertyArray(properties)) {
+-    return Cast<PropertyArray>(properties)->Hash();
++  Tagged<HeapObject> properties_object = Cast<HeapObject>(properties);
++  if (MapWord properties_object_map = properties_object->map_word(kRelaxedLoad);
++      properties_object_map.IsForwardingAddress()) {
++    properties_object =
++        properties_object_map.ToForwardingAddress(properties_object);
++    DCHECK(!properties_object->map_word(kRelaxedLoad).IsForwardingAddress());
+   }
+ 
+-  if (IsPropertyDictionary(properties)) {
+-    return Cast<PropertyDictionary>(properties)->Hash();
++  if (IsPropertyArray(properties_object)) {
++    return Cast<PropertyArray>(properties_object)->Hash();
+   }
+ 
+-  if (IsGlobalDictionary(properties)) {
+-    return Cast<GlobalDictionary>(properties)->Hash();
++  if (IsPropertyDictionary(properties_object)) {
++    return Cast<PropertyDictionary>(properties_object)->Hash();
++  }
++
++  if (IsGlobalDictionary(properties_object)) {
++    return Cast<GlobalDictionary>(properties_object)->Hash();
+   }
+ 
+ #ifdef DEBUG
+   ReadOnlyRoots roots = GetReadOnlyRoots();
+-  DCHECK(properties == roots.empty_fixed_array() ||
+-         properties == roots.empty_property_dictionary() ||
+-         properties == roots.empty_swiss_property_dictionary());
++  DCHECK(properties_object == roots.empty_fixed_array() ||
++         properties_object == roots.empty_property_dictionary() ||
++         properties_object == roots.empty_swiss_property_dictionary());
+ #endif
+ 
+   return PropertyArray::kNoHashSentinel;
+diff --git a/test/mjsunit/regress/regress-567538973.js b/test/mjsunit/regress/regress-567538973.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..3b7a353a9c6750822a25de786a30df5e2f477116
+--- /dev/null
++++ b/test/mjsunit/regress/regress-567538973.js
+@@ -0,0 +1,43 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++const reg = new FinalizationRegistry(() => {});
++const keep = {};
++let sink = null;
++
++function mk(i) {
++  const o = {};
++  o.a0 = i;
++  o.a1 = i;
++  o.a2 = i;
++  o.a3 = i;
++  o.a4 = i;
++  o.a5 = i;
++  o.a6 = i;
++  o.a7 = i;
++  return o;
++}
++
++function f(i) {
++  const o = mk(i);
++  reg.register(keep, i, o);
++  const x = o.a5;
++  const arr = new Array(4000);
++  const y = o.a6;
++  sink = arr;
++  return x + y;
++}
++
++%PrepareFunctionForOptimization(mk);
++%PrepareFunctionForOptimization(f);
++for (let i = 0; i < 10; i++) {
++  f(i);
++}
++%OptimizeFunctionOnNextCall(f);
++let s = 0;
++for (let i = 0; i < 2000; i++) {
++  s += f(i);
++}
