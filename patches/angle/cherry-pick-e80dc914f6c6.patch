@@ -1,0 +1,73 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brandon Jones <bajones@chromium.org>
+Date: Tue, 15 Sep 2026 14:09:44 -0700
+Subject: [M152] GL: Change mipmap workaround from flush to forcefullyFlush
+
+Original change's description:
+> GL: Change mipmap workaround from flush to forcefullyFlush
+>
+> An existing workaround for IMG GPUs inserts a flush prior to any
+> generateMipmaps calls, but a separate issue was discovered with the
+> same GPUs that requires a forced flush or finish to resolve. Updates
+> the flush to a forcefullyFlush to ensure that the issue is avoided.
+>
+> Bug: chromium:549995090
+> Change-Id: Ifd7d45b9fcf26f4755730c770e9dae5e84688f52
+> Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8414369
+> Reviewed-by: Geoff Lang <geofflang@chromium.org>
+> Reviewed-by: Kenneth Russell <kbr@chromium.org>
+> Auto-Submit: Brandon Jones <bajones@chromium.org>
+> Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+(cherry picked from commit cdea97f48c9fcdad495c4c9a3fff95afbc3f29c9)
+
+Bug: chromium:563677077,chromium:549995090
+Change-Id: Ifd7d45b9fcf26f4755730c770e9dae5e84688f52
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8485453
+Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+Commit-Queue: Corentin Wallez <cwallez@chromium.org>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index 44bbfe5d0e7933e67d2dd5d9a7a552a7fe88cdbf..94bd8cedd84473ebe23972e1d4d55c481e881975 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -986,7 +986,7 @@
+             "description": [
+                 "Force a flush before calling generateMipmap to work around driver bugs."
+             ],
+-            "issue": "http://crbug.com/549350408"
++            "issue": "http://crbug.com/549350408 https://crbug.com/549995090"
+         },
+         {
+             "name": "split_level_0_pbo_full_sub_image_2D",
+diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
+index c23838c9d2d0ff6799271c3b17d8e9f26f41837b..af23acfe0d23201334598cca22466377c7e60b23 100644
+--- a/src/libANGLE/renderer/gl/TextureGL.cpp
++++ b/src/libANGLE/renderer/gl/TextureGL.cpp
+@@ -1842,9 +1842,8 @@ angle::Result TextureGL::generateMipmap(const gl::Context *context)
+ 
+     if (features.flushBeforeGenerateMipmap.enabled)
+     {
+-        // Force a flush before generating the mipmap, which avoids a bad state in the IMG driver if
+-        // the texture's base level is still bound to an active FBO.
+-        ANGLE_GL_TRY(context, functions->flush());
++        // Force a flush before generating the mipmap, which avoids bad states in the IMG driver.
++        ANGLE_GL_TRY(context, stateManager->forcefullyFlush());
+     }
+ 
+     stateManager->bindTexture(getType(), mTextureID);
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index 53440f2d7c336005919b406e16bd1846685337f3..4bc95e09a8db11e18262a200d95a4eb0585ac58d 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2795,8 +2795,7 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+     // Disable EXT_clear_texture entirely on IMG as a speculative fix for driver crashes.
+     ANGLE_FEATURE_CONDITION(features, disableClearTexture, IsPowerVR(vendor));
+ 
+-    // Forces a flush before generating a mipmap, which avoids a bad state in the IMG driver if
+-    // the texture's base level is still bound to an active FBO.
++    // Forces a flush before generating a mipmap, which avoids bad states in the IMG driver.
+     ANGLE_FEATURE_CONDITION(features, flushBeforeGenerateMipmap, IsPowerVR(vendor));
+ 
+     // IMG GL drivers crash while compiling shaders with more than the limit of uniform blocks.
