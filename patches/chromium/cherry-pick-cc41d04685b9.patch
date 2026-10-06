@@ -1,0 +1,497 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jonathan Ross <jonross@chromium.org>
+Date: Wed, 30 Sep 2026 23:32:24 -0700
+Subject: [M150-LTS] Widen cc::PaintShader record shader IDs to 64 bits
+
+Record shader IDs were previously minted from a 32-bit counter, which
+could roll over in long-lived renderer processes. When the counter
+wrapped around, ID collisions could cause the service-side transfer
+cache to reuse an incorrect cached picture or generate
+kInvalidRecordShaderId, resulting in raster failures.
+
+Widen RecordShaderId and the sequence counter to uint64_t to prevent
+counter rollover. uint64_t serialization in PaintOpWriter and
+PaintOpReader is split into two uint32_t fields to maintain 4-byte
+alignment guarantees, and the transfer cache lookup helper is updated to
+accept 64-bit entry IDs.
+
+TAG=agy
+
+Bug: 556272421
+Change-Id: Id363ac7bebd8f7d5c30f1dd16cb2e60c98744e29
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8408827
+Commit-Queue: Jonathan Ross <jonross@chromium.org>
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1702187}
+(cherry picked from commit f06e60e56d7f62632ed78bdfd414d89097669734)
+
+diff --git a/cc/paint/paint_op_buffer_unittest.cc b/cc/paint/paint_op_buffer_unittest.cc
+index eb5da386d0d132e6062aedab8e3a6b2f3aafae4d..0ab1708ca7377ab0975f6d7b8504f79788e611d9 100644
+--- a/cc/paint/paint_op_buffer_unittest.cc
++++ b/cc/paint/paint_op_buffer_unittest.cc
+@@ -139,6 +139,15 @@ class PaintOpSerializationTestUtils {
+   static void ResetShaderType(PaintShader* shader, PaintShader::Type type) {
+     shader->shader_type_ = type;
+   }
++
++  static void SetRecordShaderId(PaintShader* shader,
++                                PaintShader::RecordShaderId id) {
++    shader->id_ = id;
++  }
++
++  static sk_sp<SkPicture> GetCachedPicture(const PaintShader* shader) {
++    return shader->sk_cached_picture_;
++  }
+ };
+ 
+ TEST(PaintOpBufferTest, Empty) {
+@@ -4054,6 +4063,135 @@ TEST(PaintOpBufferTest, RecordShadersCachedSize) {
+   EXPECT_GT(shader_size, estimated_image_size);
+ }
+ 
++TEST(PaintOpBufferTest, RecordShaderIdSerialization) {
++  PaintOpBuffer shader_buffer;
++  shader_buffer.push<DrawRectOp>(SkRect::MakeWH(10.f, 10.f), PaintFlags());
++  auto shader = PaintShader::MakePaintRecord(
++      shader_buffer.ReleaseAsRecord(), SkRect::MakeWH(10.f, 10.f),
++      SkTileMode::kClamp, SkTileMode::kClamp, nullptr);
++  // Record shader ids are minted by a 64-bit counter, so ids wider than 32
++  // bits must round-trip through serialization at full width.
++  const uint64_t shader_id =
++      uint64_t{shader->paint_record_shader_id()} + (uint64_t{1} << 32);
++  PaintOpSerializationTestUtils::SetRecordShaderId(shader.get(), shader_id);
++
++  PaintOpBuffer buffer;
++  PaintFlags flags;
++  flags.setShader(shader);
++  buffer.push<DrawRectOp>(SkRect::MakeWH(10.f, 10.f), flags);
++
++  auto deserialized = SerializeAndDeserialize(buffer);
++  ASSERT_TRUE(deserialized);
++  bool found_draw_rect = false;
++  for (const PaintOp& base_op : *deserialized) {
++    if (base_op.GetType() != PaintOpType::kDrawRect) {
++      continue;
++    }
++    found_draw_rect = true;
++    const auto& op = static_cast<const DrawRectOp&>(base_op);
++    ASSERT_TRUE(op.flags.getShader());
++    EXPECT_EQ(shader_id, op.flags.getShader()->paint_record_shader_id());
++  }
++  EXPECT_TRUE(found_draw_rect);
++}
++
++TEST(PaintOpBufferTest, RecordShadersWithDistinctIdsCachedSeparately) {
++  auto make_solid_color_record_shader = [](SkColor4f color) {
++    PaintOpBuffer shader_buffer;
++    PaintFlags record_flags;
++    record_flags.setColor(color);
++    shader_buffer.push<DrawRectOp>(SkRect::MakeWH(10.f, 10.f), record_flags);
++    return PaintShader::MakePaintRecord(
++        shader_buffer.ReleaseAsRecord(), SkRect::MakeWH(10.f, 10.f),
++        SkTileMode::kClamp, SkTileMode::kClamp, nullptr);
++  };
++
++  auto shader1 = make_solid_color_record_shader(SkColors::kRed);
++  auto shader2 = make_solid_color_record_shader(SkColors::kBlue);
++  const uint64_t shader1_id = shader1->paint_record_shader_id();
++  // Give the second shader an id that matches the first shader's id in the
++  // low 32 bits. The shaders have different contents, so they must not share
++  // cached pictures.
++  const uint64_t shader2_id = shader1_id + (uint64_t{1} << 32);
++  PaintOpSerializationTestUtils::SetRecordShaderId(shader2.get(), shader2_id);
++
++  TestOptionsProvider options_provider;
++  auto* transfer_cache = options_provider.transfer_cache_helper();
++
++  auto serialize_draw_rect_with_shader = [&](sk_sp<PaintShader> shader) {
++    PaintOpBuffer buffer;
++    PaintFlags flags;
++    flags.setShader(std::move(shader));
++    buffer.push<DrawRectOp>(SkRect::MakeWH(10.f, 10.f), flags);
++    auto memory = AllocateSerializedBuffer();
++    SimpleBufferSerializer serializer(memory.as_span(),
++                                      options_provider.serialize_options());
++    serializer.Serialize(buffer);
++    CHECK(serializer.valid());
++    CHECK_GT(serializer.written(), 0u);
++    return std::make_pair(std::move(memory), serializer.written());
++  };
++
++  auto [memory1, written1] = serialize_draw_rect_with_shader(shader1);
++  auto [memory2, written2] = serialize_draw_rect_with_shader(shader2);
++
++  auto deserialized1 =
++      PaintOpBuffer::MakeFromMemory(memory1.as_span().first(written1),
++                                    options_provider.deserialize_options());
++  auto deserialized2 =
++      PaintOpBuffer::MakeFromMemory(memory2.as_span().first(written2),
++                                    options_provider.deserialize_options());
++  ASSERT_TRUE(deserialized1);
++  ASSERT_TRUE(deserialized2);
++
++  auto find_draw_rect_shader =
++      [](const PaintOpBuffer& buffer) -> const PaintShader* {
++    for (const PaintOp& base_op : buffer) {
++      if (base_op.GetType() != PaintOpType::kDrawRect) {
++        continue;
++      }
++      return static_cast<const DrawRectOp&>(base_op).flags.getShader();
++    }
++    return nullptr;
++  };
++
++  const PaintShader* deserialized_shader1 =
++      find_draw_rect_shader(*deserialized1);
++  const PaintShader* deserialized_shader2 =
++      find_draw_rect_shader(*deserialized2);
++  ASSERT_TRUE(deserialized_shader1);
++  ASSERT_TRUE(deserialized_shader2);
++
++  // Each shader gets its own transfer cache entry.
++  auto* entry1 =
++      transfer_cache->GetEntryAs<ServiceShaderTransferCacheEntry>(shader1_id);
++  auto* entry2 =
++      transfer_cache->GetEntryAs<ServiceShaderTransferCacheEntry>(shader2_id);
++  ASSERT_TRUE(entry1);
++  ASSERT_TRUE(entry2);
++  EXPECT_NE(entry1, entry2);
++
++  sk_sp<SkPicture> picture1 =
++      PaintOpSerializationTestUtils::GetCachedPicture(deserialized_shader1);
++  sk_sp<SkPicture> picture2 =
++      PaintOpSerializationTestUtils::GetCachedPicture(deserialized_shader2);
++  ASSERT_TRUE(picture1);
++  ASSERT_TRUE(picture2);
++  EXPECT_NE(picture1.get(), picture2.get());
++
++  // Each deserialized shader draws its own contents.
++  auto center_pixel_color = [](const sk_sp<SkPicture>& picture) {
++    SkBitmap bitmap;
++    bitmap.allocN32Pixels(10, 10);
++    bitmap.eraseColor(SK_ColorTRANSPARENT);
++    SkCanvas canvas(bitmap);
++    canvas.drawPicture(picture);
++    return bitmap.getColor(5, 5);
++  };
++  EXPECT_EQ(SK_ColorRED, center_pixel_color(picture1));
++  EXPECT_EQ(SK_ColorBLUE, center_pixel_color(picture2));
++}
++
+ TEST(PaintOpBufferTest, RecordFilterSerializeScaledImages) {
+   PaintOpBuffer filter_buffer;
+   filter_buffer.push<DrawImageOp>(
+diff --git a/cc/paint/paint_op_helper_unittest.cc b/cc/paint/paint_op_helper_unittest.cc
+index c1748b59d5316cedcc78c7a9cca834f73eb46af2..225964dbd593d6455564180afc617db969e39461 100644
+--- a/cc/paint/paint_op_helper_unittest.cc
++++ b/cc/paint/paint_op_helper_unittest.cc
+@@ -622,7 +622,8 @@ TEST(PaintOpHelperFilters, ShaderPaintFilter) {
+       "local_matrix=(nil), center=[0.000,0.000], tile=[0.000,0.000 "
+       "0.000x0.000], start_point=[0.000,0.000], end_point=[0.000,0.000], "
+       "start_degrees=0, end_degrees=0, image=<paint image>, record=(nil), "
+-      "id=4294967295, tile_scale=(nil), colors=(nil), positions=(nil)], "
++      "id=18446744073709551615, tile_scale=(nil), colors=(nil), "
++      "positions=(nil)], "
+       "alpha=1.000, filter_quality=kMedium_SkFilterQuality, dither=kYes, "
+       "crop_rect=[0.000,0.000 100.000x100.000])");
+ }
+diff --git a/cc/paint/paint_op_reader.cc b/cc/paint/paint_op_reader.cc
+index 3d16c6c99b6194bbafcfb207d6f9cc7fae080975..352ebd94db6399b7e01b6d250e029ae3ece04b12 100644
+--- a/cc/paint/paint_op_reader.cc
++++ b/cc/paint/paint_op_reader.cc
+@@ -246,7 +246,14 @@ void PaintOpReader::Read(uint32_t* data) {
+ }
+ 
+ void PaintOpReader::Read(uint64_t* data) {
+-  ReadSimple(data);
++  // uint64_t is serialized as two uint32_ts to meet the 4-byte minimum
++  // alignment requirement of the serialization format (see
++  // PaintOpWriter::Write(uint64_t)).
++  uint32_t lo = 0u;
++  uint32_t hi = 0u;
++  ReadSimple(&lo);
++  ReadSimple(&hi);
++  *data = static_cast<uint64_t>(hi) << 32 | lo;
+ }
+ 
+ void PaintOpReader::Read(int32_t* data) {
+@@ -728,7 +735,7 @@ void PaintOpReader::Read(sk_sp<PaintShader>* shader) {
+   Read(&ref.image_);
+   bool has_record = false;
+   Read(&has_record);
+-  uint32_t shader_id = PaintShader::kInvalidRecordShaderId;
++  PaintShader::RecordShaderId shader_id = PaintShader::kInvalidRecordShaderId;
+   size_t shader_size = 0;
+   if (has_record) {
+     if (shader_type != PaintShader::Type::kPaintRecord) {
+diff --git a/cc/paint/paint_op_writer.cc b/cc/paint/paint_op_writer.cc
+index 523806574a7c7f0886f770506df569b7010d6085..5f60b22c3ff0c940b15b04f4353ab2e56a9f6b1d 100644
+--- a/cc/paint/paint_op_writer.cc
++++ b/cc/paint/paint_op_writer.cc
+@@ -288,6 +288,14 @@ void PaintOpWriter::WriteSizeAt(base::span<uint8_t> memory, size_t size) {
+       static_cast<uint32_t>(static_cast<uint64_t>(size) >> 32);
+ }
+ 
++void PaintOpWriter::Write(uint64_t data) {
++  // uint64_t is serialized as two uint32_ts to meet the 4-byte minimum
++  // alignment requirement of PaintOpWriter (https://crbug.com/1429994 and
++  // https://crbug.com/1440013).
++  Write(static_cast<uint32_t>(data));
++  Write(static_cast<uint32_t>(data >> 32));
++}
++
+ void PaintOpWriter::Write(const SkPath& path, UsePaintCache use_paint_cache) {
+   auto id = path.getGenerationID();
+   Write(id);
+diff --git a/cc/paint/paint_op_writer.h b/cc/paint/paint_op_writer.h
+index dac766ad5b99bb169f29954ee09051433f60d8c3..3b4e5b5ff978afcffc7892aa7999f95565a171e3 100644
+--- a/cc/paint/paint_op_writer.h
++++ b/cc/paint/paint_op_writer.h
+@@ -248,6 +248,7 @@ class CC_PAINT_EXPORT PaintOpWriter {
+   void Write(uint8_t data) { WriteSimple(data); }
+   void Write(uint16_t data) { WriteSimple(data); }
+   void Write(uint32_t data) { WriteSimple(data); }
++  void Write(uint64_t data);
+   void Write(int32_t data) { WriteSimple(data); }
+   void Write(const SkPoint& point) { WriteSimple(point); }
+   void Write(const SkRect& rect) { WriteSimple(rect); }
+diff --git a/cc/paint/paint_shader.cc b/cc/paint/paint_shader.cc
+index f18cc6fc4240aedfc0ad88689445af18c992177b..ad7814f6fd2323538aaf73b8c36d68e8f5f5c319 100644
+--- a/cc/paint/paint_shader.cc
++++ b/cc/paint/paint_shader.cc
+@@ -28,7 +28,7 @@
+ 
+ namespace cc {
+ namespace {
+-base::AtomicSequenceNumber g_next_shader_id;
++base::AtomicSequenceNumberT<uint64_t> g_next_shader_id;
+ 
+ sk_sp<SkPicture> ToSkPicture(const PaintRecord& record,
+                              const SkRect& bounds,
+diff --git a/cc/paint/paint_shader.h b/cc/paint/paint_shader.h
+index 29dc5c26dda52b88b23a9029b9a6acaec55bb08d..58fd2c735823fb6c539a78d4b0cf06be43e43b44 100644
+--- a/cc/paint/paint_shader.h
++++ b/cc/paint/paint_shader.h
+@@ -45,7 +45,7 @@ class CC_PAINT_EXPORT PaintShader : public SkRefCnt {
+     kShaderCount
+   };
+ 
+-  using RecordShaderId = uint32_t;
++  using RecordShaderId = uint64_t;
+   static const RecordShaderId kInvalidRecordShaderId;
+ 
+   // Scaling behavior dictates how a PaintRecord shader will behave. Use
+diff --git a/cc/paint/transfer_cache_deserialize_helper.h b/cc/paint/transfer_cache_deserialize_helper.h
+index 9acc0151957d47dd3051618ce46ecd5f5b8d9d96..40ea0ca2903055e5e694c8e3042ce6a9b3ca093f 100644
+--- a/cc/paint/transfer_cache_deserialize_helper.h
++++ b/cc/paint/transfer_cache_deserialize_helper.h
+@@ -26,7 +26,7 @@ class CC_PAINT_EXPORT TransferCacheDeserializeHelper {
+   // Type safe access to an entry in the transfer cache. Returns null if the
+   // entry is missing or of the wrong type.
+   template <typename T>
+-  T* GetEntryAs(uint32_t id) {
++  T* GetEntryAs(uint64_t id) {
+     // There is a bit of a weirdness if we use T::kType directly in the DCHECK
+     // below. Specifically, the linker can't seem to find that symbol ¯\_(ツ)_/¯
+     // so instead save off the type into a local variable and use that.
+@@ -46,7 +46,7 @@ class CC_PAINT_EXPORT TransferCacheDeserializeHelper {
+ 
+   // Creates an entry directly.  If an entry exists, it will be clobbered.
+   virtual void CreateLocalEntry(
+-      uint32_t id,
++      uint64_t id,
+       std::unique_ptr<ServiceTransferCacheEntry> entry) = 0;
+ 
+   size_t GetTotalEntrySizes() const { return total_size_; }
+@@ -54,7 +54,7 @@ class CC_PAINT_EXPORT TransferCacheDeserializeHelper {
+  private:
+   virtual ServiceTransferCacheEntry* GetEntryInternal(
+       TransferCacheEntryType entry_type,
+-      uint32_t entry_id) = 0;
++      uint64_t entry_id) = 0;
+ 
+   size_t total_size_ = 0;
+ };
+diff --git a/cc/test/transfer_cache_test_helper.cc b/cc/test/transfer_cache_test_helper.cc
+index d3c7e74026d32ac67cd9a5db6193a9ebe366fd49..b4a26efaed6ff9ddaa666bee7ee011f763d04c69 100644
+--- a/cc/test/transfer_cache_test_helper.cc
++++ b/cc/test/transfer_cache_test_helper.cc
+@@ -58,7 +58,7 @@ void TransferCacheTestHelper::CreateEntryDirect(const EntryKey& key,
+ }
+ 
+ void TransferCacheTestHelper::CreateLocalEntry(
+-    uint32_t id,
++    uint64_t id,
+     std::unique_ptr<ServiceTransferCacheEntry> entry) {
+   auto key = std::make_pair(entry->Type(), id);
+ 
+@@ -77,7 +77,7 @@ void TransferCacheTestHelper::UnlockEntriesDirect(
+   EnforceLimits();
+ }
+ 
+-void TransferCacheTestHelper::DeleteEntryDirect(const EntryKey& key) {
++void TransferCacheTestHelper::DeleteEntryDirect(const ServiceEntryKey& key) {
+   locked_entries_.erase(key);
+   local_entries_.erase(key);
+   entries_.erase(key);
+@@ -90,7 +90,7 @@ void TransferCacheTestHelper::SetCachedItemsLimit(size_t limit) {
+ 
+ ServiceTransferCacheEntry* TransferCacheTestHelper::GetEntryInternal(
+     TransferCacheEntryType type,
+-    uint32_t id) {
++    uint64_t id) {
+   auto key = std::make_pair(type, id);
+   if (locked_entries_.count(key) + local_entries_.count(key) == 0) {
+     return nullptr;
+diff --git a/cc/test/transfer_cache_test_helper.h b/cc/test/transfer_cache_test_helper.h
+index 632d504cb7ec80c2619077a0fc412e74e6ea97e1..c5b2327e5243fc5a556b4cd1a931d750ee878dcd 100644
+--- a/cc/test/transfer_cache_test_helper.h
++++ b/cc/test/transfer_cache_test_helper.h
+@@ -9,6 +9,7 @@
+ #include <map>
+ #include <memory>
+ #include <set>
++#include <utility>
+ #include <vector>
+ 
+ #include "base/containers/span.h"
+@@ -22,6 +23,11 @@ namespace cc {
+ class TransferCacheTestHelper : public TransferCacheDeserializeHelper,
+                                 public TransferCacheSerializeHelper {
+  public:
++  // Entries created locally by the service side during deserialization (e.g.
++  // record shader entries) are keyed by 64-bit ids, while client entries use
++  // 32-bit ids.
++  using ServiceEntryKey = std::pair<TransferCacheEntryType, uint64_t>;
++
+   TransferCacheTestHelper();
+   ~TransferCacheTestHelper() override;
+ 
+@@ -32,16 +38,16 @@ class TransferCacheTestHelper : public TransferCacheDeserializeHelper,
+ 
+   void CreateEntryDirect(const EntryKey& key, base::span<uint8_t> data);
+   void UnlockEntriesDirect(const std::vector<EntryKey>& keys);
+-  void DeleteEntryDirect(const EntryKey& key);
++  void DeleteEntryDirect(const ServiceEntryKey& key);
+ 
+   // Deserialization helpers.
+   ServiceTransferCacheEntry* GetEntryInternal(TransferCacheEntryType type,
+-                                              uint32_t id) override;
++                                              uint64_t id) override;
+ 
+-  const EntryKey& GetLastAddedEntry() const { return last_added_entry_; }
++  const ServiceEntryKey& GetLastAddedEntry() const { return last_added_entry_; }
+ 
+   void CreateLocalEntry(
+-      uint32_t id,
++      uint64_t id,
+       std::unique_ptr<ServiceTransferCacheEntry> entry) override;
+ 
+   size_t num_of_entries() const { return entries_.size(); }
+@@ -61,10 +67,11 @@ class TransferCacheTestHelper : public TransferCacheDeserializeHelper,
+ 
+   // entries_ may reference owned_context_ so must be destroyed before the
+   // context to avoid dangling ptrs.
+-  std::map<EntryKey, std::unique_ptr<ServiceTransferCacheEntry>> entries_;
+-  std::set<EntryKey> local_entries_;
+-  std::set<EntryKey> locked_entries_;
+-  EntryKey last_added_entry_ = {TransferCacheEntryType::kRawMemory, ~0};
++  std::map<ServiceEntryKey, std::unique_ptr<ServiceTransferCacheEntry>>
++      entries_;
++  std::set<ServiceEntryKey> local_entries_;
++  std::set<ServiceEntryKey> locked_entries_;
++  ServiceEntryKey last_added_entry_ = {TransferCacheEntryType::kRawMemory, ~0};
+ 
+   size_t cached_items_limit_ = std::numeric_limits<size_t>::max();
+ };
+diff --git a/gpu/command_buffer/service/raster_decoder.cc b/gpu/command_buffer/service/raster_decoder.cc
+index 4d3a7ee4d5656ab42addc4a557d4d5ae8cecdac8..b205b42411e229f06ec3e5ce52d31531f7376416 100644
+--- a/gpu/command_buffer/service/raster_decoder.cc
++++ b/gpu/command_buffer/service/raster_decoder.cc
+@@ -2770,7 +2770,7 @@ class TransferCacheDeserializeHelperImpl final
+   ~TransferCacheDeserializeHelperImpl() override = default;
+ 
+   void CreateLocalEntry(
+-      uint32_t id,
++      uint64_t id,
+       std::unique_ptr<cc::ServiceTransferCacheEntry> entry) override {
+     auto type = entry->Type();
+     transfer_cache_->CreateLocalEntry(
+@@ -2781,7 +2781,7 @@ class TransferCacheDeserializeHelperImpl final
+  private:
+   cc::ServiceTransferCacheEntry* GetEntryInternal(
+       cc::TransferCacheEntryType entry_type,
+-      uint32_t entry_id) override {
++      uint64_t entry_id) override {
+     return transfer_cache_->GetEntry(ServiceTransferCache::EntryKey(
+         raster_decoder_id_, entry_type, entry_id));
+   }
+diff --git a/gpu/command_buffer/service/service_transfer_cache.cc b/gpu/command_buffer/service/service_transfer_cache.cc
+index b9adb092b49dcd44175f33c78a4502b1520cba27..35e9a79f0fdb2c9fa8c8cd84007a324f522c59ff 100644
+--- a/gpu/command_buffer/service/service_transfer_cache.cc
++++ b/gpu/command_buffer/service/service_transfer_cache.cc
+@@ -476,7 +476,7 @@ bool ServiceTransferCache::OnMemoryDump(
+ 
+ ServiceTransferCache::EntryKey::EntryKey(int decoder_id,
+                                          cc::TransferCacheEntryType entry_type,
+-                                         uint32_t entry_id)
++                                         uint64_t entry_id)
+     : decoder_id(decoder_id), entry_type(entry_type), entry_id(entry_id) {}
+ 
+ }  // namespace gpu
+diff --git a/gpu/command_buffer/service/service_transfer_cache.h b/gpu/command_buffer/service/service_transfer_cache.h
+index 234083b28118e12a10c01c573ab6f5c0e0f1ebcd..dc7d8fd6821af820ef2c0b6fae7279b25076e635 100644
+--- a/gpu/command_buffer/service/service_transfer_cache.h
++++ b/gpu/command_buffer/service/service_transfer_cache.h
+@@ -48,10 +48,10 @@ class GPU_GLES2_EXPORT ServiceTransferCache
+   struct GPU_GLES2_EXPORT EntryKey {
+     EntryKey(int decoder_id,
+              cc::TransferCacheEntryType entry_type,
+-             uint32_t entry_id);
++             uint64_t entry_id);
+     int decoder_id;
+     cc::TransferCacheEntryType entry_type;
+-    uint32_t entry_id;
++    uint64_t entry_id;
+   };
+ 
+   ServiceTransferCache(const GpuPreferences& preferences,
+diff --git a/gpu/command_buffer/service/service_transfer_cache_unittest.cc b/gpu/command_buffer/service/service_transfer_cache_unittest.cc
+index cac062527eb41ccf0eae90e2ebf6b802fb52f287..08209097b53d3a1dc9a25ebae6155a628518b38c 100644
+--- a/gpu/command_buffer/service/service_transfer_cache_unittest.cc
++++ b/gpu/command_buffer/service/service_transfer_cache_unittest.cc
+@@ -84,6 +84,34 @@ TEST(ServiceTransferCache, MultipleDecoderUse) {
+                                      decoder2, kEntryType, entry_id)));
+ }
+ 
++TEST(ServiceTransferCache, EntryIdsBeyond32Bits) {
++  ServiceTransferCache cache{GpuPreferences(), base::RepeatingClosure()};
++  const size_t entry_size = 1024u;
++
++  // Two entry ids that only match in the low 32 bits address distinct
++  // entries.
++  const uint64_t low_entry_id = 7u;
++  const uint64_t high_entry_id = low_entry_id + (uint64_t{1} << 32);
++
++  auto low_entry = CreateEntry(entry_size);
++  auto* low_entry_ptr = low_entry.get();
++  cache.CreateLocalEntry(
++      ServiceTransferCache::EntryKey(kDecoderId, kEntryType, low_entry_id),
++      std::move(low_entry));
++
++  auto high_entry = CreateEntry(entry_size);
++  auto* high_entry_ptr = high_entry.get();
++  cache.CreateLocalEntry(
++      ServiceTransferCache::EntryKey(kDecoderId, kEntryType, high_entry_id),
++      std::move(high_entry));
++
++  EXPECT_EQ(cache.entries_count_for_testing(), 2u);
++  EXPECT_EQ(low_entry_ptr, cache.GetEntry(ServiceTransferCache::EntryKey(
++                               kDecoderId, kEntryType, low_entry_id)));
++  EXPECT_EQ(high_entry_ptr, cache.GetEntry(ServiceTransferCache::EntryKey(
++                                kDecoderId, kEntryType, high_entry_id)));
++}
++
+ TEST(ServiceTransferCache, DeleteEntriesForDecoder) {
+   ServiceTransferCache cache{GpuPreferences(), base::RepeatingClosure()};
+   const size_t entry_size = 1024u;
