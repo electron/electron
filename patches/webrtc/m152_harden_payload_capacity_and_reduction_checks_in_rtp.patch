@@ -1,0 +1,358 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tommi <tommi@webrtc.org>
+Date: Tue, 29 Sep 2026 13:45:52 +0200
+Subject: [M152] Harden payload capacity and reduction checks in RTP
+ packetizers
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> Harden payload capacity and reduction checks in RTP packetizers
+>
+> Ensure packet reduction lengths cannot be negative when computing
+> payload limits in RTPSenderVideo and when determining needed payload
+> sizes during aggregation. Additionally, add a bounds check against
+> available payload capacity before copying aggregated fragments in
+> RtpPacketizerH265.
+>
+> Bug: chromium:567088927
+> Change-Id: Ibd57aacce9ef79379fa627903d4aed89c9fbf489
+> Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/506260
+> Reviewed-by: Erik Språng <sprang@webrtc.org>
+> Commit-Queue: Tomas Gunnarsson <tommi@webrtc.org>
+> Cr-Commit-Position: refs/heads/main@{#48750}
+
+(cherry picked from commit fc6666263eafa63878d02102189e3dabe9c90455)
+
+Bug: chromium:567088927
+Fixed: chromium:567813005
+Change-Id: Ibd57aacce9ef79379fa627903d4aed89c9fbf489
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/506560
+Reviewed-by: Erik Språng <sprang@webrtc.org>
+Commit-Queue: Tomas Gunnarsson <tommi@webrtc.org>
+Cr-Commit-Position: refs/branch-heads/7977@{#2}
+Cr-Branched-From: 6f37672d358475cd17544121a12494da454d85fb-refs/heads/main@{#48235}
+
+diff --git a/modules/rtp_rtcp/source/rtp_format.cc b/modules/rtp_rtcp/source/rtp_format.cc
+index 5d3c880aff5656d7a8715a14fd9a722250408722..f8d8a72bbb93141f7fa6fabb9450abd237fa7a15 100644
+--- a/modules/rtp_rtcp/source/rtp_format.cc
++++ b/modules/rtp_rtcp/source/rtp_format.cc
+@@ -36,6 +36,7 @@ std::unique_ptr<RtpPacketizer> RtpPacketizer::Create(
+     PayloadSizeLimits limits,
+     // Codec-specific details.
+     const RTPVideoHeader& rtp_video_header) {
++  limits = limits.Sanitize();
+   using enum PacketizationFormat;
+   switch (format) {
+     case kRaw: {
+diff --git a/modules/rtp_rtcp/source/rtp_format.h b/modules/rtp_rtcp/source/rtp_format.h
+index e329109e82c0062d03b452d18dd0e22307ac10f5..561d6e45355ceb7fa767ff65793d03b6e296a68f 100644
+--- a/modules/rtp_rtcp/source/rtp_format.h
++++ b/modules/rtp_rtcp/source/rtp_format.h
+@@ -13,6 +13,7 @@
+ 
+ #include <stdint.h>
+ 
++#include <algorithm>
+ #include <cstddef>
+ #include <memory>
+ #include <span>
+@@ -32,6 +33,18 @@ class RtpPacketizer {
+     int last_packet_reduction_len = 0;
+     // Reduction len for packet that is first & last at the same time.
+     int single_packet_reduction_len = 0;
++
++    PayloadSizeLimits Sanitize() const {
++      PayloadSizeLimits result = *this;
++      result.max_payload_len = std::max(0, result.max_payload_len);
++      result.single_packet_reduction_len = std::clamp(
++          result.single_packet_reduction_len, 0, result.max_payload_len);
++      result.first_packet_reduction_len = std::clamp(
++          result.first_packet_reduction_len, 0, result.max_payload_len);
++      result.last_packet_reduction_len = std::clamp(
++          result.last_packet_reduction_len, 0, result.max_payload_len);
++      return result;
++    }
+   };
+ 
+   enum class PacketizationFormat {
+diff --git a/modules/rtp_rtcp/source/rtp_format_h264.cc b/modules/rtp_rtcp/source/rtp_format_h264.cc
+index ba4f4feb17cac4d3476882839784318a27014a91..5152f915c0cc89ca2c2f9c90219ccc9f428b0768 100644
+--- a/modules/rtp_rtcp/source/rtp_format_h264.cc
++++ b/modules/rtp_rtcp/source/rtp_format_h264.cc
+@@ -19,6 +19,7 @@
+ #include "absl/algorithm/container.h"
+ #include "common_video/h264/h264_common.h"
+ #include "modules/rtp_rtcp/source/byte_io.h"
++#include "modules/rtp_rtcp/source/rtp_format.h"
+ #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
+ #include "modules/video_coding/codecs/h264/include/h264_globals.h"
+ #include "rtc_base/checks.h"
+@@ -36,7 +37,7 @@ constexpr size_t kLengthFieldSize = 2;
+ RtpPacketizerH264::RtpPacketizerH264(std::span<const uint8_t> payload,
+                                      PayloadSizeLimits limits,
+                                      H264PacketizationMode packetization_mode)
+-    : limits_(limits), num_packets_left_(0) {
++    : limits_(limits.Sanitize()), num_packets_left_(0) {
+   // Guard against uninitialized memory in packetization_mode.
+   RTC_CHECK(packetization_mode == H264PacketizationMode::NonInterleaved ||
+             packetization_mode == H264PacketizationMode::SingleNalUnit);
+@@ -102,6 +103,10 @@ bool RtpPacketizerH264::PacketizeFuA(size_t fragment_index) {
+   // Fragment payload into packets (FU-A).
+   std::span<const uint8_t> fragment = input_fragments_[fragment_index];
+ 
++  if (limits_.max_payload_len <= static_cast<int>(kFuAHeaderSize)) {
++    return false;
++  }
++
+   PayloadSizeLimits limits = limits_;
+   // Leave room for the FU-A header.
+   limits.max_payload_len -= kFuAHeaderSize;
+@@ -159,15 +164,15 @@ size_t RtpPacketizerH264::PacketizeStapA(size_t fragment_index) {
+   auto payload_size_needed = [&] {
+     size_t fragment_size = fragment.size() + fragment_headers_length;
+     bool has_last_fragment = fragment_index == input_fragments_.size() - 1;
++    int reduction_len = 0;
+     if (has_first_fragment && has_last_fragment) {
+-      return fragment_size + limits_.single_packet_reduction_len;
++      reduction_len = limits_.single_packet_reduction_len;
+     } else if (has_first_fragment) {
+-      return fragment_size + limits_.first_packet_reduction_len;
++      reduction_len = limits_.first_packet_reduction_len;
+     } else if (has_last_fragment) {
+-      return fragment_size + limits_.last_packet_reduction_len;
+-    } else {
+-      return fragment_size;
++      reduction_len = limits_.last_packet_reduction_len;
+     }
++    return fragment_size + reduction_len;
+   };
+   while (payload_size_left >= payload_size_needed()) {
+     RTC_CHECK_GT(fragment.size(), 0);
+diff --git a/modules/rtp_rtcp/source/rtp_format_h264_unittest.cc b/modules/rtp_rtcp/source/rtp_format_h264_unittest.cc
+index 15e6817155b3c11e8e7ec7738ca0459ed2bf32e2..fb02b9b4c21011cbb6ec8cceca8ee9f6f2e471a1 100644
+--- a/modules/rtp_rtcp/source/rtp_format_h264_unittest.cc
++++ b/modules/rtp_rtcp/source/rtp_format_h264_unittest.cc
+@@ -724,5 +724,23 @@ TEST(RtpPacketizerH264Test, MultipleStapA) {
+   EXPECT_THAT(FetchAllPackets(&packetizer), SizeIs(2));
+ }
+ 
++TEST(RtpPacketizerH264Test, HandlesZeroMaxPayloadLen) {
++  uint8_t frame[100] = {0x00, 0x00, 0x00, 0x01, kSlice};
++  RtpPacketizer::PayloadSizeLimits limits;
++  limits.max_payload_len = 0;
++  RtpPacketizerH264 packetizer(frame, limits,
++                               H264PacketizationMode::NonInterleaved);
++  EXPECT_EQ(packetizer.NumPackets(), 0u);
++}
++
++TEST(RtpPacketizerH264Test, HandlesMaxPayloadLenSmallerThanFuAHeader) {
++  uint8_t frame[100] = {0x00, 0x00, 0x00, 0x01, kSlice};
++  RtpPacketizer::PayloadSizeLimits limits;
++  limits.max_payload_len = 2;  // Equal to kFuAHeaderSize
++  RtpPacketizerH264 packetizer(frame, limits,
++                               H264PacketizationMode::NonInterleaved);
++  EXPECT_EQ(packetizer.NumPackets(), 0u);
++}
++
+ }  // namespace
+ }  // namespace webrtc
+diff --git a/modules/rtp_rtcp/source/rtp_format_unittest.cc b/modules/rtp_rtcp/source/rtp_format_unittest.cc
+index d67e17a3768a3eb314178624c1e52c7f1564d509..eedf8416f933f112aee0d6981d53a1b144c7ed0f 100644
+--- a/modules/rtp_rtcp/source/rtp_format_unittest.cc
++++ b/modules/rtp_rtcp/source/rtp_format_unittest.cc
+@@ -278,5 +278,33 @@ TEST(RtpPacketizerSplitAboutEqually, CanPutSinglePayloadByteInOnePacket) {
+   EXPECT_THAT(RtpPacketizer::SplitAboutEqually(1, limits), ElementsAre(1));
+ }
+ 
++TEST(RtpPacketizerPayloadSizeLimits, SanitizeClampsNegativeValues) {
++  RtpPacketizer::PayloadSizeLimits limits;
++  limits.max_payload_len = -50;
++  limits.single_packet_reduction_len = -10;
++  limits.first_packet_reduction_len = -20;
++  limits.last_packet_reduction_len = -5;
++
++  RtpPacketizer::PayloadSizeLimits sanitized = limits.Sanitize();
++  EXPECT_EQ(sanitized.max_payload_len, 0);
++  EXPECT_EQ(sanitized.single_packet_reduction_len, 0);
++  EXPECT_EQ(sanitized.first_packet_reduction_len, 0);
++  EXPECT_EQ(sanitized.last_packet_reduction_len, 0);
++}
++
++TEST(RtpPacketizerPayloadSizeLimits, SanitizeClampsExcessiveReductions) {
++  RtpPacketizer::PayloadSizeLimits limits;
++  limits.max_payload_len = 100;
++  limits.single_packet_reduction_len = 150;
++  limits.first_packet_reduction_len = 200;
++  limits.last_packet_reduction_len = 101;
++
++  RtpPacketizer::PayloadSizeLimits sanitized = limits.Sanitize();
++  EXPECT_EQ(sanitized.max_payload_len, 100);
++  EXPECT_EQ(sanitized.single_packet_reduction_len, 100);
++  EXPECT_EQ(sanitized.first_packet_reduction_len, 100);
++  EXPECT_EQ(sanitized.last_packet_reduction_len, 100);
++}
++
+ }  // namespace
+ }  // namespace webrtc
+diff --git a/modules/rtp_rtcp/source/rtp_packetizer_h265.cc b/modules/rtp_rtcp/source/rtp_packetizer_h265.cc
+index 0311754394867323a1afd98d262e155fd0a77f18..fe8fcfd565301fc765313737eb7b7b5c52693a08 100644
+--- a/modules/rtp_rtcp/source/rtp_packetizer_h265.cc
++++ b/modules/rtp_rtcp/source/rtp_packetizer_h265.cc
+@@ -20,6 +20,7 @@
+ #include "common_video/h264/h264_common.h"
+ #include "common_video/h265/h265_common.h"
+ #include "modules/rtp_rtcp/source/byte_io.h"
++#include "modules/rtp_rtcp/source/rtp_format.h"
+ #include "modules/rtp_rtcp/source/rtp_packet_h265_common.h"
+ #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
+ #include "rtc_base/checks.h"
+@@ -28,7 +29,7 @@ namespace webrtc {
+ 
+ RtpPacketizerH265::RtpPacketizerH265(std::span<const uint8_t> payload,
+                                      PayloadSizeLimits limits)
+-    : limits_(limits), num_packets_left_(0) {
++    : limits_(limits.Sanitize()), num_packets_left_(0) {
+   for (const H264::NaluIndex& nalu : H264::FindNaluIndices(payload)) {
+     if (nalu.payload_size < 2) {
+       // Payload size has to include NALU header which is fixed 2 bytes.
+@@ -85,6 +86,12 @@ bool RtpPacketizerH265::PacketizeFu(size_t fragment_index) {
+   // Fragment payload into packets (FU).
+   // Strip out the original header and leave room for the FU header.
+   std::span<const uint8_t> fragment = input_fragments_[fragment_index];
++
++  if (limits_.max_payload_len <=
++      static_cast<int>(kH265FuHeaderSizeBytes + kH265PayloadHeaderSizeBytes)) {
++    return false;
++  }
++
+   PayloadSizeLimits limits = limits_;
+   // Refer to section 4.4.3 in RFC7798, each FU fragment will have a 2-bytes
+   // payload header and a one-byte FU header. DONL is not supported so ignore
+@@ -151,15 +158,15 @@ int RtpPacketizerH265::PacketizeAp(size_t fragment_index) {
+   auto payload_size_needed = [&] {
+     size_t fragment_size = fragment.size() + fragment_headers_length;
+     bool includes_last = (fragment_index == input_fragments_.size() - 1);
++    int reduction_len = 0;
+     if (includes_first && includes_last) {
+-      return fragment_size + limits_.single_packet_reduction_len;
++      reduction_len = limits_.single_packet_reduction_len;
+     } else if (includes_first) {
+-      return fragment_size + limits_.first_packet_reduction_len;
++      reduction_len = limits_.first_packet_reduction_len;
+     } else if (includes_last) {
+-      return fragment_size + limits_.last_packet_reduction_len;
+-    } else {
+-      return fragment_size;
++      reduction_len = limits_.last_packet_reduction_len;
+     }
++    return fragment_size + reduction_len;
+   };
+ 
+   uint16_t header = (fragment[0] << 8) | fragment[1];
+@@ -238,7 +245,7 @@ void RtpPacketizerH265::NextAggregatePacket(RtpPacketToSend* rtp_packet) {
+   // Refer to section 4.4.2 for aggregation packets and modify type to
+   // 48 in PayloadHdr for aggregate packet. Do not support DONL for aggregation
+   // packets, DONL field is not present.
+-  int index = kH265PayloadHeaderSizeBytes;
++  size_t index = kH265PayloadHeaderSizeBytes;
+   bool is_last_fragment = packet->last_fragment;
+ 
+   // Refer to section 4.4.2 for aggregation packets and calculate the lowest
+@@ -254,6 +261,8 @@ void RtpPacketizerH265::NextAggregatePacket(RtpPacketToSend* rtp_packet) {
+     uint8_t temporal_id = fragment[1] & kH265TIDMask;
+     temporal_id_min = std::min(temporal_id_min, temporal_id);
+ 
++    RTC_CHECK_LE(index + kH265LengthFieldSizeBytes + fragment.size(),
++                 payload_capacity);
+     ByteWriter<uint16_t>::WriteBigEndian(&buffer[index], fragment.size());
+     index += kH265LengthFieldSizeBytes;
+     // Add NAL unit.
+diff --git a/modules/rtp_rtcp/source/rtp_packetizer_h265_unittest.cc b/modules/rtp_rtcp/source/rtp_packetizer_h265_unittest.cc
+index 73985c3752fd09812b98c82dd2328c00aa3fa031..20634a977db9c3fd953ad3149dee95577b9a2e38 100644
+--- a/modules/rtp_rtcp/source/rtp_packetizer_h265_unittest.cc
++++ b/modules/rtp_rtcp/source/rtp_packetizer_h265_unittest.cc
+@@ -437,6 +437,31 @@ TEST(RtpPacketizerH265Test, ApRespectsLastPacketReduction) {
+   EXPECT_THAT(packets[2].payload(), ElementsAreArray(nalus[3]));
+ }
+ 
++TEST(RtpPacketizerH265Test, NegativeReductionLengthsClamped) {
++  RtpPacketizer::PayloadSizeLimits limits;
++  limits.max_payload_len = 100;
++  limits.single_packet_reduction_len = -50;
++  limits.first_packet_reduction_len = -50;
++  limits.last_packet_reduction_len = -50;
++
++  Buffer nalus[] = {GenerateNalUnit({.nal_unit_type = H265::NaluType::kIdrNLp,
++                                     .nuh_layer_id = 32,
++                                     .nuh_temporal_id_plus1 = 2},
++                                    /*size=*/70),
++                    GenerateNalUnit({.nal_unit_type = H265::NaluType::kIdrNLp,
++                                     .nuh_layer_id = 32,
++                                     .nuh_temporal_id_plus1 = 2},
++                                    /*size=*/70)};
++  Buffer frame = CreateFrame(nalus);
++
++  RtpPacketizerH265 packetizer(frame, limits);
++  std::vector<RtpPacketToSend> packets = FetchAllPackets(&packetizer);
++
++  // Negative reductions must not cause the fragments to be aggregated into a
++  // single overflowing packet.
++  EXPECT_GT(packets.size(), 1u);
++}
++
+ TEST(RtpPacketizerH265Test, TooSmallForApHeaders) {
+   RtpPacketizer::PayloadSizeLimits limits;
+   limits.max_payload_len = 1000;
+@@ -702,5 +727,21 @@ INSTANTIATE_TEST_SUITE_P(
+                  .start_offset = 79},
+                 {.aggregated = true, .nalu_index = 3, .nalu_number = 2}}}));
+ 
++TEST(RtpPacketizerH265Test, HandlesZeroMaxPayloadLen) {
++  const uint8_t frame[100] = {0x00, 0x00, 0x00, 0x01, 0x00, 0x01};
++  RtpPacketizer::PayloadSizeLimits limits;
++  limits.max_payload_len = 0;
++  RtpPacketizerH265 packetizer(frame, limits);
++  EXPECT_EQ(packetizer.NumPackets(), 0u);
++}
++
++TEST(RtpPacketizerH265Test, HandlesMaxPayloadLenSmallerThanFuHeader) {
++  const uint8_t frame[100] = {0x00, 0x00, 0x00, 0x01, 0x00, 0x01};
++  RtpPacketizer::PayloadSizeLimits limits;
++  limits.max_payload_len = 3;  // Equal to FU overhead (3)
++  RtpPacketizerH265 packetizer(frame, limits);
++  EXPECT_EQ(packetizer.NumPackets(), 0u);
++}
++
+ }  // namespace
+ }  // namespace webrtc
+diff --git a/modules/rtp_rtcp/source/rtp_sender_video.cc b/modules/rtp_rtcp/source/rtp_sender_video.cc
+index d5d2fa0f73a7ac5b1cb276944e39a7f294ce1ec6..3c3e10ce52897616ce7652e7bc59ec709bed35f0 100644
+--- a/modules/rtp_rtcp/source/rtp_sender_video.cc
++++ b/modules/rtp_rtcp/source/rtp_sender_video.cc
+@@ -655,15 +655,21 @@ bool RTPSenderVideo::SendVideo(int payload_type,
+ 
+   RTC_DCHECK_GE(single_packet->headers_size(), middle_packet->headers_size());
+   limits.single_packet_reduction_len =
+-      single_packet->headers_size() - middle_packet->headers_size();
++      single_packet->headers_size() > middle_packet->headers_size()
++          ? single_packet->headers_size() - middle_packet->headers_size()
++          : 0;
+ 
+   RTC_DCHECK_GE(first_packet->headers_size(), middle_packet->headers_size());
+   limits.first_packet_reduction_len =
+-      first_packet->headers_size() - middle_packet->headers_size();
++      first_packet->headers_size() > middle_packet->headers_size()
++          ? first_packet->headers_size() - middle_packet->headers_size()
++          : 0;
+ 
+   RTC_DCHECK_GE(last_packet->headers_size(), middle_packet->headers_size());
+   limits.last_packet_reduction_len =
+-      last_packet->headers_size() - middle_packet->headers_size();
++      last_packet->headers_size() > middle_packet->headers_size()
++          ? last_packet->headers_size() - middle_packet->headers_size()
++          : 0;
+ 
+   bool has_generic_descriptor =
+       first_packet->HasExtension<RtpGenericFrameDescriptorExtension00>() ||

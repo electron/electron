@@ -1,0 +1,587 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Smith <thomsmit@google.com>
+Date: Wed, 30 Sep 2026 23:32:58 -0700
+Subject: [M150-LTS] cc, gpu: Widen PaintCacheId and paint cache deletion IPC
+ to uint64_t
+
+Skia is widening SkPath generation IDs from 32-bit to 64-bit. This CL
+prepares Chromium to consume 64-bit IDs by widening PaintCacheId and
+its associated serialization and GPU command buffer purging pipeline.
+
+Bug: 562038679
+Bug: 556268833
+Change-Id: I6546900f138050327229c14db45c3c70b1e9640e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8429709
+Reviewed-by: Kyle Charbonneau <kylechar@chromium.org>
+Reviewed-by: Robert Phillips <robertphillips@google.com>
+Commit-Queue: Thomas Smith <thomsmit@google.com>
+Cr-Commit-Position: refs/heads/main@{#1703606}
+(cherry picked from commit 7ff661871690f30cb1912652aaaab2eadc23903f)
+
+Electron adaptation notes (42-x-y):
+  - M148 does not wrap memcmp() in UNSAFE_TODO() in the generated
+    *_cmd_format_test_autogen.h files or in build_cmd_buffer_lib.py, so the
+    conflicting hunks were resolved keeping the plain memcmp() form. All 42
+    autogen files were regenerated with build_raster_cmd_buffer.py and
+    build_gles2_cmd_buffer.py and match the committed tree byte-for-byte.
+  - M148 lacks the PaintOpWriter::Write(uint64_t) overload that main gained in
+    crrev.com/c/8408827 ("Widen cc::PaintShader record shader IDs to 64
+    bits"), so Write(id) with the widened PaintCacheId was ambiguous. That
+    overload (declaration + two-uint32 implementation) is included here
+    verbatim from 8408827; the rest of 8408827 is not picked.
+
+diff --git a/cc/paint/paint_cache.h b/cc/paint/paint_cache.h
+index 0ad6546d5443ede1c1ad536f1a4f8bd3780ef2f1..0acf91d939f0876f4b82548dbe521ac9fa2f1254 100644
+--- a/cc/paint/paint_cache.h
++++ b/cc/paint/paint_cache.h
+@@ -37,7 +37,7 @@ namespace cc {
+ // since it avoids the need for cross-process ref-counting required by the
+ // TransferCache.
+ 
+-using PaintCacheId = uint32_t;
++using PaintCacheId = uint64_t;
+ using PaintCacheIds = std::vector<PaintCacheId>;
+ enum class PaintCacheDataType : uint32_t {
+   kPath,
+diff --git a/cc/paint/paint_cache_unittest.cc b/cc/paint/paint_cache_unittest.cc
+index 8a2237c0043f43eb287ffeaaa4616503bb15d5b3..d71e0180edba8e186a4691d3324b87dcbf15ade8 100644
+--- a/cc/paint/paint_cache_unittest.cc
++++ b/cc/paint/paint_cache_unittest.cc
+@@ -90,7 +90,7 @@ TEST_P(PaintCacheTest, ServiceBasic) {
+   switch (GetType()) {
+     case PaintCacheDataType::kPath: {
+       auto path = CreatePath();
+-      auto id = path.getGenerationID();
++      PaintCacheId id = path.getGenerationID();
+       SkPath cached_path;
+       EXPECT_EQ(false, service_cache.GetPath(id, &cached_path));
+       service_cache.PutPath(id, path);
+@@ -103,7 +103,7 @@ TEST_P(PaintCacheTest, ServiceBasic) {
+     } break;
+     case PaintCacheDataType::kSkRuntimeEffect: {
+       auto effect = GetEffect();
+-      auto id = base::PersistentHash(effect->source());
++      PaintCacheId id = base::PersistentHash(effect->source());
+       sk_sp<SkRuntimeEffect> cached_effect = nullptr;
+       EXPECT_FALSE(service_cache.GetEffect(id, &cached_effect));
+       service_cache.PutEffect(id, effect);
+diff --git a/cc/paint/paint_op_reader.cc b/cc/paint/paint_op_reader.cc
+index 46eb807729287205b98783fa12bd09fc9a9bc0bc..089e37793263d8eb7d8dae8e987c9508c8ee148c 100644
+--- a/cc/paint/paint_op_reader.cc
++++ b/cc/paint/paint_op_reader.cc
+@@ -293,8 +293,8 @@ void PaintOpReader::Read(SkColor4f* color) {
+ }
+ 
+ void PaintOpReader::Read(SkPath* path) {
+-  uint32_t path_id;
+-  ReadSimple(&path_id);
++  PaintCacheId path_id;
++  Read(&path_id);
+   if (!valid_)
+     return;
+ 
+diff --git a/cc/paint/paint_op_writer.cc b/cc/paint/paint_op_writer.cc
+index 5c5f412e8dc3b5e8724fb416b587a8282ee839d9..cb551ce96ccb13485a2d8ffe45615be1954d0c3a 100644
+--- a/cc/paint/paint_op_writer.cc
++++ b/cc/paint/paint_op_writer.cc
+@@ -286,8 +286,16 @@ void PaintOpWriter::WriteSizeAt(void* memory, size_t size) {
+       static_cast<uint32_t>(static_cast<uint64_t>(size) >> 32);
+ }
+ 
++void PaintOpWriter::Write(uint64_t data) {
++  // uint64_t is serialized as two uint32_ts to meet the 4-byte minimum
++  // alignment requirement of PaintOpWriter (https://crbug.com/1429994 and
++  // https://crbug.com/1440013).
++  Write(static_cast<uint32_t>(data));
++  Write(static_cast<uint32_t>(data >> 32));
++}
++
+ void PaintOpWriter::Write(const SkPath& path, UsePaintCache use_paint_cache) {
+-  auto id = path.getGenerationID();
++  PaintCacheId id = path.getGenerationID();
+   Write(id);
+ 
+   DCHECK(use_paint_cache == UsePaintCache::kEnabled ||
+diff --git a/cc/paint/paint_op_writer.h b/cc/paint/paint_op_writer.h
+index bf92aeeded87a12a08c001d37aa017f268953dac..8dc3d209c8b9de549fec356629ac7254c36b0b77 100644
+--- a/cc/paint/paint_op_writer.h
++++ b/cc/paint/paint_op_writer.h
+@@ -250,6 +250,7 @@ class CC_PAINT_EXPORT PaintOpWriter {
+   void Write(uint8_t data) { WriteSimple(data); }
+   void Write(uint16_t data) { WriteSimple(data); }
+   void Write(uint32_t data) { WriteSimple(data); }
++  void Write(uint64_t data);
+   void Write(int32_t data) { WriteSimple(data); }
+   void Write(const SkPoint& point) { WriteSimple(point); }
+   void Write(const SkRect& rect) { WriteSimple(rect); }
+diff --git a/gpu/command_buffer/build_cmd_buffer_lib.py b/gpu/command_buffer/build_cmd_buffer_lib.py
+index 81b9478d549c0072ece3d9f4c08d632cad24aa88..7fdfc135be34f9cac20819009cf02d0b2d10a28d 100644
+--- a/gpu/command_buffer/build_cmd_buffer_lib.py
++++ b/gpu/command_buffer/build_cmd_buffer_lib.py
+@@ -2523,10 +2523,12 @@ class DELnHandler(TypeHandler):
+   def WriteGetDataSizeCode(self, func, arg, f):
+     """Overrriden from TypeHandler."""
+     code = """  uint32_t %(data_size)s;
+-  if (!base::CheckMul(n, sizeof(GLuint)).AssignIfValid(&%(data_size)s)) {
++  if (!base::CheckMul(n, sizeof(%(element_type)s))
++           .AssignIfValid(&%(data_size)s)) {
+     return error::kOutOfBounds;
+   }
+-""" % {'data_size': arg.GetReservedSizeId()}
++""" % {'data_size': arg.GetReservedSizeId(),
++       'element_type': arg.GetPointedType()}
+     f.write(code)
+ 
+   def WriteGLES2ImplementationUnitTest(self, func, f):
+@@ -2670,11 +2672,13 @@ TEST_P(%(test_name)s, %(name)sInvalidArgs) {
+ """
+       f.write(code % args)
+ 
+-  def WriteImmediateCmdComputeSize(self, _func, f):
++  def WriteImmediateCmdComputeSize(self, func, f):
+     """Overrriden from TypeHandler."""
++    element_type = func.GetLastOriginalArg().GetPointedType()
+     f.write("  static uint32_t ComputeDataSize(GLsizei _n) {\n")
+     f.write(
+-        "    return static_cast<uint32_t>(sizeof(GLuint) * _n);  // NOLINT\n")
++        "    return static_cast<uint32_t>(sizeof(%s) * _n);  // NOLINT\n" %
++        element_type)
+     f.write("  }\n")
+     f.write("\n")
+     f.write("  static uint32_t ComputeSize(GLsizei _n) {\n")
+@@ -2741,8 +2745,9 @@ TEST_P(%(test_name)s, %(name)sInvalidArgs) {
+ 
+   def WriteImmediateFormatTest(self, func, f):
+     """Overrriden from TypeHandler."""
++    element_type = func.GetLastOriginalArg().GetPointedType()
+     f.write("TEST_F(%sFormatTest, %s) {\n" % (_prefix, func.name))
+-    f.write("  static GLuint ids[] = { 12, 23, 34, };\n")
++    f.write("  static %s ids[] = { 12, 23, 34, };\n" % element_type)
+     f.write("  cmds::%s& cmd = *GetBufferAs<cmds::%s>();\n" %
+                (func.name, func.name))
+     f.write("  void* next_cmd = cmd.Set(\n")
+@@ -2751,12 +2756,15 @@ TEST_P(%(test_name)s, %(name)sInvalidArgs) {
+                func.name)
+     f.write("            cmd.header.command);\n")
+     f.write("  EXPECT_EQ(sizeof(cmd) +\n")
+-    f.write("            RoundSizeToMultipleOfEntries(cmd.n * 4u),\n")
++    f.write("            RoundSizeToMultipleOfEntries(cmd.n * sizeof(%s)),\n" %
++               element_type)
+     f.write("            cmd.header.size * 4u);\n")
+     f.write("  EXPECT_EQ(static_cast<GLsizei>(std::size(ids)), cmd.n);\n");
+     f.write("  CheckBytesWrittenMatchesExpectedSize(\n")
+     f.write("      next_cmd, sizeof(cmd) +\n")
+-    f.write("      RoundSizeToMultipleOfEntries(std::size(ids) * 4u));\n")
++    f.write("      RoundSizeToMultipleOfEntries("
++            "std::size(ids) * sizeof(%s)));\n" %
++               element_type)
+     f.write("  EXPECT_EQ(0, memcmp(ids, ImmediateDataAddress(&cmd),\n")
+     f.write("                      sizeof(ids)));\n")
+     f.write("}\n")
+diff --git a/gpu/command_buffer/client/raster_cmd_helper_autogen.h b/gpu/command_buffer/client/raster_cmd_helper_autogen.h
+index 002ed1df441b2521dc0233b44d55f5eae54b2132..66c4c687c4c3f9d71ed3ffee60b20429d50966d4 100644
+--- a/gpu/command_buffer/client/raster_cmd_helper_autogen.h
++++ b/gpu/command_buffer/client/raster_cmd_helper_autogen.h
+@@ -158,7 +158,7 @@ void UnlockTransferCacheEntryINTERNAL(GLuint entry_type, GLuint entry_id) {
+   }
+ }
+ 
+-void DeletePaintCachePathsINTERNALImmediate(GLsizei n, const GLuint* ids) {
++void DeletePaintCachePathsINTERNALImmediate(GLsizei n, const GLuint64* ids) {
+   const uint32_t size =
+       raster::cmds::DeletePaintCachePathsINTERNALImmediate::ComputeSize(n);
+   raster::cmds::DeletePaintCachePathsINTERNALImmediate* c =
+@@ -179,7 +179,7 @@ void DeletePaintCachePathsINTERNAL(GLsizei n,
+   }
+ }
+ 
+-void DeletePaintCacheEffectsINTERNALImmediate(GLsizei n, const GLuint* ids) {
++void DeletePaintCacheEffectsINTERNALImmediate(GLsizei n, const GLuint64* ids) {
+   const uint32_t size =
+       raster::cmds::DeletePaintCacheEffectsINTERNALImmediate::ComputeSize(n);
+   raster::cmds::DeletePaintCacheEffectsINTERNALImmediate* c =
+diff --git a/gpu/command_buffer/client/raster_implementation.cc b/gpu/command_buffer/client/raster_implementation.cc
+index 39157cffa79657dc14f233375a4e9dc3859c6d04..15ba73f2708a7721a7df07d102fcb84c8983377e 100644
+--- a/gpu/command_buffer/client/raster_implementation.cc
++++ b/gpu/command_buffer/client/raster_implementation.cc
+@@ -106,7 +106,7 @@ constexpr size_t kMaxImmediateDeletedPaintCacheEffects = 10u;
+   if (ids.size() <= IMMEDIATE_SIZE_CONSTANT) {                           \
+     helper_->IMMEDIATE_FUNCTION(ids.size(), ids.data());                 \
+   } else {                                                               \
+-    size_t data_size = ids.size() * sizeof(GLuint);                      \
++    size_t data_size = ids.size() * sizeof(cc::PaintCacheId);            \
+     ScopedSharedMemoryPtr dest(data_size, transfer_buffer_,              \
+                                mapped_memory_.get(), helper());          \
+     if (dest.valid()) {                                                  \
+diff --git a/gpu/command_buffer/common/gles2_cmd_format_test_autogen.h b/gpu/command_buffer/common/gles2_cmd_format_test_autogen.h
+index 36ac4a97a5e6dd0f1682b8626b16b2062542d686..9c3c2d5f772523b29f772a5590558e6f66b571ab 100644
+--- a/gpu/command_buffer/common/gles2_cmd_format_test_autogen.h
++++ b/gpu/command_buffer/common/gles2_cmd_format_test_autogen.h
+@@ -741,12 +741,12 @@ TEST_F(GLES2FormatTest, DeleteBuffersImmediate) {
+   void* next_cmd = cmd.Set(&cmd, static_cast<GLsizei>(std::size(ids)), ids);
+   EXPECT_EQ(static_cast<uint32_t>(cmds::DeleteBuffersImmediate::kCmdId),
+             cmd.header.command);
+-  EXPECT_EQ(sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * 4u),
++  EXPECT_EQ(sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * sizeof(GLuint)),
+             cmd.header.size * 4u);
+   EXPECT_EQ(static_cast<GLsizei>(std::size(ids)), cmd.n);
+   CheckBytesWrittenMatchesExpectedSize(
+-      next_cmd,
+-      sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) * 4u));
++      next_cmd, sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) *
++                                                           sizeof(GLuint)));
+   EXPECT_EQ(0, memcmp(ids, ImmediateDataAddress(&cmd), sizeof(ids)));
+ }
+ 
+@@ -761,12 +761,12 @@ TEST_F(GLES2FormatTest, DeleteFramebuffersImmediate) {
+   void* next_cmd = cmd.Set(&cmd, static_cast<GLsizei>(std::size(ids)), ids);
+   EXPECT_EQ(static_cast<uint32_t>(cmds::DeleteFramebuffersImmediate::kCmdId),
+             cmd.header.command);
+-  EXPECT_EQ(sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * 4u),
++  EXPECT_EQ(sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * sizeof(GLuint)),
+             cmd.header.size * 4u);
+   EXPECT_EQ(static_cast<GLsizei>(std::size(ids)), cmd.n);
+   CheckBytesWrittenMatchesExpectedSize(
+-      next_cmd,
+-      sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) * 4u));
++      next_cmd, sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) *
++                                                           sizeof(GLuint)));
+   EXPECT_EQ(0, memcmp(ids, ImmediateDataAddress(&cmd), sizeof(ids)));
+ }
+ 
+@@ -791,12 +791,12 @@ TEST_F(GLES2FormatTest, DeleteRenderbuffersImmediate) {
+   void* next_cmd = cmd.Set(&cmd, static_cast<GLsizei>(std::size(ids)), ids);
+   EXPECT_EQ(static_cast<uint32_t>(cmds::DeleteRenderbuffersImmediate::kCmdId),
+             cmd.header.command);
+-  EXPECT_EQ(sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * 4u),
++  EXPECT_EQ(sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * sizeof(GLuint)),
+             cmd.header.size * 4u);
+   EXPECT_EQ(static_cast<GLsizei>(std::size(ids)), cmd.n);
+   CheckBytesWrittenMatchesExpectedSize(
+-      next_cmd,
+-      sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) * 4u));
++      next_cmd, sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) *
++                                                           sizeof(GLuint)));
+   EXPECT_EQ(0, memcmp(ids, ImmediateDataAddress(&cmd), sizeof(ids)));
+ }
+ 
+@@ -811,12 +811,12 @@ TEST_F(GLES2FormatTest, DeleteSamplersImmediate) {
+   void* next_cmd = cmd.Set(&cmd, static_cast<GLsizei>(std::size(ids)), ids);
+   EXPECT_EQ(static_cast<uint32_t>(cmds::DeleteSamplersImmediate::kCmdId),
+             cmd.header.command);
+-  EXPECT_EQ(sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * 4u),
++  EXPECT_EQ(sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * sizeof(GLuint)),
+             cmd.header.size * 4u);
+   EXPECT_EQ(static_cast<GLsizei>(std::size(ids)), cmd.n);
+   CheckBytesWrittenMatchesExpectedSize(
+-      next_cmd,
+-      sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) * 4u));
++      next_cmd, sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) *
++                                                           sizeof(GLuint)));
+   EXPECT_EQ(0, memcmp(ids, ImmediateDataAddress(&cmd), sizeof(ids)));
+ }
+ 
+@@ -851,12 +851,12 @@ TEST_F(GLES2FormatTest, DeleteTexturesImmediate) {
+   void* next_cmd = cmd.Set(&cmd, static_cast<GLsizei>(std::size(ids)), ids);
+   EXPECT_EQ(static_cast<uint32_t>(cmds::DeleteTexturesImmediate::kCmdId),
+             cmd.header.command);
+-  EXPECT_EQ(sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * 4u),
++  EXPECT_EQ(sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * sizeof(GLuint)),
+             cmd.header.size * 4u);
+   EXPECT_EQ(static_cast<GLsizei>(std::size(ids)), cmd.n);
+   CheckBytesWrittenMatchesExpectedSize(
+-      next_cmd,
+-      sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) * 4u));
++      next_cmd, sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) *
++                                                           sizeof(GLuint)));
+   EXPECT_EQ(0, memcmp(ids, ImmediateDataAddress(&cmd), sizeof(ids)));
+ }
+ 
+@@ -872,12 +872,12 @@ TEST_F(GLES2FormatTest, DeleteTransformFeedbacksImmediate) {
+   EXPECT_EQ(
+       static_cast<uint32_t>(cmds::DeleteTransformFeedbacksImmediate::kCmdId),
+       cmd.header.command);
+-  EXPECT_EQ(sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * 4u),
++  EXPECT_EQ(sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * sizeof(GLuint)),
+             cmd.header.size * 4u);
+   EXPECT_EQ(static_cast<GLsizei>(std::size(ids)), cmd.n);
+   CheckBytesWrittenMatchesExpectedSize(
+-      next_cmd,
+-      sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) * 4u));
++      next_cmd, sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) *
++                                                           sizeof(GLuint)));
+   EXPECT_EQ(0, memcmp(ids, ImmediateDataAddress(&cmd), sizeof(ids)));
+ }
+ 
+@@ -3982,12 +3982,12 @@ TEST_F(GLES2FormatTest, DeleteQueriesEXTImmediate) {
+   void* next_cmd = cmd.Set(&cmd, static_cast<GLsizei>(std::size(ids)), ids);
+   EXPECT_EQ(static_cast<uint32_t>(cmds::DeleteQueriesEXTImmediate::kCmdId),
+             cmd.header.command);
+-  EXPECT_EQ(sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * 4u),
++  EXPECT_EQ(sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * sizeof(GLuint)),
+             cmd.header.size * 4u);
+   EXPECT_EQ(static_cast<GLsizei>(std::size(ids)), cmd.n);
+   CheckBytesWrittenMatchesExpectedSize(
+-      next_cmd,
+-      sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) * 4u));
++      next_cmd, sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) *
++                                                           sizeof(GLuint)));
+   EXPECT_EQ(0, memcmp(ids, ImmediateDataAddress(&cmd), sizeof(ids)));
+ }
+ 
+@@ -4127,12 +4127,12 @@ TEST_F(GLES2FormatTest, DeleteVertexArraysOESImmediate) {
+   void* next_cmd = cmd.Set(&cmd, static_cast<GLsizei>(std::size(ids)), ids);
+   EXPECT_EQ(static_cast<uint32_t>(cmds::DeleteVertexArraysOESImmediate::kCmdId),
+             cmd.header.command);
+-  EXPECT_EQ(sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * 4u),
++  EXPECT_EQ(sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * sizeof(GLuint)),
+             cmd.header.size * 4u);
+   EXPECT_EQ(static_cast<GLsizei>(std::size(ids)), cmd.n);
+   CheckBytesWrittenMatchesExpectedSize(
+-      next_cmd,
+-      sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) * 4u));
++      next_cmd, sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) *
++                                                           sizeof(GLuint)));
+   EXPECT_EQ(0, memcmp(ids, ImmediateDataAddress(&cmd), sizeof(ids)));
+ }
+ 
+diff --git a/gpu/command_buffer/common/raster_cmd_format_autogen.h b/gpu/command_buffer/common/raster_cmd_format_autogen.h
+index 5adf1f059063c41d195e205a93b516c87ff0cf60..8a53f43836c6aa5e7a25081f770be9258556b5f0 100644
+--- a/gpu/command_buffer/common/raster_cmd_format_autogen.h
++++ b/gpu/command_buffer/common/raster_cmd_format_autogen.h
+@@ -704,7 +704,7 @@ struct DeletePaintCachePathsINTERNALImmediate {
+   static const uint8_t cmd_flags = CMD_FLAG_SET_TRACE_LEVEL(3);
+ 
+   static uint32_t ComputeDataSize(GLsizei _n) {
+-    return static_cast<uint32_t>(sizeof(GLuint) * _n);  // NOLINT
++    return static_cast<uint32_t>(sizeof(GLuint64) * _n);  // NOLINT
+   }
+ 
+   static uint32_t ComputeSize(GLsizei _n) {
+@@ -716,13 +716,13 @@ struct DeletePaintCachePathsINTERNALImmediate {
+     header.SetCmdByTotalSize<ValueType>(ComputeSize(_n));
+   }
+ 
+-  void Init(GLsizei _n, const GLuint* _ids) {
++  void Init(GLsizei _n, const GLuint64* _ids) {
+     SetHeader(_n);
+     n = _n;
+     memcpy(ImmediateDataAddress(this), _ids, ComputeDataSize(_n));
+   }
+ 
+-  void* Set(void* cmd, GLsizei _n, const GLuint* _ids) {
++  void* Set(void* cmd, GLsizei _n, const GLuint64* _ids) {
+     static_cast<ValueType*>(cmd)->Init(_n, _ids);
+     const uint32_t size = ComputeSize(_n);
+     return NextImmediateCmdAddressTotalSize<ValueType>(cmd, size);
+@@ -792,7 +792,7 @@ struct DeletePaintCacheEffectsINTERNALImmediate {
+   static const uint8_t cmd_flags = CMD_FLAG_SET_TRACE_LEVEL(3);
+ 
+   static uint32_t ComputeDataSize(GLsizei _n) {
+-    return static_cast<uint32_t>(sizeof(GLuint) * _n);  // NOLINT
++    return static_cast<uint32_t>(sizeof(GLuint64) * _n);  // NOLINT
+   }
+ 
+   static uint32_t ComputeSize(GLsizei _n) {
+@@ -804,13 +804,13 @@ struct DeletePaintCacheEffectsINTERNALImmediate {
+     header.SetCmdByTotalSize<ValueType>(ComputeSize(_n));
+   }
+ 
+-  void Init(GLsizei _n, const GLuint* _ids) {
++  void Init(GLsizei _n, const GLuint64* _ids) {
+     SetHeader(_n);
+     n = _n;
+     memcpy(ImmediateDataAddress(this), _ids, ComputeDataSize(_n));
+   }
+ 
+-  void* Set(void* cmd, GLsizei _n, const GLuint* _ids) {
++  void* Set(void* cmd, GLsizei _n, const GLuint64* _ids) {
+     static_cast<ValueType*>(cmd)->Init(_n, _ids);
+     const uint32_t size = ComputeSize(_n);
+     return NextImmediateCmdAddressTotalSize<ValueType>(cmd, size);
+diff --git a/gpu/command_buffer/common/raster_cmd_format_test_autogen.h b/gpu/command_buffer/common/raster_cmd_format_test_autogen.h
+index 167529ebf21df23071dd299b0a3f0130c48904f4..0e6d0b6ff0a07a40d68f9a31103a4bfb8be2bb41 100644
+--- a/gpu/command_buffer/common/raster_cmd_format_test_autogen.h
++++ b/gpu/command_buffer/common/raster_cmd_format_test_autogen.h
+@@ -77,12 +77,12 @@ TEST_F(RasterFormatTest, DeleteQueriesEXTImmediate) {
+   void* next_cmd = cmd.Set(&cmd, static_cast<GLsizei>(std::size(ids)), ids);
+   EXPECT_EQ(static_cast<uint32_t>(cmds::DeleteQueriesEXTImmediate::kCmdId),
+             cmd.header.command);
+-  EXPECT_EQ(sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * 4u),
++  EXPECT_EQ(sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * sizeof(GLuint)),
+             cmd.header.size * 4u);
+   EXPECT_EQ(static_cast<GLsizei>(std::size(ids)), cmd.n);
+   CheckBytesWrittenMatchesExpectedSize(
+-      next_cmd,
+-      sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) * 4u));
++      next_cmd, sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) *
++                                                           sizeof(GLuint)));
+   EXPECT_EQ(0, memcmp(ids, ImmediateDataAddress(&cmd), sizeof(ids)));
+ }
+ 
+@@ -259,7 +259,7 @@ TEST_F(RasterFormatTest, UnlockTransferCacheEntryINTERNAL) {
+ }
+ 
+ TEST_F(RasterFormatTest, DeletePaintCachePathsINTERNALImmediate) {
+-  static GLuint ids[] = {
++  static GLuint64 ids[] = {
+       12,
+       23,
+       34,
+@@ -270,12 +270,13 @@ TEST_F(RasterFormatTest, DeletePaintCachePathsINTERNALImmediate) {
+   EXPECT_EQ(static_cast<uint32_t>(
+                 cmds::DeletePaintCachePathsINTERNALImmediate::kCmdId),
+             cmd.header.command);
+-  EXPECT_EQ(sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * 4u),
+-            cmd.header.size * 4u);
++  EXPECT_EQ(
++      sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * sizeof(GLuint64)),
++      cmd.header.size * 4u);
+   EXPECT_EQ(static_cast<GLsizei>(std::size(ids)), cmd.n);
+   CheckBytesWrittenMatchesExpectedSize(
+-      next_cmd,
+-      sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) * 4u));
++      next_cmd, sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) *
++                                                           sizeof(GLuint64)));
+   EXPECT_EQ(0, memcmp(ids, ImmediateDataAddress(&cmd), sizeof(ids)));
+ }
+ 
+@@ -295,7 +296,7 @@ TEST_F(RasterFormatTest, DeletePaintCachePathsINTERNAL) {
+ }
+ 
+ TEST_F(RasterFormatTest, DeletePaintCacheEffectsINTERNALImmediate) {
+-  static GLuint ids[] = {
++  static GLuint64 ids[] = {
+       12,
+       23,
+       34,
+@@ -306,12 +307,13 @@ TEST_F(RasterFormatTest, DeletePaintCacheEffectsINTERNALImmediate) {
+   EXPECT_EQ(static_cast<uint32_t>(
+                 cmds::DeletePaintCacheEffectsINTERNALImmediate::kCmdId),
+             cmd.header.command);
+-  EXPECT_EQ(sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * 4u),
+-            cmd.header.size * 4u);
++  EXPECT_EQ(
++      sizeof(cmd) + RoundSizeToMultipleOfEntries(cmd.n * sizeof(GLuint64)),
++      cmd.header.size * 4u);
+   EXPECT_EQ(static_cast<GLsizei>(std::size(ids)), cmd.n);
+   CheckBytesWrittenMatchesExpectedSize(
+-      next_cmd,
+-      sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) * 4u));
++      next_cmd, sizeof(cmd) + RoundSizeToMultipleOfEntries(std::size(ids) *
++                                                           sizeof(GLuint64)));
+   EXPECT_EQ(0, memcmp(ids, ImmediateDataAddress(&cmd), sizeof(ids)));
+ }
+ 
+diff --git a/gpu/command_buffer/raster_cmd_buffer_functions.txt b/gpu/command_buffer/raster_cmd_buffer_functions.txt
+index 717f4fe54968a6e7e0e380c8ce7469e6cfa8c79d..75621f30149b01007b8dbe1d303c2058c04b0fdf 100644
+--- a/gpu/command_buffer/raster_cmd_buffer_functions.txt
++++ b/gpu/command_buffer/raster_cmd_buffer_functions.txt
+@@ -28,8 +28,8 @@ GL_APICALL void         GL_APIENTRY glFlushTileRasterGraphiteCommandsCHROMIUM (v
+ GL_APICALL void         GL_APIENTRY glCreateTransferCacheEntryINTERNAL (GLuint entry_type, GLuint entry_id, GLuint handle_shm_id, GLuint handle_shm_offset, GLuint data_shm_id, GLuint data_shm_offset, GLuint data_size);
+ GL_APICALL void         GL_APIENTRY glDeleteTransferCacheEntryINTERNAL (GLuint entry_type, GLuint entry_id);
+ GL_APICALL void         GL_APIENTRY glUnlockTransferCacheEntryINTERNAL (GLuint entry_type, GLuint entry_id);
+-GL_APICALL void         GL_APIENTRY glDeletePaintCachePathsINTERNAL (GLsizeiNotNegative n, const GLuint* ids);
+-GL_APICALL void         GL_APIENTRY glDeletePaintCacheEffectsINTERNAL (GLsizeiNotNegative n, const GLuint* ids);
++GL_APICALL void         GL_APIENTRY glDeletePaintCachePathsINTERNAL (GLsizeiNotNegative n, const GLuint64* ids);
++GL_APICALL void         GL_APIENTRY glDeletePaintCacheEffectsINTERNAL (GLsizeiNotNegative n, const GLuint64* ids);
+ GL_APICALL void         GL_APIENTRY glClearPaintCacheINTERNAL (void);
+ 
+ // TOOD(backer): Remove GL encoding. These are not GL functions.
+diff --git a/gpu/command_buffer/service/raster_decoder.cc b/gpu/command_buffer/service/raster_decoder.cc
+index 1c09615cda32f78ec4e7fd203a1ea39d02cc7947..b670a83aced734906680d390e34dade6c0f74885 100644
+--- a/gpu/command_buffer/service/raster_decoder.cc
++++ b/gpu/command_buffer/service/raster_decoder.cc
+@@ -785,10 +785,10 @@ class RasterDecoderImpl final : public RasterDecoder,
+   void RestoreStateForAttrib(GLuint attrib, bool restore_array_binding);
+   void DeletePaintCachePathsINTERNALHelper(
+       GLsizei n,
+-      const volatile GLuint* paint_cache_ids);
++      const volatile GLuint64* paint_cache_ids);
+   void DeletePaintCacheEffectsINTERNALHelper(
+       GLsizei n,
+-      const volatile GLuint* paint_cache_ids);
++      const volatile GLuint64* paint_cache_ids);
+   void DoClearPaintCacheINTERNAL();
+ 
+ #if defined(NDEBUG)
+@@ -2777,13 +2777,13 @@ class TransferCacheDeserializeHelperImpl final
+ 
+ void RasterDecoderImpl::DeletePaintCachePathsINTERNALHelper(
+     GLsizei n,
+-    const volatile GLuint* paint_cache_ids) {
++    const volatile GLuint64* paint_cache_ids) {
+   paint_cache_->Purge(cc::PaintCacheDataType::kPath, n, paint_cache_ids);
+ }
+ 
+ void RasterDecoderImpl::DeletePaintCacheEffectsINTERNALHelper(
+     GLsizei n,
+-    const volatile GLuint* paint_cache_ids) {
++    const volatile GLuint64* paint_cache_ids) {
+   paint_cache_->Purge(cc::PaintCacheDataType::kSkRuntimeEffect, n,
+                       paint_cache_ids);
+ }
+diff --git a/gpu/command_buffer/service/raster_decoder_autogen.h b/gpu/command_buffer/service/raster_decoder_autogen.h
+index 3adc2d26054ddeca663ea4c028d25979bd7943d6..2ab92bbeea8a33734c3e3f5ada982d4c433a2916 100644
+--- a/gpu/command_buffer/service/raster_decoder_autogen.h
++++ b/gpu/command_buffer/service/raster_decoder_autogen.h
+@@ -214,12 +214,12 @@ error::Error RasterDecoderImpl::HandleDeletePaintCachePathsINTERNALImmediate(
+           cmd_data);
+   GLsizei n = static_cast<GLsizei>(c.n);
+   uint32_t ids_size;
+-  if (!base::CheckMul(n, sizeof(GLuint)).AssignIfValid(&ids_size)) {
++  if (!base::CheckMul(n, sizeof(GLuint64)).AssignIfValid(&ids_size)) {
+     return error::kOutOfBounds;
+   }
+-  volatile const GLuint* ids =
+-      gles2::GetImmediateDataAs<volatile const GLuint*>(c, ids_size,
+-                                                        immediate_data_size);
++  volatile const GLuint64* ids =
++      gles2::GetImmediateDataAs<volatile const GLuint64*>(c, ids_size,
++                                                          immediate_data_size);
+   if (ids == nullptr) {
+     return error::kOutOfBounds;
+   }
+@@ -235,10 +235,10 @@ error::Error RasterDecoderImpl::HandleDeletePaintCachePathsINTERNAL(
+           cmd_data);
+   GLsizei n = static_cast<GLsizei>(c.n);
+   uint32_t ids_size;
+-  if (!base::CheckMul(n, sizeof(GLuint)).AssignIfValid(&ids_size)) {
++  if (!base::CheckMul(n, sizeof(GLuint64)).AssignIfValid(&ids_size)) {
+     return error::kOutOfBounds;
+   }
+-  const GLuint* ids = GetSharedMemoryAs<const GLuint*>(
++  const GLuint64* ids = GetSharedMemoryAs<const GLuint64*>(
+       c.ids_shm_id, c.ids_shm_offset, ids_size);
+   if (ids == nullptr) {
+     return error::kOutOfBounds;
+@@ -255,12 +255,12 @@ error::Error RasterDecoderImpl::HandleDeletePaintCacheEffectsINTERNALImmediate(
+                        DeletePaintCacheEffectsINTERNALImmediate*>(cmd_data);
+   GLsizei n = static_cast<GLsizei>(c.n);
+   uint32_t ids_size;
+-  if (!base::CheckMul(n, sizeof(GLuint)).AssignIfValid(&ids_size)) {
++  if (!base::CheckMul(n, sizeof(GLuint64)).AssignIfValid(&ids_size)) {
+     return error::kOutOfBounds;
+   }
+-  volatile const GLuint* ids =
+-      gles2::GetImmediateDataAs<volatile const GLuint*>(c, ids_size,
+-                                                        immediate_data_size);
++  volatile const GLuint64* ids =
++      gles2::GetImmediateDataAs<volatile const GLuint64*>(c, ids_size,
++                                                          immediate_data_size);
+   if (ids == nullptr) {
+     return error::kOutOfBounds;
+   }
+@@ -277,10 +277,10 @@ error::Error RasterDecoderImpl::HandleDeletePaintCacheEffectsINTERNAL(
+           cmd_data);
+   GLsizei n = static_cast<GLsizei>(c.n);
+   uint32_t ids_size;
+-  if (!base::CheckMul(n, sizeof(GLuint)).AssignIfValid(&ids_size)) {
++  if (!base::CheckMul(n, sizeof(GLuint64)).AssignIfValid(&ids_size)) {
+     return error::kOutOfBounds;
+   }
+-  const GLuint* ids = GetSharedMemoryAs<const GLuint*>(
++  const GLuint64* ids = GetSharedMemoryAs<const GLuint64*>(
+       c.ids_shm_id, c.ids_shm_offset, ids_size);
+   if (ids == nullptr) {
+     return error::kOutOfBounds;
