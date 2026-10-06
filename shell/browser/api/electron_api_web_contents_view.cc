@@ -266,6 +266,25 @@ void WebContentsViewHost::WebContentsDestroyed() {
   RemoveFromParent();
 }
 
+void WebContentsViewHost::RenderViewHostChanged(
+    content::RenderViewHost* old_host,
+    content::RenderViewHost* new_host) {
+  if (!new_host)
+    return;
+  // A new RenderViewHost brings a new RenderWidgetHostView whose native view
+  // does not carry the stored interactive state, and it may not exist yet, so
+  // re-apply on a later task. ReapplyInteractive targets the current native
+  // view, making this idempotent across further swaps.
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, base::BindOnce(&WebContentsViewHost::ReapplyInteractive,
+                                weak_factory_.GetWeakPtr()));
+}
+
+void WebContentsViewHost::ReapplyInteractive() {
+  if (auto api_view = wrapper())
+    ApplyInteractive(api_view->GetInteractive());
+}
+
 void WebContentsViewHost::OnChildViewRemoved(views::View* observed_view,
                                              views::View* child) {
   View::Host::OnChildViewRemoved(observed_view, child);

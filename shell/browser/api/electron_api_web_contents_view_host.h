@@ -118,6 +118,8 @@ class WebContentsViewHost final : public View::Host,
 
   // content::WebContentsObserver:
   void WebContentsDestroyed() override;
+  void RenderViewHostChanged(content::RenderViewHost* old_host,
+                             content::RenderViewHost* new_host) override;
 
   // NativeWindowObserver:
   void UpdateWindowControlsOverlay(const gfx::Rect& bounding_rect) override;
@@ -125,6 +127,7 @@ class WebContentsViewHost final : public View::Host,
   WebContents* GetLiveWebContents() const;
   WebContentsContainerView* container() const;
   InspectableWebContentsView* GetOwnedInspectableView() const;
+  void ReapplyInteractive();
   void RemoveFromParent();
   void StopObservingWindow();
   void UnregisterDraggableRegionProvider();
