@@ -1,0 +1,136 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Sat, 5 Sep 2026 00:15:21 +0000
+Subject: Fix race during FcConfig initialization
+
+Multiple threads concurrently accessing the default configuration when
+it has not yet been initialized (e.g. via FcInit(), FcConfigEnsure(),
+or FcConfigReference(NULL)) could previously race in
+FcInitLoadConfigAndFonts(), leading to data races and redundant work.
+
+Serialize the initialization under lock_config() using double-checked
+locking to ensure FcInitLoadConfigAndFonts() is only invoked once.
+
+Enable test-pthread in Meson tests to guard against regressions with
+concurrent initialization.
+
+Changelog: fixed
+(cherry picked from commit 95e53f5229aecb5da376dee33cc28709996f9c3a)
+
+diff --git a/src/fccfg.c b/src/fccfg.c
+index eec44f8f23cdd7b59636adbeda5f4819ad930113..6623adfbe8a1af8fccfd22828e1366f83dc0db58 100644
+--- a/src/fccfg.c
++++ b/src/fccfg.c
+@@ -86,23 +86,35 @@ free_lock (void)
+ }
+ 
+ static FcConfig *
+-FcConfigEnsure (void)
++FcConfigEnsureLocked (void)
+ {
+-    FcConfig *config;
+-retry:
+-    config = fc_atomic_ptr_get (&_fcConfig);
++    FcConfig *config = fc_atomic_ptr_get (&_fcConfig);
+     if (!config) {
+ 	config = FcInitLoadConfigAndFonts();
+-
+-	if (!config || !fc_atomic_ptr_cmpexch (&_fcConfig, NULL, config)) {
+-	    if (config)
++	if (config) {
++	    if (!fc_atomic_ptr_cmpexch (&_fcConfig, NULL, config)) {
+ 		FcConfigDestroy (config);
+-	    goto retry;
++		config = fc_atomic_ptr_get (&_fcConfig);
++	    }
+ 	}
+     }
+     return config;
+ }
+ 
++static FcConfig *
++FcConfigEnsure (void)
++{
++    FcConfig *config;
++
++    config = fc_atomic_ptr_get (&_fcConfig);
++    if (!config) {
++	lock_config();
++	config = FcConfigEnsureLocked();
++	unlock_config();
++    }
++    return config;
++}
++
+ static void
+ FcDestroyAsRule (void *data)
+ {
+@@ -118,12 +130,15 @@ FcDestroyAsRuleSet (void *data)
+ FcBool
+ FcConfigInit (void)
+ {
+-    FcBool is_new = !!(_fcConfig == NULL);
++    FcBool is_new;
+     FcBool ret;
+ 
+-    ret = FcConfigEnsure() ? FcTrue : FcFalse;
++    lock_config();
++    is_new = (fc_atomic_ptr_get (&_fcConfig) == NULL);
++    ret = FcConfigEnsureLocked() ? FcTrue : FcFalse;
+     if (ret && !is_new)
+-	FcConfigReference (_fcConfig);
++	FcRefInc (&_fcConfig->ref);
++    unlock_config();
+     return ret;
+ }
+ 
+@@ -334,21 +349,9 @@ FcConfigReference (FcConfig *config)
+ 	 * there are the race between them.
+ 	 */
+ 	lock_config();
+-    retry:
+-	config = fc_atomic_ptr_get (&_fcConfig);
+-	if (!config) {
+-	    unlock_config();
+-
+-	    config = FcInitLoadConfigAndFonts();
+-	    lock_config();
+-	    if (!config)
+-		goto retry;
+-	    if (!fc_atomic_ptr_cmpexch (&_fcConfig, NULL, config)) {
+-		FcConfigDestroy (config);
+-		goto retry;
+-	    }
+-	}
+-	FcRefInc (&config->ref);
++	config = FcConfigEnsureLocked();
++	if (config)
++	    FcRefInc (&config->ref);
+ 	unlock_config();
+     } else
+ 	FcRefInc (&config->ref);
+diff --git a/test/meson.build b/test/meson.build
+index 1d85a06ad21a41d11ce2c028f320fe2525cd7a76..348e4969825203a81b459ac61b6d307d5d3ee759 100644
+--- a/test/meson.build
++++ b/test/meson.build
+@@ -38,6 +38,7 @@ if host_machine.system() != 'windows'
+   tests_not_parallel += [
+     # FIXME: this needs NotoSans-hinted.zip font downloaded and unpacked into test build directory! see run-test.sh
+     ['test-crbug1004254.c', {'dependencies': dependency('threads')}], # for pthread
++    ['test-pthread.c', {'dependencies': dependency('threads')}], # for pthread
+     ['test-mt-fccfg.c', {'include_directories': include_directories('../src'), 'dependencies': dependency('threads')}],
+   ]
+ 
+diff --git a/test/test-pthread.c b/test/test-pthread.c
+index 6628d83383d629ba7b8ab00424a29c55cb316c68..6361409018811e0d61c57f95e3e0eb64be7640aa 100644
+--- a/test/test-pthread.c
++++ b/test/test-pthread.c
+@@ -43,8 +43,6 @@ test_match (int thr_num, int test_num)
+     FcPattern *match;
+     FcResult   result;
+ 
+-    FcInit();
+-
+     pat = FcNameParse ((const FcChar8 *)"New Century Schoolbook");
+ 
+     FcConfigSubstitute (0, pat, FcMatchPattern);

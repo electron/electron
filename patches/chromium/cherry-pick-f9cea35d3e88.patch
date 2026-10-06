@@ -1,0 +1,113 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Baron <dbaron@chromium.org>
+Date: Fri, 25 Sep 2026 16:47:07 -0700
+Subject: Ensure sufficient lifetime of WebViewImpl::page_popup_.
+
+This is a straightforward fix that I think should be suitable for
+backporting to branches.  In the longer term we might want to make
+WebPagePopupImpl garbage collected, but that's a bit more involved.
+
+I verified that the added unittest (built by Gemini from the original
+testcase) does exercise the need for both the scoped_refptr in
+WebViewImpl::UpdatePagePopup and the null-check in
+WebPagePopupImpl::Update, both of which are also needed to fix the
+original testcase.
+
+Fixed: 565774991
+Change-Id: I828fe321e04a74bf9f6ba25222c507197082cbc3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8464185
+Commit-Queue: David Baron <dbaron@chromium.org>
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1705319}
+
+Electron adaptation notes (43-x-y):
+Context-only drift: M150 still uses brace-less single-statement ifs in
+WebViewImpl::{Cancel,Close,Update}PagePopup and
+WebPagePopupImpl::Update, so the hunks were re-anchored by hand. The new
+InternalPopupMenuTest case could not be placed (surrounding tests differ)
+and was not carried; internal_popup_menu_test.cc is left as on the branch.
+
+diff --git a/third_party/blink/renderer/core/exported/web_page_popup_impl.cc b/third_party/blink/renderer/core/exported/web_page_popup_impl.cc
+index a32750907bf15606f4191453cc0f85d966cbbd1c..09066c9e22569dadd0ece93d19f365a838b75412 100644
+--- a/third_party/blink/renderer/core/exported/web_page_popup_impl.cc
++++ b/third_party/blink/renderer/core/exported/web_page_popup_impl.cc
+@@ -634,6 +634,10 @@ void WebPagePopupImpl::Update() {
+     popup_owner_client_rect_ = dom_rect;
+ 
+   popup_client_->Update(forced_update);
++  if (!widget_base_) {
++    // Something inside Update() closed this popup.
++    return;
++  }
+   if (forced_update)
+     SetWindowRect(WindowRectInScreen());
+ }
+@@ -1021,6 +1025,10 @@ void WebPagePopupImpl::WidgetHostDisconnected() {
+   // Careful, this is now destroyed.
+ }
+ 
++void WebPagePopupImpl::WidgetHostDisconnectedForTesting() {
++  WidgetHostDisconnected();
++}
++
+ void WebPagePopupImpl::Close() {
+   // If the popup is closed from the renderer via Cancel(), then ClosePopup()
+   // has already run on another stack, and destroyed |page_|. If the popup is
+diff --git a/third_party/blink/renderer/core/exported/web_page_popup_impl.h b/third_party/blink/renderer/core/exported/web_page_popup_impl.h
+index 699adf87a0ef6288b6b3f719d36737392e83ffd8..d58c847483b261321595e40890021ffa6d94bfad 100644
+--- a/third_party/blink/renderer/core/exported/web_page_popup_impl.h
++++ b/third_party/blink/renderer/core/exported/web_page_popup_impl.h
+@@ -120,6 +120,7 @@ class CORE_EXPORT WebPagePopupImpl final : public WebPagePopup,
+ 
+   // Return the LayerTreeHost backing this popup widget.
+   cc::LayerTreeHost* LayerTreeHostForTesting();
++  void WidgetHostDisconnectedForTesting();
+ 
+   // Called when the browser has shown the popup.
+   void DidShowPopup();
+diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
+index 4fbdeefcbeeb0e764fc1b0f22a4563abfe752052..88eaee14eac47ba07feea905f256ce1f2564bd6b 100644
+--- a/third_party/blink/renderer/core/exported/web_view_impl.cc
++++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
+@@ -1102,8 +1102,13 @@ WebPagePopupImpl* WebViewImpl::OpenPagePopup(PagePopupClient* client) {
+ }
+ 
+ void WebViewImpl::CancelPagePopup() {
+-  if (page_popup_)
++  if (page_popup_) {
++    // Ensure page_popup_ lifetime lasts through the call even if the member
++    // variable is cleared by a callback during it.
++    scoped_refptr<WebPagePopupImpl> owning_reference(page_popup_);
++
+     page_popup_->Cancel();
++  }
+ }
+ 
+ void WebViewImpl::ClosePagePopup(PagePopup* popup) {
+@@ -1112,6 +1117,11 @@ void WebViewImpl::ClosePagePopup(PagePopup* popup) {
+   DCHECK_EQ(page_popup_.get(), popup_impl);
+   if (page_popup_.get() != popup_impl)
+     return;
++
++  // Ensure page_popup_ lifetime lasts through the call even if the member
++  // variable is cleared by a callback during it.
++  scoped_refptr<WebPagePopupImpl> owning_reference(page_popup_);
++
+   page_popup_->ClosePopup();
+ }
+ 
+@@ -1121,8 +1131,13 @@ void WebViewImpl::CleanupPagePopup() {
+ }
+ 
+ void WebViewImpl::UpdatePagePopup() {
+-  if (page_popup_)
++  if (page_popup_) {
++    // Ensure page_popup_ lifetime lasts through the call even if the member
++    // variable is cleared by a callback during it.
++    scoped_refptr<WebPagePopupImpl> owning_reference(page_popup_);
++
+     page_popup_->Update();
++  }
+ }
+ 
+ void WebViewImpl::EnablePopupMouseWheelEventListener(

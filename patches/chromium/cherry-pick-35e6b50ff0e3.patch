@@ -1,0 +1,176 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rakina Zata Amni <rakina@chromium.org>
+Date: Mon, 14 Sep 2026 03:17:45 -0700
+Subject: Fix RFH state checks in EvictBFCachedClientsIfLastActive
+
+SharedWorkerHost::EvictBFCachedClientsIfLastActive checks if the main
+frame currently navigating away (render_frame_host) is the last active
+client of a SharedWorker. If so, it evicts other BFCached clients of
+the worker and returns true so that render_frame_host is blocked from
+entering BFCache.
+
+Previously, EvictBFCachedClientsIfLastActive checked
+`if (other_rfh->IsActive()) return false;`. For inactive RFHs that
+are not in BFCache (such as frames in kPendingDeletion or running
+unload handlers), IsActive() returned false, causing them to be added
+to `bf_cached_clients`. This resulted in calling
+EvictFromBackForwardCacheWithReason on RFHs that were not in
+BFCache, triggering a crash.
+
+Changing the check to `if (!other_rfh->IsInBackForwardCache()) return false;` was also insufficient because it treated inactive
+non-BFCached RFHs (e.g., kPendingDeletion) as active clients,
+returning false early and incorrectly allowing render_frame_host to
+enter BFCache when no active clients remained.
+
+This CL explicitly handles all three RFH lifecycle categories:
+1. Active (other_rfh->IsActive()): Returns false because another
+   active client exists.
+2. In BFCache (other_rfh->IsInBackForwardCache()): Pushed to
+   bf_cached_clients to be evicted if render_frame_host is the last
+   active client.
+3. Inactive & not in BFCache (kPendingDeletion, etc.): Skipped, as it
+   is neither active nor stored in BFCache.
+
+BUG=560238696
+TAG=agy
+CONV=29c67910-05a4-442d-8a19-f8396f02d251
+
+Change-Id: Ia2a9233446cfa1619a9f887d5af130663f9755db
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8404085
+Reviewed-by: Anna Sato <annasato@chromium.org>
+Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1697153}
+
+diff --git a/content/browser/worker_host/shared_worker_host.cc b/content/browser/worker_host/shared_worker_host.cc
+index 8de66b3f2823de5521b1620fee5bd3304368c56a..2eeddb8cf89c08492b2abae0c73d9df889fee397 100644
+--- a/content/browser/worker_host/shared_worker_host.cc
++++ b/content/browser/worker_host/shared_worker_host.cc
+@@ -1151,7 +1151,9 @@ bool SharedWorkerHost::EvictBFCachedClientsIfLastActive(
+       // client.
+       return false;
+     }
+-    bf_cached_clients.push_back(other_rfh);
++    if (other_rfh->IsInBackForwardCache()) {
++      bf_cached_clients.push_back(other_rfh);
++    }
+   }
+   for (RenderFrameHostImpl* rfh_to_evict : bf_cached_clients) {
+     rfh_to_evict->EvictFromBackForwardCacheWithReason(
+diff --git a/content/browser/worker_host/shared_worker_service_impl_unittest.cc b/content/browser/worker_host/shared_worker_service_impl_unittest.cc
+index 3d56bd7858a0970c594172c5d1e6e0f9bcd8327e..4b0973bbe28db31ecc2a472e54bc64b1a7c10835 100644
+--- a/content/browser/worker_host/shared_worker_service_impl_unittest.cc
++++ b/content/browser/worker_host/shared_worker_service_impl_unittest.cc
+@@ -62,7 +62,8 @@ void ConnectToSharedWorkerWithContextType(
+     const std::string& name,
+     blink::mojom::SharedWorkerCreationContextType creation_context_type,
+     MockSharedWorkerClient* client,
+-    MessagePortChannel* local_port) {
++    MessagePortChannel* local_port,
++    bool flush_connector = true) {
+   auto options = blink::mojom::WorkerOptions::New();
+   options->name = name;
+   blink::mojom::SharedWorkerInfoPtr info(blink::mojom::SharedWorkerInfo::New(
+@@ -88,6 +89,9 @@ void ConnectToSharedWorkerWithContextType(
+   connector->Connect(std::move(info), std::move(client_proxy),
+                      creation_context_type, pipe.TakePort1(),
+                      mojo::NullRemote());
++  if (flush_connector) {
++    connector.FlushForTesting();
++  }
+ }
+ 
+ void ConnectToSharedWorker(
+@@ -95,11 +99,12 @@ void ConnectToSharedWorker(
+     const GURL& url,
+     const std::string& name,
+     MockSharedWorkerClient* client,
+-    MessagePortChannel* local_port) {
++    MessagePortChannel* local_port,
++    bool flush_connector = true) {
+   ConnectToSharedWorkerWithContextType(
+       std::move(connector), url, name,
+       blink::mojom::SharedWorkerCreationContextType::kSecure, client,
+-      local_port);
++      local_port, flush_connector);
+ }
+ 
+ }  // namespace
+@@ -380,7 +385,7 @@ TEST_F(SharedWorkerServiceImplTest, WebContentsDestroyed) {
+   const GURL kUrl("http://example.com/w.js");
+   ConnectToSharedWorker(
+       MakeSharedWorkerConnector(render_frame_host->GetGlobalId()), kUrl, "name",
+-      &client, &local_port);
++      &client, &local_port, /*flush_connector=*/false);
+ 
+   // Now asynchronously destroy |web_contents| so that the startup sequence at
+   // least reaches SharedWorkerServiceImpl::StartWorker().
+@@ -2027,4 +2032,69 @@ TEST_F(SharedWorkerServiceImplTest, ExtensionSameOriginCheckFlagOff) {
+   EXPECT_EQ(initial_bad_msg_count, renderer_host->bad_msg_count());
+ }
+ 
++TEST_F(SharedWorkerServiceImplTest, EvictBFCachedClientsIfLastActive) {
++  std::unique_ptr<TestWebContents> web_contents1 =
++      CreateWebContents(GURL("http://example.com/"));
++  TestRenderFrameHost* rfh1 = web_contents1->GetPrimaryMainFrame();
++  MockRenderProcessHost* renderer_host1 = rfh1->GetProcess();
++  const int process_id1 = renderer_host1->GetDeprecatedID();
++  renderer_host1->OverrideBinderForTesting(
++      blink::mojom::SharedWorkerFactory::Name_,
++      base::BindRepeating(&SharedWorkerServiceImplTest::BindSharedWorkerFactory,
++                          base::Unretained(this), process_id1));
++
++  std::unique_ptr<TestWebContents> web_contents2 =
++      CreateWebContents(GURL("http://example.com/"));
++  TestRenderFrameHost* rfh2 = web_contents2->GetPrimaryMainFrame();
++
++  MockSharedWorkerClient client1;
++  MessagePortChannel local_port1;
++  const GURL kUrl("http://example.com/w.js");
++  ConnectToSharedWorker(MakeSharedWorkerConnector(rfh1->GetGlobalId()), kUrl,
++                        "name", &client1, &local_port1);
++
++  MockSharedWorkerClient client2;
++  MessagePortChannel local_port2;
++  ConnectToSharedWorker(MakeSharedWorkerConnector(rfh2->GetGlobalId()), kUrl,
++                        "name", &client2, &local_port2);
++
++  RenderFrameHostImpl* rfh_impl1 = static_cast<RenderFrameHostImpl*>(rfh1);
++  RenderFrameHostImpl* rfh_impl2 = static_cast<RenderFrameHostImpl*>(rfh2);
++
++  SharedWorkerServiceImpl* service = static_cast<SharedWorkerServiceImpl*>(
++      browser_context_->GetDefaultStoragePartition()->GetSharedWorkerService());
++
++  // 1. When rfh2 is Active:
++  // EvictBFCachedClientsIfLastActive returns false because rfh2 is active.
++  EXPECT_FALSE(service->EvictBFCachedClientsIfLastActive(rfh_impl1));
++  EXPECT_FALSE(rfh_impl2->is_evicted_from_back_forward_cache());
++
++  // 2. When rfh2 is in BackForwardCache:
++  rfh_impl2->SetLifecycleState(
++      RenderFrameHostImpl::LifecycleStateImpl::kInBackForwardCache);
++  // EvictBFCachedClientsIfLastActive returns true (rfh1 is last active client)
++  // and evicts rfh2 from BFCache.
++  EXPECT_TRUE(service->EvictBFCachedClientsIfLastActive(rfh_impl1));
++  EXPECT_TRUE(rfh_impl2->is_evicted_from_back_forward_cache());
++
++  // 3. When a client (rfh3) is pending deletion (neither active nor in
++  // BFCache):
++  std::unique_ptr<TestWebContents> web_contents3 =
++      CreateWebContents(GURL("http://example.com/"));
++  TestRenderFrameHost* rfh3 = web_contents3->GetPrimaryMainFrame();
++  MockSharedWorkerClient client3;
++  MessagePortChannel local_port3;
++  ConnectToSharedWorker(MakeSharedWorkerConnector(rfh3->GetGlobalId()), kUrl,
++                        "name", &client3, &local_port3);
++  RenderFrameHostImpl* rfh_impl3 = static_cast<RenderFrameHostImpl*>(rfh3);
++
++  rfh_impl3->SetLifecycleState(
++      RenderFrameHostImpl::LifecycleStateImpl::kRunningUnloadHandlers);
++  // EvictBFCachedClientsIfLastActive returns true because rfh1 is the last
++  // active client (rfh3 is pending deletion, so not active), but rfh3 is not
++  // evicted from BFCache because it is not in BFCache.
++  EXPECT_TRUE(service->EvictBFCachedClientsIfLastActive(rfh_impl1));
++  EXPECT_FALSE(rfh_impl3->is_evicted_from_back_forward_cache());
++}
++
+ }  // namespace content

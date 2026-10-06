@@ -1,0 +1,246 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: wangra <wangra@google.com>
+Date: Tue, 8 Sep 2026 20:34:14 -0400
+Subject: D3D: Release 2D array storage on base level layer count change
+
+Release texture storage when changing base level on a 2D array texture
+whose new base level declares a different layer count, preventing stale
+slice retention and memory leaks.
+
+Test:
+    angle_end2end_tests --gtest_filter=*Texture2DArrayTestES3.BaseLevelChange*
+
+Bug: b/553857574
+Change-Id: I683f61c8f31234eeb2c0c605bb0f27e68de52ebf
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8374349
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Ran Wang <wangra@google.com>
+
+Electron adaptation notes (43-x-y):
+angle_end2end_tests_expectations.txt kept as on the branch (test-only).
+
+diff --git a/src/libANGLE/renderer/d3d/TextureD3D.cpp b/src/libANGLE/renderer/d3d/TextureD3D.cpp
+index 1862ccdcc8a9ee860a75bec981f580b674e55dcc..51a86a2622828eecdc6fa7810a0eec8915dfbcde 100644
+--- a/src/libANGLE/renderer/d3d/TextureD3D.cpp
++++ b/src/libANGLE/renderer/d3d/TextureD3D.cpp
+@@ -219,6 +219,11 @@ GLint TextureD3D::getLevelZeroDepth() const
+     return 1;
+ }
+ 
++GLint TextureD3D::getBaseLevelStorageDepth() const
++{
++    return getLevelZeroDepth();
++}
++
+ GLint TextureD3D::getBaseLevelWidth() const
+ {
+     const ImageD3D *baseImage = getBaseLevelImage();
+@@ -818,7 +823,7 @@ angle::Result TextureD3D::setBaseLevel(const gl::Context *context, GLuint baseLe
+ {
+     const int oldStorageWidth  = std::max(1, getLevelZeroWidth());
+     const int oldStorageHeight = std::max(1, getLevelZeroHeight());
+-    const int oldStorageDepth  = std::max(1, getLevelZeroDepth());
++    const int oldStorageDepth  = std::max(1, getBaseLevelStorageDepth());
+     const int oldStorageFormat = getBaseLevelInternalFormat();
+     mBaseLevel                 = baseLevel;
+ 
+@@ -831,7 +836,7 @@ angle::Result TextureD3D::setBaseLevel(const gl::Context *context, GLuint baseLe
+     // dimension mismatch and lead to recreating the storage with wrong dimensions.
+     const int newStorageWidth  = std::max(1, getLevelZeroWidth());
+     const int newStorageHeight = std::max(1, getLevelZeroHeight());
+-    const int newStorageDepth  = std::max(1, getLevelZeroDepth());
++    const int newStorageDepth  = std::max(1, getBaseLevelStorageDepth());
+     const int newStorageFormat = getBaseLevelInternalFormat();
+     if (mTexStorage && !isImmutable() &&
+         (newStorageWidth != oldStorageWidth || newStorageHeight != oldStorageHeight ||
+@@ -3825,7 +3830,7 @@ angle::Result TextureD3D_2DArray::createCompleteStorage(const gl::Context *conte
+ {
+     GLsizei width         = getLevelZeroWidth();
+     GLsizei height        = getLevelZeroHeight();
+-    GLsizei depth         = getLayerCount(getBaseLevel());
++    GLsizei depth         = getBaseLevelStorageDepth();
+     GLenum internalFormat = getBaseLevelInternalFormat();
+ 
+     ASSERT(width > 0 && height > 0 && depth > 0);
+@@ -3939,6 +3944,16 @@ angle::Result TextureD3D_2DArray::updateStorageLevel(const gl::Context *context,
+     return angle::Result::Continue;
+ }
+ 
++GLint TextureD3D_2DArray::getBaseLevelStorageDepth() const
++{
++    const GLuint baseLevel = getBaseLevel();
++    if (baseLevel < gl::IMPLEMENTATION_MAX_TEXTURE_LEVELS)
++    {
++        return getLayerCount(baseLevel);
++    }
++    return 0;
++}
++
+ void TextureD3D_2DArray::deleteImages()
+ {
+     for (int level = 0; level < gl::IMPLEMENTATION_MAX_TEXTURE_LEVELS; ++level)
+@@ -3962,14 +3977,8 @@ angle::Result TextureD3D_2DArray::redefineImage(const gl::Context *context,
+     // If there currently is a corresponding storage texture image, it has these parameters
+     const int storageWidth     = std::max(1, getLevelZeroWidth() >> level);
+     const int storageHeight    = std::max(1, getLevelZeroHeight() >> level);
+-    const GLuint baseLevel     = getBaseLevel();
+     const GLenum storageFormat = getBaseLevelInternalFormat();
+-
+-    int storageDepth = 0;
+-    if (baseLevel < gl::IMPLEMENTATION_MAX_TEXTURE_LEVELS)
+-    {
+-        storageDepth = getLayerCount(baseLevel);
+-    }
++    const int storageDepth     = getBaseLevelStorageDepth();
+ 
+     // Only reallocate the layers if the size doesn't match
+     if (size.depth != mLayerCounts[level])
+diff --git a/src/libANGLE/renderer/d3d/TextureD3D.h b/src/libANGLE/renderer/d3d/TextureD3D.h
+index 5ff519e35f23d1b985d03e2379981e64700549f3..3774c152883dc86065ed51524c8458eabdf56328 100644
+--- a/src/libANGLE/renderer/d3d/TextureD3D.h
++++ b/src/libANGLE/renderer/d3d/TextureD3D.h
+@@ -172,6 +172,7 @@ class TextureD3D : public TextureImpl, public angle::ObserverInterface
+     GLint getLevelZeroWidth() const;
+     GLint getLevelZeroHeight() const;
+     virtual GLint getLevelZeroDepth() const;
++    virtual GLint getBaseLevelStorageDepth() const;
+ 
+     GLint creationLevels(GLsizei width, GLsizei height, GLsizei depth) const;
+     bool isLevelComplete(int level) const;
+@@ -750,6 +751,7 @@ class TextureD3D_2DArray : public TextureD3D
+     bool isImageComplete(const gl::ImageIndex &index) const override;
+     bool isSRGB(GLint level) const;
+     angle::Result updateStorageLevel(const gl::Context *context, int level);
++    GLint getBaseLevelStorageDepth() const override;
+ 
+     void deleteImages();
+     angle::Result redefineImage(const gl::Context *context,
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index 9a8f46f7adab81291f1f3d171c69805306b3de2f..8a6bbb6c597d8b1399c4d06f0e9287b066a56a61 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -8646,6 +8646,123 @@ TEST_P(Texture2DArrayTestES3, RedefineLayerCountTo1AndRespecify)
+     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
+ }
+ 
++// Test that changing GL_TEXTURE_BASE_LEVEL to a mip level with fewer layers properly releases
++// storage so that undeclared layers are not sampleable and do not leak stale data.
++TEST_P(Texture2DArrayTestES3, BaseLevelChangeWithFewerLayersReleasesStorage)
++{
++    constexpr GLsizei kLevel0Width         = 4;
++    constexpr GLsizei kLevel0Height        = 4;
++    constexpr GLsizei kLevel0Layers        = 2;
++    constexpr size_t kLevel0PixelsPerLayer = kLevel0Width * kLevel0Height;
++
++    constexpr GLsizei kLevel1Width         = 2;
++    constexpr GLsizei kLevel1Height        = 2;
++    constexpr GLsizei kLevel1Layers        = 1;
++    constexpr size_t kLevel1PixelsPerLayer = kLevel1Width * kLevel1Height;
++
++    glBindTexture(GL_TEXTURE_2D_ARRAY, m2DArrayTexture);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Level 0: 4x4 with 2 layers (layer 0 = red, layer 1 = blue)
++    std::vector<GLColor> level0Data(kLevel0PixelsPerLayer * kLevel0Layers);
++    std::fill_n(level0Data.begin(), kLevel0PixelsPerLayer, GLColor::red);
++    std::fill_n(level0Data.begin() + kLevel0PixelsPerLayer, kLevel0PixelsPerLayer, GLColor::blue);
++
++    // Level 1: 2x2 with 1 layer (layer 0 = green)
++    std::vector<GLColor> level1Data(kLevel1PixelsPerLayer * kLevel1Layers, GLColor::green);
++
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, 0);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 0);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, kLevel0Width, kLevel0Height, kLevel0Layers, 0,
++                 GL_RGBA, GL_UNSIGNED_BYTE, level0Data.data());
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, kLevel1Width, kLevel1Height, kLevel1Layers, 0,
++                 GL_RGBA, GL_UNSIGNED_BYTE, level1Data.data());
++
++    glUseProgram(mProgram);
++    glUniform1i(mTextureArrayLocation, 0);
++    glUniform1i(mTextureArraySliceUniformLocation, 0);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++
++    glUniform1i(mTextureArraySliceUniformLocation, 1);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::blue);
++
++    // Change base level to 1, which only has 1 layer.
++    // The texture storage must be released and reallocated with ArraySize = 1.
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 1);
++
++    // Layer 0 is declared at level 1 and should sample green.
++    glUniform1i(mTextureArraySliceUniformLocation, 0);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++
++    // Layer 1 is NOT declared at level 1. Because the texture storage was reallocated with only
++    // 1 layer, sampling layer 1 will clamp to layer 0 (green) according to the GLES spec, rather
++    // than reading the stale blue data from layer 1 of the old 2-layer storage.
++    glUniform1i(mTextureArraySliceUniformLocation, 1);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_NE(ReadColor(0, 0), GLColor::blue);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++}
++
++// Test that changing GL_TEXTURE_BASE_LEVEL to a mip level with more layers properly releases
++// storage so that newly exposed layers can be sampled.
++TEST_P(Texture2DArrayTestES3, BaseLevelChangeWithMoreLayersReleasesStorage)
++{
++    constexpr GLsizei kLevel0Width         = 4;
++    constexpr GLsizei kLevel0Height        = 4;
++    constexpr GLsizei kLevel0Layers        = 1;
++    constexpr size_t kLevel0PixelsPerLayer = kLevel0Width * kLevel0Height;
++
++    constexpr GLsizei kLevel1Width         = 2;
++    constexpr GLsizei kLevel1Height        = 2;
++    constexpr GLsizei kLevel1Layers        = 2;
++    constexpr size_t kLevel1PixelsPerLayer = kLevel1Width * kLevel1Height;
++
++    glBindTexture(GL_TEXTURE_2D_ARRAY, m2DArrayTexture);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Level 0: 4x4 with 1 layer (layer 0 = red)
++    std::vector<GLColor> level0Data(kLevel0PixelsPerLayer * kLevel0Layers, GLColor::red);
++
++    // Level 1: 2x2 with 2 layers (layer 0 = green, layer 1 = blue)
++    std::vector<GLColor> level1Data(kLevel1PixelsPerLayer * kLevel1Layers);
++    std::fill_n(level1Data.begin(), kLevel1PixelsPerLayer, GLColor::green);
++    std::fill_n(level1Data.begin() + kLevel1PixelsPerLayer, kLevel1PixelsPerLayer, GLColor::blue);
++
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, 0);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 0);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, kLevel0Width, kLevel0Height, kLevel0Layers, 0,
++                 GL_RGBA, GL_UNSIGNED_BYTE, level0Data.data());
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, kLevel1Width, kLevel1Height, kLevel1Layers, 0,
++                 GL_RGBA, GL_UNSIGNED_BYTE, level1Data.data());
++
++    glUseProgram(mProgram);
++    glUniform1i(mTextureArrayLocation, 0);
++    glUniform1i(mTextureArraySliceUniformLocation, 0);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++
++    // Change base level to 1, which has 2 layers.
++    // The texture storage must be released and reallocated with ArraySize = 2.
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 1);
++
++    // Layer 0 should sample green.
++    glUniform1i(mTextureArraySliceUniformLocation, 0);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++
++    // Layer 1 should sample blue.
++    glUniform1i(mTextureArraySliceUniformLocation, 1);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::blue);
++}
++
+ // Create a 2D array texture and update layers with data and test that pruning
+ // of superseded updates works as expected.
+ TEST_P(Texture2DArrayTestES3, TextureArrayPruneSupersededUpdates)

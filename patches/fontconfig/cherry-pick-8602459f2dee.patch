@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Dominik=20R=C3=B6ttsches?= <drott@chromium.org>
+Date: Thu, 3 Sep 2026 15:13:00 +0300
+Subject: Add Windows SRWLOCK implementation for FcRwLock
+
+Implement FcRwLock on Windows using native Slim Reader/Writer (SRW)
+locks (InitializeSRWLock, AcquireSRWLockShared, AcquireSRWLockExclusive,
+ReleaseSRWLockShared, ReleaseSRWLockExclusive).
+
+Changelog: none
+(cherry picked from commit 8602459f2deea1457ebe7321c43b704c00988799)
+
+diff --git a/src/fcmutex.h b/src/fcmutex.h
+index 80bd4a2a958e3492f195725945f3f9a1f8f83283..95fb9c2bf8a2cd23492b15a73df8e1aafca24c14 100644
+--- a/src/fcmutex.h
++++ b/src/fcmutex.h
+@@ -55,14 +55,16 @@ typedef CRITICAL_SECTION fc_mutex_impl_t;
+ #  define fc_mutex_impl_unlock(M) LeaveCriticalSection (M)
+ #  define fc_mutex_impl_finish(M) DeleteCriticalSection (M)
+ 
+-typedef fc_mutex_impl_t fc_rwlock_impl_t;
+-#  define FC_RWLOCK_IMPL_INIT         FC_MUTEX_IMPL_INIT
+-#  define fc_rwlock_impl_init(L)      fc_mutex_impl_init (L)
+-#  define fc_rwlock_impl_rdlock(L)    fc_mutex_impl_lock (L)
+-#  define fc_rwlock_impl_wrlock(L)    fc_mutex_impl_lock (L)
+-#  define fc_rwlock_impl_unlock_rd(L) fc_mutex_impl_unlock (L)
+-#  define fc_rwlock_impl_unlock_wr(L) fc_mutex_impl_unlock (L)
+-#  define fc_rwlock_impl_finish(L)    fc_mutex_impl_finish (L)
++typedef SRWLOCK fc_rwlock_impl_t;
++#  define FC_RWLOCK_IMPL_INIT         SRWLOCK_INIT
++#  define fc_rwlock_impl_init(L)      InitializeSRWLock (L)
++#  define fc_rwlock_impl_rdlock(L)    AcquireSRWLockShared (L)
++#  define fc_rwlock_impl_wrlock(L)    AcquireSRWLockExclusive (L)
++#  define fc_rwlock_impl_unlock_rd(L) ReleaseSRWLockShared (L)
++#  define fc_rwlock_impl_unlock_wr(L) ReleaseSRWLockExclusive (L)
++#  define fc_rwlock_impl_finish(L) \
++      FC_STMT_START {}             \
++      FC_STMT_END
+ 
+ #elif !defined(FC_NO_MT) && (defined(HAVE_PTHREAD) || defined(__APPLE__))
+ 
