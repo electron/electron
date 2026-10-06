@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Thu, 1 Oct 2026 07:35:28 +0000
+Subject: [M150-LTS] Harden
+ RenderWidgetHostViewEventHandler::FinishImeCompositionSession
+
+FinishImeCompositionSession() on mouse press and gesture tap during
+active IME composition is re-entrant to OS input methods.
+
+These synchronous callouts can pump messages or cause focus changes that
+re-entrantly destroy the view or its window.
+
+Bug: 561891645
+Change-Id: Ide2361ce3be241bba1debc08930089c6092e1738
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8443460
+Commit-Queue: Jonathan Ross <jonross@chromium.org>
+Reviewed-by: Kartar Singh <kartarsingh@google.com>
+Cr-Commit-Position: refs/heads/main@{#1706078}
+(cherry picked from commit 61f3d8549e0babaa156e8573067f2fd5db627319)
+
+Electron adaptation notes (42-x-y): test-only hunks in
+render_widget_host_view_aura_unittest.cc conflicted with unrelated test drift
+and were dropped; the production changes are unmodified.
+
+diff --git a/content/browser/renderer_host/render_widget_host_view_event_handler.cc b/content/browser/renderer_host/render_widget_host_view_event_handler.cc
+index 044834e83acf892d3a228774bcd1b81fb537d41f..2ad6f46e8b908658685370252178126ca54c0f4e 100644
+--- a/content/browser/renderer_host/render_widget_host_view_event_handler.cc
++++ b/content/browser/renderer_host/render_widget_host_view_event_handler.cc
+@@ -375,7 +375,11 @@ void RenderWidgetHostViewEventHandler::OnMouseEvent(ui::MouseEvent* event) {
+       // Confirm existing composition text on mouse press, to make sure
+       // the input caret won't be moved with an ongoing composition text.
+       if (event->type() == ui::EventType::kMousePressed) {
++        auto weak_this = weak_ptr_factory_.GetWeakPtr();
+         FinishImeCompositionSession();
++        if (!weak_this || !window_ || !host_) {
++          return;
++        }
+       }
+ 
+       blink::WebMouseEvent mouse_event = ui::MakeWebMouseEvent(*event);
+@@ -557,7 +561,11 @@ void RenderWidgetHostViewEventHandler::OnGestureEvent(ui::GestureEvent* event) {
+   // Confirm existing composition text on TAP gesture, to make sure the input
+   // caret won't be moved with an ongoing composition text.
+   if (event->type() == ui::EventType::kGestureTap) {
++    auto weak_this = weak_ptr_factory_.GetWeakPtr();
+     FinishImeCompositionSession();
++    if (!weak_this || !window_ || !host_ ) {
++      return;
++    }
+   }
+ 
+   blink::WebGestureEvent gesture = ui::MakeWebGestureEvent(*event);
+@@ -675,8 +683,15 @@ void RenderWidgetHostViewEventHandler::FinishImeCompositionSession() {
+   // call to finish composition text should be made through the RWHVA itself
+   // otherwise the following call to cancel composition will lead to an extra
+   // IPC for finishing the ongoing composition (see https://crbug.com/723024).
++  if (!host_view_ || !host_view_->GetTextInputClient()) {
++    return;
++  }
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
+   host_view_->GetTextInputClient()->ConfirmCompositionText(
+       /* keep_selection */ true);
++  if (!weak_this || !window_ || !host_) {
++    return;
++  }
+   host_view_->ImeCancelComposition();
+ }
+ 
+diff --git a/content/browser/renderer_host/render_widget_host_view_event_handler.h b/content/browser/renderer_host/render_widget_host_view_event_handler.h
+index d975a34154643bc6da28ab3b2f610bdc78aae93e..aabc595df57a30ad6e8b547eff90899190d3929b 100644
+--- a/content/browser/renderer_host/render_widget_host_view_event_handler.h
++++ b/content/browser/renderer_host/render_widget_host_view_event_handler.h
+@@ -11,6 +11,7 @@
+ #include "base/containers/flat_set.h"
+ #include "base/gtest_prod_util.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "build/build_config.h"
+ #include "components/input/native_web_keyboard_event.h"
+ #include "content/browser/renderer_host/input/mouse_wheel_phase_handler.h"
+@@ -322,6 +323,9 @@ class CONTENT_EXPORT RenderWidgetHostViewEventHandler
+ 
+   // Used to identify pointing device that can fire fling events.
+   base::flat_set<int> fling_capable_device_ids_;
++
++  base::WeakPtrFactory<RenderWidgetHostViewEventHandler> weak_ptr_factory_{
++      this};
+ };
+ 
+ }  // namespace content

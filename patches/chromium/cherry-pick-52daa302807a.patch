@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Tue, 6 Oct 2026 09:07:42 +0000
+Subject: [M150-LTS] Fix bugs in HTMLMediaElement::SelectNextSourceChild
+
+In SelectNextSourceChild, src_value was held across MediaQueryMatches().
+That call can trigger a style and layout update in an embedding
+document, synchronizing dirty style attributes and causing the element's
+attribute buffer to reallocate.
+
+Fixed: 567447106
+Change-Id: I7a5b13183f65710937d57b6298165bdd0c2f0841
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8494613
+Commit-Queue: Benjamin Keen <bkeen@google.com>
+Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+Reviewed-by: Benjamin Keen <bkeen@google.com>
+Cr-Commit-Position: refs/heads/main@{#1708606}
+(cherry picked from commit fee8baee165a2165c254585eeef25a304381bd1d)
+
+Electron adaptation notes (42-x-y): test-only hunks in
+html_media_element_test.cc conflicted with unrelated test drift and were
+dropped; the html_media_element.cc change is unmodified.
+
+diff --git a/third_party/blink/renderer/core/html/media/html_media_element.cc b/third_party/blink/renderer/core/html/media/html_media_element.cc
+index f146cf18f355d46396e80c50d3482ba5a7781dfe..bad00eb15ee288c322525108a1004da0771db519 100644
+--- a/third_party/blink/renderer/core/html/media/html_media_element.cc
++++ b/third_party/blink/renderer/core/html/media/html_media_element.cc
+@@ -3749,13 +3749,11 @@ KURL HTMLMediaElement::SelectNextSourceChild(
+     // 2. If candidate does not have a src attribute, or if its src
+     // attribute's value is the empty string ... jump down to the failed
+     // step below
+-    const AtomicString& src_value =
+-        source->FastGetAttribute(html_names::kSrcAttr);
+     if (should_log) {
+       DVLOG(3) << "selectNextSourceChild(" << *this << ") - 'src' is "
+                << UrlForLoggingMedia(media_url);
+     }
+-    if (src_value.empty()) {
++    if (source->FastGetAttribute(html_names::kSrcAttr).empty()) {
+       goto checkAgain;
+     }
+ 
+@@ -3770,7 +3768,11 @@ KURL HTMLMediaElement::SelectNextSourceChild(
+     // 4. Let urlRecord be the result of encoding-parsing a URL given
+     // candidate's src attribute's value, relative to candidate's node document
+     // when the src attribute was last changed.
+-    media_url = source->GetDocument().CompleteURL(src_value);
++    // Note: Do not cache `kSrcAttr` in a local reference across step 3, as
++    // `MediaQueryMatches()` can trigger style/layout updates that mutate
++    // attributes or reallocate the element's attribute buffer.
++    media_url = source->GetDocument().CompleteURL(
++        source->FastGetAttribute(html_names::kSrcAttr));
+ 
+     // 5. If urlRecord is failure, then end the synchronous section, and jump
+     // down to the failed with elements step below.

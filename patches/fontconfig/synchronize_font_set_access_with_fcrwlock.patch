@@ -1,0 +1,273 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Dominik=20R=C3=B6ttsches?= <drott@chromium.org>
+Date: Fri, 4 Sep 2026 12:01:38 +0300
+Subject: Synchronize font set access with FcRwLock
+
+Add fonts_lock to struct _FcConfig and use reader-writer locking
+to synchronize concurrent reads and writes to config->fonts.
+
+Reader lock is acquired during font matching, sorting, and listing
+(FcFontMatch, FcFontSort, FcFontList), while writer lock is acquired
+when modifying font sets (FcConfigAppFontAddFile, FcConfigAppFontAddDir,
+FcConfigAppFontClear, FcConfigSetFonts, FcConfigBuildFonts).
+
+Note that this change does not address the MT unsafety of FcConfigGetFonts.
+FcConfigGetFonts returns an internal pointer to config->fonts[set], which
+cannot be made thread-safe without external synchronization as long as
+callers access the returned FcFontSet after the lock is released.
+Acquiring the lock only during the pointer read would give a false sense
+of security. It remains documented as not MT-safe in doc/fcconfig.fncs.
+
+Changelog: fixed
+(cherry picked from commit 8e9585bc5e763ced51c6c09b6b2e21645a947c34)
+
+Electron adaptation notes (42-x-y): the pinned fontconfig revision
+(d62c2ab268d1) predates the application-font registry
+(config->appFonts), so the FcStrSet bookkeeping hunks are dropped.
+FcConfigAppFontAddFile at this revision recurses into subdirectories
+via FcConfigAppFontAddDir, which takes the write lock itself, so the
+lock is released before that loop; error paths use a bail_unlock label
+so the lock is released on every exit after it is acquired. The lock
+scopes otherwise match upstream.
+
+diff --git a/src/fccfg.c b/src/fccfg.c
+index 55797f9bc38cc8b7718c8b724dc37ef9913ecce4..526108b9933adebbca9735f9fb13f8e192f70c07 100644
+--- a/src/fccfg.c
++++ b/src/fccfg.c
+@@ -193,6 +193,7 @@ FcConfigCreate (void)
+     config->maxObjects = 0;
+     for (set = FcSetSystem; set <= FcSetApplication; set++)
+ 	config->fonts[set] = 0;
++    FcRwLockInit (&config->fonts_lock);
+ 
+     config->rescanTime = time (0);
+     config->rescanInterval = 30;
+@@ -409,6 +410,8 @@ FcConfigDestroy (FcConfig *config)
+ 	if (config->desktop_name)
+ 	    FcStrFree (config->desktop_name);
+ 
++	FcRwLockFinish (&config->fonts_lock);
++
+ 	free (config);
+     }
+ }
+@@ -536,6 +539,16 @@ FcConfigAddDirList (FcConfig *config, FcSetName set, FcStrSet *dirSet)
+  * and build the set of available fonts.
+  */
+ 
++static void
++FcConfigSetFontsLocked (FcConfig  *config,
++                        FcFontSet *fonts,
++                        FcSetName  set)
++{
++    if (config->fonts[set])
++	FcFontSetDestroy (config->fonts[set]);
++    config->fonts[set] = fonts;
++}
++
+ FcBool
+ FcConfigBuildFonts (FcConfig *config)
+ {
+@@ -552,14 +565,17 @@ FcConfigBuildFonts (FcConfig *config)
+ 	goto bail;
+     }
+ 
+-    FcConfigSetFonts (config, fonts, FcSetSystem);
++    FcRwLockWriteLock (&config->fonts_lock);
++    FcConfigSetFontsLocked (config, fonts, FcSetSystem);
+ 
+     if (!FcConfigAddDirList (config, FcSetSystem, config->fontDirs)) {
+ 	ret = FcFalse;
+-	goto bail;
++	goto bail_unlock;
+     }
+     if (FcDebug() & FC_DBG_FONTSET)
+ 	FcFontSetPrint (fonts);
++bail_unlock:
++    FcRwLockUnlockWrite (&config->fonts_lock);
+ bail:
+     FcConfigDestroy (config);
+ 
+@@ -793,6 +809,14 @@ FcConfigGetCache (FcConfig *config FC_UNUSED)
+     return NULL;
+ }
+ 
++/*
++ * Note: this function is not thread-safe as documented in doc/fcconfig.fncs.
++ * It returns an internal pointer to config->fonts[set], which cannot be safely
++ * accessed without external synchronization if other threads may concurrently
++ * modify font sets (e.g. via FcConfigAppFontAdd* or FcConfigAppFontClear).
++ * Acquiring fonts_lock only during the pointer read would not protect callers
++ * after this function returns.
++ */
+ FcFontSet *
+ FcConfigGetFonts (FcConfig *config,
+                   FcSetName set)
+@@ -810,9 +834,9 @@ FcConfigSetFonts (FcConfig  *config,
+                   FcFontSet *fonts,
+                   FcSetName  set)
+ {
+-    if (config->fonts[set])
+-	FcFontSetDestroy (config->fonts[set]);
+-    config->fonts[set] = fonts;
++    FcRwLockWriteLock (&config->fonts_lock);
++    FcConfigSetFontsLocked (config, fonts, set);
++    FcRwLockUnlockWrite (&config->fonts_lock);
+ }
+ 
+ FcConfig *
+@@ -2727,22 +2751,29 @@ FcConfigAppFontAddFile (FcConfig      *config,
+ 	goto bail;
+     }
+ 
+-    set = FcConfigGetFonts (config, FcSetApplication);
++    FcRwLockWriteLock (&config->fonts_lock);
++
++    set = config->fonts[FcSetApplication];
+     if (!set) {
+ 	set = FcFontSetCreate();
+ 	if (!set) {
+ 	    FcStrSetDestroy (subdirs);
+ 	    ret = FcFalse;
+-	    goto bail;
++	    goto bail_unlock;
+ 	}
+-	FcConfigSetFonts (config, set, FcSetApplication);
++	FcConfigSetFontsLocked (config, set, FcSetApplication);
+     }
+ 
+     if (!FcFileScanConfig (set, subdirs, file, config)) {
+ 	FcStrSetDestroy (subdirs);
+ 	ret = FcFalse;
+-	goto bail;
++	goto bail_unlock;
+     }
++    /*
++     * Release the lock before recursing into subdirectories:
++     * FcConfigAppFontAddDir acquires the write lock itself.
++     */
++    FcRwLockUnlockWrite (&config->fonts_lock);
+     if ((sublist = FcStrListCreate (subdirs))) {
+ 	while ((subdir = FcStrListNext (sublist))) {
+ 	    FcConfigAppFontAddDir (config, subdir);
+@@ -2750,6 +2781,9 @@ FcConfigAppFontAddFile (FcConfig      *config,
+ 	FcStrListDone (sublist);
+     }
+     FcStrSetDestroy (subdirs);
++    goto bail;
++bail_unlock:
++    FcRwLockUnlockWrite (&config->fonts_lock);
+ bail:
+     FcConfigDestroy (config);
+ 
+@@ -2774,15 +2808,17 @@ FcConfigAppFontAddDir (FcConfig      *config,
+ 	goto bail;
+     }
+ 
+-    set = FcConfigGetFonts (config, FcSetApplication);
++    FcRwLockWriteLock (&config->fonts_lock);
++
++    set = config->fonts[FcSetApplication];
+     if (!set) {
+ 	set = FcFontSetCreate();
+ 	if (!set) {
+ 	    FcStrSetDestroy (dirs);
+ 	    ret = FcFalse;
+-	    goto bail;
++	    goto bail_unlock;
+ 	}
+-	FcConfigSetFonts (config, set, FcSetApplication);
++	FcConfigSetFontsLocked (config, set, FcSetApplication);
+     }
+ 
+     FcStrSetAddFilename (dirs, dir);
+@@ -2790,9 +2826,11 @@ FcConfigAppFontAddDir (FcConfig      *config,
+     if (!FcConfigAddDirList (config, FcSetApplication, dirs)) {
+ 	FcStrSetDestroy (dirs);
+ 	ret = FcFalse;
+-	goto bail;
++	goto bail_unlock;
+     }
+     FcStrSetDestroy (dirs);
++bail_unlock:
++    FcRwLockUnlockWrite (&config->fonts_lock);
+ bail:
+     FcConfigDestroy (config);
+ 
+@@ -2806,7 +2844,9 @@ FcConfigAppFontClear (FcConfig *config)
+     if (!config)
+ 	return;
+ 
+-    FcConfigSetFonts (config, 0, FcSetApplication);
++    FcRwLockWriteLock (&config->fonts_lock);
++    FcConfigSetFontsLocked (config, 0, FcSetApplication);
++    FcRwLockUnlockWrite (&config->fonts_lock);
+ 
+     FcConfigDestroy (config);
+ }
+diff --git a/src/fcint.h b/src/fcint.h
+index 42547bb769c749da3256190f75e8967d91e074e3..dffa0f5ec31db0259b7e51f277a3ef81202738fe 100644
+--- a/src/fcint.h
++++ b/src/fcint.h
+@@ -599,6 +599,7 @@ struct _FcConfig {
+      * match preferrentially
+      */
+     FcFontSet *fonts[FcSetApplication + 1];
++    FcRwLock   fonts_lock;
+     /*
+      * Fontconfig can periodically rescan the system configuration
+      * and font directories.  This rescanning occurs when font
+diff --git a/src/fclist.c b/src/fclist.c
+index 50d79cd206468ee4c1e3be52df6b1d9b6ddaef12..1f714171317d7a0a1545016369faa52707c038ff 100644
+--- a/src/fclist.c
++++ b/src/fclist.c
+@@ -564,12 +564,14 @@ FcFontList (FcConfig    *config,
+     config = FcConfigReference (config);
+     if (!config)
+ 	return NULL;
++    FcRwLockReadLock (&config->fonts_lock);
+     nsets = 0;
+     if (config->fonts[FcSetSystem])
+ 	sets[nsets++] = config->fonts[FcSetSystem];
+     if (config->fonts[FcSetApplication])
+ 	sets[nsets++] = config->fonts[FcSetApplication];
+     ret = FcFontSetList (config, sets, nsets, p, os);
++    FcRwLockUnlockRead (&config->fonts_lock);
+     FcConfigDestroy (config);
+ 
+     return ret;
+diff --git a/src/fcmatch.c b/src/fcmatch.c
+index 14fbefb918f06c004466eb73b13aa423b7f4d73b..890025dddec065aeb9f2f676e59e34df2cd4dbde 100644
+--- a/src/fcmatch.c
++++ b/src/fcmatch.c
+@@ -1000,6 +1000,7 @@ FcFontMatch (FcConfig  *config,
+     config = FcConfigReference (config);
+     if (!config)
+ 	return NULL;
++    FcRwLockReadLock (&config->fonts_lock);
+     nsets = 0;
+     if (config->fonts[FcSetSystem])
+ 	sets[nsets++] = config->fonts[FcSetSystem];
+@@ -1007,6 +1008,7 @@ FcFontMatch (FcConfig  *config,
+ 	sets[nsets++] = config->fonts[FcSetApplication];
+ 
+     best = FcFontSetMatchInternal (sets, nsets, p, result);
++    FcRwLockUnlockRead (&config->fonts_lock);
+     if (best) {
+ 	ret = FcFontRenderPrepare (config, p, best);
+ 	FcPatternDestroy (best);
+@@ -1304,12 +1306,14 @@ FcFontSort (FcConfig   *config,
+     config = FcConfigReference (config);
+     if (!config)
+ 	return NULL;
++    FcRwLockReadLock (&config->fonts_lock);
+     nsets = 0;
+     if (config->fonts[FcSetSystem])
+ 	sets[nsets++] = config->fonts[FcSetSystem];
+     if (config->fonts[FcSetApplication])
+ 	sets[nsets++] = config->fonts[FcSetApplication];
+     ret = FcFontSetSort (config, sets, nsets, p, trim, csp, result);
++    FcRwLockUnlockRead (&config->fonts_lock);
+     FcConfigDestroy (config);
+ 
+     return ret;

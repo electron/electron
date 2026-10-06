@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Baron <dbaron@chromium.org>
+Date: Mon, 5 Oct 2026 17:05:37 -0700
+Subject: [M150] Reland "Avoid dangling reference in
+ HTMLAnchorElementBase::NavigateToHyperlink."
+
+Original change's description:
+> Reland "Avoid dangling reference in HTMLAnchorElementBase::NavigateToHyperlink."
+>
+> This is a reland of commit 280ca3161bda00f116803a7064aba3ce91a7d59e
+> with the addition of a new change to LeakExpectations.
+>
+> Original change's description:
+> > Avoid dangling reference in HTMLAnchorElementBase::NavigateToHyperlink.
+> >
+> > Fixed: 565674529
+> > Change-Id: Ia3248d945dc01328e8f354ec28d7cfcadafb87f3
+> > Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8464608
+> > Auto-Submit: David Baron <dbaron@chromium.org>
+> > Commit-Queue: David Baron <dbaron@chromium.org>
+> > Reviewed-by: Joey Arhar <jarhar@chromium.org>
+> > Commit-Queue: Joey Arhar <jarhar@chromium.org>
+> > Cr-Commit-Position: refs/heads/main@{#1706396}
+>
+> Fixed: 565674529
+> Bug: 567487270
+> Change-Id: I3011a6ac54d8228f8a52601b324b7054a4aa2c9e
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8480519
+> Auto-Submit: David Baron <dbaron@chromium.org>
+> Commit-Queue: Joey Arhar <jarhar@chromium.org>
+> Reviewed-by: Joey Arhar <jarhar@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1707303}
+
+(cherry picked from commit 29c3240bc3b593965b5f78522cdf5c64562fee9e)
+
+Bug: 568542169,565674529,567487270
+Change-Id: I3011a6ac54d8228f8a52601b324b7054a4aa2c9e
+
+diff --git a/third_party/blink/renderer/core/html/html_anchor_element.cc b/third_party/blink/renderer/core/html/html_anchor_element.cc
+index 94cf4e03dba779cd409f610c3edb53f3ce789daf..261bb4ed610083c260ac4be782534f6750a4ea3b 100644
+--- a/third_party/blink/renderer/core/html/html_anchor_element.cc
++++ b/third_party/blink/renderer/core/html/html_anchor_element.cc
+@@ -454,7 +454,7 @@ void HTMLAnchorElementBase::NavigateToHyperlink(
+   frame_request.SetNavigationPolicy(navigation_policy);
+   frame_request.SetClientNavigationReason(ClientNavigationReason::kAnchorClick);
+   frame_request.SetSourceElement(this);
+-  const AtomicString& target =
++  const AtomicString target =
+       frame_request.CleanNavigationTarget(GetEffectiveTarget());
+ 
+   AnchorElementUtils::HandleRelAttribute(frame_request, frame->GetSettings(),
+diff --git a/third_party/blink/web_tests/LeakExpectations b/third_party/blink/web_tests/LeakExpectations
+index bfda84586d601862f61827a1be94ab8c7400741a..f515b369b3bfe8d39e95ce92bbc56bbcc03217ac 100644
+--- a/third_party/blink/web_tests/LeakExpectations
++++ b/third_party/blink/web_tests/LeakExpectations
+@@ -62,3 +62,5 @@ crbug.com/422282936 external/wpt/css/css-overflow/root-scroll-button.html [ Fail
+ # Sheriff 2026-01-26
+ crbug.com/478659066 virtual/webui-browser/external/wpt/html/browsers/windows/nested-browsing-contexts/window-top.html [ Failure Pass Crash ]
+ crbug.com/424246290 external/wpt/payment-handler/same-object-attributes.https.html [ Pass Failure ]
++
++crbug.com/567487270 external/wpt/trusted-types/navigate-to-javascript-url-009-crash.html [ Crash ]
+diff --git a/third_party/blink/web_tests/external/wpt/trusted-types/navigate-to-javascript-url-009-crash.html b/third_party/blink/web_tests/external/wpt/trusted-types/navigate-to-javascript-url-009-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..6fb8eadddc9457914f081bce71254fef4c3cddb7
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/trusted-types/navigate-to-javascript-url-009-crash.html
+@@ -0,0 +1,23 @@
++<!DOCTYPE HTML>
++<meta http-equiv="Content-Security-Policy" content="require-trusted-types-for 'script'">
++<body>
++<script>
++  let target_element;
++  trustedTypes.createPolicy("default", {
++    createScript: input => {
++      if (target_element) {
++        for (let i = 0; i < 64; ++i)
++          target_element.setAttribute(`data-added-${i}`, "value");
++        target_element = undefined;
++      }
++      return input;
++    }
++  });
++  target_element = document.createElement("a");
++  target_element.href = "javascript:void(0)";
++  target_element.target = "new-frame";
++  for (let i = 0; i < 6; ++i)
++    target_element.setAttribute(`data-original-${i}`, "value");
++  document.body.appendChild(target_element);
++  target_element.click();
++</script>

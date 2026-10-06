@@ -1,0 +1,3 @@
+add_fcrwlock_for_posix.patch
+add_windows_srwlock_implementation_for_fcrwlock.patch
+synchronize_font_set_access_with_fcrwlock.patch

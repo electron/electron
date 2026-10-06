@@ -1,0 +1,76 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rakina Zata Amni <rakina@chromium.org>
+Date: Fri, 18 Sep 2026 04:15:10 -0700
+Subject: [M152] Fix RFH state checks in EvictBFCachedClientsIfLastActive
+
+Original change's description:
+> Fix RFH state checks in EvictBFCachedClientsIfLastActive
+>
+> SharedWorkerHost::EvictBFCachedClientsIfLastActive checks if the main
+> frame currently navigating away (render_frame_host) is the last active
+> client of a SharedWorker. If so, it evicts other BFCached clients of
+> the worker and returns true so that render_frame_host is blocked from
+> entering BFCache.
+>
+> Previously, EvictBFCachedClientsIfLastActive checked
+> `if (other_rfh->IsActive()) return false;`. For inactive RFHs that
+> are not in BFCache (such as frames in kPendingDeletion or running
+> unload handlers), IsActive() returned false, causing them to be added
+> to `bf_cached_clients`. This resulted in calling
+> EvictFromBackForwardCacheWithReason on RFHs that were not in
+> BFCache, triggering a crash.
+>
+> Changing the check to `if (!other_rfh->IsInBackForwardCache()) return false;` was also insufficient because it treated inactive
+> non-BFCached RFHs (e.g., kPendingDeletion) as active clients,
+> returning false early and incorrectly allowing render_frame_host to
+> enter BFCache when no active clients remained.
+>
+> This CL explicitly handles all three RFH lifecycle categories:
+> 1. Active (other_rfh->IsActive()): Returns false because another
+>    active client exists.
+> 2. In BFCache (other_rfh->IsInBackForwardCache()): Pushed to
+>    bf_cached_clients to be evicted if render_frame_host is the last
+>    active client.
+> 3. Inactive & not in BFCache (kPendingDeletion, etc.): Skipped, as it
+>    is neither active nor stored in BFCache.
+>
+> BUG=560238696
+> TAG=agy
+> CONV=29c67910-05a4-442d-8a19-f8396f02d251
+>
+> Change-Id: Ia2a9233446cfa1619a9f887d5af130663f9755db
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8404085
+> Reviewed-by: Anna Sato <annasato@chromium.org>
+> Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1697153}
+
+(cherry picked from commit 35e6b50ff0e339c4b830e568a85a18061a052cb0)
+
+Bug: 562324864
+Change-Id: Ia2a9233446cfa1619a9f887d5af130663f9755db
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8427685
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7977@{#2689}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+Electron adaptation notes (42-x-y): test-only hunks in
+shared_worker_service_impl_unittest.cc conflicted with unrelated test drift
+and were dropped; the shared_worker_host.cc change is unmodified.
+
+diff --git a/content/browser/worker_host/shared_worker_host.cc b/content/browser/worker_host/shared_worker_host.cc
+index 4c6a2d08369475baa25a932d7a6911ee28fd559a..1e2832bce054e78bb84879652f4d487df738b973 100644
+--- a/content/browser/worker_host/shared_worker_host.cc
++++ b/content/browser/worker_host/shared_worker_host.cc
+@@ -1110,7 +1110,9 @@ bool SharedWorkerHost::EvictBFCachedClientsIfLastActive(
+       // client.
+       return false;
+     }
+-    bf_cached_clients.push_back(other_rfh);
++    if (other_rfh->IsInBackForwardCache()) {
++      bf_cached_clients.push_back(other_rfh);
++    }
+   }
+   for (RenderFrameHostImpl* rfh_to_evict : bf_cached_clients) {
+     rfh_to_evict->EvictFromBackForwardCacheWithReason(
