@@ -17,5 +17,6 @@
   { "patch_dir": "src/electron/patches/libyuv", "repo": "src/third_party/libyuv" },
   { "patch_dir": "src/electron/patches/skia", "repo": "src/third_party/skia" },
   { "patch_dir": "src/electron/patches/dawn", "repo": "src/third_party/dawn" },
-  { "patch_dir": "src/electron/patches/icu", "repo": "src/third_party/icu" }
+  { "patch_dir": "src/electron/patches/icu", "repo": "src/third_party/icu" },
+  { "patch_dir": "src/electron/patches/fontconfig", "repo": "src/third_party/fontconfig/src" }
 ]

@@ -1,0 +1,86 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Linke <jgruber@chromium.org>
+Date: Thu, 17 Sep 2026 13:49:15 +0200
+Subject: [M152] [compiler] Don't assume a memory fence for generated-code
+ feedback
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> [compiler] Don't assume a memory fence for generated-code feedback
+>
+> Feedback slots written by generated code are published with a plain
+> store, so background reads of such values have to keep the
+> IsPendingAllocation check.
+>
+> These incorrectly used MakeRefAssumeMemoryFence:
+>
+> ReadFeedbackForInstanceOf ic-callable.tq
+> ReadFeedbackForArrayOrObjectLiteral CreateEmptyArrayLiteral, in CSA
+> ReadFeedbackForTemplateObject internal.tq GetTemplateObject
+>
+> Use plain TryMakeRef instead.
+>
+> Fixed: 559780376
+> Change-Id: I727e94cda8f858cc84a33309bab6962b9572a8c6
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8425682
+> Commit-Queue: Marja Hölttä <marja@chromium.org>
+> Reviewed-by: Marja Hölttä <marja@chromium.org>
+> Auto-Submit: Jakob Linke <jgruber@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#109982}
+
+(cherry picked from commit ec136c5038d337396e362db4c9a4198ffda0d1ed)
+
+Bug: 565638648,559780376
+Change-Id: I727e94cda8f858cc84a33309bab6962b9572a8c6
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8504006
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.2@{#80}
+Cr-Branched-From: a8fe17c242678787f03a8a2b77424aa06cf865c4-refs/heads/15.2.124@{#1}
+Cr-Branched-From: 0e6ea09ef6f15ebd7f78555c0648c8b632ce3013-refs/heads/main@{#108894}
+
+diff --git a/src/compiler/js-heap-broker.cc b/src/compiler/js-heap-broker.cc
+index d5cf37bfd3fce69b26e1558f0fda992e889dad17..556f89c44e7f272a3c43453596d0096688d458cb 100644
+--- a/src/compiler/js-heap-broker.cc
++++ b/src/compiler/js-heap-broker.cc
+@@ -728,7 +728,8 @@ ProcessedFeedback const& JSHeapBroker::ReadFeedbackForInstanceOf(
+         nexus.GetConstructorFeedback();
+     DirectHandle<JSObject> constructor;
+     if (maybe_constructor.ToHandle(&constructor)) {
+-      optional_constructor = MakeRefAssumeMemoryFence(this, *constructor);
++      // Written by generated code so this needs TryMakeRef.
++      optional_constructor = TryMakeRef(this, *constructor);
+     }
+   }
+   return *zone()->New<InstanceOfFeedback>(optional_constructor, nexus.kind());
+@@ -753,9 +754,11 @@ ProcessedFeedback const& JSHeapBroker::ReadFeedbackForArrayOrObjectLiteral(
+     return NewInsufficientFeedback(nexus.kind());
+   }
+ 
+-  AllocationSiteRef site =
+-      MakeRefAssumeMemoryFence(this, Cast<AllocationSite>(object));
+-  return *zone()->New<LiteralFeedback>(site, nexus.kind());
++  // Written by generated code so this needs TryMakeRef.
++  OptionalAllocationSiteRef site =
++      TryMakeRef(this, Cast<AllocationSite>(object));
++  if (!site.has_value()) return NewInsufficientFeedback(nexus.kind());
++  return *zone()->New<LiteralFeedback>(*site, nexus.kind());
+ }
+ 
+ ProcessedFeedback const& JSHeapBroker::ReadFeedbackForRegExpLiteral(
+@@ -783,8 +786,10 @@ ProcessedFeedback const& JSHeapBroker::ReadFeedbackForTemplateObject(
+     return NewInsufficientFeedback(nexus.kind());
+   }
+ 
+-  JSArrayRef array = MakeRefAssumeMemoryFence(this, Cast<JSArray>(object));
+-  return *zone()->New<TemplateObjectFeedback>(array, nexus.kind());
++  // Written by generated code so this needs TryMakeRef.
++  OptionalJSArrayRef array = TryMakeRef(this, Cast<JSArray>(object));
++  if (!array.has_value()) return NewInsufficientFeedback(nexus.kind());
++  return *zone()->New<TemplateObjectFeedback>(*array, nexus.kind());
+ }
+ 
+ ProcessedFeedback const& JSHeapBroker::ReadFeedbackForCall(

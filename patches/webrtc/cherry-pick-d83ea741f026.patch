@@ -1,0 +1,172 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tommi <tommi@webrtc.org>
+Date: Fri, 25 Sep 2026 11:12:56 +0200
+Subject: [M152] Ensure stopped transceivers do not hold a channel
+
+Original change's description:
+> Ensure stopped transceivers do not hold a channel
+>
+> Make sure that a transceiver that has been stopped does not get a
+> channel during negotiation, and that any channel is cleared before a
+> stopped transceiver is removed from the transceiver list.
+>
+> Bug: chromium:565742177
+> Change-Id: I63251adef97c03644d499ad95baa244033f6678e
+> Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/505661
+> Commit-Queue: Tomas Gunnarsson <tommi@webrtc.org>
+> Reviewed-by: Stefan Holmer <stefan@webrtc.org>
+> Cr-Commit-Position: refs/heads/main@{#48722}
+
+(cherry picked from commit 82df4ce4226de25e1682351d7ba2e9bf9a198790)
+
+Bug: chromium:565742177
+Fixed: chromium:567398982
+Change-Id: I63251adef97c03644d499ad95baa244033f6678e
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/506420
+Reviewed-by: Stefan Holmer <stefan@webrtc.org>
+Commit-Queue: Tomas Gunnarsson <tommi@webrtc.org>
+Cr-Commit-Position: refs/branch-heads/7977@{#1}
+Cr-Branched-From: 6f37672d358475cd17544121a12494da454d85fb-refs/heads/main@{#48235}
+
+diff --git a/pc/BUILD.gn b/pc/BUILD.gn
+index 4018fa48135bfa3258afc0d1e930f5bd50613c19..4184a11da81ab9ceb4d57f0d4bf0e2000f3ef7fb 100644
+--- a/pc/BUILD.gn
++++ b/pc/BUILD.gn
+@@ -3689,6 +3689,7 @@ if (rtc_include_tests && !build_with_chromium) {
+       ":pc_test_utils",
+       ":peerconnection_wrapper",
+       ":rtp_transceiver",
++      ":sdp_utils",
+       ":session_description",
+       "../api:create_peerconnection_factory",
+       "../api:jsep",
+@@ -3715,6 +3716,7 @@ if (rtc_include_tests && !build_with_chromium) {
+       "../media:codec",
+       "../media:media_constants",
+       "../media:stream_params",
++      "../p2p:p2p_constants",
+       "../rtc_base:threading",
+       "../system_wrappers:metrics",
+       "../test:create_test_field_trials",
+diff --git a/pc/sdp_offer_answer.cc b/pc/sdp_offer_answer.cc
+index 64b999e55ba80f66c8c2c388dd35bf895f6a0369..8ca4e52a4ddf3d8a05f0029ece2e95782ad61372 100644
+--- a/pc/sdp_offer_answer.cc
++++ b/pc/sdp_offer_answer.cc
+@@ -2734,7 +2734,8 @@ void SdpOfferAnswerHandler::ApplyRemoteDescriptionUpdateTransceiverState(
+       // direction.
+       transceiver->set_current_direction(local_direction);
+       // 2.2.8.1.11.[3-6]: Set the transport internal slots.
+-      if (transceiver->mid()) {
++      // A stopped transceiver has no channel and therefore no transport.
++      if (transceiver->mid() && !transceiver->stopped()) {
+         auto it = dtls_transports_by_mid.find(*transceiver->mid());
+         RTC_DCHECK(it != dtls_transports_by_mid.end());
+         transceiver->SetTransport(it->second.transport,
+@@ -4737,7 +4738,8 @@ void SdpOfferAnswerHandler::UpdateTransceiverChannel(
+   TRACE_EVENT0("webrtc", "SdpOfferAnswerHandler::UpdateTransceiverChannel");
+   RTC_DCHECK(IsUnifiedPlan());
+   RTC_DCHECK(transceiver);
+-  if (content.rejected) {
++  // A stopped transceiver must not have a channel.
++  if (content.rejected || transceiver->internal()->stopped()) {
+     if (transceiver->internal()->HasChannel()) {
+       network_teardown_tasks.Add(
+           transceiver->internal()->GetClearChannelNetworkTask());
+@@ -5827,6 +5829,10 @@ void SdpOfferAnswerHandler::RemoveStoppedTransceivers() {
+   }
+   // Traverse a copy of the transceiver list.
+   auto transceiver_list = transceivers()->List();
++  // Batched channel teardown for removed transceivers. The tasks run at the
++  // end of this function while `transceiver_list` still holds references.
++  ScopedOperationsBatcher network_teardown_tasks(context_->network_thread());
++  ScopedOperationsBatcher worker_tasks(context_->worker_thread());
+   for (auto transceiver : transceiver_list) {
+     // 3.2.10.1.1: If transceiver is stopped, associated with an m= section
+     //             and the associated m= section is rejected in
+@@ -5852,8 +5858,19 @@ void SdpOfferAnswerHandler::RemoveStoppedTransceivers() {
+       RTC_LOG(LS_INFO)
+           << "Dropping stopped transceiver that was never associated";
+     }
++    // Make sure the channel is cleared before the transceiver is removed.
++    if (transceiver->internal()->HasChannel()) {
++      network_teardown_tasks.Add(
++          transceiver->internal()->GetClearChannelNetworkTask());
++      worker_tasks.Add(transceiver->internal()->GetDeleteChannelWorkerTask(
++          /*stop_senders=*/false));
++    }
+     transceivers()->Remove(transceiver);
+   }
++  RTCError error = network_teardown_tasks.Run();
++  RTC_DCHECK(error.ok());
++  error = worker_tasks.Run();
++  RTC_DCHECK(error.ok());
+ }
+ 
+ void SdpOfferAnswerHandler::RemoveUnusedChannels(
+diff --git a/pc/sdp_offer_answer_unittest.cc b/pc/sdp_offer_answer_unittest.cc
+index 1b3a540b87c8dd9ea789aaedb881399dbae3d35a..71f91a97d375ce6073beeac2a61c6ec61b9837c4 100644
+--- a/pc/sdp_offer_answer_unittest.cc
++++ b/pc/sdp_offer_answer_unittest.cc
+@@ -48,8 +48,10 @@
+ #include "media/base/codec.h"
+ #include "media/base/media_constants.h"
+ #include "media/base/stream_params.h"
++#include "p2p/base/p2p_constants.h"
+ #include "pc/peer_connection_wrapper.h"
+ #include "pc/rtp_transceiver.h"
++#include "pc/sdp_utils.h"
+ #include "pc/session_description.h"
+ #include "pc/test/fake_audio_capture_module.h"
+ #include "pc/test/integration_test_helpers.h"
+@@ -2307,6 +2309,51 @@ TEST_F(SdpOfferAnswerTest,
+   EXPECT_FALSE(pc1->SetRemoteDescription(std::move(answer3)));
+ }
+ 
++// Verifies that a stopped transceiver does not get a channel.
++TEST_F(SdpOfferAnswerTest, StoppedTransceiverHasNoChannel) {
++  auto caller = CreatePeerConnection();
++  auto callee = CreatePeerConnection();
++
++  caller->AddTransceiver(MediaType::AUDIO);
++  scoped_refptr<RtpTransceiverInterface> stopped_transceiver =
++      caller->AddTransceiver(MediaType::AUDIO);
++  ASSERT_TRUE(stopped_transceiver);
++
++  auto offer = caller->CreateOfferAndSetAsLocal();
++  ASSERT_THAT(offer, NotNull());
++  ASSERT_TRUE(callee->SetRemoteDescription(std::move(offer)));
++  auto answer = callee->CreateAnswerAndSetAsLocal();
++  ASSERT_THAT(answer, NotNull());
++
++  auto pranswer =
++      CloneSessionDescriptionAsType(answer.get(), SdpType::kPrAnswer);
++  ASSERT_THAT(pranswer, NotNull());
++  SessionDescription* pranswer_desc = pranswer->description();
++  ASSERT_THAT(pranswer_desc->contents(), SizeIs(2));
++  ContentInfo& rejected_content = pranswer_desc->contents()[1];
++  rejected_content.rejected = true;
++  const ContentGroup* bundle = pranswer_desc->GetGroupByName(GROUP_TYPE_BUNDLE);
++  ASSERT_THAT(bundle, NotNull());
++  ContentGroup new_bundle = *bundle;
++  new_bundle.RemoveContentName(rejected_content.mid());
++  pranswer_desc->RemoveGroupByName(GROUP_TYPE_BUNDLE);
++  pranswer_desc->AddGroup(new_bundle);
++
++  ASSERT_TRUE(caller->SetRemoteDescription(std::move(pranswer)));
++  EXPECT_TRUE(stopped_transceiver->stopped());
++
++  ASSERT_TRUE(caller->SetRemoteDescription(std::move(answer)));
++  EXPECT_TRUE(stopped_transceiver->stopped());
++
++  bool has_channel = signaling_thread_->BlockingCall([&] {
++    return static_cast<RtpTransceiverProxyWithInternal<RtpTransceiver>*>(
++               stopped_transceiver.get())
++        ->internal()
++        ->HasChannel();
++  });
++  EXPECT_FALSE(has_channel);
++}
++
+ TEST_F(SdpOfferAnswerTest, SubsequentOfferDoesNotAddSctpInit) {
+   auto pc1 = CreatePeerConnection("WebRTC-Sctp-Snap/Enabled/");
+   auto pc2 = CreatePeerConnection("WebRTC-Sctp-Snap/Enabled/");

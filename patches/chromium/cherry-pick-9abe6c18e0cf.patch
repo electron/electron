@@ -1,0 +1,108 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Mon, 31 Aug 2026 19:49:13 -0700
+Subject: Convert atomic sequences for cc::PaintImage to 64-bit integers
+
+Fixed: 553454734
+Change-Id: I7b1ed2117113df21db369ab7b7142f6955fa67c4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8311137
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Reviewed-by: Philip Rogers <pdr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1689557}
+
+Electron adaptation notes (44-x-y):
+M152's cc/paint/paint_image.cc still spells the AnimatedImageFrameIndexMap
+constructor's key type as a literal `int` (upstream had already switched
+it to PaintImage::Id), so widening PaintImage::Id to int64_t made the
+out-of-line definition no longer match the declaration. The definition is
+updated to use PaintImage::Id, which is the only extra change versus
+upstream.
+
+diff --git a/cc/paint/paint_image.cc b/cc/paint/paint_image.cc
+index 7eaf19d843d83118111172fb5f5eac971e41084f..efc1714a54e86b64293bdc5e05be66481dbe2cc4 100644
+--- a/cc/paint/paint_image.cc
++++ b/cc/paint/paint_image.cc
+@@ -31,9 +31,9 @@
+ 
+ namespace cc {
+ namespace {
+-base::AtomicSequenceNumber g_next_image_id;
+-base::AtomicSequenceNumber g_next_image_content_id;
+-base::AtomicSequenceNumber g_next_generator_client_id;
++base::AtomicSequenceNumberT<int64_t> g_next_image_id;
++base::AtomicSequenceNumberT<int64_t> g_next_image_content_id;
++base::AtomicSequenceNumberT<int64_t> g_next_generator_client_id;
+ }  // namespace
+ 
+ const PaintImage::Id PaintImage::kNonLazyStableId = -1;
+@@ -52,8 +52,8 @@ ImageHeaderMetadata::ImageHeaderMetadata::~ImageHeaderMetadata() = default;
+ AnimatedImageFrameIndexMap::AnimatedImageFrameIndexMap() = default;
+ AnimatedImageFrameIndexMap::AnimatedImageFrameIndexMap(
+     base::sorted_unique_t sorted_unique,
+-    const std::vector<std::pair<int, size_t>>& entries)
+-    : base::flat_map<int, size_t>(sorted_unique, entries) {}
++    const std::vector<std::pair<PaintImage::Id, size_t>>& entries)
++    : base::flat_map<PaintImage::Id, size_t>(sorted_unique, entries) {}
+ AnimatedImageFrameIndexMap::~AnimatedImageFrameIndexMap() = default;
+ 
+ PaintImage::PaintImage() = default;
+diff --git a/cc/paint/paint_image.h b/cc/paint/paint_image.h
+index d7c50b5bbbb09add162d2a7b37567846b6a0bfe7..2325e3af05c6c0c5d26a75837ef419d9518503d5 100644
+--- a/cc/paint/paint_image.h
++++ b/cc/paint/paint_image.h
+@@ -150,7 +150,7 @@ struct CC_PAINT_EXPORT ImageHeaderMetadata {
+ // scale or animation frame.
+ class CC_PAINT_EXPORT PaintImage {
+  public:
+-  using Id = int;
++  using Id = int64_t;
+   using AnimationSequenceId = uint32_t;
+   enum class AnimationSyncSequence : AnimationSequenceId {
+     // All instances of the image animation together on a shared timeline.
+@@ -164,7 +164,7 @@ class CC_PAINT_EXPORT PaintImage {
+   // stays constant for the same image, the content id can be updated when the
+   // backing encoded data for this image changes. For instance, in the case of
+   // images which can be progressively updated as more encoded data is received.
+-  using ContentId = int;
++  using ContentId = int64_t;
+ 
+   // A GeneratorClientId can be used to namespace different clients that are
+   // using the output of a PaintImageGenerator.
+@@ -176,7 +176,7 @@ class CC_PAINT_EXPORT PaintImage {
+   // parallel. This is particularly important for animated images, where
+   // compositors displaying the same image can request decodes for different
+   // frames from this image.
+-  using GeneratorClientId = int;
++  using GeneratorClientId = int64_t;
+   static const GeneratorClientId kDefaultGeneratorClientId;
+ 
+   // The default frame index to use if no index is provided. For multi-frame
+diff --git a/third_party/blink/renderer/platform/graphics/bitmap_image.cc b/third_party/blink/renderer/platform/graphics/bitmap_image.cc
+index 4cbc9dc1dc1085e8a69822295b15b9c78ca89b8e..88f36f86d4ba430637a28fe979e75427f0185d16 100644
+--- a/third_party/blink/renderer/platform/graphics/bitmap_image.cc
++++ b/third_party/blink/renderer/platform/graphics/bitmap_image.cc
+@@ -364,7 +364,7 @@ void BitmapImage::Draw(cc::PaintCanvas* canvas,
+     }
+   }
+ 
+-  uint32_t stable_id = image.stable_id();
++  PaintImage::Id stable_id = image.stable_id();
+   bool is_lazy_generated = image.IsLazyGenerated();
+ 
+   const cc::PaintFlags* image_flags = &flags;
+diff --git a/third_party/blink/renderer/platform/graphics/image_decoding_store.h b/third_party/blink/renderer/platform/graphics/image_decoding_store.h
+index 0e31f74f2186d0ccf95d2e651e9a28050fbef557..dfd3275d3628c3dcc8b41d172c2176dd8ce68ace 100644
+--- a/third_party/blink/renderer/platform/graphics/image_decoding_store.h
++++ b/third_party/blink/renderer/platform/graphics/image_decoding_store.h
+@@ -173,8 +173,9 @@ struct HashTraits<DecoderCacheKey> : GenericHashTraits<DecoderCacheKey> {
+     auto first =
+         HashInts(blink::GetHash(const_cast<ImageFrameGenerator*>(p.gen_.get())),
+                  blink::GetHash(p.size_));
+-    auto second = HashInts(
+-        blink::GetHash(static_cast<uint8_t>(p.alpha_option_)), p.client_id_);
++    auto second =
++        HashInts(blink::GetHash(static_cast<uint8_t>(p.alpha_option_)),
++                 blink::GetHash(p.client_id_));
+     return HashInts(first, second);
+   }
+ 

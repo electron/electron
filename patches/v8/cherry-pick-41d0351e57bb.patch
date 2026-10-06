@@ -1,0 +1,111 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Tue, 29 Sep 2026 13:00:10 +0200
+Subject: [turbolev] Preserve phi type during loop peeling
+
+Fixed: 567177599
+Change-Id: I43e124b40eab9861516cc7247a9f3bd86b23d81b
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8486007
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110155}
+
+diff --git a/src/maglev/maglev-ir.h b/src/maglev/maglev-ir.h
+index 5062cc86dc7d4e20330405a4813ee1beed2bdf67..c56d26b7b0b300e01a6c1d9817796946f6072908 100644
+--- a/src/maglev/maglev-ir.h
++++ b/src/maglev/maglev-ir.h
+@@ -10180,10 +10180,14 @@ class Phi : public ValueNodeT<Phi> {
+   // TODO(jgruber): More intuitive constructors, if possible.
+   Phi(uint64_t bitfield, MergePointInterpreterFrameState* merge_state,
+       interpreter::Register owner)
++      : Phi(bitfield, merge_state, owner, NodeType::kUnknown) {}
++
++  Phi(uint64_t bitfield, MergePointInterpreterFrameState* merge_state,
++      interpreter::Register owner, NodeType type)
+       : Base(bitfield),
+         owner_(owner),
+         merge_state_(merge_state),
+-        type_(NodeType::kUnknown),
++        type_(type),
+         post_loop_type_(NodeType::kUnknown) {
+     DCHECK_NOT_NULL(merge_state);
+   }
+diff --git a/src/maglev/maglev-loop-peeler.cc b/src/maglev/maglev-loop-peeler.cc
+index f4eacbff7a361d0dea70b5537d55ad50c00f30e1..24701b59f1cd564863ded7f0bb2e00dc753b625d 100644
+--- a/src/maglev/maglev-loop-peeler.cc
++++ b/src/maglev/maglev-loop-peeler.cc
+@@ -724,8 +724,8 @@ void MaglevLoopPeeler::CloneBodySubgraph(PeelContext& ctx) {
+       for (Phi* phi : *block->phis()) {
+         DCHECK(!phi->is_exception_phi());
+         int input_count = phi->input_count();
+-        Phi* clone_phi = NodeBase::New<Phi>(zone(), input_count,
+-                                            dst_block->state(), phi->owner());
++        Phi* clone_phi = NodeBase::New<Phi>(
++            zone(), input_count, dst_block->state(), phi->owner(), phi->type());
+         for (int i = 0; i < input_count; ++i) {
+           clone_phi->set_input(i, Remap(ctx.value_map, phi->input(i).node()));
+         }
+@@ -889,7 +889,7 @@ void MaglevLoopPeeler::BuildPeelExitMerge(PeelContext& ctx) {
+       // what CloneBodySubgraph seeds into value_map for the header phis.
+       DCHECK_EQ(Remap(ctx.value_map, phi), phi->input(0).node());
+       Phi* pem_phi = NodeBase::New<Phi>(zone(), 2 * exit_edge_count, pem_state,
+-                                        phi->owner());
++                                        phi->owner(), phi->type());
+       for (int idx = 0; idx < exit_edge_count; ++idx) {
+         pem_phi->set_input(2 * idx, phi->input(0).node());
+         pem_phi->set_input(2 * idx + 1, phi);
+@@ -1266,8 +1266,9 @@ void MaglevLoopPeeler::RewireDownstreamPhiRefs(PeelContext& ctx) {
+ 
+   // Create a new loop phi for each header phi and collect the rewires.
+   for (auto& [old_phi, pem_phi] : ctx.header_phi_to_pem_phi) {
+-    Phi* loop_phi = NodeBase::New<Phi>(
+-        zone(), kPhiInputCount, old_phi->merge_state(), old_phi->owner());
++    Phi* loop_phi =
++        NodeBase::New<Phi>(zone(), kPhiInputCount, old_phi->merge_state(),
++                           old_phi->owner(), old_phi->type());
+     // Slot 0 takes the peeled clone of the back-edge value (via value_map);
+     // slot 1 the original back-edge value. If the back-edge value is itself a
+     // header phi (a recursive loop phi), slot 1 still points at the old phi
+diff --git a/test/mjsunit/turbolev/regress-567177599.js b/test/mjsunit/turbolev/regress-567177599.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..9ed14c0b8d96914b74870d97e13e8c262f50e7c6
+--- /dev/null
++++ b/test/mjsunit/turbolev/regress-567177599.js
+@@ -0,0 +1,36 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --turbolev
++
++var loop_value = 1.2;
++var exit_value = 2.5;
++loop_value = 1.4;
++exit_value = 1.5;
++
++const box = {value: 1.2};
++const input = {[Symbol.toPrimitive]() { return box.value; }};
++
++function store(n, input) {
++  let value = 1.1;
++  let sum = 0;
++  while (n-- > 0) {
++    sum += value;
++    value = +input;
++    loop_value = value;
++  }
++  exit_value = value;
++  return sum;
++}
++
++%PrepareFunctionForOptimization(store);
++store(3, input);
++
++%OptimizeFunctionOnNextCall(store);
++store(3, input);
++
++box.value = 42;
++store(3, input);
++assertEquals(42, exit_value);
++assertFalse(%IsSmi(exit_value));

@@ -1,0 +1,145 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ming-Ying Chung <mych@chromium.org>
+Date: Thu, 17 Sep 2026 20:48:27 -0700
+Subject: [FSA] Block macOS firmlink alias paths to sensitive directories
+
+On macOS 10.15+, the system storage layout splits into a read-only
+System volume mounted at "/" and a read-write Data volume mounted at
+"/System/Volumes/Data". APFS firmlinks map directories such as /Users,
+/Applications, and /Library between the two volumes without modifying
+standard POSIX realpath representations.
+
+Previously, ChromeFileSystemAccessPermissionContext matched candidate
+file and directory paths lexically against canonical blocklist rules
+registered under the "/" root namespace. When a target path was
+referenced or resolved via "/System/Volumes/Data/...", component-wise
+path matching diverged at the leading path component, failing open and
+bypassing sensitive directory protections for targets like ~/.ssh,
+~/Library, and Chrome User Data.
+
+To prevent blocklist bypasses while preserving legitimate user access,
+this change introduces MaybeStripMacDataVolumePrefix() on macOS to strip
+the "/System/Volumes/Data" prefix and fold paths onto the "/" namespace
+prior to ancestor evaluation in ShouldBlockAccessToPath(). Additionally,
+it registers an explicit kBlockAllChildren rule for /System/Volumes in
+GenerateBlockPaths() to block direct access to internal system container
+volumes.
+
+Bug: 562043997
+Change-Id: Id80dfecafad651d28b691e10d960bc6e3ac5a763
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8410087
+Reviewed-by: Mingyu Lei <leimy@chromium.org>
+Commit-Queue: Ming-Ying Chung <mych@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1700449}
+
+Electron adaptation notes (44-x-y):
+Electron's refactor_expose_file_system_access_blocklist.patch relocates
+NormalizeFilePath() and GenerateBlockPaths() from this .cc into static
+members of ChromeFileSystemAccessPermissionContext in the header (Electron
+does not compile the .cc), so the new MaybeStripMacDataVolumePrefix() and
+NormalizeFilePathForBlocklist() helpers and the /System/Volumes
+kBlockAllChildren rule are added to that header copy instead, and the .cc's
+ShouldBlockAccessToPath() calls the header's static helper. The
+chrome/browser unittest hunk is dropped (not built by Electron). Electron's
+own ShouldBlockAccessToPath() in
+shell/browser/file_system_access/file_system_access_permission_context.cc
+is switched to NormalizeFilePathForBlocklist() in a companion Electron
+commit.
+
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
+index 5640c7a06926c8329eabc573243c84c813a637c4..aeb2e7d73f70e7b244a037c5dc2a01d4b73aa28c 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
+@@ -359,12 +359,13 @@ bool ShouldBlockAccessToPath(
+   DCHECK(!path.empty());
+   DCHECK(path.IsAbsolute());
+ 
+-  if (should_normalize_file_path) {
+-    path = NormalizeFilePath(path);
+-    profile_path = NormalizeFilePath(profile_path);
+-    for (auto& rule : extra_rules) {
+-      rule.path = NormalizeFilePath(rule.path);
+-    }
++  path = ChromeFileSystemAccessPermissionContext::
++      NormalizeFilePathForBlocklist(path, should_normalize_file_path);
++  profile_path =
++          NormalizeFilePathForBlocklist(profile_path, should_normalize_file_path);
++  for (auto& rule : extra_rules) {
++    rule.path = ChromeFileSystemAccessPermissionContext::
++        NormalizeFilePathForBlocklist(rule.path, should_normalize_file_path);
+   }
+ 
+ #if BUILDFLAG(IS_WIN)
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
+index ced0a2fa4451581575772e9fa5ce9f0c34fd1436..d4e78224612f1ac0b292061d1984760c2a7c9bb4 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
+@@ -503,6 +503,48 @@ class ChromeFileSystemAccessPermissionContext
+     return normalized_path;
+   }
+ 
++#if BUILDFLAG(IS_MAC)
++  // Returns a file path with the "/System/Volumes/Data" firmlink prefix stripped,
++  // mapping paths on the macOS Data volume back to the root "/" namespace.
++  //
++  // On macOS 10.15+, storage is split into a read-only System volume mounted at
++  // "/" and a read-write Data volume mounted at "/System/Volumes/Data". APFS
++  // firmlinks map system directories (e.g., "/Users", "/Applications",
++  // "/Library") between the two volumes without modifying standard POSIX
++  // `realpath` representations. Stripping this prefix allows blocklist rules
++  // defined against root-relative paths to match targets accessed through the
++  // Data volume firmlink path.
++  static base::FilePath MaybeStripMacDataVolumePrefix(
++      const base::FilePath& path) {
++    static constexpr base::FilePath::CharType kDataVolumePrefix[] =
++        FILE_PATH_LITERAL("/System/Volumes/Data");
++    base::FilePath data_volume_prefix(kDataVolumePrefix);
++    if (path == data_volume_prefix) {
++      return base::FilePath(FILE_PATH_LITERAL("/"));
++    }
++    base::FilePath stripped_path(FILE_PATH_LITERAL("/"));
++    if (data_volume_prefix.AppendRelativePath(path, &stripped_path)) {
++      return stripped_path;
++    }
++    return path;
++  }
++#endif
++
++  // Normalizes `path` for sensitive directory blocklist checking. Resolves
++  // symbolic links and canonicalizes the path when `should_normalize_file_path`
++  // is true. On macOS, additionally strips the "/System/Volumes/Data" firmlink
++  // prefix so paths on the Data volume map onto the root "/" blocklist namespace.
++  static base::FilePath NormalizeFilePathForBlocklist(
++      const base::FilePath& path,
++      bool should_normalize_file_path) {
++    base::FilePath normalized_path =
++        should_normalize_file_path ? NormalizeFilePath(path) : path;
++#if BUILDFLAG(IS_MAC)
++    normalized_path = MaybeStripMacDataVolumePrefix(normalized_path);
++#endif
++    return normalized_path;
++  }
++
+   using BlockType = ChromeFileSystemAccessPermissionContext::BlockType;
+ 
+   static std::unique_ptr<ChromeFileSystemAccessPermissionContext::BlockPathRules>
+@@ -566,6 +608,10 @@ class ChromeFileSystemAccessPermissionContext
+   #endif
+   #if BUILDFLAG(IS_MAC)
+         // Similar Mac specific blocks.
++        // Block access to /System/Volumes (internal system and container
++        // volumes).
++        BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/System/Volumes"),
++                                  BlockType::kBlockAllChildren),
+         BlockPath::CreateRelative(base::DIR_APP_DATA,
+                                   BlockType::kBlockAllChildren),
+         // Block access to the current bundle directory.
+@@ -682,7 +728,7 @@ class ChromeFileSystemAccessPermissionContext
+       }
+ 
+       block_path_rules->block_path_rules_.emplace_back(
+-          should_normalize_file_path ? NormalizeFilePath(path) : path,
++          NormalizeFilePathForBlocklist(path, should_normalize_file_path),
+           blocked_path.block_type);
+     }
+ 
