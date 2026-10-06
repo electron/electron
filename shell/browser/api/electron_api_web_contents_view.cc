@@ -8,7 +8,6 @@
 #include <optional>
 #include <utility>
 
-#include "base/check.h"
 #include "base/functional/bind.h"
 #include "base/functional/callback.h"
 #include "base/memory/weak_ptr.h"
@@ -57,96 +56,71 @@
 
 namespace electron::api {
 
-namespace {
-
-// The native view of a WebContentsView. It holds the webContents'
-// InspectableWebContentsView, which the webContents owns and deletes with
-// itself, so that the WebContentsView keeps one native view, and its place in
-// the view tree, for its whole life. The inspectable view fills it and stays
-// its last child. Child views added from JavaScript go before it, where they
-// went when they were added to the inspectable view itself.
-class WebContentsContainerView : public views::View,
-                                 public views::ViewObserver {
-  METADATA_HEADER(WebContentsContainerView, views::View)
-
- public:
-  WebContentsContainerView() {
-    // Lets a flex layout in the parent size the view, as it did the
-    // inspectable view.
-    SetProperty(
-        views::kFlexBehaviorKey,
-        views::FlexSpecification(views::MinimumFlexSizeRule::kScaleToMinimum,
-                                 views::MaximumFlexSizeRule::kUnbounded));
-    GetViewAccessibility().SetIsIgnored(true);
-  }
-
-  void TakeInspectableView(InspectableWebContentsView* inspectable_view) {
-    // Layouts set from JavaScript arrange only the JavaScript children.
-    inspectable_view->SetProperty(views::kViewIgnoredByLayoutKey, true);
-    AddChildViewRaw(static_cast<views::View*>(inspectable_view));
-    inspectable_view->SetBoundsRect(GetLocalBounds());
-    inspectable_view_.SetView(inspectable_view);
-    inspectable_view_deleting_ = false;
-    inspectable_view_observation_.Reset();
-    inspectable_view_observation_.Observe(inspectable_view);
-  }
-
-  // The inspectable view, while it is still here. Null once another
-  // WebContentsView has adopted the webContents, or the webContents has
-  // deleted it.
-  InspectableWebContentsView* GetOwnedInspectableView() {
-    views::View* view = inspectable_view_.view();
-    return view && view->parent() == this
-               ? static_cast<InspectableWebContentsView*>(view)
-               : nullptr;
-  }
-
-  // Whether |child| is the inspectable view and was removed because the
-  // webContents is deleting it, rather than because another WebContentsView
-  // adopted the webContents.
-  bool IsInspectableViewBeingDeleted(const views::View* child) const {
-    return inspectable_view_deleting_ && child == inspectable_view_.view();
-  }
-
-  // Invoked when this view's bounds have changed, including a move that keeps
-  // its size, but before its children (and therefore the page's
-  // RenderWidgetHostView) have been laid out to match.
-  void SetBoundsChangedCallback(base::RepeatingClosure callback) {
-    bounds_changed_callback_ = std::move(callback);
-  }
-
-  // views::View:
-  void OnBoundsChanged(const gfx::Rect& previous_bounds) override {
-    if (bounds_changed_callback_)
-      bounds_changed_callback_.Run();
-  }
-
-  void Layout(PassKey) override {
-    LayoutSuperclass<views::View>(this);
-    if (InspectableWebContentsView* view = GetOwnedInspectableView())
-      view->SetBoundsRect(GetLocalBounds());
-  }
-
- private:
-  // views::ViewObserver:
-  void OnViewHierarchyWillBeDeleted(views::View* observed_view) override {
-    inspectable_view_deleting_ = true;
-  }
-  void OnViewIsDeleting(views::View* observed_view) override {
-    inspectable_view_observation_.Reset();
-  }
-
-  views::ViewTracker inspectable_view_;
-  bool inspectable_view_deleting_ = false;
-  base::RepeatingClosure bounds_changed_callback_;
-  base::ScopedObservation<views::View, views::ViewObserver>
-      inspectable_view_observation_{this};
-};
-
 BEGIN_METADATA(WebContentsContainerView)
 END_METADATA
 
-}  // namespace
+WebContentsContainerView::WebContentsContainerView() {
+  // Lets a flex layout in the parent size the view, as it did the
+  // inspectable view.
+  SetProperty(
+      views::kFlexBehaviorKey,
+      views::FlexSpecification(views::MinimumFlexSizeRule::kScaleToMinimum,
+                               views::MaximumFlexSizeRule::kUnbounded));
+  GetViewAccessibility().SetIsIgnored(true);
+}
+
+WebContentsContainerView::~WebContentsContainerView() = default;
+
+void WebContentsContainerView::TakeInspectableView(
+    InspectableWebContentsView* inspectable_view) {
+  // Layouts set from JavaScript arrange only the JavaScript children.
+  inspectable_view->SetProperty(views::kViewIgnoredByLayoutKey, true);
+  AddChildViewRaw(static_cast<views::View*>(inspectable_view));
+  inspectable_view->SetBoundsRect(GetLocalBounds());
+  inspectable_view_.SetView(inspectable_view);
+  inspectable_view_deleting_ = false;
+  inspectable_view_observation_.Reset();
+  inspectable_view_observation_.Observe(inspectable_view);
+}
+
+InspectableWebContentsView*
+WebContentsContainerView::GetOwnedInspectableView() {
+  views::View* view = inspectable_view_.view();
+  return view && view->parent() == this
+             ? static_cast<InspectableWebContentsView*>(view)
+             : nullptr;
+}
+
+bool WebContentsContainerView::IsInspectableViewBeingDeleted(
+    const views::View* child) const {
+  return inspectable_view_deleting_ && child == inspectable_view_.view();
+}
+
+void WebContentsContainerView::SetBoundsChangedCallback(
+    base::RepeatingClosure callback) {
+  bounds_changed_callback_ = std::move(callback);
+}
+
+void WebContentsContainerView::OnBoundsChanged(
+    const gfx::Rect& previous_bounds) {
+  if (bounds_changed_callback_)
+    bounds_changed_callback_.Run();
+}
+
+void WebContentsContainerView::Layout(PassKey) {
+  LayoutSuperclass<views::View>(this);
+  if (InspectableWebContentsView* view = GetOwnedInspectableView())
+    view->SetBoundsRect(GetLocalBounds());
+}
+
+void WebContentsContainerView::OnViewHierarchyWillBeDeleted(
+    views::View* observed_view) {
+  inspectable_view_deleting_ = true;
+}
+
+void WebContentsContainerView::OnViewIsDeleting(views::View* observed_view) {
+  inspectable_view_observation_.Reset();
+}
 
 WebContentsViewHost::WebContentsViewHost(WebContentsView* wrapper,
                                          WebContents* web_contents)

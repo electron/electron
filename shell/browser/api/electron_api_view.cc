@@ -665,7 +665,7 @@ void View::SetBackgroundBlur(int blur_radius) {
 
 void View::SetInteractive(bool interactive) {
   interactive_ = interactive;
-  views::View* view = this->view();
+  views::View* view = live_view();
   if (!view)
     return;
   view->SetCanProcessEventsWithinSubtree(interactive);
