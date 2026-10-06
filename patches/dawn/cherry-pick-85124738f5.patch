@@ -1,0 +1,249 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lokbondo Kung <lokokung@google.com>
+Date: Mon, 31 Aug 2026 18:30:45 -0700
+Subject: [native] Add additional paths to trigger device cleanup.
+
+- In https://dawn-review.git.corp.google.com/c/dawn/+/302578 we
+  deferred device disconnection to happen only when either the
+  last external reference is dropped, or if an explicit Destroy
+  was called. This change adds additional places where we can
+  cause the cleanup to happen inline, specifically in Tick,
+  WaitAny, and ProcessEvents. The motivation behind this change
+  is two-folds:
+  1) To handle cases like the one found in crbug.com/536507840
+     where WaitAny and ProcessEvents could be exploited to
+     submit incomplete or error-ed pending commands.
+  2) Waiting until an explicit Destroy or last external ref
+     drop can sometimes take a while, so providing another
+     way that an embedder can clean up resources is beneficial
+     to keep resources low.
+
+Bug: 536507840
+Change-Id: I7b5d8136f25d16c9c0a4f94279a75ed5b8f555c7
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/337315
+Commit-Queue: Loko Kung <lokokung@google.com>
+Reviewed-by: Kai Ninomiya <kainino@chromium.org>
+
+Electron adaptation notes (43-x-y):
+Prerequisite for the Metal command-buffer-error fix: it introduces
+DeviceBase::State::Disconnecting / SetDisconnectingIfAlive(). Only
+context drift was resolved (ExecutionQueue.cpp uses Nanoseconds(0) on this
+branch).
+
+diff --git a/src/dawn/native/Device.cpp b/src/dawn/native/Device.cpp
+index 4b431c05bc5c785291102b24711b856adda15431..6952a5cd931b36bf2132901de86654d7d570a1b5 100644
+--- a/src/dawn/native/Device.cpp
++++ b/src/dawn/native/Device.cpp
+@@ -550,7 +550,7 @@ void DeviceBase::Destroy(DestroyReason reason) {
+     }
+ 
+     // Move away from the Alive state now so that the application cannot use this device anymore.
+-    auto state = mState.exchange(State::BeingDisconnected);
++    SetDisconnectingIfAlive();
+ 
+     // This function may be called re-entrantly inside APITick(). Tick triggers callbacks
+     // inside which the application may destroy the device. Thus, we should be careful not
+@@ -562,7 +562,7 @@ void DeviceBase::Destroy(DestroyReason reason) {
+     // from Tick() whether or not there is any more pending work.
+ 
+     // Skip handling device facilities if they haven't even been created (or failed doing so)
+-    if (state != State::BeingCreated) {
++    if (mState != State::BeingCreated) {
+         // The device is being destroyed so it will be lost, call the application callback.
+         HandleDeviceLost(wgpu::DeviceLostReason::Destroyed, "Device was destroyed.");
+ 
+@@ -575,41 +575,9 @@ void DeviceBase::Destroy(DestroyReason reason) {
+         // DestroyImpl() as it may relinquish resources that will be freed by backends in the
+         // DestroyImpl() call.
+         DestroyObjects();
+-    }
+-
+-    // Disconnect the device, depending on which state we are currently in.
+-    switch (state) {
+-        // The GPU timeline was never started so we don't have to wait.
+-        case State::BeingCreated:
+-        // The GPU is no longer functional so we don't wait.
+-        case State::Disconnected:
+-            break;
+ 
+-        // The device is alive so we need to wait for all in-flight work.
+-        case State::Alive:
+-        // The device was placed in an error state as a result of unexpected errors which we can no
+-        // longer recover from.
+-        case State::BeingDisconnected:
+-            // Wait for all GPU work to complete before proceeding with destruction.
+-            // Ignore errors so that we can continue with destruction.
+-            IgnoreErrors(mQueue->WaitForIdleForDestruction());
+-
+-            // Call TickImpl once last time to clean up resources
+-            // Ignore errors so that we can continue with destruction
+-            IgnoreErrors(TickImpl());
+-            break;
+-
+-        // If we are already destroyed we should've skipped this work entirely.
+-        case State::Destroyed:
+-            DAWN_UNREACHABLE();
+-            break;
+-    }
+-
+-    if (state != State::BeingCreated) {
+-        // The GPU timeline is finished.
+-        mQueue->AssumeCommandsComplete();
+-        DAWN_CHECK(mQueue->GetCompletedCommandSerial() >= mQueue->GetLastSubmittedCommandSerial());
+-        mQueue->Tick(mQueue->GetCompletedCommandSerial());
++        // Disconnect the GPU timeline if it hasn't been disconnected already.
++        Disconnect();
+     }
+ 
+     // At this point GPU operations are always finished, so we are in the disconnected state.
+@@ -682,10 +650,7 @@ void DeviceBase::HandleError(std::unique_ptr<ErrorData> error,
+     }
+ 
+     if (type == InternalErrorType::DeviceLost) {
+-        // Transition to a non-alive state if we are currently alive so that the application can no
+-        // longer use the device.
+-        State prev = State::Alive;
+-        mState.compare_exchange_strong(prev, State::BeingDisconnected, std::memory_order::acq_rel);
++        SetDisconnectingIfAlive();
+     }
+ 
+     // Re-enable validation on device loss or OOM to avoid unpredictable behaviors afterwards.
+@@ -943,6 +908,39 @@ bool DeviceBase::IsLost() const {
+     return mState != State::Alive;
+ }
+ 
++void DeviceBase::SetDisconnectingIfAlive() {
++    State state = State::Alive;
++    mState.compare_exchange_strong(state, State::Disconnecting, std::memory_order::acq_rel);
++}
++
++void DeviceBase::Disconnect() {
++    DAWN_ASSERT(IsLockedByCurrentThreadIfNeeded());
++    switch (mState) {
++        case State::Alive:
++        case State::Destroyed:
++            DAWN_UNREACHABLE();
++        case State::BeingCreated:
++        case State::Disconnected:
++            return;
++        case State::Disconnecting:
++            break;
++    }
++    DAWN_ASSERT(mQueue != nullptr);
++
++    // Wait for all GPU work to complete before proceeding with destruction.
++    IgnoreErrors(mQueue->WaitForIdleForDestruction());
++
++    // Wait for all GPU work to complete before proceeding with destruction.
++    IgnoreErrors(TickImpl());
++
++    // The GPU timeline is finished.
++    mQueue->AssumeCommandsComplete();
++    DAWN_CHECK(mQueue->GetCompletedCommandSerial() >= mQueue->GetLastSubmittedCommandSerial());
++    mQueue->Tick(mQueue->GetCompletedCommandSerial());
++
++    mState = State::Disconnected;
++}
++
+ ApiObjectList* DeviceBase::GetObjectTrackingList(ObjectType type) {
+     return &mObjectLists[type];
+ }
+@@ -1598,6 +1596,9 @@ bool DeviceBase::APITick() {
+ }
+ 
+ MaybeError DeviceBase::Tick() {
++    if (mState == State::Disconnecting) {
++        Disconnect();
++    }
+     if (IsLost() || !mQueue->HasScheduledCommands()) {
+         return {};
+     }
+diff --git a/src/dawn/native/Device.h b/src/dawn/native/Device.h
+index 1689ea283cfea8c86c6abcf4dda007a5b92919be..9b38b01dd1e8042b776371616903f39e214bd7d3 100644
+--- a/src/dawn/native/Device.h
++++ b/src/dawn/native/Device.h
+@@ -342,7 +342,7 @@ class DeviceBase : public ErrorSink,
+     //     (both for the application calling WebGPU, or re-entrant calls). No work exists on
+     //     the GPU timeline.
+     //   - Alive: the device is usable and might have work happening on the GPU timeline.
+-    //   - BeingDisconnected: the device is no longer usable because we are waiting for all
++    //   - Disconnecting: the device is no longer usable because we are waiting for all
+     //     work on the GPU timeline to finish. (this is to make validation prevent the
+     //     application from adding more work during the transition from Alive to
+     //     Disconnected)
+@@ -352,12 +352,14 @@ class DeviceBase : public ErrorSink,
+     enum class State {
+         BeingCreated,
+         Alive,
+-        BeingDisconnected,
++        Disconnecting,
+         Disconnected,
+         Destroyed,
+     };
+     State GetState() const;
+     bool IsLost() const;
++    void SetDisconnectingIfAlive();
++    void Disconnect();
+     ApiObjectList* GetObjectTrackingList(ObjectType type);
+     const ApiObjectList* GetObjectTrackingList(ObjectType type) const;
+ 
+diff --git a/src/dawn/native/ExecutionQueue.cpp b/src/dawn/native/ExecutionQueue.cpp
+index 036ad772f06bb1497341aff35550a99caee68076..5f5da42f90920b23d591b673125eb66a3a51b99b 100644
+--- a/src/dawn/native/ExecutionQueue.cpp
++++ b/src/dawn/native/ExecutionQueue.cpp
+@@ -93,20 +93,34 @@ MaybeError ExecutionQueueBase::WaitForQueueSerial(ExecutionSerial waitSerial, Na
+         return {};
+     }
+ 
++    // Check whether the serial has even been flushed. If it hasn't we need to flush it before we
++    // can even wait for it.
++    if (waitSerial > GetLastSubmittedCommandSerial()) {
++        auto deviceGuard = GetDevice()->GetGuard();
++        switch (GetDevice()->GetState()) {
++            case DeviceBase::State::Alive:
++                break;
++            case DeviceBase::State::Disconnecting:
++                GetDevice()->Disconnect();
++                return {};
++            case DeviceBase::State::Disconnected:
++            case DeviceBase::State::Destroyed:
++                return {};
++            case DeviceBase::State::BeingCreated:
++                DAWN_UNREACHABLE();
++        }
++        // Check submitted command serial again since it could have been incremented already.
++        if (waitSerial > GetLastSubmittedCommandSerial()) {
++            // Serial has not been submitted yet. Submit it now.
++            DAWN_TRY(EnsureCommandsFlushed(waitSerial));
++        }
++    }
++
+     // We currently have two differing implementations for this function depending on whether the
+     // backend supports thread safe waits. Note that while currently only the Metal backend
+     // explicitly enables thread safe wait, the main blocking backend is D3D11 which is using the
+     // value of |mCompletedSerial| within it's implementation of |CheckAndUpdateCompletedSerials|.
+     if (GetDevice()->IsToggleEnabled(Toggle::WaitIsThreadSafe)) {
+-        if (waitSerial > GetLastSubmittedCommandSerial()) {
+-            auto deviceGuard = GetDevice()->GetGuard();
+-            // Check submitted command serial again since it could have been incremented already.
+-            if (waitSerial > GetLastSubmittedCommandSerial()) {
+-                // Serial has not been submitted yet. Submit it now.
+-                DAWN_TRY(EnsureCommandsFlushed(waitSerial));
+-            }
+-        }
+-
+         if (timeout > Nanoseconds(0)) {
+             // We should never need to wait for queue serials after the device has been
+             // Disconnected.
+@@ -122,11 +136,6 @@ MaybeError ExecutionQueueBase::WaitForQueueSerial(ExecutionSerial waitSerial, Na
+     } else {
+         // Otherwise, we need to acquire the device lock first.
+         auto deviceGuard = GetDevice()->GetGuard();
+-        if (waitSerial > GetLastSubmittedCommandSerial()) {
+-            // Serial has not been submitted yet. Submit it now.
+-            DAWN_TRY(EnsureCommandsFlushed(waitSerial));
+-        }
+-
+         if (timeout > Nanoseconds(0)) {
+             // We should never need to wait for queue serials after the device has been
+             // Disconnected.

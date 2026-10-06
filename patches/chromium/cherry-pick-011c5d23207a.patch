@@ -1,0 +1,241 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Arthur Sonzogni <arthursonzogni@chromium.org>
+Date: Mon, 14 Sep 2026 14:11:45 -0700
+Subject: LNA: stop classifying chrome-untrusted:// as loopback
+
+chrome-untrusted:// was listed in special_content_schemes[], so its
+documents were classified kLoopback. A loopback client is never less
+public than its target, so the check returns early and the permission
+is never consulted -- a compromised chrome-untrusted:// renderer could
+reach loopback and private network services that LNA denies to web
+pages.
+
+Remove it from the list: it now resolves to kUnknown, treated as
+public, so LNA applies as it does to any page.
+
+CalculateIPAddressSpace() is exported for the unit test.
+
+Bug: 551529559
+Change-Id: I2872c9fdef34dbd03c64c72034418c3a14d43271
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8398809
+Reviewed-by: Hubert Chao <hchao@chromium.org>
+Reviewed-by: Titouan Rigoudy <titouan@chromium.org>
+Commit-Queue: Arthur Sonzogni <arthursonzogni@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1697548}
+
+diff --git a/content/browser/renderer_host/local_network_access_util.cc b/content/browser/renderer_host/local_network_access_util.cc
+index 8c0d471f9437b79b0c3d07037935fb879179deb1..f77507fe699cabe0d6331d57572c1648a8f26dec 100644
+--- a/content/browser/renderer_host/local_network_access_util.cc
++++ b/content/browser/renderer_host/local_network_access_util.cc
+@@ -251,6 +251,12 @@ network::mojom::ClientSecurityStatePtr DeriveClientSecurityState(
+ // - It pollutes metrics since kUnknown could also mean a missed edge case.
+ // To address these issues we list here a number of schemes that should be
+ // considered loopback.
++//
++// Note that chrome-untrusted:// is deliberately not listed. It exists to
++// render untrustworthy content in an ordinary, unprivileged renderer and is
++// not default-granted capabilities beyond those of a regular web page, so it
++// keeps the default kUnknown classification and is subject to Local Network
++// Access checks like any web page.
+ // TODO(titouan): It might be better to have these schemes (and in general
+ // other schemes such as data: or blob:) handled directly by the URLLoaders.
+ // Investigate on whether this is worth doing.
+@@ -261,7 +267,6 @@ AddressSpace IPAddressSpaceForSpecialScheme(const GURL& url,
+   const char* special_content_schemes[] = {
+       kChromeDevToolsScheme,
+       kChromeUIScheme,
+-      kChromeUIUntrustedScheme,
+ #if BUILDFLAG(IS_CHROMEOS)
+       kExternalFileScheme,
+ #endif
+diff --git a/content/browser/renderer_host/local_network_access_util.h b/content/browser/renderer_host/local_network_access_util.h
+index 5efe183e2bccd2ebadedbe6a6df24de6631a29f2..a275fa7c46d5fe8649b387628b95b4e085bd2676 100644
+--- a/content/browser/renderer_host/local_network_access_util.h
++++ b/content/browser/renderer_host/local_network_access_util.h
+@@ -67,7 +67,7 @@ network::mojom::ClientSecurityStatePtr CONTENT_EXPORT DeriveClientSecurityState(
+ // `url` the response URL.
+ // `response_head` identifies the response headers received which may be
+ // nullptr. `client` exposes the embedder API which may be nullptr.
+-network::mojom::IPAddressSpace CalculateIPAddressSpace(
++CONTENT_EXPORT network::mojom::IPAddressSpace CalculateIPAddressSpace(
+     const GURL& url,
+     network::mojom::URLResponseHead* response_head,
+     ContentBrowserClient* client);
+diff --git a/content/browser/renderer_host/local_network_access_util_unittest.cc b/content/browser/renderer_host/local_network_access_util_unittest.cc
+index 74c946b08856af587c3aaf97e9681ea66d7fa0c1..8416d6e9e8a9270e4d36da7bdd36b7fed5ecf31a 100644
+--- a/content/browser/renderer_host/local_network_access_util_unittest.cc
++++ b/content/browser/renderer_host/local_network_access_util_unittest.cc
+@@ -13,6 +13,7 @@
+ #include "base/command_line.h"
+ #include "base/metrics/field_trial_params.h"
+ #include "base/test/scoped_feature_list.h"
++#include "build/build_config.h"
+ #include "content/common/features.h"
+ #include "content/public/common/content_features.h"
+ #include "content/public/common/content_switches.h"
+@@ -21,6 +22,7 @@
+ #include "services/network/public/mojom/ip_address_space.mojom.h"
+ #include "testing/gmock/include/gmock/gmock.h"
+ #include "testing/gtest/include/gtest/gtest.h"
++#include "url/gurl.h"
+ 
+ namespace content {
+ namespace {
+@@ -640,6 +642,31 @@ TEST(LocalNetworkAccessUtilTest, DerivePolicyLocalNetworkAccess) {
+   TestPolicyMap(expected);
+ }
+ 
++// Trusted UI schemes are manually classified as `loopback`, since their
++// contents ship with the browser. chrome-untrusted:// hosts untrustworthy
++// content in an ordinary renderer, so it gets no special classification and
++// stays `unknown`, which is treated as `public` by request checks.
++TEST(LocalNetworkAccessUtilTest, CalculateIPAddressSpaceSpecialSchemes) {
++  EXPECT_EQ(CalculateIPAddressSpace(GURL("chrome://example"),
++                                    /*response_head=*/nullptr,
++                                    /*client=*/nullptr),
++            AddressSpace::kLoopback);
++  EXPECT_EQ(CalculateIPAddressSpace(GURL("devtools://example"),
++                                    /*response_head=*/nullptr,
++                                    /*client=*/nullptr),
++            AddressSpace::kLoopback);
++#if BUILDFLAG(IS_CHROMEOS)
++  EXPECT_EQ(CalculateIPAddressSpace(GURL("externalfile://example"),
++                                    /*response_head=*/nullptr,
++                                    /*client=*/nullptr),
++            AddressSpace::kLoopback);
++#endif
++  EXPECT_EQ(CalculateIPAddressSpace(GURL("chrome-untrusted://example"),
++                                    /*response_head=*/nullptr,
++                                    /*client=*/nullptr),
++            AddressSpace::kUnknown);
++}
++
+ // Test the configuration in LNA warning-only mode.
+ TEST(LocalNetworkAccessUtilTest, DerivePolicyLocalNetworkAccessWarn) {
+   base::test::ScopedFeatureList feature_list;
+diff --git a/content/browser/security/local_network_access/local_network_access_browsertest.cc b/content/browser/security/local_network_access/local_network_access_browsertest.cc
+index baaaa62f07896ee33d77e6717a00e8539ce8085e..bac97e8da926fd7324871ae2186f83d2058d3a26 100644
+--- a/content/browser/security/local_network_access/local_network_access_browsertest.cc
++++ b/content/browser/security/local_network_access/local_network_access_browsertest.cc
+@@ -19,6 +19,7 @@
+ #include "build/build_config.h"
+ #include "content/browser/renderer_host/frame_tree_node.h"
+ #include "content/browser/renderer_host/render_frame_host_impl.h"
++#include "content/public/browser/webui_config_map.h"
+ #include "content/public/common/content_client.h"
+ #include "content/public/common/content_features.h"
+ #include "content/public/common/content_switches.h"
+@@ -29,6 +30,7 @@
+ #include "content/public/test/content_browser_test_content_browser_client.h"
+ #include "content/public/test/content_browser_test_utils.h"
+ #include "content/public/test/resource_load_observer.h"
++#include "content/public/test/web_ui_browsertest_util.h"
+ #include "content/shell/browser/shell.h"
+ #include "content/test/content_browser_test_utils_internal.h"
+ #include "net/dns/mock_host_resolver.h"
+@@ -41,6 +43,7 @@
+ #include "services/network/public/cpp/ip_address_space_overrides_test_utils.h"
+ #include "services/network/public/cpp/network_switches.h"
+ #include "testing/gmock/include/gmock/gmock.h"
++#include "ui/webui/untrusted_web_ui_browsertest_util.h"
+ #include "url/gurl.h"
+ #include "url/origin.h"
+ 
+@@ -858,6 +861,29 @@ IN_PROC_BROWSER_TEST_F(LocalNetworkAccessBrowserTest,
+             security_state->ip_address_space);
+ }
+ 
++// This test verifies that the chrome-untrusted:// scheme is not considered
++// loopback for the purpose of Local Network Access, unlike chrome://.
++// Documents in this scheme process untrustworthy content in an ordinary
++// renderer, so they are classified as `unknown` (equivalent to `public`) and
++// are subject to Local Network Access checks like any web page.
++IN_PROC_BROWSER_TEST_F(LocalNetworkAccessBrowserTest,
++                       ClientSecurityStateForSpecialSchemeChromeUntrustedURL) {
++  WebUIConfigMap::GetInstance().AddUntrustedWebUIConfig(
++      std::make_unique<ui::TestUntrustedWebUIConfig>("test-host"));
++
++  EXPECT_TRUE(
++      NavigateToURL(shell(), GetChromeUntrustedUIURL("test-host/title1.html")));
++  EXPECT_TRUE(root_frame_host()->GetLastCommittedURL().SchemeIs(
++      kChromeUIUntrustedScheme));
++
++  const network::mojom::ClientSecurityStatePtr security_state =
++      root_frame_host()->BuildClientSecurityState();
++  ASSERT_FALSE(security_state.is_null());
++  EXPECT_TRUE(security_state->is_web_secure_context);
++  EXPECT_EQ(network::mojom::IPAddressSpace::kUnknown,
++            security_state->ip_address_space);
++}
++
+ // The view-source:// scheme should only ever appear in the display URL. It
+ // shouldn't affect the IPAddressSpace computation. This test verifies that we
+ // end up with the response IPAddressSpace.
+@@ -2604,6 +2630,32 @@ IN_PROC_BROWSER_TEST_F(LocalNetworkAccessBrowserTest,
+                    FetchSubresourceScript(SecureLoopbackURL(kCorsPath))));
+ }
+ 
++// This test verifies that requests:
++//  - from a chrome-untrusted:// page
++//  - to a loopback IP address
++// are blocked when the permission is not granted, just as they are for a
++// public web page.
++IN_PROC_BROWSER_TEST_F(LocalNetworkAccessBrowserTest,
++                       FromChromeUntrustedToLoopbackNoPermissionIsBlocked) {
++  // chrome-untrusted:// data sources default to "default-src 'self';", which
++  // would block the fetch below at the CSP stage, before the Local Network
++  // Access check runs. Relax it so that LNA is the only thing that can block
++  // the request, which is what this test is about.
++  TestUntrustedDataSourceHeaders headers;
++  headers.default_src = "default-src https:;";
++  WebUIConfigMap::GetInstance().AddUntrustedWebUIConfig(
++      std::make_unique<ui::TestUntrustedWebUIConfig>("test-host", headers));
++
++  EXPECT_TRUE(
++      NavigateToURL(shell(), GetChromeUntrustedUIURL("test-host/title1.html")));
++
++  // We load the resource from a secure origin to avoid running afoul of mixed
++  // content restrictions.
++  EXPECT_EQ(false,
++            EvalJs(root_frame_host(),
++                   FetchSubresourceScript(SecureLoopbackURL(kCorsPath))));
++}
++
+ // This test verifies that requests:
+ //  - from a secure page served from a local IP address
+ //  - to a loopback IP address
+@@ -3093,6 +3145,34 @@ IN_PROC_BROWSER_TEST_F(LocalNetworkAccessBrowserTest,
+       IsEmpty());
+ }
+ 
++// This test verifies that iframe requests:
++//  - from a chrome-untrusted:// page
++//  - to a loopback IP address
++// are blocked when the permission is not granted, just as they are for a
++// public web page.
++IN_PROC_BROWSER_TEST_F(LocalNetworkAccessBrowserTest,
++                       IframeFromChromeUntrustedToLoopbackIsBlocked) {
++  // Without this, the iframe below is blocked by the data source's default
++  // "default-src 'self';" (child-src falls back to it), and the test would
++  // pass without ever reaching the Local Network Access check.
++  TestUntrustedDataSourceHeaders headers;
++  headers.child_src = "child-src *;";
++  WebUIConfigMap::GetInstance().AddUntrustedWebUIConfig(
++      std::make_unique<ui::TestUntrustedWebUIConfig>("test-host", headers));
++  EXPECT_TRUE(
++      NavigateToURL(shell(), GetChromeUntrustedUIURL("test-host/title1.html")));
++
++  GURL url = InsecureLoopbackURL("/empty.html");
++
++  TestNavigationManager child_navigation_manager(shell()->web_contents(), url);
++
++  AddChildFromURLWithoutWaiting(root_frame_host(), url);
++  ASSERT_TRUE(child_navigation_manager.WaitForNavigationFinished());
++
++  // Check that the child iframe failed to fetch.
++  EXPECT_FALSE(child_navigation_manager.was_successful());
++}
++
+ // This test verifies that iframe requests:
+ //  - from a secure page served from a public IP address
+ //  - to a loopback IP address

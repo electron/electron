@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Fri, 11 Sep 2026 07:52:02 -0700
+Subject: GPU: enable adjust_src_dst_region_for_blitframebuffer on Mali.
+
+The adjust_src_dst_region_for_blitframebuffer workaround added some
+time ago is needed on Mali GPUs as well.
+
+Bug: 546630009
+Change-Id: I73f55414ab5d43fbb48a724685d17d56b95d7eca
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8395847
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Auto-Submit: Kenneth Russell <kbr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1696236}
+
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index 1ac5134af37ab45af1b5f01023c41a208249fdc9..ce1dcc1eab72a6698971c0e9af24d6f2d55582e1 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3951,6 +3951,18 @@
+       "features": [
+         "round_up_3d_texture_size_to_pot_for_limit"
+       ]
++    },
++    {
++      "id": 499,
++      "description": "adjust src/dst region if blitting pixels outside framebuffer on Android Mali",
++      "cr_bugs": [546630009],
++      "os": {
++        "type": "android"
++      },
++      "gl_vendor": "ARM.*",
++      "features": [
++        "adjust_src_dst_region_for_blitframebuffer"
++      ]
+     }
+   ]
+ }

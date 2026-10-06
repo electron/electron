@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Mon, 31 Aug 2026 19:49:13 -0700
+Subject: Convert atomic sequences for cc::PaintImage to 64-bit integers
+
+Fixed: 553454734
+Change-Id: I7b1ed2117113df21db369ab7b7142f6955fa67c4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8311137
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Reviewed-by: Philip Rogers <pdr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1689557}
+
+diff --git a/cc/paint/paint_image.cc b/cc/paint/paint_image.cc
+index 0648864922fc4b8ed8adde72c8acfc1bdd766c75..85d848f30aa3bc4b44d61c0fb8b3b7f1a028ae28 100644
+--- a/cc/paint/paint_image.cc
++++ b/cc/paint/paint_image.cc
+@@ -30,9 +30,9 @@
+ 
+ namespace cc {
+ namespace {
+-base::AtomicSequenceNumber g_next_image_id;
+-base::AtomicSequenceNumber g_next_image_content_id;
+-base::AtomicSequenceNumber g_next_generator_client_id;
++base::AtomicSequenceNumberT<int64_t> g_next_image_id;
++base::AtomicSequenceNumberT<int64_t> g_next_image_content_id;
++base::AtomicSequenceNumberT<int64_t> g_next_generator_client_id;
+ }  // namespace
+ 
+ const PaintImage::Id PaintImage::kNonLazyStableId = -1;
+diff --git a/cc/paint/paint_image.h b/cc/paint/paint_image.h
+index 7f6eff7ec0a86c824966f14cb90592340f8b3399..9e2abb829d9964809b43d3d2a405baa29a955e8d 100644
+--- a/cc/paint/paint_image.h
++++ b/cc/paint/paint_image.h
+@@ -151,7 +151,7 @@ struct CC_PAINT_EXPORT ImageHeaderMetadata {
+ // scale or animation frame.
+ class CC_PAINT_EXPORT PaintImage {
+  public:
+-  using Id = int;
++  using Id = int64_t;
+   using AnimationSequenceId = uint32_t;
+ 
+   // A ContentId is used to identify the content for which images which can be
+@@ -159,7 +159,7 @@ class CC_PAINT_EXPORT PaintImage {
+   // stays constant for the same image, the content id can be updated when the
+   // backing encoded data for this image changes. For instance, in the case of
+   // images which can be progressively updated as more encoded data is received.
+-  using ContentId = int;
++  using ContentId = int64_t;
+ 
+   // A GeneratorClientId can be used to namespace different clients that are
+   // using the output of a PaintImageGenerator.
+@@ -171,7 +171,7 @@ class CC_PAINT_EXPORT PaintImage {
+   // parallel. This is particularly important for animated images, where
+   // compositors displaying the same image can request decodes for different
+   // frames from this image.
+-  using GeneratorClientId = int;
++  using GeneratorClientId = int64_t;
+   static const GeneratorClientId kDefaultGeneratorClientId;
+ 
+   // The default frame index to use if no index is provided. For multi-frame
+diff --git a/third_party/blink/renderer/platform/graphics/bitmap_image.cc b/third_party/blink/renderer/platform/graphics/bitmap_image.cc
+index dd055fa74b6e9e39fcc0f70beff36f1eb2d22896..4cb7a93dc39c7f5ef41f7a51722feecef57424e4 100644
+--- a/third_party/blink/renderer/platform/graphics/bitmap_image.cc
++++ b/third_party/blink/renderer/platform/graphics/bitmap_image.cc
+@@ -360,7 +360,7 @@ void BitmapImage::Draw(cc::PaintCanvas* canvas,
+     }
+   }
+ 
+-  uint32_t stable_id = image.stable_id();
++  PaintImage::Id stable_id = image.stable_id();
+   bool is_lazy_generated = image.IsLazyGenerated();
+ 
+   const cc::PaintFlags* image_flags = &flags;
+diff --git a/third_party/blink/renderer/platform/graphics/image_decoding_store.h b/third_party/blink/renderer/platform/graphics/image_decoding_store.h
+index 0e31f74f2186d0ccf95d2e651e9a28050fbef557..dfd3275d3628c3dcc8b41d172c2176dd8ce68ace 100644
+--- a/third_party/blink/renderer/platform/graphics/image_decoding_store.h
++++ b/third_party/blink/renderer/platform/graphics/image_decoding_store.h
+@@ -173,8 +173,9 @@ struct HashTraits<DecoderCacheKey> : GenericHashTraits<DecoderCacheKey> {
+     auto first =
+         HashInts(blink::GetHash(const_cast<ImageFrameGenerator*>(p.gen_.get())),
+                  blink::GetHash(p.size_));
+-    auto second = HashInts(
+-        blink::GetHash(static_cast<uint8_t>(p.alpha_option_)), p.client_id_);
++    auto second =
++        HashInts(blink::GetHash(static_cast<uint8_t>(p.alpha_option_)),
++                 blink::GetHash(p.client_id_));
+     return HashInts(first, second);
+   }
+ 

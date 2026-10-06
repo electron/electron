@@ -1,0 +1,141 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Tue, 6 Oct 2026 08:06:31 +0000
+Subject: [M150-LTS][Media] Zero unfilled frames in TeeFilter::Render()
+
+Make sure frames not written by the renderer are cleared before the bus
+is used, rather than relying on callers to do it. See bug for details.
+
+TAG=agy
+CONV=1c37ed3b-c42c-4f78-a468-c9f88041c34b
+
+Fixed: 567379988
+Test: WebAudioSourceProviderImplTest.CopyAudioCBZeroesUnrenderedFrames
+Change-Id: I388d3f48b30b718659c73b4440d3e4f9f5f9af69
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8488289
+Reviewed-by: Hongchan Choi <hongchan@google.com>
+Commit-Queue: Thomas Guilbert <tguilbert@chromium.org>
+Auto-Submit: Thomas Guilbert <tguilbert@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1708380}
+(cherry picked from commit 2048cd07495ea84d4c20b54d4f0f49f7124e603e)
+
+diff --git a/third_party/blink/renderer/platform/media/web_audio_source_provider_impl.cc b/third_party/blink/renderer/platform/media/web_audio_source_provider_impl.cc
+index 50f4de64ef8c7b01619de80cbbe35174efe6b8b1..b79290d2dd0edf71b91f9d0ffd5815fa0f9e303f 100644
+--- a/third_party/blink/renderer/platform/media/web_audio_source_provider_impl.cc
++++ b/third_party/blink/renderer/platform/media/web_audio_source_provider_impl.cc
+@@ -57,6 +57,18 @@ class WebAudioSourceProviderImpl::TeeFilter
+     const int num_rendered_frames =
+         renderer_->Render(delay, delay_timestamp, glitch_info, audio_bus);
+ 
++    // Bitstream (passthrough) formats are not supported here.
++    CHECK(!audio_bus->is_bitstream_format());
++
++    // `Render()` only guarantees that the first `num_rendered_frames` frames
++    // are written. The rest of `audio_bus` may hold stale data from buffers
++    // reused by the caller (e.g. `AudioConverter`), so zero it before it is
++    // copied below or consumed downstream.
++    if (num_rendered_frames < audio_bus->frames()) {
++      audio_bus->ZeroFramesPartial(num_rendered_frames,
++                                   audio_bus->frames() - num_rendered_frames);
++    }
++
+     // Avoid taking the copy lock for the vast majority of cases.
+     if (copy_required_) {
+       base::AutoLock auto_lock(copy_lock_);
+@@ -211,8 +223,8 @@ void WebAudioSourceProviderImpl::ProvideInput(
+ 
+   // TODO(fhernqvist): If we need glitches propagated through WebAudio, plumb
+   // them through here.
+-  const int frames = tee_filter_->Render(
+-      base::TimeDelta(), base::TimeTicks::Now(), {}, bus_wrapper_.get());
++  tee_filter_->Render(base::TimeDelta(), base::TimeTicks::Now(), {},
++                      bus_wrapper_.get());
+ 
+   // Zero out frames after rendering for tainted origins.
+   if (tee_filter_->is_tainted()) {
+@@ -220,9 +232,6 @@ void WebAudioSourceProviderImpl::ProvideInput(
+     return;
+   }
+ 
+-  if (frames < number_of_frames)
+-    bus_wrapper_->ZeroFramesPartial(frames, number_of_frames - frames);
+-
+   bus_wrapper_->Scale(volume_);
+ }
+ 
+diff --git a/third_party/blink/renderer/platform/media/web_audio_source_provider_impl_test.cc b/third_party/blink/renderer/platform/media/web_audio_source_provider_impl_test.cc
+index 0042e8d7ad0e87db8bf4572ce378e895f3bcc7cf..c5594fc4408fa35c0a52ef09f56fae98cfbf98cf 100644
+--- a/third_party/blink/renderer/platform/media/web_audio_source_provider_impl_test.cc
++++ b/third_party/blink/renderer/platform/media/web_audio_source_provider_impl_test.cc
+@@ -6,6 +6,10 @@
+ 
+ #include <stddef.h>
+ 
++#include <algorithm>
++#include <memory>
++#include <tuple>
++
+ #include "base/compiler_specific.h"
+ #include "base/containers/span.h"
+ #include "base/memory/scoped_refptr.h"
+@@ -13,6 +17,7 @@
+ #include "base/test/scoped_feature_list.h"
+ #include "base/test/task_environment.h"
+ #include "base/types/zip.h"
++#include "base/test/test_future.h"
+ #include "media/base/audio_bus.h"
+ #include "media/base/audio_glitch_info.h"
+ #include "media/base/audio_parameters.h"
+@@ -46,6 +51,15 @@ std::vector<base::span<float>> GetChannelSpans(media::AudioBus* bus) {
+   return channel_spans;
+ }
+ 
++// Returns true if every frame at or after `start_frame` is zero.
++bool AreTrailingFramesZero(const media::AudioBus* bus, int start_frame) {
++  return std::ranges::all_of(bus->AllChannels(), [start_frame](auto channel) {
++    return std::ranges::all_of(
++        channel.subspan(static_cast<size_t>(start_frame)),
++        [](float sample) { return sample == 0.0f; });
++  });
++}
++
+ }  // namespace
+ 
+ class WebAudioSourceProviderImplTest : public testing::Test,
+@@ -354,6 +368,36 @@ TEST_F(WebAudioSourceProviderImplTest, CopyAudioCBTainted) {
+   testing::Mock::VerifyAndClear(mock_sink_.get());
+ }
+ 
++// Verify that frames past those written by the renderer are zeroed, both in
++// the bus passed to CopyAudioCB and in the rendered bus.
++TEST_F(WebAudioSourceProviderImplTest, CopyAudioCBZeroesUnrenderedFrames) {
++  constexpr float kStaleSampleValue = 1.0f;
++
++  wasp_impl_->Initialize(params_, &fake_callback_);
++
++  base::test::TestFuture<std::unique_ptr<media::AudioBus>, uint32_t, int>
++      copy_future;
++  wasp_impl_->SetCopyAudioCallback(copy_future.GetRepeatingCallback());
++
++  // Simulate a bus that still contains samples from another source.
++  const auto bus = media::AudioBus::Create(params_);
++  for (auto channel : bus->AllChannels()) {
++    std::ranges::fill(channel, kStaleSampleValue);
++  }
++
++  fake_callback_.set_half_fill(true);
++  const int frames_rendered = Render(bus.get());
++  ASSERT_EQ(frames_rendered, bus->frames() / 2);
++
++  std::unique_ptr<media::AudioBus> bus_copy = std::get<0>(copy_future.Take());
++  ASSERT_TRUE(bus_copy);
++  EXPECT_TRUE(AreTrailingFramesZero(bus_copy.get(), frames_rendered));
++  EXPECT_TRUE(AreTrailingFramesZero(bus.get(), frames_rendered));
++
++  wasp_impl_->ClearCopyAudioCallback();
++  testing::Mock::VerifyAndClear(mock_sink_.get());
++}
++
+ TEST_F(WebAudioSourceProviderImplTest, MultipleInitializeWithSetClient) {
+   // setClient() with a nullptr client should do nothing if no client is set.
+   wasp_impl_->SetClient(nullptr);

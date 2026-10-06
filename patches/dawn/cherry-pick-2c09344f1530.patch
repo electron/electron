@@ -1,0 +1,633 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kai Ninomiya <kainino@chromium.org>
+Date: Mon, 21 Sep 2026 14:20:40 -0700
+Subject: [metal] Handle command buffer execution errors
+
+Originally authored by Gregg but with some major iterations.
+
+- Dawn previously ignored if a Metal command buffer failed to complete.
+  This would result in Dawn continuing onward as if it had succeeded.
+
+  Fix this by moving the device to the Disconnecting state immediately
+  inside the completion handler, and updating Disconnect() to handle the
+  fact that the state could have been changed silently from another
+  thread.
+
+- Make MapAsyncEvent::Complete() check for device loss just before
+  completing the map. This prevents exposing data that could be stale
+  due to a prior command buffer having failed to actually execute, which
+  was at least necessary when we inject a fake command buffer failure. I
+  am not sure if this has any real impact on this or other backends, but
+  it seems more correct anyway.
+
+Fixed: 553115993
+Co-authored-by: Gregg Tavares <gman@chromium.org>
+Change-Id: I16ae7672ede307ee6f7565cdb5274ae9356dc556
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/340135
+Commit-Queue: Kai Ninomiya <kainino@chromium.org>
+Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+Reviewed-by: Loko Kung <lokokung@google.com>
+
+Electron adaptation notes (43-x-y):
+Requires cherry-pick-85124738f5 (State::Disconnecting). M150 Dawn keeps
+the older Queue::SubmitImpl(uint32_t, CommandBufferBase* const*)
+signature and TRACE_EVENT_ASYNC_END0 tracing in QueueMTL.mm, so those
+context lines were kept; Buffer.h has no GetMappedRangeInternal() so only
+UnmapEarly() is declared (and <string_view> is included for it).
+webgpu-cts/expectations.txt kept as on the branch (test-only).
+
+diff --git a/include/dawn/native/DawnNative.h b/include/dawn/native/DawnNative.h
+index c0f2bf1a8dcb9823d0d8c00ee3ce2573734f106e..7bf845d41d85d4c29e1cdc8f4367534367b5fa1e 100644
+--- a/include/dawn/native/DawnNative.h
++++ b/include/dawn/native/DawnNative.h
+@@ -241,6 +241,8 @@ DAWN_NATIVE_EXPORT void EnableErrorInjector();
+ DAWN_NATIVE_EXPORT void DisableErrorInjector();
+ DAWN_NATIVE_EXPORT void ClearErrorInjector();
+ DAWN_NATIVE_EXPORT uint64_t AcquireErrorInjectorCallCount();
++// TODO(https://crbug.com/562254224): Introduce "categories" or something to make it so that tests
++// don't have to specify/predict the exact number of injectable backend API calls in the backend.
+ DAWN_NATIVE_EXPORT void InjectErrorAt(uint64_t index);
+ 
+ // The different types of external images
+diff --git a/src/dawn/native/Buffer.cpp b/src/dawn/native/Buffer.cpp
+index c11d9028a75f1b3b716799477020dec913030363..8177d6572fc096fe10d6d57aac053ae4350ae411 100644
+--- a/src/dawn/native/Buffer.cpp
++++ b/src/dawn/native/Buffer.cpp
+@@ -314,9 +314,23 @@ class BufferBase::MapAsyncEvent final : public EventManager::TrackedEvent {
+             // Complete() and Unmap() race on different threads.
+             lock = RecursiveMutex::AutoLock(&buffer->mPendingMapMutex);
+             if (mStatus == WGPUMapAsyncStatus_Success) {
+-                // Complete() happened before Unmap().
+-                DAWN_CHECK(buffer->mPendingMapEvent);
+-                buffer->mPendingMapEvent = nullptr;
++                DAWN_CHECK(buffer->mPendingMapEvent == this);
++
++                // Before completing a map event, we need to be certain that any work on the buffer
++                // has actually completed. To guarantee this, any thread handling an execution
++                // failure (e.g. Metal command buffer completion handler or Vulkan fence status
++                // check) **must** mark the device lost before advancing the serial (which allows
++                // events that assume successful execution, like this one, to complete).
++                bool deviceLost = buffer->GetDevice()->IsLost();  // Atomic operation.
++                if (deviceLost) {
++                    // The device was lost while MapAsync was pending. Ensure we don't complete the
++                    // MapAsync by aborting the map now before proceeding.
++                    std::ignore = buffer->UnmapEarly(BufferState::Unmapped,
++                                                     "Device was lost before MapAsync completed.");
++                    buffer->mState.notify_all();  // Notify the wait() in UnmapInternal().
++                } else {
++                    buffer->mPendingMapEvent = nullptr;
++                }
+             }
+         }
+ 
+@@ -330,7 +344,7 @@ class BufferBase::MapAsyncEvent final : public EventManager::TrackedEvent {
+ 
+         DAWN_CHECK(buffer);
+         MaybeError result = buffer->FinalizeMap(BufferState::Mapped);
+-        buffer->mState.notify_all();
++        buffer->mState.notify_all();  // Notify the wait() in UnmapInternal().
+         if (result.IsError()) {
+             auto error = result.AcquireError();
+             DAWN_CHECK(error->GetType() != InternalErrorType::Validation);
+@@ -898,6 +912,23 @@ MaybeError BufferBase::Unmap(bool forDestroy) {
+     return {};
+ }
+ 
++Ref<BufferBase::MapAsyncEvent> BufferBase::UnmapEarly(BufferState newState,
++                                                      std::string_view abortMessage) {
++    DAWN_ASSERT(mPendingMapMutex.IsLockedByCurrentThread());
++
++    if (!mPendingMapEvent) {
++        return nullptr;
++    }
++
++    mPendingMapEvent->UnmapEarly(abortMessage);
++
++    BufferState exchangedState = mState.exchange(newState, std::memory_order::acq_rel);
++    DAWN_CHECK(exchangedState == BufferState::PendingMap);
++    // Don't mState.notify_all(), we might not be ready to do that yet. The caller handles it.
++
++    return std::move(mPendingMapEvent);
++}
++
+ MaybeError BufferBase::UnmapInternal(bool forDestroy) {
+     BufferState state = mState.load(std::memory_order::acquire);
+ 
+@@ -913,17 +944,11 @@ MaybeError BufferBase::UnmapInternal(bool forDestroy) {
+             // `mPendingMapEvent` is always reset while holding the mutex. If Complete() ran and
+             // already reset the event then map is about to complete. If not, reset here and do an
+             // early unmap.
+-            event = std::move(mPendingMapEvent);
+-            if (event) {
+-                // This modifies status in MapAsyncEvent which signals the map has been aborted. It
+-                // must happen with mutex locked.
+-                event->UnmapEarly(forDestroy ? "Buffer was destroyed before mapping was resolved."
+-                                             : "Buffer was unmapped before mapping was resolved.");
+-
+-                BufferState exchangedState =
+-                    mState.exchange(BufferState::InUse, std::memory_order::acq_rel);
+-                DAWN_CHECK(exchangedState == BufferState::PendingMap);
+-            }
++            // This modifies status in MapAsyncEvent which signals the map has been aborted. It
++            // must happen with mutex locked.
++            event = UnmapEarly(BufferState::InUse,
++                               forDestroy ? "Buffer was destroyed before mapping was resolved."
++                                          : "Buffer was unmapped before mapping was resolved.");
+         }
+ 
+         if (event) {
+@@ -936,7 +961,8 @@ MaybeError BufferBase::UnmapInternal(bool forDestroy) {
+             return {};
+         }
+ 
+-        // Wait until FinalizeMap() finishes before falling through to a regular unmap.
++        // Wait for the notify_all() in Complete() so we know that FinalizeMap() is done before
++        // falling through to a regular unmap.
+         mState.wait(BufferState::PendingMap, std::memory_order::acquire);
+     }
+ 
+diff --git a/src/dawn/native/Buffer.h b/src/dawn/native/Buffer.h
+index 84845c2c6c463cde5cad429a1c3a1998924050f5..cbe3d2ed63cfb9f49fa97845915a86f374a97444 100644
+--- a/src/dawn/native/Buffer.h
++++ b/src/dawn/native/Buffer.h
+@@ -31,6 +31,7 @@
+ #include <atomic>
+ #include <functional>
+ #include <memory>
++#include <string_view>
+ #include <utility>
+ 
+ #include "partition_alloc/pointers/raw_ptr.h"
+@@ -241,6 +242,8 @@ class BufferBase : public SharedResource, public WeakRefSupport<BufferBase> {
+     MaybeError ValidateMapAsync(wgpu::MapMode mode, size_t offset, size_t size) const;
+     MaybeError ValidateUnmap() const;
+     bool CanGetMappedRange(bool writable, size_t offset, size_t size) const;
++    [[nodiscard]] Ref<MapAsyncEvent> UnmapEarly(BufferState newState,
++                                                std::string_view abortMessage);
+     MaybeError UnmapInternal(bool forDestroy);
+ 
+     // Updates internal state to reflect that the buffer is now mapped.
+diff --git a/src/dawn/native/Device.cpp b/src/dawn/native/Device.cpp
+index 6952a5cd931b36bf2132901de86654d7d570a1b5..ea511b0c679e6c969f8cc06bfddeb6265136c4b0 100644
+--- a/src/dawn/native/Device.cpp
++++ b/src/dawn/native/Device.cpp
+@@ -900,12 +900,15 @@ void DeviceBase::APIForceLoss(wgpu::DeviceLostReason reason, StringView messageI
+ }
+ 
+ DeviceBase::State DeviceBase::GetState() const {
++    // This method must be thread-safe/atomic.
+     return mState;
+ }
+ 
+ bool DeviceBase::IsLost() const {
+-    DAWN_CHECK(mState != State::BeingCreated);
+-    return mState != State::Alive;
++    // This method must be thread-safe/atomic.
++    auto state = mState.load();
++    DAWN_CHECK(state != State::BeingCreated);
++    return state != State::Alive;
+ }
+ 
+ void DeviceBase::SetDisconnectingIfAlive() {
+@@ -928,10 +931,9 @@ void DeviceBase::Disconnect() {
+     DAWN_ASSERT(mQueue != nullptr);
+ 
+     // Wait for all GPU work to complete before proceeding with destruction.
+-    IgnoreErrors(mQueue->WaitForIdleForDestruction());
+-
+-    // Wait for all GPU work to complete before proceeding with destruction.
+-    IgnoreErrors(TickImpl());
++    // ConsumedError ensures that we pick up any errors that should trigger the DeviceLost callback.
++    std::ignore = ConsumedError(mQueue->WaitForIdleForDestruction());
++    std::ignore = ConsumedError(TickImpl());
+ 
+     // The GPU timeline is finished.
+     mQueue->AssumeCommandsComplete();
+diff --git a/src/dawn/native/metal/QueueMTL.h b/src/dawn/native/metal/QueueMTL.h
+index 54f121bf24a24cd0b584dcd97d1aea1c4993154d..69a2b48938dc5c1afd8d60f5ddb41f4d7b5c449f 100644
+--- a/src/dawn/native/metal/QueueMTL.h
++++ b/src/dawn/native/metal/QueueMTL.h
+@@ -31,6 +31,8 @@
+ #import <Metal/Metal.h>
+ 
+ #include <map>
++#include <optional>
++#include <string>
+ 
+ #include "src/dawn/common/MutexProtected.h"
+ #include "src/dawn/common/SerialMap.h"
+@@ -66,6 +68,9 @@ class Queue final : public QueueBase {
+     MaybeError Initialize();
+     void UpdateCommandsScheduledEvents(ExecutionSerial scheduledSerial);
+ 
++    MaybeError CheckExecutionError() const;
++    void SetExecutionError(std::string error);
++
+     MaybeError SubmitImpl(uint32_t commandCount, CommandBufferBase* const* commands) override;
+     bool HasPendingCommands() const override;
+     MaybeError SubmitPendingCommandsImpl() override;
+@@ -79,12 +84,14 @@ class Queue final : public QueueBase {
+ 
+     // The following fields will be accessed in an async Metal command buffer handler that can be
+     // fired on a different thread so we guard access to them with mutexes.
+-    // We need to keep the last submitted command buffer around to call waitUntilScheduled on it
+-    // for WaitForCommandsToBeScheduled. Note that what's mutex protected is just the pointer to the
+-    // last submitted command buffer; the command buffer itself is safe to use across threads.
++    // - We need to keep the last submitted command buffer around to call waitUntilScheduled on it
++    //   for WaitForCommandsToBeScheduled. Note that what's mutex protected is just the pointer to
++    //   the last submitted command buffer; the command buffer itself is safe to use across threads.
+     MutexProtected<NSPRef<id<MTLCommandBuffer>>> mLastSubmittedCommands;
+     MutexProtected<SerialMap<ExecutionSerial, Ref<EventManager::TrackedEvent>>>
+         mCommandsScheduledEvents;
++    // - Error message from the Metal command-buffer-completed handler if completion failed.
++    MutexProtected<std::optional<std::string>> mExecutionError;
+ 
+     // A shared event that can be exported for synchronization with other users of Metal.
+     // MTLSharedEvent is not available until macOS 10.14+ so use just `id`.
+diff --git a/src/dawn/native/metal/QueueMTL.mm b/src/dawn/native/metal/QueueMTL.mm
+index f57abddb8e86aec4e460928b0ee01b5c7c425f4e..949032772d6ceefaf9ba1b84e7e7cfaf89ffa3a1 100644
+--- a/src/dawn/native/metal/QueueMTL.mm
++++ b/src/dawn/native/metal/QueueMTL.mm
+@@ -27,14 +27,18 @@
+ 
+ #include "src/dawn/native/metal/QueueMTL.h"
+ 
++#include "absl/strings/str_format.h"
+ #include "dawn/native/MetalBackend.h"
+ #include "dawn/platform/DawnPlatform.h"
+ #include "src/dawn/common/FutureUtils.h"
+ #include "src/dawn/common/Math.h"
+ #include "src/dawn/native/Buffer.h"
++#include "src/dawn/native/CallbackTaskManager.h"
+ #include "src/dawn/native/CommandValidation.h"
+ #include "src/dawn/native/Commands.h"
++#include "src/dawn/native/Device.h"
+ #include "src/dawn/native/DynamicUploader.h"
++#include "src/dawn/native/ErrorInjector.h"
+ #include "src/dawn/native/Instance.h"
+ #include "src/dawn/native/PhysicalDevice.h"
+ #include "src/dawn/native/metal/CommandBufferMTL.h"
+@@ -200,7 +204,29 @@ void Complete(EventCompletionType completionType) override {
+     return &mCommandContext;
+ }
+ 
++MaybeError Queue::CheckExecutionError() const {
++    return mExecutionError.Use([](auto executionError) -> MaybeError {
++        if (executionError->has_value()) {
++            return DAWN_INTERNAL_ERROR(executionError->value());
++        }
++        return {};
++    });
++}
++
++void Queue::SetExecutionError(std::string error) {
++    mExecutionError.Use([&](auto executionError) {
++        if (!executionError->has_value()) {
++            *executionError = std::move(error);
++        }
++    });
++}
++
+ MaybeError Queue::SubmitPendingCommandBuffer() {
++    // Ensure that if there's been an error, we never try to submit anything. This is also where
++    // we propagate the device loss and error message from a Metal command buffer execution error
++    // (for example when this is called by Tick(), which happens even if nothing is pending).
++    DAWN_TRY(CheckExecutionError());
++
+     if (!mCommandContext.NeedsSubmit()) {
+         return {};
+     }
+@@ -233,10 +259,37 @@ void Complete(EventCompletionType completionType) override {
+     }];
+ 
+     // This ObjC block runs on a different thread.
+-    [*pendingCommands addCompletedHandler:^(id<MTLCommandBuffer>) {
++    [*pendingCommands addCompletedHandler:^(id<MTLCommandBuffer> commandBuffer) {
+         TRACE_EVENT_ASYNC_END0(platform, GPUWork, "DeviceMTL::SubmitPendingCommandBuffer",
+                                uint64_t(pendingSerial));
+ 
++        {
++            // Make sure we didn't disconnect the device before it finished executing.
++            // This is just a safety check to make sure we didn't mess up the state of the device
++            // somehow while it was still executing. It doesn't need to be in the same critical
++            // section with the SetDisconnectingIfAlive and UpdateCompletedSerialTo.
++            auto deviceState = this->GetDevice()->GetState();  // Atomic operation.
++            DAWN_CHECK(deviceState == DeviceBase::State::Alive ||
++                       deviceState == DeviceBase::State::Disconnecting);
++        }
++
++        MTLCommandBufferStatus status =
++            INJECT_ERROR_OR_RUN(commandBuffer.status, MTLCommandBufferStatusError);
++        if (status == MTLCommandBufferStatusError) [[unlikely]] {
++            NSError* error = commandBuffer.error;
++            this->SetExecutionError(
++                error ? absl::StrFormat("Metal command buffer failed: %s (domain=%s, code=%ld)",
++                                        [[error localizedDescription] UTF8String],
++                                        [[error domain] UTF8String], error.code)
++                      : "Metal command buffer failed (with unspecified error)");
++
++            // Since we're not holding any lock here, we need to set the device as lost immediately
++            // *before* updating the serial (as well as before any subsequent command buffers update
++            // the serial). Otherwise, Dawn may assume that since the serial was advanced, the
++            // command buffer actually completed doing its work.
++            this->GetDevice()->SetDisconnectingIfAlive();  // Atomic operation.
++        }
++
+         this->UpdateCompletedSerialTo(QueuePriority::Lowest, pendingSerial);
+     }];
+ 
+diff --git a/src/dawn/tests/end2end/DeviceLostTests.cpp b/src/dawn/tests/end2end/DeviceLostTests.cpp
+index d72ccf9874a4358d60ef479cbdbd60ef99e715c4..fce17c6c09d0d17c3144341e80130a1e7676157f 100644
+--- a/src/dawn/tests/end2end/DeviceLostTests.cpp
++++ b/src/dawn/tests/end2end/DeviceLostTests.cpp
+@@ -248,7 +248,9 @@ TEST_P(DeviceLostTest, CreateBufferFails) {
+     ExpectObjectIsError(device.CreateBuffer(&bufferDescriptor));
+ }
+ 
+-// Test that buffer.MapAsync for writing fails after device is lost
++// Test that buffer.MapAsync for writing fails after device is lost. Note we can't have a test for
++// the device being lost while MapAsync is pending because it would be inherently racy (we don't
++// have a way to force the MapAsync to "pause" while waiting for the device loss to happen).
+ TEST_P(DeviceLostTest, BufferMapAsyncFailsForWriting) {
+     wgpu::BufferDescriptor bufferDescriptor;
+     bufferDescriptor.size = 4;
+@@ -264,22 +266,6 @@ TEST_P(DeviceLostTest, BufferMapAsyncFailsForWriting) {
+                     mMapAsyncCb.Callback());
+ }
+ 
+-// Test that BufferMapAsync for writing calls back with success when device lost after
+-// mapping
+-TEST_P(DeviceLostTest, BufferMapAsyncBeforeLossFailsForWriting) {
+-    wgpu::BufferDescriptor bufferDescriptor;
+-    bufferDescriptor.size = 4;
+-    bufferDescriptor.usage = wgpu::BufferUsage::MapWrite;
+-    wgpu::Buffer buffer = device.CreateBuffer(&bufferDescriptor);
+-
+-    EXPECT_CALL(mMapAsyncCb, Call(wgpu::MapAsyncStatus::Success, _)).Times(1);
+-    buffer.MapAsync(wgpu::MapMode::Write, 0, 4, wgpu::CallbackMode::AllowProcessEvents,
+-                    mMapAsyncCb.Callback());
+-
+-    LoseDeviceForTesting();
+-    WaitForAllOperations();
+-}
+-
+ // Test that buffer.Unmap after device is lost
+ TEST_P(DeviceLostTest, BufferUnmapAfterDeviceLost) {
+     wgpu::BufferDescriptor bufferDescriptor;
+@@ -347,7 +333,9 @@ TEST_P(DeviceLostTest, CreateBuffer) {
+     Tests();
+ }
+ 
+-// Test that BufferMapAsync for reading fails after device is lost
++// Test that buffer.MapAsync for reading fails after device is lost. Note we can't have a test for
++// the device being lost while MapAsync is pending because it would be inherently racy (we don't
++// have a way to force the MapAsync to "pause" while waiting for the device loss to happen).
+ TEST_P(DeviceLostTest, BufferMapAsyncFailsForReading) {
+     wgpu::BufferDescriptor bufferDescriptor;
+     bufferDescriptor.size = 4;
+@@ -364,23 +352,6 @@ TEST_P(DeviceLostTest, BufferMapAsyncFailsForReading) {
+                     mMapAsyncCb.Callback());
+ }
+ 
+-// Test that BufferMapAsync for reading calls back with success when device lost after
+-// mapping
+-TEST_P(DeviceLostTest, BufferMapAsyncBeforeLossFailsForReading) {
+-    wgpu::BufferDescriptor bufferDescriptor;
+-    bufferDescriptor.size = sizeof(float);
+-    bufferDescriptor.usage = wgpu::BufferUsage::MapRead | wgpu::BufferUsage::CopyDst;
+-
+-    wgpu::Buffer buffer = device.CreateBuffer(&bufferDescriptor);
+-
+-    EXPECT_CALL(mMapAsyncCb, Call(wgpu::MapAsyncStatus::Success, _)).Times(1);
+-    buffer.MapAsync(wgpu::MapMode::Read, 0, 4, wgpu::CallbackMode::AllowProcessEvents,
+-                    mMapAsyncCb.Callback());
+-
+-    LoseDeviceForTesting();
+-    WaitForAllOperations();
+-}
+-
+ // Test that WriteBuffer after device is lost
+ TEST_P(DeviceLostTest, WriteBufferAfterDeviceLost) {
+     wgpu::BufferDescriptor bufferDescriptor;
+diff --git a/src/dawn/tests/perf_tests/LoadStoreOpPerfTest.cpp b/src/dawn/tests/perf_tests/LoadStoreOpPerfTest.cpp
+index ec96e89a75e8abe69bcf493e0c8652a368e006ab..2df833d87c0aa5bbe473993991272c553a1494dd 100644
+--- a/src/dawn/tests/perf_tests/LoadStoreOpPerfTest.cpp
++++ b/src/dawn/tests/perf_tests/LoadStoreOpPerfTest.cpp
+@@ -116,6 +116,9 @@ class LoadStoreOpPerfTest : public DawnPerfTestWithParams<LoadStoreOpParams> {
+ };
+ 
+ void LoadStoreOpPerfTest::SetUpPerfTest() {
++    // TODO(crbug.com/558180182): Causes Metal command buffer failed: Insufficient Memory.
++    DAWN_SUPPRESS_TEST_IF(IsMetal());
++
+     wgpu::BindGroupLayout bgl = utils::MakeBindGroupLayout(
+         device, {
+                     {0, wgpu::ShaderStage::Fragment, wgpu::TextureSampleType::Float},
+@@ -329,6 +332,9 @@ class StoreOpDepthPerfTest : public DawnPerfTestWithParams<StoreOpParams> {
+ };
+ 
+ void StoreOpDepthPerfTest::SetUpPerfTest() {
++    // TODO(crbug.com/558180182): Causes Metal command buffer failed: Insufficient Memory.
++    DAWN_SUPPRESS_TEST_IF(IsMetal());
++
+     const char* vs = R"(
+         @vertex
+         fn main(@builtin(vertex_index) VertexIndex : u32) -> @builtin(position) vec4f {
+diff --git a/src/dawn/tests/white_box/MetalBackendTests.cpp b/src/dawn/tests/white_box/MetalBackendTests.cpp
+index 64ecc1d5a5581b00e4639b9c2bf906fed90707df..ac083bb4ff3c0d8c52fc87f03d47314654d14352 100644
+--- a/src/dawn/tests/white_box/MetalBackendTests.cpp
++++ b/src/dawn/tests/white_box/MetalBackendTests.cpp
+@@ -25,6 +25,7 @@
+ // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ 
++#include "dawn/native/DawnNative.h"
+ #include "dawn/native/MetalBackend.h"
+ #include "src/dawn/tests/DawnTest.h"
+ 
+@@ -37,6 +38,16 @@ class MetalBackendTests : public DawnTest {
+         DawnTest::SetUp();
+         DAWN_TEST_UNSUPPORTED_IF(UsesWire());
+     }
++
++    void TearDown() override {
++#if defined(DAWN_ENABLE_ERROR_INJECTION)
++        // Ensure error injector is reset in TearDown so it doesn't matter if the test exits early.
++        DisableErrorInjector();
++        ClearErrorInjector();
++#endif  // defined(DAWN_ENABLE_ERROR_INJECTION)
++
++        DawnTest::TearDown();
++    }
+ };
+ 
+ // Test WaitForCommandsToBeScheduled() call without any crash.
+@@ -46,11 +57,165 @@ TEST_P(MetalBackendTests, WaitForCommandsToBeScheduledOK) {
+ 
+ // Test WaitForCommandsToBeScheduled() won't crash even if the device is destroyed.
+ TEST_P(MetalBackendTests, WaitForCommandsToBeScheduledOnDestroyedDevice) {
+-    auto device2 = CreateDevice();
+-    device2.Destroy();
+-    metal::WaitForCommandsToBeScheduled(device2.Get());
++    DestroyDevice(device);
++    metal::WaitForCommandsToBeScheduled(device.Get());
++}
++
++#if defined(DAWN_ENABLE_ERROR_INJECTION)
++
++// Test that a command buffer execution failure causes the device to be lost cleanly and
++// does not deadlock on destruction.
++TEST_P(MetalBackendTests, CommandBufferExecutionErrorTriggersDeviceLost) {
++    bool deviceLostCalled = false;
++    EXPECT_CALL(mDeviceLostCallback, Call(CHandleIs(device.Get()), wgpu::DeviceLostReason::Unknown,
++                                          testing::HasSubstr("Metal command buffer failed")))
++        .WillOnce([&](auto, auto, auto) { deviceLostCalled = true; });
++
++    wgpu::BufferDescriptor desc;
++    desc.size = 4;
++    desc.usage = wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::CopyDst;
++    wgpu::Buffer src = device.CreateBuffer(&desc);
++    wgpu::Buffer dst = device.CreateBuffer(&desc);
++
++    wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
++    encoder.CopyBufferToBuffer(src, 0, dst, 0, 4);
++    wgpu::CommandBuffer commands = encoder.Finish();
++
++    EnableErrorInjector();
++    InjectErrorAt(0u);
++
++    queue.Submit(1, &commands);
++
++    while (!deviceLostCalled) {
++        WaitABit();
++    }
++}
++
++// Test that destroying a device while a failing command buffer is in-flight does not deadlock.
++TEST_P(MetalBackendTests, DestroyDeviceWithInFlightExecutionError) {
++    wgpu::BufferDescriptor desc;
++    desc.size = 4;
++    desc.usage = wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::CopyDst;
++    wgpu::Buffer src = device.CreateBuffer(&desc);
++    wgpu::Buffer dst = device.CreateBuffer(&desc);
++
++    wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
++    encoder.CopyBufferToBuffer(src, 0, dst, 0, 4);
++    wgpu::CommandBuffer commands = encoder.Finish();
++
++    EnableErrorInjector();
++    InjectErrorAt(0u);
++
++    queue.Submit(1, &commands);
++
++    // Immediately destroy the device while the command buffer is completing with an error.
++    // This verifies WaitForIdleForDestructionImpl / WaitForQueueSerial does not deadlock.
++    DestroyDevice(device);
+ }
+ 
++// Test that OnSubmittedWorkDone does not hang when a command buffer execution error occurs.
++TEST_P(MetalBackendTests, OnSubmittedWorkDoneWithExecutionError) {
++    bool deviceLostCalled = false;
++    EXPECT_CALL(mDeviceLostCallback, Call(CHandleIs(device.Get()), wgpu::DeviceLostReason::Unknown,
++                                          testing::HasSubstr("Metal command buffer failed")))
++        .WillOnce([&](auto, auto, auto) { deviceLostCalled = true; });
++
++    wgpu::BufferDescriptor desc;
++    desc.size = 4;
++    desc.usage = wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::CopyDst;
++    wgpu::Buffer src = device.CreateBuffer(&desc);
++    wgpu::Buffer dst = device.CreateBuffer(&desc);
++
++    wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
++    encoder.CopyBufferToBuffer(src, 0, dst, 0, 4);
++    wgpu::CommandBuffer commands = encoder.Finish();
++
++    EnableErrorInjector();
++    InjectErrorAt(0u);
++
++    queue.Submit(1, &commands);
++
++    bool workDoneCalled = false;
++    queue.OnSubmittedWorkDone(
++        wgpu::CallbackMode::AllowProcessEvents,
++        [](wgpu::QueueWorkDoneStatus, wgpu::StringView, bool* called) { *called = true; },
++        &workDoneCalled);
++
++    while (!deviceLostCalled || !workDoneCalled) {
++        WaitABit();
++    }
++    EXPECT_TRUE(deviceLostCalled);
++    EXPECT_TRUE(workDoneCalled);
++}
++
++// Test that if a command buffer fails, MapAsync succeeds and the mapping is valid.
++TEST_P(MetalBackendTests, MapAsyncOnFailedCommandBuffer) {
++    bool deviceLostCalled = false;
++    EXPECT_CALL(mDeviceLostCallback, Call(CHandleIs(device.Get()), wgpu::DeviceLostReason::Unknown,
++                                          testing::HasSubstr("Metal command buffer failed")))
++        .WillOnce([&](auto, auto, auto) { deviceLostCalled = true; });
++
++    wgpu::BufferDescriptor dstDesc;
++    dstDesc.size = 4;
++    dstDesc.usage = wgpu::BufferUsage::MapRead | wgpu::BufferUsage::CopyDst;
++    wgpu::Buffer dst = device.CreateBuffer(&dstDesc);
++
++    wgpu::BufferDescriptor srcDesc;
++    srcDesc.size = 4;
++    srcDesc.usage = wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::CopyDst;
++    wgpu::Buffer srcB = device.CreateBuffer(&srcDesc);
++    wgpu::Buffer srcC = device.CreateBuffer(&srcDesc);
++
++    uint32_t valueA = 1010;
++    queue.WriteBuffer(dst, 0, &valueA, sizeof(valueA));
++
++    uint32_t valueB = 2020;
++    queue.WriteBuffer(srcB, 0, &valueB, sizeof(valueB));
++
++    uint32_t valueC = 3030;
++    queue.WriteBuffer(srcC, 0, &valueC, sizeof(valueC));
++
++    // Ensure the initial writes complete before injecting the error.
++    WaitForAllOperations();
++
++    {
++        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
++        encoder.CopyBufferToBuffer(srcB, 0, dst, 0, 4);
++        wgpu::CommandBuffer commands = encoder.Finish();
++
++        EnableErrorInjector();
++        InjectErrorAt(0u);
++
++        // This should set dst to valueB because despite the fake injected error, the Metal command
++        // buffer actually succeeded. However, valueB should never be visible to the application
++        // because this causes a device loss due to DAWN_INTERNAL_ERROR.
++        queue.Submit(1, &commands);
++    }
++
++    {
++        wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
++        encoder.CopyBufferToBuffer(srcC, 0, dst, 0, 4);
++        wgpu::CommandBuffer commands = encoder.Finish();
++
++        // This submit should silently no-op because we don't submit new work after device loss.
++        queue.Submit(1, &commands);
++    }
++
++    bool mapCompleted = false;
++    dst.MapAsync(wgpu::MapMode::Read, 0, 4, wgpu::CallbackMode::AllowProcessEvents,
++                 [&](wgpu::MapAsyncStatus status, wgpu::StringView) {
++                     EXPECT_EQ(status, wgpu::MapAsyncStatus::Aborted);
++                     EXPECT_EQ(dst.GetConstMappedRange(0, 4), nullptr);
++                     mapCompleted = true;
++                 });
++
++    while (!deviceLostCalled || !mapCompleted) {
++        WaitABit();
++    }
++}
++
++#endif  // defined(DAWN_ENABLE_ERROR_INJECTION)
++
+ DAWN_INSTANTIATE_TEST(MetalBackendTests, MetalBackend());
+ 
+ }  // anonymous namespace
