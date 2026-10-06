@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Thu, 10 Sep 2026 19:06:52 -0700
+Subject: GL: enable adjustSrcDstRegionForBlitFramebuffer on Mali GPUs.
+
+This workaround, added some time ago, is needed on Mali GPUs as well.
+
+Bug: chromium:546630009
+Change-Id: I045d4a419073125d857c17d9a23c1951f346904b
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8392600
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+Auto-Submit: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index 1b660db0504d8b011f784e1d7e57368b76b81bf8..37a19c5be9b22d861c46927003ee26a3abb370b6 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2526,7 +2526,8 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+                             IsPowerVR(vendor));
+ 
+     ANGLE_FEATURE_CONDITION(features, adjustSrcDstRegionForBlitFramebuffer,
+-                            IsLinux() || (IsAndroid() && isNvidia) || (IsWindows() && isNvidia) ||
++                            IsLinux() || (IsAndroid() && (isNvidia || isMali)) ||
++                                (IsWindows() && isNvidia) ||
+                                 (IsApple() && functions->standard == STANDARD_GL_ES));
+ 
+     ANGLE_FEATURE_CONDITION(features, clipSrcRegionForBlitFramebuffer,

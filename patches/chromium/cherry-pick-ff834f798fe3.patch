@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lei Zhang <thestig@chromium.org>
+Date: Thu, 1 Oct 2026 09:55:35 -0700
+Subject: [PDF] Avoid using invalid link handle in PDFiumPage
+
+Page loading can trigger JS that invalidates a link handle that
+PDFiumPage::PopulateAnnotationLinks() uses. Avoid this potential problem
+by first using the link handle to retrieve all the necessary
+information, before accessing the page that may invalidate the handle.
+Add comments to warn about the potential handle lifetime issues.
+
+Bug: 567910530
+Change-Id: Ic797764cf397a1e3986617faadf358eba1d32472
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8492452
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+Reviewed-by: Tom Sepez <tsepez@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1709135}
+
+diff --git a/pdf/pdfium/pdfium_page.cc b/pdf/pdfium/pdfium_page.cc
+index 93adddcb25b1142d081e900af73d1a92427e7911..a79e744fc8e073a05fa50251c24368d224bb73fe 100644
+--- a/pdf/pdfium/pdfium_page.cc
++++ b/pdf/pdfium/pdfium_page.cc
+@@ -1579,11 +1579,6 @@ void PDFiumPage::PopulateAnnotationLinks() {
+   // Make sure `page` stays valid for the duration of the loop.
+   ScopedPageUnloadPreventer scoped_unload_preventer(this);
+   while (FPDFLink_Enumerate(page, &start_pos, &link_annot)) {
+-    Link link;
+-    Area area = GetLinkTarget(link_annot, &link.target);
+-    if (area == NONSELECTABLE_AREA)
+-      continue;
+-
+     PdfRect link_rect;
+     if (!FPDFLink_GetAnnotRect(link_annot, &FsRectFFromPdfRect(link_rect))) {
+       continue;
+@@ -1593,6 +1588,7 @@ void PDFiumPage::PopulateAnnotationLinks() {
+     // flipped. Swap the coordinates before further processing.
+     link_rect.Normalize();
+ 
++    Link link;
+     int quad_point_count = FPDFLink_CountQuadPoints(link_annot);
+     // Calculate the bounds of link using the quad points data.
+     // If quad points for link is not present then use
+@@ -1613,6 +1609,15 @@ void PDFiumPage::PopulateAnnotationLinks() {
+                                                  PageOrientation::kOriginal));
+     }
+ 
++    // WARNING: Do not use `link_annot` after this call. It may have been
++    // invalidated.
++    Area area = GetLinkTarget(link_annot, &link.target);
++    if (area == NONSELECTABLE_AREA) {
++      // It is unfortunate that all the work above may get thrown away due to
++      // how `link_annot` access have to be arranged to be safe.
++      continue;
++    }
++
+     // Calculate underlying text range of link.
+     GetUnderlyingTextRangeForRect(
+         gfx::RectF(link_rect.left(), link_rect.bottom(), link_rect.width(),

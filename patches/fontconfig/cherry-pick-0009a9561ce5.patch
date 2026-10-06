@@ -1,0 +1,239 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Dominik=20R=C3=B6ttsches?= <drott@chromium.org>
+Date: Thu, 3 Sep 2026 15:12:47 +0300
+Subject: Add FcRwLock for POSIX
+
+Implement reader-writer lock using pthread_rwlock_t on POSIX platforms,
+with a unit test verifying concurrent read and exclusive write operations.
+
+Changelog: none
+(cherry picked from commit 0009a9561ce5c8f38c76dbea44b068e5cf9d47b5)
+
+Electron adaptation notes (43-x-y):
+test/meson.build kept as on the branch (test-only; Chromium builds
+fontconfig with GN).
+
+diff --git a/src/fcmutex.h b/src/fcmutex.h
+index 7f38275abd6af346efe7415b62b04b3a5e0da4fa..80bd4a2a958e3492f195725945f3f9a1f8f83283 100644
+--- a/src/fcmutex.h
++++ b/src/fcmutex.h
+@@ -55,15 +55,33 @@ typedef CRITICAL_SECTION fc_mutex_impl_t;
+ #  define fc_mutex_impl_unlock(M) LeaveCriticalSection (M)
+ #  define fc_mutex_impl_finish(M) DeleteCriticalSection (M)
+ 
++typedef fc_mutex_impl_t fc_rwlock_impl_t;
++#  define FC_RWLOCK_IMPL_INIT         FC_MUTEX_IMPL_INIT
++#  define fc_rwlock_impl_init(L)      fc_mutex_impl_init (L)
++#  define fc_rwlock_impl_rdlock(L)    fc_mutex_impl_lock (L)
++#  define fc_rwlock_impl_wrlock(L)    fc_mutex_impl_lock (L)
++#  define fc_rwlock_impl_unlock_rd(L) fc_mutex_impl_unlock (L)
++#  define fc_rwlock_impl_unlock_wr(L) fc_mutex_impl_unlock (L)
++#  define fc_rwlock_impl_finish(L)    fc_mutex_impl_finish (L)
++
+ #elif !defined(FC_NO_MT) && (defined(HAVE_PTHREAD) || defined(__APPLE__))
+ 
+ #  include <pthread.h>
+ typedef pthread_mutex_t fc_mutex_impl_t;
+-#  define FC_MUTEX_IMPL_INIT      PTHREAD_MUTEX_INITIALIZER
+-#  define fc_mutex_impl_init(M)   pthread_mutex_init (M, NULL)
+-#  define fc_mutex_impl_lock(M)   pthread_mutex_lock (M)
+-#  define fc_mutex_impl_unlock(M) pthread_mutex_unlock (M)
+-#  define fc_mutex_impl_finish(M) pthread_mutex_destroy (M)
++#  define FC_MUTEX_IMPL_INIT          PTHREAD_MUTEX_INITIALIZER
++#  define fc_mutex_impl_init(M)       pthread_mutex_init (M, NULL)
++#  define fc_mutex_impl_lock(M)       pthread_mutex_lock (M)
++#  define fc_mutex_impl_unlock(M)     pthread_mutex_unlock (M)
++#  define fc_mutex_impl_finish(M)     pthread_mutex_destroy (M)
++
++typedef pthread_rwlock_t fc_rwlock_impl_t;
++#  define FC_RWLOCK_IMPL_INIT         PTHREAD_RWLOCK_INITIALIZER
++#  define fc_rwlock_impl_init(L)      pthread_rwlock_init (L, NULL)
++#  define fc_rwlock_impl_rdlock(L)    pthread_rwlock_rdlock (L)
++#  define fc_rwlock_impl_wrlock(L)    pthread_rwlock_wrlock (L)
++#  define fc_rwlock_impl_unlock_rd(L) pthread_rwlock_unlock (L)
++#  define fc_rwlock_impl_unlock_wr(L) pthread_rwlock_unlock (L)
++#  define fc_rwlock_impl_finish(L)    pthread_rwlock_destroy (L)
+ 
+ #elif !defined(FC_NO_MT) && defined(HAVE_INTEL_ATOMIC_PRIMITIVES)
+ 
+@@ -92,6 +110,15 @@ typedef volatile int fc_mutex_impl_t;
+       FC_STMT_START {}            \
+       FC_STMT_END
+ 
++typedef fc_mutex_impl_t fc_rwlock_impl_t;
++#  define FC_RWLOCK_IMPL_INIT         FC_MUTEX_IMPL_INIT
++#  define fc_rwlock_impl_init(L)      fc_mutex_impl_init (L)
++#  define fc_rwlock_impl_rdlock(L)    fc_mutex_impl_lock (L)
++#  define fc_rwlock_impl_wrlock(L)    fc_mutex_impl_lock (L)
++#  define fc_rwlock_impl_unlock_rd(L) fc_mutex_impl_unlock (L)
++#  define fc_rwlock_impl_unlock_wr(L) fc_mutex_impl_unlock (L)
++#  define fc_rwlock_impl_finish(L)    fc_mutex_impl_finish (L)
++
+ #elif !defined(FC_NO_MT)
+ 
+ #  if defined(HAVE_SCHED_H) && defined(HAVE_SCHED_YIELD)
+@@ -120,6 +147,15 @@ typedef volatile int fc_mutex_impl_t;
+       FC_STMT_START {}            \
+       FC_STMT_END
+ 
++typedef fc_mutex_impl_t fc_rwlock_impl_t;
++#  define FC_RWLOCK_IMPL_INIT         FC_MUTEX_IMPL_INIT
++#  define fc_rwlock_impl_init(L)      fc_mutex_impl_init (L)
++#  define fc_rwlock_impl_rdlock(L)    fc_mutex_impl_lock (L)
++#  define fc_rwlock_impl_wrlock(L)    fc_mutex_impl_lock (L)
++#  define fc_rwlock_impl_unlock_rd(L) fc_mutex_impl_unlock (L)
++#  define fc_rwlock_impl_unlock_wr(L) fc_mutex_impl_unlock (L)
++#  define fc_rwlock_impl_finish(L)    fc_mutex_impl_finish (L)
++
+ #else /* FC_NO_MT */
+ 
+ typedef int fc_mutex_impl_t;
+@@ -137,6 +173,15 @@ typedef int fc_mutex_impl_t;
+       FC_STMT_START {}            \
+       FC_STMT_END
+ 
++typedef fc_mutex_impl_t fc_rwlock_impl_t;
++#  define FC_RWLOCK_IMPL_INIT         FC_MUTEX_IMPL_INIT
++#  define fc_rwlock_impl_init(L)      fc_mutex_impl_init (L)
++#  define fc_rwlock_impl_rdlock(L)    fc_mutex_impl_lock (L)
++#  define fc_rwlock_impl_wrlock(L)    fc_mutex_impl_lock (L)
++#  define fc_rwlock_impl_unlock_rd(L) fc_mutex_impl_unlock (L)
++#  define fc_rwlock_impl_unlock_wr(L) fc_mutex_impl_unlock (L)
++#  define fc_rwlock_impl_finish(L)    fc_mutex_impl_finish (L)
++
+ #endif
+ 
+ #define FC_MUTEX_INIT { FC_MUTEX_IMPL_INIT }
+@@ -146,4 +191,13 @@ static inline void      FcMutexLock (FcMutex *m) { fc_mutex_impl_lock (m); }
+ static inline void      FcMutexUnlock (FcMutex *m) { fc_mutex_impl_unlock (m); }
+ static inline void      FcMutexFinish (FcMutex *m) { fc_mutex_impl_finish (m); }
+ 
++#define FC_RWLOCK_INIT { FC_RWLOCK_IMPL_INIT }
++typedef fc_rwlock_impl_t FcRwLock;
++static inline void       FcRwLockInit (FcRwLock *l) { fc_rwlock_impl_init (l); }
++static inline void       FcRwLockReadLock (FcRwLock *l) { fc_rwlock_impl_rdlock (l); }
++static inline void       FcRwLockWriteLock (FcRwLock *l) { fc_rwlock_impl_wrlock (l); }
++static inline void       FcRwLockUnlockRead (FcRwLock *l) { fc_rwlock_impl_unlock_rd (l); }
++static inline void       FcRwLockUnlockWrite (FcRwLock *l) { fc_rwlock_impl_unlock_wr (l); }
++static inline void       FcRwLockFinish (FcRwLock *l) { fc_rwlock_impl_finish (l); }
++
+ #endif /* _FCMUTEX_H_ */
+diff --git a/test/test-rwlock.c b/test/test-rwlock.c
+new file mode 100644
+index 0000000000000000000000000000000000000000..9d11efe337c98184d4d34371c90ba592ab419be8
+--- /dev/null
++++ b/test/test-rwlock.c
+@@ -0,0 +1,113 @@
++/* Copyright (C) 2026 fontconfig Authors */
++/* SPDX-License-Identifier: HPND */
++
++#ifdef HAVE_CONFIG_H
++#  include "config.h"
++#endif
++
++#include <pthread.h>
++#include <sched.h>
++#include <stdatomic.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <unistd.h>
++
++#include "fcmutex.h"
++
++#define NUM_READERS 8
++#define NUM_WRITERS 2
++#define ITERS       1000
++
++static FcRwLock    rw;
++static atomic_int  active_readers;
++static atomic_int  max_concurrent_readers;
++static atomic_bool stop;
++static atomic_bool go;
++static int         shared_counter;
++
++static void *
++reader_thread (void *arg)
++{
++    (void)arg;
++    while (!atomic_load_explicit (&go, memory_order_acquire))
++	sched_yield ();
++    while (!atomic_load_explicit (&stop, memory_order_relaxed)) {
++	FcRwLockReadLock (&rw);
++	int cur = atomic_fetch_add_explicit (&active_readers, 1, memory_order_seq_cst) + 1;
++	int prev_max = atomic_load_explicit (&max_concurrent_readers, memory_order_relaxed);
++	while (cur > prev_max &&
++	       !atomic_compare_exchange_weak_explicit (&max_concurrent_readers, &prev_max, cur,
++	                                               memory_order_relaxed, memory_order_relaxed))
++	    ;
++	int val = shared_counter;
++	(void)val;
++	atomic_fetch_sub_explicit (&active_readers, 1, memory_order_seq_cst);
++	FcRwLockUnlockRead (&rw);
++	sched_yield ();
++    }
++    return NULL;
++}
++
++static void *
++writer_thread (void *arg)
++{
++    (void)arg;
++    while (!atomic_load_explicit (&go, memory_order_acquire))
++	sched_yield ();
++    for (int i = 0; i < ITERS && !atomic_load_explicit (&stop, memory_order_relaxed); i++) {
++	FcRwLockWriteLock (&rw);
++	int readers = atomic_load_explicit (&active_readers, memory_order_seq_cst);
++	if (readers != 0) {
++	    fprintf (stderr, "Error: active_readers = %d during write lock!\n", readers);
++	    abort();
++	}
++	shared_counter++;
++	FcRwLockUnlockWrite (&rw);
++    }
++    return NULL;
++}
++
++int
++main (void)
++{
++    pthread_t rth[NUM_READERS];
++    pthread_t wth[NUM_WRITERS];
++    int       i;
++
++    FcRwLockInit (&rw);
++
++    /* Basic test */
++    FcRwLockReadLock (&rw);
++    FcRwLockUnlockRead (&rw);
++    FcRwLockWriteLock (&rw);
++    FcRwLockUnlockWrite (&rw);
++
++    atomic_init (&active_readers, 0);
++    atomic_init (&max_concurrent_readers, 0);
++    atomic_init (&stop, 0);
++    atomic_init (&go, 0);
++    shared_counter = 0;
++
++    for (i = 0; i < NUM_READERS; i++) {
++	if (pthread_create (&rth[i], NULL, reader_thread, NULL) != 0)
++	    return 1;
++    }
++    for (i = 0; i < NUM_WRITERS; i++) {
++	if (pthread_create (&wth[i], NULL, writer_thread, NULL) != 0)
++	    return 1;
++    }
++
++    atomic_store_explicit (&go, 1, memory_order_release);
++
++    for (i = 0; i < NUM_WRITERS; i++)
++	pthread_join (wth[i], NULL);
++    atomic_store_explicit (&stop, 1, memory_order_relaxed);
++    for (i = 0; i < NUM_READERS; i++)
++	pthread_join (rth[i], NULL);
++
++    FcRwLockFinish (&rw);
++
++    printf ("PASS: test-rwlock, max concurrent readers = %d\n",
++            atomic_load_explicit (&max_concurrent_readers, memory_order_relaxed));
++    return 0;
++}

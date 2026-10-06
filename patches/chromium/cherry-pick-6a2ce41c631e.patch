@@ -1,0 +1,308 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sebastien Lalancette <seblalancette@chromium.org>
+Date: Wed, 2 Sep 2026 06:19:22 -0700
+Subject: [net] Stop PAC script auto-auth fetches in ProxyResolverWinHttp
+
+Removes the retry with `fAutoLogonIfChallenged = TRUE` in
+ProxyResolverWinHttp upon receiving ERROR_WINHTTP_LOGIN_FAILURE.
+
+The auto-logon fallback was legacy behavior for older Windows versions
+that has since been deprecated. Removing this retry aligns
+ProxyResolverWinHttp with modern Windows guidance (MS16-077) as well as
+the behavior of PacFileFetcherImpl and WindowsSystemProxyResolverImpl,
+neither of which attempts automatic logon when retrieving PAC scripts.
+
+Also adds unit tests verifying that an authentication challenge during
+PAC retrieval fails without retrying with auto-logon.
+
+Fixed: 533493992
+Change-Id: I02be9263faded7790d38e3403af6e7425c3e351a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8288770
+Commit-Queue: Sebastien Lalancette <seblalancette@chromium.org>
+Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1690651}
+
+diff --git a/net/BUILD.gn b/net/BUILD.gn
+index 06f2c841805ebf2931e8b470631843dcdcb9cd43..5ceae3bbf6870149a8f29fb98969b483b457b750 100644
+--- a/net/BUILD.gn
++++ b/net/BUILD.gn
+@@ -1503,6 +1503,7 @@ component("net") {
+       "proxy_resolution/win/proxy_config_service_win.h",
+       "proxy_resolution/win/proxy_resolver_winhttp.cc",
+       "proxy_resolution/win/proxy_resolver_winhttp.h",
++      "proxy_resolution/win/proxy_resolver_winhttp_test_hooks.h",
+       "proxy_resolution/win/windows_system_proxy_resolution_request.cc",
+       "proxy_resolution/win/windows_system_proxy_resolution_request.h",
+       "proxy_resolution/win/windows_system_proxy_resolution_service.cc",
+@@ -2730,6 +2731,7 @@ if (!is_ios) {
+       "//url",
+     ]
+   }
++
+   executable("quic_server") {
+     testonly = true
+     sources = [
+@@ -3232,6 +3234,7 @@ target(_test_target_type, "net_unittests") {
+       "proxy_resolution/win/dhcp_pac_file_adapter_fetcher_win_unittest.cc",
+       "proxy_resolution/win/dhcp_pac_file_fetcher_win_unittest.cc",
+       "proxy_resolution/win/proxy_config_service_win_unittest.cc",
++      "proxy_resolution/win/proxy_resolver_winhttp_unittest.cc",
+       "proxy_resolution/win/windows_system_proxy_resolution_service_unittest.cc",
+       "ssl/client_cert_store_win_unittest.cc",
+       "ssl/ssl_platform_key_win_unittest.cc",
+diff --git a/net/proxy_resolution/win/proxy_resolver_winhttp.cc b/net/proxy_resolution/win/proxy_resolver_winhttp.cc
+index fc47a72400ded093986c7179d27f4495b4ded8a0..5e2126f934cae12831fb8c1ac2fb74baff9c6809 100644
+--- a/net/proxy_resolution/win/proxy_resolver_winhttp.cc
++++ b/net/proxy_resolution/win/proxy_resolver_winhttp.cc
+@@ -16,6 +16,7 @@
+ #include "net/base/url_util.h"
+ #include "net/proxy_resolution/proxy_info.h"
+ #include "net/proxy_resolution/proxy_resolver.h"
++#include "net/proxy_resolution/win/proxy_resolver_winhttp_test_hooks.h"
+ #include "url/gurl.h"
+ 
+ using base::TimeTicks;
+@@ -23,6 +24,11 @@ using base::TimeTicks;
+ namespace net {
+ namespace {
+ 
++// The WinHttpGetProxyForUrl implementation used by ProxyResolverWinHttp. May be
++// overridden by tests via ScopedWinHttpGetProxyForUrlOverride.
++WinHttpGetProxyForUrlFunc g_winhttp_get_proxy_for_url =
++    &::WinHttpGetProxyForUrl;
++
+ static void FreeInfo(WINHTTP_PROXY_INFO* info) {
+   if (info->lpszProxy)
+     GlobalFree(info->lpszProxy);
+@@ -117,6 +123,12 @@ int ProxyResolverWinHttp::GetProxyForURL(
+   // to avoid WinHTTP's auto-detection code, which while more featureful (it
+   // supports DHCP based auto-detection) also appears to have issues.
+   //
++  // The fAutoLogonIfChallenged option has been deprecated and should always be
++  // set to FALSE throughout Windows 10+. Even in earlier versions of the OS,
++  // this feature did not work particularly well (see MS16-077:
++  // https://support.microsoft.com/en-us/help/3161949/ms16-077-description-of-the-security-update-for-wpad-june-14-2016).
++  // PAC file fetches must not automatically provide default credentials if
++  // challenged.
+   WINHTTP_AUTOPROXY_OPTIONS options = {0};
+   options.fAutoLogonIfChallenged = FALSE;
+   options.dwFlags = WINHTTP_AUTOPROXY_CONFIG_URL;
+@@ -126,33 +138,19 @@ int ProxyResolverWinHttp::GetProxyForURL(
+   WINHTTP_PROXY_INFO info = {0};
+   DCHECK(session_handle_);
+ 
+-  // Per http://msdn.microsoft.com/en-us/library/aa383153(VS.85).aspx, it is
+-  // necessary to first try resolving with fAutoLogonIfChallenged set to false.
+-  // Otherwise, we fail over to trying it with a value of true.  This way we
+-  // get good performance in the case where WinHTTP uses an out-of-process
+-  // resolver.  This is important for Vista and Win2k3.
+-  BOOL ok = WinHttpGetProxyForUrl(
++  BOOL ok = g_winhttp_get_proxy_for_url(
+       session_handle_,
+       base::as_wcstr(base::ASCIIToUTF16(mutable_query_url.spec())), &options,
+       &info);
+   if (!ok) {
+-    if (ERROR_WINHTTP_LOGIN_FAILURE == GetLastError()) {
+-      options.fAutoLogonIfChallenged = TRUE;
+-      ok = WinHttpGetProxyForUrl(
+-          session_handle_,
+-          base::as_wcstr(base::ASCIIToUTF16(mutable_query_url.spec())),
+-          &options, &info);
+-    }
+-    if (!ok) {
+-      DWORD error = GetLastError();
+-      // If we got here because of RPC timeout during out of process PAC
+-      // resolution, no further requests on this session are going to work.
+-      if (ERROR_WINHTTP_TIMEOUT == error ||
+-          ERROR_WINHTTP_AUTO_PROXY_SERVICE_ERROR == error) {
+-        CloseWinHttpSession();
+-      }
+-      return WinHttpErrorToNetError(error);
++    DWORD error = GetLastError();
++    // If we got here because of RPC timeout during out of process PAC
++    // resolution, no further requests on this session are going to work.
++    if (ERROR_WINHTTP_TIMEOUT == error ||
++        ERROR_WINHTTP_AUTO_PROXY_SERVICE_ERROR == error) {
++      CloseWinHttpSession();
+     }
++    return WinHttpErrorToNetError(error);
+   }
+ 
+   int rv = OK;
+@@ -226,4 +224,14 @@ int ProxyResolverFactoryWinHttp::CreateProxyResolver(
+   return OK;
+ }
+ 
++ScopedWinHttpGetProxyForUrlOverride::ScopedWinHttpGetProxyForUrlOverride(
++    WinHttpGetProxyForUrlFunc func)
++    : previous_func_(g_winhttp_get_proxy_for_url) {
++  g_winhttp_get_proxy_for_url = func ? func : &::WinHttpGetProxyForUrl;
++}
++
++ScopedWinHttpGetProxyForUrlOverride::~ScopedWinHttpGetProxyForUrlOverride() {
++  g_winhttp_get_proxy_for_url = previous_func_;
++}
++
+ }  // namespace net
+diff --git a/net/proxy_resolution/win/proxy_resolver_winhttp_test_hooks.h b/net/proxy_resolution/win/proxy_resolver_winhttp_test_hooks.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..142b13049c26c46b114300ab0b4451465b66b8f3
+--- /dev/null
++++ b/net/proxy_resolution/win/proxy_resolver_winhttp_test_hooks.h
+@@ -0,0 +1,40 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef NET_PROXY_RESOLUTION_WIN_PROXY_RESOLVER_WINHTTP_TEST_HOOKS_H_
++#define NET_PROXY_RESOLUTION_WIN_PROXY_RESOLVER_WINHTTP_TEST_HOOKS_H_
++
++#include <windows.h>
++
++#include <winhttp.h>
++
++#include "net/base/net_export.h"
++
++namespace net {
++
++using WinHttpGetProxyForUrlFunc = BOOL(WINAPI*)(HINTERNET,
++                                                LPCWSTR,
++                                                WINHTTP_AUTOPROXY_OPTIONS*,
++                                                WINHTTP_PROXY_INFO*);
++
++// Scoped override of the WinHttpGetProxyForUrl function used by
++// ProxyResolverWinHttp. Passing nullptr restores the default
++// (::WinHttpGetProxyForUrl).
++class NET_EXPORT_PRIVATE ScopedWinHttpGetProxyForUrlOverride {
++ public:
++  explicit ScopedWinHttpGetProxyForUrlOverride(WinHttpGetProxyForUrlFunc func);
++  ~ScopedWinHttpGetProxyForUrlOverride();
++
++  ScopedWinHttpGetProxyForUrlOverride(
++      const ScopedWinHttpGetProxyForUrlOverride&) = delete;
++  ScopedWinHttpGetProxyForUrlOverride& operator=(
++      const ScopedWinHttpGetProxyForUrlOverride&) = delete;
++
++ private:
++  WinHttpGetProxyForUrlFunc previous_func_;
++};
++
++}  // namespace net
++
++#endif  // NET_PROXY_RESOLUTION_WIN_PROXY_RESOLVER_WINHTTP_TEST_HOOKS_H_
+diff --git a/net/proxy_resolution/win/proxy_resolver_winhttp_unittest.cc b/net/proxy_resolution/win/proxy_resolver_winhttp_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..11fe1c4f68eec2d391b1d1d2b59ec6cdd9397508
+--- /dev/null
++++ b/net/proxy_resolution/win/proxy_resolver_winhttp_unittest.cc
+@@ -0,0 +1,110 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "net/proxy_resolution/win/proxy_resolver_winhttp.h"
++
++#include <windows.h>
++
++#include <winhttp.h>
++
++#include <memory>
++#include <string>
++
++#include "base/memory/scoped_refptr.h"
++#include "net/base/net_errors.h"
++#include "net/base/network_anonymization_key.h"
++#include "net/log/net_log_with_source.h"
++#include "net/proxy_resolution/pac_file_data.h"
++#include "net/proxy_resolution/proxy_info.h"
++#include "net/proxy_resolution/proxy_resolver.h"
++#include "net/proxy_resolution/win/proxy_resolver_winhttp_test_hooks.h"
++#include "testing/gtest/include/gtest/gtest.h"
++#include "url/gurl.h"
++
++namespace net {
++
++namespace {
++
++int g_call_count = 0;
++std::wstring g_expected_pac_url;
++
++BOOL WINAPI FakeGetProxyForUrlLoginFailure(HINTERNET /*session*/,
++                                           LPCWSTR /*url*/,
++                                           WINHTTP_AUTOPROXY_OPTIONS* options,
++                                           WINHTTP_PROXY_INFO* /*info*/) {
++  ++g_call_count;
++  EXPECT_NE(nullptr, options);
++  if (options) {
++    EXPECT_FALSE(options->fAutoLogonIfChallenged);
++    EXPECT_TRUE(options->dwFlags & WINHTTP_AUTOPROXY_CONFIG_URL);
++    if (options->lpszAutoConfigUrl) {
++      EXPECT_EQ(g_expected_pac_url, std::wstring(options->lpszAutoConfigUrl));
++    }
++  }
++  ::SetLastError(ERROR_WINHTTP_LOGIN_FAILURE);
++  return FALSE;
++}
++
++std::unique_ptr<ProxyResolver> CreateResolver(
++    const scoped_refptr<PacFileData>& script_data) {
++  ProxyResolverFactoryWinHttp factory;
++  std::unique_ptr<ProxyResolver> resolver;
++  std::unique_ptr<ProxyResolverFactory::Request> request;
++  int rv = factory.CreateProxyResolver(script_data, &resolver,
++                                       CompletionOnceCallback(), &request);
++  EXPECT_EQ(OK, rv);
++  return resolver;
++}
++
++struct AuthChallengeTestCase {
++  scoped_refptr<PacFileData> script_data;
++  std::wstring expected_pac_url;
++};
++
++class ProxyResolverWinHttpAuthChallengeTest
++    : public testing::Test,
++      public testing::WithParamInterface<AuthChallengeTestCase> {
++ public:
++  void SetUp() override {
++    g_call_count = 0;
++    g_expected_pac_url.clear();
++  }
++};
++
++}  // namespace
++
++// If the server hosting the PAC script requests authentication when the
++// resolver tries to download it, the resolver must not send default
++// credentials and must instead surface a failure to the caller. This mirrors
++// the behaviour of PacFileFetcherImpl on the non-WinHTTP code path.
++TEST_P(ProxyResolverWinHttpAuthChallengeTest, NoAutoLogonOnChallenge) {
++  const AuthChallengeTestCase& test_case = GetParam();
++  g_expected_pac_url = test_case.expected_pac_url;
++  ScopedWinHttpGetProxyForUrlOverride override_hook(
++      &FakeGetProxyForUrlLoginFailure);
++
++  std::unique_ptr<ProxyResolver> resolver =
++      CreateResolver(test_case.script_data);
++  ASSERT_TRUE(resolver);
++
++  ProxyInfo results;
++  std::unique_ptr<ProxyResolver::Request> request;
++  int rv = resolver->GetProxyForURL(
++      GURL("https://example.test/"), NetworkAnonymizationKey(), &results,
++      CompletionOnceCallback(), &request, NetLogWithSource());
++
++  EXPECT_EQ(ERR_PROXY_AUTH_UNSUPPORTED, rv);
++  EXPECT_EQ(1, g_call_count);
++}
++
++INSTANTIATE_TEST_SUITE_P(
++    All,
++    ProxyResolverWinHttpAuthChallengeTest,
++    testing::Values(AuthChallengeTestCase{PacFileData::ForAutoDetect(),
++                                          L"http://wpad/wpad.dat"},
++                    AuthChallengeTestCase{
++                        PacFileData::FromURL(GURL("http://pac.test/wpad.dat")),
++                        L"http://pac.test/wpad.dat"}));
++
++}  // namespace net

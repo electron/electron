@@ -1,0 +1,209 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tzarial <zork@google.com>
+Date: Thu, 27 Aug 2026 17:41:46 +0000
+Subject: GL: Fix UAF in ContextGL with depth init PBOs
+
+ContextGL declared mDepthInitPBOs before mRenderer in the class
+definition, causing mRenderer to be destroyed before mDepthInitPBOs
+during ~ContextGL(). If mRenderer was the last shared_ptr, RendererGL
+and its FunctionsGL were freed before ~PixelBufferGL() attempted to
+call functions->deleteBuffers(), resulting in a heap-use-after-free.
+
+This CL fixes the issue by:
+1. Moving mRenderer before mDepthInitPBOs so member destruction order
+   guarantees mDepthInitPBOs is destroyed while mRenderer is still
+   valid.
+2. Implementing ContextGL::onDestroy to clear mDepthInitPBOs on
+   context destruction.
+
+Bug: b/550379413
+Test: EGLContextASANTest.DestroyContextWithRobustDepthInitPBO/*
+Change-Id: Iefab278ad75b7ef6a45a64db7dbd6876498bdff0
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8308574
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Tzarial <zork@chromium.org>
+
+Electron adaptation notes (43-x-y):
+ContextGL.h: context drift only (the branch declares
+applyRecreateFboWorkaroundIfNeeded next to the moved members); the
+protected/private reordering is applied verbatim.
+
+diff --git a/src/libANGLE/renderer/gl/ContextGL.cpp b/src/libANGLE/renderer/gl/ContextGL.cpp
+index a6082e340cbcfbc561db4a1477e5bfa62ff06723..0fb4314a0e9bb842dcb48d3c7d48f0157d2dcdc0 100644
+--- a/src/libANGLE/renderer/gl/ContextGL.cpp
++++ b/src/libANGLE/renderer/gl/ContextGL.cpp
+@@ -100,15 +100,20 @@ ContextGL::ContextGL(const gl::State &state,
+                      const std::shared_ptr<RendererGL> &renderer,
+                      RobustnessVideoMemoryPurgeStatus robustnessVideoMemoryPurgeStatus)
+     : ContextImpl(state, errorSet),
++      mRenderer(renderer),
++      mRobustnessVideoMemoryPurgeStatus(robustnessVideoMemoryPurgeStatus),
+       // Maximum 3 cached depth initialization PBOs stored for now; can be changed in the future if
+       // needed.
+-      mDepthInitPBOs(/*max=*/3),
+-      mRenderer(renderer),
+-      mRobustnessVideoMemoryPurgeStatus(robustnessVideoMemoryPurgeStatus)
++      mDepthInitPBOs(/*max=*/3)
+ {}
+ 
+ ContextGL::~ContextGL() {}
+ 
++void ContextGL::onDestroy(const gl::Context *context)
++{
++    mDepthInitPBOs.Clear();
++}
++
+ angle::Result ContextGL::initialize(const angle::ImageLoadContext &imageLoadContext)
+ {
+     return angle::Result::Continue;
+diff --git a/src/libANGLE/renderer/gl/ContextGL.h b/src/libANGLE/renderer/gl/ContextGL.h
+index cdfc3ab5845a77040320615e3aaf41bd06fb09a2..df3754be0d67629e46bdff19cb647d34f54c73b3 100644
+--- a/src/libANGLE/renderer/gl/ContextGL.h
++++ b/src/libANGLE/renderer/gl/ContextGL.h
+@@ -48,6 +48,8 @@ class ContextGL : public ContextImpl
+               RobustnessVideoMemoryPurgeStatus robustnessVideoMemoryPurgeStatus);
+     ~ContextGL() override;
+ 
++    void onDestroy(const gl::Context *context) override;
++
+     angle::Result initialize(const angle::ImageLoadContext &imageLoadContext) override;
+ 
+     // Shader creation
+@@ -326,6 +328,12 @@ class ContextGL : public ContextImpl
+ 
+     angle::Result applyRecreateFboWorkaroundIfNeeded(const gl::Context *context);
+ 
++  protected:
++    std::shared_ptr<RendererGL> mRenderer;
++
++    RobustnessVideoMemoryPurgeStatus mRobustnessVideoMemoryPurgeStatus;
++
++  private:
+     struct PixelBufferGL
+     {
+         const FunctionsGL *functions = nullptr;
+@@ -347,11 +355,6 @@ class ContextGL : public ContextImpl
+     // Keyed by the GLenum type passed to getDepthInitPBO (e.g. GL_UNSIGNED_INT_24_8,
+     // GL_FLOAT_32_UNSIGNED_INT_24_8_REV).
+     DepthInitPBOCache mDepthInitPBOs;
+-
+-  protected:
+-    std::shared_ptr<RendererGL> mRenderer;
+-
+-    RobustnessVideoMemoryPurgeStatus mRobustnessVideoMemoryPurgeStatus;
+ };
+ 
+ }  // namespace rx
+diff --git a/src/tests/egl_tests/EGLContextASANTest.cpp b/src/tests/egl_tests/EGLContextASANTest.cpp
+index 8d98a27f1a661d34bf641b0bfc8286433c8468e1..5db2bf8592a31520f0e43aadd1003f537c5beaf6 100644
+--- a/src/tests/egl_tests/EGLContextASANTest.cpp
++++ b/src/tests/egl_tests/EGLContextASANTest.cpp
+@@ -16,6 +16,7 @@
+ #include <condition_variable>
+ #include <mutex>
+ #include <thread>
++#include <vector>
+ 
+ using namespace angle;
+ 
+@@ -201,6 +202,100 @@ TEST_P(EGLContextASANTest, DestroyContextInUse)
+     // cleanup
+     ASSERT_GL_NO_ERROR();
+ }
++
++// Tests that destroying a context with cached robust resource initialization depth PBOs does
++// not cause a use-after-free during destruction.
++// https://crbug.com/550379413
++TEST_P(EGLContextASANTest, DestroyContextWithRobustDepthInitPBO)
++{
++    EGLDisplay display = getEGLWindow()->getDisplay();
++    EGLConfig config   = getEGLWindow()->getConfig();
++    EGLSurface surface = getEGLWindow()->getSurface();
++
++    ANGLE_SKIP_TEST_IF(
++        !IsEGLDisplayExtensionEnabled(display, "EGL_ANGLE_robust_resource_initialization"));
++    ANGLE_SKIP_TEST_IF(getClientMajorVersion() < 3);
++
++    // Unmake default context
++    EXPECT_EGL_TRUE(eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
++    EXPECT_EGL_SUCCESS();
++
++    std::vector<EGLint> contextAttribs = {
++        EGL_CONTEXT_CLIENT_VERSION,
++        3,
++        EGL_ROBUST_RESOURCE_INITIALIZATION_ANGLE,
++        EGL_TRUE,
++    };
++
++    if (IsEGLDisplayExtensionEnabled(display, "EGL_ANGLE_context_virtualization"))
++    {
++        contextAttribs.push_back(EGL_CONTEXT_VIRTUALIZATION_GROUP_ANGLE);
++        contextAttribs.push_back(1);
++    }
++    contextAttribs.push_back(EGL_NONE);
++
++    EGLContext context = eglCreateContext(display, config, EGL_NO_CONTEXT, contextAttribs.data());
++    ASSERT_EGL_SUCCESS();
++    ASSERT_NE(context, EGL_NO_CONTEXT);
++
++    EXPECT_EGL_TRUE(eglMakeCurrent(display, surface, surface, context));
++    EXPECT_EGL_SUCCESS();
++
++    // Create an uninitialized depth texture
++    GLTexture depthTex;
++    glBindTexture(GL_TEXTURE_2D, depthTex);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, 64, 64, 0, GL_DEPTH_COMPONENT,
++                 GL_UNSIGNED_INT, nullptr);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
++    ASSERT_GL_NO_ERROR();
++
++    constexpr char kVS[] = R"(#version 300 es
++void main() {
++    gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
++    gl_PointSize = 1.0;
++})";
++    constexpr char kFS[] = R"(#version 300 es
++uniform highp sampler2DShadow u;
++out highp vec4 o;
++void main() {
++    o = vec4(texture(u, vec3(0.5, 0.5, 0.5)), 0.0, 0.0, 1.0);
++})";
++
++    GLProgram program;
++    program.makeRaster(kVS, kFS);
++    ASSERT_TRUE(program.valid());
++    glUseProgram(program);
++    glUniform1i(glGetUniformLocation(program, "u"), 0);
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    GLTexture colorTex;
++    glBindTexture(GL_TEXTURE_2D, colorTex);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 64, 64, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    glActiveTexture(GL_TEXTURE0);
++    glBindTexture(GL_TEXTURE_2D, depthTex);
++
++    glDrawArrays(GL_POINTS, 0, 1);
++    ASSERT_GL_NO_ERROR();
++    glFlush();
++
++    // Unmake current and destroy context.
++    EXPECT_EGL_TRUE(eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
++    EXPECT_EGL_SUCCESS();
++
++    EXPECT_EGL_TRUE(SafeDestroyContext(display, context));
++    EXPECT_EGL_SUCCESS();
++
++    // Make default context and surface current again.
++    EXPECT_TRUE(getEGLWindow()->makeCurrent());
++    EXPECT_EGL_SUCCESS();
++}
+ }  // anonymous namespace
+ 
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(EGLContextASANTest);

@@ -1,0 +1,452 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Wed, 2 Sep 2026 15:16:44 -0400
+Subject: Fix robust-init when OOB-copying between mips of same texture
+
+The front-end has logic to initialize the destination texture when the
+target of glCopyTexImage2D is out of bounds of the source framebuffer.
+However, this is skipped during self-copies as the initialization would
+destroy source(==destination)'s content before the copy.
+
+This self-copy check is improved in this change to exclude copies
+between different subresources of the same texture.
+
+Bug: chromium:550302121
+Change-Id: I565ea820d49ea8d37910247b03729468280509f0
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8347448
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+Electron adaptation notes (43-x-y):
+Caps.h: context drift only (squarePvrtc1 feature present on the branch).
+angle_end2end_tests_expectations.txt kept as on the branch (test-only).
+
+diff --git a/src/libANGLE/Caps.h b/src/libANGLE/Caps.h
+index 1bfa827e240447a5db2f4f1ccf82b51f093fcbd0..69f001fb4ec48ce06da360b54bf08b88cb00df07 100644
+--- a/src/libANGLE/Caps.h
++++ b/src/libANGLE/Caps.h
+@@ -148,6 +148,10 @@ struct Limitations
+     // PVRTC1 textures must be squares.
+     bool squarePvrtc1 = false;
+ 
++    // Some backends don't apply robust init when glCopyTexImage2D reads out of bounds of source
++    // framebuffer, whose read attachment is a different mip of the same texture being redefined.
++    bool noRobustInitOnOOBCopyTexImageSameTexture = false;
++
+     // ETC1 texture support is emulated.
+     bool emulatedEtc1 = false;
+ 
+diff --git a/src/libANGLE/Texture.cpp b/src/libANGLE/Texture.cpp
+index 631c85c9322db2f774be3d1e9ad281fd71f45519..3888e7840ee8f9509092778a64012f2fd8eadab0 100644
+--- a/src/libANGLE/Texture.cpp
++++ b/src/libANGLE/Texture.cpp
+@@ -1584,11 +1584,15 @@ angle::Result Texture::copyImage(Context *context,
+         const FramebufferAttachment *sourceReadAttachment = source->getReadColorAttachment();
+         Extents fbSize                                    = sourceReadAttachment->getSize();
+         // Force using copySubImage when the source area is out of bounds AND
+-        // we're not copying to and from the same texture
+-        forceCopySubImage = ((sourceArea.x < 0) || (sourceArea.y < 0) ||
+-                             ((sourceArea.x + sourceArea.width) > fbSize.width) ||
+-                             ((sourceArea.y + sourceArea.height) > fbSize.height)) &&
+-                            (sourceReadAttachment->getResource() != this);
++        // we're not copying to and from the same texture.  When
++        // noRobustInitOnOOBCopyTexImageSameTexture is set, copySubImage is used also when copying
++        // between different subresources of the same texture.
++        forceCopySubImage = (sourceArea.x < 0 || sourceArea.y < 0 ||
++                             sourceArea.x + sourceArea.width > fbSize.width ||
++                             sourceArea.y + sourceArea.height > fbSize.height) &&
++                            (sourceReadAttachment->getResource() != this ||
++                             (context->getLimitations().noRobustInitOnOOBCopyTexImageSameTexture &&
++                              sourceReadAttachment->getTextureImageIndex() != index));
+         Rectangle clippedArea;
+         if (ClipRectangle(sourceArea, Rectangle(0, 0, fbSize.width, fbSize.height), &clippedArea))
+         {
+diff --git a/src/libANGLE/renderer/vulkan/vk_caps_utils.cpp b/src/libANGLE/renderer/vulkan/vk_caps_utils.cpp
+index f5de86123d2576f2a4d62b211187bb7ee25cb618..c236166d662ac5851c5811c89f0cf835bcda1c2a 100644
+--- a/src/libANGLE/renderer/vulkan/vk_caps_utils.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_caps_utils.cpp
+@@ -1518,6 +1518,10 @@ void Renderer::ensureCapsInitialized() const
+     mNativeLimitations.maxBufferBytes  = static_cast<size_t>(mMaxMemoryAllocationSize);
+     mNativeLimitations.maxTextureBytes = static_cast<size_t>(mMaxMemoryAllocationSize);
+ 
++    // Ask the front-end to handle robust-init when copying between mips of the same texture via
++    // glCopyTexImage2D.
++    mNativeLimitations.noRobustInitOnOOBCopyTexImageSameTexture = true;
++
+     // Log any missing extensions required for GLES 3.2.
+     LogMissingExtensionsForGLES32(mNativeExtensions);
+ }
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index 84d89106021d953c56dbbfa553daf9f599b36cbc..9a8f46f7adab81291f1f3d171c69805306b3de2f 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -21965,6 +21965,369 @@ ANGLE_INSTANTIATE_TEST_ES31(RGBTextureBufferTestES31);
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(MultisampleTexture2DTestES31);
+ ANGLE_INSTANTIATE_TEST_ES31(MultisampleTexture2DTestES31);
+ 
++// Test that robust initialization works when glCopyTexImage2D is outside the bounds of the
++// framebuffer.
++TEST_P(Texture2DTestES3RobustInit, CopyTexImageOutOfBounds)
++{
++    constexpr GLuint kSrcWidth  = 11;
++    constexpr GLuint kSrcHeight = 17;
++    constexpr GLuint kDstWidth  = 5;
++    constexpr GLuint kDstHeight = 9;
++
++    // Set up framebuffer as source of copy.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    GLRenderbuffer rbo;
++    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
++    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, kSrcWidth, kSrcHeight);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo);
++    EXPECT_GL_NO_ERROR();
++
++    // Define the destination texture by copying from the source framebuffer out of bounds.
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kSrcWidth, kSrcHeight, kDstWidth, kDstHeight, 0);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    EXPECT_GL_NO_ERROR();
++
++    // The texture should be robust-initialized.
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
++    EXPECT_PIXEL_RECT_EQ(0, 0, kDstWidth, kDstHeight, GLColor::transparentBlack);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that robust initialization works when glCopyTexImage2D is partially outside the bounds of
++// the framebuffer.
++TEST_P(Texture2DTestES3RobustInit, CopyTexImagePartiallyOutOfBounds)
++{
++    constexpr GLuint kSrcWidth  = 11;
++    constexpr GLuint kSrcHeight = 17;
++    constexpr GLuint kDstWidth  = 5;
++    constexpr GLuint kDstHeight = 9;
++
++    // Set up framebuffer as source of copy.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    GLRenderbuffer rbo;
++    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
++    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, kSrcWidth, kSrcHeight);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo);
++    glClearColor(0, 0, 1, 1);
++    glClear(GL_COLOR_BUFFER_BIT);
++    EXPECT_GL_NO_ERROR();
++
++    // Define the destination texture by copying from the source framebuffer out of bounds.
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kSrcWidth - kDstWidth, kSrcHeight - kDstHeight / 2,
++                     kDstWidth, kDstHeight, 0);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    EXPECT_GL_NO_ERROR();
++
++    // The texture should be robust-initialized.
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
++    EXPECT_PIXEL_RECT_EQ(0, 0, kDstWidth, kDstHeight / 2, GLColor::blue);
++    EXPECT_PIXEL_RECT_EQ(0, kDstHeight / 2, kDstWidth, kDstHeight - kDstHeight / 2,
++                         GLColor::transparentBlack);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that robust initialization works when glCopyTexSubImage2D is outside the bounds of the
++// framebuffer.
++TEST_P(Texture2DTestES3RobustInit, CopyTexSubImageOutOfBounds)
++{
++    constexpr GLuint kSrcWidth  = 11;
++    constexpr GLuint kSrcHeight = 17;
++    constexpr GLuint kDstWidth  = 5;
++    constexpr GLuint kDstHeight = 9;
++
++    // Set up framebuffer as source of copy.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    GLRenderbuffer rbo;
++    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
++    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, kSrcWidth, kSrcHeight);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo);
++    EXPECT_GL_NO_ERROR();
++
++    // Define the destination texture and copy to it from the source framebuffer out of bounds.
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kDstWidth, kDstHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, kSrcWidth, kSrcHeight, kDstWidth, kDstHeight);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    EXPECT_GL_NO_ERROR();
++
++    // The texture should be robust-initialized.
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
++    EXPECT_PIXEL_RECT_EQ(0, 0, kDstWidth, kDstHeight, GLColor::transparentBlack);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that robust initialization works when glCopyTexSubImage2D is partially outside the bounds of
++// the framebuffer.
++TEST_P(Texture2DTestES3RobustInit, CopyTexSubImagePartiallyOutOfBounds)
++{
++    constexpr GLuint kSrcWidth  = 11;
++    constexpr GLuint kSrcHeight = 17;
++    constexpr GLuint kDstWidth  = 5;
++    constexpr GLuint kDstHeight = 9;
++
++    // Set up framebuffer as source of copy.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    GLRenderbuffer rbo;
++    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
++    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, kSrcWidth, kSrcHeight);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, rbo);
++    glClearColor(0, 0, 1, 1);
++    glClear(GL_COLOR_BUFFER_BIT);
++    EXPECT_GL_NO_ERROR();
++
++    // Define the destination texture and copy to it from the source framebuffer out of bounds.
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kDstWidth, kDstHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++    glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, kSrcWidth - kDstWidth, kSrcHeight - kDstHeight / 2,
++                        kDstWidth, kDstHeight);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    EXPECT_GL_NO_ERROR();
++
++    // The texture should be robust-initialized.
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
++    EXPECT_PIXEL_RECT_EQ(0, 0, kDstWidth, kDstHeight / 2, GLColor::blue);
++    EXPECT_PIXEL_RECT_EQ(0, kDstHeight / 2, kDstWidth, kDstHeight - kDstHeight / 2,
++                         GLColor::transparentBlack);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that robust initialization works when glCopyTexImage2D is outside the bounds of the
++// framebuffer, but source and dest are the same texture.
++TEST_P(Texture2DTestES3RobustInit, CopyTexImageOutOfBoundsSelf)
++{
++    constexpr GLuint kSrcWidth  = 11;
++    constexpr GLuint kSrcHeight = 17;
++    constexpr GLuint kDstWidth  = 5;
++    constexpr GLuint kDstHeight = 9;
++
++    // Set up framebuffer as source of copy.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    const std::vector<GLColor> kInitColor(kSrcWidth * kSrcHeight, GLColor::blue);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kSrcWidth, kSrcHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kInitColor.data());
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
++    EXPECT_GL_NO_ERROR();
++
++    // Redefine the texture by copying from the source framebuffer out of bounds.
++    glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kSrcWidth, kSrcHeight, kDstWidth, kDstHeight, 0);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    EXPECT_GL_NO_ERROR();
++
++    // The texture should be robust-initialized.
++    EXPECT_PIXEL_RECT_EQ(0, 0, kDstWidth, kDstHeight, GLColor::transparentBlack);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that robust initialization works when glCopyTexImage2D is partially outside the bounds of
++// the framebuffer, but source and dest are the same texture.
++TEST_P(Texture2DTestES3RobustInit, CopyTexImagePartiallyOutOfBoundsSelf)
++{
++    constexpr GLuint kSrcWidth  = 11;
++    constexpr GLuint kSrcHeight = 17;
++    constexpr GLuint kDstWidth  = 5;
++    constexpr GLuint kDstHeight = 9;
++
++    // Set up framebuffer as source of copy.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    const std::vector<GLColor> kInitColor(kSrcWidth * kSrcHeight, GLColor::blue);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kSrcWidth, kSrcHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kInitColor.data());
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
++    EXPECT_GL_NO_ERROR();
++
++    // Redefine the texture by copying from the source framebuffer out of bounds.
++    glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kSrcWidth - kDstWidth / 2, kSrcHeight - kDstHeight,
++                     kDstWidth, kDstHeight, 0);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    EXPECT_GL_NO_ERROR();
++
++    // The texture should be robust-initialized.
++    EXPECT_PIXEL_RECT_EQ(0, 0, kDstWidth / 2, kDstHeight, GLColor::blue);
++    EXPECT_PIXEL_RECT_EQ(kDstWidth / 2, 0, kDstWidth - kDstWidth / 2, kDstHeight,
++                         GLColor::transparentBlack);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that robust initialization works when glCopyTexImage2D is outside the bounds of the
++// framebuffer, but source and dest are different mips of the same texture.
++TEST_P(Texture2DTestES3RobustInit, CopyTexImageOutOfBoundsAcrossMips)
++{
++    constexpr GLuint kSrcWidth  = 11;
++    constexpr GLuint kSrcHeight = 17;
++    constexpr GLuint kDstWidth  = 5;
++    constexpr GLuint kDstHeight = 9;
++
++    // Set up framebuffer as source of copy.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    const std::vector<GLColor> kInitColor(kSrcWidth * kSrcHeight, GLColor::blue);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kSrcWidth, kSrcHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kInitColor.data());
++    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA8, kSrcWidth, kSrcHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kInitColor.data());
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
++    EXPECT_GL_NO_ERROR();
++
++    // Redefine the texture by copying from the source framebuffer out of bounds.
++    glCopyTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA8, kSrcWidth, kSrcHeight, kDstWidth, kDstHeight, 0);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    EXPECT_GL_NO_ERROR();
++
++    // The texture should be robust-initialized.
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    EXPECT_PIXEL_RECT_EQ(0, 0, kDstWidth, kDstHeight, GLColor::transparentBlack);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that robust initialization works when glCopyTexImage2D is partially outside the bounds of
++// the framebuffer, but source and dest are different mips of the same texture.
++TEST_P(Texture2DTestES3RobustInit, CopyTexImagePartiallyOutOfBoundsAcrossMips)
++{
++    constexpr GLuint kSrcWidth  = 11;
++    constexpr GLuint kSrcHeight = 17;
++    constexpr GLuint kDstWidth  = 5;
++    constexpr GLuint kDstHeight = 9;
++
++    // Set up framebuffer as source of copy.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    const std::vector<GLColor> kInitColor0(kSrcWidth * kSrcHeight, GLColor::blue);
++    const std::vector<GLColor> kInitColor1(kSrcWidth * kSrcHeight, GLColor::green);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kSrcWidth, kSrcHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kInitColor0.data());
++    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA8, kSrcWidth, kSrcHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kInitColor1.data());
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
++    EXPECT_GL_NO_ERROR();
++
++    // Redefine the texture by copying from the source framebuffer out of bounds.
++    glCopyTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA8, kSrcWidth - kDstWidth / 2,
++                     kSrcHeight - kDstHeight / 2, kDstWidth, kDstHeight, 0);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    EXPECT_GL_NO_ERROR();
++
++    // The texture should be robust-initialized.
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    EXPECT_PIXEL_RECT_EQ(0, 0, kDstWidth / 2, kDstHeight / 2, GLColor::blue);
++    EXPECT_PIXEL_RECT_EQ(kDstWidth / 2, 0, kDstWidth - kDstWidth / 2, kDstHeight,
++                         GLColor::transparentBlack);
++    EXPECT_PIXEL_RECT_EQ(0, kDstHeight / 2, kDstWidth / 2, kDstHeight - kDstHeight / 2,
++                         GLColor::transparentBlack);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that robust initialization works when glCopyTexSubImage2D is outside the bounds of the
++// framebuffer, but source and dest are different mips of the same texture.
++TEST_P(Texture2DTestES3RobustInit, CopyTexSubImageOutOfBoundsAcrossMips)
++{
++    constexpr GLuint kSrcWidth  = 11;
++    constexpr GLuint kSrcHeight = 17;
++    constexpr GLuint kDstWidth  = 5;
++    constexpr GLuint kDstHeight = 9;
++
++    // Set up framebuffer as source of copy.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    const std::vector<GLColor> kInitColor(kSrcWidth * kSrcHeight, GLColor::blue);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kSrcWidth, kSrcHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kInitColor.data());
++    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA8, kSrcWidth, kSrcHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kInitColor.data());
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
++    EXPECT_GL_NO_ERROR();
++
++    // Redefine the texture and copy to it from the source framebuffer out of bounds.
++    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA8, kDstWidth, kDstHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++    glCopyTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, kSrcWidth, kSrcHeight, kDstWidth, kDstHeight);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    EXPECT_GL_NO_ERROR();
++
++    // The texture should be robust-initialized.
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    EXPECT_PIXEL_RECT_EQ(0, 0, kDstWidth, kDstHeight, GLColor::transparentBlack);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that robust initialization works when glCopyTexSubImage2D is partially outside the bounds of
++// the framebuffer, but source and dest are different mips of the same texture.
++TEST_P(Texture2DTestES3RobustInit, CopyTexSubImagePartiallyOutOfBoundsAcrossMips)
++{
++    constexpr GLuint kSrcWidth  = 11;
++    constexpr GLuint kSrcHeight = 17;
++    constexpr GLuint kDstWidth  = 5;
++    constexpr GLuint kDstHeight = 9;
++
++    // Set up framebuffer as source of copy.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    const std::vector<GLColor> kInitColor0(kSrcWidth * kSrcHeight, GLColor::blue);
++    const std::vector<GLColor> kInitColor1(kSrcWidth * kSrcHeight, GLColor::green);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kSrcWidth, kSrcHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kInitColor0.data());
++    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA8, kSrcWidth, kSrcHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kInitColor1.data());
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
++    EXPECT_GL_NO_ERROR();
++
++    // Redefine the texture and copy to it from the source framebuffer out of bounds.
++    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA8, kDstWidth, kDstHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++    glCopyTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, kSrcWidth - kDstWidth / 2,
++                        kSrcHeight - kDstHeight / 2, kDstWidth, kDstHeight);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    EXPECT_GL_NO_ERROR();
++
++    // The texture should be robust-initialized.
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    EXPECT_PIXEL_RECT_EQ(0, 0, kDstWidth / 2, kDstHeight / 2, GLColor::blue);
++    EXPECT_PIXEL_RECT_EQ(kDstWidth / 2, 0, kDstWidth - kDstWidth / 2, kDstHeight,
++                         GLColor::transparentBlack);
++    EXPECT_PIXEL_RECT_EQ(0, kDstHeight / 2, kDstWidth / 2, kDstHeight - kDstHeight / 2,
++                         GLColor::transparentBlack);
++    ASSERT_GL_NO_ERROR();
++}
++
+ class TextureSizeLimitTest : public ANGLETest<>
+ {
+   protected:

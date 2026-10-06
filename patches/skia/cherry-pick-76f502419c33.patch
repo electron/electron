@@ -1,0 +1,296 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Smith <thomsmit@google.com>
+Date: Fri, 25 Sep 2026 11:41:21 -0400
+Subject: [SkPath] Increase GenerationID to 64 bits
+
+* GenerationID was originally intended to be a modification tracker per object but became conflated with global uniqueness. This was fine so long as ID usages were sufficiently temporally separated that wrapping IDs would never collide. However, at 32 bits it is feasible for an attacker to cause wrapping in a relatively small amount of time.
+
+* This patch ups the GenerationID to 64 bits
+
+Bug: b/562038679
+Bug: b/556268833
+Change-Id: I12d2e93cc32c8922fe0b19a1f737e6196ed54dd8
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1366216
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+Commit-Queue: Thomas Smith <thomsmit@google.com>
+
+diff --git a/docs/examples/Path_getGenerationID.cpp b/docs/examples/Path_getGenerationID.cpp
+index 51a612e159104a6850d1bdd578a6bedb3049eca8..07997f3975cfa19b23e2cc85d761ff28727afc68 100644
+--- a/docs/examples/Path_getGenerationID.cpp
++++ b/docs/examples/Path_getGenerationID.cpp
+@@ -4,12 +4,12 @@
+ REG_FIDDLE(Path_getGenerationID, 256, 256, true, 0) {
+ void draw(SkCanvas* canvas) {
+     SkPath path;
+-    SkDebugf("empty genID = %u\n", path.getGenerationID());
++    SkDebugf("empty genID = %" PRIu64 "\n", path.getGenerationID());
+     path = SkPathBuilder().lineTo(1, 2).detach();
+-    SkDebugf("1st lineTo genID = %u\n", path.getGenerationID());
++    SkDebugf("1st lineTo genID = %" PRIu64 "\n", path.getGenerationID());
+     path.reset();
+-    SkDebugf("empty genID = %u\n", path.getGenerationID());
++    SkDebugf("empty genID = %" PRIu64 "\n", path.getGenerationID());
+     path = SkPathBuilder().lineTo(1, 2).detach();
+-    SkDebugf("2nd lineTo genID = %u\n", path.getGenerationID());
++    SkDebugf("2nd lineTo genID = %" PRIu64 "\n", path.getGenerationID());
+ }
+ }  // END FIDDLE
+diff --git a/include/core/SkPath.h b/include/core/SkPath.h
+index fd4868e1a47479e0d9425140057a2720f5de5ca2..ce78aaebbcc5f6d7718189e197c00faf14fc51bf 100644
+--- a/include/core/SkPath.h
++++ b/include/core/SkPath.h
+@@ -1106,7 +1106,7 @@ public:
+ 
+         example: https://fiddle.skia.org/c/@Path_getGenerationID
+     */
+-    uint32_t getGenerationID() const;
++    uint64_t getGenerationID() const;
+ 
+     /** Returns if SkPath data is consistent. Corrupt SkPath data is detected if
+         internal values are out of range or internal storage does not match
+diff --git a/src/core/SkPath.cpp b/src/core/SkPath.cpp
+index 95f533b67111ae61c969084fff6dfbc61667cf2c..9e31be7c2b3df96bad58f892419bd92221894e6d 100644
+--- a/src/core/SkPath.cpp
++++ b/src/core/SkPath.cpp
+@@ -91,7 +91,7 @@ bool SkPath::isFinite() const {
+ 
+ bool SkPath::isValid() const { return this->isFinite(); }
+ 
+-uint32_t SkPath::getGenerationID() const { return fPathData->uniqueID(); }
++uint64_t SkPath::getGenerationID() const { return fPathData->uniqueID(); }
+ 
+ #ifdef SK_DEBUG
+ void SkPath::validate() const {}
+diff --git a/src/core/SkPathData.cpp b/src/core/SkPathData.cpp
+index f40959256fad004871a59c29499073118f6bff77..314be3ebd4aa9a5c52f6668955471663a13d9085 100644
+--- a/src/core/SkPathData.cpp
++++ b/src/core/SkPathData.cpp
+@@ -20,6 +20,7 @@
+ #include "src/core/SkPathRawShapes.h"
+ #include "src/core/SkSpanPriv.h"
+ 
++#include <limits>
+ #include <new>
+ #include <optional>
+ #include <type_traits>
+@@ -29,18 +30,13 @@ SkPathData* SkPathData::PeekEmptySingleton() {
+     return gEmpty;
+ }
+ 
+-static uint32_t next_pathdata_unique_id() {
++static uint64_t next_pathdata_unique_id() {
+     constexpr int kHighBitsToMakeRoomForFillType = 2;
+-
+-    static std::atomic<int32_t> nextID{1};
+-
+-    uint32_t id;
+-    do {
+-        id = nextID.fetch_add(1, std::memory_order_relaxed);
+-        // clear the high bits to make room for filltype
+-        id <<= kHighBitsToMakeRoomForFillType;
+-        id >>= kHighBitsToMakeRoomForFillType;
+-    } while (id == 0);
++    constexpr uint64_t kMaxID =
++            std::numeric_limits<uint64_t>::max() >> kHighBitsToMakeRoomForFillType;
++    static std::atomic<uint64_t> nextID{1};
++    uint64_t id = nextID.fetch_add(1, std::memory_order_relaxed);
++    SkASSERT_RELEASE(id <= kMaxID);
+     return id;
+ }
+ 
+@@ -184,7 +180,7 @@ SkPathData::SkPathData(size_t npts, size_t nvbs, size_t ncns)
+ SkPathData::~SkPathData() {
+     // We will implicitly call our IDChangeList here, notifying them that we are
+     // being dstroyed.
+-    SkDEBUGCODE(fUniqueID = 0xEEEEEEEE;)
++    SkDEBUGCODE(fUniqueID = 0xEEEEEEEEEEEEEEEEULL;)
+ }
+ 
+ void SkPathData::operator delete(void* p) {
+diff --git a/src/core/SkPathData.h b/src/core/SkPathData.h
+index bb57bfd2d50675da3ea8cc7fcd61201493c4be99..87d4498ebc7b00d2a7a4dba041499c3142edb6f4 100644
+--- a/src/core/SkPathData.h
++++ b/src/core/SkPathData.h
+@@ -119,8 +119,8 @@ public:
+     const SkRect& bounds() const { return fBounds; }
+     uint8_t segmentMask() const { return fSegmentMask; }
+ 
+-    // Will never be zero, has the low-2 bits always zero (to store filltype)
+-    uint32_t uniqueID() const { return fUniqueID; }
++    // Will never be zero, the upper-2 bits are always zero (to store filltype)
++    uint64_t uniqueID() const { return fUniqueID; }
+ 
+     SkPathRaw raw(SkPathFillType, SkResolveConvexity) const;
+ 
+@@ -191,7 +191,7 @@ private:
+     SkSpan<SkPathVerb> fVerbs;
+     SkRect             fBounds;
+ 
+-    uint32_t           fUniqueID;   // never 0
++    uint64_t           fUniqueID;   // never 0
+ 
+     /*
+      *  Convexity can be slow to compute, and (in theory) it can't always survive a matrix
+diff --git a/src/core/SkPictureRecord.h b/src/core/SkPictureRecord.h
+index d0aa53702a0c97fecc40f99b16f929c337c650e6..0a195afe9f70cfdb3b8b09d96846bd2e4926d3de 100644
+--- a/src/core/SkPictureRecord.h
++++ b/src/core/SkPictureRecord.h
+@@ -273,7 +273,9 @@ private:
+     skia_private::TArray<SkPaint>  fPaints;
+ 
+     struct PathHash {
+-        uint32_t operator()(const SkPath& p) { return p.getGenerationID(); }
++        // Narrowing the 64-bit generation ID to uint32_t via SkGoodHash is safe for hash table
++        // bucket distribution; THashMap resolves any collisions using SkPath::operator==.
++        uint32_t operator()(const SkPath& p) { return SkGoodHash()(p.getGenerationID()); }
+     };
+     skia_private::THashMap<SkPath, int, PathHash> fPaths;
+ 
+diff --git a/src/gpu/ganesh/geometry/GrStyledShape.cpp b/src/gpu/ganesh/geometry/GrStyledShape.cpp
+index 6aa4daa3f8d76ab0dfe062dfb2f4b1503a8a5e1f..734995415cf00989e8f9743ee410fa22f5802b2e 100644
+--- a/src/gpu/ganesh/geometry/GrStyledShape.cpp
++++ b/src/gpu/ganesh/geometry/GrStyledShape.cpp
+@@ -179,7 +179,7 @@ uint16_t GrStyledShape::unstyledKeySize() const {
+             if (dataKeySize >= 0) {
+                 count += SkTo<uint16_t>(dataKeySize);
+             } else {
+-                count++; // Just adds the gen ID.
++                count += sizeof(uint64_t) / sizeof(uint32_t); // Just adds the gen ID.
+             }
+             break; }
+         default:
+@@ -218,7 +218,8 @@ void GrStyledShape::writeUnstyledKey(uint32_t* key) const {
+                     write_path_key_from_data(fShape.path(), key);
+                     return;
+                 } else {
+-                    *key++ = fGenID;
++                    memcpy(key, &fGenID, sizeof(uint64_t));
++                    key += sizeof(uint64_t) / sizeof(uint32_t);
+                 }
+                 break; }
+             case GrShape::Type::kPoint:
+diff --git a/src/gpu/ganesh/geometry/GrStyledShape.h b/src/gpu/ganesh/geometry/GrStyledShape.h
+index ed4345355478121dfedb1a894e159b80c4fca304..99869c6faff2816d8c39b61ad5b76a33e2142211 100644
+--- a/src/gpu/ganesh/geometry/GrStyledShape.h
++++ b/src/gpu/ganesh/geometry/GrStyledShape.h
+@@ -277,7 +277,7 @@ public:
+      * the generation ID of the *original* path. This is the path that will receive
+      * GenIDChangeListeners added to this shape.
+      */
+-    uint32_t testingOnly_getOriginalGenerationID() const;
++    uint64_t testingOnly_getOriginalGenerationID() const;
+     bool testingOnly_isPath() const;
+     bool testingOnly_isNonVolatilePath() const;
+ 
+@@ -310,7 +310,7 @@ private:
+     GrShape fShape;
+     GrStyle fStyle;
+     // Gen ID of the original path (path may be modified or simplified away).
+-    int32_t fGenID      = 0;
++    uint64_t fGenID     = 0;
+     bool    fClosed     = false;
+     bool    fSimplified = false;
+ 
+diff --git a/src/gpu/ganesh/ops/AtlasPathRenderer.cpp b/src/gpu/ganesh/ops/AtlasPathRenderer.cpp
+index adaf2ab889af7a8ecac93b60ae01fdb70f2d5db6..694946d0303fd0cffb25bae1dbfc8d1c468c56f0 100644
+--- a/src/gpu/ganesh/ops/AtlasPathRenderer.cpp
++++ b/src/gpu/ganesh/ops/AtlasPathRenderer.cpp
+@@ -199,6 +199,7 @@ void AtlasPathRenderer::AtlasPathKey::set(const SkMatrix& m, const SkPath& path)
+     fAffineMatrix[4] = m.getScaleY();
+     fAffineMatrix[5] = m.getTranslateY();
+     fFillRule = (uint32_t)GrFillRuleForSkPath(path);  // Fill rule doesn't affect the path's genID.
++    fPadding = 0;
+ }
+ 
+ bool AtlasPathRenderer::addPathToAtlas(GrRecordingContext* rContext,
+diff --git a/src/gpu/ganesh/ops/AtlasPathRenderer.h b/src/gpu/ganesh/ops/AtlasPathRenderer.h
+index ecc19b1e8b319c6a5120990444f19ae37697b920..c09dc16cb8aebd37847831ceb01d0eaac3fa0067 100644
+--- a/src/gpu/ganesh/ops/AtlasPathRenderer.h
++++ b/src/gpu/ganesh/ops/AtlasPathRenderer.h
+@@ -117,12 +117,13 @@ private:
+     struct AtlasPathKey {
+         void set(const SkMatrix&, const SkPath&);
+         bool operator==(const AtlasPathKey& k) const {
+-            static_assert(sizeof(*this) == sizeof(uint32_t) * 8);
++            static_assert(sizeof(*this) == sizeof(uint32_t) * 10);
+             return !memcmp(this, &k, sizeof(*this));
+         }
+-        uint32_t fPathGenID;
++        uint64_t fPathGenID;
+         float fAffineMatrix[6];
+         uint32_t fFillRule;
++        uint32_t fPadding = 0;
+ 
+         using Hash = SkForceDirectHash<AtlasPathKey>;
+     };
+diff --git a/src/gpu/graphite/geom/Shape.cpp b/src/gpu/graphite/geom/Shape.cpp
+index 2465dcfb9fc92b678e67520e7b0e104d8514c147..83f68e96aada1d9d10cfc8d23b2b25dd874fbd45 100644
+--- a/src/gpu/graphite/geom/Shape.cpp
++++ b/src/gpu/graphite/geom/Shape.cpp
+@@ -209,7 +209,7 @@ uint16_t Shape::keySize() const {
+                 if (dataKeySize >= 0) {
+                     count += SkTo<uint16_t>(dataKeySize);
+                 } else {
+-                    count++; // Just adds the gen ID.
++                    count += sizeof(uint64_t) / sizeof(uint32_t); // Just adds the gen ID.
+                 }
+             }
+             break;
+@@ -243,7 +243,9 @@ void Shape::writeKey(uint32_t* key, bool includeInverted) const {
+                     write_path_key_from_data(this->path(), key);
+                     return;
+                 } else {
+-                    *key++ = this->path().getGenerationID();
++                    uint64_t genID = this->path().getGenerationID();
++                    memcpy(key, &genID, sizeof(uint64_t));
++                    key += sizeof(uint64_t) / sizeof(uint32_t);
+                 }
+             }
+             break;
+diff --git a/tests/GrStyledShapeTest.cpp b/tests/GrStyledShapeTest.cpp
+index fb1b36dc19e172ae5df63181948e4d75a4e3184b..fb80ce58509ef95ed17f15764de18633a550b00a 100644
+--- a/tests/GrStyledShapeTest.cpp
++++ b/tests/GrStyledShapeTest.cpp
+@@ -48,7 +48,7 @@
+ 
+ using namespace skia_private;
+ 
+-uint32_t GrStyledShape::testingOnly_getOriginalGenerationID() const {
++uint64_t GrStyledShape::testingOnly_getOriginalGenerationID() const {
+     if (const auto* lp = this->originalPathForListeners()) {
+         return lp->getGenerationID();
+     }
+@@ -260,13 +260,13 @@ static void check_original_path_ids(skiatest::Reporter* r, const GrStyledShape&
+ 
+     REPORTER_ASSERT(r, peStrokeIsPath == fullIsPath);
+ 
+-    uint32_t baseID = base.testingOnly_getOriginalGenerationID();
+-    uint32_t peID = pe.testingOnly_getOriginalGenerationID();
+-    uint32_t peStrokeID = peStroke.testingOnly_getOriginalGenerationID();
+-    uint32_t fullID = full.testingOnly_getOriginalGenerationID();
++    uint64_t baseID = base.testingOnly_getOriginalGenerationID();
++    uint64_t peID = pe.testingOnly_getOriginalGenerationID();
++    uint64_t peStrokeID = peStroke.testingOnly_getOriginalGenerationID();
++    uint64_t fullID = full.testingOnly_getOriginalGenerationID();
+ 
+     // All empty paths have the same gen ID
+-    uint32_t emptyID = SkPath().getGenerationID();
++    uint64_t emptyID = SkPath().getGenerationID();
+ 
+     // If we started with a real path, then our genID should match that path's gen ID (and not be
+     // empty). If we started with a simple shape or a volatile path, our original path should have
+diff --git a/tests/PathTest.cpp b/tests/PathTest.cpp
+index 6ae480a7d3d4571ecb1a947d3bdef22f120403e3..fa4bea414205f40de137e30d9dd191b32ba21a97 100644
+--- a/tests/PathTest.cpp
++++ b/tests/PathTest.cpp
+@@ -2776,8 +2776,8 @@ static void test_transform(skiatest::Reporter* reporter) {
+     {
+         SkPath p1 = SkPath::Rect({ 10, 20, 30, 40 });
+         SkPath p2 = SkPath::Rect({ 10, 20, 30, 40 });
+-        uint32_t id1 = p1.getGenerationID();
+-        uint32_t id2 = p2.getGenerationID();
++        uint64_t id1 = p1.getGenerationID();
++        uint64_t id2 = p2.getGenerationID();
+         REPORTER_ASSERT(reporter, id1 != id2);
+         SkMatrix matrix;
+         matrix.setScale(2, 2);

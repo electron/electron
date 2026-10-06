@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Linke <jgruber@chromium.org>
+Date: Thu, 17 Sep 2026 13:49:15 +0200
+Subject: [compiler] Don't assume a memory fence for generated-code feedback
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Feedback slots written by generated code are published with a plain
+store, so background reads of such values have to keep the
+IsPendingAllocation check.
+
+These incorrectly used MakeRefAssumeMemoryFence:
+
+ReadFeedbackForInstanceOf ic-callable.tq
+ReadFeedbackForArrayOrObjectLiteral CreateEmptyArrayLiteral, in CSA
+ReadFeedbackForTemplateObject internal.tq GetTemplateObject
+
+Use plain TryMakeRef instead.
+
+Fixed: 559780376
+Change-Id: I727e94cda8f858cc84a33309bab6962b9572a8c6
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8425682
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Reviewed-by: Marja Hölttä <marja@chromium.org>
+Auto-Submit: Jakob Linke <jgruber@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#109982}
+
+diff --git a/src/compiler/js-heap-broker.cc b/src/compiler/js-heap-broker.cc
+index c12f1bd4b85d12ceb4b3988064ba4414eec34a64..e4805c00db6f00d23580019934aed37e413601e3 100644
+--- a/src/compiler/js-heap-broker.cc
++++ b/src/compiler/js-heap-broker.cc
+@@ -681,7 +681,8 @@ ProcessedFeedback const& JSHeapBroker::ReadFeedbackForInstanceOf(
+         nexus.GetConstructorFeedback();
+     DirectHandle<JSObject> constructor;
+     if (maybe_constructor.ToHandle(&constructor)) {
+-      optional_constructor = MakeRefAssumeMemoryFence(this, *constructor);
++      // Written by generated code so this needs TryMakeRef.
++      optional_constructor = TryMakeRef(this, *constructor);
+     }
+   }
+   return *zone()->New<InstanceOfFeedback>(optional_constructor, nexus.kind());
+@@ -697,9 +698,11 @@ ProcessedFeedback const& JSHeapBroker::ReadFeedbackForArrayOrObjectLiteral(
+     return NewInsufficientFeedback(nexus.kind());
+   }
+ 
+-  AllocationSiteRef site =
+-      MakeRefAssumeMemoryFence(this, Cast<AllocationSite>(object));
+-  return *zone()->New<LiteralFeedback>(site, nexus.kind());
++  // Written by generated code so this needs TryMakeRef.
++  OptionalAllocationSiteRef site =
++      TryMakeRef(this, Cast<AllocationSite>(object));
++  if (!site.has_value()) return NewInsufficientFeedback(nexus.kind());
++  return *zone()->New<LiteralFeedback>(*site, nexus.kind());
+ }
+ 
+ ProcessedFeedback const& JSHeapBroker::ReadFeedbackForRegExpLiteral(
+@@ -727,8 +730,10 @@ ProcessedFeedback const& JSHeapBroker::ReadFeedbackForTemplateObject(
+     return NewInsufficientFeedback(nexus.kind());
+   }
+ 
+-  JSArrayRef array = MakeRefAssumeMemoryFence(this, Cast<JSArray>(object));
+-  return *zone()->New<TemplateObjectFeedback>(array, nexus.kind());
++  // Written by generated code so this needs TryMakeRef.
++  OptionalJSArrayRef array = TryMakeRef(this, Cast<JSArray>(object));
++  if (!array.has_value()) return NewInsufficientFeedback(nexus.kind());
++  return *zone()->New<TemplateObjectFeedback>(*array, nexus.kind());
+ }
+ 
+ ProcessedFeedback const& JSHeapBroker::ReadFeedbackForCall(
