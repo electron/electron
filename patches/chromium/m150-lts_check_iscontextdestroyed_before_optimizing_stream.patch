@@ -1,0 +1,68 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Wed, 30 Sep 2026 06:07:22 +0000
+Subject: [M150-LTS] Check IsContextDestroyed() before optimizing stream
+ transfer
+
+If a transferred `MediaStreamTrackProcessor.readable` stream is
+deserialized after the destination `ExecutionContext` has already been
+destroyed, `TransferredFrameQueueUnderlyingSource` never receives
+`ContextDestroyed()`, so `ClearTransferredSource()` never runs on the
+host `FrameQueueUnderlyingSource`. The host then continues forwarding
+frames to the destroyed worker's heap.
+
+Check `context->IsContextDestroyed()` in
+`FrameQueueTransferringOptimizer::PerformInProcessOptimization()` and
+bail out early instead of creating the transferred source.
+
+TAG=agy
+CONV=1b80eb30-30b9-4cf7-9c53-ec3723597325
+
+Fixed: 565742180
+Change-Id: I2850bc62ff38cbe12781f0c886e8b3f8bb94347b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8463165
+Reviewed-by: Guido Urdaneta <guidou@chromium.org>
+Commit-Queue: Thomas Guilbert <tguilbert@chromium.org>
+Auto-Submit: Thomas Guilbert <tguilbert@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1704944}
+(cherry picked from commit 8e3884cd029d8f453af29aeef5d92026b29989a8)
+
+Electron adaptation notes (42-x-y):
+  - The media_stream_track_processor_test.cc hunks are omitted: the M150
+    test file context (VideoStats and related tests) does not exist on M148
+    and Electron does not build blink_unittests.
+
+diff --git a/third_party/blink/renderer/modules/breakout_box/frame_queue_transferring_optimizer.cc b/third_party/blink/renderer/modules/breakout_box/frame_queue_transferring_optimizer.cc
+index 91ff4a3f3bd7b33ff9a969f3b6f5a43195db1fb2..93ebed162efb5bf77829a8d9c7124634c257298f 100644
+--- a/third_party/blink/renderer/modules/breakout_box/frame_queue_transferring_optimizer.cc
++++ b/third_party/blink/renderer/modules/breakout_box/frame_queue_transferring_optimizer.cc
+@@ -35,14 +35,25 @@ UnderlyingSourceBase*
+ FrameQueueTransferringOptimizer<NativeFrameType>::PerformInProcessOptimization(
+     ScriptState* script_state) {
+   ExecutionContext* context = ExecutionContext::From(script_state);
+-
+-  scoped_refptr<base::SingleThreadTaskRunner> current_runner =
+-      context->GetTaskRunner(TaskType::kInternalMediaRealTime);
+-
+   auto host = host_.Lock();
+   if (!host)
+     return nullptr;
+ 
++  // A source created on a destroyed context would never get
++  // `ContextDestroyed()`, so the host would keep forwarding frames to a dead
++  // heap. Treat this like a transferred source whose context was destroyed.
++  if (!context || context->IsContextDestroyed()) {
++    if (transferred_source_destroyed_callback_) {
++      std::move(transferred_source_destroyed_callback_).Run();
++    }
++    PostCrossThreadTask(
++        *host_runner_, FROM_HERE,
++        CrossThreadBindOnce(&FrameQueueHost::Close, std::move(host)));
++    return nullptr;
++  }
++  scoped_refptr<base::SingleThreadTaskRunner> current_runner =
++      context->GetTaskRunner(TaskType::kInternalMediaRealTime);
++
+   auto* source = MakeGarbageCollected<
+       TransferredFrameQueueUnderlyingSource<NativeFrameType>>(
+       script_state, host, host_runner_,
