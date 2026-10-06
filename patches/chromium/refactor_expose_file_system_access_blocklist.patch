@@ -348,7 +348,7 @@ index 105cf4affe19e52111d378adf060b40fa6e2e84e..7832816e89a4f1be1b87498d778cd628
  
  std::vector<FileRequestData> ChromeFileSystemAccessPermissionContext::
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 05ee182cf840bc925697a2bfa3d1c281579296c4..c778d2f6fca68cd6cc3ee6baef61e508bbbd6c83 100644
+index 05ee182cf840bc925697a2bfa3d1c281579296c4..9208b95a94135aeba5f7c3cd530e7e5547a6d698 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -10,10 +10,13 @@
@@ -373,7 +373,7 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..c778d2f6fca68cd6cc3ee6baef61e508
  #include "components/enterprise/buildflags/buildflags.h"
  #include "components/permissions/features.h"
  #include "components/permissions/object_permission_context_base.h"
-@@ -470,6 +474,222 @@ class ChromeFileSystemAccessPermissionContext
+@@ -470,6 +474,270 @@ class ChromeFileSystemAccessPermissionContext
    bool IsPathInDowngradedReadPathsForTesting(const url::Origin& origin,
                                               const base::FilePath& path) const;
  
@@ -403,6 +403,50 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..c778d2f6fca68cd6cc3ee6baef61e508
 +      return absolute_path;
 +    }
 +    CHECK_EQ(path.empty(), normalized_path.empty());
++    return normalized_path;
++  }
++
++#if BUILDFLAG(IS_MAC)
++  // Returns a file path with the "/System/Volumes/Data" firmlink prefix
++  // stripped, mapping paths on the macOS Data volume back to the root "/"
++  // namespace.
++  //
++  // On macOS 10.15+, storage is split into a read-only System volume mounted at
++  // "/" and a read-write Data volume mounted at "/System/Volumes/Data". APFS
++  // firmlinks map system directories (e.g., "/Users", "/Applications",
++  // "/Library") between the two volumes without modifying standard POSIX
++  // `realpath` representations. Stripping this prefix allows blocklist rules
++  // defined against root-relative paths to match targets accessed through the
++  // Data volume firmlink path.
++  static base::FilePath MaybeStripMacDataVolumePrefix(
++      const base::FilePath& path) {
++    static constexpr base::FilePath::CharType kDataVolumePrefix[] =
++        FILE_PATH_LITERAL("/System/Volumes/Data");
++    base::FilePath data_volume_prefix(kDataVolumePrefix);
++    if (path == data_volume_prefix) {
++      return base::FilePath(FILE_PATH_LITERAL("/"));
++    }
++    base::FilePath stripped_path(FILE_PATH_LITERAL("/"));
++    if (data_volume_prefix.AppendRelativePath(path, &stripped_path)) {
++      return stripped_path;
++    }
++    return path;
++  }
++#endif
++
++  // Normalizes `path` for sensitive directory blocklist checking. Resolves
++  // symbolic links and canonicalizes the path when `should_normalize_file_path`
++  // is true. On macOS, additionally strips the "/System/Volumes/Data" firmlink
++  // prefix so paths on the Data volume map onto the root "/" blocklist
++  // namespace.
++  static base::FilePath NormalizeFilePathForBlocklist(
++      const base::FilePath& path,
++      bool should_normalize_file_path) {
++    base::FilePath normalized_path =
++        should_normalize_file_path ? NormalizeFilePath(path) : path;
++#if BUILDFLAG(IS_MAC)
++    normalized_path = MaybeStripMacDataVolumePrefix(normalized_path);
++#endif
 +    return normalized_path;
 +  }
 +
@@ -470,6 +514,10 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..c778d2f6fca68cd6cc3ee6baef61e508
 +  #endif
 +  #if BUILDFLAG(IS_MAC)
 +        // Similar Mac specific blocks.
++        // Block access to /System/Volumes (internal system and container
++        // volumes).
++        BlockPath::CreateAbsolute(FILE_PATH_LITERAL("/System/Volumes"),
++                                  BlockType::kBlockAllChildren),
 +        BlockPath::CreateRelative(base::DIR_APP_DATA,
 +                                  BlockType::kBlockAllChildren),
 +        // Block access to the current bundle directory.
@@ -586,7 +634,7 @@ index 05ee182cf840bc925697a2bfa3d1c281579296c4..c778d2f6fca68cd6cc3ee6baef61e508
 +      }
 +
 +      block_path_rules->block_path_rules_.emplace_back(
-+          should_normalize_file_path ? NormalizeFilePath(path) : path,
++          NormalizeFilePathForBlocklist(path, should_normalize_file_path),
 +          blocked_path.block_type);
 +    }
 +
