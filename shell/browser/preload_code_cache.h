@@ -35,7 +35,9 @@ std::string IdForWebPreferencesPreload(const base::FilePath& path);
 // origin keying, sandboxing, guest and cross-origin-isolation status,
 // storage partition). Entries are only ever served back within an equal
 // scope, so a blob produced by one principal's renderer is never handed to
-// another. |dir| is empty for off-the-record contexts (memory tier only).
+// another. Scope is the security boundary for cached blobs; see the note in
+// SetFromRenderer(). |dir| is empty for off-the-record contexts (memory tier
+// only).
 struct Scope {
   Scope();
   Scope(const Scope&);
