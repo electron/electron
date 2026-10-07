@@ -50,6 +50,9 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
   // DLLs listed there (HKCU or HKLM). Call once from the browser process
   // before crashpad is initialized; may block.
   static void RegisterWerHelperModuleForCurrentUser();
+
+  // Removes this helper's HKCU value; true if removed or already absent.
+  static bool UnregisterWerHelperModuleForCurrentUser();
 #endif
 
 #if BUILDFLAG(IS_WIN)

@@ -142,6 +142,37 @@ function waitForNewFileInDir(dir: string): Promise<string[]> {
 }
 
 ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashReporter module', function () {
+  describe('cleanup()', () => {
+    const key = 'HKCU\\Software\\Microsoft\\Windows\\Windows Error Reporting\\RuntimeExceptionHelperModules';
+    const helper = path.join(path.dirname(process.execPath), `${path.basename(process.execPath, '.exe')}_wer.dll`);
+    const reg = (...args: string[]) => childProcess.spawnSync('reg.exe', args, { encoding: 'utf8' });
+
+    ifit(process.platform === 'win32')('removes only the current helper registry value', async () => {
+      const previous = reg('query', key, '/v', helper);
+      const previousData = previous.stdout.match(/REG_DWORD\s+(0x[0-9a-f]+)/i)?.[1];
+      if (previous.status === 0) expect(previousData).to.be.a('string');
+      defer(() => {
+        const restored = previousData
+          ? reg('add', key, '/v', helper, '/t', 'REG_DWORD', '/d', previousData, '/f')
+          : reg('delete', key, '/v', helper, '/f');
+        if (previousData) expect(restored.status, restored.stderr).to.equal(0);
+      });
+
+      const otherHelper = path.join(os.tmpdir(), randomUUID(), path.basename(helper));
+      const added = reg('add', key, '/v', helper, '/t', 'REG_DWORD', '/d', '0', '/f');
+      expect(added.status, added.stderr).to.equal(0);
+      const otherAdded = reg('add', key, '/v', otherHelper, '/t', 'REG_DWORD', '/d', '0', '/f');
+      expect(otherAdded.status, otherAdded.stderr).to.equal(0);
+      defer(() => reg('delete', key, '/v', otherHelper, '/f'));
+
+      const { remotely } = await startRemoteControlApp();
+      expect(await remotely(() => require('electron').crashReporter.cleanup())).to.be.true();
+      expect(reg('query', key, '/v', helper).status).to.equal(1);
+      expect(reg('query', key, '/v', otherHelper).status).to.equal(0);
+      expect(await remotely(() => require('electron').crashReporter.cleanup())).to.be.true();
+    });
+  });
+
   describe('should send minidump', () => {
     it('when renderer crashes', async () => {
       const { port, waitForCrash } = await startServer();

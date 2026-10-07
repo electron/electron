@@ -54,7 +54,7 @@ Electron process. The helper is looked up as `<executable name>_wer.dll` next
 to the executable, so if you rename `electron.exe` to `myapp.exe` when
 packaging, rename `electron_wer.dll` to `myapp_wer.dll` as well. Installers
 that write to `HKEY_LOCAL_MACHINE` may list it there instead. To opt out, do
-not ship the DLL.
+not ship the DLL. Call [`cleanup()`](#crashreportercleanup) during uninstall.
 
 ## Methods
 
@@ -113,9 +113,9 @@ changes:
     well as the Electron version. Global extra parameters are not returned by
     [`getParameters()`](#crashreportergetparameters).
 
-This method must be called before using any other `crashReporter` APIs. Once
-initialized this way, the crashpad handler collects crashes from all
-subsequently created processes. The crash reporter cannot be disabled once
+This method must be called before using any other `crashReporter` APIs, except
+`cleanup()`. Once initialized this way, the crashpad handler collects crashes from
+all subsequently created processes. The crash reporter cannot be disabled once
 started.
 
 This method should be called as early as possible in app startup, preferably
@@ -137,6 +137,21 @@ by the crash reporter.
 > names must be at most 39 bytes long, and values must be no longer than 20320
 > bytes. Keys with names longer than the maximum are ignored, and a warning is
 > emitted. Values longer than the maximum length are truncated.
+
+> [!NOTE]
+> This method is only available in the main process.
+
+### `crashReporter.cleanup()`
+
+Returns `boolean` - `true` if the registration was removed or already absent;
+`false` if cleanup failed.
+
+Call this method during uninstall.
+
+On Windows, removes the current WER helper registration created by `start()`.
+
+On other platforms, does nothing and returns `true`. This method does not stop
+the crash reporter or delete crash reports.
 
 > [!NOTE]
 > This method is only available in the main process.
