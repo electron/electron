@@ -14,7 +14,7 @@ import { ifdescribe, ifit, listen } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('shell module', () => {
-  describe('shell.openExternal()', () => {
+  describe('shell.openExternal()', { tags: ['serial'] }, () => {
     let envVars: Record<string, string | undefined> = {};
     let server: http.Server;
 
