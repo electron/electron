@@ -613,7 +613,7 @@ describe('session module', () => {
         | 'clearSharedDictionaryCache'
         | 'clearSharedDictionaryCacheForIsolationKey'
     ) => {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         let output = '';
 
         const appProcess = ChildProcess.spawn(process.execPath, [appPath, command]);
@@ -628,7 +628,7 @@ describe('session module', () => {
             resolve(JSON.parse(trimmedOutput));
           } catch (e) {
             console.error(`Error trying to deserialize ${trimmedOutput}`);
-            throw e;
+            reject(e);
           }
         });
       });
