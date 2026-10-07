@@ -37,22 +37,18 @@ def get_tree_diff(repo, before, after):
 
 
 def get_ref_inputs(repo):
-  """Return paths whose modification can change HEAD, including packed refs."""
+  """Track HEAD; commits on a branch are tracked through exported patches."""
   repo = Path(repo).resolve()
-  inputs = set()
-  git_paths = ['HEAD', 'packed-refs']
-  symbolic = run_git(repo, 'rev-parse', '--symbolic-full-name', 'HEAD').decode().strip()
-  if symbolic != 'HEAD':
-    git_paths.append(symbolic)
-  for name in git_paths:
-    path = Path(run_git(repo, 'rev-parse', '--git-path', name).decode().strip())
-    if not path.is_absolute():
-      path = repo / path
-    # A packed branch can acquire a loose ref without changing packed-refs.
-    while not path.exists():
-      path = path.parent
-    inputs.add(path.resolve())
-  return inputs
+  ref_format = run_git(repo, 'rev-parse', '--show-ref-format').decode().strip()
+  # Git before 2.45 echoes this unknown option and predates reftable support.
+  if ref_format not in ('files', '--show-ref-format'):
+    raise ValueError(
+        f'Unsupported V8 Git ref storage {ref_format!r} in {repo}; '
+        'use a checkout with files-based refs for automatic GN regeneration')
+  path = Path(run_git(repo, 'rev-parse', '--git-path', 'HEAD').decode().strip())
+  if not path.is_absolute():
+    path = repo / path
+  return {path.resolve()}
 
 
 def pinned_revision(deps):
@@ -92,11 +88,18 @@ def patch_provenance(inputs):
   return digest.hexdigest()
 
 
-def repository_fingerprint(base):
-  run_git(V8_ROOT, 'merge-base', '--is-ancestor', base, 'HEAD')
-  head_tree = run_git(V8_ROOT, 'rev-parse', '--verify', 'HEAD^{tree}').decode().strip()
-  changes = get_tree_diff(V8_ROOT, base, head_tree)
-  object_format = run_git(V8_ROOT, 'rev-parse', '--show-object-format').decode().strip()
+def repository_fingerprint(repo, base):
+  try:
+    run_git(repo, 'merge-base', '--is-ancestor', base, 'HEAD')
+  except subprocess.CalledProcessError as error:
+    detail = ('does not contain' if error.returncode == 1 else
+              'could not be checked against')
+    raise ValueError(
+        f'V8 HEAD in {repo} {detail} Chromium\'s pinned revision {base}; '
+        're-sync the checkout and check any v8_revision custom override') from error
+  head_tree = run_git(repo, 'rev-parse', '--verify', 'HEAD^{tree}').decode().strip()
+  changes = get_tree_diff(repo, base, head_tree)
+  object_format = run_git(repo, 'rev-parse', '--show-object-format').decode().strip()
   return hash_changes(object_format, changes)
 
 
@@ -133,7 +136,7 @@ def main():
   if args.write_ci_cache:
     if not has_git:
       parser.error('--write-ci-cache requires a synced V8 Git checkout')
-    fingerprint = repository_fingerprint(base)
+    fingerprint = repository_fingerprint(V8_ROOT, base)
     metadata = {
         'schema': SCHEMA,
         'base_revision': base,
@@ -146,15 +149,14 @@ def main():
     print(fingerprint)
     return
 
-  cache_inputs = [] if has_git else patch_inputs()
-  fingerprint = None if has_git else cached_fingerprint(base, cache_inputs)
+  series_inputs = patch_inputs()
+  fingerprint = None if has_git else cached_fingerprint(base, series_inputs)
   if args.inputs:
-    inputs = get_ref_inputs(V8_ROOT) if has_git else {
-        CACHE_METADATA, *cache_inputs}
-    inputs.add(V8_ROOT.parent / 'DEPS')
+    inputs = get_ref_inputs(V8_ROOT) if has_git else {CACHE_METADATA}
+    inputs.update([V8_ROOT.parent / 'DEPS', *series_inputs])
     print(json.dumps(sorted(str(path).replace('\\', '/') for path in inputs)))
   else:
-    print(repository_fingerprint(base) if has_git else fingerprint)
+    print(repository_fingerprint(V8_ROOT, base) if has_git else fingerprint)
 
 
 if __name__ == '__main__':
