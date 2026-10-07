@@ -47,7 +47,7 @@
 #endif
 
 #if DCHECK_IS_ON()
-#include "shell/common/v8_code_cache_test_helpers.h"
+#include "shell/common/v8_code_cache_test_helpers.h"  // nogncheck
 
 namespace {
 
