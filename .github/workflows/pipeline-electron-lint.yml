@@ -97,6 +97,11 @@ jobs:
         cd src/electron
         node script/yarn.js install --immutable
         node script/yarn.js lint
+    - name: Run V8 Fingerprint Tests
+      shell: bash
+      run: |
+        cd src/electron
+        python3 script/v8-patch-fingerprint-test.py
     - name: Run Script Typechecker
       shell: bash
       run: |
