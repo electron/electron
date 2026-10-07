@@ -10,7 +10,7 @@ import * as url from 'node:url';
 
 import { emittedNTimes } from './lib/events-helpers.ts';
 import { containsText, readPDF } from './lib/pdf-helpers.ts';
-import { defer, ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers.ts';
+import { defer, ifdescribe, listen, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 const features = process._linkedBinding('electron_common_features');
