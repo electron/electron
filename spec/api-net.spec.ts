@@ -10,7 +10,7 @@ import {
 
 import { expect } from 'chai';
 
-import { once } from 'node:events';
+import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as http2 from 'node:http2';
@@ -30,26 +30,12 @@ import {
   respondOnce
 } from './lib/net-helpers.ts';
 import { listen, defer, ifdescribe, isTestingBindingAvailable } from './lib/spec-helpers.ts';
+import { runInUtilityProcess, waitForUtilityResult } from './lib/utility-process-helpers.ts';
 
-const utilityFixturePath = path.resolve(import.meta.dirname, 'fixtures', 'api', 'utility-process', 'api-net-spec.js');
 const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
 async function itUtility(name: string, fn?: Function, args?: { [key: string]: any }) {
-  it(`${name} in utility process`, async () => {
-    const child = utilityProcess.fork(utilityFixturePath, [], {
-      execArgv: ['--expose-gc']
-    });
-    if (fn) {
-      child.postMessage({ fn: `(${fn})()`, args });
-    } else {
-      child.postMessage({ fn: '(() => {})()', args });
-    }
-    const [data] = await once(child, 'message');
-    expect(data.ok).to.be.true(data.message);
-    // Cleanup.
-    const [code] = await once(child, 'exit');
-    expect(code).to.equal(0);
-  });
+  it(`${name} in utility process`, () => runInUtilityProcess(fn, args));
 }
 
 // oxlint-disable-next-line @typescript-eslint/no-unused-vars
@@ -102,6 +88,23 @@ describe('net module', () => {
 
   after(() => {
     h2server.close();
+  });
+
+  describe('utility process result helper', () => {
+    it('sees an exit that is emitted right after the result', async () => {
+      const child = new EventEmitter();
+      const result = waitForUtilityResult(child);
+      child.emit('message', { ok: true });
+      child.emit('exit', 0);
+      expect(await result).to.deep.equal({ data: { ok: true }, code: 0 });
+    });
+
+    it('fails without waiting for the timeout when the child exits before posting a result', async () => {
+      const child = new EventEmitter();
+      const result = waitForUtilityResult(child);
+      child.emit('exit', 1);
+      await expect(result).to.be.rejectedWith('utility process exited (1) before posting a result');
+    });
   });
 
   for (const test of [itIgnoringArgs, itUtility]) {
