@@ -11,23 +11,28 @@ v8_promise_internal_field_count = 1
 
 # Args are evaluated before GN installs its script interpreter. Invoke the
 # hermetic Python executable directly to generate the ordinary V8 argument.
-_v8_fingerprint_python = "//third_party/cpython3/host/bin/python3"
-if (getenv("OS") == "Windows_NT") {
-  _v8_fingerprint_python += ".exe"
+_v8_embedder_override = getenv("ELECTRON_V8_EMBEDDER_STRING")
+if (_v8_embedder_override != "") {
+  v8_embedder_string = _v8_embedder_override
+} else {
+  _v8_fingerprint_python = "//third_party/cpython3/host/bin/python3"
+  if (getenv("OS") == "Windows_NT") {
+    _v8_fingerprint_python += ".exe"
+  }
+  _v8_fingerprint_script = "//electron/script/v8-patch-fingerprint.py"
+  _v8_fingerprint_inputs = exec_script(_v8_fingerprint_python,
+                                       [
+                                         rebase_path(_v8_fingerprint_script),
+                                         "--inputs",
+                                       ],
+                                       "json",
+                                       [ _v8_fingerprint_script ])
+  v8_embedder_string =
+      exec_script(_v8_fingerprint_python,
+                  [ rebase_path(_v8_fingerprint_script) ],
+                  "trim string",
+                  _v8_fingerprint_inputs + [ _v8_fingerprint_script ])
 }
-_v8_fingerprint_script = "//electron/script/v8-patch-fingerprint.py"
-_v8_fingerprint_inputs = exec_script(_v8_fingerprint_python,
-                                     [
-                                       rebase_path(_v8_fingerprint_script),
-                                       "--inputs",
-                                     ],
-                                     "json",
-                                     [ _v8_fingerprint_script ])
-v8_embedder_string =
-    exec_script(_v8_fingerprint_python,
-                [ rebase_path(_v8_fingerprint_script) ],
-                "trim string",
-                _v8_fingerprint_inputs + [ _v8_fingerprint_script ])
 
 # TODO: this breaks mksnapshot
 v8_enable_snapshot_native_code_counters = false

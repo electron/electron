@@ -1,8 +1,9 @@
 import { expect } from 'chai';
 
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { ifdescribe, isTestingBindingAvailable, startRemoteControlApp } from './lib/spec-helpers.ts';
+import { ifdescribe, ifit, isTestingBindingAvailable, startRemoteControlApp } from './lib/spec-helpers.ts';
 
 interface CacheResult {
   matchingAccepted: boolean;
@@ -40,21 +41,24 @@ describe('V8 patch code cache compatibility', () => {
       });
     });
 
-    it('rejects serialized WebAssembly from a different patch fingerprint and falls back safely', async () => {
-      const { remotely } = await startRemoteControlApp(['--js-flags=--no-liftoff --no-wasm-lazy-compilation']);
-      const result: CacheResult = await remotely(
-        (file: string, helper: string) => require(file).webassembly(helper),
-        fixture,
-        builder
-      );
-      expect(result).to.deep.equal({
-        matchingAccepted: true,
-        matchingValue: 1,
-        foreignAccepted: false,
-        foreignValue: 1,
-        rebuiltAccepted: true,
-        rebuiltValue: 1
-      });
-    });
+    ifit(fs.existsSync(builder))(
+      'rejects serialized WebAssembly from a different patch fingerprint and falls back safely',
+      async () => {
+        const { remotely } = await startRemoteControlApp(['--js-flags=--no-liftoff --no-wasm-lazy-compilation']);
+        const result: CacheResult = await remotely(
+          (file: string, helper: string) => require(file).webassembly(helper),
+          fixture,
+          builder
+        );
+        expect(result).to.deep.equal({
+          matchingAccepted: true,
+          matchingValue: 1,
+          foreignAccepted: false,
+          foreignValue: 1,
+          rebuiltAccepted: true,
+          rebuiltValue: 1
+        });
+      }
+    );
   });
 });

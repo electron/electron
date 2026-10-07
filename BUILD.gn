@@ -591,6 +591,10 @@ source_set("electron_lib") {
     "//v8:v8_libplatform",
   ]
 
+  if (is_debug || dcheck_always_on) {
+    deps += [ "shell/common:v8_code_cache_test_helpers" ]
+  }
+
   if (v8_use_external_startup_data && use_v8_context_snapshot &&
       current_toolchain == default_toolchain) {
     deps += [ ":mksnapshot_checksum_gen" ]
