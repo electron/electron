@@ -10,7 +10,7 @@ import * as url from 'node:url';
 
 import { emittedNTimes } from './lib/events-helpers.ts';
 import { containsText, readPDF } from './lib/pdf-helpers.ts';
-import { defer, ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers.ts';
+import { defer, ifdescribe, listen, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 const features = process._linkedBinding('electron_common_features');
@@ -309,14 +309,13 @@ describe('webFrameMain module', () => {
     });
     afterEach(closeAllWindows);
 
-    // TODO(jkleinsc) fix this flaky test on linux
-    ifit(process.platform !== 'linux')('throws upon accessing properties when disposed', async () => {
+    it('throws upon accessing properties when disposed', async () => {
       await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
       const { mainFrame } = w.webContents;
       w.destroy();
       // Wait for WebContents, and thus RenderFrameHost, to be destroyed.
-      await setTimeout();
-      expect(() => mainFrame.url).to.throw();
+      await waitUntil(() => mainFrame.isDestroyed());
+      expect(() => mainFrame.url).to.throw(/Render frame was disposed/);
     });
 
     it('persists through cross-origin navigation', async () => {
