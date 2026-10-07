@@ -39,7 +39,7 @@
 #include "shell/common/gin_helper/function_template_cache.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/v8_code_cache_test_helpers.h"
+#include "shell/common/v8_code_cache_test_helpers.h"  // nogncheck
 #include "ui/accessibility/platform/ax_platform.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
