@@ -30,6 +30,24 @@ update process. Apps that need to disable ATS can add the
 > Your application must be [signed](../tutorial/code-signing.md#macos-apis-that-require-code-signing)
 > for automatic updates on macOS. This is a requirement of `Squirrel.Mac`.
 
+The update ZIP is streamed to disk rather than held in memory. When the server
+answers with an `ETag` or `Last-Modified` header and honours `Range` requests,
+a download interrupted by a network change, sleep or the app quitting continues
+from where it stopped on the next update check, including after a relaunch;
+otherwise it starts over. An update entry (the update server's response, or an
+`updateTo` object in a `serverType: 'json'` feed) may declare `sha256` (hex
+digest) and `size` (bytes) alongside `url`; a download that does not match
+them is discarded before it is unpacked and `error` is emitted.
+
+An update entry may also carry `delta`, an object with `from_version`, `url`,
+`sha256` and `size`, offering a binary patch from one earlier build. When
+`from_version` equals the running app's `CFBundleVersion`, that patch is
+downloaded instead of the ZIP, applied to a copy of the running app, and the
+result goes through the same code signing verification as an unpacked ZIP; on
+any failure the ZIP is downloaded in the same check. Patches are made with
+[Sparkle](https://sparkle-project.org)'s `BinaryDelta create` from the exact
+bundles that shipped; see Squirrel.Mac's README for the constraints.
+
 ### Windows
 
 On Windows, the `autoUpdater` module automatically selects the appropriate update mechanism
