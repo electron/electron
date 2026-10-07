@@ -230,7 +230,9 @@ describe('WebContentsView', () => {
     });
   });
 
-  it('does not crash when closed via window.close()', async () => {
+  // Waits for 'blur', which needs the view to have had focus; a window that
+  // isn't active doesn't give its new contents initial focus.
+  it('does not crash when closed via window.close()', { tags: ['serial'] }, async () => {
     const bw = new BrowserWindow();
     const wcv = new WebContentsView();
     const wc = wcv.webContents;
