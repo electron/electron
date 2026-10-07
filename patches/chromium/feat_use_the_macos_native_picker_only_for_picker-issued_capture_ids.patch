@@ -1,0 +1,84 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: George Xu <george.xu@slack-corp.com>
+Date: Mon, 28 Sep 2026 21:16:10 -0700
+Subject: feat: use the macOS native picker only for picker-issued capture ids
+
+Electron opens Chromium's NativeScreenCapturePickerMac for
+session.setDisplayMediaRequestHandler's useSystemPicker option through
+content::desktop_capture::OpenNativeScreenCapturePicker.
+
+Upstream only creates the picker when kUseSCContentSharingPicker is on,
+and that feature also assumes every macOS desktop capture belongs to the
+picker: getSources() thumbnails switch to DelegatedSourceListCapturer, any
+id the picker did not issue fails with "missing authorized filter", and
+stopping any capture device closes the picker session with the same id.
+Electron apps still capture getSources() ids through getDisplayMedia() and
+the legacy chromeMediaSource: 'desktop' constraint, so the feature can't
+be turned on.
+
+Instead, always create the picker on macOS, and only hand ids tagged
+IdType::kNativePickerSession (serialized with a ":s" suffix) to it, both
+when starting a capture device and when closing one. Every other id keeps
+the regular ScreenCaptureKit path. Chrome's own picker flow always tags
+its ids, so its behavior is unchanged; ids it did not issue now capture
+normally instead of failing, which would be the argument for upstreaming.
+
+diff --git a/content/browser/media/capture/native_screen_capture_picker.cc b/content/browser/media/capture/native_screen_capture_picker.cc
+index 152f3aa78032ee3f8c48fbefe052a2f1d85bed6b..c9155f67d1c78bbc17b64fdeb4c7775dc7c4d254 100644
+--- a/content/browser/media/capture/native_screen_capture_picker.cc
++++ b/content/browser/media/capture/native_screen_capture_picker.cc
+@@ -6,7 +6,6 @@
+ 
+ #if BUILDFLAG(IS_MAC)
+ #include "content/browser/media/capture/native_screen_capture_picker_mac.h"
+-#include "media/base/media_switches.h"
+ #endif
+ 
+ namespace content {
+@@ -14,11 +13,10 @@ namespace content {
+ std::unique_ptr<NativeScreenCapturePicker>
+ MaybeCreateNativeScreenCapturePicker() {
+ #if BUILDFLAG(IS_MAC)
+-  if (base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker)) {
+-    return CreateNativeScreenCapturePickerMac();
+-  }
+-#endif
++  return CreateNativeScreenCapturePickerMac();
++#else
+   return nullptr;
++#endif
+ }
+ 
+ }  // namespace content
+diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
+index 2b7decc56a4d72d7ef8af48056e08e4d562fddec..599cd151c19d33dde71a8d632b0b8d590e34d0c0 100644
+--- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
++++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
+@@ -184,7 +184,8 @@ DesktopCaptureImplementation CreatePlatformDependentVideoCaptureDevice(
+ #if BUILDFLAG(IS_MAC)
+   // Use ScreenCaptureKit with picker if specified. `desktop_id` for the picker
+   // is not compatible with the other implementations.
+-  if (picker) {
++  if (picker &&
++      desktop_id.id_type == DesktopMediaID::IdType::kNativePickerSession) {
+     device_out = picker->CreateDevice(desktop_id);
+     if (device_out) {
+       return kNativeMacOSPickerCaptureDevice;
+diff --git a/content/browser/renderer_host/media/video_capture_manager.cc b/content/browser/renderer_host/media/video_capture_manager.cc
+index a9c53964a931f19889d60f0c5f3b3a9919acd3e7..902e95264549b2005ffe6ef32a0a29aaa2026bc6 100644
+--- a/content/browser/renderer_host/media/video_capture_manager.cc
++++ b/content/browser/renderer_host/media/video_capture_manager.cc
+@@ -939,8 +939,11 @@ void VideoCaptureManager::DestroyControllerIfNoClients(
+ 
+     // Close the native OS picker as the associated VideoCaptureDevice is being
+     // closed.
+-    CloseNativeScreenCapturePicker(
+-        DesktopMediaID::Parse(controller->device_id()));
++    const DesktopMediaID desktop_id =
++        DesktopMediaID::Parse(controller->device_id());
++    if (desktop_id.id_type == DesktopMediaID::IdType::kNativePickerSession) {
++      CloseNativeScreenCapturePicker(desktop_id);
++    }
+ 
+     // The VideoCaptureController is removed from |controllers_| immediately.
+     // The controller is deleted immediately, and the device is freed

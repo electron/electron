@@ -13,12 +13,14 @@
 #include "base/command_line.h"
 #include "base/containers/to_vector.h"
 #include "base/files/file_path.h"
+#include "base/memory/ref_counted_delete_on_sequence.h"
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/strings/escape.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
+#include "base/task/bind_post_task.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/pref_names.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
@@ -33,17 +35,21 @@
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cors_origin_pattern_setter.h"
+#include "content/public/browser/desktop_capture.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/page.h"
 #include "content/public/browser/preconnect_manager.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/storage_partition.h"
+#include "content/public/browser/weak_document_ptr.h"
 #include "content/public/browser/web_contents_media_capture_id.h"
 #include "gin/arguments.h"
 #include "media/audio/audio_device_description.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/originating_process_id.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
+#include "shell/browser/api/electron_api_desktop_capturer.h"
 #include "shell/browser/cookie_change_notifier.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_main_parts.h"
@@ -726,9 +732,163 @@ void ElectronBrowserContext::SetSSLConfigClient(
 }
 
 void ElectronBrowserContext::SetDisplayMediaRequestHandler(
-    DisplayMediaRequestHandler handler) {
+    DisplayMediaRequestHandler handler,
+    bool use_system_picker) {
   display_media_request_handler_ = handler;
+  use_system_picker_ = use_system_picker;
 }
+
+namespace {
+
+content::DesktopMediaID::Type PickerTypeForRequest(
+    const content::MediaStreamRequest& request) {
+  // Upstream's NativeScreenCapturePickerMac requires exactly TYPE_SCREEN XOR
+  // TYPE_WINDOW. Use the request's `preferred_display_surface` when it maps
+  // cleanly; default to TYPE_SCREEN otherwise.
+  switch (request.preferred_display_surface) {
+    case blink::mojom::PreferredDisplaySurface::WINDOW:
+      return content::DesktopMediaID::TYPE_WINDOW;
+    case blink::mojom::PreferredDisplaySurface::MONITOR:
+    case blink::mojom::PreferredDisplaySurface::NO_PREFERENCE:
+    case blink::mojom::PreferredDisplaySurface::BROWSER:
+      return content::DesktopMediaID::TYPE_SCREEN;
+  }
+}
+
+class SystemPickerRequest;
+
+// The native picker is process-wide and tracks one pending selection at a
+// time: opening it again drops the previous request's callbacks.
+SystemPickerRequest* g_pending_system_picker_request = nullptr;
+
+void CloseSystemPickerSession(content::DesktopMediaID::Type type,
+                              content::DesktopMediaID::Id session_id) {
+  content::DesktopMediaID id(type, session_id);
+  id.id_type = content::DesktopMediaID::IdType::kNativePickerSession;
+  content::GetIOThreadTaskRunner({})->PostTask(
+      FROM_HERE,
+      base::BindOnce(&content::desktop_capture::CloseNativeScreenCapturePicker,
+                     id));
+}
+
+// State for one getDisplayMedia() request answered by the system picker.
+// Exactly one of the picker/cancel/error callbacks consumes `callback`; if
+// none does (e.g. the picker went away), the destructor fails the request.
+class SystemPickerRequest
+    : public base::RefCountedDeleteOnSequence<SystemPickerRequest> {
+ public:
+  SystemPickerRequest(const content::MediaStreamRequest& request,
+                      content::DesktopMediaID::Type type,
+                      content::MediaResponseCallback callback)
+      : base::RefCountedDeleteOnSequence<SystemPickerRequest>(
+            content::GetUIThreadTaskRunner({})),
+        request_(request),
+        type_(type),
+        callback_(std::move(callback)) {
+    if (auto* rfh = content::RenderFrameHost::FromID(request.render_process_id,
+                                                     request.render_frame_id))
+      document_ = rfh->GetWeakDocumentPtr();
+  }
+
+  void OnCreated(content::DesktopMediaID::Id session_id) {
+    session_id_ = session_id;
+  }
+
+  void OnSelected(webrtc::DesktopCapturer::Source source) {
+    if (!callback_)
+      return;
+    if (!document_.AsRenderFrameHostIfValid()) {
+      Fail(
+          blink::mojom::MediaStreamRequestResult::FAILED_DUE_TO_SHUTDOWN_OTHER);
+      return;
+    }
+    content::DesktopMediaID media_id(type_, source.id);
+    // Serializes with a ":s" suffix so the capture launcher hands the id back
+    // to the native picker instead of treating it as a CGWindowID/display id.
+    media_id.id_type = content::DesktopMediaID::IdType::kNativePickerSession;
+    blink::MediaStreamDevice video_device(request_.video_type,
+                                          media_id.ToString(), "Screen");
+    video_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
+        nullptr, url::Origin::Create(request_.security_origin), media_id);
+
+    blink::mojom::StreamDevicesSet stream_devices_set;
+    stream_devices_set.stream_devices.emplace_back(
+        blink::mojom::StreamDevices::New());
+    stream_devices_set.stream_devices[0]->video_device = video_device;
+    if (GrantsSystemAudio()) {
+      // Same loopback device Chrome picks for a system-audio share
+      // (GetAudioDeviceId in desktop_capture_devices_util.cc).
+      std::string audio_id =
+          request_.restrict_own_audio
+              ? media::AudioDeviceDescription::kLoopbackWithoutChromeId
+          : request_.suppress_local_audio_playback
+              ? media::AudioDeviceDescription::kLoopbackWithMuteDeviceId
+              : media::AudioDeviceDescription::kLoopbackInputDeviceId;
+      blink::MediaStreamDevice audio_device(request_.audio_type, audio_id,
+                                            "System audio");
+      audio_device.display_media_info = video_device.display_media_info.Clone();
+      stream_devices_set.stream_devices[0]->audio_device = audio_device;
+    }
+    ClearPending();
+    std::move(callback_).Run(stream_devices_set,
+                             blink::mojom::MediaStreamRequestResult::OK,
+                             nullptr);
+  }
+
+  // Chrome's GetWindowCaptureAudioType, minus per-app "window" audio: that
+  // needs the window's pid, which the picker doesn't expose.
+  bool GrantsSystemAudio() const {
+    if (request_.audio_type == blink::mojom::MediaStreamType::NO_SERVICE)
+      return false;
+    if (type_ == content::DesktopMediaID::TYPE_SCREEN)
+      return !request_.exclude_system_audio;
+    return request_.window_audio_preference ==
+           blink::mojom::WindowAudioPreference::kSystem;
+  }
+
+  void Fail(blink::mojom::MediaStreamRequestResult result) {
+    if (!callback_)
+      return;
+    // Mirrors DelegatedSourceListCapturer: a session that never produced a
+    // stream must be closed or the picker stays active.
+    if (session_id_)
+      CloseSystemPickerSession(type_, *session_id_);
+    ClearPending();
+    std::move(callback_).Run(blink::mojom::StreamDevicesSet(), result, nullptr);
+  }
+
+  // Fails a request whose picker never answered without closing its session:
+  // deactivating the picker could deliver its cancel to the next request.
+  void Supersede() {
+    session_id_.reset();
+    Fail(blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED);
+  }
+
+  void SetPending() { g_pending_system_picker_request = this; }
+
+  content::DesktopMediaID::Type type() const { return type_; }
+
+ private:
+  friend class base::RefCountedDeleteOnSequence<SystemPickerRequest>;
+  friend class base::DeleteHelper<SystemPickerRequest>;
+
+  ~SystemPickerRequest() {
+    Fail(blink::mojom::MediaStreamRequestResult::FAILED_DUE_TO_SHUTDOWN_OTHER);
+  }
+
+  void ClearPending() {
+    if (g_pending_system_picker_request == this)
+      g_pending_system_picker_request = nullptr;
+  }
+
+  const content::MediaStreamRequest request_;
+  const content::DesktopMediaID::Type type_;
+  content::MediaResponseCallback callback_;
+  std::optional<content::DesktopMediaID::Id> session_id_;
+  content::WeakDocumentPtr document_;
+};
+
+}  // namespace
 
 void ElectronBrowserContext::DisplayMediaDeviceChosen(
     const content::MediaStreamRequest& request,
@@ -794,10 +954,21 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
     content::RenderFrameHost* rfh;
     if (result_dict.Get("video", &video_dict) && video_dict.Get("id", &id) &&
         video_dict.Get("name", &name)) {
+      const auto media_id = content::DesktopMediaID::Parse(id);
+      // Picker session ids come only from useSystemPicker; an id passed back
+      // through the handler may have come from a renderer.
+      if (media_id.id_type ==
+          content::DesktopMediaID::IdType::kNativePickerSession) {
+        args->ThrowTypeError("video.id is not a valid source id");
+        std::move(callback).Run(blink::mojom::StreamDevicesSet(),
+                                blink::mojom::MediaStreamRequestResult::
+                                    INVALID_DISPLAY_CAPTURE_CONSTRAINTS,
+                                nullptr);
+        return;
+      }
       blink::MediaStreamDevice video_device(request.video_type, id, name);
       video_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
-          capturer, capturer_origin,
-          content::DesktopMediaID::Parse(video_device.id));
+          capturer, capturer_origin, media_id);
       devices.video_device = video_device;
     } else if (result_dict.Get("video", &rfh)) {
       if (!rfh) {
@@ -905,6 +1076,42 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
 bool ElectronBrowserContext::ChooseDisplayMediaDevice(
     const content::MediaStreamRequest& request,
     content::MediaResponseCallback callback) {
+  if (use_system_picker_ &&
+      api::DesktopCapturer::IsDisplayMediaSystemPickerAvailable()) {
+    // Route useSystemPicker: true through upstream's
+    // NativeScreenCapturePickerMac, which owns the system picker lifecycle and
+    // issues source ids. The JS handler is bypassed (documented behavior).
+    // Supersede a request whose picker never answered (e.g. the user asked
+    // again) instead of leaving both waiting on one picker.
+    if (g_pending_system_picker_request) {
+      g_pending_system_picker_request->Supersede();
+    }
+    api::DesktopCapturer::ExcludeContentProtectedWindowsFromSystemPicker();
+    auto state = base::MakeRefCounted<SystemPickerRequest>(
+        request, PickerTypeForRequest(request), std::move(callback));
+    state->SetPending();
+    auto runner = content::GetUIThreadTaskRunner({});
+    content::GetIOThreadTaskRunner({})->PostTask(
+        FROM_HERE,
+        base::BindOnce(
+            &content::desktop_capture::OpenNativeScreenCapturePicker,
+            state->type(),
+            base::BindPostTask(
+                runner, base::BindOnce(&SystemPickerRequest::OnCreated, state)),
+            base::BindPostTask(
+                runner,
+                base::BindOnce(&SystemPickerRequest::OnSelected, state)),
+            base::BindPostTask(
+                runner,
+                base::BindOnce(
+                    &SystemPickerRequest::Fail, state,
+                    blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED)),
+            base::BindPostTask(
+                runner, base::BindOnce(&SystemPickerRequest::Fail, state,
+                                       blink::mojom::MediaStreamRequestResult::
+                                           FAILED_DUE_TO_SHUTDOWN_OTHER))));
+    return true;
+  }
   if (!display_media_request_handler_)
     return false;
   DisplayMediaResponseCallbackJs callbackJs =

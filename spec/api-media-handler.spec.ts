@@ -133,6 +133,29 @@ describe('setDisplayMediaRequestHandler', () => {
     expect(message).to.equal('Could not start video source');
   });
 
+  it('rejects a system picker session id returned from the handler', async () => {
+    const ses = session.fromPartition('' + Math.random());
+    let callbackError: Error | undefined;
+    ses.setDisplayMediaRequestHandler((request, callback) => {
+      try {
+        callback({ video: { id: 'screen:1:0:s', name: 'forged' } });
+      } catch (e) {
+        callbackError = e as Error;
+      }
+    });
+    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+    const { ok } = await w.webContents.executeJavaScript(
+      `
+      navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
+        .then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
+    `,
+      true
+    );
+    expect(ok).to.be.false();
+    expect(callbackError?.message).to.equal('video.id is not a valid source id');
+  });
+
   it('successfully returns a capture handle', async () => {
     let w: BrowserWindow | null = null;
     const ses = session.fromPartition('' + Math.random());
@@ -538,6 +561,22 @@ describe('setDisplayMediaRequestHandler', () => {
       }, x => resolve({ok: x instanceof MediaStream}), e => reject({ok: false, message: e.message})))
     `);
     expect(ok).to.be.true(message);
+  });
+
+  it('rejects a system picker session id in the legacy desktop capture constraint', async () => {
+    const w = new BrowserWindow({ show: false });
+    await w.loadURL(serverUrl);
+    const { ok } = await w.webContents.executeJavaScript(`
+      new Promise((resolve) => navigator.getUserMedia({
+        video: {
+          mandatory: {
+            chromeMediaSource: 'desktop',
+            chromeMediaSourceId: 'screen:1:0:s'
+          }
+        },
+      }, x => resolve({ok: x instanceof MediaStream}), e => resolve({ok: false, message: e.message})))
+    `);
+    expect(ok).to.be.false();
   });
 
   it('works when calling getUserMedia without a media request handler', async () => {
