@@ -543,7 +543,7 @@ describe('WebContentsView', () => {
     });
   });
 
-  describe('focusOnNavigation webPreference', () => {
+  describe('focusOnNavigation webPreference', { tags: ['serial'] }, () => {
     it('focuses the webContents on navigation by default', async () => {
       const w = new BrowserWindow();
       await once(w, 'focus');
@@ -554,7 +554,9 @@ describe('WebContentsView', () => {
       v.webContents.openDevTools({ mode: 'right' });
       await devToolsFocused;
       expect(v.webContents.isFocused()).to.be.false();
+      const focused = once(v.webContents, 'focus');
       await v.webContents.loadURL('data:text/html,<body>test</body>');
+      await focused;
       expect(v.webContents.isFocused()).to.be.true();
     });
 
