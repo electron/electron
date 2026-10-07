@@ -251,7 +251,7 @@ describe('WebContentsView', () => {
     expect(open).to.be.false();
   });
 
-  it('can be fullscreened', async () => {
+  it('can be fullscreened', { tags: ['serial'] }, async () => {
     const w = new BaseWindow();
     const v = new WebContentsView();
     w.setContentView(v);
