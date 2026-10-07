@@ -44,7 +44,8 @@ import {
   listen,
   waitUntil,
   isWayland,
-  isTestingBindingAvailable
+  isTestingBindingAvailable,
+  spawnAndWait
 } from './lib/spec-helpers.ts';
 import { closeWindow, closeAllWindows } from './lib/window-helpers.ts';
 
@@ -3934,27 +3935,20 @@ describe('BrowserWindow module', () => {
           titleBarOverlay: { height: 40 }
         });
 
-      const runFixtureApp = async (appPath: string) => {
-        const appProcess = childProcess.spawn(process.execPath, [appPath]);
-        let out = '';
-        appProcess.stdout.on('data', (data) => {
-          out += data;
-        });
-        appProcess.stderr.on('data', (data) => {
-          out += data;
-        });
-        const [code] = await once(appProcess, 'exit');
-        return { code, out };
-      };
-
-      it('emits ready-to-show', async () => {
+      it('emits ready-to-show', async function () {
         // The first window of a cold process is where the renderer used to
         // commit its navigation before the frame was laid out, so run a small
         // app a few times rather than opening windows in this (warm) process.
+        const runs = 6;
+        const timeout = 20_000;
+        const killTimeout = 5000;
+        // Each cold process includes startup, the fixture's 10s deadline, and
+        // shutdown. Give all six runs their own budget and time to be reaped.
+        this.timeout(runs * (timeout + killTimeout) + 5000);
         const appPath = path.join(fixtures, 'apps', 'hidden-window-overlay');
-        for (let i = 0; i < 6; i++) {
-          const { code, out } = await runFixtureApp(appPath);
-          expect(code).to.equal(0, `run ${i + 1}: ${out}`);
+        for (let i = 0; i < runs; i++) {
+          const { code, stdout, stderr } = await spawnAndWait(process.execPath, [appPath], { timeout, killTimeout });
+          expect(code).to.equal(0, `run ${i + 1}:\n${stdout}\n${stderr}`);
         }
       });
 
