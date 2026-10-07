@@ -476,6 +476,12 @@ describe('BrowserView module', () => {
     });
 
     it('document visibilitychange does not change when adding the same BrowserView multiple times', async () => {
+      // The view's page is only 'visible' while nothing covers the window. On
+      // the Windows CI hosts another process's console window can sit above a
+      // newly shown window, and Chromium's native occlusion tracker then keeps
+      // the page 'hidden'; keep the window above everything so the desktop's
+      // z-order cannot decide the outcome.
+      w.setAlwaysOnTop(true);
       w.show();
       expect(w.isVisible()).to.be.true('w is visible');
 
