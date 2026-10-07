@@ -7,15 +7,21 @@
 #include "base/dcheck_is_on.h"
 
 #if DCHECK_IS_ON()
-#include "v8/test/common/version-utils.h"  // nogncheck
+#include "v8/include/v8-version.h"
+#include "v8/src/base/hashing.h"  // nogncheck
+#include "v8/src/base/vector.h"   // nogncheck
 
 namespace electron::testing {
 
 uint32_t ComputeV8VersionHash(const std::string& embedder) {
-  if (embedder == v8::internal::Version::GetEmbedder())
-    return v8::internal::Version::Hash();
-  v8::internal::ScopedVersionEmbedderString scoped_embedder(embedder.c_str());
-  return v8::internal::Version::Hash();
+  // Mirror Version::Hash without changing the process-wide embedder string.
+  v8::base::Hasher hasher;
+  hasher.Add(V8_MAJOR_VERSION)
+      .Add(V8_MINOR_VERSION)
+      .Add(V8_BUILD_NUMBER)
+      .Add(V8_PATCH_LEVEL);
+  hasher.AddRange(v8::base::OneByteVector(embedder.c_str()));
+  return static_cast<uint32_t>(hasher.hash());
 }
 
 }  // namespace electron::testing

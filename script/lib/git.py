@@ -9,7 +9,6 @@ structure, or make assumptions about the passed arguments or calls' outcomes.
 import hashlib
 import io
 import os
-from pathlib import Path
 import posixpath
 import re
 import subprocess
@@ -146,47 +145,6 @@ def get_commit_for_ref(repo, ref):
 def get_commit_count(repo, commit_range):
   return int(_run(repo, 'rev-list', '--count', commit_range))
 
-
-def check_ancestor(repo, ancestor, descendant='HEAD'):
-  """Fail if the descendant does not contain the requested ancestor."""
-  _run(repo, 'merge-base', '--is-ancestor', ancestor, descendant)
-
-
-def get_object_format(repo):
-  return _run(repo, 'rev-parse', '--show-object-format').decode().strip()
-
-
-def get_tree_diff(repo, before, after):
-  """Return changed paths and their before/after (mode, object ID) pairs."""
-  records = _run(repo, 'diff', '--raw', '-z', '--no-renames', '--abbrev=64',
-                 before, after).split(b'\0')
-  changes = []
-  for index in range(0, len(records) - 1, 2):
-    before_mode, after_mode, before_id, after_id, _status = (
-        records[index].decode('ascii').split())
-    changes.append((os.fsdecode(records[index + 1]),
-                    (before_mode[1:], before_id),
-                    (after_mode, after_id)))
-  return changes
-
-
-def get_ref_inputs(repo):
-  """Return paths whose modification can change HEAD, including packed refs."""
-  repo = Path(repo).resolve()
-  inputs = set()
-  git_paths = ['HEAD', 'packed-refs']
-  symbolic = _run(repo, 'rev-parse', '--symbolic-full-name', 'HEAD').decode().strip()
-  if symbolic != 'HEAD':
-    git_paths.append(symbolic)
-  for name in git_paths:
-    path = Path(_run(repo, 'rev-parse', '--git-path', name).decode().strip())
-    if not path.is_absolute():
-      path = repo / path
-    # A packed branch can acquire a loose ref without changing packed-refs.
-    while not path.exists():
-      path = path.parent
-    inputs.add(path.resolve())
-  return inputs
 
 def guess_base_commit(repo, ref):
   """Guess which commit the patches might be based on"""

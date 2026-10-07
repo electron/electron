@@ -10,7 +10,7 @@
 
 namespace electron::testing {
 
-uint32_t ComputeV8VersionHash(const std::string& embedder);
+[[nodiscard]] uint32_t ComputeV8VersionHash(const std::string& embedder);
 
 }  // namespace electron::testing
 

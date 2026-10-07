@@ -8,14 +8,51 @@ import json
 import os
 from pathlib import Path
 import re
-
-from lib import git
+import subprocess
 
 ELECTRON_ROOT = Path(__file__).resolve().parent.parent
 V8_ROOT = ELECTRON_ROOT.parent / 'v8'
 PATCH_ROOT = ELECTRON_ROOT / 'patches' / 'v8'
 CACHE_METADATA = V8_ROOT / '.electron-patch-fingerprint.json'
 SCHEMA = 1
+
+
+def run_git(repo, *args):
+  return subprocess.check_output(
+      ['git', '--no-optional-locks', '-C', str(repo), *args])
+
+
+def get_tree_diff(repo, before, after):
+  """Return changed paths and their before/after (mode, object ID) pairs."""
+  records = run_git(repo, 'diff', '--raw', '-z', '--no-renames', '--abbrev=64',
+                    before, after).split(b'\0')
+  changes = []
+  for index in range(0, len(records) - 1, 2):
+    before_mode, after_mode, before_id, after_id, _status = (
+        records[index].decode('ascii').split())
+    changes.append((os.fsdecode(records[index + 1]),
+                    (before_mode[1:], before_id),
+                    (after_mode, after_id)))
+  return changes
+
+
+def get_ref_inputs(repo):
+  """Return paths whose modification can change HEAD, including packed refs."""
+  repo = Path(repo).resolve()
+  inputs = set()
+  git_paths = ['HEAD', 'packed-refs']
+  symbolic = run_git(repo, 'rev-parse', '--symbolic-full-name', 'HEAD').decode().strip()
+  if symbolic != 'HEAD':
+    git_paths.append(symbolic)
+  for name in git_paths:
+    path = Path(run_git(repo, 'rev-parse', '--git-path', name).decode().strip())
+    if not path.is_absolute():
+      path = repo / path
+    # A packed branch can acquire a loose ref without changing packed-refs.
+    while not path.exists():
+      path = path.parent
+    inputs.add(path.resolve())
+  return inputs
 
 
 def pinned_revision(deps):
@@ -56,10 +93,11 @@ def patch_provenance(inputs):
 
 
 def repository_fingerprint(base):
-  git.check_ancestor(V8_ROOT, base)
-  changes = git.get_tree_diff(V8_ROOT, base,
-                              git.get_commit_for_ref(V8_ROOT, 'HEAD^{tree}'))
-  return hash_changes(git.get_object_format(V8_ROOT), changes)
+  run_git(V8_ROOT, 'merge-base', '--is-ancestor', base, 'HEAD')
+  head_tree = run_git(V8_ROOT, 'rev-parse', '--verify', 'HEAD^{tree}').decode().strip()
+  changes = get_tree_diff(V8_ROOT, base, head_tree)
+  object_format = run_git(V8_ROOT, 'rev-parse', '--show-object-format').decode().strip()
+  return hash_changes(object_format, changes)
 
 
 def cached_fingerprint(base, inputs):
@@ -111,10 +149,9 @@ def main():
   cache_inputs = [] if has_git else patch_inputs()
   fingerprint = None if has_git else cached_fingerprint(base, cache_inputs)
   if args.inputs:
-    inputs = git.get_ref_inputs(V8_ROOT) if has_git else {
+    inputs = get_ref_inputs(V8_ROOT) if has_git else {
         CACHE_METADATA, *cache_inputs}
-    inputs.update([V8_ROOT.parent / 'DEPS', Path(git.__file__),
-                   Path(git.__file__).with_name('patches.py')])
+    inputs.add(V8_ROOT.parent / 'DEPS')
     print(json.dumps(sorted(str(path).replace('\\', '/') for path in inputs)))
   else:
     print(repository_fingerprint(base) if has_git else fingerprint)

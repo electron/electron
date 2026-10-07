@@ -34,7 +34,6 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/v8_code_cache_test_helpers.h"
 #include "ui/accessibility/platform/ax_platform.h"
 #include "v8/include/v8-wasm.h"
 #include "v8/include/v8.h"
@@ -48,6 +47,8 @@
 #endif
 
 #if DCHECK_IS_ON()
+#include "shell/common/v8_code_cache_test_helpers.h"
+
 namespace {
 
 v8::Local<v8::Value> SerializeWasmModuleForTesting(

@@ -11,9 +11,11 @@ source_set("v8_code_cache_test_helpers") {
   ]
   configs += [ "//v8:external_config" ]
   deps = [
+    "//base:dcheck_is_on",
     "//base:debugging_buildflags",
     "//v8",
     "//v8:v8_libbase",
+    "//v8:v8_version",
   ]
 }
 

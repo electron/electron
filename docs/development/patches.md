@@ -81,6 +81,20 @@ $ ../../electron/script/git-export-patches -o ../../electron/patches/node
 
 Note that `git-import-patches` will mark the commit that was `HEAD` when it was run as `refs/patches/upstream-head` (and a checkout-specific `refs/patches/upstream-head-<hash>` so that gclient worktrees sharing a `.git/refs` directory don't clobber each other). This lets you keep track of which commits are from Electron patches (those that come after `refs/patches/upstream-head`) and which commits are in upstream (those before `refs/patches/upstream-head`).
 
+#### Resolving conflicts
+
+When updating an upstream dependency, patches may fail to apply cleanly. Often, the conflict can be resolved automatically by git with a 3-way merge. You can instruct `git-import-patches` to use the 3-way merge algorithm by passing the `-3` argument:
+
+```bash
+$ cd src/third_party/electron_node
+# If the patch application failed midway through, you can reset it with:
+$ git am --abort
+# And then retry with 3-way merge:
+$ ../../electron/script/git-import-patches -3 ../../electron/patches/node
+```
+
+If `git-import-patches -3` encounters a merge conflict that it can't resolve automatically, it will pause and allow you to resolve the conflict manually. Once you have resolved the conflict, `git add` the resolved files and continue to apply the rest of the patches by running `git am --continue`.
+
 ### V8 serialized bytecode compatibility
 
 V8 includes its embedder string in the version hash used to validate JavaScript
@@ -108,21 +122,14 @@ the pinned V8 revision, patch series provenance and fingerprint schema before
 using that identity. Missing or stale metadata fails generation rather than
 substituting a weaker cache key.
 
-Changes to the fingerprint algorithm or cached metadata schema must also bump
-the source cache versions in `script/generate-deps-hash.js`. This is only needed
-when changing the compatibility mechanism itself, not for V8 rolls, patch
-updates or releases.
+The source cache key in `script/generate-deps-hash.js` hashes
+`script/v8-patch-fingerprint.py`, which contains the fingerprint algorithm and
+Git input handling. Changes to the algorithm or metadata schema invalidate
+existing source caches automatically.
 
-#### Resolving conflicts
-
-When updating an upstream dependency, patches may fail to apply cleanly. Often, the conflict can be resolved automatically by git with a 3-way merge. You can instruct `git-import-patches` to use the 3-way merge algorithm by passing the `-3` argument:
-
-```bash
-$ cd src/third_party/electron_node
-# If the patch application failed midway through, you can reset it with:
-$ git am --abort
-# And then retry with 3-way merge:
-$ ../../electron/script/git-import-patches -3 ../../electron/patches/node
-```
-
-If `git-import-patches -3` encounters a merge conflict that it can't resolve automatically, it will pause and allow you to resolve the conflict manually. Once you have resolved the conflict, `git add` the resolved files and continue to apply the rest of the patches by running `git am --continue`.
+Packagers building source trees without V8 Git metadata or CI fingerprint
+metadata can explicitly set `ELECTRON_V8_EMBEDDER_STRING` before GN generation
+to supply their own compatibility identity. This bypasses automatic fingerprint
+generation and validation; the packager must change the identity whenever V8
+cache compatibility changes. GN does not track environment variable changes,
+so changing or removing this override requires rerunning `gn gen` explicitly.

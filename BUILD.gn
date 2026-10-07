@@ -499,7 +499,6 @@ source_set("electron_lib") {
     "chromium_src:chrome_spellchecker",
     "shell/common:mojo",
     "shell/common:plugin",
-    "shell/common:v8_code_cache_test_helpers",
     "shell/common:web_contents_utility",
     "shell/services/node/public/mojom",
     "//base:base_static",
@@ -589,6 +588,10 @@ source_set("electron_lib") {
     "//v8",
     "//v8:v8_libplatform",
   ]
+
+  if (is_debug || dcheck_always_on) {
+    deps += [ "shell/common:v8_code_cache_test_helpers" ]
+  }
 
   if (v8_use_external_startup_data && use_v8_context_snapshot &&
       current_toolchain == default_toolchain) {
