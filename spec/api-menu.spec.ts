@@ -1052,7 +1052,7 @@ describe('Menu module', function () {
         output += data;
       });
 
-      const [code] = await once(appProcess, 'exit');
+      const [code] = await once(appProcess, 'close');
       if (!output.includes('Window has no menu')) {
         console.log(code, output);
       }
