@@ -880,16 +880,16 @@ describe('chrome extensions', () => {
             });
 
             ({ port } = await listen(server));
-
-            session.defaultSession.extensions.loadExtension(contentScript);
           });
 
           after(() => {
-            session.defaultSession.extensions.removeExtension('content-script-test');
             server.close();
           });
 
-          beforeEach(() => {
+          // The file-level afterEach removes every extension, so load it for
+          // each test (including retries) rather than once for the block.
+          beforeEach(async () => {
+            await session.defaultSession.extensions.loadExtension(contentScript);
             w = new BrowserWindow({
               show: false,
               webPreferences: {
