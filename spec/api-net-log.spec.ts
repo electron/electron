@@ -54,7 +54,12 @@ describe('netLog module', () => {
   beforeEach(() => {
     expect(testNetLog().currentlyLogging).to.be.false('currently logging');
   });
-  afterEach(() => {
+  afterEach(async () => {
+    // Stop a log that a failed test left running. Otherwise this hook and
+    // beforeEach would fail every later test, including the retry.
+    if (testNetLog().currentlyLogging) {
+      await testNetLog().stopLogging();
+    }
     try {
       if (fs.existsSync(dumpFile)) {
         fs.unlinkSync(dumpFile);
@@ -65,7 +70,6 @@ describe('netLog module', () => {
     } catch {
       // Ignore error
     }
-    expect(testNetLog().currentlyLogging).to.be.false('currently logging');
   });
 
   it('should begin and end logging to file when .startLogging() and .stopLogging() is called', async () => {
