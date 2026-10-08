@@ -232,6 +232,11 @@ JavascriptEnvironment::~JavascriptEnvironment() {
   DCHECK_NE(platform_, nullptr);
   v8::Isolate* isolate = this->isolate();
 
+  // PostMainMessageLoopRun() is skipped when startup fails early (e.g. no
+  // display), so dispose the runner here while the isolate is still alive.
+  if (microtasks_runner_)
+    DestroyMicrotasksRunner();
+
   {
     v8::HandleScope scope{isolate};
     isolate->GetCurrentContext()->Exit();
@@ -243,7 +248,6 @@ JavascriptEnvironment::~JavascriptEnvironment() {
   // Otherwise cppgc::internal::Sweeper::Start will try to request a task runner
   // from the NodePlatform with an already unregistered isolate.
   locker_.reset();
-  DCHECK(!microtasks_runner_);
   isolate_holder_.reset();
 
   platform_->UnregisterIsolate(isolate);
