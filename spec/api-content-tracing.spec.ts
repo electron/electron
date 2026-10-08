@@ -24,18 +24,21 @@ const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
 // FIXME: The tests are skipped on linux arm64
 ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTracing', () => {
-  const record = async (
+  let pendingRecording: Promise<string> | undefined;
+  const record = (
     options: TraceConfig | TraceCategoriesAndOptions,
     outputFilePath: string | undefined,
-    recordTimeInMilliseconds = 1e1
+    recordTimeInMilliseconds = 10
   ) => {
-    await app.whenReady();
+    pendingRecording = (async () => {
+      await app.whenReady();
 
-    await contentTracing.startRecording(options);
-    await setTimeout(recordTimeInMilliseconds);
-    const resultFilePath = await contentTracing.stopRecording(outputFilePath);
+      await contentTracing.startRecording(options);
+      await setTimeout(recordTimeInMilliseconds);
+      return contentTracing.stopRecording(outputFilePath);
+    })();
 
-    return resultFilePath;
+    return pendingRecording;
   };
 
   // Every test attempt (including mocha retries) writes to its own file. A
@@ -46,17 +49,20 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
   beforeEach(() => {
     outputFilePath = path.join(app.getPath('temp'), `electron-content-tracing-${randomUUID()}.json`);
   });
-  afterEach(() => {
-    fs.rmSync(outputFilePath, { force: true });
+  afterEach(async () => {
+    try {
+      // A test timeout does not cancel the recording. Drain it before cleanup
+      // or a retry so the next attempt cannot overlap an active session.
+      await pendingRecording;
+    } finally {
+      pendingRecording = undefined;
+      fs.rmSync(outputFilePath, { force: true });
+    }
   });
 
+  const recordingTimeout = process.platform === 'win32' && process.arch === 'arm64' ? 10_000 : 5_000;
   describe('startRecording', function () {
-    if (process.platform === 'win32' && process.arch === 'arm64') {
-      // WOA needs more time
-      this.timeout(10e3);
-    } else {
-      this.timeout(5e3);
-    }
+    this.timeout(recordingTimeout);
 
     const getFileSizeInKiloBytes = (filePath: string) => {
       const stats = fs.statSync(filePath);
@@ -117,12 +123,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
   });
 
   ifdescribe(process.platform !== 'linux')('stopRecording', function () {
-    if (process.platform === 'win32' && process.arch === 'arm64') {
-      // WOA needs more time
-      this.timeout(10e3);
-    } else {
-      this.timeout(5e3);
-    }
+    this.timeout(recordingTimeout);
 
     // FIXME(samuelmaddock): this test regularly flakes
     it.skip('does not crash on empty string', async () => {
