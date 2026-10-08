@@ -191,6 +191,7 @@ describe('webContents module', () => {
     // re-activated while blocked used to keep aura focus without Blink focus.
     ifit(process.platform === 'win32')(
       'keeps the page focused when the window is re-activated while the prompt is pending',
+      { tags: ['serial'] },
       async () => {
         const w = new BrowserWindow({ show: true });
         await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false.html'));
@@ -204,9 +205,10 @@ describe('webContents module', () => {
         // A navigation only prompts after a user gesture; close() always does.
         w.close();
         await once(w.webContents, 'will-prevent-unload');
-        await setTimeout(100);
-        expect(w.webContents.isFocused()).to.equal(true);
-        expect(await w.webContents.executeJavaScript('document.hasFocus()')).to.equal(true);
+        // Re-activation is asynchronous, so wait for focus instead of a fixed time.
+        await waitUntil(
+          async () => w.webContents.isFocused() && (await w.webContents.executeJavaScript('document.hasFocus()'))
+        );
       }
     );
 
@@ -1656,6 +1658,8 @@ describe('webContents module', () => {
     // above.
     ifit(process.platform !== 'linux')(
       'reveals paths under a registered workspace folder without executing them',
+      // Opens a real Finder/Explorer window, which takes focus and stays open.
+      { tags: ['serial'] },
       async () => {
         const w = new BrowserWindow({ show: false });
         await openDevTools(w);
@@ -4097,7 +4101,7 @@ describe('webContents module', () => {
     });
   });
 
-  describe('setIgnoreMenuShortcuts(ignore)', () => {
+  describe('setIgnoreMenuShortcuts(ignore)', { tags: ['serial'] }, () => {
     afterEach(closeAllWindows);
 
     const trackShortcutInvocations = (contents: WebContents) => {
@@ -4151,6 +4155,7 @@ describe('webContents module', () => {
       });
       await window.loadURL('about:blank');
       window.webContents.focus();
+      await waitUntil(() => window.webContents.isFocused());
       const sendShortcut = trackShortcutInvocations(window.webContents);
       expect(await sendShortcut(0)).to.equal(0);
       window.webContents.setIgnoreMenuShortcuts(false);
