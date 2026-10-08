@@ -109,6 +109,15 @@ class UtilityAIManager : public blink::mojom::AIManager {
       blink::mojom::AIProofreaderCreateOptionsPtr options,
       mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor)
       override;
+  void CanCreateDecisionModel(
+      blink::mojom::AIDecisionModelCreateOptionsPtr options,
+      CanCreateDecisionModelCallback callback) override;
+  void CreateDecisionModel(
+      mojo::PendingRemote<blink::mojom::AIManagerCreateDecisionModelClient>
+          client,
+      blink::mojom::AIDecisionModelCreateOptionsPtr options,
+      mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor)
+      override;
   void CanCreateSemanticEmbedder(
       CanCreateSemanticEmbedderCallback callback) override;
   void CreateSemanticEmbedder(

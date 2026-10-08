@@ -180,6 +180,21 @@ void ProxyingAIManager::CreateProofreader(
   NOTIMPLEMENTED();
 }
 
+void ProxyingAIManager::CanCreateDecisionModel(
+    blink::mojom::AIDecisionModelCreateOptionsPtr options,
+    CanCreateDecisionModelCallback callback) {
+  std::move(callback).Run(
+      blink::mojom::ModelAvailabilityCheckResult::kUnavailableUnknown);
+}
+
+void ProxyingAIManager::CreateDecisionModel(
+    mojo::PendingRemote<blink::mojom::AIManagerCreateDecisionModelClient>
+        client,
+    blink::mojom::AIDecisionModelCreateOptionsPtr options,
+    mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
+  NOTIMPLEMENTED();
+}
+
 void ProxyingAIManager::CanCreateSemanticEmbedder(
     CanCreateSemanticEmbedderCallback callback) {
   std::move(callback).Run(
