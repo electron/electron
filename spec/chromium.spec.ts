@@ -1012,7 +1012,7 @@ describe('chromium features', () => {
       expect(size).to.be.a('number');
     });
 
-    ifit(process.platform !== 'darwin')('should lock the keyboard', async () => {
+    ifit(process.platform !== 'darwin')('should lock the keyboard', { tags: ['serial'] }, async () => {
       const w = new BrowserWindow({ show: true });
       await w.loadFile(path.join(fixturesPath, 'pages', 'modal.html'));
 
