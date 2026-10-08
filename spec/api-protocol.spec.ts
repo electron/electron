@@ -19,7 +19,7 @@ import * as url from 'node:url';
 import * as zlib from 'node:zlib';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers.ts';
-import { listen, defer, ifit } from './lib/spec-helpers.ts';
+import { listen, defer, ifit, spawnAndWait } from './lib/spec-helpers.ts';
 import { WebmGenerator } from './lib/video-helpers.js';
 import { closeAllWindows, closeWindow } from './lib/window-helpers.ts';
 
@@ -962,7 +962,7 @@ describe('protocol module', () => {
       expect(stderr).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
     });
 
-    it('throws for invalid scheme names', () => {
+    it('throws for invalid scheme names', async () => {
       const appPath = path.join(fixturesPath, 'apps', 'remote-control');
       const bootEval = `
         const { protocol } = require('electron');
@@ -978,10 +978,10 @@ describe('protocol module', () => {
         console.log(JSON.stringify(results));
         process.exit(0);
       `;
-      const result = ChildProcess.spawnSync(process.execPath, [appPath, `--boot-eval=${bootEval}`]);
-
-      const stdout = result.stdout.toString();
-      expect(result.status, `stdout: ${stdout}\nstderr: ${result.stderr.toString()}`).to.equal(0);
+      const { code, stdout, stderr } = await spawnAndWait(process.execPath, [appPath, `--boot-eval=${bootEval}`], {
+        timeout: 20_000
+      });
+      expect(code, `stdout: ${stdout}\nstderr: ${stderr}`).to.equal(0);
 
       const line = stdout.split('\n').find((l) => l.startsWith('{'));
       expect(line, `unexpected stdout: ${stdout}`).to.be.a('string');
@@ -1817,12 +1817,18 @@ describe('protocol module', () => {
     });
 
     it('code cache in custom protocol is disabled by default', async () => {
-      ChildProcess.spawnSync(process.execPath, [appPath, 'false', codeCachePath]);
+      const { code, stdout, stderr } = await spawnAndWait(process.execPath, [appPath, 'false', codeCachePath], {
+        timeout: 20_000
+      });
+      expect(code).to.equal(0, `stdout:\n${stdout}\nstderr:\n${stderr}`);
       expect(fs.readdirSync(path.join(codeCachePath, 'js')).length).to.equal(2);
     });
 
     it('codeCache:true enables codeCache in custom protocol', async () => {
-      ChildProcess.spawnSync(process.execPath, [appPath, 'true', codeCachePath]);
+      const { code, stdout, stderr } = await spawnAndWait(process.execPath, [appPath, 'true', codeCachePath], {
+        timeout: 20_000
+      });
+      expect(code).to.equal(0, `stdout:\n${stdout}\nstderr:\n${stderr}`);
       expect(fs.readdirSync(path.join(codeCachePath, 'js')).length).to.above(2);
     });
   });
