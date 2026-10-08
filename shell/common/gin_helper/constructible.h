@@ -72,11 +72,9 @@ class Constructible {
       v8::Isolate* const isolate,
       v8::Local<v8::Context> context,
       const gin::WrapperInfo* const wrapper_info) {
-    v8::Local<v8::FunctionTemplate> constructor =
-        GetConstructorTemplate(isolate, context, wrapper_info);
-    if (constructor.IsEmpty())
-      return {};
-    return constructor->GetFunction(context).ToLocalChecked();
+    return GetConstructorTemplate(isolate, context, wrapper_info)
+        ->GetFunction(context)
+        .ToLocalChecked();
   }
 
   static v8::Local<v8::FunctionTemplate> GetConstructorTemplate(
@@ -98,8 +96,6 @@ class Constructible {
       v8::Local<v8::FunctionTemplate> parent =
           Constructible<Parent>::GetConstructorTemplate(isolate, context,
                                                         &Parent::kWrapperInfo);
-      if (parent.IsEmpty())
-        return {};
       constructor->Inherit(parent);
     } else if (std::is_base_of<EventEmitterMixin<T>, T>::value) {
       constructor->Inherit(

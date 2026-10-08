@@ -10,8 +10,13 @@
 
 namespace gin_helper {
 
-v8::Local<v8::FunctionTemplate> GetCachedFunctionTemplate(v8::Isolate* isolate,
-                                                          const void* key);
+// Caches FunctionTemplates for the lifetime of the isolate, keyed by the
+// address of `key`: use one static key per template. A key is set once and must
+// not be replaced. An isolate without gin::PerIsolateData, such as a Node.js
+// worker's, is never cached.
+[[nodiscard]] v8::Local<v8::FunctionTemplate> GetCachedFunctionTemplate(
+    v8::Isolate* isolate,
+    const void* key);
 void SetCachedFunctionTemplate(v8::Isolate* isolate,
                                const void* key,
                                v8::Local<v8::FunctionTemplate> tmpl);

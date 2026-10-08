@@ -5,9 +5,11 @@
 #include "shell/common/gin_helper/function_template_cache.h"
 
 #include <cstdint>
+#include <memory>
 
 #include "base/check_op.h"
 #include "base/no_destructor.h"
+#include "base/threading/thread_local.h"
 #include "gin/per_isolate_data.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 #include "v8/include/v8-isolate.h"
@@ -17,10 +19,11 @@ namespace gin_helper {
 namespace {
 
 // A thread only ever runs one isolate that has gin::PerIsolateData: the main
-// thread of the browser, utility and renderer processes, or of node_main.
-// Node.js workers and Blink workers have none and are never cached. Entries are
-// v8::Eternal handles, which V8 releases when it destroys the isolate, so the
-// cache needs no teardown of its own.
+// thread of the browser, utility and renderer processes or of node_main, or a
+// Blink worker thread, which exits after disposing its isolate. Node.js workers
+// have none and are never cached.
+// Entries are v8::Eternal handles, so they need no V8 teardown, but they
+// outlive the isolate and must not be read once it is gone.
 struct ThreadCache {
   absl::flat_hash_map<const void*, v8::Eternal<v8::FunctionTemplate>> templates;
   // Only used to catch a second isolate on this thread, which would leave
@@ -29,14 +32,20 @@ struct ThreadCache {
 };
 
 ThreadCache& CacheForThisThread(v8::Isolate* isolate) {
-  thread_local base::NoDestructor<ThreadCache> cache;
-  const auto address = reinterpret_cast<uintptr_t>(isolate);
-  if (!cache->isolate_address) {
-    cache->isolate_address = address;
+  // Freed when the thread exits. A plain thread_local would need a trivially
+  // destructible type and leak the map on every thread that fills it.
+  static base::NoDestructor<base::ThreadLocalOwnedPointer<ThreadCache>> tls;
+  if (!tls->Get()) {
+    tls->Set(std::make_unique<ThreadCache>());
   }
-  DCHECK_EQ(cache->isolate_address, address)
+  ThreadCache& cache = *tls->Get();
+  const auto address = reinterpret_cast<uintptr_t>(isolate);
+  if (!cache.isolate_address) {
+    cache.isolate_address = address;
+  }
+  DCHECK_EQ(cache.isolate_address, address)
       << "A thread must not run more than one isolate";
-  return *cache;
+  return cache;
 }
 
 bool IsCacheable(v8::Isolate* isolate) {
@@ -45,9 +54,8 @@ bool IsCacheable(v8::Isolate* isolate) {
 
 }  // namespace
 
-[[nodiscard]] v8::Local<v8::FunctionTemplate> GetCachedFunctionTemplate(
-    v8::Isolate* isolate,
-    const void* key) {
+v8::Local<v8::FunctionTemplate> GetCachedFunctionTemplate(v8::Isolate* isolate,
+                                                          const void* key) {
   if (!IsCacheable(isolate))
     return {};
   auto& templates = CacheForThisThread(isolate).templates;
@@ -64,6 +72,7 @@ void SetCachedFunctionTemplate(v8::Isolate* isolate,
   // An Eternal occupies a slot until the isolate is destroyed, so
   // never replace an entry.
   auto [it, inserted] = CacheForThisThread(isolate).templates.try_emplace(key);
+  DCHECK(inserted) << "A cached function template must not be replaced";
   if (inserted)
     it->second.Set(isolate, tmpl);
 }
