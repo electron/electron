@@ -38,10 +38,11 @@ class UnsupportedFunction : public ExtensionFunction {
 // chrome.webstorePrivate is implemented in //extensions and registered by
 // CoreExtensionsBrowserAPIProvider, but every function assumes an
 // embedder-provided WebstorePrivateAPIDelegate, which Electron does not have.
-// The API is made unavailable to all contexts via the "webstorePrivate" entry
-// in shell/common/extensions/api/_api_features.json, so these should never be
-// dispatched; replace them anyway so that a request that does reach the
-// browser fails with an error rather than dereferencing a null delegate.
+// A Chromium patch makes every branch of the core "webstorePrivate" feature
+// require a delegated availability check, which fails closed because Electron
+// never registers one, so these should never be dispatched; replace them
+// anyway so that a request that does reach the browser fails with an error
+// rather than dereferencing a null delegate.
 constexpr const char* kUnsupportedWebstorePrivateFunctions[] = {
     "webstorePrivate.beginInstallWithManifest3",
     "webstorePrivate.completeInstall",

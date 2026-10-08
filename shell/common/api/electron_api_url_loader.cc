@@ -30,7 +30,6 @@
 #include "net/base/net_errors.h"
 #include "net/http/http_util.h"
 #include "net/url_request/redirect_util.h"
-#include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
@@ -419,6 +418,7 @@ class SimpleURLLoaderClient final
       int32_t request_id,
       const GURL& url,
       bool first_auth_attempt,
+      bool do_not_prompt_for_login,
       const net::AuthChallengeInfo& auth_info,
       const scoped_refptr<net::HttpResponseHeaders>& head_headers,
       mojo::PendingRemote<network::mojom::AuthChallengeResponder>
@@ -461,6 +461,8 @@ class SimpleURLLoaderClient final
 
   void OnClearSiteData(
       const GURL& url,
+      const std::optional<net::SchemefulSite>& top_level_site,
+      const std::optional<base::UnguessableToken>& nonce,
       const std::string& header_value,
       int32_t load_flags,
       const std::optional<net::CookiePartitionKey>& cookie_partition_key,
@@ -744,9 +746,7 @@ SimpleURLLoaderWrapper* SimpleURLLoaderWrapper::Create(gin::Arguments* args) {
       request->destination = iter->second;
   }
 
-  if (base::FeatureList::IsEnabled(
-          network::features::kRestrictFrameDestinationsToNavigate) &&
-      (request->destination == network::mojom::RequestDestination::kDocument ||
+  if ((request->destination == network::mojom::RequestDestination::kDocument ||
        request->destination == network::mojom::RequestDestination::kFrame ||
        request->destination == network::mojom::RequestDestination::kIframe ||
        request->destination ==

@@ -351,14 +351,36 @@ describe('app module', () => {
     it('prevents the second launch of app', async function () {
       this.timeout(120000);
       const appPath = path.join(fixturesPath, 'api', 'singleton-data');
+      // The two copies quit within milliseconds of each other, so record each
+      // exit as soon as the copy is spawned: an 'exit' emitted before a
+      // listener is attached is lost, and the test would wait for it until it
+      // timed out.
       const first = cp.spawn(process.execPath, [appPath]);
-      await once(first.stdout, 'data');
+      let firstCode: number | null = null;
+      first.on('exit', (code) => {
+        firstCode = code;
+      });
+      defer(() => {
+        if (first.exitCode === null && first.signalCode === null) first.kill();
+      });
+      let firstOutput = '';
+      first.stdout.on('data', (data) => {
+        firstOutput += data;
+      });
+      await waitUntil(() => firstOutput.length > 0, { timeout: 30000 });
       // Start second app when received output.
       const second = cp.spawn(process.execPath, [appPath]);
-      const [code2] = await once(second, 'exit');
-      expect(code2).to.equal(1);
-      const [code1] = await once(first, 'exit');
-      expect(code1).to.equal(0);
+      let secondCode: number | null = null;
+      second.on('exit', (code) => {
+        secondCode = code;
+      });
+      defer(() => {
+        if (second.exitCode === null && second.signalCode === null) second.kill();
+      });
+      await waitUntil(() => secondCode !== null, { timeout: 30000 });
+      expect(secondCode).to.equal(1);
+      await waitUntil(() => firstCode !== null, { timeout: 30000 });
+      expect(firstCode).to.equal(0);
     });
 
     it('returns true when setting non-existent user data folder', async function () {

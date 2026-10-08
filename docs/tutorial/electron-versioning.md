@@ -153,8 +153,8 @@ gitGraph
     cherry-pick id:"fix-1" tag:"v42.0.0-alpha.2"
 ```
 
-The version of Chromium that powers Electron 42 hits Chrome's beta channel. The `alpha` line is
-promoted to `beta`.
+The version of Chromium that powers Electron 42 hits Chrome's beta channel. Once Electron 42's
+Chromium version has caught up, the `alpha` line is promoted to `beta`.
 
 ```mermaid
 gitGraph

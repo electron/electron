@@ -89,10 +89,10 @@
 #include "ui/base/ime/linux/linux_input_method_context_factory.h"
 #include "ui/gtk/gtk_compat.h"  // nogncheck
 #include "ui/gtk/gtk_util.h"    // nogncheck
-#include "ui/linux/dark_mode_manager_linux.h"
 #include "ui/linux/linux_ui.h"
 #include "ui/linux/linux_ui_factory.h"
 #include "ui/linux/linux_ui_getter.h"
+#include "ui/linux/portal_settings_linux.h"
 #include "ui/ozone/public/ozone_platform.h"
 #endif
 
@@ -543,7 +543,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
 
   // source theme changes from system settings, including settings portal:
   // https://flatpak.github.io/xdg-desktop-portal/#gdbus-org.freedesktop.portal.Settings
-  dark_mode_manager_ = std::make_unique<ui::DarkModeManagerLinux>();
+  portal_settings_ = std::make_unique<ui::PortalSettingsLinux>();
 
   ui::LinuxUi::SetInstance(linux_ui);
 
@@ -666,8 +666,7 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
   ui::OzonePlatform::GetInstance()->PostCreateMainMessageLoop(
       base::BindOnce(&ExitOnSessionLoss),
       content::GetUIThreadTaskRunner({content::BrowserTaskType::kUserInput}));
-  dbus_thread_linux::SetDisconnectedCallback(
-      base::BindRepeating(&ExitOnSessionLoss));
+  dbus_thread_linux::Initialize(base::BindRepeating(&ExitOnSessionLoss));
 
   if (!bluez::BluezDBusManager::IsInitialized())
     bluez::DBusBluezManagerWrapperLinux::Initialize();

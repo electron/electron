@@ -121,7 +121,7 @@ index b02065efac3316f6493776df979752dd9d749a14..5838047b94e7638cbe29aa3a2d9ca123
  
  PictureInPictureOcclusionTracker*
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
-index 444c5b4649da23d0773da9a0c88696c1c481a125..a80ff6e3a3ef0773864d50a5bfa0d7aa636b81fb 100644
+index 063a8f738309cbfac2b2b2e42a22170922a316fa..52377ebff207b5e8d6d14c144b73fc68e7927904 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 @@ -13,6 +13,7 @@
@@ -132,7 +132,7 @@ index 444c5b4649da23d0773da9a0c88696c1c481a125..a80ff6e3a3ef0773864d50a5bfa0d7aa
  #include "build/build_config.h"
  #include "third_party/blink/public/mojom/picture_in_picture_window_options/picture_in_picture_window_options.mojom.h"
  #include "ui/display/display.h"
-@@ -206,6 +207,7 @@ class PictureInPictureWindowManager {
+@@ -220,6 +221,7 @@ class PictureInPictureWindowManager {
    void NotifyObserversOnExitPictureInPicture();
  
  #if !BUILDFLAG(IS_ANDROID)
@@ -140,7 +140,7 @@ index 444c5b4649da23d0773da9a0c88696c1c481a125..a80ff6e3a3ef0773864d50a5bfa0d7aa
    // Shows a standalone Document Picture-in-Picture window using a
    // `DocumentPipHost` instead of a `Browser`. Used when the
    // `kDocumentPipStandaloneWindow` feature is enabled. Takes ownership of the
-@@ -218,6 +220,7 @@ class PictureInPictureWindowManager {
+@@ -232,6 +234,7 @@ class PictureInPictureWindowManager {
        std::unique_ptr<content::WebContents> child_web_contents,
        blink::mojom::PictureInPictureWindowOptions pip_options,
        bool focus_contents);
@@ -148,7 +148,7 @@ index 444c5b4649da23d0773da9a0c88696c1c481a125..a80ff6e3a3ef0773864d50a5bfa0d7aa
  
    std::unique_ptr<AutoPipSettingOverlayView> GetOverlayView(
        views::View* anchor_view,
-@@ -420,10 +423,12 @@ class PictureInPictureWindowManager {
+@@ -430,10 +433,12 @@ class PictureInPictureWindowManager {
  
    std::unique_ptr<PictureInPictureWindowManagerUmaHelper> uma_helper_;
  
@@ -162,7 +162,7 @@ index 444c5b4649da23d0773da9a0c88696c1c481a125..a80ff6e3a3ef0773864d50a5bfa0d7aa
  
    // The display of the opener window, cached during
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index d3daf10f3826cd1ab0213a5ed876ad199fbc95b3..089fb491fd3a915ee373b2134f5ff907197b4ca4 100644
+index e1154047af16efd14465539696de7b55e5ba50cc..4fbb0e6d1b3c8a99bdc81a97821c01149df27e4e 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -116,8 +116,10 @@ constexpr gfx::Size kMinWindowSize(284, 160);
@@ -263,7 +263,7 @@ index d3daf10f3826cd1ab0213a5ed876ad199fbc95b3..089fb491fd3a915ee373b2134f5ff907
  
    if (!AreControlsVisible()) {
      return false;
-@@ -1480,9 +1494,11 @@ void VideoOverlayWindowViews::UpdateLayerBoundsWithLetterboxing(
+@@ -1485,9 +1499,11 @@ void VideoOverlayWindowViews::UpdateLayerBoundsWithLetterboxing(
    video_view_->SetBoundsRect(video_bounds);
    video_view_->layer()->AsSurface()->SetSurfaceSize(video_bounds.size());
  
@@ -275,7 +275,7 @@ index d3daf10f3826cd1ab0213a5ed876ad199fbc95b3..089fb491fd3a915ee373b2134f5ff907
  
    // Notify the controller that the bounds have changed.
    controller_->UpdateLayerBounds();
-@@ -1755,6 +1771,7 @@ void VideoOverlayWindowViews::ShowInactive() {
+@@ -1760,6 +1776,7 @@ void VideoOverlayWindowViews::ShowInactive() {
    non_client_view()->frame_view()->UpdateWindowRoundedCorners();
  #endif
  
@@ -283,7 +283,7 @@ index d3daf10f3826cd1ab0213a5ed876ad199fbc95b3..089fb491fd3a915ee373b2134f5ff907
    // If there is an existing overlay view, remove it now.
    RemoveOverlayViewIfExists();
  
-@@ -1776,6 +1793,7 @@ void VideoOverlayWindowViews::ShowInactive() {
+@@ -1781,6 +1798,7 @@ void VideoOverlayWindowViews::ShowInactive() {
      overlay_view_->ShowBubble(GetNativeView());
      SetBounds(CalculateAndUpdateWindowBounds());
    }
@@ -291,7 +291,7 @@ index d3daf10f3826cd1ab0213a5ed876ad199fbc95b3..089fb491fd3a915ee373b2134f5ff907
  
    // When the window is first shown, make the title and top controls
    // visible for a few seconds.
-@@ -2367,10 +2385,15 @@ void VideoOverlayWindowViews::MaybeUnregisterFrameSinkHierarchy() {
+@@ -2372,10 +2390,15 @@ void VideoOverlayWindowViews::MaybeUnregisterFrameSinkHierarchy() {
  }
  
  bool VideoOverlayWindowViews::IsOverlayViewShown() const {
@@ -307,7 +307,7 @@ index d3daf10f3826cd1ab0213a5ed876ad199fbc95b3..089fb491fd3a915ee373b2134f5ff907
    if (overlay_view_) {
      // Remove and delete the outgoing view.  Note the trailing `T` on the method
      // name -- this removes `overlay_view_` and returns a unique_ptr to it which
-@@ -2379,6 +2402,7 @@ void VideoOverlayWindowViews::RemoveOverlayViewIfExists() {
+@@ -2384,6 +2407,7 @@ void VideoOverlayWindowViews::RemoveOverlayViewIfExists() {
      GetContentsView()->RemoveChildViewT(overlay_view_.ExtractAsDangling());
      OnSizeConstraintsChanged();
    }

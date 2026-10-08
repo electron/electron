@@ -517,9 +517,9 @@ void ImportedTextureSetReleaseSyncToken(
 
 v8::Local<v8::Value> CreateImportedSharedTextureFromSharedImage(
     v8::Isolate* isolate,
-    ImportedSharedTexture* imported) {
+    scoped_refptr<ImportedSharedTexture> imported) {
   auto* wrapper = new ImportedSharedTextureWrapper();
-  wrapper->ist = base::WrapRefCounted(imported);
+  wrapper->ist = std::move(imported);
 
   // Every method below carries |imported_wrapped| as its [[Data]], so the
   // external stays alive for as long as any of them is reachable. Tie the
@@ -825,7 +825,7 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
     return v8::Null(isolate);
   }
 
-  ImportedSharedTexture* imported = new ImportedSharedTexture();
+  auto imported = base::MakeRefCounted<ImportedSharedTexture>();
   imported->pixel_format = shared_texture.pixel_format;
   imported->coded_size = shared_texture.coded_size;
   imported->visible_rect = shared_texture.visible_rect;
@@ -834,7 +834,8 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
   imported->client_shared_image = std::move(si);
   imported->id = shared_texture.id;
 
-  return CreateImportedSharedTextureFromSharedImage(isolate, imported);
+  return CreateImportedSharedTextureFromSharedImage(isolate,
+                                                    std::move(imported));
 }
 
 void SetSharedTextureReceiver(v8::Isolate* isolate,
@@ -885,7 +886,7 @@ v8::Local<v8::Value> FinishTransferSharedTexture(v8::Isolate* isolate,
   auto source_st = GetSyncTokenFromBase64String(sync_token_data);
   sii->WaitSyncToken(source_st);
 
-  ImportedSharedTexture* imported = new ImportedSharedTexture();
+  auto imported = base::MakeRefCounted<ImportedSharedTexture>();
   imported->pixel_format = partial.pixel_format;
   imported->coded_size = partial.coded_size;
   imported->visible_rect = partial.visible_rect;
@@ -894,7 +895,8 @@ v8::Local<v8::Value> FinishTransferSharedTexture(v8::Isolate* isolate,
   imported->client_shared_image = std::move(si);
   imported->id = id;
 
-  return CreateImportedSharedTextureFromSharedImage(isolate, imported);
+  return CreateImportedSharedTextureFromSharedImage(isolate,
+                                                    std::move(imported));
 }
 
 }  // namespace electron::api::shared_texture

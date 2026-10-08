@@ -4,39 +4,60 @@
 
 #include "shell/browser/api/views/electron_api_image_view.h"
 
+#include <memory>
+
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/image_converter.h"
-#include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
+#include "ui/base/models/image_model.h"
 #include "ui/gfx/image/image.h"
+#include "ui/views/controls/image_view.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace electron::api {
 
-ImageView::ImageView() : View(new views::ImageView()) {
-  view()->set_owned_by_client(views::View::OwnedByClientPassKey{});
-}
+const gin::WrapperInfo ImageView::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronView);
+
+ImageView::ImageView() : View(std::make_unique<views::ImageView>()) {}
 
 ImageView::~ImageView() = default;
 
+views::ImageView* ImageView::image_view() const {
+  return static_cast<views::ImageView*>(view());
+}
+
 void ImageView::SetImage(const gfx::Image& image) {
-  image_view()->SetImage(ui::ImageModel::FromImage(image));
+  if (views::ImageView* image_view = this->image_view())
+    image_view->SetImage(ui::ImageModel::FromImage(image));
 }
 
 // static
-gin_helper::WrappableBase* ImageView::New(gin::Arguments* const args) {
-  // Constructor call.
-  auto* view = new ImageView();
-  view->InitWithArgs(args);
+ImageView* ImageView::New(gin::Arguments* const args) {
+  if (!gin_helper::ThrowIfNotConstructCall(args))
+    return nullptr;
+  auto* view = cppgc::MakeGarbageCollected<ImageView>(
+      args->isolate()->GetCppHeap()->GetAllocationHandle());
+  gin_helper::BindToConstructCall(args, view);
   return view;
 }
 
+const gin::WrapperInfo* ImageView::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* ImageView::GetHumanReadableName() const {
+  return "Electron / ImageView";
+}
+
 // static
-void ImageView::BuildPrototype(v8::Isolate* isolate,
-                               v8::Local<v8::FunctionTemplate> prototype) {
-  prototype->SetClassName(gin::StringToV8(isolate, "ImageView"));
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+void ImageView::FillObjectTemplate(v8::Isolate* isolate,
+                                   v8::Local<v8::ObjectTemplate> templ) {
+  gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod<&ImageView::SetImage>("setImage");
 }
 
@@ -52,10 +73,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.Set("ImageView",
-           gin_helper::CreateConstructor<ImageView>(
-               isolate, base::BindRepeating(&ImageView::New),
-               electron::api::View::GetConstructorTemplate(isolate)));
+  dict.Set("ImageView", gin_helper::Constructible<ImageView>::GetConstructor(
+                            isolate, context));
 }
 
 }  // namespace

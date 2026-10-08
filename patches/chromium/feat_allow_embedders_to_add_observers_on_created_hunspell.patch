@@ -7,10 +7,10 @@ Subject: feat: allow embedders to add observers on created hunspell
 This patch is used by Electron to implement spellchecker events.
 
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index ddf5dfe390b99967e33a83d2bb14130e20e3de78..d2185014bf3a11a4e05f32ad71953e6cd59ec5cb 100644
+index 1b40aa16d5e14dd3e97cc6f49d2f7118c431b375..d8a89a3a54e37c3e4046ef9a0eea36c590bda442 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
-@@ -599,6 +599,8 @@ void SpellcheckService::LoadDictionaries() {
+@@ -600,6 +600,8 @@ void SpellcheckService::LoadDictionaries() {
          std::make_unique<SpellcheckHunspellDictionary>(
              dictionary, platform_spellcheck_language, context_, this));
      hunspell_dictionaries_.back()->AddObserver(this);
@@ -19,8 +19,8 @@ index ddf5dfe390b99967e33a83d2bb14130e20e3de78..d2185014bf3a11a4e05f32ad71953e6c
      hunspell_dictionaries_.back()->Load();
    }
  
-@@ -649,6 +651,20 @@ bool SpellcheckService::IsSpellcheckEnabled() const {
-          (!hunspell_dictionaries_.empty() || enable_if_uninitialized);
+@@ -656,6 +658,20 @@ bool SpellcheckService::IsSpellcheckEnabled() const {
+ #endif  // BUILDFLAG(IS_MAC)
  }
  
 +void SpellcheckService::SetHunspellObserver(SpellcheckHunspellDictionary::Observer* observer) {
@@ -41,7 +41,7 @@ index ddf5dfe390b99967e33a83d2bb14130e20e3de78..d2185014bf3a11a4e05f32ad71953e6c
      content::RenderProcessHost* host) {
    if (base::FeatureList::IsEnabled(
 diff --git a/chrome/browser/spellchecker/spellcheck_service.h b/chrome/browser/spellchecker/spellcheck_service.h
-index ee820172039d3be9bf55104e4db7e696fbca8127..fe4314635fcb709a0495ed8770e90d2aa025e7bd 100644
+index 4cd5568bdb28c29521f1ee964645475d5e8fd7f1..ae5b4d3696222f72ae889cb8094f0a326a0536e8 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.h
 +++ b/chrome/browser/spellchecker/spellcheck_service.h
 @@ -135,6 +135,8 @@ class SpellcheckService : public KeyedService,
@@ -53,7 +53,7 @@ index ee820172039d3be9bf55104e4db7e696fbca8127..fe4314635fcb709a0495ed8770e90d2a
    // content::RenderProcessHostCreationObserver implementation.
    void OnRenderProcessHostCreated(content::RenderProcessHost* host) override;
  
-@@ -310,6 +312,8 @@ class SpellcheckService : public KeyedService,
+@@ -308,6 +310,8 @@ class SpellcheckService : public KeyedService,
    // A pointer to the BrowserContext which this service refers to.
    raw_ptr<content::BrowserContext> context_;
  

@@ -23,7 +23,7 @@ import * as url from 'node:url';
 import * as vm from 'node:vm';
 
 import { captureWithTabSourceId } from './lib/media-helpers.ts';
-import { containsText, readPDF } from './lib/pdf-helpers.ts';
+import { containsText, readPDF, readPDFs } from './lib/pdf-helpers.ts';
 import {
   ifdescribe,
   defer,
@@ -1241,20 +1241,17 @@ describe('webContents module', () => {
         // Fill out the form on the page
         await w.webContents.executeJavaScript('document.querySelector("input").value = "Hi!";');
 
-        // PageState is committed:
-        // 1) When the page receives an unload event
-        // 2) During periodic serialization of page state (1s visible, 5s hidden)
-        // To not wait randomly for the second option, we'll trigger another load
-        await w.loadURL(urlPage3);
-
-        // The form page is unloaded in its old renderer process, which sends its
-        // final PageState to the browser only when it handles the Unload IPC. That
-        // is not ordered with page 3's did-finish-load (a different process), so
-        // wait until the saved entry actually carries the edited value. Form state
-        // is serialized as UTF-16 (mojo_base.mojom.String16) inside the PageState.
+        // Wait for the renderer's delayed PageState sync (1s visible, 5s hidden)
+        // while the form page is still current. The update sent on unload is
+        // racy: the browser only briefly waits for the old frame to unload.
+        // Form state is serialized as UTF-16 inside the PageState.
         const hasFormValue = (pageState?: string) =>
           !!pageState && Buffer.from(pageState, 'base64').includes(Buffer.from('Hi!', 'utf16le'));
-        await waitUntil(() => hasFormValue(w.webContents.navigationHistory.getEntryAtIndex(2)?.pageState));
+        await waitUntil(() => hasFormValue(w.webContents.navigationHistory.getEntryAtIndex(2)?.pageState), {
+          timeout: 20000
+        });
+
+        await w.loadURL(urlPage3);
 
         // Save the navigation state
         const entries = w.webContents.navigationHistory.getAllEntries();
@@ -4217,6 +4214,9 @@ describe('webContents module', () => {
           const attached = once(window.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
           await window.loadFile(path.join(fixturesPath, 'pages', 'webview-zoom-factor.html'));
           [, source] = await attached;
+          // Navigating the guest while its src is still loading aborts that
+          // load, and its did-fail-load can reject the loadURL() below.
+          if (source.isLoading()) await once(source, 'did-finish-load');
           await source.loadURL('about:blank');
         } else {
           await window.loadURL('about:blank');
@@ -5131,16 +5131,22 @@ describe('webContents module', () => {
 
       await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
 
-      for (const format of Object.keys(paperFormats) as PageSizeString[]) {
-        const data = await w.webContents.printToPDF({ pageSize: format });
+      const formats = Object.keys(paperFormats) as PageSizeString[];
+      const pdfs = [];
+      for (const format of formats) {
+        pdfs.push(await w.webContents.printToPDF({ pageSize: format }));
+      }
 
-        const pdfInfo = await readPDF(data);
+      // Parse every PDF in one pdf.js subprocess: one Electron launch per
+      // format is enough to push this test past its timeout on slow CI hosts.
+      const pdfInfos = await readPDFs(pdfs);
 
+      const approxEq = (a: number, b: number, epsilon = 0.01) => Math.abs(a - b) <= epsilon;
+
+      for (const [i, format] of formats.entries()) {
         // page.view is [top, left, width, height].
-        const width = pdfInfo.view[2] / 72;
-        const height = pdfInfo.view[3] / 72;
-
-        const approxEq = (a: number, b: number, epsilon = 0.01) => Math.abs(a - b) <= epsilon;
+        const width = pdfInfos[i].view[2] / 72;
+        const height = pdfInfos[i].view[3] / 72;
 
         expect(approxEq(width, paperFormats[format].width)).to.be.true();
         expect(approxEq(height, paperFormats[format].height)).to.be.true();

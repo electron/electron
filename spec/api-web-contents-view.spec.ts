@@ -137,6 +137,32 @@ describe('WebContentsView', () => {
     v.removeChildView(wcv);
   });
 
+  it('leaves its parent and stops responding once its webContents is destroyed', async () => {
+    const w = new BaseWindow({ show: false });
+    const v = new View();
+    const wcv = new WebContentsView();
+    const child = new View();
+    const wc = wcv.webContents;
+    w.setContentView(v);
+    v.addChildView(wcv);
+    wcv.addChildView(child);
+    wcv.setBounds({ x: 1, y: 2, width: 30, height: 40 });
+    expect(wcv.children).to.deep.equal([child]);
+    expect(wcv.getVisible()).to.be.true();
+
+    const destroyed = once(wc, 'destroyed');
+    wc.destroy();
+    await destroyed;
+
+    expect(v.children).to.deep.equal([]);
+    expect(wcv.getBounds()).to.deep.equal({ x: 0, y: 0, width: 0, height: 0 });
+    expect(wcv.getVisible()).to.be.false();
+    wcv.setBounds({ x: 5, y: 5, width: 5, height: 5 });
+    expect(wcv.getBounds()).to.deep.equal({ x: 0, y: 0, width: 0, height: 0 });
+    wcv.addChildView(new View());
+    expect(() => v.addChildView(wcv)).to.throw("Can't add a destroyed child view to a parent view");
+  });
+
   it('correctly reorders children', () => {
     const w = new BaseWindow({ show: false });
     const cv = new View();
@@ -577,7 +603,7 @@ describe('WebContentsView', () => {
     });
   });
 
-  describe('focusOnNavigation webPreference', () => {
+  describe('focusOnNavigation webPreference', { tags: ['serial'] }, () => {
     it('focuses the webContents on navigation by default', async () => {
       const w = new BrowserWindow();
       await once(w, 'focus');
@@ -588,7 +614,9 @@ describe('WebContentsView', () => {
       v.webContents.openDevTools({ mode: 'right' });
       await devToolsFocused;
       expect(v.webContents.isFocused()).to.be.false();
+      const focused = once(v.webContents, 'focus');
       await v.webContents.loadURL('data:text/html,<body>test</body>');
+      await focused;
       expect(v.webContents.isFocused()).to.be.true();
     });
 

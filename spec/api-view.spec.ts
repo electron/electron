@@ -1,4 +1,5 @@
-import { BaseWindow, View } from 'electron/main';
+import { nativeImage } from 'electron/common';
+import { BaseWindow, ImageView, View, WebContentsView } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -203,6 +204,83 @@ describe('View', () => {
       expect(() => {
         v.setBackgroundBlur(10);
       }).to.not.throw();
+    });
+  });
+
+  describe('constructors', () => {
+    it('throw when called without new', () => {
+      expect(() => (View as any)()).to.throw('Requires constructor call');
+      expect(() => (ImageView as any)()).to.throw('Requires constructor call');
+      expect(() => (WebContentsView as any)()).to.throw('Requires constructor call');
+    });
+
+    it('keep the prototype of JavaScript subclasses', () => {
+      class MyView extends View {
+        kind() {
+          return 'my-view';
+        }
+      }
+      class MyImageView extends ImageView {}
+      class MyWebContentsView extends WebContentsView {}
+
+      const v = new MyView();
+      const iv = new MyImageView();
+      const wcv = new MyWebContentsView();
+      try {
+        expect(v).to.be.an.instanceOf(MyView).and.an.instanceOf(View);
+        expect(v.kind()).to.equal('my-view');
+        expect(iv).to.be.an.instanceOf(MyImageView).and.an.instanceOf(ImageView).and.an.instanceOf(View);
+        expect(wcv).to.be.an.instanceOf(MyWebContentsView).and.an.instanceOf(WebContentsView);
+
+        const parent = new View();
+        parent.addChildView(v);
+        parent.addChildView(iv);
+        parent.addChildView(wcv);
+        expect(parent.children).to.deep.equal([v, iv, wcv]);
+        expect(parent.children[0]).to.equal(v);
+
+        let emitted = 0;
+        v.on('bounds-changed', () => emitted++);
+        v.setBounds({ x: 0, y: 0, width: 10, height: 10 });
+        expect(emitted).to.equal(1);
+        expect(v.getBounds()).to.deep.equal({ x: 0, y: 0, width: 10, height: 10 });
+      } finally {
+        wcv.webContents.destroy();
+      }
+    });
+  });
+
+  describe('methods', () => {
+    it('treat two WebContentsViews that share a webContents as separate children', () => {
+      const a = new WebContentsView();
+      const b = new WebContentsView({ webContents: a.webContents });
+      try {
+        const parent = new View();
+        parent.addChildView(a);
+        parent.addChildView(b);
+        expect(parent.children).to.deep.equal([a, b]);
+        expect(parent.children[0]).to.equal(a);
+        expect(parent.children[1]).to.equal(b);
+
+        parent.removeChildView(b);
+        expect(parent.children).to.deep.equal([a]);
+        expect(parent.children[0]).to.equal(a);
+      } finally {
+        a.webContents.destroy();
+      }
+    });
+
+    it('can be called on subclass instances', () => {
+      const iv = new ImageView();
+      iv.setBounds({ x: 1, y: 2, width: 3, height: 4 });
+      expect(View.prototype.getBounds.call(iv)).to.deep.equal({ x: 1, y: 2, width: 3, height: 4 });
+    });
+
+    it('throw when called on an object of another type', () => {
+      const v = new View();
+      expect(() => ImageView.prototype.setImage.call(v, nativeImage.createEmpty())).to.throw('Illegal invocation');
+      expect(() => (WebContentsView.prototype.setBorderRadius as any).call(v, 1)).to.throw('Illegal invocation');
+      expect(() => View.prototype.getBounds.call(nativeImage.createEmpty())).to.throw('Illegal invocation');
     });
   });
 });

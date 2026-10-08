@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "gin/converter.h"
-#include "mojo/public/cpp/system/platform_handle.h"
+#include "mojo/public/cpp/platform/platform_handle.h"
 #include "shell/common/api/electron_api_shared_texture.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/serialized_value_converter.h"
@@ -244,7 +244,7 @@ void ElectronApiServiceImpl::ReceivePostMessage(
 }
 
 void ElectronApiServiceImpl::TakeHeapSnapshot(
-    mojo::ScopedHandle file,
+    mojo::PlatformHandle file,
     TakeHeapSnapshotCallback callback) {
   blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
   if (!frame)
@@ -252,14 +252,12 @@ void ElectronApiServiceImpl::TakeHeapSnapshot(
 
   ScopedAllowBlockingForElectron allow_blocking;
 
-  base::ScopedPlatformFile platform_file;
-  if (mojo::UnwrapPlatformFile(std::move(file), &platform_file) !=
-      MOJO_RESULT_OK) {
+  if (!file.is_valid()) {
     LOG(ERROR) << "Unable to get the file handle from mojo.";
     std::move(callback).Run(false);
     return;
   }
-  base::File base_file(std::move(platform_file));
+  base::File base_file(file.TakePlatformFile());
 
   v8::Isolate* isolate = frame->GetAgentGroupScheduler()->Isolate();
   bool success = electron::TakeHeapSnapshot(isolate, &base_file);

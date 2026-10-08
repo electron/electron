@@ -14,8 +14,12 @@ namespace electron {
 NotificationPresenter::NotificationPresenter() = default;
 
 NotificationPresenter::~NotificationPresenter() {
-  for (Notification* notification : notifications_)
+  while (!notifications_.empty()) {
+    auto it = notifications_.begin();
+    Notification* notification = *it;
+    notifications_.erase(it);
     delete notification;
+  }
 }
 
 base::WeakPtr<Notification> NotificationPresenter::CreateNotification(
@@ -28,8 +32,8 @@ base::WeakPtr<Notification> NotificationPresenter::CreateNotification(
 }
 
 void NotificationPresenter::RemoveNotification(Notification* notification) {
-  if (const auto nh = notifications_.extract(notification))
-    delete nh.value();
+  if (notifications_.erase(notification))
+    delete notification;
 }
 
 void NotificationPresenter::CloseNotificationWithId(
@@ -41,7 +45,13 @@ void NotificationPresenter::CloseNotificationWithId(
   if (it != notifications_.end()) {
     Notification* notification = (*it);
     notification->Dismiss();
-    notifications_.erase(notification);
+    // Dismiss() may already have destroyed |notification|. Look it up by
+    // address rather than erasing by key, which would construct a raw_ptr
+    // from a possibly-freed pointer.
+    if (auto found = notifications_.find(notification);
+        found != notifications_.end()) {
+      notifications_.erase(found);
+    }
   }
 }
 

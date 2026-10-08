@@ -7,6 +7,7 @@
 #include <string>
 
 #include "base/dcheck_is_on.h"
+#include "content/public/common/content_features.h"
 
 namespace electron {
 
@@ -32,12 +33,14 @@ std::string EnablePlatformSpecificFeatures() {
 }
 
 std::string DisablePlatformSpecificFeatures() {
+  // TODO(deepak1556): Remove when Aperitif helpers are bundled.
+  std::string disabled_features = features::kAperitifHelpers.name;
   if (@available(macOS 14.4, *)) {
     // Required to stop timing out getDisplayMedia while waiting for
     // the user to select a window with the picker
-    return "TimeoutHangingVideoCaptureStarts";
+    disabled_features += ",TimeoutHangingVideoCaptureStarts";
   }
-  return "";
+  return disabled_features;
 }
 
 }  // namespace electron

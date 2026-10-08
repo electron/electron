@@ -1029,6 +1029,7 @@ describe('chromium features', () => {
       expect(open1).to.be.true();
 
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+      w.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
       await setTimeout(1000);
       await expect(
         waitUntil(async () => {
@@ -1063,6 +1064,7 @@ describe('chromium features', () => {
       expect(open2).to.be.true();
 
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+      w.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
       await setTimeout(1000);
       await expect(
         waitUntil(async () => {
@@ -4502,7 +4504,7 @@ describe('font fallback', () => {
   );
 });
 
-describe('iframe using HTML fullscreen API while window is OS-fullscreened', () => {
+describe('iframe using HTML fullscreen API while window is OS-fullscreened', { tags: ['serial'] }, () => {
   const fullscreenChildHtml = fs.promises.readFile(path.join(fixturesPath, 'pages', 'fullscreen-oopif.html'));
   let w: BrowserWindow;
   let server: http.Server;
@@ -4912,7 +4914,7 @@ describe('navigator.clipboard.write', { tags: ['serial'] }, () => {
   });
 });
 
-describe('pointer lock permission request', () => {
+describe('pointer lock permission request', { tags: ['serial'] }, () => {
   const servers: http.Server[] = [];
   let serverUrl: string;
   let otherPortUrl: string;
@@ -4946,12 +4948,20 @@ describe('pointer lock permission request', () => {
       requests.push({ wc, permission, details });
       callback(false);
     });
-    w.webContents.focus();
+    // content rejects the request with WrongDocumentError, without consulting
+    // the permission handler, unless the widget has focus. Focus arrives
+    // asynchronously on macOS, so wait for it.
+    if (!w.webContents.isFocused()) {
+      const focus = once(w.webContents, 'focus');
+      w.webContents.focus();
+      await focus;
+    }
     const result = await iframe.executeJavaScript(
       "document.body.requestPointerLock().then(() => 'locked', (e) => e.name)",
       true
     );
-    expect(result).to.not.equal('locked');
+    // A request denied by the permission handler rejects with SecurityError.
+    expect(result).to.equal('SecurityError');
     const request = requests.find((r) => r.permission === 'pointerLock');
     expect(request).to.exist();
     expect(request!.wc).to.equal(w.webContents);
@@ -5603,8 +5613,8 @@ describe('navigator.usb', () => {
     serverUrl = (await listen(server)).url;
   });
 
-  const requestDevices: any = () => {
-    return w.webContents.executeJavaScript(
+  const requestDevices: any = (win = w) => {
+    return win.webContents.executeJavaScript(
       `
       navigator.usb.requestDevice({filters: []}).then(device => device.toString()).catch(err => err.toString());
     `,
@@ -5612,8 +5622,8 @@ describe('navigator.usb', () => {
     );
   };
 
-  const getDevices: any = () => {
-    return w.webContents.executeJavaScript(
+  const getDevices: any = (win = w) => {
+    return win.webContents.executeJavaScript(
       `
       navigator.usb.getDevices().then(devices => devices.map(device => device.toString())).catch(err => err.toString());
     `,
@@ -5636,14 +5646,24 @@ describe('navigator.usb', () => {
 
   it('does not crash when using in-memory partitions', async () => {
     const sesWin = new BrowserWindow({
+      show: false,
       webPreferences: {
         partition: 'test-partition'
       }
     });
 
     await sesWin.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
-    const devices = await getDevices();
+    const devices = await getDevices(sesWin);
     expect(devices).to.be.an('array').that.is.empty();
+
+    let selectFired = false;
+    sesWin.webContents.session.once('select-usb-device', (event, details, callback) => {
+      selectFired = true;
+      callback();
+    });
+    const device = await requestDevices(sesWin);
+    expect(selectFired).to.be.true();
+    expect(device).to.equal(notFoundError);
   });
 
   it('does not return a device if select-usb-device event is not defined', async () => {
