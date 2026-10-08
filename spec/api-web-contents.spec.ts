@@ -389,6 +389,34 @@ describe('webContents module', () => {
       }).to.throw('webContents.print(): Invalid optional callback provided.');
     });
 
+    it('takes a falsy callback as no callback', () => {
+      expect(() => {
+        // @ts-ignore this line is intentionally incorrect
+        w.webContents.print({ deviceName: 'i-am-a-nonexistent-printer' }, null);
+      }).not.to.throw();
+    });
+
+    it('does not start a job when reading the options throws', async () => {
+      let started = false;
+      expect(() => {
+        w.webContents.print(
+          {
+            deviceName: 'i-am-a-nonexistent-printer',
+            get copies(): number {
+              throw new Error('bad getter');
+            }
+          },
+          () => {
+            started = true;
+          }
+        );
+      }).to.throw('bad getter');
+      await new Promise<void>((resolve) => {
+        w.webContents.print({ deviceName: 'i-am-a-nonexistent-printer' }, () => resolve());
+      });
+      expect(started).to.be.false();
+    });
+
     it('fails when an invalid deviceName is passed', (done) => {
       w.webContents.print({ deviceName: 'i-am-a-nonexistent-printer' }, (success, reason) => {
         expect(success).to.equal(false);
@@ -494,9 +522,15 @@ describe('webContents module', () => {
     before(async function () {
       if (!deviceName) return this.skip();
       const probe = new BrowserWindow({ show: false });
-      const printers = await probe.webContents.getPrintersAsync();
-      probe.destroy();
-      if (!printers.some((p) => p.name === deviceName)) return this.skip();
+      try {
+        await waitUntil(async () => (await probe.webContents.getPrintersAsync()).some((p) => p.name === deviceName), {
+          timeout: 10000
+        });
+      } catch {
+        return this.skip();
+      } finally {
+        probe.destroy();
+      }
     });
 
     beforeEach(async function () {

@@ -281,7 +281,7 @@ class PdfQueue {
   // One of the two is set.
   struct Entry {
     std::unique_ptr<PdfJob> pdf;
-    PrintJob print;
+    QueuedPrint print;
   };
 
   void Add(int frame_tree, Entry entry) {
@@ -427,7 +427,7 @@ class PdfQueue {
 
 }  // namespace
 
-void EnqueuePrintJob(int frame_tree, PrintJob job) {
+void EnqueuePrintJob(int frame_tree, QueuedPrint job) {
   PdfQueue::Get().Add(frame_tree, {.print = std::move(job)});
 }
 

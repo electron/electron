@@ -67,6 +67,12 @@ class PrintViewManagerElectron
              bool silent,
              PrintCallback callback);
 
+  // Hides the base method to count the jobs in flight.
+  void PrintToPdf(content::RenderFrameHost* rfh,
+                  const std::string& page_ranges,
+                  printing::mojom::PrintPagesParamsPtr params,
+                  print_to_pdf::PdfPrintJob::PrintToPdfCallback callback);
+
  private:
   friend class content::WebContentsUserData<PrintViewManagerElectron>;
 
@@ -90,10 +96,6 @@ class PrintViewManagerElectron
     content::GlobalRenderFrameHostId rfh_id;
     PrintCallback callback;
     bool silent = false;
-    // The renderer defers printing while its frame loads; wait for that once,
-    // for at most as long as the renderer itself would.
-    bool waiting_for_load = false;
-    bool waited_for_load = false;
     // What print() asked for; page-content fields are re-applied after the
     // dialog, and `ranges` go to the renderer unless the dialog chose others.
     std::unique_ptr<printing::PrintSettings> requested;
@@ -110,8 +112,9 @@ class PrintViewManagerElectron
 
   explicit PrintViewManagerElectron(content::WebContents* web_contents);
 
-  bool IsCurrentJob(int id) const;
-  bool RegisterDialogClient(printing::PrinterQuery* query_to_assign);
+  [[nodiscard]] bool IsCurrentJob(int id) const;
+  [[nodiscard]] bool RegisterDialogClient(
+      printing::PrinterQuery* query_to_assign);
   static void UnregisterDialogClient(Job& job);
   void OnSettingsResolved(int id,
                           std::unique_ptr<printing::PrinterQuery> query);
@@ -133,8 +136,6 @@ class PrintViewManagerElectron
 
   // content::WebContentsObserver:
   void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
-  void DidStopLoading() override;
-  void ResumeAfterLoad(int id);
 
   // printing::mojom::PrintManagerHost:
   void GetDefaultPrintSettings(
@@ -158,6 +159,7 @@ class PrintViewManagerElectron
 
   std::optional<Job> job_;
   int next_job_id_ = 0;
+  int pdf_jobs_ = 0;
   JobObserver job_observer_{this};
 
   base::WeakPtrFactory<PrintViewManagerElectron> weak_factory_{this};

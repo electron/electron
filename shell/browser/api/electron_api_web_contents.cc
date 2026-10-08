@@ -4897,7 +4897,7 @@ void WebContents::Print(gin::Arguments* const args) {
 
   PrintViewManagerElectron::PrintCallback callback = base::DoNothing();
   v8::Local<v8::Value> callback_value;
-  if (args->GetNext(&callback_value) && !callback_value->IsUndefined() &&
+  if (args->GetNext(&callback_value) && callback_value->BooleanValue(isolate) &&
       !gin::ConvertFromV8(isolate, callback_value, &callback)) {
     args->ThrowTypeError(
         "webContents.print(): Invalid optional callback provided.");
@@ -4931,8 +4931,16 @@ void WebContents::Print(gin::Arguments* const args) {
     } else if (!(media_size = MediaSizeFromPageSize(isolate, page_size))) {
       return;
     }
+    // Later reads would clear an exception that is only left pending.
+    v8::TryCatch try_catch(isolate);
     request = ReadPrintRequest(isolate, options, std::move(*media_size));
+    if (try_catch.HasCaught())
+      try_catch.ReThrow();
   }
+
+  // A getter or Proxy trap threw while the options were read.
+  if (isolate->HasPendingException())
+    return;
 
   EnqueuePrintJob(
       web_contents()->GetPrimaryMainFrame()->GetFrameTreeNodeId().value(),

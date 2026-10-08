@@ -22,8 +22,8 @@ using PrintToPDFFrame = base::RepeatingCallback<content::RenderFrameHost*()>;
 // A webContents.print() job: started when it reaches the front of its frame
 // tree's queue, and finished (letting the next job start) when it runs |done|
 // or drops it.
-using PrintJob = base::OnceCallback<void(base::OnceClosure done)>;
-void EnqueuePrintJob(int frame_tree, PrintJob job);
+using QueuedPrint = base::OnceCallback<void(base::OnceClosure done)>;
+void EnqueuePrintJob(int frame_tree, QueuedPrint job);
 
 // webContents.printToPDF(options) / webFrameMain.printToPDF(options).
 // Validates |options| (which may be empty) and returns a promise for the PDF

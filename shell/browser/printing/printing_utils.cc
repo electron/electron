@@ -153,7 +153,7 @@ class ScopedQueryClient {
   ScopedQueryClient()
       : id_(printing::PrintBackendServiceManager::GetInstance()
                 .RegisterQueryClient()) {}
-  ScopedQueryClient(ScopedQueryClient&& other)
+  ScopedQueryClient(ScopedQueryClient&& other) noexcept
       : id_(std::exchange(other.id_, std::nullopt)) {}
   ~ScopedQueryClient() {
     if (id_) {

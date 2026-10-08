@@ -57,7 +57,18 @@ PrintViewManagerElectron::PrintViewManagerElectron(
       content::WebContentsUserData<PrintViewManagerElectron>(*web_contents) {}
 
 PrintViewManagerElectron::~PrintViewManagerElectron() {
-  Finish(false, kFailed);
+  // A fully rendered document keeps spooling through PrintJobManager after the
+  // WebContents goes away; anything earlier is cancelled.
+  bool rendered = false;
+  if (job_ && job_->print_job && job_->print_job->is_job_pending()) {
+    scoped_refptr<printing::PrintJob> print_job = job_->print_job;
+    print_job->RemoveObserver(job_observer_);
+    const printing::PrintedDocument* document = print_job->document();
+    rendered = document && document->IsComplete();
+    if (!rendered)
+      print_job->Cancel();
+  }
+  Finish(rendered, kFailed);
 }
 
 // static
@@ -123,6 +134,22 @@ void PrintViewManagerElectron::Print(content::RenderFrameHost* rfh,
       base::BindOnce(&PrintViewManagerElectron::OnSettingsResolved,
                      weak_factory_.GetWeakPtr(), job_->id, std::move(query)),
       is_modifiable, /*want_pdf_settings=*/false);
+}
+
+void PrintViewManagerElectron::PrintToPdf(
+    content::RenderFrameHost* rfh,
+    const std::string& page_ranges,
+    printing::mojom::PrintPagesParamsPtr params,
+    print_to_pdf::PdfPrintJob::PrintToPdfCallback callback) {
+  ++pdf_jobs_;
+  PrintViewManagerBase::PrintToPdf(
+      rfh, page_ranges, std::move(params),
+      std::move(callback).Then(base::BindOnce(
+          [](base::WeakPtr<PrintViewManagerElectron> self) {
+            if (self)
+              --self->pdf_jobs_;
+          },
+          weak_factory_.GetWeakPtr())));
 }
 
 bool PrintViewManagerElectron::IsCurrentJob(int id) const {
@@ -230,16 +257,6 @@ void PrintViewManagerElectron::RenderDocument() {
     Finish(false, kFailed);
     return;
   }
-  if (web_contents()->IsLoading() && !job_->waited_for_load) {
-    job_->waiting_for_load = job_->waited_for_load = true;
-    base::SequencedTaskRunner::GetCurrentDefault()->PostDelayedTask(
-        FROM_HERE,
-        base::BindOnce(&PrintViewManagerElectron::ResumeAfterLoad,
-                       weak_factory_.GetWeakPtr(), job_->id),
-        base::Seconds(2));
-    return;
-  }
-
   printing::PrintSettings settings = job_->query->settings();
   if (const printing::PrintSettings* requested = job_->requested.get()) {
     // The system dialogs rebuild PrintSettings from the driver, dropping what
@@ -382,18 +399,8 @@ void PrintViewManagerElectron::Finish(bool success, std::string_view reason) {
     return;
   Job job = std::move(*job_);
   job_.reset();
-  if (job.print_job) {
+  if (job.print_job)
     job.print_job->RemoveObserver(job_observer_);
-    printing::PrintedDocument* document = job.print_job->document();
-    if (!success && job.print_job->is_job_pending()) {
-      if (document && document->IsComplete()) {
-        // Fully rendered; PrintJobManager finishes spooling it.
-        success = true;
-      } else {
-        job.print_job->Cancel();
-      }
-    }
-  }
   UnregisterDialogClient(job);
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, base::BindOnce(std::move(job.callback), success,
@@ -412,33 +419,21 @@ void PrintViewManagerElectron::JobObserver::OnFailed() {
   owner_->Finish(false, kFailed);
 }
 
-void PrintViewManagerElectron::DidStopLoading() {
-  if (job_)
-    ResumeAfterLoad(job_->id);
-}
-
-void PrintViewManagerElectron::ResumeAfterLoad(int id) {
-  if (IsCurrentJob(id) && job_->waiting_for_load) {
-    job_->waiting_for_load = false;
-    RenderDocument();
-  }
-}
-
 void PrintViewManagerElectron::RenderFrameDeleted(
     content::RenderFrameHost* render_frame_host) {
   PrintViewManagerBase::RenderFrameDeleted(render_frame_host);
-  // Once spooling has started the frame is no longer needed.
-  if (job_ && !job_->print_job &&
-      job_->rfh_id == render_frame_host->GetGlobalId()) {
+  // A pending settings request or dialog owns the query and fails the job when
+  // it returns. Once spooling has started the frame is no longer needed.
+  if (job_ && job_->query && job_->rfh_id == render_frame_host->GetGlobalId()) {
     Finish(false, kFailed);
   }
 }
 
-// One print per WebContents at a time: the renderer's print helper and the
-// compositor request are shared with window.print().
+// One print per WebContents at a time: print() and printToPDF() share the
+// renderer's print helper and the compositor request with window.print().
 void PrintViewManagerElectron::GetDefaultPrintSettings(
     GetDefaultPrintSettingsCallback callback) {
-  if (job_) {
+  if (job_ || pdf_jobs_) {
     std::move(callback).Run(nullptr);
     return;
   }
@@ -448,7 +443,7 @@ void PrintViewManagerElectron::GetDefaultPrintSettings(
 void PrintViewManagerElectron::ScriptedPrint(
     printing::mojom::ScriptedPrintParamsPtr params,
     ScriptedPrintCallback callback) {
-  if (job_) {
+  if (job_ || pdf_jobs_) {
 #if BUILDFLAG(ENABLE_OOP_PRINTING)
     if (printing::ShouldPrintJobOop())
       UnregisterSystemPrintClient();
