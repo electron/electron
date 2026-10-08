@@ -7,6 +7,11 @@ This CL exposes the file system access blocklist publicly so that we can leverag
 it in Electron and prevent drift from Chrome's blocklist. We should look for a way
 to upstream this change to Chrome.
 
+The exposed copy also carries the upstream macOS firmlink handling
+(MaybeStripMacDataVolumePrefix() and NormalizeFilePathForBlocklist(), plus the
+/System/Volumes block rule) so that /System/Volumes/Data alias paths are matched
+against the blocklist the same way Chrome matches them.
+
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 index 105cf4affe19e52111d378adf060b40fa6e2e84e..7832816e89a4f1be1b87498d778cd6282a8fb768 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
