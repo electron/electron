@@ -4,8 +4,10 @@
 
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <utility>
+#include <variant>
 
 #include "base/command_line.h"
 #include "base/dcheck_is_on.h"
@@ -22,6 +24,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_switches.h"
+#include "gin/array_buffer.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/webauthn/electron_authenticator_request_client_delegate.h"
 #include "shell/browser/window_list.h"
@@ -32,6 +35,7 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "ui/accessibility/platform/ax_platform.h"
+#include "v8/include/v8-wasm.h"
 #include "v8/include/v8.h"
 
 #if BUILDFLAG(IS_LINUX)
@@ -43,7 +47,67 @@
 #endif
 
 #if DCHECK_IS_ON()
+#include "shell/common/v8_code_cache_test_helpers.h"  // nogncheck
+
 namespace {
+
+v8::Local<v8::Value> SerializeWasmModuleForTesting(
+    v8::Isolate* isolate,
+    gin_helper::ErrorThrower thrower,
+    v8::Local<v8::Value> module) {
+  if (!module->IsWasmModuleObject()) {
+    thrower.ThrowTypeError("Expected a WebAssembly.Module");
+    return {};
+  }
+  auto serialized =
+      module.As<v8::WasmModuleObject>()->GetCompiledModule().Serialize();
+  return node::Buffer::Copy(
+             isolate, reinterpret_cast<const char*>(serialized.buffer.get()),
+             serialized.size)
+      .ToLocalChecked();
+}
+
+v8::Local<v8::Value> CompileWasmModuleWithCacheForTesting(
+    v8::Isolate* isolate,
+    const gin::ArrayBufferView& wire_bytes,
+    const gin::ArrayBufferView& cached_bytes) {
+  auto promise =
+      std::make_unique<gin_helper::Promise<v8::Local<v8::Value>>>(isolate);
+  auto handle = promise->GetHandle();
+  using ModuleResult =
+      std::variant<v8::Local<v8::WasmModuleObject>, v8::Local<v8::Value>>;
+  auto resolve = electron::AdaptCallbackForRepeating(base::BindOnce(
+      [](std::unique_ptr<gin_helper::Promise<v8::Local<v8::Value>>> promise,
+         ModuleResult result) {
+        if (auto* module =
+                std::get_if<v8::Local<v8::WasmModuleObject>>(&result)) {
+          v8::Local<v8::Value> value = *module;
+          promise->Resolve(value);
+        } else {
+          promise->Reject(std::get<v8::Local<v8::Value>>(result));
+        }
+      },
+      std::move(promise)));
+  v8::WasmModuleCompilation compilation;
+  compilation.SetHasCompiledModuleBytes();
+  compilation.OnBytesReceived(wire_bytes.span().data(),
+                              wire_bytes.span().size());
+  bool accepted = false;
+  compilation.Finish(
+      isolate,
+      [&accepted,
+       &cached_bytes](v8::WasmStreaming::ModuleCachingInterface& cache) {
+        accepted = cache.SetCachedCompiledModuleBytes(
+            std::span(cached_bytes.span().data(), cached_bytes.span().size()));
+      },
+      [resolve = std::move(resolve)](ModuleResult result) {
+        resolve.Run(std::move(result));
+      });
+  auto result = gin_helper::Dictionary::CreateEmpty(isolate);
+  result.Set("accepted", accepted);
+  result.Set("module", handle);
+  return result.GetHandle();
+}
 
 class CallbackTestingHelper final {
  public:
@@ -346,6 +410,12 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict{isolate, exports};
+  dict.SetMethod<&electron::testing::ComputeV8VersionHash>(
+      "computeV8VersionHashForTesting");
+  dict.SetMethod<&SerializeWasmModuleForTesting>(
+      "serializeWasmModuleForTesting");
+  dict.SetMethod<&CompileWasmModuleWithCacheForTesting>(
+      "compileWasmModuleWithCacheForTesting");
   dict.SetMethod<&Log>("log");
   dict.SetMethod<&GetLoggingDestination>("getLoggingDestination");
   dict.SetMethod<&IsPlatformCaretBrowsingEnabled>(

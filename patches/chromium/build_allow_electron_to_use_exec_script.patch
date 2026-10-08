@@ -5,11 +5,8 @@ Subject: build: allow electron to use exec_script
 
 This is similar to the //build usecase so we're OK adding ourselves here.
 
-//v8/gni/version_hash_salt.gni comes from our V8 patch that derives the
-code-cache salt from patches/v8 at gen time.
-
 diff --git a/.gn b/.gn
-index 84c68fbae243a60a676b0234cf850331adbb87d9..7f3316d37e4188e3c3a28d68aa2bc8a28891dfbd 100644
+index 84c68fbae243a60a676b0234cf850331adbb87d9..f914b429a415fe4802dcd95a78d1a749890b7a19 100644
 --- a/.gn
 +++ b/.gn
 @@ -460,6 +460,31 @@ exec_script_allowlist =
@@ -18,7 +15,7 @@ index 84c68fbae243a60a676b0234cf850331adbb87d9..7f3316d37e4188e3c3a28d68aa2bc8a2
        "//third_party/dawn/third_party/meson/meson_target.gni",
 +
 +      "//electron/BUILD.gn",
-+      "//v8/gni/version_hash_salt.gni",
++      "//electron/build/args/all.gn",
 +      "//third_party/electron_node/deps/ada/unofficial.gni",
 +      "//third_party/electron_node/deps/base64/BUILD.gn",
 +      "//third_party/electron_node/deps/base64/unofficial.gni",

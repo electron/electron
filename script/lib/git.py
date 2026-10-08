@@ -134,13 +134,17 @@ def update_ref(repo, ref, newvalue):
   return subprocess.check_call(args)
 
 
+def _run(repo, *args):
+  return subprocess.check_output(
+      ['git', '--no-optional-locks', '-C', str(repo), *args])
+
+
 def get_commit_for_ref(repo, ref):
-  args = ['git', '-C', repo, 'rev-parse', '--verify', ref]
-  return subprocess.check_output(args).decode('utf-8').strip()
+  return _run(repo, 'rev-parse', '--verify', ref).decode('utf-8').strip()
 
 def get_commit_count(repo, commit_range):
-  args = ['git', '-C', repo, 'rev-list', '--count', commit_range]
-  return int(subprocess.check_output(args).decode('utf-8').strip())
+  return int(_run(repo, 'rev-list', '--count', commit_range))
+
 
 def guess_base_commit(repo, ref):
   """Guess which commit the patches might be based on"""

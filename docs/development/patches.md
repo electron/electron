@@ -94,3 +94,42 @@ $ ../../electron/script/git-import-patches -3 ../../electron/patches/node
 ```
 
 If `git-import-patches -3` encounters a merge conflict that it can't resolve automatically, it will pause and allow you to resolve the conflict manually. Once you have resolved the conflict, `git add` the resolved files and continue to apply the rest of the patches by running `git am --continue`.
+
+### V8 serialized bytecode compatibility
+
+V8 includes its embedder string in the version hash used to validate JavaScript
+code caches and serialized WebAssembly modules. Electron's common GN arguments
+automatically set `v8_embedder_string` to `-electron.<fingerprint>`. No release time bump is required.
+
+The fingerprint identifies the net committed source changes between the patched
+V8 `HEAD` produced by sync and the revision pinned by Chromium's `DEPS`. It
+includes changed paths, Git normalized content
+identities and file modes, including additions and deletions. Patch filenames,
+descriptions, authors and commit history are not inputs. Reordering, splitting or
+re-exporting patches preserves the fingerprint when the resulting source is
+identical. Actual source changes invalidate caches conservatively, even when
+they are ABI-compatible.
+
+Uncommitted local edits do not change the fingerprint. Compatibility between
+cached code from differently modified development builds is outside this
+mechanism's scope, clear local caches when testing such changes.
+
+Local builds derive the fingerprint directly from the synced V8 Git checkout
+without writing sidecar files. CI source caches deliberately omit V8 Git
+metadata, so cache creation records the same Git derived fingerprint in
+`v8/.electron-patch-fingerprint.json` before stripping it. Restored caches verify
+the pinned V8 revision, patch series provenance and fingerprint schema before
+using that identity. Missing or stale metadata fails generation rather than
+substituting a weaker cache key.
+
+The source cache key in `script/generate-deps-hash.js` hashes
+`script/v8-patch-fingerprint.py`, which contains the fingerprint algorithm and
+Git input handling. Changes to the algorithm or metadata schema invalidate
+existing source caches automatically.
+
+Packagers building source trees without V8 Git metadata or CI fingerprint
+metadata can explicitly set `ELECTRON_V8_EMBEDDER_STRING` before GN generation
+to supply their own compatibility identity. This bypasses automatic fingerprint
+generation and validation; the packager must change the identity whenever V8
+cache compatibility changes. GN does not track environment variable changes,
+so changing or removing this override requires rerunning `gn gen` explicitly.
