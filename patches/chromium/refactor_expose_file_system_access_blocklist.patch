@@ -320,7 +320,7 @@ index 0000000000000000000000000000000000000000..bf2ccceae9b929d59177d8231d0a9240
 +  return block_path_rules;
 +}
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 105cf4affe19e52111d378adf060b40fa6e2e84e..83d45ea322a2c4b92e6e8c6fe0a9a86c78b25e9c 100644
+index 056d7e8235c47b97b71811cd2a355ff567a9d86f..72ed9b50534c9926a2536f35e479d92fd9c1ff8f 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -341,262 +341,8 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
