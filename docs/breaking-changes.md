@@ -53,22 +53,6 @@ const { width, height } = image.getSize() // DIPs
 console.log(width * scaleFactor, height * scaleFactor) // pixels, as before
 ```
 
-### Behavior Changed: workers created by subframes need `nodeIntegrationInSubFrames` for Node.js integration
-
-With `nodeIntegrationInWorker: true`, a `Worker` created from an `<iframe>` in
-the same process as the main frame used to get Node.js integration even though
-the iframe itself had none. Workers now only get Node.js integration when the
-frame that creates them has it: the main frame, or any frame when
-`nodeIntegrationInSubFrames` is enabled.
-
-### Behavior Changed: preload scripts only run in DevTools extension frames hosted by DevTools
-
-A `chrome-extension://` document used to receive the window's preload script
-(and session preload scripts) wherever it was embedded. It now only does so
-when it is a top-level frame or is hosted inside the DevTools front-end (a
-`devtools_page` or panel); an extension frame embedded in an ordinary page is
-treated like any other subframe and follows `nodeIntegrationInSubFrames`.
-
 ## Breaking API Changes (45.0)
 
 ### Removed: Node.js module shims and `Buffer`, `setImmediate`, `clearImmediate` globals in sandboxed preload scripts
@@ -108,6 +92,52 @@ npm package. It provides the same instance API as before (`on`, `once`, `off`,
 the max-listener warning) with the same behavior. The static helpers that were only
 reachable through `require('events')` (`once`, `listenerCount`, `init`) are not
 provided.
+
+### Behavior Changed: workers created by subframes need `nodeIntegrationInSubFrames` for Node.js integration
+
+With `nodeIntegrationInWorker: true`, a `Worker` created from an `<iframe>` in
+the same process as the main frame used to get Node.js integration even though
+the iframe itself had none. Workers now only get Node.js integration when the
+frame that creates them has it: the main frame, or any frame when
+`nodeIntegrationInSubFrames` is enabled.
+
+This change was also backported to Electron 44.3.0, 43.7.0 and 42.11.3.
+
+### Behavior Changed: preload scripts only run in DevTools extension frames hosted by DevTools
+
+A `chrome-extension://` document used to receive the window's preload script
+(and session preload scripts) wherever it was embedded. It now only does so
+when it is a top-level frame or is hosted inside the DevTools front-end (a
+`devtools_page` or panel); an extension frame embedded in an ordinary page is
+treated like any other subframe and follows `nodeIntegrationInSubFrames`.
+
+This change was also backported to Electron 44.3.0, 43.7.0 and 42.11.3.
+
+### Behavior Changed: `getUserMedia` with `chromeMediaSource: 'desktop'` rejects WebContents source ids
+
+The legacy `chromeMediaSource: 'desktop'` constraint now only accepts screen and
+window source ids from [`desktopCapturer.getSources`](api/desktop-capturer.md#desktopcapturergetsourcesoptions).
+Passing a WebContents source id there now fails with an "Invalid state" error.
+To capture a WebContents, use `chromeMediaSource: 'tab'` with an id from
+[`webContents.getMediaSourceId()`](api/web-contents.md#contentsgetmediasourceidrequestwebcontents),
+or use [`ses.setDisplayMediaRequestHandler`](api/session.md#sessetdisplaymediarequesthandlerhandler-opts).
+
+```js
+// Main process
+const sourceId = targetContents.getMediaSourceId(requestingContents)
+
+// Renderer process of requestingContents
+const stream = await navigator.mediaDevices.getUserMedia({
+  video: {
+    mandatory: {
+      chromeMediaSource: 'tab',
+      chromeMediaSourceId: sourceId
+    }
+  }
+})
+```
+
+This change was also backported to Electron 44.3.0, 43.7.0 and 42.11.3.
 
 ### Removed: `contentTracing.enableHeapProfiling()`
 
