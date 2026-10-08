@@ -722,9 +722,9 @@ describe('chrome extensions', () => {
     const addExtension = (name: string) =>
       session.defaultSession.extensions.loadExtension(path.resolve(extensionPath, name));
     const removeAllExtensions = () => {
-      Object.keys(session.defaultSession.extensions.getAllExtensions()).forEach((extName) => {
-        session.defaultSession.extensions.removeExtension(extName);
-      });
+      for (const { id } of session.defaultSession.extensions.getAllExtensions()) {
+        session.defaultSession.extensions.removeExtension(id);
+      }
     };
 
     let responseIdCounter = 0;
@@ -886,10 +886,9 @@ describe('chrome extensions', () => {
             server.close();
           });
 
-          // The file-level afterEach removes every extension, so load it for
-          // each test (including retries) rather than once for the block.
+          let extensionId: string;
           beforeEach(async () => {
-            await session.defaultSession.extensions.loadExtension(contentScript);
+            ({ id: extensionId } = await session.defaultSession.extensions.loadExtension(contentScript));
             w = new BrowserWindow({
               show: false,
               webPreferences: {
@@ -900,11 +899,11 @@ describe('chrome extensions', () => {
             });
           });
 
-          afterEach(() =>
-            closeWindow(w).then(() => {
-              w = null as unknown as BrowserWindow;
-            })
-          );
+          afterEach(async () => {
+            await closeWindow(w);
+            w = null as unknown as BrowserWindow;
+            session.defaultSession.extensions.removeExtension(extensionId);
+          });
 
           it('applies matching rules in subframes', async () => {
             const detailsPromise = emittedNTimes(w.webContents, 'did-frame-finish-load', 2);
