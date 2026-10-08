@@ -78,14 +78,13 @@ PromiseBase::PromiseBase(v8::Isolate* isolate)
 
 PromiseBase::PromiseBase(v8::Isolate* isolate,
                          v8::Local<v8::Promise::Resolver> handle)
-    : isolate_(isolate),
-      handle_(cppgc::MakeGarbageCollected<PromiseHandle>(
+    : handle_(cppgc::MakeGarbageCollected<PromiseHandle>(
           isolate->GetCppHeap()->GetAllocationHandle(),
           isolate,
           isolate->GetCurrentContext(),
           handle)) {}
 
-PromiseBase::PromiseBase() : isolate_(nullptr) {}
+PromiseBase::PromiseBase() = default;
 
 PromiseBase::PromiseBase(PromiseBase&&) = default;
 
@@ -94,7 +93,7 @@ PromiseBase::~PromiseBase() = default;
 PromiseBase& PromiseBase::operator=(PromiseBase&&) = default;
 
 bool PromiseBase::IsAlive() const {
-  return handle_ && handle_->IsAlive();
+  return isolate() && handle_ && handle_->IsAlive();
 }
 
 // static
@@ -129,7 +128,7 @@ v8::Maybe<bool> PromiseBase::Resolve() {
 }
 
 v8::Local<v8::Context> PromiseBase::GetContext() const {
-  return IsAlive() ? handle_->GetContext(isolate_) : v8::Local<v8::Context>();
+  return IsAlive() ? handle_->GetContext(isolate()) : v8::Local<v8::Context>();
 }
 
 v8::Local<v8::Promise> PromiseBase::GetHandle() const {
@@ -138,7 +137,7 @@ v8::Local<v8::Promise> PromiseBase::GetHandle() const {
 }
 
 v8::Local<v8::Promise::Resolver> PromiseBase::GetInner() const {
-  return IsAlive() ? handle_->GetResolver(isolate_)
+  return IsAlive() ? handle_->GetResolver(isolate())
                    : v8::Local<v8::Promise::Resolver>();
 }
 

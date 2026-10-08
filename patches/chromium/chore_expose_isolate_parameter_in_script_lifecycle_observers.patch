@@ -34,7 +34,7 @@ index dccd23b881c3646e061c3ce2669df96d5b108617..237bfb19ad9905dd39f1a9e2b7a6df69
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset(blink::mojom::ScrollType) {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index d1ce56b04c6bfa1cdbb99146ffc630f22a969981..34f243dc19daabf7044bda22355d23644c221f1d 100644
+index 7993fd14c837896d872a435a454af7609b5b8a10..686bfacdd99d7ae0b0e599c2178133b9480a4764 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
 @@ -4996,10 +4996,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(

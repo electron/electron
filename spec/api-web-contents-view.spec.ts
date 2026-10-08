@@ -137,6 +137,32 @@ describe('WebContentsView', () => {
     v.removeChildView(wcv);
   });
 
+  it('leaves its parent and stops responding once its webContents is destroyed', async () => {
+    const w = new BaseWindow({ show: false });
+    const v = new View();
+    const wcv = new WebContentsView();
+    const child = new View();
+    const wc = wcv.webContents;
+    w.setContentView(v);
+    v.addChildView(wcv);
+    wcv.addChildView(child);
+    wcv.setBounds({ x: 1, y: 2, width: 30, height: 40 });
+    expect(wcv.children).to.deep.equal([child]);
+    expect(wcv.getVisible()).to.be.true();
+
+    const destroyed = once(wc, 'destroyed');
+    wc.destroy();
+    await destroyed;
+
+    expect(v.children).to.deep.equal([]);
+    expect(wcv.getBounds()).to.deep.equal({ x: 0, y: 0, width: 0, height: 0 });
+    expect(wcv.getVisible()).to.be.false();
+    wcv.setBounds({ x: 5, y: 5, width: 5, height: 5 });
+    expect(wcv.getBounds()).to.deep.equal({ x: 0, y: 0, width: 0, height: 0 });
+    wcv.addChildView(new View());
+    expect(() => v.addChildView(wcv)).to.throw("Can't add a destroyed child view to a parent view");
+  });
+
   it('correctly reorders children', () => {
     const w = new BaseWindow({ show: false });
     const cv = new View();
@@ -204,7 +230,9 @@ describe('WebContentsView', () => {
     });
   });
 
-  it('does not crash when closed via window.close()', async () => {
+  // Waits for 'blur', which needs the view to have had focus; a window that
+  // isn't active doesn't give its new contents initial focus.
+  it('does not crash when closed via window.close()', { tags: ['serial'] }, async () => {
     const bw = new BrowserWindow();
     const wcv = new WebContentsView();
     const wc = wcv.webContents;
@@ -225,7 +253,7 @@ describe('WebContentsView', () => {
     expect(open).to.be.false();
   });
 
-  it('can be fullscreened', async () => {
+  it('can be fullscreened', { tags: ['serial'] }, async () => {
     const w = new BaseWindow();
     const v = new WebContentsView();
     w.setContentView(v);
@@ -251,7 +279,15 @@ describe('WebContentsView', () => {
     expect(v.children).to.deep.equal([wcv]);
   });
 
-  describe('visibilityState', () => {
+  describe('visibilityState', { tags: ['serial'] }, () => {
+    // These pages are only 'visible' while nothing covers their window. On the
+    // Windows CI hosts another process's console window can sit above a newly
+    // shown window, and Chromium's native occlusion tracker then keeps the page
+    // 'hidden'. A BrowserWindow's own webContents is force-shown, but BaseWindow
+    // content is not, so keep these windows above everything there (as
+    // visibility-state.spec.ts does).
+    const alwaysOnTop = process.platform === 'win32';
+
     async function haveVisibilityState(view: WebContentsView, state: string) {
       const docVisState = await view.webContents.executeJavaScript('document.visibilityState');
       return docVisState === state;
@@ -276,7 +312,7 @@ describe('WebContentsView', () => {
       // executeJavaScript calls are sequential so if this one's finished then
       // the previous one must also have been finished :)
       await v.webContents.executeJavaScript('undefined');
-      const w = new BaseWindow({ width: 400, height: 300 });
+      const w = new BaseWindow({ alwaysOnTop, width: 400, height: 300 });
       w.setContentView(v);
       await p;
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
@@ -294,7 +330,7 @@ describe('WebContentsView', () => {
     });
 
     it('is initially visible if load happens after attach', async () => {
-      const w = new BaseWindow();
+      const w = new BaseWindow({ alwaysOnTop });
       const v = new WebContentsView();
       w.contentView = v;
       await v.webContents.loadURL('data:text/html,<script>initialVisibility = document.visibilityState</script>');
@@ -302,7 +338,7 @@ describe('WebContentsView', () => {
     });
 
     it('becomes hidden when parent window is hidden', async () => {
-      const w = new BaseWindow();
+      const w = new BaseWindow({ alwaysOnTop });
       const v = new WebContentsView();
       w.setContentView(v);
       await v.webContents.loadURL('about:blank');
@@ -320,7 +356,7 @@ describe('WebContentsView', () => {
     });
 
     it('becomes visible when parent window is shown', async () => {
-      const w = new BaseWindow({ show: false });
+      const w = new BaseWindow({ alwaysOnTop, show: false });
       const v = new WebContentsView();
       w.setContentView(v);
       await v.webContents.loadURL('about:blank');
@@ -338,7 +374,7 @@ describe('WebContentsView', () => {
     });
 
     it('does not change when view is moved between two visible windows', async () => {
-      const w = new BaseWindow();
+      const w = new BaseWindow({ alwaysOnTop });
       const v = new WebContentsView();
       w.setContentView(v);
       await v.webContents.loadURL('about:blank');
@@ -349,7 +385,7 @@ describe('WebContentsView', () => {
       );
       // Ensure the listener has been registered.
       await v.webContents.executeJavaScript('undefined');
-      const w2 = new BaseWindow();
+      const w2 = new BaseWindow({ alwaysOnTop });
       w2.setContentView(v);
       // Wait for the visibility state to settle as "visible".
       // On macOS one visibilitychange event is fired but visibilityState
@@ -367,7 +403,7 @@ describe('WebContentsView', () => {
     });
 
     it('tracks visibility for multiple child WebContentsViews', async () => {
-      const w = new BaseWindow({ show: false });
+      const w = new BaseWindow({ alwaysOnTop, show: false });
       const cv = new View();
       w.setContentView(cv);
 
@@ -396,7 +432,7 @@ describe('WebContentsView', () => {
     });
 
     it('tracks visibility independently when a child WebContentsView is hidden via setVisible', async () => {
-      const w = new BaseWindow();
+      const w = new BaseWindow({ alwaysOnTop });
       const cv = new View();
       w.setContentView(cv);
 
@@ -425,7 +461,7 @@ describe('WebContentsView', () => {
     });
 
     it('fires a single visibilitychange event per show/hide transition', async () => {
-      const w = new BaseWindow({ show: false });
+      const w = new BaseWindow({ alwaysOnTop, show: false });
       const v = new WebContentsView();
       w.setContentView(v);
       await v.webContents.loadURL('about:blank');
@@ -577,7 +613,7 @@ describe('WebContentsView', () => {
     });
   });
 
-  describe('focusOnNavigation webPreference', () => {
+  describe('focusOnNavigation webPreference', { tags: ['serial'] }, () => {
     it('focuses the webContents on navigation by default', async () => {
       const w = new BrowserWindow();
       await once(w, 'focus');
@@ -588,7 +624,9 @@ describe('WebContentsView', () => {
       v.webContents.openDevTools({ mode: 'right' });
       await devToolsFocused;
       expect(v.webContents.isFocused()).to.be.false();
+      const focused = once(v.webContents, 'focus');
       await v.webContents.loadURL('data:text/html,<body>test</body>');
+      await focused;
       expect(v.webContents.isFocused()).to.be.true();
     });
 

@@ -410,8 +410,8 @@ void BaseWindow::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
 }
 #endif
 
-void BaseWindow::SetContentView(gin_helper::Handle<View> view) {
-  content_view_.Reset(JavascriptEnvironment::GetIsolate(), view.ToV8());
+void BaseWindow::SetContentView(View* view) {
+  content_view_ = view;
   window_->SetContentView(view->view());
 }
 
@@ -1094,10 +1094,10 @@ void BaseWindow::CloseFilePreview() {
 }
 
 v8::Local<v8::Value> BaseWindow::GetContentView() const {
-  if (content_view_.IsEmpty())
-    return v8::Null(isolate());
-  else
-    return v8::Local<v8::Value>::New(isolate(), content_view_);
+  v8::Local<v8::Object> wrapper;
+  if (content_view_ && content_view_->GetWrapper(isolate()).ToLocal(&wrapper))
+    return wrapper;
+  return v8::Null(isolate());
 }
 
 BaseWindow* BaseWindow::GetParentWindow() const {

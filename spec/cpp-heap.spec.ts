@@ -5,7 +5,196 @@ import * as path from 'node:path';
 
 import { ifdescribe, isTestingBindingAvailable, itremote, startRemoteControlApp } from './lib/spec-helpers.ts';
 
+const fixturesPath = path.join(import.meta.dirname, 'fixtures');
+
 describe('cpp heap', () => {
+  ifdescribe(isTestingBindingAvailable())('native callback holders', () => {
+    for (const [mode, description] of [
+      ['call', 'creates callable images through an API retained from a removed iframe'],
+      ['growth', 'does not retain templates linearly when creating images in a detached realm'],
+      ['release', 'collects a detached realm and its callback holder after releasing the API and images']
+    ]) {
+      it(description, async function () {
+        this.timeout(90_000);
+        const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+        await remotely(
+          async (fixture: string, page: string, child: string, snapshotHelper: string, mode: string) => {
+            await require(fixture)(page, child, snapshotHelper, mode);
+          },
+          path.join(fixturesPath, 'api', 'cppgc-detached-frame.js'),
+          path.join(fixturesPath, 'pages', 'blank.html'),
+          path.join(fixturesPath, 'api', 'cppgc-detached-frame.html'),
+          path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js'),
+          mode
+        );
+      });
+    }
+
+    it('does not retain contexts through cached templates after reload', async function () {
+      this.timeout(60_000);
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (page: string, heap: string) => {
+          const { app, BrowserWindow } = require('electron');
+          app.on('window-all-closed', () => {});
+          const { once } = require('node:events');
+          const { mkdtemp, readFile, rm, unlink } = require('node:fs/promises');
+          const { tmpdir } = require('node:os');
+          const { join } = require('node:path');
+          const { Readable } = require('node:stream');
+          const { createJSHeapSnapshot } = require(heap);
+          const snapshotDir = await mkdtemp(join(tmpdir(), 'electron-cache-snapshot-'));
+          const snapshotPath = join(snapshotDir, 'renderer.heapsnapshot');
+          const window = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              nodeIntegration: true,
+              contextIsolation: false,
+              sandbox: false
+            }
+          });
+          const countMarkers = async () => {
+            await window.webContents.executeJavaScript(`
+              (async () => {
+                const v8Util = process._linkedBinding('electron_common_v8_util');
+                for (let i = 0; i < 10; i++) {
+                  await new Promise(resolve => setTimeout(resolve, 0));
+                  v8Util.requestGarbageCollectionForTesting();
+                }
+              })()
+            `);
+            // Collect outside renderer JS to avoid reentrant Node stream
+            // callbacks while Chromium is serializing the renderer heap.
+            await window.webContents.takeHeapSnapshot(snapshotPath);
+            try {
+              return createJSHeapSnapshot(Readable.from([await readFile(snapshotPath)])).filter(
+                (node: { type: string; name: string }) =>
+                  node.type === 'object' && node.name === 'PerContextCacheSentinel'
+              ).length;
+            } finally {
+              await unlink(snapshotPath);
+            }
+          };
+
+          try {
+            await window.loadFile(page);
+            const rendererPid = window.webContents.getOSProcessId();
+            const counts: number[] = [];
+            const rendererPids: number[] = [];
+            let liveCount = 0;
+            for (let i = 0; i < 3; i++) {
+              await window.webContents.executeJavaScript(`
+                (() => {
+                  const { nativeImage } = require('electron');
+                  class PerContextCacheSentinel {}
+                  globalThis.cacheSentinel = new PerContextCacheSentinel();
+                  globalThis.cacheSentinel.image = nativeImage.createEmpty();
+                  if (!globalThis.cacheSentinel.image.isEmpty()) throw new Error('unexpected image');
+                })()
+              `);
+              if (i === 0) {
+                liveCount = await countMarkers();
+              }
+
+              // Reload discards the context but not the isolate: an
+              // isolate wide cache must not keep the old global alive.
+              const loaded = once(window.webContents, 'did-finish-load', {
+                signal: AbortSignal.timeout(20_000)
+              });
+              window.webContents.reload();
+              await loaded;
+              rendererPids.push(window.webContents.getOSProcessId());
+              counts.push(await countMarkers());
+            }
+            return { rendererPid, rendererPids, liveCount, counts };
+          } finally {
+            window.destroy();
+            await rm(snapshotDir, { recursive: true, force: true });
+          }
+        },
+        path.join(fixturesPath, 'pages', 'blank.html'),
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap')
+      );
+      expect(result.liveCount).to.equal(1, 'the live context must retain its marker');
+      expect(result.rendererPid).to.be.greaterThan(0);
+      expect(result.rendererPids).to.deep.equal(Array(3).fill(result.rendererPid));
+      expect(result.counts).to.deep.equal([0, 0, 0], 'discarded contexts must release their markers');
+    });
+
+    it('caches function templates per isolate on the main thread and skips the cache in workers', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (fixture: string) => {
+          const { once } = require('node:events');
+          const { Worker } = require('node:worker_threads');
+          const testing = process._linkedBinding('electron_common_testing');
+          const first = testing.getCachedCallbackTemplateForTesting();
+          const cachedOnMain = first === testing.getCachedCallbackTemplateForTesting() && first() === 42;
+          const worker = new Worker(fixture);
+          try {
+            const signal = AbortSignal.timeout(20_000);
+            const [[message], [code]] = await Promise.all([
+              once(worker, 'message', { signal }),
+              once(worker, 'exit', { signal })
+            ]);
+            return { cachedOnMain, message, code };
+          } finally {
+            await worker.terminate();
+          }
+        },
+        path.join(fixturesPath, 'api', 'cppgc-template-cache-worker.js')
+      );
+      expect(result).to.deep.equal({ cachedOnMain: true, message: 'done', code: 0 });
+    });
+
+    for (const mode of ['gc', 'exit', 'terminate']) {
+      it(`destroys callback holders on worker ${mode}`, async () => {
+        const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+        const result = await remotely(
+          async (fixture: string, mode: string) => {
+            const { once } = require('node:events') as typeof import('node:events');
+            const { Worker } = require('node:worker_threads');
+            const testing = process._linkedBinding('electron_common_testing');
+            const before = testing.getLiveCallbackHolderProbeCountForTesting();
+            const worker = new Worker(fixture);
+            const signal = AbortSignal.timeout(20_000);
+            // Register both listeners before the worker can send or exit.
+            const ready = once(worker, 'message', { signal });
+            const exited = once(worker, 'exit', { signal });
+            try {
+              const [state, [code]] = await Promise.all([
+                ready.then(async ([message]) => {
+                  const during = testing.getLiveCallbackHolderProbeCountForTesting();
+                  if (mode === 'terminate') {
+                    await worker.terminate();
+                  } else {
+                    worker.postMessage(mode);
+                  }
+                  return { message, during };
+                }),
+                exited
+              ]);
+              return {
+                ...state,
+                code,
+                before,
+                after: testing.getLiveCallbackHolderProbeCountForTesting()
+              };
+            } finally {
+              await worker.terminate();
+            }
+          },
+          path.join(fixturesPath, 'api', 'cppgc-callback-lifetime-worker.js'),
+          mode
+        );
+        expect(result.message).to.equal('ready');
+        expect(result.during).to.equal(result.before + 1);
+        expect(result.after).to.equal(result.before, 'worker teardown must destroy native callback state');
+        expect(result.code).to.equal(mode === 'terminate' ? 1 : 0);
+      });
+    }
+  });
+
   describe('app module', () => {
     it('should not allocate on every require', async () => {
       const { remotely } = await startRemoteControlApp();
@@ -575,7 +764,7 @@ describe('cpp heap', () => {
 
           setTimeout(() => app.quit());
         },
-        path.join(import.meta.dirname, 'fixtures', 'api', 'service-workers'),
+        path.join(fixturesPath, 'api', 'service-workers'),
         setupWorkerSource
       );
 
@@ -611,7 +800,7 @@ describe('cpp heap', () => {
           ctx.server.close();
           return rooted;
         },
-        path.join(import.meta.dirname, 'fixtures', 'api', 'service-workers'),
+        path.join(fixturesPath, 'api', 'service-workers'),
         setupWorkerSource,
         path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
         path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
@@ -662,7 +851,7 @@ describe('cpp heap', () => {
           ctx.server.close();
           return !rooted && !stillExists;
         },
-        path.join(import.meta.dirname, 'fixtures', 'api', 'service-workers'),
+        path.join(fixturesPath, 'api', 'service-workers'),
         setupWorkerSource,
         path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
         path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
@@ -805,6 +994,214 @@ describe('cpp heap', () => {
         return waitForGC(() => weakRef.deref() === undefined);
       });
       expect(released).to.equal(true, 'Notification should be released after GC when no JS references remain');
+    });
+  });
+
+  describe('View module', () => {
+    it('should record as node in heap snapshot while a JS reference is held', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { View } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          (globalThis as any).viewRef = new View();
+          const state = recordState();
+          const present = containsRetainingPath(state.snapshot, ['Electron / View']);
+          const isPersistentRooted = containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / View']);
+          return present && !isPersistentRooted;
+        },
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true);
+    });
+
+    it('releases a View whose layout callback captures it', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const released = await remotely(async () => {
+        const { View } = require('electron');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const refs = (() => {
+          const parent = new View();
+          const child = new View();
+          parent.addChildView(child);
+          parent.setLayout({
+            calculateProposedLayout: () => ({
+              size: { width: 10, height: 10 },
+              layouts: [{ view: parent.children[0], bounds: { x: 0, y: 0, width: 10, height: 10 } }]
+            })
+          });
+          parent.setBounds({ x: 0, y: 0, width: 20, height: 20 });
+          return { parent: new WeakRef(parent), child: new WeakRef(child) };
+        })();
+
+        for (let i = 0; i < 30; ++i) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          v8Util.requestGarbageCollectionForTesting();
+          if (!refs.parent.deref() && !refs.child.deref()) return true;
+        }
+        return false;
+      });
+      expect(released).to.equal(true, 'a layout callback that captures its View must not keep it alive');
+    });
+
+    it('keeps child views alive through their parent', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(async () => {
+        const { View } = require('electron');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const parent = new View();
+        (globalThis as any).parentView = parent;
+        const childRef = (() => {
+          const child = new View();
+          parent.addChildView(child);
+          return new WeakRef(child);
+        })();
+
+        for (let i = 0; i < 10; ++i) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          v8Util.requestGarbageCollectionForTesting();
+        }
+        return { count: parent.children.length, same: childRef.deref() === parent.children[0] };
+      });
+      expect(result).to.deep.equal({ count: 1, same: true });
+    });
+
+    it('gives a window content view created before View is loaded the View prototype', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const result = await remotely(async () => {
+        const electron = require('electron');
+        const w = new electron.BaseWindow({ show: false });
+        const contentView = w.contentView;
+        const { View } = electron;
+        const ok = contentView instanceof View && Object.getPrototypeOf(contentView) === View.prototype;
+        w.destroy();
+        return ok;
+      });
+      expect(result).to.equal(true);
+    });
+
+    it('destroys the webContents of a collected WebContentsView', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(async () => {
+        const { WebContentsView } = require('electron');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const state = (() => {
+          const view = new WebContentsView();
+          return { webContents: view.webContents, view: new WeakRef(view) };
+        })();
+
+        for (let i = 0; i < 30; ++i) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          v8Util.requestGarbageCollectionForTesting();
+          if (state.webContents.isDestroyed()) break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        return { collected: !state.view.deref(), destroyed: state.webContents.isDestroyed() };
+      });
+      expect(result).to.deep.equal({ collected: true, destroyed: true });
+    });
+
+    it('does not destroy a webContents adopted before its previous view is released', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(async () => {
+        const { WebContentsView } = require('electron');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const previousViews: WeakRef<Electron.WebContentsView>[] = [];
+        let view: Electron.WebContentsView | null = new WebContentsView() as Electron.WebContentsView;
+        previousViews.push(new WeakRef(view));
+        const webContents = view.webContents;
+        for (let i = 0; i < 20; ++i) {
+          // Collect the previous view and adopt its webContents in the same
+          // task, before the collected view's native peer is released.
+          view = null;
+          v8Util.requestGarbageCollectionForTesting();
+          view = new WebContentsView({ webContents }) as Electron.WebContentsView;
+          previousViews.push(new WeakRef(view));
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          if (webContents.isDestroyed()) break;
+        }
+        for (let i = 0; i < 5; ++i) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          v8Util.requestGarbageCollectionForTesting();
+        }
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        const destroyed = webContents.isDestroyed();
+        const anyCollected = previousViews.some((ref) => ref.deref() === undefined);
+        if (!destroyed) webContents.destroy();
+        return { destroyed, anyCollected };
+      });
+      expect(result).to.deep.equal({ destroyed: false, anyCollected: true });
+    });
+
+    it('gives an adopted webContents to the view that adopted it', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(async () => {
+        const { View, WebContentsView } = require('electron');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+        const collect = async () => {
+          for (let i = 0; i < 5; ++i) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+          await new Promise((resolve) => setTimeout(resolve, 0));
+        };
+
+        const parent = new View();
+        const first = new WebContentsView();
+        const webContents = first.webContents;
+        parent.addChildView(first);
+        const adopted = (() => {
+          const second = new WebContentsView({ webContents });
+          parent.addChildView(second);
+          return new WeakRef(second);
+        })();
+
+        await collect();
+        const whileRetained = {
+          destroyed: webContents.isDestroyed(),
+          children: parent.children.length
+        };
+        parent.removeChildView(adopted.deref()!);
+        for (let i = 0; i < 30 && !webContents.isDestroyed(); ++i) await collect();
+        const afterRelease = {
+          collected: !adopted.deref(),
+          destroyed: webContents.isDestroyed(),
+          children: parent.children.length
+        };
+        return { whileRetained, afterRelease, firstInParent: parent.children[0] === first };
+      });
+      expect(result).to.deep.equal({
+        whileRetained: { destroyed: false, children: 2 },
+        afterRelease: { collected: true, destroyed: true, children: 0 },
+        firstInParent: false
+      });
+    });
+
+    it('does not crash on exit with live views', async () => {
+      const rc = await startRemoteControlApp();
+      const exited = once(rc.process, 'exit');
+      await rc.remotely(async () => {
+        const { app, BaseWindow, ImageView, View, WebContentsView } = require('electron');
+        const w = new BaseWindow({ show: false });
+        const container = new View();
+        const webContentsView = new WebContentsView();
+        container.addChildView(new ImageView());
+        container.addChildView(webContentsView);
+        container.setLayout({
+          calculateProposedLayout: () => ({ size: { width: 0, height: 0 }, layouts: [] })
+        });
+        w.contentView.addChildView(container);
+        (globalThis as any).views = { w, container, detached: new View() };
+        setTimeout(() => app.quit());
+      });
+      const [code] = await exited;
+      expect(code).to.equal(0);
     });
   });
 
@@ -1728,7 +2125,7 @@ describe('cpp heap', () => {
             await customSession.extensions.removeExtension(extension.id);
           }
         },
-        path.join(import.meta.dirname, 'fixtures', 'extensions', 'persistent-background-page')
+        path.join(fixturesPath, 'extensions', 'persistent-background-page')
       );
 
       expect(result.type).to.equal('backgroundPage');
@@ -1753,8 +2150,8 @@ describe('cpp heap', () => {
             v8Util.requestGarbageCollectionForTesting();
           }
           const retained = ref.deref() === view.webContents && !view.webContents.isDestroyed();
-          const rooted = containsRetainingPath(recordState().snapshot, [
-            'C++ Persistent roots',
+          const retainedByView = containsRetainingPath(recordState().snapshot, [
+            'Electron / WebContentsView',
             'Electron / WebContents'
           ]);
           const destroyed = once(view.webContents, 'destroyed', { signal: AbortSignal.timeout(10000) });
@@ -1766,14 +2163,14 @@ describe('cpp heap', () => {
             v8Util.requestGarbageCollectionForTesting();
             if (!ref.deref()) break;
           }
-          return { retained, rooted, released: !ref.deref() };
+          return { retained, retainedByView, released: !ref.deref() };
         },
         path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
         path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
 
       expect(result.retained).to.equal(true);
-      expect(result.rooted).to.equal(true);
+      expect(result.retainedByView).to.equal(true);
       expect(result.released).to.equal(true);
     });
 
@@ -2192,7 +2589,7 @@ describe('cpp heap', () => {
         },
         path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
         path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js'),
-        path.join(import.meta.dirname, 'fixtures', 'sub-frames', 'preload.js')
+        path.join(fixturesPath, 'sub-frames', 'preload.js')
       );
       expect(result).to.equal(true, 'only the active WebFrameMain should remain rooted after navigation');
     });

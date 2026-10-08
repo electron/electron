@@ -10,7 +10,7 @@ import {
 
 import { expect } from 'chai';
 
-import { once } from 'node:events';
+import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as http2 from 'node:http2';
@@ -30,26 +30,12 @@ import {
   respondOnce
 } from './lib/net-helpers.ts';
 import { listen, defer, ifdescribe, isTestingBindingAvailable } from './lib/spec-helpers.ts';
+import { runInUtilityProcess, waitForUtilityResult } from './lib/utility-process-helpers.ts';
 
-const utilityFixturePath = path.resolve(import.meta.dirname, 'fixtures', 'api', 'utility-process', 'api-net-spec.js');
 const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 
 async function itUtility(name: string, fn?: Function, args?: { [key: string]: any }) {
-  it(`${name} in utility process`, async () => {
-    const child = utilityProcess.fork(utilityFixturePath, [], {
-      execArgv: ['--expose-gc']
-    });
-    if (fn) {
-      child.postMessage({ fn: `(${fn})()`, args });
-    } else {
-      child.postMessage({ fn: '(() => {})()', args });
-    }
-    const [data] = await once(child, 'message');
-    expect(data.ok).to.be.true(data.message);
-    // Cleanup.
-    const [code] = await once(child, 'exit');
-    expect(code).to.equal(0);
-  });
+  it(`${name} in utility process`, () => runInUtilityProcess(fn, args));
 }
 
 // oxlint-disable-next-line @typescript-eslint/no-unused-vars
@@ -102,6 +88,23 @@ describe('net module', () => {
 
   after(() => {
     h2server.close();
+  });
+
+  describe('utility process result helper', () => {
+    it('sees an exit that is emitted right after the result', async () => {
+      const child = new EventEmitter();
+      const result = waitForUtilityResult(child);
+      child.emit('message', { ok: true });
+      child.emit('exit', 0);
+      expect(await result).to.deep.equal({ data: { ok: true }, code: 0 });
+    });
+
+    it('fails without waiting for the timeout when the child exits before posting a result', async () => {
+      const child = new EventEmitter();
+      const result = waitForUtilityResult(child);
+      child.emit('exit', 1);
+      await expect(result).to.be.rejectedWith('utility process exited (1) before posting a result');
+    });
   });
 
   for (const test of [itIgnoringArgs, itUtility]) {
@@ -2011,6 +2014,39 @@ describe('net module', () => {
           const r = await net.fetch(serverUrl);
           expect(r.status).to.equal(200);
           await expect(r.text()).to.be.rejectedWith(/ERR_INCOMPLETE_CHUNKED_ENCODING/);
+        });
+
+        test('can handle non-ASCII characters in response headers', async () => {
+          const filename = 'zażółć.txt';
+          const headerValue = `attachment; filename="${filename}"`;
+          const serverUrl = await respondOnce.toSingleURL((request, response) => {
+            response.setHeader('content-disposition', Buffer.from(headerValue, 'utf-8').toString('latin1'));
+            response.end('ok');
+          });
+          const resp = await net.fetch(serverUrl);
+          expect(resp.ok).to.be.true();
+          const header = resp.headers.get('content-disposition');
+          expect(header).to.be.a('string');
+          const decoded = Buffer.from(header!, 'latin1').toString('utf-8');
+          expect(decoded).to.equal(headerValue);
+        });
+
+        test('preserves multiple Set-Cookie headers', async () => {
+          const serverUrl = await respondOnce.toSingleURL((request, response) => {
+            response.setHeader('set-cookie', [
+              'cookie1=val1; Expires=Wed, 21 Oct 2026 07:28:00 GMT; Path=/',
+              'cookie2=val2; Path=/'
+            ]);
+            response.end('ok');
+          });
+          const resp = await net.fetch(serverUrl);
+          expect(resp.ok).to.be.true();
+          if (typeof resp.headers.getSetCookie === 'function') {
+            const cookies = resp.headers.getSetCookie();
+            expect(cookies).to.have.lengthOf(2);
+            expect(cookies[0]).to.equal('cookie1=val1; Expires=Wed, 21 Oct 2026 07:28:00 GMT; Path=/');
+            expect(cookies[1]).to.equal('cookie2=val2; Path=/');
+          }
         });
       });
     });

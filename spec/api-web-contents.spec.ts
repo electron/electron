@@ -207,6 +207,7 @@ describe('webContents module', () => {
     // re-activated while blocked used to keep aura focus without Blink focus.
     ifit(process.platform === 'win32')(
       'keeps the page focused when the window is re-activated while the prompt is pending',
+      { tags: ['serial'] },
       async () => {
         const w = new BrowserWindow({ show: true });
         await w.loadFile(path.join(import.meta.dirname, 'fixtures', 'api', 'beforeunload-false.html'));
@@ -220,9 +221,10 @@ describe('webContents module', () => {
         // A navigation only prompts after a user gesture; close() always does.
         w.close();
         await once(w.webContents, 'will-prevent-unload');
-        await setTimeout(100);
-        expect(w.webContents.isFocused()).to.equal(true);
-        expect(await w.webContents.executeJavaScript('document.hasFocus()')).to.equal(true);
+        // Re-activation is asynchronous, so wait for focus instead of a fixed time.
+        await waitUntil(
+          async () => w.webContents.isFocused() && (await w.webContents.executeJavaScript('document.hasFocus()'))
+        );
       }
     );
 
@@ -1241,20 +1243,17 @@ describe('webContents module', () => {
         // Fill out the form on the page
         await w.webContents.executeJavaScript('document.querySelector("input").value = "Hi!";');
 
-        // PageState is committed:
-        // 1) When the page receives an unload event
-        // 2) During periodic serialization of page state (1s visible, 5s hidden)
-        // To not wait randomly for the second option, we'll trigger another load
-        await w.loadURL(urlPage3);
-
-        // The form page is unloaded in its old renderer process, which sends its
-        // final PageState to the browser only when it handles the Unload IPC. That
-        // is not ordered with page 3's did-finish-load (a different process), so
-        // wait until the saved entry actually carries the edited value. Form state
-        // is serialized as UTF-16 (mojo_base.mojom.String16) inside the PageState.
+        // Wait for the renderer's delayed PageState sync (1s visible, 5s hidden)
+        // while the form page is still current. The update sent on unload is
+        // racy: the browser only briefly waits for the old frame to unload.
+        // Form state is serialized as UTF-16 inside the PageState.
         const hasFormValue = (pageState?: string) =>
           !!pageState && Buffer.from(pageState, 'base64').includes(Buffer.from('Hi!', 'utf16le'));
-        await waitUntil(() => hasFormValue(w.webContents.navigationHistory.getEntryAtIndex(2)?.pageState));
+        await waitUntil(() => hasFormValue(w.webContents.navigationHistory.getEntryAtIndex(2)?.pageState), {
+          timeout: 20000
+        });
+
+        await w.loadURL(urlPage3);
 
         // Save the navigation state
         const entries = w.webContents.navigationHistory.getAllEntries();
@@ -1707,6 +1706,8 @@ describe('webContents module', () => {
     // above.
     ifit(process.platform !== 'linux')(
       'reveals paths under a registered workspace folder without executing them',
+      // Opens a real Finder/Explorer window, which takes focus and stays open.
+      { tags: ['serial'] },
       async () => {
         const w = new BrowserWindow({ show: false });
         await openDevTools(w);
@@ -4135,7 +4136,7 @@ describe('webContents module', () => {
     });
   });
 
-  describe('setIgnoreMenuShortcuts(ignore)', () => {
+  describe('setIgnoreMenuShortcuts(ignore)', { tags: ['serial'] }, () => {
     afterEach(closeAllWindows);
 
     const trackShortcutInvocations = (contents: WebContents) => {
@@ -4189,6 +4190,7 @@ describe('webContents module', () => {
       });
       await window.loadURL('about:blank');
       window.webContents.focus();
+      await waitUntil(() => window.webContents.isFocused());
       const sendShortcut = trackShortcutInvocations(window.webContents);
       expect(await sendShortcut(0)).to.equal(0);
       window.webContents.setIgnoreMenuShortcuts(false);
@@ -4217,6 +4219,9 @@ describe('webContents module', () => {
           const attached = once(window.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
           await window.loadFile(path.join(fixturesPath, 'pages', 'webview-zoom-factor.html'));
           [, source] = await attached;
+          // Navigating the guest while its src is still loading aborts that
+          // load, and its did-fail-load can reject the loadURL() below.
+          if (source.isLoading()) await once(source, 'did-finish-load');
           await source.loadURL('about:blank');
         } else {
           await window.loadURL('about:blank');
