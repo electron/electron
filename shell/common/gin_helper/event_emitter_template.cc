@@ -6,7 +6,7 @@
 
 #include "gin/converter.h"
 #include "shell/browser/api/electron_api_event_emitter.h"
-#include "shell/common/gin_helper/per_context_template_data.h"
+#include "shell/common/gin_helper/function_template_cache.h"
 #include "v8/include/v8-function.h"
 #include "v8/include/v8-template.h"
 
@@ -14,11 +14,8 @@ namespace gin_helper::internal {
 
 v8::Local<v8::FunctionTemplate> GetEventEmitterTemplate(v8::Isolate* isolate) {
   static const char kTemplateKey = 0;
-  auto* data =
-      PerContextTemplateData::From(isolate->GetCurrentContext(), &kTemplateKey);
-  v8::Local<v8::FunctionTemplate> tmpl;
-  if (data)
-    tmpl = data->function_template.Get(isolate);
+  v8::Local<v8::FunctionTemplate> tmpl =
+      GetCachedFunctionTemplate(isolate, &kTemplateKey);
 
   if (tmpl.IsEmpty()) {
     tmpl = v8::FunctionTemplate::New(isolate);
@@ -36,8 +33,7 @@ v8::Local<v8::FunctionTemplate> GetEventEmitterTemplate(v8::Isolate* isolate) {
               ->SetPrototype(context, eventemitter_prototype)
               .ToChecked());
 
-    if (data)
-      data->function_template.Reset(isolate, tmpl);
+    SetCachedFunctionTemplate(isolate, &kTemplateKey, tmpl);
   }
 
   return tmpl;

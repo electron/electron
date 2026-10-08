@@ -49,12 +49,10 @@ v8::MaybeLocal<v8::FunctionTemplate> CreateConstructorFunctionTemplate(
       isolate->GetCppHeap()->GetAllocationHandle(), std::move(callback),
       std::move(invoker_options));
 
-  v8::Local<v8::Value> holder_value;
-  if (!TryConvertToV8(isolate, holder, &holder_value))
-    return {};
-
-  return v8::FunctionTemplate::New(
-      isolate, &internal::Dispatcher<Sig>::DispatchToCallback, holder_value);
+  v8::Local<v8::FunctionTemplate> tmpl = v8::FunctionTemplate::New(isolate);
+  tmpl->SetCallHandler(&internal::Dispatcher<Sig>::DispatchToCallback,
+                       holder->GetHandle(isolate));
+  return tmpl;
 }
 
 }  // namespace gin

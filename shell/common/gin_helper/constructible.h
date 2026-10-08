@@ -10,10 +10,11 @@
 #include <type_traits>
 
 #include "gin/arguments.h"
-#include "gin/per_context_data.h"
+#include "gin/per_isolate_data.h"
 #include "gin/public/wrapper_info.h"
 #include "gin/wrappable.h"
 #include "shell/common/gin_helper/event_emitter_template.h"
+#include "shell/common/gin_helper/function_template_cache.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
 #include "v8/include/v8-context.h"
 
@@ -82,13 +83,10 @@ class Constructible {
       v8::Isolate* const isolate,
       v8::Local<v8::Context> context,
       const gin::WrapperInfo* const wrapper_info) {
-    gin::PerContextData* data = gin::PerContextData::From(context);
-    CHECK(data);
-
-    auto* constructor_data = static_cast<PerContextConstructorData*>(
-        data->GetUserData(wrapper_info));
-    if (constructor_data)
-      return constructor_data->function_template.Get(isolate);
+    v8::Local<v8::FunctionTemplate> cached =
+        GetCachedFunctionTemplate(isolate, wrapper_info);
+    if (!cached.IsEmpty())
+      return cached;
 
     v8::Local<v8::FunctionTemplate> constructor;
     if (!gin::CreateConstructorFunctionTemplate(isolate,
@@ -116,22 +114,13 @@ class Constructible {
       T::FillInstanceTemplate(isolate, constructor->InstanceTemplate());
     }
 
-    data->SetObjectTemplate(wrapper_info, constructor->InstanceTemplate());
-    data->SetUserData(wrapper_info, std::make_unique<PerContextConstructorData>(
-                                        isolate, constructor));
+    if (auto* data = gin::PerIsolateData::From(isolate)) {
+      data->SetObjectTemplate(wrapper_info, constructor->InstanceTemplate());
+    }
+    SetCachedFunctionTemplate(isolate, wrapper_info, constructor);
 
     return constructor;
   }
-
- private:
-  class PerContextConstructorData : public base::SupportsUserData::Data {
-   public:
-    PerContextConstructorData(v8::Isolate* isolate,
-                              v8::Local<v8::FunctionTemplate> function_template)
-        : function_template(isolate, function_template) {}
-
-    v8::Global<v8::FunctionTemplate> function_template;
-  };
 };
 
 inline bool ThrowIfNotConstructCall(gin::Arguments* args) {
