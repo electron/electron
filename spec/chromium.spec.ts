@@ -1013,7 +1013,7 @@ describe('chromium features', () => {
       expect(size).to.be.a('number');
     });
 
-    ifit(process.platform !== 'darwin')('should lock the keyboard', async () => {
+    ifit(process.platform !== 'darwin')('should lock the keyboard', { tags: ['serial'] }, async () => {
       const w = new BrowserWindow({ show: true });
       await w.loadFile(path.join(fixturesPath, 'pages', 'modal.html'));
 
@@ -1029,6 +1029,7 @@ describe('chromium features', () => {
       expect(open1).to.be.true();
 
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+      w.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
       await setTimeout(1000);
       await expect(
         waitUntil(async () => {
@@ -1063,6 +1064,7 @@ describe('chromium features', () => {
       expect(open2).to.be.true();
 
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+      w.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Escape' });
       await setTimeout(1000);
       await expect(
         waitUntil(async () => {

@@ -230,7 +230,9 @@ describe('WebContentsView', () => {
     });
   });
 
-  it('does not crash when closed via window.close()', async () => {
+  // Waits for 'blur', which needs the view to have had focus; a window that
+  // isn't active doesn't give its new contents initial focus.
+  it('does not crash when closed via window.close()', { tags: ['serial'] }, async () => {
     const bw = new BrowserWindow();
     const wcv = new WebContentsView();
     const wc = wcv.webContents;
@@ -251,7 +253,7 @@ describe('WebContentsView', () => {
     expect(open).to.be.false();
   });
 
-  it('can be fullscreened', async () => {
+  it('can be fullscreened', { tags: ['serial'] }, async () => {
     const w = new BaseWindow();
     const v = new WebContentsView();
     w.setContentView(v);
@@ -603,7 +605,7 @@ describe('WebContentsView', () => {
     });
   });
 
-  describe('focusOnNavigation webPreference', () => {
+  describe('focusOnNavigation webPreference', { tags: ['serial'] }, () => {
     it('focuses the webContents on navigation by default', async () => {
       const w = new BrowserWindow();
       await once(w, 'focus');
@@ -614,7 +616,9 @@ describe('WebContentsView', () => {
       v.webContents.openDevTools({ mode: 'right' });
       await devToolsFocused;
       expect(v.webContents.isFocused()).to.be.false();
+      const focused = once(v.webContents, 'focus');
       await v.webContents.loadURL('data:text/html,<body>test</body>');
+      await focused;
       expect(v.webContents.isFocused()).to.be.true();
     });
 

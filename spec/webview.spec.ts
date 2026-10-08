@@ -555,7 +555,7 @@ describe('<webview> tag', function () {
     });
   });
 
-  describe('requestFullscreen from webview', () => {
+  describe('requestFullscreen from webview', { tags: ['serial'] }, () => {
     afterEach(closeAllWindows);
     async function loadWebViewWindow(): Promise<[BrowserWindow, WebContents]> {
       const w = new BrowserWindow({

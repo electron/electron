@@ -21,7 +21,7 @@ to STDOUT_FILENO/STD_OUTPUT_HANDLE and STDERR_FILENO/STD_ERROR_HANDLE allowing t
 parent process to read from the pipe.
 
 diff --git a/content/browser/child_process_launcher.h b/content/browser/child_process_launcher.h
-index 78aa9d6bfbb55f6b66faa572ea289fefc3ead74a..a1dc6a14c2594c19095bf2454a9eafd73f413ae8 100644
+index 4a2178ae0c08cb03b3d3d2ce69c1355f12cfc3d2..f2911504f97f74eeb914468c2b68e43ed5d7dff7 100644
 --- a/content/browser/child_process_launcher.h
 +++ b/content/browser/child_process_launcher.h
 @@ -33,6 +33,7 @@
@@ -32,7 +32,7 @@ index 78aa9d6bfbb55f6b66faa572ea289fefc3ead74a..a1dc6a14c2594c19095bf2454a9eafd7
  #endif
  
  #if BUILDFLAG(IS_POSIX)
-@@ -194,7 +195,10 @@ struct ChildProcessLauncherFileData {
+@@ -199,7 +200,10 @@ struct ChildProcessLauncherFileData {
        delete;
    ~ChildProcessLauncherFileData();
  
@@ -44,7 +44,7 @@ index 78aa9d6bfbb55f6b66faa572ea289fefc3ead74a..a1dc6a14c2594c19095bf2454a9eafd7
    // Files opened by the browser and passed as corresponding file descriptors
    // in the child process. If a FilePath is provided, the file will be opened
    // and the descriptor cached for future process launches. If a ScopedFD is
-@@ -209,6 +213,15 @@ struct ChildProcessLauncherFileData {
+@@ -214,6 +218,15 @@ struct ChildProcessLauncherFileData {
    std::map<std::string, std::variant<base::FilePath, base::ScopedFD>>
        files_to_preload;
  #endif
@@ -441,7 +441,7 @@ index 18a070048449b2fb56996241c9cebc565f59dee9..9f77589c95ceb47b98fa9b8068c43aad
      // Whether or not to bind viz::mojom::Gpu to the utility process.
      bool allowed_gpu_;
 diff --git a/content/browser/service_host/utility_sandbox_delegate.cc b/content/browser/service_host/utility_sandbox_delegate.cc
-index ec1e131ac584e71370845730557bd6959f03734c..ba0f7880f18d554bdd88b743ccc19b6f7d9f50d8 100644
+index 845171e88ef7e848ef65aa8aee3d66bf55afac18..1b7492eb0ac51d4a68d80e0a087c2c4d744d6803 100644
 --- a/content/browser/service_host/utility_sandbox_delegate.cc
 +++ b/content/browser/service_host/utility_sandbox_delegate.cc
 @@ -39,17 +39,19 @@ UtilitySandboxedProcessLauncherDelegate::
@@ -468,7 +468,7 @@ index ec1e131ac584e71370845730557bd6959f03734c..ba0f7880f18d554bdd88b743ccc19b6f
  #if DCHECK_IS_ON()
    bool supported_sandbox_type =
        sandbox_type_ == sandbox::mojom::Sandbox::kNoSandbox ||
-@@ -117,11 +119,28 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
+@@ -119,11 +121,28 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
    return sandbox_type_;
  }
  
@@ -499,7 +499,7 @@ index ec1e131ac584e71370845730557bd6959f03734c..ba0f7880f18d554bdd88b743ccc19b6f
  
  #if BUILDFLAG(USE_ZYGOTE)
  ZygoteCommunication* UtilitySandboxedProcessLauncherDelegate::GetZygote() {
-@@ -204,6 +223,15 @@ UtilitySandboxedProcessLauncherDelegate::GetProcessRequirement() {
+@@ -206,6 +225,15 @@ UtilitySandboxedProcessLauncherDelegate::GetProcessRequirement() {
  
    return std::nullopt;
  }
