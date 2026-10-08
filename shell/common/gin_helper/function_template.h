@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
 
+#include <cstdint>
 #include <functional>
 #include <optional>
 #include <type_traits>
@@ -14,12 +15,12 @@
 #include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "gin/arguments.h"
-#include "gin/per_isolate_data.h"
-#include "gin/public/gin_embedders.h"
+#include "gin/function_template.h"
 #include "shell/common/gin_helper/destroyable.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "v8/include/cppgc/allocation.h"
 #include "v8/include/cppgc/macros.h"
-#include "v8/include/v8-external.h"
+#include "v8/include/v8-cppgc.h"
 #include "v8/include/v8-isolate.h"
 #include "v8/include/v8-microtask-queue.h"
 #include "v8/include/v8-template.h"
@@ -50,76 +51,23 @@ struct CallbackParamTraits<const T*> {
   typedef T* LocalType;
 };
 
-// CallbackHolder and CallbackHolderBase are used to pass a
-// base::RepeatingCallback from CreateFunctionTemplate through v8 (via
-// v8::FunctionTemplate) to DispatchToCallback, where it is invoked.
+// CallbackHolder is used to pass a base::RepeatingCallback from
+// CreateFunctionTemplate through v8 (via v8::FunctionTemplate) to
+// DispatchToCallback, where it is invoked. It derives from gin's cppgc managed
+// holder base so its lifetime is handled by unified heap tracing.
 
-// CallbackHolder will clean up the callback in two different scenarios:
-// - If the garbage collector finds that it's garbage and collects it. (But note
-//   that even _if_ we become garbage, we might never get collected!)
-// - If the isolate gets disposed.
-//
-// TODO(crbug.com/1285119): When gin::Wrappable gets migrated over to using
-//   cppgc, this class should also be considered for migration.
-
-// This simple base class is used so that we can share a single object template
-// among every CallbackHolder instance.
-class CallbackHolderBase {
- public:
-  CallbackHolderBase(const CallbackHolderBase&) = delete;
-  CallbackHolderBase& operator=(const CallbackHolderBase&) = delete;
-
-  v8::Local<v8::External> GetHandle(v8::Isolate* isolate);
-
-  // Frees the holders created in `isolate` when it has no gin::PerIsolateData,
-  // as a Node.js worker's isolate does. gin never reports the disposal of such
-  // an isolate, and V8 does not run weak callbacks when it disposes one, so
-  // without this the holders leak. Call it on the isolate's thread once no
-  // more JavaScript will run there.
-  static void DisposeAllInIsolateWithoutGin(v8::Isolate* isolate);
-
- protected:
-  explicit CallbackHolderBase(v8::Isolate* isolate);
-  virtual ~CallbackHolderBase();
-
- private:
-  class DisposeObserver : gin::PerIsolateData::DisposeObserver {
-   public:
-    DisposeObserver(gin::PerIsolateData* per_isolate_data,
-                    CallbackHolderBase* holder);
-    ~DisposeObserver() override;
-
-    // gin::PerIsolateData::DisposeObserver
-    void OnBeforeDispose(v8::Isolate* isolate) override;
-    void OnDisposed() override;
-
-   private:
-    // Unlike in Chromium, it's possible for PerIsolateData to be null
-    // for a given isolate - e.g. in a Node.js Worker. Thus this
-    // needs to be a raw_ptr instead of a raw_ref.
-    const raw_ptr<gin::PerIsolateData> per_isolate_data_;
-    const raw_ref<CallbackHolderBase> holder_;
-  };
-
-  static void FirstWeakCallback(
-      const v8::WeakCallbackInfo<CallbackHolderBase>& data);
-  static void SecondWeakCallback(
-      const v8::WeakCallbackInfo<CallbackHolderBase>& data);
-
-  v8::Global<v8::External> v8_ref_;
-  DisposeObserver dispose_observer_;
-
-  // Set while this holder is registered for DisposeAllInIsolateWithoutGin().
-  raw_ptr<v8::Isolate> isolate_without_gin_ = nullptr;
-};
+// All callback signatures share a pointer tag, so this identifier is checked
+// before casting a holder to its signature specific subclass.
+template <typename Sig>
+inline constexpr int kSignatureId = 0;
 
 template <typename Sig>
-class CallbackHolder : public CallbackHolderBase {
+class CallbackHolder final : public gin::internal::CallbackHolderBase {
  public:
-  CallbackHolder(v8::Isolate* isolate,
-                 base::RepeatingCallback<Sig> callback,
+  CallbackHolder(base::RepeatingCallback<Sig> callback,
                  InvokerOptions invoker_options)
-      : CallbackHolderBase(isolate),
+      : gin::internal::CallbackHolderBase(
+            reinterpret_cast<uintptr_t>(&kSignatureId<Sig>)),
         callback(std::move(callback)),
         invoker_options(std::move(invoker_options)) {}
   CallbackHolder(const CallbackHolder&) = delete;
@@ -128,7 +76,6 @@ class CallbackHolder : public CallbackHolderBase {
   base::RepeatingCallback<Sig> callback;
   InvokerOptions invoker_options;
 
- private:
   ~CallbackHolder() override = default;
 };
 
@@ -331,10 +278,15 @@ struct Dispatcher {};
 template <typename ReturnType, typename... ArgTypes>
 struct Dispatcher<ReturnType(ArgTypes...)> {
   static void DispatchToCallbackImpl(gin::Arguments* args) {
-    v8::Local<v8::External> v8_holder;
-    CHECK(args->GetData(&v8_holder));
-    CallbackHolderBase* holder_base = reinterpret_cast<CallbackHolderBase*>(
-        v8_holder->Value(v8::kExternalPointerTypeTagDefault));
+    gin::internal::CallbackHolderBase* holder_base =
+        gin::internal::CallbackHolderBase::FromV8(args->isolate(),
+                                                  args->GetData());
+    if (!holder_base || holder_base->type_identifier() !=
+                            reinterpret_cast<uintptr_t>(
+                                &kSignatureId<ReturnType(ArgTypes...)>)) {
+      args->ThrowTypeError("Illegal invocation");
+      return;
+    }
 
     typedef CallbackHolder<ReturnType(ArgTypes...)> HolderT;
     HolderT* holder = static_cast<HolderT*>(holder_base);
@@ -480,25 +432,24 @@ v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(v8::Isolate* isolate) {
 // returned by this function.  Otherwise, repeated method invocations from JS
 // will create substantial memory leaks. See http://crbug.com/463487.
 //
-// The callback will be destroyed if either the function template gets garbage
-// collected or _after_ the isolate is disposed. Garbage collection can never be
-// relied upon. As such, any destructors for objects bound to the callback must
-// not depend on the isolate being alive at the point they are called. The order
-// in which callbacks are destroyed is not guaranteed.
+// Callback holders are managed by cppgc. Destructors for objects bound to the
+// callback must not access other GC-managed objects or depend on the isolate
+// being alive. The order in which callbacks are destroyed is not guaranteed.
 template <typename Sig>
 v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(
     v8::Isolate* isolate,
     base::RepeatingCallback<Sig> callback,
     InvokerOptions invoker_options = {}) {
   typedef CallbackHolder<Sig> HolderT;
-  HolderT* holder =
-      new HolderT(isolate, std::move(callback), std::move(invoker_options));
+  HolderT* holder = cppgc::MakeGarbageCollected<HolderT>(
+      isolate->GetCppHeap()->GetAllocationHandle(), std::move(callback),
+      std::move(invoker_options));
 
   v8::Local<v8::FunctionTemplate> tmpl = v8::FunctionTemplate::New(
-      isolate, &Dispatcher<Sig>::DispatchToCallback,
-      gin::ConvertToV8<v8::Local<v8::External>>(isolate,
-                                                holder->GetHandle(isolate)),
-      v8::Local<v8::Signature>(), 0, v8::ConstructorBehavior::kAllow);
+      isolate, nullptr, v8::Local<v8::Value>(), v8::Local<v8::Signature>(), 0,
+      v8::ConstructorBehavior::kAllow);
+  tmpl->SetCallHandler(&Dispatcher<Sig>::DispatchToCallback,
+                       holder->GetHandle(isolate));
   return tmpl;
 }
 

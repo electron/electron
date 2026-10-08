@@ -1,0 +1,431 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Lippautz <mlippautz@chromium.org>
+Date: Mon, 5 Oct 2026 07:38:02 -0700
+Subject: gin: Use v8::CppHeapExternal for CallbackHolderBase
+
+Migrate gin::internal::CallbackHolderBase from gin::Wrappable to
+cppgc::GarbageCollected<CallbackHolderBase> wrapped in
+v8::CppHeapExternal. Because v8::CppHeapExternal is a primitive
+HeapObject (subtype of v8::Data) rather than a v8::Object, it has no
+creation v8::Context and does not retain a NativeContext when cached on
+a v8::FunctionTemplate or v8::ObjectTemplate.
+
+This also allows moving the ObjectTemplate cache back from
+gin::PerContextData to gin::PerIsolateData.
+
+Backported so Electron's gin_helper callback holders can use the cppgc
+based CallbackHolderBase before the Chromium roll that contains this CL.
+This patch should be removed once Chromium includes crrev.com/c/8485746
+(first released in 157.0.8091.0).
+
+Bug: 567169217, 568151990
+Change-Id: If006b7738204b7cbda53698aa6c74fcdaea8950a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8485746
+Reviewed-by: Andreas Haas <ahaas@chromium.org>
+Commit-Queue: Michael Lippautz <mlippautz@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1711265}
+
+diff --git a/gin/arguments.h b/gin/arguments.h
+index e21c3ec95224b61b2f2a3e04bca7fdebf0ace579..2ce6fc47d13237303d7fd6bd357185c35b8dc925 100644
+--- a/gin/arguments.h
++++ b/gin/arguments.h
+@@ -39,6 +39,11 @@ class GIN_EXPORT Arguments {
+     return ConvertFromV8(isolate(), data.As<v8::Value>(), out);
+   }
+ 
++  v8::Local<v8::Data> GetData() const {
++    return is_for_property_ ? info_for_property_->DataV2()
++                            : info_for_function_->DataV2();
++  }
++
+   template<typename T>
+   bool GetNext(T* out) {
+     if (is_for_property_ || next_ >= info_for_function_->Length()) {
+diff --git a/gin/function_template.cc b/gin/function_template.cc
+index 440b8964a894f3059d5f9fafdeab7182b77a881f..a5ec32e5ddfed41925c2d779279f655cfdf6e608 100644
+--- a/gin/function_template.cc
++++ b/gin/function_template.cc
+@@ -13,8 +13,21 @@ CallbackHolderBase::CallbackHolderBase(uintptr_t type_identifier)
+ 
+ CallbackHolderBase::~CallbackHolderBase() = default;
+ 
+-const WrapperInfo* CallbackHolderBase::wrapper_info() const {
+-  return &kWrapperInfo;
++v8::Local<v8::CppHeapExternal> CallbackHolderBase::GetHandle(
++    v8::Isolate* isolate) {
++  return v8::CppHeapExternal::New<CallbackHolderBase>(
++      isolate, this, static_cast<v8::CppHeapPointerTag>(kCallbackHolderBase));
++}
++
++// static
++CallbackHolderBase* CallbackHolderBase::FromV8(v8::Isolate* isolate,
++                                               v8::Local<v8::Data> data) {
++  if (data.IsEmpty() || !data->IsCppHeapExternal()) {
++    return nullptr;
++  }
++  constexpr auto kTag = static_cast<v8::CppHeapPointerTag>(kCallbackHolderBase);
++  return v8::CppHeapExternal::Cast(*data)->Value<CallbackHolderBase>(
++      isolate, {kTag, kTag});
+ }
+ 
+ void ThrowConversionError(Arguments* args,
+diff --git a/gin/function_template.h b/gin/function_template.h
+index 79a3cf995c6f23ae71b895c95e01485ed09e99b7..66589541cb74932fb03da287425c70128fc6b456 100644
+--- a/gin/function_template.h
++++ b/gin/function_template.h
+@@ -17,9 +17,11 @@
+ #include "gin/converter.h"
+ #include "gin/gin_export.h"
+ #include "gin/public/wrappable_pointer_tags.h"
+-#include "gin/wrappable.h"
+ #include "v8/include/cppgc/allocation.h"
++#include "v8/include/cppgc/garbage-collected.h"
+ #include "v8/include/cppgc/macros.h"
++#include "v8/include/cppgc/visitor.h"
++#include "v8/include/v8-cpp-heap-external.h"
+ #include "v8/include/v8-cppgc.h"
+ #include "v8/include/v8-forward.h"
+ #include "v8/include/v8-template.h"
+@@ -49,7 +51,7 @@ struct CallbackParamTraits<const T*> {
+ // kSignatureId provides a unique memory address for each function signature.
+ // This identifier is stored in CallbackHolderBase and used for runtime type
+ // checks before casting to a specific CallbackHolder in DispatchToCallbackImpl.
+-// This allows all gin callbacks to share a single WrappablePointerTag tag,
++// This allows all gin callbacks to share a single NonWrappablePointerTag tag,
+ // avoiding the need to register unique tags for every possible signature.
+ template <typename Sig>
+ inline constexpr int kSignatureId = 0;
+@@ -57,24 +59,23 @@ inline constexpr int kSignatureId = 0;
+ // CallbackHolder and CallbackHolderBase are used to pass a
+ // base::RepeatingCallback from CreateFunctionTemplate through v8 (via
+ // v8::FunctionTemplate) to DispatchToCallback, where it is invoked.
+-
+-// This simple base class is used so that we can share a single object template
+-// among every CallbackHolder instance.
+-class GIN_EXPORT CallbackHolderBase : public Wrappable<CallbackHolderBase> {
++class GIN_EXPORT CallbackHolderBase
++    : public cppgc::GarbageCollected<CallbackHolderBase> {
+  public:
+-  static constexpr WrapperInfo kWrapperInfo = {{kEmbedderNativeGin},
+-                                               kCallbackHolderBase};
+-
+   CallbackHolderBase(const CallbackHolderBase&) = delete;
+   CallbackHolderBase& operator=(const CallbackHolderBase&) = delete;
++  virtual ~CallbackHolderBase();
++
++  v8::Local<v8::CppHeapExternal> GetHandle(v8::Isolate* isolate);
++  static CallbackHolderBase* FromV8(v8::Isolate* isolate,
++                                    v8::Local<v8::Data> data);
+ 
+-  const WrapperInfo* wrapper_info() const override;
++  virtual void Trace(cppgc::Visitor* visitor) const {}
+ 
+   uintptr_t type_identifier() const { return type_identifier_; }
+ 
+  protected:
+   explicit CallbackHolderBase(const uintptr_t type_identifier);
+-  ~CallbackHolderBase() override;
+ 
+  private:
+   uintptr_t type_identifier_;
+@@ -241,8 +242,8 @@ struct Dispatcher {};
+ template <typename ReturnType, typename... ArgTypes>
+ struct Dispatcher<ReturnType(ArgTypes...)> {
+   static void DispatchToCallbackImpl(Arguments* args) {
+-    CallbackHolderBase* holder_base = nullptr;
+-    CHECK(args->GetData(&holder_base));
++    CallbackHolderBase* holder_base =
++        CallbackHolderBase::FromV8(args->isolate(), args->GetData());
+     CHECK(holder_base);
+ 
+     typedef CallbackHolder<ReturnType(ArgTypes...)> HolderT;
+@@ -304,9 +305,10 @@ v8::Local<v8::FunctionTemplate> CreateFunctionTemplate(
+       std::move(invoker_options));
+ 
+   v8::Local<v8::FunctionTemplate> tmpl = v8::FunctionTemplate::New(
+-      isolate, &internal::Dispatcher<Sig>::DispatchToCallback,
+-      ConvertToV8(isolate, holder).ToLocalChecked(), v8::Local<v8::Signature>(),
+-      0, v8::ConstructorBehavior::kThrow);
++      isolate, nullptr, v8::Local<v8::Value>(), v8::Local<v8::Signature>(), 0,
++      v8::ConstructorBehavior::kThrow);
++  tmpl->SetCallHandler(&internal::Dispatcher<Sig>::DispatchToCallback,
++                       holder->GetHandle(isolate));
+   return tmpl;
+ }
+ 
+@@ -326,8 +328,11 @@ CreateDataPropertyCallback(v8::Isolate* isolate,
+   HolderT* holder = cppgc::MakeGarbageCollected<HolderT>(
+       isolate->GetCppHeap()->GetAllocationHandle(), std::move(callback),
+       std::move(invoker_options));
++  v8::Local<v8::Data> data = holder->GetHandle(isolate);
++  // TODO(567169217): Remove reinterpret_cast once
++  // v8::Template::SetLazyDataProperty accepts v8::Local<v8::Data>.
+   return {&internal::Dispatcher<Sig>::DispatchToCallbackForProperty,
+-          ConvertToV8(isolate, holder).ToLocalChecked()};
++          *reinterpret_cast<v8::Local<v8::Value>*>(&data)};
+ }
+ 
+ }  // namespace gin
+diff --git a/gin/per_context_data.cc b/gin/per_context_data.cc
+index f0592d926baec4c7c07202e297fe32dc7df0036a..82b9be133daa36cab28eeb01607fb94048e2a8d6 100644
+--- a/gin/per_context_data.cc
++++ b/gin/per_context_data.cc
+@@ -30,7 +30,6 @@ PerContextData::PerContextData(ContextHolder* context_holder,
+ PerContextData::~PerContextData() = default;
+ 
+ void PerContextData::Detach() {
+-  object_templates_.clear();
+   ClearAllUserData();
+   CHECK(context_holder_ != nullptr);
+   context_holder_->context()->SetAlignedPointerInEmbedderData(
+@@ -51,26 +50,4 @@ PerContextData* PerContextData::From(v8::Local<v8::Context> context) {
+       static_cast<v8::CppHeapPointerTag>(gin::kGinPerContextData));
+ }
+ 
+-void PerContextData::SetObjectTemplate(
+-    const WrapperInfo* info,
+-    v8::Local<v8::ObjectTemplate> object_template) {
+-  if (!context_holder_) {
+-    return;
+-  }
+-  object_templates_[info].Reset(context_holder_->isolate(), object_template);
+-}
+-
+-v8::Local<v8::ObjectTemplate> PerContextData::GetObjectTemplate(
+-    const WrapperInfo* info) {
+-  if (!context_holder_) {
+-    return v8::Local<v8::ObjectTemplate>();
+-  }
+-  auto iter = object_templates_.find(info);
+-  if (iter == object_templates_.end()) {
+-    return v8::Local<v8::ObjectTemplate>();
+-  }
+-  return v8::Local<v8::ObjectTemplate>::New(context_holder_->isolate(),
+-                                            iter->second);
+-}
+-
+ }  // namespace gin
+diff --git a/gin/per_context_data.h b/gin/per_context_data.h
+index 609e682dfb7af15b6d8e8987b294fe24da07f6d7..844103a7b7c9b512d991fc1838fdd0f09fcdd9a2 100644
+--- a/gin/per_context_data.h
++++ b/gin/per_context_data.h
+@@ -5,16 +5,12 @@
+ #ifndef GIN_PER_CONTEXT_DATA_H_
+ #define GIN_PER_CONTEXT_DATA_H_
+ 
+-#include <map>
+-
+ #include "base/memory/raw_ptr.h"
+ #include "base/supports_user_data.h"
+ #include "gin/gin_export.h"
+-#include "gin/public/wrapper_info.h"
+ #include "v8/include/cppgc/garbage-collected.h"
+ #include "v8/include/cppgc/visitor.h"
+ #include "v8/include/v8-forward.h"
+-#include "v8/include/v8-persistent-handle.h"
+ 
+ namespace gin {
+ 
+@@ -41,16 +37,10 @@ class GIN_EXPORT PerContextData
+   // Can return NULL after the ContextHolder has detached from context.
+   static PerContextData* From(v8::Local<v8::Context> context);
+ 
+-  void SetObjectTemplate(const WrapperInfo* info,
+-                         v8::Local<v8::ObjectTemplate> object_template);
+-  v8::Local<v8::ObjectTemplate> GetObjectTemplate(const WrapperInfo* info);
+-
+   ContextHolder* context_holder() { return context_holder_; }
+ 
+  private:
+   raw_ptr<ContextHolder, DanglingUntriaged> context_holder_;
+-  std::map<const WrapperInfo*, v8::Global<v8::ObjectTemplate>>
+-      object_templates_;
+ };
+ 
+ }  // namespace gin
+diff --git a/gin/per_context_data_unittest.cc b/gin/per_context_data_unittest.cc
+index 1f4724d858928bf792d99ac32a5a5a26376c0343..7683a8a3704f269510cb429b0edaf1c4cce9621c 100644
+--- a/gin/per_context_data_unittest.cc
++++ b/gin/per_context_data_unittest.cc
+@@ -33,25 +33,4 @@ TEST_F(PerContextDataTest, LookupAndDestruction) {
+   EXPECT_TRUE(per_context_data == NULL);
+ }
+ 
+-TEST_F(PerContextDataTest, ObjectTemplatesClearedOnDetach) {
+-  v8::Isolate::Scope isolate_scope(instance_->isolate());
+-  v8::HandleScope handle_scope(instance_->isolate());
+-  v8::Local<v8::Context> context = v8::Context::New(
+-      instance_->isolate(), nullptr, v8::Local<v8::ObjectTemplate>());
+-  WrapperInfo info = {{kEmbedderNativeGin}, kTestObject};
+-  PerContextData* per_context_data = nullptr;
+-  {
+-    ContextHolder context_holder(instance_->isolate());
+-    context_holder.SetContext(context);
+-    per_context_data = PerContextData::From(context);
+-    ASSERT_TRUE(per_context_data != nullptr);
+-
+-    v8::Local<v8::ObjectTemplate> templ =
+-        v8::ObjectTemplate::New(instance_->isolate());
+-    per_context_data->SetObjectTemplate(&info, templ);
+-    EXPECT_FALSE(per_context_data->GetObjectTemplate(&info).IsEmpty());
+-  }
+-  EXPECT_TRUE(per_context_data->GetObjectTemplate(&info).IsEmpty());
+-}
+-
+ }  // namespace gin
+diff --git a/gin/per_isolate_data.cc b/gin/per_isolate_data.cc
+index 6df3e02b1af1a3e11d131344625f777d997ce01e..3ea2c4707e11750aa2dd3f04ac7137d986d7ae61 100644
+--- a/gin/per_isolate_data.cc
++++ b/gin/per_isolate_data.cc
+@@ -16,7 +16,10 @@
+ #include "v8/include/v8-isolate.h"
+ 
+ using v8::ArrayBuffer;
++using v8::Eternal;
+ using v8::Isolate;
++using v8::Local;
++using v8::ObjectTemplate;
+ 
+ namespace {
+ std::shared_ptr<gin::V8ForegroundTaskRunnerBase> CreateV8ForegroundTaskRunner(
+@@ -70,6 +73,20 @@ PerIsolateData* PerIsolateData::From(Isolate* isolate) {
+   return static_cast<PerIsolateData*>(isolate->GetData(kEmbedderNativeGin));
+ }
+ 
++void PerIsolateData::SetObjectTemplate(const WrapperInfo* info,
++                                       Local<ObjectTemplate> templ) {
++  object_templates_[info] = Eternal<ObjectTemplate>(isolate_, templ);
++}
++
++v8::Local<v8::ObjectTemplate> PerIsolateData::GetObjectTemplate(
++    const WrapperInfo* info) {
++  ObjectTemplateMap::iterator it = object_templates_.find(info);
++  if (it == object_templates_.end()) {
++    return v8::Local<v8::ObjectTemplate>();
++  }
++  return it->second.Get(isolate_);
++}
++
+ void PerIsolateData::AddDisposeObserver(DisposeObserver* observer) {
+   dispose_observers_.AddObserver(observer);
+ }
+diff --git a/gin/per_isolate_data.h b/gin/per_isolate_data.h
+index d7519928328d6ef8459756c38d3d4c179f73aca7..d2b2ce62dc6244b969283c983032c1922ef83e79 100644
+--- a/gin/per_isolate_data.h
++++ b/gin/per_isolate_data.h
+@@ -5,6 +5,7 @@
+ #ifndef GIN_PER_ISOLATE_DATA_H_
+ #define GIN_PER_ISOLATE_DATA_H_
+ 
++#include <map>
+ #include <memory>
+ 
+ #include "base/check.h"
+@@ -14,6 +15,7 @@
+ #include "base/task/single_thread_task_runner.h"
+ #include "gin/gin_export.h"
+ #include "gin/public/isolate_holder.h"
++#include "gin/public/wrapper_info.h"
+ #include "gin/v8_foreground_task_runner_base.h"
+ #include "v8/include/v8-array-buffer.h"
+ #include "v8/include/v8-forward.h"
+@@ -49,6 +51,11 @@ class GIN_EXPORT PerIsolateData {
+ 
+   static PerIsolateData* From(v8::Isolate* isolate);
+ 
++  void SetObjectTemplate(const WrapperInfo* info,
++                         v8::Local<v8::ObjectTemplate> object_template);
++
++  v8::Local<v8::ObjectTemplate> GetObjectTemplate(const WrapperInfo* info);
++
+   void AddDisposeObserver(DisposeObserver* observer);
+   void RemoveDisposeObserver(DisposeObserver* observer);
+   void NotifyBeforeDispose();
+@@ -67,10 +74,14 @@ class GIN_EXPORT PerIsolateData {
+   }
+ 
+  private:
++  typedef std::map<const WrapperInfo*, v8::Eternal<v8::ObjectTemplate>>
++      ObjectTemplateMap;
++
+   // PerIsolateData doesn't actually own |isolate_|. Instead, the isolate is
+   // owned by the IsolateHolder, which also owns the PerIsolateData.
+   raw_ptr<v8::Isolate, AcrossTasksDanglingUntriaged> isolate_;
+   raw_ptr<v8::ArrayBuffer::Allocator, DanglingUntriaged> allocator_;
++  ObjectTemplateMap object_templates_;
+   base::ObserverList<DisposeObserver> dispose_observers_;
+   std::shared_ptr<V8ForegroundTaskRunnerBase> task_runner_;
+   std::shared_ptr<V8ForegroundTaskRunnerBase> user_visible_task_runner_;
+diff --git a/gin/public/wrappable_pointer_tags.h b/gin/public/wrappable_pointer_tags.h
+index fb3f9cae54855d9a44b33b0b27cc5645e22e94f0..5e8a0d02b92edb485538ecb4c1a8a15d29fc6a5e 100644
+--- a/gin/public/wrappable_pointer_tags.h
++++ b/gin/public/wrappable_pointer_tags.h
+@@ -65,7 +65,6 @@ enum WrappablePointerTag : uint16_t {
+   kAPIBindingJSUtil,             // extensions::APIBindingJSUtil
+   kAutomationPosition,           // ui::AutomationPosition
+   kBenchmarkingBindings,         // BenchmarkingBindings
+-  kCallbackHolderBase,           // gin::internal::CallbackHolderBase
+   kChromePluginPlaceholder,      // ChromePluginPlaceholder
+   kChromeSetting,                // extensions::ChromeSetting
+   kContentSetting,               // extensions::ContentSetting
+@@ -126,9 +125,11 @@ enum NonWrappablePointerTag : uint16_t {
+   kFirstNonWrappablePointerTag =
+       static_cast<uint16_t>(kGinNonWrappableTagRange.first),
+   // keep-sorted start case=no
+-  kGinPerContextData = kFirstNonWrappablePointerTag,  // gin::PerContextData
++  kCallbackHolderBase =
++      kFirstNonWrappablePointerTag,  // gin::internal::CallbackHolderBase
++  kGinPerContextData,                // gin::PerContextData
+   // keep-sorted end
+-  kLastNonWrappablePointerTag = kGinPerContextData,
++  kLastNonWrappablePointerTag,
+ };
+ 
+ static_assert(
+diff --git a/gin/wrappable.cc b/gin/wrappable.cc
+index 2f4506e22af742f1c8bb2592b814b4ac78d02858..95a80049aab75539bc2ce3a78ee0afb899bab468 100644
+--- a/gin/wrappable.cc
++++ b/gin/wrappable.cc
+@@ -6,7 +6,7 @@
+ 
+ #include "base/check_op.h"
+ #include "gin/object_template_builder.h"
+-#include "gin/per_context_data.h"
++#include "gin/per_isolate_data.h"
+ #include "v8/include/cppgc/visitor.h"
+ #include "v8/include/v8-cppgc.h"
+ #include "v8/include/v8-sandbox.h"
+@@ -44,29 +44,18 @@ v8::MaybeLocal<v8::Object> WrappableBase::GetWrapper(v8::Isolate* isolate) {
+     return wrapper_.Get(isolate);
+   }
+ 
+-  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+-  if (context.IsEmpty()) {
+-    return {};
+-  }
+-
+   const WrapperInfo* info = wrapper_info();
+-
+-  PerContextData* data = PerContextData::From(context);
+-  v8::Local<v8::ObjectTemplate> templ;
+-  if (data) {
+-    templ = data->GetObjectTemplate(info);
+-  }
++  PerIsolateData* data = PerIsolateData::From(isolate);
++  v8::Local<v8::ObjectTemplate> templ = data->GetObjectTemplate(info);
+   if (templ.IsEmpty()) {
+     templ = GetObjectTemplateBuilder(isolate).Build();
+     CHECK(!templ.IsEmpty());
+-    if (data) {
+-      data->SetObjectTemplate(info, templ);
+-    }
++    data->SetObjectTemplate(info, templ);
+   }
+   v8::Local<v8::Object> wrapper;
+   // |wrapper| may be empty in some extreme cases, e.g., when
+   // Object.prototype.constructor is overwritten.
+-  if (!templ->NewInstance(context).ToLocal(&wrapper)) {
++  if (!templ->NewInstance(isolate->GetCurrentContext()).ToLocal(&wrapper)) {
+     return {};
+   }
+ 

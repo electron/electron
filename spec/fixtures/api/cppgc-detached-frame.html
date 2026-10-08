@@ -1,0 +1,8 @@
+<!DOCTYPE html>
+<script>
+  const testing = process._linkedBinding('electron_common_testing');
+  class DetachedFrameCacheSentinel {}
+  globalThis.detachedFrameCacheSentinel = new DetachedFrameCacheSentinel();
+  globalThis.detachedFrameCacheSentinel.probe =
+    testing.createCallbackHolderProbeForTesting();
+</script>
