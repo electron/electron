@@ -63,9 +63,21 @@ ifdescribe(fs.existsSync(xcache) && !process.env.IS_UBSAN)('electron_xcache', ()
     const { info } = generate('1');
     expect(info.snapshot.kind).to.equal('node-startup-snapshot');
     const own = new vm.Script('1', { filename: 'probe' }).createCachedData();
-    // SerializedCodeData header: [12] FlagList::Hash, [16] read-only snapshot checksum.
-    expect(info.header.flagHash).to.equal('0x' + own.readUInt32LE(12).toString(16).padStart(8, '0'));
-    expect(info.header.roSnapshotChecksum).to.equal('0x' + own.readUInt32LE(16).toString(16).padStart(8, '0'));
+    // SerializedCodeData header: [8..40) source hash, [40] flag hash, [44] snapshot checksum.
+    expect(info.header.sourceHash).to.equal('0x' + own.subarray(8, 40).toString('hex'));
+    expect(info.header.flagHash).to.equal('0x' + own.readUInt32LE(40).toString(16).padStart(8, '0'));
+    expect(info.header.roSnapshotChecksum).to.equal('0x' + own.readUInt32LE(44).toString(16).padStart(8, '0'));
+  });
+
+  it('reports the complete SHA256 source hash', () => {
+    const { info, cache } = generate(
+      '1',
+      '--extra-v8-flags',
+      `${app.commandLine.getSwitchValue('js-flags')} --code-cache-source-hash-sha256`
+    );
+    expect(info.header.sourceHash).to.equal('0x' + cache.subarray(8, 40).toString('hex'));
+    expect(info.header.sourceHash).to.match(/^0x[0-9a-f]{64}$/);
+    expect(cache.subarray(12, 40).some((byte) => byte !== 0)).to.equal(true);
   });
 
   it('produces a script cache the main process accepts', () => {

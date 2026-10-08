@@ -200,6 +200,16 @@ export function allowAnyProtocol(opts: ClientRequestConstructorOptions): ClientR
   } as any;
 }
 
+export function toByteString(val: string): string {
+  if (typeof val !== 'string') return String(val);
+  for (let i = 0; i < val.length; i++) {
+    if (val.charCodeAt(i) > 255) {
+      return Buffer.from(val, 'utf-8').toString('latin1');
+    }
+  }
+  return val;
+}
+
 type ExtraURLLoaderOptions = {
   redirectPolicy: RedirectPolicy;
   headers: Record<string, { name: string; value: string | string[] }>;

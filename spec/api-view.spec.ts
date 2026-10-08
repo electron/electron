@@ -251,22 +251,20 @@ describe('View', () => {
   });
 
   describe('methods', () => {
-    it('track two WebContentsViews that share a webContents as one child', () => {
+    it('treat two WebContentsViews that share a webContents as separate children', () => {
       const a = new WebContentsView();
       const b = new WebContentsView({ webContents: a.webContents });
       try {
         const parent = new View();
         parent.addChildView(a);
         parent.addChildView(b);
-        expect(parent.children).to.deep.equal([a]);
+        expect(parent.children).to.deep.equal([a, b]);
         expect(parent.children[0]).to.equal(a);
-
-        const other = new View();
-        parent.addChildView(other);
-        expect(parent.children).to.deep.equal([a, other]);
+        expect(parent.children[1]).to.equal(b);
 
         parent.removeChildView(b);
-        expect(parent.children).to.deep.equal([other]);
+        expect(parent.children).to.deep.equal([a]);
+        expect(parent.children[0]).to.equal(a);
       } finally {
         a.webContents.destroy();
       }

@@ -65,7 +65,7 @@ void ServiceWorkerData::ReceivePostMessage(const std::string& channel,
   NOTIMPLEMENTED();
 }
 
-void ServiceWorkerData::TakeHeapSnapshot(mojo::ScopedHandle file,
+void ServiceWorkerData::TakeHeapSnapshot(mojo::PlatformHandle file,
                                          TakeHeapSnapshotCallback callback) {
   NOTIMPLEMENTED();
   std::move(callback).Run(false);

@@ -10,6 +10,7 @@
 #include "shell/browser/api/electron_api_web_contents_view.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
@@ -70,12 +71,12 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
       WebContentsView::Create(isolate, web_preferences);
   CHECK(web_contents_view);
   web_contents_view->RegisterDraggableRegionProvider(window());
+  auto* web_contents = web_contents_view->GetWebContents();
   window()->InitPrimaryWebContentsView(
-      static_cast<InspectableWebContentsView*>(web_contents_view->view()));
+      web_contents->inspectable_web_contents()->GetView());
   web_contents_view_ = web_contents_view;
 
   // Save a reference of the WebContents.
-  auto* web_contents = web_contents_view->GetWebContents();
   v8::Local<v8::Object> wrapper =
       web_contents->GetWrapper(isolate).ToLocalChecked();
   web_contents_.Reset(isolate, wrapper);
