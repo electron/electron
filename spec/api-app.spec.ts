@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, session, net as electronNet, type WebContents, utilityProcess } from 'electron/main';
+import { app, BrowserWindow, Menu, session, net as electronNet, type WebContents } from 'electron/main';
 
 import { assert, expect } from 'chai';
 
@@ -17,6 +17,7 @@ import { promisify } from 'node:util';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers.ts';
 import { defer, ifdescribe, ifit, isWayland, listen, waitUntil } from './lib/spec-helpers.ts';
+import { runInUtilityProcess } from './lib/utility-process-helpers.ts';
 import { closeWindow, closeAllWindows } from './lib/window-helpers.ts';
 import {
   makeXdgMockDirectories,
@@ -2560,13 +2561,6 @@ describe('app module', () => {
     });
 
     it('impacts proxy for requests made from utility process', async () => {
-      const utilityFixturePath = path.resolve(
-        import.meta.dirname,
-        'fixtures',
-        'api',
-        'utility-process',
-        'api-net-spec.js'
-      );
       const fn = async () => {
         const urlRequest = electronNet.request('http://example.com/');
         const response = await getResponse(urlRequest);
@@ -2583,15 +2577,7 @@ describe('app module', () => {
       await app.setProxy(config);
       const proxy = await app.resolveProxy('http://example.com/');
       expect(proxy).to.equal(`PROXY ${hostname}:${port}`);
-      const child = utilityProcess.fork(utilityFixturePath, [], {
-        execArgv: ['--expose-gc']
-      });
-      child.postMessage({ fn: `(${fn})()` });
-      const [data] = await once(child, 'message');
-      expect(data.ok).to.be.true(data.message);
-      // Cleanup.
-      const [code] = await once(child, 'exit');
-      expect(code).to.equal(0);
+      await runInUtilityProcess(fn);
     });
 
     it('does not impact proxy for requests made from main process', async () => {
