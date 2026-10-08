@@ -8,6 +8,7 @@ import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import { createRequire } from 'node:module';
+import * as originalFs from 'node:original-fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as qs from 'node:querystring';
@@ -19,7 +20,7 @@ import * as url from 'node:url';
 import * as zlib from 'node:zlib';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers.ts';
-import { listen, defer } from './lib/spec-helpers.ts';
+import { listen, defer, ifit } from './lib/spec-helpers.ts';
 import { WebmGenerator } from './lib/video-helpers.js';
 import { closeAllWindows, closeWindow } from './lib/window-helpers.ts';
 
@@ -1003,6 +1004,306 @@ describe('protocol module', () => {
     });
   });
 
+  describe('protocol.registerSource', () => {
+    // Uses the 'http-like' scheme registered as standard in spec/index.js.
+    let root: string;
+    before(() => {
+      root = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-protocol-source-'));
+      fs.mkdirSync(path.join(root, 'dist', 'sub'), { recursive: true });
+      fs.mkdirSync(path.join(root, 'assets'));
+      fs.writeFileSync(
+        path.join(root, 'dist', 'index.html'),
+        '<!doctype html><link rel="stylesheet" href="/assets/a.css"><script src="/app.js"></script><p id="p">dist index</p>'
+      );
+      fs.writeFileSync(path.join(root, 'dist', 'app.js'), 'window.loadedAt = performance.now()');
+      fs.writeFileSync(path.join(root, 'dist', 'sub', 'index.html'), '<p>sub index</p>');
+      fs.writeFileSync(path.join(root, 'dist', 'data.json'), '{"ok":true}');
+      fs.writeFileSync(path.join(root, 'assets', 'a.css'), 'p { color: red }');
+      fs.writeFileSync(path.join(root, 'secret.txt'), 'outside every root');
+    });
+    after(() => fs.rmSync(root, { recursive: true, force: true }));
+    afterEach(async () => {
+      if (protocol.isProtocolHandled('http-like')) protocol.unhandle('http-like');
+      await closeAllWindows();
+    });
+    const register = (extra: any = {}) =>
+      protocol.registerSource('http-like', {
+        routes: [
+          {
+            match: { host: 'bundle', path: '/assets/' },
+            source: { type: 'directory', root: path.join(root, 'assets'), ...extra }
+          },
+          { match: { host: 'bundle' }, source: { type: 'directory', root: path.join(root, 'dist'), ...extra } }
+        ]
+      });
+    const get = async (url: string) => {
+      const r = await net.fetch(url).catch((e) => e as Error);
+      return r instanceof Error
+        ? r.message
+        : { status: r.status, type: r.headers.get('content-type'), body: await r.text() };
+    };
+
+    it('serves files from the most specific matching route with a content type from the extension', async () => {
+      register();
+      expect(await get('http-like://bundle/data.json')).to.deep.equal({
+        status: 200,
+        type: 'application/json',
+        body: '{"ok":true}'
+      });
+      expect(await get('http-like://bundle/assets/a.css')).to.deep.equal({
+        status: 200,
+        type: 'text/css',
+        body: 'p { color: red }'
+      });
+      expect(await get('http-like://bundle/app.js')).to.deep.include({ status: 200, type: 'text/javascript' });
+    });
+
+    it('serves the index file for directory URLs', async () => {
+      register();
+      expect(await get('http-like://bundle/')).to.deep.include({ status: 200, type: 'text/html' });
+      expect(await get('http-like://bundle')).to.deep.include({ status: 200, type: 'text/html' });
+      expect(await get('http-like://bundle/sub/')).to.deep.equal({
+        status: 200,
+        type: 'text/html',
+        body: '<p>sub index</p>'
+      });
+      protocol.unhandle('http-like');
+      register({ index: '' });
+      expect(await get('http-like://bundle/')).to.match(/ERR_FILE_NOT_FOUND/);
+    });
+
+    it('does not serve paths outside the root, unknown hosts or missing files', async () => {
+      register();
+      for (const url of [
+        'http-like://bundle/../secret.txt',
+        'http-like://bundle/%2e%2e/secret.txt',
+        'http-like://bundle/sub/..%2f..%2fsecret.txt',
+        'http-like://bundle/assets/../secret.txt',
+        'http-like://bundle/assets/%2e%2e%2fsecret.txt',
+        'http-like://elsewhere/data.json',
+        'http-like://bundle/missing.js'
+      ]) {
+        expect(await get(url), url).to.match(/ERR_FILE_NOT_FOUND/);
+      }
+    });
+
+    it('answers GET, and HEAD without a body', async () => {
+      register();
+      const head = await net.fetch('http-like://bundle/data.json', { method: 'HEAD' });
+      expect(head.status).to.equal(200);
+      expect(head.headers.get('content-type')).to.equal('application/json');
+      expect(head.headers.get('content-length')).to.equal('11');
+      expect(await head.text()).to.equal('');
+      await expect(
+        net.fetch('http-like://bundle/data.json', { method: 'POST', body: 'x' })
+      ).to.eventually.be.rejectedWith(/ERR_FILE_NOT_FOUND/);
+    });
+
+    it('serves byte ranges as 206 with Content-Range, and 416 when unsatisfiable', async () => {
+      register();
+      const part = await net.fetch('http-like://bundle/data.json', { headers: { Range: 'bytes=2-5' } });
+      expect(part.status).to.equal(206);
+      expect(part.headers.get('content-range')).to.equal('bytes 2-5/11');
+      expect(part.headers.get('content-length')).to.equal('4');
+      expect(await part.text()).to.equal('ok":');
+      const whole = await net.fetch('http-like://bundle/data.json');
+      expect(whole.status).to.equal(200);
+      expect(whole.headers.get('content-range')).to.equal(null);
+      const bad = await net.fetch('http-like://bundle/data.json', { headers: { Range: 'bytes=50-60' } });
+      expect(bad.status).to.equal(416);
+      expect(bad.headers.get('content-range')).to.equal('bytes */11');
+      expect(await bad.text()).to.equal('');
+    });
+
+    it('does not follow a symlink or junction out of the root', async () => {
+      fs.symlinkSync(root, path.join(root, 'dist', 'up'), 'junction');
+      fs.symlinkSync(path.join(fixturesPath, 'test.asar'), path.join(root, 'dist', 'ext'), 'junction');
+      if (process.platform !== 'win32') {
+        fs.symlinkSync(path.join(root, 'secret.txt'), path.join(root, 'dist', 'link.txt'));
+      }
+      try {
+        register();
+        expect(await get('http-like://bundle/link.txt')).to.match(/ERR_FILE_NOT_FOUND/);
+        expect(await get('http-like://bundle/up/secret.txt')).to.match(/ERR_FILE_NOT_FOUND/);
+        expect(await get('http-like://bundle/ext/a.asar/file1')).to.match(/ERR_FILE_NOT_FOUND/);
+        expect(await get('http-like://bundle/up/dist/data.json')).to.deep.include({ status: 200 });
+      } finally {
+        fs.rmSync(path.join(root, 'dist', 'link.txt'), { force: true });
+        fs.unlinkSync(path.join(root, 'dist', 'up'));
+        fs.unlinkSync(path.join(root, 'dist', 'ext'));
+      }
+    });
+
+    it('serves a root that is itself reached through a link', async () => {
+      fs.symlinkSync(path.join(root, 'dist'), path.join(root, 'dist-link'), 'junction');
+      try {
+        protocol.registerSource('http-like', {
+          routes: [{ source: { type: 'directory', root: path.join(root, 'dist-link') } }]
+        });
+        expect(await get('http-like://x/data.json')).to.deep.include({ status: 200 });
+      } finally {
+        fs.unlinkSync(path.join(root, 'dist-link'));
+      }
+    });
+
+    ifit(process.platform !== 'win32')(
+      'does not follow a symlink out of the root through an asar archive',
+      async () => {
+        const asarDir = path.join(fixturesPath, 'test.asar');
+        const dist = path.join(root, 'dist');
+        fs.symlinkSync(path.join(asarDir, 'a.asar'), path.join(dist, 'out.asar'));
+        originalFs.copyFileSync(path.join(asarDir, 'a.asar'), path.join(dist, 'in.asar'));
+        originalFs.copyFileSync(path.join(asarDir, 'unpack.asar'), path.join(dist, 'unpack.asar'));
+        fs.mkdirSync(path.join(dist, 'unpack.asar.unpacked'));
+        fs.symlinkSync(path.join(root, 'secret.txt'), path.join(dist, 'unpack.asar.unpacked', 'a.txt'));
+        fs.copyFileSync(
+          path.join(asarDir, 'unpack.asar.unpacked', 'atom.png'),
+          path.join(dist, 'unpack.asar.unpacked', 'atom.png')
+        );
+        try {
+          register();
+          expect(await get('http-like://bundle/out.asar/file1')).to.match(/ERR_FILE_NOT_FOUND/);
+          expect(await get('http-like://bundle/in.asar/file1')).to.deep.include({ status: 200, body: 'file1\n' });
+          expect(await get('http-like://bundle/unpack.asar/a.txt')).to.match(/ERR_FILE_NOT_FOUND/);
+          expect(await get('http-like://bundle/unpack.asar/atom.png')).to.deep.include({ status: 200 });
+        } finally {
+          for (const name of ['out.asar', 'in.asar', 'unpack.asar']) originalFs.unlinkSync(path.join(dist, name));
+          fs.rmSync(path.join(dist, 'unpack.asar.unpacked'), { recursive: true });
+        }
+      }
+    );
+
+    it('matches hosts case-insensitively and only as a whole', async () => {
+      register();
+      expect(await get('http-like://BUNDLE/data.json')).to.deep.include({ status: 200 });
+      expect(await get('http-like://sub.bundle/data.json')).to.match(/ERR_FILE_NOT_FOUND/);
+    });
+
+    ifit(process.platform !== 'win32')('serves files larger than 4 GiB', async () => {
+      const big = path.join(root, 'dist', 'big.bin');
+      const size = 4 * 1024 * 1024 * 1024 + 4096;
+      const fd = fs.openSync(big, 'w');
+      fs.ftruncateSync(fd, size);
+      fs.writeSync(fd, Buffer.from('tail'), 0, 4, size - 4);
+      fs.closeSync(fd);
+      try {
+        register();
+        const head = await net.fetch('http-like://bundle/big.bin', { method: 'HEAD' });
+        expect(head.headers.get('content-length')).to.equal(String(size));
+        const tail = await net.fetch('http-like://bundle/big.bin', {
+          headers: { Range: `bytes=${size - 4}-${size - 1}` }
+        });
+        expect(tail.status).to.equal(206);
+        expect(await tail.text()).to.equal('tail');
+      } finally {
+        fs.unlinkSync(big);
+      }
+    });
+
+    it('adds the route headers to every response', async () => {
+      register({ headers: { 'X-From': 'source', 'Cross-Origin-Opener-Policy': 'same-origin' } });
+      const r = await net.fetch('http-like://bundle/data.json');
+      expect(r.headers.get('x-from')).to.equal('source');
+      expect(r.headers.get('cross-origin-opener-policy')).to.equal('same-origin');
+    });
+
+    it('keeps a single Content-Type when a route sets one', async () => {
+      register({ headers: { 'Content-Type': 'text/x-custom' } });
+      for (const method of ['GET', 'HEAD']) {
+        const r = await net.fetch('http-like://bundle/data.json', { method });
+        expect(r.headers.get('content-type'), method).to.equal('application/json');
+      }
+    });
+
+    it('serves files inside asar archives', async () => {
+      protocol.registerSource('http-like', {
+        routes: [{ source: { type: 'directory', root: path.join(fixturesPath, 'test.asar', 'a.asar') } }]
+      });
+      expect(await get('http-like://x/file1')).to.deep.include({ status: 200, body: 'file1\n' });
+      expect(await get('http-like://x/dir1/file1')).to.deep.include({ status: 200, body: 'file1\n' });
+    });
+
+    it('serves a page, and its fetches while the main process is busy', async () => {
+      register();
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
+      await w.loadURL('http-like://bundle/');
+      expect(await w.webContents.executeJavaScript('getComputedStyle(document.getElementById("p")).color')).to.equal(
+        'rgb(255, 0, 0)'
+      );
+      await w.webContents.executeJavaScript(
+        "window.timing = new Promise(r => setTimeout(() => { const s = performance.now(); fetch('/data.json').then(x => x.text()).then(t => r([t, performance.now() - s])); }, 50)); true"
+      );
+      const end = Date.now() + 600;
+      while (Date.now() < end) {
+        /* main process busy */
+      }
+      const [text, elapsed] = await w.webContents.executeJavaScript('window.timing');
+      expect(text).to.equal('{"ok":true}');
+      expect(elapsed).to.be.lessThan(300);
+    });
+
+    it('is reported by isProtocolHandled and getSource, removed by unhandle, and exclusive with handle', () => {
+      register();
+      expect(protocol.isProtocolHandled('http-like')).to.equal(true);
+      expect(protocol.getSource('http-like')).to.have.property('routes').with.lengthOf(2);
+      expect(() => protocol.handle('http-like', () => new Response('x'))).to.throw();
+      expect(() => register()).to.throw(/already handled/);
+      expect(protocol.isProtocolRegistered('http-like')).to.equal(false);
+      expect(protocol.unregisterProtocol('http-like')).to.equal(false);
+      expect(protocol.isProtocolHandled('http-like')).to.equal(true);
+      protocol.unhandle('http-like');
+      expect(protocol.isProtocolHandled('http-like')).to.equal(false);
+      expect(protocol.getSource('http-like')).to.equal(null);
+      protocol.handle('http-like', () => new Response('x'));
+      expect(() => register()).to.throw(/already handled/);
+    });
+
+    it('validates its arguments', () => {
+      const bad = (source: any, message: RegExp) =>
+        expect(() => protocol.registerSource('http-like', source), JSON.stringify(source)).to.throw(message);
+      bad({}, /routes/);
+      bad({ routes: [] }, /routes/);
+      bad({ routes: [{ match: { host: 'x' } }] }, /source/);
+      bad({ routes: [{ source: { type: 'url', root } }] }, /directory/);
+      bad({ routes: [{ source: { type: 'directory', root: 'relative/dir' } }] }, /absolute/);
+      const dir = { type: 'directory', root };
+      for (const match of ['bundle', () => true, new URL('http-like://bundle/')]) {
+        bad({ routes: [{ match, source: dir }] }, /match/);
+      }
+      for (const host of [42, '', '*.example.com', 'a b', 'bundle:80', () => true]) {
+        bad({ routes: [{ match: { host }, source: dir }] }, /match\.host/);
+      }
+      for (const prefix of ['nope', ['/x/'], '/a b/', '/a/../b/']) {
+        bad({ routes: [{ match: { path: prefix }, source: dir }] }, /match\.path/);
+      }
+      for (const index of ['../x', false]) {
+        bad({ routes: [{ source: { ...dir, index } }] }, /index/);
+      }
+      for (const headers of [{ 'Bad\nName': 'x' }, ['x'], new Headers({ a: 'b' })]) {
+        bad({ routes: [{ source: { ...dir, headers } }] }, /header/);
+      }
+      expect(() => protocol.registerSource('https', { routes: [{ source: { type: 'directory', root } }] })).to.throw(
+        /built-in/
+      );
+      for (const scheme of [
+        'https',
+        'file',
+        'blob',
+        'javascript',
+        'wss',
+        'devtools',
+        'chrome-extension',
+        'view-source'
+      ]) {
+        expect(
+          () => protocol.registerSource(scheme, { routes: [{ source: { type: 'directory', root } }] }),
+          scheme
+        ).to.throw(/built-in/);
+      }
+      expect(protocol.isProtocolHandled('http-like')).to.equal(false);
+    });
+  });
+
   describe('protocol.registerSchemesAsPrivileged allowServiceWorkers', () => {
     protocol.registerStringProtocol(serviceWorkerScheme, (request, cb) => {
       if (request.url.endsWith('.js')) {
@@ -1720,6 +2021,26 @@ describe('protocol module', () => {
         const body = await net.fetch('test-scheme://foo/:30').then((r) => r.text());
         expect(body).to.equal('test-scheme://foo/:30');
       }
+    });
+
+    it('accepts headers with non-ASCII characters', async () => {
+      let receivedHeader: string | null = null;
+      protocol.handle('test-scheme', (req) => {
+        receivedHeader = req.headers.get('x-non-ascii');
+        return new Response('ok');
+      });
+      defer(() => {
+        protocol.unhandle('test-scheme');
+      });
+      const resp = await net.fetch('test-scheme://foo/', {
+        headers: {
+          'x-non-ascii': Buffer.from('zażółć', 'utf-8').toString('latin1')
+        }
+      });
+      expect(resp.status).to.equal(200);
+      expect(receivedHeader).to.be.a('string');
+      const decoded = Buffer.from(receivedHeader!, 'latin1').toString('utf-8');
+      expect(decoded).to.equal('zażółć');
     });
 
     it('normalizes urls in standard schemes', async () => {

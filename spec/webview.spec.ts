@@ -555,7 +555,7 @@ describe('<webview> tag', function () {
     });
   });
 
-  describe('requestFullscreen from webview', () => {
+  describe('requestFullscreen from webview', { tags: ['serial'] }, () => {
     afterEach(closeAllWindows);
     async function loadWebViewWindow(): Promise<[BrowserWindow, WebContents]> {
       const w = new BrowserWindow({
@@ -2088,6 +2088,47 @@ describe('<webview> tag', function () {
         },
         [fixtures]
       );
+
+      // https://github.com/electron/electron/issues/54199
+      itremote(
+        'wraps past the last match when the embedder also contains an iframe',
+        async (fixtures: string) => {
+          const iframe = document.createElement('iframe');
+          iframe.srcdoc = '<p>embedder frame</p>';
+          await new Promise((resolve) => {
+            iframe.addEventListener('load', resolve, { once: true });
+            document.body.appendChild(iframe);
+          });
+
+          const webview = new WebView();
+          const didFinishLoad = new Promise((resolve) =>
+            webview.addEventListener('did-finish-load', resolve, { once: true })
+          );
+          webview.src = `file://${fixtures}/pages/content.html`;
+          document.body.appendChild(webview);
+          webview.focus();
+          await didFinishLoad;
+
+          const activeMatchOrdinal = [];
+          for (let i = 0; i < 4; i++) {
+            const foundInPage = new Promise<any>((resolve) =>
+              webview.addEventListener('found-in-page', resolve, { once: true })
+            );
+            const requestId = webview.findInPage('virtual');
+            const event = await foundInPage;
+
+            expect(event.result.requestId).to.equal(requestId);
+            expect(event.result.matches).to.equal(3);
+            activeMatchOrdinal.push(event.result.activeMatchOrdinal);
+          }
+
+          expect(activeMatchOrdinal).to.deep.equal([1, 2, 3, 1]);
+          webview.stopFindInPage('clearSelection');
+          webview.remove();
+          iframe.remove();
+        },
+        [fixtures]
+      );
     });
 
     describe('will-attach-webview event', () => {
@@ -2433,13 +2474,14 @@ describe('<webview> tag', function () {
           preferCSSPageSize: 'no'
         };
 
+        await loadWebView(w, { src: 'data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E' });
+
         // These will hard crash in Chromium unless we type-check
         for (const [key, value] of Object.entries(badTypes)) {
           const param = { [key]: value };
-
-          const src = 'data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E';
-          await loadWebView(w, { src });
-          await expect(w.executeJavaScript(`webview.printToPDF(${JSON.stringify(param)})`)).to.eventually.be.rejected();
+          await expect(
+            w.executeJavaScript(`webview.printToPDF(${JSON.stringify(param)})`)
+          ).to.eventually.be.rejectedWith(key);
         }
       });
 

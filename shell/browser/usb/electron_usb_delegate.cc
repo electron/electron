@@ -100,9 +100,7 @@ class ElectronUsbDelegate::ContextObservation
   ContextObservation(ElectronUsbDelegate* parent,
                      content::BrowserContext* browser_context)
       : parent_(parent), browser_context_(browser_context) {
-    auto* chooser_context = GetChooserContext(browser_context_);
-    if (chooser_context)
-      device_observation_.Observe(chooser_context);
+    device_observation_.Observe(GetChooserContext(browser_context_));
   }
   ContextObservation(ContextObservation&) = delete;
   ContextObservation& operator=(ContextObservation&) = delete;

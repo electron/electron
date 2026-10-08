@@ -1,0 +1,126 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@google.com>
+Date: Fri, 2 Oct 2026 14:33:14 -0700
+Subject: [M156] [WebAudio] Defer AudioHandler disposal for all non-closed
+ states
+
+Original change's description:
+> [WebAudio] Defer AudioHandler disposal for all non-closed states
+>
+> AudioNode::Dispose() previously checked only for kSuspended and
+> kInterrupted in addition to IsPullingAudioGraph() when adding the
+> handler to DeferredTaskHandler::AddRenderingOrphanHandler(). If
+> rendering was paused while ContextState() remained kRunning, disposed
+> handlers were not deferred through DeferredTaskHandler.
+>
+> Changes:
+> - Update AudioNode::Dispose() to defer handler cleanup whenever
+>   ContextState() is not kClosed (or when the graph is being pulled).
+> - Add AudioContextTest.DisposeOrphansHandlerWhenRunningWithoutPulling
+>   to cover node disposal in this state.
+>
+> Bug: 565612897
+> Test: AudioContextTest.DisposeOrphansHandlerWhenRunningWithoutPulling
+> Change-Id: I808b5776061d3c5eecad0651722b23b301625c8f
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8462555
+> Commit-Queue: Hongchan Choi <hongchan@google.com>
+> Reviewed-by: Mahesh Kannan <kmaheshb@google.com>
+> Cr-Commit-Position: refs/heads/main@{#1708385}
+
+(cherry picked from commit e8cfa0184ae597598dff05b7cfb1c590ef492d48)
+
+Bug: 568219447,565612897
+Change-Id: I808b5776061d3c5eecad0651722b23b301625c8f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8501935
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#253}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_context_test.cc b/third_party/blink/renderer/modules/webaudio/audio_context_test.cc
+index 29ae192b4308764e6ce4e2992faeef7b03059481..c09deed9496926e1bff3bfe12cdb805607c28a18 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_context_test.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_context_test.cc
+@@ -518,6 +518,60 @@ TEST_F(AudioContextTest, DisposeOrphansHandlerWhenInterrupted) {
+   EXPECT_FALSE(handler->HasOneRef());
+ }
+ 
++TEST_F(AudioContextTest, DisposeOrphansHandlerWhenRunningWithoutPulling) {
++  AudioContextOptions* options = AudioContextOptions::Create();
++  AudioContext* context = AudioContext::Create(
++      GetFrame().DomWindow(), options, ASSERT_NO_EXCEPTION);
++  ExpectContextBecomesRunningAsync(context);
++  ExpectContextRunning(context);
++
++  RealtimeAudioDestinationHandler* dest_handler =
++      &context->destinationNode()->GetAudioDestinationHandler();
++  FakeAudioThread audio_thread(ThreadType::kRealtimeAudioWorkletThread);
++  {
++    DelayNode* node = context->createDelay(ASSERT_NO_EXCEPTION);
++    node->connect(context->destinationNode(), 0, 0, ASSERT_NO_EXCEPTION);
++
++    // Run a render cycle so the summing junction updates its rendering state.
++    audio_thread.RunOnAudioThreadWithContext(
++        context,
++        CrossThreadBindOnce(
++            [](RealtimeAudioDestinationHandler* handler) {
++              const AudioIOPosition pos{0, 0, 0};
++              const AudioCallbackMetric metric;
++              scoped_refptr<AudioBus> bus =
++                  AudioBus::Create(2, 128, /*create_memory=*/true);
++              handler->Render(bus.get(), 128, pos, metric, base::TimeDelta(),
++                              {});
++            },
++            CrossThreadUnretained(dest_handler)));
++  }
++
++  // Stop pulling the graph while the context state remains kRunning.
++  dest_handler->StopRendering();
++  ASSERT_EQ(context->ContextState(), V8AudioContextState::Enum::kRunning);
++  ASSERT_FALSE(context->IsPullingAudioGraph());
++
++  WebHeap::CollectAllGarbageForTesting();
++
++  // Resume rendering and verify the destination renders cleanly while the
++  // graph lock is held on the main thread.
++  dest_handler->StartRendering();
++  {
++    DeferredTaskHandler::GraphAutoLocker locker(
++        context->GetDeferredTaskHandler());
++    audio_thread.RunOnAudioThread(CrossThreadBindOnce(
++        [](RealtimeAudioDestinationHandler* handler) {
++          const AudioIOPosition pos{0, 0, 0};
++          const AudioCallbackMetric metric;
++          scoped_refptr<AudioBus> bus =
++              AudioBus::Create(2, 128, /*create_memory=*/true);
++          handler->Render(bus.get(), 128, pos, metric, base::TimeDelta(), {});
++        },
++        CrossThreadUnretained(dest_handler)));
++  }
++}
++
+ TEST_F(AudioContextTest, AudioContextOptions_WebAudioLatencyHint) {
+   AudioContextOptions* interactive_options = AudioContextOptions::Create();
+   interactive_options->setLatencyHint(
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_node.cc b/third_party/blink/renderer/modules/webaudio/audio_node.cc
+index 2735af095b3509d244125a2e2459f471469ece32..ffe70ae771bb7729b5c623939a780d20cd172dc8 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_node.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_node.cc
+@@ -77,12 +77,12 @@ void AudioNode::Dispose() {
+ 
+   // Add the handler to the orphan list.  This keeps the handler alive until it
+   // can be deleted at a safe point (in pre/post handler task).  If the graph is
+-  // being processed, the handler must be added.  If the context is suspended,
+-  // the handler still needs to be added in case the context is resumed.
++  // being processed, the handler must be added.  If the context is not closed,
++  // the handler still needs to be added in case rendering is paused or the
++  // context is later resumed.
+   DCHECK(context());
+   if (context()->IsPullingAudioGraph() ||
+-      context()->ContextState() == V8AudioContextState::Enum::kSuspended ||
+-      context()->ContextState() == V8AudioContextState::Enum::kInterrupted) {
++      context()->ContextState() != V8AudioContextState::Enum::kClosed) {
+     context()->GetDeferredTaskHandler().AddRenderingOrphanHandler(
+         std::move(handler_));
+   }

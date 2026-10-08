@@ -28,7 +28,16 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
 import { emittedUntil } from './lib/events-helpers.ts';
-import { ifit, ifdescribe, defer, itremote, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
+import {
+  ifit,
+  ifdescribe,
+  defer,
+  focusWebContents,
+  itremote,
+  listen,
+  startRemoteControlApp,
+  waitUntil
+} from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 import { PipeTransport } from './pipe-transport.ts';
 
@@ -1013,7 +1022,7 @@ describe('chromium features', () => {
       expect(size).to.be.a('number');
     });
 
-    ifit(process.platform !== 'darwin')('should lock the keyboard', async () => {
+    ifit(process.platform !== 'darwin')('should lock the keyboard', { tags: ['serial'] }, async () => {
       const w = new BrowserWindow({ show: true });
       await w.loadFile(path.join(fixturesPath, 'pages', 'modal.html'));
 
@@ -1371,12 +1380,31 @@ describe('chromium features', () => {
     let w: BrowserWindow | null = null;
 
     afterEach(async () => {
-      ipcMain.removeAllListeners('did-create-file-handle');
-      ipcMain.removeAllListeners('did-create-directory-handle');
       session.defaultSession.setPermissionCheckHandler(null);
       session.defaultSession.setPermissionRequestHandler(null);
       await closeAllWindows();
     });
+
+    // Pastes a file:// URI into the test-perms.html fixture
+    // and resolves with the channel the fixture reported its new handle on.
+    // Rejects if the fixture reports that getting the handle failed.
+    const pasteFileUri = async (w: BrowserWindow, filePath: string) => {
+      const handleCreated = emittedUntil(w.webContents, 'ipc-message', (_event: unknown, channel: string) => {
+        return (
+          channel === 'did-create-file-handle' ||
+          channel === 'did-create-directory-handle' ||
+          channel === 'file-system-error'
+        );
+      });
+      await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(filePath).href })]);
+      await focusWebContents(w.webContents);
+      w.webContents.paste();
+      const [, channel, message] = await handleCreated;
+      if (channel === 'file-system-error') {
+        throw new Error(`File handle acquisition failed: ${message}`);
+      }
+      return channel;
+    };
 
     it('allows access by default to reading an OPFS file', async () => {
       w = new BrowserWindow({
@@ -1453,10 +1481,11 @@ describe('chromium features', () => {
       expect(status).to.equal('granted');
     });
 
-    it('concurrent getFileHandle calls on the same file do not stall', (done) => {
+    it('concurrent getFileHandle calls on the same file do not stall', async () => {
       const writablePath = path.join(fixturesPath, 'file-system', 'test-perms.html');
       const testDir = path.join(fixturesPath, 'file-system');
       const testFile = path.join(testDir, 'test.txt');
+      const permissionRequests: unknown[] = [];
 
       const w = new BrowserWindow({
         show: false,
@@ -1469,53 +1498,47 @@ describe('chromium features', () => {
 
       w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
         if (permission === 'fileSystem') {
-          const { href } = url.pathToFileURL(writablePath);
-          expect(details).to.deep.equal({
-            fileAccessType: 'readable',
-            isDirectory: false,
-            isMainFrame: true,
-            filePath: testFile,
-            requestingUrl: href
-          });
+          permissionRequests.push(details);
           callback(true);
         } else {
           callback(false);
         }
       });
 
-      ipcMain.once('did-create-directory-handle', async () => {
-        const result = await w.webContents.executeJavaScript(
-          `
-          new Promise(async (resolve, reject) => {
-            try {
-              const handles = await Promise.all([
-                handle.getFileHandle('test.txt'),
-                handle.getFileHandle('test.txt')
-              ]);
-              resolve(handles.length === 2);
-            } catch (err) {
-              reject(err.message);
-            }
-          })
-        `,
-          true
-        );
-        expect(result).to.be.true();
-        done();
-      });
-
-      w.loadFile(writablePath);
-
-      w.webContents.once('did-finish-load', async () => {
-        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testDir).href })]);
-        w.webContents.focus();
-        w.webContents.paste();
-      });
+      await w.loadFile(writablePath);
+      expect(await pasteFileUri(w, testDir)).to.equal('did-create-directory-handle');
+      const result = await w.webContents.executeJavaScript(
+        `
+        new Promise(async (resolve, reject) => {
+          try {
+            const handles = await Promise.all([
+              handle.getFileHandle('test.txt'),
+              handle.getFileHandle('test.txt')
+            ]);
+            resolve(handles.length === 2);
+          } catch (err) {
+            reject(err.message);
+          }
+        })
+      `,
+        true
+      );
+      expect(result).to.be.true();
+      for (const details of permissionRequests) {
+        expect(details).to.deep.equal({
+          fileAccessType: 'readable',
+          isDirectory: false,
+          isMainFrame: true,
+          filePath: testFile,
+          requestingUrl: url.pathToFileURL(writablePath).href
+        });
+      }
     });
 
-    it('allows permission when trying to create a writable file handle', (done) => {
+    it('allows permission when trying to create a writable file handle', async () => {
       const writablePath = path.join(fixturesPath, 'file-system', 'test-perms.html');
       const testFile = path.join(fixturesPath, 'file-system', 'test.txt');
+      const permissionRequests: unknown[] = [];
 
       const w = new BrowserWindow({
         webPreferences: {
@@ -1527,46 +1550,38 @@ describe('chromium features', () => {
 
       w.webContents.session.setPermissionRequestHandler((wc, permission, callback, details) => {
         if (permission === 'fileSystem') {
-          const { href } = url.pathToFileURL(writablePath);
-          expect(details).to.deep.equal({
-            fileAccessType: 'writable',
-            isDirectory: false,
-            isMainFrame: true,
-            filePath: testFile,
-            requestingUrl: href
-          });
-
+          permissionRequests.push(details);
           callback(true);
           return;
         }
         callback(false);
       });
 
-      ipcMain.once('did-create-file-handle', async () => {
-        const result = await w.webContents.executeJavaScript(
-          `
-          new Promise(async (resolve, reject) => {
-            try {
-              const writable = await handle.createWritable();
-              resolve(true);
-            } catch {
-              resolve(false);
-            }
-          })
-        `,
-          true
-        );
-        expect(result).to.be.true();
-        done();
-      });
-
-      w.loadFile(writablePath);
-
-      w.webContents.once('did-finish-load', async () => {
-        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
-        w.webContents.focus();
-        w.webContents.paste();
-      });
+      await w.loadFile(writablePath);
+      expect(await pasteFileUri(w, testFile)).to.equal('did-create-file-handle');
+      const result = await w.webContents.executeJavaScript(
+        `
+        new Promise(async (resolve, reject) => {
+          try {
+            const writable = await handle.createWritable();
+            resolve(true);
+          } catch {
+            resolve(false);
+          }
+        })
+      `,
+        true
+      );
+      expect(result).to.be.true();
+      for (const details of permissionRequests) {
+        expect(details).to.deep.equal({
+          fileAccessType: 'writable',
+          isDirectory: false,
+          isMainFrame: true,
+          filePath: testFile,
+          requestingUrl: url.pathToFileURL(writablePath).href
+        });
+      }
     });
 
     it('denies permission when trying to create a writable file handle', async () => {
@@ -1610,7 +1625,7 @@ describe('chromium features', () => {
           channel === 'file-system-error'
         );
       });
-      w.webContents.focus();
+      await focusWebContents(w.webContents);
       trace('paste requested');
       w.webContents.paste();
       const [, channel, message] = await handleCreated;
@@ -1649,9 +1664,10 @@ describe('chromium features', () => {
       ]);
     });
 
-    it('calls twice when trying to query a read/write file handle permissions', (done) => {
+    it('calls twice when trying to query a read/write file handle permissions', async () => {
       const writablePath = path.join(fixturesPath, 'file-system', 'test-perms.html');
       const testFile = path.join(fixturesPath, 'file-system', 'test.txt');
+      const permissionChecks: Electron.PermissionCheckHandlerHandlerDetails[] = [];
 
       const w = new BrowserWindow({
         webPreferences: {
@@ -1661,51 +1677,43 @@ describe('chromium features', () => {
         }
       });
 
-      let calls = 0;
       w.webContents.session.setPermissionCheckHandler((wc, permission, origin, details) => {
         if (permission === 'fileSystem') {
-          const { fileAccessType, isDirectory, filePath } = details;
-          expect(['writable', 'readable']).to.contain(fileAccessType);
-          expect(isDirectory).to.be.false();
-          expect(filePath).to.equal(testFile);
-          calls++;
+          permissionChecks.push(details);
           return true;
         }
 
         return false;
       });
 
-      ipcMain.once('did-create-file-handle', async () => {
-        const permission = await w.webContents.executeJavaScript(
-          `
-          new Promise(async (resolve, reject) => {
-            try {
-              const permission = await handle.queryPermission({ mode: 'readwrite' });
-              resolve(permission);
-            } catch {
-              resolve('denied');
-            }
-          })
-        `,
-          true
-        );
-        expect(permission).to.equal('granted');
-        expect(calls).to.equal(2);
-        done();
-      });
-
-      w.loadFile(writablePath);
-
-      w.webContents.once('did-finish-load', async () => {
-        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
-        w.webContents.focus();
-        w.webContents.paste();
-      });
+      await w.loadFile(writablePath);
+      expect(await pasteFileUri(w, testFile)).to.equal('did-create-file-handle');
+      const permission = await w.webContents.executeJavaScript(
+        `
+        new Promise(async (resolve, reject) => {
+          try {
+            const permission = await handle.queryPermission({ mode: 'readwrite' });
+            resolve(permission);
+          } catch {
+            resolve('denied');
+          }
+        })
+      `,
+        true
+      );
+      expect(permission).to.equal('granted');
+      expect(permissionChecks).to.have.lengthOf(2);
+      for (const { fileAccessType, isDirectory, filePath } of permissionChecks) {
+        expect(['writable', 'readable']).to.contain(fileAccessType);
+        expect(isDirectory).to.be.false();
+        expect(filePath).to.equal(testFile);
+      }
     });
 
-    it('correctly denies permissions after creating a readable directory handle', (done) => {
+    it('correctly denies permissions after creating a readable directory handle', async () => {
       const permPath = path.join(fixturesPath, 'file-system', 'test-perms.html');
       const testDir = path.join(fixturesPath, 'file-system');
+      const permissionChecks: Electron.PermissionCheckHandlerHandlerDetails[] = [];
 
       const w = new BrowserWindow({
         webPreferences: {
@@ -1717,45 +1725,37 @@ describe('chromium features', () => {
 
       w.webContents.session.setPermissionCheckHandler((wc, permission, origin, details) => {
         if (permission === 'fileSystem') {
-          const { fileAccessType, isDirectory, filePath } = details;
-          expect(fileAccessType).to.equal('readable');
-          expect(isDirectory).to.be.true();
-          expect(filePath).to.equal(testDir);
+          permissionChecks.push(details);
           return false;
         }
         return false;
       });
 
-      ipcMain.once('did-create-directory-handle', async () => {
-        const permission = await w.webContents.executeJavaScript(
-          `
-          new Promise(async (resolve, reject) => {
-            try {
-              const permission = await handle.queryPermission({ mode: 'read' });
-              resolve(permission);
-            } catch {
-              resolve('denied');
-            }
-          })
-        `,
-          true
-        );
-        expect(permission).to.equal('denied');
-        done();
-      });
-
-      w.loadFile(permPath);
-
-      w.webContents.once('did-finish-load', async () => {
-        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testDir).href })]);
-        w.webContents.focus();
-        w.webContents.paste();
-      });
+      await w.loadFile(permPath);
+      expect(await pasteFileUri(w, testDir)).to.equal('did-create-directory-handle');
+      const permission = await w.webContents.executeJavaScript(
+        `
+        new Promise(async (resolve, reject) => {
+          try {
+            const permission = await handle.queryPermission({ mode: 'read' });
+            resolve(permission);
+          } catch {
+            resolve('denied');
+          }
+        })
+      `,
+        true
+      );
+      expect(permission).to.equal('denied');
+      for (const details of permissionChecks) {
+        expect(details).to.include({ fileAccessType: 'readable', isDirectory: true, filePath: testDir });
+      }
     });
 
-    it('correctly allows permissions after creating a readable directory handle', (done) => {
+    it('correctly allows permissions after creating a readable directory handle', async () => {
       const permPath = path.join(fixturesPath, 'file-system', 'test-perms.html');
       const testDir = path.join(fixturesPath, 'file-system');
+      const permissionChecks: Electron.PermissionCheckHandlerHandlerDetails[] = [];
 
       const w = new BrowserWindow({
         webPreferences: {
@@ -1767,45 +1767,37 @@ describe('chromium features', () => {
 
       w.webContents.session.setPermissionCheckHandler((wc, permission, origin, details) => {
         if (permission === 'fileSystem') {
-          const { fileAccessType, isDirectory, filePath } = details;
-          expect(fileAccessType).to.equal('readable');
-          expect(isDirectory).to.be.true();
-          expect(filePath).to.equal(testDir);
+          permissionChecks.push(details);
           return true;
         }
         return false;
       });
 
-      ipcMain.once('did-create-directory-handle', async () => {
-        const permission = await w.webContents.executeJavaScript(
-          `
-          new Promise(async (resolve, reject) => {
-            try {
-              const permission = await handle.queryPermission({ mode: 'read' });
-              resolve(permission);
-            } catch {
-              resolve('denied');
-            }
-          })
-        `,
-          true
-        );
-        expect(permission).to.equal('granted');
-        done();
-      });
-
-      w.loadFile(permPath);
-
-      w.webContents.once('did-finish-load', async () => {
-        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testDir).href })]);
-        w.webContents.focus();
-        w.webContents.paste();
-      });
+      await w.loadFile(permPath);
+      expect(await pasteFileUri(w, testDir)).to.equal('did-create-directory-handle');
+      const permission = await w.webContents.executeJavaScript(
+        `
+        new Promise(async (resolve, reject) => {
+          try {
+            const permission = await handle.queryPermission({ mode: 'read' });
+            resolve(permission);
+          } catch {
+            resolve('denied');
+          }
+        })
+      `,
+        true
+      );
+      expect(permission).to.equal('granted');
+      for (const details of permissionChecks) {
+        expect(details).to.include({ fileAccessType: 'readable', isDirectory: true, filePath: testDir });
+      }
     });
 
-    it('allows in-session persistence of granted file permissions', (done) => {
+    it('allows in-session persistence of granted file permissions', async () => {
       const writablePath = path.join(fixturesPath, 'file-system', 'test-perms.html');
       const testFile = path.join(fixturesPath, 'file-system', 'persist.txt');
+      const permissionChecks: Electron.PermissionCheckHandlerHandlerDetails[] = [];
 
       const w = new BrowserWindow({
         webPreferences: {
@@ -1821,46 +1813,36 @@ describe('chromium features', () => {
 
       w.webContents.session.setPermissionCheckHandler((_wc, permission, _origin, details) => {
         if (permission === 'fileSystem') {
-          const { fileAccessType, isDirectory, filePath } = details;
-          expect(fileAccessType).to.deep.equal('readable');
-          expect(isDirectory).to.be.false();
-          expect(filePath).to.equal(testFile);
+          permissionChecks.push(details);
           return true;
         }
         return false;
       });
 
-      let reload = true;
-      ipcMain.on('did-create-file-handle', async () => {
-        if (reload) {
-          w.webContents.reload();
-          reload = false;
-        } else {
-          const permission = await w.webContents.executeJavaScript(
-            `
-            new Promise(async (resolve, reject) => {
-              try {
-                const permission = await handle.queryPermission({ mode: 'read' });
-                resolve(permission);
-              } catch {
-                resolve('denied');
-              }
-            })
-          `,
-            true
-          );
-          expect(permission).to.equal('granted');
-          done();
-        }
-      });
+      await w.loadFile(writablePath);
+      expect(await pasteFileUri(w, testFile)).to.equal('did-create-file-handle');
 
-      w.loadFile(writablePath);
-
-      w.webContents.on('did-finish-load', async () => {
-        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
-        w.webContents.focus();
-        w.webContents.paste();
-      });
+      const reloaded = once(w.webContents, 'did-finish-load');
+      w.webContents.reload();
+      await reloaded;
+      expect(await pasteFileUri(w, testFile)).to.equal('did-create-file-handle');
+      const permission = await w.webContents.executeJavaScript(
+        `
+        new Promise(async (resolve, reject) => {
+          try {
+            const permission = await handle.queryPermission({ mode: 'read' });
+            resolve(permission);
+          } catch {
+            resolve('denied');
+          }
+        })
+      `,
+        true
+      );
+      expect(permission).to.equal('granted');
+      for (const details of permissionChecks) {
+        expect(details).to.include({ fileAccessType: 'readable', isDirectory: false, filePath: testFile });
+      }
     });
   });
 
@@ -1898,11 +1880,7 @@ describe('chromium features', () => {
 
     const pasteHandle = async (w: BrowserWindow, frame: Electron.WebFrameMain, dirOrFile: string) => {
       await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(dirOrFile).href })]);
-      if (!w.webContents.isFocused()) {
-        const focused = once(w.webContents, 'focus');
-        w.webContents.focus();
-        await focused;
-      }
+      await focusWebContents(w.webContents);
       await frame.executeJavaScript('window.focus(); document.body.focus(); window.gotHandle = false; true');
       w.webContents.paste();
     };
@@ -4815,15 +4793,17 @@ describe('navigator.clipboard.read', { tags: ['serial'] }, () => {
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
   });
 
+  // Reads back known text, so that a read which fails for any reason
+  // (including "Document is not focused.") can't pass for a successful one.
+  const clipboardText = 'navigator.clipboard.read';
   const readClipboard = async () => {
-    if (!w.webContents.isFocused()) {
-      const focus = once(w.webContents, 'focus');
-      w.webContents.focus();
-      await focus;
-    }
+    clipboard.writeText(clipboardText);
+    await focusWebContents(w.webContents);
     return w.webContents.executeJavaScript(
       `
-      navigator.clipboard.read().then(clipboard => clipboard.toString()).catch(err => err.message);
+      navigator.clipboard.read()
+        .then(async ([item]) => (await item.getType('text/plain')).text())
+        .catch(err => err.message);
     `,
       true
     );
@@ -4835,8 +4815,7 @@ describe('navigator.clipboard.read', { tags: ['serial'] }, () => {
   });
 
   it('returns clipboard contents when a PermissionRequestHandler is not defined', async () => {
-    const clipboard = await readClipboard();
-    expect(clipboard).to.not.contain('Read permission denied.');
+    expect(await readClipboard()).to.equal(clipboardText);
   });
 
   it('returns an error when permission denied', async () => {
@@ -4851,8 +4830,7 @@ describe('navigator.clipboard.read', { tags: ['serial'] }, () => {
     session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
       callback(permission === 'clipboard-read');
     });
-    const clipboard = await readClipboard();
-    expect(clipboard).to.not.contain('Read permission denied.');
+    expect(await readClipboard()).to.equal(clipboardText);
   });
 });
 
@@ -4864,11 +4842,7 @@ describe('navigator.clipboard.write', { tags: ['serial'] }, () => {
   });
 
   const writeClipboard = async () => {
-    if (!w.webContents.isFocused()) {
-      const focus = once(w.webContents, 'focus');
-      w.webContents.focus();
-      await focus;
-    }
+    await focusWebContents(w.webContents);
     return w.webContents.executeJavaScript(
       `
       navigator.clipboard.writeText('Hello World!').catch(err => err.message);
@@ -4949,11 +4923,7 @@ describe('pointer lock permission request', { tags: ['serial'] }, () => {
     // content rejects the request with WrongDocumentError, without consulting
     // the permission handler, unless the widget has focus. Focus arrives
     // asynchronously on macOS, so wait for it.
-    if (!w.webContents.isFocused()) {
-      const focus = once(w.webContents, 'focus');
-      w.webContents.focus();
-      await focus;
-    }
+    await focusWebContents(w.webContents);
     const result = await iframe.executeJavaScript(
       "document.body.requestPointerLock().then(() => 'locked', (e) => e.name)",
       true
@@ -4988,31 +4958,32 @@ describe('pointer lock permission request', { tags: ['serial'] }, () => {
 
 describe('paste execCommand', { tags: ['serial'] }, () => {
   const readClipboard = async (w: BrowserWindow) => {
-    if (!w.webContents.isFocused()) {
-      const focus = once(w.webContents, 'focus');
-      w.webContents.focus();
-      await focus;
-    }
+    await focusWebContents(w.webContents);
 
     // No user gesture: these tests exercise the permission path, and a
     // gesture on the requesting frame allows paste by itself.
-    return w.webContents.executeJavaScript(
+    const { focused, text } = await w.webContents.executeJavaScript(
       `
       new Promise((resolve) => {
+        const focused = document.hasFocus();
         const timeout = setTimeout(() => {
-          resolve('');
+          resolve({ focused, text: '' });
         }, 2000);
         document.addEventListener('paste', (event) => {
           clearTimeout(timeout);
           event.preventDefault();
           let paste = event.clipboardData.getData("text");
-          resolve(paste);
+          resolve({ focused, text: paste });
         });
         document.execCommand('paste');
       });
     `,
       false
     );
+    // A page without focus pastes nothing either,
+    // which would let the tests that expect no paste pass for the wrong reason.
+    expect(focused).to.be.true('document had focus when pasting');
+    return text;
   };
 
   let ses: Electron.Session;
@@ -5165,11 +5136,7 @@ describe('paste execCommand', { tags: ['serial'] }, () => {
       );
 
     const clickMainFrame = async (w: BrowserWindow) => {
-      if (!w.webContents.isFocused()) {
-        const focus = once(w.webContents, 'focus');
-        w.webContents.focus();
-        await focus;
-      }
+      await focusWebContents(w.webContents);
       w.webContents.sendInputEvent({ type: 'mouseDown', x: 5, y: 5, button: 'left', clickCount: 1 });
       w.webContents.sendInputEvent({ type: 'mouseUp', x: 5, y: 5, button: 'left', clickCount: 1 });
       await waitUntil(
@@ -5611,8 +5578,8 @@ describe('navigator.usb', () => {
     serverUrl = (await listen(server)).url;
   });
 
-  const requestDevices: any = () => {
-    return w.webContents.executeJavaScript(
+  const requestDevices: any = (win = w) => {
+    return win.webContents.executeJavaScript(
       `
       navigator.usb.requestDevice({filters: []}).then(device => device.toString()).catch(err => err.toString());
     `,
@@ -5620,8 +5587,8 @@ describe('navigator.usb', () => {
     );
   };
 
-  const getDevices: any = () => {
-    return w.webContents.executeJavaScript(
+  const getDevices: any = (win = w) => {
+    return win.webContents.executeJavaScript(
       `
       navigator.usb.getDevices().then(devices => devices.map(device => device.toString())).catch(err => err.toString());
     `,
@@ -5644,14 +5611,24 @@ describe('navigator.usb', () => {
 
   it('does not crash when using in-memory partitions', async () => {
     const sesWin = new BrowserWindow({
+      show: false,
       webPreferences: {
         partition: 'test-partition'
       }
     });
 
     await sesWin.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
-    const devices = await getDevices();
+    const devices = await getDevices(sesWin);
     expect(devices).to.be.an('array').that.is.empty();
+
+    let selectFired = false;
+    sesWin.webContents.session.once('select-usb-device', (event, details, callback) => {
+      selectFired = true;
+      callback();
+    });
+    const device = await requestDevices(sesWin);
+    expect(selectFired).to.be.true();
+    expect(device).to.equal(notFoundError);
   });
 
   it('does not return a device if select-usb-device event is not defined', async () => {

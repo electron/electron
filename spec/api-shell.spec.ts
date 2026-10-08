@@ -9,12 +9,13 @@ import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 
-import { ifdescribe, ifit, listen } from './lib/spec-helpers.ts';
+import { ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('shell module', () => {
-  describe('shell.openExternal()', () => {
+  describe('shell.openExternal()', { tags: ['serial'] }, () => {
     let envVars: Record<string, string | undefined> = {};
     let server: http.Server;
 
@@ -104,6 +105,19 @@ describe('shell module', () => {
         const w = new BrowserWindow({ show: true });
 
         await once(w, 'focus');
+        // The browser launched by the earlier openExternal specs can still be
+        // coming to the front and take focus back from the new window, so wait
+        // until the window holds focus before checking that openExternal
+        // removes it.
+        await waitUntil(async () => {
+          if (!w.isFocused()) {
+            app.focus({ steal: true });
+            w.focus();
+            return false;
+          }
+          await setTimeout(250);
+          return w.isFocused();
+        });
         expect(w.isFocused()).to.be.true();
 
         await Promise.all<void>([shell.openExternal(url), once(w, 'blur') as Promise<any>]);

@@ -1,0 +1,186 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Thu, 1 Oct 2026 13:28:07 -0700
+Subject: [M156] Ignore <source> child element insertion when srcObject is
+ present
+
+Original change's description:
+> Ignore <source> child element insertion when srcObject is present
+>
+> Per the WHATWG HTML specification, child <source> elements are only
+> evaluated if the media element has neither an assigned media provider
+> object (srcObject) nor a src attribute.
+>
+> Prior to this CL, HTMLMediaElement::SourceWasAdded() only checked
+> FastHasAttribute(srcAttr), completely omitting the check for srcObject.
+>
+> Fixed: 566111249
+> Change-Id: I2fcb100b7da8aef970f88cb280ef753a049bece4
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8490153
+> Commit-Queue: Benjamin Keen <bkeen@google.com>
+> Reviewed-by: Benjamin Keen <bkeen@google.com>
+> Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1708276}
+
+(cherry picked from commit 852936ed111c9ec6fdfafa7d81d6eca03c7a131b)
+
+Bug: 568219133,566111249
+Change-Id: I2fcb100b7da8aef970f88cb280ef753a049bece4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8497218
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#148}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/third_party/blink/renderer/core/html/media/html_media_element.cc b/third_party/blink/renderer/core/html/media/html_media_element.cc
+index 89e1d488cddc22afb19054c7a10a59a556943ba0..41acd17f7bb849e8d44abce4d6f790be93a46dba 100644
+--- a/third_party/blink/renderer/core/html/media/html_media_element.cc
++++ b/third_party/blink/renderer/core/html/media/html_media_element.cc
+@@ -927,8 +927,7 @@ Node::InsertionNotificationRequest HTMLMediaElement::InsertedInto(
+     if (lazy_media_load_state_ == LazyMediaLoadState::kDeferred) {
+       LazyMediaHelper::StartMonitoring(this);
+     } else if ((!FastGetAttribute(html_names::kSrcAttr).empty() ||
+-                src_object_stream_descriptor_ ||
+-                src_object_media_source_handle_) &&
++                HasSrcObject()) &&
+                network_state_ == kNetworkEmpty) {
+       ignore_preload_none_ = false;
+       InvokeLoadAlgorithm();
+@@ -1327,7 +1326,7 @@ void HTMLMediaElement::SelectMediaResource() {
+ 
+   // 6 - If the media element has an assigned media provider object, then let
+   //     mode be object.
+-  if (src_object_stream_descriptor_ || src_object_media_source_handle_) {
++  if (HasSrcObject()) {
+     mode = kObject;
+   } else if (FastHasAttribute(html_names::kSrcAttr)) {
+     // Otherwise, if the media element has no assigned media provider object
+@@ -3069,8 +3068,7 @@ void HTMLMediaElement::LoadDeferredTracks() {
+ }
+ 
+ bool HTMLMediaElement::HasMediaSources() const {
+-  return FastHasAttribute(html_names::kSrcAttr) ||
+-         src_object_stream_descriptor_ || src_object_media_source_handle_ ||
++  return FastHasAttribute(html_names::kSrcAttr) || HasSrcObject() ||
+          Traversal<HTMLSourceElement>::FirstChild(*this);
+ }
+ 
+@@ -3936,10 +3934,11 @@ void HTMLMediaElement::SourceWasAdded(HTMLSourceElement* source) {
+   DVLOG(3) << "sourceWasAdded(" << *this << ") - 'src' is "
+            << UrlForLoggingMedia(url);
+ 
+-  // We should only consider a <source> element when there is not src attribute
+-  // at all.
+-  if (FastHasAttribute(html_names::kSrcAttr))
++  // We should only consider a <source> element when there is neither a
++  // srcObject nor a src attribute at all.
++  if (FastHasAttribute(html_names::kSrcAttr) || HasSrcObject()) {
+     return;
++  }
+ 
+   // 4.8.8 - If a source element is inserted as a child of a media element that
+   // has no src attribute and whose networkState has the value NETWORK_EMPTY,
+@@ -3965,8 +3964,17 @@ void HTMLMediaElement::SourceWasAdded(HTMLSourceElement* source) {
+   if (next_child_node_to_consider_)
+     return;
+ 
+-  if (load_state_ != kWaitingForSource)
++  // Step 21 ("Wait until the node after pointer is a node other than the end of
++  // the list") only applies when the resource selection algorithm is in the
++  // source elements section and waiting at the Wait step, which sets
++  // networkState to NETWORK_NO_SOURCE. If networkState is not NETWORK_NO_SOURCE
++  // (e.g. NETWORK_IDLE after a decode error where MediaEngineError() aborted
++  // resource selection but set load_state_ = kWaitingForSource), we must not
++  // resume candidate selection.
++  if (load_state_ != kWaitingForSource ||
++      network_state_ != HTMLMediaElement::kNetworkNoSource) {
+     return;
++  }
+ 
+   // 4.8.9.5, resource selection algorithm, source elements section:
+   // 21. Wait until the node after pointer is a node other than the end of the
+@@ -4001,6 +4009,12 @@ void HTMLMediaElement::SourceWasRemoved(HTMLSourceElement* source) {
+   DVLOG(3) << "sourceWasRemoved(" << *this << ") - 'src' is "
+            << UrlForLoggingMedia(url);
+ 
++  // We should only consider a <source> element when there is neither a
++  // srcObject nor a src attribute at all.
++  if (FastHasAttribute(html_names::kSrcAttr) || HasSrcObject()) {
++    return;
++  }
++
+   if (source != current_source_node_ && source != next_child_node_to_consider_)
+     return;
+ 
+diff --git a/third_party/blink/renderer/core/html/media/html_media_element.h b/third_party/blink/renderer/core/html/media/html_media_element.h
+index 9bf33cdb6325c4b04de8cfbd483a7df1cde2ae7a..7483ba1945a65e2e98a74d8c3d0154631a6075d0 100644
+--- a/third_party/blink/renderer/core/html/media/html_media_element.h
++++ b/third_party/blink/renderer/core/html/media/html_media_element.h
+@@ -203,6 +203,9 @@ class CORE_EXPORT HTMLMediaElement
+       std::variant<MediaStreamDescriptor*, MediaSourceHandle*>;
+   void SetSrcObjectVariant(SrcObjectVariant src_object_variant);
+   SrcObjectVariant GetSrcObjectVariant() const;
++  bool HasSrcObject() const {
++    return src_object_stream_descriptor_ || src_object_media_source_handle_;
++  }
+ 
+   enum NetworkState {
+     kNetworkEmpty,
+diff --git a/third_party/blink/renderer/core/html/media/html_media_element_test.cc b/third_party/blink/renderer/core/html/media/html_media_element_test.cc
+index b4628db1a35b6f76897e3e552585a172aafbb30f..ec9603f082507b1adaebaa66996c256719d01856 100644
+--- a/third_party/blink/renderer/core/html/media/html_media_element_test.cc
++++ b/third_party/blink/renderer/core/html/media/html_media_element_test.cc
+@@ -43,6 +43,7 @@
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ #include "third_party/blink/renderer/platform/heap/thread_state_scopes.h"
++#include "third_party/blink/renderer/platform/mediastream/media_stream_descriptor.h"
+ #include "third_party/blink/renderer/platform/network/network_state_notifier.h"
+ #include "third_party/blink/renderer/platform/testing/empty_web_media_player.h"
+ #include "third_party/blink/renderer/platform/testing/runtime_enabled_features_test_helpers.h"
+@@ -3522,4 +3523,44 @@ TEST_P(HTMLMediaElementTest, MediaShouldBeOpaque_NetworkState) {
+   EXPECT_TRUE(MediaShouldBeOpaque());
+ }
+ 
++TEST_P(HTMLMediaElementTest, SourceWasAddedIgnoredWithSrcObject) {
++  MediaStreamComponentVector audio_components;
++  MediaStreamComponentVector video_components;
++  auto* descriptor = MakeGarbageCollected<MediaStreamDescriptor>(
++      audio_components, video_components);
++  Media()->SetSrcObjectVariant(descriptor);
++  EXPECT_TRUE(Media()->HasSrcObject());
++
++  // With srcObject set, appending a <source> child element must be ignored.
++  auto* source =
++      Media()->GetDocument().CreateRawElement(html_names::kSourceTag);
++  source->setAttribute(html_names::kSrcAttr,
++                       AtomicString("http://example.com/test.mp4"));
++  Media()->appendChild(source);
++
++  test::RunPendingTasks();
++
++  EXPECT_TRUE(Media()->HasSrcObject());
++}
++
++TEST_P(HTMLMediaElementTest, SourceWasAddedIgnoredWhenNetworkStateNotNoSource) {
++  Media()->SetSrc(SrcSchemeToURL(TestURLScheme::kHttp));
++  test::RunPendingTasks();
++  ASSERT_TRUE(Media()->GetWebMediaPlayer());
++
++  SetReadyState(HTMLMediaElement::kHaveMetadata);
++  SetNetworkState(WebMediaPlayer::kNetworkStateDecodeError);
++  EXPECT_EQ(Media()->getNetworkState(), HTMLMediaElement::kNetworkIdle);
++
++  auto* source =
++      Media()->GetDocument().CreateRawElement(html_names::kSourceTag);
++  source->setAttribute(html_names::kSrcAttr,
++                       AtomicString("http://example.com/test.mp4"));
++  Media()->appendChild(source);
++
++  test::RunPendingTasks();
++
++  EXPECT_EQ(Media()->getNetworkState(), HTMLMediaElement::kNetworkIdle);
++}
++
+ }  // namespace blink
