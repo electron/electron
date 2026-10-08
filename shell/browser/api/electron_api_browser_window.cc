@@ -10,6 +10,7 @@
 #include "shell/browser/api/electron_api_web_contents_view.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
@@ -17,7 +18,6 @@
 #include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
@@ -67,16 +67,16 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     web_preferences.Set(options::kShow, true);
 
   // Creates the WebContentsView.
-  gin_helper::Handle<WebContentsView> web_contents_view =
+  WebContentsView* web_contents_view =
       WebContentsView::Create(isolate, web_preferences);
-  DCHECK(web_contents_view.get());
-  window()->AddDraggableRegionProvider(web_contents_view.get());
+  CHECK(web_contents_view);
+  web_contents_view->RegisterDraggableRegionProvider(window());
+  auto* web_contents = web_contents_view->GetWebContents();
   window()->InitPrimaryWebContentsView(
-      static_cast<InspectableWebContentsView*>(web_contents_view->view()));
-  web_contents_view_.Reset(isolate, web_contents_view.ToV8());
+      web_contents->inspectable_web_contents()->GetView());
+  web_contents_view_ = web_contents_view;
 
   // Save a reference of the WebContents.
-  auto* web_contents = web_contents_view->GetWebContents();
   v8::Local<v8::Object> wrapper =
       web_contents->GetWrapper(isolate).ToLocalChecked();
   web_contents_.Reset(isolate, wrapper);

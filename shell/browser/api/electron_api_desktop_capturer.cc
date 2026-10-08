@@ -301,7 +301,7 @@ class DesktopCapturer::ListObserver : public DesktopMediaListObserver {
   }
 
   cppgc::Persistent<gin::WeakCell<DesktopCapturer>> capturer_;
-  raw_ptr<DesktopMediaList> list_;
+  raw_ptr<DesktopMediaList, DanglingUntriaged> list_;
   DesktopMediaList::Type list_type_;
   bool is_delegated_ = false;
   bool need_thumbnails_ = false;

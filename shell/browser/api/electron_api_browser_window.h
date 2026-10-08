@@ -16,6 +16,8 @@ class ErrorThrower;
 
 namespace electron::api {
 
+class WebContentsView;
+
 class BrowserWindow : public BaseWindow,
                       private content::WebContentsObserver,
                       private ExtendedWebContentsObserver {
@@ -80,7 +82,7 @@ class BrowserWindow : public BaseWindow,
 
   v8::Global<v8::Value> web_contents_;
   bool web_contents_shown_ = false;
-  v8::Global<v8::Value> web_contents_view_;
+  cppgc::Persistent<WebContentsView> web_contents_view_;
   cppgc::WeakPersistent<api::WebContents> api_web_contents_;
 
   base::WeakPtrFactory<BrowserWindow> weak_factory_{this};

@@ -313,6 +313,20 @@ jobs:
             fi
     - name: Add Depot Tools to PATH
       run: echo "$(pwd)/depot_tools" >> $GITHUB_PATH
+    # The real mouse input specs (spec/fixtures/native-addon/mouse-input) load
+    # libXtst at runtime. The x64 build image ships it; the arm64 test image
+    # does not. Runs after the parallel group so it cannot race the CUPS
+    # step's apt-get for the dpkg lock.
+    - name: Install libXtst runtime (linux)
+      if: ${{ inputs.target-platform == 'linux' }}
+      run: |
+        if ldconfig -p | grep -q 'libXtst\.so\.6'; then
+          echo "libXtst.so.6 already present"
+        else
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update -y
+          apt-get install -y --no-install-recommends libxtst6
+        fi
     - name: Restore Generated Artifacts
       run: ./src/electron/script/actions/restore-artifacts.sh
     - name: Unzip Dist (win)
@@ -375,6 +389,166 @@ jobs:
             }
           }
         }
+
+    # The windows-11-arm image has not finished its first sign-in and leaves
+    # windows over the test area: real mouse input
+    # (spec/fixtures/native-addon/mouse-input) clicks them instead of the
+    # windows under test, and Chromium's native occlusion tracking reports
+    # test windows beneath them as hidden. Close the privacy settings window
+    # (WWAHost.exe, started by UserOOBEBroker.exe) and keep it from coming
+    # back, close the Start menu with Escape (stopping its host made the
+    # occlusion tracking misreport), close or minimize the other windows left
+    # open, and log what the OS hit tests on screen. The image also keeps
+    # relaunching `wsl.exe --update` in a new terminal window that takes the
+    # foreground about every 90 seconds: stop the running one and keep
+    # minimizing any that follow while the specs run.
+    - name: Dismiss first sign-in windows (Windows)
+      if: ${{ inputs.target-platform == 'win' }}
+      timeout-minutes: 5
+      # Best effort: if the window stays up, the specs report what covers
+      # them (describeWindowAtPoint) rather than failing here.
+      continue-on-error: true
+      shell: pwsh
+      run: |
+        $policy = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\OOBE'
+        New-Item -Path $policy -Force | Out-Null
+        Set-ItemProperty -Path $policy -Name DisablePrivacyExperience -Type DWord -Value 1
+        $engagement = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement'
+        New-Item -Path $engagement -Force | Out-Null
+        Set-ItemProperty -Path $engagement -Name ScoobeSystemSettingEnabled -Type DWord -Value 0
+        $windows = { Get-Process | Where-Object { $_.MainWindowHandle -ne 0 } | Format-Table -AutoSize Id, ProcessName, MainWindowTitle | Out-String }
+        Write-Host "Processes with windows before:`n$(& $windows)"
+        foreach ($name in 'UserOOBEBroker', 'WWAHost') {
+          Get-Process -Name $name -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Host ("Stopping {0} ({1}): '{2}'" -f $_.ProcessName, $_.Id, $_.MainWindowTitle)
+            Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue
+          }
+        }
+        Start-Sleep -Seconds 2
+        Write-Host "Processes with windows after:`n$(& $windows)"
+        Add-Type -Namespace ElectronCI -Name HitTest -MemberDefinition @'
+        [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X; public int Y; }
+        [DllImport("user32.dll")] public static extern IntPtr WindowFromPoint(POINT p);
+        [DllImport("user32.dll")] public static extern IntPtr GetAncestor(IntPtr hWnd, uint flags);
+        [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint pid);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder s, int n);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder s, int n);
+        public delegate bool EnumProc(IntPtr hWnd, IntPtr lParam);
+        [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc cb, IntPtr lParam);
+        [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
+        [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);
+        [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int cmd);
+        [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr w, IntPtr l);
+        [DllImport("dwmapi.dll")] public static extern int DwmGetWindowAttribute(IntPtr hWnd, int attr, out int value, int size);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern IntPtr FindWindow(string cls, string title);
+        [DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
+        // Whether the Start menu is showing: its CoreWindow always exists but
+        // is cloaked while the menu is closed.
+        public static string StartMenuState() {
+          IntPtr h = FindWindow("Windows.UI.Core.CoreWindow", "Start");
+          if (h == IntPtr.Zero) return "absent";
+          int cloaked = 0;
+          DwmGetWindowAttribute(h, 14, out cloaked, 4);
+          return (IsWindowVisible(h) && cloaked == 0) ? "open" : "closed";
+        }
+        public static void PressEscape() {
+          keybd_event(0x1B, 0, 0, UIntPtr.Zero);
+          keybd_event(0x1B, 0, 2, UIntPtr.Zero);  // KEYEVENTF_KEYUP
+        }
+        // Minimizes (dialogs: closes) visible, uncloaked top level windows
+        // other than the shell's desktop and taskbar. Returns what it did.
+        public static System.Collections.Generic.List<string> ClearDesktop() {
+          var log = new System.Collections.Generic.List<string>();
+          var keep = new System.Collections.Generic.HashSet<string> { "Progman", "WorkerW", "Shell_TrayWnd", "Shell_SecondaryTrayWnd" };
+          EnumWindows((h, l) => {
+            if (!IsWindowVisible(h) || IsIconic(h)) return true;
+            int cloaked = 0;
+            if (DwmGetWindowAttribute(h, 14, out cloaked, 4) == 0 && cloaked != 0) return true;
+            var cls = new System.Text.StringBuilder(256);
+            var title = new System.Text.StringBuilder(256);
+            GetClassName(h, cls, 256);
+            GetWindowText(h, title, 256);
+            if (keep.Contains(cls.ToString())) return true;
+            uint pid;
+            GetWindowThreadProcessId(h, out pid);
+            string proc = "?";
+            try { proc = System.Diagnostics.Process.GetProcessById((int)pid).ProcessName; } catch {}
+            bool dialog = cls.ToString() == "#32770";
+            if (dialog) PostMessage(h, 0x0010, IntPtr.Zero, IntPtr.Zero);  // WM_CLOSE
+            else ShowWindow(h, 6);  // SW_MINIMIZE
+            log.Add(string.Format("{0} class '{1}' title '{2}' process {3} ({4})", dialog ? "Closed" : "Minimized", cls, title, proc, pid));
+            return true;
+          }, IntPtr.Zero);
+          return log;
+        }
+        '@
+        $start = [ElectronCI.HitTest]::StartMenuState()
+        Write-Host "Start menu: $start"
+        if ($start -eq 'open') {
+          [ElectronCI.HitTest]::PressEscape()
+          Start-Sleep -Seconds 1
+          Write-Host "Start menu after Escape: $([ElectronCI.HitTest]::StartMenuState())"
+        }
+        # Closing a dialog can reveal another (System Properties leaves its
+        # Performance Options behind), so repeat until nothing is left.
+        for ($pass = 1; $pass -le 3; $pass++) {
+          $done = [ElectronCI.HitTest]::ClearDesktop()
+          $done | ForEach-Object { Write-Host "Pass ${pass}: $_" }
+          Start-Sleep -Seconds 1
+          if ($done.Count -eq 0) { break }
+        }
+        foreach ($xy in @(@(300, 300), @(512, 384))) {
+          $p = New-Object ElectronCI.HitTest+POINT
+          $p.X = $xy[0]; $p.Y = $xy[1]
+          $h = [ElectronCI.HitTest]::GetAncestor([ElectronCI.HitTest]::WindowFromPoint($p), 2)
+          $cls = New-Object System.Text.StringBuilder 256
+          $title = New-Object System.Text.StringBuilder 256
+          [void][ElectronCI.HitTest]::GetClassName($h, $cls, 256)
+          [void][ElectronCI.HitTest]::GetWindowText($h, $title, 256)
+          [uint32]$procId = 0
+          [void][ElectronCI.HitTest]::GetWindowThreadProcessId($h, [ref]$procId)
+          $proc = (Get-Process -Id $procId -ErrorAction SilentlyContinue).ProcessName
+          Write-Host ("Window at ({0},{1}): class '{2}' title '{3}' process {4} ({5})" -f $p.X, $p.Y, $cls, $title, $proc, $procId)
+        }
+        # Stop the running WSL update, and its launcher when that is a script
+        # host outside this step's own ancestry.
+        try {
+          $ancestors = @()
+          $cur = Get-CimInstance Win32_Process -Filter "ProcessId=$PID"
+          while ($cur -and $ancestors.Count -lt 10) { $ancestors += $cur.ProcessId; $cur = Get-CimInstance Win32_Process -Filter "ProcessId=$($cur.ParentProcessId)" }
+          $scriptHosts = 'powershell.exe', 'pwsh.exe', 'cmd.exe', 'wscript.exe', 'cscript.exe'
+          Get-CimInstance Win32_Process -Filter "Name='wsl.exe'" | Where-Object { $_.CommandLine -match '--update' } | ForEach-Object {
+            Write-Host "WSL update $($_.ProcessId): $($_.CommandLine)"
+            $parent = Get-CimInstance Win32_Process -Filter "ProcessId=$($_.ParentProcessId)"
+            $p = $parent
+            for ($i = 0; $p -and $i -lt 4; $i++) {
+              Write-Host "  launched by $($p.ProcessId) $($p.Name): $($p.CommandLine)"
+              $p = Get-CimInstance Win32_Process -Filter "ProcessId=$($p.ParentProcessId)"
+            }
+            if ($parent -and $scriptHosts -contains $parent.Name -and $ancestors -notcontains $parent.ProcessId) {
+              Write-Host "  stopping launcher $($parent.ProcessId)"
+              Stop-Process -Id $parent.ProcessId -Force -ErrorAction SilentlyContinue
+            }
+            Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+          }
+        } catch {
+          Write-Host "Stopping the WSL update failed: $_"
+        }
+        $minimizer = Join-Path $env:GITHUB_WORKSPACE 'src\electron\script\actions\minimize-wsl-terminals.ps1'
+        $log = Join-Path $env:RUNNER_TEMP 'minimize-wsl-terminals.log'
+        $empty = Join-Path $env:RUNNER_TEMP 'minimize-wsl-terminals.in'
+        New-Item -ItemType File -Force -Path $empty | Out-Null
+        # Keep the step's output pipes out of the background minimizer, so
+        # the runner does not wait for it to exit.
+        Add-Type -Namespace ElectronCI -Name Handles -MemberDefinition @'
+        [DllImport("kernel32.dll")] public static extern IntPtr GetStdHandle(int n);
+        [DllImport("kernel32.dll")] public static extern bool SetHandleInformation(IntPtr h, int mask, int flags);
+        '@
+        foreach ($n in -10, -11, -12) { [void][ElectronCI.Handles]::SetHandleInformation([ElectronCI.Handles]::GetStdHandle($n), 1, 0) }
+        Start-Process powershell.exe -NoNewWindow -RedirectStandardInput $empty -RedirectStandardOutput "$log.out" -RedirectStandardError "$log.err" `
+          -ArgumentList '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $minimizer, '-Log', $log, '-Seconds', '3600'
+        for ($i = 0; $i -lt 30 -and -not (Test-Path $log); $i++) { Start-Sleep -Seconds 1 }
+        if (Test-Path $log) { Get-Content $log | Write-Host } else { Write-Host "WSL terminal minimizer did not start: $(Get-Content -Raw "$log.err" -ErrorAction SilentlyContinue)" }
 
     - name: Run Electron Tests
       shell: bash
@@ -481,6 +655,15 @@ jobs:
             fi
           fi
         fi
+    - name: Print minimized WSL terminals (Windows)
+      if: ${{ always() && inputs.target-platform == 'win' }}
+      continue-on-error: true
+      shell: pwsh
+      run: |
+        $log = Join-Path $env:RUNNER_TEMP 'minimize-wsl-terminals.log'
+        foreach ($f in "$log.err", "$log.out", $log) {
+          if (Test-Path $f) { Write-Host "--- $f"; Get-Content $f | Write-Host }
+        }
     - name: Verify custom mksnapshot blobs reach the main process
       # electron-mksnapshot / LoadBrowserProcessSpecificV8Snapshot users replace
       # the V8 snapshot blobs; check on one native leg that a build's own
