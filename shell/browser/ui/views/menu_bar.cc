@@ -6,12 +6,14 @@
 
 #include <memory>
 
+#include "base/logging.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "shell/browser/ui/views/submenu_button.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/base/mojom/menu_source_type.mojom.h"
+#include "ui/color/color_id.h"
 #include "ui/color/color_provider.h"
 #include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/background.h"
@@ -19,6 +21,7 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "ui/gtk/gtk_util.h"  // nogncheck
+#include "ui/linux/linux_ui.h"
 #endif
 
 #if BUILDFLAG(IS_WIN)
@@ -219,11 +222,21 @@ void MenuBar::ViewHierarchyChanged(
 void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
   if (theme) {
 #if BUILDFLAG(IS_LINUX)
-    background_color_ = gtk::GetBgColor("GtkMenuBar#menubar");
-    enabled_color_ =
-        gtk::GetFgColor("GtkMenuBar#menubar GtkMenuItem#menuitem GtkLabel");
-    disabled_color_ = gtk::GetFgColor(
-        "GtkMenuBar#menubar GtkMenuItem#menuitem:disabled GtkLabel");
+    if (ui::LinuxUiTheme::GetForProfile(nullptr)) {
+      background_color_ = gtk::GetBgColor("GtkMenuBar#menubar");
+      enabled_color_ =
+          gtk::GetFgColor("GtkMenuBar#menubar GtkMenuItem#menuitem GtkLabel");
+      disabled_color_ = gtk::GetFgColor(
+          "GtkMenuBar#menubar GtkMenuItem#menuitem:disabled GtkLabel");
+    } else {
+      LOG(WARNING)
+          << "No GTK UI theme is available; using default menu colors.";
+      const auto* color_provider = root_view_->GetColorProvider();
+      background_color_ = color_provider->GetColor(ui::kColorMenuBackground);
+      enabled_color_ = color_provider->GetColor(ui::kColorMenuItemForeground);
+      disabled_color_ =
+          color_provider->GetColor(ui::kColorMenuItemForegroundDisabled);
+    }
 #elif BUILDFLAG(IS_WIN)
     background_color_ = GetBackground()->color().ResolveToSkColor(
         root_view_->GetColorProvider());
