@@ -10,10 +10,29 @@ import * as url from 'node:url';
 
 import { emittedNTimes } from './lib/events-helpers.ts';
 import { containsText, readPDF } from './lib/pdf-helpers.ts';
-import { defer, ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers.ts';
+import { defer, ifdescribe, listen, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 const features = process._linkedBinding('electron_common_features');
+
+/**
+ * Waits for the 'preload-unload' IPC that sub-frames/preload sends when a
+ * document detaches. Scoped to a single WebContents since windows torn down by
+ * cleanup send it too, and frame properties are read on arrival because they
+ * stop resolving once the frame is disposed.
+ */
+async function onceUnload(webContents: WebContents) {
+  let unload: { senderFrame: WebFrameMain | null; frameProcessId?: number; processId: number } | undefined;
+  const listener = (event: Electron.IpcMainEvent) => {
+    if (event.sender !== webContents) return;
+    const { processId, senderFrame } = event;
+    unload = { senderFrame, frameProcessId: senderFrame?.processId, processId };
+  };
+  ipcMain.on('preload-unload', listener);
+  defer(() => ipcMain.off('preload-unload', listener));
+  await waitUntil(() => unload !== undefined);
+  return unload!;
+}
 
 describe('webFrameMain module', () => {
   const fixtures = path.resolve(import.meta.dirname, 'fixtures');
@@ -309,14 +328,13 @@ describe('webFrameMain module', () => {
     });
     afterEach(closeAllWindows);
 
-    // TODO(jkleinsc) fix this flaky test on linux
-    ifit(process.platform !== 'linux')('throws upon accessing properties when disposed', async () => {
+    it('throws upon accessing properties when disposed', async () => {
       await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
       const { mainFrame } = w.webContents;
       w.destroy();
       // Wait for WebContents, and thus RenderFrameHost, to be destroyed.
-      await setTimeout();
-      expect(() => mainFrame.url).to.throw();
+      await waitUntil(() => mainFrame.isDestroyed());
+      expect(() => mainFrame.url).to.throw(/Render frame was disposed/);
     });
 
     it('persists through cross-origin navigation', async () => {
@@ -383,21 +401,12 @@ describe('webFrameMain module', () => {
         }
       });
       await w.webContents.loadURL(server.url);
-      const unloadPromise = new Promise<void>((resolve, reject) => {
-        ipcMain.once('preload-unload', (event) => {
-          try {
-            const { senderFrame } = event;
-            expect(senderFrame).to.not.be.null();
-            expect(senderFrame!.detached).to.be.true();
-            expect(senderFrame!.processId).to.equal(event.processId);
-            resolve();
-          } catch (error) {
-            reject(error);
-          }
-        });
-      });
+      const unloadPromise = onceUnload(w.webContents);
       await w.webContents.loadURL(server.crossOriginUrl);
-      await expect(unloadPromise).to.eventually.be.fulfilled();
+      const { senderFrame, frameProcessId, processId } = await unloadPromise;
+      expect(senderFrame).to.not.be.null();
+      expect(senderFrame!.detached).to.be.true();
+      expect(frameProcessId).to.equal(processId);
     });
 
     it('disposes detached frame after cross-origin navigation', async () => {
@@ -408,23 +417,14 @@ describe('webFrameMain module', () => {
         }
       });
       await w.webContents.loadURL(server.url);
-      // eslint-disable-next-line prefer-const
-      let crossOriginPromise: Promise<void>;
-      const unloadPromise = new Promise<void>((resolve, reject) => {
-        ipcMain.once('preload-unload', async (event) => {
-          try {
-            const { senderFrame } = event;
-            expect(senderFrame!.detached).to.be.true();
-            await crossOriginPromise;
-            expect(() => senderFrame!.url).to.throw(/Render frame was disposed/);
-            resolve();
-          } catch (error) {
-            reject(error);
-          }
-        });
-      });
-      crossOriginPromise = w.webContents.loadURL(server.crossOriginUrl);
-      await expect(unloadPromise).to.eventually.be.fulfilled();
+      const unloadPromise = onceUnload(w.webContents);
+      const crossOriginPromise = w.webContents.loadURL(server.crossOriginUrl);
+      const { senderFrame } = await unloadPromise;
+      expect(senderFrame!.detached).to.be.true();
+      await crossOriginPromise;
+      // The detached frame is not destroyed immediately, so wait until it is
+      await waitUntil(() => senderFrame!.isDestroyed());
+      expect(() => senderFrame!.url).to.throw(/Render frame was disposed/);
     });
 
     // Skip test as we don't have an offline repro yet

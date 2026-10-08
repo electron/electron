@@ -519,15 +519,24 @@ describe('BrowserWindow module', () => {
       w.loadURL('about:blank');
       await readyToShow;
     });
-    // DISABLED-FIXME(deepak1556): The error code now seems to be `ERR_FAILED`, verify what
-    // changed and adjust the test.
     it('should emit did-fail-load event for files that do not exist', async () => {
-      const didFailLoad = once(w.webContents, 'did-fail-load');
-      w.loadURL('file://a.txt');
-      const [, code, desc, , isMainFrame] = await didFailLoad;
-      expect(code).to.equal(-6);
-      expect(desc).to.equal('ERR_FILE_NOT_FOUND');
-      expect(isMainFrame).to.equal(true);
+      const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'electron-'));
+      const url = nodeUrl.pathToFileURL(path.join(tempDir, 'missing.txt')).toString();
+
+      try {
+        const didFailLoad = once(w.webContents, 'did-fail-load');
+        const loadURL = w.loadURL(url);
+        const didFailLoadEvent = didFailLoad.then(([, code, desc, eventURL, isMainFrame]) => {
+          expect(eventURL).to.equal(url);
+          expect(code).to.equal(-6);
+          expect(desc).to.equal('ERR_FILE_NOT_FOUND');
+          expect(isMainFrame).to.equal(true);
+        });
+
+        await Promise.all([expect(loadURL).to.be.rejected, didFailLoadEvent]);
+      } finally {
+        await fs.promises.rm(tempDir, { recursive: true, force: true });
+      }
     });
     it('should emit did-fail-load event for invalid URL', async () => {
       const didFailLoad = once(w.webContents, 'did-fail-load');
@@ -638,11 +647,10 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    // FIXME(#43730): fix underlying bug and re-enable asap
-    it.skip('should support base url for data urls', async () => {
-      await w
-        .loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', { baseURLForDataURL: 'other://' })
-        .catch((e) => console.log(e));
+    it('should support base url for data urls', async () => {
+      await w.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', {
+        baseURLForDataURL: 'other://'
+      });
       expect(await w.webContents.executeJavaScript('window.ping')).to.equal('pong');
     });
 
@@ -6829,26 +6837,27 @@ describe('BrowserWindow module', () => {
         expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
         expect(w.isFullScreen()).to.be.false('is fullscreen');
 
-        const enterFullScreen = once(w, 'enter-full-screen');
-        const leaveFullScreen = once(w, 'leave-full-screen');
+        for (const menuBarVisible of [true, false]) {
+          w.setMenuBarVisibility(menuBarVisible);
+          expect(w.isMenuBarVisible()).to.equal(
+            menuBarVisible,
+            `isMenuBarVisible before fullscreen (menuBarVisible=${menuBarVisible})`
+          );
 
-        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
-        await enterFullScreen;
-        await w.webContents.executeJavaScript('document.exitFullscreen()', true);
-        await leaveFullScreen;
+          const enterFullScreen = once(w, 'enter-full-screen');
+          await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+          await enterFullScreen;
 
-        expect(w.isFullScreen()).to.be.false('is fullscreen');
-        expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
+          const leaveFullScreen = once(w, 'leave-full-screen');
+          await w.webContents.executeJavaScript('document.exitFullscreen()', true);
+          await leaveFullScreen;
 
-        w.setMenuBarVisibility(false);
-        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
-
-        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
-        await enterFullScreen;
-        await w.webContents.executeJavaScript('document.exitFullscreen()', true);
-        await leaveFullScreen;
-
-        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
+          expect(w.isFullScreen()).to.be.false(`isFullScreen after exit (menuBarVisible=${menuBarVisible})`);
+          expect(w.isMenuBarVisible()).to.equal(
+            menuBarVisible,
+            `isMenuBarVisible after fullscreen exit (menuBarVisible=${menuBarVisible})`
+          );
+        }
       });
 
       for (const frame of [true, false]) {
@@ -6957,9 +6966,11 @@ describe('BrowserWindow module', () => {
 
     ifdescribe(process.platform === 'darwin')('kiosk state', () => {
       describe('with properties', () => {
-        it('can be set with a constructor property', () => {
+        it('can be set with a constructor property', async () => {
           const w = new BrowserWindow({ kiosk: true });
           expect(w.kiosk).to.be.true();
+          // Let the fullscreen transition finish; see leaveFullScreen().
+          await once(w, 'enter-full-screen');
         });
 
         it('can be changed ', async () => {
@@ -6978,9 +6989,11 @@ describe('BrowserWindow module', () => {
       });
 
       describe('with functions', () => {
-        it('can be set with a constructor property', () => {
+        it('can be set with a constructor property', async () => {
           const w = new BrowserWindow({ kiosk: true });
           expect(w.isKiosk()).to.be.true();
+          // Let the fullscreen transition finish; see leaveFullScreen().
+          await once(w, 'enter-full-screen');
         });
 
         it('can be changed ', async () => {
@@ -7874,7 +7887,7 @@ describe('BrowserWindow module', () => {
     );
 
     // Only applicable on Windows where transparent windows can't be maximized.
-    ifit(process.platform === 'win32')('can show maximized frameless window', async () => {
+    ifit(process.platform === 'win32')('can show maximized frameless window', () => {
       const display = screen.getPrimaryDisplay();
 
       const w = new BrowserWindow({
@@ -7883,9 +7896,6 @@ describe('BrowserWindow module', () => {
         transparent: true,
         show: true
       });
-
-      w.loadURL('about:blank');
-      await once(w, 'ready-to-show');
 
       expect(w.isMaximized()).to.be.true();
 

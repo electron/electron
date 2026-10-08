@@ -579,6 +579,7 @@ describe('command line switches', () => {
       if (printEnv) {
         args.push('--print-env');
       }
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
       appProcess = ChildProcess.spawn(process.execPath, args);
 
       let output = '';
@@ -624,7 +625,9 @@ describe('command line switches', () => {
   describe('--remote-debugging-pipe switch', () => {
     it('should expose CDP via pipe', async () => {
       const electronPath = process.execPath;
-      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe'], {
+      const args = ['--remote-debugging-pipe'];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      appProcess = ChildProcess.spawn(electronPath, args, {
         stdio: ['inherit', 'inherit', 'inherit', 'pipe', 'pipe']
       }) as ChildProcess.ChildProcessWithoutNullStreams;
       const stdio = appProcess.stdio as unknown as [
@@ -646,7 +649,9 @@ describe('command line switches', () => {
     });
     it('should override --remote-debugging-port switch', async () => {
       const electronPath = process.execPath;
-      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe', '--remote-debugging-port=0'], {
+      const args = ['--remote-debugging-pipe', '--remote-debugging-port=0'];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      appProcess = ChildProcess.spawn(electronPath, args, {
         stdio: ['inherit', 'inherit', 'pipe', 'pipe', 'pipe']
       }) as ChildProcess.ChildProcessWithoutNullStreams;
       let stderr = '';
@@ -671,7 +676,9 @@ describe('command line switches', () => {
     });
     it('should shut down Electron upon Browser.close CDP command', async () => {
       const electronPath = process.execPath;
-      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe'], {
+      const args = ['--remote-debugging-pipe'];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      appProcess = ChildProcess.spawn(electronPath, args, {
         stdio: ['inherit', 'inherit', 'inherit', 'pipe', 'pipe']
       }) as ChildProcess.ChildProcessWithoutNullStreams;
       const stdio = appProcess.stdio as unknown as [
@@ -691,7 +698,9 @@ describe('command line switches', () => {
     it('should display the discovery page', (done) => {
       const electronPath = process.execPath;
       let output = '';
-      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-port=']);
+      const args = ['--remote-debugging-port='];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      appProcess = ChildProcess.spawn(electronPath, args);
       appProcess.stdout.on('data', (data) => {
         console.log(data);
       });
@@ -950,7 +959,9 @@ describe('chromium features', () => {
 
     it('loads first party sets', async () => {
       const appPath = path.join(fixturesPath, 'api', 'first-party-sets', 'base');
-      const fpsProcess = ChildProcess.spawn(process.execPath, [appPath]);
+      const args = [appPath];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      const fpsProcess = ChildProcess.spawn(process.execPath, args);
 
       let output = '';
       fpsProcess.stdout.on('data', (data) => {
@@ -964,6 +975,7 @@ describe('chromium features', () => {
     it('loads sets from the command line', async () => {
       const appPath = path.join(fixturesPath, 'api', 'first-party-sets', 'command-line');
       const args = [appPath, `--use-first-party-set=${fps}`];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
       const fpsProcess = ChildProcess.spawn(process.execPath, args);
 
       let output = '';
@@ -2040,7 +2052,9 @@ describe('chromium features', () => {
     it('Worker with nodeIntegrationInWorker has access to self.module.paths', async () => {
       const appPath = path.join(import.meta.dirname, 'fixtures', 'apps', 'self-module-paths');
 
-      appProcess = ChildProcess.spawn(process.execPath, [appPath]);
+      const args = [appPath];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      appProcess = ChildProcess.spawn(process.execPath, args);
 
       const [code] = await once(appProcess, 'exit');
       expect(code).to.equal(0);
@@ -3452,16 +3466,12 @@ describe('chromium features', () => {
             show: false,
             ...extraPreferences
           });
-          let redirected = false;
-          w.webContents.on('render-process-gone', () => {
-            expect.fail('renderer crashed / was killed');
-          });
+          let redirectedTo: string | undefined;
           w.webContents.on('did-redirect-navigation', (event, url) => {
-            expect(url).to.equal(`${serverCrossSiteUrl}/redirected`);
-            redirected = true;
+            redirectedTo = url;
           });
           await w.loadURL(`${serverUrl}/redirect-cross-site`);
-          expect(redirected).to.be.true('didnt redirect');
+          expect(redirectedTo).to.equal(`${serverCrossSiteUrl}/redirected`, 'didnt redirect');
         });
       };
 
@@ -4371,14 +4381,14 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', { t
     await once(w, 'leave-full-screen');
   });
 
-  // TODO: Re-enable for windows on GitHub Actions,
-  // fullscreen tests seem to hang on GHA specifically
   it('can fullscreen from in-process iframes', async () => {
     if (process.platform === 'darwin') await once(w, 'enter-full-screen');
 
-    const fullscreenChange = once(ipcMain, 'fullscreenChange');
-    w.loadFile(path.join(fixturesPath, 'pages', 'fullscreen-ipif.html'));
-    await fullscreenChange;
+    await w.loadFile(path.join(fixturesPath, 'pages', 'fullscreen-ipif.html'));
+    await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').contentDocument.querySelector('video').requestFullscreen()",
+      true
+    );
 
     const fullscreenWidth = await w.webContents.executeJavaScript("document.querySelector('iframe').offsetWidth");
     expect(fullscreenWidth > 0).to.true();
@@ -4386,6 +4396,32 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', { t
     await w.webContents.executeJavaScript('document.exitFullscreen()');
     const width = await w.webContents.executeJavaScript("document.querySelector('iframe').offsetWidth");
     expect(width).to.equal(0);
+  });
+
+  it('emits fullscreenchange on the parent document for in-process iframes', async () => {
+    if (process.platform === 'darwin') await once(w, 'enter-full-screen');
+
+    w.webContents.setBackgroundThrottling(false);
+    await w.loadFile(path.join(fixturesPath, 'pages', 'fullscreen-ipif.html'));
+    const fullscreenElementIsIframe = await w.webContents.executeJavaScript(
+      `(async () => {
+        const iframe = document.querySelector('iframe');
+        const fullscreenChange = new Promise(resolve => {
+          document.addEventListener('fullscreenchange', () => {
+            resolve(document.fullscreenElement === iframe);
+          }, { once: true });
+        });
+        const [isFullscreen] = await Promise.all([
+          fullscreenChange,
+          iframe.contentDocument.querySelector('video').requestFullscreen()
+        ]);
+        return isFullscreen;
+      })()`,
+      true
+    );
+    expect(fullscreenElementIsIframe).to.be.true('parent document fullscreenElement is the iframe');
+
+    await w.webContents.executeJavaScript('document.exitFullscreen()');
   });
 });
 

@@ -64,20 +64,16 @@ describe('utilityProcess module', () => {
       await once(child, 'spawn');
     });
 
-    it("emits 'exit' when child process exits gracefully", (done) => {
+    it("emits 'exit' when child process exits gracefully", async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
-      child.on('exit', (code) => {
-        expect(code).to.equal(0);
-        done();
-      });
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
     });
 
-    it("emits 'exit' when the child process file does not exist", (done) => {
+    it("emits 'exit' when the child process file does not exist", async () => {
       const child = utilityProcess.fork('nonexistent');
-      child.on('exit', (code) => {
-        expect(code).to.equal(1);
-        done();
-      });
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(1);
     });
 
     ifit(!isWindows32Bit)('emits the correct error code when child process exits nonzero', async () => {
@@ -562,13 +558,14 @@ describe('utilityProcess module', () => {
 
     it('supports changing dns verbatim with --dns-result-order', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'dns-result-order.js'), [], {
-        stdio: 'pipe',
         execArgv: ['--dns-result-order=ipv4first']
       });
       deferKillUtilityProcess(child);
-      // The fixture prints dns.getDefaultResultOrder() and exits on its own.
-      const output = await outputUntil(child, /ipv4first|verbatim/);
-      expect(output).to.contain('ipv4first', 'default verbatim should be ipv4first');
+      await once(child, 'spawn');
+      const result = once(child, 'message');
+      child.postMessage('get-default-result-order');
+      const [order] = await result;
+      expect(order).to.equal('ipv4first');
     });
 
     ifit(process.platform !== 'win32')('supports redirecting stdout to parent process', async () => {
