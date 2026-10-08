@@ -7,10 +7,10 @@ Subject: refactor: expose HostImportModuleDynamically and
 This is so that Electron can blend Blink's and Node's implementations of these isolate handlers.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 5639cedb3a74c0542801c7c4418d3cae20b26030..c8c6580c6e3600f1e9de4f6acd1e2be7d932072e 100644
+index 701c57659221f80687ce7f12db9552ee8aab217f..0631da0d57fe94ad9216b9d8c7ff58a57afea066 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-@@ -733,8 +733,9 @@ bool WasmCustomDescriptorsEnabledCallback(v8::Local<v8::Context> context) {
+@@ -730,8 +730,9 @@ bool WasmCustomDescriptorsEnabledCallback(v8::Local<v8::Context> context) {
    return RuntimeEnabledFeatures::WebAssemblyCustomDescriptorsV2Enabled(
        execution_context);
  }
@@ -21,7 +21,7 @@ index 5639cedb3a74c0542801c7c4418d3cae20b26030..c8c6580c6e3600f1e9de4f6acd1e2be7
      v8::Local<v8::Context> context,
      v8::Local<v8::Data> v8_host_defined_options,
      v8::Local<v8::Value> v8_referrer_resource_url,
-@@ -812,20 +813,23 @@ v8::MaybeLocal<v8::Promise> HostImportModuleWithPhaseDynamically(
+@@ -809,20 +810,23 @@ v8::MaybeLocal<v8::Promise> HostImportModuleWithPhaseDynamically(
  
    return resolver->Promise().V8Promise();
  }
@@ -47,7 +47,7 @@ index 5639cedb3a74c0542801c7c4418d3cae20b26030..c8c6580c6e3600f1e9de4f6acd1e2be7
                                   v8::Local<v8::Module> module,
                                   v8::Local<v8::Object> meta) {
    v8::Isolate* isolate = v8::Isolate::GetCurrent();
-@@ -852,6 +856,7 @@ void HostGetImportMetaProperties(v8::Local<v8::Context> context,
+@@ -849,6 +853,7 @@ void HostGetImportMetaProperties(v8::Local<v8::Context> context,
    meta->CreateDataProperty(context, resolve_key, resolve_value).ToChecked();
  }
  
@@ -55,7 +55,7 @@ index 5639cedb3a74c0542801c7c4418d3cae20b26030..c8c6580c6e3600f1e9de4f6acd1e2be7
  bool IsDOMExceptionWrapper(v8::Isolate* isolate, v8::Local<v8::Object> object) {
    return V8DOMException::HasInstance(isolate, object);
  }
-@@ -880,7 +885,6 @@ int64_t CoarseTemporalHostSystemUTCEpochNanosecondsCallback(
+@@ -885,7 +890,6 @@ int64_t CoarseTemporalHostSystemUTCEpochNanosecondsCallback(
  
  }  // namespace
  
@@ -63,7 +63,7 @@ index 5639cedb3a74c0542801c7c4418d3cae20b26030..c8c6580c6e3600f1e9de4f6acd1e2be7
  void V8Initializer::InitializeV8Common(v8::Isolate* isolate) {
    // Set up garbage collection before setting up anything else as V8 may trigger
    // GCs during Blink setup.
-@@ -896,9 +900,9 @@ void V8Initializer::InitializeV8Common(v8::Isolate* isolate) {
+@@ -901,9 +905,9 @@ void V8Initializer::InitializeV8Common(v8::Isolate* isolate) {
        SharedArrayBufferConstructorEnabledCallback);
    isolate->SetHostImportModuleDynamicallyCallback(HostImportModuleDynamically);
    isolate->SetHostImportModuleWithPhaseDynamicallyCallback(
@@ -73,8 +73,8 @@ index 5639cedb3a74c0542801c7c4418d3cae20b26030..c8c6580c6e3600f1e9de4f6acd1e2be7
 -      HostGetImportMetaProperties);
 +     V8Initializer::HostGetImportMetaProperties);
    isolate->SetIsJSApiWrapperNativeErrorCallback(IsDOMExceptionWrapper);
-   isolate->SetMetricsRecorder(std::make_shared<V8MetricsRecorder>(isolate));
- 
+   isolate->SetDynamicScriptCompiledFromEmbedderCallback(
+       DynamicScriptCompiledFromEmbedderCallback);
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.h b/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
 index 7a8562075e749c0c22da258d9131a77251fe54ea..f40c04628b07672d14e471ab98727fc4bd1d2fe2 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.h

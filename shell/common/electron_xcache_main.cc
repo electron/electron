@@ -70,10 +70,12 @@ constexpr uint32_t kSnapshotDataHeaderSize = 8;
 constexpr uint32_t kCacheMagicOffset = 0;
 constexpr uint32_t kCacheVersionHashOffset = 4;
 constexpr uint32_t kCacheSourceHashOffset = 8;
-constexpr uint32_t kCacheFlagHashOffset = 12;
-constexpr uint32_t kCacheRoChecksumOffset = 16;
-constexpr uint32_t kCachePayloadLengthOffset = 20;
-constexpr uint32_t kCacheHeaderSize = 32;
+constexpr uint32_t kCacheSourceHashSize = 32;
+constexpr uint32_t kCacheFlagHashOffset =
+    kCacheSourceHashOffset + kCacheSourceHashSize;
+constexpr uint32_t kCacheRoChecksumOffset = kCacheFlagHashOffset + 4;
+constexpr uint32_t kCachePayloadLengthOffset = kCacheRoChecksumOffset + 4;
+constexpr uint32_t kCacheHeaderSize = 56;
 
 uint32_t ReadU32(const char* p) {
   uint32_t v;
@@ -85,6 +87,17 @@ std::string Hex(uint32_t v) {
   char buf[16];
   std::snprintf(buf, sizeof(buf), "0x%08x", v);
   return buf;
+}
+
+std::string HexBytes(std::string_view bytes) {
+  constexpr char kDigits[] = "0123456789abcdef";
+  std::string out = "0x";
+  out.reserve(2 + bytes.size() * 2);
+  for (unsigned char byte : bytes) {
+    out += kDigits[byte >> 4];
+    out += kDigits[byte & 0xf];
+  }
+  return out;
 }
 
 // JSON string literal, quotes included.
@@ -639,7 +652,8 @@ int main(int argc, char* argv[]) {
               << Hex(ReadU32(h + kCacheMagicOffset)) << "\",\"versionHash\":\""
               << Hex(ReadU32(h + kCacheVersionHashOffset))
               << "\",\"sourceHash\":\""
-              << Hex(ReadU32(h + kCacheSourceHashOffset))
+              << HexBytes(std::string_view(h + kCacheSourceHashOffset,
+                                           kCacheSourceHashSize))
               << "\",\"flagHash\":\"" << Hex(flag_hash)
               << "\",\"roSnapshotChecksum\":\"" << Hex(ro_checksum)
               << "\",\"payloadLength\":"

@@ -1,7 +1,15 @@
 const { app, BrowserWindow } = require('electron');
 
 const net = require('node:net');
+const os = require('node:os');
 const path = require('node:path');
+
+// Use a path of our own: a run that was killed leaves its socket behind, and a
+// fixed path would make the next run's listen() fail with EADDRINUSE.
+const socketPath =
+  process.platform === 'win32'
+    ? path.join('\\\\?\\pipe', process.cwd(), `myctl-${process.pid}`)
+    : path.join(os.tmpdir(), `electron-js-execute-iframe-${process.pid}.sock`);
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -12,7 +20,7 @@ function createWindow() {
     }
   });
 
-  mainWindow.loadFile('index.html');
+  mainWindow.loadFile('index.html', { query: { socketPath } });
 }
 
 app.whenReady().then(() => {
@@ -40,11 +48,11 @@ const server = net.createServer((c) => {
 });
 
 server.on('error', (err) => {
-  throw err;
+  // Throwing here would show a modal error dialog and the app would never exit.
+  console.error(err);
+  app.exit(1);
 });
 
-const p = process.platform === 'win32' ? path.join('\\\\?\\pipe', process.cwd(), 'myctl') : '/tmp/echo.sock';
-
-server.listen(p, () => {
+server.listen(socketPath, () => {
   console.log('server bound');
 });

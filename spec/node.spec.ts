@@ -23,6 +23,7 @@ import {
   getRemoteContext,
   ifdescribe,
   ifit,
+  isTestingBindingAvailable,
   itremote,
   spawnAndWait,
   startRemoteControlApp,
@@ -349,7 +350,7 @@ describe('node feature', () => {
     // OS event handler) must still have its continuations run before the next
     // task does. Clipboard reads on Linux otherwise sat until something
     // unrelated woke the main loop.
-    describe('promise settled by native code outside a task', () => {
+    ifdescribe(isTestingBindingAvailable())('promise settled by native code outside a task', () => {
       it('runs its continuations before the next task', async () => {
         const testing = (process as any)._linkedBinding('electron_common_testing');
         let continued = false;
