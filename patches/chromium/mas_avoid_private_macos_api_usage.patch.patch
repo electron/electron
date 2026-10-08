@@ -1281,10 +1281,10 @@ index 4ad1cf42d7a4ab65fe1ac512e5887beddea3b59c..6b1efa6ded54315f58a5275287f8a88b
  
    if (is_mac) {
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 4f7dbbc8f46922d1e8fe975eb12c73cea9f71b1b..e686813116bc5351da4b23bce043c8c78e1f87d5 100644
+index 8940cda1ea6211df84da098078a1f90c66666013..335e42c54e5d6a9f591065519443e99c8bc49b91 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
-@@ -41,7 +41,9 @@
+@@ -40,7 +40,9 @@
  #include "device/bluetooth/bluetooth_discovery_session_outcome.h"
  #include "device/bluetooth/bluetooth_socket_mac.h"
  #include "device/bluetooth/public/cpp/bluetooth_address.h"
@@ -1294,7 +1294,7 @@ index 4f7dbbc8f46922d1e8fe975eb12c73cea9f71b1b..e686813116bc5351da4b23bce043c8c7
  extern "C" {
  // Undocumented IOBluetooth Preference API [1]. Used by `blueutil` [2] and
  // `Karabiner` [3] to programmatically control the Bluetooth state. Calling the
-@@ -55,6 +57,7 @@
+@@ -54,6 +56,7 @@
  // [4] https://support.apple.com/kb/PH25091
  void IOBluetoothPreferenceSetControllerPowerState(int state);
  }
@@ -1302,18 +1302,18 @@ index 4f7dbbc8f46922d1e8fe975eb12c73cea9f71b1b..e686813116bc5351da4b23bce043c8c7
  
  namespace device {
  class BluetoothDevicesConnectListenerBridge;
-@@ -249,8 +252,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
- BluetoothAdapterMac::BluetoothAdapterMac()
+@@ -237,8 +240,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
      : controller_state_function_(
-           base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState)),
+           base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
+                               base::Unretained(this))),
 +#if !IS_MAS_BUILD()
        power_state_function_(
            base::BindRepeating(IOBluetoothPreferenceSetControllerPowerState)),
 +#endif
        device_paired_status_callback_(
-           base::BindRepeating(&IsDeviceSystemPaired)) {}
- 
-@@ -457,8 +462,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+           base::BindRepeating(&IsDeviceSystemPaired)) {
+ }
+@@ -399,8 +404,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {

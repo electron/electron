@@ -23,10 +23,10 @@ index 0a7642ce2d3512a7fba15e1944cca08f26a2bcea..2029e19f570630e4864af0f8e4038408
      return receiver_.BindNewEndpointAndPassDedicatedRemote();
    }
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 15aee67cea8884f512dbf6d4a7dd680309d58c34..fd7f3f447cab6008937cf1bd80c14d1ec453d529 100644
+index 512116f09955a0068aa4a80bc73f500af6f1a0ac..d485306d06ce3b2371fdded884666fa321363823 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -757,6 +757,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
+@@ -762,6 +762,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
    GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
  
@@ -116,7 +116,7 @@ index 8bd6b07c5c47f6625b24b1ee227d632bf5d97c5d..b87a4ff69d2b68194bcabe1a60668645
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index cff1b40777719c569f1d8593e9407024479a5cc7..86e247e82fc7d5d5444cc22b9cf233ed025c67ca 100644
+index 210e182a80343b67302a2ed347c1ab984cdc3b09..ecb2deab23578181025b0282f02960d4a71a3c1f 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -618,6 +618,7 @@ WebViewImpl::WebViewImpl(
