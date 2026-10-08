@@ -230,7 +230,15 @@ describe('WebContentsView', () => {
     expect(v.children).to.deep.equal([wcv]);
   });
 
-  describe('visibilityState', () => {
+  describe('visibilityState', { tags: ['serial'] }, () => {
+    // These pages are only 'visible' while nothing covers their window. On the
+    // Windows CI hosts another process's console window can sit above a newly
+    // shown window, and Chromium's native occlusion tracker then keeps the page
+    // 'hidden'. A BrowserWindow's own webContents is force-shown, but BaseWindow
+    // content is not, so keep these windows above everything there (as
+    // visibility-state.spec.ts does).
+    const alwaysOnTop = process.platform === 'win32';
+
     async function haveVisibilityState(view: WebContentsView, state: string) {
       const docVisState = await view.webContents.executeJavaScript('document.visibilityState');
       return docVisState === state;
@@ -255,7 +263,7 @@ describe('WebContentsView', () => {
       // executeJavaScript calls are sequential so if this one's finished then
       // the previous one must also have been finished :)
       await v.webContents.executeJavaScript('undefined');
-      const w = new BaseWindow({ width: 400, height: 300 });
+      const w = new BaseWindow({ alwaysOnTop, width: 400, height: 300 });
       w.setContentView(v);
       await p;
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
@@ -273,7 +281,7 @@ describe('WebContentsView', () => {
     });
 
     it('is initially visible if load happens after attach', async () => {
-      const w = new BaseWindow();
+      const w = new BaseWindow({ alwaysOnTop });
       const v = new WebContentsView();
       w.contentView = v;
       await v.webContents.loadURL('data:text/html,<script>initialVisibility = document.visibilityState</script>');
@@ -281,7 +289,7 @@ describe('WebContentsView', () => {
     });
 
     it('becomes hidden when parent window is hidden', async () => {
-      const w = new BaseWindow();
+      const w = new BaseWindow({ alwaysOnTop });
       const v = new WebContentsView();
       w.setContentView(v);
       await v.webContents.loadURL('about:blank');
@@ -299,7 +307,7 @@ describe('WebContentsView', () => {
     });
 
     it('becomes visible when parent window is shown', async () => {
-      const w = new BaseWindow({ show: false });
+      const w = new BaseWindow({ alwaysOnTop, show: false });
       const v = new WebContentsView();
       w.setContentView(v);
       await v.webContents.loadURL('about:blank');
@@ -317,7 +325,7 @@ describe('WebContentsView', () => {
     });
 
     it('does not change when view is moved between two visible windows', async () => {
-      const w = new BaseWindow();
+      const w = new BaseWindow({ alwaysOnTop });
       const v = new WebContentsView();
       w.setContentView(v);
       await v.webContents.loadURL('about:blank');
@@ -328,7 +336,7 @@ describe('WebContentsView', () => {
       );
       // Ensure the listener has been registered.
       await v.webContents.executeJavaScript('undefined');
-      const w2 = new BaseWindow();
+      const w2 = new BaseWindow({ alwaysOnTop });
       w2.setContentView(v);
       // Wait for the visibility state to settle as "visible".
       // On macOS one visibilitychange event is fired but visibilityState
@@ -346,7 +354,7 @@ describe('WebContentsView', () => {
     });
 
     it('tracks visibility for multiple child WebContentsViews', async () => {
-      const w = new BaseWindow({ show: false });
+      const w = new BaseWindow({ alwaysOnTop, show: false });
       const cv = new View();
       w.setContentView(cv);
 
@@ -375,7 +383,7 @@ describe('WebContentsView', () => {
     });
 
     it('tracks visibility independently when a child WebContentsView is hidden via setVisible', async () => {
-      const w = new BaseWindow();
+      const w = new BaseWindow({ alwaysOnTop });
       const cv = new View();
       w.setContentView(cv);
 
@@ -404,7 +412,7 @@ describe('WebContentsView', () => {
     });
 
     it('fires a single visibilitychange event per show/hide transition', async () => {
-      const w = new BaseWindow({ show: false });
+      const w = new BaseWindow({ alwaysOnTop, show: false });
       const v = new WebContentsView();
       w.setContentView(v);
       await v.webContents.loadURL('about:blank');
