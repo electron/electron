@@ -354,3 +354,24 @@ export function deferKillUtilityProcess(utilityProcess: Electron.UtilityProcess)
     }
   });
 }
+
+// Focuses webContents and waits until its page reports document.hasFocus().
+// The browser-side 'focus' event can arrive before the renderer learns that
+// its page is focused, and APIs that need a focused document (the async
+// clipboard, paste, pointer lock) reject with "Document is not focused." in
+// that window. Focus is requested again on each poll in case it was lost.
+export async function focusWebContents(webContents: Electron.WebContents) {
+  if (!webContents.isFocused()) {
+    const focused = once(webContents, 'focus');
+    webContents.focus();
+    await focused;
+  }
+  await waitUntil(
+    async () => {
+      if (await webContents.executeJavaScript('document.hasFocus()')) return true;
+      webContents.focus();
+      return false;
+    },
+    { rate: 100 }
+  );
+}

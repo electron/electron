@@ -28,7 +28,16 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
 import { emittedUntil } from './lib/events-helpers.ts';
-import { ifit, ifdescribe, defer, itremote, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
+import {
+  ifit,
+  ifdescribe,
+  defer,
+  focusWebContents,
+  itremote,
+  listen,
+  startRemoteControlApp,
+  waitUntil
+} from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 import { PipeTransport } from './pipe-transport.ts';
 
@@ -1507,9 +1516,13 @@ describe('chromium features', () => {
       w.loadFile(writablePath);
 
       w.webContents.once('did-finish-load', async () => {
-        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testDir).href })]);
-        w.webContents.focus();
-        w.webContents.paste();
+        try {
+          await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testDir).href })]);
+          await focusWebContents(w.webContents);
+          w.webContents.paste();
+        } catch (error) {
+          done(error);
+        }
       });
     });
 
@@ -1563,9 +1576,13 @@ describe('chromium features', () => {
       w.loadFile(writablePath);
 
       w.webContents.once('did-finish-load', async () => {
-        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
-        w.webContents.focus();
-        w.webContents.paste();
+        try {
+          await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
+          await focusWebContents(w.webContents);
+          w.webContents.paste();
+        } catch (error) {
+          done(error);
+        }
       });
     });
 
@@ -1610,7 +1627,7 @@ describe('chromium features', () => {
           channel === 'file-system-error'
         );
       });
-      w.webContents.focus();
+      await focusWebContents(w.webContents);
       trace('paste requested');
       w.webContents.paste();
       const [, channel, message] = await handleCreated;
@@ -1697,9 +1714,13 @@ describe('chromium features', () => {
       w.loadFile(writablePath);
 
       w.webContents.once('did-finish-load', async () => {
-        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
-        w.webContents.focus();
-        w.webContents.paste();
+        try {
+          await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
+          await focusWebContents(w.webContents);
+          w.webContents.paste();
+        } catch (error) {
+          done(error);
+        }
       });
     });
 
@@ -1747,9 +1768,13 @@ describe('chromium features', () => {
       w.loadFile(permPath);
 
       w.webContents.once('did-finish-load', async () => {
-        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testDir).href })]);
-        w.webContents.focus();
-        w.webContents.paste();
+        try {
+          await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testDir).href })]);
+          await focusWebContents(w.webContents);
+          w.webContents.paste();
+        } catch (error) {
+          done(error);
+        }
       });
     });
 
@@ -1797,9 +1822,13 @@ describe('chromium features', () => {
       w.loadFile(permPath);
 
       w.webContents.once('did-finish-load', async () => {
-        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testDir).href })]);
-        w.webContents.focus();
-        w.webContents.paste();
+        try {
+          await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testDir).href })]);
+          await focusWebContents(w.webContents);
+          w.webContents.paste();
+        } catch (error) {
+          done(error);
+        }
       });
     });
 
@@ -1857,9 +1886,13 @@ describe('chromium features', () => {
       w.loadFile(writablePath);
 
       w.webContents.on('did-finish-load', async () => {
-        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
-        w.webContents.focus();
-        w.webContents.paste();
+        try {
+          await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
+          await focusWebContents(w.webContents);
+          w.webContents.paste();
+        } catch (error) {
+          done(error);
+        }
       });
     });
   });
@@ -1898,11 +1931,7 @@ describe('chromium features', () => {
 
     const pasteHandle = async (w: BrowserWindow, frame: Electron.WebFrameMain, dirOrFile: string) => {
       await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(dirOrFile).href })]);
-      if (!w.webContents.isFocused()) {
-        const focused = once(w.webContents, 'focus');
-        w.webContents.focus();
-        await focused;
-      }
+      await focusWebContents(w.webContents);
       await frame.executeJavaScript('window.focus(); document.body.focus(); window.gotHandle = false; true');
       w.webContents.paste();
     };
@@ -4816,11 +4845,7 @@ describe('navigator.clipboard.read', { tags: ['serial'] }, () => {
   });
 
   const readClipboard = async () => {
-    if (!w.webContents.isFocused()) {
-      const focus = once(w.webContents, 'focus');
-      w.webContents.focus();
-      await focus;
-    }
+    await focusWebContents(w.webContents);
     return w.webContents.executeJavaScript(
       `
       navigator.clipboard.read().then(clipboard => clipboard.toString()).catch(err => err.message);
@@ -4864,11 +4889,7 @@ describe('navigator.clipboard.write', { tags: ['serial'] }, () => {
   });
 
   const writeClipboard = async () => {
-    if (!w.webContents.isFocused()) {
-      const focus = once(w.webContents, 'focus');
-      w.webContents.focus();
-      await focus;
-    }
+    await focusWebContents(w.webContents);
     return w.webContents.executeJavaScript(
       `
       navigator.clipboard.writeText('Hello World!').catch(err => err.message);
@@ -4949,11 +4970,7 @@ describe('pointer lock permission request', { tags: ['serial'] }, () => {
     // content rejects the request with WrongDocumentError, without consulting
     // the permission handler, unless the widget has focus. Focus arrives
     // asynchronously on macOS, so wait for it.
-    if (!w.webContents.isFocused()) {
-      const focus = once(w.webContents, 'focus');
-      w.webContents.focus();
-      await focus;
-    }
+    await focusWebContents(w.webContents);
     const result = await iframe.executeJavaScript(
       "document.body.requestPointerLock().then(() => 'locked', (e) => e.name)",
       true
@@ -4988,11 +5005,7 @@ describe('pointer lock permission request', { tags: ['serial'] }, () => {
 
 describe('paste execCommand', { tags: ['serial'] }, () => {
   const readClipboard = async (w: BrowserWindow) => {
-    if (!w.webContents.isFocused()) {
-      const focus = once(w.webContents, 'focus');
-      w.webContents.focus();
-      await focus;
-    }
+    await focusWebContents(w.webContents);
 
     // No user gesture: these tests exercise the permission path, and a
     // gesture on the requesting frame allows paste by itself.
@@ -5165,11 +5178,7 @@ describe('paste execCommand', { tags: ['serial'] }, () => {
       );
 
     const clickMainFrame = async (w: BrowserWindow) => {
-      if (!w.webContents.isFocused()) {
-        const focus = once(w.webContents, 'focus');
-        w.webContents.focus();
-        await focus;
-      }
+      await focusWebContents(w.webContents);
       w.webContents.sendInputEvent({ type: 'mouseDown', x: 5, y: 5, button: 'left', clickCount: 1 });
       w.webContents.sendInputEvent({ type: 'mouseUp', x: 5, y: 5, button: 'left', clickCount: 1 });
       await waitUntil(
