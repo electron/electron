@@ -259,6 +259,40 @@ This switch only works when `--enable-logging` is also passed.
 
 See also `--enable-logging`, `--log-level`, and `--v`.
 
+### --widevine-cdm-path=`path` _Experimental_
+
+Specifies the directory containing Widevine CDM files.
+
+Electron looks for `manifest.json` in this directory and then loads the
+platform-specific Widevine CDM library. If this switch is not set, Electron
+checks for bundled Widevine CDM files at
+`<Electron executable directory>/WidevineCdm`.
+
+This switch is ignored in packaged applications to prevent loading library
+code from an arbitrary command-line path. Packaged applications must bundle
+the `WidevineCdm` directory beside the Electron executable.
+
+For unpackaged applications on Linux, pass this switch on Electron's process
+command line. Calling `app.commandLine.appendSwitch` from the app's main script
+is too late because the zygote loads library CDMs before that script runs. When
+the manifest does not contain a version, pass `--widevine-cdm-version` on the
+process command line as well. Alternatively, bundle the `WidevineCdm` directory
+beside the Electron executable.
+
+This switch is only effective in builds where Widevine support is enabled
+(`enable_widevine = true`).
+
+For CDM packaging, licensing, and VMP signing expectations, see
+[Testing Widevine CDM](../tutorial/testing-widevine-cdm.md).
+
+### --widevine-cdm-version=`version` _Experimental_
+
+Specifies the Widevine CDM version when it cannot be read from `manifest.json`.
+You can omit this switch when the manifest already contains the version.
+
+This switch is only effective in builds where Widevine support is enabled
+(`enable_widevine = true`).
+
 ### --force_high_performance_gpu
 
 Force using discrete GPU when there are multiple GPUs available.
