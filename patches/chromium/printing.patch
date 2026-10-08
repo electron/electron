@@ -264,10 +264,10 @@ index 6acf5b006b7e2eafeda1c37dad21c989f9adc534..8eea22e03a3e6bd48b8303da7e82bc72
  
  enum PrintFailureReason {
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index c78be1606c7c574714dd57162fe49ab6414c8a5c..24936ea1ee262bc893bc81ce009ded2bf5034bb4 100644
+index da96939c2380725236a0d1547520ca6d7152ba81..4a5a38c2b0faf37e34bd7aeff4bdfef150bd0116 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
-@@ -2463,6 +2463,7 @@ bool PrintRenderFrameHelper::PrintPagesNative(
+@@ -2464,6 +2464,7 @@ bool PrintRenderFrameHelper::PrintPagesNative(
      result->params = std::move(page_params);
      result->accessibility_tree = std::move(accessibility_tree);
      result->generate_document_outline = print_params.generate_document_outline;
