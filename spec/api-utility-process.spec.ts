@@ -510,59 +510,50 @@ describe('utilityProcess module', () => {
   });
 
   describe('behavior', () => {
-    it('supports starting the v8 inspector with --inspect-brk', (done) => {
+    // Collects the child's stdout and stderr until `pattern` appears, then
+    // stops the child (if it has not already exited on its own) and waits for
+    // it to go. The wait is driven by the output, not by 'exit': the stdio
+    // listeners are dropped when the child exits, so a chunk still in the pipe
+    // at that point would be lost. Nothing asserts inside a stream listener
+    // either; a failing expect() there is an uncaught exception that takes
+    // the whole spec runner down instead of failing one test.
+    const outputUntil = async (child: Electron.UtilityProcess, pattern: RegExp) => {
+      let output = '';
+      await new Promise<void>((resolve) => {
+        const listener = (data: Buffer) => {
+          output += data;
+          if (pattern.test(output)) resolve();
+        };
+        child.stderr!.on('data', listener);
+        child.stdout!.on('data', listener);
+      });
+      if (child.pid) {
+        const exit = once(child, 'exit');
+        child.kill();
+        await exit;
+      }
+      return output;
+    };
+
+    it('supports starting the v8 inspector with --inspect-brk', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
         stdio: 'pipe',
         execArgv: ['--inspect-brk']
       });
-
-      let output = '';
-      const cleanup = () => {
-        child.stderr!.removeListener('data', listener);
-        child.stdout!.removeListener('data', listener);
-        child.once('exit', () => {
-          done();
-        });
-        child.kill();
-      };
-
-      const listener = (data: Buffer) => {
-        output += data;
-        if (/Debugger listening on ws:/m.test(output)) {
-          cleanup();
-        }
-      };
-
-      child.stderr!.on('data', listener);
-      child.stdout!.on('data', listener);
+      // If the expected output never arrives the test fails on mocha's timeout
+      // without reaching kill(); let the global afterEach reap the child then.
+      deferKillUtilityProcess(child);
+      await outputUntil(child, /Debugger listening on ws:/m);
     });
 
-    it('supports starting the v8 inspector with --inspect and a provided port', (done) => {
+    it('supports starting the v8 inspector with --inspect and a provided port', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
         stdio: 'pipe',
         execArgv: ['--inspect=17364']
       });
-
-      let output = '';
-      const cleanup = () => {
-        child.stderr!.removeListener('data', listener);
-        child.stdout!.removeListener('data', listener);
-        child.once('exit', () => {
-          done();
-        });
-        child.kill();
-      };
-
-      const listener = (data: Buffer) => {
-        output += data;
-        if (/Debugger listening on ws:/m.test(output)) {
-          expect(output.trim()).to.contain(':17364', 'should be listening on port 17364');
-          cleanup();
-        }
-      };
-
-      child.stderr!.on('data', listener);
-      child.stdout!.on('data', listener);
+      deferKillUtilityProcess(child);
+      const output = await outputUntil(child, /Debugger listening on ws:/m);
+      expect(output).to.contain(':17364', 'should be listening on port 17364');
     });
 
     it('supports changing dns verbatim with --dns-result-order', async () => {
