@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, session, net as electronNet, type WebContents, utilityProcess } from 'electron/main';
+import { app, BrowserWindow, Menu, session, net as electronNet, type WebContents } from 'electron/main';
 
 import { assert, expect } from 'chai';
 
@@ -17,6 +17,7 @@ import { promisify } from 'node:util';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers.ts';
 import { defer, ifdescribe, ifit, isWayland, listen, waitUntil } from './lib/spec-helpers.ts';
+import { runInUtilityProcess } from './lib/utility-process-helpers.ts';
 import { closeWindow, closeAllWindows } from './lib/window-helpers.ts';
 import {
   makeXdgMockDirectories,
@@ -2021,6 +2022,62 @@ describe('app module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'linux')('display server selection', () => {
+    let runtimeDir: string;
+    beforeEach(() => {
+      runtimeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-runtime-dir-'));
+    });
+    afterEach(() => fs.rmSync(runtimeDir, { recursive: true, force: true }));
+
+    const pick = async (vars: NodeJS.ProcessEnv, ...args: string[]) => {
+      const env: NodeJS.ProcessEnv = { ...process.env, XDG_RUNTIME_DIR: runtimeDir };
+      for (const name of ['DISPLAY', 'WAYLAND_DISPLAY', 'WAYLAND_SOCKET', 'XDG_SESSION_TYPE']) delete env[name];
+      const child = cp.spawn(process.execPath, [path.join(fixturesPath, 'api', 'ozone-platform'), ...args], {
+        env: { ...env, ...vars },
+        stdio: ['ignore', 'pipe', 'ignore']
+      });
+      defer(() => {
+        if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+      });
+      let out = '';
+      child.stdout.on('data', (chunk) => {
+        out += chunk;
+      });
+      await once(child, 'close');
+      return out;
+    };
+
+    it('picks Wayland when only Wayland is available', async () => {
+      expect(await pick({ WAYLAND_DISPLAY: 'wayland-1' })).to.equal('wayland');
+      expect(await pick({ WAYLAND_SOCKET: '99' })).to.equal('wayland');
+      fs.writeFileSync(path.join(runtimeDir, 'wayland-0'), '');
+      expect(await pick({})).to.equal('wayland');
+    });
+
+    it('picks X11 when only X11 is available', async () => {
+      expect(await pick({ DISPLAY: ':99', XDG_SESSION_TYPE: 'wayland' })).to.equal('x11');
+      expect(await pick({ XDG_SESSION_TYPE: 'wayland' }, '--display=:99')).to.equal('x11');
+    });
+
+    it('does not count an empty variable as a display', async () => {
+      expect(await pick({ DISPLAY: '', WAYLAND_DISPLAY: 'wayland-1' })).to.equal('wayland');
+      fs.writeFileSync(path.join(runtimeDir, 'wayland-0'), '');
+      expect(await pick({ DISPLAY: ':99', WAYLAND_DISPLAY: '', XDG_SESSION_TYPE: 'wayland' })).to.equal('x11');
+    });
+
+    it('goes by XDG_SESSION_TYPE when both or neither are available', async () => {
+      const both = { DISPLAY: ':99', WAYLAND_DISPLAY: 'wayland-1' };
+      expect(await pick({ ...both, XDG_SESSION_TYPE: 'wayland' })).to.equal('wayland');
+      expect(await pick(both)).to.equal('x11');
+      expect(await pick({ XDG_SESSION_TYPE: 'wayland' })).to.equal('wayland');
+      expect(await pick({})).to.equal('x11');
+    });
+
+    it('does not override --ozone-platform', async () => {
+      expect(await pick({ WAYLAND_DISPLAY: 'wayland-1' }, '--ozone-platform=x11')).to.equal('x11');
+    });
+  });
+
   ifdescribe(process.platform === 'linux')('when the X server goes away', () => {
     // Starts a private X server for the app under test, so that it can be taken
     // away without disturbing the one the spec runner is on. Resolves to
@@ -2713,13 +2770,6 @@ describe('app module', () => {
     });
 
     it('impacts proxy for requests made from utility process', async () => {
-      const utilityFixturePath = path.resolve(
-        import.meta.dirname,
-        'fixtures',
-        'api',
-        'utility-process',
-        'api-net-spec.js'
-      );
       const fn = async () => {
         const urlRequest = electronNet.request('http://example.com/');
         const response = await getResponse(urlRequest);
@@ -2736,15 +2786,7 @@ describe('app module', () => {
       await app.setProxy(config);
       const proxy = await app.resolveProxy('http://example.com/');
       expect(proxy).to.equal(`PROXY ${hostname}:${port}`);
-      const child = utilityProcess.fork(utilityFixturePath, [], {
-        execArgv: ['--expose-gc']
-      });
-      child.postMessage({ fn: `(${fn})()` });
-      const [data] = await once(child, 'message');
-      expect(data.ok).to.be.true(data.message);
-      // Cleanup.
-      const [code] = await once(child, 'exit');
-      expect(code).to.equal(0);
+      await runInUtilityProcess(fn);
     });
 
     it('does not impact proxy for requests made from main process', async () => {
