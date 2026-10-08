@@ -4,7 +4,9 @@
 
 #include "shell/common/gin_helper/function_template_cache.h"
 
-#include "base/memory/raw_ptr.h"
+#include <cstdint>
+
+#include "base/check_op.h"
 #include "base/no_destructor.h"
 #include "gin/per_isolate_data.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
@@ -14,82 +16,56 @@ namespace gin_helper {
 
 namespace {
 
-class FunctionTemplateCache final
-    : public gin::PerIsolateData::DisposeObserver {
- public:
-  FunctionTemplateCache() = default;
-  ~FunctionTemplateCache() override { Detach(); }
-
-  FunctionTemplateCache(const FunctionTemplateCache&) = delete;
-  FunctionTemplateCache& operator=(const FunctionTemplateCache&) = delete;
-
-  v8::Local<v8::FunctionTemplate> Get(v8::Isolate* isolate, const void* key) {
-    if (!Attach(isolate))
-      return {};
-    auto it = templates_.find(key);
-    if (it == templates_.end())
-      return {};
-    return it->second.Get(isolate);
-  }
-
-  void Set(v8::Isolate* isolate,
-           const void* key,
-           v8::Local<v8::FunctionTemplate> tmpl) {
-    if (!Attach(isolate))
-      return;
-    // An Eternal can only be set once, so replace the entry.
-    templates_.erase(key);
-    templates_[key].Set(isolate, tmpl);
-  }
-
-  // gin::PerIsolateData::DisposeObserver
-  void OnBeforeDispose(v8::Isolate* isolate) override { Detach(); }
-  void OnDisposed() override {}
-
- private:
-  bool Attach(v8::Isolate* isolate) {
-    if (isolate_ == isolate)
-      return true;
-    auto* const data = gin::PerIsolateData::From(isolate);
-    if (!data)
-      return false;
-    Detach();
-    isolate_ = isolate;
-    data_ = data;
-    data_->AddDisposeObserver(this);
-    return true;
-  }
-
-  void Detach() {
-    if (data_)
-      data_->RemoveDisposeObserver(this);
-    templates_.clear();
-    isolate_ = nullptr;
-    data_ = nullptr;
-  }
-
-  raw_ptr<v8::Isolate> isolate_ = nullptr;
-  raw_ptr<gin::PerIsolateData> data_ = nullptr;
-  absl::flat_hash_map<const void*, v8::Eternal<v8::FunctionTemplate>>
-      templates_;
+// A thread only ever runs one isolate that has gin::PerIsolateData: the main
+// thread of the browser, utility and renderer processes, or of node_main.
+// Node.js workers and Blink workers have none and are never cached. Entries are
+// v8::Eternal handles, which V8 releases when it destroys the isolate, so the
+// cache needs no teardown of its own.
+struct ThreadCache {
+  absl::flat_hash_map<const void*, v8::Eternal<v8::FunctionTemplate>> templates;
+  // Only used to catch a second isolate on this thread, which would leave
+  // stale entries behind.
+  uintptr_t isolate_address = 0;
 };
 
-FunctionTemplateCache& CacheForThisThread() {
-  thread_local base::NoDestructor<FunctionTemplateCache> cache;
+ThreadCache& CacheForThisThread(v8::Isolate* isolate) {
+  thread_local base::NoDestructor<ThreadCache> cache;
+  const auto address = reinterpret_cast<uintptr_t>(isolate);
+  if (!cache->isolate_address) {
+    cache->isolate_address = address;
+  }
+  DCHECK_EQ(cache->isolate_address, address)
+      << "A thread must not run more than one isolate";
   return *cache;
+}
+
+bool IsCacheable(v8::Isolate* isolate) {
+  return gin::PerIsolateData::From(isolate) != nullptr;
 }
 
 }  // namespace
 
-v8::Local<v8::FunctionTemplate> GetCachedFunctionTemplate(v8::Isolate* isolate,
-                                                          const void* key) {
-  return CacheForThisThread().Get(isolate, key);
+[[nodiscard]] v8::Local<v8::FunctionTemplate> GetCachedFunctionTemplate(
+    v8::Isolate* isolate,
+    const void* key) {
+  if (!IsCacheable(isolate))
+    return {};
+  auto& templates = CacheForThisThread(isolate).templates;
+  auto it = templates.find(key);
+  return it == templates.end() ? v8::Local<v8::FunctionTemplate>()
+                               : it->second.Get(isolate);
 }
 
 void SetCachedFunctionTemplate(v8::Isolate* isolate,
                                const void* key,
                                v8::Local<v8::FunctionTemplate> tmpl) {
-  CacheForThisThread().Set(isolate, key, tmpl);
+  if (!IsCacheable(isolate))
+    return;
+  // An Eternal occupies a slot until the isolate is destroyed, so
+  // never replace an entry.
+  auto [it, inserted] = CacheForThisThread(isolate).templates.try_emplace(key);
+  if (inserted)
+    it->second.Set(isolate, tmpl);
 }
 
 }  // namespace gin_helper

@@ -88,12 +88,9 @@ class Constructible {
     if (!cached.IsEmpty())
       return cached;
 
-    v8::Local<v8::FunctionTemplate> constructor;
-    if (!gin::CreateConstructorFunctionTemplate(isolate,
-                                                base::BindRepeating(&T::New))
-             .ToLocal(&constructor)) {
-      return {};
-    }
+    v8::Local<v8::FunctionTemplate> constructor =
+        gin::CreateConstructorFunctionTemplate(isolate,
+                                               base::BindRepeating(&T::New));
     if constexpr (requires { typename T::ConstructibleParent; }) {
       using Parent = typename T::ConstructibleParent;
       static_assert(std::derived_from<T, Parent>,

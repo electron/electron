@@ -38,7 +38,7 @@ describe('cpp heap', () => {
           const { app, BrowserWindow } = require('electron');
           app.on('window-all-closed', () => {});
           const { once } = require('node:events');
-          const { mkdtemp, readFile, unlink, rmdir } = require('node:fs/promises');
+          const { mkdtemp, readFile, rm, unlink } = require('node:fs/promises');
           const { tmpdir } = require('node:os');
           const { join } = require('node:path');
           const { Readable } = require('node:stream');
@@ -109,7 +109,7 @@ describe('cpp heap', () => {
             return { rendererPid, rendererPids, liveCount, counts };
           } finally {
             window.destroy();
-            await rmdir(snapshotDir);
+            await rm(snapshotDir, { recursive: true, force: true });
           }
         },
         path.join(fixturesPath, 'pages', 'blank.html'),

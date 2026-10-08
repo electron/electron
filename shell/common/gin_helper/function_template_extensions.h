@@ -40,7 +40,7 @@ inline bool GetNextArgument(Arguments* args,
 // Like gin::CreateFunctionTemplate, but doesn't remove the template's
 // prototype.
 template <typename Sig>
-v8::MaybeLocal<v8::FunctionTemplate> CreateConstructorFunctionTemplate(
+v8::Local<v8::FunctionTemplate> CreateConstructorFunctionTemplate(
     v8::Isolate* isolate,
     base::RepeatingCallback<Sig> callback,
     InvokerOptions invoker_options = {}) {
