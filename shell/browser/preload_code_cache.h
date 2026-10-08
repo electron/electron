@@ -55,10 +55,10 @@ Scope ScopeForFrame(content::RenderFrameHost* rfh);
 // in-memory tier first, then |scope.dir|. Disk I/O is synchronous (call behind
 // a ScopedAllowBlocking) and happens at most once per (scope, id) per session.
 //
-// Entries are bound to the source hash: V8's own CachedData source check
-// hashes only the source *length*, so without this a same-length source
-// change would execute stale bytecode. V8 still validates version/flags at
-// consume time.
+// Entries are bound to the source hash: unless its optional SHA256 source
+// hashing is enabled, V8's CachedData source check hashes only the source
+// *length*, so without this a same-length source change would execute stale
+// bytecode. V8 still validates version/flags at consume time.
 std::vector<uint8_t> Get(const Scope& scope,
                          const std::string& id,
                          const SourceHash& source_hash);

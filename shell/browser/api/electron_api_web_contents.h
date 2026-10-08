@@ -626,12 +626,6 @@ class WebContents final : public gin::Wrappable<WebContents>,
   void RendererResponsive(
       content::WebContents* source,
       content::RenderWidgetHost* render_widget_host) override;
-  void FindReply(content::WebContents* web_contents,
-                 int request_id,
-                 int number_of_matches,
-                 const gfx::Rect& selection_rect,
-                 int active_match_ordinal,
-                 bool final_update) override;
   void OnRequestPointerLock(content::WebContents* web_contents,
                             bool user_gesture,
                             bool last_unlocked_by_target,
@@ -699,6 +693,11 @@ class WebContents final : public gin::Wrappable<WebContents>,
       content::NavigationHandle* navigation_handle);
   void SendRendererStartupData(content::RenderFrameHost* rfh);
   void DidFinishNavigation(content::NavigationHandle* navigation_handle);
+  void DidReceiveFindReply(int request_id,
+                           int number_of_matches,
+                           const gfx::Rect& selection_rect,
+                           int active_match_ordinal,
+                           bool final_update);
   void WebContentsDestroyed();
   void NavigationEntryCommitted(
       const content::LoadCommittedDetails& load_details);
