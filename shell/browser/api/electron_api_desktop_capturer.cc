@@ -180,10 +180,12 @@ std::unique_ptr<ThumbnailCapturer> WrapCapturer(
          std::ranges::all_of(restore_token, [](char c) {
            return base::IsAsciiAlphaNumeric(c) || c == '_';
          }));
-    webrtc::RestoreTokenManager::GetInstance().AddToken(
-        sources[0].id, is_valid ? restore_token : std::string(),
-        persistent ? webrtc::xdg_portal::ScreenCastPersistMode::kPersistent
-                   : webrtc::xdg_portal::ScreenCastPersistMode::kTransient);
+    if (persistent || is_valid) {
+      webrtc::RestoreTokenManager::GetInstance().AddToken(
+          sources[0].id, is_valid ? restore_token : std::string(),
+          persistent ? webrtc::xdg_portal::ScreenCastPersistMode::kPersistent
+                     : webrtc::xdg_portal::ScreenCastPersistMode::kTransient);
+    }
     capturer->SelectSource(sources[0].id);
   }
 #endif
@@ -648,8 +650,9 @@ bool DesktopCapturer::IsDisplayMediaSystemPickerAvailable() {
 std::string DesktopCapturer::GetRestoreToken(const std::string& source_id) {
 #if defined(WEBRTC_USE_PIPEWIRE)
   const content::DesktopMediaID id = content::DesktopMediaID::Parse(source_id);
-  if (id.type == content::DesktopMediaID::TYPE_SCREEN ||
-      id.type == content::DesktopMediaID::TYPE_WINDOW) {
+  if (id.id_type == content::DesktopMediaID::IdType::kNativePickerSession &&
+      (id.type == content::DesktopMediaID::TYPE_SCREEN ||
+       id.type == content::DesktopMediaID::TYPE_WINDOW)) {
     return webrtc::RestoreTokenManager::GetInstance().GetEntry(id.id).token;
   }
 #endif

@@ -65,6 +65,17 @@ describe('desktopCapturer', { tags: ['serial'] }, () => {
     expect(desktopCapturer.getRestoreToken('not-a-source-id')).to.equal('');
   });
 
+  it('getRestoreToken returns the restoreToken of a returned source', async () => {
+    const sources = await desktopCapturer.getSources({
+      types: getSourceTypes(),
+      thumbnailSize: { width: 0, height: 0 }
+    });
+    expect(sources).to.be.an('array').that.is.not.empty();
+    for (const source of sources) {
+      expect(desktopCapturer.getRestoreToken(source.id)).to.equal(source.restoreToken);
+    }
+  });
+
   it('does not throw an error when called more than once (regression)', async () => {
     const sources1 = await desktopCapturer.getSources({ types: getSourceTypes() });
     expect(sources1).to.be.an('array').that.is.not.empty();

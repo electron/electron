@@ -35,7 +35,8 @@ class DesktopCapturer final : public gin::Wrappable<DesktopCapturer> {
 
   static bool IsDisplayMediaSystemPickerAvailable();
 
-  static std::string GetRestoreToken(const std::string& source_id);
+  [[nodiscard]] static std::string GetRestoreToken(
+      const std::string& source_id);
 
   void StartHandling(bool capture_window,
                      bool capture_screen,

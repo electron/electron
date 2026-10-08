@@ -184,8 +184,9 @@ With a valid token nothing asks the user before capture starts. Show the user wh
 shared, and let them choose something else by calling `desktopCapturer.getSources` again without
 `restoreToken`.
 
-This needs `xdg-desktop-portal` with version 4 or later of the ScreenCast interface. On X11 and
-on other platforms the options are ignored and `restoreToken` is always empty.
+This needs `xdg-desktop-portal` with version 4 or later of the ScreenCast interface. In an X11
+session and on other platforms the options are ignored and `restoreToken` is always empty. In a
+Wayland session they also apply when the app runs under XWayland.
 
 ```js
 const { app, desktopCapturer, safeStorage, session } = require('electron')
@@ -212,19 +213,18 @@ app.whenReady().then(() => {
   let sourceId
 
   session.defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
-    let sources
-    try {
-      sources = await desktopCapturer.getSources({
+    // There is no source if the user closes the picker without choosing anything.
+    const [source] = await desktopCapturer
+      .getSources({
         types: ['screen', 'window'],
         persistMode: 'persistent',
-        restoreToken: await readToken()
+        restoreToken: (sourceId && desktopCapturer.getRestoreToken(sourceId)) || (await readToken())
       })
-    } catch {
-      // The user closed the picker without choosing anything.
+      .catch(() => [])
+    if (!source) {
       callback(null)
       return
     }
-    const [source] = sources
     sourceId = source.id
     await writeToken(source.restoreToken)
     callback({ video: source })
