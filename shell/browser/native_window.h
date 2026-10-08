@@ -263,6 +263,10 @@ class NativeWindow : public views::WidgetDelegate {
   virtual void SetEscapeTouchBarItem(gin_helper::PersistentDictionary item);
 
   // Native Tab API
+  enum class TabbingMode { kAutomatic, kPreferred, kDisallowed };
+  static std::optional<TabbingMode> ParseTabbingMode(std::string_view mode);
+  virtual TabbingMode GetTabbingMode() const;
+  virtual void SetTabbingMode(TabbingMode mode) {}
   virtual void SelectPreviousTab() {}
   virtual void SelectNextTab() {}
   virtual void ShowAllTabs() {}
@@ -270,6 +274,9 @@ class NativeWindow : public views::WidgetDelegate {
   virtual void MoveTabToNewWindow() {}
   virtual void ToggleTabBar() {}
   virtual bool AddTabbedWindow(NativeWindow* window);
+  virtual std::vector<NativeWindow*> GetTabbedWindows() const;
+  virtual NativeWindow* GetSelectedTab() const;
+  virtual void SelectTab() {}
   virtual std::optional<std::string> GetTabbingIdentifier() const;
 
   // Toggle the menu bar.

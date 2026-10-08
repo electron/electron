@@ -61,6 +61,8 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 
   static bool IsWindowNameValid(const gin_helper::Dictionary& options,
                                 std::string* error_message);
+  static bool IsTabbingModeValid(const gin_helper::Dictionary& options,
+                                 std::string* error_message);
 
   const NativeWindow* window() const { return window_.get(); }
   NativeWindow* window() { return window_.get(); }
@@ -253,6 +255,11 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void MoveTabToNewWindow();
   void ToggleTabBar();
   void AddTabbedWindow(NativeWindow* window, gin::Arguments* args);
+  std::vector<BaseWindow*> GetTabbedWindows() const;
+  BaseWindow* GetSelectedTab() const;
+  void SelectTab();
+  std::string GetTabbingMode() const;
+  void SetTabbingMode(const std::string& mode, gin::Arguments* args);
   v8::Local<v8::Value> GetTabbingIdentifier();
   void SetAutoHideMenuBar(bool auto_hide);
   bool IsMenuBarAutoHide() const;

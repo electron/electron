@@ -71,6 +71,7 @@ inline constexpr std::string_view kTitleBarStyle = "titleBarStyle";
 
 // Tabbing identifier for the window if native tabs are enabled on macOS.
 inline constexpr std::string_view kTabbingIdentifier = "tabbingIdentifier";
+inline constexpr std::string_view kTabbingMode = "tabbingMode";
 
 // The menu bar is hidden unless "Alt" is pressed.
 inline constexpr std::string_view kAutoHideMenuBar = "autoHideMenuBar";

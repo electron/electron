@@ -432,7 +432,20 @@ A `View` property for the content view of the window.
 
 #### `win.tabbingIdentifier` _macOS_ _Readonly_
 
-A `string` (optional) property that is equal to the `tabbingIdentifier` passed to the `BrowserWindow` constructor or `undefined` if none was set.
+A `string` (optional) property containing the native window's tabbing identifier.
+When configured in the constructor, it matches the provided `tabbingIdentifier`.
+Returns `undefined` when native tabbing is disallowed.
+
+#### `win.tabbingMode` _macOS_
+
+A `string` property that controls native window tabbing. Can be `automatic`,
+`preferred` or `disallowed`. `automatic` follows the macOS tabbing preference,
+`preferred` prefers opening as a tab, and `disallowed` disables tabbing.
+
+When restoring separate groups, create windows with `tabbingMode: 'disallowed'`
+to prevent automatic grouping when shown. Set `tabbingMode` to
+`automatic` before explicitly joining windows with `addTabbedWindow()`.
+Changing the mode retains the window's configured tabbing identifier.
 
 #### `win.autoHideMenuBar` _Linux_ _Windows_
 
@@ -1522,6 +1535,41 @@ there is only one tab in the current window.
 * `baseWindow` BaseWindow
 
 Adds a window as a tab on this window, after the tab for the window instance.
+
+#### `win.getTabbedWindows()` _macOS_
+
+Returns `BaseWindow[]` - The live Electron windows in this window's native tab group,
+in tab bar order. Returns an empty array if the window has no native tab group.
+
+The array is a snapshot. Detaching, closing, merging or reordering tabs changes
+the result of subsequent calls. Closed windows and native windows not owned by
+Electron are omitted.
+
+AppKit may detach tabs when their windows are hidden. Capture the group before
+hiding and retain that snapshot if it needs to be restored later.
+
+#### `win.getSelectedTab()` _macOS_
+
+Returns `BaseWindow | null` - The selected live Electron window in this window's
+native tab group, or `null` if there is no group or no live Electron window is
+selected.
+
+The selected tab is independent of which application window has keyboard focus.
+
+#### `win.selectTab()` _macOS_
+
+Selects this window in its native tab group. For a visible group, this does not
+activate the application or bring the group to the front. Selecting a different
+tab in a minimized group restores it, following native macOS behavior. Does
+nothing if the window has no native tab group.
+
+To restore a minimized group to a specific tab, call `restore()` on its selected
+window and wait for its `restore` event before selecting the desired tab. Native
+restoration may otherwise reselect the previously active tab.
+
+These methods allow applications to capture native tab groups before closing and
+restore their order with `addTabbedWindow()`, followed by `selectTab()` on the
+previously selected window. They do not save or restore application sessions.
 
 #### `win.setVibrancy(type)` _macOS_
 

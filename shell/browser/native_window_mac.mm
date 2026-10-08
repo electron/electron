@@ -322,6 +322,11 @@ NativeWindowMac::NativeWindowMac(const int32_t base_window_id,
   } else {
     [window_ setTabbingIdentifier:base::SysUTF8ToNSString(tabbingIdentifier)];
   }
+  if (std::string tabbing_mode;
+      options.Get(options::kTabbingMode, &tabbing_mode)) {
+    if (auto mode = ParseTabbingMode(tabbing_mode))
+      SetTabbingMode(*mode);
+  }
 
   // Resize to content bounds.
   // NOTE(@mlaurencin) Spec requirements can be found here:
@@ -1635,6 +1640,64 @@ std::optional<std::string> NativeWindowMac::GetTabbingIdentifier() const {
     return std::nullopt;
 
   return base::SysNSStringToUTF8([window_ tabbingIdentifier]);
+}
+
+std::vector<NativeWindow*> NativeWindowMac::GetTabbedWindows() const {
+  std::vector<NativeWindow*> tabs;
+  const auto windows = WindowList::GetWindows();
+  for (NSWindow* tab in [[window_ tabGroup] windows]) {
+    for (auto* window : windows) {
+      if (!window->IsClosed() &&
+          window->GetNativeWindow().GetNativeNSWindow() == tab) {
+        tabs.push_back(window);
+        break;
+      }
+    }
+  }
+  return tabs;
+}
+
+NativeWindow::TabbingMode NativeWindowMac::GetTabbingMode() const {
+  switch ([window_ tabbingMode]) {
+    case NSWindowTabbingModeAutomatic:
+      return TabbingMode::kAutomatic;
+    case NSWindowTabbingModePreferred:
+      return TabbingMode::kPreferred;
+    case NSWindowTabbingModeDisallowed:
+      return TabbingMode::kDisallowed;
+  }
+  return TabbingMode::kDisallowed;
+}
+
+void NativeWindowMac::SetTabbingMode(TabbingMode mode) {
+  switch (mode) {
+    case TabbingMode::kAutomatic:
+      [window_ setTabbingMode:NSWindowTabbingModeAutomatic];
+      break;
+    case TabbingMode::kPreferred:
+      [window_ setTabbingMode:NSWindowTabbingModePreferred];
+      break;
+    case TabbingMode::kDisallowed:
+      [window_ setTabbingMode:NSWindowTabbingModeDisallowed];
+      break;
+  }
+}
+
+NativeWindow* NativeWindowMac::GetSelectedTab() const {
+  NSWindow* selected = [[window_ tabGroup] selectedWindow];
+  if (!selected)
+    return nullptr;
+
+  for (auto* window : WindowList::GetWindows()) {
+    if (!window->IsClosed() &&
+        window->GetNativeWindow().GetNativeNSWindow() == selected)
+      return window;
+  }
+  return nullptr;
+}
+
+void NativeWindowMac::SelectTab() {
+  [[window_ tabGroup] setSelectedWindow:window_];
 }
 
 void NativeWindowMac::SetAspectRatio(double aspect_ratio,

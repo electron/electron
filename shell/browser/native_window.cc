@@ -500,8 +500,31 @@ bool NativeWindow::AddTabbedWindow(NativeWindow* window) {
   return true;  // for non-Mac platforms
 }
 
+std::optional<NativeWindow::TabbingMode> NativeWindow::ParseTabbingMode(
+    std::string_view mode) {
+  if (mode == "automatic")
+    return TabbingMode::kAutomatic;
+  if (mode == "preferred")
+    return TabbingMode::kPreferred;
+  if (mode == "disallowed")
+    return TabbingMode::kDisallowed;
+  return std::nullopt;
+}
+
+NativeWindow::TabbingMode NativeWindow::GetTabbingMode() const {
+  return TabbingMode::kDisallowed;
+}
+
 std::optional<std::string> NativeWindow::GetTabbingIdentifier() const {
   return "";  // for non-Mac platforms
+}
+
+std::vector<NativeWindow*> NativeWindow::GetTabbedWindows() const {
+  return {};
+}
+
+NativeWindow* NativeWindow::GetSelectedTab() const {
+  return nullptr;
 }
 
 void NativeWindow::SetVibrancy(const std::string& type, int duration) {
