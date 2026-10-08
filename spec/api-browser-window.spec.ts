@@ -2599,7 +2599,7 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      ifdescribe(process.platform === 'win32')('Fullscreen state', () => {
+      ifdescribe(process.platform === 'win32')('Fullscreen state', { tags: ['serial'] }, () => {
         describe('with properties', () => {
           it('can be set with the fullscreen constructor option', () => {
             w = new BrowserWindow({ fullscreen: true });
@@ -6152,7 +6152,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
 
     // only applicable to windows: https://github.com/electron/electron/issues/6036
-    ifdescribe(process.platform === 'win32')('on windows', () => {
+    ifdescribe(process.platform === 'win32')('on windows', { tags: ['serial'] }, () => {
       it('should restore a normal visible window from a fullscreen startup state', async () => {
         const w = new BrowserWindow({ show: false });
         await w.loadURL('about:blank');
