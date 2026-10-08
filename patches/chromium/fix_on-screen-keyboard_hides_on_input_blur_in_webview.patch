@@ -9,10 +9,10 @@ focus node change via TextInputManager.
 chromium-bug: https://crbug.com/1369605
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 19ca97408c265159b1d33b6c93dcff222c84c0fd..02aeecfec89096d7c5751272fb28c057f7e4a501 100644
+index 9eeb4b7c76b37707c110a943ce880136906e5a86..a945ad19b2522a9f9b3df368fbc6cefa4c58bd26 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -3832,6 +3832,12 @@ void RenderWidgetHostViewAura::OnTextSelectionChanged(
+@@ -3833,6 +3833,12 @@ void RenderWidgetHostViewAura::OnTextSelectionChanged(
    }
  }
  
@@ -26,10 +26,10 @@ index 19ca97408c265159b1d33b6c93dcff222c84c0fd..02aeecfec89096d7c5751272fb28c057
      RenderWidgetHostViewAura* popup_child_host_view) {
    popup_child_host_view_ = popup_child_host_view;
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.h b/content/browser/renderer_host/render_widget_host_view_aura.h
-index bfbbb6868674021a4a4ff72e1f08deaba9d8f339..e57bc593cf08d5018d32d5118767bcc37ad2804c 100644
+index 0f0580728cac1204749fb084cd4ed987f2cb9d35..e1d627fea429e40fb7f40266b87f514b073d8c78 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.h
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.h
-@@ -689,6 +689,8 @@ class CONTENT_EXPORT RenderWidgetHostViewAura
+@@ -690,6 +690,8 @@ class CONTENT_EXPORT RenderWidgetHostViewAura
        RenderWidgetHostViewBase* updated_view) override;
    void OnTextSelectionChanged(TextInputManager* text_input_mangager,
                                RenderWidgetHostViewBase* updated_view) override;
@@ -39,10 +39,10 @@ index bfbbb6868674021a4a4ff72e1f08deaba9d8f339..e57bc593cf08d5018d32d5118767bcc3
    // Detaches |this| from the input method object.
    // is_removed flag is true if this is called while the window is
 diff --git a/content/browser/renderer_host/text_input_manager.cc b/content/browser/renderer_host/text_input_manager.cc
-index df05b3670eb8e4d0bc861db8f2ece66748154d24..cb9e5e12fecc1a94da11ef3ff4609f23ee7a109c 100644
+index 7dfe73ff635fda0a139c8507a9c9abd3946d9afa..05f19898d9ca600ba30ab4a739a24962c118c1eb 100644
 --- a/content/browser/renderer_host/text_input_manager.cc
 +++ b/content/browser/renderer_host/text_input_manager.cc
-@@ -236,6 +236,7 @@ void TextInputManager::UpdateTextInputState(
+@@ -247,6 +247,7 @@ void TextInputManager::UpdateTextInputState(
  
    if (text_input_state.type == ui::TEXT_INPUT_TYPE_NONE &&
        active_view_ != view) {
@@ -50,7 +50,7 @@ index df05b3670eb8e4d0bc861db8f2ece66748154d24..cb9e5e12fecc1a94da11ef3ff4609f23
      // We reached here because an IPC is received to reset the TextInputState
      // for |view|. But |view| != |active_view_|, which suggests that at least
      // one other view has become active and we have received the corresponding
-@@ -587,6 +588,12 @@ void TextInputManager::NotifyObserversAboutInputStateUpdate(
+@@ -613,6 +614,12 @@ void TextInputManager::NotifyObserversAboutInputStateUpdate(
      observer.OnUpdateTextInputStateCalled(this, updated_view, did_update_state);
  }
  
@@ -60,11 +60,11 @@ index df05b3670eb8e4d0bc861db8f2ece66748154d24..cb9e5e12fecc1a94da11ef3ff4609f23
 +    observer.OnFocusedInputElementChanged(this, view);
 +}
 +
- TextInputManager::SelectionRegion::SelectionRegion() = default;
+ TextInputManager::ViewState::ViewState() = default;
  
- TextInputManager::SelectionRegion::SelectionRegion(
+ TextInputManager::ViewState::~ViewState() = default;
 diff --git a/content/browser/renderer_host/text_input_manager.h b/content/browser/renderer_host/text_input_manager.h
-index 61800e5e05c6433b5cb7a81ddc49a173fb4e46a2..afb2da2f1c7857b0e734fa070c5154240d23326a 100644
+index b7d56b17cb00c568fd2ede65d80d20472d69f02a..163d31f860de241e93f03d09e7715c2e65cfae8c 100644
 --- a/content/browser/renderer_host/text_input_manager.h
 +++ b/content/browser/renderer_host/text_input_manager.h
 @@ -69,6 +69,10 @@ class CONTENT_EXPORT TextInputManager {
@@ -78,7 +78,7 @@ index 61800e5e05c6433b5cb7a81ddc49a173fb4e46a2..afb2da2f1c7857b0e734fa070c515424
    };
  
    // Text selection bounds.
-@@ -314,6 +318,7 @@ class CONTENT_EXPORT TextInputManager {
+@@ -334,6 +338,7 @@ class CONTENT_EXPORT TextInputManager {
  
    void NotifyObserversAboutInputStateUpdate(RenderWidgetHostViewBase* view,
                                              bool did_update_state);
@@ -87,10 +87,10 @@ index 61800e5e05c6433b5cb7a81ddc49a173fb4e46a2..afb2da2f1c7857b0e734fa070c515424
    // The view with active text input state, i.e., a focused <input> element.
    // It will be nullptr if no such view exists. Note that the active view
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 65a41dab4eb625a0a09cc0d11b79fd05b3f4eea8..f09322d20c7778c75a527a7e056fe1b4b9946e2d 100644
+index f6bb49b968c872b325d1bed8f0f1e97ba6373e8a..32d39f8efaae61e6feedffb5a65ca57bec9c7402 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -11281,7 +11281,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
+@@ -11299,7 +11299,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
      return;
    }
    RenderWidgetHostViewBase* root_view =

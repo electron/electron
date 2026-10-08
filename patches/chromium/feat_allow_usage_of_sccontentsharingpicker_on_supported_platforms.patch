@@ -46,7 +46,7 @@ index 6d54c2bc01f32a0d987aadb8eb0684d0ec0444d4..40f64c7705427bbe3fa4e3c056519676
    // OnStop is called by StopAndDeAllocate.
    virtual void OnStop() = 0;
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index db8f635acb0b617e7a950f84577444b49000bcb2..1963792093d5f78dc8213126317e7f514d7ba432 100644
+index d65fec0b3f3d7cd8f47be7b30639476537d6af67..e17292ef503147c377204b1a97d3a8907a2b71bd 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
 @@ -31,6 +31,61 @@
@@ -134,7 +134,7 @@ index db8f635acb0b617e7a950f84577444b49000bcb2..1963792093d5f78dc8213126317e7f51
      _errorCallback = errorCallback;
    }
    return self;
-@@ -287,14 +346,12 @@ + (SCStreamConfiguration*)streamConfigurationWithFrameSize:(gfx::Size)frameSize
+@@ -287,15 +346,13 @@ + (SCStreamConfiguration*)streamConfigurationWithFrameSize:(gfx::Size)frameSize
  
    explicit ScreenCaptureKitDeviceMac(
        const DesktopMediaID& source,
@@ -144,14 +144,15 @@ index db8f635acb0b617e7a950f84577444b49000bcb2..1963792093d5f78dc8213126317e7f51
 +      [[maybe_unused]] SCContentFilter* filter,
        StreamCallback stream_created_callback,
        std::unique_ptr<content::PipScreenCaptureCoordinatorProxy>
-           pip_screen_capture_coordinator_proxy)
+           pip_screen_capture_coordinator_proxy,
+       base::OnceClosure stop_callback)
        : source_(source),
 -        is_native_picker_session_(is_native_picker),
 -        filter_(filter),
          stream_created_callback_(std::move(stream_created_callback)),
          device_task_runner_(base::SingleThreadTaskRunner::GetCurrentDefault()),
          pip_screen_capture_coordinator_proxy_(
-@@ -303,21 +360,43 @@ explicit ScreenCaptureKitDeviceMac(
+@@ -305,21 +362,43 @@ explicit ScreenCaptureKitDeviceMac(
          device_task_runner_,
          base::BindRepeating(&ScreenCaptureKitDeviceMac::OnStreamSample,
                              weak_factory_.GetWeakPtr()));
@@ -195,7 +196,7 @@ index db8f635acb0b617e7a950f84577444b49000bcb2..1963792093d5f78dc8213126317e7f51
      CHECK(device_task_runner_->RunsTasksInCurrentSequence(),
            base::NotFatalUntil::M160);
      if (pip_screen_capture_coordinator_proxy_) {
-@@ -389,7 +468,7 @@ void CreateStream(SCContentFilter* filter) {
+@@ -391,7 +470,7 @@ void CreateStream(SCContentFilter* filter) {
        return;
      }
  
@@ -204,7 +205,7 @@ index db8f635acb0b617e7a950f84577444b49000bcb2..1963792093d5f78dc8213126317e7f51
        // Update the content size. This step is neccessary when used together
        // with SCContentSharingPicker. If the Chrome picker is used, it will
        // change to retina resolution if applicable.
-@@ -398,6 +477,9 @@ void CreateStream(SCContentFilter* filter) {
+@@ -400,6 +479,9 @@ void CreateStream(SCContentFilter* filter) {
                      filter.contentRect.size.height * filter.pointPixelScale);
      }
  
@@ -214,7 +215,7 @@ index db8f635acb0b617e7a950f84577444b49000bcb2..1963792093d5f78dc8213126317e7f51
      gfx::RectF dest_rect_in_frame;
      actual_capture_format_ = capture_params().requested_format;
      actual_capture_format_.pixel_format = media::PIXEL_FORMAT_NV12;
-@@ -411,6 +493,7 @@ void CreateStream(SCContentFilter* filter) {
+@@ -413,6 +495,7 @@ void CreateStream(SCContentFilter* filter) {
      stream_ = [[SCStream alloc] initWithFilter:filter
                                   configuration:config
                                        delegate:helper_];
@@ -222,16 +223,16 @@ index db8f635acb0b617e7a950f84577444b49000bcb2..1963792093d5f78dc8213126317e7f51
      {
        NSError* error = nil;
        bool add_stream_output_result =
-@@ -574,7 +657,7 @@ void OnStreamError(NSError* _Nullable error) {
+@@ -584,7 +667,7 @@ void OnStreamError(NSError* _Nullable error) {
        if (fullscreen_module_) {
          fullscreen_module_->Reset();
        }
 -      OnStart();
 +      OnStart(std::nullopt);
      } else {
-       std::string error_string =
-           base::StrCat({"Stream delegate called didStopWithError: ",
-@@ -670,33 +753,42 @@ void OnStateChanged(
+       std::string error_string = base::StrCat(
+           {"Stream delegate called didStopWithError: ",
+@@ -681,33 +764,42 @@ void OnStateChanged(
    }
  
    // IOSurfaceCaptureDeviceBase:
@@ -296,7 +297,7 @@ index db8f635acb0b617e7a950f84577444b49000bcb2..1963792093d5f78dc8213126317e7f51
    }
    void OnStop() override {
      CHECK(device_task_runner_->RunsTasksInCurrentSequence(),
-@@ -757,8 +849,7 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -772,8 +864,7 @@ void ResetStreamTo(SCWindow* window) override {
  
   private:
    const DesktopMediaID source_;
@@ -306,7 +307,7 @@ index db8f635acb0b617e7a950f84577444b49000bcb2..1963792093d5f78dc8213126317e7f51
    StreamCallback stream_created_callback_;
    const scoped_refptr<base::SingleThreadTaskRunner> device_task_runner_;
  
-@@ -775,6 +866,10 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -790,6 +881,10 @@ void ResetStreamTo(SCWindow* window) override {
    // Helper class that acts as output and delegate for `stream_`.
    ScreenCaptureKitDeviceHelper* __strong helper_;
  
@@ -317,7 +318,7 @@ index db8f635acb0b617e7a950f84577444b49000bcb2..1963792093d5f78dc8213126317e7f51
    // This is used to detect when a captured presentation enters fullscreen mode.
    // If this happens, the module will call the ResetStreamTo function.
    std::unique_ptr<ScreenCaptureKitFullscreenModule> fullscreen_module_;
-@@ -789,6 +884,8 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -805,6 +900,8 @@ void ResetStreamTo(SCWindow* window) override {
    base::WeakPtrFactory<ScreenCaptureKitDeviceMac> weak_factory_{this};
  };
  
