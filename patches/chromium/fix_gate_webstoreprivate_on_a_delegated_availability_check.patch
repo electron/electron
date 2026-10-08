@@ -16,10 +16,10 @@ earlier ones. Generated features are now immutable, so the override has
 to be made in the core definition.
 
 diff --git a/extensions/common/api/_api_features.json b/extensions/common/api/_api_features.json
-index 0721762e56552d7eceb49977576119f3f441a06d..35cfc4355a249a454e62422ac8def1ac74e67a51 100644
+index 48377da2780b58173cdd0da5aad816923119a709..9fbebc3cb45523f074b8c968a52052f230b368b6 100644
 --- a/extensions/common/api/_api_features.json
 +++ b/extensions/common/api/_api_features.json
-@@ -967,6 +967,10 @@
+@@ -968,6 +968,10 @@
    "webstorePrivate": [{
      "channel": "stable",
      "contexts": ["web_page"],

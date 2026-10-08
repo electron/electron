@@ -4214,6 +4214,9 @@ describe('webContents module', () => {
           const attached = once(window.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
           await window.loadFile(path.join(fixturesPath, 'pages', 'webview-zoom-factor.html'));
           [, source] = await attached;
+          // Navigating the guest while its src is still loading aborts that
+          // load, and its did-fail-load can reject the loadURL() below.
+          if (source.isLoading()) await once(source, 'did-finish-load');
           await source.loadURL('about:blank');
         } else {
           await window.loadURL('about:blank');

@@ -11,7 +11,7 @@ not need this dependency.
 refs https://chromium-review.googlesource.com/c/chromium/src/+/5573603
 
 diff --git a/chrome/browser/ui/color/BUILD.gn b/chrome/browser/ui/color/BUILD.gn
-index 42f66c6cce565ea6aa6f55bd75e61b6788eec601..19f6961c64e8c347c1559e556400b6995e4c2f79 100644
+index ac646347006a07c4f019e721b95ff924a7077e00..93a58086d5ea89afc33f9c435640a07fb7aada6a 100644
 --- a/chrome/browser/ui/color/BUILD.gn
 +++ b/chrome/browser/ui/color/BUILD.gn
 @@ -54,7 +54,6 @@ source_set("mixers") {
