@@ -411,6 +411,27 @@ describe('WebContentsView', () => {
       await expect(waitUntil(async () => await haveVisibilityState(v1, 'visible'))).to.eventually.be.fulfilled();
     });
 
+    it('becomes visible when re-added in front of a sibling that covers it', async () => {
+      const w = new BaseWindow({ alwaysOnTop, width: 400, height: 300 });
+      const v1 = new WebContentsView();
+      const v2 = new WebContentsView();
+      w.contentView.addChildView(v1);
+      w.contentView.addChildView(v2);
+      v1.setBounds({ x: 0, y: 0, width: 400, height: 300 });
+      v2.setBounds({ x: 0, y: 0, width: 400, height: 300 });
+
+      await v1.webContents.loadURL('about:blank');
+      await v2.webContents.loadURL('about:blank');
+
+      await expect(waitUntil(async () => await haveVisibilityState(v2, 'visible'))).to.eventually.be.fulfilled();
+
+      // Bring v1 to the front by detaching and re-attaching it.
+      w.contentView.removeChildView(v1);
+      w.contentView.addChildView(v1);
+
+      await expect(waitUntil(async () => await haveVisibilityState(v1, 'visible'))).to.eventually.be.fulfilled();
+    });
+
     it('fires a single visibilitychange event per show/hide transition', async () => {
       const w = new BaseWindow({ alwaysOnTop, show: false });
       const v = new WebContentsView();
