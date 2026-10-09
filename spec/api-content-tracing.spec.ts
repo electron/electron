@@ -10,7 +10,7 @@ import { performance } from 'node:perf_hooks';
 import { setTimeout } from 'node:timers/promises';
 import * as vm from 'node:vm';
 
-import { ifdescribe, waitUntil } from './lib/spec-helpers.ts';
+import { ifdescribe } from './lib/spec-helpers.ts';
 
 // Test jobs do not include Chromium's source tree, so define the subset of the
 // Perfetto schema these tests read. Field numbers match
@@ -387,22 +387,38 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
     it('include native heap profiler stack samples', async function () {
       this.timeout(60000);
       await app.whenReady();
-      await contentTracing.startRecording({
-        heap_profiler_options: {
-          dump_interval_ms: 10,
-          sampling_interval_bytes: 1024
+
+      // getTraceBufferUsage() going non-zero only means *some* data has been
+      // buffered -- routine trace metadata satisfies that almost instantly,
+      // well before the heap profiler's periodic timer has necessarily fired
+      // even once. Under CI's heavier CPU contention (several spec workers
+      // sharing a handful of cores) that timer can be delayed well past a
+      // single short burst of allocations, so retry with progressively
+      // longer recordings instead of trusting a single buffer-usage check.
+      let hasStackSample = false;
+      for (let attempt = 0; !hasStackSample && attempt < 5; attempt++) {
+        await contentTracing.startRecording({
+          heap_profiler_options: {
+            dump_interval_ms: 10,
+            sampling_interval_bytes: 1024
+          }
+        });
+
+        const allocations: Buffer[] = [];
+        const deadline = Date.now() + 100 * 2 ** attempt;
+        while (Date.now() < deadline) {
+          for (let index = 0; index < 1000; index++) {
+            allocations.push(Buffer.alloc(4096));
+          }
+          await setTimeout(10);
         }
-      });
 
-      const allocations: Buffer[] = [];
-      for (let index = 0; index < 1000; index++) {
-        allocations.push(Buffer.alloc(4096));
+        await contentTracing.stopRecording(outputFilePath);
+        const trace = readPerfettoTrace(outputFilePath);
+        hasStackSample = trace.packet?.some((packet) => packet.stackSample !== undefined) ?? false;
       }
-      await waitUntil(async () => (await contentTracing.getTraceBufferUsage()).percentage > 0);
 
-      await contentTracing.stopRecording(outputFilePath);
-      const trace = readPerfettoTrace(outputFilePath);
-      expect(trace.packet?.some((packet) => packet.stackSample !== undefined)).to.be.true();
+      expect(hasStackSample).to.be.true('no heap profiler stack samples were captured after multiple attempts');
     });
 
     it('include V8 samples from the main process', async function () {
