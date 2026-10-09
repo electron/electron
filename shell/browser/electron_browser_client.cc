@@ -1443,10 +1443,12 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
       extensions::Manifest::IsComponentLocation(extension->location())) {
     // Components of chrome that are implemented as extensions or platform apps
     // are allowed to use chrome://resources/ and chrome://theme/ URLs.
-    factories->emplace(content::kChromeUIScheme,
-                       content::CreateWebUIURLLoaderFactory(
-                           frame_host, content::kChromeUIScheme,
-                           {content::kChromeUIResourcesHost}));
+    factories->emplace(
+        content::kChromeUIScheme,
+        content::CreateWebUIURLLoaderFactory(
+            frame_host, content::kChromeUIScheme,
+            {content::kChromeUIResourcesHost},
+            request_initiator_origin.value_or(extension->origin())));
   }
 
   // Extensions with the necessary permissions get access to file:// URLs that

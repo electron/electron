@@ -2,6 +2,3 @@ build_warn_instead_of_abort_on_builtin_pgo_profile_mismatch.patch
 src_use_legacy_trace_macros_in_perfetto_to_support_all_phases.patch
 feat_key_code_caches_to_the_patch_set_and_the_embedded_blob.patch
 fix_allow_embedder_slots_of_non-api_objects_in_snapshot.patch
-cherry-pick-981fea2f8f26.patch
-cherry-pick-32e75d9d11e0.patch
-cherry-pick-8a3ae43cddea.patch
