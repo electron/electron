@@ -271,6 +271,13 @@ void UtilityAIManager::HandleLanguageModelResult(
       enabled_input_types.insert(expected_input->type);
     }
   }
+  base::flat_set<blink::mojom::AILanguageModelPromptType> enabled_output_types =
+      {blink::mojom::AILanguageModelPromptType::kText};
+  if (options->expected_outputs.has_value()) {
+    for (const auto& expected_output : options->expected_outputs.value()) {
+      enabled_output_types.insert(expected_output->type);
+    }
+  }
 
   blink::mojom::AIManagerCreateLanguageModelClient* client =
       create_model_client_set_.Get(client_id);
@@ -292,6 +299,8 @@ void UtilityAIManager::HandleLanguageModelResult(
           blink::mojom::AILanguageModelSamplingParams::New(),
           std::vector<blink::mojom::AILanguageModelPromptType>(
               enabled_input_types.begin(), enabled_input_types.end()),
+          std::vector<blink::mojom::AILanguageModelPromptType>(
+              enabled_output_types.begin(), enabled_output_types.end()),
           /*audio_sample_rate_hz=*/std::nullopt,
           /*audio_channel_count=*/std::nullopt,
           /*sampling_mode=*/std::nullopt));
