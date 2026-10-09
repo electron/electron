@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, session, net as electronNet, type WebContents, utilityProcess } from 'electron/main';
+import { app, BrowserWindow, Menu, session, net as electronNet, type WebContents } from 'electron/main';
 
 import { assert, expect } from 'chai';
 import * as semver from 'semver';
@@ -18,6 +18,7 @@ import { promisify } from 'node:util';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers.ts';
 import { defer, ifdescribe, ifit, isWayland, listen, waitUntil } from './lib/spec-helpers.ts';
+import { runInUtilityProcess } from './lib/utility-process-helpers.ts';
 import { closeWindow, closeAllWindows } from './lib/window-helpers.ts';
 import {
   makeXdgMockDirectories,
@@ -292,6 +293,30 @@ describe('app module', () => {
         expect(stderr).to.not.match(/Received signal \d+|Ignoring extra certs/, message);
       }
     });
+
+    // A missing display makes toolkit initialisation fail before the main loop
+    // runs; that early return must still tear the JS environment down cleanly.
+    // Skipped under ASan for the same reason as the test above.
+    ifit(process.platform === 'linux' && !process.env.IS_ASAN)(
+      'exits with code 1 when no display is available',
+      async () => {
+        const appPath = path.join(fixturesPath, 'api', 'no-display');
+        const env = { ...process.env };
+        delete env.DISPLAY;
+        delete env.WAYLAND_DISPLAY;
+        appProcess = cp.spawn(process.execPath, [appPath, '--ozone-platform=x11'], { env });
+        let stderr = '';
+        appProcess.stderr!.on('data', (data) => {
+          stderr += data;
+        });
+        const [code, signal] = await once(appProcess, 'close');
+        appProcess = null;
+        const message = `code=${code} signal=${signal}\n${stderr}`;
+        expect(signal).to.equal(null, message);
+        expect(code).to.equal(1, message);
+        expect(stderr).to.not.match(/Received signal \d+|Check failed/, message);
+      }
+    );
 
     ifit(['darwin', 'linux'].includes(process.platform))('exits gracefully', async function () {
       const electronPath = process.execPath;
@@ -1230,6 +1255,12 @@ describe('app module', () => {
   });
 
   ifdescribe(process.platform !== 'linux')('accessibility support functionality', () => {
+    // These tests toggle a process-wide AXMode. Turn it back off so the rest of
+    // the suite doesn't run with renderer accessibility enabled.
+    afterEach(() => {
+      app.setAccessibilitySupportEnabled(false);
+    });
+
     it('is mutable', () => {
       const values = [false, true, false];
       const setters: Array<(arg: boolean) => void> = [
@@ -2604,13 +2635,6 @@ describe('app module', () => {
     });
 
     it('impacts proxy for requests made from utility process', async () => {
-      const utilityFixturePath = path.resolve(
-        import.meta.dirname,
-        'fixtures',
-        'api',
-        'utility-process',
-        'api-net-spec.js'
-      );
       const fn = async () => {
         const urlRequest = electronNet.request('http://example.com/');
         const response = await getResponse(urlRequest);
@@ -2627,15 +2651,7 @@ describe('app module', () => {
       await app.setProxy(config);
       const proxy = await app.resolveProxy('http://example.com/');
       expect(proxy).to.equal(`PROXY ${hostname}:${port}`);
-      const child = utilityProcess.fork(utilityFixturePath, [], {
-        execArgv: ['--expose-gc']
-      });
-      child.postMessage({ fn: `(${fn})()` });
-      const [data] = await once(child, 'message');
-      expect(data.ok).to.be.true(data.message);
-      // Cleanup.
-      const [code] = await once(child, 'exit');
-      expect(code).to.equal(0);
+      await runInUtilityProcess(fn);
     });
 
     it('does not impact proxy for requests made from main process', async () => {
