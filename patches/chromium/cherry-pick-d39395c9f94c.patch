@@ -39,7 +39,7 @@ Cr-Commit-Position: refs/branch-heads/7871@{#3027}
 Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
 
 diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
-index bec18ed2d345ff0f54f54360b7c71a8e3b44cda0..d02fc162abfefbae2e5a618a3221497bd873c263 100644
+index c52700e0e49edee6c46dd0aa56260d5d13850025..40f25c6cbf3bd839cbfbf2306aae10305c8303fc 100644
 --- a/ui/gtk/gtk_ui.cc
 +++ b/ui/gtk/gtk_ui.cc
 @@ -290,22 +290,23 @@ bool IsValidSchema(ui::LinuxUiBackend backend) {
@@ -79,9 +79,9 @@ index bec18ed2d345ff0f54f54360b7c71a8e3b44cda0..d02fc162abfefbae2e5a618a3221497b
  }
  
  }  // namespace
-@@ -369,8 +370,10 @@ bool GtkUi::Initialize() {
-   // to prevent XSETTINGS updates from loading GTK modules.
-   g_object_set(settings, "gtk-modules", "", nullptr);
+@@ -366,8 +367,10 @@ bool GtkUi::Initialize() {
+ 
+   GtkSettings* settings = gtk_settings_get_default();
    SanitizeIconThemeName();
 +  SanitizeThemeName();
    SanitizeCursorThemeName();
@@ -90,7 +90,7 @@ index bec18ed2d345ff0f54f54360b7c71a8e3b44cda0..d02fc162abfefbae2e5a618a3221497b
    connect(settings, "notify::gtk-theme-name", &GtkUi::OnThemeChanged);
    connect(settings, "notify::gtk-icon-theme-name", &GtkUi::OnThemeChanged);
    connect(settings, "notify::gtk-application-prefer-dark-theme",
-@@ -521,7 +524,8 @@ void GtkUi::GetInactiveSelectionFgColor(SkColor* color) const {
+@@ -518,7 +521,8 @@ void GtkUi::GetInactiveSelectionFgColor(SkColor* color) const {
  gfx::Image GtkUi::GetIconForContentType(const std::string& content_type,
                                          int dip_size,
                                          float scale) const {
@@ -100,7 +100,7 @@ index bec18ed2d345ff0f54f54360b7c71a8e3b44cda0..d02fc162abfefbae2e5a618a3221497b
      return gfx::Image();
    }
  
-@@ -801,7 +805,7 @@ std::string GtkUi::GetCursorThemeName() {
+@@ -798,7 +802,7 @@ std::string GtkUi::GetCursorThemeName() {
  
  bool GtkUi::SanitizeIconThemeName() {
    std::string theme = GetIconThemeName();
@@ -109,7 +109,7 @@ index bec18ed2d345ff0f54f54360b7c71a8e3b44cda0..d02fc162abfefbae2e5a618a3221497b
      g_object_set(gtk_settings_get_default(), "gtk-icon-theme-name", "hicolor",
                   nullptr);
      return true;
-@@ -809,6 +813,16 @@ bool GtkUi::SanitizeIconThemeName() {
+@@ -806,6 +810,16 @@ bool GtkUi::SanitizeIconThemeName() {
    return false;
  }
  
@@ -126,7 +126,7 @@ index bec18ed2d345ff0f54f54360b7c71a8e3b44cda0..d02fc162abfefbae2e5a618a3221497b
  bool GtkUi::SanitizeCursorThemeName() {
    std::string theme = GetCursorThemeName();
    if (!ui::IsValidCursorThemeName(theme)) {
-@@ -879,7 +893,7 @@ gfx::Size GtkUi::GetPdfPaperSize(printing::PrintingContextLinux* context) {
+@@ -876,7 +890,7 @@ gfx::Size GtkUi::GetPdfPaperSize(printing::PrintingContextLinux* context) {
  #endif
  
  void GtkUi::OnThemeChanged(GtkSettings* settings, GtkParamSpec* param) {
