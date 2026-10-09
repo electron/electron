@@ -46,10 +46,10 @@ index 41e4f4a6492a54cb066864dcdef396bf7d6e1f0e..1074ad42a021bb393b6afd3e7b036343
                  'internal-forced-visited-'
              ):
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index 4928027e536308d18f4bb9e85dda3f8aae003b9d..c130fd0ecbd15a290dc6a230bea95f53e6e6e3e2 100644
+index 1f015b94a4c7b830f4aa6c27faa10ef9e59684fd..8e59e6851facd5d13c9687bbe45d2782dc853a49 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -10323,6 +10323,27 @@
+@@ -10328,6 +10328,27 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -133,7 +133,7 @@ index a776c8e3ebe1a769d9520decce5516a48c74b78f..31530399ca2a967a87b740c26b9423c6
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index 28ab094b4f12bf96979fedadf7d0006b4a22a3d1..d82c06a2069cdec3554c82115b0226651df24292 100644
+index 2761d9decfe9547812a0b1a74d306298c91abe12..ca8ae04726bbe085ad0121721a4881dabc0912f4 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 @@ -4266,6 +4266,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
@@ -204,10 +204,10 @@ index b721dd3809c0b6c89574a515bac32d397a1bfb09..750a3603bd18680228220b831709d327
      return result;
    }
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index 91fb03a152765af04d8b565d7f5daf9c20484692..edb35a7c3c4c15e41af591abbd7b3702561f9b13 100644
+index 9dbb5c1bca167a777d2c9713f03a40545b33854c..01df346ac8971fd2fdbff5e86bebbdfc8b65fb54 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
-@@ -1758,6 +1758,8 @@ component("platform") {
+@@ -1756,6 +1756,8 @@ component("platform") {
      "widget/widget_base.h",
      "widget/widget_base_client.h",
      "windows_keyboard_codes.h",
@@ -315,7 +315,7 @@ index c68eabb5ba5842cb07df1d97e205c3d96d405a4f..e9e1114f60b1ae02c2e511b6568cee92
  
    auto draw_as_single_path = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 2292d62615f6cc14bbb5097c7fda266de894c1cc..cbcf7a976b5a72024f689e32dfdebebf6bd09220 100644
+index 6c9712895291309ba7bf1316aae29247a49df7f6..3e82341b3e5dd929410e90764e1522f9230a9d82 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -237,6 +237,10 @@

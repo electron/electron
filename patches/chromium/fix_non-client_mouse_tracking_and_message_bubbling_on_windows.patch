@@ -44,7 +44,7 @@ index ec0f5c93d005f9ae2cbd77ef6d83220eb49e4ed4..df3a2b39bf607e440170a2290839fa42
      // modal loop is entered and the tab is closed). See crbug.com/503793153.
      if (ref) {
 diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.h b/content/browser/renderer_host/legacy_render_widget_host_win.h
-index 661a8123862860c88ce1eb78eae6691f38c2bdd9..705cda18d0b669249ff4ace161b53a105db2c806 100644
+index 0feb0801f995afd476c01654541d7a3a55ed776d..d3841b42a398ce818c75c9d7eaf902ae210414be 100644
 --- a/content/browser/renderer_host/legacy_render_widget_host_win.h
 +++ b/content/browser/renderer_host/legacy_render_widget_host_win.h
 @@ -101,6 +101,7 @@ class CONTENT_EXPORT LegacyRenderWidgetHostHWND

@@ -22,10 +22,10 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index b8e54d89fc86413335c87035ef749d1f270710a8..1c0f2807fc9e7f1e7fc5303002090a633318cb48 100644
+index b3d13a17d82104f21f626e38c8104d2a562dc313..12bea67e93a754436742bec589085d3e827b4c53 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2116,6 +2116,10 @@ bool RenderProcessHostImpl::Init() {
+@@ -2135,6 +2135,10 @@ bool RenderProcessHostImpl::Init() {
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegateWin>(
              *cmd_line, IsPdf(), IsJitDisabled());
@@ -37,10 +37,10 @@ index b8e54d89fc86413335c87035ef749d1f270710a8..1c0f2807fc9e7f1e7fc5303002090a63
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegate>();
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
-index e5e9bb92966f84c7b993797aeaf83c8c17e91c3b..ae1ca8e2cbb7757b8fc3eef9f966044b9a27af08 100644
+index a7bbb1d46c0c682bfdeb011a3460a7589d2ae6c3..9cd6ab6990111a480a7ea3e6950c8541e0e57d41 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
-@@ -35,6 +35,9 @@ namespace content {
+@@ -36,6 +36,9 @@ namespace content {
  
  #if BUILDFLAG(USE_ZYGOTE)
  ZygoteCommunication* RendererSandboxedProcessLauncherDelegate::GetZygote() {
@@ -51,10 +51,10 @@ index e5e9bb92966f84c7b993797aeaf83c8c17e91c3b..ae1ca8e2cbb7757b8fc3eef9f966044b
        *base::CommandLine::ForCurrentProcess();
    base::CommandLine::StringType renderer_prefix =
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
-index e058db451bef755a8c5bf3dc9bc9c5e9eb83b7f4..abe037f3a374e6fe9888186aa873fa17879ec418 100644
+index 73c0a0f38c82fbf1d040c3dadd5a78f3e2c8ffbb..209abbc2fcf80bf16816ff188c13ffa2654eceeb 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
-@@ -18,6 +18,11 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate
+@@ -21,6 +21,11 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate
   public:
    RendererSandboxedProcessLauncherDelegate() = default;
  
@@ -66,7 +66,7 @@ index e058db451bef755a8c5bf3dc9bc9c5e9eb83b7f4..abe037f3a374e6fe9888186aa873fa17
    ~RendererSandboxedProcessLauncherDelegate() override = default;
  
  #if BUILDFLAG(USE_ZYGOTE)
-@@ -30,6 +35,11 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate
+@@ -33,6 +38,11 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate
  
    // sandbox::policy::SandboxDelegate:
    sandbox::mojom::Sandbox GetSandboxType() override;

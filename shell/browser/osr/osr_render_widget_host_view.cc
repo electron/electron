@@ -484,13 +484,15 @@ void OffScreenRenderWidgetHostView::DestroyImpl() {
   delete this;
 }
 
-void OffScreenRenderWidgetHostView::CopyFromSurface(
+void OffScreenRenderWidgetHostView::CopyFromSurfaceImpl(
     const gfx::Rect& src_rect,
     const gfx::Size& output_size,
+    bool is_copy_request_secure,
     base::TimeDelta timeout,
     base::OnceCallback<void(const content::CopyFromSurfaceResult&)> callback) {
   delegated_frame_host()->CopyFromCompositingSurface(
-      src_rect, output_size, base::TimeDelta(), std::move(callback));
+      src_rect, output_size, is_copy_request_secure, base::TimeDelta(),
+      std::move(callback));
 }
 
 gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInScreen() {
