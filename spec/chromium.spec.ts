@@ -1257,7 +1257,7 @@ describe('chromium features', () => {
   });
 
   describe('navigator.geolocation', () => {
-    ifit(features.isFakeLocationProviderEnabled())('returns error when permission is denied', async () => {
+    it('returns error when permission is denied', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -1292,8 +1292,7 @@ describe('chromium features', () => {
         callback(true);
       });
       // Supply the position over CDP so the test doesn't depend on a real provider:
-      // official builds query the network location service, which fails on CI,
-      // and other builds use FakeLocationProvider, which always reports an error.
+      // the network location service fails on CI.
       // The permission request still goes through the session's handler.
       const override = { latitude: 37.7749, longitude: -122.4194, accuracy: 10 };
       w.webContents.debugger.attach();
