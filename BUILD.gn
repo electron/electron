@@ -664,13 +664,6 @@ source_set("electron_lib") {
     defines += [ "NODE_SHARED_MODE" ]
   }
 
-  if (enable_fake_location_provider) {
-    sources += [
-      "shell/browser/fake_location_provider.cc",
-      "shell/browser/fake_location_provider.h",
-    ]
-  }
-
   if (enable_prompt_api) {
     sources += [
       "shell/browser/ai/proxying_ai_manager.cc",
