@@ -1,0 +1,164 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 8 Oct 2026 19:22:50 +0900
+Subject: [metagen] Relocate explicit macOS SDK paths for temporary GN queries
+
+An explicit mac_sdk_path under the active output directory remains
+unchanged when args.gn is copied into the temporary GN query directory.
+Chromium's sdk_inputs action then declares outputs outside that
+directory, causing gn desc to fail.
+
+On macOS, copy the embedder SDK symlinks into the temporary directory
+and rebase mac_sdk_path there. Preserve the existing restoration and
+temporary query isolation. Additionally, include GN stdout in failure
+diagnostics.
+
+This is a temporary workaround until CL 8499914 replaces the GN query
+with action substitutions.
+
+Bug: 531344950
+Fixed: 570412918
+Change-Id: Iad20a9e8465546c11003d152ff27e69e5896e343
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8535626
+Auto-Submit: Deepak Mohan (Robo) <hop2deep@gmail.com>
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Deepak Mohan (Robo) <hop2deep@gmail.com>
+Reviewed-by: Jakob Linke <jgruber@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110468}
+
+diff --git a/tools/metagen/compile_flags.py b/tools/metagen/compile_flags.py
+index d7c469d6f4982a83e7c970bebfc1fe412833e7b8..6f27783da236d77274055be64df1547f93a09eff 100644
+--- a/tools/metagen/compile_flags.py
++++ b/tools/metagen/compile_flags.py
+@@ -180,6 +180,20 @@ def get_compile_args_from_gn_desc(build_dir: str, target_label: str,
+   with tempfile.TemporaryDirectory(dir=os.path.dirname(build_dir)) as tmp_dir:
+     shutil.copyfile(
+         os.path.join(build_dir, "args.gn"), os.path.join(tmp_dir, "args.gn"))
++    if sys.platform == "darwin":
++      sdk_links = os.path.join(build_dir, "xcode_links")
++      if os.path.isdir(sdk_links):
++        shutil.copytree(
++            sdk_links, os.path.join(tmp_dir, "xcode_links"), symlinks=True)
++      # Explicit SDK paths supplied by embedder build tools must stay below
++      # the query's output directory for Chromium's sdk_inputs action.
++      old_sdk_root = "//" + os.path.relpath(build_dir, source_root) + "/"
++      new_sdk_root = "//" + os.path.relpath(tmp_dir, source_root) + "/"
++      with open(os.path.join(tmp_dir, "args.gn"), "a") as f:
++        f.write("\nif (defined(mac_sdk_path)) {\n")
++        f.write("  mac_sdk_path = string_replace(mac_sdk_path, "
++                f"{json.dumps(old_sdk_root)}, {json.dumps(new_sdk_root)})\n")
++        f.write("}\n")
+     open(os.path.join(tmp_dir, "build.ninja"), "w").close()
+     try:
+       # -q ("don't print output on success") keeps stdout to the JSON alone.
+@@ -201,7 +215,9 @@ def get_compile_args_from_gn_desc(build_dir: str, target_label: str,
+     except subprocess.CalledProcessError as e:
+       raise RuntimeError(f"[metagen] `gn desc {tmp_dir} {target_label}` failed "
+                          f"(exit {e.returncode}). Is the target part of that "
+-                         f"toolchain's build?\n{(e.stderr or '').strip()}")
++                         f"toolchain's build?\n"
++                         f"{(e.stdout or '').strip()}\n"
++                         f"{(e.stderr or '').strip()}")
+     try:
+       desc = json.loads(proc.stdout)
+     except json.JSONDecodeError as e:
+diff --git a/tools/metagen/test/compile_flags_test.py b/tools/metagen/test/compile_flags_test.py
+index 9652550d7168727294aadf02c1ebb31fbfc42c78..e68be065a0e73391bd86a93a443052b8427efdfe 100644
+--- a/tools/metagen/test/compile_flags_test.py
++++ b/tools/metagen/test/compile_flags_test.py
+@@ -62,7 +62,8 @@ class GnCompileFlagsTest(unittest.TestCase):
+         }
+         return subprocess.CompletedProcess(argv, 0, json.dumps(desc))
+ 
+-      with mock.patch.object(
++      with mock.patch.object(compile_flags.sys, 'platform', 'linux'), \
++           mock.patch.object(
+           compile_flags, '_find_gn',
+           return_value='gn') as find_gn, mock.patch.object(
+               compile_flags.subprocess, 'run', side_effect=run_desc) as run:
+@@ -85,6 +86,75 @@ class GnCompileFlagsTest(unittest.TestCase):
+       ])
+       self.assertEqual(cwd, str(build_dir))
+ 
++  def test_macos_sdk_links_and_override_are_isolated(self):
++    with tempfile.TemporaryDirectory() as tmp:
++      source_root = Path(tmp) / 'src'
++      build_dir = source_root / 'out' / 'Release'
++      sdk = Path(tmp) / 'MacOSX.sdk'
++      sdk.mkdir()
++      sdk_links = build_dir / 'xcode_links' / 'embedder'
++      sdk_links.mkdir(parents=True)
++      try:
++        (sdk_links / sdk.name).symlink_to(sdk, target_is_directory=True)
++      except OSError as e:
++        if getattr(e, 'winerror', None) != 1314:
++          raise
++        self.skipTest('Symlink creation requires Windows privileges')
++      args = ('mac_sdk_path = '
++              '"//out/Release/xcode_links/embedder/MacOSX.sdk"\n')
++      (build_dir / 'args.gn').write_text(args)
++      queried_dir = None
++
++      def run_desc(argv, **kwargs):
++        nonlocal queried_dir
++        queried_dir = Path(argv[4])
++        query_args = (queried_dir / 'args.gn').read_text()
++        self.assertTrue(query_args.startswith(args))
++        self.assertIn('if (defined(mac_sdk_path))', query_args)
++        query_rel = os.path.relpath(queried_dir, source_root)
++        self.assertIn(
++            'string_replace(mac_sdk_path, "//out/Release/", '
++            f'{json.dumps("//" + query_rel + "/")})', query_args)
++        query_sdk = queried_dir / 'xcode_links' / 'embedder' / sdk.name
++        self.assertTrue(query_sdk.is_symlink())
++        self.assertEqual(query_sdk.resolve(), sdk.resolve())
++        # Mutating the query's links must not affect the running build.
++        query_sdk.unlink()
++        self.assertTrue((sdk_links / sdk.name).is_symlink())
++        desc = {'//:probe': {'cflags': ['-isysroot', str(query_sdk)],}}
++        return subprocess.CompletedProcess(argv, 0, json.dumps(desc))
++
++      with mock.patch.object(compile_flags.sys, 'platform', 'darwin'), \
++           mock.patch.object(compile_flags, '_find_gn', return_value='gn'), \
++           mock.patch.object(compile_flags.subprocess, 'run',
++                             side_effect=run_desc):
++        flags, cwd = compile_flags.get_compile_args_from_gn_desc(
++            str(build_dir), '//:probe', str(source_root))
++      self.assertEqual(flags, ['-isysroot', str(sdk_links / sdk.name)])
++      self.assertEqual(cwd, str(build_dir))
++      self.assertEqual((build_dir / 'args.gn').read_text(), args)
++      self.assertFalse(queried_dir.exists())
++
++  def test_gn_failure_includes_stdout_and_stderr(self):
++    with tempfile.TemporaryDirectory() as tmp:
++      build_dir = Path(tmp) / 'build'
++      build_dir.mkdir()
++      (build_dir / 'args.gn').touch()
++      error = subprocess.CalledProcessError(
++          1,
++          'gn',
++          output='File is not inside output directory.',
++          stderr='SDK diagnostic')
++      with mock.patch.object(compile_flags.sys, 'platform', 'linux'), \
++           mock.patch.object(compile_flags, '_find_gn', return_value='gn'), \
++           mock.patch.object(compile_flags.subprocess, 'run',
++                             side_effect=error):
++        with self.assertRaises(RuntimeError) as raised:
++          compile_flags.get_compile_args_from_gn_desc(
++              str(build_dir), '//:probe', tmp)
++      self.assertIn(error.stdout, str(raised.exception))
++      self.assertIn(error.stderr, str(raised.exception))
++
+   def test_build_directory_on_another_drive(self):
+     with tempfile.TemporaryDirectory() as tmp:
+       source_root = Path(tmp) / 'src'
+@@ -98,7 +168,8 @@ class GnCompileFlagsTest(unittest.TestCase):
+         desc = {'//:probe': {'include_dirs': [str(temp_dir / 'gen')],}}
+         return subprocess.CompletedProcess(argv, 0, json.dumps(desc))
+ 
+-      with mock.patch.object(compile_flags, '_find_gn', return_value='gn'), \
++      with mock.patch.object(compile_flags.sys, 'platform', 'win32'), \
++           mock.patch.object(compile_flags, '_find_gn', return_value='gn'), \
+            mock.patch.object(compile_flags.os.path, 'relpath',
+                              side_effect=ValueError('different drive')), \
+            mock.patch.object(compile_flags.subprocess, 'run',
