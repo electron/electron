@@ -16,7 +16,7 @@ import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers.ts';
-import { defer, ifdescribe, ifit, isWayland, listen, waitUntil } from './lib/spec-helpers.ts';
+import { defer, ifdescribe, ifit, isWayland, listen, spawnAndWait, waitUntil } from './lib/spec-helpers.ts';
 import { runInUtilityProcess } from './lib/utility-process-helpers.ts';
 import { closeWindow, closeAllWindows } from './lib/window-helpers.ts';
 import {
@@ -1428,22 +1428,28 @@ describe('app module', () => {
         fs.rmSync(tempBrowserDataPath, { force: true, recursive: true });
       });
 
-      it('writes to userData by default', () => {
+      // The app quits once it has written its session data.
+      const runApp = async (args: string[]) => {
+        const { code, stdout, stderr } = await spawnAndWait(process.execPath, [appPath, ...args], { timeout: 20_000 });
+        expect(code).to.equal(0, `stdout:\n${stdout}\nstderr:\n${stderr}`);
+      };
+
+      it('writes to userData by default', async () => {
         expect(hasSessionFiles(userDataPath)).to.equal(false);
-        cp.spawnSync(process.execPath, [appPath]);
+        await runApp([]);
         expect(hasSessionFiles(userDataPath)).to.equal(true);
       });
 
-      it('can be changed', () => {
+      it('can be changed', async () => {
         expect(hasSessionFiles(userDataPath)).to.equal(false);
-        cp.spawnSync(process.execPath, [appPath, 'sessionData', tempBrowserDataPath]);
+        await runApp(['sessionData', tempBrowserDataPath]);
         expect(hasSessionFiles(userDataPath)).to.equal(false);
         expect(hasSessionFiles(tempBrowserDataPath)).to.equal(true);
       });
 
-      it('changing userData affects default sessionData', () => {
+      it('changing userData affects default sessionData', async () => {
         expect(hasSessionFiles(userDataPath)).to.equal(false);
-        cp.spawnSync(process.execPath, [appPath, 'userData', tempBrowserDataPath]);
+        await runApp(['userData', tempBrowserDataPath]);
         expect(hasSessionFiles(userDataPath)).to.equal(false);
         expect(hasSessionFiles(tempBrowserDataPath)).to.equal(true);
       });
