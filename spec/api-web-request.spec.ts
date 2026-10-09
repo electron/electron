@@ -650,6 +650,70 @@ describe('webRequest module', () => {
       await ajax(defaultURL);
     });
 
+    async function headersOnRedirect(
+      initialHeaders: Record<string, string>,
+      onRedirect: (details: Electron.OnBeforeSendHeadersListenerDetails) => Electron.BeforeSendResponse
+    ): Promise<Record<string, string>> {
+      protocol.registerStringProtocol('cors-blob', (req, callback) => {
+        if (req.url === 'cors-blob://fake-host/redirect') {
+          callback({ statusCode: 302, headers: { Location: 'cors-blob://fake-host/target' } });
+        } else {
+          callback(JSON.stringify(req.headers));
+        }
+      });
+      try {
+        await contents.loadFile(path.join(fixturesPath, 'pages', 'fetch.html'));
+        ses.webRequest.onBeforeSendHeaders((details, callback) => {
+          callback(
+            details.url === 'cors-blob://fake-host/target'
+              ? onRedirect(details)
+              : { requestHeaders: details.requestHeaders }
+          );
+        });
+        const { data } = await ajax('cors-blob://fake-host/redirect', { headers: initialHeaders });
+        return JSON.parse(data);
+      } finally {
+        protocol.unregisterProtocol('cors-blob');
+      }
+    }
+
+    it('removes a request header on redirect', async () => {
+      let sawOriginal = false;
+      const headers = await headersOnRedirect({ Accept: 'text/plain' }, (details) => {
+        const { requestHeaders } = details;
+        sawOriginal = requestHeaders.Accept === 'text/plain';
+        delete requestHeaders.Accept;
+        return { requestHeaders };
+      });
+      expect(sawOriginal).to.be.true();
+      expect(headers).not.to.have.property('Accept');
+    });
+
+    it('preserves request headers on redirect when requestHeaders is omitted', async () => {
+      const headers = await headersOnRedirect({ Accept: 'text/plain' }, () => ({}));
+      expect(headers).to.have.property('Accept', 'text/plain');
+    });
+
+    it('removes request headers on redirect when requestHeaders is empty', async () => {
+      let sawOriginal = false;
+      const headers = await headersOnRedirect({ Accept: 'text/plain' }, (details) => {
+        sawOriginal = details.requestHeaders.Accept === 'text/plain';
+        return { requestHeaders: {} };
+      });
+      expect(sawOriginal).to.be.true();
+      expect(headers).not.to.have.property('Accept');
+    });
+
+    it('adds and modifies request headers on redirect', async () => {
+      const headers = await headersOnRedirect({ Accept: 'text/plain' }, (details) => {
+        const { requestHeaders } = details;
+        requestHeaders.Accept = 'application/json';
+        requestHeaders['X-Add'] = 'added';
+        return { requestHeaders };
+      });
+      expect(headers).to.include({ Accept: 'application/json', 'X-Add': 'added' });
+    });
+
     it('works with file:// protocol', async () => {
       const requestHeaders = {
         Test: 'header'

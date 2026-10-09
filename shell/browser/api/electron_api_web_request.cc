@@ -185,8 +185,7 @@ CalculateOnBeforeSendHeadersDelta(const net::HttpRequestHeaders* old_headers,
   // Keys of request headers to be deleted.
   std::set<std::string> deleted_request_headers;
 
-  // The event listener might not have passed any new headers if it
-  // just wanted to cancel the request.
+  // If the listener omitted requestHeaders, leave both sets empty.
   if (new_headers) {
     // Find deleted headers.
     {
@@ -209,7 +208,8 @@ CalculateOnBeforeSendHeadersDelta(const net::HttpRequestHeaders* old_headers,
     }
   }
 
-  return std::make_pair(modified_request_headers, deleted_request_headers);
+  // BeforeSendHeadersCallback takes removed headers before set headers.
+  return std::make_pair(deleted_request_headers, modified_request_headers);
 }
 
 WebRequest* ForObservedRequest(
@@ -519,10 +519,10 @@ void WebRequest::OnBeforeSendHeadersListenerResult(
     }
   }
 
-  // If the user passes |cancel|, |new_headers| should be nullptr.
+  // Omitted requestHeaders leaves the headers unchanged; an empty object
+  // explicitly removes them.
   const auto updated_headers = CalculateOnBeforeSendHeadersDelta(
-      old_headers,
-      result == net::ERR_BLOCKED_BY_CLIENT ? nullptr : &new_headers);
+      old_headers, user_modified_headers ? &new_headers : nullptr);
 
   // Leave |request.request_headers| unchanged if the user didn't modify it.
   if (user_modified_headers)
