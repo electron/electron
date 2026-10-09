@@ -18,7 +18,7 @@ dropped; when resolving such a conflict, carry the change over into
 chrome_file_system_access_blocklist.cc.
 
 diff --git a/chrome/browser/file_system_access/BUILD.gn b/chrome/browser/file_system_access/BUILD.gn
-index 52f3ffa431b9b9ad429992dda3027ce5d721ddfc..4850af7f9c4bbdb920dba0657b12c6b0b9932f12 100644
+index 6367c947fa744f64a8e8dcddfea7df5a7d6fb7f4..c382b8b39590671656a333527f50a39a8af3f43c 100644
 --- a/chrome/browser/file_system_access/BUILD.gn
 +++ b/chrome/browser/file_system_access/BUILD.gn
 @@ -38,6 +38,7 @@ source_set("file_system_access") {
@@ -320,7 +320,7 @@ index 0000000000000000000000000000000000000000..bf2ccceae9b929d59177d8231d0a9240
 +  return block_path_rules;
 +}
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 056d7e8235c47b97b71811cd2a355ff567a9d86f..72ed9b50534c9926a2536f35e479d92fd9c1ff8f 100644
+index 7f094e511b06ca743c1de3e07e3ed276b4935488..b74b7b8a2064aae6f8027b21afdd6a651d9ba2f5 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -341,262 +341,8 @@ bool MaybeIsLocalUNCPath(const base::FilePath& path) {
@@ -587,8 +587,8 @@ index 056d7e8235c47b97b71811cd2a355ff567a9d86f..72ed9b50534c9926a2536f35e479d92f
  // The BlockType of the nearest ancestor of a path to check is what
  // ultimately determines if a path is blocked or not. If a blocked path is a
 @@ -616,12 +362,15 @@ bool ShouldBlockAccessToPath(
-   DCHECK(!path.empty());
-   DCHECK(path.IsAbsolute());
+   CHECK(!path.empty(), base::NotFatalUntil::M161);
+   CHECK(path.IsAbsolute(), base::NotFatalUntil::M161);
  
 -  path = NormalizeFilePathForBlocklist(path, should_normalize_file_path);
 +  path = ChromeFileSystemAccessPermissionContext::NormalizeFilePathForBlocklist(
