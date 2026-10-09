@@ -11,16 +11,25 @@ through the window server, so it activates nothing, and answering NO drops it.
 
 AppKit activates the app before it asks about a click that the window server
 routed here, so an inactive app at this point identifies the posted event.
-Hardware events have no source process and keep the existing behavior.
+Hardware events have no source process, and events this process posts carry
+its own, so both keep the existing behavior.
 
 This patch can be removed once
 https://chromium-review.googlesource.com/c/chromium/src/+/8470994 lands.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index b7a4b146d8650f8597ec6a1314add013eaf293fb..ed0672eeb57dc8023f696d74971b1e664284b7d5 100644
+index b7a4b146d8650f8597ec6a1314add013eaf293fb..199b4780bf384bb1e0fdef932193d191264a5df3 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-@@ -872,6 +872,15 @@ - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
+@@ -6,6 +6,7 @@
+ 
+ #include <AppKit/AppKit.h>
+ #include <Carbon/Carbon.h>  // for <HIToolbox/Events.h>
++#include <unistd.h>
+ 
+ #include <algorithm>
+ #include <limits>
+@@ -872,6 +873,18 @@ - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
        [self.window acceptsFirstMouse])
      return YES;
  
@@ -28,9 +37,12 @@ index b7a4b146d8650f8597ec6a1314add013eaf293fb..ed0672eeb57dc8023f696d74971b1e66
 +  // activate the app, unlike one the window server routes here, so treating it
 +  // as an activation click would only drop it.
 +  CGEventRef cgEvent = theEvent.CGEvent;
-+  if (!NSApp.active && cgEvent &&
-+      CGEventGetIntegerValueField(cgEvent, kCGEventSourceUnixProcessID) != 0) {
-+    return YES;
++  if (!NSApp.active && cgEvent) {
++    int64_t sourcePid =
++        CGEventGetIntegerValueField(cgEvent, kCGEventSourceUnixProcessID);
++    if (sourcePid != 0 && sourcePid != getpid()) {
++      return YES;
++    }
 +  }
 +
    // Enable "click-through" if mouse clicks are accepted in inactive windows.
