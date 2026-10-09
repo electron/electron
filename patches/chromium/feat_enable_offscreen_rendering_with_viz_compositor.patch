@@ -522,7 +522,7 @@ index 4f9e8946fa02d859e92a6896beba82721914f868..78486eaa993ee7ffd5188b31503de7dd
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 39ebd59074a86a6ff5982bbb5e16be402726b968..c5e95659c48ec06e011700c78799cb7c3c4de568 100644
+index a7b06724021d0c78ef8278a2e7ebf33fa28b6544..f3229cbd18540ab2aa4f1492fd3b92fb0167615c 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -131,7 +131,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -564,10 +564,10 @@ index 399fba1a3d4e601dc2cdd5f1f4def8b7fd7a3011..8bcbe0d26c80323155d536c0d3a177a1
    gpu::SyncPointManager* GetSyncPointManager() override;
    gpu::Scheduler* GetGpuScheduler() override;
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 7ca2539e761b40c55671b815e8403ffe59c18d0f..97208fb50f1207591bd8ac6ddef307f6717a6b0a 100644
+index 53219f0aaeb84332363ff3d1e41dc97269f50608..b60d91d7d33b4f89748894327b86b7e3b4250e98 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -394,8 +394,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -400,8 +400,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();
@@ -585,10 +585,10 @@ index 7ca2539e761b40c55671b815e8403ffe59c18d0f..97208fb50f1207591bd8ac6ddef307f6
        compositor_data.display_client->GetBoundRemote(resize_task_runner_);
    mojo::AssociatedRemote<viz::mojom::ExternalBeginFrameController>
 diff --git a/services/viz/privileged/mojom/compositing/display_private.mojom b/services/viz/privileged/mojom/compositing/display_private.mojom
-index f0899f2c823dd77bdff63e1f9ae1d89ce1d85caa..fb1b88b359d4caa1b1162b9e4c4200e82f0c764a 100644
+index 94528f0b45a81605a84e8e5ba5a1f8cbc3cd80f1..20468f144221f23fe5d2f52efe4b4f1b61721c38 100644
 --- a/services/viz/privileged/mojom/compositing/display_private.mojom
 +++ b/services/viz/privileged/mojom/compositing/display_private.mojom
-@@ -124,7 +124,6 @@ interface DisplayClient {
+@@ -136,7 +136,6 @@ interface DisplayClient {
  
    // Creates a LayeredWindowUpdater implementation to draw into a layered
    // window.
