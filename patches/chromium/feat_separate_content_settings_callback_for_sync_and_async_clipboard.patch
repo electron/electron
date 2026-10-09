@@ -34,7 +34,7 @@ index 867fc205aaa787cb05c56f8c1fa6d63e2b2ed92f..97567b79069538e23115fc274c10b8a4
    }
  
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index 96d653a82111de11be05205117436d8b260d0af1..47e723a87b62df4aac21ebbaa5974994ed0c6b5d 100644
+index 19c07477b186ddebb8c3439bb628f410e0c29199..c623c4451b36738ab91ac42f54c17c91376708bf 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
 @@ -100,7 +100,8 @@ PermissionToSchedulingFeature(PermissionType permission_name) {

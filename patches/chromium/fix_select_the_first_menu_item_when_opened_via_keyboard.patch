@@ -11,7 +11,7 @@ PlatformStyle::kAutoSelectFirstMenuItemFromKeyboard
 covers the other views platforms.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index edbc8f5f5f6bba3531f28909f02cfc57d5b7d4d4..4e39581e58b5eadb0ed710436e1f33576a0a1ef8 100644
+index f2705c7e15e10c598b4425a100d856585f3dc217..1f948fc55e3b25d716637c393a693b66713f7fa7 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
 @@ -814,6 +814,22 @@ void MenuController::Run(Widget* parent,

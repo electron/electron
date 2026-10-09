@@ -12,10 +12,10 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index 15ca298d14e55f961267ed95b154edceaf23962c..fff8cd62b8f96c45bdacee06ff3a5ae8d4033064 100644
+index 9849318dc25d1677d85b6a0c50e26d12707a313c..3143640cdb21ef2b2d2d2f6d5b49348f3904bf1c 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
-@@ -367,9 +367,11 @@ void Compositor::SetLayerTreeFrameSink(
+@@ -359,9 +359,11 @@ void Compositor::SetLayerTreeFrameSink(
    // to match the Compositor's.
    if (display_private_) {
      display_private_->Resize(size());
@@ -29,7 +29,7 @@ index 15ca298d14e55f961267ed95b154edceaf23962c..fff8cd62b8f96c45bdacee06ff3a5ae8
      display_private_->SetDisplayColorSpaces(display_color_spaces_);
      display_private_->SetDisplayColorMatrix(
          gfx::SkM44ToTransform(display_color_matrix_));
-@@ -609,9 +611,11 @@ void Compositor::SetVisible(bool visible) {
+@@ -601,9 +603,11 @@ void Compositor::SetVisible(bool visible) {
    // updated then. We need to call this even if the visibility hasn't changed,
    // for the same reason.
    if (display_private_) {
@@ -43,7 +43,7 @@ index 15ca298d14e55f961267ed95b154edceaf23962c..fff8cd62b8f96c45bdacee06ff3a5ae8
    }
  
    if (changed) {
-@@ -1080,6 +1084,17 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
+@@ -1072,6 +1076,17 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
        host_begin_frame_observer_->GetBoundRemote());
  }
  

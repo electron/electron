@@ -129,10 +129,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index 93470014129c5b20fa076c0200f2661c7a1df7dd..62236733e5ec7e3b8ffa98c3e0e244c8de9ab333 100644
+index a93b1d54a43b2cdee79bb1ff64d14e70c30a8160..5df1705ad1d2827f51fc32c61bae19e56ce7cfd1 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -1049,6 +1049,7 @@ if (is_clang_or_gcc) {
+@@ -1051,6 +1051,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -971,7 +971,7 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index da8d56053e6583457a6fde9aa8bd42f5825c86ef..5290c0be45600e34d6f5fe32c60cd52019596029 100644
+index 0368c6d13f3afca0303322d42b79f382d56f952c..bf96edb40f9ec123ba48e367ab923b628f910aff 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -34,6 +34,7 @@
@@ -1005,10 +1005,10 @@ index da8d56053e6583457a6fde9aa8bd42f5825c86ef..5290c0be45600e34d6f5fe32c60cd520
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 80301d40f0402c41d233a0c7aa494755743a01fa..ce2d955d5ef046b8400662b00a148547f4e4ebc2 100644
+index bee9872ba3e310dcc1d57fc399d44926c178b884..3de9bb066f0a204695b402528975703bf6d52e13 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -384,6 +384,7 @@ source_set("browser") {
+@@ -385,6 +385,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -1220,10 +1220,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index b688001a9e3f4ac1c6ebea2717c4cb430e4c6e8c..4c03e45e8b1c688927def87205e7bbddd257dc36 100644
+index 02f6f34876629b41109eb5265bb8a6b13f6ead3f..90ff2ee690a3387e9d981ad69e74e4c5de22f382 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -652,6 +652,7 @@ static_library("test_support") {
+@@ -653,6 +653,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -1231,7 +1231,7 @@ index b688001a9e3f4ac1c6ebea2717c4cb430e4c6e8c..4c03e45e8b1c688927def87205e7bbdd
    ]
  
    data_deps = [
-@@ -1140,6 +1141,8 @@ static_library("browsertest_support") {
+@@ -1141,6 +1142,8 @@ static_library("browsertest_support") {
    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
    # enable the diagnostic by removing this line.
    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
@@ -1240,7 +1240,7 @@ index b688001a9e3f4ac1c6ebea2717c4cb430e4c6e8c..4c03e45e8b1c688927def87205e7bbdd
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2045,6 +2048,7 @@ test("content_browsertests") {
+@@ -2067,6 +2070,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1248,7 +1248,7 @@ index b688001a9e3f4ac1c6ebea2717c4cb430e4c6e8c..4c03e45e8b1c688927def87205e7bbdd
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3425,6 +3429,7 @@ test("content_unittests") {
+@@ -3455,6 +3459,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1327,10 +1327,10 @@ index 8940cda1ea6211df84da098078a1f90c66666013..335e42c54e5d6a9f591065519443e99c
  
  base::WeakPtr<BluetoothLowEnergyAdapterApple>
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index bf72ef96a2789b2a125b22ad51b3fe27a0c61e4a..047352e2bec30754f66e223c210075d905ab25d7 100644
+index 86a6d2345caae8300b7494bc02e226d4bd6dbd0b..661c23091fb8e7cc554072f80d4815e9628ac1e7 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
-@@ -134,6 +134,7 @@ component("service") {
+@@ -136,6 +136,7 @@ component("service") {
          "QuartzCore.framework",
        ]
        defines += [ "GL_SILENCE_DEPRECATION" ]
@@ -1373,7 +1373,7 @@ index 8667a1ba4f71a57f61915bb2588a338e5960a952..099a65446d90b10b021ac47d1c4e26b1
  
    if (is_ios) {
 diff --git a/media/audio/apple/audio_low_latency_input.cc b/media/audio/apple/audio_low_latency_input.cc
-index c09d7c056a8b16bd31b4f8c428d42e2c423efd18..0e2d08cd7f94b50e116085a7fcfd99087b0076ce 100644
+index d9014423b00c31677765e5eede59b79576451fdc..239fbc68ac6ada16dce7c7b1bac74df40f3a15e9 100644
 --- a/media/audio/apple/audio_low_latency_input.cc
 +++ b/media/audio/apple/audio_low_latency_input.cc
 @@ -28,6 +28,7 @@
@@ -2284,7 +2284,7 @@ index 93e90c4eba9bc9b93d68e834eb6baabeb2d0ecf0..1b90f41d05f847a94adf2f4da827b1d0
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index cf4c30f417f9a7689f02ceec3b9326e9ca9989b7..ed8059a069757b5d0ce4fd8b0925e89d69a97a07 100644
+index 6c05f8468aa42999be7a1b5d5d3f854813252e0c..16030a4b11926eb0f4c3b960d3209c8d028c5f65 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -142,6 +142,12 @@ component("display") {
@@ -2382,7 +2382,7 @@ index 65ae8170664d15c7884261812400d0ed638a681d..86c937f1e6d03b88803a2ca80abff19c
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 4b93fb6b10d7f5c1059abdd60fa0e51d699c3e8f..2674e1d0a8aea68b8d3583414f12ff1d53297514 100644
+index cb35a2682b68f90a0e6d9916a845c8e1b4b52e23..686c60c0a57be23aa323b96fa5d423278eeeaa1a 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -791,6 +791,8 @@ component("views") {
@@ -2394,7 +2394,7 @@ index 4b93fb6b10d7f5c1059abdd60fa0e51d699c3e8f..2674e1d0a8aea68b8d3583414f12ff1d
    }
  
    if (is_win) {
-@@ -1210,6 +1212,8 @@ source_set("test_support") {
+@@ -1212,6 +1214,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
@@ -2404,7 +2404,7 @@ index 4b93fb6b10d7f5c1059abdd60fa0e51d699c3e8f..2674e1d0a8aea68b8d3583414f12ff1d
      sources += [
        "test/desktop_window_tree_host_win_test_api.cc",
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index aa953e712eb73df08602c36278b8a003ce5114bc..4507428d53ff8290d9a46db7f3066c3495e2fd48 100644
+index d2a9632c4c8097f426ccf8f62597a67d1ca5bb3b..ad6a2ca5960749d2b1a45f39f4ab419370dde406 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
 @@ -20,6 +20,7 @@
@@ -2518,7 +2518,7 @@ index 352ef08958711c421ef89c48125c7505ed024afe..dcdfee94a5959f49422b4c37a0fbac9c
  }
  
 diff --git a/ui/views/controls/webview/BUILD.gn b/ui/views/controls/webview/BUILD.gn
-index bec4d5e3e528369e2806d15731ea2adf6d26fcce..b07544396dad253758877b496b67da2e17a957a2 100644
+index f9d0756f8031155c15df2e861c11de9343d6d938..ca00e8523a1b82e86fc74421ff90b566c58687cc 100644
 --- a/ui/views/controls/webview/BUILD.gn
 +++ b/ui/views/controls/webview/BUILD.gn
 @@ -51,6 +51,12 @@ component("webview") {
