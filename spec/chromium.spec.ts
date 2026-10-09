@@ -1257,7 +1257,7 @@ describe('chromium features', () => {
   });
 
   describe('navigator.geolocation', () => {
-    ifit(features.isFakeLocationProviderEnabled())('returns error when permission is denied', async () => {
+    it('returns error when permission is denied', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -1279,23 +1279,33 @@ describe('chromium features', () => {
       expect(channel).to.equal('success', 'unexpected response from geolocation api');
     });
 
-    ifit(!features.isFakeLocationProviderEnabled())('returns position when permission is granted', async () => {
+    it('returns position when permission is granted', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
           partition: 'geolocation-spec'
         }
       });
-      w.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => {
+      const requested: string[] = [];
+      w.webContents.session.setPermissionRequestHandler((_wc, permission, callback) => {
+        requested.push(permission);
         callback(true);
       });
+      // Supply the position over CDP so the test doesn't depend on a real provider:
+      // the network location service fails on CI.
+      // The permission request still goes through the session's handler.
+      const override = { latitude: 37.7749, longitude: -122.4194, accuracy: 10 };
+      w.webContents.debugger.attach();
+      await w.webContents.debugger.sendCommand('Emulation.setGeolocationOverride', override);
       await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
       const position = await w.webContents.executeJavaScript(`new Promise((resolve, reject) =>
         navigator.geolocation.getCurrentPosition(
-          x => resolve({coords: x.coords, timestamp: x.timestamp}),
+          ({ coords: { latitude, longitude, accuracy }, timestamp }) =>
+            resolve({ coords: { latitude, longitude, accuracy }, timestamp }),
           err => reject(new Error(err.message))))`);
-      expect(position).to.have.property('coords');
-      expect(position).to.have.property('timestamp');
+      expect(requested).to.include('geolocation');
+      expect(position.coords).to.deep.equal(override);
+      expect(position.timestamp).to.be.a('number');
     });
 
     ifdescribe(process.platform === 'darwin')('with --disable-geolocation', () => {
