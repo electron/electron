@@ -1989,6 +1989,40 @@ describe('chromium features', () => {
       expect(await wa.webContents.executeJavaScript('window.handle')).to.equal(null);
     });
 
+    ifit(process.platform === 'darwin')('applies the blocklist to /System/Volumes/Data alias paths', async () => {
+      const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
+      const restricted: string[] = [];
+      ses.on('file-system-access-restricted', (_e, details, callback) => {
+        restricted.push(details.path);
+        callback('deny');
+      });
+      const w = new BrowserWindow({ show: true, webPreferences: { session: ses } });
+      await w.loadURL(urlA);
+      const frame = w.webContents.mainFrame;
+
+      // ~ spelled through the Data volume is still ~.
+      await pasteHandle(w, frame, path.join('/System/Volumes/Data', fs.realpathSync(os.homedir())));
+      await waitForHandle(frame);
+      expect(restricted).to.have.lengthOf(1);
+      expect(await frame.executeJavaScript('window.handle')).to.equal(null);
+
+      // A non-sensitive file spelled through the Data volume stays allowed.
+      // This fails if the /System/Volumes rule is present but prefix stripping is not.
+      const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'fsa-firmlink-')));
+      defer(() => fs.rmSync(dir, { recursive: true, force: true }));
+      const file = path.join(dir, 'test.txt');
+      fs.writeFileSync(file, 'test');
+      await pasteHandle(w, frame, path.join('/System/Volumes/Data', file));
+      await waitForHandle(frame);
+      expect(await frame.executeJavaScript('window.handle && window.handle.kind')).to.equal('file');
+      expect(restricted).to.have.lengthOf(1);
+
+      // /System/Volumes itself (internal system volumes) stays blocked.
+      await pasteHandle(w, frame, '/System/Volumes');
+      await waitForHandle(frame);
+      expect(restricted).to.have.lengthOf(2);
+    });
+
     it('revokes active grants once no top-level document of the origin remains', async function () {
       this.timeout(60000);
       const ses = session.fromPartition(`fsa-scope-${Math.random()}`);
