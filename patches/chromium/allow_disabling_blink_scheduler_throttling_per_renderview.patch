@@ -5,6 +5,10 @@ Subject: allow disabling blink scheduler throttling per RenderView
 
 This allows us to disable throttling for hidden windows.
 
+With backgroundThrottling disabled, hiding the view leaves the renderer shown
+but hides its Windows input HWND. Restore both when the page becomes visible
+again, or precision touchpad input falls back to mouse-wheel delivery.
+
 diff --git a/content/browser/renderer_host/navigation_controller_impl_unittest.cc b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 index 0a7642ce2d3512a7fba15e1944cca08f26a2bcea..2029e19f570630e4864af0f8e403840842bdaf22 100644
 --- a/content/browser/renderer_host/navigation_controller_impl_unittest.cc
@@ -51,20 +55,199 @@ index d98b5dda96208e3f923aa8a9c6e6eb988004904b..7c91ed2d7a397ad9e36cbecfc13de7bd
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 105c0c265d596793f4b2c4e5f624b9661b744447..19ca97408c265159b1d33b6c93dcff222c84c0fd 100644
+index 105c0c265d596793f4b2c4e5f624b9661b744447..6bf6ab1ae096152fc1165442cac0dd6bdc5d2472 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -694,8 +694,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
-   // OnShowWithPageVisibility will not call NotifyHostAndDelegateOnWasShown,
-   // which updates `visibility_`, unless the host is hidden. Make sure no update
-   // is needed.
+@@ -691,11 +691,32 @@ bool RenderWidgetHostViewAura::IsShowing() {
+ }
+ 
+ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
+-  // OnShowWithPageVisibility will not call NotifyHostAndDelegateOnWasShown,
+-  // which updates `visibility_`, unless the host is hidden. Make sure no update
+-  // is needed.
 -  CHECK(host()->IsHidden() || visibility_ == Visibility::VISIBLE);
--  OnShowWithPageVisibility(page_visibility);
-+  if (host()->IsHidden() || visibility_ == Visibility::VISIBLE)
-+    OnShowWithPageVisibility(page_visibility);
++  // With background throttling disabled, the host stays shown while the view
++  // is hidden. Restore visibility_ here since OnShowWithPageVisibility skips
++  // NotifyHostAndDelegateOnWasShown for an already shown host.
++  const bool already_showing = !host()->IsHidden();
++  if (already_showing)
++    visibility_ = Visibility::VISIBLE;
++
++#if BUILDFLAG(IS_WIN)
++  base::WeakPtr<RenderWidgetHostViewAura> weak_this(
++      weak_ptr_factory_.GetWeakPtr());
++#endif
++
+   OnShowWithPageVisibility(page_visibility);
++
++#if BUILDFLAG(IS_WIN)
++  if (!weak_this)
++    return;
++
++  // HideImpl and kHiddenButPainting hide the input HWND even if the host stays
++  // shown. Restore it only when the page becomes visible.
++  if (already_showing && page_visibility == PageVisibilityState::kVisible) {
++    UpdateLegacyWin();
++    // WARNING: Do not add any code after this line, since the last call can
++    // potentially destroy `this`.
++  }
++#endif
  }
  
  void RenderWidgetHostViewAura::EnsurePlatformVisibility(
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc b/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
+index ec8d5df653a00cf8e3ae0476295e5f74c0e504c1..47b83304ad887eadd9949bcc5285f7e36e9b76c2 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
++++ b/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
+@@ -5537,6 +5537,148 @@ TEST_F(RenderWidgetHostViewAuraTest, OcclusionHidesTooltip) {
+   EXPECT_EQ(std::u16string(), view_->tooltip_);
+ }
+ 
++// Check the input HWND's own style: IsWindowVisible() also depends on the
++// visibility of the test root window.
++TEST_F(RenderWidgetHostViewAuraTest,
++       LegacyRenderWidgetHostHWNDVisibilityAfterHideOrOcclusion) {
++  MockWindowEventTarget event_target;
++  auto prop_window_target = std::make_unique<ui::ViewProp>(
++      parent_view_->GetHostWindowHWND(),
++      ui::WindowEventTarget::kWin32InputEventTarget,
++      static_cast<ui::WindowEventTarget*>(&event_target));
++
++  InitViewForFrame(nullptr);
++  ParentHostView(view_, parent_view_);
++  view_->ShowWithVisibility(PageVisibilityState::kVisible);
++
++  ASSERT_TRUE(legacy_render_widget_host_HWND());
++  HWND hwnd = legacy_render_widget_host_HWND()->hwnd();
++  ASSERT_TRUE(::GetWindowLongPtr(hwnd, GWL_STYLE) & WS_VISIBLE);
++
++  for (bool disable_hidden : {false, true}) {
++    widget_host_->disable_hidden_ = disable_hidden;
++    for (bool occluded : {false, true}) {
++      SCOPED_TRACE(testing::Message() << "disable_hidden=" << disable_hidden
++                                      << ", occluded=" << occluded);
++      if (occluded) {
++        view_->WasOccluded();
++      } else {
++        view_->Hide();
++      }
++      EXPECT_EQ(!disable_hidden, widget_host_->IsHidden());
++      EXPECT_FALSE(::GetWindowLongPtr(hwnd, GWL_STYLE) & WS_VISIBLE);
++
++      view_->ShowWithVisibility(PageVisibilityState::kVisible);
++      EXPECT_FALSE(widget_host_->IsHidden());
++      EXPECT_TRUE(::GetWindowLongPtr(hwnd, GWL_STYLE) & WS_VISIBLE);
++      EXPECT_EQ(view_->GetHostWindowHWND(), ::GetParent(hwnd));
++    }
++  }
++}
++
++TEST_F(RenderWidgetHostViewAuraTest,
++       LegacyRenderWidgetHostHWNDHiddenPaintingAfterHideOrOcclusion) {
++  MockWindowEventTarget event_target;
++  auto prop_window_target = std::make_unique<ui::ViewProp>(
++      parent_view_->GetHostWindowHWND(),
++      ui::WindowEventTarget::kWin32InputEventTarget,
++      static_cast<ui::WindowEventTarget*>(&event_target));
++
++  InitViewForFrame(nullptr);
++  ParentHostView(view_, parent_view_);
++  view_->ShowWithVisibility(PageVisibilityState::kVisible);
++
++  ASSERT_TRUE(legacy_render_widget_host_HWND());
++  HWND hwnd = legacy_render_widget_host_HWND()->hwnd();
++
++  for (bool disable_hidden : {false, true}) {
++    widget_host_->disable_hidden_ = disable_hidden;
++    for (bool occluded : {false, true}) {
++      SCOPED_TRACE(testing::Message() << "disable_hidden=" << disable_hidden
++                                      << ", occluded=" << occluded);
++      if (occluded) {
++        view_->WasOccluded();
++      } else {
++        view_->Hide();
++      }
++      EXPECT_EQ(!disable_hidden, widget_host_->IsHidden());
++      EXPECT_FALSE(::GetWindowLongPtr(hwnd, GWL_STYLE) & WS_VISIBLE);
++
++      view_->ShowWithVisibility(PageVisibilityState::kHiddenButPainting);
++      EXPECT_FALSE(widget_host_->IsHidden());
++      EXPECT_FALSE(::GetWindowLongPtr(hwnd, GWL_STYLE) & WS_VISIBLE);
++
++      view_->ShowWithVisibility(PageVisibilityState::kVisible);
++      EXPECT_FALSE(widget_host_->IsHidden());
++      EXPECT_TRUE(::GetWindowLongPtr(hwnd, GWL_STYLE) & WS_VISIBLE);
++      EXPECT_EQ(view_->GetHostWindowHWND(), ::GetParent(hwnd));
++    }
++  }
++}
++
++TEST_F(RenderWidgetHostViewAuraTest,
++       LegacyRenderWidgetHostHWNDVisibilityAfterHiddenButPainting) {
++  MockWindowEventTarget event_target;
++  auto prop_window_target = std::make_unique<ui::ViewProp>(
++      parent_view_->GetHostWindowHWND(),
++      ui::WindowEventTarget::kWin32InputEventTarget,
++      static_cast<ui::WindowEventTarget*>(&event_target));
++
++  InitViewForFrame(nullptr);
++  ParentHostView(view_, parent_view_);
++  view_->ShowWithVisibility(PageVisibilityState::kVisible);
++
++  ASSERT_TRUE(legacy_render_widget_host_HWND());
++  HWND hwnd = legacy_render_widget_host_HWND()->hwnd();
++  view_->Hide();
++  ASSERT_TRUE(widget_host_->IsHidden());
++
++  // Disable throttling after hiding, so the first show starts with a hidden
++  // host.
++  widget_host_->disable_hidden_ = true;
++  for (int cycle = 0; cycle < 2; ++cycle) {
++    SCOPED_TRACE(testing::Message() << "cycle=" << cycle);
++    view_->ShowWithVisibility(PageVisibilityState::kHiddenButPainting);
++    EXPECT_FALSE(widget_host_->IsHidden());
++    EXPECT_FALSE(::GetWindowLongPtr(hwnd, GWL_STYLE) & WS_VISIBLE);
++
++    view_->ShowWithVisibility(PageVisibilityState::kVisible);
++    EXPECT_FALSE(widget_host_->IsHidden());
++    EXPECT_TRUE(::GetWindowLongPtr(hwnd, GWL_STYLE) & WS_VISIBLE);
++    EXPECT_EQ(view_->GetHostWindowHWND(), ::GetParent(hwnd));
++  }
++}
++
++TEST_F(RenderWidgetHostViewAuraTest,
++       LegacyRenderWidgetHostHWNDVisibilityAfterEnablingBackgroundThrottling) {
++  MockWindowEventTarget event_target;
++  auto prop_window_target = std::make_unique<ui::ViewProp>(
++      parent_view_->GetHostWindowHWND(),
++      ui::WindowEventTarget::kWin32InputEventTarget,
++      static_cast<ui::WindowEventTarget*>(&event_target));
++
++  InitViewForFrame(nullptr);
++  ParentHostView(view_, parent_view_);
++  view_->ShowWithVisibility(PageVisibilityState::kVisible);
++
++  ASSERT_TRUE(legacy_render_widget_host_HWND());
++  HWND hwnd = legacy_render_widget_host_HWND()->hwnd();
++  widget_host_->disable_hidden_ = true;
++  view_->WasOccluded();
++  ASSERT_FALSE(widget_host_->IsHidden());
++  ASSERT_FALSE(::GetWindowLongPtr(hwnd, GWL_STYLE) & WS_VISIBLE);
++
++  widget_host_->disable_hidden_ = false;
++  view_->WasOccluded();
++  EXPECT_TRUE(widget_host_->IsHidden());
++  EXPECT_FALSE(::GetWindowLongPtr(hwnd, GWL_STYLE) & WS_VISIBLE);
++
++  view_->ShowWithVisibility(PageVisibilityState::kVisible);
++  EXPECT_FALSE(widget_host_->IsHidden());
++  EXPECT_TRUE(::GetWindowLongPtr(hwnd, GWL_STYLE) & WS_VISIBLE);
++  EXPECT_EQ(view_->GetHostWindowHWND(), ::GetParent(hwnd));
++}
++
+ TEST_F(RenderWidgetHostViewAuraTest, LegacyRenderWidgetHostHWNDAuraLookup) {
+   // Give the host window an event target, which allows the view to create the
+   // LegacyRenderWidgetHostHWND Chrome_RenderWidgetHostHWND window.
 diff --git a/content/public/browser/render_view_host.h b/content/public/browser/render_view_host.h
 index 782bed0fdc08d57eceb059f398f253fab9233b1b..f1ab5b981ea68af1b11313e67f2c5060f0a640b1 100644
 --- a/content/public/browser/render_view_host.h
