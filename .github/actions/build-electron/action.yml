@@ -140,6 +140,30 @@ runs:
       run: |
         sudo sysctl -w net.local.stream.sendspace=2097152 || true
         sudo sysctl -w net.local.stream.recvspace=2097152 || true
+    # Diagnostics for the "Failed to run esbuild: Error: The service was
+    # stopped" flake, where the esbuild child's stdout closes without a panic
+    # trace. devtools-frontend's esbuild.js always points ESBUILD_BINARY_PATH
+    # at third_party/esbuild/esbuild, so wrap the binary in place: the wrapper
+    # records how a failed run ended (exit code or signal, stderr tail) for the
+    # failure-only dump below. If the wrapper cannot run, the real binary is
+    # put back. Runs once per job; the MAS build reuses it.
+    - name: Wrap esbuild to record its exit status (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      shell: bash
+      run: |
+        ESBUILD="src/third_party/devtools-frontend/src/third_party/esbuild/esbuild"
+        if [ -e "$ESBUILD.real" ]; then
+          echo "esbuild is already wrapped"
+          exit 0
+        fi
+        mv "$ESBUILD" "$ESBUILD.real"
+        cp src/electron/script/actions/esbuild-wrapper.sh "$ESBUILD"
+        chmod +x "$ESBUILD"
+        if ! "$ESBUILD" --version; then
+          echo "::warning::esbuild wrapper failed to run; using the real binary"
+          rm -f "$ESBUILD"
+          mv "$ESBUILD.real" "$ESBUILD"
+        fi
     - name: Build Electron ${{ inputs.step-suffix }}
       if: ${{ inputs.target-platform != 'win' }}
       shell: bash
@@ -211,6 +235,42 @@ runs:
         echo "::group::esbuild process mentions (last 45m)"
         log show --last 45m --style compact --predicate 'eventMessage CONTAINS "esbuild"' | tail -n 50
         echo "::endgroup::"
+        # Written by script/actions/esbuild-wrapper.sh, one file per failed
+        # esbuild run (under $TMPDIR if the build tool did not pass
+        # RUNNER_TEMP through). Staged with any esbuild/node crash reports for
+        # upload.
+        DIAG_DIR="$RUNNER_TEMP/esbuild-diagnostics"
+        mkdir -p "$DIAG_DIR"
+        echo "::group::esbuild wrapper exit records"
+        found=""
+        for f in "$RUNNER_TEMP"/esbuild-exit-logs/exit-*.log "${TMPDIR:-/tmp}"/esbuild-exit-logs/exit-*.log; do
+          [ -f "$f" ] || continue
+          found=1
+          cat "$f"
+          cp "$f" "$DIAG_DIR/"
+        done
+        [ -n "$found" ] || echo "No failed esbuild runs were recorded"
+        echo "::endgroup::"
+        echo "::group::esbuild / node crash reports (last 3h)"
+        find ~/Library/Logs/DiagnosticReports /Library/Logs/DiagnosticReports \
+          -maxdepth 1 -type f \( -iname '*esbuild*' -o -iname '*node*' \) -mmin -180 2>/dev/null |
+        while read -r f; do
+          echo "=== $f"
+          copy="$DIAG_DIR/$(basename "$f")"
+          # Only reading may need root; the copy stays owned by the runner.
+          # shellcheck disable=SC2024
+          cat "$f" > "$copy" 2>/dev/null || sudo -n cat "$f" > "$copy"
+          head -n 200 "$copy"
+        done
+        echo "::endgroup::"
+    - name: Upload esbuild diagnostics
+      if: ${{ failure() && inputs.target-platform == 'macos' }}
+      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      with:
+        name: esbuild-diagnostics-${{ inputs.artifact-platform }}-${{ inputs.target-arch }}
+        path: ${{ runner.temp }}/esbuild-diagnostics
+        if-no-files-found: ignore
+        retention-days: 7
     - name: Build Electron (Windows) ${{ inputs.step-suffix }}
       if: ${{ inputs.target-platform == 'win' }}
       shell: powershell
