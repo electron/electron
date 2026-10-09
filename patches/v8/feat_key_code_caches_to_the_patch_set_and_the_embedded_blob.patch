@@ -29,7 +29,7 @@ This adds two things:
 Both parts are suitable for upstreaming.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 4b7f8f537f17f0734c2315dd7cb813b396e8a5c6..a3cab682aaf5e7ea862cb9fe5c589dd7f68ae528 100644
+index 3b0dc8a15f5a68e77ca94523aeed834bd4adcb61..5615d60b30fe06e955ef02079d5bcc29a6a72c18 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -21,6 +21,7 @@ import("//third_party/icu/config.gni")
@@ -40,7 +40,7 @@ index 4b7f8f537f17f0734c2315dd7cb813b396e8a5c6..a3cab682aaf5e7ea862cb9fe5c589dd7
  
  if (is_clang) {
    import("//build/config/clang/clang.gni")
-@@ -1325,6 +1326,14 @@ enabled_external_defines =
+@@ -1333,6 +1334,14 @@ enabled_external_defines =
  disabled_external_defines =
      disabled_external_v8_defines + disabled_external_cppgc_defines
  
@@ -128,10 +128,10 @@ index 0a0134e043722757bb85db55cf555974420e9b57..918d4bacf66e45bbd6ffc63d01de755f
  
    // Calculate the V8 version string.
 diff --git a/src/wasm/wasm-serialization.cc b/src/wasm/wasm-serialization.cc
-index de8e70d82b0ff6ac6c66540d8ea4154cec56c6bd..5bc220a8327b71d1f37a9ce784afcba8f6f54617 100644
+index a955b8f3a3d942d381c06b366928e8aadb9e4c9d..efb5aa20ae1f1ea87837ac029f82669440538d4f 100644
 --- a/src/wasm/wasm-serialization.cc
 +++ b/src/wasm/wasm-serialization.cc
-@@ -8,6 +8,7 @@
+@@ -9,6 +9,7 @@
  #include "src/codegen/assembler-inl.h"
  #include "src/debug/debug.h"
  #include "src/runtime/runtime.h"
@@ -139,7 +139,7 @@ index de8e70d82b0ff6ac6c66540d8ea4154cec56c6bd..5bc220a8327b71d1f37a9ce784afcba8
  #include "src/snapshot/snapshot-data.h"
  #include "src/utils/ostreams.h"
  #include "src/utils/version.h"
-@@ -128,9 +129,20 @@ class Reader {
+@@ -129,9 +130,20 @@ class Reader {
    const uint8_t* pos_;
  };
  
@@ -162,7 +162,7 @@ index de8e70d82b0ff6ac6c66540d8ea4154cec56c6bd..5bc220a8327b71d1f37a9ce784afcba8
           sizeof(typename CompileTimeImportFlags::StorageType) +
           sizeof(uint32_t) +  // length of constants_module.
           compile_imports.constants_module().size();
-@@ -141,6 +153,7 @@ void WriteHeader(Writer* writer, WasmEnabledFeatures enabled_features,
+@@ -142,6 +154,7 @@ void WriteHeader(Writer* writer, WasmEnabledFeatures enabled_features,
    DCHECK_EQ(0, writer->bytes_written());
    writer->Write(SerializedData::kMagicNumber);
    writer->Write(Version::Hash());
@@ -171,10 +171,10 @@ index de8e70d82b0ff6ac6c66540d8ea4154cec56c6bd..5bc220a8327b71d1f37a9ce784afcba8
    writer->Write(FlagList::Hash());
    writer->Write(enabled_features.ToIntegral());
 diff --git a/src/wasm/wasm-serialization.h b/src/wasm/wasm-serialization.h
-index 31becd542dd6ff9d72dc9e9e89fb6ced399920f8..bf38e9ddc0d3247bd2a1f9f8b3a2f4e6b9e208b9 100644
+index 3e570ad246e065c12b12d10a8766e79599362298..0806e312e76d7eec05a7d586c3b32247ae977f34 100644
 --- a/src/wasm/wasm-serialization.h
 +++ b/src/wasm/wasm-serialization.h
-@@ -30,10 +30,11 @@ class V8_EXPORT_PRIVATE WasmSerializer {
+@@ -31,10 +31,11 @@ class V8_EXPORT_PRIVATE WasmSerializer {
    // The data header consists of (see {WriteHeader}):
    // [0] magic number (uint32_t)
    // [1] version hash (uint32_t)
