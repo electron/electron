@@ -354,3 +354,22 @@ export function isTestingBindingAvailable() {
     return false;
   }
 }
+
+// Focuses webContents and waits until its page reports document.hasFocus().
+// The browser-side 'focus' event can arrive before the renderer knows it has focus.
+// Until it does, the async clipboard rejects with "Document is not focused."
+// and webContents.paste() can be dropped.
+// Each poll requests focus again in case it was lost.
+// The wait is bounded by waitUntil's timeout,
+// so a window that never gets focus fails here instead of hanging the test.
+export async function focusWebContents(webContents: Electron.WebContents) {
+  webContents.focus();
+  await waitUntil(
+    async () => {
+      if (await webContents.executeJavaScript('document.hasFocus()')) return true;
+      webContents.focus();
+      return false;
+    },
+    { rate: 100 }
+  );
+}
