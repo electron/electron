@@ -12,31 +12,38 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index 9679f9ad8f824cd3955a8e8ed0a3038388c8c88d..f8f0fd04a9e2ddd35c6c818e3773f9b49915ef9c 100644
+index 15ca298d14e55f961267ed95b154edceaf23962c..fff8cd62b8f96c45bdacee06ff3a5ae8d4033064 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
-@@ -367,7 +367,8 @@ void Compositor::SetLayerTreeFrameSink(
+@@ -367,9 +367,11 @@ void Compositor::SetLayerTreeFrameSink(
    // to match the Compositor's.
    if (display_private_) {
      display_private_->Resize(size());
--    display_private_->SetDisplayVisible(host_->IsVisible());
 +    // Invisible display is throttling itself.
-+    display_private_->SetDisplayVisible(background_throttling_ ? host_->IsVisible() : true);
+     display_private_->SetDisplayVisible(
+-        host_->IsVisible() ? viz::mojom::DisplayVisibility::kVisible
+-                           : viz::mojom::DisplayVisibility::kInvisible);
++        host_->IsVisible() || !background_throttling_
++            ? viz::mojom::DisplayVisibility::kVisible
++            : viz::mojom::DisplayVisibility::kInvisible);
      display_private_->SetDisplayColorSpaces(display_color_spaces_);
      display_private_->SetDisplayColorMatrix(
          gfx::SkM44ToTransform(display_color_matrix_));
-@@ -607,7 +608,9 @@ void Compositor::SetVisible(bool visible) {
+@@ -609,9 +611,11 @@ void Compositor::SetVisible(bool visible) {
    // updated then. We need to call this even if the visibility hasn't changed,
    // for the same reason.
-   if (display_private_)
--    display_private_->SetDisplayVisible(visible);
+   if (display_private_) {
 +    // Invisible display is throttling itself.
-+    display_private_->SetDisplayVisible(
-+        background_throttling_ ? visible : true);
+     display_private_->SetDisplayVisible(
+-        visible ? viz::mojom::DisplayVisibility::kVisible
+-                : viz::mojom::DisplayVisibility::kInvisible);
++        visible || !background_throttling_
++            ? viz::mojom::DisplayVisibility::kVisible
++            : viz::mojom::DisplayVisibility::kInvisible);
+   }
  
    if (changed) {
-     observer_list_.Notify(&CompositorObserver::OnCompositorVisibilityChanged,
-@@ -1075,6 +1078,15 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
+@@ -1080,6 +1084,17 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
        host_begin_frame_observer_->GetBoundRemote());
  }
  
@@ -45,7 +52,9 @@ index 9679f9ad8f824cd3955a8e8ed0a3038388c8c88d..f8f0fd04a9e2ddd35c6c818e3773f9b4
 +  if (display_private_) {
 +    // Invisible display is throttling itself.
 +    display_private_->SetDisplayVisible(
-+        background_throttling_ ? host_->IsVisible() : true);
++        host_->IsVisible() || !background_throttling_
++            ? viz::mojom::DisplayVisibility::kVisible
++            : viz::mojom::DisplayVisibility::kInvisible);
 +  }
 +}
 +

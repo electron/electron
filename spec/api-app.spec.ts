@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, session, net as electronNet, type WebContents, utilityProcess } from 'electron/main';
+import { app, BrowserWindow, Menu, session, net as electronNet, type WebContents } from 'electron/main';
 
 import { assert, expect } from 'chai';
 
@@ -16,7 +16,8 @@ import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers.ts';
-import { defer, ifdescribe, ifit, isWayland, listen, waitUntil } from './lib/spec-helpers.ts';
+import { defer, ifdescribe, ifit, isWayland, listen, spawnAndWait, waitUntil } from './lib/spec-helpers.ts';
+import { runInUtilityProcess } from './lib/utility-process-helpers.ts';
 import { closeWindow, closeAllWindows } from './lib/window-helpers.ts';
 import {
   makeXdgMockDirectories,
@@ -1427,22 +1428,28 @@ describe('app module', () => {
         fs.rmSync(tempBrowserDataPath, { force: true, recursive: true });
       });
 
-      it('writes to userData by default', () => {
+      // The app quits once it has written its session data.
+      const runApp = async (args: string[]) => {
+        const { code, stdout, stderr } = await spawnAndWait(process.execPath, [appPath, ...args], { timeout: 20_000 });
+        expect(code).to.equal(0, `stdout:\n${stdout}\nstderr:\n${stderr}`);
+      };
+
+      it('writes to userData by default', async () => {
         expect(hasSessionFiles(userDataPath)).to.equal(false);
-        cp.spawnSync(process.execPath, [appPath]);
+        await runApp([]);
         expect(hasSessionFiles(userDataPath)).to.equal(true);
       });
 
-      it('can be changed', () => {
+      it('can be changed', async () => {
         expect(hasSessionFiles(userDataPath)).to.equal(false);
-        cp.spawnSync(process.execPath, [appPath, 'sessionData', tempBrowserDataPath]);
+        await runApp(['sessionData', tempBrowserDataPath]);
         expect(hasSessionFiles(userDataPath)).to.equal(false);
         expect(hasSessionFiles(tempBrowserDataPath)).to.equal(true);
       });
 
-      it('changing userData affects default sessionData', () => {
+      it('changing userData affects default sessionData', async () => {
         expect(hasSessionFiles(userDataPath)).to.equal(false);
-        cp.spawnSync(process.execPath, [appPath, 'userData', tempBrowserDataPath]);
+        await runApp(['userData', tempBrowserDataPath]);
         expect(hasSessionFiles(userDataPath)).to.equal(false);
         expect(hasSessionFiles(tempBrowserDataPath)).to.equal(true);
       });
@@ -2769,13 +2776,6 @@ describe('app module', () => {
     });
 
     it('impacts proxy for requests made from utility process', async () => {
-      const utilityFixturePath = path.resolve(
-        import.meta.dirname,
-        'fixtures',
-        'api',
-        'utility-process',
-        'api-net-spec.js'
-      );
       const fn = async () => {
         const urlRequest = electronNet.request('http://example.com/');
         const response = await getResponse(urlRequest);
@@ -2792,15 +2792,7 @@ describe('app module', () => {
       await app.setProxy(config);
       const proxy = await app.resolveProxy('http://example.com/');
       expect(proxy).to.equal(`PROXY ${hostname}:${port}`);
-      const child = utilityProcess.fork(utilityFixturePath, [], {
-        execArgv: ['--expose-gc']
-      });
-      child.postMessage({ fn: `(${fn})()` });
-      const [data] = await once(child, 'message');
-      expect(data.ok).to.be.true(data.message);
-      // Cleanup.
-      const [code] = await once(child, 'exit');
-      expect(code).to.equal(0);
+      await runInUtilityProcess(fn);
     });
 
     it('does not impact proxy for requests made from main process', async () => {

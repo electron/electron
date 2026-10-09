@@ -90,10 +90,10 @@ index 54a18f27c5409bd5893e2dda988581519cb8ca86..5b462dca6277dd542d56344e45d9e417
    // when it receives the AcceptCHFrame.
    EnabledClientHints? enabled_client_hints;
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index d166641ee2492f3e6afdf23c936ae8738cb3848c..5b444e70af843c2f319264de9ef7f506ed0fa69e 100644
+index 37d07231f3bded16db0ba23448e9e8325a0708a9..9fdfe8ccfec7e497c44a0c7d40fafa66ef41b5d9 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
-@@ -15,6 +15,7 @@ import "services/network/public/mojom/fetch_api.mojom";
+@@ -16,6 +16,7 @@ import "services/network/public/mojom/fetch_api.mojom";
  import "services/network/public/mojom/http_request_headers.mojom";
  import "services/network/public/mojom/http_response_headers.mojom";
  import "services/network/public/mojom/ip_address_space.mojom";
@@ -101,7 +101,7 @@ index d166641ee2492f3e6afdf23c936ae8738cb3848c..5b444e70af843c2f319264de9ef7f506
  import "services/network/public/mojom/ip_endpoint.mojom";
  import "services/network/public/mojom/load_timing_info.mojom";
  import "services/network/public/mojom/load_timing_internal_info.mojom";
-@@ -55,6 +56,9 @@ struct URLResponseHead {
+@@ -62,6 +63,9 @@ struct URLResponseHead {
    // The response headers or NULL if the URL type does not support headers.
    HttpResponseHeaders? headers;
  

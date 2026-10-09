@@ -739,6 +739,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 
   fake_browser_process_->PostMainMessageLoopRun();
   content::DevToolsAgentHost::StopRemoteDebuggingPipeHandler();
+  content::DevToolsAgentHost::StopRemoteDebuggingServer();
 
 #if BUILDFLAG(IS_LINUX)
   ui::OzonePlatform::GetInstance()->PostMainMessageLoopRun();

@@ -86,6 +86,8 @@ class ElectronExtensionsBrowserClient
   bool CanExtensionCrossIncognito(
       const extensions::Extension* extension,
       content::BrowserContext* context) const override;
+  extensions::BrowserContextLifetimeTracker* GetBrowserContextLifetimeTracker()
+      override;
   base::FilePath GetBundleResourcePath(
       const network::ResourceRequest& request,
       const base::FilePath& extension_resources_path,

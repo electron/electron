@@ -245,7 +245,7 @@ index 61683d0eddb04c494ca5e650e7d556b44968ec49..0e39a83664fe12dc844f433e32e44605
  
  }  // namespace ui
 diff --git a/ui/shell_dialogs/select_file_dialog_linux_portal.cc b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
-index 56a1bc0dc6229e07cea474b6d8fbd39196db42a1..e65ec0fa10442458fccb14d7905885c779637d54 100644
+index 54ad2a705c846cb23e67cc834def96bec14dda4b..ebebcbda95ad1bb7db4f6dc8940e4c5ee87dbd2c 100644
 --- a/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 +++ b/ui/shell_dialogs/select_file_dialog_linux_portal.cc
 @@ -4,6 +4,7 @@
@@ -266,7 +266,7 @@ index 56a1bc0dc6229e07cea474b6d8fbd39196db42a1..e65ec0fa10442458fccb14d7905885c7
  
  constexpr char kFileChooserMethodOpenFile[] = "OpenFile";
  constexpr char kFileChooserMethodSaveFile[] = "SaveFile";
-@@ -158,13 +160,18 @@ void SelectFileDialogLinuxPortal::SelectFileImpl(
+@@ -159,13 +161,18 @@ void SelectFileDialogLinuxPortal::SelectFileImpl(
                       default_extension, std::move(caller_copy)));
  }
  
@@ -286,7 +286,7 @@ index 56a1bc0dc6229e07cea474b6d8fbd39196db42a1..e65ec0fa10442458fccb14d7905885c7
      gfx::NativeWindow owning_window = host_ ? host_->window() : nullptr;
      if (auto* linux_ui = ui::LinuxUi::instance()) {
        fallback_dialog_ = linux_ui->CreateSelectFileDialog(listener_, nullptr);
-@@ -351,11 +358,14 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -352,11 +359,14 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
      const PortalFilterSet& filter_set) {
    dbus_xdg::Dictionary dict;
  
@@ -304,7 +304,7 @@ index 56a1bc0dc6229e07cea474b6d8fbd39196db42a1..e65ec0fa10442458fccb14d7905885c7
        [[fallthrough]];
      case SelectFileDialog::SELECT_FOLDER:
      case SelectFileDialog::Type::SELECT_EXISTING_FOLDER:
-@@ -368,6 +378,11 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
+@@ -369,6 +379,11 @@ dbus_xdg::Dictionary SelectFileDialogLinuxPortal::BuildOptionsDictionary(
        break;
    }
  
