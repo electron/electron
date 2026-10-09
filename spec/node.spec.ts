@@ -25,6 +25,7 @@ import {
   ifit,
   isTestingBindingAvailable,
   itremote,
+  spawnAndWait,
   startRemoteControlApp,
   useRemoteContext
 } from './lib/spec-helpers.ts';
@@ -1451,13 +1452,13 @@ describe('node feature', () => {
     }
   });
 
-  it('Can find a module using a package.json main field', () => {
-    const result = childProcess.spawnSync(
+  it('Can find a module using a package.json main field', async () => {
+    const { code, stdout, stderr } = await spawnAndWait(
       process.execPath,
       [path.resolve(fixtures, 'api', 'electron-main-module', 'app.asar')],
-      { stdio: 'inherit' }
+      { timeout: 20_000 }
     );
-    expect(result.status).to.equal(0);
+    expect(code).to.equal(0, `stdout:\n${stdout}\nstderr:\n${stderr}`);
   });
 
   it('handles Promise timeouts correctly', async () => {
