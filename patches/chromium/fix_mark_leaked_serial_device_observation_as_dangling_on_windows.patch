@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 9 Oct 2026 12:00:00 +0000
+Subject: fix: mark leaked serial device observation as dangling on Windows
+
+With dangling raw_ptr checks enabled, the browser process fails
+CheckDanglingRawPtrBufferEmpty() at exit on Windows after any page has
+used navigator.serial.
+
+SerialDeviceEnumeratorWin::UiThreadHelper observes the
+DeviceMonitorWin for GUID_DEVINTERFACE_COMPORT through a
+base::ScopedObservation, which holds a raw_ptr to it. The helper is
+owned through SerialDeviceEnumeratorWin by SerialPortManagerImpl, which
+DeviceService keeps in a SequenceBound on a ThreadPool sequence.
+content binds DeviceService in the UI thread's SequenceLocalStorage, so
+it is destroyed in BrowserTaskExecutor::Shutdown(), after
+ThreadPoolInstance::Shutdown(). The task that would delete the
+SerialPortManagerImpl is dropped, and the enumerator and helper are
+leaked with the observation still active. AtExitManager then deletes
+DeviceMonitorMessageWindow and its DeviceMonitorWin instances, leaving
+the observation's raw_ptr dangling.
+
+The pointer is never used after that, so mark the observation
+LeakedDanglingUntriaged, as base::ScopedObservation provides for
+observations that are known to leak (crbug.com/493572976).
+HidServiceWin and UsbServiceWin are not affected because DeviceService
+owns them directly on the UI thread and destroys them before AtExit.
+
+diff --git a/services/device/serial/serial_device_enumerator_win.cc b/services/device/serial/serial_device_enumerator_win.cc
+index 62c92e4dde2d092b2d25a879d600093149b587f3..f132042de2f1885b07b009739910a1c6128c0a5f 100644
+--- a/services/device/serial/serial_device_enumerator_win.cc
++++ b/services/device/serial/serial_device_enumerator_win.cc
+@@ -494,7 +494,13 @@ class SerialDeviceEnumeratorWin::UiThreadHelper
+   base::WeakPtr<SerialDeviceEnumeratorWin> enumerator_;
+   scoped_refptr<base::SequencedTaskRunner> task_runner_;
+ 
+-  base::ScopedObservation<DeviceMonitorWin, DeviceMonitorWin::Observer>
++  // The browser destroys DeviceService after the ThreadPool has shut down, so
++  // the SerialPortManagerImpl that owns the enumerator, and in turn this
++  // helper, is leaked with the observation still active. The DeviceMonitorWin
++  // is then deleted by an AtExitManager callback, leaving this pointer
++  // dangling but never used.
++  base::ScopedObservation<DeviceMonitorWin,
++                          DeviceMonitorWin::Observer>::LeakedDanglingUntriaged
+       device_observation_{this};
+ };
+ 
