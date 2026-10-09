@@ -26,10 +26,10 @@ Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/8512441;
 remove this patch when it rolls in.
 
 diff --git a/net/base/network_change_notifier_linux_portal.cc b/net/base/network_change_notifier_linux_portal.cc
-index c20c000306954707e7cd20f0e1789e6db927d7ec..31a028857fb5a58e7d60bf0f90cf89bcc7579d3e 100644
+index 4c7f4f8fd9f767140b1c4ba3e35a65218d8de0eb..20ea9c44d838a395233e384a180b6e9f904e8e55 100644
 --- a/net/base/network_change_notifier_linux_portal.cc
 +++ b/net/base/network_change_notifier_linux_portal.cc
-@@ -58,7 +58,7 @@ class PortalMonitorImpl : public NetworkChangeNotifierLinux::PortalMonitor {
+@@ -55,7 +55,7 @@ class PortalMonitorImpl : public NetworkChangeNotifierLinux::PortalMonitor {
        // 2. In unit test suites (e.g. `net_unittests`), cross-platform tests
        //    call `NetworkChangeNotifier::CreateIfNeeded()` across sequential
        //    `TaskEnvironment`s without calling
@@ -38,7 +38,7 @@ index c20c000306954707e7cd20f0e1789e6db927d7ec..31a028857fb5a58e7d60bf0f90cf89bc
        //    process-global D-Bus singletons retains a stale origin `TaskRunner`
        //    from the first test's destroyed `TaskEnvironment`. Owning a private
        //    bus here and shutting it down in `~PortalMonitorImpl()` ties the
-@@ -73,6 +73,11 @@ class PortalMonitorImpl : public NetworkChangeNotifierLinux::PortalMonitor {
+@@ -70,6 +70,11 @@ class PortalMonitorImpl : public NetworkChangeNotifierLinux::PortalMonitor {
        options.dbus_task_runner = base::ThreadPool::CreateSingleThreadTaskRunner(
            {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
            base::SingleThreadTaskRunnerThreadMode::DEDICATED);

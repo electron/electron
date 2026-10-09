@@ -23,10 +23,10 @@ additional headless changes from breaking macOS window behavior.
 https://chromium-review.googlesource.com/c/chromium/src/+/7487666
 
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 15d59648317174e48993b3fd316f7160d3c4288b..c5c79c4a4dc07bfa1de782cb8d84df0969141627 100644
+index e58bb7368359e6ba13c249b8677a91e509313ce3..036a2af6bb00a4c06682692c964c10bd88d95651 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-@@ -248,6 +248,7 @@ @implementation NativeWidgetMacNSWindow {
+@@ -249,6 +249,7 @@ @implementation NativeWidgetMacNSWindow {
    BOOL _isEnforcingNeverMadeVisible;
    BOOL _activationIndependence;
    BOOL _isTooltip;
@@ -34,7 +34,7 @@ index 15d59648317174e48993b3fd316f7160d3c4288b..c5c79c4a4dc07bfa1de782cb8d84df09
    BOOL _isShufflingForOrdering;
    BOOL _miniaturizationInProgress;
    BOOL _inSetFrameFromAdjustment;
-@@ -256,6 +257,7 @@ @implementation NativeWidgetMacNSWindow {
+@@ -257,6 +258,7 @@ @implementation NativeWidgetMacNSWindow {
  @synthesize bridgedNativeWidgetId = _bridgedNativeWidgetId;
  @synthesize bridge = _bridge;
  @synthesize isTooltip = _isTooltip;
@@ -42,7 +42,7 @@ index 15d59648317174e48993b3fd316f7160d3c4288b..c5c79c4a4dc07bfa1de782cb8d84df09
  @synthesize isShufflingForOrdering = _isShufflingForOrdering;
  @synthesize preventKeyWindow = _preventKeyWindow;
  @synthesize childWindowAddedHandler = _childWindowAddedHandler;
-@@ -280,23 +282,6 @@ - (instancetype)initWithContentRect:(NSRect)contentRect
+@@ -281,23 +283,6 @@ - (instancetype)initWithContentRect:(NSRect)contentRect
    return self;
  }
  
@@ -67,7 +67,7 @@ index 15d59648317174e48993b3fd316f7160d3c4288b..c5c79c4a4dc07bfa1de782cb8d84df09
    return _headless_info.get();
  }
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index f9712a9b05fd5a689b8845064031153f6ba0545a..6ccd3d3783d1e5a6d0f64bec0166a6692d1259fe 100644
+index a1aba79563a33893a9d13e764065ec0db5d25bdf..8c957449321971e953e1348ed9a8474d9031285d 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -613,7 +613,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -106,7 +106,7 @@ index 4507428d53ff8290d9a46db7f3066c3495e2fd48..b25ce04c9af04950d827941a57769a24
    bool is_visible_on_all_workspaces_ = false;
    gfx::Rect window_bounds_before_fullscreen_;
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 9391ec2ed99803e8d9547157ac79d0695a5a0dda..8d20c748e4fbfd6816892f69ba752fb08b94b071 100644
+index dcdfee94a5959f49422b4c37a0fbac9c7a378760..0d796595adc97607f9c84990123d8a60a84d9ec8 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -479,6 +479,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
@@ -141,7 +141,7 @@ index 9391ec2ed99803e8d9547157ac79d0695a5a0dda..8d20c748e4fbfd6816892f69ba752fb0
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
-index 5ab33a3e3a2969a1acb2bc619200d4feae814a40..53fe50f39826e8b5e4608b12b7b171e72a644e6f 100644
+index dd051b97e2c34c147b42feda9e46367086ace871..10475df955762caff8732b1329c2a912e1683726 100644
 --- a/ui/views/widget/widget.cc
 +++ b/ui/views/widget/widget.cc
 @@ -262,6 +262,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
@@ -172,7 +172,7 @@ index 5ab33a3e3a2969a1acb2bc619200d4feae814a40..53fe50f39826e8b5e4608b12b7b171e7
  
    if (params.opacity == views::Widget::InitParams::WindowOpacity::kInferred &&
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index 0ca8a1679f8c95e68ffb35f63634ba17603c74e2..526fc704b7edbab9179a1e9038b462c6dcc1e4f6 100644
+index 2de787c406d4a8a03326b209e5cbda9e44752345..31589e72fb4731babf740e7183ea7b7554200afa 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
 @@ -331,6 +331,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,

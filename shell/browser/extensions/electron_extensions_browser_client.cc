@@ -168,6 +168,12 @@ bool ElectronExtensionsBrowserClient::CanExtensionCrossIncognito(
   return false;
 }
 
+extensions::BrowserContextLifetimeTracker*
+ElectronExtensionsBrowserClient::GetBrowserContextLifetimeTracker() {
+  // Electron sessions have no off-the-record sibling to track.
+  return nullptr;
+}
+
 base::FilePath ElectronExtensionsBrowserClient::GetBundleResourcePath(
     const network::ResourceRequest& request,
     const base::FilePath& extension_resources_path,
