@@ -1989,7 +1989,7 @@ describe('chromium features', () => {
       const frame = w.webContents.mainFrame;
 
       // ~ spelled through the Data volume is still ~.
-      await pasteHandle(w, frame, path.join('/System/Volumes/Data', os.homedir()));
+      await pasteHandle(w, frame, path.join('/System/Volumes/Data', fs.realpathSync(os.homedir())));
       await waitForHandle(frame);
       expect(restricted).to.have.lengthOf(1);
       expect(await frame.executeJavaScript('window.handle')).to.equal(null);
@@ -2004,6 +2004,11 @@ describe('chromium features', () => {
       await waitForHandle(frame);
       expect(await frame.executeJavaScript('window.handle && window.handle.kind')).to.equal('file');
       expect(restricted).to.have.lengthOf(1);
+
+      // /System/Volumes itself (internal system volumes) stays blocked.
+      await pasteHandle(w, frame, '/System/Volumes');
+      await waitForHandle(frame);
+      expect(restricted).to.have.lengthOf(2);
     });
 
     it('revokes active grants once no top-level document of the origin remains', async function () {
