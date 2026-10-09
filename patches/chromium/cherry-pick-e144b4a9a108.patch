@@ -1,0 +1,118 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Micha=C5=82=20Pichli=C5=84ski?= <michal.pichlinski@here.io>
+Date: Fri, 25 Sep 2026 12:56:09 -0700
+Subject: ReorderNativeViews after adding to Widget
+
+When `NativeViewHost` is reparented between widgets `Aura::Window`
+is at the bottom of the windows hierarchy even though `NativeViewHost`
+is on top of the views hierarchy.
+
+Calling `views::Widget::ReorderNativeViews` aligns windows hierarchy
+to the views one.
+
+Bug: 562569539
+Change-Id: I15960ba0e5d421cd5894ca43289000221a65cf2e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8421741
+Reviewed-by: Mike Wasserman <msw@chromium.org>
+Commit-Queue: Mike Wasserman <msw@chromium.org>
+Reviewed-by: Mitsuru Oshima <oshima@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1705081}
+
+diff --git a/ui/views/controls/native/native_view_host_aura.cc b/ui/views/controls/native/native_view_host_aura.cc
+index c28d73f4dc2f192ae1f6b953f708e2d643c699bf..e4b79317d4b36615b5d9db7bd8b5b342e2b74eb8 100644
+--- a/ui/views/controls/native/native_view_host_aura.cc
++++ b/ui/views/controls/native/native_view_host_aura.cc
+@@ -154,6 +154,7 @@ void NativeViewHostAura::AddedToWidget() {
+       // should be above views.
+       host_->GetWidget()->GetNativeView()->StackChildAtBottom(
+           host_->native_view());
++      host_->GetWidget()->ReorderNativeViews();
+     }
+   }
+   if (host_->IsDrawn()) {
+diff --git a/ui/views/controls/native/native_view_host_aura_unittest.cc b/ui/views/controls/native/native_view_host_aura_unittest.cc
+index 46f08aebbb2975bd2137a85c918bf0bf6b26f91c..2129f6b19d5ffa31155d8be584a8002972788e25 100644
+--- a/ui/views/controls/native/native_view_host_aura_unittest.cc
++++ b/ui/views/controls/native/native_view_host_aura_unittest.cc
+@@ -13,6 +13,7 @@
+ #include "base/test/icu_test_util.h"
+ #include "base/test/scoped_feature_list.h"
+ #include "ui/aura/client/aura_constants.h"
++#include "ui/aura/test/test_window_builder.h"
+ #include "ui/aura/window.h"
+ #include "ui/aura/window_event_dispatcher.h"
+ #include "ui/aura/window_targeter.h"
+@@ -1293,4 +1294,73 @@ TEST_F(NativeViewHostAuraTest, NestedLayerHierarchy) {
+   DestroyHost();
+ }
+ 
++TEST_F(NativeViewHostAuraTest,
++       ReparentingToDifferentWidgetSetupsWindowHierarchy) {
++  if (!base::FeatureList::IsEnabled(
++          views::features::kNativeViewHostManagesLayers)) {
++    GTEST_SKIP();
++  }
++
++  gfx::NativeWindow context = GetContext();
++
++  auto initial_widget_delegate = std::make_unique<WidgetDelegate>();
++  View* initial_widget_contents =
++      initial_widget_delegate->SetContentsView(std::make_unique<View>());
++
++  std::unique_ptr<Widget> initial_widget = std::make_unique<Widget>();
++  Widget::InitParams initial_widget_params = CreateParamsForTestWidget(
++      Widget::InitParams::CLIENT_OWNS_WIDGET, Widget::InitParams::TYPE_WINDOW);
++  initial_widget_params.context = context;
++  initial_widget_params.bounds = gfx::Rect(0, 0, 500, 400);
++  initial_widget_params.delegate = initial_widget_delegate.get();
++  initial_widget->Init(std::move(initial_widget_params));
++  initial_widget->Show();
++
++  CreateTopLevel();
++  toplevel()->SetBounds(gfx::Rect(0, 0, 500, 400));
++  toplevel()->Show();
++  View* final_widget_contents = toplevel()->GetContentsView();
++
++  const gfx::Size client_size = final_widget_contents->size();
++  // Create native windows for the hosts.
++  std::unique_ptr<aura::Window> cover_window =
++      aura::test::TestWindowBuilder()
++          .SetWindowType(aura::client::WINDOW_TYPE_CONTROL)
++          .SetBounds(gfx::Rect(client_size))
++          .SetShow(true)
++          .Build();
++  std::unique_ptr<aura::Window> reparented_nvh_window =
++      aura::test::TestWindowBuilder()
++          .SetWindowType(aura::client::WINDOW_TYPE_CONTROL)
++          .SetBounds(gfx::Rect(client_size))
++          .SetShow(true)
++          .Build();
++  reparented_nvh_window->TrackOcclusionState();
++
++  // Attach native windows to the widgets.
++  NativeViewHost* cover_host =
++      final_widget_contents->AddChildView(std::make_unique<NativeViewHost>());
++  cover_host->Attach(cover_window.get());
++
++  NativeViewHost* reparented_nvh_raw =
++      initial_widget_contents->AddChildView(std::make_unique<NativeViewHost>());
++  reparented_nvh_raw->Attach(reparented_nvh_window.get());
++
++  // Reparent the host to the final widget.
++  std::unique_ptr<NativeViewHost> reparented_nvh =
++      initial_widget_contents->RemoveChildViewT(reparented_nvh_raw);
++  final_widget_contents->AddChildView(std::move(reparented_nvh));
++
++  // Verify window hierarchy aligns with views hierarchy.
++  aura::Window* final_widget_content_window = toplevel()->GetNativeView();
++  ASSERT_TRUE(final_widget_content_window);
++  ASSERT_FALSE(final_widget_content_window->children().empty());
++
++  EXPECT_EQ(final_widget_contents->children().back(), reparented_nvh_raw);
++  EXPECT_EQ(final_widget_content_window->children().back(),
++            reparented_nvh_window.get());
++  EXPECT_EQ(reparented_nvh_window->GetOcclusionState(),
++            aura::Window::OcclusionState::VISIBLE);
++}
++
+ }  // namespace views
