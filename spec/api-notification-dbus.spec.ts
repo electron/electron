@@ -60,6 +60,8 @@ ifdescribe(!skip)('Notification module (dbus)', { tags: ['serial'] }, () => {
       'ret = ["body", "body-markup", "icon-static", "image/svg+xml", ' +
         '"private-synchronous", "append", "private-icon-only", "truncation", "actions"]'
     );
+
+    Notification = require('electron').Notification;
   });
 
   after(async () => {
@@ -107,8 +109,6 @@ ifdescribe(!skip)('Notification module (dbus)', { tags: ['serial'] }, () => {
 
     before((done) => {
       mock.on('MethodCalled', onMethodCalled(done));
-      // lazy load Notification after we listen to MethodCalled mock signal
-      Notification = require('electron').Notification;
       const n = new Notification({
         title: 'title',
         subtitle: 'subtitle',
@@ -184,6 +184,47 @@ ifdescribe(!skip)('Notification module (dbus)', { tags: ['serial'] }, () => {
       ]);
 
       await clicked;
+    });
+  });
+
+  describe('actions', () => {
+    const actions = [
+      { type: 'button', text: 'Reply' },
+      { type: 'selection', text: 'Pick', items: ['a', 'b'] },
+      { type: 'button', text: 'Archive' },
+      { type: 'button' }
+    ];
+
+    const lastNotify = async () => {
+      const calls = (await getCalls()).filter((c: any) => c[1] === 'Notify');
+      return { id: calls.length, actions: calls.at(-1)[2][5][1][0] };
+    };
+
+    it('sends each button after the default action, keyed by its index', async () => {
+      new Notification({ title: 'actions', actions }).show();
+      expect((await lastNotify()).actions).to.deep.equal(['default', 'Show', '0', 'Reply', '2', 'Archive']);
+    });
+
+    it('emits action with the index of the invoked button', async () => {
+      const n = new Notification({ title: 'actions', actions });
+      const invoked = once(n, 'action');
+      n.show();
+      emitSignal(serviceName, 'ActionInvoked', 'us', [
+        ['u', (await lastNotify()).id],
+        ['s', '2']
+      ]);
+      const [details] = await invoked;
+      expect(details).to.include({ actionIndex: 2, selectionIndex: -1 });
+    });
+
+    it('sends no actions when the server does not support them', async () => {
+      process.env.ELECTRON_USE_UBUNTU_NOTIFIER = '1';
+      try {
+        new Notification({ title: 'actions', actions }).show();
+        expect((await lastNotify()).actions).to.deep.equal([]);
+      } finally {
+        delete process.env.ELECTRON_USE_UBUNTU_NOTIFIER;
+      }
     });
   });
 });
