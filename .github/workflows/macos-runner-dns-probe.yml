@@ -96,3 +96,81 @@ jobs:
       - name: Path to upstream
         run: |
           traceroute -n -w 2 -q 1 -m 15 8.8.8.8 || true
+      - name: Hypervisor detection
+        run: |
+          sysctl kern.hv_vmm_present hw.model machdep.cpu.brand_string 2>/dev/null || true
+          sysctl -n machdep.cpu.features 2>/dev/null | tr ' ' '\n' | grep -x VMM || true
+          system_profiler SPHardwareDataType | grep -E "Model|Chip|Processor|Serial|Hardware UUID" || true
+          ioreg -l | grep -ioE "vmapple|virtualmac[0-9,]*|anka|veertu|vmware|parallels|qemu|apple virtual[a-z ]*" | sort | uniq -c || true
+          ioreg -rd1 -c IOPlatformExpertDevice | grep -E "model|manufacturer|board-id" || true
+          kextstat 2>/dev/null | grep -iE "anka|veertu|vmware|parallels|virtio|vmapple" || true
+          ls /Library/Application\ Support | grep -iE "anka|veertu|vmware|parallels" || true
+      - name: Cache / TTL probe
+        run: |
+          echo "== NSID (does the proxy pass EDNS options? which Google site?)"
+          dig @192.168.64.1 +nsid example.com | grep -E "NSID|flags" || true
+          dig @8.8.8.8 +nsid example.com | grep -E "NSID|flags" || true
+          echo "== TTL decay for github.com: via proxy vs direct 8.8.8.8"
+          for i in 1 2 3 4; do
+            p=$(dig @192.168.64.1 +noall +answer +stats github.com A | awk '/IN[[:space:]]+A/{t=$2} /Query time/{q=$4} END{print "ttl="t" time="q"ms"}')
+            d=$(dig @8.8.8.8 +noall +answer +stats github.com A | awk '/IN[[:space:]]+A/{t=$2} /Query time/{q=$4} END{print "ttl="t" time="q"ms"}')
+            echo "t+$((i*5-5))s proxy: $p | 8.8.8.8: $d"
+            sleep 5
+          done
+          echo "== Fresh unique name: cold vs warm, and RD=0 after warming"
+          n="$(uuidgen | tr 'A-Z' 'a-z' | cut -c1-8)-1-2-3-4.nip.io"
+          echo "name: $n"
+          echo -n "norecurse before: "; dig @192.168.64.1 +norecurse +noall +comments "$n" | grep -oE "status: [A-Z]+|ANSWER: [0-9]+" | tr '\n' ' '; echo
+          for i in 1 2 3; do
+            echo -n "query $i: "; dig @192.168.64.1 +noall +answer +stats "$n" | awk '/IN[[:space:]]+A/{t=$2} /Query time/{q=$4} END{print "ttl="t" time="q"ms"}'
+          done
+          echo -n "norecurse after: "; dig @192.168.64.1 +norecurse +noall +comments "$n" | grep -oE "status: [A-Z]+|ANSWER: [0-9]+" | tr '\n' ' '; echo
+          echo "== Negative caching (NXDOMAIN SOA TTL)"
+          nx="$(uuidgen | tr 'A-Z' 'a-z').example.com"
+          for i in 1 2; do dig @192.168.64.1 +noall +authority +stats "$nx" | grep -E "SOA|Query time"; sleep 3; done
+      - name: Local / host-only names via proxy
+        run: |
+          host_sname=$(ipconfig getpacket en0 | awk -F' = ' '/^sname/{print $2}')
+          echo "host sname: $host_sname"
+          for q in "$(hostname)" "$host_sname.local" "$host_sname" localhost localhost.local; do
+            echo "== $q"
+            dig @192.168.64.1 +time=3 +tries=1 +noall +comments +answer "$q" | grep -E "status|IN" || true
+          done
+          echo "== reverse 192.168.64.1 / own address"
+          dig @192.168.64.1 +short -x 192.168.64.1 || true
+          dig @192.168.64.1 +short -x "$(ipconfig getifaddr en0)" || true
+          echo "== DDR (_dns.resolver.arpa SVCB)"
+          dig @192.168.64.1 +time=3 +tries=1 _dns.resolver.arpa TYPE64 +noall +comments +answer | grep -E "status|IN" || true
+          echo "== mDNS from the VM"
+          timeout 5 dns-sd -G v4 "$host_sname.local" || true
+          timeout 5 dns-sd -B _services._dns-sd._udp local. || true
+      - name: Point system DNS at Cloudflare without restarting
+        run: |
+          echo "== before"
+          dscacheutil -q host -a name whoami.akamai.net
+          svc=$(networksetup -listallnetworkservices | sed -n '2p' | sed 's/^\*//')
+          echo "service: $svc"
+          sudo networksetup -setdnsservers "$svc" 1.1.1.1 1.0.0.1
+          sudo dscacheutil -flushcache
+          sudo killall -HUP mDNSResponder
+          sleep 2
+          echo "== after: scutil --dns (resolver #1)"
+          scutil --dns | sed -n '/resolver #1/,/^$/p' | head -12
+          echo "== after: /etc/resolv.conf"
+          grep nameserver /etc/resolv.conf
+          echo "== after: system resolver (mDNSResponder path)"
+          for i in 1 2 3; do dscacheutil -q host -a name whoami.akamai.net | grep ip_address; done
+          echo "== after: dig via resolv.conf"
+          dig +short TXT o-o.myaddr.l.google.com
+          dig +short whoami.akamai.net
+          dig +noall +stats github.com | grep SERVER
+          echo "== after: resolver owner"
+          r=$(dscacheutil -q host -a name whoami.akamai.net | awk '/ip_address/{print $2; exit}')
+          curl -s --max-time 10 "https://ipinfo.io/$r/org"; echo
+          echo "== after: apps still resolve"
+          curl -s -o /dev/null -w "github.com %{http_code} dns=%{time_namelookup}s\n" https://github.com
+          echo "== TCP to 1.1.1.1"
+          dig @1.1.1.1 +tcp +short github.com
+          echo "== still pointed at 1.1.1.1 after 20s"
+          sleep 20
+          scutil --dns | sed -n '/resolver #1/,/^$/p' | grep nameserver
