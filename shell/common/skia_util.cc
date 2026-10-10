@@ -67,6 +67,21 @@ bool AddImageSkiaRepFromPath(gfx::ImageSkia* image,
                                    0, scale_factor);
 }
 
+SkBitmap DecodeJPEG(const base::span<const uint8_t> data) {
+  SkBitmap bitmap = gfx::JPEGCodec::Decode(data);
+
+  // `JPEGCodec::Decode()` doesn't tell `SkBitmap` instance it creates
+  // that all of its pixels are opaque, that's why the bitmap gets
+  // an alpha type `kPremul_SkAlphaType` instead of `kOpaque_SkAlphaType`.
+  // Let's fix it here.
+  // TODO(alexeykuzmin): This workaround should be removed
+  // when the `JPEGCodec::Decode()` code is fixed.
+  // See https://github.com/electron/electron/issues/11294.
+  if (!bitmap.isNull())
+    bitmap.setAlphaType(SkAlphaType::kOpaque_SkAlphaType);
+  return bitmap;
+}
+
 }  // namespace
 
 bool AddImageSkiaRepFromPNG(gfx::ImageSkia* image,
@@ -83,21 +98,30 @@ bool AddImageSkiaRepFromPNG(gfx::ImageSkia* image,
 bool AddImageSkiaRepFromJPEG(gfx::ImageSkia* image,
                              const base::span<const uint8_t> data,
                              double scale_factor) {
-  auto bitmap = gfx::JPEGCodec::Decode(data);
+  SkBitmap bitmap = DecodeJPEG(data);
   if (bitmap.isNull())
     return false;
 
-  // `JPEGCodec::Decode()` doesn't tell `SkBitmap` instance it creates
-  // that all of its pixels are opaque, that's why the bitmap gets
-  // an alpha type `kPremul_SkAlphaType` instead of `kOpaque_SkAlphaType`.
-  // Let's fix it here.
-  // TODO(alexeykuzmin): This workaround should be removed
-  // when the `JPEGCodec::Decode()` code is fixed.
-  // See https://github.com/electron/electron/issues/11294.
-  bitmap.setAlphaType(SkAlphaType::kOpaque_SkAlphaType);
-
   image->AddRepresentation(gfx::ImageSkiaRep(bitmap, scale_factor));
   return true;
+}
+
+SkBitmap DecodeImageBuffer(const base::span<const uint8_t> data,
+                           int width,
+                           int height) {
+  SkBitmap bitmap = gfx::PNGCodec::Decode(data);
+  if (bitmap.isNull())
+    bitmap = DecodeJPEG(data);
+  if (!bitmap.isNull() || width == 0 || height == 0)
+    return bitmap;
+
+  auto info = SkImageInfo::MakeN32(width, height, kPremul_SkAlphaType);
+  if (data.size() < info.computeMinByteSize())
+    return bitmap;
+
+  bitmap.allocN32Pixels(width, height, false);
+  bitmap.writePixels({info, data.data(), bitmap.rowBytes()});
+  return bitmap;
 }
 
 bool AddImageSkiaRepFromBuffer(gfx::ImageSkia* image,
@@ -105,24 +129,9 @@ bool AddImageSkiaRepFromBuffer(gfx::ImageSkia* image,
                                int width,
                                int height,
                                double scale_factor) {
-  // Try PNG first.
-  if (AddImageSkiaRepFromPNG(image, data, scale_factor))
-    return true;
-
-  // Try JPEG second.
-  if (AddImageSkiaRepFromJPEG(image, data, scale_factor))
-    return true;
-
-  if (width == 0 || height == 0)
+  SkBitmap bitmap = DecodeImageBuffer(data, width, height);
+  if (bitmap.isNull())
     return false;
-
-  auto info = SkImageInfo::MakeN32(width, height, kPremul_SkAlphaType);
-  if (data.size() < info.computeMinByteSize())
-    return false;
-
-  SkBitmap bitmap;
-  bitmap.allocN32Pixels(width, height, false);
-  bitmap.writePixels({info, data.data(), bitmap.rowBytes()});
 
   image->AddRepresentation(gfx::ImageSkiaRep(bitmap, scale_factor));
   return true;
