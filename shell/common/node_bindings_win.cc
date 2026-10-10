@@ -30,19 +30,16 @@ NodeBindingsWin::NodeBindingsWin(BrowserEnvironment browser_env,
   }
 }
 
-void NodeBindingsWin::PollEvents() {
+void NodeBindingsWin::PollEvents(int timeout) {
   auto* const event_loop = uv_loop();
 
-  // If there are other kinds of events pending, uv_backend_timeout will
-  // instruct us not to wait.
-  DWORD bytes, timeout;
+  DWORD bytes;
   ULONG_PTR key;
   OVERLAPPED* overlapped;
 
-  timeout = uv_backend_timeout(event_loop);
-
+  // -1 maps to INFINITE.
   GetQueuedCompletionStatus(event_loop->iocp, &bytes, &key, &overlapped,
-                            timeout);
+                            static_cast<DWORD>(timeout));
 
   // Give the event back so libuv can deal with it.
   if (overlapped != nullptr)
