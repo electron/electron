@@ -83,7 +83,6 @@ declare namespace Electron {
     _setConsoleMessageObserved(observed: boolean): void;
     getOwnerBrowserWindow(): Electron.BrowserWindow | null;
     getLastWebPreferences(): Electron.WebPreferences | null;
-    _getProcessMemoryInfo(processId?: number): Electron.ProcessMemoryInfo;
     browserWindowOptions: BrowserWindowConstructorOptions;
     _windowOpenHandler: ((details: Electron.HandlerDetails) => any) | null;
     _callWindowOpenHandler(
@@ -266,32 +265,6 @@ declare namespace Electron {
 }
 
 declare namespace ElectronInternal {
-  interface DesktopCapturer {
-    startHandling(
-      captureWindow: boolean,
-      captureScreen: boolean,
-      thumbnailSize: Electron.Size,
-      fetchWindowIcons: boolean
-    ): void;
-    _onerror?: (error: string) => void;
-    _onfinished?: (sources: Electron.DesktopCapturerSource[], fetchWindowIcons: boolean) => void;
-  }
-
-  interface GetSourcesOptions {
-    captureWindow: boolean;
-    captureScreen: boolean;
-    thumbnailSize: Electron.Size;
-    fetchWindowIcons: boolean;
-  }
-
-  interface GetSourcesResult {
-    id: string;
-    name: string;
-    thumbnail: Electron.NativeImage;
-    display_id: string;
-    appIcon: Electron.NativeImage | null;
-  }
-
   interface IpcRendererInternal
     extends NodeJS.EventEmitter, Pick<Electron.IpcRenderer, 'send' | 'sendSync' | 'invoke'> {
     invoke<T>(channel: string, ...args: any[]): Promise<T>;
