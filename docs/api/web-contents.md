@@ -613,18 +613,15 @@ Emitted when the user is requesting to change the zoom level using the mouse whe
 
 Emitted when the `WebContents` loses focus.
 
+The `blur` event is also emitted when switching between windows or apps for the
+`WebContents` that has focus within its window.
+
 #### Event: 'focus'
 
 Emitted when the `WebContents` gains focus.
 
-Note that on macOS, having focus means the `WebContents` is the first responder
-of window, so switching focus between windows would not trigger the `focus` and
-`blur` events of `WebContents`, as the first responder of each window is not
-changed.
-
-The `focus` and `blur` events of `WebContents` should only be used to detect
-focus change between different `WebContents` and `BrowserView` in the same
-window.
+The `focus` event is also emitted when switching between windows or apps for the
+`WebContents` that has focus within its window.
 
 #### Event: 'devtools-open-url'
 
