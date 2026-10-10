@@ -7,12 +7,10 @@
 
 #include <string>
 
-#include "base/memory/scoped_refptr.h"
-#include "base/task/task_runner.h"
-
-namespace gfx {
-class Size;
-}
+#include "base/functional/callback.h"
+#include "base/types/expected.h"
+#include "printing/backend/print_backend.h"
+#include "ui/gfx/geometry/size.h"
 
 namespace content {
 class RenderFrameHost;
@@ -21,33 +19,33 @@ class WebContents;
 
 namespace electron {
 
-// This function returns the per-platform default printer's DPI.
-gfx::Size GetDefaultPrinterDPI(const std::u16string& device_name);
-
-// This will return false if no printer with the provided device_name can be
-// found on the network. We need to check this because Chromium does not do
-// sanity checking of device_name validity and so will crash on invalid names.
-bool IsDeviceNameValid(const std::u16string& device_name);
-
+// The PDF plugin frame for the PDF viewer, the focused frame if it has a
+// selection, otherwise the primary main frame.
 content::RenderFrameHost* GetRenderFrameHostToUse(
     content::WebContents* contents);
 
-// This function returns a validated device name.
-// If the user passed one to webContents.print(), we check that it's valid and
-// return it or fail if the network doesn't recognize it. If the user didn't
-// pass a device name, we first try to return the system default printer. If one
-// isn't set, then pull all the printers and use the first one or fail if none
-// exist.
-std::pair<std::string, std::u16string> GetDeviceNameToUse(
-    const std::u16string& device_name);
+struct ResolvedPrinter {
+  ResolvedPrinter();
+  ResolvedPrinter(ResolvedPrinter&&);
+  ResolvedPrinter& operator=(ResolvedPrinter&&);
+  ~ResolvedPrinter();
 
-// This function creates a task runner for use with printing tasks.
-scoped_refptr<base::TaskRunner> CreatePrinterHandlerTaskRunner();
+  std::string name;
+  // Empty unless capabilities were requested and reported.
+  gfx::Size dpi;
+  gfx::Size default_paper_um;
+};
 
-// This function returns the default paper size of the specified printer, if
-// available.
-std::optional<gfx::Size> GetPrinterDefaultPaperSize(
-    const std::string& printer_name);
+using ResolvePrinterCallback =
+    base::OnceCallback<void(base::expected<ResolvedPrinter, std::string>)>;
+
+// Looks up `device_name`, or the default printer when empty; `want_caps` also
+// fetches its DPI and default paper size. Replies on the UI thread.
+void ResolvePrinter(const std::string& device_name,
+                    bool want_caps,
+                    ResolvePrinterCallback callback);
+
+void GetPrinterList(base::OnceCallback<void(printing::PrinterList)> callback);
 
 }  // namespace electron
 

@@ -16,6 +16,7 @@ import { assert, expect } from 'chai';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
+import { createRequire } from 'node:module';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
@@ -37,6 +38,8 @@ import { WebmGenerator } from './lib/video-helpers.js';
 import { cleanupWebContents, closeAllWindows } from './lib/window-helpers.ts';
 
 import type { AddressInfo } from 'node:net';
+
+const require = createRequire(import.meta.url);
 
 const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
 const features = process._linkedBinding('electron_common_features');
@@ -388,6 +391,34 @@ describe('webContents module', () => {
       }).to.throw('webContents.print(): Invalid optional callback provided.');
     });
 
+    it('takes a falsy callback as no callback', () => {
+      expect(() => {
+        // @ts-ignore this line is intentionally incorrect
+        w.webContents.print({ deviceName: 'i-am-a-nonexistent-printer' }, null);
+      }).not.to.throw();
+    });
+
+    it('does not start a job when reading the options throws', async () => {
+      let started = false;
+      expect(() => {
+        w.webContents.print(
+          {
+            deviceName: 'i-am-a-nonexistent-printer',
+            get copies(): number {
+              throw new Error('bad getter');
+            }
+          },
+          () => {
+            started = true;
+          }
+        );
+      }).to.throw('bad getter');
+      await new Promise<void>((resolve) => {
+        w.webContents.print({ deviceName: 'i-am-a-nonexistent-printer' }, () => resolve());
+      });
+      expect(started).to.be.false();
+    });
+
     it('fails when an invalid deviceName is passed', (done) => {
       w.webContents.print({ deviceName: 'i-am-a-nonexistent-printer' }, (success, reason) => {
         expect(success).to.equal(false);
@@ -434,63 +465,242 @@ describe('webContents module', () => {
   // provisioned by script/spec-runner.js and exposed via
   // ELECTRON_TEST_PRINTER_NAME.
   // Self-skips when no such printer is available.
-  ifdescribe(features.isPrintingEnabled())('webContents.print() settings', function () {
+  ifdescribe(features.isPrintingEnabled())('webContents.print() to a printer', function () {
+    this.timeout(120000);
+    const deviceName = process.env.ELECTRON_TEST_PRINTER_NAME;
+    const outputDir = process.env.ELECTRON_TEST_PRINTER_OUTPUT;
     let w: BrowserWindow;
-    const deviceName = process.env.ELECTRON_TEST_PRINTER_NAME ?? null;
+    let token: string;
 
-    const printerVisible = async (name: string) => {
-      const probe = new BrowserWindow({ show: false });
+    const print = async (options: Electron.WebContentsPrintOptions) => {
+      const timeout = new AbortController();
       try {
-        await probe.loadURL('about:blank');
-        return await waitUntil(
-          async () => {
-            const printers = await probe.webContents.getPrintersAsync();
-            return printers.some((p) => p.name === name);
-          },
-          { timeout: 10000 }
-        )
-          .then(() => true)
-          .catch(() => false);
+        return await Promise.race([
+          new Promise<[boolean, string]>((resolve) => {
+            w.webContents.print({ silent: true, deviceName, ...options }, (success, reason) =>
+              resolve([success, reason])
+            );
+          }),
+          setTimeout(30000, undefined, { signal: timeout.signal }).then(() => {
+            throw new Error('print() did not call back; a print dialog may be blocking it');
+          })
+        ]);
       } finally {
-        probe.destroy();
+        timeout.abort();
       }
     };
 
+    // ippeveprinter writes each job as a PDF under `outputDir` a while after it
+    // completes; find this test's by the token in its text.
+    let testStart: number;
+    const canReadOutput = () => !!outputDir && !!fs.statSync(outputDir, { throwIfNoEntry: false })?.isDirectory();
+    const printedDocument = async () => {
+      const candidates = () =>
+        fs
+          .readdirSync(outputDir!)
+          .map((f) => path.join(outputDir!, f))
+          .filter((f) => fs.statSync(f, { throwIfNoEntry: false })?.mtimeMs! >= testStart - 1000);
+      const seen = new Set<string>();
+      let doc: any = null;
+      await waitUntil(
+        async () => {
+          for (const f of candidates()) {
+            const key = f + fs.statSync(f).mtimeMs;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            const parsed = await readPDF(fs.readFileSync(f)).catch(() => null);
+            if (parsed && containsText(parsed.textContent, new RegExp(token))) {
+              doc = parsed;
+              return true;
+            }
+          }
+          return false;
+        },
+        { timeout: 60000 }
+      );
+      return doc;
+    };
+
     before(async function () {
-      this.timeout(30000);
-      if (!deviceName || !(await printerVisible(deviceName))) {
+      if (!deviceName) return this.skip();
+      const probe = new BrowserWindow({ show: false });
+      try {
+        await waitUntil(async () => (await probe.webContents.getPrintersAsync()).some((p) => p.name === deviceName), {
+          timeout: 10000
+        });
+      } catch {
         return this.skip();
+      } finally {
+        probe.destroy();
       }
     });
 
-    beforeEach(() => {
+    beforeEach(async function () {
+      testStart = Date.now();
+      token = `job-${process.pid}-${testStart}`;
       w = new BrowserWindow({ show: false });
+      await w.loadURL(
+        'data:text/html,' +
+          encodeURIComponent(
+            `<style>div{page-break-after:always}</style>` +
+              [1, 2, 3, 4].map((n) => `<div>${token} page ${n}</div>`).join('')
+          )
+      );
     });
     afterEach(closeAllWindows);
 
-    it('resolves settings for a silent print with options', async function () {
-      this.timeout(60000);
-      if (!deviceName) return this.skip();
+    ifit(canReadOutput())('prints silently with default settings', async () => {
+      const [success, reason] = await print({});
+      expect(reason).to.equal('');
+      expect(success).to.be.true();
+      const doc = await printedDocument();
+      expect(doc.numPages).to.equal(4);
+      expect(doc.view[2]).to.be.lessThan(doc.view[3]);
+    });
 
-      await w.loadURL('data:text/html,<h1>print test</h1>');
+    ifit(canReadOutput())('honors landscape, copies and pageRanges', async () => {
+      const [success, reason] = await print({ landscape: true, copies: 2, pageRanges: [{ from: 1, to: 2 }] });
+      expect(reason).to.equal('');
+      expect(success).to.be.true();
+      const doc = await printedDocument();
+      expect(doc.numPages).to.equal(2);
+      expect(containsText(doc.textContent, /page 2/)).to.be.true();
+      expect(containsText(doc.textContent, /page 1$/)).to.be.false();
+    });
 
-      const printResult = new Promise<[boolean, string]>((resolve) => {
-        w.webContents.print({ silent: true, deviceName, printBackground: true }, (success, failureReason) =>
-          resolve([success, failureReason])
-        );
+    ifit(canReadOutput())('honors pageSize', async () => {
+      const [success, reason] = await print({ pageSize: 'Letter' });
+      expect(reason).to.equal('');
+      expect(success).to.be.true();
+      const doc = await printedDocument();
+      expect(Math.round(doc.view[2])).to.equal(612);
+      expect(Math.round(doc.view[3])).to.equal(792);
+    });
+
+    ifit(canReadOutput())('honors a pageSize and dpi the printer supports', async () => {
+      const [success, reason] = await print({ pageSize: 'Legal', dpi: { horizontal: 300, vertical: 300 } });
+      expect(reason).to.equal('');
+      expect(success).to.be.true();
+      const doc = await printedDocument();
+      expect(Math.round(doc.view[2])).to.equal(612);
+      expect(Math.round(doc.view[3])).to.equal(1008);
+    });
+
+    it('prints silently with options', async () => {
+      const [success, reason] = await print({
+        landscape: true,
+        copies: 2,
+        pageSize: 'Letter',
+        duplexMode: 'longEdge',
+        printBackground: true,
+        header: 'header text',
+        footer: 'footer text'
       });
+      expect(reason).to.equal('');
+      expect(success).to.be.true();
+    });
 
-      // Guard against environments where silent printing surfaces a native
-      // dialog (which would block the callback) — skip rather than hang.
-      const result = await Promise.race([printResult, setTimeout(30000).then(() => 'timeout' as const)]);
-      if (result === 'timeout') return this.skip();
+    it('accepts a custom pageSize', async () => {
+      const [success, reason] = await print({ pageSize: { width: 100000, height: 150000 } });
+      expect(reason).to.equal('');
+      expect(success).to.be.true();
+    });
 
-      const [success, failureReason] = result;
-      // Regression guard for #52266: non-empty print settings must never again
-      // be rejected up front during settings resolution with "Invalid printer
-      // settings".
-      expect(failureReason, `settings resolution failed: ${failureReason}`).to.not.match(/Invalid printer settings/);
-      expect(success, `print failed: ${failureReason}`).to.equal(true);
+    it('prints silently from the PDF viewer', async () => {
+      const readyToPrint = once(w.webContents, '-pdf-ready-to-print');
+      await w.loadFile(path.join(fixturesPath, 'cat.pdf'));
+      await readyToPrint;
+      const [success, reason] = await print({});
+      expect(reason).to.equal('');
+      expect(success).to.be.true();
+    });
+
+    ifdescribe(process.platform !== 'linux' && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
+      'through the system dialog',
+      () => {
+        let dialogHelper: {
+          startPrintDialogWatcher(action: 'print' | 'cancel', timeoutMs: number): void;
+          stopPrintDialogWatcher(): boolean;
+        };
+
+        before(function () {
+          dialogHelper = require('@electron-ci/dialog-helper');
+        });
+        beforeEach(() => w.show());
+        afterEach(() => dialogHelper.stopPrintDialogWatcher());
+
+        const printWithDialog = (options: Electron.WebContentsPrintOptions, action: 'print' | 'cancel') => {
+          dialogHelper.startPrintDialogWatcher(action, 20000);
+          return print({ ...options, silent: false });
+        };
+
+        it('reports cancellation when the dialog is cancelled', async () => {
+          const [success, reason] = await printWithDialog({}, 'cancel');
+          expect(dialogHelper.stopPrintDialogWatcher()).to.be.true();
+          expect(success).to.be.false();
+          expect(reason).to.equal('Print job canceled');
+        });
+
+        it('reports cancellation when the dialog for a print with options is cancelled', async () => {
+          const [success, reason] = await printWithDialog({ copies: 2, landscape: true }, 'cancel');
+          expect(dialogHelper.stopPrintDialogWatcher()).to.be.true();
+          expect(success).to.be.false();
+          expect(reason).to.equal('Print job canceled');
+        });
+
+        it('prints when the dialog is confirmed', async () => {
+          const [success, reason] = await printWithDialog({}, 'print');
+          expect(dialogHelper.stopPrintDialogWatcher()).to.be.true();
+          expect(reason).to.equal('');
+          expect(success).to.be.true();
+        });
+
+        ifit(canReadOutput())('keeps the requested settings when the dialog is confirmed', async () => {
+          const [success, reason] = await printWithDialog({ pageRanges: [{ from: 2, to: 3 }] }, 'print');
+          expect(dialogHelper.stopPrintDialogWatcher()).to.be.true();
+          expect(reason).to.equal('');
+          expect(success).to.be.true();
+          const doc = await printedDocument();
+          expect(doc.numPages).to.equal(2);
+          expect(containsText(doc.textContent, /page 3/)).to.be.true();
+        });
+
+        it('lets window.print() be cancelled', async () => {
+          dialogHelper.startPrintDialogWatcher('cancel', 20000);
+          await w.webContents.executeJavaScript('window.print()', true);
+          expect(dialogHelper.stopPrintDialogWatcher()).to.be.true();
+        });
+      }
+    );
+
+    it('prints a page that is still loading once it has loaded', async () => {
+      let release: () => void = () => {};
+      const server = http.createServer((req, res) => {
+        release = () => res.end();
+      });
+      const { url } = await listen(server);
+      try {
+        w.loadURL('data:text/html,' + encodeURIComponent(`<div>${token} late page</div><img src="${url}/slow.png">`));
+        await once(w.webContents, 'dom-ready');
+        expect(w.webContents.isLoading()).to.be.true();
+        const result = print({});
+        await setTimeout(500);
+        release();
+        const [success, reason] = await result;
+        expect(reason).to.equal('');
+        expect(success).to.be.true();
+      } finally {
+        server.close();
+      }
+    });
+
+    it('runs overlapping print() and printToPDF() calls one after another', async () => {
+      const first = print({});
+      const second = print({});
+      const pdf = w.webContents.printToPDF({});
+      expect(await first).to.deep.equal([true, '']);
+      expect(await second).to.deep.equal([true, '']);
+      expect((await pdf).length).to.be.greaterThan(0);
     });
   });
 
