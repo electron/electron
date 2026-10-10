@@ -23,6 +23,8 @@
   `disabled-by-default-memory-infra` category is enabled, this contains
   optional additional configuration for data collection. See the
   [Chromium memory-infra docs][memory-infra docs] for more information.
+* `heap_profiler_options` ([HeapProfilerOptions](heap-profiler-options.md)) (optional) -
+  enables native heap profiling for the duration of the trace.
 
 An example TraceConfig that roughly matches what Chrome DevTools records:
 
