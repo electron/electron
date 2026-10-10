@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 10 Oct 2026 04:35:04 +0000
+Subject: deps: add missing standard library includes to simdjson
+
+simdjson.h and simdjson.cpp use several standard library names before
+(or without) including the header that declares them, e.g. std::copy
+(<algorithm>), std::exception (<exception>), std::nothrow (<new>),
+std::FILE/std::fopen/std::snprintf (<cstdio>), std::isspace (<cctype>),
+std::is_same (<type_traits>), std::numeric_limits (<limits>) and the
+iterator helpers (<iterator>). They currently compile only because
+other headers include these transitively.
+
+These includes are needed to build with clang modules, where libc++
+uses local submodule visibility and a declaration must be imported
+from its own module before it is used.
+
+This patch can be removed once Node.js vendors a simdjson release that
+includes these headers.
+
+diff --git a/deps/simdjson/simdjson.cpp b/deps/simdjson/simdjson.cpp
+index 7b8b0c44f05767da92f631d7d117936c556f0db8..975b59f6f3a0d30bdbb62ac292fd95635fab7a04 100644
+--- a/deps/simdjson/simdjson.cpp
++++ b/deps/simdjson/simdjson.cpp
+@@ -3,6 +3,12 @@
+ /* begin file simdjson.cpp */
+ #define SIMDJSON_SRC_SIMDJSON_CPP
+ 
++#include <cstdio>
++#include <exception>
++#include <limits>
++#include <new>
++#include <type_traits>
++
+ /* including base.h: #include <base.h> */
+ /* begin file base.h */
+ #ifndef SIMDJSON_SRC_BASE_H
+diff --git a/deps/simdjson/simdjson.h b/deps/simdjson/simdjson.h
+index a836ca8cfdb2fa7348ef7c2cf9c21f18ade5707b..91047857bb250b5d2c2903f153ff59297b526988 100644
+--- a/deps/simdjson/simdjson.h
++++ b/deps/simdjson/simdjson.h
+@@ -4,6 +4,14 @@
+ #ifndef SIMDJSON_H
+ #define SIMDJSON_H
+ 
++#include <algorithm>
++#include <cctype>
++#include <cstdio>
++#include <exception>
++#include <iterator>
++#include <new>
++#include <type_traits>
++
+ /**
+  * @mainpage
+  *
