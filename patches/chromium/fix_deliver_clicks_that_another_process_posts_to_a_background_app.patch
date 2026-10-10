@@ -12,13 +12,15 @@ through the window server, so it activates nothing, and answering NO drops it.
 AppKit activates the app before it asks about a click that the window server
 routed here, so an inactive app at this point identifies the posted event.
 Hardware events have no source process, and events this process posts carry
-its own, so both keep the existing behavior.
+its own, so both keep the existing behavior. A window that ignores mouse events
+never gets a routed click, so it does not take a posted one either.
 
-This patch can be removed once
-https://chromium-review.googlesource.com/c/chromium/src/+/8470994 lands.
+Landed upstream as https://crrev.com/c/8470994 (r1715473) without the
+ignoresMouseEvents check, which follows in a separate CL; this patch can be
+removed once both have rolled in.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 9eaa36a6bc1536e3a3cb00cf9893b76d9c84f928..e73db95bf45ffbc295246b62e51b00be005c472d 100644
+index 9eaa36a6bc1536e3a3cb00cf9893b76d9c84f928..b5affa2faa99e49182b310256630e1954f2d33ac 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -6,6 +6,7 @@
@@ -29,15 +31,17 @@ index 9eaa36a6bc1536e3a3cb00cf9893b76d9c84f928..e73db95bf45ffbc295246b62e51b00be
  
  #include <algorithm>
  #include <limits>
-@@ -872,6 +873,18 @@ - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
+@@ -872,6 +873,20 @@ - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
        [self.window acceptsFirstMouse])
      return YES;
  
 +  // A click that another process posts straight to this process does not
 +  // activate the app, unlike one the window server routes here, so treating it
-+  // as an activation click would only drop it.
++  // as an activation click would only drop it. The window server never routes
++  // a click to a window that ignores mouse events, so a posted one is not taken
++  // there either.
 +  CGEventRef cgEvent = theEvent.CGEvent;
-+  if (!NSApp.active && cgEvent) {
++  if (!NSApp.active && !self.window.ignoresMouseEvents && cgEvent) {
 +    int64_t sourcePid =
 +        CGEventGetIntegerValueField(cgEvent, kCGEventSourceUnixProcessID);
 +    if (sourcePid != 0 && sourcePid != getpid()) {

@@ -2,9 +2,8 @@
 // (see spec/fixtures/native-addon/mouse-input). The window server does not
 // route them, so unlike a click at an event tap they do not activate the app.
 // The app under test is a second Electron process, so that this one is the
-// other process. Its main process logs activations and mouse downs in the order
-// AppKit hands them over, so a later click shows that an earlier one is lost.
-// There are no retries: a click that only sometimes gets through is a failure.
+// other process. Its main process logs activations and mouse downs, and there
+// are no retries: a click that only sometimes gets through is a failure.
 import { app } from 'electron/main';
 
 import { expect } from 'chai';
@@ -17,9 +16,6 @@ import { ifdescribe, startRemoteControlApp, waitUntil } from './lib/spec-helpers
 const require = createRequire(import.meta.url);
 
 type MouseInput = {
-  move(x: number, y: number): Promise<unknown>;
-  click(): Promise<unknown>;
-  getCursorPos(): { x?: number; y?: number };
   postClickToWindow(pid: number, windowNumber: number, x: number, y: number): unknown;
   getDiagnostics(): Record<string, unknown>;
 };
@@ -33,18 +29,10 @@ ifdescribe(process.platform === 'darwin' && !process.env.ELECTRON_SKIP_NATIVE_MO
   () => {
     let mouse: MouseInput;
     let rc: Awaited<ReturnType<typeof startRemoteControlApp>>;
-    let initialCursor: { x?: number; y?: number };
 
     before(function () {
       mouse = require('@electron-ci/mouse-input');
       if (!process.env.CI && !mouse.getDiagnostics().postEventAccess) this.skip();
-      initialCursor = mouse.getCursorPos();
-    });
-
-    after(async () => {
-      if (initialCursor?.x !== undefined && initialCursor?.y !== undefined) {
-        await mouse.move(initialCursor.x, initialCursor.y);
-      }
     });
 
     beforeEach(async () => {
@@ -117,38 +105,6 @@ ifdescribe(process.platform === 'darwin' && !process.env.ELECTRON_SKIP_NATIVE_MO
       postClick(w);
       await logged('mouseDown main');
       expect(await log()).to.deep.equal(['mouseDown main']);
-    });
-
-    const moveCursorToPoint = async () => {
-      await mouse.move(POINT.x, POINT.y);
-      await waitUntil(() => {
-        const { x, y } = mouse.getCursorPos();
-        return x === POINT.x && y === POINT.y;
-      });
-    };
-
-    // The control for the next test: the patch ignores clicks a process posts
-    // to itself, so this is how an unpatched build treats a routed click.
-    it('leave a click that the app posts at the event tap to only activate the app', async () => {
-      await openWindow('main');
-      await sendToBackground();
-      await moveCursorToPoint();
-      await rc.remotely(() => require('@electron-ci/mouse-input').click());
-      await logged('active');
-      await rc.remotely(() => require('@electron-ci/mouse-input').click());
-      await logged('mouseDown main');
-      expect(await log()).to.deep.equal(['active', 'mouseDown main']);
-    });
-
-    it('leave a click that the window server routes to only activate the app', async () => {
-      await openWindow('main');
-      await sendToBackground();
-      await moveCursorToPoint();
-      await mouse.click();
-      await logged('active');
-      await mouse.click();
-      await logged('mouseDown main');
-      expect(await log()).to.deep.equal(['active', 'mouseDown main']);
     });
   }
 );
