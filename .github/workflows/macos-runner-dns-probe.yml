@@ -47,3 +47,52 @@ jobs:
         run: |
           dig github.com +noall +stats +answer || true
           dscacheutil -q host -a name github.com || true
+      - name: Runner public egress IP
+        run: |
+          curl -s --max-time 10 https://ifconfig.me; echo
+          curl -s --max-time 10 https://ipinfo.io/json || true
+      - name: Fingerprint local forwarder (192.168.64.1)
+        run: |
+          for q in version.bind hostname.bind id.server version.server; do
+            echo "== CH TXT $q"
+            dig @192.168.64.1 +time=3 +tries=1 CH TXT "$q" +noall +answer +comments | grep -E "status|TXT" || true
+          done
+          echo "== flags for a normal query (look for ra/ad)"
+          dig @192.168.64.1 +dnssec cloudflare.com | grep -E "flags|status|EDNS|udp" || true
+          echo "== TCP"
+          dig @192.168.64.1 +tcp +short github.com || true
+      - name: Upstream resolver egress via whoami services (through 192.168.64.1)
+        run: |
+          for i in 1 2 3 4 5; do
+            echo "---- round $i"
+            echo "google o-o.myaddr:"; dig @192.168.64.1 +short TXT o-o.myaddr.l.google.com || true
+            echo "akamai whoami:";     dig @192.168.64.1 +short whoami.akamai.net || true
+            echo "akamai ds:";         dig @192.168.64.1 +short TXT whoami.ds.akahelp.net || true
+            echo "dnscrypt:";          dig @192.168.64.1 +short TXT resolver.dnscrypt.info || true
+          done
+      - name: Identify upstream resolver IPs
+        run: |
+          ips=$( { dig @192.168.64.1 +short whoami.akamai.net; \
+                   dig @192.168.64.1 +short TXT o-o.myaddr.l.google.com | tr -d '"' | grep -vi edns; \
+                   for i in 1 2 3 4 5 6; do dig @192.168.64.1 +short whoami.akamai.net; done; } \
+                 | grep -E '^[0-9a-f.:]+$' | sort -u )
+          for ip in $ips; do
+            echo "== $ip"
+            dig +short -x "$ip" || true
+            curl -s --max-time 10 "https://ipinfo.io/$ip/json" || true
+            echo
+          done
+      - name: Direct queries to public resolvers (interception check)
+        run: |
+          for r in 8.8.8.8 1.1.1.1 9.9.9.9 208.67.222.222; do
+            echo "== @$r"
+            dig @"$r" +time=3 +tries=1 +short TXT o-o.myaddr.l.google.com || echo "failed"
+            dig @"$r" +time=3 +tries=1 +short whoami.akamai.net || echo "failed"
+          done
+          echo "== cloudflare whoami"
+          dig @1.1.1.1 +time=3 +tries=1 +short CH TXT whoami.cloudflare || echo "failed"
+          echo "== opendns myip"
+          dig @208.67.222.222 +time=3 +tries=1 +short myip.opendns.com || echo "failed"
+      - name: Path to upstream
+        run: |
+          traceroute -n -w 2 -q 1 -m 15 8.8.8.8 || true
