@@ -164,6 +164,27 @@ async function fetchChromiumDashCommit(commitSha, repo) {
   }
 }
 
+// Upstream fixes are often cherry-picked back to the release branch a roller
+// is tracking, so the original CL lands outside the roll range while its
+// cherry-pick lands inside it. Chromium Dash lists those cherry-picks in the
+// commit's `relations`; return the first one whose earliest version is in range.
+async function findInRangeCherryPick(dashDetails, commitSha, repo, isInRange) {
+  const cherryPicks = (dashDetails.relations ?? []).filter((rel) => rel.relation_type === 'CHERRY_PICK');
+
+  for (const relation of cherryPicks) {
+    // Take whichever side of the relation isn't the commit we started from
+    const relatedSha = relation.from_commit === commitSha ? relation.to_commit : relation.from_commit;
+    if (!relatedSha || relatedSha === commitSha) continue;
+
+    const relatedDetails = await fetchChromiumDashCommit(relatedSha, repo);
+    if (relatedDetails?.earliest && isInRange(relatedDetails.earliest)) {
+      return { commitSha: relatedSha, earliest: relatedDetails.earliest };
+    }
+  }
+
+  return null;
+}
+
 async function getGerritPatchDetails(clUrl) {
   const parsedUrl = new URL(clUrl);
   const match = /^\/c\/(.+?)\/\+\/(\d+)/.exec(parsedUrl.pathname);
@@ -518,14 +539,24 @@ async function main() {
       }
 
       // CL should have landed after the base version and at or before the new version
-      const isInRange =
-        compareVersions(clEarliestVersion, baseVersion) > 0 && compareVersions(clEarliestVersion, newVersion) <= 0;
+      const isInRange = (version) =>
+        compareVersions(version, baseVersion) > 0 && compareVersions(version, newVersion) <= 0;
 
-      if (!isInRange) {
-        const error = `CL earliest version ${clEarliestVersion} is outside roller range (${baseVersion} -> ${newVersion})`;
-        checkedCLs.set(cl.url, { valid: false, error });
-        console.error(`  ❌ ${clLabel}: ${error}`);
-        hasErrors = true;
+      if (!isInRange(clEarliestVersion)) {
+        const cherryPick = await findInRangeCherryPick(dashDetails, gerritDetails.commitSha, repo, isInRange);
+
+        if (!cherryPick) {
+          const error = `CL earliest version ${clEarliestVersion} is outside roller range (${baseVersion} -> ${newVersion})`;
+          checkedCLs.set(cl.url, { valid: false, error });
+          console.error(`  ❌ ${clLabel}: ${error}`);
+          hasErrors = true;
+          continue;
+        }
+
+        checkedCLs.set(cl.url, { valid: true, subject: gerritDetails.subject });
+        console.log(
+          `  ✅ ${clLabel}: version ${clEarliestVersion} is outside range, but cherry-pick ${cherryPick.commitSha.substring(0, 7)} (version ${cherryPick.earliest}) is within range`
+        );
         continue;
       }
 
