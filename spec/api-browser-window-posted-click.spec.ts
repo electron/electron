@@ -119,14 +119,31 @@ ifdescribe(process.platform === 'darwin' && !process.env.ELECTRON_SKIP_NATIVE_MO
       expect(await log()).to.deep.equal(['mouseDown main']);
     });
 
-    it('leave a click that the window server routes to only activate the app', async () => {
-      await openWindow('main');
-      await sendToBackground();
+    const moveCursorToPoint = async () => {
       await mouse.move(POINT.x, POINT.y);
       await waitUntil(() => {
         const { x, y } = mouse.getCursorPos();
         return x === POINT.x && y === POINT.y;
       });
+    };
+
+    // The control for the next test: the patch ignores clicks a process posts
+    // to itself, so this is how an unpatched build treats a routed click.
+    it('leave a click that the app posts at the event tap to only activate the app', async () => {
+      await openWindow('main');
+      await sendToBackground();
+      await moveCursorToPoint();
+      await rc.remotely(() => require('@electron-ci/mouse-input').click());
+      await logged('active');
+      await rc.remotely(() => require('@electron-ci/mouse-input').click());
+      await logged('mouseDown main');
+      expect(await log()).to.deep.equal(['active', 'mouseDown main']);
+    });
+
+    it('leave a click that the window server routes to only activate the app', async () => {
+      await openWindow('main');
+      await sendToBackground();
+      await moveCursorToPoint();
       await mouse.click();
       await logged('active');
       await mouse.click();
