@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "base/containers/flat_map.h"
+#include "base/containers/flat_set.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ref.h"
 #include "base/memory/weak_ptr.h"
@@ -163,6 +164,8 @@ class ProxyingURLLoaderFactory
     mojo::ScopedDataPipeConsumerHandle current_body_;
     scoped_refptr<net::HttpResponseHeaders> override_headers_;
     GURL redirect_url_;
+    // Request-header names the session's header rules set on an earlier leg.
+    base::flat_set<std::string> rule_injected_headers_;
 
     const bool for_cors_preflight_ = false;
 
