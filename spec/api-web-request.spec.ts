@@ -14,6 +14,7 @@ import { ReadableStream } from 'node:stream/web';
 import * as url from 'node:url';
 
 import { listen, defer, startRemoteControlApp } from './lib/spec-helpers.ts';
+import { expectWarningMessages } from './lib/warning-helpers.ts';
 
 import type { Socket } from 'node:net';
 
@@ -549,10 +550,6 @@ describe('webRequest module', () => {
     });
 
     it('skips invalid request headers and warns about them', async () => {
-      const warnings: string[] = [];
-      const onWarning = (warning: Error) => warnings.push(warning.message);
-      process.on('warning', onWarning);
-      defer(() => process.off('warning', onWarning));
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
         callback({
           requestHeaders: {
@@ -562,11 +559,11 @@ describe('webRequest module', () => {
           }
         });
       });
-      const { data } = await ajax(defaultURL);
+      const { data } = await expectWarningMessages(() => ajax(defaultURL), {
+        name: 'electron',
+        message: `webRequest: dropping header(s) with an invalid name or value from 'requestHeaders': "X-Bad"`
+      });
       expect(data).to.equal('/header/received');
-      expect(
-        warnings.some((message) => message.includes("'requestHeaders'") && message.includes('"X-Bad"'))
-      ).to.be.true('expected a warning naming the invalid header');
     });
 
     it('keeps the original request headers when requestHeaders cannot be converted', async () => {
@@ -574,6 +571,85 @@ describe('webRequest module', () => {
         callback({ requestHeaders: [] as any });
       });
       const { data } = await ajax(defaultURL, { headers: { Accept: '*/*;test/header' } });
+      expect(data).to.equal('/header/received');
+    });
+
+    it('converts non-string request header values to strings', async () => {
+      let sentHeaders: Record<string, string> | undefined;
+      ses.webRequest.onBeforeSendHeaders((details, callback) => {
+        callback({ requestHeaders: { ...details.requestHeaders, 'X-Number': 123 } as any });
+      });
+      ses.webRequest.onSendHeaders((details) => {
+        sentHeaders = details.requestHeaders;
+      });
+      await ajax(defaultURL);
+      expect(sentHeaders).to.have.property('X-Number', '123');
+    });
+
+    it('drops object and array request header values and warns about them', async () => {
+      let sentHeaders: Record<string, string> | undefined;
+      ses.webRequest.onBeforeSendHeaders((details, callback) => {
+        callback({ requestHeaders: { ...details.requestHeaders, 'X-Object': {}, 'X-Array': ['a', 'b'] } as any });
+      });
+      ses.webRequest.onSendHeaders((details) => {
+        sentHeaders = details.requestHeaders;
+      });
+      await expectWarningMessages(() => ajax(defaultURL), {
+        name: 'electron',
+        message: `webRequest: dropping header(s) with an invalid name or value from 'requestHeaders': "X-Object", "X-Array"`
+      });
+      expect(sentHeaders).to.not.have.property('X-Object');
+      expect(sentHeaders).to.not.have.property('X-Array');
+    });
+
+    it('removes request headers whose value is null or undefined', async () => {
+      let sentHeaders: Record<string, string> | undefined;
+      ses.webRequest.onBeforeSendHeaders((details, callback) => {
+        callback({ requestHeaders: { ...details.requestHeaders, Accept: undefined, 'X-Null': null } as any });
+      });
+      ses.webRequest.onSendHeaders((details) => {
+        sentHeaders = details.requestHeaders;
+      });
+      const { data } = await ajax(defaultURL, { headers: { Accept: '*/*;test/header' } });
+      expect(data).to.equal('/');
+      expect(sentHeaders).to.not.have.property('Accept');
+      expect(sentHeaders).to.not.have.property('X-Null');
+    });
+
+    it('keeps the original request headers when a request header value cannot be converted', async () => {
+      let error: unknown;
+      ses.webRequest.onBeforeSendHeaders((details, callback) => {
+        try {
+          // A Symbol can't be converted to a string, which fails the whole
+          // conversion after 'Accept' has already been read.
+          callback({ requestHeaders: { Accept: 'changed', 'X-Symbol': Symbol('x') } as any });
+        } catch (e) {
+          error = e;
+        }
+      });
+      const { data } = await ajax(defaultURL, { headers: { Accept: '*/*;test/header' } });
+      expect(error).to.be.an.instanceOf(TypeError);
+      expect(data).to.equal('/header/received');
+    });
+
+    it('surfaces an error thrown by a request header getter and keeps the original request headers', async () => {
+      let error: unknown;
+      ses.webRequest.onBeforeSendHeaders((details, callback) => {
+        const requestHeaders = { Accept: 'changed' };
+        Object.defineProperty(requestHeaders, 'X-Throws', {
+          enumerable: true,
+          get() {
+            throw new Error('getter threw');
+          }
+        });
+        try {
+          callback({ requestHeaders });
+        } catch (e) {
+          error = e;
+        }
+      });
+      const { data } = await ajax(defaultURL, { headers: { Accept: '*/*;test/header' } });
+      expect(error).to.be.an.instanceOf(Error).with.property('message', 'getter threw');
       expect(data).to.equal('/header/received');
     });
 
@@ -772,10 +848,6 @@ describe('webRequest module', () => {
     });
 
     it('skips invalid response headers, keeps the rest and warns about them', async () => {
-      const warnings: string[] = [];
-      const onWarning = (warning: Error) => warnings.push(warning.message);
-      process.on('warning', onWarning);
-      defer(() => process.off('warning', onWarning));
       ses.webRequest.onHeadersReceived((details, callback) => {
         callback({
           responseHeaders: {
@@ -785,14 +857,23 @@ describe('webRequest module', () => {
           }
         });
       });
-      const { headers } = await ajax(defaultURL);
+      const { headers } = await expectWarningMessages(() => ajax(defaultURL), {
+        name: 'electron',
+        message: `webRequest: dropping header(s) with an invalid name or value from 'responseHeaders': "X-Bad"`
+      });
       expect(headers).to.have.property('custom', 'Header');
       expect(headers).to.have.property('x-added', 'yes');
       expect(headers).to.not.have.property('x-bad');
       expect(headers).to.not.have.property('x-injected');
-      expect(
-        warnings.some((message) => message.includes("'responseHeaders'") && message.includes('"X-Bad"'))
-      ).to.be.true('expected a warning naming the invalid header');
+    });
+
+    it('keeps response headers whose name is all digits', async () => {
+      ses.webRequest.onHeadersReceived((details, callback) => {
+        callback({ responseHeaders: { ...details.responseHeaders, 123: ['digits'] } });
+      });
+      const { headers } = await expectWarningMessages(() => ajax(defaultURL));
+      expect(headers).to.have.property('123', 'digits');
+      expect(headers).to.have.property('custom', 'Header');
     });
 
     it('keeps the original response headers when responseHeaders cannot be converted', async () => {

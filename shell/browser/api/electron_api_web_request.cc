@@ -227,8 +227,8 @@ void WarnInvalidHeaders(v8::Isolate* isolate,
     names.push_back(base::GetQuotedJSONString(name));
   util::EmitWarning(
       isolate,
-      base::StrCat({"webRequest: ignoring header(s) with an invalid name or "
-                    "value in '",
+      base::StrCat({"webRequest: dropping header(s) with an invalid name or "
+                    "value from '",
                     property, "': ", base::JoinString(names, ", ")}),
       "electron");
 }
