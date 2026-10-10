@@ -19,6 +19,10 @@ module.exports = {
   click: (button = 'left') => binding.button(button, 'click').then(check('click')),
   wheel: (delta, horizontal = false) => binding.wheel(delta, horizontal).then(check('wheel')),
   getCursorPos: binding.getCursorPos,
+  // macOS only: a left click at screen point (x, y) posted straight to window
+  // |windowNumber| of process |pid| with CGEventPostToPid().
+  postClickToWindow: (pid, windowNumber, x, y) =>
+    check('postClickToWindow')(binding.postClickToWindow(pid, windowNumber, Math.round(x), Math.round(y))),
   isWindowAtPoint: binding.isWindowAtPoint,
   // Windows only; elsewhere returns null.
   describeWindowAtPoint: binding.describeWindowAtPoint ?? (() => null),
