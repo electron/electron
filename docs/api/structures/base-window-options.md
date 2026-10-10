@@ -130,6 +130,12 @@
   tabbing identifier will be grouped together. This also adds a native new
   tab button to your window's tab bar and allows your `app` and window to
   receive the `new-window-for-tab` event.
+* `tabbingMode` string (optional) _macOS_ - Controls native window tabbing.
+  Can be `automatic`, `preferred` or `disallowed`. `automatic` follows the
+  macOS tabbing preference, `preferred` prefers opening as a tab, and
+  `disallowed` disables tabbing. Defaults to `automatic` when native tabbing
+  is enabled by `tabbingIdentifier`, otherwise `disallowed`. Use `disallowed`
+  to show restored windows independently before explicitly joining their tabs.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from

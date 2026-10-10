@@ -371,8 +371,9 @@ gin_helper::WrappableBase* BrowserWindow::New(gin_helper::ErrorThrower thrower,
   }
 
   std::string error_message;
-  if (!IsWindowNameValid(options, &error_message)) {
-    // Window name is already in use throw an error and do not create the window
+  if (!IsWindowNameValid(options, &error_message) ||
+      !IsTabbingModeValid(options, &error_message)) {
+    // Invalid options must not create a native window.
     thrower.ThrowError(error_message);
     return nullptr;
   }

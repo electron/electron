@@ -140,12 +140,17 @@ class NativeWindowMac : public NativeWindow,
   void RefreshTouchBarItem(const std::string& item_id) override;
   void SetEscapeTouchBarItem(gin_helper::PersistentDictionary item) override;
   void SelectPreviousTab() override;
+  TabbingMode GetTabbingMode() const override;
+  void SetTabbingMode(TabbingMode mode) override;
   void SelectNextTab() override;
   void ShowAllTabs() override;
   void MergeAllWindows() override;
   void MoveTabToNewWindow() override;
   void ToggleTabBar() override;
   bool AddTabbedWindow(NativeWindow* window) override;
+  std::vector<NativeWindow*> GetTabbedWindows() const override;
+  NativeWindow* GetSelectedTab() const override;
+  void SelectTab() override;
   std::optional<std::string> GetTabbingIdentifier() const override;
   void SetAspectRatio(double aspect_ratio,
                       const gfx::Size& extra_size) override;
