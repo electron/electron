@@ -61,10 +61,10 @@ index 0ae84efaeaf664857afa280ababf28f271291b48..d0957ced725eac4795a1948a5f0820f8
      return false;
    }
 diff --git a/services/network/public/cpp/url_request_mojom_traits.h b/services/network/public/cpp/url_request_mojom_traits.h
-index 2c6b978631affb4ced4189af52001f84346b2d4b..66c9cfa97030123eafcb6287ed66fdeef8d58de5 100644
+index 03653541a9216c493b7374d830b78f4e91cbcf49..76b2afad8537b5f21145e06350067eadf895701f 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.h
 +++ b/services/network/public/cpp/url_request_mojom_traits.h
-@@ -108,6 +108,10 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
+@@ -107,6 +107,10 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
        const network::ResourceRequest::TrustedParams& trusted_params) {
      return trusted_params.include_request_cookies_with_response;
    }
