@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Sun, 27 Sep 2026 19:11:01 +0200
+Subject: fix: deliver clicks that another process posts to a background app
+
+-[RenderWidgetHostViewCocoa acceptsFirstMouse:] returns NO by default so that
+the click which activates a window is not also delivered to the page. AppKit
+asks the same question for a mouse down that another process posted directly
+to this process, for example with CGEventPostToPid(). Such an event does not go
+through the window server, so it activates nothing, and answering NO drops it.
+
+AppKit activates the app before it asks about a click that the window server
+routed here, so an inactive app at this point identifies the posted event.
+Hardware events have no source process, and events this process posts carry
+its own, so both keep the existing behavior.
+
+This patch can be removed once
+https://chromium-review.googlesource.com/c/chromium/src/+/8470994 lands.
+
+diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
+index 9eaa36a6bc1536e3a3cb00cf9893b76d9c84f928..e73db95bf45ffbc295246b62e51b00be005c472d 100644
+--- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
++++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
+@@ -6,6 +6,7 @@
+ 
+ #include <AppKit/AppKit.h>
+ #include <Carbon/Carbon.h>  // for <HIToolbox/Events.h>
++#include <unistd.h>
+ 
+ #include <algorithm>
+ #include <limits>
+@@ -872,6 +873,18 @@ - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
+       [self.window acceptsFirstMouse])
+     return YES;
+ 
++  // A click that another process posts straight to this process does not
++  // activate the app, unlike one the window server routes here, so treating it
++  // as an activation click would only drop it.
++  CGEventRef cgEvent = theEvent.CGEvent;
++  if (!NSApp.active && cgEvent) {
++    int64_t sourcePid =
++        CGEventGetIntegerValueField(cgEvent, kCGEventSourceUnixProcessID);
++    if (sourcePid != 0 && sourcePid != getpid()) {
++      return YES;
++    }
++  }
++
+   // Enable "click-through" if mouse clicks are accepted in inactive windows.
+   return
+       [self acceptsMouseEventsOption] > AcceptMouseEvents::kWhenInActiveWindow;
