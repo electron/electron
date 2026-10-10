@@ -1,0 +1,522 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Sanders <dsanders11@ucsbalum.com>
+Date: Fri, 9 Oct 2026 21:01:19 -0700
+Subject: Add missing includes of standard library headers
+
+Assisted-by: Claude Opus 5.5
+
+Cherry-picked from upstream ada commit
+https://github.com/ada-url/ada/commit/afb8a1e3099cd903f92f3add4b7efec4f5c6ffcd
+and ported to the vendored amalgamation (deps/ada/ada.h and
+deps/ada/ada.cpp). Needed for building with clang modules, since ada.h
+uses e.g. std::pair, std::vector and std::same_as without including
+their headers. The changes to url_pattern_list and
+unicode_percent_encode are omitted as those files are not in the
+vendored ada 4.0.0.
+
+This patch can be removed when Node.js updates to an ada release that
+contains this change.
+
+diff --git a/deps/ada/ada.cpp b/deps/ada/ada.cpp
+index fd558881bf0530c4fea9dea0f0b86edec14514c0..3f88289ea13aadb5726647da51eb8c7d6053268c 100644
+--- a/deps/ada/ada.cpp
++++ b/deps/ada/ada.cpp
+@@ -5,6 +5,8 @@
+ 
+ #include <algorithm>
+ #include <array>
++#include <cstddef>
++#include <cstdint>
+ #include <string_view>
+ 
+ namespace ada::checkers {
+@@ -6722,7 +6724,13 @@ ADA_POP_DISABLE_WARNINGS
+ 
+ #include <algorithm>
+ #include <array>
++#include <cstdint>
+ #include <cstring>
++#include <iterator>
++#include <optional>
++#include <string>
++#include <string_view>
++#include <utility>
+ #if ADA_SSSE3
+ #include <tmmintrin.h>
+ #elif ADA_NEON
+@@ -7514,8 +7522,10 @@ std::string ipv4(const uint64_t address) {
+ /* begin file src/implementation.cpp */
+ 
+ #include <atomic>
++#include <cstdint>
+ #include <limits>
+ #include <optional>
++#include <string>
+ #include <string_view>
+ 
+ 
+@@ -7921,9 +7931,14 @@ ada_warn_unused std::string_view to_string(ada::encoding_type type) {
+ }  // namespace ada
+ /* end file src/implementation.cpp */
+ /* begin file src/helpers.cpp */
++#include <array>
+ #include <cstdint>
+ #include <cstring>
++#include <optional>
+ #include <sstream>
++#include <string>
++#include <string_view>
++#include <utility>
+ 
+ 
+ #if ADA_SSSE3
+@@ -8998,6 +9013,7 @@ ada_warn_unused std::string to_string(ada::state state) {
+ 
+ 
+ #include <array>
++#include <cstddef>
+ #include <cstdint>
+ 
+ #if defined(ADA_AVX512)
+@@ -9181,12 +9197,15 @@ ada_really_inline bool ipv6_structure_plausible(const char* data,
+ 
+ #include <algorithm>
+ #include <array>
++#include <cstddef>
+ #include <cstdint>
+ #include <iterator>
+ #include <numeric>
++#include <optional>
+ #include <ranges>
+ #include <string>
+ #include <string_view>
++#include <utility>
+ 
+ namespace ada {
+ 
+@@ -10064,7 +10083,11 @@ bool url::set_href(const std::string_view input) {
+ #include <array>
+ #include <cstring>
+ #include <limits>
++#include <optional>
+ #include <ranges>
++#include <string>
++#include <string_view>
++#include <utility>
+ 
+ 
+ namespace ada::parser {
+@@ -11433,13 +11456,16 @@ namespace ada {
+ /* end file src/url_components.cpp */
+ /* begin file src/url_aggregator.cpp */
+ 
++#include <algorithm>
+ #include <array>
+ #include <cstdint>
+ #include <cstring>
+ #include <iterator>
++#include <optional>
+ #include <ranges>
+ #include <string>
+ #include <string_view>
++#include <utility>
+ 
+ namespace {
+ 
+@@ -13005,6 +13031,8 @@ inline void url_aggregator::consume_prepared_path(std::string_view input) {
+ #include <algorithm>
+ #include <optional>
+ #include <string>
++#include <string_view>
++#include <utility>
+ 
+ namespace ada {
+ 
+@@ -13386,9 +13414,16 @@ tl::expected<std::string, errors> url_pattern_init::process_hash(
+ #include <algorithm>
+ #include <array>
+ #include <charconv>
++#include <cstddef>
++#include <cstdint>
+ #include <optional>
+ #include <ranges>
+ #include <string>
++#include <string_view>
++#include <system_error>
++#include <tuple>
++#include <utility>
++#include <vector>
+ 
+ 
+ namespace ada::url_pattern_helpers {
+@@ -14634,6 +14669,15 @@ std::string generate_pattern_string(
+ #if ADA_INCLUDE_URL_PATTERN
+ 
+ 
++#ifdef ADA_USE_UNSAFE_STD_REGEX_PROVIDER
++#include <cstddef>
++#include <optional>
++#include <regex>
++#include <string>
++#include <string_view>
++#include <vector>
++#endif  // ADA_USE_UNSAFE_STD_REGEX_PROVIDER
++
+ namespace ada::url_pattern_regex {
+ 
+ #ifdef ADA_USE_UNSAFE_STD_REGEX_PROVIDER
+diff --git a/deps/ada/ada.h b/deps/ada/ada.h
+index dc96fe8343080d447c936a37549d836374154438..adfbd7a8e9f9ef78b23d32ab4f4d45e965f4cc66 100644
+--- a/deps/ada/ada.h
++++ b/deps/ada/ada.h
+@@ -568,6 +568,8 @@ ada_really_inline constexpr bool bit_at(const uint8_t a[], uint8_t i);
+ #define ADA_CHARACTER_SETS_INL_H
+ 
+ 
++#include <cstdint>
++
+ /**
+  * These functions are not part of our public API and may
+  * change at any time.
+@@ -1088,6 +1090,7 @@ ada_really_inline constexpr bool bit_at(const uint8_t a[], const uint8_t i) {
+ #define ADA_CHECKERS_INL_H
+ 
+ #include <bit>
++#include <cstddef>
+ #include <cstdint>
+ #include <cstring>
+ #include <string_view>
+@@ -1100,6 +1103,7 @@ ada_really_inline constexpr bool bit_at(const uint8_t a[], const uint8_t i) {
+ #define ADA_CHECKERS_H
+ 
+ 
++#include <cstdint>
+ #include <cstring>
+ #include <string_view>
+ 
+@@ -1477,6 +1481,7 @@ constexpr ada_really_inline void log([[maybe_unused]] Args... args) {
+ #define ADA_ENCODING_TYPE_H
+ 
+ #include <string>
++#include <string_view>
+ 
+ namespace ada {
+ 
+@@ -1540,7 +1545,9 @@ ada_warn_unused std::string_view to_string(encoding_type type);
+ #define ADA_SCHEME_H
+ 
+ 
++#include <cstdint>
+ #include <string>
++#include <string_view>
+ 
+ /**
+  * @namespace ada::scheme
+@@ -1611,6 +1618,8 @@ constexpr ada::scheme::type get_scheme_type(std::string_view scheme) noexcept;
+ #endif  // ADA_SCHEME_H
+ /* end file include/ada/scheme.h */
+ 
++#include <cstddef>
++#include <cstdint>
+ #include <string>
+ #include <string_view>
+ 
+@@ -1745,11 +1754,15 @@ struct url_base {
+ #endif
+ /* end file include/ada/url_base.h */
+ 
++#include <cstddef>
++#include <cstdint>
++#include <optional>
+ #include <string>
+ #include <string_view>
+-#include <optional>
++#include <utility>
+ 
+ #if ADA_DEVELOPMENT_CHECKS
++#include <cstdlib>
+ #include <iostream>
+ #endif  // ADA_DEVELOPMENT_CHECKS
+ 
+@@ -1983,6 +1996,8 @@ inline int fast_digit_count(uint32_t x) noexcept {
+ #ifndef ADA_PARSER_H
+ #define ADA_PARSER_H
+ 
++#include <cstddef>
++#include <cstdint>
+ #include <string_view>
+ #include <variant>
+ 
+@@ -2014,8 +2029,10 @@ inline int fast_digit_count(uint32_t x) noexcept {
+ #define TL_EXPECTED_VERSION_MINOR 1
+ #define TL_EXPECTED_VERSION_PATCH 0
+ 
++#include <cstddef>
+ #include <exception>
+ #include <functional>
++#include <initializer_list>
+ #include <type_traits>
+ #include <utility>
+ 
+@@ -4506,8 +4523,11 @@ void swap(expected<T, E>& lhs,
+ #ifndef ADA_URL_PATTERN_REGEX_H
+ #define ADA_URL_PATTERN_REGEX_H
+ 
++#include <concepts>
++#include <optional>
+ #include <string>
+ #include <string_view>
++#include <vector>
+ 
+ #ifdef ADA_USE_UNSAFE_STD_REGEX_PROVIDER
+ #include <regex>
+@@ -4593,10 +4613,12 @@ enum class errors : uint8_t {
+ #endif  // ADA_ERRORS_H
+ /* end file include/ada/errors.h */
+ 
+-#include <string_view>
+-#include <string>
+-#include <optional>
++#include <concepts>
++#include <cstdint>
+ #include <iostream>
++#include <optional>
++#include <string>
++#include <string_view>
+ 
+ #if ADA_TESTING
+ #include <iostream>
+@@ -4825,9 +4847,11 @@ tl::expected<url_pattern<regex_provider>, errors> parse_url_pattern_impl(
+ #ifndef ADA_IMPLEMENTATION_H
+ #define ADA_IMPLEMENTATION_H
+ 
++#include <cstdint>
++#include <optional>
+ #include <string>
+ #include <string_view>
+-#include <optional>
++#include <variant>
+ 
+ /* begin file include/ada/url.h */
+ /**
+@@ -4844,6 +4868,8 @@ tl::expected<url_pattern<regex_provider>, errors> parse_url_pattern_impl(
+ #define ADA_URL_H
+ 
+ #include <algorithm>
++#include <cstddef>
++#include <cstdint>
+ #include <optional>
+ #include <ostream>
+ #include <string>
+@@ -4861,6 +4887,9 @@ tl::expected<url_pattern<regex_provider>, errors> parse_url_pattern_impl(
+ #ifndef ADA_URL_COMPONENTS_H
+ #define ADA_URL_COMPONENTS_H
+ 
++#include <cstdint>
++#include <string>
++
+ namespace ada {
+ 
+ /**
+@@ -5588,10 +5617,13 @@ uint32_t get_max_input_length();
+ #endif  // ADA_IMPLEMENTATION_H
+ /* end file include/ada/implementation.h */
+ 
++#include <cstdint>
++#include <optional>
+ #include <ostream>
+ #include <string>
+ #include <string_view>
+ #include <unordered_map>
++#include <utility>
+ #include <variant>
+ #include <vector>
+ 
+@@ -5997,8 +6029,13 @@ class url_pattern {
+ #define ADA_URL_PATTERN_HELPERS_H
+ 
+ 
++#include <cstddef>
++#include <cstdint>
++#include <optional>
+ #include <string>
++#include <string_view>
+ #include <tuple>
++#include <utility>
+ #include <vector>
+ 
+ #if ADA_INCLUDE_URL_PATTERN
+@@ -6342,8 +6379,10 @@ std::string generate_segment_wildcard_regexp(
+ #endif
+ /* end file include/ada/url_pattern_helpers.h */
+ 
++#include <cstdint>
+ #include <string>
+ #include <string_view>
++#include <utility>
+ #include <variant>
+ 
+ namespace ada::parser {
+@@ -6615,6 +6654,10 @@ tl::expected<url_pattern<regex_provider>, errors> parse_url_pattern_impl(
+ #define ADA_SCHEME_INL_H
+ 
+ 
++#include <cstddef>
++#include <cstdint>
++#include <string_view>
++
+ namespace ada::scheme {
+ 
+ /**
+@@ -6744,6 +6787,8 @@ constexpr ada::scheme::type get_scheme_type(std::string_view scheme) noexcept {
+ 
+ 
+ #include <array>
++#include <cstddef>
++#include <cstdint>
+ #include <string>
+ 
+ /**
+@@ -6936,9 +6981,11 @@ ada_warn_unused std::string to_string(ada::state s);
+ #define ADA_UNICODE_H
+ 
+ 
++#include <cstddef>
++#include <cstdint>
++#include <optional>
+ #include <string>
+ #include <string_view>
+-#include <optional>
+ 
+ /**
+  * Unicode operations. These functions are not part of our public API and may
+@@ -7187,6 +7234,7 @@ constexpr bool to_lower_ascii(char* input, size_t length) noexcept;
+ #define ADA_URL_BASE_INL_H
+ 
+ 
++#include <cstdint>
+ #include <string>
+ #if ADA_REGULAR_VISUAL_STUDIO
+ #include <intrin.h>
+@@ -7222,9 +7270,14 @@ url_base::scheme_default_port() const noexcept {
+ 
+ 
+ #include <charconv>
++#include <cstdint>
+ #include <cstring>
+ #include <optional>
++#include <ostream>
+ #include <string>
++#include <string_view>
++#include <system_error>
++#include <utility>
+ #if ADA_REGULAR_VISUAL_STUDIO
+ #include <intrin.h>
+ #endif  // ADA_REGULAR_VISUAL_STUDIO
+@@ -7572,6 +7625,8 @@ ada_really_inline size_t url::parse_port(std::string_view view,
+ #define ADA_URL_COMPONENTS_INL_H
+ 
+ 
++#include <cstdint>
++
+ namespace ada {
+ 
+ [[nodiscard]] constexpr bool url_components::check_offset_consistency()
+@@ -7662,6 +7717,8 @@ namespace ada {
+ #ifndef ADA_URL_AGGREGATOR_H
+ #define ADA_URL_AGGREGATOR_H
+ 
++#include <cstddef>
++#include <cstdint>
+ #include <ostream>
+ #include <string>
+ #include <string_view>
+@@ -8105,6 +8162,11 @@ inline std::ostream& operator<<(std::ostream& out, const url& u);
+ #ifndef ADA_UNICODE_INL_H
+ #define ADA_UNICODE_INL_H
+ 
++#include <cstddef>
++#include <cstdint>
++#include <cstring>
++#include <string_view>
++
+ /**
+  * Unicode operations. These functions are not part of our public API and may
+  * change at any time.
+@@ -8149,8 +8211,11 @@ ada_really_inline size_t percent_encode_index(const std::string_view input,
+ /* end file include/ada/unicode-inl.h */
+ 
+ #include <charconv>
++#include <cstdint>
+ #include <ostream>
++#include <string>
+ #include <string_view>
++#include <system_error>
+ 
+ namespace ada {
+ 
+@@ -9288,9 +9353,11 @@ void url_aggregator::update_host_to_base_host(const std::string_view input) {
+ #ifndef ADA_URL_SEARCH_PARAMS_H
+ #define ADA_URL_SEARCH_PARAMS_H
+ 
++#include <cstddef>
+ #include <optional>
+ #include <string>
+ #include <string_view>
++#include <utility>
+ #include <vector>
+ 
+ namespace ada {
+@@ -9547,7 +9614,9 @@ struct url_search_params_iter {
+ 
+ 
+ #include <algorithm>
++#include <cstddef>
+ #include <cstdint>
++#include <iterator>
+ #include <optional>
+ #include <ranges>
+ #include <string>
+@@ -9847,8 +9916,13 @@ url_search_params_entries_iter::next() {
+ 
+ 
+ #include <algorithm>
++#include <cstddef>
++#include <optional>
++#include <string>
+ #include <string_view>
+ #include <utility>
++#include <variant>
++#include <vector>
+ 
+ #if ADA_INCLUDE_URL_PATTERN
+ namespace ada {
+@@ -10456,8 +10530,13 @@ result<std::optional<url_pattern_result>> url_pattern<regex_provider>::match(
+ #ifndef ADA_URL_PATTERN_HELPERS_INL_H
+ #define ADA_URL_PATTERN_HELPERS_INL_H
+ 
++#include <cstddef>
++#include <cstdint>
+ #include <optional>
++#include <string>
+ #include <string_view>
++#include <utility>
++#include <vector>
+ 
+ 
+ #if ADA_INCLUDE_URL_PATTERN
+@@ -11629,8 +11708,13 @@ enum {
+ 
+ 
+ 
+-#include <variant>
++#include <cstddef>
++#include <span>
++#include <string>
+ #include <string_view>
++#include <utility>
++#include <variant>
++#include <vector>
+ 
+ namespace ada {
+ 
