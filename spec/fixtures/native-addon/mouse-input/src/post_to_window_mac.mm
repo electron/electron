@@ -12,11 +12,15 @@ namespace mouse_input {
 InjectResult PostClickToWindow(int pid, int window_number, int x, int y) {
   InjectResult result;
   result.expected = 2;
+  // AppKit cannot resolve another process's window number, so it takes the
+  // location as a screen point, with the origin at the bottom left.
+  const NSPoint location =
+      NSMakePoint(x, CGDisplayBounds(CGMainDisplayID()).size.height - y);
   const NSEventType types[] = {NSEventTypeLeftMouseDown, NSEventTypeLeftMouseUp};
   for (NSEventType type : types) {
     NSEvent* event =
         [NSEvent mouseEventWithType:type
-                           location:NSMakePoint(x, y)
+                           location:location
                       modifierFlags:0
                           timestamp:NSProcessInfo.processInfo.systemUptime
                        windowNumber:window_number

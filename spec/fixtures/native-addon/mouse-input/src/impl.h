@@ -38,9 +38,9 @@ InjectResult Wheel(int delta, bool horizontal);
 bool GetCursorPos(int* x, int* y, int64_t* error);
 
 #if defined(__APPLE__)
-// Posts a left click to process |pid| without going through the window server.
-// (x, y) is in the coordinates of its window |window_number|, whose origin is
-// the bottom left corner. Called on the JS thread.
+// Posts a left click at screen point (x, y) to window |window_number| of
+// process |pid| without going through the window server. Called on the JS
+// thread.
 InjectResult PostClickToWindow(int pid, int window_number, int x, int y);
 #endif
 
