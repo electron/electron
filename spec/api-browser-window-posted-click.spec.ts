@@ -96,6 +96,25 @@ ifdescribe(process.platform === 'darwin' && !process.env.ELECTRON_SKIP_NATIVE_MO
       expect(await log()).to.deep.equal(['mouseDown main']);
     });
 
+    // Control for the next test: the app posts the overlay's click itself, which
+    // the patch ignores, so this is what an unpatched build does with it.
+    it('do not reach a window that ignores mouse events when the app posts them', async () => {
+      const w = await openWindow('main');
+      const overlay = await openWindow('overlay', { transparent: true });
+      await rc.remotely(() => (globalThis as any).windows.overlay.setIgnoreMouseEvents(true));
+      await sendToBackground();
+      await rc.remotely(
+        (overlay: number, x: number, y: number) =>
+          require('@electron-ci/mouse-input').postClickToWindow(process.pid, overlay, x, y),
+        overlay,
+        POINT.x,
+        POINT.y
+      );
+      postClick(w);
+      await logged('mouseDown main');
+      expect(await log()).to.deep.equal(['mouseDown main']);
+    });
+
     it('do not reach a window that ignores mouse events', async () => {
       const w = await openWindow('main');
       const overlay = await openWindow('overlay', { transparent: true });
