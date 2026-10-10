@@ -5,6 +5,10 @@
 #ifndef ELECTRON_SHELL_BROWSER_DRAGGABLE_REGION_PROVIDER_H_
 #define ELECTRON_SHELL_BROWSER_DRAGGABLE_REGION_PROVIDER_H_
 
+namespace gfx {
+class Point;
+}  // namespace gfx
+
 class DraggableRegionProvider {
  public:
   virtual int NonClientHitTest(const gfx::Point& point) = 0;

@@ -56,6 +56,7 @@ class WebContentsView final : public View {
   WebContents* GetWebContents();
   void SetBackgroundColor(std::optional<WrappedSkColor> color);
   void SetBorderRadius(int radius);
+  void SetInteractive(bool interactive) override;
 
   // Lets |window| hit test this view's draggable regions until the view is
   // removed from it or its native peer is released.

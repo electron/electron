@@ -5,7 +5,7 @@ import { expect } from 'chai';
 
 import * as fs from 'node:fs';
 
-import { closeWindow } from './lib/window-helpers.ts';
+import { closeWindow, closeAllWindows } from './lib/window-helpers.ts';
 
 describe('View', () => {
   let w: BaseWindow;
@@ -220,8 +220,8 @@ describe('View', () => {
           return 'my-view';
         }
       }
-      class MyImageView extends ImageView {}
-      class MyWebContentsView extends WebContentsView {}
+      class MyImageView extends ImageView { }
+      class MyWebContentsView extends WebContentsView { }
 
       const v = new MyView();
       const iv = new MyImageView();
@@ -281,6 +281,29 @@ describe('View', () => {
       expect(() => ImageView.prototype.setImage.call(v, nativeImage.createEmpty())).to.throw('Illegal invocation');
       expect(() => (WebContentsView.prototype.setBorderRadius as any).call(v, 1)).to.throw('Illegal invocation');
       expect(() => View.prototype.getBounds.call(nativeImage.createEmpty())).to.throw('Illegal invocation');
+    });
+  });
+
+  describe('setInteractive', () => {
+    afterEach(closeAllWindows);
+
+    it('does not throw when toggled on a view', () => {
+      w = new BaseWindow({ show: false });
+      const v = new View();
+      expect(() => v.setInteractive(false)).to.not.throw();
+      expect(() => v.setInteractive(true)).to.not.throw();
+      w.setContentView(v);
+      expect(() => v.setInteractive(false)).to.not.throw();
+      expect(() => v.setInteractive(true)).to.not.throw();
+    });
+
+    it('correctly records state when toggled', () => {
+      const v = new View();
+      expect(v.getInteractive()).to.be.true();
+      v.setInteractive(false);
+      expect(v.getInteractive()).to.be.false();
+      v.setInteractive(true);
+      expect(v.getInteractive()).to.be.true();
     });
   });
 });

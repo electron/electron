@@ -94,6 +94,8 @@ class View : public gin::Wrappable<View>,
   void SetBackgroundColor(std::optional<WrappedSkColor> color);
   void SetBorderRadius(int radius);
   void SetBackgroundBlur(int blur_radius);
+  virtual void SetInteractive(bool interactive);
+  bool GetInteractive() const { return interactive_; }
   void SetVisible(bool visible);
   bool GetVisible() const;
 
@@ -145,6 +147,7 @@ class View : public gin::Wrappable<View>,
   cppgc::Member<ChildEntry> first_child_;
   v8::TracedReference<v8::Function> layout_callback_;
   std::optional<int> border_radius_;
+  bool interactive_ = true;
   std::unique_ptr<Host, NativePeerBase::Deleter> host_;
 };
 
