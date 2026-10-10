@@ -18,6 +18,7 @@
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_context.h"
+#include "shell/browser/net/device_bound_sessions.h"
 #include "shell/browser/net/system_network_context_manager.h"
 
 namespace electron {
@@ -78,6 +79,24 @@ void NetworkContextService::ConfigureNetworkContextParams(
   network_context_params->cookie_manager_params =
       network::mojom::CookieManagerParams::New();
 
+  network_context_params->device_bound_sessions_enabled =
+      ShouldEnableDeviceBoundSessions(in_memory);
+  if (network_context_params->device_bound_sessions_enabled) {
+    // Key operations run in the browser process rather than in the network
+    // service, whose built-in key provider cannot work for an Electron app on
+    // macOS. If there is no key provider the remote stays unset and no session
+    // can be registered.
+    if (!device_bound_sessions_key_service_) {
+      device_bound_sessions_key_service_ =
+          std::make_unique<DeviceBoundSessionsKeyService>(path);
+    }
+    auto key_service = device_bound_sessions_key_service_->BindNewRemote();
+    if (key_service.is_valid()) {
+      network_context_params->bound_sessions_unexportable_key_service =
+          std::move(key_service);
+    }
+  }
+
   // Configure on-disk storage for persistent sessions.
   if (!in_memory) {
     // Configure the HTTP cache path and size.
@@ -107,6 +126,11 @@ void NetworkContextService::ConfigureNetworkContextParams(
 
     network_context_params->file_paths->trust_token_database_name =
         base::FilePath(chrome::kTrustTokenFilename);
+
+    if (network_context_params->device_bound_sessions_enabled) {
+      network_context_params->file_paths->device_bound_sessions_database_name =
+          base::FilePath(chrome::kDeviceBoundSessionsFilename);
+    }
 
     network_context_params->restore_old_session_cookies = false;
     network_context_params->persist_session_cookies = false;

@@ -9,6 +9,7 @@
 #include <Security/Security.h>
 
 #include <optional>
+#include <string>
 
 namespace electron {
 
@@ -27,6 +28,15 @@ std::optional<audit_token_t> GetParentProcessAuditToken();
 // process.send stops working in processes created by child_process.fork, due
 // to the NODE_CHANNEL_ID env getting removed).
 bool ProcessSignatureIsSameWithCurrentApp(audit_token_t audit_token);
+
+// Returns whether the current app is unsigned or only ad-hoc signed, or
+// std::nullopt if its signature could not be inspected.
+std::optional<bool> CurrentAppIsUnsignedOrAdHocSigned();
+
+// Returns the Apple Developer Team ID from the current app's code signature, or
+// std::nullopt if the app has no signature or its signature carries no team
+// (unsigned, ad-hoc, or signed with an identity that has no team).
+std::optional<std::string> GetCurrentAppTeamIdentifier();
 
 }  // namespace electron
 
