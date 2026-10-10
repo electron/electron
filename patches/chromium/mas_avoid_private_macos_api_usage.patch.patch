@@ -50,7 +50,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 9ab3d0abf667e8094bcdc18dab7879d1ddb96a5a..4f45a17ed648bc7391b78cb28c7fe432b951fda2 100644
+index 2587bd828b83beac1ea36b119b3674c1b5d6b4c2..8e7174ba2fe424ac4440fa81c97e976ccf71edf1 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1154,6 +1154,7 @@ component("base") {
@@ -971,10 +971,10 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 0368c6d13f3afca0303322d42b79f382d56f952c..bf96edb40f9ec123ba48e367ab923b628f910aff 100644
+index c74a6130862162d4fdb07cf3d4a60604d0ae0482..92eaacfb3256ded77bd119e6ca30640472621f79 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-@@ -34,6 +34,7 @@
+@@ -35,6 +35,7 @@
  #import "content/public/browser/render_widget_host_view_mac_delegate.h"
  #include "content/public/browser/scoped_accessibility_mode.h"
  #include "content/public/common/content_features.h"
@@ -982,7 +982,7 @@ index 0368c6d13f3afca0303322d42b79f382d56f952c..bf96edb40f9ec123ba48e367ab923b62
  #include "skia/ext/skia_utils_mac.h"
  #include "third_party/blink/public/common/features.h"
  #include "third_party/blink/public/mojom/input/input_handler.mojom.h"
-@@ -2486,15 +2487,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -2499,15 +2500,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -1817,7 +1817,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 0da517e172ba0ffffb551173748312c35582b084..f817df64c14c638900b15a7ab699d0215ffc0235 100644
+index e5fe811ee0c302fdc22eb7d6678d48b5dd5ccc34..d7b9372e0f071374de358e5825ed3bb46719a79e 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -446,6 +446,7 @@ component("core") {
@@ -2163,7 +2163,7 @@ index 9423a2891552e8df3ea5b05c720ab11795c4b92d..610c479ef03759d3082b42d7a402cbea
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 0c60d955d51d899ceced2fe3d6483913e7160db4..6ce33e05e71c9941a76f1b9de22f2faf51550947 100644
+index dd9811827c1d7a4a0afe006ba6c0bbc17f58d3a6..3399f82675e57a1f9feb8f33ba1666dde84731cb 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -367,6 +367,13 @@ component("base") {
