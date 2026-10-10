@@ -29,7 +29,8 @@ bool ShouldInitializeSandboxInfo(const base::CommandLine& command_line) {
   if (process_type.empty())
     return true;
 
-  // The sandbox type parser only accepts Content child process types on Windows.
+  // The sandbox type parser only accepts Content child process types on
+  // Windows.
   if (process_type != sandbox::policy::switches::kRendererProcess &&
       process_type != sandbox::policy::switches::kGpuProcess &&
       process_type != sandbox::policy::switches::kUtilityProcess) {
