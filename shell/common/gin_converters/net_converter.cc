@@ -198,8 +198,16 @@ v8::Local<v8::Value> Converter<net::HttpResponseHeaders*>::ToV8(
 bool Converter<net::HttpResponseHeaders*>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
+    net::HttpResponseHeaders* out) {
+  std::vector<std::string> invalid_headers;
+  return FromV8(isolate, val, out, invalid_headers);
+}
+
+bool Converter<net::HttpResponseHeaders*>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
     net::HttpResponseHeaders* out,
-    std::vector<std::string>* invalid_headers) {
+    std::vector<std::string>& invalid_headers) {
   if (!val->IsObject()) {
     return false;
   }
@@ -216,10 +224,8 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
     gin::ConvertFromV8(isolate, localStrVal, &value);
     if (!net::HttpUtil::IsValidHeaderName(key) ||
         !net::HttpUtil::IsValidHeaderValue(value)) {
-      if (invalid_headers &&
-          (invalid_headers->empty() || invalid_headers->back() != key)) {
-        invalid_headers->push_back(key);
-      }
+      if (invalid_headers.empty() || invalid_headers.back() != key)
+        invalid_headers.push_back(key);
       return true;
     }
     out->AddHeader(key, value);
@@ -279,11 +285,19 @@ v8::Local<v8::Value> Converter<net::HttpRequestHeaders>::ToV8(
 }
 
 // static
+bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
+                                                v8::Local<v8::Value> val,
+                                                net::HttpRequestHeaders* out) {
+  std::vector<std::string> invalid_headers;
+  return FromV8(isolate, val, out, invalid_headers);
+}
+
+// static
 bool Converter<net::HttpRequestHeaders>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
     net::HttpRequestHeaders* out,
-    std::vector<std::string>* invalid_headers) {
+    std::vector<std::string>& invalid_headers) {
   if (!val->IsObject() || val->IsArray() || val->IsFunction())
     return false;
   auto context = isolate->GetCurrentContext();
@@ -309,8 +323,7 @@ bool Converter<net::HttpRequestHeaders>::FromV8(
     if (v8value->IsNullOrUndefined())
       continue;
     if (v8value->IsObject()) {
-      if (invalid_headers)
-        invalid_headers->push_back(key);
+      invalid_headers.push_back(key);
       continue;
     }
     v8::Local<v8::String> v8str;
@@ -320,8 +333,8 @@ bool Converter<net::HttpRequestHeaders>::FromV8(
     if (net::HttpUtil::IsValidHeaderName(key) &&
         net::HttpUtil::IsValidHeaderValue(value))
       out->SetHeader(key, std::move(value));
-    else if (invalid_headers)
-      invalid_headers->push_back(key);
+    else
+      invalid_headers.push_back(key);
   }
   return true;
 }

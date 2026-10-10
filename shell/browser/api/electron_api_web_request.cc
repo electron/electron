@@ -536,7 +536,7 @@ void WebRequest::OnBeforeSendHeadersListenerResult(
       if (dict.Get("requestHeaders", &value) && value->IsObject()) {
         std::vector<std::string> invalid_headers;
         if (gin::Converter<net::HttpRequestHeaders>::FromV8(
-                isolate, value, &new_headers, &invalid_headers)) {
+                isolate, value, &new_headers, invalid_headers)) {
           user_modified_headers = true;
           WarnInvalidHeaders(isolate, "requestHeaders", invalid_headers);
         } else {
@@ -640,7 +640,7 @@ void WebRequest::OnHeadersReceivedListenerResult(
         std::vector<std::string> invalid_headers;
         user_modified_headers =
             gin::Converter<net::HttpResponseHeaders*>::FromV8(
-                isolate, value, override_headers.get(), &invalid_headers);
+                isolate, value, override_headers.get(), invalid_headers);
         if (user_modified_headers)
           WarnInvalidHeaders(isolate, "responseHeaders", invalid_headers);
       }
