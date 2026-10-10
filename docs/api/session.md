@@ -1214,6 +1214,7 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
     * `videoRequested` Boolean - true if the web content requested a video stream.
     * `audioRequested` Boolean - true if the web content requested an audio stream.
     * `userGesture` Boolean - Whether a user gesture was active when this request was triggered.
+    * `preferredDisplaySurface` string - The [`displaySurface`](https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/displaySurface) the page asked for in `getDisplayMedia()`. Can be `monitor`, `window`, `browser` or `none`. `none` means the page did not ask for one.
   * `callback` Function
     * `streams` Object | null - Pass `null` to deny the request, which rejects
       the `getDisplayMedia()` promise with an `AbortError`.
