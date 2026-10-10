@@ -6,15 +6,20 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
+#include <vector>
 
 #include "base/command_line.h"
+#include "base/containers/span.h"
 #include "base/dcheck_is_on.h"
 #include "base/functional/callback.h"
 #include "base/logging.h"
 #include "base/memory/ptr_util.h"
 #include "base/no_destructor.h"
 #include "base/power_monitor/power_monitor_source.h"
+#include "base/strings/string_view_util.h"
+#include "base/values.h"
 #include "build/build_config.h"
 #include "chrome/browser/browser_process.h"
 #include "components/prefs/pref_service.h"
@@ -23,11 +28,14 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_switches.h"
+#include "net/cert/x509_certificate.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/webauthn/electron_authenticator_request_client_delegate.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/callback_util.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/function_template.h"
@@ -388,6 +396,27 @@ void SimulateWebAuthnUvLockedPinSecurityKey(bool enabled) {
       SetSimulateUvLockedPinSecurityKeyForTesting(enabled);
 }
 
+v8::Local<v8::Value> ConvertCertificateForTesting(
+    gin_helper::ErrorThrower thrower,
+    const base::ListValue& chain) {
+  std::vector<std::string_view> der_certs;
+  der_certs.reserve(chain.size());
+  for (const auto& value : chain) {
+    const auto* bytes = value.GetIfBlob();
+    if (!bytes) {
+      thrower.ThrowTypeError("Certificate chain entries must be Buffers");
+      return v8::Undefined(thrower.isolate());
+    }
+    der_certs.push_back(base::as_string_view(base::span(*bytes)));
+  }
+  auto certificate = net::X509Certificate::CreateFromDERCertChain(der_certs);
+  if (!certificate) {
+    thrower.ThrowTypeError("Certificate chain must contain a valid leaf");
+    return v8::Undefined(thrower.isolate());
+  }
+  return gin::ConvertToV8(thrower.isolate(), certificate);
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -430,6 +459,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod<&CommitPendingLocalStateWrites>(
       "commitPendingLocalStateWrites");
   dict.SetMethod<&ClearHeldPromiseForTesting>("clearHeldPromiseForTesting");
+  dict.SetMethod<&ConvertCertificateForTesting>("convertCertificateForTesting");
 }
 
 }  // namespace

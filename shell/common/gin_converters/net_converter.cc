@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "base/containers/span.h"
+#include "base/logging.h"
 #include "base/memory/raw_ptr.h"
 #include "base/strings/string_util.h"
 #include "base/values.h"
@@ -111,11 +112,18 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
       issuer_intermediates.push_back(
           bssl::UpRef(intermediate_buffers[i].get()));
     }
+    // Match the lenient options Chromium uses for client certificate chains
+    // (crbug.com/770323) so that valid chain members are not dropped here.
     const scoped_refptr<net::X509Certificate>& issuer_cert =
-        net::X509Certificate::CreateFromBuffer(
+        net::X509Certificate::CreateFromBufferUnsafeOptions(
             bssl::UpRef(intermediate_buffers[0].get()),
-            std::move(issuer_intermediates));
-    builder.Set("issuerCert", issuer_cert);
+            std::move(issuer_intermediates),
+            {.printable_string_is_utf8 = true});
+    if (issuer_cert) {
+      builder.Set("issuerCert", issuer_cert);
+    } else {
+      LOG(WARNING) << "Failed to parse intermediate certificate";
+    }
   }
 
   return builder.Build();
