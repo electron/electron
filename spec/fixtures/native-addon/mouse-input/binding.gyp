@@ -27,13 +27,16 @@
             'src/impl.h',
             'src/impl_mac.cc',
             'src/main_posix.cc',
+            'src/post_to_window_mac.mm',
           ],
           'libraries': [
+            '$(SDKROOT)/System/Library/Frameworks/AppKit.framework',
             '$(SDKROOT)/System/Library/Frameworks/ApplicationServices.framework',
           ],
           'xcode_settings': {
             # CGPreflightPostEventAccess() is macOS 10.15+.
             'MACOSX_DEPLOYMENT_TARGET': '11.0',
+            'OTHER_CFLAGS': ['-fobjc-arc'],
           },
         }],
         # X11 only. libX11 and libXtst are dlopen()ed, so no X11 development
