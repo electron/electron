@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <!--
+    Like older gsettings-desktop-schemas, this lacks the font-antialiasing key
+    that GTK initialization requires.
+    Keep keys that other code reads without checking that they exist:
+    a missing key is a fatal GLib error.
+  -->
+  <schema id="org.gnome.desktop.interface" path="/org/gnome/desktop/interface/">
+    <key name="font-name" type="s">
+      <default>'Sans 10'</default>
+    </key>
+    <!-- Read by Chromium's accessibility check when the a11y bus is unavailable. -->
+    <key name="toolkit-accessibility" type="b">
+      <default>false</default>
+    </key>
+  </schema>
+</schemalist>
