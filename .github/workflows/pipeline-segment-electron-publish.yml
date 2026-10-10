@@ -152,6 +152,12 @@ jobs:
       TARGET_ARCH: ${{ inputs.target-arch }}
       TARGET_PLATFORM: ${{ inputs.target-platform }}
     steps:
+      - name: Use Cloudflare DNS (macOS)
+        if: ${{ inputs.target-platform == 'macos' }}
+        run: |
+          sudo networksetup -setdnsservers Ethernet 1.1.1.1 1.0.0.1
+          sudo dscacheutil -flushcache
+          sudo killall -HUP mDNSResponder
       - name: Create src dir
         run: |
           mkdir src
