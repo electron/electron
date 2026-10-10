@@ -25,16 +25,18 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Use Cloudflare DNS
+        run: |
+          sudo networksetup -setdnsservers Ethernet 1.1.1.1 1.0.0.1
+          sudo dscacheutil -flushcache
+          sudo killall -HUP mDNSResponder
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: |
             .github/actions/free-space-macos
-            .github/actions/use-cloudflare-dns
           sparse-checkout-cone-mode: false
           persist-credentials: false
-      - name: Use Cloudflare DNS
-        uses: ./.github/actions/use-cloudflare-dns
 
       - name: Get Disk Space Before Cleanup
         id: disk-before
