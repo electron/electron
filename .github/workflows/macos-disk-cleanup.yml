@@ -30,8 +30,11 @@ jobs:
         with:
           sparse-checkout: |
             .github/actions/free-space-macos
+            .github/actions/use-cloudflare-dns
           sparse-checkout-cone-mode: false
           persist-credentials: false
+      - name: Use Cloudflare DNS
+        uses: ./.github/actions/use-cloudflare-dns
 
       - name: Get Disk Space Before Cleanup
         id: disk-before

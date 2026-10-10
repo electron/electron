@@ -52,6 +52,9 @@ jobs:
       with:
         path: src/electron
         persist-credentials: false
+    - name: Use Cloudflare DNS (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      uses: ./src/electron/.github/actions/use-cloudflare-dns
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform != 'linux' }}
       uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020

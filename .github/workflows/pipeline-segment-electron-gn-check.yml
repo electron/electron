@@ -52,6 +52,9 @@ jobs:
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
         persist-credentials: false
+    - name: Use Cloudflare DNS (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      uses: ./src/electron/.github/actions/use-cloudflare-dns
     - name: Cleanup disk space on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       shell: bash

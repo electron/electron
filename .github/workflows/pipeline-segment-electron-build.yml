@@ -149,6 +149,9 @@ jobs:
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
         persist-credentials: false
+    - name: Use Cloudflare DNS (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      uses: ./src/electron/.github/actions/use-cloudflare-dns
     - name: Setup SSH Debugging
       if: ${{ inputs.target-platform == 'macos' && (inputs.enable-ssh || env.ACTIONS_STEP_DEBUG == 'true') }}
       uses: ./src/electron/.github/actions/ssh-debug
