@@ -1,0 +1,49 @@
+name: macOS Runner DNS Probe
+
+on:
+  push:
+    branches:
+      - sam/macos-runner-dns-probe
+
+permissions: {}
+
+jobs:
+  dns-probe:
+    name: DNS probe (${{ matrix.runner }})
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15-large, macos-15-xlarge]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Runner info
+        run: |
+          sw_vers
+          uname -a
+          hostname
+      - name: scutil --dns
+        run: scutil --dns
+      - name: /etc/resolv.conf
+        run: cat /etc/resolv.conf || true
+      - name: networksetup DNS servers
+        run: |
+          networksetup -listallnetworkservices | tail -n +2 | while IFS= read -r svc; do
+            svc="${svc#\*}"
+            echo "== $svc"
+            networksetup -getdnsservers "$svc" || true
+          done
+      - name: Network interfaces and routes
+        run: |
+          ifconfig
+          netstat -rn -f inet
+      - name: DHCP info
+        run: |
+          for iface in $(ifconfig -l); do
+            out=$(ipconfig getpacket "$iface" 2>/dev/null) || continue
+            echo "== $iface"
+            echo "$out"
+          done
+      - name: Resolver test
+        run: |
+          dig github.com +noall +stats +answer || true
+          dscacheutil -q host -a name github.com || true
