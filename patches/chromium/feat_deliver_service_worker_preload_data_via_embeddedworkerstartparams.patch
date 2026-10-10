@@ -33,10 +33,10 @@ index f1305b444c578b9d3f67470ddac1258c8a3cd903..67efc8609de5ff6316ef4348a474f09c
    if (policy_container_host_) {
      params->policy_container =
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index ec3ed48006f883df3c6778dd942fe808e2e9ac7b..7d0c402104e2070672a38be512ceb7dda8ad40ed 100644
+index c65e4d309395da665019c86e42ee4a3ea62c6f2a..550f28359e0e33f96948ea4d26bfee92c10a5ba1 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -843,6 +843,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
+@@ -846,6 +846,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
    return std::nullopt;
  }
  
@@ -51,7 +51,7 @@ index ec3ed48006f883df3c6778dd942fe808e2e9ac7b..7d0c402104e2070672a38be512ceb7dd
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index a6e6ba792eae94ca693a48a4f3156348c948aba5..a14fc7dd71cb44e119c0c02f54181ca329d20588 100644
+index b52596f66d3376a59a0ab29edd446fd23ee27a60..294652edbb7b15f43beb67e41b94c46ca5e82db5 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -1309,6 +1309,17 @@ class CONTENT_EXPORT ContentBrowserClient {
@@ -169,7 +169,7 @@ index a3bfdd9c15d3cfc5053c2a36767ea7964f2740fd..d9d608ea5b01cff08654b11e455fd7af
        WebFetchClientSettingsObject outside_fetch_client_settings_object)
        : wait_for_debugger_mode(kDontWaitForDebugger),
 diff --git a/third_party/blink/renderer/core/workers/global_scope_creation_params.h b/third_party/blink/renderer/core/workers/global_scope_creation_params.h
-index d5a652b33a00868054695da48cbeb0cca057faa1..d971a3437d35cc9cf45c3b5eb8f3646e9649a5c7 100644
+index 334882e5f645a3df16942186836cedd7ca943a24..8ef208fc4f72de1be2c14336d941c51d10e76a5d 100644
 --- a/third_party/blink/renderer/core/workers/global_scope_creation_params.h
 +++ b/third_party/blink/renderer/core/workers/global_scope_creation_params.h
 @@ -11,6 +11,7 @@
@@ -180,7 +180,7 @@ index d5a652b33a00868054695da48cbeb0cca057faa1..d971a3437d35cc9cf45c3b5eb8f3646e
  #include "mojo/public/cpp/bindings/pending_remote.h"
  #include "net/storage_access_api/status.h"
  #include "services/metrics/public/cpp/ukm_source_id.h"
-@@ -272,6 +273,11 @@ struct CORE_EXPORT GlobalScopeCreationParams final {
+@@ -260,6 +261,11 @@ struct CORE_EXPORT GlobalScopeCreationParams final {
    // Shared and service worker scripts have no ResourceTiming entry.
    KURL dedicated_worker_script_initiator_url;
  
@@ -207,7 +207,7 @@ index 32c00e338a044b52af9b851025f6a97934233bca..05db920886c35b6d7f49996542f86994
    TRACE_EVENT_BEGIN(
        "blink.worker", "WorkerGlobalScope setup",
 diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.h b/third_party/blink/renderer/core/workers/worker_global_scope.h
-index c46068b29b4e12ed3fd0be9ccfe828d10754da56..b572e2c20ef64ff0bd7e9f86cf470796cfcfd163 100644
+index 734532813298d958b8973e574ea029ab528cf63c..cd2b62097cc06dc45cb38748391c28c53de6eb3d 100644
 --- a/third_party/blink/renderer/core/workers/worker_global_scope.h
 +++ b/third_party/blink/renderer/core/workers/worker_global_scope.h
 @@ -32,6 +32,7 @@
@@ -218,7 +218,7 @@ index c46068b29b4e12ed3fd0be9ccfe828d10754da56..b572e2c20ef64ff0bd7e9f86cf470796
  #include "services/network/public/mojom/fetch_api.mojom-blink-forward.h"
  #include "third_party/blink/public/common/permissions_policy/document_policy.h"
  #include "third_party/blink/public/common/tokens/tokens.h"
-@@ -296,6 +297,12 @@ class CORE_EXPORT WorkerGlobalScope
+@@ -292,6 +293,12 @@ class CORE_EXPORT WorkerGlobalScope
      return top_level_frame_security_origin_.get();
    }
  
@@ -231,7 +231,7 @@ index c46068b29b4e12ed3fd0be9ccfe828d10754da56..b572e2c20ef64ff0bd7e9f86cf470796
   protected:
    WorkerGlobalScope(std::unique_ptr<GlobalScopeCreationParams>,
                      WorkerThread*,
-@@ -438,6 +445,9 @@ class CORE_EXPORT WorkerGlobalScope
+@@ -434,6 +441,9 @@ class CORE_EXPORT WorkerGlobalScope
  
    const ukm::SourceId ukm_source_id_;
  
@@ -242,10 +242,10 @@ index c46068b29b4e12ed3fd0be9ccfe828d10754da56..b572e2c20ef64ff0bd7e9f86cf470796
    // DevTools agents being configured while waiting for debugger) till the main
    // script has completed loading. This is so that VT does not run while script
 diff --git a/third_party/blink/renderer/modules/exported/web_embedded_worker_impl.cc b/third_party/blink/renderer/modules/exported/web_embedded_worker_impl.cc
-index e85f9c75e8ed6961ef75c1899e93ce12a9af3521..58e22915217f05c88e9f671f6092eeb2b1d7c4d0 100644
+index 630b499aec0699ee4566298db8292ba7d83d19d3..6038911ac770cfd57594bb567bf2ba1e4041924e 100644
 --- a/third_party/blink/renderer/modules/exported/web_embedded_worker_impl.cc
 +++ b/third_party/blink/renderer/modules/exported/web_embedded_worker_impl.cc
-@@ -253,6 +253,9 @@ void WebEmbeddedWorkerImpl::StartWorkerThread(
+@@ -250,6 +250,9 @@ void WebEmbeddedWorkerImpl::StartWorkerThread(
        /*origin_to_use=*/nullptr, std::move(coep_reporting_observer),
        std::move(dip_reporting_observer));
  

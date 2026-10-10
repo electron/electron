@@ -94,7 +94,7 @@ index a41254c1f31654c1326b4bf1f29237bdf44bbe5a..8ca5673a225b69b5630383ed9673653b
    StateRestorationData? state_restoration_data;
  
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index 4507428d53ff8290d9a46db7f3066c3495e2fd48..b25ce04c9af04950d827941a57769a242e81d5ce 100644
+index ad6a2ca5960749d2b1a45f39f4ab419370dde406..2c850a6c5d01936052f2eb41f814a25ea109055e 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
 @@ -579,6 +579,7 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost

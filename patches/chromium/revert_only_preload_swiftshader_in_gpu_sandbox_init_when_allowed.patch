@@ -22,10 +22,10 @@ https://chromium-review.googlesource.com/c/chromium/src/+/8286976; this
 patch can be dropped once that or an equivalent lands.
 
 diff --git a/gpu/ipc/service/gpu_init.cc b/gpu/ipc/service/gpu_init.cc
-index b0057803f63f385fef39bfe4e95d74bd0767d836..a09895577c95c225dc224a47f65ad7c47f3296f0 100644
+index 742a7f02ecf0d4e220a2e380011960e32fce5d97..1c7d47525715c8a410772d5b929b6688cbb9b423 100644
 --- a/gpu/ipc/service/gpu_init.cc
 +++ b/gpu/ipc/service/gpu_init.cc
-@@ -751,17 +751,7 @@ bool GpuInit1::InitializeAndStartSandbox(
+@@ -750,17 +750,7 @@ bool GpuInitLegacy::InitializeAndStartSandbox(
  
      base::FilePath module_path;
      if (base::PathService::Get(base::DIR_MODULE, &module_path)) {

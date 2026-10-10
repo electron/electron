@@ -10,7 +10,7 @@ Subject: chore: "grandfather in" Electron Views and Delegates
 6448510: Lock further access to View::set_owned_by_client(). | https://chromium-review.googlesource.com/c/chromium/src/+/6448510
 
 diff --git a/ui/views/view.h b/ui/views/view.h
-index 242fc32c0b862217706bab93e380df5e8f0441b5..e92e452845277dcc3f58b405a5ed7a527c7796e4 100644
+index 5d9badf7a3d11201619c9be373a11198517e91b5..7fed40ee34e03bc2ea373f224cc8f01f65c7799a 100644
 --- a/ui/views/view.h
 +++ b/ui/views/view.h
 @@ -77,6 +77,17 @@ namespace ash {
