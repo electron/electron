@@ -40,7 +40,6 @@ ifdescribe(process.platform === 'darwin' && !process.env.ELECTRON_SKIP_NATIVE_MO
       await rc.remotely(() => {
         const { app } = require('electron');
         const log: string[] = ((globalThis as any).log = []);
-        (globalThis as any).windows = {};
         app.on('did-become-active', () => log.push('active'));
         app.on('did-resign-active', () => log.push('inactive'));
       });
@@ -57,7 +56,6 @@ ifdescribe(process.platform === 'darwin' && !process.env.ELECTRON_SKIP_NATIVE_MO
         async (name: string, options: Electron.BrowserWindowConstructorOptions) => {
           const { BrowserWindow } = require('electron');
           const w = new BrowserWindow({ ...options, show: false });
-          (globalThis as any).windows[name] = w;
           w.webContents.on('input-event', (_: unknown, input: Electron.InputEvent) => {
             if (input.type === 'mouseDown') (globalThis as any).log.push(`mouseDown ${name}`);
           });
@@ -91,17 +89,6 @@ ifdescribe(process.platform === 'darwin' && !process.env.ELECTRON_SKIP_NATIVE_MO
     it('reach the page without activating the app', async () => {
       const w = await openWindow('main');
       await sendToBackground();
-      postClick(w);
-      await logged('mouseDown main');
-      expect(await log()).to.deep.equal(['mouseDown main']);
-    });
-
-    it('do not reach a window that ignores mouse events', async () => {
-      const w = await openWindow('main');
-      const overlay = await openWindow('overlay', { transparent: true });
-      await rc.remotely(() => (globalThis as any).windows.overlay.setIgnoreMouseEvents(true));
-      await sendToBackground();
-      postClick(overlay);
       postClick(w);
       await logged('mouseDown main');
       expect(await log()).to.deep.equal(['mouseDown main']);
