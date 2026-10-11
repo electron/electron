@@ -193,10 +193,10 @@ index 334882e5f645a3df16942186836cedd7ca943a24..8ef208fc4f72de1be2c14336d941c51d
    const net::StorageAccessApiStatus parent_storage_access_api_status;
  
 diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.cc b/third_party/blink/renderer/core/workers/worker_global_scope.cc
-index 32c00e338a044b52af9b851025f6a97934233bca..05db920886c35b6d7f49996542f86994991f31ae 100644
+index a70870c22a963f86609261e72e397890c7c2d1f6..f3609df000fe54b400472586e37f7e58cd54456a 100644
 --- a/third_party/blink/renderer/core/workers/worker_global_scope.cc
 +++ b/third_party/blink/renderer/core/workers/worker_global_scope.cc
-@@ -937,6 +937,9 @@ WorkerGlobalScope::WorkerGlobalScope(
+@@ -943,6 +943,9 @@ WorkerGlobalScope::WorkerGlobalScope(
            std::move(creation_params->top_level_frame_security_origin)) {
    // Workers should always maintain the default world of an isolate.
    CHECK(creation_params->is_default_world_of_isolate);
@@ -207,7 +207,7 @@ index 32c00e338a044b52af9b851025f6a97934233bca..05db920886c35b6d7f49996542f86994
    TRACE_EVENT_BEGIN(
        "blink.worker", "WorkerGlobalScope setup",
 diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.h b/third_party/blink/renderer/core/workers/worker_global_scope.h
-index 734532813298d958b8973e574ea029ab528cf63c..cd2b62097cc06dc45cb38748391c28c53de6eb3d 100644
+index b7f3b19f12dc32908c04779e8645c6c4bd01acf6..ab04da0f4d22542f137c93f458c393f6edb4cae7 100644
 --- a/third_party/blink/renderer/core/workers/worker_global_scope.h
 +++ b/third_party/blink/renderer/core/workers/worker_global_scope.h
 @@ -32,6 +32,7 @@
@@ -218,7 +218,7 @@ index 734532813298d958b8973e574ea029ab528cf63c..cd2b62097cc06dc45cb38748391c28c5
  #include "services/network/public/mojom/fetch_api.mojom-blink-forward.h"
  #include "third_party/blink/public/common/permissions_policy/document_policy.h"
  #include "third_party/blink/public/common/tokens/tokens.h"
-@@ -292,6 +293,12 @@ class CORE_EXPORT WorkerGlobalScope
+@@ -295,6 +296,12 @@ class CORE_EXPORT WorkerGlobalScope
      return top_level_frame_security_origin_.get();
    }
  
@@ -231,7 +231,7 @@ index 734532813298d958b8973e574ea029ab528cf63c..cd2b62097cc06dc45cb38748391c28c5
   protected:
    WorkerGlobalScope(std::unique_ptr<GlobalScopeCreationParams>,
                      WorkerThread*,
-@@ -434,6 +441,9 @@ class CORE_EXPORT WorkerGlobalScope
+@@ -441,6 +448,9 @@ class CORE_EXPORT WorkerGlobalScope
  
    const ukm::SourceId ukm_source_id_;
  
