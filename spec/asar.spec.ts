@@ -11,7 +11,15 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 import { Worker } from 'node:worker_threads';
 
-import { defer, getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers.ts';
+import {
+  defer,
+  getRemoteContext,
+  ifdescribe,
+  ifit,
+  itremote,
+  spawnAndWait,
+  useRemoteContext
+} from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 const require = createRequire(import.meta.url);
