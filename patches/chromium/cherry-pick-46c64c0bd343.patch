@@ -72,10 +72,10 @@ index e582ef356b240f5e7bf3d62b7249334716bb5bb1..494f4233a8e48ee28b1d4d766d61391f
            /*force_new_document_sequence_number=*/false,
            /*navigation_metrics_token=*/base::UnguessableToken::Create(),
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 5771f93167f2036737f2e044ee8929dcac08e908..8561e057a47c914b9be9a632aa63ad74d0a1c657 100644
+index 1f67b3c173868bd8f2300dde1f017592a3dba0b0..53dee3f395e4a4c4f72b05d7fd384e51c977d58d 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -20172,51 +20172,6 @@ void RenderFrameHostImpl::GetBoundInterfacesForTesting(
+@@ -20206,51 +20206,6 @@ void RenderFrameHostImpl::GetBoundInterfacesForTesting(
        out);
  }
  
