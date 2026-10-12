@@ -20,8 +20,8 @@
 #include "ui/views/layout/box_layout.h"
 
 #if BUILDFLAG(IS_LINUX)
+#include "shell/browser/ui/gtk_util.h"
 #include "ui/gtk/gtk_util.h"  // nogncheck
-#include "ui/linux/linux_ui.h"
 #endif
 
 #if BUILDFLAG(IS_WIN)
@@ -222,7 +222,7 @@ void MenuBar::ViewHierarchyChanged(
 void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
   if (theme) {
 #if BUILDFLAG(IS_LINUX)
-    if (ui::LinuxUiTheme::GetForProfile(nullptr)) {
+    if (gtk_util::IsGtkAvailable()) {
       background_color_ = gtk::GetBgColor("GtkMenuBar#menubar");
       enabled_color_ =
           gtk::GetFgColor("GtkMenuBar#menubar GtkMenuItem#menuitem GtkLabel");
