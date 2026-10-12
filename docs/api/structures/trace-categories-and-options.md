@@ -21,4 +21,6 @@
   Enables native (C/C++) heap allocation profiling for this recording. This is
   distinct from JavaScript heap profiling (see
   [`contents.takeHeapSnapshot()`](../web-contents.md#contentstakeheapsnapshotfilepath));
-  it samples allocations made by Chromium and native modules.
+  it samples allocations made by Chromium and native modules. Unlike `TraceConfig`,
+  this object has no `included_process_ids` field, so every traced process is
+  profiled.

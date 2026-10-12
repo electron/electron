@@ -27,6 +27,7 @@
   **Electron extension; not part of Chromium's TraceConfig schema.** Enables
   native (C/C++) heap allocation profiling for this recording. This is
   distinct from JavaScript heap profiling (see
+  [`process.takeHeapSnapshot()`](../process.md#processtakeheapsnapshotfilepath) or
   [`contents.takeHeapSnapshot()`](../web-contents.md#contentstakeheapsnapshotfilepath));
   it samples allocations made by Chromium and native modules.
   `included_process_ids` above also limits which processes are profiled when
