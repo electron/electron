@@ -238,37 +238,37 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
     it('rejects invalid heap profiler options', () => {
       expect(() =>
         contentTracing.startRecording({
-          heap_profiler_options: {
-            sampling_interval_bytes: 0
+          nativeHeapProfiling: {
+            samplingInterval: 0
           }
         })
       ).to.throw();
       expect(() =>
         contentTracing.startRecording({
-          heap_profiler_options: {
-            sampling_interval_bytes: -1
+          nativeHeapProfiling: {
+            samplingInterval: -1
           }
         })
       ).to.throw();
       expect(() =>
         contentTracing.startRecording({
-          heap_profiler_options: {
-            dump_interval_ms: 1.5
+          nativeHeapProfiling: {
+            dumpInterval: 1.5
           }
         })
       ).to.throw();
-      expect(() => contentTracing.startRecording({ heap_profiler_options: 'invalid' } as any)).to.throw();
+      expect(() => contentTracing.startRecording({ nativeHeapProfiling: 'invalid' } as any)).to.throw();
       expect(() =>
         contentTracing.startRecording({
-          heap_profiler_options: {
-            dump_interval_ms: 2 ** 32
+          nativeHeapProfiling: {
+            dumpInterval: 2 ** 32
           }
         })
       ).to.throw();
     });
 
     it('rejects a second stop while heap tracing is stopping', async () => {
-      await contentTracing.startRecording({ heap_profiler_options: {} });
+      await contentTracing.startRecording({ nativeHeapProfiling: {} });
 
       const firstStop = contentTracing.stopRecording(outputFilePath);
       await expect(contentTracing.stopRecording(`${outputFilePath}.second`)).to.eventually.be.rejectedWith(
@@ -371,7 +371,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
 
     it('settles concurrent requests during heap profiling', async () => {
       await app.whenReady();
-      await contentTracing.startRecording({ heap_profiler_options: {} });
+      await contentTracing.startRecording({ nativeHeapProfiling: {} });
 
       const results = await Promise.all([contentTracing.getTraceBufferUsage(), contentTracing.getTraceBufferUsage()]);
       for (const result of results) {
@@ -398,9 +398,9 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       let hasStackSample = false;
       for (let attempt = 0; !hasStackSample && attempt < 5; attempt++) {
         await contentTracing.startRecording({
-          heap_profiler_options: {
-            dump_interval_ms: 10,
-            sampling_interval_bytes: 1024
+          nativeHeapProfiling: {
+            dumpInterval: 10,
+            samplingInterval: 1024
           }
         });
 
@@ -545,7 +545,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
   });
 
   describe('trace metadata', () => {
-    // These are necessary to be able to symbolicate heap dumps with third_party/catapult/tracing/bin/symbolize_trace.
+    // These are necessary to be able to symbolicate heap profiles with Chromium's tools/tracing/symbolize_trace.
     it('includes product version and OS arch metadata', async () => {
       const config = {
         excluded_categories: ['*']

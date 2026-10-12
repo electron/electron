@@ -60,6 +60,8 @@ changes:
   - pr-url: https://github.com/electron/electron/pull/16584
     description: "This function now returns a callback`Promise<void>`."
     breaking-changes-header: api-changed-callback-based-versions-of-promisified-apis
+  - pr-url: https://github.com/electron/electron/pull/53349
+    description: "Added the `nativeHeapProfiling` option to enable native heap profiling."
 ```
 -->
 
@@ -73,7 +75,10 @@ Recording begins immediately locally and asynchronously on child processes
 as soon as they receive the EnableRecording request.
 
 If a recording is already running, the promise will be immediately resolved, as
-only one trace operation can be in progress at a time.
+only one trace operation can be in progress at a time. If `options.nativeHeapProfiling`
+is set while a recording is already running, the promise is rejected instead,
+since the already-running recording's options can't be changed to turn on heap
+profiling.
 
 ### `contentTracing.stopRecording([resultFilePath])`
 
@@ -108,6 +113,12 @@ or not provided, trace data will be written to a temporary file, and the path
 will be returned in the promise.
 
 Trace data is written in the [Perfetto protobuf format][perfetto trace format].
+
+Heap profiling samples record instruction addresses and module build IDs rather
+than function names. To symbolize them, use the symbols published for the
+matching Electron release with Chromium's
+[`symbolize_trace`](https://chromium.googlesource.com/chromium/src/+/main/tools/tracing/README.md)
+tool.
 
 ### `contentTracing.getTraceBufferUsage()`
 
