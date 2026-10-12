@@ -9,12 +9,18 @@
 #include <utility>
 
 #include "base/files/file_util.h"
+#include "base/functional/bind.h"
 #include "base/functional/callback_helpers.h"
+#include "base/strings/strcat.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/task/bind_post_task.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/trace_event/trace_config.h"
+#include "content/browser/tracing/tracing_controller_impl.h"  // nogncheck
 #include "content/public/browser/tracing_controller.h"
+#include "services/tracing/public/cpp/perfetto/perfetto_config.h"
+#include "services/tracing/public/cpp/perfetto/perfetto_data_source_names.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -23,11 +29,47 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "third_party/perfetto/include/perfetto/tracing/core/trace_config.h"
+#include "third_party/perfetto/protos/perfetto/config/chrome/sampling_heap_profiler.gen.h"
+#include "third_party/perfetto/protos/perfetto/config/trace_config.gen.h"
 
 using content::TracingController;
 using namespace std::literals;
 
+namespace {
+
+struct NativeHeapProfilerOptions {
+  // 0 writes one snapshot when tracing stops, matching Chromium's default.
+  uint32_t dump_interval_ms = 0;
+  // 0 uses Chromium's default sampling interval
+  // (base::PoissonAllocationSampler::kDefaultSamplingIntervalBytes); the data
+  // source itself treats 0 this way, so there's no need to duplicate the
+  // constant here and risk drifting from it.
+  uint32_t sampling_interval_bytes = 0;
+};
+
+}  // namespace
+
 namespace gin {
+
+template <>
+struct Converter<NativeHeapProfilerOptions> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     NativeHeapProfilerOptions* out) {
+    gin_helper::Dictionary options;
+    if (!ConvertFromV8(isolate, val, &options))
+      return false;
+
+    if (options.Has("samplingInterval") &&
+        (!options.Get("samplingInterval", &out->sampling_interval_bytes) ||
+         out->sampling_interval_bytes == 0)) {
+      return false;
+    }
+    return !options.Has("dumpInterval") ||
+           options.Get("dumpInterval", &out->dump_interval_ms);
+  }
+};
 
 template <>
 struct Converter<base::trace_event::TraceConfig> {
@@ -62,7 +104,28 @@ struct Converter<base::trace_event::TraceConfig> {
 
 namespace {
 
-using CompletionCallback = base::OnceCallback<void(const base::FilePath&)>;
+void AddHeapProfilingDataSource(
+    const base::trace_event::TraceConfig& trace_config,
+    const NativeHeapProfilerOptions& heap_profiler_options,
+    perfetto::TraceConfig* perfetto_config) {
+  auto* heap_data_source = perfetto_config->add_data_sources();
+  auto* data_source = heap_data_source->mutable_config();
+  data_source->set_name(tracing::kNativeHeapProfilerSourceName);
+  data_source->set_target_buffer(0);
+  for (const auto& included_pid :
+       trace_config.process_filter_config().included_process_ids()) {
+    *heap_data_source->add_producer_name_filter() = base::StrCat(
+        {tracing::kPerfettoProducerNamePrefix,
+         base::NumberToString(static_cast<uint32_t>(included_pid))});
+  }
+
+  perfetto::protos::gen::ChromiumSamplingHeapProfilerConfig heap_config;
+  heap_config.set_sampling_interval_bytes(
+      heap_profiler_options.sampling_interval_bytes);
+  heap_config.set_sampling_interval_ms(heap_profiler_options.dump_interval_ms);
+  data_source->set_chromium_sampling_heap_profiler_raw(
+      heap_config.SerializeAsString());
+}
 
 std::optional<base::FilePath> CreateTemporaryFileOnIO() {
   base::FilePath temp_file_path;
@@ -148,9 +211,8 @@ v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
   return handle;
 }
 
-v8::Local<v8::Promise> StartTracing(
-    v8::Isolate* isolate,
-    const base::trace_event::TraceConfig& trace_config) {
+v8::Local<v8::Promise> StartTracing(gin::Arguments* const args) {
+  v8::Isolate* const isolate = args->isolate();
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
@@ -160,13 +222,67 @@ v8::Local<v8::Promise> StartTracing(
     return handle;
   }
 
-  if (!TracingController::GetInstance()->StartTracing(
-          trace_config,
+  gin_helper::Dictionary options;
+  if (!args->GetNext(&options)) {
+    args->ThrowTypeError(
+        "contentTracing.startRecording() requires a TraceConfig or "
+        "TraceCategoriesAndOptions object as its first argument");
+    return v8::Local<v8::Promise>();
+  }
+
+  // nativeHeapProfiling is an Electron-only addition to the Chromium-schema
+  // TraceConfig/TraceCategoriesAndOptions object -- pull it out before
+  // converting the rest, since the TraceConfig converter below doesn't know
+  // about it (and safely ignores it as just another unrecognized key).
+  std::optional<NativeHeapProfilerOptions> heap_profiler_options;
+  if (options.Has("nativeHeapProfiling")) {
+    NativeHeapProfilerOptions native_heap_profiling;
+    if (!options.Get("nativeHeapProfiling", &native_heap_profiling)) {
+      args->ThrowTypeError(
+          "contentTracing.startRecording()'s nativeHeapProfiling option is "
+          "invalid");
+      return v8::Local<v8::Promise>();
+    }
+    heap_profiler_options = native_heap_profiling;
+  }
+
+  base::trace_event::TraceConfig trace_config;
+  if (!gin::ConvertFromV8(isolate, options.GetHandle(), &trace_config)) {
+    args->ThrowTypeError(
+        "contentTracing.startRecording() requires a TraceConfig or "
+        "TraceCategoriesAndOptions object as its first argument");
+    return v8::Local<v8::Promise>();
+  }
+
+  auto* instance = content::TracingControllerImpl::GetInstance();
+  if (instance->IsTracing()) {
+    if (heap_profiler_options) {
+      // Silently resolving here would mislead the caller into believing heap
+      // profiling is now on, when the already-running recording's options
+      // are left untouched.
+      promise.RejectWithErrorMessage(
+          "Cannot start heap profiling while a recording is in progress");
+      return handle;
+    }
+    return gin_helper::Promise<void>::ResolvedPromise(isolate);
+  }
+
+  // Recordings always use the Perfetto protobuf format.
+  perfetto::TraceConfig perfetto_config = tracing::GetDefaultPerfettoConfig(
+      trace_config, /*privacy_filtering_enabled=*/false,
+      /*convert_to_legacy_json=*/false);
+  if (heap_profiler_options) {
+    AddHeapProfilingDataSource(trace_config, *heap_profiler_options,
+                               &perfetto_config);
+  }
+
+  if (!instance->StartTracingWithPerfettoConfig(
+          perfetto_config,
           base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
                          std::move(promise)))) {
-    // If StartTracing returns false, that means it didn't invoke its callback.
-    // Return an already-resolved promise and abandon the previous promise (it
-    // was std::move()d into the StartTracing callback and has been deleted by
+    // If StartTracingWithPerfettoConfig returns false, it didn't invoke its
+    // callback. Return an already-resolved promise and abandon the previous
+    // promise (it was std::move()d into the callback and has been deleted by
     // this point).
     return gin_helper::Promise<void>::ResolvedPromise(isolate);
   }

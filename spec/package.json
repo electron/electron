@@ -43,6 +43,7 @@
     "graceful-fs": "^4.1.15",
     "mkdirp": "^0.5.1",
     "pdfjs-dist": "4.10.38",
+    "protobufjs": "^8.7.2",
     "ps-list": "^7.0.0",
     "q": "^1.5.1",
     "send": "^0.19.0",
