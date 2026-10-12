@@ -133,4 +133,4 @@ jobs:
         name: siso-${{ inputs.host }}
         path: siso-out/${{ steps.host.outputs.binary }}
         if-no-files-found: error
-        retention-days: 1
+        retention-days: 5
