@@ -26,6 +26,9 @@ observations that are known to leak (crbug.com/493572976).
 HidServiceWin and UsbServiceWin are not affected because DeviceService
 owns them directly on the UI thread and destroys them before AtExit.
 
+Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/8561777.
+This patch can be removed once that CL lands.
+
 diff --git a/services/device/serial/serial_device_enumerator_win.cc b/services/device/serial/serial_device_enumerator_win.cc
 index 62c92e4dde2d092b2d25a879d600093149b587f3..f132042de2f1885b07b009739910a1c6128c0a5f 100644
 --- a/services/device/serial/serial_device_enumerator_win.cc
