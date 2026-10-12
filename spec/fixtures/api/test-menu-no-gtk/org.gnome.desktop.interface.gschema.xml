@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.desktop.interface" path="/org/gnome/desktop/interface/">
+    <key name="font-name" type="s">
+      <default>'Sans 10'</default>
+    </key>
+  </schema>
+</schemalist>

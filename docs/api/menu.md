@@ -33,6 +33,9 @@ The `Menu` class has the following static methods:
 Sets `menu` as the application menu on macOS. On Windows and Linux, the
 `menu` will be set as each window's top menu.
 
+On Linux, the menu bar uses GTK theme colors when GTK is available. If GTK
+cannot initialize, the menu bar uses Electron's default menu colors instead.
+
 Also on Windows and Linux, you can use a `&` in the top-level item name to
 indicate which letter should get a generated accelerator. For example, using
 `&File` for the file menu would result in a generated `Alt-F` accelerator that
