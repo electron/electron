@@ -47,6 +47,12 @@ jobs:
       contents: read
     container: ${{ fromJSON(inputs.check-container) }}
     steps:
+    - name: Use Cloudflare DNS (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        sudo networksetup -setdnsservers Ethernet 1.1.1.1 1.0.0.1
+        sudo dscacheutil -flushcache
+        sudo killall -HUP mDNSResponder
     - name: Checkout Electron
       uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:

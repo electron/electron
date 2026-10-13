@@ -1,1 +1,2 @@
 build_add_gn_config.patch
+fix_don_t_leave_a_broken_app_behind_when_an_install_is_interrupted.patch
