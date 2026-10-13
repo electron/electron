@@ -255,3 +255,4 @@ cherry-pick-8d07b5f3132f.patch
 cherry-pick-8b88e1034815.patch
 cherry-pick-e144b4a9a108.patch
 cherry-pick-8aa7b26db5b4.patch
+fix_deliver_clicks_that_another_process_posts_to_a_background_app.patch
