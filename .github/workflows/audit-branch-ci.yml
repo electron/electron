@@ -73,6 +73,12 @@ jobs:
                   continue; // Skip the audit workflow itself
                 }
 
+                // Only consider runs which actually failed, since retries within a
+                // test run can create error annotations even when the run succeeded
+                if (checkRun.conclusion !== 'failure') {
+                  continue;
+                }
+
                 const annotations = (await github.rest.checks.listAnnotations({
                   owner: "electron",
                   repo: "electron",
