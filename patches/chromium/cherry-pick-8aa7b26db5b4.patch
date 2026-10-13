@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: talshalti <talshalti1@gmail.com>
+Date: Sat, 10 Oct 2026 21:56:55 -0700
+Subject: Test and fix for ShadowRealm last resort full gc crash
+
+V8 full GC metrics can be attributed to a ShadowRealm context. Blink's
+metrics recorder resolves that context to ShadowRealmGlobalScope and calls
+UkmRecorder(), which currently hits NOTREACHED().
+
+Return no UKM recorder and an invalid source ID for ShadowRealms. The
+metrics recorder already handles contexts without a UKM recorder. Add a
+regression test to the existing shadow-realm-enabled virtual suite, covering
+full GC in the ordinary context, a ShadowRealm, and a nested ShadowRealm.
+The web test renderer already exposes GC, so no separate suite is needed.
+
+See also: https://github.com/electron/electron/issues/54637
+
+Co-authored-by: Hidekazu Kondo <hidekazu.kondo@gmail.com>
+Change-Id: I35ea8b5ef8fdb58707b0bf0545d24b07e0744545
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8533026
+Commit-Queue: Deepak Ravichandran <deepakr@google.com>
+Reviewed-by: Deepak Ravichandran <deepakr@google.com>
+Reviewed-by: Mason Freed <masonf@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1716425}
+
+diff --git a/AUTHORS b/AUTHORS
+index ac8c840b118cd53c10915e4fb97ae9c857cea254..f13eec8eadba52002589cb2cbf6235debfad6d94 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -1612,6 +1612,7 @@ Takashi Fujita <tgfjt.mail@gmail.com>
+ Takashi Mima <tks.m1205@gmail.com>
+ Takeshi Kurosawa <taken.spc@gmail.com>
+ Takuya Kurimoto <takuya004869@gmail.com>
++Tal Shalti <talshalti1@gmail.com>
+ Tanay Chowdhury <tanay.c@samsung.com>
+ Tanvir Rizvi <tanvir.rizvi@samsung.com>
+ Tao Wang <tao.wang.2261@gmail.com>
+diff --git a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc
+index c4cc043dc9bac54dd0876198ac54a6b8133c71b6..ca89a52843b3c2b16cb7fcaafe6f8ac21de11422 100644
+--- a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc
++++ b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc
+@@ -121,11 +121,11 @@ bool ShadowRealmGlobalScope::IsIsolatedContext() const {
+ }
+ 
+ ukm::UkmRecorder* ShadowRealmGlobalScope::UkmRecorder() {
+-  NOTREACHED();
++  return nullptr;
+ }
+ 
+ ukm::SourceId ShadowRealmGlobalScope::UkmSourceID() const {
+-  NOTREACHED();
++  return ukm::kInvalidSourceId;
+ }
+ 
+ ExecutionContextToken ShadowRealmGlobalScope::GetExecutionContextToken() const {
+diff --git a/third_party/blink/web_tests/VirtualTestSuites b/third_party/blink/web_tests/VirtualTestSuites
+index 01ecee52e54540ead4e74914ac7a922a2522accf..2724c944932e1f41c89f17484c8a8f9c4a14b661 100644
+--- a/third_party/blink/web_tests/VirtualTestSuites
++++ b/third_party/blink/web_tests/VirtualTestSuites
+@@ -2917,6 +2917,7 @@
+       "Win"
+     ],
+     "bases": [
++      "http/tests/shadowrealm/full-gc-crash.html",
+       "http/tests/shadowrealm/webexposed/global-interface-listing-shadow-realm.html"
+     ],
+     "exclusive_tests": "ALL",
+diff --git a/third_party/blink/web_tests/http/tests/shadowrealm/full-gc-crash.html b/third_party/blink/web_tests/http/tests/shadowrealm/full-gc-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..c8bd07f21867f5be40d3bf08b82b201a82801b79
+--- /dev/null
++++ b/third_party/blink/web_tests/http/tests/shadowrealm/full-gc-crash.html
+@@ -0,0 +1,17 @@
++<!DOCTYPE html>
++<!-- Copyright 2026 The Chromium Authors
++     Use of this source code is governed by a BSD-style license that can be
++     found in the LICENSE file. -->
++<meta charset="utf-8">
++<title>Full garbage collection in ShadowRealms</title>
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++<script>
++test(() => {
++  const collect = 'gc({ type: "major", execution: "sync", flavor: "last-resort" })';
++  gc({ type: 'major', execution: 'sync', flavor: 'last-resort' });
++  const realm = new ShadowRealm();
++  realm.evaluate(collect);
++  realm.evaluate('new ShadowRealm().evaluate(' + JSON.stringify(collect) + ')');
++}, 'Full garbage collection in ordinary and nested ShadowRealms does not crash');
++</script>
