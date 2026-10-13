@@ -306,7 +306,7 @@ index 1ff83218d9bc4ec2990c59bd79cc06e5d5fd8e85..6e7770af81bdbf476e7fa0b1eeb6b369
            pending_remote<blink.mojom.PointerLockContext>? context);
  };
 diff --git a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
-index 70db0cebcd2935504361d75e01f572fd3394d156..ed421203cd420fa00cf4dccc3d090ed160c447ad 100644
+index 44e834ea715fa967d430fb2a785e077b9fcf4186..8ecae07fe99292270a28e098075eb40ce546c60f 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
 @@ -3668,6 +3668,7 @@ void WebFrameWidgetImpl::CancelComposition() {

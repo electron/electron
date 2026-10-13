@@ -44,7 +44,7 @@ index 3602205e9ced2f5229ed71e28c03b757c17d2468..4d2837dc32068e6d6ce93c173a2dd563
  #include "components/password_manager/core/browser/password_form.h"
  #include "components/password_manager/core/browser/password_form_cache.h"
 diff --git a/extensions/common/value_counter.cc b/extensions/common/value_counter.cc
-index 35a36ab127f061a291cec18064d2d5ffa5e503e6..d7ddea678252ce48ff57647e7977f92d38cac32e 100644
+index 445a73884339dd5c1df06edf2b7d18ec5730690b..a89cec9ba052359dacbf0e145d9c332629a240a7 100644
 --- a/extensions/common/value_counter.cc
 +++ b/extensions/common/value_counter.cc
 @@ -31,6 +31,10 @@ ValueCounter::ValueCounter() {
@@ -56,18 +56,18 @@ index 35a36ab127f061a291cec18064d2d5ffa5e503e6..d7ddea678252ce48ff57647e7977f92d
 +}
 +
  bool ValueCounter::Add(const base::Value& value) {
+   ++total_count_;
    for (auto& entry : entries_) {
-     if (entry.value == value) {
 diff --git a/extensions/common/value_counter.h b/extensions/common/value_counter.h
-index f98ae27dcca669c668ed5b67e8a9962cf605f7dc..2b3708caf39c2c4b2b018f23446e377b9a2cd094 100644
+index 8346f48e1c2cc5a36de3c4f111e0ab65f32e7066..db0f735c4891a9541472cb80c90746341bec4d61 100644
 --- a/extensions/common/value_counter.h
 +++ b/extensions/common/value_counter.h
-@@ -39,7 +39,7 @@ class ValueCounter {
+@@ -41,7 +41,7 @@ class ValueCounter {
    bool Remove(const base::Value& value);
  
    // Returns true if there are no values of any type being counted.
 -  bool is_empty() const { return entries_.empty(); }
 +  bool is_empty() const;
  
-  private:
-   struct Entry;
+   // Returns the number of values being counted, including duplicates.
+   size_t total_count() const { return total_count_; }
