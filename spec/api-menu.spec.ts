@@ -4,11 +4,13 @@ import { assert, expect } from 'chai';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { singleModifierCombinations } from './lib/accelerator-helpers.ts';
-import { defer, ifit } from './lib/spec-helpers.ts';
+import { defer, ifit, isWayland, spawnAndWait } from './lib/spec-helpers.ts';
 import { closeWindow } from './lib/window-helpers.ts';
 
 const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
@@ -1068,6 +1070,31 @@ describe('Menu module', function () {
       Menu.setApplicationMenu(Menu.buildFromTemplate([{ label: '1' }]));
       Menu.setApplicationMenu(null);
       expect(Menu.getApplicationMenu()).to.be.null('application menu');
+    });
+
+    ifit(isWayland)('creates and refreshes a menu when GTK cannot initialize', async () => {
+      const appPath = path.join(fixturesPath, 'api', 'test-menu-no-gtk');
+      const schemaDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-menu-no-gtk-'));
+      defer(() => fs.rmSync(schemaDir, { recursive: true, force: true }));
+      fs.copyFileSync(
+        path.join(appPath, 'org.gnome.desktop.interface.gschema.xml'),
+        path.join(schemaDir, 'org.gnome.desktop.interface.gschema.xml')
+      );
+
+      const compiled = await spawnAndWait('glib-compile-schemas', ['--strict', schemaDir], { timeout: 10000 });
+      expect(compiled, compiled.stderr).to.include({ code: 0, signal: null });
+
+      const { code, signal, stdout, stderr } = await spawnAndWait(
+        process.execPath,
+        [appPath, '--ozone-platform=wayland', `--user-data-dir=${path.join(schemaDir, 'profile')}`],
+        {
+          env: { ...process.env, GSETTINGS_SCHEMA_DIR: schemaDir, GSETTINGS_BACKEND: 'memory' },
+          timeout: 10000
+        }
+      );
+      expect(stderr).to.include('Schema org.gnome.desktop.interface does not have key font-antialiasing');
+      expect({ code, signal }, stderr).to.deep.equal({ code: 0, signal: null });
+      expect(stdout).to.include('Menu created and refreshed without GTK');
     });
 
     ifit(process.platform !== 'darwin')('does not override menu visibility on startup', async () => {

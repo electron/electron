@@ -23,6 +23,15 @@
   `disabled-by-default-memory-infra` category is enabled, this contains
   optional additional configuration for data collection. See the
   [Chromium memory-infra docs][memory-infra docs] for more information.
+* `nativeHeapProfiling` [NativeHeapProfilerOptions](native-heap-profiler-options.md) (optional) _Experimental_ -
+  **Electron extension; not part of Chromium's TraceConfig schema.** Enables
+  native (C/C++) heap allocation profiling for this recording. This is
+  distinct from JavaScript heap profiling (see
+  [`process.takeHeapSnapshot()`](../process.md#processtakeheapsnapshotfilepath) or
+  [`contents.takeHeapSnapshot()`](../web-contents.md#contentstakeheapsnapshotfilepath));
+  it samples allocations made by Chromium and native modules.
+  `included_process_ids` above also limits which processes are profiled when
+  this is enabled.
 
 An example TraceConfig that roughly matches what Chrome DevTools records:
 
