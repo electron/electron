@@ -46,6 +46,12 @@ jobs:
       BUILD_TYPE: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
       TARGET_ARCH: ${{ inputs.target-arch }}
     steps:
+    - name: Use Cloudflare DNS (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        sudo networksetup -setdnsservers Ethernet 1.1.1.1 1.0.0.1
+        sudo dscacheutil -flushcache
+        sudo killall -HUP mDNSResponder
     # Same workaround as pipeline-segment-electron-test.yml.
     - name: Checkout Electron
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1

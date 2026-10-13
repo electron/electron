@@ -111,6 +111,12 @@ jobs:
       # depot_tools' unbootstrapped python3 wrapper (crrev.com/c/8162440) breaks system python3 resolution; bypass it
       DEPOT_TOOLS_PYTHON_BYPASS: 1
     steps:
+    - name: Use Cloudflare DNS (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        sudo networksetup -setdnsservers Ethernet 1.1.1.1 1.0.0.1
+        sudo dscacheutil -flushcache
+        sudo killall -HUP mDNSResponder
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform == 'win' }}
       uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
