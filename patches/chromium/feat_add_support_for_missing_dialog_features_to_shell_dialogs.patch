@@ -163,7 +163,7 @@ index e112fd4ee491820f73a376784e5ea39a6f46f165..777ae6ea77a31ef73f28095ec04f2c3c
    void OnFileChooserDestroy(GtkWidget* dialog);
  
 diff --git a/ui/shell_dialogs/select_file_dialog.h b/ui/shell_dialogs/select_file_dialog.h
-index 5b4ccd238c48b83d0233c5a07bfa97773844a738..ef5722bff264f257f618b53cfb7e53fcc56d7a9f 100644
+index 12a514b89c20b5ab5a20a17aa557da187c243a8a..278c397f78492574a751e512fb0de17a2b47a5c8 100644
 --- a/ui/shell_dialogs/select_file_dialog.h
 +++ b/ui/shell_dialogs/select_file_dialog.h
 @@ -224,6 +224,20 @@ class SHELL_DIALOGS_EXPORT SelectFileDialog

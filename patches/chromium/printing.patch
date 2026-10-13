@@ -498,7 +498,7 @@ index b673362fe80dd0752e5cde56ffeba32dc0b32879..874816ba11e3d0e9557fd2145f3c73f6
      scoped_refptr<base::RefCountedMemory> print_data,
      const gfx::Size& page_size,
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index 88f0095ed2552640f43a989e4688ec1af0ca32aa..4b5200414ca8ea47389b7825c8df3677583bc717 100644
+index f124be0421de8b3eb33b7075eff33bf22cd612f5..41904410d79f8d760f0199534c0dc5b368f52cf7 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -51,6 +51,8 @@ namespace printing {
@@ -547,7 +547,7 @@ index 88f0095ed2552640f43a989e4688ec1af0ca32aa..4b5200414ca8ea47389b7825c8df3677
   protected:
  #if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
    using PrintDocumentCallback =
-@@ -221,7 +235,7 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
+@@ -224,7 +238,7 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
                                       mojom::ScriptedPrintParamsPtr params,
                                       ScriptedPrintCallback callback);
  
@@ -556,7 +556,7 @@ index 88f0095ed2552640f43a989e4688ec1af0ca32aa..4b5200414ca8ea47389b7825c8df3677
    // Helper method bound to `content_analysis_before_printing_document_` when
    // content analysis should happen right before the document is to be printed.
    // This method is virtual for testing purposes.
-@@ -363,13 +377,19 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
+@@ -366,13 +380,19 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
        bool allowed);
  #endif  // BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
  
