@@ -22,6 +22,7 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/linux/launcher_entry.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/ui/gtk_util.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_converters/image_converter.h"
@@ -89,7 +90,7 @@ bool SetDefaultWebClient(const std::string& protocol) {
   constexpr int kIconSize = 32;
 
   GIcon* const icon = g_app_info_get_icon(app_info);
-  if (!icon)
+  if (!icon || !gtk_util::IsGtkAvailable())
     return {};
 
   // Note: this gtk3/gtk4 + icon theme lookup + snapshot control flow
