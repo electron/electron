@@ -61,10 +61,10 @@ index 0ae84efaeaf664857afa280ababf28f271291b48..d0957ced725eac4795a1948a5f0820f8
      return false;
    }
 diff --git a/services/network/public/cpp/url_request_mojom_traits.h b/services/network/public/cpp/url_request_mojom_traits.h
-index 2c6b978631affb4ced4189af52001f84346b2d4b..66c9cfa97030123eafcb6287ed66fdeef8d58de5 100644
+index 03653541a9216c493b7374d830b78f4e91cbcf49..76b2afad8537b5f21145e06350067eadf895701f 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.h
 +++ b/services/network/public/cpp/url_request_mojom_traits.h
-@@ -108,6 +108,10 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
+@@ -107,6 +107,10 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
        const network::ResourceRequest::TrustedParams& trusted_params) {
      return trusted_params.include_request_cookies_with_response;
    }
@@ -90,7 +90,7 @@ index 54a18f27c5409bd5893e2dda988581519cb8ca86..5b462dca6277dd542d56344e45d9e417
    // when it receives the AcceptCHFrame.
    EnabledClientHints? enabled_client_hints;
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index 37d07231f3bded16db0ba23448e9e8325a0708a9..9fdfe8ccfec7e497c44a0c7d40fafa66ef41b5d9 100644
+index 2551c74d161edc11e3d4e95c858c144a063ae80a..a3d1eb8d487a207a5a9c8cdc01ae01dd0073e485 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -16,6 +16,7 @@ import "services/network/public/mojom/fetch_api.mojom";
@@ -101,7 +101,7 @@ index 37d07231f3bded16db0ba23448e9e8325a0708a9..9fdfe8ccfec7e497c44a0c7d40fafa66
  import "services/network/public/mojom/ip_endpoint.mojom";
  import "services/network/public/mojom/load_timing_info.mojom";
  import "services/network/public/mojom/load_timing_internal_info.mojom";
-@@ -62,6 +63,9 @@ struct URLResponseHead {
+@@ -61,6 +62,9 @@ struct URLResponseHead {
    // The response headers or NULL if the URL type does not support headers.
    HttpResponseHeaders? headers;
  
@@ -112,10 +112,10 @@ index 37d07231f3bded16db0ba23448e9e8325a0708a9..9fdfe8ccfec7e497c44a0c7d40fafa66
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 77842b54b76464e7d51fa2e1611ee4188866aeec..17c7cab592e651c365e8b6b36bd1ebaf742f974a 100644
+index 898faffbb8de83dab0de68ca05002040d46bac2b..8671c41c1d6e1816b939544bf99131d0f2a75227 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -372,6 +372,9 @@ URLLoader::URLLoader(
+@@ -373,6 +373,9 @@ URLLoader::URLLoader(
                                    mojo::SimpleWatcher::ArmingPolicy::MANUAL,
                                    TaskRunner(request.priority)),
        per_factory_orb_state_(context.GetMutableOrbState()),
@@ -125,7 +125,7 @@ index 77842b54b76464e7d51fa2e1611ee4188866aeec..17c7cab592e651c365e8b6b36bd1ebaf
        devtools_request_id_(request.devtools_request_id),
        options_(PopulateOptions(options,
                                 factory_params_->is_orb_enabled,
-@@ -571,7 +574,7 @@ void URLLoader::SetUpUrlRequestCallbacks(
+@@ -572,7 +575,7 @@ void URLLoader::SetUpUrlRequestCallbacks(
          &URLLoader::IsSharedDictionaryReadAllowed, base::Unretained(this)));
    }
  
@@ -134,7 +134,7 @@ index 77842b54b76464e7d51fa2e1611ee4188866aeec..17c7cab592e651c365e8b6b36bd1ebaf
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1172,6 +1175,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1185,6 +1188,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
