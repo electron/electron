@@ -613,11 +613,14 @@ Emitted when the user is requesting to change the zoom level using the mouse whe
 
 Emitted when the `WebContents` loses focus.
 
+The `blur` event is also emitted when switching between windows or apps for the
+`WebContents` that has focus within its window.
+
 #### Event: 'focus'
 
 Emitted when the `WebContents` gains focus.
 
-These events are also emitted when switching between windows or apps, for the
+The `focus` event is also emitted when switching between windows or apps for the
 `WebContents` that has focus within its window.
 
 #### Event: 'devtools-open-url'
