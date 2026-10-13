@@ -30,7 +30,7 @@ index 97567b79069538e23115fc274c10b8a41ea94e61..27de5449463b341b5e9b0c14f0475fa8
  
    return ContentSettingsType::DEFAULT;
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index 47e723a87b62df4aac21ebbaa5974994ed0c6b5d..699af929a6d3fe52e3cc8e9560014710bbcb6653 100644
+index c623c4451b36738ab91ac42f54c17c91376708bf..ec80237a64dc0dc25d623a0f0a0fc75175cf01f7 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
 @@ -100,9 +100,15 @@ PermissionToSchedulingFeature(PermissionType permission_name) {

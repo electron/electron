@@ -8,13 +8,15 @@
 #include <utility>
 
 #include "base/apple/foundation_util.h"
+#include "base/files/file_util.h"
+#include "base/files/scoped_temp_file.h"
 #include "base/logging.h"
 #include "base/mac/mac_util.h"
+#include "base/memory/ref_counted_memory.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/sequenced_task_runner.h"
-#include "chrome/common/notifications/notification_image_retainer.h"
+#include "base/task/thread_pool.h"
 #include "grit/electron_resources.h"
-#include "shell/browser/notifications/mac/notification_presenter_mac.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "skia/ext/skia_utils_mac.h"
@@ -25,6 +27,22 @@
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 namespace electron {
+
+namespace {
+
+base::ScopedTempFile WriteNotificationIconToTempFile(const gfx::Image& icon) {
+  scoped_refptr<base::RefCountedMemory> data = icon.As1xPNGBytes();
+  if (!data || data->size() == 0)
+    return {};
+
+  base::ScopedTempFile temp_file;
+  if (!temp_file.Create() || !base::WriteFile(temp_file.path(), *data))
+    return {};
+
+  return temp_file;
+}
+
+}  // namespace
 
 CocoaNotification::CocoaNotification(NotificationDelegate* delegate,
                                      NotificationPresenter* presenter)
@@ -137,50 +155,51 @@ void CocoaNotification::Show(const NotificationOptions& options) {
 
   if (!options.icon.drawsNothing()) {
     gfx::Image icon = gfx::Image::CreateFrom1xBitmap(options.icon);
-    auto* mac_presenter = static_cast<NotificationPresenterMac*>(presenter());
-    mac_presenter->image_task_runner()->PostTaskAndReplyWithResult(
-        FROM_HERE,
-        base::BindOnce(
-            [](NotificationPresenterMac* mac_presenter,
-               gfx::Image icon) -> UNNotificationAttachment* {
-              base::FilePath path =
-                  mac_presenter->image_retainer()->RegisterTemporaryImage(icon);
-              if (path.empty()) {
-                return nil;
-              }
-              NSURL* url = base::apple::FilePathToNSURL(path);
-              NSDictionary* attachment_options = @{
-                UNNotificationAttachmentOptionsTypeHintKey :
-                    UTTypePNG.identifier
-              };
-              NSError* error = nil;
-              UNNotificationAttachment* attachment = [UNNotificationAttachment
-                  attachmentWithIdentifier:[[NSUUID UUID] UUIDString]
-                                       URL:url
-                                   options:attachment_options
-                                     error:&error];
-              if (!attachment || error) {
-                if (electron::debug_notifications) {
-                  LOG(INFO) << "Notification icon attachment failed: "
-                            << (error ? error.localizedDescription.UTF8String
-                                      : "unknown error");
-                }
-                return nil;
-              }
-              return attachment;
-            },
-            mac_presenter, icon),
+    base::ThreadPool::PostTaskAndReplyWithResult(
+        FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
+        base::BindOnce(&WriteNotificationIconToTempFile, std::move(icon)),
         base::BindOnce(
             [](base::WeakPtr<Notification> weak_self,
                UNMutableNotificationContent* content,
-               UNNotificationAttachment* attachment) {
-              if (auto* notification = weak_self.get()) {
-                // Deliver without an icon if the attachment couldn't be made.
-                if (attachment)
-                  content.attachments = @[ attachment ];
-                auto* self = static_cast<CocoaNotification*>(notification);
-                self->ScheduleNotification(content);
+               base::ScopedTempFile icon_file) {
+              auto* notification = weak_self.get();
+              if (!notification)
+                return;
+
+              std::shared_ptr<base::ScopedTempFile> retained_icon_file;
+              NSURL* url = nil;
+              if (icon_file) {
+                url = base::apple::FilePathToNSURL(
+                    base::MakeAbsoluteFilePath(icon_file.path()));
               }
+
+              if (url) {
+                NSDictionary* attachment_options = @{
+                  UNNotificationAttachmentOptionsTypeHintKey :
+                      UTTypePNG.identifier
+                };
+                NSError* error = nil;
+                UNNotificationAttachment* attachment = [UNNotificationAttachment
+                    attachmentWithIdentifier:[[NSUUID UUID] UUIDString]
+                                         URL:url
+                                     options:attachment_options
+                                       error:&error];
+                if (!attachment || error) {
+                  if (electron::debug_notifications) {
+                    LOG(INFO) << "Notification icon attachment failed: "
+                              << (error ? error.localizedDescription.UTF8String
+                                        : "unknown error");
+                  }
+                } else {
+                  content.attachments = @[ attachment ];
+                  retained_icon_file = std::make_shared<base::ScopedTempFile>(
+                      std::move(icon_file));
+                }
+              }
+
+              auto* self = static_cast<CocoaNotification*>(notification);
+              self->ScheduleNotification(content,
+                                         std::move(retained_icon_file));
             },
             GetWeakPtr(), content));
   } else {
@@ -189,7 +208,8 @@ void CocoaNotification::Show(const NotificationOptions& options) {
 }
 
 void CocoaNotification::ScheduleNotification(
-    UNMutableNotificationContent* content) {
+    UNMutableNotificationContent* content,
+    std::shared_ptr<base::ScopedTempFile> icon_file) {
   NSString* identifier = base::SysUTF8ToNSString(notification_id());
 
   UNNotificationRequest* request =
@@ -209,6 +229,8 @@ void CocoaNotification::ScheduleNotification(
   [[UNUserNotificationCenter currentNotificationCenter]
       addNotificationRequest:request
        withCompletionHandler:^(NSError* _Nullable error) {
+         if (icon_file)
+           icon_file->Reset();
          if (error) {
            if (electron::debug_notifications) {
              LOG(INFO) << "Error scheduling notification ("
