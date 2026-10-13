@@ -1,0 +1,119 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Fredrik=20S=C3=B6derquist?= <fs@opera.com>
+Date: Mon, 12 Oct 2026 03:54:15 -0700
+Subject: [M156] Fix iteration in
+ SVGDocumentResourceTracker::DisposeUnobserved()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> Fix iteration in SVGDocumentResourceTracker::DisposeUnobserved()
+>
+> The tracked_resources_ set could potentially be mutated by the disposal
+> of a SVGResourceDocumentContent, so make a copy before iterating.
+>
+> Since SVGDocumentResourceTracker::Dispose() could potentially suffer
+> from a similar issue, adjust it too.
+>
+> Fixed: 570050934
+> Change-Id: Iec67ad5ced154acad56a7bb30a2c4edb6fbfb507
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8525706
+> Auto-Submit: Fredrik Söderquist <fs@opera.com>
+> Commit-Queue: Philip Rogers <pdr@chromium.org>
+> Reviewed-by: Philip Rogers <pdr@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1714468}
+
+(cherry picked from commit 1a21dce7357cb20f5b79779f6fd3b3e1c6ec234a)
+
+Bug: 572074287,570050934
+Change-Id: Iec67ad5ced154acad56a7bb30a2c4edb6fbfb507
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8558757
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#1073}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/third_party/blink/renderer/core/svg/svg_document_resource_tracker.cc b/third_party/blink/renderer/core/svg/svg_document_resource_tracker.cc
+index 26eecce89a8782302701199811c1946440019363..819d97d04e7a7d21e171f4dce7a014e226a94397 100644
+--- a/third_party/blink/renderer/core/svg/svg_document_resource_tracker.cc
++++ b/third_party/blink/renderer/core/svg/svg_document_resource_tracker.cc
+@@ -36,11 +36,14 @@ SVGDocumentResourceTracker::SVGDocumentResourceTracker(
+       cache_identifier_(cache_identifier) {}
+ 
+ void SVGDocumentResourceTracker::Dispose() {
+-  for (const auto& resource : tracked_resources_) {
++  is_disposed_ = true;
++
++  HeapHashSet<Member<SVGDocumentResource>> to_dispose;
++  to_dispose.swap(tracked_resources_);
++  for (const auto& resource : to_dispose) {
+     resource->GetContent()->Dispose();
+   }
+   MemoryCache::Get()->EvictResourcesForCacheIdentifier(cache_identifier_);
+-  tracked_resources_.clear();
+ }
+ 
+ void SVGDocumentResourceTracker::DisposeUnobserved() {
+@@ -49,12 +52,17 @@ void SVGDocumentResourceTracker::DisposeUnobserved() {
+   HeapVector<Member<SVGDocumentResource>> to_remove;
+   for (const auto& resource : tracked_resources_) {
+     if (!resource->GetContent()->HasObservers()) {
+-      resource->GetContent()->Dispose();
+       to_remove.push_back(resource);
+       MemoryCache::Get()->Remove(resource);
+     }
+   }
+   tracked_resources_.RemoveAll(to_remove);
++
++  // Perform disposal from `to_remove` since Dispose() may cause additional
++  // resources to be added (i.e mutate `tracked_resources_`).
++  for (const auto& resource : to_remove) {
++    resource->GetContent()->Dispose();
++  }
+ }
+ 
+ void SVGDocumentResourceTracker::ProcessCustomWeakness(
+@@ -86,6 +94,7 @@ void SVGDocumentResourceTracker::Trace(Visitor* visitor) const {
+ }
+ 
+ void SVGDocumentResourceTracker::AddResource(SVGDocumentResource* resource) {
++  CHECK(!is_disposed_);
+   tracked_resources_.insert(resource);
+ }
+ 
+diff --git a/third_party/blink/renderer/core/svg/svg_document_resource_tracker.h b/third_party/blink/renderer/core/svg/svg_document_resource_tracker.h
+index e8d346ab26e99a704e93e28c01ba998d3892e373..61ccf158b8d89db423228dcfe7a78734ba941e54 100644
+--- a/third_party/blink/renderer/core/svg/svg_document_resource_tracker.h
++++ b/third_party/blink/renderer/core/svg/svg_document_resource_tracker.h
+@@ -43,6 +43,7 @@ class CORE_EXPORT SVGDocumentResourceTracker final
+       const String& cache_identifier);
+ 
+   void Dispose();
++  bool IsDisposed() const { return is_disposed_; }
+ 
+   void Trace(Visitor*) const;
+ 
+@@ -59,6 +60,7 @@ class CORE_EXPORT SVGDocumentResourceTracker final
+   HeapHashSet<Member<SVGDocumentResource>> tracked_resources_;
+   scoped_refptr<base::SingleThreadTaskRunner> dispose_task_runner_;
+   bool dispose_task_pending_ = false;
++  bool is_disposed_ = false;
+   String cache_identifier_;
+ };
+ 
+diff --git a/third_party/blink/renderer/core/svg/svg_resource_document_content.cc b/third_party/blink/renderer/core/svg/svg_resource_document_content.cc
+index 8ad1a6a958d246b2dd3571803793df026488295b..05662b2590e640b1c42ce8d0206bf17db8058e5b 100644
+--- a/third_party/blink/renderer/core/svg/svg_resource_document_content.cc
++++ b/third_party/blink/renderer/core/svg/svg_resource_document_content.cc
+@@ -290,6 +290,9 @@ SVGResourceDocumentContent* SVGResourceDocumentContent::Fetch(
+ 
+   Page* page = document.GetPage();
+   auto& cache = page->GetSVGDocumentResourceTracker();
++  if (cache.IsDisposed()) {
++    return nullptr;
++  }
+ 
+   SVGDocumentResource* resource = SVGDocumentResource::Fetch(
+       params, document.Fetcher(), page->GetAgentGroupScheduler());

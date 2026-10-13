@@ -1,0 +1,741 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maria Kazinova <kazinova@google.com>
+Date: Mon, 12 Oct 2026 04:02:04 -0700
+Subject: [M156] [Passwords] Reset driver state on cross-document navigations
+
+Original change's description:
+> [Passwords] Reset driver state on cross-document navigations
+>
+> A cross-document navigation can reuse the frame's RenderFrameHost
+> (e.g. when leaving the initial empty document), so the
+> ContentPasswordManagerDriver is reused too. When a navigation commits a
+> new document (i.e. not for BFCache restores or prerender activations),
+> invalidate the driver's weak pointers, assign a new DriverId, and reset
+> its PasswordGenerationFrameHelper and PasswordAutofillManager (incl.
+> pending callbacks and its own suggestions), so the new document starts
+> with fresh state.
+>
+> Also rename PasswordAutofillManager::DidNavigateMainFrame() to
+> DidNavigateFrame().
+>
+> Fixed: 561039723
+> Change-Id: I2752c0d67c359f1eeede337178e93bc861a200ce
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8479979
+> Reviewed-by: Viktor Semeniuk <vsemeniuk@google.com>
+> Commit-Queue: Maria Kazinova <kazinova@google.com>
+> Cr-Commit-Position: refs/heads/main@{#1714396}
+
+(cherry picked from commit 73e5c8fd1e88131b57950712c050831e7720a4db)
+
+Bug: 572074072,561039723
+Change-Id: I2752c0d67c359f1eeede337178e93bc861a200ce
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8558218
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#1075}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/chrome/browser/password_manager/password_manager_browsertest.cc b/chrome/browser/password_manager/password_manager_browsertest.cc
+index 0d0a3abba8f66b9927d092978ae20a6b755f95b9..d61e88fe2a64544de61c2983daa04f55dd232919 100644
+--- a/chrome/browser/password_manager/password_manager_browsertest.cc
++++ b/chrome/browser/password_manager/password_manager_browsertest.cc
+@@ -2,6 +2,7 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
++#include <algorithm>
+ #include <string>
+ #include <string_view>
+ #include <utility>
+@@ -66,11 +67,13 @@
+ #include "components/password_manager/core/browser/http_auth_manager.h"
+ #include "components/password_manager/core/browser/http_auth_observer.h"
+ #include "components/password_manager/core/browser/password_form.h"
++#include "components/password_manager/core/browser/password_form_cache.h"
+ #include "components/password_manager/core/browser/password_form_manager.h"
+ #include "components/password_manager/core/browser/password_manager_client.h"
+ #include "components/password_manager/core/browser/password_manager_driver.h"
+ #include "components/password_manager/core/browser/password_store/password_form_converters.h"
+ #include "components/password_manager/core/browser/password_store/password_store_interface.h"
++#include "components/password_manager/core/browser/password_store/stored_credential.h"
+ #include "components/password_manager/core/browser/password_store/test_password_store.h"
+ #include "components/password_manager/core/browser/password_string.h"
+ #include "components/signin/public/base/signin_buildflags.h"
+@@ -104,6 +107,7 @@
+ #include "google_apis/gaia/gaia_switches.h"
+ #include "net/base/filename_util.h"
+ #include "net/dns/mock_host_resolver.h"
++#include "net/test/embedded_test_server/embedded_test_server.h"
+ #include "net/test/embedded_test_server/http_request.h"
+ #include "net/test/embedded_test_server/http_response.h"
+ #include "services/network/public/cpp/is_potentially_trustworthy.h"
+@@ -114,6 +118,7 @@
+ #include "ui/base/window_open_disposition.h"
+ #include "ui/events/keycodes/keyboard_codes.h"
+ #include "ui/gfx/geometry/point.h"
++#include "url/origin.h"
+ 
+ #if BUILDFLAG(ENABLE_DICE_SUPPORT)
+ #include "chrome/browser/password_manager/password_manager_signin_intercept_test_helper.h"
+@@ -2248,6 +2253,100 @@ IN_PROC_BROWSER_TEST_F(PasswordManagerBrowserTest,
+                             content::EXECUTE_SCRIPT_NO_USER_GESTURE));
+ }
+ 
++// Regression test for crbug.com/561039723.
++// The first navigation of a subframe away from its initial empty document
++// reuses the RenderFrameHost, and therefore the ContentPasswordManagerDriver.
++// Password manager state created for the initial document (whose URL is set to
++// origin A by document.write()) must not be reused for the new document from
++// the same-site, but cross-origin, origin B.
++IN_PROC_BROWSER_TEST_F(PasswordManagerBrowserTest,
++                       NoStaleCredentialsAfterInitialEmptyDocumentNavigation) {
++  // B is served on a different port than A: A and B are still same-site (the
++  // port is ignored when computing the site, which is required for reusing the
++  // RenderFrameHost), but A's credential isn't a PSL match for B.
++  net::EmbeddedTestServer b_server;
++  b_server.ServeFilesFromSourceDirectory("chrome/test/data");
++  ASSERT_TRUE(b_server.Start());
++  const GURL a_url =
++      embedded_test_server()->GetURL("a.example.test", "/password/other.html");
++  const GURL b_url =
++      b_server.GetURL("b.example.test", "/password/no_form_element.html");
++  ASSERT_NE(a_url.port(), b_url.port());
++
++  // Store a credential for A.
++  PasswordForm a_credential;
++  a_credential.signon_realm = a_url.DeprecatedGetOriginAsURL().spec();
++  a_credential.url = a_url;
++  a_credential.username_value = u"a_user";
++  a_credential.password_value = PasswordString(u"a_pa55w0rd");
++  GetDefaultPasswordStore(browser()->GetProfile())
++      ->AddLogin(FromPasswordForm(a_credential));
++  WaitForPasswordStore();
++
++  ASSERT_TRUE(ui_test_utils::NavigateToURL(browser(), a_url));
++
++  // A writes form-less login fields into the initial empty document of a new
++  // iframe. Form-less fields are reported with `FormRendererId()`.
++  ASSERT_TRUE(content::ExecJs(RenderFrameHost(), R"(
++      const iframe = document.createElement('iframe');
++      iframe.id = 'iframe';
++      document.body.appendChild(iframe);
++      const doc = iframe.contentDocument;
++      doc.open();
++      doc.write('<input type="text" id="username">' +
++                '<input type="password" id="password">');
++      doc.close();
++  )"));
++  content::RenderFrameHost* child = content::ChildFrameAt(RenderFrameHost(), 0);
++  ASSERT_TRUE(child);
++  const content::GlobalRenderFrameHostId child_id = child->GetGlobalId();
++
++  // Returns the form manager of the iframe's current driver that observes a
++  // form from `origin` and has finished fetching credentials.
++  auto get_manager = [&](const GURL& origin) -> PasswordFormManager* {
++    content::RenderFrameHost* rfh = content::ChildFrameAt(RenderFrameHost(), 0);
++    auto* driver =
++        rfh ? ContentPasswordManagerDriver::GetForRenderFrameHost(rfh)
++            : nullptr;
++    if (!driver) {
++      return nullptr;
++    }
++    for (const auto& manager : driver->GetPasswordManager()
++                                   ->GetPasswordFormCache()
++                                   ->GetFormManagers()) {
++      if (manager->GetDriver().get() == driver &&
++          url::IsSameOriginWith(manager->GetURL(), origin) &&
++          manager->IsFetchCompleted()) {
++        return manager.get();
++      }
++    }
++    return nullptr;
++  };
++  auto has_a_credential = [](const PasswordFormManager& manager) {
++    return std::ranges::any_of(manager.GetBestMatches(),
++                               [](const StoredCredential& credential) {
++                                 return credential.username_value == u"a_user";
++                               });
++  };
++
++  // Sanity check: the form in A's initial document gets A's credential.
++  ASSERT_TRUE(base::test::RunUntil([&] { return get_manager(a_url); }));
++  ASSERT_TRUE(has_a_credential(*get_manager(a_url)));
++
++  // A navigates the iframe to B.
++  ASSERT_TRUE(content::NavigateIframeToURL(WebContents(), "iframe", b_url));
++  child = content::ChildFrameAt(RenderFrameHost(), 0);
++  ASSERT_TRUE(child);
++  ASSERT_EQ(b_url, child->GetLastCommittedURL());
++  // Precondition of the scenario: the RenderFrameHost is reused.
++  ASSERT_EQ(child_id, child->GetGlobalId());
++
++  // B's form-less fields must get a fresh form manager that doesn't know about
++  // A's credential.
++  ASSERT_TRUE(base::test::RunUntil([&] { return get_manager(b_url); }));
++  EXPECT_FALSE(has_a_credential(*get_manager(b_url)));
++}
++
+ // Check that a password form in an iframe of same origin will not be
+ // filled in until user interact with the iframe.
+ IN_PROC_BROWSER_TEST_F(PasswordManagerBrowserTest,
+diff --git a/components/password_manager/content/browser/content_password_manager_driver.cc b/components/password_manager/content/browser/content_password_manager_driver.cc
+index cfb9f7b60196d4da29d6c709dd47c26a2f8b826c..58c8707fe8260c5bedb1696ecdfa8ee98fa2affb 100644
+--- a/components/password_manager/content/browser/content_password_manager_driver.cc
++++ b/components/password_manager/content/browser/content_password_manager_driver.cc
+@@ -56,6 +56,11 @@ void LogSiteIsolationMetricsForSubmittedForm(
+       render_frame_host->GetSiteInstance()->RequiresDedicatedProcess());
+ }
+ 
++DriverId GenerateDriverId() {
++  static DriverId::Generator id_generator;
++  return id_generator.GenerateNextId();
++}
++
+ }  // namespace
+ 
+ ContentPasswordManagerDriver::ContentPasswordManagerDriver(
+@@ -69,8 +74,7 @@ ContentPasswordManagerDriver::ContentPasswordManagerDriver(
+           autofill::ContentAutofillClient::FromWebContents(
+               content::WebContents::FromRenderFrameHost(render_frame_host)),
+           client) {
+-  static DriverId::Generator id_generator;
+-  id_ = id_generator.GenerateNextId();
++  id_ = GenerateDriverId();
+ 
+   render_frame_host_->GetRemoteAssociatedInterfaces()->GetInterface(
+       &password_autofill_agent_);
+@@ -121,6 +125,20 @@ void ContentPasswordManagerDriver::DidNavigate() {
+   }
+ }
+ 
++void ContentPasswordManagerDriver::ResetForNewDocument() {
++  // Objects created for the previous document (most importantly
++  // `PasswordFormManager`s in the `PasswordManager`'s form cache) identify
++  // this driver by its weak pointers and its ID. Invalidate both, so they
++  // treat this driver as a different one, as if a new RenderFrameHost, and
++  // hence a new driver, had been created for the new document. Otherwise, e.g.
++  // a form manager with credentials fetched for the previous document's origin
++  // could be matched with a form of the new document (see crbug.com/561039723).
++  weak_factory_.InvalidateWeakPtrs();
++  id_ = GenerateDriverId();
++  password_generation_helper_.DidNavigateFrame();
++  password_autofill_manager_.DidNavigateFrame();
++}
++
+ bool ContentPasswordManagerDriver::HasValidURL(bool may_kill_renderer) {
+   GURL url = GetURLFromRenderFrameHost(render_frame_host_);
+ 
+diff --git a/components/password_manager/content/browser/content_password_manager_driver.h b/components/password_manager/content/browser/content_password_manager_driver.h
+index a1837ca91e51d22ba258ec527c5edac86bce5249..4e547b6fa7521816c31dde1e9841d2e5c4f43173 100644
+--- a/components/password_manager/content/browser/content_password_manager_driver.h
++++ b/components/password_manager/content/browser/content_password_manager_driver.h
+@@ -55,6 +55,13 @@ class ContentPasswordManagerDriver final
+           pending_receiver);
+   void DidNavigate();
+ 
++  // Called when a navigation commits a new document in the frame (i.e. not for
++  // BFCache restores or prerendered page activations). Such a navigation may
++  // reuse the RenderFrameHost, and hence this driver, of the previous document
++  // (e.g. the first navigation away from the initial empty document). Discards
++  // all state that belongs to the previous document.
++  void ResetForNewDocument();
++
+   // PasswordManagerDriver implementation.
+   DriverId GetId() const override;
+   void PropagateFillDataOnParsingCompletion(
+diff --git a/components/password_manager/content/browser/content_password_manager_driver_factory.cc b/components/password_manager/content/browser/content_password_manager_driver_factory.cc
+index 3e203d50f268e89f46d27952ba45d982a75492f3..3fed1c70465d54896af620e3e2748309b6356fd8 100644
+--- a/components/password_manager/content/browser/content_password_manager_driver_factory.cc
++++ b/components/password_manager/content/browser/content_password_manager_driver_factory.cc
+@@ -96,21 +96,31 @@ void ContentPasswordManagerDriverFactory::DidFinishNavigation(
+   if (navigation->IsSameDocument() || !navigation->HasCommitted()) {
+     return;
+   }
+-  GetDriverForFrame(navigation->GetRenderFrameHost())->DidNavigate();
+ 
+-  if (!navigation->IsInPrimaryMainFrame()) {
++  if (navigation->IsInPrimaryMainFrame()) {
++    // Clear page specific data after main frame navigation.
++    NotifyDidNavigateMainFrame(navigation->IsRendererInitiated(),
++                               navigation->GetPageTransition(),
++                               navigation->WasInitiatedByLinkClick(),
++                               password_client_->GetPasswordManager());
++  }
++
++  ContentPasswordManagerDriver* driver =
++      GetDriverForFrame(navigation->GetRenderFrameHost());
++  if (!driver) {
+     return;
+   }
+-  // Clear page specific data after main frame navigation.
+-  NotifyDidNavigateMainFrame(navigation->IsRendererInitiated(),
+-                             navigation->GetPageTransition(),
+-                             navigation->WasInitiatedByLinkClick(),
+-                             password_client_->GetPasswordManager());
+-  // A committed navigation always has a live RenderFrameHost.
+-  CHECK(navigation->GetRenderFrameHost()->IsRenderFrameLive());
+-  GetDriverForFrame(navigation->GetRenderFrameHost())
+-      ->GetPasswordAutofillManager()
+-      ->DidNavigateMainFrame();
++  // A cross-document navigation may commit in the same RenderFrameHost, and
++  // hence with the same driver, as the previous document (e.g. the first
++  // navigation away from the initial empty document). The previous document's
++  // state must not be reused for the new document. BFCache restores and
++  // prerendered page activations don't create a new document but reactivate an
++  // existing one together with its driver, so the driver's state is kept.
++  if (!navigation->IsServedFromBackForwardCache() &&
++      !navigation->IsPrerenderedPageActivation()) {
++    driver->ResetForNewDocument();
++  }
++  driver->DidNavigate();
+ }
+ 
+ void ContentPasswordManagerDriverFactory::RenderFrameDeleted(
+diff --git a/components/password_manager/content/browser/content_password_manager_driver_factory_unittest.cc b/components/password_manager/content/browser/content_password_manager_driver_factory_unittest.cc
+index 5976273b87af0c526e7205cfd2f4de0070543410..3caeed0b7432b94a7b65df07050b9d6e9f599906 100644
+--- a/components/password_manager/content/browser/content_password_manager_driver_factory_unittest.cc
++++ b/components/password_manager/content/browser/content_password_manager_driver_factory_unittest.cc
+@@ -5,21 +5,31 @@
+ #include "components/password_manager/content/browser/content_password_manager_driver_factory.h"
+ 
+ #include <memory>
++#include <optional>
+ #include <utility>
+ 
++#include "base/memory/weak_ptr.h"
+ #include "base/test/scoped_feature_list.h"
+ #include "components/autofill/core/browser/foundations/test_autofill_client.h"
++#include "components/autofill/core/common/unique_ids.h"
+ #include "components/password_manager/content/browser/content_password_manager_driver.h"
+ #include "components/password_manager/content/browser/content_password_manager_driver_factory_test_api.h"
++#include "components/password_manager/core/browser/password_generation_frame_helper.h"
++#include "components/password_manager/core/browser/password_manager_driver.h"
+ #include "components/password_manager/core/browser/stub_password_manager_client.h"
+ #include "components/password_manager/core/common/password_manager_features.h"
+ #include "content/public/browser/render_frame_host.h"
+ #include "content/public/common/content_features.h"
++#include "content/public/test/back_forward_cache_util.h"
+ #include "content/public/test/navigation_simulator.h"
++#include "content/public/test/prerender_test_util.h"
+ #include "content/public/test/test_renderer_host.h"
++#include "content/public/test/test_utils.h"
++#include "content/public/test/web_contents_tester.h"
+ #include "content_password_manager_driver_factory_test_api.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/blink/public/common/features.h"
++#include "url/gurl.h"
+ 
+ namespace password_manager {
+ 
+@@ -82,4 +92,186 @@ TEST_F(ContentPasswordManagerDriverFactoryFencedFramesTest,
+                 &factory(), fenced_frame_subframe));
+ }
+ 
++class ContentPasswordManagerDriverFactoryTest
++    : public content::RenderViewHostTestHarness {
++ public:
++  void SetUp() override {
++    content::RenderViewHostTestHarness::SetUp();
++    factory_ = ContentPasswordManagerDriverFactoryTestApi::Create(
++        web_contents(), &password_manager_client_);
++  }
++
++  void TearDown() override {
++    factory_.reset();
++    content::RenderViewHostTestHarness::TearDown();
++  }
++
++  // Navigates `rfh` to `url` and returns the RenderFrameHost that committed.
++  content::RenderFrameHost* NavigateFrame(const GURL& url,
++                                          content::RenderFrameHost* rfh) {
++    auto navigation =
++        content::NavigationSimulator::CreateRendererInitiated(url, rfh);
++    navigation->Commit();
++    return navigation->GetFinalRenderFrameHost();
++  }
++
++  ContentPasswordManagerDriver* GetDriver(content::RenderFrameHost* rfh) {
++    return ContentPasswordManagerDriverFactoryTestApi::GetDriverForFrame(
++        factory_.get(), rfh);
++  }
++
++ private:
++  StubPasswordManagerClient password_manager_client_;
++  std::unique_ptr<ContentPasswordManagerDriverFactory> factory_;
++};
++
++// Tests that when a cross-document navigation in a subframe reuses the
++// RenderFrameHost (and hence the driver) of the previous document, the driver
++// discards its identity and state, so that state created for the previous
++// document isn't associated with the new document. See crbug.com/561039723.
++TEST_F(ContentPasswordManagerDriverFactoryTest,
++       SubframeNavigationReusingRenderFrameHostResetsDriver) {
++  NavigateFrame(GURL("https://a.test/"), main_rfh());
++  content::RenderFrameHost* child =
++      content::RenderFrameHostTester::For(main_rfh())->AppendChild("child");
++  ContentPasswordManagerDriver* driver = GetDriver(child);
++  ASSERT_TRUE(driver);
++  const DriverId old_id = driver->GetId();
++  base::WeakPtr<PasswordManagerDriver> old_weak_ptr = driver->AsWeakPtr();
++  driver->GetPasswordGenerationHelper()->AddManualGenerationEnabledField(
++      autofill::FieldRendererId(1));
++
++  // The first navigation away from the initial empty document reuses the
++  // RenderFrameHost.
++  ASSERT_EQ(child, NavigateFrame(GURL("https://b.a.test/"), child));
++  ASSERT_EQ(driver, GetDriver(child));
++
++  EXPECT_FALSE(old_weak_ptr);
++  EXPECT_NE(old_id, driver->GetId());
++  EXPECT_TRUE(driver->AsWeakPtr());
++  EXPECT_TRUE(driver->GetPasswordGenerationHelper()
++                  ->GenerationEnabledFieldsForTests()
++                  .empty());
++}
++
++// Tests that when a cross-document navigation in the main frame reuses the
++// RenderFrameHost (and hence the driver) of the previous document, the driver
++// is reset as well.
++TEST_F(ContentPasswordManagerDriverFactoryTest,
++       MainFrameNavigationReusingRenderFrameHostResetsDriver) {
++  content::RenderFrameHost* rfh = main_rfh();
++  content::RenderFrameHostTester::For(rfh)->InitializeRenderFrameIfNeeded();
++  ContentPasswordManagerDriver* driver = GetDriver(rfh);
++  ASSERT_TRUE(driver);
++  const DriverId old_id = driver->GetId();
++  base::WeakPtr<PasswordManagerDriver> old_weak_ptr = driver->AsWeakPtr();
++
++  // The first navigation away from the initial empty document reuses the
++  // RenderFrameHost.
++  ASSERT_EQ(rfh, NavigateFrame(GURL("https://a.test/"), rfh));
++  ASSERT_EQ(driver, GetDriver(rfh));
++
++  EXPECT_FALSE(old_weak_ptr);
++  EXPECT_NE(old_id, driver->GetId());
++  EXPECT_TRUE(driver->AsWeakPtr());
++}
++
++// Tests that same-document navigations in a subframe don't reset the driver.
++TEST_F(ContentPasswordManagerDriverFactoryTest,
++       SameDocumentSubframeNavigationDoesNotResetDriver) {
++  NavigateFrame(GURL("https://a.test/"), main_rfh());
++  content::RenderFrameHost* child =
++      content::RenderFrameHostTester::For(main_rfh())->AppendChild("child");
++  child = NavigateFrame(GURL("https://a.test/child"), child);
++  ContentPasswordManagerDriver* driver = GetDriver(child);
++  ASSERT_TRUE(driver);
++  const DriverId old_id = driver->GetId();
++  base::WeakPtr<PasswordManagerDriver> old_weak_ptr = driver->AsWeakPtr();
++
++  auto same_document_navigation =
++      content::NavigationSimulator::CreateRendererInitiated(
++          GURL("https://a.test/child#ref"), child);
++  same_document_navigation->CommitSameDocument();
++  ASSERT_EQ(child, same_document_navigation->GetFinalRenderFrameHost());
++
++  EXPECT_TRUE(old_weak_ptr);
++  EXPECT_EQ(old_id, driver->GetId());
++}
++
++// Fixture for testing page activations, i.e. BFCache restores and prerendered
++// page activations.
++class ContentPasswordManagerDriverFactoryPageActivationTest
++    : public ContentPasswordManagerDriverFactoryTest {
++ public:
++  ContentPasswordManagerDriverFactoryPageActivationTest() {
++    bfcache_feature_list_.InitWithFeaturesAndParameters(
++        content::GetDefaultEnabledBackForwardCacheFeaturesForTesting(),
++        content::GetDefaultDisabledBackForwardCacheFeaturesForTesting());
++  }
++
++  void SetUp() override {
++    ContentPasswordManagerDriverFactoryTest::SetUp();
++    web_contents_delegate_.emplace(*web_contents());
++  }
++
++  void TearDown() override {
++    web_contents_delegate_.reset();
++    ContentPasswordManagerDriverFactoryTest::TearDown();
++  }
++
++ private:
++  // Declared before `bfcache_feature_list_`, which is initialized after it, so
++  // that the feature lists are reset in the reverse order of initialization.
++  content::test::ScopedPrerenderFeatureList prerender_feature_list_;
++  base::test::ScopedFeatureList bfcache_feature_list_;
++  std::optional<content::test::ScopedPrerenderWebContentsDelegate>
++      web_contents_delegate_;
++};
++
++// Tests that a BFCache restore, which reactivates an existing document rather
++// than creating a new one, doesn't reset the driver of the restored frame.
++TEST_F(ContentPasswordManagerDriverFactoryPageActivationTest,
++       BackForwardCacheRestoreDoesNotResetDriver) {
++  content::RenderFrameHostWrapper rfh(
++      NavigateFrame(GURL("https://a.test/"), main_rfh()));
++  ContentPasswordManagerDriver* driver = GetDriver(rfh.get());
++  ASSERT_TRUE(driver);
++  const DriverId old_id = driver->GetId();
++  base::WeakPtr<PasswordManagerDriver> old_weak_ptr = driver->AsWeakPtr();
++
++  NavigateFrame(GURL("https://b.test/"), main_rfh());
++  ASSERT_TRUE(rfh);
++  ASSERT_EQ(rfh->GetLifecycleState(),
++            content::RenderFrameHost::LifecycleState::kInBackForwardCache);
++  ASSERT_EQ(rfh.get(), content::NavigationSimulator::GoBack(web_contents()));
++  ASSERT_EQ(driver, GetDriver(rfh.get()));
++
++  EXPECT_TRUE(old_weak_ptr);
++  EXPECT_EQ(old_id, driver->GetId());
++}
++
++// Tests that a prerendered page activation, which reactivates an existing
++// document rather than creating a new one, doesn't reset the driver of the
++// activated frame.
++TEST_F(ContentPasswordManagerDriverFactoryPageActivationTest,
++       PrerenderedPageActivationDoesNotResetDriver) {
++  NavigateFrame(GURL("https://a.test/"), main_rfh());
++  const GURL prerender_url("https://a.test/prerender");
++  content::RenderFrameHost* prerender_rfh =
++      content::WebContentsTester::For(web_contents())
++          ->AddPrerenderAndCommitNavigation(prerender_url);
++  ContentPasswordManagerDriver* driver = GetDriver(prerender_rfh);
++  ASSERT_TRUE(driver);
++  const DriverId old_id = driver->GetId();
++  base::WeakPtr<PasswordManagerDriver> old_weak_ptr = driver->AsWeakPtr();
++
++  content::WebContentsTester::For(web_contents())
++      ->ActivatePrerenderedPage(prerender_url);
++  ASSERT_EQ(prerender_rfh, main_rfh());
++  ASSERT_EQ(driver, GetDriver(prerender_rfh));
++
++  EXPECT_TRUE(old_weak_ptr);
++  EXPECT_EQ(old_id, driver->GetId());
++}
++
+ }  // namespace password_manager
+diff --git a/components/password_manager/core/browser/password_autofill_manager.cc b/components/password_manager/core/browser/password_autofill_manager.cc
+index 78973326b1487ec27f05c42276ae8127569641d0..4f7a5fefcb58e16d244af4fd956b2cc0a3d665c6 100644
+--- a/components/password_manager/core/browser/password_autofill_manager.cc
++++ b/components/password_manager/core/browser/password_autofill_manager.cc
+@@ -735,7 +735,15 @@ bool PasswordAutofillManager::MaybeShowPasswordSuggestionsWithGeneration(
+       /*is_for_webauthn_request=*/false);
+ }
+ 
+-void PasswordAutofillManager::DidNavigateMainFrame() {
++void PasswordAutofillManager::DidNavigateFrame() {
++  // Hide the suggestions shown for the previous document, but only if they were
++  // shown by `this`, so that suggestions of other frames are not affected.
++  if (autofill_client_ && last_session_id_ &&
++      last_session_id_ ==
++          autofill_client_->GetSessionIdForCurrentAutofillSuggestions()) {
++    autofill_client_->HideSuggestions(
++        autofill::SuggestionHidingReason::kStaleData, GetMainFillingProduct());
++  }
+   fill_data_.reset();
+   CancelBiometricReauthIfOngoing();
+   favicon_tracker_.TryCancelAll();
+@@ -752,6 +760,10 @@ void PasswordAutofillManager::DidNavigateMainFrame() {
+   cross_domain_confirmation_controller_.reset();
+ #endif
+   wait_for_passkeys_timer_.Stop();
++  // Drop the callbacks created for the previous document, e.g. a pending
++  // `OnAddPasswordFillData()` call or filling a credential after the user
++  // re-authenticated.
++  weak_ptr_factory_.InvalidateWeakPtrs();
+ }
+ 
+ base::WeakPtr<PasswordAutofillManager> PasswordAutofillManager::GetWeakPtr() {
+diff --git a/components/password_manager/core/browser/password_autofill_manager.h b/components/password_manager/core/browser/password_autofill_manager.h
+index 7d343062fbe118b64af402dac688918a66882b76..cad425fe7f107e0f21e2fa4211508daf2a6b7002 100644
+--- a/components/password_manager/core/browser/password_autofill_manager.h
++++ b/components/password_manager/core/browser/password_autofill_manager.h
+@@ -128,8 +128,11 @@ class PasswordAutofillManager : public autofill::AutofillSuggestionDelegate,
+       base::i18n::TextDirection text_direction,
+       bool show_password_suggestions);
+ 
+-  // Called when main frame navigates. Not called for in-page navigations.
+-  void DidNavigateMainFrame();
++  // Called when a cross-document navigation commits in the frame of the
++  // driver. Resets the state that belongs to the previous document, including
++  // the suggestions shown by `this` and pending callbacks. Not called for
++  // in-page navigations.
++  void DidNavigateFrame();
+ 
+ #if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_IOS)
+   PasswordManualFallbackMetricsRecorder&
+diff --git a/components/password_manager/core/browser/password_autofill_manager_unittest.cc b/components/password_manager/core/browser/password_autofill_manager_unittest.cc
+index 10d5005b561b634454f8408126f73e47cd33e42d..d6a37b2d2a3750fc867a06d54f9eca9880dec5b2 100644
+--- a/components/password_manager/core/browser/password_autofill_manager_unittest.cc
++++ b/components/password_manager/core/browser/password_autofill_manager_unittest.cc
+@@ -14,12 +14,16 @@
+ #include "base/base64.h"
+ #include "base/containers/span.h"
+ #include "base/feature_list.h"
++#include "base/functional/bind.h"
+ #include "base/functional/callback.h"
+ #include "base/i18n/rtl.h"
++#include "base/location.h"
+ #include "base/memory/weak_ptr.h"
+ #include "base/no_destructor.h"
++#include "base/run_loop.h"
+ #include "base/strings/string_util.h"
+ #include "base/task/cancelable_task_tracker.h"
++#include "base/task/sequenced_task_runner.h"
+ #include "base/test/gmock_callback_support.h"
+ #include "base/test/gmock_move_support.h"
+ #include "base/test/metrics/histogram_tester.h"
+@@ -461,13 +465,72 @@ TEST_F(PasswordAutofillManagerTest, NoFillingOnNavigation) {
+   InitializePasswordAutofillManager(&client, &autofill_client);
+ 
+   EXPECT_CALL(*client.mock_driver(), FillSuggestion).Times(0);
+-  password_autofill_manager_->DidNavigateMainFrame();
++  password_autofill_manager_->DidNavigateFrame();
+   password_autofill_manager_->DidAcceptSuggestion(
+       autofill::test::CreateAutofillSuggestion(
+           autofill::SuggestionType::kPasswordEntry, test_username_),
+       SuggestionPosition{.multi_index = {0}});
+ }
+ 
++// Tests that a navigation hides the suggestions shown by the manager.
++TEST_F(PasswordAutofillManagerTest, NavigationHidesOwnSuggestions) {
++  TestPasswordManagerClient client;
++  NiceMock<MockAutofillClient> autofill_client;
++  InitializePasswordAutofillManager(&client, &autofill_client);
++  AutofillClient::PopupOpenArgs open_args;
++  EXPECT_CALL(autofill_client, ShowAutofillSuggestions)
++      .WillOnce(
++          SavePopupOpenArgsAndShowSuggestions(autofill_client, open_args));
++  password_autofill_manager_->ShowSuggestions(kTriggeringField);
++
++  EXPECT_CALL(autofill_client,
++              HideSuggestions(autofill::SuggestionHidingReason::kStaleData,
++                              std::optional(FillingProduct::kPassword)));
++  password_autofill_manager_->DidNavigateFrame();
++}
++
++// Tests that a navigation doesn't hide suggestions that weren't shown by the
++// manager, e.g. suggestions shown for another frame.
++TEST_F(PasswordAutofillManagerTest, NavigationDoesNotHideOtherSuggestions) {
++  TestPasswordManagerClient client;
++  NiceMock<MockAutofillClient> autofill_client;
++  InitializePasswordAutofillManager(&client, &autofill_client);
++  AutofillClient::PopupOpenArgs open_args;
++  EXPECT_CALL(autofill_client, ShowAutofillSuggestions)
++      .WillOnce(
++          SavePopupOpenArgsAndShowSuggestions(autofill_client, open_args));
++  password_autofill_manager_->ShowSuggestions(kTriggeringField);
++  // Simulate that another delegate replaced the suggestions.
++  autofill_client.TestAutofillClient::ShowAutofillSuggestions(
++      open_args, /*delegate=*/nullptr);
++
++  EXPECT_CALL(autofill_client, HideSuggestions).Times(0);
++  password_autofill_manager_->DidNavigateFrame();
++}
++
++// Tests that the fill data that was posted for the previous document (see
++// `ContentPasswordManagerDriver::PropagateFillDataOnParsingCompletion()`) is
++// dropped on navigation.
++TEST_F(PasswordAutofillManagerTest, NavigationDropsPendingFillData) {
++  TestPasswordManagerClient client;
++  InitializePasswordAutofillManager(&client, /*autofill_client=*/nullptr);
++
++  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
++      FROM_HERE,
++      base::BindOnce(&PasswordAutofillManager::OnAddPasswordFillData,
++                     password_autofill_manager_->GetWeakPtr(), fill_data()));
++  password_autofill_manager_->DidNavigateFrame();
++  // Tasks run in posting order, so the task above is processed before the run
++  // loop quits.
++  base::RunLoop run_loop;
++  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
++      FROM_HERE, run_loop.QuitClosure());
++  run_loop.Run();
++
++  EXPECT_FALSE(
++      password_autofill_manager_->PreviewSuggestionForTest(test_username_));
++}
++
+ TEST_F(PasswordAutofillManagerTest, PreviewSuggestion) {
+   TestPasswordManagerClient client;
+   InitializePasswordAutofillManager(&client, nullptr);
+@@ -483,7 +546,7 @@ TEST_F(PasswordAutofillManagerTest, PreviewSuggestion) {
+   EXPECT_FALSE(
+       password_autofill_manager_->PreviewSuggestionForTest(kInvalidUsername));
+ 
+-  password_autofill_manager_->DidNavigateMainFrame();
++  password_autofill_manager_->DidNavigateFrame();
+   EXPECT_FALSE(
+       password_autofill_manager_->PreviewSuggestionForTest(test_username_));
+ }
+@@ -2188,7 +2251,7 @@ TEST_F(PasswordAutofillManagerTest, ManualFallback_FlowResetOnNavigation) {
+       autofill::AutofillSuggestionTriggerSource::kManualFallbackPasswords;
+   password_autofill_manager_->ShowSuggestions(field);
+   EXPECT_TRUE(password_autofill_manager_->manual_fallback_flow());
+-  password_autofill_manager_->DidNavigateMainFrame();
++  password_autofill_manager_->DidNavigateFrame();
+ 
+   EXPECT_FALSE(password_autofill_manager_->manual_fallback_flow());
+ }
+@@ -2273,7 +2336,7 @@ TEST_F(PasswordAutofillManagerTest,
+                                     /*autofill_client=*/nullptr);
+ 
+   base::HistogramTester histograms;
+-  password_autofill_manager_->DidNavigateMainFrame();
++  password_autofill_manager_->DidNavigateFrame();
+ 
+   EXPECT_THAT(histograms.GetTotalCountsForPrefix("Autofill.Funnel."),
+               ::testing::IsEmpty());
+diff --git a/components/password_manager/core/browser/password_generation_frame_helper.cc b/components/password_manager/core/browser/password_generation_frame_helper.cc
+index 3ba984d71232838a3a2ca4a78ba20361b7ddb64f..71119e994594de191c99c44ed8049053adf3b294 100644
+--- a/components/password_manager/core/browser/password_generation_frame_helper.cc
++++ b/components/password_manager/core/browser/password_generation_frame_helper.cc
+@@ -152,6 +152,10 @@ void PasswordGenerationFrameHelper::AddManualGenerationEnabledField(
+   generation_enabled_fields_.insert(field_renderer_id);
+ }
+ 
++void PasswordGenerationFrameHelper::DidNavigateFrame() {
++  generation_enabled_fields_.clear();
++}
++
+ autofill::PasswordRequirementsSpec
+ PasswordGenerationFrameHelper::GetPasswordRequirementsSpec(
+     const GURL& last_committed_url,
+diff --git a/components/password_manager/core/browser/password_generation_frame_helper.h b/components/password_manager/core/browser/password_generation_frame_helper.h
+index 24e69ac9a5f5c2e69ccf09d6ee4abe8b882fe775..4a390fa854c40794e3309b319ef4507840d70569 100644
+--- a/components/password_manager/core/browser/password_generation_frame_helper.h
++++ b/components/password_manager/core/browser/password_generation_frame_helper.h
+@@ -74,6 +74,10 @@ class PasswordGenerationFrameHelper {
+   virtual void AddManualGenerationEnabledField(
+       autofill::FieldRendererId field_renderer_id);
+ 
++  // Called when a cross-document navigation commits in the frame of the
++  // driver. Resets the state that belongs to the previous document.
++  void DidNavigateFrame();
++
+   // Returns password requirements spec based on provided input.
+   virtual autofill::PasswordRequirementsSpec GetPasswordRequirementsSpec(
+       const GURL& last_committed_url,
+diff --git a/components/password_manager/core/browser/password_generation_frame_helper_unittest.cc b/components/password_manager/core/browser/password_generation_frame_helper_unittest.cc
+index 42bea8a8047355fb2929cbaf78945ba5714339f0..2dab987fca47c928a1e9cf9583ed91141b872371 100644
+--- a/components/password_manager/core/browser/password_generation_frame_helper_unittest.cc
++++ b/components/password_manager/core/browser/password_generation_frame_helper_unittest.cc
+@@ -461,4 +461,17 @@ TEST_F(PasswordGenerationFrameHelperTest, GetPasswordRequirementsSpec) {
+   EXPECT_EQ(computed_spec.max_length(), kShortLength);
+ }
+ 
++// Verify that the fields with manual generation enabled are forgotten after a
++// navigation.
++TEST_F(PasswordGenerationFrameHelperTest,
++       DidNavigateFrameClearsManualGenerationEnabledFields) {
++  constexpr autofill::FieldRendererId kFieldId(1);
++  GetGenerationHelper()->AddManualGenerationEnabledField(kFieldId);
++  ASSERT_TRUE(GetGenerationHelper()->IsManualGenerationEnabledField(kFieldId));
++
++  GetGenerationHelper()->DidNavigateFrame();
++
++  EXPECT_FALSE(GetGenerationHelper()->IsManualGenerationEnabledField(kFieldId));
++}
++
+ }  // namespace password_manager
