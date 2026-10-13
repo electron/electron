@@ -1,0 +1,444 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Kosyakov <caseq@chromium.org>
+Date: Tue, 6 Oct 2026 11:07:53 -0700
+Subject: [M155] Inline ToBlinkStringView() in
+ NativeValueTraitsStringAdapter::ToStringView(), its only caller
+
+Original change's description:
+> Inline ToBlinkStringView() in NativeValueTraitsStringAdapter::ToStringView(), its only caller
+>
+> No intended changes to either logic or performance, see stacked CL (https://chromium-review.git.corp.google.com/c/chromium/src/+/8393538) for the actual change.
+>
+> Bug: 496308073
+> Change-Id: I661774478228a2e3a2659849872123dfef835aab
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8392220
+> Commit-Queue: Andrey Kosyakov <caseq@chromium.org>
+> Reviewed-by: Nate Chapin <japhet@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1697797}
+
+(cherry picked from commit 711ebfd2fd5240901f96ffcb3e03581dd0746d1e)
+
+Bug: 562785300,496308073
+Change-Id: I661774478228a2e3a2659849872123dfef835aab
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8465004
+Commit-Queue: Andrey Kosyakov <caseq@chromium.org>
+Reviewed-by: Nate Chapin <japhet@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Reviewed-by: Andrey Kosyakov <caseq@chromium.org>
+Commit-Queue: Nate Chapin <japhet@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8059@{#969}
+Cr-Branched-From: 199ac2cd7ab289e11c2236bd2cede848781213da-refs/heads/main@{#1697595}
+
+diff --git a/third_party/blink/renderer/bindings/core/v8/native_value_traits_impl.cc b/third_party/blink/renderer/bindings/core/v8/native_value_traits_impl.cc
+index 973b712efe7d3050c6ce396cdef03656dd691167..52ac5ca39aef098ae5cd79fa44eff468eaf39b2c 100644
+--- a/third_party/blink/renderer/bindings/core/v8/native_value_traits_impl.cc
++++ b/third_party/blink/renderer/bindings/core/v8/native_value_traits_impl.cc
+@@ -8,12 +8,120 @@
+ #include "third_party/blink/renderer/bindings/core/v8/v8_ctype_traits.h"
+ #include "third_party/blink/renderer/core/core_export.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_messages.h"
++#include "third_party/blink/renderer/platform/bindings/string_resource.h"
++#include "third_party/blink/renderer/platform/bindings/to_blink_string.h"
+ #include "v8/include/v8-fast-api-calls.h"
+ 
+ namespace blink {
+ 
+ namespace bindings {
+ 
++StringView NativeValueTraitsStringAdapter::ToStringView() const& {
++  if (v8_string_.IsEmpty()) [[unlikely]] {
++    return wtf_string_;
++  }
++
++  // Be very careful in this code to ensure it is RVO friendly. Accidentally
++  // breaking RVO will degrade some of the blink_perf benchmarks by a few
++  // percent. This includes moving the StringTraits<>::FromStringResource() call
++  // into GetExternalizedString() as it becomes impossible for the calling code
++  // to satisfy all RVO constraints.
++  if (StringResourceBase* string_resource =
++          StringResourceBase::GetExternalizedString(isolate_, v8_string_)) {
++    return string_resource->GetAtomicString(isolate_).Impl();
++  }
++
++  uint32_t length = v8_string_->Length();
++  if (!length) [[unlikely]] {
++    return StringView(g_empty_atom);
++  }
++
++  // Note that this code path looks very similar to ToBlinkString(). The
++  // critical difference in ToStringView(), if `can_externalize` is false,
++  // there is no attempt to create either an AtomicString or an String. This
++  // can very likely avoid a heap allocation and definitely avoids refcount
++  // churn which can be significantly faster in some hot paths.
++  const bool is_one_byte = v8_string_->IsOneByte();
++  const v8::String::Encoding requested_encoding =
++      is_one_byte ? v8::String::ONE_BYTE_ENCODING
++                  : v8::String::TWO_BYTE_ENCODING;
++  bool can_externalize = v8_string_->CanMakeExternal(requested_encoding);
++  if (can_externalize) [[likely]] {
++    // An AtomicString is always used here for externalization. Using a String
++    // would avoid the AtomicStringTable insert however it also means APIs
++    // consuming the returned StringView must do O(l) operations on equality
++    // checking.
++    //
++    // Given that externalization implies reuse of the string, taking the single
++    // O(l) hit to insert into the AtomicStringTable ends up being faster in
++    // most cases.
++    //
++    // If the caller explicitly wants a String, then using ToBlinkString<String>
++    // is the better option.
++    //
++    // If the caller wants a disposable serialization where it knows the
++    // v8::String is unlikely to be re-projected into Blink (seems rare?) then
++    // calling this with kDoNotExternalize and relying on the
++    // StringView::StackBackingStore yields the most efficient code.
++    AtomicString blink_string =
++        ToBlinkString<AtomicString>(isolate_, v8_string_, kExternalize);
++    if (v8_string_->IsExternal()) {
++      return StringView(blink_string.Impl());
++    }
++  }
++
++  // The string has not been externalized. Serialize into
++  // `string_view_backing_store_` and return.
++  //
++  // Note on platforms with v8 pointer compression, this is the hot path
++  // for short strings like "id" as those are never externalized whereas on
++  // platforms without pointer compression GetExternalizedString() is the hot
++  // path.
++  //
++  // This is particularly important when optimizing for blink_perf.bindings as
++  // x64 vs ARM performance will have very different behavior; x64 has
++  // pointer compression but ARM does not. Since a common string used in the
++  // {get,set}-attribute benchmarks is "id", this means optimizations
++  // that affect the microbenchmark in one architecture likely have no effect
++  // (or even a negative effect due to different expectations in branch
++  // prediction) in the other.
++  //
++  // When pointer compression is on, short strings always cause a
++  // serialization to Blink and thus if there are 1000 runs of an API
++  // asking to convert the same `v8_string` to a Blink string, each run will
++  // behavior similarly.
++  //
++  // When pointer compression is off, the first run will externalize the string
++  // going through this path, but subsequent runs will enter the
++  // GetExternalizedString() path and be much faster as it is just extracting
++  // a pointer.
++  //
++  // Confusingly, the ARM and x64 absolute numbers for the benchmarks look
++  // similar (80-90 runs/s on a pixel2 and a Lenovo P920). This can give the
++  // mistaken belief that they are related numbers even though they are
++  // testing almost entirely completely different codepaths. When optimizing
++  // this code, it is instructive to increase the test attribute name string
++  // length. Using something like something like "abcd1234" will make all
++  // platforms externalize and x64 will likely run much much faster (local
++  // test sees 260 runs/s on a x64 P920).
++  //
++  // TODO(ajwong): Revisit if the length restriction on externalization makes
++  // sense. It's odd that pointer compression changes externalization
++  // behavior.
++  if (is_one_byte) {
++    base::span<LChar> lchar = string_view_backing_store_.Realloc<LChar>(length);
++    v8_string_->WriteOneByteV2(isolate_, 0, length, lchar.data());
++    return StringView(lchar);
++  }
++
++  base::span<UChar> uchar = string_view_backing_store_.Realloc<UChar>(length);
++  static_assert(sizeof(UChar) == sizeof(uint16_t),
++                "UChar isn't the same as uint16_t");
++  v8_string_->WriteV2(isolate_, 0, length,
++                      reinterpret_cast<uint16_t*>(uchar.data()));
++  return StringView(uchar);
++}
++
+ static_assert(static_cast<IntegerConversionConfiguration>(
+                   IDLIntegerConvMode::kDefault) == kNormalConversion,
+               "IDLIntegerConvMode::kDefault == kNormalConversion");
+diff --git a/third_party/blink/renderer/bindings/core/v8/native_value_traits_impl.h b/third_party/blink/renderer/bindings/core/v8/native_value_traits_impl.h
+index 0fd66657d0b0dd0c42ed489a293294a3729ae543..94cc75dd599f2ffee59240288ebfce1a49b09b4e 100644
+--- a/third_party/blink/renderer/bindings/core/v8/native_value_traits_impl.h
++++ b/third_party/blink/renderer/bindings/core/v8/native_value_traits_impl.h
+@@ -298,13 +298,7 @@ class CORE_EXPORT NativeValueTraitsStringAdapter {
+     return StringType(wtf_string_);
+   }
+ 
+-  StringView ToStringView() const& {
+-    if (!v8_string_.IsEmpty()) [[likely]] {
+-      return ToBlinkStringView(isolate_, v8_string_, string_view_backing_store_,
+-                               kExternalize);
+-    }
+-    return wtf_string_;
+-  }
++  StringView ToStringView() const&;
+ 
+   // Careful here, ordering some of the members here (mainly the isolate) may
+   // be important in the hot path. Having the isolate the second member showed
+diff --git a/third_party/blink/renderer/core/css/css_style_declaration.cc b/third_party/blink/renderer/core/css/css_style_declaration.cc
+index a5750d9bb9772da042e127f433c0e88aeb95876a..b1fd1f8f27f204ab6a9f064db959ce2b08ca7c67 100644
+--- a/third_party/blink/renderer/core/css/css_style_declaration.cc
++++ b/third_party/blink/renderer/core/css/css_style_declaration.cc
+@@ -210,8 +210,8 @@ NamedPropertySetterResult CSSStyleDeclaration::AnonymousNamedSetter(
+   // 829408).
+   ExceptionState exception_state(script_state->GetIsolate());
+   if (value->IsString()) {
+-    // NativeValueTraits::ToBlinkStringView() (called implicitly on conversion)
+-    // tries fairly hard to make an AtomicString out of the string,
++    // NativeValueTraitsStringAdapter::ToStringView() (called implicitly on
++    // conversion) tries fairly hard to make an AtomicString out of the string,
+     // on the basis that we'd probably like cheaper compares down the line.
+     // However, for our purposes, we never really use that; we mostly tokenize
+     // it or parse it in some other way. So if it's short enough, we try to
+diff --git a/third_party/blink/renderer/platform/bindings/string_resource.h b/third_party/blink/renderer/platform/bindings/string_resource.h
+index 8e9188ff9a6b1c672d0335c0b1d2a4920b91c405..cc2dfde64563616a142806275119892fedc44cb4 100644
+--- a/third_party/blink/renderer/platform/bindings/string_resource.h
++++ b/third_party/blink/renderer/platform/bindings/string_resource.h
+@@ -5,6 +5,8 @@
+ #ifndef THIRD_PARTY_BLINK_RENDERER_PLATFORM_BINDINGS_STRING_RESOURCE_H_
+ #define THIRD_PARTY_BLINK_RENDERER_PLATFORM_BINDINGS_STRING_RESOURCE_H_
+ 
++#include <type_traits>
++
+ #include "base/compiler_specific.h"
+ #include "base/dcheck_is_on.h"
+ #include "third_party/blink/renderer/platform/bindings/parkable_string.h"
+@@ -22,6 +24,10 @@ class StringResourceBase {
+   USING_FAST_MALLOC(StringResourceBase);
+ 
+  public:
++  static StringResourceBase* GetExternalizedString(
++      v8::Isolate* isolate,
++      v8::Local<v8::String> v8_string);
++
+   explicit StringResourceBase(v8::Isolate* isolate, String string)
+       : plain_string_(std::move(string)) {
+     DCHECK(!plain_string_.IsNull());
+@@ -304,6 +310,35 @@ class ParkableStringResource8 final : public StringResource8Base {
+   }
+ };
+ 
++ALWAYS_INLINE StringResourceBase* StringResourceBase::GetExternalizedString(
++    v8::Isolate* isolate,
++    v8::Local<v8::String> v8_string) {
++  v8::String::Encoding encoding;
++  v8::String::ExternalStringResourceBase* resource =
++      v8_string->GetExternalStringResourceBase(isolate, &encoding);
++  if (resource) [[likely]] {
++    static_assert(std::is_base_of<v8::String::ExternalOneByteStringResource,
++                                  StringResource8Base>::value,
++                  "");
++    static_assert(std::is_base_of<v8::String::ExternalStringResource,
++                                  StringResource16Base>::value,
++                  "");
++    static_assert(
++        std::is_base_of<StringResourceBase, StringResource8Base>::value, "");
++    static_assert(
++        std::is_base_of<StringResourceBase, StringResource16Base>::value, "");
++    // Then StringResource{8,16}Base allows to go from one ancestry path to
++    // the other one. Even though it's empty, removing it causes UB, see
++    // crbug.com/909796.
++    if (encoding == v8::String::ONE_BYTE_ENCODING) {
++      return static_cast<StringResource8Base*>(resource);
++    }
++    return static_cast<StringResource16Base*>(resource);
++  }
++
++  return nullptr;
++}
++
+ }  // namespace blink
+ 
+ #endif  // THIRD_PARTY_BLINK_RENDERER_PLATFORM_BINDINGS_STRING_RESOURCE_H_
+diff --git a/third_party/blink/renderer/platform/bindings/to_blink_string.cc b/third_party/blink/renderer/platform/bindings/to_blink_string.cc
+index 44911ccdbbc85a01c037ae689fec224e4a5c95ea..478354c9b55bc5cb2e0753a410ce3cd314b22aa4 100644
+--- a/third_party/blink/renderer/platform/bindings/to_blink_string.cc
++++ b/third_party/blink/renderer/platform/bindings/to_blink_string.cc
+@@ -106,43 +106,6 @@ ALWAYS_INLINE bool CanExternalize(v8::Local<v8::String> v8_string,
+   return mode == kExternalize && v8_string->CanMakeExternal(requested_encoding);
+ }
+ 
+-// Retrieves the StringResourceBase from `v8_string`.
+-//
+-// Returns a nullptr if there was no previous externalization.
+-ALWAYS_INLINE StringResourceBase* GetExternalizedString(
+-    v8::Isolate* isolate,
+-    v8::Local<v8::String> v8_string) {
+-  v8::String::Encoding encoding;
+-  v8::String::ExternalStringResourceBase* resource =
+-      v8_string->GetExternalStringResourceBase(isolate, &encoding);
+-  if (!!resource) [[likely]] {
+-    // Inheritance:
+-    // - V8 side: v8::String::ExternalStringResourceBase
+-    //   -> v8::External{One,}ByteStringResource
+-    // - Both: StringResource{8,16}Base inherits from the matching v8 class.
+-    static_assert(std::is_base_of<v8::String::ExternalOneByteStringResource,
+-                                  StringResource8Base>::value,
+-                  "");
+-    static_assert(std::is_base_of<v8::String::ExternalStringResource,
+-                                  StringResource16Base>::value,
+-                  "");
+-    static_assert(
+-        std::is_base_of<StringResourceBase, StringResource8Base>::value, "");
+-    static_assert(
+-        std::is_base_of<StringResourceBase, StringResource16Base>::value, "");
+-    // Then StringResource{8,16}Base allows to go from one ancestry path to
+-    // the other one. Even though it's empty, removing it causes UB, see
+-    // crbug.com/909796.
+-    StringResourceBase* base;
+-    if (encoding == v8::String::ONE_BYTE_ENCODING)
+-      base = static_cast<StringResource8Base*>(resource);
+-    else
+-      base = static_cast<StringResource16Base*>(resource);
+-    return base;
+-  }
+-
+-  return nullptr;
+-}
+ 
+ // Converts a `v8_string` to a StringType optionally externalizing if
+ // `can_externalize` is true; sets `was_externalized` if on successful
+@@ -205,7 +168,7 @@ StringType ToBlinkString(v8::Isolate* isolate,
+   // common case for all platforms with the one exception being super short
+   // strings on for platforms with v8 pointer compression.
+   StringResourceBase* string_resource =
+-      GetExternalizedString(isolate, v8_string);
++      StringResourceBase::GetExternalizedString(isolate, v8_string);
+   if (string_resource) {
+     return StringTraits<StringType>::FromStringResource(isolate,
+                                                         string_resource);
+@@ -235,111 +198,6 @@ template AtomicString ToBlinkString<AtomicString>(v8::Isolate* isolate,
+                                                   v8::Local<v8::String>,
+                                                   ExternalMode);
+ 
+-StringView ToBlinkStringView(v8::Isolate* isolate,
+-                             v8::Local<v8::String> v8_string,
+-                             StringView::StackBackingStore& backing_store,
+-                             ExternalMode mode) {
+-  // Be very careful in this code to ensure it is RVO friendly. Accidentally
+-  // breaking RVO will degrade some of the blink_perf benchmarks by a few
+-  // percent. This includes moving the StringTraits<>::FromStringResource() call
+-  // into GetExternalizedString() as it becomes impossible for the calling code
+-  // to satisfy all RVO constraints.
+-  StringResourceBase* string_resource =
+-      GetExternalizedString(isolate, v8_string);
+-  if (string_resource) {
+-    return StringTraits<AtomicString>::FromStringResource(isolate,
+-                                                          string_resource)
+-        .Impl();
+-  }
+-
+-  uint32_t length = v8_string->Length();
+-  if (!length) [[unlikely]] {
+-    return StringView(g_empty_atom);
+-  }
+-
+-  // Note that this code path looks very similar to ToBlinkString(). The
+-  // critical difference in ToBlinkStringView(), if `can_externalize` is false,
+-  // there is no attempt to create either an AtomicString or an String. This
+-  // can very likely avoid a heap allocation and definitely avoids refcount
+-  // churn which can be significantly faster in some hot paths.
+-  const bool is_one_byte = v8_string->IsOneByte();
+-  bool can_externalize = CanExternalize(v8_string, mode, is_one_byte);
+-  if (can_externalize) [[likely]] {
+-    bool was_externalized;
+-    // An AtomicString is always used here for externalization. Using a String
+-    // would avoid the AtomicStringTable insert however it also means APIs
+-    // consuming the returned StringView must do O(l) operations on equality
+-    // checking.
+-    //
+-    // Given that externalization implies reuse of the string, taking the single
+-    // O(l) hit to insert into the AtomicStringTable ends up being faster in
+-    // most cases.
+-    //
+-    // If the caller explicitly wants a String, then using ToBlinkString<String>
+-    // is the better option.
+-    //
+-    // If the caller wants a disposable serialization where it knows the
+-    // v8::String is unlikely to be re-projected into Blink (seems rare?) then
+-    // calling this with kDoNotExternalize and relying on the
+-    // StringView::StackBackingStore yields the most efficient code.
+-    AtomicString blink_string = ConvertAndExternalizeString<AtomicString>(
+-        isolate, v8_string, can_externalize, is_one_byte, &was_externalized);
+-    if (was_externalized) {
+-      return StringView(blink_string.Impl());
+-    }
+-  }
+-
+-  // The string has not been externalized. Serialize into `backing_store` and
+-  // return.
+-  //
+-  // Note on platforms with v8 pointer compression, this is the hot path
+-  // for short strings like "id" as those are never externalized whereas on
+-  // platforms without pointer compression GetExternalizedString() is the hot
+-  // path.
+-  //
+-  // This is particularly important when optimizing for blink_perf.bindings as
+-  // x64 vs ARM performance will have very different behavior; x64 has
+-  // pointer compression but ARM does not. Since a common string used in the
+-  // {get,set}-attribute benchmarks is "id", this means optimizations
+-  // that affect the microbenchmark in one architecture likely have no effect
+-  // (or even a negative effect due to different expectations in branch
+-  // prediction) in the other.
+-  //
+-  // When pointer compression is on, short strings always cause a
+-  // serialization to Blink and thus if there are 1000 runs of an API
+-  // asking to convert the same `v8_string` to a Blink string, each run will
+-  // behavior similarly.
+-  //
+-  // When pointer compression is off, the first run will externalize the string
+-  // going through this path, but subsequent runs will enter the
+-  // GetExternalizedString() path and be much faster as it is just extracting
+-  // a pointer.
+-  //
+-  // Confusingly, the ARM and x64 absolute numbers for the benchmarks look
+-  // similar (80-90 runs/s on a pixel2 and a Lenovo P920). This can give the
+-  // mistaken belief that they are related numbers even though they are
+-  // testing almost entirely completely different codepaths. When optimizing
+-  // this code, it is instructive to increase the test attribute name string
+-  // length. Using something like something like "abcd1234" will make all
+-  // platforms externalize and x64 will likely run much much faster (local
+-  // test sees 260 runs/s on a x64 P920).
+-  //
+-  // TODO(ajwong): Revisit if the length restriction on externalization makes
+-  // sense. It's odd that pointer compression changes externalization
+-  // behavior.
+-  if (is_one_byte) {
+-    base::span<LChar> lchar = backing_store.Realloc<LChar>(length);
+-    v8_string->WriteOneByteV2(isolate, 0, length, lchar.data());
+-    return StringView(lchar);
+-  }
+-
+-  base::span<UChar> uchar = backing_store.Realloc<UChar>(length);
+-  static_assert(sizeof(UChar) == sizeof(uint16_t),
+-                "UChar isn't the same as uint16_t");
+-  v8_string->WriteV2(isolate, 0, length,
+-                     reinterpret_cast<uint16_t*>(uchar.data()));
+-  return StringView(uchar);
+-}
+ 
+ // Fast but non thread-safe version.
+ static String ToBlinkStringFast(int value) {
+diff --git a/third_party/blink/renderer/platform/bindings/to_blink_string.h b/third_party/blink/renderer/platform/bindings/to_blink_string.h
+index 9e4d467c9c885e1c1ad7629f008771fed4a60c33..40484ef03b218da417406cde9692ce5554d93a96 100644
+--- a/third_party/blink/renderer/platform/bindings/to_blink_string.h
++++ b/third_party/blink/renderer/platform/bindings/to_blink_string.h
+@@ -21,20 +21,6 @@ PLATFORM_EXPORT StringType ToBlinkString(v8::Isolate* isolate,
+ 
+ PLATFORM_EXPORT String ToBlinkString(int value);
+ 
+-// This method is similar to ToBlinkString() except when the underlying
+-// v8::String cannot be externalized (often happens with short strings like "id"
+-// on 64-bit platforms where V8 uses pointer compression) the v8::String is
+-// copied into the given StringView::StackBackingStore which avoids creating an
+-// AtomicString unnecessarily.
+-//
+-// The returned StringView is guaranteed to be valid as long as `backing_store`
+-// and `v8_string` are alive.
+-PLATFORM_EXPORT StringView
+-ToBlinkStringView(v8::Isolate* isolate,
+-                  v8::Local<v8::String> v8_string,
+-                  StringView::StackBackingStore& backing_store,
+-                  ExternalMode external);
+-
+ }  // namespace blink
+ 
+ #endif  // THIRD_PARTY_BLINK_RENDERER_PLATFORM_BINDINGS_TO_BLINK_STRING_H_

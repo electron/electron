@@ -1,0 +1,226 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Guido Urdaneta <guidou@chromium.org>
+Date: Tue, 6 Oct 2026 05:27:51 -0700
+Subject: [M155] [EncodedTransform] Disconnect RTCEncoded*UnderlyingSource on
+ ContextDestroyed
+
+Original change's description:
+> [EncodedTransform] Disconnect RTCEncoded*UnderlyingSource on ContextDestroyed
+>
+> Previously, RTCEncodedVideoUnderlyingSource and
+> RTCEncodedAudioUnderlyingSource only ran `disconnect_callback_` (which
+> resets the stream transformer callback) when explicitly closed or
+> canceled. When an encoded stream was transferred to a worker and that
+> worker's execution context was later destroyed without canceling the
+> stream, the transformer retained its callback referencing the underlying
+> source in the destroyed context.
+>
+> Override `ContextDestroyed()` in both underlying source classes to
+> release any thread type lease and invoke `disconnect_callback_`. Also
+> reset `disconnect_callback_` and `realm_thread_type_lease_` in
+> `OnSourceTransferStartedOnTaskRunner()` so that destroying the original
+> context after a transfer does not disconnect the transferred source.
+>
+>
+> Bug: 561997899
+> Change-Id: Idc694901b64dbfbb286d1e5eeedf3d0d1404dd24
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8458644
+> Reviewed-by: Palak Agarwal <agpalak@chromium.org>
+> Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1705984}
+
+(cherry picked from commit def00f1d39bb8692e64c167d2b8901e00648b6f2)
+
+Bug: 567812903,561997899
+Change-Id: I17b3c54b27c607c413ced6f8e95fbf339f4dc02d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8523808
+Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+Reviewed-by: Palak Agarwal <agpalak@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8059@{#958}
+Cr-Branched-From: 199ac2cd7ab289e11c2236bd2cede848781213da-refs/heads/main@{#1697595}
+
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source.cc
+index 150a8736c8e9922cdcc5960d320500fb4755e736..27ac510331f7745a0b2dba30050267beaaa74a89 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source.cc
+@@ -83,6 +83,15 @@ ScriptPromise<IDLUndefined> RTCEncodedAudioUnderlyingSource::Cancel(
+   return ToResolvedUndefinedPromise(script_state);
+ }
+ 
++void RTCEncodedAudioUnderlyingSource::ContextDestroyed() {
++  DCHECK(task_runner_->BelongsToCurrentThread());
++  realm_thread_type_lease_ = std::nullopt;
++  if (disconnect_callback_) {
++    std::move(disconnect_callback_).Run();
++  }
++  UnderlyingSourceBase::ContextDestroyed();
++}
++
+ void RTCEncodedAudioUnderlyingSource::Trace(Visitor* visitor) const {
+   visitor->Trace(script_state_);
+   visitor->Trace(override_controller_);
+@@ -146,6 +155,8 @@ void RTCEncodedAudioUnderlyingSource::Close() {
+ 
+ void RTCEncodedAudioUnderlyingSource::OnSourceTransferStartedOnTaskRunner() {
+   DCHECK(task_runner_->BelongsToCurrentThread());
++  realm_thread_type_lease_ = std::nullopt;
++  disconnect_callback_.Reset();
+   // This can potentially be called before the stream is constructed and so
+   // Controller() is still unset.
+   if (GetController()) {
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source.h b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source.h
+index fd39d1e33cb67f6ed1e07ba63935d6f4f700ca86..50ce25fa7eea916f2eff8ff599efa002765f831c 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source.h
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source.h
+@@ -42,6 +42,7 @@ class MODULES_EXPORT RTCEncodedAudioUnderlyingSource
+   ScriptPromise<IDLUndefined> Cancel(ScriptState*,
+                                      ScriptValue reason,
+                                      ExceptionState&) override;
++  void ContextDestroyed() override;
+ 
+   void OnFrameFromSource(
+       std::unique_ptr<webrtc::TransformableAudioFrameInterface>);
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source_test.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source_test.cc
+index e0102c5a388b1da1b79b515c7c90ec8cad999c77..85949178fa53fbfa9b318dbbdf84d6c5529aba2f 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source_test.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source_test.cc
+@@ -19,6 +19,8 @@
+ #include "third_party/blink/renderer/core/streams/readable_stream_default_controller_with_script_scope.h"
+ #include "third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_frame.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
++#include "third_party/blink/renderer/platform/heap/garbage_collected.h"
++#include "third_party/blink/renderer/platform/heap/persistent.h"
+ #include "third_party/blink/renderer/platform/testing/task_environment.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
+ #include "third_party/webrtc/api/frame_transformer_interface.h"
+@@ -158,4 +160,38 @@ TEST_F(RTCEncodedAudioUnderlyingSourceTest,
+   EXPECT_FALSE(source->GetRealmThreadTypeLeasedForTesting().has_value());
+ }
+ 
++TEST_F(RTCEncodedAudioUnderlyingSourceTest,
++       ContextDestroyedCallsDisconnectCallback) {
++  base::test::ScopedFeatureList feature_list;
++  feature_list.InitAndEnableFeature(features::kWebRtcUseMediaThreadTypes);
++  Persistent<RTCEncodedAudioUnderlyingSource> source;
++  {
++    V8TestingScope v8_scope;
++    ScriptState* script_state = v8_scope.GetScriptState();
++    source = CreateSource(script_state);
++    source->SetRealmIsBoostableContextForTesting(true);
++    ReadableStream::CreateWithCountQueueingStrategy(script_state, source, 0);
++
++    source->OnFrameFromSource(
++        std::make_unique<NiceMock<webrtc::MockTransformableAudioFrame>>());
++    ASSERT_EQ(source->GetRealmThreadTypeLeasedForTesting(),
++              base::ThreadType::kAudioProcessing);
++
++    EXPECT_CALL(disconnect_callback_, Run());
++  }
++  EXPECT_FALSE(source->GetRealmThreadTypeLeasedForTesting().has_value());
++}
++
++TEST_F(RTCEncodedAudioUnderlyingSourceTest,
++       TransferResetsDisconnectCallbackBeforeContextDestroyed) {
++  EXPECT_CALL(disconnect_callback_, Run()).Times(0);
++  V8TestingScope v8_scope;
++  ScriptState* script_state = v8_scope.GetScriptState();
++  auto* source = CreateSource(script_state);
++  ReadableStream::CreateWithCountQueueingStrategy(script_state, source, 0);
++
++  source->OnSourceTransferStarted();
++  task_environment_.RunUntilIdle();
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source.cc
+index e3e707455b4e1a1a9f219493fbe2720cac479119..704013dc459e93296ee0f0d8f7329d7a7a399301 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source.cc
+@@ -75,6 +75,15 @@ ScriptPromise<IDLUndefined> RTCEncodedVideoUnderlyingSource::Cancel(
+   return ToResolvedUndefinedPromise(script_state);
+ }
+ 
++void RTCEncodedVideoUnderlyingSource::ContextDestroyed() {
++  DCHECK(task_runner_->BelongsToCurrentThread());
++  realm_thread_type_lease_ = std::nullopt;
++  if (disconnect_callback_) {
++    std::move(disconnect_callback_).Run();
++  }
++  UnderlyingSourceBase::ContextDestroyed();
++}
++
+ void RTCEncodedVideoUnderlyingSource::Trace(Visitor* visitor) const {
+   visitor->Trace(script_state_);
+   visitor->Trace(controller_override_);
+@@ -146,6 +155,8 @@ void RTCEncodedVideoUnderlyingSource::Close() {
+ 
+ void RTCEncodedVideoUnderlyingSource::OnSourceTransferStartedOnTaskRunner() {
+   DCHECK(task_runner_->BelongsToCurrentThread());
++  realm_thread_type_lease_ = std::nullopt;
++  disconnect_callback_.Reset();
+   // This can potentially be called before the stream is constructed and so
+   // Controller() is still unset.
+   if (GetController()) {
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source.h b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source.h
+index fcbe7ab38e69a771acb5fad1e5c37f6fe96ccb52..cad5185d219359784e1906f5e372dbda81a23100 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source.h
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source.h
+@@ -42,6 +42,7 @@ class MODULES_EXPORT RTCEncodedVideoUnderlyingSource
+   ScriptPromise<IDLUndefined> Cancel(ScriptState*,
+                                      ScriptValue reason,
+                                      ExceptionState&) override;
++  void ContextDestroyed() override;
+ 
+   void OnFrameFromSource(
+       std::unique_ptr<webrtc::TransformableVideoFrameInterface>);
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source_test.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source_test.cc
+index a5a7c6b06d8a8c4915a602ac3c468d708df2d3a3..390833349ac3c1aa006bb33ec0658bdaef188399 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source_test.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source_test.cc
+@@ -17,6 +17,8 @@
+ #include "third_party/blink/renderer/core/streams/readable_stream.h"
+ #include "third_party/blink/renderer/core/streams/readable_stream_default_controller_with_script_scope.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
++#include "third_party/blink/renderer/platform/heap/garbage_collected.h"
++#include "third_party/blink/renderer/platform/heap/persistent.h"
+ #include "third_party/blink/renderer/platform/testing/task_environment.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
+ #include "third_party/blink/renderer/platform/wtf/functional.h"
+@@ -149,4 +151,37 @@ TEST_F(RTCEncodedVideoUnderlyingSourceTest,
+   EXPECT_FALSE(source->GetRealmThreadTypeLeasedForTesting().has_value());
+ }
+ 
++TEST_F(RTCEncodedVideoUnderlyingSourceTest,
++       ContextDestroyedCallsDisconnectCallback) {
++  base::test::ScopedFeatureList feature_list;
++  feature_list.InitAndEnableFeature(features::kWebRtcUseMediaThreadTypes);
++  Persistent<RTCEncodedVideoUnderlyingSource> source;
++  {
++    V8TestingScope v8_scope;
++    ScriptState* script_state = v8_scope.GetScriptState();
++    source = CreateSource(script_state);
++    source->SetRealmIsBoostableContextForTesting(true);
++    ReadableStream::CreateWithCountQueueingStrategy(script_state, source, 0);
++
++    source->OnFrameFromSource(std::make_unique<MockTransformableVideoFrame>());
++    ASSERT_EQ(source->GetRealmThreadTypeLeasedForTesting(),
++              base::ThreadType::kPresentation);
++
++    EXPECT_CALL(disconnect_callback_, Run());
++  }
++  EXPECT_FALSE(source->GetRealmThreadTypeLeasedForTesting().has_value());
++}
++
++TEST_F(RTCEncodedVideoUnderlyingSourceTest,
++       TransferResetsDisconnectCallbackBeforeContextDestroyed) {
++  EXPECT_CALL(disconnect_callback_, Run()).Times(0);
++  V8TestingScope v8_scope;
++  ScriptState* script_state = v8_scope.GetScriptState();
++  auto* source = CreateSource(script_state);
++  ReadableStream::CreateWithCountQueueingStrategy(script_state, source, 0);
++
++  source->OnSourceTransferStarted();
++  task_environment_.RunUntilIdle();
++}
++
+ }  // namespace blink

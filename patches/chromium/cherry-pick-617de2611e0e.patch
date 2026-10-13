@@ -1,0 +1,156 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joey Arhar <jarhar@chromium.org>
+Date: Fri, 9 Oct 2026 20:16:35 -0700
+Subject: [M155] Make DataListIndicatorElement not focusable
+
+Original change's description:
+> Make DataListIndicatorElement not focusable
+>
+> DataListIndicatorElement (the UA shadow DOM element backing
+> ::-webkit-calendar-picker-indicator on <input list>) inherited from
+> HTMLDivElement without overriding SupportsFocus(), unlike other inner
+> text control elements. When styled with overflow: scroll, it became a
+> focusable scroll container and could be focused (e.g. by dialog
+> focusing steps). Removing it when the <datalist> lost its options
+> would then synchronously fire a blur event during
+> IdTargetObserverRegistry::NotifyObservers().
+>
+> Override DataListIndicatorElement::SupportsFocus() to return
+> FocusableState::kNotFocusable so the internal indicator element cannot
+> be focused.
+>
+> Fixed: 568831102
+> Change-Id: If16a84eb6fde93c80fde9a02f21d57737d77f4aa
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8523486
+> Reviewed-by: Joey Arhar <jarhar@chromium.org>
+> Commit-Queue: Joey Arhar <jarhar@chromium.org>
+> Reviewed-by: David Baron <dbaron@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1714671}
+
+(cherry picked from commit 00cf912ed1731b49867d5af45de57f79b89d6e9d)
+
+Bug: 572092425,568831102
+Change-Id: If16a84eb6fde93c80fde9a02f21d57737d77f4aa
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8550758
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8059@{#1106}
+Cr-Branched-From: 199ac2cd7ab289e11c2236bd2cede848781213da-refs/heads/main@{#1697595}
+
+diff --git a/third_party/blink/renderer/core/html/forms/html_data_list_element_test.cc b/third_party/blink/renderer/core/html/forms/html_data_list_element_test.cc
+index ff95e8077e333e010b5b54a0f5fce87fb03fa458..f138a9c70c7f440251ad44cf20fa5e2077c07815 100644
+--- a/third_party/blink/renderer/core/html/forms/html_data_list_element_test.cc
++++ b/third_party/blink/renderer/core/html/forms/html_data_list_element_test.cc
+@@ -6,11 +6,18 @@
+ 
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/blink/renderer/core/dom/document.h"
++#include "third_party/blink/renderer/core/dom/shadow_root.h"
++#include "third_party/blink/renderer/core/dom/text.h"
++#include "third_party/blink/renderer/core/html/forms/html_input_element.h"
+ #include "third_party/blink/renderer/core/html/html_document.h"
++#include "third_party/blink/renderer/core/html/shadow/shadow_element_names.h"
++#include "third_party/blink/renderer/core/page/focus_controller.h"
++#include "third_party/blink/renderer/core/page/page.h"
+ #include "third_party/blink/renderer/core/testing/null_execution_context.h"
+ #include "third_party/blink/renderer/core/testing/sim/sim_request.h"
+ #include "third_party/blink/renderer/core/testing/sim/sim_test.h"
+ #include "third_party/blink/renderer/platform/heap/thread_state.h"
++#include "third_party/blink/renderer/platform/testing/runtime_enabled_features_test_helpers.h"
+ #include "third_party/blink/renderer/platform/testing/task_environment.h"
+ 
+ namespace blink {
+@@ -28,6 +35,77 @@ TEST_F(HTMLDataListElementTest, FinishedParsingChildren) {
+   EXPECT_TRUE(data_list->IsFinishedParsingChildren());
+ }
+ 
++TEST_F(HTMLDataListElementTest,
++       DataListIndicatorNotFocusableAndReplaceChildrenDoesNotCrash) {
++  ScopedDialogNewFocusBehaviorForTest dialog_focus(false);
++  ScopedOmitBlurEventOnElementRemovalForTest omit_blur(false);
++
++  GetDocument().GetPage()->GetFocusController().SetActive(true);
++  GetDocument().GetPage()->GetFocusController().SetFocused(true);
++
++  SimRequest main_resource("https://example.com/", "text/html");
++  LoadURL("https://example.com/");
++  main_resource.Complete(R"HTML(
++    <!DOCTYPE html>
++    <style>
++      input { visibility: hidden }
++      input::-webkit-calendar-picker-indicator {
++        visibility: visible;
++        overflow: scroll;
++        width: 20px;
++        height: 6px;
++        font-size: 40px;
++        line-height: 60px;
++      }
++    </style>
++    <datalist id=options><option value=a></option></datalist>
++    <datalist id=other><option value=b></option></datalist>
++    <dialog><input id=target list=options></dialog>
++    <script>
++      const dialog = document.querySelector('dialog');
++      const input = document.querySelector('input');
++      const list = document.querySelector('datalist');
++
++      list.removeAttribute('id');
++      for (let i = 0; i < 7; i++) list.setAttribute('a' + i, '');
++      list.setAttribute('id', 'options');
++
++      const word = BigInt('0x0000123456789ab0');
++      let tail = '';
++      for (let i = 0n; i < 8n; i++) {
++        tail += String.fromCharCode(Number((word >> (8n * i)) & 255n));
++      }
++      const strings = [], nodes = [];
++      for (let i = 0; i < 256; i++) {
++        strings.push((String(i).padStart(8, '0') + 'x'.repeat(100) + tail).split('').join(''));
++      }
++
++      dialog.show();
++      input.getBoundingClientRect();
++      dialog.close();
++      dialog.show();
++
++      input.addEventListener('blur', () => {
++        input.setAttribute('list', 'other');
++        list.setAttribute('b', '');
++        for (const s of strings) nodes.push(document.createTextNode(s));
++      }, {capture: true, once: true});
++    </script>
++  )HTML");
++
++  auto* input = To<HTMLInputElement>(
++      GetDocument().getElementById(AtomicString("target")));
++  ASSERT_TRUE(input);
++  Element* picker = input->UserAgentShadowRoot()->getElementById(
++      shadow_element_names::kIdPickerIndicator);
++  ASSERT_TRUE(picker);
++  EXPECT_FALSE(picker->IsFocusable());
++
++  auto* list = GetDocument().getElementById(AtomicString("options"));
++  ASSERT_TRUE(list);
++  list->RemoveChildren();
++}
++
+ TEST(HTMLDataListElementTest2, DecrementedAfterGc) {
+   test::TaskEnvironment task_environment;
+   ScopedNullExecutionContext execution_context;
+diff --git a/third_party/blink/renderer/core/html/forms/text_field_input_type.cc b/third_party/blink/renderer/core/html/forms/text_field_input_type.cc
+index 4ecfbdbc6b9956534a049e945a625701cd3ff493..6141319bd4464a14bb308b5da081b6f72809642d 100644
+--- a/third_party/blink/renderer/core/html/forms/text_field_input_type.cc
++++ b/third_party/blink/renderer/core/html/forms/text_field_input_type.cc
+@@ -84,6 +84,10 @@ class DataListIndicatorElement final : public HTMLDivElement {
+            GetDocument().IsActive();
+   }
+ 
++  FocusableState SupportsFocus(UpdateBehavior) const override {
++    return FocusableState::kNotFocusable;
++  }
++
+  public:
+   explicit DataListIndicatorElement(Document& document)
+       : HTMLDivElement(document) {}

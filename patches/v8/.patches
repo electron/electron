@@ -62,3 +62,6 @@ m150_modules_fix_partial_scc_linking_failure.patch
 cherry-pick-a1b0c976e208.patch
 cherry-pick-ff59612bfbd2.patch
 cherry-pick-5995d2853f51.patch
+cherry-pick-505b99056972.patch
+cherry-pick-10f32b3b06a9.patch
+cherry-pick-dc3104ddb997.patch

@@ -1,0 +1,304 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kenichi Ishibashi <bashi@chromium.org>
+Date: Thu, 8 Oct 2026 20:17:14 -0700
+Subject: [M155] net: Defer proxied StreamSocket destruction in
+ TransportClientSocketPool
+
+Original change's description:
+> net: Defer proxied StreamSocket destruction in TransportClientSocketPool
+>
+> Destroying a tunneled StreamSocket (e.g., a SpdyProxyClientSocket) can
+> synchronously drain the underlying SpdySession and fail pending
+> ConnectJobs in the pool. This reentrantly invokes
+> TransportClientSocketPool::OnConnectJobComplete(), which can modify or
+> remove Group entries in `group_map_` while the pool is mid-operation.
+>
+> To avoid reentrancy when closing sockets in a proxied pool, add
+> `QueueDestroySocket()`, which queues closed `StreamSocket`s into
+> `sockets_queued_for_destruction_` and posts a task to destroy them
+> asynchronously when `!GetProxyChain().is_direct()`. Direct connections
+> continue to be destroyed synchronously.
+>
+> Bug: 568826881
+> Change-Id: Ied5765d08ea45050d35f4c746aa84a3c5f66e1ca
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8507984
+> Commit-Queue: Kenichi Ishibashi <bashi@chromium.org>
+> Reviewed-by: mmenke <mmenke@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1713084}
+
+(cherry picked from commit 7dddd41a3f94cdd49beb6c8a53977d04c91368d2)
+
+Bug: 571382929,568826881
+Change-Id: Ied5765d08ea45050d35f4c746aa84a3c5f66e1ca
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8544890
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Kenichi Ishibashi <bashi@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8059@{#1060}
+Cr-Branched-From: 199ac2cd7ab289e11c2236bd2cede848781213da-refs/heads/main@{#1697595}
+
+Electron adaptation notes (42-x-y):
+The upstream change also rewrote 'bool closed = CloseOneIdleSocketExceptInGroup(group); if (!closed)'
+into a single if() in RequestSocket(); Chromium 148 still has the two-statement form and the
+rewrite is cosmetic, so that hunk was dropped. All QueueDestroySocket()/DestroyQueuedSockets()
+hunks applied as upstream.
+
+diff --git a/net/socket/transport_client_socket_pool.cc b/net/socket/transport_client_socket_pool.cc
+index 2d2c885b7a46895d9f955a2b6037231f37337fd5..7817263956924c3a4172d4d061cb6fafef9f517c 100644
+--- a/net/socket/transport_client_socket_pool.cc
++++ b/net/socket/transport_client_socket_pool.cc
+@@ -535,6 +535,7 @@ bool TransportClientSocketPool::AssignIdleSocketToRequest(
+       it->socket->NetLog().AddEventWithStringParams(
+           NetLogEventType::SOCKET_POOL_CLOSING_SOCKET, "reason",
+           net_log_reason_utf8);
++      QueueDestroySocket(std::move(it->socket));
+       DecrementIdleCount();
+       it = idle_sockets->erase(it);
+       continue;
+@@ -665,6 +666,7 @@ void TransportClientSocketPool::CancelRequest(const GroupId& group_id,
+ void TransportClientSocketPool::CloseIdleSockets(
+     const char* net_log_reason_utf8) {
+   CleanupIdleSockets(true, net_log_reason_utf8);
++  DestroyQueuedSockets();
+   DCHECK_EQ(0u, idle_socket_count_);
+ }
+ 
+@@ -989,6 +991,7 @@ void TransportClientSocketPool::CleanupIdleSocketsInGroup(
+       idle_socket_it->socket->NetLog().AddEventWithStringParams(
+           NetLogEventType::SOCKET_POOL_CLOSING_SOCKET, "reason",
+           reason_for_closing_socket);
++      QueueDestroySocket(std::move(idle_socket_it->socket));
+       idle_socket_it = group->mutable_idle_sockets()->erase(idle_socket_it);
+       DecrementIdleCount();
+       UpdateStateAfterRelease();
+@@ -1069,7 +1072,7 @@ void TransportClientSocketPool::ReleaseSocket(
+         not_reusable_reason);
+     if (group->IsEmpty())
+       RemoveGroup(i);
+-    socket.reset();
++    QueueDestroySocket(std::move(socket));
+   }
+ 
+   CheckForStalledSocketGroups();
+@@ -1308,6 +1311,7 @@ bool TransportClientSocketPool::CloseOneIdleSocketExceptInGroup(
+     std::list<IdleSocket>* idle_sockets = group->mutable_idle_sockets();
+ 
+     if (!idle_sockets->empty()) {
++      QueueDestroySocket(std::move(idle_sockets->front().socket));
+       idle_sockets->pop_front();
+       DecrementIdleCount();
+       if (group->IsEmpty())
+@@ -1495,6 +1499,27 @@ TransportClientSocketPool::RefreshGroup(GroupMap::iterator it,
+   return ++it;
+ }
+ 
++void TransportClientSocketPool::QueueDestroySocket(
++    std::unique_ptr<StreamSocket> socket) {
++  if (GetProxyChain().is_direct()) {
++    return;
++  }
++  if (sockets_queued_for_destruction_.empty()) {
++    base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
++        FROM_HERE,
++        base::BindOnce(&TransportClientSocketPool::DestroyQueuedSockets,
++                       weak_factory_.GetWeakPtr()));
++  }
++  sockets_queued_for_destruction_.emplace_back(std::move(socket));
++}
++
++void TransportClientSocketPool::DestroyQueuedSockets() {
++  // Move into a local vector before destroying elements in case a socket's
++  // destructor reentrantly calls QueueDestroySocket().
++  std::vector<std::unique_ptr<StreamSocket>> sockets =
++      std::move(sockets_queued_for_destruction_);
++}
++
+ void TransportClientSocketPool::OnPreconnectConnectJobComplete(
+     PreconnectCompletionCallback callback,
+     const GroupId& group_id,
+diff --git a/net/socket/transport_client_socket_pool.h b/net/socket/transport_client_socket_pool.h
+index eab9a891fd0fe7f1b2014cae0846c120d0ff81c1..362b17cb1ac9ea4803784ade41e8445f60a4c453 100644
+--- a/net/socket/transport_client_socket_pool.h
++++ b/net/socket/transport_client_socket_pool.h
+@@ -766,6 +766,13 @@ class NET_EXPORT_PRIVATE TransportClientSocketPool
+                                   const base::TimeTicks& now,
+                                   const char* net_log_reason_utf8);
+ 
++  // Destroys |socket| immediately for direct connections, or queues it for
++  // asynchronous destruction when using a proxy, where destroying a tunneled
++  // socket can synchronously drain a shared session and reentrantly complete
++  // ConnectJobs in |this|.
++  void QueueDestroySocket(std::unique_ptr<StreamSocket> socket);
++  void DestroyQueuedSockets();
++
+   // Called when a preconnect connect job completes.
+   void OnPreconnectConnectJobComplete(
+       PreconnectCompletionCallback callback,
+@@ -809,6 +816,8 @@ class NET_EXPORT_PRIVATE TransportClientSocketPool
+ 
+   const raw_ptr<SSLClientContext> ssl_client_context_;
+ 
++  std::vector<std::unique_ptr<StreamSocket>> sockets_queued_for_destruction_;
++
+ #if DCHECK_IS_ON()
+   // Reentrancy guard for RequestSocketInternal().
+   bool request_in_process_ = false;
+diff --git a/net/socket/transport_client_socket_pool_unittest.cc b/net/socket/transport_client_socket_pool_unittest.cc
+index c181202eed044ff6c8371db0e174c39115c9c2ec..d96b21a21493443a4a9a070b75ef4ff7f78271ab 100644
+--- a/net/socket/transport_client_socket_pool_unittest.cc
++++ b/net/socket/transport_client_socket_pool_unittest.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "net/socket/transport_client_socket_pool.h"
+ 
++#include <limits>
+ #include <memory>
+ #include <optional>
+ #include <utility>
+@@ -2426,6 +2427,146 @@ TEST_P(TransportClientSocketPoolTest,
+       result.Get<std::unique_ptr<ClientSocketHandle>>()->is_initialized());
+ }
+ 
++// Regression test for crbug.com/568826881: Destroying an unusable idle socket
++// during CleanupIdleSockets() can synchronously drain the underlying
++// SpdySession (e.g., on send-window overflow when discarding a queued DATA
++// frame), failing a pending ConnectJob in the same group and erasing the Group
++// reentrantly while CleanupIdleSockets() still holds a pointer/iterator to it.
++TEST_P(TransportClientSocketPoolTest,
++       CleanupIdleSocketsReentrantGroupDestruction) {
++  const url::SchemeHostPort kEndpoint(url::kHttpsScheme, "host.test", 443);
++
++  session_deps_.host_resolver->set_synchronous_mode(true);
++
++  TransportClientSocketPool pool(
++      kMaxSockets, kMaxSocketsPerGroup, kUnusedIdleSocketTimeout,
++      ProxyUriToProxyChain("https://proxy.test",
++                           /*default_scheme=*/ProxyServer::SCHEME_HTTP),
++      /*is_for_websockets=*/false, tagging_common_connect_job_params_.get());
++
++  SpdyTestUtil spdy_util;
++  spdy::SpdySerializedFrame connect(spdy_util.ConstructSpdyConnect(
++      base::span<const std::string_view>(), 1,
++      HttpProxyConnectJob::kH2QuicTunnelPriority,
++      HostPortPair::FromSchemeHostPort(kEndpoint)));
++
++  spdy::SettingsMap settings_map;
++  settings_map[spdy::SETTINGS_MAX_CONCURRENT_STREAMS] = 1;
++  spdy::SpdySerializedFrame settings(
++      spdy_util.ConstructSpdySettings(settings_map));
++  spdy::SpdySerializedFrame settings_ack(spdy_util.ConstructSpdySettingsAck());
++  spdy::SpdySerializedFrame connect_reply(
++      spdy_util.ConstructSpdyGetReply(base::span<const std::string_view>(), 1));
++
++  // Initial session send window is 65535. After queueing a 10-byte DATA frame
++  // on stream 1, the session send window is 65525. Raising it by
++  // (INT32_MAX - 65525) sets it to INT32_MAX, so discarding the 10-byte DATA
++  // frame on stream cancellation overflows INT32_MAX and synchronously drains
++  // the SpdySession.
++  constexpr std::string_view kTunnelWriteData = "0123456789";
++  spdy::SpdySerializedFrame window_update(spdy_util.ConstructSpdyWindowUpdate(
++      0, std::numeric_limits<int32_t>::max() - 65535 +
++             static_cast<uint32_t>(kTunnelWriteData.size())));
++  spdy::SpdySerializedFrame unexpected_data(
++      spdy_util.ConstructSpdyDataFrame(1, "x", /*fin=*/false));
++
++  MockWrite writes[] = {
++      CreateMockWrite(connect, 0, ASYNC),
++      // Keep the SETTINGS ACK in flight (`SpdySession::in_flight_write_`) by
++      // giving it sequence number 7 (after the pause at sequence number 6), so
++      // that subsequent stream DATA frames remain in
++      // `SpdySession::write_queue_`.
++      CreateMockWrite(settings_ack, 7, ASYNC),
++  };
++
++  MockRead reads[] = {
++      CreateMockRead(settings, 1, ASYNC),
++      CreateMockRead(connect_reply, 2, ASYNC),
++      MockRead(ASYNC, ERR_IO_PENDING, 3),
++      CreateMockRead(window_update, 4, ASYNC),
++      CreateMockRead(unexpected_data, 5, ASYNC),
++      MockRead(ASYNC, ERR_IO_PENDING, 6),
++  };
++
++  SequencedSocketData socket_data(MockConnect(SYNCHRONOUS, OK), reads, writes);
++  tagging_client_socket_factory_.AddSocketDataProvider(&socket_data);
++  // SSL data for the connection to the HTTPS proxy.
++  SSLSocketDataProvider ssl_proxy_data(SYNCHRONOUS, OK);
++  ssl_proxy_data.next_proto = NextProto::kProtoHTTP2;
++  tagging_client_socket_factory_.AddSSLSocketDataProvider(&ssl_proxy_data);
++  // SSL data for the inner tunnel handshake to `kEndpoint`.
++  SSLSocketDataProvider ssl_tunnel_data(SYNCHRONOUS, OK);
++  tagging_client_socket_factory_.AddSSLSocketDataProvider(&ssl_tunnel_data);
++
++  scoped_refptr<ClientSocketPool::SocketParams> socket_params =
++      base::MakeRefCounted<ClientSocketPool::SocketParams>(
++          /*allowed_bad_certs=*/std::vector<SSLConfig::CertAndStatus>());
++
++  ClientSocketPool::GroupId group_id(
++      kEndpoint, PrivacyMode::PRIVACY_MODE_DISABLED, NetworkAnonymizationKey(),
++      SecureDnsPolicy::kAllow, /*disable_cert_network_fetches=*/false,
++      handles::kInvalidNetworkHandle);
++
++  // 1. Establish the tunnel socket (stream 1).
++  TestCompletionCallback callback1;
++  ClientSocketHandle handle1;
++  int rv1 = handle1.Init(
++      group_id, socket_params, TRAFFIC_ANNOTATION_FOR_TESTS, HIGHEST,
++      SocketTag(), ClientSocketPool::RespectLimits::ENABLED,
++      callback1.callback(), ClientSocketPool::ProxyAuthCallback(), &pool,
++      NetLogWithSource());
++  ASSERT_THAT(callback1.GetResult(rv1), IsOk());
++  ASSERT_TRUE(handle1.socket());
++
++  // 2. Queue a DATA frame on stream 1. Because `in_flight_write_` is wedged on
++  // the SETTINGS ACK (seq 4), this frame stays in `SpdySession::write_queue_`.
++  auto write_buf =
++      base::MakeRefCounted<StringIOBuffer>(std::string(kTunnelWriteData));
++  TestCompletionCallback write_callback;
++  int write_rv = handle1.socket()->Write(write_buf.get(), write_buf->size(),
++                                         write_callback.callback(),
++                                         TRAFFIC_ANNOTATION_FOR_TESTS);
++  EXPECT_THAT(write_rv, IsError(ERR_IO_PENDING));
++
++  // 3. Start a second request in the same group while `handle1` is active. Its
++  // ConnectJob queues a `SpdyStreamRequest` behind stream 1 due to
++  // `SETTINGS_MAX_CONCURRENT_STREAMS = 1`. Cancel the request without
++  // canceling the ConnectJob so the group has an unassigned ConnectJob.
++  TestCompletionCallback callback2;
++  ClientSocketHandle handle2;
++  int rv2 = handle2.Init(
++      group_id, socket_params, TRAFFIC_ANNOTATION_FOR_TESTS, LOW, SocketTag(),
++      ClientSocketPool::RespectLimits::ENABLED, callback2.callback(),
++      ClientSocketPool::ProxyAuthCallback(), &pool, NetLogWithSource());
++  ASSERT_THAT(rv2, IsError(ERR_IO_PENDING));
++  handle2.Reset();
++
++  // 4. Return `handle1`'s socket to the pool as an idle socket.
++  handle1.Reset();
++  EXPECT_EQ(1u, pool.IdleSocketCount());
++  EXPECT_EQ(1u, pool.NumConnectJobsInGroupForTesting(group_id));
++
++  // 5. Deliver the session WINDOW_UPDATE (arming the send window to INT32_MAX)
++  // and 1 byte of unexpected tunnel data (making the idle socket unusable).
++  socket_data.Resume();
++  socket_data.RunUntilPaused();
++
++  // 6. Requesting a socket runs `CleanupIdleSockets(false)`. Without deferred
++  // socket destruction, destroying the unusable idle socket overflows the
++  // session send window and drains the SpdySession synchronously, failing the
++  // pending ConnectJob and erasing the Group while CleanupIdleSockets() is
++  // still on the stack.
++  TestCompletionCallback callback3;
++  ClientSocketHandle handle3;
++  int rv3 = handle3.Init(
++      group_id, socket_params, TRAFFIC_ANNOTATION_FOR_TESTS, LOW, SocketTag(),
++      ClientSocketPool::RespectLimits::ENABLED, callback3.callback(),
++      ClientSocketPool::ProxyAuthCallback(), &pool, NetLogWithSource());
++  EXPECT_THAT(callback3.GetResult(rv3), IsError(ERR_HTTP2_PROTOCOL_ERROR));
++  EXPECT_EQ(0u, pool.IdleSocketCount());
++  EXPECT_FALSE(pool.HasGroupForTesting(group_id));
++}
++
+ // Test that SocketTag passed into TransportClientSocketPool is applied to
+ // returned sockets.
+ #if BUILDFLAG(IS_ANDROID)

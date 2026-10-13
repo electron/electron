@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lei Zhang <thestig@chromium.org>
+Date: Fri, 9 Oct 2026 16:52:23 -0700
+Subject: [M155] [PDF] Simplify PdfViewWebPluginClient::TextSelectionChanged()
+
+Original change's description:
+> [PDF] Simplify PdfViewWebPluginClient::TextSelectionChanged()
+>
+> This reverts crrev.com/906945, which added a focus frame call. The
+> motivation in that CL is to make PDFExtensionJSTest.BasicPlugin pass,
+> but the test still passes now without it. In the meanwhile, the focus
+> event is being abused, so just get rid of it.
+>
+> Bug: 40192026, 570050928
+> Change-Id: Iadfc44ae381b42e9e29f2c83f2291bff3f9704c9
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8524410
+> Reviewed-by: April Kallmeyer <ask@chromium.org>
+> Commit-Queue: Lei Zhang <thestig@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1712741}
+
+(cherry picked from commit e0c230bb186080c81c9e6b36a08deea184d15c59)
+
+Bug: 571382793,40192026,570050928
+Change-Id: Iadfc44ae381b42e9e29f2c83f2291bff3f9704c9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8544939
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8059@{#1098}
+Cr-Branched-From: 199ac2cd7ab289e11c2236bd2cede848781213da-refs/heads/main@{#1697595}
+
+diff --git a/components/pdf/renderer/pdf_view_web_plugin_client.cc b/components/pdf/renderer/pdf_view_web_plugin_client.cc
+index e5a6e7f2307103c11a5a82a111d3b82c635f460a..2f0f1dfa57110514f6aa665668be0bc2ada70c83 100644
+--- a/components/pdf/renderer/pdf_view_web_plugin_client.cc
++++ b/components/pdf/renderer/pdf_view_web_plugin_client.cc
+@@ -31,7 +31,6 @@
+ #include "third_party/blink/public/web/web_local_frame_client.h"
+ #include "third_party/blink/public/web/web_plugin_container.h"
+ #include "third_party/blink/public/web/web_serialized_script_value.h"
+-#include "third_party/blink/public/web/web_view.h"
+ #include "third_party/blink/public/web/web_widget.h"
+ #include "ui/accessibility/ax_features.mojom-features.h"
+ #include "ui/display/screen_info.h"
+@@ -188,14 +187,7 @@ void PdfViewWebPluginClient::TextSelectionChanged(
+     const blink::WebString& selection_text,
+     uint32_t offset,
+     const gfx::Range& range) {
+-  // Focus the plugin's containing frame before changing the text selection.
+-  // TODO(crbug.com/40192026): Would it make more sense not to change the text
+-  // selection at all in this case? Maybe we only have this problem because we
+-  // support a "selectAll" message.
+-  blink::WebLocalFrame* frame = GetFrame();
+-  frame->View()->SetFocusedFrame(frame);
+-
+-  frame->TextSelectionChanged(selection_text, offset, range);
++  GetFrame()->TextSelectionChanged(selection_text, offset, range);
+ }
+ 
+ std::unique_ptr<blink::WebAssociatedURLLoader>

@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ted Meyer <tmathmeyer@chromium.org>
+Date: Sun, 11 Oct 2026 08:55:26 -0700
+Subject: [M155] [MultiBuffer] always post StopLoader
+
+Original change's description:
+> [MultiBuffer] always post StopLoader
+>
+> Stop can be called re-entrantly, from places which make use of weak
+> references to `reader_`, so we need to post the destruction back onto
+> this same task queue.
+>
+> Fixed: 565742182
+> Change-Id: Ibaac92b7e77718379e5679fba3d37428d93f03b3
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8465025
+> Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+> Auto-Submit: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+> Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1706435}
+
+(cherry picked from commit 8f54d92feff3932ab984565b6e71a356d0590797)
+
+Bug: 567399324,565742182
+Change-Id: Ibaac92b7e77718379e5679fba3d37428d93f03b3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8547238
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8059@{#1167}
+Cr-Branched-From: 199ac2cd7ab289e11c2236bd2cede848781213da-refs/heads/main@{#1697595}
+
+diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
+index 3f337528faa9ff9681096b037fc0d20e4cc6fce9..240bca29b25f140ae8d40f027b57a39a0049d401 100644
+--- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
++++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
+@@ -353,13 +353,6 @@ void MultiBufferDataSource::Stop() {
+   {
+     base::AutoLock auto_lock(lock_);
+     StopInternal_Locked();
+-
+-    // Cleanup resources immediately if we're already on the right thread.
+-    if (render_task_runner_->BelongsToCurrentThread()) {
+-      reader_.reset();
+-      url_data_.reset();
+-      return;
+-    }
+   }
+ 
+   PostCrossThreadTask(*render_task_runner_, FROM_HERE,

@@ -1,0 +1,117 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Thu, 8 Oct 2026 11:31:37 -0700
+Subject: [M155] Fix bugs when ResourceMultiBufferDataProvider::Start fails
+
+Original change's description:
+> Fix bugs when ResourceMultiBufferDataProvider::Start fails
+>
+> When MultiBuffer::AddReader calls ResourceMultiBuffer::CreateWriter,
+> ResourceMultiBufferDataProvider::Start is invoked synchronously. If
+> UrlIndex has already been destroyed, Start() previously called
+> url_data_->Fail() synchronously, which runs
+> MultiBufferDataSource::OnRedirected(nullptr) -> StopLoader() and
+> destroys the MultiBufferReader while MultiBuffer::AddReader and
+> MultiBufferReader::UpdateInternalState are still on the stack.
+>
+> Post UrlData::Fail asynchronously via task_runner_->PostTask, matching
+> the existing asynchronous Terminate() path in Start(). Also check
+> stop_signal_received_ with a scoped lock in
+> MultiBufferDataSource::SetBitrateTask to match the other posted
+> MultiBufferDataSource tasks.
+>
+> Fixed: 568037533
+> Change-Id: I47984f21cc74c54da8cae6ada583a7fac24ccb51
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8497446
+> Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+> Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1711814}
+
+(cherry picked from commit ccb98073b6207c8c4c5e685ee7a7ca95f8e55595)
+
+Bug: 571383602,568037533
+Change-Id: I47984f21cc74c54da8cae6ada583a7fac24ccb51
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8541071
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8059@{#1042}
+Cr-Branched-From: 199ac2cd7ab289e11c2236bd2cede848781213da-refs/heads/main@{#1697595}
+
+diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
+index 240bca29b25f140ae8d40f027b57a39a0049d401..4e6319ee61588ce91c5b40abbaf2dbbd353754f0 100644
+--- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
++++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
+@@ -593,6 +593,12 @@ void MultiBufferDataSource::StopLoader() {
+ 
+ void MultiBufferDataSource::SetBitrateTask(int bitrate) {
+   DCHECK(render_task_runner_->BelongsToCurrentThread());
++  {
++    base::AutoLock auto_lock(lock_);
++    if (stop_signal_received_) {
++      return;
++    }
++  }
+ 
+   bitrate_ = bitrate;
+   UpdateBufferSizes();
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+index 82641e28c4439548e916527348e63d87de6e6132..90a3ead11207f2070595cf19e70a425acc3720fd 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+@@ -131,7 +131,8 @@ void ResourceMultiBufferDataProvider::Start() {
+     active_loader_ = url_index->fetch_context()->CreateUrlLoader(options);
+     active_loader_->LoadAsynchronously(request, this);
+   } else {
+-    url_data_->Fail();
++    task_runner_->PostTask(FROM_HERE,
++                           blink::BindOnce(&UrlData::Fail, url_data_));
+   }
+ }
+ 
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+index 34882b2933b25a9d2d18f06d081c96715cc7a48f..41fb50190f45b14155a8b8141270267026c11cff 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+@@ -377,4 +377,41 @@ TEST_F(ResourceMultiBufferDataProviderTest,
+   loader->DidReceiveData(data_str);
+ }
+ 
++TEST_F(ResourceMultiBufferDataProviderTest, DestructedUrlIndexStartViaReader) {
++  url_index_ = std::make_unique<UrlIndex>(
++      &fetch_context_, task_environment_.GetMainThreadTaskRunner());
++  url_ = KURL(kHttpUrl);
++  url_data_ =
++      url_index_->GetByUrl(url_, UrlData::CORS_UNSPECIFIED, UrlData::kNormal);
++
++  std::unique_ptr<MultiBufferReader> reader;
++  url_data_->OnRedirect(blink::BindOnce(
++      [](std::unique_ptr<MultiBufferReader>* reader_ptr,
++         const scoped_refptr<UrlData>& destination) {
++        EXPECT_FALSE(destination);
++        reader_ptr->reset();
++      },
++      Unretained(&reader)));
++
++  url_index_.reset();
++
++  // Creating a reader and calling SetPreload() invokes
++  // MultiBufferReader::UpdateInternalState() -> MultiBuffer::AddReader() ->
++  // ResourceMultiBuffer::CreateWriter() ->
++  // ResourceMultiBufferDataProvider::Start(). When `url_index_` is already
++  // destroyed, `Start()` must not synchronously run `url_data_->Fail()` and
++  // destroy `reader` while `AddReader()` and `UpdateInternalState()` are still
++  // on the stack.
++  reader = std::make_unique<MultiBufferReader>(
++      url_data_->multibuffer(), 0, 1024 * 1024,
++      /*is_client_audio_element=*/false, base::DoNothing(),
++      task_environment_.GetMainThreadTaskRunner());
++  reader->SetPinRange(0, 1024 * 1024);
++  reader->SetPreload(kDataSize, kDataSize);
++  ASSERT_TRUE(reader);
++
++  task_environment_.FastForwardUntilNoTasksRemain();
++  EXPECT_FALSE(reader);
++}
++
+ }  // namespace blink

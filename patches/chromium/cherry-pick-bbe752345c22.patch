@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Kosyakov <caseq@chromium.org>
+Date: Tue, 6 Oct 2026 14:10:10 -0700
+Subject: [M155] Retain WTF::String obtained from StringResource in
+ NativeValueTraitsStringAdapter
+
+Original change's description:
+> Retain WTF::String obtained from StringResource in NativeValueTraitsStringAdapter
+>
+> As a drive-by, do not force all strings returned as part of StringView
+> to be atomic, the user can do this at the time of use.
+>
+> Fixed: 496308073
+> Change-Id: I8f57d8e85f770d9458a8880f00ef18fa8b91c098
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8393538
+> Commit-Queue: Andrey Kosyakov <caseq@chromium.org>
+> Reviewed-by: Nate Chapin <japhet@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1698407}
+
+(cherry picked from commit e09fb9f12fa95df820995e00a29b517582f7598b)
+
+Bug: 562785300,496308073
+Change-Id: I8f57d8e85f770d9458a8880f00ef18fa8b91c098
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8465670
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Reviewed-by: Andrey Kosyakov <caseq@chromium.org>
+Reviewed-by: Nate Chapin <japhet@chromium.org>
+Commit-Queue: Nate Chapin <japhet@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8059@{#973}
+Cr-Branched-From: 199ac2cd7ab289e11c2236bd2cede848781213da-refs/heads/main@{#1697595}
+
+diff --git a/third_party/blink/renderer/bindings/core/v8/native_value_traits_impl.cc b/third_party/blink/renderer/bindings/core/v8/native_value_traits_impl.cc
+index 52ac5ca39aef098ae5cd79fa44eff468eaf39b2c..efdd48195ae9056dfc3a81a0412be71779251db2 100644
+--- a/third_party/blink/renderer/bindings/core/v8/native_value_traits_impl.cc
++++ b/third_party/blink/renderer/bindings/core/v8/native_value_traits_impl.cc
+@@ -28,7 +28,12 @@ StringView NativeValueTraitsStringAdapter::ToStringView() const& {
+   // to satisfy all RVO constraints.
+   if (StringResourceBase* string_resource =
+           StringResourceBase::GetExternalizedString(isolate_, v8_string_)) {
+-    return string_resource->GetAtomicString(isolate_).Impl();
++    // Note that we request (and keep) a non-atomic String, but the underlying
++    // string is likely already atomic as per externalization logic below.
++    // Transition from a WTF::String with an atomic impl to WTF::AtomicString
++    // is trivial and can be done on the blink impl side as required.
++    wtf_string_ = string_resource->GetWTFString();
++    return wtf_string_.Impl();
+   }
+ 
+   uint32_t length = v8_string_->Length();
+diff --git a/third_party/blink/renderer/bindings/core/v8/native_value_traits_impl.h b/third_party/blink/renderer/bindings/core/v8/native_value_traits_impl.h
+index 94cc75dd599f2ffee59240288ebfce1a49b09b4e..13b60f7740a9c86b80a985fac1fa0bb028fb8a53 100644
+--- a/third_party/blink/renderer/bindings/core/v8/native_value_traits_impl.h
++++ b/third_party/blink/renderer/bindings/core/v8/native_value_traits_impl.h
+@@ -254,13 +254,12 @@ class CORE_EXPORT NativeValueTraitsStringAdapter {
+   NativeValueTraitsStringAdapter(const NativeValueTraitsStringAdapter&) =
+       delete;
+   NativeValueTraitsStringAdapter(NativeValueTraitsStringAdapter&&) = default;
+-  explicit NativeValueTraitsStringAdapter(v8::Isolate* isolate,
+-                                          v8::Local<v8::String> value)
++  NativeValueTraitsStringAdapter(v8::Isolate* isolate,
++                                 v8::Local<v8::String> value)
+       : v8_string_(value), isolate_(isolate) {}
+-  explicit NativeValueTraitsStringAdapter(v8::Isolate* isolate,
+-                                          const String& value)
++  NativeValueTraitsStringAdapter(v8::Isolate* isolate, const String& value)
+       : isolate_(isolate), wtf_string_(value) {}
+-  explicit NativeValueTraitsStringAdapter(v8::Isolate* isolate, int32_t value)
++  NativeValueTraitsStringAdapter(v8::Isolate* isolate, int32_t value)
+       : isolate_(isolate), wtf_string_(ToBlinkString(value)) {}
+ 
+   NativeValueTraitsStringAdapter& operator=(
+@@ -305,7 +304,7 @@ class CORE_EXPORT NativeValueTraitsStringAdapter {
+   // a performance gain on MacOS arm (see crbug.com/1482549).
+   v8::Local<v8::String> v8_string_;
+   v8::Isolate* isolate_ = nullptr;
+-  String wtf_string_;
++  mutable String wtf_string_;
+   mutable StringView::StackBackingStore string_view_backing_store_;
+ };
+ 

@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Fredrik=20S=C3=B6derquist?= <fs@opera.com>
+Date: Thu, 8 Oct 2026 03:25:13 -0700
+Subject: [M155] Fix observer iteration in SVGResourceDocumentContent
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> Fix observer iteration in SVGResourceDocumentContent
+>
+> The SVGResourceDocumentObserver::ResourceNotifyFinished() callback can
+> cause new observers to be added. Iterate in a copy.
+>
+> Fixed: 570047270
+> Change-Id: Idd45163296244443e3ce7d6b292e78fc39aaee83
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8519167
+> Commit-Queue: Philip Rogers <pdr@chromium.org>
+> Reviewed-by: Philip Rogers <pdr@chromium.org>
+> Auto-Submit: Fredrik Söderquist <fs@opera.com>
+> Cr-Commit-Position: refs/heads/main@{#1712579}
+
+(cherry picked from commit 035234e0b8a26edd30bcc93f81efd642d099f720)
+
+Bug: 571383091,570047270
+Change-Id: Idd45163296244443e3ce7d6b292e78fc39aaee83
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8538327
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8059@{#1030}
+Cr-Branched-From: 199ac2cd7ab289e11c2236bd2cede848781213da-refs/heads/main@{#1697595}
+
+diff --git a/third_party/blink/renderer/core/svg/svg_resource_document_content.cc b/third_party/blink/renderer/core/svg/svg_resource_document_content.cc
+index 66cbff8b5e4fbc3462afc1113cde9443ff292134..6931b720eaf408161b7708ad74dd8a6c20672c97 100644
+--- a/third_party/blink/renderer/core/svg/svg_resource_document_content.cc
++++ b/third_party/blink/renderer/core/svg/svg_resource_document_content.cc
+@@ -220,7 +220,8 @@ void SVGResourceDocumentContent::NotifyObserver(
+ }
+ 
+ void SVGResourceDocumentContent::NotifyObservers() {
+-  for (auto& observer : observers_) {
++  HeapVector<Member<SVGResourceDocumentObserver>> observer_list(observers_);
++  for (auto& observer : observer_list) {
+     observer->ResourceNotifyFinished(this);
+   }
+ }
+@@ -259,7 +260,8 @@ void SVGResourceDocumentContent::ContentChanged() {
+   if (inhibit_content_change_) {
+     return;
+   }
+-  for (auto& observer : observers_) {
++  HeapVector<Member<SVGResourceDocumentObserver>> observer_list(observers_);
++  for (auto& observer : observer_list) {
+     observer->ResourceContentChanged(this);
+   }
+ }
