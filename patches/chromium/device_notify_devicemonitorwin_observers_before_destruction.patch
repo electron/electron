@@ -1,0 +1,205 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <kleinschmidtorama@gmail.com>
+Date: Mon, 12 Oct 2026 15:51:05 -0400
+Subject: [device] Notify DeviceMonitorWin observers before destruction
+
+DeviceMonitorWin instances are owned by a process-wide message window
+that an AtExitManager callback deletes. An observer that is still alive
+at that point is left holding a dangling pointer to the monitor.
+
+This happens to SerialDeviceEnumeratorWin::UiThreadHelper at browser
+shutdown. DeviceService lives in the UI thread's SequenceLocalStorage,
+so it is destroyed by BrowserTaskExecutor::Shutdown(), which runs after
+BrowserMainLoop has shut down the ThreadPool. DeviceService holds the
+SerialPortManagerImpl in a SequenceBound on a ThreadPool sequence, so
+the task that would delete it (and the enumerator and helper it owns) is
+dropped. The helper's ScopedObservation is still live when AtExitManager
+deletes the monitor, which fails CheckDanglingRawPtrBufferEmpty() at
+exit when dangling pointer checks are enabled.
+
+Add DeviceMonitorWin::Observer::OnDeviceMonitorDestroying(), called from
+~DeviceMonitorWin(), and have the serial helper reset its observation
+there. HidServiceWin and UsbServiceWin are destroyed with DeviceService
+on the UI thread, before AtExit, so they don't need it.
+
+Bug: 572741653
+
+Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/8561777.
+This patch can be removed once that CL lands.
+
+diff --git a/device/BUILD.gn b/device/BUILD.gn
+index 2cdc91e243d010941a6878b26cb164125fc25dcb..741410776eb26868aef2b05d9a3aa042c02b5b0f 100644
+--- a/device/BUILD.gn
++++ b/device/BUILD.gn
+@@ -104,6 +104,7 @@ test("device_unittests") {
+ 
+   if (is_win) {
+     sources += [
++      "base/device_monitor_win_unittest.cc",
+       "bluetooth/bluetooth_adapter_win_unittest.cc",
+       "bluetooth/bluetooth_device_win_unittest.cc",
+       "bluetooth/bluetooth_service_record_win_unittest.cc",
+diff --git a/device/base/device_monitor_win.cc b/device/base/device_monitor_win.cc
+index 72073904d7805ffe60f6077736a548ff83cde78e..ffc2c642d4f4e9d1b3253ca2d6d4ad1a5b164e66 100644
+--- a/device/base/device_monitor_win.cc
++++ b/device/base/device_monitor_win.cc
+@@ -20,6 +20,7 @@
+ #include "base/functional/bind.h"
+ #include "base/functional/callback_helpers.h"
+ #include "base/logging.h"
++#include "base/memory/ptr_util.h"
+ #include "base/strings/string_util.h"
+ #include "base/strings/sys_string_conversions.h"
+ #include "base/task/current_thread.h"
+@@ -178,6 +179,9 @@ void DeviceMonitorWin::Observer::OnDeviceRemoved(
+     const GUID& class_guid,
+     const std::wstring& device_path) {}
+ 
++void DeviceMonitorWin::Observer::OnDeviceMonitorDestroying(
++    DeviceMonitorWin* monitor) {}
++
+ // static
+ DeviceMonitorWin* DeviceMonitorWin::GetForDeviceInterface(
+     const GUID& device_interface) {
+@@ -199,7 +203,16 @@ DeviceMonitorWin* DeviceMonitorWin::GetForAllInterfaces() {
+   return nullptr;
+ }
+ 
+-DeviceMonitorWin::~DeviceMonitorWin() {}
++// static
++std::unique_ptr<DeviceMonitorWin> DeviceMonitorWin::CreateForTesting() {
++  return base::WrapUnique(new DeviceMonitorWin());
++}
++
++DeviceMonitorWin::~DeviceMonitorWin() {
++  for (auto& observer : observer_list_) {
++    observer.OnDeviceMonitorDestroying(this);
++  }
++}
+ 
+ void DeviceMonitorWin::AddObserver(Observer* observer) {
+   observer_list_.AddObserver(observer);
+diff --git a/device/base/device_monitor_win.h b/device/base/device_monitor_win.h
+index 0b1c2a4edd9cccc22cdd1b947b35f8e86adccb65..f8d34111dc33e2310dd89e1bedf4adf5924e4dd2 100644
+--- a/device/base/device_monitor_win.h
++++ b/device/base/device_monitor_win.h
+@@ -5,6 +5,7 @@
+ #ifndef DEVICE_BASE_DEVICE_MONITOR_WIN_H_
+ #define DEVICE_BASE_DEVICE_MONITOR_WIN_H_
+ 
++#include <memory>
+ #include <string>
+ 
+ #include "base/observer_list.h"
+@@ -28,6 +29,11 @@ class DEVICE_BASE_EXPORT DeviceMonitorWin {
+                                const std::wstring& device_path);
+     virtual void OnDeviceRemoved(const GUID& class_guid,
+                                  const std::wstring& device_path);
++
++    // Called when `monitor` is about to be destroyed. Monitors are destroyed
++    // by an AtExitManager callback, so an observer that may still be alive
++    // at that point must stop observing `monitor` here.
++    virtual void OnDeviceMonitorDestroying(DeviceMonitorWin* monitor);
+   };
+ 
+   ~DeviceMonitorWin();
+@@ -35,6 +41,8 @@ class DEVICE_BASE_EXPORT DeviceMonitorWin {
+   static DeviceMonitorWin* GetForDeviceInterface(const GUID& guid);
+   static DeviceMonitorWin* GetForAllInterfaces();
+ 
++  static std::unique_ptr<DeviceMonitorWin> CreateForTesting();
++
+   void AddObserver(Observer* observer);
+   void RemoveObserver(Observer* observer);
+ 
+diff --git a/device/base/device_monitor_win_unittest.cc b/device/base/device_monitor_win_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..7f7a0a8693b3b526883e185dba6e38610840ea5e
+--- /dev/null
++++ b/device/base/device_monitor_win_unittest.cc
+@@ -0,0 +1,64 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "device/base/device_monitor_win.h"
++
++#include <memory>
++
++#include "base/scoped_observation.h"
++#include "testing/gtest/include/gtest/gtest.h"
++
++namespace device {
++
++namespace {
++
++// Observer that, like SerialDeviceEnumeratorWin's UI thread helper, may
++// outlive the monitor it observes and stops observing when told the monitor is
++// going away.
++class TestObserver : public DeviceMonitorWin::Observer {
++ public:
++  void Observe(DeviceMonitorWin* monitor) { observation_.Observe(monitor); }
++
++  bool IsObserving() const { return observation_.IsObserving(); }
++  int destroying_count() const { return destroying_count_; }
++
++  // DeviceMonitorWin::Observer:
++  void OnDeviceMonitorDestroying(DeviceMonitorWin* monitor) override {
++    ++destroying_count_;
++    EXPECT_TRUE(observation_.IsObservingSource(monitor));
++    observation_.Reset();
++  }
++
++ private:
++  int destroying_count_ = 0;
++  base::ScopedObservation<DeviceMonitorWin, DeviceMonitorWin::Observer>
++      observation_{this};
++};
++
++}  // namespace
++
++// Destroying a DeviceMonitorWin must notify its observers so that they can
++// stop observing it, rather than being left with a dangling pointer to it.
++// Without the notification, `observer1` and `observer2` would call
++// RemoveObserver() on the freed monitor when they are destroyed.
++TEST(DeviceMonitorWinTest, NotifiesObserversOnDestruction) {
++  TestObserver observer1;
++  TestObserver observer2;
++
++  std::unique_ptr<DeviceMonitorWin> monitor =
++      DeviceMonitorWin::CreateForTesting();
++  observer1.Observe(monitor.get());
++  observer2.Observe(monitor.get());
++  ASSERT_TRUE(observer1.IsObserving());
++  ASSERT_TRUE(observer2.IsObserving());
++
++  monitor.reset();
++
++  EXPECT_EQ(1, observer1.destroying_count());
++  EXPECT_FALSE(observer1.IsObserving());
++  EXPECT_EQ(1, observer2.destroying_count());
++  EXPECT_FALSE(observer2.IsObserving());
++}
++
++}  // namespace device
+diff --git a/services/device/serial/serial_device_enumerator_win.cc b/services/device/serial/serial_device_enumerator_win.cc
+index 62c92e4dde2d092b2d25a879d600093149b587f3..b46c8d161d7297a1deefc4a8b43ebfbd22d947cf 100644
+--- a/services/device/serial/serial_device_enumerator_win.cc
++++ b/services/device/serial/serial_device_enumerator_win.cc
+@@ -486,6 +486,16 @@ class SerialDeviceEnumeratorWin::UiThreadHelper
+                                   enumerator_, device_path));
+   }
+ 
++  void OnDeviceMonitorDestroying(DeviceMonitorWin* monitor) override {
++    // In the browser, DeviceService is destroyed after the ThreadPool has shut
++    // down, so the task that would delete the SerialPortManagerImpl that owns
++    // the enumerator (and in turn this helper) never runs. The helper is
++    // therefore still alive when an AtExitManager callback destroys
++    // `monitor`. By then the UI thread's task scheduler has been torn down, so
++    // `sequence_checker_` is not checked here.
++    device_observation_.Reset();
++  }
++
+  private:
+   SEQUENCE_CHECKER(sequence_checker_);
+ 
