@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "base/containers/fixed_flat_set.h"
+#include "base/logging.h"
 #include "base/memory/raw_ref.h"
 #include "base/numerics/ranges.h"
 #include "base/strings/utf_string_conversions.h"
@@ -1979,26 +1980,31 @@ std::unique_ptr<views::FrameView> NativeWindowViews::CreateFrameView(
 #if BUILDFLAG(IS_WIN)
   return std::make_unique<WinFrameView>(this, widget);
 #else
-  if (!has_frame())
-    return std::make_unique<ElectronFrameViewLinux>(this, widget);
+  if (has_frame() && !has_client_frame())
+    return std::make_unique<NativeFrameView>(this, widget);
 
-  if (has_client_frame()) {
-    auto* linux_ui_theme = ui::LinuxUiTheme::GetForProfile(nullptr);
-    auto getter = base::BindRepeating(
-        [](ui::LinuxUiTheme* theme, bool tiled,
-           bool maximized) -> ui::WindowFrameProvider* {
-          return theme->GetWindowFrameProvider(ui::FrameType::kDefault,
-                                               /*solid_frame=*/false, tiled,
-                                               maximized);
-        },
-        base::Unretained(linux_ui_theme));
-    auto nav_button_provider =
-        linux_ui_theme->CreateNavButtonProvider(ui::FrameType::kDefault);
-    return std::make_unique<NativeFrameViewLinux>(
-        this, widget, std::move(nav_button_provider), std::move(getter));
+  if (has_frame()) {
+    if (auto* linux_ui_theme = ui::LinuxUiTheme::GetForProfile(nullptr)) {
+      auto getter = base::BindRepeating(
+          [](ui::LinuxUiTheme* theme, bool tiled,
+             bool maximized) -> ui::WindowFrameProvider* {
+            return theme->GetWindowFrameProvider(ui::FrameType::kDefault,
+                                                 /*solid_frame=*/false, tiled,
+                                                 maximized);
+          },
+          base::Unretained(linux_ui_theme));
+      auto nav_button_provider =
+          linux_ui_theme->CreateNavButtonProvider(ui::FrameType::kDefault);
+      return std::make_unique<NativeFrameViewLinux>(
+          this, widget, std::move(nav_button_provider), std::move(getter));
+    }
+    // No toolkit (e.g. GTK failed to initialize) means nothing can draw a
+    // native title bar; fall back to the frameless client frame below.
+    LOG(WARNING) << "No Linux UI theme is available to draw window "
+                    "decorations; creating the window without a title bar.";
   }
 
-  return std::make_unique<NativeFrameView>(this, widget);
+  return std::make_unique<ElectronFrameViewLinux>(this, widget);
 #endif
 }
 
