@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joey Arhar <jarhar@chromium.org>
+Date: Mon, 12 Oct 2026 12:49:47 -0700
+Subject: Avoid dangling reference in Element::CloneAttributesFrom()
+
+Original change's description:
+> Avoid dangling reference in Element::CloneAttributesFrom()
+>
+> Copy Attribute by value in Element::CloneAttributesFrom() instead of
+> holding a reference into the element's attribute storage, which may be
+> modified during AttributeChangedWithInvalidations().
+>
+> There will be a test for this in a subsequent patch. It isn't included
+> here because it hits a DCHECK.
+>
+> Fixed: 568730794
+> Change-Id: I4050cecff5753ebe435fd87ac1686e416f065c35
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8508875
+> Reviewed-by: Joey Arhar <jarhar@chromium.org>
+> Commit-Queue: Joey Arhar <jarhar@chromium.org>
+> Reviewed-by: David Baron <dbaron@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1711816}
+
+(cherry picked from commit bdc63e2cce0b3abc7dc984eb7f4e5168990554b2)
+
+Bug: 571764079,568730794
+Change-Id: I4050cecff5753ebe435fd87ac1686e416f065c35
+
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index f8376b740289fb19c1b4d54c4a22a5576beede0e..b0b10b80113f5e0359f352592573342d97267465 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -12081,7 +12081,7 @@ void Element::CloneAttributesFrom(const Element& other) {
+   }
+ 
+   for (wtf_size_t i = 0; i < element_data_->Attributes().size(); ++i) {
+-    const Attribute& attr = element_data_->Attributes().at(i);
++    const Attribute attr = element_data_->Attributes().at(i);
+     attribute_or_class_bloom_ |= FilterForAttribute(attr.GetName());
+     AttributeChangedWithInvalidations(
+         AttributeModificationParams(attr.GetName(), g_null_atom, attr.Value(),

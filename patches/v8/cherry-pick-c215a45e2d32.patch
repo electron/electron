@@ -1,0 +1,112 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Thu, 1 Oct 2026 20:07:11 +0200
+Subject: Prevent map normalization of remote objects
+
+Original change's description:
+> [objects] Prevent map normalization of remote objects
+>
+> When `Object.assign` encounters a source object with a large number of
+> properties, `JSReceiver::SetOrCopyDataProperties` pre-normalizes the
+> target object to a dictionary map.
+>
+> If the target object is a remote object (a JS_SPECIAL_API_OBJECT_TYPE
+> whose map is contextless), it possesses no `NativeContext`.
+> `Map::Normalize` was previously unconditionally casting the `Null` native
+> context of the remote object's meta-map to a `NativeContext`, leading
+> to an out-of-bounds ReadOnly memory access and eventually OOB writes.
+>
+> This patch updates `JSReceiver::SetOrCopyDataProperties` to exclude
+> contextless `JS_SPECIAL_API_OBJECT_TYPE` targets from normalization,
+> properly handling them alongside global proxies and shared structs,
+> which natively lack a context. It also replaces the potential silent
+> crash in `Map::Normalize` with a `DCHECK`.
+>
+> Fixed: 562038980
+>
+> TAG=agy
+> CONV=39463f19-fb84-40db-8b81-2d8d8d68ab36
+>
+> Change-Id: I9116d3e144f44e7e569b609fb5c055a4640fbb57
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8502261
+> Reviewed-by: Patrick Thier <pthier@chromium.org>
+> Auto-Submit: Igor Sheludko <ishell@chromium.org>
+> Commit-Queue: Patrick Thier <pthier@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#110261}
+
+(cherry picked from commit 3d445698dfc94acd9027f59060404780554601b1)
+
+Bug: 570834074,562038980
+Change-Id: I9116d3e144f44e7e569b609fb5c055a4640fbb57
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8519266
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.0@{#109}
+Cr-Branched-From: 0c6c73eea6994260f0a1d88469708360ea60c660-refs/heads/15.0.245@{#1}
+Cr-Branched-From: 03d64f40934c058cd1c6d7e5cead5b757a4faedd-refs/heads/main@{#107679}
+
+diff --git a/src/objects/js-objects.cc b/src/objects/js-objects.cc
+index cb81d0da1d9822c9e132d01739ed497b731b3ed9..31fbeda4f3eea6acc687c22180117a5770c4a0b7 100644
+--- a/src/objects/js-objects.cc
++++ b/src/objects/js-objects.cc
+@@ -471,6 +471,9 @@ Maybe<bool> JSReceiver::SetOrCopyDataProperties(
+     InstanceType target_instance_type = target->map()->instance_type();
+     if (InstanceTypeChecker::IsJSObject(target_instance_type) &&
+         !InstanceTypeChecker::IsJSGlobalProxy(target_instance_type) &&
++        // Exclude remote objects (they don't have local properties anyway).
++        !(InstanceTypeChecker::IsJSSpecialApiObject(target_instance_type) &&
++          !target->GetCreationContext().has_value()) &&
+         !InstanceTypeChecker::IsAlwaysSharedSpaceJSObject(
+             target_instance_type)) {
+       // Convert to slow properties if we're guaranteed to overflow the number
+diff --git a/src/objects/map.cc b/src/objects/map.cc
+index ee6912c2e8cd1e110c5d5b609c8faef2ead97b7a..f72c9a9fbefa7b9d572d5e37b52f4b6d915a8f11 100644
+--- a/src/objects/map.cc
++++ b/src/objects/map.cc
+@@ -1389,8 +1389,10 @@ Handle<Map> Map::Normalize(Isolate* isolate, DirectHandle<Map> fast_map,
+   }
+   DirectHandle<NormalizedMapCache> cache;
+   if (use_cache) {
++    Tagged<Object> maybe_native_context = meta_map->native_context_or_null();
++    DCHECK(!IsNull(maybe_native_context));
+     Tagged<Object> normalized_map_cache =
+-        meta_map->native_context()->normalized_map_cache();
++        Cast<NativeContext>(maybe_native_context)->normalized_map_cache();
+     use_cache = !IsUndefined(normalized_map_cache);
+     if (use_cache) {
+       cache = Cast<NormalizedMapCache>(
+diff --git a/test/unittests/api/remote-object-unittest.cc b/test/unittests/api/remote-object-unittest.cc
+index 753627441a0dd5f67d0ca2a0ea87d06f49e13b74..7a54c9805cf1b5bceedd98fc40d34deaaab98487 100644
+--- a/test/unittests/api/remote-object-unittest.cc
++++ b/test/unittests/api/remote-object-unittest.cc
+@@ -101,5 +101,29 @@ TEST_F(RemoteObjectTest, TypeOfRemoteObject) {
+   EXPECT_STREQ("object", *result);
+ }
+ 
++TEST_F(RemoteObjectTest, NormalizeRemoteObject) {
++  Local<FunctionTemplate> constructor_template =
++      FunctionTemplate::New(isolate(), Constructor);
++  constructor_template->InstanceTemplate()->SetAccessCheckCallbackAndHandler(
++      AccessCheck, NamedPropertyHandlerConfiguration(NamedGetter),
++      IndexedPropertyHandlerConfiguration());
++
++  Local<Object> remote_object =
++      constructor_template->NewRemoteInstance().ToLocalChecked();
++
++  Local<Context> context = Context::New(isolate());
++  Context::Scope context_scope(context);
++
++  context->Global()
++      ->Set(context, String::NewFromUtf8Literal(isolate(), "remoteObj"),
++            remote_object)
++      .Check();
++
++  TryRunJS(
++      "const src = {};"
++      "for (let i = 0; i < 1200; i++) src['p' + i] = 1;"
++      "try { Object.assign(remoteObj, src); } catch (e) {}");
++}
++
+ }  // namespace remote_object_unittest
+ }  // namespace v8
