@@ -48,6 +48,7 @@ import {
   ifit,
   ifdescribe,
   defer,
+  focusWebContents,
   listen,
   waitUntil,
   isWayland,
@@ -7683,6 +7684,15 @@ describe('BrowserWindow module', () => {
 
           w.setSimpleFullScreen(true);
           expect(w.isSimpleFullScreen()).to.be.true('isSimpleFullScreen');
+
+          // Chromium refuses requestFullscreen() from a page that doesn't have
+          // focus, even with a user gesture, so make sure the window is key and
+          // the page is focused after entering simple fullscreen.
+          // webContents.focus() only activates the app when no other app is
+          // active, and the earlier fullscreen specs can leave another app
+          // frontmost, so take activation explicitly first.
+          app.focus({ steal: true });
+          await focusWebContents(w.webContents);
 
           const enterHtmlFS = once(w.webContents, 'enter-html-full-screen');
           await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
