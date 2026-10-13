@@ -676,9 +676,9 @@ describe('chrome extensions', () => {
     const addExtension = (name: string) =>
       session.defaultSession.extensions.loadExtension(path.resolve(extensionPath, name));
     const removeAllExtensions = () => {
-      Object.keys(session.defaultSession.extensions.getAllExtensions()).forEach((extName) => {
-        session.defaultSession.extensions.removeExtension(extName);
-      });
+      for (const { id } of session.defaultSession.extensions.getAllExtensions()) {
+        session.defaultSession.extensions.removeExtension(id);
+      }
     };
 
     let responseIdCounter = 0;
@@ -766,16 +766,15 @@ describe('chrome extensions', () => {
             });
 
             ({ port } = await listen(server));
-
-            session.defaultSession.extensions.loadExtension(contentScript);
           });
 
           after(() => {
-            session.defaultSession.extensions.removeExtension('content-script-test');
             server.close();
           });
 
-          beforeEach(() => {
+          let extensionId: string;
+          beforeEach(async () => {
+            ({ id: extensionId } = await session.defaultSession.extensions.loadExtension(contentScript));
             w = new BrowserWindow({
               show: false,
               webPreferences: {
@@ -786,11 +785,11 @@ describe('chrome extensions', () => {
             });
           });
 
-          afterEach(() =>
-            closeWindow(w).then(() => {
-              w = null as unknown as BrowserWindow;
-            })
-          );
+          afterEach(async () => {
+            await closeWindow(w);
+            w = null as unknown as BrowserWindow;
+            session.defaultSession.extensions.removeExtension(extensionId);
+          });
 
           it('applies matching rules in subframes', async () => {
             const detailsPromise = emittedNTimes(w.webContents, 'did-frame-finish-load', 2);
@@ -1592,7 +1591,9 @@ describe('chrome extensions', () => {
 
   describe('custom protocol', () => {
     async function runFixture(name: string) {
-      const appProcess = spawn(process.execPath, [path.join(fixtures, 'extensions', name, 'main.js')]);
+      const args = [path.join(fixtures, 'extensions', name, 'main.js')];
+      if (process.platform === 'darwin') args.push('--use-mock-keychain');
+      const appProcess = spawn(process.execPath, args);
 
       let output = '';
       appProcess.stdout.on('data', (data) => {

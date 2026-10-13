@@ -1,0 +1,158 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Florin Malita <fmalita@chromium.org>
+Date: Sun, 11 Oct 2026 23:39:07 -0700
+Subject: Pass precomputed image orientation into DrawImageInternal
+
+Canvas2DRecorderContext::drawImage() already queries
+RespectImageOrientationInternal() before invoking Draw(), but
+DrawImageInternal() queries it a second time while holding a raw
+cc::PaintCanvas* pointer.
+
+Because RespectImageOrientationInternal() calls EnsureComputedStyle(),
+a synchronous style recalculation inside DrawImageInternal() can run
+scripts and resize the canvas, invalidating the active PaintCanvas
+pointer mid-draw. Pass the already-resolved RespectImageOrientationEnum
+down to DrawImageInternal() instead of recomputing it.
+
+Bug: 570167920
+Change-Id: I1e3bcc63d969311d394a0ff4e72a0484c182a084
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8527128
+Reviewed-by: Justin Novosad <junov@chromium.org>
+Commit-Queue: Florin Malita <fmalita@chromium.org>
+Reviewed-by: Andres Ricardo Perez Rojas <andresrperez@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1713524}
+(cherry picked from commit 6aed6936e3fbd9f24f816ba18aed9936c6aad219)
+
+diff --git a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.cc b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.cc
+index 5528a0d8a3588b78f657ac6e73503129e0504a6a..338daa0b47b6f80158b0a462627b8fdfe8f8771d 100644
+--- a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.cc
++++ b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.cc
+@@ -2095,7 +2095,8 @@ void Canvas2DRecorderContext::DrawImageInternal(
+     const gfx::RectF& src_rect,
+     const gfx::RectF& dst_rect,
+     const SkSamplingOptions& sampling,
+-    const cc::PaintFlags* flags) {
++    const cc::PaintFlags* flags,
++    RespectImageOrientationEnum respect_orientation) {
+   cc::RecordPaintCanvas::DisableFlushCheckScope disable_flush_check_scope(
+       static_cast<cc::RecordPaintCanvas*>(c));
+   int initial_save_count = c->getSaveCount();
+@@ -2139,11 +2140,6 @@ void Canvas2DRecorderContext::DrawImageInternal(
+   // the video into the canvas. The fast path is not always faster though (e.g.,
+   // when scaling), so sometimes the `image` path may still be used by video.
+   if (image) {
+-    // We always use the image-orientation property on the canvas element
+-    // because the alternative would result in complex rules depending on
+-    // the source of the image.
+-    RespectImageOrientationEnum respect_orientation =
+-        RespectImageOrientationInternal(image_source);
+     gfx::RectF corrected_src_rect = src_rect;
+     if (respect_orientation == kRespectImageOrientation &&
+         !image->HasDefaultOrientation()) {
+@@ -2171,8 +2167,7 @@ void Canvas2DRecorderContext::DrawImageInternal(
+     VideoFrame* frame = static_cast<VideoFrame*>(image_source);
+     auto media_frame = frame->frame();
+     bool ignore_transformation =
+-        RespectImageOrientationInternal(image_source) ==
+-        kDoNotRespectImageOrientation;
++        respect_orientation == kDoNotRespectImageOrientation;
+     gfx::RectF corrected_src_rect = src_rect;
+ 
+     if (!ignore_transformation) {
+@@ -2183,7 +2178,6 @@ void Canvas2DRecorderContext::DrawImageInternal(
+         corrected_src_rect = gfx::TransposeRect(src_rect);
+       }
+     }
+-
+     c->save();
+     c->clipRect(gfx::RectFToSkRect(dst_rect));
+     c->translate(dst_rect.x(), dst_rect.y());
+@@ -2293,8 +2287,13 @@ void Canvas2DRecorderContext::drawImage(CanvasImageSource* image_source,
+     return;
+   }
+ 
+-  gfx::SizeF image_size = image_source->ElementSize(
+-      default_object_size, RespectImageOrientationInternal(image_source));
++  // We always use the image-orientation property on the canvas element because
++  // the alternative would result in complex rules depending on the source of
++  // the image.
++  const RespectImageOrientationEnum respect_orientation =
++      RespectImageOrientationInternal(image_source);
++  gfx::SizeF image_size =
++      image_source->ElementSize(default_object_size, respect_orientation);
+ 
+   ClipRectsToImageRect(gfx::RectF(image_size), &src_rect, &dst_rect);
+ 
+@@ -2312,14 +2311,14 @@ void Canvas2DRecorderContext::drawImage(CanvasImageSource* image_source,
+ 
+   Draw<OverdrawOp::kDrawImage>(
+       /*draw_func=*/
+-      [this, image_source, image, src_rect, dst_rect](
++      [this, image_source, image, src_rect, dst_rect, respect_orientation](
+           MemoryManagedPaintCanvas* c, const cc::PaintFlags* flags) {
+         SkSamplingOptions sampling =
+             cc::PaintFlags::FilterQualityToSkSamplingOptions(
+                 flags ? flags->getFilterQuality()
+                       : cc::PaintFlags::FilterQuality::kNone);
+         DrawImageInternal(c, image_source, image.get(), src_rect, dst_rect,
+-                          sampling, flags);
++                          sampling, flags, respect_orientation);
+       },
+       /*draw_covers_clip_bounds=*/
+       [this, dst_rect](const SkIRect& clip_bounds) {
+diff --git a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.h b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.h
+index 485e1981fc49956d9ccefcbdaf30af30c0544bb2..2cb8b7888ed4fd33eefc7d29bb2bcc541289a084 100644
+--- a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.h
++++ b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.h
+@@ -624,7 +624,8 @@ class MODULES_EXPORT Canvas2DRecorderContext : public CanvasPath {
+                          const gfx::RectF& src_rect,
+                          const gfx::RectF& dst_rect,
+                          const SkSamplingOptions&,
+-                         const cc::PaintFlags*);
++                         const cc::PaintFlags*,
++                         RespectImageOrientationEnum);
+   void ClipInternal(const Path&,
+                     const V8CanvasFillRule& winding_rule,
+                     cc::UsePaintCache);
+diff --git a/third_party/blink/web_tests/fast/canvas/canvas-drawImage-orientation-style-recalc-crash.html b/third_party/blink/web_tests/fast/canvas/canvas-drawImage-orientation-style-recalc-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..e8ba58285b5a79c8068a44d9fc502384c70e0fda
+--- /dev/null
++++ b/third_party/blink/web_tests/fast/canvas/canvas-drawImage-orientation-style-recalc-crash.html
+@@ -0,0 +1,36 @@
++<!DOCTYPE html>
++<script src="../../resources/testharness.js"></script>
++<script src="../../resources/testharnessreport.js"></script>
++<div id="outer">
++  <object id="obj" type="text/html" data="about:blank">
++    <svg><foreignObject><canvas></canvas></foreignObject></svg>
++  </object>
++</div>
++<script>
++async_test((t) => {
++  const outer = document.getElementById('outer');
++  const obj = document.getElementById('obj');
++  const canvas = outer.querySelector('canvas');
++  const home = canvas.parentNode;
++  const ctx = canvas.getContext('2d');
++  const other = document.implementation.createHTMLDocument();
++
++  EventTarget.prototype.addEventListener.call(obj, 'load', t.step_func_done(() => {
++    const frame = new VideoFrame(canvas, {timestamp: 0});
++    ctx.filter = 'url(#none)';
++    frames[0].onpagehide = () => {
++      other.adoptNode(canvas);
++      canvas.width = 17;
++      home.append(canvas);
++    };
++
++    outer.style.display = 'none';
++    outer.offsetWidth;
++    getComputedStyle(canvas).color;
++    Element.prototype.setAttribute.call(obj, 'type', 'image/png');
++    Element.prototype.setAttribute.call(obj, 'data', 'data:image/png,x');
++    ctx.drawImage(frame, 0, 0);
++    frame.close();
++  }));
++}, 'Canvas2D drawImage does not crash when style recalc during drawing resizes canvas');
++</script>

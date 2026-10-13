@@ -23,7 +23,9 @@ import {
   getRemoteContext,
   ifdescribe,
   ifit,
+  isTestingBindingAvailable,
   itremote,
+  spawnAndWait,
   startRemoteControlApp,
   useRemoteContext
 } from './lib/spec-helpers.ts';
@@ -332,7 +334,7 @@ describe('node feature', () => {
     // OS event handler) must still have its continuations run before the next
     // task does. Clipboard reads on Linux otherwise sat until something
     // unrelated woke the main loop.
-    describe('promise settled by native code outside a task', () => {
+    ifdescribe(isTestingBindingAvailable())('promise settled by native code outside a task', () => {
       it('runs its continuations before the next task', async () => {
         const testing = (process as any)._linkedBinding('electron_common_testing');
         let continued = false;
@@ -1450,13 +1452,13 @@ describe('node feature', () => {
     }
   });
 
-  it('Can find a module using a package.json main field', () => {
-    const result = childProcess.spawnSync(
+  it('Can find a module using a package.json main field', async () => {
+    const { code, stdout, stderr } = await spawnAndWait(
       process.execPath,
       [path.resolve(fixtures, 'api', 'electron-main-module', 'app.asar')],
-      { stdio: 'inherit' }
+      { timeout: 20_000 }
     );
-    expect(result.status).to.equal(0);
+    expect(code).to.equal(0, `stdout:\n${stdout}\nstderr:\n${stderr}`);
   });
 
   it('handles Promise timeouts correctly', async () => {

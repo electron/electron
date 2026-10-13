@@ -5,12 +5,6 @@
 declare_args() {
   enable_pdf_viewer = true
 
-  # Provide a fake location provider for mocking
-  # the geolocation responses. Disable it if you
-  # need to test with chromium's location provider.
-  # Should not be enabled for release build.
-  enable_fake_location_provider = !is_official_build
-
   # Enable Chrome extensions support.
   enable_electron_extensions = true
 

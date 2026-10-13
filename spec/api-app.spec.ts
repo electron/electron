@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, session, net as electronNet, type WebContents, utilityProcess } from 'electron/main';
+import { app, BrowserWindow, Menu, session, net as electronNet, type WebContents } from 'electron/main';
 
 import { assert, expect } from 'chai';
 import * as semver from 'semver';
@@ -17,7 +17,8 @@ import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers.ts';
-import { defer, ifdescribe, ifit, isWayland, listen, waitUntil } from './lib/spec-helpers.ts';
+import { defer, ifdescribe, ifit, isWayland, listen, spawnAndWait, waitUntil } from './lib/spec-helpers.ts';
+import { runInUtilityProcess } from './lib/utility-process-helpers.ts';
 import { closeWindow, closeAllWindows } from './lib/window-helpers.ts';
 import {
   makeXdgMockDirectories,
@@ -293,6 +294,30 @@ describe('app module', () => {
       }
     });
 
+    // A missing display makes toolkit initialisation fail before the main loop
+    // runs; that early return must still tear the JS environment down cleanly.
+    // Skipped under ASan for the same reason as the test above.
+    ifit(process.platform === 'linux' && !process.env.IS_ASAN)(
+      'exits with code 1 when no display is available',
+      async () => {
+        const appPath = path.join(fixturesPath, 'api', 'no-display');
+        const env = { ...process.env };
+        delete env.DISPLAY;
+        delete env.WAYLAND_DISPLAY;
+        appProcess = cp.spawn(process.execPath, [appPath, '--ozone-platform=x11'], { env });
+        let stderr = '';
+        appProcess.stderr!.on('data', (data) => {
+          stderr += data;
+        });
+        const [code, signal] = await once(appProcess, 'close');
+        appProcess = null;
+        const message = `code=${code} signal=${signal}\n${stderr}`;
+        expect(signal).to.equal(null, message);
+        expect(code).to.equal(1, message);
+        expect(stderr).to.not.match(/Received signal \d+|Check failed/, message);
+      }
+    );
+
     ifit(['darwin', 'linux'].includes(process.platform))('exits gracefully', async function () {
       const electronPath = process.execPath;
       const appPath = path.join(fixturesPath, 'api', 'singleton');
@@ -328,14 +353,36 @@ describe('app module', () => {
     it('prevents the second launch of app', async function () {
       this.timeout(120000);
       const appPath = path.join(fixturesPath, 'api', 'singleton-data');
+      // The two copies quit within milliseconds of each other, so record each
+      // exit as soon as the copy is spawned: an 'exit' emitted before a
+      // listener is attached is lost, and the test would wait for it until it
+      // timed out.
       const first = cp.spawn(process.execPath, [appPath]);
-      await once(first.stdout, 'data');
+      let firstCode: number | null = null;
+      first.on('exit', (code) => {
+        firstCode = code;
+      });
+      defer(() => {
+        if (first.exitCode === null && first.signalCode === null) first.kill();
+      });
+      let firstOutput = '';
+      first.stdout.on('data', (data) => {
+        firstOutput += data;
+      });
+      await waitUntil(() => firstOutput.length > 0, { timeout: 30000 });
       // Start second app when received output.
       const second = cp.spawn(process.execPath, [appPath]);
-      const [code2] = await once(second, 'exit');
-      expect(code2).to.equal(1);
-      const [code1] = await once(first, 'exit');
-      expect(code1).to.equal(0);
+      let secondCode: number | null = null;
+      second.on('exit', (code) => {
+        secondCode = code;
+      });
+      defer(() => {
+        if (second.exitCode === null && second.signalCode === null) second.kill();
+      });
+      await waitUntil(() => secondCode !== null, { timeout: 30000 });
+      expect(secondCode).to.equal(1);
+      await waitUntil(() => firstCode !== null, { timeout: 30000 });
+      expect(firstCode).to.equal(0);
     });
 
     it('returns true when setting non-existent user data folder', async function () {
@@ -1451,22 +1498,28 @@ describe('app module', () => {
         fs.rmSync(tempBrowserDataPath, { force: true, recursive: true });
       });
 
-      it('writes to userData by default', () => {
+      // The app quits once it has written its session data.
+      const runApp = async (args: string[]) => {
+        const { code, stdout, stderr } = await spawnAndWait(process.execPath, [appPath, ...args], { timeout: 20_000 });
+        expect(code).to.equal(0, `stdout:\n${stdout}\nstderr:\n${stderr}`);
+      };
+
+      it('writes to userData by default', async () => {
         expect(hasSessionFiles(userDataPath)).to.equal(false);
-        cp.spawnSync(process.execPath, [appPath]);
+        await runApp([]);
         expect(hasSessionFiles(userDataPath)).to.equal(true);
       });
 
-      it('can be changed', () => {
+      it('can be changed', async () => {
         expect(hasSessionFiles(userDataPath)).to.equal(false);
-        cp.spawnSync(process.execPath, [appPath, 'sessionData', tempBrowserDataPath]);
+        await runApp(['sessionData', tempBrowserDataPath]);
         expect(hasSessionFiles(userDataPath)).to.equal(false);
         expect(hasSessionFiles(tempBrowserDataPath)).to.equal(true);
       });
 
-      it('changing userData affects default sessionData', () => {
+      it('changing userData affects default sessionData', async () => {
         expect(hasSessionFiles(userDataPath)).to.equal(false);
-        cp.spawnSync(process.execPath, [appPath, 'userData', tempBrowserDataPath]);
+        await runApp(['userData', tempBrowserDataPath]);
         expect(hasSessionFiles(userDataPath)).to.equal(false);
         expect(hasSessionFiles(tempBrowserDataPath)).to.equal(true);
       });
@@ -2613,13 +2666,6 @@ describe('app module', () => {
     });
 
     it('impacts proxy for requests made from utility process', async () => {
-      const utilityFixturePath = path.resolve(
-        import.meta.dirname,
-        'fixtures',
-        'api',
-        'utility-process',
-        'api-net-spec.js'
-      );
       const fn = async () => {
         const urlRequest = electronNet.request('http://example.com/');
         const response = await getResponse(urlRequest);
@@ -2636,15 +2682,7 @@ describe('app module', () => {
       await app.setProxy(config);
       const proxy = await app.resolveProxy('http://example.com/');
       expect(proxy).to.equal(`PROXY ${hostname}:${port}`);
-      const child = utilityProcess.fork(utilityFixturePath, [], {
-        execArgv: ['--expose-gc']
-      });
-      child.postMessage({ fn: `(${fn})()` });
-      const [data] = await once(child, 'message');
-      expect(data.ok).to.be.true(data.message);
-      // Cleanup.
-      const [code] = await once(child, 'exit');
-      expect(code).to.equal(0);
+      await runInUtilityProcess(fn);
     });
 
     it('does not impact proxy for requests made from main process', async () => {

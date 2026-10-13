@@ -18,7 +18,7 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers.ts';
-import { listen, defer } from './lib/spec-helpers.ts';
+import { listen, defer, spawnAndWait } from './lib/spec-helpers.ts';
 import { WebmGenerator } from './lib/video-helpers.js';
 import { closeAllWindows, closeWindow } from './lib/window-helpers.ts';
 
@@ -1481,12 +1481,18 @@ describe('protocol module', () => {
     });
 
     it('code cache in custom protocol is disabled by default', async () => {
-      ChildProcess.spawnSync(process.execPath, [appPath, 'false', codeCachePath]);
+      const { code, stdout, stderr } = await spawnAndWait(process.execPath, [appPath, 'false', codeCachePath], {
+        timeout: 20_000
+      });
+      expect(code).to.equal(0, `stdout:\n${stdout}\nstderr:\n${stderr}`);
       expect(fs.readdirSync(path.join(codeCachePath, 'js')).length).to.equal(2);
     });
 
     it('codeCache:true enables codeCache in custom protocol', async () => {
-      ChildProcess.spawnSync(process.execPath, [appPath, 'true', codeCachePath]);
+      const { code, stdout, stderr } = await spawnAndWait(process.execPath, [appPath, 'true', codeCachePath], {
+        timeout: 20_000
+      });
+      expect(code).to.equal(0, `stdout:\n${stdout}\nstderr:\n${stderr}`);
       expect(fs.readdirSync(path.join(codeCachePath, 'js')).length).to.above(2);
     });
   });

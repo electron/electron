@@ -134,8 +134,10 @@ describe('ipc module', () => {
         'test',
         () =>
           new Promise(() => {
-            setTimeout(() => v8Util.requestGarbageCollectionForTesting());
-            /* never resolve */
+            // Never resolves. Dropping the only reference to the reply callback
+            // and collecting it without a native stack scan (see v8Util) is what
+            // makes the renderer's invoke() reject.
+            v8Util.requestGarbageCollectionForTesting({ execution: 'async' });
           })
       );
       w.webContents.executeJavaScript(`(${rendererInvoke})()`);
@@ -492,7 +494,14 @@ describe('ipc module', () => {
             webPreferences: { nodeIntegration: true, contextIsolation: false }
           });
           w.loadURL('about:blank');
-          ipcMain.once('do-a-gc', () => v8Util.requestGarbageCollectionForTesting());
+          // The orphaned MessagePortMain must actually be reclaimed for port2 to
+          // see 'close'. A synchronous GC from inside this IPC handler scans the
+          // native stack conservatively, and the frames that entangled the port a
+          // moment ago can leave a stale pointer there that keeps it alive, so
+          // collect from a clean task instead (like gc({ execution: 'async' })).
+          ipcMain.once('do-a-gc', () => {
+            v8Util.requestGarbageCollectionForTesting({ execution: 'async' });
+          });
           await w.webContents.executeJavaScript(
             `(${async function () {
               const { port1, port2 } = new MessageChannel();
