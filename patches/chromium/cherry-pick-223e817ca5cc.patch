@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Tue, 13 Oct 2026 13:17:49 +0000
+Subject: Return early for uncommitted navigations
+
+Return early in MimeHandlerStreamManager::DidFinishNavigation() when the
+navigation has not committed, after cleaning up any matching unclaimed
+stream. Otherwise, an uncommitted about:blank navigation in a child
+frame can be treated as the placeholder extension frame and trigger a
+new navigation during renderer process exit.
+
+TAG=agy
+CONV=1785936f-edea-495c-86d0-6ce822657ace
+
+Bug: 568719364
+Change-Id: Ibfc8976936514e76d35825ee8f1fbfc2d31ab00c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8511404
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Commit-Queue: Andy Phan <andyphan@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1711495}
+(cherry picked from commit cb21df9dd4c5b550d530cd1f461731f0d1d25ad0)
+
+diff --git a/extensions/browser/mime_handler/mime_handler_stream_manager.cc b/extensions/browser/mime_handler/mime_handler_stream_manager.cc
+index 3774044c8b3c36d7a8b44ab8ce25e40216503be4..e0e7d4aa3e61f9ebebe26cfa2008e7abbf78f572 100644
+--- a/extensions/browser/mime_handler/mime_handler_stream_manager.cc
++++ b/extensions/browser/mime_handler/mime_handler_stream_manager.cc
+@@ -580,6 +580,10 @@ void MimeHandlerStreamManager::DidFinishNavigation(
+     ClearContentNavigationCrashKeys();
+   }
+ 
++  if (!navigation_handle->HasCommitted()) {
++    return;
++  }
++
+   // Maybe set up postMessage support after the PDF content host finishes
+   // navigating.
+   if (MaybeSetUpPostMessage(navigation_handle)) {
+@@ -610,7 +614,6 @@ void MimeHandlerStreamManager::DidFinishNavigation(
+     if (url == pdf_extension_url &&
+         stream_info->extension_host_frame_tree_node_id() ==
+             navigation_handle->GetFrameTreeNodeId() &&
+-        navigation_handle->HasCommitted() &&
+         !navigation_handle->IsErrorPage()) {
+       stream_info->SetDidExtensionFinishNavigation();
+       stream_info->delegate()->OnExtensionFrameFinished(navigation_handle,
