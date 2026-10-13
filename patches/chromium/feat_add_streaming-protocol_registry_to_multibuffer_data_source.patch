@@ -104,7 +104,7 @@ index 75260f0065419700cb97d18ff6d0997db555c8d0..2a76496e85e90a55b06ab19ebed37642
    using InitializeCB = base::OnceCallback<void(bool)>;
    void Initialize(InitializeCB init_cb) override;
 diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
-index 170a0fb7ce4a06a99a82b32a1f3378c8c81b59fe..1f83cf1e9f0d2f29844b05b8e85cbd4d0773beb1 100644
+index 888a2637619a34a668a7769a1b26b107379ec5f8..900bb02bb3917781e6412263df051a7af7ea2e02 100644
 --- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
 +++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
 @@ -8,6 +8,7 @@

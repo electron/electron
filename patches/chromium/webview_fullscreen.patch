@@ -37,7 +37,7 @@ index 57540135a055926d09af4c9e6d277a123711867e..1664d711cd53bf82a46d3aeaddef33fd
    if (had_fullscreen_token && !GetView()->HasFocus()) {
      GetView()->Focus();
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index c7e2fae60753ec6a8f0fabf5a1fcad7c2a5cc64f..6fd55b5c159f1dc87c574a312e8c5801da431703 100644
+index 0839edbedf4388af1842a5d32796b36a4d318a0b..91008b553242914cb776a391d42dc3334cacc93d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4636,21 +4636,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(

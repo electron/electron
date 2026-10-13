@@ -20,10 +20,10 @@ Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8329987
 Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
 
 diff --git a/src/libANGLE/renderer/d3d/TextureD3D.cpp b/src/libANGLE/renderer/d3d/TextureD3D.cpp
-index 2f73745a96be60118d044c48f3af2c120d0bd311..9ee2aa1b34c6d34b3a80b3336dfec740f03f88e5 100644
+index 17e82cbd295f88d9c847e5b70f50d2558e116c12..0450db55d3fae4eba27e708f6c0c6f25db363fa8 100644
 --- a/src/libANGLE/renderer/d3d/TextureD3D.cpp
 +++ b/src/libANGLE/renderer/d3d/TextureD3D.cpp
-@@ -209,7 +209,7 @@ GLint TextureD3D::getLevelZeroHeight() const
+@@ -213,7 +213,7 @@ GLint TextureD3D::getLevelZeroHeight() const
  
  GLint TextureD3D::getLevelZeroDepth() const
  {
@@ -32,7 +32,7 @@ index 2f73745a96be60118d044c48f3af2c120d0bd311..9ee2aa1b34c6d34b3a80b3336dfec740
  }
  
  GLint TextureD3D::getBaseLevelWidth() const
-@@ -508,6 +508,45 @@ GLint TextureD3D::creationLevels(GLsizei width, GLsizei height, GLsizei depth) c
+@@ -512,6 +512,45 @@ GLint TextureD3D::creationLevels(GLsizei width, GLsizei height, GLsizei depth) c
      }
  }
  
@@ -78,7 +78,7 @@ index 2f73745a96be60118d044c48f3af2c120d0bd311..9ee2aa1b34c6d34b3a80b3336dfec740
  TextureStorage *TextureD3D::getStorage()
  {
      ASSERT(mTexStorage);
-@@ -1577,32 +1616,8 @@ angle::Result TextureD3D_2D::getRenderTarget(const gl::Context *context,
+@@ -1581,32 +1620,8 @@ angle::Result TextureD3D_2D::getRenderTarget(const gl::Context *context,
      return mTexStorage->getRenderTarget(context, index, outRT);
  }
  
@@ -112,7 +112,7 @@ index 2f73745a96be60118d044c48f3af2c120d0bd311..9ee2aa1b34c6d34b3a80b3336dfec740
      ASSERT(level >= 0 && level <= static_cast<int>(mImageArray.size()) &&
             mImageArray[level] != nullptr);
      ImageD3D *image = mImageArray[level].get();
-@@ -1612,12 +1627,12 @@ bool TextureD3D_2D::isLevelComplete(int level) const
+@@ -1616,12 +1631,12 @@ bool TextureD3D_2D::isLevelComplete(int level) const
          return false;
      }
  
@@ -127,7 +127,7 @@ index 2f73745a96be60118d044c48f3af2c120d0bd311..9ee2aa1b34c6d34b3a80b3336dfec740
      {
          return false;
      }
-@@ -2033,7 +2048,7 @@ angle::Result TextureD3D_Cube::copyImage(const gl::Context *context,
+@@ -2037,7 +2052,7 @@ angle::Result TextureD3D_Cube::copyImage(const gl::Context *context,
  
          ASSERT(size.width == size.height);
  
@@ -136,7 +136,7 @@ index 2f73745a96be60118d044c48f3af2c120d0bd311..9ee2aa1b34c6d34b3a80b3336dfec740
          {
              ANGLE_TRY(updateStorageFaceLevel(context, faceIndex, index.getLevelIndex()));
              ANGLE_TRY(mRenderer->copyImageCube(context, source, clippedArea, internalFormat,
-@@ -2074,7 +2089,7 @@ angle::Result TextureD3D_Cube::copySubImage(const gl::Context *context,
+@@ -2078,7 +2093,7 @@ angle::Result TextureD3D_Cube::copySubImage(const gl::Context *context,
      else
      {
          ANGLE_TRY(ensureRenderTarget(context));
@@ -145,7 +145,7 @@ index 2f73745a96be60118d044c48f3af2c120d0bd311..9ee2aa1b34c6d34b3a80b3336dfec740
          {
              ANGLE_TRY(updateStorageFaceLevel(context, faceIndex, index.getLevelIndex()));
              ANGLE_TRY(mRenderer->copyImageCube(
-@@ -2118,7 +2133,7 @@ angle::Result TextureD3D_Cube::copyTexture(const gl::Context *context,
+@@ -2122,7 +2137,7 @@ angle::Result TextureD3D_Cube::copyTexture(const gl::Context *context,
      {
  
          ANGLE_TRY(ensureRenderTarget(context));
@@ -154,7 +154,7 @@ index 2f73745a96be60118d044c48f3af2c120d0bd311..9ee2aa1b34c6d34b3a80b3336dfec740
          ANGLE_TRY(updateStorageFaceLevel(context, faceIndex, index.getLevelIndex()));
  
          ANGLE_TRY(mRenderer->copyTexture(context, source, sourceLevel, gl::TextureTarget::_2D,
-@@ -2169,7 +2184,7 @@ angle::Result TextureD3D_Cube::copySubTexture(const gl::Context *context,
+@@ -2173,7 +2188,7 @@ angle::Result TextureD3D_Cube::copySubTexture(const gl::Context *context,
      if (!isSRGB(index.getLevelIndex(), faceIndex) && canCreateRenderTargetForImage(index))
      {
          ANGLE_TRY(ensureRenderTarget(context));
@@ -163,7 +163,7 @@ index 2f73745a96be60118d044c48f3af2c120d0bd311..9ee2aa1b34c6d34b3a80b3336dfec740
          ANGLE_TRY(updateStorageFaceLevel(context, faceIndex, index.getLevelIndex()));
  
          const gl::InternalFormat &internalFormatInfo =
-@@ -2424,11 +2439,6 @@ angle::Result TextureD3D_Cube::updateStorage(const gl::Context *context)
+@@ -2428,11 +2443,6 @@ angle::Result TextureD3D_Cube::updateStorage(const gl::Context *context)
      return angle::Result::Continue;
  }
  
@@ -175,7 +175,7 @@ index 2f73745a96be60118d044c48f3af2c120d0bd311..9ee2aa1b34c6d34b3a80b3336dfec740
  bool TextureD3D_Cube::isFaceLevelComplete(int faceIndex, int level) const
  {
      if (getBaseLevel() >= gl::IMPLEMENTATION_MAX_TEXTURE_LEVELS)
-@@ -2441,12 +2451,11 @@ bool TextureD3D_Cube::isFaceLevelComplete(int faceIndex, int level) const
+@@ -2445,12 +2455,11 @@ bool TextureD3D_Cube::isFaceLevelComplete(int faceIndex, int level) const
  
      if (isImmutable())
      {
@@ -190,7 +190,7 @@ index 2f73745a96be60118d044c48f3af2c120d0bd311..9ee2aa1b34c6d34b3a80b3336dfec740
      {
          return false;
      }
-@@ -3118,35 +3127,11 @@ angle::Result TextureD3D_3D::updateStorage(const gl::Context *context)
+@@ -3122,35 +3131,11 @@ angle::Result TextureD3D_3D::updateStorage(const gl::Context *context)
      return angle::Result::Continue;
  }
  
@@ -227,7 +227,7 @@ index 2f73745a96be60118d044c48f3af2c120d0bd311..9ee2aa1b34c6d34b3a80b3336dfec740
      ImageD3D *levelImage = mImageArray[level].get();
  
      if (levelImage->getInternalFormat() != getBaseLevelInternalFormat())
-@@ -3154,17 +3139,17 @@ bool TextureD3D_3D::isLevelComplete(int level) const
+@@ -3158,17 +3143,17 @@ bool TextureD3D_3D::isLevelComplete(int level) const
          return false;
      }
  
@@ -248,7 +248,7 @@ index 2f73745a96be60118d044c48f3af2c120d0bd311..9ee2aa1b34c6d34b3a80b3336dfec740
      {
          return false;
      }
-@@ -3883,30 +3868,12 @@ angle::Result TextureD3D_2DArray::updateStorage(const gl::Context *context)
+@@ -3887,30 +3872,12 @@ angle::Result TextureD3D_2DArray::updateStorage(const gl::Context *context)
      return angle::Result::Continue;
  }
  
@@ -282,7 +282,7 @@ index 2f73745a96be60118d044c48f3af2c120d0bd311..9ee2aa1b34c6d34b3a80b3336dfec740
      GLsizei layers = getLayerCount(getBaseLevel());
  
      if (layers <= 0)
-@@ -3914,22 +3881,17 @@ bool TextureD3D_2DArray::isLevelComplete(int level) const
+@@ -3918,22 +3885,17 @@ bool TextureD3D_2DArray::isLevelComplete(int level) const
          return false;
      }
  

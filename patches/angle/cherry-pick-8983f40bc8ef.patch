@@ -43,7 +43,7 @@ index e6e18579173c41b8a500d81c4503c9c3725e106c..85ddc2ed78857635318ea5794f212a2c
          "limitMax3dArrayTextureSizeTo1024",
          FeatureCategory::OpenGLWorkarounds,
 diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
-index ad0260b9e9df75cdd73f685962ac96c2f48411cc..80dd8a10e747097cf2ad4cbc82fffd7cf59c50b4 100644
+index 574ae5bca20d4d2f10ca12f5d010765e1acbf988..1e585e925971e25157e37126c46ddb1ff59f4ef6 100644
 --- a/include/platform/gl_features.json
 +++ b/include/platform/gl_features.json
 @@ -335,6 +335,15 @@
@@ -63,7 +63,7 @@ index ad0260b9e9df75cdd73f685962ac96c2f48411cc..80dd8a10e747097cf2ad4cbc82fffd7c
              "name": "limit_max_3d_array_texture_size_to_1024",
              "category": "Workarounds",
 diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
-index 04460b37e0991bdbce487a7c2b0b9763997ce84b..9cd13b02d6632d6f213d653beb1167f93eb2f4bf 100644
+index 834675fc9d1dd3623c26de5ff303003c6ce1ed2e..4cce40423faf2bf66861f97093a0bc433ed6468b 100644
 --- a/src/libANGLE/renderer/gl/TextureGL.cpp
 +++ b/src/libANGLE/renderer/gl/TextureGL.cpp
 @@ -337,6 +337,13 @@ angle::Result TextureGL::setImageHelper(const gl::Context *context,
@@ -80,7 +80,7 @@ index 04460b37e0991bdbce487a7c2b0b9763997ce84b..9cd13b02d6632d6f213d653beb1167f9
      if (features.resetTexImage2DBaseLevel.enabled)
      {
          // setBaseLevel doesn't ever generate errors.
-@@ -3129,4 +3136,86 @@ GLint TextureGL::getRequiredExternalTextureImageUnits(const gl::Context *context
+@@ -3128,4 +3135,86 @@ GLint TextureGL::getRequiredExternalTextureImageUnits(const gl::Context *context
      return result;
  }
  
@@ -184,7 +184,7 @@ index 31d921d56b5441afe1e9582088ac691a5258b6e9..60a4145dafd3e82fa0f67650b4c9a49d
                                   gl::TextureTarget target,
                                   size_t level,
 diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
-index 1f73207bfe563bdc9b45ba6a800eb0a6ecdac470..97e0b8122207d4671a2c04ae19a3b3aa6ab7b2ca 100644
+index 4f8429a9bf27072a1b040af1f6e4cf644cd0f890..ca3bcc7ba3850d4a62d61ba6f5361773fba4469f 100644
 --- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
 +++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
 @@ -2438,6 +2438,8 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
