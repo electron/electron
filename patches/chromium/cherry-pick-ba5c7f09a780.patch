@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joey Arhar <jarhar@chromium.org>
+Date: Thu, 8 Oct 2026 17:31:38 -0700
+Subject: [M152] Avoid dangling reference in Element::CloneAttributesFrom()
+
+Original change's description:
+> Avoid dangling reference in Element::CloneAttributesFrom()
+>
+> Copy Attribute by value in Element::CloneAttributesFrom() instead of
+> holding a reference into the element's attribute storage, which may be
+> modified during AttributeChangedWithInvalidations().
+>
+> There will be a test for this in a subsequent patch. It isn't included
+> here because it hits a DCHECK.
+>
+> Fixed: 568730794
+> Change-Id: I4050cecff5753ebe435fd87ac1686e416f065c35
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8508875
+> Reviewed-by: Joey Arhar <jarhar@chromium.org>
+> Commit-Queue: Joey Arhar <jarhar@chromium.org>
+> Reviewed-by: David Baron <dbaron@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1711816}
+
+(cherry picked from commit bdc63e2cce0b3abc7dc984eb7f4e5168990554b2)
+
+Bug: 571382368,568730794
+Change-Id: I4050cecff5753ebe435fd87ac1686e416f065c35
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8542815
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7977@{#2812}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index 019a1a95d1292f744d45ba5ace47da4fa0b27a8e..50c6a71c14ce1ceeb1d21d50e4898c2446e5742d 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -12235,7 +12235,7 @@ void Element::CloneAttributesFrom(const Element& other) {
+   }
+ 
+   for (wtf_size_t i = 0; i < element_data_->Attributes().size(); ++i) {
+-    const Attribute& attr = element_data_->Attributes().at(i);
++    const Attribute attr = element_data_->Attributes().at(i);
+     attribute_or_class_bloom_ |= FilterForAttribute(attr.GetName());
+     AttributeChangedWithInvalidations(
+         AttributeModificationParams(attr.GetName(), g_null_atom, attr.Value(),

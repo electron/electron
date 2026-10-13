@@ -1,0 +1,1298 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: S Ganesh <ganesh@chromium.org>
+Date: Mon, 12 Oct 2026 15:08:20 -0700
+Subject: [M152] [mojo]Validate ipcz transport handles and sender trust
+
+Original change's description:
+> [mojo]: Validate ipcz transport handles and sender trust
+>
+> Sending handles between processes on Windows requires either the
+> sender or the receiver to duplicate the handle into its peer process
+> using DuplicateHandle(). Handles sent over ipcz are marked as kSender
+> (meaning the sender still owns the handle and the receiver is
+> responsible for duplicating it) or kRecipient (meaning the sender has
+> already duplicated the handle into the receiver) to coordinate this
+> handle transfer, since only one side should duplicate the handle.
+> Moreover, duplicating a handle into another process is a powerful
+> capability: if one side is more privileged, the convention is for the
+> more privileged side to duplicate handles.
+>
+> When using a Mojo isolated connection, both sides are considered
+> brokers. Optionally, one side can mark the other as untrusted using
+> MOJO_SEND_INVITATION_FLAG_UNTRUSTED_PROCESS - in that case, the
+> untrusted side should never be duplicating handles into its peer.
+> However, two places in ipcz_driver::Transport failed to enforce safety
+> invariants around handle duplication:
+>
+> 1. DecodeHandle() accepted HandleOwner::kRecipient handles from any
+>    kBroker peer (unless the receiving endpoint itself was marked
+>    elevated). Even though the untrusted sending broker could not
+>    actually duplicate handles into the receiving process, it could
+>    still guess numeric HANDLE values that happened to name pre-existing
+>    handles in the receiving process's handle table.
+> 2. Transport::Deserialize() allowed even untrusted peers to name a
+>    transport's remote_process_.
+>
+> Changes:
+> - DecodeHandle() no longer allows kRecipient handles from
+>   explicitly-untrusted broker peers - this is encapsulated in
+>   Transport::CanAcceptReceiverOwnedHandles().
+> - Transport::Deserialize() only allows remote processes to be
+>   specified if the sender is a non-broker and the receiver is a broker
+>   (as in the case of mojo::DirectReceiver) or if the peer is not
+>   marked as kUntrusted. This is encapsulated in
+>   Transport::CanAcceptRemoteProcessFromPeer().
+> - In the updater service, CreateServerEndpointOptions() previously
+>   set MOJO_SEND_INVITATION_FLAG_UNTRUSTED_PROCESS for every caller of
+>   every install. Now that DecodeHandle() rejects kRecipient handles
+>   from untrusted peers, that declaration is made per caller, and only
+>   by a system install (where callers cross a privilege boundary): a
+>   new EndpointOptions::send_invitation_flags_callback lets
+>   NamedMojoMessagePipeServer choose the invitation flags for each
+>   connecting client, and the updater declares a caller untrusted if
+>   its token is below High integrity. Such a caller cannot open the
+>   SYSTEM server process and so never pre-duplicated legitimately. An
+>   elevated administrator or SYSTEM caller is not declared untrusted
+>   and keeps today's behavior. User installs, where both ends are
+>   equally privileged, declare nothing.
+> - To match the stricter checks in DecodeHandle(),
+>   UpdateServiceProxyMojoImpl uses MOJO_SEND_INVITATION_FLAG_ELEVATED
+>   when connecting to a system install on Windows. This keeps the more
+>   privileged side doing the duplication even for callers capable of
+>   opening the server process, and keeps such callers working should
+>   the server's classification ever be tightened.
+>
+> Compatibility: clients built before this change keep working against
+> a server built after it. A caller below High integrity cannot open the
+> SYSTEM server process and therefore already sends kSender, which the
+> server duplicates; a forged kRecipient handle from it is now refused.
+> An elevated caller is not declared untrusted, so its pre-duplicated
+> handles - including the link memory handle carried by the isolated
+> connection handshake itself - are accepted as before. This matters
+> because standalone installers bundle an older updater and run it
+> elevated against whichever version is active.
+>
+> TAG=agy
+> CONV=f1f0f9e4-5cf6-48fb-aa22-494d1abe9ed1
+>
+> Bug: 564573066, 565252396
+> Test: mojo_unittests, components_unittests, ipc_tests, updater_tests
+> Change-Id: I4236c7a0a9104b010300e79ac1b63d9bc0c8887e
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8417663
+> Reviewed-by: Andrea Orru <andreaorru@chromium.org>
+> Commit-Queue: S Ganesh <ganesh@chromium.org>
+> Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+> Reviewed-by: Noah Rose Ledesma <noahrose@google.com>
+> Cr-Commit-Position: refs/heads/main@{#1713945}
+
+(cherry picked from commit d003e09e940872de8f3e564be750ea58e4e60987)
+
+Bug: 572073965,564573066,565252396
+Change-Id: I4236c7a0a9104b010300e79ac1b63d9bc0c8887e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8549098
+Reviewed-by: Andrea Orru <andreaorru@chromium.org>
+Reviewed-by: Noah Rose Ledesma <noahrose@google.com>
+Commit-Queue: S Ganesh <ganesh@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7977@{#2828}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/chrome/updater/BUILD.gn b/chrome/updater/BUILD.gn
+index 736593b7e9f29b926dba48126bc13e7cc66889b2..cb8dbcee30c81521ac228620fa88adfeb7c8b83a 100644
+--- a/chrome/updater/BUILD.gn
++++ b/chrome/updater/BUILD.gn
+@@ -1036,6 +1036,7 @@ if (is_win || is_mac || is_linux) {
+         "app/server/win/com_classes_legacy_unittest.cc",
+         "app/server/win/com_classes_util_unittest.cc",
+         "auto_run_on_os_upgrade_task_unittest.cc",
++        "ipc/ipc_security_win_unittest.cc",
+         "policy/win/group_policy_manager_unittest.cc",
+         "test/integration_tests_win.cc",
+         "test/integration_tests_win.h",
+@@ -1081,6 +1082,8 @@ if (is_win || is_mac || is_linux) {
+         "win/test:test_executables",
+         "win/test:test_strings",
+         "win/ui/resources",
++        "//components/named_mojo_ipc_server",
++        "//mojo/public/cpp/system",
+       ]
+ 
+       data_deps += [
+diff --git a/chrome/updater/app/server/update_service_stub.cc b/chrome/updater/app/server/update_service_stub.cc
+index 2848629bf9d6f2a6e933a80cb39647ec74dfbd94..0f128cb380d7e6c7c14b37ed89ea3704ed0e8c97 100644
+--- a/chrome/updater/app/server/update_service_stub.cc
++++ b/chrome/updater/app/server/update_service_stub.cc
+@@ -389,7 +389,8 @@ UpdateServiceStub::UpdateServiceStub(
+     base::RepeatingClosure task_end_listener,
+     base::RepeatingClosure endpoint_created_listener_for_testing)
+     : filter_(std::make_unique<UpdateServiceStubUntrusted>(this)),
+-      server_(CreateServerEndpointOptions(GetUpdateServiceServerName(scope)),
++      server_(CreateServerEndpointOptions(scope,
++                                          GetUpdateServiceServerName(scope)),
+               base::BindRepeating(base::BindRepeating(
+                   [](mojom::UpdateService* interface,
+                      mojom::UpdateService* filter,
+diff --git a/chrome/updater/ipc/ipc_security.h b/chrome/updater/ipc/ipc_security.h
+index 7897ca278a0c6bad2d0956ed8926cff00aa618ba..1950a29c4ed770c1cb6d6e05152d487c2d9e6b66 100644
+--- a/chrome/updater/ipc/ipc_security.h
++++ b/chrome/updater/ipc/ipc_security.h
+@@ -8,6 +8,11 @@
+ #include "chrome/updater/updater_scope.h"
+ #include "mojo/public/cpp/platform/named_platform_channel.h"
+ 
++#if BUILDFLAG(IS_WIN)
++#include "base/win/windows_types.h"
++#include "mojo/public/c/system/invitation.h"
++#endif
++
+ namespace named_mojo_ipc_server {
+ struct ConnectionInfo;
+ struct EndpointOptions;
+@@ -19,10 +24,37 @@ namespace updater {
+ bool IsConnectionTrusted(
+     const named_mojo_ipc_server::ConnectionInfo& connector);
+ 
+-// Creates the options for instantiating the `NamedMojoIpcServer`.
++// Creates the options for instantiating the `NamedMojoIpcServer` serving
++// `scope`. How the endpoint is secured is derived from `scope`, which callers
++// must also derive `server_name` from, so that a pipe's name and its
++// protection cannot disagree.
++//
++// In production these never diverge: the only caller is `UpdateServiceStub`,
++// whose scope is `App::updater_scope()`, which is initialized from
++// `GetUpdaterScope()` - the same value the parameterless `IsSystemInstall()`
++// reads. Passing it explicitly keeps the decision an input rather than ambient
++// process state and lets tests cover both scopes without mutating the process
++// command line.
+ named_mojo_ipc_server::EndpointOptions CreateServerEndpointOptions(
++    UpdaterScope scope,
+     const mojo::NamedPlatformChannel::ServerName& server_name);
+ 
++#if BUILDFLAG(IS_WIN)
++// The extra invitation flags a system install's server uses for a caller,
++// chosen by the caller's token integrity level: a caller at High integrity or
++// above (an elevated administrator or SYSTEM) gets none, any other caller is
++// declared untrusted. `MAXDWORD` denotes a token with no integrity level, or
++// one that could not be read, and is treated as untrusted.
++MojoSendInvitationFlags SendInvitationFlagsForIntegrityLevel(
++    DWORD integrity_level);
++
++// `SendInvitationFlagsForIntegrityLevel()` applied to the token of
++// `info.process`, which must have been opened by the server (see
++// `EndpointOptions::include_peer_process_info`).
++MojoSendInvitationFlags SendInvitationFlagsForCaller(
++    const named_mojo_ipc_server::ConnectionInfo& info);
++#endif
++
+ }  // namespace updater
+ 
+ #endif  // CHROME_UPDATER_IPC_IPC_SECURITY_H_
+diff --git a/chrome/updater/ipc/ipc_security_linux.cc b/chrome/updater/ipc/ipc_security_linux.cc
+index 0e88fa8da9080dd66b29a8a32f0805dafd679e76..d270fb9a47d34bf56f19490287c0b1ae26164c93 100644
+--- a/chrome/updater/ipc/ipc_security_linux.cc
++++ b/chrome/updater/ipc/ipc_security_linux.cc
+@@ -20,6 +20,7 @@ bool IsConnectionTrusted(
+ }
+ 
+ named_mojo_ipc_server::EndpointOptions CreateServerEndpointOptions(
++    [[maybe_unused]] UpdaterScope scope,
+     const mojo::NamedPlatformChannel::ServerName& server_name) {
+   named_mojo_ipc_server::EndpointOptions options;
+   options.server_name = server_name;
+diff --git a/chrome/updater/ipc/ipc_security_mac.cc b/chrome/updater/ipc/ipc_security_mac.cc
+index ee9c9917e1a7e970c034a6763d0798a8336b9435..239c8dd5414e6e69865bf0b2f331ada7aafdc2ad 100644
+--- a/chrome/updater/ipc/ipc_security_mac.cc
++++ b/chrome/updater/ipc/ipc_security_mac.cc
+@@ -21,6 +21,7 @@ bool IsConnectionTrusted(
+ }
+ 
+ named_mojo_ipc_server::EndpointOptions CreateServerEndpointOptions(
++    [[maybe_unused]] UpdaterScope scope,
+     const mojo::NamedPlatformChannel::ServerName& server_name) {
+   return {server_name,
+           named_mojo_ipc_server::EndpointOptions::kUseIsolatedConnection,
+diff --git a/chrome/updater/ipc/ipc_security_win.cc b/chrome/updater/ipc/ipc_security_win.cc
+index 13a5686439e247785a812741b1a40183f203d171..4beed99fcf9a9cd4e03dc9a3910937ffda1be9c5 100644
+--- a/chrome/updater/ipc/ipc_security_win.cc
++++ b/chrome/updater/ipc/ipc_security_win.cc
+@@ -4,6 +4,13 @@
+ 
+ #include "chrome/updater/ipc/ipc_security.h"
+ 
++#include <windows.h>
++
++#include <optional>
++
++#include "base/functional/bind.h"
++#include "base/process/process.h"
++#include "base/win/access_token.h"
+ #include "chrome/updater/get_updater_scope.h"
+ #include "components/named_mojo_ipc_server/connection_info.h"
+ #include "components/named_mojo_ipc_server/endpoint_options.h"
+@@ -22,14 +29,61 @@ bool IsConnectionTrusted(
+   return !IsSystemInstall();
+ }
+ 
++MojoSendInvitationFlags SendInvitationFlagsForIntegrityLevel(
++    DWORD integrity_level) {
++  // A caller at High integrity or above is an elevated administrator or
++  // SYSTEM, and so at least as privileged as this process; an administrator
++  // to SYSTEM transition is not a security boundary. Anything below that,
++  // or a token with no integrity level, is declared untrusted.
++  return integrity_level != MAXDWORD &&
++                 integrity_level >= SECURITY_MANDATORY_HIGH_RID
++             ? MOJO_SEND_INVITATION_FLAG_NONE
++             : MOJO_SEND_INVITATION_FLAG_UNTRUSTED_PROCESS;
++}
++
++MojoSendInvitationFlags SendInvitationFlagsForCaller(
++    const named_mojo_ipc_server::ConnectionInfo& info) {
++  // Fail closed: a caller whose token cannot be read is declared untrusted.
++  const std::optional<base::win::AccessToken> token =
++      info.process.IsValid()
++          ? base::win::AccessToken::FromProcess(info.process.Handle())
++          : std::nullopt;
++  return SendInvitationFlagsForIntegrityLevel(token ? token->IntegrityLevel()
++                                                    : MAXDWORD);
++}
++
+ named_mojo_ipc_server::EndpointOptions CreateServerEndpointOptions(
++    UpdaterScope scope,
+     const mojo::NamedPlatformChannel::ServerName& server_name) {
+   named_mojo_ipc_server::EndpointOptions options{
+       server_name,
+-      named_mojo_ipc_server::EndpointOptions::kUseIsolatedConnection,
+-      MOJO_SEND_INVITATION_FLAG_UNTRUSTED_PROCESS};
++      named_mojo_ipc_server::EndpointOptions::kUseIsolatedConnection};
++
++  if (IsSystemInstall(scope)) {
++    // This server runs as SYSTEM while the DACL below lets any authenticated
++    // user connect. A caller below High integrity is strictly less privileged
++    // than this process, and is declared untrusted so that the connection
++    // refuses objects whose safety depends on the caller's good behavior,
++    // notably handles it claims to have already duplicated into this process.
++    // See `Transport::CanAcceptReceiverOwnedHandles()`. Such a caller cannot
++    // open this process and so never pre-duplicates legitimately; nothing it
++    // could do before is lost.
++    //
++    // The declaration is made per caller rather than for the endpoint so that
++    // elevated callers - administrators and SYSTEM - keep today's behavior.
++    // They can open this process and pre-duplicate, and callers built before
++    // this change do so, including during the connection handshake itself;
++    // declaring them untrusted would refuse the connection outright. Elevated
++    // callers built after this change declare the server elevated instead and
++    // send handles for this process to duplicate; see
++    // `UpdateServiceProxyMojoImpl::OnConnected()`.
++    //
++    // A user install has no such boundary - server and callers run as the same
++    // user - so no caller is declared untrusted there.
++    options.include_peer_process_info = true;
++    options.send_invitation_flags_callback =
++        base::BindRepeating(&SendInvitationFlagsForCaller);
+ 
+-  if (IsSystemInstall()) {
+     // A DACL to grant:
+     // GA = Generic All
+     // access to:
+diff --git a/chrome/updater/ipc/ipc_security_win_unittest.cc b/chrome/updater/ipc/ipc_security_win_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..b4d28d3c1a16764b34caf7705c1b188f2db88659
+--- /dev/null
++++ b/chrome/updater/ipc/ipc_security_win_unittest.cc
+@@ -0,0 +1,113 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "chrome/updater/ipc/ipc_security.h"
++
++#include <windows.h>
++
++#include <optional>
++
++#include "base/process/process.h"
++#include "base/process/process_handle.h"
++#include "base/win/access_token.h"
++#include "chrome/updater/updater_scope.h"
++#include "components/named_mojo_ipc_server/connection_info.h"
++#include "components/named_mojo_ipc_server/endpoint_options.h"
++#include "mojo/public/c/system/invitation.h"
++#include "testing/gtest/include/gtest/gtest.h"
++
++namespace updater {
++
++namespace {
++
++constexpr wchar_t kTestServerName[] = L"IpcSecurityWinTestServerName";
++
++}  // namespace
++
++// Only a system install's server classifies its callers: it runs as SYSTEM and
++// its pipe is open to any authenticated user. A user install's server and its
++// callers run as the same user at the same integrity level, so there is
++// nothing to defend and no caller is declared untrusted.
++TEST(IpcSecurityWinTest, CallerClassificationIsSystemOnly) {
++  const named_mojo_ipc_server::EndpointOptions user_options =
++      CreateServerEndpointOptions(UpdaterScope::kUser, kTestServerName);
++  EXPECT_FALSE(user_options.send_invitation_flags_callback);
++  EXPECT_FALSE(user_options.include_peer_process_info);
++  EXPECT_EQ(user_options.extra_send_invitation_flags,
++            MOJO_SEND_INVITATION_FLAG_NONE);
++  EXPECT_TRUE(user_options.security_descriptor.empty());
++
++  const named_mojo_ipc_server::EndpointOptions system_options =
++      CreateServerEndpointOptions(UpdaterScope::kSystem, kTestServerName);
++  EXPECT_TRUE(system_options.send_invitation_flags_callback);
++  // The callback reads the caller's token, so it needs the caller's process.
++  EXPECT_TRUE(system_options.include_peer_process_info);
++  EXPECT_FALSE(system_options.security_descriptor.empty());
++}
++
++// The endpoint's security is a function of the scope it was asked for, not of
++// the scope this process happens to be running as. Production always passes
++// the process's own scope, so this pins the coupling rather than guarding a
++// reachable mismatch: it fails if the implementation goes back to reading the
++// process-global `IsSystemInstall()`, since this test process is user scope.
++TEST(IpcSecurityWinTest, OptionsFollowRequestedScopeNotProcessScope) {
++  EXPECT_FALSE(CreateServerEndpointOptions(UpdaterScope::kUser, kTestServerName)
++                   .send_invitation_flags_callback);
++  EXPECT_TRUE(
++      CreateServerEndpointOptions(UpdaterScope::kSystem, kTestServerName)
++          .send_invitation_flags_callback);
++}
++
++// A caller at High integrity or above (an elevated administrator, or SYSTEM)
++// is at least as privileged as the server and keeps the behavior it had before
++// callers were classified: it may pre-duplicate handles into the server. This
++// is what keeps elevated callers built before that change - which do
++// pre-duplicate, including during the connection handshake - able to connect.
++// Everything below High integrity cannot open the SYSTEM server and so never
++// pre-duplicates legitimately; it is declared untrusted so that the server
++// refuses handle values it merely claims to have duplicated.
++TEST(IpcSecurityWinTest, IntegrityLevelClassification) {
++  EXPECT_EQ(SendInvitationFlagsForIntegrityLevel(SECURITY_MANDATORY_SYSTEM_RID),
++            MOJO_SEND_INVITATION_FLAG_NONE);
++  EXPECT_EQ(SendInvitationFlagsForIntegrityLevel(SECURITY_MANDATORY_HIGH_RID),
++            MOJO_SEND_INVITATION_FLAG_NONE);
++  EXPECT_EQ(SendInvitationFlagsForIntegrityLevel(SECURITY_MANDATORY_MEDIUM_RID),
++            MOJO_SEND_INVITATION_FLAG_UNTRUSTED_PROCESS);
++  EXPECT_EQ(SendInvitationFlagsForIntegrityLevel(SECURITY_MANDATORY_LOW_RID),
++            MOJO_SEND_INVITATION_FLAG_UNTRUSTED_PROCESS);
++  EXPECT_EQ(
++      SendInvitationFlagsForIntegrityLevel(SECURITY_MANDATORY_UNTRUSTED_RID),
++      MOJO_SEND_INVITATION_FLAG_UNTRUSTED_PROCESS);
++  // No integrity level at all.
++  EXPECT_EQ(SendInvitationFlagsForIntegrityLevel(MAXDWORD),
++            MOJO_SEND_INVITATION_FLAG_UNTRUSTED_PROCESS);
++}
++
++// The per-caller classification reads the token of the process the server
++// opened. This process stands in for a caller; whatever its integrity level
++// is, the classification must agree with reading it directly.
++TEST(IpcSecurityWinTest, CallerClassificationReadsCallerToken) {
++  named_mojo_ipc_server::ConnectionInfo info;
++  info.pid = base::GetCurrentProcId();
++  info.process = base::Process::OpenWithAccess(
++      info.pid, PROCESS_QUERY_LIMITED_INFORMATION);
++  ASSERT_TRUE(info.process.IsValid());
++
++  const std::optional<base::win::AccessToken> token =
++      base::win::AccessToken::FromCurrentProcess();
++  ASSERT_TRUE(token);
++  EXPECT_EQ(SendInvitationFlagsForCaller(info),
++            SendInvitationFlagsForIntegrityLevel(token->IntegrityLevel()));
++}
++
++// A caller whose process the server could not open is declared untrusted
++// rather than trusted by default.
++TEST(IpcSecurityWinTest, CallerWithoutProcessIsUntrusted) {
++  named_mojo_ipc_server::ConnectionInfo info;
++  ASSERT_FALSE(info.process.IsValid());
++  EXPECT_EQ(SendInvitationFlagsForCaller(info),
++            MOJO_SEND_INVITATION_FLAG_UNTRUSTED_PROCESS);
++}
++
++}  // namespace updater
+diff --git a/chrome/updater/ipc/update_service_proxy_mojo.cc b/chrome/updater/ipc/update_service_proxy_mojo.cc
+index d340150c82ac6c564119d0099d7f895742b60b1e..e384ce5892f2d314edf3da3c236aebb3c6ebb3fd 100644
+--- a/chrome/updater/ipc/update_service_proxy_mojo.cc
++++ b/chrome/updater/ipc/update_service_proxy_mojo.cc
+@@ -20,6 +20,7 @@
+ #include "base/logging.h"
+ #include "base/memory/scoped_refptr.h"
+ #include "base/memory/weak_ptr.h"
++#include "base/process/process.h"
+ #include "base/sequence_checker.h"
+ #include "base/task/bind_post_task.h"
+ #include "base/task/sequenced_task_runner.h"
+@@ -41,6 +42,7 @@
+ #include "chrome/updater/util/posix_util.h"
+ #include "components/named_mojo_ipc_server/named_mojo_ipc_server_client_util.h"
+ #include "components/policy/core/common/policy_types.h"
++#include "mojo/public/c/system/invitation.h"
+ #include "mojo/public/cpp/bindings/callback_helpers.h"
+ #include "mojo/public/cpp/bindings/pending_receiver.h"
+ #include "mojo/public/cpp/bindings/pending_remote.h"
+@@ -406,13 +408,45 @@ void UpdateServiceProxyMojoImpl::OnConnected(
+     return;
+   }
+ 
++  // A system install's server is at least as privileged as this process - it
++  // runs as SYSTEM while callers may be any authenticated user. Saying so here
++  // keeps handles this process sends owned by this process, for the server to
++  // duplicate out of it, rather than pre-duplicated into the server. If this
++  // process cannot open the server (it runs below High integrity) that is
++  // what happens anyway. If it can (it is elevated, or SYSTEM) the server
++  // would still accept pre-duplicated handles from it, since the server only
++  // declares callers below High integrity untrusted; the flag keeps the more
++  // privileged side doing the duplication regardless, and keeps this client
++  // working should the server's classification ever be tightened. A user
++  // install's server runs as this same user, so no flag is passed there. See
++  // `CreateServerEndpointOptions()` in chrome/updater/ipc/ipc_security_win.cc
++  // and `Transport::CanAcceptReceiverOwnedHandles()`.
++  //
++  // This also grants trust in the other direction: the flag sets
++  // `is_peer_trusted` on this end, so this process will accept pre-duplicated
++  // handles and broker-destined transports from whatever is on the far end of
++  // the pipe. That is only safe because `ConnectToUpdateService()` in
++  // update_service_dialer_win.cc connects with `verify_server_privilege` and
++  // rejects the endpoint unless `IsServerElevated()` holds for system scope.
++  // Do not relax that check without revisiting this flag.
++  //
++  // Handle ownership is a Windows-only concept; elsewhere the flag is rejected.
++  MojoSendInvitationFlags invitation_flags = MOJO_SEND_INVITATION_FLAG_NONE;
++#if BUILDFLAG(IS_WIN)
++  if (IsSystemInstall(scope_)) {
++    invitation_flags = MOJO_SEND_INVITATION_FLAG_ELEVATED;
++  }
++#endif  // BUILDFLAG(IS_WIN)
++
+   auto connection = std::make_unique<mojo::IsolatedConnection>();
+   // Connect `remote_` to the RPC server by fusing its message pipe to the one
+   // created by `IsolatedConnection::Connect`.
+   if (!mojo::FusePipes(
+           std::move(pending_receiver),
+           mojo::PendingRemote<mojom::UpdateService>(
+-              connection->Connect(std::move(endpoint.value())), 0))) {
++              connection->Connect(std::move(endpoint.value()), base::Process(),
++                                  invitation_flags),
++              0))) {
+     LOG(ERROR) << "Failed to fuse Mojo pipes for RPC.";
+     remote_.reset();
+     return;
+diff --git a/components/named_mojo_ipc_server/endpoint_options.h b/components/named_mojo_ipc_server/endpoint_options.h
+index a4db69f3aba16d808d011d6749449a3569c82b9b..92d9f7b05d892fcae6add3ff4680345b50c369b8 100644
+--- a/components/named_mojo_ipc_server/endpoint_options.h
++++ b/components/named_mojo_ipc_server/endpoint_options.h
+@@ -10,6 +10,7 @@
+ #include <string>
+ #include <variant>
+ 
++#include "base/functional/callback.h"
+ #include "build/build_config.h"
+ #include "mojo/public/c/system/invitation.h"
+ #include "mojo/public/cpp/platform/named_platform_channel.h"
+@@ -20,6 +21,8 @@
+ 
+ namespace named_mojo_ipc_server {
+ 
++struct ConnectionInfo;
++
+ // Options used by NamedMojoIpcServer to start the server endpoint.
+ struct EndpointOptions {
+   using MessagePipeId = std::variant<std::monostate, uint64_t, std::string>;
+@@ -59,6 +62,15 @@ struct EndpointOptions {
+   MojoSendInvitationFlags extra_send_invitation_flags =
+       MOJO_SEND_INVITATION_FLAG_NONE;
+ 
++  // If set, called for each client that has passed validation to choose the
++  // extra flags for the invitation sent to that client, in place of
++  // `extra_send_invitation_flags`. This lets a server declare only some of its
++  // callers untrusted (MOJO_SEND_INVITATION_FLAG_UNTRUSTED_PROCESS), based on
++  // who they are. Runs on the server's sequence.
++  using SendInvitationFlagsCallback =
++      base::RepeatingCallback<MojoSendInvitationFlags(const ConnectionInfo&)>;
++  SendInvitationFlagsCallback send_invitation_flags_callback;
++
+ #if BUILDFLAG(IS_WIN)
+   // If non-empty, a security descriptor to use when creating the pipe. If
+   // empty, a default security descriptor will be used.
+diff --git a/components/named_mojo_ipc_server/named_mojo_ipc_server_unittest.cc b/components/named_mojo_ipc_server/named_mojo_ipc_server_unittest.cc
+index 17438b1924ed2f0f5eada84d99a528ba6e18cff9..b9e15e7c236f31325896d3b24c0fbfef64daca5b 100644
+--- a/components/named_mojo_ipc_server/named_mojo_ipc_server_unittest.cc
++++ b/components/named_mojo_ipc_server/named_mojo_ipc_server_unittest.cc
+@@ -11,6 +11,7 @@
+ #include <memory>
+ #include <string>
+ #include <string_view>
++#include <vector>
+ 
+ #include "base/command_line.h"
+ #include "base/functional/bind.h"
+@@ -411,6 +412,26 @@ TEST_P(NamedMojoIpcServerTest, IpcServerRestarted_NewIpcsCanBeMade) {
+   WaitForProcessExit(child_process);
+ }
+ 
++TEST_P(NamedMojoIpcServerTest, SendInvitationFlagsCallback_CalledPerClient) {
++  ipc_server_.reset();
++  std::vector<base::ProcessId> callback_pids;
++  EndpointOptions options;
++  options.send_invitation_flags_callback = base::BindLambdaForTesting(
++      [&](const ConnectionInfo& info) -> MojoSendInvitationFlags {
++        callback_pids.push_back(info.pid);
++        return MOJO_SEND_INVITATION_FLAG_NONE;
++      });
++  CreateIpcServer(std::move(options));
++  ipc_server_->StartServer();
++  WaitForServerEndpointCreated();
++
++  base::Process child_process = LaunchClientProcess();
++  base::ProcessId child_pid = child_process.Pid();
++  EXPECT_EQ(0, WaitForProcessExit(child_process));
++  EXPECT_EQ(child_pid, last_echo_string_peer_pid_);
++  EXPECT_THAT(callback_pids, testing::ElementsAre(child_pid));
++}
++
+ #if BUILDFLAG(IS_LINUX)
+ 
+ TEST_P(NamedMojoIpcServerTest,
+diff --git a/components/named_mojo_ipc_server/named_mojo_message_pipe_server.cc b/components/named_mojo_ipc_server/named_mojo_message_pipe_server.cc
+index 36947b368c1b24b0faa744e9e077201b49e4c480..16390b58c05dc9309e922f59d01b2fb8f7378c2c 100644
+--- a/components/named_mojo_ipc_server/named_mojo_message_pipe_server.cc
++++ b/components/named_mojo_ipc_server/named_mojo_message_pipe_server.cc
+@@ -152,12 +152,16 @@ void NamedMojoMessagePipeServer::OnClientConnected(
+ #undef INVALID_PROCESS_LOG
+   }
+ 
++  const MojoSendInvitationFlags send_invitation_flags =
++      options_.send_invitation_flags_callback
++          ? options_.send_invitation_flags_callback.Run(*info)
++          : options_.extra_send_invitation_flags;
++
+   if (is_isolated) {
+     // Create isolated connection.
+     auto connection = std::make_unique<mojo::IsolatedConnection>();
+-    mojo::ScopedMessagePipeHandle message_pipe =
+-        connection->Connect(std::move(endpoint), std::move(peer_process),
+-                            options_.extra_send_invitation_flags);
++    mojo::ScopedMessagePipeHandle message_pipe = connection->Connect(
++        std::move(endpoint), std::move(peer_process), send_invitation_flags);
+     on_message_pipe_ready_.Run(std::move(message_pipe), std::move(info),
+                                result.context, std::move(connection));
+     return;
+@@ -165,7 +169,7 @@ void NamedMojoMessagePipeServer::OnClientConnected(
+ 
+   // Create non-isolated connection.
+   mojo::OutgoingInvitation invitation;
+-  invitation.set_extra_flags(options_.extra_send_invitation_flags);
++  invitation.set_extra_flags(send_invitation_flags);
+   mojo::ScopedMessagePipeHandle message_pipe =
+       std::holds_alternative<uint64_t>(options_.message_pipe_id)
+           ? invitation.AttachMessagePipe(
+diff --git a/mojo/core/ipcz_driver/transport.cc b/mojo/core/ipcz_driver/transport.cc
+index 84fbcb02aa6d844e6a32527f372f37d2f49ac3b6..0a22ccc139d5e2d06731c524f7c419cb56c150ba 100644
+--- a/mojo/core/ipcz_driver/transport.cc
++++ b/mojo/core/ipcz_driver/transport.cc
+@@ -53,10 +53,10 @@ namespace {
+ // values from the sender's own process; or as valid values in the recipient's
+ // process, already duplicated there by the sender.
+ //
+-// In general senders always send handles owned by the recipient if capable of
+-// doing so. If sent handles are owned by the sender, they can only be decoded
+-// if the recipient itself is sufficiently privileged and capable to duplicate
+-// handles from the sending process.
++// Senders pre-duplicate handles into the recipient's process when they hold a
++// handle to that process and the recipient will accept them; otherwise handles
++// are sent as the sender's own, and can only be decoded if the recipient is
++// able to duplicate them out of the sending process. See SerializeObject().
+ //
+ // This enumeration indicates whether handle values encoded by a serialized
+ // object belong to the sender or the recipient.
+@@ -67,8 +67,8 @@ enum HandleOwner : uint8_t {
+   kSender,
+ 
+   // Encoded HANDLEs belong to the recipient's process. The recipient can use
+-  // these handles as-is. Only brokers should be trusted to send handles that
+-  // already belong to the recipient.
++  // these handles as-is, so it only accepts them from a peer at least as
++  // privileged as itself. See Transport::CanAcceptReceiverOwnedHandles().
+   kRecipient,
+ 
+   // For ValidateEnum().
+@@ -201,16 +201,13 @@ std::optional<PlatformHandle> DecodeHandle(HandleData data,
+   }
+ 
+   if (handle_owner == HandleOwner::kRecipient) {
+-    // Only accept handles which the peer claims to have already duplicated into
+-    // this process if the peer is at least as privileged as this end. An
+-    // elevated process does not accept recipient-owned handles from an
+-    // untrusted broker. A broker is otherwise implicitly at least as privileged
+-    // as its peers.
+-    const bool is_peer_at_least_as_privileged =
+-        from_transport.is_peer_trusted() ||
+-        (from_transport.destination_type() == Transport::kBroker &&
+-         !from_transport.is_elevated());
+-    if (!is_peer_at_least_as_privileged && !remote_process.is_current()) {
++    // Senders can only duplicate handles into this (receiving) process in
++    // two scenarios:
++    // - The sender is at least as privileged as this process; see
++    //   Transport::CanAcceptReceiverOwnedHandles().
++    // - The sender is in the same process, i.e. for `mojo::DirectReceiver`.
++    if (!from_transport.CanAcceptReceiverOwnedHandles() &&
++        !remote_process.is_current()) {
+       return std::nullopt;
+     }
+     // Verify that this is a handle to a valid object. We do not yet know the
+@@ -479,11 +476,13 @@ IpczResult Transport::SerializeObject(ObjectBase& object,
+   header.reserved[1] = 0;
+   header.reserved[2] = 0;
+ 
+-  // Handles are pre-duplicated into the recipient's process only when this end
+-  // of the transport is at least as privileged as the recipient (so the
+-  // recipient will accept them) and a handle to the recipient's process is
+-  // available. When the peer is elevated it is more privileged than this end,
+-  // so handles are sent as-is for the peer to duplicate.
++  // Windows has no built-in mechanism to carry handles over IPC, so one side
++  // must explicitly duplicate them into the other's process. That should be the
++  // more privileged side, which may be the sender or the receiver depending on
++  // topology. A broker, or a sender trusted by its peer, duplicates handles
++  // into the receiver before sending (kRecipient). Otherwise, including when
++  // the peer is elevated, handles are sent as-is for the receiver to duplicate
++  // out of this process (kSender).
+   const HandleOwner handle_owner =
+       remote_process_.IsValid() && !is_peer_elevated() &&
+               (source_type() == kBroker || is_trusted_by_peer())
+@@ -680,13 +679,7 @@ scoped_refptr<Transport> Transport::Deserialize(
+     return nullptr;
+   }
+ 
+-  base::Process process;
+   const auto& header = *reinterpret_cast<const TransportHeader*>(data.data());
+-#if BUILDFLAG(IS_WIN)
+-  if (handles.size() >= 2) {
+-    process = base::Process(handles[1].ReleaseHandle());
+-  }
+-#endif
+   // Reject transports with out of range enum value in destination_type.
+   if (!ValidateEnum(header.destination_type)) {
+     return nullptr;
+@@ -710,9 +703,20 @@ scoped_refptr<Transport> Transport::Deserialize(
+     return nullptr;
+   }
+ 
+-  if (header.is_same_remote_process &&
+-      from_transport.remote_process().IsValid()) {
+-    process = from_transport.remote_process().Duplicate();
++  // A peer may choose the new transport's remote process, by attaching a
++  // process handle or by claiming the process is its own. Honor either only if
++  // allowed; otherwise an attached handle is closed along with `handles`.
++  base::Process process;
++  if (from_transport.CanAcceptRemoteProcessFromPeer()) {
++#if BUILDFLAG(IS_WIN)
++    if (handles.size() >= 2) {
++      process = base::Process(handles[1].ReleaseHandle());
++    }
++#endif
++    if (header.is_same_remote_process &&
++        from_transport.remote_process().IsValid()) {
++      process = from_transport.remote_process().Duplicate();
++    }
+   }
+   auto transport =
+       Create({.source = from_transport.source_type(),
+diff --git a/mojo/core/ipcz_driver/transport.h b/mojo/core/ipcz_driver/transport.h
+index f3ca85fb124a9c13d675d3431903050afac5fab3..14f07269f83edc56587863928399a2cf4147fe9c 100644
+--- a/mojo/core/ipcz_driver/transport.h
++++ b/mojo/core/ipcz_driver/transport.h
+@@ -116,6 +116,43 @@ class MOJO_SYSTEM_IMPL_EXPORT Transport : public Object<Transport>,
+            (destination_type() == kBroker && source_type() != kBroker);
+   }
+ 
++#if BUILDFLAG(IS_WIN)
++  // Whether this end may adopt handles the peer claims to have already
++  // duplicated into this process (HandleOwner::kRecipient). That means trusting
++  // a handle value chosen by the peer, so the peer must be at least as
++  // privileged as this end. A non-broker trusts its broker. Two connected
++  // brokers (e.g. a mojo::IsolatedConnection) are peers, so a broker peer is
++  // refused only if this end has declared the remote process untrusted, as
++  // the system updater's public endpoint does.
++  bool CanAcceptReceiverOwnedHandles() const {
++    return is_peer_trusted() ||
++           (destination_type() == kBroker && !is_elevated() &&
++            remote_process_trust() != ProcessTrust::kUntrusted);
++  }
++#endif  // BUILDFLAG(IS_WIN)
++
++  // Whether a peer sending us a serialized transport may choose that
++  // transport's remote process, by attaching a process handle or by setting
++  // TransportHeader::is_same_remote_process. kSender handles arriving on the
++  // new transport are duplicated out of that (sending) process.
++  //
++  // A broker always allows this from a non-broker; mojo::DirectReceiver relies
++  // on it. That holds even for an untrusted non-broker such as a renderer:
++  // a broker adopts kRecipient handles only from a non-broker it trusts, so an
++  // untrusted peer can only supply the broker's own handle to that peer or a
++  // process handle the peer itself held.
++  // Otherwise this is refused if the remote process is declared untrusted.
++  bool CanAcceptRemoteProcessFromPeer() const {
++    if (source_type() == kBroker && destination_type() != kBroker) {
++      return true;
++    }
++#if BUILDFLAG(IS_WIN)
++    return remote_process_trust() != ProcessTrust::kUntrusted;
++#else
++    return true;
++#endif
++  }
++
+   ProcessTrust remote_process_trust() const { return remote_process_trust_; }
+ 
+   void SetErrorHandler(MojoProcessErrorHandler handler, uintptr_t context) {
+@@ -227,17 +264,15 @@ class MOJO_SYSTEM_IMPL_EXPORT Transport : public Object<Transport>,
+   bool leak_channel_on_shutdown_ = false;
+ 
+   // Indicates whether the remote transport endpoint is "trusted" by this
+-  // endpoint. In practice this means we will accept pre-duplicated handles from
+-  // the remote process on Windows. This bit is ignored if the remote endpoint
+-  // is a broker, since brokers are implicitly trusted; and it's currently
+-  // meaningless on platforms other than Windows.
++  // endpoint, e.g. to send pre-duplicated handles on Windows or broker-destined
++  // transports. A non-broker implicitly trusts its broker regardless of this
++  // bit; see is_source_trusted() and CanAcceptReceiverOwnedHandles().
+   bool is_peer_trusted_ = false;
+ 
+-  // Indicates whether this endpoint is "trusted" by the remote endpoint.
+-  // In practice this means the remote endpoint will accept pre-duplicated
+-  // handles from us on Windows. This bit is ignored if the local endpoint is a
+-  // broker, since brokers are implicitly trusted; and it's currently
+-  // meaningless on platforms other than Windows.
++  // Indicates whether this endpoint is "trusted" by the remote endpoint. In
++  // practice this means the remote endpoint will accept pre-duplicated handles
++  // from us on Windows. A non-broker peer implicitly trusts this endpoint if it
++  // is its broker, regardless of this bit.
+   bool is_trusted_by_peer_ = false;
+ 
+   // Indicates whether the remote transport endpoint is running in an elevated
+diff --git a/mojo/core/ipcz_driver/transport_test.cc b/mojo/core/ipcz_driver/transport_test.cc
+index 3da859dafb5e39982a6c2f71a1143f68d67aeab1..836f0605d4370ec23f8799f7a258bf17335545f6 100644
+--- a/mojo/core/ipcz_driver/transport_test.cc
++++ b/mojo/core/ipcz_driver/transport_test.cc
+@@ -22,6 +22,8 @@
+ #include "base/memory/scoped_refptr.h"
+ #include "base/memory/unsafe_shared_memory_region.h"
+ #include "base/path_service.h"
++#include "base/process/process.h"
++#include "base/process/process_handle.h"
+ #include "base/strings/string_view_util.h"
+ #include "base/synchronization/condition_variable.h"
+ #include "base/synchronization/lock.h"
+@@ -41,6 +43,10 @@
+ #include "mojo/public/cpp/platform/platform_handle.h"
+ #include "mojo/public/cpp/system/platform_handle.h"
+ 
++#if BUILDFLAG(IS_WIN)
++#include "base/win/scoped_handle.h"
++#endif
++
+ namespace mojo::core::ipcz_driver {
+ namespace {
+ 
+@@ -91,15 +97,20 @@ class MojoIpczTransportTest : public test::MojoTestBase {
+   }
+ 
+   // Retrieves a PlatformChannel endpoint from `pipe` and returns a newly
+-  // constructed Transport over it.
+-  static scoped_refptr<Transport> ReceiveTransport(MojoHandle pipe) {
++  // constructed Transport over it. By default the new Transport is a non-broker
++  // endpoint connected to a broker.
++  static scoped_refptr<Transport> ReceiveTransport(
++      MojoHandle pipe,
++      Transport::EndpointTypes endpoint_types =
++          {.source = Transport::kNonBroker, .destination = Transport::kBroker},
++      Transport::ProcessTrust process_trust = Transport::ProcessTrust{}) {
+     MojoHandle transport_for_client;
+     ReadMessageWithHandles(pipe, &transport_for_client, 1);
+     PlatformHandle handle =
+         UnwrapPlatformHandle(ScopedHandle(Handle(transport_for_client)));
+-    return Transport::Create(
+-        {.source = Transport::kNonBroker, .destination = Transport::kBroker},
+-        PlatformChannelEndpoint(std::move(handle)));
++    return Transport::Create(endpoint_types,
++                             PlatformChannelEndpoint(std::move(handle)),
++                             base::Process(), process_trust);
+   }
+ 
+   static TestMessage SerializeObjectFor(Transport& transmitter,
+@@ -826,6 +837,31 @@ TEST_F(MojoIpczTransportTest, InvalidHandleUntrusted) {
+       });
+ }
+ 
++// Substitutes `local_handle` for the first handle encoded in `message` and
++// verifies that `transport` refuses to deserialize the result. `message` must
++// have been encoded with HandleOwner::kRecipient. On return `local_handle` must
++// still be owned solely by the caller.
++void ExpectRecipientOwnedHandleRejected(Transport& transport,
++                                        TestMessage message,
++                                        HANDLE local_handle) {
++  const uint64_t value =
++      static_cast<uint64_t>(reinterpret_cast<uintptr_t>(local_handle));
++  base::span(message.bytes)
++      .subspan(Transport::FirstHandleOffsetForTesting())
++      .first<sizeof(uint64_t)>()
++      .copy_from(base::byte_span_from_ref(value));
++
++  scoped_refptr<ObjectBase> object;
++  const IpczResult result = transport.DeserializeObject(
++      base::span(message.bytes), base::span(message.handles), object);
++  EXPECT_EQ(result, IPCZ_RESULT_INVALID_ARGUMENT);
++  EXPECT_FALSE(object);
++
++  // The handle must not have been adopted (and therefore closed) by the
++  // deserializer.
++  EXPECT_TRUE(::SetEvent(local_handle));
++}
++
+ DEFINE_TEST_CLIENT_TEST_WITH_PIPE(RecipientHandleFromUntrustedBrokerClient,
+                                   MojoIpczTransportTest,
+                                   h) {
+@@ -836,31 +872,15 @@ DEFINE_TEST_CLIENT_TEST_WITH_PIPE(RecipientHandleFromUntrustedBrokerClient,
+   scoped_refptr<Transport> transport = ReceiveTransport(h);
+   transport->set_is_elevated(true);
+   transport->set_is_trusted_by_peer(true);
++  ASSERT_FALSE(transport->CanAcceptReceiverOwnedHandles());
+ 
+   TransportListener listener(*transport);
+ 
+   // Hold a local handle which the deserializer must not adopt.
+-  HANDLE event = ::CreateEvent(nullptr, FALSE, FALSE, nullptr);
+-  ASSERT_NE(event, nullptr);
+-
+-  TestMessage message = listener.WaitForNextMessage();
+-  // Substitute the local handle for the one encoded by the host. The host
+-  // encoded the message with handles owned by the recipient.
+-  uint64_t value = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(event));
+-  base::span(message.bytes)
+-      .subspan(Transport::FirstHandleOffsetForTesting())
+-      .first<sizeof(uint64_t)>()
+-      .copy_from(base::byte_span_from_ref(value));
+-
+-  scoped_refptr<ObjectBase> object;
+-  const IpczResult result = transport->DeserializeObject(
+-      base::span(message.bytes), base::span(message.handles), object);
+-  EXPECT_EQ(result, IPCZ_RESULT_INVALID_ARGUMENT);
+-  EXPECT_FALSE(object);
+-
+-  // The local handle must still be live and owned solely by this scope.
+-  EXPECT_TRUE(::SetEvent(event));
+-  ::CloseHandle(event);
++  base::win::ScopedHandle event(::CreateEvent(nullptr, FALSE, FALSE, nullptr));
++  ASSERT_TRUE(event.is_valid());
++  ExpectRecipientOwnedHandleRejected(*transport, listener.WaitForNextMessage(),
++                                     event.get());
+ 
+   TestMessage("done").Transmit(*transport);
+   EXPECT_EQ(MOJO_RESULT_OK, MojoClose(h));
+@@ -888,6 +908,147 @@ TEST_F(MojoIpczTransportTest, RecipientHandleFromUntrustedBroker) {
+       });
+ }
+ 
++DEFINE_TEST_CLIENT_TEST_WITH_PIPE(
++    RecipientHandleFromUntrustedBrokerToBrokerClient,
++    MojoIpczTransportTest,
++    h) {
++  // This client is a broker connected to another broker over what is modeled
++  // on mojo::IsolatedConnection, and it has declared the peer's process
++  // untrustworthy - as the updater does for its public endpoint, which any
++  // authenticated user may connect to. Being a broker confers no implicit trust
++  // on a peer broker, so this client must not accept handles which the peer
++  // claims to already belong to it.
++  scoped_refptr<Transport> transport = ReceiveTransport(
++      h, {.source = Transport::kBroker, .destination = Transport::kBroker},
++      Transport::ProcessTrust::kUntrusted);
++  ASSERT_FALSE(transport->is_peer_trusted());
++  ASSERT_FALSE(transport->CanAcceptReceiverOwnedHandles());
++
++  TransportListener listener(*transport);
++
++  // Hold a local handle which the deserializer must not adopt.
++  base::win::ScopedHandle event(::CreateEvent(nullptr, FALSE, FALSE, nullptr));
++  ASSERT_TRUE(event.is_valid());
++  ExpectRecipientOwnedHandleRejected(*transport, listener.WaitForNextMessage(),
++                                     event.get());
++
++  TestMessage("done").Transmit(*transport);
++  EXPECT_EQ(MOJO_RESULT_OK, MojoClose(h));
++}
++
++TEST_F(MojoIpczTransportTest, RecipientHandleFromUntrustedBrokerToBroker) {
++  RunTestClientWithController(
++      "RecipientHandleFromUntrustedBrokerToBrokerClient",
++      [&](ClientController& c) {
++        PlatformChannel channel;
++        MojoHandle transport_for_client =
++            WrapPlatformHandle(
++                channel.TakeRemoteEndpoint().TakePlatformHandle())
++                .release()
++                .value();
++        WriteMessageWithHandles(c.pipe(), "", &transport_for_client, 1);
++        scoped_refptr<Transport> transport = Transport::Create(
++            {.source = Transport::kBroker, .destination = Transport::kBroker},
++            channel.TakeLocalEndpoint(), c.process().Duplicate());
++        EXPECT_FALSE(transport->is_peer_trusted());
++
++        // A broker with a handle to the peer's process encodes handles as
++        // already owned by the recipient. The client must reject them because
++        // it has declared this peer's process untrustworthy.
++        transport->set_is_trusted_by_peer(true);
++
++        TransportListener listener(*transport);
++
++        // The client substitutes its own local handle value for the encoded
++        // one before deserializing.
++        base::win::ScopedHandle handle(
++            ::CreateEvent(nullptr, FALSE, FALSE, nullptr));
++        auto wrapper = base::MakeRefCounted<WrappedPlatformHandle>(
++            PlatformHandle(std::move(handle)));
++        SerializeObjectFor(*transport, std::move(wrapper)).Transmit(*transport);
++
++        EXPECT_EQ("done", listener.WaitForNextMessage().as_string());
++        listener.WaitForDisconnect();
++      });
++}
++
++DEFINE_TEST_CLIENT_TEST_WITH_PIPE(SenderHandleToUntrustingBrokerClient,
++                                  MojoIpczTransportTest,
++                                  h) {
++  // This client plays the server of RecipientHandleFromUntrustedBrokerToBroker:
++  // a broker which has declared its peer broker's process untrustworthy, but
++  // which holds a handle to that process, as the updater's server does by
++  // opening each caller before accepting its connection.
++  scoped_refptr<Transport> transport = ReceiveTransport(
++      h, {.source = Transport::kBroker, .destination = Transport::kBroker},
++      Transport::ProcessTrust::kUntrusted);
++  transport->set_remote_process(base::Process::OpenWithAccess(
++      base::GetParentProcessId(base::GetCurrentProcessHandle()),
++      PROCESS_DUP_HANDLE));
++  ASSERT_TRUE(transport->remote_process().IsValid());
++  ASSERT_FALSE(transport->CanAcceptReceiverOwnedHandles());
++
++  TransportListener listener(*transport);
++
++  // The peer must have encoded its handle as sender-owned, since a
++  // recipient-owned one would have been refused above. This end duplicates it
++  // out of the peer's process.
++  scoped_refptr<WrappedPlatformHandle> wrapper =
++      DeserializeObjectFrom<WrappedPlatformHandle>(
++          *transport, listener.WaitForNextMessage());
++  PlatformHandle handle = wrapper->TakeHandle();
++  ASSERT_TRUE(handle.is_valid());
++  EXPECT_TRUE(::SetEvent(handle.GetHandle().get()));
++
++  TestMessage("done").Transmit(*transport);
++  EXPECT_EQ(MOJO_RESULT_OK, MojoClose(h));
++}
++
++TEST_F(MojoIpczTransportTest, SenderHandleToUntrustingBroker) {
++  // The client side of the same relationship. It can open the peer's process
++  // (an administrator connecting to the system updater can), so on its own it
++  // would pre-duplicate handles and be refused. Declaring the peer elevated, as
++  // UpdateServiceProxyMojoImpl::OnConnected() does, makes it send handles as
++  // its own instead and lets the peer do the duplication.
++  RunTestClientWithController(
++      "SenderHandleToUntrustingBrokerClient", [&](ClientController& c) {
++        PlatformChannel channel;
++        MojoHandle transport_for_client =
++            WrapPlatformHandle(
++                channel.TakeRemoteEndpoint().TakePlatformHandle())
++                .release()
++                .value();
++        WriteMessageWithHandles(c.pipe(), "", &transport_for_client, 1);
++        scoped_refptr<Transport> transport = Transport::Create(
++            {.source = Transport::kBroker, .destination = Transport::kBroker},
++            channel.TakeLocalEndpoint(), c.process().Duplicate());
++        ASSERT_TRUE(transport->remote_process().IsValid());
++        transport->set_is_peer_elevated(true);
++
++        TransportListener listener(*transport);
++
++        base::win::ScopedHandle handle(
++            ::CreateEvent(nullptr, FALSE, FALSE, nullptr));
++        ASSERT_TRUE(handle.is_valid());
++        // Keep a duplicate to observe the peer's SetEvent() on the object.
++        base::win::ScopedHandle observer;
++        {
++          HANDLE raw = nullptr;
++          ASSERT_TRUE(::DuplicateHandle(::GetCurrentProcess(), handle.get(),
++                                        ::GetCurrentProcess(), &raw, 0, FALSE,
++                                        DUPLICATE_SAME_ACCESS));
++          observer.Set(raw);
++        }
++        auto wrapper = base::MakeRefCounted<WrappedPlatformHandle>(
++            PlatformHandle(std::move(handle)));
++        SerializeObjectFor(*transport, std::move(wrapper)).Transmit(*transport);
++
++        EXPECT_EQ("done", listener.WaitForNextMessage().as_string());
++        EXPECT_EQ(WAIT_OBJECT_0, ::WaitForSingleObject(observer.get(), 0));
++        listener.WaitForDisconnect();
++      });
++}
++
+ DEFINE_TEST_CLIENT_TEST_WITH_PIPE(TransmitThreadClient,
+                                   MojoIpczTransportTest,
+                                   h) {
+@@ -962,6 +1123,73 @@ INSTANTIATE_TEST_SUITE_P(/*empty prefix*/,
+                                              : "FeatureDisabled";
+                          });
+ 
++// Regression test for the exemption in DecodeHandle() for transports whose
++// remote process is this process. mojo::DirectReceiver hosts an extra node
++// inside an existing process and hands the broker a transport whose remote
++// process is that process. Within a non-broker process both of that
++// transport's endpoint types are kNonBroker, so the node's end is not
++// source-trusted, but the broker holds a handle to the process and therefore
++// still pre-duplicates handles for it. Rejecting those handles leaves the node
++// unable to receive its shared memory and hangs it. See CreateTransportPair()
++// in mojo/public/cpp/bindings/direct_receiver.cc.
++TEST_F(MojoIpczTransportTest, RecipientHandleForNodeInSameProcess) {
++  // The broker's end of the introduced transport, which adopted a handle to
++  // the process hosting the new node. See CreateTransports() in driver.cc.
++  auto [broker_side, unused_broker_peer] =
++      Transport::CreatePair(Transport::kBroker, Transport::kNonBroker);
++  broker_side->set_remote_process(base::Process::Current());
++
++  // The new node's end of the same transport, as created within a non-broker
++  // process.
++  auto [local_side, unused_local_peer] =
++      Transport::CreatePair(Transport::kNonBroker, Transport::kNonBroker);
++  local_side->set_remote_process(base::Process::Current());
++  ASSERT_FALSE(local_side->CanAcceptReceiverOwnedHandles());
++
++  base::win::ScopedHandle event(::CreateEvent(nullptr, FALSE, FALSE, nullptr));
++  ASSERT_TRUE(event.is_valid());
++  TestMessage message = SerializeObjectFor(
++      *broker_side, base::MakeRefCounted<WrappedPlatformHandle>(
++                        PlatformHandle(std::move(event))));
++
++  scoped_refptr<WrappedPlatformHandle> received =
++      DeserializeObjectFrom<WrappedPlatformHandle>(*local_side, message);
++  ASSERT_TRUE(received);
++  EXPECT_TRUE(received->TakeHandle().is_valid());
++}
++
++// Both ends of a mojo::IsolatedConnection are brokers and neither is explicitly
++// trusted by the other, but handle transfer must keep working in both
++// directions: whichever end cannot open its peer's process depends entirely on
++// the peer pre-duplicating handles for it. Only an end which has declared the
++// peer's process untrustworthy refuses, per
++// RecipientHandleFromUntrustedBrokerToBroker.
++TEST_F(MojoIpczTransportTest, RecipientHandleBetweenIsolatedBrokers) {
++  auto [sender, unused_sender_peer] =
++      Transport::CreatePair(Transport::kBroker, Transport::kBroker);
++  sender->set_remote_process(base::Process::Current());
++
++  // The receiving end has no handle to the sender's process, which is exactly
++  // why the sender has to pre-duplicate. This models an unprivileged client of
++  // e.g. the updater, which cannot open the server process.
++  auto [receiver, unused_receiver_peer] =
++      Transport::CreatePair(Transport::kBroker, Transport::kBroker);
++  ASSERT_FALSE(receiver->is_peer_trusted());
++  ASSERT_FALSE(receiver->remote_process().IsValid());
++  ASSERT_TRUE(receiver->CanAcceptReceiverOwnedHandles());
++
++  base::win::ScopedHandle event(::CreateEvent(nullptr, FALSE, FALSE, nullptr));
++  ASSERT_TRUE(event.is_valid());
++  TestMessage message =
++      SerializeObjectFor(*sender, base::MakeRefCounted<WrappedPlatformHandle>(
++                                      PlatformHandle(std::move(event))));
++
++  scoped_refptr<WrappedPlatformHandle> received =
++      DeserializeObjectFrom<WrappedPlatformHandle>(*receiver, message);
++  ASSERT_TRUE(received);
++  EXPECT_TRUE(received->TakeHandle().is_valid());
++}
++
+ #endif  // BUILDFLAG(IS_WIN)
+ 
+ DEFINE_TEST_CLIENT_TEST_WITH_PIPE(TransportFromUntrustedClient,
+@@ -1037,6 +1265,39 @@ DEFINE_TEST_CLIENT_TEST_WITH_PIPE(TransportFromUntrustedBrokerClient,
+     EXPECT_EQ("got untrusted", listener.WaitForNextMessage().as_string());
+   }
+ 
++  {
++    // A transport whose remote process is this client's own process, so that
++    // the serialized header carries `is_same_remote_process`. A broker peer
++    // must not be able to make the recipient adopt its handle to this process.
++    auto [our_new_transport, their_new_transport] =
++        Transport::CreatePair(Transport::kNonBroker, Transport::kNonBroker);
++    their_new_transport->set_remote_process(base::Process::Current());
++    SerializeObjectFor(*transport, std::move(their_new_transport))
++        .Transmit(*transport);
++    EXPECT_EQ("got no process", listener.WaitForNextMessage().as_string());
++  }
++
++#if BUILDFLAG(IS_WIN)
++  {
++    // The other way to name a remote process: attach a handle to one directly.
++    // Opening our own process by PID yields a real handle rather than the
++    // current-process pseudo-handle, so `is_same_remote_process` stays clear
++    // and the process travels in the serialized transport's second handle.
++    // A broker peer must not adopt that either. This vector is Windows-only;
++    // see Transport::ShouldSerializeProcessHandle().
++    auto [our_new_transport, their_new_transport] =
++        Transport::CreatePair(Transport::kNonBroker, Transport::kNonBroker);
++    base::Process opened = base::Process::Open(base::GetCurrentProcId());
++    ASSERT_TRUE(opened.IsValid());
++    ASSERT_FALSE(opened.is_current());
++    their_new_transport->set_remote_process(std::move(opened));
++    SerializeObjectFor(*transport, std::move(their_new_transport))
++        .Transmit(*transport);
++    EXPECT_EQ("got no attached process",
++              listener.WaitForNextMessage().as_string());
++  }
++#endif  // BUILDFLAG(IS_WIN)
++
+   EXPECT_EQ(MOJO_RESULT_OK, MojoClose(h));
+ }
+ 
+@@ -1044,7 +1305,8 @@ TEST_F(MojoIpczTransportTest, TransportFromUntrustedBroker) {
+   // When both endpoints of a transport are brokers, the peer being a broker
+   // does not by itself grant it any additional trust on this end. A broker
+   // receiving a serialized transport over such a link must reject it if it
+-  // claims its own peer is trusted or is itself a broker.
++  // claims its own peer is trusted or is itself a broker, and must not let it
++  // inherit a handle to the sender's process.
+   RunTestClientWithController(
+       "TransportFromUntrustedBrokerClient", [&](ClientController& c) {
+         PlatformChannel channel;
+@@ -1054,9 +1316,17 @@ TEST_F(MojoIpczTransportTest, TransportFromUntrustedBroker) {
+                 .release()
+                 .value();
+         WriteMessageWithHandles(c.pipe(), "", &transport_for_client, 1);
++#if BUILDFLAG(IS_WIN)
++        constexpr auto kClientProcessTrust =
++            Transport::ProcessTrust::kUntrusted;
++#else
++        // Process trust is not tracked off Windows.
++        constexpr auto kClientProcessTrust = Transport::ProcessTrust{};
++#endif
+         scoped_refptr<Transport> transport = Transport::Create(
+             {.source = Transport::kBroker, .destination = Transport::kBroker},
+-            channel.TakeLocalEndpoint(), c.process().Duplicate());
++            channel.TakeLocalEndpoint(), c.process().Duplicate(),
++            kClientProcessTrust);
+         EXPECT_FALSE(transport->is_peer_trusted());
+ 
+         TransportListener listener(*transport);
+@@ -1080,10 +1350,113 @@ TEST_F(MojoIpczTransportTest, TransportFromUntrustedBroker) {
+           TestMessage("got untrusted").Transmit(*transport);
+         }
+ 
++        {
++          // The serialized transport claims to share the client's process. On
++          // Windows we have declared that process untrustworthy, so the new
++          // transport must not inherit our handle to it. Elsewhere process
++          // trust is untracked and a remote process handle plays no part in
++          // handle transfer, so the claim is honored as it is on trunk.
++          TestMessage message = listener.WaitForNextMessage();
++          scoped_refptr<Transport> received =
++              DeserializeObjectFrom<Transport>(*transport, message);
++#if BUILDFLAG(IS_WIN)
++          EXPECT_FALSE(received->remote_process().IsValid());
++#endif
++          TestMessage("got no process").Transmit(*transport);
++        }
++
++#if BUILDFLAG(IS_WIN)
++        {
++          // Same conclusion for a process handle the client attached directly
++          // rather than asserting through the header. Refusing only the header
++          // bit would leave this path open.
++          TestMessage message = listener.WaitForNextMessage();
++          scoped_refptr<Transport> received =
++              DeserializeObjectFrom<Transport>(*transport, message);
++          ASSERT_TRUE(received);
++          EXPECT_FALSE(received->remote_process().IsValid());
++          TestMessage("got no attached process").Transmit(*transport);
++        }
++#endif  // BUILDFLAG(IS_WIN)
++
+         listener.WaitForDisconnect();
+       });
+ }
+ 
++DEFINE_TEST_CLIENT_TEST_WITH_PIPE(TransportWithSameRemoteProcessClient,
++                                  MojoIpczTransportTest,
++                                  h) {
++  scoped_refptr<Transport> transport = ReceiveTransport(h);
++  TransportListener listener(*transport);
++  EXPECT_EQ("ready", listener.WaitForNextMessage().as_string());
++
++  // A node hosted within this process is introduced to our broker by sending
++  // the broker a transport whose remote process is our own. See
++  // CreateTransports() in driver.cc.
++  auto [our_new_transport, their_new_transport] =
++      Transport::CreatePair(Transport::kNonBroker, Transport::kNonBroker);
++  their_new_transport->set_remote_process(base::Process::Current());
++  SerializeObjectFor(*transport, std::move(their_new_transport))
++      .Transmit(*transport);
++  EXPECT_EQ("got process", listener.WaitForNextMessage().as_string());
++
++  EXPECT_EQ(MOJO_RESULT_OK, MojoClose(h));
++}
++
++TEST_F(MojoIpczTransportTest, TransportWithSameRemoteProcess) {
++  // A broker must honor `is_same_remote_process` from a non-broker it brokers
++  // for, because that is how nodes hosted within a client process (e.g.
++  // mojo::DirectReceiver) are introduced. The process handle is not serialized
++  // in this case, so without this the broker would have no handle to the new
++  // transport's process and could not transmit handles over it at all.
++  RunTestClientWithController(
++      "TransportWithSameRemoteProcessClient", [&](ClientController& c) {
++        scoped_refptr<Transport> transport =
++            CreateAndSendTransport(c.pipe(), c.process());
++        TransportListener listener(*transport);
++        TestMessage("ready").Transmit(*transport);
++
++        TestMessage message = listener.WaitForNextMessage();
++        scoped_refptr<Transport> received =
++            DeserializeObjectFrom<Transport>(*transport, message);
++        EXPECT_TRUE(received->remote_process().IsValid());
++        EXPECT_EQ(c.process().Pid(), received->remote_process().Pid());
++        TestMessage("got process").Transmit(*transport);
++
++        listener.WaitForDisconnect();
++      });
++}
++
++// The counterpart of the case rejected by TransportFromUntrustedBroker, and of
++// RecipientHandleBetweenIsolatedBrokers for the other predicate. Both ends of a
++// mojo::IsolatedConnection are brokers and neither is source-trusted, but
++// unless one of them has declared the other's process untrustworthy the claim
++// must still be honored. Refusing it would leave transports introduced over
++// such a link with no handle to their remote process, and so no way to move
++// handles at all.
++TEST_F(MojoIpczTransportTest, SameRemoteProcessBetweenIsolatedBrokers) {
++  auto [sender, unused_sender_peer] =
++      Transport::CreatePair(Transport::kBroker, Transport::kBroker);
++
++  auto [receiver, unused_receiver_peer] =
++      Transport::CreatePair(Transport::kBroker, Transport::kBroker);
++  receiver->set_remote_process(base::Process::Current());
++  ASSERT_FALSE(receiver->is_peer_trusted());
++  ASSERT_TRUE(receiver->CanAcceptRemoteProcessFromPeer());
++
++  // A transport the peer hosts in its own process, which is what makes it set
++  // TransportHeader::is_same_remote_process when serializing.
++  auto [transmitted, unused_transmitted_peer] =
++      Transport::CreatePair(Transport::kNonBroker, Transport::kNonBroker);
++  transmitted->set_remote_process(base::Process::Current());
++
++  TestMessage message = SerializeObjectFor(*sender, std::move(transmitted));
++  scoped_refptr<Transport> received =
++      DeserializeObjectFrom<Transport>(*receiver, message);
++  ASSERT_TRUE(received);
++  EXPECT_TRUE(received->remote_process().IsValid());
++}
++
+ TEST_F(MojoIpczTransportTest, TransportFromUntrusted) {
+ #if BUILDFLAG(IS_WIN)
+   // TODO(crbug.com/414392683) default to untrusted/untracked.
