@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/electron_api_desktop_capturer.h"
 
-#include <algorithm>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -57,8 +56,6 @@
 #endif
 
 #if defined(WEBRTC_USE_PIPEWIRE)
-#include "base/strings/string_util.h"
-#include "base/uuid.h"
 #include "third_party/webrtc/modules/desktop_capture/linux/wayland/restore_token_manager.h"
 #include "third_party/webrtc/modules/portal/screencast_persist_mode.h"
 #endif
@@ -172,17 +169,9 @@ std::unique_ptr<ThumbnailCapturer> WrapCapturer(
   webrtc::DesktopCapturer::SourceList sources;
   if (capturer->GetDelegatedSourceListController() &&
       capturer->GetSourceList(&sources) && sources.size() == 1) {
-    // The portal fails the request for a malformed token instead of showing its
-    // dialog. It takes a UUID or, since 1.22.1, a D-Bus object path element.
-    const bool is_valid =
-        base::Uuid::ParseCaseInsensitive(restore_token).is_valid() ||
-        (!restore_token.empty() &&
-         std::ranges::all_of(restore_token, [](char c) {
-           return base::IsAsciiAlphaNumeric(c) || c == '_';
-         }));
-    if (persistent || is_valid) {
+    if (persistent || !restore_token.empty()) {
       webrtc::RestoreTokenManager::GetInstance().AddToken(
-          sources[0].id, is_valid ? restore_token : std::string(),
+          sources[0].id, restore_token,
           persistent ? webrtc::xdg_portal::ScreenCastPersistMode::kPersistent
                      : webrtc::xdg_portal::ScreenCastPersistMode::kTransient);
     }

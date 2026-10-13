@@ -122,10 +122,12 @@ changes:
     across launches until the user revokes it; store the returned source's `restoreToken` to use
     it on a later launch. See [Restoring a source on Wayland](#restoring-a-source-on-wayland).
   * `restoreToken` string (optional) _Linux_ _Experimental_ - A `restoreToken` from an earlier
-    call. If the system still honors it, the promise resolves with that source and no picker is
-    shown. A token that is malformed, revoked or names a source that no longer exists is ignored
-    and the picker is shown as if no token was passed. Pass `persistMode: 'persistent'` with a
-    persistent token every time: restoring it as `transient` ends the persistent grant.
+    call; `persistMode` must be passed with it. If the system still honors the token, the promise
+    resolves with that source and no picker is shown. A token that was revoked or names a source
+    that no longer exists is ignored and the picker is shown as if no token was passed; a value
+    that is not a token the system issued makes the promise reject. Pass `persistMode:
+    'persistent'` with a persistent token every time: restoring it as `transient` ends the
+    persistent grant.
 
 Returns `Promise<DesktopCapturerSource[]>` - Resolves with an array of [`DesktopCapturerSource`](structures/desktop-capturer-source.md) objects, each `DesktopCapturerSource` represents a screen or an individual window that can be captured.
 
@@ -171,9 +173,9 @@ shows on every call. To let the user pick once and capture that choice again on 
 pass `persistMode: 'persistent'`, store the source's restore token, and pass it back as
 `restoreToken` next time. Electron does not store tokens itself. A token names a screen or
 window the user already agreed to share, so keep it somewhere private to the app, for example
-encrypted with [`safeStorage`](safe-storage.md). If the user has revoked the grant, the screen or
-window no longer exists, or the stored value is not a valid token, it is ignored and the picker is
-shown again.
+encrypted with [`safeStorage`](safe-storage.md). If the user has revoked the grant or the screen or
+window no longer exists, the token is ignored and the picker is shown again. If the stored value is
+not a token the system issued, `getSources` rejects, so drop it and ask again without one.
 
 How a token is matched to a source is up to the desktop environment. GNOME and KDE remember a
 window by its app and title, and restore the open window of that app whose title is closest, so a
@@ -213,14 +215,15 @@ app.whenReady().then(() => {
   let sourceId
 
   session.defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
-    // There is no source if the user closes the picker without choosing anything.
+    // There is no source if the user closes the picker, and the call rejects if
+    // the stored value is not a token the system issued; forget it either way.
     const [source] = await desktopCapturer
       .getSources({
         types: ['screen', 'window'],
         persistMode: 'persistent',
         restoreToken: (sourceId && desktopCapturer.getRestoreToken(sourceId)) || (await readToken())
       })
-      .catch(() => [])
+      .catch(() => fs.rm(tokenFile, { force: true }).then(() => []))
     if (!source) {
       callback(null)
       return

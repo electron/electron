@@ -17,7 +17,8 @@ const persistModes = new Set(['transient', 'persistent']);
 function isValid(options: Electron.SourcesOptions) {
   if (!Array.isArray(options?.types)) return false;
   if (options.persistMode != null && !persistModes.has(options.persistMode)) return false;
-  return options.restoreToken == null || typeof options.restoreToken === 'string';
+  if (options.restoreToken != null && typeof options.restoreToken !== 'string') return false;
+  return !options.restoreToken || options.persistMode != null;
 }
 
 export { isDisplayMediaSystemPickerAvailable, getRestoreToken };

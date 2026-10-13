@@ -50,14 +50,9 @@ describe('desktopCapturer', { tags: ['serial'] }, () => {
     }
   });
 
-  it('ignores a restoreToken that is not a portal token', async () => {
-    const sources = await desktopCapturer.getSources({
-      types: getSourceTypes(),
-      thumbnailSize: { width: 0, height: 0 },
-      persistMode: 'persistent',
-      restoreToken: 'not-a-real-token'
-    });
-    expect(sources).to.be.an('array').that.is.not.empty();
+  it('throws when restoreToken is passed without persistMode', async () => {
+    const promise = desktopCapturer.getSources({ types: getSourceTypes(), restoreToken: 'token' });
+    await expect(promise).to.be.eventually.rejectedWith(Error, 'Invalid options');
   });
 
   it('getRestoreToken returns an empty string for a source that has no token', () => {
