@@ -153,6 +153,19 @@ this event, such as launching the application for the first time, attempting
 to re-launch the application when it's already running, or clicking on the
 application's dock or taskbar icon.
 
+### Event: 'app-shim-connected' _macOS_
+
+Returns:
+
+* `event` Event
+* `shim` [AppShimHost](app-shim-host.md)
+
+Emitted when an app shim has connected, after
+[`app.startAppShimServer()`](#appstartappshimserveroptions-macos). Any process
+running as the same user can connect, so check the shim (for example with
+[`shim.satisfiesCodeRequirement()`](app-shim-host.md#shimsatisfiescoderequirementrequirement))
+before you give it a window, and call `shim.quit()` to turn it away.
+
 ### Event: 'did-become-active' _macOS_
 
 Returns:
@@ -1249,6 +1262,28 @@ Activation policy types:
 * 'regular' - The application is an ordinary app that appears in the Dock and may have a user interface.
 * 'accessory' - The application doesn’t appear in the Dock and doesn’t have a menu bar, but it may be activated programmatically or by clicking on one of its windows.
 * 'prohibited' - The application doesn’t appear in the Dock and may not create windows or be activated.
+
+### `app.startAppShimServer([options])` _macOS_
+
+* `options` Object (optional)
+  * `name` string (optional) - Tells apart the servers of several running
+    copies of your app. It may only hold letters, digits, `.`, `-` and `_`. A
+    shim's `ElectronAppShimServerName` must match it. Default is `appshim`.
+
+Starts accepting connections from [app shims](app-shim-host.md). Each shim
+that connects is announced by an
+[`app-shim-connected`](#event-app-shim-connected-macos) event.
+
+Throws if the server cannot start, for example because another copy of your app
+has started one with the same `name`.
+
+This method can only be called after the app is ready. It is not available in
+Mac App Store builds.
+
+### `app.stopAppShimServer()` _macOS_
+
+Stops accepting connections from app shims. Shims that have connected stay
+connected.
 
 ### `app.importCertificate(options, callback)` _Linux_
 

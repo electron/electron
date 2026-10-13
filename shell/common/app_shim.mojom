@@ -1,0 +1,66 @@
+// Copyright (c) 2026 Anthropic, PBC.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+module electron.mojom;
+
+import "components/remote_cocoa/common/application.mojom";
+import "mojo/public/mojom/base/file_path.mojom";
+import "url/mojom/url.mojom";
+
+enum AppShimAttentionType {
+  kCancel,
+  kInformational,
+  kCritical,
+};
+
+// How much of the accessibility tree an assistive technology that is looking
+// at the shim needs. kPartial is the native controls; kComplete adds web
+// content, which a screen reader needs.
+enum AppShimAccessibilityMode {
+  kPartial,
+  kComplete,
+};
+
+// Implemented by the app shim process and called by the browser process.
+interface AppShim {
+  // Binds the remote_cocoa application through which the browser process
+  // creates the NSWindows and NSViews that this shim hosts.
+  CreateRemoteCocoaApplication(
+      pending_associated_receiver<remote_cocoa.mojom.Application> application);
+
+  // Sets the label on the shim's Dock tile. An empty label clears it.
+  SetBadgeLabel(string label);
+
+  // Bounces, or stops bouncing, the shim's Dock tile.
+  SetUserAttention(AppShimAttentionType type);
+
+  // Terminates the shim process.
+  Quit();
+};
+
+// Implemented by the browser process and called by the app shim process.
+interface AppShimHost {
+  // The shim's Dock tile was clicked, or it was opened again while running.
+  ReopenApp(bool has_visible_windows);
+
+  // The shim was asked to open files or URLs.
+  FilesOpened(array<mojo_base.mojom.FilePath> files);
+  UrlsOpened(array<url.mojom.Url> urls);
+
+  // An assistive technology started looking at the shim. The accessibility
+  // tree of its windows is built in the browser process, which must turn it
+  // on.
+  EnableAccessibilitySupport(AppShimAccessibilityMode mode);
+
+  // The person asked the shim to quit. The shim keeps running until the
+  // browser answers with AppShim.Quit or closes the connection.
+  QuitRequested();
+};
+
+// The first interface served on the connection a shim makes to the browser.
+interface AppShimHostBootstrap {
+  // `app_shim_receiver` is null when the browser turns the shim away.
+  OnShimConnected(pending_receiver<AppShimHost> host_receiver)
+      => (pending_receiver<AppShim>? app_shim_receiver);
+};

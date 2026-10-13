@@ -85,3 +85,15 @@ mojom("web_contents_utility") {
     "//url/mojom:url_mojom_origin",
   ]
 }
+
+if (is_mac) {
+  mojom("app_shim") {
+    sources = [ "app_shim.mojom" ]
+
+    public_deps = [
+      "//components/remote_cocoa/common:mojo",
+      "//mojo/public/mojom/base",
+      "//url/mojom:url_mojom_gurl",
+    ]
+  }
+}

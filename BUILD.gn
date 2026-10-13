@@ -684,11 +684,14 @@ source_set("electron_lib") {
 
   if (is_mac) {
     deps += [
+      "shell/common:app_shim",
       "//components/os_crypt/async/browser:keychain_key_provider",
       "//components/os_crypt/common:keychain_password_mac",
       "//components/remote_cocoa/app_shim",
       "//components/remote_cocoa/browser",
       "//content/browser:mac_helpers",
+      "//mojo/core/embedder",
+      "//mojo/public/cpp/platform",
       "//ui/accelerated_widget_mac",
     ]
 
@@ -1256,6 +1259,20 @@ if (is_mac) {
     deps = [ ":electron_swiftshader_binaries" ]
   }
 
+  # The executable of an app shim. Apps copy it into the shim bundles they make;
+  # it links nothing from Electron and loads the host app's framework.
+  executable("electron_app_shim_loader") {
+    output_name = "app_shim_loader"
+    sources = [ "shell/app_shim/app_shim_loader_mac.mm" ]
+    frameworks = [ "Cocoa.framework" ]
+  }
+
+  bundle_data("electron_app_shim_loader_bundle_data") {
+    sources = [ "$root_out_dir/app_shim_loader" ]
+    outputs = [ "{{bundle_contents_dir}}/Helpers/{{source_file_part}}" ]
+    public_deps = [ ":electron_app_shim_loader" ]
+  }
+
   bundle_data("electron_crashpad_helper") {
     sources = [ "$root_out_dir/chrome_crashpad_handler" ]
 
@@ -1354,7 +1371,10 @@ if (is_mac) {
       ":electron_xibs",
     ]
     if (!is_mas_build) {
-      bundle_deps += [ ":electron_crashpad_helper" ]
+      bundle_deps += [
+        ":electron_app_shim_loader_bundle_data",
+        ":electron_crashpad_helper",
+      ]
     }
     info_plist = "shell/common/resources/mac/Info.plist"
 
@@ -1371,6 +1391,12 @@ if (is_mac) {
       "-Wl,-install_name,@rpath/$output_name.framework/$output_name",
       "-rpath",
       "@loader_path/Libraries",
+
+      # The folder this framework is in, where its sibling frameworks are. The
+      # app's executable has it as an rpath too, but an app shim loads this
+      # framework from an executable in another bundle.
+      "-rpath",
+      "@loader_path/../../..",
 
       # Required for exporting all symbols of libuv.
       "-Wl,-force_load,obj/third_party/electron_node/deps/uv/libuv.a",

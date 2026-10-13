@@ -13,6 +13,11 @@ __attribute__((visibility("default"))) int ElectronMain(int argc, char* argv[]);
 __attribute__((visibility("default"))) int ElectronInitializeICUandStartNode(
     int argc,
     char* argv[]);
+// The entry point of an app shim: a small app, in a bundle of its own, that
+// loads this framework from a host Electron app and shows windows on the
+// host's behalf. See docs/api/app-shim-host.md.
+__attribute__((visibility("default"))) int ElectronAppShimMain(int argc,
+                                                               char* argv[]);
 }
 #endif
 

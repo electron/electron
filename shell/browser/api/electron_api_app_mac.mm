@@ -8,7 +8,13 @@
 
 #include "base/path_service.h"
 #include "base/strings/sys_string_conversions.h"
+#include "electron/mas.h"
+#include "gin/arguments.h"
+#include "shell/browser/app_shim/app_shim_listener.h"
+#include "shell/browser/browser.h"
+#include "shell/common/app_shim_constants.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/process_util.h"
 #include "shell/common/thread_restrictions.h"
 
@@ -53,6 +59,30 @@ bool App::IsRunningUnderARM64Translation() const {
     return false;
   }
   return proc_translated == 1;
+}
+
+void App::StartAppShimServer(gin::Arguments* args) {
+#if IS_MAS_BUILD()
+  args->ThrowTypeError("App shims are not available in Mac App Store builds");
+#else
+  if (!Browser::Get()->is_ready()) {
+    args->ThrowTypeError(
+        "app.startAppShimServer() can only be called after app is ready");
+    return;
+  }
+  std::string name = app_shim::kDefaultServerName;
+  if (gin_helper::Dictionary options; args->GetNext(&options))
+    options.Get("name", &name);
+  std::string error;
+  if (!AppShimListener::Get()->Start(name, &error))
+    args->ThrowTypeError(error);
+#endif
+}
+
+void App::StopAppShimServer() {
+#if !IS_MAS_BUILD()
+  AppShimListener::Get()->Stop();
+#endif
 }
 
 }  // namespace electron::api

@@ -44,6 +44,10 @@
 #include "ui/gfx/geometry/rect_conversions.h"
 #include "ui/gfx/geometry/rect_f.h"
 
+#if BUILDFLAG(IS_MAC)
+#include "shell/browser/api/electron_api_app_shim_host.h"
+#endif
+
 #if defined(TOOLKIT_VIEWS)
 #include "shell/browser/native_window_views.h"
 #endif
@@ -1301,6 +1305,10 @@ gin_helper::WrappableBase* BaseWindow::New(gin::Arguments* const args) {
     args->ThrowTypeError(error_message);
     return nullptr;
   }
+  if (!IsAppShimValid(options, &error_message)) {
+    args->ThrowTypeError(error_message);
+    return nullptr;
+  }
 
   return new BaseWindow(args, options);
 }
@@ -1324,6 +1332,30 @@ bool BaseWindow::IsWindowNameValid(const gin_helper::Dictionary& options,
       return false;
     }
   }
+  return true;
+}
+
+// static
+bool BaseWindow::IsAppShimValid(const gin_helper::Dictionary& options,
+                                std::string* error_message) {
+#if BUILDFLAG(IS_MAC)
+  v8::Local<v8::Value> value;
+  if (!options.Get(options::kAppShim, &value) || value->IsNullOrUndefined())
+    return true;
+  AppShimHost* app_shim = nullptr;
+  if (!gin::ConvertFromV8(options.isolate(), value, &app_shim) || !app_shim) {
+    *error_message = "appShim must be an AppShimHost";
+    return false;
+  }
+  if (!app_shim->GetRemoteCocoaApplicationHost()) {
+    *error_message = "The app shim has disconnected";
+    return false;
+  }
+  if (bool modal = false; options.Get(options::kModal, &modal) && modal) {
+    *error_message = "A window in an app shim can't be modal";
+    return false;
+  }
+#endif
   return true;
 }
 

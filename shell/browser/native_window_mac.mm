@@ -22,6 +22,7 @@
 #include "content/public/browser/desktop_media_id.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/browser/native_window_mac_remote.h"
 #include "shell/browser/ui/cocoa/electron_native_widget_mac.h"
 #include "shell/browser/ui/cocoa/electron_ns_panel.h"
 #include "shell/browser/ui/cocoa/electron_ns_window.h"
@@ -31,6 +32,7 @@
 #include "shell/browser/ui/cocoa/root_view_mac.h"
 #include "shell/browser/ui/cocoa/window_buttons_proxy.h"
 #include "shell/browser/ui/drag_util.h"
+#include "shell/browser/ui/views/content_view_targeter_delegate.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -44,7 +46,6 @@
 #include "ui/views/background.h"
 #include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
 #include "ui/views/view_targeter.h"
-#include "ui/views/view_targeter_delegate.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/native_frame_view_mac.h"
 
@@ -111,49 +112,6 @@ struct Converter<electron::NativeWindowMac::VisualEffectState> {
 };
 
 }  // namespace gin
-
-namespace {
-
-// A ViewTargeterDelegate installed on content_view_ that makes it
-// hit-test-transparent except where one of its descendants covers the
-// target rect.
-//
-// In BrowserWindow, the WebContentsView is added as a sibling of
-// content_view_ at a lower z-order so that user-added child views paint
-// above web content. content_view_ itself covers the full window, so the
-// default DoesIntersectRect (a bounds check) would always return true and
-// the parent targeter would stop there, never reaching the WebContentsView
-// behind it. By only intersecting where a child actually does, the parent's
-// default TargetForRect loop skips content_view_ and falls through to the
-// sibling, ultimately resolving to the WebContentsView's NativeViewHost so
-// BridgedContentView::hitTest: routes the event to RenderWidgetHostViewCocoa.
-//
-// This must never affect TargetForRect's contract — it only narrows
-// HitTestRect, which the default loop already handles by skipping the child.
-// Returning nullptr from TargetForRect (the previous approach) violated the
-// contract and crashed RootView::UpdateCursor (see #51576).
-class ContentViewTargeterDelegate : public views::ViewTargeterDelegate {
- public:
-  bool DoesIntersectRect(const views::View* target,
-                         const gfx::Rect& rect) const override {
-    if (!views::ViewTargeterDelegate::DoesIntersectRect(target, rect)) {
-      return false;
-    }
-    for (const views::View* child : target->children()) {
-      if (!child->GetVisible() || !child->GetCanProcessEventsWithinSubtree()) {
-        continue;
-      }
-      gfx::RectF rect_in_child(rect);
-      views::View::ConvertRectToTarget(target, child, &rect_in_child);
-      if (child->HitTestRect(gfx::ToEnclosingRect(rect_in_child))) {
-        return true;
-      }
-    }
-    return false;
-  }
-};
-
-}  // namespace
 
 namespace electron {
 
@@ -1928,6 +1886,11 @@ std::unique_ptr<NativeWindow> NativeWindow::Create(
     const int32_t base_window_id,
     const gin_helper::Dictionary& options,
     NativeWindow* parent) {
+  if (remote_cocoa::ApplicationHost* application_host =
+          NativeWindowMacRemote::ApplicationHostFromOptions(options)) {
+    return std::make_unique<NativeWindowMacRemote>(base_window_id, options,
+                                                   parent, application_host);
+  }
   return std::make_unique<NativeWindowMac>(base_window_id, options, parent);
 }
 
