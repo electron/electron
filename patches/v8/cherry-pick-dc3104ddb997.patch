@@ -1,0 +1,919 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
+Date: Fri, 2 Oct 2026 15:11:18 +0200
+Subject: [M155] [maglev, turbofan] Fix DefineNamedOwnProperty to invalidate
+ constness correctly
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> [maglev, turbofan] Fix DefineNamedOwnProperty to invalidate constness correctly
+>
+> DefineNamedOwnProperty was used in object literals, spread object
+> literals, and class field initializers.
+>
+> In object literals, we're writing into a fresh object where the field is
+> uninitialized. That part should stay as is.
+>
+> But in spread object literals and class field initializers, the define
+> might invalidate constness of the field, in case the field already had a
+> value before the DefineNamedOwnProperty.
+>
+> Changes in this CL:
+>
+> 1) Add a new bytecode (DefineNamedOwnPropertyInLiteral) for the object
+> literal case (there we don't need additional checks) and make Maglev &
+> Turbofan deopt instead of doing DefineNamedOwnProperty with a const
+> field (this will invalidate constness).
+>
+> 2) Unify AccessModes in Maglev and Turbofan; For the old
+> DefineNamedOwnProperty, Turbofan was always using
+> AccessMode::kStoreInLiteral and Maglev was using AccessMode::kDefine.
+> Now both use AccessMode::kStoreInLiteral for
+> DefineNamedOwnPropertyInLiteral and AccessMode::kDefine for
+> DefineNamedOwnProperty.
+>
+> Fixed: 567088929
+> Change-Id: I48e2d9014be77947506e6cd6294d77e5f80ef762
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8501161
+> Commit-Queue: Marja Hölttä <marja@chromium.org>
+> Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#110308}
+
+(cherry picked from commit 6937df3c3da7b499d60d51f349c2e330b7f8ee15)
+
+Bug: 570435355,567088929
+Change-Id: I48e2d9014be77947506e6cd6294d77e5f80ef762
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8536586
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Cr-Commit-Position: refs/branch-heads/15.5@{#47}
+Cr-Branched-From: 17abeb50acb4563e253edebd0db09062d39c8c91-refs/heads/15.5.35@{#1}
+Cr-Branched-From: 9f9b3ebe0a8137c2a344d1a84536068231af632f-refs/heads/main@{#109811}
+
+diff --git a/src/baseline/baseline-compiler.cc b/src/baseline/baseline-compiler.cc
+index 7f2475c08355e9872a39d3c39a344ed86a21f597..2024fc6ea38301b8b5d04645f6b6ae0cded3944a 100644
+--- a/src/baseline/baseline-compiler.cc
++++ b/src/baseline/baseline-compiler.cc
+@@ -1207,6 +1207,10 @@ void BaselineCompiler::VisitDefineNamedOwnProperty() {
+       FeedbackSlotAsTagged(2));         // slot
+ }
+ 
++void BaselineCompiler::VisitDefineNamedOwnPropertyInLiteral() {
++  VisitDefineNamedOwnProperty();
++}
++
+ void BaselineCompiler::VisitSetKeyedProperty() {
+   // KeyedStoreIC is currently a base class for multiple keyed property store
+   // operations and contains mixed logic for set and define operations,
+diff --git a/src/compiler/bytecode-graph-builder.cc b/src/compiler/bytecode-graph-builder.cc
+index c0ecd4acd7282df7fb4287722f31a977539b8a64..a2c7fca52b804dce53c908859102d8f3ac060b81 100644
+--- a/src/compiler/bytecode-graph-builder.cc
++++ b/src/compiler/bytecode-graph-builder.cc
+@@ -241,6 +241,8 @@ class BytecodeGraphBuilder {
+     kSet,
+     // Define value to the receiver without checking the prototype chain.
+     kDefineOwn,
++    // Like kDefineOwn, but inside an object literal
++    kDefineOwnInLiteral
+   };
+   void BuildNamedStore(NamedStoreMode store_mode);
+   void BuildLdaLookupSlot(TypeofMode typeof_mode);
+@@ -2187,7 +2189,12 @@ void BytecodeGraphBuilder::BuildNamedStore(NamedStoreMode store_mode) {
+     DCHECK_EQ(FeedbackSlotKind::kDefineNamedOwn,
+               broker()->GetFeedbackSlotKind(feedback));
+ 
+-    op = javascript()->DefineNamedOwnProperty(name, feedback);
++    op = javascript()->DefineNamedOwnProperty(false, name, feedback);
++  } else if (store_mode == NamedStoreMode::kDefineOwnInLiteral) {
++    DCHECK_EQ(FeedbackSlotKind::kDefineNamedOwn,
++              broker()->GetFeedbackSlotKind(feedback));
++
++    op = javascript()->DefineNamedOwnProperty(true, name, feedback);
+   } else {
+     DCHECK_EQ(NamedStoreMode::kSet, store_mode);
+     LanguageMode language_mode =
+@@ -2309,6 +2316,10 @@ void BytecodeGraphBuilder::VisitDefineNamedOwnProperty() {
+   BuildNamedStore(NamedStoreMode::kDefineOwn);
+ }
+ 
++void BytecodeGraphBuilder::VisitDefineNamedOwnPropertyInLiteral() {
++  BuildNamedStore(NamedStoreMode::kDefineOwnInLiteral);
++}
++
+ void BytecodeGraphBuilder::VisitSetKeyedProperty() {
+   PrepareEagerCheckpoint();
+   Node* value = environment()->LookupAccumulator();
+diff --git a/src/compiler/js-native-context-specialization.cc b/src/compiler/js-native-context-specialization.cc
+index 00de1e7ecce5d425cea59d7de0c22cbca90ad050..b601a245a391e1a8a730781d4d755c7938125ad1 100644
+--- a/src/compiler/js-native-context-specialization.cc
++++ b/src/compiler/js-native-context-specialization.cc
+@@ -2338,9 +2338,9 @@ Reduction JSNativeContextSpecialization::ReduceJSDefineNamedOwnProperty(
+   JSDefineNamedOwnPropertyNode n(node);
+   DefineNamedOwnPropertyParameters const& p = n.Parameters();
+   if (!p.feedback().IsValid()) return NoChange();
+-  return ReducePropertyAccess(node, nullptr, p.name(), n.value(),
+-                              FeedbackSource(p.feedback()),
+-                              AccessMode::kStoreInLiteral);
++  return ReducePropertyAccess(
++      node, nullptr, p.name(), n.value(), FeedbackSource(p.feedback()),
++      p.in_literal() ? AccessMode::kStoreInLiteral : AccessMode::kDefine);
+ }
+ 
+ Reduction JSNativeContextSpecialization::ReduceElementAccessOnString(
+@@ -3429,7 +3429,8 @@ JSNativeContextSpecialization::BuildPropertyStore(
+               AccessBuilder::ForJSObjectPropertiesOrHashKnownPointer()),
+           storage, effect, control);
+     }
+-    if (access_info.IsFastDataConstant() && access_mode == AccessMode::kStore &&
++    if (access_info.IsFastDataConstant() &&
++        access_mode != AccessMode::kStoreInLiteral &&
+         !access_info.HasTransitionMap()) {
+       Node* deoptimize = graph()->NewNode(
+           simplified()->CheckIf(DeoptimizeReason::kStoreToConstant),
+diff --git a/src/compiler/js-operator.cc b/src/compiler/js-operator.cc
+index cb1f985dfe38660f50a1763977b8a3261b0c35a3..e1e25f422312c7b79b5cd3b1cd7f7bceb242a755 100644
+--- a/src/compiler/js-operator.cc
++++ b/src/compiler/js-operator.cc
+@@ -222,7 +222,8 @@ CreateFunctionContextParameters const& CreateFunctionContextParametersOf(
+ 
+ bool operator==(DefineNamedOwnPropertyParameters const& lhs,
+                 DefineNamedOwnPropertyParameters const& rhs) {
+-  return lhs.name_.object().location() == rhs.name_.object().location() &&
++  return lhs.in_literal() == rhs.in_literal() &&
++         lhs.name_.object().location() == rhs.name_.object().location() &&
+          lhs.feedback() == rhs.feedback();
+ }
+ 
+@@ -232,7 +233,7 @@ bool operator!=(DefineNamedOwnPropertyParameters const& lhs,
+ }
+ 
+ size_t hash_value(DefineNamedOwnPropertyParameters const& p) {
+-  return base::hash_combine(p.name_.object().location(),
++  return base::hash_combine(p.in_literal(), p.name_.object().location(),
+                             FeedbackSource::Hash()(p.feedback()));
+ }
+ 
+@@ -1336,12 +1337,12 @@ const Operator* JSOperatorBuilder::DefineKeyedOwnProperty(
+ }
+ 
+ const Operator* JSOperatorBuilder::DefineNamedOwnProperty(
+-    NameRef name, FeedbackSource const& feedback) {
++    bool in_literal, NameRef name, FeedbackSource const& feedback) {
+   static constexpr int kObject = 1;
+   static constexpr int kValue = 1;
+   static constexpr int kFeedbackVector = 1;
+   static constexpr int kArity = kObject + kValue + kFeedbackVector;
+-  DefineNamedOwnPropertyParameters parameters(name, feedback);
++  DefineNamedOwnPropertyParameters parameters(in_literal, name, feedback);
+   return zone()->New<Operator1<DefineNamedOwnPropertyParameters>>(   // --
+       IrOpcode::kJSDefineNamedOwnProperty, Operator::kNoProperties,  // opcode
+       "JSDefineNamedOwnProperty",                                    // name
+diff --git a/src/compiler/js-operator.h b/src/compiler/js-operator.h
+index d59a26837788d2287311c3f1db5dd5d946e858e4..156e4b31110b46666f91eb36734860a81dc12596 100644
+--- a/src/compiler/js-operator.h
++++ b/src/compiler/js-operator.h
+@@ -418,13 +418,16 @@ CreateFunctionContextParameters const& CreateFunctionContextParametersOf(
+ // Defines parameters for JSDefineNamedOwnProperty operator.
+ class DefineNamedOwnPropertyParameters final {
+  public:
+-  DefineNamedOwnPropertyParameters(NameRef name, FeedbackSource const& feedback)
+-      : name_(name), feedback_(feedback) {}
++  DefineNamedOwnPropertyParameters(bool in_literal, NameRef name,
++                                   FeedbackSource const& feedback)
++      : in_literal_(in_literal), name_(name), feedback_(feedback) {}
+ 
+   NameRef name() const { return name_; }
+   FeedbackSource const& feedback() const { return feedback_; }
++  bool in_literal() const { return in_literal_; }
+ 
+  private:
++  bool in_literal_;
+   const NameRef name_;
+   FeedbackSource const feedback_;
+ 
+@@ -1157,7 +1160,7 @@ class V8_EXPORT_PRIVATE JSOperatorBuilder final
+   const Operator* SetNamedProperty(LanguageMode language_mode, NameRef name,
+                                    FeedbackSource const& feedback);
+ 
+-  const Operator* DefineNamedOwnProperty(NameRef name,
++  const Operator* DefineNamedOwnProperty(bool in_literal, NameRef name,
+                                          FeedbackSource const& feedback);
+   const Operator* DefineKeyedOwnPropertyInLiteral(
+       const FeedbackSource& feedback);
+diff --git a/src/debug/debug-evaluate.cc b/src/debug/debug-evaluate.cc
+index d14f6806a01a2898c70ac5d8ea87f4f778b8a586..bb9332d7c40afa13213f18b83d8cee299c0fa73a 100644
+--- a/src/debug/debug-evaluate.cc
++++ b/src/debug/debug-evaluate.cc
+@@ -1312,6 +1312,7 @@ bool BytecodeRequiresRuntimeCheck(interpreter::Bytecode bytecode) {
+   switch (bytecode) {
+     case Bytecode::kSetNamedProperty:
+     case Bytecode::kDefineNamedOwnProperty:
++    case Bytecode::kDefineNamedOwnPropertyInLiteral:
+     case Bytecode::kSetKeyedProperty:
+     case Bytecode::kStaInArrayLiteral:
+     case Bytecode::kDefineKeyedOwnPropertyInLiteral:
+diff --git a/src/interpreter/bytecode-array-builder.cc b/src/interpreter/bytecode-array-builder.cc
+index 53bb41f3d23027872fc51541acdffe2a3c1c5276..80d6bdf43e1f4fa05a46943caa2d81e90cecc02f 100644
+--- a/src/interpreter/bytecode-array-builder.cc
++++ b/src/interpreter/bytecode-array-builder.cc
+@@ -1043,6 +1043,17 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::DefineNamedOwnProperty(
+   return *this;
+ }
+ 
++BytecodeArrayBuilder& BytecodeArrayBuilder::DefineNamedOwnPropertyInLiteral(
++    Register object, const AstRawString* name, int feedback_slot) {
++  size_t name_index = GetConstantPoolEntry(name);
++  // Ensure that the store operation is in sync with the IC slot kind.
++  DCHECK_EQ(
++      FeedbackSlotKind::kDefineNamedOwn,
++      feedback_vector_spec()->GetKind(FeedbackVector::ToSlot(feedback_slot)));
++  OutputDefineNamedOwnPropertyInLiteral(object, name_index, feedback_slot);
++  return *this;
++}
++
+ BytecodeArrayBuilder& BytecodeArrayBuilder::SetKeyedProperty(
+     Register object, Register key, int feedback_slot,
+     LanguageMode language_mode) {
+diff --git a/src/interpreter/bytecode-array-builder.h b/src/interpreter/bytecode-array-builder.h
+index 1a13156983423dddf7fa45672cab8996bc3dca9a..b8738d5e688fb2300164e1d54c80964aaa99e268 100644
+--- a/src/interpreter/bytecode-array-builder.h
++++ b/src/interpreter/bytecode-array-builder.h
+@@ -208,6 +208,13 @@ class V8_EXPORT_PRIVATE BytecodeArrayBuilder final {
+                                                const AstRawString* name,
+                                                int feedback_slot);
+ 
++  // Like DefineNamedOwnProperty, but may only be used for the initializing
++  // store of a property of an object literal created from a boilerplate: the
++  // property exists in the object's map and still holds the uninitialized
++  // value.
++  BytecodeArrayBuilder& DefineNamedOwnPropertyInLiteral(
++      Register object, const AstRawString* name, int feedback_slot);
++
+   // Set a property keyed by a value in a register, trigger the setters and
+   // set traps if necessary. The value to be set should be in the
+   // accumulator.
+diff --git a/src/interpreter/bytecode-generator.cc b/src/interpreter/bytecode-generator.cc
+index 1e892ea9b428a00b5a011ca4958d56ec7c4aa22b..e5356eb231416a747f5373e5244535c36fa68f63 100644
+--- a/src/interpreter/bytecode-generator.cc
++++ b/src/interpreter/bytecode-generator.cc
+@@ -4285,8 +4285,13 @@ void BytecodeGenerator::VisitObjectLiteral(ObjectLiteral* expr) {
+           VisitForAccumulatorValue(property->value());
+           if (key->IsStringLiteral()) {
+             FeedbackSlot slot = feedback_spec()->AddDefineNamedOwnICSlot();
+-            builder()->DefineNamedOwnProperty(literal, key->AsRawPropertyName(),
+-                                              feedback_index(slot));
++            if (clone_object_spread) {
++              builder()->DefineNamedOwnProperty(
++                  literal, key->AsRawPropertyName(), feedback_index(slot));
++            } else {
++              builder()->DefineNamedOwnPropertyInLiteral(
++                  literal, key->AsRawPropertyName(), feedback_index(slot));
++            }
+           } else {
+             FeedbackSlot slot = feedback_spec()->AddDefineKeyedOwnICSlot();
+             builder()->DefineKeyedOwnProperty(
+diff --git a/src/interpreter/bytecodes.h b/src/interpreter/bytecodes.h
+index d426822afe8a01ae30c921fa38172cc9ae1f1bdd..045aed78246b5a7b9c79fbd35d42da21fe5f2323 100644
+--- a/src/interpreter/bytecodes.h
++++ b/src/interpreter/bytecodes.h
+@@ -193,6 +193,9 @@ namespace interpreter {
+   V(DefineNamedOwnProperty, ImplicitRegisterUse::kReadAndClobberAccumulator,   \
+     OperandType::kReg, OperandType::kConstantPoolIndex,                        \
+     OperandType::kFeedbackSlot)                                                \
++  V(DefineNamedOwnPropertyInLiteral,                                           \
++    ImplicitRegisterUse::kReadAndClobberAccumulator, OperandType::kReg,        \
++    OperandType::kConstantPoolIndex, OperandType::kFeedbackSlot)               \
+   V(SetKeyedProperty, ImplicitRegisterUse::kReadAndClobberAccumulator,         \
+     OperandType::kReg, OperandType::kReg, OperandType::kFeedbackSlot)          \
+   V(DefineKeyedOwnProperty, ImplicitRegisterUse::kReadAndClobberAccumulator,   \
+diff --git a/src/interpreter/interpreter-generator.cc b/src/interpreter/interpreter-generator.cc
+index 4f8da14f9f1e0e5f840f820e46f3151e2aa75deb..d7ce26b4c2ebfd3b13f060982691357fab11da5c 100644
+--- a/src/interpreter/interpreter-generator.cc
++++ b/src/interpreter/interpreter-generator.cc
+@@ -740,6 +740,17 @@ IGNITION_HANDLER(DefineNamedOwnProperty, InterpreterSetNamedPropertyAssembler) {
+   SetNamedProperty(Builtin::kDefineNamedOwnIC, NamedPropertyType::kOwn);
+ }
+ 
++// DefineNamedOwnPropertyInLiteral <object> <name_index> <slot>
++//
++// Same as DefineNamedOwnProperty, but only used for the initializing store of
++// a property of an object literal created from a boilerplate, where the
++// property still holds the uninitialized value. Optimizing compilers rely on
++// this.
++IGNITION_HANDLER(DefineNamedOwnPropertyInLiteral,
++                 InterpreterSetNamedPropertyAssembler) {
++  SetNamedProperty(Builtin::kDefineNamedOwnIC, NamedPropertyType::kOwn);
++}
++
+ // SetKeyedProperty <object> <key> <slot>
+ //
+ // Calls the KeyedStoreIC at FeedbackVector slot <slot> for <object> and
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index 4f682b998193265020cc4be863390ca461907707..d9c451ead57e23a5729e931451f676c5cdd48372 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -4591,7 +4591,7 @@ MaybeReduceResult MaglevGraphBuilder::TryBuildStoreField(
+       broker()->dependencies()->DependOnNoSlackTrackingChange(*original_map);
+     }
+   } else if (access_info.IsFastDataConstant() &&
+-             access_mode == compiler::AccessMode::kStore) {
++             access_mode != compiler::AccessMode::kStoreInLiteral) {
+     return reducer_.EmitUnconditionalDeopt(DeoptimizeReason::kStoreToConstant);
+   }
+ 
+@@ -4888,9 +4888,9 @@ MaybeReduceResult MaglevGraphBuilder::TryBuildNamedAccess(
+               {receiver, GetConstant(feedback.name()), GetAccumulator()},
+               feedback_source);
+         case compiler::AccessMode::kDefine:
++        case compiler::AccessMode::kStoreInLiteral:
+           return {};
+         case compiler::AccessMode::kHas:
+-        case compiler::AccessMode::kStoreInLiteral:
+           UNREACHABLE();
+       }
+     }
+@@ -7127,6 +7127,16 @@ ReduceResult MaglevGraphBuilder::VisitSetPrototypeProperties() {
+ 
+ ReduceResult MaglevGraphBuilder::VisitDefineNamedOwnProperty() {
+   // DefineNamedOwnProperty <object> <name_index> <slot>
++  return VisitDefineNamedOwnPropertyHelper(false);
++}
++
++ReduceResult MaglevGraphBuilder::VisitDefineNamedOwnPropertyInLiteral() {
++  // DefineNamedOwnPropertyInLiteral <object> <name_index> <slot>
++  return VisitDefineNamedOwnPropertyHelper(true);
++}
++
++ReduceResult MaglevGraphBuilder::VisitDefineNamedOwnPropertyHelper(
++    bool in_literal) {
+   ValueNode* object = LoadRegister(0);
+   compiler::NameRef name = GetRefOperand<Name>(1);
+   FeedbackSlot slot = GetSlotOperand(2);
+@@ -7150,7 +7160,9 @@ ReduceResult MaglevGraphBuilder::VisitDefineNamedOwnProperty() {
+     case compiler::ProcessedFeedback::kNamedAccess:
+       RETURN_IF_DONE(TryBuildNamedAccess(
+           object, object, processed_feedback.AsNamedAccess(), feedback_source,
+-          compiler::AccessMode::kDefine, build_generic_access));
++          in_literal ? compiler::AccessMode::kStoreInLiteral
++                     : compiler::AccessMode::kDefine,
++          build_generic_access));
+       break;
+ 
+     default:
+diff --git a/src/maglev/maglev-graph-builder.h b/src/maglev/maglev-graph-builder.h
+index 9802401fa0e1eb572b406add2d9a6057292518c4..1121b1feff1b78b061c9a97f65c64e41706497bf 100644
+--- a/src/maglev/maglev-graph-builder.h
++++ b/src/maglev/maglev-graph-builder.h
+@@ -1310,6 +1310,7 @@ class MaglevGraphBuilder {
+   ReduceResult BuildGetKeyedProperty(
+       ValueNode* object, const compiler::FeedbackSource& feedback_source,
+       const compiler::ProcessedFeedback& processed_feedback);
++  ReduceResult VisitDefineNamedOwnPropertyHelper(bool in_literal);
+   ReduceResult BuildSetKeyedProperty(
+       ValueNode* object, ValueNode* index, compiler::AccessMode access_mode,
+       const compiler::FeedbackSource& feedback_source,
+diff --git a/test/mjsunit/compiler/define-const-data-field-class-field.js b/test/mjsunit/compiler/define-const-data-field-class-field.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..af62b64be0f402b54ce30cc0d070766cf7154df4
+--- /dev/null
++++ b/test/mjsunit/compiler/define-const-data-field-class-field.js
+@@ -0,0 +1,158 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --turbofan
++
++// A DefineNamedOwnProperty into a const field may only keep the field const
++// when the field still holds the uninitialized value, i.e. when the define is
++// the initializing store of an object literal. A define into an already
++// initialized const field must generalize the field to mutable.
++
++// Class field initializer, run on an already initialized object via return
++// override.
++(function TestDefineIntoInitializedConstField() {
++  function H1(a, b) { this.otherProp = a; this.myProp = b;}
++  function H2(a, b) { this.otherProp = a; this.myProp = b;}
++
++  const first = {};
++  const second = {};
++  const holder = new H1(1, first);
++
++  class Base { constructor(o) { return o; } }
++
++  // This function is just used for feeding map information into the optimized function.
++  function feedMap(o) {
++    return o.otherProp;
++  }
++  %PrepareFunctionForOptimization(feedMap);
++
++  // Warm up with both H1 and H2.
++  const dummyH1 = new H1(1, second);
++  const dummyH2 = new H2(1, second);
++  feedMap(dummyH1);
++  feedMap(dummyH2);
++
++  class D extends Base { myProp = (feedMap(this), second); }
++
++  function define(o) {
++    new D(o);
++  }
++  %PrepareFunctionForOptimization(D);
++  %PrepareFunctionForOptimization(define);
++
++  // Warm up define only with H2.
++  for (let i = 0; i < 20; i++) {
++     define(new H2(1, second));
++  }
++
++  %OptimizeFunctionOnNextCall(define);
++  define(new H2(1, second));
++  assertOptimized(define);
++
++  // Assert the good state before we begin the shenanigans.
++  assertTrue(%HasOwnConstDataProperty(holder, "myProp"));
++
++  // This call should invalidate the constness of 'myProp' in H1.
++  define(holder);
++  assertSame(second, holder.myProp);
++  assertFalse(%HasOwnConstDataProperty(holder, "myProp"));
++})();
++
++// Same, but the const field has Smi representation.
++(function TestDefineIntoInitializedConstFieldSmi() {
++  function H1(a, b) { this.otherProp = a; this.myProp = b;}
++  function H2(a, b) { this.otherProp = a; this.myProp = b;}
++
++  const first = 10;
++  const second = 20;
++  const holder = new H1(1, first);
++
++  class Base { constructor(o) { return o; } }
++
++  // This function is just used for feeding map information into the optimized function.
++  function feedMap(o) {
++    return o.otherProp;
++  }
++  %PrepareFunctionForOptimization(feedMap);
++
++  // Warm up with both H1 and H2.
++  const dummyH1 = new H1(1, second);
++  const dummyH2 = new H2(1, second);
++  feedMap(dummyH1);
++  feedMap(dummyH2);
++
++  class D extends Base { myProp = (feedMap(this), second); }
++
++  function define(o) {
++    new D(o);
++  }
++  %PrepareFunctionForOptimization(D);
++  %PrepareFunctionForOptimization(define);
++
++  // Warm up define only with H2.
++  for (let i = 0; i < 20; i++) {
++     define(new H2(1, second));
++  }
++
++  %OptimizeFunctionOnNextCall(define);
++  define(new H2(1, second));
++  assertOptimized(define);
++
++  // Assert the good state before we begin the shenanigans.
++  assertTrue(%HasOwnConstDataProperty(holder, "myProp"));
++
++  // This call should invalidate the constness of 'myProp' in H1.
++  define(holder);
++  assertSame(second, holder.myProp);
++  assertFalse(%HasOwnConstDataProperty(holder, "myProp"));
++})();
++
++// Same, but the const field has Double representation.
++(function TestDefineIntoInitializedConstFieldDouble() {
++  function H1(a, b) { this.otherProp = a; this.myProp = b;}
++  function H2(a, b) { this.otherProp = a; this.myProp = b;}
++
++  const first = 1.5;
++  const second = 2.5;
++  const holder = new H1(1, first);
++
++  class Base { constructor(o) { return o; } }
++
++  // This function is just used for feeding map information into the optimized function.
++  function feedMap(o) {
++    return o.otherProp;
++  }
++  %PrepareFunctionForOptimization(feedMap);
++
++  // Warm up with both H1 and H2.
++  const dummyH1 = new H1(1, second);
++  const dummyH2 = new H2(1, second);
++  feedMap(dummyH1);
++  feedMap(dummyH2);
++
++  class D extends Base { myProp = (feedMap(this), second); }
++
++  function define(o) {
++    new D(o);
++  }
++  %PrepareFunctionForOptimization(D);
++  %PrepareFunctionForOptimization(define);
++
++  // Warm up define only with H2.
++  for (let i = 0; i < 20; i++) {
++     define(new H2(1, second));
++  }
++
++  %OptimizeFunctionOnNextCall(define);
++  define(new H2(1, second));
++  assertOptimized(define);
++
++  // Assert the good state before we begin the shenanigans.
++  assertTrue(%HasOwnConstDataProperty(holder, "myProp"));
++
++  // This call should invalidate the constness of 'myProp' in H1.
++  define(holder);
++  assertSame(second, holder.myProp);
++  assertFalse(%HasOwnConstDataProperty(holder, "myProp"));
++})();
+diff --git a/test/mjsunit/maglev/define-const-data-field-class-field.js b/test/mjsunit/maglev/define-const-data-field-class-field.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..2e58d812ac45d98e35d66eb3f86d572bca8882ce
+--- /dev/null
++++ b/test/mjsunit/maglev/define-const-data-field-class-field.js
+@@ -0,0 +1,142 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --maglev
++
++// A DefineNamedOwnProperty into a const field may only keep the field const
++// when the field still holds the uninitialized value, i.e. when the define is
++// the initializing store of an object literal. A define into an already
++// initialized const field must generalize the field to mutable.
++
++// Class field initializer, run on an already initialized object via return
++// override. The define site is megamorphic and has never seen an H; Maglev
++// knows the receiver's map from the preceding load. The define must generalize
++// the field.
++
++(function TestDefineIntoInitializedConstField() {
++  function H(v) { this.myProp = v; }
++  const first = {};
++  const second = {};
++  const holder = new H(first);
++  const other = new H(second);
++
++  class Base { constructor(o) { return o; } }
++  class D extends Base { myProp = second; }
++
++  // Make the define site megamorphic without ever seeing an H.
++  for (let i = 0; i < 30; i++) {
++    const o = {};
++    o["p" + i] = i;
++    new D(o);
++  }
++
++  function define(o, constructD) {
++    const t = o.myProp;  // Known maps for o: {H, literal}.
++    if (constructD) new D(o);
++    return t;
++  }
++  %PrepareFunctionForOptimization(define);
++  // One call with an H to get its map into the load feedback, without
++  // constructing D on it (that would generalize H.myProp in the runtime).
++  define(other, false);
++  // The other calls construct D, so that its call frequency stays high enough
++  // for Maglev to inline it.
++  for (let i = 0; i < 30; i++) define({myProp: second}, true);
++  %OptimizeMaglevOnNextCall(define);
++  define({myProp: second}, true);
++
++  // Assert the good state before we begin the shenanigans.
++  assertTrue(%HasOwnConstDataProperty(holder, "myProp"));
++
++  // This call should invalidate the constness of 'myProp' in H.
++  assertSame(first, define(holder, true));
++  assertSame(second, holder.myProp);
++  assertFalse(%HasOwnConstDataProperty(holder, "myProp"));
++})();
++
++// Same, but the const field has Smi representation. The representation is
++// determined by the first store in H; there is no runtime function to assert
++// it, so the test relies on 1 giving a Smi field.
++(function TestDefineIntoInitializedConstSmiField() {
++  function H(v) { this.myProp = v; }
++  const first = 1;
++  const second = 2;
++  const holder = new H(first);
++  const other = new H(second);
++
++  class Base { constructor(o) { return o; } }
++  class D extends Base { myProp = second; }
++
++  // Make the define site megamorphic without ever seeing an H.
++  for (let i = 0; i < 30; i++) {
++    const o = {};
++    o["p" + i] = i;
++    new D(o);
++  }
++
++  function define(o, constructD) {
++    const t = o.myProp;  // Known maps for o: {H, literal}.
++    if (constructD) new D(o);
++    return t;
++  }
++  %PrepareFunctionForOptimization(define);
++  // One call with an H to get its map into the load feedback, without
++  // constructing D on it (that would generalize H.myProp in the runtime).
++  define(other, false);
++  // The other calls construct D, so that its call frequency stays high enough
++  // for Maglev to inline it.
++  for (let i = 0; i < 30; i++) define({myProp: second}, true);
++  %OptimizeMaglevOnNextCall(define);
++  define({myProp: second}, true);
++
++  // Assert the good state before we begin the shenanigans.
++  assertTrue(%HasOwnConstDataProperty(holder, "myProp"));
++
++  // This call should invalidate the constness of 'myProp' in H.
++  assertSame(first, define(holder, true));
++  assertSame(second, holder.myProp);
++  assertFalse(%HasOwnConstDataProperty(holder, "myProp"));
++})();
++
++// Same, but the const field has Double representation.
++(function TestDefineIntoInitializedConstDoubleField() {
++  function H(v) { this.myProp = v; }
++  const first = 1.5;
++  const second = 2.5;
++  const holder = new H(first);
++  const other = new H(second);
++
++  class Base { constructor(o) { return o; } }
++  class D extends Base { myProp = second; }
++
++  // Make the define site megamorphic without ever seeing an H.
++  for (let i = 0; i < 30; i++) {
++    const o = {};
++    o["p" + i] = i;
++    new D(o);
++  }
++
++  function define(o, constructD) {
++    const t = o.myProp;  // Known maps for o: {H, literal}.
++    if (constructD) new D(o);
++    return t;
++  }
++  %PrepareFunctionForOptimization(define);
++  // One call with an H to get its map into the load feedback, without
++  // constructing D on it (that would generalize H.myProp in the runtime).
++  define(other, false);
++  // The other calls construct D, so that its call frequency stays high enough
++  // for Maglev to inline it.
++  for (let i = 0; i < 30; i++) define({myProp: second}, true);
++  %OptimizeMaglevOnNextCall(define);
++  define({myProp: second}, true);
++
++  // Assert the good state before we begin the shenanigans.
++  assertTrue(%HasOwnConstDataProperty(holder, "myProp"));
++
++  // This call should invalidate the constness of 'myProp' in H.
++  assertEquals(first, define(holder, true));
++  assertEquals(second, holder.myProp);
++  assertFalse(%HasOwnConstDataProperty(holder, "myProp"));
++})();
+diff --git a/test/mjsunit/maglev/define-const-data-field-object-literal.js b/test/mjsunit/maglev/define-const-data-field-object-literal.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..fd3b728c1a0b78856de19d68e052b8ce57a645d1
+--- /dev/null
++++ b/test/mjsunit/maglev/define-const-data-field-object-literal.js
+@@ -0,0 +1,65 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --maglev
++
++// A DefineNamedOwnProperty into a const field may only keep the field const
++// when the field still holds the uninitialized value, i.e. when the define is
++// the initializing store of an object literal. In these tests the define is
++// the initializing store, so Maglev code must not deoptimize and the field
++// must stay const.
++
++(function TestObjectLiteralStaysOptimized() {
++  function make(x) {
++    return {a: x};
++  }
++
++  %PrepareFunctionForOptimization(make);
++  // The literal needs two executions before its feedback has a boilerplate.
++  make({});
++  assertTrue(%HasOwnConstDataProperty(make({}), "a"));
++
++  %OptimizeMaglevOnNextCall(make);
++  const marker = {};
++  const o = make(marker);
++  assertSame(marker, o.a);
++  assertTrue(%HasOwnConstDataProperty(o, "a"));
++})();
++
++// Same, but the const field has Smi representation. The representation is
++// determined by the first store; there is no runtime function to assert it,
++// so the test relies on 1 giving a Smi field. The property name differs from
++// the one above because object literals of the same shape share their map
++// transitions, and the field of the transition above already has HeapObject
++// representation.
++(function TestObjectLiteralSmiStaysOptimized() {
++  function make(x) {
++    return {b: x};
++  }
++
++  %PrepareFunctionForOptimization(make);
++  make(1);
++  assertTrue(%HasOwnConstDataProperty(make(2), "b"));
++
++  %OptimizeMaglevOnNextCall(make);
++  const o = make(3);
++  assertEquals(3, o.b);
++  assertTrue(%HasOwnConstDataProperty(o, "b"));
++})();
++
++// Same, but the const field has Double representation.
++(function TestObjectLiteralDoubleStaysOptimized() {
++  function make(x) {
++    return {c: x};
++  }
++
++  %PrepareFunctionForOptimization(make);
++  make(1.5);
++  assertTrue(%HasOwnConstDataProperty(make(2.5), "c"));
++
++  %OptimizeMaglevOnNextCall(make);
++  const o = make(3.5);
++  assertEquals(3.5, o.c);
++  assertTrue(%HasOwnConstDataProperty(o, "c"));
++})();
+diff --git a/test/mjsunit/maglev/define-const-data-field-spread-literal.js b/test/mjsunit/maglev/define-const-data-field-spread-literal.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..4e0ef303b4724e81e8f09897e7f668e3faba87d5
+--- /dev/null
++++ b/test/mjsunit/maglev/define-const-data-field-spread-literal.js
+@@ -0,0 +1,78 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --maglev
++
++// A DefineNamedOwnProperty into a const field may only keep the field const
++// when the field still holds the uninitialized value, i.e. when the define is
++// the initializing store of an object literal. An object literal with a spread
++// clones the source object and then defines the remaining properties into the
++// clone, so the define may hit an already initialized const field copied from
++// the source. It must then generalize the field to mutable.
++//
++// Note that Maglev does not know the map of the cloned object, so the define
++// is compiled from its own feedback, which the runtime only produces after it
++// has already generalized the field. These tests therefore document the
++// expected behavior; they do not exercise the uninitialized check in the
++// optimized code.
++
++(function TestSpreadDefineIntoInitializedConstField() {
++  const first = {};
++  const second = {};
++  function make(src) {
++    return {...src, a: second};
++  }
++
++  const src = {a: first};
++  assertTrue(%HasOwnConstDataProperty(src, "a"));
++
++  %PrepareFunctionForOptimization(make);
++  make(src);
++  make(src);
++  %OptimizeMaglevOnNextCall(make);
++  const o = make(src);
++  assertSame(second, o.a);
++  assertFalse(%HasOwnConstDataProperty(o, "a"));
++  assertSame(first, src.a);
++})();
++
++// Same, but the const field has Smi representation. The representation is
++// determined by the first store; there is no runtime function to assert it,
++// so the test relies on 1 giving a Smi field.
++(function TestSpreadDefineIntoInitializedConstSmiField() {
++  function make(src) {
++    return {...src, b: 2};
++  }
++
++  const src = {b: 1};
++  assertTrue(%HasOwnConstDataProperty(src, "b"));
++
++  %PrepareFunctionForOptimization(make);
++  make(src);
++  make(src);
++  %OptimizeMaglevOnNextCall(make);
++  const o = make(src);
++  assertEquals(2, o.b);
++  assertFalse(%HasOwnConstDataProperty(o, "b"));
++  assertEquals(1, src.b);
++})();
++
++// Same, but the const field has Double representation.
++(function TestSpreadDefineIntoInitializedConstDoubleField() {
++  function make(src) {
++    return {...src, c: 2.5};
++  }
++
++  const src = {c: 1.5};
++  assertTrue(%HasOwnConstDataProperty(src, "c"));
++
++  %PrepareFunctionForOptimization(make);
++  make(src);
++  make(src);
++  %OptimizeMaglevOnNextCall(make);
++  const o = make(src);
++  assertEquals(2.5, o.c);
++  assertFalse(%HasOwnConstDataProperty(o, "c"));
++  assertEquals(1.5, src.c);
++})();
+diff --git a/test/unittests/interpreter/bytecode-array-builder-unittest.cc b/test/unittests/interpreter/bytecode-array-builder-unittest.cc
+index fa12e2d27b26070adc755e26082e12748b2f53a2..bd140988532521b7858e70d40e59a95d9751f28a 100644
+--- a/test/unittests/interpreter/bytecode-array-builder-unittest.cc
++++ b/test/unittests/interpreter/bytecode-array-builder-unittest.cc
+@@ -245,6 +245,7 @@ TEST_F(BytecodeArrayBuilderTest, AllBytecodesGenerated) {
+       .SetKeyedProperty(reg, reg, strict_keyed_store_slot.ToInt(),
+                         LanguageMode::kStrict)
+       .DefineNamedOwnProperty(reg, name, define_named_own_slot.ToInt())
++      .DefineNamedOwnPropertyInLiteral(reg, name, define_named_own_slot.ToInt())
+       .DefineKeyedOwnProperty(reg, reg, DefineKeyedOwnPropertyFlag::kNoFlags,
+                               define_named_own_slot.ToInt())
+       .StoreInArrayLiteral(reg, reg, store_array_element_slot.ToInt())
+diff --git a/test/unittests/interpreter/bytecode_expectations/ObjectLiterals.golden b/test/unittests/interpreter/bytecode_expectations/ObjectLiterals.golden
+index ee23185c71625fd185a2ee50b71123c0520a7ccb..c972f099ddebff934809fa529f83edf6e438fdb0 100644
+--- a/test/unittests/interpreter/bytecode_expectations/ObjectLiterals.golden
++++ b/test/unittests/interpreter/bytecode_expectations/ObjectLiterals.golden
+@@ -51,7 +51,7 @@ bytecodes: [
+   /*   45 S> */ B(CreateObjectLiteral), U8(0:OBJECT_BOILERPLATE_DESCRIPTION_TYPE), FBV(0), Flag8(0x29),
+                 B(Star1),
+                 B(Ldar), R(0),
+-  /*   75 E> */ B(DefineNamedOwnProperty), R(1), U8(1:"val"), FBV(1),
++  /*   75 E> */ B(DefineNamedOwnPropertyInLiteral), R(1), U8(1:"val"), FBV(1),
+                 B(Ldar), R(1),
+   /*   79 S> */ B(Return),
+ ]
+@@ -76,7 +76,7 @@ bytecodes: [
+                 B(Star1),
+                 B(Ldar), R(0),
+   /*   69 E> */ B(AddSmi), I8(1), EmbeddedFeedback(),
+-                B(DefineNamedOwnProperty), R(1), U8(1:"val"), FBV(1),
++                B(DefineNamedOwnPropertyInLiteral), R(1), U8(1:"val"), FBV(1),
+                 B(Ldar), R(1),
+   /*   75 S> */ B(Return),
+ ]
+@@ -98,7 +98,7 @@ bytecodes: [
+   /*   34 S> */ B(CreateObjectLiteral), U8(0:OBJECT_BOILERPLATE_DESCRIPTION_TYPE), FBV(0), Flag8(0x29),
+                 B(Star0),
+   /*   49 E> */ B(CreateClosure), U8(1:SHARED_FUNCTION_INFO_TYPE), FBV(0), Flag8(0x2),
+-                B(DefineNamedOwnProperty), R(0), U8(2:"func"), FBV(1),
++                B(DefineNamedOwnPropertyInLiteral), R(0), U8(2:"func"), FBV(1),
+                 B(Ldar), R(0),
+   /*   66 S> */ B(Return),
+ ]
+@@ -121,7 +121,7 @@ bytecodes: [
+   /*   34 S> */ B(CreateObjectLiteral), U8(0:OBJECT_BOILERPLATE_DESCRIPTION_TYPE), FBV(0), Flag8(0x29),
+                 B(Star0),
+   /*   43 E> */ B(CreateClosure), U8(1:SHARED_FUNCTION_INFO_TYPE), FBV(0), Flag8(0x2),
+-                B(DefineNamedOwnProperty), R(0), U8(2:"func"), FBV(1),
++                B(DefineNamedOwnPropertyInLiteral), R(0), U8(2:"func"), FBV(1),
+                 B(Ldar), R(0),
+   /*   67 S> */ B(Return),
+ ]
+@@ -309,7 +309,7 @@ bytecodes: [
+   /*   50 S> */ B(CreateObjectLiteral), U8(1:OBJECT_BOILERPLATE_DESCRIPTION_TYPE), FBV(0), Flag8(0x29),
+                 B(Star1),
+                 B(Ldar), R(0),
+-  /*   64 E> */ B(DefineNamedOwnProperty), R(1), U8(2:"val"), FBV(1),
++  /*   64 E> */ B(DefineNamedOwnPropertyInLiteral), R(1), U8(2:"val"), FBV(1),
+                 B(Ldar), R(0),
+   /*   68 E> */ B(ToName),
+                 B(Star2),
+diff --git a/test/unittests/interpreter/bytecode_expectations/TopLevelObjectLiterals.golden b/test/unittests/interpreter/bytecode_expectations/TopLevelObjectLiterals.golden
+index 922ff3d25fd68311a4225ec0e7479c6c0d02d598..a241697e852938ad58f75384bfe6987a4d308b10 100644
+--- a/test/unittests/interpreter/bytecode_expectations/TopLevelObjectLiterals.golden
++++ b/test/unittests/interpreter/bytecode_expectations/TopLevelObjectLiterals.golden
+@@ -21,7 +21,7 @@ bytecodes: [
+   /*    8 S> */ B(CreateObjectLiteral), U8(1:OBJECT_BOILERPLATE_DESCRIPTION_TYPE), FBV(0), Flag8(0x29),
+                 B(Star0),
+   /*   16 E> */ B(CreateClosure), U8(2:SHARED_FUNCTION_INFO_TYPE), FBV(0), Flag8(0x0),
+-                B(DefineNamedOwnProperty), R(0), U8(3:"func"), FBV(1),
++                B(DefineNamedOwnPropertyInLiteral), R(0), U8(3:"func"), FBV(1),
+                 B(Ldar), R(0),
+   /*    8 E> */ B(StaGlobal), U8(4:"a"), FBV(3),
+                 B(LdaUndefined),

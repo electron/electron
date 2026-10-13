@@ -1,0 +1,166 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
+Date: Thu, 1 Oct 2026 16:01:51 +0200
+Subject: [M155] [maglev] Retain ArrayBuffers of constant TypedArrays
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> [maglev] Retain ArrayBuffers of constant TypedArrays
+>
+> Constant TypedArrays are already held strongly by whatever
+> object they're constant in (PropertyCell, constant field),
+> and if they're no longer constants, the code should be deopted.
+>
+> As an additional defense, "retain" the buffers in Maglev code.
+>
+> This adds a "Retain" mechanism to Maglev; previously it was
+> only possible in Turbofan / Turboshaft. (It doesn't really retain,
+> but it inserts the target object as a weak embedded object,
+> so if the object dies, the code is deoptimized.)
+>
+> Fixed: 568010382
+> Change-Id: I371c8b3e12973213410348f40244f7201235596a
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8494795
+> Commit-Queue: Marja Hölttä <marja@chromium.org>
+> Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#110249}
+
+(cherry picked from commit e321b042d4115179bb01270df2e75fc35ed65548)
+
+Bug: 569770883,568010382
+Change-Id: I371c8b3e12973213410348f40244f7201235596a
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8524093
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.5@{#43}
+Cr-Branched-From: 17abeb50acb4563e253edebd0db09062d39c8c91-refs/heads/15.5.35@{#1}
+Cr-Branched-From: 9f9b3ebe0a8137c2a344d1a84536068231af632f-refs/heads/main@{#109811}
+
+diff --git a/src/maglev/maglev-code-gen-state.h b/src/maglev/maglev-code-gen-state.h
+index fe88347fecabe5b20a98039367a9a7eb59e02e8c..2d1b06299921637abdc4d9458e09f119487ea7e4 100644
+--- a/src/maglev/maglev-code-gen-state.h
++++ b/src/maglev/maglev-code-gen-state.h
+@@ -5,6 +5,8 @@
+ #ifndef V8_MAGLEV_MAGLEV_CODE_GEN_STATE_H_
+ #define V8_MAGLEV_MAGLEV_CODE_GEN_STATE_H_
+ 
++#include <unordered_set>
++
+ #include "src/codegen/assembler.h"
+ #include "src/codegen/label.h"
+ #include "src/codegen/machine-type.h"
+@@ -132,6 +134,15 @@ class MaglevCodeGenState {
+ 
+   inline BasicBlock* RealJumpTarget(BasicBlock* block);
+ 
++  using RetainedObjects =
++      std::unordered_set<Handle<HeapObject>, Handle<HeapObject>::hash,
++                         Handle<HeapObject>::equal_to>;
++  void Retain(Handle<HeapObject> heap_object) {
++    retained_objects_.insert(heap_object);
++  }
++
++  const RetainedObjects& retained_objects() const { return retained_objects_; }
++
+  private:
+   MaglevCompilationInfo* const compilation_info_;
+   MaglevSafepointTableBuilder* const safepoint_table_builder_;
+@@ -143,6 +154,8 @@ class MaglevCodeGenState {
+   std::vector<LazyDeoptInfo*> lazy_deopts_;
+   std::vector<NodeBase*> handlers_;
+ 
++  RetainedObjects retained_objects_;
++
+   int untagged_slots_ = 0;
+   int tagged_slots_ = 0;
+   uint32_t max_deopted_stack_size_ = kMaxUInt32;
+diff --git a/src/maglev/maglev-code-generator.cc b/src/maglev/maglev-code-generator.cc
+index aabf1a89ca3579fd56d84357862246d5ac7277c7..db078876f73f67c3fa3bf812b75f77b60a6275b9 100644
+--- a/src/maglev/maglev-code-generator.cc
++++ b/src/maglev/maglev-code-generator.cc
+@@ -1882,6 +1882,7 @@ bool MaglevCodeGenerator::EmitCode() {
+   EmitDeferredCode();
+   if (!EmitDeopts()) return false;
+   EmitExceptionHandlerTrampolines();
++  EmitRetainedObjects();
+   __ FinishCode();
+ 
+   code_gen_succeeded_ = true;
+@@ -2031,6 +2032,21 @@ void MaglevCodeGenerator::EmitExceptionHandlerTrampolines() {
+ #endif
+ }
+ 
++void MaglevCodeGenerator::EmitRetainedObjects() {
++  if (code_gen_state_.retained_objects().empty()) return;
++
++  // This code is never executed; it's just for inserting weak embedded objects
++  // into the code.
++  __ RecordComment("-- Retained objects");
++  __ Trap();
++
++  MaglevAssembler::TemporaryRegisterScope temps(masm());
++  Register scratch = temps.AcquireScratch();
++  for (Handle<HeapObject> heap_object : code_gen_state_.retained_objects()) {
++    __ Move(scratch, heap_object);
++  }
++}
++
+ void MaglevCodeGenerator::EmitMetadata() {
+   // Final alignment before starting on the metadata section.
+   masm()->Align(InstructionStream::kMetadataAlignment);
+diff --git a/src/maglev/maglev-code-generator.h b/src/maglev/maglev-code-generator.h
+index e7c2967bc4ddc50b526600d6a5469a538f0b0114..b38547c244a288ce0fd4debf80e0572baddc45e3 100644
+--- a/src/maglev/maglev-code-generator.h
++++ b/src/maglev/maglev-code-generator.h
+@@ -41,6 +41,7 @@ class MaglevCodeGenerator final {
+   void EmitDeferredCode();
+   V8_NODISCARD bool EmitDeopts();
+   void EmitExceptionHandlerTrampolines();
++  void EmitRetainedObjects();
+   void EmitMetadata();
+   void RecordInlinedFunctions();
+ 
+diff --git a/src/maglev/maglev-ir.cc b/src/maglev/maglev-ir.cc
+index 4ea43c7fa37eeb975dbc60716214901f3af543a5..a6de639d3a67b10fc9aeb6a0abce8354bd15be04 100644
+--- a/src/maglev/maglev-ir.cc
++++ b/src/maglev/maglev-ir.cc
+@@ -7936,6 +7936,18 @@ void GenerateTypedArrayLoadFromDataPointer(MaglevAssembler* masm,
+   }
+ }
+ 
++void RetainConstantTypedArrayBuffer(MaglevAssembler* masm,
++                                    compiler::JSTypedArrayRef typed_array) {
++  // The constant typed array comes from a constant-folded source (property
++  // cell, const field, ...) which holds it strongly, and the code depends on
++  // that source not changing. So the buffer behind the embedded data pointer
++  // cannot die while this code is valid. Embed the buffer anyway as defense in
++  // depth: with this weak reference, the code is deoptimized when the buffer
++  // dies.
++  masm->code_gen_state()->Retain(
++      typed_array.buffer(masm->compilation_info()->broker()).object());
++}
++
+ template <typename ResultReg>
+ void GenerateTypedArrayLoad(MaglevAssembler* masm, Register object,
+                             Register index, ResultReg result_reg,
+@@ -7963,6 +7975,8 @@ void GenerateConstantTypedArrayLoad(MaglevAssembler* masm,
+                                     compiler::JSTypedArrayRef typed_array,
+                                     Register index, ResultReg result_reg,
+                                     ElementsKind kind) {
++  RetainConstantTypedArrayBuffer(masm, typed_array);
++
+   MaglevAssembler::TemporaryRegisterScope temps(masm);
+   Register data_pointer = temps.Acquire();
+   __ Move(data_pointer, reinterpret_cast<intptr_t>(typed_array.data_ptr()));
+@@ -8024,6 +8038,8 @@ void GenerateConstantTypedArrayStore(MaglevAssembler* masm,
+                                      compiler::JSTypedArrayRef typed_array,
+                                      Register index, ValueReg value,
+                                      ElementsKind elements_kind) {
++  RetainConstantTypedArrayBuffer(masm, typed_array);
++
+   MaglevAssembler::TemporaryRegisterScope temps(masm);
+   Register data_pointer = temps.Acquire();
+ 

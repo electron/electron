@@ -1,0 +1,450 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Robert Flack <flackr@chromium.org>
+Date: Tue, 13 Oct 2026 13:21:29 -0700
+Subject: [M152] Fix pre-interpolation composition with mismatched underlying
+ values
+
+Original change's description:
+> Fix pre-interpolation composition with mismatched underlying values
+>
+> When converting non-neutral additive or accumulative keyframes,
+> InvalidatableInterpolation::MaybeConvertPairwise and
+> ConvertSingleKeyframe should only pass underlying_value_owner.Value() to
+> with a matching InterpolationType.
+>
+> This fixes issues when animating a registered custom property whose
+> underlying value may be absent, or not convertible by any
+> InterpolationType, or produced by a different InterpolationType.
+>
+> Bug: 566496747
+> Change-Id: Ide25c19ff4a63c8e000f90c26fcd4dc1a5b7bc65
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8521821
+> Commit-Queue: Robert Flack <flackr@chromium.org>
+> Reviewed-by: Kevin Ellis <kevers@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1713374}
+
+(cherry picked from commit 544a340956293550ca5eeb89d7a046879527df18)
+
+Bug: 571383401,566496747
+Change-Id: Ide25c19ff4a63c8e000f90c26fcd4dc1a5b7bc65
+
+diff --git a/third_party/blink/renderer/core/animation/css_custom_list_interpolation_type.cc b/third_party/blink/renderer/core/animation/css_custom_list_interpolation_type.cc
+index b3fda638be907e2722280018f12bb361e3ec6d76..cdf44e259555014d0d3a0b24e3f5bc026baef609 100644
+--- a/third_party/blink/renderer/core/animation/css_custom_list_interpolation_type.cc
++++ b/third_party/blink/renderer/core/animation/css_custom_list_interpolation_type.cc
+@@ -73,6 +73,12 @@ CSSCustomListInterpolationType::PreInterpolationCompositeIfNeeded(
+     const InterpolationValue& underlying,
+     EffectModel::CompositeOperation composite,
+     ConversionCheckers& conversion_checkers) const {
++  conversion_checkers.push_back(MakeGarbageCollected<UnderlyingLengthChecker>(
++      UnderlyingLengthChecker::GetUnderlyingLength(underlying)));
++  if (!underlying) {
++    return value;
++  }
++
+   // This adapts a ListInterpolationFunctions::CompositeItemCallback function
+   // such that we can use the InterpolationType::Composite function of the
+   // inner interpolation type to get the answer.
+@@ -82,12 +88,10 @@ CSSCustomListInterpolationType::PreInterpolationCompositeIfNeeded(
+   UnderlyingValueOwner owner;
+   owner.Set(this, underlying);
+ 
+-  ConversionCheckers null_checkers;
+-
+   const CSSInterpolationType* interpolation_type =
+       inner_interpolation_type_.Get();
+   auto composite_callback =
+-      [interpolation_type, composite, &null_checkers](
++      [interpolation_type, composite, &conversion_checkers](
+           UnderlyingValue& underlying_value, double underlying_fraction,
+           const InterpolableValue& interpolable_value,
+           const NonInterpolableValue* non_interpolable_value) {
+@@ -99,7 +103,7 @@ CSSCustomListInterpolationType::PreInterpolationCompositeIfNeeded(
+             underlying_value.GetNonInterpolableValue());
+         InterpolationValue composite_result =
+             interpolation_type->PreInterpolationCompositeIfNeeded(
+-                std::move(value), underlying, composite, null_checkers);
++                std::move(value), underlying, composite, conversion_checkers);
+         composite_result = composite_result.Clone();
+         underlying_value.SetInterpolableValue(
+             composite_result.interpolable_value);
+diff --git a/third_party/blink/renderer/core/animation/css_transform_interpolation_type.cc b/third_party/blink/renderer/core/animation/css_transform_interpolation_type.cc
+index 860bf75af135b2bc094641e340cf8766611ea428..3fc0f43c6b822eebfc55ff204ea3274694014884 100644
+--- a/third_party/blink/renderer/core/animation/css_transform_interpolation_type.cc
++++ b/third_party/blink/renderer/core/animation/css_transform_interpolation_type.cc
+@@ -156,6 +156,10 @@ CSSTransformInterpolationType::PreInterpolationCompositeIfNeeded(
+   conversion_checkers.push_back(
+       MakeGarbageCollected<AlwaysInvalidateChecker>());
+ 
++  if (!underlying) {
++    return value;
++  }
++
+   InterpolableTransformList& transform_list =
+       To<InterpolableTransformList>(*value.interpolable_value);
+   const InterpolableTransformList& underlying_transform_list =
+diff --git a/third_party/blink/renderer/core/animation/invalidatable_interpolation.cc b/third_party/blink/renderer/core/animation/invalidatable_interpolation.cc
+index 1b8b4d6e16e8da5dbb7c4ea312951d7ccd0ed04c..411381f2b3a9b45ac0f9bf258537db2f96576121 100644
+--- a/third_party/blink/renderer/core/animation/invalidatable_interpolation.cc
++++ b/third_party/blink/renderer/core/animation/invalidatable_interpolation.cc
+@@ -42,17 +42,23 @@ PairwisePrimitiveInterpolation*
+ InvalidatableInterpolation::MaybeConvertPairwise(
+     const CSSInterpolationEnvironment& environment,
+     const UnderlyingValueOwner& underlying_value_owner) const {
++  const InterpolationValue null_underlying(nullptr);
+   for (const InterpolationType* interpolation_type : *interpolation_types_) {
+     if ((start_keyframe_->IsNeutral() || end_keyframe_->IsNeutral()) &&
+         (!underlying_value_owner ||
+          underlying_value_owner.GetType() != interpolation_type)) {
+       continue;
+     }
++    const InterpolationValue& underlying =
++        (underlying_value_owner &&
++         underlying_value_owner.GetType() == interpolation_type)
++            ? underlying_value_owner.Value()
++            : null_underlying;
+     ConversionCheckers conversion_checkers;
+     PairwiseInterpolationValue result =
+         interpolation_type->MaybeConvertPairwise(
+-            *start_keyframe_, *end_keyframe_, environment,
+-            underlying_value_owner.Value(), conversion_checkers);
++            *start_keyframe_, *end_keyframe_, environment, underlying,
++            conversion_checkers);
+     AddConversionCheckers(interpolation_type, conversion_checkers);
+     if (result) {
+       return MakeGarbageCollected<PairwisePrimitiveInterpolation>(
+@@ -71,15 +77,20 @@ TypedInterpolationValue* InvalidatableInterpolation::ConvertSingleKeyframe(
+   if (keyframe.IsNeutral() && !underlying_value_owner) {
+     return nullptr;
+   }
++  const InterpolationValue null_underlying(nullptr);
+   for (const InterpolationType* interpolation_type : *interpolation_types_) {
+     if (keyframe.IsNeutral() &&
+         underlying_value_owner.GetType() != interpolation_type) {
+       continue;
+     }
++    const InterpolationValue& underlying =
++        (underlying_value_owner &&
++         underlying_value_owner.GetType() == interpolation_type)
++            ? underlying_value_owner.Value()
++            : null_underlying;
+     ConversionCheckers conversion_checkers;
+     InterpolationValue result = interpolation_type->MaybeConvertSingle(
+-        keyframe, environment, underlying_value_owner.Value(),
+-        conversion_checkers);
++        keyframe, environment, underlying, conversion_checkers);
+     AddConversionCheckers(interpolation_type, conversion_checkers);
+     if (result) {
+       return MakeGarbageCollected<TypedInterpolationValue>(
+@@ -156,8 +167,14 @@ bool InvalidatableInterpolation::IsConversionCacheValid(
+       return false;
+     }
+   }
++  const InterpolationValue null_underlying(nullptr);
+   for (const auto& checker : conversion_checkers_) {
+-    if (!checker->IsValid(environment, underlying_value_owner.Value())) {
++    const InterpolationValue& underlying =
++        (underlying_value_owner &&
++         underlying_value_owner.GetType() == checker->GetType())
++            ? underlying_value_owner.Value()
++            : null_underlying;
++    if (!checker->IsValid(environment, underlying)) {
+       return false;
+     }
+   }
+diff --git a/third_party/blink/web_tests/animations/custom-properties/custom-list-type-interpolation.html b/third_party/blink/web_tests/animations/custom-properties/custom-list-type-interpolation.html
+index f8e0a0168f60a1c1e0e49d37cb7580f51beea7ea..0ef9f7c3d063c6d50350a2f5aeff52374ee52bcc 100644
+--- a/third_party/blink/web_tests/animations/custom-properties/custom-list-type-interpolation.html
++++ b/third_party/blink/web_tests/animations/custom-properties/custom-list-type-interpolation.html
+@@ -144,5 +144,70 @@ assertComposition({
+   {at: 1.5, is: '100px'},
+ ]);
+ 
++CSS.registerProperty({
++  name: '--transform-list-or-none',
++  syntax: '<transform-list> | none',
++  initialValue: 'none',
++  inherits: false
++});
++
++CSS.registerProperty({
++  name: '--number-list-or-transform-list',
++  syntax: '<number>+ | <transform-list>',
++  initialValue: '100',
++  inherits: false
++});
++
++CSS.registerProperty({
++  name: '--length-list-or-transform-function-list',
++  syntax: '<length># | <transform-function>#',
++  initialValue: '10px, 20px',
++  inherits: false
++});
++
++assertComposition({
++  property: '--transform-list-or-none',
++  underlying: 'none',
++  addFrom: 'translateX(10px) scale(2)',
++  addTo: 'translateX(100px) scale(4)',
++}, [
++  {at: 0, is: 'translateX(10px) scale(2)'},
++  {at: 0.5, is: 'translateX(55px) scale(3)'},
++  {at: 1, is: 'translateX(100px) scale(4)'},
++]);
++
++assertComposition({
++  property: '--number-list-or-transform-list',
++  underlying: '100',
++  addFrom: 'translateX(10px)',
++  addTo: 'translateX(100px)',
++}, [
++  {at: 0, is: 'translateX(10px)'},
++  {at: 0.5, is: 'translateX(55px)'},
++  {at: 1, is: 'translateX(100px)'},
++]);
++
++assertComposition({
++  property: '--number-list-or-transform-list',
++  underlying: 'translateX(100px)',
++  addFrom: '10',
++  addTo: '100',
++}, [
++  {at: 0, is: '10'},
++  {at: 0.5, is: '55'},
++  {at: 1, is: '100'},
++]);
++
++assertComposition({
++  property: '--length-list-or-transform-function-list',
++  underlying: '10px, 20px',
++  addFrom: 'translateX(10px), scale(2)',
++  addTo: 'translateX(100px), scale(4)',
++}, [
++  {at: 0, is: 'translateX(10px), scale(2)'},
++  {at: 0.5, is: 'translateX(55px), scale(3)'},
++  {at: 1, is: 'translateX(100px), scale(4)'},
++]);
++
+ </script>
+ </body>
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/animation/custom-property-animation-list-type-mismatch.html b/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/animation/custom-property-animation-list-type-mismatch.html
+index 95757445ae79121893e02d3f37153e197ac4fbd3..3f0fc5bf720a16cdfbd0d543271f88a00638705d 100644
+--- a/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/animation/custom-property-animation-list-type-mismatch.html
++++ b/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/animation/custom-property-animation-list-type-mismatch.html
+@@ -15,4 +15,88 @@ animation_test({
+   expected: "200"
+ }, 'Animating a custom property allowing multiple list types with two mismatching types');
+ 
++animation_test({
++  syntax: "<number>+ | <transform-list>",
++  inherits: false,
++  initialValue: "translateX(100px)"
++}, {
++  composite: "add",
++  keyframes: ["100", "200"],
++  expected: "150"
++}, 'Additive animation of <number>+ when underlying value is <transform-list>');
++
++animation_test({
++  syntax: "<number>+ | <transform-list>",
++  inherits: false,
++  initialValue: "100"
++}, {
++  composite: "add",
++  keyframes: ["translateX(100px)", "translateX(200px)"],
++  expected: "translateX(150px)"
++}, 'Additive animation of <transform-list> when underlying value is <number>+');
++
++animation_test({
++  syntax: "<transform-function> | <transform-list>",
++  inherits: false,
++  initialValue: "translateX(100px) scale(2)"
++}, {
++  composite: "add",
++  keyframes: ["translateX(200px)", "translateX(300px)"],
++  expected: "translateX(250px)"
++}, 'Additive animation of <transform-function> when underlying value is a multi-item <transform-list>');
++
++animation_test({
++  syntax: "<length># | <transform-function>#",
++  inherits: false,
++  initialValue: "10px, 20px"
++}, {
++  composite: "add",
++  keyframes: ["translateX(100px), scale(2)", "translateX(200px), scale(4)"],
++  expected: "translateX(150px), scale(3)"
++}, 'Additive animation of <transform-function># when underlying value is <length>#');
++
++animation_test({
++  syntax: "<transform-function># | none",
++  inherits: false,
++  initialValue: "none"
++}, {
++  composite: "add",
++  keyframes: ["translateX(100px), scale(2)", "translateX(200px), scale(4)"],
++  expected: "translateX(150px), scale(3)"
++}, 'Additive animation of <transform-function># when underlying value is none');
++
++test(() => {
++  const name = generate_name();
++  CSS.registerProperty({
++    name,
++    syntax: "<transform-function>#",
++    inherits: false,
++    initialValue: "translateX(10px), scale(2)"
++  });
++
++  target.style.setProperty(name, "translateX(10px)");
++  const anim = target.animate(
++    { [name]: ["translateX(20px), scale(3)", "translateX(40px), scale(5)"] },
++    { duration: 1000, composite: "add" }
++  );
++  anim.pause();
++  anim.currentTime = 500;
++
++  // Underlying list length (1) != keyframe list length (2), falls back to replace.
++  assert_equals(
++    getComputedStyle(target).getPropertyValue(name),
++    "translateX(30px), scale(4)"
++  );
++
++  // Dynamically updating underlying list to length 2 invalidates cache and composites.
++  target.style.setProperty(name, "translateX(10px), scale(2)");
++  assert_equals(
++    getComputedStyle(target).getPropertyValue(name),
++    "translateX(40px), scale(5)"
++  );
++
++  target.style.removeProperty(name);
++  anim.cancel();
++}, 'Additive <transform-function># animation with dynamic underlying list length and value update');
++
+ </script>
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/animation/custom-property-animation-transform-list-multiple-values.html b/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/animation/custom-property-animation-transform-list-multiple-values.html
+index 161703a672eb743e4f028e8374f06f61ab969c3b..f0902515faf5f30de602e5f7d248bd1df75cf46c 100644
+--- a/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/animation/custom-property-animation-transform-list-multiple-values.html
++++ b/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/animation/custom-property-animation-transform-list-multiple-values.html
+@@ -65,4 +65,123 @@ animation_test({
+   assert_function: assert_matrix_equals
+ }, 'Animating a custom property of type <transform-list> containing multiple values and with mismatching list lengths');
+ 
++animation_test({
++  syntax: "<transform-list> | none",
++  inherits: false,
++  initialValue: "none"
++}, {
++  composite: "add",
++  keyframes: ["translateX(100px) scale(2)", "translateX(200px) scale(4)"],
++  expected: "translateX(150px) scale(3)"
++}, 'Animating a custom property of type <transform-list> | none with additivity when underlying value is none');
++
++animation_test({
++  syntax: "<transform-list> | none",
++  inherits: false,
++  initialValue: "none"
++}, {
++  composite: "accumulate",
++  keyframes: ["translateX(100px) scale(2)", "translateX(200px) scale(4)"],
++  expected: "translateX(150px) scale(3)"
++}, 'Animating a custom property of type <transform-list> | none with accumulation when underlying value is none');
++
++test(() => {
++  const name = generate_name();
++  CSS.registerProperty({
++    name,
++    syntax: "<transform-list> | none",
++    inherits: false,
++    initialValue: "translateX(100px) scale(2)"
++  });
++
++  target.style.setProperty(name, "none");
++  const animation = target.animate(
++    { [name]: ["translateX(200px) scale(3)", "translateX(300px) scale(4)"] },
++    { duration: 1000, composite: "add" }
++  );
++  animation.pause();
++  animation.currentTime = 500;
++
++  // When the underlying value is none, composition falls back to replace.
++  assert_equals(
++    getComputedStyle(target).getPropertyValue(name),
++    "translateX(250px) scale(3.5)"
++  );
++
++  // Dynamically restoring a valid underlying <transform-list> invalidates the
++  // conversion cache and composites with the new underlying value.
++  target.style.setProperty(name, "translateX(100px) scale(2)");
++  assert_equals(
++    getComputedStyle(target).getPropertyValue(name),
++    "translateX(100px) scale(2) translateX(250px) scale(3.5)"
++  );
++
++  target.style.removeProperty(name);
++  animation.cancel();
++}, 'Additive <transform-list> | none animation with dynamic underlying value update from none');
++
++test(() => {
++  const name = generate_name();
++  CSS.registerProperty({
++    name,
++    syntax: "<transform-list>",
++    inherits: false,
++    initialValue: "translateX(100px) scale(2)"
++  });
++
++  const baseAnim = target.animate(
++    { [name]: ["var(--invalid, invalid)", "var(--invalid, invalid)"] },
++    { duration: 1000 }
++  );
++  baseAnim.pause();
++  baseAnim.currentTime = 500;
++
++  const addAnim = target.animate(
++    { [name]: ["translateX(200px) scale(3)", "translateX(300px) scale(4)"] },
++    { duration: 1000, composite: "add" }
++  );
++  addAnim.pause();
++  addAnim.currentTime = 500;
++
++  assert_equals(
++    getComputedStyle(target).getPropertyValue(name),
++    "translateX(250px) scale(3.5)"
++  );
++
++  addAnim.cancel();
++  baseAnim.cancel();
++}, 'Additive <transform-list> animation stacked on top of a discrete var(--invalid, invalid) animation');
++
++test(() => {
++  const name = generate_name();
++  CSS.registerProperty({
++    name,
++    syntax: "<transform-list> | none",
++    inherits: false,
++    initialValue: "translateX(100px) scale(2)"
++  });
++
++  const baseAnim = target.animate(
++    { [name]: ["none", "none"] },
++    { duration: 1000 }
++  );
++  baseAnim.pause();
++  baseAnim.currentTime = 500;
++
++  const addAnim = target.animate(
++    { [name]: ["translateX(200px) scale(3)", "translateX(300px) scale(4)"] },
++    { duration: 1000, composite: "add" }
++  );
++  addAnim.pause();
++  addAnim.currentTime = 500;
++
++  assert_equals(
++    getComputedStyle(target).getPropertyValue(name),
++    "translateX(250px) scale(3.5)"
++  );
++
++  addAnim.cancel();
++  baseAnim.cancel();
++}, 'Additive <transform-list> animation stacked on top of a discrete none animation');
++
+ </script>

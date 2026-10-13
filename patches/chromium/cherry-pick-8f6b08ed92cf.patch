@@ -1,0 +1,119 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Mon, 12 Oct 2026 16:00:05 -0700
+Subject: [M152] Avoid synchronous PipelineController destruction in
+ WMPI::Shutdown()
+
+Original change's description:
+> Avoid synchronous PipelineController destruction in WMPI::Shutdown()
+>
+> WebMediaPlayerImpl::OnPipelineSuspended() reports memory usage to V8 via
+> external_memory_accounter_.Update(), which can synchronously trigger a
+> V8 GC. If the HTMLMediaElement is unreachable, its pre-finalizer runs
+> ClearMediaPlayer() -> WebMediaPlayerImpl::Shutdown(). Resetting
+> pipeline_controller_ inside Shutdown() destroys PipelineController while
+> PipelineController::OnPipelineStatus() is still on the call stack,
+> causing a use-after-free when OnPipelineStatus() subsequently calls
+> Dispatch().
+>
+> pipeline_controller_.reset() was originally added in Shutdown() (in
+> 1be6d5215b1d) because PipelineImpl::RendererWrapper::DestroyRenderer()
+> did not reset default_renderer_. If the pipeline was stopped before
+> renderer initialization, default_renderer_ stayed alive until
+> ~RendererWrapper() (triggered by ~PipelineImpl()), outliving
+> DestructionHelper.
+>
+> Fix this by resetting default_renderer_ in
+> RendererWrapper::DestroyRenderer() (and when discarding a mismatched
+> default_renderer_ in CreateRendererInternal()), and removing
+> pipeline_controller_.reset() from WebMediaPlayerImpl::Shutdown() so
+> pipeline_controller_ is destroyed with ~WebMediaPlayerImpl().
+>
+> Bug: 570638834, 341254296
+> Change-Id: Iafbebc701219c097f37d9d92e1b497c98e44834c
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8524036
+> Reviewed-by: Frank Liberato <liberato@chromium.org>
+> Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1714751}
+
+(cherry picked from commit 4399ef090615497888215ca0a04a9b03d4c2afae)
+
+Bug: 572073177,570638834,341254296
+Change-Id: Iafbebc701219c097f37d9d92e1b497c98e44834c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8552658
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Reviewed-by: Frank Liberato <liberato@chromium.org>
+Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7977@{#2829}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/media/base/pipeline_impl.cc b/media/base/pipeline_impl.cc
+index 55ed412ee1b18e2fcc4670ec53adbb76fb56171a..67b232653259dfbc3a277b407a30b0750f00b3ba 100644
+--- a/media/base/pipeline_impl.cc
++++ b/media/base/pipeline_impl.cc
+@@ -739,6 +739,8 @@ void PipelineImpl::RendererWrapper::CreateRendererInternal(
+   if (!default_renderer_ ||
+       (renderer_type &&
+        default_renderer_->GetRendererType() != renderer_type.value())) {
++    default_renderer_.reset();
++
+     // Create the Renderer asynchronously on the main task runner. Use
+     // base::BindPostTaskToCurrentDefault to call OnRendererCreated() on the
+     // media task runner.
+@@ -1275,6 +1277,8 @@ void PipelineImpl::RendererWrapper::InitializeRenderer(
+ void PipelineImpl::RendererWrapper::DestroyRenderer() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(shared_state_.media_sequence_checker);
+ 
++  default_renderer_.reset();
++
+   // Destroy the renderer outside the lock scope to avoid holding the lock
+   // while renderer is being destroyed (in case Renderer destructor is costly).
+   std::unique_ptr<Renderer> renderer;
+diff --git a/media/base/pipeline_impl_unittest.cc b/media/base/pipeline_impl_unittest.cc
+index 3fbbc2d35d4699848db2dfe1e597f60a1c2b1973..d2dfb005062112fdca2b8b04afef3598ea75a695 100644
+--- a/media/base/pipeline_impl_unittest.cc
++++ b/media/base/pipeline_impl_unittest.cc
+@@ -434,6 +434,8 @@ TEST_F(PipelineImplTest, StartThenStopImmediately) {
+   base::RunLoop().RunUntilIdle();
+ 
+   pipeline_->Stop();
++  base::RunLoop().RunUntilIdle();
++  EXPECT_FALSE(renderer_);
+ }
+ 
+ TEST_F(PipelineImplTest, StartSuspendedAndResumeAudioOnly) {
+diff --git a/third_party/blink/renderer/platform/media/web_media_player_impl.cc b/third_party/blink/renderer/platform/media/web_media_player_impl.cc
+index aeca590a1b66d541dcc278dd9f14352796b7af8d..a61855d3f1f137ee93d0d34dab5764244ae8977a 100644
+--- a/third_party/blink/renderer/platform/media/web_media_player_impl.cc
++++ b/third_party/blink/renderer/platform/media/web_media_player_impl.cc
+@@ -709,13 +709,6 @@ void WebMediaPlayerImpl::Shutdown() {
+   if (observer_)
+     observer_->SetClient(nullptr);
+ 
+-  // Explicitly reset `pipeline_controller_` to guarantee its destruction
+-  // before DestructionHelper runs on `media_task_runner_`.
+-  // This prevents possible dangling ptr's if `compositor` is destroyed
+-  // before `pipeline_controller_`, which holds a VideoRendererSink
+-  // in MediaFoundationRendererClient.
+-  pipeline_controller_.reset();
+-
+   client_ = nullptr;
+   encrypted_client_ = nullptr;
+   frame_ = nullptr;
+@@ -725,7 +718,6 @@ void WebMediaPlayerImpl::Shutdown() {
+ 
+   // Handle destruction of things that need to be destructed after the pipeline
+   // completes stopping on the media thread.
+-  // TODO(crbug.com/482958590): This may not be necessary anymore.
+   PostCrossThreadTask(
+       *media_task_runner_, FROM_HERE,
+       CrossThreadBindOnce(
+@@ -3459,7 +3451,7 @@ void WebMediaPlayerImpl::FinishMemoryUsageReport(int64_t demuxer_memory_usage) {
+ 
+   const auto stats = GetPipelineStatistics();
+   const int64_t data_source_memory_usage =
+-      demuxer_manager_->GetDataSourceMemoryUsage();
++      demuxer_manager_ ? demuxer_manager_->GetDataSourceMemoryUsage() : 0;
+ 
+   // If we have video and no video memory usage and we've rendered the first
+   // frame, assume the VideoFrameCompositor is holding onto the last frame after
