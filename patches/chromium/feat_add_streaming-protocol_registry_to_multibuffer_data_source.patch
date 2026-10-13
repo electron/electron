@@ -104,7 +104,7 @@ index ad5ca8461144f77cd49a390dc81ce38cffb6ec24..b6b5a9872333cb74276aeff6f50abb55
    using InitializeCB = base::OnceCallback<void(bool)>;
    void Initialize(InitializeCB init_cb) override;
 diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
-index 2f19bdf0e6aefc8896c86a2cafbbabcd4135c639..b6516ec5768c9a78b4f138c587ed41b3a025384e 100644
+index 7d1d1395165c53f3f3acbd42d97334343fe67f13..8b70f9418cbe199d553ea3c01307a97b8edae977 100644
 --- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
 +++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
 @@ -8,6 +8,7 @@
@@ -123,7 +123,7 @@ index 2f19bdf0e6aefc8896c86a2cafbbabcd4135c639..b6516ec5768c9a78b4f138c587ed41b3
  #include "third_party/blink/renderer/platform/media/resource_fetch_context.h"
  #include "third_party/blink/renderer/platform/media/url_index.h"
  #include "third_party/blink/renderer/platform/weborigin/security_origin.h"
-@@ -335,6 +337,16 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+@@ -345,6 +347,16 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
        do_fail = true;
      }
    } else {
