@@ -6,10 +6,10 @@ Subject: feat: enable setting aspect ratio to 0
 Make SetAspectRatio accept 0 as valid input, which would reset to null.
 
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 6e51652e11749eefc5f7363c6a1ca3ab2ced549b..b4868e05fe4b193ddfe585bc351b5083e38dd5c6 100644
+index 8fedc83f1f9fb5f0f5b9132bf2d882ac839ade1a..3ad82812da1a1a84aba7b42d9864505a42cf45ce 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -741,7 +741,7 @@ void DesktopWindowTreeHostWin::SetOpacity(float opacity) {
+@@ -744,7 +744,7 @@ void DesktopWindowTreeHostWin::SetOpacity(float opacity) {
  void DesktopWindowTreeHostWin::SetAspectRatio(
      const gfx::SizeF& aspect_ratio,
      const gfx::Size& excluded_margin) {

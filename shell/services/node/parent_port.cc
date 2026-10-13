@@ -10,7 +10,7 @@
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
 #include "gin/object_template_builder.h"
-#include "gin/per_context_data.h"
+#include "gin/per_isolate_data.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -129,7 +129,7 @@ bool ParentPort::Accept(mojo::Message* mojo_message) {
 ParentPort* ParentPort::Create(v8::Isolate* isolate) {
   // The template is otherwise only made when the constructor is first used.
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
-  gin::PerContextData* data = gin::PerContextData::From(context);
+  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
   if (data && data->GetObjectTemplate(&kWrapperInfo).IsEmpty())
     GetConstructor(isolate, context, &kWrapperInfo);
   return ParentPort::GetInstance();

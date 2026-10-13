@@ -100,7 +100,3 @@ produce_v8_compile_hints = false
 # TODO: extend the allowlist consumption to Windows (PDB-based extraction);
 # there this only makes grit emit the (free) marker symbols today.
 enable_resource_allowlist_generation = true
-
-# TODO(deepak1556): Remove once https://issues.chromium.org/issues/570412918
-# is addressed.
-v8_use_metagen = false

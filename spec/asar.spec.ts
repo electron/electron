@@ -677,6 +677,37 @@ describe('asar package', () => {
         expect(fs.existsSync(j(unicodeArchive, unicodeDir, 'nope'))).to.equal(false);
       });
 
+      // Node mode never calls setlocale(), so it always runs in the "C" locale.
+      // A main process started with LC_ALL=C does too.
+      // The archive lookup must not depend on the locale in either case.
+      it('works under a non-ASCII directory in Node mode', async function () {
+        const script = `process.stdout.write(require('fs').readFileSync(${JSON.stringify(j(unicodeArchive, 'a.txt'))}, 'utf8'))`;
+        const { code, stdout, stderr } = await spawnAndWait(process.execPath, ['-e', script], {
+          env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+          timeout: 20000
+        });
+        expect(stdout, `exit code ${code}, stderr: ${stderr}`).to.equal('alpha');
+        expect(code).to.equal(0);
+      });
+
+      ifit(process.platform === 'linux')(
+        'starts an app from an archive under a non-ASCII directory with LC_ALL=C',
+        async function () {
+          const app = j(tmp, unicodeDir, 'main-app.asar');
+          writeAsar(app, {
+            'package.json': JSON.stringify({ main: 'main.js' }),
+            'main.js':
+              "const { app } = require('electron'); app.whenReady().then(() => { console.log('ready'); app.quit(); });"
+          });
+          const { code, stdout, stderr } = await spawnAndWait(process.execPath, [app], {
+            env: { ...process.env, LC_ALL: 'C' },
+            timeout: 20000
+          });
+          expect(stdout, `exit code ${code}, stderr: ${stderr}`).to.include('ready');
+          expect(code).to.equal(0);
+        }
+      );
+
       it('works when the archive extension is upper case', function () {
         expect(fs.readFileSync(j(upperArchive, 'dir', 'b.txt'), 'utf8')).to.equal('bravo');
         expect(fs.statSync(upperArchive).isDirectory()).to.equal(true);

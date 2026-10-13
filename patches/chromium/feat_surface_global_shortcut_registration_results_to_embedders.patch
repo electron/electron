@@ -46,7 +46,7 @@ index a48b7b73508942cc05e0dcf0fe108313f265c7c6..ed5f8cdd054a557a672a5bc1eb8def33
    virtual void PruneStaleCommands() {}
  
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
-index 5bb63a1cf80af8637d0cb7ec7d1dd3f893ad9ad6..4191332a8fcab17c27b05c20218ff65248280759 100644
+index a603bdf783ef8c02d68c486d311296d1676cded5..6b164322a89951043099b2ab0082e25d6080b6c2 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
 @@ -103,6 +103,7 @@ void GlobalAcceleratorListenerLinux::OnServiceStarted(uint32_t version) {
