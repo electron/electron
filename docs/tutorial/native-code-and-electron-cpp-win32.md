@@ -1299,7 +1299,7 @@ NODE_API_MODULE(cpp_addon, Init)
 
 Let's finish things off by adding a JavaScript wrapper in `js/index.js`. As we could all see, C++ requires a lot of boilerplate code that might be easier or faster to write in JavaScript - and you will find that many production applications end up transforming data or requests in JavaScript before invoking native code. We, for instance, turn our timestamp into a proper JavaScript date.
 
-```cpp title='js/index.js'
+```js title='js/index.js'
 const EventEmitter = require('events')
 
 class CppWin32Addon extends EventEmitter {
