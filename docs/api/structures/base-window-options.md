@@ -56,7 +56,7 @@
 * `modal` boolean (optional) - Whether this is a modal window. This only works when the
   window is a child window. Default is `false`.
 * `appShim` [AppShimHost](../app-shim-host.md) (optional) _macOS_ _Experimental_ - Creates the native window in
-  the process of this app shim, so that it belongs to the shim's Dock tile and
+  the process of this app shim, so that it belongs to the shim's Dock icon and
   not to your app's. See [AppShimHost](../app-shim-host.md) for what affordances
   are granted to the window.
 * `acceptFirstMouse` boolean (optional) _macOS_ - Whether clicking an
