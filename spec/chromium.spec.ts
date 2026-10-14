@@ -1418,6 +1418,18 @@ describe('chromium features', () => {
       return channel;
     };
 
+    // Gives the page transient user activation and only resolves once the
+    // browser process knows about it. A permission request such as
+    // createWritable() needs that activation in the browser, but it travels on
+    // the handle's own Mojo pipe, while the activation update travels on the
+    // frame's channel-associated interfaces. Run in the same executeJavaScript()
+    // call, the request can be handled before the activation update and is
+    // rejected with "User activation is required to request permissions". The
+    // reply to this call is ordered after the activation update.
+    const activatePage = async (w: BrowserWindow) => {
+      await w.webContents.executeJavaScript('void 0', true);
+    };
+
     it('allows access by default to reading an OPFS file', async () => {
       w = new BrowserWindow({
         show: false,
@@ -1571,6 +1583,7 @@ describe('chromium features', () => {
 
       await w.loadFile(writablePath);
       expect(await pasteFileUri(w, testFile)).to.equal('did-create-file-handle');
+      await activatePage(w);
       const result = await w.webContents.executeJavaScript(
         `
         new Promise(async (resolve, reject) => {
@@ -1649,6 +1662,7 @@ describe('chromium features', () => {
 
       const permission = await w.webContents.executeJavaScript('handle.queryPermission({ mode: "readwrite" })');
       trace(`initial permission: ${permission}`);
+      await activatePage(w);
       trace('createWritable requested');
       const writeError = await w.webContents.executeJavaScript(
         `
