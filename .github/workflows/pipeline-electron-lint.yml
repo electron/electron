@@ -58,8 +58,13 @@ jobs:
       shell: bash
       env:
         chromium_revision: ${{ steps.get-chromium-revision.outputs.revision }}
+        GITHUB_TOKEN: ${{ github.token }}
       run: |
-        curl -sL "https://raw.githubusercontent.com/chromium/chromium/refs/tags/${chromium_revision}/DEPS" > src/DEPS
+        curl -fsSL --retry 3 \
+          -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+          -H "Accept: application/vnd.github.raw+json" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          -o src/DEPS "https://api.github.com/repos/chromium/chromium/contents/DEPS?ref=refs/tags/${chromium_revision}"
         gn_version=$(e depot-tools gclient getdep --deps-file=src/DEPS --var=gn_version | tail -1)
 
         e d cipd ensure -ensure-file - -root . <<-CIPD
@@ -71,9 +76,14 @@ jobs:
       shell: bash
       env:
         chromium_revision: ${{ steps.get-chromium-revision.outputs.revision }}
+        GITHUB_TOKEN: ${{ github.token }}
       run: |
         mkdir -p src/buildtools
-        curl -sL "https://raw.githubusercontent.com/chromium/chromium/refs/tags/${chromium_revision}/buildtools/DEPS" > src/buildtools/DEPS
+        curl -fsSL --retry 3 \
+          -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+          -H "Accept: application/vnd.github.raw+json" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          -o src/buildtools/DEPS "https://api.github.com/repos/chromium/chromium/contents/buildtools/DEPS?ref=refs/tags/${chromium_revision}"
 
         e d gclient sync --spec="solutions=[{'name':'src/buildtools','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':True},'managed':False}]"
     - name: Add problem matchers
