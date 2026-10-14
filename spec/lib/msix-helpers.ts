@@ -12,10 +12,12 @@ const manifestFixturePath = path.resolve(fixturesPath, 'ElectronDevAppxManifest.
 const installCertScriptPath = path.resolve(fixturesPath, 'install_test_cert.ps1');
 const powershellTimeout = 30_000;
 // Installing the test certificate and registering the sparse package run in the
-// suite's beforeAll hook while other spec files keep the CI host busy. On
-// windows-arm64 they regularly overrun 30s there, though they finish in time
-// when the suite runs on its own, and vitest does not retry a failed hook.
-const powershellSetupTimeout = 120_000;
+// suite's beforeAll hook, and unregistering it in its afterAll hook,
+// while other spec files keep the CI host busy.
+// On windows-arm64 they regularly overrun 30s there,
+// though they finish in time when the suite runs on its own,
+// and vitest does not retry a failed hook.
+export const powershellSetupTimeout = 120_000;
 
 function runPowerShell(
   args: string[],
@@ -116,7 +118,10 @@ export async function registerExecutableWithIdentity(executablePath: string): Pr
 // Unregister the Electron Dev MSIX package
 // This removes the sparse package registration created by registerExecutableWithIdentity
 export async function unregisterExecutableWithIdentity(): Promise<void> {
-  const result = await runPowerShell(['-Command', ' Get-AppxPackage Electron.Dev.MSIX | Remove-AppxPackage']);
+  const result = await runPowerShell(
+    ['-Command', ' Get-AppxPackage Electron.Dev.MSIX | Remove-AppxPackage'],
+    powershellSetupTimeout
+  );
   // Don't throw if package doesn't exist
   if (result.status !== 0) {
     throw new Error(
