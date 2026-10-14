@@ -11,13 +11,27 @@
 #include <optional>
 #include <string>
 
+#include "base/memory/weak_ptr.h"
 #include "base/scoped_observation.h"
+#include "electron/shell/common/app_shim.mojom-forward.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/ui/file_dialog.h"
+#include "shell/browser/ui/message_box.h"
 #include "third_party/skia/include/core/SkColor.h"
 #include "ui/views/widget/widget_observer.h"
+#include "v8/include/cppgc/persistent.h"
+
+namespace electron {
+namespace api {
+class AppShimHost;
+}  // namespace api
+}  // namespace electron
 
 namespace remote_cocoa {
 class ApplicationHost;
+namespace mojom {
+class NativeWidgetNSWindow;
+}  // namespace mojom
 }  // namespace remote_cocoa
 
 namespace electron {
@@ -134,6 +148,18 @@ class NativeWindowMacRemote : public NativeWindow,
   void SetWindowButtonPosition(std::optional<gfx::Point> position) override;
   std::optional<gfx::Point> GetWindowButtonPosition() const override;
   void RedrawTrafficLights() override;
+  void SetVibrancy(const std::string& type, int duration) override;
+  void SelectPreviousTab() override;
+  void SelectNextTab() override;
+  void ShowAllTabs() override;
+  void MergeAllWindows() override;
+  void MoveTabToNewWindow() override;
+  void ToggleTabBar() override;
+  bool AddTabbedWindow(NativeWindow* window) override;
+  std::optional<std::string> GetTabbingIdentifier() const override;
+  void PreviewFile(const std::string& path,
+                   const std::string& display_name) override;
+  void CloseFilePreview() override;
   void UpdateFrame() override;
   bool IsHiddenInMissionControl() const override;
   void SetHiddenInMissionControl(bool hidden) override;
@@ -141,6 +167,28 @@ class NativeWindowMacRemote : public NativeWindow,
                       const gfx::Size& extra_size) override;
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
+
+  // The shim's process, and the id it knows this window by; null and 0 once
+  // either is gone.
+  mojom::AppShim* GetAppShim() const;
+  uint64_t GetRemoteWindowId() const;
+
+  // Dialogs with this window as their parent. They are sheets of the
+  // NSWindow in the shim's process, which shows them; the callbacks run with
+  // "cancelled" when the shim or the window goes away first.
+  void ShowMessageBox(const MessageBoxSettings& settings,
+                      MessageBoxCallback callback);
+  // Runs a nested loop until the box is answered.
+  int ShowMessageBoxSync(const MessageBoxSettings& settings);
+  // False when no window in a shim is showing a box with this id.
+  static bool CloseMessageBox(int id);
+  void ShowOpenDialog(const file_dialog::DialogSettings& settings,
+                      file_dialog::OpenDialogCallback callback);
+  void ShowSaveDialog(const file_dialog::DialogSettings& settings,
+                      file_dialog::SaveDialogCallback callback);
+
+  // The window's close button, once the shim has its answer (see the client
+  // view).
 
  protected:
   // views::WidgetDelegate:
@@ -156,15 +204,42 @@ class NativeWindowMacRemote : public NativeWindow,
                              const gfx::Rect& bounds) override;
   void OnWidgetVisibilityChanged(views::Widget* widget, bool visible) override;
   void OnWidgetShowStateChanged(views::Widget* widget) override;
+  void OnWidgetUserResizeEnded(views::Widget* widget) override;
   void OnWidgetDestroyed(views::Widget* widget) override;
 
   int FrameViewNonClientHitTest(const gfx::Point& point);
+
+  bool IsInAppShim() const override;
+
+  void OnCloseButtonClicked();
+  void CloseNow();
+  // The remote_cocoa interface of the NSWindow in the shim's process; null
+  // once it is gone.
+  remote_cocoa::mojom::NativeWidgetNSWindow* GetNSWindowMojo() const;
+  void PerformTabAction(mojom::AppShimTabAction action);
 
   // The height the window server adds above the content for this window's
   // style: its title bar's, or 0 without one.
   int TitleBarHeight() const;
 
   std::unique_ptr<RootViewMac> root_view_;
+
+  // How many of the widget's notifications are on the stack. Their listeners
+  // run JavaScript, and destroying the widget from inside one would free the
+  // object that is notifying.
+  // The shim whose process the NSWindow is in.
+  cppgc::WeakPersistent<api::AppShimHost> app_shim_;
+
+  // What the window buttons and tabs were last told, which is what the
+  // getters answer with: the NSWindow is not here to ask.
+  std::optional<bool> window_button_visibility_;
+  std::optional<gfx::Point> traffic_light_position_;
+  std::optional<std::string> tabbing_identifier_;
+  // An NSVisualEffectState.
+  int visual_effect_state_ = 0;
+
+  int widget_callback_depth_ = 0;
+  bool widget_destroyed_ = false;
 
   NSUInteger style_mask_ = 0;
   gfx::Rect last_bounds_;
@@ -185,6 +260,8 @@ class NativeWindowMacRemote : public NativeWindow,
 
   base::ScopedObservation<views::Widget, views::WidgetObserver>
       widget_observation_{this};
+
+  base::WeakPtrFactory<NativeWindowMacRemote> weak_factory_{this};
 };
 
 }  // namespace electron

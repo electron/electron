@@ -17,6 +17,7 @@
 #include "base/logging/logging_settings.h"
 #include "base/run_loop.h"
 #include "base/task/single_thread_task_executor.h"
+#include "base/task/thread_pool/thread_pool_instance.h"
 #include "base/threading/platform_thread.h"
 #include "base/threading/thread.h"
 #include "components/remote_cocoa/app_shim/application_bridge.h"
@@ -104,6 +105,9 @@ std::variant<int, content::MainFunctionParams> AppShimMainDelegate::RunProcess(
   base::SingleThreadTaskExecutor main_task_executor(base::MessagePumpType::UI,
                                                     /*is_main_thread=*/true);
   ui::WindowResizeHelperMac::Get()->Init(main_task_executor.task_runner());
+  // content made the pool for this process type but only starts it for the
+  // process types it runs itself.
+  base::ThreadPoolInstance::Get()->StartWithDefaultParams();
   base::PlatformThread::SetName("ElectronAppShimMain");
 
   controller_ = std::make_unique<AppShimController>(host_bundle_path_);

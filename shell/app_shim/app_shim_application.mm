@@ -22,6 +22,19 @@ void EnableAccessibilitySupport(
 
 @implementation ElectronAppShimApplication
 
+// Every way of quitting the app comes through here: its menu, the Dock, and
+// the quit event macOS sends at logout. The host is asked first, without
+// blocking: this can be running inside a task of the message loop (a key the
+// host sent back to be handled as a shortcut), where waiting for an answer in
+// a nested run loop would never see it. Returning does not cancel a logout,
+// which waits for the app to exit.
+- (void)terminate:(id)sender {
+  auto* controller = electron::AppShimController::Get();
+  if (controller && !controller->ShouldTerminate())
+    return;
+  [super terminate:sender];
+}
+
 - (void)enableCompleteAccessibility {
   EnableAccessibilitySupport(
       electron::mojom::AppShimAccessibilityMode::kComplete);

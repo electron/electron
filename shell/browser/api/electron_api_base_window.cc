@@ -895,6 +895,10 @@ void BaseWindow::SetParentWindow(v8::Local<v8::Value> value,
     parent_window_.Reset();
     window_->SetParentWindow(nullptr);
   } else if (gin::ConvertFromV8(isolate(), value, &parent)) {
+    if (parent->window() && parent->window()->IsInAppShim()) {
+      args->ThrowTypeError("A window in an app shim can't be a parent window");
+      return;
+    }
     parent_window_.Reset(isolate(), parent.ToV8());
     window_->SetParentWindow(parent->window());
   } else {
@@ -1049,9 +1053,13 @@ void BaseWindow::ToggleTabBar() {
 
 void BaseWindow::AddTabbedWindow(NativeWindow* const window,
                                  gin::Arguments* const args) {
-  if (!window_->AddTabbedWindow(window))
+  if (!window_->AddTabbedWindow(window)) {
     args->ThrowTypeError(
-        "AddTabbedWindow cannot be called by a window on itself.");
+        window_.get() != window &&
+                (window_->IsInAppShim() || window->IsInAppShim())
+            ? "AddTabbedWindow needs both windows to be in the same app"
+            : "AddTabbedWindow cannot be called by a window on itself.");
+  }
 }
 
 v8::Local<v8::Value> BaseWindow::GetTabbingIdentifier() {
@@ -1305,7 +1313,8 @@ gin_helper::WrappableBase* BaseWindow::New(gin::Arguments* const args) {
     args->ThrowTypeError(error_message);
     return nullptr;
   }
-  if (!IsAppShimValid(options, &error_message)) {
+  if (!IsAppShimValid(options, &error_message) ||
+      !IsParentValid(options, &error_message)) {
     args->ThrowTypeError(error_message);
     return nullptr;
   }
@@ -1356,6 +1365,18 @@ bool BaseWindow::IsAppShimValid(const gin_helper::Dictionary& options,
     return false;
   }
 #endif
+  return true;
+}
+
+// static
+bool BaseWindow::IsParentValid(const gin_helper::Dictionary& options,
+                               std::string* error_message) {
+  gin_helper::Handle<BaseWindow> parent;
+  if (options.Get("parent", &parent) && !parent.IsEmpty() && parent->window() &&
+      parent->window()->IsInAppShim()) {
+    *error_message = "A window in an app shim can't be a parent window";
+    return false;
+  }
   return true;
 }
 

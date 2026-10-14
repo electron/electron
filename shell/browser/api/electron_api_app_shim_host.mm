@@ -3,17 +3,31 @@
 // found in the LICENSE file.
 
 #include "shell/browser/api/electron_api_app_shim_host.h"
+#include "base/memory/raw_ptr.h"
+#include "base/no_destructor.h"
+#include "base/strings/utf_string_conversions.h"
+#include "shell/browser/api/electron_api_menu.h"
+#include "shell/browser/browser.h"
+#include "shell/browser/native_window_mac_remote.h"
+#include "shell/browser/ui/electron_menu_model.h"
+#include "shell/browser/window_list.h"
+#include "ui/base/accelerators/accelerator.h"
+#include "ui/base/models/image_model.h"
 
 #import <Foundation/Foundation.h>
 #import <Security/Security.h>
 #include <bsm/libbsm.h>
 
+#include <optional>
+#include <string>
 #include <utility>
 
 #include "base/apple/foundation_util.h"
 #include "base/apple/scoped_cftyperef.h"
 #include "base/functional/bind.h"
+#include "base/memory/weak_ptr.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/task/sequenced_task_runner.h"
 #include "components/remote_cocoa/browser/application_host.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/scoped_accessibility_mode.h"
@@ -36,6 +50,54 @@
 namespace electron::api {
 
 namespace {
+
+// `rename` is the app's name and the shim's. The labels that the "about",
+// "hide" and "quit" roles get by default name the app the menu was built in,
+// and in a shim's menu bar they are about the shim.
+std::vector<mojom::AppShimMenuItemPtr> DescribeMenu(
+    ElectronMenuModel* model,
+    const std::pair<std::u16string, std::u16string>& rename) {
+  std::vector<mojom::AppShimMenuItemPtr> items;
+  const size_t count = model->GetItemCount();
+  items.reserve(count);
+  for (size_t i = 0; i < count; ++i) {
+    auto item = mojom::AppShimMenuItem::New();
+    item->type = static_cast<int32_t>(model->GetTypeAt(i));
+    item->command_id = model->GetCommandIdAt(i);
+    item->label = model->GetLabelAt(i);
+    item->secondary_label = model->GetSecondaryLabelAt(i);
+    item->tool_tip = model->GetToolTipAt(i);
+    item->accessibility_label = model->GetAccessibilityLabelAt(i);
+    item->role = model->GetRoleAt(i);
+    if (!rename.first.empty() && !rename.second.empty() &&
+        (item->role == u"about" || item->role == u"hide" ||
+         item->role == u"quit") &&
+        item->label.ends_with(rename.first)) {
+      item->label.replace(item->label.size() - rename.first.size(),
+                          rename.first.size(), rename.second);
+    }
+    item->custom_type = model->GetCustomTypeAt(i);
+    if (ui::ImageModel icon = model->GetIconAt(i); icon.IsImage())
+      item->icon = icon.GetImage().AsImageSkia();
+    ui::Accelerator accelerator;
+    if (model->GetAcceleratorAtWithParams(i, true, &accelerator)) {
+      item->has_accelerator = true;
+      item->accelerator_key_code = accelerator.key_code();
+      item->accelerator_modifiers = accelerator.modifiers();
+      item->accelerator_shifted_char = accelerator.shifted_char.value_or(0);
+    }
+    item->register_accelerator = model->ShouldRegisterAcceleratorAt(i);
+    item->works_when_hidden = model->WorksWhenHiddenAt(i);
+    item->checked = model->IsItemCheckedAt(i);
+    item->enabled = model->IsEnabledAt(i);
+    item->visible = model->IsVisibleAt(i);
+    item->group_id = model->GetGroupIdAt(i);
+    if (ElectronMenuModel* submenu = model->GetSubmenuModelAt(i))
+      item->submenu = DescribeMenu(submenu, rename);
+    items.push_back(std::move(item));
+  }
+  return items;
+}
 
 // The running code of the process an audit token names. Unlike a pid, a token
 // cannot come to mean another process.
@@ -94,6 +156,10 @@ class AppShimHost::Connection final : public NativePeer<AppShimHost>,
     if (NSBundle* bundle = [NSBundle
             bundleWithPath:base::apple::FilePathToNSString(bundle_path_)]) {
       bundle_id_ = base::SysNSStringToUTF8(bundle.bundleIdentifier);
+      NSString* name =
+          [bundle objectForInfoDictionaryKey:@"CFBundleDisplayName"]
+              ?: [bundle objectForInfoDictionaryKey:@"CFBundleName"];
+      name_ = base::SysNSStringToUTF16(name);
     }
 
     receiver_.set_disconnect_handler(
@@ -103,21 +169,60 @@ class AppShimHost::Connection final : public NativePeer<AppShimHost>,
 
     mojo::PendingAssociatedReceiver<remote_cocoa::mojom::Application>
         application_receiver;
+    // Activation goes to the shim's process. Not to its bundle identifier,
+    // which is the shim's own claim and may be another app's.
     application_host_ = std::make_unique<remote_cocoa::ApplicationHost>(
-        &application_receiver, bundle_id_);
+        &application_receiver, std::string());
+    application_host_->set_pid(pid());
     app_shim_->CreateRemoteCocoaApplication(std::move(application_receiver));
   }
 
-  bool connected() const { return connected_; }
+  // The menu bar the shim shows while it is the active app. Without one it
+  // shows a short menu that it builds for itself.
+  void SetMenu(Menu* menu) {
+    menu_ = menu;
+    SendMenu();
+  }
+  Menu* menu() const { return menu_.Get(); }
+  void SendMenu() {
+    if (!connected())
+      return;
+    Menu* const menu = this->menu();
+    app_shim_->SetApplicationMenu(
+        menu ? std::make_optional(DescribeMenu(
+                   menu->model(),
+                   {base::UTF8ToUTF16(Browser::Get()->GetName()), name_}))
+             : std::nullopt);
+  }
+
+  bool connected() const { return connected_ && !quit_requested_; }
   pid_t pid() const { return audit_token_to_pid(audit_token_); }
   const base::FilePath& bundle_path() const { return bundle_path_; }
   const std::string& bundle_id() const { return bundle_id_; }
   SecCodeRef code() const { return code_.get(); }
   remote_cocoa::ApplicationHost* application_host() const {
-    return application_host_.get();
+    return quit_requested_ ? nullptr : application_host_.get();
   }
   mojom::AppShim* app_shim() const {
     return connected_ ? app_shim_.get() : nullptr;
+  }
+
+  void DidCreateWindow() {
+    hosts_window_ = true;
+    ApplyAccessibilityMode();
+  }
+
+  // Ends the connection from JavaScript. The caller may be a listener of one
+  // of this shim's windows (its `show`, say), and closing that window under
+  // it would free what is notifying, so the windows close in a task of their
+  // own. Until then the shim reads as disconnected and takes no new window.
+  void Quit() {
+    if (!connected_ || quit_requested_)
+      return;
+    quit_requested_ = true;
+    base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+        FROM_HERE,
+        base::BindOnce(&Connection::Disconnect, weak_factory_.GetWeakPtr()));
   }
 
   // Ends the connection, which ends the shim process and closes its windows.
@@ -133,10 +238,25 @@ class AppShimHost::Connection final : public NativePeer<AppShimHost>,
  private:
   ~Connection() override = default;
 
+  void ApplyAccessibilityMode() {
+    if (!hosts_window_ || !wanted_accessibility_mode_ || !connected_)
+      return;
+    accessibility_mode_ =
+        content::BrowserAccessibilityState::GetInstance()
+            ->CreateScopedModeForProcess(
+                (*wanted_accessibility_mode_ ==
+                         mojom::AppShimAccessibilityMode::kComplete
+                     ? ui::kAXModeComplete
+                     : ui::kAXModeBasic) |
+                ui::AXMode::kFromPlatform);
+  }
+
   bool TearDownConnection() {
     if (!connected_)
       return false;
     connected_ = false;
+    menu_.Clear();
+    weak_factory_.InvalidateWeakPtrs();
     // Closes every window the shim hosts, synchronously: their closed events
     // run JavaScript before this returns.
     application_host_.reset();
@@ -168,20 +288,66 @@ class AppShimHost::Connection final : public NativePeer<AppShimHost>,
   }
   void EnableAccessibilitySupport(
       mojom::AppShimAccessibilityMode mode) override {
-    accessibility_mode_ =
-        content::BrowserAccessibilityState::GetInstance()
-            ->CreateScopedModeForProcess(
-                (mode == mojom::AppShimAccessibilityMode::kComplete
-                     ? ui::kAXModeComplete
-                     : ui::kAXModeBasic) |
-                ui::AXMode::kFromPlatform);
+    // Any process of the same user can connect and ask for this, and it
+    // costs every page in the app. It waits until the app has given the
+    // shim a window, which is the app's way of saying it accepts the shim.
+    if (!wanted_accessibility_mode_ ||
+        mode == mojom::AppShimAccessibilityMode::kComplete) {
+      wanted_accessibility_mode_ = mode;
+    }
+    ApplyAccessibilityMode();
+  }
+  void MenuItemActivated(const std::vector<uint32_t>& path,
+                         int32_t command_id,
+                         int32_t event_flags) override {
+    // The shim's menu may be older than this one: the item is only chosen if
+    // what is at `path` now is still the item the shim meant.
+    Menu* const menu = this->menu();
+    ElectronMenuModel* model = menu ? menu->model() : nullptr;
+    for (size_t i = 0; model && i + 1 < path.size(); ++i) {
+      model = path[i] < model->GetItemCount()
+                  ? model->GetSubmenuModelAt(path[i])
+                  : nullptr;
+    }
+    if (model && !path.empty() && path.back() < model->GetItemCount() &&
+        model->GetCommandIdAt(path.back()) == command_id) {
+      model->ActivatedAt(path.back(), event_flags);
+    }
+    // A click may have changed a check mark, or anything else.
+    SendMenu();
+  }
+  void MenuWillShow() override {
+    if (Menu* const menu = this->menu())
+      menu->model()->MenuWillShow();
+    SendMenu();
+  }
+  void MenuWillClose() override {
+    if (Menu* const menu = this->menu())
+      menu->model()->MenuWillClose();
+  }
+  void DidBecomeActive() override { SendMenu(); }
+  void NewWindowForTab(uint64_t window_id) override {
+    for (NativeWindow* window : WindowList::GetWindows()) {
+      if (!window->IsInAppShim())
+        continue;
+      auto* remote = static_cast<NativeWindowMacRemote*>(window);
+      if (remote->GetAppShim() == app_shim() &&
+          remote->GetRemoteWindowId() == window_id) {
+        remote->NotifyNewWindowForTab();
+        return;
+      }
+    }
   }
   void QuitRequested() override {
     bool quit = true;
     if (auto shim_host = wrapper())
       quit = shim_host->OnQuitRequested();
-    if (quit && connected_)
+    if (!connected_)
+      return;
+    if (quit)
       app_shim_->Quit();
+    else
+      app_shim_->CancelQuit();
   }
 
   cppgc::Persistent<api::AppShimHost> keep_alive_;
@@ -189,7 +355,10 @@ class AppShimHost::Connection final : public NativePeer<AppShimHost>,
   const base::apple::ScopedCFTypeRef<SecCodeRef> code_;
   const base::FilePath bundle_path_;
   std::string bundle_id_;
+  // What the shim calls itself, for its menu bar; its own claim.
+  std::u16string name_;
   bool connected_ = true;
+  bool quit_requested_ = false;
 
   // Holds the isolated connection the pipes below run over.
   std::unique_ptr<AppShimHostBootstrap> bootstrap_;
@@ -198,7 +367,14 @@ class AppShimHost::Connection final : public NativePeer<AppShimHost>,
   std::unique_ptr<remote_cocoa::ApplicationHost> application_host_;
   // Keeps accessibility on in this process while an assistive technology is
   // looking at the shim.
+  // The shim's menu bar, if it has been given one.
+  cppgc::Persistent<Menu> menu_;
+
+  bool hosts_window_ = false;
+  std::optional<mojom::AppShimAccessibilityMode> wanted_accessibility_mode_;
   std::unique_ptr<content::ScopedAccessibilityMode> accessibility_mode_;
+
+  base::WeakPtrFactory<Connection> weak_factory_{this};
 };
 
 gin::WrapperInfo AppShimHost::kWrapperInfo =
@@ -227,9 +403,23 @@ AppShimHost::AppShimHost(
 
 AppShimHost::~AppShimHost() = default;
 
+// static
+base::FilePath AppShimHost::BundlePathForAuditToken(
+    const audit_token_t& token) {
+  return PathOfCode(CodeForAuditToken(token).get());
+}
+
 remote_cocoa::ApplicationHost* AppShimHost::GetRemoteCocoaApplicationHost()
     const {
   return connection_->application_host();
+}
+
+mojom::AppShim* AppShimHost::GetAppShim() const {
+  return connection_->connected() ? connection_->app_shim() : nullptr;
+}
+
+void AppShimHost::DidCreateWindow() {
+  connection_->DidCreateWindow();
 }
 
 void AppShimHost::OnReopen(bool has_visible_windows) {
@@ -291,7 +481,10 @@ void AppShimHost::SetBadge(const std::string& label) {
 
 void AppShimHost::Bounce(gin::Arguments* args) {
   std::string type = "informational";
-  args->GetNext(&type);
+  if (args->Length() > 0 && !args->GetNext(&type)) {
+    args->ThrowTypeError("Invalid bounce type");
+    return;
+  }
   mojom::AppShimAttentionType attention_type;
   if (type == "critical") {
     attention_type = mojom::AppShimAttentionType::kCritical;
@@ -311,7 +504,19 @@ void AppShimHost::CancelBounce() {
 }
 
 void AppShimHost::Quit() {
-  connection_->Disconnect();
+  connection_->Quit();
+}
+
+void AppShimHost::SetMenu(gin::Arguments* args) {
+  v8::Local<v8::Value> value;
+  Menu* menu = nullptr;
+  if (!args->GetNext(&value) ||
+      (!value->IsNull() &&
+       (!gin::ConvertFromV8(args->isolate(), value, &menu) || !menu))) {
+    args->ThrowTypeError("Must pass a Menu or null");
+    return;
+  }
+  connection_->SetMenu(menu);
 }
 
 gin::ObjectTemplateBuilder AppShimHost::GetObjectTemplateBuilder(
@@ -327,6 +532,7 @@ gin::ObjectTemplateBuilder AppShimHost::GetObjectTemplateBuilder(
       .SetMethod("setBadge", &AppShimHost::SetBadge)
       .SetMethod("bounce", &AppShimHost::Bounce)
       .SetMethod("cancelBounce", &AppShimHost::CancelBounce)
+      .SetMethod("setMenu", &AppShimHost::SetMenu)
       .SetMethod("quit", &AppShimHost::Quit);
 }
 

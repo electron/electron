@@ -71,8 +71,16 @@ void App::StartAppShimServer(gin::Arguments* args) {
     return;
   }
   std::string name = app_shim::kDefaultServerName;
-  if (gin_helper::Dictionary options; args->GetNext(&options))
-    options.Get("name", &name);
+  if (args->Length() > 0) {
+    gin_helper::Dictionary options;
+    v8::Local<v8::Value> name_value;
+    if (!args->GetNext(&options) ||
+        (options.Get("name", &name_value) && !name_value->IsUndefined() &&
+         !options.Get("name", &name))) {
+      args->ThrowTypeError("Invalid options: name must be a string");
+      return;
+    }
+  }
   std::string error;
   if (!AppShimListener::Get()->Start(name, &error))
     args->ThrowTypeError(error);

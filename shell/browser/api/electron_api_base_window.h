@@ -65,6 +65,10 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   // False when the options name an app shim (macOS) that can't host a window.
   static bool IsAppShimValid(const gin_helper::Dictionary& options,
                              std::string* error_message);
+  // Returns false, with the reason, when the `parent` in `options` is a
+  // window that can't have children.
+  static bool IsParentValid(const gin_helper::Dictionary& options,
+                            std::string* error_message);
 
   const NativeWindow* window() const { return window_.get(); }
   NativeWindow* window() { return window_.get(); }

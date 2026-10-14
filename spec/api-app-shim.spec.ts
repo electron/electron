@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron/main';
+import { app, BaseWindow, BrowserWindow, dialog, Menu } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -7,6 +7,7 @@ import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 
 import { ifdescribe, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
@@ -25,7 +26,7 @@ const loaderPath = path.join(
 const SHIM_NAME = 'Spec Shim';
 const SHIM_BUNDLE_ID = 'org.electronjs.spec.app-shim';
 
-type OnScreenWindow = { pid: number; width: number; height: number };
+type OnScreenWindow = { pid: number; x: number; y: number; width: number; height: number };
 
 // The windows the window server has on screen, with the process that owns
 // each. Read with JXA so that the answer comes from outside Electron.
@@ -36,6 +37,8 @@ function onScreenWindows(): OnScreenWindow[] {
       $.CGWindowListCopyWindowInfo($.kCGWindowListOptionOnScreenOnly, 0)));
     JSON.stringify(list.map((w) => ({
       pid: w.kCGWindowOwnerPID,
+      x: w.kCGWindowBounds.X,
+      y: w.kCGWindowBounds.Y,
       width: w.kCGWindowBounds.Width,
       height: w.kCGWindowBounds.Height
     })));`;
@@ -83,7 +86,7 @@ ifdescribe(process.platform === 'darwin' && !process.mas)('app shims', () => {
 
   afterEach(async () => {
     await closeAllWindows();
-    if (shimProcess && shimProcess.exitCode === null) {
+    if (shimProcess && shimProcess.exitCode === null && shimProcess.signalCode === null) {
       const exited = once(shimProcess, 'exit');
       shimProcess.kill('SIGKILL');
       await exited;
@@ -137,10 +140,12 @@ ifdescribe(process.platform === 'darwin' && !process.mas)('app shims', () => {
     expect(w.isVisible()).to.be.true();
     expect(w.getBounds()).to.deep.equal({ x: 80, y: 90, width: 400, height: 300 });
 
-    const resized = once(w, 'resize');
     w.setSize(500, 350);
-    await resized;
     expect(w.getSize()).to.deep.equal([500, 350]);
+    // What the shim's process did with it, according to the window server.
+    await waitUntil(() =>
+      onScreenWindows().some((win) => win.pid === shim.pid && win.width === 500 && win.height === 350)
+    );
 
     const hidden = once(w, 'hide');
     w.hide();
@@ -150,16 +155,187 @@ ifdescribe(process.platform === 'darwin' && !process.mas)('app shims', () => {
 
   it('lets the close event keep a window in a shim open', async () => {
     const shim = await launchShim();
-    const w = new BrowserWindow({ appShim: shim });
+    // A BaseWindow closes inside close() when nothing prevents it.
+    const w = new BaseWindow({ appShim: shim });
+    let closedEmitted = false;
+    w.once('closed', () => {
+      closedEmitted = true;
+    });
     w.once('close', (event) => event.preventDefault());
     w.close();
+    await setTimeout(100);
+    expect(closedEmitted).to.be.false();
     expect(w.isDestroyed()).to.be.false();
 
-    const closed = once(w, 'closed');
     w.close();
+    expect(closedEmitted).to.be.true();
+    expect(shim.isConnected()).to.be.true();
+  });
+
+  it('sizes a framed window by its content when asked to', async () => {
+    const shim = await launchShim();
+    const w = new BaseWindow({ appShim: shim, width: 400, height: 300, useContentSize: true });
+    expect(w.getContentSize()).to.deep.equal([400, 300]);
+    const titleBarHeight = w.getSize()[1] - 300;
+    expect(titleBarHeight).to.be.greaterThan(0);
+
+    // The limits are the window's, title bar included.
+    w.setMinimumSize(300, 200);
+    w.setSize(100, 100);
+    await waitUntil(() =>
+      onScreenWindows().some((win) => win.pid === shim.pid && win.width === 300 && win.height === 200)
+    );
+  });
+
+  it('survives a window being destroyed by its own show listener', async () => {
+    const shim = await launchShim();
+    const w = new BaseWindow({ appShim: shim });
+    const closed = once(w, 'closed');
+    w.once('show', () => w.destroy());
     await closed;
     expect(w.isDestroyed()).to.be.true();
     expect(shim.isConnected()).to.be.true();
+  });
+
+  it('survives the shim being quit by a show listener of its window', async () => {
+    const shim = await launchShim();
+    const exited = once(shimProcess!, 'exit');
+    const w = new BaseWindow({ appShim: shim });
+    const closed = once(w, 'closed');
+    w.once('show', () => {
+      shim.quit();
+      expect(shim.isConnected()).to.be.false();
+      expect(() => new BaseWindow({ appShim: shim })).to.throw(/disconnected/);
+    });
+    await Promise.all([closed, exited, once(shim, 'disconnected')]);
+  });
+
+  it('restores from the Dock without leaving the maximized state', async () => {
+    const shim = await launchShim();
+    const w = new BaseWindow({ appShim: shim, width: 400, height: 300 });
+    await once(w, 'show');
+    const maximized = once(w, 'maximize');
+    w.maximize();
+    await maximized;
+    const minimized = once(w, 'minimize');
+    w.minimize();
+    await minimized;
+    const restored = once(w, 'restore');
+    w.restore();
+    await restored;
+    expect(w.isMaximized()).to.be.true();
+  });
+
+  it('does not announce a shim after the server is stopped', async () => {
+    app.stopAppShimServer();
+    try {
+      let announced = false;
+      const onConnected = () => {
+        announced = true;
+      };
+      app.once('app-shim-connected', onConnected);
+      shimProcess = cp.spawn(path.join(bundlePath, 'Contents', 'MacOS', SHIM_NAME), { stdio: 'inherit' });
+      await setTimeout(1500);
+      app.removeListener('app-shim-connected', onConnected);
+      expect(announced).to.be.false();
+    } finally {
+      app.startAppShimServer({ name: serverName });
+    }
+  });
+
+  it('rejects options that are not what startAppShimServer takes', () => {
+    app.stopAppShimServer();
+    try {
+      expect(() => app.startAppShimServer({ name: 123 as any })).to.throw(/name must be a string/);
+      expect(() => app.startAppShimServer({ name: 'not valid!' })).to.throw(/may only hold/);
+    } finally {
+      app.startAppShimServer({ name: serverName });
+    }
+  });
+
+  it('shows a message box as a sheet in the shim process', async () => {
+    const shim = await launchShim();
+    const w = new BaseWindow({ appShim: shim, width: 400, height: 300 });
+    await once(w, 'show');
+    const windowsOfShim = () => onScreenWindows().filter((win) => win.pid === shim.pid).length;
+    await waitUntil(() => windowsOfShim() === 1);
+
+    const controller = new AbortController();
+    const result = dialog.showMessageBox(w, {
+      message: 'A sheet',
+      buttons: ['OK', 'Cancel'],
+      cancelId: 1,
+      signal: controller.signal
+    });
+    // The sheet is a second window of the shim's process, not of this one.
+    await waitUntil(() => windowsOfShim() === 2);
+    controller.abort();
+    expect((await result).response).to.equal(1);
+    await waitUntil(() => windowsOfShim() === 1);
+  });
+
+  it('answers a dialog with "cancelled" when its shim goes away', async () => {
+    const shim = await launchShim();
+    const w = new BaseWindow({ appShim: shim, width: 400, height: 300 });
+    await once(w, 'show');
+    const result = dialog.showOpenDialog(w, { properties: ['openFile'] });
+    await waitUntil(() => onScreenWindows().filter((win) => win.pid === shim.pid).length >= 2);
+    shimProcess!.kill('SIGKILL');
+    expect(await result).to.deep.equal({ canceled: true, filePaths: [] });
+  });
+
+  it('takes a menu of its own, or null, and nothing else', async () => {
+    const shim = await launchShim();
+    const menu = Menu.buildFromTemplate([{ role: 'appMenu' }, { label: 'Tools', submenu: [{ label: 'Ping' }] }]);
+    expect(() => shim.setMenu(menu)).to.not.throw();
+    expect(() => shim.setMenu(null)).to.not.throw();
+    expect(() => shim.setMenu('menu' as any)).to.throw(/Must pass a Menu or null/);
+    expect(() => (shim as any).setMenu()).to.throw(/Must pass a Menu or null/);
+    expect(shim.isConnected()).to.be.true();
+  });
+
+  it('gives a window with a hidden title bar its whole frame as content', async () => {
+    const shim = await launchShim();
+    const w = new BaseWindow({ appShim: shim, width: 400, height: 300, titleBarStyle: 'hidden' });
+    await once(w, 'show');
+    expect(w.getContentSize()).to.deep.equal([400, 300]);
+    await waitUntil(() =>
+      onScreenWindows().some((win) => win.pid === shim.pid && win.width === 400 && win.height === 300)
+    );
+    // The window buttons are the shim's to move and hide.
+    w.setWindowButtonPosition({ x: 20, y: 20 });
+    expect(w.getWindowButtonPosition()).to.deep.equal({ x: 20, y: 20 });
+    w.setWindowButtonVisibility(false);
+    w.setVibrancy('sidebar');
+    w.setVibrancy(null);
+    await setTimeout(200);
+    expect(shim.isConnected()).to.be.true();
+  });
+
+  it('tabs two windows of one shim together, and no others', async () => {
+    const shim = await launchShim();
+    const windowsOfShim = () => onScreenWindows().filter((win) => win.pid === shim.pid).length;
+    const a = new BaseWindow({ appShim: shim, width: 400, height: 300, tabbingIdentifier: 'group' });
+    const b = new BaseWindow({ appShim: shim, width: 400, height: 300, tabbingIdentifier: 'group' });
+    expect(a.tabbingIdentifier).to.equal('group');
+    await waitUntil(() => windowsOfShim() === 2);
+    a.addTabbedWindow(b);
+    // One window on screen, with the other as a tab in it.
+    await waitUntil(() => windowsOfShim() === 1);
+
+    const local = new BaseWindow({ show: false, tabbingIdentifier: 'group' });
+    expect(() => a.addTabbedWindow(local)).to.throw(/same app/);
+    expect(() => local.addTabbedWindow(a)).to.throw(/same app/);
+    local.destroy();
+  });
+
+  it('does not take a window in a shim as a parent', async () => {
+    const shim = await launchShim();
+    const w = new BaseWindow({ appShim: shim });
+    expect(() => new BaseWindow({ parent: w })).to.throw(/can't be a parent window/);
+    const other = new BaseWindow({ show: false });
+    expect(() => other.setParentWindow(w)).to.throw(/can't be a parent window/);
+    other.destroy();
   });
 
   it('closes the windows of a shim that goes away', async () => {

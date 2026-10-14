@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_APP_SHIM_HOST_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_APP_SHIM_HOST_H_
 
+#include <mach/message.h>
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -37,6 +39,8 @@ class AppShimHostBootstrap;
 
 namespace api {
 
+class Menu;
+
 // A connected app shim: another app, with a Dock tile of its own, that shows
 // windows on this app's behalf. Windows created with it as their `appShim`
 // option are NSWindows of the shim's process.
@@ -59,8 +63,16 @@ class AppShimHost final : public gin::Wrappable<AppShimHost>,
   AppShimHost(const AppShimHost&) = delete;
   AppShimHost& operator=(const AppShimHost&) = delete;
 
+  // The bundle that the process an audit token names runs from; empty when
+  // the process is gone.
+  static base::FilePath BundlePathForAuditToken(const audit_token_t& token);
+
   // What creates this shim's NSWindows; null once the shim has disconnected.
   remote_cocoa::ApplicationHost* GetRemoteCocoaApplicationHost() const;
+  // The shim's process; null once the shim has disconnected.
+  mojom::AppShim* GetAppShim() const;
+  // A window was made in the shim's process.
+  void DidCreateWindow();
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
@@ -93,6 +105,7 @@ class AppShimHost final : public gin::Wrappable<AppShimHost>,
   void Bounce(gin::Arguments* args);
   void CancelBounce();
   void Quit();
+  void SetMenu(gin::Arguments* args);
 
   std::unique_ptr<Connection, NativePeerBase::Deleter> connection_;
 };

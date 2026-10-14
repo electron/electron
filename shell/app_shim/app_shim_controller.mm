@@ -12,6 +12,7 @@
 #include "base/apple/bundle_locations.h"
 #include "base/apple/foundation_util.h"
 #include "base/apple/mach_logging.h"
+#include "base/apple/scoped_mach_port.h"
 #include "base/functional/bind.h"
 #include "base/logging.h"
 #include "base/mac/scoped_mach_msg_destroy.h"
@@ -20,11 +21,19 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/single_thread_task_runner.h"
 #include "components/remote_cocoa/app_shim/application_bridge.h"
+#import "components/remote_cocoa/app_shim/native_widget_mac_nswindow.h"
+#include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
 #include "content/public/browser/remote_cocoa.h"
 #include "mojo/public/cpp/platform/named_platform_channel.h"
 #include "mojo/public/cpp/platform/platform_channel.h"
+#import "shell/app_shim/app_shim_window.h"
+#import "shell/browser/ui/cocoa/electron_menu_controller.h"
+#include "shell/browser/ui/file_dialog.h"
+#include "shell/browser/ui/message_box.h"
 #include "shell/common/app_shim_constants.h"
+#include "ui/accelerated_widget_mac/window_resize_helper_mac.h"
 #include "ui/display/screen.h"
+#include "ui/gfx/native_ui_types.h"
 #include "url/gurl.h"
 
 namespace {
@@ -32,6 +41,13 @@ namespace {
 // How long a shim waits for the host app to start listening.
 constexpr base::TimeDelta kPollTimeout = base::Seconds(60);
 constexpr base::TimeDelta kPollPeriod = base::Milliseconds(100);
+// How long the host has to answer a quit request before the shim quits anyway,
+// so that a host that is busy or hung cannot hold up a logout.
+constexpr base::TimeDelta kQuitAnswerTimeout = base::Seconds(5);
+// How long the host has to take note of a build mismatch before the shim
+// quits without knowing that it has.
+constexpr base::TimeDelta kBuildMismatchAcknowledgementTimeout =
+    base::Seconds(2);
 
 NSString* InfoPlistString(const char* key) {
   id value = [NSBundle.mainBundle
@@ -67,6 +83,46 @@ NSString* AppName() {
 
 - (void)controllerDestroyed {
   _controller = nullptr;
+}
+
+// The "+" of a window's tab bar. AppKit shows it when something in the
+// responder chain answers to this, and the window's own delegate is
+// remote_cocoa's.
+- (void)newWindowForTab:(id)sender {
+  NSWindow* window = NSApp.keyWindow ?: NSApp.mainWindow;
+  if (!_controller || ![window isKindOfClass:[NativeWidgetMacNSWindow class]]) {
+    return;
+  }
+  _controller->OnNewWindowForTab(
+      static_cast<NativeWidgetMacNSWindow*>(window).bridgedNativeWidgetId);
+}
+
+// The Quick Look panel asks the responder chain who fills it, which ends
+// here. It is the key window's, if the host asked for a preview there.
+- (ElectronAppShimWindow*)windowForPreviewPanel {
+  ElectronAppShimWindow* window =
+      [ElectronAppShimWindow existingForWindow:NSApp.mainWindow];
+  return [window hasPreviewItem] ? window : nil;
+}
+
+- (BOOL)acceptsPreviewPanelControl:(QLPreviewPanel*)panel {
+  return [self windowForPreviewPanel] != nil;
+}
+
+- (void)beginPreviewPanelControl:(QLPreviewPanel*)panel {
+  ElectronAppShimWindow* window = [self windowForPreviewPanel];
+  panel.dataSource = window;
+  panel.delegate = window;
+}
+
+- (void)endPreviewPanelControl:(QLPreviewPanel*)panel {
+  panel.dataSource = nil;
+  panel.delegate = nil;
+}
+
+- (void)applicationDidBecomeActive:(NSNotification*)notification {
+  if (_controller)
+    _controller->OnDidBecomeActive();
 }
 
 - (BOOL)applicationShouldHandleReopen:(NSApplication*)sender
@@ -106,12 +162,6 @@ NSString* AppName() {
     _controller->OnOpenUrls(std::move(other));
 }
 
-- (NSApplicationTerminateReply)applicationShouldTerminate:
-    (NSApplication*)sender {
-  return !_controller || _controller->ShouldTerminate() ? NSTerminateNow
-                                                        : NSTerminateCancel;
-}
-
 - (BOOL)applicationSupportsSecureRestorableState:(NSApplication*)app {
   return YES;
 }
@@ -139,6 +189,9 @@ AppShimController::AppShimController(const base::FilePath& host_bundle_path)
   delegate_ = [[ElectronAppShimDelegate alloc] initWithController:this];
   NSApp.delegate = delegate_;
   [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+  // The host decides which shims run; macOS must not bring this one back at
+  // login by itself.
+  [NSApp disableRelaunchOnLogin];
   SetUpMenu();
 
   poll_deadline_ = base::TimeTicks::Now() + kPollTimeout;
@@ -209,10 +262,24 @@ void AppShimController::LaunchHost() {
 }
 
 void AppShimController::PollForHost() {
-  if (mojo::PlatformChannelEndpoint endpoint = ConnectToHost(ServerName());
-      endpoint.is_valid()) {
-    OnConnected(std::move(endpoint));
-    return;
+  const std::string server_name = ServerName();
+  if (mojo::PlatformChannelEndpoint server =
+          mojo::NamedPlatformChannel::ConnectToServer(server_name);
+      server.is_valid()) {
+    // The host is listening. It is only worth connecting to when it runs the
+    // build of Electron that this process loaded.
+    if (!mojo::NamedPlatformChannel::ConnectToServer(
+             app_shim::BuildMarkerServerName(server_name))
+             .is_valid()) {
+      OnBuildMismatch(std::move(server));
+      return;
+    }
+    if (mojo::PlatformChannelEndpoint endpoint =
+            ConnectToHost(std::move(server));
+        endpoint.is_valid()) {
+      OnConnected(std::move(endpoint));
+      return;
+    }
   }
 
   if (!launched_host_ && !IsHostRunning())
@@ -232,15 +299,10 @@ void AppShimController::PollForHost() {
 
 // static
 mojo::PlatformChannelEndpoint AppShimController::ConnectToHost(
-    const std::string& server_name) {
+    mojo::PlatformChannelEndpoint server_endpoint) {
   // One bootstrap server takes connections from every shim, so each shim makes
   // a channel of its own and sends the host one end of it in a raw Mach
   // message. Both sides then make an isolated Mojo connection over it.
-  mojo::PlatformChannelEndpoint server_endpoint =
-      mojo::NamedPlatformChannel::ConnectToServer(server_name);
-  if (!server_endpoint.is_valid())
-    return mojo::PlatformChannelEndpoint();
-
   mojo::PlatformChannel channel;
   mach_msg_base_t message{};
   base::ScopedMachMsgDestroy scoped_message(&message.header);
@@ -259,6 +321,49 @@ mojo::PlatformChannelEndpoint AppShimController::ConnectToHost(
   }
   scoped_message.Disarm();
   return channel.TakeRemoteEndpoint();
+}
+
+void AppShimController::OnBuildMismatch(
+    mojo::PlatformChannelEndpoint server_endpoint) {
+  LOG(ERROR) << "The host app is running another build of Electron than the "
+                "one on disk; it has to be restarted before this app can "
+                "connect to it.";
+
+  // Telling the person is the host's to do, in its own words: it gets an
+  // event for this message. It finds out who sent the message from the
+  // sender's audit token, which needs this process to still be there, so the
+  // host is given a moment to say that it has done so before this process
+  // quits. It says so by letting go of the reply right.
+  base::apple::ScopedMachReceiveRight reply;
+  if (!base::apple::CreateMachPort(&reply, nullptr)) {
+    Terminate();
+    return;
+  }
+  mach_msg_base_t message{};
+  base::ScopedMachMsgDestroy scoped_message(&message.header);
+  message.header.msgh_id = app_shim::kBuildMismatchMsgId;
+  message.header.msgh_bits =
+      MACH_MSGH_BITS(MACH_MSG_TYPE_MOVE_SEND, MACH_MSG_TYPE_MAKE_SEND_ONCE);
+  message.header.msgh_size = sizeof(message);
+  message.header.msgh_remote_port =
+      server_endpoint.TakePlatformHandle().ReleaseMachSendRight();
+  message.header.msgh_local_port = reply.get();
+  if (kern_return_t kr = mach_msg_send(&message.header); kr != KERN_SUCCESS) {
+    MACH_LOG(ERROR, kr) << "mach_msg_send";
+    Terminate();
+    return;
+  }
+  scoped_message.Disarm();
+
+  struct {
+    mach_msg_header_t header;
+    mach_msg_trailer_t trailer;
+  } acknowledgement{};
+  mach_msg(&acknowledgement.header, MACH_RCV_MSG | MACH_RCV_TIMEOUT, 0,
+           sizeof(acknowledgement), reply.get(),
+           kBuildMismatchAcknowledgementTimeout.InMilliseconds(),
+           MACH_PORT_NULL);
+  Terminate();
 }
 
 void AppShimController::OnConnected(mojo::PlatformChannelEndpoint endpoint) {
@@ -282,7 +387,10 @@ void AppShimController::OnShimConnectedResponse(
     Terminate();
     return;
   }
-  shim_receiver_.Bind(std::move(app_shim_receiver));
+  // The pipe every remote_cocoa interface is associated with. It is read on
+  // this runner so that a window resize can wait for the host's frames.
+  shim_receiver_.Bind(std::move(app_shim_receiver),
+                      ui::WindowResizeHelperMac::Get()->task_runner());
   shim_receiver_.set_disconnect_handler(
       base::BindOnce(&AppShimController::Terminate, base::Unretained(this)));
   host_bootstrap_.reset();
@@ -290,7 +398,14 @@ void AppShimController::OnShimConnectedResponse(
 
 void AppShimController::Terminate() {
   terminating_ = true;
+  waiting_for_quit_answer_ = false;
+  quit_answer_timer_.Stop();
   [NSApp terminate:nil];
+}
+
+void AppShimController::OnQuitAnswerTimeout() {
+  LOG(WARNING) << "The host app did not answer the quit request; quitting.";
+  Terminate();
 }
 
 void AppShimController::OnReopen(bool has_visible_windows) {
@@ -308,7 +423,12 @@ void AppShimController::OnOpenUrls(std::vector<GURL> urls) {
 bool AppShimController::ShouldTerminate() {
   if (terminating_ || !shim_receiver_.is_bound())
     return true;
-  host_->QuitRequested();
+  if (!waiting_for_quit_answer_) {
+    waiting_for_quit_answer_ = true;
+    host_->QuitRequested();
+    quit_answer_timer_.Start(FROM_HERE, kQuitAnswerTimeout, this,
+                             &AppShimController::OnQuitAnswerTimeout);
+  }
   return false;
 }
 
@@ -360,6 +480,193 @@ void AppShimController::SetUserAttention(mojom::AppShimAttentionType type) {
 
 void AppShimController::Quit() {
   Terminate();
+}
+
+namespace {
+
+// The NSWindow that the host knows as `window_id`, if it is still there.
+gfx::NativeWindow WindowForId(uint64_t window_id) {
+  auto* bridge = remote_cocoa::NativeWidgetNSWindowBridge::GetFromId(window_id);
+  return gfx::NativeWindow(bridge ? bridge->ns_window() : nil);
+}
+
+file_dialog::DialogSettings FromMojo(
+    const mojom::AppShimFileDialogOptions& options) {
+  file_dialog::DialogSettings settings;
+  settings.title = options.title;
+  settings.message = options.message;
+  settings.button_label = options.button_label;
+  settings.name_field_label = options.name_field_label;
+  settings.default_path = options.default_path;
+  for (const auto& filter : options.filters)
+    settings.filters.emplace_back(filter->name, filter->extensions);
+  settings.properties = options.properties;
+  settings.shows_tag_field = options.shows_tag_field;
+  return settings;
+}
+
+}  // namespace
+
+void AppShimController::InitWindowChrome(uint64_t window_id,
+                                         mojom::AppShimWindowChromePtr chrome) {
+  [[ElectronAppShimWindow forWindowId:window_id] initChrome:*chrome];
+}
+
+void AppShimController::SetWindowButtonVisibility(uint64_t window_id,
+                                                  bool visible) {
+  [[ElectronAppShimWindow forWindowId:window_id] setButtonVisibility:visible];
+}
+
+void AppShimController::SetWindowButtonPosition(
+    uint64_t window_id,
+    const std::optional<gfx::Point>& position) {
+  [[ElectronAppShimWindow forWindowId:window_id] setButtonPosition:position];
+}
+
+void AppShimController::SetWindowVibrancy(uint64_t window_id,
+                                          const std::string& type,
+                                          int32_t duration_ms,
+                                          int32_t state) {
+  [[ElectronAppShimWindow forWindowId:window_id]
+      setVibrancy:type
+         duration:duration_ms
+            state:static_cast<NSVisualEffectState>(state)];
+}
+
+void AppShimController::PerformWindowTabAction(uint64_t window_id,
+                                               mojom::AppShimTabAction action) {
+  [[ElectronAppShimWindow forWindowId:window_id] performTabAction:action];
+}
+
+void AppShimController::AddTabbedWindow(uint64_t window_id,
+                                        uint64_t tabbed_window_id) {
+  [[ElectronAppShimWindow forWindowId:window_id]
+      addTabbedWindow:[ElectronAppShimWindow forWindowId:tabbed_window_id]];
+}
+
+void AppShimController::PreviewFile(uint64_t window_id,
+                                    const base::FilePath& path,
+                                    const std::string& display_name) {
+  [[ElectronAppShimWindow forWindowId:window_id]
+      previewFile:base::apple::FilePathToNSURL(path)
+            title:base::SysUTF8ToNSString(display_name)];
+}
+
+void AppShimController::CloseFilePreview(uint64_t window_id) {
+  [[ElectronAppShimWindow forWindowId:window_id] closeFilePreview];
+}
+
+void AppShimController::OnNewWindowForTab(uint64_t window_id) {
+  if (shim_receiver_.is_bound())
+    host_->NewWindowForTab(window_id);
+}
+
+void AppShimController::ShowMessageBox(
+    uint64_t window_id,
+    mojom::AppShimMessageBoxOptionsPtr options,
+    ShowMessageBoxCallback callback) {
+  const gfx::NativeWindow window = WindowForId(window_id);
+  if (!window) {
+    std::move(callback).Run(options->cancel_id, false);
+    return;
+  }
+  MessageBoxSettings settings;
+  settings.type = static_cast<MessageBoxType>(options->type);
+  settings.buttons = options->buttons;
+  settings.default_id = options->default_id;
+  settings.cancel_id = options->cancel_id;
+  settings.message = options->message;
+  settings.detail = options->detail;
+  settings.checkbox_label = options->checkbox_label;
+  settings.checkbox_checked = options->checkbox_checked;
+  settings.icon = options->icon;
+  settings.text_width = options->text_width;
+  if (options->has_id)
+    settings.id = options->id;
+  ShowMessageBoxForNSWindow(settings, window, std::move(callback));
+}
+
+void AppShimController::CloseMessageBox(int32_t id) {
+  electron::CloseMessageBox(id);
+}
+
+void AppShimController::ShowOpenDialog(
+    uint64_t window_id,
+    mojom::AppShimFileDialogOptionsPtr options,
+    ShowOpenDialogCallback callback) {
+  const gfx::NativeWindow window = WindowForId(window_id);
+  if (!window) {
+    std::move(callback).Run(true, {});
+    return;
+  }
+  file_dialog::ShowOpenDialogForNSWindow(FromMojo(*options), window,
+                                         std::move(callback));
+}
+
+void AppShimController::ShowSaveDialog(
+    uint64_t window_id,
+    mojom::AppShimFileDialogOptionsPtr options,
+    ShowSaveDialogCallback callback) {
+  const gfx::NativeWindow window = WindowForId(window_id);
+  if (!window) {
+    std::move(callback).Run(true, base::FilePath());
+    return;
+  }
+  file_dialog::ShowSaveDialogForNSWindow(FromMojo(*options), window,
+                                         std::move(callback));
+}
+
+void AppShimController::SetApplicationMenu(
+    std::optional<std::vector<mojom::AppShimMenuItemPtr>> items) {
+  if (!items) {
+    if (menu_) {
+      menu_controller_ = nil;
+      menu_.reset();
+      SetUpMenu();
+    }
+    return;
+  }
+  // The usual case is the same menu with another state, which the menu on
+  // screen takes from the model the next time it looks.
+  if (menu_ && menu_->Update(&*items))
+    return;
+
+  // The controller refers to the model, so it goes first.
+  menu_controller_ = nil;
+  menu_ =
+      std::make_unique<AppShimMenu>(std::move(*items), std::vector<uint32_t>(),
+                                    static_cast<AppShimMenu::Client*>(this));
+  menu_controller_ =
+      [[ElectronMenuController alloc] initWithModel:menu_->model()
+                              useDefaultAccelerator:YES];
+  [NSApp setMainMenu:[menu_controller_ menu]];
+}
+
+void AppShimController::OnMenuItemActivated(const std::vector<uint32_t>& path,
+                                            int command_id,
+                                            int event_flags) {
+  if (shim_receiver_.is_bound())
+    host_->MenuItemActivated(path, command_id, event_flags);
+}
+
+void AppShimController::OnMenuWillShow() {
+  if (shim_receiver_.is_bound())
+    host_->MenuWillShow();
+}
+
+void AppShimController::OnMenuWillClose() {
+  if (shim_receiver_.is_bound())
+    host_->MenuWillClose();
+}
+
+void AppShimController::OnDidBecomeActive() {
+  if (shim_receiver_.is_bound())
+    host_->DidBecomeActive();
+}
+
+void AppShimController::CancelQuit() {
+  waiting_for_quit_answer_ = false;
+  quit_answer_timer_.Stop();
 }
 
 void AppShimController::SetUpMenu() {

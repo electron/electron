@@ -1579,6 +1579,10 @@ void NativeWindowMac::ToggleTabBar() {
 }
 
 bool NativeWindowMac::AddTabbedWindow(NativeWindow* window) {
+  // A window in an app shim is another process's: only a stand-in for it is
+  // here.
+  if (window->IsInAppShim())
+    return false;
   if (window_ == window->GetNativeWindow().GetNativeNSWindow()) {
     return false;
   } else {

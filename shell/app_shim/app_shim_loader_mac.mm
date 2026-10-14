@@ -37,15 +37,19 @@ NSString* StringForKey(NSString* key) {
 }
 
 NSString* HostBundlePath() {
-  if (NSString* path = StringForKey(@"ElectronAppShimHostPath"))
+  // The path wins while the host is still there; a host that has been moved
+  // is found again by its identifier.
+  NSString* path = StringForKey(@"ElectronAppShimHostPath");
+  if (path && [NSFileManager.defaultManager fileExistsAtPath:path])
     return path;
   if (NSString* bundle_id =
           StringForKey(@"ElectronAppShimHostBundleIdentifier")) {
-    return [NSWorkspace.sharedWorkspace
-               URLForApplicationWithBundleIdentifier:bundle_id]
-        .path;
+    if (NSURL* url = [NSWorkspace.sharedWorkspace
+            URLForApplicationWithBundleIdentifier:bundle_id]) {
+      return url.path;
+    }
   }
-  return nil;
+  return path;
 }
 
 }  // namespace

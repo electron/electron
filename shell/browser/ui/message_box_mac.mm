@@ -13,8 +13,9 @@
 #include "base/mac/mac_util.h"
 #include "base/no_destructor.h"
 #include "base/strings/sys_string_conversions.h"
-#include "content/public/browser/browser_thread.h"
+#include "base/task/sequenced_task_runner.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/native_window_mac_remote.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/gfx/image/image_skia.h"
 
@@ -110,6 +111,11 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
 }  // namespace
 
 int ShowMessageBoxSync(const MessageBoxSettings& settings) {
+  if (settings.parent_window && settings.parent_window->IsInAppShim()) {
+    return static_cast<NativeWindowMacRemote*>(settings.parent_window)
+        ->ShowMessageBoxSync(settings);
+  }
+
   NSAlert* alert(CreateNSAlert(settings));
 
   // Use runModal for synchronous alert without parent, since we don't have a
@@ -135,11 +141,27 @@ int ShowMessageBoxSync(const MessageBoxSettings& settings) {
 
 void ShowMessageBox(const MessageBoxSettings& settings,
                     MessageBoxCallback callback) {
+  if (settings.parent_window && settings.parent_window->IsInAppShim()) {
+    static_cast<NativeWindowMacRemote*>(settings.parent_window)
+        ->ShowMessageBox(settings, std::move(callback));
+    return;
+  }
+  ShowMessageBoxForNSWindow(settings,
+                            settings.parent_window
+                                ? settings.parent_window->GetNativeWindow()
+                                : gfx::NativeWindow(),
+                            std::move(callback));
+}
+
+void ShowMessageBoxForNSWindow(const MessageBoxSettings& settings,
+                               gfx::NativeWindow native_window,
+                               MessageBoxCallback callback) {
   NSAlert* alert = CreateNSAlert(settings);
+  NSWindow* window = native_window.GetNativeNSWindow();
 
   // Use runModal for synchronous alert without parent, since we don't have a
   // window to wait for.
-  if (!settings.parent_window) {
+  if (!window) {
     int ret = [alert runModal];
     std::move(callback).Run(
         ret, alert.suppressionButton.state == NSControlStateValueOn);
@@ -150,16 +172,13 @@ void ShowMessageBox(const MessageBoxSettings& settings,
       GetDialogsMap()[*settings.id] = alert;
     }
 
-    NSWindow* window =
-        settings.parent_window
-            ? settings.parent_window->GetNativeWindow().GetNativeNSWindow()
-            : nil;
-
     // Duplicate the callback object here since c is a reference and gcd would
     // only store the pointer, by duplication we can force gcd to store a copy.
     __block MessageBoxCallback callback_ = std::move(callback);
     __block std::optional<int> id = std::move(settings.id);
     __block int cancel_id = settings.cancel_id;
+    scoped_refptr<base::SequencedTaskRunner> task_runner =
+        base::SequencedTaskRunner::GetCurrentDefault();
 
     auto handler = ^(NSModalResponse response) {
       if (id)
@@ -175,9 +194,8 @@ void ShowMessageBox(const MessageBoxSettings& settings,
       // users will run in the callback, we have to delay running the callback
       // until next tick, otherwise crash like this may happen:
       // https://github.com/electron/electron/issues/26884
-      content::GetUIThreadTaskRunner({})->PostTask(
-          FROM_HERE,
-          base::BindOnce(std::move(callback_), response, suppressed));
+      task_runner->PostTask(FROM_HERE, base::BindOnce(std::move(callback_),
+                                                      response, suppressed));
     };
     [alert beginSheetModalForWindow:window completionHandler:handler];
   }
@@ -185,6 +203,8 @@ void ShowMessageBox(const MessageBoxSettings& settings,
 
 void CloseMessageBox(int id) {
   auto it = GetDialogsMap().find(id);
+  if (it == GetDialogsMap().end() && NativeWindowMacRemote::CloseMessageBox(id))
+    return;
   if (it == GetDialogsMap().end()) {
     LOG(ERROR) << "CloseMessageBox called with nonexistent ID";
     return;

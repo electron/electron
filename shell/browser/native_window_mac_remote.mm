@@ -7,15 +7,25 @@
 #include <algorithm>
 #include <utility>
 
+#include "base/auto_reset.h"
+#include "base/containers/flat_map.h"
 #include "base/functional/bind.h"
+#include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
+#include "base/no_destructor.h"
+#include "base/run_loop.h"
+#include "base/task/sequenced_task_runner.h"
 #include "components/remote_cocoa/browser/application_host.h"
 #include "components/remote_cocoa/common/native_widget_ns_window.mojom.h"
 #include "content/public/browser/desktop_media_id.h"
+#include "mojo/public/cpp/bindings/callback_helpers.h"
 #include "shell/browser/api/electron_api_app_shim_host.h"
 #include "shell/browser/ui/cocoa/root_view_mac.h"
 #include "shell/browser/ui/views/content_view_targeter_delegate.h"
 #include "shell/browser/window_list.h"
+#include "shell/common/app_shim.mojom.h"
+#include "shell/common/electron_paths.h"
+#include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
 #include "ui/base/hit_test.h"
@@ -38,11 +48,13 @@ class RemoteNativeWidgetMac : public views::NativeWidgetMac {
   RemoteNativeWidgetMac(views::internal::NativeWidgetDelegate* delegate,
                         remote_cocoa::ApplicationHost* application_host,
                         NSUInteger style_mask,
-                        bool has_frame)
+                        bool has_frame,
+                        bool has_title_bar_buttons)
       : views::NativeWidgetMac(delegate),
         application_host_(application_host),
         style_mask_(style_mask),
-        has_frame_(has_frame) {}
+        has_frame_(has_frame),
+        has_title_bar_buttons_(has_title_bar_buttons) {}
 
   RemoteNativeWidgetMac(const RemoteNativeWidgetMac&) = delete;
   RemoteNativeWidgetMac& operator=(const RemoteNativeWidgetMac&) = delete;
@@ -58,7 +70,10 @@ class RemoteNativeWidgetMac : public views::NativeWidgetMac {
       remote_cocoa::mojom::CreateWindowParams* params) override {
     params->style_mask = style_mask_;
     if (!has_frame_) {
-      params->window_class = remote_cocoa::mojom::WindowClass::kFrameless;
+      // A title bar of no height, unless the window buttons are to show in
+      // it (a titleBarStyle other than the default).
+      if (!has_title_bar_buttons_)
+        params->window_class = remote_cocoa::mojom::WindowClass::kFrameless;
       params->titlebar_appears_transparent = true;
       params->window_title_hidden = true;
     }
@@ -72,20 +87,72 @@ class RemoteNativeWidgetMac : public views::NativeWidgetMac {
   raw_ptr<remote_cocoa::ApplicationHost> application_host_;
   const NSUInteger style_mask_;
   const bool has_frame_;
+  const bool has_title_bar_buttons_;
 };
 
+// The message boxes that windows in shims are showing and that
+// CloseMessageBox() can name.
+base::flat_map<int, base::WeakPtr<NativeWindowMacRemote>>&
+RemoteMessageBoxes() {
+  static base::NoDestructor<
+      base::flat_map<int, base::WeakPtr<NativeWindowMacRemote>>>
+      boxes;
+  return *boxes;
+}
+
+mojom::AppShimFileDialogOptionsPtr ToMojo(
+    const file_dialog::DialogSettings& settings) {
+  auto options = mojom::AppShimFileDialogOptions::New();
+  options->title = settings.title;
+  options->message = settings.message;
+  options->button_label = settings.button_label;
+  options->name_field_label = settings.name_field_label;
+  // Resolved here: the shim's process has no path service for the default.
+  options->default_path =
+      settings.default_path.empty() ? GetDefaultPath() : settings.default_path;
+  for (const auto& [name, extensions] : settings.filters) {
+    options->filters.push_back(
+        mojom::AppShimFileDialogFilter::New(name, extensions));
+  }
+  options->properties = settings.properties;
+  options->shows_tag_field = settings.shows_tag_field;
+  return options;
+}
+
 // Turns the window's close button into the window's `close` event; the window
-// goes away only when that is not prevented.
+// goes away only when that is not prevented. The shim's process is blocked on
+// the answer to this, and destroying the window while it waits would drop the
+// answer, so the event is emitted once the answer has gone.
 class RemoteWindowClientView : public views::ClientView {
  public:
   RemoteWindowClientView(views::Widget* widget,
                          views::View* contents_view,
-                         NativeWindow* window)
-      : views::ClientView(widget, contents_view), window_(window) {}
+                         base::RepeatingClosure on_close_requested)
+      : views::ClientView(widget, contents_view),
+        on_close_requested_(std::move(on_close_requested)) {}
 
   views::CloseRequestResult OnWindowCloseRequested() override {
-    window_->NotifyWindowCloseButtonClicked();
+    base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+        FROM_HERE, on_close_requested_);
     return views::CloseRequestResult::kCannotClose;
+  }
+
+ private:
+  const base::RepeatingClosure on_close_requested_;
+};
+
+// The size limits views passes to a remote window are of its content, where
+// RootViewMac answers with the window's.
+class RemoteRootView : public RootViewMac {
+ public:
+  explicit RemoteRootView(NativeWindow* window)
+      : RootViewMac(window), window_(window) {}
+
+  gfx::Size GetMinimumSize() const override {
+    return window_->GetContentMinimumSize();
+  }
+  gfx::Size GetMaximumSize() const override {
+    return window_->GetContentMaximumSize();
   }
 
  private:
@@ -131,9 +198,9 @@ NativeWindowMacRemote::NativeWindowMacRemote(
     NativeWindow* parent,
     remote_cocoa::ApplicationHost* application_host)
     : NativeWindow{base_window_id, options, parent},
-      root_view_(std::make_unique<RootViewMac>(this)) {
-  const int width = options.ValueOrDefault(options::kWidth, 800);
-  const int height = options.ValueOrDefault(options::kHeight, 600);
+      root_view_(std::make_unique<RemoteRootView>(this)) {
+  int width = options.ValueOrDefault(options::kWidth, 800);
+  int height = options.ValueOrDefault(options::kHeight, 600);
   const NSRect main_screen_rect = NSScreen.screens.firstObject.frame;
   const gfx::Rect bounds(round((NSWidth(main_screen_rect) - width) / 2),
                          round((NSHeight(main_screen_rect) - height) / 2),
@@ -164,11 +231,49 @@ NativeWindowMacRemote::NativeWindowMacRemote(
   params.delegate = this;
   if (IsTranslucent())
     params.opacity = views::Widget::InitParams::WindowOpacity::kTranslucent;
-  auto* native_widget = new RemoteNativeWidgetMac(widget(), application_host,
-                                                  style_mask_, has_frame());
+  // Reading the options above may have run JavaScript that disconnected the
+  // shim, so the host is looked up again here, with nothing left to run
+  // before it is used. Without one the window is made in this process.
+  api::AppShimHost* app_shim = nullptr;
+  options.Get(options::kAppShim, &app_shim);
+  application_host =
+      app_shim ? app_shim->GetRemoteCocoaApplicationHost() : nullptr;
+  auto* native_widget = new RemoteNativeWidgetMac(
+      widget(), application_host, style_mask_, has_frame(),
+      title_bar_style() != TitleBarStyle::kNormal);
   params.native_widget = native_widget;
   widget()->Init(std::move(params));
   native_widget->DidInit();
+  if (application_host) {
+    app_shim_ = app_shim;
+    app_shim->DidCreateWindow();
+  }
+
+  // What remote_cocoa has no call for goes to the shim directly, on the pipe
+  // that the window's creation went over, so it arrives after that.
+  options.GetOptional(options::kTrafficLightPosition, &traffic_light_position_);
+  if (std::string identifier;
+      options.Get(options::kTabbingIdentifier, &identifier) &&
+      !identifier.empty() && has_frame() && !transparent()) {
+    tabbing_identifier_ = identifier;
+  }
+  if (std::string state; options.Get(options::kVisualEffectState, &state)) {
+    visual_effect_state_ = state == "active" ? NSVisualEffectStateActive
+                           : state == "inactive"
+                               ? NSVisualEffectStateInactive
+                               : NSVisualEffectStateFollowsWindowActiveState;
+  }
+  if (auto* shim = GetAppShim()) {
+    auto chrome = mojom::AppShimWindowChrome::New();
+    chrome->has_frame = has_frame();
+    chrome->title_bar_style = static_cast<int32_t>(title_bar_style());
+    chrome->traffic_light_position = traffic_light_position_;
+    chrome->titlebar_overlay_height = titlebar_overlay_height();
+    chrome->tabbing_identifier = tabbing_identifier_;
+    shim->InitWindowChrome(GetRemoteWindowId(), std::move(chrome));
+  }
+  if (!movable_)
+    SetMovable(false);
   widget()->SetNativeWindowProperty(kNativeWindowKey.c_str(), this);
   widget_observation_.Observe(widget());
 
@@ -176,6 +281,23 @@ NativeWindowMacRemote::NativeWindowMacRemote(
   SetCanMinimize(minimizable);
   SetCanMaximize(maximizable);
   widget()->OnSizeConstraintsChanged();
+
+  // Width and height are the content's for a window.open() inner size and
+  // with useContentSize.
+  constexpr int kMinSizeReqdBySpec = 100;
+  const int inner_width = options.ValueOrDefault(options::kinnerWidth, 0);
+  const int inner_height = options.ValueOrDefault(options::kinnerHeight, 0);
+  bool use_content_size =
+      options.ValueOrDefault(options::kUseContentSize, false);
+  if (inner_width || inner_height) {
+    use_content_size = true;
+    if (inner_width)
+      width = std::max(kMinSizeReqdBySpec, inner_width);
+    if (inner_height)
+      height = std::max(kMinSizeReqdBySpec, inner_height);
+  }
+  if (use_content_size)
+    SetContentSize(gfx::Size(width, height));
 
   last_bounds_ = widget()->GetWindowBoundsInScreen();
 }
@@ -212,12 +334,142 @@ void NativeWindowMacRemote::Close() {
     WindowList::WindowCloseCancelled(this);
     return;
   }
-  // Asks RemoteWindowClientView, which emits `close`.
-  widget()->Close();
+  NotifyWindowCloseButtonClicked();
 }
 
 void NativeWindowMacRemote::CloseImmediately() {
-  widget()->CloseNow();
+  if (widget_callback_depth_ == 0) {
+    CloseNow();
+    return;
+  }
+  // Called by a listener of one of the widget's own notifications, so
+  // destroying the widget now would free what is notifying. The window is
+  // closed as far as its observers are concerned, as they may be about to go
+  // away themselves; the widget follows once the notification has returned.
+  widget()->Hide();
+  NotifyWindowClosed();
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, base::BindOnce(&NativeWindowMacRemote::CloseNow,
+                                weak_factory_.GetWeakPtr()));
+}
+
+void NativeWindowMacRemote::CloseNow() {
+  if (!widget_destroyed_)
+    widget()->CloseNow();
+}
+
+void NativeWindowMacRemote::OnCloseButtonClicked() {
+  if (!IsClosed())
+    NotifyWindowCloseButtonClicked();
+}
+
+bool NativeWindowMacRemote::IsInAppShim() const {
+  return true;
+}
+
+mojom::AppShim* NativeWindowMacRemote::GetAppShim() const {
+  return app_shim_ ? app_shim_->GetAppShim() : nullptr;
+}
+
+uint64_t NativeWindowMacRemote::GetRemoteWindowId() const {
+  auto* host = views::NativeWidgetMacNSWindowHost::GetFromNativeWindow(
+      GetNativeWindow());
+  return host ? host->bridged_native_widget_id() : 0;
+}
+
+void NativeWindowMacRemote::ShowMessageBox(const MessageBoxSettings& settings,
+                                           MessageBoxCallback callback) {
+  // Run whatever happens: with "cancel" if the shim drops the request.
+  callback = mojo::WrapCallbackWithDefaultInvokeIfNotRun(
+      std::move(callback), settings.cancel_id, false);
+  auto* app_shim = GetAppShim();
+  const uint64_t window_id = GetRemoteWindowId();
+  if (!app_shim || !window_id)
+    return;
+
+  auto options = mojom::AppShimMessageBoxOptions::New();
+  options->type = static_cast<int32_t>(settings.type);
+  options->buttons = settings.buttons;
+  options->default_id = settings.default_id;
+  options->cancel_id = settings.cancel_id;
+  options->message = settings.message;
+  options->detail = settings.detail;
+  options->checkbox_label = settings.checkbox_label;
+  options->checkbox_checked = settings.checkbox_checked;
+  options->icon = settings.icon;
+  options->text_width = settings.text_width;
+  options->has_id = settings.id.has_value();
+  options->id = settings.id.value_or(0);
+  if (settings.id) {
+    RemoteMessageBoxes()[*settings.id] = weak_factory_.GetWeakPtr();
+    callback = base::BindOnce(
+        [](int id, MessageBoxCallback callback, int response, bool checked) {
+          RemoteMessageBoxes().erase(id);
+          std::move(callback).Run(response, checked);
+        },
+        *settings.id, std::move(callback));
+  }
+  app_shim->ShowMessageBox(window_id, std::move(options), std::move(callback));
+}
+
+int NativeWindowMacRemote::ShowMessageBoxSync(
+    const MessageBoxSettings& settings) {
+  // The box is in another process, so there is no modal session of this
+  // one to run; tasks, and so other JavaScript, run while it is up.
+  base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
+  int result = settings.cancel_id;
+  ShowMessageBox(settings, base::BindOnce(
+                               [](base::OnceClosure quit, int* out,
+                                  int response, bool checkbox_checked) {
+                                 *out = response;
+                                 std::move(quit).Run();
+                               },
+                               run_loop.QuitClosure(), &result));
+  run_loop.Run();
+  return result;
+}
+
+// static
+bool NativeWindowMacRemote::CloseMessageBox(int id) {
+  auto it = RemoteMessageBoxes().find(id);
+  if (it == RemoteMessageBoxes().end())
+    return false;
+  if (it->second) {
+    if (auto* app_shim = it->second->GetAppShim())
+      app_shim->CloseMessageBox(id);
+  }
+  return true;
+}
+
+void NativeWindowMacRemote::ShowOpenDialog(
+    const file_dialog::DialogSettings& settings,
+    file_dialog::OpenDialogCallback callback) {
+  callback = mojo::WrapCallbackWithDefaultInvokeIfNotRun(
+      std::move(callback), true, std::vector<base::FilePath>());
+  auto* app_shim = GetAppShim();
+  const uint64_t window_id = GetRemoteWindowId();
+  if (!app_shim || !window_id)
+    return;
+  app_shim->ShowOpenDialog(window_id, ToMojo(settings), std::move(callback));
+}
+
+void NativeWindowMacRemote::ShowSaveDialog(
+    const file_dialog::DialogSettings& settings,
+    file_dialog::SaveDialogCallback callback) {
+  callback = mojo::WrapCallbackWithDefaultInvokeIfNotRun(
+      std::move(callback), true, base::FilePath());
+  auto* app_shim = GetAppShim();
+  const uint64_t window_id = GetRemoteWindowId();
+  if (!app_shim || !window_id)
+    return;
+  app_shim->ShowSaveDialog(window_id, ToMojo(settings), std::move(callback));
+}
+
+remote_cocoa::mojom::NativeWidgetNSWindow*
+NativeWindowMacRemote::GetNSWindowMojo() const {
+  auto* host = views::NativeWidgetMacNSWindowHost::GetFromNativeWindow(
+      GetNativeWindow());
+  return host ? host->GetNSWindowMojo() : nullptr;
 }
 
 void NativeWindowMacRemote::Focus(bool focus) {
@@ -264,8 +516,9 @@ void NativeWindowMacRemote::Maximize() {
 }
 
 void NativeWindowMacRemote::Unmaximize() {
-  if (IsMaximized())
-    widget()->Restore();
+  // Widget::Restore() would also leave full screen and the Dock.
+  if (auto* ns_window = GetNSWindowMojo(); ns_window && IsMaximized())
+    ns_window->SetZoomed(false);
 }
 
 bool NativeWindowMacRemote::IsMaximized() const {
@@ -277,7 +530,9 @@ void NativeWindowMacRemote::Minimize() {
 }
 
 void NativeWindowMacRemote::Restore() {
-  widget()->Restore();
+  // Widget::Restore() would also leave full screen and un-maximize.
+  if (auto* ns_window = GetNSWindowMojo())
+    ns_window->SetMiniaturized(false);
 }
 
 bool NativeWindowMacRemote::IsMinimized() const {
@@ -337,6 +592,8 @@ bool NativeWindowMacRemote::IsResizable() const {
 
 void NativeWindowMacRemote::SetMovable(bool movable) {
   movable_ = movable;
+  if (auto* ns_window = GetNSWindowMojo())
+    ns_window->SetMovable(movable);
 }
 
 bool NativeWindowMacRemote::IsMovable() const {
@@ -346,6 +603,8 @@ bool NativeWindowMacRemote::IsMovable() const {
 void NativeWindowMacRemote::SetMinimizable(bool minimizable) {
   SetCanMinimize(minimizable);
   widget()->OnSizeConstraintsChanged();
+  if (auto* ns_window = GetNSWindowMojo())
+    ns_window->SetMiniaturizable(minimizable);
 }
 
 bool NativeWindowMacRemote::IsMinimizable() const {
@@ -365,6 +624,10 @@ void NativeWindowMacRemote::SetFullScreenable(bool fullscreenable) {
   fullscreenable_ = fullscreenable;
   SetCanFullscreen(fullscreenable);
   widget()->OnSizeConstraintsChanged();
+  // What views derives from the size constraints is "resizable and
+  // maximizable", which is a different question.
+  if (auto* ns_window = GetNSWindowMojo())
+    ns_window->SetFullscreenable(fullscreenable);
 }
 
 bool NativeWindowMacRemote::IsFullScreenable() const {
@@ -373,6 +636,8 @@ bool NativeWindowMacRemote::IsFullScreenable() const {
 
 void NativeWindowMacRemote::SetClosable(bool closable) {
   closable_ = closable;
+  if (auto* ns_window = GetNSWindowMojo())
+    ns_window->SetClosable(closable);
 }
 
 bool NativeWindowMacRemote::IsClosable() const {
@@ -478,10 +743,8 @@ double NativeWindowMacRemote::GetOpacity() const {
 }
 
 void NativeWindowMacRemote::SetIgnoreMouseEvents(bool ignore, bool forward) {
-  auto* host = views::NativeWidgetMacNSWindowHost::GetFromNativeWindow(
-      GetNativeWindow());
-  if (host && host->GetNSWindowMojo())
-    host->GetNSWindowMojo()->SetIgnoresMouseEvents(ignore);
+  if (auto* ns_window = GetNSWindowMojo())
+    ns_window->SetIgnoresMouseEvents(ignore);
 }
 
 void NativeWindowMacRemote::SetContentProtection(bool enable) {
@@ -533,21 +796,100 @@ bool NativeWindowMacRemote::IsVisibleOnAllWorkspaces() const {
   return widget()->IsVisibleOnAllWorkspaces();
 }
 
-void NativeWindowMacRemote::SetWindowButtonVisibility(bool visible) {}
+void NativeWindowMacRemote::SetWindowButtonVisibility(bool visible) {
+  window_button_visibility_ = visible;
+  if (auto* shim = GetAppShim())
+    shim->SetWindowButtonVisibility(GetRemoteWindowId(), visible);
+}
 
 bool NativeWindowMacRemote::GetWindowButtonVisibility() const {
-  return has_frame();
+  // Until told otherwise they show wherever there is a title bar for them,
+  // except where they wait for the pointer.
+  return window_button_visibility_.value_or(
+      has_frame() || title_bar_style() == TitleBarStyle::kHidden ||
+      title_bar_style() == TitleBarStyle::kHiddenInset);
 }
 
 void NativeWindowMacRemote::SetWindowButtonPosition(
-    std::optional<gfx::Point> position) {}
+    std::optional<gfx::Point> position) {
+  traffic_light_position_ = position;
+  if (auto* shim = GetAppShim())
+    shim->SetWindowButtonPosition(GetRemoteWindowId(), position);
+}
 
 std::optional<gfx::Point> NativeWindowMacRemote::GetWindowButtonPosition()
     const {
-  return std::nullopt;
+  return traffic_light_position_;
 }
 
+// The shim's process redraws them when its window changes.
 void NativeWindowMacRemote::RedrawTrafficLights() {}
+
+void NativeWindowMacRemote::SetVibrancy(const std::string& type, int duration) {
+  NativeWindow::SetVibrancy(type, duration);
+  if (auto* shim = GetAppShim()) {
+    shim->SetWindowVibrancy(GetRemoteWindowId(), type, duration,
+                            visual_effect_state_);
+  }
+}
+
+void NativeWindowMacRemote::PerformTabAction(mojom::AppShimTabAction action) {
+  if (auto* shim = GetAppShim())
+    shim->PerformWindowTabAction(GetRemoteWindowId(), action);
+}
+
+void NativeWindowMacRemote::SelectPreviousTab() {
+  PerformTabAction(mojom::AppShimTabAction::kSelectPrevious);
+}
+
+void NativeWindowMacRemote::SelectNextTab() {
+  PerformTabAction(mojom::AppShimTabAction::kSelectNext);
+}
+
+void NativeWindowMacRemote::ShowAllTabs() {
+  PerformTabAction(mojom::AppShimTabAction::kShowAll);
+}
+
+void NativeWindowMacRemote::MergeAllWindows() {
+  PerformTabAction(mojom::AppShimTabAction::kMergeAll);
+}
+
+void NativeWindowMacRemote::MoveTabToNewWindow() {
+  PerformTabAction(mojom::AppShimTabAction::kMoveToNewWindow);
+}
+
+void NativeWindowMacRemote::ToggleTabBar() {
+  PerformTabAction(mojom::AppShimTabAction::kToggleTabBar);
+}
+
+bool NativeWindowMacRemote::AddTabbedWindow(NativeWindow* window) {
+  // Tabs are windows of one process: the other window has to be in the same
+  // shim.
+  if (window == this || !window->IsInAppShim())
+    return false;
+  auto* other = static_cast<NativeWindowMacRemote*>(window);
+  auto* shim = GetAppShim();
+  if (!shim || other->GetAppShim() != shim)
+    return false;
+  shim->AddTabbedWindow(GetRemoteWindowId(), other->GetRemoteWindowId());
+  return true;
+}
+
+std::optional<std::string> NativeWindowMacRemote::GetTabbingIdentifier() const {
+  return tabbing_identifier_;
+}
+
+void NativeWindowMacRemote::PreviewFile(const std::string& path,
+                                        const std::string& display_name) {
+  if (auto* shim = GetAppShim()) {
+    shim->PreviewFile(GetRemoteWindowId(), base::FilePath(path), display_name);
+  }
+}
+
+void NativeWindowMacRemote::CloseFilePreview() {
+  if (auto* shim = GetAppShim())
+    shim->CloseFilePreview(GetRemoteWindowId());
+}
 
 void NativeWindowMacRemote::UpdateFrame() {}
 
@@ -560,8 +902,12 @@ void NativeWindowMacRemote::SetHiddenInMissionControl(bool hidden) {}
 void NativeWindowMacRemote::SetAspectRatio(double aspect_ratio,
                                            const gfx::Size& extra_size) {
   NativeWindow::SetAspectRatio(aspect_ratio, extra_size);
-  if (aspect_ratio > 0.0)
-    widget()->SetAspectRatio(gfx::SizeF(aspect_ratio, 1.0));
+  // An empty ratio lifts the restriction.
+  if (auto* ns_window = GetNSWindowMojo()) {
+    ns_window->SetAspectRatio(
+        aspect_ratio > 0.0 ? gfx::SizeF(aspect_ratio, 1.0) : gfx::SizeF(),
+        extra_size);
+  }
 }
 
 int NativeWindowMacRemote::TitleBarHeight() const {
@@ -598,8 +944,10 @@ views::View* NativeWindowMacRemote::GetContentsView() {
 
 views::ClientView* NativeWindowMacRemote::CreateClientView(
     views::Widget* widget) {
-  return new RemoteWindowClientView(widget, TransferOwnershipOfContentsView(),
-                                    this);
+  return new RemoteWindowClientView(
+      widget, TransferOwnershipOfContentsView(),
+      base::BindRepeating(&NativeWindowMacRemote::OnCloseButtonClicked,
+                          weak_factory_.GetWeakPtr()));
 }
 
 std::unique_ptr<views::FrameView> NativeWindowMacRemote::CreateFrameView(
@@ -622,6 +970,8 @@ int NativeWindowMacRemote::FrameViewNonClientHitTest(const gfx::Point& point) {
 
 void NativeWindowMacRemote::OnWidgetActivationChanged(views::Widget* widget,
                                                       bool active) {
+  base::AutoReset<int> in_callback(&widget_callback_depth_,
+                                   widget_callback_depth_ + 1);
   if (active)
     NotifyWindowFocus();
   else
@@ -630,19 +980,28 @@ void NativeWindowMacRemote::OnWidgetActivationChanged(views::Widget* widget,
 
 void NativeWindowMacRemote::OnWidgetBoundsChanged(views::Widget* widget,
                                                   const gfx::Rect& bounds) {
+  base::AutoReset<int> in_callback(&widget_callback_depth_,
+                                   widget_callback_depth_ + 1);
   const gfx::Rect previous = std::exchange(last_bounds_, bounds);
-  if (previous.size() != bounds.size()) {
+  if (previous.size() != bounds.size())
     NotifyWindowResize();
-    NotifyWindowResized();
-  }
-  if (previous.origin() != bounds.origin()) {
+  if (previous.origin() != bounds.origin() && !IsClosed()) {
+    // On macOS `moved` is an alias of `move`.
     NotifyWindowMove();
     NotifyWindowMoved();
   }
 }
 
+void NativeWindowMacRemote::OnWidgetUserResizeEnded(views::Widget* widget) {
+  base::AutoReset<int> in_callback(&widget_callback_depth_,
+                                   widget_callback_depth_ + 1);
+  NotifyWindowResized();
+}
+
 void NativeWindowMacRemote::OnWidgetVisibilityChanged(views::Widget* widget,
                                                       bool visible) {
+  base::AutoReset<int> in_callback(&widget_callback_depth_,
+                                   widget_callback_depth_ + 1);
   if (visible)
     NotifyWindowShow();
   else
@@ -650,6 +1009,8 @@ void NativeWindowMacRemote::OnWidgetVisibilityChanged(views::Widget* widget,
 }
 
 void NativeWindowMacRemote::OnWidgetShowStateChanged(views::Widget* widget) {
+  base::AutoReset<int> in_callback(&widget_callback_depth_,
+                                   widget_callback_depth_ + 1);
   const bool minimized = widget->IsMinimized();
   if (std::exchange(was_minimized_, minimized) != minimized) {
     if (minimized)
@@ -674,6 +1035,7 @@ void NativeWindowMacRemote::OnWidgetShowStateChanged(views::Widget* widget) {
 }
 
 void NativeWindowMacRemote::OnWidgetDestroyed(views::Widget* widget) {
+  widget_destroyed_ = true;
   widget_observation_.Reset();
   NotifyWindowClosed();
 }

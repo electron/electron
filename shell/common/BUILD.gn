@@ -93,6 +93,8 @@ if (is_mac) {
     public_deps = [
       "//components/remote_cocoa/common:mojo",
       "//mojo/public/mojom/base",
+      "//ui/gfx/geometry/mojom",
+      "//ui/gfx/image/mojom",
       "//url/mojom:url_mojom_gurl",
     ]
   }

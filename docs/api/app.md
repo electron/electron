@@ -153,7 +153,7 @@ this event, such as launching the application for the first time, attempting
 to re-launch the application when it's already running, or clicking on the
 application's dock or taskbar icon.
 
-### Event: 'app-shim-connected' _macOS_
+### Event: 'app-shim-connected' _macOS_ _Experimental_
 
 Returns:
 
@@ -161,10 +161,38 @@ Returns:
 * `shim` [AppShimHost](app-shim-host.md)
 
 Emitted when an app shim has connected, after
-[`app.startAppShimServer()`](#appstartappshimserveroptions-macos). Any process
+[`app.startAppShimServer()`](#appstartappshimserveroptions-macos-experimental). Any process
 running as the same user can connect, so check the shim (for example with
-[`shim.satisfiesCodeRequirement()`](app-shim-host.md#shimsatisfiescoderequirementrequirement))
+[`shim.satisfiesCodeRequirement()`](app-shim-host.md#shimsatisfiescoderequirementrequirement-experimental))
 before you give it a window, and call `shim.quit()` to turn it away.
+
+### Event: 'app-shim-version-mismatch' _macOS_ _Experimental_
+
+Returns:
+
+* `event` Event
+* `bundlePath` string - The path of the app shim's bundle.
+
+Emitted when an app shim started and could not connect, because your app has
+been replaced on disk by another version since it started: the shim loads the
+version on disk, which can't talk to the one that is running. The shim quits
+without showing anything, so this event is where you tell the person what
+happened. Restarting your app lets shims connect again.
+
+```js
+const { app, dialog } = require('electron')
+
+app.on('app-shim-version-mismatch', async () => {
+  const { response } = await dialog.showMessageBox({
+    message: `Restart ${app.name} to finish updating`,
+    buttons: ['Restart', 'Later']
+  })
+  if (response === 0) {
+    app.relaunch()
+    app.quit()
+  }
+})
+```
 
 ### Event: 'did-become-active' _macOS_
 
@@ -1263,7 +1291,7 @@ Activation policy types:
 * 'accessory' - The application doesn’t appear in the Dock and doesn’t have a menu bar, but it may be activated programmatically or by clicking on one of its windows.
 * 'prohibited' - The application doesn’t appear in the Dock and may not create windows or be activated.
 
-### `app.startAppShimServer([options])` _macOS_
+### `app.startAppShimServer([options])` _macOS_ _Experimental_
 
 * `options` Object (optional)
   * `name` string (optional) - Tells apart the servers of several running
@@ -1272,7 +1300,7 @@ Activation policy types:
 
 Starts accepting connections from [app shims](app-shim-host.md). Each shim
 that connects is announced by an
-[`app-shim-connected`](#event-app-shim-connected-macos) event.
+[`app-shim-connected`](#event-app-shim-connected-macos-experimental) event.
 
 Throws if the server cannot start, for example because another copy of your app
 has started one with the same `name`.
@@ -1280,10 +1308,10 @@ has started one with the same `name`.
 This method can only be called after the app is ready. It is not available in
 Mac App Store builds.
 
-### `app.stopAppShimServer()` _macOS_
+### `app.stopAppShimServer()` _macOS_ _Experimental_
 
-Stops accepting connections from app shims. Shims that have connected stay
-connected.
+Stops accepting connections from app shims. Shims that have been announced by
+an `app-shim-connected` event stay connected.
 
 ### `app.importCertificate(options, callback)` _Linux_
 

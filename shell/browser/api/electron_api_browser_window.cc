@@ -375,7 +375,8 @@ gin_helper::WrappableBase* BrowserWindow::New(gin_helper::ErrorThrower thrower,
     thrower.ThrowError(error_message);
     return nullptr;
   }
-  if (!IsAppShimValid(options, &error_message)) {
+  if (!IsAppShimValid(options, &error_message) ||
+      !IsParentValid(options, &error_message)) {
     thrower.ThrowTypeError(error_message);
     return nullptr;
   }

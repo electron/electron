@@ -55,7 +55,7 @@
 * `parent` BaseWindow (optional) - Specify parent window. Default is `null`.
 * `modal` boolean (optional) - Whether this is a modal window. This only works when the
   window is a child window. Default is `false`.
-* `appShim` [AppShimHost](../app-shim-host.md) (optional) _macOS_ - Creates the native window in
+* `appShim` [AppShimHost](../app-shim-host.md) (optional) _macOS_ _Experimental_ - Creates the native window in
   the process of this app shim, so that it belongs to the shim's Dock tile and
   not to your app's. See [AppShimHost](../app-shim-host.md) for what such a
   window can't do.
