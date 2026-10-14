@@ -1,6 +1,6 @@
 import { net, session, type ClientRequest, type ClientRequestConstructorOptions, utilityProcess } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
@@ -30,21 +30,20 @@ async function itUtility(name: string, fn?: Function, args?: { [key: string]: an
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function itIgnoringArgs(name: string, fn?: Mocha.Func | Mocha.AsyncFunc, args?: { [key: string]: any }) {
-  it(name, fn);
+function itIgnoringArgs(name: string, fn?: () => unknown, args?: { [key: string]: any }) {
+  if (fn) it(name, fn);
+  else it.todo(name);
 }
 
 describe('net module', () => {
   beforeEach(() => {
     respondNTimes.routeFailure = false;
   });
-  afterEach(async function () {
-    if (respondNTimes.routeFailure && this.test) {
-      if (!this.test.isFailed()) {
-        throw new Error(
-          'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
-        );
-      }
+  afterEach((ctx) => {
+    if (respondNTimes.routeFailure && ctx.task.result?.state !== 'fail') {
+      throw new Error(
+        'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
+      );
     }
   });
 
@@ -73,11 +72,11 @@ describe('net module', () => {
     }
   );
 
-  before(async () => {
+  beforeAll(async () => {
     http2URL = (await listen(h2server)).url + '/';
   });
 
-  after(() => {
+  afterAll(() => {
     h2server.close();
   });
 
@@ -87,14 +86,14 @@ describe('net module', () => {
       const result = waitForUtilityResult(child);
       child.emit('message', { ok: true });
       child.emit('exit', 0);
-      expect(await result).to.deep.equal({ data: { ok: true }, code: 0 });
+      expect(await result).toEqual({ data: { ok: true }, code: 0 });
     });
 
     it('fails without waiting for the timeout when the child exits before posting a result', async () => {
       const child = new EventEmitter();
       const result = waitForUtilityResult(child);
       child.emit('exit', 1);
-      await expect(result).to.be.rejectedWith('utility process exited (1) before posting a result');
+      await expect(result).rejects.toThrow('utility process exited (1) before posting a result');
     });
   });
 
@@ -102,18 +101,18 @@ describe('net module', () => {
     describe('HTTP basics', () => {
       test('should be able to issue a basic GET request', async () => {
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
-          expect(request.method).to.equal('GET');
+          expect(request.method).toBe('GET');
           response.end();
         });
         const urlRequest = net.request(serverUrl);
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
+        expect(response.statusCode).toBe(200);
         await collectStreamBody(response);
       });
 
       test('should be able to issue a basic POST request', async () => {
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
-          expect(request.method).to.equal('POST');
+          expect(request.method).toBe('POST');
           response.end();
         });
         const urlRequest = net.request({
@@ -121,21 +120,21 @@ describe('net module', () => {
           url: serverUrl
         });
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
+        expect(response.statusCode).toBe(200);
         await collectStreamBody(response);
       });
 
       test('should fetch correct data in a GET request', async () => {
         const expectedBodyData = 'Hello World!';
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
-          expect(request.method).to.equal('GET');
+          expect(request.method).toBe('GET');
           response.end(expectedBodyData);
         });
         const urlRequest = net.request(serverUrl);
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
+        expect(response.statusCode).toBe(200);
         const body = await collectStreamBody(response);
-        expect(body).to.equal(expectedBodyData);
+        expect(body).toBe(expectedBodyData);
       });
 
       test('should post the correct data in a POST request', async () => {
@@ -151,8 +150,8 @@ describe('net module', () => {
         });
         urlRequest.write(bodyData);
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
-        expect(postedBodyData).to.equal(bodyData);
+        expect(response.statusCode).toBe(200);
+        expect(postedBodyData).toBe(bodyData);
       });
 
       test('a 307 redirected POST request preserves the body', async () => {
@@ -180,10 +179,10 @@ describe('net module', () => {
         });
         urlRequest.write(bodyData);
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
+        expect(response.statusCode).toBe(200);
         await collectStreamBody(response);
-        expect(methodAfterRedirect).to.equal('POST');
-        expect(postedBodyData).to.equal(bodyData);
+        expect(methodAfterRedirect).toBe('POST');
+        expect(postedBodyData).toBe(bodyData);
       });
 
       test('a 302 redirected POST request DOES NOT preserve the body', async () => {
@@ -211,10 +210,10 @@ describe('net module', () => {
         });
         urlRequest.write(bodyData);
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
+        expect(response.statusCode).toBe(200);
         await collectStreamBody(response);
-        expect(methodAfterRedirect).to.equal('GET');
-        expect(postedBodyData).to.equal('');
+        expect(methodAfterRedirect).toBe('GET');
+        expect(postedBodyData).toBe('');
       });
 
       test('should support chunked encoding', async () => {
@@ -249,13 +248,13 @@ describe('net module', () => {
         }
 
         const response = await getResponse(urlRequest);
-        expect(receivedRequest.method).to.equal('POST');
-        expect(receivedRequest.headers['transfer-encoding']).to.equal('chunked');
-        expect(receivedRequest.headers['content-length']).to.equal(undefined);
-        expect(response.statusCode).to.equal(200);
+        expect(receivedRequest.method).toBe('POST');
+        expect(receivedRequest.headers['transfer-encoding']).toBe('chunked');
+        expect(receivedRequest.headers['content-length']).toBe(undefined);
+        expect(response.statusCode).toBe(200);
         const received = await collectStreamBodyBuffer(response);
-        expect(sent.equals(received)).to.be.true();
-        expect(chunkIndex).to.be.equal(chunkCount);
+        expect(sent.equals(received)).toBe(true);
+        expect(chunkIndex).toBe(chunkCount);
       });
 
       for (const extraOptions of [
@@ -281,9 +280,9 @@ describe('net module', () => {
                 cb(user, pass);
               });
               const response = await getResponse(request);
-              expect(response.statusCode).to.equal(200);
-              expect(loginAuthInfo!.realm).to.equal('Foo');
-              expect(loginAuthInfo!.scheme).to.equal('basic');
+              expect(response.statusCode).toBe(200);
+              expect(loginAuthInfo!.realm).toBe('Foo');
+              expect(loginAuthInfo!.scheme).toBe('basic');
             },
             { extraOptions }
           );
@@ -305,8 +304,8 @@ describe('net module', () => {
               });
               const response = await getResponse(request);
               const body = await collectStreamBody(response);
-              expect(response.statusCode).to.equal(401);
-              expect(body).to.equal('unauthenticated');
+              expect(response.statusCode).toBe(401);
+              expect(body).toBe('unauthenticated');
             },
             { extraOptions }
           );
@@ -331,7 +330,7 @@ describe('net module', () => {
               request.write(requestData);
               const response = await getResponse(request);
               const responseData = await collectStreamBody(response);
-              expect(responseData).to.equal(requestData);
+              expect(responseData).toBe(requestData);
             },
             { extraOptions }
           );
@@ -353,9 +352,9 @@ describe('net module', () => {
             cb();
           });
           const response = await getResponse(request);
-          expect(loginEventEmitted).to.be.false('unexpected login event');
-          expect(response.statusCode).to.equal(401);
-          expect(response.headers['www-authenticate']).to.equal('Basic realm="Foo"');
+          expect(loginEventEmitted, 'unexpected login event').toBe(false);
+          expect(response.statusCode).toBe(401);
+          expect(response.headers['www-authenticate']).toBe('Basic realm="Foo"');
         });
       });
     });
@@ -379,18 +378,18 @@ describe('net module', () => {
           responseError = error;
         });
         const statusCode = response.statusCode;
-        expect(statusCode).to.equal(200);
+        expect(statusCode).toBe(200);
         // response data event
         // respond end event
         const body = await collectStreamBody(response);
-        expect(body).to.equal(bodyData);
+        expect(body).toBe(bodyData);
         let requestError: Error | undefined;
         urlRequest.on('error', (error) => {
           requestError = error;
         });
         await Promise.all([closePromise, finishPromise]);
-        expect(responseError).to.be.undefined();
-        expect(requestError).to.be.undefined();
+        expect(responseError).toBeUndefined();
+        expect(requestError).toBeUndefined();
       });
 
       test('request/response objects should emit error events when the connection is lost mid-body', async () => {
@@ -403,36 +402,36 @@ describe('net module', () => {
         const urlRequest = net.request(serverUrl);
         const requestErrorPromise = once(urlRequest, 'error');
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
+        expect(response.statusCode).toBe(200);
         const responseErrorPromise = once(response, 'error');
         // The body is only read (and the dropped connection noticed) while it is being consumed.
         response.on('data', () => {});
         const [responseError] = await responseErrorPromise;
         const [requestError] = await requestErrorPromise;
-        expect(responseError).to.be.an.instanceOf(Error);
-        expect(responseError.message).to.match(/^net::ERR_/);
-        expect(requestError).to.be.an.instanceOf(Error);
-        expect(requestError.message).to.equal(responseError.message);
+        expect(responseError).toBeInstanceOf(Error);
+        expect(responseError.message).toMatch(/^net::ERR_/);
+        expect(requestError).toBeInstanceOf(Error);
+        expect(requestError.message).toBe(responseError.message);
       });
 
       test('should be able to set a custom HTTP request header before first write', async () => {
         const customHeaderName = 'Some-Custom-Header-Name';
         const customHeaderValue = 'Some-Customer-Header-Value';
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
-          expect(request.headers[customHeaderName.toLowerCase()]).to.equal(customHeaderValue);
+          expect(request.headers[customHeaderName.toLowerCase()]).toBe(customHeaderValue);
           response.statusCode = 200;
           response.statusMessage = 'OK';
           response.end();
         });
         const urlRequest = net.request(serverUrl);
         urlRequest.setHeader(customHeaderName, customHeaderValue);
-        expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue);
-        expect(urlRequest.getHeader(customHeaderName.toLowerCase())).to.equal(customHeaderValue);
+        expect(urlRequest.getHeader(customHeaderName)).toBe(customHeaderValue);
+        expect(urlRequest.getHeader(customHeaderName.toLowerCase())).toBe(customHeaderValue);
         urlRequest.write('');
-        expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue);
-        expect(urlRequest.getHeader(customHeaderName.toLowerCase())).to.equal(customHeaderValue);
+        expect(urlRequest.getHeader(customHeaderName)).toBe(customHeaderValue);
+        expect(urlRequest.getHeader(customHeaderName.toLowerCase())).toBe(customHeaderValue);
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
+        expect(response.statusCode).toBe(200);
         await collectStreamBody(response);
       });
 
@@ -440,7 +439,7 @@ describe('net module', () => {
         const customHeaderName = 'Some-Integer-Value';
         const customHeaderValue = 900;
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
-          expect(request.headers[customHeaderName.toLowerCase()]).to.equal(customHeaderValue.toString());
+          expect(request.headers[customHeaderName.toLowerCase()]).toBe(customHeaderValue.toString());
           response.statusCode = 200;
           response.statusMessage = 'OK';
           response.end();
@@ -448,13 +447,13 @@ describe('net module', () => {
 
         const urlRequest = net.request(serverUrl);
         urlRequest.setHeader(customHeaderName, customHeaderValue as any);
-        expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue);
-        expect(urlRequest.getHeader(customHeaderName.toLowerCase())).to.equal(customHeaderValue);
+        expect(urlRequest.getHeader(customHeaderName)).toBe(customHeaderValue);
+        expect(urlRequest.getHeader(customHeaderName.toLowerCase())).toBe(customHeaderValue);
         urlRequest.write('');
-        expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue);
-        expect(urlRequest.getHeader(customHeaderName.toLowerCase())).to.equal(customHeaderValue);
+        expect(urlRequest.getHeader(customHeaderName)).toBe(customHeaderValue);
+        expect(urlRequest.getHeader(customHeaderName.toLowerCase())).toBe(customHeaderValue);
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
+        expect(response.statusCode).toBe(200);
         await collectStreamBody(response);
       });
 
@@ -462,8 +461,8 @@ describe('net module', () => {
         const customHeaderName = 'X-Header-Name';
         const customHeaderValue = 'value';
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
-          expect(request.headers[customHeaderName.toLowerCase()]).to.equal(customHeaderValue.toString());
-          expect(request.rawHeaders.includes(customHeaderName)).to.equal(true);
+          expect(request.headers[customHeaderName.toLowerCase()]).toBe(customHeaderValue.toString());
+          expect(request.rawHeaders.includes(customHeaderName)).toBe(true);
           response.statusCode = 200;
           response.statusMessage = 'OK';
           response.end();
@@ -471,10 +470,10 @@ describe('net module', () => {
 
         const urlRequest = net.request(serverUrl);
         urlRequest.setHeader(customHeaderName, customHeaderValue);
-        expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue);
+        expect(urlRequest.getHeader(customHeaderName)).toBe(customHeaderValue);
         urlRequest.write('');
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
+        expect(response.statusCode).toBe(200);
         await collectStreamBody(response);
       });
 
@@ -482,7 +481,7 @@ describe('net module', () => {
         const customHeaderName = 'Some-Custom-Header-Name';
         const customHeaderValue = 'Some-Customer-Header-Value';
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
-          expect(request.headers[customHeaderName.toLowerCase()]).to.equal(undefined);
+          expect(request.headers[customHeaderName.toLowerCase()]).toBe(undefined);
           response.statusCode = 200;
           response.statusMessage = 'OK';
           response.end();
@@ -491,10 +490,10 @@ describe('net module', () => {
         urlRequest.write('');
         expect(() => {
           urlRequest.setHeader(customHeaderName, customHeaderValue);
-        }).to.throw();
-        expect(urlRequest.getHeader(customHeaderName)).to.equal(undefined);
+        }).toThrow();
+        expect(urlRequest.getHeader(customHeaderName)).toBe(undefined);
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
+        expect(response.statusCode).toBe(200);
         await collectStreamBody(response);
       });
 
@@ -502,19 +501,19 @@ describe('net module', () => {
         const customHeaderName = 'Some-Custom-Header-Name';
         const customHeaderValue = 'Some-Customer-Header-Value';
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
-          expect(request.headers[customHeaderName.toLowerCase()]).to.equal(undefined);
+          expect(request.headers[customHeaderName.toLowerCase()]).toBe(undefined);
           response.statusCode = 200;
           response.statusMessage = 'OK';
           response.end();
         });
         const urlRequest = net.request(serverUrl);
         urlRequest.setHeader(customHeaderName, customHeaderValue);
-        expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue);
+        expect(urlRequest.getHeader(customHeaderName)).toBe(customHeaderValue);
         urlRequest.removeHeader(customHeaderName);
-        expect(urlRequest.getHeader(customHeaderName)).to.equal(undefined);
+        expect(urlRequest.getHeader(customHeaderName)).toBe(undefined);
         urlRequest.write('');
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
+        expect(response.statusCode).toBe(200);
         await collectStreamBody(response);
       });
 
@@ -522,21 +521,21 @@ describe('net module', () => {
         const customHeaderName = 'Some-Custom-Header-Name';
         const customHeaderValue = 'Some-Customer-Header-Value';
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
-          expect(request.headers[customHeaderName.toLowerCase()]).to.equal(customHeaderValue);
+          expect(request.headers[customHeaderName.toLowerCase()]).toBe(customHeaderValue);
           response.statusCode = 200;
           response.statusMessage = 'OK';
           response.end();
         });
         const urlRequest = net.request(serverUrl);
         urlRequest.setHeader(customHeaderName, customHeaderValue);
-        expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue);
+        expect(urlRequest.getHeader(customHeaderName)).toBe(customHeaderValue);
         urlRequest.write('');
         expect(() => {
           urlRequest.removeHeader(customHeaderName);
-        }).to.throw();
-        expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue);
+        }).toThrow();
+        expect(urlRequest.getHeader(customHeaderName)).toBe(customHeaderValue);
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
+        expect(response.statusCode).toBe(200);
         await collectStreamBody(response);
       });
 
@@ -547,7 +546,7 @@ describe('net module', () => {
           const headerNames = Array.from(Object.keys(request.headers));
           const headerAIndex = headerNames.indexOf(customHeaderNameA.toLowerCase());
           const headerBIndex = headerNames.indexOf(customHeaderNameB.toLowerCase());
-          expect(headerBIndex).to.be.below(headerAIndex);
+          expect(headerBIndex).toBeLessThan(headerAIndex);
           response.statusCode = 200;
           response.statusMessage = 'OK';
           response.end();
@@ -557,7 +556,7 @@ describe('net module', () => {
         urlRequest.setHeader(customHeaderNameB, 'b');
         urlRequest.setHeader(customHeaderNameA, 'a');
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
+        expect(response.statusCode).toBe(200);
         await collectStreamBody(response);
       });
 
@@ -571,7 +570,8 @@ describe('net module', () => {
         });
         const urlRequest = net.request(serverUrl);
         const response = await getResponse(urlRequest);
-        expect(response.headers['set-cookie']).to.have.same.members(cookie);
+        expect(response.headers['set-cookie']).toHaveLength(cookie.length);
+        expect(response.headers['set-cookie']).toEqual(expect.arrayContaining(cookie));
       });
 
       test('should be able to receive content-type', async () => {
@@ -584,7 +584,7 @@ describe('net module', () => {
         });
         const urlRequest = net.request(serverUrl);
         const response = await getResponse(urlRequest);
-        expect(response.headers['content-type']).to.equal(contentType);
+        expect(response.headers['content-type']).toBe(contentType);
       });
 
       describe('when {"credentials":"omit"}', () => {
@@ -594,7 +594,7 @@ describe('net module', () => {
 
       test('should set sec-fetch-site to same-origin for request from same origin', async () => {
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
-          expect(request.headers['sec-fetch-site']).to.equal('same-origin');
+          expect(request.headers['sec-fetch-site']).toBe('same-origin');
           response.statusCode = 200;
           response.statusMessage = 'OK';
           response.end();
@@ -608,7 +608,7 @@ describe('net module', () => {
 
       test('should set sec-fetch-site to same-origin for request with the same origin header', async () => {
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
-          expect(request.headers['sec-fetch-site']).to.equal('same-origin');
+          expect(request.headers['sec-fetch-site']).toBe('same-origin');
           response.statusCode = 200;
           response.statusMessage = 'OK';
           response.end();
@@ -622,7 +622,7 @@ describe('net module', () => {
 
       test('should set sec-fetch-site to cross-site for request from other origin', async () => {
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
-          expect(request.headers['sec-fetch-site']).to.equal('cross-site');
+          expect(request.headers['sec-fetch-site']).toBe('cross-site');
           response.statusCode = 200;
           response.statusMessage = 'OK';
           response.end();
@@ -636,7 +636,7 @@ describe('net module', () => {
 
       test('should not send sec-fetch-user header by default', async () => {
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
-          expect(request.headers).not.to.have.property('sec-fetch-user');
+          expect(request.headers).not.toHaveProperty('sec-fetch-user');
           response.statusCode = 200;
           response.statusMessage = 'OK';
           response.end();
@@ -649,7 +649,7 @@ describe('net module', () => {
 
       test('should set sec-fetch-user to ?1 if requested', async () => {
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
-          expect(request.headers['sec-fetch-user']).to.equal('?1');
+          expect(request.headers['sec-fetch-user']).toBe('?1');
           response.statusCode = 200;
           response.statusMessage = 'OK';
           response.end();
@@ -663,7 +663,7 @@ describe('net module', () => {
 
       test('should set sec-fetch-mode to no-cors by default', async () => {
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
-          expect(request.headers['sec-fetch-mode']).to.equal('no-cors');
+          expect(request.headers['sec-fetch-mode']).toBe('no-cors');
           response.statusCode = 200;
           response.statusMessage = 'OK';
           response.end();
@@ -679,7 +679,7 @@ describe('net module', () => {
           `should set sec-fetch-mode to ${mode} if requested`,
           async () => {
             const serverUrl = await respondOnce.toSingleURL((request, response) => {
-              expect(request.headers['sec-fetch-mode']).to.equal(mode);
+              expect(request.headers['sec-fetch-mode']).toBe(mode);
               response.statusCode = 200;
               response.statusMessage = 'OK';
               response.end();
@@ -697,7 +697,7 @@ describe('net module', () => {
 
       test('should set sec-fetch-dest to empty by default', async () => {
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
-          expect(request.headers['sec-fetch-dest']).to.equal('empty');
+          expect(request.headers['sec-fetch-dest']).toBe('empty');
           response.statusCode = 200;
           response.statusMessage = 'OK';
           response.end();
@@ -734,7 +734,7 @@ describe('net module', () => {
           `should set sec-fetch-dest to ${dest} if requested`,
           async () => {
             const serverUrl = await respondOnce.toSingleURL((request, response) => {
-              expect(request.headers['sec-fetch-dest']).to.equal(dest);
+              expect(request.headers['sec-fetch-dest']).toBe(dest);
               response.statusCode = 200;
               response.statusMessage = 'OK';
               response.end();
@@ -767,8 +767,8 @@ describe('net module', () => {
         urlRequest.write('');
         urlRequest.end();
         await aborted;
-        expect(requestReceivedByServer).to.be.false('Unexpected request event');
-        expect(responseEventEmitted).to.be.false('Unexpected response event');
+        expect(requestReceivedByServer, 'Unexpected request event').toBe(false);
+        expect(responseEventEmitted, 'Unexpected response event').toBe(false);
       });
 
       test('it should be able to abort an HTTP request before request end', async () => {
@@ -801,11 +801,11 @@ describe('net module', () => {
         urlRequest.chunkedEncoding = true;
         urlRequest.write(randomString(kOneKiloByte));
         await p;
-        expect(responseEventEmitted).to.be.false('Unexpected response event');
-        expect(finishEventEmitted).to.be.false('Unexpected finish event');
-        expect(unexpectedError).to.be.undefined('Unexpected error event');
-        expect(requestReceivedByServer).to.equal(true);
-        expect(requestAbortEventEmitted).to.equal(true);
+        expect(responseEventEmitted, 'Unexpected response event').toBe(false);
+        expect(finishEventEmitted, 'Unexpected finish event').toBe(false);
+        expect(unexpectedError, 'Unexpected error event').toBeUndefined();
+        expect(requestReceivedByServer).toBe(true);
+        expect(requestAbortEventEmitted).toBe(true);
       });
 
       test('it should be able to abort an HTTP request after request end and before response', async () => {
@@ -836,10 +836,10 @@ describe('net module', () => {
         });
         urlRequest.end(randomString(kOneKiloByte));
         await once(urlRequest, 'abort');
-        expect(responseEventEmitted).to.be.false('Unexpected response event');
-        expect(unexpectedError).to.be.undefined('Unexpected error event');
-        expect(requestFinishEventEmitted).to.equal(true);
-        expect(requestReceivedByServer).to.equal(true);
+        expect(responseEventEmitted, 'Unexpected response event').toBe(false);
+        expect(unexpectedError, 'Unexpected error event').toBeUndefined();
+        expect(requestFinishEventEmitted).toBe(true);
+        expect(requestReceivedByServer).toBe(true);
       });
 
       test('it should be able to abort an HTTP request after response start', async () => {
@@ -881,13 +881,13 @@ describe('net module', () => {
         });
         urlRequest.end(randomString(kOneKiloByte));
         await once(urlRequest, 'abort');
-        expect(unexpectedError).to.be.undefined('Unexpected error event');
-        expect(requestFinishEventEmitted).to.be.true('request should emit "finish" event');
-        expect(requestReceivedByServer).to.be.true('request should be received by the server');
-        expect(requestResponseEventEmitted).to.be.true('"response" event should be emitted');
-        expect(responseStatusCode).to.equal(200);
-        expect(responseEndEventEmitted).to.be.false('Unexpected end event');
-        expect(responseCloseEventEmitted).to.be.true('response should emit "close" event');
+        expect(unexpectedError, 'Unexpected error event').toBeUndefined();
+        expect(requestFinishEventEmitted, 'request should emit "finish" event').toBe(true);
+        expect(requestReceivedByServer, 'request should be received by the server').toBe(true);
+        expect(requestResponseEventEmitted, '"response" event should be emitted').toBe(true);
+        expect(responseStatusCode).toBe(200);
+        expect(responseEndEventEmitted, 'Unexpected end event').toBe(false);
+        expect(responseCloseEventEmitted, 'response should emit "close" event').toBe(true);
       });
 
       test('abort event should be emitted at most once', async () => {
@@ -918,11 +918,11 @@ describe('net module', () => {
         });
         urlRequest.end(randomString(kOneKiloByte));
         await once(urlRequest, 'abort');
-        expect(responseEventEmitted).to.be.false('Unexpected response event');
-        expect(unexpectedError).to.be.undefined('Unexpected error event');
-        expect(requestFinishEventEmitted).to.be.true('request should emit "finish" event');
-        expect(requestReceivedByServer).to.be.true('request should be received by server');
-        expect(abortsEmitted).to.equal(1, 'request should emit exactly 1 "abort" event');
+        expect(responseEventEmitted, 'Unexpected response event').toBe(false);
+        expect(unexpectedError, 'Unexpected error event').toBeUndefined();
+        expect(requestFinishEventEmitted, 'request should emit "finish" event').toBe(true);
+        expect(requestReceivedByServer, 'request should be received by server').toBe(true);
+        expect(abortsEmitted, 'request should emit exactly 1 "abort" event').toBe(1);
       });
 
       test('should allow to read response body from non-2xx response', async () => {
@@ -935,12 +935,12 @@ describe('net module', () => {
         const urlRequest = net.request(serverUrl);
         const bodyCheckPromise = getResponse(urlRequest)
           .then((r) => {
-            expect(r.statusCode).to.equal(404);
+            expect(r.statusCode).toBe(404);
             return r;
           })
           .then(collectStreamBody)
           .then((receivedBodyData) => {
-            expect(receivedBodyData.toString()).to.equal(bodyData);
+            expect(receivedBodyData.toString()).toBe(bodyData);
           });
         const eventHandlers = Promise.all([bodyCheckPromise, once(urlRequest, 'close')]);
 
@@ -952,21 +952,21 @@ describe('net module', () => {
       test('should throw when calling getHeader without a name', () => {
         expect(() => {
           (net.request({ url: 'https://test' }).getHeader as any)();
-        }).to.throw(/`name` is required for getHeader\(name\)/);
+        }).toThrow(/`name` is required for getHeader\(name\)/);
 
         expect(() => {
           net.request({ url: 'https://test' }).getHeader(null as any);
-        }).to.throw(/`name` is required for getHeader\(name\)/);
+        }).toThrow(/`name` is required for getHeader\(name\)/);
       });
 
       test('should throw when calling removeHeader without a name', () => {
         expect(() => {
           (net.request({ url: 'https://test' }).removeHeader as any)();
-        }).to.throw(/`name` is required for removeHeader\(name\)/);
+        }).toThrow(/`name` is required for removeHeader\(name\)/);
 
         expect(() => {
           net.request({ url: 'https://test' }).removeHeader(null as any);
-        }).to.throw(/`name` is required for removeHeader\(name\)/);
+        }).toThrow(/`name` is required for removeHeader\(name\)/);
       });
 
       test('should follow redirect when no redirect handler is provided', async () => {
@@ -986,7 +986,7 @@ describe('net module', () => {
           url: `${serverUrl}${requestUrl}`
         });
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
+        expect(response.statusCode).toBe(200);
       });
 
       test('should follow redirect chain when no redirect handler is provided', async () => {
@@ -1010,7 +1010,7 @@ describe('net module', () => {
           url: `${serverUrl}/redirectChain`
         });
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
+        expect(response.statusCode).toBe(200);
       });
 
       test('should not follow redirect when request is canceled in redirect handler', async () => {
@@ -1032,7 +1032,7 @@ describe('net module', () => {
           responseEventEmitted = true;
         });
         await once(urlRequest, 'abort');
-        expect(responseEventEmitted).to.be.false('Unexpected response');
+        expect(responseEventEmitted, 'Unexpected response').toBe(false);
       });
 
       test('should not follow redirect when mode is error', async () => {
@@ -1058,7 +1058,7 @@ describe('net module', () => {
         const urlRequest = net.request({ url: serverUrl });
         urlRequest.end();
         const [err] = await once(urlRequest, 'error');
-        expect(String(err)).to.match(/ERR_UNSAFE_REDIRECT/);
+        expect(String(err)).toMatch(/ERR_UNSAFE_REDIRECT/);
       });
 
       test('should follow redirect when handler calls callback', async () => {
@@ -1085,16 +1085,16 @@ describe('net module', () => {
           urlRequest.followRedirect();
         });
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
-        expect(redirects).to.deep.equal([`${serverUrl}/302`, `${serverUrl}/200`]);
+        expect(response.statusCode).toBe(200);
+        expect(redirects).toEqual([`${serverUrl}/302`, `${serverUrl}/200`]);
       });
 
       test('should be able to create a request with options', async () => {
         const customHeaderName = 'Some-Custom-Header-Name';
         const customHeaderValue = 'Some-Customer-Header-Value';
         const serverUrlUnparsed = await respondOnce.toURL('/', (request, response) => {
-          expect(request.method).to.equal('GET');
-          expect(request.headers[customHeaderName.toLowerCase()]).to.equal(customHeaderValue);
+          expect(request.method).toBe('GET');
+          expect(request.headers[customHeaderName.toLowerCase()]).toBe(customHeaderValue);
           response.statusCode = 200;
           response.statusMessage = 'OK';
           response.end();
@@ -1106,7 +1106,7 @@ describe('net module', () => {
           headers: { [customHeaderName]: customHeaderValue }
         });
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.be.equal(200);
+        expect(response.statusCode).toBe(200);
         await collectStreamBody(response);
       });
 
@@ -1139,11 +1139,11 @@ describe('net module', () => {
         // TODO(@MarshallOfSound) - FIXME with #22730
         nodeResponse.pipe(netRequest as any);
         const [netResponse] = await responsePromise;
-        expect(netResponse.statusCode).to.equal(200);
+        expect(netResponse.statusCode).toBe(200);
         await collectStreamBody(netResponse);
-        expect(netRequestReceived).to.be.true('net request received');
-        expect(netRequestEnded).to.be.true('net request ended');
-        expect(receivedBodyData).to.equal(bodyData);
+        expect(netRequestReceived, 'net request received').toBe(true);
+        expect(netRequestEnded, 'net request ended').toBe(true);
+        expect(receivedBodyData).toBe(bodyData);
       });
 
       test('should report upload progress', async () => {
@@ -1151,10 +1151,10 @@ describe('net module', () => {
           response.end();
         });
         const netRequest = net.request({ url: serverUrl, method: 'POST' });
-        expect(netRequest.getUploadProgress()).to.have.property('active', false);
+        expect(netRequest.getUploadProgress()).toHaveProperty('active', false);
         netRequest.end(Buffer.from('hello'));
         const [position, total] = await once(netRequest, 'upload-progress');
-        expect(netRequest.getUploadProgress()).to.deep.equal({ active: true, started: true, current: position, total });
+        expect(netRequest.getUploadProgress()).toEqual({ active: true, started: true, current: position, total });
       });
 
       test('should emit error event on server socket destroy', async () => {
@@ -1164,7 +1164,7 @@ describe('net module', () => {
         const urlRequest = net.request(serverUrl);
         urlRequest.end();
         const [error] = await once(urlRequest, 'error');
-        expect(error.message).to.equal('net::ERR_EMPTY_RESPONSE');
+        expect(error.message).toBe('net::ERR_EMPTY_RESPONSE');
       });
 
       test('should emit error event on server request destroy', async () => {
@@ -1175,11 +1175,9 @@ describe('net module', () => {
         const urlRequest = net.request(serverUrl);
         urlRequest.end(randomBuffer(kOneMegaByte));
         const [error] = await once(urlRequest, 'error');
-        expect(error.message).to.be.oneOf([
-          'net::ERR_FAILED',
-          'net::ERR_CONNECTION_RESET',
-          'net::ERR_CONNECTION_ABORTED'
-        ]);
+        expect(['net::ERR_FAILED', 'net::ERR_CONNECTION_RESET', 'net::ERR_CONNECTION_ABORTED']).toContain(
+          error.message
+        );
       });
 
       test('should not emit any event after close', async () => {
@@ -1203,7 +1201,7 @@ describe('net module', () => {
 
       test('should remove the referer header when no referrer url specified', async () => {
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
-          expect(request.headers.referer).to.equal(undefined);
+          expect(request.headers.referer).toBe(undefined);
           response.statusCode = 200;
           response.statusMessage = 'OK';
           response.end();
@@ -1212,14 +1210,14 @@ describe('net module', () => {
         urlRequest.end();
 
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
+        expect(response.statusCode).toBe(200);
         await collectStreamBody(response);
       });
 
       test('should set the referer header when a referrer url specified', async () => {
         const referrerURL = 'https://www.electronjs.org/';
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
-          expect(request.headers.referer).to.equal(referrerURL);
+          expect(request.headers.referer).toBe(referrerURL);
           response.statusCode = 200;
           response.statusMessage = 'OK';
           response.end();
@@ -1237,7 +1235,7 @@ describe('net module', () => {
         urlRequest.end();
 
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
+        expect(response.statusCode).toBe(200);
         await collectStreamBody(response);
       });
     });
@@ -1257,27 +1255,30 @@ describe('net module', () => {
         const urlRequest = net.request(serverUrl);
         const response = await getResponse(urlRequest);
 
-        expect(response.statusCode).to.equal(200);
-        expect(response.statusMessage).to.equal('OK');
+        expect(response.statusCode).toBe(200);
+        expect(response.statusMessage).toBe('OK');
 
         const headers = response.headers;
-        expect(headers).to.be.an('object');
+        expect(headers).toBeTypeOf('object');
         const headerValue = headers[customHeaderName.toLowerCase()];
-        expect(headerValue).to.equal(customHeaderValue);
+        expect(headerValue).toBe(customHeaderValue);
 
         const rawHeaders = response.rawHeaders;
-        expect(rawHeaders).to.be.an('array');
-        expect(rawHeaders[0]).to.equal(customHeaderName);
-        expect(rawHeaders[1]).to.equal(customHeaderValue);
+        expect(rawHeaders).toBeInstanceOf(Array);
+        expect(rawHeaders[0]).toBe(customHeaderName);
+        expect(rawHeaders[1]).toBe(customHeaderValue);
 
         const httpVersion = response.httpVersion;
-        expect(httpVersion).to.be.a('string').and.to.have.lengthOf.at.least(1);
+        expect(httpVersion).toBeTypeOf('string');
+        expect(httpVersion.length).toBeGreaterThanOrEqual(1);
 
         const httpVersionMajor = response.httpVersionMajor;
-        expect(httpVersionMajor).to.be.a('number').and.to.be.at.least(1);
+        expect(httpVersionMajor).toBeTypeOf('number');
+        expect(httpVersionMajor).toBeGreaterThanOrEqual(1);
 
         const httpVersionMinor = response.httpVersionMinor;
-        expect(httpVersionMinor).to.be.a('number').and.to.be.at.least(0);
+        expect(httpVersionMinor).toBeTypeOf('number');
+        expect(httpVersionMinor).toBeGreaterThanOrEqual(0);
 
         await collectStreamBody(response);
       });
@@ -1298,15 +1299,15 @@ describe('net module', () => {
         });
         const urlRequest = net.request(serverUrl);
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
-        expect(response.statusMessage).to.equal('OK');
+        expect(response.statusCode).toBe(200);
+        expect(response.statusMessage).toBe('OK');
 
         const headers = response.headers;
-        expect(headers).to.be.an('object');
+        expect(headers).toBeTypeOf('object');
 
-        expect(headers).to.have.property(includedHeader);
-        expect(headers).to.not.have.property(discardableHeader);
-        expect(headers[includedHeader]).to.equal(includedHeaderValue);
+        expect(headers).toHaveProperty([includedHeader]);
+        expect(headers).not.toHaveProperty([discardableHeader]);
+        expect(headers[includedHeader]).toBe(includedHeaderValue);
 
         await collectStreamBody(response);
       });
@@ -1320,13 +1321,13 @@ describe('net module', () => {
         });
         const urlRequest = net.request(serverUrl);
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
-        expect(response.statusMessage).to.equal('OK');
+        expect(response.statusCode).toBe(200);
+        expect(response.statusMessage).toBe('OK');
 
         const headers = response.headers;
-        expect(headers).to.be.an('object');
-        expect(headers).to.have.property('referrer-policy');
-        expect(headers['referrer-policy']).to.equal('first-text, second-text');
+        expect(headers).toBeTypeOf('object');
+        expect(headers).toHaveProperty('referrer-policy');
+        expect(headers['referrer-policy']).toBe('first-text, second-text');
 
         await collectStreamBody(response);
       });
@@ -1340,13 +1341,13 @@ describe('net module', () => {
         });
         const urlRequest = net.request(serverUrl);
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
-        expect(response.statusMessage).to.equal('OK');
+        expect(response.statusCode).toBe(200);
+        expect(response.statusMessage).toBe('OK');
 
         const headers = response.headers;
-        expect(headers).to.be.an('object');
-        expect(headers).to.have.property('last-modified');
-        expect(headers['last-modified']).to.equal('yesterday');
+        expect(headers).toBeTypeOf('object');
+        expect(headers).toHaveProperty('last-modified');
+        expect(headers['last-modified']).toBe('yesterday');
 
         await collectStreamBody(response);
       });
@@ -1360,14 +1361,14 @@ describe('net module', () => {
         });
         const urlRequest = net.request(serverUrl);
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
-        expect(response.statusMessage).to.equal('OK');
+        expect(response.statusCode).toBe(200);
+        expect(response.statusMessage).toBe('OK');
 
         const headers = response.headers;
-        expect(headers).to.be.an('object');
-        expect(headers).to.have.property('set-cookie');
-        expect(headers['set-cookie']).to.be.an('array');
-        expect(headers['set-cookie'][0]).to.equal('chocolate-chip');
+        expect(headers).toBeTypeOf('object');
+        expect(headers).toHaveProperty('set-cookie');
+        expect(headers['set-cookie']).toBeInstanceOf(Array);
+        expect(headers['set-cookie'][0]).toBe('chocolate-chip');
 
         await collectStreamBody(response);
       });
@@ -1381,15 +1382,15 @@ describe('net module', () => {
         });
         const urlRequest = net.request(serverUrl);
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
-        expect(response.statusMessage).to.equal('OK');
+        expect(response.statusCode).toBe(200);
+        expect(response.statusMessage).toBe('OK');
 
         const headers = response.headers;
-        expect(headers).to.be.an('object');
-        expect(headers).to.have.property('set-cookie');
-        expect(headers['set-cookie']).to.be.an('array');
-        expect(headers['set-cookie'][0]).to.equal('chocolate-chip');
-        expect(headers['set-cookie'][1]).to.equal('oatmeal');
+        expect(headers).toBeTypeOf('object');
+        expect(headers).toHaveProperty('set-cookie');
+        expect(headers['set-cookie']).toBeInstanceOf(Array);
+        expect(headers['set-cookie'][0]).toBe('chocolate-chip');
+        expect(headers['set-cookie'][1]).toBe('oatmeal');
 
         await collectStreamBody(response);
       });
@@ -1407,16 +1408,16 @@ describe('net module', () => {
         });
         const urlRequest = net.request(serverUrl);
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
-        expect(response.statusMessage).to.equal('OK');
+        expect(response.statusCode).toBe(200);
+        expect(response.statusMessage).toBe('OK');
 
         const headers = response.headers;
-        expect(headers).to.be.an('object');
+        expect(headers).toBeTypeOf('object');
 
-        expect(headers).to.have.property('header-key');
-        expect(headers).to.have.property('set-cookie');
-        expect(headers).to.have.property('referrer-policy');
-        expect(headers).to.have.property('last-modified');
+        expect(headers).toHaveProperty('header-key');
+        expect(headers).toHaveProperty('set-cookie');
+        expect(headers).toHaveProperty('referrer-policy');
+        expect(headers).toHaveProperty('last-modified');
 
         await collectStreamBody(response);
       });
@@ -1442,19 +1443,19 @@ describe('net module', () => {
         });
         const urlRequest = net.request(serverUrl);
         const response = await getResponse(urlRequest);
-        expect(response.statusCode).to.equal(200);
-        expect(response.statusMessage).to.equal('OK');
+        expect(response.statusCode).toBe(200);
+        expect(response.statusMessage).toBe('OK');
 
         const rawHeaders = response.rawHeaders;
-        expect(rawHeaders).to.be.an('array');
+        expect(rawHeaders).toBeInstanceOf(Array);
 
         let rawHeadersIdx = 0;
         for (const headerTuple of customHeaders) {
           const headerKey = headerTuple[0];
           const headerValues = Array.isArray(headerTuple[1]) ? headerTuple[1] : [headerTuple[1]];
           for (const headerValue of headerValues) {
-            expect(rawHeaders[rawHeadersIdx]).to.equal(headerKey);
-            expect(rawHeaders[rawHeadersIdx + 1]).to.equal(headerValue);
+            expect(rawHeaders[rawHeadersIdx]).toBe(headerKey);
+            expect(rawHeaders[rawHeadersIdx + 1]).toBe(headerValue);
             rawHeadersIdx += 2;
           }
         }
@@ -1469,7 +1470,7 @@ describe('net module', () => {
           respondOnce.toSingleURL((request, response) => response.end(bodyData)),
           respondOnce.toSingleURL(async (request, response) => {
             const receivedBodyData = await collectStreamBody(request);
-            expect(receivedBodyData).to.be.equal(bodyData);
+            expect(receivedBodyData).toBe(bodyData);
             nodeRequestProcessed = true;
             response.end();
           })
@@ -1489,7 +1490,7 @@ describe('net module', () => {
         const [nodeResponse] = await nodeResponsePromise;
         netRequest.end();
         await collectStreamBody(nodeResponse);
-        expect(nodeRequestProcessed).to.equal(true);
+        expect(nodeRequestProcessed).toBe(true);
       });
 
       test('should correctly throttle an incoming stream', async () => {
@@ -1516,17 +1517,17 @@ describe('net module', () => {
         // but we should investigate if there's actually something broken here and
         // if so fix it and reset this to max at 20, and if not then delete this
         // comment.
-        expect(numChunksSent).to.be.at.most(25);
+        expect(numChunksSent).toBeLessThanOrEqual(25);
       });
     });
 
     describe('net.isOnline', () => {
       test('getter returns boolean', () => {
-        expect(net.isOnline()).to.be.a('boolean');
+        expect(net.isOnline()).toBeTypeOf('boolean');
       });
 
       test('property returns boolean', () => {
-        expect(net.online).to.be.a('boolean');
+        expect(net.online).toBeTypeOf('boolean');
       });
     });
 
@@ -1578,7 +1579,7 @@ describe('net module', () => {
       test('should finish sending data when urlRequest is unreferenced', async () => {
         const serverUrl = await respondOnce.toSingleURL(async (request, response) => {
           const received = await collectStreamBodyBuffer(request);
-          expect(received.length).to.equal(kOneMegaByte);
+          expect(received.length).toBe(kOneMegaByte);
           response.end();
         });
         const urlRequest = net.request(serverUrl);
@@ -1597,7 +1598,7 @@ describe('net module', () => {
         const serverUrl = await respondOnce.toSingleURL(async (request, response) => {
           const received = await collectStreamBodyBuffer(request);
           response.end();
-          expect(received.length).to.equal(kOneMegaByte);
+          expect(received.length).toBe(kOneMegaByte);
         });
         const urlRequest = net.request(serverUrl);
         urlRequest.chunkedEncoding = true;
@@ -1614,7 +1615,7 @@ describe('net module', () => {
         const serverUrl = await respondOnce.toSingleURL(async (request, response) => {
           const received = await collectStreamBodyBuffer(request);
           response.end();
-          expect(received.length).to.equal(kOneMegaByte);
+          expect(received.length).toBe(kOneMegaByte);
         });
         const urlRequest = net.request(serverUrl);
         urlRequest.chunkedEncoding = true;
@@ -1628,7 +1629,7 @@ describe('net module', () => {
         const serverUrl = await respondOnce.toSingleURL(async (request, response) => {
           const received = await collectStreamBodyBuffer(request);
           response.end();
-          expect(received.length).to.equal(kOneMegaByte);
+          expect(received.length).toBe(kOneMegaByte);
         });
         const urlRequest = net.request(serverUrl);
         urlRequest.on('close', () => {
@@ -1645,7 +1646,7 @@ describe('net module', () => {
         const serverUrl = await respondOnce.toSingleURL(async (request, response) => {
           const received = await collectStreamBodyBuffer(request);
           response.end();
-          expect(received.length).to.equal(kOneMegaByte);
+          expect(received.length).toBe(kOneMegaByte);
         });
         const urlRequest = net.request(serverUrl);
         urlRequest.on('close', () => {
@@ -1664,13 +1665,13 @@ describe('net module', () => {
       test('should be rejected by net.request', async () => {
         expect(() => {
           net.request('file://bar');
-        }).to.throw('ClientRequest only supports http: and https: protocols');
+        }).toThrow('ClientRequest only supports http: and https: protocols');
       });
 
       test('should be rejected by net.request when passed in url:', async () => {
         expect(() => {
           net.request({ url: 'file://bar' });
-        }).to.throw('ClientRequest only supports http: and https: protocols');
+        }).toThrow('ClientRequest only supports http: and https: protocols');
       });
     });
 
@@ -1690,8 +1691,8 @@ describe('net module', () => {
             response.end('test');
           });
           const resp = await net.fetch(serverUrl);
-          expect(resp.ok).to.be.true();
-          expect(await resp.text()).to.equal('test');
+          expect(resp.ok).toBe(true);
+          expect(await resp.text()).toBe('test');
         });
 
         test('can upload a string body', async () => {
@@ -1703,7 +1704,7 @@ describe('net module', () => {
             method: 'POST',
             body: 'anchovies'
           });
-          expect(await resp.text()).to.equal('anchovies');
+          expect(await resp.text()).toBe('anchovies');
         });
 
         test('can read response as an array buffer', async () => {
@@ -1715,7 +1716,7 @@ describe('net module', () => {
             method: 'POST',
             body: 'anchovies'
           });
-          expect(new TextDecoder().decode(new Uint8Array(await resp.arrayBuffer()))).to.equal('anchovies');
+          expect(new TextDecoder().decode(new Uint8Array(await resp.arrayBuffer()))).toBe('anchovies');
         });
 
         test('can read response as form data', async () => {
@@ -1725,12 +1726,12 @@ describe('net module', () => {
           });
           const resp = await net.fetch(serverUrl);
           const result = await resp.formData();
-          expect(result.get('foo')).to.equal('bar');
+          expect(result.get('foo')).toBe('bar');
         });
 
         test('should reject promise on DNS failure', async () => {
           const r = net.fetch('https://i.do.not.exist');
-          await expect(r).to.be.rejectedWith(/ERR_NAME_NOT_RESOLVED/);
+          await expect(r).rejects.toThrow(/ERR_NAME_NOT_RESOLVED/);
         });
 
         test('should follow a redirect to another http origin', async () => {
@@ -1743,8 +1744,8 @@ describe('net module', () => {
             res.end();
           });
           const resp = await net.fetch(serverUrl);
-          expect(resp.status).to.equal(200);
-          expect(await resp.text()).to.equal('redirected');
+          expect(resp.status).toBe(200);
+          expect(await resp.text()).toBe('redirected');
         });
 
         test('should reject a redirect from http to file:', async () => {
@@ -1753,7 +1754,7 @@ describe('net module', () => {
             res.setHeader('Location', 'file:///');
             res.end();
           });
-          await expect(net.fetch(serverUrl)).to.be.rejectedWith(/ERR_UNSAFE_REDIRECT/);
+          await expect(net.fetch(serverUrl)).rejects.toThrow(/ERR_UNSAFE_REDIRECT/);
         });
 
         test('should reject a redirect from http to data:', async () => {
@@ -1762,7 +1763,7 @@ describe('net module', () => {
             res.setHeader('Location', 'data:text/plain,hello');
             res.end();
           });
-          await expect(net.fetch(serverUrl)).to.be.rejectedWith(/ERR_UNSAFE_REDIRECT/);
+          await expect(net.fetch(serverUrl)).rejects.toThrow(/ERR_UNSAFE_REDIRECT/);
         });
 
         test('should reject a redirect from http to about:', async () => {
@@ -1771,7 +1772,7 @@ describe('net module', () => {
             res.setHeader('Location', 'about:blank');
             res.end();
           });
-          await expect(net.fetch(serverUrl)).to.be.rejectedWith(/ERR_UNSAFE_REDIRECT/);
+          await expect(net.fetch(serverUrl)).rejects.toThrow(/ERR_UNSAFE_REDIRECT/);
         });
 
         test('should reject a redirect from http to blob:', async () => {
@@ -1780,7 +1781,7 @@ describe('net module', () => {
             res.setHeader('Location', 'blob:https://example.com/00000000-0000-0000-0000-000000000000');
             res.end();
           });
-          await expect(net.fetch(serverUrl)).to.be.rejectedWith(/ERR_UNSAFE_REDIRECT/);
+          await expect(net.fetch(serverUrl)).rejects.toThrow(/ERR_UNSAFE_REDIRECT/);
         });
 
         test('should reject body promise when stream fails', async () => {
@@ -1789,8 +1790,8 @@ describe('net module', () => {
             setTimeout().then(() => response.destroy());
           });
           const r = await net.fetch(serverUrl);
-          expect(r.status).to.equal(200);
-          await expect(r.text()).to.be.rejectedWith(/ERR_INCOMPLETE_CHUNKED_ENCODING/);
+          expect(r.status).toBe(200);
+          await expect(r.text()).rejects.toThrow(/ERR_INCOMPLETE_CHUNKED_ENCODING/);
         });
       });
     });
@@ -1798,10 +1799,10 @@ describe('net module', () => {
     describe('net.resolveHost', () => {
       test('resolves ipv4.localhost2', async () => {
         const { endpoints } = await net.resolveHost('ipv4.localhost2');
-        expect(endpoints).to.be.a('array');
-        expect(endpoints).to.have.lengthOf(1);
-        expect(endpoints[0].family).to.equal('ipv4');
-        expect(endpoints[0].address).to.equal('10.0.0.1');
+        expect(endpoints).toBeInstanceOf(Array);
+        expect(endpoints).toHaveLength(1);
+        expect(endpoints[0].family).toBe('ipv4');
+        expect(endpoints[0].address).toBe('10.0.0.1');
       });
 
       test('fails to resolve AAAA record for ipv4.localhost2', async () => {
@@ -1809,15 +1810,15 @@ describe('net module', () => {
           net.resolveHost('ipv4.localhost2', {
             queryType: 'AAAA'
           })
-        ).to.eventually.be.rejectedWith(/net::ERR_NAME_NOT_RESOLVED/);
+        ).rejects.toThrow(/net::ERR_NAME_NOT_RESOLVED/);
       });
 
       test('resolves ipv6.localhost2', async () => {
         const { endpoints } = await net.resolveHost('ipv6.localhost2');
-        expect(endpoints).to.be.a('array');
-        expect(endpoints).to.have.lengthOf(1);
-        expect(endpoints[0].family).to.equal('ipv6');
-        expect(endpoints[0].address).to.equal('::1');
+        expect(endpoints).toBeInstanceOf(Array);
+        expect(endpoints).toHaveLength(1);
+        expect(endpoints[0].family).toBe('ipv6');
+        expect(endpoints[0].address).toBe('::1');
       });
 
       test('fails to resolve A record for ipv6.localhost2', async () => {
@@ -1825,13 +1826,11 @@ describe('net module', () => {
           net.resolveHost('notfound.localhost2', {
             queryType: 'A'
           })
-        ).to.eventually.be.rejectedWith(/net::ERR_NAME_NOT_RESOLVED/);
+        ).rejects.toThrow(/net::ERR_NAME_NOT_RESOLVED/);
       });
 
       test('fails to resolve notfound.localhost2', async () => {
-        await expect(net.resolveHost('notfound.localhost2')).to.eventually.be.rejectedWith(
-          /net::ERR_NAME_NOT_RESOLVED/
-        );
+        await expect(net.resolveHost('notfound.localhost2')).rejects.toThrow(/net::ERR_NAME_NOT_RESOLVED/);
       });
     });
   }
@@ -1869,9 +1868,10 @@ describe('net module', () => {
                 expectedPriority = expectedPriority ? expectedPriority + ', i' : 'i';
               }
               if (expectedPriority === '') {
-                expect(data.headers.priority).to.be.undefined();
+                expect(data.headers.priority).toBeUndefined();
               } else {
-                expect(data.headers.priority).to.be.a('string').and.equal(expectedPriority);
+                expect(data.headers.priority).toBeTypeOf('string');
+                expect(data.headers.priority).toBe(expectedPriority);
               }
             },
             { priorityName, urgency, priorityIncremental }
@@ -1888,8 +1888,8 @@ describe('net module', () => {
         response.end('first');
       });
       const firstResponse = await net.fetch(serverUrl);
-      expect(firstResponse.ok).to.be.true();
-      expect(await firstResponse.text()).to.equal('first');
+      expect(firstResponse.ok).toBe(true);
+      expect(await firstResponse.text()).toBe('first');
 
       await binding.simulateNetworkServiceCrash();
 
@@ -1901,8 +1901,8 @@ describe('net module', () => {
         response.end('second');
       });
       const secondResponse = await net.fetch(secondServerUrl);
-      expect(secondResponse.ok).to.be.true();
-      expect(await secondResponse.text()).to.equal('second');
+      expect(secondResponse.ok).toBe(true);
+      expect(await secondResponse.text()).toBe('second');
     });
 
     it('should recover net.fetch after Network Service crash (utility process)', async () => {
@@ -1916,8 +1916,8 @@ describe('net module', () => {
       });
       child.postMessage({ type: 'fetch', url: firstServerUrl });
       const [firstResult] = await once(child, 'message');
-      expect(firstResult.ok).to.be.true();
-      expect(firstResult.body).to.equal('utility-first');
+      expect(firstResult.ok).toBe(true);
+      expect(firstResult.body).toBe('utility-first');
 
       await binding.simulateNetworkServiceCrash();
 
@@ -1930,8 +1930,8 @@ describe('net module', () => {
       });
       child.postMessage({ type: 'fetch', url: secondServerUrl });
       const [secondResult] = await once(child, 'message');
-      expect(secondResult.ok).to.be.true();
-      expect(secondResult.body).to.equal('utility-second');
+      expect(secondResult.ok).toBe(true);
+      expect(secondResult.body).toBe('utility-second');
 
       child.kill();
       await once(child, 'exit');

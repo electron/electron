@@ -1,6 +1,6 @@
 import { BaseWindow, BrowserWindow, app, ipcMain, nativeImage, sharedTexture } from 'electron';
 
-import { expect } from 'chai';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { randomUUID } from 'node:crypto';
 import * as path from 'node:path';
@@ -27,8 +27,7 @@ ifdescribe(!skip)('sharedTexture module', () => {
       }
     });
 
-    it('successfully imported and rendered with subtle api', async function () {
-      this.timeout(debugSpec ? 100000 : 10000);
+    it('successfully imported and rendered with subtle api', { timeout: debugSpec ? 100000 : 10000 }, async () => {
       type CapturedTextureHolder = {
         importedSubtle: Electron.SharedTextureImportedSubtle;
         texture: Electron.OffscreenSharedTexture;
@@ -126,7 +125,7 @@ ifdescribe(!skip)('sharedTexture module', () => {
               // and the color may change slightly when resizing at device pixel ratio != 1.
               // Limit error should not be different more than 1% of the whole image.
               const ratio = result.difference / result.total;
-              expect(ratio).to.be.lessThan(0.01);
+              expect(ratio).toBeLessThan(0.01);
               resolve();
             } catch (e) {
               reject(e);
@@ -240,7 +239,7 @@ ifdescribe(!skip)('sharedTexture module', () => {
               // and the color may change slightly when resizing at device pixel ratio != 1.
               // Limit error should not be different more than 1% of the whole image.
               const ratio = result.difference / result.total;
-              expect(ratio).to.be.lessThan(0.01);
+              expect(ratio).toBeLessThan(0.01);
               resolve();
             } catch (e) {
               setTimeout(() => reject(e), 1000000);
@@ -262,12 +261,16 @@ ifdescribe(!skip)('sharedTexture module', () => {
       });
     };
 
-    it('successfully imported and rendered with managed api, without iframe', async () => {
-      return runSharedTextureManagedTest(false);
-    }).timeout(debugSpec ? 100000 : 10000);
+    it(
+      'successfully imported and rendered with managed api, without iframe',
+      { timeout: debugSpec ? 100000 : 10000 },
+      () => runSharedTextureManagedTest(false)
+    );
 
-    it('successfully imported and rendered with managed api, with iframe', async () => {
-      return runSharedTextureManagedTest(true);
-    }).timeout(debugSpec ? 100000 : 10000);
+    it(
+      'successfully imported and rendered with managed api, with iframe',
+      { timeout: debugSpec ? 100000 : 10000 },
+      () => runSharedTextureManagedTest(true)
+    );
   });
 });

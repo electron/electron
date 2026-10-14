@@ -1,6 +1,6 @@
 import { ipcMain, session, webContents as webContentsModule, type WebContents } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { once, on } from 'node:events';
 import * as fs from 'node:fs';
@@ -70,7 +70,7 @@ describe('ServiceWorkerMain module', () => {
       type: 'service-worker',
       filePath: path.resolve(preloadRealmFixtures, scriptName)
     });
-    expect(id).to.be.a('string');
+    expect(id).toBeTypeOf('string');
   }
 
   async function loadWorkerScript(scriptUrl?: string) {
@@ -106,7 +106,7 @@ describe('ServiceWorkerMain module', () => {
       serviceWorkers.on('running-status-changed', onRunningStatusChanged);
     });
     const serviceWorker = await serviceWorkerPromise;
-    expect(serviceWorker).to.not.be.undefined();
+    expect(serviceWorker).not.toBeUndefined();
     return serviceWorker!;
   }
 
@@ -127,8 +127,8 @@ describe('ServiceWorkerMain module', () => {
 
   describe('serviceWorkers.getWorkerFromVersionID', () => {
     it('returns undefined for non-live service worker', () => {
-      expect(serviceWorkers.getWorkerFromVersionID(-1)).to.be.undefined();
-      expect(serviceWorkers._getWorkerFromVersionIDIfExists(-1)).to.be.undefined();
+      expect(serviceWorkers.getWorkerFromVersionID(-1)).toBeUndefined();
+      expect(serviceWorkers._getWorkerFromVersionIDIfExists(-1)).toBeUndefined();
     });
 
     it('returns instance for live service worker', async () => {
@@ -136,10 +136,10 @@ describe('ServiceWorkerMain module', () => {
       loadWorkerScript();
       const [{ versionId }] = await runningStatusChanged;
       const serviceWorker = serviceWorkers.getWorkerFromVersionID(versionId);
-      expect(serviceWorker).to.not.be.undefined();
+      expect(serviceWorker).not.toBeUndefined();
       const ifExistsServiceWorker = serviceWorkers._getWorkerFromVersionIDIfExists(versionId);
-      expect(ifExistsServiceWorker).to.not.be.undefined();
-      expect(serviceWorker).to.equal(ifExistsServiceWorker);
+      expect(ifExistsServiceWorker).not.toBeUndefined();
+      expect(serviceWorker).toBe(ifExistsServiceWorker);
     });
 
     it('does not crash on script error', async () => {
@@ -155,8 +155,8 @@ describe('ServiceWorkerMain module', () => {
           break;
         }
       }
-      expect(actualStatuses).to.deep.equal(['starting', 'stopping']);
-      expect(serviceWorker).to.not.be.undefined();
+      expect(actualStatuses).toEqual(['starting', 'stopping']);
+      expect(serviceWorker).not.toBeUndefined();
     });
 
     it('does not find unregistered service worker', async () => {
@@ -166,7 +166,7 @@ describe('ServiceWorkerMain module', () => {
       unregisterAllServiceWorkers();
       await waitUntil(() => runningServiceWorker.isDestroyed());
       const serviceWorker = serviceWorkers.getWorkerFromVersionID(versionId);
-      expect(serviceWorker).to.be.undefined();
+      expect(serviceWorker).toBeUndefined();
     });
   });
 
@@ -174,13 +174,13 @@ describe('ServiceWorkerMain module', () => {
     it('is not destroyed after being created', async () => {
       loadWorkerScript();
       const serviceWorker = await waitForServiceWorker();
-      expect(serviceWorker.isDestroyed()).to.be.false();
+      expect(serviceWorker.isDestroyed()).toBe(false);
     });
 
     it('is destroyed after being unregistered', async () => {
       loadWorkerScript();
       const serviceWorker = await waitForServiceWorker();
-      expect(serviceWorker.isDestroyed()).to.be.false();
+      expect(serviceWorker.isDestroyed()).toBe(false);
       await unregisterAllServiceWorkers();
       await waitUntil(() => serviceWorker.isDestroyed());
     });
@@ -199,16 +199,16 @@ describe('ServiceWorkerMain module', () => {
       loadWorkerScript();
       const serviceWorker = await waitForServiceWorker('running');
       const startWorkerPromise = serviceWorkers.startWorkerForScope(serviceWorker.scope);
-      await expect(startWorkerPromise).to.eventually.be.fulfilled();
+      await startWorkerPromise;
       const otherSW = await startWorkerPromise;
-      expect(otherSW).to.equal(serviceWorker);
+      expect(otherSW).toBe(serviceWorker);
     });
 
     it('rejects with starting workers', async () => {
       loadWorkerScript();
       const serviceWorker = await waitForServiceWorker('starting');
       const startWorkerPromise = serviceWorkers.startWorkerForScope(serviceWorker.scope);
-      await expect(startWorkerPromise).to.eventually.be.rejected();
+      await expect(startWorkerPromise).rejects.toThrow();
     });
 
     it('starts previously stopped worker', async () => {
@@ -219,7 +219,7 @@ describe('ServiceWorkerMain module', () => {
       await serviceWorkers._stopAllWorkers();
       await stoppedPromise;
       const startWorkerPromise = serviceWorkers.startWorkerForScope(scope);
-      await expect(startWorkerPromise).to.eventually.be.fulfilled();
+      await startWorkerPromise;
     });
 
     it('resolves when called twice', async () => {
@@ -230,8 +230,8 @@ describe('ServiceWorkerMain module', () => {
         serviceWorkers.startWorkerForScope(scope),
         serviceWorkers.startWorkerForScope(scope)
       ]);
-      expect(swA).to.equal(swB);
-      expect(swA).to.equal(serviceWorker);
+      expect(swA).toBe(swB);
+      expect(swA).toBe(serviceWorker);
     });
   });
 
@@ -239,7 +239,7 @@ describe('ServiceWorkerMain module', () => {
     it('has no tasks in-flight initially', async () => {
       loadWorkerScript();
       const serviceWorker = await waitForServiceWorker();
-      expect(serviceWorker._countExternalRequests()).to.equal(0);
+      expect(serviceWorker._countExternalRequests()).toBe(0);
     });
 
     it('can start and end a task', async () => {
@@ -253,15 +253,15 @@ describe('ServiceWorkerMain module', () => {
       const serviceWorker = await waitForServiceWorker('running');
 
       const task = serviceWorker.startTask();
-      expect(task).to.be.an('object');
-      expect(task).to.have.property('end').that.is.a('function');
-      expect(serviceWorker._countExternalRequests()).to.equal(1);
+      expect(task).toBeTypeOf('object');
+      expect(task).toHaveProperty('end', expect.any(Function));
+      expect(serviceWorker._countExternalRequests()).toBe(1);
 
       task.end();
 
       // Count will decrement after Promise.finally callback
       await new Promise<void>(queueMicrotask);
-      expect(serviceWorker._countExternalRequests()).to.equal(0);
+      expect(serviceWorker._countExternalRequests()).toBe(0);
     });
 
     it('can have more than one active task', async () => {
@@ -270,13 +270,13 @@ describe('ServiceWorkerMain module', () => {
 
       const taskA = serviceWorker.startTask();
       const taskB = serviceWorker.startTask();
-      expect(serviceWorker._countExternalRequests()).to.equal(2);
+      expect(serviceWorker._countExternalRequests()).toBe(2);
       taskB.end();
       taskA.end();
 
       // Count will decrement after Promise.finally callback
       await new Promise<void>(queueMicrotask);
-      expect(serviceWorker._countExternalRequests()).to.equal(0);
+      expect(serviceWorker._countExternalRequests()).toBe(0);
     });
 
     it('throws when starting task after destroyed', async () => {
@@ -284,7 +284,7 @@ describe('ServiceWorkerMain module', () => {
       const serviceWorker = await waitForServiceWorker();
       await unregisterAllServiceWorkers();
       await waitUntil(() => serviceWorker.isDestroyed());
-      expect(() => serviceWorker.startTask()).to.throw();
+      expect(() => serviceWorker.startTask()).toThrow();
     });
 
     it('throws when ending task after destroyed', async () => {
@@ -293,7 +293,7 @@ describe('ServiceWorkerMain module', () => {
       const task = serviceWorker.startTask();
       await unregisterAllServiceWorkers();
       await waitUntil(() => serviceWorker.isDestroyed());
-      expect(() => task.end()).to.throw();
+      expect(() => task.end()).toThrow();
     });
   });
 
@@ -303,10 +303,10 @@ describe('ServiceWorkerMain module', () => {
       wc.loadURL(`${baseUrl}/index.html`);
       const [{ versionId }] = await runningStatusChanged;
       const serviceWorker = serviceWorkers.getWorkerFromVersionID(versionId);
-      expect(serviceWorker).to.not.be.undefined();
+      expect(serviceWorker).not.toBeUndefined();
       if (!serviceWorker) return;
-      expect(serviceWorker).to.have.property('versionId').that.is.a('number');
-      expect(serviceWorker.versionId).to.equal(versionId);
+      expect(serviceWorker).toHaveProperty('versionId', expect.any(Number));
+      expect(serviceWorker.versionId).toBe(versionId);
     });
   });
 
@@ -314,10 +314,10 @@ describe('ServiceWorkerMain module', () => {
     it('matches the expected value', async () => {
       loadWorkerScript();
       const serviceWorker = await waitForServiceWorker();
-      expect(serviceWorker).to.not.be.undefined();
+      expect(serviceWorker).not.toBeUndefined();
       if (!serviceWorker) return;
-      expect(serviceWorker).to.have.property('scope').that.is.a('string');
-      expect(serviceWorker.scope).to.equal(`${baseUrl}/`);
+      expect(serviceWorker).toHaveProperty('scope', expect.any(String));
+      expect(serviceWorker.scope).toBe(`${baseUrl}/`);
     });
   });
 
@@ -325,10 +325,10 @@ describe('ServiceWorkerMain module', () => {
     it('matches the expected value', async () => {
       loadWorkerScript();
       const serviceWorker = await waitForServiceWorker();
-      expect(serviceWorker).to.not.be.undefined();
+      expect(serviceWorker).not.toBeUndefined();
       if (!serviceWorker) return;
-      expect(serviceWorker).to.have.property('scriptURL').that.is.a('string');
-      expect(serviceWorker.scriptURL).to.equal(`${baseUrl}/sw.js`);
+      expect(serviceWorker).toHaveProperty('scriptURL', expect.any(String));
+      expect(serviceWorker.scriptURL).toBe(`${baseUrl}/sw.js`);
     });
   });
 
@@ -366,7 +366,7 @@ describe('ServiceWorkerMain module', () => {
           runTest(serviceWorker, { name: 'testSend', args: ['ping'] });
           await once(ses, '-ipc-message');
           await new Promise<void>(queueMicrotask);
-          expect(pingReceived).to.be.false();
+          expect(pingReceived).toBe(false);
         } finally {
           abortController.abort();
         }
@@ -379,7 +379,7 @@ describe('ServiceWorkerMain module', () => {
         const serviceWorker = await waitForServiceWorker('running');
         serviceWorker.ipc.handle('ping', () => 'pong');
         const result = await runTest(serviceWorker, { name: 'testInvoke', args: ['ping'] });
-        expect(result).to.equal('pong');
+        expect(result).toBe('pong');
       });
 
       it('works after restarting worker', async () => {
@@ -390,7 +390,7 @@ describe('ServiceWorkerMain module', () => {
         await serviceWorkers._stopAllWorkers();
         await serviceWorkers.startWorkerForScope(scope);
         const result = await runTest(serviceWorker, { name: 'testInvoke', args: ['ping'] });
-        expect(result).to.equal('pong');
+        expect(result).toBe('pong');
       });
     });
   });
@@ -408,17 +408,17 @@ describe('ServiceWorkerMain module', () => {
       loadWorkerScript();
       const serviceWorker = await waitForServiceWorker('running');
       const result: any = await runTest(serviceWorker, { name: 'testProcess', args: [] });
-      expect(result.type).to.equal('service-worker');
-      expect(result.sandboxed).to.be.true();
-      expect(result.contextIsolated).to.be.true();
-      expect(result.arch).to.equal(process.arch);
-      expect(result.platform).to.equal(process.platform);
-      expect(result.version).to.equal(process.version);
-      expect(result.electronVersion).to.equal(process.versions.electron);
-      expect(result.chromeVersion).to.equal(process.versions.chrome);
-      expect(result.nodeVersion).to.equal(process.versions.node);
-      expect(result.hasEnv).to.be.true('preload realm should have process.env');
-      expect(result.hasExecPath).to.be.true('preload realm should have process.execPath');
+      expect(result.type).toBe('service-worker');
+      expect(result.sandboxed).toBe(true);
+      expect(result.contextIsolated).toBe(true);
+      expect(result.arch).toBe(process.arch);
+      expect(result.platform).toBe(process.platform);
+      expect(result.version).toBe(process.version);
+      expect(result.electronVersion).toBe(process.versions.electron);
+      expect(result.chromeVersion).toBe(process.versions.chrome);
+      expect(result.nodeVersion).toBe(process.versions.node);
+      expect(result.hasEnv, 'preload realm should have process.env').toBe(true);
+      expect(result.hasExecPath, 'preload realm should have process.execPath').toBe(true);
     });
   });
 
@@ -431,14 +431,14 @@ describe('ServiceWorkerMain module', () => {
       loadWorkerScript();
       const serviceWorker = await waitForServiceWorker('running');
       const result = await runTest(serviceWorker, { name: 'testEvaluate', args: ['evalConstructorName'] });
-      expect(result).to.equal('ServiceWorkerGlobalScope');
+      expect(result).toBe('ServiceWorkerGlobalScope');
     });
 
     it('does not leak prototypes', async () => {
       loadWorkerScript();
       const serviceWorker = await waitForServiceWorker('running');
       const result = await runTest(serviceWorker, { name: 'testPrototypeLeak', args: [] });
-      expect(result).to.be.true();
+      expect(result).toBe(true);
     });
   });
 
@@ -455,7 +455,7 @@ describe('ServiceWorkerMain module', () => {
       const serviceWorkerPromise = waitForServiceWorker();
       const extension = await ses.extensions.loadExtension(testExtensionFixture);
       const serviceWorker = await serviceWorkerPromise;
-      expect(serviceWorker.scope).to.equal(extension.url);
+      expect(serviceWorker.scope).toBe(extension.url);
     });
 
     it('has extension state available when preload runs', async () => {
@@ -469,9 +469,9 @@ describe('ServiceWorkerMain module', () => {
         });
       });
       const extension = await extensionPromise;
-      expect(result).to.be.an('object');
-      expect(result.id).to.equal(extension.id);
-      expect(result.manifest).to.deep.equal(result.manifest);
+      expect(result).toBeTypeOf('object');
+      expect(result.id).toBe(extension.id);
+      expect(result.manifest).toEqual(result.manifest);
     });
   });
 });
