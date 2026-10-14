@@ -698,39 +698,41 @@ describe('command line switches', () => {
   });
 
   describe('--remote-debugging-port switch', () => {
-    it('should display the discovery page', (done) => {
-      const electronPath = process.execPath;
-      let output = '';
-      const args = ['--remote-debugging-port='];
-      if (process.platform === 'darwin') args.push('--use-mock-keychain');
-      appProcess = ChildProcess.spawn(electronPath, args);
-      appProcess.stdout.on('data', (data) => {
-        console.log(data);
-      });
+    it('should display the discovery page', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const electronPath = process.execPath;
+        let output = '';
+        const args = ['--remote-debugging-port='];
+        if (process.platform === 'darwin') args.push('--use-mock-keychain');
+        appProcess = ChildProcess.spawn(electronPath, args);
+        appProcess.stdout.on('data', (data) => {
+          console.log(data);
+        });
 
-      appProcess.stderr.on('data', (data) => {
-        console.log(data);
-        output += data;
-        const m = /DevTools listening on ws:\/\/127.0.0.1:(\d+)\//.exec(output);
-        if (m) {
-          appProcess!.stderr.removeAllListeners('data');
-          const port = m[1];
-          http
-            .get(`http://127.0.0.1:${port}`, (res) => {
-              try {
-                expect(res.statusCode).toEqual(200);
-                expect(parseInt(res.headers['content-length']!)).toBeGreaterThan(0);
-                done();
-              } catch (e) {
-                done(e);
-              } finally {
-                res.destroy();
-              }
-            })
-            .on('error', done);
-        }
-      });
-    });
+        appProcess.stderr.on('data', (data) => {
+          console.log(data);
+          output += data;
+          const m = /DevTools listening on ws:\/\/127.0.0.1:(\d+)\//.exec(output);
+          if (m) {
+            appProcess!.stderr.removeAllListeners('data');
+            const port = m[1];
+            http
+              .get(`http://127.0.0.1:${port}`, (res) => {
+                try {
+                  expect(res.statusCode).toEqual(200);
+                  expect(parseInt(res.headers['content-length']!)).toBeGreaterThan(0);
+                  done();
+                } catch (e) {
+                  done(e);
+                } finally {
+                  res.destroy();
+                }
+              })
+              .on('error', done);
+          }
+        });
+      }));
 
     it('should use bundled devtools frontend URL in /json response', async () => {
       // Regression test for https://github.com/electron/electron/issues/51035
@@ -946,14 +948,16 @@ describe('chromium features', () => {
   afterEach(closeAllWindows);
 
   describe('accessing key names also used as Node.js module names', () => {
-    it('does not crash', (done) => {
-      const w = new BrowserWindow({ show: false });
-      w.webContents.once('did-finish-load', () => {
-        done();
-      });
-      w.webContents.once('render-process-gone', () => done(new Error('WebContents crashed.')));
-      w.loadFile(path.join(fixturesPath, 'pages', 'external-string.html'));
-    });
+    it('does not crash', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const w = new BrowserWindow({ show: false });
+        w.webContents.once('did-finish-load', () => {
+          done();
+        });
+        w.webContents.once('render-process-gone', () => done(new Error('WebContents crashed.')));
+        w.loadFile(path.join(fixturesPath, 'pages', 'external-string.html'));
+      }));
   });
 
   describe('first party sets', () => {
@@ -991,14 +995,16 @@ describe('chromium features', () => {
   });
 
   describe('loading jquery', () => {
-    it('does not crash', (done) => {
-      const w = new BrowserWindow({ show: false });
-      w.webContents.once('did-finish-load', () => {
-        done();
-      });
-      w.webContents.once('render-process-gone', () => done(new Error('WebContents crashed.')));
-      w.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'jquery.html'));
-    });
+    it('does not crash', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const w = new BrowserWindow({ show: false });
+        w.webContents.once('did-finish-load', () => {
+          done();
+        });
+        w.webContents.once('render-process-gone', () => done(new Error('WebContents crashed.')));
+        w.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'jquery.html'));
+      }));
   });
 
   describe('navigator.keyboard', () => {
@@ -1085,137 +1091,145 @@ describe('chromium features', () => {
   });
 
   describe('navigator.serviceWorker', () => {
-    it('should register for file scheme', (done) => {
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true,
-          partition: 'sw-file-scheme-spec',
-          contextIsolation: false
-        }
-      });
-      w.webContents.on('ipc-message', (event, channel, message) => {
-        if (channel === 'reload') {
-          w.webContents.reload();
-        } else if (channel === 'error') {
-          done(message);
-        } else if (channel === 'response') {
-          expect(message).toBe('Hello from serviceWorker!');
-          session
-            .fromPartition('sw-file-scheme-spec')
-            .clearStorageData({
-              storages: ['serviceworkers']
-            })
-            .then(() => done());
-        }
-      });
-      w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
-      w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
-    });
+    it('should register for file scheme', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            partition: 'sw-file-scheme-spec',
+            contextIsolation: false
+          }
+        });
+        w.webContents.on('ipc-message', (event, channel, message) => {
+          if (channel === 'reload') {
+            w.webContents.reload();
+          } else if (channel === 'error') {
+            done(message);
+          } else if (channel === 'response') {
+            expect(message).toBe('Hello from serviceWorker!');
+            session
+              .fromPartition('sw-file-scheme-spec')
+              .clearStorageData({
+                storages: ['serviceworkers']
+              })
+              .then(() => done());
+          }
+        });
+        w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
+        w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
+      }));
 
-    it('should register for intercepted file scheme', (done) => {
-      const customSession = session.fromPartition('intercept-file');
-      customSession.protocol.interceptBufferProtocol('file', (request, callback) => {
-        let file = new URL(request.url).pathname!;
-        if (file[0] === '/' && process.platform === 'win32') file = file.slice(1);
+    it('should register for intercepted file scheme', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const customSession = session.fromPartition('intercept-file');
+        customSession.protocol.interceptBufferProtocol('file', (request, callback) => {
+          let file = new URL(request.url).pathname!;
+          if (file[0] === '/' && process.platform === 'win32') file = file.slice(1);
 
-        file = file.replace('service-worker.js', 'service-worker-intercepted.js');
+          file = file.replace('service-worker.js', 'service-worker-intercepted.js');
 
-        const content = fs.readFileSync(path.normalize(file));
-        const ext = path.extname(file);
-        let type = 'text/html';
+          const content = fs.readFileSync(path.normalize(file));
+          const ext = path.extname(file);
+          let type = 'text/html';
 
-        if (ext === '.js') type = 'application/javascript';
-        callback({ data: content, mimeType: type } as any);
-      });
+          if (ext === '.js') type = 'application/javascript';
+          callback({ data: content, mimeType: type } as any);
+        });
 
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true,
-          session: customSession,
-          contextIsolation: false
-        }
-      });
-      w.webContents.on('ipc-message', (event, channel, message) => {
-        if (channel === 'reload') {
-          w.webContents.reload();
-        } else if (channel === 'error') {
-          done(`unexpected error : ${message}`);
-        } else if (channel === 'response') {
-          expect(message).toBe('Hello from serviceWorker intercepted!');
-          customSession
-            .clearStorageData({
-              storages: ['serviceworkers']
-            })
-            .then(() => {
-              customSession.protocol.uninterceptProtocol('file');
-              done();
-            });
-        }
-      });
-      w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
-      w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
-    });
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            session: customSession,
+            contextIsolation: false
+          }
+        });
+        w.webContents.on('ipc-message', (event, channel, message) => {
+          if (channel === 'reload') {
+            w.webContents.reload();
+          } else if (channel === 'error') {
+            done(`unexpected error : ${message}`);
+          } else if (channel === 'response') {
+            expect(message).toBe('Hello from serviceWorker intercepted!');
+            customSession
+              .clearStorageData({
+                storages: ['serviceworkers']
+              })
+              .then(() => {
+                customSession.protocol.uninterceptProtocol('file');
+                done();
+              });
+          }
+        });
+        w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
+        w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
+      }));
 
-    it('should trigger webRequest handlers when loaded as a file', (done) => {
-      const customSession = session.fromPartition('sw-file-scheme-webRequest');
-      customSession.webRequest.onBeforeRequest((details, cb) => {
-        if (details.url.endsWith('service-worker.js')) {
-          done(); // Service worker triggered webRequest handler.
-        }
-        cb({});
-      });
+    it('should trigger webRequest handlers when loaded as a file', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const customSession = session.fromPartition('sw-file-scheme-webRequest');
+        customSession.webRequest.onBeforeRequest((details, cb) => {
+          if (details.url.endsWith('service-worker.js')) {
+            done(); // Service worker triggered webRequest handler.
+          }
+          cb({});
+        });
 
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true,
-          session: customSession,
-          contextIsolation: false
-        }
-      });
-      w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
-      w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
-    });
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            session: customSession,
+            contextIsolation: false
+          }
+        });
+        w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
+        w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
+      }));
 
-    it('should register for custom scheme', (done) => {
-      const customSession = session.fromPartition('custom-scheme');
-      customSession.protocol.registerFileProtocol(serviceWorkerScheme, (request, callback) => {
-        let file = new URL(request.url).pathname!;
-        if (file[0] === '/' && process.platform === 'win32') file = file.slice(1);
+    it('should register for custom scheme', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const customSession = session.fromPartition('custom-scheme');
+        customSession.protocol.registerFileProtocol(serviceWorkerScheme, (request, callback) => {
+          let file = new URL(request.url).pathname!;
+          if (file[0] === '/' && process.platform === 'win32') file = file.slice(1);
 
-        callback({ path: path.normalize(file) } as any);
-      });
+          callback({ path: path.normalize(file) } as any);
+        });
 
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true,
-          session: customSession,
-          contextIsolation: false
-        }
-      });
-      w.webContents.on('ipc-message', (event, channel, message) => {
-        if (channel === 'reload') {
-          w.webContents.reload();
-        } else if (channel === 'error') {
-          done(`unexpected error : ${message}`);
-        } else if (channel === 'response') {
-          expect(message).toBe('Hello from serviceWorker!');
-          customSession
-            .clearStorageData({
-              storages: ['serviceworkers']
-            })
-            .then(() => {
-              customSession.protocol.uninterceptProtocol(serviceWorkerScheme);
-              done();
-            });
-        }
-      });
-      w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
-      w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'custom-scheme-index.html'));
-    });
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            session: customSession,
+            contextIsolation: false
+          }
+        });
+        w.webContents.on('ipc-message', (event, channel, message) => {
+          if (channel === 'reload') {
+            w.webContents.reload();
+          } else if (channel === 'error') {
+            done(`unexpected error : ${message}`);
+          } else if (channel === 'response') {
+            expect(message).toBe('Hello from serviceWorker!');
+            customSession
+              .clearStorageData({
+                storages: ['serviceworkers']
+              })
+              .then(() => {
+                customSession.protocol.uninterceptProtocol(serviceWorkerScheme);
+                done();
+              });
+          }
+        });
+        w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
+        w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'custom-scheme-index.html'));
+      }));
 
     it('should not allow nodeIntegrationInWorker', async () => {
       const w = new BrowserWindow({
@@ -1368,12 +1382,14 @@ describe('chromium features', () => {
   describe('<geolocation> element', () => {
     afterEach(closeAllWindows);
 
-    it('does not crash the renderer', (done) => {
-      const w = new BrowserWindow({ show: false });
-      w.webContents.once('did-finish-load', () => done());
-      w.webContents.once('render-process-gone', () => done(new Error('renderer crashed / was killed')));
-      w.loadURL('data:text/html,<geolocation></geolocation>');
-    });
+    it('does not crash the renderer', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const w = new BrowserWindow({ show: false });
+        w.webContents.once('did-finish-load', () => done());
+        w.webContents.once('render-process-gone', () => done(new Error('renderer crashed / was killed')));
+        w.loadURL('data:text/html,<geolocation></geolocation>');
+      }));
   });
 
   describe('File System API,', { tags: ['serial'] }, () => {
@@ -5287,44 +5303,50 @@ ifdescribe(process.platform !== 'linux')('navigator.setAppBadge/clearAppBadge', 
       await closeAllWindows();
     });
 
-    it('setAppBadge can be called in a ServiceWorker', (done) => {
-      w.webContents.on('ipc-message', (event, channel, message) => {
-        if (channel === 'reload') {
-          w.webContents.reload();
-        } else if (channel === 'error') {
-          done(message);
-        } else if (channel === 'response') {
-          // The worker sets and then clears the badge before it answers, so
-          // there is no count to wait for here.
-          expect(message).toBe('SUCCESS setting app badge');
-          session
-            .fromPartition('sw-file-scheme-spec')
-            .clearStorageData({ storages: ['serviceworkers'] })
-            .then(() => done(), done);
-        }
-      });
-      w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
-      w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'badge-index.html'), { search: '?setBadge' });
-    });
+    it('setAppBadge can be called in a ServiceWorker', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        w.webContents.on('ipc-message', (event, channel, message) => {
+          if (channel === 'reload') {
+            w.webContents.reload();
+          } else if (channel === 'error') {
+            done(message);
+          } else if (channel === 'response') {
+            // The worker sets and then clears the badge before it answers, so
+            // there is no count to wait for here.
+            expect(message).toBe('SUCCESS setting app badge');
+            session
+              .fromPartition('sw-file-scheme-spec')
+              .clearStorageData({ storages: ['serviceworkers'] })
+              .then(() => done(), done);
+          }
+        });
+        w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
+        w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'badge-index.html'), { search: '?setBadge' });
+      }));
 
-    it('clearAppBadge can be called in a ServiceWorker', (done) => {
-      w.webContents.on('ipc-message', (event, channel, message) => {
-        if (channel === 'reload') {
-          w.webContents.reload();
-        } else if (channel === 'setAppBadge') {
-          expect(message).toBe('SUCCESS setting app badge');
-        } else if (channel === 'error') {
-          done(message);
-        } else if (channel === 'response') {
-          expect(message).toBe('SUCCESS clearing app badge');
-          waitForBadgeCount(0)
-            .then(() => session.fromPartition('sw-file-scheme-spec').clearStorageData({ storages: ['serviceworkers'] }))
-            .then(() => done(), done);
-        }
-      });
-      w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
-      w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'badge-index.html'), { search: '?clearBadge' });
-    });
+    it('clearAppBadge can be called in a ServiceWorker', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        w.webContents.on('ipc-message', (event, channel, message) => {
+          if (channel === 'reload') {
+            w.webContents.reload();
+          } else if (channel === 'setAppBadge') {
+            expect(message).toBe('SUCCESS setting app badge');
+          } else if (channel === 'error') {
+            done(message);
+          } else if (channel === 'response') {
+            expect(message).toBe('SUCCESS clearing app badge');
+            waitForBadgeCount(0)
+              .then(() =>
+                session.fromPartition('sw-file-scheme-spec').clearStorageData({ storages: ['serviceworkers'] })
+              )
+              .then(() => done(), done);
+          }
+        });
+        w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
+        w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'badge-index.html'), { search: '?clearBadge' });
+      }));
   });
 });
 

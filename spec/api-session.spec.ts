@@ -1019,12 +1019,14 @@ describe('session module', () => {
     });
     afterEach(closeAllWindows);
 
-    it('returns blob data for uuid', (done) => {
-      const postData = JSON.stringify({
-        type: 'blob',
-        value: 'hello'
-      });
-      const content = `<html>
+    it('returns blob data for uuid', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const postData = JSON.stringify({
+          type: 'blob',
+          value: 'hello'
+        });
+        const content = `<html>
                        <script>
                        let fd = new FormData();
                        fd.append('file', new Blob(['${postData}'], {type:'application/json'}));
@@ -1032,29 +1034,29 @@ describe('session module', () => {
                        </script>
                        </html>`;
 
-      protocol.registerStringProtocol(scheme, (request, callback) => {
-        try {
-          if (request.method === 'GET') {
-            callback({ data: content, mimeType: 'text/html' });
-          } else if (request.method === 'POST') {
-            const uuid = request.uploadData![1].blobUUID;
-            expect(uuid).toBeTypeOf('string');
-            session.defaultSession.getBlobData(uuid!).then((result) => {
-              try {
-                expect(result.toString()).toBe(postData);
-                done();
-              } catch (e) {
-                done(e);
-              }
-            });
+        protocol.registerStringProtocol(scheme, (request, callback) => {
+          try {
+            if (request.method === 'GET') {
+              callback({ data: content, mimeType: 'text/html' });
+            } else if (request.method === 'POST') {
+              const uuid = request.uploadData![1].blobUUID;
+              expect(uuid).toBeTypeOf('string');
+              session.defaultSession.getBlobData(uuid!).then((result) => {
+                try {
+                  expect(result.toString()).toBe(postData);
+                  done();
+                } catch (e) {
+                  done(e);
+                }
+              });
+            }
+          } catch (e) {
+            done(e);
           }
-        } catch (e) {
-          done(e);
-        }
-      });
-      const w = new BrowserWindow({ show: false });
-      w.loadURL(url);
-    });
+        });
+        const w = new BrowserWindow({ show: false });
+        w.loadURL(url);
+      }));
   });
 
   describe('ses.getBlobData() (gc)', () => {
@@ -1170,8 +1172,10 @@ describe('session module', () => {
     });
     afterEach(closeAllWindows);
 
-    it('returns blob data for uuid', (done) => {
-      const content = `<html>
+    it('returns blob data for uuid', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const content = `<html>
                        <script>
                        let fd = new FormData();
                        fd.append("data", new Blob(new Array(65_537).fill('a')));
@@ -1179,30 +1183,30 @@ describe('session module', () => {
                        </script>
                        </html>`;
 
-      protocol.registerStringProtocol(scheme, (request, callback) => {
-        try {
-          if (request.method === 'GET') {
-            callback({ data: content, mimeType: 'text/html' });
-          } else if (request.method === 'POST') {
-            const uuid = request.uploadData![1].blobUUID;
-            expect(uuid).toBeTypeOf('string');
-            session.defaultSession.getBlobData(uuid!).then((result) => {
-              try {
-                const data = new Array(65_537).fill('a');
-                expect(result.toString()).toBe(data.join(''));
-                done();
-              } catch (e) {
-                done(e);
-              }
-            });
+        protocol.registerStringProtocol(scheme, (request, callback) => {
+          try {
+            if (request.method === 'GET') {
+              callback({ data: content, mimeType: 'text/html' });
+            } else if (request.method === 'POST') {
+              const uuid = request.uploadData![1].blobUUID;
+              expect(uuid).toBeTypeOf('string');
+              session.defaultSession.getBlobData(uuid!).then((result) => {
+                try {
+                  const data = new Array(65_537).fill('a');
+                  expect(result.toString()).toBe(data.join(''));
+                  done();
+                } catch (e) {
+                  done(e);
+                }
+              });
+            }
+          } catch (e) {
+            done(e);
           }
-        } catch (e) {
-          done(e);
-        }
-      });
-      const w = new BrowserWindow({ show: false });
-      w.loadURL(url);
-    });
+        });
+        const w = new BrowserWindow({ show: false });
+        w.loadURL(url);
+      }));
   });
 
   describe('ses.setCertificateVerifyProc(callback)', () => {
@@ -1228,9 +1232,13 @@ describe('session module', () => {
       serverUrl = (await listen(server)).url;
     });
 
-    afterEach((done) => {
-      server.close(done);
-    });
+    afterEach(
+      () =>
+        new Promise<void>((resolve, reject) => {
+          const done = (error?: unknown) => (error ? reject(error) : resolve());
+          server.close(done);
+        })
+    );
     afterEach(closeAllWindows);
 
     it('accepts the request when the callback is called with 0', async () => {

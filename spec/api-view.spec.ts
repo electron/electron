@@ -170,21 +170,22 @@ describe('View', () => {
       expect(child.getBounds()).toEqual({ x: 10, y: 15, width: 25, height: 30 });
     });
 
-    it('can set bounds with animation', (done) => {
-      const v = new View();
-      v.setBounds(
-        { x: 0, y: 0, width: 100, height: 100 },
-        {
-          animate: {
-            duration: 300
+    it('can set bounds with animation', () =>
+      new Promise<void>((resolve) => {
+        const v = new View();
+        v.setBounds(
+          { x: 0, y: 0, width: 100, height: 100 },
+          {
+            animate: {
+              duration: 300
+            }
           }
-        }
-      );
-      setTimeout(() => {
-        expect(v.getBounds()).toEqual({ x: 0, y: 0, width: 100, height: 100 });
-        done();
-      }, 350);
-    });
+        );
+        setTimeout(() => {
+          expect(v.getBounds()).toEqual({ x: 0, y: 0, width: 100, height: 100 });
+          resolve();
+        }, 350);
+      }));
   });
 
   describe('view.setBackgroundBlur', () => {
