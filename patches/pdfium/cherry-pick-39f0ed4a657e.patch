@@ -1,0 +1,96 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lei Zhang <thestig@chromium.org>
+Date: Fri, 9 Oct 2026 19:04:07 -0700
+Subject: [M155] Correctly initialize current cell in agg::outline_aa
+
+Original change's description:
+> Correctly initialize current cell in agg::outline_aa
+>
+> Initialize `m_cur_cell` to (0x7FFFFFFF, 0x7FFFFFFF) instead of
+> (0x7FFF, 0x7FFF) in outline_aa::outline_aa() and outline_aa::reset(),
+> matching `m_min_x` and `m_min_y`.
+>
+> Previously, if a path started at cell (0x7FFF, 0x7FFF),
+> outline_aa::set_cur_cell() treated the coordinates as unchanged and
+> skipped updating `m_min_x`, `m_max_x`, `m_min_y`, and `m_max_y`. This
+> left the bounds out of sync with the cells in `m_cells`, leading to
+> out-of-bounds memory accesses in outline_aa::sort_cells() and
+> rasterizer_scanline_aa::sweep_scanline(). Since cell coordinates passed
+> to outline_aa::set_cur_cell() are shifted right by `poly_base_shift`,
+> they can never equal 0x7FFFFFFF.
+>
+> This matches the equivalent code in newer versions of AGG.
+>
+> TAG=agy
+> CONV=c8cb5ce3-fe6b-4ebe-8831-b653899043f0
+>
+> Bug: 570167922
+> Change-Id: I5e06c418226e67ff7487e4e8bba6233402a4ea8e
+> Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/160091
+> Commit-Queue: Lei Zhang <thestig@chromium.org>
+> Reviewed-by: Tom Sepez <tsepez@chromium.org>
+
+(cherry picked from commit 58e11305710a506ce3369581662eeb14440639cf)
+
+Bug: 572073587,570167922
+Change-Id: I5e06c418226e67ff7487e4e8bba6233402a4ea8e
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/160470
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/third_party/agg23/0018-outline_aa_reset.patch b/third_party/agg23/0018-outline_aa_reset.patch
+new file mode 100644
+index 0000000000000000000000000000000000000000..7d9c8d63fd399257fe15d11e0e1edb9e8420a938
+--- /dev/null
++++ b/third_party/agg23/0018-outline_aa_reset.patch
+@@ -0,0 +1,20 @@
++diff --git a/third_party/agg23/agg_rasterizer_scanline_aa.cpp b/third_party/agg23/agg_rasterizer_scanline_aa.cpp
++index ed59cf0ffb..d561e02b58 100644
++--- a/third_party/agg23/agg_rasterizer_scanline_aa.cpp
+++++ b/third_party/agg23/agg_rasterizer_scanline_aa.cpp
++@@ -101,13 +101,13 @@ outline_aa::outline_aa() :
++     m_max_y(-0x7FFFFFFF),
++     m_sorted(false)
++ {
++-    m_cur_cell.set(0x7FFF, 0x7FFF, 0, 0);
+++    m_cur_cell.set(0x7FFFFFFF, 0x7FFFFFFF, 0, 0);
++ }
++ void outline_aa::reset()
++ {
++     m_num_cells = 0;
++     m_cur_block = 0;
++-    m_cur_cell.set(0x7FFF, 0x7FFF, 0, 0);
+++    m_cur_cell.set(0x7FFFFFFF, 0x7FFFFFFF, 0, 0);
++     m_sorted = false;
++     m_min_x =  0x7FFFFFFF;
++     m_min_y =  0x7FFFFFFF;
+diff --git a/third_party/agg23/README.pdfium b/third_party/agg23/README.pdfium
+index 6956d82635683abe3475db574a6145d0f5974db7..26810027ca535006b9c3e5ece777952eb8eb6677 100644
+--- a/third_party/agg23/README.pdfium
++++ b/third_party/agg23/README.pdfium
+@@ -39,3 +39,4 @@ outline_aa::render_line().
+ 0016-support-negative-dash-phases.patch: Support negative dash phases in
+ calc_dash_start().
+ 0017-support-odd-size-dash-arrays.patch: Support odd-sized dash arrays.
++0018-outline_aa_reset.patch: Correctly reset current cell.
+diff --git a/third_party/agg23/agg_rasterizer_scanline_aa.cpp b/third_party/agg23/agg_rasterizer_scanline_aa.cpp
+index ed59cf0ffb6096a4e1625c0a66c5ce63b0b953f0..d561e02b581f55f4e32457c84972a8d392ece84c 100644
+--- a/third_party/agg23/agg_rasterizer_scanline_aa.cpp
++++ b/third_party/agg23/agg_rasterizer_scanline_aa.cpp
+@@ -101,13 +101,13 @@ outline_aa::outline_aa() :
+     m_max_y(-0x7FFFFFFF),
+     m_sorted(false)
+ {
+-    m_cur_cell.set(0x7FFF, 0x7FFF, 0, 0);
++    m_cur_cell.set(0x7FFFFFFF, 0x7FFFFFFF, 0, 0);
+ }
+ void outline_aa::reset()
+ {
+     m_num_cells = 0;
+     m_cur_block = 0;
+-    m_cur_cell.set(0x7FFF, 0x7FFF, 0, 0);
++    m_cur_cell.set(0x7FFFFFFF, 0x7FFFFFFF, 0, 0);
+     m_sorted = false;
+     m_min_x =  0x7FFFFFFF;
+     m_min_y =  0x7FFFFFFF;

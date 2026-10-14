@@ -1,0 +1,105 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Mon, 12 Oct 2026 13:41:46 -0700
+Subject: [M155] Keep old UrlData alive across
+ ResourceMultiBufferDataProvider::DidReceiveResponse()
+
+Original change's description:
+> Keep old UrlData alive across ResourceMultiBufferDataProvider::DidReceiveResponse()
+>
+> Hold a scoped_refptr to url_data_ at the start of DidReceiveResponse()
+> so that GetByUrl() and TryInsert() cannot drop the last reference to
+> url_data_ before provider ownership transfers to destination_url_data.
+>
+> Bug: 570461696
+> Change-Id: I22a893572b3c7aecf8f1bf202e74da779655ef9c
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8528426
+> Commit-Queue: Thomas Guilbert <tguilbert@chromium.org>
+> Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+> Reviewed-by: Thomas Guilbert <tguilbert@chromium.org>
+> Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1713826}
+
+(cherry picked from commit 226a56e63791ea7dccad7c30bbb689b817e33964)
+
+Bug: 572073834,570461696
+Change-Id: I22a893572b3c7aecf8f1bf202e74da779655ef9c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8552937
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8059@{#1228}
+Cr-Branched-From: 199ac2cd7ab289e11c2236bd2cede848781213da-refs/heads/main@{#1697595}
+
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+index 90a3ead11207f2070595cf19e70a425acc3720fd..58f5762aebe797bf7974c9e0a6964230cc204a44 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+@@ -242,6 +242,12 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+     return;  // "this" may be deleted now.
+   }
+ 
++  // Keep a reference to `url_data_` across `GetByUrl()` and `TryInsert()`. If
++  // `UrlIndex` holds the sole reference to `url_data_` and `TryInsert()`
++  // replaces it with a new `UrlData` for the same key, `url_data_` (which owns
++  // `this` via `multibuffer()`) would otherwise be destroyed before ownership
++  // of `this` is transferred below.
++  scoped_refptr<UrlData> old_url_data(url_data_.get());
+   scoped_refptr<UrlData> destination_url_data(url_data_.get());
+ 
+   if (!redirects_to_.IsEmpty()) {
+@@ -360,9 +366,6 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+   if (destination_url_data != url_data_.get()) {
+     // At this point, we've encountered a redirect, or found a better url data
+     // instance for the data that we're about to download.
+-
+-    // First, let's take a ref on the current url data.
+-    scoped_refptr<UrlData> old_url_data(url_data_.get());
+     destination_url_data->Use();
+ 
+     // Take ownership of ourselves. (From the multibuffer)
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+index 41fb50190f45b14155a8b8141270267026c11cff..7336d80b023307731993a5e44b2b672598d044c2 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+@@ -377,6 +377,40 @@ TEST_F(ResourceMultiBufferDataProviderTest,
+   loader->DidReceiveData(data_str);
+ }
+ 
++TEST_F(ResourceMultiBufferDataProviderTest,
++       RedirectToSameUrlReplacesUrlDataInUrlIndex) {
++  Initialize(kHttpUrl, 0);
++  Start();
++  PartialResponse(0, 100, 1024);
++
++  // Drop the test's reference so `url_index_` holds the sole reference to
++  // `UrlData`.
++  ResourceMultiBufferDataProvider* loader = loader_.ExtractAsDangling();
++  url_data_ = nullptr;
++
++  // Redirect to the same URL with a no-cache response so `url_data_->Valid()`
++  // becomes false. In `DidReceiveResponse()`, `GetByUrl()` creates a new
++  // `UrlData` for the same key and `TryInsert()` replaces the old `UrlData` in
++  // `url_index_`, which must not destroy `url_data_` and `loader` before
++  // `loader` is migrated to the new `UrlData`.
++  WebURLResponse redirect_response(url_);
++  redirect_response.SetHttpHeaderField(WebString::FromUtf8("Cache-Control"),
++                                       WebString::FromUtf8("no-cache"));
++  EXPECT_CALL(*this, RedirectCallback(_))
++      .WillOnce(Invoke(this, &ResourceMultiBufferDataProviderTest::SetUrlData));
++  ASSERT_TRUE(loader->WillFollowRedirect(WebURL(url_), redirect_response));
++
++  WebURLResponse response(url_);
++  response.SetHttpHeaderField(WebString::FromUtf8("Content-Range"),
++                              WebString::FromUtf8("bytes 0-100/1024"));
++  response.SetExpectedContentLength(101);
++  response.SetHttpHeaderField(WebString::FromUtf8("Accept-Ranges"),
++                              WebString::FromUtf8("bytes"));
++  response.SetHttpStatusCode(kHttpPartialContent);
++  loader->DidReceiveResponse(response);
++  EXPECT_TRUE(url_data_);
++}
++
+ TEST_F(ResourceMultiBufferDataProviderTest, DestructedUrlIndexStartViaReader) {
+   url_index_ = std::make_unique<UrlIndex>(
+       &fetch_context_, task_environment_.GetMainThreadTaskRunner());

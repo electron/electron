@@ -1,0 +1,73 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Fri, 2 Oct 2026 16:01:02 -0700
+Subject: [M155] Change semantic of limitOutputVaryingsTo256 workaround.
+
+Original change's description:
+> Change semantic of limitOutputVaryingsTo256 workaround.
+>
+> Change this to limit the number of vertex output components to 256
+> rather than the number of vertex output varyings, which is 4 times
+> larger and which can still trigger the underlying driver bug.
+>
+> Avoid changing the name of the workaround because it's already
+> referenced in Chromium's code.
+>
+> Revise the unit test for the workaround.
+>
+> Fixed: chromium:567736859
+> Change-Id: I5ca01e92ce29b2a61263d1fe0b6b275d52edf75a
+> Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8503841
+> Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+> Auto-Submit: Kenneth Russell <kbr@chromium.org>
+> Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+(cherry picked from commit e0e5a9bc99a7027268515fd6463768d7c6236293)
+
+Bug: chromium:570372715,chromium:567736859
+Change-Id: I5ca01e92ce29b2a61263d1fe0b6b275d52edf75a
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8550916
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
+index 39618cc5dc732f62016529b1dce1ccf745d4ceed..ce54848c73f7478c192187cc51bfc89c6c849155 100644
+--- a/src/compiler/translator/ParseContext.cpp
++++ b/src/compiler/translator/ParseContext.cpp
+@@ -10656,11 +10656,10 @@ void TParseContext::addAndCheckOutputVaryings(const TVariable &variable, const T
+     mNumOutputVaryingComponents =
+         checkedNum.ValueOrDefault(std::numeric_limits<unsigned int>::max());
+ 
+-    // The cap to 256 vec4s = 1024 components seems somewhat arbitrary, but this is intended as a
+-    // workaround for a specific driver bug, and this limit being much
+-    // higher than the device limits (mResources.MaxVertexOutputVectors *
+-    // 4), it avoids regressing both tests and applications.
+-    if (mNumOutputVaryingComponents > 1024)
++    // The cap to 256 components seems somewhat arbitrary, but this is intended as a workaround for
++    // a specific driver bug, and this limit being much higher than the device limits
++    // (mResources.MaxVertexOutputVectors * 4), it avoids regressing both tests and applications.
++    if (mNumOutputVaryingComponents > 256)
+     {
+         error(line, "Too many declared shader output varying components for this device",
+               variable.name());
+diff --git a/src/tests/gl_tests/GLSLValidationTest.cpp b/src/tests/gl_tests/GLSLValidationTest.cpp
+index 1376b7e4653e96e26d6fafc1a0d353a5c4a45db9..547d8c8de2ecaade71e7cef5561da2b2dac29e73 100644
+--- a/src/tests/gl_tests/GLSLValidationTest.cpp
++++ b/src/tests/gl_tests/GLSLValidationTest.cpp
+@@ -8707,14 +8707,14 @@ class GLSLValidationTest_ES3_LimitOutputVaryings : public GLSLValidationTest_ES3
+ {};
+ 
+ // Regression test for crbug.com/529991907.
+-// Verify that compiling a shader with up to 1024 output varying components
+-// succeeds, and exceeding 1024 components is rejected at compile time.
++// Verify that compiling a shader with up to 256 output varying components
++// succeeds, and exceeding 256 components is rejected at compile time.
+ TEST_P(GLSLValidationTest_ES3_LimitOutputVaryings, TooManyDeclaredVertexOutputComponents)
+ {
+     ANGLE_SKIP_TEST_IF(
+         !getEGLWindow()->isFeatureEnabled(Feature::LimitOutputVaryingsTo256AtCompileTime));
+ 
+-    constexpr int kMaxVectors = 1024 / 4;
++    constexpr int kMaxVectors = 256 / 4;
+ 
+     std::stringstream vsValid;
+     vsValid << "#version 300 es\n";

@@ -1,0 +1,393 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Bryan Oltman <bryanoltman@google.com>
+Date: Thu, 8 Oct 2026 10:45:54 -0700
+Subject: [M155] Ensure extensions only install into their own directory
+
+Original change's description:
+> Ensure extensions only install into their own directory
+>
+> Updates file_util::InstallExtension and file_util::GetInstallTempDir to
+> verify that both the extension install destination (extensions_dir/id)
+> and install temp directory (extensions_dir/Temp) resolve strictly to
+> their expected child directories under the extensions root, rejecting
+> symbolic links and NTFS junction reparse points. Path normalization and
+> Windows fallback logic (e.g. for ramdisks) are shared with
+> ExtensionResource via a new file_util::NormalizeFilePath helper.
+>
+> Because ChromeOS unpacks extensions inside the profile rather than
+> %TEMP%, this stricter validation also requires ExtensionUpdaterTest to
+> properly initialize TestExtensionSystem via Init() instead of passing an
+> empty install directory to CreateExtensionService().
+>
+> Fixed: 561892119
+> Change-Id: I6a026d72d287b447f6d66f81abcee81e5b88bb0c
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8469727
+> Reviewed-by: Andrea Orru <andreaorru@chromium.org>
+> Commit-Queue: Bryan Oltman <bryanoltman@google.com>
+> Cr-Commit-Position: refs/heads/main@{#1711841}
+
+(cherry picked from commit 2889bd9685a228611ae6f466cff63aaa8805eff5)
+
+Bug: 571382975,561892119
+Change-Id: I6a026d72d287b447f6d66f81abcee81e5b88bb0c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8541950
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8059@{#1039}
+Cr-Branched-From: 199ac2cd7ab289e11c2236bd2cede848781213da-refs/heads/main@{#1697595}
+
+diff --git a/chrome/browser/extensions/updater/extension_updater_unittest.cc b/chrome/browser/extensions/updater/extension_updater_unittest.cc
+index f70b35ae6168efcec17b67defbf56691a37e6dd0..380113facf27904c37bc2355a6da671016a4745e 100644
+--- a/chrome/browser/extensions/updater/extension_updater_unittest.cc
++++ b/chrome/browser/extensions/updater/extension_updater_unittest.cc
+@@ -1616,9 +1616,7 @@ class ExtensionUpdaterTest : public testing::Test {
+     TestingProfile profile;
+     // TODO(crbug.com/396722906): Delete this when CrxInstaller no longer has
+     // dependencies on ExtensionService.
+-    static_cast<TestExtensionSystem*>(ExtensionSystem::Get(&profile))
+-        ->CreateExtensionService(base::CommandLine::ForCurrentProcess(),
+-                                 base::FilePath(), false);
++    static_cast<TestExtensionSystem*>(ExtensionSystem::Get(&profile))->Init();
+     scoped_refptr<MockCrxInstaller> mock_installer =
+         base::MakeRefCounted<MockCrxInstaller>(&profile);
+ 
+diff --git a/extensions/common/extension_resource.cc b/extensions/common/extension_resource.cc
+index a694c7af94761dfe40bc72530a44aafb68180593..336480c3bb1ede4d6d4c2c2a220da8023e16e77c 100644
+--- a/extensions/common/extension_resource.cc
++++ b/extensions/common/extension_resource.cc
+@@ -6,6 +6,8 @@
+ 
+ #include "base/check.h"
+ #include "base/files/file_util.h"
++#include "build/build_config.h"
++#include "extensions/common/file_util.h"
+ 
+ namespace extensions {
+ 
+@@ -56,34 +58,10 @@ base::FilePath ExtensionResource::GetFilePath(
+   // normalize file paths. Without normalization parent references, Windows
+   // short paths, or different path capitalization will cause `IsParent` to
+   // return false.
+-  bool extension_root_normalization_skipped = false;
+   base::FilePath normalized_extension_root;
+-  if (!base::NormalizeFilePath(extension_root, &normalized_extension_root)) {
+-#if BUILDFLAG(IS_WIN)
+-    // On Windows, `NormalizeFilePath` is implemented via
+-    // `GetFinalPathNameByHandle`, which can fail in some cases. One such case
+-    // which was reported by users is with paths on a ramdisk. For example, from
+-    // the author of ImDisk:
+-    //
+-    // > ImDisk is a rather old product. It is designed to be as small and
+-    // > simple as possible and compatible with Windows versions as old as NT
+-    // > 3.51. By design it lacks support for certain "modern" OS features like
+-    // > plug-and-play and Volume Mount Manager. The mentioned API function,
+-    // > GetFinalPathNameByHandle, uses Volume Mount Manager and is therefore
+-    // > not supported for ImDisk virtual disks.
+-    //
+-    // Since we can't normalize the path, fall back to `MakeAbsoluteFilePath`
+-    // and proceed if the file exists.
+-    normalized_extension_root = base::MakeAbsoluteFilePath(extension_root);
+-    if (normalized_extension_root.empty() ||
+-        !base::PathExists(normalized_extension_root)) {
+-      return base::FilePath();
+-    }
+-
+-    extension_root_normalization_skipped = true;
+-#else
++  if (!file_util::NormalizeFilePath(extension_root,
++                                    &normalized_extension_root)) {
+     return base::FilePath();
+-#endif
+   }
+ 
+   base::FilePath full_path = normalized_extension_root.Append(relative_path);
+@@ -107,22 +85,8 @@ base::FilePath ExtensionResource::GetFilePath(
+   // We must resolve the absolute path of the combined path when
+   // the relative path contains references to a parent folder (i.e., '..').
+   // NormalizeFilePath will fail if the path doesn't exist.
+-  if (base::FilePath full_path_normalized;
+-      !extension_root_normalization_skipped &&
+-      base::NormalizeFilePath(full_path, &full_path_normalized)) {
+-    full_path = std::move(full_path_normalized);
+-  } else {
+-#if BUILDFLAG(IS_WIN)
+-    // On Windows, if `NormalizeFilePath` fails, fall back to
+-    // `MakeAbsoluteFilePath` and proceed if the file exists. This can happen
+-    // if, for example, the file isn't accessible due to permissions.
+-    full_path = base::MakeAbsoluteFilePath(full_path);
+-    if (full_path.empty() || !base::PathExists(full_path)) {
+-      return base::FilePath();
+-    }
+-#else
++  if (!file_util::NormalizeFilePath(full_path, &full_path)) {
+     return base::FilePath();
+-#endif
+   }
+ 
+   if (symlink_policy != FOLLOW_SYMLINKS_ANYWHERE &&
+diff --git a/extensions/common/file_util.cc b/extensions/common/file_util.cc
+index 7dc0ad50d0ba87152225dc5daecce5975c77737b..b130a6ef0d3ddc76e7329bc1ad82948ce149ad05 100644
+--- a/extensions/common/file_util.cc
++++ b/extensions/common/file_util.cc
+@@ -28,6 +28,7 @@
+ #include "base/strings/stringprintf.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/values.h"
++#include "build/build_config.h"
+ #include "extensions/common/constants.h"
+ #include "extensions/common/extension.h"
+ #include "extensions/common/extension_id.h"
+@@ -106,6 +107,23 @@ void FlushFilesInDir(const base::FilePath& path,
+   }
+ }
+ 
++// Returns true if `dir` is not a symlink and resolves strictly to
++// `extensions_dir/dir.BaseName()`. This prevents pre-planted symlinks by
++// another profile writer from redirecting install steps to sibling or external
++// directories.
++bool ResolvesToDirectChildDir(const base::FilePath& dir,
++                              const base::FilePath& extensions_dir) {
++  if (base::IsLink(dir)) {
++    return false;
++  }
++  base::FilePath normalized_extensions_dir;
++  base::FilePath normalized_dir;
++  return file_util::NormalizeFilePath(extensions_dir,
++                                      &normalized_extensions_dir) &&
++         file_util::NormalizeFilePath(dir, &normalized_dir) &&
++         normalized_dir == normalized_extensions_dir.Append(dir.BaseName());
++}
++
+ }  // namespace
+ 
+ const base::FilePath::CharType kTempDirectoryName[] = FILE_PATH_LITERAL("Temp");
+@@ -130,6 +148,14 @@ base::FilePath InstallExtension(const base::FilePath& unpacked_source_dir,
+     }
+   }
+ 
++  // Refuse to install if the destination does not resolve strictly to this
++  // extension's own directory.
++  if (!ResolvesToDirectChildDir(extension_dir, extensions_dir)) {
++    LOG(ERROR) << "Extension install directory " << extension_dir.value()
++               << " does not resolve to its expected extension directory.";
++    return base::FilePath();
++  }
++
+   // Get a temp directory on the same file system as the profile.
+   base::FilePath install_temp_dir = GetInstallTempDir(extensions_dir);
+   base::ScopedTempDir extension_temp_dir;
+@@ -483,18 +509,53 @@ base::FilePath GetInstallTempDir(const base::FilePath& extensions_dir) {
+       DLOG(WARNING) << "Can't write to path: " << temp_path.value();
+       return base::FilePath();
+     }
+-    // This is a directory we can write to.
+-    return temp_path;
++  } else if (!base::CreateDirectory(temp_path)) {
++    DLOG(WARNING) << "Couldn't create directory: " << temp_path.value();
++    return base::FilePath();
+   }
+ 
+-  // Directory doesn't exist, so create it.
+-  if (!base::CreateDirectory(temp_path)) {
+-    DLOG(WARNING) << "Couldn't create directory: " << temp_path.value();
++  // Refuse to use the temp directory if it does not resolve strictly to
++  // `extensions_dir/Temp`.
++  if (!ResolvesToDirectChildDir(temp_path, extensions_dir)) {
++    LOG(ERROR) << "Extension install temp directory " << temp_path.value()
++               << " does not resolve to its expected directory.";
+     return base::FilePath();
+   }
++
+   return temp_path;
+ }
+ 
++bool NormalizeFilePath(const base::FilePath& path,
++                       base::FilePath* normalized_path) {
++  if (base::FilePath result; base::NormalizeFilePath(path, &result)) {
++    *normalized_path = std::move(result);
++    return true;
++  }
++#if BUILDFLAG(IS_WIN)
++  // On Windows, `base::NormalizeFilePath` is implemented via
++  // `GetFinalPathNameByHandle`, which can fail in some cases. One such case
++  // which was reported by users is with paths on a ramdisk. For example, from
++  // the author of ImDisk (see crbug.com/442094023):
++  //
++  // > ImDisk is a rather old product. It is designed to be as small and
++  // > simple as possible and compatible with Windows versions as old as NT
++  // > 3.51. By design it lacks support for certain "modern" OS features like
++  // > plug-and-play and Volume Mount Manager. The mentioned API function,
++  // > GetFinalPathNameByHandle, uses Volume Mount Manager and is therefore
++  // > not supported for ImDisk virtual disks.
++  //
++  // It can also fail if a file isn't accessible due to permissions. Since we
++  // can't normalize the path, fall back to `base::MakeAbsoluteFilePath` and
++  // proceed if the path exists.
++  base::FilePath result = base::MakeAbsoluteFilePath(path);
++  if (!result.empty() && base::PathExists(result)) {
++    *normalized_path = std::move(result);
++    return true;
++  }
++#endif
++  return false;
++}
++
+ base::FilePath ExtensionURLToRelativeFilePath(const GURL& url) {
+   std::string_view url_path = url.path();
+   if (url_path.empty() || url_path[0] != '/') {
+diff --git a/extensions/common/file_util.h b/extensions/common/file_util.h
+index c6998563b1478d03d21af98e7757acd07a6eaf7e..41bd9dce4e68df0c2d1641890eb124d795266bd5 100644
+--- a/extensions/common/file_util.h
++++ b/extensions/common/file_util.h
+@@ -132,6 +132,14 @@ bool CheckForWindowsReservedFilenames(const base::FilePath& extension_dir,
+ // an empty file path on failure.
+ base::FilePath GetInstallTempDir(const base::FilePath& extensions_dir);
+ 
++// Normalizes `path` into `normalized_path` via `base::NormalizeFilePath`. On
++// Windows, falls back to `base::MakeAbsoluteFilePath` (requiring `path` to
++// exist) when `base::NormalizeFilePath` fails (e.g. on ramdisks that do not
++// support `GetFinalPathNameByHandle`, see crbug.com/442094023, or when a file
++// cannot be opened due to permissions).
++bool NormalizeFilePath(const base::FilePath& path,
++                       base::FilePath* normalized_path);
++
+ // Get a relative file path from a chrome-extension:// URL.
+ base::FilePath ExtensionURLToRelativeFilePath(const GURL& url);
+ 
+diff --git a/extensions/common/file_util_unittest.cc b/extensions/common/file_util_unittest.cc
+index 97e900c354065f7161ed620a3929a43a02debc9b..2a14c1441167e6d6e6186bbbddd0995274347788 100644
+--- a/extensions/common/file_util_unittest.cc
++++ b/extensions/common/file_util_unittest.cc
+@@ -37,6 +37,10 @@
+ #include "ui/base/l10n/l10n_util.h"
+ #include "url/gurl.h"
+ 
++#if BUILDFLAG(IS_WIN)
++#include "base/test/file_path_reparse_point_win.h"
++#endif
++
+ using extensions::mojom::ManifestLocation;
+ 
+ namespace extensions {
+@@ -283,6 +287,120 @@ TEST_F(FileUtilTest, UninstallRemovesAllPackedExtensionVersions) {
+   EXPECT_TRUE(base::DirectoryExists(extensions_dir));
+ }
+ 
++// Verifies that InstallExtension refuses to install an extension whose
++// destination directory is a symlink pointing to a sibling extension
++// directory (https://crbug.com/561892119).
++TEST_F(FileUtilTest, InstallExtensionRejectsSymlinkToSiblingExtension) {
++  base::ScopedTempDir temp;
++  ASSERT_TRUE(temp.CreateUniqueTempDir());
++
++  base::FilePath profile_dir = temp.GetPath().AppendASCII("Default");
++  base::FilePath extensions_dir = profile_dir.AppendASCII("TestExtensions");
++  ASSERT_TRUE(base::CreateDirectory(extensions_dir));
++
++  base::FilePath sibling_dir = extensions_dir.AppendASCII("sibling_dir");
++  ASSERT_TRUE(base::CreateDirectory(sibling_dir));
++
++  base::FilePath target_dir = extensions_dir.AppendASCII(kExtensionId);
++#if BUILDFLAG(IS_POSIX)
++  ASSERT_TRUE(base::CreateSymbolicLink(sibling_dir, target_dir));
++#elif BUILDFLAG(IS_WIN)
++  ASSERT_TRUE(base::CreateDirectory(target_dir));
++  auto reparse_point =
++      base::test::FilePathReparsePoint::Create(target_dir, sibling_dir);
++  ASSERT_TRUE(reparse_point.has_value());
++#endif
++
++  base::FilePath src = temp.GetPath().AppendASCII("src");
++  ASSERT_TRUE(base::CreateDirectory(src));
++  base::FilePath extension_content;
++  ASSERT_TRUE(base::CreateTemporaryFileInDir(src, &extension_content));
++
++  base::FilePath installed_path =
++      file_util::InstallExtension(src, kExtensionId, "1.0", extensions_dir);
++  EXPECT_TRUE(installed_path.empty());
++
++  EXPECT_TRUE(base::IsDirectoryEmpty(sibling_dir));
++  EXPECT_TRUE(base::DirectoryExists(src));
++}
++
++// Verifies that InstallExtension refuses to install an extension whose
++// destination directory is a symlink pointing outside the extensions
++// directory (https://crbug.com/561892119).
++TEST_F(FileUtilTest, InstallExtensionRejectsSymlinkOutsideExtensionsDir) {
++  base::ScopedTempDir temp;
++  ASSERT_TRUE(temp.CreateUniqueTempDir());
++
++  base::FilePath profile_dir = temp.GetPath().AppendASCII("Default");
++  base::FilePath extensions_dir = profile_dir.AppendASCII("TestExtensions");
++  ASSERT_TRUE(base::CreateDirectory(extensions_dir));
++
++  base::FilePath outside_dir = temp.GetPath().AppendASCII("outside");
++  ASSERT_TRUE(base::CreateDirectory(outside_dir));
++
++  base::FilePath target_dir = extensions_dir.AppendASCII(kExtensionId);
++#if BUILDFLAG(IS_POSIX)
++  ASSERT_TRUE(base::CreateSymbolicLink(outside_dir, target_dir));
++#elif BUILDFLAG(IS_WIN)
++  ASSERT_TRUE(base::CreateDirectory(target_dir));
++  auto reparse_point =
++      base::test::FilePathReparsePoint::Create(target_dir, outside_dir);
++  ASSERT_TRUE(reparse_point.has_value());
++#endif
++
++  base::FilePath src = temp.GetPath().AppendASCII("src");
++  ASSERT_TRUE(base::CreateDirectory(src));
++  base::FilePath extension_content;
++  ASSERT_TRUE(base::CreateTemporaryFileInDir(src, &extension_content));
++
++  base::FilePath installed_path =
++      file_util::InstallExtension(src, kExtensionId, "1.0", extensions_dir);
++  EXPECT_TRUE(installed_path.empty());
++
++  EXPECT_TRUE(base::IsDirectoryEmpty(outside_dir));
++  EXPECT_TRUE(base::DirectoryExists(src));
++}
++
++// Verifies that InstallExtension refuses to install an extension when
++// `extensions_dir/Temp` is a symlink pointing outside the expected temp
++// directory (https://crbug.com/561892119).
++TEST_F(FileUtilTest, InstallExtensionRejectsSymlinkTempDir) {
++  base::ScopedTempDir temp;
++  ASSERT_TRUE(temp.CreateUniqueTempDir());
++
++  base::FilePath profile_dir = temp.GetPath().AppendASCII("Default");
++  base::FilePath extensions_dir = profile_dir.AppendASCII("TestExtensions");
++  ASSERT_TRUE(base::CreateDirectory(extensions_dir));
++
++  base::FilePath outside_dir = temp.GetPath().AppendASCII("outside");
++  ASSERT_TRUE(base::CreateDirectory(outside_dir));
++
++  base::FilePath temp_dir =
++      extensions_dir.Append(file_util::kTempDirectoryName);
++#if BUILDFLAG(IS_POSIX)
++  ASSERT_TRUE(base::CreateSymbolicLink(outside_dir, temp_dir));
++#elif BUILDFLAG(IS_WIN)
++  ASSERT_TRUE(base::CreateDirectory(temp_dir));
++  auto reparse_point =
++      base::test::FilePathReparsePoint::Create(temp_dir, outside_dir);
++  ASSERT_TRUE(reparse_point.has_value());
++#endif
++
++  base::FilePath src = temp.GetPath().AppendASCII("src");
++  ASSERT_TRUE(base::CreateDirectory(src));
++  base::FilePath extension_content;
++  ASSERT_TRUE(base::CreateTemporaryFileInDir(src, &extension_content));
++
++  EXPECT_TRUE(file_util::GetInstallTempDir(extensions_dir).empty());
++
++  base::FilePath installed_path =
++      file_util::InstallExtension(src, kExtensionId, "1.0", extensions_dir);
++  EXPECT_TRUE(installed_path.empty());
++
++  EXPECT_TRUE(base::IsDirectoryEmpty(outside_dir));
++  EXPECT_TRUE(base::DirectoryExists(src));
++}
++
+ TEST_F(FileUtilTest, LoadExtensionWithMetadataFolder) {
+   RunUnderscoreDirectoriesTest({"_metadata"});
+ }

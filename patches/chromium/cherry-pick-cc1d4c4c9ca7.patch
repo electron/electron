@@ -1,0 +1,150 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Fri, 9 Oct 2026 20:24:07 -0700
+Subject: [M155] Guard against reentrancy in OnPageVisibilityChanged
+
+Original change's description:
+> Guard against reentrancy in OnPageVisibilityChanged
+>
+> OnPageShown() and OnPageHidden() can synchronously run script (e.g. via
+> text-track cue updates) that removes the frame and destroys the
+> RendererWebMediaPlayerDelegate. Snapshot player IDs before iterating and
+> check a WeakPtr after each observer notification.
+>
+> Fixed: 570675082
+> Change-Id: I5e784dcd7bb779fa689ba832ae683de827f62792
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8526472
+> Reviewed-by: Frank Liberato <liberato@chromium.org>
+> Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+> Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1713842}
+
+(cherry picked from commit 8b59df19e200d81d59d6f75985fe0f9a00b744ff)
+
+Bug: 572073557,570675082
+Change-Id: I5e784dcd7bb779fa689ba832ae683de827f62792
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8552460
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8059@{#1108}
+Cr-Branched-From: 199ac2cd7ab289e11c2236bd2cede848781213da-refs/heads/main@{#1697595}
+
+Electron adaptation notes (42-x-y):
+Only renderer_web_media_player_delegate_browsertest.cc conflicted (the new tests are appended
+where Chromium 148 has additional frame-visibility tests); both sets of tests were kept. The
+renderer_web_media_player_delegate.cc hunk applied as upstream.
+
+diff --git a/content/renderer/media/renderer_web_media_player_delegate.cc b/content/renderer/media/renderer_web_media_player_delegate.cc
+index 15a3c375433c8e44b7945d219421572efe8faaa3..b4b1cab48e4df19af49529130f1a470732b510e2 100644
+--- a/content/renderer/media/renderer_web_media_player_delegate.cc
++++ b/content/renderer/media/renderer_web_media_player_delegate.cc
+@@ -6,6 +6,8 @@
+ 
+ #include <stdint.h>
+ 
++#include <vector>
++
+ #include "base/functional/bind.h"
+ #include "base/logging.h"
+ #include "base/metrics/user_metrics_action.h"
+@@ -221,17 +223,34 @@ void RendererWebMediaPlayerDelegate::OnPageVisibilityChanged(
+ 
+   if (is_shown) {
+     RecordAction(base::UserMetricsAction("Media.Shown"));
+-
+-    for (base::IDMap<Observer*>::iterator it(&id_map_); !it.IsAtEnd();
+-         it.Advance()) {
+-      it.GetCurrentValue()->OnPageShown();
+-    }
+   } else {
+     RecordAction(base::UserMetricsAction("Media.Hidden"));
++  }
+ 
+-    for (base::IDMap<Observer*>::iterator it(&id_map_); !it.IsAtEnd();
+-         it.Advance()) {
+-      it.GetCurrentValue()->OnPageHidden();
++  // Create a list of players before making any possibly reentrant calls to
++  // OnPageShown() or OnPageHidden().
++  std::vector<int> player_ids;
++  player_ids.reserve(id_map_.size());
++  for (base::IDMap<Observer*>::iterator it(&id_map_); !it.IsAtEnd();
++       it.Advance()) {
++    player_ids.push_back(it.GetCurrentKey());
++  }
++
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
++  for (int player_id : player_ids) {
++    Observer* player = id_map_.Lookup(player_id);
++    if (!player) {
++      continue;
++    }
++
++    if (is_shown) {
++      player->OnPageShown();
++    } else {
++      player->OnPageHidden();
++    }
++
++    if (!weak_this) {
++      return;
+     }
+   }
+ 
+diff --git a/content/renderer/media/renderer_web_media_player_delegate_browsertest.cc b/content/renderer/media/renderer_web_media_player_delegate_browsertest.cc
+index b17f106b9b50c85c74e9e0785117f0b06a651cd9..2defa9be5e22fc819618f7bb1c9eda8682df90ed 100644
+--- a/content/renderer/media/renderer_web_media_player_delegate_browsertest.cc
++++ b/content/renderer/media/renderer_web_media_player_delegate_browsertest.cc
+@@ -344,4 +344,52 @@ TEST_F(RendererWebMediaPlayerDelegateVisibilityTest,
+       blink::mojom::FrameVisibility::kNotRendered);
+ }
+ 
++TEST_F(RendererWebMediaPlayerDelegateTest, DestroyingDelegateOnPageHidden) {
++  const int delegate_id_1 = delegate_manager_->AddObserver(&observer_1_);
++  const int delegate_id_2 = delegate_manager_->AddObserver(&observer_2_);
++
++  int call_count = 0;
++  auto destroy_delegate = [&]() {
++    ++call_count;
++    delegate_manager_->RemoveObserver(delegate_id_1);
++    delegate_manager_->RemoveObserver(delegate_id_2);
++    delegate_manager_.reset();
++  };
++
++  EXPECT_CALL(observer_1_, OnPageHidden())
++      .Times(testing::AtMost(1))
++      .WillRepeatedly(destroy_delegate);
++  EXPECT_CALL(observer_2_, OnPageHidden())
++      .Times(testing::AtMost(1))
++      .WillRepeatedly(destroy_delegate);
++
++  delegate_manager_->OnPageVisibilityChanged(
++      blink::mojom::PageVisibilityState::kHidden);
++  EXPECT_EQ(1, call_count);
++}
++
++TEST_F(RendererWebMediaPlayerDelegateTest, DestroyingDelegateOnPageShown) {
++  const int delegate_id_1 = delegate_manager_->AddObserver(&observer_1_);
++  const int delegate_id_2 = delegate_manager_->AddObserver(&observer_2_);
++
++  int call_count = 0;
++  auto destroy_delegate = [&]() {
++    ++call_count;
++    delegate_manager_->RemoveObserver(delegate_id_1);
++    delegate_manager_->RemoveObserver(delegate_id_2);
++    delegate_manager_.reset();
++  };
++
++  EXPECT_CALL(observer_1_, OnPageShown())
++      .Times(testing::AtMost(1))
++      .WillRepeatedly(destroy_delegate);
++  EXPECT_CALL(observer_2_, OnPageShown())
++      .Times(testing::AtMost(1))
++      .WillRepeatedly(destroy_delegate);
++
++  delegate_manager_->OnPageVisibilityChanged(
++      blink::mojom::PageVisibilityState::kVisible);
++  EXPECT_EQ(1, call_count);
++}
++
+ }  // namespace media
