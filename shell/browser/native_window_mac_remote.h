@@ -21,11 +21,9 @@
 #include "ui/views/widget/widget_observer.h"
 #include "v8/include/cppgc/persistent.h"
 
-namespace electron {
-namespace api {
+namespace electron::api {
 class AppShimHost;
-}  // namespace api
-}  // namespace electron
+}  // namespace electron::api
 
 namespace remote_cocoa {
 class ApplicationHost;

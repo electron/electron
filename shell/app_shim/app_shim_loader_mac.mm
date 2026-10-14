@@ -64,10 +64,8 @@ int main(int argc, char* argv[]) {
     NSString* framework_name =
         StringForKey(@"ElectronAppShimFrameworkName") ?: @"Electron Framework";
     NSString* framework =
-        [[[host stringByAppendingPathComponent:@"Contents/Frameworks"]
-            stringByAppendingPathComponent:
-                [framework_name stringByAppendingPathExtension:@"framework"]]
-            stringByAppendingPathComponent:framework_name];
+        [NSString stringWithFormat:@"%@/Contents/Frameworks/%@.framework/%@",
+                                   host, framework_name, framework_name];
 
     void* library = dlopen(framework.fileSystemRepresentation, RTLD_NOW);
     if (!library) {
