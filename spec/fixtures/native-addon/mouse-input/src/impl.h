@@ -37,6 +37,13 @@ InjectResult Wheel(int delta, bool horizontal);
 // Called on the JS thread.
 bool GetCursorPos(int* x, int* y, int64_t* error);
 
+#if defined(__APPLE__)
+// Posts a left click at screen point (x, y) to window |window_number| of
+// process |pid| without going through the window server. Called on the JS
+// thread.
+InjectResult PostClickToWindow(int pid, int window_number, int x, int y);
+#endif
+
 // Whether the window identified by |handle| (the bytes of
 // BrowserWindow.getNativeWindowHandle()) is what the OS hit tests at the
 // screen point. Returns false and sets |supported| to false where there is no

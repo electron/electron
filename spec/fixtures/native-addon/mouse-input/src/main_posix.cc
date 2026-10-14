@@ -217,6 +217,32 @@ napi_value GetCursorPosJs(napi_env env, napi_callback_info info) {
   return result;
 }
 
+#if defined(__APPLE__)
+// postClickToWindow(pid, windowNumber, x, y): see impl.h.
+napi_value PostClickToWindowJs(napi_env env, napi_callback_info info) {
+  size_t argc = 4;
+  napi_value args[4];
+  NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
+  int32_t pid = 0, window_number = 0, x = 0, y = 0;
+  if (argc < 4 || !GetInt32Arg(env, args[0], &pid) ||
+      !GetInt32Arg(env, args[1], &window_number) ||
+      !GetInt32Arg(env, args[2], &x) || !GetInt32Arg(env, args[3], &y)) {
+    napi_throw_type_error(
+        env, nullptr,
+        "postClickToWindow(pid, windowNumber, x, y) expects four integers");
+    return nullptr;
+  }
+  const mouse_input::InjectResult posted =
+      mouse_input::PostClickToWindow(pid, window_number, x, y);
+  napi_value result;
+  NAPI_CALL(env, napi_create_object(env, &result));
+  SetInt(env, result, "sent", posted.sent);
+  SetInt(env, result, "expected", posted.expected);
+  SetInt(env, result, "error", posted.error);
+  return result;
+}
+#endif
+
 // isWindowAtPoint(handle, x, y): see impl.h. Throws where unsupported.
 napi_value IsWindowAtPointJs(napi_env env, napi_callback_info info) {
   size_t argc = 3;
@@ -276,6 +302,10 @@ napi_value Init(napi_env env, napi_value exports) {
        nullptr},
       {"getCursorPos", nullptr, GetCursorPosJs, nullptr, nullptr, nullptr,
        napi_default, nullptr},
+#if defined(__APPLE__)
+      {"postClickToWindow", nullptr, PostClickToWindowJs, nullptr, nullptr,
+       nullptr, napi_default, nullptr},
+#endif
       {"isWindowAtPoint", nullptr, IsWindowAtPointJs, nullptr, nullptr, nullptr,
        napi_default, nullptr},
       {"getDiagnostics", nullptr, GetDiagnosticsJs, nullptr, nullptr, nullptr,
