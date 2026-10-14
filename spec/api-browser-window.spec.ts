@@ -4523,7 +4523,9 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    describe('preload code cache', () => {
+    // Longer than cacheWriteTimeout below,
+    // so that a write that never lands fails the wait with its own message.
+    describe('preload code cache', { timeout: 60_000 }, () => {
       // Sandboxed preload scripts are compiled with a persistent V8 code cache
       // stored as `${sha256(scriptId)}-${sha256(processLock)}.cache` under the
       // session's `Code Cache/electron-preload/` dir, where `processLock` is
@@ -4546,6 +4548,10 @@ describe('BrowserWindow module', () => {
         const cacheKey = crypto.createHash('sha256').update(`preload-${preload}`).digest('hex').toUpperCase();
         cacheFile = path.join(cacheDir, `${cacheKey}-${fileLockHash}.cache`);
       });
+      // Cache writes are best-effort thread pool tasks,
+      // which a busy machine can hold back for well over the default 5s.
+      // Every wait on one, in the tests and in the beforeAll probe, uses this.
+      const cacheWriteTimeout = 30_000;
       const waitFor = async (predicate: () => boolean, what: string, timeoutMs = 5000) => {
         const start = Date.now();
         while (Date.now() - start < timeoutMs) {
@@ -4603,10 +4609,14 @@ describe('BrowserWindow module', () => {
         await ran;
         try {
           let probeFile: string | undefined;
-          await waitFor(() => {
-            probeFile = cacheFilesFor(probeKey)[0];
-            return !!probeFile && fs.statSync(path.join(cacheDir, probeFile)).size > 0;
-          }, 'probe cache file to be written');
+          await waitFor(
+            () => {
+              probeFile = cacheFilesFor(probeKey)[0];
+              return !!probeFile && fs.statSync(path.join(cacheDir, probeFile)).size > 0;
+            },
+            'probe cache file to be written',
+            cacheWriteTimeout
+          );
           fileLockHash = probeFile!.slice(probeKey.length + 1, -'.cache'.length);
         } finally {
           w.destroy();
@@ -4615,7 +4625,7 @@ describe('BrowserWindow module', () => {
             await removeFile(path.join(cacheDir, f));
           }
         }
-      });
+      }, 60_000);
 
       it('produces and persists a code cache after the first compile', async () => {
         const w = makeWindow();
@@ -4625,7 +4635,7 @@ describe('BrowserWindow module', () => {
         expect(result.hasEnv, 'preload should have process.env').toBe(true);
         expect(result.electronVersion).toBe(process.versions.electron);
         // The cache write is async (thread pool, fire-and-forget); wait for it.
-        await waitFor(() => fs.existsSync(cacheFile) && fs.statSync(cacheFile).size > 0, cacheFile);
+        await waitFor(() => fs.existsSync(cacheFile) && fs.statSync(cacheFile).size > 0, cacheFile, cacheWriteTimeout);
         expect(fs.statSync(cacheFile).size).toBeGreaterThan(0);
       });
 
@@ -4635,7 +4645,7 @@ describe('BrowserWindow module', () => {
         const ran1 = once(ipcMain, 'preload-code-cache-ran');
         await w1.loadFile(path.join(fixtures, 'api', 'blank.html'));
         const [, result1] = await ran1;
-        await waitFor(() => fs.existsSync(cacheFile) && fs.statSync(cacheFile).size > 0, cacheFile);
+        await waitFor(() => fs.existsSync(cacheFile) && fs.statSync(cacheFile).size > 0, cacheFile, cacheWriteTimeout);
         w1.destroy();
 
         // Second navigation: same preload, fresh renderer, should consume the
@@ -4670,7 +4680,7 @@ describe('BrowserWindow module', () => {
         expect(result.electronVersion).toBe(process.versions.electron);
         // Wait for the corrupt blob to be overwritten by a real one — V8 cache
         // blobs are several hundred bytes minimum.
-        await waitFor(() => fs.statSync(cacheFile).size > 100, 'cache file to be overwritten');
+        await waitFor(() => fs.statSync(cacheFile).size > 100, 'cache file to be overwritten', cacheWriteTimeout);
         expect(fs.statSync(cacheFile).size).toBeGreaterThan(100);
       });
 
@@ -4694,7 +4704,8 @@ describe('BrowserWindow module', () => {
           const cacheKey = crypto.createHash('sha256').update(`preload-${preload}`).digest('hex').toUpperCase();
           await waitFor(
             () => cacheFilesFor(cacheKey).filter((f) => fs.statSync(path.join(cacheDir, f)).size > 0).length === 2,
-            'a cache file per site'
+            'a cache file per site',
+            cacheWriteTimeout
           );
           for (const f of cacheFilesFor(cacheKey)) {
             await removeFile(path.join(cacheDir, f));
@@ -4715,7 +4726,7 @@ describe('BrowserWindow module', () => {
         const marker1 = once(ipcMain, 'preload-code-cache-marker');
         await w1.loadFile(path.join(fixtures, 'api', 'blank.html'));
         expect((await marker1)[1]).toBe('first-');
-        await waitFor(() => fs.existsSync(cacheFile) && fs.statSync(cacheFile).size > 0, cacheFile);
+        await waitFor(() => fs.existsSync(cacheFile) && fs.statSync(cacheFile).size > 0, cacheFile, cacheWriteTimeout);
         w1.destroy();
 
         const second = preloadSource('second');
@@ -5653,7 +5664,9 @@ describe('BrowserWindow module', () => {
   });
 
   // TODO(codebytere): figure out how to make these pass in CI on Windows.
-  ifdescribe(process.platform !== 'win32')('document.visibilityState/hidden', () => {
+  // Serial because on macOS a window that another spec file's window covers is occluded,
+  // and Chromium then reports the page as hidden.
+  ifdescribe(process.platform !== 'win32')('document.visibilityState/hidden', { tags: ['serial'] }, () => {
     afterEach(closeAllWindows);
 
     it('visibilityState is initially visible despite window being hidden', async () => {

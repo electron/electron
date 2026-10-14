@@ -8,6 +8,7 @@ import {
   getMsixPackageVersion,
   installMsixCertificate,
   installMsixPackage,
+  powershellSetupTimeout,
   registerExecutableWithIdentity,
   shouldRunMsixTests,
   spawn,
@@ -26,16 +27,22 @@ const MSIX_V2 = getMsixFixturePath('v2');
 
 // We can only test the MSIX updater on Windows
 ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', { timeout: 120000 }, () => {
+  // Each of the setup and teardown PowerShell commands
+  // may take up to powershellSetupTimeout on a busy host.
+  // The hooks allow for that plus some slack,
+  // so that a slow command fails with its own error rather than the hook's.
+  const setupHookTimeout = 2 * powershellSetupTimeout + 60_000;
+  const teardownHookTimeout = powershellSetupTimeout + 30_000;
   beforeAll(async () => {
     await installMsixCertificate();
 
     const electronExec = getElectronExecutable();
     await registerExecutableWithIdentity(electronExec);
-  }, 120000);
+  }, setupHookTimeout);
 
   afterAll(async () => {
     await unregisterExecutableWithIdentity();
-  }, 120000);
+  }, teardownHookTimeout);
 
   const launchApp = (executablePath: string, args: string[] = []) => {
     return spawn(executablePath, args);
