@@ -8,7 +8,7 @@ import * as fs from 'node:fs';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
 
-import { ifdescribe, ifit } from './lib/spec-helpers.ts';
+import { ifdescribe, ifit, spawnAndWait } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 const require = createRequire(import.meta.url);
@@ -38,14 +38,14 @@ describe('modules support', () => {
         expect(msg).to.equal('ok');
       });
 
-      ifit(process.platform === 'win32')('can be required if electron.exe is renamed', () => {
+      ifit(process.platform === 'win32')('can be required if electron.exe is renamed', async () => {
         const testExecPath = path.join(path.dirname(process.execPath), 'test.exe');
         fs.copyFileSync(process.execPath, testExecPath);
         try {
           const fixture = path.join(fixtures, 'module', 'echo-renamed.js');
           expect(fs.existsSync(fixture)).to.be.true();
-          const child = childProcess.spawnSync(testExecPath, [fixture]);
-          expect(child.status).to.equal(0);
+          const { code, stdout, stderr } = await spawnAndWait(testExecPath, [fixture], { timeout: 20_000 });
+          expect(code).to.equal(0, `stdout:\n${stdout}\nstderr:\n${stderr}`);
         } finally {
           fs.unlinkSync(testExecPath);
         }

@@ -2,6 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <atomic>
 #include <memory>
 #include <optional>
 #include <string>
@@ -29,9 +30,12 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/function_template.h"
+#include "shell/common/gin_helper/function_template_cache.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "ui/accessibility/platform/ax_platform.h"
+#include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8.h"
 
 #if BUILDFLAG(IS_LINUX)
@@ -44,6 +48,50 @@
 
 #if DCHECK_IS_ON()
 namespace {
+
+std::atomic<int> live_callback_holder_probes{0};
+
+class CallbackHolderProbe {
+ public:
+  CallbackHolderProbe() { ++live_callback_holder_probes; }
+  ~CallbackHolderProbe() { --live_callback_holder_probes; }
+
+  int Run() const { return 42; }
+};
+
+v8::Local<v8::Function> CreateCallbackHolderProbeForTesting(
+    v8::Isolate* isolate) {
+  auto callback = base::BindRepeating(
+      [](const std::shared_ptr<CallbackHolderProbe>& probe) {
+        return probe->Run();
+      },
+      std::make_shared<CallbackHolderProbe>());
+  using HolderT = gin_helper::CallbackHolder<int()>;
+  auto* holder = cppgc::MakeGarbageCollected<HolderT>(
+      isolate->GetCppHeap()->GetAllocationHandle(), std::move(callback),
+      gin_helper::InvokerOptions{});
+  return v8::Function::New(isolate->GetCurrentContext(),
+                           &gin_helper::Dispatcher<int()>::DispatchToCallback,
+                           holder->GetHandle(isolate))
+      .ToLocalChecked();
+}
+
+v8::Local<v8::Function> GetCachedCallbackTemplateForTesting(
+    v8::Isolate* isolate) {
+  static const char kCacheKey = 0;
+  auto context = isolate->GetCurrentContext();
+  auto tmpl = gin_helper::GetCachedFunctionTemplate(isolate, &kCacheKey);
+  if (tmpl.IsEmpty()) {
+    tmpl = gin_helper::CreateFunctionTemplate(
+        isolate, base::BindRepeating([]() { return 42; }));
+    gin_helper::SetCachedFunctionTemplate(isolate, &kCacheKey, tmpl);
+  }
+  return tmpl->GetFunction(context).ToLocalChecked();
+}
+
+int GetLiveCallbackHolderProbeCountForTesting() {
+  return live_callback_holder_probes.load();
+}
 
 class CallbackTestingHelper final {
  public:
@@ -346,6 +394,12 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict{isolate, exports};
+  dict.SetMethod<&CreateCallbackHolderProbeForTesting>(
+      "createCallbackHolderProbeForTesting");
+  dict.SetMethod<&GetCachedCallbackTemplateForTesting>(
+      "getCachedCallbackTemplateForTesting");
+  dict.SetMethod<&GetLiveCallbackHolderProbeCountForTesting>(
+      "getLiveCallbackHolderProbeCountForTesting");
   dict.SetMethod<&Log>("log");
   dict.SetMethod<&GetLoggingDestination>("getLoggingDestination");
   dict.SetMethod<&IsPlatformCaretBrowsingEnabled>(

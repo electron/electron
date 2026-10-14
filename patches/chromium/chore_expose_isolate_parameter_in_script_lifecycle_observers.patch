@@ -34,10 +34,10 @@ index dccd23b881c3646e061c3ce2669df96d5b108617..237bfb19ad9905dd39f1a9e2b7a6df69
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset(blink::mojom::ScrollType) {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 7993fd14c837896d872a435a454af7609b5b8a10..686bfacdd99d7ae0b0e599c2178133b9480a4764 100644
+index 070715f96b2b114fcc5af6452c89cc8a0d5cb80c..2112158f1778a8b43b10fbd9f587d542cb90dd0a 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4996,10 +4996,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4991,10 +4991,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
    }
  }
  
@@ -103,10 +103,10 @@ index c698d80d5c1efdd5e715fc3b40a9d47fc1a44f8d..b3def35a3fb42a73c6f88e897ff09488
    void WillInitializeWorkerContext() override;
    void WillDestroyWorkerContext(v8::Local<v8::Context> context) override;
 diff --git a/extensions/renderer/dispatcher.cc b/extensions/renderer/dispatcher.cc
-index b4fd769cc2ea5da737b5a5bd7763f6da6050cbbb..a5351d6f19549d7b0c2f7a5bb562aa01a77a585d 100644
+index 5bb4f1d64c72f5fdecebf8600db7ddf2adfcfe52..2e1537846bf640ab567e56b54a7de0a4a75866fb 100644
 --- a/extensions/renderer/dispatcher.cc
 +++ b/extensions/renderer/dispatcher.cc
-@@ -524,6 +524,7 @@ void Dispatcher::DidInitializeServiceWorkerContextOnWorkerThread(
+@@ -527,6 +527,7 @@ void Dispatcher::DidInitializeServiceWorkerContextOnWorkerThread(
  
  void Dispatcher::WillEvaluateServiceWorkerOnWorkerThread(
      blink::WebServiceWorkerContextProxy* context_proxy,

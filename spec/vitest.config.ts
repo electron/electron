@@ -71,8 +71,16 @@ process.env.ELECTRON_SPEC_WORKERS = String(maxWorkers);
 const reporters: (string | [string, Record<string, unknown>] | SpecTimingsReporter)[] = ['default'];
 if (process.env.GITHUB_ACTIONS === 'true') {
   // Annotates failures on the PR; vitest only adds it by itself when no
-  // reporters are configured.
-  reporters.push('github-actions');
+  // reporters are configured. CI checks Electron out in src/electron, not at
+  // GITHUB_WORKSPACE, so give GitHub paths relative to the repo root.
+  const repoRoot = path.resolve(specDir, '..');
+  reporters.push([
+    'github-actions',
+    {
+      onWritePath: (file: string) => path.relative(repoRoot, file).replaceAll(path.sep, '/'),
+      jobSummary: { fileLinks: { workspacePath: repoRoot } }
+    }
+  ]);
 }
 if (process.env.MOCHA_FILE) {
   reporters.push(['junit', { outputFile: process.env.MOCHA_FILE, includeConsoleOutput: false }]);

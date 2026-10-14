@@ -133,9 +133,10 @@ class OffScreenRenderWidgetHostView
   void UpdateTooltipUnderCursor(const std::u16string&) override {}
   void OnUnconfirmedTapConvertedToTap() override {}
   input::CursorManager* GetCursorManager() override;
-  void CopyFromSurface(
+  void CopyFromSurfaceImpl(
       const gfx::Rect& src_rect,
       const gfx::Size& output_size,
+      bool is_copy_request_secure,
       base::TimeDelta timeout,
       base::OnceCallback<void(const content::CopyFromSurfaceResult&)> callback)
       override;

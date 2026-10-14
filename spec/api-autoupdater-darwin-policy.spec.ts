@@ -9,7 +9,7 @@ import * as path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 
 import { type Mutation, setupUpdaterHarness, shouldRunUpdaterSpecs } from './lib/autoupdater-darwin-helpers.ts';
-import { ifdescribe } from './lib/spec-helpers.ts';
+import { ifdescribe, ifit, isTestingBindingAvailable } from './lib/spec-helpers.ts';
 
 // When Squirrel.Mac refuses or alters an update: version rules, a running
 // app, tampered payloads, JSON update mode and direct contents writes. The
@@ -448,7 +448,9 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
         );
       });
 
-      it('should compare version numbers correctly', () => {
+      // isVersionAllowedForUpdate only exists in DCHECK builds,
+      // like the testing binding.
+      ifit(isTestingBindingAvailable())('should compare version numbers correctly', () => {
         expect(autoUpdater.isVersionAllowedForUpdate!('1.0.0', '2.0.0')).to.equal(true);
         expect(autoUpdater.isVersionAllowedForUpdate!('1.0.1', '1.0.10')).to.equal(true);
         expect(autoUpdater.isVersionAllowedForUpdate!('1.0.10', '1.0.1')).to.equal(false);

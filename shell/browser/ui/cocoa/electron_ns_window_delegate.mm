@@ -128,6 +128,9 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 }
 
 - (void)windowDidBecomeKey:(NSNotification*)notification {
+  // Let the views host know the window is key, otherwise Widget::IsActive()
+  // stays false and focusing a View waits for an activation that never comes.
+  [super windowDidBecomeKey:notification];
   shell_->NotifyWindowIsKeyChanged(true);
   shell_->RedrawTrafficLights();
 }
@@ -140,6 +143,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
   if ([NSApp isActive] && ([NSApp keyWindow] == [notification object]))
     return;
 
+  [super windowDidResignKey:notification];
   shell_->NotifyWindowIsKeyChanged(false);
   shell_->RedrawTrafficLights();
 }

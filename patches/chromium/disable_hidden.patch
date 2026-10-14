@@ -15,10 +15,10 @@ makes it defer main frames until the view is eventually shown. Key the
 decision off the host's visibility, as RenderWidgetHostViewMac does.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 2296b58ef1213f6360a2640baecdc5dd5891bad1..985136a22ff293931f151692f9acc86384ebd997 100644
+index f0377b9acce6ff3d56f0b98266f7288b3be29358..9babca6b48195d7f44d0d4864812a4b465a8234a 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -911,6 +911,10 @@ void RenderWidgetHostImpl::WasHidden() {
+@@ -910,6 +910,10 @@ void RenderWidgetHostImpl::WasHidden() {
      return;
    }
  
@@ -43,7 +43,7 @@ index 02bdef3bae5a29d874956d88e33e37bf0fd9ce5c..f3c132412ca87c3abda84cf91434a9f7
    // |routing_id| must not be IPC::mojom::kRoutingIdNone.
    // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 848cdaafe21def656d6f6be9232514d58d4a158a..105c0c265d596793f4b2c4e5f624b9661b744447 100644
+index 5e68fd479b3c466ca38f1d5ee0b1e2831ca32755..1e111b10c91f752fc6f6c7f6413ca8670900f2ec 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -753,7 +753,7 @@ void RenderWidgetHostViewAura::HideImpl() {
@@ -55,7 +55,7 @@ index 848cdaafe21def656d6f6be9232514d58d4a158a..105c0c265d596793f4b2c4e5f624b966
      host()->WasHidden();
      aura::WindowTreeHost* host = window_->GetHost();
        aura::Window* parent = window_->parent();
-@@ -3865,7 +3865,12 @@ RenderWidgetHostViewAura::DidUpdateVisualProperties(
+@@ -3866,7 +3866,12 @@ RenderWidgetHostViewAura::DidUpdateVisualProperties(
  void RenderWidgetHostViewAura::DidNavigate() {
    CHECK(delegated_frame_host_) << "Cannot be invoked during destruction.";
  

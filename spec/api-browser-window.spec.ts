@@ -48,6 +48,7 @@ import {
   ifit,
   ifdescribe,
   defer,
+  focusWebContents,
   listen,
   waitUntil,
   isWayland,
@@ -2394,7 +2395,7 @@ describe('BrowserWindow module', () => {
           expect(w.isMinimized()).to.equal(true);
         });
 
-        it('correctly reports maximized state after maximizing then fullscreening', async () => {
+        it('correctly reports maximized state after maximizing then fullscreening', { tags: ['serial'] }, async () => {
           w.destroy();
           w = new BrowserWindow({ show: false });
 
@@ -2606,7 +2607,7 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      ifdescribe(process.platform === 'win32')('Fullscreen state', () => {
+      ifdescribe(process.platform === 'win32')('Fullscreen state', { tags: ['serial'] }, () => {
         describe('with properties', () => {
           it('can be set with the fullscreen constructor option', () => {
             w = new BrowserWindow({ fullscreen: true });
@@ -3360,7 +3361,7 @@ describe('BrowserWindow module', () => {
       expect(w._getWindowButtonVisibility()).to.equal(false);
     });
 
-    it('correctly updates when entering/exiting fullscreen for hidden style', async () => {
+    it('correctly updates when entering/exiting fullscreen for hidden style', { tags: ['serial'] }, async () => {
       const w = new BrowserWindow({ show: false, frame: false, titleBarStyle: 'hidden' });
       expect(w._getWindowButtonVisibility()).to.equal(true);
       w.setWindowButtonVisibility(false);
@@ -3378,7 +3379,7 @@ describe('BrowserWindow module', () => {
       expect(w._getWindowButtonVisibility()).to.equal(true);
     });
 
-    it('correctly updates when entering/exiting fullscreen for hiddenInset style', async () => {
+    it('correctly updates when entering/exiting fullscreen for hiddenInset style', { tags: ['serial'] }, async () => {
       const w = new BrowserWindow({ show: false, frame: false, titleBarStyle: 'hiddenInset' });
       expect(w._getWindowButtonVisibility()).to.equal(true);
       w.setWindowButtonVisibility(false);
@@ -6097,7 +6098,7 @@ describe('BrowserWindow module', () => {
       }
     );
 
-    ifit(process.platform !== 'linux')('should not break fullscreen state', async () => {
+    ifit(process.platform !== 'linux')('should not break fullscreen state', { tags: ['serial'] }, async () => {
       const w = new BrowserWindow({ show: false });
       w.show();
 
@@ -6202,7 +6203,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
 
     // only applicable to windows: https://github.com/electron/electron/issues/6036
-    ifdescribe(process.platform === 'win32')('on windows', () => {
+    ifdescribe(process.platform === 'win32')('on windows', { tags: ['serial'] }, () => {
       it('should restore a normal visible window from a fullscreen startup state', async () => {
         const w = new BrowserWindow({ show: false });
         await w.loadURL('about:blank');
@@ -6228,18 +6229,22 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    ifdescribe(process.platform === 'darwin')('BrowserWindow.setFullScreen(false) when HTML fullscreen', () => {
-      it('exits HTML fullscreen when window leaves fullscreen', async () => {
-        const w = new BrowserWindow();
-        await w.loadURL('about:blank');
-        await w.webContents.executeJavaScript('document.body.webkitRequestFullscreen()', true);
-        await once(w, 'enter-full-screen');
-        // Wait a tick for the full-screen state to 'stick'
-        await setTimeout();
-        w.setFullScreen(false);
-        await once(w, 'leave-html-full-screen');
-      });
-    });
+    ifdescribe(process.platform === 'darwin')(
+      'BrowserWindow.setFullScreen(false) when HTML fullscreen',
+      { tags: ['serial'] },
+      () => {
+        it('exits HTML fullscreen when window leaves fullscreen', async () => {
+          const w = new BrowserWindow();
+          await w.loadURL('about:blank');
+          await w.webContents.executeJavaScript('document.body.webkitRequestFullscreen()', true);
+          await once(w, 'enter-full-screen');
+          // Wait a tick for the full-screen state to 'stick'
+          await setTimeout();
+          w.setFullScreen(false);
+          await once(w, 'leave-html-full-screen');
+        });
+      }
+    );
   });
 
   describe('parent window', () => {
@@ -7152,7 +7157,7 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    ifdescribe(process.platform !== 'darwin')('when fullscreen state is changed', () => {
+    ifdescribe(process.platform !== 'darwin')('when fullscreen state is changed', { tags: ['serial'] }, () => {
       it('correctly remembers state prior to fullscreen change', async () => {
         const w = new BrowserWindow({ show: false });
 
@@ -7202,7 +7207,7 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    ifdescribe(process.platform !== 'darwin')('fullscreen state', () => {
+    ifdescribe(process.platform !== 'darwin')('fullscreen state', { tags: ['serial'] }, () => {
       it('correctly remembers state prior to HTML fullscreen transition', async () => {
         const w = new BrowserWindow();
         await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
@@ -7270,21 +7275,25 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      it('does not open non-fullscreenable child windows in fullscreen if parent is fullscreen', async () => {
-        const w = new BrowserWindow();
+      it(
+        'does not open non-fullscreenable child windows in fullscreen if parent is fullscreen',
+        { tags: ['serial'] },
+        async () => {
+          const w = new BrowserWindow();
 
-        const enterFS = once(w, 'enter-full-screen');
-        w.setFullScreen(true);
-        await enterFS;
+          const enterFS = once(w, 'enter-full-screen');
+          w.setFullScreen(true);
+          await enterFS;
 
-        const child = new BrowserWindow({ parent: w, resizable: false, fullscreenable: false });
-        const shown = once(child, 'show');
-        await shown;
+          const child = new BrowserWindow({ parent: w, resizable: false, fullscreenable: false });
+          const shown = once(child, 'show');
+          await shown;
 
-        expect(child.resizable).to.be.false('resizable');
-        expect(child.fullScreen).to.be.false('fullscreen');
-        expect(child.fullScreenable).to.be.false('fullscreenable');
-      });
+          expect(child.resizable).to.be.false('resizable');
+          expect(child.fullScreen).to.be.false('fullscreen');
+          expect(child.fullScreenable).to.be.false('fullscreenable');
+        }
+      );
 
       it('is set correctly with different resizable values', async () => {
         const w1 = new BrowserWindow({
@@ -7340,7 +7349,7 @@ describe('BrowserWindow module', () => {
 
     // fullscreen events are dispatched eagerly and twiddling things too fast can confuse poor Electron
 
-    ifdescribe(process.platform === 'darwin')('kiosk state', () => {
+    ifdescribe(process.platform === 'darwin')('kiosk state', { tags: ['serial'] }, () => {
       describe('with properties', () => {
         it('can be set with a constructor property', async () => {
           const w = new BrowserWindow({ kiosk: true });
@@ -7388,7 +7397,7 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    ifdescribe(process.platform === 'darwin')('fullscreen state with resizable set', () => {
+    ifdescribe(process.platform === 'darwin')('fullscreen state with resizable set', { tags: ['serial'] }, () => {
       it('resizable flag should be set to false and restored', async () => {
         const w = new BrowserWindow({ resizable: false });
 
@@ -7675,6 +7684,15 @@ describe('BrowserWindow module', () => {
 
           w.setSimpleFullScreen(true);
           expect(w.isSimpleFullScreen()).to.be.true('isSimpleFullScreen');
+
+          // Chromium refuses requestFullscreen() from a page that doesn't have
+          // focus, even with a user gesture, so make sure the window is key and
+          // the page is focused after entering simple fullscreen.
+          // webContents.focus() only activates the app when no other app is
+          // active, and the earlier fullscreen specs can leave another app
+          // frontmost, so take activation explicitly first.
+          app.focus({ steal: true });
+          await focusWebContents(w.webContents);
 
           const enterHtmlFS = once(w.webContents, 'enter-html-full-screen');
           await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
