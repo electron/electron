@@ -1,6 +1,6 @@
 import { systemPreferences } from 'electron/main';
 
-import { expect } from 'chai';
+import { describe, expect, it } from 'vitest';
 
 import { ifdescribe, ifit } from './lib/spec-helpers.ts';
 
@@ -10,11 +10,12 @@ describe('systemPreferences module', () => {
       // Testing this properly (i.e. non-empty string) requires
       // some tricky D-Bus mock setup.
       const accentColor = systemPreferences.getAccentColor();
-      expect(accentColor).to.be.a('string');
+      expect(accentColor).toBeTypeOf('string');
     });
     ifit(process.platform === 'win32')('should return a non-empty string', () => {
       const accentColor = systemPreferences.getAccentColor();
-      expect(accentColor).to.be.a('string').that.is.not.empty('accent color');
+      expect(accentColor, 'accent color').toBeTypeOf('string');
+      expect(accentColor, 'accent color').not.toHaveLength(0);
     });
   });
 
@@ -22,11 +23,11 @@ describe('systemPreferences module', () => {
     it('throws an error when the id is invalid', () => {
       expect(() => {
         systemPreferences.getColor('not-a-color' as any);
-      }).to.throw('Unknown color: not-a-color');
+      }).toThrow('Unknown color: not-a-color');
     });
 
     it('returns a hex RGBA color string', () => {
-      expect(systemPreferences.getColor('window')).to.match(/^#[0-9A-F]{8}$/i);
+      expect(systemPreferences.getColor('window')).toMatch(/^#[0-9A-F]{8}$/i);
     });
   });
 
@@ -48,7 +49,7 @@ describe('systemPreferences module', () => {
       for (const userDefault of defaultsMap) {
         const { key, value: expectedValue, type } = userDefault;
         const actualValue = systemPreferences.getUserDefault(key, type);
-        expect(actualValue).to.deep.equal(expectedValue);
+        expect(actualValue).toEqual(expectedValue);
       }
     });
 
@@ -58,7 +59,7 @@ describe('systemPreferences module', () => {
       for (const badDefault of badDefaults) {
         expect(() => {
           systemPreferences.registerDefaults(badDefault as any);
-        }).to.throw('Error processing argument at index 0, conversion failure from ');
+        }).toThrow('Error processing argument at index 0, conversion failure from ');
       }
     });
   });
@@ -66,24 +67,27 @@ describe('systemPreferences module', () => {
   ifdescribe(process.platform === 'darwin')('systemPreferences.getUserDefault(key, type)', () => {
     it('returns values for known user defaults', () => {
       const locale = systemPreferences.getUserDefault('AppleLocale', 'string');
-      expect(locale).to.be.a('string').that.is.not.empty('locale');
+      expect(locale, 'locale').toBeTypeOf('string');
+      expect(locale, 'locale').not.toHaveLength(0);
 
       const languages = systemPreferences.getUserDefault('AppleLanguages', 'array');
-      expect(languages).to.be.an('array').that.is.not.empty('languages');
+      expect(languages, 'languages').toBeInstanceOf(Array);
+      expect(languages, 'languages').not.toHaveLength(0);
     });
 
     it('returns values for unknown user defaults', () => {
-      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'boolean')).to.equal(false);
-      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'integer')).to.equal(0);
-      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'float')).to.equal(0);
-      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'double')).to.equal(0);
-      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'string')).to.equal('');
-      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'url')).to.equal('');
-      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'badtype' as any)).to.be.undefined(
+      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'boolean')).toBe(false);
+      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'integer')).toBe(0);
+      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'float')).toBe(0);
+      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'double')).toBe(0);
+      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'string')).toBe('');
+      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'url')).toBe('');
+      expect(
+        systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'badtype' as any),
         'user default'
-      );
-      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'array')).to.deep.equal([]);
-      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'dictionary')).to.deep.equal({});
+      ).toBeUndefined();
+      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'array')).toEqual([]);
+      expect(systemPreferences.getUserDefault('UserDefaultDoesNotExist', 'dictionary')).toEqual({});
     });
   });
 
@@ -104,7 +108,7 @@ describe('systemPreferences module', () => {
       for (const [type, value] of TEST_CASES) {
         systemPreferences.setUserDefault(KEY, type, value as any);
         const retrievedValue = systemPreferences.getUserDefault(KEY, type);
-        expect(retrievedValue).to.deep.equal(value);
+        expect(retrievedValue).toEqual(value);
       }
     });
 
@@ -112,14 +116,14 @@ describe('systemPreferences module', () => {
       for (const [type, value] of TEST_CASES) {
         expect(() => {
           systemPreferences.setUserDefault(KEY, type, typeof value === 'string' ? {} : ('foo' as any));
-        }).to.throw(`Unable to convert value to: ${type}`);
+        }).toThrow(`Unable to convert value to: ${type}`);
       }
     });
 
     it('throws when type is not valid', () => {
       expect(() => {
         systemPreferences.setUserDefault(KEY, 'abc' as any, 'foo');
-      }).to.throw('Invalid type: abc');
+      }).toThrow('Invalid type: abc');
     });
   });
 
@@ -129,7 +133,7 @@ describe('systemPreferences module', () => {
       for (const bad of badArgs) {
         expect(() => {
           systemPreferences.subscribeNotification(bad as any, () => {});
-        }).to.throw('Must pass null or a string');
+        }).toThrow('Must pass null or a string');
       }
     });
   });
@@ -140,7 +144,7 @@ describe('systemPreferences module', () => {
       for (const bad of badArgs) {
         expect(() => {
           systemPreferences.subscribeNotification(bad as any, () => {});
-        }).to.throw('Must pass null or a string');
+        }).toThrow('Must pass null or a string');
       }
     });
   });
@@ -151,7 +155,7 @@ describe('systemPreferences module', () => {
       for (const bad of badArgs) {
         expect(() => {
           systemPreferences.subscribeWorkspaceNotification(bad as any, () => {});
-        }).to.throw('Must pass null or a string');
+        }).toThrow('Must pass null or a string');
       }
     });
   });
@@ -161,7 +165,7 @@ describe('systemPreferences module', () => {
       const color = 'bad-color';
       expect(() => {
         systemPreferences.getSystemColor(color as any);
-      }).to.throw(`Unknown system color: ${color}`);
+      }).toThrow(`Unknown system color: ${color}`);
     });
 
     it('returns a valid system color', () => {
@@ -169,7 +173,7 @@ describe('systemPreferences module', () => {
 
       for (const color of colors) {
         const sysColor = systemPreferences.getSystemColor(color);
-        expect(sysColor).to.be.a('string');
+        expect(sysColor).toBeTypeOf('string');
       }
     });
   });
@@ -179,7 +183,7 @@ describe('systemPreferences module', () => {
       const color = 'bad-color';
       expect(() => {
         systemPreferences.getColor(color as any);
-      }).to.throw(`Unknown color: ${color}`);
+      }).toThrow(`Unknown color: ${color}`);
     });
 
     it('returns a valid color', async () => {
@@ -220,7 +224,7 @@ describe('systemPreferences module', () => {
 
       for (const color of colors) {
         const sysColor = systemPreferences.getColor(color);
-        expect(sysColor).to.be.a('string');
+        expect(sysColor).toBeTypeOf('string');
       }
     });
   });
@@ -230,14 +234,14 @@ describe('systemPreferences module', () => {
     describe('with properties', () => {
       it('returns a valid appearance', () => {
         const appearance = systemPreferences.effectiveAppearance;
-        expect(options).to.include(appearance);
+        expect(options).toContain(appearance);
       });
     });
 
     describe('with functions', () => {
       it('returns a valid appearance', () => {
         const appearance = systemPreferences.getEffectiveAppearance();
-        expect(options).to.include(appearance);
+        expect(options).toContain(appearance);
       });
     });
   });
@@ -247,7 +251,7 @@ describe('systemPreferences module', () => {
       const KEY = 'SystemPreferencesTest';
       systemPreferences.setUserDefault(KEY, 'string', 'foo');
       systemPreferences.removeUserDefault(KEY);
-      expect(systemPreferences.getUserDefault(KEY, 'string')).to.equal('');
+      expect(systemPreferences.getUserDefault(KEY, 'string')).toBe('');
     });
 
     it('does not throw for missing keys', () => {
@@ -257,26 +261,24 @@ describe('systemPreferences module', () => {
 
   ifdescribe(process.platform === 'darwin')('systemPreferences.canPromptTouchID()', () => {
     it('returns a boolean', () => {
-      expect(systemPreferences.canPromptTouchID()).to.be.a('boolean');
+      expect(systemPreferences.canPromptTouchID()).toBeTypeOf('boolean');
     });
   });
 
   ifdescribe(process.platform === 'darwin')('systemPreferences.promptTouchID(reason)', () => {
     it('rejects an empty reason', async () => {
-      await expect(systemPreferences.promptTouchID('')).to.eventually.be.rejectedWith('reason must be non-empty');
+      await expect(systemPreferences.promptTouchID('')).rejects.toThrow('reason must be non-empty');
     });
 
     it('rejects a reason that is not valid UTF-8', async () => {
-      await expect(systemPreferences.promptTouchID('\uD800')).to.eventually.be.rejectedWith(
-        'reason must be valid UTF-8'
-      );
+      await expect(systemPreferences.promptTouchID('\uD800')).rejects.toThrow('reason must be valid UTF-8');
     });
   });
 
   ifdescribe(process.platform === 'darwin')('systemPreferences.isTrustedAccessibilityClient(prompt)', () => {
     it('returns a boolean', () => {
       const trusted = systemPreferences.isTrustedAccessibilityClient(false);
-      expect(trusted).to.be.a('boolean');
+      expect(trusted).toBeTypeOf('boolean');
     });
   });
 
@@ -287,17 +289,17 @@ describe('systemPreferences module', () => {
 
       it('returns an access status for a camera access request', () => {
         const cameraStatus = systemPreferences.getMediaAccessStatus('camera');
-        expect(statuses).to.include(cameraStatus);
+        expect(statuses).toContain(cameraStatus);
       });
 
       it('returns an access status for a microphone access request', () => {
         const microphoneStatus = systemPreferences.getMediaAccessStatus('microphone');
-        expect(statuses).to.include(microphoneStatus);
+        expect(statuses).toContain(microphoneStatus);
       });
 
       it('returns an access status for a screen access request', () => {
         const screenStatus = systemPreferences.getMediaAccessStatus('screen');
-        expect(statuses).to.include(screenStatus);
+        expect(statuses).toContain(screenStatus);
       });
     }
   );
@@ -305,10 +307,10 @@ describe('systemPreferences module', () => {
   describe('systemPreferences.getAnimationSettings()', () => {
     it('returns an object with all properties', () => {
       const settings = systemPreferences.getAnimationSettings();
-      expect(settings).to.be.an('object');
-      expect(settings).to.have.property('shouldRenderRichAnimation').that.is.a('boolean');
-      expect(settings).to.have.property('scrollAnimationsEnabledBySystem').that.is.a('boolean');
-      expect(settings).to.have.property('prefersReducedMotion').that.is.a('boolean');
+      expect(settings).toBeTypeOf('object');
+      expect(settings).toHaveProperty('shouldRenderRichAnimation', expect.any(Boolean));
+      expect(settings).toHaveProperty('scrollAnimationsEnabledBySystem', expect.any(Boolean));
+      expect(settings).toHaveProperty('prefersReducedMotion', expect.any(Boolean));
     });
   });
 });

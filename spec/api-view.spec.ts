@@ -1,6 +1,6 @@
 import { BaseWindow, View } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import * as fs from 'node:fs';
 
@@ -30,17 +30,17 @@ describe('View', () => {
 
     it('does not run pending microtasks re-entrantly (from a timer)', async () => {
       const order = await new Promise<string[]>((resolve) => setTimeout(() => resolve(probe())));
-      expect(order).to.deep.equal(expected);
+      expect(order).toEqual(expected);
     });
 
     it('does not run pending microtasks re-entrantly (from a promise continuation)', async () => {
       const order = await Promise.resolve().then(probe);
-      expect(order).to.deep.equal(expected);
+      expect(order).toEqual(expected);
     });
 
     it('does not run pending microtasks re-entrantly (from a libuv callback)', async () => {
       const order = await new Promise<string[]>((resolve) => fs.stat(import.meta.filename, () => resolve(probe())));
-      expect(order).to.deep.equal(expected);
+      expect(order).toEqual(expected);
     });
   });
 
@@ -48,14 +48,14 @@ describe('View', () => {
     w = new BaseWindow({ show: false });
     const v = new View();
     w.setContentView(v);
-    expect(w.contentView).to.equal(v);
+    expect(w.contentView).toBe(v);
   });
 
   it('will throw when added as a child to itself', () => {
     w = new BaseWindow({ show: false });
     expect(() => {
       w.contentView.addChildView(w.contentView);
-    }).to.throw('A view cannot be added as its own child');
+    }).toThrow('A view cannot be added as its own child');
   });
 
   it('does not crash when attempting to add a child multiple times', () => {
@@ -68,7 +68,7 @@ describe('View', () => {
     w.contentView.addChildView(v);
     w.contentView.addChildView(v);
 
-    expect(w.contentView.children).to.have.lengthOf(1);
+    expect(w.contentView.children).toHaveLength(1);
   });
 
   it('can be added as a child of another View', async () => {
@@ -79,8 +79,8 @@ describe('View', () => {
     v1.addChildView(v2);
     w.contentView.addChildView(v1);
 
-    expect(w.contentView.children).to.deep.equal([v1]);
-    expect(v1.children).to.deep.equal([v2]);
+    expect(w.contentView.children).toEqual([v1]);
+    expect(v1.children).toEqual([v2]);
   });
 
   it('correctly reorders children', () => {
@@ -95,11 +95,11 @@ describe('View', () => {
     w.contentView.addChildView(v2);
     w.contentView.addChildView(v3);
 
-    expect(w.contentView.children).to.deep.equal([v1, v2, v3]);
+    expect(w.contentView.children).toEqual([v1, v2, v3]);
 
     w.contentView.addChildView(v1);
     w.contentView.addChildView(v2);
-    expect(w.contentView.children).to.deep.equal([v3, v1, v2]);
+    expect(w.contentView.children).toEqual([v3, v1, v2]);
   });
 
   it('allows setting various border radius values', () => {
@@ -116,26 +116,26 @@ describe('View', () => {
   describe('view.getVisible|setVisible', () => {
     it('is visible by default', () => {
       const v = new View();
-      expect(v.getVisible()).to.be.true();
+      expect(v.getVisible()).toBe(true);
     });
 
     it('can be set to not visible', () => {
       const v = new View();
       v.setVisible(false);
-      expect(v.getVisible()).to.be.false();
+      expect(v.getVisible()).toBe(false);
     });
   });
 
   describe('view.getBounds|setBounds', () => {
     it('defaults to 0,0,0,0', () => {
       const v = new View();
-      expect(v.getBounds()).to.deep.equal({ x: 0, y: 0, width: 0, height: 0 });
+      expect(v.getBounds()).toEqual({ x: 0, y: 0, width: 0, height: 0 });
     });
 
     it('can be set and retrieved', () => {
       const v = new View();
       v.setBounds({ x: 10, y: 20, width: 300, height: 400 });
-      expect(v.getBounds()).to.deep.equal({ x: 10, y: 20, width: 300, height: 400 });
+      expect(v.getBounds()).toEqual({ x: 10, y: 20, width: 300, height: 400 });
     });
 
     it('emits bounds-changed when bounds mutate', () => {
@@ -145,19 +145,19 @@ describe('View', () => {
         called++;
       });
       v.setBounds({ x: 5, y: 6, width: 7, height: 8 });
-      expect(called).to.equal(1);
+      expect(called).toBe(1);
     });
 
     it('allows zero-size bounds', () => {
       const v = new View();
       v.setBounds({ x: 1, y: 2, width: 0, height: 0 });
-      expect(v.getBounds()).to.deep.equal({ x: 1, y: 2, width: 0, height: 0 });
+      expect(v.getBounds()).toEqual({ x: 1, y: 2, width: 0, height: 0 });
     });
 
     it('allows negative coordinates', () => {
       const v = new View();
       v.setBounds({ x: -10, y: -20, width: 100, height: 50 });
-      expect(v.getBounds()).to.deep.equal({ x: -10, y: -20, width: 100, height: 50 });
+      expect(v.getBounds()).toEqual({ x: -10, y: -20, width: 100, height: 50 });
     });
 
     it('child bounds remain relative after parent moves', () => {
@@ -166,24 +166,25 @@ describe('View', () => {
       parent.addChildView(child);
       child.setBounds({ x: 10, y: 15, width: 25, height: 30 });
       parent.setBounds({ x: 50, y: 60, width: 500, height: 600 });
-      expect(child.getBounds()).to.deep.equal({ x: 10, y: 15, width: 25, height: 30 });
+      expect(child.getBounds()).toEqual({ x: 10, y: 15, width: 25, height: 30 });
     });
 
-    it('can set bounds with animation', (done) => {
-      const v = new View();
-      v.setBounds(
-        { x: 0, y: 0, width: 100, height: 100 },
-        {
-          animate: {
-            duration: 300
+    it('can set bounds with animation', () =>
+      new Promise<void>((resolve) => {
+        const v = new View();
+        v.setBounds(
+          { x: 0, y: 0, width: 100, height: 100 },
+          {
+            animate: {
+              duration: 300
+            }
           }
-        }
-      );
-      setTimeout(() => {
-        expect(v.getBounds()).to.deep.equal({ x: 0, y: 0, width: 100, height: 100 });
-        done();
-      }, 350);
-    });
+        );
+        setTimeout(() => {
+          expect(v.getBounds()).toEqual({ x: 0, y: 0, width: 100, height: 100 });
+          resolve();
+        }, 350);
+      }));
   });
 
   describe('view.setBackgroundBlur', () => {
@@ -202,7 +203,7 @@ describe('View', () => {
       const v = new View();
       expect(() => {
         v.setBackgroundBlur(10);
-      }).to.not.throw();
+      }).not.toThrow();
     });
   });
 });

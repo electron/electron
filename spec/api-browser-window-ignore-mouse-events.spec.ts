@@ -14,7 +14,7 @@
 // option is not supported (docs/api/browser-window.md).
 import { BaseWindow, BrowserWindow, WebContentsView, screen } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as http from 'node:http';
@@ -135,20 +135,23 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       return undefined;
     };
 
-    before(async function () {
+    let skipReason: string | undefined;
+    beforeAll(async () => {
       mouse = require('@electron-ci/mouse-input');
       initialCursor = mouse.getCursorPos();
-      const reason = await cannotInject();
-      if (reason) {
+      skipReason = await cannotInject();
+      if (skipReason) {
         // On CI this must not turn into a silent skip, or a runner image
         // change would quietly disable the suite.
-        if (process.env.CI) throw new Error(reason);
-        console.warn(`Skipping real mouse input specs. ${reason}`);
-        this.skip();
+        if (process.env.CI) throw new Error(skipReason);
+        console.warn(`Skipping real mouse input specs. ${skipReason}`);
       }
     });
+    beforeEach((ctx) => {
+      if (skipReason) ctx.skip();
+    });
 
-    after(async () => {
+    afterAll(async () => {
       if (mouse && initialCursor?.x !== undefined && initialCursor?.y !== undefined) {
         await mouse.move(initialCursor.x, initialCursor.y);
       }
@@ -270,8 +273,8 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
         await moveInWindow(w, { x: 100 + i * 10, y: 100 + i * 10 });
       }
       await waitUntil(() => isHovered(w));
-      expect(await count(w, 'mouseenter')).to.equal(1);
-      expect(await count(w, 'mouseleave')).to.equal(0);
+      expect(await count(w, 'mouseenter')).toBe(1);
+      expect(await count(w, 'mouseleave')).toBe(0);
     };
 
     ifit(canHitTest)('removes the window from OS hit testing', async () => {
@@ -287,7 +290,7 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       w.setIgnoreMouseEvents(true, { forward: canForward });
       // Synchronous on both: Windows changes the extended style in place, and
       // on X11 the new input shape is applied when the call returns.
-      expect(mouse.isWindowAtPoint(w.getNativeWindowHandle(), p.x, p.y)).to.be.false();
+      expect(mouse.isWindowAtPoint(w.getNativeWindowHandle(), p.x, p.y)).toBe(false);
     });
 
     // Only clicks are checked in the window below. Hover there is not: on X11
@@ -325,7 +328,7 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
         'a mousedown in the window below',
         async () => (await count(below, 'mousedown')) > 0
       );
-      expect(await count(above, 'mousedown')).to.equal(0);
+      expect(await count(above, 'mousedown')).toBe(0);
     });
 
     ifit(canForward)('forwards mouse moves to the page', async () => {
@@ -333,7 +336,7 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       await glide(inWindow(MARGIN), inWindow(TARGET_CENTER));
       await moveInWindow(w, { x: 210, y: 220 });
       await waitUntil(() => isHovered(w));
-      expect(await count(w, 'mouseenter')).to.equal(1);
+      expect(await count(w, 'mouseenter')).toBe(1);
     });
 
     // https://github.com/electron/electron/issues/30808
@@ -354,8 +357,8 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       await moveInWindow(w, MARGIN);
       await waitUntil(async () => !(await isHovered(w)));
       await moveTo(OUTSIDE);
-      expect(await count(w, 'mouseenter')).to.equal(1);
-      expect(await count(w, 'mouseleave')).to.equal(1);
+      expect(await count(w, 'mouseenter')).toBe(1);
+      expect(await count(w, 'mouseleave')).toBe(1);
     });
 
     // Regression cases for the Windows forwarding rewrite in
@@ -405,17 +408,19 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
 
       // https://github.com/electron/electron/issues/49982: the renderer's
       // replacement Chrome_RenderWidgetHostHWND was never forwarded to.
-      it('keeps forwarding after the renderer crashes and the page is reloaded (#49982)', async function () {
-        this.timeout(60000);
-        const w = await createForwardingWindow();
-        await crashAndReload(w);
-        await warmUp(w);
-        await expectForwardsWithoutFlapping(w);
-      });
+      it(
+        'keeps forwarding after the renderer crashes and the page is reloaded (#49982)',
+        { timeout: 60000 },
+        async () => {
+          const w = await createForwardingWindow();
+          await crashAndReload(w);
+          await warmUp(w);
+          await expectForwardsWithoutFlapping(w);
+        }
+      );
 
       // https://github.com/electron/electron/issues/15376
-      it('keeps forwarding after the page is reloaded (#15376)', async function () {
-        this.timeout(60000);
+      it('keeps forwarding after the page is reloaded (#15376)', { timeout: 60000 }, async () => {
         const w = await createForwardingWindow();
         const loaded = once(w.webContents, 'did-finish-load');
         w.webContents.reload();
@@ -426,33 +431,36 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
 
       // https://github.com/electron/electron/issues/49982: after a click in
       // the click-through area mouseleave stopped firing.
-      it('fires mouseleave after a click-through click once the renderer crashed and reloaded (#49982)', async function () {
-        this.timeout(60000);
-        await moveTo(OUTSIDE);
-        const below = await createClickCatcher();
-        const w = await createForwardingWindow();
-        await crashAndReload(w);
-        await warmUp(w);
+      it(
+        'fires mouseleave after a click-through click once the renderer crashed and reloaded (#49982)',
+        { timeout: 60000 },
+        async () => {
+          await moveTo(OUTSIDE);
+          const below = await createClickCatcher();
+          const w = await createForwardingWindow();
+          await crashAndReload(w);
+          await warmUp(w);
 
-        await glide(inWindow(MARGIN), inWindow(TARGET_CENTER));
-        await moveInWindow(w, TARGET_CENTER);
-        await waitUntil(() => isHovered(w));
+          await glide(inWindow(MARGIN), inWindow(TARGET_CENTER));
+          await moveInWindow(w, TARGET_CENTER);
+          await waitUntil(() => isHovered(w));
 
-        const p = toScreen(inWindow(TARGET_CENTER));
-        await waitUntilAt(p, 'the window below being hit tested under the forwarding window', () =>
-          mouse.isWindowAtPoint(below.getNativeWindowHandle(), p.x, p.y)
-        );
-        await mouse.click();
-        await waitUntilAt(p, 'a mousedown in the window below', async () => (await count(below, 'mousedown')) > 0);
-        expect(await count(w, 'mousedown')).to.equal(0);
+          const p = toScreen(inWindow(TARGET_CENTER));
+          await waitUntilAt(p, 'the window below being hit tested under the forwarding window', () =>
+            mouse.isWindowAtPoint(below.getNativeWindowHandle(), p.x, p.y)
+          );
+          await mouse.click();
+          await waitUntilAt(p, 'a mousedown in the window below', async () => (await count(below, 'mousedown')) > 0);
+          expect(await count(w, 'mousedown')).toBe(0);
 
-        await glide(inWindow(TARGET_CENTER), inWindow(MARGIN));
-        await moveInWindow(w, MARGIN);
-        await waitUntil(async () => !(await isHovered(w)));
-        await settle();
-        expect(await count(w, 'mouseenter')).to.equal(1);
-        expect(await count(w, 'mouseleave')).to.equal(1);
-      });
+          await glide(inWindow(TARGET_CENTER), inWindow(MARGIN));
+          await moveInWindow(w, MARGIN);
+          await waitUntil(async () => !(await isHovered(w)));
+          await settle();
+          expect(await count(w, 'mouseenter')).toBe(1);
+          expect(await count(w, 'mouseleave')).toBe(1);
+        }
+      );
 
       // https://github.com/electron/electron/issues/51521: the leaves
       // swallowed while forwarding left Chromium's one-shot TME_LEAVE
@@ -470,8 +478,8 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
         await waitUntil(async () => !(await isHovered(w)));
         await waitUntil(async () => !(await isBodyHovered(w)));
         await settle();
-        expect(await count(w, 'mouseenter')).to.equal(1);
-        expect(await count(w, 'mouseleave')).to.equal(1);
+        expect(await count(w, 'mouseenter')).toBe(1);
+        expect(await count(w, 'mouseleave')).toBe(1);
       });
 
       // https://github.com/electron/electron/issues/51521: only moves inside
@@ -479,7 +487,7 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       // never cleared :hover.
       it('clears :hover when the cursor leaves the window straight from an element (#51521)', async () => {
         const w = await createForwardingWindow();
-        expect(await isBodyHovered(w)).to.be.true();
+        expect(await isBodyHovered(w)).toBe(true);
         await glide(inWindow(MARGIN), inWindow(TARGET_CENTER));
         await moveInWindow(w, TARGET_CENTER);
         await waitUntil(() => isHovered(w));
@@ -489,16 +497,15 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
         await waitUntil(async () => !(await isHovered(w)));
         await waitUntil(async () => !(await isBodyHovered(w)));
         await settle();
-        expect(await count(w, 'mouseenter')).to.equal(1);
-        expect(await count(w, 'mouseleave')).to.equal(1);
+        expect(await count(w, 'mouseenter')).toBe(1);
+        expect(await count(w, 'mouseleave')).toBe(1);
       });
 
       // A cross-site navigation swaps the renderer, and with it the
       // Chrome_RenderWidgetHostHWND. The two servers are on different ports,
       // and one is reached as localhost, so the navigation is cross-site and
       // not only cross-origin.
-      it('keeps forwarding after a cross-origin navigation', async function () {
-        this.timeout(60000);
+      it('keeps forwarding after a cross-origin navigation', { timeout: 60000 }, async () => {
         const serve = async (host: string) => {
           const server = http.createServer((_req, res) => {
             res.setHeader('Content-Type', 'text/html');
@@ -519,7 +526,7 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
         const firstPid = w.webContents.getOSProcessId();
 
         await w.loadURL(second);
-        expect(w.webContents.getOSProcessId()).to.not.equal(firstPid);
+        expect(w.webContents.getOSProcessId()).not.toBe(firstPid);
         await warmUp(w);
         await expectForwardsWithoutFlapping(w);
       });
@@ -539,14 +546,13 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
         await moveTo(OUTSIDE);
         await waitUntil(async () => !(await isHovered(w)));
         await settle();
-        expect(await count(w, 'mouseenter')).to.equal(0);
-        expect(await count(w, 'mouseleave')).to.equal(1);
+        expect(await count(w, 'mouseenter')).toBe(0);
+        expect(await count(w, 'mouseleave')).toBe(1);
       });
 
       // https://github.com/electron/electron/issues/30808: forwarding enabled
       // before the page (and its Chrome_RenderWidgetHostHWND) exists.
-      it('forwards without flapping when enabled before loadURL() (#30808)', async function () {
-        this.timeout(60000);
+      it('forwards without flapping when enabled before loadURL() (#30808)', { timeout: 60000 }, async () => {
         await moveTo(OUTSIDE);
         const w = new BrowserWindow({ ...BOUNDS, frame: false, show: false, useContentSize: true });
         await showForwarding(w);
@@ -558,44 +564,48 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       // https://github.com/electron/electron/issues/30808 and
       // https://github.com/electron/electron/issues/49982: the usual pattern
       // of an overlay that stops ignoring while an element is hovered.
-      it('toggles cleanly when the page switches ignoring from its mouseenter/mouseleave handlers (#30808, #49982)', async function () {
-        this.timeout(90000);
-        const w = await createForwardingWindow({ webPreferences: { nodeIntegration: true, contextIsolation: false } });
-        let ignoring = true;
-        w.webContents.ipc.on('set-ignore', (_event, ignore: boolean) => {
-          ignoring = ignore;
-          if (ignore) {
-            w.setIgnoreMouseEvents(true, { forward: true });
-          } else {
-            w.setIgnoreMouseEvents(false);
-          }
-        });
-        await w.webContents.executeJavaScript(`{
+      it(
+        'toggles cleanly when the page switches ignoring from its mouseenter/mouseleave handlers (#30808, #49982)',
+        { timeout: 90000 },
+        async () => {
+          const w = await createForwardingWindow({
+            webPreferences: { nodeIntegration: true, contextIsolation: false }
+          });
+          let ignoring = true;
+          w.webContents.ipc.on('set-ignore', (_event, ignore: boolean) => {
+            ignoring = ignore;
+            if (ignore) {
+              w.setIgnoreMouseEvents(true, { forward: true });
+            } else {
+              w.setIgnoreMouseEvents(false);
+            }
+          });
+          await w.webContents.executeJavaScript(`{
           const { ipcRenderer } = require('electron');
           target.addEventListener('mouseenter', () => ipcRenderer.send('set-ignore', false));
           target.addEventListener('mouseleave', () => ipcRenderer.send('set-ignore', true));
         }`);
 
-        for (let i = 1; i <= 3; i++) {
-          await glide(inWindow(MARGIN), inWindow(TARGET_CENTER));
-          await waitUntil(async () => !ignoring && (await isHovered(w)));
-          await glide(inWindow(TARGET_CENTER), inWindow(MARGIN));
-          await waitUntil(async () => ignoring && !(await isHovered(w)));
-          // Forwarding picks up again in the MARGIN.
-          await moveInWindow(w, { x: MARGIN.x + 5, y: MARGIN.y + 5 });
-          expect(await count(w, 'mouseenter')).to.equal(i, `mouseenter count after pass ${i}`);
-          expect(await count(w, 'mouseleave')).to.equal(i, `mouseleave count after pass ${i}`);
+          for (let i = 1; i <= 3; i++) {
+            await glide(inWindow(MARGIN), inWindow(TARGET_CENTER));
+            await waitUntil(async () => !ignoring && (await isHovered(w)));
+            await glide(inWindow(TARGET_CENTER), inWindow(MARGIN));
+            await waitUntil(async () => ignoring && !(await isHovered(w)));
+            // Forwarding picks up again in the MARGIN.
+            await moveInWindow(w, { x: MARGIN.x + 5, y: MARGIN.y + 5 });
+            expect(await count(w, 'mouseenter'), `mouseenter count after pass ${i}`).toBe(i);
+            expect(await count(w, 'mouseleave'), `mouseleave count after pass ${i}`).toBe(i);
+          }
+          await settle();
+          expect(await count(w, 'mouseenter')).toBe(3);
+          expect(await count(w, 'mouseleave')).toBe(3);
+          expect(await isHovered(w)).toBe(false);
         }
-        await settle();
-        expect(await count(w, 'mouseenter')).to.equal(3);
-        expect(await count(w, 'mouseleave')).to.equal(3);
-        expect(await isHovered(w)).to.be.false();
-      });
+      );
 
       // Every WebContentsView has a Chrome_RenderWidgetHostHWND of its own,
       // and only the first one a window ever had was forwarded to.
-      it('forwards to the WebContentsView under the cursor in a BaseWindow', async function () {
-        this.timeout(60000);
+      it('forwards to the WebContentsView under the cursor in a BaseWindow', { timeout: 60000 }, async () => {
         await moveTo(OUTSIDE);
         const w = new BaseWindow({ ...BOUNDS, frame: false, show: false });
         const viewPage = `data:text/html,${encodeURIComponent(makePage({ left: 50, top: 50, width: 100, height: 300 }))}`;
@@ -630,8 +640,8 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
         await waitUntil(async () => !(await isHovered(views[1])));
         await settle();
         for (const view of views) {
-          expect(await count(view, 'mouseenter')).to.equal(1);
-          expect(await count(view, 'mouseleave')).to.equal(1);
+          expect(await count(view, 'mouseenter')).toBe(1);
+          expect(await count(view, 'mouseleave')).toBe(1);
         }
       });
     });
