@@ -50,7 +50,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 2587bd828b83beac1ea36b119b3674c1b5d6b4c2..8e7174ba2fe424ac4440fa81c97e976ccf71edf1 100644
+index 9c94939937c77e67042c45939ba6f827b679d9fb..d7b97a4df1a99f3fc2cb2212584b4064a6b845cd 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1154,6 +1154,7 @@ component("base") {
@@ -843,7 +843,7 @@ index c5c652c6c67da33e9a2127cbbc35ec5fc535df6c..e58bb7368359e6ba13c249b8677a91e5
  
  - (NSWindow*)rootWindow {
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index e7a596db9798ce0dfa27d2f7691b7e3548405ac7..a1aba79563a33893a9d13e764065ec0db5d25bdf 100644
+index 7233249bab88e1bf91b76c1a840c9e2b527627bb..9efdd5dbb57ba8b57d85ce5729f315f0cc3c467a 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -1005,7 +1005,7 @@ index c74a6130862162d4fdb07cf3d4a60604d0ae0482..92eaacfb3256ded77bd119e6ca306404
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index bee9872ba3e310dcc1d57fc399d44926c178b884..3de9bb066f0a204695b402528975703bf6d52e13 100644
+index 22a3406776819dd8dedba241d15f4f5ed3f982a3..d32af8d8628e5b3eb2437ab2b663d72c37948e2a 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -385,6 +385,7 @@ source_set("browser") {

@@ -306,10 +306,10 @@ index 1ff83218d9bc4ec2990c59bd79cc06e5d5fd8e85..6e7770af81bdbf476e7fa0b1eeb6b369
            pending_remote<blink.mojom.PointerLockContext>? context);
  };
 diff --git a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
-index 44e834ea715fa967d430fb2a785e077b9fcf4186..8ecae07fe99292270a28e098075eb40ce546c60f 100644
+index 7c10f4fa47cb17eff3ea3c0b598826791e27776b..b1138379ebfe1228a2ba19ff04f46c45e1937dd3 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
-@@ -3668,6 +3668,7 @@ void WebFrameWidgetImpl::CancelComposition() {
+@@ -3671,6 +3671,7 @@ void WebFrameWidgetImpl::CancelComposition() {
  }
  
  void WebFrameWidgetImpl::RequestMouseLock(
@@ -317,7 +317,7 @@ index 44e834ea715fa967d430fb2a785e077b9fcf4186..8ecae07fe99292270a28e098075eb40c
      bool has_transient_user_activation,
      bool request_unadjusted_movement,
      mojom::blink::WidgetInputHandlerHost::RequestMouseLockCallback callback) {
-@@ -3681,7 +3682,7 @@ void WebFrameWidgetImpl::RequestMouseLock(
+@@ -3684,7 +3685,7 @@ void WebFrameWidgetImpl::RequestMouseLock(
    // callback. It does share the same signature as the mojo definition
    // for simplicity.
    if (host) {

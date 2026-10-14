@@ -33,10 +33,10 @@ index 0ab8187b0db8ae6db46d81738f653a2bc4c566f6..de3d55e85c22317f7f9375eb94d0d5d4
  
  }  // namespace net
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index beab48b814d524731a065d02435b6226981ba558..a8d38377385d214b2c5e62e2f63aabcf676afd7c 100644
+index d03cd6c235071254695a36d8b91af64d1a9716cb..b05683fae4001437dd8f35bbc696276a0a52dfd9 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -2088,6 +2088,13 @@ void NetworkContext::SetNetworkConditions(
+@@ -2097,6 +2097,13 @@ void NetworkContext::SetNetworkConditions(
                                        std::move(network_conditions));
  }
  
@@ -51,10 +51,10 @@ index beab48b814d524731a065d02435b6226981ba558..a8d38377385d214b2c5e62e2f63aabcf
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 2c817b9cf621de51bb83ca4ebc1d6897504023c3..a2487be527c501938a223fc3f8ebdba8807f94b2 100644
+index 83bc56ce2acb987f67093a8184913a3521a0b47b..eb7332dc5fa1b66f3e92ef0e2da8f53bc67145af 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -356,6 +356,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -357,6 +357,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
        const base::UnguessableToken& throttling_profile_id,
        const base::UnguessableToken& throttling_client_id,
        std::vector<mojom::MatchedNetworkConditionsPtr> conditions) override;
