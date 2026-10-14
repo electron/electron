@@ -76,14 +76,18 @@ content should keep `webviewTag` disabled or filter
 [`will-attach-webview`](web-contents.md#event-will-attach-webview).
 
 ```js
-const { session, BrowserWindow } = require('electron')
+const { session, BrowserWindow, net } = require('electron')
+const path = require('node:path')
+const { pathToFileURL } = require('node:url')
 
 const offline = session.fromPartition('offline-viewer', { networkAccess: 'none' })
 offline.protocol.handle('app', (request) => {
-  // serve bundled content
+  // serve bundled content from the app directory
+  const { pathname } = new URL(request.url)
+  return net.fetch(pathToFileURL(path.join(__dirname, 'bundle', pathname)).toString())
 })
 const win = new BrowserWindow({ webPreferences: { session: offline } })
-win.loadURL('app://index.html')
+win.loadURL('app://bundle/index.html')
 ```
 
 ## Methods
