@@ -1,6 +1,6 @@
 import { ipcMain, BrowserWindow } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 
@@ -8,7 +8,7 @@ import { closeWindow } from './lib/window-helpers.ts';
 
 describe('ipcRenderer module', () => {
   let w: BrowserWindow;
-  before(async () => {
+  beforeAll(async () => {
     w = new BrowserWindow({
       show: false,
       webPreferences: {
@@ -20,7 +20,7 @@ describe('ipcRenderer module', () => {
     await w.loadURL('about:blank');
     w.webContents.on('console-message', (_event, ...args) => console.error(...args));
   });
-  after(async () => {
+  afterAll(async () => {
     await closeWindow(w);
     w = null as unknown as BrowserWindow;
   });
@@ -36,7 +36,7 @@ describe('ipcRenderer module', () => {
         ipcRenderer.send('message', ${JSON.stringify(obj)})
       }`);
       const [, received] = await once(ipcMain, 'message');
-      expect(received).to.deep.equal(obj);
+      expect(received).toEqual(obj);
     });
 
     it('can send instances of Date as Dates', async () => {
@@ -46,7 +46,7 @@ describe('ipcRenderer module', () => {
         ipcRenderer.send('message', new Date(${JSON.stringify(isoDate)}))
       }`);
       const [, received] = await once(ipcMain, 'message');
-      expect(received.toISOString()).to.equal(isoDate);
+      expect(received.toISOString()).toBe(isoDate);
     });
 
     it('can send instances of Buffer', async () => {
@@ -56,8 +56,8 @@ describe('ipcRenderer module', () => {
         ipcRenderer.send('message', Buffer.from(${JSON.stringify(data)}))
       }`);
       const [, received] = await once(ipcMain, 'message');
-      expect(received).to.be.an.instanceOf(Uint8Array);
-      expect(Buffer.from(data).equals(received)).to.be.true();
+      expect(received).toBeInstanceOf(Uint8Array);
+      expect(Buffer.from(data).equals(received)).toBe(true);
     });
 
     it('throws when sending objects with DOM class prototypes', async () => {
@@ -66,7 +66,7 @@ describe('ipcRenderer module', () => {
         const { ipcRenderer } = require('electron')
         ipcRenderer.send('message', document.location)
       }`)
-      ).to.eventually.be.rejected();
+      ).rejects.toThrow();
     });
 
     it('does not crash when sending external objects', async () => {
@@ -80,7 +80,7 @@ describe('ipcRenderer module', () => {
 
         ipcRenderer.send('message', stream)
       }`)
-      ).to.eventually.be.rejected();
+      ).rejects.toThrow();
     });
 
     it('can send objects that both reference the same object', async () => {
@@ -101,10 +101,10 @@ describe('ipcRenderer module', () => {
       const array = [foo, bar];
 
       const [, arrayValue, fooValue, barValue, childValue] = await once(ipcMain, 'message');
-      expect(arrayValue).to.deep.equal(array);
-      expect(fooValue).to.deep.equal(foo);
-      expect(barValue).to.deep.equal(bar);
-      expect(childValue).to.deep.equal(child);
+      expect(arrayValue).toEqual(array);
+      expect(fooValue).toEqual(foo);
+      expect(barValue).toEqual(bar);
+      expect(childValue).toEqual(child);
     });
 
     it('can handle cyclic references', async () => {
@@ -119,11 +119,11 @@ describe('ipcRenderer module', () => {
       }`);
 
       const [, arrayValue, childValue] = await once(ipcMain, 'message');
-      expect(arrayValue[0]).to.equal(5);
-      expect(arrayValue[1]).to.equal(arrayValue);
+      expect(arrayValue[0]).toBe(5);
+      expect(arrayValue[1]).toBe(arrayValue);
 
-      expect(childValue.hello).to.equal('world');
-      expect(childValue.child).to.equal(childValue);
+      expect(childValue.hello).toBe('world');
+      expect(childValue.child).toBe(childValue);
     });
   });
 
@@ -136,7 +136,7 @@ describe('ipcRenderer module', () => {
         const { ipcRenderer } = require('electron')
         resolve(ipcRenderer.sendSync('echo', 'test'))
       })`);
-      expect(msg).to.equal('test');
+      expect(msg).toBe('test');
     });
   });
 
@@ -145,7 +145,7 @@ describe('ipcRenderer module', () => {
       const result = await w.webContents.executeJavaScript(`
         require('electron').ipcRenderer.eventNames()
       `);
-      expect(result).to.deep.equal([]);
+      expect(result).toEqual([]);
     });
   });
 
@@ -163,7 +163,7 @@ describe('ipcRenderer module', () => {
           return ipcRenderer.eventNames();
         })()
       `);
-      expect(result).to.deep.equal(['channel2']);
+      expect(result).toEqual(['channel2']);
     });
 
     it('removes all channels if no channel is specified', async () => {
@@ -179,7 +179,7 @@ describe('ipcRenderer module', () => {
           return ipcRenderer.eventNames();
         })()
       `);
-      expect(result).to.deep.equal([]);
+      expect(result).toEqual([]);
     });
   });
 
@@ -201,7 +201,7 @@ describe('ipcRenderer module', () => {
           });
         }})()`
       );
-      expect(error).to.have.property('message', 'IPC method called after context was released');
+      expect(error).toHaveProperty('message', 'IPC method called after context was released');
     });
   });
 });
