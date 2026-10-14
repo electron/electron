@@ -15,7 +15,7 @@ When present, authenticator_common_impl uses it in place of the request-
 level client_data_json.
 
 diff --git a/content/browser/webauth/authenticator_common_impl.cc b/content/browser/webauth/authenticator_common_impl.cc
-index 35f7ef707d807bed0a02721303609dbe8dfe0a30..dc9ca377e0cd514809889b4e0924f2584e78dcff 100644
+index 9e4649349b27d2359dc1c701adc2f45434202416..62878baf0fad52d3c325c0ab741314fda2f4f99f 100644
 --- a/content/browser/webauth/authenticator_common_impl.cc
 +++ b/content/browser/webauth/authenticator_common_impl.cc
 @@ -3110,8 +3110,12 @@ AuthenticatorCommonImpl::CreateMakeCredentialResponse(

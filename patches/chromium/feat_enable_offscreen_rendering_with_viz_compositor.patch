@@ -238,10 +238,10 @@ index 67d5ff67d74c107a867b39b306c6528425b87e05..5fd12a25c9e319e8e675955926271c9d
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..c5f45c564f015d209aee39b4b8f0fd95ce187907
+index 0000000000000000000000000000000000000000..b0f8d47d9ba077030ab336990c5eefc808747ded
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
-@@ -0,0 +1,162 @@
+@@ -0,0 +1,160 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -265,8 +265,6 @@ index 0000000000000000000000000000000000000000..c5f45c564f015d209aee39b4b8f0fd95
 +#include "skia/ext/skia_utils_win.h"
 +#include "ui/gfx/win/gdi_util.h"
 +#include "ui/gfx/win/hwnd_util.h"
-+#else
-+#include "mojo/public/cpp/base/shared_memory_utils.h"
 +#endif
 +
 +namespace viz {
