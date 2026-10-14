@@ -169,12 +169,16 @@ int NodeMain() {
   std::optional<std::string> pid_string =
       os_env->GetVar("CRASHPAD_HANDLER_PID");
   if (fd_string && pid_string) {
+    // Parse outside DCHECK(), which skips its argument when DCHECKs are off.
     int fd = -1;
-    DCHECK(base::StringToInt(fd_string.value(), &fd));
-    DCHECK(base::StringToInt(pid_string.value(), &pid));
-    base::GlobalDescriptors::GetInstance()->Set(kCrashDumpSignal, fd);
-    command_line->AppendSwitchASCII(
-        crash_reporter::switches::kCrashpadHandlerPid, pid_string.value());
+    int handler_pid = -1;
+    if (base::StringToInt(*fd_string, &fd) &&
+        base::StringToInt(*pid_string, &handler_pid)) {
+      pid = handler_pid;
+      base::GlobalDescriptors::GetInstance()->Set(kCrashDumpSignal, fd);
+      command_line->AppendSwitchASCII(
+          crash_reporter::switches::kCrashpadHandlerPid, *pid_string);
+    }
     // Following API is unsafe in multi-threaded scenario, but at this point
     // we are still single threaded.
     os_env->UnSetVar("CRASHDUMP_SIGNAL_FD");
