@@ -18,6 +18,7 @@ import * as https from 'node:https';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
+import { emittedUntil } from './lib/events-helpers.ts';
 import {
   collectStreamBody,
   collectStreamBodyBuffer,
@@ -2240,8 +2241,10 @@ describe('net module', () => {
     // until the new Network Service is up and the requester has a URLLoaderFactory for it.
     // That can take a while on a busy machine,
     // so retry |probe| until it reports success.
-    // Each attempt is raced against a timeout and, when given, the child's 'exit',
-    // so a request that stalls or a child that dies fails the test right away, saying why,
+    // An attempt that gets no response within the probe timeout counts as a failure and is retried,
+    // since the first requests after the crash can wait for the new Network Service to launch.
+    // When given, the child's 'exit' is raced against each attempt,
+    // so a child that dies fails the test right away, saying why,
     // instead of running into the test's timeout.
     const waitForNetworkServiceRecovery = (probe: () => Promise<boolean>, exited?: Promise<unknown[]>) =>
       waitUntil(
@@ -2251,9 +2254,7 @@ describe('net module', () => {
           try {
             return await Promise.race([
               probe(),
-              setTimeout(probeTimeout, undefined, { signal: ac.signal }).then(() => {
-                throw new Error(`a Network Service recovery probe got no response within ${probeTimeout}ms`);
-              }),
+              setTimeout(probeTimeout, false, { signal: ac.signal }),
               ...(exited
                 ? [
                     exited.then(([code]) => {
@@ -2313,11 +2314,20 @@ describe('net module', () => {
       await once(child, 'spawn');
       await once(child, 'message');
 
+      // Each fetch carries an id that the child echoes in its reply,
+      // so a late reply to a probe that timed out isn't taken as the reply to a later fetch.
+      let lastRequestId = 0;
+      const fetchInChild = async (url: string) => {
+        const id = ++lastRequestId;
+        child.postMessage({ type: 'fetch', url, id });
+        const [result] = await emittedUntil(child, 'message', (message: { id?: number }) => message.id === id);
+        return result;
+      };
+
       const firstServerUrl = await respondOnce.toSingleURL((request, response) => {
         response.end('utility-first');
       });
-      child.postMessage({ type: 'fetch', url: firstServerUrl });
-      const [firstResult] = await once(child, 'message');
+      const firstResult = await fetchInChild(firstServerUrl);
       expect(firstResult.ok).toBe(true);
       expect(firstResult.body).toBe('utility-first');
 
@@ -2328,17 +2338,12 @@ describe('net module', () => {
       const probeUrl = await respondNTimes.toSingleURL((request, response) => {
         response.end('probe');
       }, 200);
-      await waitForNetworkServiceRecovery(async () => {
-        child.postMessage({ type: 'fetch', url: probeUrl });
-        const [result] = await once(child, 'message');
-        return result.ok;
-      }, exited);
+      await waitForNetworkServiceRecovery(async () => (await fetchInChild(probeUrl)).ok, exited);
 
       const secondServerUrl = await respondOnce.toSingleURL((request, response) => {
         response.end('utility-second');
       });
-      child.postMessage({ type: 'fetch', url: secondServerUrl });
-      const [secondResult] = await once(child, 'message');
+      const secondResult = await fetchInChild(secondServerUrl);
       expect(secondResult.ok).toBe(true);
       expect(secondResult.body).toBe('utility-second');
     });
