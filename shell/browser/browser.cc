@@ -33,6 +33,10 @@
 #include "content/public/browser/profiling_utils.h"
 #endif
 
+#if BUILDFLAG(IS_LINUX)
+#include "components/dbus/xdg/request.h"
+#endif
+
 namespace electron {
 
 LoginItemSettings::LoginItemSettings() = default;
