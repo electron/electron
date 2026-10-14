@@ -4580,7 +4580,8 @@ describe('BrowserWindow module', () => {
       // so learn that suffix once by producing a probe entry and reading the
       // name of the file it creates.
       let fileLockHash: string;
-      before(async () => {
+      before(async function () {
+        this.timeout(60_000);
         const probePreload = path.join(os.tmpdir(), `preload-code-cache-probe-${crypto.randomUUID()}.js`);
         fs.copyFileSync(fixture, probePreload);
         const probeKey = crypto.createHash('sha256').update(`preload-${probePreload}`).digest('hex').toUpperCase();
@@ -4593,10 +4594,17 @@ describe('BrowserWindow module', () => {
         await ran;
         try {
           let probeFile: string | undefined;
-          await waitFor(() => {
-            probeFile = cacheFilesFor(probeKey)[0];
-            return !!probeFile && fs.statSync(path.join(cacheDir, probeFile)).size > 0;
-          }, 'probe cache file to be written');
+          // The write is a best-effort thread pool task, which a busy machine
+          // can hold back for longer than the default 5s, and a failed before
+          // hook is not retried.
+          await waitFor(
+            () => {
+              probeFile = cacheFilesFor(probeKey)[0];
+              return !!probeFile && fs.statSync(path.join(cacheDir, probeFile)).size > 0;
+            },
+            'probe cache file to be written',
+            30_000
+          );
           fileLockHash = probeFile!.slice(probeKey.length + 1, -'.cache'.length);
         } finally {
           w.destroy();
