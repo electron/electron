@@ -76,6 +76,9 @@ export async function cleanupWebContents() {
   let webContentsDestroyed = 0;
   const existingWCS = webContents.getAllWebContents();
   for (const contents of existingWCS) {
+    // Destroying one webContents can take others in the list down with it
+    // (e.g. its guests or devtools), and calling destroy() on those throws.
+    if (contents.isDestroyed()) continue;
     const isDestroyed = once(contents, 'destroyed');
     contents.destroy();
     await isDestroyed;
