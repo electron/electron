@@ -4994,10 +4994,19 @@ describe('BrowserWindow module', () => {
         });
         const htmlPath = path.join(import.meta.dirname, 'fixtures', 'api', 'sandbox.html?exit-event');
         const pageUrl = 'file://' + htmlPath;
+        const ready = once(ipcMain, 'exit-event-ready');
         w.loadURL(pageUrl);
-        const [, url] = await once(ipcMain, 'answer');
+        await ready;
+        const processId = w.webContents.mainFrame.processId;
+        // Navigate cross-site, so that the page is unloaded by a process swap.
+        const answer = once(ipcMain, 'answer');
+        const navigated = once(w.webContents, 'did-finish-load');
+        w.webContents.send('navigate', `${serverUrl}/cross-site`);
+        const [, url] = await answer;
+        await navigated;
         const expectedUrl = process.platform === 'win32' ? 'file:///' + htmlPath.replaceAll('\\', '/') : pageUrl;
         expect(url).toBe(expectedUrl);
+        expect(w.webContents.mainFrame.processId, 'the navigation should swap processes').not.toBe(processId);
       });
 
       it('exposes ipcRenderer with the full EventEmitter API to preload script', async () => {

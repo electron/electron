@@ -52,9 +52,13 @@
         process.on('exit', () => {
           ipcRenderer.send('answer', currentLocation)
         })
-        // Navigate to another file:// page so the unload stays in this renderer
-        // and doesn't depend on reaching the internet.
-        location.assign(new URL('../pages/blank.html', location.href).href)
+        // The spec sends a cross-site URL on a local server,
+        // so that the navigation swaps renderer processes
+        // without depending on reaching the internet.
+        ipcRenderer.once('navigate', (event, url) => {
+          location.assign(url)
+        })
+        ipcRenderer.send('exit-event-ready')
       },
       'window-open': () => {
         addEventListener('load', () => {
