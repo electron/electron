@@ -679,16 +679,18 @@ describe('<webview> tag', () => {
 
       const [, webContents] = await didAttachWebview;
 
-      // Chromium refuses requestFullscreen() from a page that doesn't have
-      // focus, even with a user gesture, so focus the window and then the
-      // <webview> element until the guest page reports focus.
-      // webContents.focus() only activates the app on macOS when no other app
-      // is active, and earlier fullscreen specs can leave another app
-      // frontmost, so take activation first.
+      // Chromium refuses requestFullscreen() from a page that doesn't have focus,
+      // even with a user gesture.
+      // So focus the window and then the <webview> element until the guest page reports focus,
+      // focusing the window again on each poll in case it has lost OS focus since.
+      // On macOS, webContents.focus() only activates the app when no other app is active,
+      // and earlier fullscreen specs can leave another app frontmost,
+      // so take activation first.
       if (process.platform === 'darwin') app.focus({ steal: true });
       await focusWebContents(w.webContents);
       await waitUntil(
         async () => {
+          w.webContents.focus();
           await w.webContents.executeJavaScript("document.querySelector('webview').focus()");
           return await webContents.executeJavaScript('document.hasFocus()');
         },
