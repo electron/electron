@@ -9,8 +9,8 @@
 import { nativeImage } from 'electron/common';
 import { app } from 'electron/main';
 
-import { expect } from 'chai';
 import * as dbus from 'dbus-native';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import { createRequire } from 'node:module';
@@ -32,7 +32,7 @@ ifdescribe(!skip)('Notification module (dbus)', { tags: ['serial'] }, () => {
   const appName = 'api-notification-dbus-spec';
   const serviceName = 'org.freedesktop.Notifications';
 
-  before(async () => {
+  beforeAll(async () => {
     // init app
     app.name = appName;
     app.setDesktopName(`${appName}.desktop`);
@@ -64,7 +64,7 @@ ifdescribe(!skip)('Notification module (dbus)', { tags: ['serial'] }, () => {
     Notification = require('electron').Notification;
   });
 
-  after(async () => {
+  afterAll(async () => {
     // cleanup dbus
     if (reset) await reset();
     // cleanup app
@@ -107,30 +107,35 @@ ifdescribe(!skip)('Notification module (dbus)', { tags: ['serial'] }, () => {
       };
     }
 
-    before((done) => {
-      mock.on('MethodCalled', onMethodCalled(done));
-      const n = new Notification({
-        title: 'title',
-        subtitle: 'subtitle',
-        body: 'body',
-        icon: nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'notification_icon.png')),
-        replyPlaceholder: 'replyPlaceholder',
-        sound: 'sound',
-        closeButtonText: 'closeButtonText'
-      });
-      n.show();
-    });
+    beforeAll(
+      () =>
+        new Promise<void>((resolve, reject) => {
+          const done = (error?: unknown) => (error ? reject(error) : resolve());
+          mock.on('MethodCalled', onMethodCalled(done));
+          const n = new Notification({
+            title: 'title',
+            subtitle: 'subtitle',
+            body: 'body',
+            icon: nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'notification_icon.png')),
+            replyPlaceholder: 'replyPlaceholder',
+            sound: 'sound',
+            closeButtonText: 'closeButtonText'
+          });
+          n.show();
+        })
+    );
 
     it(`should call ${serviceName} to show notifications`, async () => {
       const calls = await getCalls();
-      expect(calls).to.be.an('array').of.lengthOf.at.least(1);
+      expect(calls).toBeInstanceOf(Array);
+      expect(calls.length).toBeGreaterThanOrEqual(1);
 
       const lastCall = calls[calls.length - 1];
       const methodName = lastCall[1];
-      expect(methodName).to.equal('Notify');
+      expect(methodName).toBe('Notify');
 
       const args = unmarshalDBusNotifyArgs(lastCall[2]);
-      expect(args).to.deep.equal({
+      expect(args).toEqual({
         app_name: appName,
         replaces_id: 0,
         app_icon: '',
@@ -202,7 +207,7 @@ ifdescribe(!skip)('Notification module (dbus)', { tags: ['serial'] }, () => {
 
     it('sends each button after the default action, keyed by its index', async () => {
       new Notification({ title: 'actions', actions }).show();
-      expect((await lastNotify()).actions).to.deep.equal(['default', 'Show', '0', 'Reply', '2', 'Archive']);
+      expect((await lastNotify()).actions).toEqual(['default', 'Show', '0', 'Reply', '2', 'Archive']);
     });
 
     it('emits action with the index of the invoked button', async () => {
@@ -214,14 +219,14 @@ ifdescribe(!skip)('Notification module (dbus)', { tags: ['serial'] }, () => {
         ['s', '2']
       ]);
       const [details] = await invoked;
-      expect(details).to.include({ actionIndex: 2, selectionIndex: -1 });
+      expect(details).toMatchObject({ actionIndex: 2, selectionIndex: -1 });
     });
 
     it('sends no actions when the server does not support them', async () => {
       process.env.ELECTRON_USE_UBUNTU_NOTIFIER = '1';
       try {
         new Notification({ title: 'actions', actions }).show();
-        expect((await lastNotify()).actions).to.deep.equal([]);
+        expect((await lastNotify()).actions).toEqual([]);
       } finally {
         delete process.env.ELECTRON_USE_UBUNTU_NOTIFIER;
       }

@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { EventEmitter as NodeEventEmitter, once } from 'node:events';
 import * as path from 'node:path';
@@ -28,9 +28,9 @@ function sameAsNode(scenario: (EventEmitter: Impl, log: (...values: any[]) => vo
   };
   const expected = run(NodeEventEmitter);
   const actual = run(NativeEventEmitter as unknown as Impl);
-  expect(actual).to.deep.equal(expected);
+  expect(actual).toEqual(expected);
   // Guard against scenarios that silently record nothing.
-  expect(expected.length).to.be.greaterThan(0);
+  expect(expected.length).toBeGreaterThan(0);
 }
 
 function captureThrow(fn: () => unknown): any {
@@ -44,19 +44,19 @@ function captureThrow(fn: () => unknown): any {
 
 describe('native EventEmitter (electron_common_events)', () => {
   it("is a distinct implementation from Node's", () => {
-    expect(NativeEventEmitter).to.not.equal(NodeEventEmitter);
-    expect(NativeEventEmitter.prototype).to.not.equal(NodeEventEmitter.prototype);
+    expect(NativeEventEmitter).not.toBe(NodeEventEmitter);
+    expect(NativeEventEmitter.prototype).not.toBe(NodeEventEmitter.prototype);
   });
 
   describe('shape', () => {
     it('has the same prototype property names as Node', () => {
-      expect(Object.getOwnPropertyNames(NativeEventEmitter.prototype).sort()).to.deep.equal(
+      expect(Object.getOwnPropertyNames(NativeEventEmitter.prototype).sort()).toEqual(
         Object.getOwnPropertyNames(NodeEventEmitter.prototype).sort()
       );
     });
 
     it('has the same enumerable prototype keys as Node, in the same order', () => {
-      expect(Object.keys(NativeEventEmitter.prototype)).to.deep.equal(Object.keys(NodeEventEmitter.prototype));
+      expect(Object.keys(NativeEventEmitter.prototype)).toEqual(Object.keys(NodeEventEmitter.prototype));
     });
 
     it('has matching method names and lengths', () => {
@@ -65,25 +65,25 @@ describe('native EventEmitter (electron_common_events)', () => {
         if (key === 'constructor') continue;
         const nodeValue = (NodeEventEmitter.prototype as any)[key];
         const nativeValue = (NativeEventEmitter.prototype as any)[key];
-        expect(typeof nativeValue).to.equal(typeof nodeValue, key);
+        expect(typeof nativeValue, key).toBe(typeof nodeValue);
         if (typeof nodeValue === 'function') {
-          expect(nativeValue.name).to.equal(nodeValue.name, `${key}.name`);
-          expect(nativeValue.length).to.equal(nodeValue.length, `${key}.length`);
+          expect(nativeValue.name, `${key}.name`).toBe(nodeValue.name);
+          expect(nativeValue.length, `${key}.length`).toBe(nodeValue.length);
         } else {
-          expect(nativeValue).to.equal(nodeValue, key);
+          expect(nativeValue, key).toBe(nodeValue);
         }
       }
     });
 
     it('aliases on/addListener and off/removeListener', () => {
-      expect(NativeEventEmitter.prototype.on).to.equal(NativeEventEmitter.prototype.addListener);
-      expect(NativeEventEmitter.prototype.off).to.equal(NativeEventEmitter.prototype.removeListener);
+      expect(NativeEventEmitter.prototype.on).toBe(NativeEventEmitter.prototype.addListener);
+      expect(NativeEventEmitter.prototype.off).toBe(NativeEventEmitter.prototype.removeListener);
     });
 
     it('only exposes defaultMaxListeners on the class', () => {
-      expect(NativeEventEmitter.name).to.equal('EventEmitter');
-      expect(NativeEventEmitter.defaultMaxListeners).to.equal(10);
-      expect(Object.getOwnPropertyNames(NativeEventEmitter).sort()).to.deep.equal([
+      expect(NativeEventEmitter.name).toBe('EventEmitter');
+      expect(NativeEventEmitter.defaultMaxListeners).toBe(10);
+      expect(Object.getOwnPropertyNames(NativeEventEmitter).sort()).toEqual([
         'defaultMaxListeners',
         'length',
         'name',
@@ -283,14 +283,14 @@ describe('native EventEmitter (electron_common_events)', () => {
       e.emit('x');
       e.emit('x');
       e.removeListener('x', other);
-      expect(seen).to.deep.equal([
+      expect(seen).toEqual([
         ['other'],
         ['removed', 'x', true, false],
         ['once'],
         ['other'],
         ['removed', 'x', false, true]
       ]);
-      expect(e.listenerCount('x')).to.equal(0);
+      expect(e.listenerCount('x')).toBe(0);
     });
 
     it('when removing every listener of a large event', () => {
@@ -347,15 +347,15 @@ describe('native EventEmitter (electron_common_events)', () => {
     it('wraps a non-Error unhandled error event', () => {
       const e = new NativeEventEmitter();
       const fromString = captureThrow(() => e.emit('error', 'a string'));
-      expect(fromString).to.be.an.instanceOf(Error);
-      expect(fromString.message).to.equal('Unhandled error. (undefined)');
-      expect(fromString.context).to.equal('a string');
+      expect(fromString).toBeInstanceOf(Error);
+      expect(fromString.message).toBe('Unhandled error. (undefined)');
+      expect(fromString.context).toBe('a string');
       const fromObject = captureThrow(() => e.emit('error', { message: 'custom' }));
-      expect(fromObject.message).to.equal('Unhandled error. (custom)');
-      expect(fromObject.context).to.deep.equal({ message: 'custom' });
+      expect(fromObject.message).toBe('Unhandled error. (custom)');
+      expect(fromObject.context).toEqual({ message: 'custom' });
       const fromNothing = captureThrow(() => e.emit('error'));
-      expect(fromNothing.message).to.equal('Unhandled error.');
-      expect(fromNothing.context).to.equal(undefined);
+      expect(fromNothing.message).toBe('Unhandled error.');
+      expect(fromNothing.context).toBe(undefined);
     });
 
     it('validates listeners and max listener counts', () => {
@@ -367,15 +367,15 @@ describe('native EventEmitter (electron_common_events)', () => {
         () => e.prependListener('x')
       ]) {
         const error = captureThrow(call);
-        expect(error).to.be.an.instanceOf(TypeError);
-        expect(error.message).to.match(
+        expect(error).toBeInstanceOf(TypeError);
+        expect(error.message).toMatch(
           /^The "listener" argument must be of type Function\. Received type (object|string|undefined)$/
         );
       }
       for (const value of [-1, '3', NaN]) {
         const error = captureThrow(() => e.setMaxListeners(value));
-        expect(error).to.be.an.instanceOf(RangeError);
-        expect(error.message).to.equal(
+        expect(error).toBeInstanceOf(RangeError);
+        expect(error.message).toBe(
           `The value of "n" is out of range. It must be a non-negative number. Received ${value}.`
         );
       }
@@ -383,15 +383,15 @@ describe('native EventEmitter (electron_common_events)', () => {
         captureThrow(() => {
           NativeEventEmitter.defaultMaxListeners = -1;
         })
-      ).to.be.an.instanceOf(RangeError);
-      expect(NativeEventEmitter.defaultMaxListeners).to.equal(10);
+      ).toBeInstanceOf(RangeError);
+      expect(NativeEventEmitter.defaultMaxListeners).toBe(10);
     });
 
     it('throws when a method is called without a receiver', () => {
       const { on, emit } = new NativeEventEmitter();
-      expect(() => (on as any)('x', () => {})).to.throw(TypeError);
-      expect(() => (emit as any)('x')).to.throw(TypeError);
-      expect((globalThis as any)._events).to.equal(undefined);
+      expect(() => (on as any)('x', () => {})).toThrow(TypeError);
+      expect(() => (emit as any)('x')).toThrow(TypeError);
+      expect((globalThis as any)._events).toBe(undefined);
     });
   });
 
@@ -413,12 +413,12 @@ describe('native EventEmitter (electron_common_events)', () => {
       } finally {
         console.warn = originalWarn;
       }
-      expect(warnings).to.have.lengthOf(1);
-      expect(warnings[0]).to.be.an.instanceOf(Error);
-      expect(warnings[0].name).to.equal('MaxListenersExceededWarning');
-      expect(warnings[0].count).to.equal(2);
-      expect(warnings[0].type).to.equal('leak');
-      expect(warnings[0].message).to.equal(
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0]).toBeInstanceOf(Error);
+      expect(warnings[0].name).toBe('MaxListenersExceededWarning');
+      expect(warnings[0].count).toBe(2);
+      expect(warnings[0].type).toBe('leak');
+      expect(warnings[0].message).toBe(
         'Possible EventEmitter memory leak detected. 2 leak listeners added. Use emitter.setMaxListeners() to increase limit'
       );
     });
@@ -428,9 +428,9 @@ describe('native EventEmitter (electron_common_events)', () => {
     const e = new NativeEventEmitter();
     const p = once(e as any, 'x');
     e.emit('x', 1, 2);
-    expect(await p).to.deep.equal([1, 2]);
-    expect(e.listenerCount('x')).to.equal(0);
-    expect(e.listenerCount('error')).to.equal(0);
+    expect(await p).toEqual([1, 2]);
+    expect(e.listenerCount('x')).toBe(0);
+    expect(e.listenerCount('error')).toBe(0);
   });
 
   describe('in a sandboxed preload', () => {
@@ -446,9 +446,7 @@ describe('native EventEmitter (electron_common_events)', () => {
       });
       w.loadURL('about:blank');
       const [, rendererEventEmitterProperties] = await once(ipcMain, 'answer');
-      expect(rendererEventEmitterProperties).to.deep.equal(
-        Object.getOwnPropertyNames(NodeEventEmitter.prototype).sort()
-      );
+      expect(rendererEventEmitterProperties).toEqual(Object.getOwnPropertyNames(NodeEventEmitter.prototype).sort());
     });
   });
 });
