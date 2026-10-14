@@ -1,6 +1,6 @@
 import { BaseWindow, BrowserWindow, TouchBar } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as path from 'node:path';
 
@@ -24,33 +24,33 @@ describe('TouchBar module', () => {
     expect(() => {
       const touchBar = new (TouchBar as any)();
       touchBar.toString();
-    }).to.throw('Must specify options object as first argument');
+    }).toThrow('Must specify options object as first argument');
   });
 
   it('throws an error when created with invalid items', () => {
     expect(() => {
       const touchBar = new TouchBar({ items: [1, true, {}, []] as any });
       touchBar.toString();
-    }).to.throw('Each item must be an instance of TouchBarItem');
+    }).toThrow('Each item must be an instance of TouchBarItem');
   });
 
   it('throws an error when an invalid escape item is set', () => {
     expect(() => {
       const touchBar = new TouchBar({ items: [], escapeItem: 'esc' as any });
       touchBar.toString();
-    }).to.throw('Escape item must be an instance of TouchBarItem');
+    }).toThrow('Escape item must be an instance of TouchBarItem');
 
     expect(() => {
       const touchBar = new TouchBar({ items: [] });
       touchBar.escapeItem = 'esc' as any;
-    }).to.throw('Escape item must be an instance of TouchBarItem');
+    }).toThrow('Escape item must be an instance of TouchBarItem');
   });
 
   it('throws an error if multiple OtherItemProxy items are added', () => {
     expect(() => {
       const touchBar = new TouchBar({ items: [new TouchBarOtherItemsProxy(), new TouchBarOtherItemsProxy()] });
       touchBar.toString();
-    }).to.throw('Must only have one OtherItemsProxy per TouchBar');
+    }).toThrow('Must only have one OtherItemsProxy per TouchBar');
   });
 
   it('throws an error if the same TouchBarItem is added multiple times', () => {
@@ -58,7 +58,7 @@ describe('TouchBar module', () => {
       const item = new TouchBarLabel({ label: 'Label' });
       const touchBar = new TouchBar({ items: [item, item] });
       touchBar.toString();
-    }).to.throw('Cannot add a single instance of TouchBarItem multiple times in a TouchBar');
+    }).toThrow('Cannot add a single instance of TouchBarItem multiple times in a TouchBar');
   });
 
   describe('Window behavior', () => {

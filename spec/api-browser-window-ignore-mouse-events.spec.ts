@@ -14,7 +14,7 @@
 // option is not supported (docs/api/browser-window.md).
 import { BaseWindow, BrowserWindow, WebContentsView, screen } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { once } from 'node:events';
 import * as http from 'node:http';
@@ -270,8 +270,8 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
         await moveInWindow(w, { x: 100 + i * 10, y: 100 + i * 10 });
       }
       await waitUntil(() => isHovered(w));
-      expect(await count(w, 'mouseenter')).to.equal(1);
-      expect(await count(w, 'mouseleave')).to.equal(0);
+      expect(await count(w, 'mouseenter')).toBe(1);
+      expect(await count(w, 'mouseleave')).toBe(0);
     };
 
     ifit(canHitTest)('removes the window from OS hit testing', async () => {
@@ -287,7 +287,7 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       w.setIgnoreMouseEvents(true, { forward: canForward });
       // Synchronous on both: Windows changes the extended style in place, and
       // on X11 the new input shape is applied when the call returns.
-      expect(mouse.isWindowAtPoint(w.getNativeWindowHandle(), p.x, p.y)).to.be.false();
+      expect(mouse.isWindowAtPoint(w.getNativeWindowHandle(), p.x, p.y)).toBe(false);
     });
 
     // Only clicks are checked in the window below. Hover there is not: on X11
@@ -325,7 +325,7 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
         'a mousedown in the window below',
         async () => (await count(below, 'mousedown')) > 0
       );
-      expect(await count(above, 'mousedown')).to.equal(0);
+      expect(await count(above, 'mousedown')).toBe(0);
     });
 
     ifit(canForward)('forwards mouse moves to the page', async () => {
@@ -333,7 +333,7 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       await glide(inWindow(MARGIN), inWindow(TARGET_CENTER));
       await moveInWindow(w, { x: 210, y: 220 });
       await waitUntil(() => isHovered(w));
-      expect(await count(w, 'mouseenter')).to.equal(1);
+      expect(await count(w, 'mouseenter')).toBe(1);
     });
 
     // https://github.com/electron/electron/issues/30808
@@ -354,8 +354,8 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       await moveInWindow(w, MARGIN);
       await waitUntil(async () => !(await isHovered(w)));
       await moveTo(OUTSIDE);
-      expect(await count(w, 'mouseenter')).to.equal(1);
-      expect(await count(w, 'mouseleave')).to.equal(1);
+      expect(await count(w, 'mouseenter')).toBe(1);
+      expect(await count(w, 'mouseleave')).toBe(1);
     });
 
     // Regression cases for the Windows forwarding rewrite in
@@ -444,14 +444,14 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
         );
         await mouse.click();
         await waitUntilAt(p, 'a mousedown in the window below', async () => (await count(below, 'mousedown')) > 0);
-        expect(await count(w, 'mousedown')).to.equal(0);
+        expect(await count(w, 'mousedown')).toBe(0);
 
         await glide(inWindow(TARGET_CENTER), inWindow(MARGIN));
         await moveInWindow(w, MARGIN);
         await waitUntil(async () => !(await isHovered(w)));
         await settle();
-        expect(await count(w, 'mouseenter')).to.equal(1);
-        expect(await count(w, 'mouseleave')).to.equal(1);
+        expect(await count(w, 'mouseenter')).toBe(1);
+        expect(await count(w, 'mouseleave')).toBe(1);
       });
 
       // https://github.com/electron/electron/issues/51521: the leaves
@@ -470,8 +470,8 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
         await waitUntil(async () => !(await isHovered(w)));
         await waitUntil(async () => !(await isBodyHovered(w)));
         await settle();
-        expect(await count(w, 'mouseenter')).to.equal(1);
-        expect(await count(w, 'mouseleave')).to.equal(1);
+        expect(await count(w, 'mouseenter')).toBe(1);
+        expect(await count(w, 'mouseleave')).toBe(1);
       });
 
       // https://github.com/electron/electron/issues/51521: only moves inside
@@ -479,7 +479,7 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       // never cleared :hover.
       it('clears :hover when the cursor leaves the window straight from an element (#51521)', async () => {
         const w = await createForwardingWindow();
-        expect(await isBodyHovered(w)).to.be.true();
+        expect(await isBodyHovered(w)).toBe(true);
         await glide(inWindow(MARGIN), inWindow(TARGET_CENTER));
         await moveInWindow(w, TARGET_CENTER);
         await waitUntil(() => isHovered(w));
@@ -489,8 +489,8 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
         await waitUntil(async () => !(await isHovered(w)));
         await waitUntil(async () => !(await isBodyHovered(w)));
         await settle();
-        expect(await count(w, 'mouseenter')).to.equal(1);
-        expect(await count(w, 'mouseleave')).to.equal(1);
+        expect(await count(w, 'mouseenter')).toBe(1);
+        expect(await count(w, 'mouseleave')).toBe(1);
       });
 
       // A cross-site navigation swaps the renderer, and with it the
@@ -519,7 +519,7 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
         const firstPid = w.webContents.getOSProcessId();
 
         await w.loadURL(second);
-        expect(w.webContents.getOSProcessId()).to.not.equal(firstPid);
+        expect(w.webContents.getOSProcessId()).not.toBe(firstPid);
         await warmUp(w);
         await expectForwardsWithoutFlapping(w);
       });
@@ -539,8 +539,8 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
         await moveTo(OUTSIDE);
         await waitUntil(async () => !(await isHovered(w)));
         await settle();
-        expect(await count(w, 'mouseenter')).to.equal(0);
-        expect(await count(w, 'mouseleave')).to.equal(1);
+        expect(await count(w, 'mouseenter')).toBe(0);
+        expect(await count(w, 'mouseleave')).toBe(1);
       });
 
       // https://github.com/electron/electron/issues/30808: forwarding enabled
@@ -583,13 +583,13 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
           await waitUntil(async () => ignoring && !(await isHovered(w)));
           // Forwarding picks up again in the MARGIN.
           await moveInWindow(w, { x: MARGIN.x + 5, y: MARGIN.y + 5 });
-          expect(await count(w, 'mouseenter')).to.equal(i, `mouseenter count after pass ${i}`);
-          expect(await count(w, 'mouseleave')).to.equal(i, `mouseleave count after pass ${i}`);
+          expect(await count(w, 'mouseenter'), `mouseenter count after pass ${i}`).toBe(i);
+          expect(await count(w, 'mouseleave'), `mouseleave count after pass ${i}`).toBe(i);
         }
         await settle();
-        expect(await count(w, 'mouseenter')).to.equal(3);
-        expect(await count(w, 'mouseleave')).to.equal(3);
-        expect(await isHovered(w)).to.be.false();
+        expect(await count(w, 'mouseenter')).toBe(3);
+        expect(await count(w, 'mouseleave')).toBe(3);
+        expect(await isHovered(w)).toBe(false);
       });
 
       // Every WebContentsView has a Chrome_RenderWidgetHostHWND of its own,
@@ -630,8 +630,8 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
         await waitUntil(async () => !(await isHovered(views[1])));
         await settle();
         for (const view of views) {
-          expect(await count(view, 'mouseenter')).to.equal(1);
-          expect(await count(view, 'mouseleave')).to.equal(1);
+          expect(await count(view, 'mouseenter')).toBe(1);
+          expect(await count(view, 'mouseleave')).toBe(1);
         }
       });
     });

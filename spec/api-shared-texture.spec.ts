@@ -1,6 +1,6 @@
 import { BaseWindow, BrowserWindow, app, ipcMain, nativeImage, sharedTexture } from 'electron';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { randomUUID } from 'node:crypto';
 import * as path from 'node:path';
@@ -126,7 +126,7 @@ ifdescribe(!skip)('sharedTexture module', () => {
               // and the color may change slightly when resizing at device pixel ratio != 1.
               // Limit error should not be different more than 1% of the whole image.
               const ratio = result.difference / result.total;
-              expect(ratio).to.be.lessThan(0.01);
+              expect(ratio).toBeLessThan(0.01);
               resolve();
             } catch (e) {
               reject(e);
@@ -240,7 +240,7 @@ ifdescribe(!skip)('sharedTexture module', () => {
               // and the color may change slightly when resizing at device pixel ratio != 1.
               // Limit error should not be different more than 1% of the whole image.
               const ratio = result.difference / result.total;
-              expect(ratio).to.be.lessThan(0.01);
+              expect(ratio).toBeLessThan(0.01);
               resolve();
             } catch (e) {
               setTimeout(() => reject(e), 1000000);
@@ -307,11 +307,11 @@ ifdescribe(!skip)('sharedTexture module', () => {
       }
       await setTimeoutAsync(10);
 
-      expect(retained.getFrameCreationSyncToken()).to.have.property('syncToken').that.is.a('string');
+      expect(retained.getFrameCreationSyncToken()).toHaveProperty('syncToken', expect.any(String));
       retained.release();
       // A second release must be a no-op rather than a crash.
-      expect(() => retained.release()).to.not.throw();
-      expect(() => retained.getFrameCreationSyncToken()).to.throw(/released/);
+      expect(() => retained.release()).not.toThrow();
+      expect(() => retained.getFrameCreationSyncToken()).toThrow(/released/);
       texture.release();
     });
 

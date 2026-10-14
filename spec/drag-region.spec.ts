@@ -1,6 +1,6 @@
 import { BrowserWindow, screen } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { once } from 'node:events';
 import { createRequire } from 'node:module';
@@ -123,7 +123,7 @@ describe('draggable regions', { tags: ['serial'] }, function () {
 
       const { start, end } = await performDrag(w);
 
-      expect(start).to.not.deep.equal(end);
+      expect(start).not.toEqual(end);
     });
 
     it('does not drag when app-region: no-drag overlaps drag region', async () => {
@@ -133,7 +133,7 @@ describe('draggable regions', { tags: ['serial'] }, function () {
 
       const { start, end } = await performDrag(w);
 
-      expect(start).to.deep.equal(end);
+      expect(start).toEqual(end);
     });
 
     it('drags after navigation', async () => {
@@ -142,7 +142,7 @@ describe('draggable regions', { tags: ['serial'] }, function () {
 
       const { start, end } = await performDrag(w);
 
-      expect(start).to.not.deep.equal(end);
+      expect(start).not.toEqual(end);
     });
 
     it('drags after in-page navigation', async () => {
@@ -156,7 +156,7 @@ describe('draggable regions', { tags: ['serial'] }, function () {
 
       const { start, end } = await performDrag(w);
 
-      expect(start).to.not.deep.equal(end);
+      expect(start).not.toEqual(end);
     });
   });
 
@@ -183,7 +183,7 @@ describe('draggable regions', { tags: ['serial'] }, function () {
     it('drags with app-region: drag', async () => {
       const { start, end } = await performDrag(childWindow);
 
-      expect(start).to.not.deep.equal(end);
+      expect(start).not.toEqual(end);
     });
 
     it('drags after navigation', async () => {
@@ -191,7 +191,7 @@ describe('draggable regions', { tags: ['serial'] }, function () {
 
       const { start, end } = await performDrag(childWindow);
 
-      expect(start).to.not.deep.equal(end);
+      expect(start).not.toEqual(end);
     });
   });
 
@@ -220,7 +220,7 @@ describe('draggable regions', { tags: ['serial'] }, function () {
 
         const { start, end } = await performDrag(w);
 
-        expect(start).to.not.deep.equal(end);
+        expect(start).not.toEqual(end);
       });
 
       it('drags after subframe navigation', async () => {
@@ -230,7 +230,7 @@ describe('draggable regions', { tags: ['serial'] }, function () {
 
         const { start, end } = await performDrag(w);
 
-        expect(start).to.not.deep.equal(end);
+        expect(start).not.toEqual(end);
       });
 
       it('does not drag after host page navigation without draggable region', async () => {
@@ -241,7 +241,7 @@ describe('draggable regions', { tags: ['serial'] }, function () {
 
         const { start, end } = await performDrag(w);
 
-        expect(start).to.deep.equal(end);
+        expect(start).toEqual(end);
       });
 
       it('drags after host page navigation', async () => {
@@ -252,7 +252,7 @@ describe('draggable regions', { tags: ['serial'] }, function () {
 
         const { start, end } = await performDrag(w);
 
-        expect(start).to.not.deep.equal(end);
+        expect(start).not.toEqual(end);
       });
     });
   }

@@ -1,6 +1,6 @@
 import { ipcMain, BrowserWindow } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -67,7 +67,7 @@ describe('ipc main module', () => {
       await once(appProcess.stdout, 'end');
 
       output = JSON.parse(output);
-      expect(output).to.deep.equal(['error']);
+      expect(output).toEqual(['error']);
     });
 
     it('can be replied to', async () => {
@@ -93,7 +93,7 @@ describe('ipc main module', () => {
           resolve(v)
         })
       })`);
-      expect(v).to.equal('hello');
+      expect(v).toBe('hello');
     });
   });
 
@@ -111,7 +111,7 @@ describe('ipc main module', () => {
 
       ipcMain.removeAllListeners('channel1');
 
-      expect(ipcMain.eventNames()).to.deep.equal(['channel2']);
+      expect(ipcMain.eventNames()).toEqual(['channel2']);
     });
 
     it('removes all channels if no channel is specified', () => {
@@ -120,7 +120,7 @@ describe('ipc main module', () => {
 
       ipcMain.removeAllListeners();
 
-      expect(ipcMain.eventNames()).to.deep.equal([]);
+      expect(ipcMain.eventNames()).toEqual([]);
     });
   });
 });

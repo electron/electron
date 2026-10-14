@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { createRoutedServer, type RoutedRequest, type RoutedServer } from './lib/http-server-helpers.ts';
 import {
@@ -55,17 +55,17 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
   it('should launch Electron via MSIX alias', async () => {
     const launchResult = await launchApp(ELECTRON_MSIX_ALIAS, ['--version']);
     logOnError(launchResult, () => {
-      expect(launchResult.code).to.equal(0);
+      expect(launchResult.code).toBe(0);
     });
   });
 
   it('should print package identity information', async () => {
     const launchResult = await launchApp(ELECTRON_MSIX_ALIAS, [MAIN_JS_PATH, '--printPackageId']);
     logOnError(launchResult, () => {
-      expect(launchResult.code).to.equal(0);
-      expect(launchResult.out).to.include('Family Name: Electron.Dev.MSIX_rdjwn13tdj8dy');
-      expect(launchResult.out).to.include('Package ID: Electron.Dev.MSIX_1.0.0.0_x64__rdjwn13tdj8dy');
-      expect(launchResult.out).to.include('Version: 1.0.0.0');
+      expect(launchResult.code).toBe(0);
+      expect(launchResult.out).toContain('Family Name: Electron.Dev.MSIX_rdjwn13tdj8dy');
+      expect(launchResult.out).toContain('Package ID: Electron.Dev.MSIX_1.0.0.0_x64__rdjwn13tdj8dy');
+      expect(launchResult.out).toContain('Version: 1.0.0.0');
     });
   });
 
@@ -112,17 +112,17 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
         `http://localhost:${port}/update-check`
       ]);
       logOnError(launchResult, () => {
-        expect(launchResult.code).to.equal(0);
-        expect(requests.length).to.be.greaterThan(0);
-        expect(launchResult.out).to.include('Checking for update...');
-        expect(launchResult.out).to.include('Update not available');
+        expect(launchResult.code).toBe(0);
+        expect(requests.length).toBeGreaterThan(0);
+        expect(launchResult.out).toContain('Checking for update...');
+        expect(launchResult.out).toContain('Update not available');
       });
     });
 
     it('should hit the update endpoint with custom headers when checkForUpdates is called', async () => {
       server.get('/update-check', (req, res) => {
-        expect(req.headers['x-appversion']).to.equal('1.0.0');
-        expect(req.headers.authorization).to.equal('Bearer test-token');
+        expect(req.headers['x-appversion']).toBe('1.0.0');
+        expect(req.headers.authorization).toBe('Bearer test-token');
         res.status(204).send();
       });
 
@@ -134,17 +134,17 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
       ]);
 
       logOnError(launchResult, () => {
-        expect(launchResult.code).to.equal(0);
-        expect(requests.length).to.be.greaterThan(0);
-        expect(launchResult.out).to.include('Checking for update...');
-        expect(launchResult.out).to.include('Update not available');
+        expect(launchResult.code).toBe(0);
+        expect(requests.length).toBeGreaterThan(0);
+        expect(launchResult.out).toContain('Checking for update...');
+        expect(launchResult.out).toContain('Update not available');
       });
     });
 
     it('should update successfully with direct link to MSIX file', async () => {
       await installMsixPackage(MSIX_V1);
       const initialVersion = await getMsixPackageVersion('com.electron.myapp');
-      expect(initialVersion).to.equal('1.0.0.0');
+      expect(initialVersion).toBe('1.0.0.0');
 
       server.get('/update.msix', (req, res) => {
         res.download(MSIX_V2);
@@ -157,24 +157,24 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
       ]);
 
       logOnError(launchResult, () => {
-        expect(launchResult.code).to.equal(0);
-        expect(requests.length).to.be.greaterThan(0);
-        expect(launchResult.out).to.include('Checking for update...');
-        expect(launchResult.out).to.include('Update available');
-        expect(launchResult.out).to.include('Update downloaded');
-        expect(launchResult.out).to.include('Release Name: N/A');
-        expect(launchResult.out).to.include('Release Notes: N/A');
-        expect(launchResult.out).to.include(`Update URL: http://localhost:${port}/update.msix`);
+        expect(launchResult.code).toBe(0);
+        expect(requests.length).toBeGreaterThan(0);
+        expect(launchResult.out).toContain('Checking for update...');
+        expect(launchResult.out).toContain('Update available');
+        expect(launchResult.out).toContain('Update downloaded');
+        expect(launchResult.out).toContain('Release Name: N/A');
+        expect(launchResult.out).toContain('Release Notes: N/A');
+        expect(launchResult.out).toContain(`Update URL: http://localhost:${port}/update.msix`);
       });
 
       const updatedVersion = await getMsixPackageVersion('com.electron.myapp');
-      expect(updatedVersion).to.equal('2.0.0.0');
+      expect(updatedVersion).toBe('2.0.0.0');
     });
 
     it('should update successfully with JSON response', async () => {
       await installMsixPackage(MSIX_V1);
       const initialVersion = await getMsixPackageVersion('com.electron.myapp');
-      expect(initialVersion).to.equal('1.0.0.0');
+      expect(initialVersion).toBe('1.0.0.0');
 
       const fixedPubDate = '2011-11-11T11:11:11.000Z';
       const expectedDateStr = new Date(fixedPubDate).toDateString();
@@ -198,25 +198,25 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
         `http://localhost:${port}/update-check`
       ]);
       logOnError(launchResult, () => {
-        expect(launchResult.code).to.equal(0);
-        expect(requests.length).to.be.greaterThan(0);
-        expect(launchResult.out).to.include('Checking for update...');
-        expect(launchResult.out).to.include('Update available');
-        expect(launchResult.out).to.include('Update downloaded');
-        expect(launchResult.out).to.include('Release Name: 2.0.0');
-        expect(launchResult.out).to.include('Release Notes: Test release notes');
-        expect(launchResult.out).to.include(`Release Date: ${expectedDateStr}`);
-        expect(launchResult.out).to.include(`Update URL: http://localhost:${port}/update.msix`);
+        expect(launchResult.code).toBe(0);
+        expect(requests.length).toBeGreaterThan(0);
+        expect(launchResult.out).toContain('Checking for update...');
+        expect(launchResult.out).toContain('Update available');
+        expect(launchResult.out).toContain('Update downloaded');
+        expect(launchResult.out).toContain('Release Name: 2.0.0');
+        expect(launchResult.out).toContain('Release Notes: Test release notes');
+        expect(launchResult.out).toContain(`Release Date: ${expectedDateStr}`);
+        expect(launchResult.out).toContain(`Update URL: http://localhost:${port}/update.msix`);
       });
 
       const updatedVersion = await getMsixPackageVersion('com.electron.myapp');
-      expect(updatedVersion).to.equal('2.0.0.0');
+      expect(updatedVersion).toBe('2.0.0.0');
     });
 
     it('should update successfully with static JSON releases file', async () => {
       await installMsixPackage(MSIX_V1);
       const initialVersion = await getMsixPackageVersion('com.electron.myapp');
-      expect(initialVersion).to.equal('1.0.0.0');
+      expect(initialVersion).toBe('1.0.0.0');
 
       const fixedPubDate = '2011-11-11T11:11:11.000Z';
       const expectedDateStr = new Date(fixedPubDate).toDateString();
@@ -260,19 +260,19 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
       ]);
 
       logOnError(launchResult, () => {
-        expect(launchResult.code).to.equal(0);
-        expect(requests.length).to.be.greaterThan(0);
-        expect(launchResult.out).to.include('Checking for update...');
-        expect(launchResult.out).to.include('Update available');
-        expect(launchResult.out).to.include('Update downloaded');
-        expect(launchResult.out).to.include('Release Name: 2.0.0');
-        expect(launchResult.out).to.include('Release Notes: Test release notes for static format');
-        expect(launchResult.out).to.include(`Release Date: ${expectedDateStr}`);
-        expect(launchResult.out).to.include(`Update URL: http://localhost:${port}/update-v2.msix`);
+        expect(launchResult.code).toBe(0);
+        expect(requests.length).toBeGreaterThan(0);
+        expect(launchResult.out).toContain('Checking for update...');
+        expect(launchResult.out).toContain('Update available');
+        expect(launchResult.out).toContain('Update downloaded');
+        expect(launchResult.out).toContain('Release Name: 2.0.0');
+        expect(launchResult.out).toContain('Release Notes: Test release notes for static format');
+        expect(launchResult.out).toContain(`Release Date: ${expectedDateStr}`);
+        expect(launchResult.out).toContain(`Update URL: http://localhost:${port}/update-v2.msix`);
       });
 
       const updatedVersion = await getMsixPackageVersion('com.electron.myapp');
-      expect(updatedVersion).to.equal('2.0.0.0');
+      expect(updatedVersion).toBe('2.0.0.0');
     });
 
     it('should not update with update File JSON Format if currentRelease is older than installed version', async () => {
@@ -303,17 +303,17 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
       ]);
 
       logOnError(launchResult, () => {
-        expect(launchResult.code).to.equal(0);
-        expect(requests.length).to.be.greaterThan(0);
-        expect(launchResult.out).to.include('Checking for update...');
-        expect(launchResult.out).to.include('Update not available');
+        expect(launchResult.code).toBe(0);
+        expect(requests.length).toBeGreaterThan(0);
+        expect(launchResult.out).toContain('Checking for update...');
+        expect(launchResult.out).toContain('Update not available');
       });
     });
 
     it('should downgrade to older version with JSON server format and allowAnyVersion is true', async () => {
       await installMsixPackage(MSIX_V2);
       const initialVersion = await getMsixPackageVersion('com.electron.myapp');
-      expect(initialVersion).to.equal('2.0.0.0');
+      expect(initialVersion).toBe('2.0.0.0');
 
       const fixedPubDate = '2010-10-10T10:10:10.000Z';
       const expectedDateStr = new Date(fixedPubDate).toDateString();
@@ -339,19 +339,19 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
       ]);
 
       logOnError(launchResult, () => {
-        expect(launchResult.code).to.equal(0);
-        expect(requests.length).to.be.greaterThan(0);
-        expect(launchResult.out).to.include('Checking for update...');
-        expect(launchResult.out).to.include('Update available');
-        expect(launchResult.out).to.include('Update downloaded');
-        expect(launchResult.out).to.include('Release Name: 1.0.0');
-        expect(launchResult.out).to.include('Release Notes: Initial release');
-        expect(launchResult.out).to.include(`Release Date: ${expectedDateStr}`);
-        expect(launchResult.out).to.include(`Update URL: http://localhost:${port}/update-v1.msix`);
+        expect(launchResult.code).toBe(0);
+        expect(requests.length).toBeGreaterThan(0);
+        expect(launchResult.out).toContain('Checking for update...');
+        expect(launchResult.out).toContain('Update available');
+        expect(launchResult.out).toContain('Update downloaded');
+        expect(launchResult.out).toContain('Release Name: 1.0.0');
+        expect(launchResult.out).toContain('Release Notes: Initial release');
+        expect(launchResult.out).toContain(`Release Date: ${expectedDateStr}`);
+        expect(launchResult.out).toContain(`Update URL: http://localhost:${port}/update-v1.msix`);
       });
 
       const downgradedVersion = await getMsixPackageVersion('com.electron.myapp');
-      expect(downgradedVersion).to.equal('1.0.0.0');
+      expect(downgradedVersion).toBe('1.0.0.0');
     });
   });
 });

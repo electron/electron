@@ -6,7 +6,7 @@
 // are no retries: a click that only sometimes gets through is a failure.
 import { app } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { once } from 'node:events';
 import { createRequire } from 'node:module';
@@ -83,7 +83,7 @@ ifdescribe(process.platform === 'darwin' && !process.env.ELECTRON_SKIP_NATIVE_MO
       await sendToBackground();
       postClick(w);
       await logged('mouseDown main');
-      expect(await log()).to.deep.equal(['mouseDown main']);
+      expect(await log()).toEqual(['mouseDown main']);
     });
 
     it('reach the page without activating the app', async () => {
@@ -91,7 +91,7 @@ ifdescribe(process.platform === 'darwin' && !process.env.ELECTRON_SKIP_NATIVE_MO
       await sendToBackground();
       postClick(w);
       await logged('mouseDown main');
-      expect(await log()).to.deep.equal(['mouseDown main']);
+      expect(await log()).toEqual(['mouseDown main']);
     });
   }
 );

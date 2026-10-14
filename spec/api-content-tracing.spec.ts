@@ -1,7 +1,7 @@
 import { app, contentTracing, type TraceConfig, type TraceCategoriesAndOptions } from 'electron/main';
 
-import { expect } from 'chai';
 import * as protobuf from 'protobufjs';
+import { expect } from 'vitest';
 
 import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
@@ -208,10 +208,10 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       const config = {};
       await record(config, outputFilePath);
 
-      expect(fs.existsSync(outputFilePath)).to.be.true('output exists');
+      expect(fs.existsSync(outputFilePath), 'output exists').toBe(true);
 
       const fileSizeInKiloBytes = getFileSizeInKiloBytes(outputFilePath);
-      expect(fileSizeInKiloBytes).to.be.above(0, `the trace output file is empty, check "${outputFilePath}"`);
+      expect(fileSizeInKiloBytes, `the trace output file is empty, check "${outputFilePath}"`).toBeGreaterThan(0);
     });
 
     it('accepts a trace config', async () => {
@@ -225,14 +225,15 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       // If the `excluded_categories` param above is not respected, categories
       // like `node,node.environment` will be included in the output.
       const events = getTraceEvents(outputFilePath);
-      expect(events.some((event) => hasCategory(event, 'node.environment'))).to.be.false();
+      expect(events.some((event) => hasCategory(event, 'node.environment'))).toBe(false);
     });
 
     it('records the Perfetto protobuf format', async () => {
       await record({}, outputFilePath);
 
-      expect(fs.readFileSync(outputFilePath)[0]).to.not.equal('{'.charCodeAt(0), 'output looks like JSON');
-      expect(readPerfettoTrace(outputFilePath).packet).to.be.an('array').that.is.not.empty('trace has no packets');
+      expect(fs.readFileSync(outputFilePath)[0], 'output looks like JSON').not.toBe('{'.charCodeAt(0));
+      expect(readPerfettoTrace(outputFilePath).packet, 'trace has no packets').toBeInstanceOf(Array);
+      expect(readPerfettoTrace(outputFilePath).packet, 'trace has no packets').not.toHaveLength(0);
     });
 
     it('rejects invalid heap profiler options', () => {
@@ -242,38 +243,36 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
             samplingInterval: 0
           }
         })
-      ).to.throw();
+      ).toThrow();
       expect(() =>
         contentTracing.startRecording({
           nativeHeapProfiling: {
             samplingInterval: -1
           }
         })
-      ).to.throw();
+      ).toThrow();
       expect(() =>
         contentTracing.startRecording({
           nativeHeapProfiling: {
             dumpInterval: 1.5
           }
         })
-      ).to.throw();
-      expect(() => contentTracing.startRecording({ nativeHeapProfiling: 'invalid' } as any)).to.throw();
+      ).toThrow();
+      expect(() => contentTracing.startRecording({ nativeHeapProfiling: 'invalid' } as any)).toThrow();
       expect(() =>
         contentTracing.startRecording({
           nativeHeapProfiling: {
             dumpInterval: 2 ** 32
           }
         })
-      ).to.throw();
+      ).toThrow();
     });
 
     it('rejects a second stop while heap tracing is stopping', async () => {
       await contentTracing.startRecording({ nativeHeapProfiling: {} });
 
       const firstStop = contentTracing.stopRecording(outputFilePath);
-      await expect(contentTracing.stopRecording(`${outputFilePath}.second`)).to.eventually.be.rejectedWith(
-        'Failed to stop tracing'
-      );
+      await expect(contentTracing.stopRecording(`${outputFilePath}.second`)).rejects.toThrow('Failed to stop tracing');
       await firstStop;
     });
 
@@ -286,10 +285,10 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       };
       await record(config, outputFilePath);
 
-      expect(fs.existsSync(outputFilePath)).to.be.true('output exists');
+      expect(fs.existsSync(outputFilePath), 'output exists').toBe(true);
 
       const fileSizeInKiloBytes = getFileSizeInKiloBytes(outputFilePath);
-      expect(fileSizeInKiloBytes).to.be.above(0, `the trace output file is empty, check "${outputFilePath}"`);
+      expect(fileSizeInKiloBytes, `the trace output file is empty, check "${outputFilePath}"`).toBeGreaterThan(0);
 
       // If the `categoryFilter` param above is not respected the trace will
       // contain events from other categories. Metadata events use the
@@ -300,7 +299,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
           .flatMap((event) => event.categories)
           .filter((category) => !expectedCategories.has(category))
       );
-      expect([...unexpectedCategories]).to.be.empty(`unexpected trace event categories, check "${outputFilePath}"`);
+      expect([...unexpectedCategories], `unexpected trace event categories, check "${outputFilePath}"`).toHaveLength(0);
     });
   });
 
@@ -316,27 +315,31 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
 
       await contentTracing.startRecording(options);
       const path = await contentTracing.stopRecording('');
-      expect(path).to.be.a('string').that.is.not.empty('result path');
-      expect(fs.statSync(path).isFile()).to.be.true('output exists');
+      expect(path, 'result path').toBeTypeOf('string');
+      expect(path, 'result path').not.toHaveLength(0);
+      expect(fs.statSync(path).isFile(), 'output exists').toBe(true);
     });
 
     it('calls its callback with a result file path', async () => {
       const resultFilePath = await record(/* options */ {}, outputFilePath);
-      expect(resultFilePath).to.be.a('string').and.be.equal(outputFilePath);
+      expect(resultFilePath).toBeTypeOf('string');
+      expect(resultFilePath).toBe(outputFilePath);
     });
 
     it('creates a temporary file when an empty string is passed', async function () {
       const resultFilePath = await record(/* options */ {}, /* outputFilePath */ '');
-      expect(resultFilePath).to.be.a('string').that.is.not.empty('result path');
+      expect(resultFilePath, 'result path').toBeTypeOf('string');
+      expect(resultFilePath, 'result path').not.toHaveLength(0);
     });
 
     it('creates a temporary file when no path is passed', async function () {
       const resultFilePath = await record(/* options */ {}, /* outputFilePath */ undefined);
-      expect(resultFilePath).to.be.a('string').that.is.not.empty('result path');
+      expect(resultFilePath, 'result path').toBeTypeOf('string');
+      expect(resultFilePath, 'result path').not.toHaveLength(0);
     });
 
     it('rejects if no trace is happening', async () => {
-      await expect(contentTracing.stopRecording()).to.be.rejectedWith('Failed to stop tracing - no trace in progress');
+      await expect(contentTracing.stopRecording()).rejects.toThrow('Failed to stop tracing - no trace in progress');
     });
   });
 
@@ -356,8 +359,8 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       // the process will crash with "Cannot create a handle without a HandleScope".
       const result = await contentTracing.getTraceBufferUsage();
 
-      expect(result).to.have.property('percentage').that.is.a('number');
-      expect(result).to.have.property('value').that.is.a('number');
+      expect(result).toHaveProperty('percentage', expect.any(Number));
+      expect(result).toHaveProperty('value', expect.any(Number));
 
       await contentTracing.stopRecording();
     });
@@ -365,8 +368,8 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
     it('returns zero usage when no trace is active', async () => {
       await app.whenReady();
       const result = await contentTracing.getTraceBufferUsage();
-      expect(result).to.have.property('percentage').that.is.a('number');
-      expect(result.percentage).to.equal(0);
+      expect(result).toHaveProperty('percentage', expect.any(Number));
+      expect(result.percentage).toBe(0);
     });
 
     it('settles concurrent requests during heap profiling', async () => {
@@ -375,8 +378,8 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
 
       const results = await Promise.all([contentTracing.getTraceBufferUsage(), contentTracing.getTraceBufferUsage()]);
       for (const result of results) {
-        expect(result).to.have.property('percentage').that.is.a('number');
-        expect(result).to.have.property('value').that.is.a('number');
+        expect(result).toHaveProperty('percentage', expect.any(Number));
+        expect(result).toHaveProperty('value', expect.any(Number));
       }
 
       await contentTracing.stopRecording();
@@ -418,7 +421,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
         hasStackSample = trace.packet?.some((packet) => packet.stackSample !== undefined) ?? false;
       }
 
-      expect(hasStackSample).to.be.true('no heap profiler stack samples were captured after multiple attempts');
+      expect(hasStackSample, 'no heap profiler stack samples were captured after multiple attempts').toBe(true);
     });
 
     it('include V8 samples from the main process', async function () {
@@ -443,7 +446,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
         events.some(
           (event) => hasCategory(event, 'disabled-by-default-v8.cpu_profiler') && event.name === 'ProfileChunk'
         )
-      ).to.be.true();
+      ).toBe(true);
     });
   });
 
@@ -459,11 +462,15 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
       const markEvents = getTraceEvents(resultPath).filter(
         (event) => hasCategory(event, 'node.perf.usertiming') && event.name === 'test-trace-mark'
       );
-      expect(markEvents).to.have.lengthOf.at.least(1, 'should have node.perf.usertiming events for performance.mark()');
+      expect(
+        markEvents.length,
+        'should have node.perf.usertiming events for performance.mark()'
+      ).toBeGreaterThanOrEqual(1);
       // Instants are typed events, or legacy events with the 'I' phase.
-      expect(markEvents[0].type === TYPE_INSTANT || markEvents[0].phase === 'I').to.be.true(
+      expect(
+        markEvents[0].type === TYPE_INSTANT || markEvents[0].phase === 'I',
         'performance.mark() should emit instant events'
-      );
+      ).toBe(true);
     });
 
     it('captures performance.measure() as nestable async begin/end trace events', async function () {
@@ -488,13 +495,13 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
           event.name === 'test-trace-measure' &&
           (event.type === TYPE_SLICE_BEGIN || event.phase === 'b')
       );
-      expect(begin).to.not.be.undefined('should have a nestable async begin event');
+      expect(begin, 'should have a nestable async begin event').not.toBeUndefined();
       const hasEnd = events.some(
         (event) =>
           (event.type === TYPE_SLICE_END && event.trackUuid === begin!.trackUuid) ||
           (event.phase === 'e' && event.name === 'test-trace-measure')
       );
-      expect(hasEnd).to.be.true('should have a nestable async end event');
+      expect(hasEnd, 'should have a nestable async end event').toBe(true);
     });
 
     it('captures node.fs.sync trace events for file operations', async function () {
@@ -506,7 +513,7 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
 
       const resultPath = await contentTracing.stopRecording();
       const fsEvents = getTraceEvents(resultPath).filter((event) => hasCategory(event, 'node.fs.sync'));
-      expect(fsEvents).to.have.lengthOf.at.least(1, 'should have node.fs.sync trace events');
+      expect(fsEvents.length, 'should have node.fs.sync trace events').toBeGreaterThanOrEqual(1);
     });
 
     it('captures multiple node categories simultaneously', async function () {
@@ -522,8 +529,8 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
 
       const asyncHooksEvents = events.filter((event) => hasCategory(event, 'node.async_hooks'));
       const vmEvents = events.filter((event) => hasCategory(event, 'node.vm.script'));
-      expect(asyncHooksEvents).to.have.lengthOf.at.least(1, 'should have node.async_hooks events');
-      expect(vmEvents).to.have.lengthOf.at.least(1, 'should have node.vm.script events');
+      expect(asyncHooksEvents.length, 'should have node.async_hooks events').toBeGreaterThanOrEqual(1);
+      expect(vmEvents.length, 'should have node.vm.script events').toBeGreaterThanOrEqual(1);
     });
 
     it('captures events using wildcard category pattern node.fs.*', async function () {
@@ -539,8 +546,8 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
 
       const syncEvents = events.filter((event) => hasCategory(event, 'node.fs.sync'));
       const asyncEvents = events.filter((event) => hasCategory(event, 'node.fs.async'));
-      expect(syncEvents).to.have.lengthOf.at.least(1, 'should have node.fs.sync events from wildcard pattern');
-      expect(asyncEvents).to.have.lengthOf.at.least(1, 'should have node.fs.async events from wildcard pattern');
+      expect(syncEvents.length, 'should have node.fs.sync events from wildcard pattern').toBeGreaterThanOrEqual(1);
+      expect(asyncEvents.length, 'should have node.fs.async events from wildcard pattern').toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -554,9 +561,10 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
 
       const metadata = getTraceMetadata(outputFilePath);
       const productVersion = metadata.get('product-version');
-      expect(productVersion).to.be.a('string');
-      expect(productVersion!.startsWith(process.versions.chrome)).to.be.true();
-      expect(metadata.get('os-arch')).to.be.a('string').that.is.not.empty();
+      expect(productVersion).toBeTypeOf('string');
+      expect(productVersion!.startsWith(process.versions.chrome)).toBe(true);
+      expect(metadata.get('os-arch')).toBeTypeOf('string');
+      expect(metadata.get('os-arch')).not.toHaveLength(0);
     });
   });
 });

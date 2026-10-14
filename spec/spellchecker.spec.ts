@@ -1,6 +1,6 @@
 import { BrowserWindow, type Session, session } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
@@ -99,8 +99,8 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
         const contextMenuParams = await rightClickUntil(
           (contextMenuParams) => contextMenuParams.selectionText.length > 0
         );
-        expect(contextMenuParams.misspelledWord).to.eq('');
-        expect(contextMenuParams.dictionarySuggestions).to.have.lengthOf(0);
+        expect(contextMenuParams.misspelledWord).toBe('');
+        expect(contextMenuParams.dictionarySuggestions).toHaveLength(0);
       });
 
       ifit(shouldRun)('should detect incorrectly spelled words as incorrect', async () => {
@@ -109,8 +109,8 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
         const contextMenuParams = await rightClickUntil(
           (contextMenuParams) => contextMenuParams.misspelledWord.length > 0
         );
-        expect(contextMenuParams.misspelledWord).to.eq('typograpy');
-        expect(contextMenuParams.dictionarySuggestions).to.have.length.of.at.least(1);
+        expect(contextMenuParams.misspelledWord).toBe('typograpy');
+        expect(contextMenuParams.dictionarySuggestions.length).toBeGreaterThanOrEqual(1);
       });
 
       ifit(shouldRun)(
@@ -124,8 +124,8 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
           const contextMenuParams = await rightClickUntil(
             (contextMenuParams) => contextMenuParams.misspelledWord.length > 0
           );
-          expect(contextMenuParams.misspelledWord).to.eq('typograpy');
-          expect(contextMenuParams.dictionarySuggestions).to.have.length.of.at.least(1);
+          expect(contextMenuParams.misspelledWord).toBe('typograpy');
+          expect(contextMenuParams.dictionarySuggestions.length).toBeGreaterThanOrEqual(1);
         }
       );
 
@@ -136,15 +136,15 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
 
         const callWebFrameFn = (expr: string) => w.webContents.executeJavaScript(`electron.webFrame.${expr}`);
 
-        expect(await callWebFrameFn('isWordMisspelled("typography")')).to.equal(false);
-        expect(await callWebFrameFn('isWordMisspelled("typograpy")')).to.equal(true);
-        expect(await callWebFrameFn('getWordSuggestions("typography")')).to.be.empty();
-        expect(await callWebFrameFn('getWordSuggestions("typograpy")')).to.not.be.empty();
+        expect(await callWebFrameFn('isWordMisspelled("typography")')).toBe(false);
+        expect(await callWebFrameFn('isWordMisspelled("typograpy")')).toBe(true);
+        expect(await callWebFrameFn('getWordSuggestions("typography")')).toHaveLength(0);
+        expect(await callWebFrameFn('getWordSuggestions("typograpy")')).not.toHaveLength(0);
       });
 
       describe('spellCheckerEnabled', () => {
         it('is enabled by default', async () => {
-          expect(w.webContents.session.spellCheckerEnabled).to.be.true();
+          expect(w.webContents.session.spellCheckerEnabled).toBe(true);
         });
 
         ifit(shouldRun)('can be dynamically changed', async () => {
@@ -156,18 +156,18 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
 
           w.webContents.session.spellCheckerEnabled = false;
           v8Util.runUntilIdle();
-          expect(w.webContents.session.spellCheckerEnabled).to.be.false();
+          expect(w.webContents.session.spellCheckerEnabled).toBe(false);
           // spellCheckerEnabled is sent to renderer asynchronously and there is
           // no event notifying when it is finished, so wait a little while to
           // ensure the setting has been changed in renderer.
           await setTimeout(500);
-          expect(await callWebFrameFn('isWordMisspelled("typograpy")')).to.equal(false);
+          expect(await callWebFrameFn('isWordMisspelled("typograpy")')).toBe(false);
 
           w.webContents.session.spellCheckerEnabled = true;
           v8Util.runUntilIdle();
-          expect(w.webContents.session.spellCheckerEnabled).to.be.true();
+          expect(w.webContents.session.spellCheckerEnabled).toBe(true);
           await setTimeout(500);
-          expect(await callWebFrameFn('isWordMisspelled("typograpy")')).to.equal(true);
+          expect(await callWebFrameFn('isWordMisspelled("typograpy")')).toBe(true);
         });
       });
 
@@ -190,38 +190,39 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
           it('should successfully list words in custom dictionary', async () => {
             const words = ['foo', 'bar', 'baz'];
             const results = words.map((word) => ses.addWordToSpellCheckerDictionary(word));
-            expect(results).to.eql([true, true, true]);
+            expect(results).toEqual([true, true, true]);
 
             const wordList = await ses.listWordsInSpellCheckerDictionary();
-            expect(wordList).to.have.deep.members(words);
+            expect(wordList).toHaveLength(words.length);
+            expect(wordList).toEqual(expect.arrayContaining(words));
           });
 
           it('should return an empty array if no words are added', async () => {
             const wordList = await ses.listWordsInSpellCheckerDictionary();
-            expect(wordList).to.have.length(0);
+            expect(wordList).toHaveLength(0);
           });
         });
 
         describe('ses.addWordToSpellCheckerDictionary', () => {
           it('should successfully add word to custom dictionary', async () => {
             const result = ses.addWordToSpellCheckerDictionary('foobar');
-            expect(result).to.equal(true);
+            expect(result).toBe(true);
             const wordList = await ses.listWordsInSpellCheckerDictionary();
-            expect(wordList).to.eql(['foobar']);
+            expect(wordList).toEqual(['foobar']);
           });
 
           it('should fail for an empty string', async () => {
             const result = ses.addWordToSpellCheckerDictionary('');
-            expect(result).to.equal(false);
+            expect(result).toBe(false);
             const wordList = await ses.listWordsInSpellCheckerDictionary;
-            expect(wordList).to.have.length(0);
+            expect(wordList).toHaveLength(0);
           });
 
           // remove API will always return false because we can't add words
           it('should fail for non-persistent sessions', async () => {
             const tempSes = session.fromPartition('temporary');
             const result = tempSes.addWordToSpellCheckerDictionary('foobar');
-            expect(result).to.equal(false);
+            expect(result).toBe(false);
           });
         });
 
@@ -231,19 +232,19 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
           ifit(isMac)('should be a no-op when setSpellCheckerLanguages is called on macOS', () => {
             expect(() => {
               w.webContents.session.setSpellCheckerLanguages(['i-am-a-nonexistent-language']);
-            }).to.not.throw();
+            }).not.toThrow();
           });
 
           ifit(!isMac)('should throw when a bad language is passed', () => {
             expect(() => {
               w.webContents.session.setSpellCheckerLanguages(['i-am-a-nonexistent-language']);
-            }).to.throw(/Invalid language code provided: "i-am-a-nonexistent-language" is not a valid language code/);
+            }).toThrow(/Invalid language code provided: "i-am-a-nonexistent-language" is not a valid language code/);
           });
 
           ifit(!isMac)('should not throw when a recognized language is passed', () => {
             expect(() => {
               w.webContents.session.setSpellCheckerLanguages(['es']);
-            }).to.not.throw();
+            }).not.toThrow();
           });
         });
 
@@ -253,31 +254,31 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
           ifit(isMac)('should be a no-op when a bad url is passed on macOS', () => {
             expect(() => {
               w.webContents.session.setSpellCheckerDictionaryDownloadURL('i-am-not-a-valid-url');
-            }).to.not.throw();
+            }).not.toThrow();
           });
 
           ifit(!isMac)('should throw when a bad url is passed', () => {
             expect(() => {
               w.webContents.session.setSpellCheckerDictionaryDownloadURL('i-am-not-a-valid-url');
-            }).to.throw(/The URL you provided to setSpellCheckerDictionaryDownloadURL is not a valid URL/);
+            }).toThrow(/The URL you provided to setSpellCheckerDictionaryDownloadURL is not a valid URL/);
           });
         });
 
         describe('ses.removeWordFromSpellCheckerDictionary', () => {
           it('should successfully remove words to custom dictionary', async () => {
             const result1 = ses.addWordToSpellCheckerDictionary('foobar');
-            expect(result1).to.equal(true);
+            expect(result1).toBe(true);
             const wordList1 = await ses.listWordsInSpellCheckerDictionary();
-            expect(wordList1).to.eql(['foobar']);
+            expect(wordList1).toEqual(['foobar']);
             const result2 = ses.removeWordFromSpellCheckerDictionary('foobar');
-            expect(result2).to.equal(true);
+            expect(result2).toBe(true);
             const wordList2 = await ses.listWordsInSpellCheckerDictionary();
-            expect(wordList2).to.have.length(0);
+            expect(wordList2).toHaveLength(0);
           });
 
           it('should fail for words not in custom dictionary', () => {
             const result2 = ses.removeWordFromSpellCheckerDictionary('foobar');
-            expect(result2).to.equal(false);
+            expect(result2).toBe(false);
           });
         });
       });

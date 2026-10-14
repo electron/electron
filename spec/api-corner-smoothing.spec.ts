@@ -1,7 +1,7 @@
 import { type NativeImage, nativeImage } from 'electron/common';
 import { BrowserWindow } from 'electron/main';
 
-import { AssertionError, expect } from 'chai';
+import { assert, expect } from 'vitest';
 
 import * as path from 'node:path';
 
@@ -34,10 +34,10 @@ const COMPARISON_TOLERANCE = 2.5;
  * constant.
  */
 function compareImages(img1: NativeImage, img2: NativeImage): boolean {
-  expect(img1.getSize()).to.deep.equal(
-    img2.getSize(),
+  expect(
+    img1.getSize(),
     'Cannot compare images with different sizes. Run tests with --force-device-scale-factor=1'
-  );
+  ).toEqual(img2.getSize());
 
   const bitmap1 = img1.toBitmap();
   const bitmap2 = img2.toBitmap();
@@ -87,17 +87,17 @@ async function pageCaptureTestRecipe(
   await w.webContents.executeJavaScript('new Promise((resolve) => { requestAnimationFrame(() => resolve()); })');
 
   const actualImg = await w.webContents.capturePage();
-  expect(actualImg.isEmpty()).to.be.false('Failed to capture page image');
+  expect(actualImg.isEmpty(), 'Failed to capture page image').toBe(false);
 
   const expectedImg = nativeImage.createFromPath(expectedImgPath);
-  expect(expectedImg.isEmpty()).to.be.false('Failed to read expected reference image');
+  expect(expectedImg.isEmpty(), 'Failed to read expected reference image').toBe(false);
 
   const matches = compareImages(actualImg, expectedImg);
   if (!matches) {
     const artifactFileName = `corner-rounding-expected-${artifactName}.png`;
     await createArtifact(artifactFileName, actualImg.toPNG());
 
-    throw new AssertionError(
+    assert.fail(
       `Actual image did not match expected reference image. Actual: "${artifactFileName}" in artifacts, Expected: "${path.relative(
         path.resolve(import.meta.dirname, '..'),
         expectedImgPath

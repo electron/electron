@@ -1,6 +1,6 @@
 import { BaseWindow, BrowserWindow, webContents } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { once } from 'node:events';
 
@@ -50,7 +50,7 @@ export const closeWindow = async (
         // called: by now the next test may already have created its own.
         const leftover = windows.filter((win) => !win.isDestroyed());
         try {
-          expect(leftover).to.have.lengthOf(0);
+          expect(leftover).toHaveLength(0);
         } finally {
           for (const win of leftover) {
             await ensureWindowIsClosed(win);

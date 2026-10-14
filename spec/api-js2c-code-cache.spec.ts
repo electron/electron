@@ -1,6 +1,6 @@
 import { flipFuses, FuseV1Options, FuseVersion } from '@electron/fuses';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import * as fs from 'node:fs';
@@ -41,13 +41,13 @@ async function runFixtureApp(execPath: string): Promise<Result> {
     });
   });
   const m = /JS2C_RESULT (.+)/.exec(out);
-  expect(m, `fixture app did not report a result. Output:\n${out}`).to.not.equal(null);
+  expect(m, `fixture app did not report a result. Output:\n${out}`).not.toBe(null);
   return JSON.parse(m![1]);
 }
 
 function expectConsumed(status: Status, id: string) {
-  expect(status, `${id} should be present (compiled in this process)`).to.have.property(id);
-  expect(status[id], `${id} build-time code cache must be CONSUMED (accepted), not rejected/absent`).to.equal(true);
+  expect(status, `${id} should be present (compiled in this process)`).toHaveProperty([id]);
+  expect(status[id], `${id} build-time code cache must be CONSUMED (accepted), not rejected/absent`).toBe(true);
 }
 
 // Every Node builtin the process compiled so far must have consumed a cache
@@ -58,9 +58,9 @@ function expectNodeBuiltinsConsumed(status: Status, processType: string) {
   const nodeIds = Object.keys(status).filter(
     (id) => !id.startsWith('internal/electron/js2c/') && !id.startsWith('internal/deps/')
   );
-  expect(nodeIds.length, `${processType} should have compiled some Node builtins`).to.be.greaterThan(20);
+  expect(nodeIds.length, `${processType} should have compiled some Node builtins`).toBeGreaterThan(20);
   const notConsumed = nodeIds.filter((id) => !status[id]);
-  expect(notConsumed, `${processType}: Node builtins compiled WITHOUT consuming the code cache`).to.deep.equal([]);
+  expect(notConsumed, `${processType}: Node builtins compiled WITHOUT consuming the code cache`).toEqual([]);
 }
 
 ifdescribe(isTestingBindingAvailable())('js2c build-time code cache', () => {
@@ -100,7 +100,7 @@ ifdescribe(isTestingBindingAvailable())('js2c build-time code cache', () => {
           ? path.resolve(appPath, 'Contents/Frameworks/Electron Framework.framework/Resources')
           : path.dirname(appPath);
       const builtInBlob = fs.readdirSync(assetsDir).find((f) => /^v8_context_snapshot.*\.bin$/.test(f));
-      expect(builtInBlob, `no v8 context snapshot in ${assetsDir}`).to.be.a('string');
+      expect(builtInBlob, `no v8 context snapshot in ${assetsDir}`).toBeTypeOf('string');
       fs.copyFileSync(
         path.resolve(assetsDir, builtInBlob!),
         path.resolve(assetsDir, 'browser_v8_context_snapshot.bin')
