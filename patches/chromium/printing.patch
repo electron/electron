@@ -169,10 +169,10 @@ index b673362fe80dd0752e5cde56ffeba32dc0b32879..f7266ed712d05f036500ef3dba01b5dd
      scoped_refptr<base::RefCountedMemory> print_data,
      const gfx::Size& page_size,
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index 88f0095ed2552640f43a989e4688ec1af0ca32aa..e5475ab2d62b2121a7b8f8705b8a1643e346a52b 100644
+index f124be0421de8b3eb33b7075eff33bf22cd612f5..1e710704525b9d0dbab972fa68dd76d3cb069297 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
-@@ -221,7 +221,7 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
+@@ -224,7 +224,7 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
                                       mojom::ScriptedPrintParamsPtr params,
                                       ScriptedPrintCallback callback);
  
