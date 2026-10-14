@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { defer } from './lib/spec-helpers.ts';
 
@@ -50,6 +50,44 @@ describe('spec runner', () => {
         'outer afterEach'
       ]);
       expect(reported).toEqual(['third cleanup failure', 'second cleanup failure', 'afterEach failure']);
+    });
+  });
+
+  describe('when a defer()-ed cleanup outlasts the hook timeout', () => {
+    const ran: string[] = [];
+    let reported: string[] | undefined;
+
+    // A short hook timeout keeps this fast; defer()-ed cleanup reads it when it runs.
+    beforeAll(() => {
+      vi.setConfig({ hookTimeout: 100 });
+    });
+    afterAll(() => {
+      vi.resetConfig();
+    });
+
+    afterEach(() => {
+      ran.push('afterEach');
+    });
+
+    it.fails('fails the test with a timeout', { retry: 0 }, ({ onTestFailed }) => {
+      onTestFailed(({ task }) => {
+        reported = task.result?.errors?.map((error) => error.message);
+      });
+      defer(() => {
+        ran.push('first deferred');
+      });
+      defer(() => {
+        ran.push('second deferred');
+        // Settles well after the 100 ms hook timeout,
+        // so a runner without the timeout fails this test instead of hanging.
+        return new Promise<void>((resolve) => setTimeout(resolve, 5000));
+      });
+    });
+
+    // Reads what the test above left behind, so it must run after it.
+    it('still runs every later cleanup and hook', () => {
+      expect(ran).toEqual(['second deferred', 'first deferred', 'afterEach']);
+      expect(reported).toEqual(['defer()-ed cleanup timed out in 100ms']);
     });
   });
 });
