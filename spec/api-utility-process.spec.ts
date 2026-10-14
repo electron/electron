@@ -541,6 +541,26 @@ describe('utilityProcess module', () => {
       await exit;
     });
 
+    it('delivers messages the child posted right before exiting', async () => {
+      const count = 20;
+      const child = utilityProcess.fork(path.join(fixturesPath, 'post-message-then-exit.js'));
+      deferKillUtilityProcess(child);
+      const received: number[] = [];
+      child.on('message', (index) => received.push(index));
+      let receivedBeforeExit: number[] = [];
+      child.once('exit', () => {
+        receivedBeforeExit = [...received];
+      });
+      await once(child, 'spawn');
+      child.postMessage(count);
+      // Block this thread while the child posts and exits, so that its
+      // messages and its exit are both waiting here when it gets back to them.
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1000);
+      const [code] = await once(child, 'exit');
+      expect(code).toBe(0);
+      expect(receivedBeforeExit).toEqual(Array.from({ length: count }, (_, index) => index));
+    });
+
     it('handles the parent port trying to send an non-clonable object', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'non-cloneable.js'));
       await once(child, 'spawn');
