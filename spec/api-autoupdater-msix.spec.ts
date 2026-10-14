@@ -29,6 +29,8 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
   this.timeout(120000);
 
   before(async function () {
+    // Each of the two setup commands may take up to two minutes on a busy host.
+    this.timeout(300000);
     await installMsixCertificate();
 
     const electronExec = getElectronExecutable();

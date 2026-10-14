@@ -11,13 +11,21 @@ const fixturesPath = path.resolve(import.meta.dirname, '..', 'fixtures', 'api', 
 const manifestFixturePath = path.resolve(fixturesPath, 'ElectronDevAppxManifest.xml');
 const installCertScriptPath = path.resolve(fixturesPath, 'install_test_cert.ps1');
 const powershellTimeout = 30_000;
+// Installing the test certificate and registering the sparse package run in the
+// suite's before hook while other spec files keep the CI host busy. On
+// windows-arm64 they regularly overrun 30s there, though they finish in time
+// when the suite runs on its own, and vitest does not retry a failed hook.
+const powershellSetupTimeout = 120_000;
 
-function runPowerShell(args: string[]): Promise<{ status: number; stdout: string; stderr: string }> {
+function runPowerShell(
+  args: string[],
+  timeout = powershellTimeout
+): Promise<{ status: number; stdout: string; stderr: string }> {
   const result = new Promise<{ status: number; stdout: string; stderr: string }>((resolve, reject) => {
     const child = cp.execFile(
       'powershell',
       ['-NoProfile', '-NonInteractive', ...args],
-      { timeout: powershellTimeout, killSignal: 'SIGKILL' },
+      { timeout, killSignal: 'SIGKILL' },
       (error, stdout, stderr) => {
         if (!error) {
           resolve({ status: 0, stdout, stderr });
@@ -25,7 +33,7 @@ function runPowerShell(args: string[]): Promise<{ status: number; stdout: string
           resolve({ status: error.code, stdout, stderr });
         } else {
           reject(
-            new Error(`PowerShell failed (timeout: ${powershellTimeout} ms): ${error.message}\n${stderr || stdout}`, {
+            new Error(`PowerShell failed (timeout: ${timeout} ms): ${error.message}\n${stderr || stdout}`, {
               cause: error
             })
           );
@@ -45,7 +53,10 @@ function runPowerShell(args: string[]): Promise<{ status: number; stdout: string
 // Install the signing certificate for MSIX test packages to the Trusted People store
 // This is required to install self-signed MSIX packages
 export async function installMsixCertificate(): Promise<void> {
-  const result = await runPowerShell(['-ExecutionPolicy', 'Bypass', '-File', installCertScriptPath]);
+  const result = await runPowerShell(
+    ['-ExecutionPolicy', 'Bypass', '-File', installCertScriptPath],
+    powershellSetupTimeout
+  );
 
   if (result.status !== 0) {
     throw new Error(`Failed to install MSIX certificate: ${result.stderr.toString() || result.stdout.toString()}`);
@@ -87,7 +98,7 @@ export async function registerExecutableWithIdentity(executablePath: string): Pr
   fs.copyFileSync(manifestFixturePath, manifestPath);
 
   try {
-    const result = await runPowerShell(['-Command', psCommand]);
+    const result = await runPowerShell(['-Command', psCommand], powershellSetupTimeout);
     if (result.status !== 0) {
       const errorMsg = result.stderr.toString() || result.stdout.toString();
       throw new Error(`Failed to register executable with identity: ${errorMsg}`);
