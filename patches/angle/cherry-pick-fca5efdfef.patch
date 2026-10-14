@@ -51,7 +51,7 @@ index 414d3f02081f659ad383490c23e58841662b4ad4..e6e18579173c41b8a500d81c4503c9c3
          "finishBeforeBlitFramebufferMultiAttachment",
          FeatureCategory::OpenGLWorkarounds,
 diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
-index 21a76917baaef35f14d37c4fca146e87fad11abf..ad0260b9e9df75cdd73f685962ac96c2f48411cc 100644
+index bf0240f159aed1e324d56e92fe1d28affaf5d2b2..574ae5bca20d4d2f10ca12f5d010765e1acbf988 100644
 --- a/include/platform/gl_features.json
 +++ b/include/platform/gl_features.json
 @@ -1002,6 +1002,15 @@
@@ -71,7 +71,7 @@ index 21a76917baaef35f14d37c4fca146e87fad11abf..ad0260b9e9df75cdd73f685962ac96c2
              "name": "finish_before_blit_framebuffer_multi_attachment",
              "category": "Workarounds",
 diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
-index 101c7e00d33626bf0b382ba2782d6f2844de3ee9..3028c5fd84ee11f03834529c09166d57b62d7070 100644
+index 7639dd20b3fbe6441b164dcc0de82b6eeb9d2331..c9847780aa969108d93e07a6583b59aadb713431 100644
 --- a/src/libANGLE/renderer/gl/TextureGL.cpp
 +++ b/src/libANGLE/renderer/gl/TextureGL.cpp
 @@ -210,6 +210,30 @@ angle::Result TextureGL::setImage(const gl::Context *context,
@@ -263,7 +263,7 @@ index 33933f313223addfd176c0568ad5b912d5b6ba72..31d921d56b5441afe1e9582088ac691a
      angle::Result reserveTexImageToBeFilled(const gl::Context *context,
                                              gl::TextureTarget target,
 diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
-index 41b72b28c93719040729a803c40c4bcc9a789c6b..1f73207bfe563bdc9b45ba6a800eb0a6ecdac470 100644
+index 48e13e95b13cf287c283ce019dcba19d8ce4dd6a..4f8429a9bf27072a1b040af1f6e4cf644cd0f890 100644
 --- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
 +++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
 @@ -2358,6 +2358,10 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature

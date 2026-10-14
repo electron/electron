@@ -45,7 +45,7 @@ index be923b6a0d0333484d2a7e8b93cef51f5193612b..03e028fa33679affa9a9ede5c38d5c9f
  
  inline FeaturesGL::FeaturesGL()  = default;
 diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
-index 065ddf3943b30f653c65ad18adb0bac9b2439e25..fafb599da133f79b209d96b1525673dd15efc612 100644
+index 53f80f91d3770916b5d1b4a8c0e8a404fca87d7e..1f6beb6d73c75d1a77fc32f5e009ae9e10f80b4d 100644
 --- a/include/platform/gl_features.json
 +++ b/include/platform/gl_features.json
 @@ -1037,6 +1037,14 @@
@@ -64,7 +64,7 @@ index 065ddf3943b30f653c65ad18adb0bac9b2439e25..fafb599da133f79b209d96b1525673dd
      ]
  }
 diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
-index 8b963847ba0828ce0b541151a8ecc63628151055..767bcb3358a8bd6b432d0b4303cf04771af6fd9d 100644
+index 60469a186df7a63ef6867906f1412d13ab4e642f..96a43e8ee2c5d1b8a055131e612c7438cedec858 100644
 --- a/src/libANGLE/renderer/gl/TextureGL.cpp
 +++ b/src/libANGLE/renderer/gl/TextureGL.cpp
 @@ -113,6 +113,13 @@ LevelInfoGL GetLevelInfo(const angle::FeaturesGL &features,
@@ -117,10 +117,10 @@ index 8b963847ba0828ce0b541151a8ecc63628151055..767bcb3358a8bd6b432d0b4303cf0477
      else
      {
 diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
-index 4b1087fd569654af185a5daf736179a2bfa0e919..ff95994a5c9c817d34d546360302d4938179f978 100644
+index 74f5c81f0948f781a6d402411c32ea767876db0f..37fcdb1b13f76b34ce0727a643f296866f10c97e 100644
 --- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
 +++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
-@@ -2811,6 +2811,10 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+@@ -2810,6 +2810,10 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
      ANGLE_FEATURE_CONDITION(features, reattachTextureToFboAfterLayerIncrease,
                              IsPowerVR(vendor) && IsAndroid());
  

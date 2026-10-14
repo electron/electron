@@ -16,7 +16,7 @@ Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
 Reviewed-by: Geoff Lang <geofflang@chromium.org>
 
 diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
-index 3028c5fd84ee11f03834529c09166d57b62d7070..04460b37e0991bdbce487a7c2b0b9763997ce84b 100644
+index c9847780aa969108d93e07a6583b59aadb713431..834675fc9d1dd3623c26de5ff303003c6ce1ed2e 100644
 --- a/src/libANGLE/renderer/gl/TextureGL.cpp
 +++ b/src/libANGLE/renderer/gl/TextureGL.cpp
 @@ -7,6 +7,7 @@
@@ -51,7 +51,7 @@ index 3028c5fd84ee11f03834529c09166d57b62d7070..04460b37e0991bdbce487a7c2b0b9763
  // For use with the uploadTextureDataInChunks feature.  See http://crbug.com/1181068
  constexpr const size_t kUploadTextureDataInChunksUploadSize = (120 * 1024) - 1;
  
-@@ -2241,21 +2259,31 @@ angle::Result TextureGL::syncState(const gl::Context *context,
+@@ -2240,21 +2258,31 @@ angle::Result TextureGL::syncState(const gl::Context *context,
                                                    &mAppliedSwizzle.swizzleAlpha));
                  break;
              case gl::Texture::DIRTY_BIT_BASE_LEVEL:
@@ -93,7 +93,7 @@ index 3028c5fd84ee11f03834529c09166d57b62d7070..04460b37e0991bdbce487a7c2b0b9763
                  }
                  break;
              case gl::Texture::DIRTY_BIT_DEPTH_STENCIL_TEXTURE_MODE:
-@@ -2310,12 +2338,14 @@ bool TextureGL::hasAnyDirtyBit() const
+@@ -2309,12 +2337,14 @@ bool TextureGL::hasAnyDirtyBit() const
  
  angle::Result TextureGL::setBaseLevel(const gl::Context *context, GLuint baseLevel)
  {
@@ -110,7 +110,7 @@ index 3028c5fd84ee11f03834529c09166d57b62d7070..04460b37e0991bdbce487a7c2b0b9763
          mLocalDirtyBits.set(gl::Texture::DIRTY_BIT_BASE_LEVEL);
  
          // Signal to the GL layer that the Impl has dirty bits.
-@@ -2323,27 +2353,29 @@ angle::Result TextureGL::setBaseLevel(const gl::Context *context, GLuint baseLev
+@@ -2322,27 +2352,29 @@ angle::Result TextureGL::setBaseLevel(const gl::Context *context, GLuint baseLev
  
          stateManager->bindTexture(getType(), mTextureID);
          ANGLE_GL_TRY(context, functions->texParameteri(ToGLenum(getType()), GL_TEXTURE_BASE_LEVEL,
@@ -145,7 +145,7 @@ index 3028c5fd84ee11f03834529c09166d57b62d7070..04460b37e0991bdbce487a7c2b0b9763
      }
      return angle::Result::Continue;
  }
-@@ -2483,7 +2515,7 @@ angle::Result TextureGL::recreateTexture(const gl::Context *context)
+@@ -2482,7 +2514,7 @@ angle::Result TextureGL::recreateTexture(const gl::Context *context)
      mAppliedSampler = gl::SamplerState::CreateDefaultForTarget(getType());
  
      mAppliedBaseLevel = 0;

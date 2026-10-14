@@ -29,7 +29,7 @@ This adds two things:
 Both parts are suitable for upstreaming.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 81c88f5fcdfbb2ddd55b07a20cf9076b127bdb08..264511c2a2b00a619ac8f700837b94f77f198ff1 100644
+index eca0f75c929de48e63ba84fc443ce2cba0237165..8aec0b8dfadd638bb820f50f53c33d9398ad827d 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -19,6 +19,7 @@ import("//third_party/icu/config.gni")

@@ -18,10 +18,10 @@ Commit-Queue: Ran Wang <wangra@google.com>
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8272990
 
 diff --git a/src/libANGLE/renderer/d3d/TextureD3D.cpp b/src/libANGLE/renderer/d3d/TextureD3D.cpp
-index 4b65716656ee8975a37f230c8564ffd34cd12900..2f73745a96be60118d044c48f3af2c120d0bd311 100644
+index ecbf8d98f2d63a7b65a64766322e50a220106130..17e82cbd295f88d9c847e5b70f50d2558e116c12 100644
 --- a/src/libANGLE/renderer/d3d/TextureD3D.cpp
 +++ b/src/libANGLE/renderer/d3d/TextureD3D.cpp
-@@ -283,7 +283,7 @@ angle::Result TextureD3D::setStorageExternalMemory(const gl::Context *context,
+@@ -287,7 +287,7 @@ angle::Result TextureD3D::setStorageExternalMemory(const gl::Context *context,
  
  bool TextureD3D::shouldUseSetData(const gl::ImageIndex &index, const ImageD3D *image) const
  {
@@ -30,7 +30,7 @@ index 4b65716656ee8975a37f230c8564ffd34cd12900..2f73745a96be60118d044c48f3af2c12
      {
          return false;
      }
-@@ -730,9 +730,8 @@ angle::Result TextureD3D::commitRegion(const gl::Context *context,
+@@ -734,9 +734,8 @@ angle::Result TextureD3D::commitRegion(const gl::Context *context,
                                         const gl::ImageIndex &index,
                                         const gl::Box &region)
  {
@@ -41,7 +41,7 @@ index 4b65716656ee8975a37f230c8564ffd34cd12900..2f73745a96be60118d044c48f3af2c12
          ImageD3D *image = getImage(index);
          ANGLE_TRY(image->copyToStorage(context, mTexStorage, index, region));
          image->markClean();
-@@ -960,7 +959,7 @@ angle::Result TextureD3D::initializeContents(const gl::Context *context,
+@@ -964,7 +963,7 @@ angle::Result TextureD3D::initializeContents(const gl::Context *context,
      // Slow path: non-renderable texture, incomplete level, or texture storage doesn't exist.
      ANGLE_TRY(image->initializeContents(context));
  
