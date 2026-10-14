@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/dcheck_is_on.h"
 #include "base/memory/weak_ptr.h"
 #include "base/scoped_observation.h"
 #include "build/build_config.h"
@@ -40,6 +41,14 @@ class ElectronAuthenticatorRequestClientDelegate
   ElectronAuthenticatorRequestClientDelegate& operator=(
       const ElectronAuthenticatorRequestClientDelegate&) = delete;
 
+#if DCHECK_IS_ON()
+  // Makes every request see one virtual CTAP 2.1 security key whose built-in
+  // user verification is locked and which has a PIN set, so that Chromium
+  // falls back to asking for the PIN. DevTools' virtual authenticators cannot
+  // be given a PIN; specs reach this through the testing binding instead.
+  static void SetSimulateUvLockedPinSecurityKeyForTesting(bool enabled);
+#endif
+
   // content::AuthenticatorRequestClientDelegate:
   void SetRelyingPartyId(const std::string& rp_id) override;
   void StartObserving(device::FidoRequestHandlerBase* request_handler) override;
@@ -66,10 +75,11 @@ class ElectronAuthenticatorRequestClientDelegate
       const device::FidoAuthenticator& authenticator) override;
   void OnTransportAvailabilityEnumerated(
       device::FidoRequestHandlerBase::TransportAvailabilityInfo data) override;
-#if BUILDFLAG(IS_MAC)
+  void CollectPIN(
+      CollectPINOptions options,
+      base::OnceCallback<void(std::u16string)> provide_pin_cb) override;
   std::vector<std::unique_ptr<device::FidoDiscoveryBase>>
   CreatePlatformDiscoveries() override;
-#endif
 
  private:
   struct PendingAuthenticator {
@@ -79,6 +89,7 @@ class ElectronAuthenticatorRequestClientDelegate
 
   void OnAccountSelected(gin::Arguments* args);
   void CancelPendingAccountSelection();
+  void CancelRequest();
   void MaybeEmitSelectAuthenticatorEvent();
   void DispatchDefaultAuthenticator();
   void OnAuthenticatorSelected(gin::Arguments* args);

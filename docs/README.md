@@ -58,6 +58,7 @@ an issue:
   * [DevTools Extension](tutorial/devtools-extension.md)
   * [Automated Testing](tutorial/automated-testing.md)
   * [REPL](tutorial/repl.md)
+  * [Crash Reporting](tutorial/crash-reporting.md)
 * [Distribution](tutorial/application-distribution.md)
   * [Code Signing](tutorial/code-signing.md)
   * [Mac App Store](tutorial/mac-app-store-submission-guide.md)

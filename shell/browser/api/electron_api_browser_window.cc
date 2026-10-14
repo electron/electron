@@ -10,6 +10,7 @@
 #include "shell/browser/api/electron_api_web_contents_view.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
@@ -17,11 +18,11 @@
 #include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
-#include "ui/gl/gpu_switching_manager.h"
+#include "ui/views/focus/focus_manager.h"
+#include "ui/views/widget/widget.h"
 
 namespace electron::api {
 
@@ -65,16 +66,16 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     web_preferences.Set(options::kShow, true);
 
   // Creates the WebContentsView.
-  gin_helper::Handle<WebContentsView> web_contents_view =
+  WebContentsView* web_contents_view =
       WebContentsView::Create(isolate, web_preferences);
-  DCHECK(web_contents_view.get());
-  window()->AddDraggableRegionProvider(web_contents_view.get());
+  CHECK(web_contents_view);
+  web_contents_view->RegisterDraggableRegionProvider(window());
+  auto* web_contents = web_contents_view->GetWebContents();
   window()->InitPrimaryWebContentsView(
-      static_cast<InspectableWebContentsView*>(web_contents_view->view()));
-  web_contents_view_.Reset(isolate, web_contents_view.ToV8());
+      web_contents->inspectable_web_contents()->GetView());
+  web_contents_view_ = web_contents_view;
 
   // Save a reference of the WebContents.
-  auto* web_contents = web_contents_view->GetWebContents();
   v8::Local<v8::Object> wrapper =
       web_contents->GetWrapper(isolate).ToLocalChecked();
   web_contents_.Reset(isolate, wrapper);
@@ -198,8 +199,11 @@ void BrowserWindow::OnWindowBlur() {
 }
 
 void BrowserWindow::OnWindowFocus() {
-  // focus/blur events might be emitted while closing window.
-  if (auto* api_web_contents = GetLiveWebContents()) {
+  // focus/blur events might be emitted while closing window. When the views
+  // focus manager already restored focus to another view in this window (a
+  // child WebContentsView the user clicked into), leave it there.
+  if (auto* api_web_contents = GetLiveWebContents();
+      api_web_contents && !FocusIsInAnotherView()) {
     content::WebContents* contents = api_web_contents->web_contents();
     contents->RestoreFocus();
 #if !BUILDFLAG(IS_MAC)
@@ -209,6 +213,17 @@ void BrowserWindow::OnWindowFocus() {
   }
 
   BaseWindow::OnWindowFocus();
+}
+
+bool BrowserWindow::FocusIsInAnotherView() {
+#if BUILDFLAG(IS_MAC)
+  return false;
+#else
+  auto* focus_manager = window()->widget()->GetFocusManager();
+  auto* focused = focus_manager ? focus_manager->GetFocusedView() : nullptr;
+  auto* primary = window()->primary_web_contents_view();
+  return focused && primary && !primary->Contains(focused);
+#endif
 }
 
 void BrowserWindow::OnWindowIsKeyChanged(bool is_key) {
@@ -369,9 +384,9 @@ void BrowserWindow::BuildPrototype(v8::Isolate* isolate,
                                    v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(gin::StringToV8(isolate, "BrowserWindow"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("focusOnWebView", &BrowserWindow::FocusOnWebView)
-      .SetMethod("blurWebView", &BrowserWindow::BlurWebView)
-      .SetProperty("webContents", &BrowserWindow::GetWebContents);
+      .SetMethod<&BrowserWindow::FocusOnWebView>("focusOnWebView")
+      .SetMethod<&BrowserWindow::BlurWebView>("blurWebView")
+      .SetProperty<&BrowserWindow::GetWebContents>("webContents");
 }
 
 // static

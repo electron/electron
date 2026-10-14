@@ -19,7 +19,7 @@ class NativeWindowMac;
 @interface ElectronNSWindowDelegate
     : ViewsNSWindowDelegate <NSTouchBarDelegate, QLPreviewPanelDataSource> {
  @private
-  raw_ptr<electron::NativeWindowMac> shell_;
+  raw_ptr<electron::NativeWindowMac, DanglingUntriaged> shell_;
   bool is_zooming_;
   int level_;
   bool is_resizable_;

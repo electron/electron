@@ -74,9 +74,9 @@ void ElectronBindings::BindTo(v8::Isolate* isolate,
   gin_helper::Dictionary dict(isolate, process);
   BindProcess(isolate, &dict, metrics_.get());
 
-  dict.SetMethod("takeHeapSnapshot", &TakeHeapSnapshot);
+  dict.SetMethod<&TakeHeapSnapshot>("takeHeapSnapshot");
 #if BUILDFLAG(IS_POSIX)
-  dict.SetMethod("setFdLimit", &base::IncreaseFdLimitTo);
+  dict.SetMethod<&base::IncreaseFdLimitTo>("setFdLimit");
 #endif
   dict.SetMethod("activateUvLoop",
                  base::BindRepeating(&ElectronBindings::ActivateUVLoop,
@@ -99,7 +99,7 @@ void ElectronBindings::ActivateUVLoop(v8::Isolate* isolate) {
 // static
 void ElectronBindings::OnCallNextTick(uv_async_t* handle) {
   auto* self = static_cast<ElectronBindings*>(handle->data);
-  for (auto* env : self->pending_next_ticks_) {
+  for (node::Environment* env : self->pending_next_ticks_) {
     gin_helper::Locker locker(env->isolate());
     v8::Context::Scope context_scope(env->context());
     v8::HandleScope handle_scope(env->isolate());

@@ -1,0 +1,78 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <vertedinde@electronjs.org>
+Date: Sun, 6 Sep 2026 23:30:55 +0000
+Subject: fix: use a private D-Bus connection for each status icon
+
+Chromium now registers every StatusNotifierItem with the watcher under
+its connection's unique name (https://crrev.com/c/8337991) instead of
+owning a well-known org.freedesktop.StatusNotifierItem-* name, which
+fixes the missing tray icon in Flatpak and Snap sandboxes that this
+patch originally worked around. StatusNotifierWatcher implementations
+only drop an item once the name it was registered under leaves the bus,
+so an icon created on the shared session bus lingers in the tray after
+it is destroyed for as long as that bus stays connected. Always use a
+private connection for status icons so the item goes away with the icon,
+as this patch already did in sandboxes.
+
+Upstream bug: https://issues.chromium.org/issues/554905106
+
+diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
+index 110fdb5e1654433ff31a6893ee7a8c830a702d60..e6b0edeadb45114ef2c662e6187dcf16aa32353c 100644
+--- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
++++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
+@@ -29,7 +29,6 @@
+ #include "base/task/thread_pool.h"
+ #include "components/dbus/menu/menu.h"
+ #include "components/dbus/properties/dbus_properties.h"
+-#include "components/dbus/thread_linux/dbus_thread_linux.h"
+ #include "components/dbus/utils/bind_weak_ptr_for_export_method.h"
+ #include "components/dbus/utils/call_method.h"
+ #include "components/dbus/utils/export_method.h"
+@@ -228,8 +227,6 @@ base::FilePath WriteIconFile(size_t icon_file_id,
+   return file_path;
+ }
+ 
+-bool g_shared_bus_in_use = false;
+-
+ scoped_refptr<dbus::Bus> CreateSessionBus() {
+   dbus::Bus::Options options;
+   options.bus_type = dbus::Bus::SESSION;
+@@ -242,10 +239,11 @@ scoped_refptr<dbus::Bus> CreateSessionBus() {
+ 
+ scoped_refptr<dbus::Bus> GetBusForNewStatusIcon() {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+-  if (!g_shared_bus_in_use) {
+-    g_shared_bus_in_use = true;
+-    return dbus_thread_linux::GetSharedSessionBus();
+-  }
++  // The item is registered with the StatusNotifierWatcher under the
++  // connection's unique name, and watchers only drop an item once that name
++  // leaves the bus. Always use a private connection so that the item goes
++  // away with the icon instead of lingering for as long as the shared session
++  // bus stays connected.
+   return CreateSessionBus();
+ }
+ 
+@@ -350,17 +348,11 @@ StatusIconLinuxDbus::~StatusIconLinuxDbus() {
+   watcher_ = nullptr;
+ 
+   if (bus_) {
+-    if (bus_ == dbus_thread_linux::GetSharedSessionBus()) {
+-      g_shared_bus_in_use = false;
+-      bus_->UnregisterExportedObject(dbus::ObjectPath(kPathStatusNotifierItem));
+-      bus_->UnregisterExportedObject(dbus::ObjectPath(kPathDbusMenu));
+-    } else {
+-      bus_->GetDBusTaskRunner()->PostTask(
+-          FROM_HERE,
+-          base::BindOnce(
+-              [](scoped_refptr<dbus::Bus> bus) { bus->ShutdownAndBlock(); },
+-              bus_));
+-    }
++    bus_->GetDBusTaskRunner()->PostTask(
++        FROM_HERE,
++        base::BindOnce(
++            [](scoped_refptr<dbus::Bus> bus) { bus->ShutdownAndBlock(); },
++            bus_));
+   }
+ }
+ 

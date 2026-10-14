@@ -199,7 +199,7 @@ v8::Local<v8::Object> CreateAbortController(v8::Isolate* isolate) {
 }
 
 ExplicitMicrotasksScope::ExplicitMicrotasksScope(v8::MicrotaskQueue* queue)
-    : microtask_queue_(queue), original_policy_(queue->microtasks_policy()) {
+    : microtask_queue_(queue), original_policy_(queue->GetMicrotasksPolicy()) {
   // Browser-like processes already run with kExplicit, nested run loops
   // included. Renderers can get here from inside script (a frame's environment
   // freed by element.remove()); explicit checkpoints are then no-ops until the
@@ -207,11 +207,11 @@ ExplicitMicrotasksScope::ExplicitMicrotasksScope(v8::MicrotaskQueue* queue)
   if (electron::IsBrowserProcess() || electron::IsUtilityProcess())
     DCHECK_EQ(original_policy_, v8::MicrotasksPolicy::kExplicit);
 
-  microtask_queue_->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
+  microtask_queue_->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
 }
 
 ExplicitMicrotasksScope::~ExplicitMicrotasksScope() {
-  microtask_queue_->set_microtasks_policy(original_policy_);
+  microtask_queue_->SetMicrotasksPolicy(original_policy_);
 }
 
 }  // namespace electron::util

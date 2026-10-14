@@ -13,13 +13,11 @@
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "base/memory/raw_ptr.h"
-#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "gin/arguments.h"
 #include "gin/object_template_builder.h"
-#include "shell/browser/microtasks_runner.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
@@ -36,24 +34,22 @@ gin::WrapperInfo Debugger::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronDebugger);
 
 class Debugger::AgentHostLifecycle final
-    : public content::DevToolsAgentHostClient,
-      public MicrotasksRunner::Observer,
+    : public NativePeer<Debugger>,
+      public content::DevToolsAgentHostClient,
       private content::WebContentsObserver {
  public:
   using PendingRequestMap = std::map<int, gin_helper::Promise<base::DictValue>>;
 
   AgentHostLifecycle(Debugger* debugger, content::WebContents* web_contents)
-      : content::WebContentsObserver(web_contents), debugger_(debugger) {
-    MicrotasksRunner::AddObserver(this);
-  }
-
-  ~AgentHostLifecycle() override {
-    MicrotasksRunner::RemoveObserver(this);
-    Detach();
+      : NativePeer<Debugger>(debugger),
+        content::WebContentsObserver(web_contents) {
+    StartObservingShutdown();
   }
 
   bool Attach(scoped_refptr<DevToolsAgentHost> agent_host) {
     DCHECK(!agent_host_);
+    if (!is_active())
+      return false;
     agent_host_ = std::move(agent_host);
     if (agent_host_->AttachClient(this))
       return true;
@@ -74,12 +70,6 @@ class Debugger::AgentHostLifecycle final
   }
 
   bool IsAttached() const { return agent_host_ && agent_host_->IsAttached(); }
-  void OnBeforeMicrotasksRunnerDispose() override {
-    cppgc::Persistent<Debugger> debugger(debugger_.Get());
-    debugger_.Clear();
-    if (Detach() && debugger)
-      debugger->AgentHostClosed();
-  }
 
   void AgentHostClosed(DevToolsAgentHost* agent_host) override {
     DCHECK_EQ(agent_host, agent_host_.get());
@@ -87,7 +77,7 @@ class Debugger::AgentHostLifecycle final
       return;
     agent_host_ = nullptr;
     ClearPendingRequests();
-    if (auto* debugger = debugger_.Get())
+    if (auto debugger = wrapper())
       debugger->AgentHostClosed();
   }
 
@@ -104,7 +94,7 @@ class Debugger::AgentHostLifecycle final
     base::DictValue& dict = parsed_message->GetDict();
     std::optional<int> id = dict.FindInt("id");
     if (!id) {
-      Debugger* debugger = debugger_.Get();
+      auto debugger = wrapper();
       std::string* method = dict.FindString("method");
       if (!debugger || !method)
         return;
@@ -136,7 +126,7 @@ class Debugger::AgentHostLifecycle final
                    base::DictValue command_params,
                    std::string session_id,
                    gin_helper::Promise<base::DictValue> promise) {
-    if (!agent_host_) {
+    if (!agent_host_ || !is_active()) {
       promise.RejectWithErrorMessage("No target available");
       return;
     }
@@ -156,6 +146,25 @@ class Debugger::AgentHostLifecycle final
   }
 
  private:
+  ~AgentHostLifecycle() override = default;
+
+  // NativePeer:
+  void OnShutdown() override {
+    auto debugger = wrapper();
+    // Unlink before releasing so that settling pending commands cannot reach
+    // the wrapper, then report the closed target.
+    DisconnectWrapper();
+    const bool attached = agent_host_ != nullptr;
+    Release();
+    if (attached && debugger)
+      debugger->AgentHostClosed();
+  }
+
+  void TearDownNative() override {
+    Detach();
+    Observe(nullptr);
+  }
+
   void RenderFrameHostChanged(content::RenderFrameHost* old_rfh,
                               content::RenderFrameHost* new_rfh) override {
     if (!agent_host_ || !new_rfh->IsInPrimaryMainFrame())
@@ -179,7 +188,6 @@ class Debugger::AgentHostLifecycle final
       promise.RejectWithErrorMessage("target closed while handling command");
   }
 
-  cppgc::WeakPersistent<Debugger> debugger_;
   scoped_refptr<DevToolsAgentHost> agent_host_;
   PendingRequestMap pending_requests_;
   int previous_request_id_ = 0;
@@ -187,8 +195,8 @@ class Debugger::AgentHostLifecycle final
 
 Debugger::Debugger(content::WebContents* web_contents)
     : agent_host_lifecycle_(
-          new AgentHostLifecycle(this, web_contents),
-          base::OnTaskRunnerDeleter(content::GetUIThreadTaskRunner({}))) {}
+          NativePeer<Debugger>::Create<AgentHostLifecycle>(this,
+                                                           web_contents)) {}
 
 Debugger::~Debugger() = default;
 

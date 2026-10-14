@@ -13,7 +13,7 @@ https://github.com/electron/electron/pull/48675#issuecomment-3452781711
 for more info.
 
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-index 98f9abe44e4c0c85e69fda3f1c28bc48b5345dce..b6386ecc2eca721cc56a47a16f77c3a5c5eb506a 100644
+index 3f7543580ee1d82a28c6864ef0154aafcb6806f0..110fdb5e1654433ff31a6893ee7a8c830a702d60 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 @@ -138,8 +138,9 @@ int NextServiceId() {
@@ -50,7 +50,7 @@ index 98f9abe44e4c0c85e69fda3f1c28bc48b5345dce..b6386ecc2eca721cc56a47a16f77c3a5
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    if (bus_) {
      CheckStatusNotifierWatcherHasOwner();
-@@ -476,7 +479,8 @@ void StatusIconLinuxDbus::OnHostRegisteredResponse(
+@@ -464,7 +467,8 @@ void StatusIconLinuxDbus::OnHostRegisteredResponse(
    SetProperty<"s">(kPropertyAttentionIconName, "", false);
    SetProperty<"s">(kPropertyAttentionMovieName, "", false);
    SetProperty<"s">(kPropertyCategory, kPropertyValueCategory, false);
@@ -61,7 +61,7 @@ index 98f9abe44e4c0c85e69fda3f1c28bc48b5345dce..b6386ecc2eca721cc56a47a16f77c3a5
    SetProperty<"s">(kPropertyStatus, kPropertyValueStatus, false);
    SetProperty<"s">(kPropertyTitle, "", false);
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
-index e45db2d3a657dfacf8042d49113f5a3f2e960ee7..aa5647cdf8b9431b7195c8e6c70ee32dab6e28b2 100644
+index 4fa0a91af74e63a7f78bcbb02623e5f49cb757f4..d12aedd85fadfe0d596da7e3469506507b86ce0d 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
 @@ -38,8 +38,9 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
@@ -76,7 +76,7 @@ index e45db2d3a657dfacf8042d49113f5a3f2e960ee7..aa5647cdf8b9431b7195c8e6c70ee32d
  
    StatusIconLinuxDbus(const StatusIconLinuxDbus&) = delete;
    StatusIconLinuxDbus& operator=(const StatusIconLinuxDbus&) = delete;
-@@ -163,6 +164,8 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
+@@ -162,6 +163,8 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
    size_t icon_file_id_ = 0;
    base::FilePath icon_file_;
  

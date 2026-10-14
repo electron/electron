@@ -25,6 +25,7 @@
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/node_entry_scope.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8.h"
@@ -510,6 +511,12 @@ void MenuItem::Activate(BaseWindow* window,
                         int flags) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Object> self;
+  if (!GetWrapper(isolate).ToLocal(&self))
+    return;
+  v8::Local<v8::Context> context = self->GetCreationContextChecked(isolate);
+  v8::Context::Scope context_scope(context);
+  gin_helper::NodeEntryScope node_scope(context, self);
   v8::Local<v8::Value> window_value = window && !window->GetWrapper().IsEmpty()
                                           ? window->GetWrapper().As<v8::Value>()
                                           : v8::Null(isolate).As<v8::Value>();
@@ -520,11 +527,8 @@ void MenuItem::Activate(BaseWindow* window,
   }
   // click(event, focusedWindow, focusedWebContents)
   v8::Local<v8::Value> click = replaced_click_.Get(isolate);
-  v8::Local<v8::Object> wrapper;
-  if (!click->IsFunction() || !GetWrapper(isolate).ToLocal(&wrapper))
+  if (!click->IsFunction())
     return;
-  v8::Local<v8::Context> context = wrapper->GetCreationContextChecked(isolate);
-  v8::Context::Scope context_scope(context);
   v8::Local<v8::Object> contents_wrapper;
   v8::Local<v8::Value> contents_value = v8::Null(isolate);
   if (web_contents &&
@@ -534,7 +538,7 @@ void MenuItem::Activate(BaseWindow* window,
   v8::Local<v8::Value> argv[] = {CreateEventFromFlags(flags), window_value,
                                  contents_value};
   std::ignore =
-      click.As<v8::Function>()->Call(context, wrapper, std::size(argv), argv);
+      click.As<v8::Function>()->Call(context, self, std::size(argv), argv);
 }
 
 bool MenuItem::RunBuiltInAction(BaseWindow* window, WebContents* web_contents) {

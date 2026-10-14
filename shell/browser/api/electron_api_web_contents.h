@@ -191,6 +191,10 @@ class WebContents final : public gin::Wrappable<WebContents>,
   void Trace(cppgc::Visitor* visitor) const override;
 
   void Destroy();
+  // Like Destroy(), but disposes before returning. Only call it from a task of
+  // its own, where no Chromium callback for this WebContents can be on the
+  // stack. Destroy() defers disposal for that reason.
+  void DestroyNow();
   void Close(std::optional<gin_helper::Dictionary> options);
   bool IsDestroyed() const { return destroyed_; }
   cppgc::Persistent<gin::WeakCell<WebContents>> WeakRef();
@@ -391,10 +395,14 @@ class WebContents final : public gin::Wrappable<WebContents>,
 
   // webContents.send(): resolves the primary main frame here rather than
   // via the mainFrame accessor, so a send crosses into C++ once.
-  void SendToMainFrame(v8::Isolate* isolate,
-                       bool internal,
-                       const std::string& channel,
-                       v8::Local<v8::Value> args);
+  // send(channel, ...args) to the main frame.
+  void Send(gin::Arguments* args);
+  void SendInternal(gin::Arguments* args);
+  void PostMessage(v8::Isolate* isolate,
+                   const std::string& channel,
+                   v8::Local<v8::Value> message,
+                   std::optional<v8::Local<v8::Value>> transfer);
+  void SendImpl(bool internal, gin::Arguments* args);
 
   // The main frame's renderer-side API, or null with |promise| rejected when
   // there is no live render frame.
@@ -514,6 +522,10 @@ class WebContents final : public gin::Wrappable<WebContents>,
                              DialogClosedCallback callback) override;
   void CancelDialogs(content::WebContents* web_contents,
                      bool reset_state) override;
+  DialogClosedCallback ResyncFocusAfterDialog(DialogClosedCallback callback);
+#if defined(USE_AURA)
+  void ResyncViewFocus();
+#endif
 
   void SetBackgroundColor(std::optional<SkColor> color);
 
@@ -616,12 +628,6 @@ class WebContents final : public gin::Wrappable<WebContents>,
   void RendererResponsive(
       content::WebContents* source,
       content::RenderWidgetHost* render_widget_host) override;
-  void FindReply(content::WebContents* web_contents,
-                 int request_id,
-                 int number_of_matches,
-                 const gfx::Rect& selection_rect,
-                 int active_match_ordinal,
-                 bool final_update) override;
   void OnRequestPointerLock(content::WebContents* web_contents,
                             bool user_gesture,
                             bool last_unlocked_by_target,
@@ -630,8 +636,6 @@ class WebContents final : public gin::Wrappable<WebContents>,
                           bool user_gesture,
                           bool last_unlocked_by_target) override;
   void LostPointerLock() override;
-  bool IsWaitingForPointerLockPrompt(
-      content::WebContents* web_contents) override;
   void OnRequestKeyboardLock(content::WebContents* web_contents,
                              bool esc_key_locked,
                              bool allowed);
@@ -689,6 +693,11 @@ class WebContents final : public gin::Wrappable<WebContents>,
       content::NavigationHandle* navigation_handle);
   void SendRendererStartupData(content::RenderFrameHost* rfh);
   void DidFinishNavigation(content::NavigationHandle* navigation_handle);
+  void DidReceiveFindReply(int request_id,
+                           int number_of_matches,
+                           const gfx::Rect& selection_rect,
+                           int active_match_ordinal,
+                           bool final_update);
   void WebContentsDestroyed();
   void NavigationEntryCommitted(
       const content::LoadCommittedDetails& load_details);
@@ -858,9 +867,6 @@ class WebContents final : public gin::Wrappable<WebContents>,
   bool guest_transparent_ = true;
 
   int32_t id_;
-
-  // Request id used for findInPage request.
-  uint32_t find_in_page_request_id_ = 0;
 
   // Whether background throttling is disabled.
   bool background_throttling_ = true;

@@ -773,7 +773,7 @@ int NativeWindow::NonClientHitTest(const gfx::Point& point) {
   if (widget()->IsFullscreen())
     return HTNOWHERE;
 
-  for (auto* provider : draggable_region_providers_) {
+  for (DraggableRegionProvider* provider : draggable_region_providers_) {
     int hit = provider->NonClientHitTest(point);
     if (hit != HTNOWHERE)
       return hit;

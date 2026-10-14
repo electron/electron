@@ -38,6 +38,8 @@ class UsbChooserContextFactory : public BrowserContextKeyedServiceFactory {
   // BrowserContextKeyedServiceFactory methods:
   std::unique_ptr<KeyedService> BuildServiceInstanceForBrowserContext(
       content::BrowserContext* profile) const override;
+  content::BrowserContext* GetBrowserContextToUse(
+      content::BrowserContext* context) const override;
 };
 
 }  // namespace electron

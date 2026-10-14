@@ -43,7 +43,8 @@ ExtensionConfigProvider* GetConfigProvider(const ExtensionId& extension_id,
     return nullptr;
   }
   auto* config_map = ExtensionConfigMapFactory::GetForBrowserContext(context);
-  return config_map ? config_map->GetConfigProvider(extension_id) : nullptr;
+  return config_map ? config_map->GetConfigProviderByExtensionId(extension_id)
+                    : nullptr;
 }
 
 }  // namespace

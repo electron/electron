@@ -129,7 +129,7 @@ page.
 <webview src="https://www.google.com/" nodeintegrationinsubframes></webview>
 ```
 
-A `boolean` for the experimental option for enabling NodeJS support in sub-frames such as iframes
+A `boolean` for the experimental option for enabling Node.js support in sub-frames such as iframes
 inside the `webview`. All your preloads will load for every iframe, you can
 use `process.isMainFrame` to determine if you are in the main frame or not.
 This option is disabled by default in the guest page.

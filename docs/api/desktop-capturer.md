@@ -17,10 +17,17 @@ app.whenReady().then(() => {
 
   session.defaultSession.setDisplayMediaRequestHandler(
     (request, callback) => {
-      desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
-        // Grant access to the first screen found.
-        callback({ video: sources[0], audio: 'loopback' })
-      })
+      desktopCapturer.getSources({ types: ['screen'] }).then(
+        (sources) => {
+          // Grant access to the first screen found.
+          callback({ video: sources[0], audio: 'loopback' })
+        },
+        () => {
+          // Deny the request if no sources could be retrieved, for example
+          // when the user cancels the PipeWire picker on Linux.
+          callback(null)
+        }
+      )
       // If true, use the system picker if available.
       // Note: this is currently experimental. If the system picker
       // is available, it will be used and the media request handler

@@ -14,6 +14,7 @@
 #include "base/process/process_handle.h"
 #include "content/public/browser/browser_child_process_observer.h"
 #include "content/public/browser/service_process_host.h"
+#include "content/public/common/child_process_id.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
@@ -135,6 +136,9 @@ class UtilityProcessWrapper final
   node::mojom::URLLoaderFactoryParamsPtr CreateURLLoaderFactoryParams();
 
   base::ProcessId pid_ = base::kNullProcessId;
+  // Identifies the utility process in BrowserChildProcessObserver callbacks,
+  // whose ChildProcessData no longer carries the process.
+  content::ChildProcessId child_process_id_;
 #if BUILDFLAG(IS_WIN)
   // Non-owning handles, these will be closed when the
   // corresponding FD are closed via _close.

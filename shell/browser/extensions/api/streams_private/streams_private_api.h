@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_EXTENSIONS_API_STREAMS_PRIVATE_STREAMS_PRIVATE_API_H_
 #define ELECTRON_SHELL_BROWSER_EXTENSIONS_API_STREAMS_PRIVATE_STREAMS_PRIVATE_API_H_
 
+#include <cstdint>
 #include <string>
 
 #include "base/memory/scoped_refptr.h"
@@ -26,11 +27,14 @@ class StreamsPrivateAPI {
   // MimeHandlerViewGuest creation. |embedded| should be set to whether the
   // document is embedded within another document. The |frame_tree_node_id|
   // parameter is used for the top level plugins case. (PDF, etc).
+  // |navigation_id| identifies the navigation whose response was intercepted
+  // and is recorded on the stream.
   static void SendExecuteMimeTypeHandlerEvent(
       const std::string& extension_id,
       const std::string& stream_id,
       bool embedded,
       content::FrameTreeNodeId frame_tree_node_id,
+      int64_t navigation_id,
       blink::mojom::TransferrableURLLoaderPtr transferrable_loader,
       const GURL& original_url,
       const std::string& internal_id,

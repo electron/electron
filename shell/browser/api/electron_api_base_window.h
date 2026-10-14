@@ -131,7 +131,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 #endif
 
   // Public APIs of NativeWindow.
-  void SetContentView(gin_helper::Handle<View> view);
+  void SetContentView(View* view);
   void Close();
   virtual void CloseImmediately();
   virtual void Focus();
@@ -151,7 +151,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsMinimized() const;
   void SetFullScreen(bool fullscreen);
   bool IsFullscreen() const;
-  void SetBounds(const gfx::Rect& bounds, gin::Arguments* args);
+  void SetBounds(v8::Local<v8::Object> bounds, gin::Arguments* args);
   gfx::Rect GetBounds() const;
   void SetSize(int width, int height, gin::Arguments* args);
   std::array<int, 2U> GetSize() const;
@@ -314,7 +314,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   MessageCallbackMap messages_callback_map_;
 #endif
 
-  v8::Global<v8::Value> content_view_;
+  cppgc::Persistent<View> content_view_;
   cppgc::Persistent<Menu> menu_;
   v8::Global<v8::Value> parent_window_;
 

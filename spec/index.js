@@ -1,15 +1,26 @@
 import { app, protocol } from 'electron';
 
-import * as childProcess from 'node:child_process';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import * as v8 from 'node:v8';
 
-const FAILURE_STATUS_KEY = 'Electron_Spec_Runner_Failures';
+// This app is started by the vitest Electron pool (spec/vitest/electron-pool.ts),
+// several instances at a time, each running one spec file after another in
+// the main process. Everything up to app 'ready' configures the process the
+// specs expect; spec/vitest/worker.ts then takes over.
+const isVitestWorker = process.argv.includes('--vitest-worker');
+if (isVitestWorker) {
+  // Workers run concurrently; give each its own profile directory so they do
+  // not fight over cookie/localStorage/cache databases. Keep the app name in
+  // the path, some specs check for it.
+  app.setPath('userData', `${app.getPath('userData')}-worker-${process.env.ELECTRON_SPEC_WORKER_ID || process.pid}`);
+}
 
-// We want to terminate on errors, not throw up a dialog
+// Uncaught exceptions before the worker runtime is up are fatal; afterwards
+// vitest reports them against the running test (and its listener keeps
+// Electron's error dialog away).
+let workerStarted = false;
 process.on('uncaughtException', (err) => {
-  console.error('Unhandled exception in main spec runner:', err);
+  if (workerStarted) return;
+  console.error('Unhandled exception in the spec worker:', err);
   process.exit(1);
 });
 
@@ -79,329 +90,26 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'bar', privileges: { standard: true } }
 ]);
 
-// Walk up the PPid chain in /proc to determine if `pid` is a descendant
-// of the current process.  Used on Linux to avoid killing the current Electron
-// instance's own helper processes (GPU, renderer, zygote, crashpad, etc.)
-// which share the same executable path but are spawned by us.
-function isDescendantOfCurrentProcess(pid) {
-  let current = pid;
-  while (current > 1) {
-    try {
-      const status = fs.readFileSync(`/proc/${current}/status`, 'utf8');
-      const match = status.match(/^PPid:\s+(\d+)/m);
-      if (!match) return false;
-      const ppid = parseInt(match[1], 10);
-      if (ppid === process.pid) return true;
-      if (ppid === current) return false; // guard against cycles
-      current = ppid;
-    } catch {
-      return false;
-    }
-  }
-  return false;
-}
-
-async function killOrphanedElectronProcesses(suiteName) {
-  let killed = 0;
-  try {
-    if (process.platform === 'win32') {
-      // Enumerate by executable path, also fetching ParentProcessId so we can
-      // skip the current instance's own child processes (GPU, network service,
-      // renderer helpers) which all run as the same electron.exe binary.
-      const escapedPath = process.execPath.replace(/\\/g, '\\\\');
-      const result = childProcess.spawnSync(
-        'wmic',
-        ['process', 'where', `ExecutablePath='${escapedPath}'`, 'get', 'ProcessId,ParentProcessId', '/format:value'],
-        { encoding: 'utf8' }
-      );
-      // wmic /format:value outputs blank-line-separated records, each with
-      // Key=Value lines.  Build a pid→ppid map from the output.
-      const pidToParent = new Map();
-      for (const record of (result.stdout || '').split(/(?:\r?\n){2,}/)) {
-        let pid = null;
-        let ppid = null;
-        for (const line of record.split(/\r?\n/)) {
-          const pidMatch = line.match(/^ProcessId=(\d+)/);
-          const ppidMatch = line.match(/^ParentProcessId=(\d+)/);
-          if (pidMatch) pid = Number(pidMatch[1]);
-          if (ppidMatch) ppid = Number(ppidMatch[1]);
-        }
-        if (pid !== null && ppid !== null) pidToParent.set(pid, ppid);
-      }
-      // Walk the parent chain to check whether a pid is descended from us.
-      // Mirrors the Linux isDescendantOfCurrentProcess logic but uses the
-      // pre-built map instead of /proc.
-      const isDescendant = (pid) => {
-        let current = pid;
-        while (current > 1) {
-          const parent = pidToParent.get(current);
-          if (parent === undefined) return false;
-          if (parent === process.pid) return true;
-          if (parent === current) return false; // cycle guard
-          current = parent;
-        }
-        return false;
-      };
-      for (const [pid] of pidToParent) {
-        if (pid === process.pid || isDescendant(pid)) continue;
-        try {
-          childProcess.spawnSync('taskkill', ['/F', '/PID', String(pid), '/T']);
-          killed++;
-        } catch {
-          // process may have already exited
-        }
-      }
-    } else {
-      let pids;
-      if (process.platform === 'linux') {
-        // On Linux, pgrep -f matches the full command line, which would also
-        // match wrapper scripts like `python3 dbus_mock.py /path/to/electron`.
-        // Killing those wrappers hangs the test run.  Instead, scan /proc
-        // directly and compare the /proc/<pid>/exe symlink (the real executable)
-        // against process.execPath so we only find actual Electron processes.
-        pids = [];
-        try {
-          for (const entry of fs.readdirSync('/proc')) {
-            const pid = parseInt(entry, 10);
-            if (isNaN(pid)) continue;
-            try {
-              if (fs.readlinkSync(`/proc/${pid}/exe`) === process.execPath) {
-                pids.push(pid);
-              }
-            } catch {
-              // no permission or process already exited
-            }
-          }
-        } catch {
-          // /proc unavailable — ignore
-        }
-      } else {
-        // macOS: pgrep -f is safe here (no wrapper scripts, and helpers use
-        // different .app bundles with different executable paths).
-        const result = childProcess.spawnSync('pgrep', ['-f', process.execPath], { encoding: 'utf8' });
-        pids = (result.stdout || '')
-          .split('\n')
-          .map((s) => parseInt(s, 10))
-          .filter((pid) => !isNaN(pid));
-      }
-
-      for (const pid of pids.filter((pid) => pid !== process.pid)) {
-        try {
-          // On Linux, skip any process that is a descendant of the current
-          // Electron instance (GPU, renderer, zygote, crashpad, etc.).
-          if (process.platform === 'linux' && isDescendantOfCurrentProcess(pid)) continue;
-          process.kill(pid, 'SIGKILL');
-          killed++;
-        } catch {
-          // process may have already exited
-        }
-      }
-    }
-  } catch {
-    // pgrep / wmic not available or returned an error — ignore
-  }
-  if (killed > 0) {
-    console.log(`Killed ${killed} orphaned Electron process${killed === 1 ? '' : 'es'} before suite: ${suiteName}`);
-  }
-}
-
 app
   .whenReady()
   .then(async () => {
-    // Test dependencies are import()ed from here on rather than at the top of
-    // the file, so that a missing or broken one fails the run through the
-    // handlers in this file instead of Electron's uncaught-exception dialog.
-    const { default: yargs } = await import('yargs');
-    const { hideBin } = await import('yargs/helpers');
-    const argv = yargs(hideBin(process.argv))
-      .boolean('ci')
-      .array('files')
-      .string('g')
-      .alias('g', 'grep')
-      .boolean('i')
-      .alias('i', 'invert').argv;
-
-    const mochaOptions = {
-      forbidOnly: process.env.CI
-    };
-    if (process.env.CI) {
-      mochaOptions.retries = 3;
+    if (!isVitestWorker) {
+      console.error(
+        'This is the Electron spec app; it is started by the test runner. Run `npm test` ' +
+          '(node script/spec-runner.js) from the repository root instead, optionally with ' +
+          '--files spec/some.spec.ts or -g <pattern>.'
+      );
+      return process.exit(1);
     }
-    if (process.env.MOCHA_REPORTER) {
-      mochaOptions.reporter = process.env.MOCHA_REPORTER;
-    }
-    if (process.env.MOCHA_MULTI_REPORTERS) {
-      mochaOptions.reporterOptions = {
-        reporterEnabled: process.env.MOCHA_MULTI_REPORTERS
-      };
-    }
-    // The MOCHA_GREP and MOCHA_INVERT are used in some vendor builds for sharding
-    // tests.
-    if (process.env.MOCHA_GREP) {
-      mochaOptions.grep = process.env.MOCHA_GREP;
-    }
-    if (process.env.MOCHA_INVERT) {
-      mochaOptions.invert = process.env.MOCHA_INVERT === 'true';
-    }
-    const { default: Mocha } = await import('mocha');
-    const mocha = new Mocha(mochaOptions);
-
-    // Add a root hook on mocha to skip any tests that are disabled
-    const disabledTests = new Set(
-      JSON.parse(fs.readFileSync(path.join(import.meta.dirname, 'disabled-tests.json'), 'utf8'))
-    );
-    mocha.suite.beforeEach(function () {
-      // TODO(clavin): add support for disabling *suites* by title, not just tests
-      if (disabledTests.has(this.currentTest?.fullTitle())) {
-        this.skip();
-      }
-    });
-
-    // The cleanup method is registered this way rather than through an
-    // `afterEach` at the top level so that it can run before other `afterEach`
-    // methods.
-    //
-    // The order of events is:
-    // 1. test completes,
-    // 2. `defer()`-ed methods run, in reverse order,
-    // 3. regular `afterEach` hooks run.
-    const { runCleanupFunctions, isTestingBindingAvailable } = await import('./lib/spec-helpers.ts');
+    const { isTestingBindingAvailable } = await import('./lib/spec-helpers.ts');
     if (process.env.ELECTRON_REQUIRE_TESTING_BINDINGS === '1' && !isTestingBindingAvailable()) {
       throw new Error('Testing build expected, but testing bindings are unavailable');
     }
-    mocha.suite.on('suite', function attach(suite) {
-      suite.afterEach('cleanup', runCleanupFunctions);
-      suite.on('suite', attach);
-    });
-
-    // Kill any Electron processes left over from the previous spec file before
-    // starting the next one.  The listener is intentionally non-recursive so it
-    // only fires for top-level suites (one per file), not nested describes.
-    mocha.suite.on('suite', (suite) => {
-      console.log(`Adding kill orphaned process for test suite: ${suite.title}`);
-      suite.beforeAll('kill orphaned electron processes', () => killOrphanedElectronProcesses(suite.title));
-    });
-
-    if (!process.env.MOCHA_REPORTER) {
-      mocha.ui('bdd').reporter('tap');
-    }
-    const mochaTimeout = process.env.MOCHA_TIMEOUT || 30000;
-    mocha.timeout(mochaTimeout);
-
-    if (argv.grep) mocha.grep(argv.grep);
-    if (argv.invert) mocha.invert();
-
-    const baseElectronDir = path.resolve(import.meta.dirname, '..');
-    const validTestPaths =
-      argv.files &&
-      argv.files.map((file) => (path.isAbsolute(file) ? path.relative(baseElectronDir, file) : path.normalize(file)));
-    const filter = (file) => {
-      if (!/\.spec\.[tj]s$/.test(file)) {
-        return false;
-      }
-
-      // This allows you to run specific modules only:
-      // npm run test -match=menu
-      const moduleMatch = process.env.npm_config_match ? new RegExp(process.env.npm_config_match, 'g') : null;
-      if (moduleMatch && !moduleMatch.test(file)) {
-        return false;
-      }
-
-      if (validTestPaths && !validTestPaths.includes(path.relative(baseElectronDir, file))) {
-        return false;
-      }
-
-      return true;
-    };
-
-    const { getFiles } = await import('./get-files.ts');
-    // The filter above only loads *.spec.ts, so a file still named *-spec.ts
-    // (e.g. from a PR opened before the rename) would silently never run.
-    const misnamed = await getFiles(import.meta.dirname, (file) => /-spec\.[cm]?[jt]sx?$/.test(file));
-    if (misnamed.length > 0) {
-      const names = misnamed.map((file) => path.relative(baseElectronDir, file)).join(', ');
-      throw new Error(`Spec files must be named *.spec.ts, rename: ${names}`);
-    }
-    const testFiles = await getFiles(import.meta.dirname, filter);
-    for (const file of testFiles.sort()) {
-      mocha.addFile(file);
-    }
-
-    if (validTestPaths && validTestPaths.length > 0 && testFiles.length === 0) {
-      console.error('Test files were provided, but they did not match any searched files');
-      console.error('provided file paths (relative to electron/):', validTestPaths);
-      // process.exit() only schedules a graceful app.exit() in the main process.
-      return process.exit(1);
-    }
-
-    const cb = () => {
-      // Ensure the callback is called after runner is defined
-      process.nextTick(() => {
-        if (process.env.ELECTRON_FORCE_TEST_SUITE_EXIT === 'true') {
-          console.log(`${FAILURE_STATUS_KEY}: ${runner.failures}`);
-          process.kill(process.pid);
-        } else {
-          process.exit(runner.failures);
-        }
-      });
-    };
-
-    // Set up chai in the correct order
-    const chai = await import('chai');
-    chai.use((await import('chai-as-promised')).default);
-    chai.use((await import('dirty-chai')).default);
-
-    // Show full object diff
-    // https://github.com/chaijs/chai/issues/469
-    chai.config.truncateThreshold = 0;
-
-    // Spec files are ES modules, which mocha can only load asynchronously.
-    await mocha.loadFilesAsync();
-    const runner = mocha.run(cb);
-
-    const RETRY_EVENT = Mocha?.Runner?.constants?.EVENT_TEST_RETRY || 'retry';
-
-    runner.on(RETRY_EVENT, (test, err) => {
-      console.log(`Failure in test: "${test.fullTitle()}"`);
-      if (err?.stack) console.log(err.stack.split('\n').slice(0, 3).join('\n'));
-      console.log(`Retrying test (${test.currentRetry() + 1}/${test.retries()})...`);
-    });
-
-    // Per-file wall time, consumed by script/gen-spec-weights.js to balance CI
-    // shards. Skipped for grep'd runs so a rerun doesn't overwrite the full run.
-    if (process.env.CI && !argv.grep && !process.env.MOCHA_GREP) {
-      const started = new Map();
-      const timings = {};
-      runner.on('suite', (suite) => {
-        if (suite.parent?.root) started.set(suite, Date.now());
-      });
-      runner.on('suite end', (suite) => {
-        if (!started.has(suite) || !suite.file) return;
-        const file = path.relative(baseElectronDir, suite.file).split(path.sep).join('/');
-        timings[file] = (timings[file] || 0) + (Date.now() - started.get(suite)) / 1000;
-      });
-      runner.on('end', () => {
-        const artifactsDir = path.join(import.meta.dirname, 'artifacts');
-        fs.mkdirSync(artifactsDir, { recursive: true });
-        fs.writeFileSync(
-          path.join(artifactsDir, 'spec-timings.json'),
-          JSON.stringify(
-            {
-              platform: process.platform,
-              arch: process.arch,
-              mas: !!process.mas,
-              sanitizer: process.env.IS_ASAN === 'true' ? 'asan' : process.env.IS_UBSAN === 'true' ? 'ubsan' : null,
-              files: timings
-            },
-            null,
-            2
-          )
-        );
-      });
-    }
+    workerStarted = true;
+    await import('./vitest/worker.ts');
   })
   .catch((err) => {
-    console.error('An error occurred while running the spec runner');
+    console.error('An error occurred while starting the spec worker');
     console.error(err);
     process.exit(1);
   });
