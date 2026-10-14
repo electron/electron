@@ -4,6 +4,7 @@
 
 #include "shell/browser/preload_script.h"
 
+#include <string_view>
 #include <utility>
 
 #include "base/check_op.h"
@@ -65,14 +66,23 @@ PreloadScript& PreloadScript::operator=(PreloadScript&&) = default;
 PreloadScript::~PreloadScript() = default;
 
 bool PreloadScript::ParseUrlPatterns(std::string* error) {
-  return ParsePatterns(matches, &match_patterns_, error) &&
+  // Content scripts require at least one match pattern, and webRequest
+  // filters dropped "empty means everything". Keep that unambiguous here.
+  if (matches && matches->empty()) {
+    *error =
+        "Preload script 'matches' must not be empty. Use '<all_urls>' to "
+        "match all URLs.";
+    return false;
+  }
+  return ParsePatterns(matches.value_or(std::vector<std::string>()),
+                       &match_patterns_, error) &&
          ParsePatterns(exclude_matches, &exclude_match_patterns_, error);
 }
 
 // Mirrors extensions::UserScript::MatchesURL() for content scripts.
 bool PreloadScript::MatchesURL(const GURL& url) const {
   // Unparsed patterns would silently match every URL.
-  DCHECK_EQ(match_patterns_.size(), matches.size());
+  DCHECK_EQ(match_patterns_.size(), matches ? matches->size() : 0u);
   DCHECK_EQ(exclude_match_patterns_.size(), exclude_matches.size());
   if (MatchesAnyPattern(exclude_match_patterns_, url))
     return false;
@@ -121,8 +131,8 @@ v8::Local<v8::Value> Converter<PreloadScript>::ToV8(
   dict.Set("filePath", script.file_path.AsUTF8Unsafe());
   dict.Set("id", script.id);
   dict.Set("type", script.script_type);
-  if (!script.matches.empty())
-    dict.Set("matches", script.matches);
+  if (script.matches)
+    dict.Set("matches", *script.matches);
   if (!script.exclude_matches.empty())
     dict.Set("excludeMatches", script.exclude_matches);
   if (!script.include_globs.empty())
@@ -157,15 +167,23 @@ bool Converter<PreloadScript>::FromV8(v8::Isolate* isolate,
   }
   // URL filters are optional, but reject a present value that isn't a
   // string array rather than silently running the preload everywhere.
-  for (auto [key, field] : {std::pair{"matches", &out->matches},
-                            std::pair{"excludeMatches", &out->exclude_matches},
-                            std::pair{"includeGlobs", &out->include_globs},
-                            std::pair{"excludeGlobs", &out->exclude_globs}}) {
+  auto get_filter = [&](std::string_view key, std::vector<std::string>* field) {
     v8::Local<v8::Value> value;
-    if (options.Get(key, &value) && !value->IsUndefined() &&
-        !ConvertFromV8(isolate, value, field)) {
-      return false;
-    }
+    if (!options.Get(key, &value) || value->IsUndefined())
+      return true;
+    return ConvertFromV8(isolate, value, field);
+  };
+  // |matches| also records whether it was given, so that an explicit empty
+  // list can be told apart from an omitted one.
+  if (v8::Local<v8::Value> value;
+      options.Get("matches", &value) && !value->IsUndefined() &&
+      !ConvertFromV8(isolate, value, &out->matches.emplace())) {
+    return false;
+  }
+  if (!get_filter("excludeMatches", &out->exclude_matches) ||
+      !get_filter("includeGlobs", &out->include_globs) ||
+      !get_filter("excludeGlobs", &out->exclude_globs)) {
+    return false;
   }
   if (bool deprecated; options.Get("_deprecated", &deprecated)) {
     out->deprecated = deprecated;

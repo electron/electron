@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_PRELOAD_SCRIPT_H_
 #define ELECTRON_SHELL_BROWSER_PRELOAD_SCRIPT_H_
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -25,8 +26,9 @@ struct PreloadScript {
   base::FilePath file_path;
 
   // URL filters modeled after Chromium content scripts. A preload with no
-  // filters runs for every URL.
-  std::vector<std::string> matches;
+  // filters runs for every URL. |matches| is unset when omitted; an explicit
+  // empty list is rejected by ParseUrlPatterns().
+  std::optional<std::vector<std::string>> matches;
   std::vector<std::string> exclude_matches;
   std::vector<std::string> include_globs;
   std::vector<std::string> exclude_globs;

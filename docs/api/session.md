@@ -1630,7 +1630,7 @@ a URL must match `matches` (if set) and `includeGlobs` (if set), and must not ma
 so the initial empty document of a frame or popup is matched as `about:blank`. For
 `service-worker` contexts the URL is the service worker's scope.
 
-Throws an error if any of the URL patterns are invalid.
+Throws an error if any of the URL patterns are invalid, or if `matches` is an empty array.
 
 ```js
 const { session } = require('electron')

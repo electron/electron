@@ -4423,6 +4423,29 @@ describe('BrowserWindow module', () => {
             await w.loadURL(`${url}/other`);
             expect(locations).to.deep.equal([`${url}/allowed/page`, `${url}/other?included=1`, `${url}/other`]);
           });
+
+          it(`runs a session preload matching <all_urls> on any document (sandbox: ${sandbox})`, async () => {
+            const server = http.createServer((_request, response) => {
+              response.writeHead(200, { 'Content-Type': 'text/html' });
+              response.end('<html></html>');
+            });
+            defer(() => server.close());
+            const { url } = await listen(server);
+            const ses = session.fromPartition(`preload-all-urls-${sandbox}`);
+            const id = ses.registerPreloadScript({
+              type: 'frame',
+              filePath: path.join(fixtures, 'module', 'preload-location.js'),
+              matches: ['<all_urls>']
+            });
+            defer(() => ses.unregisterPreloadScript(id));
+            const locations: string[] = [];
+            ipcMain.on('preload-location', (_e, href: string) => locations.push(href));
+            defer(() => ipcMain.removeAllListeners('preload-location'));
+            const w = new BrowserWindow({ show: false, webPreferences: { sandbox, session: ses } });
+            await w.loadURL(`${url}/page`);
+            await w.loadURL('about:blank');
+            expect(locations).to.deep.equal([`${url}/page`, 'about:blank']);
+          });
         }
 
         it('rejects invalid preload URL filters', () => {
@@ -4433,6 +4456,9 @@ describe('BrowserWindow module', () => {
           );
           expect(() => ses.registerPreloadScript({ type: 'frame', filePath, excludeMatches: ['https://'] })).to.throw(
             /Invalid URL pattern/
+          );
+          expect(() => ses.registerPreloadScript({ type: 'frame', filePath, matches: [] })).to.throw(
+            /'matches' must not be empty/
           );
           expect(ses.getPreloadScripts()).to.be.empty();
         });
