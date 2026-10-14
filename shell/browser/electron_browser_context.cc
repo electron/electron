@@ -599,6 +599,7 @@ void ElectronBrowserContext::OnNetworkServiceProcessGone(bool /* crashed */) {
   // Clear the cached URLLoaderFactory so the next request creates a new one
   // from the new NetworkContext.
   url_loader_factory_.reset();
+  url_loader_factory_watcher_.reset();
 }
 
 std::pair<network::URLLoaderFactoryBuilder,
@@ -622,7 +623,13 @@ ElectronBrowserContext::CreateURLLoaderFactoryBuilder() {
 
 scoped_refptr<network::SharedURLLoaderFactory>
 ElectronBrowserContext::GetURLLoaderFactory() {
-  if (url_loader_factory_)
+  // OnNetworkServiceProcessGone() can run before the StoragePartition has
+  // noticed that its NetworkContext is gone (RestartNetworkService() notifies
+  // synchronously, while the old context's pipe only breaks once the old
+  // process has exited), so a factory created in that window is bound to the
+  // dead context. Rebuild the cached factory once its pipe has disconnected
+  // rather than failing every later request with ERR_FAILED.
+  if (url_loader_factory_ && url_loader_factory_watcher_.is_connected())
     return url_loader_factory_;
 
   auto [factory_builder, header_client] = CreateURLLoaderFactoryBuilder();
@@ -641,6 +648,9 @@ ElectronBrowserContext::GetURLLoaderFactory() {
   url_loader_factory_ =
       std::move(factory_builder)
           .Finish(storage_partition->GetNetworkContext(), std::move(params));
+  url_loader_factory_watcher_.reset();
+  url_loader_factory_->Clone(
+      url_loader_factory_watcher_.BindNewPipeAndPassReceiver());
   return url_loader_factory_;
 }
 
