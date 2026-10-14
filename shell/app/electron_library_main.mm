@@ -42,6 +42,7 @@ bool HasProcessTypeSwitch(int argc, char* argv[]) {
   return false;
 }
 
+#if !IS_MAS_BUILD()
 // The .app that holds the framework this code was loaded from: the app shim's
 // host. Empty when the framework is not inside an app bundle.
 base::FilePath HostBundlePathFromLoadedFramework() {
@@ -62,6 +63,7 @@ base::FilePath HostBundlePathFromLoadedFramework() {
   path = path.DirName().DirName().DirName();
   return path.Extension() == ".app" ? path : base::FilePath();
 }
+#endif  // !IS_MAS_BUILD()
 
 }  // namespace
 
@@ -106,10 +108,8 @@ int ElectronInitializeICUandStartNode(int argc, char* argv[]) {
   return electron::NodeMain();
 }
 
+#if !IS_MAS_BUILD()
 int ElectronAppShimMain(int argc, char* argv[]) {
-#if IS_MAS_BUILD()
-  NOTREACHED() << "App shims are not available in Mac App Store builds";
-#else
   const base::FilePath host_bundle_path = HostBundlePathFromLoadedFramework();
   CHECK(!host_bundle_path.empty())
       << "An app shim must load the framework from inside its host app";
@@ -128,5 +128,5 @@ int ElectronAppShimMain(int argc, char* argv[]) {
   electron::AppShimMainDelegate delegate(host_bundle_path);
   content::ContentMainParams params{&delegate};
   return content::ContentMain(std::move(params));
-#endif
 }
+#endif  // !IS_MAS_BUILD()

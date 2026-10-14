@@ -59,6 +59,9 @@ void ShowMessageBox(const MessageBoxSettings& settings,
 void CloseMessageBox(int id);
 
 #if BUILDFLAG(IS_MAC)
+// CloseMessageBox(), if a box with this id is showing; nothing otherwise.
+void CloseMessageBoxIfShowing(int id);
+
 // ShowMessageBox() for a parent that is not a NativeWindow of this process:
 // the box is a sheet of `window`, or stands alone when `window` is null. An
 // app shim's process shows the boxes of its windows with it.

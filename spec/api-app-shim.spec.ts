@@ -202,12 +202,26 @@ ifdescribe(process.platform === 'darwin' && !process.mas)('app shims', () => {
     const exited = once(shimProcess!, 'exit');
     const w = new BaseWindow({ appShim: shim });
     const closed = once(w, 'closed');
+    // What the listener saw, checked below: a failed expectation inside a
+    // listener is an uncaught exception, not a failed test.
+    let connectedAfterQuit: boolean | undefined;
+    let errorFromNewWindow: unknown;
     w.once('show', () => {
       shim.quit();
-      expect(shim.isConnected()).to.be.false();
-      expect(() => new BaseWindow({ appShim: shim })).to.throw(/disconnected/);
+      connectedAfterQuit = shim.isConnected();
+      try {
+        const unexpected = new BaseWindow({ appShim: shim });
+        unexpected.destroy();
+      } catch (error) {
+        errorFromNewWindow = error;
+      }
     });
     await Promise.all([closed, exited, once(shim, 'disconnected')]);
+    expect(connectedAfterQuit).to.be.false();
+    expect(errorFromNewWindow)
+      .to.be.an('error')
+      .with.property('message')
+      .that.matches(/disconnected/);
   });
 
   it('restores from the Dock without leaving the maximized state', async () => {
@@ -287,10 +301,10 @@ ifdescribe(process.platform === 'darwin' && !process.mas)('app shims', () => {
   it('takes a menu of its own, or null, and nothing else', async () => {
     const shim = await launchShim();
     const menu = Menu.buildFromTemplate([{ role: 'appMenu' }, { label: 'Tools', submenu: [{ label: 'Ping' }] }]);
-    expect(() => shim.setMenu(menu)).to.not.throw();
-    expect(() => shim.setMenu(null)).to.not.throw();
-    expect(() => shim.setMenu('menu' as any)).to.throw(/Must pass a Menu or null/);
-    expect(() => (shim as any).setMenu()).to.throw(/Must pass a Menu or null/);
+    expect(() => shim.setApplicationMenu(menu)).to.not.throw();
+    expect(() => shim.setApplicationMenu(null)).to.not.throw();
+    expect(() => shim.setApplicationMenu('menu' as any)).to.throw(/Must pass a Menu or null/);
+    expect(() => (shim as any).setApplicationMenu()).to.throw(/Must pass a Menu or null/);
     expect(shim.isConnected()).to.be.true();
   });
 
@@ -335,6 +349,10 @@ ifdescribe(process.platform === 'darwin' && !process.mas)('app shims', () => {
     expect(() => new BaseWindow({ parent: w })).to.throw(/can't be a parent window/);
     const other = new BaseWindow({ show: false });
     expect(() => other.setParentWindow(w)).to.throw(/can't be a parent window/);
+    // Nor does it take one.
+    expect(() => new BaseWindow({ appShim: shim, parent: other })).to.throw(/can't have a parent window/);
+    expect(() => w.setParentWindow(other)).to.throw(/can't have a parent window/);
+    expect(w.getParentWindow()).to.be.null();
     other.destroy();
   });
 

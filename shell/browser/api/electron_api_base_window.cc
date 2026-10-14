@@ -894,6 +894,8 @@ void BaseWindow::SetParentWindow(v8::Local<v8::Value> value,
   if (value->IsNull() || value->IsUndefined()) {
     parent_window_.Reset();
     window_->SetParentWindow(nullptr);
+  } else if (window_->IsInAppShim()) {
+    args->ThrowTypeError("A window in an app shim can't have a parent window");
   } else if (gin::ConvertFromV8(isolate(), value, &parent)) {
     if (parent->window() && parent->window()->IsInAppShim()) {
       args->ThrowTypeError("A window in an app shim can't be a parent window");
@@ -1362,6 +1364,11 @@ bool BaseWindow::IsAppShimValid(const gin_helper::Dictionary& options,
   }
   if (bool modal = false; options.Get(options::kModal, &modal) && modal) {
     *error_message = "A window in an app shim can't be modal";
+    return false;
+  }
+  if (v8::Local<v8::Value> parent;
+      options.Get("parent", &parent) && !parent->IsNullOrUndefined()) {
+    *error_message = "A window in an app shim can't have a parent window";
     return false;
   }
 #endif

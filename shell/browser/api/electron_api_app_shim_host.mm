@@ -507,7 +507,7 @@ void AppShimHost::Quit() {
   connection_->Quit();
 }
 
-void AppShimHost::SetMenu(gin::Arguments* args) {
+void AppShimHost::SetApplicationMenu(gin::Arguments* args) {
   v8::Local<v8::Value> value;
   Menu* menu = nullptr;
   if (!args->GetNext(&value) ||
@@ -532,7 +532,7 @@ gin::ObjectTemplateBuilder AppShimHost::GetObjectTemplateBuilder(
       .SetMethod("setBadge", &AppShimHost::SetBadge)
       .SetMethod("bounce", &AppShimHost::Bounce)
       .SetMethod("cancelBounce", &AppShimHost::CancelBounce)
-      .SetMethod("setMenu", &AppShimHost::SetMenu)
+      .SetMethod("setApplicationMenu", &AppShimHost::SetApplicationMenu)
       .SetMethod("quit", &AppShimHost::Quit);
 }
 

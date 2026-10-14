@@ -105,7 +105,7 @@ class AppShimHost final : public gin::Wrappable<AppShimHost>,
   void Bounce(gin::Arguments* args);
   void CancelBounce();
   void Quit();
-  void SetMenu(gin::Arguments* args);
+  void SetApplicationMenu(gin::Arguments* args);
 
   std::unique_ptr<Connection, NativePeerBase::Deleter> connection_;
 };

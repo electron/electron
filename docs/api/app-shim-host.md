@@ -86,8 +86,8 @@ parts of the window API that work on that native window directly do nothing
 yet. That includes the Touch Bar, the window controls overlay
 (`titleBarOverlay`), simple fullscreen, `win.setEnabled()`,
 `win.flashFrame()` (use [`shim.bounce()`](#shimbouncetype-experimental)),
-`win.setRepresentedFilename()`, `win.setDocumentEdited()` and
-`win.setHiddenInMissionControl()`. `win.getNativeWindowHandle()` and
+`win.setProgressBar()`, `win.setHasShadow()`, `win.setRepresentedFilename()`,
+`win.setDocumentEdited()` and `win.setHiddenInMissionControl()`. `win.getNativeWindowHandle()` and
 `win.getMediaSourceId()` name a hidden stand-in window, not the one on screen.
 
 Tabs are windows of one process, so `win.addTabbedWindow()` only takes two
@@ -108,7 +108,7 @@ afterwards. So a change is not always visible to your app straight away: after
 `show` event.
 
 While a shim is the active app, the menu bar is the shim's and not your app's:
-the menu you gave it with [`shim.setMenu()`](#shimsetmenumenu-experimental), or
+the menu you gave it with [`shim.setApplicationMenu()`](#shimsetapplicationmenumenu-experimental), or
 else a short standard menu that the shim builds. Your app's application menu
 is not shown, and its accelerators do not apply to the shim's windows.
 
@@ -204,7 +204,7 @@ does for your app's.
 
 Stops the bounce that `shim.bounce()` started.
 
-#### `shim.setMenu(menu)` _Experimental_
+#### `shim.setApplicationMenu(menu)` _Experimental_
 
 * `menu` [Menu](menu.md) | null
 

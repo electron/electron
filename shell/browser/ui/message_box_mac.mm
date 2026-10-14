@@ -167,8 +167,7 @@ void ShowMessageBoxForNSWindow(const MessageBoxSettings& settings,
         ret, alert.suppressionButton.state == NSControlStateValueOn);
   } else {
     if (settings.id) {
-      if (GetDialogsMap().contains(*settings.id))
-        CloseMessageBox(*settings.id);
+      CloseMessageBoxIfShowing(*settings.id);
       GetDialogsMap()[*settings.id] = alert;
     }
 
@@ -199,6 +198,15 @@ void ShowMessageBoxForNSWindow(const MessageBoxSettings& settings,
     };
     [alert beginSheetModalForWindow:window completionHandler:handler];
   }
+}
+
+void CloseMessageBoxIfShowing(int id) {
+  if (auto it = GetDialogsMap().find(id); it != GetDialogsMap().end()) {
+    [NSApp endSheet:it->second.window];
+    return;
+  }
+  // One that a window in an app shim is showing, in the shim's process.
+  NativeWindowMacRemote::CloseMessageBox(id);
 }
 
 void CloseMessageBox(int id) {

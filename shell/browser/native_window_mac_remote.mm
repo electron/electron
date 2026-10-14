@@ -90,13 +90,16 @@ class RemoteNativeWidgetMac : public views::NativeWidgetMac {
   const bool has_title_bar_buttons_;
 };
 
-// The message boxes that windows in shims are showing and that
-// CloseMessageBox() can name.
-base::flat_map<int, base::WeakPtr<NativeWindowMacRemote>>&
-RemoteMessageBoxes() {
-  static base::NoDestructor<
-      base::flat_map<int, base::WeakPtr<NativeWindowMacRemote>>>
-      boxes;
+// A message box that a window in a shim is showing and that
+// CloseMessageBox() can name. `serial` tells it from a later box that was
+// given the same id.
+struct RemoteMessageBox {
+  base::WeakPtr<NativeWindowMacRemote> window;
+  uint64_t serial = 0;
+};
+
+base::flat_map<int, RemoteMessageBox>& RemoteMessageBoxes() {
+  static base::NoDestructor<base::flat_map<int, RemoteMessageBox>> boxes;
   return *boxes;
 }
 
@@ -401,13 +404,22 @@ void NativeWindowMacRemote::ShowMessageBox(const MessageBoxSettings& settings,
   options->has_id = settings.id.has_value();
   options->id = settings.id.value_or(0);
   if (settings.id) {
-    RemoteMessageBoxes()[*settings.id] = weak_factory_.GetWeakPtr();
+    // A box that is up under this id, here or in any shim, makes way, as one
+    // of this process's own does.
+    electron::CloseMessageBoxIfShowing(*settings.id);
+    static uint64_t next_serial = 0;
+    const uint64_t serial = ++next_serial;
+    RemoteMessageBoxes()[*settings.id] = {weak_factory_.GetWeakPtr(), serial};
     callback = base::BindOnce(
-        [](int id, MessageBoxCallback callback, int response, bool checked) {
-          RemoteMessageBoxes().erase(id);
+        [](int id, uint64_t serial, MessageBoxCallback callback, int response,
+           bool checked) {
+          // Unless a later box has taken the id over.
+          auto it = RemoteMessageBoxes().find(id);
+          if (it != RemoteMessageBoxes().end() && it->second.serial == serial)
+            RemoteMessageBoxes().erase(it);
           std::move(callback).Run(response, checked);
         },
-        *settings.id, std::move(callback));
+        *settings.id, serial, std::move(callback));
   }
   app_shim->ShowMessageBox(window_id, std::move(options), std::move(callback));
 }
@@ -434,8 +446,8 @@ bool NativeWindowMacRemote::CloseMessageBox(int id) {
   auto it = RemoteMessageBoxes().find(id);
   if (it == RemoteMessageBoxes().end())
     return false;
-  if (it->second) {
-    if (auto* app_shim = it->second->GetAppShim())
+  if (it->second.window) {
+    if (auto* app_shim = it->second.window->GetAppShim())
       app_shim->CloseMessageBox(id);
   }
   return true;
