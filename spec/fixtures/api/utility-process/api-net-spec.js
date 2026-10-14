@@ -36,11 +36,15 @@ v8.setFlagsFromString('--expose_gc');
 chai.use(require('chai-as-promised'));
 chai.use(require('dirty-chai'));
 
-function fail(message) {
-  process.parentPort.postMessage({ ok: false, message });
+// Posts |result| and exits with |code| once the parent has acknowledged it
+// (see waitForUtilityResult in spec/lib/utility-process-helpers.ts). Exiting
+// right after posting lets the exit overtake the message, or lose it.
+function finish(result, code) {
+  process.parentPort.once('message', () => process.exit(code));
+  process.parentPort.postMessage(result);
 }
 
-process.parentPort.on('message', async (e) => {
+process.parentPort.once('message', async (e) => {
   // Equivalent of beforeEach in spec/api-net.spec.ts
   respondNTimes.routeFailure = false;
 
@@ -54,19 +58,23 @@ process.parentPort.on('message', async (e) => {
     // oxlint-disable-next-line no-eval
     await eval(e.data.fn);
   } catch (err) {
-    fail(`${err}`);
-    process.exit(1);
+    finish({ ok: false, message: `${err}` }, 1);
+    return;
   }
 
   // Equivalent of afterEach in spec/api-net.spec.ts
   if (respondNTimes.routeFailure) {
-    fail(
-      'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
+    finish(
+      {
+        ok: false,
+        message:
+          'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
+      },
+      1
     );
-    process.exit(1);
+    return;
   }
 
   // Test passed
-  process.parentPort.postMessage({ ok: true });
-  process.exit(0);
+  finish({ ok: true }, 0);
 });
