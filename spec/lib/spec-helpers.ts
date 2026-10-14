@@ -234,6 +234,13 @@ export function waitUntil(callback: () => boolean | Promise<boolean>, opts: { ra
   })();
 }
 
+// Blocks the calling thread for |ms| without yielding to the event loop,
+// so events that arrive in the meantime queue up and are handled together afterwards.
+// Atomics.wait() sleeps until the shared value changes, which never happens here, or until the timeout.
+export function sleepSync(ms: number) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
 export async function repeatedly<T>(fn: () => Promise<T>, opts?: { until?: (x: T) => boolean; timeLimit?: number }) {
   const { until = (x: T) => !!x, timeLimit = 10000 } = opts ?? {};
   const begin = Date.now();
