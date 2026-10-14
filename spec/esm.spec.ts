@@ -89,11 +89,12 @@ describe('esm', () => {
   // `require()` returns, so the two should expose exactly the same names bound
   // to exactly the same objects in every process type that can load ESM.
   describe('import / require parity', () => {
-    // The fixture starts a main, a utility and a renderer process, so it is
-    // run once and shared by the tests below. It runs from the first test
-    // rather than a beforeAll hook so that a run that fails or times out on a
-    // busy machine is retried like any other test (hooks are not); a failed
-    // run is forgotten so that the retry starts a fresh one.
+    // The fixture starts a main, a utility and a renderer process,
+    // so it is run once and shared by the tests below.
+    // It runs from the first test rather than a beforeAll hook,
+    // so that a run that fails or times out on a busy machine is retried
+    // like any other test (hooks are not);
+    // a failed run is forgotten so that the retry starts a fresh one.
     let results: Promise<Record<string, string[]>> | null = null;
     const getResults = () => {
       results ??= (async () => {

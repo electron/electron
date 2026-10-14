@@ -2812,8 +2812,8 @@ describe('protocol module', () => {
       expect(response).toContain("hello to it's-a me! Mario!");
     });
 
-    // A throughput comparison: run it serially so that other spec files'
-    // Electron processes don't skew one side of the ratio.
+    // A throughput comparison:
+    // run it serially so that other spec files' Electron processes don't skew one side of the ratio.
     it('is fast', { tags: ['serial'] }, async () => {
       // 128 MB payload.
       const chunk = new Uint8Array(128 * 1024 * 1024);

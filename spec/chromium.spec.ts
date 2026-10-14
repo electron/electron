@@ -5609,8 +5609,8 @@ describe('navigator.hid', () => {
     });
     guest.executeJavaScript('navigator.hid.requestDevice({filters: []})', true).catch(() => {});
     await selectFired;
-    // destroy() tears the WebContents down in a later task, which on a busy
-    // machine can be more than one timer tick away.
+    // destroy() tears the WebContents down in a later task,
+    // which on a busy machine can be more than one timer tick away.
     await waitUntil(() => guest.isDestroyed());
   });
 });
@@ -5826,8 +5826,8 @@ describe('navigator.usb', () => {
     });
     guest.executeJavaScript('navigator.usb.requestDevice({filters: []})', true).catch(() => {});
     await selectFired;
-    // destroy() tears the WebContents down in a later task, which on a busy
-    // machine can be more than one timer tick away.
+    // destroy() tears the WebContents down in a later task,
+    // which on a busy machine can be more than one timer tick away.
     await waitUntil(() => guest.isDestroyed());
   });
 });

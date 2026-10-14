@@ -5673,8 +5673,8 @@ describe('BrowserWindow module', () => {
   });
 
   // TODO(codebytere): figure out how to make these pass in CI on Windows.
-  // Serial because on macOS a window that another spec file's window covers is
-  // occluded, and Chromium then reports the page as hidden.
+  // Serial because on macOS a window that another spec file's window covers is occluded,
+  // and Chromium then reports the page as hidden.
   ifdescribe(process.platform !== 'win32')('document.visibilityState/hidden', { tags: ['serial'] }, () => {
     afterEach(closeAllWindows);
 
