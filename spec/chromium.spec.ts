@@ -1422,18 +1422,6 @@ describe('chromium features', () => {
       return channel;
     };
 
-    // Gives the page transient user activation and only resolves once the
-    // browser process knows about it. A permission request such as
-    // createWritable() needs that activation in the browser, but it travels on
-    // the handle's own Mojo pipe, while the activation update travels on the
-    // frame's channel-associated interfaces. Run in the same executeJavaScript()
-    // call, the request can be handled before the activation update and is
-    // rejected with "User activation is required to request permissions". The
-    // reply to this call is ordered after the activation update.
-    const activatePage = async (w: BrowserWindow) => {
-      await w.webContents.executeJavaScript('void 0', true);
-    };
-
     it('allows access by default to reading an OPFS file', async () => {
       w = new BrowserWindow({
         show: false,
@@ -1587,8 +1575,13 @@ describe('chromium features', () => {
 
       await w.loadFile(writablePath);
       expect(await pasteFileUri(w, testFile)).toBe('did-create-file-handle');
-      await activatePage(w);
-      const result = await w.webContents.executeJavaScript(
+      // A permission request such as createWritable() needs the page's user
+      // activation in the browser process.
+      // webFrameMain.executeJavaScript() updates that before it runs the script.
+      // webContents.executeJavaScript() only tells the renderer,
+      // whose activation update can lose the race with the request,
+      // which is then rejected with "User activation is required to request permissions".
+      const result = await w.webContents.mainFrame.executeJavaScript(
         `
         new Promise(async (resolve, reject) => {
           try {
@@ -1666,9 +1659,10 @@ describe('chromium features', () => {
 
       const permission = await w.webContents.executeJavaScript('handle.queryPermission({ mode: "readwrite" })');
       trace(`initial permission: ${permission}`);
-      await activatePage(w);
       trace('createWritable requested');
-      const writeError = await w.webContents.executeJavaScript(
+      // webFrameMain.executeJavaScript(),
+      // so that the browser process knows of the user activation before the request (see above).
+      const writeError = (await w.webContents.mainFrame.executeJavaScript(
         `
         (async () => {
           try {
@@ -1680,7 +1674,7 @@ describe('chromium features', () => {
         })()
       `,
         true
-      );
+      )) as { name: string; message: string } | null;
       trace(`createWritable ${writeError ? `rejected: ${writeError.name}: ${writeError.message}` : 'succeeded'}`);
       expect(writeError?.name).toBe('NotAllowedError');
       expect(permissionRequests).toEqual([
