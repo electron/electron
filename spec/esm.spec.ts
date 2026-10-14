@@ -89,18 +89,29 @@ describe('esm', () => {
   // `require()` returns, so the two should expose exactly the same names bound
   // to exactly the same objects in every process type that can load ESM.
   describe('import / require parity', () => {
-    let results: Record<string, string[]> = {};
-
-    before(async () => {
-      const result = await runFixture(path.resolve(fixturePath, 'import-require-parity'));
-      expect(result.code).to.be.oneOf([0, 1], `fixture did not run to completion:\n${result.stderr}`);
-      results = JSON.parse(result.stdout.split('\n').pop()!);
-    });
+    // The fixture starts a main, a utility and a renderer process, so it is
+    // run once and shared by the tests below. It runs from the first test
+    // rather than a before hook so that a run that fails or times out on a
+    // busy machine is retried like any other test (hooks are not); a failed
+    // run is forgotten so that the retry starts a fresh one.
+    let results: Promise<Record<string, string[]>> | null = null;
+    const getResults = () => {
+      results ??= (async () => {
+        const result = await runFixture(path.resolve(fixturePath, 'import-require-parity'));
+        expect(result.code).to.be.oneOf([0, 1], `fixture did not run to completion:\n${result.stderr}`);
+        return JSON.parse(result.stdout.split('\n').pop()!);
+      })().catch((error) => {
+        results = null;
+        throw error;
+      });
+      return results;
+    };
 
     for (const processType of ['main', 'utility', 'renderer']) {
-      it(`exposes the same electron module to import and require() in the ${processType} process`, () => {
-        expect(results).to.have.property(processType);
-        expect(results[processType]).to.deep.equal([]);
+      it(`exposes the same electron module to import and require() in the ${processType} process`, async () => {
+        const parity = await getResults();
+        expect(parity).to.have.property(processType);
+        expect(parity[processType]).to.deep.equal([]);
       });
     }
   });
