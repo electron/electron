@@ -28,10 +28,10 @@ index ac58ca5cf626ff7cb9f4e1bc5bea83dda0982a4a..f7ef13b3a64ec7386e1d75770c023c08
                                                TextureStorage *storage,
                                                int level);
 diff --git a/src/libANGLE/renderer/d3d/TextureD3D.cpp b/src/libANGLE/renderer/d3d/TextureD3D.cpp
-index caffb445ec6de8786d26d3413175bf374e8a9355..4b65716656ee8975a37f230c8564ffd34cd12900 100644
+index 001d773d0225fc055f6908a3864a1b2f2eca1209..ecbf8d98f2d63a7b65a64766322e50a220106130 100644
 --- a/src/libANGLE/renderer/d3d/TextureD3D.cpp
 +++ b/src/libANGLE/renderer/d3d/TextureD3D.cpp
-@@ -281,8 +281,13 @@ angle::Result TextureD3D::setStorageExternalMemory(const gl::Context *context,
+@@ -285,8 +285,13 @@ angle::Result TextureD3D::setStorageExternalMemory(const gl::Context *context,
      return angle::Result::Continue;
  }
  
@@ -46,7 +46,7 @@ index caffb445ec6de8786d26d3413175bf374e8a9355..4b65716656ee8975a37f230c8564ffd3
      if (!mRenderer->getFeatures().setDataFasterThanImageUpload.enabled)
      {
          return false;
-@@ -338,7 +343,7 @@ angle::Result TextureD3D::setImageImpl(const gl::Context *context,
+@@ -342,7 +347,7 @@ angle::Result TextureD3D::setImageImpl(const gl::Context *context,
  
      if (pixelData != nullptr)
      {
@@ -55,7 +55,7 @@ index caffb445ec6de8786d26d3413175bf374e8a9355..4b65716656ee8975a37f230c8564ffd3
          {
              ANGLE_TRY(
                  mTexStorage->setData(context, index, image, nullptr, type, unpack, pixelData));
-@@ -376,7 +381,7 @@ angle::Result TextureD3D::subImage(const gl::Context *context,
+@@ -380,7 +385,7 @@ angle::Result TextureD3D::subImage(const gl::Context *context,
          ImageD3D *image = getImage(index);
          ASSERT(image);
  
@@ -64,7 +64,7 @@ index caffb445ec6de8786d26d3413175bf374e8a9355..4b65716656ee8975a37f230c8564ffd3
          {
              return mTexStorage->setData(context, index, image, &area, type, unpack, pixelData);
          }
-@@ -725,7 +730,7 @@ angle::Result TextureD3D::commitRegion(const gl::Context *context,
+@@ -729,7 +734,7 @@ angle::Result TextureD3D::commitRegion(const gl::Context *context,
                                         const gl::ImageIndex &index,
                                         const gl::Box &region)
  {
@@ -73,7 +73,7 @@ index caffb445ec6de8786d26d3413175bf374e8a9355..4b65716656ee8975a37f230c8564ffd3
      {
          ASSERT(isValidIndex(index));
          ImageD3D *image = getImage(index);
-@@ -884,8 +889,7 @@ angle::Result TextureD3D::initializeContents(const gl::Context *context,
+@@ -888,8 +893,7 @@ angle::Result TextureD3D::initializeContents(const gl::Context *context,
                                               GLenum binding,
                                               const gl::OwnImageIndex &ownImageIndex)
  {
@@ -83,7 +83,7 @@ index caffb445ec6de8786d26d3413175bf374e8a9355..4b65716656ee8975a37f230c8564ffd3
  
      // Special case for D3D11 3D textures. We can't create render targets for individual layers of a
      // 3D texture, so force the clear to the entire mip. There shouldn't ever be a case where we
-@@ -953,55 +957,18 @@ angle::Result TextureD3D::initializeContents(const gl::Context *context,
+@@ -957,55 +961,18 @@ angle::Result TextureD3D::initializeContents(const gl::Context *context,
  
      ASSERT(image != nullptr);
  

@@ -17,7 +17,7 @@ Commit-Queue: Geoff Lang <geofflang@chromium.org>
 Reviewed-by: Zhenyao Mo <zmo@chromium.org>
 
 diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
-index 6f70c21bdb1be96207ed322f15aecd71b27e5695..c23838c9d2d0ff6799271c3b17d8e9f26f41837b 100644
+index 7555f4a6df8c64731e9484f7ff08cebf5f726bb7..af23acfe0d23201334598cca22466377c7e60b23 100644
 --- a/src/libANGLE/renderer/gl/TextureGL.cpp
 +++ b/src/libANGLE/renderer/gl/TextureGL.cpp
 @@ -855,23 +855,31 @@ angle::Result TextureGL::setCompressedImage(const gl::Context *context,

@@ -47,7 +47,7 @@ index bd7bb2cdf841810aa7b36c162523e14435b399ae..414d3f02081f659ad383490c23e58841
  
  inline FeaturesGL::FeaturesGL()  = default;
 diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
-index 96082d8f4a63c508b608eb9757a14806503e41f2..21a76917baaef35f14d37c4fca146e87fad11abf 100644
+index 3e979d4a2641ece4a370247a596c2fbd49e97dd7..bf0240f159aed1e324d56e92fe1d28affaf5d2b2 100644
 --- a/include/platform/gl_features.json
 +++ b/include/platform/gl_features.json
 @@ -1001,6 +1001,15 @@
@@ -116,7 +116,7 @@ index 625eefcbb13cf75aa8a9d7f2861e4c57a520e216..ca7caeeab233ae8ade0cf44df4b152fa
                                 finalSourceArea.y1(), finalDestArea.x, finalDestArea.y,
                                 finalDestArea.x1(), finalDestArea.y1(), blitMask, filter);
 diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
-index 9e16d2c5ce16aeb2632251896ee3be494a7b81f1..41b72b28c93719040729a803c40c4bcc9a789c6b 100644
+index f48e96890c2ce688768be56692f53e93fc8029d8..48e13e95b13cf287c283ce019dcba19d8ce4dd6a 100644
 --- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
 +++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
 @@ -2685,6 +2685,9 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature

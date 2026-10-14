@@ -31,7 +31,7 @@ index 53de31945963c43d18649f2d31615dd36d5ba16f..c05b4eb70dc80320f57c8797a4c1f39e
          "adjustSrcDstRegionForBlitFramebuffer",
          FeatureCategory::OpenGLWorkarounds,
 diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
-index c7d066c308f8b8cc8b39871a3db0f5454b261463..44bbfe5d0e7933e67d2dd5d9a7a552a7fe88cdbf 100644
+index 6bddd5ffe8060dd867f03994ca8b3ac14c53d25a..94bd8cedd84473ebe23972e1d4d55c481e881975 100644
 --- a/include/platform/gl_features.json
 +++ b/include/platform/gl_features.json
 @@ -361,6 +361,15 @@
@@ -65,7 +65,7 @@ index 27df7443a3dfc1dca65bbd7b773391e9e28ab865..5e6c8f4704999b4037ad0103d899d09d
  
  struct TypePrecision
 diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
-index 7fff47c1e729dd16943dee0c069656fd56a9f589..53440f2d7c336005919b406e16bd1846685337f3 100644
+index 9147cd050289be9f5e643f12e89349a456f43069..4bc95e09a8db11e18262a200d95a4eb0585ac58d 100644
 --- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
 +++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
 @@ -2202,6 +2202,11 @@ void GenerateCaps(const FunctionsGL *functions,

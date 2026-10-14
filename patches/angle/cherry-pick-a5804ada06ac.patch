@@ -33,7 +33,7 @@ index 9721bfe9d9df9afca7931c4fb0d3c1af474072d0..53de31945963c43d18649f2d31615dd3
          &members,
      };
 diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
-index 8e3a635477a6df701ca81e2e1c4499ff4ce3ff15..c7d066c308f8b8cc8b39871a3db0f5454b261463 100644
+index b15cb3084be2f86ab409f107930b5baee7df49bd..6bddd5ffe8060dd867f03994ca8b3ac14c53d25a 100644
 --- a/include/platform/gl_features.json
 +++ b/include/platform/gl_features.json
 @@ -309,13 +309,13 @@
@@ -54,7 +54,7 @@ index 8e3a635477a6df701ca81e2e1c4499ff4ce3ff15..c7d066c308f8b8cc8b39871a3db0f545
          {
              "name": "recreate_immutable_texture_on_base_level_increase",
 diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
-index 48d1f63632066fee1e262a6ceae0c6c18fa888d4..6f70c21bdb1be96207ed322f15aecd71b27e5695 100644
+index eba8a04a830e63706e6e028e3b2184cc7245d27a..7555f4a6df8c64731e9484f7ff08cebf5f726bb7 100644
 --- a/src/libANGLE/renderer/gl/TextureGL.cpp
 +++ b/src/libANGLE/renderer/gl/TextureGL.cpp
 @@ -887,6 +887,13 @@ angle::Result TextureGL::setCompressedImage(const gl::Context *context,
@@ -81,7 +81,7 @@ index 48d1f63632066fee1e262a6ceae0c6c18fa888d4..6f70c21bdb1be96207ed322f15aecd71
          ANGLE_TRY(setBaseLevel(context, 0));
      }
 diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
-index a9ff1f7068f4aa9802c7a43eb847d805ddda52f1..7fff47c1e729dd16943dee0c069656fd56a9f589 100644
+index 271212e64f629065fdf3b8a1f78727a91df90ef1..9147cd050289be9f5e643f12e89349a456f43069 100644
 --- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
 +++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
 @@ -2435,7 +2435,7 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature

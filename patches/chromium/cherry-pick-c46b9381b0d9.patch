@@ -1,0 +1,68 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Mon, 12 Oct 2026 16:09:00 -0700
+Subject: [M152] Cancel have_enough_after_lazy_load_cb_ in
+ WebMediaPlayerImpl::Shutdown()
+
+Original change's description:
+> Cancel have_enough_after_lazy_load_cb_ in WebMediaPlayerImpl::Shutdown()
+>
+> When a lazy-loaded video suspends during startup, OnPipelineSuspended()
+> posts have_enough_after_lazy_load_cb_ with a 250ms delay using
+> base::Unretained(demuxer_manager_.get()).
+>
+> Previously, WebMediaPlayerImpl::Shutdown() moved demuxer_manager_ to
+> DestructionHelper without cancelling have_enough_after_lazy_load_cb_.
+> Because ~WebMediaPlayerImpl() is posted asynchronously via DeleteSoon,
+> if demuxer_manager_ is destroyed and the 250ms delayed task runs before
+> ~WebMediaPlayerImpl(), DemuxerManager::StopPreloading() is invoked on a
+> freed DemuxerManager.
+>
+> Cancel have_enough_after_lazy_load_cb_ in WebMediaPlayerImpl::Shutdown()
+> before transferring ownership of demuxer_manager_ to DestructionHelper.
+>
+> Fixed: 568719352
+> Change-Id: Ia70f3549f38985bfd7bdb57d33ebe3ac6d6664ec
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8542870
+> Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+> Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+> Reviewed-by: Thomas Guilbert <tguilbert@chromium.org>
+> Commit-Queue: Thomas Guilbert <tguilbert@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1714912}
+
+(cherry picked from commit 839f33256e792606993c2fae501babe68cd31921)
+
+Bug: 572074066,568719352
+Change-Id: Ia70f3549f38985bfd7bdb57d33ebe3ac6d6664ec
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8546636
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+Reviewed-by: Frank Liberato <liberato@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7977@{#2830}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/third_party/blink/renderer/platform/media/web_media_player_impl.cc b/third_party/blink/renderer/platform/media/web_media_player_impl.cc
+index a61855d3f1f137ee93d0d34dab5764244ae8977a..5bc0cf8a96395a962295d8135913614dbeb08c2d 100644
+--- a/third_party/blink/renderer/platform/media/web_media_player_impl.cc
++++ b/third_party/blink/renderer/platform/media/web_media_player_impl.cc
+@@ -690,6 +690,7 @@ void WebMediaPlayerImpl::Shutdown() {
+   memory_usage_reporting_timer_.Stop();
+   background_pause_timer_.Stop();
+   update_background_status_cb_.Cancel();
++  have_enough_after_lazy_load_cb_.Cancel();
+   media_log_->OnWebMediaPlayerDestroyed();
+ 
+   demuxer_manager_->StopAndResetClient();
+@@ -1931,9 +1932,9 @@ void WebMediaPlayerImpl::OnPipelineSuspended() {
+       // connection, briefly (250ms chosen arbitrarily) delay signaling "have
+       // enough" to the MultiBufferDataSource.
+       //
+-      // Unretained() is safe here since the base::CancelableOnceClosure will
+-      // cancel upon destruction of this class and `demuxer_manager_` is
+-      // gauranteeed to outlive us as a result of the DestructionHelper.
++      // Unretained() is safe here since `have_enough_after_lazy_load_cb_` is
++      // cancelled in Shutdown() before `demuxer_manager_` is destroyed via
++      // DestructionHelper.
+       have_enough_after_lazy_load_cb_.Reset(
+           BindOnce(&media::DemuxerManager::StopPreloading,
+                    Unretained(demuxer_manager_.get())));

@@ -1,0 +1,326 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Fran=C3=A7ois=20Doray?= <fdoray@chromium.org>
+Date: Tue, 6 Oct 2026 23:10:50 -0700
+Subject: [M155] [FSA] Fix use-after-free in FileSystemAccessLockManager
+
+Original change's description:
+> [FSA] Fix use-after-free in FileSystemAccessLockManager
+>
+> Problem:
+> Consider three locks on the same path:
+> - Lock A: Active lock held by a BFCached page.
+> - Lock B: Pending lock requested by another BFCached page. Lock A begins
+>   eviction, and Lock B's callback holds the only surviving handle to
+>   Lock A (`Lock B->evicting_subroot_lock_ = Lock A`).
+> - Lock C: New pending lock requested by an active page, superseding
+>   Lock B in its parent's `child_locks_`.
+>
+> In `Lock C->SetEvictingSubrootLock(Lock B)`, Lock A was extracted into a
+> stack local `next_evicting_subroot_lock` while calling
+> `evicting_subroot_lock->EvictPendingSubtree()` on Lock B. Evicting
+> Lock B dropped its callbacks, releasing the last handle to Lock A and
+> invoking `Lock A->LockHandleDestroyed()`.
+>
+> Because Lock C had not yet adopted Lock A as its
+> `evicting_subroot_lock_`, `Lock A->IsEvictingSubroot()` returned false.
+> Believing it was an active lock, Lock A invoked `DestroySelf()`, which
+> called `ReleaseChild()` on its parent (`root_lock_`). This erased Lock C
+> from `root_lock_->child_locks_` while Lock C's
+> `SetEvictingSubrootLock()` was still running on the stack. When
+> `EvictPendingSubtree()` returned, Lock C accessed its now-freed memory
+> to assign `evicting_subroot_lock_`, causing a heap use-after-free.
+>
+> Additionally, two related lifecycle bugs existed:
+> 1. `LockHandleDestroyed()` unconditionally called `DestroySelf()` for
+>    locks with empty handles, even if they were detached/superseded
+>    (`parent->GetChild(path) != this`) or still anchored child locks in
+>    the path hierarchy (`!child_locks_.empty()`).
+> 2. An unhandled null pointer occurred in `IsEvictingSubroot()` when
+>    `parent_lock_->GetChild(path_)` was null.
+>
+> Fix:
+> 1. In `SetEvictingSubrootLock()`: Adopt `next_evicting_subroot_lock`
+>    (Lock A) into `evicting_subroot_lock_` before calling
+>    `EvictPendingSubtree()` on Lock B. During eviction, Lock A's
+>    `IsEvictingSubroot()` evaluates to true, so Lock A destroys itself
+>    safely via `pending_lock->RemoveEvictingSubrootLock()` and promotes
+>    Lock C, without invoking `ReleaseChild()`.
+> 2. In `LockHandleDestroyed()`:
+>    - Do not destroy a lock if
+>      `!child_locks_.empty() || evicting_subroot_lock_`. Intermediate
+>      path nodes must be preserved until their children are gone to
+>      avoid dangling parent references.
+>    - Verify parent ownership (`parent_lock_->GetChild(path_) == this`)
+>      before calling `DestroySelf()`. Detached or superseded locks cannot
+>      delete unrelated children from former parents.
+> 3. In `ReleaseChild()`: Prune ancestor locks whose children are now
+>    empty if they have no remaining handles or active evictions.
+> 4. In `IsEvictingSubroot()`: Add a null check for
+>    `parent_lock_->GetChild(path_)` to handle cases where `path_` has
+>    already been released or detached.
+> 5. In `IteratePendingSubtreeCallbacks()`: Guard callback execution with
+>    `!pending_callbacks_.empty()` to support locks promoted reentrantly
+>    before callbacks are attached.
+>
+> AGY was used to help write this patch.
+>
+> Fixed: 553525515
+> Change-Id: I9f1c8f0d3310d992823dfebc84b6a8bbe32196ef
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8389638
+> Reviewed-by: Mingyu Lei <leimy@chromium.org>
+> Commit-Queue: Francois Pierre Doray <fdoray@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1707268}
+
+(cherry picked from commit aa6c477ded0f2d8ad56bdabce2820462f9a9f30c)
+
+Bug: 568219380,553525515
+Change-Id: I9f1c8f0d3310d992823dfebc84b6a8bbe32196ef
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8529026
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8059@{#988}
+Cr-Branched-From: 199ac2cd7ab289e11c2236bd2cede848781213da-refs/heads/main@{#1697595}
+
+diff --git a/content/browser/file_system_access/file_system_access_lock_manager.cc b/content/browser/file_system_access/file_system_access_lock_manager.cc
+index 290a140b3ca57c6a20fb6634741dfbb05e075373..dcae2cef1755159e0ba2fcac5e75a281d4c0a68b 100644
+--- a/content/browser/file_system_access/file_system_access_lock_manager.cc
++++ b/content/browser/file_system_access/file_system_access_lock_manager.cc
+@@ -196,6 +196,37 @@ class Lock {
+     size_t count_removed = child_locks_.erase(path);
+ 
+     CHECK_EQ(1u, count_removed);
++
++    // If this lock was kept alive solely as an ancestor of children that are
++    // now gone, destroy it if possible.
++    //
++    // This is not expected to happen: `ReleaseChild()` is only called from a
++    // child's `LockHandleDestroyed()`, while the child's `LockHandle` still
++    // holds a `parent_lock_handle_` to `this`. `this` is instead destroyed when
++    // that parent handle is released.
++    // TODO(crbug.com/553525515): Remove the `DestroySelf()` fallback below if
++    // there are no reports of this CHECK failing.
++    CHECK(!CanDestroySelf(), base::NotFatalUntil::M160);
++    if (CanDestroySelf()) {
++      DestroySelf();
++    }
++  }
++
++  bool CanDestroySelf() {
++    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++    // A lock can only destroy itself through its parent if:
++    // - No active handles or pending callbacks reference it.
++    // - It does not anchor any child locks in the path hierarchy (it will be
++    //   pruned in `ReleaseChild` once its children are gone).
++    // - It is neither waiting on an underlying eviction nor being evicted as
++    //   another lock's `evicting_subroot_lock_`.
++    // - Its parent still owns it at `path_` (an evicted or superseded lock must
++    //   not call `ReleaseChild()`, which would erroneously remove whatever new
++    //   lock replaced it).
++    return frame_id_lock_handles_.empty() && child_locks_.empty() &&
++           pending_callbacks_.empty() && !evicting_subroot_lock_ &&
++           !IsEvictingSubroot() &&
++           (!parent_lock_.has_value() || parent_lock_->GetChild(path_) == this);
+   }
+ 
+   bool IsHeldOnlyByInactivePages() {
+@@ -241,41 +272,42 @@ class Lock {
+ 
+     // If nothing is holding this lock, release it.
+     if (frame_id_lock_handles_.empty()) {
+-      // If we're not an Evicting subroot, then our parent owns us, and we can
+-      // destroy ourselves through our parent.
+-      if (!IsEvictingSubroot()) {
+-        // `DestroySelf` will destroy `this`.
+-        DestroySelf();
+-        return;
+-      }
+-
+-      // The root cannot be an Evicting subroot.
+-      CHECK(parent_lock_.has_value());
+-
+-      // If we are an Evicting subroot, then we must destroy ourselves through
+-      // the `pending_lock` that owns us.
+-      Lock* pending_lock = parent_lock_->GetChild(path_);
+-      bool in_pending_subtree = InPendingSubtree();
+-      CHECK(!in_pending_subtree || !IsPendingSubroot());
++      if (IsEvictingSubroot()) {
++        // The root cannot be an Evicting subroot.
++        CHECK(parent_lock_.has_value());
++
++        // If we are an Evicting subroot, then we must destroy ourselves through
++        // the `pending_lock` that owns us.
++        Lock* pending_lock = parent_lock_->GetChild(path_);
++        CHECK(pending_lock);
++        bool in_pending_subtree = InPendingSubtree();
++        CHECK(!in_pending_subtree || !IsPendingSubroot());
++
++        // `RemoveEvictingSubrootLock` will destroy `this`.
++        pending_lock->RemoveEvictingSubrootLock();
++
++        if (in_pending_subtree) {
++          return;
++        }
+ 
+-      // `RemoveEvictingSubrootLock` will destroy `this`.
+-      pending_lock->RemoveEvictingSubrootLock();
++        if (pending_lock->InEvictingSubtree()) {
++          // If the pending lock is in an Evicting subtree, then it should be
++          // evicted.
++          pending_lock->EvictPendingSubtree();
++          return;
++        }
+ 
+-      if (in_pending_subtree) {
++        // This was the last Evicting Lock that needed to be destroyed to
++        // promote the `pending_lock`.
++        pending_lock->PromotePendingToTaken();
+         return;
+       }
+ 
+-      if (pending_lock->InEvictingSubtree()) {
+-        // If the pending lock is in an Evicting subtree, then it should be
+-        // evicted.
+-
+-        pending_lock->EvictPendingSubtree();
++      if (CanDestroySelf()) {
++        // `DestroySelf` will destroy `this`.
++        DestroySelf();
+         return;
+       }
+-
+-      // This was the last Evicting Lock that needed to be destroyed to promote
+-      // the `pending_lock`.
+-      pending_lock->PromotePendingToTaken();
+     }
+   }
+ 
+@@ -315,11 +347,13 @@ class Lock {
+       return;
+     }
+ 
+-    // This is a leaf of a Pending subtree, so it should have Pending callbacks.
+-    CHECK(pending_callbacks_.size() > 0);
+-
+-    // `this` may be destroyed.
+-    callback.Run(std::move(pending_callbacks_));
++    // This is a leaf of a Pending subtree. If it has pending callbacks, run
++    // them. It may not have any yet if it was promoted before callbacks were
++    // attached.
++    if (!pending_callbacks_.empty()) {
++      // `this` may be destroyed.
++      callback.Run(std::move(pending_callbacks_));
++    }
+   }
+ 
+   void EvictPendingSubtree() {
+@@ -371,8 +405,13 @@ class Lock {
+ 
+   // Returns if we're the subroot of an Evicting subtree. See class comment.
+   bool IsEvictingSubroot() {
+-    return parent_lock_.has_value() &&
+-           parent_lock_->GetChild(path_)->evicting_subroot_lock_.get() == this;
++    if (!parent_lock_.has_value()) {
++      return false;
++    }
++    // `child` can be null if `path_` in the parent has already been released
++    // or if `this` has been detached.
++    Lock* child = parent_lock_->GetChild(path_);
++    return child && child->evicting_subroot_lock_.get() == this;
+   }
+ 
+   // Makes `this` a Pending subtree that is waiting on the destruction of the
+@@ -380,17 +419,23 @@ class Lock {
+   // comment.
+   void SetEvictingSubrootLock(std::unique_ptr<Lock> evicting_subroot_lock) {
+     DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++    CHECK(evicting_subroot_lock);
+     is_pending_ = true;
+-    evicting_subroot_lock_ = std::move(evicting_subroot_lock);
+ 
+-    // If our `evicting_subroot_lock_` has its own `evicting_subroot_lock_`,
+-    // then replace the former with the latter.
++    // If `evicting_subroot_lock` was itself pending on an evicting subroot,
++    // then that underlying evicting subroot is what `this` must wait on.
+     auto next_evicting_subroot_lock =
+-        evicting_subroot_lock_->TakeEvictingSubrootLock();
++        evicting_subroot_lock->TakeEvictingSubrootLock();
+     if (next_evicting_subroot_lock) {
+-      // Destroys `evicting_subroot_lock_`.
+-      evicting_subroot_lock_->EvictPendingSubtree();
++      // Must adopt `next_evicting_subroot_lock` BEFORE calling
++      // `EvictPendingSubtree()`. Dropping callbacks in `EvictPendingSubtree()`
++      // may release handles to the underlying evicting lock, which relies on
++      // `this->evicting_subroot_lock_` to recognize that it is an evicting
++      // subroot rather than an active lock.
+       evicting_subroot_lock_ = std::move(next_evicting_subroot_lock);
++      evicting_subroot_lock->EvictPendingSubtree();
++    } else {
++      evicting_subroot_lock_ = std::move(evicting_subroot_lock);
+     }
+   }
+ 
+diff --git a/content/browser/file_system_access/file_system_access_lock_manager_unittest.cc b/content/browser/file_system_access/file_system_access_lock_manager_unittest.cc
+index cd093836b926e1a8b12b9bdcdb00d7d8f9bdea6c..c1fa9d3d3197c1cd13cbe64764253c8596ff0d2c 100644
+--- a/content/browser/file_system_access/file_system_access_lock_manager_unittest.cc
++++ b/content/browser/file_system_access/file_system_access_lock_manager_unittest.cc
+@@ -1316,6 +1316,59 @@ TEST_F(FileSystemAccessLockManagerTest, BFCacheEvictPendingTree) {
+   ASSERT_TRUE(parent_future->IsReady() && parent_future->Take());
+ }
+ 
++TEST_F(FileSystemAccessLockManagerTest,
++       BFCacheEvictPendingLockReentrantDestroySelf) {
++  RenderFrameHostImpl* rfh = static_cast<RenderFrameHostImpl*>(main_rfh());
++  auto active_context = kBindingContext;
++  auto bf_cache_context = FileSystemAccessManagerImpl::BindingContext(
++      kTestStorageKey, kTestURL, rfh->GetGlobalId());
++  rfh->SetLifecycleState(
++      RenderFrameHostImpl::LifecycleStateImpl::kInBackForwardCache);
++
++  base::FilePath parent = dir_.GetPath().AppendASCII("parent");
++  auto parent_url = CreateLocalUrl(parent);
++  LockType exclusive_lock_type = manager_->GetExclusiveLockType();
++
++  // 1. Take Lock A on `parent_url` in BFCache.
++  auto lock_a = TakeLockSync(bf_cache_context, parent_url, exclusive_lock_type);
++  ASSERT_TRUE(lock_a);
++
++  // 2. Take Lock B on `parent_url` in BFCache, holding Lock A in the callback.
++  base::test::TestFuture<scoped_refptr<FileSystemAccessLockManager::LockHandle>>
++      lock_b_future;
++  auto holding_callback = base::BindOnce(
++      [](scoped_refptr<FileSystemAccessLockManager::LockHandle> held_lock,
++         base::OnceCallback<void(
++             scoped_refptr<FileSystemAccessLockManager::LockHandle>)> cb,
++         scoped_refptr<FileSystemAccessLockManager::LockHandle> lock) {
++        std::move(cb).Run(std::move(lock));
++      },
++      std::move(lock_a), lock_b_future.GetCallback());
++
++  manager_->TakeLock(bf_cache_context, parent_url, exclusive_lock_type,
++                     std::move(holding_callback));
++
++  // 3. Take Lock C on `parent_url` in active_context.
++  //    This triggers eviction of Lock B, which has Lock A parked as its
++  //    evicting subroot. When B's pending subtree is evicted, the holding
++  //    callback is dropped, destroying the last handle to Lock A.
++  auto lock_c_future =
++      TakeLockAsync(active_context, parent_url, exclusive_lock_type);
++
++  // When Lock B was evicted, the holding callback must be dropped.
++  EXPECT_FALSE(lock_b_future.IsReady());
++  // Lock C must be reentrantly promoted and granted.
++  ASSERT_TRUE(lock_c_future->IsReady());
++  auto lock_c = lock_c_future->Take();
++  ASSERT_TRUE(lock_c);
++
++  // Verify the lock is actively held.
++  EXPECT_FALSE(TakeLockSync(active_context, parent_url, exclusive_lock_type));
++  // Verify clean release when Lock C is destroyed.
++  lock_c.reset();
++  EXPECT_TRUE(TakeLockSync(active_context, parent_url, exclusive_lock_type));
++}
++
+ TEST_F(FileSystemAccessLockManagerTest,
+        LocksCanExistAfterFileSystemAccessManagerIsDestroyed) {
+   base::FilePath path = dir_.GetPath().AppendASCII("foo");

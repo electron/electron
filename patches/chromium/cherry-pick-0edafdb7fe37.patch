@@ -1,0 +1,120 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Fri, 9 Oct 2026 19:54:07 -0700
+Subject: [M152] [Media] Fail opaque 416 responses in
+ ResourceMultiBufferDataProvider
+
+Original change's description:
+> [Media] Fail opaque 416 responses in ResourceMultiBufferDataProvider
+>
+> Route opaque 416 (Range Not Satisfiable) responses in
+> ResourceMultiBufferDataProvider::DidReceiveResponse() through the same
+> failure path as opaque 206 responses with a mismatched Content-Range,
+> rather than treating them as end-of-file.
+>
+> Fixed: 568895734
+> Change-Id: Id7e703581dcf9d647cc0042914be9599d011fcff
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8540648
+> Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+> Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+> Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+> Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1714947}
+
+(cherry picked from commit 718a8fc1586aeb3d9554ad5e40617da50ec1bc5b)
+
+Bug: 572074149,568895734
+Change-Id: Id7e703581dcf9d647cc0042914be9599d011fcff
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8551497
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7977@{#2817}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc
+index c5d272dcf322024e743a5b51f3fffa7b8c605226..42e4814788a3d6cd194b50667768cdd217835cd2 100644
+--- a/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc
++++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source_unittest.cc
+@@ -580,6 +580,16 @@ TEST_F(MultiBufferDataSourceTest, Range_NotSatisfiable) {
+   Stop();
+ }
+ 
++TEST_F(MultiBufferDataSourceTest, Range_NotSatisfiableOpaque) {
++  Initialize(kHttpUrl, false);
++  WebURLResponse response = response_generator_->GenerateResponse(416);
++  response.SetType(network::mojom::blink::FetchResponseType::kOpaque);
++  Respond(response);
++  EXPECT_TRUE(data_source_->WouldTaintOrigin());
++  EXPECT_FALSE(loading());
++  Stop();
++}
++
+ // Special carve-out for Apache versions that choose to return a 200 for
+ // Range:0- ("because it's more efficient" than a 206)
+ TEST_F(MultiBufferDataSourceTest, Range_SupportedButReturned200) {
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+index 84be62186c56cd59aa52e45e0e763d9967858468..ad6a32cc0a9743b55171a9c08e6c15ebb66c2616 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
+@@ -284,7 +284,8 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+   bool end_of_file = false;
+   bool do_fail = false;
+   // We get the response type here because aborting the loader may change it.
+-  const auto response_type = response.GetType();
++  const bool is_cors_cross_origin =
++      network::cors::IsCorsCrossOriginResponseType(response.GetType());
+   bytes_to_discard_ = 0;
+ 
+   // We make a strong assumption that when we reach here we have either
+@@ -314,10 +315,13 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+       // to return.
+       destination_url_data->set_length(content_length);
+       bytes_to_discard_ = byte_pos();
+-    } else if (response.HttpStatusCode() == kHttpRangeNotSatisfiable) {
++    } else if (response.HttpStatusCode() == kHttpRangeNotSatisfiable &&
++               !is_cors_cross_origin) {
+       // Unsatisfiable range
+       // Really, we should never request a range that doesn't exist, but
+-      // if we do, let's handle it in a sane way.
++      // if we do, let's handle it in a sane way. Opaque responses are
++      // excluded so a service-worker-replayed 416 takes the same failure
++      // path as a 206 with a mismatched Content-Range.
+       // Note, we can't just call OnDataProviderEvent() here, because
+       // url_data_ hasn't been updated to the final destination yet.
+       end_of_file = true;
+@@ -349,8 +353,7 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+   }
+ 
+   // This is vital for security!
+-  destination_url_data->set_is_cors_cross_origin(
+-      network::cors::IsCorsCrossOriginResponseType(response_type));
++  destination_url_data->set_is_cors_cross_origin(is_cors_cross_origin);
+ 
+   // Only used for metrics.
+   {
+diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+index 3a1a52e2524edae9287571f4f978f89de84f1763..52eea31e26c0e63242418a1a2c00653c60196c9b 100644
+--- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
++++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider_unittest.cc
+@@ -353,6 +353,20 @@ TEST_F(ResourceMultiBufferDataProviderTest, InvalidPartialResponse) {
+   loader_->DidReceiveResponse(response);
+ }
+ 
++TEST_F(ResourceMultiBufferDataProviderTest, OpaqueRangeNotSatisfiableFails) {
++  Initialize(kHttpUrl, 0);
++  Start();
++
++  EXPECT_CALL(*this, RedirectCallback(scoped_refptr<UrlData>(nullptr)));
++
++  WebURLResponse response(url_);
++  response.SetHttpStatusCode(416);
++  response.SetType(network::mojom::FetchResponseType::kOpaque);
++  loader_->DidReceiveResponse(response);
++  EXPECT_TRUE(url_data_->is_cors_cross_origin());
++  EXPECT_TRUE(url_data_->multibuffer()->map().empty());
++}
++
+ TEST_F(ResourceMultiBufferDataProviderTest, TestRedirects) {
+   // Test redirect.
+   Initialize(kHttpUrl, 0);

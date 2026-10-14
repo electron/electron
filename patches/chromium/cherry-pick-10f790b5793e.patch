@@ -1,0 +1,446 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Aldo Culquicondor <acondor@chromium.org>
+Date: Fri, 9 Oct 2026 08:34:49 -0700
+Subject: [M155] NavigationEntryScreenshot waits for in-flight readbacks before
+ release
+
+Original change's description:
+> NavigationEntryScreenshot waits for in-flight readbacks before release
+>
+> When an asynchronous readback of a screenshot's shared image is in
+> progress, the screenshot or its SharedImageProvider could be destroyed
+> or released before the read access completes on the GPU.
+>
+> This change tracks the read sync token generated upon ending raster read
+> access. When releasing or destroying the provider, the read sync token
+> is combined with any pending release sync token to ensure the GPU
+> finishes reading the image before it is reused or deleted.
+>
+> The token is cleared once the readback completes or when the context is
+> lost so that no additional IPCs are issued in the happy path.
+>
+> Fixed: 568827293
+> Change-Id: Ib920df53b46b1166bf9e7f8d4e524d14cd5c885e
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8518437
+> Auto-Submit: Aldo Culquicondor <acondor@chromium.org>
+> Commit-Queue: Aldo Culquicondor <acondor@chromium.org>
+> Reviewed-by: Mingjing Zhang <mjzhang@chromium.org>
+> Reviewed-by: Kyle Charbonneau <kylechar@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1713730}
+
+(cherry picked from commit 458152b40c693beeea7441a0a10d2035ac590240)
+
+Bug: 571382515,568827293
+Change-Id: Ib920df53b46b1166bf9e7f8d4e524d14cd5c885e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8549915
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8059@{#1082}
+Cr-Branched-From: 199ac2cd7ab289e11c2236bd2cede848781213da-refs/heads/main@{#1697595}
+
+diff --git a/content/browser/renderer_host/navigation_transitions/navigation_entry_screenshot.cc b/content/browser/renderer_host/navigation_transitions/navigation_entry_screenshot.cc
+index 5420f1f9301ec74cb563ae31711dfc9627156bce..e31226a9d2b792ebca751346588edfdda595e742 100644
+--- a/content/browser/renderer_host/navigation_transitions/navigation_entry_screenshot.cc
++++ b/content/browser/renderer_host/navigation_transitions/navigation_entry_screenshot.cc
+@@ -152,6 +152,55 @@ NavigationEntryScreenshot::SharedImageProvider::SharedImageProvider() = default;
+ NavigationEntryScreenshot::SharedImageProvider::~SharedImageProvider() =
+     default;
+ 
++void NavigationEntryScreenshot::SharedImageProvider::SetReadSyncToken(
++    const gpu::SyncToken& sync_token) {
++  read_sync_token_ = sync_token;
++}
++
++void NavigationEntryScreenshot::SharedImageProvider::ClearReadSyncToken() {
++  read_sync_token_.Clear();
++}
++
++gpu::SyncToken
++NavigationEntryScreenshot::SharedImageProvider::CombineWithReadSyncToken(
++    const gpu::SyncToken& release_sync_token,
++    viz::RasterContextProvider* context_provider,
++    bool verify) {
++  if (!read_sync_token_.HasData() || !context_provider) {
++    // Reached when no readback is in flight (never started, already completed
++    // in OnReadBack(), or using automatic sync token management) or when the
++    // context was lost.
++    // TODO(b/40286368): Remove this function when
++    // UseAutomaticSyncTokenManagement is launched.
++    return release_sync_token;
++  }
++  auto* raster_interface = context_provider->RasterInterface();
++  gpu::SyncToken sync_token = read_sync_token_;
++  if (release_sync_token.HasData()) {
++    // The readback and the display compositor run on different GPU sequences.
++    // Since `read_sync_token_` was already generated on `raster_interface`,
++    // waiting on `release_sync_token` before generating a new token on
++    // `raster_interface` ensures the new token is ordered after both.
++    // WaitSyncTokenCHROMIUM and GenUnverifiedSyncTokenCHROMIUM only enqueue
++    // commands in client memory without performing an IPC.
++    raster_interface->WaitSyncTokenCHROMIUM(release_sync_token.GetConstData());
++    sync_token.Clear();
++    raster_interface->GenUnverifiedSyncTokenCHROMIUM(sync_token.GetData());
++    if (!sync_token.HasData()) {
++      // Reached if the context was lost before OnContextLost() was notified,
++      // causing GenUnverifiedSyncTokenCHROMIUM() to leave `sync_token` empty.
++      return release_sync_token;
++    }
++  }
++  if (verify) {
++    // VerifySyncTokensCHROMIUM flushes the GPU channel and may perform a
++    // synchronous IPC if the ordering barrier has not been processed yet.
++    int8_t* sync_token_data = sync_token.GetData();
++    raster_interface->VerifySyncTokensCHROMIUM(&sync_token_data, 1);
++  }
++  return sync_token;
++}
++
+ // static
+ scoped_refptr<NavigationEntryScreenshot::SharedImageProvider>
+ NavigationEntryScreenshot::SharedImageHolder::Create(
+@@ -185,11 +234,16 @@ void NavigationEntryScreenshot::SharedImageHolder::OnContextLost() {
+   context_provider_->RemoveObserver(this);
+   context_provider_.reset();
+   shared_image_.reset();
++  read_sync_token_.Clear();
+ }
+ 
+ NavigationEntryScreenshot::SharedImageHolder::~SharedImageHolder() {
+   if (release_callback_) {
+-    std::move(release_callback_).Run(destruction_sync_token_, is_lost_);
++    std::move(release_callback_)
++        .Run(CombineWithReadSyncToken(destruction_sync_token_,
++                                      context_provider_.get(),
++                                      /*verify=*/true),
++             is_lost_);
+   }
+   if (context_provider_) {
+     context_provider_->RemoveObserver(this);
+@@ -272,6 +326,7 @@ void NavigationEntryScreenshot::HardwareBufferHolder::DoRelease(
+     const gpu::SyncToken& sync_token,
+     bool is_lost) {
+   pending_transferable_resource_ = true;
++  release_sync_token_ = sync_token;
+   if (cached_shared_image_) {
+     cached_shared_image_->UpdateDestructionSyncToken(sync_token);
+   }
+@@ -281,10 +336,18 @@ void NavigationEntryScreenshot::HardwareBufferHolder::OnContextLost() {
+   cached_context_provider_->RemoveObserver(this);
+   cached_context_provider_.reset();
+   cached_shared_image_.reset();
++  read_sync_token_.Clear();
+   pending_transferable_resource_ = true;
+ }
+ 
+ NavigationEntryScreenshot::HardwareBufferHolder::~HardwareBufferHolder() {
++  if (cached_shared_image_) {
++    // DestroySharedImage() uses the same GPU channel as the readback, so the
++    // token doesn't need to be verified.
++    cached_shared_image_->UpdateDestructionSyncToken(CombineWithReadSyncToken(
++        release_sync_token_, cached_context_provider_.get(),
++        /*verify=*/false));
++  }
+   if (cached_context_provider_) {
+     cached_context_provider_->RemoveObserver(this);
+   }
+@@ -529,10 +592,18 @@ void NavigationEntryScreenshot::DoReadBack(SkBitmap bitmap) {
+       info.minRowBytes(), span,
+       base::BindOnce(&NavigationEntryScreenshot::OnReadBack,
+                      weak_factory_.GetWeakPtr(), std::move(bitmap)));
++  shared_image_provider_->SetReadSyncToken(
++      gpu::RasterScopedAccess::EndAccess(std::move(scoped_access)));
+ }
+ 
+ void NavigationEntryScreenshot::OnReadBack(SkBitmap bitmap, bool success) {
+   CHECK_CURRENTLY_ON(BrowserThread::UI, base::NotFatalUntil::M152);
++  if (shared_image_provider_) {
++    // The GPU has already finished reading from the shared image by the time
++    // the readback callback runs. Clear the read sync token so releasing the
++    // provider does not need to combine and verify tokens.
++    shared_image_provider_->ClearReadSyncToken();
++  }
+   // This has to run after the readback is completed, otherwise, this operation
+   // might destroy the context provider, attempting a re-entry to this same
+   // callback (crbug.com/456887685).
+diff --git a/content/browser/renderer_host/navigation_transitions/navigation_entry_screenshot.h b/content/browser/renderer_host/navigation_transitions/navigation_entry_screenshot.h
+index 46acd1dfc1ef66a48fcec78e1080d381600e72b9..6edefebfcf85225f4dcd28ba598363cddabd4733 100644
+--- a/content/browser/renderer_host/navigation_transitions/navigation_entry_screenshot.h
++++ b/content/browser/renderer_host/navigation_transitions/navigation_entry_screenshot.h
+@@ -94,6 +94,13 @@ class CONTENT_EXPORT NavigationEntryScreenshot
+     virtual gfx::Size Size() const = 0;
+     virtual scoped_refptr<viz::RasterContextProvider> GetContextProvider() = 0;
+ 
++    // Records or clears the sync token of an in-flight readback of Get()
++    // issued on GetContextProvider(). While set, the shared image is not
++    // released or destroyed before this token is released, whether DoRelease()
++    // runs before or after.
++    void SetReadSyncToken(const gpu::SyncToken& sync_token);
++    void ClearReadSyncToken();
++
+    protected:
+     SharedImageProvider();
+     // Implementors of this interface should perform clean up operations upon
+@@ -104,8 +111,18 @@ class CONTENT_EXPORT NavigationEntryScreenshot
+     // It is to be used as the callback returned by PrepareTransferableResource.
+     virtual void DoRelease(const gpu::SyncToken& sync_token, bool is_lost) = 0;
+ 
++    // Returns a token released once both `release_sync_token` and
++    // `read_sync_token_` are released. Set `verify` when the token is sent to
++    // another process.
++    gpu::SyncToken CombineWithReadSyncToken(
++        const gpu::SyncToken& release_sync_token,
++        viz::RasterContextProvider* context_provider,
++        bool verify);
++
+     bool pending_transferable_resource_ = false;
+ 
++    gpu::SyncToken read_sync_token_;
++
+    private:
+     friend class base::RefCounted<SharedImageProvider>;
+   };
+@@ -194,6 +211,9 @@ class CONTENT_EXPORT NavigationEntryScreenshot
+     // buffer is destroyed.
+     scoped_refptr<viz::RasterContextProvider> cached_context_provider_;
+     scoped_refptr<gpu::ClientSharedImage> cached_shared_image_;
++
++    // Last sync token received in DoRelease().
++    gpu::SyncToken release_sync_token_;
+   };
+ 
+   using ScreenshotCallback = base::RepeatingCallback<
+diff --git a/content/browser/renderer_host/navigation_transitions/navigation_entry_screenshot_unittest.cc b/content/browser/renderer_host/navigation_transitions/navigation_entry_screenshot_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..5546a3f8f7f1b6de58df29fb320f837f8d27fa10
+--- /dev/null
++++ b/content/browser/renderer_host/navigation_transitions/navigation_entry_screenshot_unittest.cc
+@@ -0,0 +1,216 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "content/browser/renderer_host/navigation_transitions/navigation_entry_screenshot.h"
++
++#include <memory>
++#include <utility>
++#include <vector>
++
++#include "base/compiler_specific.h"
++#include "base/containers/span.h"
++#include "base/functional/callback.h"
++#include "base/memory/raw_ptr.h"
++#include "base/test/test_future.h"
++#include "cc/slim/texture_layer.h"
++#include "components/viz/common/resources/release_callback.h"
++#include "components/viz/common/resources/transferable_resource.h"
++#include "components/viz/test/test_context_provider.h"
++#include "components/viz/test/test_raster_interface.h"
++#include "content/public/test/browser_task_environment.h"
++#include "gpu/command_buffer/client/client_shared_image.h"
++#include "gpu/command_buffer/common/shared_image_usage.h"
++#include "gpu/command_buffer/common/sync_token.h"
++#include "testing/gmock/include/gmock/gmock.h"
++#include "testing/gtest/include/gtest/gtest.h"
++
++namespace content {
++namespace {
++
++gpu::SyncToken Verified(gpu::SyncToken token) {
++  token.SetVerifyFlush();
++  return token;
++}
++
++gpu::SyncToken SyncTokenFromPointer(const GLbyte* sync_token) {
++  gpu::SyncToken sync_token_data;
++  if (sync_token) {
++    // SAFETY: Test only. Called from viz::TestRasterInterface.
++    UNSAFE_BUFFERS(
++        base::span(sync_token_data.GetData(), sizeof(sync_token_data))
++            .copy_from(base::span(sync_token, sizeof(sync_token_data))));
++  }
++  return sync_token_data;
++}
++
++class ReadbackTestRasterInterface : public viz::TestRasterInterface {
++ public:
++  ReadbackTestRasterInterface() = default;
++  ~ReadbackTestRasterInterface() override = default;
++
++  void ReadbackARGBPixelsAsync(
++      const gpu::Mailbox& source_mailbox,
++      GLenum source_target,
++      GrSurfaceOrigin source_origin,
++      const gfx::Size& source_size,
++      const gfx::Point& source_starting_point,
++      const SkImageInfo& dst_info,
++      GLuint dst_row_bytes,
++      base::span<uint8_t> out,
++      base::OnceCallback<void(bool)> readback_done) override {
++    readback_done_ = std::move(readback_done);
++    readback_started_.SetValue();
++  }
++
++  void GenUnverifiedSyncTokenCHROMIUM(GLbyte* sync_token) override {
++    viz::TestRasterInterface::GenUnverifiedSyncTokenCHROMIUM(sync_token);
++    gpu::SyncToken sync_token_data = SyncTokenFromPointer(sync_token);
++    if (sync_token_data.HasData()) {
++      generated_sync_tokens_.push_back(sync_token_data);
++    }
++  }
++
++  void WaitSyncTokenCHROMIUM(const GLbyte* sync_token) override {
++    viz::TestRasterInterface::WaitSyncTokenCHROMIUM(sync_token);
++    gpu::SyncToken sync_token_data = SyncTokenFromPointer(sync_token);
++    if (sync_token_data.HasData()) {
++      waited_sync_tokens_.push_back(sync_token_data);
++    }
++  }
++
++  bool WaitForReadbackStarted() { return readback_started_.Wait(); }
++
++  void CompleteReadback(bool success) {
++    ASSERT_TRUE(readback_done_);
++    std::move(readback_done_).Run(success);
++  }
++
++  const std::vector<gpu::SyncToken>& generated_sync_tokens() const {
++    return generated_sync_tokens_;
++  }
++
++  const std::vector<gpu::SyncToken>& waited_sync_tokens() const {
++    return waited_sync_tokens_;
++  }
++
++ private:
++  base::test::TestFuture<void> readback_started_;
++  base::OnceCallback<void(bool)> readback_done_;
++  std::vector<gpu::SyncToken> generated_sync_tokens_;
++  std::vector<gpu::SyncToken> waited_sync_tokens_;
++};
++
++class NavigationEntryScreenshotTest : public testing::Test {
++ public:
++  void SetUp() override {
++    NavigationEntryScreenshot::SetDisableCompressionForTesting(true);
++    auto raster_interface = std::make_unique<ReadbackTestRasterInterface>();
++    raster_interface_ = raster_interface.get();
++    context_provider_ =
++        viz::TestContextProvider::CreateRaster(std::move(raster_interface));
++    context_provider_->BindToCurrentSequence();
++    shared_image_ = gpu::ClientSharedImage::CreateForTesting(
++        gpu::SHARED_IMAGE_USAGE_RASTER_READ |
++        gpu::SHARED_IMAGE_USAGE_DISPLAY_READ);
++  }
++
++  void TearDown() override {
++    NavigationEntryScreenshot::SetDisableCompressionForTesting(false);
++  }
++
++ protected:
++  BrowserTaskEnvironment task_environment_;
++  raw_ptr<ReadbackTestRasterInterface> raster_interface_ = nullptr;
++  scoped_refptr<viz::TestContextProvider> context_provider_;
++  scoped_refptr<gpu::ClientSharedImage> shared_image_;
++};
++
++TEST_F(NavigationEntryScreenshotTest, DestroyedDuringReadBackWaitsForRead) {
++  base::test::TestFuture<const gpu::SyncToken&, bool> release_future;
++  auto provider = NavigationEntryScreenshot::SharedImageHolder::Create(
++      context_provider_, shared_image_, release_future.GetCallback());
++
++  auto screenshot = std::make_unique<NavigationEntryScreenshot>(
++      std::move(provider), NavigationTransitionData::UniqueId(1),
++      /*supports_etc_non_power_of_two=*/true, base::NullCallback());
++  ASSERT_TRUE(raster_interface_->WaitForReadbackStarted());
++  ASSERT_EQ(raster_interface_->generated_sync_tokens().size(), 1u);
++  gpu::SyncToken read_token = raster_interface_->generated_sync_tokens()[0];
++
++  screenshot.reset();
++  ASSERT_TRUE(release_future.IsReady());
++  EXPECT_THAT(raster_interface_->waited_sync_tokens(), testing::IsEmpty());
++  EXPECT_EQ(raster_interface_->generated_sync_tokens().size(), 1u);
++  EXPECT_EQ(release_future.Get<0>(), Verified(read_token));
++  EXPECT_FALSE(release_future.Get<1>());
++}
++
++TEST_F(NavigationEntryScreenshotTest,
++       ReadBackBeforeTextureLayerReleaseCombinesSyncTokens) {
++  base::test::TestFuture<const gpu::SyncToken&, bool> release_future;
++  auto provider = NavigationEntryScreenshot::SharedImageHolder::Create(
++      context_provider_, shared_image_, release_future.GetCallback());
++
++  auto screenshot = std::make_unique<NavigationEntryScreenshot>(
++      provider, NavigationTransitionData::UniqueId(1),
++      /*supports_etc_non_power_of_two=*/true, base::NullCallback());
++  auto layer = screenshot->CreateTextureLayer();
++  viz::TransferableResource resource;
++  viz::ReleaseCallback layer_release_callback;
++  ASSERT_TRUE(provider->PrepareTransferableResource(&resource,
++                                                    &layer_release_callback));
++  provider.reset();
++
++  // Issue DoReadBack() before the texture layer's resource is returned.
++  ASSERT_TRUE(raster_interface_->WaitForReadbackStarted());
++  ASSERT_EQ(raster_interface_->generated_sync_tokens().size(), 1u);
++
++  gpu::SyncToken viz_token(gpu::CommandBufferNamespace::GPU_IO,
++                           gpu::CommandBufferId::FromUnsafeValue(99u), 1u);
++  viz_token.SetVerifyFlush();
++  std::move(layer_release_callback).Run(viz_token, /*is_lost=*/false);
++  screenshot.reset();
++
++  ASSERT_TRUE(release_future.IsReady());
++  EXPECT_THAT(raster_interface_->waited_sync_tokens(),
++              testing::ElementsAre(viz_token));
++  ASSERT_EQ(raster_interface_->generated_sync_tokens().size(), 2u);
++  gpu::SyncToken combined_token = raster_interface_->generated_sync_tokens()[1];
++  EXPECT_EQ(release_future.Get<0>(), Verified(combined_token));
++}
++
++TEST_F(NavigationEntryScreenshotTest,
++       CompletedReadBackClearsReadSyncTokenBeforeRelease) {
++  base::test::TestFuture<const gpu::SyncToken&, bool> release_future;
++  auto provider = NavigationEntryScreenshot::SharedImageHolder::Create(
++      context_provider_, shared_image_, release_future.GetCallback());
++
++  auto screenshot = std::make_unique<NavigationEntryScreenshot>(
++      provider, NavigationTransitionData::UniqueId(1),
++      /*supports_etc_non_power_of_two=*/true, base::NullCallback());
++  auto layer = screenshot->CreateTextureLayer();
++  viz::TransferableResource resource;
++  viz::ReleaseCallback layer_release_callback;
++  ASSERT_TRUE(provider->PrepareTransferableResource(&resource,
++                                                    &layer_release_callback));
++  provider.reset();
++
++  ASSERT_TRUE(raster_interface_->WaitForReadbackStarted());
++  ASSERT_EQ(raster_interface_->generated_sync_tokens().size(), 1u);
++  raster_interface_->CompleteReadback(/*success=*/true);
++
++  gpu::SyncToken viz_token(gpu::CommandBufferNamespace::GPU_IO,
++                           gpu::CommandBufferId::FromUnsafeValue(99u), 1u);
++  viz_token.SetVerifyFlush();
++  std::move(layer_release_callback).Run(viz_token, /*is_lost=*/false);
++  screenshot.reset();
++
++  ASSERT_TRUE(release_future.IsReady());
++  EXPECT_THAT(raster_interface_->waited_sync_tokens(), testing::IsEmpty());
++  EXPECT_EQ(raster_interface_->generated_sync_tokens().size(), 1u);
++  EXPECT_EQ(release_future.Get<0>(), viz_token);
++}
++
++}  // namespace
++}  // namespace content
+diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
+index 7ad0e5a6920b091a72ccea62027a99e6269676d0..cf0efce5f28802511b89a34c254913c63f0a72e8 100644
+--- a/content/test/BUILD.gn
++++ b/content/test/BUILD.gn
+@@ -3139,6 +3139,7 @@ test("content_unittests") {
+       "../browser/renderer_host/input/input_transfer_handler_android_unittest.cc",
+       "../browser/renderer_host/navigation_transitions/navigation_entry_screenshot_cache_unittest.cc",
+       "../browser/renderer_host/navigation_transitions/navigation_entry_screenshot_manager_unittest.cc",
++      "../browser/renderer_host/navigation_transitions/navigation_entry_screenshot_unittest.cc",
+       "../browser/screen_orientation/screen_orientation_delegate_android_unittest.cc",
+       "../browser/web_contents/color_chooser_unittest.cc",
+       "../common/android/child_process_id_unittest.cc",

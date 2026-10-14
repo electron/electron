@@ -33,34 +33,10 @@ Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1690285}
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 27cc954bb191c7a24693988bba53ac290469e6f1..430184a187ef96a07ab85e7a4f4fe635f8b1a8b6 100644
+index 23142987245f9243763e5e794ee26a0f9c363da2..7e53d7edd76ce77403761eb65b6c8153f96cf105 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -8548,9 +8548,13 @@ void WebContentsImpl::ViewSource(RenderFrameHostImpl* frame) {
- 
-   // Any new WebContents opened while this WebContents is in fullscreen can be
-   // used to confuse the user, so drop fullscreen.
-+  base::WeakPtr<RenderFrameHostImpl> weak_frame = frame->GetWeakPtr();
-   if (!ForSecurityDropFullscreen(/*display_id=*/display::kInvalidDisplayId)) {
-     return;
-   }
-+  if (!weak_frame) {
-+    return;
-+  }
- 
-   // We intentionally don't share the SiteInstance with the original frame so
-   // that view source has a consistent process model and always ends up in a new
-@@ -8579,7 +8583,8 @@ void WebContentsImpl::ViewSource(RenderFrameHostImpl* frame) {
-   // iframe, so preserve the IsolationInfo from the origin frame, to use the
-   // same network shard and increase chances of a cache hit.
-   navigation_entry->set_isolation_info(
--      frame->ComputeIsolationInfoForNavigation(navigation_entry->GetURL()));
-+      weak_frame->ComputeIsolationInfoForNavigation(
-+          navigation_entry->GetURL()));
- 
-   // Do not restore scroller position.
-   // TODO(creis, lukasza, arthursonzogni): Do not reuse the original PageState,
-@@ -9385,9 +9390,10 @@ void WebContentsImpl::RunJavaScriptDialog(
+@@ -9400,9 +9400,10 @@ void WebContentsImpl::RunJavaScriptDialog(
  
    // Running a dialog causes an exit to webpage-initiated fullscreen.
    // http://crbug.com/728276
@@ -72,7 +48,7 @@ index 27cc954bb191c7a24693988bba53ac290469e6f1..430184a187ef96a07ab85e7a4f4fe635
      return;
    }
  
-@@ -9521,9 +9527,10 @@ void WebContentsImpl::RunBeforeUnloadConfirm(
+@@ -9536,9 +9537,10 @@ void WebContentsImpl::RunBeforeUnloadConfirm(
  
    // Running a dialog causes an exit to webpage-initiated fullscreen.
    // http://crbug.com/728276
@@ -84,7 +60,7 @@ index 27cc954bb191c7a24693988bba53ac290469e6f1..430184a187ef96a07ab85e7a4f4fe635
      return;
    }
  
-@@ -9604,7 +9611,7 @@ void WebContentsImpl::RunBeforeUnloadConfirm(
+@@ -9619,7 +9621,7 @@ void WebContentsImpl::RunBeforeUnloadConfirm(
  
  void WebContentsImpl::RunFileChooser(
      base::WeakPtr<FileChooserImpl> file_chooser,
@@ -93,7 +69,7 @@ index 27cc954bb191c7a24693988bba53ac290469e6f1..430184a187ef96a07ab85e7a4f4fe635
      scoped_refptr<FileChooserImpl::FileSelectListenerImpl> listener,
      const blink::mojom::FileChooserParams& params) {
    OPTIONAL_TRACE_EVENT1("content", "WebContentsImpl::RunFileChooser",
-@@ -9628,16 +9635,18 @@ void WebContentsImpl::RunFileChooser(
+@@ -9643,16 +9645,18 @@ void WebContentsImpl::RunFileChooser(
  
    // Any explicit focusing of another window while this WebContents is in
    // fullscreen can be used to confuse the user, so drop fullscreen.
@@ -115,7 +91,7 @@ index 27cc954bb191c7a24693988bba53ac290469e6f1..430184a187ef96a07ab85e7a4f4fe635
    }
  }
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 77076012fb6125b49be7273d2a2febdf0ed08cc3..e1b1f3c7ecf9c09d290ae6dbcad19998e9df2881 100644
+index 5f7fc02696a55cd93ee47bc880bce0f26406ddfc..7e04b0fb290a691a3f09fd6cf057b2e0faac73da 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -1512,7 +1512,7 @@ class CONTENT_EXPORT WebContentsImpl
@@ -128,51 +104,13 @@ index 77076012fb6125b49be7273d2a2febdf0ed08cc3..e1b1f3c7ecf9c09d290ae6dbcad19998
        const blink::mojom::FileChooserParams& params);
  
 diff --git a/content/browser/web_contents/web_contents_impl_browsertest.cc b/content/browser/web_contents/web_contents_impl_browsertest.cc
-index 421a9075cf8d3b1a7532cae6a8557aa1fce55db5..689be0c9c1b59a5e51a89f4ba0642e31bbc3bb4a 100644
+index cbf7e47cfa44cf1369a51a2e047b4fafb76fbaac..0e5dfdfb21228a776e5a717cd4c0aef3fe374427 100644
 --- a/content/browser/web_contents/web_contents_impl_browsertest.cc
 +++ b/content/browser/web_contents/web_contents_impl_browsertest.cc
-@@ -9327,4 +9327,152 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
-   }
+@@ -9454,4 +9454,114 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
+   EXPECT_TRUE(listener->was_canceled());
  }
  
-+class DetachFrameOnFullscreenExitDelegate : public WebContentsDelegate {
-+ public:
-+  DetachFrameOnFullscreenExitDelegate(WebContentsDelegate* original_delegate,
-+                                      WebContents* target_contents)
-+      : original_delegate_(original_delegate),
-+        target_contents_(target_contents) {}
-+
-+  void ExitFullscreenModeForTab(WebContents* web_contents) override {
-+    if (target_contents_) {
-+      EXPECT_TRUE(ExecJs(target_contents_,
-+                         "document.querySelector('iframe').remove();"));
-+      target_contents_ = nullptr;
-+    }
-+    if (original_delegate_) {
-+      original_delegate_->ExitFullscreenModeForTab(web_contents);
-+    }
-+  }
-+
-+  FullscreenState GetFullscreenState(
-+      const WebContents* web_contents) const override {
-+    if (original_delegate_) {
-+      return original_delegate_->GetFullscreenState(web_contents);
-+    }
-+    return FullscreenState();
-+  }
-+
-+  bool IsFullscreenForTabOrPending(const WebContents* web_contents) override {
-+    if (original_delegate_) {
-+      return original_delegate_->IsFullscreenForTabOrPending(web_contents);
-+    }
-+    return false;
-+  }
-+
-+ private:
-+  raw_ptr<WebContentsDelegate> original_delegate_;
-+  raw_ptr<WebContents, DisableDanglingPtrDetection> target_contents_;
-+};
-+
 +IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
 +                       RunJavaScriptDialogFrameDetachOnFullscreenExit) {
 +  ASSERT_TRUE(embedded_test_server()->Start());

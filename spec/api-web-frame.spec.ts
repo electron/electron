@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain, type WebContents } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as path from 'node:path';
@@ -23,7 +23,7 @@ describe('webFrame module', () => {
     const isSafe = once(ipcMain, 'executejs-safe');
     w.loadURL('about:blank');
     const [, wasSafe] = await isSafe;
-    expect(wasSafe).to.equal(true);
+    expect(wasSafe).toBe(true);
   });
 
   it('can use executeJavaScript and catch conversion errors', async () => {
@@ -39,8 +39,8 @@ describe('webFrame module', () => {
     const execError = once(ipcMain, 'executejs-safe');
     w.loadURL('about:blank');
     const [, error] = await execError;
-    expect(error).to.not.equal(null, 'Error should not be null');
-    expect(error).to.have.property('message', 'Uncaught Error: An object could not be cloned.');
+    expect(error, 'Error should not be null').not.toBe(null);
+    expect(error).toHaveProperty('message', 'Uncaught Error: An object could not be cloned.');
   });
 
   it('calls a spellcheck provider', async () => {
@@ -70,14 +70,14 @@ describe('webFrame module', () => {
       w.webContents.sendInputEvent({ type: 'char', keyCode });
     }
     const [words, callbackDefined] = await spellCheckerFeedback;
-    expect(words.sort()).to.deep.equal(['spleling', 'test', "you're", 'you', 're'].sort());
-    expect(callbackDefined).to.be.true();
+    expect(words.sort()).toEqual(['spleling', 'test', "you're", 'you', 're'].sort());
+    expect(callbackDefined).toBe(true);
   });
 
   describe('api', () => {
     let w: WebContents;
     let win: BrowserWindow;
-    before(async () => {
+    beforeAll(async () => {
       win = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false, nodeIntegration: true } });
       await win.loadURL('data:text/html,<iframe name="test"></iframe>');
       w = win.webContents;
@@ -89,7 +89,7 @@ describe('webFrame module', () => {
       `);
     });
 
-    after(() => {
+    afterAll(() => {
       win.close();
       win = null as unknown as BrowserWindow;
     });
@@ -97,107 +97,107 @@ describe('webFrame module', () => {
     describe('top', () => {
       it('is self for top frame', async () => {
         const equal = await w.executeJavaScript('isSameWebFrame(webFrame.top, webFrame)');
-        expect(equal).to.be.true();
+        expect(equal).toBe(true);
       });
 
       it('is self for child frame', async () => {
         const equal = await w.executeJavaScript('isSameWebFrame(childFrame.top, webFrame)');
-        expect(equal).to.be.true();
+        expect(equal).toBe(true);
       });
     });
 
     describe('opener', () => {
       it('is null for top frame', async () => {
         const equal = await w.executeJavaScript('webFrame.opener === null');
-        expect(equal).to.be.true();
+        expect(equal).toBe(true);
       });
     });
 
     describe('parent', () => {
       it('is null for top frame', async () => {
         const equal = await w.executeJavaScript('webFrame.parent === null');
-        expect(equal).to.be.true();
+        expect(equal).toBe(true);
       });
 
       it('is top frame for child frame', async () => {
         const equal = await w.executeJavaScript('isSameWebFrame(childFrame.parent, webFrame)');
-        expect(equal).to.be.true();
+        expect(equal).toBe(true);
       });
     });
 
     describe('firstChild', () => {
       it('is child frame for top frame', async () => {
         const equal = await w.executeJavaScript('isSameWebFrame(webFrame.firstChild, childFrame)');
-        expect(equal).to.be.true();
+        expect(equal).toBe(true);
       });
 
       it('is null for child frame', async () => {
         const equal = await w.executeJavaScript('childFrame.firstChild === null');
-        expect(equal).to.be.true();
+        expect(equal).toBe(true);
       });
     });
 
     describe('getFrameForSelector()', () => {
       it('does not crash when not found', async () => {
         const equal = await w.executeJavaScript('webFrame.getFrameForSelector("unexist-selector") === null');
-        expect(equal).to.be.true();
+        expect(equal).toBe(true);
       });
 
       it('returns the webFrame when found', async () => {
         const equal = await w.executeJavaScript('isSameWebFrame(webFrame.getFrameForSelector("iframe"), childFrame)');
-        expect(equal).to.be.true();
+        expect(equal).toBe(true);
       });
     });
 
     describe('findFrameByName()', () => {
       it('does not crash when not found', async () => {
         const equal = await w.executeJavaScript('webFrame.findFrameByName("unexist-name") === null');
-        expect(equal).to.be.true();
+        expect(equal).toBe(true);
       });
 
       it('returns the webFrame when found', async () => {
         const equal = await w.executeJavaScript('isSameWebFrame(webFrame.findFrameByName("test"), childFrame)');
-        expect(equal).to.be.true();
+        expect(equal).toBe(true);
       });
     });
 
     describe('findFrameByToken()', () => {
       it('does not crash when not found', async () => {
         const equal = await w.executeJavaScript('webFrame.findFrameByToken("unknown") === null');
-        expect(equal).to.be.true();
+        expect(equal).toBe(true);
       });
 
       it('returns the webFrame when found', async () => {
         const equal = await w.executeJavaScript(
           'isSameWebFrame(webFrame.findFrameByToken(childFrame.frameToken), childFrame)'
         );
-        expect(equal).to.be.true();
+        expect(equal).toBe(true);
       });
     });
 
     describe('setZoomFactor()', () => {
       it('works', async () => {
         const zoom = await w.executeJavaScript('childFrame.setZoomFactor(2.0); childFrame.getZoomFactor()');
-        expect(zoom).to.equal(2.0);
+        expect(zoom).toBe(2.0);
       });
     });
 
     describe('setZoomLevel()', () => {
       it('works', async () => {
         const zoom = await w.executeJavaScript('childFrame.setZoomLevel(5); childFrame.getZoomLevel()');
-        expect(zoom).to.equal(5);
+        expect(zoom).toBe(5);
       });
     });
 
     describe('getResourceUsage()', () => {
       it('works', async () => {
         const result = await w.executeJavaScript('childFrame.getResourceUsage()');
-        expect(result).to.have.property('images').that.is.an('object');
-        expect(result).to.have.property('scripts').that.is.an('object');
-        expect(result).to.have.property('cssStyleSheets').that.is.an('object');
-        expect(result).to.have.property('xslStyleSheets').that.is.an('object');
-        expect(result).to.have.property('fonts').that.is.an('object');
-        expect(result).to.have.property('other').that.is.an('object');
+        expect(result).toHaveProperty('images', expect.any(Object));
+        expect(result).toHaveProperty('scripts', expect.any(Object));
+        expect(result).toHaveProperty('cssStyleSheets', expect.any(Object));
+        expect(result).toHaveProperty('xslStyleSheets', expect.any(Object));
+        expect(result).toHaveProperty('fonts', expect.any(Object));
+        expect(result).toHaveProperty('other', expect.any(Object));
       });
     });
 
@@ -212,9 +212,9 @@ describe('webFrame module', () => {
             }).then(result => resolve({callbackResult, callbackError, result}))
         })`);
 
-        expect(callbackResult).to.equal(2);
-        expect(callbackError).to.be.undefined();
-        expect(result).to.equal(2);
+        expect(callbackResult).toBe(2);
+        expect(callbackError).toBeUndefined();
+        expect(result).toBe(2);
       });
 
       it('executeJavaScriptInIsolatedWorld() yields results via a promise and a sync callback', async () => {
@@ -227,9 +227,9 @@ describe('webFrame module', () => {
             }).then(result => resolve({callbackResult, callbackError, result}))
         })`);
 
-        expect(callbackResult).to.equal(2);
-        expect(callbackError).to.be.undefined();
-        expect(result).to.equal(2);
+        expect(callbackResult).toBe(2);
+        expect(callbackError).toBeUndefined();
+        expect(result).toBe(2);
       });
 
       it('executeJavaScript() yields errors via a promise and a sync callback', async () => {
@@ -242,9 +242,9 @@ describe('webFrame module', () => {
             }).then(result => {throw new Error}, error => resolve({callbackResult, callbackError, error}))
         })`);
 
-        expect(callbackResult).to.be.undefined();
-        expect(callbackError).to.be.an('error');
-        expect(error).to.be.an('error');
+        expect(callbackResult).toBeUndefined();
+        expect(callbackError).toBeInstanceOf(Error);
+        expect(error).toBeInstanceOf(Error);
       });
 
       it('executeJavaScriptInIsolatedWorld() yields errors via a promise and a sync callback', async () => {
@@ -257,16 +257,14 @@ describe('webFrame module', () => {
             }).then(result => {throw new Error}, error => resolve({callbackResult, callbackError, error}))
         })`);
 
-        expect(callbackResult).to.be.undefined();
-        expect(callbackError).to.be.an('error');
-        expect(error).to.be.an('error');
+        expect(callbackResult).toBeUndefined();
+        expect(callbackError).toBeInstanceOf(Error);
+        expect(error).toBeInstanceOf(Error);
       });
 
       it('executeJavaScript(InIsolatedWorld) can be used without a callback', async () => {
-        expect(await w.executeJavaScript("webFrame.executeJavaScript('1 + 1')")).to.equal(2);
-        expect(await w.executeJavaScript("webFrame.executeJavaScriptInIsolatedWorld(999, [{code: '1 + 1'}])")).to.equal(
-          2
-        );
+        expect(await w.executeJavaScript("webFrame.executeJavaScript('1 + 1')")).toBe(2);
+        expect(await w.executeJavaScript("webFrame.executeJavaScriptInIsolatedWorld(999, [{code: '1 + 1'}])")).toBe(2);
       });
 
       it('executeJavaScriptInIsolatedWorld() rejects when worldId is not an integer', async () => {
@@ -276,9 +274,9 @@ describe('webFrame module', () => {
             (error) => ({ rejected: true, name: error.name, message: error.message })
           )
         `);
-        expect(result.rejected).to.be.true();
-        expect(result.name).to.equal('TypeError');
-        expect(result.message).to.equal('worldId must be an integer');
+        expect(result.rejected).toBe(true);
+        expect(result.name).toBe('TypeError');
+        expect(result.message).toBe('worldId must be an integer');
       });
     });
   });
