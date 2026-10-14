@@ -9,13 +9,11 @@ import { deferKillUtilityProcess } from './spec-helpers.ts';
 
 const fixturePath = path.resolve(import.meta.dirname, '..', 'fixtures', 'api', 'utility-process', 'api-net-spec.js');
 
-// Waits for the result the api-net-spec.js fixture posts, acknowledges it, then
-// waits for the child to exit. The fixture only exits once it has the
-// acknowledgement, so its result can't be overtaken by (or lost to) its exit.
+// Waits for the result the api-net-spec.js fixture posts, then for the child to exit.
 // Both listeners are attached before this returns, so call it before posting work.
 // Rejects as soon as the child exits without having posted a result,
 // instead of leaving the test to wait for its timeout.
-export async function waitForUtilityResult(child: NodeJS.EventEmitter & { postMessage?(message: unknown): void }) {
+export async function waitForUtilityResult(child: NodeJS.EventEmitter) {
   const exit = once(child, 'exit');
   const [data] = await Promise.race([
     once(child, 'message'),
@@ -23,7 +21,6 @@ export async function waitForUtilityResult(child: NodeJS.EventEmitter & { postMe
       throw new Error(`utility process exited (${code}) before posting a result`);
     })
   ]);
-  child.postMessage?.('ack');
   const [code] = await exit;
   return { data, code };
 }

@@ -14,7 +14,7 @@ import { setImmediate } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 
 import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers.ts';
-import { defer, deferKillUtilityProcess, ifit, listen, startRemoteControlApp } from './lib/spec-helpers.ts';
+import { defer, deferKillUtilityProcess, ifit, listen, sleepSync, startRemoteControlApp } from './lib/spec-helpers.ts';
 import { closeWindow } from './lib/window-helpers.ts';
 
 const require = createRequire(import.meta.url);
@@ -555,7 +555,7 @@ describe('utilityProcess module', () => {
       child.postMessage(count);
       // Block this thread while the child posts and exits, so that its
       // messages and its exit are both waiting here when it gets back to them.
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1000);
+      sleepSync(1000);
       const [code] = await once(child, 'exit');
       expect(code).toBe(0);
       expect(receivedBeforeExit).toEqual(Array.from({ length: count }, (_, index) => index));
