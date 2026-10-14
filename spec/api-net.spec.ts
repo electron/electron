@@ -2311,6 +2311,9 @@ describe('net module', () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'api', 'utility-process', 'network-restart-test.js'));
       deferKillUtilityProcess(child);
       const exited = once(child, 'exit');
+      // once() rejects if the child emits 'error',
+      // and nothing else handles |exited| until the first recovery probe.
+      exited.catch(() => {});
       await once(child, 'spawn');
       await once(child, 'message');
 
