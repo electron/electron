@@ -31,11 +31,6 @@ Commit-Queue: Lei Zhang <thestig@chromium.org>
 Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
 Reviewed-by: Lei Zhang <thestig@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1716984}
----
- ui/base/x/selection_requester.cc          |  96 ++++++-----
- ui/base/x/selection_requester.h           |  31 ++--
- ui/base/x/selection_requester_unittest.cc | 200 ++++++++++++++++++++--
- 3 files changed, 252 insertions(+), 75 deletions(-)
 
 diff --git a/ui/base/x/selection_requester.cc b/ui/base/x/selection_requester.cc
 index 53375068081707c83201bc1651ea4ebaa0ce6c3c..e9078cdc9650acd9a9a364e906155acfeef312d0 100644
