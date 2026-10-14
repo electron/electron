@@ -11,7 +11,16 @@ import * as url from 'node:url';
 
 import { emittedUntil } from './lib/events-helpers.ts';
 import { HexColors, ScreenCapture, hasCapturableScreen } from './lib/screen-helpers.ts';
-import { ifit, ifdescribe, defer, itremote, useRemoteContext, listen } from './lib/spec-helpers.ts';
+import {
+  ifit,
+  ifdescribe,
+  defer,
+  focusWebContents,
+  itremote,
+  useRemoteContext,
+  listen,
+  waitUntil
+} from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 declare let WebView: any;
@@ -652,8 +661,8 @@ describe('<webview> tag', () => {
     });
 
     it('pressing ESC should emit the leave-html-full-screen event', async () => {
+      // Shown, so that the webview can be focused below.
       const w = new BrowserWindow({
-        show: false,
         webPreferences: {
           webviewTag: true,
           nodeIntegration: true,
@@ -665,6 +674,24 @@ describe('<webview> tag', () => {
       w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html'));
 
       const [, webContents] = await didAttachWebview;
+
+      // Chromium refuses requestFullscreen() from a page that doesn't have focus,
+      // even with a user gesture.
+      // So focus the window and then the <webview> element until the guest page reports focus,
+      // focusing the window again on each poll in case it has lost OS focus since.
+      // On macOS, webContents.focus() only activates the app when no other app is active,
+      // and earlier fullscreen specs can leave another app frontmost,
+      // so take activation first.
+      if (process.platform === 'darwin') app.focus({ steal: true });
+      await focusWebContents(w.webContents);
+      await waitUntil(
+        async () => {
+          w.webContents.focus();
+          await w.webContents.executeJavaScript("document.querySelector('webview').focus()");
+          return await webContents.executeJavaScript('document.hasFocus()');
+        },
+        { rate: 100 }
+      );
 
       const enterFSWindow = once(w, 'enter-html-full-screen');
       const enterFSWebview = once(webContents, 'enter-html-full-screen');
