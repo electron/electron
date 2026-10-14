@@ -1,6 +1,6 @@
 import { autoUpdater } from 'electron';
 
-import { expect } from 'chai';
+import { describe, expect } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -17,9 +17,7 @@ import { ifdescribe, ifit, isTestingBindingAvailable } from './lib/spec-helpers.
 // share a harness and are split so that they can land on different CI shards.
 // The updater specs share ShipIt's per-app cache directory, so no two of them
 // can run at the same time.
-ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, function () {
-  this.timeout(120000);
-
+ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'], timeout: 120000 }, () => {
   const { logOnError, updaterIt } = setupUpdaterHarness();
 
   describe('with update server', () => {
@@ -35,19 +33,19 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
           const relaunchPromise = ctx.relaunched();
           const launchResult = await ctx.launchApp(appPath, [`http://localhost:${ctx.port}/update-check`]);
           logOnError(launchResult, () => {
-            expect(launchResult).to.have.property('code', 0);
-            expect(launchResult.out).to.include('Update Downloaded');
-            expect(ctx.requests).to.have.lengthOf(2);
-            expect(ctx.requests[0]).to.have.property('url', '/update-check');
-            expect(ctx.requests[1]).to.have.property('url', '/update-file');
-            expect(ctx.requests[0].header('user-agent')).to.include('Electron/');
-            expect(ctx.requests[1].header('user-agent')).to.include('Electron/');
+            expect(launchResult).toHaveProperty('code', 0);
+            expect(launchResult.out).toContain('Update Downloaded');
+            expect(ctx.requests).toHaveLength(2);
+            expect(ctx.requests[0]).toHaveProperty('url', '/update-check');
+            expect(ctx.requests[1]).toHaveProperty('url', '/update-file');
+            expect(ctx.requests[0].header('user-agent')).toContain('Electron/');
+            expect(ctx.requests[1].header('user-agent')).toContain('Electron/');
           });
 
           await relaunchPromise;
-          expect(ctx.requests).to.have.lengthOf(3);
-          expect(ctx.requests[2].url).to.equal('/update-check/updated/0.0.1');
-          expect(ctx.requests[2].header('user-agent')).to.include('Electron/');
+          expect(ctx.requests).toHaveLength(3);
+          expect(ctx.requests[2].url).toBe('/update-check/updated/0.0.1');
+          expect(ctx.requests[2].header('user-agent')).toContain('Electron/');
         }
       );
     });
@@ -90,22 +88,23 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
           const retainerHandle = ctx.spawnAppWithHandle(appPath, ['remain-open']);
           try {
             logOnError(launchResult, () => {
-              expect(launchResult).to.have.property('code', 0);
-              expect(launchResult.out).to.include('Update Downloaded');
-              expect(ctx.requests).to.have.lengthOf(2);
-              expect(ctx.requests[0]).to.have.property('url', '/update-check');
-              expect(ctx.requests[1]).to.have.property('url', '/update-file');
-              expect(ctx.requests[0].header('user-agent')).to.include('Electron/');
-              expect(ctx.requests[1].header('user-agent')).to.include('Electron/');
+              expect(launchResult).toHaveProperty('code', 0);
+              expect(launchResult.out).toContain('Update Downloaded');
+              expect(ctx.requests).toHaveLength(2);
+              expect(ctx.requests[0]).toHaveProperty('url', '/update-check');
+              expect(ctx.requests[1]).toHaveProperty('url', '/update-file');
+              expect(ctx.requests[0].header('user-agent')).toContain('Electron/');
+              expect(ctx.requests[1].header('user-agent')).toContain('Electron/');
             });
 
             await shipItFlipFlopPromise;
-            expect(ctx.requests).to.have.lengthOf(2, 'should not have relaunched the updated app');
+            expect(ctx.requests, 'should not have relaunched the updated app').toHaveLength(2);
             expect(
               JSON.parse(
                 await fs.promises.readFile(path.resolve(appPath, 'Contents/Resources/app/package.json'), 'utf8')
-              ).version
-            ).to.equal('1.0.0', 'should still be the old version on disk');
+              ).version,
+              'should still be the old version on disk'
+            ).toBe('1.0.0');
           } finally {
             retainerHandle.kill('SIGINT');
           }
@@ -133,14 +132,14 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
             ctx.serveUpdate(updateZipPath);
             const launchResult = await ctx.launchApp(appPath, [`http://localhost:${ctx.port}/update-check`]);
             logOnError(launchResult, () => {
-              expect(launchResult).to.have.property('code', 1);
-              expect(launchResult.out).to.include('Code signature at URL');
-              expect(launchResult.out).to.include('a sealed resource is missing or invalid');
-              expect(ctx.requests).to.have.lengthOf(2);
-              expect(ctx.requests[0]).to.have.property('url', '/update-check');
-              expect(ctx.requests[1]).to.have.property('url', '/update-file');
-              expect(ctx.requests[0].header('user-agent')).to.include('Electron/');
-              expect(ctx.requests[1].header('user-agent')).to.include('Electron/');
+              expect(launchResult).toHaveProperty('code', 1);
+              expect(launchResult.out).toContain('Code signature at URL');
+              expect(launchResult.out).toContain('a sealed resource is missing or invalid');
+              expect(ctx.requests).toHaveLength(2);
+              expect(ctx.requests[0]).toHaveProperty('url', '/update-check');
+              expect(ctx.requests[1]).toHaveProperty('url', '/update-file');
+              expect(ctx.requests[0].header('user-agent')).toContain('Electron/');
+              expect(ctx.requests[1].header('user-agent')).toContain('Electron/');
             });
           }
         );
@@ -175,14 +174,14 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
             ctx.serveUpdate(updateZipPath);
             const launchResult = await ctx.launchApp(appPath, [`http://localhost:${ctx.port}/update-check`]);
             logOnError(launchResult, () => {
-              expect(launchResult).to.have.property('code', 1);
-              expect(launchResult.out).to.include('Code signature at URL');
-              expect(launchResult.out).to.include('a sealed resource is missing or invalid');
-              expect(ctx.requests).to.have.lengthOf(2);
-              expect(ctx.requests[0]).to.have.property('url', '/update-check');
-              expect(ctx.requests[1]).to.have.property('url', '/update-file');
-              expect(ctx.requests[0].header('user-agent')).to.include('Electron/');
-              expect(ctx.requests[1].header('user-agent')).to.include('Electron/');
+              expect(launchResult).toHaveProperty('code', 1);
+              expect(launchResult.out).toContain('Code signature at URL');
+              expect(launchResult.out).toContain('a sealed resource is missing or invalid');
+              expect(ctx.requests).toHaveLength(2);
+              expect(ctx.requests[0]).toHaveProperty('url', '/update-check');
+              expect(ctx.requests[1]).toHaveProperty('url', '/update-file');
+              expect(ctx.requests[0].header('user-agent')).toContain('Electron/');
+              expect(ctx.requests[1].header('user-agent')).toContain('Electron/');
             });
           }
         );
@@ -215,14 +214,14 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
             ctx.serveUpdate(updateZipPath);
             const launchResult = await ctx.launchApp(appPath, [`http://localhost:${ctx.port}/update-check`]);
             logOnError(launchResult, () => {
-              expect(launchResult).to.have.property('code', 1);
-              expect(launchResult.out).to.include('Code signature at URL');
-              expect(launchResult.out).to.include(' main executable failed strict validation');
-              expect(ctx.requests).to.have.lengthOf(2);
-              expect(ctx.requests[0]).to.have.property('url', '/update-check');
-              expect(ctx.requests[1]).to.have.property('url', '/update-file');
-              expect(ctx.requests[0].header('user-agent')).to.include('Electron/');
-              expect(ctx.requests[1].header('user-agent')).to.include('Electron/');
+              expect(launchResult).toHaveProperty('code', 1);
+              expect(launchResult.out).toContain('Code signature at URL');
+              expect(launchResult.out).toContain(' main executable failed strict validation');
+              expect(ctx.requests).toHaveLength(2);
+              expect(ctx.requests[0]).toHaveProperty('url', '/update-check');
+              expect(ctx.requests[1]).toHaveProperty('url', '/update-file');
+              expect(ctx.requests[0].header('user-agent')).toContain('Electron/');
+              expect(ctx.requests[1].header('user-agent')).toContain('Electron/');
             });
           }
         );
@@ -246,14 +245,14 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
               [`http://localhost:${ctx.port}/update-check`]
             );
             logOnError(launchResult, () => {
-              expect(launchResult).to.have.property('code', 1);
-              expect(launchResult.out).to.include('Starting ditto task failed with error:');
-              expect(launchResult.out).to.include('SQRLZipArchiverErrorDomain');
-              expect(ctx.requests).to.have.lengthOf(2);
-              expect(ctx.requests[0]).to.have.property('url', '/update-check');
-              expect(ctx.requests[1]).to.have.property('url', '/update-file');
-              expect(ctx.requests[0].header('user-agent')).to.include('Electron/');
-              expect(ctx.requests[1].header('user-agent')).to.include('Electron/');
+              expect(launchResult).toHaveProperty('code', 1);
+              expect(launchResult.out).toContain('Starting ditto task failed with error:');
+              expect(launchResult.out).toContain('SQRLZipArchiverErrorDomain');
+              expect(ctx.requests).toHaveLength(2);
+              expect(ctx.requests[0]).toHaveProperty('url', '/update-check');
+              expect(ctx.requests[1]).toHaveProperty('url', '/update-file');
+              expect(ctx.requests[0].header('user-agent')).toContain('Electron/');
+              expect(ctx.requests[1].header('user-agent')).toContain('Electron/');
             });
           }
         );
@@ -293,19 +292,19 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
             const relaunchPromise = ctx.relaunched();
             const launchResult = await ctx.launchApp(appPath, [`http://localhost:${ctx.port}/update-check`]);
             logOnError(launchResult, () => {
-              expect(launchResult).to.have.property('code', 0);
-              expect(launchResult.out).to.include('Update Downloaded');
-              expect(ctx.requests).to.have.lengthOf(2);
-              expect(ctx.requests[0]).to.have.property('url', '/update-check');
-              expect(ctx.requests[1]).to.have.property('url', '/update-file');
-              expect(ctx.requests[0].header('user-agent')).to.include('Electron/');
-              expect(ctx.requests[1].header('user-agent')).to.include('Electron/');
+              expect(launchResult).toHaveProperty('code', 0);
+              expect(launchResult.out).toContain('Update Downloaded');
+              expect(ctx.requests).toHaveLength(2);
+              expect(ctx.requests[0]).toHaveProperty('url', '/update-check');
+              expect(ctx.requests[1]).toHaveProperty('url', '/update-file');
+              expect(ctx.requests[0].header('user-agent')).toContain('Electron/');
+              expect(ctx.requests[1].header('user-agent')).toContain('Electron/');
             });
 
             await relaunchPromise;
-            expect(ctx.requests).to.have.lengthOf(3);
-            expect(ctx.requests[2]).to.have.property('url', '/update-check/updated/2.0.0');
-            expect(ctx.requests[2].header('user-agent')).to.include('Electron/');
+            expect(ctx.requests).toHaveLength(3);
+            expect(ctx.requests[2]).toHaveProperty('url', '/update-check/updated/2.0.0');
+            expect(ctx.requests[2].header('user-agent')).toContain('Electron/');
           }
         );
       }
@@ -343,11 +342,11 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
             });
             const launchResult = await ctx.launchApp(appPath, [`http://localhost:${ctx.port}/update-check`]);
             logOnError(launchResult, () => {
-              expect(launchResult).to.have.property('code', 1);
-              expect(launchResult.out).to.include('No update available');
-              expect(ctx.requests).to.have.lengthOf(1);
-              expect(ctx.requests[0]).to.have.property('url', '/update-check');
-              expect(ctx.requests[0].header('user-agent')).to.include('Electron/');
+              expect(launchResult).toHaveProperty('code', 1);
+              expect(launchResult.out).toContain('No update available');
+              expect(ctx.requests).toHaveLength(1);
+              expect(ctx.requests[0]).toHaveProperty('url', '/update-check');
+              expect(ctx.requests[0].header('user-agent')).toContain('Electron/');
             });
           }
         );
@@ -383,13 +382,13 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
             ctx.serveUpdate(updateZipPath);
             const launchResult = await ctx.launchApp(appPath, [`http://localhost:${ctx.port}/update-check`]);
             logOnError(launchResult, () => {
-              expect(launchResult).to.have.property('code', 1);
-              expect(launchResult.out).to.include('Cannot update to a bundle with a lower version number');
-              expect(ctx.requests).to.have.lengthOf(2);
-              expect(ctx.requests[0]).to.have.property('url', '/update-check');
-              expect(ctx.requests[1]).to.have.property('url', '/update-file');
-              expect(ctx.requests[0].header('user-agent')).to.include('Electron/');
-              expect(ctx.requests[1].header('user-agent')).to.include('Electron/');
+              expect(launchResult).toHaveProperty('code', 1);
+              expect(launchResult.out).toContain('Cannot update to a bundle with a lower version number');
+              expect(ctx.requests).toHaveLength(2);
+              expect(ctx.requests[0]).toHaveProperty('url', '/update-check');
+              expect(ctx.requests[1]).toHaveProperty('url', '/update-file');
+              expect(ctx.requests[0].header('user-agent')).toContain('Electron/');
+              expect(ctx.requests[1].header('user-agent')).toContain('Electron/');
             });
           }
         );
@@ -407,13 +406,13 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
             ctx.serveUpdate(updateZipPath);
             const launchResult = await ctx.launchApp(appPath, [`http://localhost:${ctx.port}/update-check`]);
             logOnError(launchResult, () => {
-              expect(launchResult).to.have.property('code', 1);
-              expect(launchResult.out).to.include('Cannot update to a bundle with a lower version number');
-              expect(ctx.requests).to.have.lengthOf(2);
-              expect(ctx.requests[0]).to.have.property('url', '/update-check');
-              expect(ctx.requests[1]).to.have.property('url', '/update-file');
-              expect(ctx.requests[0].header('user-agent')).to.include('Electron/');
-              expect(ctx.requests[1].header('user-agent')).to.include('Electron/');
+              expect(launchResult).toHaveProperty('code', 1);
+              expect(launchResult.out).toContain('Cannot update to a bundle with a lower version number');
+              expect(ctx.requests).toHaveLength(2);
+              expect(ctx.requests[0]).toHaveProperty('url', '/update-check');
+              expect(ctx.requests[1]).toHaveProperty('url', '/update-file');
+              expect(ctx.requests[0].header('user-agent')).toContain('Electron/');
+              expect(ctx.requests[1].header('user-agent')).toContain('Electron/');
             });
           }
         );
@@ -431,19 +430,19 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
             const relaunchPromise = ctx.relaunched();
             const launchResult = await ctx.launchApp(appPath, [`http://localhost:${ctx.port}/update-check`]);
             logOnError(launchResult, () => {
-              expect(launchResult).to.have.property('code', 0);
-              expect(launchResult.out).to.include('Update Downloaded');
-              expect(ctx.requests).to.have.lengthOf(2);
-              expect(ctx.requests[0]).to.have.property('url', '/update-check');
-              expect(ctx.requests[1]).to.have.property('url', '/update-file');
-              expect(ctx.requests[0].header('user-agent')).to.include('Electron/');
-              expect(ctx.requests[1].header('user-agent')).to.include('Electron/');
+              expect(launchResult).toHaveProperty('code', 0);
+              expect(launchResult.out).toContain('Update Downloaded');
+              expect(ctx.requests).toHaveLength(2);
+              expect(ctx.requests[0]).toHaveProperty('url', '/update-check');
+              expect(ctx.requests[1]).toHaveProperty('url', '/update-file');
+              expect(ctx.requests[0].header('user-agent')).toContain('Electron/');
+              expect(ctx.requests[1].header('user-agent')).toContain('Electron/');
             });
 
             await relaunchPromise;
-            expect(ctx.requests).to.have.lengthOf(3);
-            expect(ctx.requests[2].url).to.equal('/update-check/updated/1.0.1');
-            expect(ctx.requests[2].header('user-agent')).to.include('Electron/');
+            expect(ctx.requests).toHaveLength(3);
+            expect(ctx.requests[2].url).toBe('/update-check/updated/1.0.1');
+            expect(ctx.requests[2].header('user-agent')).toContain('Electron/');
           }
         );
       });
@@ -451,11 +450,11 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
       // isVersionAllowedForUpdate only exists in DCHECK builds,
       // like the testing binding.
       ifit(isTestingBindingAvailable())('should compare version numbers correctly', () => {
-        expect(autoUpdater.isVersionAllowedForUpdate!('1.0.0', '2.0.0')).to.equal(true);
-        expect(autoUpdater.isVersionAllowedForUpdate!('1.0.1', '1.0.10')).to.equal(true);
-        expect(autoUpdater.isVersionAllowedForUpdate!('1.0.10', '1.0.1')).to.equal(false);
-        expect(autoUpdater.isVersionAllowedForUpdate!('1.31.1', '1.32.0')).to.equal(true);
-        expect(autoUpdater.isVersionAllowedForUpdate!('1.31.1', '0.32.0')).to.equal(false);
+        expect(autoUpdater.isVersionAllowedForUpdate!('1.0.0', '2.0.0')).toBe(true);
+        expect(autoUpdater.isVersionAllowedForUpdate!('1.0.1', '1.0.10')).toBe(true);
+        expect(autoUpdater.isVersionAllowedForUpdate!('1.0.10', '1.0.1')).toBe(false);
+        expect(autoUpdater.isVersionAllowedForUpdate!('1.31.1', '1.32.0')).toBe(true);
+        expect(autoUpdater.isVersionAllowedForUpdate!('1.31.1', '0.32.0')).toBe(false);
       });
     });
 
@@ -478,21 +477,21 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
                 const relaunchPromise = ctx.relaunched();
                 const launchResult = await ctx.launchApp(appPath, [`http://localhost:${ctx.port}/update-check`]);
                 logOnError(launchResult, () => {
-                  expect(launchResult).to.have.property('code', 0);
-                  expect(launchResult.out).to.include('Update Downloaded');
-                  expect(ctx.requests).to.have.lengthOf(2);
-                  expect(ctx.requests[0]).to.have.property('url', '/update-check');
-                  expect(ctx.requests[1]).to.have.property('url', '/update-file');
-                  expect(ctx.requests[0].header('user-agent')).to.include('Electron/');
-                  expect(ctx.requests[1].header('user-agent')).to.include('Electron/');
+                  expect(launchResult).toHaveProperty('code', 0);
+                  expect(launchResult.out).toContain('Update Downloaded');
+                  expect(ctx.requests).toHaveLength(2);
+                  expect(ctx.requests[0]).toHaveProperty('url', '/update-check');
+                  expect(ctx.requests[1]).toHaveProperty('url', '/update-file');
+                  expect(ctx.requests[0].header('user-agent')).toContain('Electron/');
+                  expect(ctx.requests[1].header('user-agent')).toContain('Electron/');
                 });
 
                 await relaunchPromise;
-                expect(ctx.requests).to.have.lengthOf(3);
-                expect(ctx.requests[2].url).to.equal('/update-check/updated/2.0.0');
-                expect(ctx.requests[2].header('user-agent')).to.include('Electron/');
+                expect(ctx.requests).toHaveLength(3);
+                expect(ctx.requests[2].url).toBe('/update-check/updated/2.0.0');
+                expect(ctx.requests[2].header('user-agent')).toContain('Electron/');
                 const result = cp.spawnSync('xattr', ['-l', appPath]);
-                expect(result.stdout.toString()).to.include(`spec-id: ${randomID}`);
+                expect(result.stdout.toString()).toContain(`spec-id: ${randomID}`);
               }
             );
           } finally {

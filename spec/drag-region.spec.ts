@@ -1,6 +1,6 @@
 import { BrowserWindow, screen } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import { createRequire } from 'node:module';
@@ -95,12 +95,11 @@ const loadDraggableSubframe = async (w: BrowserWindow): Promise<void> => {
   `);
 };
 
-describe('draggable regions', { tags: ['serial'] }, function () {
-  before(async function () {
-    if (!robot || !robot.moveMouse || !hasCapturableScreen()) {
-      this.skip();
-    }
+// @ts-expect-error robot stays unassigned when the module cannot be loaded
+const canDrag = !!robot?.moveMouse && hasCapturableScreen();
 
+describe.runIf(canDrag)('draggable regions', { tags: ['serial'] }, () => {
+  beforeAll(async () => {
     // The first window may not properly receive events due to UI transitions or
     // focus management. To mitigate this, warm up with a test run.
     const w = new BrowserWindow(testWindowOpts);
@@ -123,7 +122,7 @@ describe('draggable regions', { tags: ['serial'] }, function () {
 
       const { start, end } = await performDrag(w);
 
-      expect(start).to.not.deep.equal(end);
+      expect(start).not.toEqual(end);
     });
 
     it('does not drag when app-region: no-drag overlaps drag region', async () => {
@@ -133,7 +132,7 @@ describe('draggable regions', { tags: ['serial'] }, function () {
 
       const { start, end } = await performDrag(w);
 
-      expect(start).to.deep.equal(end);
+      expect(start).toEqual(end);
     });
 
     it('drags after navigation', async () => {
@@ -142,7 +141,7 @@ describe('draggable regions', { tags: ['serial'] }, function () {
 
       const { start, end } = await performDrag(w);
 
-      expect(start).to.not.deep.equal(end);
+      expect(start).not.toEqual(end);
     });
 
     it('drags after in-page navigation', async () => {
@@ -156,7 +155,7 @@ describe('draggable regions', { tags: ['serial'] }, function () {
 
       const { start, end } = await performDrag(w);
 
-      expect(start).to.not.deep.equal(end);
+      expect(start).not.toEqual(end);
     });
   });
 
@@ -183,7 +182,7 @@ describe('draggable regions', { tags: ['serial'] }, function () {
     it('drags with app-region: drag', async () => {
       const { start, end } = await performDrag(childWindow);
 
-      expect(start).to.not.deep.equal(end);
+      expect(start).not.toEqual(end);
     });
 
     it('drags after navigation', async () => {
@@ -191,7 +190,7 @@ describe('draggable regions', { tags: ['serial'] }, function () {
 
       const { start, end } = await performDrag(childWindow);
 
-      expect(start).to.not.deep.equal(end);
+      expect(start).not.toEqual(end);
     });
   });
 
@@ -220,7 +219,7 @@ describe('draggable regions', { tags: ['serial'] }, function () {
 
         const { start, end } = await performDrag(w);
 
-        expect(start).to.not.deep.equal(end);
+        expect(start).not.toEqual(end);
       });
 
       it('drags after subframe navigation', async () => {
@@ -230,7 +229,7 @@ describe('draggable regions', { tags: ['serial'] }, function () {
 
         const { start, end } = await performDrag(w);
 
-        expect(start).to.not.deep.equal(end);
+        expect(start).not.toEqual(end);
       });
 
       it('does not drag after host page navigation without draggable region', async () => {
@@ -241,7 +240,7 @@ describe('draggable regions', { tags: ['serial'] }, function () {
 
         const { start, end } = await performDrag(w);
 
-        expect(start).to.deep.equal(end);
+        expect(start).toEqual(end);
       });
 
       it('drags after host page navigation', async () => {
@@ -252,7 +251,7 @@ describe('draggable regions', { tags: ['serial'] }, function () {
 
         const { start, end } = await performDrag(w);
 
-        expect(start).to.not.deep.equal(end);
+        expect(start).not.toEqual(end);
       });
     });
   }
