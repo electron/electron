@@ -1,6 +1,6 @@
 import { BrowserWindow, type WebPreferences } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
@@ -25,7 +25,7 @@ describe('security warnings', () => {
   let useCsp = true;
   let serverUrl: string;
 
-  before(async () => {
+  beforeAll(async () => {
     // Create HTTP Server
     server = http.createServer(async (request, response) => {
       const uri = new URL(request.url!, `http://${request.headers.host}`).pathname!;
@@ -51,7 +51,7 @@ describe('security warnings', () => {
     serverUrl = `http://localhost2:${(await listen(server)).port}`;
   });
 
-  after(() => {
+  afterAll(() => {
     // Close server
     server.close();
     server = null as unknown as any;
@@ -74,7 +74,7 @@ describe('security warnings', () => {
 
     w.loadURL(`${serverUrl}/base-page-security.html`);
     const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
-    expect(message).to.include('Node.js Integration with Remote Content');
+    expect(message).toContain('Node.js Integration with Remote Content');
   });
 
   it('should not warn about Node.js integration with remote content from localhost', async () => {
@@ -87,7 +87,7 @@ describe('security warnings', () => {
 
     w.loadURL(`${serverUrl}/base-page-security-onload-message.html`);
     const [{ message }] = await emittedUntil(w.webContents, 'console-message', isLoaded);
-    expect(message).to.not.include('Node.js Integration with Remote Content');
+    expect(message).not.toContain('Node.js Integration with Remote Content');
   });
 
   const generateSpecs = (description: string, webPreferences: WebPreferences) => {
@@ -103,7 +103,7 @@ describe('security warnings', () => {
 
         w.loadURL(`${serverUrl}/base-page-security.html`);
         const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
-        expect(message).to.include('Disabled webSecurity');
+        expect(message).toContain('Disabled webSecurity');
       });
 
       it('should warn about insecure Content-Security-Policy', async () => {
@@ -115,7 +115,7 @@ describe('security warnings', () => {
         useCsp = false;
         w.loadURL(`${serverUrl}/base-page-security.html`);
         const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
-        expect(message).to.include('Insecure Content-Security-Policy');
+        expect(message).toContain('Insecure Content-Security-Policy');
       });
 
       it('should not warn about secure Content-Security-Policy', async () => {
@@ -131,7 +131,7 @@ describe('security warnings', () => {
           didNotWarn = false;
         });
         await setTimeout(500);
-        expect(didNotWarn).to.equal(true);
+        expect(didNotWarn).toBe(true);
       });
 
       it('should warn about allowRunningInsecureContent', async () => {
@@ -145,7 +145,7 @@ describe('security warnings', () => {
 
         w.loadURL(`${serverUrl}/base-page-security.html`);
         const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
-        expect(message).to.include('allowRunningInsecureContent');
+        expect(message).toContain('allowRunningInsecureContent');
       });
 
       it('should warn about experimentalFeatures', async () => {
@@ -159,7 +159,7 @@ describe('security warnings', () => {
 
         w.loadURL(`${serverUrl}/base-page-security.html`);
         const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
-        expect(message).to.include('experimentalFeatures');
+        expect(message).toContain('experimentalFeatures');
       });
 
       it('should warn about enableBlinkFeatures', async () => {
@@ -173,7 +173,7 @@ describe('security warnings', () => {
 
         w.loadURL(`${serverUrl}/base-page-security.html`);
         const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
-        expect(message).to.include('enableBlinkFeatures');
+        expect(message).toContain('enableBlinkFeatures');
       });
 
       it('should warn about allowpopups', async () => {
@@ -184,7 +184,7 @@ describe('security warnings', () => {
 
         w.loadURL(`${serverUrl}/webview-allowpopups.html`);
         const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
-        expect(message).to.include('allowpopups');
+        expect(message).toContain('allowpopups');
       });
 
       it('should warn about insecure resources', async () => {
@@ -195,7 +195,7 @@ describe('security warnings', () => {
 
         w.loadURL(`${serverUrl}/insecure-resources.html`);
         const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
-        expect(message).to.include('Insecure Resources');
+        expect(message).toContain('Insecure Resources');
       });
 
       it('should not warn about loading insecure-resources.html from localhost', async () => {
@@ -206,7 +206,7 @@ describe('security warnings', () => {
 
         w.loadURL(`${serverUrl}/insecure-resources.html`);
         const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
-        expect(message).to.not.include('insecure-resources.html');
+        expect(message).not.toContain('insecure-resources.html');
       });
     });
   };

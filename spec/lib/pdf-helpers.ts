@@ -25,7 +25,7 @@ export const readPDFs = async (datas: any[]) => {
     stdio: 'pipe'
   });
   // Register cleanup right away so a hung PDF read doesn't leak the child
-  // into the in-job retry when mocha times out.
+  // into the in-job retry when the test times out.
   defer(() => {
     if (result.exitCode === null && result.signalCode === null) {
       result.kill();
