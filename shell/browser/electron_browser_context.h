@@ -22,6 +22,7 @@
 #include "services/network/public/cpp/url_loader_factory_builder.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/ssl_config.mojom.h"
+#include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
 
 class PrefService;
@@ -229,6 +230,10 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   // Shared URLLoaderFactory.
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
+  // A clone of |url_loader_factory_|'s pipe, used only to notice when that
+  // factory has been disconnected (e.g. because it was created from a
+  // NetworkContext that belonged to a Network Service that has gone away).
+  mojo::Remote<network::mojom::URLLoaderFactory> url_loader_factory_watcher_;
   scoped_refptr<InterceptState> intercept_state_;
 
   // Subscription to Network Service process gone notifications.
