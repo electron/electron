@@ -36,7 +36,7 @@ index 5f469c6955a4243fd9bdada8ee19e4aaf7a02897..0ceaa2bddde3d4f58da0bf88860ed499
    // important to do this before we return from the |opener_suppressed| case
    // below.
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 9cc6449b7b1882f87953028049ecf84fb7ba5848..5c602a33195a1ad99d7c14efc4b7f215af6a77a5 100644
+index 042878335fb950e2f8f4710343af9d9bb49d8ce1..ae9cc14af681af19d546e5140360b0ce575b2b4e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5830,6 +5830,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
