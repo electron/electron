@@ -48,6 +48,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "components/crash/core/app/crash_switches.h"  // nogncheck
 #include "content/public/common/content_descriptors.h"
+#include "v8/include/v8-wasm-trap-handler-posix.h"
 #endif
 
 #if BUILDFLAG(IS_MAC)
@@ -248,6 +249,10 @@ int NodeMain() {
     if (pid != -1) {
       ElectronCrashReporterClient::Create();
       crash_reporter::InitializeCrashpad(false, "node");
+      // Crashpad's handler now runs before Node's,
+      // so let V8 claim WebAssembly out-of-bounds traps first.
+      crash_reporter::SetFirstChanceExceptionHandler(
+          v8::TryHandleWebAssemblyTrapPosix);
       crash_keys::SetCrashKeysFromCommandLine(
           *base::CommandLine::ForCurrentProcess());
       crash_keys::SetPlatformCrashKey();
