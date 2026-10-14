@@ -47,7 +47,7 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Check NMV Version
       env:
-        ABI_VERSION_REGISTRY_URL: https://raw.githubusercontent.com/nodejs/node/main/doc/abi_version_registry.json
+        GH_TOKEN: ${{ github.token }}
       run: |
         set -euo pipefail
 
@@ -60,7 +60,8 @@ jobs:
         echo "Found node_module_version: $nmv"
 
         # Download the ABI version registry from the Node.js repository.
-        curl -fsSL "$ABI_VERSION_REGISTRY_URL" -o abi_version_registry.json
+        gh repo read-file doc/abi_version_registry.json --repo nodejs/node --ref main \
+          --output abi_version_registry.json --clobber
 
         # Look up every runtime registered for the given NMV. Some NMVs are
         # shared across runtimes, so collect all matching entries.
