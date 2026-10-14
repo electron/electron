@@ -1624,7 +1624,7 @@ Registers preload script that will be executed in its associated context type in
 WebContents.
 
 URL filters can limit which documents or service workers a script runs in. They behave like
-[content script match patterns and globs](https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts#matchAndGlob):
+[content script URL matching](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/content_scripts#matching_url_patterns):
 a URL must match `matches` (if set) and `includeGlobs` (if set), and must not match
 `excludeMatches` or `excludeGlobs`. For `frame` contexts the URL is the document being loaded,
 so the initial empty document of a frame or popup is matched as `about:blank`. For
