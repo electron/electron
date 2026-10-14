@@ -29,7 +29,7 @@ import {
   respondNTimes,
   respondOnce
 } from './lib/net-helpers.ts';
-import { listen, defer, ifdescribe, isTestingBindingAvailable } from './lib/spec-helpers.ts';
+import { listen, defer, ifdescribe, isTestingBindingAvailable, waitUntil } from './lib/spec-helpers.ts';
 import { runInUtilityProcess, waitForUtilityResult } from './lib/utility-process-helpers.ts';
 
 const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
@@ -2232,9 +2232,22 @@ describe('net module', () => {
 
       await binding.simulateNetworkServiceCrash();
 
-      // Wait for StoragePartitionImpl's NetworkContext disconnect handler to
-      // fire and reinitialize the context in the new Network Service.
-      await setTimeout(500);
+      // Requests fail until StoragePartitionImpl's NetworkContext disconnect
+      // handler has fired and the context has been reinitialized in the new
+      // Network Service, which can take a while on a busy machine.
+      const probeUrl = await respondNTimes.toSingleURL((request, response) => {
+        response.end('probe');
+      }, 200);
+      await waitUntil(
+        async () => {
+          try {
+            return (await net.fetch(probeUrl)).ok;
+          } catch {
+            return false;
+          }
+        },
+        { rate: 100 }
+      );
 
       const secondServerUrl = await respondOnce.toSingleURL((request, response) => {
         response.end('second');
@@ -2260,9 +2273,20 @@ describe('net module', () => {
 
       await binding.simulateNetworkServiceCrash();
 
-      // Needed for UpdateURLLoaderFactory IPC to propagate to the utility process
-      // and for any in-flight requests to settle
-      await setTimeout(500);
+      // Requests from the utility process fail until the UpdateURLLoaderFactory
+      // IPC for the new Network Service has reached it, which can take a while
+      // on a busy machine.
+      const probeUrl = await respondNTimes.toSingleURL((request, response) => {
+        response.end('probe');
+      }, 200);
+      await waitUntil(
+        async () => {
+          child.postMessage({ type: 'fetch', url: probeUrl });
+          const [result] = await once(child, 'message');
+          return result.ok;
+        },
+        { rate: 100 }
+      );
 
       const secondServerUrl = await respondOnce.toSingleURL((request, response) => {
         response.end('utility-second');
