@@ -696,7 +696,9 @@ class WebContents final : public gin::Wrappable<WebContents>,
   // CommitNavigation, for documents that will run preloads.
   void MaybeSendRendererStartupData(
       content::NavigationHandle* navigation_handle);
-  void SendRendererStartupData(content::RenderFrameHost* rfh);
+  // |url| is the document the preloads will run in, matched against each
+  // session preload's URL filters.
+  void SendRendererStartupData(content::RenderFrameHost* rfh, const GURL& url);
   void DidFinishNavigation(content::NavigationHandle* navigation_handle);
   void DidReceiveFindReply(int request_id,
                            int number_of_matches,

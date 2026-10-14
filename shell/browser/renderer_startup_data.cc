@@ -25,6 +25,7 @@
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/node_includes.h"
+#include "url/gurl.h"
 
 namespace electron::renderer_startup_data {
 
@@ -111,6 +112,7 @@ mojom::PreloadScriptDataPtr ReadPreloadScript(
 mojom::RendererStartupDataPtr BuildInternal(
     content::BrowserContext* browser_context,
     PreloadScript::ScriptType type,
+    const GURL& url,
     const preload_code_cache::Scope& scope,
     std::vector<preload_code_cache::ServedPreload>* served,
     bool sandboxed) {
@@ -122,6 +124,8 @@ mojom::RendererStartupDataPtr BuildInternal(
       if (script.script_type != type)
         continue;
       if (!script.file_path.IsAbsolute())
+        continue;
+      if (!script.MatchesURL(url))
         continue;
       data->preload_scripts.push_back(ReadPreloadScript(
           script.id, script.file_path, scope, served, sandboxed));
@@ -140,19 +144,21 @@ mojom::RendererStartupDataPtr BuildInternal(
 }  // namespace
 
 mojom::RendererStartupDataPtr Build(content::BrowserContext* browser_context,
-                                    PreloadScript::ScriptType type) {
-  return BuildInternal(browser_context, type, preload_code_cache::Scope(),
+                                    PreloadScript::ScriptType type,
+                                    const GURL& url) {
+  return BuildInternal(browser_context, type, url, preload_code_cache::Scope(),
                        nullptr, /*sandboxed=*/true);
 }
 
-mojom::RendererStartupDataPtr BuildForFrame(content::RenderFrameHost* rfh) {
+mojom::RendererStartupDataPtr BuildForFrame(content::RenderFrameHost* rfh,
+                                            const GURL& url) {
   const preload_code_cache::Scope scope =
       preload_code_cache::ScopeForFrame(rfh);
   auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
   const bool sandboxed = IsFrameInSandboxedRenderer(rfh);
   std::vector<preload_code_cache::ServedPreload> served;
   auto data = BuildInternal(rfh->GetBrowserContext(),
-                            PreloadScript::ScriptType::kWebFrame, scope,
+                            PreloadScript::ScriptType::kWebFrame, url, scope,
                             sandboxed ? &served : nullptr, sandboxed);
 
   // The per-WebContents webPreferences.preload runs last. May be absent for a

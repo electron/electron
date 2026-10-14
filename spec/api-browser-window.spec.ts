@@ -4388,7 +4388,71 @@ describe('BrowserWindow module', () => {
             await waitUntil(() => locations.length > 0);
             expect(locations).toEqual(['about:blank']);
           });
+
+          it(`only runs session preloads whose URL filters match the document (sandbox: ${sandbox})`, async () => {
+            const server = http.createServer((_request, response) => {
+              response.writeHead(200, { 'Content-Type': 'text/html' });
+              response.end('<html></html>');
+            });
+            defer(() => server.close());
+            const { url } = await listen(server);
+            const ses = session.fromPartition(`preload-url-filters-${sandbox}`);
+            const preload = path.join(fixtures, 'module', 'preload-location.js');
+            const ids = [
+              ses.registerPreloadScript({ type: 'frame', filePath: preload, matches: [`${url}/allowed/*`] }),
+              ses.registerPreloadScript({
+                type: 'frame',
+                filePath: preload,
+                matches: [`${url}/*`],
+                excludeMatches: [`${url}/allowed/*`],
+                includeGlobs: ['*included=1']
+              }),
+              ses.registerPreloadScript({
+                type: 'frame',
+                filePath: preload,
+                excludeGlobs: ['*/allowed/*', '*included=1']
+              })
+            ];
+            defer(() => ids.forEach((id) => ses.unregisterPreloadScript(id)));
+            const locations: string[] = [];
+            ipcMain.on('preload-location', (_e, href: string) => locations.push(href));
+            defer(() => ipcMain.removeAllListeners('preload-location'));
+            const w = new BrowserWindow({ show: false, webPreferences: { sandbox, session: ses } });
+            await w.loadURL(`${url}/allowed/page`);
+            await w.loadURL(`${url}/other?included=1`);
+            await w.loadURL(`${url}/other`);
+            expect(locations).to.deep.equal([`${url}/allowed/page`, `${url}/other?included=1`, `${url}/other`]);
+          });
         }
+
+        it('rejects invalid preload URL filters', () => {
+          const ses = session.fromPartition('preload-url-filters-invalid');
+          const filePath = path.join(fixtures, 'module', 'empty.js');
+          expect(() => ses.registerPreloadScript({ type: 'frame', filePath, matches: ['not a pattern'] })).to.throw(
+            /Invalid URL pattern 'not a pattern'/
+          );
+          expect(() => ses.registerPreloadScript({ type: 'frame', filePath, excludeMatches: ['https://'] })).to.throw(
+            /Invalid URL pattern/
+          );
+          expect(ses.getPreloadScripts()).to.be.empty();
+        });
+
+        it('returns URL filters from getPreloadScripts', () => {
+          const ses = session.fromPartition('preload-url-filters-get');
+          const filters = {
+            matches: ['https://example.com/*'],
+            excludeMatches: ['https://example.com/private/*'],
+            includeGlobs: ['*foo*'],
+            excludeGlobs: ['*bar*']
+          };
+          const id = ses.registerPreloadScript({
+            type: 'frame',
+            filePath: path.join(fixtures, 'module', 'empty.js'),
+            ...filters
+          });
+          defer(() => ses.unregisterPreloadScript(id));
+          expect(ses.getPreloadScripts().find((script) => script.id === id)).to.deep.include(filters);
+        });
       });
 
       it('does not leak any node globals on the window object with nodeIntegration is disabled', async () => {

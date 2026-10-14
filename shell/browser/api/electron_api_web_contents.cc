@@ -199,6 +199,8 @@
 #include "ui/events/base_event_utils.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/views/widget/widget.h"
+#include "url/gurl.h"
+#include "url/url_constants.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
 
@@ -3044,7 +3046,7 @@ void WebContents::HandleNewRenderFrame(
     const bool allow_subframes =
         web_preferences && web_preferences->AllowsNodeIntegrationInSubFrames();
     if (!render_frame_host->GetParent() || allow_subframes)
-      SendRendererStartupData(render_frame_host);
+      SendRendererStartupData(render_frame_host, GURL(url::kAboutBlankURL));
   }
 }
 
@@ -3498,10 +3500,11 @@ void WebContents::MaybeSendRendererStartupData(
   if (!main_frame && !allow_subframes && !is_devtools_like)
     return;
 
-  SendRendererStartupData(rfh);
+  SendRendererStartupData(rfh, url);
 }
 
-void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh) {
+void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh,
+                                          const GURL& url) {
   if (!rfh || !rfh->IsRenderFrameLive())
     return;
 
@@ -3512,7 +3515,7 @@ void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh) {
     // parked waiting on us here — we haven't sent CommitNavigation yet — so
     // unlike the old sync IPC handler this can't amplify under contention.
     ScopedAllowBlockingForElectron allow_blocking;
-    data = renderer_startup_data::BuildForFrame(rfh);
+    data = renderer_startup_data::BuildForFrame(rfh, url);
   }
 
   // GetRemoteAssociatedInterfaces() routes over the same channel as

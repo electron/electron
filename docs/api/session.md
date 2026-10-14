@@ -1623,6 +1623,26 @@ Registers preload script that will be executed in its associated context type in
 `frame` contexts, this will run prior to any preload defined in the web preferences of a
 WebContents.
 
+URL filters can limit which documents or service workers a script runs in. They behave like
+[content script match patterns and globs](https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts#matchAndGlob):
+a URL must match `matches` (if set) and `includeGlobs` (if set), and must not match
+`excludeMatches` or `excludeGlobs`. For `frame` contexts the URL is the document being loaded,
+so the initial empty document of a frame or popup is matched as `about:blank`. For
+`service-worker` contexts the URL is the service worker's scope.
+
+Throws an error if any of the URL patterns are invalid.
+
+```js
+const { session } = require('electron')
+
+session.defaultSession.registerPreloadScript({
+  type: 'frame',
+  filePath: '/path/to/preload.js',
+  matches: ['https://*.example.com/*'],
+  excludeGlobs: ['*/logout*']
+})
+```
+
 Returns `string` - The ID of the registered preload script.
 
 #### `ses.unregisterPreloadScript(id)`

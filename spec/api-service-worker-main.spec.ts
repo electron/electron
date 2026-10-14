@@ -448,6 +448,41 @@ describe('ServiceWorkerMain module', () => {
     });
   });
 
+  describe('preload URL filters', () => {
+    function registerFilteredPreload(scriptName: string, filters: Partial<Electron.PreloadScriptRegistration>) {
+      ses.registerPreloadScript({
+        type: 'service-worker',
+        filePath: path.resolve(preloadRealmFixtures, scriptName),
+        ...filters
+      });
+    }
+
+    it('runs a preload whose filters match the worker scope', async () => {
+      registerFilteredPreload('preload-send-ping.js', { matches: [`${baseUrl}/*`] });
+      loadWorkerScript();
+      const serviceWorker = await waitForServiceWorker();
+      await once(serviceWorker.ipc, 'ping');
+    });
+
+    it('skips a preload whose filters do not match the worker scope', async () => {
+      registerFilteredPreload('preload-send-ping.js', { excludeMatches: [`${baseUrl}/*`] });
+      registerPreload('preload-tests.js');
+      let pingReceived = false;
+      serviceWorkers.on('running-status-changed', ({ versionId, runningStatus }) => {
+        if (runningStatus !== 'starting') return;
+        serviceWorkers.getWorkerFromVersionID(versionId)?.ipc.on('ping', () => {
+          pingReceived = true;
+        });
+      });
+      loadWorkerScript();
+      const serviceWorker = await waitForServiceWorker('running');
+      const pongPromise = once(serviceWorker.ipc, 'pong');
+      runTest(serviceWorker, { name: 'testSend', args: ['pong'] });
+      await pongPromise;
+      expect(pingReceived).to.be.false();
+    });
+  });
+
   describe('contextBridge', () => {
     beforeEach(() => {
       registerPreload('preload-tests.js');
