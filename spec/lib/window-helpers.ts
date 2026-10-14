@@ -1,11 +1,22 @@
 import { BaseWindow, BrowserWindow, webContents } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { once } from 'node:events';
 
+// On macOS, destroying a fullscreen window animates it out of its Space, and
+// AppKit ignores fullscreen requests from other windows until that finishes.
+// Leave fullscreen first so the next test doesn't start inside the animation.
+async function leaveFullScreen(window: BaseWindow) {
+  if (process.platform !== 'darwin' || !window.isFullScreen()) return;
+  const left = once(window, 'leave-full-screen');
+  window.setFullScreen(false);
+  await Promise.race([left, new Promise((resolve) => setTimeout(resolve, 5000))]);
+}
+
 async function ensureWindowIsClosed(window: BaseWindow | null) {
   if (window && !window.isDestroyed()) {
+    await leaveFullScreen(window);
     if (window instanceof BrowserWindow && window.webContents && !window.webContents.isDestroyed()) {
       // If a window isn't destroyed already, and it has non-destroyed WebContents,
       // then calling destroy() won't immediately destroy it, as it may have
@@ -39,7 +50,7 @@ export const closeWindow = async (
         // called: by now the next test may already have created its own.
         const leftover = windows.filter((win) => !win.isDestroyed());
         try {
-          expect(leftover).to.have.lengthOf(0);
+          expect(leftover).toHaveLength(0);
         } finally {
           for (const win of leftover) {
             await ensureWindowIsClosed(win);
@@ -50,10 +61,12 @@ export const closeWindow = async (
   }
 };
 
-export async function closeAllWindows(assertNotWindows = false) {
+// Takes no parameters on purpose: it is registered directly as an afterEach /
+// afterAll hook, and vitest hands hooks their context as the first argument.
+export async function closeAllWindows() {
   let windowsClosed = 0;
   for (const w of BaseWindow.getAllWindows()) {
-    await closeWindow(w, { assertNotWindows });
+    await closeWindow(w, { assertNotWindows: false });
     windowsClosed++;
   }
   return windowsClosed;

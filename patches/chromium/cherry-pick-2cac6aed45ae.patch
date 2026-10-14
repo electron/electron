@@ -1,0 +1,68 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andy Phan <andyphan@chromium.org>
+Date: Wed, 7 Oct 2026 16:17:00 -0700
+Subject: [M155] [mime_handler] Return early for uncommitted navigations
+
+Manual merge conflict resolution due to https://crrev.com/c/8304493
+landing after M155.
+
+Original change's description:
+> [mime_handler] Return early for uncommitted navigations
+>
+> Return early in MimeHandlerStreamManager::DidFinishNavigation() when the
+> navigation has not committed, after cleaning up any matching unclaimed
+> stream. Otherwise, an uncommitted about:blank navigation in a child
+> frame can be treated as the placeholder extension frame and trigger a
+> new navigation during renderer process exit.
+>
+> TAG=agy
+> CONV=1785936f-edea-495c-86d0-6ce822657ace
+>
+> Bug: 568719364
+> Change-Id: Ibfc8976936514e76d35825ee8f1fbfc2d31ab00c
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8511404
+> Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+> Commit-Queue: Andy Phan <andyphan@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1711495}
+
+(cherry picked from commit cb21df9dd4c5b550d530cd1f461731f0d1d25ad0)
+
+Bug: 570373427,568719364
+Change-Id: Ibfc8976936514e76d35825ee8f1fbfc2d31ab00c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8532006
+Commit-Queue: Andy Phan <andyphan@chromium.org>
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8059@{#1012}
+Cr-Branched-From: 199ac2cd7ab289e11c2236bd2cede848781213da-refs/heads/main@{#1697595}
+
+Electron adaptation notes (42-x-y):
+In Chromium 148 MimeHandlerStreamManager has not yet been moved to
+extensions/browser/mime_handler/; the identical DidFinishNavigation() lives
+in chrome/browser/pdf/pdf_viewer_stream_manager.cc (PdfViewerStreamManager),
+which Electron compiles via chromium_src/BUILD.gn. Both code hunks were
+applied there verbatim. The unit-test hunks (chrome/browser/pdf/*_unittest.cc,
+not built by Electron) were dropped.
+
+diff --git a/chrome/browser/pdf/pdf_viewer_stream_manager.cc b/chrome/browser/pdf/pdf_viewer_stream_manager.cc
+index 9a569aeca5e3453c06ec6cf1be7f68e6088ef2b0..a59d8f97f83ef8e85bb9448f31b360591286a8df 100644
+--- a/chrome/browser/pdf/pdf_viewer_stream_manager.cc
++++ b/chrome/browser/pdf/pdf_viewer_stream_manager.cc
+@@ -475,6 +475,10 @@ void PdfViewerStreamManager::DidFinishNavigation(
+     ClearContentNavigationCrashKeys();
+   }
+ 
++  if (!navigation_handle->HasCommitted()) {
++    return;
++  }
++
+   // Maybe set up postMessage support after the PDF content host finishes
+   // navigating.
+   if (MaybeSetUpPostMessage(navigation_handle)) {
+@@ -505,7 +509,6 @@ void PdfViewerStreamManager::DidFinishNavigation(
+     if (url == pdf_extension_url &&
+         stream_info->extension_host_frame_tree_node_id() ==
+             navigation_handle->GetFrameTreeNodeId() &&
+-        navigation_handle->HasCommitted() &&
+         !navigation_handle->IsErrorPage()) {
+       // TODO(crbug.com/432497344, crbug.com/479589477): Remove debugging data.
+       crash_reporter::ScopedCrashKeyString

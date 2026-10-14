@@ -10,8 +10,8 @@ import {
 } from 'electron/main';
 
 import auth from 'basic-auth';
-import { expect } from 'chai';
 import send from 'send';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import * as ChildProcess from 'node:child_process';
 import { once } from 'node:events';
@@ -33,13 +33,13 @@ describe('session module', () => {
 
   describe('session.defaultSession', () => {
     it('returns the default session', () => {
-      expect(session.defaultSession).to.equal(session.fromPartition(''));
+      expect(session.defaultSession).toBe(session.fromPartition(''));
     });
   });
 
   describe('session.fromPartition(partition, options)', () => {
     it('returns existing session with same partition', () => {
-      expect(session.fromPartition('test')).to.equal(session.fromPartition('test'));
+      expect(session.fromPartition('test')).toBe(session.fromPartition('test'));
     });
   });
 
@@ -47,7 +47,7 @@ describe('session module', () => {
     it('returns storage path of a session which was created with an absolute path', () => {
       const tmppath = require('electron').app.getPath('temp');
       const ses = session.fromPath(tmppath);
-      expect(ses.storagePath).to.equal(tmppath);
+      expect(ses.storagePath).toBe(tmppath);
     });
   });
 
@@ -98,7 +98,8 @@ describe('session module', () => {
       await w.loadURL(`${url}:${port}`);
       const list = await w.webContents.session.cookies.get({ url });
       const cookie = list.find((cookie) => cookie.name === name);
-      expect(cookie).to.exist.and.to.have.property('value', value);
+      expect(cookie).toEqual(expect.anything());
+      expect(cookie).toHaveProperty('value', value);
     });
 
     it('sets cookies', async () => {
@@ -108,9 +109,9 @@ describe('session module', () => {
 
       await cookies.set({ url, name, value, expirationDate: Date.now() / 1000 + 120 });
       const c = (await cookies.get({ url }))[0];
-      expect(c.name).to.equal(name);
-      expect(c.value).to.equal(value);
-      expect(c.session).to.equal(false);
+      expect(c.name).toBe(name);
+      expect(c.value).toBe(value);
+      expect(c.session).toBe(false);
     });
 
     it('sets session cookies', async () => {
@@ -120,9 +121,9 @@ describe('session module', () => {
 
       await cookies.set({ url, name, value });
       const c = (await cookies.get({ url }))[0];
-      expect(c.name).to.equal(name);
-      expect(c.value).to.equal(value);
-      expect(c.session).to.equal(true);
+      expect(c.name).toBe(name);
+      expect(c.value).toBe(value);
+      expect(c.session).toBe(true);
     });
 
     it('sets cookies without name', async () => {
@@ -131,8 +132,8 @@ describe('session module', () => {
 
       await cookies.set({ url, value });
       const c = (await cookies.get({ url }))[0];
-      expect(c.name).to.be.empty();
-      expect(c.value).to.equal(value);
+      expect(c.name).toHaveLength(0);
+      expect(c.value).toBe(value);
     });
 
     for (const sameSite of ['unspecified', 'no_restriction', 'lax', 'strict'] as const) {
@@ -141,16 +142,16 @@ describe('session module', () => {
         const value = 'hithere';
         await cookies.set({ url, value, sameSite });
         const c = (await cookies.get({ url }))[0];
-        expect(c.name).to.be.empty();
-        expect(c.value).to.equal(value);
-        expect(c.sameSite).to.equal(sameSite);
+        expect(c.name).toHaveLength(0);
+        expect(c.value).toBe(value);
+        expect(c.sameSite).toBe(sameSite);
       });
     }
 
     it('fails to set cookies with samesite=garbage', async () => {
       const { cookies } = session.defaultSession;
       const value = 'hithere';
-      await expect(cookies.set({ url, value, sameSite: 'garbage' as any })).to.eventually.be.rejectedWith(
+      await expect(cookies.set({ url, value, sameSite: 'garbage' as any })).rejects.toThrow(
         "Failed to convert 'garbage' to an appropriate cookie same site value"
       );
     });
@@ -162,7 +163,7 @@ describe('session module', () => {
 
       await cookies.set({ url, name, value, expirationDate: Date.now() / 1000 + 120 });
       const cs = await cookies.get({ domain: '127.0.0.1' });
-      expect(cs.some((c) => c.name === name && c.value === value)).to.equal(true);
+      expect(cs.some((c) => c.name === name && c.value === value)).toBe(true);
     });
 
     it('rejects when setting a cookie with missing required fields', async () => {
@@ -170,7 +171,7 @@ describe('session module', () => {
       const name = '1';
       const value = '1';
 
-      await expect(cookies.set({ url: '', name, value })).to.eventually.be.rejectedWith(
+      await expect(cookies.set({ url: '', name, value })).rejects.toThrow(
         'Failed to set cookie - The cookie was set with an invalid Domain attribute.'
       );
     });
@@ -180,7 +181,7 @@ describe('session module', () => {
       const name = '1';
       const value = '1';
 
-      await expect(cookies.set({ url: 'asdf', name, value })).to.eventually.be.rejectedWith(
+      await expect(cookies.set({ url: 'asdf', name, value })).rejects.toThrow(
         'Failed to set cookie - The cookie was set with an invalid Domain attribute.'
       );
     });
@@ -190,7 +191,7 @@ describe('session module', () => {
       const name = 'BadCookie';
       const value = 'test;test';
 
-      await expect(cookies.set({ url, name, value })).to.eventually.be.rejectedWith(
+      await expect(cookies.set({ url, name, value })).rejects.toThrow(
         'Failed to set cookie - The cookie contains ASCII control characters'
       );
     });
@@ -202,7 +203,7 @@ describe('session module', () => {
         await cookies.set({ url, name, value, expirationDate: Date.now() / 1000 + 120 });
         const list = await cookies.get({ url });
 
-        expect(list.some((cookie) => cookie.name === name && cookie.value === value)).to.equal(true);
+        expect(list.some((cookie) => cookie.name === name && cookie.value === value)).toBe(true);
       }
     });
 
@@ -215,7 +216,7 @@ describe('session module', () => {
       await cookies.remove(url, name);
       const list = await cookies.get({ url });
 
-      expect(list.some((cookie) => cookie.name === name && cookie.value === value)).to.equal(false);
+      expect(list.some((cookie) => cookie.name === name && cookie.value === value)).toBe(false);
     });
 
     // DISABLED-FIXME
@@ -229,10 +230,10 @@ describe('session module', () => {
       await cookies.set({ url, name, value, expirationDate: Date.now() / 1000 + 120 });
       const list = await cookies.get({ url });
 
-      expect(list).to.have.lengthOf(1);
-      expect(list[0]).to.have.property('name', name);
-      expect(list[0]).to.have.property('value', value);
-      expect(list[0]).to.have.property('domain', domain);
+      expect(list).toHaveLength(1);
+      expect(list[0]).toHaveProperty('name', name);
+      expect(list[0]).toHaveProperty('value', value);
+      expect(list[0]).toHaveProperty('domain', domain);
     });
 
     it('emits a changed event when a cookie is added or removed', async () => {
@@ -248,15 +249,15 @@ describe('session module', () => {
       await cookies.remove(url, name);
       const [, removeEventCookie, removeEventCause, removeEventRemoved] = await b;
 
-      expect(setEventCookie.name).to.equal(name);
-      expect(setEventCookie.value).to.equal(value);
-      expect(setEventCause).to.equal('inserted');
-      expect(setEventRemoved).to.equal(false);
+      expect(setEventCookie.name).toBe(name);
+      expect(setEventCookie.value).toBe(value);
+      expect(setEventCause).toBe('inserted');
+      expect(setEventRemoved).toBe(false);
 
-      expect(removeEventCookie.name).to.equal(name);
-      expect(removeEventCookie.value).to.equal(value);
-      expect(removeEventCause).to.equal('explicit');
-      expect(removeEventRemoved).to.equal(true);
+      expect(removeEventCookie.name).toBe(name);
+      expect(removeEventCookie.value).toBe(value);
+      expect(removeEventCause).toBe('explicit');
+      expect(removeEventRemoved).toBe(true);
     });
 
     it('emits overwrite and inserted events when a cookie is overwritten with a new value', async () => {
@@ -279,7 +280,7 @@ describe('session module', () => {
       );
 
       const actual = changes.map(({ cookie: { name, value }, cause, removed }) => ({ cause, name, removed, value }));
-      expect(actual).to.deep.equal(expected);
+      expect(actual).toEqual(expected);
     });
 
     it('emits inserted-no-value-change-overwrite when a cookie is overwritten with the same value', async () => {
@@ -302,7 +303,7 @@ describe('session module', () => {
       );
 
       const actual = changes.map(({ cookie: { name, value }, cause, removed }) => ({ cause, name, removed, value }));
-      expect(actual).to.deep.equal(expected);
+      expect(actual).toEqual(expected);
     });
 
     it('emits expired-overwrite when a cookie is overwritten by an already-expired cookie', async () => {
@@ -322,7 +323,7 @@ describe('session module', () => {
       );
 
       const actual = changes.map(({ cookie: { name, value }, cause, removed }) => ({ cause, name, removed, value }));
-      expect(actual).to.deep.equal(expected);
+      expect(actual).toEqual(expected);
     });
 
     describe('ses.cookies.flushStore()', async () => {
@@ -336,8 +337,7 @@ describe('session module', () => {
       });
     });
 
-    it('should survive an app restart for persistent partition', async function () {
-      this.timeout(60000);
+    it('should survive an app restart for persistent partition', { timeout: 60000 }, async () => {
       const appPath = path.join(fixtures, 'api', 'cookie-app');
 
       const runAppWithPhase = (phase: string) => {
@@ -355,8 +355,8 @@ describe('session module', () => {
         });
       };
 
-      expect(await runAppWithPhase('one')).to.equal('011');
-      expect(await runAppWithPhase('two')).to.equal('110');
+      expect(await runAppWithPhase('one')).toBe('011');
+      expect(await runAppWithPhase('two')).toBe('110');
     });
   });
 
@@ -378,11 +378,11 @@ describe('session module', () => {
       const cookies = await testSession.cookies.get({ domain });
 
       if (expectMatch) {
-        expect(cookies).to.have.lengthOf(1);
-        expect(cookies[0].name).to.equal(setCookieOpts.name);
-        expect(cookies[0].value).to.equal(setCookieOpts.value);
+        expect(cookies).toHaveLength(1);
+        expect(cookies[0].name).toBe(setCookieOpts.name);
+        expect(cookies[0].value).toBe(setCookieOpts.value);
       } else {
-        expect(cookies).to.have.lengthOf(0);
+        expect(cookies).toHaveLength(0);
       }
     }
 
@@ -501,20 +501,20 @@ describe('session module', () => {
 
       // This should match the cookie
       const cookies1 = await testSession.cookies.get({ domain: 'a.b.example.com' });
-      expect(cookies1).to.have.lengthOf(1);
-      expect(cookies1[0].name).to.equal('complexSubdomain');
+      expect(cookies1).toHaveLength(1);
+      expect(cookies1[0].name).toBe('complexSubdomain');
 
       // This should also match
       const cookies2 = await testSession.cookies.get({ domain: 'b.example.com' });
-      expect(cookies2).to.have.lengthOf(1);
+      expect(cookies2).toHaveLength(1);
 
       // This should also match
       const cookies3 = await testSession.cookies.get({ domain: 'example.com' });
-      expect(cookies3).to.have.lengthOf(1);
+      expect(cookies3).toHaveLength(1);
 
       // This should not match
       const cookies4 = await testSession.cookies.get({ domain: 'otherexample.com' });
-      expect(cookies4).to.have.lengthOf(0);
+      expect(cookies4).toHaveLength(0);
     });
 
     it('should handle multiple cookies with different domains', async () => {
@@ -535,17 +535,17 @@ describe('session module', () => {
 
       // Filter for the first domain
       const cookies1 = await testSession.cookies.get({ domain: 'example.com' });
-      expect(cookies1).to.have.lengthOf(1);
-      expect(cookies1[0].name).to.equal('cookie1');
+      expect(cookies1).toHaveLength(1);
+      expect(cookies1[0].name).toBe('cookie1');
 
       // Filter for the second domain
       const cookies2 = await testSession.cookies.get({ domain: 'other.com' });
-      expect(cookies2).to.have.lengthOf(1);
-      expect(cookies2[0].name).to.equal('cookie2');
+      expect(cookies2).toHaveLength(1);
+      expect(cookies2[0].name).toBe('cookie2');
 
       // Get all cookies
       const allCookies = await testSession.cookies.get({});
-      expect(allCookies).to.have.lengthOf(2);
+      expect(allCookies).toHaveLength(2);
     });
   });
 
@@ -569,10 +569,18 @@ describe('session module', () => {
     // Shared dictionaries can only be created from real https websites, which we
     // lack the APIs to fake in CI. If you're working on this code, you can run
     // the real-internet tests below by uncommenting the `skip` below.
-    // In CI, we'll run simple tests here that ensure that the code in question doesn't
-    // crash, even if we expect it to not return any real dictionaries.
+    // In CI, we'll run simple tests here that ensure that the code in question
+    // doesn't crash. We clear the default session's shared-dictionary cache in a
+    // beforeEach so the emptiness assertions start from a known-clean state.
+    beforeEach(async () => {
+      // A Chromium background service can register a real shared dictionary
+      // (e.g. from www.google.com) on the default session during the run, which
+      // would make the emptiness assertions below flaky. Start from a clean state.
+      await session.defaultSession.clearSharedDictionaryCache();
+    });
+
     it('can get shared dictionary usage info', async () => {
-      expect(await session.defaultSession.getSharedDictionaryUsageInfo()).to.deep.equal([]);
+      expect(await session.defaultSession.getSharedDictionaryUsageInfo()).toEqual([]);
     });
 
     it('can get shared dictionary info', async () => {
@@ -581,7 +589,7 @@ describe('session module', () => {
           frameOrigin: 'https://compression-dictionary-transport-threejs-demo.glitch.me',
           topFrameSite: 'https://compression-dictionary-transport-threejs-demo.glitch.me'
         })
-      ).to.deep.equal([]);
+      ).toEqual([]);
     });
 
     it('can clear shared dictionary cache', async () => {
@@ -605,7 +613,7 @@ describe('session module', () => {
         | 'clearSharedDictionaryCache'
         | 'clearSharedDictionaryCacheForIsolationKey'
     ) => {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         let output = '';
 
         const appProcess = ChildProcess.spawn(process.execPath, [appPath, command]);
@@ -620,7 +628,7 @@ describe('session module', () => {
             resolve(JSON.parse(trimmedOutput));
           } catch (e) {
             console.error(`Error trying to deserialize ${trimmedOutput}`);
-            throw e;
+            reject(e);
           }
         });
       });
@@ -632,7 +640,7 @@ describe('session module', () => {
 
     it('can get shared dictionary usage info', async () => {
       // In our fixture, this calls session.defaultSession.getSharedDictionaryUsageInfo()
-      expect(await runApp('getSharedDictionaryUsageInfo')).to.deep.equal([
+      expect(await runApp('getSharedDictionaryUsageInfo')).toEqual([
         {
           frameOrigin: 'https://compression-dictionary-transport-threejs-demo.glitch.me',
           topFrameSite: 'https://compression-dictionary-transport-threejs-demo.glitch.me',
@@ -648,20 +656,20 @@ describe('session module', () => {
       // })
       const sharedDictionaryInfo = (await runApp('getSharedDictionaryInfo')) as Electron.SharedDictionaryInfo[];
 
-      expect(sharedDictionaryInfo).to.have.lengthOf(1);
-      expect(sharedDictionaryInfo[0].match).to.not.be.undefined();
-      expect(sharedDictionaryInfo[0].hash).to.not.be.undefined();
-      expect(sharedDictionaryInfo[0].lastFetchTime).to.not.be.undefined();
-      expect(sharedDictionaryInfo[0].responseTime).to.not.be.undefined();
-      expect(sharedDictionaryInfo[0].expirationDuration).to.not.be.undefined();
-      expect(sharedDictionaryInfo[0].lastUsedTime).to.not.be.undefined();
-      expect(sharedDictionaryInfo[0].size).to.not.be.undefined();
+      expect(sharedDictionaryInfo).toHaveLength(1);
+      expect(sharedDictionaryInfo[0].match).not.toBeUndefined();
+      expect(sharedDictionaryInfo[0].hash).not.toBeUndefined();
+      expect(sharedDictionaryInfo[0].lastFetchTime).not.toBeUndefined();
+      expect(sharedDictionaryInfo[0].responseTime).not.toBeUndefined();
+      expect(sharedDictionaryInfo[0].expirationDuration).not.toBeUndefined();
+      expect(sharedDictionaryInfo[0].lastUsedTime).not.toBeUndefined();
+      expect(sharedDictionaryInfo[0].size).not.toBeUndefined();
     });
 
     it('can clear shared dictionary cache', async () => {
       // In our fixture, this calls session.defaultSession.clearSharedDictionaryCache()
       // followed by session.defaultSession.getSharedDictionaryUsageInfo()
-      expect(await runApp('clearSharedDictionaryCache')).to.deep.equal([]);
+      expect(await runApp('clearSharedDictionaryCache')).toEqual([]);
     });
 
     it('can clear shared dictionary cache for isolation key', async () => {
@@ -670,7 +678,7 @@ describe('session module', () => {
       //   topFrameSite: 'https://compression-dictionary-transport-threejs-demo.glitch.me'
       // })
       // followed by session.defaultSession.getSharedDictionaryUsageInfo()
-      expect(await runApp('clearSharedDictionaryCacheForIsolationKey')).to.deep.equal([]);
+      expect(await runApp('clearSharedDictionaryCacheForIsolationKey')).toEqual([]);
     });
   });
 
@@ -700,11 +708,11 @@ describe('session module', () => {
         });
       w.loadURL(url);
       const { item, itemUrl, itemFilename } = await downloadPrevented;
-      expect(itemUrl).to.equal(url + '/');
-      expect(itemFilename).to.equal('mockFile.txt');
+      expect(itemUrl).toBe(url + '/');
+      expect(itemFilename).toBe('mockFile.txt');
       // Delay till the next tick.
       await new Promise(setImmediate);
-      expect(() => item.getURL()).to.throw('DownloadItem used after being destroyed');
+      expect(() => item.getURL()).toThrow('DownloadItem used after being destroyed');
     });
   });
 
@@ -730,10 +738,10 @@ describe('session module', () => {
 
     it('does not affect defaultSession', () => {
       const result1 = protocol.isProtocolRegistered(protocolName);
-      expect(result1).to.equal(false);
+      expect(result1).toBe(false);
 
       const result2 = customSession.protocol.isProtocolRegistered(protocolName);
-      expect(result2).to.equal(true);
+      expect(result2).toBe(true);
     });
 
     it('handles requests from partition', async () => {
@@ -778,7 +786,7 @@ describe('session module', () => {
       const config = { proxyRules: 'http=myproxy:80' };
       await customSession.setProxy(config);
       const proxy = await customSession.resolveProxy('http://example.com/');
-      expect(proxy).to.equal('PROXY myproxy:80');
+      expect(proxy).toBe('PROXY myproxy:80');
     });
 
     it('allows removing the implicit bypass rules for localhost', async () => {
@@ -789,7 +797,7 @@ describe('session module', () => {
 
       await customSession.setProxy(config);
       const proxy = await customSession.resolveProxy('http://localhost');
-      expect(proxy).to.equal('PROXY myproxy:80');
+      expect(proxy).toBe('PROXY myproxy:80');
     });
 
     it('allows configuring proxy settings with pacScript', async () => {
@@ -809,13 +817,13 @@ describe('session module', () => {
         const config = { pacScript: url };
         await customSession.setProxy(config);
         const proxy = await customSession.resolveProxy('https://google.com');
-        expect(proxy).to.equal('PROXY myproxy:8132');
+        expect(proxy).toBe('PROXY myproxy:8132');
       }
       {
         const config = { mode: 'pac_script' as any, pacScript: url };
         await customSession.setProxy(config);
         const proxy = await customSession.resolveProxy('https://google.com');
-        expect(proxy).to.equal('PROXY myproxy:8132');
+        expect(proxy).toBe('PROXY myproxy:8132');
       }
     });
 
@@ -826,14 +834,14 @@ describe('session module', () => {
       };
       await customSession.setProxy(config);
       const proxy = await customSession.resolveProxy('http://example/');
-      expect(proxy).to.equal('DIRECT');
+      expect(proxy).toBe('DIRECT');
     });
 
     it('allows configuring proxy settings with mode `direct`', async () => {
       const config = { mode: 'direct' as const, proxyRules: 'http=myproxy:80' };
       await customSession.setProxy(config);
       const proxy = await customSession.resolveProxy('http://example.com/');
-      expect(proxy).to.equal('DIRECT');
+      expect(proxy).toBe('DIRECT');
     });
 
     it('allows configuring proxy settings with mode `auto_detect`', async () => {
@@ -845,14 +853,14 @@ describe('session module', () => {
       const config = { mode: 'pac_script' as const };
       await customSession.setProxy(config);
       const proxy = await customSession.resolveProxy('http://example.com/');
-      expect(proxy).to.equal('DIRECT');
+      expect(proxy).toBe('DIRECT');
     });
 
     it('allows configuring proxy settings with mode `fixed_servers`', async () => {
       const config = { mode: 'fixed_servers' as const, proxyRules: 'http=myproxy:80' };
       await customSession.setProxy(config);
       const proxy = await customSession.resolveProxy('http://example.com/');
-      expect(proxy).to.equal('PROXY myproxy:80');
+      expect(proxy).toBe('PROXY myproxy:80');
     });
 
     it('allows configuring proxy settings with mode `system`', async () => {
@@ -862,7 +870,7 @@ describe('session module', () => {
 
     it('disallows configuring proxy settings with mode `invalid`', async () => {
       const config = { mode: 'invalid' as any };
-      await expect(customSession.setProxy(config)).to.eventually.be.rejectedWith(/Invalid mode/);
+      await expect(customSession.setProxy(config)).rejects.toThrow(/Invalid mode/);
     });
 
     it('reload proxy configuration', async () => {
@@ -883,13 +891,13 @@ describe('session module', () => {
       await customSession.setProxy(config);
       {
         const proxy = await customSession.resolveProxy('https://google.com');
-        expect(proxy).to.equal(`PROXY myproxy:${proxyPort}`);
+        expect(proxy).toBe(`PROXY myproxy:${proxyPort}`);
       }
       {
         proxyPort = 8133;
         await customSession.forceReloadProxyConfig();
         const proxy = await customSession.resolveProxy('https://google.com');
-        expect(proxy).to.equal(`PROXY myproxy:${proxyPort}`);
+        expect(proxy).toBe(`PROXY myproxy:${proxyPort}`);
       }
     });
   });
@@ -907,10 +915,10 @@ describe('session module', () => {
 
     it('resolves ipv4.localhost2', async () => {
       const { endpoints } = await customSession.resolveHost('ipv4.localhost2');
-      expect(endpoints).to.be.a('array');
-      expect(endpoints).to.have.lengthOf(1);
-      expect(endpoints[0].family).to.equal('ipv4');
-      expect(endpoints[0].address).to.equal('10.0.0.1');
+      expect(endpoints).toBeInstanceOf(Array);
+      expect(endpoints).toHaveLength(1);
+      expect(endpoints[0].family).toBe('ipv4');
+      expect(endpoints[0].address).toBe('10.0.0.1');
     });
 
     it('fails to resolve AAAA record for ipv4.localhost2', async () => {
@@ -918,15 +926,15 @@ describe('session module', () => {
         customSession.resolveHost('ipv4.localhost2', {
           queryType: 'AAAA'
         })
-      ).to.eventually.be.rejectedWith(/net::ERR_NAME_NOT_RESOLVED/);
+      ).rejects.toThrow(/net::ERR_NAME_NOT_RESOLVED/);
     });
 
     it('resolves ipv6.localhost2', async () => {
       const { endpoints } = await customSession.resolveHost('ipv6.localhost2');
-      expect(endpoints).to.be.a('array');
-      expect(endpoints).to.have.lengthOf(1);
-      expect(endpoints[0].family).to.equal('ipv6');
-      expect(endpoints[0].address).to.equal('::1');
+      expect(endpoints).toBeInstanceOf(Array);
+      expect(endpoints).toHaveLength(1);
+      expect(endpoints[0].family).toBe('ipv6');
+      expect(endpoints[0].address).toBe('::1');
     });
 
     it('fails to resolve A record for ipv6.localhost2', async () => {
@@ -934,13 +942,11 @@ describe('session module', () => {
         customSession.resolveHost('notfound.localhost2', {
           queryType: 'A'
         })
-      ).to.eventually.be.rejectedWith(/net::ERR_NAME_NOT_RESOLVED/);
+      ).rejects.toThrow(/net::ERR_NAME_NOT_RESOLVED/);
     });
 
     it('fails to resolve notfound.localhost2', async () => {
-      await expect(customSession.resolveHost('notfound.localhost2')).to.eventually.be.rejectedWith(
-        /net::ERR_NAME_NOT_RESOLVED/
-      );
+      await expect(customSession.resolveHost('notfound.localhost2')).rejects.toThrow(/net::ERR_NAME_NOT_RESOLVED/);
     });
   });
 
@@ -948,17 +954,19 @@ describe('session module', () => {
     const scheme = 'cors-blob';
     const protocol = session.defaultSession.protocol;
     const url = `${scheme}://host`;
-    after(async () => {
+    afterAll(async () => {
       await protocol.unregisterProtocol(scheme);
     });
     afterEach(closeAllWindows);
 
-    it('returns blob data for uuid', (done) => {
-      const postData = JSON.stringify({
-        type: 'blob',
-        value: 'hello'
-      });
-      const content = `<html>
+    it('returns blob data for uuid', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const postData = JSON.stringify({
+          type: 'blob',
+          value: 'hello'
+        });
+        const content = `<html>
                        <script>
                        let fd = new FormData();
                        fd.append('file', new Blob(['${postData}'], {type:'application/json'}));
@@ -966,29 +974,29 @@ describe('session module', () => {
                        </script>
                        </html>`;
 
-      protocol.registerStringProtocol(scheme, (request, callback) => {
-        try {
-          if (request.method === 'GET') {
-            callback({ data: content, mimeType: 'text/html' });
-          } else if (request.method === 'POST') {
-            const uuid = request.uploadData![1].blobUUID;
-            expect(uuid).to.be.a('string');
-            session.defaultSession.getBlobData(uuid!).then((result) => {
-              try {
-                expect(result.toString()).to.equal(postData);
-                done();
-              } catch (e) {
-                done(e);
-              }
-            });
+        protocol.registerStringProtocol(scheme, (request, callback) => {
+          try {
+            if (request.method === 'GET') {
+              callback({ data: content, mimeType: 'text/html' });
+            } else if (request.method === 'POST') {
+              const uuid = request.uploadData![1].blobUUID;
+              expect(uuid).toBeTypeOf('string');
+              session.defaultSession.getBlobData(uuid!).then((result) => {
+                try {
+                  expect(result.toString()).toBe(postData);
+                  done();
+                } catch (e) {
+                  done(e);
+                }
+              });
+            }
+          } catch (e) {
+            done(e);
           }
-        } catch (e) {
-          done(e);
-        }
-      });
-      const w = new BrowserWindow({ show: false });
-      w.loadURL(url);
-    });
+        });
+        const w = new BrowserWindow({ show: false });
+        w.loadURL(url);
+      }));
   });
 
   describe('ses.getBlobData() (gc)', () => {
@@ -1032,7 +1040,7 @@ describe('session module', () => {
               const uploadData = request.uploadData as any;
               const uuid: string = uploadData[1].blobUUID;
               const dataPipe = uploadData[1].dataPipe;
-              expect(dataPipe).to.be.ok();
+              expect(dataPipe).toBeTruthy();
               onDataPipe(dataPipe);
               resolve({ uuid });
               callback('');
@@ -1062,8 +1070,8 @@ describe('session module', () => {
         v8Util.requestGarbageCollectionForTesting();
 
         const result = await session.defaultSession.getBlobData(uuid);
-        expect(result.toString()).to.equal(postData);
-        expect(heldDataPipe).to.be.ok();
+        expect(result.toString()).toBe(postData);
+        expect(heldDataPipe).toBeTruthy();
       } finally {
         await protocol.unregisterProtocol(scheme);
       }
@@ -1083,7 +1091,7 @@ describe('session module', () => {
         await w.loadURL(url);
 
         const { uuid } = await postInfo;
-        expect(heldDataPipe).to.be.ok();
+        expect(heldDataPipe).toBeTruthy();
         const weak = new WeakRef(heldDataPipe as object);
         heldDataPipe = null;
 
@@ -1099,13 +1107,15 @@ describe('session module', () => {
     const scheme = 'cors-blob';
     const protocol = session.defaultSession.protocol;
     const url = `${scheme}://host`;
-    after(async () => {
+    afterAll(async () => {
       await protocol.unregisterProtocol(scheme);
     });
     afterEach(closeAllWindows);
 
-    it('returns blob data for uuid', (done) => {
-      const content = `<html>
+    it('returns blob data for uuid', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const content = `<html>
                        <script>
                        let fd = new FormData();
                        fd.append("data", new Blob(new Array(65_537).fill('a')));
@@ -1113,30 +1123,30 @@ describe('session module', () => {
                        </script>
                        </html>`;
 
-      protocol.registerStringProtocol(scheme, (request, callback) => {
-        try {
-          if (request.method === 'GET') {
-            callback({ data: content, mimeType: 'text/html' });
-          } else if (request.method === 'POST') {
-            const uuid = request.uploadData![1].blobUUID;
-            expect(uuid).to.be.a('string');
-            session.defaultSession.getBlobData(uuid!).then((result) => {
-              try {
-                const data = new Array(65_537).fill('a');
-                expect(result.toString()).to.equal(data.join(''));
-                done();
-              } catch (e) {
-                done(e);
-              }
-            });
+        protocol.registerStringProtocol(scheme, (request, callback) => {
+          try {
+            if (request.method === 'GET') {
+              callback({ data: content, mimeType: 'text/html' });
+            } else if (request.method === 'POST') {
+              const uuid = request.uploadData![1].blobUUID;
+              expect(uuid).toBeTypeOf('string');
+              session.defaultSession.getBlobData(uuid!).then((result) => {
+                try {
+                  const data = new Array(65_537).fill('a');
+                  expect(result.toString()).toBe(data.join(''));
+                  done();
+                } catch (e) {
+                  done(e);
+                }
+              });
+            }
+          } catch (e) {
+            done(e);
           }
-        } catch (e) {
-          done(e);
-        }
-      });
-      const w = new BrowserWindow({ show: false });
-      w.loadURL(url);
-    });
+        });
+        const w = new BrowserWindow({ show: false });
+        w.loadURL(url);
+      }));
   });
 
   describe('ses.setCertificateVerifyProc(callback)', () => {
@@ -1162,9 +1172,13 @@ describe('session module', () => {
       serverUrl = (await listen(server)).url;
     });
 
-    afterEach((done) => {
-      server.close(done);
-    });
+    afterEach(
+      () =>
+        new Promise<void>((resolve, reject) => {
+          const done = (error?: unknown) => (error ? reject(error) : resolve());
+          server.close(done);
+        })
+    );
     afterEach(closeAllWindows);
 
     it('accepts the request when the callback is called with 0', async () => {
@@ -1173,19 +1187,18 @@ describe('session module', () => {
       ses.setCertificateVerifyProc(({ hostname, verificationResult, errorCode }, callback) => {
         if (hostname !== '127.0.0.1') return callback(-3);
         validate = () => {
-          expect(verificationResult).to.be.oneOf([
-            'net::ERR_CERT_AUTHORITY_INVALID',
-            'net::ERR_CERT_COMMON_NAME_INVALID'
-          ]);
-          expect(errorCode).to.be.oneOf([-202, -200]);
+          expect(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID']).toContain(
+            verificationResult
+          );
+          expect([-202, -200]).toContain(errorCode);
         };
         callback(0);
       });
 
       const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
       await w.loadURL(serverUrl);
-      expect(w.webContents.getTitle()).to.equal('hello');
-      expect(validate!).not.to.be.undefined();
+      expect(w.webContents.getTitle()).toBe('hello');
+      expect(validate!).not.toBeUndefined();
       validate!();
     });
 
@@ -1195,27 +1208,26 @@ describe('session module', () => {
       ses.setCertificateVerifyProc(({ hostname, certificate, verificationResult, isIssuedByKnownRoot }, callback) => {
         if (hostname !== '127.0.0.1') return callback(-3);
         validate = () => {
-          expect(certificate.issuerName).to.equal('Intermediate CA');
-          expect(certificate.subjectName).to.equal('localhost');
-          expect(certificate.issuer.commonName).to.equal('Intermediate CA');
-          expect(certificate.subject.commonName).to.equal('localhost');
-          expect(certificate.issuerCert.issuer.commonName).to.equal('Root CA');
-          expect(certificate.issuerCert.subject.commonName).to.equal('Intermediate CA');
-          expect(certificate.issuerCert.issuerCert.issuer.commonName).to.equal('Root CA');
-          expect(certificate.issuerCert.issuerCert.subject.commonName).to.equal('Root CA');
-          expect(certificate.issuerCert.issuerCert.issuerCert).to.equal(undefined);
-          expect(verificationResult).to.be.oneOf([
-            'net::ERR_CERT_AUTHORITY_INVALID',
-            'net::ERR_CERT_COMMON_NAME_INVALID'
-          ]);
-          expect(isIssuedByKnownRoot).to.be.false();
+          expect(certificate.issuerName).toBe('Intermediate CA');
+          expect(certificate.subjectName).toBe('localhost');
+          expect(certificate.issuer.commonName).toBe('Intermediate CA');
+          expect(certificate.subject.commonName).toBe('localhost');
+          expect(certificate.issuerCert.issuer.commonName).toBe('Root CA');
+          expect(certificate.issuerCert.subject.commonName).toBe('Intermediate CA');
+          expect(certificate.issuerCert.issuerCert.issuer.commonName).toBe('Root CA');
+          expect(certificate.issuerCert.issuerCert.subject.commonName).toBe('Root CA');
+          expect(certificate.issuerCert.issuerCert.issuerCert).toBe(undefined);
+          expect(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID']).toContain(
+            verificationResult
+          );
+          expect(isIssuedByKnownRoot).toBe(false);
         };
         callback(-2);
       });
 
       const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
-      await expect(w.loadURL(serverUrl)).to.eventually.be.rejectedWith(/ERR_FAILED/);
-      expect(validate!).not.to.be.undefined();
+      await expect(w.loadURL(serverUrl)).rejects.toThrow(/ERR_FAILED/);
+      expect(validate!).not.toBeUndefined();
       validate!();
     });
 
@@ -1229,10 +1241,10 @@ describe('session module', () => {
       });
 
       const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
-      await expect(w.loadURL(serverUrl), 'first load').to.eventually.be.rejectedWith(/ERR_FAILED/);
+      await expect(w.loadURL(serverUrl), 'first load').rejects.toThrow(/ERR_FAILED/);
       await once(w.webContents, 'did-stop-loading');
-      await expect(w.loadURL(serverUrl + '/test'), 'second load').to.eventually.be.rejectedWith(/ERR_FAILED/);
-      expect(numVerificationRequests).to.equal(1);
+      await expect(w.loadURL(serverUrl + '/test'), 'second load').rejects.toThrow(/ERR_FAILED/);
+      expect(numVerificationRequests).toBe(1);
     });
 
     it('does not cancel requests in other sessions', async () => {
@@ -1245,16 +1257,14 @@ describe('session module', () => {
       setTimeout().then(() => {
         ses2.setCertificateVerifyProc((opts, callback) => callback(0));
       });
-      await expect(
-        new Promise<void>((resolve, reject) => {
-          req.on('error', (err) => {
-            reject(err);
-          });
-          req.on('response', () => {
-            resolve();
-          });
-        })
-      ).to.eventually.be.fulfilled();
+      await new Promise<void>((resolve, reject) => {
+        req.on('error', (err) => {
+          reject(err);
+        });
+        req.on('response', () => {
+          resolve();
+        });
+      });
     });
   });
 
@@ -1303,14 +1313,14 @@ describe('session module', () => {
           request.end();
         });
       // the first time should throw due to unauthenticated
-      await expect(fetch(`http://127.0.0.1:${port}`)).to.eventually.be.rejected();
+      await expect(fetch(`http://127.0.0.1:${port}`)).rejects.toThrow();
       // passing the password should let us in
-      expect(await fetch(`http://test:test@127.0.0.1:${port}`)).to.equal('authenticated');
+      expect(await fetch(`http://test:test@127.0.0.1:${port}`)).toBe('authenticated');
       // subsequently, the credentials are cached
-      expect(await fetch(`http://127.0.0.1:${port}`)).to.equal('authenticated');
+      expect(await fetch(`http://127.0.0.1:${port}`)).toBe('authenticated');
       await ses.clearAuthCache();
       // once the cache is cleared, we should get an error again
-      await expect(fetch(`http://127.0.0.1:${port}`)).to.eventually.be.rejected();
+      await expect(fetch(`http://127.0.0.1:${port}`)).rejects.toThrow();
     });
   });
 
@@ -1322,7 +1332,7 @@ describe('session module', () => {
     let port: number;
     let downloadServer: http.Server;
 
-    before(async () => {
+    beforeAll(async () => {
       downloadServer = http.createServer((req, res) => {
         res.writeHead(200, {
           'Content-Length': mockPDF.length,
@@ -1334,7 +1344,7 @@ describe('session module', () => {
       port = (await listen(downloadServer)).port;
     });
 
-    after(async () => {
+    afterAll(async () => {
       await new Promise((resolve) => downloadServer.close(resolve));
     });
 
@@ -1344,20 +1354,20 @@ describe('session module', () => {
       return path.relative(path1, path2) === '';
     };
     const assertDownload = (state: string, item: Electron.DownloadItem, isCustom = false) => {
-      expect(state).to.equal('completed');
-      expect(item.getFilename()).to.equal('mock.pdf');
-      expect(path.isAbsolute(item.savePath)).to.equal(true);
-      expect(isPathEqual(item.savePath, downloadFilePath)).to.equal(true);
+      expect(state).toBe('completed');
+      expect(item.getFilename()).toBe('mock.pdf');
+      expect(path.isAbsolute(item.savePath)).toBe(true);
+      expect(isPathEqual(item.savePath, downloadFilePath)).toBe(true);
       if (isCustom) {
-        expect(item.getURL()).to.equal(`${protocolName}://item`);
+        expect(item.getURL()).toBe(`${protocolName}://item`);
       } else {
-        expect(item.getURL()).to.be.equal(`${url}:${port}/`);
+        expect(item.getURL()).toBe(`${url}:${port}/`);
       }
-      expect(item.getMimeType()).to.equal('application/pdf');
-      expect(item.getReceivedBytes()).to.equal(mockPDF.length);
-      expect(item.getTotalBytes()).to.equal(mockPDF.length);
-      expect(item.getContentDisposition()).to.equal(contentDisposition);
-      expect(fs.existsSync(downloadFilePath)).to.equal(true);
+      expect(item.getMimeType()).toBe('application/pdf');
+      expect(item.getReceivedBytes()).toBe(mockPDF.length);
+      expect(item.getTotalBytes()).toBe(mockPDF.length);
+      expect(item.getContentDisposition()).toBe(contentDisposition);
+      expect(fs.existsSync(downloadFilePath)).toBe(true);
       fs.unlinkSync(downloadFilePath);
     };
 
@@ -1416,19 +1426,19 @@ describe('session module', () => {
 
         const today = Math.floor(Date.now() / 1000);
         const item = await downloadDone;
-        expect(item.getState()).to.equal('completed');
-        expect(item.getFilename()).to.equal('mock.pdf');
-        expect(item.getMimeType()).to.equal('application/pdf');
-        expect(item.getReceivedBytes()).to.equal(mockPDF.length);
-        expect(item.getTotalBytes()).to.equal(mockPDF.length);
-        expect(item.getPercentComplete()).to.equal(100);
-        expect(item.getCurrentBytesPerSecond()).to.equal(0);
-        expect(item.getContentDisposition()).to.equal(contentDisposition);
+        expect(item.getState()).toBe('completed');
+        expect(item.getFilename()).toBe('mock.pdf');
+        expect(item.getMimeType()).toBe('application/pdf');
+        expect(item.getReceivedBytes()).toBe(mockPDF.length);
+        expect(item.getTotalBytes()).toBe(mockPDF.length);
+        expect(item.getPercentComplete()).toBe(100);
+        expect(item.getCurrentBytesPerSecond()).toBe(0);
+        expect(item.getContentDisposition()).toBe(contentDisposition);
 
         const start = item.getStartTime();
         const end = item.getEndTime();
-        expect(start).to.be.greaterThan(today);
-        expect(end).to.be.greaterThan(start);
+        expect(start).toBeGreaterThan(today);
+        expect(end).toBeGreaterThan(start);
       });
 
       it('throws when called with invalid headers', () => {
@@ -1437,7 +1447,7 @@ describe('session module', () => {
             // @ts-ignore this line is intentionally incorrect
             headers: 'i-am-a-bad-header'
           });
-        }).to.throw(/Invalid value for headers - must be an object/);
+        }).toThrow(/Invalid value for headers - must be an object/);
       });
 
       it('correctly handles a download with an invalid auth header', async () => {
@@ -1478,9 +1488,9 @@ describe('session module', () => {
         });
 
         const item = await downloadFailed;
-        expect(item.getState()).to.equal('interrupted');
-        expect(item.getReceivedBytes()).to.equal(0);
-        expect(item.getTotalBytes()).to.equal(0);
+        expect(item.getState()).toBe('interrupted');
+        expect(item.getReceivedBytes()).toBe(0);
+        expect(item.getTotalBytes()).toBe(0);
       });
     });
 
@@ -1540,12 +1550,12 @@ describe('session module', () => {
         });
 
         const item = await downloadDone;
-        expect(item.getState()).to.equal('completed');
-        expect(item.getFilename()).to.equal('mock.pdf');
-        expect(item.getMimeType()).to.equal('application/pdf');
-        expect(item.getReceivedBytes()).to.equal(mockPDF.length);
-        expect(item.getTotalBytes()).to.equal(mockPDF.length);
-        expect(item.getContentDisposition()).to.equal(contentDisposition);
+        expect(item.getState()).toBe('completed');
+        expect(item.getFilename()).toBe('mock.pdf');
+        expect(item.getMimeType()).toBe('application/pdf');
+        expect(item.getReceivedBytes()).toBe(mockPDF.length);
+        expect(item.getTotalBytes()).toBe(mockPDF.length);
+        expect(item.getContentDisposition()).toBe(contentDisposition);
       });
 
       it('can perform a download with referer header', async () => {
@@ -1587,12 +1597,12 @@ describe('session module', () => {
         });
 
         const item = await downloadDone;
-        expect(item.getState()).to.equal('completed');
-        expect(item.getFilename()).to.equal('mock.pdf');
-        expect(item.getMimeType()).to.equal('application/pdf');
-        expect(item.getReceivedBytes()).to.equal(mockPDF.length);
-        expect(item.getTotalBytes()).to.equal(mockPDF.length);
-        expect(item.getContentDisposition()).to.equal(contentDisposition);
+        expect(item.getState()).toBe('completed');
+        expect(item.getFilename()).toBe('mock.pdf');
+        expect(item.getMimeType()).toBe('application/pdf');
+        expect(item.getReceivedBytes()).toBe(mockPDF.length);
+        expect(item.getTotalBytes()).toBe(mockPDF.length);
+        expect(item.getContentDisposition()).toBe(contentDisposition);
       });
 
       it('throws when called with invalid headers', () => {
@@ -1602,7 +1612,7 @@ describe('session module', () => {
             // @ts-ignore this line is intentionally incorrect
             headers: 'i-am-a-bad-header'
           });
-        }).to.throw(/Invalid value for headers - must be an object/);
+        }).toThrow(/Invalid value for headers - must be an object/);
       });
 
       it('correctly handles a download and an invalid auth header', async () => {
@@ -1644,9 +1654,9 @@ describe('session module', () => {
         });
 
         const item = await downloadFailed;
-        expect(item.getState()).to.equal('interrupted');
-        expect(item.getReceivedBytes()).to.equal(0);
-        expect(item.getTotalBytes()).to.equal(0);
+        expect(item.getState()).toBe('interrupted');
+        expect(item.getReceivedBytes()).toBe(0);
+        expect(item.getTotalBytes()).toBe(0);
       });
 
       it('can download from custom protocols', async () => {
@@ -1674,12 +1684,12 @@ describe('session module', () => {
         const itemDone = once(item, 'done');
         item.cancel();
         const [, state] = await itemDone;
-        expect(state).to.equal('cancelled');
-        expect(item.getFilename()).to.equal('mock.pdf');
-        expect(item.getMimeType()).to.equal('application/pdf');
-        expect(item.getReceivedBytes()).to.equal(0);
-        expect(item.getTotalBytes()).to.equal(mockPDF.length);
-        expect(item.getContentDisposition()).to.equal(contentDisposition);
+        expect(state).toBe('cancelled');
+        expect(item.getFilename()).toBe('mock.pdf');
+        expect(item.getMimeType()).toBe('application/pdf');
+        expect(item.getReceivedBytes()).toBe(0);
+        expect(item.getTotalBytes()).toBe(mockPDF.length);
+        expect(item.getContentDisposition()).toBe(contentDisposition);
       });
 
       ifit(process.platform !== 'win32')('can generate a default filename', async () => {
@@ -1691,7 +1701,7 @@ describe('session module', () => {
         const itemDone = once(item, 'done');
         item.cancel();
         await itemDone;
-        expect(item.getFilename()).to.equal('download.pdf');
+        expect(item.getFilename()).toBe('download.pdf');
       });
 
       it('can set options for the save dialog', async () => {
@@ -1726,7 +1736,7 @@ describe('session module', () => {
         const itemDone = once(item, 'done');
         item.cancel();
         await itemDone;
-        expect(item.getSaveDialogOptions()).to.deep.equal(options);
+        expect(item.getSaveDialogOptions()).toEqual(options);
       });
 
       describe('when a save path is specified and the URL is unavailable', () => {
@@ -1740,7 +1750,7 @@ describe('session module', () => {
             item.resume();
           }
           const [, state] = await once(item, 'done');
-          expect(state).to.equal('interrupted');
+          expect(state).toBe('interrupted');
         });
       });
     });
@@ -1787,13 +1797,13 @@ describe('session module', () => {
       const p = once(w.webContents.session, 'will-download');
       w.webContents.session.createInterruptedDownload(options);
       const [, item] = await p;
-      expect(item.getState()).to.equal('interrupted');
+      expect(item.getState()).toBe('interrupted');
       item.cancel();
-      expect(item.getURLChain()).to.deep.equal(options.urlChain);
-      expect(item.getMimeType()).to.equal(options.mimeType);
-      expect(item.getReceivedBytes()).to.equal(options.offset);
-      expect(item.getTotalBytes()).to.equal(options.length);
-      expect(item.savePath).to.equal(downloadFilePath);
+      expect(item.getURLChain()).toEqual(options.urlChain);
+      expect(item.getMimeType()).toBe(options.mimeType);
+      expect(item.getReceivedBytes()).toBe(options.offset);
+      expect(item.getTotalBytes()).toBe(options.length);
+      expect(item.savePath).toBe(downloadFilePath);
     });
 
     it('can be resumed', async () => {
@@ -1824,7 +1834,7 @@ describe('session module', () => {
         const downloadUrl = `${url}/assets/logo.png`;
         w.webContents.downloadURL(downloadUrl);
         const item = await downloadCancelled;
-        expect(item.getState()).to.equal('cancelled');
+        expect(item.getState()).toBe('cancelled');
 
         const options = {
           path: item.savePath,
@@ -1837,7 +1847,7 @@ describe('session module', () => {
         };
         const downloadResumed: Promise<Electron.DownloadItem> = new Promise((resolve) => {
           w.webContents.session.once('will-download', function (e, item) {
-            expect(item.getState()).to.equal('interrupted');
+            expect(item.getState()).toBe('interrupted');
             item.setSavePath(downloadFilePath);
             item.resume();
             item.on('done', function () {
@@ -1847,14 +1857,14 @@ describe('session module', () => {
         });
         w.webContents.session.createInterruptedDownload(options);
         const completedItem = await downloadResumed;
-        expect(completedItem.getState()).to.equal('completed');
-        expect(completedItem.getFilename()).to.equal('logo.png');
-        expect(completedItem.savePath).to.equal(downloadFilePath);
-        expect(completedItem.getURL()).to.equal(downloadUrl);
-        expect(completedItem.getMimeType()).to.equal('image/png');
-        expect(completedItem.getReceivedBytes()).to.equal(14022);
-        expect(completedItem.getTotalBytes()).to.equal(14022);
-        expect(fs.existsSync(downloadFilePath)).to.equal(true);
+        expect(completedItem.getState()).toBe('completed');
+        expect(completedItem.getFilename()).toBe('logo.png');
+        expect(completedItem.savePath).toBe(downloadFilePath);
+        expect(completedItem.getURL()).toBe(downloadUrl);
+        expect(completedItem.getMimeType()).toBe('image/png');
+        expect(completedItem.getReceivedBytes()).toBe(14022);
+        expect(completedItem.getTotalBytes()).toBe(14022);
+        expect(fs.existsSync(downloadFilePath)).toBe(true);
       } finally {
         rangeServer.close();
       }
@@ -1867,14 +1877,14 @@ describe('session module', () => {
     // requires a secure context.
     let server: http.Server;
     let serverUrl: string;
-    before(async () => {
+    beforeAll(async () => {
       server = http.createServer((req, res) => {
         res.setHeader('Content-Type', 'text/html');
         res.end('');
       });
       serverUrl = (await listen(server)).url;
     });
-    after(() => {
+    afterAll(() => {
       server.close();
     });
 
@@ -1911,7 +1921,7 @@ describe('session module', () => {
       await w.loadURL('https://myfakesite');
 
       const [, name] = await result;
-      expect(name).to.deep.equal('NotAllowedError');
+      expect(name).toEqual('NotAllowedError');
     });
 
     it('successfully resolves when calling legacy getUserMedia', async () => {
@@ -1928,7 +1938,7 @@ describe('session module', () => {
           audio: true,
         }, x => resolve({ok: x instanceof MediaStream}), e => reject({ok: false, message: e.message})))
       `);
-      expect(ok).to.be.true(message);
+      expect(ok, message).toBe(true);
     });
 
     it('successfully rejects when calling legacy getUserMedia', async () => {
@@ -1946,7 +1956,7 @@ describe('session module', () => {
           audio: true,
         }, x => resolve({ok: x instanceof MediaStream}), e => reject({ok: false, message: e.message})))
       `)
-      ).to.eventually.be.rejectedWith('Permission denied');
+      ).rejects.toThrow('Permission denied');
     });
   });
 
@@ -1987,8 +1997,8 @@ describe('session module', () => {
 
       await w.loadURL(loadUrl);
       const state = await readClipboardPermission();
-      expect(state).to.equal('granted');
-      expect(handlerDetails!.requestingUrl).to.equal(loadUrl);
+      expect(state).toBe('granted');
+      expect(handlerDetails!.requestingUrl).toBe(loadUrl);
     });
 
     it('details provides requestingURL for cross origin subFrame', async () => {
@@ -2034,10 +2044,10 @@ describe('session module', () => {
       `);
       const [, , frameProcessId, frameRoutingId] = await once(w.webContents, 'did-frame-finish-load');
       const state = await readClipboardPermission(webFrameMain.fromId(frameProcessId, frameRoutingId));
-      expect(state).to.equal('granted');
-      expect(handlerDetails!.requestingUrl).to.equal(loadUrl);
-      expect(handlerDetails!.isMainFrame).to.be.false();
-      expect(handlerDetails!.embeddingOrigin).to.equal('file:///');
+      expect(state).toBe('granted');
+      expect(handlerDetails!.requestingUrl).toBe(loadUrl);
+      expect(handlerDetails!.isMainFrame).toBe(false);
+      expect(handlerDetails!.embeddingOrigin).toBe('file:///');
     });
 
     it('provides iframe origin as requestingOrigin for media check from cross-origin subFrame', async () => {
@@ -2084,10 +2094,10 @@ describe('session module', () => {
           true
         );
 
-        expect(capturedOrigin).to.equal(iframeUrl);
-        expect(capturedIsMainFrame).to.be.false();
-        expect(capturedRequestingUrl).to.equal(iframeUrl);
-        expect(capturedSecurityOrigin).to.equal(iframeUrl);
+        expect(capturedOrigin).toBe(iframeUrl);
+        expect(capturedIsMainFrame).toBe(false);
+        expect(capturedRequestingUrl).toBe(iframeUrl);
+        expect(capturedSecurityOrigin).toBe(iframeUrl);
       } finally {
         ses.protocol.uninterceptProtocol('https');
         ses.setPermissionCheckHandler(null);
@@ -2133,12 +2143,12 @@ describe('session module', () => {
           const frame = webFrameMain.fromId(frameProcessId, frameRoutingId)!;
           await frame.executeJavaScript(`${api}.then(() => {}).catch(() => {});`, true);
 
-          expect(captured).to.not.be.undefined();
-          expect(captured!.origin).to.equal(iframeUrl);
-          expect(captured!.webContents).to.equal(w.webContents);
-          expect(captured!.details.isMainFrame).to.be.false();
-          expect(captured!.details.requestingUrl).to.equal(iframeUrl);
-          expect(captured!.details.securityOrigin).to.equal(iframeUrl);
+          expect(captured).not.toBeUndefined();
+          expect(captured!.origin).toBe(iframeUrl);
+          expect(captured!.webContents).toBe(w.webContents);
+          expect(captured!.details.isMainFrame).toBe(false);
+          expect(captured!.details.requestingUrl).toBe(iframeUrl);
+          expect(captured!.details.securityOrigin).toBe(iframeUrl);
         } finally {
           ses.protocol.uninterceptProtocol('https');
           ses.setPermissionCheckHandler(null);
@@ -2157,17 +2167,17 @@ describe('session module', () => {
 
       const ses = w.webContents.session;
 
-      expect(ses.isPersistent()).to.be.true();
+      expect(ses.isPersistent()).toBe(true);
     });
 
     it('returns persist: session as persistent', () => {
       const ses = session.fromPartition(`persist:${Math.random()}`);
-      expect(ses.isPersistent()).to.be.true();
+      expect(ses.isPersistent()).toBe(true);
     });
 
     it('returns temporary session as not persistent', () => {
       const ses = session.fromPartition(`${Math.random()}`);
-      expect(ses.isPersistent()).to.be.false();
+      expect(ses.isPersistent()).toBe(false);
     });
   });
 
@@ -2178,7 +2188,7 @@ describe('session module', () => {
       const userAgent = 'test-agent';
       const ses = session.fromPartition('' + Math.random());
       ses.setUserAgent(userAgent);
-      expect(ses.getUserAgent()).to.equal(userAgent);
+      expect(ses.getUserAgent()).toBe(userAgent);
     });
 
     it('sets the User-Agent header for web requests made from renderers', async () => {
@@ -2194,8 +2204,8 @@ describe('session module', () => {
       });
       const { url } = await listen(server);
       await w.loadURL(url);
-      expect(headers!['user-agent']).to.equal(userAgent);
-      expect(headers!['accept-language']).to.equal('en-US,fr;q=0.9,de;q=0.8');
+      expect(headers!['user-agent']).toBe(userAgent);
+      expect(headers!['accept-language']).toBe('en-US,fr;q=0.9,de;q=0.8');
     });
   });
 
@@ -2204,25 +2214,25 @@ describe('session module', () => {
       const sessionCreated = once(app, 'session-created') as Promise<[any, Session]>;
       const session1 = session.fromPartition('' + Math.random());
       const [session2] = await sessionCreated;
-      expect(session1).to.equal(session2);
+      expect(session1).toBe(session2);
     });
   });
 
   describe('session.storagePage', () => {
     it('returns a string', () => {
-      expect(session.defaultSession.storagePath).to.be.a('string');
+      expect(session.defaultSession.storagePath).toBeTypeOf('string');
     });
 
     it('returns null for in memory sessions', () => {
-      expect(session.fromPartition('in-memory').storagePath).to.equal(null);
+      expect(session.fromPartition('in-memory').storagePath).toBe(null);
     });
 
     it('returns different paths for partitions and the default session', () => {
-      expect(session.defaultSession.storagePath).to.not.equal(session.fromPartition('persist:two').storagePath);
+      expect(session.defaultSession.storagePath).not.toBe(session.fromPartition('persist:two').storagePath);
     });
 
     it('returns different paths for different partitions', () => {
-      expect(session.fromPartition('persist:one').storagePath).to.not.equal(
+      expect(session.fromPartition('persist:one').storagePath).not.toBe(
         session.fromPartition('persist:two').storagePath
       );
     });
@@ -2232,13 +2242,13 @@ describe('session module', () => {
     it('throws when relative or empty path is provided', () => {
       expect(() => {
         session.defaultSession.setCodeCachePath('../fixtures');
-      }).to.throw('Absolute path must be provided to store code cache.');
+      }).toThrow('Absolute path must be provided to store code cache.');
       expect(() => {
         session.defaultSession.setCodeCachePath('');
-      }).to.throw('Absolute path must be provided to store code cache.');
+      }).toThrow('Absolute path must be provided to store code cache.');
       expect(() => {
         session.defaultSession.setCodeCachePath(path.join(app.getPath('userData'), 'electron-test-code-cache'));
-      }).to.not.throw();
+      }).not.toThrow();
     });
   });
 
@@ -2288,11 +2298,11 @@ describe('session module', () => {
         });
       }
 
-      await expect(request()).to.be.rejectedWith(/ERR_CERT_AUTHORITY_INVALID/);
+      await expect(request()).rejects.toThrow(/ERR_CERT_AUTHORITY_INVALID/);
       ses.setSSLConfig({
         disabledCipherSuites: [0x009c]
       });
-      await expect(request()).to.be.rejectedWith(/ERR_SSL_VERSION_OR_CIPHER_MISMATCH/);
+      await expect(request()).rejects.toThrow(/ERR_SSL_VERSION_OR_CIPHER_MISMATCH/);
     });
   });
 
@@ -2305,24 +2315,24 @@ describe('session module', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
       await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
 
-      expect(await w.webContents.executeJavaScript('localStorage.length')).to.be.greaterThan(0);
+      expect(await w.webContents.executeJavaScript('localStorage.length')).toBeGreaterThan(0);
 
       await w.webContents.session.clearData();
 
-      expect(await w.webContents.executeJavaScript('localStorage.length')).to.equal(0);
+      expect(await w.webContents.executeJavaScript('localStorage.length')).toBe(0);
     });
 
     it('clears all data when no options supplied, called twice in parallel', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
       await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
 
-      expect(await w.webContents.executeJavaScript('localStorage.length')).to.be.greaterThan(0);
+      expect(await w.webContents.executeJavaScript('localStorage.length')).toBeGreaterThan(0);
 
       // This first call is not awaited immediately
       const clearDataPromise = w.webContents.session.clearData();
       await w.webContents.session.clearData();
 
-      expect(await w.webContents.executeJavaScript('localStorage.length')).to.equal(0);
+      expect(await w.webContents.executeJavaScript('localStorage.length')).toBe(0);
 
       // Await the first promise so it doesn't creep into another test
       await clearDataPromise;
@@ -2347,18 +2357,18 @@ describe('session module', () => {
       }
 
       // Data is in localStorage
-      await expect(queryData('localstorage')).to.eventually.equal('hello localstorage');
+      await expect(queryData('localstorage')).resolves.toBe('hello localstorage');
       // Data is in indexedDB
-      await expect(queryData('indexeddb')).to.eventually.equal('hello indexeddb');
+      await expect(queryData('indexeddb')).resolves.toBe('hello indexeddb');
 
       // Clear only indexedDB, not localStorage
       await session.clearData({ dataTypes: ['indexedDB'] });
 
       // The localStorage data should still be there
-      await expect(queryData('localstorage')).to.eventually.equal('hello localstorage');
+      await expect(queryData('localstorage')).resolves.toBe('hello localstorage');
 
       // The indexedDB data should be gone
-      await expect(queryData('indexeddb')).to.eventually.be.undefined();
+      await expect(queryData('indexeddb')).resolves.toBeUndefined();
     });
 
     it('only clears the specified origins', async () => {
@@ -2383,8 +2393,8 @@ describe('session module', () => {
 
       await session.clearData({ origins: ['https://example.com'] });
 
-      expect((await cookies.get({ url: 'https://example.com/', name: 'testdotcom' })).length).to.equal(0);
-      expect((await cookies.get({ url: 'https://example.org/', name: 'testdotorg' })).length).to.be.greaterThan(0);
+      expect((await cookies.get({ url: 'https://example.com/', name: 'testdotcom' })).length).toBe(0);
+      expect((await cookies.get({ url: 'https://example.org/', name: 'testdotorg' })).length).toBeGreaterThan(0);
     });
 
     it('clears all except the specified origins', async () => {
@@ -2409,8 +2419,8 @@ describe('session module', () => {
 
       await session.clearData({ excludeOrigins: ['https://example.com'] });
 
-      expect((await cookies.get({ url: 'https://example.com/', name: 'testdotcom' })).length).to.be.greaterThan(0);
-      expect((await cookies.get({ url: 'https://example.org/', name: 'testdotorg' })).length).to.equal(0);
+      expect((await cookies.get({ url: 'https://example.com/', name: 'testdotcom' })).length).toBeGreaterThan(0);
+      expect((await cookies.get({ url: 'https://example.org/', name: 'testdotorg' })).length).toBe(0);
     });
   });
 });

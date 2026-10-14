@@ -12,7 +12,8 @@ THREEWAY = "ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES" in os.environ
 
 def apply_patches(target):
   repo = target.get('repo')
-  if not os.path.exists(repo):
+  # An unfetched gitlink leaves an empty dir, and git would resolve it to the parent repo.
+  if not os.path.exists(os.path.join(repo, '.git')):
     warnings.warn(f'repo not found: {repo}')
     return
   patch_dir = target.get('patch_dir')

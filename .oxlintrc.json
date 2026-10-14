@@ -15,6 +15,10 @@
     {
       "name": "no-floating-spec-helpers",
       "specifier": "./script/lint-plugins/no-floating-spec-helpers.mjs"
+    },
+    {
+      "name": "no-chai-assertions",
+      "specifier": "./script/lint-plugins/no-chai-assertions.mjs"
     }
   ],
   "categories": {
@@ -349,7 +353,8 @@
       ],
       "rules": {
         "no-only-tests/no-only-tests": "error",
-        "no-floating-spec-helpers/no-floating-spec-helpers": "error"
+        "no-floating-spec-helpers/no-floating-spec-helpers": "error",
+        "no-chai-assertions/no-chai-assertions": "error"
       }
     },
     {
@@ -359,6 +364,8 @@
         "spec/**/*.ts"
       ],
       "rules": {
+        // Assertions are matcher calls; a bare property chain asserts nothing.
+        "no-unused-expressions": "error",
         "typescript/consistent-type-imports": [
           "error",
           { "fixStyle": "inline-type-imports", "disallowTypeAnnotations": false }

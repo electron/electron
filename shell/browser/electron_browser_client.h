@@ -207,8 +207,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       std::vector<std::string>* additional_schemes) override;
   std::unique_ptr<net::ClientCertStore> CreateClientCertStore(
       content::BrowserContext* browser_context) override;
-  std::unique_ptr<device::LocationProvider> OverrideSystemLocationProvider()
-      override;
   void ConfigureNetworkContextParams(
       content::BrowserContext* browser_context,
       bool in_memory,
