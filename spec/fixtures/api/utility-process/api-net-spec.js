@@ -36,6 +36,11 @@ v8.setFlagsFromString('--expose_gc');
 // (see waitForUtilityResult in spec/lib/utility-process-helpers.ts). Exiting
 // right after posting lets the exit overtake the message, or lose it.
 function finish(result, code) {
+  // Leftover async work from the test body can still fail while this waits for the ack.
+  // Log it rather than let it change the exit code of a test that has already reported its result.
+  const logError = (err) => console.error('error after the test result was posted:', err);
+  process.on('uncaughtException', logError);
+  process.on('unhandledRejection', logError);
   process.parentPort.once('message', () => process.exit(code));
   process.parentPort.postMessage(result);
 }
