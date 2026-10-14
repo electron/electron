@@ -1,7 +1,7 @@
 import { app } from 'electron';
 
-import { expect } from 'chai';
 import * as uuid from 'uuid';
+import { expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
@@ -34,12 +34,12 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
       });
       return [require('electron').app.commandLine.hasSwitch('enable-logging'), !!process.env.ELECTRON_ENABLE_LOGGING];
     });
-    expect(hasLoggingSwitch).to.be.false();
-    expect(hasLoggingVar).to.be.false();
+    expect(hasLoggingSwitch).toBe(false);
+    expect(hasLoggingVar).toBe(false);
     const stderr = await stderrComplete;
     // stderr should include the sentinel but not the LOG() message.
-    expect(stderr).to.match(/SENTINEL/);
-    expect(stderr).not.to.match(/TEST_LOG/);
+    expect(stderr).toMatch(/SENTINEL/);
+    expect(stderr).not.toMatch(/TEST_LOG/);
   });
 
   it('logs to stderr when --enable-logging is passed', async () => {
@@ -60,7 +60,7 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
       });
     });
     const stderr = await stderrComplete;
-    expect(stderr).to.match(/TEST_LOG/);
+    expect(stderr).toMatch(/TEST_LOG/);
   });
 
   it('logs to stderr when ELECTRON_ENABLE_LOGGING is set', async () => {
@@ -81,7 +81,7 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
       });
     });
     const stderr = await stderrComplete;
-    expect(stderr).to.match(/TEST_LOG/);
+    expect(stderr).toMatch(/TEST_LOG/);
   });
 
   it('logs to a file in the user data dir when --enable-logging=file is passed', async () => {
@@ -97,9 +97,9 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
     await once(rc.process, 'exit');
     const logFilePath = path.join(userDataDir, 'electron_debug.log');
     const stat = await fs.stat(logFilePath);
-    expect(stat.isFile()).to.be.true();
+    expect(stat.isFile()).toBe(true);
     const contents = await fs.readFile(logFilePath, 'utf8');
-    expect(contents).to.match(/TEST_LOG/);
+    expect(contents).toMatch(/TEST_LOG/);
   });
 
   it('logs to a file in the user data dir when ELECTRON_ENABLE_LOGGING=file is set', async () => {
@@ -115,9 +115,9 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
     await once(rc.process, 'exit');
     const logFilePath = path.join(userDataDir, 'electron_debug.log');
     const stat = await fs.stat(logFilePath);
-    expect(stat.isFile()).to.be.true();
+    expect(stat.isFile()).toBe(true);
     const contents = await fs.readFile(logFilePath, 'utf8');
-    expect(contents).to.match(/TEST_LOG/);
+    expect(contents).toMatch(/TEST_LOG/);
   });
 
   it('logs to the given file when --log-file is passed', async () => {
@@ -131,9 +131,9 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
     });
     await once(rc.process, 'exit');
     const stat = await fs.stat(logFilePath);
-    expect(stat.isFile()).to.be.true();
+    expect(stat.isFile()).toBe(true);
     const contents = await fs.readFile(logFilePath, 'utf8');
-    expect(contents).to.match(/TEST_LOG/);
+    expect(contents).toMatch(/TEST_LOG/);
   });
 
   ifit(process.platform === 'win32')('child process logs to the given file when --log-file is passed', async () => {
@@ -163,11 +163,11 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
     });
     await once(rc.process, 'exit');
     const stat = await fs.stat(logFilePath);
-    expect(stat.isFile()).to.be.true();
+    expect(stat.isFile()).toBe(true);
     const contents = await fs.readFile(logFilePath, 'utf8');
-    expect(contents).to.match(/MAIN_PROCESS_TEST_LOG/);
-    expect(contents).to.match(/CHILD_PROCESS_TEST_LOG/);
-    expect(contents).to.match(/CHILD_PROCESS_DESTINATION_handle/);
+    expect(contents).toMatch(/MAIN_PROCESS_TEST_LOG/);
+    expect(contents).toMatch(/CHILD_PROCESS_TEST_LOG/);
+    expect(contents).toMatch(/CHILD_PROCESS_DESTINATION_handle/);
   });
 
   it('logs to the given file when ELECTRON_LOG_FILE is set', async () => {
@@ -183,9 +183,9 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
     });
     await once(rc.process, 'exit');
     const stat = await fs.stat(logFilePath);
-    expect(stat.isFile()).to.be.true();
+    expect(stat.isFile()).toBe(true);
     const contents = await fs.readFile(logFilePath, 'utf8');
-    expect(contents).to.match(/TEST_LOG/);
+    expect(contents).toMatch(/TEST_LOG/);
   });
 
   it('does not lose early log messages when logging to a given file with --log-file', async () => {
@@ -203,10 +203,10 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
     });
     await once(rc.process, 'exit');
     const stat = await fs.stat(logFilePath);
-    expect(stat.isFile()).to.be.true();
+    expect(stat.isFile()).toBe(true);
     const contents = await fs.readFile(logFilePath, 'utf8');
-    expect(contents).to.match(/EARLY_LOG/);
-    expect(contents).to.match(/LATER_LOG/);
+    expect(contents).toMatch(/EARLY_LOG/);
+    expect(contents).toMatch(/LATER_LOG/);
   });
 
   it('enables logging when switch is appended during first tick', async () => {
@@ -229,7 +229,7 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
       });
     });
     const stderr = await stderrComplete;
-    expect(stderr).to.match(/TEST_LOG/);
+    expect(stderr).toMatch(/TEST_LOG/);
   });
 
   it('respects --log-level', async () => {
@@ -251,7 +251,7 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
       });
     });
     const stderr = await stderrComplete;
-    expect(stderr).to.match(/TEST_WARNING_LOG/);
-    expect(stderr).not.to.match(/TEST_INFO_LOG/);
+    expect(stderr).toMatch(/TEST_WARNING_LOG/);
+    expect(stderr).not.toMatch(/TEST_INFO_LOG/);
   });
 });
