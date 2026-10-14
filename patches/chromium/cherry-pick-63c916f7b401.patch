@@ -1,0 +1,811 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <kleinschmidtorama@gmail.com>
+Date: Tue, 29 Sep 2026 17:32:34 -0700
+Subject: [tracing] Let TracingControllerImpl start from a perfetto config
+
+TracingController::StartTracing() builds its perfetto config internally
+with GetDefaultPerfettoConfig() and always asks for the legacy JSON
+conversion. Callers that want the raw protobuf trace, or that want to
+record a data source with no base::trace_event::TraceConfig
+representation -- for example Chromium's trace-scoped native heap
+profiler -- have to run a second perfetto::TracingSession alongside the
+shared one, so those samples land in a different trace from everything
+else.
+
+This CL adds a method to TracingControllerImpl that takes a
+perfetto::TraceConfig directly:
+
+bool StartTracingWithPerfettoConfig(const perfetto::TraceConfig&,
+                                      StartTracingDoneCallback);
+
+Callers assemble the config themselves, starting from
+tracing::GetDefaultPerfettoConfig() if they want the usual data sources.
+The content/public API is unchanged apart from a comment.
+
+The output format follows the config. If its data sources set
+convert_to_legacy_json, the session behaves as before and calls
+DisableTracingAndEmitJson(). Otherwise the trace is delivered as the raw
+protobuf: the session calls DisableTracing() and reads the buffers with
+ReadBuffers() once OnTracingDisabled() has arrived, since a data source
+may still be emitting its final samples while it is disabled.
+
+convert_to_legacy_json applies to the whole session -- ConsumerHost
+turns the conversion on if any data source asks for it -- so a config
+whose data sources disagree is rejected.
+
+Two consequences worth calling out:
+
+ * |agent_label| filters the converted JSON, so StopTracing() rejects
+   a non-empty label for a protobuf trace.
+
+ * IsTracing() no longer keys off |trace_config_|, which is null for a
+   session started from a perfetto config, and the "update the process
+   filter of a running session" path now requires |trace_config_|.
+
+FileTraceDataEndpoint now opens its FILE* in binary mode. It can receive
+payloads that are not text -- gzip data when CompressedTraceDataEndpoint
+is chained onto it, and now protobuf traces -- and Windows text mode
+translates '\n' to '\r\n', corrupting them. The gzip case is reachable
+today but has no in-tree caller.
+
+Bug: 540681575
+Change-Id: I91011b9fd648f11d1d3adf87090766ab5e37fa6f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8433288
+Commit-Queue: David Sanders <dsanders11@ucsbalum.com>
+Reviewed-by: Mikhail Khokhlov <khokhlov@google.com>
+Reviewed-by: Arthur Sonzogni <arthursonzogni@chromium.org>
+Reviewed-by: Etienne Pierre-Doray <etiennep@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1707675}
+
+diff --git a/content/browser/tracing/tracing_controller_browsertest.cc b/content/browser/tracing/tracing_controller_browsertest.cc
+index f2c5b42439a649f6ebc2b6178789d8092de2109f..efe0dce5684027b547d09effa2fea5e2bab167d9 100644
+--- a/content/browser/tracing/tracing_controller_browsertest.cc
++++ b/content/browser/tracing/tracing_controller_browsertest.cc
+@@ -17,6 +17,7 @@
+ #include "base/strings/pattern.h"
+ #include "base/task/task_traits.h"
+ #include "base/test/scoped_feature_list.h"
++#include "base/test/test_future.h"
+ #include "base/threading/thread_restrictions.h"
+ #include "base/trace_event/trace_config.h"
+ #include "base/values.h"
+@@ -32,7 +33,10 @@
+ #include "content/public/test/test_content_browser_client.h"
+ #include "content/shell/browser/shell.h"
+ #include "services/network/public/cpp/shared_url_loader_factory.h"
++#include "services/tracing/public/cpp/perfetto/perfetto_config.h"
+ #include "services/tracing/public/cpp/tracing_features.h"
++#include "third_party/perfetto/include/perfetto/tracing/core/trace_config.h"
++#include "third_party/perfetto/protos/perfetto/trace/trace.pbzero.h"
+ 
+ #if BUILDFLAG(IS_CHROMEOS)
+ #include "chromeos/ash/components/dbus/debug_daemon/debug_daemon_client.h"
+@@ -49,6 +53,36 @@ using base::trace_event::TraceConfig;
+ 
+ namespace content {
+ 
++namespace {
++
++// A legacy JSON trace decodes to no packets, so a non-zero count means the
++// trace is a protobuf.
++size_t CountTracePackets(const std::string& serialized_trace) {
++  perfetto::protos::pbzero::Trace::Decoder trace(serialized_trace);
++  size_t packets = 0;
++  for (auto it = trace.packet(); !!it; ++it) {
++    ++packets;
++  }
++  return packets;
++}
++
++// The default config, asking for the protobuf trace instead of JSON.
++perfetto::TraceConfig ProtobufTraceConfig() {
++  return tracing::GetDefaultPerfettoConfig(TraceConfig(),
++                                           /*privacy_filtering_enabled=*/false,
++                                           /*convert_to_legacy_json=*/false);
++}
++
++// Stops tracing and waits for the session to finish, discarding the trace.
++void StopTracingAndWait() {
++  base::test::TestFuture<std::unique_ptr<std::string>> trace;
++  ASSERT_TRUE(TracingController::GetInstance()->StopTracing(
++      TracingControllerImpl::CreateCallbackEndpoint(trace.GetCallback())));
++  ASSERT_TRUE(trace.Wait());
++}
++
++}  // namespace
++
+ class TracingControllerTestEndpoint
+     : public TracingController::TraceDataEndpoint {
+  public:
+@@ -316,6 +350,18 @@ class TracingControllerTest : public ContentBrowserTest {
+   DISABLED_EnableAndStopTracingWithEmptyFile
+ #define MAYBE_DoubleStopTracing DISABLED_DoubleStopTracing
+ #define MAYBE_ProcessesPresentInTrace DISABLED_ProcessesPresentInTrace
++#define MAYBE_EnableAndStopTracingWithProtobufOutput \
++  DISABLED_EnableAndStopTracingWithProtobufOutput
++#define MAYBE_ProtobufOutputToFileIsNotTranslated \
++  DISABLED_ProtobufOutputToFileIsNotTranslated
++#define MAYBE_StartTracingWithAddedDataSource \
++  DISABLED_StartTracingWithAddedDataSource
++#define MAYBE_StartTracingWithMixedOutputFormatsFails \
++  DISABLED_StartTracingWithMixedOutputFormatsFails
++#define MAYBE_StartTracingWithPerfettoConfigFailsWhileTracing \
++  DISABLED_StartTracingWithPerfettoConfigFailsWhileTracing
++#define MAYBE_StopTracingWithAgentLabelFailsForProtobuf \
++  DISABLED_StopTracingWithAgentLabelFailsForProtobuf
+ #else
+ #define MAYBE_EnableAndStopTracing EnableAndStopTracing
+ #define MAYBE_EnableAndStopTracingWithFilePath EnableAndStopTracingWithFilePath
+@@ -325,6 +371,17 @@ class TracingControllerTest : public ContentBrowserTest {
+   EnableAndStopTracingWithEmptyFile
+ #define MAYBE_DoubleStopTracing DoubleStopTracing
+ #define MAYBE_ProcessesPresentInTrace ProcessesPresentInTrace
++#define MAYBE_EnableAndStopTracingWithProtobufOutput \
++  EnableAndStopTracingWithProtobufOutput
++#define MAYBE_ProtobufOutputToFileIsNotTranslated \
++  ProtobufOutputToFileIsNotTranslated
++#define MAYBE_StartTracingWithAddedDataSource StartTracingWithAddedDataSource
++#define MAYBE_StartTracingWithMixedOutputFormatsFails \
++  StartTracingWithMixedOutputFormatsFails
++#define MAYBE_StartTracingWithPerfettoConfigFailsWhileTracing \
++  StartTracingWithPerfettoConfigFailsWhileTracing
++#define MAYBE_StopTracingWithAgentLabelFailsForProtobuf \
++  StopTracingWithAgentLabelFailsForProtobuf
+ #endif
+ 
+ IN_PROC_BROWSER_TEST_F(TracingControllerTest, GetCategories) {
+@@ -430,4 +487,140 @@ IN_PROC_BROWSER_TEST_F(TracingControllerTest, MAYBE_ProcessesPresentInTrace) {
+   EXPECT_TRUE(last_data().find("CrRendererMain") != std::string::npos);
+ }
+ 
++// A config that does not set convert_to_legacy_json yields a protobuf trace.
++IN_PROC_BROWSER_TEST_F(TracingControllerTest,
++                       MAYBE_EnableAndStopTracingWithProtobufOutput) {
++  Navigate(shell());
++
++  TracingControllerImpl* controller = TracingControllerImpl::GetInstance();
++
++  base::test::TestFuture<void> started;
++  ASSERT_TRUE(controller->StartTracingWithPerfettoConfig(
++      ProtobufTraceConfig(), started.GetCallback()));
++  ASSERT_TRUE(started.Wait());
++
++  base::test::TestFuture<std::unique_ptr<std::string>> trace;
++  ASSERT_TRUE(controller->StopTracing(
++      TracingController::CreateStringEndpoint(trace.GetCallback())));
++  std::unique_ptr<std::string> contents = trace.Take();
++
++  ASSERT_FALSE(contents->empty());
++  // A legacy JSON trace starts with '{'; a protobuf trace does not.
++  EXPECT_NE('{', (*contents)[0]);
++  EXPECT_GT(CountTracePackets(*contents), 0u);
++}
++
++// A protobuf trace must reach disk byte for byte; Windows text mode would
++// expand its '\n' bytes and it would no longer decode.
++IN_PROC_BROWSER_TEST_F(TracingControllerTest,
++                       MAYBE_ProtobufOutputToFileIsNotTranslated) {
++  Navigate(shell());
++
++  base::FilePath file_path;
++  {
++    base::ScopedAllowBlockingForTesting allow_blocking;
++    ASSERT_TRUE(base::CreateTemporaryFile(&file_path));
++  }
++
++  TracingControllerImpl* controller = TracingControllerImpl::GetInstance();
++
++  base::test::TestFuture<void> started;
++  ASSERT_TRUE(controller->StartTracingWithPerfettoConfig(
++      ProtobufTraceConfig(), started.GetCallback()));
++  ASSERT_TRUE(started.Wait());
++
++  base::test::TestFuture<void> written;
++  ASSERT_TRUE(controller->StopTracing(TracingController::CreateFileEndpoint(
++      file_path, written.GetCallback(), base::TaskPriority::USER_BLOCKING)));
++  ASSERT_TRUE(written.Wait());
++
++  std::string trace;
++  {
++    base::ScopedAllowBlockingForTesting allow_blocking;
++    ASSERT_TRUE(base::ReadFileToString(file_path, &trace));
++  }
++
++  ASSERT_FALSE(trace.empty());
++  EXPECT_NE('{', trace[0]);
++  EXPECT_GT(CountTracePackets(trace), 0u);
++}
++
++// A caller may add data sources GetDefaultPerfettoConfig() does not produce.
++IN_PROC_BROWSER_TEST_F(TracingControllerTest,
++                       MAYBE_StartTracingWithAddedDataSource) {
++  Navigate(shell());
++
++  perfetto::TraceConfig config = ProtobufTraceConfig();
++  ASSERT_FALSE(config.data_sources().empty());
++  config.add_data_sources()->mutable_config()->set_name(
++      "org.chromium.tracing_controller_browsertest");
++
++  TracingControllerImpl* controller = TracingControllerImpl::GetInstance();
++
++  base::test::TestFuture<void> started;
++  ASSERT_TRUE(controller->StartTracingWithPerfettoConfig(
++      config, started.GetCallback()));
++  ASSERT_TRUE(started.Wait());
++
++  StopTracingAndWait();
++}
++
++// convert_to_legacy_json applies to the whole session, so a config whose data
++// sources disagree is rejected.
++IN_PROC_BROWSER_TEST_F(TracingControllerTest,
++                       MAYBE_StartTracingWithMixedOutputFormatsFails) {
++  Navigate(shell());
++
++  TracingControllerImpl* controller = TracingControllerImpl::GetInstance();
++
++  perfetto::TraceConfig config = ProtobufTraceConfig();
++  ASSERT_GT(config.data_sources().size(), 1u);
++  (*config.mutable_data_sources())[0]
++      .mutable_config()
++      ->mutable_chrome_config()
++      ->set_convert_to_legacy_json(true);
++
++  EXPECT_FALSE(controller->StartTracingWithPerfettoConfig(
++      config, TracingController::StartTracingDoneCallback()));
++  EXPECT_FALSE(controller->IsTracing());
++}
++
++// The config belongs to the session and cannot be swapped while tracing.
++IN_PROC_BROWSER_TEST_F(TracingControllerTest,
++                       MAYBE_StartTracingWithPerfettoConfigFailsWhileTracing) {
++  Navigate(shell());
++
++  TracingControllerImpl* controller = TracingControllerImpl::GetInstance();
++
++  base::test::TestFuture<void> started;
++  ASSERT_TRUE(controller->StartTracing(TraceConfig(), started.GetCallback()));
++  ASSERT_TRUE(started.Wait());
++
++  EXPECT_FALSE(controller->StartTracingWithPerfettoConfig(
++      ProtobufTraceConfig(), TracingController::StartTracingDoneCallback()));
++
++  StopTracingAndWait();
++}
++
++// An agent label filters the converted JSON, so it needs a JSON trace.
++IN_PROC_BROWSER_TEST_F(TracingControllerTest,
++                       MAYBE_StopTracingWithAgentLabelFailsForProtobuf) {
++  Navigate(shell());
++
++  TracingControllerImpl* controller = TracingControllerImpl::GetInstance();
++
++  base::test::TestFuture<void> started;
++  ASSERT_TRUE(controller->StartTracingWithPerfettoConfig(
++      ProtobufTraceConfig(), started.GetCallback()));
++  ASSERT_TRUE(started.Wait());
++
++  base::test::TestFuture<std::unique_ptr<std::string>> rejected;
++  EXPECT_FALSE(controller->StopTracing(
++      TracingController::CreateStringEndpoint(rejected.GetCallback()),
++      "traceEvents"));
++
++  StopTracingAndWait();
++  EXPECT_FALSE(rejected.IsReady());
++}
++
+ }  // namespace content
+diff --git a/content/browser/tracing/tracing_controller_impl.cc b/content/browser/tracing/tracing_controller_impl.cc
+index cfb78b15a9ff160583d8c7752971b14ab5ceb9d6..2db4e4eae26dfc8db03889ffd8cd9df66f18ea90 100644
+--- a/content/browser/tracing/tracing_controller_impl.cc
++++ b/content/browser/tracing/tracing_controller_impl.cc
+@@ -60,6 +60,7 @@
+ #include "services/tracing/public/mojom/constants.mojom.h"
+ #include "third_party/icu/source/i18n/unicode/timezone.h"
+ #include "third_party/perfetto/include/perfetto/protozero/message.h"
++#include "third_party/perfetto/include/perfetto/tracing/core/trace_config.h"
+ #include "third_party/perfetto/protos/perfetto/common/tracing_service_state.gen.h"
+ #include "third_party/perfetto/protos/perfetto/common/track_event_descriptor.gen.h"
+ #include "third_party/perfetto/protos/perfetto/trace/chrome/chrome_trace_event.pbzero.h"
+@@ -100,6 +101,21 @@ inline constexpr char kRevisionMetadataKey[] = "revision";
+ 
+ TracingControllerImpl* g_tracing_controller = nullptr;
+ 
++// Returns whether |config| asks for the legacy JSON conversion, or nullopt if
++// its data sources disagree. The setting applies to the whole session.
++std::optional<bool> ConvertsToLegacyJson(const perfetto::TraceConfig& config) {
++  std::optional<bool> converts;
++  for (const auto& data_source : config.data_sources()) {
++    const bool source_converts =
++        data_source.config().chrome_config().convert_to_legacy_json();
++    if (converts.value_or(source_converts) != source_converts) {
++      return std::nullopt;
++    }
++    converts = source_converts;
++  }
++  return converts.value_or(false);
++}
++
+ }  // namespace
+ 
+ TracingController* TracingController::GetInstance() {
+@@ -236,7 +252,7 @@ bool TracingControllerImpl::StartTracingImpl(
+   // this function should return void.
+   if (IsTracing()) {
+     // Do not allow updating trace config when process filter is not used.
+-    if (trace_config.process_filter_config().empty() ||
++    if (!trace_config_ || trace_config.process_filter_config().empty() ||
+         trace_config_->process_filter_config().empty()) {
+       return false;
+     }
+@@ -254,13 +270,43 @@ bool TracingControllerImpl::StartTracingImpl(
+   trace_config_ =
+       std::make_unique<base::trace_event::TraceConfig>(trace_config);
+ 
++  return StartTracingSession(
++      tracing::GetDefaultPerfettoConfig(trace_config, privacy_filtering_enabled,
++                                        /*convert_to_legacy_json=*/true),
++      std::move(callback), /*converts_to_legacy_json=*/true);
++}
++
++bool TracingControllerImpl::StartTracingWithPerfettoConfig(
++    const perfetto::TraceConfig& perfetto_config,
++    StartTracingDoneCallback callback) {
++  CHECK_CURRENTLY_ON(BrowserThread::UI);
++  if (IsTracing()) {
++    return false;
++  }
++
++  std::optional<bool> converts_to_legacy_json =
++      ConvertsToLegacyJson(perfetto_config);
++  if (!converts_to_legacy_json.has_value()) {
++    DLOG(ERROR) << "Data sources disagree on convert_to_legacy_json";
++    return false;
++  }
++
++  return StartTracingSession(perfetto_config, std::move(callback),
++                             *converts_to_legacy_json);
++}
++
++bool TracingControllerImpl::StartTracingSession(
++    perfetto::TraceConfig perfetto_config,
++    StartTracingDoneCallback callback,
++    bool converts_to_legacy_json) {
+   CHECK(!tracing_session_host_, base::NotFatalUntil::M159);
+   ConnectToServiceIfNeeded();
+ 
+-  perfetto::TraceConfig perfetto_config =
+-      tracing::GetDefaultPerfettoConfig(trace_config, privacy_filtering_enabled,
+-                                        /*convert_to_legacy_json=*/true);
+-
++  output_format_ = converts_to_legacy_json ? TraceDataFormat::kLegacyJson
++                                           : TraceDataFormat::kProtobuf;
++  is_tracing_ = true;
++  stop_requested_ = false;
++  tracing_disabled_ = false;
+   consumer_host_->EnableTracing(
+       tracing_session_host_.BindNewPipeAndPassReceiver(),
+       receiver_.BindNewPipeAndPassRemote(), std::move(perfetto_config),
+@@ -285,30 +331,45 @@ bool TracingControllerImpl::StopTracing(
+ bool TracingControllerImpl::StopTracing(
+     const scoped_refptr<TraceDataEndpoint>& trace_data_endpoint,
+     const std::string& agent_label) {
+-  if (!IsTracing() || drainer_ || !tracing_session_host_)
++  // |agent_label| filters the converted JSON, so it is meaningless for a
++  // protobuf trace.
++  if (!IsTracing() || stop_requested_ || drainer_ || !tracing_session_host_ ||
++      (output_format_ == TraceDataFormat::kProtobuf && !agent_label.empty())) {
+     return false;
++  }
+   CHECK_CURRENTLY_ON(BrowserThread::UI, base::NotFatalUntil::M159);
+ 
++  stop_requested_ = true;
+   trace_data_endpoint_ = std::move(trace_data_endpoint);
+   is_data_complete_ = false;
+   read_buffers_complete_ = false;
+ 
+-  mojo::ScopedDataPipeProducerHandle producer_handle;
+-  mojo::ScopedDataPipeConsumerHandle consumer_handle;
+-  MojoResult result =
+-      mojo::CreateDataPipe(nullptr, producer_handle, consumer_handle);
+-  if (result != MOJO_RESULT_OK) {
+-    CompleteFlush();
+-    return true;
+-  }
++  if (output_format_ == TraceDataFormat::kProtobuf) {
++    // Data sources may still be emitting samples while they are disabled, so
++    // the buffers must not be read until OnTracingDisabled().
++    if (tracing_disabled_) {
++      StartProtobufRead();
++    } else {
++      tracing_session_host_->DisableTracing();
++    }
++  } else {
++    mojo::ScopedDataPipeProducerHandle producer_handle;
++    mojo::ScopedDataPipeConsumerHandle consumer_handle;
++    MojoResult result =
++        mojo::CreateDataPipe(nullptr, producer_handle, consumer_handle);
++    if (result != MOJO_RESULT_OK) {
++      CompleteFlush();
++      return true;
++    }
+ 
+-  drainer_ =
+-      std::make_unique<mojo::DataPipeDrainer>(this, std::move(consumer_handle));
++    drainer_ = std::make_unique<mojo::DataPipeDrainer>(
++        this, std::move(consumer_handle));
+ 
+-  tracing_session_host_->DisableTracingAndEmitJson(
+-      agent_label, std::move(producer_handle),
+-      base::BindOnce(&TracingControllerImpl::OnReadBuffersComplete,
+-                     base::Unretained(this)));
++    tracing_session_host_->DisableTracingAndEmitJson(
++        agent_label, std::move(producer_handle),
++        base::BindOnce(&TracingControllerImpl::OnReadBuffersComplete,
++                       base::Unretained(this)));
++  }
+ 
+   // TODO(chiniforooshan): Is the return value used anywhere?
+   return true;
+@@ -333,7 +394,7 @@ bool TracingControllerImpl::GetTraceBufferUsage(
+ }
+ 
+ bool TracingControllerImpl::IsTracing() {
+-  return trace_config_ != nullptr;
++  return is_tracing_;
+ }
+ 
+ void TracingControllerImpl::OnTracingEnabled() {
+@@ -341,7 +402,20 @@ void TracingControllerImpl::OnTracingEnabled() {
+     std::move(start_tracing_callback_).Run();
+ }
+ 
+-void TracingControllerImpl::OnTracingDisabled(bool) {}
++void TracingControllerImpl::OnTracingDisabled(bool tracing_succeeded) {
++  // DisableTracingAndEmitJson() already reads the buffers for the JSON path.
++  if (output_format_ != TraceDataFormat::kProtobuf) {
++    return;
++  }
++
++  if (!tracing_succeeded) {
++    VLOG(1) << "Tracing stopped with an error; draining available trace data";
++  }
++  tracing_disabled_ = true;
++  if (stop_requested_ && !drainer_) {
++    StartProtobufRead();
++  }
++}
+ 
+ void TracingControllerImpl::OnTracingFailed() {
+   CompleteFlush();
+@@ -349,13 +423,16 @@ void TracingControllerImpl::OnTracingFailed() {
+ 
+ void TracingControllerImpl::OnDataAvailable(base::span<const uint8_t> data) {
+   if (trace_data_endpoint_) {
+-    const std::string chunk(base::as_string_view(data));
+     trace_data_endpoint_->ReceiveTraceChunk(
+-        std::make_unique<std::string>(chunk));
++        std::make_unique<std::string>(base::as_string_view(data)));
+   }
+ }
+ 
+ void TracingControllerImpl::CompleteFlush() {
++  output_format_ = TraceDataFormat::kLegacyJson;
++  is_tracing_ = false;
++  stop_requested_ = false;
++  tracing_disabled_ = false;
+   if (trace_data_endpoint_)
+     trace_data_endpoint_->ReceivedTraceFinalContents();
+ 
+@@ -364,6 +441,33 @@ void TracingControllerImpl::CompleteFlush() {
+   drainer_ = nullptr;
+   tracing_session_host_.reset();
+   receiver_.reset();
++  is_data_complete_ = false;
++  read_buffers_complete_ = false;
++}
++
++void TracingControllerImpl::StartProtobufRead() {
++  CHECK_CURRENTLY_ON(BrowserThread::UI);
++  CHECK(stop_requested_);
++  CHECK(tracing_disabled_);
++  CHECK(tracing_session_host_);
++  // A second read would replace the in-flight drainer.
++  CHECK(!drainer_);
++
++  mojo::ScopedDataPipeProducerHandle producer_handle;
++  mojo::ScopedDataPipeConsumerHandle consumer_handle;
++  MojoResult result =
++      mojo::CreateDataPipe(nullptr, producer_handle, consumer_handle);
++  if (result != MOJO_RESULT_OK) {
++    CompleteFlush();
++    return;
++  }
++
++  drainer_ =
++      std::make_unique<mojo::DataPipeDrainer>(this, std::move(consumer_handle));
++  tracing_session_host_->ReadBuffers(
++      std::move(producer_handle),
++      base::BindOnce(&TracingControllerImpl::OnReadBuffersComplete,
++                     base::Unretained(this)));
+ }
+ 
+ void TracingControllerImpl::OnDataComplete() {
+diff --git a/content/browser/tracing/tracing_controller_impl.h b/content/browser/tracing/tracing_controller_impl.h
+index 26f42b375c87ed1c5a7b4921639552d8a83567e6..00a9f46643217c9145a70f105237a5acec76cb61 100644
+--- a/content/browser/tracing/tracing_controller_impl.h
++++ b/content/browser/tracing/tracing_controller_impl.h
+@@ -22,6 +22,7 @@
+ #include "mojo/public/cpp/bindings/remote.h"
+ #include "mojo/public/cpp/system/data_pipe_drainer.h"
+ #include "services/tracing/public/mojom/perfetto_service.mojom.h"
++#include "third_party/perfetto/include/perfetto/tracing/core/forward_decls.h"
+ #include "third_party/perfetto/protos/perfetto/trace/chrome/chrome_metadata.pbzero.h"
+ 
+ namespace perfetto::protos::pbzero {
+@@ -58,6 +59,20 @@ class TracingControllerImpl : public TracingController,
+   TracingControllerImpl(const TracingControllerImpl&) = delete;
+   TracingControllerImpl& operator=(const TracingControllerImpl&) = delete;
+ 
++  // Like StartTracing(), but from a config the caller assembled itself, for
++  // data sources or options with no base::trace_event::TraceConfig
++  // representation. tracing::GetDefaultPerfettoConfig() produces the config
++  // this takes, so callers can start from the default and adjust it.
++  //
++  // The trace is delivered as the raw perfetto protobuf, unless the config's
++  // data sources ask for the legacy JSON conversion. That conversion applies
++  // to the whole trace, so either every data source sets
++  // convert_to_legacy_json or none does; a mixed config is rejected. Fails
++  // while tracing is in progress.
++  CONTENT_EXPORT bool StartTracingWithPerfettoConfig(
++      const perfetto::TraceConfig& perfetto_config,
++      StartTracingDoneCallback callback);
++
+   // TracingController implementation.
+   bool GetCategories(GetCategoriesDoneCallback callback) override;
+   bool GetTrackEventDescriptor(
+@@ -95,6 +110,18 @@ class TracingControllerImpl : public TracingController,
+ 
+   void OnReadBuffersComplete();
+ 
++  // The format the trace data is delivered in, derived from the config the
++  // session was started with.
++  enum class TraceDataFormat { kLegacyJson, kProtobuf };
++
++  // Enables |perfetto_config| on the service and wires up the session.
++  bool StartTracingSession(perfetto::TraceConfig perfetto_config,
++                           StartTracingDoneCallback callback,
++                           bool converts_to_legacy_json);
++
++  // Only valid once the session has been disabled.
++  void StartProtobufRead();
++
+   void CompleteFlush();
+ 
+   void InitStartupTracingForDuration();
+@@ -108,6 +135,11 @@ class TracingControllerImpl : public TracingController,
+   mojo::Receiver<tracing::mojom::TracingSessionClient> receiver_{this};
+   StartTracingDoneCallback start_tracing_callback_;
+ 
++  TraceDataFormat output_format_ = TraceDataFormat::kLegacyJson;
++  bool is_tracing_ = false;
++  bool stop_requested_ = false;
++  bool tracing_disabled_ = false;
++  // Null for a session started from a perfetto config.
+   std::unique_ptr<base::trace_event::TraceConfig> trace_config_;
+   std::unique_ptr<mojo::DataPipeDrainer> drainer_;
+   scoped_refptr<TraceDataEndpoint> trace_data_endpoint_;
+diff --git a/content/browser/tracing/tracing_controller_impl_data_endpoint.cc b/content/browser/tracing/tracing_controller_impl_data_endpoint.cc
+index d9e6d854c024239a12cafc1171280255ffd80d36..d5d84bc5ab89b4674801e2fc4cc80a5b6249d59a 100644
+--- a/content/browser/tracing/tracing_controller_impl_data_endpoint.cc
++++ b/content/browser/tracing/tracing_controller_impl_data_endpoint.cc
+@@ -57,6 +57,8 @@ class StringTraceDataEndpoint : public TracingController::TraceDataEndpoint {
+   std::ostringstream trace_;
+ };
+ 
++// The file is opened in binary mode: the trace may be gzip data or a protobuf,
++// which Windows text mode would corrupt by translating '\n' to '\r\n'.
+ class FileTraceDataEndpoint : public TracingController::TraceDataEndpoint {
+  public:
+   explicit FileTraceDataEndpoint(const base::FilePath& trace_file_path,
+@@ -108,13 +110,13 @@ class FileTraceDataEndpoint : public TracingController::TraceDataEndpoint {
+       // it's still owned by base::File. So we have to close it first and then
+       // reopen as FILE*.
+       temp_file.Close();
+-      file_.reset(base::OpenFile(pending_file_path_, "w"));
++      file_.reset(base::OpenFile(pending_file_path_, "wb"));
+     } else {
+       LOG(WARNING) << "Unable to use temporary file " << pending_file_path_
+                    << ": "
+                    << base::File::ErrorToString(temp_file.error_details());
+       pending_file_path_.clear();
+-      file_.reset(base::OpenFile(file_path_, "w"));
++      file_.reset(base::OpenFile(file_path_, "wb"));
+       LOG_IF(ERROR, file_ == nullptr)
+           << "Failed to open " << file_path_.value();
+     }
+diff --git a/content/browser/tracing/tracing_controller_impl_data_endpoint_unittest.cc b/content/browser/tracing/tracing_controller_impl_data_endpoint_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..2dce7ebf172f9d0c89e717a734153083a6b01578
+--- /dev/null
++++ b/content/browser/tracing/tracing_controller_impl_data_endpoint_unittest.cc
+@@ -0,0 +1,141 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include <memory>
++#include <string>
++#include <vector>
++
++#include "base/files/file_path.h"
++#include "base/files/file_util.h"
++#include "base/files/scoped_temp_dir.h"
++#include "base/functional/callback.h"
++#include "base/memory/scoped_refptr.h"
++#include "base/task/task_traits.h"
++#include "base/test/test_future.h"
++#include "content/browser/tracing/tracing_controller_impl.h"
++#include "content/public/browser/tracing_controller.h"
++#include "content/public/test/browser_task_environment.h"
++#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/zlib/google/compression_utils.h"
++
++namespace content {
++namespace {
++
++using TraceDataEndpoint = TracingController::TraceDataEndpoint;
++
++// Covers the bytes a text-mode FILE* would rewrite: '\n', "\r\n", a lone
++// '\r', a NUL, and the Windows text-mode EOF character (0x1A).
++std::string BinaryPayload() {
++  std::string payload("header\ncrlf\r\ncr\r");
++  payload.append(1, '\0');
++  payload.append(1, '\x1a');
++  // Every byte value, so any translation shows up as a mismatch.
++  for (int i = 0; i <= 0xFF; ++i) {
++    payload.append(1, static_cast<char>(i));
++  }
++  return payload;
++}
++
++class TracingControllerDataEndpointTest : public testing::Test {
++ public:
++  void SetUp() override { ASSERT_TRUE(temp_dir_.CreateUniqueTempDir()); }
++
++ protected:
++  base::FilePath TracePath() const {
++    return temp_dir_.GetPath().AppendASCII("trace.out");
++  }
++
++  // A file endpoint writing to TracePath() and signalling |file_written_|.
++  scoped_refptr<TraceDataEndpoint> CreateFileEndpoint() {
++    return TracingController::CreateFileEndpoint(
++        TracePath(), file_written_.GetCallback(),
++        base::TaskPriority::USER_BLOCKING);
++  }
++
++  // Pushes |chunks| through |endpoint| and waits for the file to be written.
++  void DrainThrough(scoped_refptr<TraceDataEndpoint> endpoint,
++                    const std::vector<std::string>& chunks) {
++    for (const std::string& chunk : chunks) {
++      endpoint->ReceiveTraceChunk(std::make_unique<std::string>(chunk));
++    }
++    endpoint->ReceivedTraceFinalContents();
++    EXPECT_TRUE(file_written_.Wait());
++  }
++
++  std::string ReadTraceFile() const {
++    std::string contents;
++    EXPECT_TRUE(base::ReadFileToString(TracePath(), &contents));
++    return contents;
++  }
++
++  BrowserTaskEnvironment task_environment_;
++  base::ScopedTempDir temp_dir_;
++  base::test::TestFuture<void> file_written_;
++};
++
++// The endpoint must not transform the bytes it is given.
++TEST_F(TracingControllerDataEndpointTest, FileEndpointWritesBytesVerbatim) {
++  const std::string payload = BinaryPayload();
++
++  DrainThrough(CreateFileEndpoint(), {payload});
++
++  EXPECT_EQ(payload, ReadTraceFile());
++}
++
++// The file must be the exact concatenation of the chunks, including across a
++// boundary that splits a "\r\n" pair.
++TEST_F(TracingControllerDataEndpointTest, FileEndpointConcatenatesChunks) {
++  const std::vector<std::string> chunks = {"first\r", "\nsecond\n",
++                                           std::string("\0third\n", 7)};
++  std::string expected;
++  for (const std::string& chunk : chunks) {
++    expected += chunk;
++  }
++
++  DrainThrough(CreateFileEndpoint(), chunks);
++
++  EXPECT_EQ(expected, ReadTraceFile());
++}
++
++// A session that produced no data still leaves an empty file behind.
++TEST_F(TracingControllerDataEndpointTest, FileEndpointWithNoChunks) {
++  DrainThrough(CreateFileEndpoint(), {});
++
++  EXPECT_TRUE(base::PathExists(TracePath()));
++  EXPECT_EQ(std::string(), ReadTraceFile());
++}
++
++// CompressedTraceDataEndpoint hands gzip data to the endpoint it wraps, so the
++// file it writes must still decompress.
++TEST_F(TracingControllerDataEndpointTest, CompressedFileEndpointRoundTrips) {
++  const std::string payload = BinaryPayload();
++
++  DrainThrough(TracingControllerImpl::CreateCompressedStringEndpoint(
++                   CreateFileEndpoint(),
++                   /*compress_with_background_priority=*/false),
++               {payload});
++
++  const std::string compressed = ReadTraceFile();
++  ASSERT_FALSE(compressed.empty());
++  std::string uncompressed;
++  ASSERT_TRUE(compression::GzipUncompress(compressed, &uncompressed));
++  EXPECT_EQ(payload, uncompressed);
++}
++
++// The string endpoint must preserve the bytes exactly too.
++TEST_F(TracingControllerDataEndpointTest, StringEndpointPreservesBytes) {
++  const std::string payload = BinaryPayload();
++
++  base::test::TestFuture<std::unique_ptr<std::string>> received;
++  auto endpoint =
++      TracingController::CreateStringEndpoint(received.GetCallback());
++
++  endpoint->ReceiveTraceChunk(std::make_unique<std::string>(payload));
++  endpoint->ReceivedTraceFinalContents();
++
++  EXPECT_EQ(payload, *received.Take());
++}
++
++}  // namespace
++}  // namespace content
+diff --git a/content/public/browser/tracing_controller.h b/content/public/browser/tracing_controller.h
+index a7b1aab90ef4b24116895acbe31464223dd77e79..5e1edc2dfe6828dcb7e866f76a8bb0f701414673 100644
+--- a/content/public/browser/tracing_controller.h
++++ b/content/public/browser/tracing_controller.h
+@@ -122,8 +122,11 @@ class TracingController {
+   // the traced data.
+   //
+   // If |trace_data_endpoint| is not null, it will receive chunks of trace data
+-  // as JSON-stringified events, followed by a notification that the trace
+-  // collection is finished.
++  // in the format selected when tracing was started, followed by a
++  // notification that the trace collection is finished.
++  //
++  // |agent_label| filters the converted JSON, so passing a non-empty label
++  // for a protobuf trace fails.
+   //
+   virtual bool StopTracing(
+       const scoped_refptr<TraceDataEndpoint>& trace_data_endpoint) = 0;
+diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
+index bca04eeb794fb61d940c3a5f86b97147a6066491..4efb63cdcb34f251c31db478ba69f4e5ae410b0b 100644
+--- a/content/test/BUILD.gn
++++ b/content/test/BUILD.gn
+@@ -2012,6 +2012,7 @@ test("content_browsertests") {
+     "//third_party/blink/public:blink",
+     "//third_party/inspector_protocol:crdtp",
+     "//third_party/leveldatabase",
++    "//third_party/perfetto:libperfetto",
+     "//third_party/re2",
+     "//third_party/zlib",
+     "//third_party/zlib/google:compression_utils",
+@@ -2936,6 +2937,7 @@ test("content_unittests") {
+     "../browser/storage_partition_impl_map_unittest.cc",
+     "../browser/storage_partition_impl_unittest.cc",
+     "../browser/tracing/traces_internals/traces_internals_handler_unittest.cc",
++    "../browser/tracing/tracing_controller_impl_data_endpoint_unittest.cc",
+     "../browser/url_loader_factory_params_helper_unittest.cc",
+     "../browser/usb/web_usb_service_impl_unittest.cc",
+     "../browser/wake_lock/wake_lock_service_impl_unittest.cc",
