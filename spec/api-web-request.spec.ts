@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain, net, protocol, session, type WebContents, webContents } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { WebSocketServer } from 'ws';
 
 import * as childProcess from 'node:child_process';
@@ -62,14 +62,14 @@ describe('webRequest module', () => {
     }
   );
 
-  before(async () => {
+  beforeAll(async () => {
     protocol.registerStringProtocol('cors', (req, cb) => cb(''));
     defaultURL = (await listen(server)).url + '/';
     http2URL = (await listen(h2server)).url + '/';
     console.log(http2URL);
   });
 
-  after(() => {
+  afterAll(() => {
     server.close();
     h2server.close();
     protocol.unregisterProtocol('cors');
@@ -77,13 +77,13 @@ describe('webRequest module', () => {
 
   let contents: WebContents;
   // NB. sandbox: true is used because it makes navigations much (~8x) faster.
-  before(async () => {
+  beforeAll(async () => {
     contents = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true });
     // const w = new BrowserWindow({webPreferences: {sandbox: true}})
     // contents = w.webContents
     await contents.loadFile(path.join(fixturesPath, 'pages', 'fetch.html'));
   });
-  after(() => contents.destroy());
+  afterAll(() => contents.destroy());
 
   async function ajax(url: string, options = {}) {
     return contents.executeJavaScript(`ajax("${url}", ${JSON.stringify(options)})`);
@@ -105,8 +105,8 @@ describe('webRequest module', () => {
       // Top-level navigation started by the browser: no initiator.
       await w.loadURL(`${defaultURL}top`);
       const nav = seen.find((d) => d.url === `${defaultURL}top`);
-      expect(nav).to.exist();
-      expect(nav!.initiatorOrigin).to.equal(undefined);
+      expect(nav).toEqual(expect.anything());
+      expect(nav!.initiatorOrigin).toBe(undefined);
       // A cross-origin iframe's own subresource request is attributed to the
       // iframe's origin regardless of referrer policy.
       const crossOrigin = defaultURL.replace('127.0.0.1', 'localhost');
@@ -121,10 +121,10 @@ describe('webRequest module', () => {
         `fetch(${JSON.stringify(defaultURL + 'fromframe')}, { referrerPolicy: 'no-referrer', mode: 'no-cors' }).then(() => true)`
       );
       const sub = seen.find((d) => d.url === `${defaultURL}fromframe`);
-      expect(sub).to.exist();
-      expect(sub!.initiatorOrigin).to.equal(new URL(crossOrigin).origin);
-      expect(sub!.referrer).to.equal('');
-      expect(sub!.frame).to.equal(iframe);
+      expect(sub).toEqual(expect.anything());
+      expect(sub!.initiatorOrigin).toBe(new URL(crossOrigin).origin);
+      expect(sub!.referrer).toBe('');
+      expect(sub!.frame).toBe(iframe);
     });
 
     const cancel = (
@@ -136,28 +136,28 @@ describe('webRequest module', () => {
 
     it('can cancel the request', async () => {
       ses.webRequest.onBeforeRequest(cancel);
-      await expect(ajax(defaultURL)).to.eventually.be.rejected();
+      await expect(ajax(defaultURL)).rejects.toThrow();
     });
 
     it('matches all requests when no filters are defined', async () => {
       ses.webRequest.onBeforeRequest(cancel);
-      await expect(ajax(`${defaultURL}nofilter/test`)).to.eventually.be.rejected();
-      await expect(ajax(`${defaultURL}nofilter2/test`)).to.eventually.be.rejected();
+      await expect(ajax(`${defaultURL}nofilter/test`)).rejects.toThrow();
+      await expect(ajax(`${defaultURL}nofilter2/test`)).rejects.toThrow();
     });
 
     it('can filter URLs', async () => {
       const filter = { urls: [defaultURL + 'filter/*'] };
       ses.webRequest.onBeforeRequest(filter, cancel);
       const { data } = await ajax(`${defaultURL}nofilter/test`);
-      expect(data).to.equal('/nofilter/test');
-      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+      expect(data).toBe('/nofilter/test');
+      await expect(ajax(`${defaultURL}filter/test`)).rejects.toThrow();
     });
 
     it('can filter all URLs with syntax <all_urls>', async () => {
       const filter = { urls: ['<all_urls>'] };
       ses.webRequest.onBeforeRequest(filter, cancel);
-      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
-      await expect(ajax(`${defaultURL}nofilter/test`)).to.eventually.be.rejected();
+      await expect(ajax(`${defaultURL}filter/test`)).rejects.toThrow();
+      await expect(ajax(`${defaultURL}nofilter/test`)).rejects.toThrow();
     });
 
     it('can filter URLs with overlapping patterns of urls and excludeUrls', async () => {
@@ -165,7 +165,7 @@ describe('webRequest module', () => {
       const filter = { urls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'filter/test'] };
       ses.webRequest.onBeforeRequest(filter, cancel);
       const { data } = await ajax(`${defaultURL}filter/test`);
-      expect(data).to.equal('/filter/test');
+      expect(data).toBe('/filter/test');
     });
 
     it('can filter URLs with multiple excludeUrls patterns', async () => {
@@ -174,29 +174,29 @@ describe('webRequest module', () => {
         excludeUrls: [defaultURL + 'filter/exclude1/*', defaultURL + 'filter/exclude2/*']
       };
       ses.webRequest.onBeforeRequest(filter, cancel);
-      expect((await ajax(`${defaultURL}filter/exclude1/test`)).data).to.equal('/filter/exclude1/test');
-      expect((await ajax(`${defaultURL}filter/exclude2/test`)).data).to.equal('/filter/exclude2/test');
+      expect((await ajax(`${defaultURL}filter/exclude1/test`)).data).toBe('/filter/exclude1/test');
+      expect((await ajax(`${defaultURL}filter/exclude2/test`)).data).toBe('/filter/exclude2/test');
       // expect non-excluded URL to pass filter
-      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+      await expect(ajax(`${defaultURL}filter/test`)).rejects.toThrow();
     });
 
     it('can filter URLs with empty excludeUrls', async () => {
       const filter = { urls: [defaultURL + 'filter/*'], excludeUrls: [] };
       ses.webRequest.onBeforeRequest(filter, cancel);
-      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+      await expect(ajax(`${defaultURL}filter/test`)).rejects.toThrow();
     });
 
     it('can filter URLs and types', async () => {
       const filter1: Electron.WebRequestFilter = { urls: [defaultURL + 'filter/*'], types: ['xhr'] };
       ses.webRequest.onBeforeRequest(filter1, cancel);
       const { data } = await ajax(`${defaultURL}nofilter/test`);
-      expect(data).to.equal('/nofilter/test');
-      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+      expect(data).toBe('/nofilter/test');
+      await expect(ajax(`${defaultURL}filter/test`)).rejects.toThrow();
 
       const filter2: Electron.WebRequestFilter = { urls: [defaultURL + 'filter/*'], types: ['stylesheet'] };
       ses.webRequest.onBeforeRequest(filter2, cancel);
-      expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
-      expect((await ajax(`${defaultURL}filter/test`)).data).to.equal('/filter/test');
+      expect((await ajax(`${defaultURL}nofilter/test`)).data).toBe('/nofilter/test');
+      expect((await ajax(`${defaultURL}filter/test`)).data).toBe('/filter/test');
     });
 
     it('can filter URLs, excludeUrls and types', async () => {
@@ -207,9 +207,9 @@ describe('webRequest module', () => {
       };
       ses.webRequest.onBeforeRequest(filter1, cancel);
 
-      expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
-      expect((await ajax(`${defaultURL}exclude/test`)).data).to.equal('/exclude/test');
-      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+      expect((await ajax(`${defaultURL}nofilter/test`)).data).toBe('/nofilter/test');
+      expect((await ajax(`${defaultURL}exclude/test`)).data).toBe('/exclude/test');
+      await expect(ajax(`${defaultURL}filter/test`)).rejects.toThrow();
 
       const filter2: Electron.WebRequestFilter = {
         urls: [defaultURL + 'filter/*'],
@@ -217,9 +217,9 @@ describe('webRequest module', () => {
         types: ['stylesheet']
       };
       ses.webRequest.onBeforeRequest(filter2, cancel);
-      expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
-      expect((await ajax(`${defaultURL}filter/test`)).data).to.equal('/filter/test');
-      expect((await ajax(`${defaultURL}exclude/test`)).data).to.equal('/exclude/test');
+      expect((await ajax(`${defaultURL}nofilter/test`)).data).toBe('/nofilter/test');
+      expect((await ajax(`${defaultURL}filter/test`)).data).toBe('/filter/test');
+      expect((await ajax(`${defaultURL}exclude/test`)).data).toBe('/exclude/test');
     });
 
     // allowExtensions changes how URLPattern works, so we add extra tests that ensure that filters still work as expected.
@@ -250,7 +250,7 @@ describe('webRequest module', () => {
 
           return called;
         }, defaultURL);
-        expect(called).to.be.true();
+        expect(called).toBe(true);
       });
 
       it('will not call webRequest.onBeforeRequest for non-custom protocol URLs that do not match the filter', async () => {
@@ -279,7 +279,7 @@ describe('webRequest module', () => {
 
           return called;
         }, defaultURL);
-        expect(called).to.be.false();
+        expect(called).toBe(false);
       });
 
       it('will call webRequest.onBeforeRequest for custom protocol URLs with <all_urls> filter', async () => {
@@ -308,8 +308,8 @@ describe('webRequest module', () => {
 
           return { called, responseText };
         });
-        expect(responseText).to.equal('success');
-        expect(called).to.be.true();
+        expect(responseText).toBe('success');
+        expect(called).toBe(true);
       });
 
       it('will not call webRequest.onBeforeRequest for custom protocol URLs that do not match the filter', async () => {
@@ -338,27 +338,30 @@ describe('webRequest module', () => {
 
           return { called, responseText };
         });
-        expect(responseText).to.equal('success');
-        expect(called).to.be.false();
+        expect(responseText).toBe('success');
+        expect(called).toBe(false);
       });
     });
 
     it('receives details object', async () => {
       ses.webRequest.onBeforeRequest((details, callback) => {
-        expect(details.id).to.be.a('number');
-        expect(details.timestamp).to.be.a('number');
-        expect(details.webContentsId).to.be.a('number');
-        expect(details.webContents).to.be.an('object');
-        expect(details.webContents!.id).to.equal(details.webContentsId);
-        expect(details.frame).to.be.an('object');
-        expect(details.url).to.be.a('string').that.is.equal(defaultURL);
-        expect(details.method).to.be.a('string').that.is.equal('GET');
-        expect(details.resourceType).to.be.a('string').that.is.equal('xhr');
-        expect(details.uploadData).to.be.undefined();
+        expect(details.id).toBeTypeOf('number');
+        expect(details.timestamp).toBeTypeOf('number');
+        expect(details.webContentsId).toBeTypeOf('number');
+        expect(details.webContents).toBeTypeOf('object');
+        expect(details.webContents!.id).toBe(details.webContentsId);
+        expect(details.frame).toBeTypeOf('object');
+        expect(details.url).toBeTypeOf('string');
+        expect(details.url).toBe(defaultURL);
+        expect(details.method).toBeTypeOf('string');
+        expect(details.method).toBe('GET');
+        expect(details.resourceType).toBeTypeOf('string');
+        expect(details.resourceType).toBe('xhr');
+        expect(details.uploadData).toBeUndefined();
         callback({});
       });
       const { data } = await ajax(defaultURL);
-      expect(data).to.equal('/');
+      expect(data).toBe('/');
     });
 
     it('receives post data in details object', async () => {
@@ -367,11 +370,11 @@ describe('webRequest module', () => {
         type: 'string'
       };
       ses.webRequest.onBeforeRequest((details, callback) => {
-        expect(details.url).to.equal(defaultURL);
-        expect(details.method).to.equal('POST');
-        expect(details.uploadData).to.have.lengthOf(1);
+        expect(details.url).toBe(defaultURL);
+        expect(details.method).toBe('POST');
+        expect(details.uploadData).toHaveLength(1);
         const data = qs.parse(details.uploadData[0].bytes.toString());
-        expect(data).to.deep.equal(postData);
+        expect(data).toEqual(postData);
         callback({ cancel: true });
       });
       await expect(
@@ -379,7 +382,7 @@ describe('webRequest module', () => {
           method: 'POST',
           body: qs.stringify(postData)
         })
-      ).to.eventually.be.rejected();
+      ).rejects.toThrow();
     });
 
     it('can redirect the request', async () => {
@@ -391,7 +394,7 @@ describe('webRequest module', () => {
         }
       });
       const { data } = await ajax(defaultURL);
-      expect(data).to.equal('/redirect');
+      expect(data).toBe('/redirect');
     });
 
     it('does not crash for redirects', async () => {
@@ -411,7 +414,7 @@ describe('webRequest module', () => {
         protocol: 'file',
         slashes: true
       });
-      await expect(ajax(fileURL)).to.eventually.be.rejected();
+      await expect(ajax(fileURL)).rejects.toThrow();
     });
 
     it('can handle a streaming upload', async () => {
@@ -442,7 +445,7 @@ describe('webRequest module', () => {
           duplex: 'half',
         }).then(r => r.text())
       `);
-      expect(result).to.equal('hello world');
+      expect(result).toBe('hello world');
     });
 
     it('can handle a streaming upload if the uploadData is read', async () => {
@@ -499,7 +502,7 @@ describe('webRequest module', () => {
       // NOTE: since the upload stream was consumed by the onBeforeRequest
       // handler, it can't be used again to upload to the actual server.
       // This is a limitation of the WebRequest API.
-      expect(result).to.equal('');
+      expect(result).toBe('');
     });
   });
 
@@ -511,12 +514,12 @@ describe('webRequest module', () => {
 
     it('receives details object', async () => {
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
-        expect(details.requestHeaders).to.be.an('object');
-        expect(details.requestHeaders['Foo.Bar']).to.equal('baz');
+        expect(details.requestHeaders).toBeTypeOf('object');
+        expect(details.requestHeaders['Foo.Bar']).toBe('baz');
         callback({});
       });
       const { data } = await ajax(defaultURL, { headers: { 'Foo.Bar': 'baz' } });
-      expect(data).to.equal('/');
+      expect(data).toBe('/');
     });
 
     it('can change the request headers', async () => {
@@ -526,7 +529,7 @@ describe('webRequest module', () => {
         callback({ requestHeaders });
       });
       const { data } = await ajax(defaultURL);
-      expect(data).to.equal('/header/received');
+      expect(data).toBe('/header/received');
     });
 
     it('can change the request headers on a custom protocol redirect', async () => {
@@ -559,7 +562,7 @@ describe('webRequest module', () => {
           callback({ requestHeaders });
         });
         const { data } = await ajax('cors-blob://fake-host/redirect');
-        expect(data).to.equal('header-received');
+        expect(data).toBe('header-received');
       } finally {
         protocol.unregisterProtocol('cors-blob');
       }
@@ -572,7 +575,7 @@ describe('webRequest module', () => {
         callback({ requestHeaders });
       });
       const { data } = await ajax(defaultURL);
-      expect(data).to.equal('/new/origin');
+      expect(data).toBe('/new/origin');
     });
 
     it('can capture CORS requests', async () => {
@@ -582,7 +585,7 @@ describe('webRequest module', () => {
         callback({ requestHeaders: details.requestHeaders });
       });
       await ajax('cors://host');
-      expect(called).to.be.true();
+      expect(called).toBe(true);
     });
 
     it('does not crash on invalid header name or value', async () => {
@@ -600,10 +603,10 @@ describe('webRequest module', () => {
       const { data } = await ajax(defaultURL);
       const details = await sentHeaders;
 
-      expect(details.requestHeaders['Invalid Header']).to.be.undefined();
-      expect(details.requestHeaders['Valid-Header']).to.be.undefined();
-      expect(details.requestHeaders['X-Good']).to.equal('good-value');
-      expect(data).to.equal('/');
+      expect(details.requestHeaders['Invalid Header']).toBeUndefined();
+      expect(details.requestHeaders['Valid-Header']).toBeUndefined();
+      expect(details.requestHeaders['X-Good']).toBe('good-value');
+      expect(data).toBe('/');
     });
 
     it('resets the whole headers', async () => {
@@ -614,7 +617,7 @@ describe('webRequest module', () => {
         callback({ requestHeaders });
       });
       ses.webRequest.onSendHeaders((details) => {
-        expect(details.requestHeaders).to.deep.equal(requestHeaders);
+        expect(details.requestHeaders).toEqual(requestHeaders);
       });
       await ajax(defaultURL);
     });
@@ -626,7 +629,7 @@ describe('webRequest module', () => {
         callback({});
       });
       ses.webRequest.onSendHeaders((details) => {
-        expect(details.requestHeaders).to.deep.equal(originalRequestHeaders);
+        expect(details.requestHeaders).toEqual(originalRequestHeaders);
       });
       await ajax(defaultURL);
     });
@@ -640,7 +643,7 @@ describe('webRequest module', () => {
         callback({ requestHeaders });
       });
       ses.webRequest.onSendHeaders((details) => {
-        expect(details.requestHeaders).to.deep.equal(requestHeaders);
+        expect(details.requestHeaders).toEqual(requestHeaders);
         onSendHeadersCalled = true;
       });
       await ajax(
@@ -650,7 +653,7 @@ describe('webRequest module', () => {
           slashes: true
         })
       );
-      expect(onSendHeadersCalled).to.be.true();
+      expect(onSendHeadersCalled).toBe(true);
     });
 
     it('can inject Proxy-Authorization header for net module requests', async () => {
@@ -675,8 +678,8 @@ describe('webRequest module', () => {
         });
 
         const response = await net.fetch(serverUrl, { bypassCustomProtocolHandlers: true });
-        expect(response.ok).to.be.true();
-        expect(receivedProxyAuth).to.equal(proxyAuthValue);
+        expect(response.ok).toBe(true);
+        expect(receivedProxyAuth).toBe(proxyAuthValue);
       } finally {
         server.close();
       }
@@ -690,10 +693,10 @@ describe('webRequest module', () => {
 
     it('receives details object', async () => {
       ses.webRequest.onSendHeaders((details) => {
-        expect(details.requestHeaders).to.be.an('object');
+        expect(details.requestHeaders).toBeTypeOf('object');
       });
       const { data } = await ajax(defaultURL);
-      expect(data).to.equal('/');
+      expect(data).toBe('/');
     });
   });
 
@@ -704,13 +707,13 @@ describe('webRequest module', () => {
 
     it('receives details object', async () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
-        expect(details.statusLine).to.equal('HTTP/1.1 200 OK');
-        expect(details.statusCode).to.equal(200);
-        expect(details.responseHeaders!.Custom).to.deep.equal(['Header']);
+        expect(details.statusLine).toBe('HTTP/1.1 200 OK');
+        expect(details.statusCode).toBe(200);
+        expect(details.responseHeaders!.Custom).toEqual(['Header']);
         callback({});
       });
       const { data } = await ajax(defaultURL);
-      expect(data).to.equal('/');
+      expect(data).toBe('/');
     });
 
     it('can change the response header', async () => {
@@ -720,7 +723,7 @@ describe('webRequest module', () => {
         callback({ responseHeaders });
       });
       const { headers } = await ajax(defaultURL);
-      expect(headers).to.to.have.property('custom', 'Changed');
+      expect(headers).toHaveProperty('custom', 'Changed');
     });
 
     it('can change response origin', async () => {
@@ -730,7 +733,7 @@ describe('webRequest module', () => {
         callback({ responseHeaders });
       });
       const { headers } = await ajax(defaultURL);
-      expect(headers).to.to.have.property('access-control-allow-origin', 'http://new-origin');
+      expect(headers).toHaveProperty('access-control-allow-origin', 'http://new-origin');
     });
 
     it('can change headers of CORS responses', async () => {
@@ -740,7 +743,7 @@ describe('webRequest module', () => {
         callback({ responseHeaders });
       });
       const { headers } = await ajax('cors://host');
-      expect(headers).to.to.have.property('custom', 'Changed');
+      expect(headers).toHaveProperty('custom', 'Changed');
     });
 
     it('does not change header by default', async () => {
@@ -748,19 +751,19 @@ describe('webRequest module', () => {
         callback({});
       });
       const { data, headers } = await ajax(defaultURL);
-      expect(headers).to.to.have.property('custom', 'Header');
-      expect(data).to.equal('/');
+      expect(headers).toHaveProperty('custom', 'Header');
+      expect(data).toBe('/');
     });
 
     it('does not change content-disposition header by default', async () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
-        expect(details.responseHeaders!['content-disposition']).to.deep.equal(['attachment; filename=aa中aa.txt']);
+        expect(details.responseHeaders!['content-disposition']).toEqual(['attachment; filename=aa中aa.txt']);
         callback({});
       });
       const { data, headers } = await ajax(defaultURL + 'contentDisposition');
       const disposition = Buffer.from('attachment; filename=aa中aa.txt').toString('binary');
-      expect(headers).to.to.have.property('content-disposition', disposition);
-      expect(data).to.equal('/contentDisposition');
+      expect(headers).toHaveProperty('content-disposition', disposition);
+      expect(data).toBe('/contentDisposition');
     });
 
     it('follows server redirect', async () => {
@@ -769,7 +772,7 @@ describe('webRequest module', () => {
         callback({ responseHeaders });
       });
       const { headers } = await ajax(defaultURL + 'serverRedirect');
-      expect(headers).to.to.have.property('custom', 'Header');
+      expect(headers).toHaveProperty('custom', 'Header');
     });
 
     it('can change the header status', async () => {
@@ -781,7 +784,7 @@ describe('webRequest module', () => {
         });
       });
       const { headers } = await ajax(defaultURL);
-      expect(headers).to.to.have.property('custom', 'Header');
+      expect(headers).toHaveProperty('custom', 'Header');
     });
   });
 
@@ -792,14 +795,14 @@ describe('webRequest module', () => {
 
     it('receives details object', async () => {
       ses.webRequest.onResponseStarted((details) => {
-        expect(details.fromCache).to.be.a('boolean');
-        expect(details.statusLine).to.equal('HTTP/1.1 200 OK');
-        expect(details.statusCode).to.equal(200);
-        expect(details.responseHeaders!.Custom).to.deep.equal(['Header']);
+        expect(details.fromCache).toBeTypeOf('boolean');
+        expect(details.statusLine).toBe('HTTP/1.1 200 OK');
+        expect(details.statusCode).toBe(200);
+        expect(details.responseHeaders!.Custom).toEqual(['Header']);
       });
       const { data, headers } = await ajax(defaultURL);
-      expect(headers).to.to.have.property('custom', 'Header');
-      expect(data).to.equal('/');
+      expect(headers).toHaveProperty('custom', 'Header');
+      expect(data).toBe('/');
     });
   });
 
@@ -819,13 +822,13 @@ describe('webRequest module', () => {
         }
       });
       ses.webRequest.onBeforeRedirect((details) => {
-        expect(details.fromCache).to.be.a('boolean');
-        expect(details.statusLine).to.equal('HTTP/1.1 307 Internal Redirect');
-        expect(details.statusCode).to.equal(307);
-        expect(details.redirectURL).to.equal(redirectURL);
+        expect(details.fromCache).toBeTypeOf('boolean');
+        expect(details.statusLine).toBe('HTTP/1.1 307 Internal Redirect');
+        expect(details.statusCode).toBe(307);
+        expect(details.redirectURL).toBe(redirectURL);
       });
       const { data } = await ajax(defaultURL);
-      expect(data).to.equal('/redirect');
+      expect(data).toBe('/redirect');
     });
   });
 
@@ -836,12 +839,12 @@ describe('webRequest module', () => {
 
     it('receives details object', async () => {
       ses.webRequest.onCompleted((details) => {
-        expect(details.fromCache).to.be.a('boolean');
-        expect(details.statusLine).to.equal('HTTP/1.1 200 OK');
-        expect(details.statusCode).to.equal(200);
+        expect(details.fromCache).toBeTypeOf('boolean');
+        expect(details.statusLine).toBe('HTTP/1.1 200 OK');
+        expect(details.statusCode).toBe(200);
       });
       const { data } = await ajax(defaultURL);
-      expect(data).to.equal('/');
+      expect(data).toBe('/');
     });
   });
 
@@ -856,9 +859,9 @@ describe('webRequest module', () => {
         callback({ cancel: true });
       });
       ses.webRequest.onErrorOccurred((details) => {
-        expect(details.error).to.equal('net::ERR_BLOCKED_BY_CLIENT');
+        expect(details.error).toBe('net::ERR_BLOCKED_BY_CLIENT');
       });
-      await expect(ajax(defaultURL)).to.eventually.be.rejected();
+      await expect(ajax(defaultURL)).rejects.toThrow();
     });
   });
 
@@ -866,11 +869,11 @@ describe('webRequest module', () => {
     // Served from another process: these tests block the main process on purpose.
     let server: childProcess.ChildProcess;
     let serverURL: string;
-    before(async () => {
+    beforeAll(async () => {
       server = childProcess.fork(path.join(fixturesPath, 'api', 'web-request', 'server.js'));
       [{ url: serverURL }] = await once(server, 'message');
     });
-    after(() => server.kill());
+    afterAll(() => server.kill());
     afterEach(() => {
       ses.webRequest.onBeforeRequest(null);
       ses.webRequest.onHeadersReceived(null);
@@ -901,8 +904,8 @@ describe('webRequest module', () => {
       });
       ses.webRequest.onErrorOccurred(() => {});
       const elapsed = await fetchWhileMainIsBusy(`${serverURL}/observed`);
-      expect(elapsed).to.be.lessThan(300);
-      expect(completed).to.include(`${serverURL}/observed`);
+      expect(elapsed).toBeLessThan(300);
+      expect(completed).toContain(`${serverURL}/observed`);
     });
 
     it('reach the network without the main process when blocking listeners filter them out by type', async () => {
@@ -919,8 +922,8 @@ describe('webRequest module', () => {
         callback({});
       });
       const elapsed = await fetchWhileMainIsBusy(`${serverURL}/typed`);
-      expect(elapsed).to.be.lessThan(300);
-      expect(calls).to.equal(0);
+      expect(elapsed).toBeLessThan(300);
+      expect(calls).toBe(0);
     });
 
     it('let a matching blocking listener take precedence over observers', async () => {
@@ -932,12 +935,12 @@ describe('webRequest module', () => {
         callback({});
       });
       const elapsed = await fetchWhileMainIsBusy(`${serverURL}/blocked`);
-      expect(elapsed).to.be.greaterThan(400);
+      expect(elapsed).toBeGreaterThan(400);
 
       ses.webRequest.onBeforeRequest(null);
       const directElapsed = await fetchWhileMainIsBusy(`${serverURL}/observed-after-blocking`);
-      expect(directElapsed).to.be.lessThan(300);
-      expect(completed).to.include.members(['/blocked', '/observed-after-blocking']);
+      expect(directElapsed).toBeLessThan(300);
+      expect(completed).toEqual(expect.arrayContaining(['/blocked', '/observed-after-blocking']));
     });
 
     it('report redirect, response and completion details to observers', async () => {
@@ -955,8 +958,8 @@ describe('webRequest module', () => {
         events.push(`completed ${new URL(d.url).pathname} ${d.statusCode} ${d.resourceType}`);
       });
       const { data } = await ajax(`${serverURL}/redirect`);
-      expect(data).to.equal('/landed');
-      expect(events).to.deep.equal([
+      expect(data).toBe('/landed');
+      expect(events).toEqual([
         'send /redirect',
         'redirect /redirect -> /landed 301',
         'send /landed',
@@ -983,7 +986,7 @@ describe('webRequest module', () => {
       });
       await contents.executeJavaScript(`fetch(${JSON.stringify(`${serverURL}/redirect`)}, { redirect: 'manual' })`);
       await failed;
-      expect(events).to.deep.equal(['send /redirect', 'redirect /redirect -> /landed', 'error /redirect']);
+      expect(events).toEqual(['send /redirect', 'redirect /redirect -> /landed', 'error /redirect']);
     });
 
     it('reports the redirected method, headers and referrer when followed', async () => {
@@ -1028,8 +1031,8 @@ describe('webRequest module', () => {
         `fetch(${JSON.stringify(requestURL)}, ${JSON.stringify(options)}).then(response => response.text())`
       );
       temporaryContents.destroy();
-      expect(data).to.equal('GET /landed-method 0');
-      expect(sent).to.deep.equal([
+      expect(data).toBe('GET /landed-method 0');
+      expect(sent).toEqual([
         {
           method: 'POST',
           path: '/redirect-post',
@@ -1075,7 +1078,7 @@ describe('webRequest module', () => {
       temporaryContents.destroy();
       await failed;
       await new Promise((resolve) => setTimeout(resolve, 100));
-      expect(errors).to.deep.equal(['net::ERR_ABORTED']);
+      expect(errors).toEqual(['net::ERR_ABORTED']);
     });
 
     it('report failures to onErrorOccurred', async () => {
@@ -1084,8 +1087,8 @@ describe('webRequest module', () => {
       });
       const { url } = await listen(closed);
       const error = new Promise<string>((resolve) => ses.webRequest.onErrorOccurred((d) => resolve(d.error)));
-      await expect(ajax(`${url}/`)).to.eventually.be.rejected();
-      expect(await error).to.match(/^net::ERR_/);
+      await expect(ajax(`${url}/`)).rejects.toThrow();
+      expect(await error).toMatch(/^net::ERR_/);
       closed.close();
     });
   });
@@ -1136,24 +1139,24 @@ describe('webRequest module', () => {
       });
       ses.webRequest.onResponseStarted((details) => {
         if (details.url.startsWith('ws://')) {
-          expect(details.responseHeaders!.Connection[0]).be.equal('Upgrade');
+          expect(details.responseHeaders!.Connection[0]).toBe('Upgrade');
         } else if (details.url.startsWith('http')) {
-          expect(details.responseHeaders!.foo1[0]).be.equal('bar1');
+          expect(details.responseHeaders!.foo1[0]).toBe('bar1');
         }
       });
       ses.webRequest.onSendHeaders((details) => {
         if (details.url.startsWith('ws://')) {
-          expect(details.requestHeaders.foo).be.equal('bar');
-          expect(details.requestHeaders.Upgrade).be.equal('websocket');
+          expect(details.requestHeaders.foo).toBe('bar');
+          expect(details.requestHeaders.Upgrade).toBe('websocket');
         } else if (details.url.startsWith('http')) {
-          expect(details.requestHeaders.foo).be.equal('bar');
+          expect(details.requestHeaders.foo).toBe('bar');
         }
       });
       ses.webRequest.onCompleted((details) => {
         if (details.url.startsWith('ws://')) {
-          expect(details.error).be.equal('net::ERR_WS_UPGRADE');
+          expect(details.error).toBe('net::ERR_WS_UPGRADE');
         } else if (details.url.startsWith('http')) {
-          expect(details.error).be.equal('net::OK');
+          expect(details.error).toBe('net::OK');
         }
       });
 
@@ -1182,10 +1185,10 @@ describe('webRequest module', () => {
       contents.loadFile(path.join(fixturesPath, 'api', 'webrequest.html'), { query: { port: `${port}` } });
       await once(ipcMain, 'websocket-success');
 
-      expect(receivedHeaders['/websocket'].Upgrade[0]).to.equal('websocket');
-      expect(receivedHeaders['/'].foo1[0]).to.equal('bar1');
-      expect(reqHeaders['/websocket'].foo).to.equal('bar');
-      expect(reqHeaders['/'].foo).to.equal('bar');
+      expect(receivedHeaders['/websocket'].Upgrade[0]).toBe('websocket');
+      expect(receivedHeaders['/'].foo1[0]).toBe('bar1');
+      expect(reqHeaders['/websocket'].foo).toBe('bar');
+      expect(reqHeaders['/'].foo).toBe('bar');
     });
 
     it('authenticates a WebSocket via login event', async () => {
@@ -1260,7 +1263,7 @@ describe('webRequest module', () => {
         setTimeout(() => reject(new Error('timeout')), 5000);
       });`);
 
-      expect(message).to.equal('Authenticated!');
+      expect(message).toBe('Authenticated!');
     });
   });
 });

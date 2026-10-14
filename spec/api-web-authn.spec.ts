@@ -1,6 +1,6 @@
 import { app, BrowserWindow, session } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import * as http from 'node:http';
 
@@ -14,15 +14,15 @@ const configureWebAuthn = (app as any).configureWebAuthn?.bind(app) as (options?
 
 ifdescribe(process.platform === 'darwin')('app.configureWebAuthn', () => {
   it('throws when called without an options object', () => {
-    expect(() => configureWebAuthn()).to.throw(/configureWebAuthn requires an options object/);
+    expect(() => configureWebAuthn()).toThrow(/configureWebAuthn requires an options object/);
   });
 
   it('throws when touchID.keychainAccessGroup is missing', () => {
-    expect(() => configureWebAuthn({ touchID: {} })).to.throw(/keychainAccessGroup/);
+    expect(() => configureWebAuthn({ touchID: {} })).toThrow(/keychainAccessGroup/);
   });
 
   it('throws when touchID.keychainAccessGroup is empty', () => {
-    expect(() => configureWebAuthn({ touchID: { keychainAccessGroup: '' } })).to.throw(/keychainAccessGroup/);
+    expect(() => configureWebAuthn({ touchID: { keychainAccessGroup: '' } })).toThrow(/keychainAccessGroup/);
   });
 
   it('accepts a valid touchID configuration', () => {
@@ -30,7 +30,7 @@ ifdescribe(process.platform === 'darwin')('app.configureWebAuthn', () => {
       configureWebAuthn({
         touchID: { keychainAccessGroup: 'TESTTEAMID.org.electron.spec.webauthn' }
       })
-    ).to.not.throw();
+    ).not.toThrow();
   });
 
   it('throws when touchID.promptReason is empty', () => {
@@ -41,7 +41,7 @@ ifdescribe(process.platform === 'darwin')('app.configureWebAuthn', () => {
           promptReason: ''
         }
       })
-    ).to.throw(/promptReason/);
+    ).toThrow(/promptReason/);
   });
 
   it('accepts a touchID.promptReason with a $1 placeholder', () => {
@@ -52,7 +52,7 @@ ifdescribe(process.platform === 'darwin')('app.configureWebAuthn', () => {
           promptReason: 'sign in to $1'
         }
       })
-    ).to.not.throw();
+    ).not.toThrow();
   });
 
   it('accepts a touchID.promptReason without a placeholder', () => {
@@ -63,7 +63,7 @@ ifdescribe(process.platform === 'darwin')('app.configureWebAuthn', () => {
           promptReason: 'sign in'
         }
       })
-    ).to.not.throw();
+    ).not.toThrow();
   });
 });
 
@@ -73,7 +73,7 @@ describe("session 'select-webauthn-account' event", () => {
   let w: BrowserWindow;
   let authenticatorId: string;
 
-  before(async () => {
+  beforeAll(async () => {
     server = http.createServer((req, res) => {
       res.setHeader('Content-Type', 'text/html');
       res.end('<!doctype html><title>webauthn</title>');
@@ -83,7 +83,7 @@ describe("session 'select-webauthn-account' event", () => {
     serverUrl = `http://localhost:${port}/`;
   });
 
-  after(() => {
+  afterAll(() => {
     server.close();
   });
 
@@ -183,8 +183,9 @@ describe("session 'select-webauthn-account' event", () => {
         e => ({ ok: false, name: e.name, message: e.message })
       )
     `);
-    expect(result.ok).to.be.true();
-    expect(result.id).to.be.a('string').and.not.be.empty();
+    expect(result.ok).toBe(true);
+    expect(result.id).toBeTypeOf('string');
+    expect(result.id).not.toHaveLength(0);
   });
 
   // Pick byte sequences that exercise the URL-safe base64 alphabet — '?' and
@@ -209,28 +210,29 @@ describe("session 'select-webauthn-account' event", () => {
 
     const result = await getAssertion();
 
-    expect(received).to.exist();
-    expect(received.relyingPartyId).to.equal('localhost');
-    expect(received.accounts).to.have.lengthOf(2);
+    expect(received).toEqual(expect.anything());
+    expect(received.relyingPartyId).toBe('localhost');
+    expect(received.accounts).toHaveLength(2);
     const names = received.accounts.map((a: any) => a.name).sort();
-    expect(names).to.deep.equal(['alice@example.com', 'bob@example.com']);
+    expect(names).toEqual(['alice@example.com', 'bob@example.com']);
     const bob = received.accounts.find((a: any) => a.name === 'bob@example.com');
-    expect(bob.displayName).to.equal('Bob');
-    expect(bob.credentialId).to.be.a('string').and.not.be.empty();
+    expect(bob.displayName).toBe('Bob');
+    expect(bob.credentialId).toBeTypeOf('string');
+    expect(bob.credentialId).not.toHaveLength(0);
 
     // Both credentialId and userHandle must be URL-safe base64 (no '+', '/'
     // or padding) so the values are byte-for-byte comparable to what the
     // WebAuthn JS API exposes on PublicKeyCredential.
-    expect(bob.credentialId).to.equal(toBase64Url(BOB_ID));
-    expect(bob.userHandle).to.equal(toBase64Url(BOB_USER_HANDLE));
-    expect(bob.credentialId).to.not.match(/[+/=]/);
-    expect(bob.userHandle).to.not.match(/[+/=]/);
+    expect(bob.credentialId).toBe(toBase64Url(BOB_ID));
+    expect(bob.userHandle).toBe(toBase64Url(BOB_USER_HANDLE));
+    expect(bob.credentialId).not.toMatch(/[+/=]/);
+    expect(bob.userHandle).not.toMatch(/[+/=]/);
 
     // The strong invariant: the credentialId surfaced via the main-process
     // event is the same string the renderer sees as PublicKeyCredential.id.
-    expect(result.ok).to.be.true();
-    expect(result.id).to.equal(bob.credentialId);
-    expect(result.userHandle).to.equal(bob.userHandle);
+    expect(result.ok).toBe(true);
+    expect(result.id).toBe(bob.credentialId);
+    expect(result.userHandle).toBe(bob.userHandle);
   });
 
   it('cancels the request when the callback is invoked with an unknown credentialId', async () => {
@@ -242,8 +244,8 @@ describe("session 'select-webauthn-account' event", () => {
     });
 
     const result = await getAssertion();
-    expect(result.ok).to.be.false();
-    expect(result.name).to.equal('NotAllowedError');
+    expect(result.ok).toBe(false);
+    expect(result.name).toBe('NotAllowedError');
   });
 
   it('cancels the request when the callback is invoked with no credential', async () => {
@@ -255,19 +257,19 @@ describe("session 'select-webauthn-account' event", () => {
     });
 
     const result = await getAssertion();
-    expect(result.ok).to.be.false();
-    expect(result.name).to.equal('NotAllowedError');
+    expect(result.ok).toBe(false);
+    expect(result.name).toBe('NotAllowedError');
   });
 
   it('cancels the request when no listener is registered', async () => {
     await addCredential({ id: 'cred-alice', userHandle: 'uh-alice', name: 'alice@example.com', displayName: 'Alice' });
     await addCredential({ id: 'cred-bob', userHandle: 'uh-bob', name: 'bob@example.com', displayName: 'Bob' });
 
-    expect(w.webContents.session.listenerCount('select-webauthn-account')).to.equal(0);
+    expect(w.webContents.session.listenerCount('select-webauthn-account')).toBe(0);
 
     const result = await getAssertion();
-    expect(result.ok).to.be.false();
-    expect(result.name).to.equal('NotAllowedError');
+    expect(result.ok).toBe(false);
+    expect(result.name).toBe('NotAllowedError');
   });
 });
 
@@ -285,7 +287,7 @@ ifdescribe(process.platform !== 'win32' && isTestingBindingAvailable())(
     let w: BrowserWindow;
     let testing: any;
 
-    before(async () => {
+    beforeAll(async () => {
       testing = (process as any)._linkedBinding('electron_common_testing');
       server = http.createServer((req, res) => {
         res.setHeader('Content-Type', 'text/html');
@@ -296,7 +298,7 @@ ifdescribe(process.platform !== 'win32' && isTestingBindingAvailable())(
       serverUrl = `http://localhost:${port}/`;
     });
 
-    after(() => {
+    afterAll(() => {
       server.close();
     });
 
@@ -336,7 +338,7 @@ ifdescribe(process.platform !== 'win32' && isTestingBindingAvailable())(
           e => ({ ok: false, name: e.name })
         )
       `);
-      expect(result).to.deep.equal({ ok: false, name: 'NotAllowedError' });
+      expect(result).toEqual({ ok: false, name: 'NotAllowedError' });
       await warned;
     });
 
@@ -354,7 +356,7 @@ ifdescribe(process.platform !== 'win32' && isTestingBindingAvailable())(
           e => ({ ok: false, name: e.name })
         )
       `);
-      expect(result).to.deep.equal({ ok: false, name: 'NotAllowedError' });
+      expect(result).toEqual({ ok: false, name: 'NotAllowedError' });
       await warned;
     });
   }

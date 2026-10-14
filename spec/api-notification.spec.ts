@@ -1,6 +1,6 @@
 import { Notification } from 'electron/main';
 
-import { expect } from 'chai';
+import { describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 
@@ -8,11 +8,11 @@ import { ifit } from './lib/spec-helpers.ts';
 
 describe('Notification module', () => {
   it('sets the correct class name on the prototype', () => {
-    expect(Notification.prototype.constructor.name).to.equal('Notification');
+    expect(Notification.prototype.constructor.name).toBe('Notification');
   });
 
   it('is supported', () => {
-    expect(Notification.isSupported()).to.be.a('boolean');
+    expect(Notification.isSupported()).toBeTypeOf('boolean');
   });
 
   ifit(process.platform === 'darwin' || process.platform === 'win32')('inits and gets id property', () => {
@@ -22,7 +22,7 @@ describe('Notification module', () => {
       body: 'body'
     });
 
-    expect(n.id).to.equal('my-custom-id');
+    expect(n.id).toBe('my-custom-id');
   });
 
   ifit(process.platform === 'darwin' || process.platform === 'win32')('id is read-only', () => {
@@ -34,7 +34,7 @@ describe('Notification module', () => {
 
     expect(() => {
       (n as any).id = 'new-id';
-    }).to.throw();
+    }).toThrow();
   });
 
   ifit(process.platform === 'darwin' || process.platform === 'win32')('defaults id to a UUID when not provided', () => {
@@ -43,8 +43,9 @@ describe('Notification module', () => {
       body: 'body'
     });
 
-    expect(n.id).to.be.a('string').and.not.be.empty();
-    expect(n.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    expect(n.id).toBeTypeOf('string');
+    expect(n.id).not.toHaveLength(0);
+    expect(n.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   });
 
   ifit(process.platform === 'darwin' || process.platform === 'win32')(
@@ -56,7 +57,7 @@ describe('Notification module', () => {
         body: 'body'
       });
 
-      expect(n.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+      expect(n.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     }
   );
 
@@ -67,7 +68,7 @@ describe('Notification module', () => {
       groupId: 'E017VKL2N8H|C07RBMNS9EK'
     });
 
-    expect(n.groupId).to.equal('E017VKL2N8H|C07RBMNS9EK');
+    expect(n.groupId).toBe('E017VKL2N8H|C07RBMNS9EK');
   });
 
   ifit(process.platform === 'darwin' || process.platform === 'win32')('groupId is read-only', () => {
@@ -79,7 +80,7 @@ describe('Notification module', () => {
 
     expect(() => {
       (n as any).groupId = 'new-group';
-    }).to.throw();
+    }).toThrow();
   });
 
   ifit(process.platform === 'darwin' || process.platform === 'win32')(
@@ -90,7 +91,7 @@ describe('Notification module', () => {
         body: 'body'
       });
 
-      expect(n.groupId).to.equal('');
+      expect(n.groupId).toBe('');
     }
   );
 
@@ -102,7 +103,7 @@ describe('Notification module', () => {
       groupTitle: 'My Group Title'
     });
 
-    expect(n.groupTitle).to.equal('My Group Title');
+    expect(n.groupTitle).toBe('My Group Title');
   });
 
   ifit(process.platform === 'win32')('groupTitle is read-only', () => {
@@ -115,7 +116,7 @@ describe('Notification module', () => {
 
     expect(() => {
       (n as any).groupTitle = 'new-title';
-    }).to.throw();
+    }).toThrow();
   });
 
   ifit(process.platform === 'win32')('defaults groupTitle to empty string when not provided', () => {
@@ -124,7 +125,7 @@ describe('Notification module', () => {
       body: 'body'
     });
 
-    expect(n.groupTitle).to.equal('');
+    expect(n.groupTitle).toBe('');
   });
 
   ifit(process.platform === 'win32')('throws when id exceeds 64 characters', () => {
@@ -135,7 +136,7 @@ describe('Notification module', () => {
         title: 'title',
         body: 'body'
       });
-    }).to.throw(/id exceeds Windows limit of 64 UTF-16 characters/);
+    }).toThrow(/id exceeds Windows limit of 64 UTF-16 characters/);
   });
 
   ifit(process.platform === 'win32')('throws when groupId exceeds 64 characters', () => {
@@ -146,7 +147,7 @@ describe('Notification module', () => {
         title: 'title',
         body: 'body'
       });
-    }).to.throw(/groupId exceeds Windows limit of 64 UTF-16 characters/);
+    }).toThrow(/groupId exceeds Windows limit of 64 UTF-16 characters/);
   });
 
   ifit(process.platform === 'win32')('throws when groupTitle is set without groupId', () => {
@@ -157,7 +158,7 @@ describe('Notification module', () => {
         title: 'title',
         body: 'body'
       });
-    }).to.throw(/groupTitle requires groupId to be set/);
+    }).toThrow(/groupTitle requires groupId to be set/);
   });
 
   ifit(process.platform === 'win32')('accepts id and groupId at 64 characters', () => {
@@ -168,8 +169,8 @@ describe('Notification module', () => {
       body: 'body'
     });
 
-    expect(n.id).to.equal('a'.repeat(64));
-    expect(n.groupId).to.equal('b'.repeat(64));
+    expect(n.id).toBe('a'.repeat(64));
+    expect(n.groupId).toBe('b'.repeat(64));
   });
 
   it('inits, gets and sets basic string properties correctly', () => {
@@ -182,29 +183,29 @@ describe('Notification module', () => {
       closeButtonText: 'closeButtonText'
     });
 
-    expect(n.title).to.equal('title');
+    expect(n.title).toBe('title');
     n.title = 'title1';
-    expect(n.title).to.equal('title1');
+    expect(n.title).toBe('title1');
 
-    expect(n.subtitle).equal('subtitle');
+    expect(n.subtitle).toBe('subtitle');
     n.subtitle = 'subtitle1';
-    expect(n.subtitle).equal('subtitle1');
+    expect(n.subtitle).toBe('subtitle1');
 
-    expect(n.body).to.equal('body');
+    expect(n.body).toBe('body');
     n.body = 'body1';
-    expect(n.body).to.equal('body1');
+    expect(n.body).toBe('body1');
 
-    expect(n.replyPlaceholder).to.equal('replyPlaceholder');
+    expect(n.replyPlaceholder).toBe('replyPlaceholder');
     n.replyPlaceholder = 'replyPlaceholder1';
-    expect(n.replyPlaceholder).to.equal('replyPlaceholder1');
+    expect(n.replyPlaceholder).toBe('replyPlaceholder1');
 
-    expect(n.sound).to.equal('sound');
+    expect(n.sound).toBe('sound');
     n.sound = 'sound1';
-    expect(n.sound).to.equal('sound1');
+    expect(n.sound).toBe('sound1');
 
-    expect(n.closeButtonText).to.equal('closeButtonText');
+    expect(n.closeButtonText).toBe('closeButtonText');
     n.closeButtonText = 'closeButtonText1';
-    expect(n.closeButtonText).to.equal('closeButtonText1');
+    expect(n.closeButtonText).toBe('closeButtonText1');
   });
 
   it('inits, gets and sets basic boolean properties correctly', () => {
@@ -215,13 +216,13 @@ describe('Notification module', () => {
       hasReply: true
     });
 
-    expect(n.silent).to.be.true('silent');
+    expect(n.silent, 'silent').toBe(true);
     n.silent = false;
-    expect(n.silent).to.be.false('silent');
+    expect(n.silent, 'silent').toBe(false);
 
-    expect(n.hasReply).to.be.true('has reply');
+    expect(n.hasReply, 'has reply').toBe(true);
     n.hasReply = false;
-    expect(n.hasReply).to.be.false('has reply');
+    expect(n.hasReply, 'has reply').toBe(false);
   });
 
   it('inits, gets and sets actions correctly', () => {
@@ -240,11 +241,11 @@ describe('Notification module', () => {
       ]
     });
 
-    expect(n.actions.length).to.equal(2);
-    expect(n.actions[0].type).to.equal('button');
-    expect(n.actions[0].text).to.equal('1');
-    expect(n.actions[1].type).to.equal('button');
-    expect(n.actions[1].text).to.equal('2');
+    expect(n.actions.length).toBe(2);
+    expect(n.actions[0].type).toBe('button');
+    expect(n.actions[0].text).toBe('1');
+    expect(n.actions[1].type).toBe('button');
+    expect(n.actions[1].text).toBe('2');
 
     n.actions = [
       {
@@ -257,11 +258,11 @@ describe('Notification module', () => {
       }
     ];
 
-    expect(n.actions.length).to.equal(2);
-    expect(n.actions[0].type).to.equal('button');
-    expect(n.actions[0].text).to.equal('3');
-    expect(n.actions[1].type).to.equal('button');
-    expect(n.actions[1].text).to.equal('4');
+    expect(n.actions.length).toBe(2);
+    expect(n.actions[0].type).toBe('button');
+    expect(n.actions[0].text).toBe('3');
+    expect(n.actions[1].type).toBe('button');
+    expect(n.actions[1].text).toBe('4');
   });
 
   it('can be shown and closed', () => {
@@ -279,7 +280,7 @@ describe('Notification module', () => {
       toastXml: '<xml/>'
     });
 
-    expect(n.toastXml).to.equal('<xml/>');
+    expect(n.toastXml).toBe('<xml/>');
   });
 
   ifit(process.platform === 'darwin')('emits show and close events', async () => {
@@ -380,9 +381,9 @@ describe('Notification module', () => {
   describe('static methods', () => {
     ifit(process.platform === 'darwin')('getHistory returns a promise that resolves to an array', async () => {
       const result = Notification.getHistory();
-      expect(result).to.be.a('promise');
+      expect(result).toBeInstanceOf(Promise);
       const history = await result;
-      expect(history).to.be.an('array');
+      expect(history).toBeInstanceOf(Array);
     });
 
     ifit(process.platform === 'darwin')(
@@ -409,11 +410,11 @@ describe('Notification module', () => {
           if (!found) {
             expect.fail('Expected to find notification with id "history-test-id" in history');
           }
-          expect(found).to.be.an.instanceOf(Notification);
-          expect(found.title).to.equal('history test');
-          expect(found.subtitle).to.equal('history subtitle');
-          expect(found.body).to.equal('history body');
-          expect(found.groupId).to.equal('history-group');
+          expect(found).toBeInstanceOf(Notification);
+          expect(found.title).toBe('history test');
+          expect(found.subtitle).toBe('history subtitle');
+          expect(found.body).toBe('history body');
+          expect(found.groupId).toBe('history-group');
         }
 
         n.close();
@@ -421,35 +422,35 @@ describe('Notification module', () => {
     );
 
     ifit(process.platform === 'darwin')('remove does not throw with a string argument', () => {
-      expect(() => Notification.remove('nonexistent-id')).to.not.throw();
+      expect(() => Notification.remove('nonexistent-id')).not.toThrow();
     });
 
     ifit(process.platform === 'darwin')('remove does not throw with an array argument', () => {
-      expect(() => Notification.remove(['id-1', 'id-2'])).to.not.throw();
+      expect(() => Notification.remove(['id-1', 'id-2'])).not.toThrow();
     });
 
     ifit(process.platform === 'darwin')('remove throws with no arguments', () => {
-      expect(() => (Notification.remove as any)()).to.throw(/Expected a string or array of strings/);
+      expect(() => (Notification.remove as any)()).toThrow(/Expected a string or array of strings/);
     });
 
     ifit(process.platform === 'darwin')('remove throws with an invalid argument type', () => {
-      expect(() => (Notification.remove as any)(123)).to.throw(/Expected a string or array of strings/);
+      expect(() => (Notification.remove as any)(123)).toThrow(/Expected a string or array of strings/);
     });
 
     ifit(process.platform === 'darwin')('remove does not throw with an empty array', () => {
-      expect(() => Notification.remove([])).to.not.throw();
+      expect(() => Notification.remove([])).not.toThrow();
     });
 
     ifit(process.platform === 'darwin')('remove does not throw with an empty string', () => {
-      expect(() => Notification.remove('')).to.not.throw();
+      expect(() => Notification.remove('')).not.toThrow();
     });
 
     ifit(process.platform === 'darwin')('removeAll does not throw', () => {
-      expect(() => Notification.removeAll()).to.not.throw();
+      expect(() => Notification.removeAll()).not.toThrow();
     });
 
     ifit(process.platform === 'darwin')('removeGroup does not throw', () => {
-      expect(() => Notification.removeGroup('nonexistent-group')).to.not.throw();
+      expect(() => Notification.removeGroup('nonexistent-group')).not.toThrow();
     });
 
     ifit(process.platform === 'darwin')('getHistory returned notifications can be shown and closed', async () => {
@@ -474,7 +475,7 @@ describe('Notification module', () => {
         expect(() => {
           found.show();
           found.close();
-        }).to.not.throw();
+        }).not.toThrow();
       }
     });
 
@@ -497,7 +498,7 @@ describe('Notification module', () => {
 
       const history = await Notification.getHistory();
       const found = history.find((item: any) => item.id === 'remove-test-id');
-      expect(found).to.be.undefined();
+      expect(found).toBeUndefined();
     });
 
     ifit(process.platform === 'darwin')('remove accepts an array of ids', async () => {
@@ -529,8 +530,8 @@ describe('Notification module', () => {
       const history = await Notification.getHistory();
       const found1 = history.find((item: any) => item.id === 'remove-array-1');
       const found2 = history.find((item: any) => item.id === 'remove-array-2');
-      expect(found1).to.be.undefined();
-      expect(found2).to.be.undefined();
+      expect(found1).toBeUndefined();
+      expect(found2).toBeUndefined();
     });
 
     ifit(process.platform === 'darwin')('removeAll removes all notifications', async () => {
@@ -551,7 +552,7 @@ describe('Notification module', () => {
 
       const history = await Notification.getHistory();
       const found = history.find((item: any) => item.id === 'remove-all-test');
-      expect(found).to.be.undefined();
+      expect(found).toBeUndefined();
     });
 
     ifit(process.platform === 'darwin')('removeGroup removes notifications by groupId', async () => {
@@ -593,8 +594,8 @@ describe('Notification module', () => {
       // while group-b notifications should be gone
       const foundB1 = history.find((item: any) => item.id === 'group-remove-1');
       const foundB2 = history.find((item: any) => item.id === 'group-remove-2');
-      expect(foundB1).to.be.undefined();
-      expect(foundB2).to.be.undefined();
+      expect(foundB1).toBeUndefined();
+      expect(foundB2).toBeUndefined();
 
       // Clean up
       Notification.removeAll();

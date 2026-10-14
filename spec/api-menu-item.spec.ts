@@ -8,7 +8,7 @@ import {
   type MenuItemConstructorOptions
 } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import { createRequire } from 'node:module';
@@ -58,23 +58,36 @@ describe('MenuItems', () => {
         submenu: [{ role: 'about' }]
       });
 
-      expect(item).to.have.property('id').that.is.a('string');
-      expect(item).to.have.property('label').that.is.a('string').equal('hello');
-      expect(item).to.have.property('sublabel').that.is.a('string').equal('goodbye');
-      expect(item).to.have.property('accelerator').that.is.a('string').equal('CmdOrControl+Q');
-      expect(item).to.have.property('click').that.is.a('function');
-      expect(item).to.have.property('enabled').that.is.a('boolean').and.is.true('item is enabled');
-      expect(item).to.have.property('visible').that.is.a('boolean').and.is.true('item is visible');
-      expect(item).to.have.property('checked').that.is.a('boolean').and.is.false('item is not checked');
-      expect(item)
-        .to.have.property('registerAccelerator')
-        .that.is.a('boolean')
-        .and.is.true('item can register accelerator');
-      expect(item).to.have.property('type').that.is.a('string').equal('normal');
-      expect(item).to.have.property('commandId').that.is.a('number');
-      expect(item).to.have.property('toolTip').that.is.a('string');
-      expect(item).to.have.property('role').that.is.a('string');
-      expect(item).to.have.property('icon');
+      expect(item).toHaveProperty('id', expect.any(String));
+      expect(item).toHaveProperty('label');
+      expect(item.label).toBeTypeOf('string');
+      expect(item.label).toBe('hello');
+      expect(item).toHaveProperty('sublabel');
+      expect(item.sublabel).toBeTypeOf('string');
+      expect(item.sublabel).toBe('goodbye');
+      expect(item).toHaveProperty('accelerator');
+      expect(item.accelerator).toBeTypeOf('string');
+      expect(item.accelerator).toBe('CmdOrControl+Q');
+      expect(item).toHaveProperty('click', expect.any(Function));
+      expect(item, 'item is enabled').toHaveProperty('enabled');
+      expect(item.enabled, 'item is enabled').toBeTypeOf('boolean');
+      expect(item.enabled, 'item is enabled').toBe(true);
+      expect(item, 'item is visible').toHaveProperty('visible');
+      expect(item.visible, 'item is visible').toBeTypeOf('boolean');
+      expect(item.visible, 'item is visible').toBe(true);
+      expect(item, 'item is not checked').toHaveProperty('checked');
+      expect(item.checked, 'item is not checked').toBeTypeOf('boolean');
+      expect(item.checked, 'item is not checked').toBe(false);
+      expect(item, 'item can register accelerator').toHaveProperty('registerAccelerator');
+      expect(item.registerAccelerator, 'item can register accelerator').toBeTypeOf('boolean');
+      expect(item.registerAccelerator, 'item can register accelerator').toBe(true);
+      expect(item).toHaveProperty('type');
+      expect(item.type).toBeTypeOf('string');
+      expect(item.type).toBe('normal');
+      expect(item).toHaveProperty('commandId', expect.any(Number));
+      expect(item).toHaveProperty('toolTip', expect.any(String));
+      expect(item).toHaveProperty('role', expect.any(String));
+      expect(item).toHaveProperty('icon');
     });
 
     it('should have a default accelerator for certain roles', () => {
@@ -132,29 +145,31 @@ describe('MenuItems', () => {
       for (const role in items) {
         if (!Object.hasOwn(items, role)) continue;
         const item = new MenuItem({ role: role as any });
-        expect(item.accelerator).to.equal(items[role]);
+        expect(item.accelerator).toBe(items[role]);
       }
     });
   });
 
   describe('MenuItem.click', () => {
-    it('should be called with the item object passed', (done) => {
-      const menu = Menu.buildFromTemplate([
-        {
-          label: 'text',
-          click: (item) => {
-            try {
-              expect(item.constructor.name).to.equal('MenuItem');
-              expect(item.label).to.equal('text');
-              done();
-            } catch (e) {
-              done(e);
+    it('should be called with the item object passed', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const menu = Menu.buildFromTemplate([
+          {
+            label: 'text',
+            click: (item) => {
+              try {
+                expect(item.constructor.name).toBe('MenuItem');
+                expect(item.label).toBe('text');
+                done();
+              } catch (e) {
+                done(e);
+              }
             }
           }
-        }
-      ]);
-      menu._executeCommand({}, menu.items[0].commandId);
-    });
+        ]);
+        menu._executeCommand({}, menu.items[0].commandId);
+      }));
   });
 
   describe('MenuItem with checked/radio property', () => {
@@ -166,9 +181,9 @@ describe('MenuItems', () => {
         }
       ]);
 
-      expect(menu.items[0].checked).to.be.false('menu item checked');
+      expect(menu.items[0].checked, 'menu item checked').toBe(false);
       menu._executeCommand({}, menu.items[0].commandId);
-      expect(menu.items[0].checked).to.be.true('menu item checked');
+      expect(menu.items[0].checked, 'menu item checked').toBe(true);
     });
 
     it('clicking an radio item should always make checked property true', () => {
@@ -180,9 +195,9 @@ describe('MenuItems', () => {
       ]);
 
       menu._executeCommand({}, menu.items[0].commandId);
-      expect(menu.items[0].checked).to.be.true('menu item checked');
+      expect(menu.items[0].checked, 'menu item checked').toBe(true);
       menu._executeCommand({}, menu.items[0].commandId);
-      expect(menu.items[0].checked).to.be.true('menu item checked');
+      expect(menu.items[0].checked, 'menu item checked').toBe(true);
     });
 
     describe('MenuItem group properties', () => {
@@ -237,7 +252,7 @@ describe('MenuItems', () => {
         const groups = findRadioGroups(template);
 
         for (const g of groups) {
-          expect(findChecked(menu.items, g.begin!, g.end!)).to.deep.equal([g.begin]);
+          expect(findChecked(menu.items, g.begin!, g.end!)).toEqual([g.begin]);
         }
       });
 
@@ -250,13 +265,13 @@ describe('MenuItems', () => {
           const groupId = (menu.items[g.begin!] as any).groupId;
 
           // groupId should be previously unused
-          // expect(usedGroupIds.has(groupId)).to.be.false('group id present')
-          expect(usedGroupIds).not.to.contain(groupId);
+          // expect(usedGroupIds.has(groupId)).to.be.false
+          expect(usedGroupIds).not.toContain(groupId);
           usedGroupIds.add(groupId);
 
           // everything in the group should have the same id
           for (let i = g.begin!; i < g.end!; ++i) {
-            expect((menu.items[i] as any).groupId).to.equal(groupId);
+            expect((menu.items[i] as any).groupId).toBe(groupId);
           }
         }
       });
@@ -266,13 +281,13 @@ describe('MenuItems', () => {
 
         const groups = findRadioGroups(template);
         for (const g of groups) {
-          expect(findChecked(menu.items, g.begin!, g.end!)).to.deep.equal([]);
+          expect(findChecked(menu.items, g.begin!, g.end!)).toEqual([]);
 
           menu.items[g.begin!].checked = true;
-          expect(findChecked(menu.items, g.begin!, g.end!)).to.deep.equal([g.begin!]);
+          expect(findChecked(menu.items, g.begin!, g.end!)).toEqual([g.begin!]);
 
           menu.items[g.end! - 1].checked = true;
-          expect(findChecked(menu.items, g.begin!, g.end!)).to.deep.equal([g.end! - 1]);
+          expect(findChecked(menu.items, g.begin!, g.end!)).toEqual([g.end! - 1]);
         }
       });
     });
@@ -285,7 +300,7 @@ describe('MenuItems', () => {
       const item = new MenuItem({ role: 'asdfghjkl' as any });
 
       const canExecute = executeByRole(item.role as any, win, win.webContents);
-      expect(canExecute).to.be.false('can execute');
+      expect(canExecute, 'can execute').toBe(false);
     });
 
     it('executes roles with native role functions', () => {
@@ -293,7 +308,7 @@ describe('MenuItems', () => {
       const item = new MenuItem({ role: 'reload' });
 
       const canExecute = executeByRole(item.role as any, win, win.webContents);
-      expect(canExecute).to.be.true('can execute');
+      expect(canExecute, 'can execute').toBe(true);
     });
 
     it('execute roles with non-native role functions', () => {
@@ -301,7 +316,7 @@ describe('MenuItems', () => {
       const item = new MenuItem({ role: 'resetZoom' });
 
       const canExecute = executeByRole(item.role as any, win, win.webContents);
-      expect(canExecute).to.be.true('can execute');
+      expect(canExecute, 'can execute').toBe(true);
     });
 
     ifit(process.platform === 'win32')('does not execute minimize role when minimizable false', () => {
@@ -315,11 +330,11 @@ describe('MenuItems', () => {
 
       Menu.setApplicationMenu(menu);
       menu._executeCommand({}, menu.items[0].commandId);
-      expect(win.isMinimized()).to.equal(false);
+      expect(win.isMinimized()).toBe(false);
 
       win.setMinimizable(true);
       menu._executeCommand({}, menu.items[0].commandId);
-      expect(win.isMinimized()).to.equal(true);
+      expect(win.isMinimized()).toBe(true);
     });
   });
 
@@ -328,11 +343,11 @@ describe('MenuItems', () => {
       const item = new MenuItem({ label: 'item' });
 
       const commandId = item.commandId;
-      expect(commandId).to.not.be.undefined('command id');
+      expect(commandId, 'command id').not.toBeUndefined();
       expect(() => {
         item.commandId = `${commandId}-modified` as any;
-      }).to.throw(/Cannot assign to read only property/);
-      expect(item.commandId).to.equal(commandId);
+      }).toThrow(/Cannot assign to read only property/);
+      expect(item.commandId).toBe(commandId);
     });
   });
 
@@ -345,7 +360,7 @@ describe('MenuItems', () => {
             type: 'not-a-type' as any
           }
         ]);
-      }).to.throw(/Unknown menu item type: not-a-type/);
+      }).toThrow(/Unknown menu item type: not-a-type/);
     });
   });
 
@@ -358,7 +373,7 @@ describe('MenuItems', () => {
             type: 'submenu'
           }
         ]);
-      }).to.throw(/Invalid submenu/);
+      }).toThrow(/Invalid submenu/);
     });
   });
 
@@ -368,7 +383,7 @@ describe('MenuItems', () => {
 
       for (const role of list) {
         const item = new MenuItem({ role: role as any });
-        expect(item.getDefaultRoleAccelerator()).to.be.undefined('default accelerator');
+        expect(item.getDefaultRoleAccelerator(), 'default accelerator').toBeUndefined();
       }
     });
 
@@ -376,7 +391,7 @@ describe('MenuItems', () => {
       for (const role of keys(roleList)) {
         const item = new MenuItem({ role: role as any });
         const label: string = roleList[role].label;
-        expect(item.label).to.equal(label);
+        expect(item.label).toBe(label);
       }
     });
 
@@ -386,7 +401,7 @@ describe('MenuItems', () => {
       for (const role of list) {
         const item = new MenuItem({ role: role as any });
         const accelerator = roleList[role].accelerator;
-        expect(item.getDefaultRoleAccelerator()).to.equal(accelerator);
+        expect(item.getDefaultRoleAccelerator()).toBe(accelerator);
       }
     });
 
@@ -397,9 +412,9 @@ describe('MenuItems', () => {
         accelerator: 'D'
       });
 
-      expect(item.label).to.equal('Custom Close!');
-      expect(item.accelerator).to.equal('D');
-      expect(item.getDefaultRoleAccelerator()).to.equal('CommandOrControl+W');
+      expect(item.label).toBe('Custom Close!');
+      expect(item.accelerator).toBe('D');
+      expect(item.getDefaultRoleAccelerator()).toBe('CommandOrControl+W');
     });
   });
 
@@ -407,16 +422,16 @@ describe('MenuItems', () => {
     it('includes a default submenu layout when submenu is empty', () => {
       const item = new MenuItem({ role: 'appMenu' });
 
-      expect(item.label).to.equal(app.name);
-      expect(item.submenu!.items[0].role).to.equal('about');
-      expect(item.submenu!.items[1].type).to.equal('separator');
-      expect(item.submenu!.items[2].role).to.equal('services');
-      expect(item.submenu!.items[3].type).to.equal('separator');
-      expect(item.submenu!.items[4].role).to.equal('hide');
-      expect(item.submenu!.items[5].role).to.equal('hideothers');
-      expect(item.submenu!.items[6].role).to.equal('unhide');
-      expect(item.submenu!.items[7].type).to.equal('separator');
-      expect(item.submenu!.items[8].role).to.equal('quit');
+      expect(item.label).toBe(app.name);
+      expect(item.submenu!.items[0].role).toBe('about');
+      expect(item.submenu!.items[1].type).toBe('separator');
+      expect(item.submenu!.items[2].role).toBe('services');
+      expect(item.submenu!.items[3].type).toBe('separator');
+      expect(item.submenu!.items[4].role).toBe('hide');
+      expect(item.submenu!.items[5].role).toBe('hideothers');
+      expect(item.submenu!.items[6].role).toBe('unhide');
+      expect(item.submenu!.items[7].type).toBe('separator');
+      expect(item.submenu!.items[8].role).toBe('quit');
     });
 
     it('overrides default layout when submenu is specified', () => {
@@ -428,8 +443,8 @@ describe('MenuItems', () => {
           }
         ]
       });
-      expect(item.label).to.equal(app.name);
-      expect(item.submenu!.items[0].role).to.equal('close');
+      expect(item.label).toBe(app.name);
+      expect(item.submenu!.items[0].role).toBe('close');
     });
   });
 
@@ -437,11 +452,11 @@ describe('MenuItems', () => {
     it('includes a default submenu layout when submenu is empty', () => {
       const item = new MenuItem({ role: 'fileMenu' });
 
-      expect(item.label).to.equal('File');
+      expect(item.label).toBe('File');
       if (process.platform === 'darwin') {
-        expect(item.submenu!.items[0].role).to.equal('close');
+        expect(item.submenu!.items[0].role).toBe('close');
       } else {
-        expect(item.submenu!.items[0].role).to.equal('quit');
+        expect(item.submenu!.items[0].role).toBe('quit');
       }
     });
 
@@ -454,8 +469,8 @@ describe('MenuItems', () => {
           }
         ]
       });
-      expect(item.label).to.equal('File');
-      expect(item.submenu!.items[0].role).to.equal('about');
+      expect(item.label).toBe('File');
+      expect(item.submenu!.items[0].role).toBe('about');
     });
   });
 
@@ -463,32 +478,32 @@ describe('MenuItems', () => {
     it('includes a default submenu layout when submenu is empty', () => {
       const item = new MenuItem({ role: 'editMenu' });
 
-      expect(item.label).to.equal('Edit');
-      expect(item.submenu!.items[0].role).to.equal('undo');
-      expect(item.submenu!.items[1].role).to.equal('redo');
-      expect(item.submenu!.items[2].type).to.equal('separator');
-      expect(item.submenu!.items[3].role).to.equal('cut');
-      expect(item.submenu!.items[4].role).to.equal('copy');
-      expect(item.submenu!.items[5].role).to.equal('paste');
+      expect(item.label).toBe('Edit');
+      expect(item.submenu!.items[0].role).toBe('undo');
+      expect(item.submenu!.items[1].role).toBe('redo');
+      expect(item.submenu!.items[2].type).toBe('separator');
+      expect(item.submenu!.items[3].role).toBe('cut');
+      expect(item.submenu!.items[4].role).toBe('copy');
+      expect(item.submenu!.items[5].role).toBe('paste');
 
       if (process.platform === 'darwin') {
-        expect(item.submenu!.items[6].role).to.equal('pasteandmatchstyle');
-        expect(item.submenu!.items[7].role).to.equal('delete');
-        expect(item.submenu!.items[8].role).to.equal('selectall');
-        expect(item.submenu!.items[9].type).to.equal('separator');
-        expect(item.submenu!.items[10].label).to.equal('Substitutions');
-        expect(item.submenu!.items[10].submenu!.items[0].role).to.equal('showsubstitutions');
-        expect(item.submenu!.items[10].submenu!.items[1].type).to.equal('separator');
-        expect(item.submenu!.items[10].submenu!.items[2].role).to.equal('togglesmartquotes');
-        expect(item.submenu!.items[10].submenu!.items[3].role).to.equal('togglesmartdashes');
-        expect(item.submenu!.items[10].submenu!.items[4].role).to.equal('toggletextreplacement');
-        expect(item.submenu!.items[11].label).to.equal('Speech');
-        expect(item.submenu!.items[11].submenu!.items[0].role).to.equal('startspeaking');
-        expect(item.submenu!.items[11].submenu!.items[1].role).to.equal('stopspeaking');
+        expect(item.submenu!.items[6].role).toBe('pasteandmatchstyle');
+        expect(item.submenu!.items[7].role).toBe('delete');
+        expect(item.submenu!.items[8].role).toBe('selectall');
+        expect(item.submenu!.items[9].type).toBe('separator');
+        expect(item.submenu!.items[10].label).toBe('Substitutions');
+        expect(item.submenu!.items[10].submenu!.items[0].role).toBe('showsubstitutions');
+        expect(item.submenu!.items[10].submenu!.items[1].type).toBe('separator');
+        expect(item.submenu!.items[10].submenu!.items[2].role).toBe('togglesmartquotes');
+        expect(item.submenu!.items[10].submenu!.items[3].role).toBe('togglesmartdashes');
+        expect(item.submenu!.items[10].submenu!.items[4].role).toBe('toggletextreplacement');
+        expect(item.submenu!.items[11].label).toBe('Speech');
+        expect(item.submenu!.items[11].submenu!.items[0].role).toBe('startspeaking');
+        expect(item.submenu!.items[11].submenu!.items[1].role).toBe('stopspeaking');
       } else {
-        expect(item.submenu!.items[6].role).to.equal('delete');
-        expect(item.submenu!.items[7].type).to.equal('separator');
-        expect(item.submenu!.items[8].role).to.equal('selectall');
+        expect(item.submenu!.items[6].role).toBe('delete');
+        expect(item.submenu!.items[7].type).toBe('separator');
+        expect(item.submenu!.items[8].role).toBe('selectall');
       }
     });
 
@@ -501,8 +516,8 @@ describe('MenuItems', () => {
           }
         ]
       });
-      expect(item.label).to.equal('Edit');
-      expect(item.submenu!.items[0].role).to.equal('close');
+      expect(item.label).toBe('Edit');
+      expect(item.submenu!.items[0].role).toBe('close');
     });
   });
 
@@ -510,16 +525,16 @@ describe('MenuItems', () => {
     it('includes a default submenu layout when submenu is empty', () => {
       const item = new MenuItem({ role: 'viewMenu' });
 
-      expect(item.label).to.equal('View');
-      expect(item.submenu!.items[0].role).to.equal('reload');
-      expect(item.submenu!.items[1].role).to.equal('forcereload');
-      expect(item.submenu!.items[2].role).to.equal('toggledevtools');
-      expect(item.submenu!.items[3].type).to.equal('separator');
-      expect(item.submenu!.items[4].role).to.equal('resetzoom');
-      expect(item.submenu!.items[5].role).to.equal('zoomin');
-      expect(item.submenu!.items[6].role).to.equal('zoomout');
-      expect(item.submenu!.items[7].type).to.equal('separator');
-      expect(item.submenu!.items[8].role).to.equal('togglefullscreen');
+      expect(item.label).toBe('View');
+      expect(item.submenu!.items[0].role).toBe('reload');
+      expect(item.submenu!.items[1].role).toBe('forcereload');
+      expect(item.submenu!.items[2].role).toBe('toggledevtools');
+      expect(item.submenu!.items[3].type).toBe('separator');
+      expect(item.submenu!.items[4].role).toBe('resetzoom');
+      expect(item.submenu!.items[5].role).toBe('zoomin');
+      expect(item.submenu!.items[6].role).toBe('zoomout');
+      expect(item.submenu!.items[7].type).toBe('separator');
+      expect(item.submenu!.items[8].role).toBe('togglefullscreen');
     });
 
     it('overrides default layout when submenu is specified', () => {
@@ -531,8 +546,8 @@ describe('MenuItems', () => {
           }
         ]
       });
-      expect(item.label).to.equal('View');
-      expect(item.submenu!.items[0].role).to.equal('close');
+      expect(item.label).toBe('View');
+      expect(item.submenu!.items[0].role).toBe('close');
     });
   });
 
@@ -547,14 +562,14 @@ describe('MenuItems', () => {
       await wcv.webContents.loadURL('about:blank');
 
       const opened = once(wcv.webContents, 'devtools-opened');
-      expect(executeByRole('toggleDevTools', w, wcv.webContents)).to.be.true();
+      expect(executeByRole('toggleDevTools', w, wcv.webContents)).toBe(true);
       await opened;
-      expect(wcv.webContents.isDevToolsOpened()).to.be.true();
+      expect(wcv.webContents.isDevToolsOpened()).toBe(true);
 
       const closed = once(wcv.webContents, 'devtools-closed');
       executeByRole('toggleDevTools', w, wcv.webContents);
       await closed;
-      expect(wcv.webContents.isDevToolsOpened()).to.be.false();
+      expect(wcv.webContents.isDevToolsOpened()).toBe(false);
     });
 
     it('toggles parent devtools when invoked with the devtools webContents', async () => {
@@ -566,15 +581,15 @@ describe('MenuItems', () => {
       const opened = once(wcv.webContents, 'devtools-opened');
       wcv.webContents.openDevTools({ mode: 'bottom' });
       await opened;
-      expect(wcv.webContents.isDevToolsOpened()).to.be.true();
+      expect(wcv.webContents.isDevToolsOpened()).toBe(true);
 
       const devToolsWc = wcv.webContents.devToolsWebContents!;
-      expect(devToolsWc).to.not.be.null();
+      expect(devToolsWc).not.toBeNull();
 
       const closed = once(wcv.webContents, 'devtools-closed');
-      expect(executeByRole('toggleDevTools', w, devToolsWc)).to.be.true();
+      expect(executeByRole('toggleDevTools', w, devToolsWc)).toBe(true);
       await closed;
-      expect(wcv.webContents.isDevToolsOpened()).to.be.false();
+      expect(wcv.webContents.isDevToolsOpened()).toBe(false);
     });
   });
 
@@ -588,7 +603,7 @@ describe('MenuItems', () => {
     const changeTitle = async (wcv: WebContentsView) => {
       const changedTitle = 'CHANGED';
       await wcv.webContents.executeJavaScript(`document.title = '${changedTitle}'`);
-      expect(wcv.webContents.getTitle()).to.equal(changedTitle);
+      expect(wcv.webContents.getTitle()).toBe(changedTitle);
     };
 
     const testReloadRole = async (role: 'reload' | 'forceReload') => {
@@ -600,12 +615,12 @@ describe('MenuItems', () => {
       await changeTitle(wcv);
 
       const didStartLoading = once(wcv.webContents, 'did-start-loading');
-      expect(executeByRole(role, w, wcv.webContents)).to.be.true();
+      expect(executeByRole(role, w, wcv.webContents)).toBe(true);
       await didStartLoading;
       await once(wcv.webContents, 'did-finish-load');
 
       // If the page was reloaded, the title should have been reset.
-      expect(wcv.webContents.getTitle()).to.equal(title);
+      expect(wcv.webContents.getTitle()).toBe(title);
     };
 
     const testReloadRoleOnDevToolsWebContents = async (role: 'reload' | 'forceReload') => {
@@ -621,12 +636,12 @@ describe('MenuItems', () => {
       await opened;
 
       const didStartLoading = once(wcv.webContents, 'did-start-loading');
-      expect(executeByRole(role, w, wcv.webContents.devToolsWebContents!)).to.be.true();
+      expect(executeByRole(role, w, wcv.webContents.devToolsWebContents!)).toBe(true);
       await didStartLoading;
       await once(wcv.webContents, 'did-finish-load');
 
       // If the page was reloaded, the title should have been reset.
-      expect(wcv.webContents.getTitle()).to.equal(title);
+      expect(wcv.webContents.getTitle()).toBe(title);
     };
 
     describe('reload role', () => {
@@ -654,15 +669,15 @@ describe('MenuItems', () => {
     it('includes a default submenu layout when submenu is empty', () => {
       const item = new MenuItem({ role: 'windowMenu' });
 
-      expect(item.label).to.equal('Window');
-      expect(item.submenu!.items[0].role).to.equal('minimize');
-      expect(item.submenu!.items[1].role).to.equal('zoom');
+      expect(item.label).toBe('Window');
+      expect(item.submenu!.items[0].role).toBe('minimize');
+      expect(item.submenu!.items[1].role).toBe('zoom');
 
       if (process.platform === 'darwin') {
-        expect(item.submenu!.items[2].type).to.equal('separator');
-        expect(item.submenu!.items[3].role).to.equal('front');
+        expect(item.submenu!.items[2].type).toBe('separator');
+        expect(item.submenu!.items[3].role).toBe('front');
       } else {
-        expect(item.submenu!.items[2].role).to.equal('close');
+        expect(item.submenu!.items[2].role).toBe('close');
       }
     });
 
@@ -672,8 +687,8 @@ describe('MenuItems', () => {
         submenu: [{ role: 'copy' }]
       });
 
-      expect(item.label).to.equal('Window');
-      expect(item.submenu!.items[0].role).to.equal('copy');
+      expect(item.label).toBe('Window');
+      expect(item.submenu!.items[0].role).toBe('copy');
     });
   });
 
@@ -696,10 +711,10 @@ describe('MenuItems', () => {
         } as any)
       );
 
-      expect((menu.items[0] as any).customProp).to.equal('foo');
-      expect(menu.items[0].submenu!.items[0].label).to.equal('item 1');
-      expect((menu.items[0].submenu!.items[0] as any).customProp).to.equal('bar');
-      expect((menu.items[0].submenu!.items[0] as any).overrideProperty).to.be.a('function');
+      expect((menu.items[0] as any).customProp).toBe('foo');
+      expect(menu.items[0].submenu!.items[0].label).toBe('item 1');
+      expect((menu.items[0].submenu!.items[0] as any).customProp).toBe('bar');
+      expect((menu.items[0].submenu!.items[0] as any).overrideProperty).toBeTypeOf('function');
     });
   });
 
@@ -715,9 +730,9 @@ describe('MenuItems', () => {
         { label: 'text', accelerator: 'Alt+A' }
       ]);
 
-      expect(menu._getAcceleratorTextAt(0)).to.equal(isDarwin() ? 'Command+A' : 'Ctrl+A');
-      expect(menu._getAcceleratorTextAt(1)).to.equal('Shift+A');
-      expect(menu._getAcceleratorTextAt(2)).to.equal('Alt+A');
+      expect(menu._getAcceleratorTextAt(0)).toBe(isDarwin() ? 'Command+A' : 'Ctrl+A');
+      expect(menu._getAcceleratorTextAt(1)).toBe('Shift+A');
+      expect(menu._getAcceleratorTextAt(2)).toBe('Alt+A');
     });
 
     it('should display modifiers correctly for special keys', () => {
@@ -727,9 +742,9 @@ describe('MenuItems', () => {
         { label: 'text', accelerator: 'Alt+Tab' }
       ]);
 
-      expect(menu._getAcceleratorTextAt(0)).to.equal(isDarwin() ? 'Command+Tab' : 'Ctrl+Tab');
-      expect(menu._getAcceleratorTextAt(1)).to.equal('Shift+Tab');
-      expect(menu._getAcceleratorTextAt(2)).to.equal('Alt+Tab');
+      expect(menu._getAcceleratorTextAt(0)).toBe(isDarwin() ? 'Command+Tab' : 'Ctrl+Tab');
+      expect(menu._getAcceleratorTextAt(1)).toBe('Shift+Tab');
+      expect(menu._getAcceleratorTextAt(2)).toBe('Alt+Tab');
     });
 
     it('should not display modifiers twice', () => {
@@ -738,8 +753,8 @@ describe('MenuItems', () => {
         { label: 'text', accelerator: 'Shift+Shift+Tab' }
       ]);
 
-      expect(menu._getAcceleratorTextAt(0)).to.equal('Shift+A');
-      expect(menu._getAcceleratorTextAt(1)).to.equal('Shift+Tab');
+      expect(menu._getAcceleratorTextAt(0)).toBe('Shift+A');
+      expect(menu._getAcceleratorTextAt(1)).toBe('Shift+Tab');
     });
 
     it('should display correctly for shifted keys', () => {
@@ -752,12 +767,12 @@ describe('MenuItems', () => {
         { label: 'text', accelerator: 'Control+?' }
       ]);
 
-      expect(menu._getAcceleratorTextAt(0)).to.equal('Ctrl+Shift+=');
-      expect(menu._getAcceleratorTextAt(1)).to.equal('Ctrl++');
-      expect(menu._getAcceleratorTextAt(2)).to.equal('Ctrl+Shift+3');
-      expect(menu._getAcceleratorTextAt(3)).to.equal('Ctrl+#');
-      expect(menu._getAcceleratorTextAt(4)).to.equal('Ctrl+Shift+/');
-      expect(menu._getAcceleratorTextAt(5)).to.equal('Ctrl+?');
+      expect(menu._getAcceleratorTextAt(0)).toBe('Ctrl+Shift+=');
+      expect(menu._getAcceleratorTextAt(1)).toBe('Ctrl++');
+      expect(menu._getAcceleratorTextAt(2)).toBe('Ctrl+Shift+3');
+      expect(menu._getAcceleratorTextAt(3)).toBe('Ctrl+#');
+      expect(menu._getAcceleratorTextAt(4)).toBe('Ctrl+Shift+/');
+      expect(menu._getAcceleratorTextAt(5)).toBe('Ctrl+?');
     });
   });
 
@@ -768,7 +783,7 @@ describe('MenuItems', () => {
         badge: { type: 'alerts', count: 3 }
       });
 
-      expect(item.badge).to.deep.equal({ type: 'alerts', count: 3 });
+      expect(item.badge).toEqual({ type: 'alerts', count: 3 });
     });
 
     it('should support all badge types', () => {
@@ -777,10 +792,10 @@ describe('MenuItems', () => {
       const newItems = new MenuItem({ label: 'c', badge: { type: 'new-items', count: 5 } });
       const custom = new MenuItem({ label: 'd', badge: { type: 'none', content: 'Custom' } });
 
-      expect(alerts.badge).to.deep.equal({ type: 'alerts', count: 1 });
-      expect(updates.badge).to.deep.equal({ type: 'updates', count: 2 });
-      expect(newItems.badge).to.deep.equal({ type: 'new-items', count: 5 });
-      expect(custom.badge).to.deep.equal({ type: 'none', content: 'Custom' });
+      expect(alerts.badge).toEqual({ type: 'alerts', count: 1 });
+      expect(updates.badge).toEqual({ type: 'updates', count: 2 });
+      expect(newItems.badge).toEqual({ type: 'new-items', count: 5 });
+      expect(custom.badge).toEqual({ type: 'none', content: 'Custom' });
     });
 
     it('should allow dynamic badge updates', () => {
@@ -790,67 +805,67 @@ describe('MenuItems', () => {
       });
 
       item.badge = { type: 'updates', count: 10 };
-      expect(item.badge).to.deep.equal({ type: 'updates', count: 10 });
+      expect(item.badge).toEqual({ type: 'updates', count: 10 });
     });
 
     it('should have undefined badge when not set', () => {
       const item = new MenuItem({ label: 'test' });
-      expect(item.badge).to.be.undefined();
+      expect(item.badge).toBeUndefined();
     });
 
     it('should set badge on items added to a menu', () => {
       const menu = Menu.buildFromTemplate([{ label: 'test', badge: { type: 'alerts', count: 3 } }]);
 
-      expect(menu.items[0].badge).to.deep.equal({ type: 'alerts', count: 3 });
+      expect(menu.items[0].badge).toEqual({ type: 'alerts', count: 3 });
     });
 
     it('should update badge after item is added to a menu', () => {
       const menu = Menu.buildFromTemplate([{ label: 'test', badge: { type: 'alerts', count: 1 } }]);
 
       menu.items[0].badge = { type: 'updates', count: 5 };
-      expect(menu.items[0].badge).to.deep.equal({ type: 'updates', count: 5 });
+      expect(menu.items[0].badge).toEqual({ type: 'updates', count: 5 });
     });
 
     it('should remove an existing badge', () => {
       const item = new MenuItem({ label: 'test', badge: { type: 'alerts', count: 3 } });
       item.badge = undefined;
-      expect(item.badge).to.be.undefined();
+      expect(item.badge).toBeUndefined();
 
       const menu = Menu.buildFromTemplate([{ label: 'test', badge: { type: 'none', content: 'New' } }]);
       menu.items[0].badge = undefined;
-      expect(menu.items[0].badge).to.be.undefined();
+      expect(menu.items[0].badge).toBeUndefined();
       menu.items[0].badge = { type: 'new-items', count: 2 };
-      expect(menu.items[0].badge).to.deep.equal({ type: 'new-items', count: 2 });
+      expect(menu.items[0].badge).toEqual({ type: 'new-items', count: 2 });
     });
 
     it('should default the badge type to none', () => {
       const item = new MenuItem({ label: 'test', badge: { content: 'Beta' } });
-      expect(item.badge).to.deep.equal({ content: 'Beta' });
+      expect(item.badge).toEqual({ content: 'Beta' });
     });
 
     it('should throw on an invalid badge', () => {
-      expect(() => new MenuItem({ label: 'test', badge: { type: 'bogus', count: 1 } as any })).to.throw(
+      expect(() => new MenuItem({ label: 'test', badge: { type: 'bogus', count: 1 } as any })).toThrow(
         /Invalid badge type/
       );
-      expect(() => new MenuItem({ label: 'test', badge: { type: 'alerts' } })).to.throw(
+      expect(() => new MenuItem({ label: 'test', badge: { type: 'alerts' } })).toThrow(
         /badge.count must be a non-negative integer/
       );
-      expect(() => new MenuItem({ label: 'test', badge: { type: 'updates', count: -1 } })).to.throw(
+      expect(() => new MenuItem({ label: 'test', badge: { type: 'updates', count: -1 } })).toThrow(
         /badge.count must be a non-negative integer/
       );
-      expect(() => new MenuItem({ label: 'test', badge: { type: 'alerts', count: 1, content: 'x' } })).to.throw(
+      expect(() => new MenuItem({ label: 'test', badge: { type: 'alerts', count: 1, content: 'x' } })).toThrow(
         /badge.content can only be used/
       );
-      expect(() => new MenuItem({ label: 'test', badge: { type: 'none' } })).to.throw(/badge.content must be a string/);
-      expect(() => new MenuItem({ label: 'test', badge: { type: 'none', content: 'x', count: 1 } })).to.throw(
+      expect(() => new MenuItem({ label: 'test', badge: { type: 'none' } })).toThrow(/badge.content must be a string/);
+      expect(() => new MenuItem({ label: 'test', badge: { type: 'none', content: 'x', count: 1 } })).toThrow(
         /badge.count cannot be used/
       );
 
       const item = new MenuItem({ label: 'test' });
       expect(() => {
         item.badge = { type: 'bogus' } as any;
-      }).to.throw(/Invalid badge type/);
-      expect(item.badge).to.be.undefined();
+      }).toThrow(/Invalid badge type/);
+      expect(item.badge).toBeUndefined();
     });
   });
 });

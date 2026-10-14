@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { expect, it } from 'vitest';
 
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
@@ -31,7 +31,7 @@ ifdescribe(process.platform === 'linux')('defaultDesktopName', () => {
       ['!!!', fallback]
     ];
     for (const [input, expected] of cases) {
-      expect(defaultDesktopName(input)).to.equal(expected, `input: ${JSON.stringify(input)}`);
+      expect(defaultDesktopName(input), `input: ${JSON.stringify(input)}`).toBe(expected);
     }
   });
 });
