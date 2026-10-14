@@ -1,6 +1,6 @@
 import { utilityProcess } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { once } from 'node:events';
 import * as path from 'node:path';
@@ -35,6 +35,6 @@ export async function runInUtilityProcess(fn: Function = () => {}, args?: { [key
   const result = waitForUtilityResult(child);
   child.postMessage({ fn: `(${fn})()`, args });
   const { data, code } = await result;
-  expect(data.ok).to.be.true(data.message);
-  expect(code).to.equal(0);
+  expect(data.ok, data.message).toBe(true);
+  expect(code).toBe(0);
 }

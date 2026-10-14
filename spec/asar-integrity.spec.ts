@@ -2,7 +2,7 @@ import { getRawHeader } from '@electron/asar';
 import { flipFuses, type FuseV1Config, FuseV1Options, FuseVersion } from '@electron/fuses';
 import { resedit } from '@electron/packager/dist/resedit.js';
 
-import { expect } from 'chai';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import * as cp from 'node:child_process';
 import * as nodeCrypto from 'node:crypto';
@@ -51,18 +51,16 @@ function spawn(cmd: string, args: string[], opts: any = {}) {
 
 const expectToHaveCrashed = (res: SpawnResult) => {
   if (process.platform === 'win32') {
-    expect(res.code).to.not.equal(0);
-    expect(res.code).to.not.equal(null);
-    expect(res.signal).to.equal(null);
+    expect(res.code).not.toBe(0);
+    expect(res.code).not.toBe(null);
+    expect(res.signal).toBe(null);
   } else {
-    expect(res.code).to.equal(null);
-    expect(res.signal).to.be.oneOf(['SIGABRT', 'SIGTRAP']);
+    expect(res.code).toBe(null);
+    expect(['SIGABRT', 'SIGTRAP']).toContain(res.signal);
   }
 };
 
-describe('fuses', function () {
-  this.timeout(120000);
-
+describe('fuses', { timeout: 120000 }, () => {
   let tmpDir: string;
   let appPath: string;
 
@@ -82,13 +80,13 @@ describe('fuses', function () {
         resetAdHocDarwinSignature: true,
         ...fuses
       });
-    });
+    }, 120000);
   };
 
   beforeEach(async () => {
     tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-asar-integrity-spec-'));
     appPath = await copyApp(tmpDir);
-  });
+  }, 120000);
 
   afterEach(async () => {
     for (let attempt = 0; attempt <= 3; attempt++) {
@@ -99,7 +97,7 @@ describe('fuses', function () {
         break;
       } catch {}
     }
-  });
+  }, 120000);
 
   ifdescribe((process.platform === 'win32' && process.arch !== 'arm64') || process.platform === 'darwin')(
     'ASAR Integrity',
@@ -123,7 +121,7 @@ describe('fuses', function () {
             }
           });
         }
-      });
+      }, 120000);
 
       describe('when enabled', () => {
         ensureFusesBeforeEach({
@@ -132,16 +130,16 @@ describe('fuses', function () {
 
         it('opens normally when unmodified', async () => {
           const res = await launchApp([path.resolve(import.meta.dirname, 'fixtures/apps/hello/hello.js')]);
-          expect(res.code).to.equal(0);
-          expect(res.signal).to.equal(null);
-          expect(res.out).to.include('alive');
+          expect(res.code).toBe(0);
+          expect(res.signal).toBe(null);
+          expect(res.out).toContain('alive');
         });
 
         it('fatals if the integrity header does not match', async () => {
           const asar = await originalFs.promises.readFile(pathToAsar);
           // Ensure that the header still starts with the same thing, if build system
           // things result in the header changing we should update this test
-          expect(asar.toString()).to.contain('{"files":{"default_app.js"');
+          expect(asar.toString()).toContain('{"files":{"default_app.js"');
           await originalFs.promises.writeFile(
             pathToAsar,
             bufferReplace(asar, '{"files":{"default_app.js"', '{"files":{"default_oop.js"')
@@ -149,27 +147,27 @@ describe('fuses', function () {
 
           const res = await launchApp(['--version']);
           expectToHaveCrashed(res);
-          expect(res.out).to.include('Integrity check failed for asar archive');
+          expect(res.out).toContain('Integrity check failed for asar archive');
         });
 
         it('fatals if a loaded main process JS file does not match', async () => {
           const asar = await originalFs.promises.readFile(pathToAsar);
           // Ensure that the header still starts with the same thing, if build system
           // things result in the header changing we should update this test
-          expect(asar.toString()).to.contain('Invalid Usage');
+          expect(asar.toString()).toContain('Invalid Usage');
           await originalFs.promises.writeFile(pathToAsar, bufferReplace(asar, 'Invalid Usage', 'VVValid Usage'));
 
           const res = await launchApp(['--version']);
-          expect(res.code).to.equal(1);
-          expect(res.signal).to.equal(null);
-          expect(res.out).to.include('ASAR Integrity Violation: got a hash mismatch');
+          expect(res.code).toBe(1);
+          expect(res.signal).toBe(null);
+          expect(res.out).toContain('ASAR Integrity Violation: got a hash mismatch');
         });
 
         it('fatals if a renderer content file does not match', async () => {
           const asar = await originalFs.promises.readFile(pathToAsar);
           // Ensure that the header still starts with the same thing, if build system
           // things result in the header changing we should update this test
-          expect(asar.toString()).to.contain('require-trusted-types-for');
+          expect(asar.toString()).toContain('require-trusted-types-for');
           await originalFs.promises.writeFile(
             pathToAsar,
             bufferReplace(asar, 'require-trusted-types-for', 'require-trusted-types-not')
@@ -177,7 +175,7 @@ describe('fuses', function () {
 
           const res = await launchApp();
           expectToHaveCrashed(res);
-          expect(res.out).to.include('Failed to validate block while ending ASAR file stream');
+          expect(res.out).toContain('Failed to validate block while ending ASAR file stream');
         });
       });
 
@@ -190,14 +188,14 @@ describe('fuses', function () {
           const asar = await originalFs.promises.readFile(pathToAsar);
           // Ensure that the header still starts with the same thing, if build system
           // things result in the header changing we should update this test
-          expect(asar.toString()).to.contain('{"files":{"default_app.js"');
+          expect(asar.toString()).toContain('{"files":{"default_app.js"');
           await originalFs.promises.writeFile(
             pathToAsar,
             bufferReplace(asar, '{"files":{"default_app.js"', '{"files":{"default_oop.js"')
           );
 
           const res = await launchApp(['--version']);
-          expect(res.code).to.equal(0);
+          expect(res.code).toBe(0);
         });
       });
     }

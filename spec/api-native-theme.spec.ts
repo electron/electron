@@ -1,6 +1,6 @@
 import { nativeTheme, BrowserWindow, ipcMain } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as path from 'node:path';
@@ -12,7 +12,7 @@ import { closeAllWindows } from './lib/window-helpers.ts';
 describe('nativeTheme module', () => {
   describe('nativeTheme.shouldUseDarkColors', () => {
     it('returns a boolean', () => {
-      expect(nativeTheme.shouldUseDarkColors).to.be.a('boolean');
+      expect(nativeTheme.shouldUseDarkColors).toBeTypeOf('boolean');
     });
   });
 
@@ -26,14 +26,14 @@ describe('nativeTheme module', () => {
     });
 
     it('is system by default', () => {
-      expect(nativeTheme.themeSource).to.equal('system');
+      expect(nativeTheme.themeSource).toBe('system');
     });
 
     it('should override the value of shouldUseDarkColors', () => {
       nativeTheme.themeSource = 'dark';
-      expect(nativeTheme.shouldUseDarkColors).to.equal(true);
+      expect(nativeTheme.shouldUseDarkColors).toBe(true);
       nativeTheme.themeSource = 'light';
-      expect(nativeTheme.shouldUseDarkColors).to.equal(false);
+      expect(nativeTheme.shouldUseDarkColors).toBe(false);
     });
 
     it('should emit the "updated" event when it is set and the resulting "shouldUseDarkColors" value changes', async () => {
@@ -57,7 +57,7 @@ describe('nativeTheme module', () => {
       nativeTheme.themeSource = 'dark';
       // Wait a few ticks to allow an async events to flush
       await setTimeout(20);
-      expect(called).to.equal(false);
+      expect(called).toBe(false);
     });
 
     const getPrefersColorSchemeIsDark = async (w: Electron.BrowserWindow) => {
@@ -78,52 +78,52 @@ describe('nativeTheme module', () => {
       let changePromise = once(ipcMain, 'theme-change');
       nativeTheme.themeSource = 'dark';
       if (!originalSystemIsDark) await changePromise;
-      expect(await getPrefersColorSchemeIsDark(w)).to.equal(true);
+      expect(await getPrefersColorSchemeIsDark(w)).toBe(true);
       changePromise = once(ipcMain, 'theme-change');
       nativeTheme.themeSource = 'light';
       await changePromise;
-      expect(await getPrefersColorSchemeIsDark(w)).to.equal(false);
+      expect(await getPrefersColorSchemeIsDark(w)).toBe(false);
       changePromise = once(ipcMain, 'theme-change');
       nativeTheme.themeSource = 'system';
       if (originalSystemIsDark) await changePromise;
-      expect(await getPrefersColorSchemeIsDark(w)).to.equal(originalSystemIsDark);
+      expect(await getPrefersColorSchemeIsDark(w)).toBe(originalSystemIsDark);
       w.close();
     });
   });
 
   describe('nativeTheme.shouldUseInvertedColorScheme', () => {
     it('returns a boolean', () => {
-      expect(nativeTheme.shouldUseInvertedColorScheme).to.be.a('boolean');
+      expect(nativeTheme.shouldUseInvertedColorScheme).toBeTypeOf('boolean');
     });
   });
 
   describe('nativeTheme.shouldUseHighContrastColors', () => {
     it('returns a boolean', () => {
-      expect(nativeTheme.shouldUseHighContrastColors).to.be.a('boolean');
+      expect(nativeTheme.shouldUseHighContrastColors).toBeTypeOf('boolean');
     });
   });
 
   describe('nativeTheme.shouldUseDarkColorsForSystemIntegratedUI', () => {
     it('returns a boolean', () => {
-      expect(nativeTheme.shouldUseDarkColorsForSystemIntegratedUI).to.be.a('boolean');
+      expect(nativeTheme.shouldUseDarkColorsForSystemIntegratedUI).toBeTypeOf('boolean');
     });
   });
 
   describe('nativeTheme.inForcedColorsMode', () => {
     it('returns a boolean', () => {
-      expect(nativeTheme.inForcedColorsMode).to.be.a('boolean');
+      expect(nativeTheme.inForcedColorsMode).toBeTypeOf('boolean');
     });
   });
 
   describe('nativeTheme.prefersReducesTransparency', () => {
     it('returns a boolean', () => {
-      expect(nativeTheme.prefersReducedTransparency).to.be.a('boolean');
+      expect(nativeTheme.prefersReducedTransparency).toBeTypeOf('boolean');
     });
   });
 
   ifdescribe(process.platform === 'darwin')('nativeTheme.shouldDifferentiateWithoutColor', () => {
     it('returns a boolean', () => {
-      expect(nativeTheme.shouldDifferentiateWithoutColor).to.be.a('boolean');
+      expect(nativeTheme.shouldDifferentiateWithoutColor).toBeTypeOf('boolean');
     });
   });
 });
