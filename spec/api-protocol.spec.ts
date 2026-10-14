@@ -1,6 +1,6 @@
 import { protocol, webContents, type WebContents, session, BrowserWindow, ipcMain, net, View } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import * as ChildProcess from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -86,10 +86,10 @@ function deferPromise(): Promise<any> & { resolve: Function; reject: Function } 
 describe('protocol module', () => {
   let contents: WebContents;
   // NB. sandbox: true is used because it makes navigations much (~8x) faster.
-  before(() => {
+  beforeAll(() => {
     contents = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true });
   });
-  after(() => contents.destroy());
+  afterAll(() => contents.destroy());
 
   async function ajax(url: string, options = {}) {
     // Note that we need to do navigation every time after a protocol is
@@ -106,8 +106,8 @@ describe('protocol module', () => {
 
   describe('protocol.register(Any)Protocol', () => {
     it('fails when scheme is already registered', () => {
-      expect(registerStringProtocol(protocolName, (req, cb) => cb(''))).to.equal(true);
-      expect(registerBufferProtocol(protocolName, (req, cb) => cb(Buffer.from('')))).to.equal(false);
+      expect(registerStringProtocol(protocolName, (req, cb) => cb(''))).toBe(true);
+      expect(registerBufferProtocol(protocolName, (req, cb) => cb(Buffer.from('')))).toBe(false);
     });
 
     it('does not crash when handler is called twice', async () => {
@@ -120,12 +120,12 @@ describe('protocol module', () => {
         }
       });
       const r = await ajax(protocolName + '://fake-host');
-      expect(r.data).to.equal(text);
+      expect(r.data).toBe(text);
     });
 
     it('sends error when callback is called with nothing', async () => {
       registerBufferProtocol(protocolName, (req, cb: any) => cb());
-      await expect(ajax(protocolName + '://fake-host')).to.eventually.be.rejected();
+      await expect(ajax(protocolName + '://fake-host')).rejects.toThrow();
     });
 
     it('does not crash when callback is called in next tick', async () => {
@@ -133,7 +133,7 @@ describe('protocol module', () => {
         setImmediate(() => callback(text));
       });
       const r = await ajax(protocolName + '://fake-host');
-      expect(r.data).to.equal(text);
+      expect(r.data).toBe(text);
     });
 
     it('can redirect to the same scheme', async () => {
@@ -146,18 +146,18 @@ describe('protocol module', () => {
             }
           });
         } else {
-          expect(request.url).to.equal(`${protocolName}://fake-host`);
+          expect(request.url).toBe(`${protocolName}://fake-host`);
           callback('redirected');
         }
       });
       const r = await ajax(`${protocolName}://fake-host/redirect`);
-      expect(r.data).to.equal('redirected');
+      expect(r.data).toBe('redirected');
     });
   });
 
   describe('protocol.unregisterProtocol', () => {
     it('returns false when scheme does not exist', () => {
-      expect(unregisterProtocol('not-exist')).to.equal(false);
+      expect(unregisterProtocol('not-exist')).toBe(false);
     });
   });
 
@@ -169,14 +169,14 @@ describe('protocol module', () => {
       it('sends string as response', async () => {
         registerStringProtocol(protocolName, (request, callback) => callback(text));
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.equal(text);
+        expect(r.data).toBe(text);
       });
 
       it('sets Access-Control-Allow-Origin', async () => {
         registerStringProtocol(protocolName, (request, callback) => callback(text));
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.equal(text);
-        expect(r.headers).to.have.property('access-control-allow-origin', '*');
+        expect(r.data).toBe(text);
+        expect(r.headers).toHaveProperty('access-control-allow-origin', '*');
       });
 
       it('sends object as response', async () => {
@@ -187,13 +187,13 @@ describe('protocol module', () => {
           });
         });
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.equal(text);
+        expect(r.data).toBe(text);
       });
 
       it('fails when sending object other than string', async () => {
         const notAString = () => {};
         registerStringProtocol(protocolName, (request, callback) => callback(notAString as any));
-        await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
+        await expect(ajax(protocolName + '://fake-host')).rejects.toThrow();
       });
     });
   }
@@ -207,14 +207,14 @@ describe('protocol module', () => {
       it('sends Buffer as response', async () => {
         registerBufferProtocol(protocolName, (request, callback) => callback(buffer));
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.equal(text);
+        expect(r.data).toBe(text);
       });
 
       it('sets Access-Control-Allow-Origin', async () => {
         registerBufferProtocol(protocolName, (request, callback) => callback(buffer));
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.equal(text);
-        expect(r.headers).to.have.property('access-control-allow-origin', '*');
+        expect(r.data).toBe(text);
+        expect(r.headers).toHaveProperty('access-control-allow-origin', '*');
       });
 
       it('sends object as response', async () => {
@@ -225,13 +225,13 @@ describe('protocol module', () => {
           });
         });
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.equal(text);
+        expect(r.data).toBe(text);
       });
 
       if (name !== 'protocol.registerProtocol') {
         it('fails when sending string', async () => {
           registerBufferProtocol(protocolName, (request, callback) => callback(text as any));
-          await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
+          await expect(ajax(protocolName + '://fake-host')).rejects.toThrow();
         });
       }
     });
@@ -253,15 +253,15 @@ describe('protocol module', () => {
         it('sends file path as response', async () => {
           registerFileProtocol(protocolName, (request, callback) => callback(filePath));
           const r = await ajax(protocolName + '://fake-host');
-          expect(r.data).to.equal(String(fileContent));
+          expect(r.data).toBe(String(fileContent));
         });
       }
 
       it('sets Access-Control-Allow-Origin', async () => {
         registerFileProtocol(protocolName, (request, callback) => callback({ path: filePath }));
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.equal(String(fileContent));
-        expect(r.headers).to.have.property('access-control-allow-origin', '*');
+        expect(r.data).toBe(String(fileContent));
+        expect(r.headers).toHaveProperty('access-control-allow-origin', '*');
       });
 
       it('sets custom headers', async () => {
@@ -272,8 +272,8 @@ describe('protocol module', () => {
           })
         );
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.equal(String(fileContent));
-        expect(r.headers).to.have.property('x-great-header', 'sogreat');
+        expect(r.data).toBe(String(fileContent));
+        expect(r.headers).toHaveProperty('x-great-header', 'sogreat');
       });
 
       it('can load iframes with custom protocols', async () => {
@@ -299,24 +299,24 @@ describe('protocol module', () => {
       it('sends object as response', async () => {
         registerFileProtocol(protocolName, (request, callback) => callback({ path: filePath }));
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.equal(String(fileContent));
+        expect(r.data).toBe(String(fileContent));
       });
 
       it('can send normal file', async () => {
         registerFileProtocol(protocolName, (request, callback) => callback({ path: normalPath }));
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.equal(String(normalContent));
+        expect(r.data).toBe(String(normalContent));
       });
 
       it('fails when sending unexist-file', async () => {
         const fakeFilePath = path.join(fixturesPath, 'test.asar', 'a.asar', 'not-exist');
         registerFileProtocol(protocolName, (request, callback) => callback({ path: fakeFilePath }));
-        await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
+        await expect(ajax(protocolName + '://fake-host')).rejects.toThrow();
       });
 
       it('fails when sending unsupported content', async () => {
         registerFileProtocol(protocolName, (request, callback) => callback(new Date() as any));
-        await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
+        await expect(ajax(protocolName + '://fake-host')).rejects.toThrow();
       });
     });
   }
@@ -328,7 +328,7 @@ describe('protocol module', () => {
     describe(name, () => {
       it('sends url as response', async () => {
         const server = http.createServer((req, res) => {
-          expect(req.headers.accept).to.not.equal('');
+          expect(req.headers.accept).not.toBe('');
           res.end(text);
           server.close();
         });
@@ -336,17 +336,17 @@ describe('protocol module', () => {
 
         registerHttpProtocol(protocolName, (request, callback) => callback({ url }));
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.equal(text);
+        expect(r.data).toBe(text);
       });
 
       it('fails when sending invalid url', async () => {
         registerHttpProtocol(protocolName, (request, callback) => callback({ url: 'url' }));
-        await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
+        await expect(ajax(protocolName + '://fake-host')).rejects.toThrow();
       });
 
       it('fails when sending unsupported content', async () => {
         registerHttpProtocol(protocolName, (request, callback) => callback(new Date() as any));
-        await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
+        await expect(ajax(protocolName + '://fake-host')).rejects.toThrow();
       });
 
       it('works when target URL redirects', async () => {
@@ -359,27 +359,29 @@ describe('protocol module', () => {
             res.end(text);
           }
         });
-        after(() => server.close());
+        afterAll(() => server.close());
         const { port } = await listen(server);
         const url = `${protocolName}://fake-host`;
         const redirectURL = `http://127.0.0.1:${port}/serverRedirect`;
         registerHttpProtocol(protocolName, (request, callback) => callback({ url: redirectURL }));
 
         const r = await ajax(url);
-        expect(r.data).to.equal(text);
+        expect(r.data).toBe(text);
       });
 
-      it('can access request headers', (done) => {
-        protocol.registerHttpProtocol(protocolName, (request) => {
-          try {
-            expect(request).to.have.property('headers');
-            done();
-          } catch (e) {
-            done(e);
-          }
-        });
-        ajax(protocolName + '://fake-host').catch(() => {});
-      });
+      it('can access request headers', () =>
+        new Promise<void>((resolve, reject) => {
+          const done = (error?: unknown) => (error ? reject(error) : resolve());
+          protocol.registerHttpProtocol(protocolName, (request) => {
+            try {
+              expect(request).toHaveProperty('headers');
+              done();
+            } catch (e) {
+              done(e);
+            }
+          });
+          ajax(protocolName + '://fake-host').catch(() => {});
+        }));
     });
   }
 
@@ -415,10 +417,10 @@ describe('protocol module', () => {
       defer(() => w.destroy());
       await w.webContents.loadFile(path.join(import.meta.dirname, 'fixtures', 'pages', 'fetch.html'));
       const r = await w.webContents.executeJavaScript(`ajax("${protocolName}://fake-host", {})`);
-      expect(r.data).to.equal(text);
+      expect(r.data).toBe(text);
 
-      expect(upstreamSeenByHandlingSession).to.be.true('upstream request did not go through the handling session');
-      expect(upstreamSeenByDefaultSession).to.be.false('upstream request went through the default session');
+      expect(upstreamSeenByHandlingSession, 'upstream request did not go through the handling session').toBe(true);
+      expect(upstreamSeenByDefaultSession, 'upstream request went through the default session').toBe(false);
     });
   });
 
@@ -430,14 +432,14 @@ describe('protocol module', () => {
       it('sends Stream as response', async () => {
         registerStreamProtocol(protocolName, (request, callback) => callback(getStream()));
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.equal(text);
+        expect(r.data).toBe(text);
       });
 
       it('sends object as response', async () => {
         registerStreamProtocol(protocolName, (request, callback) => callback({ data: getStream() }));
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.equal(text);
-        expect(r.status).to.equal(200);
+        expect(r.data).toBe(text);
+        expect(r.status).toBe(200);
       });
 
       it('sends custom response headers', async () => {
@@ -450,9 +452,9 @@ describe('protocol module', () => {
           })
         );
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.equal(text);
-        expect(r.status).to.equal(200);
-        expect(r.headers).to.have.property('x-electron', 'a, b');
+        expect(r.data).toBe(text);
+        expect(r.status).toBe(200);
+        expect(r.headers).toHaveProperty('x-electron', 'a, b');
       });
 
       it('sends custom status code', async () => {
@@ -463,8 +465,8 @@ describe('protocol module', () => {
           })
         );
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.be.empty('data');
-        expect(r.status).to.equal(204);
+        expect(r.data, 'data').toHaveLength(0);
+        expect(r.status).toBe(204);
       });
 
       it('receives request headers', async () => {
@@ -477,7 +479,7 @@ describe('protocol module', () => {
           });
         });
         const r = await ajax(protocolName + '://fake-host', { headers: { 'x-return-headers': 'yes' } });
-        expect(JSON.parse(r.data)['x-return-headers']).to.equal('yes');
+        expect(JSON.parse(r.data)['x-return-headers']).toBe('yes');
       });
 
       it('returns response multiple response headers with the same name', async () => {
@@ -494,8 +496,8 @@ describe('protocol module', () => {
         // SUBTLE: when the response headers have multiple values it
         // separates values by ", ". When the response headers are incorrectly
         // converting an array to a string it separates values by ",".
-        expect(r.headers).to.have.property('header1', 'value1, value2');
-        expect(r.headers).to.have.property('header2', 'value3');
+        expect(r.headers).toHaveProperty('header1', 'value1, value2');
+        expect(r.headers).toHaveProperty('header2', 'value3');
       });
 
       it('can handle large responses', async () => {
@@ -504,7 +506,7 @@ describe('protocol module', () => {
           callback(getStream(data.length, data));
         });
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.have.lengthOf(data.length);
+        expect(r.data).toHaveLength(data.length);
       });
 
       it('can handle a stream completing while writing', async () => {
@@ -523,7 +525,7 @@ describe('protocol module', () => {
           });
         });
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.have.lengthOf(1024 * 1024 * 2);
+        expect(r.data).toHaveLength(1024 * 1024 * 2);
       });
 
       it('can handle next-tick scheduling during read calls', async () => {
@@ -575,7 +577,7 @@ describe('protocol module', () => {
         });
 
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.equal(text);
+        expect(r.data).toBe(text);
       });
 
       it('keeps reading when readable is emitted during the first read', async () => {
@@ -599,7 +601,7 @@ describe('protocol module', () => {
         });
 
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.equal(text);
+        expect(r.data).toBe(text);
       });
 
       it('completes cleanly when the stream errors from within read()', async () => {
@@ -632,7 +634,7 @@ describe('protocol module', () => {
           });
         });
 
-        await expect(ajax(protocolName + '://fake-host')).to.eventually.be.rejected();
+        await expect(ajax(protocolName + '://fake-host')).rejects.toThrow();
       });
 
       it('destroys response streams when aborted before completion', async () => {
@@ -673,7 +675,7 @@ describe('protocol module', () => {
           callback({ statusCode: 200, headers: { 'Content-Type': 'text/plain' }, data });
         });
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.equal('');
+        expect(r.data).toBe('');
       });
 
       it('does not crash when removeListener re-invokes a listener during teardown', async () => {
@@ -698,7 +700,7 @@ describe('protocol module', () => {
           callback({ statusCode: 200, headers: { 'Content-Type': 'text/plain' }, data });
         });
         const r = await ajax(protocolName + '://fake-host');
-        expect(r.data).to.equal('');
+        expect(r.data).toBe('');
       });
     });
   }
@@ -706,13 +708,13 @@ describe('protocol module', () => {
   describe('protocol.isProtocolRegistered', () => {
     it('returns false when scheme is not registered', () => {
       const result = protocol.isProtocolRegistered('no-exist');
-      expect(result).to.be.false('no-exist: is handled');
+      expect(result, 'no-exist: is handled').toBe(false);
     });
 
     it('returns true for custom protocol', () => {
       registerStringProtocol(protocolName, (request, callback) => callback(''));
       const result = protocol.isProtocolRegistered(protocolName);
-      expect(result).to.be.true('custom protocol is handled');
+      expect(result, 'custom protocol is handled').toBe(true);
     });
   });
 
@@ -720,16 +722,14 @@ describe('protocol module', () => {
     it('returns true for intercepted protocol', () => {
       interceptStringProtocol('http', (request, callback) => callback(''));
       const result = protocol.isProtocolIntercepted('http');
-      expect(result).to.be.true('intercepted protocol is handled');
+      expect(result, 'intercepted protocol is handled').toBe(true);
     });
   });
 
   describe('protocol.intercept(Any)Protocol', () => {
     it('returns false when scheme is already intercepted', () => {
-      expect(protocol.interceptStringProtocol('http', (request, callback) => callback(''))).to.equal(true);
-      expect(protocol.interceptBufferProtocol('http', (request, callback) => callback(Buffer.from('')))).to.equal(
-        false
-      );
+      expect(protocol.interceptStringProtocol('http', (request, callback) => callback(''))).toBe(true);
+      expect(protocol.interceptBufferProtocol('http', (request, callback) => callback(Buffer.from('')))).toBe(false);
     });
 
     it('does not crash when handler is called twice', async () => {
@@ -742,12 +742,12 @@ describe('protocol module', () => {
         }
       });
       const r = await ajax('http://fake-host');
-      expect(r.data).to.be.equal(text);
+      expect(r.data).toBe(text);
     });
 
     it('sends error when callback is called with nothing', async () => {
       interceptStringProtocol('http', (request, callback: any) => callback());
-      await expect(ajax('http://fake-host')).to.be.eventually.rejected();
+      await expect(ajax('http://fake-host')).rejects.toThrow();
     });
   });
 
@@ -755,7 +755,7 @@ describe('protocol module', () => {
     it('can intercept http protocol', async () => {
       interceptStringProtocol('http', (request, callback) => callback(text));
       const r = await ajax('http://fake-host');
-      expect(r.data).to.equal(text);
+      expect(r.data).toBe(text);
     });
 
     it('can set content-type', async () => {
@@ -766,7 +766,7 @@ describe('protocol module', () => {
         });
       });
       const r = await ajax('http://fake-host');
-      expect(JSON.parse(r.data)).to.have.property('value').that.is.equal(1);
+      expect(JSON.parse(r.data)).toHaveProperty('value', 1);
     });
 
     it('can set content-type with charset', async () => {
@@ -777,7 +777,7 @@ describe('protocol module', () => {
         });
       });
       const r = await ajax('http://fake-host');
-      expect(JSON.parse(r.data)).to.have.property('value').that.is.equal(1);
+      expect(JSON.parse(r.data)).toHaveProperty('value', 1);
     });
 
     it('can receive post data', async () => {
@@ -786,7 +786,7 @@ describe('protocol module', () => {
         callback({ data: uploadData });
       });
       const r = await ajax('http://fake-host', { method: 'POST', body: qs.stringify(postData) });
-      expect({ ...qs.parse(r.data) }).to.deep.equal(postData);
+      expect({ ...qs.parse(r.data) }).toEqual(postData);
     });
   });
 
@@ -794,7 +794,7 @@ describe('protocol module', () => {
     it('can intercept http protocol', async () => {
       interceptBufferProtocol('http', (request, callback) => callback(Buffer.from(text)));
       const r = await ajax('http://fake-host');
-      expect(r.data).to.equal(text);
+      expect(r.data).toBe(text);
     });
 
     it('can receive post data', async () => {
@@ -803,7 +803,7 @@ describe('protocol module', () => {
         callback(uploadData);
       });
       const r = await ajax('http://fake-host', { method: 'POST', body: qs.stringify(postData) });
-      expect(qs.parse(r.data)).to.deep.equal({ name: 'post test', type: 'string' });
+      expect(qs.parse(r.data)).toEqual({ name: 'post test', type: 'string' });
     });
   });
 
@@ -811,7 +811,7 @@ describe('protocol module', () => {
     // FIXME(zcbenz): This test was passing because the test itself was wrong,
     // I don't know whether it ever passed before and we should take a look at
     // it in future.
-    xit('can send POST request', async () => {
+    it.skip('can send POST request', async () => {
       const server = http.createServer((req, res) => {
         let body = '';
         req.on('data', (chunk) => {
@@ -822,7 +822,7 @@ describe('protocol module', () => {
         });
         server.close();
       });
-      after(() => server.close());
+      afterAll(() => server.close());
       const { url } = await listen(server);
       interceptHttpProtocol('http', (request, callback) => {
         const data: Electron.ProtocolResponse = {
@@ -837,16 +837,16 @@ describe('protocol module', () => {
         callback(data);
       });
       const r = await ajax('http://fake-host', { type: 'POST', data: postData });
-      expect({ ...qs.parse(r.data) }).to.deep.equal(postData);
+      expect({ ...qs.parse(r.data) }).toEqual(postData);
     });
 
     it('can use custom session', async () => {
       const customSession = session.fromPartition('custom-ses', { cache: false });
       customSession.webRequest.onBeforeRequest((details, callback) => {
-        expect(details.url).to.equal('http://fake-host/');
+        expect(details.url).toBe('http://fake-host/');
         callback({ cancel: true });
       });
-      after(() => customSession.webRequest.onBeforeRequest(null));
+      afterAll(() => customSession.webRequest.onBeforeRequest(null));
 
       interceptHttpProtocol('http', (request, callback) => {
         callback({
@@ -854,27 +854,29 @@ describe('protocol module', () => {
           session: customSession
         });
       });
-      await expect(ajax('http://fake-host')).to.be.eventually.rejectedWith(Error);
+      await expect(ajax('http://fake-host')).rejects.toThrow(Error);
     });
 
-    it('can access request headers', (done) => {
-      protocol.interceptHttpProtocol('http', (request) => {
-        try {
-          expect(request).to.have.property('headers');
-          done();
-        } catch (e) {
-          done(e);
-        }
-      });
-      ajax('http://fake-host').catch(() => {});
-    });
+    it('can access request headers', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        protocol.interceptHttpProtocol('http', (request) => {
+          try {
+            expect(request).toHaveProperty('headers');
+            done();
+          } catch (e) {
+            done(e);
+          }
+        });
+        ajax('http://fake-host').catch(() => {});
+      }));
   });
 
   describe('protocol.interceptStreamProtocol', () => {
     it('can intercept http protocol', async () => {
       interceptStreamProtocol('http', (request, callback) => callback(getStream()));
       const r = await ajax('http://fake-host');
-      expect(r.data).to.equal(text);
+      expect(r.data).toBe(text);
     });
 
     it('can receive post data', async () => {
@@ -882,7 +884,7 @@ describe('protocol module', () => {
         callback(getStream(3, request.uploadData![0].bytes.toString()));
       });
       const r = await ajax('http://fake-host', { method: 'POST', body: qs.stringify(postData) });
-      expect({ ...qs.parse(r.data) }).to.deep.equal(postData);
+      expect({ ...qs.parse(r.data) }).toEqual(postData);
     });
 
     it('can execute redirects', async () => {
@@ -898,12 +900,12 @@ describe('protocol module', () => {
             });
           });
         } else {
-          expect(request.url.indexOf('http://fake-redirect')).to.equal(0);
+          expect(request.url.indexOf('http://fake-redirect')).toBe(0);
           callback(getStream(1, 'redirect'));
         }
       });
       const r = await ajax('http://fake-host');
-      expect(r.data).to.equal('redirect');
+      expect(r.data).toBe('redirect');
     });
 
     it('should discard post data after redirection', async () => {
@@ -918,22 +920,22 @@ describe('protocol module', () => {
             });
           });
         } else {
-          expect(request.url.indexOf('http://fake-redirect')).to.equal(0);
+          expect(request.url.indexOf('http://fake-redirect')).toBe(0);
           callback(getStream(3, request.method));
         }
       });
       const r = await ajax('http://fake-host', { type: 'POST', data: postData });
-      expect(r.data).to.equal('GET');
+      expect(r.data).toBe('GET');
     });
   });
 
   describe('protocol.uninterceptProtocol', () => {
     it('returns false when scheme does not exist', () => {
-      expect(uninterceptProtocol('not-exist')).to.equal(false);
+      expect(uninterceptProtocol('not-exist')).toBe(false);
     });
 
     it('returns false when scheme is not intercepted', () => {
-      expect(uninterceptProtocol('http')).to.equal(false);
+      expect(uninterceptProtocol('http')).toBe(false);
     });
   });
 
@@ -957,9 +959,9 @@ describe('protocol module', () => {
         console.log('stdout : ', stdout);
         console.log('stderr : ', stderr);
       }
-      expect(code).to.equal(0);
-      expect(stdout).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
-      expect(stderr).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
+      expect(code).toBe(0);
+      expect(stdout).not.toContain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
+      expect(stderr).not.toContain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
     });
 
     it('throws for invalid scheme names', async () => {
@@ -981,16 +983,16 @@ describe('protocol module', () => {
       const { code, stdout, stderr } = await spawnAndWait(process.execPath, [appPath, `--boot-eval=${bootEval}`], {
         timeout: 20_000
       });
-      expect(code, `stdout: ${stdout}\nstderr: ${stderr}`).to.equal(0);
+      expect(code, `stdout: ${stdout}\nstderr: ${stderr}`).toBe(0);
 
       const line = stdout.split('\n').find((l) => l.startsWith('{'));
-      expect(line, `unexpected stdout: ${stdout}`).to.be.a('string');
+      expect(line, `unexpected stdout: ${stdout}`).toBeTypeOf('string');
 
       const invalid = (scheme: string) =>
         `Invalid scheme name '${scheme}'. Scheme names must ` +
         "start with an ASCII letter and contain only ASCII letters, digits, '+', '-', or '.'.";
 
-      expect(JSON.parse(line!)).to.deep.equal({
+      expect(JSON.parse(line!)).toEqual({
         'foo,bar': invalid('foo,bar'),
         '1foo': invalid('1foo'),
         foo_bar: invalid('foo_bar'),
@@ -1004,7 +1006,7 @@ describe('protocol module', () => {
   describe('protocol.registerSource', () => {
     // Uses the 'http-like' scheme registered as standard in spec/index.js.
     let root: string;
-    before(() => {
+    beforeAll(() => {
       root = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-protocol-source-'));
       fs.mkdirSync(path.join(root, 'dist', 'sub'), { recursive: true });
       fs.mkdirSync(path.join(root, 'assets'));
@@ -1018,7 +1020,7 @@ describe('protocol module', () => {
       fs.writeFileSync(path.join(root, 'assets', 'a.css'), 'p { color: red }');
       fs.writeFileSync(path.join(root, 'secret.txt'), 'outside every root');
     });
-    after(() => fs.rmSync(root, { recursive: true, force: true }));
+    afterAll(() => fs.rmSync(root, { recursive: true, force: true }));
     afterEach(async () => {
       if (protocol.isProtocolHandled('http-like')) protocol.unhandle('http-like');
       await closeAllWindows();
@@ -1042,31 +1044,31 @@ describe('protocol module', () => {
 
     it('serves files from the most specific matching route with a content type from the extension', async () => {
       register();
-      expect(await get('http-like://bundle/data.json')).to.deep.equal({
+      expect(await get('http-like://bundle/data.json')).toEqual({
         status: 200,
         type: 'application/json',
         body: '{"ok":true}'
       });
-      expect(await get('http-like://bundle/assets/a.css')).to.deep.equal({
+      expect(await get('http-like://bundle/assets/a.css')).toEqual({
         status: 200,
         type: 'text/css',
         body: 'p { color: red }'
       });
-      expect(await get('http-like://bundle/app.js')).to.deep.include({ status: 200, type: 'text/javascript' });
+      expect(await get('http-like://bundle/app.js')).toMatchObject({ status: 200, type: 'text/javascript' });
     });
 
     it('serves the index file for directory URLs', async () => {
       register();
-      expect(await get('http-like://bundle/')).to.deep.include({ status: 200, type: 'text/html' });
-      expect(await get('http-like://bundle')).to.deep.include({ status: 200, type: 'text/html' });
-      expect(await get('http-like://bundle/sub/')).to.deep.equal({
+      expect(await get('http-like://bundle/')).toMatchObject({ status: 200, type: 'text/html' });
+      expect(await get('http-like://bundle')).toMatchObject({ status: 200, type: 'text/html' });
+      expect(await get('http-like://bundle/sub/')).toEqual({
         status: 200,
         type: 'text/html',
         body: '<p>sub index</p>'
       });
       protocol.unhandle('http-like');
       register({ index: '' });
-      expect(await get('http-like://bundle/')).to.match(/ERR_FILE_NOT_FOUND/);
+      expect(await get('http-like://bundle/')).toMatch(/ERR_FILE_NOT_FOUND/);
     });
 
     it('does not serve paths outside the root, unknown hosts or missing files', async () => {
@@ -1080,36 +1082,36 @@ describe('protocol module', () => {
         'http-like://elsewhere/data.json',
         'http-like://bundle/missing.js'
       ]) {
-        expect(await get(url), url).to.match(/ERR_FILE_NOT_FOUND/);
+        expect(await get(url), url).toMatch(/ERR_FILE_NOT_FOUND/);
       }
     });
 
     it('answers GET, and HEAD without a body', async () => {
       register();
       const head = await net.fetch('http-like://bundle/data.json', { method: 'HEAD' });
-      expect(head.status).to.equal(200);
-      expect(head.headers.get('content-type')).to.equal('application/json');
-      expect(head.headers.get('content-length')).to.equal('11');
-      expect(await head.text()).to.equal('');
-      await expect(
-        net.fetch('http-like://bundle/data.json', { method: 'POST', body: 'x' })
-      ).to.eventually.be.rejectedWith(/ERR_FILE_NOT_FOUND/);
+      expect(head.status).toBe(200);
+      expect(head.headers.get('content-type')).toBe('application/json');
+      expect(head.headers.get('content-length')).toBe('11');
+      expect(await head.text()).toBe('');
+      await expect(net.fetch('http-like://bundle/data.json', { method: 'POST', body: 'x' })).rejects.toThrow(
+        /ERR_FILE_NOT_FOUND/
+      );
     });
 
     it('serves byte ranges as 206 with Content-Range, and 416 when unsatisfiable', async () => {
       register();
       const part = await net.fetch('http-like://bundle/data.json', { headers: { Range: 'bytes=2-5' } });
-      expect(part.status).to.equal(206);
-      expect(part.headers.get('content-range')).to.equal('bytes 2-5/11');
-      expect(part.headers.get('content-length')).to.equal('4');
-      expect(await part.text()).to.equal('ok":');
+      expect(part.status).toBe(206);
+      expect(part.headers.get('content-range')).toBe('bytes 2-5/11');
+      expect(part.headers.get('content-length')).toBe('4');
+      expect(await part.text()).toBe('ok":');
       const whole = await net.fetch('http-like://bundle/data.json');
-      expect(whole.status).to.equal(200);
-      expect(whole.headers.get('content-range')).to.equal(null);
+      expect(whole.status).toBe(200);
+      expect(whole.headers.get('content-range')).toBe(null);
       const bad = await net.fetch('http-like://bundle/data.json', { headers: { Range: 'bytes=50-60' } });
-      expect(bad.status).to.equal(416);
-      expect(bad.headers.get('content-range')).to.equal('bytes */11');
-      expect(await bad.text()).to.equal('');
+      expect(bad.status).toBe(416);
+      expect(bad.headers.get('content-range')).toBe('bytes */11');
+      expect(await bad.text()).toBe('');
     });
 
     it('does not follow a symlink or junction out of the root', async () => {
@@ -1120,10 +1122,10 @@ describe('protocol module', () => {
       }
       try {
         register();
-        expect(await get('http-like://bundle/link.txt')).to.match(/ERR_FILE_NOT_FOUND/);
-        expect(await get('http-like://bundle/up/secret.txt')).to.match(/ERR_FILE_NOT_FOUND/);
-        expect(await get('http-like://bundle/ext/a.asar/file1')).to.match(/ERR_FILE_NOT_FOUND/);
-        expect(await get('http-like://bundle/up/dist/data.json')).to.deep.include({ status: 200 });
+        expect(await get('http-like://bundle/link.txt')).toMatch(/ERR_FILE_NOT_FOUND/);
+        expect(await get('http-like://bundle/up/secret.txt')).toMatch(/ERR_FILE_NOT_FOUND/);
+        expect(await get('http-like://bundle/ext/a.asar/file1')).toMatch(/ERR_FILE_NOT_FOUND/);
+        expect(await get('http-like://bundle/up/dist/data.json')).toMatchObject({ status: 200 });
       } finally {
         fs.rmSync(path.join(root, 'dist', 'link.txt'), { force: true });
         fs.unlinkSync(path.join(root, 'dist', 'up'));
@@ -1137,7 +1139,7 @@ describe('protocol module', () => {
         protocol.registerSource('http-like', {
           routes: [{ source: { type: 'directory', root: path.join(root, 'dist-link') } }]
         });
-        expect(await get('http-like://x/data.json')).to.deep.include({ status: 200 });
+        expect(await get('http-like://x/data.json')).toMatchObject({ status: 200 });
       } finally {
         fs.unlinkSync(path.join(root, 'dist-link'));
       }
@@ -1159,10 +1161,10 @@ describe('protocol module', () => {
         );
         try {
           register();
-          expect(await get('http-like://bundle/out.asar/file1')).to.match(/ERR_FILE_NOT_FOUND/);
-          expect(await get('http-like://bundle/in.asar/file1')).to.deep.include({ status: 200, body: 'file1\n' });
-          expect(await get('http-like://bundle/unpack.asar/a.txt')).to.match(/ERR_FILE_NOT_FOUND/);
-          expect(await get('http-like://bundle/unpack.asar/atom.png')).to.deep.include({ status: 200 });
+          expect(await get('http-like://bundle/out.asar/file1')).toMatch(/ERR_FILE_NOT_FOUND/);
+          expect(await get('http-like://bundle/in.asar/file1')).toMatchObject({ status: 200, body: 'file1\n' });
+          expect(await get('http-like://bundle/unpack.asar/a.txt')).toMatch(/ERR_FILE_NOT_FOUND/);
+          expect(await get('http-like://bundle/unpack.asar/atom.png')).toMatchObject({ status: 200 });
         } finally {
           for (const name of ['out.asar', 'in.asar', 'unpack.asar']) originalFs.unlinkSync(path.join(dist, name));
           fs.rmSync(path.join(dist, 'unpack.asar.unpacked'), { recursive: true });
@@ -1172,8 +1174,8 @@ describe('protocol module', () => {
 
     it('matches hosts case-insensitively and only as a whole', async () => {
       register();
-      expect(await get('http-like://BUNDLE/data.json')).to.deep.include({ status: 200 });
-      expect(await get('http-like://sub.bundle/data.json')).to.match(/ERR_FILE_NOT_FOUND/);
+      expect(await get('http-like://BUNDLE/data.json')).toMatchObject({ status: 200 });
+      expect(await get('http-like://sub.bundle/data.json')).toMatch(/ERR_FILE_NOT_FOUND/);
     });
 
     ifit(process.platform !== 'win32')('serves files larger than 4 GiB', async () => {
@@ -1186,12 +1188,12 @@ describe('protocol module', () => {
       try {
         register();
         const head = await net.fetch('http-like://bundle/big.bin', { method: 'HEAD' });
-        expect(head.headers.get('content-length')).to.equal(String(size));
+        expect(head.headers.get('content-length')).toBe(String(size));
         const tail = await net.fetch('http-like://bundle/big.bin', {
           headers: { Range: `bytes=${size - 4}-${size - 1}` }
         });
-        expect(tail.status).to.equal(206);
-        expect(await tail.text()).to.equal('tail');
+        expect(tail.status).toBe(206);
+        expect(await tail.text()).toBe('tail');
       } finally {
         fs.unlinkSync(big);
       }
@@ -1200,15 +1202,15 @@ describe('protocol module', () => {
     it('adds the route headers to every response', async () => {
       register({ headers: { 'X-From': 'source', 'Cross-Origin-Opener-Policy': 'same-origin' } });
       const r = await net.fetch('http-like://bundle/data.json');
-      expect(r.headers.get('x-from')).to.equal('source');
-      expect(r.headers.get('cross-origin-opener-policy')).to.equal('same-origin');
+      expect(r.headers.get('x-from')).toBe('source');
+      expect(r.headers.get('cross-origin-opener-policy')).toBe('same-origin');
     });
 
     it('keeps a single Content-Type when a route sets one', async () => {
       register({ headers: { 'Content-Type': 'text/x-custom' } });
       for (const method of ['GET', 'HEAD']) {
         const r = await net.fetch('http-like://bundle/data.json', { method });
-        expect(r.headers.get('content-type'), method).to.equal('application/json');
+        expect(r.headers.get('content-type'), method).toBe('application/json');
       }
     });
 
@@ -1216,15 +1218,15 @@ describe('protocol module', () => {
       protocol.registerSource('http-like', {
         routes: [{ source: { type: 'directory', root: path.join(fixturesPath, 'test.asar', 'a.asar') } }]
       });
-      expect(await get('http-like://x/file1')).to.deep.include({ status: 200, body: 'file1\n' });
-      expect(await get('http-like://x/dir1/file1')).to.deep.include({ status: 200, body: 'file1\n' });
+      expect(await get('http-like://x/file1')).toMatchObject({ status: 200, body: 'file1\n' });
+      expect(await get('http-like://x/dir1/file1')).toMatchObject({ status: 200, body: 'file1\n' });
     });
 
     it('serves a page, and its fetches while the main process is busy', async () => {
       register();
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
       await w.loadURL('http-like://bundle/');
-      expect(await w.webContents.executeJavaScript('getComputedStyle(document.getElementById("p")).color')).to.equal(
+      expect(await w.webContents.executeJavaScript('getComputedStyle(document.getElementById("p")).color')).toBe(
         'rgb(255, 0, 0)'
       );
       await w.webContents.executeJavaScript(
@@ -1235,29 +1237,29 @@ describe('protocol module', () => {
         /* main process busy */
       }
       const [text, elapsed] = await w.webContents.executeJavaScript('window.timing');
-      expect(text).to.equal('{"ok":true}');
-      expect(elapsed).to.be.lessThan(300);
+      expect(text).toBe('{"ok":true}');
+      expect(elapsed).toBeLessThan(300);
     });
 
     it('is reported by isProtocolHandled and getSource, removed by unhandle, and exclusive with handle', () => {
       register();
-      expect(protocol.isProtocolHandled('http-like')).to.equal(true);
-      expect(protocol.getSource('http-like')).to.have.property('routes').with.lengthOf(2);
-      expect(() => protocol.handle('http-like', () => new Response('x'))).to.throw();
-      expect(() => register()).to.throw(/already handled/);
-      expect(protocol.isProtocolRegistered('http-like')).to.equal(false);
-      expect(protocol.unregisterProtocol('http-like')).to.equal(false);
-      expect(protocol.isProtocolHandled('http-like')).to.equal(true);
+      expect(protocol.isProtocolHandled('http-like')).toBe(true);
+      expect(protocol.getSource('http-like')?.routes).toHaveLength(2);
+      expect(() => protocol.handle('http-like', () => new Response('x'))).toThrow();
+      expect(() => register()).toThrow(/already handled/);
+      expect(protocol.isProtocolRegistered('http-like')).toBe(false);
+      expect(protocol.unregisterProtocol('http-like')).toBe(false);
+      expect(protocol.isProtocolHandled('http-like')).toBe(true);
       protocol.unhandle('http-like');
-      expect(protocol.isProtocolHandled('http-like')).to.equal(false);
-      expect(protocol.getSource('http-like')).to.equal(null);
+      expect(protocol.isProtocolHandled('http-like')).toBe(false);
+      expect(protocol.getSource('http-like')).toBe(null);
       protocol.handle('http-like', () => new Response('x'));
-      expect(() => register()).to.throw(/already handled/);
+      expect(() => register()).toThrow(/already handled/);
     });
 
     it('validates its arguments', () => {
       const bad = (source: any, message: RegExp) =>
-        expect(() => protocol.registerSource('http-like', source), JSON.stringify(source)).to.throw(message);
+        expect(() => protocol.registerSource('http-like', source), JSON.stringify(source)).toThrow(message);
       bad({}, /routes/);
       bad({ routes: [] }, /routes/);
       bad({ routes: [{ match: { host: 'x' } }] }, /source/);
@@ -1279,7 +1281,7 @@ describe('protocol module', () => {
       for (const headers of [{ 'Bad\nName': 'x' }, ['x'], new Headers({ a: 'b' })]) {
         bad({ routes: [{ source: { ...dir, headers } }] }, /header/);
       }
-      expect(() => protocol.registerSource('https', { routes: [{ source: { type: 'directory', root } }] })).to.throw(
+      expect(() => protocol.registerSource('https', { routes: [{ source: { type: 'directory', root } }] })).toThrow(
         /built-in/
       );
       for (const scheme of [
@@ -1295,9 +1297,9 @@ describe('protocol module', () => {
         expect(
           () => protocol.registerSource(scheme, { routes: [{ source: { type: 'directory', root } }] }),
           scheme
-        ).to.throw(/built-in/);
+        ).toThrow(/built-in/);
       }
-      expect(protocol.isProtocolHandled('http-like')).to.equal(false);
+      expect(protocol.isProtocolHandled('http-like')).toBe(false);
     });
   });
 
@@ -1317,13 +1319,13 @@ describe('protocol module', () => {
         });
       }
     });
-    after(() => protocol.unregisterProtocol(serviceWorkerScheme));
+    afterAll(() => protocol.unregisterProtocol(serviceWorkerScheme));
 
     it('should fail when registering invalid service worker', async () => {
       await contents.loadURL(`${serviceWorkerScheme}://${randomUUID()}.com`);
       await expect(
         contents.executeJavaScript(`navigator.serviceWorker.register('${randomUUID()}.notjs', {scope: './'})`)
-      ).to.be.rejected();
+      ).rejects.toThrow();
     });
 
     it('should be able to register service worker for custom scheme', async () => {
@@ -1394,24 +1396,28 @@ describe('protocol module', () => {
       await requestReceived;
     });
 
-    it('can access files through the FileSystem API', (done) => {
-      const filePath = path.join(fixturesPath, 'pages', 'filesystem.html');
-      protocol.registerFileProtocol(standardScheme, (request, callback) => callback({ path: filePath }));
-      w.loadURL(origin);
-      ipcMain.once('file-system-error', (event, err) => done(err));
-      ipcMain.once('file-system-write-end', () => done());
-    });
+    it('can access files through the FileSystem API', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const filePath = path.join(fixturesPath, 'pages', 'filesystem.html');
+        protocol.registerFileProtocol(standardScheme, (request, callback) => callback({ path: filePath }));
+        w.loadURL(origin);
+        ipcMain.once('file-system-error', (event, err) => done(err));
+        ipcMain.once('file-system-write-end', () => done());
+      }));
 
-    it('registers secure, when {secure: true}', (done) => {
-      const filePath = path.join(fixturesPath, 'pages', 'cache-storage.html');
-      ipcMain.once('success', () => done());
-      ipcMain.once('failure', (event, err) => done(err));
-      protocol.registerFileProtocol(standardScheme, (request, callback) => callback({ path: filePath }));
-      w.loadURL(origin);
-    });
+    it('registers secure, when {secure: true}', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        const filePath = path.join(fixturesPath, 'pages', 'cache-storage.html');
+        ipcMain.once('success', () => done());
+        ipcMain.once('failure', (event, err) => done(err));
+        protocol.registerFileProtocol(standardScheme, (request, callback) => callback({ path: filePath }));
+        w.loadURL(origin);
+      }));
   });
 
-  describe('protocol.registerSchemesAsPrivileged cors-fetch', function () {
+  describe('protocol.registerSchemesAsPrivileged cors-fetch', () => {
     let w: BrowserWindow;
     beforeEach(async () => {
       w = new BrowserWindow({ show: false });
@@ -1429,7 +1435,7 @@ describe('protocol module', () => {
       const url = `file://${fixturesPath}/assets/logo.png`;
       await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
       const ok = await w.webContents.executeJavaScript(`fetch(${JSON.stringify(url)}).then(r => r.ok)`);
-      expect(ok).to.be.true('response ok');
+      expect(ok, 'response ok').toBe(true);
     });
 
     it('allows CORS requests by default', async () => {
@@ -1489,11 +1495,10 @@ describe('protocol module', () => {
             .then(r => r.text()).then(body => ({ body, error: null }))
             .catch(e => ({ body: null, error: String(e) }))
         `);
-        expect(body).to.not.equal(secret, 'http origin read no-cors:// body via fetch()');
-        expect(error)
-          .to.be.a('string')
-          .and.match(/Failed to fetch/);
-        expect(consoleMessages.join('\n')).to.match(/has been blocked by CORS policy/);
+        expect(body, 'http origin read no-cors:// body via fetch()').not.toBe(secret);
+        expect(error).toBeTypeOf('string');
+        expect(error).toMatch(/Failed to fetch/);
+        expect(consoleMessages.join('\n')).toMatch(/has been blocked by CORS policy/);
       });
 
       it('blocks a remote http origin from reading the response body via XHR', async () => {
@@ -1507,8 +1512,8 @@ describe('protocol module', () => {
             x.send();
           })
         `);
-        expect(body).to.not.equal(secret, 'http origin read no-cors:// body via XHR');
-        expect(errored).to.be.true();
+        expect(body, 'http origin read no-cors:// body via XHR').not.toBe(secret);
+        expect(errored).toBe(true);
       });
 
       it('does not invoke the protocol handler for a blocked cross-origin CORS request', async () => {
@@ -1520,7 +1525,7 @@ describe('protocol module', () => {
             body: 'x'
           }).catch(() => 0)
         `);
-        expect(handlerCalls).to.deep.equal([]);
+        expect(handlerCalls).toEqual([]);
       });
 
       it('returns an opaque response for cross-origin fetch with mode: no-cors', async () => {
@@ -1529,9 +1534,9 @@ describe('protocol module', () => {
           fetch('no-cors://host/secret', { mode: 'no-cors' })
             .then(async r => ({ type: r.type, status: r.status, body: await r.text() }))
         `);
-        expect(type).to.equal('opaque');
-        expect(status).to.equal(0);
-        expect(body).to.equal('');
+        expect(type).toBe('opaque');
+        expect(status).toBe(0);
+        expect(body).toBe('');
       });
 
       it('returns an opaque response for a registerFileProtocol scheme fetched cross-origin with mode: no-cors', async () => {
@@ -1547,9 +1552,9 @@ describe('protocol module', () => {
           fetch('no-cors-file://host/secret', { mode: 'no-cors' })
             .then(async r => ({ type: r.type, status: r.status, body: await r.text() }))
         `);
-        expect(type).to.equal('opaque');
-        expect(status).to.equal(0);
-        expect(body).to.equal('');
+        expect(type).toBe('opaque');
+        expect(status).toBe(0);
+        expect(body).toBe('');
       });
 
       it('returns an opaque response for a registerHttpProtocol scheme fetched cross-origin with mode: no-cors', async () => {
@@ -1567,9 +1572,9 @@ describe('protocol module', () => {
           fetch('no-cors-http://host/secret', { mode: 'no-cors' })
             .then(async r => ({ type: r.type, status: r.status, body: await r.text() }))
         `);
-        expect(type).to.equal('opaque');
-        expect(status).to.equal(0);
-        expect(body).to.equal('');
+        expect(type).toBe('opaque');
+        expect(status).toBe(0);
+        expect(body).toBe('');
       });
 
       it('still allows cross-origin <img> loads (no-cors subresource)', async () => {
@@ -1590,14 +1595,14 @@ describe('protocol module', () => {
             img.src = 'no-cors://host/logo.png';
           })
         `);
-        expect(ok).to.be.true();
-        expect(width).to.be.greaterThan(0);
+        expect(ok).toBe(true);
+        expect(width).toBeGreaterThan(0);
       });
 
       it('allows same-origin fetch on a standard supportFetchAPI-only scheme', async () => {
         await w.loadURL('no-cors-standard://app/page');
         const body = await w.webContents.executeJavaScript("fetch('no-cors-standard://app/data').then(r => r.text())");
-        expect(body).to.equal(secret);
+        expect(body).toBe(secret);
       });
 
       it('blocks cross-origin fetch on a standard supportFetchAPI-only scheme', async () => {
@@ -1606,10 +1611,9 @@ describe('protocol module', () => {
         const error = await w.webContents.executeJavaScript(
           "fetch('no-cors-standard://other/data').then(() => null, e => String(e))"
         );
-        expect(error)
-          .to.be.a('string')
-          .and.match(/Failed to fetch/);
-        expect(handlerCalls).to.deep.equal([]);
+        expect(error).toBeTypeOf('string');
+        expect(error).toMatch(/Failed to fetch/);
+        expect(handlerCalls).toEqual([]);
       });
 
       it('does not affect cross-origin fetch to a corsEnabled scheme', async () => {
@@ -1617,12 +1621,12 @@ describe('protocol module', () => {
         defer(() => protocol.unhandle('cors'));
         await w.loadURL(remoteUrl);
         const body = await w.webContents.executeJavaScript("fetch('cors://host/').then(r => r.text())");
-        expect(body).to.equal('ok');
+        expect(body).toBe('ok');
       });
 
       it('does not affect main-process net.fetch', async () => {
         const body = await net.fetch('no-cors://host/secret').then((r) => r.text());
-        expect(body).to.equal(secret);
+        expect(body).toBe(secret);
       });
     });
 
@@ -1683,8 +1687,8 @@ describe('protocol module', () => {
       try {
         newContents.loadURL(standardScheme + '://fake-host');
         const [, response] = await once(ipcMain, 'response');
-        expect(response).to.deep.equal(expected);
-        expect(consoleMessages.join('\n')).to.match(expectedConsole);
+        expect(response).toEqual(expected);
+        expect(consoleMessages.join('\n')).toMatch(expectedConsole);
       } finally {
         // This is called in a timeout to avoid a crash that happens when
         // calling destroy() in a microtask.
@@ -1695,13 +1699,13 @@ describe('protocol module', () => {
     }
   });
 
-  describe('protocol.registerSchemesAsPrivileged stream', async function () {
+  describe('protocol.registerSchemesAsPrivileged stream', async () => {
     const pagePath = path.join(fixturesPath, 'pages', 'video.html');
     const videoSourceImagePath = path.join(fixturesPath, 'video-source-image.webp');
     const videoPath = path.join(fixturesPath, 'video.webm');
     let w: BrowserWindow;
 
-    before(async () => {
+    beforeAll(async () => {
       // generate test video
       const imageBase64 = await fs.promises.readFile(videoSourceImagePath, 'base64');
       const imageDataUrl = `data:image/webp;base64,${imageBase64}`;
@@ -1716,11 +1720,11 @@ describe('protocol module', () => {
       });
     });
 
-    after(async () => {
+    afterAll(async () => {
       await fs.promises.unlink(videoPath);
     });
 
-    beforeEach(async function () {
+    beforeEach(async (ctx) => {
       w = new BrowserWindow({ show: false });
       await w.loadURL('about:blank');
       if (
@@ -1728,7 +1732,7 @@ describe('protocol module', () => {
           "document.createElement('video').canPlayType('video/webm; codecs=\"vp8.0\"')"
         ))
       ) {
-        this.skip();
+        ctx.skip();
       }
     });
 
@@ -1790,7 +1794,7 @@ describe('protocol module', () => {
       try {
         newContents.loadURL(testingScheme + '://fake-host');
         const [, response] = await once(ipcMain, 'result');
-        expect(response).to.deep.equal(expected);
+        expect(response).toEqual(expected);
       } finally {
         // This is called in a timeout to avoid a crash that happens when
         // calling destroy() in a microtask.
@@ -1801,7 +1805,7 @@ describe('protocol module', () => {
     }
   });
 
-  describe('protocol.registerSchemesAsPrivileged codeCache', function () {
+  describe('protocol.registerSchemesAsPrivileged codeCache', () => {
     const appPath = path.join(fixturesPath, 'apps', 'refresh-page');
 
     let w: BrowserWindow;
@@ -1820,16 +1824,16 @@ describe('protocol module', () => {
       const { code, stdout, stderr } = await spawnAndWait(process.execPath, [appPath, 'false', codeCachePath], {
         timeout: 20_000
       });
-      expect(code).to.equal(0, `stdout:\n${stdout}\nstderr:\n${stderr}`);
-      expect(fs.readdirSync(path.join(codeCachePath, 'js')).length).to.equal(2);
+      expect(code, `stdout:\n${stdout}\nstderr:\n${stderr}`).toBe(0);
+      expect(fs.readdirSync(path.join(codeCachePath, 'js')).length).toBe(2);
     });
 
     it('codeCache:true enables codeCache in custom protocol', async () => {
       const { code, stdout, stderr } = await spawnAndWait(process.execPath, [appPath, 'true', codeCachePath], {
         timeout: 20_000
       });
-      expect(code).to.equal(0, `stdout:\n${stdout}\nstderr:\n${stderr}`);
-      expect(fs.readdirSync(path.join(codeCachePath, 'js')).length).to.above(2);
+      expect(code, `stdout:\n${stdout}\nstderr:\n${stderr}`).toBe(0);
+      expect(fs.readdirSync(path.join(codeCachePath, 'js')).length).toBeGreaterThan(2);
     });
   });
 
@@ -1857,7 +1861,7 @@ describe('protocol module', () => {
         protocol.unhandle('test-scheme');
       });
       await net.fetch('test-scheme://order');
-      expect(order).to.deep.equal(['bounds-changed', 'handler returned', 'nextTick', 'microtask']);
+      expect(order).toEqual(['bounds-changed', 'handler returned', 'nextTick', 'microtask']);
     });
 
     it('reports the origin that issued the request', async () => {
@@ -1873,14 +1877,14 @@ describe('protocol module', () => {
       const w = new BrowserWindow({ show: false });
       // Browser-initiated navigation: no initiator.
       await w.loadURL('http-like://page/');
-      expect(initiators).to.have.property('/');
-      expect(initiators['/']).to.equal(undefined);
+      expect(initiators).toHaveProperty('/');
+      expect(initiators['/']).toBe(undefined);
       // A fetch from that document carries the document's origin, even with
       // no referrer.
       await w.webContents.executeJavaScript(
         "fetch('http-like://page/data', { referrerPolicy: 'no-referrer' }).then(r => r.text())"
       );
-      expect(initiators['/data']).to.equal('http-like://page');
+      expect(initiators['/data']).toBe('http-like://page');
     });
 
     it('receives requests to a custom scheme', async () => {
@@ -1889,7 +1893,7 @@ describe('protocol module', () => {
         protocol.unhandle('test-scheme');
       });
       const resp = await net.fetch('test-scheme://foo/');
-      expect(resp.status).to.equal(200);
+      expect(resp.status).toBe(200);
     });
 
     it('can be unhandled', async () => {
@@ -1904,9 +1908,9 @@ describe('protocol module', () => {
         }
       });
       const resp1 = await net.fetch('test-scheme://foo/');
-      expect(resp1.status).to.equal(200);
+      expect(resp1.status).toBe(200);
       protocol.unhandle('test-scheme');
-      await expect(net.fetch('test-scheme://foo/')).to.eventually.be.rejectedWith(/ERR_UNKNOWN_URL_SCHEME/);
+      await expect(net.fetch('test-scheme://foo/')).rejects.toThrow(/ERR_UNKNOWN_URL_SCHEME/);
     });
 
     it('receives requests to the existing https scheme', async () => {
@@ -1915,31 +1919,32 @@ describe('protocol module', () => {
         protocol.unhandle('https');
       });
       const body = await net.fetch('https://foo').then((r) => r.text());
-      expect(body).to.equal('hello https://foo/');
+      expect(body).toBe('hello https://foo/');
     });
 
-    it('receives requests to the existing file scheme', (done) => {
-      const filePath = path.join(import.meta.dirname, 'fixtures', 'pages', 'a.html');
+    it('receives requests to the existing file scheme', () =>
+      new Promise<void>((resolve) => {
+        const filePath = path.join(import.meta.dirname, 'fixtures', 'pages', 'a.html');
 
-      protocol.handle('file', (req) => {
-        let file;
-        if (process.platform === 'win32') {
-          file = `file:///${filePath.replaceAll('\\', '/')}`;
-        } else {
-          file = `file://${filePath}`;
-        }
+        protocol.handle('file', (req) => {
+          let file;
+          if (process.platform === 'win32') {
+            file = `file:///${filePath.replaceAll('\\', '/')}`;
+          } else {
+            file = `file://${filePath}`;
+          }
 
-        if (req.url === file) done();
-        return new Response(req.url);
-      });
+          if (req.url === file) resolve();
+          return new Response(req.url);
+        });
 
-      defer(() => {
-        protocol.unhandle('file');
-      });
+        defer(() => {
+          protocol.unhandle('file');
+        });
 
-      const w = new BrowserWindow();
-      w.loadFile(filePath);
-    });
+        const w = new BrowserWindow();
+        w.loadFile(filePath);
+      }));
 
     it('receives requests to an existing scheme when navigating', async () => {
       protocol.handle('https', (req) => new Response('hello ' + req.url));
@@ -1948,7 +1953,7 @@ describe('protocol module', () => {
       });
       const w = new BrowserWindow({ show: false });
       await w.loadURL('https://localhost');
-      expect(await w.webContents.executeJavaScript('document.body.textContent')).to.equal('hello https://localhost/');
+      expect(await w.webContents.executeJavaScript('document.body.textContent')).toBe('hello https://localhost/');
     });
 
     it('can send buffer body', async () => {
@@ -1957,7 +1962,7 @@ describe('protocol module', () => {
         protocol.unhandle('test-scheme');
       });
       const body = await net.fetch('test-scheme://foo/').then((r) => r.text());
-      expect(body).to.equal('hello test-scheme://foo/');
+      expect(body).toBe('hello test-scheme://foo/');
     });
 
     it('can send stream body', async () => {
@@ -1966,7 +1971,7 @@ describe('protocol module', () => {
         protocol.unhandle('test-scheme');
       });
       const body = await net.fetch('test-scheme://foo/').then((r) => r.text());
-      expect(body).to.equal(text);
+      expect(body).toBe(text);
     });
 
     it('calls destroy on aborted body stream', async () => {
@@ -1991,8 +1996,8 @@ describe('protocol module', () => {
       const res = net.fetch('test-scheme://foo/', {
         signal: abortController.signal
       });
-      await expect(res).to.be.rejectedWith('This operation was aborted');
-      await expect(once(body, 'end')).to.be.rejectedWith('The operation was aborted');
+      await expect(res).rejects.toThrow('This operation was aborted');
+      await expect(once(body, 'end')).rejects.toThrow('The operation was aborted');
     });
 
     it('accepts urls with no hostname in non-standard schemes', async () => {
@@ -2002,15 +2007,15 @@ describe('protocol module', () => {
       });
       {
         const body = await net.fetch('test-scheme://foo/').then((r) => r.text());
-        expect(body).to.equal('test-scheme://foo/');
+        expect(body).toBe('test-scheme://foo/');
       }
       {
         const body = await net.fetch('test-scheme:///foo').then((r) => r.text());
-        expect(body).to.equal('test-scheme:///foo');
+        expect(body).toBe('test-scheme:///foo');
       }
       {
         const body = await net.fetch('test-scheme://').then((r) => r.text());
-        expect(body).to.equal('test-scheme://');
+        expect(body).toBe('test-scheme://');
       }
     });
 
@@ -2021,7 +2026,7 @@ describe('protocol module', () => {
       });
       {
         const body = await net.fetch('test-scheme://foo/:30').then((r) => r.text());
-        expect(body).to.equal('test-scheme://foo/:30');
+        expect(body).toBe('test-scheme://foo/:30');
       }
     });
 
@@ -2039,10 +2044,10 @@ describe('protocol module', () => {
           'x-non-ascii': Buffer.from('zażółć', 'utf-8').toString('latin1')
         }
       });
-      expect(resp.status).to.equal(200);
-      expect(receivedHeader).to.be.a('string');
+      expect(resp.status).toBe(200);
+      expect(receivedHeader).toBeTypeOf('string');
       const decoded = Buffer.from(receivedHeader!, 'latin1').toString('utf-8');
-      expect(decoded).to.equal('zażółć');
+      expect(decoded).toBe('zażółć');
     });
 
     it('normalizes urls in standard schemes', async () => {
@@ -2053,18 +2058,18 @@ describe('protocol module', () => {
       });
       {
         const body = await net.fetch('app://foo').then((r) => r.text());
-        expect(body).to.equal('app://foo/');
+        expect(body).toBe('app://foo/');
       }
       {
         const body = await net.fetch('app:///foo').then((r) => r.text());
-        expect(body).to.equal('app://foo/');
+        expect(body).toBe('app://foo/');
       }
       // NB. 'app' is registered with the default scheme type of 'host'.
       {
         const body = await net.fetch('app://foo:1234').then((r) => r.text());
-        expect(body).to.equal('app://foo/');
+        expect(body).toBe('app://foo/');
       }
-      await expect(net.fetch('app://')).to.be.rejectedWith('Invalid URL');
+      await expect(net.fetch('app://')).rejects.toThrow('Invalid URL');
     });
 
     it('fails on URLs with a username', async () => {
@@ -2073,7 +2078,7 @@ describe('protocol module', () => {
       defer(() => {
         protocol.unhandle('http');
       });
-      await expect(contents.loadURL('http://x@foo:1234')).to.be.rejectedWith(/ERR_UNEXPECTED/);
+      await expect(contents.loadURL('http://x@foo:1234')).rejects.toThrow(/ERR_UNEXPECTED/);
     });
 
     it('normalizes http urls', async () => {
@@ -2083,7 +2088,7 @@ describe('protocol module', () => {
       });
       {
         const body = await net.fetch('http://foo').then((r) => r.text());
-        expect(body).to.equal('http://foo/');
+        expect(body).toBe('http://foo/');
       }
     });
 
@@ -2092,7 +2097,7 @@ describe('protocol module', () => {
       defer(() => {
         protocol.unhandle('test-scheme');
       });
-      await expect(net.fetch('test-scheme://foo/')).to.eventually.be.rejectedWith('net::ERR_FAILED');
+      await expect(net.fetch('test-scheme://foo/')).rejects.toThrow('net::ERR_FAILED');
     });
 
     it('handles invalid protocol response status', async () => {
@@ -2103,7 +2108,7 @@ describe('protocol module', () => {
       defer(() => {
         protocol.unhandle('test-scheme');
       });
-      await expect(net.fetch('test-scheme://foo/')).to.be.rejectedWith('net::ERR_UNEXPECTED');
+      await expect(net.fetch('test-scheme://foo/')).rejects.toThrow('net::ERR_UNEXPECTED');
     });
 
     it('handles invalid protocol response statusText', async () => {
@@ -2114,7 +2119,7 @@ describe('protocol module', () => {
       defer(() => {
         protocol.unhandle('test-scheme');
       });
-      await expect(net.fetch('test-scheme://foo/')).to.be.rejectedWith('net::ERR_UNEXPECTED');
+      await expect(net.fetch('test-scheme://foo/')).rejects.toThrow('net::ERR_UNEXPECTED');
     });
 
     it('handles invalid protocol response header parameters', async () => {
@@ -2125,7 +2130,7 @@ describe('protocol module', () => {
       defer(() => {
         protocol.unhandle('test-scheme');
       });
-      await expect(net.fetch('test-scheme://foo/')).to.be.rejectedWith('net::ERR_UNEXPECTED');
+      await expect(net.fetch('test-scheme://foo/')).rejects.toThrow('net::ERR_UNEXPECTED');
     });
 
     it('handles invalid protocol response body parameters', async () => {
@@ -2136,7 +2141,7 @@ describe('protocol module', () => {
       defer(() => {
         protocol.unhandle('test-scheme');
       });
-      await expect(net.fetch('test-scheme://foo/')).to.be.rejectedWith('net::ERR_UNEXPECTED');
+      await expect(net.fetch('test-scheme://foo/')).rejects.toThrow('net::ERR_UNEXPECTED');
     });
 
     it('handles a synchronous error in the handler', async () => {
@@ -2146,7 +2151,7 @@ describe('protocol module', () => {
       defer(() => {
         protocol.unhandle('test-scheme');
       });
-      await expect(net.fetch('test-scheme://foo/')).to.be.rejectedWith('net::ERR_UNEXPECTED');
+      await expect(net.fetch('test-scheme://foo/')).rejects.toThrow('net::ERR_UNEXPECTED');
     });
 
     it('handles an asynchronous error in the handler', async () => {
@@ -2154,7 +2159,7 @@ describe('protocol module', () => {
       defer(() => {
         protocol.unhandle('test-scheme');
       });
-      await expect(net.fetch('test-scheme://foo/')).to.be.rejectedWith('net::ERR_UNEXPECTED');
+      await expect(net.fetch('test-scheme://foo/')).rejects.toThrow('net::ERR_UNEXPECTED');
     });
 
     it('correctly sets statusCode', async () => {
@@ -2163,7 +2168,7 @@ describe('protocol module', () => {
         protocol.unhandle('test-scheme');
       });
       const resp = await net.fetch('test-scheme://foo/');
-      expect(resp.status).to.equal(201);
+      expect(resp.status).toBe(201);
     });
 
     it('correctly sets content-type and charset', async () => {
@@ -2175,7 +2180,7 @@ describe('protocol module', () => {
         protocol.unhandle('test-scheme');
       });
       const resp = await net.fetch('test-scheme://foo/');
-      expect(resp.headers.get('content-type')).to.equal('text/html; charset=testcharset');
+      expect(resp.headers.get('content-type')).toBe('text/html; charset=testcharset');
     });
 
     it('can forward to http', async () => {
@@ -2192,7 +2197,7 @@ describe('protocol module', () => {
         protocol.unhandle('test-scheme');
       });
       const body = await net.fetch('test-scheme://foo/').then((r) => r.text());
-      expect(body).to.equal(text);
+      expect(body).toBe(text);
     });
 
     it('can forward an http request with headers', async () => {
@@ -2211,7 +2216,7 @@ describe('protocol module', () => {
       });
 
       const resp = await net.fetch('test-scheme://foo/');
-      expect(resp.headers.get('foo')).to.equal('bar');
+      expect(resp.headers.get('foo')).toBe('bar');
     });
 
     it('can forward to file', async () => {
@@ -2223,7 +2228,7 @@ describe('protocol module', () => {
       });
 
       const body = await net.fetch('test-scheme://foo/').then((r) => r.text());
-      expect(body.trimEnd()).to.equal('hello world');
+      expect(body.trimEnd()).toBe('hello world');
     });
 
     describe('relaying an untouched net.fetch response', () => {
@@ -2232,7 +2237,7 @@ describe('protocol module', () => {
       let server: http.Server;
       let base: string;
       let tmpDir: string;
-      before(async () => {
+      beforeAll(async () => {
         server = http.createServer((req, res) => {
           if (req.url === '/big') {
             res.writeHead(200, { 'content-length': String(big.length), 'x-upstream': 'yes' });
@@ -2265,7 +2270,7 @@ describe('protocol module', () => {
         tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-protocol-'));
         fs.writeFileSync(path.join(tmpDir, 'big.bin'), big);
       });
-      after(() => {
+      afterAll(() => {
         server.close();
         fs.rmSync(tmpDir, { recursive: true, force: true });
       });
@@ -2280,15 +2285,15 @@ describe('protocol module', () => {
       it('delivers small and large upstream bodies byte for byte with status and headers', async () => {
         proxy((u) => base + u.pathname);
         const small = await net.fetch('test-scheme://host/small');
-        expect(small.status).to.equal(200);
-        expect(await small.text()).to.equal('small body');
+        expect(small.status).toBe(200);
+        expect(await small.text()).toBe('small body');
         const large = await net.fetch('test-scheme://host/big');
-        expect(large.headers.get('x-upstream')).to.equal('yes');
-        expect(Buffer.from(await large.arrayBuffer()).equals(big)).to.be.true();
+        expect(large.headers.get('x-upstream')).toBe('yes');
+        expect(Buffer.from(await large.arrayBuffer()).equals(big)).toBe(true);
         const status = await net.fetch('test-scheme://host/status');
-        expect(status.status).to.equal(404);
-        expect(status.headers.get('x-reason')).to.equal('nope');
-        expect(await status.text()).to.equal('missing');
+        expect(status.status).toBe(404);
+        expect(status.headers.get('x-reason')).toBe('nope');
+        expect(await status.text()).toBe('missing');
       });
 
       it('completes when the fetch finished before the handler returned it', async () => {
@@ -2298,30 +2303,30 @@ describe('protocol module', () => {
           return r;
         });
         const small = await net.fetch('test-scheme://host/small');
-        expect(await small.text()).to.equal('small body');
+        expect(await small.text()).toBe('small body');
         const empty = await net.fetch('test-scheme://host/empty');
-        expect(empty.status).to.equal(204);
-        expect(await empty.text()).to.equal('');
+        expect(empty.status).toBe(204);
+        expect(await empty.text()).toBe('');
         const large = await net.fetch('test-scheme://host/big');
-        expect(Buffer.from(await large.arrayBuffer()).equals(big)).to.be.true();
+        expect(Buffer.from(await large.arrayBuffer()).equals(big)).toBe(true);
       });
 
       it('delivers a decoded body for an encoded upstream response', async () => {
         proxy((u) => base + u.pathname);
         const r = await net.fetch('test-scheme://host/gzip');
-        expect(await r.text()).to.equal('compressed hello '.repeat(5000));
+        expect(await r.text()).toBe('compressed hello '.repeat(5000));
       });
 
       it('streams a slow upstream body to the end', async () => {
         proxy((u) => base + u.pathname);
         const r = await net.fetch('test-scheme://host/slow');
-        expect(await r.text()).to.equal('chunk 0\nchunk 1\nchunk 2\nchunk 3\nchunk 4\nend\n');
+        expect(await r.text()).toBe('chunk 0\nchunk 1\nchunk 2\nchunk 3\nchunk 4\nend\n');
       });
 
       it('relays file responses too', async () => {
         proxy(() => url.pathToFileURL(path.join(tmpDir, 'big.bin')).toString());
         const r = await net.fetch('test-scheme://host/whatever');
-        expect(Buffer.from(await r.arrayBuffer()).equals(big)).to.be.true();
+        expect(Buffer.from(await r.arrayBuffer()).equals(big)).toBe(true);
       });
 
       it('keeps working when the handler inspected the response without touching the body', async () => {
@@ -2331,8 +2336,8 @@ describe('protocol module', () => {
           return r;
         });
         const r = await net.fetch('test-scheme://host/big');
-        expect(r.headers.get('x-seen-status')).to.equal('200');
-        expect(Buffer.from(await r.arrayBuffer()).equals(big)).to.be.true();
+        expect(r.headers.get('x-seen-status')).toBe('200');
+        expect(Buffer.from(await r.arrayBuffer()).equals(big)).toBe(true);
       });
 
       it('still relays through JS when the handler read, cloned or re-wrapped the body', async () => {
@@ -2349,7 +2354,7 @@ describe('protocol module', () => {
         });
         for (const which of ['/clone', '/rewrap', '/read']) {
           const r = await net.fetch('test-scheme://host' + which);
-          expect(Buffer.from(await r.arrayBuffer()).equals(big)).to.equal(true, which);
+          expect(Buffer.from(await r.arrayBuffer()).equals(big), which).toBe(true);
         }
       });
 
@@ -2360,9 +2365,9 @@ describe('protocol module', () => {
         const reader = r.body!.getReader();
         await reader.read();
         controller.abort();
-        await expect(reader.read()).to.eventually.be.rejected();
+        await expect(reader.read()).rejects.toThrow();
         const again = await net.fetch('test-scheme://host/small');
-        expect(await again.text()).to.equal('small body');
+        expect(await again.text()).toBe('small body');
       });
     });
 
@@ -2377,7 +2382,7 @@ describe('protocol module', () => {
           body: 'foobar'
         })
         .then((r) => r.text());
-      expect(body).to.equal('foobar');
+      expect(body).toBe('foobar');
     });
 
     it('can receive stream request body', async () => {
@@ -2392,7 +2397,7 @@ describe('protocol module', () => {
           duplex: 'half' // https://github.com/microsoft/TypeScript/issues/53157
         } as any)
         .then((r) => r.text());
-      expect(body).to.equal(text);
+      expect(body).toBe(text);
     });
 
     it('can receive stream request body asynchronously', async () => {
@@ -2441,7 +2446,7 @@ describe('protocol module', () => {
       ).toString('hex');
       const body = Buffer.concat(await requestReceived);
       const actualHash = Buffer.from(await crypto.subtle.digest('SHA-256', Buffer.from(body))).toString('hex');
-      expect(actualHash).to.equal(expectedHash);
+      expect(actualHash).toBe(expectedHash);
     });
 
     it('can receive multi-part postData from loadURL', async () => {
@@ -2455,7 +2460,7 @@ describe('protocol module', () => {
           { type: 'rawData', bytes: Buffer.from('b') }
         ]
       });
-      expect(await contents.executeJavaScript('document.documentElement.textContent')).to.equal('ab');
+      expect(await contents.executeJavaScript('document.documentElement.textContent')).toBe('ab');
     });
 
     it('can receive file postData from loadURL', async () => {
@@ -2474,7 +2479,7 @@ describe('protocol module', () => {
           }
         ]
       });
-      expect(await contents.executeJavaScript('document.documentElement.textContent')).to.equal('hello world\n');
+      expect(await contents.executeJavaScript('document.documentElement.textContent')).toBe('hello world\n');
     });
 
     it('can receive file postData from a form', async () => {
@@ -2499,7 +2504,7 @@ describe('protocol module', () => {
       const navigated = once(contents, 'did-finish-load');
       await contents.executeJavaScript('document.querySelector("form").submit()');
       await navigated;
-      expect(await contents.executeJavaScript('document.documentElement.textContent')).to.match(
+      expect(await contents.executeJavaScript('document.documentElement.textContent')).toMatch(
         /------WebKitFormBoundary.*\nContent-Disposition: form-data; name="foo"; filename="hello.txt"\nContent-Type: text\/plain\n\nhello world\n\n------WebKitFormBoundary.*--\n/
       );
     });
@@ -2519,7 +2524,7 @@ describe('protocol module', () => {
         }).pipeThrough(new TextEncoderStream());
         fetch(location.href, {method: 'POST', body: stream, duplex: 'half'}).then(x => x.text())
       `);
-      expect(fetchBodyResult).to.equal('hello world');
+      expect(fetchBodyResult).toBe('hello world');
     });
 
     it('can receive streaming fetch upload when a webRequest handler is present', async () => {
@@ -2548,7 +2553,7 @@ describe('protocol module', () => {
         }).pipeThrough(new TextEncoderStream());
         fetch(location.href, {method: 'POST', body: stream, duplex: 'half'}).then(x => x.text())
       `);
-      expect(fetchBodyResult).to.equal('hello world');
+      expect(fetchBodyResult).toBe('hello world');
     });
 
     it('can receive an error from streaming fetch upload', async () => {
@@ -2565,7 +2570,7 @@ describe('protocol module', () => {
         });
         fetch(location.href, {method: 'POST', body: stream, duplex: 'half'}).then(x => x.text()).catch(err => err)
       `);
-      expect(fetchBodyResult).to.be.an.instanceOf(Error);
+      expect(fetchBodyResult).toBeInstanceOf(Error);
     });
 
     it('gets an error from streaming fetch upload when the renderer dies', async () => {
@@ -2593,7 +2598,7 @@ describe('protocol module', () => {
       contents.destroy();
       // Undo .destroy() for the next test
       contents = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true });
-      await expect(req.body!.getReader().read()).to.eventually.be.rejectedWith('net::ERR_FAILED');
+      await expect(req.body!.getReader().read()).rejects.toThrow('net::ERR_FAILED');
     });
 
     it('can bypass intercepeted protocol handlers', async () => {
@@ -2606,7 +2611,7 @@ describe('protocol module', () => {
       });
       defer(() => server.close());
       const { url } = await listen(server);
-      expect(await net.fetch(url, { bypassCustomProtocolHandlers: true }).then((r) => r.text())).to.equal('default');
+      expect(await net.fetch(url, { bypassCustomProtocolHandlers: true }).then((r) => r.text())).toBe('default');
     });
 
     it('can bypass intercepted protocol handlers with net.request', async () => {
@@ -2623,8 +2628,8 @@ describe('protocol module', () => {
       const request = net.request({ method: 'GET', url, bypassCustomProtocolHandlers: true });
       const response = await getResponse(request);
       const body = await collectStreamBody(response);
-      expect(response.statusCode).to.equal(200);
-      expect(body).to.equal('default');
+      expect(response.statusCode).toBe(200);
+      expect(body).toBe('default');
     });
 
     it('bypassing custom protocol handlers also bypasses new protocols', async () => {
@@ -2632,7 +2637,7 @@ describe('protocol module', () => {
       defer(() => {
         protocol.unhandle('app');
       });
-      await expect(net.fetch('app://foo/', { bypassCustomProtocolHandlers: true })).to.be.rejectedWith(
+      await expect(net.fetch('app://foo/', { bypassCustomProtocolHandlers: true })).rejects.toThrow(
         'net::ERR_UNKNOWN_URL_SCHEME'
       );
     });
@@ -2648,7 +2653,7 @@ describe('protocol module', () => {
       });
       const { url } = await listen(server);
       await contents.loadURL(url);
-      expect(await contents.executeJavaScript('document.documentElement.textContent')).to.equal('hello');
+      expect(await contents.executeJavaScript('document.documentElement.textContent')).toBe('hello');
     });
 
     it('supports sniffing mime type', async () => {
@@ -2672,20 +2677,20 @@ describe('protocol module', () => {
       {
         await contents.loadURL(url);
         const doc = await contents.executeJavaScript('document.documentElement.outerHTML');
-        expect(doc).to.match(/white-space: pre-wrap/);
+        expect(doc).toMatch(/white-space: pre-wrap/);
       }
       {
         await contents.loadURL(url + '?html');
         const doc = await contents.executeJavaScript('document.documentElement.outerHTML');
-        expect(doc).to.equal('<html><head></head><body>hi</body></html>');
+        expect(doc).toBe('<html><head></head><body>hi</body></html>');
       }
     });
 
     it('does not emit undefined chunks into the request body stream when uploading a stream', async () => {
       protocol.handle('cors', async (request) => {
-        expect(request.body).to.be.an.instanceOf(webStream.ReadableStream);
+        expect(request.body).toBeInstanceOf(webStream.ReadableStream);
         for await (const value of request.body as webStream.ReadableStream<Uint8Array>) {
-          expect(value).to.not.be.undefined();
+          expect(value).not.toBeUndefined();
         }
         return new Response(undefined, { status: 200 });
       });
@@ -2717,14 +2722,14 @@ describe('protocol module', () => {
         }).pipeThrough(new TextEncoderStream());
         return (await fetch('cors://url.invalid', { method: 'POST', body: stream, duplex: 'half' })).ok;
       })()`);
-      expect(ok).to.be.true();
+      expect(ok).toBe(true);
     });
 
     it('does not emit undefined chunks into the request body stream when uploading a file', async () => {
       protocol.handle('cors', async (request) => {
-        expect(request.body).to.be.an.instanceOf(webStream.ReadableStream);
+        expect(request.body).toBeInstanceOf(webStream.ReadableStream);
         for await (const value of request.body as webStream.ReadableStream<Uint8Array>) {
-          expect(value).to.not.be.undefined();
+          expect(value).not.toBeUndefined();
         }
         return new Response(undefined, { status: 200 });
       });
@@ -2749,7 +2754,7 @@ describe('protocol module', () => {
           formData.append("data", document.getElementById("file").files[0]);
           return (await fetch('cors://url.invalid', { method: 'POST', body: formData })).ok;
         })()`);
-        expect(ok).to.be.true();
+        expect(ok).toBe(true);
       } finally {
         debug.detach();
       }
@@ -2757,7 +2762,7 @@ describe('protocol module', () => {
 
     it('filters an illegal "origin: null" header', async () => {
       protocol.handle('http', (req) => {
-        expect(new Headers(req.headers).get('origin')).to.not.equal('null');
+        expect(new Headers(req.headers).get('origin')).not.toBe('null');
         return new Response();
       });
       defer(() => {
@@ -2788,7 +2793,7 @@ describe('protocol module', () => {
       const s = session.fromPartition('protocol-handle-forwards-blob-chunks');
 
       s.protocol.handle('cors', async (request) => {
-        expect(request.body).to.be.an.instanceOf(webStream.ReadableStream);
+        expect(request.body).toBeInstanceOf(webStream.ReadableStream);
         return new Response(
           `hello to ${await streamConsumers.text(request.body as webStream.ReadableStream<Uint8Array>)}`,
           { status: 200 }
@@ -2804,7 +2809,7 @@ describe('protocol module', () => {
         const body = new Blob(["it's-a ", 'me! ', 'Mario!'], { type: 'text/plain' });
         return await (await fetch('cors://url.invalid', { method: 'POST', body })).text();
       })()`);
-      expect(response).to.be.string("hello to it's-a me! Mario!");
+      expect(response).toContain("hello to it's-a me! Mario!");
     });
 
     // A throughput comparison: run it serially so that other spec files'
@@ -2839,8 +2844,8 @@ describe('protocol module', () => {
             }
           })()
         `);
-        expect(length).to.equal(chunk.byteLength);
-        expect(handlerCalls - callsBefore, intercepted ? 'intercepted fetch' : 'direct fetch').to.equal(
+        expect(length).toBe(chunk.byteLength);
+        expect(handlerCalls - callsBefore, intercepted ? 'intercepted fetch' : 'direct fetch').toBe(
           intercepted ? 1 : 0
         );
         return elapsed;
@@ -2881,7 +2886,7 @@ describe('protocol module', () => {
       const medianRatio = (ratios[1] + ratios[2]) / 2;
       // Balance pair order to reduce drift and use the median to limit isolated outliers.
       // Interception adds another response body pipeline; allow headroom above its expected ~2x cost.
-      expect(medianRatio, `timings: ${JSON.stringify(samples)}`).to.be.lessThan(3);
+      expect(medianRatio, `timings: ${JSON.stringify(samples)}`).toBeLessThan(3);
     });
   });
 });

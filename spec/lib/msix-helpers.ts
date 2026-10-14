@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -12,7 +12,7 @@ const manifestFixturePath = path.resolve(fixturesPath, 'ElectronDevAppxManifest.
 const installCertScriptPath = path.resolve(fixturesPath, 'install_test_cert.ps1');
 const powershellTimeout = 30_000;
 // Installing the test certificate and registering the sparse package run in the
-// suite's before hook while other spec files keep the CI host busy. On
+// suite's beforeAll hook while other spec files keep the CI host busy. On
 // windows-arm64 they regularly overrun 30s there, though they finish in time
 // when the suite runs on its own, and vitest does not retry a failed hook.
 const powershellSetupTimeout = 120_000;
@@ -181,6 +181,6 @@ export async function spawn(cmd: string, args: string[], opts: any = {}): Promis
     out += chunk.toString();
   });
   const [code, signal] = await once(child, 'close');
-  expect(signal).to.equal(null);
+  expect(signal).toBe(null);
   return { code, out };
 }

@@ -331,7 +331,7 @@ async function runElectronTests() {
     try {
       console.info('\nRunning:', description);
       if (testResultsDir) {
-        process.env.MOCHA_FILE = path.join(testResultsDir, `test-results-${runnerId}.xml`);
+        process.env.ELECTRON_SPEC_JUNIT_FILE = path.join(testResultsDir, `test-results-${runnerId}.xml`);
       }
       await run();
     } catch (err) {
@@ -367,19 +367,17 @@ async function asyncSpawn(exe, runnerArgs, env = process.env) {
   });
 }
 
-// The runner used to launch `electron spec/ <args>` and let the spec app (a
-// mocha runner) interpret the arguments. It now launches the vitest CLI, which
-// starts the Electron processes itself (spec/vitest/electron-pool.ts), so the
-// arguments the spec app understood are translated here: `--files` becomes
-// vitest's file filters, `-g`/`--grep` (and `-i`/`--invert`) its test name
-// pattern, and anything else is treated as a command line switch for the
-// Electron workers, as before.
+// Launches the vitest CLI, which starts the Electron processes itself
+// (spec/vitest/electron-pool.ts). The runner's own arguments are translated:
+// `--files` becomes vitest's file filters, `-g`/`--grep` (and `-i`/`--invert`)
+// its test name pattern, and anything else is treated as a command line
+// switch for the Electron workers.
 function toVitestInvocation(exe, specDir, runnerArgs) {
   const specRoot = path.resolve(__dirname, '..', specDir);
   const files = [];
   const electronArgs = [];
-  let grep = process.env.MOCHA_GREP || null;
-  let invert = process.env.MOCHA_INVERT === 'true';
+  let grep = null;
+  let invert = false;
   for (let i = 0; i < runnerArgs.length; i++) {
     const arg = String(runnerArgs[i]);
     const takeValue = () => (arg.includes('=') ? arg.slice(arg.indexOf('=') + 1) : String(runnerArgs[++i]));
