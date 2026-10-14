@@ -85,8 +85,8 @@ if (process.env.GITHUB_ACTIONS === 'true') {
 if (process.env.MOCHA_FILE) {
   reporters.push(['junit', { outputFile: process.env.MOCHA_FILE, includeConsoleOutput: false }]);
 }
-// Per-file wall time for script/gen-spec-weights.js; skipped for filtered runs
-// so a rerun does not overwrite the full run's numbers.
+// Per-file wall time for script/gen-spec-weights.js; skipped for runs filtered
+// by test name so a partial run does not overwrite the full run's numbers.
 if (isCI && !process.argv.some((arg) => /^(-t|--testNamePattern)/.test(arg))) {
   reporters.push(new SpecTimingsReporter(specDir));
 }
