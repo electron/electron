@@ -14,7 +14,7 @@
 // option is not supported (docs/api/browser-window.md).
 import { BrowserWindow, screen } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import { createRequire } from 'node:module';
@@ -125,20 +125,23 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       return undefined;
     };
 
-    before(async function () {
+    let skipReason: string | undefined;
+    beforeAll(async () => {
       mouse = require('@electron-ci/mouse-input');
       initialCursor = mouse.getCursorPos();
-      const reason = await cannotInject();
-      if (reason) {
+      skipReason = await cannotInject();
+      if (skipReason) {
         // On CI this must not turn into a silent skip, or a runner image
         // change would quietly disable the suite.
-        if (process.env.CI) throw new Error(reason);
-        console.warn(`Skipping real mouse input specs. ${reason}`);
-        this.skip();
+        if (process.env.CI) throw new Error(skipReason);
+        console.warn(`Skipping real mouse input specs. ${skipReason}`);
       }
     });
+    beforeEach((ctx) => {
+      if (skipReason) ctx.skip();
+    });
 
-    after(async () => {
+    afterAll(async () => {
       if (mouse && initialCursor?.x !== undefined && initialCursor?.y !== undefined) {
         await mouse.move(initialCursor.x, initialCursor.y);
       }
@@ -251,7 +254,7 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       w.setIgnoreMouseEvents(true, { forward: canForward });
       // Synchronous on both: Windows changes the extended style in place, and
       // on X11 the new input shape is applied when the call returns.
-      expect(mouse.isWindowAtPoint(w.getNativeWindowHandle(), p.x, p.y)).to.be.false();
+      expect(mouse.isWindowAtPoint(w.getNativeWindowHandle(), p.x, p.y)).toBe(false);
     });
 
     // Only clicks are checked in the window below. Hover there is not: on X11
@@ -289,7 +292,7 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
         'a mousedown in the window below',
         async () => (await count(below, 'mousedown')) > 0
       );
-      expect(await count(above, 'mousedown')).to.equal(0);
+      expect(await count(above, 'mousedown')).toBe(0);
     });
 
     ifit(canForward)('forwards mouse moves to the page', async () => {
@@ -297,7 +300,7 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       await glide(inWindow(MARGIN), inWindow(TARGET_CENTER));
       await moveInWindow(w, { x: 210, y: 220 });
       await waitUntil(() => isHovered(w));
-      expect(await count(w, 'mouseenter')).to.equal(1);
+      expect(await count(w, 'mouseenter')).toBe(1);
     });
 
     // https://github.com/electron/electron/issues/30808
@@ -306,8 +309,8 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       for (let i = 0; i < 10; i++) {
         await moveInWindow(w, { x: 100 + i * 10, y: 100 + i * 10 });
       }
-      expect(await count(w, 'mouseenter')).to.equal(1);
-      expect(await count(w, 'mouseleave')).to.equal(0);
+      expect(await count(w, 'mouseenter')).toBe(1);
+      expect(await count(w, 'mouseleave')).toBe(0);
     });
 
     // Leaves #target through the window's margin. Leaving the window straight
@@ -322,8 +325,8 @@ ifdescribe(hasRealInput && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
       await moveInWindow(w, MARGIN);
       await waitUntil(async () => !(await isHovered(w)));
       await moveTo(OUTSIDE);
-      expect(await count(w, 'mouseenter')).to.equal(1);
-      expect(await count(w, 'mouseleave')).to.equal(1);
+      expect(await count(w, 'mouseenter')).toBe(1);
+      expect(await count(w, 'mouseleave')).toBe(1);
     });
   }
 );

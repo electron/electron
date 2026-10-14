@@ -6,7 +6,7 @@ import {
   type TraceCategoriesAndOptions
 } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
@@ -61,9 +61,7 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
   });
 
   const recordingTimeout = process.platform === 'win32' && process.arch === 'arm64' ? 10_000 : 5_000;
-  describe('startRecording', function () {
-    this.timeout(recordingTimeout);
-
+  describe('startRecording', { timeout: recordingTimeout }, () => {
     const getFileSizeInKiloBytes = (filePath: string) => {
       const stats = fs.statSync(filePath);
       const fileSizeInBytes = stats.size;
@@ -75,10 +73,10 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
       const config = {};
       await record(config, outputFilePath);
 
-      expect(fs.existsSync(outputFilePath)).to.be.true('output exists');
+      expect(fs.existsSync(outputFilePath), 'output exists').toBe(true);
 
       const fileSizeInKiloBytes = getFileSizeInKiloBytes(outputFilePath);
-      expect(fileSizeInKiloBytes).to.be.above(0, `the trace output file is empty, check "${outputFilePath}"`);
+      expect(fileSizeInKiloBytes, `the trace output file is empty, check "${outputFilePath}"`).toBeGreaterThan(0);
     });
 
     it('accepts a trace config', async () => {
@@ -92,7 +90,7 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
       // If the `excluded_categories` param above is not respected, categories
       // like `node,node.environment` will be included in the output.
       const content = fs.readFileSync(outputFilePath).toString();
-      expect(content.includes('"cat":"node,node.environment"')).to.be.false();
+      expect(content.includes('"cat":"node,node.environment"')).toBe(false);
     });
 
     it('accepts "categoryFilter" and "traceOptions" as a config', async () => {
@@ -104,25 +102,23 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
       };
       await record(config, outputFilePath);
 
-      expect(fs.existsSync(outputFilePath)).to.be.true('output exists');
+      expect(fs.existsSync(outputFilePath), 'output exists').toBe(true);
 
       // If the `categoryFilter` param above is not respected
       // the file size will be above 60KB.
       const fileSizeInKiloBytes = getFileSizeInKiloBytes(outputFilePath);
       const expectedMaximumFileSize = 60; // Depends on a platform.
 
-      expect(fileSizeInKiloBytes).to.be.above(0, `the trace output file is empty, check "${outputFilePath}"`);
-      expect(fileSizeInKiloBytes).to.be.below(
-        expectedMaximumFileSize,
+      expect(fileSizeInKiloBytes, `the trace output file is empty, check "${outputFilePath}"`).toBeGreaterThan(0);
+      expect(
+        fileSizeInKiloBytes,
         `the trace output file is suspiciously large (${fileSizeInKiloBytes}KB),
         check "${outputFilePath}"`
-      );
+      ).toBeLessThan(expectedMaximumFileSize);
     });
   });
 
-  ifdescribe(process.platform !== 'linux')('stopRecording', function () {
-    this.timeout(recordingTimeout);
-
+  ifdescribe(process.platform !== 'linux')('stopRecording', { timeout: recordingTimeout }, () => {
     // FIXME(samuelmaddock): this test regularly flakes
     it.skip('does not crash on empty string', async () => {
       const options = {
@@ -132,33 +128,35 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
 
       await contentTracing.startRecording(options);
       const path = await contentTracing.stopRecording('');
-      expect(path).to.be.a('string').that.is.not.empty('result path');
-      expect(fs.statSync(path).isFile()).to.be.true('output exists');
+      expect(path, 'result path').toBeTypeOf('string');
+      expect(path, 'result path').not.toHaveLength(0);
+      expect(fs.statSync(path).isFile(), 'output exists').toBe(true);
     });
 
     it('calls its callback with a result file path', async () => {
       const resultFilePath = await record(/* options */ {}, outputFilePath);
-      expect(resultFilePath).to.be.a('string').and.be.equal(outputFilePath);
+      expect(resultFilePath).toBeTypeOf('string');
+      expect(resultFilePath).toBe(outputFilePath);
     });
 
-    it('creates a temporary file when an empty string is passed', async function () {
+    it('creates a temporary file when an empty string is passed', async () => {
       const resultFilePath = await record(/* options */ {}, /* outputFilePath */ '');
-      expect(resultFilePath).to.be.a('string').that.is.not.empty('result path');
+      expect(resultFilePath, 'result path').toBeTypeOf('string');
+      expect(resultFilePath, 'result path').not.toHaveLength(0);
     });
 
-    it('creates a temporary file when no path is passed', async function () {
+    it('creates a temporary file when no path is passed', async () => {
       const resultFilePath = await record(/* options */ {}, /* outputFilePath */ undefined);
-      expect(resultFilePath).to.be.a('string').that.is.not.empty('result path');
+      expect(resultFilePath, 'result path').toBeTypeOf('string');
+      expect(resultFilePath, 'result path').not.toHaveLength(0);
     });
 
     it('rejects if no trace is happening', async () => {
-      await expect(contentTracing.stopRecording()).to.be.rejectedWith('Failed to stop tracing - no trace in progress');
+      await expect(contentTracing.stopRecording()).rejects.toThrow('Failed to stop tracing - no trace in progress');
     });
   });
 
-  describe('getTraceBufferUsage', function () {
-    this.timeout(10e3);
-
+  describe('getTraceBufferUsage', { timeout: 10e3 }, () => {
     it('does not crash and returns valid usage data', async () => {
       await app.whenReady();
       await contentTracing.startRecording({
@@ -172,8 +170,8 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
       // the process will crash with "Cannot create a handle without a HandleScope".
       const result = await contentTracing.getTraceBufferUsage();
 
-      expect(result).to.have.property('percentage').that.is.a('number');
-      expect(result).to.have.property('value').that.is.a('number');
+      expect(result).toHaveProperty('percentage', expect.any(Number));
+      expect(result).toHaveProperty('value', expect.any(Number));
 
       await contentTracing.stopRecording();
     });
@@ -181,16 +179,13 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
     it('returns zero usage when no trace is active', async () => {
       await app.whenReady();
       const result = await contentTracing.getTraceBufferUsage();
-      expect(result).to.have.property('percentage').that.is.a('number');
-      expect(result.percentage).to.equal(0);
+      expect(result).toHaveProperty('percentage', expect.any(Number));
+      expect(result.percentage).toBe(0);
     });
   });
 
-  describe('enableHeapProfiling', function () {
-    const enableHeapProfilingTestTimeout = 120000;
-
-    this.timeout(enableHeapProfilingTestTimeout);
-
+  const enableHeapProfilingTestTimeout = 120000;
+  describe('enableHeapProfiling', { timeout: enableHeapProfilingTestTimeout }, () => {
     const checkForHeapDumps = async (options?: EnableHeapProfilingOptions | false) => {
       const rc = await startRemoteControlApp([`--remote-app-timeout=${enableHeapProfilingTestTimeout}`]);
 
@@ -270,7 +265,7 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
       );
 
       const [code] = await once(rc.process, 'exit');
-      expect(code).to.equal(0);
+      expect(code).toBe(0);
 
       return {
         hasBrowserProcessHeapDump,
@@ -279,76 +274,76 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
       };
     };
 
-    it('does not include heap dumps when enableHeapProfiling is not called', async function () {
+    it('does not include heap dumps when enableHeapProfiling is not called', async () => {
       const { hasBrowserProcessHeapDump, hasRendererProcessHeapDump, hasUtilityProcessHeapDump } =
         await checkForHeapDumps(false);
 
-      expect(hasBrowserProcessHeapDump).to.be.false();
-      expect(hasRendererProcessHeapDump).to.be.false();
-      expect(hasUtilityProcessHeapDump).to.be.false();
+      expect(hasBrowserProcessHeapDump).toBe(false);
+      expect(hasRendererProcessHeapDump).toBe(false);
+      expect(hasUtilityProcessHeapDump).toBe(false);
     });
 
     ifit(!process.env.IS_ASAN)(
       'includes heap dumps for browser process when called with { mode: "browser" }',
-      async function () {
+      async () => {
         const { hasBrowserProcessHeapDump, hasRendererProcessHeapDump, hasUtilityProcessHeapDump } =
           await checkForHeapDumps({ mode: 'browser' });
 
-        expect(hasBrowserProcessHeapDump).to.be.true();
-        expect(hasRendererProcessHeapDump).to.be.false();
-        expect(hasUtilityProcessHeapDump).to.be.false();
+        expect(hasBrowserProcessHeapDump).toBe(true);
+        expect(hasRendererProcessHeapDump).toBe(false);
+        expect(hasUtilityProcessHeapDump).toBe(false);
       }
     );
 
     ifit(!process.env.IS_ASAN)(
       'includes heap dumps for renderer processes when called with { mode: "all-renderers" }',
-      async function () {
+      async () => {
         const { hasBrowserProcessHeapDump, hasRendererProcessHeapDump, hasUtilityProcessHeapDump } =
           await checkForHeapDumps({ mode: 'all-renderers' });
 
-        expect(hasBrowserProcessHeapDump).to.be.false();
-        expect(hasRendererProcessHeapDump).to.be.true();
-        expect(hasUtilityProcessHeapDump).to.be.false();
+        expect(hasBrowserProcessHeapDump).toBe(false);
+        expect(hasRendererProcessHeapDump).toBe(true);
+        expect(hasUtilityProcessHeapDump).toBe(false);
       }
     );
 
     ifit(!process.env.IS_ASAN)(
       'includes heap dumps for utility processes when called with { mode: "all-utilities" }',
-      async function () {
+      async () => {
         const { hasBrowserProcessHeapDump, hasRendererProcessHeapDump, hasUtilityProcessHeapDump } =
           await checkForHeapDumps({ mode: 'all-utilities' });
 
-        expect(hasBrowserProcessHeapDump).to.be.false();
-        expect(hasRendererProcessHeapDump).to.be.false();
-        expect(hasUtilityProcessHeapDump).to.be.true();
+        expect(hasBrowserProcessHeapDump).toBe(false);
+        expect(hasRendererProcessHeapDump).toBe(false);
+        expect(hasUtilityProcessHeapDump).toBe(true);
       }
     );
 
     ifit(!process.env.IS_ASAN)(
       'includes heap dumps for browser, renderer, and utility processes when called with { mode: "all" }',
-      async function () {
+      async () => {
         const { hasBrowserProcessHeapDump, hasRendererProcessHeapDump, hasUtilityProcessHeapDump } =
           await checkForHeapDumps({ mode: 'all' });
 
-        expect(hasBrowserProcessHeapDump).to.be.true();
-        expect(hasRendererProcessHeapDump).to.be.true();
-        expect(hasUtilityProcessHeapDump).to.be.true();
+        expect(hasBrowserProcessHeapDump).toBe(true);
+        expect(hasRendererProcessHeapDump).toBe(true);
+        expect(hasUtilityProcessHeapDump).toBe(true);
       }
     );
 
     ifit(!process.env.IS_ASAN)(
       'includes heap dumps for browser, renderer, and utility processes when called without options',
-      async function () {
+      async () => {
         const { hasBrowserProcessHeapDump, hasRendererProcessHeapDump, hasUtilityProcessHeapDump } =
           await checkForHeapDumps();
 
-        expect(hasBrowserProcessHeapDump).to.be.true();
-        expect(hasRendererProcessHeapDump).to.be.true();
-        expect(hasUtilityProcessHeapDump).to.be.true();
+        expect(hasBrowserProcessHeapDump).toBe(true);
+        expect(hasRendererProcessHeapDump).toBe(true);
+        expect(hasUtilityProcessHeapDump).toBe(true);
       }
     );
 
-    ifit(!process.env.IS_ASAN)('accepts valid options', async function () {
+    ifit(!process.env.IS_ASAN)('accepts valid options', async () => {
       const { hasBrowserProcessHeapDump, hasRendererProcessHeapDump, hasUtilityProcessHeapDump } =
         await checkForHeapDumps({
           mode: 'all',
@@ -356,12 +351,12 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
           samplingRate: 50000
         });
 
-      expect(hasBrowserProcessHeapDump).to.be.true();
-      expect(hasRendererProcessHeapDump).to.be.true();
-      expect(hasUtilityProcessHeapDump).to.be.true();
+      expect(hasBrowserProcessHeapDump).toBe(true);
+      expect(hasRendererProcessHeapDump).toBe(true);
+      expect(hasUtilityProcessHeapDump).toBe(true);
     });
 
-    ifit(!process.env.IS_ASAN)('does not crash when invalid options are passed', async function () {
+    ifit(!process.env.IS_ASAN)('does not crash when invalid options are passed', async () => {
       const { hasBrowserProcessHeapDump, hasRendererProcessHeapDump, hasUtilityProcessHeapDump } =
         await checkForHeapDumps({
           // @ts-expect-error Invalid mode
@@ -371,12 +366,12 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
           samplingRate: -1000
         });
 
-      expect(hasBrowserProcessHeapDump).to.be.true();
-      expect(hasRendererProcessHeapDump).to.be.true();
-      expect(hasUtilityProcessHeapDump).to.be.true();
+      expect(hasBrowserProcessHeapDump).toBe(true);
+      expect(hasRendererProcessHeapDump).toBe(true);
+      expect(hasUtilityProcessHeapDump).toBe(true);
     });
 
-    ifit(!process.env.IS_ASAN)('does not crash when options of invalid types are passed', async function () {
+    ifit(!process.env.IS_ASAN)('does not crash when options of invalid types are passed', async () => {
       const { hasBrowserProcessHeapDump, hasRendererProcessHeapDump, hasUtilityProcessHeapDump } =
         await checkForHeapDumps({
           // @ts-expect-error Invalid mode
@@ -387,21 +382,21 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
           samplingRate: 'invalid'
         });
 
-      expect(hasBrowserProcessHeapDump).to.be.true();
-      expect(hasRendererProcessHeapDump).to.be.true();
-      expect(hasUtilityProcessHeapDump).to.be.true();
+      expect(hasBrowserProcessHeapDump).toBe(true);
+      expect(hasRendererProcessHeapDump).toBe(true);
+      expect(hasUtilityProcessHeapDump).toBe(true);
     });
 
-    ifit(!!process.env.IS_ASAN)('does not include heap dumps in ASAN builds', async function () {
+    ifit(!!process.env.IS_ASAN)('does not include heap dumps in ASAN builds', async () => {
       const { hasBrowserProcessHeapDump, hasRendererProcessHeapDump, hasUtilityProcessHeapDump } =
         await checkForHeapDumps();
 
-      expect(hasBrowserProcessHeapDump).to.be.false();
-      expect(hasRendererProcessHeapDump).to.be.false();
-      expect(hasUtilityProcessHeapDump).to.be.false();
+      expect(hasBrowserProcessHeapDump).toBe(false);
+      expect(hasRendererProcessHeapDump).toBe(false);
+      expect(hasUtilityProcessHeapDump).toBe(false);
     });
 
-    ifit(!process.env.IS_ASAN)('rejects when called multiple times', async function () {
+    ifit(!process.env.IS_ASAN)('rejects when called multiple times', async () => {
       const rc = await startRemoteControlApp();
 
       const [firstResult, secondResult, thirdResult] = await rc.remotely(async () => {
@@ -422,19 +417,18 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
       });
 
       const [code] = await once(rc.process, 'exit');
-      expect(code).to.equal(0);
+      expect(code).toBe(0);
 
-      expect(firstResult.status).to.equal('fulfilled');
-      expect(secondResult.status).to.equal('rejected');
-      expect(secondResult.reason.message).to.equal('Heap profiling is already enabled');
-      expect(thirdResult.status).to.equal('rejected');
-      expect(thirdResult.reason.message).to.equal('Heap profiling is already enabled');
+      expect(firstResult.status).toBe('fulfilled');
+      expect(secondResult.status).toBe('rejected');
+      expect(secondResult.reason.message).toBe('Heap profiling is already enabled');
+      expect(thirdResult.status).toBe('rejected');
+      expect(thirdResult.reason.message).toBe('Heap profiling is already enabled');
     });
   });
 
   describe('captured events', () => {
-    it('include V8 samples from the main process', async function () {
-      this.timeout(60000);
+    it('include V8 samples from the main process', { timeout: 60000 }, async () => {
       await contentTracing.startRecording({
         categoryFilter: 'disabled-by-default-v8.cpu_profiler',
         traceOptions: 'record-until-full'
@@ -456,12 +450,12 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
         parsed.traceEvents.some(
           (x: any) => x.cat === 'disabled-by-default-v8.cpu_profiler' && x.name === 'ProfileChunk'
         )
-      ).to.be.true();
+      ).toBe(true);
     });
   });
 
   describe('node trace categories', () => {
-    it('captures performance.mark() as instant trace events', async function () {
+    it('captures performance.mark() as instant trace events', async () => {
       const { performance } = require('node:perf_hooks');
 
       await contentTracing.startRecording({
@@ -477,11 +471,14 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
       const markEvents = parsed.traceEvents.filter(
         (x: any) => x.cat === 'node.perf.usertiming' && x.name === 'test-trace-mark'
       );
-      expect(markEvents).to.have.lengthOf.at.least(1, 'should have node.perf.usertiming events for performance.mark()');
-      expect(markEvents[0].ph).to.equal('I', 'performance.mark() should emit instant (I) phase events');
+      expect(
+        markEvents.length,
+        'should have node.perf.usertiming events for performance.mark()'
+      ).toBeGreaterThanOrEqual(1);
+      expect(markEvents[0].ph, 'performance.mark() should emit instant (I) phase events').toBe('I');
     });
 
-    it('captures performance.measure() as nestable async begin/end trace events', async function () {
+    it('captures performance.measure() as nestable async begin/end trace events', async () => {
       const { performance } = require('node:perf_hooks');
 
       await contentTracing.startRecording({
@@ -500,11 +497,17 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
       const measureEvents = parsed.traceEvents.filter(
         (x: any) => x.cat === 'node.perf.usertiming' && x.name === 'test-trace-measure'
       );
-      expect(measureEvents.some((x: any) => x.ph === 'b')).to.be.true('should have nestable async begin (b) event');
-      expect(measureEvents.some((x: any) => x.ph === 'e')).to.be.true('should have nestable async end (e) event');
+      expect(
+        measureEvents.some((x: any) => x.ph === 'b'),
+        'should have nestable async begin (b) event'
+      ).toBe(true);
+      expect(
+        measureEvents.some((x: any) => x.ph === 'e'),
+        'should have nestable async end (e) event'
+      ).toBe(true);
     });
 
-    it('captures node.fs.sync trace events for file operations', async function () {
+    it('captures node.fs.sync trace events for file operations', async () => {
       await contentTracing.startRecording({
         included_categories: ['node.fs.sync']
       });
@@ -518,10 +521,10 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
       const fsEvents = parsed.traceEvents.filter(
         (x: any) => typeof x.cat === 'string' && x.cat.includes('node.fs.sync')
       );
-      expect(fsEvents).to.have.lengthOf.at.least(1, 'should have node.fs.sync trace events');
+      expect(fsEvents.length, 'should have node.fs.sync trace events').toBeGreaterThanOrEqual(1);
     });
 
-    it('captures multiple node categories simultaneously', async function () {
+    it('captures multiple node categories simultaneously', async () => {
       const vm = require('node:vm');
 
       await contentTracing.startRecording({
@@ -541,11 +544,11 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
       const vmEvents = parsed.traceEvents.filter(
         (x: any) => typeof x.cat === 'string' && x.cat.includes('node.vm.script')
       );
-      expect(asyncHooksEvents).to.have.lengthOf.at.least(1, 'should have node.async_hooks events');
-      expect(vmEvents).to.have.lengthOf.at.least(1, 'should have node.vm.script events');
+      expect(asyncHooksEvents.length, 'should have node.async_hooks events').toBeGreaterThanOrEqual(1);
+      expect(vmEvents.length, 'should have node.vm.script events').toBeGreaterThanOrEqual(1);
     });
 
-    it('captures events using wildcard category pattern node.fs.*', async function () {
+    it('captures events using wildcard category pattern node.fs.*', async () => {
       await contentTracing.startRecording({
         included_categories: ['node.fs.*']
       });
@@ -563,8 +566,8 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
       const asyncEvents = parsed.traceEvents.filter(
         (x: any) => typeof x.cat === 'string' && x.cat.includes('node.fs.async')
       );
-      expect(syncEvents).to.have.lengthOf.at.least(1, 'should have node.fs.sync events from wildcard pattern');
-      expect(asyncEvents).to.have.lengthOf.at.least(1, 'should have node.fs.async events from wildcard pattern');
+      expect(syncEvents.length, 'should have node.fs.sync events from wildcard pattern').toBeGreaterThanOrEqual(1);
+      expect(asyncEvents.length, 'should have node.fs.async events from wildcard pattern').toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -579,11 +582,11 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
       const content = fs.readFileSync(outputFilePath).toString();
       const parsed = JSON.parse(content);
 
-      expect(parsed.metadata).to.be.an('object');
-      expect(parsed.metadata['product-version']).to.be.a('string');
-      expect(parsed.metadata['product-version'].startsWith(process.versions.chrome)).to.be.true();
-      expect(parsed.metadata['os-arch']).to.be.a('string');
-      expect(parsed.metadata['os-arch']).to.not.be.empty();
+      expect(parsed.metadata).toBeTypeOf('object');
+      expect(parsed.metadata['product-version']).toBeTypeOf('string');
+      expect(parsed.metadata['product-version'].startsWith(process.versions.chrome)).toBe(true);
+      expect(parsed.metadata['os-arch']).toBeTypeOf('string');
+      expect(parsed.metadata['os-arch']).not.toHaveLength(0);
     });
   });
 });

@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { describe, expect, it } from 'vitest';
 
 import { setupUpdaterHarness, shouldRunUpdaterSpecs } from './lib/autoupdater-darwin-helpers.ts';
 import { copyMacOSFixtureApp, unsignApp } from './lib/codesign-helpers.ts';
@@ -13,14 +13,13 @@ import type express from 'express';
 // are split so that they can land on different CI shards.
 // The updater specs share ShipIt's per-app cache directory, so no two of them
 // can run at the same time.
-ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, function () {
-  this.timeout(120000);
-
+ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'], timeout: 120000 }, () => {
   const harness = setupUpdaterHarness();
   const { launchApp, shallowSign, logOnError, updaterIt } = harness;
 
   it('should have a valid code signing identity', () => {
-    expect(harness.identity()).to.be.a('string').with.lengthOf.at.least(1);
+    expect(harness.identity()).toBeTypeOf('string');
+    expect(harness.identity().length).toBeGreaterThanOrEqual(1);
   });
 
   // These use the raw build output, not the template. On arm64 builds the
@@ -31,8 +30,8 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
       await unsignApp(appPath);
       const launchResult = await launchApp(appPath, ['http://myupdate']);
       console.log(launchResult);
-      expect(launchResult.code).to.equal(1);
-      expect(launchResult.out).to.include('Could not get code signature for running application');
+      expect(launchResult.code).toBe(1);
+      expect(launchResult.out).toContain('Could not get code signature for running application');
     });
   });
 
@@ -43,8 +42,8 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
         const appPath = await copyMacOSFixtureApp(dir);
         await unsignApp(appPath);
         const launchResult = await launchApp(appPath, ['', 'default']);
-        expect(launchResult.code).to.equal(1);
-        expect(launchResult.out).to.include('Could not get code signature for running application');
+        expect(launchResult.code).toBe(1);
+        expect(launchResult.out).toContain('Could not get code signature for running application');
       });
     }
   );
@@ -56,8 +55,8 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
         const appPath = await copyMacOSFixtureApp(dir);
         await unsignApp(appPath);
         const launchResult = await launchApp(appPath, ['', 'json']);
-        expect(launchResult.code).to.equal(1);
-        expect(launchResult.out).to.include('Could not get code signature for running application');
+        expect(launchResult.code).toBe(1);
+        expect(launchResult.out).toContain('Could not get code signature for running application');
       });
     }
   );
@@ -68,8 +67,8 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
       await withTempDirectory(async (dir) => {
         const appPath = await copyMacOSFixtureApp(dir);
         const launchResult = await launchApp(appPath, ['', 'weow']);
-        expect(launchResult.code).to.equal(1);
-        expect(launchResult.out).to.include("Expected serverType to be 'default' or 'json'");
+        expect(launchResult.code).toBe(1);
+        expect(launchResult.out).toContain("Expected serverType to be 'default' or 'json'");
       });
     }
   );
@@ -79,8 +78,8 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
       const appPath = await copyMacOSFixtureApp(dir, 'initial', { sourceApp: harness.templateApp() });
       await shallowSign(appPath);
       const launchResult = await launchApp(appPath, ['http://myupdate']);
-      expect(launchResult.code).to.equal(0);
-      expect(launchResult.out).to.include('Feed URL Set: http://myupdate');
+      expect(launchResult.code).toBe(0);
+      expect(launchResult.out).toContain('Feed URL Set: http://myupdate');
     });
   });
 
@@ -93,10 +92,10 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
         });
         const launchResult = await ctx.launchApp(appPath, [`http://localhost:${ctx.port}/update-check`]);
         logOnError(launchResult, () => {
-          expect(launchResult.code).to.equal(0);
-          expect(ctx.requests).to.have.lengthOf(1);
-          expect(ctx.requests[0]).to.have.property('url', '/update-check');
-          expect(ctx.requests[0].header('user-agent')).to.include('Electron/');
+          expect(launchResult.code).toBe(0);
+          expect(ctx.requests).toHaveLength(1);
+          expect(ctx.requests[0]).toHaveProperty('url', '/update-check');
+          expect(ctx.requests[0].header('user-agent')).toContain('Electron/');
         });
       });
     });
@@ -109,10 +108,10 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
         });
         const launchResult = await ctx.launchApp(appPath, [`http://localhost:${ctx.port}/update-check`]);
         logOnError(launchResult, () => {
-          expect(launchResult.code).to.equal(0);
-          expect(ctx.requests).to.have.lengthOf(1);
-          expect(ctx.requests[0]).to.have.property('url', '/update-check');
-          expect(ctx.requests[0].header('x-test')).to.equal('this-is-a-test');
+          expect(launchResult.code).toBe(0);
+          expect(ctx.requests).toHaveLength(1);
+          expect(ctx.requests[0]).toHaveProperty('url', '/update-check');
+          expect(ctx.requests[0].header('x-test')).toBe('this-is-a-test');
         });
       });
     });
@@ -135,13 +134,13 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
           });
           const launchResult = await ctx.launchApp(appPath, [`http://localhost:${ctx.port}/update-check`]);
           logOnError(launchResult, () => {
-            expect(launchResult).to.have.property('code', 1);
-            expect(launchResult.out).to.include('Update download failed. The server sent an invalid response.');
-            expect(ctx.requests).to.have.lengthOf(2);
-            expect(ctx.requests[0]).to.have.property('url', '/update-check');
-            expect(ctx.requests[1]).to.have.property('url', '/update-file');
-            expect(ctx.requests[0].header('user-agent')).to.include('Electron/');
-            expect(ctx.requests[1].header('user-agent')).to.include('Electron/');
+            expect(launchResult).toHaveProperty('code', 1);
+            expect(launchResult.out).toContain('Update download failed. The server sent an invalid response.');
+            expect(ctx.requests).toHaveLength(2);
+            expect(ctx.requests[0]).toHaveProperty('url', '/update-check');
+            expect(ctx.requests[1]).toHaveProperty('url', '/update-file');
+            expect(ctx.requests[0].header('user-agent')).toContain('Electron/');
+            expect(ctx.requests[1].header('user-agent')).toContain('Electron/');
           });
         });
       }
@@ -161,19 +160,19 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
             const relaunchPromise = ctx.relaunched();
             const launchResult = await ctx.launchApp(appPath, [`http://localhost:${ctx.port}/update-check`]);
             logOnError(launchResult, () => {
-              expect(launchResult).to.have.property('code', 0);
-              expect(launchResult.out).to.include('Update Downloaded');
-              expect(ctx.requests).to.have.lengthOf(2);
-              expect(ctx.requests[0]).to.have.property('url', '/update-check');
-              expect(ctx.requests[1]).to.have.property('url', '/update-file');
-              expect(ctx.requests[0].header('user-agent')).to.include('Electron/');
-              expect(ctx.requests[1].header('user-agent')).to.include('Electron/');
+              expect(launchResult).toHaveProperty('code', 0);
+              expect(launchResult.out).toContain('Update Downloaded');
+              expect(ctx.requests).toHaveLength(2);
+              expect(ctx.requests[0]).toHaveProperty('url', '/update-check');
+              expect(ctx.requests[1]).toHaveProperty('url', '/update-file');
+              expect(ctx.requests[0].header('user-agent')).toContain('Electron/');
+              expect(ctx.requests[1].header('user-agent')).toContain('Electron/');
             });
 
             await relaunchPromise;
-            expect(ctx.requests).to.have.lengthOf(3);
-            expect(ctx.requests[2].url).to.equal('/update-check/updated/2.0.0');
-            expect(ctx.requests[2].header('user-agent')).to.include('Electron/');
+            expect(ctx.requests).toHaveLength(3);
+            expect(ctx.requests[2].url).toBe('/update-check/updated/2.0.0');
+            expect(ctx.requests[2].header('user-agent')).toContain('Electron/');
           }
         );
       }
@@ -206,23 +205,23 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
             const relaunchPromise = ctx.relaunched();
             const launchResult = await ctx.launchApp(appPath, [`http://localhost:${ctx.port}/update-check`]);
             logOnError(launchResult, () => {
-              expect(launchResult).to.have.property('code', 0);
-              expect(launchResult.out).to.include('Update Downloaded');
-              expect(ctx.requests).to.have.lengthOf(4);
-              expect(ctx.requests[0]).to.have.property('url', '/update-check');
-              expect(ctx.requests[1]).to.have.property('url', '/update-file');
-              expect(ctx.requests[0].header('user-agent')).to.include('Electron/');
-              expect(ctx.requests[1].header('user-agent')).to.include('Electron/');
-              expect(ctx.requests[2]).to.have.property('url', '/update-check');
-              expect(ctx.requests[3]).to.have.property('url', '/update-file');
-              expect(ctx.requests[2].header('user-agent')).to.include('Electron/');
-              expect(ctx.requests[3].header('user-agent')).to.include('Electron/');
+              expect(launchResult).toHaveProperty('code', 0);
+              expect(launchResult.out).toContain('Update Downloaded');
+              expect(ctx.requests).toHaveLength(4);
+              expect(ctx.requests[0]).toHaveProperty('url', '/update-check');
+              expect(ctx.requests[1]).toHaveProperty('url', '/update-file');
+              expect(ctx.requests[0].header('user-agent')).toContain('Electron/');
+              expect(ctx.requests[1].header('user-agent')).toContain('Electron/');
+              expect(ctx.requests[2]).toHaveProperty('url', '/update-check');
+              expect(ctx.requests[3]).toHaveProperty('url', '/update-file');
+              expect(ctx.requests[2].header('user-agent')).toContain('Electron/');
+              expect(ctx.requests[3].header('user-agent')).toContain('Electron/');
             });
 
             await relaunchPromise;
-            expect(ctx.requests).to.have.lengthOf(5);
-            expect(ctx.requests[4].url).to.equal('/update-check/updated/3.0.0');
-            expect(ctx.requests[4].header('user-agent')).to.include('Electron/');
+            expect(ctx.requests).toHaveLength(5);
+            expect(ctx.requests[4].url).toBe('/update-check/updated/3.0.0');
+            expect(ctx.requests[4].header('user-agent')).toContain('Electron/');
           }
         );
       },
@@ -277,30 +276,30 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
             const relaunchPromise = ctx.relaunched();
             const launchResult = await ctx.launchApp(appPath, [`http://localhost:${ctx.port}/update-check`]);
             logOnError(launchResult, () => {
-              expect(launchResult).to.have.property('code', 0);
-              expect(launchResult.out).to.include('Update Downloaded');
+              expect(launchResult).toHaveProperty('code', 0);
+              expect(launchResult.out).toContain('Update Downloaded');
             });
 
             await relaunchPromise;
 
             // First download: exactly one temp dir (the first update).
-            expect(dirsDuringFirstDownload).to.have.lengthOf(
-              1,
+            expect(
+              dirsDuringFirstDownload,
               `Expected 1 update directory during first download but found ${dirsDuringFirstDownload.length}: ${dirsDuringFirstDownload.join(', ')}`
-            );
+            ).toHaveLength(1);
 
             // Second download: exactly two — the staged one preserved + the new
             // one. Crucially the first download's directory must still be present,
             // otherwise a mid-download quitAndInstall would find a dangling
             // ShipItState.plist.
-            expect(dirsDuringSecondDownload).to.have.lengthOf(
-              2,
+            expect(
+              dirsDuringSecondDownload,
               `Expected 2 update directories during second download (staged + new) but found ${dirsDuringSecondDownload.length}: ${dirsDuringSecondDownload.join(', ')}`
-            );
-            expect(dirsDuringSecondDownload).to.include(
-              dirsDuringFirstDownload[0],
+            ).toHaveLength(2);
+            expect(
+              dirsDuringSecondDownload,
               'The staged update directory from the first download must be preserved during the second download'
-            );
+            ).toContain(dirsDuringFirstDownload[0]);
           }
         );
       }
@@ -346,34 +345,34 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
 
             const launchResult = await ctx.launchApp(appPath, [`http://localhost:${ctx.port}/update-check`]);
             logOnError(launchResult, () => {
-              expect(launchResult).to.have.property('code', 0);
-              expect(launchResult.out).to.include('Update Downloaded');
+              expect(launchResult).toHaveProperty('code', 0);
+              expect(launchResult.out).toContain('Update Downloaded');
             });
 
             await relaunchPromise;
-            expect(ctx.requests[ctx.requests.length - 1].url).to.equal('/update-check/updated/4.0.0');
+            expect(ctx.requests[ctx.requests.length - 1].url).toBe('/update-check/updated/4.0.0');
 
-            expect(dirsPerDownload).to.have.lengthOf(3);
+            expect(dirsPerDownload).toHaveLength(3);
 
             // 1st: fresh cache, 1 dir.
-            expect(dirsPerDownload[0]).to.have.lengthOf(1, `1st download: ${dirsPerDownload[0].join(', ')}`);
+            expect(dirsPerDownload[0], `1st download: ${dirsPerDownload[0].join(', ')}`).toHaveLength(1);
 
             // 2nd: staged (1st) preserved + new = 2 dirs.
-            expect(dirsPerDownload[1]).to.have.lengthOf(2, `2nd download: ${dirsPerDownload[1].join(', ')}`);
-            expect(dirsPerDownload[1]).to.include(dirsPerDownload[0][0]);
+            expect(dirsPerDownload[1], `2nd download: ${dirsPerDownload[1].join(', ')}`).toHaveLength(2);
+            expect(dirsPerDownload[1]).toContain(dirsPerDownload[0][0]);
 
             // 3rd: 1st is now orphaned (plist points to 2nd) — must be pruned.
             // Staged (2nd) preserved + new = still 2 dirs. Bounded.
-            expect(dirsPerDownload[2]).to.have.lengthOf(2, `3rd download: ${dirsPerDownload[2].join(', ')}`);
-            expect(dirsPerDownload[2]).to.not.include(
-              dirsPerDownload[0][0],
+            expect(dirsPerDownload[2], `3rd download: ${dirsPerDownload[2].join(', ')}`).toHaveLength(2);
+            expect(
+              dirsPerDownload[2],
               'The first (now orphaned) update directory must be pruned on the third check'
-            );
+            ).not.toContain(dirsPerDownload[0][0]);
             const secondDir = dirsPerDownload[1].find((d) => d !== dirsPerDownload[0][0]);
-            expect(dirsPerDownload[2]).to.include(
-              secondDir,
+            expect(
+              dirsPerDownload[2],
               'The second (currently staged) update directory must be preserved on the third check'
-            );
+            ).toContain(secondDir);
           }
         );
       },
@@ -427,18 +426,18 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
 
             const launchResult = await ctx.launchApp(appPath, [`http://localhost:${ctx.port}/update-check`]);
             logOnError(launchResult, () => {
-              expect(launchResult).to.have.property('code', 0);
-              expect(launchResult.out).to.include('Update Downloaded');
-              expect(launchResult.out).to.include('Calling quitAndInstall mid-download');
+              expect(launchResult).toHaveProperty('code', 0);
+              expect(launchResult.out).toContain('Update Downloaded');
+              expect(launchResult.out).toContain('Calling quitAndInstall mid-download');
               // First check + first download + second check + stalled second download.
-              expect(ctx.requests).to.have.lengthOf(4);
-              expect(ctx.requests[0]).to.have.property('url', '/update-check');
-              expect(ctx.requests[1]).to.have.property('url', '/update-file');
-              expect(ctx.requests[2]).to.have.property('url', '/update-check');
-              expect(ctx.requests[3]).to.have.property('url', '/update-file');
+              expect(ctx.requests).toHaveLength(4);
+              expect(ctx.requests[0]).toHaveProperty('url', '/update-check');
+              expect(ctx.requests[1]).toHaveProperty('url', '/update-file');
+              expect(ctx.requests[2]).toHaveProperty('url', '/update-check');
+              expect(ctx.requests[3]).toHaveProperty('url', '/update-file');
               // The second download must have been in flight (never completed)
               // when quitAndInstall was called.
-              expect(launchResult.out).to.not.include('Unexpected second download completion');
+              expect(launchResult.out).not.toContain('Unexpected second download completion');
             });
 
             // Unblock the stalled response now that the initial app has exited
@@ -451,9 +450,9 @@ ifdescribe(shouldRunUpdaterSpecs)('autoUpdater behavior', { tags: ['serial'] }, 
             // the app must relaunch, proving the staged update directory was
             // not pruned out from under ShipItState.plist.
             await relaunchPromise;
-            expect(ctx.requests).to.have.lengthOf(5);
-            expect(ctx.requests[4].url).to.equal('/update-check/updated/2.0.0');
-            expect(ctx.requests[4].header('user-agent')).to.include('Electron/');
+            expect(ctx.requests).toHaveLength(5);
+            expect(ctx.requests[4].url).toBe('/update-check/updated/2.0.0');
+            expect(ctx.requests[4].header('user-agent')).toContain('Electron/');
           }
         );
       }

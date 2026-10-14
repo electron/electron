@@ -593,7 +593,7 @@ jobs:
             export NSS_DISABLE_ARENA_FREE_LIST=1
             export NSS_DISABLE_UNLOAD=1
             export LLVM_SYMBOLIZER_PATH=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer
-            export MOCHA_TIMEOUT=180000
+            export ELECTRON_SPEC_TIMEOUT=180000
             echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
             cd electron
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE

@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as http from 'node:http';
@@ -30,17 +30,17 @@ describe('debugger module', () => {
       await w.webContents.loadURL('about:blank');
       w.webContents.openDevTools();
       w.webContents.debugger.attach();
-      expect(w.webContents.debugger.isAttached()).to.be.true();
+      expect(w.webContents.debugger.isAttached()).toBe(true);
     });
 
     it('fails when protocol version is not supported', () => {
-      expect(() => w.webContents.debugger.attach('2.0')).to.throw();
-      expect(w.webContents.debugger.isAttached()).to.be.false();
+      expect(() => w.webContents.debugger.attach('2.0')).toThrow();
+      expect(w.webContents.debugger.isAttached()).toBe(false);
     });
 
     it('attaches when no protocol version is specified', () => {
       w.webContents.debugger.attach();
-      expect(w.webContents.debugger.isAttached()).to.be.true();
+      expect(w.webContents.debugger.isAttached()).toBe(true);
     });
 
     it('throws when the webContents has been destroyed', async () => {
@@ -48,8 +48,8 @@ describe('debugger module', () => {
       w.webContents.destroy();
       await once(w.webContents, 'destroyed');
       await setTimeout(50);
-      expect(() => dbg.attach()).to.throw('No target available');
-      expect(dbg.isAttached()).to.be.false();
+      expect(() => dbg.attach()).toThrow('No target available');
+      expect(dbg.isAttached()).toBe(false);
     });
   });
 
@@ -59,8 +59,8 @@ describe('debugger module', () => {
       w.webContents.debugger.attach();
       w.webContents.debugger.detach();
       const [, reason] = await detach;
-      expect(reason).to.equal('target closed');
-      expect(w.webContents.debugger.isAttached()).to.be.false();
+      expect(reason).toBe('target closed');
+      expect(w.webContents.debugger.isAttached()).toBe(false);
     });
 
     it("doesn't disconnect an active devtools session", async () => {
@@ -72,8 +72,8 @@ describe('debugger module', () => {
         w.webContents.debugger.detach();
       });
       await detach;
-      expect(w.webContents.debugger.isAttached()).to.be.false();
-      expect(w.devToolsWebContents.isDestroyed()).to.be.false();
+      expect(w.webContents.debugger.isAttached()).toBe(false);
+      expect(w.devToolsWebContents.isDestroyed()).toBe(false);
     });
 
     it('clears device metrics overrides left behind by the session', async () => {
@@ -87,7 +87,7 @@ describe('debugger module', () => {
         deviceScaleFactor: 0,
         mobile: false
       });
-      expect(await innerSize()).to.equal('200x150');
+      expect(await innerSize()).toBe('200x150');
 
       // Detaching without Emulation.clearDeviceMetricsOverride used to leave
       // the view pinned at the emulated size.
@@ -113,8 +113,8 @@ describe('debugger module', () => {
       const params = { expression: '4+2' };
       const res = await w.webContents.debugger.sendCommand('Runtime.evaluate', params);
 
-      expect(res.wasThrown).to.be.undefined();
-      expect(res.result.value).to.equal(6);
+      expect(res.wasThrown).toBeUndefined();
+      expect(res.result.value).toBe(6);
 
       w.webContents.debugger.detach();
     });
@@ -130,8 +130,8 @@ describe('debugger module', () => {
       const params = { expression: '4+2' };
       const res = await w.webContents.debugger.sendCommand('Runtime.evaluate', params);
 
-      expect(res.wasThrown).to.be.undefined();
-      expect(res.result.value).to.equal(6);
+      expect(res.wasThrown).toBeUndefined();
+      expect(res.result.value).toBe(6);
 
       w.webContents.debugger.detach();
     });
@@ -151,9 +151,9 @@ describe('debugger module', () => {
       w.webContents.debugger.sendCommand('Console.enable');
       const [, , params] = await message;
       w.webContents.debugger.detach();
-      expect(params.message.level).to.equal('log');
-      expect(params.message.url).to.equal(url);
-      expect(params.message.text).to.equal('a');
+      expect(params.message.level).toBe('log');
+      expect(params.message.url).toBe(url);
+      expect(params.message.text).toBe('a');
     });
 
     it('returns error message when command fails', async () => {
@@ -161,7 +161,7 @@ describe('debugger module', () => {
       w.webContents.debugger.attach();
 
       const promise = w.webContents.debugger.sendCommand('Test');
-      await expect(promise).to.be.eventually.rejectedWith(Error, "'Test' wasn't found");
+      await expect(promise).rejects.toThrow("'Test' wasn't found");
 
       w.webContents.debugger.detach();
     });
@@ -177,7 +177,7 @@ describe('debugger module', () => {
         type: 'keyDown',
         text: 1 as any
       });
-      await expect(promise).to.be.eventually.rejected();
+      await expect(promise).rejects.toThrow();
 
       w.webContents.debugger.detach();
     });
@@ -209,7 +209,7 @@ describe('debugger module', () => {
           method === 'Network.loadingFinished' && params.requestId === requestId
       );
       const { body } = await w.webContents.debugger.sendCommand('Network.getResponseBody', { requestId });
-      expect(body).to.equal('\u0024');
+      expect(body).toBe('\u0024');
     });
 
     it('does not crash for invalid unicode characters in message', async () => {
@@ -265,7 +265,7 @@ describe('debugger module', () => {
           patterns: [{ resourceType: 'Document' }]
         });
 
-        await expect(w.loadURL(url)).to.eventually.be.fulfilled();
+        await w.loadURL(url);
         await Promise.all(continueRequests);
       } finally {
         w.webContents.debugger.off('message', onMessage);
@@ -326,8 +326,8 @@ describe('debugger module', () => {
         await w.loadURL(`${url}/page`);
 
         await loadEvent;
-        expect(requestedUrls).to.include(`${url}/style.css`);
-        expect(requestedUrls).to.include(`${url}/script.js`);
+        expect(requestedUrls).toContain(`${url}/style.css`);
+        expect(requestedUrls).toContain(`${url}/script.js`);
       } finally {
         if (w.webContents.debugger.isAttached()) {
           w.webContents.debugger.detach();
@@ -356,15 +356,15 @@ describe('debugger module', () => {
       });
 
       const { cookies } = await w.webContents.debugger.sendCommand('Storage.getCookies', {});
-      expect(cookies).to.have.lengthOf(2);
+      expect(cookies).toHaveLength(2);
 
       const cookieOne = cookies.find((cookie: any) => cookie.name === 'cookieOne');
-      expect(cookieOne.domain).to.equal('cookieone.com');
-      expect(cookieOne.value).to.equal('cookieValueOne');
+      expect(cookieOne.domain).toBe('cookieone.com');
+      expect(cookieOne.value).toBe('cookieValueOne');
 
       const cookieTwo = cookies.find((cookie: any) => cookie.name === 'cookieTwo');
-      expect(cookieTwo.domain).to.equal('cookietwo.com');
-      expect(cookieTwo.value).to.equal('cookieValueTwo');
+      expect(cookieTwo.domain).toBe('cookietwo.com');
+      expect(cookieTwo.value).toBe('cookieValueTwo');
     });
 
     it('uses empty sessionId by default', async () => {
@@ -373,39 +373,40 @@ describe('debugger module', () => {
       const onMessage = once(w.webContents.debugger, 'message');
       await w.webContents.debugger.sendCommand('Target.setDiscoverTargets', { discover: true });
       const [, method, params, sessionId] = await onMessage;
-      expect(method).to.equal('Target.targetCreated');
-      expect(params.targetInfo.targetId).to.not.be.empty();
-      expect(sessionId).to.be.empty();
+      expect(method).toBe('Target.targetCreated');
+      expect(params.targetInfo.targetId).not.toHaveLength(0);
+      expect(sessionId).toHaveLength(0);
       w.webContents.debugger.detach();
     });
 
-    it('creates unique session id for each target', (done) => {
-      w.webContents.loadFile(path.join(import.meta.dirname, 'fixtures', 'sub-frames', 'debug-frames.html'));
-      w.webContents.debugger.attach();
-      let debuggerSessionId: string;
+    it('creates unique session id for each target', () =>
+      new Promise<void>((resolve) => {
+        w.webContents.loadFile(path.join(import.meta.dirname, 'fixtures', 'sub-frames', 'debug-frames.html'));
+        w.webContents.debugger.attach();
+        let debuggerSessionId: string;
 
-      w.webContents.debugger.on('message', (_event, ...args) => {
-        const [method, params, sessionId] = args;
-        if (method === 'Target.targetCreated') {
-          w.webContents.debugger
-            .sendCommand('Target.attachToTarget', { targetId: params.targetInfo.targetId, flatten: true })
-            .then((result) => {
-              debuggerSessionId = result.sessionId;
-              w.webContents.debugger.sendCommand('Debugger.enable', {}, result.sessionId);
+        w.webContents.debugger.on('message', (_event, ...args) => {
+          const [method, params, sessionId] = args;
+          if (method === 'Target.targetCreated') {
+            w.webContents.debugger
+              .sendCommand('Target.attachToTarget', { targetId: params.targetInfo.targetId, flatten: true })
+              .then((result) => {
+                debuggerSessionId = result.sessionId;
+                w.webContents.debugger.sendCommand('Debugger.enable', {}, result.sessionId);
 
-              // Ensure debugger finds a script to pause to possibly reduce flaky
-              // tests.
-              w.webContents.mainFrame.executeJavaScript('void 0;');
-            });
-        }
-        if (method === 'Debugger.scriptParsed') {
-          if (sessionId === debuggerSessionId) {
-            w.webContents.debugger.detach();
-            done();
+                // Ensure debugger finds a script to pause to possibly reduce flaky
+                // tests.
+                w.webContents.mainFrame.executeJavaScript('void 0;');
+              });
           }
-        }
-      });
-      w.webContents.debugger.sendCommand('Target.setDiscoverTargets', { discover: true });
-    });
+          if (method === 'Debugger.scriptParsed') {
+            if (sessionId === debuggerSessionId) {
+              w.webContents.debugger.detach();
+              resolve();
+            }
+          }
+        });
+        w.webContents.debugger.sendCommand('Target.setDiscoverTargets', { discover: true });
+      }));
   });
 });
