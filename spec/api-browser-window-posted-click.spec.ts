@@ -6,7 +6,7 @@
 // are no retries: a click that only sometimes gets through is a failure.
 import { app } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterEach, beforeAll, beforeEach, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import { createRequire } from 'node:module';
@@ -30,9 +30,13 @@ ifdescribe(process.platform === 'darwin' && !process.env.ELECTRON_SKIP_NATIVE_MO
     let mouse: MouseInput;
     let rc: Awaited<ReturnType<typeof startRemoteControlApp>>;
 
-    before(function () {
+    let canPostEvents = true;
+    beforeAll(() => {
       mouse = require('@electron-ci/mouse-input');
-      if (!process.env.CI && !mouse.getDiagnostics().postEventAccess) this.skip();
+      canPostEvents = !!process.env.CI || !!mouse.getDiagnostics().postEventAccess;
+    });
+    beforeEach((ctx) => {
+      if (!canPostEvents) ctx.skip();
     });
 
     beforeEach(async () => {
@@ -83,7 +87,7 @@ ifdescribe(process.platform === 'darwin' && !process.env.ELECTRON_SKIP_NATIVE_MO
       await sendToBackground();
       postClick(w);
       await logged('mouseDown main');
-      expect(await log()).to.deep.equal(['mouseDown main']);
+      expect(await log()).toEqual(['mouseDown main']);
     });
 
     it('reach the page without activating the app', async () => {
@@ -91,7 +95,7 @@ ifdescribe(process.platform === 'darwin' && !process.env.ELECTRON_SKIP_NATIVE_MO
       await sendToBackground();
       postClick(w);
       await logged('mouseDown main');
-      expect(await log()).to.deep.equal(['mouseDown main']);
+      expect(await log()).toEqual(['mouseDown main']);
     });
   }
 );

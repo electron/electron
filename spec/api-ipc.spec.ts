@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain, type IpcMainInvokeEvent, MessageChannelMain, type WebContents } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { EventEmitter, once } from 'node:events';
 import * as http from 'node:http';
@@ -16,11 +16,11 @@ describe('ipc module', () => {
   describe('invoke', () => {
     let w: BrowserWindow;
 
-    before(async () => {
+    beforeAll(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       await w.loadURL('about:blank');
     });
-    after(async () => {
+    afterAll(async () => {
       w.destroy();
     });
 
@@ -36,12 +36,12 @@ describe('ipc module', () => {
 
     it('receives a response from a synchronous handler', async () => {
       ipcMain.handleOnce('test', (e: IpcMainInvokeEvent, arg: number) => {
-        expect(arg).to.equal(123);
+        expect(arg).toBe(123);
         return 3;
       });
       const done = new Promise<void>((resolve) =>
         ipcMain.once('result', (e, arg) => {
-          expect(arg).to.deep.equal({ result: 3 });
+          expect(arg).toEqual({ result: 3 });
           resolve();
         })
       );
@@ -51,13 +51,13 @@ describe('ipc module', () => {
 
     it('receives a response from an asynchronous handler', async () => {
       ipcMain.handleOnce('test', async (e: IpcMainInvokeEvent, arg: number) => {
-        expect(arg).to.equal(123);
+        expect(arg).toBe(123);
         await new Promise(setImmediate);
         return 3;
       });
       const done = new Promise<void>((resolve) =>
         ipcMain.once('result', (e, arg) => {
-          expect(arg).to.deep.equal({ result: 3 });
+          expect(arg).toEqual({ result: 3 });
           resolve();
         })
       );
@@ -71,7 +71,7 @@ describe('ipc module', () => {
       });
       const done = new Promise<void>((resolve) =>
         ipcMain.once('result', (e, arg) => {
-          expect(arg.error).to.match(/some error/);
+          expect(arg.error).toMatch(/some error/);
           resolve();
         })
       );
@@ -86,7 +86,7 @@ describe('ipc module', () => {
       });
       const done = new Promise<void>((resolve) =>
         ipcMain.once('result', (e, arg) => {
-          expect(arg.error).to.match(/some error/);
+          expect(arg.error).toMatch(/some error/);
           resolve();
         })
       );
@@ -97,7 +97,7 @@ describe('ipc module', () => {
     it('throws an error if no handler is registered', async () => {
       const done = new Promise<void>((resolve) =>
         ipcMain.once('result', (e, arg) => {
-          expect(arg.error).to.match(/No handler registered/);
+          expect(arg.error).toMatch(/No handler registered/);
           resolve();
         })
       );
@@ -110,7 +110,7 @@ describe('ipc module', () => {
       ipcMain.removeHandler('test');
       const done = new Promise<void>((resolve) =>
         ipcMain.once('result', (e, arg) => {
-          expect(arg.error).to.match(/No handler registered/);
+          expect(arg.error).toMatch(/No handler registered/);
           resolve();
         })
       );
@@ -123,7 +123,7 @@ describe('ipc module', () => {
       try {
         expect(() => {
           ipcMain.handle('test', () => {});
-        }).to.throw(/second handler/);
+        }).toThrow(/second handler/);
       } finally {
         ipcMain.removeHandler('test');
       }
@@ -142,7 +142,7 @@ describe('ipc module', () => {
       );
       w.webContents.executeJavaScript(`(${rendererInvoke})()`);
       const [, { error }] = await once(ipcMain, 'result');
-      expect(error).to.match(/reply was never sent/);
+      expect(error).toMatch(/reply was never sent/);
     });
   });
 
@@ -150,7 +150,7 @@ describe('ipc module', () => {
     let w: BrowserWindow;
     const sizes = [0, 1, 65535, 65536, 65537, 256 * 1024 + 3, 3 * 1024 * 1024 + 1];
 
-    before(async () => {
+    beforeAll(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       await w.loadURL('about:blank');
       ipcMain.handle('echo-large', (_e, arg) => arg);
@@ -161,7 +161,7 @@ describe('ipc module', () => {
         e.sender.send('echo-large-reply', arg);
       });
     });
-    after(async () => {
+    afterAll(async () => {
       w.destroy();
       ipcMain.removeHandler('echo-large');
       ipcMain.removeAllListeners('echo-large-sync');
@@ -206,18 +206,18 @@ describe('ipc module', () => {
         true
       );
       const expected = sizes.flatMap((n) => samples(n).flatMap((value) => Array(3).fill(digest(value))));
-      expect(result).to.deep.equal(expected);
+      expect(result).toEqual(expected);
     });
   });
 
   describe('ordering', () => {
     let w: BrowserWindow;
 
-    before(async () => {
+    beforeAll(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       await w.loadURL('about:blank');
     });
-    after(async () => {
+    afterAll(async () => {
       w.destroy();
     });
 
@@ -256,8 +256,8 @@ describe('ipc module', () => {
         ipcMain.removeAllListeners('test-async');
         ipcMain.removeAllListeners('test-sync');
       }
-      expect(received).to.have.lengthOf(1000);
-      expect(received).to.deep.equal([...received].sort((a, b) => a - b));
+      expect(received).toHaveLength(1000);
+      expect(received).toEqual([...received].sort((a, b) => a - b));
     });
 
     it('between send, sendSync, and invoke is consistent', async () => {
@@ -302,8 +302,8 @@ describe('ipc module', () => {
         ipcMain.removeAllListeners('test-async');
         ipcMain.removeAllListeners('test-sync');
       }
-      expect(received).to.have.lengthOf(1000);
-      expect(received).to.deep.equal([...received].sort((a, b) => a - b));
+      expect(received).toHaveLength(1000);
+      expect(received).toEqual([...received].sort((a, b) => a - b));
     });
   });
 
@@ -321,12 +321,12 @@ describe('ipc module', () => {
         }})()`
       );
       const [ev, msg] = await p;
-      expect(msg).to.equal('hi');
-      expect(ev.ports).to.have.length(1);
-      expect(ev.senderFrame.parent).to.be.null();
-      expect(ev.senderFrame.frameToken).to.equal(w.webContents.mainFrame.frameToken);
+      expect(msg).toBe('hi');
+      expect(ev.ports).toHaveLength(1);
+      expect(ev.senderFrame.parent).toBeNull();
+      expect(ev.senderFrame.frameToken).toBe(w.webContents.mainFrame.frameToken);
       const [port] = ev.ports;
-      expect(port).to.be.an.instanceOf(EventEmitter);
+      expect(port).toBeInstanceOf(EventEmitter);
     });
 
     it('can sent a message without a transfer', async () => {
@@ -339,9 +339,9 @@ describe('ipc module', () => {
         }})()`
       );
       const [ev, msg] = await p;
-      expect(msg).to.equal('hi');
-      expect(ev.ports).to.deep.equal([]);
-      expect(ev.senderFrame.frameToken).to.equal(w.webContents.mainFrame.frameToken);
+      expect(msg).toBe('hi');
+      expect(ev.ports).toEqual([]);
+      expect(ev.senderFrame.frameToken).toBe(w.webContents.mainFrame.frameToken);
     });
 
     it('throws when the transferable is invalid', async () => {
@@ -359,7 +359,7 @@ describe('ipc module', () => {
         }})()`
       );
       const [, msg] = await p;
-      expect(msg.error).to.eql('Invalid value for transfer');
+      expect(msg.error).toEqual('Invalid value for transfer');
     });
 
     it('can communicate between main and renderer', async () => {
@@ -376,13 +376,13 @@ describe('ipc module', () => {
         }})()`
       );
       const [ev] = await p;
-      expect(ev.ports).to.have.length(1);
-      expect(ev.senderFrame.frameToken).to.equal(w.webContents.mainFrame.frameToken);
+      expect(ev.ports).toHaveLength(1);
+      expect(ev.senderFrame.frameToken).toBe(w.webContents.mainFrame.frameToken);
       const [port] = ev.ports;
       port.start();
       port.postMessage(42);
       const [ev2] = await once(port, 'message');
-      expect(ev2.data).to.equal(84);
+      expect(ev2.data).toBe(84);
     });
 
     it('can receive a port from a renderer over a MessagePort connection', async () => {
@@ -409,7 +409,7 @@ describe('ipc module', () => {
       ] = await once(port1, 'message');
       port2.start();
       const [{ data }] = await once(port2, 'message');
-      expect(data).to.equal('matryoshka');
+      expect(data).toBe('matryoshka');
     });
 
     it('can forward a port from one renderer to another renderer', async () => {
@@ -440,7 +440,7 @@ describe('ipc module', () => {
       );
       w2.webContents.postMessage('port', '', [port]);
       const [, data] = await once(ipcMain, 'message received');
-      expect(data).to.equal('a message');
+      expect(data).toBe('a message');
     });
 
     describe('close event', () => {
@@ -560,10 +560,10 @@ describe('ipc module', () => {
           });
           const w = new BrowserWindow({ show: false });
           await w.loadURL(`http://localhost:${port}/index.html`);
-          expect(w.webContents.getTitle()).to.equal('Hello1');
+          expect(w.webContents.getTitle()).toBe('Hello1');
           // Before the fix, it would crash if reloaded, but now it doesn't
           await w.loadURL(`http://localhost:${port}/index.html`);
-          expect(w.webContents.getTitle()).to.equal('Hello2');
+          expect(w.webContents.getTitle()).toBe('Hello2');
           // const crashEvent = emittedOnce(w.webContents, 'render-process-gone');
           // await crashEvent;
         });
@@ -573,8 +573,8 @@ describe('ipc module', () => {
     describe('MessageChannelMain', () => {
       it('can be created', () => {
         const { port1, port2 } = new MessageChannelMain();
-        expect(port1).not.to.be.null();
-        expect(port2).not.to.be.null();
+        expect(port1).not.toBeNull();
+        expect(port2).not.toBeNull();
       });
 
       it('should not throw when supported values are passed as message', () => {
@@ -583,26 +583,26 @@ describe('ipc module', () => {
         expect(() => {
           // @ts-expect-error - this shouldn't crash.
           port1.postMessage();
-        }).to.not.throw();
+        }).not.toThrow();
 
         expect(() => {
           port1.postMessage(undefined);
-        }).to.not.throw();
+        }).not.toThrow();
         expect(() => {
           port1.postMessage(42);
-        }).to.not.throw();
+        }).not.toThrow();
         expect(() => {
           port1.postMessage(false);
-        }).to.not.throw();
+        }).not.toThrow();
         expect(() => {
           port1.postMessage([]);
-        }).to.not.throw();
+        }).not.toThrow();
         expect(() => {
           port1.postMessage('hello');
-        }).to.not.throw();
+        }).not.toThrow();
         expect(() => {
           port1.postMessage({ hello: 'goodbye' });
-        }).to.not.throw();
+        }).not.toThrow();
       });
 
       it('throws an error when an invalid parameter is sent to postMessage', () => {
@@ -611,15 +611,15 @@ describe('ipc module', () => {
         expect(() => {
           const buffer = new ArrayBuffer(10) as any;
           port1.postMessage(null, [buffer]);
-        }).to.throw(/Port at index 0 is not a valid port/);
+        }).toThrow(/Port at index 0 is not a valid port/);
 
         expect(() => {
           port1.postMessage(null, ['1' as any]);
-        }).to.throw(/Port at index 0 is not a valid port/);
+        }).toThrow(/Port at index 0 is not a valid port/);
 
         expect(() => {
           port1.postMessage(null, [new Date() as any]);
-        }).to.throw(/Port at index 0 is not a valid port/);
+        }).toThrow(/Port at index 0 is not a valid port/);
       });
 
       it('throws when postMessage transferables contains the source port', () => {
@@ -627,7 +627,7 @@ describe('ipc module', () => {
 
         expect(() => {
           port1.postMessage(null, [port1]);
-        }).to.throw(/Port at index 0 contains the source port./);
+        }).toThrow(/Port at index 0 contains the source port./);
       });
 
       it('can send messages within the process', async () => {
@@ -635,7 +635,7 @@ describe('ipc module', () => {
         port2.postMessage('hello');
         port1.start();
         const [ev] = await once(port1, 'message');
-        expect(ev.data).to.equal('hello');
+        expect(ev.data).toBe('hello');
       });
 
       it('can pass one end to a WebContents', async () => {
@@ -685,7 +685,7 @@ describe('ipc module', () => {
         port3.postMessage('hello');
         w.webContents.postMessage('port', null, [port2]);
         const [, message] = await once(ipcMain, 'done');
-        expect(message).to.equal('hello');
+        expect(message).toBe('hello');
       });
 
       it('can send messages to a closed port', () => {
@@ -712,7 +712,7 @@ describe('ipc module', () => {
         const { port1 } = new MessageChannelMain();
         expect(() => {
           port1.postMessage(null, [null] as any);
-        }).to.throw(/Port at index 0 is not a valid port/);
+        }).toThrow(/Port at index 0 is not a valid port/);
       });
 
       it('throws when passing duplicate ports', () => {
@@ -720,7 +720,7 @@ describe('ipc module', () => {
         const { port1: port3 } = new MessageChannelMain();
         expect(() => {
           port1.postMessage(null, [port3, port3]);
-        }).to.throw(/duplicate/);
+        }).toThrow(/duplicate/);
       });
 
       it('throws when passing ports that have already been neutered', () => {
@@ -729,14 +729,14 @@ describe('ipc module', () => {
         port1.postMessage(null, [port3]);
         expect(() => {
           port1.postMessage(null, [port3]);
-        }).to.throw(/already neutered/);
+        }).toThrow(/already neutered/);
       });
 
       it('throws when passing itself', () => {
         const { port1 } = new MessageChannelMain();
         expect(() => {
           port1.postMessage(null, [port1]);
-        }).to.throw(/contains the source port/);
+        }).toThrow(/contains the source port/);
       });
 
       describe('GC behavior', () => {
@@ -756,7 +756,7 @@ describe('ipc module', () => {
           })();
           v8Util.requestGarbageCollectionForTesting();
           port1.postMessage('hello');
-          expect(await promise).to.equal('hello');
+          expect(await promise).toBe('hello');
         });
       });
     });
@@ -779,7 +779,7 @@ describe('ipc module', () => {
           );
           postMessage(w.webContents)('foo', { some: 'message' });
           const [, msg] = await once(ipcMain, 'bar');
-          expect(msg).to.deep.equal({ some: 'message' });
+          expect(msg).toEqual({ some: 'message' });
         });
 
         describe('error handling', () => {
@@ -788,7 +788,7 @@ describe('ipc module', () => {
             await w.loadURL('about:blank');
             expect(() => {
               (postMessage(w.webContents) as any)();
-            }).to.throw(/Insufficient number of arguments/);
+            }).toThrow(/Insufficient number of arguments/);
           });
 
           it('throws on invalid channel', async () => {
@@ -796,7 +796,7 @@ describe('ipc module', () => {
             await w.loadURL('about:blank');
             expect(() => {
               postMessage(w.webContents)(null as any, '', []);
-            }).to.throw(/Error processing argument at index 0/);
+            }).toThrow(/Error processing argument at index 0/);
           });
 
           it('throws on missing message', async () => {
@@ -804,7 +804,7 @@ describe('ipc module', () => {
             await w.loadURL('about:blank');
             expect(() => {
               (postMessage(w.webContents) as any)('channel');
-            }).to.throw(/Insufficient number of arguments/);
+            }).toThrow(/Insufficient number of arguments/);
           });
 
           it('throws on non-serializable message', async () => {
@@ -812,7 +812,7 @@ describe('ipc module', () => {
             await w.loadURL('about:blank');
             expect(() => {
               postMessage(w.webContents)('channel', w);
-            }).to.throw(/An object could not be cloned/);
+            }).toThrow(/An object could not be cloned/);
           });
 
           it('throws on invalid transferable list', async () => {
@@ -820,7 +820,7 @@ describe('ipc module', () => {
             await w.loadURL('about:blank');
             expect(() => {
               postMessage(w.webContents)('', '', null as any);
-            }).to.throw(/Invalid value for transfer/);
+            }).toThrow(/Invalid value for transfer/);
           });
 
           it('throws on transferring non-transferable', async () => {
@@ -828,7 +828,7 @@ describe('ipc module', () => {
             await w.loadURL('about:blank');
             expect(() => {
               (postMessage(w.webContents) as any)('channel', '', [123]);
-            }).to.throw(/Invalid value for transfer/);
+            }).toThrow(/Invalid value for transfer/);
           });
 
           it('throws when passing null ports', async () => {
@@ -836,7 +836,7 @@ describe('ipc module', () => {
             await w.loadURL('about:blank');
             expect(() => {
               postMessage(w.webContents)('foo', null, [null] as any);
-            }).to.throw(/Invalid value for transfer/);
+            }).toThrow(/Invalid value for transfer/);
           });
 
           it('throws when passing duplicate ports', async () => {
@@ -845,7 +845,7 @@ describe('ipc module', () => {
             const { port1 } = new MessageChannelMain();
             expect(() => {
               postMessage(w.webContents)('foo', null, [port1, port1]);
-            }).to.throw(/duplicate/);
+            }).toThrow(/duplicate/);
           });
 
           it('throws when passing ports that have already been neutered', async () => {
@@ -855,7 +855,7 @@ describe('ipc module', () => {
             postMessage(w.webContents)('foo', null, [port1]);
             expect(() => {
               postMessage(w.webContents)('foo', null, [port1]);
-            }).to.throw(/already neutered/);
+            }).toThrow(/already neutered/);
           });
         });
       });
@@ -873,7 +873,7 @@ describe('ipc module', () => {
       w.loadURL('about:blank');
       w.webContents.executeJavaScript("require('electron').ipcRenderer.send('test', 42)");
       const [, num] = await once(w.webContents.ipc, 'test');
-      expect(num).to.equal(42);
+      expect(num).toBe(42);
     });
 
     it('receives sync-ipc messages sent from the WebContents', async () => {
@@ -883,7 +883,7 @@ describe('ipc module', () => {
         event.returnValue = arg * 2;
       });
       const result = await w.webContents.executeJavaScript("require('electron').ipcRenderer.sendSync('test', 42)");
-      expect(result).to.equal(42 * 2);
+      expect(result).toBe(42 * 2);
     });
 
     it('receives postMessage messages sent from the WebContents, w/ MessagePorts', async () => {
@@ -893,7 +893,7 @@ describe('ipc module', () => {
         "require('electron').ipcRenderer.postMessage('test', null, [(new MessageChannel).port1])"
       );
       const [event] = await once(w.webContents.ipc, 'test');
-      expect(event.ports.length).to.equal(1);
+      expect(event.ports.length).toBe(1);
     });
 
     it('handles invoke messages sent from the WebContents', async () => {
@@ -901,7 +901,7 @@ describe('ipc module', () => {
       w.loadURL('about:blank');
       w.webContents.ipc.handle('test', (_event, arg) => arg * 2);
       const result = await w.webContents.executeJavaScript("require('electron').ipcRenderer.invoke('test', 42)");
-      expect(result).to.equal(42 * 2);
+      expect(result).toBe(42 * 2);
     });
 
     it('cascades to ipcMain', async () => {
@@ -923,7 +923,7 @@ describe('ipc module', () => {
       w.webContents.executeJavaScript("require('electron').ipcRenderer.send('test', 42)");
 
       // assert that they are delivered in the correct order
-      expect(await ipcReceived).to.be.false();
+      expect(await ipcReceived).toBe(false);
       await ipcMainReceived;
     });
 
@@ -936,7 +936,7 @@ describe('ipc module', () => {
       });
       defer(() => ipcMain.removeHandler('test'));
       const result = await w.webContents.executeJavaScript("require('electron').ipcRenderer.invoke('test', 42)");
-      expect(result).to.equal(42 * 2);
+      expect(result).toBe(42 * 2);
     });
 
     it('falls back to ipcMain handlers', async () => {
@@ -947,7 +947,7 @@ describe('ipc module', () => {
       });
       defer(() => ipcMain.removeHandler('test'));
       const result = await w.webContents.executeJavaScript("require('electron').ipcRenderer.invoke('test', 42)");
-      expect(result).to.equal(42 * 2);
+      expect(result).toBe(42 * 2);
     });
 
     it('receives ipcs from child frames', async () => {
@@ -970,7 +970,7 @@ describe('ipc module', () => {
       await w.loadURL(`data:text/html,<iframe src="http://localhost:${port}"></iframe>`);
       w.webContents.mainFrame.frames[0].executeJavaScript("ipc.send('test', 42)");
       const [, arg] = await once(w.webContents.ipc, 'test');
-      expect(arg).to.equal(42);
+      expect(arg).toBe(42);
     });
   });
 
@@ -981,7 +981,7 @@ describe('ipc module', () => {
       w.loadURL('about:blank');
       w.webContents.executeJavaScript("require('electron').ipcRenderer.send('test', 42)");
       const [, arg] = await once(w.webContents.mainFrame.ipc, 'test');
-      expect(arg).to.equal(42);
+      expect(arg).toBe(42);
     });
 
     it('responds to sync ipc messages in the main frame', async () => {
@@ -991,7 +991,7 @@ describe('ipc module', () => {
         event.returnValue = arg * 2;
       });
       const result = await w.webContents.executeJavaScript("require('electron').ipcRenderer.sendSync('test', 42)");
-      expect(result).to.equal(42 * 2);
+      expect(result).toBe(42 * 2);
     });
 
     it('receives postMessage messages sent from the WebContents, w/ MessagePorts', async () => {
@@ -1001,7 +1001,7 @@ describe('ipc module', () => {
         "require('electron').ipcRenderer.postMessage('test', null, [(new MessageChannel).port1])"
       );
       const [event] = await once(w.webContents.mainFrame.ipc, 'test');
-      expect(event.ports.length).to.equal(1);
+      expect(event.ports.length).toBe(1);
     });
 
     it('handles invoke messages sent from the WebContents', async () => {
@@ -1009,7 +1009,7 @@ describe('ipc module', () => {
       w.loadURL('about:blank');
       w.webContents.mainFrame.ipc.handle('test', (_event, arg) => arg * 2);
       const result = await w.webContents.executeJavaScript("require('electron').ipcRenderer.invoke('test', 42)");
-      expect(result).to.equal(42 * 2);
+      expect(result).toBe(42 * 2);
     });
 
     it('cascades to WebContents and ipcMain', async () => {
@@ -1038,8 +1038,8 @@ describe('ipc module', () => {
       w.webContents.executeJavaScript("require('electron').ipcRenderer.send('test', 42)");
 
       // assert that they are delivered in the correct order
-      expect(await ipcReceived).to.be.false();
-      expect(await ipcWebContentsReceived).to.be.false();
+      expect(await ipcReceived).toBe(false);
+      expect(await ipcWebContentsReceived).toBe(false);
       await ipcMainReceived;
     });
 
@@ -1052,7 +1052,7 @@ describe('ipc module', () => {
       });
       defer(() => ipcMain.removeHandler('test'));
       const result = await w.webContents.executeJavaScript("require('electron').ipcRenderer.invoke('test', 42)");
-      expect(result).to.equal(42 * 2);
+      expect(result).toBe(42 * 2);
     });
 
     it('overrides WebContents handlers', async () => {
@@ -1067,7 +1067,7 @@ describe('ipc module', () => {
       });
       defer(() => ipcMain.removeHandler('test'));
       const result = await w.webContents.executeJavaScript("require('electron').ipcRenderer.invoke('test', 42)");
-      expect(result).to.equal(42 * 2);
+      expect(result).toBe(42 * 2);
     });
 
     it('falls back to WebContents handlers', async () => {
@@ -1077,7 +1077,7 @@ describe('ipc module', () => {
         return arg * 2;
       });
       const result = await w.webContents.executeJavaScript("require('electron').ipcRenderer.invoke('test', 42)");
-      expect(result).to.equal(42 * 2);
+      expect(result).toBe(42 * 2);
     });
 
     it('receives ipcs from child frames', async () => {
@@ -1103,7 +1103,7 @@ describe('ipc module', () => {
         throw new Error('should not be called');
       });
       const [, arg] = await once(w.webContents.mainFrame.frames[0].ipc, 'test');
-      expect(arg).to.equal(42);
+      expect(arg).toBe(42);
     });
 
     it('receives ipcs from unloading frames in the main frame', async () => {
@@ -1123,7 +1123,7 @@ describe('ipc module', () => {
       const onUnloadIpc = once(w.webContents.mainFrame.ipc, 'unload');
       w.loadURL(`http://127.0.0.1:${port}`); // cross-origin navigation
       const [{ senderFrame }] = await onUnloadIpc;
-      expect(senderFrame.detached).to.be.true();
+      expect(senderFrame.detached).toBe(true);
     });
   });
 
@@ -1175,7 +1175,7 @@ describe('ipc module', () => {
         path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap')
       );
 
-      expect(templatesCreated).to.be.below(messageCount / 2);
+      expect(templatesCreated).toBeLessThan(messageCount / 2);
     });
   });
 });

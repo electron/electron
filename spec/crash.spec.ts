@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { afterEach, describe, expect } from 'vitest';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -39,8 +39,8 @@ const runFixtureAndEnsureCleanExit = async (args: string[], customEnv: NodeJS.Pr
   }
   children = children.filter((c) => c !== child);
 
-  expect(signal).to.equal(null, 'exit signal should be null');
-  expect(code).to.equal(0, 'should have exited with code 0');
+  expect(signal, 'exit signal should be null').toBe(null);
+  expect(code, 'should have exited with code 0').toBe(0);
 };
 
 const shouldRunCase = (crashCase: string) => {

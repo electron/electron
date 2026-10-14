@@ -1,6 +1,6 @@
 import { clipboard, nativeImage } from 'electron/common';
 
-import { expect } from 'chai';
+import { describe, expect, it } from 'vitest';
 
 import { Buffer } from 'node:buffer';
 import * as path from 'node:path';
@@ -17,12 +17,12 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
       const i = nativeImage.createFromPath(p);
       clipboard.writeImage(i);
       const readImage = clipboard.readImage();
-      expect(readImage.toDataURL()).to.equal(i.toDataURL());
+      expect(readImage.toDataURL()).toBe(i.toDataURL());
     });
 
     it('works for empty image', () => {
       clipboard.writeText('Not an Image');
-      expect(clipboard.readImage().isEmpty()).to.be.true();
+      expect(clipboard.readImage().isEmpty()).toBe(true);
     });
   });
 
@@ -30,7 +30,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
     it('returns unicode string correctly', () => {
       const text = '千江有水千江月，万里无云万里天';
       clipboard.writeText(text);
-      expect(clipboard.readText()).to.equal(text);
+      expect(clipboard.readText()).toBe(text);
     });
   });
 
@@ -42,7 +42,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
         text = "<meta charset='utf-8'><string>Hi</string>";
       }
       clipboard.writeHTML('<string>Hi</string>');
-      expect(clipboard.readHTML()).to.equal(text);
+      expect(clipboard.readHTML()).toBe(text);
     });
   });
 
@@ -50,7 +50,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
     it('returns rtf text correctly', () => {
       const rtf = '{\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard\nThis is some {\\b bold} text.\\par\n}';
       clipboard.writeRTF(rtf);
-      expect(clipboard.readRTF()).to.equal(rtf);
+      expect(clipboard.readRTF()).toBe(rtf);
     });
   });
 
@@ -60,12 +60,12 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
 
       const readBookmark = clipboard.readBookmark();
       if (process.platform !== 'win32') {
-        expect(readBookmark.title).to.equal('a title');
+        expect(readBookmark.title).toBe('a title');
       }
-      expect(clipboard.readBookmark().url).to.equal('https://electronjs.org/');
+      expect(clipboard.readBookmark().url).toBe('https://electronjs.org/');
 
       clipboard.writeText('no bookmark');
-      expect(clipboard.readBookmark()).to.deep.equal({
+      expect(clipboard.readBookmark()).toEqual({
         title: '',
         url: ''
       });
@@ -78,13 +78,13 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
 
       expect(() => {
         clipboard.read(type);
-      }).to.not.throw();
+      }).not.toThrow();
     });
     it('can read data written with writeBuffer', () => {
       const testText = 'Testing read';
       const buffer = Buffer.from(testText, 'utf8');
       clipboard.writeBuffer('public/utf8-plain-text', buffer);
-      expect(clipboard.read('public/utf8-plain-text')).to.equal(testText);
+      expect(clipboard.read('public/utf8-plain-text')).toBe(testText);
     });
   });
 
@@ -108,17 +108,17 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
         image: i
       });
 
-      expect(clipboard.readText()).to.equal(text);
-      expect(clipboard.readHTML()).to.equal(markup);
-      expect(clipboard.readRTF()).to.equal(rtf);
+      expect(clipboard.readText()).toBe(text);
+      expect(clipboard.readHTML()).toBe(markup);
+      expect(clipboard.readRTF()).toBe(rtf);
       const readImage = clipboard.readImage();
-      expect(readImage.toDataURL()).to.equal(i.toDataURL());
+      expect(readImage.toDataURL()).toBe(i.toDataURL());
 
       if (process.platform !== 'linux') {
         if (process.platform !== 'win32') {
-          expect(clipboard.readBookmark()).to.deep.equal(bookmark);
+          expect(clipboard.readBookmark()).toEqual(bookmark);
         } else {
-          expect(clipboard.readBookmark().url).to.equal(bookmark.url);
+          expect(clipboard.readBookmark().url).toBe(bookmark.url);
         }
       }
     });
@@ -127,24 +127,24 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
   ifdescribe(process.platform === 'darwin')('clipboard.read/writeFindText(text)', () => {
     it('reads and write text to the find pasteboard', () => {
       clipboard.writeFindText('find this');
-      expect(clipboard.readFindText()).to.equal('find this');
+      expect(clipboard.readFindText()).toBe('find this');
     });
   });
 
   describe('clipboard.readBuffer(format)', () => {
-    it('writes a Buffer for the specified format', function () {
+    it('writes a Buffer for the specified format', () => {
       const buffer = Buffer.from('writeBuffer', 'utf8');
       clipboard.writeBuffer('public/utf8-plain-text', buffer);
-      expect(buffer.equals(clipboard.readBuffer('public/utf8-plain-text'))).to.equal(true);
+      expect(buffer.equals(clipboard.readBuffer('public/utf8-plain-text'))).toBe(true);
     });
 
     it('throws an error when a non-Buffer is specified', () => {
       expect(() => {
         clipboard.writeBuffer('public/utf8-plain-text', 'hello' as any);
-      }).to.throw(/buffer must be a node Buffer/);
+      }).toThrow(/buffer must be a node Buffer/);
     });
 
-    ifit(process.platform !== 'win32')('writes a Buffer using a raw format that is used by native apps', function () {
+    ifit(process.platform !== 'win32')('writes a Buffer using a raw format that is used by native apps', () => {
       const message = 'Hello from Electron!';
       const buffer = Buffer.from(message);
       let rawFormat = 'text/plain';
@@ -152,7 +152,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
         rawFormat = 'public.utf8-plain-text';
       }
       clipboard.writeBuffer(rawFormat, buffer);
-      expect(clipboard.readText()).to.equal(message);
+      expect(clipboard.readText()).toBe(message);
     });
   });
 });
