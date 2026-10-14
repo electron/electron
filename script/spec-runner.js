@@ -25,6 +25,13 @@ const args = minimist(process.argv, {
   unknown: (arg) => unknownFlags.push(arg)
 });
 
+// Reject a leftover --enableRerun rather than forward it to Electron as an unknown switch,
+// where it would silently do nothing.
+if ('enableRerun' in args) {
+  console.log(`${fail} --enableRerun was removed; failing tests are no longer re-run individually`);
+  process.exit(1);
+}
+
 const unknownArgs = [];
 for (const flag of unknownFlags) {
   unknownArgs.push(flag);
