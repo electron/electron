@@ -1575,7 +1575,13 @@ describe('chromium features', () => {
 
       await w.loadFile(writablePath);
       expect(await pasteFileUri(w, testFile)).toBe('did-create-file-handle');
-      const result = await w.webContents.executeJavaScript(
+      // A permission request such as createWritable() needs the page's user
+      // activation in the browser process.
+      // webFrameMain.executeJavaScript() updates that before it runs the script.
+      // webContents.executeJavaScript() only tells the renderer,
+      // whose activation update can lose the race with the request,
+      // which is then rejected with "User activation is required to request permissions".
+      const result = await w.webContents.mainFrame.executeJavaScript(
         `
         new Promise(async (resolve, reject) => {
           try {
@@ -1654,7 +1660,9 @@ describe('chromium features', () => {
       const permission = await w.webContents.executeJavaScript('handle.queryPermission({ mode: "readwrite" })');
       trace(`initial permission: ${permission}`);
       trace('createWritable requested');
-      const writeError = await w.webContents.executeJavaScript(
+      // webFrameMain.executeJavaScript(),
+      // so that the browser process knows of the user activation before the request (see above).
+      const writeError = (await w.webContents.mainFrame.executeJavaScript(
         `
         (async () => {
           try {
@@ -1666,7 +1674,7 @@ describe('chromium features', () => {
         })()
       `,
         true
-      );
+      )) as { name: string; message: string } | null;
       trace(`createWritable ${writeError ? `rejected: ${writeError.name}: ${writeError.message}` : 'succeeded'}`);
       expect(writeError?.name).toBe('NotAllowedError');
       expect(permissionRequests).toEqual([
@@ -5601,8 +5609,9 @@ describe('navigator.hid', () => {
     });
     guest.executeJavaScript('navigator.hid.requestDevice({filters: []})', true).catch(() => {});
     await selectFired;
-    await setTimeout();
-    expect(guest.isDestroyed()).toBe(true);
+    // destroy() tears the WebContents down in a later task,
+    // which on a busy machine can be more than one timer tick away.
+    await waitUntil(() => guest.isDestroyed());
   });
 });
 
@@ -5817,8 +5826,9 @@ describe('navigator.usb', () => {
     });
     guest.executeJavaScript('navigator.usb.requestDevice({filters: []})', true).catch(() => {});
     await selectFired;
-    await setTimeout();
-    expect(guest.isDestroyed()).toBe(true);
+    // destroy() tears the WebContents down in a later task,
+    // which on a busy machine can be more than one timer tick away.
+    await waitUntil(() => guest.isDestroyed());
   });
 });
 
