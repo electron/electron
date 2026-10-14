@@ -395,6 +395,14 @@ describe('app module', () => {
       const appPath = path.join(fixturesPath, 'api', 'singleton-data');
       const first = cp.spawn(process.execPath, [appPath, ...testArgs.args]);
       const firstExited = once(first, 'exit');
+      // A copy left running holds the single instance lock, and a retry
+      // could never get it, so make sure both copies are gone after the test.
+      defer(async () => {
+        if (first.exitCode === null && first.signalCode === null) {
+          first.kill();
+          await firstExited;
+        }
+      });
 
       // Wait for the first app to boot.
       const firstStdoutLines = readline.createInterface({ input: first.stdout });
@@ -406,6 +414,12 @@ describe('app module', () => {
       const secondInstanceArgs = [process.execPath, appPath, ...testArgs.args, '--some-switch', 'some-arg'];
       const second = cp.spawn(secondInstanceArgs[0], secondInstanceArgs.slice(1));
       const secondExited = once(second, 'exit');
+      defer(async () => {
+        if (second.exitCode === null && second.signalCode === null) {
+          second.kill();
+          await secondExited;
+        }
+      });
 
       const [code2] = await secondExited;
       expect(code2).to.equal(1);
