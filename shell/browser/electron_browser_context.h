@@ -12,7 +12,6 @@
 #include <variant>
 #include <vector>
 
-#include "base/callback_list.h"
 #include "base/files/file_path.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/browser_context.h"
@@ -29,6 +28,7 @@ class ValueMapPrefStore;
 
 namespace content {
 class PreconnectManager;
+class ReconnectableURLLoaderFactory;
 }  // namespace content
 
 namespace gin {
@@ -204,8 +204,10 @@ class ElectronBrowserContext : public content::BrowserContext {
   // Initialize pref registry.
   void InitPrefs();
 
-  // Called when the Network Service process crashes or restarts.
-  void OnNetworkServiceProcessGone(bool crashed);
+  // Creates a URLLoaderFactory from the default StoragePartition's current
+  // NetworkContext; used by |url_loader_factory_| to (re)connect.
+  void CreateURLLoaderFactory(
+      mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory);
 
   scoped_refptr<ValueMapPrefStore> in_memory_pref_store_;
   std::unique_ptr<CookieChangeNotifier> cookie_change_notifier_;
@@ -228,15 +230,8 @@ class ElectronBrowserContext : public content::BrowserContext {
   int max_cache_size_ = 0;
 
   // Shared URLLoaderFactory.
-  scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
-  // A clone of |url_loader_factory_|'s pipe, used only to notice when that
-  // factory has been disconnected (e.g. because it was created from a
-  // NetworkContext that belonged to a Network Service that has gone away).
-  mojo::Remote<network::mojom::URLLoaderFactory> url_loader_factory_watcher_;
+  scoped_refptr<content::ReconnectableURLLoaderFactory> url_loader_factory_;
   scoped_refptr<InterceptState> intercept_state_;
-
-  // Subscription to Network Service process gone notifications.
-  base::CallbackListSubscription network_service_gone_subscription_;
 
   network::mojom::SSLConfigPtr ssl_config_;
   mojo::Remote<network::mojom::SSLConfigClient> ssl_config_client_;
