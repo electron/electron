@@ -98,7 +98,7 @@ index 114b0c920882dd267f057c6414563c57e91eb236..ec217aadc4a34ce09742c3b949063472
    uint32_t array_length = cert_array->Length();
  
 diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
-index 8884c6292c497a261dcbaab261d3e05b9fa2da16..3ca961fb47d0b86e311d3358ac04f6bd19211a7f 100644
+index 1bf003f830812664ad903dbdfe30366835767c0b..337cd5899f9ced88e9d2eda61ba194b7f70b910a 100644
 --- a/src/crypto/crypto_x509.cc
 +++ b/src/crypto/crypto_x509.cc
 @@ -109,7 +109,7 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, BIOPointer&& bio) {
