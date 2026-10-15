@@ -129,10 +129,6 @@ header. To temporarily restore the old behavior for your whole app, disable the
 app.commandLine.appendSwitch('disable-features', 'DeprecateUnload')
 ```
 
-Disable `DeprecateUnload` itself; disabling only `DeprecateUnloadByBucket`
-extends the deprecation to every scheme, including `file:` and custom
-protocols.
-
 ## Breaking API Changes (45.0)
 
 ### Removed: Node.js module shims and `Buffer`, `setImmediate`, `clearImmediate` globals in sandboxed preload scripts
