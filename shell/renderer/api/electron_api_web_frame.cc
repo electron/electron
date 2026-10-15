@@ -1097,7 +1097,8 @@ void ListenHook(const v8::FunctionCallbackInfo<v8::Value>& info) {
     if (gin::ConvertFromV8(isolate, self, &frame) && frame)
       frame->EnsureIsolatedWorldCreatedEvent(isolate, self);
   }
-  v8::Local<v8::Function> method = info.Data().As<v8::Function>();
+  v8::Local<v8::Function> method =
+      info.DataV2().As<v8::Value>().As<v8::Function>();
   v8::LocalVector<v8::Value> args(isolate);
   for (int i = 0; i < info.Length(); ++i)
     args.push_back(info[i]);

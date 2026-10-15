@@ -170,7 +170,8 @@ class Dictionary : public gin::Dictionary {
             [](v8::Local<v8::Name> property_name,
                const v8::PropertyCallbackInfo<v8::Value>& info) {
               AccessorValue<V> acc_value;
-              if (!gin::ConvertFromV8(info.GetIsolate(), info.Data(),
+              if (!gin::ConvertFromV8(info.GetIsolate(),
+                                      info.DataV2().As<v8::Value>(),
                                       &acc_value))
                 return;
 
