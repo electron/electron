@@ -73,6 +73,8 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "base/nix/xdg_util.h"
+#include "third_party/icu/source/common/unicode/locid.h"
+#include "third_party/icu/source/common/unicode/uloc.h"
 #include "ui/linux/display_server_utils.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
 #include "v8/include/v8.h"
@@ -214,6 +216,18 @@ ElectronMainDelegate::GetNonWildcardDomainNonPortSchemes() {
 }
 
 std::optional<int> ElectronMainDelegate::BasicStartupComplete() {
+#if BUILDFLAG(IS_LINUX)
+  // An invalid system locale can leave ICU's default locale null. Seed a
+  // fallback before Chromium or V8 initializes ICU, then let ICU load the
+  // system locale. If parsing fails, ICU retains the fallback without changing
+  // the environment. Use an explicit locale: getUS() itself initializes a cache
+  // using the default locale.
+  UErrorCode locale_status = U_ZERO_ERROR;
+  icu::Locale::setDefault(icu::Locale("en_US"), locale_status);
+  CHECK(U_SUCCESS(locale_status));
+  uloc_setDefault(nullptr, &locale_status);
+#endif
+
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
 #if BUILDFLAG(IS_WIN)
