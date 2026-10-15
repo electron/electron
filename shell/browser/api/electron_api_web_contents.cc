@@ -1115,11 +1115,6 @@ class WebContents::NativeLifecycle final
     if (auto* contents = contents_.Get())
       contents->LostPointerLock();
   }
-  bool IsWaitingForPointerLockPrompt(content::WebContents* source) override {
-    if (auto* contents = contents_.Get())
-      return contents->IsWaitingForPointerLockPrompt(source);
-    return false;
-  }
   void RequestKeyboardLock(content::WebContents* source,
                            bool esc_key_locked) override {
     if (auto* contents = contents_.Get())
@@ -2870,12 +2865,6 @@ void WebContents::RequestPointerLock(content::WebContents* web_contents,
 void WebContents::LostPointerLock() {
   native_lifecycle_->exclusive_access_manager_->pointer_lock_controller()
       ->ExitExclusiveAccessToPreviousState();
-}
-
-bool WebContents::IsWaitingForPointerLockPrompt(
-    content::WebContents* web_contents) {
-  return native_lifecycle_->exclusive_access_manager_->pointer_lock_controller()
-      ->IsWaitingForPointerLockPrompt(web_contents);
 }
 
 void WebContents::OnRequestKeyboardLock(content::WebContents* web_contents,
@@ -5937,6 +5926,19 @@ v8::Local<v8::Promise> WebContents::ExecuteJavaScriptInRenderer(
   }
 
   if (auto* renderer = MainFrameRenderer(isolate, promise)) {
+    if (has_user_gesture) {
+      // Activate the frame in the browser before the script runs, as
+      // RenderFrameHostImpl::ExecuteJavaScriptForTests() does. The renderer
+      // reports the activation too, but on the frame's channel-associated
+      // interfaces, so a request the script makes on its own Mojo pipe (such
+      // as FileSystemFileHandle.createWritable()) can reach the browser first
+      // and be refused for lacking user activation.
+      static_cast<content::RenderFrameHostImpl*>(
+          web_contents()->GetPrimaryMainFrame())
+          ->UpdateUserActivationState(
+              blink::mojom::UserActivationUpdateType::kNotifyActivation,
+              blink::mojom::UserActivationNotificationType::kWebScriptExec);
+    }
     renderer->ExecuteJavaScript(
         world_id, std::move(script_sources), has_user_gesture,
         WebFrameMain::BindPromiseToReply(std::move(promise)));

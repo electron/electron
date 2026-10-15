@@ -23,7 +23,6 @@
 #include "base/types/pass_key.h"
 #include "base/uuid.h"
 #include "chrome/browser/browser_process.h"
-#include "chrome/browser/predictors/predictors_traffic_annotations.h"  // nogncheck
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/pref_names.h"
 #include "components/download/public/common/download_danger_type.h"
@@ -59,6 +58,7 @@
 #include "net/http/http_auth_preferences.h"
 #include "net/http/http_cache.h"
 #include "net/http/http_util.h"
+#include "net/traffic_annotation/network_traffic_annotation.h"
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/request_destination.h"
@@ -133,6 +133,22 @@ using content::BrowsingDataRemover;
 using content::StoragePartition;
 
 namespace {
+
+constexpr net::NetworkTrafficAnnotationTag kPreconnectTrafficAnnotation =
+    net::DefineNetworkTrafficAnnotation("electron_session_preconnect", R"(
+        semantics {
+          sender: "Electron Session"
+          description:
+            "Preemptively opens sockets to an origin so that later requests "
+            "to it can skip DNS resolution, TCP connection and TLS setup."
+          trigger: "Using session.preconnect"
+          data: "No user data is sent; only a connection is established."
+          destination: OTHER
+        }
+        policy {
+          cookies_allowed: NO
+          setting: "This feature cannot be disabled."
+        })");
 
 struct ClearStorageDataOptions {
   blink::StorageKey storage_key;
@@ -1436,8 +1452,8 @@ static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
       {url::Origin::Create(url), num_sockets_to_preconnect,
        net::NetworkAnonymizationKey::CreateSameSite(
            net::SchemefulSite(origin))}};
-  browser_context->GetPreconnectManager()->Start(
-      url, requests, predictors::kLoadingPredictorPreconnectTrafficAnnotation);
+  browser_context->GetPreconnectManager()->Start(url, requests,
+                                                 kPreconnectTrafficAnnotation);
 }
 
 void Session::Preconnect(const gin_helper::Dictionary& options,

@@ -1,7 +1,7 @@
 import { type NativeImage, nativeImage } from 'electron/common';
 import { BrowserWindow } from 'electron/main';
 
-import { AssertionError, expect } from 'chai';
+import { afterEach, assert, describe, expect, it } from 'vitest';
 
 import * as path from 'node:path';
 
@@ -16,16 +16,23 @@ const FIXTURE_PATH = path.resolve(import.meta.dirname, 'fixtures', 'api', 'corne
  * is the cutoff for whether two images "match" or not.
  *
  * From testing, matching images were found to have an average global difference
- * up to about 1.3 and mismatched images were found to have a difference of at
- * least about 7.3.
+ * up to about 1.3. The shape page rendered with the feature in the other state
+ * differs from its reference by about 5.7, so the tolerance must stay well
+ * below that.
  *
- * See the documentation on `compareImages` for more information.
+ * See the documentation on `getAverageImageDifference` for more information.
  */
 const COMPARISON_TOLERANCE = 2.5;
 
 /**
- * Compares the average global difference of two images to determine if they
- * are similar enough to "match" each other.
+ * How long to keep capturing new frames of the page while they do not match
+ * the expected image. See `pageCaptureTestRecipe`.
+ */
+const CAPTURE_TIMEOUT = 5000;
+
+/**
+ * Returns the average global difference of two images, which determines if
+ * they are similar enough to "match" each other.
  *
  * "Average global difference" is the average difference of pixel components
  * (RGB each) across an entire image.
@@ -33,11 +40,11 @@ const COMPARISON_TOLERANCE = 2.5;
  * The cutoff for matching/not-matching is defined by the `COMPARISON_TOLERANCE`
  * constant.
  */
-function compareImages(img1: NativeImage, img2: NativeImage): boolean {
-  expect(img1.getSize()).to.deep.equal(
-    img2.getSize(),
+function getAverageImageDifference(img1: NativeImage, img2: NativeImage): number {
+  expect(
+    img1.getSize(),
     'Cannot compare images with different sizes. Run tests with --force-device-scale-factor=1'
-  );
+  ).toEqual(img2.getSize());
 
   const bitmap1 = img1.toBitmap();
   const bitmap2 = img2.toBitmap();
@@ -55,8 +62,7 @@ function compareImages(img1: NativeImage, img2: NativeImage): boolean {
     }
   }
 
-  const avgDiff = totalDiff / (width * height);
-  return avgDiff <= COMPARISON_TOLERANCE;
+  return totalDiff / (width * height);
 }
 
 /**
@@ -83,22 +89,36 @@ async function pageCaptureTestRecipe(
   await w.loadFile(pagePath);
   w.show();
 
-  // Wait for a render frame to prepare the page.
-  await w.webContents.executeJavaScript('new Promise((resolve) => { requestAnimationFrame(() => resolve()); })');
-
-  const actualImg = await w.webContents.capturePage();
-  expect(actualImg.isEmpty()).to.be.false('Failed to capture page image');
-
   const expectedImg = nativeImage.createFromPath(expectedImgPath);
-  expect(expectedImg.isEmpty()).to.be.false('Failed to read expected reference image');
+  expect(expectedImg.isEmpty(), 'Failed to read expected reference image').toBe(false);
 
-  const matches = compareImages(actualImg, expectedImg);
-  if (!matches) {
+  // The window paints while it is hidden and the page is still loading.
+  // One animation frame after showing the window, the renderer may not have
+  // submitted the frame for the loaded page yet, so a capture can still get
+  // a frame of a partly parsed page or a partly loaded image. Capture new
+  // frames until one matches the reference or time runs out.
+  // The page is static, so captures converge on its final rendering.
+  const deadline = Date.now() + CAPTURE_TIMEOUT;
+  let actualImg: NativeImage;
+  let difference: number;
+  let captures = 0;
+  do {
+    // Wait for a render frame to prepare the page.
+    await w.webContents.executeJavaScript('new Promise((resolve) => { requestAnimationFrame(() => resolve()); })');
+
+    actualImg = await w.webContents.capturePage();
+    captures++;
+    expect(actualImg.isEmpty(), 'Failed to capture page image').toBe(false);
+
+    difference = getAverageImageDifference(actualImg, expectedImg);
+  } while (difference > COMPARISON_TOLERANCE && Date.now() < deadline);
+
+  if (difference > COMPARISON_TOLERANCE) {
     const artifactFileName = `corner-rounding-expected-${artifactName}.png`;
     await createArtifact(artifactFileName, actualImg.toPNG());
 
-    throw new AssertionError(
-      `Actual image did not match expected reference image. Actual: "${artifactFileName}" in artifacts, Expected: "${path.relative(
+    assert.fail(
+      `Actual image did not match expected reference image (average difference ${difference.toFixed(2)} after ${captures} capture${captures === 1 ? '' : 's'}, tolerance ${COMPARISON_TOLERANCE}). Actual: "${artifactFileName}" in artifacts, Expected: "${path.relative(
         path.resolve(import.meta.dirname, '..'),
         expectedImgPath
       )}" in source`
