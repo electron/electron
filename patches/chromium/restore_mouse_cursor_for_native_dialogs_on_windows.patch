@@ -29,10 +29,10 @@ Commit-Queue: Mitsuru Oshima <oshima@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1716435}
 
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 1b19747100e06a134634e49a02aec17860fdba76..0251470d559d1b0cdb5c9f88ba842e707727b1eb 100644
+index 2a36a26042c93cf6774180af7717c08ec7cbe5e9..b9fa53c4a1cddc2237fd1187c41cab9b0886add4 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -39,6 +39,7 @@
+@@ -36,6 +36,7 @@
  #include "ui/base/mojom/menu_source_type.mojom-shared.h"
  #include "ui/base/mojom/ui_base_types.mojom-shared.h"
  #include "ui/base/mojom/window_show_state.mojom.h"
@@ -40,7 +40,7 @@ index 1b19747100e06a134634e49a02aec17860fdba76..0251470d559d1b0cdb5c9f88ba842e70
  #include "ui/base/win/event_creation_utils.h"
  #include "ui/base/win/hwnd_metrics.h"
  #include "ui/base/win/win_cursor.h"
-@@ -318,11 +319,13 @@ void DesktopWindowTreeHostWin::Init(const Widget::InitParams& params) {
+@@ -252,11 +253,13 @@ void DesktopWindowTreeHostWin::Init(const Widget::InitParams& params) {
  
  void DesktopWindowTreeHostWin::OnNativeWidgetCreated(
      const Widget::InitParams& params) {
@@ -59,7 +59,7 @@ index 1b19747100e06a134634e49a02aec17860fdba76..0251470d559d1b0cdb5c9f88ba842e70
    }
  
    window()->SetProperty(kContentWindowForRootWindow,
-@@ -893,6 +896,16 @@ void DesktopWindowTreeHostWin::SetCursorNative(gfx::NativeCursor cursor) {
+@@ -823,6 +826,16 @@ void DesktopWindowTreeHostWin::SetCursorNative(gfx::NativeCursor cursor) {
  }
  
  void DesktopWindowTreeHostWin::OnCursorVisibilityChangedNative(bool show) {
@@ -76,7 +76,7 @@ index 1b19747100e06a134634e49a02aec17860fdba76..0251470d559d1b0cdb5c9f88ba842e70
    if (is_cursor_visible_ == show) {
      return;
    }
-@@ -1170,6 +1183,16 @@ bool DesktopWindowTreeHostWin::HandleAppCommand(int command) {
+@@ -1091,6 +1104,16 @@ bool DesktopWindowTreeHostWin::HandleAppCommand(int command) {
  }
  
  void DesktopWindowTreeHostWin::HandleCancelMode() {
@@ -94,7 +94,7 @@ index 1b19747100e06a134634e49a02aec17860fdba76..0251470d559d1b0cdb5c9f88ba842e70
  }
  
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index d42f44a9e734265015cb8fde5d0250955b40fc24..bc8fb2a51498a4853f9234214bb4ac2ae6407fd4 100644
+index b9ee5824e422b75ad37536c8848ef825a5d1fd6e..636daf3746a59f976264806265437f1046ea0172 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 @@ -373,6 +373,10 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
@@ -109,21 +109,20 @@ index d42f44a9e734265015cb8fde5d0250955b40fc24..bc8fb2a51498a4853f9234214bb4ac2a
  
    // Modality of the window should be immutable, so we can cache it here for
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win_unittest.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win_unittest.cc
-index 0cbf9c15e4ebc589d9d567a4dd75d713f8583317..a6c52f8842e937aba5fc1c1ad0a4eeb5e9d8a3ba 100644
+index a4d0dd022c307bc1aabc5d3c187303f89761532a..fcae712d640bb24a265d6a2d0a38d186ec7e1ce5 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win_unittest.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win_unittest.cc
-@@ -24,7 +24,9 @@
- #include "ui/accessibility/platform/ax_platform_node_delegate.h"
+@@ -16,6 +16,8 @@
+ #include "base/win/windows_version.h"
  #include "ui/accessibility/platform/ax_platform_node_win.h"
  #include "ui/accessibility/platform/ax_system_caret_win.h"
 +#include "ui/aura/client/cursor_client.h"
- #include "ui/aura/window.h"
 +#include "ui/base/ui_base_features.h"
- #include "ui/views/focus/focus_manager.h"
  #include "ui/views/test/desktop_window_tree_host_win_test_api.h"
  #include "ui/views/test/widget_test.h"
-@@ -1024,5 +1026,52 @@ TEST_F(DesktopWindowTreeHostWinTest, MissingWmDestroyDoesNotCrash) {
-   g_original_wndproc = nullptr;
+ #include "ui/views/views_features.h"
+@@ -397,5 +399,52 @@ TEST_F(DesktopWindowTreeHostWinTest, IsInNativeMoveResizeLoopAcrossWindows) {
+   EXPECT_FALSE(host_b->IsInNativeMoveResizeLoop());
  }
  
 +TEST_F(DesktopWindowTreeHostWinTest, RestoresHiddenCursorOnCancelMode) {
