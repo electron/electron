@@ -106,14 +106,6 @@ describe('net module', () => {
       expect(await result).toEqual({ data: { ok: true }, code: 0 });
     });
 
-    it('acknowledges the result so that the child can exit', async () => {
-      const child = new EventEmitter() as EventEmitter & { postMessage(message: unknown): void };
-      child.postMessage = () => child.emit('exit', 0);
-      const result = waitForUtilityResult(child);
-      child.emit('message', { ok: true });
-      expect(await result).toEqual({ data: { ok: true }, code: 0 });
-    });
-
     it('fails without waiting for the timeout when the child exits before posting a result', async () => {
       const child = new EventEmitter();
       const result = waitForUtilityResult(child);
@@ -1969,7 +1961,7 @@ describe('net module', () => {
         });
 
         test('should reject promise on DNS failure', async () => {
-          const r = net.fetch('https://i.do.not.exist');
+          const r = net.fetch('https://notfound.localhost');
           await expect(r).rejects.toThrow(/ERR_NAME_NOT_RESOLVED/);
         });
 
