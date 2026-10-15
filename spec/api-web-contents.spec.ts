@@ -787,6 +787,33 @@ describe('webContents module', () => {
         expect(result).toBe('test');
       });
     });
+
+    describe('with userGesture', () => {
+      afterEach(closeAllWindows);
+
+      // navigator.hid.requestDevice() is sent on the HID service's own Mojo
+      // pipe and needs transient user activation in the browser process, which
+      // it consumes. If the browser only learned of the activation from the
+      // renderer, on the frame's channel-associated interfaces, the request
+      // could overtake that update and resolve empty without a chooser.
+      it('gives the browser user activation before the script runs', async () => {
+        const ses = session.fromPartition(`execute-javascript-user-gesture-${Math.random()}`);
+        const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        let choosersShown = 0;
+        ses.on('select-hid-device', (event, details, callback) => {
+          choosersShown++;
+          callback();
+        });
+        const code = 'navigator.hid.requestDevice({ filters: [] }).then(() => true)';
+        const attempts = 20;
+        for (let i = 0; i < attempts; i++) {
+          await w.webContents.executeJavaScript(code, true);
+          await w.webContents.executeJavaScriptInIsolatedWorld(999, [{ code }], true);
+        }
+        expect(choosersShown).toBe(attempts * 2);
+      });
+    });
   });
 
   describe('webContents.executeJavaScriptInIsolatedWorld', () => {
@@ -878,17 +905,9 @@ describe('webContents module', () => {
       await expect(w.loadURL('file:non-existent')).rejects.toHaveProperty('code', 'ERR_FILE_NOT_FOUND');
     });
 
-    // FIXME: Temporarily disable on WOA until
-    // https://github.com/electron/electron/issues/20008 is resolved
-    ifit(!(process.platform === 'win32' && process.arch === 'arm64'))(
-      'rejects when loading fails due to DNS not resolved',
-      async () => {
-        await expect(w.loadURL('https://err.name.not.resolved')).rejects.toHaveProperty(
-          'code',
-          'ERR_NAME_NOT_RESOLVED'
-        );
-      }
-    );
+    it('rejects when loading fails due to DNS not resolved', async () => {
+      await expect(w.loadURL('https://notfound.localhost')).rejects.toHaveProperty('code', 'ERR_NAME_NOT_RESOLVED');
+    });
 
     it('rejects when navigation is cancelled due to a bad scheme', async () => {
       await expect(w.loadURL('bad-scheme://foo')).rejects.toHaveProperty('code', 'ERR_FAILED');
@@ -1003,7 +1022,7 @@ describe('webContents module', () => {
       let resp = null as unknown as http.ServerResponse;
       s = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.write('<iframe src="http://err.name.not.resolved"></iframe>');
+        res.write('<iframe src="http://notfound.localhost"></iframe>');
         resp = res;
         // don't end the response yet
       });
@@ -2566,27 +2585,50 @@ describe('webContents module', () => {
     });
 
     describe('pre-warmed renderer', () => {
+      // Chromium drops a spare renderer to background priority as soon as it
+      // launches, since it hosts no visible page;
+      // on Windows that is IDLE_PRIORITY_CLASS.
+      // While a parallel spec worker keeps every CPU busy,
+      // the spare can then take longer than the 10 s wait below to start up,
+      // and is still missing from app.getAppMetrics() when the wait ends.
+      // These tests check which window gets the spare, not its priority.
+      const startAppWithoutBackgrounding = (extraArgs: string[] = []) =>
+        startRemoteControlApp(['--disable-renderer-backgrounding', ...extraArgs]);
+
       const tabPidsAroundFirstWindow = (
         rc: Awaited<ReturnType<typeof startRemoteControlApp>>,
-        firstPrefs: Electron.WebPreferences
+        firstPrefs: Electron.WebPreferences,
+        { expectReplacement = false } = {}
       ) => {
-        return rc.remotely(async (prefs: Electron.WebPreferences) => {
+        const options = { prefs: firstPrefs, expectReplacement };
+        return rc.remotely(async ({ prefs, expectReplacement }: typeof options) => {
           const { app, BrowserWindow, session } = require('electron');
           const tabPids = () =>
             app
               .getAppMetrics()
               .filter((m: Electron.ProcessMetric) => m.type === 'Tab')
               .map((m: Electron.ProcessMetric) => m.pid);
+          const waitForTabPids = async (done: (pids: number[]) => boolean) => {
+            const deadline = Date.now() + 10000;
+            while (!done(tabPids()) && Date.now() < deadline) {
+              await new Promise((resolve) => global.setTimeout(resolve, 20));
+            }
+          };
           session.defaultSession.getUserAgent();
-          const deadline = Date.now() + 10000;
-          while (tabPids().length === 0 && Date.now() < deadline) {
-            await new Promise((resolve) => global.setTimeout(resolve, 20));
-          }
+          await waitForTabPids((pids) => pids.length > 0);
           const warmed = tabPids();
           const first = new BrowserWindow({ show: false, webPreferences: prefs });
           const firstPidBeforeLoad = first.webContents.getOSProcessId();
           await first.loadURL('about:blank');
-          await new Promise((resolve) => global.setTimeout(resolve, 500));
+          if (expectReplacement) {
+            // Taking the warmed renderer starts a replacement spare.
+            const firstPid = first.webContents.getOSProcessId();
+            await waitForTabPids((pids) => pids.some((pid) => pid !== firstPid));
+          } else {
+            // Leave time for a replacement spare that should not exist.
+            await new Promise((resolve) => global.setTimeout(resolve, 500));
+          }
+          const tabsBeforeSecond = tabPids();
           const second = new BrowserWindow({ show: false });
           const secondPidBeforeLoad = second.webContents.getOSProcessId();
           await second.loadURL('about:blank');
@@ -2594,6 +2636,7 @@ describe('webContents module', () => {
             warmed,
             firstPidBeforeLoad,
             firstPid: first.webContents.getOSProcessId(),
+            tabsBeforeSecond,
             secondPidBeforeLoad,
             secondPid: second.webContents.getOSProcessId(),
             tabsAfter: tabPids()
@@ -2601,11 +2644,11 @@ describe('webContents module', () => {
           first.destroy();
           second.destroy();
           return result;
-        }, firstPrefs);
+        }, options);
       };
 
       it('is handed to the first sandboxed window only', async () => {
-        const rc = await startRemoteControlApp();
+        const rc = await startAppWithoutBackgrounding();
         const r = await tabPidsAroundFirstWindow(rc, {});
         expect(r.warmed).toHaveLength(1);
         expect(r.firstPidBeforeLoad).toBe(r.warmed[0]);
@@ -2614,7 +2657,7 @@ describe('webContents module', () => {
       });
 
       it('is discarded when the first window cannot use it', async () => {
-        const rc = await startRemoteControlApp();
+        const rc = await startAppWithoutBackgrounding();
         const r = await tabPidsAroundFirstWindow(rc, { sandbox: false });
         expect(r.warmed).toHaveLength(1);
         expect(r.firstPidBeforeLoad).toBe(0);
@@ -2624,11 +2667,14 @@ describe('webContents module', () => {
       });
 
       it('keeps serving later windows with SpareRendererForSitePerProcess enabled', async () => {
-        const rc = await startRemoteControlApp(['--enable-features=SpareRendererForSitePerProcess']);
-        const r = await tabPidsAroundFirstWindow(rc, {});
+        const rc = await startAppWithoutBackgrounding(['--enable-features=SpareRendererForSitePerProcess']);
+        const r = await tabPidsAroundFirstWindow(rc, {}, { expectReplacement: true });
+        expect(r.warmed).toHaveLength(1);
         expect(r.firstPidBeforeLoad).toBe(r.warmed[0]);
+        expect(r.firstPid).toBe(r.warmed[0]);
         expect(r.secondPidBeforeLoad).not.toBe(0);
         expect(r.secondPidBeforeLoad).not.toBe(r.firstPid);
+        expect(r.tabsBeforeSecond).toContain(r.secondPidBeforeLoad);
         expect(r.secondPid).toBe(r.secondPidBeforeLoad);
       });
     });
@@ -2903,9 +2949,6 @@ describe('webContents module', () => {
   describe('caretBrowsingEnabled', () => {
     afterEach(closeAllWindows);
 
-    const platformCaretBrowsing = () =>
-      process._linkedBinding('electron_common_testing').isPlatformCaretBrowsingEnabled();
-
     it('defaults to false', () => {
       const w = new BrowserWindow({ show: false });
       expect(w.webContents.caretBrowsingEnabled).toBe(false);
@@ -2998,6 +3041,9 @@ describe('webContents module', () => {
 
     // These depend on a binding that is only available when DCHECK_IS_ON.
     ifdescribe(isTestingBindingAvailable())('process-wide accessibility notification', () => {
+      const platformCaretBrowsing = () =>
+        process._linkedBinding('electron_common_testing').isPlatformCaretBrowsingEnabled();
+
       it('stays on while another WebContents still has caret browsing enabled', () => {
         const w1 = new BrowserWindow({ show: false });
         const w2 = new BrowserWindow({ show: false });
@@ -3013,6 +3059,47 @@ describe('webContents module', () => {
 
         w2.webContents.caretBrowsingEnabled = false;
         expect(platformCaretBrowsing()).toBe(false);
+      });
+
+      describe('guest preference inheritance', () => {
+        it('releases exactly one reference when an inherited preference is disabled', async () => {
+          const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+          w.webContents.caretBrowsingEnabled = true;
+
+          const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+          w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
+          const [, guest] = await created;
+
+          expect(guest.caretBrowsingEnabled).toBe(true);
+
+          // An inherited preference has to come with its own reference, otherwise
+          // the guest keeps caret browsing on with nothing holding the count up.
+          w.webContents.caretBrowsingEnabled = false;
+          expect(platformCaretBrowsing()).toBe(true);
+
+          guest.caretBrowsingEnabled = false;
+          expect(platformCaretBrowsing()).toBe(false);
+        });
+
+        it('releases an inherited reference when the guest is destroyed', async () => {
+          const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+          w.webContents.caretBrowsingEnabled = true;
+
+          const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+          w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
+          const [, guest] = await created;
+
+          expect(guest.caretBrowsingEnabled).toBe(true);
+          expect(platformCaretBrowsing()).toBe(true);
+
+          // An attached guest's WebContents is owned by its embedder frame, so the
+          // wrapper holding the reference is only deleted at garbage collection.
+          const destroyed = once(guest, 'destroyed');
+          w.close();
+          await destroyed;
+
+          expect(platformCaretBrowsing()).toBe(false);
+        });
       });
 
       it('takes at most one reference per WebContents however often it is set', () => {
@@ -3121,48 +3208,6 @@ describe('webContents module', () => {
 
         expect(guest.getType()).toBe('webview');
         expect(guest.caretBrowsingEnabled).toBe(true);
-      });
-
-      ifit(isTestingBindingAvailable())(
-        'releases exactly one reference when an inherited preference is disabled',
-        async () => {
-          const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
-          w.webContents.caretBrowsingEnabled = true;
-
-          const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
-          w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
-          const [, guest] = await created;
-
-          expect(guest.caretBrowsingEnabled).toBe(true);
-
-          // An inherited preference has to come with its own reference, otherwise
-          // the guest keeps caret browsing on with nothing holding the count up.
-          w.webContents.caretBrowsingEnabled = false;
-          expect(platformCaretBrowsing()).toBe(true);
-
-          guest.caretBrowsingEnabled = false;
-          expect(platformCaretBrowsing()).toBe(false);
-        }
-      );
-
-      ifit(isTestingBindingAvailable())('releases an inherited reference when the guest is destroyed', async () => {
-        const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
-        w.webContents.caretBrowsingEnabled = true;
-
-        const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
-        w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
-        const [, guest] = await created;
-
-        expect(guest.caretBrowsingEnabled).toBe(true);
-        expect(platformCaretBrowsing()).toBe(true);
-
-        // An attached guest's WebContents is owned by its embedder frame, so the
-        // wrapper holding the reference is only deleted at garbage collection.
-        const destroyed = once(guest, 'destroyed');
-        w.close();
-        await destroyed;
-
-        expect(platformCaretBrowsing()).toBe(false);
       });
     });
   });

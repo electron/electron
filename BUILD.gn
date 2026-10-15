@@ -509,6 +509,7 @@ source_set("electron_lib") {
     "//chrome/app/resources:platform_locale_settings",
     "//chrome/common/notifications",
     "//components/cbor",
+    "//components/cdm/renderer",
     "//components/certificate_transparency",
     "//components/compose:buildflags",
     "//components/embedder_support:user_agent",
@@ -544,6 +545,7 @@ source_set("electron_lib") {
     "//gin",
     "//gpu/ipc/client",
     "//media/capture/mojom:video_capture",
+    "//media/cdm:cdm_paths",
     "//media/mojo/mojom",
     "//media/mojo/mojom:web_speech_recognition",
     "//net:extras",
@@ -561,7 +563,6 @@ source_set("electron_lib") {
     "//skia",
     "//third_party/blink/public:blink",
     "//third_party/blink/public:blink_devtools_inspector_resources",
-    "//third_party/blink/public/platform/media",
     "//third_party/boringssl",
     "//third_party/electron_node:libnode",
 
@@ -648,6 +649,10 @@ source_set("electron_lib") {
   if (!is_mac) {
     sources += filenames.lib_sources_views
   }
+  if (is_debug || dcheck_always_on) {
+    sources += [ "shell/common/api/electron_api_testing.cc" ]
+    deps += [ "shell/common:v8_code_cache_test_helpers" ]
+  }
 
   if (electron_generate_js2c_code_cache) {
     sources += [
@@ -678,11 +683,6 @@ source_set("electron_lib") {
   }
 
   if (is_mac) {
-    # Disable C++ modules to resolve linking error when including MacOS SDK
-    # headers from third_party/electron_node/deps/uv/include/uv/darwin.h
-    # TODO(samuelmaddock): consider revisiting this in the future
-    use_libcxx_modules = false
-
     deps += [
       "//components/os_crypt/async/browser:keychain_key_provider",
       "//components/os_crypt/common:keychain_password_mac",
@@ -2055,8 +2055,22 @@ action("libcxx_objects_zip") {
   args = rebase_path(outputs)
 }
 
+if (is_debug || dcheck_always_on) {
+  # Test runners receive these assets rather than a full V8 checkout.
+  copy("v8_code_cache_spec_assets") {
+    sources = [
+      "//v8/LICENSE",
+      "//v8/test/mjsunit/wasm/wasm-module-builder.js",
+    ]
+    outputs = [ "$root_gen_dir/electron/v8-code-cache/{{source_file_part}}" ]
+  }
+}
+
 group("electron") {
   public_deps = [ ":electron_app" ]
+  if (is_debug || dcheck_always_on) {
+    data_deps = [ ":v8_code_cache_spec_assets" ]
+  }
 }
 
 ##### node_headers
@@ -2128,6 +2142,9 @@ group("testing_build") {
     ":electron_mksnapshot_zip",
     ":node_headers",
   ]
+  if (is_debug || dcheck_always_on) {
+    data_deps = [ ":v8_code_cache_spec_assets" ]
+  }
   if (!is_mas_build) {
     public_deps += [ ":electron_xcache_zip" ]
   }

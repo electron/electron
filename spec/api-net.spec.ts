@@ -18,6 +18,7 @@ import * as https from 'node:https';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
+import { emittedUntil } from './lib/events-helpers.ts';
 import {
   collectStreamBody,
   collectStreamBodyBuffer,
@@ -29,7 +30,14 @@ import {
   respondNTimes,
   respondOnce
 } from './lib/net-helpers.ts';
-import { listen, defer, ifdescribe, isTestingBindingAvailable, waitUntil } from './lib/spec-helpers.ts';
+import {
+  listen,
+  defer,
+  deferKillUtilityProcess,
+  ifdescribe,
+  isTestingBindingAvailable,
+  waitUntil
+} from './lib/spec-helpers.ts';
 import { runInUtilityProcess, waitForUtilityResult } from './lib/utility-process-helpers.ts';
 
 const fixturesPath = path.resolve(import.meta.dirname, 'fixtures');
@@ -1953,7 +1961,7 @@ describe('net module', () => {
         });
 
         test('should reject promise on DNS failure', async () => {
-          const r = net.fetch('https://i.do.not.exist');
+          const r = net.fetch('https://notfound.localhost');
           await expect(r).rejects.toThrow(/ERR_NAME_NOT_RESOLVED/);
         });
 
@@ -2221,6 +2229,41 @@ describe('net module', () => {
   });
 
   ifdescribe(isTestingBindingAvailable())('Network Service crash recovery', () => {
+    // Requests fail for a while after the simulated crash,
+    // until the new Network Service is up and the requester has a URLLoaderFactory for it.
+    // That can take a while on a busy machine,
+    // so retry |probe| until it reports success.
+    // An attempt that gets no response within the probe timeout counts as a failure and is retried,
+    // since the first requests after the crash can wait for the new Network Service to launch.
+    // When given, the child's 'exit' is raced against each attempt,
+    // so a child that dies fails the test right away, saying why,
+    // instead of running into the test's timeout.
+    const waitForNetworkServiceRecovery = (probe: () => Promise<boolean>, exited?: Promise<unknown[]>) =>
+      waitUntil(
+        async () => {
+          const probeTimeout = 5000;
+          const ac = new AbortController();
+          try {
+            return await Promise.race([
+              probe(),
+              setTimeout(probeTimeout, false, { signal: ac.signal }),
+              ...(exited
+                ? [
+                    exited.then(([code]) => {
+                      throw new Error(
+                        `the utility process exited (${code}) while probing for Network Service recovery`
+                      );
+                    })
+                  ]
+                : [])
+            ]);
+          } finally {
+            ac.abort();
+          }
+        },
+        { rate: 100 }
+      );
+
     it('should recover net.fetch after Network Service crash (main process)', async () => {
       const binding = process._linkedBinding('electron_common_testing');
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
@@ -2232,24 +2275,20 @@ describe('net module', () => {
 
       await binding.simulateNetworkServiceCrash();
 
-      // Requests fail until StoragePartitionImpl's NetworkContext disconnect
-      // handler has fired and the context has been reinitialized in the new
-      // Network Service, which can take a while on a busy machine. Probing
-      // right away also covers the session's cached URLLoaderFactory being
-      // rebuilt after it was created from the old, dying NetworkContext.
+      // Requests fail until StoragePartitionImpl's NetworkContext disconnect handler has fired
+      // and the context has been reinitialized in the new Network Service.
+      // Probing right away also covers the session's cached URLLoaderFactory being rebuilt
+      // after it was created from the old, dying NetworkContext.
       const probeUrl = await respondNTimes.toSingleURL((request, response) => {
         response.end('probe');
       }, 200);
-      await waitUntil(
-        async () => {
-          try {
-            return (await net.fetch(probeUrl)).ok;
-          } catch {
-            return false;
-          }
-        },
-        { rate: 100 }
-      );
+      await waitForNetworkServiceRecovery(async () => {
+        try {
+          return (await net.fetch(probeUrl)).ok;
+        } catch {
+          return false;
+        }
+      });
 
       const secondServerUrl = await respondOnce.toSingleURL((request, response) => {
         response.end('second');
@@ -2262,33 +2301,46 @@ describe('net module', () => {
     it('should recover net.fetch after Network Service crash (utility process)', async () => {
       const binding = process._linkedBinding('electron_common_testing');
       const child = utilityProcess.fork(path.join(fixturesPath, 'api', 'utility-process', 'network-restart-test.js'));
+      deferKillUtilityProcess(child);
+      const exited = once(child, 'exit');
+      // once() rejects if the child emits 'error',
+      // and nothing else handles |exited| until the first recovery probe.
+      exited.catch(() => {});
       await once(child, 'spawn');
       await once(child, 'message');
+
+      // Each fetch carries an id that the child echoes in its reply,
+      // so a late reply to a probe that timed out isn't taken as the reply to a later fetch.
+      let lastRequestId = 0;
+      const fetchInChild = async (url: string) => {
+        const id = ++lastRequestId;
+        child.postMessage({ type: 'fetch', url, id });
+        const [result] = await emittedUntil(child, 'message', (message: { id?: number }) => message.id === id);
+        return result;
+      };
 
       const firstServerUrl = await respondOnce.toSingleURL((request, response) => {
         response.end('utility-first');
       });
-      child.postMessage({ type: 'fetch', url: firstServerUrl });
-      const [firstResult] = await once(child, 'message');
+      const firstResult = await fetchInChild(firstServerUrl);
       expect(firstResult.ok).toBe(true);
       expect(firstResult.body).toBe('utility-first');
 
       await binding.simulateNetworkServiceCrash();
 
-      // Needed for UpdateURLLoaderFactory IPC to propagate to the utility process
-      // and for any in-flight requests to settle
-      await setTimeout(500);
+      // Requests from the utility process fail
+      // until the UpdateURLLoaderFactory IPC for the new Network Service has reached it.
+      const probeUrl = await respondNTimes.toSingleURL((request, response) => {
+        response.end('probe');
+      }, 200);
+      await waitForNetworkServiceRecovery(async () => (await fetchInChild(probeUrl)).ok, exited);
 
       const secondServerUrl = await respondOnce.toSingleURL((request, response) => {
         response.end('utility-second');
       });
-      child.postMessage({ type: 'fetch', url: secondServerUrl });
-      const [secondResult] = await once(child, 'message');
+      const secondResult = await fetchInChild(secondServerUrl);
       expect(secondResult.ok).toBe(true);
       expect(secondResult.body).toBe('utility-second');
-
-      child.kill();
-      await once(child, 'exit');
     });
   });
 });
