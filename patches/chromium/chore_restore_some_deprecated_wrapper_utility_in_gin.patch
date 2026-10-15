@@ -36,23 +36,19 @@ index c2fe6822764708c097b968c5cad9adf60bb73293..72fbc09eda42ff7be01e3737fd95b823
  ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate* isolate,
                                               const char* type_name,
 diff --git a/gin/per_isolate_data.cc b/gin/per_isolate_data.cc
-index 6df3e02b1af1a3e11d131344625f777d997ce01e..611d1b403829bd6e229a82bca7e489bee06c2077 100644
+index 3ea2c4707e11750aa2dd3f04ac7137d986d7ae61..5a243c99e4701d672af4a8f3e6fecc13f79183f8 100644
 --- a/gin/per_isolate_data.cc
 +++ b/gin/per_isolate_data.cc
-@@ -16,7 +16,11 @@
- #include "v8/include/v8-isolate.h"
+@@ -17,6 +17,7 @@
  
  using v8::ArrayBuffer;
-+using v8::Eternal;
+ using v8::Eternal;
 +using v8::FunctionTemplate;
  using v8::Isolate;
-+using v8::Local;
-+using v8::ObjectTemplate;
- 
- namespace {
- std::shared_ptr<gin::V8ForegroundTaskRunnerBase> CreateV8ForegroundTaskRunner(
-@@ -70,6 +74,52 @@ PerIsolateData* PerIsolateData::From(Isolate* isolate) {
-   return static_cast<PerIsolateData*>(isolate->GetData(kEmbedderNativeGin));
+ using v8::Local;
+ using v8::ObjectTemplate;
+@@ -87,6 +88,52 @@ v8::Local<v8::ObjectTemplate> PerIsolateData::GetObjectTemplate(
+   return it->second.Get(isolate_);
  }
  
 +void PerIsolateData::DeprecatedSetObjectTemplate(DeprecatedWrapperInfo* info,
@@ -104,7 +100,7 @@ index 6df3e02b1af1a3e11d131344625f777d997ce01e..611d1b403829bd6e229a82bca7e489be
  void PerIsolateData::AddDisposeObserver(DisposeObserver* observer) {
    dispose_observers_.AddObserver(observer);
  }
-@@ -84,6 +134,12 @@ void PerIsolateData::NotifyBeforeDispose() {
+@@ -101,6 +148,12 @@ void PerIsolateData::NotifyBeforeDispose() {
    }
  }
  
@@ -118,26 +114,10 @@ index 6df3e02b1af1a3e11d131344625f777d997ce01e..611d1b403829bd6e229a82bca7e489be
    for (auto& observer : dispose_observers_) {
      observer.OnDisposed();
 diff --git a/gin/per_isolate_data.h b/gin/per_isolate_data.h
-index d7519928328d6ef8459756c38d3d4c179f73aca7..18488e7546aa6bc2ae0c766a64db50a70b87b0b5 100644
+index d2b2ce62dc6244b969283c983032c1922ef83e79..ecc615c6efb70d949cf9506025fb0632fb04062a 100644
 --- a/gin/per_isolate_data.h
 +++ b/gin/per_isolate_data.h
-@@ -5,6 +5,7 @@
- #ifndef GIN_PER_ISOLATE_DATA_H_
- #define GIN_PER_ISOLATE_DATA_H_
- 
-+#include <map>
- #include <memory>
- 
- #include "base/check.h"
-@@ -14,6 +15,7 @@
- #include "base/task/single_thread_task_runner.h"
- #include "gin/gin_export.h"
- #include "gin/public/isolate_holder.h"
-+#include "gin/public/wrapper_info.h"
- #include "gin/v8_foreground_task_runner_base.h"
- #include "v8/include/v8-array-buffer.h"
- #include "v8/include/v8-forward.h"
-@@ -32,6 +34,10 @@ class GIN_EXPORT PerIsolateData {
+@@ -34,6 +34,10 @@ class GIN_EXPORT PerIsolateData {
      // be entered before the observer is notified, but there will not be a
      // handle scope by default.
      virtual void OnBeforeDispose(v8::Isolate* isolate) = 0;
@@ -148,13 +128,18 @@ index d7519928328d6ef8459756c38d3d4c179f73aca7..18488e7546aa6bc2ae0c766a64db50a7
      // Called just after the isolate has been disposed.
      virtual void OnDisposed() = 0;
    };
-@@ -49,9 +55,32 @@ class GIN_EXPORT PerIsolateData {
+@@ -51,14 +55,37 @@ class GIN_EXPORT PerIsolateData {
  
    static PerIsolateData* From(v8::Isolate* isolate);
  
 +  // Each isolate is associated with a collection of v8::ObjectTemplates and
 +  // v8::FunctionTemplates. Typically these template objects are created
 +  // lazily.
+   void SetObjectTemplate(const WrapperInfo* info,
+                          v8::Local<v8::ObjectTemplate> object_template);
+ 
+   v8::Local<v8::ObjectTemplate> GetObjectTemplate(const WrapperInfo* info);
+ 
 +  void DeprecatedSetObjectTemplate(
 +      DeprecatedWrapperInfo* info,
 +      v8::Local<v8::ObjectTemplate> object_template);
@@ -181,21 +166,22 @@ index d7519928328d6ef8459756c38d3d4c179f73aca7..18488e7546aa6bc2ae0c766a64db50a7
    void NotifyDisposed();
  
    void EnableIdleTasks(std::unique_ptr<V8IdleTaskRunner> idle_task_runner);
-@@ -67,10 +96,20 @@ class GIN_EXPORT PerIsolateData {
-   }
- 
+@@ -76,12 +103,21 @@ class GIN_EXPORT PerIsolateData {
   private:
+   typedef std::map<const WrapperInfo*, v8::Eternal<v8::ObjectTemplate>>
+       ObjectTemplateMap;
 +  typedef std::map<DeprecatedWrapperInfo*, v8::Eternal<v8::ObjectTemplate>>
 +      DeprecatedObjectTemplateMap;
 +  typedef std::map<DeprecatedWrapperInfo*, v8::Eternal<v8::FunctionTemplate>>
 +      DeprecatedFunctionTemplateMap;
 +  typedef std::map<const WrapperInfo*, v8::Eternal<v8::FunctionTemplate>>
 +      FunctionTemplateMap;
-+
+ 
    // PerIsolateData doesn't actually own |isolate_|. Instead, the isolate is
    // owned by the IsolateHolder, which also owns the PerIsolateData.
    raw_ptr<v8::Isolate, AcrossTasksDanglingUntriaged> isolate_;
    raw_ptr<v8::ArrayBuffer::Allocator, DanglingUntriaged> allocator_;
+   ObjectTemplateMap object_templates_;
 +  DeprecatedObjectTemplateMap deprecated_object_templates_;
 +  DeprecatedFunctionTemplateMap deprecated_function_templates_;
 +  FunctionTemplateMap function_templates_;
@@ -249,26 +235,18 @@ index 34b5f1c30c05152122f23708a1df62f00296fcd6..d80cec1b5f6d045638039aac907811a2
    const WrappablePointerTag pointer_tag;
  };
 diff --git a/gin/wrappable.cc b/gin/wrappable.cc
-index 2f4506e22af742f1c8bb2592b814b4ac78d02858..db0cb982f57f0faf21489efd9629b2c6409709a9 100644
+index 95a80049aab75539bc2ce3a78ee0afb899bab468..063fac41016c870fda97cdfd5911002762559569 100644
 --- a/gin/wrappable.cc
 +++ b/gin/wrappable.cc
-@@ -7,6 +7,7 @@
- #include "base/check_op.h"
- #include "gin/object_template_builder.h"
- #include "gin/per_context_data.h"
-+#include "gin/per_isolate_data.h"
- #include "v8/include/cppgc/visitor.h"
- #include "v8/include/v8-cppgc.h"
- #include "v8/include/v8-sandbox.h"
-@@ -63,6 +64,7 @@ v8::MaybeLocal<v8::Object> WrappableBase::GetWrapper(v8::Isolate* isolate) {
-       data->SetObjectTemplate(info, templ);
-     }
+@@ -52,6 +52,7 @@ v8::MaybeLocal<v8::Object> WrappableBase::GetWrapper(v8::Isolate* isolate) {
+     CHECK(!templ.IsEmpty());
+     data->SetObjectTemplate(info, templ);
    }
 +  CHECK_EQ(kNumberOfInternalFields, templ->InternalFieldCount());
    v8::Local<v8::Object> wrapper;
    // |wrapper| may be empty in some extreme cases, e.g., when
    // Object.prototype.constructor is overwritten.
-@@ -70,6 +72,13 @@ v8::MaybeLocal<v8::Object> WrappableBase::GetWrapper(v8::Isolate* isolate) {
+@@ -59,6 +60,13 @@ v8::MaybeLocal<v8::Object> WrappableBase::GetWrapper(v8::Isolate* isolate) {
      return {};
    }
  
@@ -282,7 +260,7 @@ index 2f4506e22af742f1c8bb2592b814b4ac78d02858..db0cb982f57f0faf21489efd9629b2c6
    AssociateWithWrapper(isolate, wrapper);
    return wrapper;
  }
-@@ -80,4 +89,102 @@ void WrappableBase::SetWrapper(v8::Isolate* isolate,
+@@ -69,4 +77,102 @@ void WrappableBase::SetWrapper(v8::Isolate* isolate,
    AssociateWithWrapper(isolate, wrapper);
  }
  
