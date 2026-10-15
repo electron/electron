@@ -6,13 +6,12 @@ description: 'Ensures proper binaries are in place'
 # 2. Fixing esbuild (wrong binary)
 # 3. Fixing rustc on Windows (wrong binary)
 # 4. Fixing gn (wrong binary)
-# 5. Fix reclient (wrong binary)
-# 6. Ensuring we are using the correct ninja and adding it to PATH
-# 7. Fixing angle (wrong remote)
-# 8. Install windows toolchain on Windows
-# 9. Fix node binary on Windows
-# 10. Fix rc binary on Windows
-# 11. Fix clang-format binary on Windows
+# 5. Ensuring we are using the correct ninja and adding it to PATH
+# 6. Fixing angle (wrong remote)
+# 7. Install windows toolchain on Windows
+# 8. Fix node binary on Windows
+# 9. Fix rc binary on Windows
+# 10. Fix clang-format binary on Windows
 #
 # The macOS src cache is synced with host_os=mac and host_cpu=arm64, so every
 # dep and hook that DEPS selects by host vars (clang, rust, dsymutil, ...) is
@@ -136,20 +135,6 @@ runs:
         installation-dir: src/buildtools/win 
         target-platform: ${{ inputs.target-platform }}
         package: gn/gn/windows-amd64
-    - name: Fix reclient
-      if: ${{ inputs.target-platform != 'linux' }}
-      uses: ./src/electron/.github/actions/cipd-install
-      with:
-        dependency: reclient
-        deps-file: src/DEPS
-        installation-dir: src/buildtools/reclient
-        target-platform: ${{ inputs.target-platform }}
-        package: infra/rbe/client/${platform}
-    - name: Configure reclient configs
-      if: ${{ inputs.target-platform != 'linux' }}
-      shell: bash
-      run : |
-        python3 src/buildtools/reclient_cfgs/configure_reclient_cfgs.py --rbe_instance "projects/rbe-chrome-untrusted/instances/default_instance" --reproxy_cfg_template reproxy.cfg.template --rewrapper_cfg_project "" --skip_remoteexec_cfg_fetch
     - name: Fix ninja
       if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/cipd-install
