@@ -308,21 +308,14 @@ int NodeMain() {
           static_cast<node::EnvironmentFlags::Flags>(env_flags));
       CHECK_NE(nullptr, env);
 
-      node::IsolateSettings isolate_settings;
       if (snapshot) {
         // The snapshot's main context was created inside CreateEnvironment and
         // is not entered yet; enter it for the lifetime of the process, as
         // JavascriptEnvironment does for the context it creates itself (its
         // destructor exits the current context).
         env->context()->Enter();
-        // node::CreateEnvironment already installed the per-isolate message
-        // listener while deserializing (SetIsolateErrorHandlers, snapshot path
-        // only). Listeners are additive, so don't let SetIsolateUpForNode add a
-        // second one -- every uncaught exception would be reported twice.
-        isolate_settings.flags &=
-            ~node::IsolateSettingsFlags::MESSAGE_LISTENER_WITH_ERROR_LEVEL;
       }
-      node::SetIsolateUpForNode(isolate, isolate_settings);
+      node::SetIsolateUpForNode(isolate, node::IsolateSettings{});
 
       gin_helper::Dictionary process(isolate, env->process_object());
       process.SetMethod("crash", &ElectronBindings::Crash);
