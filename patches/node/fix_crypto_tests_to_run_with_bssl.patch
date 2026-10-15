@@ -10,23 +10,8 @@ This should be upstreamed in some form, though it may need to be tweaked
 before it's acceptable to upstream, as this patch comments out a couple
 of tests that upstream probably cares about.
 
-diff --git a/test/parallel/test-crypto-keygen-deprecation.js b/test/parallel/test-crypto-keygen-deprecation.js
-index 926dfbbc4ae987217ab404ec25a3ca0a2ef2edcf..df0b379c1b1e982b96ea97c9814f38991d734ce4 100644
---- a/test/parallel/test-crypto-keygen-deprecation.js
-+++ b/test/parallel/test-crypto-keygen-deprecation.js
-@@ -4,6 +4,10 @@ const common = require('../common');
- if (!common.hasCrypto)
-   common.skip('missing crypto');
- 
-+if (process.features.openssl_is_boringssl) {
-+  common.skip('Skipping unsupported RSA-PSS key tests');
-+}
-+
- const DeprecationWarning = [];
- DeprecationWarning.push([
-   '"options.hash" is deprecated, use "options.hashAlgorithm" instead.',
 diff --git a/test/parallel/test-crypto-pqc-key-objects-ml-dsa.js b/test/parallel/test-crypto-pqc-key-objects-ml-dsa.js
-index 883c2b7123844ede9c729809c2ac11e2c7288d72..54e7ff13547955ee7891fc493765e96aac39ba82 100644
+index 715b313849dfaed0bae244ae971b8e9cb74a5d76..f42e34900f212399099efd68c9bb2249b1d0157a 100644
 --- a/test/parallel/test-crypto-pqc-key-objects-ml-dsa.js
 +++ b/test/parallel/test-crypto-pqc-key-objects-ml-dsa.js
 @@ -4,6 +4,10 @@ const common = require('../common');
@@ -37,7 +22,7 @@ index 883c2b7123844ede9c729809c2ac11e2c7288d72..54e7ff13547955ee7891fc493765e96a
 +  common.skip('Skipping unsupported ML-DSA key tests');
 +}
 +
- const { hasOpenSSL } = require('../common/crypto');
+ const { hasOpenSSL, isBoringSSL } = require('../common/crypto');
  
  const assert = require('assert');
 diff --git a/test/parallel/test-openssl-unreadable-config.js b/test/parallel/test-openssl-unreadable-config.js
