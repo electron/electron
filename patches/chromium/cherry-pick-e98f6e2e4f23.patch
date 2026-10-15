@@ -438,7 +438,7 @@ index 932f3bab68eca8975bed8043d024e7f93de7423b..7a3a95033407bad86379271e935a125c
 +
  }  // namespace content
 diff --git a/content/browser/worker_host/worker_script_fetcher.cc b/content/browser/worker_host/worker_script_fetcher.cc
-index 6f67f0269ff30048b7eeadae9e21d0479aa27c34..677f89d229ab27c0f41fcbe0c399b7e8749ed2ce 100644
+index a5816455ed6423b6ce22e5df66d9a884fe86518d..2d5486d8ef55e3ba83e33b19e69b4dc89ac9348f 100644
 --- a/content/browser/worker_host/worker_script_fetcher.cc
 +++ b/content/browser/worker_host/worker_script_fetcher.cc
 @@ -30,6 +30,7 @@
