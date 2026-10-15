@@ -8,7 +8,6 @@ import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import { createRequire } from 'node:module';
-import * as os from 'node:os';
 import * as path from 'node:path';
 import * as qs from 'node:querystring';
 import * as stream from 'node:stream';
