@@ -17,7 +17,7 @@ which removed range-requests-supported on non-http protocols. See https://issues
 for more information.
 
 diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
-index bf0200112bfca23a5d69e02966a4a7d66855a2bc..6c7dfddb6f8240264eac19ec51a10f5e9982d763 100644
+index 6a9f63ec449f99d9d3d53b1c4874599d65edbccd..1066b774840f571d14504c034fc56a18a6eaa631 100644
 --- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
 +++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
 @@ -12,8 +12,10 @@
@@ -104,7 +104,7 @@ index 75260f0065419700cb97d18ff6d0997db555c8d0..2a76496e85e90a55b06ab19ebed37642
    using InitializeCB = base::OnceCallback<void(bool)>;
    void Initialize(InitializeCB init_cb) override;
 diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
-index 888a2637619a34a668a7769a1b26b107379ec5f8..900bb02bb3917781e6412263df051a7af7ea2e02 100644
+index 72986bd93ddcc7cd9b2deccfd298c955df2f1f79..36edb26fe04a4096d5e72f6039a58acc9592c3b3 100644
 --- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
 +++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
 @@ -8,6 +8,7 @@
@@ -123,7 +123,7 @@ index 888a2637619a34a668a7769a1b26b107379ec5f8..900bb02bb3917781e6412263df051a7a
  #include "third_party/blink/renderer/platform/media/resource_fetch_context.h"
  #include "third_party/blink/renderer/platform/media/url_index.h"
  #include "third_party/blink/renderer/platform/weborigin/security_origin.h"
-@@ -325,6 +327,16 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+@@ -336,6 +338,16 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
        do_fail = true;
      }
    } else {

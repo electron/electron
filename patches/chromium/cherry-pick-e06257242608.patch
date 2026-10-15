@@ -203,10 +203,10 @@ index 8e96df818ac4a7ee2af2f62d30817ca6aeb45f9c..d75587b44903e39deec12343b7c58c7a
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 53dee3f395e4a4c4f72b05d7fd384e51c977d58d..a5eee9312d7c84475c15b67a027ff2b4d3c00da6 100644
+index 1e775ca49d729246ea8ce2c3dc8f875b6339b5dc..963431d57baed64a09d398b96223731f1c5067e7 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -13550,6 +13550,19 @@ bool RenderFrameHostImpl::IsFullCookieAccessAllowed() {
+@@ -13552,6 +13552,19 @@ bool RenderFrameHostImpl::IsFullCookieAccessAllowed() {
  void RenderFrameHostImpl::BindBlobUrlStoreAssociatedReceiver(
      mojo::PendingAssociatedReceiver<blink::mojom::BlobURLStore> receiver) {
    CHECK_CURRENTLY_ON(BrowserThread::UI);
@@ -226,7 +226,7 @@ index 53dee3f395e4a4c4f72b05d7fd384e51c977d58d..a5eee9312d7c84475c15b67a027ff2b4
    auto* storage_partition_impl =
        static_cast<StoragePartitionImpl*>(GetStoragePartition());
  
-@@ -13592,6 +13605,17 @@ void RenderFrameHostImpl::BindBlobUrlStoreAssociatedReceiver(
+@@ -13594,6 +13607,17 @@ void RenderFrameHostImpl::BindBlobUrlStoreAssociatedReceiver(
  void RenderFrameHostImpl::BindBlobUrlStoreReceiver(
      mojo::PendingReceiver<blink::mojom::BlobURLStore> receiver) {
    CHECK_CURRENTLY_ON(BrowserThread::UI);
