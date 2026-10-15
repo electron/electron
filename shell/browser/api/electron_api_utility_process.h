@@ -83,6 +83,7 @@ class UtilityProcessWrapper final
  private:
   void OnServiceProcessLaunch(const base::Process& process);
   void CloseConnectorPort();
+  void DispatchPendingMessages();
 
   void HandleTermination(uint32_t exit_code);
 

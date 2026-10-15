@@ -97,14 +97,6 @@ describe('net module', () => {
       expect(await result).toEqual({ data: { ok: true }, code: 0 });
     });
 
-    it('acknowledges the result so that the child can exit', async () => {
-      const child = new EventEmitter() as EventEmitter & { postMessage(message: unknown): void };
-      child.postMessage = () => child.emit('exit', 0);
-      const result = waitForUtilityResult(child);
-      child.emit('message', { ok: true });
-      expect(await result).toEqual({ data: { ok: true }, code: 0 });
-    });
-
     it('fails without waiting for the timeout when the child exits before posting a result', async () => {
       const child = new EventEmitter();
       const result = waitForUtilityResult(child);

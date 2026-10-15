@@ -14,7 +14,7 @@ import { setImmediate } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 
 import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers.ts';
-import { defer, deferKillUtilityProcess, ifit, listen, startRemoteControlApp } from './lib/spec-helpers.ts';
+import { defer, deferKillUtilityProcess, ifit, listen, sleepSync, startRemoteControlApp } from './lib/spec-helpers.ts';
 import { closeWindow } from './lib/window-helpers.ts';
 
 const require = createRequire(import.meta.url);
@@ -498,6 +498,26 @@ describe('utilityProcess module', () => {
       const exit = once(child, 'exit');
       expect(child.kill()).toBe(true);
       await exit;
+    });
+
+    it('delivers messages the child posted right before exiting', async () => {
+      const count = 20;
+      const child = utilityProcess.fork(path.join(fixturesPath, 'post-message-then-exit.js'));
+      deferKillUtilityProcess(child);
+      const received: number[] = [];
+      child.on('message', (index) => received.push(index));
+      let receivedBeforeExit: number[] = [];
+      child.once('exit', () => {
+        receivedBeforeExit = [...received];
+      });
+      await once(child, 'spawn');
+      child.postMessage(count);
+      // Block this thread while the child posts and exits, so that its
+      // messages and its exit are both waiting here when it gets back to them.
+      sleepSync(1000);
+      const [code] = await once(child, 'exit');
+      expect(code).toBe(0);
+      expect(receivedBeforeExit).toEqual(Array.from({ length: count }, (_, index) => index));
     });
 
     it('handles the parent port trying to send an non-clonable object', async () => {
