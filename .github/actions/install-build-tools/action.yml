@@ -16,7 +16,7 @@ runs:
         git config --global core.preloadindex true
         git config --global core.longpaths true
       fi
-      export BUILD_TOOLS_SHA=32e2253f7c5696d85a77fe19d54d284cf9a62322
+      export BUILD_TOOLS_SHA=3bf7c9f543348c03b7a0f2e265dd352d0f61c1ab
       # Both fetch over the network (the first `e` command clones depot_tools),
       # so retry them on transient failures.
       RETRY="$PWD/src/electron/script/actions/retry.sh"
