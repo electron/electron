@@ -827,14 +827,20 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
 
   bool leaving_fullscreen = IsFullscreen() && !fullscreen;
 #if BUILDFLAG(IS_WIN)
-  // There is no native fullscreen state on Windows.
-  if (fullscreen) {
-    last_window_state_ = ui::mojom::WindowShowState::kFullscreen;
-    NotifyWindowEnterFullScreen();
-  } else {
-    last_window_state_ = ui::mojom::WindowShowState::kNormal;
-    NotifyWindowLeaveFullScreen();
-  }
+  // There is no native fullscreen state on Windows. HandleSizeEvent() reads
+  // this for the size events that the change below sends.
+  last_window_state_ = fullscreen ? ui::mojom::WindowShowState::kFullscreen
+                                  : ui::mojom::WindowShowState::kNormal;
+
+  // Observers are told once the window is in the new state, so that they read
+  // it from IsFullscreen().
+  const auto notify_observers = [this, fullscreen] {
+    if (fullscreen) {
+      NotifyWindowEnterFullScreen();
+    } else {
+      NotifyWindowLeaveFullScreen();
+    }
+  };
 
   // If round corners are enabled,
   // they need to be set based on whether the window is fullscreen.
@@ -853,11 +859,10 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
     } else {
       SetBounds(restore_bounds_, false);
     }
+    notify_observers();
     return;
   }
 
-  // We set the new value after notifying, so we can handle the size event
-  // correctly.
   widget()->SetFullscreen(fullscreen);
 
   // If restoring from fullscreen and the window isn't visible, force visible,
@@ -866,6 +871,8 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   // Note: the following must be after "widget()->SetFullscreen(fullscreen);"
   if (leaving_fullscreen && !IsVisible())
     FlipWindowStyle(GetAcceleratedWidget(), true, WS_VISIBLE);
+
+  notify_observers();
 #else
   if (IsVisible())
     widget()->SetFullscreen(fullscreen);

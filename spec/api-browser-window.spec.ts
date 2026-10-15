@@ -2623,6 +2623,15 @@ describe('BrowserWindow module', () => {
             expect(w.fullScreen).toBe(true);
           });
 
+          it('is in the new state when enter-full-screen and leave-full-screen are emitted', () => {
+            const states: boolean[] = [];
+            w.once('enter-full-screen', () => states.push(w.fullScreen));
+            w.once('leave-full-screen', () => states.push(w.fullScreen));
+            w.fullScreen = true;
+            w.fullScreen = false;
+            expect(states).toEqual([true, false]);
+          });
+
           it("checks normal bounds when fullscreen'ed", async () => {
             const bounds = w.getBounds();
             const enterFullScreen = once(w, 'enter-full-screen');
