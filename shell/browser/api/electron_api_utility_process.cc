@@ -25,6 +25,7 @@
 #include "content/public/common/result_codes.h"
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
+#include "mojo/public/cpp/bindings/connector.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "services/network/public/cpp/originating_process_id.h"
 #include "shell/browser/api/electron_api_session.h"
@@ -312,6 +313,7 @@ void UtilityProcessWrapper::HandleTermination(uint32_t exit_code) {
 
   pid_ = base::kNullProcessId;
   content::ServiceProcessHost::RemoveObserver(this);
+  DispatchPendingMessages();
   CloseConnectorPort();
   CloseStdioReadFds();
   if (killed_) {
@@ -388,8 +390,26 @@ void UtilityProcessWrapper::CloseConnectorPort() {
   }
 }
 
+void UtilityProcessWrapper::DispatchPendingMessages() {
+  // Messages the child posted before it exited can still be queued on the
+  // port when its exit is observed: the connector dispatches them one per
+  // task, and the exit notification may already be ahead of those tasks.
+  // Dispatch whatever is already queued so it is emitted before 'exit'
+  // instead of being dropped with the port. A readable pipe never blocks
+  // WaitForIncomingMessage(). If dispatch fails, the connector's error
+  // handler closes the port and the loop ends.
+  while (!connector_closed_ && connector_ && connector_->is_valid() &&
+         connector_->handle().QuerySignalsState().readable()) {
+    if (!connector_->WaitForIncomingMessage())
+      break;
+  }
+}
+
 void UtilityProcessWrapper::Shutdown(uint32_t exit_code) {
   node_service_remote_.reset();
+  // The child is still running during browser shutdown; drop its messages
+  // rather than dispatching them.
+  CloseConnectorPort();
   HandleTermination(exit_code);
 }
 
