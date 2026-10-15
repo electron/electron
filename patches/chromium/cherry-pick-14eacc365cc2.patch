@@ -1,0 +1,242 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jonathan Ross <jonross@chromium.org>
+Date: Wed, 14 Oct 2026 05:50:09 -0700
+Subject: [M152] Guard TextInputManager against re-entrant destruction during
+ notify
+
+Original change's description:
+> Guard TextInputManager against re-entrant destruction during notify
+>
+> TextInputManager::UpdateTextInputState() notifies observers in the
+> middle of updating its state. When a newly focused view replaces the
+> active view, it first notifies observers that the previously active
+> view lost its text input state. RenderWidgetHostViewAura forwards this
+> to InputMethod::OnTextInputTypeChanged(), where third-party IMEs can
+> run a nested message loop. Tasks run there, such as window.close(), can
+> destroy the WebContents, which owns the TextInputManager, or destroy the
+> newly focused view. UpdateTextInputState() then continued with
+> `active_view_ = view` on the freed TextInputManager, or went on to use
+> the freed view.
+>
+> 77d3b67459722 made RenderWidgetHostViewAura robust to destruction during
+> these IME callouts, but its caller here was not.
+>
+> Add a WeakPtrFactory to TextInputManager, and after each notification
+> in UpdateTextInputState() return early if `this` has been destroyed or
+> `view` is no longer registered. This also covers the final
+> notification, after which `active_view_` was read without checking
+> that `this` was still alive.
+>
+> Bug: 568937999
+> Change-Id: I751acf24c8a4c426bd7198d478333eed2ebf3f87
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8519361
+> Commit-Queue: Jonathan Ross <jonross@chromium.org>
+> Reviewed-by: Aman Verma <amanvr@google.com>
+> Cr-Commit-Position: refs/heads/main@{#1713881}
+
+(cherry picked from commit 1ecc753ba08893dfa91cfa98b3dbea6439fe0dde)
+
+Bug: 572073614,568937999
+Change-Id: I751acf24c8a4c426bd7198d478333eed2ebf3f87
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8561740
+Commit-Queue: Jonathan Ross <jonross@chromium.org>
+Reviewed-by: Aman Verma <amanvr@google.com>
+Cr-Commit-Position: refs/branch-heads/7977@{#2837}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/content/browser/renderer_host/text_input_manager.cc b/content/browser/renderer_host/text_input_manager.cc
+index 19d369cd0b778f47e21770ad16ad4fd288d4c235..92739596ac9452eebd7a0e0205222be5f343e403 100644
+--- a/content/browser/renderer_host/text_input_manager.cc
++++ b/content/browser/renderer_host/text_input_manager.cc
+@@ -255,6 +255,13 @@ void TextInputManager::UpdateTextInputState(
+         view->TransformPointToRootCoordSpace(bounds.origin()), bounds.size());
+   }
+ 
++  // Observers can run nested message loops (e.g. a third-party IME pumping
++  // messages inside InputMethod::OnTextInputTypeChanged()). Those can destroy
++  // the WebContents, and with it |this|, or unregister |view|. Re-validate
++  // both after every notification below before touching any state.
++  base::WeakPtr<TextInputManager> weak_this = weak_ptr_factory_.GetWeakPtr();
++  base::WeakPtr<RenderWidgetHostViewBase> weak_view = view->GetWeakPtr();
++
+   // If |view| is different from |active_view| and its |TextInputState.type| is
+   // not NONE, |active_view_| should change to |view|.
+   if (text_input_state.type != ui::TEXT_INPUT_TYPE_NONE &&
+@@ -271,6 +278,11 @@ void TextInputManager::UpdateTextInputState(
+       RenderWidgetHostViewBase* active_view = active_view_;
+       active_view_ = nullptr;
+       NotifyObserversAboutInputStateUpdate(active_view, true);
++      // |view| may also have been unregistered without being destroyed (e.g.
++      // moved to another TextInputManager); it must not become |active_view_|.
++      if (!weak_this || !weak_view || !IsRegistered(view)) {
++        return;
++      }
+     }
+     active_view_ = view;
+   }
+diff --git a/content/browser/renderer_host/text_input_manager.h b/content/browser/renderer_host/text_input_manager.h
+index ee72a9bf160c10011a2d80f4023d143485587edc..4db66e1b62dca58fbcbf3c7350b4036a915b8b9c 100644
+--- a/content/browser/renderer_host/text_input_manager.h
++++ b/content/browser/renderer_host/text_input_manager.h
+@@ -12,6 +12,7 @@
+ 
+ #include "base/i18n/rtl.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "base/observer_list.h"
+ #include "content/common/content_export.h"
+ #include "third_party/blink/public/mojom/page/widget.mojom-forward.h"
+@@ -335,6 +336,8 @@ class CONTENT_EXPORT TextInputManager {
+   // TextInputManager::Observer reentrantly issues further notifications upon
+   // `OnUpdateTextInputStateCalled()` (e.g. `SelectionBoundsChange()`).
+   base::ReentrantObserverList<Observer>::Unchecked observer_list_;
++
++  base::WeakPtrFactory<TextInputManager> weak_ptr_factory_{this};
+ };
+ }
+ 
+diff --git a/content/browser/renderer_host/text_input_manager_unittest.cc b/content/browser/renderer_host/text_input_manager_unittest.cc
+index 006ceb21fa343ac344019a362735601183a669c2..0147f329891b35493a12651f09f93edf8c6163ff 100644
+--- a/content/browser/renderer_host/text_input_manager_unittest.cc
++++ b/content/browser/renderer_host/text_input_manager_unittest.cc
+@@ -4,7 +4,15 @@
+ 
+ #include "content/browser/renderer_host/text_input_manager.h"
+ 
++#include "base/command_line.h"
++#include "base/functional/callback.h"
++#include "base/test/bind.h"
++#include "content/browser/renderer_host/frame_tree.h"
++#include "content/browser/renderer_host/frame_tree_node.h"
++#include "content/browser/renderer_host/render_frame_host_impl.h"
++#include "content/public/test/navigation_simulator.h"
+ #include "content/public/test/test_renderer_host.h"
++#include "content/public/test/test_utils.h"
+ #include "content/test/test_render_view_host.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "ui/gfx/geometry/rect.h"
+@@ -161,4 +169,124 @@ TEST_F(TextInputManagerTest, SelectionBoundsChanged_Clamped_DifferentBounds) {
+   EXPECT_EQ(region->bounding_box, bounding_box);
+ }
+ 
++// Runs |callback| the first time an observer is told about an update for
++// |target_view|, simulating a nested message loop (e.g. a third-party IME)
++// running arbitrary tasks from inside the notification.
++class ReentrantUpdateObserver : public TextInputManager::Observer {
++ public:
++  ReentrantUpdateObserver(RenderWidgetHostViewBase* target_view,
++                          base::OnceClosure callback)
++      : target_view_(target_view), callback_(std::move(callback)) {}
++
++  void OnUpdateTextInputStateCalled(TextInputManager* text_input_manager,
++                                    RenderWidgetHostViewBase* updated_view,
++                                    bool did_update_state) override {
++    if (updated_view != target_view_ || !callback_) {
++      return;
++    }
++    text_input_manager->RemoveObserver(this);
++    std::move(callback_).Run();
++  }
++
++ private:
++  raw_ptr<RenderWidgetHostViewBase, DisableDanglingPtrDetection> target_view_;
++  base::OnceClosure callback_;
++};
++
++class TextInputManagerReentrancyTest : public TextInputManagerTest {
++ public:
++  TextInputManagerReentrancyTest() {
++    // Needed so the cross-site child frame gets its own RenderWidgetHostView.
++    IsolateAllSitesForTesting(base::CommandLine::ForCurrentProcess());
++  }
++
++ protected:
++  // Commits a cross-site child frame, and makes the main frame the active
++  // text input view.
++  void SetUpMainAndChild() {
++    NavigationSimulator::CreateRendererInitiated(GURL("https://a.test/"),
++                                                 main_rfh())
++        ->Commit();
++    child_rfh_ = static_cast<RenderFrameHostImpl*>(
++        NavigationSimulator::NavigateAndCommitFromDocument(
++            GURL("https://b.test/"),
++            RenderFrameHostTester::For(main_rfh())->AppendChild("child")));
++    main_view_ = static_cast<RenderWidgetHostViewBase*>(
++        main_rfh()->GetRenderWidgetHost()->GetView());
++    child_view_ = static_cast<RenderWidgetHostViewBase*>(
++        child_rfh_->GetRenderWidgetHost()->GetView());
++    manager_ = main_view_->GetTextInputManager();
++    ASSERT_TRUE(manager_);
++    ASSERT_EQ(manager_, child_view_->GetTextInputManager());
++
++    ui::mojom::TextInputState state;
++    state.type = ui::TEXT_INPUT_TYPE_TEXT;
++    manager_->UpdateTextInputState(main_view_, state);
++    ASSERT_EQ(main_view_, manager_->active_view_for_testing());
++
++    // Move focus to the child frame, so that its text input update replaces
++    // the main frame as the active view.
++    child_rfh_->frame_tree_node()->frame_tree().SetFocusedFrame(
++        child_rfh_->frame_tree_node(), nullptr);
++  }
++
++  void UpdateChildTextInputState() {
++    ui::mojom::TextInputState state;
++    state.type = ui::TEXT_INPUT_TYPE_TEXT;
++    manager_->UpdateTextInputState(child_view_, state);
++  }
++
++  raw_ptr<RenderFrameHostImpl, DisableDanglingPtrDetection> child_rfh_ =
++      nullptr;
++  raw_ptr<RenderWidgetHostViewBase, DisableDanglingPtrDetection> main_view_ =
++      nullptr;
++  raw_ptr<RenderWidgetHostViewBase, DisableDanglingPtrDetection> child_view_ =
++      nullptr;
++  raw_ptr<TextInputManager, DisableDanglingPtrDetection> manager_ = nullptr;
++};
++
++// Regression test for crbug.com/568937999. When a newly focused view replaces
++// the active view, observers are notified that the previously active view lost
++// its text input state. An observer that runs a nested message loop can close
++// the tab, destroying the WebContents and its TextInputManager.
++// UpdateTextInputState() must not touch the destroyed TextInputManager after
++// that notification returns.
++TEST_F(TextInputManagerReentrancyTest,
++       WebContentsDestroyedDuringActiveViewReset) {
++  ASSERT_NO_FATAL_FAILURE(SetUpMainAndChild());
++
++  bool contents_deleted = false;
++  ReentrantUpdateObserver observer(main_view_,
++                                   base::BindLambdaForTesting([&]() {
++                                     DeleteContents();
++                                     contents_deleted = true;
++                                   }));
++  manager_->AddObserver(&observer);
++
++  UpdateChildTextInputState();
++  EXPECT_TRUE(contents_deleted);
++}
++
++// Same as above, but the nested message loop only unregisters the newly
++// focused child view without destroying it (e.g. the view moving to another
++// TextInputManager). The TextInputManager survives, and the still-alive,
++// focused view must not become the active view of a TextInputManager it is no
++// longer registered with.
++TEST_F(TextInputManagerReentrancyTest, ViewUnregisteredDuringActiveViewReset) {
++  ASSERT_NO_FATAL_FAILURE(SetUpMainAndChild());
++
++  bool child_unregistered = false;
++  ReentrantUpdateObserver observer(main_view_,
++                                   base::BindLambdaForTesting([&]() {
++                                     manager_->Unregister(child_view_);
++                                     child_unregistered = true;
++                                   }));
++  manager_->AddObserver(&observer);
++
++  UpdateChildTextInputState();
++  EXPECT_TRUE(child_unregistered);
++  EXPECT_FALSE(manager_->IsRegistered(child_view_));
++  EXPECT_EQ(nullptr, manager_->active_view_for_testing());
++}
++
+ }  // namespace content

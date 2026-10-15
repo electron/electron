@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Takashi Nakayama <tnak@chromium.org>
+Date: Mon, 28 Sep 2026 04:34:07 -0700
+Subject: Worker: Use GetServiceWorkerClient() consistently in
+ DedicatedWorkerHost
+
+DedicatedWorkerHost already provides GetServiceWorkerClient(), which
+null-checks service_worker_handle_ before returning
+service_worker_handle_->service_worker_client() (for example, before
+StartScriptLoad() initializes service_worker_handle_).
+
+Use GetServiceWorkerClient() consistently in StartScriptLoad() and
+DidStartScriptLoad() instead of dereferencing service_worker_handle_
+directly, and remove the unused DedicatedWorkerHost::service_worker_handle()
+getter.
+
+Bug: 563194341
+Change-Id: I65a5f51977116411b6f6f80e47aa20278cf42eaa
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8461263
+Reviewed-by: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Commit-Queue: Takashi Nakayama <tnak@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1705986}
+
+diff --git a/content/browser/worker_host/dedicated_worker_host.cc b/content/browser/worker_host/dedicated_worker_host.cc
+index 8e448c333e09e5e0f996b38d13b2027407c1d322..36b75ed33d3fa5bd8ad0cdb37f5b26205eea5070 100644
+--- a/content/browser/worker_host/dedicated_worker_host.cc
++++ b/content/browser/worker_host/dedicated_worker_host.cc
+@@ -381,8 +381,7 @@ void DedicatedWorkerHost::StartScriptLoad(
+     parent_service_worker_client =
+         creator_render_frame_host->GetLastCommittedServiceWorkerClient();
+   } else {
+-    parent_service_worker_client =
+-        creator_worker->service_worker_handle()->service_worker_client();
++    parent_service_worker_client = creator_worker->GetServiceWorkerClient();
+   }
+   std::string fetch_event_client_id;
+   if (parent_service_worker_client) {
+@@ -595,7 +594,7 @@ void DedicatedWorkerHost::DidStartScriptLoad(
+ 
+   blink::mojom::ServiceWorkerContainerInfoForClientPtr container_info;
+   blink::mojom::ControllerServiceWorkerInfoPtr controller;
+-  if (service_worker_handle_->service_worker_client()) {
++  if (GetServiceWorkerClient()) {
+     // TODO(crbug.com/40153087): Propagate dedicated worker ukm::SourceId
+     // here.
+     mojo::PendingRemote<network::mojom::CrossOriginEmbedderPolicyReporter>
+@@ -626,8 +625,8 @@ void DedicatedWorkerHost::DidStartScriptLoad(
+       BindAndPassRemoteForBackForwardCacheControllerHost(),
+       policy_container_host->CreatePolicyContainerForBlink(),
+       std::move(coep_reporting_observer), std::move(dip_reporting_observer));
+-  if (service_worker_handle_->service_worker_client()) {
+-    service_worker_handle_->service_worker_client()->SetContainerReady();
++  if (auto service_worker_client = GetServiceWorkerClient()) {
++    service_worker_client->SetContainerReady();
+   }
+ }
+ 
+diff --git a/content/browser/worker_host/dedicated_worker_host.h b/content/browser/worker_host/dedicated_worker_host.h
+index 47ce68345166f21b39329f541d3ea7f41b078419..77c8dcb01c96071c5669893744ad8ff626b1a35e 100644
+--- a/content/browser/worker_host/dedicated_worker_host.h
++++ b/content/browser/worker_host/dedicated_worker_host.h
+@@ -242,10 +242,6 @@ class CONTENT_EXPORT DedicatedWorkerHost final
+     return worker_client_security_state_->cross_origin_embedder_policy;
+   }
+ 
+-  ServiceWorkerMainResourceHandle* service_worker_handle() {
+-    return service_worker_handle_.get();
+-  }
+-
+   bool file_url_support() const { return file_url_support_; }
+ 
+ #if BUILDFLAG(ENABLE_COMPUTE_PRESSURE)

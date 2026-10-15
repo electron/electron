@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Tue, 13 Oct 2026 13:24:01 -0700
+Subject: [M155] Fix stale iterators during svg resource cycle check
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> Fix stale iterators during svg resource cycle check
+>
+> Fixed: 569038297
+> Change-Id: I62c94483506a992005d71673eff044202b9a784c
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8516494
+> Reviewed-by: Fredrik Söderquist <fs@opera.com>
+> Commit-Queue: Stefan Zager <szager@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1712397}
+
+(cherry picked from commit 1d69cc5a02596c6904644f57dfd2c45efc04cf3e)
+
+Bug: 571382372,569038297
+Change-Id: I62c94483506a992005d71673eff044202b9a784c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8573298
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8059@{#1267}
+Cr-Branched-From: 199ac2cd7ab289e11c2236bd2cede848781213da-refs/heads/main@{#1697595}
+
+diff --git a/third_party/blink/renderer/core/svg/svg_resource.cc b/third_party/blink/renderer/core/svg/svg_resource.cc
+index 5c73b0ac27e92a4bb55230ce6452c06bdb16e0dd..9d071c6964ed506b20f591604cbd48ae55753138 100644
+--- a/third_party/blink/renderer/core/svg/svg_resource.cc
++++ b/third_party/blink/renderer/core/svg/svg_resource.cc
+@@ -163,23 +163,28 @@ bool SVGResource::FindCycle(SVGResourceClient& client) const {
+   auto* container = ResourceContainerNoCycleCheck();
+   if (!container)
+     return false;
+-  ClientEntry& entry = it->value;
+-  switch (entry.cached_cycle_check) {
++  switch (it->value.cached_cycle_check) {
+     case kNeedCheck: {
+-      entry.cached_cycle_check = kPerformingCheck;
++      it->value.cached_cycle_check = kPerformingCheck;
+       bool has_cycle = container->FindCycle();
+-      DCHECK_EQ(entry.cached_cycle_check, kPerformingCheck);
++      // FindCycle() can modify clients_ and invalidate the iterator
++      it = clients_.find(&client);
++      CHECK(it != clients_.end());
++      DCHECK_EQ(it->value.cached_cycle_check, kPerformingCheck);
+       // Update our cached state based on the result of FindCycle(), but don't
+       // signal a cycle since ResourceContainer() will consider the resource
+       // invalid if one is present, thus we break the cycle at this resource.
+-      entry.cached_cycle_check = has_cycle ? kHasCycle : kNoCycle;
++      it->value.cached_cycle_check = has_cycle ? kHasCycle : kNoCycle;
+       return false;
+     }
+     case kNoCycle: {
+-      entry.cached_cycle_check = kPerformingCheck;
++      it->value.cached_cycle_check = kPerformingCheck;
+       bool has_cycle = container->FindCycle();
+-      DCHECK_EQ(entry.cached_cycle_check, kPerformingCheck);
+-      entry.cached_cycle_check = kNoCycle;
++      // FindCycle() can modify clients_ and invalidate the iterator
++      it = clients_.find(&client);
++      CHECK(it != clients_.end());
++      DCHECK_EQ(it->value.cached_cycle_check, kPerformingCheck);
++      it->value.cached_cycle_check = kNoCycle;
+       return has_cycle;
+     }
+     case kPerformingCheck:

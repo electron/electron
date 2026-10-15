@@ -1,0 +1,114 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mason Freed <masonf@chromium.org>
+Date: Tue, 13 Oct 2026 16:03:32 -0700
+Subject: [M152] Don't hold a reference to the id attribute across UpdateId()
+
+Original change's description:
+> Don't hold a reference to the id attribute across UpdateId()
+>
+> Element::InsertedInto() took a reference into the element's attribute
+> storage via GetIdAttribute() and passed it to UpdateId(). UpdateId()
+> notifies id target observers, and those can update style and layout.
+> For example, a focused <input list> whose datalist became usable
+> rebuilds its shadow tree and calls RevealSelection(). If that update
+> builds a <use> instance tree that clones the element, cloning
+> serializes the element's dirty style attribute and appends it to the
+> attribute storage. When that reallocates the storage, the reference
+> dangles, and the remaining reads of the id in UpdateId() access freed
+> memory.
+>
+> This CL copies the id into a local AtomicString before calling
+> UpdateId(). RemovedFrom() passes the id to UpdateId() the same way, so
+> it gets the same change. Recent fixes for similar bugs in
+> ElementRuleCollector and HTMLAnchorElementBase::NavigateToHyperlink()
+> used the same approach.
+>
+> Fixed: 567638392
+> Change-Id: I1ebac072098091e5dc9d8898f2bced3cf0c3bbcc
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8517119
+> Auto-Submit: Mason Freed <masonf@chromium.org>
+> Reviewed-by: David Baron <dbaron@chromium.org>
+> Commit-Queue: Mason Freed <masonf@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1715019}
+
+(cherry picked from commit 90ae142e4c7c5fb94683a6e027f9492d06711abd)
+
+Bug: 572091637,567638392
+Change-Id: I1ebac072098091e5dc9d8898f2bced3cf0c3bbcc
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8573777
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7977@{#2834}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index 50c6a71c14ce1ceeb1d21d50e4898c2446e5742d..ea4cf128bb7d96f11c343f98cc69a5ad75475eee 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -4207,8 +4207,11 @@ Node::InsertionNotificationRequest Element::InsertedInto(
+     return kInsertionDone;
+   }
+ 
+-  const AtomicString& id_value = GetIdAttribute();
++  const AtomicString id_value = GetIdAttribute();
+   if (!id_value.IsNull()) {
++    // UpdateId() notifies id observers, which can update style and layout.
++    // That can synchronize the lazy style attribute, which can reallocate the
++    // attribute storage, invalidating references from GetIdAttribute().
+     UpdateId(scope, g_null_atom, id_value);
+   }
+ 
+@@ -4463,9 +4466,11 @@ void Element::RemovedFrom(ContainerNode& insertion_point) {
+ 
+   SetSavedLayerScrollOffset(ScrollOffset());
+ 
+-  const AtomicString& id_value = GetIdAttribute();
++  const AtomicString id_value = GetIdAttribute();
+   if (insertion_point.IsInTreeScope() && GetTreeScope() == document) {
+     if (!id_value.IsNull()) {
++      // UpdateId() can invalidate references from GetIdAttribute(). See the
++      // comment in InsertedInto().
+       UpdateId(insertion_point.GetTreeScope(), id_value, g_null_atom);
+     }
+ 
+diff --git a/third_party/blink/web_tests/external/wpt/html/semantics/forms/the-datalist-element/list-id-insertion-crash.html b/third_party/blink/web_tests/external/wpt/html/semantics/forms/the-datalist-element/list-id-insertion-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..77823aeb67e4e5f1fdf3b3f038465ea1049d4bd2
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/semantics/forms/the-datalist-element/list-id-insertion-crash.html
+@@ -0,0 +1,34 @@
++<!DOCTYPE html>
++<meta charset="utf-8">
++<link rel="author" href="mailto:masonf@chromium.org">
++<link rel="help" href="https://crbug.com/567638392">
++
++<datalist id="list">
++  <option value="value" disabled></option>
++</datalist>
++<input list="list">
++<svg>
++  <use href="#target"></use>
++</svg>
++
++<script>
++  const input = document.querySelector('input');
++  document.body.offsetTop;
++  input.focus();
++  // This makes the datalist usable, but doesn't notify the input.
++  document.querySelector('option').disabled = false;
++
++  const target = document.createElementNS('http://www.w3.org/2000/svg', 'g');
++  target.id = 'target';
++  const object = document.createElement('object');
++  object.id = 'list';
++  // Fill the attribute storage to (Chromium) capacity, so that adding the
++  // style attribute reallocates it.
++  for (let i = 0; i < 7; ++i) {
++    object.setAttribute(`data-${i}`, '');
++  }
++  object.style.color = 'green';
++  target.appendChild(object);
++  // This test passes if this doesn't crash:
++  document.querySelector('svg').appendChild(target);
++</script>
