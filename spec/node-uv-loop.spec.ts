@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { describe, expect, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
@@ -23,10 +23,10 @@ async function runMatrix(args: string[] = []): Promise<Case[]> {
     if (child.exitCode === null) child.kill();
   });
   const [code] = await once(child, 'close');
-  expect(code).to.equal(0);
+  expect(code).toBe(0);
   const { cases } = JSON.parse(fs.readFileSync(out, 'utf8'));
   fs.rmSync(path.dirname(out), { recursive: true });
-  expect(cases).to.not.be.empty();
+  expect(cases).not.toHaveLength(0);
   return cases;
 }
 
@@ -42,13 +42,11 @@ function late(cases: Case[]) {
 // Node's loop only runs when Electron's embed thread notices it has work. These
 // start uv-backed operations from every kind of JS entry an otherwise idle
 // process has and check each completes about as fast as it would in Node.
-describe('uv loop integration', { tags: ['serial'] }, function () {
-  this.timeout(5 * 60 * 1000);
-
+describe('uv loop integration', { tags: ['serial'], timeout: 5 * 60 * 1000 }, () => {
   it('completes uv work started from an idle browser process and nodeIntegration renderer on time', async () => {
     const cases = await runMatrix();
     const failures = late(cases);
-    expect(failures, failures.join('\n')).to.be.empty();
+    expect(failures, failures.join('\n')).toEqual([]);
     // Testing builds can always produce these entries; make sure they ran.
     if (isTestingBindingAvailable()) {
       const untriggered = cases.filter(
@@ -61,12 +59,12 @@ describe('uv loop integration', { tags: ['serial'] }, function () {
             'native-event-in-nested-loop'
           ].includes(c.context) && c.samples[0] === 'no-trigger'
       );
-      expect(untriggered.map((c) => `${c.context} -> ${c.op}`)).to.be.empty();
+      expect(untriggered.map((c) => `${c.context} -> ${c.op}`)).toEqual([]);
     }
   });
 
   it('completes uv work started from an idle isolated-world preload on time', async () => {
     const failures = late(await runMatrix(['--procs=renderer', '--isolated']));
-    expect(failures, failures.join('\n')).to.be.empty();
+    expect(failures, failures.join('\n')).toEqual([]);
   });
 });
