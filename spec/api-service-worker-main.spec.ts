@@ -110,6 +110,27 @@ describe('ServiceWorkerMain module', () => {
     return serviceWorker!;
   }
 
+  // A newly registered worker is already 'running'
+  // while its install event is still in flight.
+  // Stopping it then fails the install, which makes the version redundant
+  // and deletes the registration,
+  // so tests that stop the worker must first wait until it is activated.
+  // Call this after the worker reports 'running', so the registration exists.
+  async function waitForActivation() {
+    await wc.executeJavaScript(
+      `(${async function () {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (!registration) throw new Error('service worker registration not found');
+        const worker = registration.installing ?? registration.waiting ?? registration.active;
+        if (!worker) throw new Error('service worker registration has no worker');
+        while (worker.state !== 'activated') {
+          if (worker.state === 'redundant') throw new Error('service worker became redundant before activating');
+          await new Promise((resolve) => worker.addEventListener('statechange', resolve, { once: true }));
+        }
+      }}())`
+    );
+  }
+
   /** Runs a test using the framework in preload-tests.js */
   const runTest = async (serviceWorker: Electron.ServiceWorkerMain, rpc: { name: string; args: any[] }) => {
     const uuid = crypto.randomUUID();
@@ -214,12 +235,13 @@ describe('ServiceWorkerMain module', () => {
     it('starts previously stopped worker', async () => {
       loadWorkerScript();
       const serviceWorker = await waitForServiceWorker('running');
+      await waitForActivation();
       const { scope } = serviceWorker;
       const stoppedPromise = waitForServiceWorker('stopped');
       await serviceWorkers._stopAllWorkers();
-      await stoppedPromise;
-      const startWorkerPromise = serviceWorkers.startWorkerForScope(scope);
-      await startWorkerPromise;
+      expect(await stoppedPromise).toBe(serviceWorker);
+      const startedWorker = await serviceWorkers.startWorkerForScope(scope);
+      expect(startedWorker).toBe(serviceWorker);
     });
 
     it('resolves when called twice', async () => {
@@ -385,10 +407,14 @@ describe('ServiceWorkerMain module', () => {
       it('works after restarting worker', async () => {
         loadWorkerScript();
         const serviceWorker = await waitForServiceWorker('running');
+        await waitForActivation();
         const { scope } = serviceWorker;
         serviceWorker.ipc.handle('ping', () => 'pong');
         await serviceWorkers._stopAllWorkers();
-        await serviceWorkers.startWorkerForScope(scope);
+        // Compare identity as a boolean: `ipc` is now a read-only own property,
+        // which breaks vitest's object diff when toBe() fails.
+        const startedWorker = await serviceWorkers.startWorkerForScope(scope);
+        expect(startedWorker === serviceWorker, 'startWorkerForScope() restarted the original worker').toBe(true);
         const result = await runTest(serviceWorker, { name: 'testInvoke', args: ['ping'] });
         expect(result).toBe('pong');
       });
