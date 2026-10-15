@@ -104,7 +104,7 @@ index ad5ca8461144f77cd49a390dc81ce38cffb6ec24..b6b5a9872333cb74276aeff6f50abb55
    using InitializeCB = base::OnceCallback<void(bool)>;
    void Initialize(InitializeCB init_cb) override;
 diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
-index 9141e2b91356997378f60dc71182246a91b8972f..bf0753c41163ccc2c6e8690ecc4c4d7e0935b1a2 100644
+index 5b7d5cdf6a084ca81dfb9e30c211fb54d2453828..766c676cc5a5bee53756b55280b6b4f9961758a2 100644
 --- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
 +++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
 @@ -8,6 +8,7 @@
@@ -113,9 +113,9 @@ index 9141e2b91356997378f60dc71182246a91b8972f..bf0753c41163ccc2c6e8690ecc4c4d7e
  #include <utility>
 +#include <algorithm>
  
+ #include "base/feature_list.h"
  #include "base/location.h"
- #include "base/metrics/histogram_functions.h"
-@@ -31,6 +32,7 @@
+@@ -33,6 +34,7 @@
  #include "third_party/blink/public/platform/web_url_response.h"
  #include "third_party/blink/public/web/web_associated_url_loader.h"
  #include "third_party/blink/renderer/platform/media/cache_util.h"
@@ -123,7 +123,7 @@ index 9141e2b91356997378f60dc71182246a91b8972f..bf0753c41163ccc2c6e8690ecc4c4d7e
  #include "third_party/blink/renderer/platform/media/resource_fetch_context.h"
  #include "third_party/blink/renderer/platform/media/url_index.h"
  #include "third_party/blink/renderer/platform/weborigin/security_origin.h"
-@@ -346,6 +348,16 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+@@ -352,6 +354,16 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
        do_fail = true;
      }
    } else {

@@ -563,7 +563,6 @@ source_set("electron_lib") {
     "//skia",
     "//third_party/blink/public:blink",
     "//third_party/blink/public:blink_devtools_inspector_resources",
-    "//third_party/blink/public/platform/media",
     "//third_party/boringssl",
     "//third_party/electron_node:libnode",
 

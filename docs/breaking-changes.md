@@ -69,6 +69,19 @@ when it is a top-level frame or is hosted inside the DevTools front-end (a
 `devtools_page` or panel); an extension frame embedded in an ordinary page is
 treated like any other subframe and follows `nodeIntegrationInSubFrames`.
 
+### Removed: `document.requestStorageAccessFor`
+
+Chromium has removed `document.requestStorageAccessFor` and the
+`top-level-storage-access` permission descriptor. Calling
+`navigator.permissions.query({ name: 'top-level-storage-access' })` now rejects
+with a `TypeError`, and web content can no longer trigger a
+`top-level-storage-access` permission request or check. Setting the
+[`enableBlinkFeatures`](api/structures/web-preferences.md) web preference to
+`RequestStorageAccessFor`, which restored the API in Electron 45, no longer has
+any effect. See
+[Chromium's intent to remove discussion](https://groups.google.com/a/chromium.org/g/blink-dev/c/bqHGZYHWxnQ)
+for more information.
+
 ## Breaking API Changes (45.0)
 
 ### Removed: Node.js module shims and `Buffer`, `setImmediate`, `clearImmediate` globals in sandboxed preload scripts
