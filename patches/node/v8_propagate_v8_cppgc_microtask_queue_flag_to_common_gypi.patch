@@ -18,10 +18,10 @@ Will be removed when Node.js bumps to version of V8 that contains
 the API change.
 
 diff --git a/common.gypi b/common.gypi
-index 364928d344097a40032d81673ab243184bc45b9c..16a4e669c435d91eebe4ab2f6c58e5a15ac3e5b7 100644
+index 5918885e750b07c4ecde5890dfba6da5b159b2b3..3c48fa0ce140e0467fa95ce8b449a39493864bd8 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -92,6 +92,7 @@
+@@ -95,6 +95,7 @@
      'v8_enable_zone_compression%': 0,
      'v8_use_perfetto': 0,
      'tsan%': 0,
@@ -29,7 +29,7 @@ index 364928d344097a40032d81673ab243184bc45b9c..16a4e669c435d91eebe4ab2f6c58e5a1
  
      'using_electron_config_gypi%': 0,
  
-@@ -576,6 +577,9 @@
+@@ -582,6 +583,9 @@
        ['v8_enable_direct_local == 1', {
          'defines': ['V8_ENABLE_DIRECT_LOCAL',],
        }],
@@ -40,12 +40,12 @@ index 364928d344097a40032d81673ab243184bc45b9c..16a4e669c435d91eebe4ab2f6c58e5a1
          'defines': [
            'WIN32',
 diff --git a/configure.py b/configure.py
-index 443818802df9bf62c17aa783617ec5b932cedf81..da70b199695921604b7522411403603422fd4689 100755
+index 172aef2c5194574eb298462588ecf76ae2a2e366..be207803abb3561461792c8ffb5c695fa338f891 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -762,6 +762,14 @@ parser.add_argument('--experimental-pointer-compression-shared-cage',
+@@ -756,6 +756,14 @@ parser.add_argument('--experimental-pointer-compression-shared-cage',
      default=None,
-     help='[Experimental] Use V8 pointer compression with shared cage (requires --experimental-enable-pointer-compression)')
+     help='[Experimental] Use V8 pointer compression with a shared cage and enable the V8 sandbox (requires --experimental-enable-pointer-compression)')
  
 +parser.add_argument('--v8-enable-cppgc-microtask-queue',
 +    action='store_true',
@@ -58,7 +58,7 @@ index 443818802df9bf62c17aa783617ec5b932cedf81..da70b199695921604b75224114036034
  parser.add_argument('--v8-options',
      action='store',
      dest='v8_options',
-@@ -1995,6 +2003,7 @@ def configure_v8(o, configs):
+@@ -1960,6 +1968,7 @@ def configure_v8(o, configs):
    o['variables']['v8_enable_pointer_compression_shared_cage'] = 1 if options.pointer_compression_shared_cage else 0
    o['variables']['v8_enable_external_code_space'] = 1 if options.enable_pointer_compression else 0
    o['variables']['v8_enable_31bit_smis_on_64bit_arch'] = 1 if options.enable_pointer_compression else 0

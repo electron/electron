@@ -347,10 +347,10 @@ index 45e0ca368a7621783cfe32acf8378659dca14852..2a9ab6493d992cbd7639f2c067e331e4
  
  void CreatePerContextProperties(Local<Object> target,
 diff --git a/src/node_trace_events.cc b/src/node_trace_events.cc
-index 49c457cae2b3da603a548874f63dbdf9f50580d9..73ef9f99167154f6fbb3ef857b8ce3b5a94a1431 100644
+index f2d766b8b192dfbbd40af1f8ffaee624b747bb1d..b4eaea0976b4efb1d9c5fa53f1bac807acd10e4f 100644
 --- a/src/node_trace_events.cc
 +++ b/src/node_trace_events.cc
-@@ -205,6 +205,14 @@ void NodeCategorySet::Initialize(Local<Object> target,
+@@ -210,6 +210,14 @@ void NodeCategorySet::Initialize(Local<Object> target,
                    .Check();
    target->Set(context, trace,
                binding->Get(context, trace).ToLocalChecked()).Check();
