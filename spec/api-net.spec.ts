@@ -1961,7 +1961,7 @@ describe('net module', () => {
         });
 
         test('should reject promise on DNS failure', async () => {
-          const r = net.fetch('https://i.do.not.exist');
+          const r = net.fetch('https://notfound.localhost');
           await expect(r).rejects.toThrow(/ERR_NAME_NOT_RESOLVED/);
         });
 
