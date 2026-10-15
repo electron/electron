@@ -313,12 +313,15 @@ describe('utilityProcess module', () => {
         stdio: 'pipe'
       });
       expect(child.stdout).not.toBeNull();
-      let log = '';
-      child.stdout!.on('data', (chunk) => {
-        log += chunk.toString('utf8');
+      const output = new Promise<string>((resolve) => {
+        let log = '';
+        child.stdout!.on('data', (chunk) => {
+          log += chunk.toString('utf8');
+          if (log.includes('\n')) resolve(log);
+        });
       });
       await once(child, 'exit');
-      expect(log).toBe(pathToFileURL(fixtureFile) + '\n');
+      expect(await output).toBe(pathToFileURL(fixtureFile) + '\n');
     });
 
     it("import 'electron/lol' should throw", async () => {
@@ -578,7 +581,7 @@ describe('utilityProcess module', () => {
       appProcess.stdout.on('data', (data: Buffer) => {
         output += data;
       });
-      await once(appProcess, 'exit');
+      await once(appProcess, 'close');
       expect(output).toBe(result);
     });
 
@@ -592,7 +595,7 @@ describe('utilityProcess module', () => {
       appProcess.stderr.on('data', (data: Buffer) => {
         output += data;
       });
-      await once(appProcess, 'exit');
+      await once(appProcess, 'close');
       expect(output).toContain(result);
     });
 

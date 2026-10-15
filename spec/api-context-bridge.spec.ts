@@ -1727,7 +1727,7 @@ describe('ContextBridgeMutability', () => {
     appProcess.stdout.on('data', (data) => {
       output += data;
     });
-    await once(appProcess, 'exit');
+    await once(appProcess, 'close');
 
     expect(output).toContain('some-modified-text');
     expect(output).toContain('obj-modified-prop');
@@ -1742,7 +1742,7 @@ describe('ContextBridgeMutability', () => {
     appProcess.stdout.on('data', (data) => {
       output += data;
     });
-    await once(appProcess, 'exit');
+    await once(appProcess, 'close');
 
     expect(output).toContain('some-text');
     expect(output).toContain('obj-prop');

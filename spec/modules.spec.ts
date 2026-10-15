@@ -111,13 +111,16 @@ describe('modules support', () => {
         const child = utilityProcess.fork(path.join(utilityProcessFixturesPath, 'require-lol.js'), [], {
           stdio: ['ignore', 'ignore', 'pipe']
         });
-        let stderr = '';
-        child.stderr!.on('data', (data) => {
-          stderr += data.toString('utf8');
+        const sawError = new Promise<string>((resolve) => {
+          let stderr = '';
+          child.stderr!.on('data', (data) => {
+            stderr += data.toString('utf8');
+            if (/Cannot find module 'electron\/lol'/.test(stderr)) resolve(stderr);
+          });
         });
         const [code] = await once(child, 'exit');
         expect(code).toBe(1);
-        expect(stderr).toMatch(/Cannot find module 'electron\/lol'/);
+        expect(await sawError).toMatch(/Cannot find module 'electron\/lol'/);
       });
 
       it("require('electron') should not throw in the main process", () => {
