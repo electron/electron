@@ -1885,36 +1885,57 @@ describe('cpp heap', () => {
     });
 
     it('PromiseHandle should not leak', async () => {
-      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
-      const result = await remotely(
-        async (heap: string) => {
-          const testingBinding = (process as any)._linkedBinding('electron_common_testing');
-          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
-          const { recordState } = require(heap);
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(async () => {
+        const { getCppHeapStatistics } = require('node:v8');
+        const testingBinding = (process as any)._linkedBinding('electron_common_testing');
 
-          const countPromiseHandles = () =>
-            recordState().snapshot.filter((node: any) => node.name === 'Electron / PromiseHandle').length;
-
-          const gc = async () => {
-            for (let i = 0; i < 10; i++) {
-              await new Promise((resolve) => setTimeout(resolve, 0));
-              v8Util.requestGarbageCollectionForTesting();
+        // Count PromiseHandles in the C++ heap's per-type statistics.
+        // These include any handle not yet reclaimed, garbage too,
+        // so the test collects before each count,
+        // and the count then reflects the handles live at that point.
+        // A heap snapshot shows the same objects,
+        // but taking and parsing three snapshots of the main process
+        // can overrun the test timeout on slow CI machines.
+        const countPromiseHandles = () => {
+          const { type_names: typeNames, space_statistics: spaces } = getCppHeapStatistics('detailed');
+          let count = 0;
+          for (const space of spaces) {
+            for (const page of space.page_stats) {
+              page.object_statistics.forEach((entry: any, index: number) => {
+                if (typeNames[index] === 'Electron / PromiseHandle') count += entry.object_count;
+              });
             }
-          };
+          }
+          return count;
+        };
 
-          testingBinding.holdPromiseForTesting();
-          const beforeGC = countPromiseHandles();
-          await gc();
-          const afterGC = countPromiseHandles();
+        // Collect from a fresh task without scanning the native stack,
+        // so a stale pointer cannot keep a released PromiseHandle alive.
+        // This uses V8's gc() rather than v8Util's async collection,
+        // whose returned promise would itself leave a PromiseHandle to count.
+        // Several rounds also reclaim objects that only become unreachable
+        // after an earlier round's weak callbacks have run.
+        const gc = async () => {
+          for (let i = 0; i < 3; i++) {
+            await globalThis.gc!({ type: 'major', execution: 'async' });
+          }
+        };
 
-          testingBinding.clearHeldPromiseForTesting();
-          await gc();
-          const afterClear = countPromiseHandles();
+        // The first count is taken before any collection,
+        // so start from a collected heap that holds no garbage for gc() to remove.
+        await gc();
+        testingBinding.holdPromiseForTesting();
+        const beforeGC = countPromiseHandles();
+        await gc();
+        const afterGC = countPromiseHandles();
 
-          return { beforeGC, afterGC, afterClear };
-        },
-        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap')
-      );
+        testingBinding.clearHeldPromiseForTesting();
+        await gc();
+        const afterClear = countPromiseHandles();
+
+        return { beforeGC, afterGC, afterClear };
+      });
 
       expect(result.afterGC, 'held PromiseHandle must survive GC').toBeGreaterThanOrEqual(result.beforeGC);
       expect(result.afterClear, 'clearing should release the PromiseHandle').toBeLessThan(result.afterGC);
