@@ -799,9 +799,6 @@ void NodeBindings::SetUpIsolate(v8::Isolate* const isolate) {
       browser_env_ == BrowserEnvironment::kUtility) {
     // Node.js requires that microtask checkpoints be explicitly invoked.
     is.policy = v8::MicrotasksPolicy::kExplicit;
-    // node::CreateEnvironment already added Node's listener if it built the
-    // environment from the Node snapshot; keep exactly one.
-    isolate->RemoveMessageListeners(node::errors::PerIsolateMessageListener);
   } else {
     // Blink expects the microtasks policy to be kScoped, but Node.js expects it
     // to be kExplicit. In the renderer, there can be many contexts within the
