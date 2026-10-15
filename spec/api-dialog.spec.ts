@@ -3,6 +3,7 @@ import { app, dialog, BaseWindow, BrowserWindow } from 'electron/main';
 import * as dbus from 'dbus-native';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
+import { once } from 'node:events';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
@@ -218,6 +219,55 @@ describe('dialog module', () => {
       controller.abort();
       const result = await p;
       expect(result.response).toBe(1);
+    });
+  });
+
+  describe('app dialog events', () => {
+    afterEach(closeAllWindows);
+
+    it('emits dialog-opened and dialog-closed around a dialog', async () => {
+      const controller = new AbortController();
+      const w = new BrowserWindow();
+      const opened = once(app, 'dialog-opened');
+      const closed = once(app, 'dialog-closed');
+
+      const p = dialog.showMessageBox(w, { signal: controller.signal, message: 'i am message' });
+
+      const [, openedDetails] = await opened;
+      expect(openedDetails.type).toBe('message-box');
+      expect(openedDetails.window).toBe(w);
+
+      controller.abort();
+      await p;
+      const [, closedDetails] = await closed;
+      expect(closedDetails).toBe(openedDetails);
+    });
+
+    it('emits both events when showing the dialog throws', () => {
+      const events: string[] = [];
+      const onOpened = (_: unknown, { type }: { type: string }) => events.push(`opened ${type}`);
+      const onClosed = (_: unknown, { type }: { type: string }) => events.push(`closed ${type}`);
+      app.on('dialog-opened', onOpened);
+      app.on('dialog-closed', onClosed);
+      try {
+        expect(() => (dialog.showErrorBox as any)()).toThrow();
+      } finally {
+        app.off('dialog-opened', onOpened);
+        app.off('dialog-closed', onClosed);
+      }
+      expect(events).toEqual(['opened error-box', 'closed error-box']);
+    });
+
+    it('emits no events for a message box whose signal is already aborted', async () => {
+      const events: string[] = [];
+      const onOpened = () => events.push('opened');
+      app.on('dialog-opened', onOpened);
+      try {
+        await dialog.showMessageBox({ signal: AbortSignal.abort(), message: 'i am message' });
+      } finally {
+        app.off('dialog-opened', onOpened);
+      }
+      expect(events).toEqual([]);
     });
   });
 
