@@ -1,0 +1,529 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Mon, 12 Oct 2026 11:54:25 +0200
+Subject: [M152] [deserializer] Check source hash before starting BG merge
+
+Original change's description:
+> [deserializer] Check source hash before starting BG merge
+>
+> Off-thread code cache deserialization happens before source text is
+> available, so we can't verify the cache's source hash up front. When
+> source text becomes available, SourceTextAvailable previously set up a
+> background merge with a matching Script from the compilation cache
+> without checking whether the serialized code cache's source hash
+> (including module vs. classic origin options) matched the incoming
+> script. If a module code cache was handed to a classic script load of
+> the same URL, the background merge would merge incompatible scripts
+> before FinishOffThreadDeserialize rejected the cache.
+>
+> Check the cached data's source hash via
+> CodeSerializer::NotifySourceTextAvailable before setting up the
+> background merge task, and record the result in
+> OffThreadDeserializeData::source_sanity_check_result so
+> FinishOffThreadDeserialize does not recompute it. Populate
+> OffThreadDeserializeData in-place in StartDeserializeOffThread and avoid
+> reading data->sanity_check_result or mutating cached_data->Reject() in
+> NotifySourceTextAvailable so the main-thread source check cannot race
+> with or be clobbered by concurrent background deserialization.
+>
+> TAG=agy
+> CONV=d5ba0f6d-8783-4ff9-b6c1-1b9dffa490f4
+>
+> Fixed: 568831769
+> Change-Id: Id8d350af7ef0a4f52fb954ad16902b1cfab364ea
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8526067
+> Auto-Submit: Leszek Swirski <leszeks@chromium.org>
+> Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+> Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#110449}
+
+(cherry picked from commit 9d9ccafe3b95e4658806c1d7514257d6042a1ba4)
+
+Bug: 572074443,568831769
+Change-Id: Id8d350af7ef0a4f52fb954ad16902b1cfab364ea
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8558917
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/branch-heads/15.2@{#88}
+Cr-Branched-From: a8fe17c242678787f03a8a2b77424aa06cf865c4-refs/heads/15.2.124@{#1}
+Cr-Branched-From: 0e6ea09ef6f15ebd7f78555c0648c8b632ce3013-refs/heads/main@{#108894}
+
+diff --git a/src/codegen/compiler.cc b/src/codegen/compiler.cc
+index adfbf3f4a15c9a03ac6a440ab62babba1575e5d2..de15e52404a6545dd6ce7d5a54cfa3fe7f38205d 100644
+--- a/src/codegen/compiler.cc
++++ b/src/codegen/compiler.cc
+@@ -2808,8 +2808,8 @@ void BackgroundDeserializeTask::Run() {
+   LocalHandleScope handle_scope(&isolate);
+ 
+   DirectHandle<SharedFunctionInfo> inner_result;
+-  off_thread_data_ =
+-      CodeSerializer::StartDeserializeOffThread(&isolate, &cached_data_);
++  CodeSerializer::StartDeserializeOffThread(&isolate, &cached_data_,
++                                            &off_thread_data_);
+   if (v8_flags.enable_slow_asserts && off_thread_data_.HasResult()) {
+ #ifdef ENABLE_SLOW_DCHECKS
+     MergeAssumptionChecker checker(&isolate, false);
+@@ -2822,6 +2822,11 @@ void BackgroundDeserializeTask::SourceTextAvailable(
+     Isolate* isolate, Handle<String> source_text,
+     const ScriptDetails& script_details) {
+   DCHECK_EQ(isolate, isolate_for_local_isolate_);
++  if (!CodeSerializer::NotifySourceTextAvailable(isolate, &off_thread_data_,
++                                                 &cached_data_, source_text,
++                                                 script_details)) {
++    return;
++  }
+   LanguageMode language_mode = construct_language_mode(v8_flags.use_strict);
+   background_merge_task_.SetUpOnMainThread(isolate, source_text, script_details,
+                                            language_mode);
+diff --git a/src/codegen/compiler.h b/src/codegen/compiler.h
+index 4547b230df37d02478d0baf1d940e3d4379f6844..df85d8a1ff9b4517ce6094965f5d535f240847c0 100644
+--- a/src/codegen/compiler.h
++++ b/src/codegen/compiler.h
+@@ -724,7 +724,7 @@ class V8_EXPORT_PRIVATE BackgroundDeserializeTask {
+  private:
+   Isolate* isolate_for_local_isolate_;
+   AlignedCachedData cached_data_;
+-  CodeSerializer::OffThreadDeserializeData off_thread_data_;
++  OffThreadDeserializeData off_thread_data_;
+   BackgroundMergeTask background_merge_task_;
+   TimedHistogram* timer_;
+   int64_t background_time_in_microseconds_ = 0;
+diff --git a/src/snapshot/code-serializer.cc b/src/snapshot/code-serializer.cc
+index 755402ad4d2c486d2fa29da819342934faaf46a2..103c0a3019e7886fe6bcd095d570d705e1c4a0d3 100644
+--- a/src/snapshot/code-serializer.cc
++++ b/src/snapshot/code-serializer.cc
+@@ -345,8 +345,8 @@ class StressOffThreadDeserializeThread final : public base::Thread {
+     LocalIsolate local_isolate(isolate_, ThreadKind::kBackground);
+     UnparkedScope unparked_scope(&local_isolate);
+     LocalHandleScope handle_scope(&local_isolate);
+-    off_thread_data_ =
+-        CodeSerializer::StartDeserializeOffThread(&local_isolate, cached_data_);
++    CodeSerializer::StartDeserializeOffThread(&local_isolate, cached_data_,
++                                              &off_thread_data_);
+   }
+ 
+   MaybeDirectHandle<SharedFunctionInfo> Finalize(
+@@ -360,7 +360,7 @@ class StressOffThreadDeserializeThread final : public base::Thread {
+  private:
+   Isolate* isolate_;
+   AlignedCachedData* cached_data_;
+-  CodeSerializer::OffThreadDeserializeData off_thread_data_;
++  OffThreadDeserializeData off_thread_data_;
+ };
+ 
+ void FinalizeDeserialization(Isolate* isolate,
+@@ -554,8 +554,7 @@ MaybeDirectHandle<SharedFunctionInfo> CodeSerializer::Deserialize(
+   return scope.CloseAndEscape(result);
+ }
+ 
+-DirectHandle<Script> CodeSerializer::OffThreadDeserializeData::GetOnlyScript(
+-    LocalHeap* heap) {
++DirectHandle<Script> OffThreadDeserializeData::GetOnlyScript(LocalHeap* heap) {
+   std::unique_ptr<PersistentHandles> previous_persistent_handles =
+       heap->DetachPersistentHandles();
+   heap->AttachPersistentHandles(std::move(persistent_handles));
+@@ -573,32 +572,47 @@ DirectHandle<Script> CodeSerializer::OffThreadDeserializeData::GetOnlyScript(
+   return script;
+ }
+ 
+-CodeSerializer::OffThreadDeserializeData
+-CodeSerializer::StartDeserializeOffThread(LocalIsolate* local_isolate,
+-                                          AlignedCachedData* cached_data) {
+-  OffThreadDeserializeData result;
+-
++void CodeSerializer::StartDeserializeOffThread(LocalIsolate* local_isolate,
++                                               AlignedCachedData* cached_data,
++                                               OffThreadDeserializeData* data) {
+   DCHECK(!local_isolate->heap()->HasPersistentHandles());
+ 
+   const SerializedCodeData scd =
+       SerializedCodeData::FromCachedDataWithoutSource(
+-          local_isolate, cached_data, &result.sanity_check_result);
+-  if (result.sanity_check_result != SerializedCodeSanityCheckResult::kSuccess) {
++          local_isolate, cached_data, &data->sanity_check_result);
++  if (data->sanity_check_result != SerializedCodeSanityCheckResult::kSuccess) {
+     // Exit early but don't report yet, we'll re-check this when finishing on
+     // the main thread
+     DCHECK(cached_data->rejected());
+-    return result;
++    return;
+   }
+ 
+   MaybeDirectHandle<SharedFunctionInfo> local_maybe_result =
+       OffThreadObjectDeserializer::DeserializeSharedFunctionInfo(
+-          local_isolate, &scd, &result.scripts);
++          local_isolate, &scd, &data->scripts);
+ 
+-  result.maybe_result =
++  data->maybe_result =
+       local_isolate->heap()->NewPersistentMaybeHandle(local_maybe_result);
+-  result.persistent_handles = local_isolate->heap()->DetachPersistentHandles();
++  data->persistent_handles = local_isolate->heap()->DetachPersistentHandles();
++}
+ 
+-  return result;
++bool CodeSerializer::NotifySourceTextAvailable(
++    Isolate* isolate, OffThreadDeserializeData* data,
++    const AlignedCachedData* cached_data, DirectHandle<String> source,
++    const ScriptDetails& script_details) {
++  HandleScope scope(isolate);
++
++  // Only check the source hash against the immutable cached_data header and
++  // write the main-thread-only data->source_sanity_check_result field here. Do
++  // not read/write data->sanity_check_result or mutate cached_data->Reject(),
++  // as StartDeserializeOffThread may still be running concurrently on a
++  // background thread. Full rejection and histogram reporting happen in
++  // FinishOffThreadDeserialize.
++  SerializedCodeData scd(cached_data);
++  SerializedCodeSanityCheckResult sanity_check_result =
++      scd.SanityCheckJustSource(isolate, source, script_details);
++  data->source_sanity_check_result = sanity_check_result;
++  return sanity_check_result == SerializedCodeSanityCheckResult::kSuccess;
+ }
+ 
+ MaybeDirectHandle<SharedFunctionInfo>
+@@ -614,11 +628,6 @@ CodeSerializer::FinishOffThreadDeserialize(
+ 
+   HandleScope scope(isolate);
+ 
+-  DirectHandle<FixedArray> wrapped_arguments;
+-  if (!script_details.wrapped_arguments.is_null()) {
+-    wrapped_arguments = script_details.wrapped_arguments.ToHandleChecked();
+-  }
+-
+   // Do a source sanity check now that we have the source. It's important for
+   // FromPartiallySanityCheckedCachedData call that the sanity_check_result
+   // holds the result of the off-thread sanity check.
+@@ -626,10 +635,9 @@ CodeSerializer::FinishOffThreadDeserialize(
+       data.sanity_check_result;
+   const SerializedCodeData scd =
+       SerializedCodeData::FromPartiallySanityCheckedCachedData(
+-          cached_data,
+-          SerializedCodeData::SourceHash(source, wrapped_arguments,
+-                                         script_details.origin_options),
++          isolate, cached_data, data, source, script_details,
+           &sanity_check_result);
++  USE(scd);
+   if (sanity_check_result != SerializedCodeSanityCheckResult::kSuccess) {
+     // The only case where the deserialization result could exist despite a
+     // check failure is on a source mismatch, since we can't test for this
+@@ -768,8 +776,22 @@ SerializedCodeSanityCheckResult SerializedCodeData::SanityCheck(
+   return SanityCheckJustSource(expected_source_hash);
+ }
+ 
++SerializedCodeSanityCheckResult SerializedCodeData::SanityCheckJustSource(
++    Isolate* isolate, DirectHandle<String> source,
++    const ScriptDetails& script_details) const {
++  DirectHandle<FixedArray> wrapped_arguments;
++  if (!script_details.wrapped_arguments.is_null()) {
++    wrapped_arguments = script_details.wrapped_arguments.ToHandleChecked();
++  }
++  return SanityCheckJustSource(
++      SourceHash(source, wrapped_arguments, script_details.origin_options));
++}
++
+ SerializedCodeSanityCheckResult SerializedCodeData::SanityCheckJustSource(
+     uint32_t expected_source_hash) const {
++  if (size_ < kHeaderSize) {
++    return SerializedCodeSanityCheckResult::kInvalidHeader;
++  }
+   uint32_t source_hash = GetHeaderValue(kSourceHashOffset);
+   if (source_hash != expected_source_hash) {
+     return SerializedCodeSanityCheckResult::kSourceMismatch;
+@@ -847,7 +869,7 @@ base::Vector<const uint8_t> SerializedCodeData::Payload() const {
+   return base::Vector<const uint8_t>(payload, length);
+ }
+ 
+-SerializedCodeData::SerializedCodeData(AlignedCachedData* data)
++SerializedCodeData::SerializedCodeData(const AlignedCachedData* data)
+     : SerializedData(const_cast<uint8_t*>(data->data()), data->length()) {}
+ 
+ SerializedCodeData SerializedCodeData::FromCachedData(
+@@ -882,12 +904,14 @@ SerializedCodeData SerializedCodeData::FromCachedDataWithoutSource(
+ }
+ 
+ SerializedCodeData SerializedCodeData::FromPartiallySanityCheckedCachedData(
+-    AlignedCachedData* cached_data, uint32_t expected_source_hash,
++    Isolate* isolate, AlignedCachedData* cached_data,
++    const OffThreadDeserializeData& data, DirectHandle<String> source,
++    const ScriptDetails& script_details,
+     SerializedCodeSanityCheckResult* rejection_result) {
+-  DisallowGarbageCollection no_gc;
+   // The previous call to FromCachedDataWithoutSource may have already rejected
+   // the cached data, so reuse the previous rejection result if it's not a
+   // success.
++  *rejection_result = data.sanity_check_result;
+   if (*rejection_result != SerializedCodeSanityCheckResult::kSuccess) {
+     // FromCachedDataWithoutSource doesn't check the source, so there can't be
+     // a source mismatch.
+@@ -897,7 +921,14 @@ SerializedCodeData SerializedCodeData::FromPartiallySanityCheckedCachedData(
+     return SerializedCodeData(nullptr, 0);
+   }
+   SerializedCodeData scd(cached_data);
+-  *rejection_result = scd.SanityCheckJustSource(expected_source_hash);
++  if (data.source_sanity_check_result.has_value()) {
++    DCHECK_EQ(*data.source_sanity_check_result,
++              scd.SanityCheckJustSource(isolate, source, script_details));
++    *rejection_result = *data.source_sanity_check_result;
++  } else {
++    *rejection_result =
++        scd.SanityCheckJustSource(isolate, source, script_details);
++  }
+   if (*rejection_result != SerializedCodeSanityCheckResult::kSuccess) {
+     // This check only checks the source, so the only possible failure is a
+     // source mismatch.
+diff --git a/src/snapshot/code-serializer.h b/src/snapshot/code-serializer.h
+index ed2281113f4b228e9a20e6167f4a5a90f9c1a581..6cfafc4d26b1a9f080c113383e89d581a30b2bce 100644
+--- a/src/snapshot/code-serializer.h
++++ b/src/snapshot/code-serializer.h
+@@ -5,6 +5,8 @@
+ #ifndef V8_SNAPSHOT_CODE_SERIALIZER_H_
+ #define V8_SNAPSHOT_CODE_SERIALIZER_H_
+ 
++#include <optional>
++
+ #include "src/base/macros.h"
+ #include "src/codegen/script-details.h"
+ #include "src/snapshot/serializer.h"
+@@ -57,21 +59,26 @@ typedef v8::ScriptCompiler::CachedData::CompatibilityCheckResult
+ // histogram definition.
+ static_assert(static_cast<int>(SerializedCodeSanityCheckResult::kLast) == 9);
+ 
+-class CodeSerializer : public Serializer {
++class CodeSerializer;
++
++struct OffThreadDeserializeData {
+  public:
+-  struct OffThreadDeserializeData {
+-   public:
+-    bool HasResult() const { return !maybe_result.is_null(); }
+-    DirectHandle<Script> GetOnlyScript(LocalHeap* heap);
+-
+-   private:
+-    friend class CodeSerializer;
+-    MaybeIndirectHandle<SharedFunctionInfo> maybe_result;
+-    std::vector<IndirectHandle<Script>> scripts;
+-    std::unique_ptr<PersistentHandles> persistent_handles;
+-    SerializedCodeSanityCheckResult sanity_check_result;
+-  };
++  bool HasResult() const { return !maybe_result.is_null(); }
++  DirectHandle<Script> GetOnlyScript(LocalHeap* heap);
++
++ private:
++  friend class CodeSerializer;
++  friend class SerializedCodeData;
++  MaybeIndirectHandle<SharedFunctionInfo> maybe_result;
++  std::vector<IndirectHandle<Script>> scripts;
++  std::unique_ptr<PersistentHandles> persistent_handles;
++  SerializedCodeSanityCheckResult sanity_check_result =
++      SerializedCodeSanityCheckResult::kSuccess;
++  std::optional<SerializedCodeSanityCheckResult> source_sanity_check_result;
++};
+ 
++class CodeSerializer : public Serializer {
++ public:
+   CodeSerializer(const CodeSerializer&) = delete;
+   CodeSerializer& operator=(const CodeSerializer&) = delete;
+   V8_EXPORT_PRIVATE static ScriptCompiler::CachedData* Serialize(
+@@ -85,9 +92,14 @@ class CodeSerializer : public Serializer {
+               DirectHandle<String> source, const ScriptDetails& script_details,
+               MaybeDirectHandle<Script> maybe_cached_script = {});
+ 
+-  V8_WARN_UNUSED_RESULT static OffThreadDeserializeData
+-  StartDeserializeOffThread(LocalIsolate* isolate,
+-                            AlignedCachedData* cached_data);
++  static void StartDeserializeOffThread(LocalIsolate* isolate,
++                                        AlignedCachedData* cached_data,
++                                        OffThreadDeserializeData* data);
++
++  V8_WARN_UNUSED_RESULT static bool NotifySourceTextAvailable(
++      Isolate* isolate, OffThreadDeserializeData* data,
++      const AlignedCachedData* cached_data, DirectHandle<String> source,
++      const ScriptDetails& script_details);
+ 
+   V8_WARN_UNUSED_RESULT static MaybeDirectHandle<SharedFunctionInfo>
+   FinishOffThreadDeserialize(
+@@ -140,7 +152,9 @@ class SerializedCodeData : public SerializedData {
+   // FromCachedDataWithoutSource. The rejection result from that call should be
+   // passed into this one.
+   static SerializedCodeData FromPartiallySanityCheckedCachedData(
+-      AlignedCachedData* cached_data, uint32_t expected_source_hash,
++      Isolate* isolate, AlignedCachedData* cached_data,
++      const OffThreadDeserializeData& data, DirectHandle<String> source,
++      const ScriptDetails& script_details,
+       SerializedCodeSanityCheckResult* rejection_result);
+ 
+   // Used when producing.
+@@ -157,7 +171,8 @@ class SerializedCodeData : public SerializedData {
+                              ScriptOriginOptions origin_options);
+ 
+  private:
+-  explicit SerializedCodeData(AlignedCachedData* data);
++  friend class CodeSerializer;
++  explicit SerializedCodeData(const AlignedCachedData* data);
+   SerializedCodeData(const uint8_t* data, int size)
+       : SerializedData(const_cast<uint8_t*>(data), size) {}
+ 
+@@ -169,6 +184,9 @@ class SerializedCodeData : public SerializedData {
+   SerializedCodeSanityCheckResult SanityCheck(
+       uint32_t expected_ro_snapshot_checksum,
+       uint32_t expected_source_hash) const;
++  SerializedCodeSanityCheckResult SanityCheckJustSource(
++      Isolate* isolate, DirectHandle<String> source,
++      const ScriptDetails& script_details) const;
+   SerializedCodeSanityCheckResult SanityCheckJustSource(
+       uint32_t expected_source_hash) const;
+   SerializedCodeSanityCheckResult SanityCheckWithoutSource(
+diff --git a/test/unittests/api/deserialize-unittest.cc b/test/unittests/api/deserialize-unittest.cc
+index ecd607e46fe9d31cf515f4dcb535aaf73f294fa5..fb9fb9983b7d21d491ff015987bf324f2e11a23f 100644
+--- a/test/unittests/api/deserialize-unittest.cc
++++ b/test/unittests/api/deserialize-unittest.cc
+@@ -1333,4 +1333,148 @@ TEST_F(MergeDeserializedCodeTest, MergeThatStartsButDoesNotFinish) {
+   }
+ }
+ 
++TEST_F(MergeDeserializedCodeTest, ModuleCacheClassicScriptMismatch) {
++  i::v8_flags.merge_background_deserialized_script_with_compilation_cache =
++      true;
++  std::unique_ptr<v8::ScriptCompiler::CachedData> cached_data;
++  IsolateAndContextScope scope(this);
++  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate());
++  PersistentScriptOrigin default_origin(
++      isolate(), NewString("http://example.com/test.js"));
++
++  constexpr char kPolyglotSource[] =
++      "let L0 = 1;\n"
++      "var z, o;\n"
++      "function g() { throw 1; }\n"
++      "function K(a, b) { var t = globalThis.top; (t.__keep = t.__keep || "
++      "[]).push(a, b); }\n"
++      "z = await /1; function lazyOuter() { function inner() {} } { try { g() "
++      "} catch /* 1, o = { a: function () {}, 'NAMENAMENAMENAME' //*/\n"
++      "(e) { K(() => e, function later() { return e }) } }\n";
++
++  // Setup: define `await` and `top` in global scope for classic script parse.
++  {
++    v8::HandleScope handle_scope(isolate());
++    Local<Script> setup =
++        Script::Compile(
++            context(), NewString("var await = 6; globalThis.top = globalThis;"))
++            .ToLocalChecked();
++    CHECK(!setup->Run(context()).IsEmpty());
++  }
++
++  // Step 1: Compile and run as a classic script, populating the Isolate
++  // compilation cache and retaining catch-block closures in globalThis.__keep.
++  // Also compile as a module with the same resource name and create a module
++  // code cache, then age and flush the classic script's top-level bytecode.
++  {
++    v8::HandleScope handle_scope(isolate());
++    ScriptOrigin classic_origin = default_origin.AsScriptOrigin();
++    Local<Script> script =
++        Script::Compile(context(), NewString(kPolyglotSource), &classic_origin)
++            .ToLocalChecked();
++    CHECK(!script->Run(context()).IsEmpty());
++
++    ScriptOrigin module_origin(NewString("http://example.com/test.js"), 0, 0,
++                               false, -1, Local<Value>(), false, false,
++                               /*is_module=*/true);
++    ScriptCompiler::Source module_source(NewString(kPolyglotSource),
++                                         module_origin);
++    Local<Module> module =
++        ScriptCompiler::CompileModule(isolate(), &module_source)
++            .ToLocalChecked();
++    cached_data.reset(
++        ScriptCompiler::CreateCodeCache(module->GetUnboundModuleScript()));
++
++    i::SharedFunctionInfo::EnsureOldForTesting(GetSharedFunctionInfo(script));
++  }
++
++  // Step 2: Flush the classic script's top-level bytecode via major GC.
++  {
++    i::DisableConservativeStackScanningScopeForTesting no_css_scope(
++        i_isolate->heap());
++    InvokeMajorGC(i_isolate);
++    InvokeMajorGC(i_isolate);
++  }
++
++  // Step 3a: Start off-thread consumption of the MODULE code cache, then notify
++  // SourceTextAvailable with the CLASSIC ScriptOrigin after Run() completes.
++  {
++    auto task_cached_data = std::make_unique<ScriptCompiler::CachedData>(
++        cached_data->data, cached_data->length,
++        ScriptCompiler::CachedData::BufferNotOwned);
++    DeserializeThread deserialize_thread(
++        ScriptCompiler::StartConsumingCodeCache(
++            isolate(), std::make_unique<ScriptCompiler::CachedData>(
++                           cached_data->data, cached_data->length,
++                           ScriptCompiler::CachedData::BufferNotOwned)));
++    CHECK(deserialize_thread.Start());
++    deserialize_thread.Join();
++
++    std::unique_ptr<ScriptCompiler::ConsumeCodeCacheTask> task =
++        deserialize_thread.TakeTask();
++    task->SourceTextAvailable(isolate(), NewString(kPolyglotSource),
++                              default_origin.AsScriptOrigin());
++    CHECK(!task->ShouldMergeWithExistingScript());
++
++    v8::HandleScope handle_scope(isolate());
++    ScriptCompiler::Source source(NewString(kPolyglotSource),
++                                  default_origin.AsScriptOrigin(),
++                                  task_cached_data.release(), task.release());
++    Local<Script> script =
++        ScriptCompiler::Compile(context(), &source,
++                                ScriptCompiler::kConsumeCodeCache)
++            .ToLocalChecked();
++    CHECK(!script.IsEmpty());
++    CHECK(source.GetCachedData()->rejected);
++
++    // Age and flush the recompiled classic script's top-level bytecode again so
++    // Step 3b also sees a flushed Script in the Isolate compilation cache.
++    i::SharedFunctionInfo::EnsureOldForTesting(GetSharedFunctionInfo(script));
++  }
++  {
++    i::DisableConservativeStackScanningScopeForTesting no_css_scope(
++        i_isolate->heap());
++    InvokeMajorGC(i_isolate);
++    InvokeMajorGC(i_isolate);
++  }
++
++  // Step 3b: Also test calling SourceTextAvailable on the main thread BEFORE
++  // Run() executes on the background thread.
++  {
++    auto task_cached_data = std::make_unique<ScriptCompiler::CachedData>(
++        cached_data->data, cached_data->length,
++        ScriptCompiler::CachedData::BufferNotOwned);
++    std::unique_ptr<ScriptCompiler::ConsumeCodeCacheTask> task(
++        ScriptCompiler::StartConsumingCodeCache(
++            isolate(), std::make_unique<ScriptCompiler::CachedData>(
++                           cached_data->data, cached_data->length,
++                           ScriptCompiler::CachedData::BufferNotOwned)));
++    task->SourceTextAvailable(isolate(), NewString(kPolyglotSource),
++                              default_origin.AsScriptOrigin());
++
++    DeserializeThread deserialize_thread(task.release());
++    CHECK(deserialize_thread.Start());
++    deserialize_thread.Join();
++    task = deserialize_thread.TakeTask();
++    CHECK(!task->ShouldMergeWithExistingScript());
++
++    v8::HandleScope handle_scope(isolate());
++    ScriptCompiler::Source source(NewString(kPolyglotSource),
++                                  default_origin.AsScriptOrigin(),
++                                  task_cached_data.release(), task.release());
++    Local<Script> script =
++        ScriptCompiler::Compile(context(), &source,
++                                ScriptCompiler::kConsumeCodeCache)
++            .ToLocalChecked();
++    CHECK(!script.IsEmpty());
++    CHECK(source.GetCachedData()->rejected);
++
++    Local<Script> run_kept =
++        Script::Compile(context(),
++                        NewString("for (const f of globalThis.__keep) f();"))
++            .ToLocalChecked();
++    CHECK(!run_kept->Run(context()).IsEmpty());
++  }
++}
++
+ }  // namespace v8

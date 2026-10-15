@@ -1,0 +1,150 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rakina Zata Amni <rakina@chromium.org>
+Date: Tue, 13 Oct 2026 19:45:15 -0700
+Subject: [M152] Guard BeginNavigation() against self-deletion during prerender
+ checks
+
+Original change's description:
+> Guard BeginNavigation() against self-deletion during prerender checks
+>
+> NavigationRequest::BeginNavigation() calls
+> MaybeStartPrerenderingActivationChecks(), which queries
+> PrerenderHostRegistry::FindPotentialHostToActivate(). When a candidate
+> PrerenderHost matches the navigation URL (e.g. via a No-Vary-Search
+> hint) but cannot be activated (such as during a BackForwardCache
+> restore navigation), FindPotentialHostToActivate() cancels that host.
+>
+> Cancelling the running PrerenderHost can synchronously start a queued
+> pending prerender, whose navigation start can trigger side effects
+> (such as evicting the BackForwardCached entry being restored via
+> RestartBackForwardCachedNavigationAsync()) that synchronously reset
+> and destroy the in-flight NavigationRequest on the primary FrameTree
+> while BeginNavigation() is still on the stack.
+>
+> Guard the call to MaybeStartPrerenderingActivationChecks() in
+> NavigationRequest::BeginNavigation() with a WeakPtr check and return
+> early if `this` was destroyed, matching the pattern used in
+> NavigationRequest::BeginNavigationImpl().
+>
+> TAG=agy
+> CONV=0a6e1b34-3eb6-4c7f-b0e4-e0f83dc8c7f9
+>
+> Bug: 568719351
+> Change-Id: If18df8e1d9e4ff8e5b34305dfeb3ab39f05222ff
+> Fixed: 568719351
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8513959
+> Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+> Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1712087}
+
+(cherry picked from commit d50992ebe4421079a6f9782c7e8a4d0eb3f14c5f)
+
+Bug: 571382470,568719351,568719351
+Change-Id: If18df8e1d9e4ff8e5b34305dfeb3ab39f05222ff
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8577137
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7977@{#2835}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/content/browser/preloading/prerender/prerender_browsertest.cc b/content/browser/preloading/prerender/prerender_browsertest.cc
+index e5a67d6827210750e397a7d84459a4d699d44a83..e0d6fd325519694e6d53522bd92c480af3293e69 100644
+--- a/content/browser/preloading/prerender/prerender_browsertest.cc
++++ b/content/browser/preloading/prerender/prerender_browsertest.cc
+@@ -11793,6 +11793,73 @@ IN_PROC_BROWSER_TEST_F(PrerenderBackForwardCacheBrowserTest,
+       EvalJs(current_frame_host(), "getSessionStorageKeys()").ExtractString());
+ }
+ 
++// Regression test for crbug.com/568719351:
++// Verifies that if a BackForwardCache restore navigation triggers prerender
++// activation checks in NavigationRequest::BeginNavigation(), and cancelling a
++// matching prerender synchronously starts a queued pending prerender whose
++// navigation evicts the BFCached page being restored (synchronously destroying
++// the primary main frame's NavigationRequest), BeginNavigation() does not
++// access `this` after it is destroyed.
++IN_PROC_BROWSER_TEST_F(PrerenderBackForwardCacheBrowserTest,
++                       EvictBackForwardCacheDuringPrerenderActivationCheck) {
++  net::test_server::ControllableHttpResponse response1(
++      embedded_test_server(), "/empty.html?prerender=1");
++  ASSERT_TRUE(embedded_test_server()->Start());
++
++  const GURL initial_url = embedded_test_server()->GetURL("/empty.html");
++  const GURL next_url = embedded_test_server()->GetURL("/empty.html?next");
++  const GURL prerender1_url =
++      embedded_test_server()->GetURL("/empty.html?prerender=1");
++  const GURL prerender2_url =
++      embedded_test_server()->GetURL("/empty.html?prerender2");
++
++  // 1. Navigate to `initial_url` and then `next_url` so `initial_rfh` is
++  // stored in the BackForwardCache.
++  ASSERT_TRUE(NavigateToURL(shell(), initial_url));
++  RenderFrameHostImplWrapper initial_rfh(current_frame_host());
++  ASSERT_TRUE(NavigateToURL(shell(), next_url));
++  ASSERT_TRUE(initial_rfh->IsInBackForwardCache());
++
++  // 2. Trigger `prerender1_url` with a No-Vary-Search hint matching
++  // `initial_url`, and hold its initial navigation in-flight so it remains the
++  // running prerender (`running_prerender_host_id_`). Queue `prerender2_url`
++  // behind it in `pending_prerenders_`.
++  test::PrerenderHostRegistryObserver registry_observer(*web_contents_impl());
++  AddPrerenderAsync(prerender1_url, R"(params=(\\\"prerender\\\"))");
++  response1.WaitForRequest();
++  AddPrerenderAsync(prerender2_url);
++  registry_observer.WaitForTrigger(prerender2_url);
++
++  // 3. When `prerender2_url` starts its initial navigation (triggered
++  // synchronously when `prerender1_url` is cancelled during
++  // `FindPotentialHostToActivate()`), evict `initial_rfh` from BFCache (e.g.
++  // simulating ServiceWorker activation evicting BFCached controllees). This
++  // synchronously calls `RestartBackForwardCachedNavigationAsync()` and
++  // destroys the in-flight BFCache restore `NavigationRequest`.
++  bool evicted_during_prerender2_start = false;
++  base::RunLoop primary_page_changed_loop;
++  testing::NiceMock<MockWebContentsObserver> observer(web_contents());
++  ON_CALL(observer, DidStartNavigation(testing::_))
++      .WillByDefault([&](NavigationHandle* navigation_handle) {
++        if (navigation_handle->GetURL() == prerender2_url &&
++            initial_rfh->IsInBackForwardCache()) {
++          evicted_during_prerender2_start = true;
++          initial_rfh->EvictFromBackForwardCacheWithReason(
++              BackForwardCacheMetrics::NotRestoredReason::
++                  kServiceWorkerVersionActivation);
++        }
++      });
++  ON_CALL(observer, PrimaryPageChanged(testing::_))
++      .WillByDefault([&](Page&) { primary_page_changed_loop.Quit(); });
++
++  // 4. Navigate back to `initial_url`. The BFCache restore navigation is
++  // restarted as a normal navigation and should complete without crashing.
++  shell()->GoBackOrForward(-1);
++  EXPECT_TRUE(evicted_during_prerender2_start);
++  primary_page_changed_loop.Run();
++  EXPECT_EQ(web_contents()->GetLastCommittedURL(), initial_url);
++}
++
+ #if !BUILDFLAG(IS_ANDROID)
+ // The out-of-process StorageService is not implemented on Android. Also as
+ // commented below, test_api->CrashNow() won't work on x86 and x86_64 Android.
+diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
+index 494f4233a8e48ee28b1d4d766d61391f70042f6f..ce6370580562eabe478ce392f78256b270a402cc 100644
+--- a/content/browser/renderer_host/navigation_request.cc
++++ b/content/browser/renderer_host/navigation_request.cc
+@@ -2508,10 +2508,17 @@ void NavigationRequest::BeginNavigation() {
+     std::move(begin_navigation_callback_for_testing_).Run();
+   }
+ 
++  base::WeakPtr<NavigationRequest> weak_self(weak_factory_.GetWeakPtr());
+   if (MaybeStartPrerenderingActivationChecks()) {
+     // BeginNavigationImpl() will be called after the checks.
+     return;
+   }
++  if (!weak_self) {
++    // DO NOT ADD CODE after this. The previous call to
++    // MaybeStartPrerenderingActivationChecks() has destroyed the
++    // NavigationRequest.
++    return;
++  }
+ 
+   MaybeAssignInvalidActivatingPrerenderHostId();
+ 

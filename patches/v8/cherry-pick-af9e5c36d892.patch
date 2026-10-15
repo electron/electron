@@ -1,0 +1,261 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Thu, 8 Oct 2026 13:21:08 +0200
+Subject: [compiler] Mark JSCreateGeneratorObject as writing and deoptimizing
+
+Creating a generator object for a closure without an initial map calls
+into the runtime to initialize its prototype and initial map. When the
+new prototype is set up, JSObject::OptimizeAsPrototype can normalize
+%GeneratorPrototype% from fast properties to dictionary mode, mutating
+its map and invalidating stable-map dependencies.
+
+Change JSCreateGeneratorObject from Operator::kEliminatable to
+Operator::kNoThrow and give it a FrameState input so LoadElimination
+does not eliminate map checks across it and lazy deoptimization has a
+valid FrameState.
+
+TAG=agy
+CONV=bd05db8c-af63-4056-8c71-2d7cef5afe7e
+
+Fixed: 569659194
+Change-Id: I020f79dbac1394f93f612e7346cbf27657dc77c7
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8525490
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110456}
+
+diff --git a/src/compiler/js-generic-lowering.cc b/src/compiler/js-generic-lowering.cc
+index de87f0ce86b878b39cdcb3dff8867eafe22b4646..24e3ec9c360239805290645dc01816e1a587b152 100644
+--- a/src/compiler/js-generic-lowering.cc
++++ b/src/compiler/js-generic-lowering.cc
+@@ -713,7 +713,6 @@ void JSGenericLowering::LowerJSCreateFunctionContext(Node* node) {
+ }
+ 
+ void JSGenericLowering::LowerJSCreateGeneratorObject(Node* node) {
+-  node->RemoveInput(4);  // control
+   ReplaceWithBuiltinCall(node, Builtin::kCreateGeneratorObject);
+ }
+ 
+diff --git a/src/compiler/js-intrinsic-lowering.cc b/src/compiler/js-intrinsic-lowering.cc
+index 2274980adeffc58ee5c77b32aca24950e739a7b2..6737cfd9eec75a1bbf99500fb8454c16bb80828d 100644
+--- a/src/compiler/js-intrinsic-lowering.cc
++++ b/src/compiler/js-intrinsic-lowering.cc
+@@ -157,8 +157,8 @@ Reduction JSIntrinsicLowering::ReduceCreateJSGeneratorObject(Node* node) {
+   FrameState frame_state{NodeProperties::GetFrameStateInput(node)};
+   Operator const* const op = javascript()->CreateGeneratorObject(
+       frame_state.frame_state_info().bytecode_array().ToHandleChecked());
+-  Node* create_generator =
+-      graph()->NewNode(op, closure, receiver, context, effect, control);
++  Node* create_generator = graph()->NewNode(op, closure, receiver, context,
++                                            frame_state, effect, control);
+   ReplaceWithValue(node, create_generator, create_generator);
+   return Changed(create_generator);
+ }
+diff --git a/src/compiler/js-operator.cc b/src/compiler/js-operator.cc
+index e1e25f422312c7b79b5cd3b1cd7f7bceb242a755..144869943faeb4011e727ff36bf1d65cb38dcf64 100644
+--- a/src/compiler/js-operator.cc
++++ b/src/compiler/js-operator.cc
+@@ -1360,11 +1360,11 @@ const Operator* JSOperatorBuilder::DeleteProperty() {
+ const Operator* JSOperatorBuilder::CreateGeneratorObject(
+     IndirectHandle<BytecodeArray> bytecode_array) {
+   CreateGeneratorObjectParameters parameters(bytecode_array);
+-  return zone()->New<Operator1<CreateGeneratorObjectParameters>>(   // --
+-      IrOpcode::kJSCreateGeneratorObject, Operator::kEliminatable,  // opcode
+-      "JSCreateGeneratorObject",                                    // name
+-      2, 1, 1, 1, 1, 0,                                             // counts
+-      parameters);  // parameters
++  return zone()->New<Operator1<CreateGeneratorObjectParameters>>(  // --
++      IrOpcode::kJSCreateGeneratorObject, Operator::kNoThrow,      // opcode
++      "JSCreateGeneratorObject",                                   // name
++      2, 1, 1, 1, 1, 0,                                            // counts
++      parameters);                                                 // parameters
+ }
+ 
+ const Operator* JSOperatorBuilder::LoadGlobal(NameRef name,
+diff --git a/src/compiler/operator-properties.cc b/src/compiler/operator-properties.cc
+index f7e9f16b0ef48f74fd96690ee1c9c7e214607068..e19d1bf0ece55bb7517b20d8f5d4b8cdd95ba41b 100644
+--- a/src/compiler/operator-properties.cc
++++ b/src/compiler/operator-properties.cc
+@@ -159,10 +159,6 @@ bool OperatorProperties::HasFrameStateInput(const Operator* op) {
+     case IrOpcode::kJSStrictEqual:
+       return false;
+ 
+-    // Generator creation cannot call back into arbitrary JavaScript.
+-    case IrOpcode::kJSCreateGeneratorObject:
+-      return false;
+-
+     // Binary operations
+     case IrOpcode::kJSAdd:
+     case IrOpcode::kJSSubtract:
+@@ -203,6 +199,7 @@ bool OperatorProperties::HasFrameStateInput(const Operator* op) {
+     case IrOpcode::kJSCreateLiteralRegExp:
+     case IrOpcode::kJSCreateObject:
+     case IrOpcode::kJSCloneObject:
++    case IrOpcode::kJSCreateGeneratorObject:
+ 
+     // Property access operations
+     case IrOpcode::kJSDeleteProperty:
+diff --git a/test/mjsunit/compiler/regress-569659194-1.js b/test/mjsunit/compiler/regress-569659194-1.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..76d1084946c907e3a91a325559aabd8d1a8a2e9e
+--- /dev/null
++++ b/test/mjsunit/compiler/regress-569659194-1.js
+@@ -0,0 +1,44 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++function makeGenerator() {
++  return function* () {};
++}
++
++// %GeneratorPrototype% starts in fast-properties mode from the snapshot, with
++// is_prototype_map() == true and should_be_fast_prototype_map() == false.
++const generatorPrototype = Object.getPrototypeOf(makeGenerator()).prototype;
++generatorPrototype.doubleProp = 1.5;
++
++function foo(obj, gen) {
++  // Access an in-object property first so TurboFan emits CheckMaps(obj).
++  obj.next = 1;
++  // Calling an uninitialized generator closure normalizes generatorPrototype
++  // from fast properties (PropertyArray) to dictionary mode (NameDictionary).
++  gen();
++  // Because JSCreateGeneratorObject was marked kNoWrite, LoadElimination
++  // eliminated the CheckMaps(obj) before this out-of-object double store.
++  obj.doubleProp = 3.5;
++}
++
++// Warm up with two closures that already have a custom .prototype so that:
++// 1. The call site in foo() is polymorphic over closures (not specialized to a
++//    single HeapConstant closure) and lowers to JSCreateGeneratorObject.
++// 2. Initializing their initial_map does not touch generatorPrototype.
++const gen1 = makeGenerator();
++const gen2 = makeGenerator();
++gen1.prototype = {};
++gen2.prototype = {};
++
++%PrepareFunctionForOptimization(foo);
++%PrepareFunctionForOptimization(gen1);
++foo(generatorPrototype, gen1);
++foo(generatorPrototype, gen2);
++
++%OptimizeFunctionOnNextCall(foo);
++const freshGen = makeGenerator();
++foo(generatorPrototype, freshGen);
++assertEquals(3.5, generatorPrototype.doubleProp);
+diff --git a/test/mjsunit/compiler/regress-569659194-2.js b/test/mjsunit/compiler/regress-569659194-2.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..49efb73059af4fb7149e0f4c79e42d83564c5efd
+--- /dev/null
++++ b/test/mjsunit/compiler/regress-569659194-2.js
+@@ -0,0 +1,37 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++function makeGenerator() {
++  return function* () {};
++}
++
++// %GeneratorPrototype% starts in fast-properties mode with a stable map.
++const generatorPrototype = Object.getPrototypeOf(makeGenerator()).prototype;
++
++function foo(gen) {
++  // Calling an uninitialized generator closure normalizes generatorPrototype,
++  // which invalidates its stable map and triggers lazy deoptimization of foo().
++  gen();
++  // Accessing generatorPrototype as a HeapConstant installs a compilation
++  // dependency (DependOnStableMap) on generatorPrototype's map rather than
++  // emitting a CheckMaps node.
++  generatorPrototype.next = 1;
++}
++
++const gen1 = makeGenerator();
++const gen2 = makeGenerator();
++gen1.prototype = {};
++gen2.prototype = {};
++
++%PrepareFunctionForOptimization(foo);
++%PrepareFunctionForOptimization(gen1);
++foo(gen1);
++foo(gen2);
++
++%OptimizeFunctionOnNextCall(foo);
++const freshGen = makeGenerator();
++foo(freshGen);
++assertEquals(1, generatorPrototype.next);
+diff --git a/test/mjsunit/compiler/regress-569659194-3.js b/test/mjsunit/compiler/regress-569659194-3.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..0b30f10d2ed3ae8839377e2999c86258aaa6b6c1
+--- /dev/null
++++ b/test/mjsunit/compiler/regress-569659194-3.js
+@@ -0,0 +1,64 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++function makeGenerator() {
++  return function* () {};
++}
++
++// Even if %GeneratorPrototype% starts in dictionary mode or with
++// should_be_fast_prototype_map() == true, iterating over a generator instance
++// ensures %GeneratorPrototype% is in fast mode with
++// should_be_fast_prototype_map() == true.
++for (let _ in (function* () {})()) {}
++
++const generatorPrototype = Object.getPrototypeOf(makeGenerator()).prototype;
++generatorPrototype[0] = 1;
++
++// Reconfiguring a field from Smi to Double on a detached prototype root map
++// normalizes generatorPrototype to dictionary mode (NameDictionary) without
++// clearing should_be_fast_prototype_map() on its PrototypeInfo.
++generatorPrototype.x = 1;
++generatorPrototype.x = 1.5;
++
++function foo(obj, gen) {
++  // Emit CheckMaps(obj, [dictionary_map]) before gen().
++  obj[0];
++  // Calling an uninitialized generator closure invokes
++  // JSObject::OptimizeAsPrototype(generatorPrototype), which sees
++  // should_be_fast_prototype_map() == true && !HasFastProperties() and calls
++  // JSObject::MigrateSlowToFast(generatorPrototype), replacing its
++  // NameDictionary with a PropertyArray.
++  gen();
++  // Without the fix, LoadElimination eliminated CheckMaps(obj, [dictionary_map])
++  // before LoadDictionaryField, which then read the new PropertyArray as if it
++  // were a NameDictionary.
++  return obj.x;
++}
++
++const gen1 = makeGenerator();
++const gen2 = makeGenerator();
++gen1.prototype = {};
++gen2.prototype = {};
++
++%PrepareFunctionForOptimization(foo);
++%PrepareFunctionForOptimization(gen1);
++foo(generatorPrototype, gen1);
++foo(generatorPrototype, gen2);
++
++%OptimizeFunctionOnNextCall(foo);
++
++// Populate dictionary properties (which does not change generatorPrototype's
++// dictionary map) so that after MigrateSlowToFast packs all properties into a
++// PropertyArray, every NameDictionary entry offset [6 + 3 * i] in the
++// PropertyArray contains a valid fake dictionary entry ["x", "corrupted", 0].
++for (let i = 0; i < 48; i += 3) {
++  generatorPrototype['p' + i] = 'x';
++  generatorPrototype['p' + (i + 1)] = 'corrupted';
++  generatorPrototype['p' + (i + 2)] = 0;
++}
++
++const freshGen = makeGenerator();
++assertEquals(1.5, foo(generatorPrototype, freshGen));
