@@ -47,6 +47,8 @@ class WebContentsView : public View,
   void SetBackgroundColor(std::optional<WrappedSkColor> color);
   void SetBorderRadius(int radius);
 
+  // DraggableRegionProvider:
+  views::View* GetDraggableRegionView() override { return view(); }
   int NonClientHitTest(const gfx::Point& point) override;
 
  protected:
