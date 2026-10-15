@@ -95,7 +95,7 @@ index 19a087770f7ef98b5a93429f785a45281446d3d5..70392a2e29ac85012a11f517e103e24b
  
    auto data = DataPointer::SecureAlloc(len);
 diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
-index 944802925def832be06a05f05a9ff535b5e0d97c..1bf003f830812664ad903dbdfe30366835767c0b 100644
+index cd5217a960c539a799d05e306776430b32cf5144..fbca682b804a0a1b7e688d01359c20a416584f15 100644
 --- a/src/crypto/crypto_x509.cc
 +++ b/src/crypto/crypto_x509.cc
 @@ -141,19 +141,17 @@ MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {

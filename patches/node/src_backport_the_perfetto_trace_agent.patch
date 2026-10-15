@@ -732,7 +732,7 @@ index dc228f8e1e245d9f4fca8f2f948619304bfed5d5..39e8312ddd7167ee235927e1772f6d4d
  // Functions defined in node.cc that are exposed via the bootstrapper object
  
 diff --git a/src/node_options.h b/src/node_options.h
-index 04eaa705e8023dab7104ac4d55f9d4179b7f30d4..575f4b23b58d9d2ea863d3209e3b9abaa6cfce7c 100644
+index b55fae0a32175fdff7a0c3ecb479297bd035eb7e..0cd2aa0fce832484b26e30af8d9470cb98a3fb0a 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -333,7 +333,11 @@ class PerProcessOptions : public Options {
