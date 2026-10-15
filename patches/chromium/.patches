@@ -476,3 +476,4 @@ cherry-pick-faa6de8c9795.patch
 cherry-pick-cec8a90bb4b0.patch
 cherry-pick-d53b1680234c.patch
 fix_deliver_clicks_that_another_process_posts_to_a_background_app.patch
+cherry-pick-431b8be6a111.patch

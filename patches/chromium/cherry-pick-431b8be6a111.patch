@@ -1,0 +1,533 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Mon, 12 Oct 2026 18:46:46 +0000
+Subject: [X11] Restore timeout for in-flight selection requests
+
+SelectionRequester processes ConvertSelection requests serially, so a
+selection owner that never replies (e.g. one that exits after the
+SelectionRequest is forwarded but before sending SelectionNotify) or an
+INCR transfer that stalls would block every subsequent request for the
+lifetime of the process. Since r1599052 removed the request timeout,
+pasting content from other applications could hang permanently until
+the browser was restarted.
+
+This restores a timeout, with a few changes from the original:
+- The timeout only applies to the request that has been sent to the
+  selection owner, and starts when it is sent rather than when it is
+  queued.
+- It is reset whenever an INCR transfer makes progress.
+- It is 5 seconds rather than 1 second, since the clipboard is now
+  asynchronous and the timeout only needs to guarantee forward progress.
+
+Since only the front request can now complete, CompleteRequest() is
+simplified and the unused per-request completed/success state is
+removed.
+
+Bug: 571343363
+Change-Id: I8abd531e7c707be6ef93447134658e47642bdb92
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8535281
+Auto-Submit: Thomas Anderson <thomasanderson@chromium.org>
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1716984}
+
+diff --git a/ui/base/x/selection_requester.cc b/ui/base/x/selection_requester.cc
+index 53375068081707c83201bc1651ea4ebaa0ce6c3c..e9078cdc9650acd9a9a364e906155acfeef312d0 100644
+--- a/ui/base/x/selection_requester.cc
++++ b/ui/base/x/selection_requester.cc
+@@ -23,6 +23,13 @@ namespace {
+ 
+ const char kChromeSelection[] = "CHROME_SELECTION";
+ 
++// The amount of time to wait for the selection owner to make progress on the
++// in-flight request before aborting it. Requests are processed serially, so
++// without this, a single owner that never responds would block all subsequent
++// requests indefinitely. The clipboard is asynchronous, so this does not need
++// to be short to keep the UI responsive.
++constexpr base::TimeDelta kRequestTimeout = base::Seconds(5);
++
+ // Combines |data| into a single std::vector<uint8_t>.
+ std::vector<uint8_t> CombineData(
+     const std::vector<scoped_refptr<base::RefCountedMemory>>& data) {
+@@ -56,7 +63,7 @@ void SelectionRequester::PerformConvertSelectionAsync(
+     x11::Atom selection,
+     x11::Atom target,
+     ConvertSelectionCallback callback) {
+-  requests_.push_back(
++  requests_.push(
+       std::make_unique<Request>(selection, target, std::move(callback)));
+   if (requests_.size() == 1) {
+     ConvertSelectionForCurrentRequest();
+@@ -111,8 +118,7 @@ void SelectionRequester::OnSelectionNotify(
+     const x11::SelectionNotifyEvent& selection) {
+   Request* request = GetCurrentRequest();
+   x11::Atom event_property = selection.property;
+-  if (!request || request->completed ||
+-      request->selection != selection.selection ||
++  if (!request || request->selection != selection.selection ||
+       request->target != selection.target) {
+     // ICCCM requires us to delete the property passed into SelectionNotify.
+     if (event_property != x11::Atom::None) {
+@@ -139,9 +145,11 @@ void SelectionRequester::OnSelectionNotify(
+     request->data_sent_incrementally = true;
+     request->out_data.clear();
+     request->out_type = x11::Atom::None;
++    // The owner is making progress, so give it more time.
++    timeout_timer_.Reset();
+   } else {
+     // Note: `this` may be deleted after this call.
+-    CompleteRequest(0, success);
++    CompleteCurrentRequest(success);
+   }
+ }
+ 
+@@ -164,13 +172,13 @@ void SelectionRequester::OnPropertyEvent(
+       ui::GetRawBytesOfProperty(x_window_, x_property_, &out_data, &out_type);
+   if (!success) {
+     // Note: `this` may be deleted after this call.
+-    CompleteRequest(0, false);
++    CompleteCurrentRequest(false);
+     return;
+   }
+ 
+   if (request->out_type != x11::Atom::None && request->out_type != out_type) {
+     // Note: `this` may be deleted after this call.
+-    CompleteRequest(0, false);
++    CompleteCurrentRequest(false);
+     return;
+   }
+ 
+@@ -182,63 +190,59 @@ void SelectionRequester::OnPropertyEvent(
+ 
+   if (!out_data->size()) {
+     // Note: `this` may be deleted after this call.
+-    CompleteRequest(0, true);
++    CompleteCurrentRequest(true);
++    return;
+   }
++
++  // The owner is making progress, so give it more time.
++  timeout_timer_.Reset();
+ }
+ 
+-void SelectionRequester::CompleteRequest(size_t index, bool success) {
+-  CHECK_LT(index, requests_.size());
++void SelectionRequester::OnRequestTimeout() {
++  // Note: `this` may be deleted after this call.
++  CompleteCurrentRequest(false);
++}
+ 
+-  Request* request = requests_[index].get();
+-  if (request->completed) {
+-    return;
+-  }
++void SelectionRequester::CompleteCurrentRequest(bool success) {
++  CHECK(!requests_.empty());
+ 
+-  // 1. Mark completed
+-  request->success = success;
+-  request->completed = true;
++  std::unique_ptr<Request> request = std::move(requests_.front());
++  requests_.pop();
+ 
+-  // 2. Extract data & callback
+   std::vector<uint8_t> out_data;
+   if (success) {
+     out_data = CombineData(request->out_data);
+   }
+-  x11::Atom out_type = request->out_type;
+-  auto callback = std::move(request->callback);
+-
+-  // 3. Update `requests_` queue
+-  if (index == 0) {
+-    size_t completed_count = 0;
+-    while (completed_count < requests_.size() &&
+-           requests_[completed_count]->completed) {
+-      ++completed_count;
+-    }
+ 
+-    if (completed_count > 0) {
+-      requests_.erase(requests_.begin(), requests_.begin() + completed_count);
+-    }
+-
+-    ConvertSelectionForCurrentRequest();
+-  }
++  // Start the next request before running the callback, since the callback
++  // may delete `this`.
++  ConvertSelectionForCurrentRequest();
+ 
+-  // 4. Safely run the callback
+-  if (callback) {
+-    std::move(callback).Run(success, std::move(out_data), out_type);
++  if (request->callback) {
++    // Note: `this` may be deleted after this call.
++    std::move(request->callback)
++        .Run(success, std::move(out_data), request->out_type);
+   }
+ }
+ 
+ void SelectionRequester::ConvertSelectionForCurrentRequest() {
+   Request* request = GetCurrentRequest();
+-  if (request) {
+-    x11::Connection::Get()->ConvertSelection({
+-        .requestor = x_window_,
+-        .selection = request->selection,
+-        .target = request->target,
+-        .property = x_property_,
+-        .time = x11::Time::CurrentTime,
+-    });
+-    x11::Connection::Get()->Flush();
++  if (!request) {
++    timeout_timer_.Stop();
++    return;
+   }
++
++  x11::Connection::Get()->ConvertSelection({
++      .requestor = x_window_,
++      .selection = request->selection,
++      .target = request->target,
++      .property = x_property_,
++      .time = x11::Time::CurrentTime,
++  });
++  x11::Connection::Get()->Flush();
++
++  timeout_timer_.Start(FROM_HERE, kRequestTimeout, this,
++                       &SelectionRequester::OnRequestTimeout);
+ }
+ 
+ SelectionRequester::Request* SelectionRequester::GetCurrentRequest() {
+@@ -252,8 +256,6 @@ SelectionRequester::Request::Request(x11::Atom selection,
+       target(target),
+       data_sent_incrementally(false),
+       out_type(x11::Atom::None),
+-      success(false),
+-      completed(false),
+       callback(std::move(callback)) {}
+ 
+ SelectionRequester::Request::~Request() = default;
+diff --git a/ui/base/x/selection_requester.h b/ui/base/x/selection_requester.h
+index 08c20c50e8114644b4d2d599845f3c48c9c37fea..639cf340e90f519f89e76630ebec0d8cbe22f1b9 100644
+--- a/ui/base/x/selection_requester.h
++++ b/ui/base/x/selection_requester.h
+@@ -10,10 +10,12 @@
+ #include <vector>
+ 
+ #include "base/component_export.h"
++#include "base/containers/queue.h"
+ #include "base/functional/callback.h"
+ #include "base/memory/raw_ptr.h"
+ #include "base/memory/ref_counted_memory.h"
+ #include "base/memory/weak_ptr.h"
++#include "base/timer/timer.h"
+ #include "ui/gfx/x/connection.h"
+ 
+ namespace ui {
+@@ -85,23 +87,22 @@ class COMPONENT_EXPORT(UI_BASE_X) SelectionRequester {
+     std::vector<scoped_refptr<base::RefCountedMemory>> out_data;
+     x11::Atom out_type;
+ 
+-    // Whether the XConvertSelection() request was successful.
+-    bool success;
+-
+-    // True if the request is complete.
+-    bool completed;
+-
+     ConvertSelectionCallback callback;
+   };
+ 
+-  // Mark |request| as completed. If the current request is completed, converts
+-  // the selection for the next request.
+-  void CompleteRequest(size_t index, bool success);
++  // Called when the in-flight request has not made progress within the
++  // timeout. Aborts the request so that subsequent requests can proceed.
++  void OnRequestTimeout();
+ 
+-  // Converts the selection for the request at |current_request_index_|.
++  // Removes the current request from the queue, converts the selection for the
++  // next request, and runs the completed request's callback.
++  void CompleteCurrentRequest(bool success);
++
++  // Converts the selection for the request at the front of `requests_`.
+   void ConvertSelectionForCurrentRequest();
+ 
+-  // Returns the request at |current_request_index_| or NULL if there isn't any.
++  // Returns the request at the front of `requests_` or nullptr if there isn't
++  // any.
+   Request* GetCurrentRequest();
+ 
+   void RequestTypesRecursive(x11::Atom selection,
+@@ -126,8 +127,12 @@ class COMPONENT_EXPORT(UI_BASE_X) SelectionRequester {
+   // the selection.
+   const x11::Atom x_property_;
+ 
+-  // In progress requests.
+-  std::vector<std::unique_ptr<Request>> requests_;
++  // Pending requests. Only the request at the front has been sent to the
++  // selection owner.
++  base::queue<std::unique_ptr<Request>> requests_;
++
++  // Aborts the in-flight request if the selection owner stops responding.
++  base::OneShotTimer timeout_timer_;
+ 
+   base::WeakPtrFactory<SelectionRequester> weak_ptr_factory_{this};
+ };
+diff --git a/ui/base/x/selection_requester_unittest.cc b/ui/base/x/selection_requester_unittest.cc
+index ff5eb2b2b16de722b93dea30ad93690d90626859..b089718ec82cbd4b3ecad11fbd6f725a55a9e219 100644
+--- a/ui/base/x/selection_requester_unittest.cc
++++ b/ui/base/x/selection_requester_unittest.cc
+@@ -7,6 +7,7 @@
+ #include <stddef.h>
+ 
+ #include <memory>
++#include <vector>
+ 
+ #include "base/functional/bind.h"
+ #include "base/memory/raw_ptr.h"
+@@ -15,6 +16,7 @@
+ #include "base/test/task_environment.h"
+ #include "base/test/test_future.h"
+ #include "testing/gtest/include/gtest/gtest.h"
++#include "ui/base/x/selection_owner.h"
+ #include "ui/base/x/selection_utils.h"
+ #include "ui/base/x/x11_clipboard_helper.h"
+ #include "ui/base/x/x11_util.h"
+@@ -25,6 +27,19 @@
+ 
+ namespace ui {
+ 
++namespace {
++
++// The result of SelectionRequester::PerformConvertSelectionAsync().
++struct ConvertSelectionResult {
++  bool success = false;
++  std::vector<uint8_t> data;
++  x11::Atom type = x11::Atom::None;
++};
++
++using ConvertSelectionFuture = base::test::TestFuture<ConvertSelectionResult>;
++
++}  // namespace
++
+ class SelectionRequesterTest : public testing::Test {
+  public:
+   explicit SelectionRequesterTest() : connection_(*x11::Connection::Get()) {}
+@@ -34,9 +49,27 @@ class SelectionRequesterTest : public testing::Test {
+ 
+   ~SelectionRequesterTest() override = default;
+ 
++  // Requests `target` from `selection`. The result is delivered to `future`.
++  void PerformConvertSelection(x11::Atom selection,
++                               x11::Atom target,
++                               ConvertSelectionFuture& future) {
++    requestor_->PerformConvertSelectionAsync(
++        selection, target,
++        base::BindOnce(
++            [](base::OnceCallback<void(ConvertSelectionResult)> callback,
++               bool success, std::vector<uint8_t> data, x11::Atom type) {
++              std::move(callback).Run({
++                  .success = success,
++                  .data = std::move(data),
++                  .type = type,
++              });
++            },
++            future.GetCallback()));
++  }
++
+   // Responds to the SelectionRequester's XConvertSelection() request by
+   // - Setting the property passed into the XConvertSelection() request to
+-  //   |value|.
++  //   `value`.
+   // - Sending a SelectionNotify event.
+   void SendSelectionNotify(x11::Atom selection,
+                            x11::Atom target,
+@@ -60,6 +93,31 @@ class SelectionRequesterTest : public testing::Test {
+     });
+   }
+ 
++  // Responds to the SelectionRequester's XConvertSelection() request by
++  // starting an INCR transfer.
++  void SendIncrStart(x11::Atom selection, x11::Atom target) {
++    connection_->SetProperty<uint32_t>(requestor_->x_window_,
++                                       requestor_->x_property_,
++                                       x11::GetAtom(kIncr), 1024);
++    connection_->Sync();
++
++    SendSelectionNotifyFailure(selection, target, requestor_->x_property_);
++  }
++
++  // Sends a chunk of an INCR transfer. An empty `value` ends the transfer.
++  void SendIncrChunk(const std::string& value) {
++    connection_->SetStringProperty(requestor_->x_window_,
++                                   requestor_->x_property_, x11::Atom::STRING,
++                                   value);
++    connection_->Sync();
++
++    requestor_->OnPropertyEvent({
++        .window = requestor_->x_window_,
++        .atom = requestor_->x_property_,
++        .state = x11::Property::NewValue,
++    });
++  }
++
+  protected:
+   void SetUp() override {
+     helper_ = std::make_unique<XClipboardHelper>(
+@@ -93,26 +151,24 @@ TEST_F(SelectionRequesterTest, NestedRequests) {
+   x11::Atom target1 = x11::GetAtom("TARGET1");
+   x11::Atom target2 = x11::GetAtom("TARGET2");
+ 
+-  base::test::TestFuture<bool, std::vector<uint8_t>, x11::Atom> future1;
+-  base::test::TestFuture<bool, std::vector<uint8_t>, x11::Atom> future2;
++  ConvertSelectionFuture future1;
++  ConvertSelectionFuture future2;
+ 
+-  requestor_->PerformConvertSelectionAsync(selection, target1,
+-                                           future1.GetCallback());
+-  requestor_->PerformConvertSelectionAsync(selection, target2,
+-                                           future2.GetCallback());
++  PerformConvertSelection(selection, target1, future1);
++  PerformConvertSelection(selection, target2, future2);
+ 
+   SendSelectionNotify(selection, target1, "Data1");
+   SendSelectionNotify(selection, target2, "Data2");
+ 
+-  EXPECT_TRUE(future1.Get<0>());
+-  const std::vector<uint8_t>& data1 = future1.Get<1>();
+-  EXPECT_EQ("Data1", base::as_string_view(data1));
+-  EXPECT_EQ(x11::Atom::STRING, future1.Get<2>());
++  const ConvertSelectionResult& result1 = future1.Get();
++  EXPECT_TRUE(result1.success);
++  EXPECT_EQ("Data1", base::as_string_view(result1.data));
++  EXPECT_EQ(x11::Atom::STRING, result1.type);
+ 
+-  EXPECT_TRUE(future2.Get<0>());
+-  const std::vector<uint8_t>& data2 = future2.Get<1>();
+-  EXPECT_EQ("Data2", base::as_string_view(data2));
+-  EXPECT_EQ(x11::Atom::STRING, future2.Get<2>());
++  const ConvertSelectionResult& result2 = future2.Get();
++  EXPECT_TRUE(result2.success);
++  EXPECT_EQ("Data2", base::as_string_view(result2.data));
++  EXPECT_EQ(x11::Atom::STRING, result2.type);
+ }
+ 
+ TEST_F(SelectionRequesterTest, RequestTypesAsync) {
+@@ -135,4 +191,118 @@ TEST_F(SelectionRequesterTest, RequestTypesAsync) {
+   EXPECT_EQ("Data2", base::as_string_view(result.GetSpan()));
+ }
+ 
++// Test that a request is aborted if the selection owner never responds.
++TEST_F(SelectionRequesterTest, AbortStaleRequests) {
++  x11::Atom selection = x11::GetAtom("FAKE_SELECTION");
++  x11::Atom target = x11::GetAtom("TARGET");
++
++  ConvertSelectionFuture future;
++  PerformConvertSelection(selection, target, future);
++
++  // Fast forward to trigger timeout.
++  task_environment_.FastForwardBy(base::Seconds(10));
++
++  const ConvertSelectionResult& result = future.Get();
++  EXPECT_FALSE(result.success);
++  EXPECT_TRUE(result.data.empty());
++  EXPECT_EQ(x11::Atom::None, result.type);
++}
++
++// Test that a request which is never answered does not block subsequent
++// requests indefinitely. Regression test for https://crbug.com/571343363.
++TEST_F(SelectionRequesterTest, UnansweredRequestDoesNotBlockQueue) {
++  x11::Atom selection = x11::GetAtom("FAKE_SELECTION");
++  x11::Atom target1 = x11::GetAtom("TARGET1");
++  x11::Atom target2 = x11::GetAtom("TARGET2");
++
++  ConvertSelectionFuture future1;
++  ConvertSelectionFuture future2;
++  PerformConvertSelection(selection, target1, future1);
++  PerformConvertSelection(selection, target2, future2);
++
++  // Never respond to the first request. Advance past its timeout, but not far
++  // enough for the second request to also time out.
++  task_environment_.FastForwardBy(base::Seconds(6));
++  ASSERT_TRUE(future1.IsReady());
++  EXPECT_FALSE(future1.Get().success);
++
++  // The second request should now be in flight and able to complete.
++  EXPECT_FALSE(future2.IsReady());
++  SendSelectionNotify(selection, target2, "Data2");
++  const ConvertSelectionResult& result2 = future2.Get();
++  EXPECT_TRUE(result2.success);
++  EXPECT_EQ("Data2", base::as_string_view(result2.data));
++}
++
++// Test that the timeout for a queued request is measured from when it is sent
++// to the selection owner, not from when it was queued.
++TEST_F(SelectionRequesterTest, TimeoutStartsWhenRequestIsSent) {
++  x11::Atom selection = x11::GetAtom("FAKE_SELECTION");
++  x11::Atom target1 = x11::GetAtom("TARGET1");
++  x11::Atom target2 = x11::GetAtom("TARGET2");
++
++  ConvertSelectionFuture future1;
++  ConvertSelectionFuture future2;
++  PerformConvertSelection(selection, target1, future1);
++  PerformConvertSelection(selection, target2, future2);
++
++  task_environment_.FastForwardBy(base::Seconds(4));
++  SendSelectionNotify(selection, target1, "Data1");
++  EXPECT_TRUE(future1.Get().success);
++
++  // The second request was queued more than the timeout ago, but has only been
++  // in flight for a short time.
++  task_environment_.FastForwardBy(base::Seconds(4));
++  EXPECT_FALSE(future2.IsReady());
++
++  task_environment_.FastForwardBy(base::Seconds(2));
++  ASSERT_TRUE(future2.IsReady());
++  EXPECT_FALSE(future2.Get().success);
++}
++
++// Test that an INCR transfer that keeps making progress is not aborted, even if
++// the total transfer time exceeds the timeout.
++TEST_F(SelectionRequesterTest, IncrProgressResetsTimeout) {
++  x11::Atom selection = x11::GetAtom("FAKE_SELECTION");
++  x11::Atom target = x11::GetAtom("TARGET");
++
++  ConvertSelectionFuture future;
++  PerformConvertSelection(selection, target, future);
++
++  SendIncrStart(selection, target);
++
++  task_environment_.FastForwardBy(base::Seconds(4));
++  EXPECT_FALSE(future.IsReady());
++  SendIncrChunk("Da");
++
++  task_environment_.FastForwardBy(base::Seconds(4));
++  EXPECT_FALSE(future.IsReady());
++  SendIncrChunk("ta");
++
++  task_environment_.FastForwardBy(base::Seconds(4));
++  EXPECT_FALSE(future.IsReady());
++  SendIncrChunk("");
++
++  const ConvertSelectionResult& result = future.Get();
++  EXPECT_TRUE(result.success);
++  EXPECT_EQ("Data", base::as_string_view(result.data));
++  EXPECT_EQ(x11::Atom::STRING, result.type);
++}
++
++// Test that an INCR transfer that stalls is aborted.
++TEST_F(SelectionRequesterTest, StalledIncrTransferTimesOut) {
++  x11::Atom selection = x11::GetAtom("FAKE_SELECTION");
++  x11::Atom target = x11::GetAtom("TARGET");
++
++  ConvertSelectionFuture future;
++  PerformConvertSelection(selection, target, future);
++
++  SendIncrStart(selection, target);
++
++  // Never send any chunks.
++  task_environment_.FastForwardBy(base::Seconds(10));
++  ASSERT_TRUE(future.IsReady());
++  EXPECT_FALSE(future.Get().success);
++}
++
+ }  // namespace ui
