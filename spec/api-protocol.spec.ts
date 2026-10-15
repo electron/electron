@@ -1543,11 +1543,12 @@ describe('protocol module', () => {
       });
 
       it('returns an opaque response for a registerFileProtocol scheme fetched cross-origin with mode: no-cors', async () => {
-        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'protocol-spec-'));
-        defer(() => fs.rmSync(dir, { recursive: true, force: true }));
-        const secretFile = path.join(dir, 'secret.txt');
-        fs.writeFileSync(secretFile, secret);
-        protocol.registerFileProtocol('no-cors-file', (_req, cb) => cb({ path: secretFile }));
+        // Serve a checked-in file rather than a temporary one.
+        // On Windows, Electron's fs.rmSync leaves a deleted file in its directory
+        // while any other handle still has it open,
+        // so removing a temporary directory here can fail with ENOTEMPTY.
+        const file = path.join(fixturesPath, 'hello.txt');
+        protocol.registerFileProtocol('no-cors-file', (_req, cb) => cb({ path: file }));
         defer(() => protocol.unregisterProtocol('no-cors-file'));
 
         await w.loadURL(remoteUrl);
