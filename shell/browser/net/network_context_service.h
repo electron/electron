@@ -21,6 +21,7 @@ class BrowserContext;
 
 namespace electron {
 
+class DeviceBoundSessionsKeyService;
 class ElectronBrowserContext;
 
 // KeyedService that initializes and provides access to the NetworkContexts for
@@ -42,6 +43,8 @@ class NetworkContextService : public KeyedService {
   raw_ptr<ElectronBrowserContext> browser_context_;
   ProxyConfigMonitor proxy_config_monitor_;
   std::unique_ptr<CookieEncryptionProviderImpl> cookie_encryption_provider_;
+  std::unique_ptr<DeviceBoundSessionsKeyService>
+      device_bound_sessions_key_service_;
 };
 
 }  // namespace electron

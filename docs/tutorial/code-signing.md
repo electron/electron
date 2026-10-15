@@ -96,6 +96,9 @@ signing (and notarizing) your app:
   signing requirement.
 - [`autoUpdater`](../api/auto-updater.md) - `Squirrel.Mac` requires the app to be
   signed for automatic updates to work at all.
+- [The `deviceBoundSessions` fuse](./fuses.md#deviceboundsessions) - Device Bound Session
+  Credentials keep their keys in the Keychain under a `keychain-access-groups` entitlement,
+  so the app needs a real signature and an embedded provisioning profile, not only a signature.
 
 ## Signing Windows builds
 
