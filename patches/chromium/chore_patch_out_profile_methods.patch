@@ -43,7 +43,7 @@ index ba02974778b98b83456e79ba62a9d6b30680039c..fd2e7a592cdeca42393d2e3f9f2a0e6c
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(chrome_pdf::features::kPdfXfaSupport);
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index 435d133f0d66ef7a9aee93d0b5f64b4afd2e40a1..977c1377c081c2ff580faafce3b87d79478d84da 100644
+index 067d32765013e05e148ee8253ab9b2afdb979a22..da9add58b669b7ec9e0ce729c8703cda78d0c586 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
 @@ -16,7 +16,6 @@
@@ -68,7 +68,7 @@ index 435d133f0d66ef7a9aee93d0b5f64b4afd2e40a1..977c1377c081c2ff580faafce3b87d79
  }
  
  bool IsPdfInk2AnnotationsEnabled(content::BrowserContext* context) {
-@@ -509,11 +511,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
+@@ -546,11 +548,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
      }
    }
  
@@ -83,7 +83,7 @@ index 435d133f0d66ef7a9aee93d0b5f64b4afd2e40a1..977c1377c081c2ff580faafce3b87d79
    auto* tab_interface = tabs::TabInterface::MaybeGetFromContents(web_contents);
    if (tab_interface && !tab_interface->IsInNormalWindow()) {
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index d8a89a3a54e37c3e4046ef9a0eea36c590bda442..68cef18d8a3f5f3b56dbde26d248f5b245d03e8a 100644
+index fe3c87eb4a3bd02915333ad9a67fdc2a626842a0..99e85910fb0bebd70f363cd9c83af28857c103bc 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
 @@ -25,8 +25,10 @@
@@ -108,7 +108,7 @@ index d8a89a3a54e37c3e4046ef9a0eea36c590bda442..68cef18d8a3f5f3b56dbde26d248f5b2
  }
  
  }  // namespace
-@@ -505,11 +510,13 @@ void SpellcheckService::InitForRenderer(content::RenderProcessHost* host) {
+@@ -504,11 +509,13 @@ void SpellcheckService::InitForRenderer(content::RenderProcessHost* host) {
        features::kInitialWebUIWithoutSpellCheck.Get()) {
      return;
    }

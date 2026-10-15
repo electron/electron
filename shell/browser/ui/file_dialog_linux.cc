@@ -16,6 +16,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "components/dbus/thread_linux/dbus_thread_linux.h"
 #include "components/dbus/xdg/portal.h"
+#include "components/dbus/xdg/portal_constants.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/file_dialog.h"
@@ -109,6 +110,7 @@ void LogIfNeededAboutUnsupportedPortalFeature(const DialogSettings& settings) {
     return;
   dbus_xdg::RequestXdgDesktopPortal(
       dbus_thread_linux::GetSharedSessionBus().get(),
+      dbus_xdg::kFileChooserInterfaceName,
       base::BindOnce(
           [](uint32_t required_version, uint32_t available_version) {
             if (available_version >= required_version &&

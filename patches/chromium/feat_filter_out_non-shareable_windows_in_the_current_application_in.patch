@@ -17,7 +17,7 @@ protecting a window during an active capture will not take effect until the
 next filter update or stream restart.
 
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index 6bcb69df1ecc8ec78814793a9d4879d4a9a6576c..db8f635acb0b617e7a950f84577444b49000bcb2 100644
+index 9e293cc59d5b1507840e67e7b3d984c0591a7d1f..d65fec0b3f3d7cd8f47be7b30639476537d6af67 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
 @@ -152,6 +152,32 @@ bool IsPresenterOverlayLargeActive(CFDictionaryRef attachment) {
@@ -53,7 +53,7 @@ index 6bcb69df1ecc8ec78814793a9d4879d4a9a6576c..db8f635acb0b617e7a950f84577444b4
  }  // namespace
  
  @interface ScreenCaptureKitDeviceHelper
-@@ -321,6 +347,9 @@ void OnShareableContentCreated(SCShareableContent* content) {
+@@ -323,6 +349,9 @@ void OnShareableContentCreated(SCShareableContent* content) {
                source_.id == webrtc::kFullDesktopScreenId) {
              NSArray<SCWindow*>* excluded_windows = GetWindowsToExclude(
                  content, pip_screen_capture_coordinator_proxy_.get(), source_);
@@ -63,7 +63,7 @@ index 6bcb69df1ecc8ec78814793a9d4879d4a9a6576c..db8f635acb0b617e7a950f84577444b4
              filter = [[SCContentFilter alloc] initWithDisplay:display
                                               excludingWindows:excluded_windows];
              stream_config_content_size_ =
-@@ -596,6 +625,8 @@ void OnShareableContentForFilterUpdate(SCShareableContent* content) {
+@@ -607,6 +636,8 @@ void OnShareableContentForFilterUpdate(SCShareableContent* content) {
  
      NSArray<SCWindow*>* excluded_windows = GetWindowsToExclude(
          content, pip_screen_capture_coordinator_proxy_.get(), source_);

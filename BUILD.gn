@@ -554,6 +554,7 @@ source_set("electron_lib") {
     "//services/device/public/cpp/hid",
     "//services/device/public/mojom",
     "//services/proxy_resolver:lib",
+    "//services/tracing/public/cpp",
     "//services/video_capture/public/mojom:constants",
     "//services/viz/privileged/mojom/compositing",
     "//services/viz/public/mojom",
@@ -572,6 +573,7 @@ source_set("electron_lib") {
     "//third_party/inspector_protocol:crdtp",
     "//third_party/leveldatabase",
     "//third_party/libyuv",
+    "//third_party/perfetto/protos/perfetto/config:cpp",
     "//third_party/webrtc_overrides:webrtc_component",
     "//third_party/widevine/cdm:headers",
     "//third_party/zlib/google:zip",
@@ -664,13 +666,6 @@ source_set("electron_lib") {
     defines += [ "NODE_SHARED_MODE" ]
   }
 
-  if (enable_fake_location_provider) {
-    sources += [
-      "shell/browser/fake_location_provider.cc",
-      "shell/browser/fake_location_provider.h",
-    ]
-  }
-
   if (enable_prompt_api) {
     sources += [
       "shell/browser/ai/proxying_ai_manager.cc",
@@ -683,11 +678,6 @@ source_set("electron_lib") {
   }
 
   if (is_mac) {
-    # Disable C++ modules to resolve linking error when including MacOS SDK
-    # headers from third_party/electron_node/deps/uv/include/uv/darwin.h
-    # TODO(samuelmaddock): consider revisiting this in the future
-    use_libcxx_modules = false
-
     deps += [
       "//components/os_crypt/async/browser:keychain_key_provider",
       "//components/os_crypt/common:keychain_password_mac",
