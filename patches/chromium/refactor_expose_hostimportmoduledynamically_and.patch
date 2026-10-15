@@ -7,7 +7,7 @@ Subject: refactor: expose HostImportModuleDynamically and
 This is so that Electron can blend Blink's and Node's implementations of these isolate handlers.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 5639cedb3a74c0542801c7c4418d3cae20b26030..c8c6580c6e3600f1e9de4f6acd1e2be7d932072e 100644
+index 9d28b830097998e5a3c6f702ec561d4a027d61e0..ce05b1f20d2ca81bf6b00517b22de6f80d5e7803 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 @@ -733,8 +733,9 @@ bool WasmCustomDescriptorsEnabledCallback(v8::Local<v8::Context> context) {

@@ -24,7 +24,7 @@ https://chromium-review.googlesource.com/c/chromium/src/+/8455902.
 This patch can be removed when that CL lands and rolls into Electron.
 
 diff --git a/gin/function_template.h b/gin/function_template.h
-index 19af32e0dc7b2c05d767bc6d54244c6c1c9ed8d2..79a3cf995c6f23ae71b895c95e01485ed09e99b7 100644
+index 02adc3e2012886305340d1ad19b522173d098441..66589541cb74932fb03da287425c70128fc6b456 100644
 --- a/gin/function_template.h
 +++ b/gin/function_template.h
 @@ -12,7 +12,6 @@
@@ -35,7 +35,7 @@ index 19af32e0dc7b2c05d767bc6d54244c6c1c9ed8d2..79a3cf995c6f23ae71b895c95e01485e
  #include "base/strings/strcat.h"
  #include "gin/arguments.h"
  #include "gin/converter.h"
-@@ -196,6 +195,8 @@ class Invoker;
+@@ -197,6 +196,8 @@ class Invoker;
  template <size_t... indices, typename... ArgTypes>
  class Invoker<std::index_sequence<indices...>, ArgTypes...>
      : public ArgumentHolder<indices, ArgTypes>... {
@@ -44,7 +44,7 @@ index 19af32e0dc7b2c05d767bc6d54244c6c1c9ed8d2..79a3cf995c6f23ae71b895c95e01485e
   public:
    // Invoker<> inherits from ArgumentHolder<> for each argument.
    // C++ has always been strict about the class initialization order,
-@@ -229,7 +230,7 @@ class Invoker<std::index_sequence<indices...>, ArgTypes...>
+@@ -230,7 +231,7 @@ class Invoker<std::index_sequence<indices...>, ArgTypes...>
      return arg1 && And(args...);
    }
  
