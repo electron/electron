@@ -10,6 +10,7 @@
 //  - `defer()`-ed cleanup (spec/lib/spec-helpers.ts) runs straight after each
 //    test, before the enclosing suites' own afterEach hooks, so that a hook
 //    like `afterEach(closeAllWindows)` finds the test's windows already gone.
+//    Each cleanup gets the hook timeout, as an afterEach hook would.
 //  - A failing afterEach hook or defer()-ed cleanup does not stop the rest.
 //    Once one throws, vitest skips the test's remaining afterEach hooks,
 //    the enclosing suites' included,
@@ -74,7 +75,8 @@ export default class ElectronSpecRunner extends TestRunner {
       for (const list of [hooks.beforeAll, hooks.beforeEach, hooks.afterEach, hooks.afterAll]) {
         list.splice(0, list.length, ...list.map(fromFreshMacrotask));
       }
-      hooks.afterEach.unshift(runCleanupFunctions);
+      // Read when the hook runs, so that vi.setConfig() applies to it.
+      hooks.afterEach.unshift(() => runCleanupFunctions(this.config.hookTimeout));
       hooks.afterEach.splice(0, hooks.afterEach.length, ...hooks.afterEach.map(collectingErrors));
     }
     return super.onBeforeRunSuite(suite);

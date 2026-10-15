@@ -25,17 +25,33 @@ export const isWayland =
     process.argv.includes('--ozone-platform=wayland'));
 
 type CleanupFunction = (() => void) | (() => Promise<void>);
-const cleanupFunctions: CleanupFunction[] = [];
-export async function runCleanupFunctions() {
+// Each cleanup comes with the error it fails with if it times out,
+// created in defer() so that its stack points at the caller.
+const cleanupFunctions: { cleanup: CleanupFunction; timeoutError: Error }[] = [];
+
+// Runs every defer()-ed cleanup, newest first.
+// Like a vitest hook, each one gets `timeout` ms (no limit if 0 or Infinity),
+// so a cleanup that never settles fails the test instead of hanging the run.
+export async function runCleanupFunctions(timeout: number) {
   // Take the whole list up front: a cleanup that throws must not leave the
   // rest behind to run (and throw) again after every later test.
   const pending = cleanupFunctions.splice(0, cleanupFunctions.length);
   const errors: unknown[] = [];
-  for (const cleanup of pending) {
+  for (const { cleanup, timeoutError } of pending) {
+    let timer: NodeJS.Timeout | undefined;
+    const timedOut = new Promise<never>((_resolve, reject) => {
+      if (timeout <= 0 || timeout === Infinity) return;
+      timer = globalThis.setTimeout(() => {
+        timeoutError.message = `defer()-ed cleanup timed out in ${timeout}ms`;
+        reject(timeoutError);
+      }, timeout);
+    });
     try {
-      await cleanup();
+      await Promise.race([cleanup(), timedOut]);
     } catch (error) {
       errors.push(error);
+    } finally {
+      globalThis.clearTimeout(timer);
     }
   }
   if (errors.length === 1) throw errors[0];
@@ -43,7 +59,9 @@ export async function runCleanupFunctions() {
 }
 
 export function defer(f: CleanupFunction) {
-  cleanupFunctions.unshift(f);
+  const timeoutError = new Error('defer()-ed cleanup timed out');
+  Error.captureStackTrace(timeoutError, defer);
+  cleanupFunctions.unshift({ cleanup: f, timeoutError });
 }
 
 export function deferKillUtilityProcess(utilityProcess: Electron.UtilityProcess) {
