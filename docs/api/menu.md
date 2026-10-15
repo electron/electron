@@ -61,6 +61,29 @@ Returns `Menu | null` - The application menu, if set, or `null`, if not set.
 > removal of menu items. [Instance properties](#instance-properties) can still
 > be dynamically modified.
 
+#### `Menu.setHighlightColors(options)` _Windows_
+
+- `options` Object | null
+  - `background` string (optional) - Background color of the hovered or
+    keyboard-focused menu item, as a CSS color string (e.g. `#0067c0`).
+  - `foreground` string (optional) - Text color of the hovered or
+    keyboard-focused menu item, as a CSS color string.
+  - `dark` Object (optional) - Colors to use instead when the menu uses dark
+    colors. Any value left unset falls back to `background` / `foreground`.
+    - `background` string (optional)
+    - `foreground` string (optional)
+
+Sets the colors used to highlight the hovered or keyboard-focused item in
+every menu the app shows, including context menus and the menu bar's
+dropdowns. Colors left unset keep the default. Passing `null` restores the
+defaults.
+
+Menus opened after the call use the new colors. The colors are not applied
+while Windows high contrast mode or forced colors are active, so the user's
+system colors take priority.
+
+This method has no effect on macOS and Linux.
+
 #### `Menu.sendActionToFirstResponder(action)` _macOS_
 
 - `action` string

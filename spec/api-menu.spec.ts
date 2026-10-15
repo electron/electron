@@ -1190,4 +1190,41 @@ describe('Menu module', () => {
       expect(output).toContain('Window has no menu');
     });
   });
+
+  describe('Menu.setHighlightColors', () => {
+    afterEach(() => {
+      Menu.setHighlightColors(null);
+    });
+
+    it('accepts CSS color strings', () => {
+      expect(() => {
+        Menu.setHighlightColors({
+          background: '#0067c0',
+          foreground: 'white',
+          dark: { background: 'rgb(76, 194, 255)', foreground: '#000' }
+        });
+      }).not.toThrow();
+    });
+
+    it('accepts a partial set of colors', () => {
+      expect(() => Menu.setHighlightColors({ background: '#0067c0' })).not.toThrow();
+      expect(() => Menu.setHighlightColors({ dark: { foreground: '#fff' } })).not.toThrow();
+    });
+
+    it('resets the colors when passed null', () => {
+      Menu.setHighlightColors({ background: '#0067c0' });
+      expect(() => Menu.setHighlightColors(null)).not.toThrow();
+    });
+
+    it('throws on an invalid color', () => {
+      expect(() => Menu.setHighlightColors({ background: 'not-a-color' })).toThrow(/Invalid color for 'background'/);
+      expect(() => Menu.setHighlightColors({ foreground: 123 as any })).toThrow(/Invalid color for 'foreground'/);
+      expect(() => Menu.setHighlightColors({ dark: { background: 'nope' } })).toThrow(/Invalid color for 'background'/);
+    });
+
+    it('throws on invalid options', () => {
+      expect(() => Menu.setHighlightColors('#0067c0' as any)).toThrow(/Options must be an object or null/);
+      expect(() => Menu.setHighlightColors({ dark: '#000' as any })).toThrow(/'dark' must be an object/);
+    });
+  });
 });
