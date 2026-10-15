@@ -1,0 +1,16 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Test <test@test.com>
+Date: Mon, 13 Oct 2026 00:00:00 +0000
+Subject: test: add comment to base_switches
+
+Trivial comment addition.
+
+diff --git a/base/base_switches.cc b/base/base_switches.cc
+index 1234567..abcdefg 100644
+--- a/base/base_switches.cc
++++ b/base/base_switches.cc
+@@ -1,3 +1,4 @@
++// Test comment
+ #include "base/base_switches.h"
+ 
+ namespace switches {
