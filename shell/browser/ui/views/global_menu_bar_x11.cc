@@ -23,36 +23,51 @@
 #include "ui/gfx/x/keysyms/keysyms.h"
 #include "ui/gfx/x/xproto.h"
 
+#if defined(__clang__) && __has_attribute(cfi_unchecked_callee)
+#define DBUSMENU_CFI_UNCHECKED_CALLEE [[clang::cfi_unchecked_callee]]
+#else
+#define DBUSMENU_CFI_UNCHECKED_CALLEE
+#endif
+
 // libdbusmenu-glib types
 using DbusmenuMenuitem = struct _DbusmenuMenuitem;
-using dbusmenu_menuitem_new_func = DbusmenuMenuitem* (*)();
-using dbusmenu_menuitem_new_with_id_func = DbusmenuMenuitem* (*)(int id);
+using dbusmenu_menuitem_new_func = DbusmenuMenuitem* (*)()
+    DBUSMENU_CFI_UNCHECKED_CALLEE;
+using dbusmenu_menuitem_new_with_id_func = DbusmenuMenuitem* (*)(int id)
+    DBUSMENU_CFI_UNCHECKED_CALLEE;
 
-using dbusmenu_menuitem_get_id_func = int (*)(DbusmenuMenuitem* item);
-using dbusmenu_menuitem_get_children_func = GList* (*)(DbusmenuMenuitem* item);
+using dbusmenu_menuitem_get_id_func = int (*)(DbusmenuMenuitem* item)
+    DBUSMENU_CFI_UNCHECKED_CALLEE;
+using dbusmenu_menuitem_get_children_func = GList* (*)(DbusmenuMenuitem* item)
+    DBUSMENU_CFI_UNCHECKED_CALLEE;
 using dbusmenu_menuitem_child_append_func =
-    DbusmenuMenuitem* (*)(DbusmenuMenuitem* parent, DbusmenuMenuitem* child);
+    DbusmenuMenuitem* (*)(DbusmenuMenuitem* parent,
+                          DbusmenuMenuitem* child)DBUSMENU_CFI_UNCHECKED_CALLEE;
 using dbusmenu_menuitem_property_set_func =
     DbusmenuMenuitem* (*)(DbusmenuMenuitem* item,
                           const char* property,
-                          const char* value);
+                          const char* value)DBUSMENU_CFI_UNCHECKED_CALLEE;
 using dbusmenu_menuitem_property_set_variant_func =
     DbusmenuMenuitem* (*)(DbusmenuMenuitem* item,
                           const char* property,
-                          GVariant* value);
+                          GVariant* value)DBUSMENU_CFI_UNCHECKED_CALLEE;
 using dbusmenu_menuitem_property_set_bool_func =
     DbusmenuMenuitem* (*)(DbusmenuMenuitem* item,
                           const char* property,
-                          bool value);
+                          bool value)DBUSMENU_CFI_UNCHECKED_CALLEE;
 using dbusmenu_menuitem_property_set_int_func =
     DbusmenuMenuitem* (*)(DbusmenuMenuitem* item,
                           const char* property,
-                          int value);
+                          int value)DBUSMENU_CFI_UNCHECKED_CALLEE;
 
 using DbusmenuServer = struct _DbusmenuServer;
-using dbusmenu_server_new_func = DbusmenuServer* (*)(const char* object);
+using dbusmenu_server_new_func = DbusmenuServer* (*)(const char* object)
+    DBUSMENU_CFI_UNCHECKED_CALLEE;
 using dbusmenu_server_set_root_func = void (*)(DbusmenuServer* self,
-                                               DbusmenuMenuitem* root);
+                                               DbusmenuMenuitem* root)
+    DBUSMENU_CFI_UNCHECKED_CALLEE;
+
+#undef DBUSMENU_CFI_UNCHECKED_CALLEE
 
 namespace electron {
 

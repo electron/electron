@@ -1,0 +1,353 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Sat, 26 Sep 2026 20:30:18 +0000
+Subject: fix: support native addons with Clang CFI
+
+1) Electron enables CFI-icall in processes that also load independently built
+native addons. Route Node addon initializers, Node-API callbacks and cleanup
+hooks through narrow unchecked dispatchers, including finalizers invoked after
+their environment is gone.
+
+2) Give libuv fs-poll dispatch a distinct name so Electron can exclude that precise
+function through its CFI ignorelist instead of changing public callback types.
+
+diff --git a/deps/uv/src/fs-poll.c b/deps/uv/src/fs-poll.c
+index 1fadafdea1746a1d8cb737dd48f921787201ca8c..51094a84acb8f826b8cc6d9048cdf2322d785a8b 100644
+--- a/deps/uv/src/fs-poll.c
++++ b/deps/uv/src/fs-poll.c
+@@ -49,7 +49,7 @@ struct poll_ctx {
+ };
+ 
+ static int statbuf_eq(const uv_stat_t* a, const uv_stat_t* b);
+-static void poll_cb(uv_fs_t* req);
++static void uv__fs_poll_cb(uv_fs_t* req);
+ static void timer_cb(uv_timer_t* timer);
+ static void timer_close_cb(uv_handle_t* timer);
+ 
+@@ -96,7 +96,7 @@ int uv_fs_poll_start(uv_fs_poll_t* handle,
+   ctx->timer_handle.flags |= UV_HANDLE_INTERNAL;
+   uv__handle_unref(&ctx->timer_handle);
+ 
+-  err = uv_fs_stat(loop, &ctx->fs_req, ctx->path, poll_cb);
++  err = uv_fs_stat(loop, &ctx->fs_req, ctx->path, uv__fs_poll_cb);
+   if (err < 0)
+     goto error;
+ 
+@@ -124,7 +124,7 @@ int uv_fs_poll_stop(uv_fs_poll_t* handle) {
+   assert(ctx->parent_handle == handle);
+ 
+   /* Close the timer if it's active. If it's inactive, there's a stat request
+-   * in progress and poll_cb will take care of the cleanup.
++   * in progress and uv__fs_poll_cb will take care of the cleanup.
+    */
+   if (uv_is_active((uv_handle_t*)&ctx->timer_handle))
+     uv_close((uv_handle_t*)&ctx->timer_handle, timer_close_cb);
+@@ -180,12 +180,12 @@ static void timer_cb(uv_timer_t* timer) {
+   assert(ctx->parent_handle->poll_ctx == ctx);
+   ctx->start_time = uv_now(ctx->loop);
+ 
+-  if (uv_fs_stat(ctx->loop, &ctx->fs_req, ctx->path, poll_cb))
++  if (uv_fs_stat(ctx->loop, &ctx->fs_req, ctx->path, uv__fs_poll_cb))
+     abort();
+ }
+ 
+ 
+-static void poll_cb(uv_fs_t* req) {
++static void uv__fs_poll_cb(uv_fs_t* req) {
+   uv_stat_t* statbuf;
+   struct poll_ctx* ctx;
+   uint64_t interval;
+diff --git a/src/api/hooks.cc b/src/api/hooks.cc
+index 3213a30a7bc734a6626d0f93d4ce2ac7ddc747f6..5a3168a58a41105e56491911e6454c3ca3017d98 100644
+--- a/src/api/hooks.cc
++++ b/src/api/hooks.cc
+@@ -1,4 +1,5 @@
+ #include "env-inl.h"
++#include "node_binding.h"
+ #include "node_internals.h"
+ #include "node_process-inl.h"
+ #include "async_wrap.h"
+@@ -164,7 +165,7 @@ static void CleanupHookThunkRun(void* arg) {
+   Isolate* isolate = thunk->isolate;
+   CleanupHook fun = thunk->fun;
+   void* fun_arg = thunk->arg;
+-  fun(fun_arg);
++  binding::CallAddonEntryPoint(fun, fun_arg);
+   RemoveEnvironmentCleanupHook(isolate, fun, fun_arg);
+ }
+ 
+@@ -213,7 +214,8 @@ static void RunAsyncCleanupHook(void* arg) {
+   AsyncCleanupHookInfo* info = static_cast<AsyncCleanupHookInfo*>(arg);
+   info->env->IncreaseWaitingRequestCounter();
+   info->started = true;
+-  info->fun(info->arg, FinishAsyncCleanupHook, info);
++  binding::CallAddonEntryPoint(
++      info->fun, info->arg, FinishAsyncCleanupHook, info);
+ }
+ 
+ ACHHandle* AddEnvironmentCleanupHookInternal(
+@@ -244,7 +246,7 @@ void RequestInterrupt(Environment* env, void (*fun)(void* arg), void* arg) {
+     Isolate::DisallowJavascriptExecutionScope scope(
+         env->isolate(),
+         Isolate::DisallowJavascriptExecutionScope::CRASH_ON_FAILURE);
+-    fun(arg);
++    binding::CallAddonEntryPoint(fun, arg);
+   });
+ }
+ 
+diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
+index da2ed4bae5a552117ad808c19a2e57f884b037ae..2e73df3f2f9aa21125c403e7c691c3fef1b00277 100644
+--- a/src/js_native_api_v8.cc
++++ b/src/js_native_api_v8.cc
+@@ -7,6 +7,7 @@
+ #include "env-inl.h"
+ #include "js_native_api.h"
+ #include "js_native_api_v8.h"
++#include "node_binding.h"
+ #include "util-inl.h"
+ 
+ #define CHECK_MAYBE_NOTHING(env, maybe, status)                                \
+@@ -501,7 +502,10 @@ class FunctionCallbackWrapper {
+ 
+     napi_value result = nullptr;
+     bool exceptionOccurred = false;
+-    env->CallIntoModule([&](napi_env env) { result = cb(env, cbinfo_wrapper); },
++    env->CallIntoModule([&](napi_env env) {
++                          result = node::binding::CallAddonEntryPoint(
++                              cb, env, cbinfo_wrapper);
++                        },
+                         [&](napi_env env, v8::Local<v8::Value> value) {
+                           exceptionOccurred = true;
+                           if (env->terminatedOrTerminating()) {
+@@ -614,7 +618,8 @@ void Finalizer::CallFinalizer() {
+   if (finalize_callback == nullptr) return;
+   if (env_ == nullptr) {
+     // The environment is dead. Call the finalizer directly.
+-    finalize_callback(nullptr, finalize_data, finalize_hint);
++    node::binding::CallAddonEntryPoint(
++        finalize_callback, nullptr, finalize_data, finalize_hint);
+   } else {
+     env_->CallFinalizer(finalize_callback, finalize_data, finalize_hint);
+   }
+@@ -3152,7 +3157,7 @@ node_api_create_external_sharedarraybuffer(napi_env env,
+   };
+   auto deleter = [](void* external_data, size_t length, void* deleter_data) {
+     if (auto fd = static_cast<FinalizerData*>(deleter_data)) {
+-      fd->cb(external_data, fd->hint);
++      node::binding::CallAddonEntryPoint(fd->cb, external_data, fd->hint);
+       delete fd;
+     }
+   };
+diff --git a/src/node_api.cc b/src/node_api.cc
+index f95f93df7b25c7cb2f9262489721b12f60ef5531..bb72bf4a52f66034b46a378dfff4fc5998d798e3 100644
+--- a/src/node_api.cc
++++ b/src/node_api.cc
+@@ -94,7 +94,9 @@ void node_napi_env__::CallFinalizer(napi_finalize cb, void* data, void* hint) {
+   v8::HandleScope handle_scope(isolate);
+   v8::Context::Scope context_scope(context());
+   CallbackIntoModule<enforceUncaughtExceptionPolicy>(
+-      [&](napi_env env) { cb(env, data, hint); });
++      [&](napi_env env) {
++        node::binding::CallAddonEntryPoint(cb, env, data, hint);
++      });
+ }
+ 
+ void node_napi_env__::EnqueueFinalizer(v8impl::RefTracker* finalizer) {
+@@ -315,7 +317,8 @@ class ThreadSafeFunction {
+       queue.swap(drain_queue);
+     }
+     for (; !drain_queue.empty(); drain_queue.pop()) {
+-      call_js_cb(nullptr, nullptr, context, drain_queue.front());
++      node::binding::CallAddonEntryPoint(
++          call_js_cb, nullptr, nullptr, context, drain_queue.front());
+     }
+   }
+ 
+@@ -459,7 +462,10 @@ class ThreadSafeFunction {
+         js_callback = v8impl::JsValueFromV8LocalValue(js_cb);
+       }
+       env->CallbackIntoModule<false>(
+-          [&](napi_env env) { call_js_cb(env, js_callback, context, data); });
++          [&](napi_env env) {
++            node::binding::CallAddonEntryPoint(
++                call_js_cb, env, js_callback, context, data);
++          });
+     }
+ 
+     return has_more;
+@@ -705,11 +711,12 @@ static void napi_module_register_cb(v8::Local<v8::Object> exports,
+                                     v8::Local<v8::Value> module,
+                                     v8::Local<v8::Context> context,
+                                     void* priv) {
+-  napi_module_register_by_symbol(
++  napi_module_register_by_symbol_from_addon(
+       exports,
+       module,
+       context,
+-      static_cast<const napi_module*>(priv)->nm_register_func);
++      static_cast<const napi_module*>(priv)->nm_register_func,
++      NODE_API_DEFAULT_MODULE_API_VERSION);
+ }
+ 
+ template <int32_t module_api_version>
+@@ -754,11 +761,13 @@ node::addon_context_register_func get_node_api_context_register_func(
+   }
+ }
+ 
+-void napi_module_register_by_symbol(v8::Local<v8::Object> exports,
+-                                    v8::Local<v8::Value> module,
+-                                    v8::Local<v8::Context> context,
+-                                    napi_addon_register_func init,
+-                                    int32_t module_api_version) {
++template <typename CallInit>
++void napi_module_register_by_symbol_impl(v8::Local<v8::Object> exports,
++                                         v8::Local<v8::Value> module,
++                                         v8::Local<v8::Context> context,
++                                         napi_addon_register_func init,
++                                         int32_t module_api_version,
++                                         CallInit call_init) {
+   node::Environment* node_env = node::Environment::GetCurrent(context);
+   CHECK_NOT_NULL(node_env);
+   std::string module_filename = "";
+@@ -791,7 +800,8 @@ void napi_module_register_by_symbol(v8::Local<v8::Object> exports,
+ 
+   napi_value _exports = nullptr;
+   env->CallIntoModule([&](napi_env env) {
+-    _exports = init(env, v8impl::JsValueFromV8LocalValue(exports));
++    napi_value exports_value = v8impl::JsValueFromV8LocalValue(exports);
++    _exports = call_init(init, env, exports_value);
+   });
+ 
+   // If register function returned a non-null exports object different from
+@@ -804,6 +814,31 @@ void napi_module_register_by_symbol(v8::Local<v8::Object> exports,
+   }
+ }
+ 
++void napi_module_register_by_symbol(v8::Local<v8::Object> exports,
++                                    v8::Local<v8::Value> module,
++                                    v8::Local<v8::Context> context,
++                                    napi_addon_register_func init,
++                                    int32_t module_api_version) {
++  napi_module_register_by_symbol_impl(
++      exports, module, context, init, module_api_version,
++      [](napi_addon_register_func init, napi_env env, napi_value exports) {
++        return init(env, exports);
++      });
++}
++
++void napi_module_register_by_symbol_from_addon(
++    v8::Local<v8::Object> exports,
++    v8::Local<v8::Value> module,
++    v8::Local<v8::Context> context,
++    napi_addon_register_func init,
++    int32_t module_api_version) {
++  napi_module_register_by_symbol_impl(
++      exports, module, context, init, module_api_version,
++      [](napi_addon_register_func init, napi_env env, napi_value exports) {
++        return node::binding::CallAddonEntryPoint(init, env, exports);
++      });
++}
++
+ namespace node {
+ node_module napi_module_to_node_module(const napi_module* mod) {
+   return {
+@@ -1254,7 +1289,9 @@ class Work : public node::AsyncResource, public node::ThreadPoolWork {
+ 
+   static void Delete(Work* work) { delete work; }
+ 
+-  void DoThreadPoolWork() override { _execute(_env, _data); }
++  void DoThreadPoolWork() override {
++    node::binding::CallAddonEntryPoint(_execute, _env, _data);
++  }
+ 
+   void AfterThreadPoolWork(int status) override {
+     if (_complete == nullptr) return;
+@@ -1266,7 +1303,8 @@ class Work : public node::AsyncResource, public node::ThreadPoolWork {
+     CallbackScope callback_scope(this);
+ 
+     _env->CallbackIntoModule<true>([&](napi_env env) {
+-      _complete(env, ConvertUVErrorCode(status), _data);
++      node::binding::CallAddonEntryPoint(
++          _complete, env, ConvertUVErrorCode(status), _data);
+     });
+ 
+     // Note: Don't access `work` after this point because it was
+diff --git a/src/node_binding.cc b/src/node_binding.cc
+index ba3f06b8df90bce623e656940a27fae2b4e0206d..740f335cfa585b171077956c30a48df03e0dc0f5 100644
+--- a/src/node_binding.cc
++++ b/src/node_binding.cc
+@@ -511,14 +511,14 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
+       dlib->SaveInGlobalHandleMap(mp);
+     } else {
+       if (auto callback = GetInitializerCallback(dlib)) {
+-        callback(exports, module, context);
++        CallAddonEntryPoint(callback, exports, module, context);
+         return true;
+       } else if (auto napi_callback = GetNapiInitializerCallback(dlib)) {
+         int32_t module_api_version = NODE_API_DEFAULT_MODULE_API_VERSION;
+         if (auto get_version = GetNapiAddonGetApiVersionCallback(dlib)) {
+-          module_api_version = get_version();
++          module_api_version = CallAddonEntryPoint(get_version);
+         }
+-        napi_module_register_by_symbol(
++        napi_module_register_by_symbol_from_addon(
+             exports, module, context, napi_callback, module_api_version);
+         return true;
+       } else {
+@@ -538,7 +538,7 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
+       // wrong version. We must only give up after having checked to see if it
+       // has an appropriate initializer callback.
+       if (auto callback = GetInitializerCallback(dlib)) {
+-        callback(exports, module, context);
++        CallAddonEntryPoint(callback, exports, module, context);
+         return true;
+       }
+ 
+@@ -564,9 +564,10 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
+     // Do not keep the lock while running userland addon loading code.
+     Mutex::ScopedUnlock unlock(lock);
+     if (mp->nm_context_register_func != nullptr) {
+-      mp->nm_context_register_func(exports, module, context, mp->nm_priv);
++      CallAddonEntryPoint(
++          mp->nm_context_register_func, exports, module, context, mp->nm_priv);
+     } else if (mp->nm_register_func != nullptr) {
+-      mp->nm_register_func(exports, module, mp->nm_priv);
++      CallAddonEntryPoint(mp->nm_register_func, exports, module, mp->nm_priv);
+     } else {
+       dlib->Close();
+       THROW_ERR_DLOPEN_FAILED(env, "Module has no declared entry point.");
+diff --git a/src/node_binding.h b/src/node_binding.h
+index 83f8cee7c9f7b0e0cf2000198aea8f68b1726e77..be7b7c9bde0075f842d2877e42148fa49c37d02a 100644
+--- a/src/node_binding.h
++++ b/src/node_binding.h
+@@ -87,6 +87,13 @@ void napi_module_register_by_symbol(
+     napi_addon_register_func init,
+     int32_t module_api_version = NODE_API_DEFAULT_MODULE_API_VERSION);
+ 
++void napi_module_register_by_symbol_from_addon(
++    v8::Local<v8::Object> exports,
++    v8::Local<v8::Value> module,
++    v8::Local<v8::Context> context,
++    napi_addon_register_func init,
++    int32_t module_api_version);
++
+ node::addon_context_register_func get_node_api_context_register_func(
+     node::Environment* node_env,
+     const char* module_name,
+@@ -116,6 +123,16 @@ extern bool node_is_initialized;
+ 
+ namespace binding {
+ 
++// Addon entry points live in shared libraries without CFI type metadata.
++template <typename Callback, typename... Args>
++#if defined(__clang__)
++__attribute__((no_sanitize("cfi-icall")))
++#endif
++auto CallAddonEntryPoint(Callback callback, Args... args)
++    -> decltype(callback(args...)) {
++  return callback(args...);
++}
++
+ class DLib {
+  public:
+ #ifdef __POSIX__

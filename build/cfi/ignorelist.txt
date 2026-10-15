@@ -1,0 +1,67 @@
+#!special-case-list-v2
+
+# Electron loads uninstrumented native addons into processes with CFI icall.
+# Only disable checks in dispatchers that invoke callbacks supplied by addons.
+# The ThinLTO call site inventory in ir_callback_manifest.txt makes additions
+# and changes to V8 or libuv indirect calls fail CFI builds pending review.
+[cfi-icall]
+
+# libuv's public callback dispatchers. Keep its internal work/done dispatch
+# (w->work/w->done) checked. These sites correspond to libuv's callback
+# registration APIs in uv.h on Linux x64.
+fun:uv__queue_work
+fun:uv__queue_done
+fun:uv__finish_close
+fun:uv__async_io
+fun:uv__run_timers
+fun:uv__random_done
+fun:uv__fs_poll_cb
+fun:uv__fs_done
+fun:uv__getaddrinfo_done
+fun:uv__getnameinfo_done
+fun:uv__poll_io
+fun:uv__poll_io_uring
+fun:uv__wait_children
+fun:uv__signal_event
+fun:uv__server_io
+fun:uv__stream_destroy
+fun:uv__drain
+fun:uv__write_callbacks
+fun:uv__stream_eof
+fun:uv__read
+fun:uv__stream_connect
+fun:uv__udp_run_completed
+fun:uv__udp_recvmmsg
+fun:uv__udp_recvmsg_errqueue
+fun:uv__udp_recvmsg
+fun:uv__inotify_read
+fun:uv_walk
+fun:uv__run_prepare
+fun:uv__run_check
+fun:uv__run_idle
+
+# V8's embedder GC callback dispatchers.
+fun:*CallGCCallbackWithoutData*
+fun:*11GCCallbacks6Invoke*
+
+# V8's other direct calls into embedder supplied callbacks. Function/property
+# template callbacks and weak handles are already handled by Chromium's list.
+fun:*Runtime_RunMicrotaskCallback*
+fun:*MicrotaskQueue*OnCompleted*
+fun:*Isolate*RunPromiseHook*
+fun:*Isolate*ReportPromiseReject*
+fun:*Isolate*InvokeApiInterruptCallbacks*
+fun:*Heap*InvokeNearHeapLimitCallback*
+fun:*BackingStore*Free*
+fun:*MessageHandler*ReportMessageNoExceptions*
+fun:*IsWasmCodegenAllowed*
+fun:*HeapProfiler*BuildEmbedderGraph*
+fun:*HeapProfiler*GetDetachedness*
+fun:*ContextDataSerializeWrapper*
+fun:*ContextDeserializer*DeserializeEmbedderFields*
+fun:*ContextDeserializer*DeserializeApiWrapperFields*
+fun:*JitLogger*LogRecordedBuffer*
+fun:*Isolate*CountUsage*
+fun:*Isolate*RunHostImportModuleDynamicallyCallback*
+fun:*Isolate*RunHostInitializeImportMetaObjectCallback*
+fun:*SourceTextModule*PrepareInstantiate*

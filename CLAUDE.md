@@ -186,6 +186,49 @@ When working on the `roller/chromium/main` branch to upgrade Chromium activate t
 
 When working on the `roller/node/main` branch to upgrade Node.js activate the "Electron Node.js Upgrade" skill.
 
+## CFI Callback Boundaries
+
+Linux x64 CFI builds check V8 and libuv indirect calls against
+`build/cfi/ir_callback_manifest.txt`. Use the friendly wrapper rather than
+invoking `build/cfi/verify_callback_boundaries.py` directly:
+
+```bash
+python3 script/cfi-callback-boundaries.py check
+python3 script/cfi-callback-boundaries.py update
+python3 script/cfi-callback-boundaries.py build
+```
+
+Basic review rules:
+
+- `icall_checks=1` (or greater) means CFI protects a function-pointer call.
+  This is the safe default for internal Chromium, V8, Node.js, and libuv
+  callbacks.
+- `unchecked_calls=1` (or greater) means a function has indirect calls without
+  matching CFI icall or vcall checks. Accept this only in a narrow dispatcher
+  whose callback can come from an ordinary, uninstrumented native addon.
+- The manifest omits functions containing only protected virtual calls. Those
+  are covered by `cfi-vcall` and are not native-addon callback boundaries.
+- Never suppress a whole source file or a broad callback family to make the
+  manifest pass. Add the narrowest dispatcher to
+  `build/cfi/ignorelist.txt`, add an addon boundary test, and keep unrelated
+  dispatch protected.
+- Do not regenerate the manifest blindly. First inspect every added or changed
+  row and identify who supplies that function pointer.
+- A removed required boundary invariant is not a routine manifest update. Find
+  whether the dispatcher moved, was renamed, or changed protection state.
+
+Typical Chromium or Node.js roll workflow:
+
+1. Build normally. The verifier runs as part of the Linux x64 CFI `electron`
+   target.
+2. If it fails, run `python3 script/cfi-callback-boundaries.py check` for the
+   focused diff and next steps.
+3. Review the changed dispatchers. Make any narrow ignorelist and test changes.
+4. Rebuild the affected ThinLTO objects.
+5. Run `python3 script/cfi-callback-boundaries.py update`.
+6. Review the manifest diff, then run
+   `python3 script/cfi-callback-boundaries.py build`.
+
 ## Pull Requests
 
 PR bodies must always include a `Notes:` section as the **last line** of the body. This is a consumer-facing release note for Electron app developers — describe the user-visible fix or change, not internal implementation details. Use `Notes: none` if there is no user-facing change.
