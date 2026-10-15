@@ -240,11 +240,7 @@ cherry-pick-64fab9307cf2.patch
 cherry-pick-e144b4a9a108.patch
 cherry-pick-8aa7b26db5b4.patch
 fix_deliver_clicks_that_another_process_posts_to_a_background_app.patch
-cherry-pick-007113ee5866.patch
-cherry-pick-8f6b08ed92cf.patch
-cherry-pick-c46b9381b0d9.patch
 cherry-pick-10f790b5793e.patch
 cherry-pick-7443fea93884.patch
-cherry-pick-262a8f1f374c.patch
 cherry-pick-95ed3d1e7e70.patch
 restore_mouse_cursor_for_native_dialogs_on_windows.patch

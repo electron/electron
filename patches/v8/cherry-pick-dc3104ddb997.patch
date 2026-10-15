@@ -313,7 +313,7 @@ index 4f8da14f9f1e0e5f840f820e46f3151e2aa75deb..d7ce26b4c2ebfd3b13f060982691357f
  //
  // Calls the KeyedStoreIC at FeedbackVector slot <slot> for <object> and
 diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
-index 4f682b998193265020cc4be863390ca461907707..d9c451ead57e23a5729e931451f676c5cdd48372 100644
+index 6fcaa6057628fe676d03ab6d414ae3a12410bd30..a5677e7f07feed3f4006e1563a9cea198a1bc99e 100644
 --- a/src/maglev/maglev-graph-builder.cc
 +++ b/src/maglev/maglev-graph-builder.cc
 @@ -4591,7 +4591,7 @@ MaybeReduceResult MaglevGraphBuilder::TryBuildStoreField(
