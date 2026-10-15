@@ -82,6 +82,57 @@ any effect. See
 [Chromium's intent to remove discussion](https://groups.google.com/a/chromium.org/g/blink-dev/c/bqHGZYHWxnQ)
 for more information.
 
+### Behavior Changed: `unload` event handlers no longer run on http(s) pages by default
+
+Chromium now [deprecates the `unload` event](https://developer.chrome.com/docs/web-platform/deprecating-unload)
+by disabling the `unload` Permissions Policy feature by default for `http:` and
+`https:` documents. In those documents `window.addEventListener('unload', ...)`
+and `window.onunload` handlers are not registered, so they never run. The check
+uses each frame's own origin, so it also applies to an `http:` or `https:`
+iframe embedded in a `file:` page. Documents loaded from `file:` or from a
+custom protocol (for example one registered with
+[`protocol.handle`](api/protocol.md#protocolhandlescheme-handler)) are not
+affected. `beforeunload`, `pagehide` and `visibilitychange` handlers are not
+affected either.
+
+Move `unload` logic to `pagehide`, which fires at the same point when a page is
+navigated away from or closed, or to `visibilitychange` if you also want to
+save state whenever the page is hidden:
+
+```js
+// Before
+window.addEventListener('unload', () => {
+  saveState()
+})
+
+// After
+window.addEventListener('pagehide', () => {
+  saveState()
+})
+
+// or
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    saveState()
+  }
+})
+```
+
+A top-level page served over `http:` or `https:` can opt back in by sending the
+`Permissions-Policy: unload=*` response header. An iframe can only opt in when
+its parent document also enables `unload` through its own Permissions-Policy
+header. To temporarily restore the old behavior for your whole app, disable the
+`DeprecateUnload` feature:
+
+```js
+// main.js (right beneath your require/import statements)
+app.commandLine.appendSwitch('disable-features', 'DeprecateUnload')
+```
+
+Disable `DeprecateUnload` itself; disabling only `DeprecateUnloadByBucket`
+extends the deprecation to every scheme, including `file:` and custom
+protocols.
+
 ## Breaking API Changes (45.0)
 
 ### Removed: Node.js module shims and `Buffer`, `setImmediate`, `clearImmediate` globals in sandboxed preload scripts
