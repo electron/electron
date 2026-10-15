@@ -763,9 +763,11 @@ DraggableRegionProvider* FrontmostDraggableRegionProviderAt(
     const std::list<raw_ptr<DraggableRegionProvider>>& providers) {
   const views::View::Views children = view->GetChildrenInZOrder();
   for (views::View* child : base::Reversed(children)) {
+    if (!child->GetVisible() || !child->GetCanProcessEventsWithinSubtree())
+      continue;
     gfx::Point child_point = point;
     views::View::ConvertPointToTarget(view, child, &child_point);
-    if (!child->GetVisible() || !child->HitTestPoint(child_point))
+    if (!child->HitTestPoint(child_point))
       continue;
     if (DraggableRegionProvider* provider =
             FrontmostDraggableRegionProviderAt(child, child_point, providers)) {
