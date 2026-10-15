@@ -1,0 +1,176 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mitsuru Oshima <oshima@chromium.org>
+Date: Sun, 11 Oct 2026 00:06:57 -0700
+Subject: Restore mouse cursor for native dialogs on Windows
+
+When the mouse cursor is hidden while typing, native dialogs can inherit
+a hidden cursor because: 1. Calling ::ShowCursor(FALSE) in
+DesktopWindowTreeHostWin decrements the
+   Win32 thread-global cursor counter below 0.
+2. Mouse events over native dialogs bypass Chrome's event filter, so
+   Chrome never unhides the cursor.
+
+This CL fixes this by: 1. Stopping ::ShowCursor() calls in
+DesktopWindowTreeHostWin (per-window
+   visibility is already handled via CursorType::kNone).
+   This is most likely legacy code that is no longer necessary.
+2. Restoring cursor visibility in HandleCancelMode() when a modal dialog
+   opens, so the cursor is restored immediately without mouse movement
+   and CursorClient stays in sync.
+3. Guarding these changes behind features::kHideCursorWhileTyping, so
+  that if this ever causes a regression, we can disable it to diagnose
+  the issue.
+
+Bug: 567626032
+Change-Id: I9dbe6cfa52d0f37af6ff9c5f1fae8f20bc3a5b1e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8501043
+Reviewed-by: David Bienvenu <davidbienvenu@chromium.org>
+Commit-Queue: Mitsuru Oshima <oshima@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1716435}
+
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+index 2a36a26042c93cf6774180af7717c08ec7cbe5e9..b9fa53c4a1cddc2237fd1187c41cab9b0886add4 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+@@ -36,6 +36,7 @@
+ #include "ui/base/mojom/menu_source_type.mojom-shared.h"
+ #include "ui/base/mojom/ui_base_types.mojom-shared.h"
+ #include "ui/base/mojom/window_show_state.mojom.h"
++#include "ui/base/ui_base_features.h"
+ #include "ui/base/win/event_creation_utils.h"
+ #include "ui/base/win/hwnd_metrics.h"
+ #include "ui/base/win/win_cursor.h"
+@@ -252,11 +253,13 @@ void DesktopWindowTreeHostWin::Init(const Widget::InitParams& params) {
+ 
+ void DesktopWindowTreeHostWin::OnNativeWidgetCreated(
+     const Widget::InitParams& params) {
+-  // The cursor is not necessarily visible when the root window is created.
+-  aura::client::CursorClient* cursor_client =
+-      aura::client::GetCursorClient(window());
+-  if (cursor_client) {
+-    is_cursor_visible_ = cursor_client->IsCursorVisible();
++  if (!base::FeatureList::IsEnabled(::features::kHideCursorWhileTyping)) {
++    // The cursor is not necessarily visible when the root window is created.
++    aura::client::CursorClient* cursor_client =
++        aura::client::GetCursorClient(window());
++    if (cursor_client) {
++      is_cursor_visible_ = cursor_client->IsCursorVisible();
++    }
+   }
+ 
+   window()->SetProperty(kContentWindowForRootWindow,
+@@ -823,6 +826,16 @@ void DesktopWindowTreeHostWin::SetCursorNative(gfx::NativeCursor cursor) {
+ }
+ 
+ void DesktopWindowTreeHostWin::OnCursorVisibilityChangedNative(bool show) {
++  if (base::FeatureList::IsEnabled(::features::kHideCursorWhileTyping)) {
++    // Cursor visibility is handled by setting the platform cursor to
++    // ui::mojom::CursorType::kNone in
++    // DesktopNativeCursorManager::SetVisibility. Avoid calling ::ShowCursor()
++    // here because it modifies the Win32 thread-global cursor display counter,
++    // which causes same-thread native dialogs (e.g. file pickers, print
++    // dialogs) to inherit a hidden cursor.
++    return;
++  }
++
+   if (is_cursor_visible_ == show) {
+     return;
+   }
+@@ -1091,6 +1104,16 @@ bool DesktopWindowTreeHostWin::HandleAppCommand(int command) {
+ }
+ 
+ void DesktopWindowTreeHostWin::HandleCancelMode() {
++  // Windows sends WM_CANCELMODE when a modal dialog or message box is
++  // displayed (e.g. Open/Save File, Print, MessageBox) to cancel modes such as
++  // mouse capture. Restore cursor visibility here so that native dialogs do not
++  // inherit a hidden cursor.
++  if (base::FeatureList::IsEnabled(::features::kHideCursorWhileTyping)) {
++    if (aura::client::CursorClient* cursor_client =
++            aura::client::GetCursorClient(window())) {
++      cursor_client->ShowCursor();
++    }
++  }
+   dispatcher()->DispatchCancelModeEvent();
+ }
+ 
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
+index b9ee5824e422b75ad37536c8848ef825a5d1fd6e..636daf3746a59f976264806265437f1046ea0172 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
+@@ -373,6 +373,10 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+   // the implementation of ::ShowCursor() is based on a counter, so making this
+   // member static ensures that ::ShowCursor() is always called exactly once
+   // whenever the cursor visibility state changes.
++  // Used for legacy behavior when `features::kHideCursorWhileTyping` is
++  // disabled.
++  // TODO(crbug.com/567626032): Clean up `is_cursor_visible_` and fallback
++  // branches once `features::kHideCursorWhileTyping` launches permanently.
+   static bool is_cursor_visible_;
+ 
+   // Modality of the window should be immutable, so we can cache it here for
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win_unittest.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win_unittest.cc
+index a4d0dd022c307bc1aabc5d3c187303f89761532a..fcae712d640bb24a265d6a2d0a38d186ec7e1ce5 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win_unittest.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win_unittest.cc
+@@ -16,6 +16,8 @@
+ #include "base/win/windows_version.h"
+ #include "ui/accessibility/platform/ax_platform_node_win.h"
+ #include "ui/accessibility/platform/ax_system_caret_win.h"
++#include "ui/aura/client/cursor_client.h"
++#include "ui/base/ui_base_features.h"
+ #include "ui/views/test/desktop_window_tree_host_win_test_api.h"
+ #include "ui/views/test/widget_test.h"
+ #include "ui/views/views_features.h"
+@@ -397,5 +399,52 @@ TEST_F(DesktopWindowTreeHostWinTest, IsInNativeMoveResizeLoopAcrossWindows) {
+   EXPECT_FALSE(host_b->IsInNativeMoveResizeLoop());
+ }
+ 
++TEST_F(DesktopWindowTreeHostWinTest, RestoresHiddenCursorOnCancelMode) {
++  base::test::ScopedFeatureList feature_list(
++      ::features::kHideCursorWhileTyping);
++
++  WidgetAutoclosePtr widget(CreateTopLevelNativeWidget());
++  widget->Show();
++
++  aura::client::CursorClient* cursor_client =
++      aura::client::GetCursorClient(widget->GetNativeWindow()->GetRootWindow());
++  ASSERT_TRUE(cursor_client);
++  EXPECT_TRUE(cursor_client->IsCursorVisible());
++  EXPECT_NE(nullptr, ::GetCursor());
++
++  // Hide the cursor.
++  cursor_client->HideCursor();
++  EXPECT_FALSE(cursor_client->IsCursorVisible());
++  EXPECT_EQ(nullptr, ::GetCursor());
++
++  // When a native dialog opens, the host receives WM_CANCELMODE and should
++  // restore the cursor.
++  ::SendMessage(widget->GetNativeWindow()->GetHost()->GetAcceleratedWidget(),
++                WM_CANCELMODE, 0, 0);
++  EXPECT_TRUE(cursor_client->IsCursorVisible());
++  EXPECT_NE(nullptr, ::GetCursor());
++}
++
++TEST_F(DesktopWindowTreeHostWinTest,
++       DoesNotRestoreHiddenCursorOnCancelModeWhenFeatureDisabled) {
++  base::test::ScopedFeatureList feature_list;
++  feature_list.InitAndDisableFeature(::features::kHideCursorWhileTyping);
++
++  WidgetAutoclosePtr widget(CreateTopLevelNativeWidget());
++  widget->Show();
++
++  aura::client::CursorClient* cursor_client =
++      aura::client::GetCursorClient(widget->GetNativeWindow()->GetRootWindow());
++  ASSERT_TRUE(cursor_client);
++  EXPECT_TRUE(cursor_client->IsCursorVisible());
++
++  cursor_client->HideCursor();
++  EXPECT_FALSE(cursor_client->IsCursorVisible());
++
++  ::SendMessage(widget->GetNativeWindow()->GetHost()->GetAcceleratedWidget(),
++                WM_CANCELMODE, 0, 0);
++  EXPECT_FALSE(cursor_client->IsCursorVisible());
++}
++
+ }  // namespace test
+ }  // namespace views
