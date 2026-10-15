@@ -70,7 +70,11 @@ const expectToHaveCrashed = (res: SpawnResult) => {
 // reads): an "Integrity"/"ElectronAsar" resource containing a JSON list of
 // { file, alg, value } entries.
 async function embedAsarIntegrity(exePath: string, integrity: Record<string, { algorithm: 'SHA256'; hash: string }>) {
-  const exe = NtExecutable.from(await fs.promises.readFile(exePath));
+  // The executable under test may be Authenticode-signed
+  // (e.g. a signed release build), and resedit refuses to parse one by default.
+  // Editing the resources invalidates the signature anyway,
+  // so with ignoreCert this copy is written back out without its certificate table.
+  const exe = NtExecutable.from(await fs.promises.readFile(exePath), { ignoreCert: true });
   const resources = NtExecutableResource.from(exe);
 
   // Attach the resource to the same language as the existing version info.

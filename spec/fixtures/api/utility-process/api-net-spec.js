@@ -32,20 +32,11 @@ const electronNet = net;
 
 v8.setFlagsFromString('--expose_gc');
 
-// Posts |result| and exits with |code| once the parent has acknowledged it
-// (see waitForUtilityResult in spec/lib/utility-process-helpers.ts). Exiting
-// right after posting lets the exit overtake the message, or lose it.
-function finish(result, code) {
-  // Leftover async work from the test body can still fail while this waits for the ack.
-  // Log it rather than let it change the exit code of a test that has already reported its result.
-  const logError = (err) => console.error('error after the test result was posted:', err);
-  process.on('uncaughtException', logError);
-  process.on('unhandledRejection', logError);
-  process.parentPort.once('message', () => process.exit(code));
-  process.parentPort.postMessage(result);
+function fail(message) {
+  process.parentPort.postMessage({ ok: false, message });
 }
 
-process.parentPort.once('message', async (e) => {
+process.parentPort.on('message', async (e) => {
   // Equivalent of beforeEach in spec/api-net.spec.ts
   respondNTimes.routeFailure = false;
 
@@ -59,23 +50,19 @@ process.parentPort.once('message', async (e) => {
     // oxlint-disable-next-line no-eval
     await eval(e.data.fn);
   } catch (err) {
-    finish({ ok: false, message: `${err}` }, 1);
-    return;
+    fail(`${err}`);
+    process.exit(1);
   }
 
   // Equivalent of afterEach in spec/api-net.spec.ts
   if (respondNTimes.routeFailure) {
-    finish(
-      {
-        ok: false,
-        message:
-          'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
-      },
-      1
+    fail(
+      'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
     );
-    return;
+    process.exit(1);
   }
 
   // Test passed
-  finish({ ok: true }, 0);
+  process.parentPort.postMessage({ ok: true });
+  process.exit(0);
 });

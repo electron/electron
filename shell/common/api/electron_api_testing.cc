@@ -5,16 +5,19 @@
 #include <atomic>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <utility>
+#include <variant>
 
 #include "base/command_line.h"
-#include "base/dcheck_is_on.h"
+#include "base/functional/bind.h"
 #include "base/functional/callback.h"
 #include "base/logging.h"
 #include "base/memory/ptr_util.h"
 #include "base/no_destructor.h"
 #include "base/power_monitor/power_monitor_source.h"
+#include "base/task/sequenced_task_runner.h"
 #include "build/build_config.h"
 #include "chrome/browser/browser_process.h"
 #include "components/prefs/pref_service.h"
@@ -23,6 +26,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_switches.h"
+#include "gin/array_buffer.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/webauthn/electron_authenticator_request_client_delegate.h"
 #include "shell/browser/window_list.h"
@@ -34,8 +38,11 @@
 #include "shell/common/gin_helper/function_template_cache.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/v8_code_cache_test_helpers.h"  // nogncheck
 #include "ui/accessibility/platform/ax_platform.h"
 #include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
+#include "v8/include/v8-wasm.h"
 #include "v8/include/v8.h"
 
 #if BUILDFLAG(IS_LINUX)
@@ -46,7 +53,6 @@
 #include <windows.h>
 #endif
 
-#if DCHECK_IS_ON()
 namespace {
 
 std::atomic<int> live_callback_holder_probes{0};
@@ -91,6 +97,64 @@ v8::Local<v8::Function> GetCachedCallbackTemplateForTesting(
 
 int GetLiveCallbackHolderProbeCountForTesting() {
   return live_callback_holder_probes.load();
+}
+
+v8::Local<v8::Value> SerializeWasmModuleForTesting(
+    v8::Isolate* isolate,
+    gin_helper::ErrorThrower thrower,
+    v8::Local<v8::Value> module) {
+  if (!module->IsWasmModuleObject()) {
+    thrower.ThrowTypeError("Expected a WebAssembly.Module");
+    return {};
+  }
+  auto serialized =
+      module.As<v8::WasmModuleObject>()->GetCompiledModule().Serialize();
+  return node::Buffer::Copy(
+             isolate, reinterpret_cast<const char*>(serialized.buffer.get()),
+             serialized.size)
+      .ToLocalChecked();
+}
+
+v8::Local<v8::Value> CompileWasmModuleWithCacheForTesting(
+    v8::Isolate* isolate,
+    const gin::ArrayBufferView& wire_bytes,
+    const gin::ArrayBufferView& cached_bytes) {
+  auto promise =
+      std::make_unique<gin_helper::Promise<v8::Local<v8::Value>>>(isolate);
+  auto handle = promise->GetHandle();
+  using ModuleResult =
+      std::variant<v8::Local<v8::WasmModuleObject>, v8::Local<v8::Value>>;
+  auto resolve = electron::AdaptCallbackForRepeating(base::BindOnce(
+      [](std::unique_ptr<gin_helper::Promise<v8::Local<v8::Value>>> promise,
+         ModuleResult result) {
+        if (auto* module =
+                std::get_if<v8::Local<v8::WasmModuleObject>>(&result)) {
+          v8::Local<v8::Value> value = *module;
+          promise->Resolve(value);
+        } else {
+          promise->Reject(std::get<v8::Local<v8::Value>>(result));
+        }
+      },
+      std::move(promise)));
+  v8::WasmModuleCompilation compilation;
+  compilation.SetHasCompiledModuleBytes();
+  compilation.OnBytesReceived(wire_bytes.span().data(),
+                              wire_bytes.span().size());
+  bool accepted = false;
+  compilation.Finish(
+      isolate,
+      [&accepted,
+       &cached_bytes](v8::WasmStreaming::ModuleCachingInterface& cache) {
+        accepted = cache.SetCachedCompiledModuleBytes(
+            std::span(cached_bytes.span().data(), cached_bytes.span().size()));
+      },
+      [resolve = std::move(resolve)](ModuleResult result) {
+        resolve.Run(std::move(result));
+      });
+  auto result = gin_helper::Dictionary::CreateEmpty(isolate);
+  result.Set("accepted", accepted);
+  result.Set("module", handle);
+  return result.GetHandle();
 }
 
 class CallbackTestingHelper final {
@@ -368,6 +432,45 @@ v8::Local<v8::Promise> SettlePromiseOutsideTask(
   return handle;
 }
 
+// Calls |before_collection|, runs a full garbage collection,
+// then calls |before_finalization| while the cppgc objects
+// that the collection found unreachable are still waiting to be swept,
+// as a natural collection leaves them until a later task sweeps.
+// Everything runs in one fresh non-nestable task.
+// That task starts from the message loop,
+// so no native frame below it holds a cppgc pointer,
+// which makes kNoHeapPointers accurate and lets the collection skip the stack.
+// It also means no sweeping task runs in between.
+// Sweeping finishes before the promise resolves.
+// Requires --js-flags=--expose-gc.
+v8::Local<v8::Promise> CollectGarbageBeforeFinalizationForTesting(
+    v8::Isolate* isolate,
+    base::OnceClosure before_collection,
+    base::OnceClosure before_finalization) {
+  gin_helper::Promise<void> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  base::SequencedTaskRunner::GetCurrentDefault()->PostNonNestableTask(
+      FROM_HERE,
+      base::BindOnce(
+          [](v8::Isolate* isolate, base::OnceClosure before_collection,
+             base::OnceClosure before_finalization,
+             gin_helper::Promise<void> promise) {
+            std::move(before_collection).Run();
+            v8::CppHeap* cpp_heap = isolate->GetCppHeap();
+            cpp_heap->SetForceIncrementalSweepingForTesting(true);
+            isolate->RequestGarbageCollectionForTesting(
+                v8::Isolate::GarbageCollectionType::kFullGarbageCollection,
+                v8::StackState::kNoHeapPointers);
+            std::move(before_finalization).Run();
+            cpp_heap->FinishSweepingForTesting();
+            cpp_heap->SetForceIncrementalSweepingForTesting(false);
+            promise.Resolve();
+          },
+          base::Unretained(isolate), std::move(before_collection),
+          std::move(before_finalization), std::move(promise)));
+  return handle;
+}
+
 // Reaches the protected PowerMonitorSource::ProcessPowerEvent().
 struct PowerEventInjector : base::PowerMonitorSource {
   static void Inject(PowerEvent event) { ProcessPowerEvent(event); }
@@ -400,6 +503,12 @@ void Initialize(v8::Local<v8::Object> exports,
       "getCachedCallbackTemplateForTesting");
   dict.SetMethod<&GetLiveCallbackHolderProbeCountForTesting>(
       "getLiveCallbackHolderProbeCountForTesting");
+  dict.SetMethod<&electron::testing::ComputeV8VersionHash>(
+      "computeV8VersionHashForTesting");
+  dict.SetMethod<&SerializeWasmModuleForTesting>(
+      "serializeWasmModuleForTesting");
+  dict.SetMethod<&CompileWasmModuleWithCacheForTesting>(
+      "compileWasmModuleWithCacheForTesting");
   dict.SetMethod<&Log>("log");
   dict.SetMethod<&GetLoggingDestination>("getLoggingDestination");
   dict.SetMethod<&IsPlatformCaretBrowsingEnabled>(
@@ -426,6 +535,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod<&ClearHeldCallbacksForTesting>("clearHeldCallbacksForTesting");
   dict.SetMethod<&HoldPromiseForTesting>("holdPromiseForTesting");
   dict.SetMethod<&SettlePromiseOutsideTask>("settlePromiseOutsideTask");
+  dict.SetMethod<&CollectGarbageBeforeFinalizationForTesting>(
+      "collectGarbageBeforeFinalizationForTesting");
   dict.SetMethod<&FlushPendingWindowStateSaves>("flushPendingWindowStateSaves");
   dict.SetMethod<&CommitPendingLocalStateWrites>(
       "commitPendingLocalStateWrites");
@@ -435,4 +546,3 @@ void Initialize(v8::Local<v8::Object> exports,
 }  // namespace
 
 NODE_LINKED_BINDING_CONTEXT_AWARE(electron_common_testing, Initialize)
-#endif

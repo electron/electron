@@ -204,10 +204,10 @@ index 507eaa61fb8e83727807e6917ba0c9a3e23f9d31..f2603172991ba2c29092c95e3c92905e
    bool sysex;
  };
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index 490e3bdca2a092cfb98f8a7cda2666ec979d953b..8689da58e0e225e67fac695e6375468f1678aab9 100644
+index 323b86d6f571647c551fd216dbd9f2ac9ca2c3a1..cbeff89c2a607160b74f17e64c7ba1ab0b76db05 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-@@ -165,8 +165,22 @@ String PermissionNameToString(PermissionName name) {
+@@ -164,8 +164,22 @@ String PermissionNameToString(PermissionName name) {
        return "web-printing";
      case PermissionName::SMART_CARD:
        return "smart-card";

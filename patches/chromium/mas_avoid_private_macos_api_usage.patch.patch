@@ -50,7 +50,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 2587bd828b83beac1ea36b119b3674c1b5d6b4c2..8e7174ba2fe424ac4440fa81c97e976ccf71edf1 100644
+index 9c94939937c77e67042c45939ba6f827b679d9fb..d7b97a4df1a99f3fc2cb2212584b4064a6b845cd 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1154,6 +1154,7 @@ component("base") {
@@ -843,7 +843,7 @@ index c5c652c6c67da33e9a2127cbbc35ec5fc535df6c..e58bb7368359e6ba13c249b8677a91e5
  
  - (NSWindow*)rootWindow {
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index e7a596db9798ce0dfa27d2f7691b7e3548405ac7..a1aba79563a33893a9d13e764065ec0db5d25bdf 100644
+index 711339903cd8272470e72bb83495116c7ceec1bf..23f119b4adf8d604a5f283ecf58f23a08a1f88f7 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -1005,7 +1005,7 @@ index c74a6130862162d4fdb07cf3d4a60604d0ae0482..92eaacfb3256ded77bd119e6ca306404
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index bee9872ba3e310dcc1d57fc399d44926c178b884..3de9bb066f0a204695b402528975703bf6d52e13 100644
+index 7e121dff7222916106318e2c4ee8a8526d5b507d..56c67adf2243050f60d96623831ee3a04a42dadd 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -385,6 +385,7 @@ source_set("browser") {
@@ -1138,10 +1138,10 @@ index 2e1af512e770c9bee1b3d3c430f5537e0193f069..aeca39edb1bfd856c5a5722155097dfb
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index a63c3bea226425589ebb8b9b55b1bace381d3a96..1e3d510414fda0657c61499187b58f4862ab63f4 100644
+index cf78814644054c5557ba7d4192384531c56143d3..e91c3a6f5109349cf9c26a3da1d06dbbdfb8402b 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -322,6 +322,7 @@ target(link_target_type, "renderer") {
+@@ -321,6 +321,7 @@ target(link_target_type, "renderer") {
      "//ui/strings:auto_image_annotation_strings_grit",
      "//url",
      "//v8",
@@ -1220,7 +1220,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 309d2cd9282f07e64c894f134e007ff31960743a..01d30e1eadb5b4237d326ac51e112f4ba32795bd 100644
+index 2a59068e1900d98fd3ef2bf4a0f5540536c54111..3decb5ded7ce388965f8637a718435941c240dd9 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -653,6 +653,7 @@ static_library("test_support") {
@@ -1231,16 +1231,16 @@ index 309d2cd9282f07e64c894f134e007ff31960743a..01d30e1eadb5b4237d326ac51e112f4b
    ]
  
    data_deps = [
-@@ -1141,6 +1142,8 @@ static_library("browsertest_support") {
-   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
-   # enable the diagnostic by removing this line.
-   configs += [ "//build/config/compiler:no_exit_time_destructors" ]
+@@ -1137,6 +1138,8 @@ static_library("browsertest_support") {
+   }
+ 
+   configs += [ "//v8:external_startup_data" ]
 +
 +  deps += ["//electron/build/config:generate_mas_config"]
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2067,6 +2070,7 @@ test("content_browsertests") {
+@@ -2063,6 +2066,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1248,7 +1248,7 @@ index 309d2cd9282f07e64c894f134e007ff31960743a..01d30e1eadb5b4237d326ac51e112f4b
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3456,6 +3460,7 @@ test("content_unittests") {
+@@ -3453,6 +3457,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1817,7 +1817,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index e5fe811ee0c302fdc22eb7d6678d48b5dd5ccc34..d7b9372e0f071374de358e5825ed3bb46719a79e 100644
+index 674644db7e14a16bf74bd5e7ae3989ae0130b3cd..4571c53a57a1247db208e38345f0430601892f34 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -446,6 +446,7 @@ component("core") {
@@ -1939,10 +1939,10 @@ index b3fd5abd10fae78c0bb62da6966e516400d1a452..9af448405391822f851b70e76725ec6c
      return;
    }
 diff --git a/ui/accelerated_widget_mac/BUILD.gn b/ui/accelerated_widget_mac/BUILD.gn
-index daa300a59ab92b1af2dadfa37d42f9d85951aa38..1377a290136a82516c27ea54b97624513a5c1207 100644
+index eb90cda4852ca7dc0932cc77801f6b4d62c5624d..2b2dedabfc75548cb46227905035cdc6a4ed681e 100644
 --- a/ui/accelerated_widget_mac/BUILD.gn
 +++ b/ui/accelerated_widget_mac/BUILD.gn
-@@ -85,6 +85,7 @@ component("accelerated_widget_mac") {
+@@ -84,6 +84,7 @@ component("accelerated_widget_mac") {
      "//ui/gfx",
      "//ui/gfx/geometry",
      "//ui/gl",
@@ -2331,7 +2331,7 @@ index 618217772a2fa38077ca0913dc017ecc6a702142..f06c9cf5bd3d841935d4e7353e704027
    // Query the display's refresh rate. To get a float number such as 59.95Hz,
    // use 1.0/screen.minimumRefreshInterval instead of
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 6927db7d4a5d4d81658ff6b81269113b25949f47..c7816052d396ac50987a2a70c37f242903c0cfa8 100644
+index 99c19df414c807116cf97bfc3d321a18a487517a..50c30ba91116438183246777ca40c15d2f1ca003 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -286,6 +286,8 @@ component("gfx") {
