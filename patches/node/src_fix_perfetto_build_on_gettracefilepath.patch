@@ -12,7 +12,7 @@ Reviewed-By: Yagiz Nizipli <yagiz@nizipli.com>
 Reviewed-By: James M Snell <jasnell@gmail.com>
 
 diff --git a/node.gyp b/node.gyp
-index 83508bde4111861b6fab2b4d679cc2dd8225c88d..8aa3652277db2aef5e9ac5f0febdd08a44853fa0 100644
+index 1debcde88911e0c5c5165260285b63c8b1b0de36..e9a73b3b5cf580d559d1cac60082c1022fcdc3ac 100644
 --- a/node.gyp
 +++ b/node.gyp
 @@ -194,8 +194,6 @@
@@ -36,7 +36,7 @@ index 83508bde4111861b6fab2b4d679cc2dd8225c88d..8aa3652277db2aef5e9ac5f0febdd08a
        'src/tracing/traced_value.h',
        'src/timer_wrap.h',
 diff --git a/src/node_trace_events.cc b/src/node_trace_events.cc
-index 73ef9f99167154f6fbb3ef857b8ce3b5a94a1431..412b5b67b35dfd192af04485e9c858f9862e9e0a 100644
+index b4eaea0976b4efb1d9c5fa53f1bac807acd10e4f..c8f2a58734ee6d2ab440cd2439574cbd09d6fc00 100644
 --- a/src/node_trace_events.cc
 +++ b/src/node_trace_events.cc
 @@ -7,7 +7,7 @@

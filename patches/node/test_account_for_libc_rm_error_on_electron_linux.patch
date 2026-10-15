@@ -19,7 +19,7 @@ user with ordinary permissions.
 Refs: https://github.com/nodejs/node/pull/57103
 
 diff --git a/test/parallel/test-fs-rm.js b/test/parallel/test-fs-rm.js
-index e92bf8c079715fc97f491f83be09a606769eba18..b15118fc9aa0d63688cdac07e8004f452d86d08e 100644
+index 1d0578e3004da463d30cdb9ff2bd28477d4318f5..6a2607ad57ece1e9a0b82dded7bf46bb722e18d9 100644
 --- a/test/parallel/test-fs-rm.js
 +++ b/test/parallel/test-fs-rm.js
 @@ -491,7 +491,8 @@ if (isGitPresent) {
