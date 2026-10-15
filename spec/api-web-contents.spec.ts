@@ -635,17 +635,9 @@ describe('webContents module', () => {
       await expect(w.loadURL('file:non-existent')).rejects.toHaveProperty('code', 'ERR_FILE_NOT_FOUND');
     });
 
-    // FIXME: Temporarily disable on WOA until
-    // https://github.com/electron/electron/issues/20008 is resolved
-    ifit(!(process.platform === 'win32' && process.arch === 'arm64'))(
-      'rejects when loading fails due to DNS not resolved',
-      async () => {
-        await expect(w.loadURL('https://err.name.not.resolved')).rejects.toHaveProperty(
-          'code',
-          'ERR_NAME_NOT_RESOLVED'
-        );
-      }
-    );
+    it('rejects when loading fails due to DNS not resolved', async () => {
+      await expect(w.loadURL('https://notfound.localhost')).rejects.toHaveProperty('code', 'ERR_NAME_NOT_RESOLVED');
+    });
 
     it('rejects when navigation is cancelled due to a bad scheme', async () => {
       await expect(w.loadURL('bad-scheme://foo')).rejects.toHaveProperty('code', 'ERR_FAILED');
@@ -760,7 +752,7 @@ describe('webContents module', () => {
       let resp = null as unknown as http.ServerResponse;
       s = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.write('<iframe src="http://err.name.not.resolved"></iframe>');
+        res.write('<iframe src="http://notfound.localhost"></iframe>');
         resp = res;
         // don't end the response yet
       });
