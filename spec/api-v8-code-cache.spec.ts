@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { describe, expect, it } from 'vitest';
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -23,15 +23,16 @@ const builder = path.join(buildDir, 'gen', 'electron', 'v8-code-cache', 'wasm-mo
 
 describe('V8 patch code cache compatibility', () => {
   it('exposes a nonempty V8 version with a 16-hex Electron patch fingerprint', () => {
-    expect(process.versions.v8).to.be.a('string').and.not.be.empty();
-    expect(process.versions.v8).to.match(/^\d+\.\d+\.\d+(?:\.\d+)?-electron\.[0-9a-f]{16}(?: \(candidate\))?$/);
+    expect(process.versions.v8).toBeTypeOf('string');
+    expect(process.versions.v8).not.toBe('');
+    expect(process.versions.v8).toMatch(/^\d+\.\d+\.\d+(?:\.\d+)?-electron\.[0-9a-f]{16}(?: \(candidate\))?$/);
   });
 
   ifdescribe(isTestingBindingAvailable())('serialized caches', () => {
     it('rejects JavaScript caches from a different patch fingerprint and falls back to source', async () => {
       const { remotely } = await startRemoteControlApp();
       const result: CacheResult = await remotely((file: string) => require(file).javascript(), fixture);
-      expect(result).to.deep.equal({
+      expect(result).toEqual({
         matchingAccepted: true,
         matchingValue: 42,
         foreignAccepted: false,
@@ -50,7 +51,7 @@ describe('V8 patch code cache compatibility', () => {
           fixture,
           builder
         );
-        expect(result).to.deep.equal({
+        expect(result).toEqual({
           matchingAccepted: true,
           matchingValue: 1,
           foreignAccepted: false,
