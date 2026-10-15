@@ -555,6 +555,33 @@ describe('webContents module', () => {
         expect(result).toBe('test');
       });
     });
+
+    describe('with userGesture', () => {
+      afterEach(closeAllWindows);
+
+      // navigator.hid.requestDevice() is sent on the HID service's own Mojo
+      // pipe and needs transient user activation in the browser process, which
+      // it consumes. If the browser only learned of the activation from the
+      // renderer, on the frame's channel-associated interfaces, the request
+      // could overtake that update and resolve empty without a chooser.
+      it('gives the browser user activation before the script runs', async () => {
+        const ses = session.fromPartition(`execute-javascript-user-gesture-${Math.random()}`);
+        const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+        let choosersShown = 0;
+        ses.on('select-hid-device', (event, details, callback) => {
+          choosersShown++;
+          callback();
+        });
+        const code = 'navigator.hid.requestDevice({ filters: [] }).then(() => true)';
+        const attempts = 20;
+        for (let i = 0; i < attempts; i++) {
+          await w.webContents.executeJavaScript(code, true);
+          await w.webContents.executeJavaScriptInIsolatedWorld(999, [{ code }], true);
+        }
+        expect(choosersShown).toBe(attempts * 2);
+      });
+    });
   });
 
   describe('webContents.executeJavaScriptInIsolatedWorld', () => {
