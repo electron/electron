@@ -1,6 +1,6 @@
 import type { BrowserWindow } from 'electron/main';
 
-import { AssertionError } from 'chai';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
@@ -11,22 +11,12 @@ import * as url from 'node:url';
 import { stripVTControlCharacters } from 'node:util';
 import * as v8 from 'node:v8';
 
-import type { SuiteFunction, TestFunction } from 'mocha';
 import type * as http2 from 'node:http2';
 import type * as https from 'node:https';
 import type * as net from 'node:net';
 
-const addOnly = <T>(fn: Function): T => {
-  const wrapped = (...args: any[]) => {
-    return fn(...args);
-  };
-  (wrapped as any).only = wrapped;
-  (wrapped as any).skip = wrapped;
-  return wrapped as any;
-};
-
-export const ifit = (condition: boolean) => (condition ? it : addOnly<TestFunction>(it.skip));
-export const ifdescribe = (condition: boolean) => (condition ? describe : addOnly<SuiteFunction>(describe.skip));
+export const ifit = (condition: boolean) => (condition ? it : it.skip);
+export const ifdescribe = (condition: boolean) => (condition ? describe : describe.skip);
 
 export const isWayland =
   process.platform === 'linux' &&
@@ -233,6 +223,13 @@ export function waitUntil(callback: () => boolean | Promise<boolean>, opts: { ra
   })();
 }
 
+// Blocks the calling thread for |ms| without yielding to the event loop,
+// so events that arrive in the meantime queue up and are handled together afterwards.
+// Atomics.wait() sleeps until the shared value changes, which never happens here, or until the timeout.
+export function sleepSync(ms: number) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
 export async function repeatedly<T>(fn: () => Promise<T>, opts?: { until?: (x: T) => boolean; timeLimit?: number }) {
   const { until = (x: T) => !!x, timeLimit = 10000 } = opts ?? {};
   const begin = Date.now();
@@ -274,24 +271,24 @@ export async function getRemoteContext() {
 }
 
 export function useRemoteContext(opts?: any) {
-  before(async () => {
+  beforeAll(async () => {
     remoteContext.unshift(await makeRemoteContext(opts));
   });
-  after(() => {
+  afterAll(() => {
     const w = remoteContext.shift();
     w!.close();
   });
 }
+
+// See vitest-cjs.cjs: the remote function runs in a CommonJS context.
+const vitestForRequire = path.join(import.meta.dirname, 'vitest-cjs.cjs');
 
 async function runRemote(type: 'skip' | 'none' | 'only', name: string, fn: Function, args?: any[]) {
   const wrapped = async () => {
     const w = await getRemoteContext();
     const { ok, message } = await w.webContents.executeJavaScript(`(async () => {
       try {
-        const chai = require('chai')
-        chai.use(require('chai-as-promised'))
-        chai.use(require('dirty-chai'))
-        const { expect } = chai
+        const { expect } = require(${JSON.stringify(vitestForRequire)})
         await (${fn})(...${JSON.stringify(args ?? [])})
         return {ok: true};
       } catch (e) {
@@ -299,7 +296,7 @@ async function runRemote(type: 'skip' | 'none' | 'only', name: string, fn: Funct
       }
     })()`);
     if (!ok) {
-      throw new AssertionError(message);
+      assert.fail(message);
     }
   };
 

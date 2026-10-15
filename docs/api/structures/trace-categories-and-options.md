@@ -16,3 +16,11 @@
   The trace option will first be reset to the default option (`record_mode` set
   to `record-until-full`, `enable_sampling` and `enable_systrace`
   set to `false`) before options parsed from `traceOptions` are applied on it.
+* `nativeHeapProfiling` [NativeHeapProfilerOptions](native-heap-profiler-options.md) (optional) _Experimental_ -
+  **Electron extension; not part of Chromium's TraceCategoriesAndOptions schema.**
+  Enables native (C/C++) heap allocation profiling for this recording. This is
+  distinct from JavaScript heap profiling (see
+  [`contents.takeHeapSnapshot()`](../web-contents.md#contentstakeheapsnapshotfilepath));
+  it samples allocations made by Chromium and native modules. Unlike `TraceConfig`,
+  this object has no `included_process_ids` field, so every traced process is
+  profiled.

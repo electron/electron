@@ -1,0 +1,175 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Fri, 18 Sep 2026 08:31:03 +0200
+Subject: fix: don't leave a broken app behind when an install is interrupted
+ (#335)
+
+Backport of https://github.com/Squirrel/Squirrel.Mac/pull/335 onto the pinned
+fffea30e4a: keep the old bundle in place until the new one is fully staged, so
+an install that ShipIt does not finish leaves the previous version runnable.
+Remove this patch when the branch rolls Squirrel.Mac past 5c9e2133c0.
+
+diff --git a/Squirrel/SQRLInstaller+Private.h b/Squirrel/SQRLInstaller+Private.h
+index 1ab932c40a7540b1e85c852d1921bde48cca633f..f813d984a14c1353f42a96127c25cf55faa6357d 100644
+--- a/Squirrel/SQRLInstaller+Private.h
++++ b/Squirrel/SQRLInstaller+Private.h
+@@ -8,6 +8,8 @@
+ 
+ #import "SQRLInstaller.h"
+ 
++@class RACSignal;
++
+ // The defaults key to store a `SQRLInstallerOwnedBundle` so that a moved bundle
+ // can be restored.
+ extern NSString * const SQRLInstallerOwnedBundleKey;
+@@ -15,3 +17,13 @@ extern NSString * const SQRLInstallerOwnedBundleKey;
+ // The defaults key to store the number of installation attempts that have been
+ // made.
+ extern NSString * const SQRLShipItInstallationAttemptsKey;
++
++@interface SQRLInstaller (Private)
++
++// Moves a bundle that an earlier, unfinished install left in the temporary
++// directory back to its original location, if there is one. Sends completed
++// when there was nothing to restore or the bundle was restored, and errors if
++// it could not be moved back.
++- (RACSignal *)abortInstall;
++
++@end
+diff --git a/Squirrel/ShipIt-main.m b/Squirrel/ShipIt-main.m
+index e26c0f11870ddbe801e572b1696af484231bf1dc..0825cd8c832ed82df004a9d26da31d285a6a673e 100644
+--- a/Squirrel/ShipIt-main.m
++++ b/Squirrel/ShipIt-main.m
+@@ -100,25 +100,48 @@ static void drainMachServicePort(const char *serviceName) {
+ 		setNameWithFormat:@"waitForTerminationIfNecessary"];
+ }
+ 
++// Puts back an application that an earlier, interrupted run moved aside. Done
++// at launch rather than after waiting for the application to quit, which can
++// take days, so the backup does not sit in the temporary directory long enough
++// for the system to clean it up.
++static RACSignal *restoreOwnedBundle(SQRLInstaller *installer) {
++	return [[[installer
++		abortInstall]
++		catch:^(NSError *error) {
++			NSLog(@"Could not restore bundle left by an earlier install attempt: %@", error.sqrl_verboseDescription);
++			return [RACSignal empty];
++		}]
++		setNameWithFormat:@"restoreOwnedBundle"];
++}
++
+ static void installRequest(RACSignal *readRequestSignal, NSString *applicationIdentifier) {
+-	[[[[[readRequestSignal
++	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:applicationIdentifier];
++
++	[[[[[[restoreOwnedBundle(installer)
++		concat:readRequestSignal]
+ 		flattenMap:^(SQRLShipItRequest *request) {
+ 			return waitForTerminationIfNecessary(request);
+ 		}]
+ 		ignoreValues]
+ 		concat:readRequestSignal]
+ 		flattenMap:^(SQRLShipItRequest *request) {
+-			SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:applicationIdentifier];
+-
+ 			NSUInteger attempt = installationAttempts(applicationIdentifier) + 1;
+ 			setInstallationAttempts(applicationIdentifier, attempt);
+ 
++			// The staged update can be removed while ShipIt waits for the
++			// application to quit; retrying cannot help then.
++			BOOL updateMissing = ![request.updateBundleURL checkResourceIsReachableAndReturnError:NULL];
++
+ 			RACSignal *action;
+-			if (attempt > SQRLShipItMaximumInstallationAttempts) {
++			if (updateMissing || attempt > SQRLShipItMaximumInstallationAttempts) {
+ 				action = [[[[installer.abortInstallationCommand
+ 					execute:request]
+ 					initially:^{
+-						NSLog(@"Too many attempts to install, aborting update");
++						if (updateMissing) {
++							NSLog(@"Update bundle %@ no longer exists, aborting update", request.updateBundleURL.path);
++						} else {
++							NSLog(@"Too many attempts to install, aborting update");
++						}
+ 					}]
+ 					catch:^(NSError *error) {
+ 						NSLog(@"Error aborting installation: %@", error);
+@@ -259,6 +282,13 @@ int main(int argc, const char * argv[]) {
+ 			return EXIT_FAILURE;
+ 		}
+ 
++		// Resolve the main bundle while it still exists on disk. ShipIt can wait
++		// hours for the application to quit, and the app that contains it may be
++		// moved or deleted in that time; +mainBundle is created lazily and comes
++		// back nil once the executable's directory is gone, which turns every
++		// later NSLocalizedString() into nil.
++		(void)NSBundle.mainBundle;
++
+ 		char const *jobLabel = argv[1];
+ 		const char *statePath = argv[2];
+ 		NSURL *shipItStateURL = [NSURL fileURLWithPath:@(statePath)];
+diff --git a/SquirrelTests/SQRLInstallerSpec.m b/SquirrelTests/SQRLInstallerSpec.m
+index 928bc10046ba6d12aa9d7a918bae3f137c416289..92dc70d8f45ab33d2505464b7eeb2d30fa8faf5b 100644
+--- a/SquirrelTests/SQRLInstallerSpec.m
++++ b/SquirrelTests/SQRLInstallerSpec.m
+@@ -15,6 +15,7 @@
+ #import "SQRLDirectoryManager.h"
+ #import "SQRLInstaller+Private.h"
+ #import "SQRLInstallerOwnedBundle.h"
++#import "SQRLShipItLauncher.h"
+ #import "SQRLShipItRequest.h"
+ 
+ #import "QuickSpec+SQRLFixtures.h"
+@@ -139,6 +140,30 @@ - (RACSignal *)deleteOwnedBundleAtURL:(NSURL *)bundleURL;
+ 	expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
+ });
+ 
++it(@"should restore a bundle left by an earlier attempt before waiting for the application to quit", ^{
++	NSURL *strandedURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"Stranded.app"];
++	NSURL *originalURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"Original.app"];
++	expect(@([NSFileManager.defaultManager copyItemAtURL:self.testApplicationURL toURL:strandedURL error:NULL])).to(beTruthy());
++
++	SQRLInstallerOwnedBundle *ownedBundle = [[SQRLInstallerOwnedBundle alloc] initWithOriginalURL:originalURL temporaryURL:strandedURL codeSignature:self.testApplicationSignature];
++	NSString *applicationIdentifier = self.shipItDirectoryManager.applicationIdentifier;
++	CFPreferencesSetValue((__bridge CFStringRef)SQRLInstallerOwnedBundleKey, (__bridge CFDataRef)[NSKeyedArchiver archivedDataWithRootObject:ownedBundle], (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
++	expect(@(CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost))).to(beTruthy());
++
++	NSRunningApplication *app = [self launchTestApplicationWithEnvironment:nil];
++
++	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:@"com.github.Squirrel.TestApplication" launchAfterInstallation:NO useUpdateBundleName:NO];
++	[self submitShipItRequest:request];
++
++	expect(@([NSFileManager.defaultManager fileExistsAtPath:originalURL.path])).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
++	expect(@([NSFileManager.defaultManager fileExistsAtPath:strandedURL.path])).to(beFalsy());
++	expect(@(app.isTerminated)).to(beFalsy());
++
++	[app forceTerminate];
++	[self waitForShipItJobToExitWithLabel:SQRLShipItLauncher.shipItJobLabel];
++	expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
++});
++
+ it(@"should install an update and relaunch", ^{
+ 	NSString *bundleIdentifier = @"com.github.Squirrel.TestApplication";
+ 	NSArray *apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier];
+@@ -212,6 +237,21 @@ - (RACSignal *)deleteOwnedBundleAtURL:(NSURL *)bundleURL;
+ 		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
+ 	});
+ 
++	it(@"should restore the backup on the first attempt when the update is gone", ^{
++		NSString *applicationIdentifier = self.shipItDirectoryManager.applicationIdentifier;
++		CFPreferencesSetValue((__bridge CFStringRef)SQRLShipItInstallationAttemptsKey, NULL, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
++		expect(@(CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost))).to(beTruthy());
++
++		NSURL *missingUpdateURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"update.gone/TestApplication.app" isDirectory:YES];
++		SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:missingUpdateURL targetBundleURL:targetURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO];
++		[self installWithRequest:request remote:YES];
++
++		__block NSError *error;
++		expect(@([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error])).to(beTruthy());
++		expect(error).to(beNil());
++		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
++	});
++
+ 	it(@"should relaunch even after failing to install an update", ^{
+ 		SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:targetURL bundleIdentifier:nil launchAfterInstallation:YES useUpdateBundleName:NO];
+ 		[self installWithRequest:request remote:YES];

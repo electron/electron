@@ -1,7 +1,7 @@
 import { session, webContents, type WebContents } from 'electron/main';
 
-import { expect } from 'chai';
 import { v4 } from 'uuid';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { on, once } from 'node:events';
 import * as fs from 'node:fs';
@@ -18,7 +18,7 @@ describe('session.serviceWorkers', () => {
   let baseUrl: string;
   let w: WebContents;
 
-  before(async () => {
+  beforeAll(async () => {
     ses = session.fromPartition(partition);
     await ses.clearStorageData();
   });
@@ -50,7 +50,7 @@ describe('session.serviceWorkers', () => {
 
   describe('getAllRunning()', () => {
     it('should initially report none are running', () => {
-      expect(ses.serviceWorkers.getAllRunning()).to.deep.equal({});
+      expect(ses.serviceWorkers.getAllRunning()).toEqual({});
     });
 
     it('should report one as running once you load a page with a service worker', async () => {
@@ -58,7 +58,7 @@ describe('session.serviceWorkers', () => {
       await once(ses.serviceWorkers, 'console-message');
       const workers = ses.serviceWorkers.getAllRunning();
       const ids = Object.keys(workers) as any[] as number[];
-      expect(ids).to.have.lengthOf(1, 'should have one worker running');
+      expect(ids, 'should have one worker running').toHaveLength(1);
     });
   });
 
@@ -68,9 +68,9 @@ describe('session.serviceWorkers', () => {
       const eventInfo = await once(ses.serviceWorkers, 'console-message');
       const details: Electron.MessageDetails = eventInfo[1];
       const worker = ses.serviceWorkers.getFromVersionID(details.versionId);
-      expect(worker).to.not.equal(null);
-      expect(worker).to.have.property('scope', baseUrl + '/');
-      expect(worker).to.have.property('scriptUrl', baseUrl + '/sw.js');
+      expect(worker).not.toBe(null);
+      expect(worker).toHaveProperty('scope', baseUrl + '/');
+      expect(worker).toHaveProperty('scriptUrl', baseUrl + '/sw.js');
     });
   });
 
@@ -80,18 +80,18 @@ describe('session.serviceWorkers', () => {
       w.loadURL(`${baseUrl}/index.html?scriptUrl=sw-logs.js`);
       for await (const [, details] of on(ses.serviceWorkers, 'console-message')) {
         messages[details.message] = details;
-        expect(details).to.have.property('source', 'console-api');
+        expect(details).toHaveProperty('source', 'console-api');
         if (Object.keys(messages).length >= 4) break;
       }
 
-      expect(messages).to.have.property('log log');
-      expect(messages).to.have.property('info log');
-      expect(messages).to.have.property('warn log');
-      expect(messages).to.have.property('error log');
-      expect(messages['log log']).to.have.property('level', 1);
-      expect(messages['info log']).to.have.property('level', 1);
-      expect(messages['warn log']).to.have.property('level', 2);
-      expect(messages['error log']).to.have.property('level', 3);
+      expect(messages).toHaveProperty('log log');
+      expect(messages).toHaveProperty('info log');
+      expect(messages).toHaveProperty('warn log');
+      expect(messages).toHaveProperty('error log');
+      expect(messages['log log']).toHaveProperty('level', 1);
+      expect(messages['info log']).toHaveProperty('level', 1);
+      expect(messages['warn log']).toHaveProperty('level', 2);
+      expect(messages['error log']).toHaveProperty('level', 3);
     });
   });
 });
