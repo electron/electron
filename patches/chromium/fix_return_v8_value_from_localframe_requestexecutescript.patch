@@ -107,7 +107,7 @@ index b2aa838c4f605cb532135e28fa5dc52bfa76bfc1..489402ca077483308713053094f35376
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption,
 diff --git a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-index e42771a3443c970b079ffd8d8281c6e3401d165c..5b66a240d1addde10ebeb714f683178cb47d6160 100644
+index 4e97cf9e93f936e3248285f3231de60183aa8e9a..039b80059abd11d8c20433dbb2f51db4962bc834 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 @@ -995,6 +995,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
@@ -319,10 +319,10 @@ index 4ed8807eadcbdef7c77cb06fa072f90e216b9d2d..d12223bb29774d75e78380887299e831
    const mojom::blink::UserActivationOption user_activation_option_;
    const mojom::blink::LoadEventBlockingOption blocking_option_;
 diff --git a/third_party/blink/renderer/core/frame/web_frame_test.cc b/third_party/blink/renderer/core/frame/web_frame_test.cc
-index 20ddd2985068c835ecda6618f6f5d6ce5f08838e..0f06a15014587cfabcf2e331659c3e1f70c70e3a 100644
+index a56b5ea7e25caa1418f2cc8ffb4f3aa27d807934..f6e642d9730b025d7ec3df17d03a36f27b89f6a5 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_test.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_test.cc
-@@ -309,6 +309,7 @@ void ExecuteScriptsInMainWorld(
+@@ -310,6 +310,7 @@ void ExecuteScriptsInMainWorld(
        DOMWrapperWorld::kMainWorldId, sources, user_gesture,
        mojom::blink::EvaluationTiming::kSynchronous,
        mojom::blink::LoadEventBlockingOption::kDoNotBlock, std::move(callback),
