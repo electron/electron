@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Attard <sattard@anthropic.com>
+Date: Thu, 15 Oct 2026 18:02:58 +0000
+Subject: test: drop removed wasm rab integration flag
+
+Chromium's V8 shipped resizable ArrayBuffer / WebAssembly integration and
+removed the --experimental-wasm-rab-integration flag, so passing it makes
+the test exit with "bad option". Node.js v24.22.0 added the flag to
+test-internal-webidl-buffer-source.js.
+
+This patch can be removed once Node.js's bundled V8 no longer has the
+flag and the test stops passing it.
+
+Refs: https://github.com/nodejs/node/pull/65845
+Refs: https://chromium-review.googlesource.com/c/v8/v8/+/7708297
+
+diff --git a/test/parallel/test-internal-webidl-buffer-source.js b/test/parallel/test-internal-webidl-buffer-source.js
+index b3158bd7d3481e3257fc97a1ed584cd27e8d0c9b..8e81f42a9456054d95dd60fca6c99f4ebcf21736 100644
+--- a/test/parallel/test-internal-webidl-buffer-source.js
++++ b/test/parallel/test-internal-webidl-buffer-source.js
+@@ -1,4 +1,4 @@
+-// Flags: --expose-internals --experimental-wasm-rab-integration
++// Flags: --expose-internals
+ 'use strict';
+ 
+ const common = require('../common');
