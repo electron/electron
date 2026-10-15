@@ -1166,6 +1166,7 @@ describe('protocol module', () => {
         // while any other handle still has it open,
         // so removing a temporary directory here can fail with ENOTEMPTY.
         const file = path.join(fixturesPath, 'hello.txt');
+        expect(fs.readFileSync(file).length).toBeGreaterThan(0);
         protocol.registerFileProtocol('no-cors-file', (_req, cb) => cb({ path: file }));
         defer(() => protocol.unregisterProtocol('no-cors-file'));
 
