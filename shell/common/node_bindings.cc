@@ -880,10 +880,9 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 
   // The Node startup snapshot's per-isolate data (templates, primordials)
   // is fed to CreateIsolateData so the bootstrap is deserialized.
-  auto snapshot_wrapper = from_snapshot
-                              ? node::SnapshotBuilder::GetEmbeddedSnapshotData()
-                                    ->AsEmbedderWrapper()
-                              : node::EmbedderSnapshotData::Pointer{};
+  auto snapshot_wrapper =
+      from_snapshot ? node::EmbedderSnapshotData::BuiltinSnapshotData()
+                    : node::EmbedderSnapshotData::Pointer{};
   auto* isolate_data =
       node::CreateIsolateData(isolate, uv_loop_, platform,
                               /*allocator=*/nullptr, snapshot_wrapper.get());
