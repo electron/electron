@@ -459,7 +459,7 @@ jobs:
         done
     - name: Upload V8 Builtins Profiles
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
       with:
         name: pgo-v8-builtins-profiles
         path: src/v8-builtins-profiles/
@@ -630,7 +630,7 @@ jobs:
         echo "Merged $merged profile(s):"
         ls -la profiles/
     - name: Upload Merged Profiles as Workflow Artifact
-      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
       with:
         name: pgo-profiles
         path: profiles/
