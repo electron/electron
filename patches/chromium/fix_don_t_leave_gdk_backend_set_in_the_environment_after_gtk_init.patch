@@ -14,7 +14,7 @@ GtkInitFromCommandLine() instead, as is already done for GDK_GL.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/8468407
 
 diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
-index 7a18d6a7279c00b093d343a16eb6a406fda6833a..c69d4332a55e215604253a50b612c1dd48257a8a 100644
+index 0bc31770336d43e41cd8d783fa77835019573ef4..7ad4c9d214c9bc33d21ec19673a1d3d96f7b214c 100644
 --- a/ui/gtk/gtk_ui.cc
 +++ b/ui/gtk/gtk_ui.cc
 @@ -29,6 +29,7 @@
