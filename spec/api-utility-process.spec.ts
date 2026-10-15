@@ -14,7 +14,7 @@ import { setImmediate } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 
 import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers.ts';
-import { deferKillUtilityProcess, ifit, listen, startRemoteControlApp } from './lib/spec-helpers.ts';
+import { defer, deferKillUtilityProcess, ifit, listen, startRemoteControlApp } from './lib/spec-helpers.ts';
 import { closeWindow } from './lib/window-helpers.ts';
 
 const require = createRequire(import.meta.url);
@@ -931,6 +931,7 @@ describe('utilityProcess module', () => {
 
     it('supports generating snapshots via v8.setHeapSnapshotNearHeapLimit', { timeout: 60_000 }, async () => {
       const tmpDir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'electron-spec-utility-oom-'));
+      defer(() => fs.rm(tmpDir, { recursive: true, force: true }));
       const child = utilityProcess.fork(path.join(fixturesPath, 'oom-grow.js'), [], {
         stdio: 'ignore',
         execArgv: [`--diagnostic-dir=${tmpDir}`, '--js-flags=--max-old-space-size=50'],
@@ -938,13 +939,13 @@ describe('utilityProcess module', () => {
           NODE_DEBUG_NATIVE: 'diagnostic'
         }
       });
+      deferKillUtilityProcess(child);
       await once(child, 'spawn');
       await once(child, 'exit');
       const files = (await fs.readdir(tmpDir)).filter((file) => file.endsWith('.heapsnapshot'));
       expect(files.length).toBe(1);
       const stat = await fs.stat(path.join(tmpDir, files[0]));
       expect(stat.size).toBeGreaterThan(0);
-      await fs.rm(tmpDir, { recursive: true });
     });
 
     it('supports --no-experimental-global-navigator flag', async () => {
