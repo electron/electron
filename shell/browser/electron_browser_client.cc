@@ -1419,7 +1419,9 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
     factories->emplace(content::kChromeUIScheme,
                        content::CreateWebUIURLLoaderFactory(
                            frame_host, content::kChromeUIScheme,
-                           {content::kChromeUIResourcesHost}));
+                           {content::kChromeUIResourcesHost},
+                           request_initiator_origin.value_or(
+                               frame_host->GetLastCommittedOrigin())));
   }
 
   // Extensions with the necessary permissions get access to file:// URLs that
