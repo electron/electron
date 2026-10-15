@@ -2603,7 +2603,11 @@ describe('cpp heap', () => {
           const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
 
           const createServer = async () => {
-            const server = http.createServer((_request: any, response: any) => response.end('<body></body>'));
+            const server = http.createServer((_request: any, response: any) => {
+              // Chromium deprecates unload handlers on http(s) pages by default.
+              response.setHeader('permissions-policy', 'unload=*');
+              response.end('<body></body>');
+            });
             server.listen(0, '127.0.0.1');
             await once(server, 'listening');
             return server;
