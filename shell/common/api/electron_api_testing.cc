@@ -10,11 +10,13 @@
 
 #include "base/command_line.h"
 #include "base/dcheck_is_on.h"
+#include "base/functional/bind.h"
 #include "base/functional/callback.h"
 #include "base/logging.h"
 #include "base/memory/ptr_util.h"
 #include "base/no_destructor.h"
 #include "base/power_monitor/power_monitor_source.h"
+#include "base/task/sequenced_task_runner.h"
 #include "build/build_config.h"
 #include "chrome/browser/browser_process.h"
 #include "components/prefs/pref_service.h"
@@ -36,6 +38,7 @@
 #include "shell/common/node_includes.h"
 #include "ui/accessibility/platform/ax_platform.h"
 #include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 #include "v8/include/v8.h"
 
 #if BUILDFLAG(IS_LINUX)
@@ -368,6 +371,45 @@ v8::Local<v8::Promise> SettlePromiseOutsideTask(
   return handle;
 }
 
+// Calls |before_collection|, runs a full garbage collection,
+// then calls |before_finalization| while the cppgc objects
+// that the collection found unreachable are still waiting to be swept,
+// as a natural collection leaves them until a later task sweeps.
+// Everything runs in one fresh non-nestable task.
+// That task starts from the message loop,
+// so no native frame below it holds a cppgc pointer,
+// which makes kNoHeapPointers accurate and lets the collection skip the stack.
+// It also means no sweeping task runs in between.
+// Sweeping finishes before the promise resolves.
+// Requires --js-flags=--expose-gc.
+v8::Local<v8::Promise> CollectGarbageBeforeFinalizationForTesting(
+    v8::Isolate* isolate,
+    base::OnceClosure before_collection,
+    base::OnceClosure before_finalization) {
+  gin_helper::Promise<void> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+  base::SequencedTaskRunner::GetCurrentDefault()->PostNonNestableTask(
+      FROM_HERE,
+      base::BindOnce(
+          [](v8::Isolate* isolate, base::OnceClosure before_collection,
+             base::OnceClosure before_finalization,
+             gin_helper::Promise<void> promise) {
+            std::move(before_collection).Run();
+            v8::CppHeap* cpp_heap = isolate->GetCppHeap();
+            cpp_heap->SetForceIncrementalSweepingForTesting(true);
+            isolate->RequestGarbageCollectionForTesting(
+                v8::Isolate::GarbageCollectionType::kFullGarbageCollection,
+                v8::StackState::kNoHeapPointers);
+            std::move(before_finalization).Run();
+            cpp_heap->FinishSweepingForTesting();
+            cpp_heap->SetForceIncrementalSweepingForTesting(false);
+            promise.Resolve();
+          },
+          base::Unretained(isolate), std::move(before_collection),
+          std::move(before_finalization), std::move(promise)));
+  return handle;
+}
+
 // Reaches the protected PowerMonitorSource::ProcessPowerEvent().
 struct PowerEventInjector : base::PowerMonitorSource {
   static void Inject(PowerEvent event) { ProcessPowerEvent(event); }
@@ -426,6 +468,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod<&ClearHeldCallbacksForTesting>("clearHeldCallbacksForTesting");
   dict.SetMethod<&HoldPromiseForTesting>("holdPromiseForTesting");
   dict.SetMethod<&SettlePromiseOutsideTask>("settlePromiseOutsideTask");
+  dict.SetMethod<&CollectGarbageBeforeFinalizationForTesting>(
+      "collectGarbageBeforeFinalizationForTesting");
   dict.SetMethod<&FlushPendingWindowStateSaves>("flushPendingWindowStateSaves");
   dict.SetMethod<&CommitPendingLocalStateWrites>(
       "commitPendingLocalStateWrites");

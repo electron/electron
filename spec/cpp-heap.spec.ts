@@ -1,9 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { ifdescribe, isTestingBindingAvailable, itremote, startRemoteControlApp } from './lib/spec-helpers.ts';
+import {
+  defer,
+  ifdescribe,
+  ifit,
+  isTestingBindingAvailable,
+  itremote,
+  startRemoteControlApp
+} from './lib/spec-helpers.ts';
 
 const fixturesPath = path.join(import.meta.dirname, 'fixtures');
 
@@ -710,6 +719,70 @@ describe('cpp heap', () => {
         `C++ heap grew by ${growth} bytes between two identical rounds of downloads — likely a leak`
       ).toBeLessThanOrEqual(result.after1 * 0.1);
     });
+
+    ifit(isTestingBindingAvailable())(
+      'does not crash when clearData() runs between collection and finalization',
+      async () => {
+        const savePath = path.join(os.tmpdir(), 'cppheap-download-unswept.bin');
+        defer(() => fs.promises.rm(savePath, { force: true }));
+        const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+        const result = await remotely(async (savePath: string) => {
+          const { session } = require('electron');
+          const http = require('node:http');
+          const testing = (process as any)._linkedBinding('electron_common_testing');
+
+          const payload = Buffer.alloc(1024);
+          const server = http.createServer((_req: any, res: any) => {
+            res.writeHead(200, {
+              'Content-Length': payload.length,
+              'Content-Type': 'application/octet-stream',
+              'Content-Disposition': 'attachment; filename="unswept.bin"'
+            });
+            res.end(payload);
+          });
+          await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+          const { port } = server.address();
+
+          // Once the download is done, only the holder keeps the wrapper alive.
+          // The collection task below drops it,
+          // so no earlier collection can find it unreachable.
+          const holder: { item: any } = { item: null };
+          const ses = session.fromPartition('cppheap-download-unswept');
+          const { state, weakItem } = await new Promise<{ state: string; weakItem: WeakRef<any> }>((resolve) => {
+            ses.once('will-download', (_event: any, item: any) => {
+              item.savePath = savePath;
+              holder.item = item;
+              const weakItem = new WeakRef(item);
+              item.once('done', (_doneEvent: any, state: string) => resolve({ state, weakItem }));
+            });
+            ses.downloadURL(`http://127.0.0.1:${port}`);
+          });
+          server.close();
+
+          // The completed download stays in the session's DownloadManager,
+          // and clearData() removes it, which notifies its observers.
+          // Do that while the wrapper is unreachable but not yet finalized,
+          // as it is between a natural collection and the task that sweeps it.
+          let cleared: Promise<void> | undefined;
+          for (let attempt = 0; attempt < 10; attempt++) {
+            await testing.collectGarbageBeforeFinalizationForTesting(
+              () => {
+                holder.item = null;
+              },
+              () => {
+                if (weakItem.deref() === undefined) cleared = ses.clearData({ dataTypes: ['downloads'] });
+              }
+            );
+            if (cleared) break;
+          }
+          const collected = cleared !== undefined;
+          await cleared;
+          return { state, collected };
+        }, savePath);
+        expect(result.state).toBe('completed');
+        expect(result.collected, 'the DownloadItem should be unreachable when clearData() runs').toBe(true);
+      }
+    );
   });
 
   describe('serviceWorkerMain module', () => {
