@@ -1306,6 +1306,31 @@ describe('session module', () => {
       expect(numVerificationRequests).toBe(1);
     });
 
+    it('is consulted for a connection that starts while an earlier verification of the same certificate is waiting on the callback', async () => {
+      const ses = session.fromPartition(`${Math.random()}`);
+      let numVerificationRequests = 0;
+      let second: Promise<string> | undefined;
+      ses.setCertificateVerifyProc((e, callback) => {
+        if (e.hostname !== '127.0.0.1') return callback(-3);
+        numVerificationRequests++;
+        if (numVerificationRequests === 1) {
+          // Chromium has finished verifying this certificate by the time the callback runs, so a
+          // new connection opened now gets a synchronous answer inside the network service while
+          // this one is still waiting on us.
+          second = ses.fetch(`${serverUrl}/second`).then((r) => r.text());
+          setTimeout(500).then(() => callback(0));
+        } else {
+          callback(0);
+        }
+      });
+
+      await expect(ses.fetch(`${serverUrl}/first`).then((r) => r.text())).resolves.toBe('<title>hello</title>');
+      await expect(second!).resolves.toBe('<title>hello</title>');
+      expect(numVerificationRequests).toBe(2);
+      // Idle keep-alive sockets would otherwise hold the server open in afterEach.
+      await ses.closeAllConnections();
+    });
+
     it('does not cancel requests in other sessions', async () => {
       const ses1 = session.fromPartition(`${Math.random()}`);
       ses1.setCertificateVerifyProc((opts, cb) => cb(0));
