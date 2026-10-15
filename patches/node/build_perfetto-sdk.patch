@@ -10,10 +10,10 @@ Reviewed-By: James M Snell <jasnell@gmail.com>
 Reviewed-By: Ryuhei Shima <shimaryuhei@gmail.com>
 
 diff --git a/common.gypi b/common.gypi
-index 16a4e669c435d91eebe4ab2f6c58e5a15ac3e5b7..fd3895604ae198fa4d0fc06a433eeba329b97494 100644
+index 3c48fa0ce140e0467fa95ce8b449a39493864bd8..2fdafef6b4cda0042613a9e78da5ddaead6f1197 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -90,7 +90,7 @@
+@@ -93,7 +93,7 @@
      'v8_enable_sandbox%': 0,
      'v8_enable_v8_checks%': 0,
      'v8_enable_zone_compression%': 0,
@@ -23,10 +23,10 @@ index 16a4e669c435d91eebe4ab2f6c58e5a15ac3e5b7..fd3895604ae198fa4d0fc06a433eeba3
      'v8_cppgc_microtask_queue%': 0,
  
 diff --git a/configure.py b/configure.py
-index da70b199695921604b7522411403603422fd4689..c9d996c18a0e4cbb326e9ea4d9448b310c108714 100755
+index be207803abb3561461792c8ffb5c695fa338f891..4f85c9e477e6c36c8f294a386b194e7208d74e9f 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1039,6 +1039,12 @@ parser.add_argument('--without-inspector',
+@@ -1012,6 +1012,12 @@ parser.add_argument('--without-inspector',
      default=None,
      help='disable the V8 inspector protocol')
  
@@ -39,7 +39,7 @@ index da70b199695921604b7522411403603422fd4689..c9d996c18a0e4cbb326e9ea4d9448b31
  parser.add_argument('--shared',
      action='store_true',
      dest='shared',
-@@ -2006,6 +2012,7 @@ def configure_v8(o, configs):
+@@ -1971,6 +1977,7 @@ def configure_v8(o, configs):
    o['variables']['v8_cppgc_microtask_queue'] = 1 if options.v8_enable_cppgc_microtask_queue else 0
    o['variables']['v8_enable_extensible_ro_snapshot'] = 0
    o['variables']['v8_trace_maps'] = 1 if options.trace_maps else 0
@@ -48,10 +48,10 @@ index da70b199695921604b7522411403603422fd4689..c9d996c18a0e4cbb326e9ea4d9448b31
    o['variables']['node_use_bundled_v8'] = b(not options.without_bundled_v8)
    o['variables']['force_dynamic_crt'] = 1 if options.shared else 0
 diff --git a/node.gyp b/node.gyp
-index 5df80c48e7c747a49bd2e86ea7706de757fff32e..a5c17ed75b5513fdba2a5ea0d9fb7b259041da75 100644
+index 14f14c79630f19bbf7d319b669614123ef94b148..1e2d3666134984bb0aa4e3c4325b891344e7620f 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -1387,6 +1387,14 @@
+@@ -1339,6 +1339,14 @@
          }, {
            'sources!': [ '<@(node_cctest_quic_sources)' ],
          }],
@@ -66,7 +66,7 @@ index 5df80c48e7c747a49bd2e86ea7706de757fff32e..a5c17ed75b5513fdba2a5ea0d9fb7b25
          ['v8_enable_inspector==1', {
            'defines': [
              'HAVE_INSPECTOR=1',
-@@ -1709,6 +1717,14 @@
+@@ -1661,6 +1669,14 @@
              'NODE_USE_NODE_CODE_CACHE=1',
            ],
          }],
@@ -82,10 +82,10 @@ index 5df80c48e7c747a49bd2e86ea7706de757fff32e..a5c17ed75b5513fdba2a5ea0d9fb7b25
            'defines': [
              'HAVE_INSPECTOR=1',
 diff --git a/tools/v8_gypfiles/features.gypi b/tools/v8_gypfiles/features.gypi
-index 53886830721c46b3ea1df7aaf7180ed19c3288eb..56f2ec123d22250ac1c7bcf368c4ea640114eb09 100644
+index 373448fccfb22ca2ec16df321a387fc710319cc4..d911d9f01b0c02e154358ccd812f324850655b56 100644
 --- a/tools/v8_gypfiles/features.gypi
 +++ b/tools/v8_gypfiles/features.gypi
-@@ -205,8 +205,7 @@
+@@ -208,8 +208,7 @@
      # Enable seeded array index hash.
      'v8_enable_seeded_array_index_hash%': 1,
  
@@ -95,7 +95,7 @@ index 53886830721c46b3ea1df7aaf7180ed19c3288eb..56f2ec123d22250ac1c7bcf368c4ea64
      'v8_use_perfetto%': 0,
  
      # Enable map packing & unpacking (sets -dV8_MAP_PACKING).
-@@ -465,7 +464,10 @@
+@@ -484,7 +483,10 @@
          'defines': ['ENABLE_VERIFY_CSA',],
        }],
        ['v8_use_perfetto==1', {
@@ -108,7 +108,7 @@ index 53886830721c46b3ea1df7aaf7180ed19c3288eb..56f2ec123d22250ac1c7bcf368c4ea64
        ['v8_enable_map_packing==1', {
          'defines': ['V8_MAP_PACKING',],
 diff --git a/tools/v8_gypfiles/v8.gyp b/tools/v8_gypfiles/v8.gyp
-index f90a29d102ac0246a9261e223f0b5f69ec6d328b..71a7c40efa061afa954874ac97820be97e50463c 100644
+index 370001847ee8b43c0e83e516f65856c85eff3f41..60d630702b95d786d9634c0ffda40ba7f8374a1d 100644
 --- a/tools/v8_gypfiles/v8.gyp
 +++ b/tools/v8_gypfiles/v8.gyp
 @@ -33,6 +33,7 @@

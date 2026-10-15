@@ -72,10 +72,10 @@ index 5f04e7085f4246b673f8ea629d03cc8b02e93f2a..60d61aef3f8db2e1d43096de580c5127
  
  inline Environment* Environment::GetCurrent(
 diff --git a/src/histogram.cc b/src/histogram.cc
-index 7127bb80cc8fa3ecf3d618358bfd7d53dc8b591e..41c3528529b970a319f9c2baab51eb0b801a7fc0 100644
+index 30a095b3c43c015d8569f65362b6b3b619290f7f..2e649644acf7aff3be059cd8ec1c96235d2d44e6 100644
 --- a/src/histogram.cc
 +++ b/src/histogram.cc
-@@ -755,7 +755,8 @@ HistogramBase::HistogramBase(
+@@ -1873,7 +1873,8 @@ HistogramBase::HistogramBase(Environment* env,
    MakeWeak();
    wrap->SetAlignedPointerInInternalField(
        HistogramImpl::InternalFields::kImplField,
@@ -84,8 +84,8 @@ index 7127bb80cc8fa3ecf3d618358bfd7d53dc8b591e..41c3528529b970a319f9c2baab51eb0b
 +      v8::kEmbedderDataTypeTagDefault);
  }
  
- HistogramBase::HistogramBase(
-@@ -767,7 +768,8 @@ HistogramBase::HistogramBase(
+ HistogramBase::HistogramBase(Environment* env,
+@@ -1883,7 +1884,8 @@ HistogramBase::HistogramBase(Environment* env,
    MakeWeak();
    wrap->SetAlignedPointerInInternalField(
        HistogramImpl::InternalFields::kImplField,
@@ -95,7 +95,7 @@ index 7127bb80cc8fa3ecf3d618358bfd7d53dc8b591e..41c3528529b970a319f9c2baab51eb0b
  }
  
  void HistogramBase::MemoryInfo(MemoryTracker* tracker) const {
-@@ -1022,7 +1024,8 @@ IntervalHistogram::IntervalHistogram(Environment* env,
+@@ -2387,7 +2389,8 @@ IntervalHistogram::IntervalHistogram(Environment* env,
    MakeWeak();
    wrap->SetAlignedPointerInInternalField(
        HistogramImpl::InternalFields::kImplField,
@@ -105,7 +105,7 @@ index 7127bb80cc8fa3ecf3d618358bfd7d53dc8b591e..41c3528529b970a319f9c2baab51eb0b
    uv_timer_init(env->event_loop(), &timer_);
  }
  
-@@ -1114,7 +1117,8 @@ IterationHistogram::IterationHistogram(Environment* env,
+@@ -2479,7 +2482,8 @@ IterationHistogram::IterationHistogram(Environment* env,
    MakeWeak();
    wrap->SetAlignedPointerInInternalField(
        HistogramImpl::InternalFields::kImplField,
@@ -115,7 +115,7 @@ index 7127bb80cc8fa3ecf3d618358bfd7d53dc8b591e..41c3528529b970a319f9c2baab51eb0b
    uv_check_init(env->event_loop(), &check_handle_);
    uv_prepare_init(env->event_loop(), &prepare_handle_);
    uv_unref(reinterpret_cast<uv_handle_t*>(&check_handle_));
-@@ -1595,7 +1599,8 @@ HistogramImpl* HistogramImpl::FromJSObject(Local<Value> value) {
+@@ -3056,7 +3060,8 @@ HistogramImpl* HistogramImpl::FromJSObject(Local<Value> value) {
    auto obj = value.As<Object>();
    DCHECK_GE(obj->InternalFieldCount(), HistogramImpl::kInternalFieldCount);
    return static_cast<HistogramImpl*>(
@@ -203,7 +203,7 @@ index d4dd93d084d5e58f0c18ef82a51d25be4643ba7a..2709cdb31869d9e030c654d975b07967
  
  void BindingData::MemoryInfo(MemoryTracker* tracker) const {
 diff --git a/src/node_realm-inl.h b/src/node_realm-inl.h
-index 0af487a9abc9ee1783367ac86b0016ab89e02006..c01cef477aaba52f9894943acede7fb22ed17dcb 100644
+index d527a4d4c620a30377ce2c0cdb0ff0cb6a11ec66..97756edfce15b2f3647646146683727b36c0eec3 100644
 --- a/src/node_realm-inl.h
 +++ b/src/node_realm-inl.h
 @@ -22,7 +22,8 @@ inline Realm* Realm::GetCurrent(v8::Local<v8::Context> context) {
@@ -217,7 +217,7 @@ index 0af487a9abc9ee1783367ac86b0016ab89e02006..c01cef477aaba52f9894943acede7fb2
  
  inline Realm* Realm::GetCurrent(
 diff --git a/src/node_snapshotable.cc b/src/node_snapshotable.cc
-index c3e995adf437413fe956e45c2ccc704d8737de59..8561933060ac30e3559d7ce2ac633d25f1e4d6ec 100644
+index e773fb1ed4e777667fa677b402b20d676e9af4a2..e915e257259aac0ed21f101e537230f448d0402f 100644
 --- a/src/node_snapshotable.cc
 +++ b/src/node_snapshotable.cc
 @@ -1461,7 +1461,8 @@ StartupData SerializeNodeContextInternalFields(Local<Object> holder,

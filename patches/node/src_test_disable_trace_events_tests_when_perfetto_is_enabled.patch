@@ -87,7 +87,7 @@ index 2193cfa48c9b8a2971de01ab1dee26ea0a152781..98d70037777a28910239aac866ebd416
    perfetto::Tracing::Initialize(init_args);
  
 diff --git a/test/common/index.js b/test/common/index.js
-index 9d15b57bf6b85bb006496069149f41110a2664b5..309c7301f2bbf842aad00c31f57c8a455e6b2228 100755
+index 0f2d695bbc5a6476d0e87bc79eb94485398e6e6b..15f3c1fa796f3ce11b62b8437469a5ae83c9c389 100755
 --- a/test/common/index.js
 +++ b/test/common/index.js
 @@ -58,6 +58,7 @@ const hasCrypto = Boolean(process.versions.openssl) &&
@@ -117,7 +117,7 @@ index 9d15b57bf6b85bb006496069149f41110a2664b5..309c7301f2bbf842aad00c31f57c8a45
  function getArrayBufferViews(buf) {
    const { buffer, byteOffset, byteLength } = buf;
  
-@@ -1006,6 +1019,8 @@ const common = {
+@@ -1007,6 +1020,8 @@ const common = {
    skipIfEslintMissing,
    skipIfInspectorDisabled,
    skipIfSQLiteMissing,

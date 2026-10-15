@@ -82,10 +82,10 @@ index 1066633daf65d430b5f46e1b226ee3cf70979c33..4d6788b9705911e33d74f9d106374d7a
  
  class ContextifyScript final : CPPGC_MIXIN(ContextifyScript) {
 diff --git a/test/cctest/test_environment.cc b/test/cctest/test_environment.cc
-index a219d512570136a9b1e940942b8426bf19d0d1f1..e83e23abd2b9fbdb274acb06460f160a794369fe 100644
+index 6a48db67baad3d97e3bc8a469e65fc5b07548ffd..45d6e571ba5b1111e4914df6facfba60a5d48e26 100644
 --- a/test/cctest/test_environment.cc
 +++ b/test/cctest/test_environment.cc
-@@ -706,15 +706,26 @@ TEST_F(EnvironmentTest, NestedMicrotaskQueue) {
+@@ -806,15 +806,26 @@ TEST_F(EnvironmentTest, NestedMicrotaskQueue) {
    const v8::HandleScope handle_scope(isolate_);
    const Argv argv;
  
