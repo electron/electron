@@ -191,7 +191,7 @@ index d1ef4d06f73bcb23686d91df2a0a3d5141e1ba70..0b32b2a8be3650da0d46f72ee344363f
      return BaseObjectPtr<StatementSyncIterator>();
    }
 diff --git a/src/node_util.cc b/src/node_util.cc
-index 39523bd256c8bf22597ba79dd06ea451025ffabb..ddb0c73716060ffde81d4bc600caabea366f71d7 100644
+index 39523bd256c8bf22597ba79dd06ea451025ffabb..04217d6dce9333cf0e5a1c6de711f49b93c46663 100644
 --- a/src/node_util.cc
 +++ b/src/node_util.cc
 @@ -369,7 +369,7 @@ static void DefineLazyPropertiesGetter(
@@ -203,6 +203,15 @@ index 39523bd256c8bf22597ba79dd06ea451025ffabb..ddb0c73716060ffde81d4bc600caabea
    if (!receiver_val->IsObject()) {
      THROW_ERR_INVALID_INVOCATION(isolate);
      return;
+@@ -522,7 +522,7 @@ void Initialize(Local<Object> target,
+ 
+   {
+     const Local<Object> prototype =
+-        SharedArrayBuffer::New(isolate, 0)->GetPrototypeV2().As<Object>();
++        SharedArrayBuffer::New(isolate, 0)->GetPrototype().As<Object>();
+     const Local<Object> descriptor =
+         prototype
+             ->GetOwnPropertyDescriptor(
 diff --git a/src/node_webstorage.cc b/src/node_webstorage.cc
 index 8a058f19834134ca65b7a763b7c41fe850642980..3856e9cdaa305f4919c315060bae8d1a5f17cb80 100644
 --- a/src/node_webstorage.cc
