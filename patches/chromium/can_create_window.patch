@@ -12,10 +12,10 @@ that the new window is created in its own BrowsingInstance (and process).
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 5f469c6955a4243fd9bdada8ee19e4aaf7a02897..0ceaa2bddde3d4f58da0bf88860ed499b94a69d6 100644
+index cfd765693847c96257f261406c9bf3af07794dd2..b194c937a8fbc693809b3062bb0be7ce5e2f877b 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -10770,6 +10770,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10779,6 +10779,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -23,7 +23,7 @@ index 5f469c6955a4243fd9bdada8ee19e4aaf7a02897..0ceaa2bddde3d4f58da0bf88860ed499
            effective_transient_activation_state, params->opener_suppressed,
            &no_javascript_access);
  
-@@ -10780,6 +10781,11 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10789,6 +10790,11 @@ void RenderFrameHostImpl::CreateNewWindow(
      return;
    }
  
@@ -36,7 +36,7 @@ index 5f469c6955a4243fd9bdada8ee19e4aaf7a02897..0ceaa2bddde3d4f58da0bf88860ed499
    // important to do this before we return from the |opener_suppressed| case
    // below.
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 042878335fb950e2f8f4710343af9d9bb49d8ce1..ae9cc14af681af19d546e5140360b0ce575b2b4e 100644
+index 120511c9ca9e6839e29fe9f3efbca4e4626ca191..ebf6766ba711717a4a78e6465b246fa4ac6d6fbe 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5830,6 +5830,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -94,7 +94,7 @@ index 572c5763b9995dde20a0a7a2ddaa077934939b1d..66c36cedacc93897e1bf51bee5181eee
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index e7cfe6838e64e1829fd6774ec258fac545c7447f..4af3da299e5bca347ca19454892e4974b5bdcc97 100644
+index 6a07f32cb64a90a09b44cf9f7c2479f257eba198..10f0f0878178abb0c14a52403cd43d370508179b 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -836,6 +836,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -107,7 +107,7 @@ index e7cfe6838e64e1829fd6774ec258fac545c7447f..4af3da299e5bca347ca19454892e4974
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 768a7db83cfad440ec4a4b305bfa51a6121062d7..534a9c5519bef5dddedbd47bde595e07b2e89a46 100644
+index 42a04c54b65ddcf0905c7d527de950303bcf8ab7..ce53f4dab5f793d58a560573680edb3992c11ba7 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -206,6 +206,7 @@ class TrustedURLLoaderHeaderClient;
