@@ -20,10 +20,10 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 867fc205aaa787cb05c56f8c1fa6d63e2b2ed92f..97567b79069538e23115fc274c10b8a41ea94e61 100644
+index b47da08dde4ab059be8959e2c8c44576bc3e3fb4..824686c5d37f69311b306a9228cb212f6abfe90b 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -588,7 +588,8 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -589,7 +589,8 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::LOCAL_NETWORK;
      case PermissionType::LOOPBACK_NETWORK:
        return ContentSettingsType::LOOPBACK_NETWORK;
@@ -34,7 +34,7 @@ index 867fc205aaa787cb05c56f8c1fa6d63e2b2ed92f..97567b79069538e23115fc274c10b8a4
    }
  
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index 96d653a82111de11be05205117436d8b260d0af1..47e723a87b62df4aac21ebbaa5974994ed0c6b5d 100644
+index 19c07477b186ddebb8c3439bb628f410e0c29199..c623c4451b36738ab91ac42f54c17c91376708bf 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
 @@ -100,7 +100,8 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
@@ -152,10 +152,10 @@ index 2168cf7675cf43cf3a925033cd9282e173edd88b..ab4f4841f370ef533e6adefd53011acf
  
  bool ClipboardCommands::ExecuteCopy(LocalFrame& frame,
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index bed216ff6d4d577d54ecf39c32c1bb1ed48c60fe..490e3bdca2a092cfb98f8a7cda2666ec979d953b 100644
+index 6b526fe627e3a7dbccd43dfd9386823ccecf9ce9..323b86d6f571647c551fd216dbd9f2ac9ca2c3a1 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-@@ -165,6 +165,8 @@ String PermissionNameToString(PermissionName name) {
+@@ -164,6 +164,8 @@ String PermissionNameToString(PermissionName name) {
        return "web-printing";
      case PermissionName::SMART_CARD:
        return "smart-card";

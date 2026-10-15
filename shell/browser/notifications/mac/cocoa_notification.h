@@ -8,8 +8,10 @@
 #import <Foundation/Foundation.h>
 #import <UserNotifications/UserNotifications.h>
 
+#include <memory>
 #include <string>
 
+#include "base/files/scoped_temp_file.h"
 #include "shell/browser/notifications/notification.h"
 
 namespace electron {
@@ -36,7 +38,9 @@ class CocoaNotification : public Notification {
 
  private:
   void LogAction(const char* action);
-  void ScheduleNotification(UNMutableNotificationContent* content);
+  void ScheduleNotification(
+      UNMutableNotificationContent* content,
+      std::shared_ptr<base::ScopedTempFile> icon_file = nullptr);
 
   bool is_restored_ = false;
   UNNotificationRequest* __strong notification_request_;

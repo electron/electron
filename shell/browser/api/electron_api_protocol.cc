@@ -26,6 +26,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
+#include "third_party/blink/public/common/scheme_registry.h"
 #include "url/url_util.h"
 #include "v8/include/cppgc/allocation.h"
 
@@ -173,7 +174,8 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
     }
     if (custom_scheme.options.codeCache) {
       GetCodeCacheSchemes().push_back(custom_scheme.scheme);
-      url::AddCodeCacheScheme(custom_scheme.scheme.c_str());
+      blink::CommonSchemeRegistry::RegisterURLSchemeAsSupportingCodeCache(
+          custom_scheme.scheme);
     }
     if (custom_scheme.options.allowExtensions) {
       extension_schemes.push_back(custom_scheme.scheme);

@@ -164,7 +164,7 @@ If no artifact exists (e.g. the 3-way merge itself failed), fall back to `e sync
 e test                    # Run full test suite
 ```
 
-**Test frameworks:** vitest (with mocha-style `describe`/`it`/`before`/`after` globals from `spec/vitest/mocha-compat.ts`), Chai
+**Test frameworks:** vitest (`describe`/`it`/`expect` imported from `vitest`; assertions use its matchers, `expect(x).toBe(y)`, never chai-style `.to.equal` chains)
 
 ## Build Configuration
 

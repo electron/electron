@@ -134,13 +134,17 @@ def update_ref(repo, ref, newvalue):
   return subprocess.check_call(args)
 
 
+def _run(repo, *args):
+  return subprocess.check_output(
+      ['git', '--no-optional-locks', '-C', str(repo), *args])
+
+
 def get_commit_for_ref(repo, ref):
-  args = ['git', '-C', repo, 'rev-parse', '--verify', ref]
-  return subprocess.check_output(args).decode('utf-8').strip()
+  return _run(repo, 'rev-parse', '--verify', ref).decode('utf-8').strip()
 
 def get_commit_count(repo, commit_range):
-  args = ['git', '-C', repo, 'rev-list', '--count', commit_range]
-  return int(subprocess.check_output(args).decode('utf-8').strip())
+  return int(_run(repo, 'rev-list', '--count', commit_range))
+
 
 def guess_base_commit(repo, ref):
   """Guess which commit the patches might be based on"""
@@ -277,9 +281,11 @@ def remove_patch_location(patch):
 def export_patches(repo, out_dir,
                    patch_range=None, ref=UPSTREAM_HEAD,
                    dry_run=False, grep=None):
-  if not os.path.exists(repo):
+  # An unfetched gitlink leaves an empty dir, and git would resolve it to the
+  # parent repo, exporting the parent's patches instead.
+  if not os.path.exists(os.path.join(repo, '.git')):
     sys.stderr.write(
-      f"Skipping patches in {repo} because it does not exist.\n"
+      f"Skipping patches in {repo} because it is not checked out.\n"
     )
     return
   if patch_range is None:

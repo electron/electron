@@ -9,7 +9,9 @@
 
 #include "base/scoped_observation.h"
 #include "chrome/common/chrome_features.h"
+#include "content/public/browser/browser_context.h"
 #include "content/public/browser/render_frame_host.h"
+#include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
 #include "services/device/public/cpp/hid/hid_switches.h"
@@ -23,6 +25,7 @@
 #include "third_party/blink/public/mojom/hid/hid.mojom.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+#include "extensions/browser/guest_view/web_view/web_view_guest.h"
 #include "extensions/common/constants.h"
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
@@ -140,6 +143,34 @@ std::unique_ptr<content::HidChooser> ElectronHidDelegate::RunChooser(
   // value is simply used in Chromium to cleanup the chooser UI once the serial
   // service is destroyed.
   return nullptr;
+}
+
+bool ElectronHidDelegate::IsHidAllowedForFrame(
+    content::RenderFrameHost* render_frame_host) {
+  if (!render_frame_host)
+    return false;
+
+  content::RenderFrameHost* main_rfh =
+      render_frame_host->GetOutermostMainFrame();
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  // WebViewGuests have no mechanism to show permission prompts and their
+  // embedder can't grant HID access through its permissionrequest API. Also
+  // since webviews use a separate StoragePartition, they must not gain access
+  // through permissions granted in non-webview contexts.
+  if (extensions::WebViewGuest::FromRenderFrameHost(main_rfh))
+    return false;
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+
+  // HID permissions are scoped to a BrowserContext instead of a
+  // StoragePartition, so guard against sharing them with HTTP(S) pages in
+  // non-default partitions, as ElectronUsbDelegate::PageMayUseUsb() does.
+  if (main_rfh->GetStoragePartition() !=
+      main_rfh->GetBrowserContext()->GetDefaultStoragePartition()) {
+    return !main_rfh->GetLastCommittedURL().SchemeIsHTTPOrHTTPS();
+  }
+
+  return true;
 }
 
 bool ElectronHidDelegate::CanRequestDevicePermission(
