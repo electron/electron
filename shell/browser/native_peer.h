@@ -6,16 +6,19 @@
 #define ELECTRON_SHELL_BROWSER_NATIVE_PEER_H_
 
 #include <concepts>
+#include <cstdint>
 #include <memory>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
 #include "base/check.h"
+#include "base/dcheck_is_on.h"
 #include "shell/browser/microtasks_runner.h"
 #include "v8/include/cppgc/macros.h"
 #include "v8/include/cppgc/persistent.h"
 #include "v8/include/cppgc/type-traits.h"
+#include "v8/include/v8-object.h"
 
 namespace electron {
 
@@ -71,6 +74,14 @@ class NativePeerBase : public MicrotasksRunner::Observer {
   // wrappers were destroyed during heap teardown.
   static void DeleteQueuedPeersAfterIsolateDisposal();
 
+#if DCHECK_IS_ON()
+  // Whether the peer of the wrapper identified by |wrapper_identity| is queued
+  // for release, which happens when that wrapper is finalized. Queued peers
+  // are released from a posted task, so within one task the answer only
+  // changes from false to true.
+  static bool IsQueuedForTesting(uintptr_t wrapper_identity);
+#endif
+
   bool is_active() const { return state_ == State::kActive; }
   bool is_released() const { return state_ == State::kReleased; }
 
@@ -103,6 +114,10 @@ class NativePeerBase : public MicrotasksRunner::Observer {
   // Wrappers may only be borrowed on the owning sequence and outside cppgc
   // finalizers, where creating a Persistent is not allowed.
   static void DCheckCanBorrowWrapper();
+
+#if DCHECK_IS_ON()
+  uintptr_t wrapper_identity_ = 0;
+#endif
 
  private:
   enum class State { kActive, kReleasing, kReleased };
@@ -187,6 +202,12 @@ class NativePeer : public NativePeerBase {
   explicit NativePeer(Wrapper* wrapper) : wrapper_(wrapper) {
     static_assert(cppgc::IsGarbageCollectedTypeV<Wrapper>,
                   "NativePeer<Wrapper> requires a cppgc managed wrapper");
+#if DCHECK_IS_ON()
+    if constexpr (std::derived_from<Wrapper, v8::Object::Wrappable>) {
+      wrapper_identity_ = reinterpret_cast<uintptr_t>(
+          static_cast<const v8::Object::Wrappable*>(wrapper));
+    }
+#endif
   }
   ~NativePeer() override = default;
 

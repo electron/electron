@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include <atomic>
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
@@ -25,6 +26,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_switches.h"
+#include "shell/browser/native_peer.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/webauthn/electron_authenticator_request_client_delegate.h"
 #include "shell/browser/window_list.h"
@@ -38,7 +40,9 @@
 #include "shell/common/node_includes.h"
 #include "ui/accessibility/platform/ax_platform.h"
 #include "v8/include/cppgc/allocation.h"
+#include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8-cppgc.h"
+#include "v8/include/v8-object.h"
 #include "v8/include/v8.h"
 
 #if BUILDFLAG(IS_LINUX)
@@ -371,42 +375,84 @@ v8::Local<v8::Promise> SettlePromiseOutsideTask(
   return handle;
 }
 
-// Calls |before_collection|, runs a full garbage collection,
-// then calls |before_finalization| while the cppgc objects
-// that the collection found unreachable are still waiting to be swept,
-// as a natural collection leaves them until a later task sweeps.
-// Everything runs in one fresh non-nestable task.
-// That task starts from the message loop,
-// so no native frame below it holds a cppgc pointer,
-// which makes kNoHeapPointers accurate and lets the collection skip the stack.
-// It also means no sweeping task runs in between.
-// Sweeping finishes before the promise resolves.
-// Requires --js-flags=--expose-gc.
+// Runs |before_collection|, a full garbage collection, and then
+// |before_finalization| while the collection's dead cppgc objects are still
+// waiting to be swept, as a natural collection leaves them until a later task
+// sweeps. Everything runs in one fresh non-nestable task. That task starts from
+// the message loop, so no native frame below it holds a cppgc pointer, which
+// makes kNoHeapPointers accurate and lets the collection skip the stack. It
+// also means no sweeping task runs in between. Sweeping finishes before the
+// promise resolves.
+//
+// It watches |target|, a wrapper object that |before_collection| is expected to
+// make unreachable:
+//  - |before_finalization| is told whether the collection found it dead.
+//  - The promise rejects if the target's wrapper was finalized before or during
+//    |before_finalization|, which would leave the callback running too late.
+//    Its native peer is queued for release exactly when it is finalized.
+//  - The promise resolves with whether the target was dead and finalized by the
+//    sweep that followed.
+// The target is read when this is called and only watched weakly afterwards, so
+// it stays collectable. Requires --js-flags=--expose-gc.
+void CollectBeforeFinalization(
+    v8::Isolate* isolate,
+    cppgc::WeakPersistent<v8::Object::Wrappable> watched,
+    uintptr_t identity,
+    base::OnceClosure before_collection,
+    base::OnceCallback<void(bool)> before_finalization,
+    gin_helper::Promise<bool> promise) {
+  std::move(before_collection).Run();
+
+  v8::CppHeap* cpp_heap = isolate->GetCppHeap();
+  cpp_heap->SetForceIncrementalSweepingForTesting(true);
+  isolate->RequestGarbageCollectionForTesting(
+      v8::Isolate::GarbageCollectionType::kFullGarbageCollection,
+      v8::StackState::kNoHeapPointers);
+
+  const bool dead = !watched;
+  // Peers are only added to the queue within this task. They are released by a
+  // posted non-nestable task. So a check after the callback also covers the
+  // time before it.
+  if (!electron::NativePeerBase::IsQueuedForTesting(identity))
+    std::move(before_finalization).Run(dead);
+  const bool finalized_early =
+      electron::NativePeerBase::IsQueuedForTesting(identity);
+
+  cpp_heap->FinishSweepingForTesting();
+  cpp_heap->SetForceIncrementalSweepingForTesting(false);
+
+  if (finalized_early) {
+    promise.RejectWithErrorMessage(
+        "The target was finalized before or during the callback");
+    return;
+  }
+  promise.Resolve(dead &&
+                  electron::NativePeerBase::IsQueuedForTesting(identity));
+}
+
 v8::Local<v8::Promise> CollectGarbageBeforeFinalizationForTesting(
     v8::Isolate* isolate,
+    v8::Local<v8::Object> target,
     base::OnceClosure before_collection,
-    base::OnceClosure before_finalization) {
-  gin_helper::Promise<void> promise(isolate);
+    base::OnceCallback<void(bool)> before_finalization) {
+  gin_helper::Promise<bool> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
+  v8::Object::Wrappable* wrappable = nullptr;
+  if (target->IsApiWrapper()) {
+    wrappable = v8::Object::Unwrap<v8::Object::Wrappable>(
+        isolate, target, v8::kObjectWrappableTagRange);
+  }
+  if (!wrappable) {
+    promise.RejectWithErrorMessage("The target is not a wrapper object");
+    return handle;
+  }
   base::SequencedTaskRunner::GetCurrentDefault()->PostNonNestableTask(
       FROM_HERE,
-      base::BindOnce(
-          [](v8::Isolate* isolate, base::OnceClosure before_collection,
-             base::OnceClosure before_finalization,
-             gin_helper::Promise<void> promise) {
-            std::move(before_collection).Run();
-            v8::CppHeap* cpp_heap = isolate->GetCppHeap();
-            cpp_heap->SetForceIncrementalSweepingForTesting(true);
-            isolate->RequestGarbageCollectionForTesting(
-                v8::Isolate::GarbageCollectionType::kFullGarbageCollection,
-                v8::StackState::kNoHeapPointers);
-            std::move(before_finalization).Run();
-            cpp_heap->FinishSweepingForTesting();
-            cpp_heap->SetForceIncrementalSweepingForTesting(false);
-            promise.Resolve();
-          },
-          base::Unretained(isolate), std::move(before_collection),
-          std::move(before_finalization), std::move(promise)));
+      base::BindOnce(&CollectBeforeFinalization, base::Unretained(isolate),
+                     cppgc::WeakPersistent<v8::Object::Wrappable>(wrappable),
+                     reinterpret_cast<uintptr_t>(wrappable),
+                     std::move(before_collection),
+                     std::move(before_finalization), std::move(promise)));
   return handle;
 }
 
