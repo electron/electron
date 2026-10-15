@@ -15,20 +15,20 @@ was missing gypi_values.node_pdl_files from its inputs, causing Ninja to skip
 regeneration when PDL domain files changed. Should be upstreamed.
 
 diff --git a/configure.py b/configure.py
-index 3c3b5a34925b5e578aa4b507674e15b88c4035c7..65da589f59e1eb7fc82c08dc05429fb19a1772eb 100755
+index b826e24e3f474f4ec89bafd0a6db3081fadfbef8..1b35f195f7ee7547544cc954baf95c725afa8d0b 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1987,7 +1987,7 @@ def configure_v8(o, configs):
-   # Until we manage to get rid of all those, v8_enable_sandbox cannot be used.
-   # Note that enabling pointer compression without enabling sandbox is unsupported by V8,
-   # so this can be broken at any time.
--  o['variables']['v8_enable_sandbox'] = 0
+@@ -1955,7 +1955,7 @@ def configure_v8(o, configs):
+   # Like V8's own default, the sandbox goes with the shared pointer compression
+   # cage. Multi-cage builds give every IsolateGroup its own sandbox, which the
+   # array buffer allocator does not know about yet.
+-  o['variables']['v8_enable_sandbox'] = 1 if options.pointer_compression_shared_cage else 0
 +  o['variables']['v8_enable_sandbox'] = 1 if options.enable_pointer_compression else 0
-   # We set v8_enable_pointer_compression_shared_cage to 0 always, even when
-   # pointer compression is enabled so that we don't accidentally enable shared
-   # cage mode when pointer compression is on.
+   o['variables']['v8_enable_pointer_compression_shared_cage'] = 1 if options.pointer_compression_shared_cage else 0
+   o['variables']['v8_enable_external_code_space'] = 1 if options.enable_pointer_compression else 0
+   o['variables']['v8_enable_31bit_smis_on_64bit_arch'] = 1 if options.enable_pointer_compression else 0
 diff --git a/node.gni b/node.gni
-index 41f200189a34e150e4c8f25da2a72c2108259720..156fee33b3813fe4d94a1c9585f217a99dbfbd5f 100644
+index 28ef444b72c139eb9253122dfaf8b14c8108eac6..0d0438ba8f478a08949ea07cad6c349d15060be9 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -5,10 +5,10 @@
@@ -70,7 +70,7 @@ index 41f200189a34e150e4c8f25da2a72c2108259720..156fee33b3813fe4d94a1c9585f217a9
 +  use_system_histogram = false
  }
  
- assert(!node_enable_inspector || node_use_openssl,
+ # Link against shared copies of the bundled dependencies instead of building
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
 index bf1276f82412b7321732995cfc2f93d9cce961a2..cfd8c8c9c7d8911be7b3a66f4695e54f1022a678 100644
 --- a/src/node_builtins.cc
@@ -309,18 +309,9 @@ index 856878c33681a73d41016729dabe48b0a6a80589..91a11852d206b65485fe90fd037a0bd1
      if sys.platform == 'win32':
        files = [ x.replace('\\', '/') for x in files ]
 diff --git a/unofficial.gni b/unofficial.gni
-index aa78f9ce60c0439536eaf6e23880e30ebef0e1a9..7265e09bf7601afe76463f528ffb385db796e093 100644
+index aa35cd4664e9ed43b46e1ad62eaabcf1cfe40135..7265e09bf7601afe76463f528ffb385db796e093 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -94,7 +94,7 @@ template("node_gn_build") {
-       "-Wno-unused-function",
-     ]
- 
--    if (current_cpu == "x86") {
-+    if (target_cpu == "x86") {
-       node_arch = "ia32"
-     } else {
-       node_arch = target_cpu
 @@ -147,32 +147,42 @@ template("node_gn_build") {
      public_configs = [
        ":node_external_config",
