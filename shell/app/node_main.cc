@@ -291,8 +291,9 @@ int NodeMain() {
       // bootstrapped environment) from the snapshot instead of running the
       // bootstrap -- the same path the browser process takes in
       // NodeBindings::CreateEnvironment.
-      auto snapshot_wrapper = snapshot ? snapshot->AsEmbedderWrapper()
-                                       : node::EmbedderSnapshotData::Pointer{};
+      auto snapshot_wrapper =
+          snapshot ? node::EmbedderSnapshotData::BuiltinSnapshotData()
+                   : node::EmbedderSnapshotData::Pointer{};
       isolate_data = node::CreateIsolateData(isolate, loop, gin_env.platform(),
                                              /*allocator=*/nullptr,
                                              snapshot_wrapper.get());
