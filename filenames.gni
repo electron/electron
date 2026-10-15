@@ -619,7 +619,6 @@ filenames = {
     "shell/common/api/electron_api_net.cc",
     "shell/common/api/electron_api_shared_texture.cc",
     "shell/common/api/electron_api_shell.cc",
-    "shell/common/api/electron_api_testing.cc",
     "shell/common/api/electron_api_url_loader.cc",
     "shell/common/api/electron_api_url_loader.h",
     "shell/common/api/electron_api_v8_util.cc",
