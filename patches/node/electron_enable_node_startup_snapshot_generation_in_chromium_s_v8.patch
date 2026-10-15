@@ -60,7 +60,7 @@ eliminating the Node bootstrap recompile.
   blob to the SnapshotCreator.
 
 diff --git a/node.gni b/node.gni
-index 156fee33b3813fe4d94a1c9585f217a99dbfbd5f..a443ff52ca1dda5cb2cfdfe5241076836a33b8fc 100644
+index 0d0438ba8f478a08949ea07cad6c349d15060be9..55f35c4c376e66be291631cff8b1acf266ff41a3 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -31,6 +31,13 @@ declare_args() {
@@ -108,12 +108,12 @@ index 156fee33b3813fe4d94a1c9585f217a99dbfbd5f..a443ff52ca1dda5cb2cfdfe524107683
    # Build with Amaro (TypeScript utils).
    node_use_amaro = true
 diff --git a/src/api/embed_helpers.cc b/src/api/embed_helpers.cc
-index c1bcb3948c4cf68b36dbb1ea985bfb02267ad724..b9ddc1e2139c1a3b869a27f088e6e64688efa0f0 100644
+index 051110c9c6e96b91fa966f9dc8cd3a161db6d0b2..7b78ed07d020c6553c9fdf449fa057e5daef54a3 100644
 --- a/src/api/embed_helpers.cc
 +++ b/src/api/embed_helpers.cc
 @@ -131,6 +131,15 @@ CommonEnvironmentSetup::CommonEnvironmentSetup(
-     isolate = impl_->isolate = Isolate::Allocate(GetOrCreateIsolateGroup());
-     platform->RegisterIsolate(isolate, loop);
+     params.cpp_heap =
+         v8::CppHeap::Create(platform, v8::CppHeapCreateParams{{}}).release();
  
 +    // Electron: extend an existing V8 startup snapshot rather than build the
 +    // heap from scratch (Electron's V8 has external startup data / the
@@ -236,7 +236,7 @@ index 664f878c0671db76cbf68116d224606243ddf501..4ed6d6ecf12ea92129f4d7b7fdb59bcb
    return nullptr;
  }
 diff --git a/src/node_snapshotable.cc b/src/node_snapshotable.cc
-index 8561933060ac30e3559d7ce2ac633d25f1e4d6ec..79dad674d21bc82096830eaf5a5100b0220b6cf4 100644
+index e915e257259aac0ed21f101e537230f448d0402f..8fe7e44d9c4d60fed6f99c3eacb0b9b36609f5d2 100644
 --- a/src/node_snapshotable.cc
 +++ b/src/node_snapshotable.cc
 @@ -866,6 +866,19 @@ const std::vector<intptr_t>& SnapshotBuilder::CollectExternalReferences() {

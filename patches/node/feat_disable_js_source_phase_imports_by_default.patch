@@ -18,7 +18,7 @@ Stage 3.
 Upstreamed in https://github.com/nodejs/node/pull/60364
 
 diff --git a/src/node.cc b/src/node.cc
-index 47c25d9af7a004dd0d8791686a3bf918b07906d3..185726f4e42e71988c95f5bf23a49f8f362ff2cf 100644
+index 5fa8d2cb9c071b0daf511cd471816253ac4ec64b..de35850c3f100dbb5084b213144841e00929eff0 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -783,7 +783,7 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,
@@ -29,4 +29,4 @@ index 47c25d9af7a004dd0d8791686a3bf918b07906d3..185726f4e42e71988c95f5bf23a49f8f
 +    // v8_args.emplace_back("--js-source-phase-imports");
    }
  
-   // WebAssembly JS Promise Integration
+ #if V8_ENABLE_WEBASSEMBLY
