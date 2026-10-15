@@ -8,10 +8,10 @@ an ExternalPointerTypeTag parameter. Use kExternalPointerTypeTagDefault
 for all existing call sites.
 
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 62083eae718813142e0808b055117ecebf25ef75..2a649cd3c16d1fdfaea8d4922805876e208376ef 100644
+index ec217aadc4a34ce09742c3b9490634727f387c1d..e857de97428bde0bcd76f486fe29f1befa076e2c 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -2620,7 +2620,7 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
+@@ -2622,7 +2622,7 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
  void SecureContext::CtxGetter(const FunctionCallbackInfo<Value>& info) {
    SecureContext* sc;
    ASSIGN_OR_RETURN_UNWRAP(&sc, info.This());
