@@ -1,0 +1,147 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Fri, 9 Oct 2026 18:17:16 -0500
+Subject: Revert GTK module pinning on Linux
+
+Backports the parts of https://chromium-review.googlesource.com/c/chromium/src/+/8488311
+that apply to M156:
+
+* Reverts "[ui/gtk] Pin gtk-modules to an empty string during
+  initialization" (https://chromium-review.googlesource.com/c/chromium/src/+/8243490).
+  The pin runs after GTK has loaded the modules listed in settings.ini
+  and XSETTINGS, so it unloads them while their callbacks are still
+  registered. appmenu-gtk-module, used for KDE Plasma's global menu,
+  has a D-Bus name watch pending, so the browser process crashes at
+  startup. colorreload-gtk-module and window-decorations-gtk-module,
+  which Plasma's GTK integration adds to gtk-modules, watch colors.css
+  and the GTK theme name, so the browser process crashes when the
+  desktop theme changes. See
+  https://github.com/electron/electron/issues/54782 and
+  crbug.com/551107198.
+* Reverts "[ui/gtk] Sanitize gtk-modules in interceptor and install early"
+  (https://chromium-review.googlesource.com/c/chromium/src/+/8296244),
+  which also removed GTK_MODULES from the process environment and so from
+  child processes.
+
+Upstream's change also removes the GtkSettings interceptor and the CFI
+exemption for it. M156 still uses the interceptor to sanitize theme
+names, so both are kept here.
+
+This patch can be removed once Electron's Chromium includes 8488311.
+
+diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
+index ce43b29eb301a846c84f26811b8632d737e91a5f..7333c23ff5529cd40a74f03cfebfaddc97cb9261 100644
+--- a/ui/gtk/gtk_ui.cc
++++ b/ui/gtk/gtk_ui.cc
+@@ -321,11 +321,6 @@ bool GtkUi::Initialize() {
+     return false;
+   }
+ 
+-  // The GtkSettings interceptor must be installed early (before GTK
+-  // initialization like gtk_init_check()) to intercept and sanitize
+-  // settings such as gtk-modules when initial XSETTINGS are read.
+-  InstallGtkSettingsInterceptor();
+-
+   // Gtk initialization through pango may call FcInit() before we get to that.
+   // Retrieve global FontConfig config here to call FcInit() with configuration
+   // we control.
+@@ -337,9 +332,6 @@ bool GtkUi::Initialize() {
+   // do it once it is ready.
+   std::unique_ptr<base::Environment> env(base::Environment::Create());
+   env->SetVar("NO_AT_BRIDGE", "1");
+-  // GTK's module loading mechanism can be bypassed with the GTK_MODULES
+-  // environment variable, so unset it here.
+-  env->UnSetVar("GTK_MODULES");
+ 
+   // When GDK opens the display during gtk_init() it probes it for OpenGL
+   // support (GLX/EGL version and extension queries), which loads the GL
+@@ -392,16 +384,11 @@ bool GtkUi::Initialize() {
+   };
+ 
+   GtkSettings* settings = gtk_settings_get_default();
+-  if (!GtkCheckVersion(4)) {
+-    // Pin `gtk-modules` to an empty string with APPLICATION source priority
+-    // to prevent XSETTINGS updates from loading GTK modules.  GTK4 does not
+-    // have this property.
+-    g_object_set(settings, "gtk-modules", "", nullptr);
+-  }
+   SanitizeIconThemeName();
+   SanitizeThemeName();
+   SanitizeCursorThemeName();
+   SanitizeCursorThemeSize();
++  InstallGtkSettingsInterceptor();
+ 
+   if (!GtkCheckVersion(4)) {
+     SanitizeKeyThemeName();
+diff --git a/ui/gtk/gtk_util.cc b/ui/gtk/gtk_util.cc
+index 960a3a1909742ee1838427709ba763c7c5fc822e..1ca0e2e4cdc68a4177de17311bf4d82f0e512dcf 100644
+--- a/ui/gtk/gtk_util.cc
++++ b/ui/gtk/gtk_util.cc
+@@ -237,7 +237,6 @@ bool GtkInitFromCommandLine(int* argc, char** argv) {
+   // This prevents GTK from calling setlocale(LC_ALL, ""), which potentially
+   // overwrites the LC_NUMERIC locale to something other than "C".
+   gtk_disable_setlocale();
+-  InstallGtkSettingsInterceptor();
+   InstallGtkLogWriter();
+   return GtkInitCheck(argc, argv);
+ }
+@@ -907,14 +906,6 @@ void GtkSettingsSetProperty(GObject* object,
+                             GParamSpec* pspec) {
+   if (pspec && pspec->name) {
+     std::string_view prop_name(pspec->name);
+-    if (prop_name == "gtk-modules") {
+-      GValue sanitized_value = G_VALUE_INIT;
+-      g_value_init(&sanitized_value, G_TYPE_STRING);
+-      g_value_set_string(&sanitized_value, "");
+-      g_orig_set_property(object, property_id, &sanitized_value, pspec);
+-      g_value_unset(&sanitized_value);
+-      return;
+-    }
+     std::optional<ThemeProperty> property;
+     if (prop_name == "gtk-theme-name") {
+       property = ThemeProperty::kThemeName;
+diff --git a/ui/gtk/gtk_util.h b/ui/gtk/gtk_util.h
+index 3455a2fe68cbd998d40e92da92f5e6a61ccb9ae9..7156900268bd4088da11f5e446c71e3bd52ab1d9 100644
+--- a/ui/gtk/gtk_util.h
++++ b/ui/gtk/gtk_util.h
+@@ -232,7 +232,7 @@ bool IsValidThemeName(ThemeProperty property, const char* theme);
+ COMPONENT_EXPORT(GTK)
+ const char* GetThemeFallback(ThemeProperty property);
+ 
+-// Hook the `GtkSettings` `set_property` method to sanitize settings.
++// Hook the `GtkSettings` `set_property` method to sanitize theme names.
+ COMPONENT_EXPORT(GTK) void InstallGtkSettingsInterceptor();
+ 
+ // Unhook the `GtkSettings` `set_property` method.
+diff --git a/ui/gtk/gtk_util_unittest.cc b/ui/gtk/gtk_util_unittest.cc
+index 07fa0b44045eec6aca5d14e1e93c41221ecf35df..97fb830e3b85d82ff043b66fa5a40442132675ad 100644
+--- a/ui/gtk/gtk_util_unittest.cc
++++ b/ui/gtk/gtk_util_unittest.cc
+@@ -218,27 +218,6 @@ TEST_F(GtkUtilInterceptorTest, CursorThemeNamesSanitizedAtWriteTime) {
+   EXPECT_EQ(observer.value, "Adwaita");
+ }
+ 
+-TEST_F(GtkUtilInterceptorTest, GtkModulesSanitizedAtWriteTime) {
+-  if (GtkCheckVersion(4)) {
+-    GTEST_SKIP();
+-  }
+-  GtkSettings* settings = GetDefaultGtkSettings();
+-  ASSERT_TRUE(settings);
+-
+-  PropertyObserver observer;
+-  ScopedGSignal signal(
+-      settings, "notify::gtk-modules",
+-      base::BindRepeating(&PropertyObserver::OnNotify,
+-                          observer.weak_factory.GetWeakPtr(), "gtk-modules"));
+-
+-  // Set to a module name
+-  g_object_set(settings, "gtk-modules", "canberra-gtk-module:pk-gtk-module",
+-               nullptr);
+-
+-  // The interceptor should have triggered and sanitized the modules to ""
+-  EXPECT_EQ(observer.value, "");
+-}
+-
+ TEST_F(GtkUtilInterceptorTest, CursorThemeNamesAllowsEmpty) {
+   GtkSettings* settings = GetDefaultGtkSettings();
+   ASSERT_TRUE(settings);
