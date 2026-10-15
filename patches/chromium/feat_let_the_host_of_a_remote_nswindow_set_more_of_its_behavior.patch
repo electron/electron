@@ -52,10 +52,10 @@ index de4c147140265a8a576aa5ef4d0276e1a3cf1de5..c5bb4f6871c161e457d25a229005285e
  
    raw_ptr<NativeWidgetNSWindowBridge> parent_ =
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 8c957449321971e953e1348ed9a8474d9031285d..f108b562685c458a8909d1bfead19dc40eb7cd56 100644
+index df23bb8f408e9a712ceeb24558947a83ce62e634..3c364d2f4c2bd2bc72efa22183992510ab75785a 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -1613,6 +1613,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -1628,6 +1628,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    gfx::ApplyNSWindowSizeConstraints(window_, min_size, max_size,
                                      shows_resize_controls,
                                      shows_fullscreen_controls);
@@ -63,7 +63,7 @@ index 8c957449321971e953e1348ed9a8474d9031285d..f108b562685c458a8909d1bfead19dc4
  }
  
  void NativeWidgetNSWindowBridge::OnShowAnimationComplete() {
-@@ -2027,7 +2028,10 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -2043,7 +2044,10 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
  void NativeWidgetNSWindowBridge::SetAspectRatio(
      const gfx::SizeF& aspect_ratio,
      const gfx::Size& excluded_margin) {
@@ -75,7 +75,7 @@ index 8c957449321971e953e1348ed9a8474d9031285d..f108b562685c458a8909d1bfead19dc4
    [window_delegate_ setAspectRatio:aspect_ratio.width() / aspect_ratio.height()
                      excludedMargin:excluded_margin];
  }
-@@ -2107,6 +2111,56 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -2123,6 +2127,56 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    [window_ setIgnoresMouseEvents:ignores_mouse_events];
  }
  
