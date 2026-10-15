@@ -1,0 +1,126 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
+Date: Tue, 6 Oct 2026 13:19:14 +0200
+Subject: [M150-LTS][maglev] Fix predecessor counting in the "smi case falls
+ back to object case" logic
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+If the smi case "succeeds" but it just falls back to the object case
+which fails, that should not count as a success.
+
+Drive-by: Hardening; upgrading a DCHECK (which hits with one of the
+variants) to CHECK. Another variant was already hitting a CHECK.
+
+Fixed: 569286602
+Change-Id: Iae131e470629efd6a1c4c062512843944b6df138
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8518260
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110393}
+(cherry picked from commit 6c626cef36527614a5f9001a2946ed4277118a77)
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index 350b81ac11b3f1eaaac49d86171110cdcfe34693..7e6f6fbc14ef8b2d39eee95c33558e278f99b768 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -10623,16 +10623,21 @@ MaglevGraphBuilder::BuildJSArrayBuiltinMapSwitchOnElementsKind(
+         sub_graph.GotoOrTrim(&*object_case);
+         sub_graph.Bind(&*object_case);
+       }
+-      any_successful |= (!build_kind_specific(kind).IsDoneWithAbort());
++      ReduceResult result = build_kind_specific(kind);
+       if (IsSmiElementsKind(kind) && make_smi_fallthrough_to_object) {
+         // After building the SMI specific parts (see build_kind_specific call
+         // above), jump to the beginning of the case for the object elements
+         // kind.
+         DCHECK(object_case.has_value());
+         sub_graph.GotoOrTrim(&*object_case);
++
++        // Whether the Smi case is successful depends on whether the object case
++        // is successful, so don't update any_successful here.
+       } else {
+         DCHECK(do_return.has_value());
+         sub_graph.GotoOrTrim(&*do_return);
++
++        any_successful |= !result.IsDoneWithAbort();
+       }
+       sub_graph.Bind(&check_next_map);
+     } else {
+@@ -17353,11 +17358,11 @@ void MaglevGraphBuilder::ProcessMergePointPredecessors(
+   ResetBuilderCachedState();
+ 
+   if (merge_state.is_loop()) {
+-    DCHECK_EQ(merge_state.predecessors_so_far(),
+-              merge_state.predecessor_count() - 1);
++    CHECK_EQ(merge_state.predecessors_so_far(),
++             merge_state.predecessor_count() - 1);
+   } else {
+-    DCHECK_EQ(merge_state.predecessors_so_far(),
+-              merge_state.predecessor_count());
++    CHECK_EQ(merge_state.predecessors_so_far(),
++             merge_state.predecessor_count());
+   }
+ 
+   if (merge_state.predecessor_count() == 1) return;
+diff --git a/test/mjsunit/maglev/regress-569286602-1.js b/test/mjsunit/maglev/regress-569286602-1.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..b89ebdcb4828efa5b6dc82e91af3f464a1560bc3
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-569286602-1.js
+@@ -0,0 +1,24 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --maglev
++
++function f(r) {
++  let pos;
++  while ('a'.startsWith('b', pos)) { do { pos = 1; } while (pos); }
++  r.push(pos);
++}
++
++%PrepareFunctionForOptimization(f);
++let a = [{}];
++assertEquals(undefined, f(a));
++assertEquals([{}, undefined], a);
++let b = [1];
++assertEquals(undefined, f(b));
++assertEquals([1, undefined], b);
++
++%OptimizeMaglevOnNextCall(f);
++let c = [1];
++assertEquals(undefined, f(c));
++assertEquals([1, undefined], c);
+diff --git a/test/mjsunit/maglev/regress-569286602-2.js b/test/mjsunit/maglev/regress-569286602-2.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..dc186b862a9be6213aeb2b50183f2642f2b19484
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-569286602-2.js
+@@ -0,0 +1,24 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --maglev
++
++function f(r) {
++  let pos;
++  while ('a'.startsWith('b', pos)) { do { pos = 1; } while (pos); }
++  if (r) r.push(pos);
++}
++
++%PrepareFunctionForOptimization(f);
++let a = [{}];
++assertEquals(undefined, f(a));
++assertEquals([{}, undefined], a);
++let b = [1];
++assertEquals(undefined, f(b));
++assertEquals([1, undefined], b);
++
++%OptimizeMaglevOnNextCall(f);
++let c = [1];
++assertEquals(undefined, f(c));
++assertEquals([1, undefined], c);

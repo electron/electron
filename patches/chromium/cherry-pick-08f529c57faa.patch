@@ -1,0 +1,521 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Takashi Nakayama <tnak@chromium.org>
+Date: Tue, 6 Oct 2026 00:02:02 -0700
+Subject: ServiceWorker: Drop ServiceWorkerMainResourceHandle for CSP-sandboxed
+ workers
+
+When shared and dedicated worker scripts are received and started, its
+PolicyContainerPolicies must be computed and checked to prevent invalid
+ServiceWorker from running for the shared/dedicated worker.
+
+This CL ensures the calculation of PolicyContainerPolicies in
+DidCreateScriptLoader() and drops ServiceWorkerHandle if the worker is
+sandboxed by CSP.
+
+See the bug for details.
+
+Bug: 41478971, 563194341
+Change-Id: I8e1df63ea670b10a3bfec73dedd47036ae62dd5e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8461264
+Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+Reviewed-by: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Commit-Queue: Takashi Nakayama <tnak@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1712040}
+
+Electron adaptation notes (42-x-y):
+- worker_script_fetcher.cc: this branch predates the
+  GetConnectionAllowlistsForWorker() helper (connection_allowlist_utils),
+  so ComputePolicyContainerPoliciesForWorker() inlines the branch's
+  existing connection-allowlist selection logic (same conditions, now
+  copying instead of moving from the const creator policies) and still
+  assigns the result to policies.connection_allowlists unconditionally,
+  as upstream does. base/types/optional_util.h is included explicitly
+  for base::OptionalToPtr().
+- dedicated_worker_host.cc: DidStartScriptLoad() on this branch does not
+  build a PolicyContainerHost (that came with the later connection
+  allowlist work), so the CSP-sandbox check reads
+  result->policy_container_policies.sandbox_flags directly, before the
+  policies are moved into CommitResponseAndRelease().
+- shared_worker_host.cc: the EnsureRequiredHeadersForIsolatedApp()
+  context block does not exist on this branch; only the feature-gated
+  policies selection was applied.
+- dedicated_worker_service_impl_unittest.cc hunks were dropped (test-only,
+  heavy context drift; the friend declaration in the header is kept).
+
+diff --git a/content/browser/worker_host/dedicated_worker_host.cc b/content/browser/worker_host/dedicated_worker_host.cc
+index eaaa15fee00c621769085bccd3c26d350ecd8de6..aa77179a27d91db3f18404bc516f05408429c239 100644
+--- a/content/browser/worker_host/dedicated_worker_host.cc
++++ b/content/browser/worker_host/dedicated_worker_host.cc
+@@ -40,6 +40,7 @@
+ #include "content/browser/worker_host/dedicated_worker_service_impl.h"
+ #include "content/browser/worker_host/worker_script_fetcher.h"
+ #include "content/browser/worker_host/worker_util.h"
++#include "content/common/features.h"
+ #include "content/public/browser/browser_context.h"
+ #include "content/public/browser/browser_thread.h"
+ #include "content/public/browser/network_service_util.h"
+@@ -220,8 +221,8 @@ void DedicatedWorkerHost::CreateLockManager(
+     mojo::PendingReceiver<blink::mojom::LockManager> receiver) {
+   GetStoragePartitionImpl()->BindLockManager(
+       GetWorkerStorageKey(), GetToken().value(), std::move(receiver));
+-  GetStoragePartitionImpl()->GetLockManager()->AddLockObserver(GetToken().value(),
+-                                                            this);
++  GetStoragePartitionImpl()->GetLockManager()->AddLockObserver(
++      GetToken().value(), this);
+ }
+ 
+ void DedicatedWorkerHost::OnLockContention() {
+@@ -509,7 +510,6 @@ void DedicatedWorkerHost::DidStartScriptLoad(
+     worker_client_security_state_->cross_origin_embedder_policy =
+         result->main_script_load_params->response_head->parsed_headers
+             ->cross_origin_embedder_policy;
+-
+   }
+ 
+   // The worker global scope's document isolation policy is the same as its
+@@ -569,6 +569,18 @@ void DedicatedWorkerHost::DidStartScriptLoad(
+   result->subresource_loader_factories->set_bypass_redirect_checks(
+       bypass_redirect_checks);
+ 
++  // A worker sandboxed without `allow-same-origin` has an opaque origin and
++  // is not eligible to use service workers (mirroring
++  // `NavigationRequest::CommitNavigation()`).
++  if (base::FeatureList::IsEnabled(
++          features::kServiceWorkerDropHandleForCSPSandboxedWorker) &&
++      service_worker_handle_ &&
++      (result->policy_container_policies.sandbox_flags &
++       network::mojom::WebSandboxFlags::kOrigin) ==
++          network::mojom::WebSandboxFlags::kOrigin) {
++    service_worker_handle_.reset();
++  }
++
+   blink::mojom::ServiceWorkerContainerInfoForClientPtr container_info;
+   blink::mojom::ControllerServiceWorkerInfoPtr controller;
+   if (GetServiceWorkerClient()) {
+diff --git a/content/browser/worker_host/dedicated_worker_host.h b/content/browser/worker_host/dedicated_worker_host.h
+index 043e18ad9cca5a4542fb505e724e0812f0afd2ff..c6062554b35b5555799c85e20fd725734f01800c 100644
+--- a/content/browser/worker_host/dedicated_worker_host.h
++++ b/content/browser/worker_host/dedicated_worker_host.h
+@@ -300,6 +300,8 @@ class CONTENT_EXPORT DedicatedWorkerHost final
+   }
+ 
+  private:
++  friend class DedicatedWorkerServiceImplTest;
++
+   // RenderProcessHostObserver:
+   void RenderProcessExited(RenderProcessHost* render_process_host,
+                            const ChildProcessTerminationInfo& info) override;
+diff --git a/content/browser/worker_host/shared_worker_host.cc b/content/browser/worker_host/shared_worker_host.cc
+index 1e2832bce054e78bb84879652f4d487df738b973..6725cd6a246083e285079999b33bd4dc14283dab 100644
+--- a/content/browser/worker_host/shared_worker_host.cc
++++ b/content/browser/worker_host/shared_worker_host.cc
+@@ -302,12 +302,18 @@ void SharedWorkerHost::Start(
+ 
+     policy_container_host = std::move(creator_policy_container_host_);
+   } else {
+-    // https://html.spec.whatwg.org/C/#creating-a-policy-container-from-a-fetch-response
+-    // This does not parse the referrer policy, which will be
+-    // updated in `SharedWorkerGlobalScope::Initialize()`.
+-    PolicyContainerPolicies policies(
+-        result.final_response_url,
+-        result.main_script_load_params->response_head.get(), nullptr);
++    PolicyContainerPolicies policies;
++    if (base::FeatureList::IsEnabled(
++            features::kServiceWorkerDropHandleForCSPSandboxedWorker)) {
++      policies = std::move(result.policy_container_policies);
++    } else {
++      // https://html.spec.whatwg.org/C/#creating-a-policy-container-from-a-fetch-response
++      // This does not parse the referrer policy, which will be updated in
++      // `SharedWorkerGlobalScope::Initialize()`.
++      policies = PolicyContainerPolicies(
++          result.final_response_url,
++          result.main_script_load_params->response_head.get(), nullptr);
++    }
+ 
+     // A worker context can only be secure if its creator also is.
+     if (!creator_policy_container_host_->policies().is_web_secure_context) {
+@@ -422,9 +428,22 @@ void SharedWorkerHost::Start(
+   result.subresource_loader_factories->set_bypass_redirect_checks(
+       bypass_redirect_checks);
+ 
++  // A worker sandboxed without `allow-same-origin` has an opaque origin and
++  // is not eligible to use service workers (mirroring
++  // `NavigationRequest::CommitNavigation()`).
++  if (base::FeatureList::IsEnabled(
++          features::kServiceWorkerDropHandleForCSPSandboxedWorker) &&
++      service_worker_handle_ &&
++      (policy_container_host->policies().sandbox_flags &
++       network::mojom::WebSandboxFlags::kOrigin) ==
++          network::mojom::WebSandboxFlags::kOrigin) {
++    service_worker_handle_.reset();
++  }
++
+   blink::mojom::ServiceWorkerContainerInfoForClientPtr container_info;
+   blink::mojom::ControllerServiceWorkerInfoPtr controller;
+-  if (service_worker_handle_->service_worker_client()) {
++  if (service_worker_handle_ &&
++      service_worker_handle_->service_worker_client()) {
+     mojo::PendingRemote<network::mojom::CrossOriginEmbedderPolicyReporter>
+         coep_reporter;
+     if (coep_reporter_) {
+@@ -439,7 +458,10 @@ void SharedWorkerHost::Start(
+         service_worker_handle_->scoped_service_worker_client()
+             ->CommitResponseAndRelease(
+                 /*rfh_id=*/std::nullopt,
+-                std::move(result.policy_container_policies),
++                base::FeatureList::IsEnabled(
++                    features::kServiceWorkerDropHandleForCSPSandboxedWorker)
++                    ? policy_container_host->policies()
++                    : result.policy_container_policies,
+                 std::move(coep_reporter), std::move(dip_reporter),
+                 ukm_source_id());
+   }
+@@ -491,7 +513,8 @@ void SharedWorkerHost::Start(
+       instance_.DoesRequireCrossSiteRequestForCookies(),
+       std::move(coep_reporting_observer), std::move(dip_reporting_observer),
+       cross_origin_isolated);
+-  if (service_worker_handle_->service_worker_client()) {
++  if (service_worker_handle_ &&
++      service_worker_handle_->service_worker_client()) {
+     service_worker_handle_->service_worker_client()->SetContainerReady();
+   }
+ 
+diff --git a/content/browser/worker_host/shared_worker_host_unittest.cc b/content/browser/worker_host/shared_worker_host_unittest.cc
+index f387902fb27b106a61bc54b068fe6a80d7442c48..50c955a2c975660e6bd0006825e540f12566fdcd 100644
+--- a/content/browser/worker_host/shared_worker_host_unittest.cc
++++ b/content/browser/worker_host/shared_worker_host_unittest.cc
+@@ -162,22 +162,25 @@ class SharedWorkerHostTest : public testing::Test {
+     host->SetServiceWorkerHandle(std::move(service_worker_handle));
+ 
+     TestContentBrowserClient client;
+-    host->Start(std::move(factory),
+-                blink::mojom::FetchClientSettingsObject::New(
+-                    []() {
+-                      auto policies =
+-                          blink::mojom::PolicyContainerPolicies::New();
+-                      policies->referrer_policy =
+-                          network::mojom::ReferrerPolicy::kDefault;
+-                      return policies;
+-                    }(),
+-                    /*outgoing_referrer=*/GURL(),
+-                    blink::mojom::InsecureRequestsPolicy::kDoNotUpgrade),
+-                &client,
+-                WorkerScriptFetcherResult(
+-                    std::move(subresource_loader_factories),
+-                    std::move(main_script_load_params),
+-                    PolicyContainerPolicies(), final_response_url));
++    PolicyContainerPolicies policies =
++        WorkerScriptFetcher::ComputePolicyContainerPoliciesForTesting(
++            final_response_url, main_script_load_params->response_head.get(),
++            /*creator_policies=*/nullptr);
++    host->Start(
++        std::move(factory),
++        blink::mojom::FetchClientSettingsObject::New(
++            []() {
++              auto policies = blink::mojom::PolicyContainerPolicies::New();
++              policies->referrer_policy =
++                  network::mojom::ReferrerPolicy::kDefault;
++              return policies;
++            }(),
++            /*outgoing_referrer=*/GURL(),
++            blink::mojom::InsecureRequestsPolicy::kDoNotUpgrade),
++        &client,
++        WorkerScriptFetcherResult(std::move(subresource_loader_factories),
++                                  std::move(main_script_load_params),
++                                  std::move(policies), final_response_url));
+   }
+ 
+   MessagePortChannel AddClient(
+@@ -194,6 +197,10 @@ class SharedWorkerHostTest : public testing::Test {
+     return local_port;
+   }
+ 
++  bool HasServiceWorkerHandle(SharedWorkerHost* host) const {
++    return host->service_worker_handle_ != nullptr;
++  }
++
+   void RunNormalTest(bool extended_lifetime) {
+     base::WeakPtr<SharedWorkerHost> host = CreateHostWithExtendedLifetime(
+         /*extended_lifetime=*/extended_lifetime);
+@@ -608,4 +615,24 @@ TEST_F(SharedWorkerHostTest, NetworkIsolationPartitionForSameSiteCookies) {
+             host_none->GetNetworkAnonymizationKey());
+ }
+ 
++TEST_F(SharedWorkerHostTest, ServiceWorkerHandleDroppedWhenCSPSandboxed) {
++  base::WeakPtr<SharedWorkerHost> host = CreateHost();
++  mojo::PendingRemote<blink::mojom::SharedWorkerFactory> factory;
++  MockSharedWorkerFactory factory_impl(
++      factory.InitWithNewPipeAndPassReceiver());
++
++  auto response_head = network::mojom::URLResponseHead::New();
++  response_head->parsed_headers = network::mojom::ParsedHeaders::New();
++  auto csp = network::mojom::ContentSecurityPolicy::New();
++  csp->self_origin = network::mojom::CSPSource::New();
++  csp->header = network::mojom::ContentSecurityPolicyHeader::New();
++  csp->sandbox = network::mojom::WebSandboxFlags::kOrigin;
++  response_head->parsed_headers->content_security_policy.push_back(
++      std::move(csp));
++
++  StartWorker(host.get(), std::move(factory),
++              GURL("https://www.example.com/w.js"), std::move(response_head));
++  EXPECT_FALSE(HasServiceWorkerHandle(host.get()));
++}
++
+ }  // namespace content
+diff --git a/content/browser/worker_host/worker_script_fetcher.cc b/content/browser/worker_host/worker_script_fetcher.cc
+index c97c941d89e38fb6d57f46235a899f26eb51d44d..26505cfc124b1323b658bd56de3288000e9dd5b4 100644
+--- a/content/browser/worker_host/worker_script_fetcher.cc
++++ b/content/browser/worker_host/worker_script_fetcher.cc
+@@ -9,6 +9,7 @@
+ #include "base/feature_list.h"
+ #include "base/functional/bind.h"
+ #include "base/task/single_thread_task_runner.h"
++#include "base/types/optional_util.h"
+ #include "content/browser/connection_allowlist_gating.h"
+ #include "content/browser/data_url_loader_factory.h"
+ #include "content/browser/devtools/devtools_agent_host_impl.h"
+@@ -28,6 +29,7 @@
+ #include "content/browser/worker_host/network_restrictions_worker_throttle.h"
+ #include "content/browser/worker_host/worker_script_loader.h"
+ #include "content/browser/worker_host/worker_script_loader_factory.h"
++#include "content/common/features.h"
+ #include "content/public/browser/browser_context.h"
+ #include "content/public/browser/browser_thread.h"
+ #include "content/public/browser/content_browser_client.h"
+@@ -123,6 +125,43 @@ void AddAdditionalRequestHeaders(network::ResourceRequest* resource_request,
+       /*is_for_worker_script=*/true);
+ }
+ 
++// Build `PolicyContainerPolicies` from the worker script response headers or
++// inherit from the creator for local schemes.
++PolicyContainerPolicies ComputePolicyContainerPoliciesForWorker(
++    const GURL& final_response_url,
++    network::mojom::URLResponseHead* response_head,
++    const PolicyContainerPolicies* creator_policies) {
++  PolicyContainerPolicies policies;
++  if (base::FeatureList::IsEnabled(
++          features::kServiceWorkerDropHandleForCSPSandboxedWorker)) {
++    if (final_response_url.SchemeIsLocal() && creator_policies) {
++      policies = creator_policies->Clone();
++    } else if (response_head && response_head->parsed_headers) {
++      policies =
++          PolicyContainerPolicies(final_response_url, response_head, nullptr);
++    }
++  }
++  network::ConnectionAllowlists connection_allowlists;
++  if (base::FeatureList::IsEnabled(
++          network::features::kConnectionAllowlists)) {
++    if (final_response_url.SchemeIsLocal() && creator_policies) {
++      connection_allowlists = creator_policies->connection_allowlists;
++    } else if (ResponseContainsConnectionAllowlist(response_head) &&
++               ResponseEnablesConnectionAllowlistsOriginTrial(
++                   final_response_url, response_head->headers.get())) {
++      // Connection allowlist needs to be enforced for workers once the
++      // allowlist response header is received. The origin trial token for
++      // this feature is received within the same response. The token is
++      // parsed here to query the trial status. See
++      // https://wicg.github.io/connection-allowlists/.
++      connection_allowlists =
++          response_head->parsed_headers->connection_allowlists;
++    }
++  }
++  policies.connection_allowlists = std::move(connection_allowlists);
++  return policies;
++}
++
+ void DidCreateScriptLoader(
+     WorkerScriptFetcher::CompletionCallback callback,
+     std::unique_ptr<blink::PendingURLLoaderFactoryBundle>
+@@ -171,30 +210,12 @@ void DidCreateScriptLoader(
+ 
+   // The load succeeded iff `main_script_load_params` is not nullptr.
+   if (main_script_load_params) {
+-    // TODO(crbug.com/41478971): Pass the PolicyContainerPolicies. It can
+-    // be built from the
+-    // `main_script_load_params.response_head->parsed_headers`.
+-    PolicyContainerPolicies policies;
+-    if (base::FeatureList::IsEnabled(
+-            network::features::kConnectionAllowlists)) {
+-      if (final_response_url.SchemeIsLocal() && creator_policies) {
+-        policies.connection_allowlists =
+-            std::move(creator_policies->connection_allowlists);
+-      } else if (ResponseContainsConnectionAllowlist(
+-                     main_script_load_params->response_head.get()) &&
+-                 ResponseEnablesConnectionAllowlistsOriginTrial(
+-                     final_response_url,
+-                     main_script_load_params->response_head->headers.get())) {
+-        // Connection allowlist needs to be enforced for workers once the
+-        // allowlist response header is received. The origin trial token for
+-        // this feature is received within the same response. The token is
+-        // parsed here to query the trial status. See
+-        // https://wicg.github.io/connection-allowlists/.
+-        policies.connection_allowlists =
+-            main_script_load_params->response_head->parsed_headers
+-                ->connection_allowlists;
+-      }
+-    }
++    // Note: Unlike in the spec, the referrer policy will be lazily calculated
++    // by the renderer in `(Shared/Dedicated)WorkerGlobalScope::Initialize()`.
++    // https://html.spec.whatwg.org/C/#creating-a-policy-container-from-a-fetch-response
++    PolicyContainerPolicies policies = ComputePolicyContainerPoliciesForWorker(
++        final_response_url, main_script_load_params->response_head.get(),
++        base::OptionalToPtr(creator_policies));
+ 
+     std::move(callback).Run(std::make_optional<WorkerScriptFetcherResult>(
+         std::move(subresource_loader_factories),
+@@ -693,6 +714,16 @@ GURL WorkerScriptFetcher::DetermineFinalResponseUrl(
+   return initial_request_url;
+ }
+ 
++// static
++PolicyContainerPolicies
++WorkerScriptFetcher::ComputePolicyContainerPoliciesForTesting(
++    const GURL& final_response_url,
++    network::mojom::URLResponseHead* response_head,
++    const PolicyContainerPolicies* creator_policies) {
++  return ComputePolicyContainerPoliciesForWorker(
++      final_response_url, response_head, creator_policies);
++}
++
+ WorkerScriptFetcher::WorkerScriptFetcher(
+     std::unique_ptr<WorkerScriptLoaderFactory> script_loader_factory,
+     std::unique_ptr<network::ResourceRequest> resource_request,
+diff --git a/content/browser/worker_host/worker_script_fetcher.h b/content/browser/worker_host/worker_script_fetcher.h
+index 8e9cd5744b3dc832f8648305dabd64df4d1ac6e5..1e9b3cb05da0a394cf2e35f57c3311da5eab236f 100644
+--- a/content/browser/worker_host/worker_script_fetcher.h
++++ b/content/browser/worker_host/worker_script_fetcher.h
+@@ -175,6 +175,12 @@ class WorkerScriptFetcher : public network::mojom::URLLoaderClient {
+       const GURL& initial_request_url,
+       blink::mojom::WorkerMainScriptLoadParams* main_script_load_params);
+ 
++  CONTENT_EXPORT static PolicyContainerPolicies
++  ComputePolicyContainerPoliciesForTesting(
++      const GURL& final_response_url,
++      network::mojom::URLResponseHead* response_head,
++      const PolicyContainerPolicies* creator_policies);
++
+  private:
+   // Callback invoked by this instance when the load ends, successfully or not.
+   //
+diff --git a/content/browser/worker_host/worker_script_fetcher_unittest.cc b/content/browser/worker_host/worker_script_fetcher_unittest.cc
+index 3b24e0cd63f78249949b06b8d52742a060c6395d..3ed206446ff70c353fcfa049269f26020551dad8 100644
+--- a/content/browser/worker_host/worker_script_fetcher_unittest.cc
++++ b/content/browser/worker_host/worker_script_fetcher_unittest.cc
+@@ -6,6 +6,8 @@
+ 
+ #include <vector>
+ 
++#include "base/test/scoped_feature_list.h"
++#include "content/common/features.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/blink/public/mojom/worker/worker_main_script_load_params.mojom.h"
+ #include "url/gurl.h"
+@@ -88,4 +90,58 @@ TEST(WorkerScriptFetcherTest, DetermineFinalResponseUrl) {
+   }
+ }
+ 
++TEST(WorkerScriptFetcherTest, ComputePolicyContainerPolicies_NetworkResponse) {
++  auto response_head = network::mojom::URLResponseHead::New();
++  response_head->parsed_headers = network::mojom::ParsedHeaders::New();
++  auto csp = network::mojom::ContentSecurityPolicy::New();
++  csp->self_origin = network::mojom::CSPSource::New();
++  csp->header = network::mojom::ContentSecurityPolicyHeader::New();
++  csp->sandbox = network::mojom::WebSandboxFlags::kOrigin;
++  response_head->parsed_headers->content_security_policy.push_back(
++      std::move(csp));
++
++  PolicyContainerPolicies policies =
++      WorkerScriptFetcher::ComputePolicyContainerPoliciesForTesting(
++          GURL("https://example.com/worker.js"), response_head.get(),
++          /*creator_policies=*/nullptr);
++  EXPECT_EQ(network::mojom::WebSandboxFlags::kOrigin,
++            policies.sandbox_flags & network::mojom::WebSandboxFlags::kOrigin);
++}
++
++TEST(WorkerScriptFetcherTest, ComputePolicyContainerPolicies_LocalScheme) {
++  auto response_head = network::mojom::URLResponseHead::New();
++  response_head->parsed_headers = network::mojom::ParsedHeaders::New();
++
++  PolicyContainerPolicies creator_policies;
++  creator_policies.sandbox_flags = network::mojom::WebSandboxFlags::kOrigin;
++
++  PolicyContainerPolicies policies =
++      WorkerScriptFetcher::ComputePolicyContainerPoliciesForTesting(
++          GURL("blob:https://example.com/uuid"), response_head.get(),
++          &creator_policies);
++  EXPECT_EQ(network::mojom::WebSandboxFlags::kOrigin,
++            policies.sandbox_flags & network::mojom::WebSandboxFlags::kOrigin);
++}
++
++TEST(WorkerScriptFetcherTest, ComputePolicyContainerPolicies_FeatureDisabled) {
++  base::test::ScopedFeatureList feature_list;
++  feature_list.InitAndDisableFeature(
++      features::kServiceWorkerDropHandleForCSPSandboxedWorker);
++
++  auto response_head = network::mojom::URLResponseHead::New();
++  response_head->parsed_headers = network::mojom::ParsedHeaders::New();
++  auto csp = network::mojom::ContentSecurityPolicy::New();
++  csp->self_origin = network::mojom::CSPSource::New();
++  csp->header = network::mojom::ContentSecurityPolicyHeader::New();
++  csp->sandbox = network::mojom::WebSandboxFlags::kOrigin;
++  response_head->parsed_headers->content_security_policy.push_back(
++      std::move(csp));
++
++  PolicyContainerPolicies policies =
++      WorkerScriptFetcher::ComputePolicyContainerPoliciesForTesting(
++          GURL("https://example.com/worker.js"), response_head.get(),
++          /*creator_policies=*/nullptr);
++  EXPECT_EQ(network::mojom::WebSandboxFlags::kNone, policies.sandbox_flags);
++}
++
+ }  // namespace content
+diff --git a/content/common/features.cc b/content/common/features.cc
+index 432453ca69ac5742daa3efef677c650112755238..b06385190957619cdbea07e2cf8fd547bc097e91 100644
+--- a/content/common/features.cc
++++ b/content/common/features.cc
+@@ -699,6 +699,10 @@ const base::FeatureParam<std::string>
+         &kServiceWorkerBypassFetchHandlerHashStrings,
+         "script_checksum_to_bypass", ""};
+ 
++// Killswitch for crbug.com/563194341
++BASE_FEATURE(kServiceWorkerDropHandleForCSPSandboxedWorker,
++             base::FEATURE_ENABLED_BY_DEFAULT);
++
+ // (crbug.com/41411856): When enabled, the srcdoc iframes are controlled by the
+ // same service worker that controls their parent.
+ BASE_FEATURE(kServiceWorkerSrcdocSupport, base::FEATURE_ENABLED_BY_DEFAULT);
+diff --git a/content/common/features.h b/content/common/features.h
+index c7003ca9e977499e5eb2687a6c38d4148f299639..fce7a418a8b9c0c48203e314e5d7de3cd1929b4f 100644
+--- a/content/common/features.h
++++ b/content/common/features.h
+@@ -217,6 +217,8 @@ CONTENT_EXPORT BASE_DECLARE_FEATURE(
+     kServiceWorkerBypassFetchHandlerHashStrings);
+ CONTENT_EXPORT extern const base::FeatureParam<std::string>
+     kServiceWorkerBypassFetchHandlerBypassedHashStrings;
++CONTENT_EXPORT BASE_DECLARE_FEATURE(
++    kServiceWorkerDropHandleForCSPSandboxedWorker);
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kServiceWorkerSrcdocSupport);
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kServiceWorkerStaticRouterRaceRequestFix2);
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kServiceWorkerStaticRouterCORPCheck);
+diff --git a/third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/reflection-credentialless.tentative.https.any.worker-expected.txt b/third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/reflection-credentialless.tentative.https.any.worker-expected.txt
+deleted file mode 100644
+index 680a9ec368ba9d566e0a8c4ed48a78fa2600248b..0000000000000000000000000000000000000000
+--- a/third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/reflection-credentialless.tentative.https.any.worker-expected.txt
++++ /dev/null
+@@ -1,5 +0,0 @@
+-This is a testharness.js-based test.
+-[FAIL] reflection-credentialless
+-  assert_equals: expected "credentialless" but got "unsafe-none"
+-Harness: the test ran to completion.
+-
+diff --git a/third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/reflection-require-corp.tentative.https.any.worker-expected.txt b/third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/reflection-require-corp.tentative.https.any.worker-expected.txt
+deleted file mode 100644
+index d35468ba0f53e47b135f0ada02ef842355ab6e08..0000000000000000000000000000000000000000
+--- a/third_party/blink/web_tests/external/wpt/html/cross-origin-embedder-policy/reflection-require-corp.tentative.https.any.worker-expected.txt
++++ /dev/null
+@@ -1,5 +0,0 @@
+-This is a testharness.js-based test.
+-[FAIL] reflection-require-corp
+-  assert_equals: expected "require-corp" but got "unsafe-none"
+-Harness: the test ran to completion.
+-

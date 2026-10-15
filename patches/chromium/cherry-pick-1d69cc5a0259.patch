@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Tue, 6 Oct 2026 09:11:05 -0700
+Subject: Fix stale iterators during svg resource cycle check
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Fixed: 569038297
+Change-Id: I62c94483506a992005d71673eff044202b9a784c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8516494
+Reviewed-by: Fredrik Söderquist <fs@opera.com>
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1712397}
+
+diff --git a/third_party/blink/renderer/core/svg/svg_resource.cc b/third_party/blink/renderer/core/svg/svg_resource.cc
+index f91eebaf19cf64921c1bcf74b2990f8e8ebd3def..0b1537b68cb1f05d9ad95cb683447de0f07c3a7d 100644
+--- a/third_party/blink/renderer/core/svg/svg_resource.cc
++++ b/third_party/blink/renderer/core/svg/svg_resource.cc
+@@ -161,23 +161,28 @@ bool SVGResource::FindCycle(SVGResourceClient& client) const {
+   auto* container = ResourceContainerNoCycleCheck();
+   if (!container)
+     return false;
+-  ClientEntry& entry = it->value;
+-  switch (entry.cached_cycle_check) {
++  switch (it->value.cached_cycle_check) {
+     case kNeedCheck: {
+-      entry.cached_cycle_check = kPerformingCheck;
++      it->value.cached_cycle_check = kPerformingCheck;
+       bool has_cycle = container->FindCycle();
+-      DCHECK_EQ(entry.cached_cycle_check, kPerformingCheck);
++      // FindCycle() can modify clients_ and invalidate the iterator
++      it = clients_.find(&client);
++      CHECK(it != clients_.end());
++      DCHECK_EQ(it->value.cached_cycle_check, kPerformingCheck);
+       // Update our cached state based on the result of FindCycle(), but don't
+       // signal a cycle since ResourceContainer() will consider the resource
+       // invalid if one is present, thus we break the cycle at this resource.
+-      entry.cached_cycle_check = has_cycle ? kHasCycle : kNoCycle;
++      it->value.cached_cycle_check = has_cycle ? kHasCycle : kNoCycle;
+       return false;
+     }
+     case kNoCycle: {
+-      entry.cached_cycle_check = kPerformingCheck;
++      it->value.cached_cycle_check = kPerformingCheck;
+       bool has_cycle = container->FindCycle();
+-      DCHECK_EQ(entry.cached_cycle_check, kPerformingCheck);
+-      entry.cached_cycle_check = kNoCycle;
++      // FindCycle() can modify clients_ and invalidate the iterator
++      it = clients_.find(&client);
++      CHECK(it != clients_.end());
++      DCHECK_EQ(it->value.cached_cycle_check, kPerformingCheck);
++      it->value.cached_cycle_check = kNoCycle;
+       return has_cycle;
+     }
+     case kPerformingCheck:
