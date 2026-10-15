@@ -3191,10 +3191,10 @@ describe('chromium features', () => {
           }
         );
 
-        expect(result.code, result.stderr).to.equal(0);
+        expect(result.code, result.stderr).toBe(0);
         const resultLine = result.stdout.split(/\r?\n/).find((line) => line.startsWith('WIDEVINE_CDM_PATH_RESULT='));
-        expect(resultLine, result.stdout).to.be.a('string');
-        expect(JSON.parse(resultLine!.slice('WIDEVINE_CDM_PATH_RESULT='.length))).to.deep.equal({
+        expect(resultLine, result.stdout).toBeTypeOf('string');
+        expect(JSON.parse(resultLine!.slice('WIDEVINE_CDM_PATH_RESULT='.length))).toEqual({
           isPackaged: true,
           isSecureContext: true,
           widevineAvailable: false
@@ -3235,8 +3235,8 @@ describe('chromium features', () => {
         true
       );
 
-      expect(result.ok).to.be.false();
-      expect(result.name).to.equal('NotSupportedError');
+      expect(result.ok).toBe(false);
+      expect(result.name).toBe('NotSupportedError');
     });
   });
 
