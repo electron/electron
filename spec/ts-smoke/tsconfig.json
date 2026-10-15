@@ -12,6 +12,7 @@
   },
   "files": [
     "electron/main.ts",
+    "electron/native-video-frame.ts",
     "electron/renderer.ts",
     "electron/utility.ts",
     "../../electron.d.ts"

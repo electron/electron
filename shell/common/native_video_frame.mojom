@@ -1,0 +1,27 @@
+// Copyright (c) 2026 Electron contributors.
+// Use of this source code is governed by the MIT license.
+module electron.mojom;
+
+import "ui/gfx/mojom/buffer_types.mojom";
+import "ui/gfx/geometry/mojom/geometry.mojom";
+
+// Keeping this pipe open retains the original renderer VideoFrame.
+interface NativeVideoFrameLease {
+  Release() => ();
+};
+
+struct NativeVideoFrameInfo {
+  bool rgba;
+  gfx.mojom.Size coded_size;
+  gfx.mojom.Rect visible_rect;
+  int64 timestamp_us;
+};
+
+// Bound only for renderer frames allowed to use Electron IPC. OS handles travel
+// through Mojo, never as renderer-local file descriptor numbers in JS IPC.
+interface NativeVideoFrameHost {
+  Export(gfx.mojom.GpuMemoryBufferHandle buffer, NativeVideoFrameInfo info,
+         pending_remote<NativeVideoFrameLease> lease)
+      => (string id, string error);
+  Release(string id) => ();
+};
