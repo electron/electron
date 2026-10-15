@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Thu, 15 Oct 2026 04:57:32 +0000
+Subject: [M150-LTS] Guard TextInputManager against re-entrant destruction
+ during notify
+
+TextInputManager::UpdateTextInputState() notifies observers in the
+middle of updating its state. When a newly focused view replaces the
+active view, it first notifies observers that the previously active
+view lost its text input state. RenderWidgetHostViewAura forwards this
+to InputMethod::OnTextInputTypeChanged(), where third-party IMEs can
+run a nested message loop. Tasks run there, such as window.close(), can
+destroy the WebContents, which owns the TextInputManager, or destroy the
+newly focused view. UpdateTextInputState() then continued with
+`active_view_ = view` on the freed TextInputManager, or went on to use
+the freed view.
+
+77d3b67459722 made RenderWidgetHostViewAura robust to destruction during
+these IME callouts, but its caller here was not.
+
+Add a WeakPtrFactory to TextInputManager, and after each notification
+in UpdateTextInputState() return early if `this` has been destroyed or
+`view` is no longer registered. This also covers the final
+notification, after which `active_view_` was read without checking
+that `this` was still alive.
+
+Bug: 568937999
+Change-Id: I751acf24c8a4c426bd7198d478333eed2ebf3f87
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8519361
+Commit-Queue: Jonathan Ross <jonross@chromium.org>
+Reviewed-by: Aman Verma <amanvr@google.com>
+Cr-Commit-Position: refs/heads/main@{#1713881}
+(cherry picked from commit 1ecc753ba08893dfa91cfa98b3dbea6439fe0dde)
+
+Electron adaptation notes (42-x-y):
+The text_input_manager_unittest.cc hunks were dropped because that file
+does not exist on this branch (M148); the text_input_manager.{cc,h}
+hunks are unchanged from the M150-LTS cherry-pick.
+
+diff --git a/content/browser/renderer_host/text_input_manager.cc b/content/browser/renderer_host/text_input_manager.cc
+index 5eda935a18ebabc0a76f99069f6c6a754139f8cc..11327779af52f5cfe9f930a7d62fb9758077c10f 100644
+--- a/content/browser/renderer_host/text_input_manager.cc
++++ b/content/browser/renderer_host/text_input_manager.cc
+@@ -226,6 +226,13 @@ void TextInputManager::UpdateTextInputState(
+         view->TransformPointToRootCoordSpace(bounds.origin()), bounds.size());
+   }
+ 
++  // Observers can run nested message loops (e.g. a third-party IME pumping
++  // messages inside InputMethod::OnTextInputTypeChanged()). Those can destroy
++  // the WebContents, and with it |this|, or unregister |view|. Re-validate
++  // both after every notification below before touching any state.
++  base::WeakPtr<TextInputManager> weak_this = weak_ptr_factory_.GetWeakPtr();
++  base::WeakPtr<RenderWidgetHostViewBase> weak_view = view->GetWeakPtr();
++
+   // If |view| is different from |active_view| and its |TextInputState.type| is
+   // not NONE, |active_view_| should change to |view|.
+   if (text_input_state.type != ui::TEXT_INPUT_TYPE_NONE &&
+@@ -242,6 +249,11 @@ void TextInputManager::UpdateTextInputState(
+       RenderWidgetHostViewBase* active_view = active_view_;
+       active_view_ = nullptr;
+       NotifyObserversAboutInputStateUpdate(active_view, true);
++      // |view| may also have been unregistered without being destroyed (e.g.
++      // moved to another TextInputManager); it must not become |active_view_|.
++      if (!weak_this || !weak_view || !IsRegistered(view)) {
++        return;
++      }
+     }
+     active_view_ = view;
+   }
+diff --git a/content/browser/renderer_host/text_input_manager.h b/content/browser/renderer_host/text_input_manager.h
+index 83c42b5062aa8193fe2f56e407abe67da3e96b86..6bf5276dc59f0cc5582b0e5806a56678e4dffc77 100644
+--- a/content/browser/renderer_host/text_input_manager.h
++++ b/content/browser/renderer_host/text_input_manager.h
+@@ -12,6 +12,7 @@
+ 
+ #include "base/i18n/rtl.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "base/observer_list.h"
+ #include "content/common/content_export.h"
+ #include "third_party/blink/public/mojom/page/widget.mojom-forward.h"
+@@ -330,6 +331,8 @@ class CONTENT_EXPORT TextInputManager {
+   // TextInputManager::Observer reentrantly issues further notifications upon
+   // `OnUpdateTextInputStateCalled()` (e.g. `SelectionBoundsChange()`).
+   base::ReentrantObserverList<Observer>::Unchecked observer_list_;
++
++  base::WeakPtrFactory<TextInputManager> weak_ptr_factory_{this};
+ };
+ }
+ 
