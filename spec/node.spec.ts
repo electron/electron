@@ -1,11 +1,12 @@
 import { BrowserWindow, webContents } from 'electron/main';
 
-import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import { createRequire } from 'node:module';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import * as tty from 'node:tty';
 import { pathToFileURL } from 'node:url';
@@ -16,7 +17,8 @@ import {
   getCodesignIdentity,
   shouldRunCodesignTests,
   signApp,
-  spawn
+  spawn,
+  stripFrameworkSymbols
 } from './lib/codesign-helpers.ts';
 import { withTempDirectory } from './lib/fs-helpers.ts';
 import {
@@ -1204,6 +1206,41 @@ describe('node feature', () => {
 
   ifdescribe(shouldRunCodesignTests)('NODE_OPTIONS in signed app', () => {
     let identity = '';
+    // Copying and deep-signing the whole unstripped Electron.app
+    // took most of each test's 30s budget on the Intel runners.
+    // As in the updater specs, deep-sign one stripped template up front;
+    // each test clones it and needs only a shallow re-sign.
+    let templateDir = '';
+    let templateApp = '';
+
+    beforeAll(
+      async () => {
+        const result = getCodesignIdentity();
+        if (result === null) return; // beforeEach below skips every test
+        identity = result;
+        templateDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-node-options-template-'));
+        templateApp = await copyMacOSFixtureApp(templateDir, null);
+        stripFrameworkSymbols(templateApp);
+        const { code, out } = await signApp(templateApp, identity);
+        if (code !== 0) {
+          throw new Error(`Failed to sign template app: ${out}`);
+        }
+      },
+      5 * 60 * 1000
+    );
+
+    afterAll(() => {
+      if (templateDir) childProcess.spawnSync('rm', ['-r', templateDir]);
+    });
+
+    const copySignedApp = async (dir: string, fixture: string | null) => {
+      const appPath = await copyMacOSFixtureApp(dir, fixture, { sourceApp: templateApp });
+      const { code, out } = await signApp(appPath, identity, { deep: false });
+      if (code !== 0) {
+        throw new Error(`codesign failed for ${appPath}: ${out}`);
+      }
+      return appPath;
+    };
 
     beforeEach((ctx) => {
       const result = getCodesignIdentity();
@@ -1220,8 +1257,7 @@ describe('node feature', () => {
 
     it('is disabled when invoked by other apps in ELECTRON_RUN_AS_NODE mode', async () => {
       await withTempDirectory(async (dir) => {
-        const appPath = await copyMacOSFixtureApp(dir);
-        await signApp(appPath, identity);
+        const appPath = await copySignedApp(dir, 'initial');
         // Invoke Electron by using the system node binary as middle layer, so
         // the check of NODE_OPTIONS will think the process is started by other
         // apps.
@@ -1233,8 +1269,7 @@ describe('node feature', () => {
 
     it('is disabled when invoked by alien binary in app bundle in ELECTRON_RUN_AS_NODE mode', async (ctx) => {
       await withTempDirectory(async (dir) => {
-        const appPath = await copyMacOSFixtureApp(dir);
-        await signApp(appPath, identity);
+        const appPath = await copySignedApp(dir, 'initial');
         // Find system node and copy it to app bundle.
         const nodePath = process.env.PATH?.split(path.delimiter).find((dir) => fs.existsSync(path.join(dir, 'node')));
         if (!nodePath) {
@@ -1252,8 +1287,7 @@ describe('node feature', () => {
 
     it('is respected when invoked from self', async () => {
       await withTempDirectory(async (dir) => {
-        const appPath = await copyMacOSFixtureApp(dir, null);
-        await signApp(appPath, identity);
+        const appPath = await copySignedApp(dir, null);
         const appExePath = path.join(appPath, 'Contents/MacOS/Electron');
         const { code, out } = await spawn(appExePath, [script, appExePath]);
         expect(code).toBe(1);
