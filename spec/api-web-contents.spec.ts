@@ -2369,27 +2369,50 @@ describe('webContents module', () => {
     });
 
     describe('pre-warmed renderer', () => {
+      // Chromium drops a spare renderer to background priority as soon as it
+      // launches, since it hosts no visible page;
+      // on Windows that is IDLE_PRIORITY_CLASS.
+      // While a parallel spec worker keeps every CPU busy,
+      // the spare can then take longer than the 10 s wait below to start up,
+      // and is still missing from app.getAppMetrics() when the wait ends.
+      // These tests check which window gets the spare, not its priority.
+      const startAppWithoutBackgrounding = (extraArgs: string[] = []) =>
+        startRemoteControlApp(['--disable-renderer-backgrounding', ...extraArgs]);
+
       const tabPidsAroundFirstWindow = (
         rc: Awaited<ReturnType<typeof startRemoteControlApp>>,
-        firstPrefs: Electron.WebPreferences
+        firstPrefs: Electron.WebPreferences,
+        { expectReplacement = false } = {}
       ) => {
-        return rc.remotely(async (prefs: Electron.WebPreferences) => {
+        const options = { prefs: firstPrefs, expectReplacement };
+        return rc.remotely(async ({ prefs, expectReplacement }: typeof options) => {
           const { app, BrowserWindow, session } = require('electron');
           const tabPids = () =>
             app
               .getAppMetrics()
               .filter((m: Electron.ProcessMetric) => m.type === 'Tab')
               .map((m: Electron.ProcessMetric) => m.pid);
+          const waitForTabPids = async (done: (pids: number[]) => boolean) => {
+            const deadline = Date.now() + 10000;
+            while (!done(tabPids()) && Date.now() < deadline) {
+              await new Promise((resolve) => global.setTimeout(resolve, 20));
+            }
+          };
           session.defaultSession.getUserAgent();
-          const deadline = Date.now() + 10000;
-          while (tabPids().length === 0 && Date.now() < deadline) {
-            await new Promise((resolve) => global.setTimeout(resolve, 20));
-          }
+          await waitForTabPids((pids) => pids.length > 0);
           const warmed = tabPids();
           const first = new BrowserWindow({ show: false, webPreferences: prefs });
           const firstPidBeforeLoad = first.webContents.getOSProcessId();
           await first.loadURL('about:blank');
-          await new Promise((resolve) => global.setTimeout(resolve, 500));
+          if (expectReplacement) {
+            // Taking the warmed renderer starts a replacement spare.
+            const firstPid = first.webContents.getOSProcessId();
+            await waitForTabPids((pids) => pids.some((pid) => pid !== firstPid));
+          } else {
+            // Leave time for a replacement spare that should not exist.
+            await new Promise((resolve) => global.setTimeout(resolve, 500));
+          }
+          const tabsBeforeSecond = tabPids();
           const second = new BrowserWindow({ show: false });
           const secondPidBeforeLoad = second.webContents.getOSProcessId();
           await second.loadURL('about:blank');
@@ -2397,6 +2420,7 @@ describe('webContents module', () => {
             warmed,
             firstPidBeforeLoad,
             firstPid: first.webContents.getOSProcessId(),
+            tabsBeforeSecond,
             secondPidBeforeLoad,
             secondPid: second.webContents.getOSProcessId(),
             tabsAfter: tabPids()
@@ -2404,11 +2428,11 @@ describe('webContents module', () => {
           first.destroy();
           second.destroy();
           return result;
-        }, firstPrefs);
+        }, options);
       };
 
       it('is handed to the first sandboxed window only', async () => {
-        const rc = await startRemoteControlApp();
+        const rc = await startAppWithoutBackgrounding();
         const r = await tabPidsAroundFirstWindow(rc, {});
         expect(r.warmed).toHaveLength(1);
         expect(r.firstPidBeforeLoad).toBe(r.warmed[0]);
@@ -2417,7 +2441,7 @@ describe('webContents module', () => {
       });
 
       it('is discarded when the first window cannot use it', async () => {
-        const rc = await startRemoteControlApp();
+        const rc = await startAppWithoutBackgrounding();
         const r = await tabPidsAroundFirstWindow(rc, { sandbox: false });
         expect(r.warmed).toHaveLength(1);
         expect(r.firstPidBeforeLoad).toBe(0);
@@ -2427,11 +2451,14 @@ describe('webContents module', () => {
       });
 
       it('keeps serving later windows with SpareRendererForSitePerProcess enabled', async () => {
-        const rc = await startRemoteControlApp(['--enable-features=SpareRendererForSitePerProcess']);
-        const r = await tabPidsAroundFirstWindow(rc, {});
+        const rc = await startAppWithoutBackgrounding(['--enable-features=SpareRendererForSitePerProcess']);
+        const r = await tabPidsAroundFirstWindow(rc, {}, { expectReplacement: true });
+        expect(r.warmed).toHaveLength(1);
         expect(r.firstPidBeforeLoad).toBe(r.warmed[0]);
+        expect(r.firstPid).toBe(r.warmed[0]);
         expect(r.secondPidBeforeLoad).not.toBe(0);
         expect(r.secondPidBeforeLoad).not.toBe(r.firstPid);
+        expect(r.tabsBeforeSecond).toContain(r.secondPidBeforeLoad);
         expect(r.secondPid).toBe(r.secondPidBeforeLoad);
       });
     });
