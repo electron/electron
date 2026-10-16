@@ -378,3 +378,4 @@ cherry-pick-e886fddb58ee8.patch
 cherry-pick-1d69cc5a0259.patch
 cherry-pick-3f6b73b9e0b3.patch
 cherry-pick-08f529c57faa.patch
+fix_avoid_misaligned_char16_t_reads_in_crdtp_string_deserialization.patch
