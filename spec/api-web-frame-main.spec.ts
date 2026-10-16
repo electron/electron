@@ -330,7 +330,9 @@ describe('webFrameMain module', () => {
     let w: BrowserWindow;
 
     beforeAll(async () => {
-      server = await createServer();
+      // Chromium deprecates unload handlers on http(s) pages by default, so
+      // opt back in for the specs that observe IPC sent from an unload handler.
+      server = await createServer({ headers: { 'Permissions-Policy': 'unload=*' } });
     });
     afterAll(() => {
       server.server.close();

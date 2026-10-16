@@ -496,8 +496,9 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
 
 void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
   TRACE_EVENT0("electron", "ContextBridge::ProxyFunctionWrapper");
-  CHECK(info.Data()->IsArray());
-  v8::Local<v8::Array> state = info.Data().As<v8::Array>();
+  v8::Local<v8::Value> data = info.DataV2().As<v8::Value>();
+  CHECK(data->IsArray());
+  v8::Local<v8::Array> state = data.As<v8::Array>();
   gin::Arguments args{info};
   v8::Isolate* const isolate = args.isolate();
   // Context the proxy function was called from
