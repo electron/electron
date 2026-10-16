@@ -15,7 +15,7 @@ class NodeBindingsWin : public NodeBindings {
 
  private:
   // NodeBindings
-  void PollEvents() override;
+  void PollEvents(int timeout) override;
 };
 
 }  // namespace electron
