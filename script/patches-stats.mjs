@@ -24,9 +24,10 @@ async function main() {
 
   for (const target of config) {
     const patchDirPath = path.join(root, target.patch_dir);
-    const patches = await fs.readFile(path.join(patchDirPath, '.patches'), 'utf-8');
+    const patchList = (await fs.readFile(path.join(patchDirPath, '.patches'), 'utf-8')).trim();
+    const patchFileList = patchList ? patchList.split('\n') : [];
 
-    for (const patch of patches.trim().split('\n')) {
+    for (const patch of patchFileList) {
       patchCount++;
       const contents = await fs.readFile(path.join(patchDirPath, patch), 'utf-8');
       patchesLineCount += Array.from(contents.matchAll(/\n/g)).length;
