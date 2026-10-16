@@ -191,6 +191,53 @@ class IPCBase : public gin::Wrappable<T> {
     return electron::DeserializeV8Value(isolate, result);
   }
 
+  // process.getProcessMemoryInfo()
+  v8::Local<v8::Promise> GetProcessMemoryInfo(v8::Isolate* isolate) {
+    gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
+    v8::Local<v8::Promise> handle = promise.GetHandle();
+    if (!electron_ipc_remote_) {
+      promise.RejectWithErrorMessage(kIPCMethodCalledAfterContextReleasedError);
+      return handle;
+    }
+    // Like invoke(), the promise is left unsettled if the frame goes away.
+    electron_ipc_remote_->GetProcessMemoryInfo(base::BindOnce(
+        [](gin_helper::Promise<gin_helper::Dictionary> promise,
+           electron::mojom::ProcessMemoryInfoPtr info,
+           const std::string& error) {
+          if (!info) {
+            promise.RejectWithErrorMessage(error);
+            return;
+          }
+          v8::Isolate* isolate = promise.isolate();
+          v8::HandleScope handle_scope(isolate);
+          v8::Local<v8::Context> context = promise.GetContext();
+          v8::Context::Scope context_scope(context);
+          v8::MicrotasksScope microtasks_scope(
+              context, v8::MicrotasksScope::kDoNotRunMicrotasks);
+          auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
+          dict.Set("residentSet", info->resident_set_kb);
+#endif
+          dict.Set("private", info->private_kb);
+          dict.Set("shared", info->shared_kb);
+          promise.Resolve(dict);
+        },
+        std::move(promise)));
+    return handle;
+  }
+
+  // Reports a preload script that threw while loading to the WebContents.
+  void ReportPreloadError(v8::Isolate* isolate,
+                          const std::string& preload_path,
+                          v8::Local<v8::Value> error) {
+    electron::SerializedValue serialized;
+    if (!electron_ipc_remote_ ||
+        !electron::SerializeV8Value(isolate, error, &serialized)) {
+      return;
+    }
+    electron_ipc_remote_->PreloadError(preload_path, std::move(serialized));
+  }
+
   // gin::Wrappable:
   const gin::WrapperInfo* wrapper_info() const override {
     return &kWrapperInfo;
@@ -458,6 +505,35 @@ struct EmitterMethods {
   }
 };
 
+// Binding-level functions whose data is the transport's wrapper.
+template <typename T>
+struct TransportMethods {
+  static T* Transport(const v8::FunctionCallbackInfo<v8::Value>& info) {
+    T* transport = nullptr;
+    gin::ConvertFromV8(info.GetIsolate(), info.Data(), &transport);
+    return transport;
+  }
+
+  static void GetProcessMemoryInfo(
+      const v8::FunctionCallbackInfo<v8::Value>& info) {
+    if (T* transport = Transport(info)) {
+      info.GetReturnValue().Set(
+          transport->GetProcessMemoryInfo(info.GetIsolate()));
+    }
+  }
+
+  static void ReportPreloadError(
+      const v8::FunctionCallbackInfo<v8::Value>& info) {
+    v8::Isolate* isolate = info.GetIsolate();
+    std::string preload_path;
+    if (T* transport = Transport(info);
+        transport && info.Length() >= 2 &&
+        gin::ConvertFromV8(isolate, info[0], &preload_path)) {
+      transport->ReportPreloadError(isolate, preload_path, info[1]);
+    }
+  }
+};
+
 template <typename T>
 v8::Local<v8::Object> CreateEmitter(v8::Local<v8::Context> context,
                                     v8::Local<v8::Value> transport,
@@ -512,6 +588,14 @@ void CreateEmitters(v8::Local<v8::Context> context,
   gin_helper::Dictionary dict{isolate, exports};
   dict.Set("ipcRenderer", ipc_renderer);
   dict.Set("ipcRendererInternal", ipc_renderer_internal);
+  dict.Set("getProcessMemoryInfo",
+           v8::Function::New(context, TransportMethods<T>::GetProcessMemoryInfo,
+                             transport, 0, v8::ConstructorBehavior::kThrow)
+               .ToLocalChecked());
+  dict.Set("reportPreloadError",
+           v8::Function::New(context, TransportMethods<T>::ReportPreloadError,
+                             transport, 2, v8::ConstructorBehavior::kThrow)
+               .ToLocalChecked());
 
   // ipc_native::EmitIPCEvent() delivers incoming messages to these.
   gin_helper::Dictionary(isolate, context->Global())

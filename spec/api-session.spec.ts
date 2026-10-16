@@ -1807,6 +1807,7 @@ describe('session module', () => {
               extensions: ['.3', '.4', '.5']
             }
           ],
+          properties: ['createDirectory', 'showOverwriteConfirmation'],
           showsTagField: true,
           securityScopedBookmarks: true
         };

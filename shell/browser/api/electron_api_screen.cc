@@ -81,16 +81,51 @@ void DelayEmitWithMetrics(Screen* screen,
 }  // namespace
 
 Screen::Screen() {
-  if (auto* screen = GetDisplayScreen())
-    screen->AddObserver(this);
+  ObserveDisplays();
+  if (!display_observation_started_)
+    Browser::Get()->AddObserver(this);
 }
 
 Screen::~Screen() {
-  if (auto* screen = GetDisplayScreen())
-    screen->RemoveObserver(this);
+  // Browser is destroyed before the JavaScript environment at shutdown.
+  if (auto* browser = Browser::Get())
+    browser->RemoveObserver(this);
+  if (display_observation_started_) {
+    if (auto* screen = GetDisplayScreen())
+      screen->RemoveObserver(this);
+  }
 }
 
-gfx::Point Screen::GetCursorScreenPoint(v8::Isolate* isolate) {
+void Screen::ObserveDisplays() {
+  if (display_observation_started_)
+    return;
+  if (auto* screen = GetDisplayScreen()) {
+    screen->AddObserver(this);
+    display_observation_started_ = true;
+  }
+}
+
+void Screen::OnWillFinishLaunching() {
+  ObserveDisplays();
+}
+
+void Screen::OnFinishLaunching(base::DictValue launch_info) {
+  Browser::Get()->RemoveObserver(this);
+  ObserveDisplays();
+}
+
+// static
+bool Screen::CheckReady(gin_helper::ErrorThrower thrower) {
+  if (Browser::Get()->is_ready())
+    return true;
+  thrower.ThrowError(
+      "The 'screen' module can't be used before the app 'ready' event");
+  return false;
+}
+
+gfx::Point Screen::GetCursorScreenPoint(gin_helper::ErrorThrower thrower) {
+  if (!CheckReady(thrower))
+    return {};
 #if BUILDFLAG(IS_LINUX)
   if (x11_util::IsWayland())
     return {};
@@ -99,12 +134,17 @@ gfx::Point Screen::GetCursorScreenPoint(v8::Isolate* isolate) {
   return screen ? screen->GetCursorScreenPoint() : gfx::Point{};
 }
 
-display::Display Screen::GetPrimaryDisplay() const {
+display::Display Screen::GetPrimaryDisplay(gin_helper::ErrorThrower thrower) {
+  if (!CheckReady(thrower))
+    return GetFallbackDisplay();
   const auto* screen = GetDisplayScreen();
   return screen ? screen->GetPrimaryDisplay() : GetFallbackDisplay();
 }
 
-std::vector<display::Display> Screen::GetAllDisplays() const {
+std::vector<display::Display> Screen::GetAllDisplays(
+    gin_helper::ErrorThrower thrower) {
+  if (!CheckReady(thrower))
+    return {};
   if (const auto* screen = GetDisplayScreen())
     return screen->GetAllDisplays();
 
@@ -114,26 +154,45 @@ std::vector<display::Display> Screen::GetAllDisplays() const {
   return {GetFallbackDisplay()};
 }
 
-display::Display Screen::GetDisplayNearestPoint(const gfx::Point& point) const {
+display::Display Screen::GetDisplayNearestPoint(
+    gin_helper::ErrorThrower thrower,
+    const gfx::Point& point) {
+  if (!CheckReady(thrower))
+    return GetFallbackDisplay();
   const auto* screen = GetDisplayScreen();
   return screen ? screen->GetDisplayNearestPoint(point) : GetFallbackDisplay();
 }
 
-display::Display Screen::GetDisplayMatching(const gfx::Rect& match_rect) const {
+display::Display Screen::GetDisplayMatching(gin_helper::ErrorThrower thrower,
+                                            const gfx::Rect& match_rect) {
+  if (!CheckReady(thrower))
+    return GetFallbackDisplay();
   const auto* screen = GetDisplayScreen();
   return screen ? screen->GetDisplayMatching(match_rect) : GetFallbackDisplay();
 }
 
 #if BUILDFLAG(IS_WIN)
 
-static gfx::Rect ScreenToDIPRect(electron::NativeWindow* window,
+static gfx::Rect ScreenToDIPRect(gin_helper::ErrorThrower thrower,
+                                 electron::NativeWindow* window,
                                  const gfx::Rect& rect) {
+  if (!Browser::Get()->is_ready()) {
+    thrower.ThrowError(
+        "The 'screen' module can't be used before the app 'ready' event");
+    return {};
+  }
   HWND hwnd = window ? window->GetAcceleratedWidget() : nullptr;
   return display::win::GetScreenWin()->ScreenToDIPRect(hwnd, rect);
 }
 
-static gfx::Rect DIPToScreenRect(electron::NativeWindow* window,
+static gfx::Rect DIPToScreenRect(gin_helper::ErrorThrower thrower,
+                                 electron::NativeWindow* window,
                                  const gfx::Rect& rect) {
+  if (!Browser::Get()->is_ready()) {
+    thrower.ThrowError(
+        "The 'screen' module can't be used before the app 'ready' event");
+    return {};
+  }
   HWND hwnd = window ? window->GetAcceleratedWidget() : nullptr;
   return display::win::GetScreenWin()->DIPToScreenRect(hwnd, rect);
 }
@@ -162,13 +221,16 @@ void Screen::OnDisplayMetricsChanged(const display::Display& display,
                                 MetricsToArray(changed_metrics)));
 }
 
-gfx::PointF Screen::ScreenToDIPPoint(const gfx::PointF& point_px) {
+gfx::PointF Screen::ScreenToDIPPoint(gin_helper::ErrorThrower thrower,
+                                     const gfx::PointF& point_px) {
+  if (!CheckReady(thrower))
+    return {};
 #if BUILDFLAG(IS_WIN)
   return display::win::GetScreenWin()->ScreenToDIPPoint(point_px);
 #elif BUILDFLAG(IS_LINUX)
   if (x11_util::IsX11()) {
     gfx::Point pt_px = gfx::ToFlooredPoint(point_px);
-    display::Display display = GetDisplayNearestPoint(pt_px);
+    display::Display display = GetDisplayNearestPoint(thrower, pt_px);
     gfx::Vector2d delta_px = pt_px - display.native_origin();
     gfx::Vector2dF delta_dip =
         gfx::ScaleVector2d(delta_px, 1.0 / display.device_scale_factor());
@@ -181,12 +243,15 @@ gfx::PointF Screen::ScreenToDIPPoint(const gfx::PointF& point_px) {
 #endif
 }
 
-gfx::Point Screen::DIPToScreenPoint(const gfx::Point& point_dip) {
+gfx::Point Screen::DIPToScreenPoint(gin_helper::ErrorThrower thrower,
+                                    const gfx::Point& point_dip) {
+  if (!CheckReady(thrower))
+    return {};
 #if BUILDFLAG(IS_WIN)
   return display::win::GetScreenWin()->DIPToScreenPoint(point_dip);
 #elif BUILDFLAG(IS_LINUX)
   if (x11_util::IsX11()) {
-    display::Display display = GetDisplayNearestPoint(point_dip);
+    display::Display display = GetDisplayNearestPoint(thrower, point_dip);
     gfx::Rect bounds_dip = display.bounds();
     gfx::Vector2d delta_dip = point_dip - bounds_dip.origin();
     gfx::Vector2d delta_px = gfx::ToFlooredVector2d(
@@ -201,21 +266,9 @@ gfx::Point Screen::DIPToScreenPoint(const gfx::Point& point_dip) {
 }
 
 // static
-Screen* Screen::Create(gin_helper::ErrorThrower error_thrower) {
-  if (!Browser::Get()->is_ready()) {
-    error_thrower.ThrowError(
-        "The 'screen' module can't be used before the app 'ready' event");
-    return {};
-  }
-
-  display::Screen* screen = GetDisplayScreen();
-  if (!screen) {
-    error_thrower.ThrowError("Failed to get screen information");
-    return {};
-  }
-
+Screen* Screen::Create(v8::Isolate* isolate) {
   return cppgc::MakeGarbageCollected<Screen>(
-      error_thrower.isolate()->GetCppHeap()->GetAllocationHandle());
+      isolate->GetCppHeap()->GetAllocationHandle());
 }
 
 gin::ObjectTemplateBuilder Screen::GetObjectTemplateBuilder(
@@ -256,7 +309,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.SetMethod<&Screen::Create>("createScreen");
+  dict.Set("screen", Screen::Create(isolate));
 }
 
 }  // namespace

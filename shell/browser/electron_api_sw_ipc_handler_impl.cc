@@ -16,6 +16,7 @@
 #include "shell/browser/api/electron_api_ipc_event.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/message_port.h"
+#include "shell/browser/electron_api_ipc_handler_impl.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/serialized_value_converter.h"
@@ -153,6 +154,17 @@ void ElectronApiSWIPCHandlerImpl::MessageSync(
                                        gin::ConvertToV8(isolate, arguments),
                                        /*sync=*/true);
   }
+}
+
+void ElectronApiSWIPCHandlerImpl::GetProcessMemoryInfo(
+    GetProcessMemoryInfoCallback callback) {
+  ReplyWithProcessMemoryInfo(render_process_host_, std::move(callback));
+}
+
+void ElectronApiSWIPCHandlerImpl::PreloadError(
+    const std::string& preload_path,
+    electron::SerializedValue error) {
+  // Service worker preload errors are only logged in the worker.
 }
 
 void ElectronApiSWIPCHandlerImpl::MessageHost(
