@@ -277,7 +277,7 @@ runs:
         retention-days: 7
     - name: Generate Include Analysis ${{ inputs.step-suffix }}
       id: include-analysis
-      if: ${{ inputs.run-include-analysis == 'true' && inputs.target-platform == 'linux' && inputs.target-arch == 'x64' && inputs.is-asan != 'true' && inputs.is-ubsan != 'true' }}
+      if: ${{ inputs.target-platform == 'linux' && inputs.target-arch == 'x64' && inputs.is-asan != 'true' && inputs.is-ubsan != 'true' }}
       shell: bash
       run: |
         set -o pipefail
