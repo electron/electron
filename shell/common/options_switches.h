@@ -14,6 +14,7 @@ namespace electron {
 namespace options {
 
 inline constexpr std::string_view kTitle = "title";
+inline constexpr std::string_view kAppShim = "appShim";
 inline constexpr std::string_view kIcon = "icon";
 inline constexpr std::string_view kFrame = "frame";
 inline constexpr std::string_view kShow = "show";

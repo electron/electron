@@ -11,7 +11,10 @@
 #include <vector>
 
 #include "base/files/file_path.h"
+#include "base/functional/callback_forward.h"
 #include "base/memory/raw_ptr_exclusion.h"
+#include "build/build_config.h"
+#include "ui/gfx/native_ui_types.h"
 
 #if BUILDFLAG(IS_LINUX)
 #include <bits/stdint-uintn.h>
@@ -82,6 +85,25 @@ std::optional<base::FilePath> ShowSaveDialogSync(
 
 void ShowSaveDialog(const DialogSettings& settings,
                     gin_helper::Promise<gin_helper::Dictionary> promise);
+
+#if BUILDFLAG(IS_MAC)
+using OpenDialogCallback =
+    base::OnceCallback<void(bool canceled,
+                            const std::vector<base::FilePath>& paths)>;
+using SaveDialogCallback =
+    base::OnceCallback<void(bool canceled, const base::FilePath& path)>;
+
+// The dialogs for a parent that is not a NativeWindow of this process: the
+// panel is a sheet of `window`, which must not be null and which the
+// settings' own parent is ignored for. An app shim's process shows the
+// dialogs of its windows with these.
+void ShowOpenDialogForNSWindow(const DialogSettings& settings,
+                               gfx::NativeWindow window,
+                               OpenDialogCallback callback);
+void ShowSaveDialogForNSWindow(const DialogSettings& settings,
+                               gfx::NativeWindow window,
+                               SaveDialogCallback callback);
+#endif
 
 }  // namespace file_dialog
 
