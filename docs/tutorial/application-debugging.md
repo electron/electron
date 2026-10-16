@@ -23,6 +23,17 @@ Google offers [excellent documentation for their developer tools][devtools].
 We recommend that you make yourself familiar with them - they are usually one
 of the most powerful utilities in any Electron Developer's tool belt.
 
+## Preload scripts
+
+Preload scripts run in the renderer process. By default (`contextIsolation` is
+enabled), they execute in a separate JavaScript world named
+`Electron Isolated Context`. To debug them, open the DevTools of the window the
+preload script belongs to, go to the Sources panel and select
+**Electron Isolated Context** from the JavaScript context dropdown above the
+file tree. Your preload scripts are listed there, so you can set breakpoints
+and step through them as usual. `console` output from a preload script appears
+in the Console panel of the same window.
+
 ## Main Process
 
 Debugging the main process is a bit trickier, since you cannot open
