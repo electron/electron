@@ -35,6 +35,7 @@ type CrashInfo = {
   globalParam: 'globalValue' | undefined;
   addedThenRemoved: 'to-be-removed' | undefined;
   longParam: string | undefined;
+  wasmTrapsCaught: string | undefined;
   'electron.v8-fatal.location': string | undefined;
   'electron.v8-fatal.message': string | undefined;
   'electron.v8-oom.stack': string | undefined;
@@ -198,6 +199,20 @@ ifdescribe(!process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashRepo
       checkCrash('node', crash);
       expect(crash.mainProcessSpecific).toBeUndefined();
       expect(crash.rendererSpecific).toBeUndefined();
+    });
+
+    // V8 handles WebAssembly out-of-bounds accesses as SIGSEGV traps.
+    // Crashpad's handler sits in front of Node's in a Linux node child,
+    // so a caught trap must neither be reported
+    // nor stop later crashes from being reported.
+    ifit(process.platform === 'linux')('when a node process crashes after catching WebAssembly traps', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('node-wasm-trap', port);
+      // Without the first-chance handler, crashpad dumps the first caught trap
+      // and then stops reporting, so the only upload lacks the parameter.
+      const crash = await waitForCrash();
+      checkCrash('node', crash);
+      expect(crash.wasmTrapsCaught, 'the first upload should be the crash after the caught traps').toBe('2');
     });
 
     // Ensures that passing in crashpadHandlerPID flag for Linx child processes
