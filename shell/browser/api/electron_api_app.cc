@@ -718,19 +718,8 @@ bool App::CanCreateWindow(
     bool user_gesture,
     bool opener_suppressed,
     bool* no_javascript_access) {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  content::WebContents* web_contents =
-      content::WebContents::FromRenderFrameHost(opener);
-  if (web_contents) {
-    WebContents* api_web_contents = WebContents::From(web_contents);
-    // No need to emit any event if the WebContents is not available in JS.
-    if (api_web_contents) {
-      api_web_contents->OnCreateWindow(target_url, referrer, frame_name,
-                                       disposition, raw_features, body);
-    }
-  }
-
+  // Only reached for openers Electron did not create (no
+  // WebContentsPreferences); those may not open windows.
   return false;
 }
 
