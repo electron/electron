@@ -36,6 +36,7 @@
 #include <vector>
 
 #include "base/i18n/case_conversion.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/win/registry.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/shell_dialogs/execute_select_file_win.h"

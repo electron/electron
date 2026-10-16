@@ -5,6 +5,7 @@
 #include "shell/browser/api/electron_api_browser_window.h"
 
 #include "base/containers/fixed_flat_set.h"
+#include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "shell/browser/api/electron_api_web_contents_view.h"
