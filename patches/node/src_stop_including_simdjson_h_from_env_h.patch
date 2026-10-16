@@ -1,0 +1,246 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Lemire <daniel@lemire.me>
+Date: Tue, 6 Oct 2026 17:11:53 -0400
+Subject: src: stop including simdjson.h from env.h
+
+Backport of https://github.com/nodejs/node/pull/66620 (upstream commit
+https://github.com/nodejs/node/commit/2b17b43eeba4484d43afaa1d5e3f951f006c5df6).
+Only the include-reduction commit is taken; the simdjson 5.0.3 update
+from the same PR is not.
+
+env.h includes inspector_profiler.h, which included simdjson.h for
+the types of two virtual methods and a parser member. As a result,
+about 155 files in src/ parsed the amalgamated simdjson header, which
+is over 10 MB.
+
+Keep simdjson out of inspector_profiler.h: the profile connections
+now say which field of `result` holds the profile, and
+WriteProfile() takes the profile as raw JSON. The parser becomes a
+local variable, so its buffers are no longer kept alive for the
+lifetime of the Environment. Also drop the unused include from
+node_task_runner.h.
+
+The upstream change to src/node_config_file.cc is omitted: it removes
+a second parse of the config file that does not exist on v24.x.
+
+This patch can be removed when Electron updates to a Node.js release
+that contains nodejs/node#66620.
+
+diff --git a/src/inspector_profiler.cc b/src/inspector_profiler.cc
+index 559b4fd27d56abed0a9aaa7981e10fe12ebb0c2a..791ff993f84dcb2ee2bf85758e44362a5c23312e 100644
+--- a/src/inspector_profiler.cc
++++ b/src/inspector_profiler.cc
+@@ -13,7 +13,9 @@
+ 
+ #include <cinttypes>
+ #include <limits>
++#include <optional>
+ #include <sstream>
++#include "simdjson.h"
+ #include "simdutf.h"
+ 
+ namespace node {
+@@ -109,6 +111,28 @@ bool StringViewToUTF8(const v8_inspector::StringView& source,
+   return *utf8_length == result_len;
+ }
+ 
++// Return the raw JSON of the profile object in `result`: either the
++// `field` member of `result` or, if `field` is nullptr, `result` itself.
++static std::optional<std::string_view> GetProfile(
++    simdjson::ondemand::object* result, const char* field, const char* type) {
++  simdjson::ondemand::object profile_object;
++  if (field == nullptr) {
++    profile_object = *result;
++  } else if ((*result)[field].get_object().get(profile_object)) {
++    fprintf(
++        stderr, "'%s' from %s profile result is not an Object\n", field, type);
++    return std::nullopt;
++  }
++  std::string_view profile_raw;
++  if (profile_object.raw_json().get(profile_raw)) {
++    fprintf(stderr,
++            "Cannot get raw string of the 'profile' field from %s profile\n",
++            type);
++    return std::nullopt;
++  }
++  return profile_raw;
++}
++
+ void V8ProfilerConnection::V8ProfilerSessionDelegate::SendMessageToFrontend(
+     const v8_inspector::StringView& message) {
+   Environment* env = connection_->env();
+@@ -134,9 +158,10 @@ void V8ProfilerConnection::V8ProfilerSessionDelegate::SendMessageToFrontend(
+     return;
+   }
+ 
++  simdjson::ondemand::parser json_parser;
+   simdjson::ondemand::document parsed;
+   simdjson::ondemand::object response;
+-  if (connection_->json_parser_
++  if (json_parser
+           .iterate(
+               message_utf8.data(), message_utf8_length, message_utf8.size())
+           .get(parsed) ||
+@@ -184,7 +209,10 @@ void V8ProfilerConnection::V8ProfilerSessionDelegate::SendMessageToFrontend(
+     return;
+   }
+ 
+-  connection_->WriteProfile(&result);
++  auto profile = GetProfile(&result, connection_->profile_field(), type);
++  if (profile.has_value()) {
++    connection_->WriteProfile(*profile);
++  }
+   connection_->RemoveProfileId(id);
+ }
+ 
+@@ -214,32 +242,7 @@ std::string V8CoverageConnection::GetFilename() const {
+       env()->thread_id());
+ }
+ 
+-std::optional<std::string_view> V8ProfilerConnection::GetProfile(
+-    simdjson::ondemand::object* result) {
+-  simdjson::ondemand::object profile_object;
+-  if ((*result)["profile"].get_object().get(profile_object)) {
+-    fprintf(
+-        stderr, "'profile' from %s profile result is not an Object\n", type());
+-    return std::nullopt;
+-  }
+-  std::string_view profile_raw;
+-  if (profile_object.raw_json().get(profile_raw)) {
+-    fprintf(stderr,
+-            "Cannot get raw string of the 'profile' field from %s profile\n",
+-            type());
+-    return std::nullopt;
+-  }
+-  return profile_raw;
+-}
+-
+-void V8ProfilerConnection::WriteProfile(simdjson::ondemand::object* result) {
+-  // Generate the profile output from the subclass.
+-  auto profile_opt = GetProfile(result);
+-  if (!profile_opt.has_value()) {
+-    return;
+-  }
+-  std::string_view profile = profile_opt.value();
+-
++void V8ProfilerConnection::WriteProfile(std::string_view profile) {
+   // Create the directory if necessary.
+   std::string directory = GetDirectory();
+   DCHECK(!directory.empty());
+@@ -254,7 +257,7 @@ void V8ProfilerConnection::WriteProfile(simdjson::ondemand::object* result) {
+   WriteResult(env_, path.c_str(), profile);
+ }
+ 
+-void V8CoverageConnection::WriteProfile(simdjson::ondemand::object* result) {
++void V8CoverageConnection::WriteProfile(std::string_view profile) {
+   Isolate* isolate = env_->isolate();
+   HandleScope handle_scope(isolate);
+ 
+@@ -271,13 +274,6 @@ void V8CoverageConnection::WriteProfile(simdjson::ondemand::object* result) {
+   Local<Context> context = env_->context();
+   Context::Scope context_scope(context);
+ 
+-  // Generate the profile output from the subclass.
+-  auto profile_opt = GetProfile(result);
+-  if (!profile_opt.has_value()) {
+-    return;
+-  }
+-  std::string_view profile = profile_opt.value();
+-
+   // append source-map cache information to coverage object:
+   Local<Value> source_map_cache_v;
+   {
+@@ -349,18 +345,6 @@ void V8CoverageConnection::WriteProfile(simdjson::ondemand::object* result) {
+   }
+ }
+ 
+-std::optional<std::string_view> V8CoverageConnection::GetProfile(
+-    simdjson::ondemand::object* result) {
+-  std::string_view profile_raw;
+-  if (result->raw_json().get(profile_raw)) {
+-    fprintf(stderr,
+-            "Cannot get raw string of the 'profile' field from %s profile\n",
+-            type());
+-    return std::nullopt;
+-  }
+-  return profile_raw;
+-}
+-
+ std::string V8CoverageConnection::GetDirectory() const {
+   return env()->coverage_directory();
+ }
+diff --git a/src/inspector_profiler.h b/src/inspector_profiler.h
+index d07334c818d90ec32594e5776b87232744425246..cdd6bcf6f0aa0bcbc77b916a827afa35c3b59ea2 100644
+--- a/src/inspector_profiler.h
++++ b/src/inspector_profiler.h
+@@ -7,10 +7,9 @@
+ #error("This header can only be used when inspector is enabled")
+ #endif
+ 
+-#include <optional>
++#include <string_view>
+ #include <unordered_set>
+ #include "inspector_agent.h"
+-#include "simdjson.h"
+ 
+ namespace node {
+ // Forward declaration to break recursive dependency chain with src/env.h.
+@@ -59,11 +58,11 @@ class V8ProfilerConnection {
+   virtual std::string GetDirectory() const = 0;
+   // Return the filename the profile should be written as.
+   virtual std::string GetFilename() const = 0;
+-  // Return the profile object parsed from `message.result`,
+-  // which will be then written as a JSON.
+-  virtual std::optional<std::string_view> GetProfile(
+-      simdjson::ondemand::object* result);
+-  virtual void WriteProfile(simdjson::ondemand::object* result);
++  // Return the field of `message.result` that holds the profile object,
++  // or nullptr if `message.result` is itself the profile object.
++  virtual const char* profile_field() const { return "profile"; }
++  // Write the profile, given as raw JSON.
++  virtual void WriteProfile(std::string_view profile);
+ 
+   bool HasProfileId(uint64_t id) const { return profile_ids_.contains(id); }
+ 
+@@ -76,7 +75,6 @@ class V8ProfilerConnection {
+   std::unordered_set<uint64_t> profile_ids_;
+ 
+  protected:
+-  simdjson::ondemand::parser json_parser_;
+   Environment* env_ = nullptr;
+ };
+ 
+@@ -92,9 +90,8 @@ class V8CoverageConnection : public V8ProfilerConnection {
+ 
+   std::string GetDirectory() const override;
+   std::string GetFilename() const override;
+-  std::optional<std::string_view> GetProfile(
+-      simdjson::ondemand::object* result) override;
+-  void WriteProfile(simdjson::ondemand::object* result) override;
++  const char* profile_field() const override { return nullptr; }
++  void WriteProfile(std::string_view profile) override;
+   void WriteSourceMapCache();
+   void TakeCoverage();
+   void StopCoverage();
+diff --git a/src/node_task_runner.cc b/src/node_task_runner.cc
+index 55f348afc69ae3244bca41901c94cb0ad0263a97..136dec24fa023fdd32150401be38194a80116910 100644
+--- a/src/node_task_runner.cc
++++ b/src/node_task_runner.cc
+@@ -1,4 +1,5 @@
+ #include "node_task_runner.h"
++#include "simdjson.h"
+ #include "util-inl.h"
+ 
+ #include <regex>  // NOLINT(build/c++11)
+diff --git a/src/node_task_runner.h b/src/node_task_runner.h
+index 15573498f7393a04302237dd42e265bba73141b3..8cdfe572353395567465e29b0e63b8919e2608d1 100644
+--- a/src/node_task_runner.h
++++ b/src/node_task_runner.h
+@@ -4,7 +4,6 @@
+ #if defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
+ 
+ #include "node_internals.h"
+-#include "simdjson.h"
+ #include "spawn_sync.h"
+ #include "uv.h"
+ 

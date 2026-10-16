@@ -128,10 +128,18 @@ index 768a7db83cfad440ec4a4b305bfa51a6121062d7..534a9c5519bef5dddedbd47bde595e07
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 03560c05649a87a87ab514052d302b38799e9a57..2e87b1a0eb238e97d18b8871782ea8e222bbfe0a 100644
+index 03560c05649a87a87ab514052d302b38799e9a57..9da320927b69ee61a665063d95fa3cd8a626225f 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
-@@ -35,6 +35,18 @@ namespace content {
+@@ -12,6 +12,7 @@
+ #include "base/memory/singleton.h"
+ #include "base/notreached.h"
+ #include "build/build_config.h"
++#include "content/common/frame.mojom.h"
+ #include "content/public/browser/audio_stream_broker.h"
+ #include "content/public/browser/color_chooser.h"
+ #include "content/public/browser/file_select_listener.h"
+@@ -35,6 +36,18 @@ namespace content {
  
  WebContentsDelegate::WebContentsDelegate() = default;
  
@@ -151,14 +159,14 @@ index 03560c05649a87a87ab514052d302b38799e9a57..2e87b1a0eb238e97d18b8871782ea8e2
      WebContents* source,
      const OpenURLParams& params,
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 38efabfe5d486e893fbf4f4fed72570771dad817..33070d7de072e48b305067429b29541861868269 100644
+index 38efabfe5d486e893fbf4f4fed72570771dad817..86977e5ffc531cf919fa3addb600d3cb7d91ab77 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -19,6 +19,7 @@
  #include "base/types/expected.h"
  #include "build/build_config.h"
  #include "content/common/content_export.h"
-+#include "content/common/frame.mojom.h"
++#include "content/common/frame.mojom-forward.h"
  #include "content/public/browser/eye_dropper.h"
  #include "content/public/browser/fullscreen_types.h"
  #include "content/public/browser/immersive_playback_options.h"
