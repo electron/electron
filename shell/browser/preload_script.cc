@@ -4,6 +4,7 @@
 
 #include "shell/browser/preload_script.h"
 
+#include <algorithm>
 #include <string_view>
 #include <utility>
 
@@ -15,6 +16,9 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "url/gurl.h"
+#include "url/origin.h"
+#include "url/scheme_host_port.h"
+#include "url/url_constants.h"
 
 namespace electron {
 
@@ -56,6 +60,27 @@ bool MatchesAnyGlob(const std::vector<std::string>& globs, const GURL& url) {
   return false;
 }
 
+// The URL to match filters against for a document at |url| with security
+// origin |origin| when matching the origin as a fallback. Mirrors
+// extensions::ContentScriptInjectionUrlGetter::Get() for
+// MatchOriginAsFallbackBehavior::kAlways.
+GURL GetOriginFallbackURL(const GURL& url, const url::Origin& origin) {
+  static constexpr std::string_view kSchemesWithoutOwnOrigin[] = {
+      url::kAboutScheme,
+      url::kBlobScheme,
+      url::kDataScheme,
+      url::kFileSystemScheme,
+  };
+  if (!std::ranges::contains(kSchemesWithoutOwnOrigin, url.GetScheme()))
+    return url;
+  // An opaque origin with no precursor has no creator to fall back to, e.g. a
+  // browser-initiated navigation to a data: URL.
+  const url::SchemeHostPort& tuple = origin.GetTupleOrPrecursorTupleIfOpaque();
+  if (!tuple.IsValid())
+    return url;
+  return tuple.GetURL();
+}
+
 }  // namespace
 
 PreloadScript::PreloadScript() = default;
@@ -74,9 +99,23 @@ bool PreloadScript::ParseUrlPatterns(std::string* error) {
         "match all URLs.";
     return false;
   }
-  return ParsePatterns(matches.value_or(std::vector<std::string>()),
-                       &match_patterns_, error) &&
-         ParsePatterns(exclude_matches, &exclude_match_patterns_, error);
+  if (!ParsePatterns(matches.value_or(std::vector<std::string>()),
+                     &match_patterns_, error) ||
+      !ParsePatterns(exclude_matches, &exclude_match_patterns_, error)) {
+    return false;
+  }
+  // An origin has no path, so a pattern with one could never match a document
+  // by its origin. Same rule as content scripts.
+  if (match_origin_as_fallback) {
+    for (const URLPattern& pattern : match_patterns_) {
+      if (pattern.path() != "/*") {
+        *error = "Invalid URL pattern '" + pattern.GetAsString() +
+                 "': the path must be '/*' when matchOriginAsFallback is set";
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 // Mirrors extensions::UserScript::MatchesURL() for content scripts.
@@ -90,6 +129,12 @@ bool PreloadScript::MatchesURL(const GURL& url) const {
     return false;
   return (match_patterns_.empty() || MatchesAnyPattern(match_patterns_, url)) &&
          (include_globs.empty() || MatchesAnyGlob(include_globs, url));
+}
+
+bool PreloadScript::MatchesDocument(const GURL& url,
+                                    const url::Origin& origin) const {
+  return MatchesURL(match_origin_as_fallback ? GetOriginFallbackURL(url, origin)
+                                             : url);
 }
 
 }  // namespace electron
@@ -139,6 +184,8 @@ v8::Local<v8::Value> Converter<PreloadScript>::ToV8(
     dict.Set("includeGlobs", script.include_globs);
   if (!script.exclude_globs.empty())
     dict.Set("excludeGlobs", script.exclude_globs);
+  if (script.match_origin_as_fallback)
+    dict.Set("matchOriginAsFallback", true);
   return ConvertToV8(isolate, dict).As<v8::Object>();
 }
 
@@ -185,6 +232,7 @@ bool Converter<PreloadScript>::FromV8(v8::Isolate* isolate,
       !get_filter("excludeGlobs", &out->exclude_globs)) {
     return false;
   }
+  options.Get("matchOriginAsFallback", &out->match_origin_as_fallback);
   if (bool deprecated; options.Get("_deprecated", &deprecated)) {
     out->deprecated = deprecated;
   }

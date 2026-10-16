@@ -4478,6 +4478,48 @@ describe('BrowserWindow module', () => {
             // Each page runs exactly one of the two preloads.
             expect(locations).to.deep.equal([extensionPage, `${url}/page`]);
           });
+
+          it(`matches a popup's initial empty document by its opener's origin with matchOriginAsFallback (sandbox: ${sandbox})`, async () => {
+            const server = http.createServer((_request, response) => {
+              response.writeHead(200, { 'Content-Type': 'text/html' });
+              response.end('<html></html>');
+            });
+            defer(() => server.close());
+            const { url } = await listen(server);
+            // Preload A carries the filters under test. Preload B is unfiltered
+            // and registered after it, so once B reports from a document, A has
+            // already reported from that document if it ran there.
+            const preloadA = path.join(fixtures, 'module', 'preload-window-open-a.js');
+            const preloadB = path.join(fixtures, 'module', 'preload-window-open-b.js');
+            let partitions = 0;
+            const collectFilteredPreloads = async (filters: Partial<Electron.PreloadScriptRegistration>) => {
+              const ses = session.fromPartition(`preload-origin-fallback-${sandbox}-${partitions++}`);
+              ses.registerPreloadScript({ type: 'frame', filePath: preloadA, ...filters });
+              ses.registerPreloadScript({ type: 'frame', filePath: preloadB });
+              const reports: Array<{ which: string; href: string }> = [];
+              const handler = (_e: any, which: string, href: string) => reports.push({ which, href });
+              ipcMain.on('preload-ran', handler);
+              try {
+                const w = new BrowserWindow({ show: false, webPreferences: { sandbox, session: ses } });
+                await w.loadURL(`${url}/page`);
+                await w.webContents.executeJavaScript('void window.open()');
+                await waitUntil(() => reports.some((r) => r.which === 'b' && r.href === 'about:blank'));
+              } finally {
+                ipcMain.removeListener('preload-ran', handler);
+              }
+              return reports.filter((r) => r.which === 'a').map((r) => r.href);
+            };
+            // By default the popup is matched as about:blank, whatever opened it...
+            expect(await collectFilteredPreloads({ excludeMatches: [`${url}/*`] })).to.deep.equal(['about:blank']);
+            expect(await collectFilteredPreloads({ matches: [`${url}/*`] })).to.deep.equal([`${url}/page`]);
+            // ...and with matchOriginAsFallback as the origin it inherited.
+            expect(
+              await collectFilteredPreloads({ excludeMatches: [`${url}/*`], matchOriginAsFallback: true })
+            ).to.deep.equal([]);
+            expect(await collectFilteredPreloads({ matches: [`${url}/*`], matchOriginAsFallback: true })).to.deep.equal(
+              [`${url}/page`, 'about:blank']
+            );
+          });
         }
 
         it('rejects invalid preload URL filters', () => {
@@ -4492,6 +4534,14 @@ describe('BrowserWindow module', () => {
           expect(() => ses.registerPreloadScript({ type: 'frame', filePath, matches: [] })).to.throw(
             /'matches' must not be empty/
           );
+          expect(() =>
+            ses.registerPreloadScript({
+              type: 'frame',
+              filePath,
+              matches: ['https://example.com/path/*'],
+              matchOriginAsFallback: true
+            })
+          ).to.throw(/the path must be '\/\*' when matchOriginAsFallback is set/);
           expect(ses.getPreloadScripts()).to.be.empty();
         });
 
@@ -4501,7 +4551,8 @@ describe('BrowserWindow module', () => {
             matches: ['https://example.com/*'],
             excludeMatches: ['https://example.com/private/*'],
             includeGlobs: ['*foo*'],
-            excludeGlobs: ['*bar*']
+            excludeGlobs: ['*bar*'],
+            matchOriginAsFallback: true
           };
           const id = ses.registerPreloadScript({
             type: 'frame',

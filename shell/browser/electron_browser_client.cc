@@ -806,8 +806,11 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
   mojom::RendererStartupDataPtr data;
   {
     ScopedAllowBlockingForElectron allow_blocking;
-    data = renderer_startup_data::BuildForFrame(new_window_main_frame,
-                                                GURL(url::kAboutBlankURL));
+    // The popup's initial empty document has already inherited its opener's
+    // origin, if it has one.
+    data = renderer_startup_data::BuildForFrame(
+        new_window_main_frame, GURL(url::kAboutBlankURL),
+        new_window_main_frame->GetLastCommittedOrigin());
   }
   // Opaque blob — Chromium can't depend on Electron's mojom types.
   return mojo_base::BigBuffer(mojom::RendererStartupData::Serialize(&data));

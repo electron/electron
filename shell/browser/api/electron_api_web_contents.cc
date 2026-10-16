@@ -3046,7 +3046,8 @@ void WebContents::HandleNewRenderFrame(
     const bool allow_subframes =
         web_preferences && web_preferences->AllowsNodeIntegrationInSubFrames();
     if (!render_frame_host->GetParent() || allow_subframes)
-      SendRendererStartupData(render_frame_host, GURL(url::kAboutBlankURL));
+      SendRendererStartupData(render_frame_host, GURL(url::kAboutBlankURL),
+                              render_frame_host->GetLastCommittedOrigin());
   }
 }
 
@@ -3500,11 +3501,14 @@ void WebContents::MaybeSendRendererStartupData(
   if (!main_frame && !allow_subframes && !is_devtools_like)
     return;
 
-  SendRendererStartupData(rfh, url);
+  // Has a value whenever the navigation has a RenderFrameHost to commit in.
+  SendRendererStartupData(
+      rfh, url, navigation_handle->GetOriginToCommit().value_or(url::Origin()));
 }
 
 void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh,
-                                          const GURL& url) {
+                                          const GURL& url,
+                                          const url::Origin& origin) {
   if (!rfh || !rfh->IsRenderFrameLive())
     return;
 
@@ -3515,7 +3519,7 @@ void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh,
     // parked waiting on us here — we haven't sent CommitNavigation yet — so
     // unlike the old sync IPC handler this can't amplify under contention.
     ScopedAllowBlockingForElectron allow_blocking;
-    data = renderer_startup_data::BuildForFrame(rfh, url);
+    data = renderer_startup_data::BuildForFrame(rfh, url, origin);
   }
 
   // GetRemoteAssociatedInterfaces() routes over the same channel as

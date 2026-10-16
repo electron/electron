@@ -12,3 +12,9 @@
   also match one of these globs. `*` matches any sequence of characters and `?` matches
   any single character.
 * `excludeGlobs` string[] (optional) - Glob patterns for URLs the script will not run in.
+* `matchOriginAsFallback` boolean (optional) - Whether a document whose URL has no origin of
+  its own (`about:`, `blob:`, `data:` or `filesystem:`) is matched by the origin it inherited
+  from the frame that created it instead of by its URL. For example, an `about:blank` popup
+  opened by `https://example.com/page` is matched as `https://example.com/`. When set, every
+  pattern in `matches` must have a path of `/*`. Only applies to `frame` contexts. Default is
+  `false`.
