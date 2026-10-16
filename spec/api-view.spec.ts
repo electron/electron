@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import * as fs from 'node:fs';
 
-import { closeWindow } from './lib/window-helpers.ts';
+import { closeWindow, closeAllWindows } from './lib/window-helpers.ts';
 
 describe('View', () => {
   let w: BaseWindow;
@@ -286,6 +286,29 @@ describe('View', () => {
       expect(() => ImageView.prototype.setImage.call(v, nativeImage.createEmpty())).toThrow('Illegal invocation');
       expect(() => (WebContentsView.prototype.setBorderRadius as any).call(v, 1)).toThrow('Illegal invocation');
       expect(() => View.prototype.getBounds.call(nativeImage.createEmpty())).toThrow('Illegal invocation');
+    });
+  });
+
+  describe('setInteractive', () => {
+    afterEach(closeAllWindows);
+
+    it('does not throw when toggled on a view', () => {
+      w = new BaseWindow({ show: false });
+      const v = new View();
+      expect(() => v.setInteractive(false)).not.toThrow();
+      expect(() => v.setInteractive(true)).not.toThrow();
+      w.setContentView(v);
+      expect(() => v.setInteractive(false)).not.toThrow();
+      expect(() => v.setInteractive(true)).not.toThrow();
+    });
+
+    it('correctly records state when toggled', () => {
+      const v = new View();
+      expect(v.getInteractive()).toBe(true);
+      v.setInteractive(false);
+      expect(v.getInteractive()).toBe(false);
+      v.setInteractive(true);
+      expect(v.getInteractive()).toBe(true);
     });
   });
 });
