@@ -6,7 +6,9 @@ Subject: fix: avoid misaligned char16_t reads in crdtp string deserialization
 The STRING16 wire representation is a raw slice of the CBOR message and
 may start at an odd byte offset. Reading it through a char16_t pointer
 is undefined behavior and aborts Electron's UBSan build, so copy the
-payload into an aligned buffer first. This should be upstreamed to Chromium.
+payload into an aligned buffer first.
+
+Upstream CL: https://chromium-review.googlesource.com/c/chromium/src/+/8567285
 
 diff --git a/third_party/inspector_protocol/crdtp/chromium/protocol_traits.cc b/third_party/inspector_protocol/crdtp/chromium/protocol_traits.cc
 index 1f06aa9fe50023edd759a29932d4e5c95235cefe..67c26a773244f8b7c443f9224a7e84e1b07051cc 100644
