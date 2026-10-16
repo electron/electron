@@ -11,7 +11,6 @@
 #include "shell/browser/ui/electron_menu_model.h"
 #include "ui/base/glib/scoped_gsignal.h"
 #include "ui/gfx/native_ui_types.h"
-#include "ui/gfx/x/xproto.h"
 
 typedef struct _DbusmenuMenuitem DbusmenuMenuitem;
 typedef struct _DbusmenuServer DbusmenuServer;
@@ -33,6 +32,10 @@ namespace electron {
 //
 // This class is like the chrome's corresponding one, but it generates the menu
 // from menu models instead, and it is also per-window specific.
+//
+// Despite the name, this is used on both X11 and Wayland; see
+// GlobalMenuBarRegistrarX11 for how the menu is associated with the window on
+// each platform.
 class GlobalMenuBarX11 {
  public:
   explicit GlobalMenuBarX11(gfx::AcceleratedWidget accelerated_widget);
@@ -43,7 +46,7 @@ class GlobalMenuBarX11 {
   GlobalMenuBarX11& operator=(const GlobalMenuBarX11&) = delete;
 
   // Creates the object path for DbusmenuServer which is attached to |window|.
-  static std::string GetPathForWindow(x11::Window window);
+  static std::string GetPathForWindow(gfx::AcceleratedWidget window);
 
   void SetMenu(ElectronMenuModel* menu_model);
   bool IsServerStarted() const;
@@ -54,7 +57,7 @@ class GlobalMenuBarX11 {
 
  private:
   // Creates a DbusmenuServer.
-  void InitServer(x11::Window window);
+  void InitServer(gfx::AcceleratedWidget window);
 
   // Create a menu from menu model.
   void BuildMenuFromModel(ElectronMenuModel* model, DbusmenuMenuitem* parent);
@@ -66,7 +69,7 @@ class GlobalMenuBarX11 {
   void OnItemActivated(DbusmenuMenuitem* item, unsigned int timestamp);
   void OnSubMenuShow(DbusmenuMenuitem* item);
 
-  x11::Window xwindow_;
+  gfx::AcceleratedWidget window_;
 
   raw_ptr<DbusmenuServer> server_ = nullptr;
   std::vector<ScopedGSignal> signals_;
