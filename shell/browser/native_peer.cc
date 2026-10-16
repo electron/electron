@@ -168,7 +168,7 @@ void NativePeerBase::DeleteQueuedPeersAfterIsolateDisposal() {
 bool NativePeerBase::IsQueuedForTesting(uintptr_t wrapper_identity) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(GetQueueState().sequence_checker);
   return std::ranges::any_of(QueuedPeers(), [&](const QueuedPeer& peer) {
-    return peer->wrapper_identity_ == wrapper_identity;
+    return peer->WrapperIdentityForTesting() == wrapper_identity;
   });
 }
 #endif

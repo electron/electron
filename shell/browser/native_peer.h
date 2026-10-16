@@ -22,6 +22,9 @@
 
 namespace electron {
 
+template <typename Wrapper>
+class NativePeer;
+
 // The off heap half of a cppgc managed API wrapper.
 //
 // A wrapper's destructor runs during cppgc sweeping, where it must not touch
@@ -79,7 +82,7 @@ class NativePeerBase : public MicrotasksRunner::Observer {
   // for release, which happens when that wrapper is finalized. Queued peers
   // are released from a posted task, so within one task the answer only
   // changes from false to true.
-  static bool IsQueuedForTesting(uintptr_t wrapper_identity);
+  [[nodiscard]] static bool IsQueuedForTesting(uintptr_t wrapper_identity);
 #endif
 
   bool is_active() const { return state_ == State::kActive; }
@@ -115,10 +118,6 @@ class NativePeerBase : public MicrotasksRunner::Observer {
   // finalizers, where creating a Persistent is not allowed.
   static void DCheckCanBorrowWrapper();
 
-#if DCHECK_IS_ON()
-  uintptr_t wrapper_identity_ = 0;
-#endif
-
  private:
   enum class State { kActive, kReleasing, kReleased };
 
@@ -132,15 +131,16 @@ class NativePeerBase : public MicrotasksRunner::Observer {
   static void ReleaseAndDeleteQueuedPeers();
   static void ReleaseAndDelete(std::vector<QueuedPeer> peers);
 
+#if DCHECK_IS_ON()
+  virtual uintptr_t WrapperIdentityForTesting() const = 0;
+#endif
+
   // MicrotasksRunner::Observer
   void OnBeforeMicrotasksRunnerDispose() final;
 
   State state_ = State::kActive;
   bool observing_shutdown_ = false;
 };
-
-template <typename Wrapper>
-class NativePeer;
 
 // A stack-only borrow of a peer's wrapper, returned by NativePeer::wrapper().
 //
@@ -222,6 +222,14 @@ class NativePeer : public NativePeerBase {
   void DisconnectWrapper() final { wrapper_.Clear(); }
 
  private:
+#if DCHECK_IS_ON()
+  uintptr_t WrapperIdentityForTesting() const final {
+    return wrapper_identity_;
+  }
+
+  uintptr_t wrapper_identity_ = 0;
+#endif
+
   cppgc::WeakPersistent<Wrapper> wrapper_;
 };
 
