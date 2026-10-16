@@ -108,6 +108,35 @@ describe('setDisplayMediaRequestHandler', () => {
     }
   );
 
+  for (const [constraint, expected] of [
+    ['{ displaySurface: "monitor" }', 'monitor'],
+    ['{ displaySurface: "window" }', 'window'],
+    ['{ displaySurface: "browser" }', 'browser'],
+    ['true', 'none']
+  ] as const) {
+    it(`reports preferredDisplaySurface '${expected}' for video: ${constraint}`, async () => {
+      const ses = session.fromPartition('' + Math.random());
+      let preferredDisplaySurface: string | undefined;
+      ses.setDisplayMediaRequestHandler((request, callback) => {
+        preferredDisplaySurface = request.preferredDisplaySurface;
+        callback({ video: w.webContents.mainFrame });
+      });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await w.loadURL(serverUrl);
+      const { ok, message } = await w.webContents.executeJavaScript(
+        `
+        navigator.mediaDevices.getDisplayMedia({
+          video: ${constraint},
+          audio: false,
+        }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
+      `,
+        true
+      );
+      expect(ok).to.be.true(message);
+      expect(preferredDisplaySurface).to.equal(expected);
+    });
+  }
+
   it('does not crash when using a bogus ID', async () => {
     const ses = session.fromPartition('' + Math.random());
     let requestHandlerCalled = false;
