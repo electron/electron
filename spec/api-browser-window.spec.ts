@@ -4388,7 +4388,184 @@ describe('BrowserWindow module', () => {
             await waitUntil(() => locations.length > 0);
             expect(locations).toEqual(['about:blank']);
           });
+
+          it(`only runs session preloads whose URL filters match the document (sandbox: ${sandbox})`, async () => {
+            const server = http.createServer((_request, response) => {
+              response.writeHead(200, { 'Content-Type': 'text/html' });
+              response.end('<html></html>');
+            });
+            defer(() => server.close());
+            const { url } = await listen(server);
+            const ses = session.fromPartition(`preload-url-filters-${sandbox}`);
+            const preload = path.join(fixtures, 'module', 'preload-location.js');
+            const ids = [
+              ses.registerPreloadScript({ type: 'frame', filePath: preload, matches: [`${url}/allowed/*`] }),
+              ses.registerPreloadScript({
+                type: 'frame',
+                filePath: preload,
+                matches: [`${url}/*`],
+                excludeMatches: [`${url}/allowed/*`],
+                includeGlobs: ['*included=1']
+              }),
+              ses.registerPreloadScript({
+                type: 'frame',
+                filePath: preload,
+                excludeGlobs: ['*/allowed/*', '*included=1']
+              })
+            ];
+            defer(() => ids.forEach((id) => ses.unregisterPreloadScript(id)));
+            const locations: string[] = [];
+            ipcMain.on('preload-location', (_e, href: string) => locations.push(href));
+            defer(() => ipcMain.removeAllListeners('preload-location'));
+            const w = new BrowserWindow({ show: false, webPreferences: { sandbox, session: ses } });
+            await w.loadURL(`${url}/allowed/page`);
+            await w.loadURL(`${url}/other?included=1`);
+            await w.loadURL(`${url}/other`);
+            expect(locations).toEqual([`${url}/allowed/page`, `${url}/other?included=1`, `${url}/other`]);
+          });
+
+          it(`runs a session preload matching <all_urls> on any document (sandbox: ${sandbox})`, async () => {
+            const server = http.createServer((_request, response) => {
+              response.writeHead(200, { 'Content-Type': 'text/html' });
+              response.end('<html></html>');
+            });
+            defer(() => server.close());
+            const { url } = await listen(server);
+            const ses = session.fromPartition(`preload-all-urls-${sandbox}`);
+            const id = ses.registerPreloadScript({
+              type: 'frame',
+              filePath: path.join(fixtures, 'module', 'preload-location.js'),
+              matches: ['<all_urls>']
+            });
+            defer(() => ses.unregisterPreloadScript(id));
+            const locations: string[] = [];
+            ipcMain.on('preload-location', (_e, href: string) => locations.push(href));
+            defer(() => ipcMain.removeAllListeners('preload-location'));
+            const w = new BrowserWindow({ show: false, webPreferences: { sandbox, session: ses } });
+            await w.loadURL(`${url}/page`);
+            await w.loadURL('about:blank');
+            expect(locations).toEqual([`${url}/page`, 'about:blank']);
+          });
+
+          it(`filters session preloads by chrome-extension:// URL (sandbox: ${sandbox})`, async () => {
+            const server = http.createServer((_request, response) => {
+              response.writeHead(200, { 'Content-Type': 'text/html' });
+              response.end('<html></html>');
+            });
+            defer(() => server.close());
+            const { url } = await listen(server);
+            // Extensions can only be loaded into a persistent session.
+            const ses = session.fromPartition(`persist:preload-extension-filters-${crypto.randomUUID()}`);
+            const extension = await ses.extensions.loadExtension(path.join(fixtures, 'extensions', 'ui-page'));
+            defer(() => ses.extensions.removeExtension(extension.id));
+            const preload = path.join(fixtures, 'module', 'preload-location.js');
+            const ids = [
+              ses.registerPreloadScript({ type: 'frame', filePath: preload, matches: ['chrome-extension://*/*'] }),
+              ses.registerPreloadScript({
+                type: 'frame',
+                filePath: preload,
+                excludeMatches: ['chrome-extension://*/*']
+              })
+            ];
+            defer(() => ids.forEach((id) => ses.unregisterPreloadScript(id)));
+            const locations: string[] = [];
+            ipcMain.on('preload-location', (_e, href: string) => locations.push(href));
+            defer(() => ipcMain.removeAllListeners('preload-location'));
+            const w = new BrowserWindow({ show: false, webPreferences: { sandbox, session: ses } });
+            const extensionPage = `${extension.url}bare-page.html`;
+            await w.loadURL(extensionPage);
+            await w.loadURL(`${url}/page`);
+            // Each page runs exactly one of the two preloads.
+            expect(locations).toEqual([extensionPage, `${url}/page`]);
+          });
+
+          it(`matches a popup's initial empty document by its opener's origin with matchOriginAsFallback (sandbox: ${sandbox})`, async () => {
+            const server = http.createServer((_request, response) => {
+              response.writeHead(200, { 'Content-Type': 'text/html' });
+              response.end('<html></html>');
+            });
+            defer(() => server.close());
+            const { url } = await listen(server);
+            // Preload A carries the filters under test. Preload B is unfiltered
+            // and registered after it, so once B reports from a document, A has
+            // already reported from that document if it ran there.
+            const preloadA = path.join(fixtures, 'module', 'preload-window-open-a.js');
+            const preloadB = path.join(fixtures, 'module', 'preload-window-open-b.js');
+            let partitions = 0;
+            const collectFilteredPreloads = async (filters: Partial<Electron.PreloadScriptRegistration>) => {
+              const ses = session.fromPartition(`preload-origin-fallback-${sandbox}-${partitions++}`);
+              ses.registerPreloadScript({ type: 'frame', filePath: preloadA, ...filters });
+              ses.registerPreloadScript({ type: 'frame', filePath: preloadB });
+              const reports: Array<{ which: string; href: string }> = [];
+              const handler = (_e: any, which: string, href: string) => reports.push({ which, href });
+              ipcMain.on('preload-ran', handler);
+              try {
+                const w = new BrowserWindow({ show: false, webPreferences: { sandbox, session: ses } });
+                await w.loadURL(`${url}/page`);
+                await w.webContents.executeJavaScript('void window.open()');
+                await waitUntil(() => reports.some((r) => r.which === 'b' && r.href === 'about:blank'));
+              } finally {
+                ipcMain.removeListener('preload-ran', handler);
+              }
+              return reports.filter((r) => r.which === 'a').map((r) => r.href);
+            };
+            // By default the popup is matched as about:blank, whatever opened it...
+            expect(await collectFilteredPreloads({ excludeMatches: [`${url}/*`] })).toEqual(['about:blank']);
+            expect(await collectFilteredPreloads({ matches: [`${url}/*`] })).toEqual([`${url}/page`]);
+            // ...and with matchOriginAsFallback as the origin it inherited.
+            expect(
+              await collectFilteredPreloads({ excludeMatches: [`${url}/*`], matchOriginAsFallback: true })
+            ).toEqual([]);
+            expect(await collectFilteredPreloads({ matches: [`${url}/*`], matchOriginAsFallback: true })).toEqual([
+              `${url}/page`,
+              'about:blank'
+            ]);
+          });
         }
+
+        it('rejects invalid preload URL filters', () => {
+          const ses = session.fromPartition('preload-url-filters-invalid');
+          const filePath = path.join(fixtures, 'module', 'empty.js');
+          expect(() => ses.registerPreloadScript({ type: 'frame', filePath, matches: ['not a pattern'] })).toThrow(
+            /Invalid URL pattern 'not a pattern'/
+          );
+          expect(() => ses.registerPreloadScript({ type: 'frame', filePath, excludeMatches: ['https://'] })).toThrow(
+            /Invalid URL pattern/
+          );
+          expect(() => ses.registerPreloadScript({ type: 'frame', filePath, matches: [] })).toThrow(
+            /'matches' must not be empty/
+          );
+          expect(() => ses.registerPreloadScript({ type: 'frame', filePath, includeGlobs: [] })).toThrow(
+            /'includeGlobs' must not be empty/
+          );
+          expect(() =>
+            ses.registerPreloadScript({
+              type: 'frame',
+              filePath,
+              matches: ['https://example.com/path/*'],
+              matchOriginAsFallback: true
+            })
+          ).toThrow(/the path must be '\/\*' when matchOriginAsFallback is set/);
+          expect(ses.getPreloadScripts()).toHaveLength(0);
+        });
+
+        it('returns URL filters from getPreloadScripts', () => {
+          const ses = session.fromPartition('preload-url-filters-get');
+          const filters = {
+            matches: ['https://example.com/*'],
+            excludeMatches: ['https://example.com/private/*'],
+            includeGlobs: ['*foo*'],
+            excludeGlobs: ['*bar*'],
+            matchOriginAsFallback: true
+          };
+          const id = ses.registerPreloadScript({
+            type: 'frame',
+            filePath: path.join(fixtures, 'module', 'empty.js'),
+            ...filters
+          });
+          defer(() => ses.unregisterPreloadScript(id));
+          expect(ses.getPreloadScripts().find((script) => script.id === id)).toMatchObject(filters);
+        });
       });
 
       it('does not leak any node globals on the window object with nodeIntegration is disabled', async () => {
