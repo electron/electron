@@ -1,9 +1,9 @@
 /**
- * Create and minimally track guest windows at the direction of the renderer
- * (via window.open). Here, "guest" roughly means "child" — it's not necessarily
- * emblematic of its process status; both in-process (same-origin) and
- * out-of-process (cross-origin) are created here. "Embedder" roughly means
- * "parent."
+ * Create and minimally track guest windows opened by a page (window.open or
+ * a link opened into a new window). Here, "guest" roughly means "child" —
+ * it's not necessarily emblematic of its process status; both in-process
+ * (same-origin) and out-of-process (cross-origin) are created here.
+ * "Embedder" roughly means "parent."
  */
 import { parseFeatures } from '@electron/internal/browser/parse-features-string';
 
@@ -30,12 +30,10 @@ export function openGuestWindow({
   overrideBrowserWindowOptions,
   windowOpenArgs,
   outlivesOpener,
-  createWindow,
-  inheritedSandboxFlags,
-  navigate
+  createWindow
 }: {
   embedder: WebContents;
-  guest?: WebContents;
+  guest: WebContents;
   referrer: Referrer;
   disposition: string;
   postData?: PostData;
@@ -43,10 +41,6 @@ export function openGuestWindow({
   windowOpenArgs: WindowOpenArgs;
   outlivesOpener: boolean;
   createWindow?: Electron.CreateWindowFunction;
-  inheritedSandboxFlags?: number;
-  // For windows opened from a link (OpenURLFromTab): starts the navigation in
-  // the new webContents with the initiating frame's identity preserved.
-  navigate?: (webContents: WebContents) => void;
 }): void {
   const { url, frameName, features } = windowOpenArgs;
   const { options: parsedOptions } = parseFeatures(features);
@@ -58,34 +52,19 @@ export function openGuestWindow({
     ...overrideBrowserWindowOptions
   };
 
-  // When the opening frame is sandboxed without
-  // 'allow-popups-to-escape-sandbox', the new window must inherit the
-  // opener's sandbox restrictions. They are applied when the window's
-  // WebContents is created; sandbox flags can only be added this way, never
-  // cleared.
-  if (inheritedSandboxFlags) {
-    browserWindowOptions.webPreferences = {
-      ...browserWindowOptions.webPreferences,
-      openerSandboxFlags: inheritedSandboxFlags
-    };
-  }
-
   if (createWindow) {
     const webContents = createWindow({
       webContents: guest,
       ...browserWindowOptions
     });
 
-    if (guest != null) {
-      if (webContents !== guest) {
-        throw new Error(
-          'Invalid webContents. Created window should be connected to webContents passed with options object.'
-        );
-      }
-
-      handleWindowLifecycleEvents({ embedder, guest, outlivesOpener });
+    if (webContents !== guest) {
+      throw new Error(
+        'Invalid webContents. Created window should be connected to webContents passed with options object.'
+      );
     }
 
+    handleWindowLifecycleEvents({ embedder, guest, outlivesOpener });
     return;
   }
 
@@ -94,24 +73,7 @@ export function openGuestWindow({
     ...browserWindowOptions
   });
 
-  if (!guest) {
-    // When we open a new window from a link (via OpenURLFromTab),
-    // the browser process is responsible for initiating navigation
-    // in the new window.
-    if (navigate) {
-      navigate(window.webContents);
-    } else {
-      window.loadURL(url, {
-        httpReferrer: referrer,
-        ...(postData && {
-          postData,
-          extraHeaders: formatPostDataHeaders(postData as Electron.UploadRawData[])
-        })
-      });
-    }
-  }
-
-  handleWindowLifecycleEvents({ embedder, guest: window.webContents, outlivesOpener });
+  handleWindowLifecycleEvents({ embedder, guest, outlivesOpener });
 
   embedder.emit('did-create-window', window, {
     url,
@@ -195,17 +157,6 @@ export function makeWebPreferences({
     ...securityWebPreferencesFromParent,
     ...secureOverrideWebPreferences
   };
-}
-
-function formatPostDataHeaders(postData: PostData) {
-  if (!postData) return;
-
-  const { contentType, boundary } = parseContentTypeFormat(postData);
-  if (boundary != null) {
-    return `content-type: ${contentType}; boundary=${boundary}`;
-  }
-
-  return `content-type: ${contentType}`;
 }
 
 const MULTIPART_CONTENT_TYPE = 'multipart/form-data';

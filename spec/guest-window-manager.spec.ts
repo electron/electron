@@ -1,4 +1,4 @@
-import { BrowserWindow, screen } from 'electron';
+import { BrowserWindow, screen, session } from 'electron';
 
 import { afterAll, afterEach, assert, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
@@ -7,7 +7,7 @@ import * as http from 'node:http';
 import * as nodePath from 'node:path';
 
 import { HexColors, ScreenCapture, hasCapturableScreen } from './lib/screen-helpers.ts';
-import { ifit, listen } from './lib/spec-helpers.ts';
+import { ifit, listen, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('webContents.setWindowOpenHandler', () => {
@@ -139,6 +139,75 @@ describe('webContents.setWindowOpenHandler', () => {
       });
 
       await denied;
+    });
+
+    describe('window opened by middle-clicking a link', () => {
+      // These windows are opened by the browser process (OpenURLFromTab) rather
+      // than by the renderer through window.open(), but must inherit from the
+      // opener the same way.
+      let server: http.Server;
+      let url: string;
+      beforeAll(async () => {
+        server = http.createServer((req, res) => {
+          res.setHeader('Content-Type', 'text/html');
+          if (req.url === '/popup') {
+            res.end('<title>no-script</title><script>document.title = "script-ran";</script>');
+          } else {
+            res.end(
+              '<a href="/popup" style="display: block; width: 100%; height: 100%; position: fixed; left: 0; top: 0;">link</a>'
+            );
+          }
+        });
+        url = (await listen(server)).url;
+      });
+      afterAll(() => {
+        server.close();
+      });
+
+      const middleClickLink = async (opener: BrowserWindow) => {
+        let handled = false;
+        opener.webContents.setWindowOpenHandler(() => {
+          if (handled) return { action: 'deny' };
+          handled = true;
+          return { action: 'allow', overrideBrowserWindowOptions: { show: false } };
+        });
+        await opener.loadURL(`${url}/opener`);
+        const created = once(opener.webContents, 'did-create-window') as Promise<
+          [BrowserWindow, Electron.DidCreateWindowDetails]
+        >;
+        // A hidden window may drop input sent right after load, so click
+        // until the handler has seen it.
+        await waitUntil(
+          () => {
+            if (handled) return true;
+            opener.webContents.sendInputEvent({ type: 'mouseDown', x: 10, y: 10, button: 'middle', clickCount: 1 });
+            opener.webContents.sendInputEvent({ type: 'mouseUp', x: 10, y: 10, button: 'middle', clickCount: 1 });
+            return false;
+          },
+          { rate: 100 }
+        );
+        const [child, details] = await created;
+        if (child.webContents.isLoading()) await once(child.webContents, 'did-finish-load');
+        return { child, details };
+      };
+
+      it("inherits the opener's security webPreferences", async () => {
+        const opener = new BrowserWindow({ show: false, webPreferences: { javascript: false } });
+        const { child, details } = await middleClickLink(opener);
+        expect(details.options.webPreferences?.javascript).toBe(false);
+        expect(child.webContents.getLastWebPreferences()?.javascript).toBe(false);
+        expect(child.webContents.getTitle()).toBe('no-script');
+      });
+
+      it("opens in the opener's session", async () => {
+        const opener = new BrowserWindow({
+          show: false,
+          webPreferences: { partition: 'link-opened-window' }
+        });
+        expect(opener.webContents.session).not.toBe(session.defaultSession);
+        const { child } = await middleClickLink(opener);
+        expect(child.webContents.session).toBe(opener.webContents.session);
+      });
     });
 
     it('fires handler with correct params', async () => {
