@@ -318,7 +318,7 @@ index 0842cba257d0ca36e07c97736e5b24cc77f2a053..0ee1bd02a03b6d303861cd0f8353db6c
        node::InitializeOncePerProcess(
            std::vector<std::string>(argv, argv + argc),
 diff --git a/unofficial.gni b/unofficial.gni
-index fdb258adabea6607f617e374026562366c8bac0e..906869551f6ec26f353f09e72ebc4c5ecd843a15 100644
+index fdb258adabea6607f617e374026562366c8bac0e..d55f69133a3ba870c4b1dd23b6580c82ee590c77 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -32,7 +32,22 @@ template("node_gn_build") {
@@ -518,7 +518,7 @@ index fdb258adabea6607f617e374026562366c8bac0e..906869551f6ec26f353f09e72ebc4c5e
 +    ]
 +    if (node_use_openssl) {
 +      # node headers include OpenSSL headers when HAVE_OPENSSL is set.
-+      deps += [ "//third_party/boringssl" ]
++      deps += [ "$node_openssl_path" ]
 +    }
 +    sources = [ "src/node_snapshot_stub.cc" ]
 +  }
@@ -551,7 +551,7 @@ index fdb258adabea6607f617e374026562366c8bac0e..906869551f6ec26f353f09e72ebc4c5e
 +    ]
 +    if (node_use_openssl) {
 +      # node headers include OpenSSL headers when HAVE_OPENSSL is set.
-+      deps += [ "//third_party/boringssl" ]
++      deps += [ "$node_openssl_path" ]
 +    }
 +    if (node_use_node_snapshot) {
 +      _run_node_mksnapshot = ":run_node_mksnapshot($default_toolchain)"

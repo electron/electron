@@ -2385,7 +2385,7 @@ index 370001847ee8b43c0e83e516f65856c85eff3f41..60d630702b95d786d9634c0ffda40ba7
      },  # cppgc_base
      {
 diff --git a/unofficial.gni b/unofficial.gni
-index a12b7773a13c75cbb6110c218344c133c7d4f66d..dfd3a2e6af0c751636cc20aa9608501b7ccd9f4a 100644
+index ceeed26dfaeace32e9ef761a68062ce93e9277b6..dd32e6d940d50f3091a45ef2977251c0d773e5d7 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -166,6 +166,7 @@ template("node_gn_build") {
