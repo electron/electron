@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michaela Laurencin <mlaurencin@electronjs.org>
+Date: Thu, 15 Oct 2026 17:48:46 -0400
+Subject: fix: avoid updating display affinity for hidden owned windows
+
+Calling SetWindowDisplayAffinity on a hidden owned HWND can cause DWM to materialize its surface while Windows still reports it hidden.
+Skip hidden owned windows; DesktopWindowTreeHostWin::Show updates inherited affinity before making each window visible.
+
+This patch is temporary and should be removed once the fix is upstreamed in Chromium.
+Verify by checking whether ApplyAffinityToOwnedWindows skips hidden HWNDs.
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+@@ -153,7 +153,12 @@ void ApplyAffinityToOwnedWindows(HWND owner_hwnd, DWORD affinity) {
+         constexpr int kMaxOwnerDepth = 32;
+         for (int depth = 0; current_owner && depth < kMaxOwnerDepth; ++depth) {
+           if (current_owner == enum_data->owner) {
+-            ::SetWindowDisplayAffinity(hwnd, enum_data->affinity);
++            // Applying display affinity to a hidden owned window can cause DWM
++            // to materialize its surface. The window will inherit its owner's
++            // affinity when it is shown.
++            if (::IsWindowVisible(hwnd)) {
++              ::SetWindowDisplayAffinity(hwnd, enum_data->affinity);
++            }
+             break;
+           }
+           current_owner = ::GetWindow(current_owner, GW_OWNER);
