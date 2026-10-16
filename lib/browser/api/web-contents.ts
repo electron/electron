@@ -644,51 +644,6 @@ WebContents.prototype._init = function () {
   });
 
   if (this.getType() !== 'remote') {
-    // Make new windows requested by links behave like "window.open".
-    this.on(
-      '-new-window',
-      (event, url, frameName, disposition, rawFeatures, referrer, postData, sandboxFlags, navigate) => {
-        const postBody = postData
-          ? {
-              data: postData,
-              ...parseContentTypeFormat(postData)
-            }
-          : undefined;
-        const details: Electron.HandlerDetails = {
-          url,
-          frameName,
-          features: rawFeatures,
-          referrer,
-          postBody,
-          disposition
-        };
-
-        let result: ReturnType<typeof this._callWindowOpenHandler>;
-        try {
-          result = this._callWindowOpenHandler(event, details);
-        } catch (err) {
-          event.preventDefault();
-          throw err;
-        }
-
-        const options = result.browserWindowConstructorOptions;
-        if (!event.defaultPrevented) {
-          openGuestWindow({
-            embedder: this,
-            disposition,
-            referrer,
-            postData,
-            overrideBrowserWindowOptions: options || {},
-            windowOpenArgs: details,
-            outlivesOpener: result.outlivesOpener,
-            createWindow: result.createWindow,
-            inheritedSandboxFlags: sandboxFlags,
-            navigate
-          });
-        }
-      }
-    );
-
     let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
     let windowOpenOutlivesOpenerOption: boolean = false;
     let createWindow: Electron.CreateWindowFunction | undefined;
@@ -745,7 +700,8 @@ WebContents.prototype._init = function () {
       }
     });
 
-    // Create a new browser window for "window.open"
+    // Create a new browser window for window.open() and for links opened into
+    // a new window; both arrive here with the new webContents already created.
     this.on(
       '-add-new-contents',
       (
@@ -772,7 +728,12 @@ WebContents.prototype._init = function () {
         // false is the default
         windowOpenOutlivesOpenerOption = false;
 
-        if (disposition !== 'foreground-tab' && disposition !== 'new-window' && disposition !== 'background-tab') {
+        if (
+          disposition !== 'foreground-tab' &&
+          disposition !== 'new-window' &&
+          disposition !== 'background-tab' &&
+          disposition !== 'save-to-disk'
+        ) {
           event.preventDefault();
           return;
         }

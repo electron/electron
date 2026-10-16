@@ -940,14 +940,6 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Whether to enable DevTools.
   options.Get("devTools", &enable_devtools_);
 
-  // Sandbox flags this WebContents must start with, e.g. inherited from a
-  // sandboxed frame that requested the window. Sandbox flags can only be
-  // added this way, never cleared.
-  uint32_t opener_sandbox_flags = 0;
-  options.Get("openerSandboxFlags", &opener_sandbox_flags);
-  const auto starting_sandbox_flags =
-      static_cast<network::mojom::WebSandboxFlags>(opener_sandbox_flags);
-
   const bool initially_shown = options.ValueOrDefault(options::kShow, true);
 
   // Obtain the session.
@@ -998,7 +990,6 @@ WebContents::WebContents(v8::Isolate* isolate,
     bool transparent = bc == SK_ColorTRANSPARENT;
 
     content::WebContents::CreateParams params{browser_context};
-    params.starting_sandbox_flags = starting_sandbox_flags;
     auto* view = new OffScreenWebContentsView(
         transparent, offscreen_use_shared_texture_,
         offscreen_shared_texture_pixel_format_, offscreen_device_scale_factor_,
@@ -1010,7 +1001,6 @@ WebContents::WebContents(v8::Isolate* isolate,
     view->SetWebContents(web_contents.get());
   } else {
     content::WebContents::CreateParams params{browser_context};
-    params.starting_sandbox_flags = starting_sandbox_flags;
     params.initially_hidden = !initially_shown;
     base::AutoReset<bool> reset(
         ElectronBrowserClient::Get()->spare_renderer_compatible(),
@@ -1349,30 +1339,31 @@ void WebContents::OnDidAddMessageToConsole(
   EmitWithoutEvent("-console-message", event_object);
 }
 
-void WebContents::OnCreateWindow(
-    const GURL& target_url,
-    const content::Referrer& referrer,
-    const std::string& frame_name,
-    WindowOpenDisposition disposition,
-    const std::string& features,
-    const scoped_refptr<network::ResourceRequestBody>& body) {
-  Emit("-new-window", target_url, frame_name, disposition, features, referrer,
-       body);
-}
-
 void WebContents::WebContentsCreatedWithFullParams(
     content::WebContents* source_contents,
     int opener_render_process_id,
     int opener_render_frame_id,
     const content::mojom::CreateNewWindowParams& params,
     content::WebContents* new_contents) {
+  AdoptChildWebContents(new_contents, params.target_url, params.frame_name,
+                        params.referrer.To<content::Referrer>(),
+                        params.raw_features, params.body);
+}
+
+void WebContents::AdoptChildWebContents(
+    content::WebContents* new_contents,
+    const GURL& url,
+    const std::string& frame_name,
+    const content::Referrer& referrer,
+    const std::string& raw_features,
+    const scoped_refptr<network::ResourceRequestBody>& body) {
   ChildWebContentsTracker::CreateForWebContents(new_contents);
   auto* tracker = ChildWebContentsTracker::FromWebContents(new_contents);
-  tracker->url = params.target_url;
-  tracker->frame_name = params.frame_name;
-  tracker->referrer = params.referrer.To<content::Referrer>();
-  tracker->raw_features = params.raw_features;
-  tracker->body = params.body;
+  tracker->url = url;
+  tracker->frame_name = frame_name;
+  tracker->referrer = referrer;
+  tracker->raw_features = raw_features;
+  tracker->body = body;
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
@@ -1499,6 +1490,8 @@ content::WebContents* WebContents::AddNewContents(
            window_features.bounds.width(), window_features.bounds.height(),
            tracker->url, tracker->frame_name, tracker->referrer,
            tracker->raw_features, tracker->body)) {
+    if (was_blocked)
+      *was_blocked = true;
     // Destroy() may synchronously `delete this`, so drop the handle's
     // reference first. Otherwise it is left dangling until the handle goes
     // out of scope below.
@@ -1522,7 +1515,7 @@ content::WebContents* WebContents::OpenURLFromTab(
     // and is subject to the same embedder policy; see
     // ElectronBrowserClient::CanCreateWindow.
     auto* source_preferences = WebContentsPreferences::From(source);
-    if (source_preferences && source_preferences->ShouldDisablePopups())
+    if (!source_preferences || source_preferences->ShouldDisablePopups())
       return nullptr;
 
     using SandboxFlags = network::mojom::WebSandboxFlags;
@@ -1557,31 +1550,7 @@ content::WebContents* WebContents::OpenURLFromTab(
         inherited_sandbox_flags = flags;
       }
     }
-    // The new window's first navigation keeps the initiator's identity
-    // (origin, frame, site instance, user gesture) instead of being re-issued
-    // as a browser-initiated load, so Sec-Fetch-Site / SameSite, external
-    // protocol attribution and navigation events describe who asked for it.
-    auto navigate = base::BindRepeating(
-        [](const content::OpenURLParams& params, content::WebContents* target) {
-          if (!target)
-            return;
-          content::NavigationController::LoadURLParams load_params(params);
-          // The initiator may live in a different session than the window the
-          // app created; a SiteInstance cannot cross browser contexts.
-          if (load_params.source_site_instance &&
-              load_params.source_site_instance->GetBrowserContext() !=
-                  target->GetBrowserContext()) {
-            load_params.source_site_instance = nullptr;
-          }
-          load_params.frame_tree_node_id = {};
-          load_params.override_user_agent =
-              content::NavigationController::UA_OVERRIDE_INHERIT;
-          target->GetController().LoadURLWithParams(load_params);
-        },
-        params);
-    Emit("-new-window", params.url, "", params.disposition, "", params.referrer,
-         params.post_data, static_cast<uint32_t>(inherited_sandbox_flags),
-         navigate);
+    OpenURLInNewWebContents(source, params, inherited_sandbox_flags);
     return nullptr;
   }
 
@@ -1613,6 +1582,55 @@ content::WebContents* WebContents::OpenURLFromTab(
 
   source->GetController().LoadURLWithParams(load_url_params);
   return source;
+}
+
+void WebContents::OpenURLInNewWebContents(
+    content::WebContents* source,
+    const content::OpenURLParams& params,
+    network::mojom::WebSandboxFlags sandbox_flags) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  auto weak_this = GetWeakPtr();
+
+  // Build the window the way a renderer-created popup is built
+  // (OnWillCreateWindow -> WebContentsCreatedWithFullParams ->
+  // AddNewContents): the app's window-open handler decides first and leaves
+  // the child's webPreferences behind, the child is created in the opener's
+  // browser context with those preferences, and only then is it handed to JS.
+  pending_child_web_preferences_.Reset();
+  if (Emit("-will-add-new-contents", params.url, "", "", params.disposition,
+           params.referrer, params.post_data) ||
+      !weak_this) {
+    if (weak_this)
+      pending_child_web_preferences_.Reset();
+    return;
+  }
+
+  content::WebContents::CreateParams create_params(source->GetBrowserContext());
+  create_params.starting_sandbox_flags = sandbox_flags;
+  MaybeOverrideCreateParamsForNewWindow(&create_params);
+  std::unique_ptr<content::WebContents> new_contents =
+      content::WebContents::Create(create_params);
+  AdoptChildWebContents(new_contents.get(), params.url, "", params.referrer, "",
+                        params.post_data);
+
+  bool was_blocked = false;
+  base::WeakPtr<content::WebContents> target = new_contents->GetWeakPtr();
+  AddNewContents(source, std::move(new_contents), params.url,
+                 params.disposition, *blink::mojom::WindowFeatures::New(),
+                 params.user_gesture, &was_blocked);
+  if (was_blocked || !target)
+    return;
+
+  // The first navigation keeps the initiator's identity (origin, frame, site
+  // instance, user gesture) instead of being re-issued as a browser-initiated
+  // load, so Sec-Fetch-Site / SameSite, external protocol attribution and
+  // navigation events describe who asked for it.
+  content::NavigationController::LoadURLParams load_params(params);
+  load_params.frame_tree_node_id = {};
+  load_params.override_user_agent =
+      content::NavigationController::UA_OVERRIDE_INHERIT;
+  target->GetController().LoadURLWithParams(load_params);
 }
 
 void WebContents::BeforeUnloadFired(content::WebContents* tab,

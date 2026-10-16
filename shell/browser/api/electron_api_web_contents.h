@@ -33,6 +33,7 @@
 #include "content/public/common/stop_find_action.h"
 #include "electron/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
+#include "services/network/public/mojom/web_sandbox_flags.mojom-forward.h"
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/extended_web_contents_observer.h"
@@ -352,14 +353,6 @@ class WebContents final : public ExclusiveAccessContext,
       const blink::mojom::FullscreenOptions& options,
       bool allowed);
 
-  // Create window with the given disposition.
-  void OnCreateWindow(const GURL& target_url,
-                      const content::Referrer& referrer,
-                      const std::string& frame_name,
-                      WindowOpenDisposition disposition,
-                      const std::string& features,
-                      const scoped_refptr<network::ResourceRequestBody>& body);
-
   // Returns the preload script of current WebContents.
   std::optional<PreloadScript> GetPreloadScript() const;
 
@@ -567,6 +560,20 @@ class WebContents final : public ExclusiveAccessContext,
       const content::OpenURLParams& params,
       base::OnceCallback<void(content::NavigationHandle&)>
           navigation_handle_callback) override;
+  // Opens |params| in a new WebContents created in |source|'s browser context,
+  // going through the same app hooks as a renderer-created popup.
+  void OpenURLInNewWebContents(content::WebContents* source,
+                               const content::OpenURLParams& params,
+                               network::mojom::WebSandboxFlags sandbox_flags);
+  // Records what a child WebContents was opened with and attaches the
+  // webPreferences the app's window-open handler left for it.
+  void AdoptChildWebContents(
+      content::WebContents* new_contents,
+      const GURL& url,
+      const std::string& frame_name,
+      const content::Referrer& referrer,
+      const std::string& raw_features,
+      const scoped_refptr<network::ResourceRequestBody>& body);
   void BeforeUnloadFired(content::WebContents* tab,
                          bool proceed,
                          bool* proceed_to_fire_unload) override;
