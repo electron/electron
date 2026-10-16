@@ -1,0 +1,205 @@
+// Copyright (c) 2026 Anthropic, PBC.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
+module electron.mojom;
+
+import "components/remote_cocoa/common/application.mojom";
+import "mojo/public/mojom/base/file_path.mojom";
+import "mojo/public/mojom/base/string16.mojom";
+import "ui/gfx/geometry/mojom/geometry.mojom";
+import "ui/gfx/image/mojom/image.mojom";
+import "url/mojom/url.mojom";
+
+enum AppShimAttentionType {
+  kCancel,
+  kInformational,
+  kCritical,
+};
+
+// How much of the accessibility tree an assistive technology that is looking
+// at the shim needs. kPartial is the native controls; kComplete adds web
+// content, which a screen reader needs.
+enum AppShimAccessibilityMode {
+  kPartial,
+  kComplete,
+};
+
+// electron::MessageBoxSettings, less the parent window.
+struct AppShimMessageBoxOptions {
+  // An electron::MessageBoxType.
+  int32 type;
+  array<string> buttons;
+  int32 default_id;
+  int32 cancel_id;
+  string message;
+  string detail;
+  string checkbox_label;
+  bool checkbox_checked;
+  gfx.mojom.ImageSkia? icon;
+  int32 text_width;
+  // What AppShim.CloseMessageBox names the box by, when it has one.
+  bool has_id;
+  int32 id;
+};
+
+struct AppShimFileDialogFilter {
+  string name;
+  array<string> extensions;
+};
+
+// file_dialog::DialogSettings, less the parent window.
+struct AppShimFileDialogOptions {
+  string title;
+  string message;
+  string button_label;
+  string name_field_label;
+  mojo_base.mojom.FilePath default_path;
+  array<AppShimFileDialogFilter> filters;
+  // file_dialog::OpenFileDialogProperty or SaveFileDialogProperty bits.
+  int32 properties;
+  bool shows_tag_field;
+};
+
+// What a window was created with that remote_cocoa has no call for. Sent
+// once, right after the window is made.
+struct AppShimWindowChrome {
+  bool has_frame;
+  // An electron::NativeWindow::TitleBarStyle.
+  int32 title_bar_style;
+  gfx.mojom.Point? traffic_light_position;
+  int32 titlebar_overlay_height;
+  // Null for a window that takes no part in tabbing.
+  string? tabbing_identifier;
+};
+
+enum AppShimTabAction {
+  kSelectPrevious,
+  kSelectNext,
+  kShowAll,
+  kMergeAll,
+  kMoveToNewWindow,
+  kToggleTabBar,
+};
+
+// One item of a menu, as an ElectronMenuModel describes it.
+struct AppShimMenuItem {
+  // A ui::MenuModel::ItemType.
+  int32 type;
+  int32 command_id;
+  mojo_base.mojom.String16 label;
+  mojo_base.mojom.String16 secondary_label;
+  mojo_base.mojom.String16 tool_tip;
+  mojo_base.mojom.String16 accessibility_label;
+  mojo_base.mojom.String16 role;
+  mojo_base.mojom.String16 custom_type;
+  gfx.mojom.ImageSkia? icon;
+  // A ui::Accelerator: a ui::KeyboardCode, ui::EventFlags, and the shifted
+  // character if the accelerator names one (0 if not).
+  bool has_accelerator;
+  int32 accelerator_key_code;
+  int32 accelerator_modifiers;
+  uint16 accelerator_shifted_char;
+  bool register_accelerator;
+  bool works_when_hidden;
+  bool checked;
+  bool enabled;
+  bool visible;
+  int32 group_id;
+  array<AppShimMenuItem>? submenu;
+};
+
+// Implemented by the app shim process and called by the browser process.
+interface AppShim {
+  // Binds the remote_cocoa application through which the browser process
+  // creates the NSWindows and NSViews that this shim hosts.
+  CreateRemoteCocoaApplication(
+      pending_associated_receiver<remote_cocoa.mojom.Application> application);
+
+  // Sets the label on the shim's Dock tile. An empty label clears it.
+  SetBadgeLabel(string label);
+
+  // Bounces, or stops bouncing, the shim's Dock tile.
+  SetUserAttention(AppShimAttentionType type);
+
+  // Terminates the shim process.
+  Quit();
+
+  // Answers AppShimHost.QuitRequested with "keep running".
+  CancelQuit();
+
+  // The menu bar to show while the shim is the active app, which is the
+  // shim's own and not the browser's. The browser sends it again whenever an
+  // item's state may have changed. Null puts back the short menu that the
+  // shim builds for itself.
+  SetApplicationMenu(array<AppShimMenuItem>? items);
+
+  // The parts of the window API that act on the NSWindow itself and that
+  // remote_cocoa has no call for. `window_id` is the remote_cocoa id of the
+  // window; a call for a window that is gone does nothing.
+  InitWindowChrome(uint64 window_id, AppShimWindowChrome chrome);
+  SetWindowButtonVisibility(uint64 window_id, bool visible);
+  SetWindowButtonPosition(uint64 window_id, gfx.mojom.Point? position);
+  // An empty `type` removes the effect. `state` is an
+  // NSVisualEffectState.
+  SetWindowVibrancy(
+      uint64 window_id, string type, int32 duration_ms, int32 state);
+  PerformWindowTabAction(uint64 window_id, AppShimTabAction action);
+  AddTabbedWindow(uint64 window_id, uint64 tabbed_window_id);
+  PreviewFile(
+      uint64 window_id, mojo_base.mojom.FilePath path, string display_name);
+  CloseFilePreview(uint64 window_id);
+
+  // Dialogs that are sheets of one of the shim's windows, which only the
+  // shim's process can show. `window_id` is the remote_cocoa id of the
+  // window; the dialog is cancelled when no such window is left.
+  ShowMessageBox(uint64 window_id, AppShimMessageBoxOptions options)
+      => (int32 response, bool checkbox_checked);
+  CloseMessageBox(int32 id);
+  ShowOpenDialog(uint64 window_id, AppShimFileDialogOptions options)
+      => (bool canceled, array<mojo_base.mojom.FilePath> paths);
+  ShowSaveDialog(uint64 window_id, AppShimFileDialogOptions options)
+      => (bool canceled, mojo_base.mojom.FilePath path);
+};
+
+// Implemented by the browser process and called by the app shim process.
+interface AppShimHost {
+  // The shim's Dock tile was clicked, or it was opened again while running.
+  ReopenApp(bool has_visible_windows);
+
+  // The shim was asked to open files or URLs.
+  FilesOpened(array<mojo_base.mojom.FilePath> files);
+  UrlsOpened(array<url.mojom.Url> urls);
+
+  // An assistive technology started looking at the shim. The accessibility
+  // tree of its windows is built in the browser process, which must turn it
+  // on.
+  EnableAccessibilitySupport(AppShimAccessibilityMode mode);
+
+  // An item of the menu from AppShim.SetApplicationMenu was chosen. `path`
+  // is the index of the item in each menu on the way to it, from the menu
+  // bar down; `command_id` is the item's, so that the browser can tell when
+  // its menu has changed since.
+  MenuItemActivated(array<uint32> path, int32 command_id, int32 event_flags);
+  // A menu of the menu bar is about to open, or has closed.
+  MenuWillShow();
+  MenuWillClose();
+  // The "+" of a window's tab bar was clicked.
+  NewWindowForTab(uint64 window_id);
+
+  // The shim became the active app, which is a good moment for the browser
+  // to send the menu again.
+  DidBecomeActive();
+
+  // The person, or the system at logout, asked the shim to quit. The browser
+  // answers with AppShim.Quit or AppShim.CancelQuit; the shim quits by
+  // itself if neither comes soon.
+  QuitRequested();
+};
+
+// The first interface served on the connection a shim makes to the browser.
+interface AppShimHostBootstrap {
+  // `app_shim_receiver` is null when the browser turns the shim away.
+  OnShimConnected(pending_receiver<AppShimHost> host_receiver)
+      => (pending_receiver<AppShim>? app_shim_receiver);
+};
