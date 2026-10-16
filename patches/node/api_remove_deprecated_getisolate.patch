@@ -85,7 +85,7 @@ index cc60ddddb037e0279615bbe24821eb20fd8da677..37d83e41b618a07aca98118260abe961
  
    return handle;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 114b0c920882dd267f057c6414563c57e91eb236..ec217aadc4a34ce09742c3b9490634727f387c1d 100644
+index 57e4bc771fafc2eee2c13ff0d35295d9c3d6fd67..c78551c250acb14a988677aa6bf6949068a7fe41 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -1174,7 +1174,7 @@ bool ArrayOfStringsToX509s(Local<Context> context,
@@ -98,7 +98,7 @@ index 114b0c920882dd267f057c6414563c57e91eb236..ec217aadc4a34ce09742c3b949063472
    uint32_t array_length = cert_array->Length();
  
 diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
-index 1bf003f830812664ad903dbdfe30366835767c0b..337cd5899f9ced88e9d2eda61ba194b7f70b910a 100644
+index fbca682b804a0a1b7e688d01359c20a416584f15..624102e31b593e0b72872f53d5cfd46d0f54d6e2 100644
 --- a/src/crypto/crypto_x509.cc
 +++ b/src/crypto/crypto_x509.cc
 @@ -109,7 +109,7 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, BIOPointer&& bio) {

@@ -379,7 +379,7 @@ index 3765d931f8e17b33e2201ff3a0e4be84a3216356..17b990455e7d6a791998ab304418c256
 +
  #endif  // SRC_TRACING_TRACE_EVENT_PERFETTO_H_
 diff --git a/unofficial.gni b/unofficial.gni
-index 52ce63a777b0f470a579a09082e61fdc9a209c5f..95feec90c1b21d0d4f4d0f7d700dd89f53f41aff 100644
+index 2db9a1644b2e639b7af8b8dbd5025ec3338fdc22..1818802a7a702f343416ed7695093643de433fd7 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -52,6 +52,11 @@ template("node_gn_build") {
