@@ -30,13 +30,16 @@
 #include "base/task/sequenced_task_runner.h"
 #include "components/remote_cocoa/browser/application_host.h"
 #include "content/public/browser/browser_accessibility_state.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/scoped_accessibility_mode.h"
 #include "gin/arguments.h"
 #include "gin/object_template_builder.h"
+#include "gin/per_isolate_data.h"
 #include "mojo/public/cpp/bindings/pending_associated_receiver.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "shell/browser/app_shim/app_shim_listener.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -136,14 +139,19 @@ base::FilePath PathOfCode(SecCodeRef code) {
 // and the remote_cocoa application its windows are made through. It keeps the
 // wrapper alive while the shim is connected, so a shim nobody holds on to in
 // JavaScript still gets its events and keeps its windows.
-class AppShimHost::Connection final : public NativePeer<AppShimHost>,
-                                      public mojom::AppShimHost {
+//
+// It is not on the cppgc heap: the wrapper's destructor runs while the heap is
+// swept, where nothing here could be torn down, so the wrapper only posts the
+// deletion of this to the UI thread.
+class AppShimHost::Connection final
+    : public gin::PerIsolateData::DisposeObserver,
+      public mojom::AppShimHost {
  public:
   Connection(api::AppShimHost* wrapper,
              std::unique_ptr<AppShimHostBootstrap> bootstrap,
              mojo::PendingReceiver<mojom::AppShimHost> host_receiver,
              mojo::PendingRemote<mojom::AppShim> app_shim)
-      : NativePeer<api::AppShimHost>(wrapper),
+      : wrapper_(wrapper),
         keep_alive_(wrapper),
         audit_token_(bootstrap->audit_token()),
         code_(CodeForAuditToken(audit_token_)),
@@ -151,7 +159,8 @@ class AppShimHost::Connection final : public NativePeer<AppShimHost>,
         bootstrap_(std::move(bootstrap)),
         receiver_(this, std::move(host_receiver)),
         app_shim_(std::move(app_shim)) {
-    StartObservingShutdown();
+    gin::PerIsolateData::From(JavascriptEnvironment::GetIsolate())
+        ->AddDisposeObserver(this);
 
     if (NSBundle* bundle = [NSBundle
             bundleWithPath:base::apple::FilePathToNSString(bundle_path_)]) {
@@ -175,6 +184,15 @@ class AppShimHost::Connection final : public NativePeer<AppShimHost>,
         &application_receiver, std::string());
     application_host_->set_pid(pid());
     app_shim_->CreateRemoteCocoaApplication(std::move(application_receiver));
+  }
+
+  ~Connection() override {
+    // The wrapper is not collected while the shim is connected, so all that
+    // may be left to undo is the registration.
+    if (observing_dispose_) {
+      gin::PerIsolateData::From(JavascriptEnvironment::GetIsolate())
+          ->RemoveDisposeObserver(this);
+    }
   }
 
   // The menu bar the shim shows while it is the active app. Without one it
@@ -236,7 +254,11 @@ class AppShimHost::Connection final : public NativePeer<AppShimHost>,
   }
 
  private:
-  ~Connection() override = default;
+  // Empty once the wrapper is unreachable or the app is shutting down. What it
+  // returns keeps the wrapper alive while its listeners run.
+  cppgc::Persistent<api::AppShimHost> wrapper() const {
+    return cppgc::Persistent<api::AppShimHost>(wrapper_.Get());
+  }
 
   void ApplyAccessibilityMode() {
     if (!hosts_window_ || !wanted_accessibility_mode_ || !connected_)
@@ -267,11 +289,18 @@ class AppShimHost::Connection final : public NativePeer<AppShimHost>,
     return true;
   }
 
-  // NativePeerBase:
-  void TearDownNative() override {
+  // gin::PerIsolateData::DisposeObserver:
+  void OnBeforeDispose(v8::Isolate* isolate) override {}
+  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override {
+    gin::PerIsolateData::From(isolate)->RemoveDisposeObserver(this);
+    observing_dispose_ = false;
+    // While V8 can still run: the windows that close here say so to
+    // JavaScript.
     TearDownConnection();
     keep_alive_.Clear();
+    wrapper_.Clear();
   }
+  void OnDisposed() override {}
 
   // mojom::AppShimHost:
   void ReopenApp(bool has_visible_windows) override {
@@ -350,7 +379,9 @@ class AppShimHost::Connection final : public NativePeer<AppShimHost>,
       app_shim_->CancelQuit();
   }
 
+  cppgc::WeakPersistent<api::AppShimHost> wrapper_;
   cppgc::Persistent<api::AppShimHost> keep_alive_;
+  bool observing_dispose_ = true;
   const audit_token_t audit_token_;
   const base::apple::ScopedCFTypeRef<SecCodeRef> code_;
   const base::FilePath bundle_path_;
@@ -396,10 +427,11 @@ AppShimHost::AppShimHost(
     mojo::PendingReceiver<mojom::AppShimHost> host_receiver,
     mojo::PendingRemote<mojom::AppShim> app_shim)
     : connection_(
-          NativePeer<AppShimHost>::Create<Connection>(this,
-                                                      std::move(bootstrap),
-                                                      std::move(host_receiver),
-                                                      std::move(app_shim))) {}
+          new Connection(this,
+                         std::move(bootstrap),
+                         std::move(host_receiver),
+                         std::move(app_shim)),
+          base::OnTaskRunnerDeleter(content::GetUIThreadTaskRunner({}))) {}
 
 AppShimHost::~AppShimHost() = default;
 

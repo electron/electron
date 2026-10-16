@@ -746,7 +746,7 @@ bool NativeWindowMacRemote::HasShadow() const {
 }
 
 void NativeWindowMacRemote::SetOpacity(const double opacity) {
-  opacity_ = ClampOpacity(opacity);
+  opacity_ = std::clamp(opacity, 0.0, 1.0);
   widget()->SetOpacity(opacity_);
 }
 
