@@ -131,6 +131,7 @@
 #include "shell/browser/file_system_access/file_system_access_web_contents_helper.h"
 #include "shell/browser/microtasks_runner.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/osr/osr_paint_event.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_web_contents_view.h"
 #include "shell/browser/renderer_startup_data.h"

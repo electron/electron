@@ -529,6 +529,7 @@ filenames = {
     "shell/browser/osr/osr_host_display_client.h",
     "shell/browser/osr/osr_paint_event.cc",
     "shell/browser/osr/osr_paint_event.h",
+    "shell/browser/osr/osr_paint_event_fwd.h",
     "shell/browser/osr/osr_render_widget_host_view.cc",
     "shell/browser/osr/osr_render_widget_host_view.h",
     "shell/browser/osr/osr_video_consumer.cc",
