@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "base/containers/flat_set.h"
@@ -16,6 +17,7 @@
 #include "base/synchronization/lock.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
+#include "services/network/public/mojom/network_context.mojom-forward.h"
 #include "services/network/public/mojom/url_loader.mojom-forward.h"
 #include "services/network/public/mojom/url_loader_factory.mojom-forward.h"
 
@@ -36,11 +38,17 @@ struct MutableNetworkTrafficAnnotationTag;
 namespace electron {
 
 class ElectronBrowserContext;
+class HeaderRules;
 
 // The webRequest resource type of a renderer request, as WebRequestInfo would
 // compute it. Unlike the URL it cannot change across redirects.
 extensions::WebRequestResourceType ResourceTypeOf(
     const network::ResourceRequest& request);
+
+// The names Electron's webRequest API uses for resource types ('xhr',
+// 'mainFrame', ...); OTHER for anything unknown.
+extensions::WebRequestResourceType ParseResourceTypeName(std::string_view name);
+std::string_view ResourceTypeName(extensions::WebRequestResourceType type);
 
 constexpr uint32_t kAllResourceTypes = ~0u;
 
@@ -62,6 +70,10 @@ class InterceptState : public base::RefCountedThreadSafe<InterceptState> {
 
   Route RouteFor(const network::ResourceRequest& request) const;
 
+  // session.webRequest.setHeaderRules(); null when there are none.
+  void SetHeaderRules(scoped_refptr<const HeaderRules> rules);
+  scoped_refptr<const HeaderRules> header_rules() const;
+
  private:
   friend class base::RefCountedThreadSafe<InterceptState>;
   ~InterceptState();
@@ -73,6 +85,7 @@ class InterceptState : public base::RefCountedThreadSafe<InterceptState> {
   uint32_t observer_types_ GUARDED_BY(lock_) = 0;
   base::flat_set<std::string> intercepted_schemes_ GUARDED_BY(lock_);
   std::vector<std::string> ignore_connections_limit_domains_ GUARDED_BY(lock_);
+  scoped_refptr<const HeaderRules> header_rules_ GUARDED_BY(lock_);
 };
 
 // Starts a request on the IO thread with both URLLoader endpoints proxied so
@@ -91,15 +104,22 @@ void CreateObservedLoaderAndStartOnIO(
 
 // Bound on the IO thread between a renderer's factory pipe and the network:
 // requests go straight to `target` unless `state` wants them on the UI thread,
-// in which case `interceptor` (a ProxyingURLLoaderFactory) gets them. Lives as
-// long as its receivers and both remotes do.
+// in which case `interceptor` (a ProxyingURLLoaderFactory) gets them. When the
+// factory has a trusted header client, the gate answers it for the requests it
+// sent direct (applying the session's header rules on the IO thread) and
+// forwards it to `interceptor_header_client` for the rest. Lives as long as
+// its receivers and both remotes do.
 void CreateURLLoaderFactoryGate(
     ElectronBrowserContext* browser_context,
     int render_process_id,
     int frame_routing_id,
     mojo::PendingReceiver<network::mojom::URLLoaderFactory> receiver,
     mojo::PendingRemote<network::mojom::URLLoaderFactory> target,
-    mojo::PendingRemote<network::mojom::URLLoaderFactory> interceptor);
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> interceptor,
+    mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
+        header_client,
+    mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>
+        interceptor_header_client);
 
 }  // namespace electron
 
