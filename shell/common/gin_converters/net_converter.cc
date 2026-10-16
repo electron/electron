@@ -199,11 +199,20 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
     net::HttpResponseHeaders* out) {
+  std::vector<std::string> invalid_headers;
+  return FromV8(isolate, val, out, invalid_headers);
+}
+
+bool Converter<net::HttpResponseHeaders*>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    net::HttpResponseHeaders* out,
+    std::vector<std::string>& invalid_headers) {
   if (!val->IsObject()) {
     return false;
   }
 
-  auto addHeaderFromValue = [&isolate, &out](
+  auto addHeaderFromValue = [&isolate, &out, &invalid_headers](
                                 const std::string& key,
                                 const v8::Local<v8::Value>& localVal) {
     auto context = isolate->GetCurrentContext();
@@ -215,7 +224,9 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
     gin::ConvertFromV8(isolate, localStrVal, &value);
     if (!net::HttpUtil::IsValidHeaderName(key) ||
         !net::HttpUtil::IsValidHeaderValue(value)) {
-      return false;
+      if (invalid_headers.empty() || invalid_headers.back() != key)
+        invalid_headers.push_back(key);
+      return true;
     }
     out->AddHeader(key, value);
     return true;
@@ -224,7 +235,12 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
   auto context = isolate->GetCurrentContext();
   auto headers = val.As<v8::Object>();
   v8::Local<v8::Array> keys;
-  if (!headers->GetOwnPropertyNames(context).ToLocal(&keys)) {
+  if (!headers
+           ->GetOwnPropertyNames(context,
+                                 static_cast<v8::PropertyFilter>(
+                                     v8::ONLY_ENUMERABLE | v8::SKIP_SYMBOLS),
+                                 v8::KeyConversionMode::kConvertToString)
+           .ToLocal(&keys)) {
     return false;
   }
   for (uint32_t i = 0; i < keys->Length(); i++) {
@@ -272,6 +288,16 @@ v8::Local<v8::Value> Converter<net::HttpRequestHeaders>::ToV8(
 bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
                                                 v8::Local<v8::Value> val,
                                                 net::HttpRequestHeaders* out) {
+  std::vector<std::string> invalid_headers;
+  return FromV8(isolate, val, out, invalid_headers);
+}
+
+// static
+bool Converter<net::HttpRequestHeaders>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    net::HttpRequestHeaders* out,
+    std::vector<std::string>& invalid_headers) {
   if (!val->IsObject() || val->IsArray() || val->IsFunction())
     return false;
   auto context = isolate->GetCurrentContext();
@@ -289,16 +315,26 @@ bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
     v8::Local<v8::Value> v8key;
     if (!keys->Get(context, i).ToLocal(&v8key))
       return false;
-    v8::TryCatch try_catch{isolate};
+    if (!gin::ConvertFromV8(isolate, v8key, &key))
+      return false;
     v8::Local<v8::Value> v8value;
-    if (!obj->Get(context, v8key).ToLocal(&v8value) || !v8value->IsString())
+    if (!obj->Get(context, v8key).ToLocal(&v8value))
+      return false;
+    if (v8value->IsNullOrUndefined())
       continue;
-    if (!gin::ConvertFromV8(isolate, v8key, &key) ||
-        !gin::ConvertFromV8(isolate, v8value, &value))
+    if (v8value->IsObject()) {
+      invalid_headers.push_back(key);
+      continue;
+    }
+    v8::Local<v8::String> v8str;
+    if (!v8value->ToString(context).ToLocal(&v8str) ||
+        !gin::ConvertFromV8(isolate, v8str, &value))
       return false;
     if (net::HttpUtil::IsValidHeaderName(key) &&
         net::HttpUtil::IsValidHeaderValue(value))
       out->SetHeader(key, std::move(value));
+    else
+      invalid_headers.push_back(key);
   }
   return true;
 }
