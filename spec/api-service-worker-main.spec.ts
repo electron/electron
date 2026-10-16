@@ -534,5 +534,40 @@ describe('ServiceWorkerMain module', () => {
       expect(result.id).toBe(extension.id);
       expect(result.manifest).toEqual(result.manifest);
     });
+
+    it('runs a preload filtered to chrome-extension:// scopes', async () => {
+      ses.registerPreloadScript({
+        type: 'service-worker',
+        filePath: path.resolve(preloadRealmFixtures, 'preload-send-ping.js'),
+        matches: ['chrome-extension://*/*']
+      });
+      const serviceWorkerPromise = waitForServiceWorker();
+      ses.extensions.loadExtension(testExtensionFixture);
+      const serviceWorker = await serviceWorkerPromise;
+      await once(serviceWorker.ipc, 'ping');
+    });
+
+    it('skips a preload that excludes chrome-extension:// scopes', async () => {
+      ses.registerPreloadScript({
+        type: 'service-worker',
+        filePath: path.resolve(preloadRealmFixtures, 'preload-send-ping.js'),
+        excludeMatches: ['chrome-extension://*/*']
+      });
+      registerPreload('preload-tests.js');
+      let pingReceived = false;
+      serviceWorkers.on('running-status-changed', ({ versionId, runningStatus }) => {
+        if (runningStatus !== 'starting') return;
+        serviceWorkers.getWorkerFromVersionID(versionId)?.ipc.on('ping', () => {
+          pingReceived = true;
+        });
+      });
+      ses.extensions.loadExtension(testExtensionFixture);
+      const serviceWorker = await waitForServiceWorker('running');
+      expect(serviceWorker.scope).to.match(/^chrome-extension:\/\//);
+      const pongPromise = once(serviceWorker.ipc, 'pong');
+      runTest(serviceWorker, { name: 'testSend', args: ['pong'] });
+      await pongPromise;
+      expect(pingReceived).to.be.false();
+    });
   });
 });

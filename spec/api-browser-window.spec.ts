@@ -4446,6 +4446,38 @@ describe('BrowserWindow module', () => {
             await w.loadURL('about:blank');
             expect(locations).to.deep.equal([`${url}/page`, 'about:blank']);
           });
+
+          it(`filters session preloads by chrome-extension:// URL (sandbox: ${sandbox})`, async () => {
+            const server = http.createServer((_request, response) => {
+              response.writeHead(200, { 'Content-Type': 'text/html' });
+              response.end('<html></html>');
+            });
+            defer(() => server.close());
+            const { url } = await listen(server);
+            // Extensions can only be loaded into a persistent session.
+            const ses = session.fromPartition(`persist:preload-extension-filters-${crypto.randomUUID()}`);
+            const extension = await ses.extensions.loadExtension(path.join(fixtures, 'extensions', 'ui-page'));
+            defer(() => ses.extensions.removeExtension(extension.id));
+            const preload = path.join(fixtures, 'module', 'preload-location.js');
+            const ids = [
+              ses.registerPreloadScript({ type: 'frame', filePath: preload, matches: ['chrome-extension://*/*'] }),
+              ses.registerPreloadScript({
+                type: 'frame',
+                filePath: preload,
+                excludeMatches: ['chrome-extension://*/*']
+              })
+            ];
+            defer(() => ids.forEach((id) => ses.unregisterPreloadScript(id)));
+            const locations: string[] = [];
+            ipcMain.on('preload-location', (_e, href: string) => locations.push(href));
+            defer(() => ipcMain.removeAllListeners('preload-location'));
+            const w = new BrowserWindow({ show: false, webPreferences: { sandbox, session: ses } });
+            const extensionPage = `${extension.url}bare-page.html`;
+            await w.loadURL(extensionPage);
+            await w.loadURL(`${url}/page`);
+            // Each page runs exactly one of the two preloads.
+            expect(locations).to.deep.equal([extensionPage, `${url}/page`]);
+          });
         }
 
         it('rejects invalid preload URL filters', () => {
