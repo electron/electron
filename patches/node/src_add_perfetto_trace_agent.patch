@@ -10,7 +10,7 @@ Reviewed-By: James M Snell <jasnell@gmail.com>
 Reviewed-By: Ryuhei Shima <shimaryuhei@gmail.com>
 
 diff --git a/node.gyp b/node.gyp
-index a5c17ed75b5513fdba2a5ea0d9fb7b259041da75..83508bde4111861b6fab2b4d679cc2dd8225c88d 100644
+index 1e2d3666134984bb0aa4e3c4325b891344e7620f..1debcde88911e0c5c5165260285b63c8b1b0de36 100644
 --- a/node.gyp
 +++ b/node.gyp
 @@ -193,10 +193,11 @@
@@ -41,10 +41,10 @@ index a5c17ed75b5513fdba2a5ea0d9fb7b259041da75..83508bde4111861b6fab2b4d679cc2dd
        'src/timer_wrap.h',
        'src/timer_wrap-inl.h',
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 90d40720a4faad865cf6584bee73e5739d534f36..269fffd585d527320f370ea2204d7bc28451687a 100644
+index 6313d5ce1839fafb175c0e0c74eb39445baed467..f84e839564e5120e00ad0dc908e538b940c43f24 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -759,14 +759,6 @@ MultiIsolatePlatform* GetMultiIsolatePlatform(IsolateData* env) {
+@@ -777,14 +777,6 @@ MultiIsolatePlatform* GetMultiIsolatePlatform(IsolateData* env) {
    return env->platform();
  }
  
@@ -96,7 +96,7 @@ index a493f59465d207b4b89d8941807d4ff6acff82ac..88e8a2f401cac75810e3b0fdb776b41e
 +  ],
  }
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
-index 55fe49c1e3058c366ede37a7698aefae82ea3f75..b9de291f3ef0f0f402320615e48f28584b982684 100644
+index 351033ebc10879a440f99667eddd4cc1cfe604a5..dec1d25272674457de3f14a2a5573b9b7d101afa 100644
 --- a/src/inspector_agent.cc
 +++ b/src/inspector_agent.cc
 @@ -14,7 +14,9 @@
@@ -109,7 +109,7 @@ index 55fe49c1e3058c366ede37a7698aefae82ea3f75..b9de291f3ef0f0f402320615e48f2858
  #include "inspector/worker_agent.h"
  #include "inspector/worker_inspector.h"
  #include "inspector_io.h"
-@@ -238,9 +240,11 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+@@ -245,9 +247,11 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
                                    StringView(),
                                    V8Inspector::ClientTrustLevel::kFullyTrusted);
      node_dispatcher_ = std::make_unique<UberDispatcher>(this);
@@ -121,7 +121,7 @@ index 55fe49c1e3058c366ede37a7698aefae82ea3f75..b9de291f3ef0f0f402320615e48f2858
      if (worker_manager) {
        worker_agent_ = std::make_unique<protocol::WorkerAgent>(worker_manager);
        worker_agent_->Wire(node_dispatcher_.get());
-@@ -274,8 +278,10 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+@@ -281,8 +285,10 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
    }
  
    ~ChannelImpl() override {
@@ -132,7 +132,7 @@ index 55fe49c1e3058c366ede37a7698aefae82ea3f75..b9de291f3ef0f0f402320615e48f2858
      if (worker_agent_) {
        worker_agent_->disable();
        worker_agent_.reset();  // Dispose before the dispatchers
-@@ -424,7 +430,9 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+@@ -431,7 +437,9 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
    }
  
    std::unique_ptr<protocol::RuntimeAgent> runtime_agent_;
@@ -143,7 +143,7 @@ index 55fe49c1e3058c366ede37a7698aefae82ea3f75..b9de291f3ef0f0f402320615e48f2858
    std::shared_ptr<protocol::TargetAgent> target_agent_;
    std::unique_ptr<NetworkInspector> network_inspector_;
 diff --git a/src/node_internals.h b/src/node_internals.h
-index 8e930a6fecd6589b858293d91b2454ea14ae7c73..24c5dbe405d69ceb0e515aeaa6b26233bb2943a9 100644
+index dc228f8e1e245d9f4fca8f2f948619304bfed5d5..39e8312ddd7167ee235927e1772f6d4dff98a5ad 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
 @@ -315,6 +315,7 @@ class ThreadPoolWork {
@@ -163,7 +163,7 @@ index 8e930a6fecd6589b858293d91b2454ea14ae7c73..24c5dbe405d69ceb0e515aeaa6b26233
  // Functions defined in node.cc that are exposed via the bootstrapper object
  
 diff --git a/src/node_options.h b/src/node_options.h
-index 4ffcdb8c1f9e1d866960c419569f3410f8e50934..04ca2785b9da5cd4083c6dee200cfaeb6e06bfc6 100644
+index 04eaa705e8023dab7104ac4d55f9d4179b7f30d4..575f4b23b58d9d2ea863d3209e3b9abaa6cfce7c 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -333,7 +333,11 @@ class PerProcessOptions : public Options {
@@ -179,7 +179,7 @@ index 4ffcdb8c1f9e1d866960c419569f3410f8e50934..04ca2785b9da5cd4083c6dee200cfaeb
    bool zero_fill_all_buffers = false;
    bool debug_arraybuffer_allocations = false;
 diff --git a/src/node_platform.cc b/src/node_platform.cc
-index c13d363cde2cf028ba3f364db489bb5d6bedf7a6..1f235cdd171ed4d00bdfd3ed25acbbfdfd172d2f 100644
+index 6893935e7cf7bc5cc92479f553a1e4827820b71d..bf2dac8f5d9e11f52603c562ff049cabc67eb91e 100644
 --- a/src/node_platform.cc
 +++ b/src/node_platform.cc
 @@ -477,7 +477,8 @@ NodePlatform::NodePlatform(int thread_pool_size,

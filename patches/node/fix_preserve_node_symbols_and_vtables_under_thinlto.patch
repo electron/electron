@@ -39,10 +39,10 @@ Three classes of fixes, all of which give the affected symbols strong
 Observed on macOS arm64 official builds; latent on Linux/Windows.
 
 diff --git a/src/env.cc b/src/env.cc
-index 3f655793d1353619699d42b09b227c729946075f..74d6dbb3a44e3b8db247dd7b1b1b0d5a7cf4afc5 100644
+index efda30eb1fb1c18bafd64eed46a6fc72e806a02b..bdcf61bce4618156a8a6dfd6de95b92d6c77c0c5 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -2321,4 +2321,8 @@ v8::CpuProfile* Environment::StopCpuProfile(v8::ProfilerId profile_id) {
+@@ -2438,4 +2438,8 @@ v8::CpuProfile* Environment::StopCpuProfile(v8::ProfilerId profile_id) {
    return profile;
  }
  
@@ -74,7 +74,7 @@ index 72c1a73aa6c06f55f655cabd0416a709c31e2722..bb7519e4b984ef9915f72bdfb08414f0
   public:
    explicit JSGraph(Isolate* isolate) : isolate_(isolate) {}
 diff --git a/src/js_native_api.h b/src/js_native_api.h
-index d2375ecd32483ff57840d30f804100372f2e12db..396f7848952e941b3e667b47424c51664cac72ef 100644
+index 2a36c4e3ddf397f8df6d535bdd61e8a1fb720ebb..4d97fe40c8935f0e23a42e8e7034bcb9155600fb 100644
 --- a/src/js_native_api.h
 +++ b/src/js_native_api.h
 @@ -17,7 +17,7 @@
@@ -126,10 +126,10 @@ index f4094b05b0122377c826828457a842cde0acb2e8..a6a0ffb0ed272b9b05acc9cb32aa7951
  
  NODE_BINDING_PER_ISOLATE_INIT(
 diff --git a/src/node_http2.cc b/src/node_http2.cc
-index b6bbb1a4edc33da3b77806c095213e0d663ad1a6..426d25d13c28d0282d217a54d66549324ff875ed 100644
+index 010109791f0b3727dcf8cbad484341ae654a56f1..4ad6f6d25c8c4e326d9bcbebb43b4b663974ccb0 100644
 --- a/src/node_http2.cc
 +++ b/src/node_http2.cc
-@@ -3795,6 +3795,13 @@ void Http2Session::MaybeNotifyGracefulCloseComplete() {
+@@ -3749,6 +3749,13 @@ void Http2Session::MaybeNotifyGracefulCloseComplete() {
    return;
  }
  }  // namespace http2
@@ -144,7 +144,7 @@ index b6bbb1a4edc33da3b77806c095213e0d663ad1a6..426d25d13c28d0282d217a54d6654932
  
  NODE_BINDING_CONTEXT_AWARE_INTERNAL(http2, node::http2::Initialize)
 diff --git a/src/node_http2.h b/src/node_http2.h
-index f321bf0c16018fa134202784a8e1c30e017d2de8..df19438171dbf2164e735d576036b8ea462065be 100644
+index 94e77cbc6fa62af386beb4da5de0eb93a7788174..793bc3e27eccb1037518ad0d70f748b032fb6b55 100644
 --- a/src/node_http2.h
 +++ b/src/node_http2.h
 @@ -146,6 +146,96 @@ struct Http2RcBufferPointerTraits {

@@ -44,7 +44,12 @@ app.commandLine.appendSwitch(
     'MAP localhost2 127.0.0.1',
     'MAP ipv4.localhost2 10.0.0.1',
     'MAP ipv6.localhost2 [::1]',
-    'MAP notfound.localhost2 ~NOTFOUND'
+    'MAP notfound.localhost2 ^NOTFOUND',
+    // For specs that load a URL which must fail name resolution.
+    // Chromium fails this lookup with ERR_NAME_NOT_RESOLVED without a DNS query,
+    // and proxies bypass *.localhost by default (unlike localhost2),
+    // so the result does not depend on the network's DNS server or proxy.
+    'MAP notfound.localhost ^NOTFOUND'
   ].join(', ')
 );
 

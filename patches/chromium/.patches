@@ -102,7 +102,6 @@ feat_allow_passing_of_objecttemplate_to_objecttemplatebuilder.patch
 chore_remove_check_is_test_on_script_injection_tracker.patch
 fix_restore_original_resize_performance_on_macos.patch
 feat_allow_code_cache_in_custom_schemes.patch
-build_run_reclient_cfg_generator_after_chrome.patch
 refactor_expose_file_system_access_blocklist.patch
 feat_add_support_for_missing_dialog_features_to_shell_dialogs.patch
 feat_enable_passing_exit_code_on_service_process_crash.patch
@@ -192,7 +191,6 @@ remove_cr_xcode_build_define_from_build_gn.patch
 cherry-pick-2c2d4b9fc5f2.patch
 cherry-pick-cf1e39ed8884.patch
 cherry-pick-b403c7aeff2b.patch
-cherry-pick-58b7849d7590.patch
 cherry-pick-506527a4327d.patch
 cherry-pick-9abbc0c6d03f.patch
 cherry-pick-4a5d45bdafd6.patch
@@ -373,4 +371,11 @@ cherry-pick-e7482cf23de0.patch
 cherry-pick-89329fe5ff64.patch
 cherry-pick-20ad69f21b4d.patch
 fix_deliver_clicks_that_another_process_posts_to_a_background_app.patch
+cherry-pick-8c2a5f895bec.patch
+cherry-pick-c37757223d4f.patch
+cherry-pick-9f1bea61d0f9.patch
+cherry-pick-e886fddb58ee8.patch
+cherry-pick-1d69cc5a0259.patch
+cherry-pick-3f6b73b9e0b3.patch
+cherry-pick-08f529c57faa.patch
 cherry-pick-e85c5aea16d7.patch

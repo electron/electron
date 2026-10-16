@@ -4,7 +4,7 @@ vars = {
   'chromium_version':
     '150.0.7871.250',
   'node_version':
-    'v24.21.0',
+    'v24.22.0',
   'nan_version':
     '675cefebca42410733da8a454c8d9391fcebfbc2',
   'squirrel.mac_version':
@@ -13,8 +13,6 @@ vars = {
     '74ab5baccc6f7202c8ac69a8d1e152c29dc1ea76',
   'mantle_version':
     '2a8e2123a3931038179ee06105c9e6ec336b12ea',
-  'engflow_reclient_configs_version':
-    '955335c30a752e9ef7bff375baab5e0819b6c00d',
 
   'pyyaml_version': '3.12',
 
@@ -25,7 +23,6 @@ vars = {
   'squirrel_git': 'https://github.com/Squirrel',
   'reactiveobjc_git': 'https://github.com/ReactiveCocoa',
   'mantle_git': 'https://github.com/Mantle',
-  'engflow_git': 'https://github.com/EngFlow',
   
   # The path of the sysroots.json file.
   'sysroots_json_path': 'electron/script/sysroots.json',
@@ -104,10 +101,6 @@ deps = {
     'url':  Var("mantle_git") + '/Mantle.git@' + Var("mantle_version"),
     'condition': 'process_deps',
   },
-  'src/third_party/engflow-reclient-configs': {
-    'url': Var("engflow_git") + '/reclient-configs.git@' + Var("engflow_reclient_configs_version"),
-    'condition': 'process_deps'
-  }
 }
 
 pre_deps_hooks = [
