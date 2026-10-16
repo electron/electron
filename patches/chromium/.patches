@@ -166,3 +166,7 @@ fix_deliver_clicks_that_another_process_posts_to_a_background_app.patch
 cherry-pick-63c916f7b401.patch
 restore_mouse_cursor_for_native_dialogs_on_windows.patch
 revert_gtk_module_pinning_on_linux.patch
+cherry-pick-c95a95bc1317.patch
+cherry-pick-6f8bd0510049.patch
+cherry-pick-eb3f43746d10.patch
+cherry-pick-08f529c57faa.patch
