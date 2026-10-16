@@ -1632,7 +1632,8 @@ so the initial empty document of a frame or popup is matched as `about:blank`. S
 created them instead, for example to keep a script out of the `about:blank` popups of an excluded
 site. For `service-worker` contexts the URL is the service worker's scope.
 
-Throws an error if any of the URL patterns are invalid, or if `matches` is an empty array.
+Throws an error if any of the URL patterns are invalid, or if `matches` or `includeGlobs` is an
+empty array.
 
 ```js
 const { session } = require('electron')

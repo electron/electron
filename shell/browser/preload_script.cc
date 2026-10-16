@@ -99,6 +99,11 @@ bool PreloadScript::ParseUrlPatterns(std::string* error) {
         "match all URLs.";
     return false;
   }
+  // Likewise, an empty include list must not mean every URL.
+  if (include_globs && include_globs->empty()) {
+    *error = "Preload script 'includeGlobs' must not be empty.";
+    return false;
+  }
   if (!ParsePatterns(matches.value_or(std::vector<std::string>()),
                      &match_patterns_, error) ||
       !ParsePatterns(exclude_matches, &exclude_match_patterns_, error)) {
@@ -128,7 +133,7 @@ bool PreloadScript::MatchesURL(const GURL& url) const {
   if (MatchesAnyGlob(exclude_globs, url))
     return false;
   return (match_patterns_.empty() || MatchesAnyPattern(match_patterns_, url)) &&
-         (include_globs.empty() || MatchesAnyGlob(include_globs, url));
+         (!include_globs || MatchesAnyGlob(*include_globs, url));
 }
 
 bool PreloadScript::MatchesDocument(const GURL& url,
@@ -180,8 +185,8 @@ v8::Local<v8::Value> Converter<PreloadScript>::ToV8(
     dict.Set("matches", *script.matches);
   if (!script.exclude_matches.empty())
     dict.Set("excludeMatches", script.exclude_matches);
-  if (!script.include_globs.empty())
-    dict.Set("includeGlobs", script.include_globs);
+  if (script.include_globs)
+    dict.Set("includeGlobs", *script.include_globs);
   if (!script.exclude_globs.empty())
     dict.Set("excludeGlobs", script.exclude_globs);
   if (script.match_origin_as_fallback)
@@ -220,15 +225,19 @@ bool Converter<PreloadScript>::FromV8(v8::Isolate* isolate,
       return true;
     return ConvertFromV8(isolate, value, field);
   };
-  // |matches| also records whether it was given, so that an explicit empty
-  // list can be told apart from an omitted one.
-  if (v8::Local<v8::Value> value;
-      options.Get("matches", &value) && !value->IsUndefined() &&
-      !ConvertFromV8(isolate, value, &out->matches.emplace())) {
-    return false;
-  }
-  if (!get_filter("excludeMatches", &out->exclude_matches) ||
-      !get_filter("includeGlobs", &out->include_globs) ||
+  // |matches| and |includeGlobs| also record whether they were given, so
+  // that an explicit empty list can be told apart from an omitted one.
+  auto get_include_filter =
+      [&](std::string_view key,
+          std::optional<std::vector<std::string>>* field) {
+        v8::Local<v8::Value> value;
+        if (!options.Get(key, &value) || value->IsUndefined())
+          return true;
+        return ConvertFromV8(isolate, value, &field->emplace());
+      };
+  if (!get_include_filter("matches", &out->matches) ||
+      !get_filter("excludeMatches", &out->exclude_matches) ||
+      !get_include_filter("includeGlobs", &out->include_globs) ||
       !get_filter("excludeGlobs", &out->exclude_globs)) {
     return false;
   }

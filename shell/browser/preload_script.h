@@ -30,11 +30,11 @@ struct PreloadScript {
   base::FilePath file_path;
 
   // URL filters modeled after Chromium content scripts. A preload with no
-  // filters runs for every URL. |matches| is unset when omitted; an explicit
-  // empty list is rejected by ParseUrlPatterns().
+  // filters runs for every URL. |matches| and |include_globs| are unset when
+  // omitted; an explicit empty list is rejected by ParseUrlPatterns().
   std::optional<std::vector<std::string>> matches;
   std::vector<std::string> exclude_matches;
-  std::vector<std::string> include_globs;
+  std::optional<std::vector<std::string>> include_globs;
   std::vector<std::string> exclude_globs;
 
   // Frame preloads only. Matches a document whose URL carries no origin of

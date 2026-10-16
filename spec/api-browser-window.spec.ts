@@ -4534,6 +4534,9 @@ describe('BrowserWindow module', () => {
           expect(() => ses.registerPreloadScript({ type: 'frame', filePath, matches: [] })).to.throw(
             /'matches' must not be empty/
           );
+          expect(() => ses.registerPreloadScript({ type: 'frame', filePath, includeGlobs: [] })).to.throw(
+            /'includeGlobs' must not be empty/
+          );
           expect(() =>
             ses.registerPreloadScript({
               type: 'frame',
