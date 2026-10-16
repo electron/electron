@@ -4,18 +4,67 @@ import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
 import * as path from 'node:path';
 
-import { ifdescribe, isTestingBindingAvailable, startRemoteControlApp } from './lib/spec-helpers.ts';
+import { defer, ifdescribe, isTestingBindingAvailable, startRemoteControlApp } from './lib/spec-helpers.ts';
+
+const noopApp = path.join(import.meta.dirname, 'fixtures', 'module', 'noop.js');
+
+// Runs an app that exits immediately with --inspect=0 and reports whether the
+// inspector started.
+async function runWithInspect(args: string[], env: NodeJS.ProcessEnv = {}) {
+  const child = spawn(process.execPath, [...args, noopApp, '--inspect=0'], {
+    env: { ...process.env, ...env }
+  });
+  defer(() => {
+    if (child.exitCode === null && child.signalCode === null) child.kill();
+  });
+  let output = '';
+  child.stdout.on('data', (data) => {
+    output += data;
+  });
+  child.stderr.on('data', (data) => {
+    output += data;
+  });
+  const [code] = await once(child, 'close');
+  return { code, inspectorStarted: output.includes('Debugger listening on ws://') };
+}
 
 ifdescribe(isTestingBindingAvailable())('fuses', () => {
   it('can be enabled by command-line argument during testing', async () => {
     const child0 = spawn(process.execPath, ['-v'], { env: { NODE_OPTIONS: '-e 0' } });
     const [code0] = await once(child0, 'exit');
-    // Should exit with 9 because -e is not allowed in NODE_OPTIONS
-    expect(code0).toBe(9);
-    const child1 = spawn(process.execPath, ['--set-fuse-node_options=0', '-v'], { env: { NODE_OPTIONS: '-e 0' } });
+    // NODE_OPTIONS is ignored because node_options is disabled by default, so
+    // this should print the version and exit with 0
+    expect(code0).toBe(0);
+    const child1 = spawn(process.execPath, ['--set-fuse-node_options=1', '-v'], { env: { NODE_OPTIONS: '-e 0' } });
     const [code1] = await once(child1, 'exit');
-    // Should print the version and exit with 0
-    expect(code1).toBe(0);
+    // Should exit with 9 because -e is not allowed in NODE_OPTIONS
+    expect(code1).toBe(9);
+  });
+
+  it('enables --inspect by default when the app is not packaged', async () => {
+    const { code, inspectorStarted } = await runWithInspect([]);
+    expect(code).toBe(0);
+    expect(inspectorStarted).toBe(true);
+  });
+
+  it('disables --inspect by default when the app is packaged', async () => {
+    const { code, inspectorStarted } = await runWithInspect([], { ELECTRON_FORCE_IS_PACKAGED: 'true' });
+    expect(code).toBe(0);
+    expect(inspectorStarted).toBe(false);
+  });
+
+  it('enables --inspect only when packaged when node_cli_inspect is p', async () => {
+    const unpackaged = await runWithInspect(['--set-fuse-node_cli_inspect=p']);
+    expect(unpackaged.inspectorStarted).toBe(false);
+    const packaged = await runWithInspect(['--set-fuse-node_cli_inspect=p'], { ELECTRON_FORCE_IS_PACKAGED: 'true' });
+    expect(packaged.inspectorStarted).toBe(true);
+  });
+
+  it('enables --inspect when packaged when node_cli_inspect is 1', async () => {
+    const { inspectorStarted } = await runWithInspect(['--set-fuse-node_cli_inspect=1'], {
+      ELECTRON_FORCE_IS_PACKAGED: 'true'
+    });
+    expect(inspectorStarted).toBe(true);
   });
 
   it('disables --inspect flag when node_cli_inspect is 0', () => {
@@ -27,21 +76,23 @@ ifdescribe(isTestingBindingAvailable())('fuses', () => {
     expect(status).toBe(0);
   });
 
-  it('makes child_process.fork throw when run_as_node is 0', async () => {
-    const rc = await startRemoteControlApp(['--set-fuse-run_as_node=0']);
-    const message = await rc.remotely(
-      (fixture: string) => {
+  for (const [description, args] of [
+    ['by default', []],
+    ['when run_as_node is 0', ['--set-fuse-run_as_node=0']]
+  ] as const) {
+    it(`makes child_process.fork throw ${description}`, async () => {
+      const rc = await startRemoteControlApp([...args]);
+      const message = await rc.remotely((fixture: string) => {
         try {
           require('node:child_process').fork(fixture);
           return 'forked';
         } catch (error) {
           return (error as Error).message;
         }
-      },
-      path.join(import.meta.dirname, 'fixtures', 'module', 'noop.js')
-    );
-    expect(message).toContain('runAsNode fuse is disabled');
-  });
+      }, noopApp);
+      expect(message).toContain('runAsNode fuse is disabled');
+    });
+  }
 
   it('disables fetching file:// URLs when grant_file_protocol_extra_privileges is 0', async () => {
     const rc = await startRemoteControlApp(['--set-fuse-grant_file_protocol_extra_privileges=0']);
