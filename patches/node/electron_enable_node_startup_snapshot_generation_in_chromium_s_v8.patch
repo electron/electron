@@ -318,7 +318,7 @@ index 0842cba257d0ca36e07c97736e5b24cc77f2a053..0ee1bd02a03b6d303861cd0f8353db6c
        node::InitializeOncePerProcess(
            std::vector<std::string>(argv, argv + argc),
 diff --git a/unofficial.gni b/unofficial.gni
-index 504dd46249425a8e8396332bf061f1f75cdd9401..0f5b0553e693f2011a9fd562be6677a8869b38af 100644
+index 504dd46249425a8e8396332bf061f1f75cdd9401..ef1883fd65cdbb36ec6f2b64f414eea36667fea0 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -32,7 +32,22 @@ template("node_gn_build") {
@@ -424,7 +424,7 @@ index 504dd46249425a8e8396332bf061f1f75cdd9401..0f5b0553e693f2011a9fd562be6677a8
        }
  
        # This config disables a link time optimization "ICF", which may merge
-@@ -328,26 +362,121 @@ template("node_gn_build") {
+@@ -328,26 +362,129 @@ template("node_gn_build") {
            ldflags = [ "/OPT:NOICF" ]  # link.exe, but also lld-link.exe.
          } else if (is_apple && !use_lld) {
            ldflags = [ "-Wl,-no_deduplicate" ]  # ld64.
@@ -510,6 +510,10 @@ index 504dd46249425a8e8396332bf061f1f75cdd9401..0f5b0553e693f2011a9fd562be6677a8
 +      "$node_v8_path",
 +      "$node_v8_path:v8_libplatform",
 +    ]
++    if (node_use_openssl) {
++      # node headers include OpenSSL headers when HAVE_OPENSSL is set.
++      deps += [ "$node_openssl_path" ]
++    }
 +    sources = [ "src/node_snapshot_stub.cc" ]
 +  }
 +
@@ -539,6 +543,10 @@ index 504dd46249425a8e8396332bf061f1f75cdd9401..0f5b0553e693f2011a9fd562be6677a8
 +      "$node_v8_path",
 +      "$node_v8_path:v8_libplatform",
 +    ]
++    if (node_use_openssl) {
++      # node headers include OpenSSL headers when HAVE_OPENSSL is set.
++      deps += [ "$node_openssl_path" ]
++    }
 +    if (node_use_node_snapshot) {
 +      _run_node_mksnapshot = ":run_node_mksnapshot($default_toolchain)"
 +      sources = [ get_label_info(_run_node_mksnapshot, "target_gen_dir") +
