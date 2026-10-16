@@ -20,7 +20,6 @@
   "parallel/test-crypto-dh-stateless",
   "parallel/test-crypto-fips",
   "parallel/test-crypto-keygen",
-  "parallel/test-crypto-pqc-key-objects-ml-kem",
   "parallel/test-crypto-secure-heap",
   "parallel/test-diagnostics-channel-memory-leak",
   "parallel/test-domain-error-types",
