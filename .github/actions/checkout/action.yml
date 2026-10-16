@@ -133,11 +133,16 @@ runs:
             echo "======================================================================"
             exit 1
           else
-            git add patches
-            GIT_COMMITTER_NAME="PatchUp" GIT_COMMITTER_EMAIL="73610968+patchup[bot]@users.noreply.github.com" git commit -m "chore: update patches" --author="PatchUp <73610968+patchup[bot]@users.noreply.github.com>"
-            # Export it
+            # Split the changes into lint-clean commits: non-content changes as
+            # "chore: update patches" (like `e patches --commit-updates`), then
+            # upstreamed patch removals, then anything left over
+            BASE_SHA=$(git rev-parse HEAD)
+            GIT_AUTHOR_NAME="PatchUp" GIT_AUTHOR_EMAIL="73610968+patchup[bot]@users.noreply.github.com" \
+              GIT_COMMITTER_NAME="PatchUp" GIT_COMMITTER_EMAIL="73610968+patchup[bot]@users.noreply.github.com" \
+              node ./script/commit-patch-updates.js
+            # Export them
             mkdir -p ../../patches
-            git format-patch -1 --stdout --keep-subject --no-stat --full-index > ../../patches/update-patches.patch
+            git format-patch --stdout --keep-subject --no-stat --full-index "$BASE_SHA..HEAD" > ../../patches/update-patches.patch
             echo
             echo "======================================================================"
             echo "There were changes to the patches when applying."
