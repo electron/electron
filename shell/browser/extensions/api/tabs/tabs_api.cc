@@ -12,6 +12,7 @@
 
 #include "base/containers/fixed_flat_set.h"
 #include "base/strings/pattern.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/types/expected.h"
 #include "chrome/common/url_constants.h"
 #include "components/url_formatter/url_fixer.h"
