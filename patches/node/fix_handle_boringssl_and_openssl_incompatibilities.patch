@@ -3,41 +3,21 @@ From: Shelley Vohr <shelley.vohr@gmail.com>
 Date: Wed, 12 Feb 2020 15:08:04 -0800
 Subject: fix: handle BoringSSL and OpenSSL incompatibilities
 
-This patch corrects for imcompatibilities between OpenSSL, which Node.js uses,
-and BoringSSL which Electron uses via Chromium. Each incompatibility typically has
-~2 paths forward:
-* Upstream a shim or adapted implementation to BoringSSL
-* Alter Node.js functionality to something which both libraries can handle.
+This patch corrects for incompatibilities between OpenSSL, which Node.js
+uses, and BoringSSL, which Electron uses via Chromium.
 
-Where possible, we should seek to make this patch as minimal as possible.
+BoringSSL's sk_*_num() and EVP_MD_size() return size_t where OpenSSL
+returns int, so code that hard codes int for these values does not build
+cleanly against BoringSSL.
 
-Upstreams:
-- https://github.com/nodejs/node/pull/39054
-- https://github.com/nodejs/node/pull/39138
-- https://github.com/nodejs/node/pull/39136
+This is a backport of https://github.com/nodejs/node/pull/66752, which
+switches those call sites to ncrypto's OPENSSL_SIZE_T (size_t under
+BoringSSL, int under OpenSSL). The hunks are kept identical to upstream,
+so this patch can be removed once Electron updates to a Node.js version
+that includes that change.
 
-diff --git a/deps/ncrypto/ncrypto.cc b/deps/ncrypto/ncrypto.cc
-index b7bbaccfc3a568b7ccfed97f01f2bc37a56b70dd..8c34bb9434284f4d25b4a472cb5496d22d47ce3e 100644
---- a/deps/ncrypto/ncrypto.cc
-+++ b/deps/ncrypto/ncrypto.cc
-@@ -3347,6 +3347,7 @@ constexpr bool IsASN1Sequence(const unsigned char* data,
-   return true;
- }
- 
-+#if NCRYPTO_USE_OPENSSL3_PROVIDER
- constexpr bool ReadASN1Element(const unsigned char* data,
-                                size_t size,
-                                unsigned char tag,
-@@ -3374,6 +3375,7 @@ constexpr bool ReadASN1Element(const unsigned char* data,
-   *total_size = offset + length;
-   return true;
- }
-+#endif  // NCRYPTO_USE_OPENSSL3_PROVIDER
- 
- constexpr bool IsEncryptedPrivateKeyInfo(
-     const Buffer<const unsigned char>& buffer) {
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index fde12953860cd0a40d04e6342b91337045bc784e..08f567bc4bf22840756b81b8a7c8cdf7dd53326f 100644
+index ea0747511a107c96befd2dae1d7bd56759dd95b6..ad056b5610bc8f0db2137402cecc07e18ff0cd09 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
 @@ -90,7 +90,7 @@ StackOfX509 CloneSSLCerts(X509Pointer&& cert,
@@ -45,7 +25,7 @@ index fde12953860cd0a40d04e6342b91337045bc784e..08f567bc4bf22840756b81b8a7c8cdf7
    if (cert && !sk_X509_push(peer_certs.get(), cert.release()))
      return StackOfX509();
 -  for (int i = 0; i < sk_X509_num(ssl_certs); i++) {
-+  for (size_t i = 0; i < sk_X509_num(ssl_certs); i++) {
++  for (OPENSSL_SIZE_T i = 0; i < sk_X509_num(ssl_certs); i++) {
      X509Pointer cert(X509_dup(sk_X509_value(ssl_certs, i)));
      if (!cert || !sk_X509_push(peer_certs.get(), cert.get()))
        return StackOfX509();
@@ -54,101 +34,56 @@ index fde12953860cd0a40d04e6342b91337045bc784e..08f567bc4bf22840756b81b8a7c8cdf7
    cert->reset(sk_X509_delete(peer_certs.get(), 0));
    for (;;) {
 -    int i;
-+    size_t i;
++    OPENSSL_SIZE_T i;
      for (i = 0; i < sk_X509_num(peer_certs.get()); i++) {
        X509View ca(sk_X509_value(peer_certs.get(), i));
        if (!cert->view().isIssuedBy(ca)) continue;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index af8d52fbe699a1b8721f09ea53503edaa91ce60a..176c69dfe7a7d1f6dfe33fcc7ffc470e50df50d2 100644
+index 74ea622dad505586a9437097d36e84b7c11f0aa5..57e4bc771fafc2eee2c13ff0d35295d9c3d6fd67 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -169,7 +169,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
+@@ -170,7 +170,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
      // the CA certificates.
      SSL_CTX_clear_extra_chain_certs(ctx);
  
 -    for (int i = 0; i < sk_X509_num(extra_certs); i++) {
-+    for (size_t i = 0; i < sk_X509_num(extra_certs); i++) {
++    for (OPENSSL_SIZE_T i = 0; i < sk_X509_num(extra_certs); i++) {
        X509* ca = sk_X509_value(extra_certs, i);
  
        // NOTE: Increments reference count on `ca`
-@@ -2345,7 +2345,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
+@@ -2360,7 +2360,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
    }
  
    // Add CA certs too
 -  for (int i = 0; i < sk_X509_num(extra_certs.get()); i++) {
-+  for (size_t i = 0; i < sk_X509_num(extra_certs.get()); i++) {
++  for (OPENSSL_SIZE_T i = 0; i < sk_X509_num(extra_certs.get()); i++) {
      X509* ca = sk_X509_value(extra_certs.get(), i);
  
      X509_STORE_add_cert(sc->GetCertStoreOwnedByThisSecureContext(), ca);
-diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index 6418283e7e4ef06a4cacb973255dd42ccbe246ab..678ae4ebde6e0f12e09a3e9c01f8b9a560186c1e 100644
---- a/src/crypto/crypto_dh.cc
-+++ b/src/crypto/crypto_dh.cc
-@@ -458,11 +458,12 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
-     if (!dh) return {};
- 
-     key_params = EVPKeyPointer::NewDH(std::move(dh));
--  } else if (int* prime_size = std::get_if<int>(&params->params.prime)) {
--    auto param_ctx = EVPKeyCtxPointer::NewFromID(EVP_PKEY_DH);
-+  } else if (std::holds_alternative<int>(params->params.prime)) {
- #ifndef OPENSSL_IS_BORINGSSL
-+    auto param_ctx = EVPKeyCtxPointer::NewFromID(EVP_PKEY_DH);
-     if (!param_ctx.initForParamgen() ||
--        !param_ctx.setDhParameters(*prime_size, params->params.generator)) {
-+        !param_ctx.setDhParameters(std::get<int>(params->params.prime),
-+                                  params->params.generator)) {
-       return {};
-     }
- 
 diff --git a/src/crypto/crypto_hash.cc b/src/crypto/crypto_hash.cc
-index f1a7bab16967b0b6e94e859d9a0af65ad65fd008..d250ee36017449b5081890a3af686e4ad45a1e42 100644
+index 2cf971347b9ea98bf76a8d277a46d7a6842efda6..9391b884e18557815365e0b3c2442e364543ddd0 100644
 --- a/src/crypto/crypto_hash.cc
 +++ b/src/crypto/crypto_hash.cc
-@@ -282,7 +282,7 @@ void Hash::OneShotDigest(const FunctionCallbackInfo<Value>& args) {
+@@ -380,7 +380,7 @@ void OneShotDigestWithMD(Environment* env,
    enum encoding output_enc = ParseEncoding(isolate, args[4], args[5], HEX);
  
    bool is_xof = (EVP_MD_flags(md) & EVP_MD_FLAG_XOF) != 0;
 -  int output_length = EVP_MD_size(md);
-+  size_t output_length = EVP_MD_size(md);
++  OPENSSL_SIZE_T output_length = EVP_MD_size(md);
  
    // This is to cause hash() to fail when an incorrect
    // outputLength option was passed for a non-XOF hash function.
-diff --git a/src/env.h b/src/env.h
-index c5501cd7914a7369c2b93f2b66127e6901852692..499dcb86728d83656b9283ef004b519f46cb2b24 100644
---- a/src/env.h
-+++ b/src/env.h
-@@ -53,7 +53,7 @@
- #include "v8-profiler.h"
- #include "v8.h"
+diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
+index 0050e5591e2ae0afb517500934ddfb223078bd76..cd5217a960c539a799d05e306776430b32cf5144 100644
+--- a/src/crypto/crypto_x509.cc
++++ b/src/crypto/crypto_x509.cc
+@@ -946,7 +946,8 @@ MaybeLocal<Object> X509Certificate::NewWithIssuers(
+   }
  
--#if HAVE_OPENSSL
-+#if HAVE_OPENSSL && OPENSSL_VERSION_MAJOR >= 3
- #include <openssl/evp.h>
- #endif
- 
-diff --git a/src/node_metadata.h b/src/node_metadata.h
-index 8703e4315a999df505ff322aea05a268e017831e..18ddb44400f90f2fbea4ffad09cc1a8f986bf997 100644
---- a/src/node_metadata.h
-+++ b/src/node_metadata.h
-@@ -8,7 +8,7 @@
- #include <utility>
- #include "node_version.h"
- 
--#if HAVE_OPENSSL
-+#if 0
- #include <openssl/crypto.h>
- #include <quic/guard.h>
- #ifndef OPENSSL_NO_QUIC
-diff --git a/src/node_options.h b/src/node_options.h
-index 870a6babc770b35c93ac5528ab765bae81b1f40b..4ffcdb8c1f9e1d866960c419569f3410f8e50934 100644
---- a/src/node_options.h
-+++ b/src/node_options.h
-@@ -11,7 +11,7 @@
- #include "node_mutex.h"
- #include "util.h"
- 
--#if HAVE_OPENSSL
-+#if 0
- #include "openssl/opensslv.h"
- #include "quic/guard.h"
- #endif
+   Local<Object> issuer;
+-  if (issuer_chain != nullptr && start < sk_X509_num(issuer_chain)) {
++  if (issuer_chain != nullptr &&
++      static_cast<OPENSSL_SIZE_T>(start) < sk_X509_num(issuer_chain)) {
+     X509Pointer issuer_cert =
+         X509View(sk_X509_value(issuer_chain, start)).clone();
+     if (!issuer_cert) [[unlikely]] {

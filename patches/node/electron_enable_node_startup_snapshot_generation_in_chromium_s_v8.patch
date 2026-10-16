@@ -62,7 +62,7 @@ eliminating the Node bootstrap recompile.
   config following https://chromium-review.googlesource.com/c/v8/v8/+/7808546.
 
 diff --git a/node.gni b/node.gni
-index 156fee33b3813fe4d94a1c9585f217a99dbfbd5f..a443ff52ca1dda5cb2cfdfe5241076836a33b8fc 100644
+index 0d0438ba8f478a08949ea07cad6c349d15060be9..55f35c4c376e66be291631cff8b1acf266ff41a3 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -31,6 +31,13 @@ declare_args() {
@@ -110,12 +110,12 @@ index 156fee33b3813fe4d94a1c9585f217a99dbfbd5f..a443ff52ca1dda5cb2cfdfe524107683
    # Build with Amaro (TypeScript utils).
    node_use_amaro = true
 diff --git a/src/api/embed_helpers.cc b/src/api/embed_helpers.cc
-index c1bcb3948c4cf68b36dbb1ea985bfb02267ad724..b9ddc1e2139c1a3b869a27f088e6e64688efa0f0 100644
+index 051110c9c6e96b91fa966f9dc8cd3a161db6d0b2..7b78ed07d020c6553c9fdf449fa057e5daef54a3 100644
 --- a/src/api/embed_helpers.cc
 +++ b/src/api/embed_helpers.cc
 @@ -131,6 +131,15 @@ CommonEnvironmentSetup::CommonEnvironmentSetup(
-     isolate = impl_->isolate = Isolate::Allocate(GetOrCreateIsolateGroup());
-     platform->RegisterIsolate(isolate, loop);
+     params.cpp_heap =
+         v8::CppHeap::Create(platform, v8::CppHeapCreateParams{{}}).release();
  
 +    // Electron: extend an existing V8 startup snapshot rather than build the
 +    // heap from scratch (Electron's V8 has external startup data / the
@@ -238,7 +238,7 @@ index 664f878c0671db76cbf68116d224606243ddf501..4ed6d6ecf12ea92129f4d7b7fdb59bcb
    return nullptr;
  }
 diff --git a/src/node_snapshotable.cc b/src/node_snapshotable.cc
-index ae0613fdf35efcdb4b5917b9ecb3ad12d7bf4976..bc48096932b0a1004aec4317dc0c265bd6f1c045 100644
+index 643cc0bb244c89178a499082f0532d887e18c24c..2568e857f299f058c15e41b7990412c51064767e 100644
 --- a/src/node_snapshotable.cc
 +++ b/src/node_snapshotable.cc
 @@ -866,6 +866,19 @@ const std::vector<intptr_t>& SnapshotBuilder::CollectExternalReferences() {
@@ -318,7 +318,7 @@ index 0842cba257d0ca36e07c97736e5b24cc77f2a053..0ee1bd02a03b6d303861cd0f8353db6c
        node::InitializeOncePerProcess(
            std::vector<std::string>(argv, argv + argc),
 diff --git a/unofficial.gni b/unofficial.gni
-index fdb258adabea6607f617e374026562366c8bac0e..512ca7a1c5e12aa8fa4fdbfc7bb2025dc0a8667a 100644
+index fdb258adabea6607f617e374026562366c8bac0e..d55f69133a3ba870c4b1dd23b6580c82ee590c77 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -32,7 +32,22 @@ template("node_gn_build") {
@@ -424,7 +424,7 @@ index fdb258adabea6607f617e374026562366c8bac0e..512ca7a1c5e12aa8fa4fdbfc7bb2025d
        }
  
        # This config disables a link time optimization "ICF", which may merge
-@@ -324,26 +358,127 @@ template("node_gn_build") {
+@@ -324,26 +358,135 @@ template("node_gn_build") {
            ldflags = [ "/OPT:NOICF" ]  # link.exe, but also lld-link.exe.
          } else if (is_apple && !use_lld) {
            ldflags = [ "-Wl,-no_deduplicate" ]  # ld64.
@@ -516,6 +516,10 @@ index fdb258adabea6607f617e374026562366c8bac0e..512ca7a1c5e12aa8fa4fdbfc7bb2025d
 +      "$node_v8_path",
 +      "$node_v8_path:v8_libplatform",
 +    ]
++    if (node_use_openssl) {
++      # node headers include OpenSSL headers when HAVE_OPENSSL is set.
++      deps += [ "$node_openssl_path" ]
++    }
 +    sources = [ "src/node_snapshot_stub.cc" ]
 +  }
 +
@@ -545,6 +549,10 @@ index fdb258adabea6607f617e374026562366c8bac0e..512ca7a1c5e12aa8fa4fdbfc7bb2025d
 +      "$node_v8_path",
 +      "$node_v8_path:v8_libplatform",
 +    ]
++    if (node_use_openssl) {
++      # node headers include OpenSSL headers when HAVE_OPENSSL is set.
++      deps += [ "$node_openssl_path" ]
++    }
 +    if (node_use_node_snapshot) {
 +      _run_node_mksnapshot = ":run_node_mksnapshot($default_toolchain)"
 +      sources = [ get_label_info(_run_node_mksnapshot, "target_gen_dir") +
