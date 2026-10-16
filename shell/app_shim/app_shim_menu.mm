@@ -11,7 +11,7 @@
 
 namespace electron {
 
-class AppShimMenu::Item : public ElectronMenuModel::Item {
+class AppShimMenu::Item {
  public:
   Item(mojom::AppShimMenuItemPtr data,
        std::vector<uint32_t> path,
@@ -50,51 +50,6 @@ class AppShimMenu::Item : public ElectronMenuModel::Item {
     data_->submenu.reset();
   }
 
-  // ElectronMenuModel::Item:
-  ui::MenuModel::ItemType GetType() const override {
-    return static_cast<ui::MenuModel::ItemType>(data_->type);
-  }
-  int GetCommandId() const override { return data_->command_id; }
-  std::u16string GetLabel() const override { return data_->label; }
-  std::u16string GetSecondaryLabel() const override {
-    return data_->secondary_label;
-  }
-  std::u16string GetToolTip() const override { return data_->tool_tip; }
-  std::u16string GetAccessibilityLabel() const override {
-    return data_->accessibility_label;
-  }
-  std::u16string GetRole() const override { return data_->role; }
-  std::u16string GetCustomType() const override { return data_->custom_type; }
-  ui::ImageModel GetIcon() const override {
-    return data_->icon.isNull() ? ui::ImageModel()
-                                : ui::ImageModel::FromImageSkia(data_->icon);
-  }
-  bool GetAccelerator(ui::Accelerator* accelerator) const override {
-    if (!data_->has_accelerator)
-      return false;
-    *accelerator = ui::Accelerator(
-        static_cast<ui::KeyboardCode>(data_->accelerator_key_code),
-        data_->accelerator_modifiers);
-    if (data_->accelerator_shifted_char)
-      accelerator->shifted_char = data_->accelerator_shifted_char;
-    return true;
-  }
-  bool ShouldRegisterAccelerator() const override {
-    return data_->register_accelerator;
-  }
-  bool WorksWhenHidden() const override { return data_->works_when_hidden; }
-  bool IsChecked() const override { return data_->checked; }
-  bool IsEnabled() const override { return data_->enabled; }
-  bool IsVisible() const override { return data_->visible; }
-  int GetGroupId() const override { return data_->group_id; }
-  ElectronMenuModel* GetSubmenuModel() const override {
-    return submenu_ ? submenu_->model() : nullptr;
-  }
-  std::optional<ElectronMenuModel::SharingItem> GetSharingItem() override {
-    return std::nullopt;
-  }
-  const ElectronMenuModel::Badge* GetBadge() const override { return nullptr; }
-
  private:
   mojom::AppShimMenuItemPtr data_;
   std::unique_ptr<AppShimMenu> submenu_;
@@ -107,11 +62,41 @@ AppShimMenu::AppShimMenu(std::vector<mojom::AppShimMenuItemPtr> items,
       client_(client),
       model_(std::make_unique<ElectronMenuModel>(this)) {
   for (auto& item : items) {
+    const size_t index = items_.size();
     std::vector<uint32_t> item_path = path_;
-    item_path.push_back(items_.size());
+    item_path.push_back(index);
     items_.push_back(
         std::make_unique<Item>(std::move(item), std::move(item_path), client));
-    model_->InsertItemAt(items_.size() - 1, items_.back().get());
+    const mojom::AppShimMenuItem& data = items_.back()->data();
+    AppShimMenu* const submenu = items_.back()->submenu();
+    // The model keeps the type of each item, and what it files under the
+    // item's command id. The rest it asks this, its delegate, for.
+    switch (static_cast<ui::MenuModel::ItemType>(data.type)) {
+      case ui::MenuModel::TYPE_SEPARATOR:
+        model_->InsertSeparatorAt(index, ui::NORMAL_SEPARATOR);
+        SyncModelItemAt(index);
+        continue;
+      case ui::MenuModel::TYPE_CHECK:
+        model_->InsertCheckItemAt(index, data.command_id, data.label);
+        break;
+      case ui::MenuModel::TYPE_RADIO:
+        model_->InsertRadioItemAt(index, data.command_id, data.label,
+                                  data.group_id);
+        break;
+      case ui::MenuModel::TYPE_SUBMENU:
+        if (submenu) {
+          model_->InsertSubMenuAt(index, data.command_id, data.label,
+                                  submenu->model());
+          break;
+        }
+        [[fallthrough]];
+      default:
+        model_->InsertItemAt(index, data.command_id, data.label);
+        break;
+    }
+    model_->SetToolTip(index, data.tool_tip);
+    model_->SetRole(index, data.role);
+    model_->SetCustomType(index, data.custom_type);
   }
   // Only the menu bar's model is told that a menu opens and closes.
   if (path_.empty())
@@ -137,20 +122,106 @@ bool AppShimMenu::HasShapeOf(
 bool AppShimMenu::Update(std::vector<mojom::AppShimMenuItemPtr>* items) {
   if (!HasShapeOf(*items))
     return false;
-  for (size_t i = 0; i < items->size(); ++i)
+  for (size_t i = 0; i < items->size(); ++i) {
     items_[i]->Update(std::move((*items)[i]));
+    SyncModelItemAt(i);
+  }
   return true;
 }
 
-void AppShimMenu::ActivatedAt(size_t index, int event_flags) {
-  std::vector<uint32_t> item_path = path_;
-  item_path.push_back(index);
-  client_->OnMenuItemActivated(item_path, items_[index]->data().command_id,
-                               event_flags);
+const AppShimMenu::Item* AppShimMenu::ItemForCommandId(int command_id) const {
+  const std::optional<size_t> index = model_->GetIndexOfCommandId(command_id);
+  return index ? items_[*index].get() : nullptr;
 }
 
-void AppShimMenu::MenuWillShow() {
+void AppShimMenu::SyncModelItemAt(size_t index) {
+  // A separator has no command id for the model to ask about.
+  if (model_->GetTypeAt(index) == ui::MenuModel::TYPE_SEPARATOR)
+    model_->SetVisibleAt(index, items_[index]->data().visible);
+}
+
+bool AppShimMenu::IsCommandIdChecked(int command_id) const {
+  const Item* item = ItemForCommandId(command_id);
+  return item && item->data().checked;
+}
+
+bool AppShimMenu::IsCommandIdEnabled(int command_id) const {
+  const Item* item = ItemForCommandId(command_id);
+  return item && item->data().enabled;
+}
+
+bool AppShimMenu::IsCommandIdVisible(int command_id) const {
+  const Item* item = ItemForCommandId(command_id);
+  return item && item->data().visible;
+}
+
+std::u16string AppShimMenu::GetLabelForCommandId(int command_id) const {
+  const Item* item = ItemForCommandId(command_id);
+  return item ? item->data().label : std::u16string();
+}
+
+std::u16string AppShimMenu::GetSecondaryLabelForCommandId(
+    int command_id) const {
+  const Item* item = ItemForCommandId(command_id);
+  return item ? item->data().secondary_label : std::u16string();
+}
+
+ui::ImageModel AppShimMenu::GetIconForCommandId(int command_id) const {
+  const Item* item = ItemForCommandId(command_id);
+  return item && !item->data().icon.isNull()
+             ? ui::ImageModel::FromImageSkia(item->data().icon)
+             : ui::ImageModel();
+}
+
+void AppShimMenu::ExecuteCommand(int command_id, int event_flags) {
+  const std::optional<size_t> index = model_->GetIndexOfCommandId(command_id);
+  if (!index)
+    return;
+  std::vector<uint32_t> item_path = path_;
+  item_path.push_back(*index);
+  client_->OnMenuItemActivated(item_path, command_id, event_flags);
+}
+
+void AppShimMenu::OnMenuWillShow(ui::SimpleMenuModel* source) {
   client_->OnMenuWillShow();
+}
+
+bool AppShimMenu::GetAcceleratorForCommandIdWithParams(
+    int command_id,
+    bool use_default_accelerator,
+    ui::Accelerator* accelerator) const {
+  const Item* item = ItemForCommandId(command_id);
+  if (!item || !item->data().has_accelerator)
+    return false;
+  const mojom::AppShimMenuItem& data = item->data();
+  *accelerator =
+      ui::Accelerator(static_cast<ui::KeyboardCode>(data.accelerator_key_code),
+                      data.accelerator_modifiers);
+  if (data.accelerator_shifted_char)
+    accelerator->shifted_char = data.accelerator_shifted_char;
+  return true;
+}
+
+bool AppShimMenu::ShouldRegisterAcceleratorForCommandId(int command_id) const {
+  const Item* item = ItemForCommandId(command_id);
+  return item && item->data().register_accelerator;
+}
+
+bool AppShimMenu::ShouldCommandIdWorkWhenHidden(int command_id) const {
+  const Item* item = ItemForCommandId(command_id);
+  return item && item->data().works_when_hidden;
+}
+
+std::u16string AppShimMenu::GetAccessibilityLabelForCommandId(
+    int command_id) const {
+  const Item* item = ItemForCommandId(command_id);
+  return item ? item->data().accessibility_label : std::u16string();
+}
+
+bool AppShimMenu::GetSharingItemForCommandId(
+    int command_id,
+    ElectronMenuModel::SharingItem* item) const {
+  return false;
 }
 
 void AppShimMenu::OnMenuWillClose() {

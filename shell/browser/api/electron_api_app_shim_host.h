@@ -12,12 +12,12 @@
 #include <vector>
 
 #include "base/files/file_path.h"
+#include "base/task/sequenced_task_runner.h"
 #include "electron/shell/common/app_shim.mojom.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "shell/browser/event_emitter_mixin.h"
-#include "shell/browser/native_peer.h"
 
 class GURL;
 
@@ -107,7 +107,7 @@ class AppShimHost final : public gin::Wrappable<AppShimHost>,
   void Quit();
   void SetApplicationMenu(gin::Arguments* args);
 
-  std::unique_ptr<Connection, NativePeerBase::Deleter> connection_;
+  std::unique_ptr<Connection, base::OnTaskRunnerDeleter> connection_;
 };
 
 }  // namespace api

@@ -54,12 +54,35 @@ class AppShimMenu : public ElectronMenuModel::Delegate,
   class Item;
 
   bool HasShapeOf(const std::vector<mojom::AppShimMenuItemPtr>& items) const;
+  // Null when no item of this menu has `command_id`.
+  const Item* ItemForCommandId(int command_id) const;
+  // Gives the model the state of the item at `index` that it keeps for
+  // itself and does not ask its delegate for.
+  void SyncModelItemAt(size_t index);
 
   // ElectronMenuModel::Delegate:
-  void ActivatedAt(size_t index, int event_flags) override;
-  void MenuWillShow() override;
+  bool IsCommandIdChecked(int command_id) const override;
+  bool IsCommandIdEnabled(int command_id) const override;
+  bool IsCommandIdVisible(int command_id) const override;
+  std::u16string GetLabelForCommandId(int command_id) const override;
+  std::u16string GetSecondaryLabelForCommandId(int command_id) const override;
+  ui::ImageModel GetIconForCommandId(int command_id) const override;
+  void ExecuteCommand(int command_id, int event_flags) override;
+  void OnMenuWillShow(ui::SimpleMenuModel* source) override;
+  bool GetAcceleratorForCommandIdWithParams(
+      int command_id,
+      bool use_default_accelerator,
+      ui::Accelerator* accelerator) const override;
+  bool ShouldRegisterAcceleratorForCommandId(int command_id) const override;
+  bool ShouldCommandIdWorkWhenHidden(int command_id) const override;
+  std::u16string GetAccessibilityLabelForCommandId(
+      int command_id) const override;
+  bool GetSharingItemForCommandId(
+      int command_id,
+      ElectronMenuModel::SharingItem* item) const override;
 
   // ElectronMenuModel::Observer:
+  void OnMenuWillShow() override {}
   void OnMenuWillClose() override;
 
   const std::vector<uint32_t> path_;
