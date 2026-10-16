@@ -1034,6 +1034,12 @@ void App::SetDesktopName(const std::string& desktop_name) {
 #endif
 }
 
+void App::SetActivationToken(const std::string& token) {
+#if BUILDFLAG(IS_LINUX)
+  base::nix::SetActivationToken(token);
+#endif
+}
+
 std::string App::GetLocale() {
   return g_browser_process->GetApplicationLocale();
 }
@@ -2169,6 +2175,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("getPath", &App::GetPath)
       .SetMethod("setAppLogsPath", &App::SetAppLogsPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
+      .SetMethod("setActivationToken", &App::SetActivationToken)
       .SetMethod("getLocale", &App::GetLocale)
       .SetMethod("getPreferredSystemLanguages", &GetPreferredLanguages)
       .SetMethod("getSystemLocale", &App::GetSystemLocale)
