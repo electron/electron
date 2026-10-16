@@ -63,6 +63,13 @@ Returns `Menu | null` - The application menu, if set, or `null`, if not set.
 
 #### `Menu.setHighlightColors(options)` _Windows_
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/55074
+```
+-->
+
 - `options` Object | null
   - `background` string (optional) - Background color of the hovered or
     keyboard-focused menu item, as a CSS color string (e.g. `#0067c0`).
