@@ -664,25 +664,25 @@ describe('WebContentsView', () => {
 
     it('does not throw when toggled', () => {
       const v = new WebContentsView();
-      expect(() => v.setInteractive(false)).to.not.throw();
-      expect(() => v.setInteractive(true)).to.not.throw();
+      expect(() => v.setInteractive(false)).not.toThrow();
+      expect(() => v.setInteractive(true)).not.toThrow();
     });
 
     it('correctly records state when toggled', () => {
       const v = new WebContentsView();
-      expect(v.getInteractive()).to.be.true();
+      expect(v.getInteractive()).toBe(true);
       v.setInteractive(false);
-      expect(v.getInteractive()).to.be.false();
+      expect(v.getInteractive()).toBe(false);
       v.setInteractive(true);
-      expect(v.getInteractive()).to.be.true();
+      expect(v.getInteractive()).toBe(true);
     });
 
     it('does not throw for a WebContentsView, before and after attach', async () => {
       const w = new BaseWindow({ show: false });
       const view = new WebContentsView();
-      expect(() => view.setInteractive(false)).to.not.throw(); // before attach
+      expect(() => view.setInteractive(false)).not.toThrow(); // before attach
       w.contentView.addChildView(view);
-      expect(() => view.setInteractive(true)).to.not.throw(); // after attach
+      expect(() => view.setInteractive(true)).not.toThrow(); // after attach
     });
 
     it('survives destroy/toggle churn', () => {
@@ -691,7 +691,7 @@ describe('WebContentsView', () => {
       view.setInteractive(true);
       view.setInteractive(false);
       view.webContents.destroy();
-      expect(() => view.setInteractive(true)).to.not.throw();
+      expect(() => view.setInteractive(true)).not.toThrow();
     });
 
     it('prevents interaction when setInteractive(false) is called', async function () {
@@ -733,7 +733,7 @@ describe('WebContentsView', () => {
       robot.mouseClick();
 
       const [, id] = await clickedPromise;
-      expect(id).to.equal('bottom');
+      expect(id).toBe('bottom');
 
       top.setInteractive(true);
 
@@ -744,7 +744,7 @@ describe('WebContentsView', () => {
       robot.mouseClick();
 
       const [, id2] = await clickedPromise2;
-      expect(id2).to.equal('top');
+      expect(id2).toBe('top');
     });
   });
 });
