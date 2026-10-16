@@ -1135,6 +1135,12 @@ events will be emitted for that. However when users start your app in command
 line, the system's single instance mechanism will be bypassed, and you have to
 use this method to ensure single instance.
 
+An instance is identified by the app's `userData` directory, which is where the
+underlying Chromium process singleton places its lock. Two processes that use
+different `userData` directories (for example, after calling
+`app.setPath('userData', ...)` with different values) are treated as separate
+instances and can each acquire the lock.
+
 > [!NOTE]
 > On macOS and Linux, the second instance's command line arguments and
 > `additionalData` are sent to the primary instance in a single message that is
