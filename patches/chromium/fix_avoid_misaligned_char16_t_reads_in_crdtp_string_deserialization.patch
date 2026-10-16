@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Fri, 9 Oct 2026 17:17:09 +0000
+Subject: fix: avoid misaligned char16_t reads in crdtp string deserialization
+
+The STRING16 wire representation is a raw slice of the CBOR message and
+may start at an odd byte offset. Reading it through a char16_t pointer
+is undefined behavior and aborts Electron's UBSan build, so copy the
+payload into an aligned buffer first. This should be upstreamed to Chromium.
+
+diff --git a/third_party/inspector_protocol/crdtp/chromium/protocol_traits.cc b/third_party/inspector_protocol/crdtp/chromium/protocol_traits.cc
+index 1f06aa9fe50023edd759a29932d4e5c95235cefe..67c26a773244f8b7c443f9224a7e84e1b07051cc 100644
+--- a/third_party/inspector_protocol/crdtp/chromium/protocol_traits.cc
++++ b/third_party/inspector_protocol/crdtp/chromium/protocol_traits.cc
+@@ -4,6 +4,8 @@
+ 
+ #include "third_party/inspector_protocol/crdtp/chromium/protocol_traits.h"
+ 
++#include <cstring>
++#include <string>
+ #include <string_view>
+ #include <utility>
+ 
+@@ -98,10 +100,13 @@ bool ProtocolTypeTraits<std::string>::Deserialize(DeserializerState* state,
+   }
+   if (tokenizer->TokenTag() == cbor::CBORTokenTag::STRING16) {
+     const auto str = tokenizer->GetString16WireRep();
++    // The payload is a raw slice of the CBOR message and may not be aligned
++    // for char16_t, so copy it into an aligned buffer before reading it.
++    std::u16string utf16(str.size() / 2, u'\0');
++    memcpy(utf16.data(), str.data(), utf16.size() * sizeof(char16_t));
+     // In Chromium, we do not support big endian architectures, so no conversion
+     // is needed to interpret UTF16LE.
+-    base::UTF16ToUTF8(reinterpret_cast<const char16_t*>(str.data()),
+-                      str.size() / 2, value);
++    base::UTF16ToUTF8(utf16.data(), utf16.size(), value);
+     return true;
+   }
+   state->RegisterError(Error::BINDINGS_STRING_VALUE_EXPECTED);
+@@ -181,9 +186,11 @@ bool ProtocolTypeTraits<base::Value>::Deserialize(DeserializerState* state,
+     }
+     case cbor::CBORTokenTag::STRING16: {
+       const auto str = tokenizer->GetString16WireRep();
++      // The payload may not be aligned for char16_t; copy it before reading.
++      std::u16string utf16(str.size() / 2, u'\0');
++      memcpy(utf16.data(), str.data(), utf16.size() * sizeof(char16_t));
+       // TODO(caseq): support big-endian architectures when needed.
+-      *value = base::Value(std::u16string_view(
+-          reinterpret_cast<const char16_t*>(str.data()), str.size() / 2));
++      *value = base::Value(std::u16string_view(utf16));
+       break;
+     }
+ 
