@@ -4421,7 +4421,7 @@ describe('BrowserWindow module', () => {
             await w.loadURL(`${url}/allowed/page`);
             await w.loadURL(`${url}/other?included=1`);
             await w.loadURL(`${url}/other`);
-            expect(locations).to.deep.equal([`${url}/allowed/page`, `${url}/other?included=1`, `${url}/other`]);
+            expect(locations).toEqual([`${url}/allowed/page`, `${url}/other?included=1`, `${url}/other`]);
           });
 
           it(`runs a session preload matching <all_urls> on any document (sandbox: ${sandbox})`, async () => {
@@ -4444,7 +4444,7 @@ describe('BrowserWindow module', () => {
             const w = new BrowserWindow({ show: false, webPreferences: { sandbox, session: ses } });
             await w.loadURL(`${url}/page`);
             await w.loadURL('about:blank');
-            expect(locations).to.deep.equal([`${url}/page`, 'about:blank']);
+            expect(locations).toEqual([`${url}/page`, 'about:blank']);
           });
 
           it(`filters session preloads by chrome-extension:// URL (sandbox: ${sandbox})`, async () => {
@@ -4476,7 +4476,7 @@ describe('BrowserWindow module', () => {
             await w.loadURL(extensionPage);
             await w.loadURL(`${url}/page`);
             // Each page runs exactly one of the two preloads.
-            expect(locations).to.deep.equal([extensionPage, `${url}/page`]);
+            expect(locations).toEqual([extensionPage, `${url}/page`]);
           });
 
           it(`matches a popup's initial empty document by its opener's origin with matchOriginAsFallback (sandbox: ${sandbox})`, async () => {
@@ -4510,31 +4510,32 @@ describe('BrowserWindow module', () => {
               return reports.filter((r) => r.which === 'a').map((r) => r.href);
             };
             // By default the popup is matched as about:blank, whatever opened it...
-            expect(await collectFilteredPreloads({ excludeMatches: [`${url}/*`] })).to.deep.equal(['about:blank']);
-            expect(await collectFilteredPreloads({ matches: [`${url}/*`] })).to.deep.equal([`${url}/page`]);
+            expect(await collectFilteredPreloads({ excludeMatches: [`${url}/*`] })).toEqual(['about:blank']);
+            expect(await collectFilteredPreloads({ matches: [`${url}/*`] })).toEqual([`${url}/page`]);
             // ...and with matchOriginAsFallback as the origin it inherited.
             expect(
               await collectFilteredPreloads({ excludeMatches: [`${url}/*`], matchOriginAsFallback: true })
-            ).to.deep.equal([]);
-            expect(await collectFilteredPreloads({ matches: [`${url}/*`], matchOriginAsFallback: true })).to.deep.equal(
-              [`${url}/page`, 'about:blank']
-            );
+            ).toEqual([]);
+            expect(await collectFilteredPreloads({ matches: [`${url}/*`], matchOriginAsFallback: true })).toEqual([
+              `${url}/page`,
+              'about:blank'
+            ]);
           });
         }
 
         it('rejects invalid preload URL filters', () => {
           const ses = session.fromPartition('preload-url-filters-invalid');
           const filePath = path.join(fixtures, 'module', 'empty.js');
-          expect(() => ses.registerPreloadScript({ type: 'frame', filePath, matches: ['not a pattern'] })).to.throw(
+          expect(() => ses.registerPreloadScript({ type: 'frame', filePath, matches: ['not a pattern'] })).toThrow(
             /Invalid URL pattern 'not a pattern'/
           );
-          expect(() => ses.registerPreloadScript({ type: 'frame', filePath, excludeMatches: ['https://'] })).to.throw(
+          expect(() => ses.registerPreloadScript({ type: 'frame', filePath, excludeMatches: ['https://'] })).toThrow(
             /Invalid URL pattern/
           );
-          expect(() => ses.registerPreloadScript({ type: 'frame', filePath, matches: [] })).to.throw(
+          expect(() => ses.registerPreloadScript({ type: 'frame', filePath, matches: [] })).toThrow(
             /'matches' must not be empty/
           );
-          expect(() => ses.registerPreloadScript({ type: 'frame', filePath, includeGlobs: [] })).to.throw(
+          expect(() => ses.registerPreloadScript({ type: 'frame', filePath, includeGlobs: [] })).toThrow(
             /'includeGlobs' must not be empty/
           );
           expect(() =>
@@ -4544,8 +4545,8 @@ describe('BrowserWindow module', () => {
               matches: ['https://example.com/path/*'],
               matchOriginAsFallback: true
             })
-          ).to.throw(/the path must be '\/\*' when matchOriginAsFallback is set/);
-          expect(ses.getPreloadScripts()).to.be.empty();
+          ).toThrow(/the path must be '\/\*' when matchOriginAsFallback is set/);
+          expect(ses.getPreloadScripts()).toHaveLength(0);
         });
 
         it('returns URL filters from getPreloadScripts', () => {
@@ -4563,7 +4564,7 @@ describe('BrowserWindow module', () => {
             ...filters
           });
           defer(() => ses.unregisterPreloadScript(id));
-          expect(ses.getPreloadScripts().find((script) => script.id === id)).to.deep.include(filters);
+          expect(ses.getPreloadScripts().find((script) => script.id === id)).toMatchObject(filters);
         });
       });
 

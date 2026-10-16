@@ -479,7 +479,7 @@ describe('ServiceWorkerMain module', () => {
       const pongPromise = once(serviceWorker.ipc, 'pong');
       runTest(serviceWorker, { name: 'testSend', args: ['pong'] });
       await pongPromise;
-      expect(pingReceived).to.be.false();
+      expect(pingReceived).toBe(false);
     });
   });
 
@@ -563,11 +563,11 @@ describe('ServiceWorkerMain module', () => {
       });
       ses.extensions.loadExtension(testExtensionFixture);
       const serviceWorker = await waitForServiceWorker('running');
-      expect(serviceWorker.scope).to.match(/^chrome-extension:\/\//);
+      expect(serviceWorker.scope).toMatch(/^chrome-extension:\/\//);
       const pongPromise = once(serviceWorker.ipc, 'pong');
       runTest(serviceWorker, { name: 'testSend', args: ['pong'] });
       await pongPromise;
-      expect(pingReceived).to.be.false();
+      expect(pingReceived).toBe(false);
     });
   });
 });
