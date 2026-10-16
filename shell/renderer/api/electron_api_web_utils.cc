@@ -7,6 +7,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/node_includes.h"
+#include "shell/renderer/api/native_video_frame_export.h"
 #include "third_party/blink/public/web/web_blob.h"
 
 namespace electron::api::web_utils {
@@ -33,6 +34,7 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod<&electron::api::web_utils::GetPathForFile>("getPathForFile");
+  electron::InstallNativeVideoFrameExport(isolate, exports);
 }
 
 }  // namespace

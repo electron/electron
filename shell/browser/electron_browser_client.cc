@@ -104,6 +104,7 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/login_handler.h"
 #include "shell/browser/media/media_capture_devices_dispatcher.h"
+#include "shell/browser/native_video_frame_registry.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/net/network_context_service.h"
 #include "shell/browser/net/network_context_service_factory.h"
@@ -1710,6 +1711,9 @@ void ElectronBrowserClient::
     if (render_frame_host.GetFrameTreeNodeId() ==
             contents->GetPrimaryMainFrame()->GetFrameTreeNodeId() ||
         (prefs && prefs->AllowsNodeIntegrationInSubFrames())) {
+      associated_registry.AddInterface<mojom::NativeVideoFrameHost>(
+          base::BindRepeating(&NativeVideoFrameRegistry::Bind,
+                              &render_frame_host));
       associated_registry.AddInterface<mojom::ElectronApiIPC>(
           base::BindRepeating(
               [](content::RenderFrameHost* render_frame_host,

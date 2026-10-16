@@ -49,6 +49,25 @@ Set a callback to receive imported shared textures from the main process.
 > [!NOTE]
 > This method is only available in the renderer process.
 
+### `sharedTexture.resolveVideoFrameHandle(frame, id)` _Experimental_
+
+* `frame` [WebFrameMain](web-frame-main.md) - The sending document, normally `event.senderFrame`.
+* `id` string - An ID obtained by that document with
+  `webUtils.getNativeVideoFrameHandle`.
+
+> [!NOTE]
+> This method is only available in the main process.
+
+Returns [`NativeVideoFrameLease`](structures/native-video-frame-lease.md) - The original native allocation and its lifetime
+lease. Resolution consumes the ID. A different document, an expired ID or a
+second resolution throws. The caller must authenticate its application's IPC
+sender before resolving.
+
+The native consumer must finish reading the texture before calling `release()`.
+The lease keeps the native handle and renderer frame alive independently of the
+JavaScript VideoFrame and survives navigation after resolution. Holding only the
+returned descriptor numbers or pointer bytes does not retain the allocation.
+
 ## Properties
 
 The `sharedTexture` module has the following properties:

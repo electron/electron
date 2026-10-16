@@ -185,6 +185,7 @@ function importSharedTexture(options: Electron.ImportSharedTextureOptions) {
 }
 
 const sharedTexture = {
+  resolveVideoFrameHandle: sharedTextureNative.resolveVideoFrameHandle,
   subtle: sharedTextureNative,
   importSharedTexture,
   sendSharedTexture

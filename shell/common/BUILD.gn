@@ -66,6 +66,14 @@ mojom("mojo") {
   component_deps = [ "//third_party/blink/public/common" ]
 }
 
+mojom("native_video_frame") {
+  sources = [ "native_video_frame.mojom" ]
+  public_deps = [
+    "//ui/gfx/geometry/mojom",
+    "//ui/gfx/mojom",
+  ]
+}
+
 mojom("plugin") {
   sources = [ "plugin.mojom" ]
 

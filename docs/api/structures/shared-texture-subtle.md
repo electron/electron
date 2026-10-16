@@ -4,3 +4,6 @@
   * `textureInfo` [SharedTextureImportTextureInfo](shared-texture-import-texture-info.md) - The information of shared texture to import.
 * `finishTransferSharedTexture` Function\<[SharedTextureImportedSubtle](shared-texture-imported-subtle.md)\> - Finishes the transfer of the shared texture and gets the transferred shared texture. Returns the imported shared texture from the transfer object.
   * `transfer` [SharedTextureTransfer](shared-texture-transfer.md) - The transfer object of the shared texture.
+* `resolveVideoFrameHandle` Function\<[NativeVideoFrameLease](native-video-frame-lease.md)\> - Resolves a native frame export in the main process.
+  * `frame` WebFrameMain - The sending document.
+  * `id` string - The single-use export ID.

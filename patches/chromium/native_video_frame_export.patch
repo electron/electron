@@ -1,0 +1,76 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: albi <albi@fedodo.com>
+Date: Thu, 15 Oct 2026 19:14:02 +0200
+Subject: feat: preserve native VideoFrame handles for Electron consumers
+
+Electron's native VideoFrame export needs an existing OS allocation and its
+handle after VideoFrame::WrapSharedImage. MakeUnowned currently drops that
+handle, and ordinary accelerated Canvas backings need not be native buffers.
+These internal allocation and wrapping paths cannot be overridden by Electron.
+
+Preserve existing native handles without changing opaque-frame storage. Add a
+disabled-by-default CanvasNativeVideoFrameExport feature with an explicit linear
+allocation option. This permits CPU mapping but never maps or copies pixels.
+
+This is an Electron-specific opt-in for the experimental API proposed in
+https://github.com/electron/electron/issues/49762. Revisit this patch when
+ClientSharedImage::MakeUnowned preserves native handles or Chromium exposes a
+public native Canvas allocation/export contract; then remove the corresponding
+parts. The allocation policy needs upstream discussion before becoming default.
+
+diff --git a/media/base/video_frame.cc b/media/base/video_frame.cc
+index 8fc72b0e7265909eee225a15f1ad426c41f6fb5b..12c90e5ea84513b1f25699e4d1b53fe44099486c 100644
+--- a/media/base/video_frame.cc
++++ b/media/base/video_frame.cc
+@@ -466,7 +466,17 @@ scoped_refptr<VideoFrame> VideoFrame::WrapSharedImage(
+ 
+   frame->acquire_sync_token_ = sync_token;
+   frame->set_color_space(shared_image->color_space());
+-  frame->shared_image_ = shared_image->MakeUnowned();
++  // Preserve an existing native handle without changing opaque-frame storage
++  // or imposing mappable RGB plane-layout constraints (e.g. compression planes).
++  // The release callback still owns the original backing's lifetime.
++  const auto buffer_type = shared_image->GetGpuMemoryBufferType();
++  if (!shared_image->is_software() && buffer_type != gfx::EMPTY_BUFFER &&
++      buffer_type != gfx::SHARED_MEMORY_BUFFER) {
++    frame->shared_image_ = gpu::ClientSharedImage::ImportUnowned(
++        shared_image->Export(/*with_buffer_handle=*/true));
++  } else {
++    frame->shared_image_ = shared_image->MakeUnowned();
++  }
+   if (shared_image_release_cb) {
+     frame->SetReleaseMailboxCB(std::move(shared_image_release_cb));
+   }
+diff --git a/third_party/blink/renderer/platform/graphics/canvas_2d_resource_provider.cc b/third_party/blink/renderer/platform/graphics/canvas_2d_resource_provider.cc
+index cdf4927a051e9ad477a713e196ffd1ee5561e37d..c8977fb3203611b6a2fc86a623655d48cbd41cc3 100644
+--- a/third_party/blink/renderer/platform/graphics/canvas_2d_resource_provider.cc
++++ b/third_party/blink/renderer/platform/graphics/canvas_2d_resource_provider.cc
+@@ -94,6 +94,13 @@ BASE_FEATURE(kCanvasResourceIsWebGPUCompatible,
+ #endif
+ );
+ 
++// Opt-in prototype: allocate exportable storage before rendering, rather than
++// copying an existing canvas into an external buffer at export time.
++BASE_FEATURE(kCanvasNativeVideoFrameExport,
++             base::FEATURE_DISABLED_BY_DEFAULT);
++const base::FeatureParam<bool> kCanvasNativeVideoFrameExportLinear(
++    &kCanvasNativeVideoFrameExport, "linear", true);
++
+ base::WeakPtr<Canvas2DResourceProvider>
+ Canvas2DResourceProvider::CreateWeakPtr() {
+   return weak_ptr_factory_.GetWeakPtr();
+@@ -824,6 +831,14 @@ Canvas2DResourceProvider::Canvas2DResourceProvider(
+       }
+ 
+       std::optional<gfx::BufferUsage> buffer_usage = std::nullopt;
++      if (is_accelerated_ &&
++          base::FeatureList::IsEnabled(kCanvasNativeVideoFrameExport)) {
++        // Linear storage supports native consumers with a one-plane RGB import
++        // contract. This usage permits CPU mapping but does not map pixels here.
++        buffer_usage = kCanvasNativeVideoFrameExportLinear.Get()
++                           ? gfx::BufferUsage::SCANOUT_CPU_READ_WRITE
++                           : gfx::BufferUsage::GPU_READ;
++      }
+       if (!is_accelerated_) {
+         // Ideally we should add SHARED_IMAGE_USAGE_CPU_WRITE_ONLY to the shared
+         // image usage flag here since mailbox will be used for CPU writes by

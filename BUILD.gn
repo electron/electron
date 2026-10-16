@@ -498,6 +498,7 @@ source_set("electron_lib") {
     "chromium_src:chrome",
     "chromium_src:chrome_spellchecker",
     "shell/common:mojo",
+    "shell/common:native_video_frame",
     "shell/common:plugin",
     "shell/common:web_contents_utility",
     "shell/services/node/public/mojom",

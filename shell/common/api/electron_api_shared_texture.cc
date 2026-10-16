@@ -23,8 +23,10 @@
 #include "media/base/format_utils.h"
 #include "media/base/video_frame.h"
 #include "media/mojo/mojom/video_frame_mojom_traits.h"
+#include "shell/browser/native_video_frame_registry.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -909,6 +911,10 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict(isolate, exports);
+  if (IsBrowserProcess()) {
+    dict.SetMethod<&electron::NativeVideoFrameRegistry::Resolve>(
+        "resolveVideoFrameHandle");
+  }
   dict.SetMethod<&electron::api::shared_texture::ImportSharedTexture>(
       "importSharedTexture");
   dict.SetMethod<&electron::api::shared_texture::FinishTransferSharedTexture>(
