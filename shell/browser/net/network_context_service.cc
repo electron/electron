@@ -12,6 +12,7 @@
 #include "electron/fuses.h"
 #include "net/http/http_util.h"
 #include "net/net_buildflags.h"
+#include "net/proxy_resolution/proxy_config_with_annotation.h"
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/cookie_encryption_provider_impl.h"
 #include "services/network/public/cpp/cors/origin_access_list.h"
@@ -75,6 +76,12 @@ void NetworkContextService::ConfigureNetworkContextParams(
   network_context_params->http_cache_enabled =
       browser_context_->can_use_http_cache();
 
+  // Sessions created with `networkAccess: 'none'` must never reach the
+  // network. This makes the network service refuse every connection for the
+  // context, regardless of which browser-side path created the request.
+  network_context_params->block_network =
+      browser_context_->is_network_blocked();
+
   network_context_params->cookie_manager_params =
       network::mojom::CookieManagerParams::New();
 
@@ -130,7 +137,15 @@ void NetworkContextService::ConfigureNetworkContextParams(
         base::FilePath(chrome::kTransportSecurityPersisterFilename);
   }
 
-  proxy_config_monitor_.AddToNetworkContextParams(network_context_params);
+  if (browser_context_->is_network_blocked()) {
+    // Pin the offline context to a DIRECT proxy config and do not attach the
+    // proxy config monitor, so no PAC script fetch, WPAD auto-detection or
+    // user/system proxy can run for it.
+    network_context_params->initial_proxy_config =
+        net::ProxyConfigWithAnnotation::CreateDirect();
+  } else {
+    proxy_config_monitor_.AddToNetworkContextParams(network_context_params);
+  }
 
   BrowserProcessImpl::ApplyProxyModeFromCommandLine(
       browser_context_->in_memory_pref_store());
