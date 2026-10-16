@@ -12,6 +12,7 @@
 
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_map.h"
+#include "base/logging.h"
 #include "cc/base/switches.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents_user_data.h"

@@ -38,7 +38,7 @@
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/extended_web_contents_observer.h"
-#include "shell/browser/osr/osr_paint_event.h"
+#include "shell/browser/osr/osr_paint_event_fwd.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "shell/common/api/api.mojom-forward.h"
