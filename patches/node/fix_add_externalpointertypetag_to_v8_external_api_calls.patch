@@ -8,7 +8,7 @@ an ExternalPointerTypeTag parameter. Use kExternalPointerTypeTagDefault
 for all existing call sites.
 
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index ec217aadc4a34ce09742c3b9490634727f387c1d..e857de97428bde0bcd76f486fe29f1befa076e2c 100644
+index c78551c250acb14a988677aa6bf6949068a7fe41..4d6d9accd1970eca3ab065884e445d662e9f0c5a 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -2622,7 +2622,7 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
