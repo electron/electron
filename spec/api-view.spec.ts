@@ -221,8 +221,8 @@ describe('View', () => {
           return 'my-view';
         }
       }
-      class MyImageView extends ImageView { }
-      class MyWebContentsView extends WebContentsView { }
+      class MyImageView extends ImageView {}
+      class MyWebContentsView extends WebContentsView {}
 
       const v = new MyView();
       const iv = new MyImageView();
@@ -295,20 +295,20 @@ describe('View', () => {
     it('does not throw when toggled on a view', () => {
       w = new BaseWindow({ show: false });
       const v = new View();
-      expect(() => v.setInteractive(false)).to.not.throw();
-      expect(() => v.setInteractive(true)).to.not.throw();
+      expect(() => v.setInteractive(false)).not.toThrow();
+      expect(() => v.setInteractive(true)).not.toThrow();
       w.setContentView(v);
-      expect(() => v.setInteractive(false)).to.not.throw();
-      expect(() => v.setInteractive(true)).to.not.throw();
+      expect(() => v.setInteractive(false)).not.toThrow();
+      expect(() => v.setInteractive(true)).not.toThrow();
     });
 
     it('correctly records state when toggled', () => {
       const v = new View();
-      expect(v.getInteractive()).to.be.true();
+      expect(v.getInteractive()).toBe(true);
       v.setInteractive(false);
-      expect(v.getInteractive()).to.be.false();
+      expect(v.getInteractive()).toBe(false);
       v.setInteractive(true);
-      expect(v.getInteractive()).to.be.true();
+      expect(v.getInteractive()).toBe(true);
     });
   });
 });
