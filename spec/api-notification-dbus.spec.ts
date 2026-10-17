@@ -1,0 +1,235 @@
+// For these tests we use a fake DBus daemon to verify libnotify interaction
+// with the session bus. This requires python-dbusmock to be installed and
+// running at $DBUS_SESSION_BUS_ADDRESS.
+//
+// script/spec-runner.js spawns dbusmock, which sets DBUS_SESSION_BUS_ADDRESS.
+//
+// See https://pypi.python.org/pypi/python-dbusmock to read about dbusmock.
+
+import { nativeImage } from 'electron/common';
+import { app } from 'electron/main';
+
+import * as dbus from 'dbus-native';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+
+import { once } from 'node:events';
+import { createRequire } from 'node:module';
+import * as path from 'node:path';
+import { promisify } from 'node:util';
+
+import { ifdescribe } from './lib/spec-helpers.ts';
+
+const require = createRequire(import.meta.url);
+
+const fixturesPath = path.join(import.meta.dirname, 'fixtures');
+
+const skip = process.platform !== 'linux' || !process.env.DBUS_SESSION_BUS_ADDRESS;
+
+ifdescribe(!skip)('Notification module (dbus)', { tags: ['serial'] }, () => {
+  let mock: any, Notification: any, getCalls: any, emitSignal: any, reset: any;
+  const realAppName = app.name;
+  const realAppVersion = app.getVersion();
+  const appName = 'api-notification-dbus-spec';
+  const serviceName = 'org.freedesktop.Notifications';
+
+  beforeAll(async () => {
+    // init app
+    app.name = appName;
+    app.setDesktopName(`${appName}.desktop`);
+
+    // init DBus
+    const path = '/org/freedesktop/Notifications';
+    const iface = 'org.freedesktop.DBus.Mock';
+    console.log(`session bus: ${process.env.DBUS_SESSION_BUS_ADDRESS}`);
+    const bus = dbus.sessionBus();
+    const service = bus.getService(serviceName);
+    const getInterface = promisify(service.getInterface.bind(service));
+    mock = await getInterface(path, iface);
+    getCalls = promisify(mock.GetCalls.bind(mock));
+    emitSignal = promisify(mock.EmitSignal.bind(mock));
+    reset = promisify(mock.Reset.bind(mock));
+
+    // Override GetCapabilities to include "actions" so that libnotify
+    // registers the "default" action callback on notifications.
+    const addMethod = promisify(mock.AddMethod.bind(mock));
+    await addMethod(
+      serviceName,
+      'GetCapabilities',
+      '',
+      'as',
+      'ret = ["body", "body-markup", "icon-static", "image/svg+xml", ' +
+        '"private-synchronous", "append", "private-icon-only", "truncation", "actions"]'
+    );
+
+    Notification = require('electron').Notification;
+  });
+
+  afterAll(async () => {
+    // cleanup dbus
+    if (reset) await reset();
+    // cleanup app
+    app.setName(realAppName);
+    app.setVersion(realAppVersion);
+  });
+
+  describe(`Notification module using ${serviceName}`, () => {
+    function onMethodCalled(done: () => void) {
+      function cb(name: string) {
+        console.log(`onMethodCalled: ${name}`);
+        if (name === 'Notify') {
+          mock.removeListener('MethodCalled', cb);
+          console.log('done');
+          done();
+        }
+      }
+      return cb;
+    }
+
+    function unmarshalDBusNotifyHints(dbusHints: any) {
+      const o: Record<string, any> = {};
+      for (const hint of dbusHints) {
+        const key = hint[0];
+        const value = hint[1][1][0];
+        o[key] = value;
+      }
+      return o;
+    }
+
+    function unmarshalDBusNotifyArgs(dbusArgs: any) {
+      return {
+        app_name: dbusArgs[0][1][0],
+        replaces_id: dbusArgs[1][1][0],
+        app_icon: dbusArgs[2][1][0],
+        title: dbusArgs[3][1][0],
+        body: dbusArgs[4][1][0],
+        actions: dbusArgs[5][1][0],
+        hints: unmarshalDBusNotifyHints(dbusArgs[6][1][0])
+      };
+    }
+
+    beforeAll(
+      () =>
+        new Promise<void>((resolve, reject) => {
+          const done = (error?: unknown) => (error ? reject(error) : resolve());
+          mock.on('MethodCalled', onMethodCalled(done));
+          const n = new Notification({
+            title: 'title',
+            subtitle: 'subtitle',
+            body: 'body',
+            icon: nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'notification_icon.png')),
+            replyPlaceholder: 'replyPlaceholder',
+            sound: 'sound',
+            closeButtonText: 'closeButtonText'
+          });
+          n.show();
+        })
+    );
+
+    it(`should call ${serviceName} to show notifications`, async () => {
+      const calls = await getCalls();
+      expect(calls).toBeInstanceOf(Array);
+      expect(calls.length).toBeGreaterThanOrEqual(1);
+
+      const lastCall = calls[calls.length - 1];
+      const methodName = lastCall[1];
+      expect(methodName).toBe('Notify');
+
+      const args = unmarshalDBusNotifyArgs(lastCall[2]);
+      expect(args).toEqual({
+        app_name: appName,
+        replaces_id: 0,
+        app_icon: '',
+        title: 'title',
+        body: 'body',
+        actions: ['default', 'Show'],
+        hints: {
+          append: 'true',
+          image_data: [
+            3,
+            3,
+            12,
+            true,
+            8,
+            4,
+            Buffer.from([
+              255, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 0, 76, 255, 0, 255, 0, 0, 0, 255, 0, 0, 0, 0, 0, 38, 255, 255, 0,
+              0, 0, 255, 0, 0, 0, 0
+            ])
+          ],
+          'desktop-entry': appName,
+          'sender-pid': process.pid,
+          urgency: 1
+        }
+      });
+    });
+  });
+
+  describe('ActivationToken on notification click', () => {
+    it('should emit click when ActionInvoked is sent by the daemon', async () => {
+      const n = new Notification({ title: 'activation-token-test', body: 'test' });
+      const clicked = once(n, 'click');
+
+      n.show();
+
+      // getCalls returns all D-Bus method calls. The mock assigns sequential
+      // notification IDs starting at 1 for each Notify call.
+      const calls = await getCalls();
+      const notifyCalls = calls.filter((c: any) => c[1] === 'Notify');
+      const notificationId = notifyCalls.length;
+
+      // Simulate the notification daemon emitting ActivationToken (FDN 1.2)
+      // followed by ActionInvoked for a "default" click.
+      emitSignal('org.freedesktop.Notifications', 'ActivationToken', 'us', [
+        ['u', notificationId],
+        ['s', 'test-activation-token']
+      ]);
+      emitSignal('org.freedesktop.Notifications', 'ActionInvoked', 'us', [
+        ['u', notificationId],
+        ['s', 'default']
+      ]);
+
+      await clicked;
+    });
+  });
+
+  describe('actions', () => {
+    const actions = [
+      { type: 'button', text: 'Reply' },
+      { type: 'selection', text: 'Pick', items: ['a', 'b'] },
+      { type: 'button', text: 'Archive' },
+      { type: 'button' }
+    ];
+
+    const lastNotify = async () => {
+      const calls = (await getCalls()).filter((c: any) => c[1] === 'Notify');
+      return { id: calls.length, actions: calls.at(-1)[2][5][1][0] };
+    };
+
+    it('sends each button after the default action, keyed by its index', async () => {
+      new Notification({ title: 'actions', actions }).show();
+      expect((await lastNotify()).actions).toEqual(['default', 'Show', '0', 'Reply', '2', 'Archive']);
+    });
+
+    it('emits action with the index of the invoked button', async () => {
+      const n = new Notification({ title: 'actions', actions });
+      const invoked = once(n, 'action');
+      n.show();
+      emitSignal(serviceName, 'ActionInvoked', 'us', [
+        ['u', (await lastNotify()).id],
+        ['s', '2']
+      ]);
+      const [details] = await invoked;
+      expect(details).toMatchObject({ actionIndex: 2, selectionIndex: -1 });
+    });
+
+    it('sends no actions when the server does not support them', async () => {
+      process.env.ELECTRON_USE_UBUNTU_NOTIFIER = '1';
+      try {
+        new Notification({ title: 'actions', actions }).show();
+        expect((await lastNotify()).actions).toEqual([]);
+      } finally {
+        delete process.env.ELECTRON_USE_UBUNTU_NOTIFIER;
+      }
+    });
+  });
+});

@@ -29,6 +29,7 @@ class Dictionary : public gin::Dictionary {
 
   // Allow implicitly converting from gin::Dictionary, as it is absolutely
   // safe in this case.
+  // NOLINTNEXTLINE(google-explicit-constructor)
   Dictionary(const gin::Dictionary& dict)  // NOLINT(runtime/explicit)
       : gin::Dictionary(dict) {}
 
@@ -131,6 +132,19 @@ class Dictionary : public gin::Dictionary {
   bool SetMethod(std::string_view key, const T& callback) {
     auto context = isolate()->GetCurrentContext();
     auto templ = CallbackTraits<T>::CreateTemplate(isolate(), callback);
+    return GetHandle()
+        ->Set(context, MakeKey(key),
+              templ->GetFunction(context).ToLocalChecked())
+        .ToChecked();
+  }
+
+  // Naming the target as a template argument lets the call go straight from
+  // V8 to it, with no callback object in between. See
+  // CreateFunctionTemplate<kTarget>().
+  template <auto kTarget>
+  bool SetMethod(std::string_view key) {
+    auto context = isolate()->GetCurrentContext();
+    auto templ = CreateFunctionTemplate<kTarget>(isolate());
     return GetHandle()
         ->Set(context, MakeKey(key),
               templ->GetFunction(context).ToLocalChecked())

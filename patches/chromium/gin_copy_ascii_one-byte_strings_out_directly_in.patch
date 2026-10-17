@@ -1,0 +1,138 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Attard <samuel.r.attard@gmail.com>
+Date: Thu, 24 Sep 2026 01:59:37 +0000
+Subject: gin: Copy ASCII one-byte strings out directly in
+ Converter<std::string>
+
+Converter<std::string>::FromV8 walks every string twice: Utf8LengthV2
+to size the buffer, then WriteUtf8V2 to fill it. A one-byte string
+whose bytes are all ASCII is already valid UTF-8. For one-byte strings,
+read the bytes through String::ValueView and assign them directly when
+they are ASCII. Two-byte strings and one-byte strings with Latin-1
+characters above 0x7F take the old path. Every string argument to a
+gin-bound function goes through this converter.
+
+Measured with a gin_unittests micro-benchmark (not part of this CL)
+that calls a bound void(const std::string&) from a JS loop, Linux x64
+release build, ns per call:
+
+  11 char ASCII      72.4 -> 58.2
+  64 char ASCII      93.8 -> 90.1
+  1024 char ASCII   142.2 -> 120.9
+  4 char Latin-1     69.1 -> 79.4  (extra ASCII scan, then old path)
+  two-byte           74.9 -> 75.1
+
+No behaviour change. Adds a ConverterTest.String unit test; there was
+no coverage for Converter<std::string>::FromV8 before.
+
+Bug: None
+
+Cherry-picked from
+https://chromium-review.googlesource.com/c/chromium/src/+/8454983.
+This patch can be removed when that CL lands and rolls into Electron.
+
+diff --git a/gin/converter.cc b/gin/converter.cc
+index 04bfeb77157ea168de6a382852e7163e0f8d9949..4f5cfb4d9119b28fe32d1a67fc018dac54229dbd 100644
+--- a/gin/converter.cc
++++ b/gin/converter.cc
+@@ -8,7 +8,10 @@
+ 
+ #include <string_view>
+ 
++#include "base/compiler_specific.h"
++#include "base/containers/span.h"
+ #include "base/strings/string_util.h"
++#include "base/strings/string_view_util.h"
+ #include "base/time/time.h"
+ #include "v8/include/v8-array-buffer.h"
+ #include "v8/include/v8-external.h"
+@@ -154,6 +157,22 @@ bool Converter<std::string>::FromV8(Isolate* isolate,
+   if (!val->IsString())
+     return false;
+   Local<String> str = Local<String>::Cast(val);
++  // A one-byte string that is all ASCII is already valid UTF-8, so copy it
++  // out directly instead of measuring and then encoding it. IsOneByte() is
++  // only a cheap filter that keeps two-byte strings from creating the view.
++  if (str->IsOneByte()) {
++    String::ValueView view(isolate, str);
++    if (view.is_one_byte()) {
++      // SAFETY: ValueView only exposes a pointer and a length. It guarantees
++      // that data8() addresses length() bytes while the view is alive.
++      std::string_view bytes = base::as_string_view(
++          UNSAFE_BUFFERS(base::span(view.data8(), view.length())));
++      if (base::IsStringASCII(bytes)) {
++        out->assign(bytes);
++        return true;
++      }
++    }
++  }
+   size_t length = str->Utf8LengthV2(isolate);
+   out->resize(length);
+   str->WriteUtf8V2(isolate, out->data(), length);
+diff --git a/gin/converter_unittest.cc b/gin/converter_unittest.cc
+index 17eef92120dafe336171d85a9782ac16b6d5c2d2..35b2c76ff5271b0d24c84670c96e660dd24d4305 100644
+--- a/gin/converter_unittest.cc
++++ b/gin/converter_unittest.cc
+@@ -10,6 +10,7 @@
+ 
+ #include <array>
+ #include <string>
++#include <string_view>
+ 
+ #include "base/compiler_specific.h"
+ #include "base/strings/utf_string_conversions.h"
+@@ -92,6 +93,54 @@ TEST_F(ConverterTest, Bool) {
+   }
+ }
+ 
++TEST_F(ConverterTest, String) {
++  v8::Isolate* isolate = instance_->isolate();
++
++  HandleScope handle_scope(isolate);
++
++  auto one_byte = [isolate](std::string_view latin1) {
++    return String::NewFromOneByte(
++               isolate, reinterpret_cast<const uint8_t*>(latin1.data()),
++               v8::NewStringType::kNormal, static_cast<int>(latin1.size()))
++        .ToLocalChecked();
++  };
++
++  std::string result;
++  EXPECT_FALSE(
++      Converter<std::string>::FromV8(isolate, v8::False(isolate), &result));
++
++  // One-byte ASCII strings, including a cons string that has to be flattened
++  // (the halves are long enough that Concat does not just copy them).
++  ASSERT_TRUE(
++      Converter<std::string>::FromV8(isolate, String::Empty(isolate), &result));
++  EXPECT_EQ(result, "");
++  ASSERT_TRUE(
++      Converter<std::string>::FromV8(isolate, one_byte("hello"), &result));
++  EXPECT_EQ(result, "hello");
++  ASSERT_TRUE(Converter<std::string>::FromV8(
++      isolate,
++      String::Concat(isolate, one_byte("the first half, "),
++                     one_byte("the second half")),
++      &result));
++  EXPECT_EQ(result, "the first half, the second half");
++
++  // One-byte strings outside ASCII are Latin-1 and must be re-encoded.
++  ASSERT_TRUE(
++      Converter<std::string>::FromV8(isolate, one_byte("caf\xe9"), &result));
++  EXPECT_EQ(result, "caf\xc3\xa9");
++  ASSERT_TRUE(Converter<std::string>::FromV8(
++      isolate,
++      String::Concat(isolate, one_byte("caf\xe9 au lait, "),
++                     one_byte("\xe0 la cr\xe8me")),
++      &result));
++  EXPECT_EQ(result, "caf\xc3\xa9 au lait, \xc3\xa0 la cr\xc3\xa8me");
++
++  // Two-byte string.
++  ASSERT_TRUE(Converter<std::string>::FromV8(
++      isolate, StringToV8(isolate, "\xe2\x98\x83 snowman"), &result));
++  EXPECT_EQ(result, "\xe2\x98\x83 snowman");
++}
++
+ TEST_F(ConverterTest, String16) {
+   v8::Isolate* isolate = instance_->isolate();
+ 

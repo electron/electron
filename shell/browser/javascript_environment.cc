@@ -25,6 +25,7 @@
 #include "gin/v8_initializer.h"
 #include "partition_alloc/partition_alloc_constants.h"
 #include "shell/browser/microtasks_runner.h"
+#include "shell/browser/native_peer.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -232,6 +233,11 @@ JavascriptEnvironment::~JavascriptEnvironment() {
   DCHECK_NE(platform_, nullptr);
   v8::Isolate* isolate = this->isolate();
 
+  // PostMainMessageLoopRun() is skipped when startup fails early (e.g. no
+  // display), so dispose the runner here while the isolate is still alive.
+  if (microtasks_runner_)
+    DestroyMicrotasksRunner();
+
   {
     v8::HandleScope scope{isolate};
     isolate->GetCurrentContext()->Exit();
@@ -243,10 +249,13 @@ JavascriptEnvironment::~JavascriptEnvironment() {
   // Otherwise cppgc::internal::Sweeper::Start will try to request a task runner
   // from the NodePlatform with an already unregistered isolate.
   locker_.reset();
-  DCHECK(!microtasks_runner_);
   isolate_holder_.reset();
 
   platform_->UnregisterIsolate(isolate);
+
+  // Heap teardown destroys the remaining wrappers, which queue their released
+  // peers. Delete those peers now that no cppgc finalizer can be running.
+  NativePeerBase::DeleteQueuedPeersAfterIsolateDisposal();
 }
 
 v8::Isolate* JavascriptEnvironment::Initialize(
@@ -322,10 +331,13 @@ void JavascriptEnvironment::DestroyMicrotasksRunner() {
   {
     v8::HandleScope scope{isolate()};
     gin_helper::CleanedUpAtExit::DoCleanup();
+    // After DoCleanup() so that observers created by JS that ran during it
+    // (e.g. a webContents 'destroyed' handler) are notified too.
+    microtasks_runner_->NotifyBeforeDispose();
+    // Posted peer release tasks will not run after this point. Release the
+    // peers already queued while V8 can still run.
+    NativePeerBase::ReleaseQueuedPeersForShutdown();
   }
-  // After DoCleanup() so that observers created by JS that ran during it (e.g.
-  // a webContents 'destroyed' handler) are notified too.
-  gin::PerIsolateData::From(isolate())->NotifyBeforeMicrotasksRunnerDispose();
   base::CurrentThread::Get()->RemoveTaskObserver(microtasks_runner_.get());
   microtasks_runner_.reset();
 }

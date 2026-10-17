@@ -16,7 +16,7 @@
 #include "base/no_destructor.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "shell/browser/win/scoped_hstring.h"
+#include "base/win/scoped_hstring.h"
 
 namespace electron {
 
@@ -68,9 +68,8 @@ PCWSTR GetRawAppUserModelID() {
   return GetAppUserModelId().c_str();
 }
 
-bool GetAppUserModelID(ScopedHString* app_id) {
-  app_id->Reset(GetRawAppUserModelID());
-  return app_id->success();
+base::win::ScopedHString GetAppUserModelID() {
+  return base::win::ScopedHString::Create(GetRawAppUserModelID());
 }
 
 bool IsRunningInDesktopBridgeImpl() {

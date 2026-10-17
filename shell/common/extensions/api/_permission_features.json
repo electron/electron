@@ -59,10 +59,6 @@
     "channel": "stable",
     "extension_types": ["extension", "legacy_packaged_app", "platform_app"]
   },
-  "cookies": {
-    "channel": "stable",
-    "extension_types": ["extension", "legacy_packaged_app"]
-  },
   "debugger": [
     {
       "channel": "stable",
@@ -167,10 +163,6 @@
     "extension_types": ["extension", "legacy_packaged_app"]
   },
   "privacy": {
-    "channel": "stable",
-    "extension_types": ["extension", "legacy_packaged_app"]
-  },
-  "proxy": {
     "channel": "stable",
     "extension_types": ["extension", "legacy_packaged_app"]
   },

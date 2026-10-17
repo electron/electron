@@ -20,8 +20,6 @@ const pass = styleText('green', '✓');
 const fail = styleText('red', '✗');
 const warn = styleText('yellow', '⚠');
 
-const FAILURE_STATUS_KEY = 'Electron_Spec_Runner_Failures';
-
 const args = minimist(process.argv, {
   boolean: ['skipYarnInstall'],
   string: ['runners', 'target', 'electronVersion'],
@@ -335,7 +333,7 @@ async function runElectronTests() {
     try {
       console.info('\nRunning:', description);
       if (testResultsDir) {
-        process.env.MOCHA_FILE = path.join(testResultsDir, `test-results-${runnerId}.xml`);
+        process.env.ELECTRON_SPEC_JUNIT_FILE = path.join(testResultsDir, `test-results-${runnerId}.xml`);
       }
       await run();
     } catch (err) {
@@ -353,46 +351,31 @@ async function runElectronTests() {
   }
 }
 
-async function asyncSpawn(exe, runnerArgs) {
+async function asyncSpawn(exe, runnerArgs, env = process.env) {
   return new Promise((resolve, reject) => {
-    let forceExitResult = 0;
     const child = childProcess.spawn(exe, runnerArgs, {
-      cwd: path.resolve(__dirname, '../..')
+      cwd: path.resolve(__dirname, '../..'),
+      env
     });
     if (process.env.ELECTRON_TEST_PID_DUMP_PATH && child.pid) {
       fs.writeFileSync(process.env.ELECTRON_TEST_PID_DUMP_PATH, child.pid.toString());
     }
     child.stdout.pipe(process.stdout);
     child.stderr.pipe(process.stderr);
-    if (process.env.ELECTRON_FORCE_TEST_SUITE_EXIT) {
-      child.stdout.on('data', (data) => {
-        const failureRE = RegExp(`${FAILURE_STATUS_KEY}: (\\d.*)`);
-        const failures = data.toString().match(failureRE);
-        if (failures) {
-          forceExitResult = parseInt(failures[1], 10);
-        }
-      });
-    }
     child.on('error', (error) => reject(error));
     child.on('close', (status, signal) => {
-      let returnStatus = 0;
-      if (process.env.ELECTRON_FORCE_TEST_SUITE_EXIT) {
-        returnStatus = forceExitResult;
-      } else {
-        returnStatus = status;
-      }
-      resolve({ status: returnStatus, signal });
+      resolve({ status, signal });
     });
   });
 }
 
 function parseJUnitXML(specDir) {
-  if (!fs.existsSync(process.env.MOCHA_FILE)) {
-    console.error('JUnit XML file not found:', process.env.MOCHA_FILE);
+  if (!fs.existsSync(process.env.ELECTRON_SPEC_JUNIT_FILE)) {
+    console.error('JUnit XML file not found:', process.env.ELECTRON_SPEC_JUNIT_FILE);
     return [];
   }
 
-  const xmlContent = fs.readFileSync(process.env.MOCHA_FILE, 'utf8');
+  const xmlContent = fs.readFileSync(process.env.ELECTRON_SPEC_JUNIT_FILE, 'utf8');
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
 
@@ -412,7 +395,10 @@ function parseJUnitXML(specDir) {
 
         if (failures.length > 0 || errors.length > 0) {
           const testName = testcase.getAttribute('name');
-          const filePath = testSuite.getAttribute('file');
+          // vitest names each <testsuite> after the spec file, relative to spec/.
+          const suiteName = testSuite.getAttribute('name');
+          const filePath =
+            testSuite.getAttribute('file') || (suiteName ? path.resolve(__dirname, '..', specDir, suiteName) : null);
           const fileName = filePath ? path.relative(specDir, filePath) : 'unknown file';
           const failureInfo = {
             name: testName,
@@ -474,8 +460,8 @@ async function rerunFailedTests(specDir, testName) {
   }
 
   // Save off the original junit xml file
-  if (fs.existsSync(process.env.MOCHA_FILE)) {
-    fs.copyFileSync(process.env.MOCHA_FILE, `${process.env.MOCHA_FILE}.save`);
+  if (fs.existsSync(process.env.ELECTRON_SPEC_JUNIT_FILE)) {
+    fs.copyFileSync(process.env.ELECTRON_SPEC_JUNIT_FILE, `${process.env.ELECTRON_SPEC_JUNIT_FILE}.save`);
   }
 
   console.log(`\n📊 Found ${failedTests.length} failed test(s):`);
@@ -527,8 +513,8 @@ async function rerunFailedTests(specDir, testName) {
   console.log(`Still failing: ${results.failed}`);
 
   // Restore the original junit xml file
-  if (fs.existsSync(`${process.env.MOCHA_FILE}.save`)) {
-    fs.renameSync(`${process.env.MOCHA_FILE}.save`, process.env.MOCHA_FILE);
+  if (fs.existsSync(`${process.env.ELECTRON_SPEC_JUNIT_FILE}.save`)) {
+    fs.renameSync(`${process.env.ELECTRON_SPEC_JUNIT_FILE}.save`, process.env.ELECTRON_SPEC_JUNIT_FILE);
   }
 
   if (results.failed === 0) {
@@ -537,6 +523,74 @@ async function rerunFailedTests(specDir, testName) {
     console.log(`⚠️  ${results.failed} test(s) are still failing`);
     process.exit(1);
   }
+}
+
+let electronLaunchCount = 0;
+
+// Launches the vitest CLI, which starts the Electron processes itself
+// (spec/vitest/electron-pool.ts). The runner's own arguments are translated:
+// `--files` becomes vitest's file filters, `-g`/`--grep` (and `-i`/`--invert`)
+// its test name pattern, and anything else is treated as a command line
+// switch for the Electron workers.
+function toVitestInvocation(exe, specDir, runnerArgs) {
+  const specRoot = path.resolve(__dirname, '..', specDir);
+  const files = [];
+  const electronArgs = [];
+  let grep = null;
+  let invert = false;
+  for (let i = 0; i < runnerArgs.length; i++) {
+    const arg = String(runnerArgs[i]);
+    const takeValue = () => (arg.includes('=') ? arg.slice(arg.indexOf('=') + 1) : String(runnerArgs[++i]));
+    if (arg === '--files') {
+      while (i + 1 < runnerArgs.length && !String(runnerArgs[i + 1]).startsWith('-')) {
+        files.push(String(runnerArgs[++i]));
+      }
+    } else if (arg === '-g' || arg === '--grep' || arg.startsWith('--grep=') || arg.startsWith('-g=')) {
+      grep = takeValue();
+    } else if (arg === '-i' || arg === '--invert') {
+      invert = true;
+    } else {
+      electronArgs.push(arg);
+    }
+  }
+
+  const vitestArgs = [
+    path.join(specRoot, 'node_modules', 'vitest', 'vitest.mjs'),
+    'run',
+    '--config',
+    path.join(specRoot, 'vitest.config.ts')
+  ];
+  if (grep) {
+    vitestArgs.push('--testNamePattern', invert ? `^(?!.*(?:${grep}))` : grep);
+  }
+  const missing = [];
+  for (const file of files) {
+    // vitest filters are matched against paths relative to its root (spec/).
+    const absolute = path.isAbsolute(file) ? file : path.resolve(__dirname, '..', file);
+    if (!fs.existsSync(absolute)) missing.push(file);
+    vitestArgs.push(path.relative(specRoot, absolute));
+  }
+  if (missing.length > 0) {
+    console.error(
+      `${fail} Test files were provided, but these do not exist (relative to electron/): ${missing.join(', ')}`
+    );
+    process.exit(1);
+  }
+
+  const env = {
+    ...process.env,
+    ELECTRON_SPEC_ELECTRON_PATH: exe,
+    ELECTRON_SPEC_WORKER_ARGS: electronArgs.join(' ')
+  };
+  let command = process.execPath;
+  let commandArgs = vitestArgs;
+  if (process.platform === 'linux') {
+    // The mock D-Bus services are started once around the whole run; every
+    // Electron worker inherits the bus addresses from the CLI's environment.
+    commandArgs = [path.resolve(__dirname, 'dbus_mock.py'), command, ...commandArgs];
+    command = 'python3';
+  }
+  return { command, commandArgs, env };
 }
 
 async function runTestUsingElectron(specDir, testName, shouldRerun, additionalArgs = []) {
@@ -548,18 +602,26 @@ async function runTestUsingElectron(specDir, testName, shouldRerun, additionalAr
     exe = path.resolve(BASE, utils.getElectronExec());
   }
   let argsToPass = unknownArgs.slice(2);
-  if (additionalArgs.includes('--files')) {
-    argsToPass = argsToPass.filter(
-      (arg) => arg.toString().indexOf('--files') === -1 && arg.toString().indexOf('spec/') === -1
+  // Each launch truncates the --log-file it is given, so give reruns their
+  // own file rather than let them wipe the log of the run that failed.
+  const launchIndex = electronLaunchCount++;
+  if (launchIndex > 0) {
+    argsToPass = argsToPass.map((arg) =>
+      String(arg).startsWith('--log-file=')
+        ? String(arg).replace(/(\.[^./\\]+)?$/, (ext) => `.rerun-${launchIndex}${ext}`)
+        : arg
     );
   }
-  const runnerArgs = [`electron/${specDir}`, ...argsToPass, ...additionalArgs];
-  if (process.platform === 'linux') {
-    runnerArgs.unshift(path.resolve(__dirname, 'dbus_mock.py'), exe);
-    exe = 'python3';
+  if (additionalArgs.includes('--files')) {
+    argsToPass = argsToPass.filter(
+      (arg) =>
+        arg.toString().startsWith('--log-file=') ||
+        (arg.toString().indexOf('--files') === -1 && arg.toString().indexOf('spec/') === -1)
+    );
   }
-  console.log(`Running: ${exe} ${runnerArgs.join(' ')}`);
-  const { status, signal } = await asyncSpawn(exe, runnerArgs);
+  const { command, commandArgs, env } = toVitestInvocation(exe, specDir, [...argsToPass, ...additionalArgs]);
+  console.log(`Running: ${command} ${commandArgs.join(' ')}`);
+  const { status, signal } = await asyncSpawn(command, commandArgs, env);
   if (status !== 0) {
     if (status) {
       const textStatus = process.platform === 'win32' ? `0x${status.toString(16)}` : status.toString();
@@ -657,7 +719,7 @@ async function installSpecModules(dir) {
     }
     if (toolchainEnv === null) {
       // Not silent: the specs covering these fixtures are gated on this
-      // variable and report as skipped, see spec/node-spec.ts.
+      // variable and report as skipped, see spec/node.spec.ts.
       console.log(
         `${warn} No compiler on this host can build Electron's headers, not rebuilding native addon '${addon}'; its specs will be skipped`
       );
@@ -722,6 +784,25 @@ function getNativeAddonToolchainEnv() {
     );
     return null;
   }
+  const targetArch = process.env.npm_config_arch || process.env.NPM_CONFIG_ARCH || process.arch;
+  const targetFlags = [];
+  if (targetArch !== process.arch) {
+    const target = {
+      arm: ['arm-linux-gnueabihf', 'bullseye_armhf'],
+      arm64: ['aarch64-linux-gnu', 'bullseye_arm64'],
+      ia32: ['i686-linux-gnu', 'bullseye_i386'],
+      x64: ['x86_64-linux-gnu', 'bullseye_amd64']
+    }[targetArch];
+    if (!target) {
+      throw new Error(`Unsupported native addon target architecture: ${targetArch}`);
+    }
+    const [triple, sysrootName] = target;
+    const sysroot = path.resolve(BASE, 'build', 'linux', require('./sysroots.json')[sysrootName].SysrootDir);
+    if (!fs.existsSync(sysroot)) {
+      throw new Error(`Missing sysroot for ${targetArch} native addons: ${sysroot}`);
+    }
+    targetFlags.push(`--target=${triple}`, `--sysroot="${sysroot}"`);
+  }
   const ldflags = ['-stdlib=libc++', '-fuse-ld=lld', `-L"${libcxxLibDir}"`];
   // Sanitizer builds compile libc++abi into the electron executable and export
   // it from there (export_libcxxabi_from_executables in Chromium's
@@ -735,8 +816,10 @@ function getNativeAddonToolchainEnv() {
     CC: path.join(clangDir, 'clang'),
     CXX: path.join(clangDir, 'clang++'),
     LD: path.join(clangDir, 'lld'),
-    CFLAGS: '-Wno-trigraphs -fPIC',
+    npm_config_arch: targetArch,
+    CFLAGS: [process.env.CFLAGS, '-Wno-trigraphs -fPIC', ...targetFlags].filter(Boolean).join(' '),
     CXXFLAGS: [
+      process.env.CXXFLAGS,
       '-Wno-trigraphs',
       '-nostdinc++',
       `-isystem "${libcxxConfigDir}"`,
@@ -745,9 +828,12 @@ function getNativeAddonToolchainEnv() {
       '-fvisibility-inlines-hidden',
       '-fPIC',
       '-D_LIBCPP_ABI_NAMESPACE=Cr',
-      '-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE'
-    ].join(' '),
-    LDFLAGS: ldflags.join(' ')
+      '-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE',
+      ...targetFlags
+    ]
+      .filter(Boolean)
+      .join(' '),
+    LDFLAGS: [process.env.LDFLAGS, ...ldflags, ...targetFlags].filter(Boolean).join(' ')
   };
 }
 

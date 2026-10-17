@@ -12,12 +12,12 @@
 #include "base/functional/bind.h"
 #include "base/location.h"
 #include "base/no_destructor.h"
-#include "base/process/kill.h"
 #include "base/process/launch.h"
 #include "base/process/process.h"
 #include "base/task/single_thread_task_runner.h"
 #include "chrome/browser/browser_process.h"
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
+#include "content/public/browser/browser_child_process_host_iterator.h"
 #include "content/public/browser/child_process_data.h"
 #include "content/public/browser/child_process_host.h"
 #include "content/public/browser/child_process_termination_info.h"
@@ -28,6 +28,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
+#include "mojo/public/cpp/bindings/connector.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "services/network/public/cpp/originating_process_id.h"
 #include "shell/browser/api/electron_api_session.h"
@@ -298,6 +299,17 @@ void UtilityProcessWrapper::OnServiceProcessLaunch(
   DCHECK(node_service_remote_.is_connected());
   pid_ = process.Pid();
   GetAllUtilityProcessWrappers().Add(pid_, this);
+  // Remember the child process id: the process has already gone from the
+  // ChildProcessData that BrowserChildProcessCrashed/Killed receive.
+  for (content::BrowserChildProcessHostIterator it(
+           content::PROCESS_TYPE_UTILITY);
+       !it.Done(); ++it) {
+    const base::Process& host_process = it.GetProcess();
+    if (host_process.IsValid() && host_process.Pid() == pid_) {
+      child_process_id_ = it.GetData().GetChildProcessId();
+      break;
+    }
+  }
   // JS wraps these in net.Socket and owns them from here on.
   if (stdout_read_fd_ != -1)
     EmitWithoutEvent("stdout", std::exchange(stdout_read_fd_, -1));
@@ -320,8 +332,10 @@ void UtilityProcessWrapper::HandleTermination(uint32_t exit_code) {
     GetAllUtilityProcessWrappers().Remove(pid_);
 
   pid_ = base::kNullProcessId;
+  child_process_id_ = content::ChildProcessId();
   content::ServiceProcessHost::RemoveObserver(this);
   content::BrowserChildProcessObserver::Remove(this);
+  DispatchPendingMessages();
   CloseConnectorPort();
   CloseStdioReadFds();
   if (killed_) {
@@ -330,12 +344,11 @@ void UtilityProcessWrapper::HandleTermination(uint32_t exit_code) {
     // to gracefully shutdown the process which is performed by sending
     // SIGTERM signal. When listening for exit events via ServiceProcessHost
     // observers, the exit code on posix is obtained via
-    // BrowserChildProcessHostImpl::GetTerminationInfo which inturn relies
-    // on waitpid to extract the exit signal. If the process is unavailable,
-    // then the exit_code will be set to 0, otherwise we get the signal that
-    // was sent during the base::Process::Terminate call. For a user, this is
-    // still a graceful shutdown case so lets' convert the exit code to the
-    // expected value.
+    // BrowserChildProcessHostImpl::GetTerminationInfo which in turn relies
+    // on waitpid to extract the exit signal. A child that exits from the
+    // SIGTERM sent by kill() therefore reports the signal as its exit code.
+    // For a user, this is still a graceful shutdown case so let's convert
+    // the exit code to the expected value.
     if (exit_code == SIGTERM || exit_code == SIGKILL) {
       exit_code = 0;
     }
@@ -370,10 +383,10 @@ void UtilityProcessWrapper::OnServiceProcessTerminatedNormally(
 
 bool UtilityProcessWrapper::IsThisProcess(
     const content::ChildProcessData& data) const {
-  return pid_ != base::kNullProcessId &&
+  return !child_process_id_.is_null() &&
          data.process_type == content::PROCESS_TYPE_UTILITY &&
          data.metrics_name == node::mojom::NodeService::Name_ &&
-         data.GetProcess().Pid() == pid_;
+         data.GetChildProcessId() == child_process_id_;
 }
 
 void UtilityProcessWrapper::BrowserChildProcessCrashed(
@@ -413,8 +426,26 @@ void UtilityProcessWrapper::CloseConnectorPort() {
   }
 }
 
+void UtilityProcessWrapper::DispatchPendingMessages() {
+  // Messages the child posted before it exited can still be queued on the
+  // port when its exit is observed: the connector dispatches them one per
+  // task, and the exit notification may already be ahead of those tasks.
+  // Dispatch whatever is already queued so it is emitted before 'exit'
+  // instead of being dropped with the port. A readable pipe never blocks
+  // WaitForIncomingMessage(). If dispatch fails, the connector's error
+  // handler closes the port and the loop ends.
+  while (!connector_closed_ && connector_ && connector_->is_valid() &&
+         connector_->handle().QuerySignalsState().readable()) {
+    if (!connector_->WaitForIncomingMessage())
+      break;
+  }
+}
+
 void UtilityProcessWrapper::Shutdown(uint32_t exit_code) {
   node_service_remote_.reset();
+  // The child is still running during browser shutdown; drop its messages
+  // rather than dispatching them.
+  CloseConnectorPort();
   HandleTermination(exit_code);
 }
 
@@ -459,15 +490,13 @@ bool UtilityProcessWrapper::Kill() {
   if (pid_ == base::kNullProcessId)
     return false;
   base::Process process = base::Process::Open(pid_);
+  // Like Node's child_process.kill(), this delivers the signal (SIGTERM on
+  // POSIX, TerminateProcess on Windows) and does not guarantee that the child
+  // exits. content's BrowserChildProcessHost reaps the child once its mojo
+  // pipe drops; reaping it here as well (as base::EnsureProcessTerminated
+  // did) would race that and make content's kill()/waitpid() fail with
+  // ESRCH/ECHILD.
   bool result = process.Terminate(content::RESULT_CODE_NORMAL_EXIT, false);
-  // Refs https://bugs.chromium.org/p/chromium/issues/detail?id=818244
-  // Currently utility process is not sandboxed which
-  // means Zygote is not used on linux, refs
-  // content::UtilitySandboxedProcessLauncherDelegate::GetZygote.
-  // If sandbox feature is enabled for the utility process, then the
-  // process reap should be signaled through the zygote via
-  // content::ZygoteCommunication::EnsureProcessTerminated.
-  base::EnsureProcessTerminated(std::move(process));
   killed_ = result;
   return result;
 }
@@ -700,7 +729,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("_fork", &electron::api::UtilityProcessWrapper::Create);
+  dict.SetMethod<&electron::api::UtilityProcessWrapper::Create>("_fork");
 }
 
 }  // namespace

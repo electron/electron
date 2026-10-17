@@ -2,7 +2,9 @@
 // test job, used by script/split-tests.js) from the spec-timings.json files
 // the test jobs upload in their test_artifacts_* bundles.
 //
-// Usage, from a recent green build.yml run on the branch:
+// Usage, from a recent green build.yml run on the branch (one with full macOS
+// legs: a push to main or a PR carrying the run-full-macos label, since the
+// reduced PR legs only time the spec files in script/macos-*-spec-allowlist.txt):
 //   gh run download <run-id> --repo electron/electron -D /tmp/spec-timings -p 'test_artifacts_*'
 //   node script/gen-spec-weights.js /tmp/spec-timings
 //

@@ -76,7 +76,6 @@ inAppPurchase.on('transactions-updated', (event, transactions) => {
       }
 
       case 'failed':
-
         console.log(`Failed to purchase ${payment.productIdentifier}.`)
 
         // Finish the transaction.
@@ -84,12 +83,10 @@ inAppPurchase.on('transactions-updated', (event, transactions) => {
 
         break
       case 'restored':
-
         console.log(`The purchase of ${payment.productIdentifier} has been restored.`)
 
         break
       case 'deferred':
-
         console.log(`The purchase of ${payment.productIdentifier} has been deferred.`)
 
         break
@@ -105,7 +102,7 @@ if (!inAppPurchase.canMakePayments()) {
 }
 
 // Retrieve and display the product descriptions.
-inAppPurchase.getProducts(PRODUCT_IDS).then(products => {
+inAppPurchase.getProducts(PRODUCT_IDS).then((products) => {
   // Check the parameters.
   if (!Array.isArray(products) || products.length <= 0) {
     console.log('Unable to retrieve the product information.')
@@ -122,7 +119,7 @@ inAppPurchase.getProducts(PRODUCT_IDS).then(products => {
   const selectedQuantity = 1
 
   // Purchase the selected product.
-  inAppPurchase.purchaseProduct(selectedProduct.productIdentifier, selectedQuantity).then(isProductValid => {
+  inAppPurchase.purchaseProduct(selectedProduct.productIdentifier, selectedQuantity).then((isProductValid) => {
     if (!isProductValid) {
       console.log('The product is not valid.')
       return

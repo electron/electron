@@ -2,13 +2,13 @@ gclient_gn_args_from = 'src'
 
 vars = {
   'chromium_version':
-    '155.0.8046.0',
+    '158.0.8105.0',
   'node_version':
-    'v24.21.0',
+    'v24.22.0',
   'nan_version':
     'a1b4ba8f4bf2f46d2f270dbbb7bc0af482dc3e32',
   'squirrel.mac_version':
-    'eb13da304858c9c48ba970a55ee4afec38a55863',
+    '5c9e2133c09d6f8e2e3c5a45c5b0ffc00448c58a',
   'reactiveobjc_version':
     '74ab5baccc6f7202c8ac69a8d1e152c29dc1ea76',
   'mantle_version':
@@ -16,12 +16,9 @@ vars = {
   'sparkle_version':
     '79bc9e872948e47877e76f194cb0c8e0412b0b90',
 
-  'pyyaml_version': '3.12',
-
   'chromium_git': 'https://chromium.googlesource.com',
   'electron_git': 'https://github.com/electron',
   'nodejs_git': 'https://github.com/nodejs',
-  'yaml_git': 'https://github.com/yaml',
   'squirrel_git': 'https://github.com/Squirrel',
   'reactiveobjc_git': 'https://github.com/ReactiveCocoa',
   'mantle_git': 'https://github.com/Mantle',
@@ -45,9 +42,6 @@ vars = {
   # True (and set the pgo_data_path GN arg) to build against Chrome's
   # profiles instead.
   'checkout_pgo_profiles': False,
-
-  # It's only needed to parse the native tests configurations.
-  'checkout_pyyaml': False,
 
   # Can be used to disable the sysroot hooks.
   'install_sysroot': True,
@@ -88,23 +82,19 @@ deps = {
     'url': (Var("nodejs_git")) + '/node.git@' + (Var("node_version")),
     'condition': 'checkout_node and process_deps',
   },
-  'src/third_party/pyyaml': {
-    'url': (Var("yaml_git")) + '/pyyaml.git@' + (Var("pyyaml_version")),
-    'condition': 'checkout_pyyaml and process_deps',
-  },
   'src/third_party/squirrel.mac': {
     'url': Var("squirrel_git") + '/Squirrel.Mac.git@' + Var("squirrel.mac_version"),
     'condition': 'process_deps',
   },
-  'src/third_party/squirrel.mac/Carthage/Checkouts/ReactiveObjC': {
+  'src/third_party/squirrel.mac/vendor/ReactiveObjC': {
     'url': Var("reactiveobjc_git") + '/ReactiveObjC.git@' + Var("reactiveobjc_version"),
     'condition': 'process_deps'
   },
-  'src/third_party/squirrel.mac/Carthage/Checkouts/Mantle': {
+  'src/third_party/squirrel.mac/vendor/Mantle': {
     'url':  Var("mantle_git") + '/Mantle.git@' + Var("mantle_version"),
     'condition': 'process_deps',
   },
-  'src/third_party/squirrel.mac/Carthage/Checkouts/Sparkle': {
+  'src/third_party/squirrel.mac/vendor/Sparkle': {
     'url': Var("sparkle_git") + '/Sparkle.git@' + Var("sparkle_version"),
     'condition': 'process_deps',
   },
@@ -156,7 +146,7 @@ hooks = [
     'action': [
       'python3',
       '-c',
-      'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["node", ".yarn/releases/yarn-4.12.0.cjs", "install", "--immutable"]);',
+      'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["node", ".yarn/releases/yarn-4.18.0.cjs", "install", "--immutable"]);',
     ],
   },
   {

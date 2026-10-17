@@ -5,74 +5,11 @@
 #ifndef SHELL_BROWSER_EXTENSIONS_API_EXTENSION_ACTION_EXTENSION_ACTION_API_H_
 #define SHELL_BROWSER_EXTENSIONS_API_EXTENSION_ACTION_EXTENSION_ACTION_API_H_
 
-#include "extensions/browser/browser_context_keyed_api_factory.h"
-#include "extensions/browser/extension_action.h"
 #include "extensions/browser/extension_function.h"
-#include "extensions/browser/extension_host_registry.h"
-
-namespace content {
-class BrowserContext;
-class WebContents;
-}  // namespace content
 
 namespace extensions {
 
-class ExtensionActionAPI : public BrowserContextKeyedAPI {
- public:
-  class Observer {
-   public:
-    virtual void OnExtensionActionUpdated(
-        ExtensionAction* extension_action,
-        content::WebContents* web_contents,
-        content::BrowserContext* browser_context);
-
-    virtual void OnExtensionActionAPIShuttingDown();
-
-   protected:
-    virtual ~Observer() = default;
-  };
-
-  explicit ExtensionActionAPI(content::BrowserContext* context);
-
-  ExtensionActionAPI(const ExtensionActionAPI&) = delete;
-  ExtensionActionAPI& operator=(const ExtensionActionAPI&) = delete;
-
-  ~ExtensionActionAPI() override = default;
-
-  // Convenience method to get the instance for a profile.
-  static ExtensionActionAPI* Get(content::BrowserContext* context);
-
-  static BrowserContextKeyedAPIFactory<ExtensionActionAPI>*
-  GetFactoryInstance();
-
-  // Add or remove observers.
-  void AddObserver(Observer* observer) {}
-  void RemoveObserver(Observer* observer) {}
-
-  // Notifies that there has been a change in the given |extension_action|.
-  void NotifyChange(ExtensionAction* extension_action,
-                    content::WebContents* web_contents,
-                    content::BrowserContext* browser_context) {}
-
-  // Dispatches the onClicked event for extension that owns the given action.
-  void DispatchExtensionActionClicked(const ExtensionAction& extension_action,
-                                      content::WebContents* web_contents,
-                                      const Extension* extension) {}
-
-  // Clears the values for all ExtensionActions for the tab associated with the
-  // given |web_contents| (and signals that page actions changed).
-  void ClearAllValuesForTab(content::WebContents* web_contents) {}
-
- private:
-  friend class BrowserContextKeyedAPIFactory<ExtensionActionAPI>;
-
-  // BrowserContextKeyedAPI implementation.
-  void Shutdown() override;
-  static const char* service_name() { return "ExtensionActionAPI"; }
-  static const bool kServiceRedirectedInIncognito = true;
-};
-
-// Implementation of the browserAction and pageAction APIs.
+// Implementation of the action API.
 class ExtensionActionFunction : public ExtensionFunction {
  protected:
   ExtensionActionFunction();
@@ -87,8 +24,8 @@ class ExtensionActionFunction : public ExtensionFunction {
 //
 // Implementations of each extension action API.
 //
-// pageAction and browserAction bindings are created for these by extending them
-// then declaring an EXTENSION_FUNCTION_NAME.
+// action bindings are created for these by extending them then declaring an
+// EXTENSION_FUNCTION_NAME.
 //
 
 // show
@@ -107,9 +44,6 @@ class ExtensionActionHideFunction : public ExtensionActionFunction {
 
 // setIcon
 class ExtensionActionSetIconFunction : public ExtensionActionFunction {
- public:
-  static void SetReportErrorForInvisibleIconForTesting(bool value);
-
  protected:
   ~ExtensionActionSetIconFunction() override = default;
   ResponseAction RunExtensionAction() override;
@@ -155,13 +89,6 @@ class ExtensionActionGetTitleFunction : public ExtensionActionFunction {
 class ExtensionActionGetPopupFunction : public ExtensionActionFunction {
  protected:
   ~ExtensionActionGetPopupFunction() override = default;
-  ResponseAction RunExtensionAction() override;
-};
-
-// openPopup
-class ExtensionActionOpenPopupFunction : public ExtensionActionFunction {
- protected:
-  ~ExtensionActionOpenPopupFunction() override = default;
   ResponseAction RunExtensionAction() override;
 };
 
@@ -320,7 +247,7 @@ class ActionGetUserSettingsFunction : public ExtensionFunction {
   ~ActionGetUserSettingsFunction() override;
 };
 
-class ActionOpenPopupFunction : public ExtensionActionOpenPopupFunction {
+class ActionOpenPopupFunction : public ExtensionActionFunction {
  public:
   DECLARE_EXTENSION_FUNCTION("action.openPopup", ACTION_OPENPOPUP)
 
@@ -329,180 +256,6 @@ class ActionOpenPopupFunction : public ExtensionActionOpenPopupFunction {
   ResponseAction RunExtensionAction() override;
 };
 
-//
-// browserAction.* aliases for supported browserAction APIs.
-//
-
-class BrowserActionSetIconFunction : public ExtensionActionSetIconFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("browserAction.setIcon", BROWSERACTION_SETICON)
-
- protected:
-  ~BrowserActionSetIconFunction() override = default;
-};
-
-class BrowserActionSetTitleFunction : public ExtensionActionSetTitleFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("browserAction.setTitle", BROWSERACTION_SETTITLE)
-
- protected:
-  ~BrowserActionSetTitleFunction() override = default;
-};
-
-class BrowserActionSetPopupFunction : public ExtensionActionSetPopupFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("browserAction.setPopup", BROWSERACTION_SETPOPUP)
-
- protected:
-  ~BrowserActionSetPopupFunction() override = default;
-};
-
-class BrowserActionGetTitleFunction : public ExtensionActionGetTitleFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("browserAction.getTitle", BROWSERACTION_GETTITLE)
-
- protected:
-  ~BrowserActionGetTitleFunction() override = default;
-};
-
-class BrowserActionGetPopupFunction : public ExtensionActionGetPopupFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("browserAction.getPopup", BROWSERACTION_GETPOPUP)
-
- protected:
-  ~BrowserActionGetPopupFunction() override = default;
-};
-
-class BrowserActionSetBadgeTextFunction
-    : public ExtensionActionSetBadgeTextFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("browserAction.setBadgeText",
-                             BROWSERACTION_SETBADGETEXT)
-
- protected:
-  ~BrowserActionSetBadgeTextFunction() override = default;
-};
-
-class BrowserActionSetBadgeBackgroundColorFunction
-    : public ExtensionActionSetBadgeBackgroundColorFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("browserAction.setBadgeBackgroundColor",
-                             BROWSERACTION_SETBADGEBACKGROUNDCOLOR)
-
- protected:
-  ~BrowserActionSetBadgeBackgroundColorFunction() override = default;
-};
-
-class BrowserActionGetBadgeTextFunction
-    : public ExtensionActionGetBadgeTextFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("browserAction.getBadgeText",
-                             BROWSERACTION_GETBADGETEXT)
-
- protected:
-  ~BrowserActionGetBadgeTextFunction() override = default;
-};
-
-class BrowserActionGetBadgeBackgroundColorFunction
-    : public ExtensionActionGetBadgeBackgroundColorFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("browserAction.getBadgeBackgroundColor",
-                             BROWSERACTION_GETBADGEBACKGROUNDCOLOR)
-
- protected:
-  ~BrowserActionGetBadgeBackgroundColorFunction() override = default;
-};
-
-class BrowserActionEnableFunction : public ExtensionActionShowFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("browserAction.enable", BROWSERACTION_ENABLE)
-
- protected:
-  ~BrowserActionEnableFunction() override = default;
-};
-
-class BrowserActionDisableFunction : public ExtensionActionHideFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("browserAction.disable", BROWSERACTION_DISABLE)
-
- protected:
-  ~BrowserActionDisableFunction() override = default;
-};
-
-class BrowserActionOpenPopupFunction : public ExtensionActionOpenPopupFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("browserAction.openPopup",
-                             BROWSERACTION_OPEN_POPUP)
-
- protected:
-  ~BrowserActionOpenPopupFunction() override = default;
-};
-
 }  // namespace extensions
-
-//
-// pageAction.* aliases for supported pageAction APIs.
-//
-
-class PageActionShowFunction : public extensions::ExtensionActionShowFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("pageAction.show", PAGEACTION_SHOW)
-
- protected:
-  ~PageActionShowFunction() override = default;
-};
-
-class PageActionHideFunction : public extensions::ExtensionActionHideFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("pageAction.hide", PAGEACTION_HIDE)
-
- protected:
-  ~PageActionHideFunction() override = default;
-};
-
-class PageActionSetIconFunction
-    : public extensions::ExtensionActionSetIconFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("pageAction.setIcon", PAGEACTION_SETICON)
-
- protected:
-  ~PageActionSetIconFunction() override = default;
-};
-
-class PageActionSetTitleFunction
-    : public extensions::ExtensionActionSetTitleFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("pageAction.setTitle", PAGEACTION_SETTITLE)
-
- protected:
-  ~PageActionSetTitleFunction() override = default;
-};
-
-class PageActionSetPopupFunction
-    : public extensions::ExtensionActionSetPopupFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("pageAction.setPopup", PAGEACTION_SETPOPUP)
-
- protected:
-  ~PageActionSetPopupFunction() override = default;
-};
-
-class PageActionGetTitleFunction
-    : public extensions::ExtensionActionGetTitleFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("pageAction.getTitle", PAGEACTION_GETTITLE)
-
- protected:
-  ~PageActionGetTitleFunction() override = default;
-};
-
-class PageActionGetPopupFunction
-    : public extensions::ExtensionActionGetPopupFunction {
- public:
-  DECLARE_EXTENSION_FUNCTION("pageAction.getPopup", PAGEACTION_GETPOPUP)
-
- protected:
-  ~PageActionGetPopupFunction() override = default;
-};
 
 #endif  // SHELL_BROWSER_EXTENSIONS_API_EXTENSION_ACTION_EXTENSION_ACTION_API_H_

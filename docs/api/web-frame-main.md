@@ -32,7 +32,7 @@ of [`WebContents`](web-contents.md).
 ```js
 const { BrowserWindow } = require('electron')
 
-async function main () {
+async function main() {
   const win = new BrowserWindow({ width: 800, height: 600 })
   await win.loadURL('https://reddit.com')
 
@@ -226,14 +226,17 @@ app.whenReady().then(() => {
   win.webContents.on('did-finish-load', () => {
     const pdfPath = path.join(os.homedir(), 'Desktop', 'iframe.pdf')
     const iframe = win.webContents.mainFrame.frames[0]
-    iframe.printToPDF({}).then(data => {
-      fs.writeFile(pdfPath, data, (error) => {
-        if (error) throw error
-        console.log(`Wrote PDF successfully to ${pdfPath}`)
+    iframe
+      .printToPDF({})
+      .then((data) => {
+        fs.writeFile(pdfPath, data, (error) => {
+          if (error) throw error
+          console.log(`Wrote PDF successfully to ${pdfPath}`)
+        })
       })
-    }).catch(error => {
-      console.log(`Failed to write PDF to ${pdfPath}: `, error)
-    })
+      .catch((error) => {
+        console.log(`Failed to write PDF to ${pdfPath}: `, error)
+      })
   })
 })
 ```

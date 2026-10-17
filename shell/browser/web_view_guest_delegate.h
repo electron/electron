@@ -8,10 +8,12 @@
 #include <memory>
 
 #include "base/memory/raw_ptr.h"
+#include "base/memory/weak_ptr.h"
 #include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "shell/browser/web_contents_zoom_controller.h"
 #include "shell/browser/web_contents_zoom_observer.h"
 #include "third_party/blink/public/common/tokens/tokens.h"
+#include "v8/include/cppgc/persistent.h"
 
 namespace electron {
 
@@ -53,13 +55,13 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   void ResetZoomController();
 
   // The WebContents that attaches this guest view.
-  raw_ptr<content::WebContents> embedder_web_contents_ = nullptr;
+  base::WeakPtr<content::WebContents> embedder_web_contents_;
 
   // The zoom controller of the embedder that is used
   // to subscribe for zoom changes.
   raw_ptr<WebContentsZoomController> embedder_zoom_controller_ = nullptr;
 
-  raw_ptr<api::WebContents> api_web_contents_ = nullptr;
+  cppgc::WeakPersistent<api::WebContents> api_web_contents_;
 
   base::WeakPtrFactory<WebViewGuestDelegate> weak_ptr_factory_{this};
 };

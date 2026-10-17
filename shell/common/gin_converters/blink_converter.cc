@@ -16,6 +16,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "gin/converter.h"
 #include "gin/data_object_builder.h"
+#include "services/network/public/mojom/referrer_policy.mojom-shared.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
@@ -30,7 +31,6 @@
 #include "third_party/blink/public/common/input/web_mouse_wheel_event.h"
 #include "third_party/blink/public/common/widget/device_emulation_params.h"
 #include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
-#include "third_party/blink/public/mojom/loader/referrer.mojom.h"
 #include "ui/events/blink/blink_event_util.h"
 #include "ui/events/keycodes/dom/keycode_converter.h"
 #include "ui/events/keycodes/keyboard_code_conversion.h"
@@ -708,33 +708,6 @@ bool Converter<network::mojom::ReferrerPolicy>::FromV8(
     v8::Local<v8::Value> val,
     network::mojom::ReferrerPolicy* out) {
   return FromV8WithLowerLookup(isolate, val, ReferrerPolicies, out);
-}
-
-// static
-v8::Local<v8::Value> Converter<blink::mojom::Referrer>::ToV8(
-    v8::Isolate* isolate,
-    const blink::mojom::Referrer& val) {
-  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-  dict.Set("url", ConvertToV8(isolate, val.url));
-  dict.Set("policy", ConvertToV8(isolate, val.policy));
-  return gin::ConvertToV8(isolate, dict);
-}
-//
-// static
-bool Converter<blink::mojom::Referrer>::FromV8(v8::Isolate* isolate,
-                                               v8::Local<v8::Value> val,
-                                               blink::mojom::Referrer* out) {
-  gin_helper::Dictionary dict;
-  if (!ConvertFromV8(isolate, val, &dict))
-    return false;
-
-  if (!dict.Get("url", &out->url))
-    return false;
-
-  if (!dict.Get("policy", &out->policy))
-    return false;
-
-  return true;
 }
 
 v8::Local<v8::Value> Converter<blink::CloneableMessage>::ToV8(

@@ -75,8 +75,7 @@ programmatically. For more information, see the [Snapcraft API docs][snapcraft-s
 ```js @ts-nocheck
 const snap = require('electron-installer-snap')
 
-snap(options)
-  .then(snapPath => console.log(`Created snap at ${snapPath}!`))
+snap(options).then((snapPath) => console.log(`Created snap at ${snapPath}!`))
 ```
 
 ## Using `snapcraft` with `@electron/packager`

@@ -1,3 +1,5 @@
+import { toByteString } from '@electron/internal/common/api/net-client-request';
+
 import { ProtocolRequest, session } from 'electron/main';
 
 import { createReadStream } from 'fs';
@@ -158,7 +160,18 @@ Protocol.prototype.handle = function (
   const success = register.call(this, scheme, async (preq: ProtocolRequest, cb: any) => {
     try {
       const body = convertToRequestBody(preq.uploadData);
-      const headers = new Headers(preq.headers);
+      const headers = new Headers();
+      if (preq.headers) {
+        for (const [k, v] of Object.entries(preq.headers)) {
+          if (Array.isArray(v)) {
+            for (const item of v) {
+              headers.append(k, toByteString(item));
+            }
+          } else if (typeof v === 'string') {
+            headers.set(k, toByteString(v));
+          }
+        }
+      }
       if (headers.get('origin') === 'null') {
         headers.delete('origin');
       }
@@ -178,8 +191,19 @@ Protocol.prototype.handle = function (
       } else if (res.type === 'error') {
         cb({ error: ERR_FAILED });
       } else {
+        const headersObj: Record<string, string | string[]> = {};
+        if (res.headers) {
+          for (const [k, v] of res.headers) {
+            if (k === 'set-cookie') {
+              if (!headersObj[k]) headersObj[k] = [];
+              (headersObj[k] as string[]).push(v);
+            } else {
+              headersObj[k] = v;
+            }
+          }
+        }
         const head = {
-          headers: res.headers ? Object.fromEntries(res.headers) : {},
+          headers: headersObj,
           statusCode: res.status,
           statusText: res.statusText,
           mimeType: (res as any).__original_resp?._responseHead?.mimeType
@@ -201,14 +225,35 @@ Protocol.prototype.handle = function (
 
 Protocol.prototype.unhandle = function (this: Electron.Protocol, scheme: string) {
   const unregister = isBuiltInScheme(scheme) ? this.uninterceptProtocol : this.unregisterProtocol;
-  if (!unregister.call(this, scheme)) {
+  if (!unregister.call(this, scheme) && !(this as any).unregisterSource(scheme)) {
     throw new Error(`Failed to unhandle protocol: ${scheme}`);
   }
 };
 
+// The native converter drops what it cannot represent (functions, the state of
+// class instances), which would then read as an omitted, wider setting.
+function assertPlainData(value: unknown, name: string) {
+  if (typeof value === 'string' || value === undefined) return;
+  const proto = typeof value === 'object' && value !== null ? Object.getPrototypeOf(value) : undefined;
+  if (proto !== Object.prototype && proto !== Array.prototype && proto !== null) {
+    throw new TypeError(`${name} must be a string, an array or a plain object`);
+  }
+  for (const [key, child] of Object.entries(value as object)) assertPlainData(child, `${name}.${key}`);
+}
+
+const { registerSource } = Protocol.prototype;
+Protocol.prototype.registerSource = function (
+  this: Electron.Protocol,
+  scheme: string,
+  source: Electron.ProtocolSource
+) {
+  assertPlainData(source, 'source');
+  return registerSource.call(this, scheme, source);
+};
+
 Protocol.prototype.isProtocolHandled = function (this: Electron.Protocol, scheme: string) {
   const isRegistered = isBuiltInScheme(scheme) ? this.isProtocolIntercepted : this.isProtocolRegistered;
-  return isRegistered.call(this, scheme);
+  return isRegistered.call(this, scheme) || this.getSource(scheme) !== null;
 };
 
 const protocol = {
@@ -232,7 +277,9 @@ const protocol = {
   isProtocolIntercepted: (...args) => session.defaultSession.protocol.isProtocolIntercepted(...args),
   handle: (...args) => session.defaultSession.protocol.handle(...args),
   unhandle: (...args) => session.defaultSession.protocol.unhandle(...args),
-  isProtocolHandled: (...args) => session.defaultSession.protocol.isProtocolHandled(...args)
+  isProtocolHandled: (...args) => session.defaultSession.protocol.isProtocolHandled(...args),
+  registerSource: (...args) => session.defaultSession.protocol.registerSource(...args),
+  getSource: (...args) => session.defaultSession.protocol.getSource(...args)
 } as typeof Electron.protocol;
 
 export default protocol;

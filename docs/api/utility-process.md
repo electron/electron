@@ -103,9 +103,13 @@ process.parentPort.once('message', (e) => {
 
 Returns `boolean`
 
-Terminates the process gracefully. On POSIX, it uses SIGTERM
-but will ensure the process is reaped on exit. This function returns
-true if the kill is successful, and false otherwise.
+Terminates the process gracefully. On POSIX, it sends `SIGTERM`; on Windows,
+it terminates the process. Like Node's
+[`child_process.kill()`](https://nodejs.org/api/child_process.html#subprocesskillsignal),
+this delivers the signal but does not guarantee that the process exits: a
+child that handles `SIGTERM` decides when, or whether, to exit. On POSIX, the child
+is reaped by Electron once it exits. Returns `true` if the signal was delivered,
+and `false` otherwise.
 
 ### Instance Properties
 
@@ -194,6 +198,7 @@ Emitted when the child process sends a message using [`process.parentPort.postMe
 
 Returns:
 
+* `event` Event
 * `authenticationResponseDetails` Object
   * `url` URL
   * `pid` number
@@ -212,8 +217,10 @@ Returns:
 
 Emitted when the utility process encounters an HTTP 401 or 407 authentication challenge, if the
 process was created with both `respondToAuthRequestsFromMainProcess: true` and a `session` option.
-The `callback` should be called with credentials to respond to the challenge. Calling `callback`
-without arguments will cancel the request.
+
+The default behavior is to cancel the authentication. To override this you should prevent the
+default behavior with `event.preventDefault()` and call `callback(username, password)` with the
+credentials. Calling `callback` without arguments will cancel the request.
 
 This behaves the same as the [`login` event on `app`](app.md#event-login) but is scoped to the
 individual utility process instance.
@@ -227,7 +234,8 @@ const child = utilityProcess.fork('./worker.js', [], {
   respondToAuthRequestsFromMainProcess: true
 })
 
-child.on('login', (authenticationResponseDetails, authInfo, callback) => {
+child.on('login', (event, authenticationResponseDetails, authInfo, callback) => {
+  event.preventDefault()
   callback('username', 'password')
 })
 ```

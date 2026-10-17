@@ -21,7 +21,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "electron/buildflags/buildflags.h"
 #include "extensions/browser/api/app_runtime/app_runtime_api.h"
-#include "extensions/browser/extension_registry.h"
 #include "extensions/browser/management_policy.h"
 #include "extensions/browser/null_app_sorting.h"
 #include "extensions/browser/quota_service.h"
@@ -191,13 +190,6 @@ void ElectronExtensionSystem::PerformActionBasedOnOmahaAttributes(
     const std::string& extension_id,
     const base::DictValue& attributes) {
   NOTREACHED();
-}
-
-void ElectronExtensionSystem::OnExtensionRegisteredWithRequestContexts(
-    scoped_refptr<Extension> extension) {
-  ExtensionRegistry* registry = ExtensionRegistry::Get(browser_context_);
-  registry->AddReady(extension);
-  registry->TriggerOnReady(extension.get());
 }
 
 }  // namespace extensions

@@ -24,7 +24,7 @@ const path = require('node:path');
 const currentShard = parseInt(process.argv[2], 10);
 const shardCount = parseInt(process.argv[3], 10);
 
-const specFiles = glob.sync('spec/*-spec.ts').map((f) => path.normalize(f));
+const specFiles = glob.sync('spec/*.spec.ts').map((f) => path.normalize(f));
 
 const BUILD_TYPES = { darwin: 'darwin', linux: 'linux', win32: 'win' };
 

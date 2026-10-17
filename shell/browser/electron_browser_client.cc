@@ -72,7 +72,6 @@
 #include "printing/buildflags/buildflags.h"
 #include "sandbox/policy/switches.h"
 #include "services/device/public/cpp/geolocation/geolocation_system_permission_manager.h"
-#include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/is_potentially_trustworthy.h"
 #include "services/network/public/cpp/network_switches.h"
@@ -165,10 +164,6 @@
 #include "components/spellcheck/common/spellcheck.mojom.h"  // nogncheck
 #endif
 
-#if BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
-#include "shell/browser/fake_location_provider.h"
-#endif  // BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
-
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "base/functional/bind.h"
 #include "chrome/common/webui_url_constants.h"
@@ -182,9 +177,9 @@
 #include "extensions/browser/event_router.h"
 #include "extensions/browser/extension_host.h"
 #include "extensions/browser/extension_navigation_throttle.h"
-#include "extensions/browser/extension_prefs.h"
 #include "extensions/browser/extension_protocols.h"
 #include "extensions/browser/extension_registry.h"
+#include "extensions/browser/extension_util.h"
 #include "extensions/browser/extensions_browser_client.h"
 #include "extensions/browser/guest_view/extensions_guest_view.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
@@ -199,7 +194,6 @@
 #include "extensions/common/mojom/event_router.mojom.h"
 #include "extensions/common/mojom/guest_view.mojom.h"
 #include "extensions/common/mojom/renderer_host.mojom.h"
-#include "extensions/common/switches.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #endif
@@ -256,6 +250,15 @@ using content::BrowserThread;
 namespace electron {
 
 namespace {
+
+// A GPU cache directory under sessionData, or empty when that path is not
+// available, which content treats as caching being disabled.
+base::FilePath GpuCacheDirectory(base::FilePath::StringViewType name) {
+  base::FilePath session_data;
+  if (!base::PathService::Get(DIR_SESSION_DATA, &session_data))
+    return {};
+  return session_data.Append(name);
+}
 
 #if BUILDFLAG(ENABLE_PROMPT_API)
 const char kAIManagerUserDataKey[] = "ai_manager";
@@ -314,15 +317,6 @@ enum class RenderProcessHostPrivilege {
   kIsolated,
   kExtension,
 };
-
-// Copied from chrome/browser/extensions/extension_util.cc.
-bool AllowFileAccess(const std::string& extension_id,
-                     content::BrowserContext* context) {
-  return base::CommandLine::ForCurrentProcess()->HasSwitch(
-             extensions::switches::kDisableExtensionsFileAccessCheck) ||
-         extensions::ExtensionPrefs::Get(context)->AllowFileAccess(
-             extension_id);
-}
 
 RenderProcessHostPrivilege GetPrivilegeRequiredBySecurityPrincipal(
     const content::SecurityPrincipal& principal) {
@@ -439,13 +433,6 @@ content::WebContents* ElectronBrowserClient::GetWebContentsFromProcessID(
   // Certain render process will be created with no associated render view,
   // for example: ServiceWorker.
   return WebContentsPreferences::GetWebContentsFromProcessID(process_id);
-}
-
-content::SiteInstance* ElectronBrowserClient::GetSiteInstanceFromAffinity(
-    content::BrowserContext* browser_context,
-    const GURL& url,
-    content::RenderFrameHost* rfh) const {
-  return nullptr;
 }
 
 bool ElectronBrowserClient::IsRendererSubFrame(
@@ -805,7 +792,7 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
   //
   // Only the about:blank document needs this. A popup that navigates
   // (window.open(url)) does not run the preload on its initial document and
-  // gets a normal ElectronFrameStartup push at ReadyToCommitNavigation, so
+  // gets a normal ElectronFrame push at ReadyToCommitNavigation, so
   // building the data here for it would be pure waste.
   if (!target_url.is_empty() && !target_url.IsAboutBlank())
     return std::nullopt;
@@ -961,15 +948,6 @@ ElectronBrowserClient::CreateClientCertStore(
   return std::make_unique<net::ClientCertStoreMac>();
 #elif defined(USE_OPENSSL)
   return ();
-#endif
-}
-
-std::unique_ptr<device::LocationProvider>
-ElectronBrowserClient::OverrideSystemLocationProvider() {
-#if BUILDFLAG(OVERRIDE_LOCATION_PROVIDER)
-  return std::make_unique<FakeLocationProvider>();
-#else
-  return {};
 #endif
 }
 
@@ -1207,6 +1185,28 @@ base::FilePath ElectronBrowserClient::GetDefaultDownloadDirectory() {
   return {};
 }
 
+// The GPU process asks the browser to persist the shaders it compiles for the
+// display compositor and for Skia, and to load them back on the next launch.
+// Content only does so for the caches whose directory the embedder provides;
+// without these the shaders were compiled again on every launch. The
+// directories sit next to the other Chromium caches under sessionData, which
+// like them has to be set before the app is ready.
+base::FilePath ElectronBrowserClient::GetShaderDiskCacheDirectory() {
+  return GpuCacheDirectory(FILE_PATH_LITERAL("ShaderCache"));
+}
+
+base::FilePath ElectronBrowserClient::GetGrShaderDiskCacheDirectory() {
+  return GpuCacheDirectory(FILE_PATH_LITERAL("GrShaderCache"));
+}
+
+base::FilePath ElectronBrowserClient::GetGraphiteDawnDiskCacheDirectory() {
+  return GpuCacheDirectory(FILE_PATH_LITERAL("GraphiteDawnCache"));
+}
+
+base::FilePath ElectronBrowserClient::GetGPUPersistentCacheDirectory() {
+  return GpuCacheDirectory(FILE_PATH_LITERAL("GPUPersistentCache"));
+}
+
 scoped_refptr<network::SharedURLLoaderFactory>
 ElectronBrowserClient::GetSystemSharedURLLoaderFactory() {
   if (!g_browser_process)
@@ -1412,10 +1412,11 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
       extensions::Manifest::IsComponentLocation(extension->location())) {
     // Components of chrome that are implemented as extensions or platform apps
     // are allowed to use chrome://resources/ and chrome://theme/ URLs.
-    factories->emplace(content::kChromeUIScheme,
-                       content::CreateWebUIURLLoaderFactory(
-                           frame_host, content::kChromeUIScheme,
-                           {content::kChromeUIResourcesHost}));
+    factories->emplace(
+        content::kChromeUIScheme,
+        content::CreateWebUIURLLoaderFactory(
+            frame_host, content::kChromeUIScheme,
+            {content::kChromeUIResourcesHost}, *request_initiator_origin));
   }
 
   // Extensions with the necessary permissions get access to file:// URLs that
@@ -1423,7 +1424,8 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
   // ExtensionWebContentsObserver::RenderFrameCreated.
   extensions::Manifest::Type type = extension->GetType();
   if (type == extensions::Manifest::Type::kExtension &&
-      AllowFileAccess(extension->id(), web_contents->GetBrowserContext())) {
+      extensions::util::AllowFileAccess(extension->id(),
+                                        web_contents->GetBrowserContext())) {
     factories->emplace(url::kFileScheme,
                        FileURLLoaderFactory::Create(render_process_id));
   }
@@ -2041,6 +2043,7 @@ ElectronBrowserClient::CreateLoginDelegate(
     const GURL& url,
     scoped_refptr<net::HttpResponseHeaders> response_headers,
     bool first_auth_attempt,
+    bool do_not_prompt_for_login,
     content::GuestPageHolder* guest_page_holder,
     content::LoginDelegate::LoginAuthRequiredCallback auth_required_callback) {
   return std::make_unique<LoginHandler>(
@@ -2062,8 +2065,15 @@ ElectronBrowserClient::CreateURLLoaderThrottles(
   std::vector<std::unique_ptr<blink::URLLoaderThrottle>> result;
 
 #if BUILDFLAG(ENABLE_PLUGINS) && BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  result.push_back(std::make_unique<PluginResponseInterceptorURLLoaderThrottle>(
-      request.destination, frame_tree_node_id));
+  // MIME handler interception replaces the response with a document load,
+  // so only a navigation request may be intercepted; the navigation ID is
+  // present exactly for those. Browser-side preloads and other
+  // non-navigation requests pass through untouched.
+  if (navigation_id.has_value()) {
+    result.push_back(
+        std::make_unique<PluginResponseInterceptorURLLoaderThrottle>(
+            request.destination, frame_tree_node_id, navigation_id.value()));
+  }
 #endif
 
   return result;

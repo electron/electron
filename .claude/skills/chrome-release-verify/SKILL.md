@@ -39,6 +39,8 @@ For each bug, three checks against the **synced** repo:
 
 Any hit ⇒ IN-TREE. All empty ⇒ NEEDS-BACKPORT.
 
+Rows that step 1 (or an upstream triage report you were handed) left as **RESTRICTED / no public CL** are not inherited — re-resolve them here before classifying. Run `git -C "$repo" fetch origin` and `git -C "$repo" log --all --remotes -E --grep="(Bug|Fixed):.*\b${bug}\b" --format='%h %s'`, the `chrome-release-cls` skill's `gitiles_grep` on `refs/heads/main` and the branch-heads refs of `chromium/src`, `v8` and the component's repo, and a fresh Gerrit `?q=bug:<id>` / `?q=message:<id>` query. The Gerrit change record is often restricted while the fix commit is already public in git, and restrictions lift during a run, so an earlier RESTRICTED verdict is a hint, not a result. A row stays RESTRICTED only when all of those are empty; it is never IN-TREE by omission — list it separately in the report so a human can follow up.
+
 For each NEEDS-BACKPORT CL, also fetch its file list (`/changes/<proj>~<cl>/revisions/current/files`) and **skip** if every file is under `chrome/browser/`, `chrome/android/`, `ios/`, or `components/**/android/` — Electron doesn't compile those.
 
 Report the table now (`CVE | Sev | Bug | Component | Verdict | CL`) and the proposed backport set; get user sign-off before continuing.

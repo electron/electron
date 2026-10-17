@@ -14,30 +14,36 @@ For example:
 const { session } = require('electron')
 
 // Query all cookies.
-session.defaultSession.cookies.get({})
+session.defaultSession.cookies
+  .get({})
   .then((cookies) => {
     console.log(cookies)
-  }).catch((error) => {
+  })
+  .catch((error) => {
     console.log(error)
   })
 
 // Query all cookies associated with a specific url.
-session.defaultSession.cookies.get({ url: 'https://www.github.com' })
+session.defaultSession.cookies
+  .get({ url: 'https://www.github.com' })
   .then((cookies) => {
     console.log(cookies)
-  }).catch((error) => {
+  })
+  .catch((error) => {
     console.log(error)
   })
 
 // Set a cookie with the given cookie data;
 // may overwrite equivalent cookies if they exist.
 const cookie = { url: 'https://www.github.com', name: 'dummy_name', value: 'dummy' }
-session.defaultSession.cookies.set(cookie)
-  .then(() => {
+session.defaultSession.cookies.set(cookie).then(
+  () => {
     // success
-  }, (error) => {
+  },
+  (error) => {
     console.error(error)
-  })
+  }
+)
 ```
 
 ### Instance Events

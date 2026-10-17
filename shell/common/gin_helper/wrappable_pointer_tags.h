@@ -13,6 +13,7 @@ namespace electron {
 // Electron-specific WrappablePointerTag values that extend gin's tag range.
 enum ElectronWrappablePointerTag : uint16_t {
   kElectronApp = gin::kLastPointerTag + 1,  // electron::api::App
+  kElectronAppShimHost,                     // electron::api::AppShimHost
   kElectronAutoUpdater,                     // electron::api::AutoUpdater
   kElectronChunkedDataPipeReadableStream,   // ChunkedDataPipeReadableStream
   kElectronClipboardItem,                   // electron::api::ClipboardItem
@@ -52,12 +53,19 @@ enum ElectronWrappablePointerTag : uint16_t {
   kElectronSystemPreferences,       // electron::api::SystemPreferences
   kElectronTray,                    // electron::api::Tray
   kElectronUtilityProcess,          // electron::api::UtilityProcessWrapper
-  kElectronWebFrameMain,            // electron::api::WebFrameMain
-  kElectronWebFrameRenderer,        // (anonymous) WebFrameRenderer
-  kElectronWebRequest,              // electron::api::WebRequest
-  kElectronWebSocket,               // electron::api::WebSocketWrapper
+  kElectronView,         // electron::api::View and its subclasses ImageView and
+                         // WebContentsView
+  kElectronWebContents,  // electron::api::WebContents
+  kElectronWebFrameMain,      // electron::api::WebFrameMain
+  kElectronWebFrameRenderer,  // (anonymous) WebFrameRenderer
+  kElectronWebRequest,        // electron::api::WebRequest
+  kElectronWebSocket,         // electron::api::WebSocketWrapper
   kLastElectronPointerTag = kElectronWebSocket,
 };
+
+constexpr v8::CppHeapPointerTagRange kElectronWrappableTagRange(
+    static_cast<v8::CppHeapPointerTag>(kElectronApp),
+    static_cast<v8::CppHeapPointerTag>(kLastElectronPointerTag));
 
 // Constructs a gin::WrapperInfo from an ElectronWrappablePointerTag,
 constexpr gin::WrapperInfo MakeWrapperInfo(ElectronWrappablePointerTag tag) {
@@ -76,6 +84,10 @@ static_assert(
     "The defined Electron type tags exceed the range of allowed tags. "
     "Reduce the number of tags or adjust gin::kFirstPointerTag so that "
     "all values fit.");
+
+static_assert(
+    v8::kObjectWrappableTagRange.Contains(kElectronWrappableTagRange),
+    "Electron tags must stay within the V8 object wrappable tag range.");
 
 // Electron's tags extend gin's range (they start at gin::kLastPointerTag + 1),
 // so the combined gin + Electron tag range must stay below the tag Node.js

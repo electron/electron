@@ -27,7 +27,6 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents.h"
-#include "net/base/filename_util.h"
 #include "net/base/mime_util.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/electron_browser_context.h"
@@ -62,10 +61,7 @@ struct FileSelectHelper::ActiveDirectoryEnumeration {
 };
 
 FileSelectHelper::FileSelectHelper()
-    : render_frame_host_(nullptr),
-      web_contents_(nullptr),
-      dialog_type_(ui::SelectFileDialog::SELECT_OPEN_FILE),
-      dialog_mode_(FileChooserParams::Mode::kOpen) {}
+    : render_frame_host_(nullptr), web_contents_(nullptr) {}
 
 FileSelectHelper::~FileSelectHelper() {
   // There may be pending file dialogs, we need to tell them that we've gone
@@ -228,13 +224,6 @@ bool FileSelectHelper::AbortIfWebContentsDestroyed() {
   }
 
   return false;
-}
-
-void FileSelectHelper::SetFileSelectListenerForTesting(
-    scoped_refptr<content::FileSelectListener> listener) {
-  DCHECK(listener);
-  DCHECK(!listener_);
-  listener_ = std::move(listener);
 }
 
 std::unique_ptr<ui::SelectFileDialog::FileTypeInfo>
@@ -508,29 +497,4 @@ void FileSelectHelper::WebContentsDestroyed() {
   render_frame_host_ = nullptr;
   web_contents_ = nullptr;
   CleanUp();
-}
-
-// static
-bool FileSelectHelper::IsAcceptTypeValid(const std::string& accept_type) {
-  // TODO(raymes): This only does some basic checks, extend to test more cases.
-  // A 1 character accept type will always be invalid (either a "." in the case
-  // of an extension or a "/" in the case of a MIME type).
-  std::string unused;
-  if (accept_type.length() <= 1 ||
-      base::ToLowerASCII(accept_type) != accept_type ||
-      base::TrimWhitespaceASCII(accept_type, base::TRIM_ALL, &unused) !=
-          base::TRIM_NONE) {
-    return false;
-  }
-  return true;
-}
-
-// static
-base::FilePath FileSelectHelper::GetSanitizedFileName(
-    const base::FilePath& suggested_filename) {
-  if (suggested_filename.empty())
-    return {};
-  return net::GenerateFileName(
-      GURL(), std::string(), std::string(), suggested_filename.AsUTF8Unsafe(),
-      std::string(), l10n_util::GetStringUTF8(IDS_DEFAULT_DOWNLOAD_FILENAME));
 }

@@ -97,7 +97,9 @@ class OffScreenWebContentsView : public content::WebContentsView,
       const gfx::Rect& drag_obj_rect,
       const blink::mojom::DragEventSourceInfo& event_info) override;
   void UpdateDragOperation(ui::mojom::DragOperation operation,
-                           bool document_is_handling_drag) override {}
+                           bool document_is_handling_drag,
+                           content::RenderWidgetHostImpl* source_rwh) override {
+  }
   void SetPainting(bool painting);
   bool IsPainting() const;
   void SetFrameRate(int frame_rate);

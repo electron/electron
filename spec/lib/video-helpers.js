@@ -474,54 +474,58 @@ function doubleToString(num) {
     .join(''); // join the bytes in holy matrimony as a string
 }
 
-function WhammyVideo(speed, quality = 0.8) {
-  // a more abstract-ish API
-  this.frames = [];
-  this.duration = 1000 / speed;
-  this.quality = quality;
-}
+class WhammyVideo {
+  constructor(speed, quality = 0.8) {
+    // a more abstract-ish API
+    this.frames = [];
+    this.duration = 1000 / speed;
+    this.quality = quality;
+  }
 
-/**
- *
- * @param {string} frame
- * @param {number} [duration]
- */
-WhammyVideo.prototype.add = function (frame, duration) {
-  if (typeof duration !== 'undefined' && this.duration) throw new Error("you can't pass a duration if the fps is set");
-  if (typeof duration === 'undefined' && !this.duration) {
-    throw new Error("if you don't have the fps set, you need to have durations here.");
+  /**
+   *
+   * @param {string} frame
+   * @param {number} [duration]
+   */
+  add(frame, duration) {
+    if (typeof duration !== 'undefined' && this.duration) {
+      throw new Error("you can't pass a duration if the fps is set");
+    }
+    if (typeof duration === 'undefined' && !this.duration) {
+      throw new Error("if you don't have the fps set, you need to have durations here.");
+    }
+    if (frame.canvas) {
+      // CanvasRenderingContext2D
+      frame = frame.canvas;
+    }
+    if (frame.toDataURL) {
+      // frame = frame.toDataURL('image/webp', this.quality);
+      // quickly store image data so we don't block cpu. encode in compile method.
+      frame = frame.getContext('2d').getImageData(0, 0, frame.width, frame.height);
+    } else if (typeof frame !== 'string') {
+      throw new TypeError(
+        'frame must be a a HTMLCanvasElement, a CanvasRenderingContext2D or a DataURI formatted string'
+      );
+    }
+    if (typeof frame === 'string' && !/^data:image\/webp;base64,/gi.test(frame)) {
+      throw new Error('Input must be formatted properly as a base64 encoded DataURI of type image/webp');
+    }
+    this.frames.push({
+      image: frame,
+      duration: duration || this.duration
+    });
   }
-  if (frame.canvas) {
-    // CanvasRenderingContext2D
-    frame = frame.canvas;
-  }
-  if (frame.toDataURL) {
-    // frame = frame.toDataURL('image/webp', this.quality);
-    // quickly store image data so we don't block cpu. encode in compile method.
-    frame = frame.getContext('2d').getImageData(0, 0, frame.width, frame.height);
-  } else if (typeof frame !== 'string') {
-    throw new TypeError(
-      'frame must be a a HTMLCanvasElement, a CanvasRenderingContext2D or a DataURI formatted string'
+
+  compile(callback) {
+    const webm = new ToWebM(
+      this.frames.map(function (frame) {
+        const webp = parseWebP(parseRIFF(atob(frame.image.slice(23))));
+        webp.duration = frame.duration;
+        return webp;
+      })
     );
+    callback(webm);
   }
-  if (typeof frame === 'string' && !/^data:image\/webp;base64,/gi.test(frame)) {
-    throw new Error('Input must be formatted properly as a base64 encoded DataURI of type image/webp');
-  }
-  this.frames.push({
-    image: frame,
-    duration: duration || this.duration
-  });
-};
-
-WhammyVideo.prototype.compile = function (callback) {
-  const webm = new ToWebM(
-    this.frames.map(function (frame) {
-      const webp = parseWebP(parseRIFF(atob(frame.image.slice(23))));
-      webp.duration = frame.duration;
-      return webp;
-    })
-  );
-  callback(webm);
-};
+}
 
 export const WebmGenerator = WhammyVideo;

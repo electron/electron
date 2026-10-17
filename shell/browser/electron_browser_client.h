@@ -225,8 +225,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       std::vector<std::string>* additional_schemes) override;
   void GetAdditionalWebUISchemes(
       std::vector<std::string>* additional_schemes) override;
-  std::unique_ptr<device::LocationProvider> OverrideSystemLocationProvider()
-      override;
   void ConfigureNetworkContextParams(
       content::BrowserContext* browser_context,
       bool in_memory,
@@ -241,6 +239,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::unique_ptr<content::BrowserMainParts> CreateBrowserMainParts(
       bool /* is_integration_test */) override;
   base::FilePath GetDefaultDownloadDirectory() override;
+  base::FilePath GetShaderDiskCacheDirectory() override;
+  base::FilePath GetGrShaderDiskCacheDirectory() override;
+  base::FilePath GetGraphiteDawnDiskCacheDirectory() override;
+  base::FilePath GetGPUPersistentCacheDirectory() override;
   scoped_refptr<network::SharedURLLoaderFactory>
   GetSystemSharedURLLoaderFactory() override;
   void OnNetworkServiceCreated(
@@ -349,6 +351,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const GURL& url,
       scoped_refptr<net::HttpResponseHeaders> response_headers,
       bool first_auth_attempt,
+      bool do_not_prompt_for_login,
       content::GuestPageHolder* guest_page_holder,
       content::LoginDelegate::LoginAuthRequiredCallback auth_required_callback)
       override;
@@ -385,11 +388,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const content::ChildProcessTerminationInfo& info) override;
 
  private:
-  content::SiteInstance* GetSiteInstanceFromAffinity(
-      content::BrowserContext* browser_context,
-      const GURL& url,
-      content::RenderFrameHost* rfh) const;
-
   bool IsRendererSubFrame(content::ChildProcessId process_id) const;
 
   // What ShouldUseSpareRenderProcessHost() answers: set around

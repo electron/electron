@@ -32,9 +32,10 @@ class MicrotasksRunner;
 // Manage the V8 isolate and context automatically.
 class JavascriptEnvironment {
  public:
-  JavascriptEnvironment(uv_loop_t* event_loop,
-                        bool setup_wasm_streaming = false,
-                        v8::TracingController* tracing_controller = nullptr);
+  explicit JavascriptEnvironment(
+      uv_loop_t* event_loop,
+      bool setup_wasm_streaming = false,
+      v8::TracingController* tracing_controller = nullptr);
   ~JavascriptEnvironment();
 
   // disable copy

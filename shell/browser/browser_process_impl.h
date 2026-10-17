@@ -70,7 +70,6 @@ class BrowserProcessImpl : public BrowserProcess {
   // BrowserProcess
   BuildState* GetBuildState() override;
   GlobalFeatures* GetFeatures() override;
-  void CreateGlobalFeaturesForTesting() {}
   void EndSession() override {}
   bool IsShuttingDown() override;
   ui::UnownedUserDataHost& GetUnownedUserDataHost() override;

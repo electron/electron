@@ -59,10 +59,9 @@ jobs:
         node script/yarn.js create-typescript-definitions
         node script/yarn.js tsc -p tsconfig.default_app.json --noEmit
         node script/yarn.js tsc -p tsconfig.spec.json --noEmit
-        for f in build/webpack/*.js
+        node script/yarn.js typecheck --project tsconfig.electron.json
+        targets=$(node --input-type=module -e "import { targets } from './build/bundle/targets.mjs'; console.log(Object.keys(targets).join(' '))")
+        for target in $targets
         do
-            out="${f:29}"
-            if [ "$out" != "base.js" ]; then
-            node script/yarn.js webpack --config $f --output-filename=$out --output-path=./.tmp --env mode=development
-            fi
+            node script/yarn.js bundle --target $target --output-filename $target.js --output-path ./.tmp
         done

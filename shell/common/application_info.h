@@ -7,11 +7,11 @@
 
 #include "build/build_config.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "shell/browser/win/scoped_hstring.h"
-#endif
-
 #include <string>
+
+#if BUILDFLAG(IS_WIN)
+#include "base/win/scoped_hstring.h"
+#endif
 
 namespace electron {
 
@@ -25,11 +25,15 @@ std::string GetApplicationVersion();
 // Returns the user agent of Electron.
 std::string GetApplicationUserAgent();
 
+// Drops the cached user agent so that the next caller rebuilds it. Call this
+// whenever something the user agent is built from changes.
+void InvalidateApplicationUserAgent();
+
 bool IsAppRTL();
 
 #if BUILDFLAG(IS_WIN)
 PCWSTR GetRawAppUserModelID();
-bool GetAppUserModelID(ScopedHString* app_id);
+base::win::ScopedHString GetAppUserModelID();
 void SetAppUserModelID(const std::wstring& name);
 bool IsRunningInDesktopBridge();
 PCWSTR GetAppToastActivatorCLSID();

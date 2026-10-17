@@ -28,9 +28,15 @@ async function rendererStatus(sandbox) {
     webPreferences: {
       sandbox,
       contextIsolation: true,
+      // A sandboxed renderer only runs a bundle for the <webview> element.
+      webviewTag: sandbox,
       preload: PRELOAD,
       nodeIntegration: false,
-      additionalArguments: ['--js2c-cc-channel=' + channel]
+      additionalArguments: [
+        '--js2c-cc-channel=' + channel,
+        // Lets the sandboxed preload reach the v8 util binding.
+        '--unsafely-expose-electron-internals-for-testing'
+      ]
     }
   });
   try {

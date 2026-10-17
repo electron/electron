@@ -5,19 +5,17 @@
 #include "shell/common/gin_helper/event_emitter_template.h"
 
 #include "gin/converter.h"
-#include "gin/per_isolate_data.h"
 #include "shell/browser/api/electron_api_event_emitter.h"
+#include "shell/common/gin_helper/function_template_cache.h"
 #include "v8/include/v8-function.h"
 #include "v8/include/v8-template.h"
 
 namespace gin_helper::internal {
 
-gin::DeprecatedWrapperInfo kWrapperInfo = {gin::kEmbedderNativeGin};
-
 v8::Local<v8::FunctionTemplate> GetEventEmitterTemplate(v8::Isolate* isolate) {
-  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
+  static const char kTemplateKey = 0;
   v8::Local<v8::FunctionTemplate> tmpl =
-      data->DeprecatedGetFunctionTemplate(&kWrapperInfo);
+      GetCachedFunctionTemplate(isolate, &kTemplateKey);
 
   if (tmpl.IsEmpty()) {
     tmpl = v8::FunctionTemplate::New(isolate);
@@ -35,7 +33,7 @@ v8::Local<v8::FunctionTemplate> GetEventEmitterTemplate(v8::Isolate* isolate) {
               ->SetPrototype(context, eventemitter_prototype)
               .ToChecked());
 
-    data->DeprecatedSetFunctionTemplate(&kWrapperInfo, tmpl);
+    SetCachedFunctionTemplate(isolate, &kTemplateKey, tmpl);
   }
 
   return tmpl;

@@ -6,6 +6,6 @@ window.electronAPI.onBoundsChanged((event, bounds) => {
   manageWindowReply.textContent = message
 })
 
-manageWindowBtn.addEventListener('click', (event) => {
+manageWindowBtn.addEventListener('click', () => {
   window.electronAPI.createDemoWindow()
 })

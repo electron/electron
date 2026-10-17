@@ -14,7 +14,6 @@
 
 namespace electron {
 
-#if !BUILDFLAG(IS_LINUX)
 struct ProcessMemoryInfo {
   size_t working_set_size = 0;
   size_t peak_working_set_size = 0;
@@ -22,7 +21,6 @@ struct ProcessMemoryInfo {
   size_t private_bytes = 0;
 #endif
 };
-#endif
 
 #if BUILDFLAG(IS_WIN)
 enum class ProcessIntegrityLevel {
@@ -48,9 +46,7 @@ struct ProcessMetric {
                 const std::string& name = std::string());
   ~ProcessMetric();
 
-#if !BUILDFLAG(IS_LINUX)
   ProcessMemoryInfo GetMemoryInfo() const;
-#endif
 
 #if BUILDFLAG(IS_WIN)
   ProcessIntegrityLevel GetIntegrityLevel() const;

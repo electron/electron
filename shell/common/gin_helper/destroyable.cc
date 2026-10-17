@@ -6,6 +6,7 @@
 
 #include "base/no_destructor.h"
 #include "gin/converter.h"
+#include "gin/wrappable.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/wrappable_base.h"
 #include "v8/include/v8-function.h"
@@ -80,6 +81,18 @@ bool Destroyable::IsDestroyed(v8::Local<v8::Object> object) {
   return object->InternalFieldCount() == 0 ||
          object->GetAlignedPointerFromInternalField(
              0, v8::kEmbedderDataTypeTagDefault) == nullptr;
+}
+
+// static
+void Destroyable::MarkDestroyed(v8::Isolate* isolate,
+                                gin::WrappableBase* wrappable) {
+  v8::Local<v8::Object> wrapper;
+  if (!wrappable->GetWrapper(isolate).ToLocal(&wrapper))
+    return;
+
+  v8::Object::Wrap(isolate, wrapper, nullptr,
+                   static_cast<v8::CppHeapPointerTag>(
+                       wrappable->wrapper_info()->pointer_tag));
 }
 
 // static

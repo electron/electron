@@ -26,6 +26,9 @@ class ThemeDataSource : public content::URLDataSource {
 
  private:
   std::string GetMimeType(const GURL& url) override;
+  bool ShouldServiceRequest(const GURL& url,
+                            content::BrowserContext* browser_context,
+                            int render_process_id) override;
 
   void SendColorsCss(const GURL& url,
                      const content::WebContents::Getter& wc_getter,

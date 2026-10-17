@@ -16,6 +16,23 @@ interface ElectronWebContentsUtility {
 
   SetTemporaryZoomLevel(double zoom_level);
 
+  // window.close() from the top-level document of a renderer with Node.js
+  // integration closes its BrowserWindow regardless of who opened it.
+  CloseWindow();
+
+  // A <webview> guest's window gained or lost focus.
+  NotifyGuestFocusChange(bool focus);
+
+  // For the deprecated webFrame.routingId / webFrame.findFrameByRoutingId():
+  // map between the caller's process's frame tokens and routing IDs.
+  // |routing_id| is 0 and |frame_token| null when there is no such frame.
+  [Sync]
+  GetFrameRoutingIdDeprecated(blink.mojom.LocalFrameToken frame_token)
+      => (int32 routing_id);
+  [Sync]
+  GetFrameTokenDeprecated(int32 routing_id)
+      => (blink.mojom.LocalFrameToken? frame_token);
+
   [Sync]
   CanAccessClipboardDeprecated(
       PermissionName name,

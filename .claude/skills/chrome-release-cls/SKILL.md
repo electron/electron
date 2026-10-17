@@ -73,6 +73,18 @@ Drive it from `/tmp/cve_bugs.txt`. Prefer the **non-`[M1xx]`-prefixed** commit s
 
 For any bug with no local hit:
 - `git -C <repo> fetch origin` then re-search `--remotes` (fix may be newer than the checkout).
+- **Search gitiles history** — works with or without a checkout and needs no auth. Query `refs/heads/main` plus the release's branch refs (`refs/branch-heads/<Chromium branch number>` for `chromium/src`, `refs/branch-heads/<V8 major.minor>` for `v8/v8`, likewise `angle/angle` and `skia` on chromium.googlesource.com, and `pdfium.googlesource.com/pdfium`, `dawn.googlesource.com/dawn`, `aomedia.googlesource.com/aom`). The response starts with a `)]}'` line; gitiles `grep` is a substring match over the whole commit message, so check the hit's `Bug:`/`Fixed:` footer:
+  ```bash
+  gitiles_grep() {  # gitiles_grep <host> <repo> <ref> <bug>   e.g. chromium v8/v8 refs/branch-heads/15.2 558734727
+    curl -s "https://$1.googlesource.com/$2/+log/$3?format=JSON&n=50&grep=$4" | tail -n +2 | python3 -c '
+  import sys, json, re
+  for c in json.load(sys.stdin).get("log", []):
+      if re.search(r"^(Bug|Fixed):.*\b" + sys.argv[1] + r"\b", c["message"], re.M):
+          print(c["commit"], c["message"].splitlines()[0])
+  ' "$4"
+  }
+  ```
+  For `chromium/src` **always bound the walk with a range** — an unbounded grep over its full history times out (HTTP 502): pass `refs/branch-heads/<previous milestone's branch>..refs/branch-heads/<this branch>` and `refs/branch-heads/<this branch>..refs/heads/main` as the ref (branch number = third component of the Chrome version, e.g. 8010 for 153.0.8010.x; the previous milestone's is in `https://chromiumdash.appspot.com/fetch_milestones?mstone=<N-1>`). The sub-repos are small enough to walk unbounded (a few seconds). A hit gives the sha, the ref, and (from the commit message) the `Reviewed-on:` CL — report it as the fix even if Gerrit refuses to show that CL.
 - Query Gerrit directly: `curl -s "https://chromium-review.googlesource.com/changes/?q=bug:${BUG}&n=10" | tail -n +2 | python3 -m json.tool` (also try `skia-review`, `pdfium-review`, `dawn-review`, `aomedia-review`).
 - **`b/` bug format (Skia, Graphite, Dawn):** These repos reference bugs as `b/<id>` in commit messages rather than `Bug: <id>` footers. The Gerrit `bug:` query will return nothing. Use `message:<id>` search instead:
   ```bash
@@ -87,7 +99,8 @@ For any bug with no local hit:
   print(d.get('cherry_pick_of_change', 'none'))
   "
   ```
-- If still nothing and the bug was reported very recently (especially by "Google Threat Intelligence" or marked in-the-wild), the CL is likely still access-restricted — report it as such rather than guessing.
+- **A CL that is restricted in Gerrit may still be public in git.** The change record and the repository have separate ACLs, and the change often stays hidden for days after the commit has landed on main and the branch-heads. So RESTRICTED is only a valid verdict once git history (local, `--remotes` after a fetch) *and* gitiles have both come up empty — a Gerrit miss on its own is not enough.
+- If still nothing and the bug was reported very recently (especially by "Google Threat Intelligence" or marked in-the-wild), the CL is likely still access-restricted — report it as RESTRICTED rather than guessing, and flag it for a re-check (restrictions are commonly lifted within hours).
 
 ### 4. Special cases
 

@@ -10,6 +10,7 @@
 #include "shell/browser/api/electron_api_web_contents_view.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/window_list.h"
@@ -17,11 +18,11 @@
 #include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
-#include "ui/gl/gpu_switching_manager.h"
+#include "ui/views/focus/focus_manager.h"
+#include "ui/views/widget/widget.h"
 
 namespace electron::api {
 
@@ -72,19 +73,20 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   web_preferences.SetHidden(options::kOwnedByWindow, true);
 
   // Creates the WebContentsView.
-  gin_helper::Handle<WebContentsView> web_contents_view =
+  WebContentsView* web_contents_view =
       WebContentsView::Create(isolate, web_preferences);
-  DCHECK(web_contents_view.get());
-  window()->AddDraggableRegionProvider(web_contents_view.get());
+  CHECK(web_contents_view);
+  web_contents_view->RegisterDraggableRegionProvider(window());
+  auto* web_contents = web_contents_view->GetWebContents();
   window()->InitPrimaryWebContentsView(
-      static_cast<InspectableWebContentsView*>(web_contents_view->view()));
-  web_contents_view_.Reset(isolate, web_contents_view.ToV8());
+      web_contents->inspectable_web_contents()->GetView());
+  web_contents_view_ = web_contents_view;
 
   // Save a reference of the WebContents.
-  gin_helper::Handle<WebContents> web_contents =
-      web_contents_view->GetWebContents(isolate);
-  web_contents_.Reset(isolate, web_contents.ToV8());
-  api_web_contents_ = web_contents->GetWeakPtr();
+  v8::Local<v8::Object> wrapper =
+      web_contents->GetWrapper(isolate).ToLocalChecked();
+  web_contents_.Reset(isolate, wrapper);
+  api_web_contents_ = web_contents;
   api_web_contents_->AddObserver(this);
   Observe(api_web_contents_->web_contents());
 
@@ -108,12 +110,21 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
 }
 
 BrowserWindow::~BrowserWindow() {
-  if (api_web_contents_) {
+  if (auto* web_contents = api_web_contents_.Get()) {
     // Cleanup the observers if user destroyed this instance directly instead of
     // gracefully closing content::WebContents.
-    api_web_contents_->RemoveObserver(this);
-    api_web_contents_->Destroy();
+    web_contents->RemoveObserver(this);
+    if (!web_contents->IsDestroyed() && web_contents->web_contents())
+      web_contents->Destroy();
   }
+}
+
+WebContents* BrowserWindow::GetLiveWebContents() const {
+  WebContents* web_contents = api_web_contents_.Get();
+  return web_contents && !web_contents->IsDestroyed() &&
+                 web_contents->web_contents()
+             ? web_contents
+             : nullptr;
 }
 
 void BrowserWindow::BeforeUnloadDialogCancelled() {
@@ -134,7 +145,7 @@ void BrowserWindow::OnSetContentBounds(const gfx::Rect& rect) {
 void BrowserWindow::OnActivateContents() {
   // Hide the auto-hide menu when webContents is focused.
 #if !BUILDFLAG(IS_MAC)
-  if (IsMenuBarAutoHide() && IsMenuBarVisible())
+  if (window()->IsMenuBarAutoHide() && window()->IsMenuBarVisible())
     window()->SetMenuBarVisibility(false);
 #endif
 }
@@ -158,7 +169,10 @@ void BrowserWindow::OnPageTitleUpdated(
 }
 
 void BrowserWindow::RequestPreferredWidth(int* width) {
-  *width = web_contents()->GetPreferredSize().width();
+  WebContents* api_web_contents = GetLiveWebContents();
+  content::WebContents* contents =
+      api_web_contents ? api_web_contents->web_contents() : nullptr;
+  *width = contents ? contents->GetPreferredSize().width() : 0;
 }
 
 void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
@@ -168,52 +182,75 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
   *prevent_default = true;
 
   // Already closed by renderer.
-  if (!web_contents() || !api_web_contents_)
+  WebContents* api_web_contents = GetLiveWebContents();
+  content::WebContents* contents =
+      api_web_contents ? api_web_contents->web_contents() : nullptr;
+  if (!contents)
     return;
 
   // Required to make beforeunload handler work.
-  api_web_contents_->NotifyUserActivation();
+  api_web_contents->NotifyUserActivation();
 
-  if (web_contents()->NeedToFireBeforeUnloadOrUnloadEvents()) {
-    web_contents()->DispatchBeforeUnload(false /* auto_cancel */);
+  if (contents->NeedToFireBeforeUnloadOrUnloadEvents()) {
+    contents->DispatchBeforeUnload(false /* auto_cancel */);
   } else {
-    web_contents()->Close();
+    contents->Close();
   }
 }
 
 void BrowserWindow::OnWindowBlur() {
-  if (api_web_contents_)
-    web_contents()->StoreFocus();
+  if (auto* api_web_contents = GetLiveWebContents())
+    api_web_contents->web_contents()->StoreFocus();
 
   BaseWindow::OnWindowBlur();
 }
 
 void BrowserWindow::OnWindowFocus() {
-  // focus/blur events might be emitted while closing window.
-  if (api_web_contents_) {
-    web_contents()->RestoreFocus();
+  // focus/blur events might be emitted while closing window. When the views
+  // focus manager already restored focus to another view in this window (a
+  // child WebContentsView the user clicked into), leave it there.
+  if (auto* api_web_contents = GetLiveWebContents();
+      api_web_contents && !FocusIsInAnotherView()) {
+    content::WebContents* contents = api_web_contents->web_contents();
+    contents->RestoreFocus();
 #if !BUILDFLAG(IS_MAC)
-    if (!api_web_contents_->IsDevToolsOpened())
-      web_contents()->Focus();
+    if (!api_web_contents->IsDevToolsOpened())
+      contents->Focus();
 #endif
   }
 
   BaseWindow::OnWindowFocus();
 }
 
+bool BrowserWindow::FocusIsInAnotherView() {
+#if BUILDFLAG(IS_MAC)
+  return false;
+#else
+  auto* focus_manager = window()->widget()->GetFocusManager();
+  auto* focused = focus_manager ? focus_manager->GetFocusedView() : nullptr;
+  auto* primary = window()->primary_web_contents_view();
+  return focused && primary && !primary->Contains(focused);
+#endif
+}
+
 void BrowserWindow::OnWindowIsKeyChanged(bool is_key) {
 #if BUILDFLAG(IS_MAC)
-  auto* rwhv = web_contents()->GetRenderWidgetHostView();
-  if (rwhv)
-    rwhv->SetActive(is_key);
+  if (auto* api_web_contents = GetLiveWebContents()) {
+    auto* rwhv = api_web_contents->web_contents()->GetRenderWidgetHostView();
+    if (rwhv)
+      rwhv->SetActive(is_key);
+  }
   window()->SetActive(is_key);
 #endif
 }
 
 void BrowserWindow::OnWindowLeaveFullScreen() {
 #if BUILDFLAG(IS_MAC)
-  if (web_contents()->IsFullscreen())
-    web_contents()->ExitFullscreen(true);
+  if (auto* api_web_contents = GetLiveWebContents()) {
+    content::WebContents* contents = api_web_contents->web_contents();
+    if (contents->IsFullscreen())
+      contents->ExitFullscreen(true);
+  }
 #endif
   BaseWindow::OnWindowLeaveFullScreen();
 }
@@ -227,14 +264,16 @@ void BrowserWindow::CloseImmediately() {
 }
 
 void BrowserWindow::Focus() {
-  if (api_web_contents_ && api_web_contents_->IsOffScreen())
+  if (auto* api_web_contents = GetLiveWebContents();
+      api_web_contents && api_web_contents->IsOffScreen())
     FocusOnWebView();
   else
     BaseWindow::Focus();
 }
 
 void BrowserWindow::Blur() {
-  if (api_web_contents_ && api_web_contents_->IsOffScreen())
+  if (auto* api_web_contents = GetLiveWebContents();
+      api_web_contents && api_web_contents->IsOffScreen())
     BlurWebView();
   else
     BaseWindow::Blur();
@@ -243,12 +282,12 @@ void BrowserWindow::Blur() {
 void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
   BaseWindow::SetBackgroundColor(color_name);
   SkColor color = ParseCSSColor(color_name).value_or(SK_ColorWHITE);
-  if (api_web_contents_) {
-    api_web_contents_->SetBackgroundColor(color);
+  if (auto* api_web_contents = GetLiveWebContents()) {
+    api_web_contents->SetBackgroundColor(color);
     // Also update the web preferences object otherwise the view will be reset
     // on the next load URL call
     auto* web_preferences =
-        WebContentsPreferences::From(api_web_contents_->web_contents());
+        WebContentsPreferences::From(api_web_contents->web_contents());
     if (web_preferences) {
       web_preferences->SetBackgroundColor(color);
     }
@@ -268,11 +307,14 @@ void BrowserWindow::SetBackgroundMaterial(const std::string& material) {
 }
 
 void BrowserWindow::FocusOnWebView() {
-  web_contents()->GetRenderViewHost()->GetWidget()->Focus();
+  if (auto* api_web_contents = GetLiveWebContents()) {
+    api_web_contents->web_contents()->GetRenderViewHost()->GetWidget()->Focus();
+  }
 }
 
 void BrowserWindow::BlurWebView() {
-  web_contents()->GetRenderViewHost()->GetWidget()->Blur();
+  if (auto* api_web_contents = GetLiveWebContents())
+    api_web_contents->web_contents()->GetRenderViewHost()->GetWidget()->Blur();
 }
 
 v8::Local<v8::Value> BrowserWindow::GetWebContents(v8::Isolate* isolate) {
@@ -282,31 +324,37 @@ v8::Local<v8::Value> BrowserWindow::GetWebContents(v8::Isolate* isolate) {
 }
 
 void BrowserWindow::OnWindowShow() {
-  if (!web_contents_shown_) {
-    web_contents()->WasShown();
+  if (auto* api_web_contents = GetLiveWebContents();
+      api_web_contents && !web_contents_shown_) {
+    api_web_contents->web_contents()->WasShown();
     web_contents_shown_ = true;
   }
   BaseWindow::OnWindowShow();
 }
 
 void BrowserWindow::OnWindowHide() {
-  web_contents()->WasOccluded();
+  if (auto* api_web_contents = GetLiveWebContents())
+    api_web_contents->web_contents()->WasOccluded();
   web_contents_shown_ = false;
   BaseWindow::OnWindowHide();
 }
 
 void BrowserWindow::Show() {
-  web_contents()->WasShown();
-  web_contents_shown_ = true;
+  if (auto* api_web_contents = GetLiveWebContents()) {
+    api_web_contents->web_contents()->WasShown();
+    web_contents_shown_ = true;
+  }
   BaseWindow::Show();
 }
 
 void BrowserWindow::ShowInactive() {
   // This method doesn't make sense for modal window.
-  if (IsModal())
+  if (window()->is_modal())
     return;
-  web_contents()->WasShown();
-  web_contents_shown_ = true;
+  if (auto* api_web_contents = GetLiveWebContents()) {
+    api_web_contents->web_contents()->WasShown();
+    web_contents_shown_ = true;
+  }
   BaseWindow::ShowInactive();
 }
 
@@ -334,6 +382,11 @@ gin_helper::WrappableBase* BrowserWindow::New(gin_helper::ErrorThrower thrower,
     thrower.ThrowError(error_message);
     return nullptr;
   }
+  if (!IsAppShimValid(options, &error_message) ||
+      !IsParentValid(options, &error_message)) {
+    thrower.ThrowTypeError(error_message);
+    return nullptr;
+  }
 
   return new BrowserWindow(args, options);
 }
@@ -343,9 +396,9 @@ void BrowserWindow::BuildPrototype(v8::Isolate* isolate,
                                    v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(gin::StringToV8(isolate, "BrowserWindow"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("focusOnWebView", &BrowserWindow::FocusOnWebView)
-      .SetMethod("blurWebView", &BrowserWindow::BlurWebView)
-      .SetProperty("webContents", &BrowserWindow::GetWebContents);
+      .SetMethod<&BrowserWindow::FocusOnWebView>("focusOnWebView")
+      .SetMethod<&BrowserWindow::BlurWebView>("blurWebView")
+      .SetProperty<&BrowserWindow::GetWebContents>("webContents");
 }
 
 // static
@@ -373,7 +426,8 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict{isolate, exports};
   dict.Set("BrowserWindow",
            gin_helper::CreateConstructor<BrowserWindow>(
-               isolate, base::BindRepeating(&BrowserWindow::New)));
+               isolate, base::BindRepeating(&BrowserWindow::New),
+               electron::api::BaseWindow::GetConstructorTemplate(isolate)));
 }
 
 }  // namespace

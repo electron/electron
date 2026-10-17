@@ -18,13 +18,13 @@ import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/gni/snapshot_toolchain.gni")
 import("//v8/gni/v8.gni")
 import("build/asar.gni")
+import("build/bundle/bundle.gni")
 import("build/electron_paks.gni")
 import("build/extract_symbols.gni")
 import("build/js2c_toolchain.gni")
 import("build/npm.gni")
 import("build/templated_file.gni")
 import("build/tsc.gni")
-import("build/webpack/webpack.gni")
 import("buildflags/buildflags.gni")
 import("filenames.auto.gni")
 import("filenames.gni")
@@ -201,7 +201,8 @@ config("electron_lib_config") {
 # the repo-root write is a fixed shared path, instantiating this action in more
 # than one toolchain races two concurrent truncate-then-write generators on it.
 # Generate it once in the default toolchain and forward to that instance
-# everywhere else.
+# everywhere else. The lib/ type check only depends on source files, so there is
+# no point repeating it per toolchain either.
 if (current_toolchain == default_toolchain) {
   npm_action("build_electron_definitions") {
     script = "gn-typescript-definitions"
@@ -210,82 +211,72 @@ if (current_toolchain == default_toolchain) {
 
     outputs = [ "$target_gen_dir/tsc/typings/electron.d.ts" ]
   }
+
+  # Type checks lib/ against tsconfig.electron.json for the electron_bundle
+  # targets below, which only strip types.
+  npm_action("electron_lib_typecheck") {
+    deps = [ ":build_electron_definitions" ]
+
+    script = "typecheck"
+    inputs = auto_filenames.lib_typecheck_sources + [ "yarn.lock" ]
+    outputs = [ "$target_gen_dir/electron_lib_typecheck.stamp" ]
+    args = [
+      "--project",
+      rebase_path("tsconfig.electron.json"),
+      "--stamp",
+      rebase_path(outputs[0]),
+    ]
+  }
 } else {
   group("build_electron_definitions") {
     public_deps = [ ":build_electron_definitions($default_toolchain)" ]
   }
+
+  group("electron_lib_typecheck") {
+    public_deps = [ ":electron_lib_typecheck($default_toolchain)" ]
+  }
 }
 
-webpack_build("electron_browser_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_browser_bundle") {
+  bundle = "browser"
   inputs = auto_filenames.browser_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.browser.js"
   out_file = "$root_gen_dir/internal/electron/js2c/browser_init.js"
 }
 
-webpack_build("electron_renderer_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_renderer_bundle") {
+  bundle = "renderer"
   inputs = auto_filenames.renderer_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.renderer.js"
   out_file = "$root_gen_dir/internal/electron/js2c/renderer_init.js"
 }
 
-webpack_build("electron_worker_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_worker_bundle") {
+  bundle = "worker"
   inputs = auto_filenames.worker_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.worker.js"
   out_file = "$root_gen_dir/internal/electron/js2c/worker_init.js"
 }
 
-webpack_build("electron_sandboxed_renderer_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
-  inputs = auto_filenames.sandbox_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.sandboxed_renderer.js"
-  out_file = "$root_gen_dir/internal/electron/js2c/sandbox_bundle.js"
+electron_bundle("electron_webview_bundle") {
+  bundle = "webview"
+  inputs = auto_filenames.webview_bundle_deps
+  out_file = "$root_gen_dir/internal/electron/js2c/webview_bundle.js"
 }
 
-webpack_build("electron_isolated_renderer_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_isolated_renderer_bundle") {
+  bundle = "isolated_renderer"
   inputs = auto_filenames.isolated_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.isolated_renderer.js"
   out_file = "$root_gen_dir/internal/electron/js2c/isolated_bundle.js"
 }
 
-webpack_build("electron_node_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_node_bundle") {
+  bundle = "node"
   inputs = auto_filenames.node_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.node.js"
   out_file = "$root_gen_dir/internal/electron/js2c/node_init.js"
 }
 
-webpack_build("electron_utility_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
+electron_bundle("electron_utility_bundle") {
+  bundle = "utility"
   inputs = auto_filenames.utility_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.utility.js"
   out_file = "$root_gen_dir/internal/electron/js2c/utility_init.js"
-}
-
-webpack_build("electron_preload_realm_bundle") {
-  deps = [ ":build_electron_definitions" ]
-
-  inputs = auto_filenames.preload_realm_bundle_deps
-
-  config_file = "//electron/build/webpack/webpack.config.preload_realm.js"
-  out_file = "$root_gen_dir/internal/electron/js2c/preload_realm_bundle.js"
 }
 
 action("electron_js2c") {
@@ -293,10 +284,9 @@ action("electron_js2c") {
     ":electron_browser_bundle",
     ":electron_isolated_renderer_bundle",
     ":electron_node_bundle",
-    ":electron_preload_realm_bundle",
     ":electron_renderer_bundle",
-    ":electron_sandboxed_renderer_bundle",
     ":electron_utility_bundle",
+    ":electron_webview_bundle",
     ":electron_worker_bundle",
     "//third_party/electron_node:node_js2c($electron_js2c_toolchain)",
   ]
@@ -305,10 +295,9 @@ action("electron_js2c") {
     "$root_gen_dir/internal/electron/js2c/browser_init.js",
     "$root_gen_dir/internal/electron/js2c/isolated_bundle.js",
     "$root_gen_dir/internal/electron/js2c/node_init.js",
-    "$root_gen_dir/internal/electron/js2c/preload_realm_bundle.js",
     "$root_gen_dir/internal/electron/js2c/renderer_init.js",
-    "$root_gen_dir/internal/electron/js2c/sandbox_bundle.js",
     "$root_gen_dir/internal/electron/js2c/utility_init.js",
+    "$root_gen_dir/internal/electron/js2c/webview_bundle.js",
     "$root_gen_dir/internal/electron/js2c/worker_init.js",
   ]
 
@@ -520,6 +509,7 @@ source_set("electron_lib") {
     "//chrome/app/resources:platform_locale_settings",
     "//chrome/common/notifications",
     "//components/cbor",
+    "//components/cdm/renderer",
     "//components/certificate_transparency",
     "//components/compose:buildflags",
     "//components/embedder_support:user_agent",
@@ -555,6 +545,7 @@ source_set("electron_lib") {
     "//gin",
     "//gpu/ipc/client",
     "//media/capture/mojom:video_capture",
+    "//media/cdm:cdm_paths",
     "//media/mojo/mojom",
     "//media/mojo/mojom:web_speech_recognition",
     "//net:extras",
@@ -565,13 +556,13 @@ source_set("electron_lib") {
     "//services/device/public/cpp/hid",
     "//services/device/public/mojom",
     "//services/proxy_resolver:lib",
+    "//services/tracing/public/cpp",
     "//services/video_capture/public/mojom:constants",
     "//services/viz/privileged/mojom/compositing",
     "//services/viz/public/mojom",
     "//skia",
     "//third_party/blink/public:blink",
     "//third_party/blink/public:blink_devtools_inspector_resources",
-    "//third_party/blink/public/platform/media",
     "//third_party/boringssl",
     "//third_party/electron_node:libnode",
 
@@ -583,6 +574,7 @@ source_set("electron_lib") {
     "//third_party/inspector_protocol:crdtp",
     "//third_party/leveldatabase",
     "//third_party/libyuv",
+    "//third_party/perfetto/protos/perfetto/config:cpp",
     "//third_party/webrtc_overrides:webrtc_component",
     "//third_party/widevine/cdm:headers",
     "//third_party/zlib/google:zip",
@@ -657,6 +649,10 @@ source_set("electron_lib") {
   if (!is_mac) {
     sources += filenames.lib_sources_views
   }
+  if (is_debug || dcheck_always_on) {
+    sources += [ "shell/common/api/electron_api_testing.cc" ]
+    deps += [ "shell/common:v8_code_cache_test_helpers" ]
+  }
 
   if (electron_generate_js2c_code_cache) {
     sources += [
@@ -675,13 +671,6 @@ source_set("electron_lib") {
     defines += [ "NODE_SHARED_MODE" ]
   }
 
-  if (enable_fake_location_provider) {
-    sources += [
-      "shell/browser/fake_location_provider.cc",
-      "shell/browser/fake_location_provider.h",
-    ]
-  }
-
   if (enable_prompt_api) {
     sources += [
       "shell/browser/ai/proxying_ai_manager.cc",
@@ -694,17 +683,15 @@ source_set("electron_lib") {
   }
 
   if (is_mac) {
-    # Disable C++ modules to resolve linking error when including MacOS SDK
-    # headers from third_party/electron_node/deps/uv/include/uv/darwin.h
-    # TODO(samuelmaddock): consider revisiting this in the future
-    use_libcxx_modules = false
-
     deps += [
+      "shell/common:app_shim",
       "//components/os_crypt/async/browser:keychain_key_provider",
       "//components/os_crypt/common:keychain_password_mac",
       "//components/remote_cocoa/app_shim",
       "//components/remote_cocoa/browser",
       "//content/browser:mac_helpers",
+      "//mojo/core/embedder",
+      "//mojo/public/cpp/platform",
       "//ui/accelerated_widget_mac",
     ]
 
@@ -812,6 +799,7 @@ source_set("electron_lib") {
       "//components/crash/core/app:crash_export_thunks",
       "//components/os_crypt/async/browser:dpapi_key_provider",
       "//third_party/libxml:xml_writer",
+      "//ui/color:accent_color_observer",
       "//ui/wm",
       "//ui/wm/public",
     ]
@@ -1129,15 +1117,18 @@ if (electron_use_resource_allowlist) {
   electron_resource_allowlist_file =
       "$target_gen_dir/electron_resource_allowlist.txt"
 
-  # TODO: on Windows this should extract from electron.exe.pdb instead of the
-  # inputs pseudo-link (and the executable must then stop depending on
-  # :packed_resources to avoid a dependency cycle).
-  generate_resource_allowlist("electron_resource_allowlist") {
-    deps = [ ":electron_resource_allowlist_inputs" ]
-    inputs = [
-      "$root_out_dir/libelectron_resource_allowlist_inputs$shlib_extension",
-    ]
-    output = electron_resource_allowlist_file
+  # On macOS this target is defined with the framework below.
+  if (!is_mac) {
+    # TODO: on Windows this should extract from electron.exe.pdb instead of the
+    # inputs pseudo-link (and the executable must then stop depending on
+    # :packed_resources to avoid a dependency cycle).
+    generate_resource_allowlist("electron_resource_allowlist") {
+      deps = [ ":electron_resource_allowlist_inputs" ]
+      inputs = [
+        "$root_out_dir/libelectron_resource_allowlist_inputs$shlib_extension",
+      ]
+      output = electron_resource_allowlist_file
+    }
   }
 }
 
@@ -1268,6 +1259,20 @@ if (is_mac) {
     deps = [ ":electron_swiftshader_binaries" ]
   }
 
+  # The executable of an app shim. Apps copy it into the shim bundles they make;
+  # it links nothing from Electron and loads the host app's framework.
+  executable("electron_app_shim_loader") {
+    output_name = "app_shim_loader"
+    sources = [ "shell/app_shim/app_shim_loader_mac.mm" ]
+    frameworks = [ "Cocoa.framework" ]
+  }
+
+  bundle_data("electron_app_shim_loader_bundle_data") {
+    sources = [ "$root_out_dir/app_shim_loader" ]
+    outputs = [ "{{bundle_contents_dir}}/Helpers/{{source_file_part}}" ]
+    public_deps = [ ":electron_app_shim_loader" ]
+  }
+
   bundle_data("electron_crashpad_helper") {
     sources = [ "$root_out_dir/chrome_crashpad_handler" ]
 
@@ -1282,27 +1287,39 @@ if (is_mac) {
     }
   }
 
-  # Deps that determine the native code linked into the Electron Framework
-  # (all of Electron's native code lives in the framework on macOS, so its
-  # link inputs, not the app shim's, determine the reachable resource set).
-  # Shared with :electron_resource_allowlist_inputs below so the resource
-  # allowlist is computed from exactly the same link inputs as the shipped
-  # framework.
-  electron_framework_link_deps = [
-    ":electron_lib",
-    "//third_party/electron_node:libnode",
-  ]
-
   if (electron_use_resource_allowlist) {
-    # Pseudo-link sharing the Electron Framework's link inputs:
-    # --collect-inputs-only makes linker_driver.py skip the real link and
-    # write the list of link inputs instead. generate_resource_allowlist
-    # greps those inputs for ui::AllowlistedResource<id> markers.
-    shared_library("electron_resource_allowlist_inputs") {
-      ldflags = [ "--collect-inputs-only" ]
-      include_dirs = [ "." ]
-      sources = filenames.framework_sources
-      deps = electron_framework_link_deps
+    # Read the markers back from the linked framework's symbol table (the
+    # dSYM's copy when the framework itself is stripped). The locale paks that
+    # consume this reach the framework through bundle_deps, not the link, so
+    # there is no cycle.
+    if (enable_dsyms) {
+      _allowlist_binary = "$root_out_dir/$electron_framework_name.dSYM/Contents/Resources/DWARF/$electron_framework_name"
+    } else if (save_unstripped_output) {
+      _allowlist_binary = "$root_out_dir/$electron_framework_name.unstripped"
+    } else {
+      _allowlist_binary =
+          get_label_info(":electron_framework_shared_library",
+                         "target_out_dir") +
+          "/electron_framework_shared_library/$electron_framework_name"
+    }
+
+    action("electron_resource_allowlist") {
+      script = "build/mac_resource_allowlist.py"
+      deps = [ ":electron_framework+link_nested" ]
+      _nm = "//third_party/llvm-build/Release+Asserts/bin/llvm-nm"
+      inputs = [
+        _allowlist_binary,
+        _nm,
+      ]
+      outputs = [ electron_resource_allowlist_file ]
+      args = [
+        "--nm",
+        rebase_path(_nm, root_build_dir),
+        "--input",
+        rebase_path(_allowlist_binary, root_build_dir),
+        "--output",
+        rebase_path(electron_resource_allowlist_file, root_build_dir),
+      ]
     }
   }
 
@@ -1341,16 +1358,23 @@ if (is_mac) {
     if (!is_mas_build) {
       framework_contents += [ "Helpers" ]
     }
-    public_deps =
-        [ ":electron_framework_libraries" ] + electron_framework_link_deps
-    deps = [
+    public_deps = [ ":electron_lib" ]
+    deps = [ "//third_party/electron_node:libnode" ]
+
+    # bundle_deps reach the bundle but not the framework's link, which
+    # :electron_resource_allowlist (and through it :packed_resources) depends
+    # on; bundle_data on the link would leak to every consumer of the paks.
+    bundle_deps = [
       ":electron_framework_libraries",
       ":electron_framework_resources",
       ":electron_swiftshader_library",
       ":electron_xibs",
     ]
     if (!is_mas_build) {
-      deps += [ ":electron_crashpad_helper" ]
+      bundle_deps += [
+        ":electron_app_shim_loader_bundle_data",
+        ":electron_crashpad_helper",
+      ]
     }
     info_plist = "shell/common/resources/mac/Info.plist"
 
@@ -1367,6 +1391,12 @@ if (is_mac) {
       "-Wl,-install_name,@rpath/$output_name.framework/$output_name",
       "-rpath",
       "@loader_path/Libraries",
+
+      # The folder this framework is in, where its sibling frameworks are. The
+      # app's executable has it as an rpath too, but an app shim loads this
+      # framework from an executable in another bundle.
+      "-rpath",
+      "@loader_path/../../..",
 
       # Required for exporting all symbols of libuv.
       "-Wl,-force_load,obj/third_party/electron_node/deps/uv/libuv.a",
@@ -1853,6 +1883,10 @@ template("dist_zip") {
   action(target_name) {
     script = "//electron/build/zip.py"
     deps = [ ":$_runtime_deps_target" ]
+    if (defined(invoker.build_deps)) {
+      # Ordered before the zip without contributing to its runtime deps.
+      deps += invoker.build_deps
+    }
     forward_variables_from(invoker,
                            [
                              "outputs",
@@ -1914,10 +1948,7 @@ dist_zip("electron_dist_zip") {
   }
   deps = data_deps
   if (electron_use_resource_allowlist) {
-    # Build-order dep only (not data_deps): the check must pass before the
-    # dist zip is created, but its stamp output must not be packed into the
-    # zip's runtime deps.
-    deps += [ ":electron_resource_allowlist_check" ]
+    build_deps = [ ":electron_resource_allowlist_check" ]
   }
   outputs = [ "$root_build_dir/dist.zip" ]
 }
@@ -2049,8 +2080,22 @@ action("libcxx_objects_zip") {
   args = rebase_path(outputs)
 }
 
+if (is_debug || dcheck_always_on) {
+  # Test runners receive these assets rather than a full V8 checkout.
+  copy("v8_code_cache_spec_assets") {
+    sources = [
+      "//v8/LICENSE",
+      "//v8/test/mjsunit/wasm/wasm-module-builder.js",
+    ]
+    outputs = [ "$root_gen_dir/electron/v8-code-cache/{{source_file_part}}" ]
+  }
+}
+
 group("electron") {
   public_deps = [ ":electron_app" ]
+  if (is_debug || dcheck_always_on) {
+    data_deps = [ ":v8_code_cache_spec_assets" ]
+  }
 }
 
 ##### node_headers
@@ -2122,6 +2167,9 @@ group("testing_build") {
     ":electron_mksnapshot_zip",
     ":node_headers",
   ]
+  if (is_debug || dcheck_always_on) {
+    data_deps = [ ":v8_code_cache_spec_assets" ]
+  }
   if (!is_mas_build) {
     public_deps += [ ":electron_xcache_zip" ]
   }

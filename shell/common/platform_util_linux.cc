@@ -14,6 +14,8 @@
 
 #include <gdk/gdk.h>
 
+#include "base/containers/flat_set.h"
+#include "base/containers/unique_ptr_adapters.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/files/scoped_file.h"
@@ -25,6 +27,7 @@
 #include "base/process/kill.h"
 #include "base/process/launch.h"
 #include "base/run_loop.h"
+#include "base/strings/escape.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/types/expected.h"
@@ -211,30 +214,27 @@ class ShowItemHelper {
     dbus_xdg::Dictionary options;
     options[kActivationTokenKey] =
         dbus_utils::Variant::Wrap<"s">(activation_token);
-    // In the rare occasion that another request comes in before the response is
-    // received, we will end up overwriting this request object with the new one
-    // and the response from the first request will not be handled in that case.
-    // This should be acceptable as it means the two requests were received too
-    // close to each other from the user and the first one was handled on a best
-    // effort basis.
-    portal_open_directory_request_ = std::make_unique<dbus_xdg::Request>(
+    auto request = std::make_unique<dbus_xdg::Request>(
         bus_, portal_object_proxy_, kFreedesktopPortalOpenURI,
-        kMethodOpenDirectory, std::move(options),
+        kMethodOpenDirectory, std::move(options), std::string(), std::move(fd));
+    request->SetCallback(
         base::BindOnce(&ShowItemHelper::ShowItemUsingPortalResponse,
                        // Unretained is safe, the ShowItemHelper instance is
                        // never destroyed.
-                       base::Unretained(this), full_path),
-        std::string(), std::move(fd));
+                       base::Unretained(this), request.get(), full_path));
+    portal_requests_.insert(std::move(request));
   }
 
   void ShowItemUsingPortalResponse(
+      dbus_xdg::Request* request,
       const base::FilePath& full_path,
       base::expected<dbus_xdg::Dictionary, dbus_xdg::ResponseError> results) {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-    portal_open_directory_request_.reset();
-    if (!results.has_value()) {
+    if (!results.has_value() &&
+        results.error() != dbus_xdg::ResponseError::kRequestCancelledByUser) {
       OpenParentFolderFallback(full_path);
     }
+    CHECK_EQ(portal_requests_.erase(request), 1u);
   }
 
   void ShowItemUsingFileManager(const base::FilePath& full_path) {
@@ -250,7 +250,11 @@ class ShowItemHelper {
                                dbus::ObjectPath(kFreedesktopFileManagerPath));
     }
 
-    std::vector<std::string> file_to_highlight{"file://" + full_path.value()};
+    // Percent-encode the path bytes directly. net::FilePathToFileURL() would
+    // first convert them through the C library locale, which drops non-ASCII
+    // paths when that locale is not UTF-8.
+    std::vector<std::string> file_to_highlight{
+        "file://" + base::EscapePath(full_path.value())};
     dbus_utils::CallMethod<"ass", "">(
         file_manager_object_proxy_, kFreedesktopFileManagerName,
         kMethodShowItems,
@@ -281,7 +285,8 @@ class ShowItemHelper {
   // The proxy objects are owned by `bus_`.
   raw_ptr<dbus::ObjectProxy> portal_object_proxy_ = nullptr;
   raw_ptr<dbus::ObjectProxy> file_manager_object_proxy_ = nullptr;
-  std::unique_ptr<dbus_xdg::Request> portal_open_directory_request_;
+  base::flat_set<std::unique_ptr<dbus_xdg::Request>, base::UniquePtrComparator>
+      portal_requests_;
 
   // Requests that are queued until the API availability is determined.
   std::queue<base::FilePath> pending_requests_;
@@ -410,12 +415,27 @@ bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
   std::string trash = env->GetVar(ELECTRON_TRASH).value_or("");
   if (trash.empty()) {
     // Determine desktop environment and set accordingly.
-    const auto desktop_env(base::nix::GetDesktopEnvironment(env.get()));
-    if (desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE4 ||
-        desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE5) {
-      trash = "kioclient5";
-    } else if (desktop_env == base::nix::DESKTOP_ENVIRONMENT_KDE3) {
-      trash = "kioclient";
+    switch (base::nix::GetDesktopEnvironment(env.get())) {
+      case base::nix::DESKTOP_ENVIRONMENT_KDE4:
+      case base::nix::DESKTOP_ENVIRONMENT_KDE5:
+        trash = "kioclient5";
+        break;
+      case base::nix::DESKTOP_ENVIRONMENT_KDE3:
+      case base::nix::DESKTOP_ENVIRONMENT_KDE6:
+        trash = "kioclient";
+        break;
+      case base::nix::DESKTOP_ENVIRONMENT_OTHER:
+      case base::nix::DESKTOP_ENVIRONMENT_CINNAMON:
+      case base::nix::DESKTOP_ENVIRONMENT_DEEPIN:
+      case base::nix::DESKTOP_ENVIRONMENT_GNOME:
+      case base::nix::DESKTOP_ENVIRONMENT_PANTHEON:
+      case base::nix::DESKTOP_ENVIRONMENT_UKUI:
+      case base::nix::DESKTOP_ENVIRONMENT_UNITY:
+      case base::nix::DESKTOP_ENVIRONMENT_XFCE:
+      case base::nix::DESKTOP_ENVIRONMENT_LXQT:
+      case base::nix::DESKTOP_ENVIRONMENT_COSMIC:
+        // No DE-specific tool, falls through to `gio trash` below.
+        break;
     }
   }
 

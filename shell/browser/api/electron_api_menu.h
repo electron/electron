@@ -132,7 +132,13 @@ class Menu : public gin::Wrappable<Menu>,
   void MenuWillShowForTesting();
   static void SetApplicationMenuFromJS(gin::Arguments* args);
   static v8::Local<v8::Value> GetApplicationMenu(v8::Isolate* isolate);
-  static bool ApplicationMenuWasSet();
+  // Menu.setApplicationMenu(menu); a null |menu| removes it.
+  static void ChangeApplicationMenu(Menu* menu);
+  // The menu passed to Menu.setApplicationMenu, or the default one.
+  static Menu* application_menu();
+  // Installs the File/Edit/View/Window role menu as the application menu
+  // unless the app has already called Menu.setApplicationMenu.
+  static void InstallDefaultApplicationMenu(v8::Isolate* isolate);
 
  protected:
   // Remove this instance as an observer from the model. Called by derived

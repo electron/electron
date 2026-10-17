@@ -28,7 +28,7 @@ ELECTRON_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC_DIR = os.path.dirname(ELECTRON_DIR)
 SHELL_DIR = os.path.join(ELECTRON_DIR, 'shell')
 
-# Keep in sync with script/run-clang-tidy.ts.
+# Keep in sync with script/run-clang-tidy.mts.
 SKIPPED_SOURCES = {
     # Host tool built in v8_snapshot_toolchain; its generated buildflag headers
     # don't exist in the default toolchain's gen dir.

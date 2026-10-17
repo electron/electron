@@ -183,7 +183,15 @@ bool IsArchivePrefix(std::string_view prefix) {
     if (it != cache->end())
       return it->second;
   }
+#if BUILDFLAG(IS_WIN)
   const base::FilePath as_path = base::FilePath::FromUTF8Unsafe(prefix);
+#else
+  // A POSIX FilePath is the path's raw bytes, which |prefix| already holds.
+  // On Linux, FromUTF8Unsafe() re-encodes through the C library locale
+  // and returns an empty path for non-ASCII input in the "C" locale.
+  // Node mode never calls setlocale(), so it is always in the "C" locale.
+  const base::FilePath as_path{prefix};
+#endif
   // Same test GetAsarArchivePath() applies to each candidate component.
   if (!as_path.BaseName().MatchesExtension(kAsarExtension)) {
     base::AutoLock auto_lock(*lock);

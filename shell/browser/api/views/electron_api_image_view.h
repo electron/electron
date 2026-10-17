@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_BROWSER_API_VIEWS_ELECTRON_API_IMAGE_VIEW_H_
 
 #include "shell/browser/api/electron_api_view.h"
-#include "ui/views/controls/image_view.h"
 
 namespace gfx {
 class Image;
@@ -16,28 +15,35 @@ namespace gin {
 class Arguments;
 }  // namespace gin
 
-namespace gin_helper {
-class WrappableBase;
-}  // namespace gin_helper
+namespace views {
+class ImageView;
+}  // namespace views
 
 namespace electron::api {
 
-class ImageView : public View {
+class ImageView final : public View {
  public:
-  static gin_helper::WrappableBase* New(gin::Arguments* args);
+  static ImageView* New(gin::Arguments* args);
 
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype);
+  // gin::Wrappable
+  static const gin::WrapperInfo kWrapperInfo;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
 
-  void SetImage(const gfx::Image& image);
+  // gin_helper::Constructible
+  using ConstructibleParent = View;
+  static void FillObjectTemplate(v8::Isolate* isolate,
+                                 v8::Local<v8::ObjectTemplate> templ);
+  static const char* GetClassName() { return "ImageView"; }
 
- protected:
+  // Make public for cppgc::MakeGarbageCollected.
   ImageView();
   ~ImageView() override;
 
-  views::ImageView* image_view() const {
-    return static_cast<views::ImageView*>(view());
-  }
+  void SetImage(const gfx::Image& image);
+
+ private:
+  views::ImageView* image_view() const;
 };
 
 }  // namespace electron::api

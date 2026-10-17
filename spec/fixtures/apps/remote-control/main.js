@@ -1,9 +1,6 @@
-const electron_1 = require('electron');
+const { app } = require('electron');
 
-const { app } = electron_1;
 const http = require('node:http');
-// oxlint-disable-next-line @typescript-eslint/no-unused-vars
-const promises_1 = require('node:timers/promises');
 const v8 = require('node:v8');
 
 function getAutoQuitTimeout() {

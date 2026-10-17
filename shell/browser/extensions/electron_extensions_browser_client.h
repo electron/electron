@@ -86,6 +86,8 @@ class ElectronExtensionsBrowserClient
   bool CanExtensionCrossIncognito(
       const extensions::Extension* extension,
       content::BrowserContext* context) const override;
+  extensions::BrowserContextLifetimeTracker* GetBrowserContextLifetimeTracker()
+      override;
   base::FilePath GetBundleResourcePath(
       const network::ResourceRequest& request,
       const base::FilePath& extension_resources_path,
@@ -159,9 +161,6 @@ class ElectronExtensionsBrowserClient
       content::RenderFrameHost* render_frame_host,
       const extensions::Extension* extension) const override;
   extensions::SafeBrowsingDelegate* GetSafeBrowsingDelegate() override;
-
-  // Sets the API client.
-  void SetAPIClientForTest(extensions::ExtensionsAPIClient* api_client);
 
  private:
   // Support for extension APIs.

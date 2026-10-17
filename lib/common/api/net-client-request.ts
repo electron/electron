@@ -124,19 +124,19 @@ class IncomingMessage extends Readable {
 
 /** Writable stream that buffers up everything written to it. */
 class SlurpStream extends Writable {
-  _data: Buffer;
-  constructor() {
-    super();
-    this._data = Buffer.alloc(0);
-  }
+  _chunks: Buffer[] = [];
 
   _write(chunk: Buffer, encoding: string, callback: () => void) {
-    this._data = Buffer.concat([this._data, chunk]);
+    // Copy the chunk: the write callback below tells the caller it may reuse or
+    // mutate the buffer, but the body is not concatenated until data() is called.
+    this._chunks.push(Buffer.from(chunk));
     callback();
   }
 
   data() {
-    return this._data;
+    const data = this._chunks.length === 1 ? this._chunks[0] : Buffer.concat(this._chunks);
+    this._chunks = [];
+    return data;
   }
 }
 
@@ -198,6 +198,16 @@ export function allowAnyProtocol(opts: ClientRequestConstructorOptions): ClientR
     ...opts,
     [kAllowNonHttpProtocols]: true
   } as any;
+}
+
+export function toByteString(val: string): string {
+  if (typeof val !== 'string') return String(val);
+  for (let i = 0; i < val.length; i++) {
+    if (val.charCodeAt(i) > 255) {
+      return Buffer.from(val, 'utf-8').toString('latin1');
+    }
+  }
+  return val;
 }
 
 type ExtraURLLoaderOptions = {

@@ -156,7 +156,8 @@ const LINTERS = [
       'spec/node_modules',
       'spec/fixtures/native-addon'
     ],
-    test: (filename) => filename.endsWith('.js') || filename.endsWith('.ts') || filename.endsWith('.mjs'),
+    test: (filename) =>
+      filename.endsWith('.js') || filename.endsWith('.ts') || filename.endsWith('.mjs') || filename.endsWith('.mts'),
     run: async (opts, filenames) => {
       const clean = runOxlint(filenames, { fix: opts.fix });
       if (!clean) {
@@ -225,7 +226,8 @@ const LINTERS = [
         }
 
         // Read the patch list
-        const patchFileList = fs.readFileSync(dotPatchesPath, 'utf8').trim().split('\n');
+        const patchList = fs.readFileSync(dotPatchesPath, 'utf8').trim();
+        const patchFileList = patchList ? patchList.split('\n') : [];
         const patchFileSet = new Set(patchFileList);
         patchFileList.reduce((seen, file) => {
           if (seen.has(file)) {

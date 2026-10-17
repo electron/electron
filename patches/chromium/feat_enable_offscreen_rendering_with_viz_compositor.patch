@@ -8,7 +8,7 @@ rendering with the viz compositor by way of a custom HostDisplayClient
 and LayeredWindowUpdater.
 
 diff --git a/components/viz/host/host_display_client.cc b/components/viz/host/host_display_client.cc
-index 65e6d28734051dc6ba0201b7b09a91ac733e3ff9..f8d66e68f7fdb4944a667ec10ba227fa62af7728 100644
+index 65e6d28734051dc6ba0201b7b09a91ac733e3ff9..ea6c92624466dbfdec21880632d8a265776a9d9f 100644
 --- a/components/viz/host/host_display_client.cc
 +++ b/components/viz/host/host_display_client.cc
 @@ -50,9 +50,9 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
@@ -28,9 +28,9 @@ index 65e6d28734051dc6ba0201b7b09a91ac733e3ff9..f8d66e68f7fdb4944a667ec10ba227fa
        std::make_unique<LayeredWindowUpdaterImpl>(widget_, std::move(receiver));
 +
 +#else
-+  CHECK(false) << "Chromium is calling CreateLayeredWindowUpdater for non-OSR "
-+                  "windows on POSIX platforms, something is wrong with "
-+                  "Electron's OSR implementation.";
++  // Outside Windows only Electron's offscreen display client provides a
++  // LayeredWindowUpdater; drop the request for any other window.
++  DLOG(ERROR) << "CreateLayeredWindowUpdater called for a non-OSR window";
 +#endif
  }
 +
@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 9660bf70de66562eac16aa318e303fa66c6bfdf7..20acf7d67f5cbec632e255c798ab60a79eaf9bbc 100644
+index 6acbea5d741982ff7c7ec01ac813e0418802bb10..2dff02a63c0b26ee1604efe35b88959d5684d9f5 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -180,6 +180,8 @@ viz_component("service") {
@@ -238,10 +238,10 @@ index 67d5ff67d74c107a867b39b306c6528425b87e05..5fd12a25c9e319e8e675955926271c9d
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..c5f45c564f015d209aee39b4b8f0fd95ce187907
+index 0000000000000000000000000000000000000000..b0f8d47d9ba077030ab336990c5eefc808747ded
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
-@@ -0,0 +1,162 @@
+@@ -0,0 +1,160 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -265,8 +265,6 @@ index 0000000000000000000000000000000000000000..c5f45c564f015d209aee39b4b8f0fd95
 +#include "skia/ext/skia_utils_win.h"
 +#include "ui/gfx/win/gdi_util.h"
 +#include "ui/gfx/win/hwnd_util.h"
-+#else
-+#include "mojo/public/cpp/base/shared_memory_utils.h"
 +#endif
 +
 +namespace viz {
@@ -522,10 +520,10 @@ index 4f9e8946fa02d859e92a6896beba82721914f868..78486eaa993ee7ffd5188b31503de7dd
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index be30bdc58bbd50fc735772106a9dda78fb5ddf1f..138238829b9d1a860a2a6e19f3bfb1fa6f4abea4 100644
+index 189074b58fa866a3ab5c723b8883515bd8e20af3..a4aabae6f9e37f76af9ee917f7f59c8c8f51deec 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-@@ -131,7 +131,8 @@ RootCompositorFrameSinkImpl::Create(
+@@ -133,7 +133,8 @@ RootCompositorFrameSinkImpl::Create(
        params->gpu_compositing, params->widget);
    auto output_surface = output_surface_provider->CreateOutputSurface(
        params->widget, params->gpu_compositing, display_client.get(),
@@ -564,10 +562,10 @@ index 399fba1a3d4e601dc2cdd5f1f4def8b7fd7a3011..8bcbe0d26c80323155d536c0d3a177a1
    gpu::SyncPointManager* GetSyncPointManager() override;
    gpu::Scheduler* GetGpuScheduler() override;
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 7ca2539e761b40c55671b815e8403ffe59c18d0f..97208fb50f1207591bd8ac6ddef307f6717a6b0a 100644
+index 53219f0aaeb84332363ff3d1e41dc97269f50608..b60d91d7d33b4f89748894327b86b7e3b4250e98 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -394,8 +394,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -400,8 +400,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();
@@ -585,10 +583,10 @@ index 7ca2539e761b40c55671b815e8403ffe59c18d0f..97208fb50f1207591bd8ac6ddef307f6
        compositor_data.display_client->GetBoundRemote(resize_task_runner_);
    mojo::AssociatedRemote<viz::mojom::ExternalBeginFrameController>
 diff --git a/services/viz/privileged/mojom/compositing/display_private.mojom b/services/viz/privileged/mojom/compositing/display_private.mojom
-index f0899f2c823dd77bdff63e1f9ae1d89ce1d85caa..fb1b88b359d4caa1b1162b9e4c4200e82f0c764a 100644
+index 94528f0b45a81605a84e8e5ba5a1f8cbc3cd80f1..20468f144221f23fe5d2f52efe4b4f1b61721c38 100644
 --- a/services/viz/privileged/mojom/compositing/display_private.mojom
 +++ b/services/viz/privileged/mojom/compositing/display_private.mojom
-@@ -124,7 +124,6 @@ interface DisplayClient {
+@@ -136,7 +136,6 @@ interface DisplayClient {
  
    // Creates a LayeredWindowUpdater implementation to draw into a layered
    // window.
@@ -597,7 +595,7 @@ index f0899f2c823dd77bdff63e1f9ae1d89ce1d85caa..fb1b88b359d4caa1b1162b9e4c4200e8
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index ad19a581d7fd503d4091ac5d1f5b3c1139387c7f..e361a64483478f02cbc48509a31179e0cebab12b 100644
+index a360316b8f0b1c4de98248bf2cb44b5a7ac3c272..8b55377d37778ec043c7169312f4b90fd6d551bf 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 @@ -40,6 +40,7 @@ struct RootCompositorFrameSinkParams {
