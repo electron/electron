@@ -34,7 +34,7 @@ on:
         type: boolean
         default: false
       run-include-analysis:
-        description: 'Run analyze_includes.py on the linux-x64 build and upload include-analysis.html as an artifact'
+        description: 'Run analyze_includes.py on the linux-x64 and macos-arm64 builds and upload include-analysis.<platform>.html artifacts'
         required: false
         type: boolean
         default: false
@@ -405,6 +405,8 @@ jobs:
       upload-to-storage: '0'
       enable-ssh: ${{ inputs.enable-ssh || false }}
       full-macos-tests: ${{ github.event_name != 'pull_request' || startsWith(github.head_ref, 'roller/') || contains(github.event.pull_request.labels.*.name, 'run-full-macos') }}
+      run-include-analysis: ${{ inputs.run-include-analysis || contains(github.event.pull_request.labels.*.name, 'run-include-analysis') }}
+      include-analysis-root-filter: ${{ inputs.include-analysis-root-filter || '^electron/' }}
     secrets:
       CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}

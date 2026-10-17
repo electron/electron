@@ -84,7 +84,7 @@ on:
         type: boolean
         default: false
       run-include-analysis:
-        description: 'Run analyze_includes.py and upload include-analysis.html as an artifact'
+        description: 'Run analyze_includes.py and upload include-analysis.<platform>.html as an artifact'
         required: false
         type: boolean
         default: false
