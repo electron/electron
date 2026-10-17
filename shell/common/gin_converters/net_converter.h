@@ -8,23 +8,29 @@
 #include <utility>
 #include <vector>
 
+#include "base/memory/scoped_refptr.h"
 #include "gin/converter.h"
 #include "services/network/public/mojom/host_resolver.mojom-forward.h"
 #include "services/network/public/mojom/host_resolver.mojom.h"
-#include "shell/browser/net/cert_verifier_client.h"
 
 namespace net {
 class AuthChallengeInfo;
-class X509Certificate;
+class HttpRequestHeaders;
 class HttpResponseHeaders;
-struct CertPrincipal;
 class HttpVersion;
+class X509Certificate;
+struct CertPrincipal;
+struct RedirectInfo;
 }  // namespace net
 
 namespace network {
 struct ResourceRequest;
 class ResourceRequestBody;
 }  // namespace network
+
+namespace electron {
+struct VerifyRequestParams;
+}  // namespace electron
 
 namespace gin {
 
