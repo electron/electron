@@ -17,12 +17,12 @@
 
 #include "base/functional/callback_forward.h"
 #include "base/memory/raw_ptr.h"
+#include "base/memory/weak_ptr.h"
 #include "components/viz/common/quads/compositor_frame.h"
 #include "components/viz/common/surfaces/parent_local_surface_id_allocator.h"
-#include "content/browser/renderer_host/delegated_frame_host.h"  // nogncheck
 #include "content/browser/renderer_host/input/mouse_wheel_phase_handler.h"  // nogncheck
-#include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
+#include "content/public/browser/render_frame_metadata_provider.h"
 #include "shell/browser/osr/osr_paint_event.h"
 #include "shell/browser/osr/osr_view_proxy.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
@@ -35,6 +35,11 @@
 
 class SkBitmap;
 
+namespace content {
+class DelegatedFrameHost;
+class RenderWidgetHostImpl;
+}  // namespace content
+
 namespace gfx {
 class PointF;
 class Rect;
@@ -43,6 +48,10 @@ class Rect;
 namespace input {
 class CursorManager;
 }
+
+namespace ui {
+class LayerSurface;
+}  // namespace ui
 
 namespace electron {
 
