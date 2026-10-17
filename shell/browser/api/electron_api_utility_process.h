@@ -115,6 +115,7 @@ class UtilityProcessWrapper final
   // node::mojom::NodeServiceClient
   void OnV8FatalError(const std::string& location,
                       const std::string& report) override;
+  void FlushBeforeExit(FlushBeforeExitCallback callback) override;
 
   // content::ServiceProcessHost::Observer
   void OnServiceProcessTerminatedNormally(

@@ -201,8 +201,12 @@ void NodeService::Initialize(
         node_env_stopped_ = true;
         ParentPort::GetInstance()->Close();
         js_env_->DestroyMicrotasksRunner();
-        GetRemote().reset();
         receiver_.ResetWithReason(exit_code, "process_exit_termination");
+        // Wait until the browser has read the messages queued above, such as
+        // ones the script posted to parentPort right before exiting.
+        if (GetRemote().is_bound() && GetRemote().is_connected())
+          GetRemote()->FlushBeforeExit();
+        GetRemote().reset();
         node::DefaultProcessExitHandler(env, exit_code);
       });
 

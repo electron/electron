@@ -36,6 +36,14 @@ struct BindAIManagerParams {
 
 interface NodeServiceClient {
   OnV8FatalError(string location, string report);
+
+  // Called by the child just before it exits. The child sends all of its
+  // messages over one channel in order, so the browser cannot reply before it
+  // has read everything the child sent first. On Windows the channel queues
+  // outgoing messages in process memory while a write is in flight, so
+  // without this they would be lost when the child exits.
+  [Sync]
+  FlushBeforeExit() => ();
 };
 
 [ServiceSandbox=sandbox.mojom.Sandbox.kNoSandbox]
