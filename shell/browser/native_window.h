@@ -107,6 +107,15 @@ class NativeWindow : public views::WidgetDelegate {
   virtual void SetBounds(const gfx::Rect& bounds, bool animate) = 0;
   virtual gfx::Rect GetBounds() const = 0;
   void SetShape(const std::vector<gfx::Rect>& rects);
+  virtual void SetInputRegion(const std::vector<gfx::Rect>& rects,
+                              bool within_frame,
+                              bool include_inset,
+                              bool include_menu_bar);
+  // Called when the in-window menu bar is shown or hidden, which moves the
+  // content area the input region is relative to.
+  virtual void OnMenuBarVisibilityChanged();
+  // Test-only: the region last applied by SetInputRegion(), in DIP.
+  virtual std::vector<gfx::Rect> GetAppliedInputRegionForTesting() const;
   void SetSize(const gfx::Size& size, bool animate = false);
   [[nodiscard]] gfx::Size GetSize() const;
 

@@ -162,6 +162,10 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool SetTitleFromPageIfNotSetFromApi(const std::string& title);
   virtual void SetBackgroundColor(const std::string& color_name);
   std::string GetBackgroundColor() const;
+  void SetInputRegion(const std::vector<gfx::Rect>& rects,
+                      gin::Arguments* args);
+  // Test-only: the input region last applied to the platform window, in DIP.
+  std::vector<gfx::Rect> GetInputRegionForTesting() const;
   void SetIgnoreMouseEvents(bool ignore, gin::Arguments* args);
   void SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> menu);
   void SetParentWindow(v8::Local<v8::Value> value, gin::Arguments* args);

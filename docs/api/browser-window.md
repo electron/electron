@@ -1427,6 +1427,59 @@ will be drawn and no mouse events will be registered. Mouse events outside of
 the region will not be received by that window, but will fall through to
 whatever is behind the window.
 
+#### `win.setInputRegion(rects[, options])` _Linux_ _Experimental_
+
+* `rects` [Rectangle[]](structures/rectangle.md) - The regions of the window, in
+  DIP, that should receive mouse events. Passing an empty list restores the
+  default input region.
+* `options` Object (optional)
+  * `withinFrame` boolean (optional) - Whether `rects` are relative to the
+    content area or to the whole window surface. This only matters for
+    client-side decorated windows, i.e. windows where Electron draws the frame
+    itself: their surface also covers the margin reserved for the frame shadow
+    and resize border. Default is `true`.
+  * `includeInset` boolean (optional) - Whether the margin the window frame
+    reserves for the client-side decoration shadow and the resize border is
+    added to the region. Default is `false`.
+  * `includeMenuBar` boolean (optional) - Whether the area occupied by the
+    in-window menu bar is added to the region. Default is `false`.
+
+Sets the region of the window that receives mouse events. Mouse events outside
+of the given region are not received by the window, but fall through to whatever
+is behind it. Multiple rectangles may be given.
+
+By default coordinates are relative to the top-left corner of the content area,
+the part of the window the page is drawn in. It excludes the margin the window
+frame reserves for the client-side decoration shadow and, when present, the
+in-window menu bar, and the region is clipped to it, so a rectangle can never
+cover that chrome. Set `withinFrame` to `false` to use the whole window surface
+instead, whose top-left corner includes the shadow margin; the region is then
+not clipped. The distinction only exists for client-side decorated windows,
+which in practice means frameless windows. Other windows have no such margin,
+so for them the two modes describe the same area, and the in-window menu bar is
+skipped in both. Note that this differs from
+[`win.setShape(rects)`](#winsetshaperects-windows-linux-experimental), which
+always uses whole-window coordinates.
+
+Setting a region replaces the one Electron derives from the window frame, which
+would otherwise leave the window chrome without input. App code cannot query
+that chrome's geometry, so adding it back is opt-in: `includeInset` adds the
+frame's inset margin (the shadow and resize border, keeping the window
+resizable), and `includeMenuBar` adds the in-window menu bar's area, which only
+exists on framed windows. Both are added as their own rectangles; `rects` is
+never modified. Chrome the window does not have is unaffected, such as missing
+client-side decoration insets when maximized, fullscreen, tiled or
+server-decorated, or a missing menu bar when frameless. Because showing or
+hiding the menu bar moves the content area, the region is recomputed whenever
+that happens, including with auto-hide. Calling
+[`win.setIgnoreMouseEvents(true)`](#winsetignoremouseeventsignore-options) makes
+the whole window click-through regardless of the input region; disabling it
+restores the input region.
+
+On X11 the X server has applied the new input shape when the call returns. On
+Wayland the new input region takes effect with the window's next surface commit,
+so the compositor may see it one frame later.
+
 #### `win.setThumbarButtons(buttons)` _Windows_
 
 * `buttons` [ThumbarButton[]](structures/thumbar-button.md)
