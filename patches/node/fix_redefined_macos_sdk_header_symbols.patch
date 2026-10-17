@@ -10,7 +10,7 @@ change, it seems to introduce an incompatibility when compiling
 using clang modules. Disabling them resolves the issue.
 
 diff --git a/unofficial.gni b/unofficial.gni
-index 1ccb4f3274b50f74e4ea5c309db155d7e0027560..76ed323dbc47da0fd3da5df271b58649630d8a51 100644
+index 16ca92f90e5c08f35cc806e952229cd8a35fd725..538f0244530de020e2550e9b4e8f18bbb5384601 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -197,6 +197,10 @@ template("node_gn_build") {
