@@ -8,9 +8,10 @@
 #include <memory>
 #include <optional>
 
-#include "shell/common/uv_includes.h"
-#include "third_party/electron_node/src/tracing/agent.h"
 #include "v8/include/v8-locker.h"
+
+struct uv_loop_s;
+using uv_loop_t = uv_loop_s;  // from <uv.h>
 
 namespace gin {
 class IsolateHolder;
