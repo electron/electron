@@ -38,6 +38,11 @@ on:
         required: false
         type: boolean
         default: false
+      include-analysis-root-filter:
+        description: 'Regex passed to analyze_includes.py --root-filter'
+        required: false
+        type: string
+        default: '^electron/'
   push:
     branches:
       - main
@@ -434,7 +439,8 @@ jobs:
       gn-build-type: testing
       generate-symbols: false
       upload-to-storage: '0'
-      run-include-analysis: ${{ inputs.run-include-analysis || false }}
+      run-include-analysis: ${{ inputs.run-include-analysis || contains(github.event.pull_request.labels.*.name, 'run-include-analysis') }}
+      include-analysis-root-filter: ${{ inputs.include-analysis-root-filter || '^electron/' }}
     secrets:
       CI_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}

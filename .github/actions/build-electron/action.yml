@@ -56,6 +56,10 @@ inputs:
     description: 'Run analyze_includes.py and upload include-analysis.html as an artifact'
     required: false
     default: 'false'
+  include-analysis-root-filter:
+    description: 'Regex passed to analyze_includes.py --root-filter'
+    required: false
+    default: '^electron/'
 runs:
   using: "composite"
   steps:
@@ -279,6 +283,8 @@ runs:
       id: include-analysis
       if: ${{ inputs.run-include-analysis == 'true' && inputs.target-platform == 'linux' && inputs.target-arch == 'x64' && inputs.is-asan != 'true' && inputs.is-ubsan != 'true' }}
       shell: bash
+      env:
+        INCLUDE_ANALYSIS_ROOT_FILTER: ${{ inputs.include-analysis-root-filter }}
       run: |
         set -o pipefail
 
@@ -301,7 +307,7 @@ runs:
         python3 tools/clang/scripts/analyze_includes.py \
           --target electron \
           --revision "$REVISION" \
-          --root-filter '^electron/' \
+          --root-filter "$INCLUDE_ANALYSIS_ROOT_FILTER" \
           --json-out /tmp/include-analysis.data.js \
           --processes 24 \
           /tmp/include-build.log
