@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Babenko-Sanders <dsanders11@electronjs.org>
+Date: Sat, 17 Oct 2026 01:30:00 +0000
+Subject: build: roll clang back to sub-revision 60 (UBSan CI experiment)
+
+DO NOT MERGE. This is a CI-only experiment for the macOS UBSan
+regression bisect.
+
+The 157.0.8091.0 -> 157.0.8100.0 roll kept CLANG_REVISION at
+llvmorg-24-init-7747-g62397f8b but moved CLANG_SUB_REVISION from 60 to
+67 (a rebuilt clang package). Since then macOS UBSan builds report
+vptr false positives in host tools such as protoc. Pin the
+sub-revision back to 60 so CI's fix-sync step downloads the
+sub-revision 60 package and GN's clang_revision consistency check
+matches it, to tell whether the package rebuild is the cause.
+
+diff --git a/tools/clang/scripts/update.py b/tools/clang/scripts/update.py
+index 200845370e77178aa53b4176a0ea37d322d29881..07e38ef838a0a97d91c49db63a82cb8dd1a124e5 100644
+--- a/tools/clang/scripts/update.py
++++ b/tools/clang/scripts/update.py
+@@ -41,7 +41,7 @@ import zlib
+ # should not be changed manually.
+ # They are also read by build/config/compiler/BUILD.gn.
+ CLANG_REVISION = 'llvmorg-24-init-7747-g62397f8b'
+-CLANG_SUB_REVISION = 67
++CLANG_SUB_REVISION = 60
+ 
+ PACKAGE_VERSION = '%s-%s' % (CLANG_REVISION, CLANG_SUB_REVISION)
+ RELEASE_VERSION = '24'

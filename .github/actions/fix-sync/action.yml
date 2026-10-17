@@ -48,6 +48,16 @@ runs:
           python3 src/tools/clang/scripts/update.py --package clang-tidy
         }
 
+        # UBSan bisect experiment: macOS variant of fix_llvm. The cached clang
+        # comes from Chromium's unpatched DEPS (sub-revision 67), so download
+        # the package that the patched update.py pins (sub-revision 60).
+        fix_llvm_mac() {
+          rm -rf src/third_party/llvm-build
+          python3 src/tools/clang/scripts/update.py --host-os mac-arm64
+          python3 src/tools/clang/scripts/update.py --host-os mac-arm64 --package objdump
+          python3 src/tools/clang/scripts/update.py --host-os mac-arm64 --package clang-tidy
+        }
+
         fix_rustc() {
           rm -rf src/third_party/rust-toolchain
           python3 src/tools/rust/update_rust.py
@@ -70,6 +80,8 @@ runs:
         TASKS="fix_angle_git"
         if [ "$TARGET_PLATFORM" == "win" ]; then
           TASKS="fix_llvm fix_rustc $TASKS"
+        elif [ "$TARGET_PLATFORM" == "macos" ]; then
+          TASKS="fix_llvm_mac $TASKS"
         fi
         PIDS=""
         for task in $TASKS; do
