@@ -139,17 +139,30 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
 
 // This class stores a base::WeakPtr<electron::ElectronMenuModel> as an
 // Objective-C object, which allows it to be stored in the representedObject
-// field of an NSMenuItem.
+// field of an NSMenuItem. It also records what Electron last applied to that
+// item, so that refreshing it doesn't undo AppKit's changes.
 @interface WeakPtrToElectronMenuModelAsNSObject : NSObject
 + (instancetype)weakPtrForModel:(electron::ElectronMenuModel*)model;
 + (electron::ElectronMenuModel*)getFrom:(id)instance;
 - (instancetype)initWithModel:(electron::ElectronMenuModel*)model;
 - (electron::ElectronMenuModel*)menuModel;
+// The title Electron last set on the menu item, and whether Electron set its
+// image. AppKit also sets titles and images of its own: when the main menu is
+// set, it renames the app menu's "Preferences" item to "Settings…" and gives
+// it an icon, and since macOS 26 it gives default icons to items with
+// standard actions such as copy: and to standard submenus such as "Speech".
+// Some of these are only applied once, so -applyStateToMenuItem: changes a
+// title or image only when the model's value has changed.
+@property(nonatomic, copy) NSString* appliedTitle;
+@property(nonatomic) BOOL hasAppliedImage;
 @end
 
 @implementation WeakPtrToElectronMenuModelAsNSObject {
   base::WeakPtr<electron::ElectronMenuModel> _model;
 }
+
+@synthesize appliedTitle;
+@synthesize hasAppliedImage;
 
 + (instancetype)weakPtrForModel:(electron::ElectronMenuModel*)model {
   return [[WeakPtrToElectronMenuModelAsNSObject alloc] initWithModel:model];
@@ -500,6 +513,14 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
     }
   }
 
+  // Record what was applied above. Items without a model (e.g. Services) have
+  // no state and are never refreshed.
+  WeakPtrToElectronMenuModelAsNSObject* state =
+      base::apple::ObjCCast<WeakPtrToElectronMenuModelAsNSObject>(
+          item.representedObject);
+  state.appliedTitle = label;
+  state.hasAppliedImage = icon.IsImage();
+
   return item;
 }
 
@@ -512,17 +533,10 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
 }
 
 - (void)applyStateToMenuItem:(NSMenuItem*)item {
-  id represented = item.representedObject;
-  if (!represented)
-    return;
-
-  if (![represented
-          isKindOfClass:[WeakPtrToElectronMenuModelAsNSObject class]]) {
-    return;
-  }
-
-  electron::ElectronMenuModel* model =
-      [WeakPtrToElectronMenuModelAsNSObject getFrom:represented];
+  WeakPtrToElectronMenuModelAsNSObject* state =
+      base::apple::ObjCCast<WeakPtrToElectronMenuModelAsNSObject>(
+          item.representedObject);
+  electron::ElectronMenuModel* model = [state menuModel];
   if (!model)
     return;
 
@@ -541,7 +555,11 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
   std::u16string label16 = model->GetLabelAt(index);
   std::u16string accessibility_label16 = model->GetAccessibilityLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
-  item.title = label;
+  // Keep AppKit's title (e.g. "Settings…") unless the label has changed.
+  if (![label isEqualToString:state.appliedTitle]) {
+    item.title = label;
+    state.appliedTitle = label;
+  }
   if (!accessibility_label16.empty()) {
     NSString* accessibility_label =
         base::SysUTF16ToNSString(accessibility_label16);
@@ -557,17 +575,20 @@ NSMenuItemBadge* CreateBadge(const electron::ElectronMenuModel::Badge& badge)
     }
   }
 
+  // Only touch the image when the app sets or removes one, so AppKit's default
+  // icon (if any) is kept.
   ui::ImageModel icon = model->GetIconAt(index);
   if (icon.IsImage()) {
     item.image = icon.GetImage().ToNSImage();
-  } else {
+    state.hasAppliedImage = YES;
+  } else if (state.hasAppliedImage) {
+    // The app removed its icon. Clearing `item.image` also removes AppKit's
+    // default icon. AppKit picks the default for a standard action when the
+    // action is set, so reassigning a role's action restores it. Defaults
+    // applied only once, like the Settings or "Speech" icon, can't be
+    // restored.
     item.image = nil;
-    // Since macOS Tahoe introduced default menu icons, some role-based
-    // menu items receive a system-provided icon. When we clear `item.image`
-    // (set it to nil) AppKit may remove or fail to restore the role's
-    // default icon. To ensure the correct icon is shown, we force AppKit to
-    // refresh the item by reassigning its action selector (clear then set),
-    // which causes the menu item to update its displayed icon.
+    state.hasAppliedImage = NO;
     std::u16string role = model->GetRoleAt(index);
     if (!role.empty()) {
       for (const Role& pair : kRolesMap) {
