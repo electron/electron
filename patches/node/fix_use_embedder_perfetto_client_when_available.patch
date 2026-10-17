@@ -20,7 +20,7 @@ allowing contentTracing to remain the sole owner of category filtering,
 recording sessions, output, and lifecycle.
 
 diff --git a/node.gni b/node.gni
-index c7159731d790a76f20c7c678494a3969eccba5e9..3903e8c27294403de12a91bd33f5380ac4640507 100644
+index 444f6975ae8aa949cdcad2524676cc88b6064a00..f9c46ecbeaa6d77aabd2cd32011ab2c35a85a412 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -57,6 +57,10 @@ declare_args() {
