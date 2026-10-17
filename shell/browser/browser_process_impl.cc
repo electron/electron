@@ -42,6 +42,7 @@
 #include "services/network/public/cpp/network_switches.h"
 #include "shell/browser/metrics/electron_metrics_service_client.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
+#include "shell/browser/net/system_network_context_manager.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/thread_restrictions.h"
