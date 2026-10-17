@@ -467,11 +467,12 @@ void OpenDialogCompletion(int chosen,
     ReadDialogPaths(dialog, &paths);
 #endif
   }
-  ResolvePromiseInNextTick(
-      promise.As<v8::Local<v8::Value>>(),
+  // Built before the promise is converted: As() moves it, isolate and all.
+  v8::Local<v8::Value> result =
       OpenDialogResult(promise.isolate(), chosen == NSModalResponseCancel,
                        paths, bookmarks)
-          .GetHandle());
+          .GetHandle();
+  ResolvePromiseInNextTick(promise.As<v8::Local<v8::Value>>(), result);
 }
 
 void ShowOpenDialog(const DialogSettings& settings,
