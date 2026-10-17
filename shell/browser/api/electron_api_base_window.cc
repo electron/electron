@@ -39,6 +39,10 @@
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 
+#if BUILDFLAG(IS_MAC)
+#include "shell/browser/api/electron_api_app_shim_host.h"
+#endif
+
 #if defined(TOOLKIT_VIEWS)
 #include "shell/browser/native_window_views.h"
 #endif
@@ -806,7 +810,13 @@ void BaseWindow::SetParentWindow(v8::Local<v8::Value> value,
   if (value->IsNull() || value->IsUndefined()) {
     parent_window_.Reset();
     window_->SetParentWindow(nullptr);
+  } else if (window_->IsInAppShim()) {
+    args->ThrowTypeError("A window in an app shim can't have a parent window");
   } else if (gin::ConvertFromV8(isolate(), value, &parent)) {
+    if (parent->window() && parent->window()->IsInAppShim()) {
+      args->ThrowTypeError("A window in an app shim can't be a parent window");
+      return;
+    }
     parent_window_.Reset(isolate(), parent.ToV8());
     window_->SetParentWindow(parent->window());
   } else {
@@ -961,9 +971,13 @@ void BaseWindow::ToggleTabBar() {
 
 void BaseWindow::AddTabbedWindow(NativeWindow* const window,
                                  gin::Arguments* const args) {
-  if (!window_->AddTabbedWindow(window))
+  if (!window_->AddTabbedWindow(window)) {
     args->ThrowTypeError(
-        "AddTabbedWindow cannot be called by a window on itself.");
+        window_.get() != window &&
+                (window_->IsInAppShim() || window->IsInAppShim())
+            ? "AddTabbedWindow needs both windows to be in the same app"
+            : "AddTabbedWindow cannot be called by a window on itself.");
+  }
 }
 
 v8::Local<v8::Value> BaseWindow::GetTabbingIdentifier() {
@@ -1221,6 +1235,11 @@ gin_helper::WrappableBase* BaseWindow::New(gin::Arguments* const args) {
     args->ThrowTypeError(error_message);
     return nullptr;
   }
+  if (!IsAppShimValid(options, &error_message) ||
+      !IsParentValid(options, &error_message)) {
+    args->ThrowTypeError(error_message);
+    return nullptr;
+  }
 
   return new BaseWindow(args, options);
 }
@@ -1243,6 +1262,47 @@ bool BaseWindow::IsWindowNameValid(const gin_helper::Dictionary& options,
                        "' is already in use. Window names must be unique.";
       return false;
     }
+  }
+  return true;
+}
+
+// static
+bool BaseWindow::IsAppShimValid(const gin_helper::Dictionary& options,
+                                std::string* error_message) {
+#if BUILDFLAG(IS_MAC)
+  v8::Local<v8::Value> value;
+  if (!options.Get(options::kAppShim, &value) || value->IsNullOrUndefined())
+    return true;
+  AppShimHost* app_shim = nullptr;
+  if (!gin::ConvertFromV8(options.isolate(), value, &app_shim) || !app_shim) {
+    *error_message = "appShim must be an AppShimHost";
+    return false;
+  }
+  if (!app_shim->GetRemoteCocoaApplicationHost()) {
+    *error_message = "The app shim has disconnected";
+    return false;
+  }
+  if (bool modal = false; options.Get(options::kModal, &modal) && modal) {
+    *error_message = "A window in an app shim can't be modal";
+    return false;
+  }
+  if (v8::Local<v8::Value> parent;
+      options.Get("parent", &parent) && !parent->IsNullOrUndefined()) {
+    *error_message = "A window in an app shim can't have a parent window";
+    return false;
+  }
+#endif
+  return true;
+}
+
+// static
+bool BaseWindow::IsParentValid(const gin_helper::Dictionary& options,
+                               std::string* error_message) {
+  gin_helper::Handle<BaseWindow> parent;
+  if (options.Get("parent", &parent) && !parent.IsEmpty() && parent->window() &&
+      parent->window()->IsInAppShim()) {
+    *error_message = "A window in an app shim can't be a parent window";
+    return false;
   }
   return true;
 }

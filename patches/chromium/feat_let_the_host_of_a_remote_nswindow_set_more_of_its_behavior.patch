@@ -1,0 +1,248 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@anthropic.com>
+Date: Wed, 14 Oct 2026 10:58:22 -0700
+Subject: feat: let the host of a remote NSWindow set more of its behavior
+
+Electron's app shims create their windows through remote_cocoa, where the
+host process has no NSWindow to call. This adds what BaseWindow's API
+needs and remote_cocoa has no call for:
+
+- NativeWidgetNSWindow.SetMovable, SetClosable and SetMiniaturizable.
+- NativeWidgetNSWindow.SetFullscreenable, which decides whether the
+  window can go full screen whatever the size constraints say. Without it
+  that follows from "resizable and maximizable", which is a different
+  question to an app that sets the three separately.
+- An empty aspect ratio passed to SetAspectRatio removes the restriction,
+  where it used to hit a DCHECK.
+- ApplicationHost::set_pid. When the embedder knows the process that hosts
+  the application, showing one of its windows yields activation to that
+  process and not to whichever running app declares the bundle
+  identifier, which the hosted process chooses for itself.
+
+Chromium's own remote windows (PWA shims) call none of these, so there is
+nothing here that it needs; the calls could be upstreamed as they are if
+it ever does.
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+
+diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
+index 03ec447170e955144ea69da1e575cd65cce21b99..bf48b7fe943a9c811a8453386ab97f9b9898cef6 100644
+--- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
++++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
+@@ -308,6 +308,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
+   void SetCALayerParams(gfx::CALayerParams ca_layer_params) override;
+   void SetWindowTitle(const std::u16string& title) override;
+   void SetIgnoresMouseEvents(bool ignores_mouse_events) override;
++  void SetMovable(bool movable) override;
++  void SetClosable(bool closable) override;
++  void SetMiniaturizable(bool miniaturizable) override;
++  void SetFullscreenable(bool fullscreenable) override;
+   void MakeFirstResponder() override;
+   void SortSubviews(
+       const std::vector<uint64_t>& associated_subview_ids) override;
+@@ -443,6 +447,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
+   std::unique_ptr<CocoaWindowMoveLoop> window_move_loop_;
+   ui::mojom::ModalType modal_type_ = ui::mojom::ModalType::kNone;
+   bool is_translucent_window_ = false;
++  // Set by SetFullscreenable(); takes the place of what the size constraints
++  // would decide.
++  std::optional<bool> fullscreenable_override_;
++  void ApplyFullscreenableOverride();
+   id __strong local_event_monitor_;
+ 
+   raw_ptr<NativeWidgetNSWindowBridge> parent_ =
+diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
+index 3c1a966c90e17a32a56682f88eb59bb6bffcdd9c..b272799d098641f4d3ac131fde6264c220eb1b9f 100644
+--- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
++++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
+@@ -1514,6 +1514,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+   gfx::ApplyNSWindowSizeConstraints(window_, min_size, max_size,
+                                     shows_resize_controls,
+                                     shows_fullscreen_controls);
++  ApplyFullscreenableOverride();
+ }
+ 
+ void NativeWidgetNSWindowBridge::OnShowAnimationComplete() {
+@@ -1922,7 +1923,10 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+ void NativeWidgetNSWindowBridge::SetAspectRatio(
+     const gfx::SizeF& aspect_ratio,
+     const gfx::Size& excluded_margin) {
+-  DCHECK(!aspect_ratio.IsEmpty());
++  if (aspect_ratio.IsEmpty()) {
++    [window_delegate_ clearAspectRatio];
++    return;
++  }
+   [window_delegate_ setAspectRatio:aspect_ratio.width() / aspect_ratio.height()
+                     excludedMargin:excluded_margin];
+ }
+@@ -1982,6 +1986,56 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+   [window_ setIgnoresMouseEvents:ignores_mouse_events];
+ }
+ 
++void NativeWidgetNSWindowBridge::SetMovable(bool movable) {
++  [window_ setMovable:movable];
++}
++
++void NativeWidgetNSWindowBridge::SetClosable(bool closable) {
++  NSUInteger style_mask = [window_ styleMask];
++  if (closable) {
++    style_mask |= NSWindowStyleMaskClosable;
++  } else {
++    style_mask &= ~NSWindowStyleMaskClosable;
++  }
++  [window_ setStyleMask:style_mask];
++}
++
++void NativeWidgetNSWindowBridge::SetMiniaturizable(bool miniaturizable) {
++  NSUInteger style_mask = [window_ styleMask];
++  if (miniaturizable) {
++    style_mask |= NSWindowStyleMaskMiniaturizable;
++  } else {
++    style_mask &= ~NSWindowStyleMaskMiniaturizable;
++  }
++  [window_ setStyleMask:style_mask];
++}
++
++void NativeWidgetNSWindowBridge::SetFullscreenable(bool fullscreenable) {
++  fullscreenable_override_ = fullscreenable;
++  // Not while in full screen or on the way: the window would lose the
++  // behavior it needs to come back. The next size constraints apply it.
++  if (fullscreen_controller_.CanResize()) {
++    ApplyFullscreenableOverride();
++  }
++}
++
++void NativeWidgetNSWindowBridge::ApplyFullscreenableOverride() {
++  if (!fullscreenable_override_) {
++    return;
++  }
++  // A resizable window can go full screen unless it is marked as auxiliary,
++  // so clearing the primary behavior alone would not stop it.
++  NSWindowCollectionBehavior behavior = [window_ collectionBehavior];
++  if (*fullscreenable_override_) {
++    behavior |= NSWindowCollectionBehaviorFullScreenPrimary;
++    behavior &= ~NSWindowCollectionBehaviorFullScreenAuxiliary;
++  } else {
++    behavior &= ~NSWindowCollectionBehaviorFullScreenPrimary;
++    behavior |= NSWindowCollectionBehaviorFullScreenAuxiliary;
++  }
++  [window_ setCollectionBehavior:behavior];
++}
++
+ void NativeWidgetNSWindowBridge::MakeFirstResponder() {
+   [window_ makeFirstResponder:bridged_view_];
+ }
+diff --git a/components/remote_cocoa/app_shim/views_nswindow_delegate.h b/components/remote_cocoa/app_shim/views_nswindow_delegate.h
+index 40b1e27ecca25715dd6677743c9f520576cd657b..751d8af8b8f03c1de9f1f1b143057fe6b3e7648d 100644
+--- a/components/remote_cocoa/app_shim/views_nswindow_delegate.h
++++ b/components/remote_cocoa/app_shim/views_nswindow_delegate.h
+@@ -52,6 +52,9 @@ REMOTE_COCOA_APP_SHIM_EXPORT
+ - (void)setAspectRatio:(float)aspectRatio
+         excludedMargin:(const gfx::Size&)excludedMargin;
+ 
++// Removes the restriction set by setAspectRatio:excludedMargin:.
++- (void)clearAspectRatio;
++
+ @end
+ 
+ #endif  // COMPONENTS_REMOTE_COCOA_APP_SHIM_VIEWS_NSWINDOW_DELEGATE_H_
+diff --git a/components/remote_cocoa/app_shim/views_nswindow_delegate.mm b/components/remote_cocoa/app_shim/views_nswindow_delegate.mm
+index 1aa3983953a5e292fd57a9e4a860a49c6942f7e5..f2c394a8afe4a09ab473e000938c42dfe0e2ea42 100644
+--- a/components/remote_cocoa/app_shim/views_nswindow_delegate.mm
++++ b/components/remote_cocoa/app_shim/views_nswindow_delegate.mm
+@@ -153,6 +153,11 @@ - (void)setAspectRatio:(float)aspectRatio
+   _excludedMargin = excludedMargin;
+ }
+ 
++- (void)clearAspectRatio {
++  _aspectRatio.reset();
++  _excludedMargin = gfx::Size();
++}
++
+ - (NSSize)windowWillResize:(NSWindow*)window toSize:(NSSize)size {
+   const NSRect windowFrame = [window frame];
+   if (_aspectRatio) {
+diff --git a/components/remote_cocoa/browser/application_host.h b/components/remote_cocoa/browser/application_host.h
+index c4f1bd2e8d646306ae2c80100aba01085777a0fc..d5d4d778fb1190eb22b4933632ad9d3a44c83141 100644
+--- a/components/remote_cocoa/browser/application_host.h
++++ b/components/remote_cocoa/browser/application_host.h
+@@ -7,6 +7,7 @@
+ 
+ #include "base/observer_list.h"
+ #include "base/observer_list_types.h"
++#include "base/process/process_handle.h"
+ #include "components/remote_cocoa/browser/remote_cocoa_browser_export.h"
+ #include "components/remote_cocoa/common/application.mojom.h"
+ #include "mojo/public/cpp/bindings/associated_remote.h"
+@@ -42,9 +43,16 @@ class REMOTE_COCOA_BROWSER_EXPORT ApplicationHost {
+ 
+   const std::string& bundle_id() const { return bundle_id_; }
+ 
++  // The process that hosts the application, when the embedder knows it.
++  // Activation is then yielded to that process, and not to whichever running
++  // app declares |bundle_id|.
++  void set_pid(base::ProcessId pid) { pid_ = pid; }
++  base::ProcessId pid() const { return pid_; }
++
+  private:
+   mojo::AssociatedRemote<mojom::Application> application_remote_;
+   const std::string bundle_id_;
++  base::ProcessId pid_ = base::kNullProcessId;
+   base::ObserverList<Observer> observers_;
+ };
+ 
+diff --git a/components/remote_cocoa/common/native_widget_ns_window.mojom b/components/remote_cocoa/common/native_widget_ns_window.mojom
+index 8ca5673a225b69b5630383ed9673653ba03a0e97..f650180f02ef8c5c92421a5bec35f1b13355e533 100644
+--- a/components/remote_cocoa/common/native_widget_ns_window.mojom
++++ b/components/remote_cocoa/common/native_widget_ns_window.mojom
+@@ -291,6 +291,7 @@ interface NativeWidgetNSWindow {
+   // Presumably, (10, 15) of this area would be used to draw client-drawn
+   // decorations, while the remaining (30, 30) would be used for whatever
+   // content is supposed to have a 1.f aspect-ratio.
++  // An empty |aspect_ratio| removes the restriction.
+   SetAspectRatio(
+       gfx.mojom.SizeF aspect_ratio, gfx.mojom.Size excluded_margin);
+ 
+@@ -303,6 +304,18 @@ interface NativeWidgetNSWindow {
+   // Ignore or accept mouse events on the NSWindow.
+   SetIgnoresMouseEvents(bool ignores_mouse_events);
+ 
++  // Set whether the window can be moved by dragging it.
++  SetMovable(bool movable);
++
++  // Set whether the window has a close button and a minimize button that
++  // work.
++  SetClosable(bool closable);
++  SetMiniaturizable(bool miniaturizable);
++
++  // Set whether the window can go full screen, whatever the size constraints
++  // say; without this call a window that can resize and maximize can.
++  SetFullscreenable(bool fullscreenable);
++
+   // Make the content view be the first responder for the NSWindow.
+   MakeFirstResponder();
+ 
+diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
+index 1135fb598ed61e82a5c88d43ad8eb13ce4699c76..d7bad23e89a308bd21c6319524fc6f89b6a89de4 100644
+--- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
++++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
+@@ -911,8 +911,17 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+   if (@available(macOS 14, *)) {
+     if (application_host_ &&
+         new_state == WindowVisibilityState::kShowAndActivateWindow) {
+-      [NSApp yieldActivationToApplicationWithBundleIdentifier:
+-                 base::SysUTF8ToNSString(application_host_->bundle_id())];
++      NSRunningApplication* application = nil;
++      if (application_host_->pid() != base::kNullProcessId) {
++        application = [NSRunningApplication
++            runningApplicationWithProcessIdentifier:application_host_->pid()];
++      }
++      if (application) {
++        [NSApp yieldActivationToApplication:application];
++      } else {
++        [NSApp yieldActivationToApplicationWithBundleIdentifier:
++                   base::SysUTF8ToNSString(application_host_->bundle_id())];
++      }
+     }
+   }
+ 

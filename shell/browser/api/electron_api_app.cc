@@ -1961,6 +1961,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("isInApplicationsFolder", &App::IsInApplicationsFolder)
       .SetMethod("setActivationPolicy", &App::SetActivationPolicy)
       .SetMethod("configureWebAuthn", &App::ConfigureWebAuthn)
+      .SetMethod("startAppShimServer", &App::StartAppShimServer)
+      .SetMethod("stopAppShimServer", &App::StopAppShimServer)
 #endif
       .SetMethod("setAboutPanelOptions",
                  base::BindRepeating(&Browser::SetAboutPanelOptions, browser))

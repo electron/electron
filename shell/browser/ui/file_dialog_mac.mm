@@ -15,12 +15,16 @@
 #include "base/apple/foundation_util.h"
 #include "base/apple/scoped_cftyperef.h"
 #include "base/files/file_util.h"
+#include "base/functional/bind.h"
 #include "base/mac/mac_util.h"
+#include "base/run_loop.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/task/sequenced_task_runner.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "electron/mas.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/native_window_mac_remote.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -255,16 +259,32 @@ void SetupSaveDialogForProperties(NSSavePanel* dialog, int properties) {
     [dialog setTreatsFilePackagesAsDirectories:YES];
 }
 
+// The window the dialog is a sheet of, if any. A window in an app shim has no
+// NSWindow in this process that could take one.
+NSWindow* SheetParent(const DialogSettings& settings) {
+  if (!settings.parent_window || settings.force_detached ||
+      settings.parent_window->IsInAppShim()) {
+    return nil;
+  }
+  return settings.parent_window->GetNativeWindow().GetNativeNSWindow();
+}
+
+// The window in an app shim that shows the dialog as its sheet, if any.
+electron::NativeWindowMacRemote* ShimParent(const DialogSettings& settings) {
+  if (!settings.parent_window || settings.force_detached ||
+      !settings.parent_window->IsInAppShim()) {
+    return nullptr;
+  }
+  return static_cast<electron::NativeWindowMacRemote*>(settings.parent_window);
+}
+
 // Run modal dialog with parent window and return user's choice.
 int RunModalDialog(NSSavePanel* dialog, const DialogSettings& settings) {
   __block int chosen = NSModalResponseCancel;
-  if (!settings.parent_window || !settings.parent_window->GetNativeWindow() ||
-      settings.force_detached) {
+  NSWindow* window = SheetParent(settings);
+  if (!window) {
     chosen = [dialog runModal];
   } else {
-    NSWindow* window =
-        settings.parent_window->GetNativeWindow().GetNativeNSWindow();
-
     [dialog beginSheetModalForWindow:window
                    completionHandler:^(NSInteger c) {
                      chosen = c;
@@ -363,11 +383,60 @@ void ResolvePromiseInNextTick(gin_helper::Promise<v8::Local<v8::Value>> promise,
           std::move(promise), v8::Global<v8::Value>(promise.isolate(), value)));
 }
 
+// Waits, in a nested loop, for a dialog that a shim's process is showing.
+template <typename Result>
+Result WaitForShimDialog(
+    base::OnceCallback<void(base::OnceCallback<void(bool, const Result&)>)>
+        show) {
+  base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
+  Result result;
+  std::move(show).Run(base::BindOnce(
+      [](base::OnceClosure quit, Result* out, bool canceled,
+         const Result& value) {
+        if (!canceled)
+          *out = value;
+        std::move(quit).Run();
+      },
+      run_loop.QuitClosure(), &result));
+  run_loop.Run();
+  return result;
+}
+
+gin_helper::Dictionary OpenDialogResult(
+    v8::Isolate* isolate,
+    bool canceled,
+    const std::vector<base::FilePath>& paths,
+    const std::vector<std::string>& bookmarks) {
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
+  dict.Set("canceled", canceled);
+  dict.Set("filePaths", paths);
+#if IS_MAS_BUILD()
+  dict.Set("bookmarks", bookmarks);
+#endif
+  return dict;
+}
+
+gin_helper::Dictionary SaveDialogResult(v8::Isolate* isolate,
+                                        bool canceled,
+                                        const base::FilePath& path) {
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
+  dict.Set("canceled", canceled);
+  dict.Set("filePath", path);
+  return dict;
+}
+
 }  // namespace
 
 bool ShowOpenDialogSync(const DialogSettings& settings,
                         std::vector<base::FilePath>* paths) {
   DCHECK(paths);
+  if (auto* shim_parent = ShimParent(settings)) {
+    *paths = WaitForShimDialog<std::vector<base::FilePath>>(
+        base::BindOnce(&electron::NativeWindowMacRemote::ShowOpenDialog,
+                       base::Unretained(shim_parent), settings));
+    return !paths->empty();
+  }
+
   NSOpenPanel* dialog = [NSOpenPanel openPanel];
 
   SetupDialog(dialog, settings);
@@ -386,35 +455,42 @@ void OpenDialogCompletion(int chosen,
                           bool security_scoped_bookmarks,
                           gin_helper::Promise<gin_helper::Dictionary> promise) {
   v8::HandleScope scope(promise.isolate());
-  auto dict = gin_helper::Dictionary::CreateEmpty(promise.isolate());
-  if (chosen == NSModalResponseCancel) {
-    dict.Set("canceled", true);
-    dict.Set("filePaths", std::vector<base::FilePath>());
+  std::vector<base::FilePath> paths;
+  std::vector<std::string> bookmarks;
+  if (chosen != NSModalResponseCancel) {
 #if IS_MAS_BUILD()
-    dict.Set("bookmarks", std::vector<std::string>());
-#endif
-  } else {
-    std::vector<base::FilePath> paths;
-    dict.Set("canceled", false);
-#if IS_MAS_BUILD()
-    std::vector<std::string> bookmarks;
     if (security_scoped_bookmarks)
       ReadDialogPathsWithBookmarks(dialog, &paths, &bookmarks);
     else
       ReadDialogPaths(dialog, &paths);
-    dict.Set("filePaths", paths);
-    dict.Set("bookmarks", bookmarks);
 #else
     ReadDialogPaths(dialog, &paths);
-    dict.Set("filePaths", paths);
 #endif
   }
-  ResolvePromiseInNextTick(promise.As<v8::Local<v8::Value>>(),
-                           dict.GetHandle());
+  // Built before the promise is converted: As() moves it, isolate and all.
+  v8::Local<v8::Value> result =
+      OpenDialogResult(promise.isolate(), chosen == NSModalResponseCancel,
+                       paths, bookmarks)
+          .GetHandle();
+  ResolvePromiseInNextTick(promise.As<v8::Local<v8::Value>>(), result);
 }
 
 void ShowOpenDialog(const DialogSettings& settings,
                     gin_helper::Promise<gin_helper::Dictionary> promise) {
+  if (auto* shim_parent = ShimParent(settings)) {
+    shim_parent->ShowOpenDialog(
+        settings,
+        base::BindOnce(
+            [](gin_helper::Promise<gin_helper::Dictionary> promise,
+               bool canceled, const std::vector<base::FilePath>& paths) {
+              v8::HandleScope scope(promise.isolate());
+              promise.Resolve(
+                  OpenDialogResult(promise.isolate(), canceled, paths, {}));
+            },
+            std::move(promise)));
+    return;
+  }
+
   NSOpenPanel* dialog = [NSOpenPanel openPanel];
 
   SetupDialog(dialog, settings);
@@ -426,26 +502,57 @@ void ShowOpenDialog(const DialogSettings& settings,
 
   __block gin_helper::Promise<gin_helper::Dictionary> p = std::move(promise);
 
-  if (!settings.parent_window || !settings.parent_window->GetNativeWindow() ||
-      settings.force_detached) {
-    [dialog beginWithCompletionHandler:^(NSInteger chosen) {
-      OpenDialogCompletion(chosen, dialog, security_scoped_bookmarks,
-                           std::move(p));
-    }];
-  } else {
-    NSWindow* window =
-        settings.parent_window->GetNativeWindow().GetNativeNSWindow();
+  if (NSWindow* window = SheetParent(settings)) {
     [dialog
         beginSheetModalForWindow:window
                completionHandler:^(NSInteger chosen) {
                  OpenDialogCompletion(chosen, dialog, security_scoped_bookmarks,
                                       std::move(p));
                }];
+  } else {
+    [dialog beginWithCompletionHandler:^(NSInteger chosen) {
+      OpenDialogCompletion(chosen, dialog, security_scoped_bookmarks,
+                           std::move(p));
+    }];
   }
+}
+
+void ShowOpenDialogForNSWindow(const DialogSettings& settings,
+                               gfx::NativeWindow window,
+                               OpenDialogCallback callback) {
+  NSOpenPanel* dialog = [NSOpenPanel openPanel];
+
+  SetupDialog(dialog, settings);
+  SetupOpenDialogForProperties(dialog, settings.properties);
+
+  __block OpenDialogCallback cb = std::move(callback);
+  scoped_refptr<base::SequencedTaskRunner> task_runner =
+      base::SequencedTaskRunner::GetCurrentDefault();
+  [dialog
+      beginSheetModalForWindow:window.GetNativeNSWindow()
+             completionHandler:^(NSInteger chosen) {
+               std::vector<base::FilePath> paths;
+               if (chosen != NSModalResponseCancel)
+                 ReadDialogPaths(dialog, &paths);
+               // Not from inside the panel's own transaction.
+               task_runner->PostTask(
+                   FROM_HERE, base::BindOnce(std::move(cb),
+                                             chosen == NSModalResponseCancel,
+                                             std::move(paths)));
+             }];
 }
 
 std::optional<base::FilePath> ShowSaveDialogSync(
     const DialogSettings& settings) {
+  if (auto* shim_parent = ShimParent(settings)) {
+    base::FilePath path = WaitForShimDialog<base::FilePath>(
+        base::BindOnce(&electron::NativeWindowMacRemote::ShowSaveDialog,
+                       base::Unretained(shim_parent), settings));
+    if (path.empty())
+      return {};
+    return path;
+  }
+
   NSSavePanel* dialog = [NSSavePanel savePanel];
 
   SetupDialog(dialog, settings);
@@ -488,6 +595,19 @@ void SaveDialogCompletion(int chosen,
 
 void ShowSaveDialog(const DialogSettings& settings,
                     gin_helper::Promise<gin_helper::Dictionary> promise) {
+  if (auto* shim_parent = ShimParent(settings)) {
+    shim_parent->ShowSaveDialog(
+        settings, base::BindOnce(
+                      [](gin_helper::Promise<gin_helper::Dictionary> promise,
+                         bool canceled, const base::FilePath& path) {
+                        v8::HandleScope scope(promise.isolate());
+                        promise.Resolve(SaveDialogResult(promise.isolate(),
+                                                         canceled, path));
+                      },
+                      std::move(promise)));
+    return;
+  }
+
   NSSavePanel* dialog = [NSSavePanel savePanel];
 
   SetupDialog(dialog, settings);
@@ -500,22 +620,44 @@ void ShowSaveDialog(const DialogSettings& settings,
 
   __block gin_helper::Promise<gin_helper::Dictionary> p = std::move(promise);
 
-  if (!settings.parent_window || !settings.parent_window->GetNativeWindow() ||
-      settings.force_detached) {
-    [dialog beginWithCompletionHandler:^(NSInteger chosen) {
-      SaveDialogCompletion(chosen, dialog, security_scoped_bookmarks,
-                           std::move(p));
-    }];
-  } else {
-    NSWindow* window =
-        settings.parent_window->GetNativeWindow().GetNativeNSWindow();
+  if (NSWindow* window = SheetParent(settings)) {
     [dialog
         beginSheetModalForWindow:window
                completionHandler:^(NSInteger chosen) {
                  SaveDialogCompletion(chosen, dialog, security_scoped_bookmarks,
                                       std::move(p));
                }];
+  } else {
+    [dialog beginWithCompletionHandler:^(NSInteger chosen) {
+      SaveDialogCompletion(chosen, dialog, security_scoped_bookmarks,
+                           std::move(p));
+    }];
   }
+}
+
+void ShowSaveDialogForNSWindow(const DialogSettings& settings,
+                               gfx::NativeWindow window,
+                               SaveDialogCallback callback) {
+  NSSavePanel* dialog = [NSSavePanel savePanel];
+
+  SetupDialog(dialog, settings);
+  SetupSaveDialogForProperties(dialog, settings.properties);
+  [dialog setCanSelectHiddenExtension:YES];
+
+  __block SaveDialogCallback cb = std::move(callback);
+  scoped_refptr<base::SequencedTaskRunner> task_runner =
+      base::SequencedTaskRunner::GetCurrentDefault();
+  [dialog
+      beginSheetModalForWindow:window.GetNativeNSWindow()
+             completionHandler:^(NSInteger chosen) {
+               base::FilePath path;
+               if (chosen != NSModalResponseCancel && [[dialog URL] isFileURL])
+                 path = base::FilePath(
+                     base::SysNSStringToUTF8([[dialog URL] path]));
+               task_runner->PostTask(FROM_HERE,
+                                     base::BindOnce(std::move(cb), path.empty(),
+                                                    std::move(path)));
+             }];
 }
 
 }  // namespace file_dialog

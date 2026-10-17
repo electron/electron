@@ -330,6 +330,10 @@ bool NativeWindow::IsClosed() const {
   return is_closed_;
 }
 
+bool NativeWindow::IsInAppShim() const {
+  return false;
+}
+
 void NativeWindow::SetSize(const gfx::Size& size, bool animate) {
   SetBounds(gfx::Rect(GetPosition(), size), animate);
 }
