@@ -9,26 +9,29 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <variant>
 #include <vector>
 
 #include "base/files/file_path.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/browser_context.h"
-#include "content/public/browser/media_stream_request.h"
 #include "mojo/public/cpp/bindings/remote.h"
-#include "services/network/public/cpp/url_loader_factory_builder.h"
-#include "services/network/public/mojom/network_context.mojom.h"
+#include "services/network/public/mojom/network_context.mojom-forward.h"
 #include "services/network/public/mojom/ssl_config.mojom.h"
-#include "services/network/public/mojom/url_loader_factory.mojom.h"
+#include "services/network/public/mojom/url_loader_factory.mojom-forward.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
+#include "third_party/blink/public/mojom/mediastream/media_stream.mojom-forward.h"
+#include "url/origin.h"
 
 class PrefService;
 class ValueMapPrefStore;
 
 namespace content {
+class MediaStreamUI;
 class PreconnectManager;
 class ReconnectableURLLoaderFactory;
+struct MediaStreamRequest;
 }  // namespace content
 
 namespace gin {
@@ -37,7 +40,8 @@ class Arguments;
 
 namespace network {
 class SharedURLLoaderFactory;
-}
+class URLLoaderFactoryBuilder;
+}  // namespace network
 
 namespace storage {
 class SpecialStoragePolicy;
@@ -156,8 +160,14 @@ class ElectronBrowserContext : public content::BrowserContext {
   network::mojom::SSLConfigPtr GetSSLConfig();
   void SetSSLConfigClient(mojo::Remote<network::mojom::SSLConfigClient> client);
 
-  bool ChooseDisplayMediaDevice(const content::MediaStreamRequest& request,
-                                content::MediaResponseCallback callback);
+  // |callback| is a content::MediaResponseCallback, spelled out here so this
+  // header doesn't need content/public/browser/media_stream_request.h.
+  bool ChooseDisplayMediaDevice(
+      const content::MediaStreamRequest& request,
+      base::OnceCallback<
+          void(const blink::mojom::StreamDevicesSet& stream_devices_set,
+               blink::mojom::MediaStreamRequestResult result,
+               std::unique_ptr<content::MediaStreamUI> ui)> callback);
   void SetDisplayMediaRequestHandler(DisplayMediaRequestHandler handler);
 
   ~ElectronBrowserContext() override;
@@ -198,7 +208,10 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   static void DisplayMediaDeviceChosen(
       const content::MediaStreamRequest& request,
-      content::MediaResponseCallback callback,
+      base::OnceCallback<
+          void(const blink::mojom::StreamDevicesSet& stream_devices_set,
+               blink::mojom::MediaStreamRequestResult result,
+               std::unique_ptr<content::MediaStreamUI> ui)> callback,
       gin::Arguments* args);
 
   // Initialize pref registry.

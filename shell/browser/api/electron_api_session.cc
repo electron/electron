@@ -40,6 +40,7 @@
 #include "content/public/browser/browsing_data_remover.h"
 #include "content/public/browser/download_item_utils.h"
 #include "content/public/browser/download_manager_delegate.h"
+#include "content/public/browser/media_stream_request.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/preconnect_manager.h"
 #include "content/public/browser/preconnect_request.h"
