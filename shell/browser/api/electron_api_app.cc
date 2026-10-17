@@ -68,6 +68,7 @@
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
+#include "shell/browser/net/system_network_context_manager.h"
 #include "shell/browser/relauncher.h"
 #include "shell/common/api/electron_api_command_line.h"
 #include "shell/common/application_info.h"
