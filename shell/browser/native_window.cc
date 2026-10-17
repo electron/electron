@@ -325,6 +325,17 @@ void NativeWindow::SetShape(const std::vector<gfx::Rect>& rects) {
   widget()->SetShape(std::make_unique<std::vector<gfx::Rect>>(rects));
 }
 
+void NativeWindow::SetInputRegion(const std::vector<gfx::Rect>& /*rects*/,
+                                  bool /*within_frame*/,
+                                  bool /*include_inset*/,
+                                  bool /*include_menu_bar*/) {}
+
+void NativeWindow::OnMenuBarVisibilityChanged() {}
+
+std::vector<gfx::Rect> NativeWindow::GetAppliedInputRegionForTesting() const {
+  return {};
+}
+
 void NativeWindow::FlushPendingRootLayout(views::View* view) {
   view->InvalidateLayout();
 
