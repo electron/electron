@@ -129,6 +129,17 @@ class NativeWindowViews : public NativeWindow,
   double GetOpacity() const override;
   void SetIgnoreMouseEvents(bool ignore, bool forward) override;
   void SetContentProtection(bool enable) override;
+#if BUILDFLAG(IS_LINUX)
+  void SetInputRegion(const std::vector<gfx::Rect>& rects,
+                      bool within_frame,
+                      bool include_inset,
+                      bool include_menu_bar) override;
+  [[nodiscard]] int GetVisibleMenuBarHeight() const;
+  void OnMenuBarVisibilityChanged() override;
+  std::vector<gfx::Rect> GetAppliedInputRegionForTesting() const override;
+  // Records what ApplyInputRegion() handed to the platform window, in DIP.
+  void SetAppliedInputRegionForTesting(const std::vector<gfx::Rect>& rects);
+#endif
   bool IsContentProtected() const override;
   void SetFocusable(bool focusable) override;
   bool IsFocusable() const override;
@@ -211,6 +222,19 @@ class NativeWindowViews : public NativeWindow,
   [[nodiscard]] bool ignore_mouse_events() const {
     return ignore_mouse_events_;
   }
+  [[nodiscard]] const std::optional<std::vector<gfx::Rect>>& input_region()
+      const {
+    return input_region_;
+  }
+  [[nodiscard]] bool input_region_within_frame() const {
+    return input_region_within_frame_;
+  }
+  [[nodiscard]] bool input_region_include_inset() const {
+    return input_region_include_inset_;
+  }
+  [[nodiscard]] bool input_region_include_menu_bar() const {
+    return input_region_include_menu_bar_;
+  }
 #endif
 
   [[nodiscard]] bool has_rounded_corners() const { return rounded_corner_; }
@@ -227,6 +251,11 @@ class NativeWindowViews : public NativeWindow,
   }
 
   gfx::Insets GetRestoredFrameBorderInsets() const;
+
+#if BUILDFLAG(IS_LINUX)
+  // Asks the tree host to apply the region again.
+  void OnInputRegionChanged();
+#endif
 
   // views::WidgetObserver:
   void OnWidgetActivationChanged(views::Widget* widget, bool active) override;
@@ -326,6 +355,17 @@ class NativeWindowViews : public NativeWindow,
 
 #if BUILDFLAG(IS_LINUX)
   bool ignore_mouse_events_ = false;
+  // std::nullopt until setInputRegion() is called; an engaged but empty
+  // optional means "reset to the default input region".
+  std::optional<std::vector<gfx::Rect>> input_region_;
+  // Whether |input_region_| is relative to, and clipped to, the content area
+  // rather than the whole window surface.
+  bool input_region_within_frame_ = false;
+  // Whether the frame's inset margin is added to |input_region_|.
+  bool input_region_include_inset_ = false;
+  bool input_region_include_menu_bar_ = false;
+  // Last region applied to the platform window, in DIP, exposed for tests.
+  std::vector<gfx::Rect> applied_input_region_;
 #endif
 
 #if BUILDFLAG(IS_WIN)

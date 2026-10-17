@@ -583,6 +583,23 @@ std::string BaseWindow::GetBackgroundColor() const {
   return ToRGBHex(window_->GetBackgroundColor());
 }
 
+void BaseWindow::SetInputRegion(const std::vector<gfx::Rect>& rects,
+                                gin::Arguments* const args) {
+  gin_helper::Dictionary options;
+  bool within_frame = true;
+  bool include_inset = false;
+  bool include_menu_bar = false;
+  if (args->GetNext(&options)) {
+    options.Get("withinFrame", &within_frame);
+    options.Get("includeInset", &include_inset);
+    options.Get("includeMenuBar", &include_menu_bar);
+  }
+  window_->SetInputRegion(rects, within_frame, include_inset, include_menu_bar);
+}
+
+std::vector<gfx::Rect> BaseWindow::GetInputRegionForTesting() const {
+  return window_->GetAppliedInputRegionForTesting();
+}
 void BaseWindow::SetIgnoreMouseEvents(bool ignore, gin::Arguments* const args) {
   gin_helper::Dictionary options;
   bool forward = false;
@@ -1158,6 +1175,8 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod<&NativeWindow::SetOpacity>("setOpacity")
       .SetMethod<&NativeWindow::GetOpacity>("getOpacity")
       .SetMethod<&NativeWindow::SetShape>("setShape")
+      .SetMethod<&BaseWindow::SetInputRegion>("setInputRegion")
+      .SetMethod<&BaseWindow::GetInputRegionForTesting>("_getInputRegion")
       .SetMethod<&NativeWindow::SetRepresentedFilename>(
           "setRepresentedFilename")
       .SetMethod<&NativeWindow::GetRepresentedFilename>(
