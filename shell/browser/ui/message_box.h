@@ -11,7 +11,9 @@
 
 #include "base/functional/callback_forward.h"
 #include "base/memory/raw_ptr_exclusion.h"
+#include "build/build_config.h"
 #include "ui/gfx/image/image_skia.h"
+#include "ui/gfx/native_ui_types.h"
 
 namespace electron {
 
@@ -55,6 +57,18 @@ void ShowMessageBox(const MessageBoxSettings& settings,
                     MessageBoxCallback callback);
 
 void CloseMessageBox(int id);
+
+#if BUILDFLAG(IS_MAC)
+// CloseMessageBox(), if a box with this id is showing; nothing otherwise.
+void CloseMessageBoxIfShowing(int id);
+
+// ShowMessageBox() for a parent that is not a NativeWindow of this process:
+// the box is a sheet of `window`, or stands alone when `window` is null. An
+// app shim's process shows the boxes of its windows with it.
+void ShowMessageBoxForNSWindow(const MessageBoxSettings& settings,
+                               gfx::NativeWindow window,
+                               MessageBoxCallback callback);
+#endif
 
 // Like ShowMessageBox with simplest settings, but safe to call at very early
 // stage of application.
