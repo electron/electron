@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "base/functional/callback.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_context.h"

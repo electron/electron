@@ -6,7 +6,6 @@
 
 #include "base/time/time.h"
 #include "shell/browser/javascript_environment.h"
-#include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/time_converter.h"

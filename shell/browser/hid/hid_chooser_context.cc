@@ -21,7 +21,6 @@
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_permission_manager.h"
-#include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"

@@ -10,6 +10,7 @@
 #include "media/base/video_types.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "services/viz/privileged/mojom/compositing/frame_sink_video_capture.mojom.h"
+#include "shell/browser/osr/osr_paint_event_fwd.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 
 #include <cstdint>
@@ -102,12 +103,6 @@ struct OffscreenSharedTextureValue {
   bool supports_zero_copy_webgpu_import;
 #endif
 };
-
-typedef std::optional<OffscreenSharedTextureValue> OffscreenSharedTexture;
-
-typedef base::RepeatingCallback<
-    void(const gfx::Rect&, const SkBitmap&, const OffscreenSharedTexture&)>
-    OnPaintCallback;
 
 }  // namespace electron
 

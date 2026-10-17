@@ -7,7 +7,6 @@
 #include "base/base64.h"
 #include "build/build_config.h"
 #include "content/public/browser/notification_event_dispatcher.h"
-#include "content/public/browser/render_process_host.h"
 #include "crypto/hash.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/notifications/notification.h"

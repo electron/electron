@@ -4,8 +4,8 @@
 
 #include "shell/browser/electron_navigation_throttle.h"
 
-#include "content/browser/renderer_host/render_frame_host_impl.h"  // nogncheck
 #include "content/public/browser/navigation_handle.h"
+#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/javascript_environment.h"
@@ -47,9 +47,7 @@ ElectronNavigationThrottle::WillStartRequest() {
   if (!is_renderer_initiated &&
       ui::PageTransitionIsWebTriggerable(handle->GetPageTransition())) {
     auto* render_frame_host = contents->GetPrimaryMainFrame();
-    auto* rfh_impl =
-        static_cast<content::RenderFrameHostImpl*>(render_frame_host);
-    is_renderer_initiated = rfh_impl && rfh_impl->web_ui();
+    is_renderer_initiated = render_frame_host && render_frame_host->GetWebUI();
   }
 
   if (is_renderer_initiated &&

@@ -8,8 +8,7 @@
 
 #include "base/logging.h"
 #include "base/trace_event/trace_event.h"
-#include "shell/common/gin_converters/blink_converter.h"
-#include "shell/common/gin_converters/value_converter.h"
+#include "gin/converter.h"
 #include "shell/common/gin_helper/node_event_emitter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"

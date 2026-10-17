@@ -31,6 +31,7 @@
 #include "mojo/public/cpp/bindings/connector.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "services/network/public/cpp/originating_process_id.h"
+#include "services/network/public/cpp/url_loader_factory_builder.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"

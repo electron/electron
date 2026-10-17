@@ -32,6 +32,7 @@
 #include "services/network/public/mojom/fetch_api.mojom.h"
 #include "services/network/public/mojom/url_request.mojom.h"
 #include "shell/browser/api/electron_api_data_pipe_holder.h"
+#include "shell/browser/net/cert_verifier_client.h"
 #include "shell/common/gc_plugin.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/std_converter.h"

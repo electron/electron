@@ -21,9 +21,7 @@
 #include "electron/electron_version.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/linux/launcher_entry.h"
-#include "shell/browser/native_window.h"
 #include "shell/browser/ui/gtk_util.h"
-#include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/login_item_settings_converter.h"
@@ -37,6 +35,7 @@
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gtk/gtk_compat.h"  // nogncheck
 #include "ui/gtk/gtk_util.h"    // nogncheck
+#include "url/gurl.h"
 
 namespace electron {
 

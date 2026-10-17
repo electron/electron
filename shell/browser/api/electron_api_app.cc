@@ -43,6 +43,7 @@
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/render_frame_host.h"
+#include "content/public/browser/render_process_host.h"
 #include "content/public/common/content_switches.h"
 #include "crypto/crypto_buildflags.h"
 #include "electron/mas.h"
@@ -68,6 +69,7 @@
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
+#include "shell/browser/net/system_network_context_manager.h"
 #include "shell/browser/relauncher.h"
 #include "shell/common/api/electron_api_command_line.h"
 #include "shell/common/application_info.h"
@@ -124,6 +126,10 @@
 #if BUILDFLAG(IS_LINUX)
 #include "base/nix/scoped_xdg_activation_token_injector.h"
 #include "base/nix/xdg_util.h"
+#endif
+
+#if BUILDFLAG(USE_NSS_CERTS)
+#include "shell/browser/certificate_manager_model.h"
 #endif
 
 using electron::Browser;
