@@ -1621,18 +1621,26 @@ for `frame` context types.
 
 Registers preload script that will be executed in its associated context type in this session. For
 `frame` contexts, this will run prior to any preload defined in the web preferences of a
-WebContents.
+WebContents. In-page navigations do not rerun the preload script.
 
 URL filters can limit which documents or service workers a script runs in. They behave like
-[content script URL matching](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/content_scripts#matching_url_patterns):
-a URL must match `matches` (if set) and `includeGlobs` (if set), and must not match
-`excludeMatches` or `excludeGlobs`. For `frame` contexts the URL is the document being loaded,
-so the initial empty document of a frame or popup is matched as `about:blank`. Set
-`matchOriginAsFallback` to match such documents by the origin of the frame that created them
-instead, for example to keep a script out of the `about:blank` popups of an excluded site. A
-`data:` URL loaded with `baseURLForDataURL` is matched by its base URL, and the error page of a
-failed navigation is matched by the URL that failed to load. For `service-worker` contexts the
-URL is the service worker's scope.
+[content script URL matching](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/content_scripts#matching_url_patterns).
+A script runs for a URL that meets all of these conditions:
+
+* It matches at least one pattern in `matches`, if set.
+* It matches at least one glob in `includeGlobs`, if set.
+* It does not match any pattern in `excludeMatches`.
+* It does not match any glob in `excludeGlobs`.
+
+The URL that the filters are matched against depends on the context type:
+
+* For `service-worker` contexts, it is the service worker's scope.
+* For `frame` contexts, it is the URL of the document being loaded, with these special cases:
+  * The initial empty document of a frame or popup is matched as `about:blank`. Set
+    `matchOriginAsFallback` to match such documents by the origin of the frame that created them
+    instead, for example to keep a script out of the `about:blank` popups of an excluded site.
+  * A `data:` URL loaded with `baseURLForDataURL` is matched by its base URL.
+  * The error page of a failed navigation is matched by the URL that failed to load.
 
 Throws an error if any of the URL patterns are invalid, or if `matches` or `includeGlobs` is an
 empty array.
