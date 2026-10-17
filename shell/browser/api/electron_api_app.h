@@ -14,8 +14,8 @@
 #include "chrome/browser/process_singleton.h"
 #include "content/public/browser/browser_child_process_observer.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
-#include "content/public/browser/render_process_host.h"
 #include "content/public/browser/scoped_accessibility_mode.h"
+#include "content/public/common/child_process_id.h"
 #include "crypto/crypto_buildflags.h"
 #include "electron/mas.h"
 #include "gin/wrappable.h"
@@ -32,12 +32,14 @@
 #include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8-traced-handle.h"
 
-#if BUILDFLAG(USE_NSS_CERTS)
-#include "shell/browser/certificate_manager_model.h"
-#endif
+class CertificateManagerModel;
 
 namespace base {
 class FilePath;
+}
+
+namespace content {
+class RenderProcessHost;
 }
 
 namespace gin_helper {
