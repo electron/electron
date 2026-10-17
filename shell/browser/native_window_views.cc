@@ -1417,9 +1417,50 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
   if (ignore_mouse_events_ == ignore)
     return;
   ignore_mouse_events_ = ignore;
-  if (auto* tree_host = static_cast<ElectronDesktopWindowTreeHostLinux*>(
-          views::DesktopWindowTreeHostLinux::GetHostForWidget(
-              GetAcceleratedWidget()))) {
+  OnInputRegionChanged();
+#endif
+}
+
+#if BUILDFLAG(IS_LINUX)
+void NativeWindowViews::SetInputRegion(const std::vector<gfx::Rect>& rects,
+                                       bool within_frame,
+                                       bool include_inset,
+                                       bool include_menu_bar) {
+  input_region_ = rects;
+  input_region_within_frame_ = within_frame;
+  input_region_include_inset_ = include_inset;
+  input_region_include_menu_bar_ = include_menu_bar;
+  OnInputRegionChanged();
+}
+
+int NativeWindowViews::GetVisibleMenuBarHeight() const {
+  // |root_view_| keeps the MenuBar object around even when it is hidden (e.g.
+  // auto-hide or a not-yet-shown window), so only count it when it is
+  // actually in the layout.
+  return root_view_.is_menu_bar_visible() ? root_view_.GetMenuBarHeight() : 0;
+}
+
+std::vector<gfx::Rect> NativeWindowViews::GetAppliedInputRegionForTesting()
+    const {
+  return applied_input_region_;
+}
+
+void NativeWindowViews::SetAppliedInputRegionForTesting(
+    const std::vector<gfx::Rect>& rects) {
+  applied_input_region_ = rects;
+}
+
+void NativeWindowViews::OnMenuBarVisibilityChanged() {
+  // Rects are content-relative, so a moving menu bar moves them too.
+  if (input_region_.has_value())
+    OnInputRegionChanged();
+}
+
+void NativeWindowViews::OnInputRegionChanged() {
+  auto* tree_host = static_cast<ElectronDesktopWindowTreeHostLinux*>(
+      views::DesktopWindowTreeHostLinux::GetHostForWidget(
+          GetAcceleratedWidget()));
+  if (tree_host) {
     tree_host->UpdateFrameHints();
     if (x11_util::IsX11()) {
       // Round-trip so the server has applied the input shape on return.
@@ -1430,8 +1471,8 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
       compositor->ScheduleFullRedraw();
     }
   }
-#endif
 }
+#endif
 
 void NativeWindowViews::SetContentProtection(const bool enable) {
 #if BUILDFLAG(IS_WIN)
