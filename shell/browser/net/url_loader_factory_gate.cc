@@ -4,6 +4,7 @@
 
 #include "shell/browser/net/url_loader_factory_gate.h"
 
+#include <algorithm>
 #include <optional>
 #include <utility>
 
@@ -19,6 +20,7 @@
 #include "net/url_request/redirect_util.h"
 #include "services/network/public/cpp/http_request_headers_update_params.h"
 #include "services/network/public/cpp/resource_request.h"
+#include "services/network/public/cpp/resource_request_body.h"
 #include "services/network/public/cpp/self_deleting_url_loader_factory.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
 #include "services/network/public/mojom/early_hints.mojom.h"
@@ -134,6 +136,30 @@ scoped_refptr<base::SequencedTaskRunner> UIThread() {
   return content::GetUIThreadTaskRunner({});
 }
 
+// Cloning a data pipe getter takes it out of its element for the duration of
+// the call. This thread clones the original's getters to send it to the
+// network while the UI thread clones them for uploadData, so the UI thread's
+// copy needs getters of its own.
+scoped_refptr<network::ResourceRequestBody> CloneBodyForUIThread(
+    const scoped_refptr<network::ResourceRequestBody>& body) {
+  using Tag = network::DataElement::Tag;
+  if (!body || std::ranges::none_of(*body->elements(), [](const auto& element) {
+        return element.type() == Tag::kDataPipe;
+      })) {
+    return body;
+  }
+  auto clone = base::MakeRefCounted<network::ResourceRequestBody>();
+  clone->set_identifier(body->identifier());
+  clone->set_contains_sensitive_info(body->contains_sensitive_info());
+  for (const auto& element : *body->elements()) {
+    // A chunked getter can't be cloned. Blink never puts one in a body with
+    // data pipes, so this only drops it from a malformed request.
+    if (element.type() != Tag::kChunkedDataPipe)
+      clone->elements_mutable()->push_back(element.Clone());
+  }
+  return clone;
+}
+
 // Proxies both sides of an observed request on the IO thread.
 class ObservedURLLoader : public network::mojom::URLLoader,
                           public network::mojom::URLLoaderClient {
@@ -164,6 +190,7 @@ class ObservedURLLoader : public network::mojom::URLLoader,
     renderer_client_.set_disconnect_handler(std::move(on_disconnect));
     network_client_receiver_.set_disconnect_handler(base::BindOnce(
         &ObservedURLLoader::Finish, weak_factory_.GetWeakPtr(), std::nullopt));
+    request_.request_body = CloneBodyForUIThread(request.request_body);
     UIThread()->PostTask(
         FROM_HERE, base::BindOnce(&api::WebRequest::ObservedRequestStarted,
                                   browser_context_, key_, render_process_id_,
