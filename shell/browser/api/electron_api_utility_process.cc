@@ -528,6 +528,12 @@ void UtilityProcessWrapper::OnV8FatalError(const std::string& location,
   EmitWithoutEvent("error", "FatalError", location, report);
 }
 
+void UtilityProcessWrapper::FlushBeforeExit(FlushBeforeExitCallback callback) {
+  // Replying is enough: by the time this runs, everything the child sent
+  // before this call has been read and queued on its pipes here.
+  std::move(callback).Run();
+}
+
 void UtilityProcessWrapper::CreateAndSendURLLoaderFactory(bool /* crashed */) {
   if (!node_service_remote_.is_bound() || !node_service_remote_.is_connected())
     return;
