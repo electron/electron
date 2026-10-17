@@ -16,10 +16,7 @@ regeneration when PDL domain files changed. Should be upstreamed.
 
 node.gni - The node_* declare_args() are configured from Electron's build
 args (//electron/build/args/all.gn) rather than by changing their defaults
-here. The exception is node_path: node_module_version's default in the same
-declare_args() block runs exec_script() on $node_path, and GN evaluates it
-against node_path's default even when both are overridden, so gn gen fails
-unless the default points at the real checkout.
+here.
 
 diff --git a/configure.py b/configure.py
 index b826e24e3f474f4ec89bafd0a6db3081fadfbef8..1b35f195f7ee7547544cc954baf95c725afa8d0b 100755
@@ -35,18 +32,9 @@ index b826e24e3f474f4ec89bafd0a6db3081fadfbef8..1b35f195f7ee7547544cc954baf95c72
    o['variables']['v8_enable_external_code_space'] = 1 if options.enable_pointer_compression else 0
    o['variables']['v8_enable_31bit_smis_on_64bit_arch'] = 1 if options.enable_pointer_compression else 0
 diff --git a/node.gni b/node.gni
-index 28ef444b72c139eb9253122dfaf8b14c8108eac6..757a0b2a75643322b3339a45e991ad5622ffc29e 100644
+index 28ef444b72c139eb9253122dfaf8b14c8108eac6..668aadfc9b688eeb80734a1709e876eadea88417 100644
 --- a/node.gni
 +++ b/node.gni
-@@ -5,7 +5,7 @@
- # Embedder options.
- declare_args() {
-   # The location of Node.js in source code tree.
--  node_path = "//node"
-+  node_path = "//third_party/electron_node"
- 
-   # The location of V8 - use the one from node's deps by default.
-   node_v8_path = "$node_path/deps/v8"
 @@ -72,6 +72,12 @@ declare_args() {
  
    # Build with Amaro (TypeScript utils).
