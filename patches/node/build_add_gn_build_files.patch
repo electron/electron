@@ -14,6 +14,13 @@ src/inspector/unofficial.gni - The node_protocol_generated_sources action
 was missing gypi_values.node_pdl_files from its inputs, causing Ninja to skip
 regeneration when PDL domain files changed. Should be upstreamed.
 
+node.gni - The node_* declare_args() are configured from Electron's build
+args (//electron/build/args/all.gn) rather than by changing their defaults
+here. The exception is node_path: node_module_version's default in the same
+declare_args() block runs exec_script() on $node_path, and GN evaluates it
+against node_path's default even when both are overridden, so gn gen fails
+unless the default points at the real checkout.
+
 diff --git a/configure.py b/configure.py
 index b826e24e3f474f4ec89bafd0a6db3081fadfbef8..1b35f195f7ee7547544cc954baf95c725afa8d0b 100755
 --- a/configure.py
@@ -28,10 +35,10 @@ index b826e24e3f474f4ec89bafd0a6db3081fadfbef8..1b35f195f7ee7547544cc954baf95c72
    o['variables']['v8_enable_external_code_space'] = 1 if options.enable_pointer_compression else 0
    o['variables']['v8_enable_31bit_smis_on_64bit_arch'] = 1 if options.enable_pointer_compression else 0
 diff --git a/node.gni b/node.gni
-index 28ef444b72c139eb9253122dfaf8b14c8108eac6..0d0438ba8f478a08949ea07cad6c349d15060be9 100644
+index 28ef444b72c139eb9253122dfaf8b14c8108eac6..757a0b2a75643322b3339a45e991ad5622ffc29e 100644
 --- a/node.gni
 +++ b/node.gni
-@@ -5,10 +5,10 @@
+@@ -5,7 +5,7 @@
  # Embedder options.
  declare_args() {
    # The location of Node.js in source code tree.
@@ -39,26 +46,8 @@ index 28ef444b72c139eb9253122dfaf8b14c8108eac6..0d0438ba8f478a08949ea07cad6c349d
 +  node_path = "//third_party/electron_node"
  
    # The location of V8 - use the one from node's deps by default.
--  node_v8_path = "$node_path/deps/v8"
-+  node_v8_path = "//v8"
- 
-   # The location of OpenSSL - use the one from node's deps by default.
-   node_openssl_path = "$node_path/deps/openssl"
-@@ -48,7 +48,7 @@ declare_args() {
-   node_openssl_system_ca_path = ""
- 
-   # Initialize v8 platform during node.js startup.
--  node_use_v8_platform = true
-+  node_use_v8_platform = false
- 
-   # Custom build tag.
-   node_tag = ""
-@@ -68,10 +68,16 @@ declare_args() {
-   # TODO(zcbenz): There are few broken things for now:
-   #   1. cross-os compilation is not supported.
-   #   2. node_mksnapshot crashes when cross-compiling for x64 from arm64.
--  node_use_node_snapshot = (host_os == target_os) && !(host_cpu == "arm64" && target_cpu == "x64")
-+  node_use_node_snapshot = false
+   node_v8_path = "$node_path/deps/v8"
+@@ -72,6 +72,12 @@ declare_args() {
  
    # Build with Amaro (TypeScript utils).
    node_use_amaro = true
@@ -309,7 +298,7 @@ index 856878c33681a73d41016729dabe48b0a6a80589..91a11852d206b65485fe90fd037a0bd1
      if sys.platform == 'win32':
        files = [ x.replace('\\', '/') for x in files ]
 diff --git a/unofficial.gni b/unofficial.gni
-index aa35cd4664e9ed43b46e1ad62eaabcf1cfe40135..7265e09bf7601afe76463f528ffb385db796e093 100644
+index aa35cd4664e9ed43b46e1ad62eaabcf1cfe40135..5fe998f97e2465162bde97cdae758bc7ab8243ba 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -147,32 +147,42 @@ template("node_gn_build") {
@@ -358,15 +347,6 @@ index aa35cd4664e9ed43b46e1ad62eaabcf1cfe40135..7265e09bf7601afe76463f528ffb385d
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
  
-@@ -195,7 +205,7 @@ template("node_gn_build") {
-     }
-     if (node_use_openssl) {
-       deps += [ "deps/ncrypto" ]
--      public_deps += [ "$node_openssl_path" ]
-+      public_deps += [ "//third_party/boringssl" ]
-       sources += gypi_values.node_crypto_sources
-     }
-     if (node_use_sqlite) {
 @@ -224,6 +234,10 @@ template("node_gn_build") {
      }
    }
