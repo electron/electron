@@ -1110,7 +1110,7 @@ index 0000000000000000000000000000000000000000..8cfcb52182df9a600e5cf2c1466e9ffa
 +  assert(stat.size > 0);
 +}));
 diff --git a/unofficial.gni b/unofficial.gni
-index f898c9e1d6416f58e1b83c6d378b57744a8b3901..2db9a1644b2e639b7af8b8dbd5025ec3338fdc22 100644
+index f01d9cd80618865fa3fa3fb6179623fa6c634a95..0aa096ab9e2a1e877cbd990b40b55486d32be7ef 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -160,6 +160,7 @@ template("node_gn_build") {
