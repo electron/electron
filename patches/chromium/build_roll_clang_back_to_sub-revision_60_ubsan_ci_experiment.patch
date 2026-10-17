@@ -15,7 +15,7 @@ sub-revision 60 package and GN's clang_revision consistency check
 matches it, to tell whether the package rebuild is the cause.
 
 diff --git a/tools/clang/scripts/update.py b/tools/clang/scripts/update.py
-index 200845370e77178aa53b4176a0ea37d322d29881..07e38ef838a0a97d91c49db63a82cb8dd1a124e5 100644
+index 0a9a72faa21f253399a0ec17a61565bc372667a8..3688df7093f812f8b93e05a1844d05f5e557efdd 100755
 --- a/tools/clang/scripts/update.py
 +++ b/tools/clang/scripts/update.py
 @@ -41,7 +41,7 @@ import zlib
