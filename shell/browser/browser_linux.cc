@@ -35,6 +35,7 @@
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gtk/gtk_compat.h"  // nogncheck
 #include "ui/gtk/gtk_util.h"    // nogncheck
+#include "url/gurl.h"
 
 namespace electron {
 

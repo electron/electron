@@ -52,6 +52,7 @@
 #include "components/prefs/scoped_user_pref_update.h"
 #include "components/security_state/content/content_utils.h"
 #include "components/security_state/core/security_state.h"
+#include "components/viz/common/frame_sinks/copy_output_result.h"
 #include "content/browser/renderer_host/frame_tree_node.h"  // nogncheck
 #include "content/browser/renderer_host/navigation_controller_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_frame_host_impl.h"  // nogncheck
