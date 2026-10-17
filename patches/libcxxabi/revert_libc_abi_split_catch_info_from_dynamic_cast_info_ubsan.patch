@@ -1,0 +1,290 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 17 Oct 2026 03:14:19 +0000
+Subject: Revert "[libc++abi] Split catch_info from __dynamic_cast_info" (UBSan
+ CI experiment, DO NOT MERGE)
+
+This reverts commit 0e691bb69ac90450d8d53bc8ee5968c62f9c15a7
+(llvm/llvm-project#223744) to test whether it causes the macOS UBSan
+-fsanitize=vptr false positives seen since Chromium 157.0.8100.0.
+
+diff --git a/src/private_typeinfo.cpp b/src/private_typeinfo.cpp
+index 74d9a7b358352dce3fd355219704c33c4cb859ad..1b74bd28435db44f52da4b50658248d1a5321167 100644
+--- a/src/private_typeinfo.cpp
++++ b/src/private_typeinfo.cpp
+@@ -171,6 +171,7 @@ const void* dyn_cast_to_derived(
+       dst_type,
+       static_ptr,
+       static_type,
++      src2dst_offset,
+       0,
+       0,
+       0,
+@@ -182,7 +183,9 @@ const void* dyn_cast_to_derived(
+       1, // number_of_dst_type
+       false,
+       false,
+-      false};
++      false,
++      true,
++      nullptr};
+   // Do the  search
+   dst_type->search_above_dst(&info, dynamic_ptr, dynamic_ptr, public_path, false);
+ #ifdef _LIBCXXABI_FORGIVING_DYNAMIC_CAST
+@@ -203,7 +206,25 @@ const void* dyn_cast_to_derived(
+              static_type->name(),
+              dst_type->name());
+     // Redo the search comparing type_info's using strcmp
+-    info                    = {dst_type, static_ptr, static_type, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, false, false};
++    info = {
++        dst_type,
++        static_ptr,
++        static_type,
++        src2dst_offset,
++        0,
++        0,
++        0,
++        0,
++        0,
++        0,
++        0,
++        0,
++        0,
++        false,
++        false,
++        false,
++        true,
++        nullptr};
+     info.number_of_dst_type = 1;
+     dst_type->search_above_dst(&info, dynamic_ptr, dynamic_ptr, public_path, true);
+   }
+@@ -244,6 +265,7 @@ const void* dyn_cast_try_downcast(
+       dynamic_type,
+       dst_ptr_to_static,
+       dst_type,
++      src2dst_offset,
+       0,
+       0,
+       0,
+@@ -255,7 +277,9 @@ const void* dyn_cast_try_downcast(
+       1, // number_of_dst_type
+       false,
+       false,
+-      false};
++      false,
++      true,
++      nullptr};
+   dynamic_type->search_above_dst(&dynamic_to_dst_info, dynamic_ptr, dynamic_ptr, public_path, false);
+   if (dynamic_to_dst_info.path_dst_ptr_to_static_ptr != unknown) {
+     // We have found at least one path from dynamic_ptr to dst_ptr. The
+@@ -276,7 +300,8 @@ const void* dyn_cast_slow(
+   // Not using giant short cut.  Do the search
+ 
+   // Initialize info struct for this search.
+-  __dynamic_cast_info info = {dst_type, static_ptr, static_type, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, false, false};
++  __dynamic_cast_info info = {
++      dst_type, static_ptr, static_type, src2dst_offset, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, false, false, true, nullptr};
+ 
+   dynamic_type->search_below_dst(&info, dynamic_ptr, public_path, false);
+ #ifdef _LIBCXXABI_FORGIVING_DYNAMIC_CAST
+@@ -297,7 +322,25 @@ const void* dyn_cast_slow(
+              dynamic_type->name(),
+              dst_type->name());
+     // Redo the search comparing type_info's using strcmp
+-    info = {dst_type, static_ptr, static_type, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, false, false};
++    info = {
++        dst_type,
++        static_ptr,
++        static_type,
++        src2dst_offset,
++        0,
++        0,
++        0,
++        0,
++        0,
++        0,
++        0,
++        0,
++        0,
++        false,
++        false,
++        false,
++        true,
++        nullptr};
+     dynamic_type->search_below_dst(&info, dynamic_ptr, public_path, true);
+   }
+ #endif // _LIBCXXABI_FORGIVING_DYNAMIC_CAST
+@@ -444,7 +487,8 @@ bool __class_type_info::can_catch(const __shim_type_info* thrown_type, void*& ad
+     return false;
+   // bullet 2
+   _LIBCXXABI_ASSERT(adjustedPtr, "catching a class without an object?");
+-  catch_info info = {this, nullptr, nullptr, 0, 0, false, true, nullptr};
++  __dynamic_cast_info info = {thrown_class_type, 0, this, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, true, nullptr};
++  info.number_of_dst_type  = 1;
+   thrown_class_type->has_unambiguous_public_base(&info, adjustedPtr, public_path);
+   if (info.path_dst_ptr_to_static_ptr == public_path) {
+     adjustedPtr = const_cast<void*>(info.dst_ptr_leading_to_static_ptr);
+@@ -473,7 +517,7 @@ bool __class_type_info::can_catch(const __shim_type_info* thrown_type, void*& ad
+ // different offset (adjustedPtr) from any previously recorded, this indicates
+ // an ambiguous case within the virtual base.
+ 
+-void __class_type_info::process_found_base_class(catch_info* info, void* adjustedPtr, int path_below) const {
++void __class_type_info::process_found_base_class(__dynamic_cast_info* info, void* adjustedPtr, int path_below) const {
+   if (info->number_to_static_ptr == 0) {
+     // First time we found this base
+     info->dst_ptr_leading_to_static_ptr = adjustedPtr;
+@@ -495,19 +539,22 @@ void __class_type_info::process_found_base_class(catch_info* info, void* adjuste
+   }
+ }
+ 
+-void __class_type_info::has_unambiguous_public_base(catch_info* info, void* adjustedPtr, int path_below) const {
++void __class_type_info::has_unambiguous_public_base(
++    __dynamic_cast_info* info, void* adjustedPtr, int path_below) const {
+   if (is_equal(this, info->static_type, false))
+     process_found_base_class(info, adjustedPtr, path_below);
+ }
+ 
+-void __si_class_type_info::has_unambiguous_public_base(catch_info* info, void* adjustedPtr, int path_below) const {
++void __si_class_type_info::has_unambiguous_public_base(
++    __dynamic_cast_info* info, void* adjustedPtr, int path_below) const {
+   if (is_equal(this, info->static_type, false))
+     process_found_base_class(info, adjustedPtr, path_below);
+   else
+     __base_type->has_unambiguous_public_base(info, adjustedPtr, path_below);
+ }
+ 
+-void __base_class_type_info::has_unambiguous_public_base(catch_info* info, void* adjustedPtr, int path_below) const {
++void __base_class_type_info::has_unambiguous_public_base(
++    __dynamic_cast_info* info, void* adjustedPtr, int path_below) const {
+   bool is_virtual          = __offset_flags & __virtual_mask;
+   ptrdiff_t offset_to_base = 0;
+   if (info->have_object) {
+@@ -538,7 +585,8 @@ void __base_class_type_info::has_unambiguous_public_base(catch_info* info, void*
+       (__offset_flags & __public_mask) ? path_below : not_public_path);
+ }
+ 
+-void __vmi_class_type_info::has_unambiguous_public_base(catch_info* info, void* adjustedPtr, int path_below) const {
++void __vmi_class_type_info::has_unambiguous_public_base(
++    __dynamic_cast_info* info, void* adjustedPtr, int path_below) const {
+   if (is_equal(this, info->static_type, false))
+     process_found_base_class(info, adjustedPtr, path_below);
+   else {
+@@ -634,8 +682,10 @@ bool __pointer_type_info::can_catch(const __shim_type_info* thrown_type, void*&
+   const __class_type_info* thrown_class_type = dynamic_cast<const __class_type_info*>(thrown_pointer_type->__pointee);
+   if (thrown_class_type == 0)
+     return false;
+-  bool have_object = adjustedPtr != nullptr;
+-  catch_info info  = {catch_class_type, nullptr, nullptr, 0, 0, false, have_object, nullptr};
++  bool have_object         = adjustedPtr != nullptr;
++  __dynamic_cast_info info = {
++      thrown_class_type, 0, catch_class_type, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, have_object, nullptr};
++  info.number_of_dst_type = 1;
+   thrown_class_type->has_unambiguous_public_base(&info, adjustedPtr, public_path);
+   if (info.path_dst_ptr_to_static_ptr == public_path) {
+     // In the case of a thrown null pointer, we have no object but we might
+diff --git a/src/private_typeinfo.h b/src/private_typeinfo.h
+index 62d0addb19eb7f7018883a69e79f6890f9cdf4dd..ad5a8e57ae25bae08eeca637aeaf4040967c500d 100644
+--- a/src/private_typeinfo.h
++++ b/src/private_typeinfo.h
+@@ -61,30 +61,6 @@ enum
+ 
+ class _LIBCXXABI_TYPE_VIS __class_type_info;
+ 
+-struct catch_info {
+-  const __class_type_info* static_type;
+-
+-  // pointer to a dst_type which has (static_ptr, static_type) above it
+-  const void* dst_ptr_leading_to_static_ptr;
+-  // pointer to a dst_type which does not have (static_ptr, static_type) above it
+-  const void* dst_ptr_not_leading_to_static_ptr;
+-
+-  // The following three paths are either unknown, public_path or not_public_path.
+-  // access of path from dst_ptr_leading_to_static_ptr to (static_ptr, static_type)
+-  int path_dst_ptr_to_static_ptr;
+-
+-  // Number of dst_types below (static_ptr, static_type)
+-  int number_to_static_ptr;
+-
+-  // Set whenever a search can be stopped
+-  bool search_done;
+-
+-  // There is no object (seen when we throw a null pointer to object).
+-  bool have_object;
+-  // Virtual base
+-  const void* vbase_cookie;
+-};
+-
+ struct _LIBCXXABI_HIDDEN __dynamic_cast_info
+ {
+ // const data supplied to the search:
+@@ -92,8 +68,9 @@ struct _LIBCXXABI_HIDDEN __dynamic_cast_info
+     const __class_type_info* dst_type;
+     const void* static_ptr;
+     const __class_type_info* static_type;
++    ptrdiff_t src2dst_offset;
+ 
+-    // Data that represents the answer:
++// Data that represents the answer:
+ 
+     // pointer to a dst_type which has (static_ptr, static_type) above it
+     const void* dst_ptr_leading_to_static_ptr;
+@@ -129,6 +106,13 @@ struct _LIBCXXABI_HIDDEN __dynamic_cast_info
+     bool found_any_static_type;
+     // Set whenever a search can be stopped
+     bool search_done;
++
++    // Data that modifies the search mechanism.
++
++    // There is no object (seen when we throw a null pointer to object).
++    bool have_object;
++    // Virtual base
++    const void* vbase_cookie;
+ };
+ 
+ // Has no base class
+@@ -141,14 +125,16 @@ public:
+                                                        const void *, int) const;
+   _LIBCXXABI_HIDDEN void process_static_type_below_dst(__dynamic_cast_info *,
+                                                        const void *, int) const;
+-  _LIBCXXABI_HIDDEN void process_found_base_class(catch_info*, void*, int) const;
++  _LIBCXXABI_HIDDEN void process_found_base_class(__dynamic_cast_info *, void *,
++                                                  int) const;
+   _LIBCXXABI_HIDDEN virtual void search_above_dst(__dynamic_cast_info *,
+                                                   const void *, const void *,
+                                                   int, bool) const;
+   _LIBCXXABI_HIDDEN virtual void
+   search_below_dst(__dynamic_cast_info *, const void *, int, bool) const;
+   _LIBCXXABI_HIDDEN bool can_catch(const __shim_type_info*, void*&) const final;
+-  _LIBCXXABI_HIDDEN virtual void has_unambiguous_public_base(catch_info*, void*, int) const;
++  _LIBCXXABI_HIDDEN virtual void
++  has_unambiguous_public_base(__dynamic_cast_info *, void *, int) const;
+ };
+ 
+ // Has one non-virtual public base class at offset zero
+@@ -160,7 +146,7 @@ public:
+ 
+   _LIBCXXABI_HIDDEN void search_above_dst(__dynamic_cast_info*, const void*, const void*, int, bool) const final;
+   _LIBCXXABI_HIDDEN void search_below_dst(__dynamic_cast_info*, const void*, int, bool) const final;
+-  _LIBCXXABI_HIDDEN void has_unambiguous_public_base(catch_info*, void*, int) const final;
++  _LIBCXXABI_HIDDEN void has_unambiguous_public_base(__dynamic_cast_info*, void*, int) const final;
+ };
+ 
+ struct _LIBCXXABI_HIDDEN __base_class_type_info
+@@ -178,7 +164,7 @@ public:
+ 
+     void search_above_dst(__dynamic_cast_info*, const void*, const void*, int, bool) const;
+     void search_below_dst(__dynamic_cast_info*, const void*, int, bool) const;
+-    void has_unambiguous_public_base(catch_info*, void*, int) const;
++    void has_unambiguous_public_base(__dynamic_cast_info*, void*, int) const;
+ };
+ 
+ // Has one or more base classes
+@@ -199,7 +185,7 @@ public:
+ 
+   _LIBCXXABI_HIDDEN void search_above_dst(__dynamic_cast_info*, const void*, const void*, int, bool) const final;
+   _LIBCXXABI_HIDDEN void search_below_dst(__dynamic_cast_info*, const void*, int, bool) const final;
+-  _LIBCXXABI_HIDDEN void has_unambiguous_public_base(catch_info*, void*, int) const final;
++  _LIBCXXABI_HIDDEN void has_unambiguous_public_base(__dynamic_cast_info*, void*, int) const final;
+ };
+ 
+ class _LIBCXXABI_TYPE_VIS __pbase_type_info : public __shim_type_info {
