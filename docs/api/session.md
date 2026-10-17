@@ -1628,9 +1628,11 @@ URL filters can limit which documents or service workers a script runs in. They 
 a URL must match `matches` (if set) and `includeGlobs` (if set), and must not match
 `excludeMatches` or `excludeGlobs`. For `frame` contexts the URL is the document being loaded,
 so the initial empty document of a frame or popup is matched as `about:blank`. Set
-`matchOriginAsFallback` to match such documents by the origin they inherit from the frame that
-created them instead, for example to keep a script out of the `about:blank` popups of an excluded
-site. For `service-worker` contexts the URL is the service worker's scope.
+`matchOriginAsFallback` to match such documents by the origin of the frame that created them
+instead, for example to keep a script out of the `about:blank` popups of an excluded site. A
+`data:` URL loaded with `baseURLForDataURL` is matched by its base URL, and the error page of a
+failed navigation is matched by the URL that failed to load. For `service-worker` contexts the
+URL is the service worker's scope.
 
 Throws an error if any of the URL patterns are invalid, or if `matches` or `includeGlobs` is an
 empty array.

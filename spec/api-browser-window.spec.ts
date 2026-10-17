@@ -4521,6 +4521,93 @@ describe('BrowserWindow module', () => {
               'about:blank'
             ]);
           });
+
+          it(`matches a data: URL loaded with baseURLForDataURL by its base URL (sandbox: ${sandbox})`, async () => {
+            const server = http.createServer((_request, response) => {
+              response.writeHead(200, { 'Content-Type': 'text/html' });
+              response.end('<html></html>');
+            });
+            defer(() => server.close());
+            const { url } = await listen(server);
+            const ses = session.fromPartition(`preload-base-url-filters-${sandbox}`);
+            const ids = [
+              ses.registerPreloadScript({
+                type: 'frame',
+                filePath: path.join(fixtures, 'module', 'preload-window-open-a.js'),
+                matches: [`${url}/*`]
+              }),
+              ses.registerPreloadScript({
+                type: 'frame',
+                filePath: path.join(fixtures, 'module', 'preload-window-open-b.js'),
+                matches: ['data:*']
+              })
+            ];
+            defer(() => ids.forEach((id) => ses.unregisterPreloadScript(id)));
+            const reports: Array<{ which: string; href: string }> = [];
+            ipcMain.on('preload-ran', (_e, which: string, href: string) => reports.push({ which, href }));
+            defer(() => ipcMain.removeAllListeners('preload-ran'));
+            const w = new BrowserWindow({ show: false, webPreferences: { sandbox, session: ses } });
+            // The document commits at the base URL, so only preload A matches.
+            await w.loadURL('data:text/html,<html></html>', { baseURLForDataURL: `${url}/app/` });
+            expect(reports).toEqual([{ which: 'a', href: `${url}/app/` }]);
+          });
+
+          it(`matches each frame by its own URL (sandbox: ${sandbox})`, async () => {
+            const server = http.createServer((request, response) => {
+              const child = new URL(request.url!, `http://${request.headers.host}`).searchParams.get('child');
+              response.writeHead(200, { 'Content-Type': 'text/html' });
+              response.end(child ? `<iframe src="${child}"></iframe>` : '<html></html>');
+            });
+            defer(() => server.close());
+            const { url } = await listen(server);
+            const ses = session.fromPartition(`preload-subframe-filters-${sandbox}`);
+            const id = ses.registerPreloadScript({
+              type: 'frame',
+              filePath: path.join(fixtures, 'module', 'preload-location.js'),
+              matches: [`${url}/allowed/*`]
+            });
+            defer(() => ses.unregisterPreloadScript(id));
+            const locations: string[] = [];
+            ipcMain.on('preload-location', (_e, href: string) => locations.push(href));
+            defer(() => ipcMain.removeAllListeners('preload-location'));
+            const w = new BrowserWindow({
+              show: false,
+              webPreferences: { sandbox, session: ses, nodeIntegrationInSubFrames: true }
+            });
+            // A matching frame in a non-matching page, then the reverse.
+            await w.loadURL(`${url}/other/page?child=/allowed/frame`);
+            await w.loadURL(`${url}/allowed/page?child=/other/frame`);
+            expect(locations).toEqual([`${url}/allowed/frame`, `${url}/allowed/page?child=/other/frame`]);
+          });
+
+          it(`matches the final URL of a redirected navigation (sandbox: ${sandbox})`, async () => {
+            const server = http.createServer((request, response) => {
+              const to = new URL(request.url!, `http://${request.headers.host}`).searchParams.get('to');
+              if (to) {
+                response.writeHead(302, { Location: to });
+                response.end();
+                return;
+              }
+              response.writeHead(200, { 'Content-Type': 'text/html' });
+              response.end('<html></html>');
+            });
+            defer(() => server.close());
+            const { url } = await listen(server);
+            const ses = session.fromPartition(`preload-redirect-filters-${sandbox}`);
+            const id = ses.registerPreloadScript({
+              type: 'frame',
+              filePath: path.join(fixtures, 'module', 'preload-location.js'),
+              matches: [`${url}/allowed/*`]
+            });
+            defer(() => ses.unregisterPreloadScript(id));
+            const locations: string[] = [];
+            ipcMain.on('preload-location', (_e, href: string) => locations.push(href));
+            defer(() => ipcMain.removeAllListeners('preload-location'));
+            const w = new BrowserWindow({ show: false, webPreferences: { sandbox, session: ses } });
+            await w.loadURL(`${url}/allowed/redirect?to=/other/landing`);
+            await w.loadURL(`${url}/other/redirect?to=/allowed/landing`);
+            expect(locations).toEqual([`${url}/allowed/landing`]);
+          });
         }
 
         it('rejects invalid preload URL filters', () => {
@@ -4531,6 +4618,13 @@ describe('BrowserWindow module', () => {
           );
           expect(() => ses.registerPreloadScript({ type: 'frame', filePath, excludeMatches: ['https://'] })).toThrow(
             /Invalid URL pattern/
+          );
+          // 'cors' is registered as a non-standard scheme in spec/index.js.
+          expect(() => ses.registerPreloadScript({ type: 'frame', filePath, matches: ['cors://host/*'] })).toThrow(
+            /must be registered as standard/
+          );
+          expect(() => ses.registerPreloadScript({ type: 'frame', filePath, matches: ['https:*'] })).toThrow(
+            /a standard scheme must use 'scheme:\/\/host\/path'/
           );
           expect(() => ses.registerPreloadScript({ type: 'frame', filePath, matches: [] })).toThrow(
             /'matches' must not be empty/

@@ -8,7 +8,6 @@
 #include <string_view>
 #include <utility>
 
-#include "base/check_op.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/files/file_path.h"
 #include "base/strings/pattern.h"
@@ -36,6 +35,19 @@ bool ParsePatterns(const std::vector<std::string>& patterns,
     if (result != URLPattern::ParseResult::kSuccess) {
       *error = "Invalid URL pattern '" + pattern_string +
                "': " + URLPattern::GetParseResultString(result);
+      // URLPattern requires "scheme://host/path" for standard schemes and
+      // rejects it for any other scheme.
+      if (result == URLPattern::ParseResult::kWrongSchemeSeparator) {
+        const bool has_standard_separator =
+            pattern_string.find(url::kStandardSchemeSeparator) !=
+            std::string::npos;
+        *error += has_standard_separator
+                      ? " A custom scheme must be registered as standard to "
+                        "be matched with '://'. Use includeGlobs or "
+                        "excludeGlobs otherwise."
+                      : " A pattern for a standard scheme must use "
+                        "'scheme://host/path'.";
+      }
       return false;
     }
     out->push_back(std::move(pattern));
@@ -125,14 +137,17 @@ bool PreloadScript::ParseUrlPatterns(std::string* error) {
 
 // Mirrors extensions::UserScript::MatchesURL() for content scripts.
 bool PreloadScript::MatchesURL(const GURL& url) const {
-  // Unparsed patterns would silently match every URL.
-  DCHECK_EQ(match_patterns_.size(), matches ? matches->size() : 0u);
-  DCHECK_EQ(exclude_match_patterns_.size(), exclude_matches.size());
+  // Fail closed if ParseUrlPatterns() was skipped: unparsed patterns would
+  // match every URL and drop every exclusion.
+  if (match_patterns_.size() != (matches ? matches->size() : 0u) ||
+      exclude_match_patterns_.size() != exclude_matches.size()) {
+    return false;
+  }
   if (MatchesAnyPattern(exclude_match_patterns_, url))
     return false;
   if (MatchesAnyGlob(exclude_globs, url))
     return false;
-  return (match_patterns_.empty() || MatchesAnyPattern(match_patterns_, url)) &&
+  return (!matches || MatchesAnyPattern(match_patterns_, url)) &&
          (!include_globs || MatchesAnyGlob(*include_globs, url));
 }
 

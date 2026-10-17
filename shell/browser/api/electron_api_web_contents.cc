@@ -105,6 +105,7 @@
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/platform/platform_handle.h"
 #include "mojo/public/cpp/system/platform_handle.h"
+#include "net/base/net_errors.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/network/public/cpp/web_sandbox_flags.h"
 #include "services/network/public/mojom/web_sandbox_flags.mojom-shared.h"
@@ -3501,9 +3502,19 @@ void WebContents::MaybeSendRendererStartupData(
   if (!main_frame && !allow_subframes && !is_devtools_like)
     return;
 
+  // loadURL(dataUrl, {baseURLForDataURL}) commits the data: URL as a document
+  // at the base URL, so match URL filters against that. Same condition as
+  // content::NavigationRequest::IsLoadDataWithBaseURL().
+  const GURL& base_url = navigation_handle->GetBaseURLForDataURL();
+  const bool is_load_data_with_base_url =
+      navigation_handle->IsInPrimaryMainFrame() &&
+      navigation_handle->GetNetErrorCode() == net::OK &&
+      url.SchemeIs(url::kDataScheme) && base_url.is_valid();
+
   // Has a value whenever the navigation has a RenderFrameHost to commit in.
   SendRendererStartupData(
-      rfh, url, navigation_handle->GetOriginToCommit().value_or(url::Origin()));
+      rfh, is_load_data_with_base_url ? base_url : url,
+      navigation_handle->GetOriginToCommit().value_or(url::Origin()));
 }
 
 void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh,
