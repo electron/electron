@@ -18,7 +18,6 @@
 #include "content/public/common/content_features.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/mac/dict_util.h"
-#import "shell/browser/mac/electron_application_delegate.h"
 #include "ui/accessibility/ax_mode.h"
 
 namespace {

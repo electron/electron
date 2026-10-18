@@ -11,7 +11,6 @@
 #include "base/strings/sys_string_conversions.h"
 #include "services/device/public/cpp/geolocation/geolocation_system_permission_manager.h"
 #include "services/device/public/cpp/geolocation/system_geolocation_source_apple.h"
-#include "shell/browser/browser_process_impl.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/mac/electron_application.h"
 #include "shell/browser/mac/electron_application_delegate.h"

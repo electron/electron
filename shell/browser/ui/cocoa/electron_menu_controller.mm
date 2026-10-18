@@ -14,7 +14,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/apple/url_conversions.h"
-#include "shell/browser/mac/electron_application.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/window_list.h"
