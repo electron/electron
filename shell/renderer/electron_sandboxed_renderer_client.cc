@@ -10,6 +10,7 @@
 #include "base/process/process_metrics.h"
 #include "components/cdm/renderer/key_system_support_update.h"
 #include "content/public/renderer/render_frame.h"
+#include "shell/common/api/api.mojom.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/js2c_bundle_ids.h"

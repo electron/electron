@@ -12,6 +12,7 @@
 #include "base/containers/span.h"
 #include "base/strings/strcat.h"
 #include "gin/converter.h"
+#include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/node_event_emitter.h"
 #include "shell/renderer/preload_utils.h"

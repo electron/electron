@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "shell/common/api/api.mojom.h"
+#include "shell/common/api/api.mojom-forward.h"
 #include "shell/renderer/renderer_client_base.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 
