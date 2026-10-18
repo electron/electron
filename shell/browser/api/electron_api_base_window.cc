@@ -18,7 +18,6 @@
 #include "gin/dictionary.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_view.h"
-#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/javascript_environment.h"
