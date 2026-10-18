@@ -15,9 +15,12 @@
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/platform/platform_handle.h"
-#include "third_party/blink/public/web/modules/service_worker/web_service_worker_context_proxy.h"
 #include "v8/include/v8-context.h"
 #include "v8/include/v8-forward.h"
+
+namespace blink {
+class WebServiceWorkerContextProxy;
+}  // namespace blink
 
 namespace electron {
 

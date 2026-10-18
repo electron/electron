@@ -19,9 +19,9 @@
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/message.h"
+#include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "shell/browser/event_emitter_mixin.h"
-#include "shell/browser/net/url_loader_network_observer.h"
 #include "shell/common/gc_plugin.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
 #include "shell/services/node/public/mojom/node_service.mojom.h"
@@ -43,6 +43,10 @@ class Process;
 namespace mojo {
 class Connector;
 }  // namespace mojo
+
+namespace electron {
+class URLLoaderNetworkObserver;
+}  // namespace electron
 
 namespace electron::api {
 

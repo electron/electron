@@ -17,7 +17,6 @@
 #include "components/embedder_support/origin_trials/origin_trials_settings_storage.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/network/public/cpp/network_quality_tracker.h"
-#include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "ui/base/unowned_user_data/unowned_user_data_host.h"
 
 class PrefService;
@@ -29,6 +28,10 @@ class PrintJobManager;
 
 namespace metrics {
 class MetricsServiceClient;
+}
+
+namespace network {
+class SharedURLLoaderFactory;
 }
 
 namespace electron {

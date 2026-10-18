@@ -40,6 +40,7 @@
 #include "net/proxy_resolution/proxy_config_with_annotation.h"
 #include "services/device/public/cpp/geolocation/geolocation_system_permission_manager.h"
 #include "services/network/public/cpp/network_switches.h"
+#include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "shell/browser/metrics/electron_metrics_service_client.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/browser/net/system_network_context_manager.h"

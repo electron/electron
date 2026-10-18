@@ -24,6 +24,7 @@
 #include "shell/renderer/service_worker_data.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/platform/scheduler/web_agent_group_scheduler.h"
+#include "third_party/blink/public/web/modules/service_worker/web_service_worker_context_proxy.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "v8/include/v8-function.h"
 
