@@ -5,7 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_MAC_REMOTE_H_
 #define ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_MAC_REMOTE_H_
 
-#import <Cocoa/Cocoa.h>
+#import <Foundation/Foundation.h>
 
 #include <memory>
 #include <optional>

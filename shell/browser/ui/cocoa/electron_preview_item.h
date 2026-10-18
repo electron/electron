@@ -6,7 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_PREVIEW_ITEM_H_
 
 #import <AppKit/AppKit.h>
-#import <Quartz/Quartz.h>
+#import <Quartz/QuickLookUI.h>
 
 @interface ElectronPreviewItem : NSObject <QLPreviewItem>
 @property(nonatomic, retain) NSURL* previewItemURL;

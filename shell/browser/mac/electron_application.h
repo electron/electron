@@ -5,11 +5,10 @@
 #ifndef ELECTRON_SHELL_BROWSER_MAC_ELECTRON_APPLICATION_H_
 #define ELECTRON_SHELL_BROWSER_MAC_ELECTRON_APPLICATION_H_
 
+#import <AppKit/AppKit.h>
+
 #include "base/functional/callback.h"
 #include "base/mac/scoped_sending_event.h"
-
-#import <AVFoundation/AVFoundation.h>
-#import <LocalAuthentication/LocalAuthentication.h>
 
 @interface AtomApplication : NSApplication <CrAppProtocol,
                                             CrAppControlProtocol,

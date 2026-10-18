@@ -6,7 +6,7 @@
 #define ELECTRON_SHELL_APP_SHIM_APP_SHIM_WINDOW_H_
 
 #import <AppKit/AppKit.h>
-#import <Quartz/Quartz.h>
+#import <Quartz/QuickLookUI.h>
 
 #include <optional>
 #include <string>
