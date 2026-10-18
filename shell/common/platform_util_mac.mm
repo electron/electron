@@ -7,8 +7,8 @@
 #include <string>
 #include <utility>
 
+#import <AppKit/AppKit.h>
 #import <Carbon/Carbon.h>
-#import <Cocoa/Cocoa.h>
 #import <ServiceManagement/ServiceManagement.h>
 
 #include "base/apple/foundation_util.h"

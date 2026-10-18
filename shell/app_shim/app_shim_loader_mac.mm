@@ -12,7 +12,7 @@
 //   ElectronAppShimHostBundleIdentifier  the host's bundle identifier
 // See docs/api/app-shim-host.md.
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 #include <dlfcn.h>
 #include <stdlib.h>
 

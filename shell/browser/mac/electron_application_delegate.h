@@ -5,7 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_MAC_ELECTRON_APPLICATION_DELEGATE_H_
 #define ELECTRON_SHELL_BROWSER_MAC_ELECTRON_APPLICATION_DELEGATE_H_
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 
 #import "shell/browser/ui/cocoa/electron_menu_controller.h"
 

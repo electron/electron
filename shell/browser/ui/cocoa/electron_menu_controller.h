@@ -6,7 +6,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_MENU_CONTROLLER_H_
 #define ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_MENU_CONTROLLER_H_
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 
 #include "base/functional/callback.h"
 #include "base/memory/weak_ptr.h"

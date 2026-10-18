@@ -4,7 +4,7 @@
 
 #include "shell/browser/file_select_helper.h"
 
-#include <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 #include <sys/stat.h>
 
 #include <vector>

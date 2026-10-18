@@ -9,7 +9,7 @@
 #include <utility>
 #include <vector>
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 #import <CoreServices/CoreServices.h>
 
 #include "base/apple/foundation_util.h"

@@ -5,7 +5,7 @@
 #ifndef ELECTRON_SHELL_APP_SHIM_APP_SHIM_WINDOW_H_
 #define ELECTRON_SHELL_APP_SHIM_APP_SHIM_WINDOW_H_
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 #import <Quartz/Quartz.h>
 
 #include <optional>

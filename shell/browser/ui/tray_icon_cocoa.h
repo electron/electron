@@ -5,7 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_COCOA_H_
 #define ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_COCOA_H_
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 
 #include <string>
 

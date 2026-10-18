@@ -4,7 +4,7 @@
 
 #include "shell/app_shim/app_shim_main_delegate.h"
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 
 #include <utility>
 

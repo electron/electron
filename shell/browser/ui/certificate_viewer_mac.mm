@@ -4,7 +4,7 @@
 
 #include "shell/browser/ui/certificate_viewer.h"
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 #import <SecurityInterface/SFCertificatePanel.h>
 
 #include "net/cert/x509_certificate.h"

@@ -5,7 +5,7 @@
 #ifndef ELECTRON_SHELL_APP_SHIM_APP_SHIM_APPLICATION_H_
 #define ELECTRON_SHELL_APP_SHIM_APP_SHIM_APPLICATION_H_
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 
 #import "components/remote_cocoa/app_shim/cr_application.h"
 

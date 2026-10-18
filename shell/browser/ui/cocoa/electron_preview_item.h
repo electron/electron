@@ -5,7 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_PREVIEW_ITEM_H_
 #define ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_PREVIEW_ITEM_H_
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 #import <Quartz/Quartz.h>
 
 @interface ElectronPreviewItem : NSObject <QLPreviewItem>

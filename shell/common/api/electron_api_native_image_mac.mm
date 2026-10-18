@@ -8,7 +8,7 @@
 #include <utility>
 #include <vector>
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 #import <QuickLook/QuickLook.h>
 #import <QuickLookThumbnailing/QuickLookThumbnailing.h>
 

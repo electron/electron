@@ -11,8 +11,8 @@
 #import "shell/browser/mac/electron_application.h"
 #include "shell/common/gc_plugin.h"
 
+#import <AppKit/AppKit.h>
 #import <ApplicationServices/ApplicationServices.h>
-#import <Cocoa/Cocoa.h>
 
 @interface MacLockMonitor : NSObject {
  @private

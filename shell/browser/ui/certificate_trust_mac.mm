@@ -8,7 +8,7 @@
 #include <string>
 #include <utility>
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 #import <SecurityInterface/SFCertificateTrustPanel.h>
 
 #include "base/strings/sys_string_conversions.h"

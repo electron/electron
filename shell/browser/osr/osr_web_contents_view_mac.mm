@@ -4,7 +4,7 @@
 
 #include "shell/browser/osr/osr_web_contents_view.h"
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 
 @interface OffScreenView : NSView
 @end
