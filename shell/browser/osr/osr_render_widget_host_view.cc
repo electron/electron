@@ -33,6 +33,7 @@
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_process_host.h"
 #include "shell/browser/osr/osr_host_display_client.h"
+#include "shell/browser/osr/osr_paint_event.h"
 #include "shell/browser/osr/osr_video_consumer.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/skia/include/core/SkCanvas.h"

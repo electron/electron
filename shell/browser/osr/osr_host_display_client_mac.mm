@@ -4,6 +4,7 @@
 
 #include "base/logging.h"
 #include "shell/browser/osr/osr_host_display_client.h"
+#include "shell/browser/osr/osr_paint_event.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkImageInfo.h"
 

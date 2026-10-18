@@ -10,7 +10,7 @@
 #include "base/memory/shared_memory_mapping.h"
 #include "components/viz/host/host_display_client.h"
 #include "services/viz/privileged/mojom/compositing/layered_window_updater.mojom.h"
-#include "shell/browser/osr/osr_paint_event.h"
+#include "shell/browser/osr/osr_paint_event_fwd.h"
 #include "ui/gfx/native_ui_types.h"
 
 class SkCanvas;

@@ -6,7 +6,7 @@
 #define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_OSR_CONVERTER_H_
 
 #include "gin/converter.h"
-#include "shell/browser/osr/osr_paint_event.h"
+#include "shell/browser/osr/osr_paint_event_fwd.h"
 
 namespace gin {
 
