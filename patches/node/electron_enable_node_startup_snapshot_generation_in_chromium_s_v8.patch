@@ -62,7 +62,7 @@ eliminating the Node bootstrap recompile.
   config following https://chromium-review.googlesource.com/c/v8/v8/+/7808546.
 
 diff --git a/node.gni b/node.gni
-index 0d0438ba8f478a08949ea07cad6c349d15060be9..55f35c4c376e66be291631cff8b1acf266ff41a3 100644
+index 757a0b2a75643322b3339a45e991ad5622ffc29e..c7159731d790a76f20c7c678494a3969eccba5e9 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -31,6 +31,13 @@ declare_args() {
@@ -90,7 +90,7 @@ index 0d0438ba8f478a08949ea07cad6c349d15060be9..55f35c4c376e66be291631cff8b1acf2
 -  # TODO(zcbenz): There are few broken things for now:
 -  #   1. cross-os compilation is not supported.
 -  #   2. node_mksnapshot crashes when cross-compiling for x64 from arm64.
--  node_use_node_snapshot = false
+-  node_use_node_snapshot = (host_os == target_os) && !(host_cpu == "arm64" && target_cpu == "x64")
 +  # Embed a startup snapshot of the bootstrapped Node.js environment, and the
 +  # V8 code cache for the builtins that complements it, to speed up startup.
 +  # Neither contains machine code, so cross-arch builds can generate them, but
@@ -318,7 +318,7 @@ index 0842cba257d0ca36e07c97736e5b24cc77f2a053..0ee1bd02a03b6d303861cd0f8353db6c
        node::InitializeOncePerProcess(
            std::vector<std::string>(argv, argv + argc),
 diff --git a/unofficial.gni b/unofficial.gni
-index 504dd46249425a8e8396332bf061f1f75cdd9401..ef1883fd65cdbb36ec6f2b64f414eea36667fea0 100644
+index 4b10306f5d046699bd4335e9c4e6431d9e0eb385..b47c775c931684e47fa39cfe2836f2d3d950d163 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -32,7 +32,22 @@ template("node_gn_build") {
