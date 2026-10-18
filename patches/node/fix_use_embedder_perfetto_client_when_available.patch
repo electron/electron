@@ -20,12 +20,12 @@ allowing contentTracing to remain the sole owner of category filtering,
 recording sessions, output, and lifecycle.
 
 diff --git a/node.gni b/node.gni
-index 55f35c4c376e66be291631cff8b1acf266ff41a3..102e27726b7bd7f4adb290c43ceadc1559b27e54 100644
+index c7159731d790a76f20c7c678494a3969eccba5e9..3903e8c27294403de12a91bd33f5380ac4640507 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -57,6 +57,10 @@ declare_args() {
    # Initialize v8 platform during node.js startup.
-   node_use_v8_platform = false
+   node_use_v8_platform = true
  
 +  # Include Node's standalone Perfetto client. Electron retains it for
 +  # ELECTRON_RUN_AS_NODE while regular Electron processes use Chromium's client.
@@ -379,7 +379,7 @@ index 3765d931f8e17b33e2201ff3a0e4be84a3216356..17b990455e7d6a791998ab304418c256
 +
  #endif  // SRC_TRACING_TRACE_EVENT_PERFETTO_H_
 diff --git a/unofficial.gni b/unofficial.gni
-index cde97c5d1dc44c4e88daeda6b4cac5d5681349a5..a14357f4b7b76917d1e10a8bffdc2c0214bb9477 100644
+index 2a57c6dbf2ff8356f39e7b49c743083eabdf7683..b9f985f75140a1d3db64b12bad69e47887f8f6aa 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -52,6 +52,11 @@ template("node_gn_build") {
