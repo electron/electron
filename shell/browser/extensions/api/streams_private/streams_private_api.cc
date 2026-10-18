@@ -13,7 +13,6 @@
 #include "electron/buildflags/buildflags.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_stream_manager.h"
-#include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
 #include "extensions/browser/mime_handler/mime_handler_body_cache.h"  // nogncheck
 #include "extensions/browser/mime_handler/stream_container.h"  // nogncheck
 #include "extensions/common/manifest_handlers/mime_types_handler.h"

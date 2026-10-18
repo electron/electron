@@ -13,8 +13,6 @@
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/ui/views/global_menu_bar_registrar_x11.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
-#include "ui/aura/window.h"
-#include "ui/aura/window_tree_host.h"
 #include "ui/base/accelerators/menu_label_accelerator_util_linux.h"
 #include "ui/events/keycodes/keyboard_code_conversion_x.h"
 #include "ui/events/keycodes/keysym_to_unicode.h"

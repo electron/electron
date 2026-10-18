@@ -17,7 +17,6 @@
 #include "content/browser/compositor/image_transport_factory.h"  // nogncheck
 #include "gpu/command_buffer/client/context_support.h"
 #include "gpu/ipc/client/client_shared_image_interface.h"
-#include "gpu/ipc/client/gpu_channel_host.h"
 #include "gpu/ipc/common/exported_shared_image.mojom-shared.h"
 #include "gpu/ipc/common/exported_shared_image_mojom_traits.h"
 #include "media/base/format_utils.h"
