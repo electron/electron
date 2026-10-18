@@ -5,8 +5,6 @@
 
 #include "shell/browser/osr/osr_paint_event.h"
 
-#include "services/viz/privileged/mojom/compositing/frame_sink_video_capture.mojom.h"
-
 namespace electron {
 
 OffscreenNativePixmapPlaneInfo::~OffscreenNativePixmapPlaneInfo() = default;
