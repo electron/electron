@@ -24,7 +24,6 @@
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/javascript_dialog_manager.h"
 #include "content/public/browser/navigation_controller.h"
-#include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -71,6 +70,7 @@ class Value;
 namespace content {
 enum class KeyboardEventProcessingResult;
 class DevToolsAgentHost;
+class NavigationEntry;
 class WebContents;
 }  // namespace content
 
