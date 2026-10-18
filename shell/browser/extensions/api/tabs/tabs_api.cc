@@ -12,6 +12,7 @@
 
 #include "base/containers/fixed_flat_set.h"
 #include "base/strings/pattern.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/types/expected.h"
 #include "chrome/common/url_constants.h"
@@ -27,9 +28,7 @@
 #include "extensions/common/permissions/permissions_data.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/extensions/electron_extension_tab_util.h"
-#include "shell/browser/native_window.h"
 #include "shell/browser/web_contents_zoom_controller.h"
-#include "shell/browser/window_list.h"
 #include "shell/common/extensions/api/tabs.h"
 #include "third_party/blink/public/common/chrome_debug_urls.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
