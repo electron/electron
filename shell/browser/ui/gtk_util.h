@@ -5,7 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_GTK_UTIL_H_
 #define ELECTRON_SHELL_BROWSER_UI_GTK_UTIL_H_
 
-#include <gtk/gtk.h>
+#include <gdk-pixbuf/gdk-pixbuf.h>
 
 class SkBitmap;
 
