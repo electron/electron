@@ -14,6 +14,7 @@
 #include "shell/common/gin_helper/object_builder.h"
 #include "ui/display/display.h"
 #include "ui/gfx/color_space.h"
+#include "ui/gfx/display_color_spaces.h"
 #include "ui/gfx/geometry/insets.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/point_f.h"
