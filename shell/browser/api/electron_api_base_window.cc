@@ -37,7 +37,7 @@
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/persistent_dictionary.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/node_linked_binding.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "ui/gfx/geometry/rect_conversions.h"

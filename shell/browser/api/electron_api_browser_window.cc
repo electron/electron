@@ -20,7 +20,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/object_template_builder.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/node_linked_binding.h"
 #include "shell/common/options_switches.h"
 #include "ui/views/focus/focus_manager.h"
 #include "ui/views/widget/widget.h"

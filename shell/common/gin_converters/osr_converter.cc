@@ -18,7 +18,6 @@
 #include "shell/browser/osr/osr_paint_event.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/optional_converter.h"
-#include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 
 namespace gin {

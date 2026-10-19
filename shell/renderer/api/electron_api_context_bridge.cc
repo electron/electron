@@ -21,7 +21,7 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/node_linked_binding.h"
 #include "shell/common/world_ids.h"
 #include "shell/renderer/preload_realm_context.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"

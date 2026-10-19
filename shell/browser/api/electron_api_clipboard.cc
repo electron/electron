@@ -22,7 +22,7 @@
 #include "shell/browser/api/electron_api_clipboard_item.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/node_linked_binding.h"
 #include "shell/common/skia_util.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "ui/base/clipboard/clipboard_constants.h"

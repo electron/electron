@@ -10,7 +10,7 @@
 #include "net/base/switches.h"
 #include "shell/common/gin_converters/base_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/node_linked_binding.h"
 
 namespace {
 

@@ -4,7 +4,7 @@
 
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/node_event_emitter.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/node_linked_binding.h"
 #include "v8/include/v8-context.h"
 
 namespace {

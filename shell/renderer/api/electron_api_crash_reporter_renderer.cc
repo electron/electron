@@ -4,7 +4,7 @@
 
 #include "electron/mas.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/node_linked_binding.h"
 
 #if !IS_MAS_BUILD()
 #include "shell/common/crash_keys.h"

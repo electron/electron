@@ -37,14 +37,7 @@
 #undef RB_BLACK
 #undef RB_RED
 
-// Alternative to NODE_BINDING_CONTEXT_AWARE_X.
-// Allows to explicitly register builtin bindings instead of using
-// __attribute__((constructor)), and to look one up without a node::Environment
-// (NodeBindings::GetLinkedBinding).
-#define NODE_LINKED_BINDING_CONTEXT_AWARE(modname, regfunc)                \
-  NODE_BINDING_CONTEXT_AWARE_CPP(modname, regfunc, nullptr, NM_F_LINKED) \
-  node::node_module* get_linked_module_##modname() {                    \
-    return &_module;                                                     \
-  }
+// NODE_LINKED_BINDING_CONTEXT_AWARE
+#include "shell/common/node_linked_binding.h"
 
 #endif  // ELECTRON_SHELL_COMMON_NODE_INCLUDES_H_
