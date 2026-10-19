@@ -1,0 +1,168 @@
+# Throwaway diagnostic probe. DO NOT MERGE.
+# Captures screenshots and a top-level window list of the windows-11-arm
+# runner desktop to check whether an OS prompt is covering windows.
+name: zz Windows arm64 desktop probe
+
+on:
+  push:
+    branches: [claude/win-arm64-desktop-probe]
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: windows-11-arm
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Write probe script
+        run: |
+          $out = Join-Path $env:GITHUB_WORKSPACE 'probe-out'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          $script = @'
+          $ErrorActionPreference = 'Continue'
+          $out = Join-Path $env:GITHUB_WORKSPACE 'probe-out'
+          if (-not ('ProbeNative' -as [type])) {
+            Add-Type -TypeDefinition @"
+          using System;
+          using System.Text;
+          using System.Collections.Generic;
+          using System.Runtime.InteropServices;
+          public static class ProbeNative {
+            public delegate bool EnumProc(IntPtr h, IntPtr l);
+            [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc cb, IntPtr l);
+            [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
+            [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr h);
+            [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetClassNameW(IntPtr h, StringBuilder s, int n);
+            [DllImport("user32.dll", CharSet = CharSet.Unicode)] public static extern int GetWindowTextW(IntPtr h, StringBuilder s, int n);
+            [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+            [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")] public static extern IntPtr GetWindowLongPtr(IntPtr h, int i);
+            [StructLayout(LayoutKind.Sequential)] public struct RECT { public int L, T, R, B; }
+            [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr h, out RECT r);
+            [DllImport("dwmapi.dll")] public static extern int DwmGetWindowAttribute(IntPtr h, int a, out int v, int s);
+            [DllImport("user32.dll")] public static extern bool SetProcessDPIAware();
+            [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+            public static List<IntPtr> All() {
+              var l = new List<IntPtr>();
+              EnumWindows((h, p) => { l.Add(h); return true; }, IntPtr.Zero);
+              return l;
+            }
+            public static string Cls(IntPtr h) { var sb = new StringBuilder(256); GetClassNameW(h, sb, 256); return sb.ToString(); }
+            public static string Title(IntPtr h) { var sb = new StringBuilder(512); GetWindowTextW(h, sb, 512); return sb.ToString(); }
+          }
+          "@
+          }
+          Add-Type -AssemblyName System.Drawing
+          Add-Type -AssemblyName System.Windows.Forms
+          [void][ProbeNative]::SetProcessDPIAware()
+
+          function Invoke-Probe([string]$label) {
+            $stamp = (Get-Date).ToUniversalTime().ToString('o')
+            Write-Host "===== probe '$label' at $stamp ====="
+            # Screenshot
+            try {
+              $vs = [System.Windows.Forms.SystemInformation]::VirtualScreen
+              Write-Host "VirtualScreen: $($vs.X),$($vs.Y) $($vs.Width)x$($vs.Height)"
+              $bmp = New-Object System.Drawing.Bitmap $vs.Width, $vs.Height
+              $g = [System.Drawing.Graphics]::FromImage($bmp)
+              $g.CopyFromScreen($vs.X, $vs.Y, 0, 0, $bmp.Size)
+              $png = Join-Path $out "shot-$label.png"
+              $bmp.Save($png, [System.Drawing.Imaging.ImageFormat]::Png)
+              $g.Dispose(); $bmp.Dispose()
+              Write-Host "Saved $png"
+            } catch {
+              Write-Host "Screenshot failed: $_"
+            }
+            # Window enumeration (EnumWindows returns top-level windows in z-order, topmost first)
+            $lines = New-Object System.Collections.Generic.List[string]
+            $lines.Add("probe=$label time=$stamp")
+            $fg = [ProbeNative]::GetForegroundWindow()
+            $lines.Add(("foreground=0x{0:X} class='{1}' title='{2}'" -f $fg.ToInt64(), [ProbeNative]::Cls($fg), [ProbeNative]::Title($fg)))
+            $z = 0
+            foreach ($h in [ProbeNative]::All()) {
+              $z++
+              if (-not [ProbeNative]::IsWindowVisible($h)) { continue }
+              $cls = [ProbeNative]::Cls($h)
+              $title = [ProbeNative]::Title($h)
+              $procId = [uint32]0
+              [void][ProbeNative]::GetWindowThreadProcessId($h, [ref]$procId)
+              $pname = try { (Get-Process -Id $procId -ErrorAction Stop).ProcessName } catch { '?' }
+              $style = [int64]([ProbeNative]::GetWindowLongPtr($h, -16).ToInt64() -band 0xFFFFFFFF)
+              $ex = [int64]([ProbeNative]::GetWindowLongPtr($h, -20).ToInt64() -band 0xFFFFFFFF)
+              $flags = @()
+              if ($style -band 0x80000000) { $flags += 'WS_POPUP' }
+              if ($style -band 0x00C00000) { $flags += 'WS_CAPTION' }
+              if ($ex -band 0x00000008) { $flags += 'WS_EX_TOPMOST' }
+              if ($ex -band 0x00000080) { $flags += 'WS_EX_TOOLWINDOW' }
+              if ($ex -band 0x08000000) { $flags += 'WS_EX_NOACTIVATE' }
+              if ($ex -band 0x00080000) { $flags += 'WS_EX_LAYERED' }
+              if ($ex -band 0x00000020) { $flags += 'WS_EX_TRANSPARENT' }
+              $cloaked = 0
+              $hr = [ProbeNative]::DwmGetWindowAttribute($h, 14, [ref]$cloaked, 4)
+              $iconic = [ProbeNative]::IsIconic($h)
+              $r = New-Object ProbeNative+RECT
+              [void][ProbeNative]::GetWindowRect($h, [ref]$r)
+              $lines.Add(("z={0} hwnd=0x{1:X} class='{2}' title='{3}' proc={4}({5}) style=0x{6:X8} exstyle=0x{7:X8} flags=[{8}] cloaked={9}(hr=0x{10:X}) iconic={11} rect=({12},{13})-({14},{15}) {16}x{17}" -f `
+                $z, $h.ToInt64(), $cls, $title, $pname, $procId, $style, $ex, ($flags -join ','), $cloaked, $hr, $iconic, $r.L, $r.T, $r.R, $r.B, ($r.R - $r.L), ($r.B - $r.T)))
+            }
+            $lines.Add("--- processes with MainWindowHandle != 0 ---")
+            Get-Process | Where-Object { $_.MainWindowHandle.ToInt64() -ne 0 } | ForEach-Object {
+              $lines.Add(("{0}({1}) session={2} hwnd=0x{3:X} title='{4}'" -f $_.ProcessName, $_.Id, $_.SessionId, $_.MainWindowHandle.ToInt64(), $_.MainWindowTitle))
+            }
+            $lines.Add("--- processes of interest ---")
+            Get-Process | Where-Object { $_.ProcessName -match 'Sysprep|slui|LicensingUI|ServerManager|WindowsTerminal|conhost|explorer|OpenWith|LogonUI|consent|ShellExperienceHost|StartMenuExperienceHost|SearchHost|Widgets|OOBE|MoUso|musNotif|UsoClient|SecurityHealth' } | ForEach-Object {
+              $lines.Add(("{0}({1}) session={2} hwnd=0x{3:X} title='{4}'" -f $_.ProcessName, $_.Id, $_.SessionId, $_.MainWindowHandle.ToInt64(), $_.MainWindowTitle))
+            }
+            $txt = Join-Path $out "windows-$label.txt"
+            $lines | Set-Content -Path $txt -Encoding utf8
+            $lines | ForEach-Object { Write-Host $_ }
+          }
+          '@
+          Set-Content -Path (Join-Path $env:RUNNER_TEMP 'probe.ps1') -Value $script -Encoding utf8
+
+      - name: OS / session info
+        run: |
+          $out = Join-Path $env:GITHUB_WORKSPACE 'probe-out'
+          & {
+            Get-ComputerInfo -Property WindowsProductName, OsBuildNumber, OsVersion, WindowsInstallationType, WindowsEditionId, OsName | Format-List | Out-String
+            "Environment.OSVersion: $([Environment]::OSVersion)"
+            Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' | Select-Object ProductName, DisplayVersion, CurrentBuild, UBR, BuildLabEx, EditionID, InstallationType | Format-List | Out-String
+            "ImageOS=$env:ImageOS ImageVersion=$env:ImageVersion"
+            "SessionId=$((Get-Process -Id $PID).SessionId) UserInteractive=$([Environment]::UserInteractive) User=$env:USERNAME"
+            Add-Type -AssemblyName System.Windows.Forms
+            "Screens:"
+            [System.Windows.Forms.Screen]::AllScreens | ForEach-Object { "  $($_.DeviceName) primary=$($_.Primary) bounds=$($_.Bounds)" }
+            "query user:"
+            (query user 2>&1 | Out-String)
+            "qwinsta:"
+            (qwinsta 2>&1 | Out-String)
+          } | Tee-Object -FilePath (Join-Path $out 'osinfo.txt')
+
+      - name: Probe at start
+        run: |
+          . (Join-Path $env:RUNNER_TEMP 'probe.ps1')
+          Invoke-Probe 'start'
+
+      - name: Probe after 2 minutes
+        run: |
+          Start-Sleep -Seconds 120
+          . (Join-Path $env:RUNNER_TEMP 'probe.ps1')
+          Invoke-Probe 'plus2min'
+
+      - name: Probe after 5 minutes
+        run: |
+          Start-Sleep -Seconds 180
+          . (Join-Path $env:RUNNER_TEMP 'probe.ps1')
+          Invoke-Probe 'plus5min'
+
+      - name: Upload probe output
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: desktop-probe
+          path: |
+            probe-out/*.png
+            probe-out/*.txt
