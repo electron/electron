@@ -366,6 +366,11 @@ async function main() {
     '--enable-logging=stderr'
   ];
   if (args['no-sandbox']) electronArgs.push('--no-sandbox');
+  // Chromium 157+ native occlusion marks the window occluded on the hosted Windows arm64 runner, so
+  // the page goes hidden and rAF benchmarks never start. Browser-side only; renderer paths unchanged.
+  if (process.platform === 'win32') {
+    electronArgs.push('--disable-features=CalculateNativeWinOcclusion');
+  }
 
   // A failed attempt's counters cannot be separated from good ones once they
   // are on disk (and Darwin's %c continuous-mode counters accumulate for the
