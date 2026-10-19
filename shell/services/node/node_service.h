@@ -15,7 +15,6 @@
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/bindings/unique_receiver_set.h"
-#include "net/base/network_change_notifier.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/mojom/host_resolver.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom-forward.h"
@@ -25,6 +24,10 @@
 #if BUILDFLAG(ENABLE_PROMPT_API)
 #include "third_party/blink/public/mojom/ai/ai_manager.mojom.h"
 #endif  // BUILDFLAG(ENABLE_PROMPT_API)
+
+namespace net {
+class NetworkChangeNotifier;
+}  // namespace net
 
 namespace node {
 
