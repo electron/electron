@@ -21,13 +21,14 @@
 #include "shell/common/node_linked_binding.h"
 
 #if BUILDFLAG(IS_WIN)
+#include <windows.h>  // Must precede <appmodel.h>.
+
 #include <appmodel.h>
 #include <roapi.h>
 #include <windows.applicationmodel.h>
 #include <windows.foundation.collections.h>
 #include <windows.foundation.h>
 #include <windows.foundation.metadata.h>
-#include <windows.h>
 #include <windows.management.deployment.h>
 #include <wrl.h>
 

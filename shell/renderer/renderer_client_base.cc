@@ -63,6 +63,8 @@
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 #if BUILDFLAG(IS_WIN)
+#include <windows.h>
+
 #include <shlobj.h>
 #endif
 
