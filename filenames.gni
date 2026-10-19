@@ -482,6 +482,7 @@ filenames = {
     "shell/browser/native_window.cc",
     "shell/browser/native_window.h",
     "shell/browser/native_window_observer.h",
+    "shell/browser/native_window_relay.h",
     "shell/browser/net/asar/asar_file_validator.cc",
     "shell/browser/net/asar/asar_file_validator.h",
     "shell/browser/net/asar/asar_url_loader.cc",

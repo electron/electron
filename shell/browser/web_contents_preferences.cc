@@ -22,6 +22,7 @@
 #include "sandbox/policy/switches.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/native_window_relay.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_converters/value_converter.h"
