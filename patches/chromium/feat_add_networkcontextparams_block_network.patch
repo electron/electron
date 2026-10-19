@@ -16,7 +16,7 @@ Electron uses this to implement sessions created with
 browser-side path created the request.
 
 diff --git a/services/network/cors/cors_url_loader_factory.cc b/services/network/cors/cors_url_loader_factory.cc
-index fe4202638d8e048ee2a12b4d4350fd395f40d3a9..4a5b886c7945198493a3fd84a4caab36c39ae014 100644
+index a8d81a22f212e19a17101430b3252ea95ac769e2..c4b32ed4def1b43efca2db6cdda63b27409a1820 100644
 --- a/services/network/cors/cors_url_loader_factory.cc
 +++ b/services/network/cors/cors_url_loader_factory.cc
 @@ -460,11 +460,13 @@ void CorsURLLoaderFactory::CreateLoaderAndStart(
