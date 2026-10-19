@@ -23,10 +23,6 @@ applicative code.
 
 Indicates that response body has ended. Must be placed before 'data' event.
 
-#### Event: 'aborted'
-
-Emitted when a request has been canceled during an ongoing HTTP transaction.
-
 #### Event: 'error'
 
 Returns:

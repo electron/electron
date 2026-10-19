@@ -937,9 +937,6 @@ app.whenReady().then(() => {
     response.on('error', () => {
       console.log('"error" event emitted');
     });
-    response.on('aborted', () => {
-      console.log('"aborted" event emitted');
-    });
   });
   request.on('login', (authInfo, callback) => {
     callback('username', 'password');
