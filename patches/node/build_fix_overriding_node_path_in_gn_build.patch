@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Babenko-Sanders <dsanders11@ucsbalum.com>
+Date: Fri, 16 Oct 2026 00:18:15 -0700
+Subject: build: fix overriding node_path in GN build
+
+node_v8_path, node_openssl_path and node_module_version derive their
+defaults from node_path, but GN evaluates a declare_args() block's
+defaults against the other args' default values, not their overridden
+ones. So when an embedder overrides node_path, node_module_version's
+default still runs exec_script() against "//node" and gn gen fails if
+that path does not exist.
+
+Move the dependent args into a second declare_args() block so they see
+the overridden node_path.
+
+Signed-off-by: David Babenko-Sanders <dsanders11@ucsbalum.com>
+
+diff --git a/node.gni b/node.gni
+index f9c46ecbeaa6d77aabd2cd32011ab2c35a85a412..89ca8bbb652bd906ab6cb1bf088196bf68f3b5cd 100644
+--- a/node.gni
++++ b/node.gni
+@@ -7,21 +7,12 @@ declare_args() {
+   # The location of Node.js in source code tree.
+   node_path = "//node"
+ 
+-  # The location of V8 - use the one from node's deps by default.
+-  node_v8_path = "$node_path/deps/v8"
+-
+-  # The location of OpenSSL - use the one from node's deps by default.
+-  node_openssl_path = "$node_path/deps/openssl"
+-
+   # The location of simdutf - use the one from node's deps by default.
+   node_simdutf_path = "//third_party/simdutf"
+ 
+   # The location of inspector_protocol - use the one from node's deps by default.
+   node_inspector_protocol_path = "//third_party/inspector_protocol"
+ 
+-  # The NODE_MODULE_VERSION defined in node_version.h.
+-  node_module_version = exec_script("$node_path/tools/getmoduleversion.py", [], "value")
+-
+   # Support for external shareable builtins.
+   # TODO(zcbenz): This is currently copied from configure.py, we should share
+   # the list between configure.py and GN configurations.
+@@ -31,6 +22,22 @@ declare_args() {
+   ]
+ }
+ 
++# These must be declared in a separate block from `node_path`, per GN documentation
++# (https://gn.googlesource.com/gn/+/main/docs/reference.md#func_declare_args):
++# "you cannot read the value of a variable defined in the same block, if you need
++# to make the default value of one arg depend on the possibly-overridden value of
++# another, write two separate declare_args() blocks"
++declare_args() {
++  # The location of V8 - use the one from node's deps by default.
++  node_v8_path = "$node_path/deps/v8"
++
++  # The location of OpenSSL - use the one from node's deps by default.
++  node_openssl_path = "$node_path/deps/openssl"
++
++  # The NODE_MODULE_VERSION defined in node_version.h.
++  node_module_version = exec_script("$node_path/tools/getmoduleversion.py", [], "value")
++}
++
+ import("$node_v8_path/gni/snapshot_toolchain.gni")
+ 
+ # See node_use_node_snapshot below.
