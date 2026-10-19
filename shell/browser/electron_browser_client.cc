@@ -1296,6 +1296,35 @@ void ElectronBrowserClient::
       extensions::CreateExtensionWorkerMainResourceURLLoaderFactory(
           browser_context, request_initiator));
 #endif
+  ProxyNonNetworkURLLoaderFactories(
+      browser_context, content::ChildProcessHost::kInvalidUniqueID,
+      URLLoaderFactoryType::kWorkerMainResource, request_initiator, factories);
+}
+
+void ElectronBrowserClient::ProxyNonNetworkURLLoaderFactories(
+    content::BrowserContext* browser_context,
+    int render_process_id,
+    URLLoaderFactoryType type,
+    const std::optional<url::Origin>& request_initiator,
+    NonNetworkURLLoaderFactoryMap* factories) {
+  const url::Origin initiator = request_initiator.value_or(url::Origin());
+  for (auto& [scheme, factory_remote] : *factories) {
+    if (!factory_remote)
+      continue;
+    network::URLLoaderFactoryBuilder factory_builder;
+    WillCreateURLLoaderFactory(
+        browser_context, /*frame=*/nullptr, render_process_id, type, initiator,
+        net::IsolationInfo(), /*navigation_id=*/std::nullopt,
+        ukm::kInvalidSourceIdObj, factory_builder, /*header_client=*/nullptr,
+        /*bypass_redirect_checks=*/nullptr, /*disable_secure_dns=*/nullptr,
+        /*factory_override=*/nullptr,
+        /*navigation_response_task_runner=*/nullptr,
+        /*is_for_network_service=*/false);
+    factory_remote =
+        std::move(factory_builder)
+            .Finish<mojo::PendingRemote<network::mojom::URLLoaderFactory>>(
+                std::move(factory_remote));
+  }
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -1395,46 +1424,44 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
   if (factory)
     factories->emplace(extensions::kExtensionScheme, std::move(factory));
 
-  if (!web_contents)
-    return;
+  if (auto* web_observer =
+          web_contents ? extensions::ElectronExtensionWebContentsObserver::
+                             FromWebContents(web_contents)
+                       : nullptr) {
+    if (const extensions::Extension* extension =
+            web_observer->GetExtensionFromFrame(frame_host, false)) {
+      // Support for chrome:// scheme if appropriate.
+      if (extension->is_extension() &&
+          extensions::Manifest::IsComponentLocation(extension->location())) {
+        // Components of chrome that are implemented as extensions or platform
+        // apps are allowed to use chrome://resources/ and chrome://theme/ URLs.
+        factories->emplace(
+            content::kChromeUIScheme,
+            content::CreateWebUIURLLoaderFactory(
+                frame_host, content::kChromeUIScheme,
+                {content::kChromeUIResourcesHost}, *request_initiator_origin));
+      }
 
-  extensions::ElectronExtensionWebContentsObserver* web_observer =
-      extensions::ElectronExtensionWebContentsObserver::FromWebContents(
-          web_contents);
-
-  // There is nothing to do if no ElectronExtensionWebContentsObserver is
-  // attached to the |web_contents|.
-  if (!web_observer)
-    return;
-
-  const extensions::Extension* extension =
-      web_observer->GetExtensionFromFrame(frame_host, false);
-  if (!extension)
-    return;
-
-  // Support for chrome:// scheme if appropriate.
-  if (extension->is_extension() &&
-      extensions::Manifest::IsComponentLocation(extension->location())) {
-    // Components of chrome that are implemented as extensions or platform apps
-    // are allowed to use chrome://resources/ and chrome://theme/ URLs.
-    factories->emplace(
-        content::kChromeUIScheme,
-        content::CreateWebUIURLLoaderFactory(
-            frame_host, content::kChromeUIScheme,
-            {content::kChromeUIResourcesHost}, *request_initiator_origin));
-  }
-
-  // Extensions with the necessary permissions get access to file:// URLs that
-  // gets approval from ChildProcessSecurityPolicy. Keep this logic in sync with
-  // ExtensionWebContentsObserver::RenderFrameCreated.
-  extensions::Manifest::Type type = extension->GetType();
-  if (type == extensions::Manifest::Type::kExtension &&
-      extensions::util::AllowFileAccess(extension->id(),
-                                        web_contents->GetBrowserContext())) {
-    factories->emplace(url::kFileScheme,
-                       FileURLLoaderFactory::Create(render_process_id));
+      // Extensions with the necessary permissions get access to file:// URLs
+      // that gets approval from ChildProcessSecurityPolicy. Keep this logic in
+      // sync with ExtensionWebContentsObserver::RenderFrameCreated.
+      extensions::Manifest::Type type = extension->GetType();
+      if (type == extensions::Manifest::Type::kExtension &&
+          extensions::util::AllowFileAccess(
+              extension->id(), web_contents->GetBrowserContext())) {
+        factories->emplace(url::kFileScheme,
+                           FileURLLoaderFactory::Create(render_process_id));
+      }
+    }
   }
 #endif
+
+  if (!frame_host) {
+    ProxyNonNetworkURLLoaderFactories(render_process_host->GetBrowserContext(),
+                                      render_process_id,
+                                      URLLoaderFactoryType::kWorkerSubResource,
+                                      request_initiator_origin, factories);
+  }
 }
 
 void ElectronBrowserClient::
