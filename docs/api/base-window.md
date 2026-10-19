@@ -1429,7 +1429,7 @@ new input region is applied with the window's next frame.
 > On Windows, `forward: true` stops working temporarily when the active window is running at a
 > higher integrity level (e.g., elevated/Administrator) than your Electron app. Since Electron
 > typically runs at standard user privilege, this occurs when an elevated window—such as Task
-> Manager or an installer—takes focus. This is due to UIPI.
+> Manager or an installer—takes focus. This is due to User Interface Privacy Isolation (UIPI).
 >
 > To work around it, your app must be run with Administrator privileges or configured with UIAccess
 > privileges (see the Background section under
