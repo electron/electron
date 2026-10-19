@@ -1189,6 +1189,8 @@ describe('ipc module', () => {
     it('receives ipcs from unloading frames in the main frame', async () => {
       const server = http.createServer((req, res) => {
         res.setHeader('content-type', 'text/html');
+        // Chromium deprecates unload handlers on http(s) pages by default.
+        res.setHeader('permissions-policy', 'unload=*');
         res.end('');
       });
       const { port } = await listen(server);

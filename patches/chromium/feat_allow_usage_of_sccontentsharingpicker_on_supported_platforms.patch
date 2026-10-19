@@ -20,7 +20,7 @@ index 99a8bde6a7b29bdd6c6e88959ae7bce1ce62cd65..9c02628b26da317f1f4130a3cf7fb9d1
      requested_format_.pixel_format = media::PIXEL_FORMAT_NV12;
      CHECK_GT(requested_format_.frame_size.GetArea(), 0,
 diff --git a/content/browser/media/capture/io_surface_capture_device_base_mac.cc b/content/browser/media/capture/io_surface_capture_device_base_mac.cc
-index 80a17cba8e8f93c95a77098b9a104aee5ba00dba..a6ae971d68c62ab4de2a9605f42e7794c434e9aa 100644
+index 126870df795b24a6f7e3aebc1df2b94c453ace81..212ca79950938bb5074607aa215e45c99b51b1a7 100644
 --- a/content/browser/media/capture/io_surface_capture_device_base_mac.cc
 +++ b/content/browser/media/capture/io_surface_capture_device_base_mac.cc
 @@ -20,7 +20,7 @@ void IOSurfaceCaptureDeviceBase::AllocateAndStart(
