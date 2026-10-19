@@ -1099,7 +1099,10 @@ describe('Menu module', () => {
           timeout: 10000
         }
       );
-      expect(stderr).toContain('Schema org.gnome.desktop.interface does not have key font-antialiasing');
+      // Chromium logs this from ui/gtk before CL 8574624 and from ui/base/glib after it.
+      expect(stderr).toMatch(
+        /Schema org\.gnome\.desktop\.interface does not have key font-antialiasing|Invalid GSettings schema org\.gnome\.desktop\.interface for key font-antialiasing: missing/
+      );
       expect({ code, signal }, stderr).toEqual({ code: 0, signal: null });
       expect(stdout).toContain('Menu created and refreshed without GTK');
     });
