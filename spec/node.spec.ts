@@ -1,11 +1,12 @@
 import { BrowserWindow, webContents } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import { createRequire } from 'node:module';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import * as tty from 'node:tty';
 import { pathToFileURL } from 'node:url';
@@ -16,7 +17,8 @@ import {
   getCodesignIdentity,
   shouldRunCodesignTests,
   signApp,
-  spawn
+  spawn,
+  stripFrameworkSymbols
 } from './lib/codesign-helpers.ts';
 import { withTempDirectory } from './lib/fs-helpers.ts';
 import {
@@ -48,13 +50,13 @@ describe('node feature', () => {
         const message = once(child, 'message');
         child.send('message');
         const [msg] = await message;
-        expect(msg).to.equal('message');
+        expect(msg).toBe('message');
       });
 
       it('Has its module search paths restricted', async () => {
         const child = childProcess.fork(path.join(fixtures, 'module', 'module-paths.js'));
         const [msg] = await once(child, 'message');
-        expect(msg.length).to.equal(2);
+        expect(msg.length).toBe(2);
       });
 
       ifit(process.platform === 'darwin')(
@@ -68,8 +70,8 @@ describe('node feature', () => {
               timeout: 20000
             }
           );
-          expect(status).to.equal(64);
-          expect(stderr).to.include('requires a --type argument');
+          expect(status).toBe(64);
+          expect(stderr).toContain('requires a --type argument');
         }
       );
     });
@@ -86,7 +88,7 @@ describe('node feature', () => {
           const message = new Promise<any>((resolve) => child.once('message', resolve));
           child.send('message');
           const msg = await message;
-          expect(msg).to.equal('message');
+          expect(msg).toBe('message');
         },
         [fixtures]
       );
@@ -102,7 +104,7 @@ describe('node feature', () => {
           const message = new Promise<any>((resolve) => child.once('message', resolve));
           child.send('message');
           const msg = await message;
-          expect(args).to.deep.equal(msg.slice(2));
+          expect(args).toEqual(msg.slice(2));
         },
         [fixtures]
       );
@@ -116,7 +118,7 @@ describe('node feature', () => {
           const message = new Promise<any>((resolve) => child.once('message', resolve));
           child.send('message');
           const msg = await message;
-          expect(msg).to.equal('message');
+          expect(msg).toBe('message');
         },
         [fixtures]
       );
@@ -134,7 +136,7 @@ describe('node feature', () => {
           const message = new Promise<any>((resolve) => child.once('message', resolve));
           child.send('message');
           const msg = await message;
-          expect(msg).to.equal('message');
+          expect(msg).toBe('message');
         },
         [fixtures]
       );
@@ -148,7 +150,7 @@ describe('node feature', () => {
           const message = new Promise<any>((resolve) => child.once('message', resolve));
           child.send('message');
           const msg = await message;
-          expect(msg).to.deep.equal([0, -1, 1]);
+          expect(msg).toEqual([0, -1, 1]);
         },
         [fixtures]
       );
@@ -162,7 +164,7 @@ describe('node feature', () => {
           const message = new Promise<any>((resolve) => child.once('message', resolve));
           child.send('message');
           const msg = await message;
-          expect(msg).to.equal('ok');
+          expect(msg).toBe('ok');
         },
         [fixtures]
       );
@@ -179,8 +181,8 @@ describe('node feature', () => {
             data += String(chunk);
           });
           const code = await new Promise<any>((resolve) => child.once('close', resolve));
-          expect(code).to.equal(0);
-          expect(data).to.equal('pipes stdio');
+          expect(code).toBe(0);
+          expect(data).toBe('pipes stdio');
         },
         [fixtures]
       );
@@ -191,17 +193,16 @@ describe('node feature', () => {
         const message = new Promise((resolve) => forked.once('message', resolve));
         forked.send('hello');
         const msg = await message;
-        expect(msg).to.equal('hello');
+        expect(msg).toBe('hello');
       });
 
       it('has the electron version in process.versions', async () => {
         const source = 'process.send(process.versions)';
         const forked = childProcess.fork('--eval', [source]);
         const [message] = await once(forked, 'message');
-        expect(message)
-          .to.have.own.property('electron')
-          .that.is.a('string')
-          .and.matches(/^\d+\.\d+\.\d+(\S*)?$/);
+        expect(message).toHaveProperty('electron');
+        expect(message.electron).toBeTypeOf('string');
+        expect(message.electron).toMatch(/^\d+\.\d+\.\d+(\S*)?$/);
       });
     });
 
@@ -225,7 +226,7 @@ describe('node feature', () => {
           });
           try {
             await new Promise((resolve) => child.stdout.once('close', resolve));
-            expect(JSON.parse(output)).to.deep.equal({
+            expect(JSON.parse(output)).toEqual({
               stdoutType: 'pipe',
               processType: 'undefined',
               window: 'undefined'
@@ -248,7 +249,7 @@ describe('node feature', () => {
         // being set has become ineffective.
         const w = await getRemoteContext();
         const stdout = await w.webContents.executeJavaScript("require('child_process').execSync('sudo --help')");
-        expect(stdout).to.not.be.empty();
+        expect(stdout).not.toHaveLength(0);
       });
     });
   });
@@ -256,9 +257,9 @@ describe('node feature', () => {
   describe('EventSource', () => {
     itremote('works correctly when nodeIntegration is enabled in the renderer', () => {
       const es = new EventSource('https://example.com');
-      expect(es).to.have.property('url').that.is.a('string');
-      expect(es).to.have.property('readyState').that.is.a('number');
-      expect(es).to.have.property('withCredentials').that.is.a('boolean');
+      expect(es).toHaveProperty('url', expect.any(String));
+      expect(es).toHaveProperty('readyState', expect.any(Number));
+      expect(es).toHaveProperty('withCredentials', expect.any(Boolean));
     });
   });
 
@@ -269,30 +270,30 @@ describe('node feature', () => {
         const file = require('node:path').join(fixtures, 'hello.txt');
         expect(() => {
           fetch('file://' + file);
-        }).to.not.throw();
+        }).not.toThrow();
 
         expect(() => {
           const formData = new FormData();
           formData.append('username', 'Groucho');
-        }).not.to.throw();
+        }).not.toThrow();
 
         expect(() => {
           const request = new Request('https://example.com', {
             method: 'POST',
             body: JSON.stringify({ foo: 'bar' })
           });
-          expect(request.method).to.equal('POST');
-        }).not.to.throw();
+          expect(request.method).toBe('POST');
+        }).not.toThrow();
 
         expect(() => {
           const response = new Response('Hello, world!');
-          expect(response.status).to.equal(200);
-        }).not.to.throw();
+          expect(response.status).toBe(200);
+        }).not.toThrow();
 
         expect(() => {
           const headers = new Headers();
           headers.append('Content-Type', 'text/xml');
-        }).not.to.throw();
+        }).not.toThrow();
       },
       [fixtures]
     );
@@ -302,7 +303,7 @@ describe('node feature', () => {
       // bindings are native. This guards against Node's bootstrap clobbering
       // the renderer's Web Platform globals.
       for (const ctor of [fetch, FormData, Headers, Request, Response, EventSource]) {
-        expect(ctor.toString()).to.match(/\[native code\]/);
+        expect(ctor.toString()).toMatch(/\[native code\]/);
       }
     });
   });
@@ -314,36 +315,41 @@ describe('node feature', () => {
       stdio: 'inherit'
     });
     const [code] = await once(appProcess, 'close');
-    expect(code).to.equal(0);
+    expect(code).toBe(0);
   });
 
   describe('contexts', () => {
     describe('setTimeout called under Chromium event loop in browser process', () => {
-      it('Can be scheduled in time', (done) => {
-        setTimeout(done, 0);
-      });
+      it('Can be scheduled in time', () =>
+        new Promise<void>((resolve, reject) => {
+          const done = (error?: unknown) => (error ? reject(error) : resolve());
+          setTimeout(done, 0);
+        }));
 
-      it('Can be promisified', (done) => {
-        util.promisify(setTimeout)(0).then(done);
-      });
+      it('Can be promisified', () =>
+        new Promise<void>((resolve, reject) => {
+          const done = (error?: unknown) => (error ? reject(error) : resolve());
+          util.promisify(setTimeout)(0).then(done);
+        }));
     });
 
     describe('setInterval called under Chromium event loop in browser process', () => {
-      it('can be scheduled in time', (done) => {
-        let interval: any = null;
-        let clearing = false;
-        const clear = () => {
-          if (interval === null || clearing) return;
+      it('can be scheduled in time', () =>
+        new Promise<void>((resolve) => {
+          let interval: any = null;
+          let clearing = false;
+          const clear = () => {
+            if (interval === null || clearing) return;
 
-          // interval might trigger while clearing (remote is slow sometimes)
-          clearing = true;
-          clearInterval(interval);
-          clearing = false;
-          interval = null;
-          done();
-        };
-        interval = setInterval(clear, 10);
-      });
+            // interval might trigger while clearing (remote is slow sometimes)
+            clearing = true;
+            clearInterval(interval);
+            clearing = false;
+            interval = null;
+            resolve();
+          };
+          interval = setInterval(clear, 10);
+        }));
     });
 
     // Native code that settles a promise from outside a task (an X11 reply, an
@@ -361,7 +367,7 @@ describe('node feature', () => {
               continued = true;
             });
         });
-        expect(continuedBeforeNextTask).to.be.true();
+        expect(continuedBeforeNextTask).toBe(true);
       });
     });
 
@@ -387,7 +393,7 @@ describe('node feature', () => {
             resolve(error.message);
           })
         );
-        expect(result).to.equal('hello');
+        expect(result).toBe('hello');
       });
     });
 
@@ -401,7 +407,7 @@ describe('node feature', () => {
             resolve(error.message);
           })
         );
-        expect(result).to.equal('hello');
+        expect(result).toBe('hello');
       });
 
       it('does not log the warning more than once when the rejection is unhandled', async () => {
@@ -419,9 +425,9 @@ describe('node feature', () => {
         appProcess.stderr!.on('data', out);
 
         await once(appProcess, 'close');
-        expect(/UnhandledPromiseRejectionWarning/.test(output)).to.equal(true);
+        expect(/UnhandledPromiseRejectionWarning/.test(output)).toBe(true);
         const matches = output.match(/Error: oops/gm);
-        expect(matches).to.have.lengthOf(1);
+        expect(matches).toHaveLength(1);
       });
 
       it('does not log the warning more than once when the rejection is handled', async () => {
@@ -436,10 +442,10 @@ describe('node feature', () => {
         appProcess.stderr!.on('data', out);
 
         const [code] = await once(appProcess, 'close');
-        expect(code).to.equal(0);
-        expect(/UnhandledPromiseRejectionWarning/.test(output)).to.equal(false);
+        expect(code).toBe(0);
+        expect(/UnhandledPromiseRejectionWarning/.test(output)).toBe(false);
         const matches = output.match(/Error: oops/gm);
-        expect(matches).to.have.lengthOf(1);
+        expect(matches).toHaveLength(1);
       });
     });
   });
@@ -472,7 +478,7 @@ describe('node feature', () => {
           await new Promise<void>((resolve, reject) => {
             process.once('uncaughtException', (thrown) => {
               try {
-                expect(thrown).to.equal(error);
+                expect(thrown).toBe(error);
                 resolve();
               } catch (e) {
                 reject(e);
@@ -491,7 +497,7 @@ describe('node feature', () => {
           const url = new URL('file://' + require('node:path').resolve(fixtures, 'pages', 'base-page.html'));
           expect(() => {
             require('node:fs').createReadStream(url);
-          }).to.not.throw();
+          }).not.toThrow();
         },
         [fixtures]
       );
@@ -580,17 +586,17 @@ describe('node feature', () => {
       await w.webContents.executeJavaScript(`window.child = window.open(${JSON.stringify(url)}); undefined`);
       const [child] = await childCreated;
       if (child.webContents.isLoading()) await once(child.webContents, 'did-finish-load');
-      expect(child.webContents.getOSProcessId()).to.equal(w.webContents.getOSProcessId());
+      expect(child.webContents.getOSProcessId()).toBe(w.webContents.getOSProcessId());
       return child;
     };
 
     it('runs each same-process child window on a working loop of its own', async () => {
       const { w, errors } = await openWindow();
       const child = await openChild(w, 'base-page.html');
-      await expect(exerciseLoop(child.webContents)).to.eventually.deep.equal(loopWork);
+      await expect(exerciseLoop(child.webContents)).resolves.toEqual(loopWork);
       const blankChild = await openChild(w, 'about:blank');
-      await expect(exerciseLoop(blankChild.webContents)).to.eventually.deep.equal(loopWork);
-      expect(errors).to.deep.equal([]);
+      await expect(exerciseLoop(blankChild.webContents)).resolves.toEqual(loopWork);
+      expect(errors).toEqual([]);
     });
 
     it('keeps a child window working while its opener reloads', async () => {
@@ -600,11 +606,11 @@ describe('node feature', () => {
         const pending = exerciseLoop(child.webContents);
         w.webContents.reload();
         await once(w.webContents, 'did-finish-load');
-        await expect(pending).to.eventually.deep.equal(loopWork);
-        await expect(exerciseLoop(child.webContents)).to.eventually.deep.equal(loopWork);
+        await expect(pending).resolves.toEqual(loopWork);
+        await expect(exerciseLoop(child.webContents)).resolves.toEqual(loopWork);
       }
-      await expect(exerciseLoop(w.webContents)).to.eventually.deep.equal(loopWork);
-      expect(errors).to.deep.equal([]);
+      await expect(exerciseLoop(w.webContents)).resolves.toEqual(loopWork);
+      expect(errors).toEqual([]);
     });
 
     it('keeps the opener working when a same-process child window closes', async () => {
@@ -614,9 +620,9 @@ describe('node feature', () => {
         const closed = once(child, 'closed');
         const result = await w.webContents.executeJavaScript(churnDuring('window.child.close()'));
         await closed;
-        expect(result).to.deep.equal({ immediates: 200, read: true, echoed: true, closed: 5 });
+        expect(result).toEqual({ immediates: 200, read: true, echoed: true, closed: 5 });
       }
-      expect(errors).to.deep.equal([]);
+      expect(errors).toEqual([]);
     });
 
     it('keeps the parent frame working when a node-integrated iframe is removed', async () => {
@@ -629,9 +635,9 @@ describe('node feature', () => {
           document.body.appendChild(window.frame = frame);
         })`);
         const result = await w.webContents.executeJavaScript(churnDuring('window.frame.remove()'));
-        expect(result).to.deep.equal({ immediates: 200, read: true, echoed: true, closed: 5 });
+        expect(result).toEqual({ immediates: 200, read: true, echoed: true, closed: 5 });
       }
-      expect(errors).to.deep.equal([]);
+      expect(errors).toEqual([]);
     });
 
     // Regression test for https://github.com/electron/electron/issues/53789.
@@ -658,7 +664,7 @@ describe('node feature', () => {
         check();
       })`);
       const result = await Promise.race([removed, gone.then(([, details]) => `render process ${details.reason}`)]);
-      expect(result).to.equal(10);
+      expect(result).toBe(10);
     });
   });
 
@@ -696,9 +702,9 @@ describe('node feature', () => {
           stderr += chunk;
         });
         const [code, signal] = await once(child, 'close');
-        expect(signal, stderr).to.be.null();
-        expect(code, stderr).to.equal(0);
-        expect(stdout.trim()).to.equal('ok');
+        expect(signal, stderr).toBeNull();
+        expect(code, stderr).toBe(0);
+        expect(stdout.trim()).toBe('ok');
       }
     );
   });
@@ -743,10 +749,10 @@ describe('node feature', () => {
         const script = require('node:path').join(fixtures, 'module', 'create_socket.js');
         const child = require('node:child_process').fork(script, [socketPath]);
         const code = await new Promise((resolve) => child.once('exit', resolve));
-        expect(code).to.equal(0);
+        expect(code).toBe(0);
         const client = require('node:net').connect(socketPath);
         const error = await new Promise<any>((resolve) => client.once('error', resolve));
-        expect(error.code).to.equal('ECONNREFUSED');
+        expect(error.code).toBe('ECONNREFUSED');
       },
       [fixtures]
     );
@@ -759,23 +765,23 @@ describe('node feature', () => {
       const p = document.createElement('p');
       p.innerText = '闲云潭影日悠悠，物换星移几度秋';
       const b = Buffer.from(p.innerText);
-      expect(b.toString()).to.equal('闲云潭影日悠悠，物换星移几度秋');
-      expect(Buffer.byteLength(p.innerText)).to.equal(45);
+      expect(b.toString()).toBe('闲云潭影日悠悠，物换星移几度秋');
+      expect(Buffer.byteLength(p.innerText)).toBe(45);
     });
 
     itremote('correctly parses external one-byte UTF8 string', () => {
       const p = document.createElement('p');
       p.innerText = 'Jøhänñéß';
       const b = Buffer.from(p.innerText);
-      expect(b.toString()).to.equal('Jøhänñéß');
-      expect(Buffer.byteLength(p.innerText)).to.equal(13);
+      expect(b.toString()).toBe('Jøhänñéß');
+      expect(Buffer.byteLength(p.innerText)).toBe(13);
     });
 
     itremote('does not crash when creating large Buffers', () => {
       let buffer = Buffer.from(new Array(4096).join(' '));
-      expect(buffer.length).to.equal(4095);
+      expect(buffer.length).toBe(4095);
       buffer = Buffer.from(new Array(4097).join(' '));
-      expect(buffer.length).to.equal(4096);
+      expect(buffer.length).toBe(4096);
     });
 
     itremote('does not crash for crypto operations', () => {
@@ -789,7 +795,7 @@ describe('node feature', () => {
         const input = Buffer.from(data, 'base64');
         const decipher = crypto.createDecipheriv('aes-128-cbc', Buffer.from(key, 'base64'), iv);
         const result = Buffer.concat([decipher.update(input), decipher.final()]).toString('utf8');
-        expect(cipherText).to.equal(result);
+        expect(cipherText).toBe(result);
       }
     });
 
@@ -817,7 +823,7 @@ describe('node feature', () => {
 
       expect(() => {
         crypto.createPrivateKey({ key: ed448, format: 'jwk' });
-      }).to.throw(/Invalid JWK/);
+      }).toThrow(/Invalid JWK/);
     });
   });
 
@@ -828,7 +834,7 @@ describe('node feature', () => {
         setImmediate(() => process.exit());
       }).catch(() => {});
       const [code] = await once(rc.process, 'exit');
-      expect(code).to.equal(0);
+      expect(code).toBe(0);
     });
 
     it('uses process.exitCode when called without an argument', async () => {
@@ -838,7 +844,7 @@ describe('node feature', () => {
         setImmediate(() => process.exit());
       }).catch(() => {});
       const [code] = await once(rc.process, 'exit');
-      expect(code).to.equal(42);
+      expect(code).toBe(42);
     });
 
     it('overrides process.exitCode when called with an argument', async () => {
@@ -848,7 +854,7 @@ describe('node feature', () => {
         setImmediate(() => process.exit(11));
       }).catch(() => {});
       const [code] = await once(rc.process, 'exit');
-      expect(code).to.equal(11);
+      expect(code).toBe(11);
     });
 
     it('can be called with a null argument', async () => {
@@ -857,7 +863,7 @@ describe('node feature', () => {
         setImmediate(() => process.exit(null));
       }).catch(() => {});
       const [code] = await once(rc.process, 'exit');
-      expect(code).to.equal(0);
+      expect(code).toBe(0);
     });
 
     it('can be called with a number argument', async () => {
@@ -866,7 +872,7 @@ describe('node feature', () => {
         setImmediate(() => process.exit(7));
       }).catch(() => {});
       const [code] = await once(rc.process, 'exit');
-      expect(code).to.equal(7);
+      expect(code).toBe(7);
     });
 
     it('throws with an invalid number argument', async () => {
@@ -886,8 +892,8 @@ describe('node feature', () => {
         });
       }).catch(() => {});
       const [code] = await once(rc.process, 'close');
-      expect(code).to.equal(99);
-      expect(stdout).to.match(
+      expect(code).toBe(99);
+      expect(stdout).toMatch(
         /RangeError \[ERR_OUT_OF_RANGE\]: The value of "code" is out of range. It must be an integer./
       );
     });
@@ -898,7 +904,7 @@ describe('node feature', () => {
         setImmediate(() => process.exit('12'));
       }).catch(() => {});
       const [code] = await once(rc.process, 'exit');
-      expect(code).to.equal(12);
+      expect(code).toBe(12);
     });
 
     it('throws with an invalid string argument', async () => {
@@ -918,8 +924,8 @@ describe('node feature', () => {
         });
       }).catch(() => {});
       const [code] = await once(rc.process, 'close');
-      expect(code).to.equal(99);
-      expect(stdout).to.match(/TypeError \[ERR_INVALID_ARG_TYPE\]/);
+      expect(code).toBe(99);
+      expect(stdout).toMatch(/TypeError \[ERR_INVALID_ARG_TYPE\]/);
     });
   });
 
@@ -927,24 +933,24 @@ describe('node feature', () => {
     useRemoteContext();
 
     it('is a real Node stream', () => {
-      expect((process.stdout as any)._type).to.not.be.undefined();
+      expect((process.stdout as any)._type).not.toBeUndefined();
     });
 
     itremote('does not throw an exception when accessed', () => {
-      expect(() => process.stdout).to.not.throw();
+      expect(() => process.stdout).not.toThrow();
     });
 
     itremote('does not throw an exception when calling write()', () => {
       expect(() => {
         process.stdout.write('test');
-      }).to.not.throw();
+      }).not.toThrow();
     });
 
     describe('isTTY', () => {
-      itremote("should match Node's TTY classification in the renderer", function () {
+      itremote("should match Node's TTY classification in the renderer", () => {
         const { isatty } = require('node:tty');
 
-        expect(process.stdout.isTTY === true).to.equal(isatty(1));
+        expect(process.stdout.isTTY === true).toBe(isatty(1));
       });
 
       ifdescribe(process.platform !== 'win32')('POSIX platforms', () => {
@@ -955,7 +961,7 @@ describe('node feature', () => {
           function (parentStdoutIsTTY: boolean) {
             const { isatty } = require('node:tty');
 
-            expect(isatty(1)).to.equal(parentStdoutIsTTY);
+            expect(isatty(1)).toBe(parentStdoutIsTTY);
           },
           [parentStdoutIsTTY]
         );
@@ -967,17 +973,17 @@ describe('node feature', () => {
     useRemoteContext();
 
     itremote('does not throw an exception when accessed', () => {
-      expect(() => process.stdin).to.not.throw();
+      expect(() => process.stdin).not.toThrow();
     });
 
     itremote('returns null when read from', () => {
-      expect(process.stdin.read()).to.be.null();
+      expect(process.stdin.read()).toBeNull();
     });
   });
 
   describe('process.version', () => {
     itremote('should not have -pre', () => {
-      expect(process.version.endsWith('-pre')).to.be.false();
+      expect(process.version.endsWith('-pre')).toBe(false);
     });
   });
 
@@ -990,17 +996,17 @@ describe('node feature', () => {
   describe('crypto', () => {
     useRemoteContext();
     itremote('should list the ripemd160 hash in getHashes', () => {
-      expect(require('node:crypto').getHashes()).to.include('ripemd160');
+      expect(require('node:crypto').getHashes()).toContain('ripemd160');
     });
 
     itremote('should be able to create a ripemd160 hash and use it', () => {
       const hash = require('node:crypto').createHash('ripemd160');
       hash.update('electron-ripemd160');
-      expect(hash.digest('hex')).to.equal('fa7fec13c624009ab126ebb99eda6525583395fe');
+      expect(hash.digest('hex')).toBe('fa7fec13c624009ab126ebb99eda6525583395fe');
     });
 
     itremote('should list aes-{128,256}-cfb in getCiphers', () => {
-      expect(require('node:crypto').getCiphers()).to.include.members(['aes-128-cfb', 'aes-256-cfb']);
+      expect(require('node:crypto').getCiphers()).toEqual(expect.arrayContaining(['aes-128-cfb', 'aes-256-cfb']));
     });
 
     itremote('should be able to create an aes-128-cfb cipher', () => {
@@ -1018,7 +1024,7 @@ describe('node feature', () => {
     });
 
     itremote('should list des-ede-cbc in getCiphers', () => {
-      expect(require('node:crypto').getCiphers()).to.include('des-ede-cbc');
+      expect(require('node:crypto').getCiphers()).toContain('des-ede-cbc');
     });
 
     itremote('should be able to create an des-ede-cbc cipher', () => {
@@ -1029,17 +1035,17 @@ describe('node feature', () => {
 
     itremote('should not crash when getting an ECDH key', () => {
       const ecdh = require('node:crypto').createECDH('prime256v1');
-      expect(ecdh.generateKeys()).to.be.an.instanceof(Buffer);
-      expect(ecdh.getPrivateKey()).to.be.an.instanceof(Buffer);
+      expect(ecdh.generateKeys()).toBeInstanceOf(Buffer);
+      expect(ecdh.getPrivateKey()).toBeInstanceOf(Buffer);
     });
 
     itremote('should not crash when generating DH keys or fetching DH fields', () => {
       const dh = require('node:crypto').createDiffieHellman('modp15');
-      expect(dh.generateKeys()).to.be.an.instanceof(Buffer);
-      expect(dh.getPublicKey()).to.be.an.instanceof(Buffer);
-      expect(dh.getPrivateKey()).to.be.an.instanceof(Buffer);
-      expect(dh.getPrime()).to.be.an.instanceof(Buffer);
-      expect(dh.getGenerator()).to.be.an.instanceof(Buffer);
+      expect(dh.generateKeys()).toBeInstanceOf(Buffer);
+      expect(dh.getPublicKey()).toBeInstanceOf(Buffer);
+      expect(dh.getPrivateKey()).toBeInstanceOf(Buffer);
+      expect(dh.getPrime()).toBeInstanceOf(Buffer);
+      expect(dh.getGenerator()).toBeInstanceOf(Buffer);
     });
 
     itremote('should not crash when creating an ECDH cipher', () => {
@@ -1051,89 +1057,90 @@ describe('node feature', () => {
   });
 
   itremote('includes the electron version in process.versions', () => {
-    expect(process.versions)
-      .to.have.own.property('electron')
-      .that.is.a('string')
-      .and.matches(/^\d+\.\d+\.\d+(\S*)?$/);
+    expect(process.versions).toHaveProperty('electron');
+    expect(process.versions.electron).toBeTypeOf('string');
+    expect(process.versions.electron).toMatch(/^\d+\.\d+\.\d+(\S*)?$/);
   });
 
   itremote('includes the chrome version in process.versions', () => {
-    expect(process.versions)
-      .to.have.own.property('chrome')
-      .that.is.a('string')
-      .and.matches(/^\d+\.\d+\.\d+\.\d+$/);
+    expect(process.versions).toHaveProperty('chrome');
+    expect(process.versions.chrome).toBeTypeOf('string');
+    expect(process.versions.chrome).toMatch(/^\d+\.\d+\.\d+\.\d+$/);
   });
 
   describe('NODE_OPTIONS', () => {
     let child: childProcess.ChildProcessWithoutNullStreams;
     let exitPromise: Promise<any[]>;
 
-    it('Fails for options disallowed by Node.js itself', (done) => {
-      after(async () => {
-        const [code, signal] = await exitPromise;
-        expect(signal).to.equal(null);
+    it('Fails for options disallowed by Node.js itself', () =>
+      new Promise<void>((resolve, reject) => {
+        const done = (error?: unknown) => (error ? reject(error) : resolve());
+        afterAll(async () => {
+          const [code, signal] = await exitPromise;
+          expect(signal).toBe(null);
 
-        // Exit code 9 indicates cli flag parsing failure
-        expect(code).to.equal(9);
-        child.kill();
-      });
+          // Exit code 9 indicates cli flag parsing failure
+          expect(code).toBe(9);
+          child.kill();
+        });
 
-      const env = { ...process.env, NODE_OPTIONS: '--v8-options' };
-      child = childProcess.spawn(process.execPath, { env });
-      exitPromise = once(child, 'exit');
+        const env = { ...process.env, NODE_OPTIONS: '--v8-options' };
+        child = childProcess.spawn(process.execPath, { env });
+        exitPromise = once(child, 'exit');
 
-      let output = '';
-      let success = false;
-      const cleanup = () => {
-        child.stderr.removeListener('data', listener);
-        child.stdout.removeListener('data', listener);
-      };
+        let output = '';
+        let success = false;
+        const cleanup = () => {
+          child.stderr.removeListener('data', listener);
+          child.stdout.removeListener('data', listener);
+        };
 
-      const listener = (data: Buffer) => {
-        output += data;
-        if (/electron: --v8-options is not allowed in NODE_OPTIONS/m.test(output)) {
-          success = true;
-          cleanup();
-          done();
-        }
-      };
+        const listener = (data: Buffer) => {
+          output += data;
+          if (/electron: --v8-options is not allowed in NODE_OPTIONS/m.test(output)) {
+            success = true;
+            cleanup();
+            done();
+          }
+        };
 
-      child.stderr.on('data', listener);
-      child.stdout.on('data', listener);
-      child.on('close', () => {
-        if (!success) {
-          cleanup();
-          done(new Error(`Unexpected output: ${output.toString()}`));
-        }
-      });
-    });
+        child.stderr.on('data', listener);
+        child.stdout.on('data', listener);
+        child.on('close', () => {
+          if (!success) {
+            cleanup();
+            done(new Error(`Unexpected output: ${output.toString()}`));
+          }
+        });
+      }));
 
-    it('Disallows crypto-related options', (done) => {
-      after(() => {
-        child.kill();
-      });
+    it('Disallows crypto-related options', () =>
+      new Promise<void>((resolve) => {
+        afterAll(() => {
+          child.kill();
+        });
 
-      const appPath = path.join(fixtures, 'module', 'noop.js');
-      const env = { ...process.env, NODE_OPTIONS: '--use-openssl-ca' };
-      child = childProcess.spawn(process.execPath, ['--enable-logging', appPath], { env });
+        const appPath = path.join(fixtures, 'module', 'noop.js');
+        const env = { ...process.env, NODE_OPTIONS: '--use-openssl-ca' };
+        child = childProcess.spawn(process.execPath, ['--enable-logging', appPath], { env });
 
-      let output = '';
-      const cleanup = () => {
-        child.stderr.removeListener('data', listener);
-        child.stdout.removeListener('data', listener);
-      };
+        let output = '';
+        const cleanup = () => {
+          child.stderr.removeListener('data', listener);
+          child.stdout.removeListener('data', listener);
+        };
 
-      const listener = (data: Buffer) => {
-        output += data;
-        if (/The NODE_OPTION --use-openssl-ca is not supported in Electron/m.test(output)) {
-          cleanup();
-          done();
-        }
-      };
+        const listener = (data: Buffer) => {
+          output += data;
+          if (/The NODE_OPTION --use-openssl-ca is not supported in Electron/m.test(output)) {
+            cleanup();
+            resolve();
+          }
+        };
 
-      child.stderr.on('data', listener);
-      child.stdout.on('data', listener);
-    });
+        child.stderr.on('data', listener);
+        child.stdout.on('data', listener);
+      }));
 
     it('does allow --require in non-packaged apps', async () => {
       const appPath = path.join(fixtures, 'module', 'noop.js');
@@ -1144,7 +1151,7 @@ describe('node feature', () => {
       // App should exit with code 1.
       const child = childProcess.spawn(process.execPath, [appPath], { env });
       const [code] = await once(child, 'exit');
-      expect(code).to.equal(1);
+      expect(code).toBe(1);
     });
 
     it('does allow --require in utility process of non-packaged apps', async () => {
@@ -1152,7 +1159,7 @@ describe('node feature', () => {
       // App should exit with code 1.
       const child = childProcess.spawn(process.execPath, [appPath]);
       const [code] = await once(child, 'exit');
-      expect(code).to.equal(1);
+      expect(code).toBe(1);
     });
 
     it('does not allow --require in utility process of packaged apps', async () => {
@@ -1165,7 +1172,7 @@ describe('node feature', () => {
         }
       });
       const [code] = await once(child, 'exit');
-      expect(code).to.equal(0);
+      expect(code).toBe(0);
     });
 
     it('does not allow --require in packaged apps', async () => {
@@ -1178,7 +1185,7 @@ describe('node feature', () => {
       // App should exit with code 0.
       const child = childProcess.spawn(process.execPath, [appPath], { env });
       const [code] = await once(child, 'exit');
-      expect(code).to.equal(0);
+      expect(code).toBe(0);
     });
 
     it('does not throw --import hook in non-packaged apps', async () => {
@@ -1193,17 +1200,52 @@ describe('node feature', () => {
       // App should exit with code 0.
       const child = childProcess.spawn(process.execPath, [appPath], { env });
       const [code] = await once(child, 'exit');
-      expect(code).to.equal(0);
+      expect(code).toBe(0);
     });
   });
 
-  ifdescribe(shouldRunCodesignTests)('NODE_OPTIONS in signed app', function () {
+  ifdescribe(shouldRunCodesignTests)('NODE_OPTIONS in signed app', () => {
     let identity = '';
+    // Copying and deep-signing the whole unstripped Electron.app
+    // took most of each test's 30s budget on the Intel runners.
+    // As in the updater specs, deep-sign one stripped template up front;
+    // each test clones it and needs only a shallow re-sign.
+    let templateDir = '';
+    let templateApp = '';
 
-    beforeEach(function () {
+    beforeAll(
+      async () => {
+        const result = getCodesignIdentity();
+        if (result === null) return; // beforeEach below skips every test
+        identity = result;
+        templateDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-node-options-template-'));
+        templateApp = await copyMacOSFixtureApp(templateDir, null);
+        stripFrameworkSymbols(templateApp);
+        const { code, out } = await signApp(templateApp, identity);
+        if (code !== 0) {
+          throw new Error(`Failed to sign template app: ${out}`);
+        }
+      },
+      5 * 60 * 1000
+    );
+
+    afterAll(() => {
+      if (templateDir) childProcess.spawnSync('rm', ['-r', templateDir]);
+    });
+
+    const copySignedApp = async (dir: string, fixture: string | null) => {
+      const appPath = await copyMacOSFixtureApp(dir, fixture, { sourceApp: templateApp });
+      const { code, out } = await signApp(appPath, identity, { deep: false });
+      if (code !== 0) {
+        throw new Error(`codesign failed for ${appPath}: ${out}`);
+      }
+      return appPath;
+    };
+
+    beforeEach((ctx) => {
       const result = getCodesignIdentity();
       if (result === null) {
-        this.skip();
+        ctx.skip();
       } else {
         identity = result;
       }
@@ -1215,45 +1257,42 @@ describe('node feature', () => {
 
     it('is disabled when invoked by other apps in ELECTRON_RUN_AS_NODE mode', async () => {
       await withTempDirectory(async (dir) => {
-        const appPath = await copyMacOSFixtureApp(dir);
-        await signApp(appPath, identity);
+        const appPath = await copySignedApp(dir, 'initial');
         // Invoke Electron by using the system node binary as middle layer, so
         // the check of NODE_OPTIONS will think the process is started by other
         // apps.
         const { code, out } = await spawn('node', [script, path.join(appPath, 'Contents/MacOS/Electron')]);
-        expect(code).to.equal(0);
-        expect(out).to.include(nodeOptionsWarning);
+        expect(code).toBe(0);
+        expect(out).toContain(nodeOptionsWarning);
       });
     });
 
-    it('is disabled when invoked by alien binary in app bundle in ELECTRON_RUN_AS_NODE mode', async function () {
+    it('is disabled when invoked by alien binary in app bundle in ELECTRON_RUN_AS_NODE mode', async (ctx) => {
       await withTempDirectory(async (dir) => {
-        const appPath = await copyMacOSFixtureApp(dir);
-        await signApp(appPath, identity);
+        const appPath = await copySignedApp(dir, 'initial');
         // Find system node and copy it to app bundle.
         const nodePath = process.env.PATH?.split(path.delimiter).find((dir) => fs.existsSync(path.join(dir, 'node')));
         if (!nodePath) {
-          this.skip();
+          ctx.skip();
           return;
         }
         const alienBinary = path.join(appPath, 'Contents/MacOS/node');
         await fs.promises.cp(path.join(nodePath, 'node'), alienBinary, { recursive: true });
         // Try to execute electron app from the alien node in app bundle.
         const { code, out } = await spawn(alienBinary, [script, path.join(appPath, 'Contents/MacOS/Electron')]);
-        expect(code).to.equal(0);
-        expect(out).to.include(nodeOptionsWarning);
+        expect(code).toBe(0);
+        expect(out).toContain(nodeOptionsWarning);
       });
     });
 
     it('is respected when invoked from self', async () => {
       await withTempDirectory(async (dir) => {
-        const appPath = await copyMacOSFixtureApp(dir, null);
-        await signApp(appPath, identity);
+        const appPath = await copySignedApp(dir, null);
         const appExePath = path.join(appPath, 'Contents/MacOS/Electron');
         const { code, out } = await spawn(appExePath, [script, appExePath]);
-        expect(code).to.equal(1);
-        expect(out).to.not.include(nodeOptionsWarning);
-        expect(out).to.include('NODE_OPTIONS passed to child');
+        expect(code).toBe(1);
+        expect(out).not.toContain(nodeOptionsWarning);
+        expect(out).toContain('NODE_OPTIONS passed to child');
       });
     });
   });
@@ -1262,36 +1301,37 @@ describe('node feature', () => {
     let child: childProcess.ChildProcessWithoutNullStreams;
     let exitPromise: Promise<any[]>;
 
-    it('Prohibits crypto-related flags in ELECTRON_RUN_AS_NODE mode', (done) => {
-      after(async () => {
-        const [code, signal] = await exitPromise;
-        expect(signal).to.equal(null);
-        expect(code).to.equal(9);
-        child.kill();
-      });
+    it('Prohibits crypto-related flags in ELECTRON_RUN_AS_NODE mode', () =>
+      new Promise<void>((resolve) => {
+        afterAll(async () => {
+          const [code, signal] = await exitPromise;
+          expect(signal).toBe(null);
+          expect(code).toBe(9);
+          child.kill();
+        });
 
-      child = childProcess.spawn(process.execPath, ['--force-fips'], {
-        env: { ELECTRON_RUN_AS_NODE: 'true' }
-      });
-      exitPromise = once(child, 'exit');
+        child = childProcess.spawn(process.execPath, ['--force-fips'], {
+          env: { ELECTRON_RUN_AS_NODE: 'true' }
+        });
+        exitPromise = once(child, 'exit');
 
-      let output = '';
-      const cleanup = () => {
-        child.stderr.removeListener('data', listener);
-        child.stdout.removeListener('data', listener);
-      };
+        let output = '';
+        const cleanup = () => {
+          child.stderr.removeListener('data', listener);
+          child.stdout.removeListener('data', listener);
+        };
 
-      const listener = (data: Buffer) => {
-        output += data;
-        if (/.*The Node.js cli flag --force-fips is not supported in Electron/m.test(output)) {
-          cleanup();
-          done();
-        }
-      };
+        const listener = (data: Buffer) => {
+          output += data;
+          if (/.*The Node.js cli flag --force-fips is not supported in Electron/m.test(output)) {
+            cleanup();
+            resolve();
+          }
+        };
 
-      child.stderr.on('data', listener);
-      child.stdout.on('data', listener);
-    });
+        child.stderr.on('data', listener);
+        child.stdout.on('data', listener);
+      }));
   });
 
   describe('fs.readFile', () => {
@@ -1300,7 +1340,7 @@ describe('node feature', () => {
       const fileHandle = await fs.promises.open(filePathForHandle, 'r');
 
       const file = await fs.promises.readFile(fileHandle, { encoding: 'utf8' });
-      expect(file).to.not.be.empty();
+      expect(file).not.toHaveLength(0);
       await fileHandle.close();
     });
   });
@@ -1312,8 +1352,8 @@ describe('node feature', () => {
     afterEach(async () => {
       if (child && exitPromise) {
         const [code, signal] = await exitPromise;
-        expect(signal).to.equal(null);
-        expect(code).to.equal(0);
+        expect(signal).toBe(null);
+        expect(code).toBe(0);
       } else if (child) {
         child.kill();
       }
@@ -1321,28 +1361,33 @@ describe('node feature', () => {
       exitPromise = null as any;
     });
 
-    it('Supports starting the v8 inspector with --inspect/--inspect-brk', (done) => {
-      child = childProcess.spawn(process.execPath, ['--inspect-brk', path.join(fixtures, 'module', 'run-as-node.js')], {
-        env: { ELECTRON_RUN_AS_NODE: 'true' }
-      });
+    it('Supports starting the v8 inspector with --inspect/--inspect-brk', () =>
+      new Promise<void>((resolve) => {
+        child = childProcess.spawn(
+          process.execPath,
+          ['--inspect-brk', path.join(fixtures, 'module', 'run-as-node.js')],
+          {
+            env: { ELECTRON_RUN_AS_NODE: 'true' }
+          }
+        );
 
-      let output = '';
-      const cleanup = () => {
-        child.stderr.removeListener('data', listener);
-        child.stdout.removeListener('data', listener);
-      };
+        let output = '';
+        const cleanup = () => {
+          child.stderr.removeListener('data', listener);
+          child.stdout.removeListener('data', listener);
+        };
 
-      const listener = (data: Buffer) => {
-        output += data;
-        if (/Debugger listening on ws:/m.test(output)) {
-          cleanup();
-          done();
-        }
-      };
+        const listener = (data: Buffer) => {
+          output += data;
+          if (/Debugger listening on ws:/m.test(output)) {
+            cleanup();
+            resolve();
+          }
+        };
 
-      child.stderr.on('data', listener);
-      child.stdout.on('data', listener);
-    });
+        child.stderr.on('data', listener);
+        child.stdout.on('data', listener);
+      }));
 
     it('Supports starting the v8 inspector with --inspect and a provided port', async () => {
       child = childProcess.spawn(
@@ -1368,7 +1413,7 @@ describe('node feature', () => {
       await once(child, 'close');
       cleanup();
       if (/^Debugger listening on ws:/m.test(output)) {
-        expect(output.trim()).to.contain(':17364', 'should be listening on port 17364');
+        expect(output.trim(), 'should be listening on port 17364').toContain(':17364');
       } else {
         throw new Error(`Unexpected output: ${output.toString()}`);
       }
@@ -1391,53 +1436,57 @@ describe('node feature', () => {
     });
 
     // IPC Electron child process not supported on Windows.
-    ifit(process.platform !== 'win32')('does not crash when quitting with the inspector connected', function (done) {
-      child = childProcess.spawn(process.execPath, [path.join(fixtures, 'module', 'delay-exit'), '--inspect=0'], {
-        stdio: ['ipc']
-      }) as childProcess.ChildProcessWithoutNullStreams;
-      exitPromise = once(child, 'exit');
+    ifit(process.platform !== 'win32')(
+      'does not crash when quitting with the inspector connected',
+      () =>
+        new Promise<void>((resolve) => {
+          child = childProcess.spawn(process.execPath, [path.join(fixtures, 'module', 'delay-exit'), '--inspect=0'], {
+            stdio: ['ipc']
+          }) as childProcess.ChildProcessWithoutNullStreams;
+          exitPromise = once(child, 'exit');
 
-      const cleanup = () => {
-        child.stderr.removeListener('data', listener);
-        child.stdout.removeListener('data', listener);
-      };
+          const cleanup = () => {
+            child.stderr.removeListener('data', listener);
+            child.stdout.removeListener('data', listener);
+          };
 
-      let output = '';
-      const success = false;
-      function listener(data: Buffer) {
-        output += data;
-        console.log(data.toString()); // NOTE: temporary debug logging to try to catch flake.
-        const match = /^Debugger listening on (ws:\/\/.+:\d+\/.+)\n/m.exec(output.trim());
-        if (match) {
-          cleanup();
-          // NOTE: temporary debug logging to try to catch flake.
-          child.stderr.on('data', (m) => console.log(m.toString()));
-          child.stdout.on('data', (m) => console.log(m.toString()));
-          const w = (webContents as typeof ElectronInternal.WebContents).create();
-          w.loadURL('about:blank')
-            .then(() =>
-              w.executeJavaScript(`new Promise(resolve => {
+          let output = '';
+          const success = false;
+          function listener(data: Buffer) {
+            output += data;
+            console.log(data.toString()); // NOTE: temporary debug logging to try to catch flake.
+            const match = /^Debugger listening on (ws:\/\/.+:\d+\/.+)\n/m.exec(output.trim());
+            if (match) {
+              cleanup();
+              // NOTE: temporary debug logging to try to catch flake.
+              child.stderr.on('data', (m) => console.log(m.toString()));
+              child.stdout.on('data', (m) => console.log(m.toString()));
+              const w = (webContents as typeof ElectronInternal.WebContents).create();
+              w.loadURL('about:blank')
+                .then(() =>
+                  w.executeJavaScript(`new Promise(resolve => {
               const connection = new WebSocket(${JSON.stringify(match[1])})
               connection.onopen = () => {
                 connection.onclose = () => resolve()
                 connection.close()
               }
             })`)
-            )
-            .then(() => {
-              w.destroy();
-              child.send('plz-quit');
-              done();
-            });
-        }
-      }
+                )
+                .then(() => {
+                  w.destroy();
+                  child.send('plz-quit');
+                  resolve();
+                });
+            }
+          }
 
-      child.stderr.on('data', listener);
-      child.stdout.on('data', listener);
-      child.on('exit', () => {
-        if (!success) cleanup();
-      });
-    });
+          child.stderr.on('data', listener);
+          child.stdout.on('data', listener);
+          child.on('exit', () => {
+            if (!success) cleanup();
+          });
+        })
+    );
 
     it('Supports js binding', async () => {
       child = childProcess.spawn(
@@ -1451,9 +1500,9 @@ describe('node feature', () => {
       exitPromise = once(child, 'exit');
 
       const [{ cmd, debuggerEnabled, success }] = await once(child, 'message');
-      expect(cmd).to.equal('assert');
-      expect(debuggerEnabled).to.be.true();
-      expect(success).to.be.true();
+      expect(cmd).toBe('assert');
+      expect(debuggerEnabled).toBe(true);
+      expect(success).toBe(true);
     });
   });
 
@@ -1464,7 +1513,7 @@ describe('node feature', () => {
       expect.fail('assert.ok(false) should throw');
     } catch (err) {
       console.log(err);
-      expect(err).to.be.instanceOf(assert.AssertionError);
+      expect(err).toBeInstanceOf(assert.AssertionError);
     }
   });
 
@@ -1474,7 +1523,7 @@ describe('node feature', () => {
       [path.resolve(fixtures, 'api', 'electron-main-module', 'app.asar')],
       { timeout: 20_000 }
     );
-    expect(code).to.equal(0, `stdout:\n${stdout}\nstderr:\n${stderr}`);
+    expect(code, `stdout:\n${stdout}\nstderr:\n${stderr}`).toBe(0);
   });
 
   it('handles Promise timeouts correctly', async () => {
@@ -1483,31 +1532,33 @@ describe('node feature', () => {
       env: { ELECTRON_RUN_AS_NODE: 'true' }
     });
     const [code, signal] = await once(child, 'exit');
-    expect(code).to.equal(0);
-    expect(signal).to.equal(null);
+    expect(code).toBe(0);
+    expect(signal).toBe(null);
     child.kill();
   });
 
-  it('performs microtask checkpoint correctly', (done) => {
-    let timer: NodeJS.Timeout;
-    const listener = () => {
-      done(new Error('catch block is delayed to next tick'));
-    };
+  it('performs microtask checkpoint correctly', () =>
+    new Promise<void>((resolve, reject) => {
+      const done = (error?: unknown) => (error ? reject(error) : resolve());
+      let timer: NodeJS.Timeout;
+      const listener = () => {
+        done(new Error('catch block is delayed to next tick'));
+      };
 
-    const f3 = async () => {
-      return new Promise((resolve, reject) => {
-        timer = setTimeout(listener);
-        reject(new Error('oops'));
-      });
-    };
+      const f3 = async () => {
+        return new Promise((resolve, reject) => {
+          timer = setTimeout(listener);
+          reject(new Error('oops'));
+        });
+      };
 
-    setTimeout(() => {
-      f3().catch(() => {
-        clearTimeout(timer);
-        done();
+      setTimeout(() => {
+        f3().catch(() => {
+          clearTimeout(timer);
+          done();
+        });
       });
-    });
-  });
+    }));
 
   describe('node:wasi', () => {
     it('does not crash when a wasiImport call is optimized', async () => {
@@ -1523,8 +1574,8 @@ describe('node feature', () => {
         output += data;
       });
       const [code] = await once(child, 'close');
-      expect(output).to.equal('ok');
-      expect(code).to.equal(0);
+      expect(output).toBe('ok');
+      expect(code).toBe(0);
     });
   });
 
@@ -1532,7 +1583,7 @@ describe('node feature', () => {
     it('strips TypeScript types automatically in the main process', async () => {
       const child = childProcess.spawn(process.execPath, [path.join(fixtures, 'type-stripping', 'basic.ts')]);
       const [code] = await once(child, 'exit');
-      expect(code).to.equal(0);
+      expect(code).toBe(0);
     });
 
     it('will not transform TypeScript types without --experimental-transform-types', async () => {
@@ -1544,7 +1595,7 @@ describe('node feature', () => {
         }
       );
       const [code] = await once(child, 'exit');
-      expect(code).to.not.equal(0);
+      expect(code).not.toBe(0);
     });
 
     it('transforms TypeScript types with --experimental-transform-types', async () => {
@@ -1553,7 +1604,7 @@ describe('node feature', () => {
         path.join(fixtures, 'type-stripping', 'transform-types.ts')
       ]);
       const [code] = await once(child, 'exit');
-      expect(code).to.equal(0);
+      expect(code).toBe(0);
     });
   });
 });
@@ -1596,7 +1647,7 @@ describe('Node.js startup snapshot', () => {
   };
 
   it('captures the same values as an environment bootstrapped from scratch', async () => {
-    expect(fromThisProcess()).to.deep.equal(await fromFreshEnvironment());
+    expect(fromThisProcess()).toEqual(await fromFreshEnvironment());
   });
 
   it('captures the same values for ELECTRON_RUN_AS_NODE', async () => {
@@ -1610,8 +1661,8 @@ describe('Node.js startup snapshot', () => {
       stdout += chunk;
     });
     const [code] = await once(child, 'close');
-    expect(code).to.equal(0);
-    expect(comparable(stdout)).to.deep.equal(await fromFreshEnvironment());
+    expect(code).toBe(0);
+    expect(comparable(stdout)).toEqual(await fromFreshEnvironment());
   });
 
   ifit(process.platform !== 'win32')('can open a directory with O_DIRECTORY', async () => {
@@ -1628,9 +1679,7 @@ describe('Node.js startup snapshot', () => {
       fs.writeFileSync(target, '');
       fs.symlinkSync(target, link);
       const { O_RDONLY, O_NOFOLLOW } = fs.constants;
-      expect(() => fs.openSync(link, O_RDONLY | O_NOFOLLOW))
-        .to.throw()
-        .with.property('code', 'ELOOP');
+      expect(() => fs.openSync(link, O_RDONLY | O_NOFOLLOW)).toThrow(expect.objectContaining({ code: 'ELOOP' }));
     });
   });
 });

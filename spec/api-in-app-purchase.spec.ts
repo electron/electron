@@ -1,6 +1,6 @@
 import { inAppPurchase } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
 
@@ -26,10 +26,8 @@ function windowOwners(): Map<number, string> {
   return owners;
 }
 
-describe('inAppPurchase module', { tags: ['serial'] }, function () {
+describe('inAppPurchase module', { tags: ['serial'], timeout: 3 * 60 * 1000 }, () => {
   if (process.platform !== 'darwin') return;
-
-  this.timeout(3 * 60 * 1000);
 
   // Without an App Store session StoreKit answers restoreCompletedTransactions()
   // with an Apple Account sign-in dialog, shown by a system agent, that nothing
@@ -40,44 +38,50 @@ describe('inAppPurchase module', { tags: ['serial'] }, function () {
     [...windowOwners()].filter(
       ([pid, executable]) => !ownersBefore.has(pid) && /^\/(System|usr\/libexec)\//.test(executable)
     );
-  before(() => {
-    ownersBefore = new Set(windowOwners().keys());
-  });
-  after(async () => {
-    // The dialog trails the call that caused it, so give it a moment to show.
-    await waitUntil(() => summoned().length > 0, { timeout: 3000 }).catch(() => {});
-    await waitUntil(() => {
-      const left = summoned();
-      for (const [pid] of left) process.kill(pid);
-      return left.length === 0;
-    });
-  });
+  beforeAll(
+    () => {
+      ownersBefore = new Set(windowOwners().keys());
+    },
+    3 * 60 * 1000
+  );
+  afterAll(
+    async () => {
+      // The dialog trails the call that caused it, so give it a moment to show.
+      await waitUntil(() => summoned().length > 0, { timeout: 3000 }).catch(() => {});
+      await waitUntil(() => {
+        const left = summoned();
+        for (const [pid] of left) process.kill(pid);
+        return left.length === 0;
+      });
+    },
+    3 * 60 * 1000
+  );
 
   it('canMakePayments() returns a boolean', () => {
     const canMakePayments = inAppPurchase.canMakePayments();
-    expect(canMakePayments).to.be.a('boolean');
+    expect(canMakePayments).toBeTypeOf('boolean');
   });
 
   it('restoreCompletedTransactions() does not throw', () => {
     expect(() => {
       inAppPurchase.restoreCompletedTransactions();
-    }).to.not.throw();
+    }).not.toThrow();
   });
 
   it('finishAllTransactions() does not throw', () => {
     expect(() => {
       inAppPurchase.finishAllTransactions();
-    }).to.not.throw();
+    }).not.toThrow();
   });
 
   it('finishTransactionByDate() does not throw', () => {
     expect(() => {
       inAppPurchase.finishTransactionByDate(new Date().toISOString());
-    }).to.not.throw();
+    }).not.toThrow();
   });
 
   it('getReceiptURL() returns receipt URL', () => {
-    expect(inAppPurchase.getReceiptURL()).to.match(/_MASReceipt\/receipt$/);
+    expect(inAppPurchase.getReceiptURL()).toMatch(/_MASReceipt\/receipt$/);
   });
 
   // This fails on x64 in CI - likely owing to some weirdness with the machines.
@@ -85,22 +89,23 @@ describe('inAppPurchase module', { tags: ['serial'] }, function () {
   ifdescribe(process.arch !== 'x64')('handles product purchases', () => {
     it('purchaseProduct() fails when buying invalid product', async () => {
       const success = await inAppPurchase.purchaseProduct('non-exist');
-      expect(success).to.be.false('failed to purchase non-existent product');
+      expect(success, 'failed to purchase non-existent product').toBe(false);
     });
 
     it('purchaseProduct() accepts optional (Integer) argument', async () => {
       const success = await inAppPurchase.purchaseProduct('non-exist', 1);
-      expect(success).to.be.false('failed to purchase non-existent product');
+      expect(success, 'failed to purchase non-existent product').toBe(false);
     });
 
     it('purchaseProduct() accepts optional (Object) argument', async () => {
       const success = await inAppPurchase.purchaseProduct('non-exist', { quantity: 1, username: 'username' });
-      expect(success).to.be.false('failed to purchase non-existent product');
+      expect(success, 'failed to purchase non-existent product').toBe(false);
     });
 
     it('getProducts() returns an empty list when getting invalid product', async () => {
       const products = await inAppPurchase.getProducts(['non-exist']);
-      expect(products).to.be.an('array').of.length(0);
+      expect(products).toBeInstanceOf(Array);
+      expect(products).toHaveLength(0);
     });
   });
 });

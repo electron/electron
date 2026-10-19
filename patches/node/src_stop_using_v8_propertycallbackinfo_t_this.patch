@@ -76,10 +76,10 @@ index 53d4de01666271e6bb84b04d3386b7b1cb193cdd..757d39558f7853d39ee0d574152bb381
      THROW_ERR_INVALID_INVOCATION(isolate);
      return;
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index 91ae8c9d31f5c8984c25c1030238fbe0db5c95a2..a04c7b97e743d75a53e8e01f31e40f601a207572 100644
+index f21c7deea5edd85198bb4c015af0d38b42e7d8c9..d1ef4d06f73bcb23686d91df2a0a3d5141e1ba70 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
-@@ -765,7 +765,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(
+@@ -827,7 +827,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(
    }
  
    DatabaseSyncLimits* limits;
@@ -88,7 +88,7 @@ index 91ae8c9d31f5c8984c25c1030238fbe0db5c95a2..a04c7b97e743d75a53e8e01f31e40f60
  
    Environment* env = limits->env();
    Isolate* isolate = env->isolate();
-@@ -797,7 +797,7 @@ Intercepted DatabaseSyncLimits::LimitsSetter(
+@@ -859,7 +859,7 @@ Intercepted DatabaseSyncLimits::LimitsSetter(
    }
  
    DatabaseSyncLimits* limits;
@@ -98,10 +98,10 @@ index 91ae8c9d31f5c8984c25c1030238fbe0db5c95a2..a04c7b97e743d75a53e8e01f31e40f60
    Environment* env = limits->env();
    Isolate* isolate = env->isolate();
 diff --git a/src/node_util.cc b/src/node_util.cc
-index 027f668c21944308d021e8eb10ee3898c8b482a7..ce381c00888b032c281938a7bab334058e075ec8 100644
+index 96c0c9397546afc420f3649b5d5ba9f636364bb9..c3a6fbed06efc92e3cc0ac59ab51c8b802033c81 100644
 --- a/src/node_util.cc
 +++ b/src/node_util.cc
-@@ -366,7 +366,7 @@ static void DefineLazyPropertiesGetter(
+@@ -369,7 +369,7 @@ static void DefineLazyPropertiesGetter(
    // When this getter is invoked in a vm context, the `Realm::GetCurrent(info)`
    // returns a nullptr and retrieve the creation context via `this` object and
    // get the creation Realm.

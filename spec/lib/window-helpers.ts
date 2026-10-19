@@ -1,6 +1,6 @@
 import { BaseWindow, BrowserWindow, webContents } from 'electron/main';
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 
 import { once } from 'node:events';
 
@@ -50,7 +50,7 @@ export const closeWindow = async (
         // called: by now the next test may already have created its own.
         const leftover = windows.filter((win) => !win.isDestroyed());
         try {
-          expect(leftover).to.have.lengthOf(0);
+          expect(leftover).toHaveLength(0);
         } finally {
           for (const win of leftover) {
             await ensureWindowIsClosed(win);
@@ -61,10 +61,12 @@ export const closeWindow = async (
   }
 };
 
-export async function closeAllWindows(assertNotWindows = false) {
+// Takes no parameters on purpose: it is registered directly as an afterEach /
+// afterAll hook, and vitest hands hooks their context as the first argument.
+export async function closeAllWindows() {
   let windowsClosed = 0;
   for (const w of BaseWindow.getAllWindows()) {
-    await closeWindow(w, { assertNotWindows });
+    await closeWindow(w, { assertNotWindows: false });
     windowsClosed++;
   }
   return windowsClosed;
@@ -74,6 +76,9 @@ export async function cleanupWebContents() {
   let webContentsDestroyed = 0;
   const existingWCS = webContents.getAllWebContents();
   for (const contents of existingWCS) {
+    // Destroying one webContents can take others in the list down with it
+    // (e.g. its guests or devtools), and calling destroy() on those throws.
+    if (contents.isDestroyed()) continue;
     const isDestroyed = once(contents, 'destroyed');
     contents.destroy();
     await isDestroyed;

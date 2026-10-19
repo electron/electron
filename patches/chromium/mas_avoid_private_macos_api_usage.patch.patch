@@ -1220,7 +1220,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 51cb749d82788d57796d47b8600781ffeed4f129..a5bbaef7fbabd485c99a5649fb0fb519f214cd5d 100644
+index 308794f7f40e7de92ce6bcf82bba02a61ef1553f..bca04eeb794fb61d940c3a5f86b97147a6066491 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -652,6 +652,7 @@ static_library("test_support") {
@@ -1248,7 +1248,7 @@ index 51cb749d82788d57796d47b8600781ffeed4f129..a5bbaef7fbabd485c99a5649fb0fb519
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3417,6 +3421,7 @@ test("content_unittests") {
+@@ -3418,6 +3422,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1939,10 +1939,10 @@ index 8736e0be60194803cac6737f567cafe4a9200116..bd8e1d349402d41b7558be71b82f0aa4
      return;
    }
 diff --git a/ui/accelerated_widget_mac/BUILD.gn b/ui/accelerated_widget_mac/BUILD.gn
-index eb90cda4852ca7dc0932cc77801f6b4d62c5624d..2b2dedabfc75548cb46227905035cdc6a4ed681e 100644
+index daa300a59ab92b1af2dadfa37d42f9d85951aa38..1377a290136a82516c27ea54b97624513a5c1207 100644
 --- a/ui/accelerated_widget_mac/BUILD.gn
 +++ b/ui/accelerated_widget_mac/BUILD.gn
-@@ -84,6 +84,7 @@ component("accelerated_widget_mac") {
+@@ -85,6 +85,7 @@ component("accelerated_widget_mac") {
      "//ui/gfx",
      "//ui/gfx/geometry",
      "//ui/gl",

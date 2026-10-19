@@ -2,9 +2,9 @@ gclient_gn_args_from = 'src'
 
 vars = {
   'chromium_version':
-    '156.0.8078.13',
+    '156.0.8078.36',
   'node_version':
-    'v24.21.0',
+    'v24.22.0',
   'nan_version':
     '675cefebca42410733da8a454c8d9391fcebfbc2',
   'squirrel.mac_version':
@@ -15,8 +15,6 @@ vars = {
     '2a8e2123a3931038179ee06105c9e6ec336b12ea',
   'sparkle_version':
     '79bc9e872948e47877e76f194cb0c8e0412b0b90',
-  'engflow_reclient_configs_version':
-    '955335c30a752e9ef7bff375baab5e0819b6c00d',
 
   'pyyaml_version': '3.12',
 
@@ -28,7 +26,6 @@ vars = {
   'reactiveobjc_git': 'https://github.com/ReactiveCocoa',
   'mantle_git': 'https://github.com/Mantle',
   'sparkle_git': 'https://github.com/sparkle-project',
-  'engflow_git': 'https://github.com/EngFlow',
   
   # The path of the sysroots.json file.
   'sysroots_json_path': 'electron/script/sysroots.json',
@@ -111,10 +108,6 @@ deps = {
     'url': Var("sparkle_git") + '/Sparkle.git@' + Var("sparkle_version"),
     'condition': 'process_deps',
   },
-  'src/third_party/engflow-reclient-configs': {
-    'url': Var("engflow_git") + '/reclient-configs.git@' + Var("engflow_reclient_configs_version"),
-    'condition': 'process_deps'
-  }
 }
 
 pre_deps_hooks = [
