@@ -50,7 +50,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 9c94939937c77e67042c45939ba6f827b679d9fb..d7b97a4df1a99f3fc2cb2212584b4064a6b845cd 100644
+index 9feaf5f8e639b33b871fdafe9e5d3e4c6b240761..05fa7e84103811395fe02d63738fdfe348e62470 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1154,6 +1154,7 @@ component("base") {
@@ -1005,7 +1005,7 @@ index c74a6130862162d4fdb07cf3d4a60604d0ae0482..92eaacfb3256ded77bd119e6ca306404
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 7e121dff7222916106318e2c4ee8a8526d5b507d..56c67adf2243050f60d96623831ee3a04a42dadd 100644
+index 88198203b8e696c07ca9971d5716d3d5197eb45c..29189cc7d5b0724a07998079d1cfc977b85c39f5 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -385,6 +385,7 @@ source_set("browser") {
@@ -1817,7 +1817,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 674644db7e14a16bf74bd5e7ae3989ae0130b3cd..4571c53a57a1247db208e38345f0430601892f34 100644
+index a96e9c9df209abba41bccf9d348eee89058b5f83..12942929d97d2bfff86fc43c506253934fd8e68e 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -446,6 +446,7 @@ component("core") {
@@ -2331,7 +2331,7 @@ index 618217772a2fa38077ca0913dc017ecc6a702142..f06c9cf5bd3d841935d4e7353e704027
    // Query the display's refresh rate. To get a float number such as 59.95Hz,
    // use 1.0/screen.minimumRefreshInterval instead of
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 99c19df414c807116cf97bfc3d321a18a487517a..50c30ba91116438183246777ca40c15d2f1ca003 100644
+index 250c1ad2048f80386864f6037e2d0eda6eeebc26..b6d4aeba0072475d384a96bc838d0e1de56c65f4 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -286,6 +286,8 @@ component("gfx") {

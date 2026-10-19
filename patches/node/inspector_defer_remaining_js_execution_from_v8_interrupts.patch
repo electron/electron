@@ -16,7 +16,7 @@ call into JS from an interrupt.
 Upstreamed at https://github.com/nodejs/node/pull/65397.
 
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
-index 55fe49c1e3058c366ede37a7698aefae82ea3f75..7329990ebf6a0bcb64b18069b67a61d45b56c60b 100644
+index 351033ebc10879a440f99667eddd4cc1cfe604a5..c22d6fc36b9cef4c15fe579bc3f9acf979528e8e 100644
 --- a/src/inspector_agent.cc
 +++ b/src/inspector_agent.cc
 @@ -54,6 +54,7 @@ using crdtp::UberDispatcher;
@@ -27,9 +27,9 @@ index 55fe49c1e3058c366ede37a7698aefae82ea3f75..7329990ebf6a0bcb64b18069b67a61d4
  using v8::Function;
  using v8::HandleScope;
  using v8::Isolate;
-@@ -77,6 +78,53 @@ static std::atomic_bool start_io_thread_async_initialized { false };
- // Protects the Agent* stored in start_io_thread_async.data.
- static Mutex start_io_thread_async_mutex;
+@@ -77,6 +78,53 @@ static Mutex start_io_thread_agents_mutex;
+ static std::vector<Agent*> start_io_thread_agents;
+ static bool debug_signal_handler_started = false;
  
 +template <typename Defer, typename OnFailure>
 +void SyncJavaScriptHookState(Environment* env,
@@ -78,10 +78,10 @@ index 55fe49c1e3058c366ede37a7698aefae82ea3f75..7329990ebf6a0bcb64b18069b67a61d4
 +  }
 +}
 +
- // Called on the main thread.
- void StartIoThreadAsyncCallback(uv_async_t* handle) {
-   static_cast<Agent*>(handle->data)->StartIoThread();
-@@ -455,6 +503,15 @@ class SameThreadInspectorSession : public InspectorSession {
+ static void RequestIoThreadStartOnAgents() {
+   Mutex::ScopedLock lock(start_io_thread_agents_mutex);
+   for (Agent* agent : start_io_thread_agents) agent->RequestIoThreadStart();
+@@ -462,6 +510,15 @@ class SameThreadInspectorSession : public InspectorSession {
  
  void NotifyClusterWorkersDebugEnabled(Environment* env) {
    Isolate* isolate = env->isolate();
@@ -97,7 +97,7 @@ index 55fe49c1e3058c366ede37a7698aefae82ea3f75..7329990ebf6a0bcb64b18069b67a61d4
    HandleScope handle_scope(isolate);
  
    // Send message to enable debug in cluster workers
-@@ -959,54 +1016,40 @@ void Agent::SetupNetworkTracking(Local<Function> enable_function,
+@@ -974,54 +1031,40 @@ void Agent::SetupNetworkTracking(Local<Function> enable_function,
                                   Local<Function> disable_function) {
    parent_env_->set_inspector_enable_network_tracking(enable_function);
    parent_env_->set_inspector_disable_network_tracking(disable_function);
@@ -177,7 +177,7 @@ index 55fe49c1e3058c366ede37a7698aefae82ea3f75..7329990ebf6a0bcb64b18069b67a61d4
  }
  
  void Agent::WaitForDisconnect() {
-@@ -1057,7 +1100,7 @@ void Agent::RegisterAsyncHook(Isolate* isolate,
+@@ -1072,7 +1115,7 @@ void Agent::RegisterAsyncHook(Isolate* isolate,
  }
  
  void Agent::SetAsyncHookTrackingEnabled(bool enabled) {
@@ -186,7 +186,7 @@ index 55fe49c1e3058c366ede37a7698aefae82ea3f75..7329990ebf6a0bcb64b18069b67a61d4
    SyncAsyncHookState();
  }
  
-@@ -1071,52 +1114,25 @@ void Agent::SetAsyncHookTrackingEnabled(bool enabled) {
+@@ -1086,52 +1129,25 @@ void Agent::SetAsyncHookTrackingEnabled(bool enabled) {
  // When it's not safe to call into JS, this is a no-op and we'll try again in
  // RegisterAsyncHook() (for 1) or from a scheduled immediate (for 2).
  void Agent::SyncAsyncHookState() {
@@ -257,10 +257,10 @@ index 55fe49c1e3058c366ede37a7698aefae82ea3f75..7329990ebf6a0bcb64b18069b67a61d4
  
  void Agent::AsyncTaskScheduled(const StringView& task_name, void* task,
 diff --git a/src/inspector_agent.h b/src/inspector_agent.h
-index 932e4e8dce899101a17d978dfc5065de5eb06758..6e1a622aa6d95be198165f521f82513c8552606e 100644
+index 5a1d1de26547bb437f4f86c2e1825d6eaf709e9d..bf76578e8c06a062b991937a2cca02b62d3f4c5a 100644
 --- a/src/inspector_agent.h
 +++ b/src/inspector_agent.h
-@@ -28,6 +28,12 @@ class ParentInspectorHandle;
+@@ -29,6 +29,12 @@ class ParentInspectorHandle;
  class NodeInspectorClient;
  class WorkerManager;
  
@@ -273,7 +273,7 @@ index 932e4e8dce899101a17d978dfc5065de5eb06758..6e1a622aa6d95be198165f521f82513c
  class InspectorSession {
   public:
    virtual ~InspectorSession() = default;
-@@ -132,7 +138,7 @@ class Agent {
+@@ -134,7 +140,7 @@ class Agent {
  
   private:
    void SyncAsyncHookState();
@@ -282,7 +282,7 @@ index 932e4e8dce899101a17d978dfc5065de5eb06758..6e1a622aa6d95be198165f521f82513c
  
    node::Environment* parent_env_;
    // Encapsulates majority of the Inspector functionality
-@@ -152,13 +158,11 @@ class Agent {
+@@ -154,9 +160,7 @@ class Agent {
    // The state of the async hook used for async stack traces that the protocol
    // last requested, and the state JS currently has. SyncAsyncHookState()
    // reconciles the two when it is possible and safe to call into JS.
@@ -290,6 +290,12 @@ index 932e4e8dce899101a17d978dfc5065de5eb06758..6e1a622aa6d95be198165f521f82513c
 -  bool async_hook_enabled_ = false;
 -  bool syncing_async_hook_state_ = false;
 +  JavaScriptHookState async_hook_state_;
+ 
+   // Woken by the SIGUSR1 watchdog; closed by the cleanup hook or ~Agent(),
+   // whichever runs first, and freed by its close callback.
+@@ -164,9 +168,9 @@ class Agent {
+   void StopAcceptingIoThreadStarts();
+   static void StopAcceptingIoThreadStartsHook(void* agent);
  
 -  bool network_tracking_enabled_ = false;
 -  bool pending_enable_network_tracking = false;

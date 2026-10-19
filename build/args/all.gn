@@ -2,10 +2,16 @@ is_electron_build = true
 root_extra_deps = [ "//electron" ]
 
 # Registry of NMVs --> https://github.com/nodejs/node/blob/main/doc/abi_version_registry.json
-node_module_version = 150
+node_module_version = 154
 
 # Build Node.js against Chromium's BoringSSL instead of node's bundled OpenSSL.
 node_openssl_path = "//third_party/boringssl"
+
+# Build Node.js against Chromium's V8 instead of node's bundled copy.
+node_v8_path = "//v8"
+
+# Electron owns V8 platform initialization, so Node.js must not set up its own.
+node_use_v8_platform = false
 
 v8_promise_internal_field_count = 1
 

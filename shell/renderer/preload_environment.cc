@@ -59,7 +59,7 @@ void ModuleGetter(v8::Local<v8::Name> property,
   v8::Isolate* isolate = info.GetIsolate();
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   const ModuleEntry& entry =
-      kModules[static_cast<size_t>(info.Data().As<v8::Int32>()->Value())];
+      kModules[static_cast<size_t>(info.DataV2().As<v8::Int32>()->Value())];
   v8::Local<v8::Value> exports = LoadBinding(isolate, entry.binding);
   if (exports.IsEmpty() || !exports->IsObject())
     return;
@@ -93,7 +93,7 @@ void ModuleGetter(v8::Local<v8::Name> property,
 void Require(const v8::FunctionCallbackInfo<v8::Value>& info) {
   v8::Isolate* isolate = info.GetIsolate();
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
-  v8::Local<v8::Array> data = info.Data().As<v8::Array>();
+  v8::Local<v8::Array> data = info.DataV2().As<v8::Value>().As<v8::Array>();
   v8::Local<v8::Value> module, renderer_flavor;
   if (!data->Get(context, 0).ToLocal(&module) ||
       !data->Get(context, 1).ToLocal(&renderer_flavor)) {

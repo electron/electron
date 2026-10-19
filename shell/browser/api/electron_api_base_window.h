@@ -18,12 +18,6 @@
 #include "shell/common/gin_helper/trackable_object.h"
 #include "v8/include/cppgc/persistent.h"
 
-#if BUILDFLAG(IS_MAC)
-#include <optional>
-
-#include "ui/gfx/geometry/point.h"
-#endif
-
 namespace gin {
 class Arguments;
 }  // namespace gin
@@ -61,6 +55,14 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 
   static bool IsWindowNameValid(const gin_helper::Dictionary& options,
                                 std::string* error_message);
+
+  // False when the options name an app shim (macOS) that can't host a window.
+  static bool IsAppShimValid(const gin_helper::Dictionary& options,
+                             std::string* error_message);
+  // Returns false, with the reason, when the `parent` in `options` is a
+  // window that can't have children.
+  static bool IsParentValid(const gin_helper::Dictionary& options,
+                            std::string* error_message);
 
   const NativeWindow* window() const { return window_.get(); }
   NativeWindow* window() { return window_.get(); }
@@ -130,143 +132,57 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
 #endif
 
-  // Public APIs of NativeWindow.
+  // The NativeWindow APIs that need a wrapper here: they adapt arguments or
+  // results, keep state, or are overridden by BrowserWindow. The rest of the
+  // JavaScript API binds NativeWindow's methods directly in BuildPrototype().
   void SetContentView(View* view);
-  void Close();
   virtual void CloseImmediately();
   virtual void Focus();
   virtual void Blur();
-  bool IsFocused() const;
   virtual void Show();
   virtual void ShowInactive();
-  void Hide();
-  bool IsVisible() const;
-  bool IsEnabled() const;
-  void SetEnabled(bool enable);
-  void Maximize();
-  void Unmaximize();
-  bool IsMaximized() const;
-  void Minimize();
-  void Restore();
-  bool IsMinimized() const;
-  void SetFullScreen(bool fullscreen);
-  bool IsFullscreen() const;
   void SetBounds(v8::Local<v8::Object> bounds, gin::Arguments* args);
-  gfx::Rect GetBounds() const;
   void SetSize(int width, int height, gin::Arguments* args);
   std::array<int, 2U> GetSize() const;
   void SetContentSize(int width, int height, gin::Arguments* args);
   std::array<int, 2U> GetContentSize() const;
   void SetContentBounds(const gfx::Rect& bounds, gin::Arguments* args);
-  gfx::Rect GetContentBounds() const;
-  bool IsNormal() const;
-  gfx::Rect GetNormalBounds() const;
   void SetMinimumSize(int width, int height);
   std::array<int, 2U> GetMinimumSize() const;
   void SetMaximumSize(int width, int height);
   std::array<int, 2U> GetMaximumSize() const;
   void SetSheetOffset(double offsetY, gin::Arguments* args);
-  void SetResizable(bool resizable);
-  bool IsResizable() const;
-  void SetMovable(bool movable);
   void MoveAbove(const std::string& sourceId, gin::Arguments* args);
-  void MoveTop();
-  bool IsMovable() const;
-  void SetMinimizable(bool minimizable);
-  bool IsMinimizable() const;
-  void SetMaximizable(bool maximizable);
-  bool IsMaximizable() const;
-  void SetFullScreenable(bool fullscreenable);
-  bool IsFullScreenable() const;
-  void SetClosable(bool closable);
-  bool IsClosable() const;
   void SetAlwaysOnTop(bool top, gin::Arguments* args);
   bool IsAlwaysOnTop() const;
-  void Center();
   void SetPosition(int x, int y, gin::Arguments* args);
   std::array<int, 2U> GetPosition() const;
   void SetTitle(const std::string& title);
   void SetTitleFromPage(const std::string& title);
   bool SetTitleFromPageIfNotSetFromApi(const std::string& title);
-  std::string GetTitle() const;
-  void SetAccessibleTitle(const std::string& title);
-  std::string GetAccessibleTitle() const;
-  void FlashFrame(bool flash);
-  void SetSkipTaskbar(bool skip);
-  void SetExcludedFromShownWindowsMenu(bool excluded);
-  bool IsExcludedFromShownWindowsMenu() const;
-  void SetSimpleFullScreen(bool simple_fullscreen);
-  bool IsSimpleFullScreen() const;
-  void SetKiosk(bool kiosk);
-  bool IsKiosk() const;
-  bool IsTabletMode() const;
   virtual void SetBackgroundColor(const std::string& color_name);
   std::string GetBackgroundColor() const;
-  void InvalidateShadow();
-  void SetHasShadow(bool has_shadow);
-  bool HasShadow() const;
-  void SetOpacity(const double opacity);
-  double GetOpacity() const;
-  void SetShape(const std::vector<gfx::Rect>& rects);
-  void SetRepresentedFilename(const std::string& filename);
-  std::string GetRepresentedFilename() const;
-  void SetDocumentEdited(bool edited);
-  bool IsDocumentEdited() const;
   void SetIgnoreMouseEvents(bool ignore, gin::Arguments* args);
-  void SetContentProtection(bool enable);
-  bool IsContentProtected() const;
-  void SetFocusable(bool focusable);
-  bool IsFocusable() const;
   void SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> menu);
   void SetParentWindow(v8::Local<v8::Value> value, gin::Arguments* args);
   std::string GetMediaSourceId() const;
   v8::Local<v8::Value> GetNativeWindowHandle();
   void SetProgressBar(double progress, gin::Arguments* args);
-  void SetOverlayIcon(const gfx::Image& overlay,
-                      const std::string& description);
   void SetVisibleOnAllWorkspaces(bool visible, gin::Arguments* args);
-  bool IsVisibleOnAllWorkspaces() const;
-  void SetAutoHideCursor(bool auto_hide);
   virtual void SetVibrancy(v8::Isolate* isolate,
                            v8::Local<v8::Value> value,
                            gin::Arguments* args);
   virtual void SetBackgroundMaterial(const std::string& material);
 
-#if BUILDFLAG(IS_MAC)
-  std::string GetAlwaysOnTopLevel() const;
-  void SetWindowButtonVisibility(bool visible);
-  bool GetWindowButtonVisibility() const;
-  void SetWindowButtonPosition(std::optional<gfx::Point> position);
-  std::optional<gfx::Point> GetWindowButtonPosition() const;
-
-  bool IsHiddenInMissionControl();
-  void SetHiddenInMissionControl(bool hidden);
-#endif
-
-  void SetTouchBar(std::vector<gin_helper::PersistentDictionary> items);
-  void RefreshTouchBarItem(const std::string& item_id);
-  void SetEscapeTouchBarItem(gin_helper::PersistentDictionary item);
-  void SelectPreviousTab();
-  void SelectNextTab();
-  void ShowAllTabs();
-  void MergeAllWindows();
-  void MoveTabToNewWindow();
-  void ToggleTabBar();
   void AddTabbedWindow(NativeWindow* window, gin::Arguments* args);
   v8::Local<v8::Value> GetTabbingIdentifier();
-  void SetAutoHideMenuBar(bool auto_hide);
-  bool IsMenuBarAutoHide() const;
-  void SetMenuBarVisibility(bool visible);
-  bool IsMenuBarVisible() const;
   void SetAspectRatio(double aspect_ratio, gin::Arguments* args);
   void PreviewFile(const std::string& path, gin::Arguments* args);
-  void CloseFilePreview();
 
   // Public getters of NativeWindow.
   v8::Local<v8::Value> GetContentView() const;
   BaseWindow* GetParentWindow() const;
   std::vector<BaseWindow*> GetChildWindows() const;
-  bool IsModal() const;
 
   // Extra APIs added in JS.
   bool SetThumbarButtons(gin::Arguments* args);
@@ -287,7 +203,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool SetThumbnailClip(const gfx::Rect& region);
   bool SetThumbnailToolTip(const std::string& tooltip);
   void SetAppDetails(const gin_helper::Dictionary& options);
-  bool IsSnapped() const;
   void SetAccentColor(gin::Arguments* args);
   v8::Local<v8::Value> GetAccentColor() const;
 #endif

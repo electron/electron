@@ -130,7 +130,7 @@ class State {
         context_(isolate->GetCurrentContext()),
         data_(data.As<v8::Object>()) {}
   explicit State(const v8::FunctionCallbackInfo<v8::Value>& info)
-      : State(info.GetIsolate(), info.Data()) {}
+      : State(info.GetIsolate(), info.DataV2().As<v8::Value>()) {}
 
   v8::Isolate* isolate() const { return isolate_; }
   v8::Local<v8::Context> context() const { return context_; }

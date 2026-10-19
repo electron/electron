@@ -7,7 +7,7 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/node.gyp b/node.gyp
-index 988838e85858ef1ca87662a024c278f811477179..5df80c48e7c747a49bd2e86ea7706de757fff32e 100644
+index 62c748b130c7ddec9e429d48925e79d5a395bd73..14f14c79630f19bbf7d319b669614123ef94b148 100644
 --- a/node.gyp
 +++ b/node.gyp
 @@ -152,6 +152,7 @@
@@ -19,10 +19,10 @@ index 988838e85858ef1ca87662a024c278f811477179..5df80c48e7c747a49bd2e86ea7706de7
        'src/node_snapshotable.cc',
        'src/node_sockaddr.cc',
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 3f5f70bf320040bafa479279c163d7c74d3decc6..2023f913eae6661768c09d80fffa9ce58396da9d 100644
+index 19a087770f7ef98b5a93429f785a45281446d3d5..70392a2e29ac85012a11f517e103e24b0a0439d0 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -403,24 +403,30 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(
+@@ -765,24 +765,30 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(
    // It's ok for allocated_data_ to be nullptr but
    // only if size_ is zero.
    CHECK_IMPLIES(size_ > 0, allocated_data_ != nullptr);
@@ -69,7 +69,7 @@ index 3f5f70bf320040bafa479279c163d7c74d3decc6..2023f913eae6661768c09d80fffa9ce5
  #else
    std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
        allocated_data_,
-@@ -793,19 +799,13 @@ namespace {
+@@ -1155,19 +1161,13 @@ namespace {
  // using OPENSSL_malloc. However, if the secure heap is
  // initialized, SecureBuffer will automatically use it.
  void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
@@ -95,7 +95,7 @@ index 3f5f70bf320040bafa479279c163d7c74d3decc6..2023f913eae6661768c09d80fffa9ce5
  
    auto data = DataPointer::SecureAlloc(len);
 diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
-index be4067df0e226636cb6d876c41aa830343069f86..82da68d8eef06c57aae76f2b54eeb09db5b41ecf 100644
+index cd5217a960c539a799d05e306776430b32cf5144..fbca682b804a0a1b7e688d01359c20a416584f15 100644
 --- a/src/crypto/crypto_x509.cc
 +++ b/src/crypto/crypto_x509.cc
 @@ -141,19 +141,17 @@ MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
@@ -425,10 +425,10 @@ index 0000000000000000000000000000000000000000..44bc180778a23ce611b570c91242a1b1
 +
 +#endif  // SRC_NODE_SERDES_UTILS_H_
 diff --git a/src/node_trace_events.cc b/src/node_trace_events.cc
-index 5e01f64a5039235447101d0d8cfbdba3da4ddbc1..49c457cae2b3da603a548874f63dbdf9f50580d9 100644
+index 08eb71c5122d749bd499d55a7cd878b50ca321a0..f2d766b8b192dfbbd40af1f8ffaee624b747bb1d 100644
 --- a/src/node_trace_events.cc
 +++ b/src/node_trace_events.cc
-@@ -141,12 +141,28 @@ static void GetCategoryEnabledBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -145,12 +145,28 @@ static void GetCategoryEnabledBuffer(const FunctionCallbackInfo<Value>& args) {
    const uint8_t* enabled_pointer =
        TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(category_name.out());
    uint8_t* enabled_pointer_cast = const_cast<uint8_t*>(enabled_pointer);

@@ -761,26 +761,28 @@ describe('cpp heap', () => {
 
           // The completed download stays in the session's DownloadManager,
           // and clearData() removes it, which notifies its observers.
-          // Do that while the wrapper is unreachable but not yet finalized,
-          // as it is between a natural collection and the task that sweeps it.
+          // Do that while the wrapper is unreachable but not yet finalized.
           let cleared: Promise<void> | undefined;
+          let finalized = false;
           for (let attempt = 0; attempt < 10; attempt++) {
-            await testing.collectGarbageBeforeFinalizationForTesting(
+            finalized = await testing.collectGarbageBeforeFinalizationForTesting(
+              weakItem.deref(),
               () => {
                 holder.item = null;
               },
-              () => {
-                if (weakItem.deref() === undefined) cleared = ses.clearData({ dataTypes: ['downloads'] });
+              (itemIsDead: boolean) => {
+                if (itemIsDead) cleared = ses.clearData({ dataTypes: ['downloads'] });
               }
             );
             if (cleared) break;
           }
           const collected = cleared !== undefined;
           await cleared;
-          return { state, collected };
+          return { state, collected, finalized };
         }, savePath);
         expect(result.state).toBe('completed');
         expect(result.collected, 'the DownloadItem should be unreachable when clearData() runs').toBe(true);
+        expect(result.finalized, 'the DownloadItem should be finalized after clearData() ran').toBe(true);
       }
     );
   });
@@ -2603,7 +2605,11 @@ describe('cpp heap', () => {
           const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
 
           const createServer = async () => {
-            const server = http.createServer((_request: any, response: any) => response.end('<body></body>'));
+            const server = http.createServer((_request: any, response: any) => {
+              // Chromium deprecates unload handlers on http(s) pages by default.
+              response.setHeader('permissions-policy', 'unload=*');
+              response.end('<body></body>');
+            });
             server.listen(0, '127.0.0.1');
             await once(server, 'listening');
             return server;
