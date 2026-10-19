@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "base/check_op.h"
+#include "ui/base/models/image_model.h"
 #include "ui/base/models/menu_model_delegate.h"
 
 namespace electron {

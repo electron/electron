@@ -27,6 +27,7 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/node_entry_scope.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
+#include "ui/base/models/image_model.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8.h"
 

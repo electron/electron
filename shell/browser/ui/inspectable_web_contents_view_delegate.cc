@@ -5,6 +5,8 @@
 
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 
+#include "ui/base/models/image_model.h"
+
 namespace electron {
 
 ui::ImageModel InspectableWebContentsViewDelegate::GetDevToolsWindowIcon() {

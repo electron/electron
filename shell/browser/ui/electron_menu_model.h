@@ -16,9 +16,12 @@
 #include "base/observer_list_types.h"
 #include "build/build_config.h"
 #include "ui/base/accelerators/accelerator.h"
-#include "ui/base/models/image_model.h"
 #include "ui/base/models/menu_model.h"
 #include "url/gurl.h"
+
+namespace ui {
+class ImageModel;
+}  // namespace ui
 
 namespace electron {
 

@@ -45,10 +45,6 @@
 #include "third_party/skia/include/core/SkRegion.h"
 #include "v8/include/cppgc/persistent.h"
 
-#if defined(TOOLKIT_VIEWS) && !BUILDFLAG(IS_MAC)
-#include "ui/base/models/image_model.h"
-#endif
-
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/common/mojom/view_type.mojom-forward.h"
 
@@ -98,7 +94,8 @@ enum class PdfPrintResult;
 
 namespace ui {
 class Cursor;
-}
+class ImageModel;
+}  // namespace ui
 
 class DevToolsEyeDropper;
 

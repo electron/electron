@@ -19,6 +19,7 @@
 #include "shell/browser/window_list.h"
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/base/l10n/l10n_util_mac.h"
+#include "ui/base/models/image_model.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/events/keycodes/keyboard_code_conversion_mac.h"
 #include "ui/strings/grit/ui_strings.h"
