@@ -1,6 +1,3 @@
-import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
-import type * as ipcRendererInternalModule from '@electron/internal/renderer/ipc-renderer-internal';
-
 import * as path from 'path';
 import { pathToFileURL } from 'url';
 
@@ -43,12 +40,9 @@ Module.wrapper = [
 // Import common settings.
 require('@electron/internal/common/init');
 
-const { ipcRendererInternal } =
-  require('@electron/internal/renderer/ipc-renderer-internal') as typeof ipcRendererInternalModule;
+const { getProcessMemoryInfo, reportPreloadError } = process._linkedBinding('electron_renderer_ipc');
 
-process.getProcessMemoryInfo = () => {
-  return ipcRendererInternal.invoke<Electron.ProcessMemoryInfo>(IPC_MESSAGES.BROWSER_GET_PROCESS_MEMORY_INFO);
-};
+process.getProcessMemoryInfo = getProcessMemoryInfo;
 
 // Process command line arguments.
 const { hasSwitch, getSwitchValue } = process._linkedBinding('electron_common_command_line');
@@ -154,7 +148,7 @@ if (cjsPreloads.length) {
       console.error(`Unable to load preload script: ${preloadScript}`);
       console.error(error);
 
-      ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadScript, error);
+      reportPreloadError(preloadScript, error);
     }
   }
 }
@@ -171,7 +165,7 @@ if (esmPreloads.length) {
           console.error(`Unable to load preload script: ${preloadScript}`);
           console.error(err);
 
-          ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadScript, err);
+          reportPreloadError(preloadScript, err);
         });
     }
   }).finally(onPreloadsLoaded);

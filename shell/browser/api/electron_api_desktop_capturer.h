@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DESKTOP_CAPTURER_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DESKTOP_CAPTURER_H_
 
+#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -13,7 +14,13 @@
 #include "chrome/browser/media/webrtc/desktop_media_list.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
+#include "ui/gfx/geometry/size.h"
+
+namespace gin {
+class Arguments;
+}
 
 namespace electron::api {
 
@@ -28,7 +35,18 @@ class DesktopCapturer final : public gin::Wrappable<DesktopCapturer> {
     bool fetch_icon = false;
   };
 
-  static DesktopCapturer* Create(v8::Isolate* isolate);
+  struct Options {
+    bool capture_window = false;
+    bool capture_screen = false;
+    gfx::Size thumbnail_size{150, 150};
+    bool fetch_window_icons = false;
+
+    bool operator==(const Options&) const = default;
+  };
+
+  // desktopCapturer.getSources(options); concurrent calls with the same
+  // options share one capture.
+  static v8::Local<v8::Promise> GetSources(gin::Arguments* args);
 
   static bool IsDisplayMediaSystemPickerAvailable();
 
@@ -65,6 +83,16 @@ class DesktopCapturer final : public gin::Wrappable<DesktopCapturer> {
   void CollectSourcesFrom(DesktopMediaList* list);
   void HandleFailure();
   void HandleSuccess();
+  // Removes this from the running captures and restores window state.
+  void Finish();
+
+  Options options_;
+  std::vector<gin_helper::Promise<v8::Local<v8::Value>>> promises_;
+#if BUILDFLAG(IS_MAC)
+  // ScreenCaptureKit changes a non-resizable window's styleMask the first
+  // time it captures it; the values from before the capture are restored.
+  std::map<int32_t, bool> resizable_before_capture_;  // by window_id()
+#endif
 
   std::unique_ptr<ListObserver> window_observer_;
   std::unique_ptr<ListObserver> screen_observer_;
