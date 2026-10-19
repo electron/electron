@@ -26,10 +26,10 @@ hook called before the new RenderFrame is created so it can be picked up
 by RenderFrameCreated() on the same call stack.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 9447f4981055db6b125fc2d096b6db5efeb08abf..b03baeb1e104e5e4029e20eb8d89de3d0332825e 100644
+index 7d8d8917a1e62f211f105d7b92314a9d891a7432..4bdea03a2cad7d20553bf038701fcec8d955e709 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -10978,7 +10978,12 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10996,7 +10996,12 @@ void RenderFrameHostImpl::CreateNewWindow(
        new_main_rfh->GetSiteInstance()->browsing_instance_token(),
        delegate_->GetColorProviderColorMaps(),
        /*widget_screen_rect=*/std::nullopt,
@@ -71,10 +71,10 @@ index 66c36cedacc93897e1bf51bee5181eeed3e310ee..02e1b5b8b417016a53ec6554d046c333
  
  // A per-navigation interface passed along with the BeginNavigation call, used
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 10f0f0878178abb0c14a52403cd43d370508179b..4ee0b29a8600ebae2f43524b1cea04da9b499138 100644
+index ebdd1317464261abc8e73994f3b6842663c234c2..3c7e405ffc99a26b7eb47cda609de23337456714 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -845,6 +845,13 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -851,6 +851,13 @@ bool ContentBrowserClient::CanCreateWindow(
    return true;
  }
  
@@ -89,7 +89,7 @@ index 10f0f0878178abb0c14a52403cd43d370508179b..4ee0b29a8600ebae2f43524b1cea04da
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 7ac22c3caa6f472259a2489bfb919800dc474178..5c948f33ae0c7506d8d7f0c2ac076ee561411f9f 100644
+index 185553eaf786bee55f24d0ed39b0d6fb525fc7fb..c8bbd4cfd257d78976360993fc616012ebc793a5 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -64,6 +64,7 @@
@@ -100,7 +100,7 @@ index 7ac22c3caa6f472259a2489bfb919800dc474178..5c948f33ae0c7506d8d7f0c2ac076ee5
  #include "mojo/public/cpp/bindings/pending_remote.h"
  #include "mojo/public/cpp/bindings/remote.h"
  #include "mojo/public/cpp/system/message_pipe.h"
-@@ -1304,6 +1305,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1313,6 +1314,17 @@ class CONTENT_EXPORT ContentBrowserClient {
        bool opener_suppressed,
        bool* no_javascript_access);
  
@@ -119,7 +119,7 @@ index 7ac22c3caa6f472259a2489bfb919800dc474178..5c948f33ae0c7506d8d7f0c2ac076ee5
    // The delegate will be owned by the manager. It's valid to return nullptr.
    virtual SpeechRecognitionManagerDelegate*
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 79d93f7ab27815bac0948d1064aecf9070b93a05..794a732014691c5369d6c8f8d91a26cb1969fed4 100644
+index db698a9a9adfd9bd2dfc8dd29932b3e4b7764f73..9088b206b2101b8e8b101d5a75809308f1b0c3d2 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
 @@ -24,6 +24,7 @@

@@ -16,7 +16,7 @@ This patch can be removed when upstream starts using AudioManager::SetGlobalAppN
 for all pa_context names (and when actually works with AudioServiceOutOfProcess).
 
 diff --git a/media/audio/pulse/pulse_util.cc b/media/audio/pulse/pulse_util.cc
-index fd1fea63ea424b7e90daf0e815e3c2631f0e6c6b..f535c3a1c829ce971b406ea4c828adc32bf89b99 100644
+index 852bafda23297d462c9e7f445193e5bbb6e5df9a..5fc9dbd1e87b017255df61d3ce40cdb7c9b3fd25 100644
 --- a/media/audio/pulse/pulse_util.cc
 +++ b/media/audio/pulse/pulse_util.cc
 @@ -5,6 +5,7 @@
@@ -27,7 +27,7 @@ index fd1fea63ea424b7e90daf0e815e3c2631f0e6c6b..f535c3a1c829ce971b406ea4c828adc3
  #include <string.h>
  
  #include <memory>
-@@ -43,6 +44,18 @@ constexpr char kBrowserDisplayName[] = "chromium-browser";
+@@ -41,6 +42,18 @@ constexpr char kBrowserDisplayName[] = "chromium-browser";
  #define PRODUCT_STRING "Chromium"
  #endif
  
@@ -44,9 +44,9 @@ index fd1fea63ea424b7e90daf0e815e3c2631f0e6c6b..f535c3a1c829ce971b406ea4c828adc3
 +}
 +
  #if defined(DLOPEN_PULSEAUDIO)
- static const base::FilePath::CharType kPulseLib[] =
+ constexpr base::FilePath::CharType kPulseLib[] =
      FILE_PATH_LITERAL("libpulse.so.0");
-@@ -250,7 +263,7 @@ bool InitPulse(pa_threaded_mainloop** mainloop, pa_context** context) {
+@@ -248,7 +261,7 @@ bool InitPulse(pa_threaded_mainloop** mainloop, pa_context** context) {
  
    pa_mainloop_api* pa_mainloop_api = pa_threaded_mainloop_get_api(pa_mainloop);
    pa_context* pa_context =
@@ -55,7 +55,7 @@ index fd1fea63ea424b7e90daf0e815e3c2631f0e6c6b..f535c3a1c829ce971b406ea4c828adc3
    if (!pa_context) {
      pa_threaded_mainloop_free(pa_mainloop);
      return false;
-@@ -479,7 +492,7 @@ bool CreateInputStream(pa_threaded_mainloop* mainloop,
+@@ -477,7 +490,7 @@ bool CreateInputStream(pa_threaded_mainloop* mainloop,
    // tells PulseAudio what the stream icon should be.
    ScopedPropertyList property_list;
    pa_proplist_sets(property_list.get(), PA_PROP_APPLICATION_ICON_NAME,
@@ -64,7 +64,7 @@ index fd1fea63ea424b7e90daf0e815e3c2631f0e6c6b..f535c3a1c829ce971b406ea4c828adc3
    *stream = pa_stream_new_with_proplist(context, "RecordStream",
                                          &sample_specifications, map,
                                          property_list.get());
-@@ -540,7 +553,8 @@ bool CreateOutputStream(raw_ptr<pa_threaded_mainloop>* mainloop,
+@@ -538,7 +551,8 @@ bool CreateOutputStream(raw_ptr<pa_threaded_mainloop>* mainloop,
  
    pa_mainloop_api* pa_mainloop_api = pa_threaded_mainloop_get_api(*mainloop);
    *context = pa_context_new(
@@ -74,7 +74,7 @@ index fd1fea63ea424b7e90daf0e815e3c2631f0e6c6b..f535c3a1c829ce971b406ea4c828adc3
    RETURN_ON_FAILURE(*context, "Failed to create PulseAudio context.");
  
    // A state callback must be set before calling pa_threaded_mainloop_lock() or
-@@ -589,7 +603,7 @@ bool CreateOutputStream(raw_ptr<pa_threaded_mainloop>* mainloop,
+@@ -587,7 +601,7 @@ bool CreateOutputStream(raw_ptr<pa_threaded_mainloop>* mainloop,
    // tell PulseAudio what the stream icon should be.
    ScopedPropertyList property_list;
    pa_proplist_sets(property_list.get(), PA_PROP_APPLICATION_ICON_NAME,

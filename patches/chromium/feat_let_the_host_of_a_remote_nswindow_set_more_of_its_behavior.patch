@@ -26,7 +26,7 @@ it ever does.
 Co-Authored-By: Claude <noreply@anthropic.com>
 
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
-index de4c147140265a8a576aa5ef4d0276e1a3cf1de5..c5bb4f6871c161e457d25a229005285e5f70e660 100644
+index bd38cfa246d4b7fadc221bf70c2e362995093e4a..d4f542d1d81b093f6b9a27a5f787a9a49a1e88dc 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h
 @@ -320,6 +320,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
@@ -40,7 +40,7 @@ index de4c147140265a8a576aa5ef4d0276e1a3cf1de5..c5bb4f6871c161e457d25a229005285e
    void MakeFirstResponder() override;
    void SortSubviews(
        const std::vector<uint64_t>& associated_subview_ids) override;
-@@ -471,6 +475,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
+@@ -475,6 +479,10 @@ class REMOTE_COCOA_APP_SHIM_EXPORT NativeWidgetNSWindowBridge
    std::unique_ptr<CocoaWindowMoveLoop> window_move_loop_;
    ui::mojom::ModalType modal_type_ = ui::mojom::ModalType::kNone;
    bool is_translucent_window_ = false;
@@ -52,7 +52,7 @@ index de4c147140265a8a576aa5ef4d0276e1a3cf1de5..c5bb4f6871c161e457d25a229005285e
  
    raw_ptr<NativeWidgetNSWindowBridge> parent_ =
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index df23bb8f408e9a712ceeb24558947a83ce62e634..3c364d2f4c2bd2bc72efa22183992510ab75785a 100644
+index 7cbf2596bf6b0dc70568f5a591745c38e3572ef9..a4ba2c3e29cf5107dc8537f19a026efc6d5aa99a 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -1628,6 +1628,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {

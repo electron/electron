@@ -19,10 +19,10 @@ This is specific to Electron's permission model and is not intended for
 upstream.
 
 diff --git a/content/browser/hid/hid_service.cc b/content/browser/hid/hid_service.cc
-index 16187596f2beccd9dae03c234624d4a72ed2a263..9cb5f00dbce774e9e15781e516643dfe65d43eb4 100644
+index b7bedaffd8505e2824f8c4e51bbcf0be3816635b..869f0dda9bdca38b69c8d5faed9aead5bdb6aed9 100644
 --- a/content/browser/hid/hid_service.cc
 +++ b/content/browser/hid/hid_service.cc
-@@ -123,7 +123,7 @@ HidService::HidService(
+@@ -135,7 +135,7 @@ HidService::HidService(
  HidService::HidService(RenderFrameHostImpl* render_frame_host)
      : HidService(render_frame_host,
                   /*service_worker_version=*/nullptr,
