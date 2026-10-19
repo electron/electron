@@ -15,7 +15,6 @@
 #include "extensions/browser/kiosk/kiosk_delegate.h"
 #include "extensions/browser/safe_browsing_delegate.h"
 #include "extensions/common/event_args.h"
-#include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/mojom/fetch_api.mojom.h"
 
 namespace extensions {
@@ -34,6 +33,10 @@ class PendingReceiver;
 template <typename T>
 class PendingRemote;
 }  // namespace mojo
+
+namespace network {
+struct ResourceRequest;
+}  // namespace network
 
 namespace url {
 class Origin;
