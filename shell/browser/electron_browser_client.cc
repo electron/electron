@@ -1694,6 +1694,11 @@ void ElectronBrowserClient::RegisterAssociatedInterfaceBindersForServiceWorker(
   associated_registry.AddInterface<extensions::mojom::ServiceWorkerHost>(
       base::BindRepeating(&extensions::ServiceWorkerHost::BindReceiver,
                           service_worker_version_info.process_id));
+  // Service workers register their extension event listeners over this
+  // interface; without it the browser never dispatches events to them.
+  associated_registry.AddInterface<extensions::mojom::EventRouter>(
+      base::BindRepeating(&extensions::EventRouter::BindForRenderer,
+                          service_worker_version_info.process_id));
 #endif
 }
 
