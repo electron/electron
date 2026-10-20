@@ -1233,6 +1233,31 @@ describe('chrome extensions', () => {
       }
     });
 
+    it('keeps the background service worker when storage data is cleared', async () => {
+      const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
+      const extension = await customSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'mv3-service-worker')
+      );
+
+      const messageWorker = async () => {
+        await w.loadURL(url);
+        w.webContents.executeJavaScript("window.postMessage('fetch-confirmation', '*')");
+        const [{ message: responseString }] = await once(w.webContents, 'console-message');
+        return JSON.parse(responseString).message;
+      };
+
+      // A reply means the worker has finished registering. Until then the
+      // registration is not protected.
+      expect(await messageWorker()).toBe('Hello from background.js');
+
+      await customSession.clearStorageData();
+
+      const worker = await customSession.serviceWorkers.startWorkerForScope(extension.url);
+      expect(worker.scope).toBe(extension.url);
+      expect(await messageWorker()).toBe('Hello from background.js');
+    });
+
     it('can run chrome extension APIs', async () => {
       const customSession = session.fromPartition(`persist:${randomUUID()}`);
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });

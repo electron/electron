@@ -376,6 +376,19 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   bool ShouldUseProcessPerSite(
       content::BrowserContext* browser_context,
       const content::SecurityPrincipal& security_principal) override;
+  content::AllowServiceWorkerResult AllowServiceWorker(
+      const GURL& scope,
+      const net::SiteForCookies& site_for_cookies,
+      const std::optional<url::Origin>& top_frame_origin,
+      const blink::StorageKey& storage_key,
+      const GURL& script_url,
+      content::BrowserContext* context) override;
+  bool MayDeleteServiceWorkerRegistration(
+      const GURL& scope,
+      content::BrowserContext* browser_context) override;
+  bool ShouldTryToUpdateServiceWorkerRegistration(
+      const GURL& scope,
+      content::BrowserContext* browser_context) override;
   void GetMediaDeviceIDSalt(
       content::RenderFrameHost* rfh,
       const net::SiteForCookies& site_for_cookies,
