@@ -796,7 +796,7 @@ v8::MaybeLocal<v8::Context> GetTargetContext(v8::Isolate* isolate,
         world_id == WorldIDs::MAIN_WORLD_ID
             ? frame->MainWorldScriptContext()
             : frame->GetScriptContextFromWorldId(isolate, world_id);
-  } else if (execution_context->IsShadowRealmGlobalScope()) {
+  } else if (execution_context->IsPreloadRealmGlobalScope()) {
     if (world_id != WorldIDs::MAIN_WORLD_ID) {
       isolate->ThrowException(v8::Exception::Error(gin::StringToV8(
           isolate, "Isolated worlds are not supported in preload realms.")));
