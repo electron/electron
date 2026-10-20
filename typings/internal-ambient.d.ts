@@ -148,6 +148,7 @@ declare namespace NodeJS {
     hiddenPage: boolean;
     nodeIntegration: boolean;
     webviewTag: boolean;
+    webview2Tag: boolean;
   }
 
   interface InternalWebFrame extends Electron.WebFrame {

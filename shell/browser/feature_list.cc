@@ -47,6 +47,8 @@ void InitializeFeatureList() {
       cmd_line->GetSwitchValueASCII(::switches::kEnableFeatures);
   auto disable_features =
       cmd_line->GetSwitchValueASCII(::switches::kDisableFeatures);
+  enable_features +=
+      std::string(",") + features::kAttachUnownedInnerWebContents.name;
   // A renderer's command line depends on the WebContents it is created for,
   // so Electron warms one spare itself (for the first sandboxed window) rather
   // than letting content keep one alive at all times; apps that open many

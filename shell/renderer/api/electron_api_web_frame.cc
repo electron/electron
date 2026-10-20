@@ -591,6 +591,8 @@ class WebFrameRenderer final
       return gin::ConvertToV8(isolate, prefs.hidden_page);
     } else if (pref_name == options::kNodeIntegration) {
       return gin::ConvertToV8(isolate, prefs.node_integration);
+    } else if (pref_name == "webview2Tag") {
+      return gin::ConvertToV8(isolate, prefs.webview2_tag);
     } else if (pref_name == options::kWebviewTag) {
       return gin::ConvertToV8(isolate, prefs.webview_tag);
     }

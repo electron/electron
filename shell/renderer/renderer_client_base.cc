@@ -268,6 +268,7 @@ void RendererClientBase::RenderThreadStarted() {
 #endif
 
   blink::WebCustomElement::AddEmbedderCustomElementName("webview");
+  blink::WebCustomElement::AddEmbedderCustomElementName("webview2");
   blink::WebCustomElement::AddEmbedderCustomElementName("browserplugin");
 
   std::vector<std::string> fetch_enabled_schemes =
@@ -653,7 +654,7 @@ void RendererClientBase::SetupMainWorldOverrides(
     content::RenderFrame* render_frame) {
   auto prefs = render_frame->GetBlinkPreferences();
   // We only need to run the isolated bundle if webview is enabled
-  if (!prefs.webview_tag)
+  if (!prefs.webview_tag && !prefs.webview2_tag)
     return;
 
   // Setup window overrides in the main world context
@@ -678,6 +679,15 @@ void RendererClientBase::SetupMainWorldOverrides(
     if (!result.IsEmpty()) {
       isolated_api.Set("guestViewInternal", result.ToLocalChecked());
     }
+  }
+
+  v8::Local<v8::Value> webview2_internal;
+  if (global.GetHidden("webview2Internal", &webview2_internal)) {
+    auto result = api::PassValueToOtherContext(
+        isolate, source_context, context, webview2_internal,
+        source_context->Global(), false, api::BridgeErrorTarget::kSource);
+    if (!result.IsEmpty())
+      isolated_api.Set("webview2Internal", result.ToLocalChecked());
   }
 
   v8::LocalVector<v8::String> isolated_bundle_params =

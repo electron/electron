@@ -111,6 +111,7 @@ class ElectronBrowserContext;
 class InspectableWebContents;
 class WebContentsZoomController;
 class WebViewGuestDelegate;
+class UnownedWebContentsBridge;
 class NativeWindow;
 class OffScreenRenderWidgetHostView;
 class OffScreenWebContentsView;
@@ -142,6 +143,7 @@ class WebContents final : public gin::Wrappable<WebContents>,
                       // kBrowserWindow.
     kRemote,          // Thin wrap around an existing WebContents.
     kWebView,         // Used by <webview>.
+    kWebView2,        // Independently owned; may be attached to an iframe.
     kOffScreen,       // Used for offscreen rendering
   };
 
@@ -349,6 +351,12 @@ class WebContents final : public gin::Wrappable<WebContents>,
   void AttachToIframe(content::WebContents* embedder_web_contents,
                       std::string embedder_frame_token);
   void DetachFromOuterFrame();
+  bool IsAttached() const;
+  std::string Attach(content::RenderFrameHost* owner,
+                     std::string frame_token,
+                     gin_helper::ErrorThrower thrower);
+  bool Detach();
+  void OnUnownedDetached(std::string attachment_id);
 
   // Methods for offscreen rendering
   bool IsOffScreen() const;
@@ -944,6 +952,7 @@ class WebContents final : public gin::Wrappable<WebContents>,
   // Owns native resources and weakly forwards callbacks; deferred on GC so
   // native teardown never runs during sweeping.
   std::unique_ptr<NativeLifecycle> native_lifecycle_;
+  std::unique_ptr<UnownedWebContentsBridge> attachment_bridge_;
 
   bool destroyed_ = false;
   bool disposing_ = false;

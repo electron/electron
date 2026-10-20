@@ -12,5 +12,5 @@ process._linkedBinding('electron_renderer_ipc');
 // Load webview tag implementation.
 if (process.isMainFrame) {
   const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init') as typeof webViewInitModule;
-  webViewInit(webviewTag, isWebView);
+  webViewInit(webviewTag, isWebView, mainFrame.getWebPreference('webview2Tag'));
 }

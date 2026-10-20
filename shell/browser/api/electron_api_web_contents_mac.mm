@@ -24,7 +24,7 @@ bool WebContents::IsFocused() const {
   if (!view)
     return false;
 
-  if (type() != Type::kBackgroundPage) {
+  if (type() != Type::kBackgroundPage && !IsAttached()) {
     // A window in an app shim is key in the shim's process; its stand-in in
     // this process never is.
     if (auto* host = views::NativeWidgetMacNSWindowHost::GetFromNativeWindow(

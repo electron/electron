@@ -1,0 +1,111 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Electron contributors <electron@github.com>
+Date: Tue, 20 Oct 2026 07:00:00 +0000
+Subject: feat: support independently owned webview2 contents
+
+Authorize Electron's narrow unowned bridge, notify after complete unowned
+attachment teardown, and carry the opt-in webview2 preference to renderers.
+WebContents ownership stays with the application across iframe teardown.
+
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 450079a0a8..00bf264377 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -3657,6 +3657,9 @@ void WebContentsImpl::DetachUnownedInnerWebContents(
+   }
+ 
+   inner_main_frame->UpdateAXTreeData();
++  observers_.NotifyObservers(
++      &WebContentsObserver::UnownedInnerWebContentsDetached,
++      inner_web_contents_impl);
+ }
+ 
+ SurfaceEmbedConnector* WebContentsImpl::GetSurfaceEmbedConnector() const {
+diff --git a/content/public/browser/unowned_inner_web_contents_client.h b/content/public/browser/unowned_inner_web_contents_client.h
+index ef2822c96c..41bc2dc170 100644
+--- a/content/public/browser/unowned_inner_web_contents_client.h
++++ b/content/public/browser/unowned_inner_web_contents_client.h
+@@ -8,6 +8,10 @@
+ #include "base/types/pass_key.h"
+ #include "content/common/content_export.h"
+ 
++namespace electron {
++class UnownedWebContentsBridge;
++}
++
+ namespace guest_contents {
+ class GuestContentsHandle;
+ }  // namespace guest_contents
+@@ -30,6 +34,7 @@ class CONTENT_EXPORT UnownedInnerWebContentsClient {
+ 
+  private:
+   friend class guest_contents::GuestContentsHandle;
++  friend class electron::UnownedWebContentsBridge;
+ 
+   static PassKey GetPassKey();
+ };
+diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
+index fc65c756b4..8efcf86158 100644
+--- a/content/public/browser/web_contents_observer.h
++++ b/content/public/browser/web_contents_observer.h
+@@ -745,6 +745,10 @@ class CONTENT_EXPORT WebContentsObserver : public base::CheckedObserver {
+   virtual void InnerWebContentsAttached(WebContents* inner_web_contents,
+                                         RenderFrameHost* render_frame_host) {}
+ 
++  // Called after complete unowned detach, including automatic frame teardown.
++  // Observers must not reenter attach/destroy or retain the inner pointer.
++  virtual void UnownedInnerWebContentsDetached(WebContents* inner) {}
++
+   // Called when a SurfaceEmbed child WebContents is attached to its embedder.
+   // `inner_web_contents` is the child WebContents. `embedder_render_frame_host`
+   // is the outer document's RenderFrameHost that embeds it.
+diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
+index ba1964c6a2..e6b0908e3f 100644
+--- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
++++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
+@@ -161,6 +161,7 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
+   out->enable_spellcheck = data.enable_spellcheck();
+   out->enable_plugins = data.enable_plugins();
+   out->webview_tag = data.webview_tag();
++  out->webview2_tag = data.webview2_tag();
+   // End Electron-specific WebPreferences.
+   out->cookie_enabled = data.cookie_enabled();
+   out->accelerated_video_decode_enabled =
+diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
+index a357182b40..67fb56886a 100644
+--- a/third_party/blink/public/common/web_preferences/web_preferences.h
++++ b/third_party/blink/public/common/web_preferences/web_preferences.h
+@@ -510,6 +510,7 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+   bool enable_spellcheck = false;
+   bool enable_plugins = false;
+   bool webview_tag = false;
++  bool webview2_tag = false;
+ 
+   // We try to keep the default values the same as the default values in
+   // chrome, except for the cases where it would require lots of extra work for
+diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
+index 5271d3e665..1b9741a094 100644
+--- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
++++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
+@@ -488,6 +488,9 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
+   static bool webview_tag(const blink::web_pref::WebPreferences& r) {
+     return r.webview_tag;
+   }
++  static bool webview2_tag(const blink::web_pref::WebPreferences& r) {
++    return r.webview2_tag;
++  }
+   // End Electron-specific WebPreferences.
+ 
+   static bool cookie_enabled(const blink::web_pref::WebPreferences& r) {
+diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
+index 9b387a64b2..8316f9c166 100644
+--- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
++++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
+@@ -235,6 +235,7 @@ struct WebPreferences {
+   bool enable_spellcheck;
+   bool enable_plugins;
+   bool webview_tag;
++  bool webview2_tag;
+   // End Electron-specific WebPreferences.
+ 
+   // This flags corresponds to a Page's Settings' setCookieEnabled state. It

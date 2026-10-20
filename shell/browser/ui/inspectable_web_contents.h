@@ -45,7 +45,7 @@ class InspectableWebContents
 
   InspectableWebContents(std::unique_ptr<content::WebContents> web_contents,
                          PrefService* pref_service,
-                         bool is_guest);
+                         bool has_external_display);
   ~InspectableWebContents() override;
 
   // disable copy
@@ -57,7 +57,9 @@ class InspectableWebContents
   content::WebContents* GetDevToolsWebContents() const;
 
   void SetDelegate(InspectableWebContentsDelegate* delegate);
-  [[nodiscard]] bool is_guest() const { return is_guest_; }
+  [[nodiscard]] bool has_external_display() const {
+    return has_external_display_;
+  }
   void ReleaseWebContents();
   void SetDevToolsWebContents(content::WebContents* devtools);
   void SetDockState(const std::string& state);
@@ -303,7 +305,7 @@ class InspectableWebContents
   // it is destroyed before then.
   base::WeakPtr<content::WebContents> external_devtools_web_contents_;
 
-  bool is_guest_;
+  bool has_external_display_;
   std::unique_ptr<InspectableWebContentsView> view_;
 
   bool frontend_loaded_ = false;

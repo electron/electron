@@ -114,6 +114,10 @@
   [Chrome Content Scripts][chrome-content-scripts].  You can access this
   context in the dev tools by selecting the 'Electron Isolated Context'
   entry in the combo box at the top of the Console tab.
+* `type` string (optional) - For `webContents.create`, use `webview2` to create
+  independently owned contents for `webview2`.
+* `webview2Tag` boolean (optional) - Enables the independently owned `webview2`
+  iframe tag. Defaults to `false`.
 * `webviewTag` boolean (optional) - Whether to enable the [`<webview>` tag](../webview-tag.md).
   Defaults to `false`. **Note:** The
   `preload` script configured for the `<webview>` will have node integration

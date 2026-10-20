@@ -59,6 +59,14 @@ const { webContents } = require('electron')
 console.log(webContents)
 ```
 
+### `webContents.create(options)`
+
+* `options` WebPreferences - Creation settings. Set `type` to `webview2` for
+  independently owned contents that can be embedded in a `webview2` iframe.
+
+Returns `WebContents` - A newly created WebContents. Webview2 contents remain
+alive until explicitly destroyed or application shutdown.
+
 ### `webContents.getAllWebContents()`
 
 Returns `WebContents[]` - An array of all `WebContents` instances. This will contain web contents
@@ -2428,9 +2436,32 @@ changes:
 Controls whether or not this WebContents will throttle animations and timers
 when the page becomes backgrounded. This also affects the Page Visibility API.
 
+#### `contents.isAttached()`
+
+Returns `boolean` - Whether a webview2 WebContents is currently embedded.
+
+#### `contents.attach(owner, frameToken)`
+
+* `owner` WebFrameMain - The parent frame of the target iframe.
+* `frameToken` string - The LocalFrameToken freshly read from the target iframe.
+
+Returns `string` - The unique attachment ID. Attaches synchronously to a fresh,
+empty local iframe in the same SiteInstance as its parent. The host must enable
+`webview2Tag` and use the same session as the contents. Throws if the target is
+invalid, busy, navigated, or the contents is already attached. The `webview2`
+bridge reads the token and calls this method through synchronous IPC.
+
+#### `contents.detach()`
+
+Returns `boolean` - Whether an existing attachment was removed.
+
+Detaches the contents synchronously without closing it. Repeated calls are safe.
+Use a new empty iframe and read its LocalFrameToken for the next attachment.
+Applies to contents created with `webContents.create({ type: 'webview2' })`.
+
 #### `contents.getType()`
 
-Returns `string` - the type of the webContent. Can be `backgroundPage`, `window`, `browserView`, `remote`, `webview` or `offscreen`.
+Returns `string` - the type of the webContent. Can be `backgroundPage`, `window`, `browserView`, `remote`, `webview`, `webview2` or `offscreen`.
 
 #### `contents.setImageAnimationPolicy(policy)`
 

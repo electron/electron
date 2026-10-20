@@ -57,6 +57,7 @@ require('@electron/internal/browser/rpc-server');
 
 // Load the guest view manager.
 require('@electron/internal/browser/guest-view-manager');
+require('@electron/internal/browser/webview2-manager');
 
 // The app's package.json has already been found and applied (name, version,
 // desktopName); what is left is the entry script and any v8Flags for it.

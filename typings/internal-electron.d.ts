@@ -116,6 +116,9 @@ declare namespace Electron {
     _restoreHistory(index: number, entries: Electron.NavigationEntry[]): Promise<void>;
     _clearHistory(): void;
     destroy(): void;
+    isAttached(): boolean;
+    attach(owner: Electron.WebFrameMain, frameToken: string): string;
+    detach(): boolean;
     // <webview>
     attachToIframe(embedderWebContents: Electron.WebContents, embedderFrameToken: string): void;
     detachFromOuterFrame(): void;
@@ -138,7 +141,6 @@ declare namespace Electron {
   interface WebPreferences {
     disablePopups?: boolean;
     embedder?: Electron.WebContents;
-    type?: 'backgroundPage' | 'window' | 'browserView' | 'remote' | 'webview' | 'offscreen';
   }
 
   interface Session {

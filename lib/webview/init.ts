@@ -7,4 +7,8 @@ import { webViewInit } from '@electron/internal/renderer/web-view/web-view-init'
 
 const { mainFrame } = process._linkedBinding('electron_renderer_web_frame');
 
-webViewInit(mainFrame.getWebPreference('webviewTag'), mainFrame.getWebPreference('isWebView'));
+webViewInit(
+  mainFrame.getWebPreference('webviewTag'),
+  mainFrame.getWebPreference('isWebView'),
+  mainFrame.getWebPreference('webview2Tag')
+);

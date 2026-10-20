@@ -146,6 +146,7 @@ class WebContentsPreferences
   bool node_integration_in_worker_;
   bool disable_html_fullscreen_window_resize_;
   bool webview_tag_;
+  bool webview2_tag_;
   bool context_isolation_;
   bool javascript_;
   bool images_;

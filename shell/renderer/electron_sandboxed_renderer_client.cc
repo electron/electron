@@ -71,7 +71,8 @@ void ElectronSandboxedRendererClient::SetUpPreloadEnvironment(
 bool ElectronSandboxedRendererClient::HasScriptsToInject(
     content::RenderFrame* render_frame) const {
   // The <webview> element is implemented by the bundle in the embedder.
-  if (render_frame->GetBlinkPreferences().webview_tag)
+  if (render_frame->GetBlinkPreferences().webview_tag ||
+      render_frame->GetBlinkPreferences().webview2_tag)
     return true;
   auto* api_service = ElectronApiServiceImpl::Get(render_frame);
   return api_service && api_service->startup_data() &&
@@ -123,7 +124,8 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   // The <webview> element for renderers that enable it.
   const blink::web_pref::WebPreferences& prefs =
       render_frame->GetBlinkPreferences();
-  if (prefs.webview_tag && render_frame->IsMainFrame()) {
+  if ((prefs.webview_tag || prefs.webview2_tag) &&
+      render_frame->IsMainFrame()) {
     auto binding = gin_helper::Dictionary::CreateEmpty(isolate);
     binding.SetMethod<&preload_utils::GetBinding>("get");
     binding.Set("contextIsolated", prefs.context_isolation);
