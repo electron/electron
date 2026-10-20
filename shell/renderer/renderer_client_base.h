@@ -172,6 +172,8 @@ class RendererClientBase : public content::ContentRendererClient
   std::unique_ptr<blink::URLLoaderThrottleProvider>
   CreateURLLoaderThrottleProvider(
       blink::URLLoaderThrottleProviderType provider_type) override;
+  bool ShouldNotifyServiceWorkerOnWebSocketActivity(
+      v8::Local<v8::Context> context) override;
 
  private:
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)

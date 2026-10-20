@@ -557,6 +557,16 @@ RendererClientBase::CreateURLLoaderThrottleProvider(
 #endif
 }
 
+bool RendererClientBase::ShouldNotifyServiceWorkerOnWebSocketActivity(
+    v8::Local<v8::Context> context) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  return extensions::Dispatcher::ShouldNotifyServiceWorkerOnWebSocketActivity(
+      context);
+#else
+  return false;
+#endif
+}
+
 void RendererClientBase::DidInitializeServiceWorkerContextOnWorkerThread(
     blink::WebServiceWorkerContextProxy* context_proxy,
     const GURL& service_worker_scope,
