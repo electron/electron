@@ -1163,6 +1163,29 @@ describe('chrome extensions', () => {
       expect(textContent).toBe('script loaded ok\n');
     });
 
+    it('isolates only manifest-sandboxed pages from the extension process', async () => {
+      const { id } = await session.defaultSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'sandboxed-pages')
+      );
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL(`chrome-extension://${id}/page.html`);
+
+      const { mainFrame } = w.webContents;
+      const findFrame = (file: string) => mainFrame.frames.find((frame) => frame.url.endsWith(file))!;
+      const hasExtensionApi = (frame: Electron.WebFrameMain) =>
+        frame.executeJavaScript("typeof globalThis.chrome?.runtime?.getManifest === 'function'");
+
+      // Listed under "sandbox" in the manifest: its own process, no API access.
+      const sandboxed = findFrame('sandboxed.html');
+      expect(sandboxed.processId).not.toBe(mainFrame.processId);
+      expect(await hasExtensionApi(sandboxed)).toBe(false);
+
+      // Sandboxed by its embedder only: stays in the extension's process.
+      const inherited = findFrame('frame.html');
+      expect(inherited.processId).toBe(mainFrame.processId);
+      expect(await hasExtensionApi(inherited)).toBe(true);
+    });
+
     it('localizes messages in stylesheets', async () => {
       const { id } = await session.defaultSession.extensions.loadExtension(
         path.join(fixtures, 'extensions', 'css-localization')

@@ -194,7 +194,9 @@
 #include "extensions/common/api/mime_handler.mojom.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/extension.h"
+#include "extensions/common/extension_set.h"
 #include "extensions/common/manifest_handlers/background_info.h"
+#include "extensions/common/manifest_handlers/sandboxed_page_info.h"
 #include "extensions/common/mojom/event_router.mojom.h"
 #include "extensions/common/mojom/guest_view.mojom.h"
 #include "extensions/common/mojom/renderer_host.mojom.h"
@@ -891,12 +893,17 @@ void ElectronBrowserClient::SiteInstanceGotProcessAndSite(
     content::SiteInstance* site_instance) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* browser_context = site_instance->GetBrowserContext();
-  extensions::ExtensionRegistry* registry =
-      extensions::ExtensionRegistry::Get(browser_context);
+  const content::SecurityPrincipal& principal =
+      site_instance->GetSecurityPrincipal();
   const extensions::Extension* extension =
-      registry->enabled_extensions().GetExtensionOrAppByURL(
-          site_instance->GetSecurityPrincipal().GetDeprecatedSiteURL());
+      GetEnabledExtensionFromSecurityPrincipal(browser_context, principal);
   if (!extension)
+    return;
+
+  // Frames isolated in a sandbox (see
+  // ShouldAllowCrossProcessSandboxedFrameForPrecursor) have no extension API
+  // access, so their process must not count as an extension process.
+  if (principal.IsSandboxed())
     return;
 
   extensions::ProcessMap::Get(browser_context)
@@ -2038,6 +2045,34 @@ bool ElectronBrowserClient::DoesSiteRequireDedicatedProcess(
   return content::ContentBrowserClient::DoesSiteRequireDedicatedProcess(
       browser_context, effective_site_url);
 #endif
+}
+
+bool ElectronBrowserClient::ShouldAllowCrossProcessSandboxedFrameForPrecursor(
+    content::BrowserContext* browser_context,
+    const GURL& precursor,
+    const GURL& url) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  // Only pages an extension's manifest lists as sandboxed, and sandboxed
+  // about:srcdoc and data: documents, are isolated without API access. Other
+  // sandboxed extension documents may not control their sandbox status (an
+  // embedder's sandbox is inherited), so they stay in the extension's process.
+  const extensions::ExtensionId extension_id =
+      extensions::ExtensionSet::GetExtensionIdByURL(precursor);
+  if (!precursor.is_empty() && !extension_id.empty() && !url.IsAboutSrcdoc() &&
+      !url.SchemeIs(url::kDataScheme)) {
+    const extensions::Extension* extension =
+        extensions::ExtensionRegistry::Get(browser_context)
+            ->enabled_extensions()
+            .GetByID(extension_id);
+    if (extension) {
+      return extensions::SandboxedPageInfo::IsSandboxedPage(extension,
+                                                            url.GetPath());
+    }
+  }
+#endif
+  return content::ContentBrowserClient::
+      ShouldAllowCrossProcessSandboxedFrameForPrecursor(browser_context,
+                                                        precursor, url);
 }
 
 void ElectronBrowserClient::BindHostReceiverForRenderer(

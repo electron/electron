@@ -107,6 +107,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
   bool DoesSiteRequireDedicatedProcess(content::BrowserContext* browser_context,
                                        const GURL& effective_site_url) override;
+  bool ShouldAllowCrossProcessSandboxedFrameForPrecursor(
+      content::BrowserContext* browser_context,
+      const GURL& precursor,
+      const GURL& url) override;
   void BindHostReceiverForRenderer(
       content::RenderProcessHost* render_process_host,
       mojo::GenericPendingReceiver receiver) override;
