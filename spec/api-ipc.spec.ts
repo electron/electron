@@ -1,4 +1,11 @@
-import { BrowserWindow, ipcMain, type IpcMainInvokeEvent, MessageChannelMain, type WebContents } from 'electron/main';
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  type IpcMainInvokeEvent,
+  MessageChannelMain,
+  type WebContents
+} from 'electron/main';
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
@@ -1176,6 +1183,18 @@ describe('ipc module', () => {
       defer(() => {
         server.close();
       });
+      // Content gives the old frame's unload handlers 500 ms (kUnloadTimeout)
+      // before it deletes the frame and drops its IPC, and once the new page
+      // commits the old process hosts no active page, so Chromium drops it to
+      // background priority (on macOS, darwinbg with CPU and timer
+      // suppression). With other spec workers busy, the unload handler then
+      // misses that window and the IPC never arrives. Keep renderers at
+      // foreground priority for this test; the switch is read on every
+      // priority update.
+      if (!app.commandLine.hasSwitch('disable-renderer-backgrounding')) {
+        app.commandLine.appendSwitch('disable-renderer-backgrounding');
+        defer(() => app.commandLine.removeSwitch('disable-renderer-backgrounding'));
+      }
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       await w.loadURL(`http://localhost:${port}`);
       await w.webContents.executeJavaScript(
