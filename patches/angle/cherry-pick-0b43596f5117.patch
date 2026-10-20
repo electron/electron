@@ -21,6 +21,11 @@ on this ANGLE revision carry an extra zeroMaxLodWorkaround ASSERT next to
 the mTextureDepth assignment; the conflict was resolved by keeping that
 ASSERT and taking upstream's `mTextureDepth = depth`.
 
+This branch also still has the D3D_FEATURE_LEVEL_9_3 CopySubresourceRegion
+path in TextureStorage11::copySubresourceLevel, which upstream had already
+removed; its MakeValidSize call is converted to the new signature with
+TextureType::_2D and a local depth/levelOffset (previously nullptr).
+
 diff --git a/src/libANGLE/renderer/d3d/d3d11/Image11.cpp b/src/libANGLE/renderer/d3d/d3d11/Image11.cpp
 index 935fb0077babd878808b4daa506972ec945d3e26..b4de2efd6ceb2338ebace5510fc9dc5d03be3f9f 100644
 --- a/src/libANGLE/renderer/d3d/d3d11/Image11.cpp
@@ -56,10 +61,26 @@ index 935fb0077babd878808b4daa506972ec945d3e26..b4de2efd6ceb2338ebace5510fc9dc5d
                  ANGLE_TRY(mRenderer->allocateTexture(context11, desc, formatInfo,
                                                       initialData.data(), &mStagingTexture));
 diff --git a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
-index b0062195b22f73c751e8cae9c1924123de2c780b..9e7ad4c5a058fc0d576cdec5030dc4de74144110 100644
+index b0062195b22f73c751e8cae9c1924123de2c780b..ea5b515ddd04cfabbcf0d301202567924b194014 100644
 --- a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
 +++ b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
-@@ -1068,11 +1068,13 @@ TextureStorage11_2D::TextureStorage11_2D(Renderer11 *renderer,
+@@ -739,9 +739,12 @@ angle::Result TextureStorage11::copySubresourceLevel(const gl::Context *context,
+     D3D11_BOX *pSrcBox = nullptr;
+     if (mRenderer->getRenderer11DeviceCaps().featureLevel <= D3D_FEATURE_LEVEL_9_3)
+     {
+-        GLsizei width  = region.width;
+-        GLsizei height = region.height;
+-        d3d11::MakeValidSize(false, mFormatInfo.texFormat, &width, &height, nullptr);
++        GLsizei width   = region.width;
++        GLsizei height  = region.height;
++        GLsizei depth   = 1;
++        int levelOffset = 0;
++        d3d11::MakeValidSize(false, mFormatInfo.texFormat, gl::TextureType::_2D, width, height,
++                             depth, levelOffset);
+ 
+         // Keep srcbox as nullptr if we're dealing with tiny mips of compressed textures.
+         if (width == region.width && height == region.height)
+@@ -1068,11 +1071,13 @@ TextureStorage11_2D::TextureStorage11_2D(Renderer11 *renderer,
          mRenderTarget[i]     = nullptr;
      }
  
@@ -75,7 +96,7 @@ index b0062195b22f73c751e8cae9c1924123de2c780b..9e7ad4c5a058fc0d576cdec5030dc4de
  
      // The LevelZeroOnly hint should only be true if the zero max LOD workaround is active.
      ASSERT(!mUseLevelZeroTexture || mRenderer->getFeatures().zeroMaxLodWorkaround.enabled);
-@@ -2207,13 +2209,15 @@ TextureStorage11_Cube::TextureStorage11_Cube(Renderer11 *renderer,
+@@ -2207,13 +2212,15 @@ TextureStorage11_Cube::TextureStorage11_Cube(Renderer11 *renderer,
      }
  
      // adjust size if needed for compressed textures
@@ -94,7 +115,7 @@ index b0062195b22f73c751e8cae9c1924123de2c780b..9e7ad4c5a058fc0d576cdec5030dc4de
  
      // The LevelZeroOnly hint should only be true if the zero max LOD workaround is active.
      ASSERT(!mUseLevelZeroTexture || mRenderer->getFeatures().zeroMaxLodWorkaround.enabled);
-@@ -2898,7 +2902,8 @@ TextureStorage11_3D::TextureStorage11_3D(Renderer11 *renderer,
+@@ -2898,7 +2905,8 @@ TextureStorage11_3D::TextureStorage11_3D(Renderer11 *renderer,
      }
  
      // adjust size if needed for compressed textures
@@ -104,7 +125,7 @@ index b0062195b22f73c751e8cae9c1924123de2c780b..9e7ad4c5a058fc0d576cdec5030dc4de
  
      mMipLevels     = mTopLevel + levels;
      mTextureWidth  = width;
-@@ -3274,7 +3279,8 @@ TextureStorage11_2DArray::TextureStorage11_2DArray(Renderer11 *renderer,
+@@ -3274,7 +3282,8 @@ TextureStorage11_2DArray::TextureStorage11_2DArray(Renderer11 *renderer,
            label)
  {
      // adjust size if needed for compressed textures
