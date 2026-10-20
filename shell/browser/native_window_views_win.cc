@@ -756,6 +756,8 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
     // Stop filtering mouse leave messages and forget where the cursor was, so
     // that the next time forwarding is enabled the state is rebuilt from
     // scratch.
+    mouse_forwarding_weak_factory_.InvalidateWeakPtrs();
+    forwarded_event_pending_ = false;
     pending_forwarded_point_.reset();
     cursor_inside_window_ = false;
 
