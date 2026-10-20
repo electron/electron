@@ -4,7 +4,9 @@
 
 #include <memory>
 #include <optional>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "base/command_line.h"
 #include "base/dcheck_is_on.h"
@@ -12,6 +14,7 @@
 #include "base/logging.h"
 #include "base/memory/ptr_util.h"
 #include "base/no_destructor.h"
+#include "base/strings/string_number_conversions.h"
 #include "build/build_config.h"
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
 #include "content/public/browser/browser_task_traits.h"
@@ -22,6 +25,7 @@
 #include "shell/common/callback_util.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "ui/accessibility/platform/ax_platform.h"
@@ -36,6 +40,11 @@
 #endif
 
 #if DCHECK_IS_ON()
+namespace node::crypto {
+NODE_EXTERN void AddBlockedSPKIForTesting(const uint8_t* sha256_hash);
+NODE_EXTERN void ClearBlockedSPKIsForTesting();
+}  // namespace node::crypto
+
 namespace {
 
 class CallbackTestingHelper final {
@@ -291,6 +300,20 @@ void SimulateWebAuthnUvLockedPinSecurityKey(bool enabled) {
       SetSimulateUvLockedPinSecurityKeyForTesting(enabled);
 }
 
+void AddNodeBlockedSPKIForTesting(gin_helper::ErrorThrower thrower,
+                                  const std::string& hex) {
+  std::vector<uint8_t> hash;
+  if (!base::HexStringToBytes(hex, &hash) || hash.size() != 32) {
+    thrower.ThrowTypeError("expected a 64 character hex SHA-256");
+    return;
+  }
+  node::crypto::AddBlockedSPKIForTesting(hash.data());
+}
+
+void ClearNodeBlockedSPKIsForTesting() {
+  node::crypto::ClearBlockedSPKIsForTesting();
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -302,6 +325,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isPlatformCaretBrowsingEnabled",
                  &IsPlatformCaretBrowsingEnabled);
   dict.SetMethod("simulateNetworkServiceCrash", &SimulateNetworkServiceCrash);
+  dict.SetMethod("addNodeBlockedSPKI", &AddNodeBlockedSPKIForTesting);
+  dict.SetMethod("clearNodeBlockedSPKIs", &ClearNodeBlockedSPKIsForTesting);
   dict.SetMethod("simulateWebAuthnUvLockedPinSecurityKey",
                  &SimulateWebAuthnUvLockedPinSecurityKey);
   dict.SetMethod("holdRepeatingCallbackForTesting",
