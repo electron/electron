@@ -1,0 +1,73 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Sun, 18 Oct 2026 19:31:32 -0700
+Subject: [M156] [HiC] Fix IsInCanvasSubtree for pseudo element on shadow host
+
+Original change's description:
+> [HiC] Fix IsInCanvasSubtree for pseudo element on shadow host
+>
+> Fixed: 553117109
+> Change-Id: Ib12e73273f23c6488bc1416fac37401eda1bdb4a
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8544046
+> Reviewed-by: Stephen Chenney <schenney@chromium.org>
+> Auto-Submit: Stefan Zager <szager@chromium.org>
+> Commit-Queue: Stephen Chenney <schenney@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1716768}
+
+(cherry picked from commit f8e59690fb80b99d226fe3f6fef0a0d555ef3c81)
+
+Bug: 573034935,553117109
+Change-Id: Ib12e73273f23c6488bc1416fac37401eda1bdb4a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8602612
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/8078@{#1279}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index 9e38252e625b97df45131efec4e266c8fb03ab2c..e2367fc7cabd34840e3b34f7e2e67316f1733f32 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -4264,7 +4264,8 @@ Node::InsertionNotificationRequest Element::InsertedInto(
+     const auto* slot = ToHTMLSlotElementIfSupportsAssignmentOrNull(*parent);
+     const bool is_inactive_fallback_content =
+         slot && !slot->AssignedNodesNoRecalc().empty();
+-    if (!IsChildOfShadowHost() && !is_inactive_fallback_content) {
++    if (IsPseudoElement() ||
++        (!IsChildOfShadowHost() && !is_inactive_fallback_content)) {
+       SetIsInCanvasSubtree(true);
+     }
+   } else if (!parent && insertion_point.IsDocumentNode()) {
+diff --git a/third_party/blink/renderer/core/html/canvas/html_canvas_element_test.cc b/third_party/blink/renderer/core/html/canvas/html_canvas_element_test.cc
+index 95e5208207a8de37361a76b7c74f13a45d0253f4..65a9bcb2f3597c5725731dfddf7bd7601ebffe11 100644
+--- a/third_party/blink/renderer/core/html/canvas/html_canvas_element_test.cc
++++ b/third_party/blink/renderer/core/html/canvas/html_canvas_element_test.cc
+@@ -882,4 +882,27 @@ TEST_P(HTMLCanvasElementTest, MoveConnectedHostWithSlottedChildIntoCanvas) {
+   EXPECT_TRUE(grandchild->IsInCanvasSubtree());
+ }
+ 
++TEST_P(HTMLCanvasElementTest, PseudoElementChildOfShadowHost) {
++  GetDocument().body()->SetHTMLUnsafeWithoutTrustedTypes(R"HTML(
++    <style>
++      #host::after {
++        content: "Hello, world!";
++      }
++    </style>
++    <div id="host">
++      <template shadowrootmode="open"></template>
++    </div>
++    <canvas id="c"></canvas>
++  )HTML");
++  UpdateAllLifecyclePhasesForTest();
++
++  auto* host = GetDocument().getElementById(AtomicString("host"));
++  EXPECT_FALSE(host->IsInCanvasSubtree());
++  EXPECT_FALSE(host->GetPseudoElement(kPseudoIdAfter)->IsInCanvasSubtree());
++  GetDocument().getElementById(AtomicString("c"))->appendChild(host);
++  UpdateAllLifecyclePhasesForTest();
++  EXPECT_TRUE(host->IsInCanvasSubtree());
++  EXPECT_TRUE(host->GetPseudoElement(kPseudoIdAfter)->IsInCanvasSubtree());
++}
++
+ }  // namespace blink
