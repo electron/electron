@@ -1,0 +1,185 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Fri, 18 Sep 2026 13:27:10 +0200
+Subject: [maglev] Do not cache the_hole in loaded_context_constants_
+
+When a kNotAssigned (let/const) context variable is accessed in a try
+block before initialization, LdaImmutableContextSlot emits a
+LoadContextSlotNoCells and caches it in loaded_context_constants_
+before ThrowReferenceErrorIfHole runs. When ThrowReferenceErrorIfHole
+merges KnownNodeAspects into the catch handler (both during graph
+building in VisitThrowReferenceErrorIfHole and during KNA recomputation
+in ProcessThrowingNode), the uninitialized load (which evaluates to
+the_hole on the exception path) was being merged into the catch block's
+loaded_context_constants_. If the catch block resumes a generator that
+initializes the variable and then reads it again, Maglev reused the
+stale load from before initialization.
+
+Clear the cached slot in loaded_context_constants_ before merging into
+the exception handler in VisitThrowReferenceErrorIfHole and
+RecomputeKnownNodeAspectsProcessor::ProcessThrowingNode, restoring it on
+the non-throwing fallthrough path. Also erase any cached value in
+SetContextCachedValue when storing the_hole (e.g. during loop TDZ
+re-initialization) instead of caching RootConstant(kTheHoleValue).
+
+This general fix handles both let and const variables in inverted
+generators, allowing us to revert the parser/preparser/ScopeInfo
+workaround from commits e935736811d and 37e1db4a5e8.
+
+Bug: 559932543
+TAG=agy
+CONV=1b7d9654-2731-4157-8abc-cd9414138332
+
+Change-Id: I5d4aaf955e586b688960228e9c8acd240987c1ff
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8419542
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#109939}
+
+Electron adaptation notes (42-x-y): V8 14.8 still carries the earlier
+parser/preparser/ScopeInfo workaround (UpdateVariableMaybeAssigned /
+maybe-assigned marking of generator try-catch variables) that this change
+reverts upstream; that revert is not part of the fix and is omitted here,
+so src/ast, src/objects and src/parsing are left untouched. The Maglev
+part is applied as upstream: VisitThrowReferenceErrorIfHole and
+RecomputeKnownNodeAspectsProcessor::ProcessThrowingNode temporarily clear
+the cached kNotAssigned context slot around the merge into the exception
+handler (the 14.8 processor keeps its reachable_exception_handlers_
+bookkeeping instead of tracker_.MarkReachable), and the the_hole erase is
+added to KnownNodeAspects::SetContextCachedValue, which is still inline in
+maglev-known-node-aspects.h on this branch.
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index 7e6f6fbc14ef8b2d39eee95c33558e278f99b768..658f3f123c49185f8d516ddf306f3c44b1dab6a7 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -16568,9 +16568,34 @@ ReduceResult MaglevGraphBuilder::VisitThrowReferenceErrorIfHole() {
+                         GetConstant(name));
+     case Tribool::kFalse:
+       return ReduceResult::Done();
+-    case Tribool::kMaybe:
++    case Tribool::kMaybe: {
+       DCHECK(value->is_tagged());
+-      return AddNewNode<ThrowReferenceErrorIfHole>({value}, name);
++      // Temporarily clear the cached constant value before emitting
++      // ThrowReferenceErrorIfHole so that known_node_aspects() merged into the
++      // exception handler (the catch block) does not cache this load. On the
++      // exception path, the value is guaranteed to be the_hole, and the catch
++      // block may resume a generator that initializes the const variable.
++      // Restore the cached value afterward for the non-throwing fallthrough
++      // path where the value is known not to be the_hole.
++      // TODO(verwaest): Look into making loaded_context_constants_ monotonic,
++      // e.g. by folding the hole check into the context load rather than
++      // temporarily clearing the cached constant here.
++      ValueNode** cached_slot = nullptr;
++      if (auto* load = value->TryCast<LoadContextSlotNoCells>();
++          load && load->maybe_assigned() == kNotAssigned) {
++        ValueNode*& slot = known_node_aspects().GetContextCachedValue(
++            load->input(0).node(), load->offset(), kNotAssigned);
++        if (slot == value) {
++          cached_slot = &slot;
++          *cached_slot = nullptr;
++        }
++      }
++      ReduceResult res = AddNewNode<ThrowReferenceErrorIfHole>({value}, name);
++      if (cached_slot) {
++        *cached_slot = value;
++      }
++      return res;
++    }
+   }
+ }
+ ReduceResult MaglevGraphBuilder::VisitThrowSuperNotCalledIfHole() {
+diff --git a/src/maglev/maglev-kna-processor.h b/src/maglev/maglev-kna-processor.h
+index f237d3f603f9e7b3b500c3dda0f6752504677a71..0b1a7acc90709a07fdf66702ed8943826fd3a1ad 100644
+--- a/src/maglev/maglev-kna-processor.h
++++ b/src/maglev/maglev-kna-processor.h
+@@ -115,7 +115,33 @@ class RecomputeKnownNodeAspectsProcessor {
+     if (info->HasExceptionHandler() && !info->ShouldLazyDeopt()) {
+       BasicBlock* exception_handler = info->catch_block();
+       reachable_exception_handlers_.insert(exception_handler);
++      // Temporarily clear the cached constant value before merging into the
++      // exception handler so that the catch block does not cache this load. On
++      // the exception path, the value is guaranteed to be the_hole, and the
++      // catch block may resume a generator that initializes the variable.
++      // Restore the cached value afterward for the non-throwing fallthrough
++      // path where the value is known not to be the_hole.
++      // TODO(verwaest): Look into making loaded_context_constants_ monotonic,
++      // e.g. by folding the hole check into the context load rather than
++      // temporarily clearing the cached constant here.
++      ValueNode** cached_slot = nullptr;
++      ValueNode* value = nullptr;
++      if (auto* throw_if_hole = node->TryCast<ThrowReferenceErrorIfHole>()) {
++        value = throw_if_hole->input(0).node();
++        if (auto* load = value->TryCast<LoadContextSlotNoCells>();
++            load && load->maybe_assigned() == kNotAssigned) {
++          ValueNode*& slot = known_node_aspects().GetContextCachedValue(
++              load->input(0).node(), load->offset(), kNotAssigned);
++          if (slot == value) {
++            cached_slot = &slot;
++            *cached_slot = nullptr;
++          }
++        }
++      }
+       Merge(exception_handler);
++      if (cached_slot) {
++        *cached_slot = value;
++      }
+     }
+   }
+ 
+diff --git a/src/maglev/maglev-known-node-aspects.h b/src/maglev/maglev-known-node-aspects.h
+index a9248c0dfdf1c94f819b65317d614987a0faa2fb..64e4c70cd14f3933568fead615155fc5bd9264f8 100644
+--- a/src/maglev/maglev-known-node-aspects.h
++++ b/src/maglev/maglev-known-node-aspects.h
+@@ -645,6 +645,13 @@ class KnownNodeAspects {
+   bool SetContextCachedValue(ValueNode* context, int offset, ValueNode* value,
+                              MaybeAssignedFlag assigned) {
+     value = value->UnwrapIdentities();
++    if (assigned == kNotAssigned) {
++      if (auto* root_const = value->TryCast<RootConstant>();
++          root_const && root_const->index() == RootIndex::kTheHoleValue) {
++        loaded_context_constants_.erase({context, offset});
++        return false;
++      }
++    }
+     auto& target_map = (assigned == kMaybeAssigned) ? loaded_context_slots_
+                                                     : loaded_context_constants_;
+ 
+diff --git a/test/mjsunit/maglev/context-inverted-generator3.js b/test/mjsunit/maglev/context-inverted-generator3.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..3a91ef8ec3c546116597db2391eb61b9246ca815
+--- /dev/null
++++ b/test/mjsunit/maglev/context-inverted-generator3.js
+@@ -0,0 +1,30 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++function* f() {
++  yield function g() {
++    try { test } catch (e) { gen.next(); return test }
++  }
++  const test = 10;
++}
++
++var gen = f();
++var g = gen.next().value;
++%PrepareFunctionForOptimization(g);
++assertEquals(10, g());
++
++gen = f();
++g = gen.next().value;
++assertEquals(10, g());
++
++gen = f();
++g = gen.next().value;
++assertEquals(10, g());
++
++gen = f();
++g = gen.next().value;
++%OptimizeMaglevOnNextCall(g);
++assertEquals(10, g());

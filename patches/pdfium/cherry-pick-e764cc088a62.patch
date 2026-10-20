@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Sepez <tsepez@google.com>
+Date: Tue, 13 Oct 2026 18:43:02 -0700
+Subject: Guard against re-entrant destruction of the CJS_Runtime
+
+Prevent a (somewhat) misbehaving embedder from tearing down the
+runtime while a callback is still in-flight.
+
+Bug: 572237007
+Change-Id: I003a6b67703305c465a2ed0845f4274df93ed5af
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/160614
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+
+diff --git a/fxjs/cjs_app.cpp b/fxjs/cjs_app.cpp
+index f2b7d6e37f97944f7777f8d12bdb7776b9494072..16c3434159619a2d9bcb716674542974930a2954 100644
+--- a/fxjs/cjs_app.cpp
++++ b/fxjs/cjs_app.cpp
+@@ -288,7 +288,10 @@ CJS_Result CJS_App::beep(CJS_Runtime* pRuntime,
+     type = pRuntime->ToInt32(params[0]);
+   }
+ 
++  pRuntime->BeginBlock();
+   pRuntime->GetFormFillEnv()->JS_appBeep(type);
++  pRuntime->EndBlock();
++
+   return CJS_Result::Success();
+ }
+ 
+@@ -585,8 +588,11 @@ CJS_Result CJS_App::response(CJS_Runtime* pRuntime,
+   static constexpr int kMaxWideChars = 1024;
+   static constexpr int kMaxBytes = kMaxWideChars * sizeof(uint16_t);
+   auto buffer = FixedSizeDataVector<uint8_t>::Zeroed(kMaxBytes);
++
++  pRuntime->BeginBlock();
+   int byte_length = pRuntime->GetFormFillEnv()->JS_appResponse(
+       swQuestion, swTitle, swDefault, swLabel, bPassword, buffer.span());
++  pRuntime->EndBlock();
+ 
+   if (byte_length < 0 || byte_length > kMaxBytes) {
+     return CJS_Result::Failure(JSMessage::kParamTooLongError);
+diff --git a/fxjs/cjs_runtime.cpp b/fxjs/cjs_runtime.cpp
+index 4bd392ef84ef020a1c4be04f52c26639a5d69e19..10a403d4fc610dd1e3d384e16d66d72fcd17cb6f 100644
+--- a/fxjs/cjs_runtime.cpp
++++ b/fxjs/cjs_runtime.cpp
+@@ -74,6 +74,7 @@ CJS_Runtime::CJS_Runtime(CPDFSDK_FormFillEnvironment* pFormFillEnv)
+ }
+ 
+ CJS_Runtime::~CJS_Runtime() {
++  CHECK(!IsBlocking());
+   NotifyObservers();
+   ReleaseEngine();
+   if (isolate_managed_) {

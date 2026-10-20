@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shunya Shishido <sisidovski@chromium.org>
+Date: Mon, 28 Sep 2026 23:02:42 -0700
+Subject: [ServiceWorker] Defer clone completion callback in
+ SimpleBufferManager
+
+Post clone_complete_callback_ via
+SequencedTaskRunner::GetCurrentDefault()->PostTask() in
+RaceNetworkRequestSimpleBufferManager::Finish() instead of running it
+synchronously.
+
+Bug: 566136673
+Change-Id: I8f5cb74a4a882334b3d7cb5d1b81987fefdc5ca4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8474871
+Commit-Queue: Shunya Shishido <sisidovski@chromium.org>
+Reviewed-by: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1706765}
+
+Electron adaptation notes (42-x-y): M148's
+RaceNetworkRequestSimpleBufferManager::Finish() predates the
+peer_closed_watcher_ / early-return structure upstream, so the conflict was
+resolved by keeping that simpler body and replacing the synchronous
+clone_complete_callback_ run with the deferred PostTask exactly as upstream.
+Unittest hunks did not apply and were dropped.
+
+diff --git a/content/common/service_worker/race_network_request_simple_buffer_manager.cc b/content/common/service_worker/race_network_request_simple_buffer_manager.cc
+index 2c924def2272866b0f2d4c09aab69b696964bfd0..e329841f028d0fffb4397e2c2744434838eff9b6 100644
+--- a/content/common/service_worker/race_network_request_simple_buffer_manager.cc
++++ b/content/common/service_worker/race_network_request_simple_buffer_manager.cc
+@@ -73,7 +73,10 @@ void RaceNetworkRequestSimpleBufferManager::Finish() {
+   write_position_ = 0;
+   producer_handle_.reset();
+   producer_handle_watcher_.reset();
+-  std::move(clone_complete_callback_).Run();
++  if (clone_complete_callback_) {
++    base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
++        FROM_HERE, std::move(clone_complete_callback_));
++  }
+ }
+ 
+ void RaceNetworkRequestSimpleBufferManager::MaybeWriteData() {

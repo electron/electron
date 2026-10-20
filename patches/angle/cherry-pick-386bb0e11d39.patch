@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Sun, 20 Sep 2026 16:33:45 -0400
+Subject: MSL: Correctly identify uint >= 0 condition as an infinite loop
+
+Bug: chromium:563788518
+Change-Id: Idf857a8ed20b71b50739b8799017c88fb301f99a
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8427087
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+
+Electron adaptation notes (42-x-y): test-only hunks that did not apply were dropped: src/tests/gl_tests/GLSLOutputTest.cpp.
+
+diff --git a/src/compiler/translator/ir/src/transform/msl/ensure_loop_forward_progress.rs b/src/compiler/translator/ir/src/transform/msl/ensure_loop_forward_progress.rs
+index 4bbf37cb8c78f3f81d22a6e76293779998c4c0df..cd60838b1bd3c43a1c996630991e13c88d95a35a 100644
+--- a/src/compiler/translator/ir/src/transform/msl/ensure_loop_forward_progress.rs
++++ b/src/compiler/translator/ir/src/transform/msl/ensure_loop_forward_progress.rs
+@@ -159,6 +159,24 @@ fn matches_finite_loop_condition(ir_meta: &IRMeta, block: &Block) -> Option<Vari
+         ir_meta.get_instruction(loop_variable_value).op
+         && loop_variable.id.is_variable()
+     {
++        // Loop variable must be scalar integer
++        let type_info = ir_meta.get_type(ir_meta.get_pointee_type(loop_variable.type_id));
++        if !matches!(type_info, Type::Scalar(BasicType::Int) | Type::Scalar(BasicType::Uint)) {
++            return None;
++        }
++
++        // If the type is uint and the condition is >=, it might be |>= 0| which is always true;
++        // don't consider that a finite loop.  Only |>= 0| and |>= variable_that_could_be_zero| may
++        // lead to infinite loop, but all uint with >= is considered infinite loop for simplicity.
++        if matches!(type_info, Type::Scalar(BasicType::Uint))
++            && matches!(
++                ir_meta.get_instruction(op_result).op,
++                OpCode::Binary(BinaryOpCode::GreaterThanEqual, ..)
++            )
++        {
++            return None;
++        }
++
+         loop_variable.id.get_variable()
+     } else {
+         return None;
+diff --git a/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp b/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp
+index 7997879860f0aeefe619922e954331f77001cf56..fc99527cc20fbb7dd9dcb9e07342aeb8668d660d 100644
+--- a/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp
++++ b/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp
+@@ -93,7 +93,16 @@ const TVariable *computeFiniteLoopVariable(TIntermLoop *loop)
+         case EOpLessThan:
+         case EOpGreaterThan:
+         case EOpLessThanEqual:
++            break;
+         case EOpGreaterThanEqual:
++            // If the type is uint and the condition is >=, it might be |>= 0| which is always true;
++            // don't consider that a finite loop.  Only |>= 0| and |>= variable_that_could_be_zero|
++            // may lead to infinite loop, but all uint with >= is considered infinite loop for
++            // simplicity.
++            if (variable->getType().getBasicType() == EbtUInt)
++            {
++                return nullptr;
++            }
+             break;
+         default:
+             return nullptr;

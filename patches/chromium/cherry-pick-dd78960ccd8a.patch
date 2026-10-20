@@ -1,0 +1,1146 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Fred Shih <ffred@chromium.org>
+Date: Mon, 12 Oct 2026 14:12:37 -0700
+Subject: [M152] Enforce cross-origin access control in WebUIURLLoaderFactory
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> Enforce cross-origin access control in WebUIURLLoaderFactory
+>
+> WebUIURLLoaderFactory is a non-network factory, so subresource requests
+> handled by it do not go through the CORS checks applied by the network
+> service. Consequently, requests between chrome-untrusted:// origins were
+> processed without validating whether the target data source permits
+> cross-origin access via
+> URLDataSource::GetAccessControlAllowOriginForOrigin().
+>
+> This change binds the requesting initiator origin lock to the factory at
+> creation time and validates cross-origin requests from
+> chrome-untrusted:// initiators against the target data source's access
+> control configuration. Relevant data sources such as shared resources,
+> webui-test, theme, and favicon2 are updated to explicitly declare their
+> permitted cross-origin access.
+>
+> TAG=agy
+>
+> Bug: 551059870
+> Change-Id: Id8f8cf23c6d5bbd4fc9431c7d675dfcc4c7dcd5c
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8422739
+> Reviewed-by: Sandeep Vijayasekar <sandv@google.com>
+> Reviewed-by: Andrey Kosyakov <caseq@chromium.org>
+> Reviewed-by: Łukasz Anforowicz <lukasza@chromium.org>
+> Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+> Reviewed-by: Kevin McNee <mcnee@chromium.org>
+> Commit-Queue: Fred Shih <ffred@chromium.org>
+> Reviewed-by: Demetrios Papadopoulos <dpapad@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1707667}
+
+(cherry picked from commit 738f50bbfc2b9fcf96872e3dd77679e654d39d01)
+
+Bug: 568218943,551059870
+Change-Id: Id8f8cf23c6d5bbd4fc9431c7d675dfcc4c7dcd5c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8500755
+Commit-Queue: Fred Shih <ffred@chromium.org>
+Reviewed-by: Łukasz Anforowicz <lukasza@chromium.org>
+Owners-Override: Fred Shih <ffred@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7977@{#2826}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+Electron adaptation notes (42-x-y): M148's WebUIURLLoaderFactory is still
+constructed with `new` and has no base::SelfDeletingPassKey /
+base::MakeSelfDeleting, so CreateForFrame, the new CreateForWorker and the
+constructor are adapted to that idiom while adding the
+request_initiator_origin_lock parameter and member exactly as upstream.
+chrome/browser/chrome_content_browser_client.cc (not compiled by Electron)
+took the upstream hunks as-is. The unittest hunks did not apply and were
+dropped. Electron's own caller in shell/browser/electron_browser_client.cc
+is updated in a separate commit.
+
+Electron adaptation notes (42-x-y): M148's WebUIURLLoaderFactory is still
+constructed with `new` and has no base::SelfDeletingPassKey /
+base::MakeSelfDeleting, so CreateForFrame, the new CreateForWorker and the
+constructor are adapted to that idiom while adding the
+request_initiator_origin_lock parameter and member exactly as upstream.
+chrome/browser/chrome_content_browser_client.cc (not compiled by Electron)
+took the upstream hunks as-is. The unittest hunks did not apply and were
+dropped. Electron's own caller in shell/browser/electron_browser_client.cc
+is updated in a separate commit.
+Build fix-up: M148's WebUIDataSourceImpl has no resources_frozen_ state, so the two CHECK(!resources_frozen_) lines in SetAllowAllOrigins / AddAccessControlAllowOrigin are dropped.
+
+diff --git a/chrome/browser/chrome_content_browser_client.cc b/chrome/browser/chrome_content_browser_client.cc
+index f823433796c5c7888bbece301c29d51d5e24461d..080fe356f7d5b3f0c6e2eb4022f5cfc552481b0c 100644
+--- a/chrome/browser/chrome_content_browser_client.cc
++++ b/chrome/browser/chrome_content_browser_client.cc
+@@ -6125,6 +6125,49 @@ ChromeContentBrowserClient::CreateNonNetworkNavigationURLLoaderFactory(
+   return {};
+ }
+ 
++#if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
++namespace {
++// Components of chrome that are implemented as extensions are allowed to use
++// chrome://resources/ URLs in workers.
++bool ExtensionWorkerHasAccessToChromeResources(
++    const extensions::Extension* extension) {
++  return extension && extension->is_extension() &&
++         Manifest::IsComponentLocation(extension->location());
++}
++
++void AddChromeSchemeFactoriesForWorker(
++    content::BrowserContext* browser_context,
++    const std::optional<url::Origin>& request_initiator,
++    ChromeContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories) {
++  if (!base::FeatureList::IsEnabled(
++          extensions_features::kComponentExtensionAllowWorkerChromeResources)) {
++    return;
++  }
++
++  if (!request_initiator.has_value()) {
++    return;
++  }
++
++  extensions::ExtensionRegistry* registry = extensions::ExtensionRegistry::Get(
++      Profile::FromBrowserContext(browser_context));
++  DCHECK(registry);
++  const extensions::Extension* extension =
++      registry->enabled_extensions().GetExtensionOrAppByURL(
++          request_initiator->GetURL());
++
++  // Support for chrome:// scheme if appropriate for workers.
++  if (ExtensionWorkerHasAccessToChromeResources(extension)) {
++    std::vector<std::string> allowed_webui_hosts = {
++        content::kChromeUIResourcesHost};
++    factories->emplace(content::kChromeUIScheme,
++                       content::CreateWebUIURLLoaderFactoryForWorker(
++                           browser_context, content::kChromeUIScheme,
++                           std::move(allowed_webui_hosts), *request_initiator));
++  }
++}
++}  // namespace
++#endif  // BUILDFLAG(ENABLE_EXTENSIONS_CORE)
++
+ void ChromeContentBrowserClient::
+     RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
+         content::BrowserContext* browser_context,
+@@ -6320,6 +6363,7 @@ bool IsSystemFeatureURLDisabled(const GURL& url) {
+   return false;
+ }
+ #endif
++}  // namespace
+ 
+ #if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
+ void InitializeFileURLLoaderFactoryForExtension(
+@@ -6339,10 +6383,8 @@ void InitializeFileURLLoaderFactoryForExtension(
+         SpecialAccessFileURLLoaderFactory::Create(render_process_id));
+   }
+ }
+-#endif  // BUILDFLAG(ENABLE_EXTENSIONS_CORE)
+ 
+-#if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
+-void AddChromeSchemeFactories(
++void ChromeContentBrowserClient::AddChromeSchemeFactories(
+     int render_process_id,
+     content::RenderFrameHost* frame_host,
+     content::WebContents* web_contents,
+@@ -6363,7 +6405,8 @@ void AddChromeSchemeFactories(
+   // Profile.
+   if (instant_service && instant_service->IsInstantProcess(render_process_id)) {
+     factories->emplace(chrome::kChromeSearchScheme,
+-                       content::CreateWebUIURLLoaderFactory(
++                       content::CreateWebUIURLLoaderFactoryWithoutOriginLock(
++                           content::WebUIURLLoaderFactoryPasskey::GetPassKey(),
+                            frame_host, chrome::kChromeSearchScheme,
+                            /*allowed_hosts=*/base::flat_set<std::string>()));
+   }
+@@ -6401,14 +6444,14 @@ void AddChromeSchemeFactories(
+     allowed_webui_hosts.emplace_back(chrome::kChromeUIAppIconHost);
+   }
+   if (!allowed_webui_hosts.empty()) {
+-    factories->emplace(content::kChromeUIScheme,
+-                       content::CreateWebUIURLLoaderFactory(
+-                           frame_host, content::kChromeUIScheme,
+-                           std::move(allowed_webui_hosts)));
++    factories->emplace(
++        content::kChromeUIScheme,
++        content::CreateWebUIURLLoaderFactoryWithoutOriginLock(
++            content::WebUIURLLoaderFactoryPasskey::GetPassKey(), frame_host,
++            content::kChromeUIScheme, std::move(allowed_webui_hosts)));
+   }
+ }
+ #endif  // BUILDFLAG(ENABLE_EXTENSIONS_CORE)
+-}  // namespace
+ 
+ void ChromeContentBrowserClient::
+     RegisterNonNetworkSubresourceURLLoaderFactories(
+diff --git a/chrome/browser/chrome_content_browser_client.h b/chrome/browser/chrome_content_browser_client.h
+index 5bde5b7fb734a0f6b3ffca8dff96c1cd8e1347f8..4723253b131c954fc3e9e297acca523561d4163f 100644
+--- a/chrome/browser/chrome_content_browser_client.h
++++ b/chrome/browser/chrome_content_browser_client.h
+@@ -77,6 +77,10 @@ namespace blocked_content {
+ class PopupNavigationDelegate;
+ }  // namespace blocked_content
+ 
++namespace extensions {
++class Extension;
++}  // namespace extensions
++
+ namespace content {
+ class BrowserContext;
+ class BtmService;
+@@ -1228,6 +1232,13 @@ class ChromeContentBrowserClient : public content::ContentBrowserClient {
+   // their own extra part objects.
+   void AddExtraPart(std::unique_ptr<ChromeContentBrowserClientParts> part);
+ 
++  static void AddChromeSchemeFactories(
++      int render_process_id,
++      content::RenderFrameHost* frame_host,
++      content::WebContents* web_contents,
++      const extensions::Extension* extension,
++      NonNetworkURLLoaderFactoryMap* factories);
++
+   // Exposed for tests to perform dependency injection.
+   virtual std::unique_ptr<HttpAuthCoordinator> CreateHttpAuthCoordinator();
+ 
+diff --git a/chrome/browser/devtools/devtools_ui_bindings.cc b/chrome/browser/devtools/devtools_ui_bindings.cc
+index 23f74f341f53365268850c3046442a40cf86937d..fe9c333ad0926802bf05e96ca7777bf1426e8618 100644
+--- a/chrome/browser/devtools/devtools_ui_bindings.cc
++++ b/chrome/browser/devtools/devtools_ui_bindings.cc
+@@ -1298,8 +1298,9 @@ void DevToolsUIBindings::LoadNetworkResource(DispatchCallback callback,
+           web_contents()->GetPrimaryMainFrame();
+ 
+       mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
+-          content::CreateWebUIURLLoaderFactory(
+-              frame_host, target_tab->GetLastCommittedURL().GetScheme(),
++          content::CreateWebUIURLLoaderFactoryWithoutOriginLock(
++              content::WebUIURLLoaderFactoryPasskey::GetPassKey(), frame_host,
++              target_tab->GetLastCommittedURL().GetScheme(),
+               std::move(allowed_webui_hosts));
+       url_loader_factory = network::SharedURLLoaderFactory::Create(
+           std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+diff --git a/chrome/browser/ui/webui/ash/settings/pages/multidevice/multidevice_section_unittest.cc b/chrome/browser/ui/webui/ash/settings/pages/multidevice/multidevice_section_unittest.cc
+index 99b160294e9ad0edd9ce249d44efd3866e96b0e7..25d4eb159190bd54dbb55eb968aa86d003722bd2 100644
+--- a/chrome/browser/ui/webui/ash/settings/pages/multidevice/multidevice_section_unittest.cc
++++ b/chrome/browser/ui/webui/ash/settings/pages/multidevice/multidevice_section_unittest.cc
+@@ -67,6 +67,8 @@ class MockWebUIDataSource : public content::WebUIDataSource {
+   void OverrideCrossOriginOpenerPolicy(const std::string& value) override {}
+   void OverrideCrossOriginEmbedderPolicy(const std::string& value) override {}
+   void OverrideCrossOriginResourcePolicy(const std::string& value) override {}
++  void SetAllowAllOrigins(bool allow_all_origins) override {}
++  void AddAccessControlAllowOrigin(const url::Origin& origin) override {}
+   void DisableTrustedTypesCSP() override {}
+   void DisableDenyXFrameOptions() override {}
+   void EnableReplaceI18nInJS() override {}
+diff --git a/chrome/browser/ui/webui/favicon_source.cc b/chrome/browser/ui/webui/favicon_source.cc
+index 0681a5184833cdde33bacd60b4bbffdb249f5b6b..52f366d77397ca098923f8cd7f8873b9f5f7321a 100644
+--- a/chrome/browser/ui/webui/favicon_source.cc
++++ b/chrome/browser/ui/webui/favicon_source.cc
+@@ -9,6 +9,7 @@
+ #include "base/functional/bind.h"
+ #include "base/functional/callback_helpers.h"
+ #include "base/metrics/histogram_functions.h"
++#include "base/strings/strcat.h"
+ #include "base/strings/string_number_conversions.h"
+ #include "chrome/browser/favicon/favicon_service_factory.h"
+ #include "chrome/browser/favicon/favicon_utils.h"
+@@ -242,6 +243,17 @@ bool FaviconSource::ShouldServiceRequest(
+                                              render_process_id);
+ }
+ 
++std::string FaviconSource::GetAccessControlAllowOriginForOrigin(
++    const std::string& origin) {
++  // chrome-untrusted://favicon2 serves the favicons that the Data Sharing
++  // page renders for the tabs of a shared tab group.
++  if (serve_untrusted_ &&
++      base::StrCat({origin, "/"}) == chrome::kChromeUIUntrustedDataSharingURL) {
++    return origin;
++  }
++  return content::URLDataSource::GetAccessControlAllowOriginForOrigin(origin);
++}
++
+ ui::NativeTheme* FaviconSource::GetNativeTheme(
+     const content::WebContents::Getter& wc_getter) {
+ #if BUILDFLAG(IS_ANDROID)
+diff --git a/chrome/browser/ui/webui/favicon_source.h b/chrome/browser/ui/webui/favicon_source.h
+index 4e15d41145b962bafc934525084eff1a19debbb2..f3d9b8b8db8bb535147fd12e6f5b3c9f98c55920 100644
+--- a/chrome/browser/ui/webui/favicon_source.h
++++ b/chrome/browser/ui/webui/favicon_source.h
+@@ -66,6 +66,8 @@ class FaviconSource : public content::URLDataSource {
+   bool ShouldServiceRequest(const GURL& url,
+                             content::BrowserContext* browser_context,
+                             int render_process_id) override;
++  std::string GetAccessControlAllowOriginForOrigin(
++      const std::string& origin) override;
+ 
+  protected:
+   // Exposed for testing.
+diff --git a/chrome/browser/ui/webui/theme_source.cc b/chrome/browser/ui/webui/theme_source.cc
+index d259b3ef857da189c00e9a3d73ccaeec97b490ab..813892d194b435a2cface61ff198ee89d672b138 100644
+--- a/chrome/browser/ui/webui/theme_source.cc
++++ b/chrome/browser/ui/webui/theme_source.cc
+@@ -381,6 +381,17 @@ std::string ThemeSource::GetAccessControlAllowOriginForOrigin(
+     return origin;
+   }
+ 
++  // The chrome-untrusted://theme source serves theme assets to all
++  // chrome-untrusted:// pages.
++  if (serve_untrusted_) {
++    std::string untrusted_origin_prefix = content::kChromeUIUntrustedScheme;
++    untrusted_origin_prefix += "://";
++    if (base::StartsWith(origin, untrusted_origin_prefix,
++                         base::CompareCase::SENSITIVE)) {
++      return origin;
++    }
++  }
++
+   return content::URLDataSource::GetAccessControlAllowOriginForOrigin(origin);
+ }
+ 
+diff --git a/chrome/browser/ui/webui/theme_source_unittest.cc b/chrome/browser/ui/webui/theme_source_unittest.cc
+index 6f40c2765a4b41b0121f5b520141202d5ede48d9..b7bc1d1f5e464e96165564327cd9e0e8fc09c9a7 100644
+--- a/chrome/browser/ui/webui/theme_source_unittest.cc
++++ b/chrome/browser/ui/webui/theme_source_unittest.cc
+@@ -153,4 +153,25 @@ TEST_F(WebUISourcesTest, ThemeAllowedOrigin) {
+   EXPECT_EQ(
+       theme_source()->GetAccessControlAllowOriginForOrigin("http://google.com"),
+       "");
++  // Only the source serving chrome-untrusted://theme allows
++  // chrome-untrusted:// origins.
++  EXPECT_EQ(theme_source()->GetAccessControlAllowOriginForOrigin(
++                "chrome-untrusted://new-tab-page"),
++            "");
++}
++
++TEST_F(WebUISourcesTest, ThemeAllowedOriginUntrusted) {
++  ThemeSource untrusted_theme_source(profile(), /*serve_untrusted=*/true);
++  EXPECT_EQ(untrusted_theme_source.GetAccessControlAllowOriginForOrigin(
++                "chrome-untrusted://new-tab-page"),
++            "chrome-untrusted://new-tab-page");
++  EXPECT_EQ(untrusted_theme_source.GetAccessControlAllowOriginForOrigin(
++                "chrome://settings"),
++            "chrome://settings");
++  EXPECT_EQ(untrusted_theme_source.GetAccessControlAllowOriginForOrigin(
++                "chrome-extensions://some-id"),
++            "");
++  EXPECT_EQ(untrusted_theme_source.GetAccessControlAllowOriginForOrigin(
++                "http://google.com"),
++            "");
+ }
+diff --git a/chrome/test/base/web_ui_test_data_source.cc b/chrome/test/base/web_ui_test_data_source.cc
+index 8108503aae6e9c85558adc23f299fdac5fc8904d..4847de2c97ed7e8896f274325bf7e96be1adae14 100644
+--- a/chrome/test/base/web_ui_test_data_source.cc
++++ b/chrome/test/base/web_ui_test_data_source.cc
+@@ -76,6 +76,8 @@ content::WebUIDataSource* CreateAndAddUntrustedWebUITestDataSource(
+       browser_context, chrome::kChromeUIUntrustedWebUITestURL);
+ 
+   SetupTestDataSource(source, content::kChromeUIUntrustedScheme);
++  // Test files are loaded by every chrome-untrusted:// page under test.
++  source->SetAllowAllOrigins(true);
+   return source;
+ }
+ 
+diff --git a/chromecast/browser/cast_content_browser_client.cc b/chromecast/browser/cast_content_browser_client.cc
+index 6f05c5971e4e3e98cd2173d67974eb8c00608f11..b0fee1910c641b5d63e426a0a511b00ab15ab9db 100644
+--- a/chromecast/browser/cast_content_browser_client.cc
++++ b/chromecast/browser/cast_content_browser_client.cc
+@@ -821,8 +821,9 @@ void CastContentBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
+ 
+   factories->emplace(
+       kChromeResourceScheme,
+-      content::CreateWebUIURLLoaderFactory(
+-          frame_host, kChromeResourceScheme,
++      content::CreateWebUIURLLoaderFactoryWithoutOriginLock(
++          content::WebUIURLLoaderFactoryPasskey::GetPassKey(), frame_host,
++          kChromeResourceScheme,
+           /*allowed_webui_hosts=*/base::flat_set<std::string>()));
+ }
+ 
+diff --git a/content/browser/download/download_manager_impl.cc b/content/browser/download/download_manager_impl.cc
+index 683cabb33a5010e3268dea05984b2eef25b63e8f..adb96cc1e7ba9217eb3978377a67d13be5ace355 100644
+--- a/content/browser/download/download_manager_impl.cc
++++ b/content/browser/download/download_manager_impl.cc
+@@ -1462,8 +1462,9 @@ void DownloadManagerImpl::BeginResourceDownloadOnChecksComplete(
+   } else if (rfh && params->url().SchemeIs(content::kChromeUIScheme)) {
+     pending_url_loader_factory =
+         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+-            CreateWebUIURLLoaderFactory(rfh, params->url().GetScheme(),
+-                                        base::flat_set<std::string>()));
++            CreateWebUIURLLoaderFactoryWithoutOriginLock(
++                WebUIURLLoaderFactoryPasskey::GetPassKey(), rfh,
++                params->url().GetScheme(), base::flat_set<std::string>()));
+   } else if (rfh && params->url().SchemeIsFileSystem()) {
+     StoragePartitionImpl* storage_partition = GetStoragePartitionForConfig(
+         browser_context_, storage_partition_config);
+diff --git a/content/browser/download/save_file_manager.cc b/content/browser/download/save_file_manager.cc
+index 0b6f3ee29e3e38d9409a4702af8e4f82f8b8ef77..3a6c63a0249ffecd3c4a04d5298bf4634aac3109 100644
+--- a/content/browser/download/save_file_manager.cc
++++ b/content/browser/download/save_file_manager.cc
+@@ -320,8 +320,9 @@ void SaveFileManager::SaveURL(
+           static_cast<RenderFrameHostImpl*>(rfh)->GetStorageKey()));
+       factory = factory_remote.get();
+     } else if (rfh && url.SchemeIs(content::kChromeUIScheme)) {
+-      factory_remote.Bind(
+-          CreateWebUIURLLoaderFactory(rfh, url.GetScheme(), {}));
++      factory_remote.Bind(CreateWebUIURLLoaderFactoryWithoutOriginLock(
++          WebUIURLLoaderFactoryPasskey::GetPassKey(), rfh, url.GetScheme(),
++          {}));
+       factory = factory_remote.get();
+     } else {
+       factory = storage_partition->GetURLLoaderFactoryForBrowserProcess().get();
+diff --git a/content/browser/loader/navigation_url_loader_impl.cc b/content/browser/loader/navigation_url_loader_impl.cc
+index fa6f36f8bb5ce1a19d912693028377bb81f499c4..17e9eff6bd5408deab91cefb4e183740287b4e81 100644
+--- a/content/browser/loader/navigation_url_loader_impl.cc
++++ b/content/browser/loader/navigation_url_loader_impl.cc
+@@ -698,7 +698,8 @@ void NavigationURLLoaderImpl::Start() {
+           url_loader_factory::Create(
+               ContentBrowserClient::URLLoaderFactoryType::kNavigation,
+               url_loader_factory::TerminalParams::ForNonNetwork(
+-                  CreateWebUIURLLoaderFactory(
++                  CreateWebUIURLLoaderFactoryWithoutOriginLock(
++                      WebUIURLLoaderFactoryPasskey::GetPassKey(),
+                       frame_tree_node->current_frame_host(), scheme, {}),
+                   network::mojom::kBrowserProcessId),
+               url_loader_factory::ContentClientParams(
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index be3fe6d38290b1ce3a32461df9f75129d2c6f2d3..d88681795b239d49ec652a2220f41e6599d28837 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -13048,7 +13048,9 @@ void RenderFrameHostImpl::CommitNavigation(
+           url_loader_factory::CreatePendingRemote(
+               ContentBrowserClient::URLLoaderFactoryType::kDocumentSubResource,
+               url_loader_factory::TerminalParams::ForNonNetwork(
+-                  CreateWebUIURLLoaderFactory(this, effective_scheme, {}),
++                  CreateWebUIURLLoaderFactory(
++                      this, effective_scheme, {},
++                      subresource_loader_factories_config.origin()),
+                   GetProcess()->GetDeprecatedID()),
+               url_loader_factory::ContentClientParams(
+                   browser_context, this, GetProcess()->GetDeprecatedID(),
+diff --git a/content/browser/webui/shared_resources_data_source.cc b/content/browser/webui/shared_resources_data_source.cc
+index ed876dcc31b96afb867c83d8a240c93123f9f3e2..412a077dd22d57653284876465ba8d627e043cd7 100644
+--- a/content/browser/webui/shared_resources_data_source.cc
++++ b/content/browser/webui/shared_resources_data_source.cc
+@@ -54,6 +54,10 @@ void PopulateSharedResourcesDataSource(WebUIDataSource* source) {
+   // included in the either the ts_library() target for the UI using them (if
+   // they are only used by one UI) or in //ui/webui/resources/mojo:build_ts
+   // (if used by multiple UIs).
++  // The shared resources are static assets bundled with Chrome, meant to be
++  // readable by every WebUI origin (both chrome:// and chrome-untrusted://).
++  source->SetAllowAllOrigins(true);
++
+   source->AddResourcePaths(kWebuiResources);
+ #if BUILDFLAG(IS_CHROMEOS)
+   source->AddResourcePaths(kAshWebuiCommonResources);
+diff --git a/content/browser/webui/web_ui_data_source_impl.cc b/content/browser/webui/web_ui_data_source_impl.cc
+index 42955f79fe8f60b4b7554167e85b1b369610cec7..1551dc9970abaf249db7613216eafeba6a9740e0 100644
+--- a/content/browser/webui/web_ui_data_source_impl.cc
++++ b/content/browser/webui/web_ui_data_source_impl.cc
+@@ -180,6 +180,18 @@ class WebUIDataSourceImpl::InternalDataSource : public URLDataSource {
+   std::string GetCrossOriginResourcePolicy() override {
+     return parent_->corp_value_;
+   }
++  std::string GetAccessControlAllowOriginForOrigin(
++      const std::string& origin) override {
++    if (parent_->access_control_allow_all_origins_) {
++      return "*";
++    }
++    url::Origin parsed_origin = url::Origin::Create(GURL(origin));
++    if (!parsed_origin.opaque() &&
++        parent_->access_control_allow_origins_.contains(parsed_origin)) {
++      return origin;
++    }
++    return URLDataSource::GetAccessControlAllowOriginForOrigin(origin);
++  }
+   bool ShouldDenyXFrameOptions() override {
+     return parent_->deny_xframe_options_;
+   }
+@@ -333,6 +345,19 @@ void WebUIDataSourceImpl::OverrideCrossOriginResourcePolicy(
+   corp_value_ = value;
+ }
+ 
++void WebUIDataSourceImpl::SetAllowAllOrigins(bool allow_all_origins) {
++  access_control_allow_all_origins_ = allow_all_origins;
++}
++
++void WebUIDataSourceImpl::AddAccessControlAllowOrigin(
++    const url::Origin& origin) {
++  CHECK(!origin.opaque())
++      << "Opaque origins cannot be uniquely allowlisted. For sandboxed WebUI "
++         "frames, allow the precursor origin instead; for arbitrary opaque "
++         "origins, use SetAllowAllOrigins(true).";
++  access_control_allow_origins_.insert(origin);
++}
++
+ void WebUIDataSourceImpl::DisableTrustedTypesCSP() {
+   // TODO(crbug.com/40137141): Trusted Type remaining WebUI
+   // This removes require-trusted-types-for and trusted-types directives
+diff --git a/content/browser/webui/web_ui_data_source_impl.h b/content/browser/webui/web_ui_data_source_impl.h
+index a847389bfb2732e91bc004cd1956aaaf221d0ef6..2412104c71579f5523ec0800b7a86bf8753a4727 100644
+--- a/content/browser/webui/web_ui_data_source_impl.h
++++ b/content/browser/webui/web_ui_data_source_impl.h
+@@ -8,6 +8,7 @@
+ #include <stdint.h>
+ 
+ #include <map>
++#include <set>
+ #include <string>
+ #include <string_view>
+ 
+@@ -61,6 +62,8 @@ class CONTENT_EXPORT WebUIDataSourceImpl : public URLDataSourceImpl,
+   void OverrideCrossOriginOpenerPolicy(const std::string& value) override;
+   void OverrideCrossOriginEmbedderPolicy(const std::string& value) override;
+   void OverrideCrossOriginResourcePolicy(const std::string& value) override;
++  void SetAllowAllOrigins(bool allow_all_origins) override;
++  void AddAccessControlAllowOrigin(const url::Origin& origin) override;
+   void DisableTrustedTypesCSP() override;
+   void DisableDenyXFrameOptions() override;
+   void EnableReplaceI18nInJS() override;
+@@ -150,6 +153,8 @@ class CONTENT_EXPORT WebUIDataSourceImpl : public URLDataSourceImpl,
+   std::string coop_value_;
+   std::string coep_value_;
+   std::string corp_value_;
++  bool access_control_allow_all_origins_ = false;
++  std::set<url::Origin> access_control_allow_origins_;
+   bool deny_xframe_options_ = true;
+   bool add_load_time_data_defaults_ = true;
+   bool should_replace_i18n_in_js_ = false;
+diff --git a/content/browser/webui/web_ui_data_source_unittest.cc b/content/browser/webui/web_ui_data_source_unittest.cc
+index cde691c4f05b55af0cabeee880499b6f5e1d7298..e68a02fde1b9ee3e018a20cf355090f2d185e6b2 100644
+--- a/content/browser/webui/web_ui_data_source_unittest.cc
++++ b/content/browser/webui/web_ui_data_source_unittest.cc
+@@ -461,6 +461,38 @@ TEST_F(WebUIDataSourceTest, SetCrossOriginPolicyValues) {
+   EXPECT_EQ("same-origin", url_data_source->GetCrossOriginResourcePolicy());
+ }
+ 
++TEST_F(WebUIDataSourceTest, AccessControlAllowOrigin) {
++  URLDataSource* url_data_source = source()->source();
++
++  // Default is empty.
++  EXPECT_EQ("", url_data_source->GetAccessControlAllowOriginForOrigin(
++                    "chrome-untrusted://foo"));
++
++  // Add specific origin.
++  source()->AddAccessControlAllowOrigin(
++      url::Origin::Create(GURL("chrome-untrusted://foo")));
++  EXPECT_EQ("chrome-untrusted://foo",
++            url_data_source->GetAccessControlAllowOriginForOrigin(
++                "chrome-untrusted://foo"));
++  EXPECT_EQ("", url_data_source->GetAccessControlAllowOriginForOrigin(
++                    "chrome-untrusted://bar"));
++
++  // Set allow all origins.
++  source()->SetAllowAllOrigins(true);
++  EXPECT_EQ("*", url_data_source->GetAccessControlAllowOriginForOrigin(
++                     "chrome-untrusted://foo"));
++  EXPECT_EQ("*", url_data_source->GetAccessControlAllowOriginForOrigin(
++                     "chrome-untrusted://bar"));
++
++  // Disabling allow all origins falls back to explicitly added origins.
++  source()->SetAllowAllOrigins(false);
++  EXPECT_EQ("chrome-untrusted://foo",
++            url_data_source->GetAccessControlAllowOriginForOrigin(
++                "chrome-untrusted://foo"));
++  EXPECT_EQ("", url_data_source->GetAccessControlAllowOriginForOrigin(
++                    "chrome-untrusted://bar"));
++}
++
+ TEST_F(WebUIDataSourceTest, GetOrigin) {
+   CreateDataSource("host");
+   EXPECT_EQ(source()->GetOrigin(), url::Origin::Create(GURL("chrome://host")));
+diff --git a/content/browser/webui/web_ui_security_browsertest.cc b/content/browser/webui/web_ui_security_browsertest.cc
+index 183b38ef449492fda5a21d201d9a20fc65a00293..92b701331b39864f8e0c8ef8dd186b729455b660 100644
+--- a/content/browser/webui/web_ui_security_browsertest.cc
++++ b/content/browser/webui/web_ui_security_browsertest.cc
+@@ -767,6 +767,177 @@ IN_PROC_BROWSER_TEST_F(
+   }
+ }
+ 
++// Verify a cross-origin fetch request from a chrome-untrusted:// page to
++// another chrome-untrusted:// page is blocked when the requested data source
++// does not allow the requesting origin through its
++// Access-Control-Allow-Origin value, even if the requesting page's Content
++// Security Policy allows the request.
++// Note: Both CORS and NO_CORS modes fail with "Failed to fetch" because
++// WebUIURLLoaderFactory rejects unpermitted cross-origin requests at the
++// factory level with net::ERR_FAILED, preventing even opaque responses.
++IN_PROC_BROWSER_TEST_F(WebUISecurityTest,
++                       DisallowCrossOriginFetchRequestToChromeUntrustedSource) {
++  TestUntrustedDataSourceHeaders headers;
++  headers.default_src = "default-src chrome-untrusted://test2;";
++  const GURL untrusted_url1 = GURL("chrome-untrusted://test1/title1.html");
++  WebUIConfigMap::GetInstance().AddUntrustedWebUIConfig(
++      std::make_unique<ui::TestUntrustedWebUIConfig>(untrusted_url1.GetHost(),
++                                                     headers));
++
++  // The data source for test2 does not serve an Access-Control-Allow-Origin
++  // header to other origins.
++  const GURL untrusted_url2 = GURL("chrome-untrusted://test2/title2.html");
++  AddUntrustedDataSource(shell()->web_contents()->GetBrowserContext(),
++                         untrusted_url2.GetHost());
++
++  EXPECT_TRUE(NavigateToURL(shell(), untrusted_url1));
++
++  EXPECT_EQ("Failed to fetch",
++            PerformFetch(shell(), untrusted_url2, FetchMode::CORS));
++  EXPECT_EQ("Failed to fetch",
++            PerformFetch(shell(), untrusted_url2, FetchMode::NO_CORS));
++}
++
++// Verify that a sandboxed iframe embedded within a chrome-untrusted:// page
++// (which has an opaque origin with a chrome-untrusted:// precursor) can fetch
++// subresources from its precursor origin.
++IN_PROC_BROWSER_TEST_F(WebUISecurityTest,
++                       SandboxedFrameSubresourceFetchToPrecursorAllowed) {
++  TestUntrustedDataSourceHeaders headers;
++  headers.no_xfo = true;
++  headers.child_src = "child-src 'self';";
++  WebUIConfigMap::GetInstance().AddUntrustedWebUIConfig(
++      std::make_unique<ui::TestUntrustedWebUIConfig>("test-host", headers));
++
++  const GURL untrusted_url(GetChromeUntrustedUIURL("test-host/title1.html"));
++  EXPECT_TRUE(NavigateToURL(shell(), untrusted_url));
++
++  // Create a sandboxed iframe without allow-same-origin so its origin is
++  // opaque.
++  const char kCreateIframeScript[] =
++      "new Promise((resolve) => {"
++      "  const iframe = document.createElement('iframe');"
++      "  iframe.sandbox = 'allow-scripts';"
++      "  iframe.id = 'sandboxed_frame';"
++      "  iframe.src = $1;"
++      "  iframe.onload = () => resolve('loaded');"
++      "  document.body.appendChild(iframe);"
++      "});";
++
++  EXPECT_EQ("loaded",
++            EvalJs(shell(), JsReplace(kCreateIframeScript, untrusted_url),
++                   EXECUTE_SCRIPT_DEFAULT_OPTIONS, 1 /* world_id */));
++
++  FrameTreeNode* root = static_cast<WebContentsImpl*>(shell()->web_contents())
++                            ->GetPrimaryFrameTree()
++                            .root();
++  ASSERT_EQ(1U, root->child_count());
++  RenderFrameHostImpl* sandboxed_rfh = root->child_at(0)->current_frame_host();
++  EXPECT_TRUE(sandboxed_rfh->GetLastCommittedOrigin().opaque());
++  EXPECT_EQ(
++      url::Origin::Create(untrusted_url).GetTupleOrPrecursorTupleIfOpaque(),
++      sandboxed_rfh->GetLastCommittedOrigin()
++          .GetTupleOrPrecursorTupleIfOpaque());
++
++  // Fetch a subresource on the same precursor origin from the sandboxed iframe.
++  const char kFetchScript[] =
++      "fetch($1).then("
++      "  response => 'success',"
++      "  error => error.message"
++      ");";
++  const GURL subresource_url(GetChromeUntrustedUIURL("test-host/title2.html"));
++  EXPECT_EQ("success",
++            EvalJs(sandboxed_rfh, JsReplace(kFetchScript, subresource_url),
++                   EXECUTE_SCRIPT_DEFAULT_OPTIONS, 1 /* world_id */));
++}
++
++// Verify that a sandboxed iframe embedded within a chrome-untrusted:// page
++// cannot fetch subresources from a different chrome-untrusted:// origin that
++// has not opted into cross-origin access.
++IN_PROC_BROWSER_TEST_F(WebUISecurityTest,
++                       SandboxedFrameSubresourceFetchToDifferentOriginDenied) {
++  TestUntrustedDataSourceHeaders headers;
++  headers.no_xfo = true;
++  headers.child_src = "child-src 'self';";
++  headers.default_src = "default-src chrome-untrusted://test2 'self';";
++  WebUIConfigMap::GetInstance().AddUntrustedWebUIConfig(
++      std::make_unique<ui::TestUntrustedWebUIConfig>("test1", headers));
++
++  // test2 does not allow cross-origin access.
++  const GURL untrusted_url2 = GURL("chrome-untrusted://test2/title2.html");
++  AddUntrustedDataSource(shell()->web_contents()->GetBrowserContext(),
++                         untrusted_url2.GetHost());
++
++  const GURL untrusted_url1 = GURL("chrome-untrusted://test1/title1.html");
++  EXPECT_TRUE(NavigateToURL(shell(), untrusted_url1));
++
++  // Create a sandboxed iframe inside test1.
++  const char kCreateIframeScript[] =
++      "new Promise((resolve) => {"
++      "  const iframe = document.createElement('iframe');"
++      "  iframe.sandbox = 'allow-scripts';"
++      "  iframe.id = 'sandboxed_frame';"
++      "  iframe.src = $1;"
++      "  iframe.onload = () => resolve('loaded');"
++      "  document.body.appendChild(iframe);"
++      "});";
++
++  EXPECT_EQ("loaded",
++            EvalJs(shell(), JsReplace(kCreateIframeScript, untrusted_url1),
++                   EXECUTE_SCRIPT_DEFAULT_OPTIONS, 1 /* world_id */));
++
++  FrameTreeNode* root = static_cast<WebContentsImpl*>(shell()->web_contents())
++                            ->GetPrimaryFrameTree()
++                            .root();
++  ASSERT_EQ(1U, root->child_count());
++  RenderFrameHostImpl* sandboxed_rfh = root->child_at(0)->current_frame_host();
++  EXPECT_TRUE(sandboxed_rfh->GetLastCommittedOrigin().opaque());
++
++  // Attempt to fetch test2 from the sandboxed iframe.
++  const char kFetchScript[] =
++      "fetch($1).then("
++      "  response => 'success',"
++      "  error => error.message"
++      ");";
++  EXPECT_EQ("Failed to fetch",
++            EvalJs(sandboxed_rfh, JsReplace(kFetchScript, untrusted_url2),
++                   EXECUTE_SCRIPT_DEFAULT_OPTIONS, 1 /* world_id */));
++}
++
++// Verify a chrome-untrusted:// page can load scripts from the shared
++// resources at chrome-untrusted://resources, which are served to all WebUI
++// origins.
++IN_PROC_BROWSER_TEST_F(WebUISecurityTest,
++                       AllowChromeUntrustedScriptRequestToSharedResources) {
++  TestUntrustedDataSourceHeaders headers;
++  headers.no_trusted_types = true;
++  WebUIConfigMap::GetInstance().AddUntrustedWebUIConfig(
++      std::make_unique<ui::TestUntrustedWebUIConfig>("test-host", headers));
++
++  const GURL untrusted_url(GetChromeUntrustedUIURL("test-host/title1.html"));
++  EXPECT_TRUE(NavigateToURL(shell(), untrusted_url));
++
++  const char kLoadModuleScript[] =
++      "new Promise((resolve) => {"
++      "  const script = document.createElement('script');"
++      "  script.type = 'module';"
++      "  script.onload = () => {"
++      "    resolve('Script loaded');"
++      "  };"
++      "  script.onerror = () => {"
++      "    resolve('Load failed');"
++      "  };"
++      "  script.src = $1;"
++      "  document.body.appendChild(script);"
++      "});";
++
++  const GURL shared_resource_url(
++      GURL("chrome-untrusted://resources/js/assert.js"));
++  EXPECT_EQ("Script loaded",
++            EvalJs(shell(), JsReplace(kLoadModuleScript, shared_resource_url),
++                   EXECUTE_SCRIPT_DEFAULT_OPTIONS, 1 /* world_id */));
++}
++
+ // Verify cross-origin fetch request from a chrome-untrusted:// page to another
+ // chrome-untrusted:// page succeeds if Content Security Policy allows it.
+ IN_PROC_BROWSER_TEST_F(WebUISecurityTest,
+@@ -929,6 +1100,30 @@ IN_PROC_BROWSER_TEST_F(
+   EXPECT_EQ("success", PerformXHRRequest(shell(), untrusted_url2));
+ }
+ 
++// Verify a cross-origin XHR request from a chrome-untrusted:// page to
++// another chrome-untrusted:// page is blocked when the requested data source
++// does not allow the requesting origin through its
++// Access-Control-Allow-Origin value, even if the requesting page's Content
++// Security Policy allows the request.
++IN_PROC_BROWSER_TEST_F(WebUISecurityTest,
++                       DisallowCrossOriginXHRRequestToChromeUntrustedSource) {
++  TestUntrustedDataSourceHeaders headers;
++  headers.default_src = "default-src chrome-untrusted://test2;";
++  const GURL untrusted_url1 = GURL("chrome-untrusted://test1/title1.html");
++  WebUIConfigMap::GetInstance().AddUntrustedWebUIConfig(
++      std::make_unique<ui::TestUntrustedWebUIConfig>(untrusted_url1.GetHost(),
++                                                     headers));
++
++  // The data source for test2 does not serve an Access-Control-Allow-Origin
++  // header to other origins.
++  const GURL untrusted_url2 = GURL("chrome-untrusted://test2/title2.html");
++  AddUntrustedDataSource(shell()->web_contents()->GetBrowserContext(),
++                         untrusted_url2.GetHost());
++
++  EXPECT_TRUE(NavigateToURL(shell(), untrusted_url1));
++  EXPECT_EQ("error", PerformXHRRequest(shell(), untrusted_url2));
++}
++
+ // Verify XHR request from a chrome-untrusted:// page to a chrome:// page is
+ // blocked, even if CSP allows this.
+ IN_PROC_BROWSER_TEST_F(WebUISecurityTest,
+diff --git a/content/browser/webui/web_ui_url_loader_factory.cc b/content/browser/webui/web_ui_url_loader_factory.cc
+index 24c7bec96ca0a1cd700714e21b368be54ec10ca4..a97d8d3334163d23e4a6c11d5e3dfb5f45764ef3 100644
+--- a/content/browser/webui/web_ui_url_loader_factory.cc
++++ b/content/browser/webui/web_ui_url_loader_factory.cc
+@@ -6,6 +6,7 @@
+ 
+ #include <algorithm>
+ #include <optional>
++#include <ranges>
+ #include <string_view>
+ #include <utility>
+ #include <vector>
+@@ -47,6 +48,7 @@
+ #include "services/network/public/cpp/self_deleting_url_loader_factory.h"
+ #include "services/network/public/mojom/network_service.mojom.h"
+ #include "ui/base/template_expressions.h"
++#include "url/origin.h"
+ 
+ namespace content {
+ 
+@@ -117,9 +119,32 @@ void DataAvailable(
+                                 std::move(url_request_elapsed_timer), bytes));
+ }
+ 
++// This is a non-network factory, so requests made through it are not
++// subject to the standard CORS handling that the network service applies to
++// renderer-initiated requests. Instead, enforce origin isolation directly at
++// the factory level for requests originating from chrome-untrusted://
++// documents and workers, keyed off |request_initiator_origin_lock| (which the
++// browser process assigned when the factory was created) rather than any
++// renderer-provided request fields: a cross-origin request is rejected with
++// net::ERR_FAILED unless the requested data source explicitly allows the
++// initiator through its Access-Control-Allow-Origin value, regardless of
++// renderer-side request settings/modes (including no-cors).
++//
++// Opaque initiator origins (e.g. sandboxed frames) are treated as their
++// precursor origin. This differs from HTTP/CORS, where an opaque initiator is
++// always considered cross-origin. This is maintains existing WebUI
++// behavior.
++bool NeedsToCheckOrigin(
++    const std::optional<url::Origin>& request_initiator_origin_lock) {
++  return request_initiator_origin_lock.has_value() &&
++         request_initiator_origin_lock->GetTupleOrPrecursorTupleIfOpaque()
++                 .scheme() == kChromeUIUntrustedScheme;
++}
++
+ void StartURLLoader(
+     const network::ResourceRequest& request,
+     FrameTreeNodeId frame_tree_node_id,
++    const std::optional<url::Origin>& request_initiator_origin_lock,
+     mojo::PendingRemote<network::mojom::URLLoaderClient> client_remote,
+     BrowserContext* browser_context) {
+   base::ElapsedTimer url_request_elapsed_timer;
+@@ -144,6 +169,25 @@ void StartURLLoader(
+     return;
+   }
+ 
++  if (NeedsToCheckOrigin(request_initiator_origin_lock)) {
++    CHECK(request_initiator_origin_lock.has_value());
++    // An opaque initiator is intentionally compared using its precursor
++    // tuple, so a sandboxed frame is treated as same-origin with its
++    // precursor. See the comment above NeedsToCheckOrigin().
++    if (request_initiator_origin_lock->GetTupleOrPrecursorTupleIfOpaque() !=
++        url::SchemeHostPort(request.url)) {
++      const std::string initiator = request_initiator_origin_lock->Serialize();
++      const std::string allowed_origin =
++          source->source()->GetAccessControlAllowOriginForOrigin(initiator);
++      if (allowed_origin != "*" && allowed_origin != initiator) {
++        DVLOG(1) << "Denied cross-origin request from " << initiator << " to "
++                 << request.url;
++        webui::CallOnError(std::move(client_remote), net::ERR_FAILED);
++        return;
++      }
++    }
++  }
++
+   // Load everything by default, but respect the Range header if present.
+   base::expected<net::HttpByteRange, webui::GetRequestedRangeError>
+       range_or_error = webui::GetRequestedRange(request.headers);
+@@ -224,7 +268,8 @@ class WebUIURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
+   static mojo::PendingRemote<network::mojom::URLLoaderFactory> CreateForFrame(
+       FrameTreeNode* ftn,
+       const std::string& scheme,
+-      base::flat_set<std::string> allowed_hosts) {
++      base::flat_set<std::string> allowed_hosts,
++      std::optional<url::Origin> request_initiator_origin_lock) {
+     mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote;
+ 
+     // The WebUIURLLoaderFactory will delete itself when there are no more
+@@ -233,6 +278,20 @@ class WebUIURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
+     new WebUIURLLoaderFactory(ftn->current_frame_host()->GetBrowserContext(),
+                               ftn->frame_tree_node_id(), scheme,
+                               std::move(allowed_hosts),
++                              std::move(request_initiator_origin_lock),
++                              pending_remote.InitWithNewPipeAndPassReceiver());
++    return pending_remote;
++  }
++
++  static mojo::PendingRemote<network::mojom::URLLoaderFactory> CreateForWorker(
++      BrowserContext* browser_context,
++      const std::string& scheme,
++      base::flat_set<std::string> allowed_hosts,
++      const url::Origin& request_initiator_origin_lock) {
++    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote;
++    new WebUIURLLoaderFactory(browser_context, FrameTreeNodeId(), scheme,
++                              std::move(allowed_hosts),
++                              request_initiator_origin_lock,
+                               pending_remote.InitWithNewPipeAndPassReceiver());
+     return pending_remote;
+   }
+@@ -318,8 +377,8 @@ class WebUIURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
+     // from frames can happen while the RFH is changed for a cross-process
+     // navigation. The URLDataSources just need the WebContents; the specific
+     // frame doesn't matter.
+-    StartURLLoader(request, frame_tree_node_id_, std::move(client),
+-                   browser_context_.get());
++    StartURLLoader(request, frame_tree_node_id_, request_initiator_origin_lock_,
++                   std::move(client), browser_context_.get());
+   }
+ 
+   const std::string& scheme() const { return scheme_; }
+@@ -329,17 +388,23 @@ class WebUIURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
+       FrameTreeNodeId frame_tree_node_id,
+       const std::string& scheme,
+       base::flat_set<std::string> allowed_hosts,
++      std::optional<url::Origin> request_initiator_origin_lock,
+       mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver)
+       : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver)),
+         browser_context_(browser_context->GetWeakPtr()),
+         frame_tree_node_id_(frame_tree_node_id),
+         scheme_(scheme),
+-        allowed_hosts_(std::move(allowed_hosts)) {}
++        allowed_hosts_(std::move(allowed_hosts)),
++        request_initiator_origin_lock_(
++            std::move(request_initiator_origin_lock)) {}
+ 
+   base::WeakPtr<BrowserContext> browser_context_;
+   const FrameTreeNodeId frame_tree_node_id_;
+   const std::string scheme_;
+   const base::flat_set<std::string> allowed_hosts_;  // if empty all allowed.
++  // The origin of the document or worker this factory serves, when the
++  // factory is handed out to a renderer process for subresource loading.
++  const std::optional<url::Origin> request_initiator_origin_lock_;
+ };
+ 
+ }  // namespace
+@@ -347,9 +412,33 @@ class WebUIURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
+ mojo::PendingRemote<network::mojom::URLLoaderFactory>
+ CreateWebUIURLLoaderFactory(RenderFrameHost* render_frame_host,
+                             const std::string& scheme,
+-                            base::flat_set<std::string> allowed_hosts) {
++                            base::flat_set<std::string> allowed_hosts,
++                            const url::Origin& request_initiator_origin_lock) {
++  return WebUIURLLoaderFactory::CreateForFrame(
++      FrameTreeNode::From(render_frame_host), scheme, std::move(allowed_hosts),
++      request_initiator_origin_lock);
++}
++
++mojo::PendingRemote<network::mojom::URLLoaderFactory>
++CreateWebUIURLLoaderFactoryForWorker(
++    BrowserContext* browser_context,
++    const std::string& scheme,
++    base::flat_set<std::string> allowed_hosts,
++    const url::Origin& request_initiator_origin_lock) {
++  return WebUIURLLoaderFactory::CreateForWorker(browser_context, scheme,
++                                                std::move(allowed_hosts),
++                                                request_initiator_origin_lock);
++}
++
++mojo::PendingRemote<network::mojom::URLLoaderFactory>
++CreateWebUIURLLoaderFactoryWithoutOriginLock(
++    WebUIURLLoaderFactoryPasskey::PassKey pass_key,
++    RenderFrameHost* render_frame_host,
++    const std::string& scheme,
++    base::flat_set<std::string> allowed_hosts) {
+   return WebUIURLLoaderFactory::CreateForFrame(
+-      FrameTreeNode::From(render_frame_host), scheme, std::move(allowed_hosts));
++      FrameTreeNode::From(render_frame_host), scheme, std::move(allowed_hosts),
++      std::nullopt);
+ }
+ 
+ }  // namespace content
+diff --git a/content/browser/worker_host/worker_script_fetcher.cc b/content/browser/worker_host/worker_script_fetcher.cc
+index 26505cfc124b1323b658bd56de3288000e9dd5b4..a0a6faa1413729ecaabf0fc38db53fd76de020eb 100644
+--- a/content/browser/worker_host/worker_script_fetcher.cc
++++ b/content/browser/worker_host/worker_script_fetcher.cc
+@@ -672,10 +672,10 @@ WorkerScriptFetcher::CreateFactoryBundle(
+     auto requesting_scheme =
+         creator_render_frame_host->GetLastCommittedOrigin().scheme();
+     non_network_factories.emplace(
+-        requesting_scheme,
+-        CreateWebUIURLLoaderFactory(
+-            creator_render_frame_host, requesting_scheme,
+-            /*allowed_hosts=*/base::flat_set<std::string>()));
++        requesting_scheme, CreateWebUIURLLoaderFactory(
++                               creator_render_frame_host, requesting_scheme,
++                               /*allowed_hosts=*/base::flat_set<std::string>(),
++                               request_initiator_storage_key.origin()));
+   }
+ 
+   auto factory_bundle =
+diff --git a/content/public/browser/web_ui_data_source.h b/content/public/browser/web_ui_data_source.h
+index 705ff99d89a9204a95755b1defe1d678a063328f..8b7f7c38ef1a28d9c350d6b68627c87341ac6811 100644
+--- a/content/public/browser/web_ui_data_source.h
++++ b/content/public/browser/web_ui_data_source.h
+@@ -156,6 +156,26 @@ class WebUIDataSource {
+   virtual void OverrideCrossOriginEmbedderPolicy(const std::string& value) = 0;
+   virtual void OverrideCrossOriginResourcePolicy(const std::string& value) = 0;
+ 
++  // Sets whether any WebUI origin that can request this source's scheme is
++  // allowed to read its responses cross-origin via
++  // "Access-Control-Allow-Origin: *". If set to true, this wildcard setting
++  // takes precedence and broadly covers all requesting origins, superseding any
++  // individual origins added via AddAccessControlAllowOrigin().
++  virtual void SetAllowAllOrigins(bool allow_all_origins) = 0;
++
++  // Adds an allowed origin for the "Access-Control-Allow-Origin" header on this
++  // source's responses. `origin` must not be opaque.
++  //
++  // For sandboxed WebUI frames / documents with opaque origins, add the
++  // precursor tuple origin (e.g. `chrome-untrusted://foo`) instead, as matching
++  // automatically resolves precursor origins. For arbitrary opaque origins or
++  // "null" requests without a precursor, use `SetAllowAllOrigins(true)`.
++  //
++  // Note that if SetAllowAllOrigins(true) is enabled, the wildcard will broadly
++  // cover all requesting origins regardless of whether specific origins have
++  // been added here.
++  virtual void AddAccessControlAllowOrigin(const url::Origin& origin) = 0;
++
+   // Removes directives related to Trusted Types from the CSP header.
+   virtual void DisableTrustedTypesCSP() = 0;
+ 
+diff --git a/content/public/browser/web_ui_url_loader_factory.h b/content/public/browser/web_ui_url_loader_factory.h
+index f887400feb569c8c1289f27d31a55f46a9dfffbf..aac866f39bb85c3200da7bdc57043983c421d58c 100644
+--- a/content/public/browser/web_ui_url_loader_factory.h
++++ b/content/public/browser/web_ui_url_loader_factory.h
+@@ -5,27 +5,121 @@
+ #ifndef CONTENT_PUBLIC_BROWSER_WEB_UI_URL_LOADER_FACTORY_H_
+ #define CONTENT_PUBLIC_BROWSER_WEB_UI_URL_LOADER_FACTORY_H_
+ 
++#include <optional>
+ #include <string>
+ 
+ #include "base/containers/flat_set.h"
++#include "base/gtest_prod_util.h"
++#include "base/types/pass_key.h"
+ #include "content/common/content_export.h"
+ #include "mojo/public/cpp/bindings/pending_remote.h"
+-#include "services/network/public/mojom/url_loader_factory.mojom.h"
++#include "services/network/public/mojom/url_loader_factory.mojom-forward.h"
++#include "url/origin.h"
++
++class ChromeContentBrowserClient;
++class DevToolsUIBindings;
++
++namespace chromecast::shell {
++class CastContentBrowserClient;
++}
++
++namespace extensions {
++class WebUIURLFetcher;
++}
+ 
+ namespace content {
++
++class BrowserContext;
++class DownloadManagerImpl;
++class NavigationURLLoaderImpl;
+ class RenderFrameHost;
+-// Create and bind a URLLoaderFactory for loading resources matching the
+-// specified |scheme| and also from a "pseudo host" matching one in
+-// |allowed_hosts|.
++class SaveFileManager;
++
++// Passkey restricting creation of WebUI URLLoaderFactories without an origin
++// lock (unconstrained mode) to explicitly allowlisted browser-internal callers.
+ //
+-// The factory will only create loaders for requests with the same scheme as
+-// |scheme|. This is needed because there is more than one scheme used for
+-// WebUI, and not all have WebUI bindings.
++// A factory without an origin lock skips the cross-origin checks that
++// WebUIURLLoaderFactory otherwise enforces (see CreateWebUIURLLoaderFactory()),
++// so it can read from any data source within its scheme and allowed hosts. If
++// handed to a renderer, a compromised renderer could use it to read data it
++// shouldn't have access to.
++//
++// Avoid adding new callers; prefer passing an origin lock. If one is really
++// needed, it should either be browser-initiated and never handed to a
++// renderer, or be restricted via |allowed_hosts| to data sources that are safe
++// to expose to that renderer.
++class CONTENT_EXPORT WebUIURLLoaderFactoryPasskey {
++ public:
++  using PassKey = base::PassKey<WebUIURLLoaderFactoryPasskey>;
++
++ private:
++  static PassKey GetPassKey() { return PassKey(); }
++
++  // Allowlisted browser-process callers that load resources without a specific
++  // renderer initiator origin lock (e.g. navigations, downloads, DevTools,
++  // extensions).
++  friend class DownloadManagerImpl;
++  friend class NavigationURLLoaderImpl;
++  friend class SaveFileManager;
++  friend class chromecast::shell::CastContentBrowserClient;
++  friend class ::ChromeContentBrowserClient;
++  friend class ::DevToolsUIBindings;
++  friend class extensions::WebUIURLFetcher;
++
++  // Tests.
++  friend class WebUIURLLoaderFactoryOriginLockTest;
++  friend class WebUIURLLoaderFactoryTest;
++  friend class WebUIURLLoaderFactoryTest_RangeRequest_Test;
++  friend class WebUIURLLoaderFactoryInvalidUrlTest;
++  friend class WebUIURLLoaderFactoryInvalidUrlTest_InvalidUrl_Test;
++  FRIEND_TEST_ALL_PREFIXES(WebUIURLLoaderFactoryOriginLockTest,
++                           NoInitiatorOriginLockAllowsAllRequests);
++  FRIEND_TEST_ALL_PREFIXES(WebUIURLLoaderFactoryTest, RangeRequest);
++  FRIEND_TEST_ALL_PREFIXES(WebUIURLLoaderFactoryInvalidUrlTest, InvalidUrl);
++  FRIEND_TEST_ALL_PREFIXES(WebUIURLLoaderFactoryInvalidUrlTest,
++                           DevToolsSchemeRejectsChromeDataSource);
++};
++
++// Returns a URLLoaderFactory that can load resources from the given WebUI
++// scheme and allowed hosts (e.g. "chrome", "chrome-untrusted"). If
++// |allowed_hosts| is empty, all hosts in the scheme are allowed.
++//
++// |request_initiator_origin_lock| is the origin of the document or worker when
++// handed out to a renderer process for subresource loading.
++// Because WebUIURLLoaderFactory is a non-network factory, it enforces cross-
++// origin access control directly against this browser-verified origin lock
++// rather than renderer-provided request headers, preventing a compromised
++// renderer from spoofing its initiator.
++// Requests from a chrome-untrusted:// initiator to a different origin are then
++// only served when the target URLDataSource allows that initiator through
++// URLDataSource::GetAccessControlAllowOriginForOrigin().
+ CONTENT_EXPORT
+ mojo::PendingRemote<network::mojom::URLLoaderFactory>
+ CreateWebUIURLLoaderFactory(RenderFrameHost* render_frame_host,
+                             const std::string& scheme,
+-                            base::flat_set<std::string> allowed_hosts);
++                            base::flat_set<std::string> allowed_hosts,
++                            const url::Origin& request_initiator_origin_lock);
++
++// Similar to the above method, but used for worker processes.
++CONTENT_EXPORT
++mojo::PendingRemote<network::mojom::URLLoaderFactory>
++CreateWebUIURLLoaderFactoryForWorker(
++    BrowserContext* browser_context,
++    const std::string& scheme,
++    base::flat_set<std::string> allowed_hosts,
++    const url::Origin& request_initiator_origin_lock);
++
++// Creates a WebUIURLLoaderFactory without an origin lock, allowing any resource
++// within the configured scheme and allowed hosts to be loaded without
++// cross-origin restrictions. This mode is restricted via PassKey to trusted
++// browser-process-internal callers (e.g. navigations, downloads, DevTools).
++CONTENT_EXPORT
++mojo::PendingRemote<network::mojom::URLLoaderFactory>
++CreateWebUIURLLoaderFactoryWithoutOriginLock(
++    WebUIURLLoaderFactoryPasskey::PassKey pass_key,
++    RenderFrameHost* render_frame_host,
++    const std::string& scheme,
++    base::flat_set<std::string> allowed_hosts);
+ }  // namespace content
+ 
+ #endif  // CONTENT_PUBLIC_BROWSER_WEB_UI_URL_LOADER_FACTORY_H_
+diff --git a/extensions/browser/guest_view/web_view/web_ui/web_ui_url_fetcher.cc b/extensions/browser/guest_view/web_view/web_ui/web_ui_url_fetcher.cc
+index 9ca7199a0339a7e01c66705ae365618b52d3f661..c6385d1e15173e673f32f7e25f803b316b1875e8 100644
+--- a/extensions/browser/guest_view/web_view/web_ui/web_ui_url_fetcher.cc
++++ b/extensions/browser/guest_view/web_view/web_ui/web_ui_url_fetcher.cc
+@@ -38,9 +38,11 @@ void WebUIURLFetcher::Start() {
+     return;
+   }
+ 
++  // TODO(crbug.com/566312711): Remove the bypass origin lock.
+   mojo::Remote<network::mojom::URLLoaderFactory> factory(
+-      content::CreateWebUIURLLoaderFactory(render_frame_host, url_.GetScheme(),
+-                                           {}));
++      content::CreateWebUIURLLoaderFactoryWithoutOriginLock(
++          content::WebUIURLLoaderFactoryPasskey::GetPassKey(),
++          render_frame_host, url_.GetScheme(), {}));
+ 
+   net::NetworkTrafficAnnotationTag traffic_annotation =
+       net::DefineNetworkTrafficAnnotation("webui_content_scripts_download", R"(

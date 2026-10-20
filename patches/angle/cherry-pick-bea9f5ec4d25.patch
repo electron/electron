@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Wed, 16 Sep 2026 22:30:37 -0400
+Subject: Translator: Fix off-by-one error in variable-size check
+
+Bug: chromium:525685715
+Bug: chromium:561999377
+Change-Id: I67146644ea6da349c5f8208d479e222cbc5eca24
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8414095
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+
+Electron adaptation notes (42-x-y): TParseContext::checkVariableSize on
+this ANGLE revision has no mValidatedVariableTypeSizes cache, so only the
+comparison change (`>` -> `>=` against kWebGLMaxVariableSizeInBytes) is
+applied to the existing code. Test-only hunks that did not apply were
+dropped: src/tests/gl_tests/GLSLTest.cpp src/tests/gl_tests/GLSLValidationTest.cpp.
+
+diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
+index ce54848c73f7478c192187cc51bfc89c6c849155..a0b4b0040873b71c07869c585ce02ae3a9b43cd9 100644
+--- a/src/compiler/translator/ParseContext.cpp
++++ b/src/compiler/translator/ParseContext.cpp
+@@ -1823,7 +1823,7 @@ bool TParseContext::checkVariableSize(const TSourceLoc &line,
+     const size_t variableSize =
+         CalculateVariableSize(type, type->isInterfaceBlock() || type->getQualifier() == EvqUniform)
+             .ValueOrDefault(std::numeric_limits<size_t>::max());
+-    if (variableSize > kWebGLMaxVariableSizeInBytes)
++    if (variableSize >= kWebGLMaxVariableSizeInBytes)
+     {
+         error(line, "Size of declared variable exceeds implementation-defined limit", identifier);
+         return false;
+@@ -1867,7 +1867,7 @@ bool TParseContext::checkVariableSize(const TSourceLoc &line,
+         case EvqPerVertexIn:
+         case EvqPerVertexOut:
+ 
+-            if (variableSize > kWebGLMaxPrivateVariableSizeInBytes)
++            if (variableSize >= kWebGLMaxPrivateVariableSizeInBytes)
+             {
+                 error(line,
+                       "Size of declared private variable exceeds implementation-defined limit",
