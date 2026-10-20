@@ -421,6 +421,39 @@ describe('chrome extensions', () => {
     });
   });
 
+  describe('chrome.cookies', () => {
+    let customSession: Session;
+    let w: BrowserWindow;
+
+    beforeEach(async () => {
+      customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      const extension = await customSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'chrome-cookies')
+      );
+      w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      await w.loadURL(`${extension.url}page.html`);
+    });
+
+    it('lists the session as a cookie store', async () => {
+      const stores = await w.webContents.executeJavaScript('chrome.cookies.getAllCookieStores()');
+      expect(stores).toEqual([{ id: '0', tabIds: [w.webContents.id] }]);
+    });
+
+    it('sets and gets cookies and emits onChanged', async () => {
+      const cookieUrl = `${url}/`;
+      const { change, cookie } = await w.webContents.executeJavaScript(`(async () => {
+        const changed = new Promise((resolve) => chrome.cookies.onChanged.addListener(resolve));
+        await chrome.cookies.set({ url: ${JSON.stringify(cookieUrl)}, name: 'key', value: 'value' });
+        return { change: await changed, cookie: await chrome.cookies.get({ url: ${JSON.stringify(cookieUrl)}, name: 'key' }) };
+      })()`);
+      expect(cookie).toMatchObject({ name: 'key', value: 'value', storeId: '0' });
+      expect(change).toMatchObject({ removed: false, cause: 'explicit', cookie: { name: 'key', value: 'value' } });
+
+      const cookies = await customSession.cookies.get({ url: cookieUrl, name: 'key' });
+      expect(cookies.map((c) => c.value)).toEqual(['value']);
+    });
+  });
+
   describe('chrome.storage', () => {
     it('stores and retrieves a key', async () => {
       const customSession = session.fromPartition(`persist:${randomUUID()}`);

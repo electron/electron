@@ -1,0 +1,7 @@
+{
+  "name": "chrome-cookies",
+  "version": "1.0",
+  "permissions": ["cookies"],
+  "host_permissions": ["<all_urls>"],
+  "manifest_version": 3
+}

@@ -7,8 +7,11 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "components/value_store/value_store_factory.h"
+#include "extensions/browser/api/cookies/cookies_api_delegate.h"
 #include "extensions/browser/api/storage/settings_namespace.h"
 #include "extensions/browser/guest_view/extensions_guest_view_manager_delegate.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest_delegate.h"
@@ -81,6 +84,40 @@ class ElectronMimeHandlerViewGuestDelegate
                         content::BrowserContext* browser_context) override {}
 };
 
+class ElectronCookiesApiDelegate : public CookiesApiDelegate {
+ public:
+  ElectronCookiesApiDelegate() = default;
+  ~ElectronCookiesApiDelegate() override = default;
+
+  // disable copy
+  ElectronCookiesApiDelegate(const ElectronCookiesApiDelegate&) = delete;
+  ElectronCookiesApiDelegate& operator=(const ElectronCookiesApiDelegate&) =
+      delete;
+
+  // CookiesApiDelegate:
+  std::vector<CookieStoreContext> GetCookieStoreContexts(
+      content::BrowserContext& context,
+      bool include_incognito) override {
+    // A session is its own cookie store and has no off-the-record sibling.
+    std::vector<int> tab_ids;
+    for (const auto& contents :
+         electron::api::WebContents::GetWebContentsList()) {
+      if (contents && contents->web_contents() &&
+          contents->web_contents()->GetBrowserContext() == &context) {
+        tab_ids.push_back(contents->ID());
+      }
+    }
+
+    // Only stores with an open tab are listed.
+    std::vector<CookieStoreContext> cookie_stores;
+    if (!tab_ids.empty()) {
+      cookie_stores.push_back(
+          {raw_ref<content::BrowserContext>(context), std::move(tab_ids)});
+    }
+    return cookie_stores;
+  }
+};
+
 ElectronExtensionsAPIClient::ElectronExtensionsAPIClient() = default;
 ElectronExtensionsAPIClient::~ElectronExtensionsAPIClient() = default;
 
@@ -113,6 +150,12 @@ void ElectronExtensionsAPIClient::AttachWebContentsHelpers(
 
   extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(
       web_contents);
+}
+
+CookiesApiDelegate* ElectronExtensionsAPIClient::GetCookiesApiDelegate() {
+  if (!cookies_api_delegate_)
+    cookies_api_delegate_ = std::make_unique<ElectronCookiesApiDelegate>();
+  return cookies_api_delegate_.get();
 }
 
 ManagementAPIDelegate*
