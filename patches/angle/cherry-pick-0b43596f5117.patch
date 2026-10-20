@@ -16,7 +16,7 @@ Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
 Commit-Queue: Ran Wang <wangra@google.com>
 Reviewed-by: Geoff Lang <geofflang@chromium.org>
 
-Electron adaptation notes (43-x-y): TextureStorage11_2D/_Cube constructors on this branch also assert the zeroMaxLodWorkaround invariant; only mTextureDepth was switched to the MakeValidSize-computed depth.
+Electron adaptation notes (43-x-y): TextureStorage11_2D/_Cube constructors on this branch also assert the zeroMaxLodWorkaround invariant; only mTextureDepth was switched to the MakeValidSize-computed depth. This branch also still has the feature level 9_3 path in TextureStorage11::copySubresourceLevel (removed upstream), so its 5-arg MakeValidSize call is converted to the new by-reference signature, passing TextureType::_2D so only width/height are adjusted, as before.
 
 diff --git a/src/libANGLE/renderer/d3d/d3d11/Image11.cpp b/src/libANGLE/renderer/d3d/d3d11/Image11.cpp
 index 650b67a78feda31b76374b97210f2c01b82d4c03..77e11909c98d721fc8662b2fa98b81f78e2cc9b2 100644
@@ -53,10 +53,26 @@ index 650b67a78feda31b76374b97210f2c01b82d4c03..77e11909c98d721fc8662b2fa98b81f7
                  ANGLE_TRY(mRenderer->allocateTexture(context11, desc, formatInfo,
                                                       initialData.data(), &mStagingTexture));
 diff --git a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
-index 0d5bb3d65b56711117e56281c0a6eda243d48250..000e22c075398934d9cffc57e0d1ebf41ba67ba8 100644
+index 0d5bb3d65b56711117e56281c0a6eda243d48250..67e912db7cd55cfeced3f2ffcf28e43cd11b9901 100644
 --- a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
 +++ b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
-@@ -1065,11 +1065,13 @@ TextureStorage11_2D::TextureStorage11_2D(Renderer11 *renderer,
+@@ -739,9 +739,12 @@ angle::Result TextureStorage11::copySubresourceLevel(const gl::Context *context,
+     D3D11_BOX *pSrcBox = nullptr;
+     if (mRenderer->getRenderer11DeviceCaps().featureLevel <= D3D_FEATURE_LEVEL_9_3)
+     {
+-        GLsizei width  = region.width;
+-        GLsizei height = region.height;
+-        d3d11::MakeValidSize(false, mFormatInfo.texFormat, &width, &height, nullptr);
++        GLsizei width   = region.width;
++        GLsizei height  = region.height;
++        GLsizei depth   = region.depth;
++        int levelOffset = 0;
++        d3d11::MakeValidSize(false, mFormatInfo.texFormat, gl::TextureType::_2D, width, height,
++                             depth, levelOffset);
+ 
+         // Keep srcbox as nullptr if we're dealing with tiny mips of compressed textures.
+         if (width == region.width && height == region.height)
+@@ -1065,11 +1068,13 @@ TextureStorage11_2D::TextureStorage11_2D(Renderer11 *renderer,
          mRenderTarget[i]     = nullptr;
      }
  
@@ -72,7 +88,7 @@ index 0d5bb3d65b56711117e56281c0a6eda243d48250..000e22c075398934d9cffc57e0d1ebf4
  
      // The LevelZeroOnly hint should only be true if the zero max LOD workaround is active.
      ASSERT(!mUseLevelZeroTexture || mRenderer->getFeatures().zeroMaxLodWorkaround.enabled);
-@@ -2209,13 +2211,15 @@ TextureStorage11_Cube::TextureStorage11_Cube(Renderer11 *renderer,
+@@ -2209,13 +2214,15 @@ TextureStorage11_Cube::TextureStorage11_Cube(Renderer11 *renderer,
      }
  
      // adjust size if needed for compressed textures
@@ -91,7 +107,7 @@ index 0d5bb3d65b56711117e56281c0a6eda243d48250..000e22c075398934d9cffc57e0d1ebf4
  
      // The LevelZeroOnly hint should only be true if the zero max LOD workaround is active.
      ASSERT(!mUseLevelZeroTexture || mRenderer->getFeatures().zeroMaxLodWorkaround.enabled);
-@@ -2904,7 +2908,8 @@ TextureStorage11_3D::TextureStorage11_3D(Renderer11 *renderer,
+@@ -2904,7 +2911,8 @@ TextureStorage11_3D::TextureStorage11_3D(Renderer11 *renderer,
      }
  
      // adjust size if needed for compressed textures
@@ -101,7 +117,7 @@ index 0d5bb3d65b56711117e56281c0a6eda243d48250..000e22c075398934d9cffc57e0d1ebf4
  
      mMipLevels     = mTopLevel + levels;
      mTextureWidth  = width;
-@@ -3284,7 +3289,8 @@ TextureStorage11_2DArray::TextureStorage11_2DArray(Renderer11 *renderer,
+@@ -3284,7 +3292,8 @@ TextureStorage11_2DArray::TextureStorage11_2DArray(Renderer11 *renderer,
            label)
  {
      // adjust size if needed for compressed textures

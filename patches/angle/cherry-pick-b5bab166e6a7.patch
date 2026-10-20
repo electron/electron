@@ -311,10 +311,10 @@ index d29a393841ab831a38b25a8529a97fdc2db9d034..557d350c2f01d7ddeb98d2fff2729afb
              ANGLE_TRY(mRenderer->copyImage(context, destImage, sourceImage, currentLayerBox,
                                             destOffset, unpackFlipY, unpackPremultiplyAlpha,
 diff --git a/src/libANGLE/renderer/d3d/TextureD3D.h b/src/libANGLE/renderer/d3d/TextureD3D.h
-index 5d6987608907bc10c0ced8ae49d9dafcd26fad02..3c01c27f7635141fb649bea4a69b8094a64604f6 100644
+index 7436f03e526c50231d5c54cbf107a06e6c5ff98a..3a92fd8cea03aafde634b6791fce324ed2d67426 100644
 --- a/src/libANGLE/renderer/d3d/TextureD3D.h
 +++ b/src/libANGLE/renderer/d3d/TextureD3D.h
-@@ -47,9 +47,12 @@ class TextureD3D : public TextureImpl, public angle::ObserverInterface
+@@ -48,9 +48,12 @@ class TextureD3D : public TextureImpl, public angle::ObserverInterface
      virtual ImageD3D *getImage(const gl::ImageIndex &index) const = 0;
      virtual GLsizei getLayerCount(int level) const                = 0;
  
@@ -330,7 +330,7 @@ index 5d6987608907bc10c0ced8ae49d9dafcd26fad02..3c01c27f7635141fb649bea4a69b8094
  
      GLint getBaseLevelWidth() const;
      GLint getBaseLevelHeight() const;
-@@ -182,6 +185,11 @@ class TextureD3D : public TextureImpl, public angle::ObserverInterface
+@@ -183,6 +186,11 @@ class TextureD3D : public TextureImpl, public angle::ObserverInterface
      virtual bool isImageComplete(const gl::ImageIndex &index) const = 0;
  
      bool canCreateRenderTargetForImage(const gl::ImageIndex &index) const;
