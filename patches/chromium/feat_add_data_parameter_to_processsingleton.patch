@@ -72,7 +72,7 @@ index 7da4c199de1d2721a2e6ba9cb10ba0bc146917b7..b100f5feb95aabf63558aebc4d0054c9
  #if BUILDFLAG(IS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 6e42d6a1bfe1cab905a4dc8927f6f169ef20da52..2d28b2d047c18d51b3ef0396673e72d3903dd0fe 100644
+index 7e60fda45f824974b3403a376d8aa9b35b0a1f84..27221b14dc9a6b8346207e5ebb9ff727503d86ac 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -41,6 +41,7 @@
@@ -116,7 +116,7 @@ index 6e42d6a1bfe1cab905a4dc8927f6f169ef20da52..2d28b2d047c18d51b3ef0396673e72d3
 +bool WriteToSocket(int fd,
 +                   std::string_view message,
 +                   const base::TimeDelta& timeout = base::TimeDelta()) {
-   DCHECK(!message.empty());
+   CHECK(!message.empty(), base::NotFatalUntil::M162);
 +  const base::TimeTicks deadline = base::TimeTicks::Now() + timeout;
    while (!message.empty()) {
      ssize_t rv = HANDLE_EINTR(write(fd, message.data(), message.size()));
@@ -140,7 +140,7 @@ index 6e42d6a1bfe1cab905a4dc8927f6f169ef20da52..2d28b2d047c18d51b3ef0396673e72d3
 -          fd_(fd),
 -          bytes_read_(0) {
 +        : parent_(parent), ui_task_runner_(ui_task_runner), fd_(fd) {
-       DCHECK_CURRENTLY_ON(BrowserThread::IO);
+       CHECK_CURRENTLY_ON(BrowserThread::IO, base::NotFatalUntil::M162);
        // Wait for reads.
        fd_watch_controller_ = base::FileDescriptorWatcher::WatchReadable(
 @@ -597,11 +614,10 @@ class ProcessSingleton::LinuxWatcher
@@ -175,8 +175,8 @@ index 6e42d6a1bfe1cab905a4dc8927f6f169ef20da52..2d28b2d047c18d51b3ef0396673e72d3
 +    const std::vector<std::string>& argv,
 +    const std::vector<uint8_t> additional_data,
      SocketReader* reader) {
-   DCHECK(ui_task_runner_->BelongsToCurrentThread());
-   DCHECK(reader);
+   CHECK(ui_task_runner_->BelongsToCurrentThread(), base::NotFatalUntil::M162);
+   CHECK(reader, base::NotFatalUntil::M162);
  
    if (parent_ && parent_->notification_callback_.Run(
 -                     base::CommandLine(argv), base::FilePath(current_dir))) {
@@ -189,7 +189,7 @@ index 6e42d6a1bfe1cab905a4dc8927f6f169ef20da52..2d28b2d047c18d51b3ef0396673e72d3
 @@ -716,23 +737,58 @@ void ProcessSingleton::LinuxWatcher::RemoveSocketReader(SocketReader* reader) {
  void ProcessSingleton::LinuxWatcher::SocketReader::
      OnSocketCanReadWithoutBlocking() {
-   DCHECK_CURRENTLY_ON(BrowserThread::IO);
+   CHECK_CURRENTLY_ON(BrowserThread::IO, base::NotFatalUntil::M162);
 -  bytes_read_ += ReadFromSocketWithTimeout(
 -      fd_, base::span(buf_).subspan(bytes_read_), base::Seconds(0));
  

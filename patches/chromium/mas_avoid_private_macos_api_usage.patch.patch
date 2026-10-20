@@ -50,7 +50,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 9feaf5f8e639b33b871fdafe9e5d3e4c6b240761..05fa7e84103811395fe02d63738fdfe348e62470 100644
+index 559dc98860e425e973852e4e9cf441359875e57e..3e00942a6d41466c755001e0f3216f20484a0836 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1154,6 +1154,7 @@ component("base") {
@@ -129,10 +129,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index a93b1d54a43b2cdee79bb1ff64d14e70c30a8160..5df1705ad1d2827f51fc32c61bae19e56ce7cfd1 100644
+index 7780529ef26ed86f74ca452745eda8801f3181c6..c4042f2eb818db39f2cb51ffa6e9c16e238a8427 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -1051,6 +1051,7 @@ if (is_clang_or_gcc) {
+@@ -1047,6 +1047,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -843,7 +843,7 @@ index c5c652c6c67da33e9a2127cbbc35ec5fc535df6c..e58bb7368359e6ba13c249b8677a91e5
  
  - (NSWindow*)rootWindow {
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 711339903cd8272470e72bb83495116c7ceec1bf..23f119b4adf8d604a5f283ecf58f23a08a1f88f7 100644
+index 5abdca1cb441d306b5dbea7d7bf7e1400ce3a14d..d2235a096f5ea7b5c3ecdc84af9b10a839615347 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -1005,7 +1005,7 @@ index c74a6130862162d4fdb07cf3d4a60604d0ae0482..92eaacfb3256ded77bd119e6ca306404
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 88198203b8e696c07ca9971d5716d3d5197eb45c..29189cc7d5b0724a07998079d1cfc977b85c39f5 100644
+index 56de9c52be3c20327b7a14cca46b4d24fa9d80f2..d1e0d849eec52d97fcd10e99c40491b0c92faf79 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -385,6 +385,7 @@ source_set("browser") {
@@ -1126,10 +1126,10 @@ index 10d8a0e16d6bd7e603eddabfd3f053f44d43d7a1..23b8154e7695d2fb4efbd777de6e84f2
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 2e1af512e770c9bee1b3d3c430f5537e0193f069..aeca39edb1bfd856c5a5722155097dfb13eb4f65 100644
+index e41489d4c98fbf96f9bfadfb78c5b0b0f5a5d841..1a6298d187d6245370d7c29c419617a8c401c5d0 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -280,6 +280,7 @@ source_set("common") {
+@@ -279,6 +279,7 @@ source_set("common") {
      "//ui/shell_dialogs",
      "//url",
      "//url/ipc:url_ipc",
@@ -1220,7 +1220,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 2a59068e1900d98fd3ef2bf4a0f5540536c54111..3decb5ded7ce388965f8637a718435941c240dd9 100644
+index 749d414b5ac90f23ea4ae285bd7b9251308ea9cc..1b514295dfa0ce6cc50c1c03bb1dc19076f58c3d 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -653,6 +653,7 @@ static_library("test_support") {
@@ -1248,7 +1248,7 @@ index 2a59068e1900d98fd3ef2bf4a0f5540536c54111..3decb5ded7ce388965f8637a71843594
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3453,6 +3457,7 @@ test("content_unittests") {
+@@ -3455,6 +3459,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -2163,10 +2163,10 @@ index 9423a2891552e8df3ea5b05c720ab11795c4b92d..610c479ef03759d3082b42d7a402cbea
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index dd9811827c1d7a4a0afe006ba6c0bbc17f58d3a6..3399f82675e57a1f9feb8f33ba1666dde84731cb 100644
+index c92c5700536048d3fafc030ff259526c6e7dba55..ecfa2b7713024a0f9d1dc3b2a394b4ccd8ebdf10 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -367,6 +367,13 @@ component("base") {
+@@ -365,6 +365,13 @@ component("base") {
      ]
    }
  
@@ -2180,7 +2180,7 @@ index dd9811827c1d7a4a0afe006ba6c0bbc17f58d3a6..3399f82675e57a1f9feb8f33ba1666dd
    if (is_ios) {
      sources += [
        "device_form_factor_ios.mm",
-@@ -523,6 +530,12 @@ component("base") {
+@@ -521,6 +528,12 @@ component("base") {
      "//url",
    ]
  
@@ -2382,7 +2382,7 @@ index 65ae8170664d15c7884261812400d0ed638a681d..86c937f1e6d03b88803a2ca80abff19c
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index cb35a2682b68f90a0e6d9916a845c8e1b4b52e23..686c60c0a57be23aa323b96fa5d423278eeeaa1a 100644
+index c0d1b5edde7890a13fcdf1e8a18d7733041593fa..d88b9590e4ea4170aa680e56dca5916f9e7363b8 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -791,6 +791,8 @@ component("views") {

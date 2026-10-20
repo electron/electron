@@ -18,6 +18,7 @@
 #include "base/memory/ptr_util.h"
 #include "base/no_destructor.h"
 #include "base/power_monitor/power_monitor_source.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/task/sequenced_task_runner.h"
 #include "build/build_config.h"
 #include "chrome/browser/browser_process.h"
@@ -56,6 +57,11 @@
 #elif BUILDFLAG(IS_WIN)
 #include <windows.h>
 #endif
+
+namespace node::crypto {
+NODE_EXTERN void AddBlockedSPKIForTesting(const uint8_t* sha256_hash);
+NODE_EXTERN void ClearBlockedSPKIsForTesting();
+}  // namespace node::crypto
 
 namespace {
 
@@ -290,6 +296,20 @@ v8::Local<v8::Promise> SimulateNetworkServiceCrash(v8::Isolate* isolate) {
                          std::move(promise))));
   content::RestartNetworkService();
   return handle;
+}
+
+void AddNodeBlockedSPKIForTesting(gin_helper::ErrorThrower thrower,
+                                  const std::string& hex) {
+  std::vector<uint8_t> hash;
+  if (!base::HexStringToBytes(hex, &hash) || hash.size() != 32) {
+    thrower.ThrowTypeError("expected a 64 character hex SHA-256");
+    return;
+  }
+  node::crypto::AddBlockedSPKIForTesting(hash.data());
+}
+
+void ClearNodeBlockedSPKIsForTesting() {
+  node::crypto::ClearBlockedSPKIsForTesting();
 }
 
 void HoldRepeatingCallbackForTesting(const base::RepeatingClosure& callback) {
@@ -560,6 +580,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod<&IsPlatformCaretBrowsingEnabled>(
       "isPlatformCaretBrowsingEnabled");
   dict.SetMethod<&SimulateNetworkServiceCrash>("simulateNetworkServiceCrash");
+  dict.SetMethod<&AddNodeBlockedSPKIForTesting>("addNodeBlockedSPKI");
+  dict.SetMethod<&ClearNodeBlockedSPKIsForTesting>("clearNodeBlockedSPKIs");
   dict.SetMethod<&SimulatePowerEvent>("simulatePowerEvent");
   dict.SetMethod<&SimulateWebAuthnUvLockedPinSecurityKey>(
       "simulateWebAuthnUvLockedPinSecurityKey");
