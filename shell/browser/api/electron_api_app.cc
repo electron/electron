@@ -453,7 +453,11 @@ bool NotificationCallbackWrapper(
   // Set the global activation token sent as a command line switch by another
   // electron app instance. This also removes the switch after use to prevent
   // any side effects of leaving it in the command line after this point.
-  base::nix::ExtractXdgActivationTokenFromCmdLine(cmd);
+  if (std::optional<std::string> token =
+          base::nix::GetXdgActivationTokenFromCommandLine(cmd)) {
+    base::nix::SetActivationToken(std::move(*token));
+    cmd.RemoveSwitch(base::nix::kXdgActivationTokenSwitch);
+  }
 #endif
   // Make sure the callback is called after app gets ready.
   if (Browser::Get()->is_ready()) {
