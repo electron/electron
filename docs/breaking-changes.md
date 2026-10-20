@@ -53,21 +53,65 @@ const { width, height } = image.getSize() // DIPs
 console.log(width * scaleFactor, height * scaleFactor) // pixels, as before
 ```
 
-### Behavior Changed: workers created by subframes need `nodeIntegrationInSubFrames` for Node.js integration
+### Removed: `document.requestStorageAccessFor`
 
-With `nodeIntegrationInWorker: true`, a `Worker` created from an `<iframe>` in
-the same process as the main frame used to get Node.js integration even though
-the iframe itself had none. Workers now only get Node.js integration when the
-frame that creates them has it: the main frame, or any frame when
-`nodeIntegrationInSubFrames` is enabled.
+Chromium has removed `document.requestStorageAccessFor` and the
+`top-level-storage-access` permission descriptor. Calling
+`navigator.permissions.query({ name: 'top-level-storage-access' })` now rejects
+with a `TypeError`, and web content can no longer trigger a
+`top-level-storage-access` permission request or check. Setting the
+[`enableBlinkFeatures`](api/structures/web-preferences.md) web preference to
+`RequestStorageAccessFor`, which restored the API in Electron 45, no longer has
+any effect. See
+[Chromium's intent to remove discussion](https://groups.google.com/a/chromium.org/g/blink-dev/c/bqHGZYHWxnQ)
+for more information.
 
-### Behavior Changed: preload scripts only run in DevTools extension frames hosted by DevTools
+### Behavior Changed: `unload` event handlers no longer run on http(s) pages by default
 
-A `chrome-extension://` document used to receive the window's preload script
-(and session preload scripts) wherever it was embedded. It now only does so
-when it is a top-level frame or is hosted inside the DevTools front-end (a
-`devtools_page` or panel); an extension frame embedded in an ordinary page is
-treated like any other subframe and follows `nodeIntegrationInSubFrames`.
+Chromium now [deprecates the `unload` event](https://developer.chrome.com/docs/web-platform/deprecating-unload)
+by disabling the `unload` Permissions Policy feature by default for `http:` and
+`https:` documents. In those documents `window.addEventListener('unload', ...)`
+and `window.onunload` handlers are not registered, so they never run. The check
+uses each frame's own origin, so it also applies to an `http:` or `https:`
+iframe embedded in a `file:` page. Documents loaded from `file:` or from a
+custom protocol (for example one registered with
+[`protocol.handle`](api/protocol.md#protocolhandlescheme-handler)) are not
+affected. `beforeunload`, `pagehide` and `visibilitychange` handlers are not
+affected either.
+
+Move `unload` logic to `pagehide`, which fires at the same point when a page is
+navigated away from or closed, or to `visibilitychange` if you also want to
+save state whenever the page is hidden:
+
+```js
+// Before
+window.addEventListener('unload', () => {
+  saveState()
+})
+
+// After
+window.addEventListener('pagehide', () => {
+  saveState()
+})
+
+// or
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    saveState()
+  }
+})
+```
+
+A top-level page served over `http:` or `https:` can opt back in by sending the
+`Permissions-Policy: unload=*` response header. An iframe can only opt in when
+its parent document also enables `unload` through its own Permissions-Policy
+header. To temporarily restore the old behavior for your whole app, disable the
+`DeprecateUnload` feature:
+
+```js
+// main.js (right beneath your require/import statements)
+app.commandLine.appendSwitch('disable-features', 'DeprecateUnload')
+```
 
 ## Breaking API Changes (45.0)
 
@@ -108,6 +152,52 @@ npm package. It provides the same instance API as before (`on`, `once`, `off`,
 the max-listener warning) with the same behavior. The static helpers that were only
 reachable through `require('events')` (`once`, `listenerCount`, `init`) are not
 provided.
+
+### Behavior Changed: workers created by subframes need `nodeIntegrationInSubFrames` for Node.js integration
+
+With `nodeIntegrationInWorker: true`, a `Worker` created from an `<iframe>` in
+the same process as the main frame used to get Node.js integration even though
+the iframe itself had none. Workers now only get Node.js integration when the
+frame that creates them has it: the main frame, or any frame when
+`nodeIntegrationInSubFrames` is enabled.
+
+This change was also backported to Electron 44.3.0, 43.7.0 and 42.11.3.
+
+### Behavior Changed: preload scripts only run in DevTools extension frames hosted by DevTools
+
+A `chrome-extension://` document used to receive the window's preload script
+(and session preload scripts) wherever it was embedded. It now only does so
+when it is a top-level frame or is hosted inside the DevTools front-end (a
+`devtools_page` or panel); an extension frame embedded in an ordinary page is
+treated like any other subframe and follows `nodeIntegrationInSubFrames`.
+
+This change was also backported to Electron 44.3.0, 43.7.0 and 42.11.3.
+
+### Behavior Changed: `getUserMedia` with `chromeMediaSource: 'desktop'` rejects WebContents source ids
+
+The legacy `chromeMediaSource: 'desktop'` constraint now only accepts screen and
+window source ids from [`desktopCapturer.getSources`](api/desktop-capturer.md#desktopcapturergetsourcesoptions).
+Passing a WebContents source id there now fails with an "Invalid state" error.
+To capture a WebContents, use `chromeMediaSource: 'tab'` with an id from
+[`webContents.getMediaSourceId()`](api/web-contents.md#contentsgetmediasourceidrequestwebcontents),
+or use [`ses.setDisplayMediaRequestHandler`](api/session.md#sessetdisplaymediarequesthandlerhandler-opts).
+
+```js
+// Main process
+const sourceId = targetContents.getMediaSourceId(requestingContents)
+
+// Renderer process of requestingContents
+const stream = await navigator.mediaDevices.getUserMedia({
+  video: {
+    mandatory: {
+      chromeMediaSource: 'tab',
+      chromeMediaSourceId: sourceId
+    }
+  }
+})
+```
+
+This change was also backported to Electron 44.3.0, 43.7.0 and 42.11.3.
 
 ### Removed: `contentTracing.enableHeapProfiling()`
 

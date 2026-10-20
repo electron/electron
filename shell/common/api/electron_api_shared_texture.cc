@@ -399,7 +399,7 @@ void ImportedTextureGetVideoFrame(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* isolate = info.GetIsolate();
   auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
-      info.Data().As<v8::External>()->Value(
+      info.DataV2().As<v8::External>()->Value(
           v8::kExternalPointerTypeTagDefault));
 
   if (wrapper->IsReferenceReleased()) {
@@ -422,7 +422,7 @@ void ImportedTextureStartTransferSharedTexture(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* isolate = info.GetIsolate();
   auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
-      info.Data().As<v8::External>()->Value(
+      info.DataV2().As<v8::External>()->Value(
           v8::kExternalPointerTypeTagDefault));
 
   if (wrapper->IsReferenceReleased()) {
@@ -443,7 +443,7 @@ void ImportedTextureStartTransferSharedTexture(
 
 void ImportedTextureRelease(const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
-      info.Data().As<v8::External>()->Value(
+      info.DataV2().As<v8::External>()->Value(
           v8::kExternalPointerTypeTagDefault));
 
   if (wrapper->IsReferenceReleased()) {
@@ -468,7 +468,7 @@ void ImportedTextureGetFrameCreationSyncToken(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* isolate = info.GetIsolate();
   auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
-      info.Data().As<v8::External>()->Value(
+      info.DataV2().As<v8::External>()->Value(
           v8::kExternalPointerTypeTagDefault));
 
   if (wrapper->IsReferenceReleased()) {
@@ -491,7 +491,7 @@ void ImportedTextureSetReleaseSyncToken(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   auto* isolate = info.GetIsolate();
   auto* wrapper = static_cast<ImportedSharedTextureWrapper*>(
-      info.Data().As<v8::External>()->Value(
+      info.DataV2().As<v8::External>()->Value(
           v8::kExternalPointerTypeTagDefault));
 
   if (wrapper->IsReferenceReleased()) {

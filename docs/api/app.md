@@ -153,6 +153,52 @@ this event, such as launching the application for the first time, attempting
 to re-launch the application when it's already running, or clicking on the
 application's dock or taskbar icon.
 
+### Event: 'app-shim-connected' _macOS_ _Experimental_
+
+Returns:
+
+* `event` Event
+* `shim` [AppShimHost](app-shim-host.md)
+
+Emitted when an app shim connects to your app. Shims can only connect after
+[`app.startAppShimServer()`](#appstartappshimserveroptions-macos-experimental)
+has been called.
+
+Any process running as the same user can connect. Verify the shim before
+creating windows in it, for example with
+[`shim.satisfiesCodeRequirement()`](app-shim-host.md#shimsatisfiescoderequirementrequirement-experimental),
+and call `shim.quit()` to reject a shim that you do not trust.
+
+### Event: 'app-shim-version-mismatch' _macOS_ _Experimental_
+
+Returns:
+
+* `event` Event
+* `bundlePath` string - The path of the app shim's bundle.
+
+Emitted when an app shim was launched but could not connect because your app's
+bundle has been replaced by a different version since your app started. A shim
+loads the version of Electron that is on disk, which cannot communicate with
+the version that is still running.
+
+The shim quits without showing any UI, so use this event to tell the user what
+happened. Shims can connect again after your app restarts.
+
+```js
+const { app, dialog } = require('electron')
+
+app.on('app-shim-version-mismatch', async () => {
+  const { response } = await dialog.showMessageBox({
+    message: `Restart ${app.name} to finish updating`,
+    buttons: ['Restart', 'Later']
+  })
+  if (response === 0) {
+    app.relaunch()
+    app.quit()
+  }
+})
+```
+
 ### Event: 'did-become-active' _macOS_
 
 Returns:
@@ -655,8 +701,9 @@ Returns `string` - The current application directory.
     * `~/Library/Application Support` on macOS
   * `assets` The directory where app assets such as `resources.pak` are stored. By default this is the same as the folder containing the `exe` path. Available on Windows and Linux only.
   * `userData` The directory for storing your app's configuration files, which
-    by default is the `appData` directory appended with your app's name. By
-    convention files storing user data should be written to this directory, and
+    by default is the `appData` directory appended with your app's name. On
+    Windows, the app's name must not contain [reserved filename characters](#appgetname).
+    By convention files storing user data should be written to this directory, and
     it is not recommended to write large files here because some environments
     may backup this directory to cloud storage. It is recommended to store
     app-specific files within a subdirectory of `userData` (e.g.,
@@ -741,11 +788,20 @@ to the npm modules spec. You should usually also specify a `productName`
 field, which is your application's full capitalized name, and which will be
 preferred over `name` by Electron.
 
+Electron uses the application's name to construct the default `userData` directory.
+On Windows, neither `productName` nor `name` should contain the following special
+characters, which cannot be used in directory or file names:
+`<`, `>`, `:`, `"`, `\`, `/`, `|`, `?`, `*`. Using these characters in the application's
+name can prevent Electron from creating the default `userData` directory and cause
+the application to crash on startup.
+
 ### `app.setName(name)`
 
 * `name` string
 
 Overrides the current application's name.
+
+On Windows, avoid the [reserved filename characters](#appgetname) in `name`.
 
 > [!NOTE]
 > This function overrides the name used internally by Electron; it does not affect the name that the OS uses.
@@ -1240,6 +1296,30 @@ Activation policy types:
 * 'accessory' - The application doesn’t appear in the Dock and doesn’t have a menu bar, but it may be activated programmatically or by clicking on one of its windows.
 * 'prohibited' - The application doesn’t appear in the Dock and may not create windows or be activated.
 
+### `app.startAppShimServer([options])` _macOS_ _Experimental_
+
+* `options` Object (optional)
+  * `name` string (optional) - A name for this server, which lets several
+    running copies of your app each have their own. It can only contain
+    letters, digits, `.`, `-` and `_`, and must match the
+    `ElectronAppShimServerName` of the shims that connect to it. Default is
+    `appshim`.
+
+Starts accepting connections from [app shims](app-shim-host.md). An
+[`app-shim-connected`](#event-app-shim-connected-macos-experimental) event is
+emitted for each shim that connects.
+
+Throws if the server cannot be started, for example because another copy of
+your app has already started a server with the same `name`.
+
+This method can only be called after the app is ready. It is not available in
+Mac App Store builds.
+
+### `app.stopAppShimServer()` _macOS_ _Experimental_
+
+Stops accepting connections from app shims. Shims that have already connected
+stay connected.
+
 ### `app.importCertificate(options, callback)` _Linux_
 
 * `options` Object
@@ -1641,7 +1721,7 @@ you'll want to set the launch path to your executable's name but a directory up,
 a stub application automatically generated by Squirrel which will automatically launch the
 latest version.
 
-``` js
+```js
 const { app } = require('electron')
 
 const path = require('node:path')
@@ -1994,6 +2074,10 @@ Usually the `name` field of `package.json` is a short lowercase name, according
 to the npm modules spec. You should usually also specify a `productName`
 field, which is your application's full capitalized name, and which will be
 preferred over `name` by Electron.
+
+On Windows, the application's name must not contain
+[reserved filename characters](#appgetname), because it is used to construct the
+default `userData` directory.
 
 ### `app.userAgentFallback`
 

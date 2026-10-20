@@ -51,7 +51,7 @@ index 6f081c26ca4cffe76104eae5a4130a81a93a539d..7da4c199de1d2721a2e6ba9cb10ba0bc
    bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
  
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 9a83a1d2d2f9bf68ac8b832744b34fbe00ca724e..6e42d6a1bfe1cab905a4dc8927f6f169ef20da52 100644
+index 827a8a94b0a185638678d63e3e8f9f5e380cca28..7e60fda45f824974b3403a376d8aa9b35b0a1f84 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -55,6 +55,7 @@

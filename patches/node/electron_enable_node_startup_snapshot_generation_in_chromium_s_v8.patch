@@ -62,7 +62,7 @@ eliminating the Node bootstrap recompile.
   config following https://chromium-review.googlesource.com/c/v8/v8/+/7808546.
 
 diff --git a/node.gni b/node.gni
-index 156fee33b3813fe4d94a1c9585f217a99dbfbd5f..a443ff52ca1dda5cb2cfdfe5241076836a33b8fc 100644
+index 757a0b2a75643322b3339a45e991ad5622ffc29e..c7159731d790a76f20c7c678494a3969eccba5e9 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -31,6 +31,13 @@ declare_args() {
@@ -90,7 +90,7 @@ index 156fee33b3813fe4d94a1c9585f217a99dbfbd5f..a443ff52ca1dda5cb2cfdfe524107683
 -  # TODO(zcbenz): There are few broken things for now:
 -  #   1. cross-os compilation is not supported.
 -  #   2. node_mksnapshot crashes when cross-compiling for x64 from arm64.
--  node_use_node_snapshot = false
+-  node_use_node_snapshot = (host_os == target_os) && !(host_cpu == "arm64" && target_cpu == "x64")
 +  # Embed a startup snapshot of the bootstrapped Node.js environment, and the
 +  # V8 code cache for the builtins that complements it, to speed up startup.
 +  # Neither contains machine code, so cross-arch builds can generate them, but
@@ -110,12 +110,12 @@ index 156fee33b3813fe4d94a1c9585f217a99dbfbd5f..a443ff52ca1dda5cb2cfdfe524107683
    # Build with Amaro (TypeScript utils).
    node_use_amaro = true
 diff --git a/src/api/embed_helpers.cc b/src/api/embed_helpers.cc
-index c1bcb3948c4cf68b36dbb1ea985bfb02267ad724..b9ddc1e2139c1a3b869a27f088e6e64688efa0f0 100644
+index 051110c9c6e96b91fa966f9dc8cd3a161db6d0b2..7b78ed07d020c6553c9fdf449fa057e5daef54a3 100644
 --- a/src/api/embed_helpers.cc
 +++ b/src/api/embed_helpers.cc
 @@ -131,6 +131,15 @@ CommonEnvironmentSetup::CommonEnvironmentSetup(
-     isolate = impl_->isolate = Isolate::Allocate(GetOrCreateIsolateGroup());
-     platform->RegisterIsolate(isolate, loop);
+     params.cpp_heap =
+         v8::CppHeap::Create(platform, v8::CppHeapCreateParams{{}}).release();
  
 +    // Electron: extend an existing V8 startup snapshot rather than build the
 +    // heap from scratch (Electron's V8 has external startup data / the
@@ -238,7 +238,7 @@ index 664f878c0671db76cbf68116d224606243ddf501..4ed6d6ecf12ea92129f4d7b7fdb59bcb
    return nullptr;
  }
 diff --git a/src/node_snapshotable.cc b/src/node_snapshotable.cc
-index ae0613fdf35efcdb4b5917b9ecb3ad12d7bf4976..bc48096932b0a1004aec4317dc0c265bd6f1c045 100644
+index 643cc0bb244c89178a499082f0532d887e18c24c..2568e857f299f058c15e41b7990412c51064767e 100644
 --- a/src/node_snapshotable.cc
 +++ b/src/node_snapshotable.cc
 @@ -866,6 +866,19 @@ const std::vector<intptr_t>& SnapshotBuilder::CollectExternalReferences() {
@@ -318,7 +318,7 @@ index 0842cba257d0ca36e07c97736e5b24cc77f2a053..0ee1bd02a03b6d303861cd0f8353db6c
        node::InitializeOncePerProcess(
            std::vector<std::string>(argv, argv + argc),
 diff --git a/unofficial.gni b/unofficial.gni
-index 504dd46249425a8e8396332bf061f1f75cdd9401..bc31136d8f4ad1fa08083832623f4ef98795cfab 100644
+index 8846cb83ed2949b81095883d99d9f0a7a7e04dc2..1b95224d0555fd5d3ea2396535967d87631e0f91 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -32,7 +32,22 @@ template("node_gn_build") {
@@ -357,7 +357,7 @@ index 504dd46249425a8e8396332bf061f1f75cdd9401..bc31136d8f4ad1fa08083832623f4ef9
        "$root_gen_dir/electron_natives.cc",
        "$target_gen_dir/node_javascript.cc",
      ] + gypi_values.node_sources
-@@ -279,20 +297,12 @@ template("node_gn_build") {
+@@ -275,20 +293,12 @@ template("node_gn_build") {
      sources = [ "src/node_main.cc" ]
      deps = [
        ":libnode",
@@ -382,7 +382,7 @@ index 504dd46249425a8e8396332bf061f1f75cdd9401..bc31136d8f4ad1fa08083832623f4ef9
      output_name = "node"
  
      if (is_apple) {
-@@ -308,12 +318,36 @@ template("node_gn_build") {
+@@ -304,12 +314,36 @@ template("node_gn_build") {
    if (node_use_node_snapshot) {
      if (current_toolchain == v8_snapshot_toolchain) {
        executable("node_mksnapshot") {
@@ -424,7 +424,7 @@ index 504dd46249425a8e8396332bf061f1f75cdd9401..bc31136d8f4ad1fa08083832623f4ef9
        }
  
        # This config disables a link time optimization "ICF", which may merge
-@@ -328,26 +362,127 @@ template("node_gn_build") {
+@@ -324,26 +358,135 @@ template("node_gn_build") {
            ldflags = [ "/OPT:NOICF" ]  # link.exe, but also lld-link.exe.
          } else if (is_apple && !use_lld) {
            ldflags = [ "-Wl,-no_deduplicate" ]  # ld64.
@@ -516,6 +516,10 @@ index 504dd46249425a8e8396332bf061f1f75cdd9401..bc31136d8f4ad1fa08083832623f4ef9
 +      "$node_v8_path",
 +      "$node_v8_path:v8_libplatform",
 +    ]
++    if (node_use_openssl) {
++      # node headers include OpenSSL headers when HAVE_OPENSSL is set.
++      deps += [ "$node_openssl_path" ]
++    }
 +    sources = [ "src/node_snapshot_stub.cc" ]
 +  }
 +
@@ -545,6 +549,10 @@ index 504dd46249425a8e8396332bf061f1f75cdd9401..bc31136d8f4ad1fa08083832623f4ef9
 +      "$node_v8_path",
 +      "$node_v8_path:v8_libplatform",
 +    ]
++    if (node_use_openssl) {
++      # node headers include OpenSSL headers when HAVE_OPENSSL is set.
++      deps += [ "$node_openssl_path" ]
++    }
 +    if (node_use_node_snapshot) {
 +      _run_node_mksnapshot = ":run_node_mksnapshot($default_toolchain)"
 +      sources = [ get_label_info(_run_node_mksnapshot, "target_gen_dir") +

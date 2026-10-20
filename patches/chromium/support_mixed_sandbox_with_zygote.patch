@@ -22,7 +22,7 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 712445d23f1375d9089d3f33366e418ca880b2c1..d7c1182300c69e11d7e2adc9365cd9e1be9f6514 100644
+index 87c93425984b86d8122b29a5b6255be38e213207..aca2627015bec55846b892886b3fe955cb614325 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -2135,6 +2135,10 @@ bool RenderProcessHostImpl::Init() {
@@ -37,7 +37,7 @@ index 712445d23f1375d9089d3f33366e418ca880b2c1..d7c1182300c69e11d7e2adc9365cd9e1
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegate>();
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
-index a7bbb1d46c0c682bfdeb011a3460a7589d2ae6c3..9cd6ab6990111a480a7ea3e6950c8541e0e57d41 100644
+index 4766810d7478f90c665572232f23beb33107f897..ab43ba8d994c966ce42b3e3e82e334939c554f4f 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 @@ -36,6 +36,9 @@ namespace content {
@@ -51,10 +51,10 @@ index a7bbb1d46c0c682bfdeb011a3460a7589d2ae6c3..9cd6ab6990111a480a7ea3e6950c8541
        *base::CommandLine::ForCurrentProcess();
    base::CommandLine::StringType renderer_prefix =
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
-index 73c0a0f38c82fbf1d040c3dadd5a78f3e2c8ffbb..209abbc2fcf80bf16816ff188c13ffa2654eceeb 100644
+index ecc214dff1b68eb94526958d9a463f78eeccf8cb..0736f4cc5db0140a7b87fea74794dcf7094b8ccd 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
-@@ -21,6 +21,11 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate
+@@ -24,6 +24,11 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate
   public:
    RendererSandboxedProcessLauncherDelegate() = default;
  
@@ -66,7 +66,7 @@ index 73c0a0f38c82fbf1d040c3dadd5a78f3e2c8ffbb..209abbc2fcf80bf16816ff188c13ffa2
    ~RendererSandboxedProcessLauncherDelegate() override = default;
  
  #if BUILDFLAG(USE_ZYGOTE)
-@@ -33,6 +38,11 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate
+@@ -36,6 +41,11 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate
  
    // sandbox::policy::SandboxDelegate:
    sandbox::mojom::Sandbox GetSandboxType() override;
