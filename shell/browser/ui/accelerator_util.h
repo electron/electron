@@ -9,8 +9,11 @@
 #include <string_view>
 
 #include "base/memory/raw_ptr.h"
-#include "shell/browser/ui/electron_menu_model.h"
 #include "ui/base/accelerators/accelerator.h"
+
+namespace electron {
+class ElectronMenuModel;
+}  // namespace electron
 
 namespace accelerator_util {
 
