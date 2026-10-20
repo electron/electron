@@ -19,12 +19,12 @@
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "shell/browser/ui/views/win_frame_view.h"
-#include "shell/browser/ui/win/electron_desktop_window_tree_host_win.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
 #include "shell/common/electron_constants.h"
 #include "skia/ext/skia_utils_win.h"
-#include "ui/aura/window.h"
+#include "ui/base/view_prop.h"
+#include "ui/base/win/window_event_target.h"
 #include "ui/color/win/accent_color_observer.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
@@ -703,13 +703,16 @@ void NativeWindowViews::FlushForwardedMouseEvent() {
   if (!forwarding_mouse_messages_ || widget_destroyed_)
     return;
 
-  aura::Window* window = GetNativeWindow();
-  if (!window)
+  HWND hwnd = GetAcceleratedWidget();
+  if (!hwnd)
     return;
 
-  auto* desktop_window_tree_host =
-      static_cast<ElectronDesktopWindowTreeHostWin*>(window->GetHost());
-  if (!desktop_window_tree_host)
+  // The dispatcher that owns this HWND: the same one a
+  // Chrome_RenderWidgetHostHWND relays its own messages to.
+  auto* event_target =
+      reinterpret_cast<ui::WindowEventTarget*>(ui::ViewProp::GetValue(
+          hwnd, ui::WindowEventTarget::kWin32InputEventTarget));
+  if (!event_target)
     return;
 
   // Update the tracked state before dispatching: the dispatch runs page code,
@@ -719,15 +722,17 @@ void NativeWindowViews::FlushForwardedMouseEvent() {
       pending_forwarded_point_.value_or(last_forwarded_point_);
   cursor_inside_window_ = pending_forwarded_point_.has_value();
 
+  if (!cursor_inside_window_ && !was_inside)
+    return;
+
   // Dispatching the equivalent of the messages a click-through window never
-  // gets keeps hover state, draggable regions and input routing working.
-  if (cursor_inside_window_) {
-    desktop_window_tree_host->DispatchSyntheticMouseMessage(WM_MOUSEMOVE,
-                                                            point);
-  } else if (was_inside) {
-    desktop_window_tree_host->DispatchSyntheticMouseMessage(WM_MOUSELEAVE,
-                                                            point);
-  }
+  // gets keeps hover state, draggable regions and input routing working, and
+  // going through the dispatcher reuses Chromium's pipeline instead of
+  // hand-building a CHROME_MSG.
+  bool handled = false;
+  event_target->HandleMouseMessage(
+      cursor_inside_window_ ? WM_MOUSEMOVE : WM_MOUSELEAVE, 0,
+      MAKELPARAM(point.x(), point.y()), &handled);
 }
 
 void NativeWindowViews::SetForwardMouseMessages(bool forward) {
