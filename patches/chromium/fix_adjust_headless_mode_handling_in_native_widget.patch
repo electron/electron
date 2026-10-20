@@ -141,7 +141,7 @@ index dcdfee94a5959f49422b4c37a0fbac9c7a378760..0d796595adc97607f9c84990123d8a60
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
-index dd051b97e2c34c147b42feda9e46367086ace871..10475df955762caff8732b1329c2a912e1683726 100644
+index eb2f39791d6fd0ea24df04de41b417985e5f409a..1654a05d0f0751aa9f5515b6466278ee41ef12dc 100644
 --- a/ui/views/widget/widget.cc
 +++ b/ui/views/widget/widget.cc
 @@ -262,6 +262,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {

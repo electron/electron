@@ -15,7 +15,7 @@ makes it defer main frames until the view is eventually shown. Key the
 decision off the host's visibility, as RenderWidgetHostViewMac does.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 54aefe9e4c152d5e4055769b7c818c73b0342691..b50470a2827de457feaa73f2b57de290d8f35390 100644
+index 421fa454dce53943cf90f1073f6938bb624f0c6d..b0ed11224b554839111e47d37ea1fe10e165b054 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -910,6 +910,10 @@ void RenderWidgetHostImpl::WasHidden() {
@@ -43,7 +43,7 @@ index 02bdef3bae5a29d874956d88e33e37bf0fd9ce5c..f3c132412ca87c3abda84cf91434a9f7
    // |routing_id| must not be IPC::mojom::kRoutingIdNone.
    // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 2c8b8a12a61f465d44754ce9baaad5f0b5a483a4..f53b7c80aaf89af75ac0c951e987e1592175940a 100644
+index 98303c3ef0ad6abff3ddbfd1472d19b57fdd01d1..c910f273bb3f2388d087043f76d84fcf5406fde2 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -745,7 +745,7 @@ void RenderWidgetHostViewAura::HideImpl() {
@@ -55,7 +55,7 @@ index 2c8b8a12a61f465d44754ce9baaad5f0b5a483a4..f53b7c80aaf89af75ac0c951e987e159
      host()->WasHidden();
      aura::WindowTreeHost* host = window_->GetHost();
        aura::Window* parent = window_->parent();
-@@ -3875,7 +3875,12 @@ RenderWidgetHostViewAura::DidUpdateVisualProperties(
+@@ -3871,7 +3871,12 @@ RenderWidgetHostViewAura::DidUpdateVisualProperties(
  void RenderWidgetHostViewAura::DidNavigate() {
    CHECK(delegated_frame_host_) << "Cannot be invoked during destruction.";
  
