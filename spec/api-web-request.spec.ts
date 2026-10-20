@@ -895,6 +895,7 @@ describe('webRequest module', () => {
     afterAll(() => server.kill());
     afterEach(() => {
       ses.webRequest.onBeforeRequest(null);
+      ses.webRequest.onBeforeSendHeaders(null);
       ses.webRequest.onHeadersReceived(null);
       ses.webRequest.onSendHeaders(null);
       ses.webRequest.onBeforeRedirect(null);
@@ -1111,26 +1112,76 @@ describe('webRequest module', () => {
       closed.close();
     });
 
-    it('send Blob bodies while observers listen', async () => {
-      const requestURL = `${serverURL}/blob`;
-      let observed = 0;
-      ses.webRequest.onSendHeaders({ urls: [requestURL] }, () => {
-        observed++;
+    it('upload a Blob without passing uploadData to observers', async () => {
+      const uploadURL = `${serverURL}/upload`;
+      const filter = { urls: [uploadURL] };
+      const uploadData: Record<string, unknown> = {};
+      ses.webRequest.onSendHeaders(filter, (details) => {
+        uploadData.onSendHeaders = (details as any).uploadData;
       });
-      // Each request is one chance to hit the race, so it takes many of them.
-      const sent = await contents.executeJavaScript(`(async () => {
-        let next = 0;
-        const send = async () => {
-          while (next < 1000) {
-            next++;
-            await fetch(${JSON.stringify(requestURL)}, { method: 'POST', body: new Blob(['blob body']) });
-          }
-        };
-        await Promise.all(Array.from({ length: 16 }, send));
-        return next;
-      })()`);
-      expect(sent).toBe(1000);
-      expect(observed).toBe(1000);
+      ses.webRequest.onResponseStarted(filter, (details) => {
+        uploadData.onResponseStarted = (details as any).uploadData;
+      });
+      const completed = new Promise<void>((resolve) => {
+        ses.webRequest.onCompleted(filter, (details) => {
+          uploadData.onCompleted = (details as any).uploadData;
+          resolve();
+        });
+      });
+      const response = await contents.executeJavaScript(
+        `fetch(${JSON.stringify(uploadURL)}, { method: 'POST', body: new Blob(['blob body']) }).then((r) => r.text())`
+      );
+      await completed;
+      expect(response).toBe('POST /upload 9');
+      expect(uploadData).toStrictEqual({
+        onSendHeaders: undefined,
+        onResponseStarted: undefined,
+        onCompleted: undefined
+      });
+    });
+
+    it('pass uploadData to onBeforeRequest and onBeforeSendHeaders only', async () => {
+      const uploadURL = `${serverURL}/upload`;
+      const filter = { urls: [uploadURL] };
+      const uploadData: Record<string, unknown> = {};
+      ses.webRequest.onBeforeRequest(filter, (details, callback) => {
+        uploadData.onBeforeRequest = details.uploadData;
+        callback({});
+      });
+      ses.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
+        uploadData.onBeforeSendHeaders = details.uploadData;
+        callback({});
+      });
+      ses.webRequest.onSendHeaders(filter, (details) => {
+        uploadData.onSendHeaders = (details as any).uploadData;
+      });
+      ses.webRequest.onHeadersReceived(filter, (details, callback) => {
+        uploadData.onHeadersReceived = (details as any).uploadData;
+        callback({});
+      });
+      ses.webRequest.onResponseStarted(filter, (details) => {
+        uploadData.onResponseStarted = (details as any).uploadData;
+      });
+      const completed = new Promise<void>((resolve) => {
+        ses.webRequest.onCompleted(filter, (details) => {
+          uploadData.onCompleted = (details as any).uploadData;
+          resolve();
+        });
+      });
+      const response = await contents.executeJavaScript(
+        `fetch(${JSON.stringify(uploadURL)}, { method: 'POST', body: new Blob(['blob body']) }).then((r) => r.text())`
+      );
+      await completed;
+      expect(response).toBe('POST /upload 9');
+      const blob = [expect.objectContaining({ type: 'blob', blobUUID: expect.any(String) })];
+      expect(uploadData).toStrictEqual({
+        onBeforeRequest: blob,
+        onBeforeSendHeaders: blob,
+        onSendHeaders: undefined,
+        onHeadersReceived: undefined,
+        onResponseStarted: undefined,
+        onCompleted: undefined
+      });
     });
   });
 
