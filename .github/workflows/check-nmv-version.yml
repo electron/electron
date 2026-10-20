@@ -19,14 +19,10 @@ jobs:
     outputs:
       has-build-args-change: ${{ steps.filter.outputs.build-args }}
     steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      with:
-        persist-credentials: false
-        ref: ${{ github.event.pull_request.head.sha }}
     # Check changed paths via the API instead of the path filter under the on: block
     # so that the output can be used to conditionally run the apply-patches job, which lets
     # the job be marked as a required status check (conditional skip counts as a success).
-    - uses: ./.github/actions/paths-filter
+    - uses: $/.github/actions/paths-filter
       id: filter
       with:
         filters: |

@@ -73,7 +73,7 @@ jobs:
     # exclusions must live inside a single negated brace pattern - a second
     # negated pattern would match (and re-include) every file the first one
     # excluded.
-    - uses: ./.github/actions/paths-filter
+    - uses: $/.github/actions/paths-filter
       id: filter
       with:
         filters: |
@@ -121,7 +121,7 @@ jobs:
             - DEPS
     - name: Set Build Image SHA
       id: build-image-sha
-      uses: ./.github/actions/build-image-sha
+      uses: $/.github/actions/build-image-sha
       with:
         override: ${{ inputs.build-image-sha }}
     - name: Set Docs Only
@@ -139,7 +139,7 @@ jobs:
   lint:
     needs: setup
     if: ${{ !inputs.skip-lint }}
-    uses: ./.github/workflows/pipeline-electron-lint.yml
+    uses: $/.github/workflows/pipeline-electron-lint.yml
     permissions:
       contents: read
     with:
@@ -152,7 +152,7 @@ jobs:
   docs-only:
     needs: [setup, checkout-linux]
     if: ${{ needs.setup.outputs.docs-only == 'true' }}
-    uses: ./.github/workflows/pipeline-electron-docs-only.yml
+    uses: $/.github/workflows/pipeline-electron-docs-only.yml
     permissions:
       contents: read
     with:
@@ -191,7 +191,7 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
         persist-credentials: false
     - name: Checkout & Sync & Save
-      uses: ./src/electron/.github/actions/checkout
+      uses: $/.github/actions/checkout
       with:
         generate-sas-token: 'true'
         target-platform: macos
@@ -227,7 +227,7 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
         persist-credentials: false
     - name: Checkout & Sync & Save
-      uses: ./src/electron/.github/actions/checkout
+      uses: $/.github/actions/checkout
       with:
         target-platform: linux
 
@@ -260,7 +260,7 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
         persist-credentials: false
     - name: Checkout & Sync & Save
-      uses: ./src/electron/.github/actions/checkout
+      uses: $/.github/actions/checkout
       with:
         generate-sas-token: 'true'
         target-platform: win
@@ -273,7 +273,7 @@ jobs:
   build-siso-macos:
     needs: setup
     if: ${{ needs.setup.outputs.src == 'true' }}
-    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    uses: $/.github/workflows/pipeline-segment-build-siso.yml
     permissions:
       contents: read
     with:
@@ -282,7 +282,7 @@ jobs:
   build-siso-linux:
     needs: setup
     if: ${{ needs.setup.outputs.src == 'true' }}
-    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    uses: $/.github/workflows/pipeline-segment-build-siso.yml
     permissions:
       contents: read
     with:
@@ -291,7 +291,7 @@ jobs:
   build-siso-windows:
     needs: setup
     if: ${{ needs.setup.outputs.src == 'true' }}
-    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    uses: $/.github/workflows/pipeline-segment-build-siso.yml
     permissions:
       contents: read
     with:
@@ -299,7 +299,7 @@ jobs:
 
   # GN Check Jobs
   macos-gn-check:
-    uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
+    uses: $/.github/workflows/pipeline-segment-electron-gn-check.yml
     permissions:
       contents: read
     needs: checkout-macos
@@ -311,7 +311,7 @@ jobs:
       ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
 
   linux-gn-check:
-    uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
+    uses: $/.github/workflows/pipeline-segment-electron-gn-check.yml
     permissions:
       contents: read
     needs: checkout-linux
@@ -325,7 +325,7 @@ jobs:
       ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
 
   windows-gn-check:
-    uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
+    uses: $/.github/workflows/pipeline-segment-electron-gn-check.yml
     permissions:
       contents: read
     needs: checkout-windows
@@ -350,7 +350,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
+    uses: $/.github/workflows/pipeline-electron-build-and-test.yml
     needs: [checkout-macos, build-siso-macos]
     with:
       build-runs-on: macos-15-xlarge
@@ -385,7 +385,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: ./.github/workflows/pipeline-electron-build-and-tidy-and-test.yml
+    uses: $/.github/workflows/pipeline-electron-build-and-tidy-and-test.yml
     needs: [setup, checkout-macos, build-siso-macos]
     with:
       build-runs-on: macos-15-xlarge
@@ -417,7 +417,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: ./.github/workflows/pipeline-electron-build-and-tidy-and-test-and-nan.yml
+    uses: $/.github/workflows/pipeline-electron-build-and-tidy-and-test-and-nan.yml
     needs: [setup, checkout-linux, build-siso-linux]
     if: ${{ needs.setup.outputs.src == 'true' }}
     with:
@@ -452,7 +452,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
+    uses: $/.github/workflows/pipeline-electron-build-and-test.yml
     needs: [checkout-linux, build-siso-linux]
     if: ${{ needs.setup.outputs.src == 'true' }}
     with:
@@ -484,7 +484,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
+    uses: $/.github/workflows/pipeline-electron-build-and-test.yml
     needs: [checkout-linux, build-siso-linux]
     if: ${{ needs.setup.outputs.src == 'true' }}
     with:
@@ -516,7 +516,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
+    uses: $/.github/workflows/pipeline-electron-build-and-test.yml
     needs: [checkout-linux, build-siso-linux]
     if: ${{ needs.setup.outputs.src == 'true' }}
     with:
@@ -543,7 +543,7 @@ jobs:
       SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
     
   test-linux-arm64-64k:
-    uses: ./.github/workflows/pipeline-segment-electron-test-64k.yml
+    uses: $/.github/workflows/pipeline-segment-electron-test-64k.yml
     permissions:
       contents: read
       issues: read
@@ -558,7 +558,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: ./.github/workflows/pipeline-electron-build-and-tidy-and-test.yml
+    uses: $/.github/workflows/pipeline-electron-build-and-tidy-and-test.yml
     needs: [setup, checkout-windows, build-siso-windows]
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
@@ -590,7 +590,7 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
+    uses: $/.github/workflows/pipeline-electron-build-and-test.yml
     needs: [checkout-windows, build-siso-windows]
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:

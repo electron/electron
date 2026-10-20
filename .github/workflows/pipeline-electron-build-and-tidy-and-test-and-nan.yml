@@ -105,7 +105,7 @@ concurrency:
 
 jobs:
   build:
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    uses: $/.github/workflows/pipeline-segment-electron-build.yml
     permissions:
       contents: read
     with:
@@ -131,7 +131,7 @@ jobs:
       SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
       SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
   clang-tidy:
-    uses: ./.github/workflows/pipeline-segment-electron-clang-tidy.yml
+    uses: $/.github/workflows/pipeline-segment-electron-clang-tidy.yml
     permissions:
       contents: read
     needs: build
@@ -144,7 +144,7 @@ jobs:
     secrets:
       ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   test:
-    uses: ./.github/workflows/pipeline-segment-electron-test.yml
+    uses: $/.github/workflows/pipeline-segment-electron-test.yml
     permissions:
       contents: read
       issues: read
@@ -165,7 +165,7 @@ jobs:
       ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
       SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
   test-wayland:
-    uses: ./.github/workflows/pipeline-segment-electron-test.yml
+    uses: $/.github/workflows/pipeline-segment-electron-test.yml
     permissions:
       contents: read
       issues: read
@@ -188,7 +188,7 @@ jobs:
       ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
       SSH_DEBUG_AUTHORIZED_USERS: ${{ secrets.SSH_DEBUG_AUTHORIZED_USERS }}
   nn-test:
-    uses: ./.github/workflows/pipeline-segment-node-nan-test.yml
+    uses: $/.github/workflows/pipeline-segment-node-nan-test.yml
     permissions:
       contents: read
     needs: build

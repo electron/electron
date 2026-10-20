@@ -40,7 +40,7 @@ jobs:
         echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
         echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
     - name: Restore src cache via AKS
-      uses: ./src/electron/.github/actions/restore-cache-aks
+      uses: $/.github/actions/restore-cache-aks
       with:
         target-platform: linux
     - name: Checkout Electron
@@ -51,7 +51,7 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
         persist-credentials: false
     - name: Install Dependencies
-      uses: ./src/electron/.github/actions/install-dependencies
+      uses: $/.github/actions/install-dependencies
     - name: Run TS/JS compile
       shell: bash
       run: |
