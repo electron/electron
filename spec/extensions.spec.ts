@@ -624,6 +624,44 @@ describe('chrome extensions', () => {
         });
       });
     });
+
+    it('reports the tab id of the requesting WebContents', async () => {
+      const extension = await customSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'request-tab-id')
+      );
+      const page = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      await page.loadURL(`${extension.url}page.html`);
+      // Wait for the service worker to register its listener.
+      await page.webContents.executeJavaScript("chrome.runtime.sendMessage({ type: 'ping' })");
+
+      await w.loadURL(`${url}/?tab-id`);
+      const request = await page.webContents.executeJavaScript(
+        "chrome.runtime.sendMessage({ type: 'wait-for-request', marker: 'tab-id' })"
+      );
+      expect(request.tabId).toBe(w.webContents.id);
+    });
+  });
+
+  describe('chrome.declarativeNetRequest', () => {
+    it('matches rules restricted to a tab', async () => {
+      const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      const extension = await customSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'request-tab-id')
+      );
+      const page = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      const tab = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      const otherTab = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      await Promise.all([page.loadURL(`${extension.url}page.html`), tab.loadURL(url), otherTab.loadURL(url)]);
+
+      await page.webContents.executeJavaScript(
+        `chrome.runtime.sendMessage({ type: 'block-in-tab', marker: 'blocked-in-tab', tabId: ${tab.webContents.id} })`
+      );
+
+      const canFetch = (contents: WebContents) =>
+        contents.executeJavaScript(`fetch('${url}/blocked-in-tab').then(() => true, () => false)`);
+      expect(await canFetch(otherTab.webContents)).toBe(true);
+      expect(await canFetch(tab.webContents)).toBe(false);
+    });
   });
 
   describe('chrome.tabs', () => {
