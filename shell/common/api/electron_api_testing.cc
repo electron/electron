@@ -6,6 +6,7 @@
 #include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "base/command_line.h"
 #include "base/dcheck_is_on.h"
@@ -14,6 +15,7 @@
 #include "base/memory/ptr_util.h"
 #include "base/no_destructor.h"
 #include "base/power_monitor/power_monitor_source.h"
+#include "base/strings/string_number_conversions.h"
 #include "build/build_config.h"
 #include "chrome/browser/browser_process.h"
 #include "components/prefs/pref_service.h"
@@ -43,6 +45,11 @@
 #endif
 
 #if DCHECK_IS_ON()
+namespace node::crypto {
+NODE_EXTERN void AddBlockedSPKIForTesting(const uint8_t* sha256_hash);
+NODE_EXTERN void ClearBlockedSPKIsForTesting();
+}  // namespace node::crypto
+
 namespace {
 
 class CallbackTestingHelper final {
@@ -340,6 +347,20 @@ void SimulateWebAuthnUvLockedPinSecurityKey(bool enabled) {
       SetSimulateUvLockedPinSecurityKeyForTesting(enabled);
 }
 
+void AddNodeBlockedSPKIForTesting(gin_helper::ErrorThrower thrower,
+                                  const std::string& hex) {
+  std::vector<uint8_t> hash;
+  if (!base::HexStringToBytes(hex, &hash) || hash.size() != 32) {
+    thrower.ThrowTypeError("expected a 64 character hex SHA-256");
+    return;
+  }
+  node::crypto::AddBlockedSPKIForTesting(hash.data());
+}
+
+void ClearNodeBlockedSPKIsForTesting() {
+  node::crypto::ClearBlockedSPKIsForTesting();
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -351,6 +372,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isPlatformCaretBrowsingEnabled",
                  &IsPlatformCaretBrowsingEnabled);
   dict.SetMethod("simulateNetworkServiceCrash", &SimulateNetworkServiceCrash);
+  dict.SetMethod("addNodeBlockedSPKI", &AddNodeBlockedSPKIForTesting);
+  dict.SetMethod("clearNodeBlockedSPKIs", &ClearNodeBlockedSPKIsForTesting);
   dict.SetMethod("simulatePowerEvent", &SimulatePowerEvent);
   dict.SetMethod("simulateWebAuthnUvLockedPinSecurityKey",
                  &SimulateWebAuthnUvLockedPinSecurityKey);
