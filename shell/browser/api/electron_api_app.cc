@@ -22,6 +22,7 @@
 #include "base/notimplemented.h"
 #include "base/path_service.h"
 #include "base/process/process.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/system/sys_info.h"
 #include "base/values.h"
 #include "base/win/windows_version.h"
@@ -56,7 +57,7 @@
 #include "net/ssl/ssl_cert_request_info.h"
 #include "net/ssl/ssl_private_key.h"
 #include "sandbox/policy/switches.h"
-#include "services/network/network_service.h"
+#include "services/network/public/mojom/network_service.mojom.h"
 #include "shell/app/command_line_args.h"
 #include "shell/browser/api/electron_api_event_emitter.h"
 #include "shell/browser/api/electron_api_menu.h"
@@ -103,7 +104,6 @@
 #include "v8/include/v8-traced-handle.h"
 
 #if BUILDFLAG(IS_WIN)
-#include "base/strings/utf_string_conversions.h"
 #include "base/win/win_util.h"
 #include "shell/browser/notifications/win/windows_toast_activator.h"
 #include "shell/browser/ui/win/jump_list.h"
@@ -113,7 +113,6 @@
 #include <CoreFoundation/CoreFoundation.h>
 #include "base/apple/scoped_cftyperef.h"
 #include "base/no_destructor.h"
-#include "base/strings/utf_string_conversions.h"
 #include "content/browser/mac_helpers.h"
 #include "device/fido/strings/grit/fido_strings.h"
 #include "shell/browser/electron_child_process_host_flags.h"
