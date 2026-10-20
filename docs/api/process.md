@@ -268,3 +268,11 @@ Causes the main thread of the current process hang.
 
 Sets the file descriptor soft limit to `maxDescriptors` or the OS hard
 limit, whichever is lower for the current process.
+
+```js
+const { process } = require('electron')
+
+// Set file descriptor limit to 2048 on macOS/Linux
+if (process.platform !== 'win32') {
+  process.setFdLimit(2048)
+}
