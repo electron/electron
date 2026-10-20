@@ -18,10 +18,10 @@ dropped; when resolving such a conflict, carry the change over into
 chrome_file_system_access_blocklist.cc.
 
 diff --git a/chrome/browser/file_system_access/BUILD.gn b/chrome/browser/file_system_access/BUILD.gn
-index 01c5f8e2c7671abd5c621c0e8ddcae1fc8188f78..0911c460de128ba7eea32543e44395e975d2018c 100644
+index e5146cc3ed80f558fe729e76158463a4d6fed518..cf3a3a321286972783b8bb3e85fc50b6eea230e6 100644
 --- a/chrome/browser/file_system_access/BUILD.gn
 +++ b/chrome/browser/file_system_access/BUILD.gn
-@@ -38,6 +38,7 @@ source_set("file_system_access") {
+@@ -40,6 +40,7 @@ source_set("file_system_access") {
  
  source_set("impl") {
    sources = [
