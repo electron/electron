@@ -1,0 +1,353 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: wangra <wangra@google.com>
+Date: Thu, 30 Jul 2026 22:20:41 -0400
+Subject: Optimize robust init check during GenerateMipmap
+
+Add an enum class EnsureInitializedLevels to optionally skip robust
+initialization for texture levels above the base level during
+glGenerateMipmap since they will be overwritten.
+
+Test: angle_end2end_tests --gtest_filter="MipmapRobustInitTestES3.GenerateMipmapRobustInitOptimization*"
+Bug: b/532617619
+Change-Id: I5bc60b0df7e72839f61a4f8a65c3d2e64825b67f
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8177726
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Ran Wang <wangra@google.com>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+Electron adaptation notes (43-x-y): Prerequisite for cherry-pick-d219c4f45f93 (introduces Texture::EnsureInitializedLevels and the ensureInitialized(context, levels) signature).
+
+diff --git a/src/libANGLE/Context.cpp b/src/libANGLE/Context.cpp
+index 95c7059d0a3040cfa01dcb7330ac0d4d41a188fd..1e2704e42d25f25c5e64ebb9565bf8ac1495158c 100644
+--- a/src/libANGLE/Context.cpp
++++ b/src/libANGLE/Context.cpp
+@@ -1674,7 +1674,7 @@ void Context::bindImageTexture(GLuint unit,
+     // For robust init, make sure the texture is initialized before storage writes.
+     if (tex != nullptr)
+     {
+-        ANGLE_CONTEXT_TRY(tex->ensureInitialized(this));
++        ANGLE_CONTEXT_TRY(tex->ensureInitialized(this, EnsureInitializedLevels::AllEnabledLevels));
+     }
+     mState.setImageUnit(this, unit, tex, level, layered, layer, access, format);
+     mImageObserverBindings[unit].bind(tex);
+diff --git a/src/libANGLE/State.cpp b/src/libANGLE/State.cpp
+index bf32e7acff519d958ba8f39fbd7948d28cffdcc9..7be0330bec9592947ac2c1ac5fa325ffed2be7cd 100644
+--- a/src/libANGLE/State.cpp
++++ b/src/libANGLE/State.cpp
+@@ -3881,7 +3881,8 @@ angle::Result State::syncTexturesInit(const Context *context, Command command)
+         Texture *texture = mActiveTexturesCache[textureUnitIndex];
+         if (texture)
+         {
+-            ANGLE_TRY(texture->ensureInitialized(context));
++            ANGLE_TRY(
++                texture->ensureInitialized(context, EnsureInitializedLevels::AllEnabledLevels));
+         }
+     }
+     return angle::Result::Continue;
+@@ -3896,7 +3897,8 @@ angle::Result State::syncImagesInit(const Context *context, Command command)
+         Texture *texture = mImageUnits[imageUnitIndex].texture.get();
+         if (texture)
+         {
+-            ANGLE_TRY(texture->ensureInitialized(context));
++            ANGLE_TRY(
++                texture->ensureInitialized(context, EnsureInitializedLevels::AllEnabledLevels));
+         }
+     }
+     return angle::Result::Continue;
+diff --git a/src/libANGLE/Texture.cpp b/src/libANGLE/Texture.cpp
+index 3888e7840ee8f9509092778a64012f2fd8eadab0..cde6ec883c0f338bd97cb6290e2fb5df31bb7658 100644
+--- a/src/libANGLE/Texture.cpp
++++ b/src/libANGLE/Texture.cpp
+@@ -1747,7 +1747,7 @@ angle::Result Texture::copyTexture(Context *context,
+ 
+     // Initialize source texture.
+     // Note: we don't have a way to notify which portions of the image changed currently.
+-    ANGLE_TRY(source->ensureInitialized(context));
++    ANGLE_TRY(source->ensureInitialized(context, EnsureInitializedLevels::AllEnabledLevels));
+ 
+     ImageIndex index = ImageIndex::MakeFromTarget(target, level, ImageIndex::kEntireLevel);
+ 
+@@ -1780,7 +1780,7 @@ angle::Result Texture::copySubTexture(const Context *context,
+     ASSERT(TextureTargetToType(target) == mState.mType);
+ 
+     // Ensure source is initialized.
+-    ANGLE_TRY(source->ensureInitialized(context));
++    ANGLE_TRY(source->ensureInitialized(context, EnsureInitializedLevels::AllEnabledLevels));
+ 
+     Box destBox(destOffset.x, destOffset.y, destOffset.z, sourceBox.width, sourceBox.height,
+                 sourceBox.depth);
+@@ -2498,7 +2498,11 @@ angle::Result Texture::syncState(const Context *context, Command source)
+ {
+     ASSERT(hasAnyDirtyBit() || source == Command::GenerateMipmap ||
+            (context->isRobustResourceInitEnabled() && mState.mInitState == InitState::MayNeedInit));
+-    ANGLE_TRY(ensureInitialized(context));
++    // During glGenerateMipmap, robust initialization of levels i > baseLevel can be skipped
++    // because they will be completely overwritten by the generated mipmaps.
++    ANGLE_TRY(ensureInitialized(context, source == Command::GenerateMipmap
++                                             ? EnsureInitializedLevels::BaseOnly
++                                             : EnsureInitializedLevels::AllEnabledLevels));
+     ANGLE_TRY(mTexture->syncState(context, mDirtyBits, source));
+     mDirtyBits.reset();
+     return angle::Result::Continue;
+@@ -2590,7 +2594,7 @@ void Texture::invalidateCompletenessCache() const
+     mCompletenessCache.context = {0};
+ }
+ 
+-angle::Result Texture::ensureInitialized(const Context *context)
++angle::Result Texture::ensureInitialized(const Context *context, EnsureInitializedLevels levels)
+ {
+     if (!context->isRobustResourceInitEnabled() || mState.mInitState == InitState::Initialized)
+     {
+@@ -2606,6 +2610,11 @@ angle::Result Texture::ensureInitialized(const Context *context)
+     while (it.hasNext())
+     {
+         const ImageIndex index = it.next();
++        if (levels == EnsureInitializedLevels::BaseOnly &&
++            index.getLevelIndex() != static_cast<GLint>(mState.getEffectiveBaseLevel()))
++        {
++            break;
++        }
+         ImageDesc &desc =
+             mState.mImageDescs[GetImageDescIndex(index.getTarget(), index.getLevelIndex())];
+         if (desc.initState == InitState::MayNeedInit && !desc.size.empty())
+diff --git a/src/libANGLE/Texture.h b/src/libANGLE/Texture.h
+index 39188fc90733a30b5a0efb70e3f9021ad535d8dd..fd1d4fd724390d30f02ed6a8a6e12b6d0ef20038 100644
+--- a/src/libANGLE/Texture.h
++++ b/src/libANGLE/Texture.h
+@@ -48,6 +48,12 @@ class Sampler;
+ class State;
+ class Texture;
+ 
++enum class EnsureInitializedLevels
++{
++    BaseOnly,
++    AllEnabledLevels,
++};
++
+ constexpr GLuint kInitialMaxLevel = 1000;
+ 
+ bool IsMipmapFiltered(GLenum minFilterMode);
+@@ -693,7 +699,7 @@ class Texture final : public RefCountObject<TextureID>,
+     GLuint getNativeID() const;
+ 
+     // Needed for robust resource init.
+-    angle::Result ensureInitialized(const Context *context);
++    angle::Result ensureInitialized(const Context *context, EnsureInitializedLevels levels);
+     InitState initState(GLenum binding, const ImageIndex &imageIndex) const override;
+     InitState initState() const { return mState.mInitState; }
+     void setInitState(GLenum binding, const ImageIndex &imageIndex, InitState initState) override;
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index af15d71cdafe364e89f1a50004342da46da710eb..aa86f7c5dc08008c1136255cb8d36e541503be28 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -36,6 +36,8 @@
+ // Generate mipmap or draw on mismatched stale levels fails on some OpenGL/GLES drivers when robust init is enabled
+ 532617619 OPENGL : Texture2DTestES3RobustInit.MismatchedStaleLevel*/* = SKIP
+ 532617619 GLES : Texture2DTestES3RobustInit.MismatchedStaleLevel*/* = SKIP
++532617619 OPENGL : MipmapRobustInitTestES3.GenerateMipmapRobustInitOptimization*/* = SKIP
++532617619 GLES : MipmapRobustInitTestES3.GenerateMipmapRobustInitOptimization*/* = SKIP
+ 
+ // Redefining base level on native OpenGL/GLES drivers drops existing higher mip levels.
+ 480069042 OPENGL : CopyTextureTest.CubeMapDestLevelPastStorageMips/* = SKIP
+diff --git a/src/tests/gl_tests/MipmapTest.cpp b/src/tests/gl_tests/MipmapTest.cpp
+index 0bcf0bf2e78102707642643808aecd148d94d930..5707d5b7b7698bde87f532215d657ea2579e9593 100644
+--- a/src/tests/gl_tests/MipmapTest.cpp
++++ b/src/tests/gl_tests/MipmapTest.cpp
+@@ -2664,6 +2664,197 @@ TEST_P(MipmapTestES3, MismatchingLevelFormats3)
+     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::cyan);
+ }
+ 
++class MipmapRobustInitTestES3 : public ANGLETest<>
++{
++  protected:
++    MipmapRobustInitTestES3()
++    {
++        setWindowWidth(128);
++        setWindowHeight(128);
++        setConfigRedBits(8);
++        setConfigGreenBits(8);
++        setConfigBlueBits(8);
++        setConfigAlphaBits(8);
++        setRobustResourceInit(true);
++    }
++};
++
++// Test that robust initialization is correctly handled after glGenerateMipmap.
++TEST_P(MipmapRobustInitTestES3, GenerateMipmapRobustInitOptimization)
++{
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_2D, texture);
++
++    // Allocate with nullptr to verify it gets robust cleared later
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 16, 16, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    // Set levels 1 through 4 to be mipcomplete (incompatible with level 0) with different colors.
++    std::vector<GLColor> kLevel1Data(8 * 8, GLColor::green);
++    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, kLevel1Data.data());
++
++    glTexImage2D(GL_TEXTURE_2D, 2, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    std::vector<GLColor> kLevel3Data(2 * 2, GLColor::blue);
++    glTexImage2D(GL_TEXTURE_2D, 3, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, kLevel3Data.data());
++
++    glTexImage2D(GL_TEXTURE_2D, 4, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    // Set levels 5, 6 and 10 to something unrelated and incompatible. Upload data to level 6.
++    glTexImage2D(GL_TEXTURE_2D, 5, GL_RGBA, 16, 16, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    std::vector<GLColor> kLevel6Data(17 * 31, GLColor::yellow);
++    glTexImage2D(GL_TEXTURE_2D, 6, GL_RGBA, 17, 31, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kLevel6Data.data());
++
++    glTexImage2D(GL_TEXTURE_2D, 10, GL_RGBA, 3, 3, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Force overwriting levels 2, 3 and 4
++    glGenerateMipmap(GL_TEXTURE_2D);
++    ASSERT_GL_NO_ERROR();
++
++    // Use GL_NEAREST min filter so the texture doesn't need to be mipmap-complete for framebuffer
++    // completeness.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++
++    // Level 0 is robust cleared
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::transparentBlack);
++
++    // Levels 1 through 4 all have the color uploaded
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 4);
++    for (int level = 1; level <= 4; ++level)
++    {
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, level);
++        EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    }
++
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 5);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 5);
++
++    // Level 5 is cleared
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 5);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::transparentBlack);
++
++    // Level 6 still has its uploaded data
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 6);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 6);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 6);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::yellow);
++
++    // Level 10 is cleared
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 10);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 10);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 10);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::transparentBlack);
++}
++
++// Test that robust initialization is correctly handled after glGenerateMipmap, verifying by
++// sampling.
++TEST_P(MipmapRobustInitTestES3, GenerateMipmapRobustInitOptimizationWithSampling)
++{
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_2D, texture);
++
++    // Allocate with nullptr to verify it gets robust cleared later
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 16, 16, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    // Set levels 1 through 4 to be mipcomplete (incompatible with level 0) with different colors.
++    std::vector<GLColor> kLevel1Data(8 * 8, GLColor::green);
++    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, kLevel1Data.data());
++
++    glTexImage2D(GL_TEXTURE_2D, 2, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    std::vector<GLColor> kLevel3Data(2 * 2, GLColor::blue);
++    glTexImage2D(GL_TEXTURE_2D, 3, GL_RGBA, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, kLevel3Data.data());
++
++    glTexImage2D(GL_TEXTURE_2D, 4, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    // Set levels 5, 6 and 10 to something unrelated and incompatible. Upload data to level 6.
++    glTexImage2D(GL_TEXTURE_2D, 5, GL_RGBA, 16, 16, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    std::vector<GLColor> kLevel6Data(17 * 31, GLColor::yellow);
++    glTexImage2D(GL_TEXTURE_2D, 6, GL_RGBA, 17, 31, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kLevel6Data.data());
++
++    glTexImage2D(GL_TEXTURE_2D, 10, GL_RGBA, 3, 3, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Force overwriting levels 2, 3 and 4
++    glGenerateMipmap(GL_TEXTURE_2D);
++    ASSERT_GL_NO_ERROR();
++
++    ANGLE_GL_PROGRAM(verify, essl3_shaders::vs::Texture2DLod(), essl3_shaders::fs::Texture2DLod());
++    glUseProgram(verify);
++    const GLint lodLoc = glGetUniformLocation(verify, essl3_shaders::LodUniform());
++    glUniform1i(glGetUniformLocation(verify, essl3_shaders::Texture2DUniform()), 0);
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++
++    GLTexture destTexture;
++    glBindTexture(GL_TEXTURE_2D, destTexture);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, destTexture, 0);
++    ASSERT_GL_NO_ERROR();
++
++    glBindTexture(GL_TEXTURE_2D, texture);
++
++    // Level 0 is robust cleared
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
++    glUniform1f(lodLoc, 0.0f);
++    drawQuad(verify, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::transparentBlack);
++
++    // Levels 1 through 4 all have the color uploaded
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 4);
++    for (int level = 1; level <= 4; ++level)
++    {
++        glUniform1f(lodLoc, static_cast<GLfloat>(level - 1));
++        drawQuad(verify, essl3_shaders::PositionAttrib(), 0.5f);
++        EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    }
++
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 5);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 5);
++
++    // Level 5 is cleared
++    glUniform1f(lodLoc, 0.0f);
++    drawQuad(verify, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::transparentBlack);
++
++    // Level 6 still has its uploaded data
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 6);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 6);
++    glUniform1f(lodLoc, 0.0f);
++    drawQuad(verify, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::yellow);
++
++    // Level 10 is cleared
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 10);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 10);
++    glUniform1f(lodLoc, 0.0f);
++    drawQuad(verify, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::transparentBlack);
++}
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(MipmapRobustInitTestES3);
++ANGLE_INSTANTIATE_TEST_ES3(MipmapRobustInitTestES3);
++
+ // Use this to select which configurations (e.g. which renderer, which GLES major version) these
+ // tests should be run against.
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3_AND(

@@ -1,0 +1,166 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Lukaszewicz <tluk@chromium.org>
+Date: Mon, 21 Sep 2026 11:10:16 -0700
+Subject: [Views] Prevent potential UAF in NativeWidgetAura::Show()
+
+Both window_->Show() and Activate() notify aura::Window observers,
+which are explicitly permitted to synchronously destroy window_ during
+visibility notifications. Under NATIVE_WIDGET_OWNS_WIDGET or
+CLIENT_OWNS_WIDGET ownership models, OnWindowDestroyed() deletes `this`.
+Continuing execution in Show() after the window is destroyed results in
+a heap-use-after-free when accessing member fields or invoking further
+methods (e.g. Activate(), SetInitialFocus(), Minimize()).
+
+Use a WeakPtr to verify that `this` and `window_` remain valid after
+invoking window_->Show() and Activate(), returning early if destroyed.
+
+Add a regression test covering synchronous widget destruction during
+Show().
+
+Fixed: 553140050
+Change-Id: I855479577166b018d94388c3e5a0d6326c228390
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8423564
+Reviewed-by: Allen Bauer <kylixrd@chromium.org>
+Commit-Queue: Thomas Lukaszewicz <tluk@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1701883}
+
+diff --git a/ui/views/widget/native_widget_aura.cc b/ui/views/widget/native_widget_aura.cc
+index bb40d0b2a5e9e6b9cb9b975c0a02a5dc39800f46..989b974ddffc9186a7c96f8833002e7426c82086 100644
+--- a/ui/views/widget/native_widget_aura.cc
++++ b/ui/views/widget/native_widget_aura.cc
+@@ -780,10 +780,24 @@ void NativeWidgetAura::Show(ui::mojom::WindowShowState show_state,
+     disabler.emplace(window_);
+   }
+ 
++  // `window_->Show()` and `Activate()` below fan out to aura::Window
++  // observers, which are explicitly permitted to synchronously destroy
++  // `window_` (see Window::NotifyWindowVisibilityChangedAtReceiver()). When
++  // that happens under NATIVE_WIDGET_OWNS_WIDGET or CLIENT_OWNS_WIDGET
++  // ownership, OnWindowDestroyed() deletes `this`, so the rest of this method
++  // must not run.
++  auto weak_this = weak_factory.GetWeakPtr();
++
+   window_->Show();
++  if (!weak_this || !window_) {
++    return;
++  }
+   if (delegate_->CanActivate()) {
+     if (show_state != ui::mojom::WindowShowState::kInactive) {
+       Activate();
++      if (!weak_this || !window_) {
++        return;
++      }
+     }
+     // SetInitialFocus() should be always be called, even for
+     // SHOW_STATE_INACTIVE. If the window has to stay inactive, the method will
+diff --git a/ui/views/widget/native_widget_aura_unittest.cc b/ui/views/widget/native_widget_aura_unittest.cc
+index 77c1de9e09fca72ffcc4690eaa4fcf88165d70ac..3a342a0d02ae9ee6798149f2f178ea050b13ae87 100644
+--- a/ui/views/widget/native_widget_aura_unittest.cc
++++ b/ui/views/widget/native_widget_aura_unittest.cc
+@@ -1223,4 +1223,106 @@ TEST_F(NativeWidgetAuraWithNoDelegateTest, UpdateVisualStateTest) {
+   native_widget_->UpdateVisualState();
+ }
+ 
++namespace {
++
++// An aura::WindowObserver that deletes the window when it is hidden.
++class DeleteWindowOnHide : public aura::WindowObserver {
++ public:
++  explicit DeleteWindowOnHide(aura::Window* window) {
++    observation_.Observe(window);
++  }
++
++  // aura::WindowObserver:
++  void OnWindowVisibilityChanged(aura::Window* window, bool visible) override {
++    if (!visible && observation_.IsObservingSource(window)) {
++      observation_.Reset();
++      delete window;
++    }
++  }
++
++ private:
++  base::ScopedObservation<aura::Window, aura::WindowObserver> observation_{
++      this};
++};
++
++}  // namespace
++
++// Regression test for use-after-free in Close() (b/553134101).
++TEST_F(NativeWidgetAuraTest, CloseTailUseAfterFreeViaVisibilityObserver) {
++  auto widget = std::make_unique<Widget>();
++  Widget::InitParams params(Widget::InitParams::Ownership::CLIENT_OWNS_WIDGET,
++                            Widget::InitParams::TYPE_POPUP);
++  params.parent = root_window();
++  params.bounds = gfx::Rect(10, 10, 200, 200);
++  widget->Init(std::move(params));
++  widget->Show();
++
++  DeleteWindowOnHide deleter(widget->GetNativeView());
++  widget->Close();
++}
++
++namespace {
++
++// Closes (and thereby destroys) a widget's aura::Window synchronously from
++// within the window-visibility-changed observer fan-out that
++// aura::Window::Show() dispatches. Aura explicitly permits observers to
++// delete the window during this notification (see
++// Window::NotifyWindowVisibilityChangedAtReceiver). This models production
++// destroyer chains in which showing a window synchronously re-enters
++// hide/teardown logic that closes the widget (e.g. an overview-force-hidden
++// window being re-hidden by ScopedOverviewHideWindows, whose nested Hide()
++// runs WindowEventDispatcher::OnWindowHidden gesture-cancel/capture-release
++// handlers that close the widget).
++class SyncWidgetCloserOnVisibilityChange : public aura::WindowObserver {
++ public:
++  SyncWidgetCloserOnVisibilityChange(aura::Window* window, Widget* widget)
++      : widget_(widget) {
++    observation_.Observe(window);
++  }
++
++  // aura::WindowObserver:
++  void OnWindowVisibilityChanged(aura::Window* window, bool visible) override {
++    if (!visible || !widget_) {
++      return;
++    }
++    observation_.Reset();
++    Widget* widget = widget_;
++    widget_ = nullptr;
++    // Widget::CloseNow() -> NativeWidgetAura::CloseNow() -> delete window_ ->
++    // ~Window -> NativeWidgetAura::OnWindowDestroyed() -> delete this
++    // (ownership is CLIENT_OWNS_WIDGET), all synchronously while
++    // NativeWidgetAura::Show() is still on the stack.
++    widget->CloseNow();
++  }
++
++ private:
++  raw_ptr<Widget> widget_;
++  base::ScopedObservation<aura::Window, aura::WindowObserver> observation_{
++      this};
++};
++
++}  // namespace
++
++// Regression test for a use-after-free in NativeWidgetAura::Show(): the
++// window-visibility observer fan-out triggered by window_->Show() may
++// synchronously destroy the aura::Window. Under NATIVE_WIDGET_OWNS_WIDGET or
++// CLIENT_OWNS_WIDGET ownership, NativeWidgetAura::OnWindowDestroyed() then
++// runs `delete this`, and the remainder of Show() (delegate_->CanActivate(),
++// Activate(), IsActive(), SetInitialFocus(), Minimize()) executes on the
++// freed NativeWidgetAura (heap-use-after-free under ASAN).
++TEST_F(NativeWidgetAuraTest, ShowWithSynchronousWindowDestruction) {
++  auto widget = std::make_unique<Widget>();
++  Widget::InitParams params(Widget::InitParams::Ownership::CLIENT_OWNS_WIDGET,
++                            Widget::InitParams::TYPE_POPUP);
++  params.parent = root_window();
++  widget->Init(std::move(params));
++
++  SyncWidgetCloserOnVisibilityChange closer(widget->GetNativeView(),
++                                            widget.get());
++
++  // The NativeWidgetAura is deleted inside window_->Show(); the tail of
++  // NativeWidgetAura::Show() must not touch |this| afterwards.
++  widget->Show();
++}
++
+ }  // namespace views

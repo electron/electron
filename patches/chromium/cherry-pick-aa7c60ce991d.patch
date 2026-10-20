@@ -1,0 +1,461 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Tue, 20 Oct 2026 03:54:29 +0000
+Subject: [M150-LTS] Do not optimize RTC encoded stream transfer if context is
+ destroyed
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When a ReadableStream created by RTCRtpReceiver::createEncodedStreams()
+or RTCRtpSender::createEncodedStreams() is transferred and deserialized
+in a destination ExecutionContext that has already been destroyed,
+PerformInProcessOptimization() previously constructed a new
+RTCEncoded{Audio,Video}UnderlyingSource on the destroyed context and
+bound it to the active WebRTC encoded stream transformer. Because
+NotifyContextDestroyed() had already fired on the destination context,
+ContextDestroyed() would never be invoked to unregister the transformer
+callback.
+
+Mirroring https://crrev.com/c/8463165 (crbug.com/565742180), guard
+RtcEncoded{Audio,Video}{Receiver,Sender}SourceOptimizer::
+PerformInProcessOptimization() against a null or destroyed
+ExecutionContext, invoking the disconnect callback before returning
+nullptr so the encoded stream transformer callback is unregistered.
+Also add a defensive guard to
+RtcEncoded{Audio,Video}{Receiver,Sender}SinkOptimizer::
+PerformInProcessOptimization().
+
+Fixed: 568945639
+Change-Id: I618e945c4c4a06c866be936b1a489bd5c109d5c5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8577741
+Reviewed-by: Henrik Boström <hbos@chromium.org>
+Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1720474}
+(cherry picked from commit 6c38d4ec50ea5a153e2e616a39c06d6a4777b7c8)
+
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_receiver_sink_optimizer.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_receiver_sink_optimizer.cc
+index 7495ae643ac008591abe7932886ec27c74b4fb0c..41d57aca897b205918183c7b8470d00681f86858 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_receiver_sink_optimizer.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_receiver_sink_optimizer.cc
+@@ -2,6 +2,7 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
++#include "third_party/blink/renderer/core/execution_context/execution_context.h"
+ #include "third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_receiver_sink_optimizer.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cross_thread_task.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
+@@ -17,6 +18,13 @@ RtcEncodedAudioReceiverSinkOptimizer::RtcEncodedAudioReceiverSinkOptimizer(
+ UnderlyingSinkBase*
+ RtcEncodedAudioReceiverSinkOptimizer::PerformInProcessOptimization(
+     ScriptState* script_state) {
++  ExecutionContext* context = ExecutionContext::From(script_state);
++  if (!context || context->IsContextDestroyed()) {
++    // Do not allocate a sink on a destroyed context or bind a persistent
++    // reference to it on the receiver.
++    return nullptr;
++  }
++
+   auto* new_sink = MakeGarbageCollected<RTCEncodedAudioUnderlyingSink>(
+       script_state, std::move(transformer_),
+       /*detach_frame_data_on_write=*/false);
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_receiver_source_optimizer.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_receiver_source_optimizer.cc
+index 0786627009757267bcd111f18a289ce3aae0ccb9..088a89f8f7f7ff69acd1cc34123c943553c5f87d 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_receiver_source_optimizer.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_receiver_source_optimizer.cc
+@@ -19,6 +19,13 @@ UnderlyingSourceBase*
+ RtcEncodedAudioReceiverSourceOptimizer::PerformInProcessOptimization(
+     ScriptState* script_state) {
+   ExecutionContext* context = ExecutionContext::From(script_state);
++  if (!context || context->IsContextDestroyed()) {
++    // A source created on a destroyed context would never get
++    // ContextDestroyed(), so the disconnect callback would never run and the
++    // transformer would keep pushing frames to a dead heap. Disconnect now.
++    std::move(disconnect_callback_).Run();
++    return nullptr;
++  }
+ 
+   scoped_refptr<base::SingleThreadTaskRunner> current_runner =
+       context->GetTaskRunner(TaskType::kInternalMediaRealTime);
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_sender_sink_optimizer.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_sender_sink_optimizer.cc
+index 5b6f510325b5c8ffff985fcc65125bb54d14a13f..c2ecda01a7714d83b1db360ee82fa5008c9a4c22 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_sender_sink_optimizer.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_sender_sink_optimizer.cc
+@@ -3,6 +3,8 @@
+ // found in the LICENSE file.
+ 
+ #include "third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_sender_sink_optimizer.h"
++
++#include "third_party/blink/renderer/core/execution_context/execution_context.h"
+ #include "third_party/blink/renderer/platform/heap/cross_thread_persistent.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cross_thread_task.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
+@@ -18,6 +20,13 @@ RtcEncodedAudioSenderSinkOptimizer::RtcEncodedAudioSenderSinkOptimizer(
+ UnderlyingSinkBase*
+ RtcEncodedAudioSenderSinkOptimizer::PerformInProcessOptimization(
+     ScriptState* script_state) {
++  ExecutionContext* context = ExecutionContext::From(script_state);
++  if (!context || context->IsContextDestroyed()) {
++    // Do not allocate a sink on a destroyed context or bind a persistent
++    // reference to it on the sender.
++    return nullptr;
++  }
++
+   auto* new_sink = MakeGarbageCollected<RTCEncodedAudioUnderlyingSink>(
+       script_state, std::move(transformer_),
+       /*detach_frame_data_on_write=*/false);
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_sender_source_optimizer.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_sender_source_optimizer.cc
+index 0f2d4535599acdb9ae9ebd54a141915032998e22..85a0ff1edc9453d38887f8d44302f55f2e9f4e2a 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_sender_source_optimizer.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_sender_source_optimizer.cc
+@@ -20,6 +20,13 @@ UnderlyingSourceBase*
+ RtcEncodedAudioSenderSourceOptimizer::PerformInProcessOptimization(
+     ScriptState* script_state) {
+   ExecutionContext* context = ExecutionContext::From(script_state);
++  if (!context || context->IsContextDestroyed()) {
++    // A source created on a destroyed context would never get
++    // ContextDestroyed(), so the disconnect callback would never run and the
++    // transformer would keep pushing frames to a dead heap. Disconnect now.
++    std::move(disconnect_callback_).Run();
++    return nullptr;
++  }
+ 
+   scoped_refptr<base::SingleThreadTaskRunner> current_runner =
+       context->GetTaskRunner(TaskType::kInternalMediaRealTime);
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_sink_test.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_sink_test.cc
+index 91efaa1fe99cbd5f8a3c71a7668d7de684602646..102bd1021922d92c5328c64746fe999d250b0e99 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_sink_test.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_sink_test.cc
+@@ -7,6 +7,7 @@
+ #include "base/containers/span.h"
+ #include "base/memory/scoped_refptr.h"
+ #include "base/task/single_thread_task_runner.h"
++#include "base/test/mock_callback.h"
+ #include "testing/gmock/include/gmock/gmock.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/blink/public/platform/scheduler/test/renderer_scheduler_test_support.h"
+@@ -16,14 +17,18 @@
+ #include "third_party/blink/renderer/bindings/core/v8/v8_dom_exception.h"
+ #include "third_party/blink/renderer/bindings/modules/v8/v8_rtc_encoded_audio_frame.h"
+ #include "third_party/blink/renderer/core/dom/dom_exception.h"
++#include "third_party/blink/renderer/core/execution_context/execution_context.h"
+ #include "third_party/blink/renderer/core/streams/writable_stream.h"
+ #include "third_party/blink/renderer/core/streams/writable_stream_default_writer.h"
+ #include "third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_frame.h"
+ #include "third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_frame_delegate.h"
++#include "third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_receiver_sink_optimizer.h"
++#include "third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_sender_sink_optimizer.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
+ #include "third_party/blink/renderer/platform/peerconnection/rtc_encoded_audio_stream_transformer.h"
+ #include "third_party/blink/renderer/platform/testing/task_environment.h"
+ #include "third_party/blink/renderer/platform/testing/testing_platform_support.h"
++#include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
+ #include "third_party/blink/renderer/platform/wtf/functional.h"
+ #include "third_party/blink/renderer/platform/wtf/vector.h"
+ #include "third_party/webrtc/api/frame_transformer_interface.h"
+@@ -182,4 +187,34 @@ TEST_F(RTCEncodedAudioUnderlyingSinkTest, WriteInDifferentDirectionIsAllowed) {
+   EXPECT_FALSE(dummy_exception_state.HadException());
+ }
+ 
++TEST_F(RTCEncodedAudioUnderlyingSinkTest,
++       ReceiverOptimizerAfterContextDestroyedReturnsNull) {
++  V8TestingScope v8_scope;
++  base::MockOnceCallback<void(RTCEncodedAudioUnderlyingSink*)>
++      set_underlying_sink;
++  RtcEncodedAudioReceiverSinkOptimizer optimizer(
++      CrossThreadBindOnce(set_underlying_sink.Get()), transformer_.GetBroker());
++
++  v8_scope.GetExecutionContext()->NotifyContextDestroyed();
++
++  EXPECT_CALL(set_underlying_sink, Run(_)).Times(0);
++  EXPECT_EQ(optimizer.PerformInProcessOptimization(v8_scope.GetScriptState()),
++            nullptr);
++}
++
++TEST_F(RTCEncodedAudioUnderlyingSinkTest,
++       SenderOptimizerAfterContextDestroyedReturnsNull) {
++  V8TestingScope v8_scope;
++  base::MockOnceCallback<void(RTCEncodedAudioUnderlyingSink*)>
++      set_underlying_sink;
++  RtcEncodedAudioSenderSinkOptimizer optimizer(
++      CrossThreadBindOnce(set_underlying_sink.Get()), transformer_.GetBroker());
++
++  v8_scope.GetExecutionContext()->NotifyContextDestroyed();
++
++  EXPECT_CALL(set_underlying_sink, Run(_)).Times(0);
++  EXPECT_EQ(optimizer.PerformInProcessOptimization(v8_scope.GetScriptState()),
++            nullptr);
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source_test.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source_test.cc
+index 85949178fa53fbfa9b318dbbdf84d6c5529aba2f..14e3cc401652e95ce7b79888daea85e628f22ece 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source_test.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_underlying_source_test.cc
+@@ -15,9 +15,12 @@
+ #include "third_party/blink/renderer/bindings/core/v8/v8_binding_for_testing.h"
+ #include "third_party/blink/renderer/bindings/core/v8/v8_readable_stream_read_result.h"
+ #include "third_party/blink/renderer/bindings/modules/v8/v8_rtc_encoded_audio_frame.h"
++#include "third_party/blink/renderer/core/execution_context/execution_context.h"
+ #include "third_party/blink/renderer/core/streams/readable_stream.h"
+ #include "third_party/blink/renderer/core/streams/readable_stream_default_controller_with_script_scope.h"
+ #include "third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_frame.h"
++#include "third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_receiver_source_optimizer.h"
++#include "third_party/blink/renderer/modules/peerconnection/rtc_encoded_audio_sender_source_optimizer.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ #include "third_party/blink/renderer/platform/heap/persistent.h"
+@@ -194,4 +197,40 @@ TEST_F(RTCEncodedAudioUnderlyingSourceTest,
+   task_environment_.RunUntilIdle();
+ }
+ 
++TEST_F(RTCEncodedAudioUnderlyingSourceTest,
++       ReceiverOptimizerAfterContextDestroyedDisconnectsAndReturnsNull) {
++  V8TestingScope v8_scope;
++  base::MockRepeatingCallback<void(RTCEncodedAudioUnderlyingSource*,
++                                   scoped_refptr<base::SingleThreadTaskRunner>)>
++      set_underlying_source;
++  RtcEncodedAudioReceiverSourceOptimizer optimizer(
++      CrossThreadBindRepeating(set_underlying_source.Get()),
++      CrossThreadBindOnce(disconnect_callback_.Get()));
++
++  v8_scope.GetExecutionContext()->NotifyContextDestroyed();
++
++  EXPECT_CALL(set_underlying_source, Run(testing::_, testing::_)).Times(0);
++  EXPECT_CALL(disconnect_callback_, Run()).Times(1);
++  EXPECT_EQ(optimizer.PerformInProcessOptimization(v8_scope.GetScriptState()),
++            nullptr);
++}
++
++TEST_F(RTCEncodedAudioUnderlyingSourceTest,
++       SenderOptimizerAfterContextDestroyedDisconnectsAndReturnsNull) {
++  V8TestingScope v8_scope;
++  base::MockRepeatingCallback<void(RTCEncodedAudioUnderlyingSource*,
++                                   scoped_refptr<base::SingleThreadTaskRunner>)>
++      set_underlying_source;
++  RtcEncodedAudioSenderSourceOptimizer optimizer(
++      CrossThreadBindRepeating(set_underlying_source.Get()),
++      CrossThreadBindOnce(disconnect_callback_.Get()));
++
++  v8_scope.GetExecutionContext()->NotifyContextDestroyed();
++
++  EXPECT_CALL(set_underlying_source, Run(testing::_, testing::_)).Times(0);
++  EXPECT_CALL(disconnect_callback_, Run()).Times(1);
++  EXPECT_EQ(optimizer.PerformInProcessOptimization(v8_scope.GetScriptState()),
++            nullptr);
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_receiver_sink_optimizer.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_receiver_sink_optimizer.cc
+index c27fd211be9dae04f5ff1a215b6ef68bab45a0ef..6892c6bdda4bd9ec8cdc99770d5586f969589b82 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_receiver_sink_optimizer.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_receiver_sink_optimizer.cc
+@@ -3,6 +3,7 @@
+ // found in the LICENSE file.
+ 
+ #include "third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_receiver_sink_optimizer.h"
++#include "third_party/blink/renderer/core/execution_context/execution_context.h"
+ #include "third_party/blink/renderer/platform/heap/cross_thread_persistent.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cross_thread_task.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
+@@ -18,6 +19,13 @@ RtcEncodedVideoReceiverSinkOptimizer::RtcEncodedVideoReceiverSinkOptimizer(
+ UnderlyingSinkBase*
+ RtcEncodedVideoReceiverSinkOptimizer::PerformInProcessOptimization(
+     ScriptState* script_state) {
++  ExecutionContext* context = ExecutionContext::From(script_state);
++  if (!context || context->IsContextDestroyed()) {
++    // Do not allocate a sink on a destroyed context or bind a persistent
++    // reference to it on the receiver.
++    return nullptr;
++  }
++
+   auto* new_sink = MakeGarbageCollected<RTCEncodedVideoUnderlyingSink>(
+       script_state, std::move(transformer_),
+       /*detach_frame_data_on_write=*/false);
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_receiver_source_optimizer.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_receiver_source_optimizer.cc
+index 4ab24eb6f05ae9c4e8daa003584bdc589b8b3085..d221b74be3ad315293a56bfce48fa37dcefd8289 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_receiver_source_optimizer.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_receiver_source_optimizer.cc
+@@ -20,6 +20,13 @@ UnderlyingSourceBase*
+ RtcEncodedVideoReceiverSourceOptimizer::PerformInProcessOptimization(
+     ScriptState* script_state) {
+   ExecutionContext* context = ExecutionContext::From(script_state);
++  if (!context || context->IsContextDestroyed()) {
++    // A source created on a destroyed context would never get
++    // ContextDestroyed(), so the disconnect callback would never run and the
++    // transformer would keep pushing frames to a dead heap. Disconnect now.
++    std::move(disconnect_callback_).Run();
++    return nullptr;
++  }
+ 
+   scoped_refptr<base::SingleThreadTaskRunner> current_runner =
+       context->GetTaskRunner(TaskType::kInternalMediaRealTime);
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_sender_sink_optimizer.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_sender_sink_optimizer.cc
+index 736053791fbb8f571c130c594cbdd19667fcf0ba..38437037c4e36bed6ee10d4b1d8c9de1310bf309 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_sender_sink_optimizer.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_sender_sink_optimizer.cc
+@@ -3,6 +3,8 @@
+ // found in the LICENSE file.
+ 
+ #include "third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_sender_sink_optimizer.h"
++
++#include "third_party/blink/renderer/core/execution_context/execution_context.h"
+ #include "third_party/blink/renderer/platform/heap/cross_thread_persistent.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cross_thread_task.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
+@@ -18,6 +20,13 @@ RtcEncodedVideoSenderSinkOptimizer::RtcEncodedVideoSenderSinkOptimizer(
+ UnderlyingSinkBase*
+ RtcEncodedVideoSenderSinkOptimizer::PerformInProcessOptimization(
+     ScriptState* script_state) {
++  ExecutionContext* context = ExecutionContext::From(script_state);
++  if (!context || context->IsContextDestroyed()) {
++    // Do not allocate a sink on a destroyed context or bind a persistent
++    // reference to it on the sender.
++    return nullptr;
++  }
++
+   auto* new_sink = MakeGarbageCollected<RTCEncodedVideoUnderlyingSink>(
+       script_state, std::move(transformer_),
+       /*detach_frame_data_on_write=*/false);
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_sender_source_optimizer.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_sender_source_optimizer.cc
+index d8fd75d25dafea0f71b84edda32da7a41eb021e8..6a982ed1c2ded19bb9d4da7db898a9e4ce1b1350 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_sender_source_optimizer.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_sender_source_optimizer.cc
+@@ -20,6 +20,13 @@ UnderlyingSourceBase*
+ RtcEncodedVideoSenderSourceOptimizer::PerformInProcessOptimization(
+     ScriptState* script_state) {
+   ExecutionContext* context = ExecutionContext::From(script_state);
++  if (!context || context->IsContextDestroyed()) {
++    // A source created on a destroyed context would never get
++    // ContextDestroyed(), so the disconnect callback would never run and the
++    // transformer would keep pushing frames to a dead heap. Disconnect now.
++    std::move(disconnect_callback_).Run();
++    return nullptr;
++  }
+ 
+   scoped_refptr<base::SingleThreadTaskRunner> current_runner =
+       context->GetTaskRunner(TaskType::kInternalMediaRealTime);
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_sink_test.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_sink_test.cc
+index 3fbd18cd360860020d3b9064b51c8c994f043d9d..09da5064c88d5440d5bc0afe80181a13803d6c99 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_sink_test.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_sink_test.cc
+@@ -6,6 +6,7 @@
+ 
+ #include "base/memory/scoped_refptr.h"
+ #include "base/task/single_thread_task_runner.h"
++#include "base/test/mock_callback.h"
+ #include "testing/gmock/include/gmock/gmock.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/blink/public/platform/scheduler/test/renderer_scheduler_test_support.h"
+@@ -15,14 +16,18 @@
+ #include "third_party/blink/renderer/bindings/core/v8/v8_dom_exception.h"
+ #include "third_party/blink/renderer/bindings/modules/v8/v8_rtc_encoded_video_frame.h"
+ #include "third_party/blink/renderer/core/dom/dom_exception.h"
++#include "third_party/blink/renderer/core/execution_context/execution_context.h"
+ #include "third_party/blink/renderer/core/streams/writable_stream.h"
+ #include "third_party/blink/renderer/core/streams/writable_stream_default_writer.h"
+ #include "third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_frame.h"
+ #include "third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_frame_delegate.h"
++#include "third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_receiver_sink_optimizer.h"
++#include "third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_sender_sink_optimizer.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
+ #include "third_party/blink/renderer/platform/peerconnection/rtc_encoded_video_stream_transformer.h"
+ #include "third_party/blink/renderer/platform/testing/task_environment.h"
+ #include "third_party/blink/renderer/platform/testing/testing_platform_support.h"
++#include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
+ #include "third_party/blink/renderer/platform/wtf/functional.h"
+ #include "third_party/webrtc/api/frame_transformer_interface.h"
+ #include "third_party/webrtc/api/scoped_refptr.h"
+@@ -180,4 +185,34 @@ TEST_F(RTCEncodedVideoUnderlyingSinkTest, WritingReceiverFrameSucceeds) {
+   EXPECT_FALSE(dummy_exception_state.HadException());
+ }
+ 
++TEST_F(RTCEncodedVideoUnderlyingSinkTest,
++       ReceiverOptimizerAfterContextDestroyedReturnsNull) {
++  V8TestingScope v8_scope;
++  base::MockOnceCallback<void(RTCEncodedVideoUnderlyingSink*)>
++      set_underlying_sink;
++  RtcEncodedVideoReceiverSinkOptimizer optimizer(
++      CrossThreadBindOnce(set_underlying_sink.Get()), transformer_.GetBroker());
++
++  v8_scope.GetExecutionContext()->NotifyContextDestroyed();
++
++  EXPECT_CALL(set_underlying_sink, Run(_)).Times(0);
++  EXPECT_EQ(optimizer.PerformInProcessOptimization(v8_scope.GetScriptState()),
++            nullptr);
++}
++
++TEST_F(RTCEncodedVideoUnderlyingSinkTest,
++       SenderOptimizerAfterContextDestroyedReturnsNull) {
++  V8TestingScope v8_scope;
++  base::MockOnceCallback<void(RTCEncodedVideoUnderlyingSink*)>
++      set_underlying_sink;
++  RtcEncodedVideoSenderSinkOptimizer optimizer(
++      CrossThreadBindOnce(set_underlying_sink.Get()), transformer_.GetBroker());
++
++  v8_scope.GetExecutionContext()->NotifyContextDestroyed();
++
++  EXPECT_CALL(set_underlying_sink, Run(_)).Times(0);
++  EXPECT_EQ(optimizer.PerformInProcessOptimization(v8_scope.GetScriptState()),
++            nullptr);
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source_test.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source_test.cc
+index 390833349ac3c1aa006bb33ec0658bdaef188399..78c1d76c34a88a328ded0237b55b9f7e7890e0cc 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source_test.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_source_test.cc
+@@ -14,8 +14,11 @@
+ #include "third_party/blink/renderer/bindings/core/v8/script_promise_tester.h"
+ #include "third_party/blink/renderer/bindings/core/v8/v8_binding_for_testing.h"
+ #include "third_party/blink/renderer/bindings/core/v8/v8_readable_stream_read_result.h"
++#include "third_party/blink/renderer/core/execution_context/execution_context.h"
+ #include "third_party/blink/renderer/core/streams/readable_stream.h"
+ #include "third_party/blink/renderer/core/streams/readable_stream_default_controller_with_script_scope.h"
++#include "third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_receiver_source_optimizer.h"
++#include "third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_sender_source_optimizer.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ #include "third_party/blink/renderer/platform/heap/persistent.h"
+@@ -184,4 +187,40 @@ TEST_F(RTCEncodedVideoUnderlyingSourceTest,
+   task_environment_.RunUntilIdle();
+ }
+ 
++TEST_F(RTCEncodedVideoUnderlyingSourceTest,
++       ReceiverOptimizerAfterContextDestroyedDisconnectsAndReturnsNull) {
++  V8TestingScope v8_scope;
++  base::MockRepeatingCallback<void(RTCEncodedVideoUnderlyingSource*,
++                                   scoped_refptr<base::SingleThreadTaskRunner>)>
++      set_underlying_source;
++  RtcEncodedVideoReceiverSourceOptimizer optimizer(
++      CrossThreadBindRepeating(set_underlying_source.Get()),
++      CrossThreadBindOnce(disconnect_callback_.Get()));
++
++  v8_scope.GetExecutionContext()->NotifyContextDestroyed();
++
++  EXPECT_CALL(set_underlying_source, Run(testing::_, testing::_)).Times(0);
++  EXPECT_CALL(disconnect_callback_, Run()).Times(1);
++  EXPECT_EQ(optimizer.PerformInProcessOptimization(v8_scope.GetScriptState()),
++            nullptr);
++}
++
++TEST_F(RTCEncodedVideoUnderlyingSourceTest,
++       SenderOptimizerAfterContextDestroyedDisconnectsAndReturnsNull) {
++  V8TestingScope v8_scope;
++  base::MockRepeatingCallback<void(RTCEncodedVideoUnderlyingSource*,
++                                   scoped_refptr<base::SingleThreadTaskRunner>)>
++      set_underlying_source;
++  RtcEncodedVideoSenderSourceOptimizer optimizer(
++      CrossThreadBindRepeating(set_underlying_source.Get()),
++      CrossThreadBindOnce(disconnect_callback_.Get()));
++
++  v8_scope.GetExecutionContext()->NotifyContextDestroyed();
++
++  EXPECT_CALL(set_underlying_source, Run(testing::_, testing::_)).Times(0);
++  EXPECT_CALL(disconnect_callback_, Run()).Times(1);
++  EXPECT_EQ(optimizer.PerformInProcessOptimization(v8_scope.GetScriptState()),
++            nullptr);
++}
++
+ }  // namespace blink

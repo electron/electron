@@ -1,0 +1,119 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Tue, 15 Sep 2026 14:47:34 -0400
+Subject: Vulkan: Don't ghost images if base level has changed
+
+Bug: b/560140367
+Bug: chromium:561499641
+Change-Id: Ib21dfece7075e00c5193214c06440e2c5f90ce91
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8415126
+Reviewed-by: Charlie Lao <cclao@google.com>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+Electron adaptation notes (43-x-y): This branch has no gl::OwnerLevel / TextureState::toOwnerLevel(); the base-level comparison uses gl::LevelIndex(mState.getBaseLevel()) against mImage->getFirstAllocatedLevel().
+
+diff --git a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+index 8c233272b89c22893cdaf936a32419936f068acd..1103ad3398eb0962e6b9d55c5692e5261d2b4434 100644
+--- a/src/libANGLE/renderer/vulkan/TextureVk.cpp
++++ b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+@@ -1182,6 +1182,9 @@ angle::Result TextureVk::ghostOnOverwrite(ContextVk *contextVk,
+     }
+ 
+     // Size check: Can only ghost the image if the area being overwritten covers the entire image.
++    // Base level check: If base level has changed, don't attempt to ghost it as
++    //                   getBaseLevelFormat() and initImage() will be wrong below, but also it's
++    //                   possible the texture has to be reallocated anyway later.
+     //
+     // As a targeted optimization, only limit to non-array 2D color textures.  Other texture types
+     // can be very easily added if need, but need additional tests similar to those that have landed
+@@ -1189,6 +1192,12 @@ angle::Result TextureVk::ghostOnOverwrite(ContextVk *contextVk,
+     const gl::LevelIndex overwriteLevel = gl::LevelIndex(index.getLevelIndex());
+     const gl::LevelIndex imageLevel     = mImage->getFirstAllocatedLevel();
+ 
++    const gl::LevelIndex baseLevel(mState.getBaseLevel());
++    if (baseLevel != imageLevel)
++    {
++        return angle::Result::Continue;
++    }
++
+     const bool is2DImage = mImage->getLevelCount() == 1 && mImage->getLayerCount() == 1 &&
+                            mImage->getType() == VK_IMAGE_TYPE_2D;
+     const bool is2DUpdate  = mState.getType() == gl::TextureType::_2D && index.getLayerCount() == 1;
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 451c91c22e502a022cd11e989d8a1a3c031bf4ad..382ba8de38fa627134566fd96ad193daf71bfa01 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -180,6 +180,13 @@
+ 447556589 WIN INTEL OPENGL : GeometryShaderTest.ImplicitSizedArrayMatchesExplicitSizedArray2/* = SKIP
+ 451644991 WIN INTEL OPENGL : WebGL2GLSLTest.NotInfiniteLoop/* = SKIP
+ 436598955 WIN D3D11 : DepthStencilFormatsTest.DepthTextureRender/ES3*D3D11 = SKIP
++517618343 WIN INTEL VULKAN : TransformFeedbackTestES31.CaptureArray/* = SKIP
++40096690 WIN INTEL VULKAN : TransformFeedbackTest.RecordAndDraw/* = SKIP
++40096690 WIN INTEL VULKAN : TransformFeedbackWithDepthBufferTest.RecordAndDrawWithDepthWriteEnabled/* = SKIP
++534082926 WIN INTEL VULKAN : TransformFeedbackTest.RenderOnceChangeXfbBufferRenderAgain/* = SKIP
++534082926 WIN INTEL VULKAN : TransformFeedbackTest.BufferRebinding/* = SKIP
++534082926 WIN INTEL VULKAN : TransformFeedbackTest.MultiplePaused/* = SKIP
++40096690 WIN INTEL VULKAN : TextureBufferTestES31.UseAsXFBThenAsTextureBuffer/* = SKIP
+ 
+ // Failures on Intel Comet Lake S UHD Graphics 630 (8086:9bc5-31.0.101.2111)
+ 40644896 WIN INTEL OPENGL : D3DImageFormatConversionTest.WriteColorFunctionR8G8B8A8/* = SKIP
+@@ -1337,6 +1344,10 @@
+ 535213600 PIXEL10 GLES : PbufferTestES3.BindTexImageAndCopyTextureInvertedSrc/* = SKIP
+ 535213600 PIXEL10 GLES : PbufferTestES3.BindTexImageAndCopyTextureSrc/* = SKIP
+ 537235694 PIXEL10 GLES : WebGLGLSLTest.FragDataIndexClampWithoutDrawBuffers/* = SKIP
++537235694 PIXEL10 GLES : WebGLGLSLTest.FragDataInCommaIndexClampWithoutDrawBuffers/* = SKIP
++546627192 PIXEL10 GLES : GLSLTest_ES3.VaryingAnonymousStructAssignment/* = SKIP
++546627192 PIXEL10 GLES : GLSLTest_ES3.VaryingAnonymousStructTernary/* = SKIP
++563032519 PIXEL10 GLES : Texture2DTestES3.SampleThenFullUpdateWithBaseChange/* = SKIP
+ 
+ 480069042 PIXEL10 VULKAN : ClearTextureEXTTestES31Unrenderable.Clear/ES3_1_Vulkan*__GL_RG16_SNORM_EXT_GL_RG_GL_SHORT_GL_TEXTURE_2D_ARRAY = SKIP
+ 480069042 PIXEL10 VULKAN : ClearTextureEXTTestES31Unrenderable.Clear/ES3_1_Vulkan*__GL_RGB32UI_GL_RGB_INTEGER_GL_UNSIGNED_INT_GL_TEXTURE_2D_ARRAY = SKIP
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index e43a6f8fe6011e973af1b1116feab14711047396..db55aaab26b7bf8119361ec409f9636a0dd1b457 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -11839,6 +11839,44 @@ void main()
+     }
+ }
+ 
++// Test completely overwriting a texture with a data upload while the texture is being sampled from
++// by the GPU.
++// Test changes base level just before upload.
++TEST_P(Texture2DTestES3, SampleThenFullUpdateWithBaseChange)
++{
++    constexpr uint32_t kWidth  = 16;
++    constexpr uint32_t kHeight = 24;
++
++    ANGLE_GL_PROGRAM(program, getVertexShaderSource(), getExpensiveFragmentShaderSource());
++
++    glViewport(0, 0, kWidth, kHeight);
++
++    GLTexture tex;
++    const std::vector<GLColor> texDataRed(kWidth * kHeight, GLColor::red);
++    const std::vector<GLColor> texDataGreen(kWidth * kHeight, GLColor::green);
++    const std::vector<GLColor> texDataBlue(kWidth * kHeight, GLColor::blue);
++
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 texDataRed.data());
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
++    drawQuad(program, "position", 0.0f);
++    ASSERT_GL_NO_ERROR();
++
++    // Set the base level to something random before the upload; that shouldn't have any effect on
++    // the upload.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 123);
++    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, kWidth, kHeight, GL_RGBA, GL_UNSIGNED_BYTE,
++                    texDataGreen.data());
++    // Restore base level
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++    drawQuad(program, "position", 0.0f);
++
++    EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
+ // Test for ASTC decode mode queries
+ TEST_P(Texture2DTestES3, ASTCDecodeModeQueries)
+ {

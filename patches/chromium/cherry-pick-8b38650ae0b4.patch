@@ -1,0 +1,235 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rob Pitkin <robpitkin@google.com>
+Date: Mon, 12 Oct 2026 22:04:50 -0700
+Subject: bluetooth: Fix UAF in BluetoothPairingBlueZ on synchronous cancel
+
+PairingDelegate implementations (such as DevicePairingHandler in Ash
+when a system-modal pairing dialog fails to open or is immediately
+dismissed) can synchronously invoke BluetoothDevice::CancelPairing() or
+BluetoothAdapter::RemovePairingDelegate() from inside delegate callbacks
+like DisplayPinCode(), DisplayPasskey(), or KeysEntered().
+
+Because BluetoothDeviceBlueZ::CancelPairing() synchronously calls
+EndPairing(), which resets std::unique_ptr<BluetoothPairingBlueZ>, the
+active BluetoothPairingBlueZ instance is destroyed while its method or
+caller is still on the stack. This causes a use-after-free when:
+
+1. BluetoothPairingBlueZ::DisplayPinCode() or KeysEntered() accesses
+   `device_` after `pairing_delegate_` returns.
+2. BluetoothAdapterBlueZ::DisplayPasskey() calls
+   `pairing->KeysEntered(entered)` after `pairing->DisplayPasskey()`
+   synchronously destroyed `pairing`.
+
+This CL adds a WeakPtrFactory to BluetoothPairingBlueZ and checks weak
+pointer validity after external delegate and callback invocations before
+accessing member state or making follow-up calls.
+
+Bug: 566687517
+Change-Id: I4d16dff447062be9cae39cfd65ef8433ef87e0e9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8477932
+Reviewed-by: Matt Reynolds <mattreynolds@chromium.org>
+Commit-Queue: Rob Pitkin <robpitkin@chromium.org>
+Reviewed-by: Vincent Scheib <scheib@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1717336}
+
+diff --git a/device/bluetooth/bluez/bluetooth_adapter_bluez.cc b/device/bluetooth/bluez/bluetooth_adapter_bluez.cc
+index 7103973846ab1bbcad38922eca6b1b749f8cd5cc..702348f0148596cf7aebd35f250044c69090a7bb 100644
+--- a/device/bluetooth/bluez/bluetooth_adapter_bluez.cc
++++ b/device/bluetooth/bluez/bluetooth_adapter_bluez.cc
+@@ -1076,9 +1076,15 @@ void BluetoothAdapterBlueZ::DisplayPasskey(const dbus::ObjectPath& device_path,
+   if (!pairing)
+     return;
+ 
+-  if (entered == 0)
++  if (entered == 0) {
++    // DisplayPasskey() notifies the pairing delegate, which may cancel pairing
++    // and destroy `pairing` before returning.
++    base::WeakPtr<BluetoothPairingBlueZ> weak_pairing = pairing->GetWeakPtr();
+     pairing->DisplayPasskey(passkey);
+-
++    if (!weak_pairing) {
++      return;
++    }
++  }
+   pairing->KeysEntered(entered);
+ }
+ 
+diff --git a/device/bluetooth/bluez/bluetooth_bluez_unittest.cc b/device/bluetooth/bluez/bluetooth_bluez_unittest.cc
+index 899a93aac80b2c9e7d5d41f93639d3a6455f257a..3b681ca3562bce08d9a05bcb5c757c8a96692dd4 100644
+--- a/device/bluetooth/bluez/bluetooth_bluez_unittest.cc
++++ b/device/bluetooth/bluez/bluetooth_bluez_unittest.cc
+@@ -3612,6 +3612,101 @@ TEST_P(BluetoothBlueZTestP, PairingCancelledAtConfirmation) {
+   EXPECT_FALSE(device->IsPaired());
+ }
+ 
++TEST_P(BluetoothBlueZTestP, PairingCancelledSynchronouslyAtDisplayPinCode) {
++  fake_bluetooth_device_client_->SetSimulationIntervalMs(10);
++
++  GetAdapter();
++  DiscoverDevices();
++
++  BluetoothDevice* device = adapter_->GetDevice(
++      bluez::FakeBluetoothDeviceClient::kDisplayPinCodeAddress);
++  ASSERT_TRUE(device != nullptr);
++  ASSERT_FALSE(device->IsPaired());
++
++  StrictMock<MockPairingDelegate> pairing_delegate;
++  // Note: Synchronous cancel
++  // The delegate cancels pairing from inside its callout. CancelPairing()
++  // synchronously ends pairing, destroying the BluetoothPairingBlueZ while
++  // the method that called the delegate is still on the stack. That method
++  // must check its WeakPtr before touching members, or it reads freed memory.
++  EXPECT_CALL(pairing_delegate, DisplayPinCode(_, "123456"))
++      .WillOnce([](BluetoothDevice* device, const std::string& pincode) {
++        device->CancelPairing();
++      });
++
++  base::test::TestFuture<std::optional<BluetoothDevice::ConnectErrorCode>>
++      connect_future;
++  PerformConnect(device, &pairing_delegate, connect_future.GetCallback());
++  EXPECT_EQ(BluetoothDevice::ERROR_AUTH_CANCELED, connect_future.Get());
++  EXPECT_FALSE(device->IsConnected());
++  EXPECT_FALSE(device->IsConnecting());
++  EXPECT_FALSE(device->IsPaired());
++}
++
++TEST_P(BluetoothBlueZTestP, PairingCancelledSynchronouslyAtDisplayPasskey) {
++  fake_bluetooth_device_client_->SetSimulationIntervalMs(10);
++
++  GetAdapter();
++  DiscoverDevices();
++
++  BluetoothDevice* device = adapter_->GetDevice(
++      bluez::FakeBluetoothDeviceClient::kDisplayPasskeyAddress);
++  ASSERT_TRUE(device != nullptr);
++  ASSERT_FALSE(device->IsPaired());
++
++  StrictMock<MockPairingDelegate> pairing_delegate;
++  // See "Note: Synchronous cancel" above. Cancelling inside DisplayPasskey()
++  // means BluetoothAdapterBlueZ::DisplayPasskey() must not go on to call
++  // KeysEntered() on the destroyed pairing.
++  EXPECT_CALL(pairing_delegate, DisplayPasskey(_, 123456U))
++      .WillOnce([](BluetoothDevice* device, uint32_t passkey) {
++        device->CancelPairing();
++      });
++  EXPECT_CALL(pairing_delegate, KeysEntered(_, _)).Times(0);
++
++  base::test::TestFuture<std::optional<BluetoothDevice::ConnectErrorCode>>
++      connect_future;
++  PerformConnect(device, &pairing_delegate, connect_future.GetCallback());
++  EXPECT_EQ(BluetoothDevice::ERROR_AUTH_CANCELED, connect_future.Get());
++  EXPECT_FALSE(device->IsConnected());
++  EXPECT_FALSE(device->IsConnecting());
++  EXPECT_FALSE(device->IsPaired());
++}
++
++TEST_P(BluetoothBlueZTestP, PairingCancelledSynchronouslyAtKeysEntered) {
++  fake_bluetooth_device_client_->SetSimulationIntervalMs(10);
++
++  GetAdapter();
++  DiscoverDevices();
++
++  BluetoothDevice* device = adapter_->GetDevice(
++      bluez::FakeBluetoothDeviceClient::kDisplayPasskeyAddress);
++  ASSERT_TRUE(device != nullptr);
++  ASSERT_FALSE(device->IsPaired());
++
++  StrictMock<MockPairingDelegate> pairing_delegate;
++  EXPECT_CALL(pairing_delegate, DisplayPasskey(_, 123456U)).Times(1);
++  // See "Note: Synchronous cancel" above. Cancelling inside the final
++  // KeysEntered() means BluetoothPairingBlueZ::KeysEntered() must not read
++  // `device_` afterwards.
++  testing::InSequence seq;
++  for (int i = 0; i < 7; ++i) {
++    EXPECT_CALL(pairing_delegate, KeysEntered(_, i));
++  }
++  EXPECT_CALL(pairing_delegate, KeysEntered(_, 7))
++      .WillOnce([](BluetoothDevice* device, uint32_t entered) {
++        device->CancelPairing();
++      });
++
++  base::test::TestFuture<std::optional<BluetoothDevice::ConnectErrorCode>>
++      connect_future;
++  PerformConnect(device, &pairing_delegate, connect_future.GetCallback());
++  EXPECT_EQ(BluetoothDevice::ERROR_AUTH_CANCELED, connect_future.Get());
++  EXPECT_FALSE(device->IsConnected());
++  EXPECT_FALSE(device->IsConnecting());
++  EXPECT_FALSE(device->IsPaired());
++}
++
+ TEST_P(BluetoothBlueZTestP, PairingCancelledInFlight) {
+   fake_bluetooth_device_client_->SetSimulationIntervalMs(10);
+ 
+diff --git a/device/bluetooth/bluez/bluetooth_pairing_bluez.cc b/device/bluetooth/bluez/bluetooth_pairing_bluez.cc
+index c42d36ed78af6c1a82f98d799add9cd3c395ed56..bb2bba56a6f70f72b94bb86899dc4cd4f5d32f69 100644
+--- a/device/bluetooth/bluez/bluetooth_pairing_bluez.cc
++++ b/device/bluetooth/bluez/bluetooth_pairing_bluez.cc
+@@ -65,7 +65,13 @@ void BluetoothPairingBlueZ::SetPinCode(const std::string& pincode) {
+ void BluetoothPairingBlueZ::DisplayPinCode(const std::string& pincode) {
+   ResetCallbacks();
+   pairing_delegate_used_ = true;
++
++  base::WeakPtr<BluetoothPairingBlueZ> weak_this =
++      weak_ptr_factory_.GetWeakPtr();
+   pairing_delegate_->DisplayPinCode(device_, pincode);
++  if (!weak_this) {
++    return;
++  }
+ 
+   // If this is not an outgoing connection to the device, the pairing context
+   // needs to be cleaned up again as there's no reliable indication of
+@@ -108,7 +114,13 @@ void BluetoothPairingBlueZ::DisplayPasskey(uint32_t passkey) {
+ 
+ void BluetoothPairingBlueZ::KeysEntered(uint16_t entered) {
+   pairing_delegate_used_ = true;
++
++  base::WeakPtr<BluetoothPairingBlueZ> weak_this =
++      weak_ptr_factory_.GetWeakPtr();
+   pairing_delegate_->KeysEntered(device_, entered);
++  if (!weak_this) {
++    return;
++  }
+ 
+   // If this is not an outgoing connection to the device, the pairing context
+   // needs to be cleaned up again as there's no reliable indication of
+@@ -169,6 +181,10 @@ BluetoothDevice::PairingDelegate* BluetoothPairingBlueZ::GetPairingDelegate()
+   return pairing_delegate_;
+ }
+ 
++base::WeakPtr<BluetoothPairingBlueZ> BluetoothPairingBlueZ::GetWeakPtr() {
++  return weak_ptr_factory_.GetWeakPtr();
++}
++
+ void BluetoothPairingBlueZ::ResetCallbacks() {
+   if (!pincode_callback_.is_null()) {
+     std::move(pincode_callback_)
+diff --git a/device/bluetooth/bluez/bluetooth_pairing_bluez.h b/device/bluetooth/bluez/bluetooth_pairing_bluez.h
+index e6843b2182e3df78d88cd82ba393e4c8c611e8ac..aa5221df8d246a7688ba7c5989801506a0c0ada1 100644
+--- a/device/bluetooth/bluez/bluetooth_pairing_bluez.h
++++ b/device/bluetooth/bluez/bluetooth_pairing_bluez.h
+@@ -8,6 +8,7 @@
+ #include <stdint.h>
+ 
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "device/bluetooth/bluetooth_device.h"
+ #include "device/bluetooth/dbus/bluetooth_agent_service_provider.h"
+ 
+@@ -114,6 +115,8 @@ class BluetoothPairingBlueZ {
+   // Returns the pairing delegate being used by this pairing object.
+   device::BluetoothDevice::PairingDelegate* GetPairingDelegate() const;
+ 
++  base::WeakPtr<BluetoothPairingBlueZ> GetWeakPtr();
++
+  private:
+   // Internal method to run the current set of callbacks with canceled state
+   // because a new request has arrived that supersedes them.
+@@ -146,6 +149,8 @@ class BluetoothPairingBlueZ {
+       passkey_callback_;
+   bluez::BluetoothAgentServiceProvider::Delegate::ConfirmationCallback
+       confirmation_callback_;
++
++  base::WeakPtrFactory<BluetoothPairingBlueZ> weak_ptr_factory_{this};
+ };
+ 
+ }  // namespace bluez
