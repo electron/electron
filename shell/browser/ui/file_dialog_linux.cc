@@ -21,7 +21,6 @@
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/common/electron_paths.h"
-#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
