@@ -446,6 +446,14 @@ describe('webFrameMain module', () => {
     });
 
     it('is detached when unload handler sends IPC', async () => {
+      // The old renderer is backgrounded once the cross-origin page commits,
+      // and under parallel spec load it can miss the 500 ms unload timeout, so
+      // the IPC is dropped. Keep renderers at foreground priority for this test
+      // (see 'receives ipcs from unloading frames' in api-ipc.spec.ts).
+      if (!app.commandLine.hasSwitch('disable-renderer-backgrounding')) {
+        app.commandLine.appendSwitch('disable-renderer-backgrounding');
+        defer(() => app.commandLine.removeSwitch('disable-renderer-backgrounding'));
+      }
       w = new BrowserWindow({
         show: false,
         webPreferences: {
