@@ -32,11 +32,21 @@ const electronNet = net;
 
 v8.setFlagsFromString('--expose_gc');
 
-function fail(message) {
-  process.parentPort.postMessage({ ok: false, message });
+// Posts |result| and exits with |code| once the parent has acknowledged it
+// (see waitForUtilityResult in spec/lib/utility-process-helpers.ts).
+// postMessage() is an asynchronous write and process.exit() does not wait for
+// pending writes, so exiting right after posting can lose the result.
+function finish(result, code) {
+  // Leftover async work from the test body can still fail while this waits for the ack.
+  // Log it rather than let it change the exit code of a test that has already reported its result.
+  const logError = (err) => console.error('error after the test result was posted:', err);
+  process.on('uncaughtException', logError);
+  process.on('unhandledRejection', logError);
+  process.parentPort.once('message', () => process.exit(code));
+  process.parentPort.postMessage(result);
 }
 
-process.parentPort.on('message', async (e) => {
+process.parentPort.once('message', async (e) => {
   // Equivalent of beforeEach in spec/api-net.spec.ts
   respondNTimes.routeFailure = false;
 
@@ -50,19 +60,23 @@ process.parentPort.on('message', async (e) => {
     // eslint-disable-next-line no-eval
     await eval(e.data.fn);
   } catch (err) {
-    fail(`${err}`);
-    process.exit(1);
+    finish({ ok: false, message: `${err}` }, 1);
+    return;
   }
 
   // Equivalent of afterEach in spec/api-net.spec.ts
   if (respondNTimes.routeFailure) {
-    fail(
-      'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
+    finish(
+      {
+        ok: false,
+        message:
+          'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
+      },
+      1
     );
-    process.exit(1);
+    return;
   }
 
   // Test passed
-  process.parentPort.postMessage({ ok: true });
-  process.exit(0);
+  finish({ ok: true }, 0);
 });
