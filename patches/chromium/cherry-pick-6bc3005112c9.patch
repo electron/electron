@@ -1,0 +1,1287 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sebastien Lalancette <seblalancette@chromium.org>
+Date: Fri, 25 Sep 2026 12:26:09 -0700
+Subject: [net] Validate server certificate before generating auth token
+
+Connection-based HTTP authentication schemes (such as NTLM and
+Negotiate) derive per-connection state and channel bindings from the
+server certificate presented when the handler is created. Previously,
+HttpAuthController only validated certificate consistency upon receiving
+a challenge in HandleAuthChallenge().
+
+If a connection was replaced after receiving a challenge or between
+handshake rounds, MaybeGenerateAuthToken() could generate and transmit
+an authentication token bound to the previous connection's certificate
+over a new connection presenting a different certificate.
+
+This change passes the target connection's server certificate to
+HttpAuthController::MaybeGenerateAuthToken() and invalidates the active
+handler if the certificate does not match before generating an auth
+token. All transaction and proxy socket callers are updated to pass the
+target certificate.
+
+Bug: 557075191
+Change-Id: Ie219efcb29fa840ffeb9b181563b12663458d962
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8374421
+Reviewed-by: mmenke <mmenke@chromium.org>
+Commit-Queue: Sebastien Lalancette <seblalancette@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1705049}
+
+diff --git a/net/http/http_auth_controller.cc b/net/http/http_auth_controller.cc
+index 3a670fb762a4f3ad42a48228459f300a48a7a99f..cc5afa574ec0e2fe0f7bc85e69ad9469184edd75 100644
+--- a/net/http/http_auth_controller.cc
++++ b/net/http/http_auth_controller.cc
+@@ -125,18 +125,31 @@ void HttpAuthController::BindToCallingNetLog(
+ 
+ int HttpAuthController::MaybeGenerateAuthToken(
+     const HttpRequestInfo* request,
++    const SSLInfo& ssl_info,
+     CompletionOnceCallback callback,
+     const NetLogWithSource& caller_net_log) {
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+   DCHECK(!auth_info_);
++
++  // A connection-based handler derives per-connection state (such as channel
++  // bindings) from the server certificate at creation time. If the
++  // underlying connection has been replaced with one that presents a
++  // different certificate since the last challenge, that state is no longer
++  // valid for the current connection, so drop the handler instead of
++  // generating a token from it. The next challenge starts the authentication
++  // protocol over on the current connection.
++  InvalidateIfServerCertChanged(ssl_info.cert.get());
++
+   bool needs_auth = HaveAuth() || SelectPreemptiveAuth(caller_net_log);
+-  if (!needs_auth)
++  if (!needs_auth) {
+     return OK;
++  }
+   net_log_.BeginEventReferencingSource(NetLogEventType::AUTH_GENERATE_TOKEN,
+                                        caller_net_log.source());
+   const AuthCredentials* credentials = nullptr;
+-  if (identity_.source != HttpAuth::IDENT_SRC_DEFAULT_CREDENTIALS)
++  if (identity_.source != HttpAuth::IDENT_SRC_DEFAULT_CREDENTIALS) {
+     credentials = &identity_.credentials;
++  }
+   DCHECK(auth_token_.empty());
+   DCHECK(callback_.is_null());
+   int rv = handler_->GenerateAuthToken(
+@@ -161,8 +174,9 @@ bool HttpAuthController::SelectPreemptiveAuth(
+ 
+   // Don't do preemptive authorization if the URL contains a username:password,
+   // since we must first be challenged in order to use the URL's identity.
+-  if (auth_url_.has_username())
++  if (auth_url_.has_username()) {
+     return false;
++  }
+ 
+   // SelectPreemptiveAuth() is on the critical path for each request, so it
+   // is expected to be fast. LookupByPath() is fast in the common case, since
+@@ -170,8 +184,9 @@ bool HttpAuthController::SelectPreemptiveAuth(
+   // (For most users in fact, it will be 0.)
+   HttpAuthCache::Entry* entry = http_auth_cache_->LookupByPath(
+       auth_scheme_host_port_, target_, network_anonymization_key_, auth_path_);
+-  if (!entry)
++  if (!entry) {
+     return false;
++  }
+ 
+   BindToCallingNetLog(caller_net_log);
+ 
+@@ -226,11 +241,8 @@ int HttpAuthController::HandleAuthChallenge(
+   // certificate at creation time. If the underlying connection has been
+   // replaced with one that presents a different certificate, that state is
+   // no longer valid for the current connection, so drop the handler and
+-  // start the scheme over.
+-  if (handler_ && handler_->is_connection_based() &&
+-      !ServerCertMatches(handler_server_cert_.get(), ssl_info.cert.get())) {
+-    InvalidateCurrentHandler(INVALIDATE_HANDLER);
+-  }
++  // start the authentication protocol over.
++  InvalidateIfServerCertChanged(ssl_info.cert.get());
+ 
+   // Give the existing auth handler first try at the authentication headers.
+   // This will also evict the entry in the HttpAuthCache if the previous
+@@ -673,4 +685,13 @@ void HttpAuthController::OnConnectionClosed() {
+   InvalidateCurrentHandler(INVALIDATE_HANDLER);
+ }
+ 
++void HttpAuthController::InvalidateIfServerCertChanged(
++    const X509Certificate* cert) {
++  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
++  if (handler_ && handler_->is_connection_based() &&
++      !ServerCertMatches(handler_server_cert_.get(), cert)) {
++    InvalidateCurrentHandler(INVALIDATE_HANDLER);
++  }
++}
++
+ }  // namespace net
+diff --git a/net/http/http_auth_controller.h b/net/http/http_auth_controller.h
+index 7d5cbf5e6a38b153ac2e85bb9ca0194960dac9b5..136c79c8acc257cc5c389264c6d91efdc5f7f7d9 100644
+--- a/net/http/http_auth_controller.h
++++ b/net/http/http_auth_controller.h
+@@ -93,11 +93,20 @@ class NET_EXPORT_PRIVATE HttpAuthController
+                      HttpAuthHandlerFactory* http_auth_handler_factory,
+                      HostResolver* host_resolver);
+ 
+-  // Generate an authentication token for |target| if necessary. The return
+-  // value is a net error code. |OK| will be returned both in the case that
++  // Generate an authentication token for `target` if necessary. The return
++  // value is a net error code. `OK` will be returned both in the case that
+   // a token is correctly generated synchronously, as well as when no tokens
+   // were necessary.
++  //
++  // `ssl_info` is the certificate information for the connection the token
++  // will be sent over, and must match what HandleAuthChallenge() is given for
++  // responses on that connection. It is empty when no certificate applies to
++  // this controller's target, for example for "http" origins and for proxy
++  // auth. If a connection-based handler was created on a connection with a
++  // different server certificate, it is dropped instead of generating a token,
++  // so that authentication restarts on the current connection.
+   int MaybeGenerateAuthToken(const HttpRequestInfo* request,
++                             const SSLInfo& ssl_info,
+                              CompletionOnceCallback callback,
+                              const NetLogWithSource& net_log);
+ 
+@@ -207,6 +216,10 @@ class NET_EXPORT_PRIVATE HttpAuthController
+   // Records the number of authentication events per authentication scheme.
+   void HistogramAuthEvent(AuthEvent auth_event);
+ 
++  // If the current handler is connection-based and was created for a connection
++  // with a different server certificate, invalidates the handler.
++  void InvalidateIfServerCertChanged(const X509Certificate* cert);
++
+   // Indicates if this handler is for Proxy auth or Server auth.
+   HttpAuth::Target target_;
+ 
+diff --git a/net/http/http_auth_controller_unittest.cc b/net/http/http_auth_controller_unittest.cc
+index 856ddd2138658eec1c16c70a12550c79881ff2c9..9e576967f3d715017f2e5a0a6c82c2ccd006c844 100644
+--- a/net/http/http_auth_controller_unittest.cc
++++ b/net/http/http_auth_controller_unittest.cc
+@@ -96,8 +96,8 @@ void RunSingleRoundAuthTest(
+   TestCompletionCallback callback;
+   EXPECT_EQ(
+       (run_mode == RUN_HANDLER_ASYNC) ? ERR_IO_PENDING : expected_controller_rv,
+-      controller->MaybeGenerateAuthToken(&request, callback.callback(),
+-                                         net_log));
++      controller->MaybeGenerateAuthToken(&request, null_ssl_info,
++                                         callback.callback(), net_log));
+   if (run_mode == RUN_HANDLER_ASYNC)
+     EXPECT_EQ(expected_controller_rv, callback.WaitForResult());
+   EXPECT_EQ((scheme_state == SCHEME_IS_DISABLED),
+@@ -285,8 +285,9 @@ TEST(HttpAuthControllerTest, NoExplicitCredentialsAllowed) {
+   EXPECT_TRUE(controller->HaveAuth());
+ 
+   // Should only succeed if we are using the AUTH_SCHEME_MOCK MockHandler.
+-  EXPECT_EQ(OK, controller->MaybeGenerateAuthToken(
+-                    &request, CompletionOnceCallback(), dummy_log));
++  EXPECT_EQ(OK,
++            controller->MaybeGenerateAuthToken(
++                &request, null_ssl_info, CompletionOnceCallback(), dummy_log));
+   controller->AddAuthorizationHeader(&request_headers);
+ 
+   // Once a token is generated, simulate the receipt of a server response
+@@ -300,8 +301,9 @@ TEST(HttpAuthControllerTest, NoExplicitCredentialsAllowed) {
+   EXPECT_FALSE(controller->IsAuthSchemeDisabled(HttpAuth::AUTH_SCHEME_BASIC));
+ 
+   // Should only succeed if we are using the AUTH_SCHEME_BASIC MockHandler.
+-  EXPECT_EQ(OK, controller->MaybeGenerateAuthToken(
+-                    &request, CompletionOnceCallback(), dummy_log));
++  EXPECT_EQ(OK,
++            controller->MaybeGenerateAuthToken(
++                &request, null_ssl_info, CompletionOnceCallback(), dummy_log));
+ }
+ 
+ // Tests that a connection-based auth handler is reused when a subsequent
+@@ -359,7 +361,7 @@ TEST(HttpAuthControllerTest,
+   controller->ResetAuth(AuthCredentials(u"user", u"pass"));
+   ASSERT_TRUE(controller->HaveAuth());
+   ASSERT_EQ(OK, controller->MaybeGenerateAuthToken(
+-                    &request, CompletionOnceCallback(), dummy_log));
++                    &request, ssl_info, CompletionOnceCallback(), dummy_log));
+ 
+   ASSERT_EQ(OK, controller->HandleAuthChallenge(continuation_headers, ssl_info,
+                                                 false, false, dummy_log));
+@@ -433,7 +435,7 @@ TEST(HttpAuthControllerTest, ConnectionBasedHandlerDroppedOnCertificateChange) {
+   controller->ResetAuth(AuthCredentials(u"user", u"pass"));
+   ASSERT_TRUE(controller->HaveAuth());
+   ASSERT_EQ(OK, controller->MaybeGenerateAuthToken(
+-                    &request, CompletionOnceCallback(), dummy_log));
++                    &request, ssl_info1, CompletionOnceCallback(), dummy_log));
+ 
+   ASSERT_EQ(OK, controller->HandleAuthChallenge(continuation_headers, ssl_info2,
+                                                 false, false, dummy_log));
+@@ -467,4 +469,124 @@ TEST(HttpAuthControllerTest, MatchesSchemeHostPort) {
+       url::SchemeHostPort(GURL("https://proxy.example.com:8080"))));
+ }
+ 
++// Tests that a connection-based auth handler is dropped, without a token
++// being generated from it, when the connection is replaced with one that
++// presents a different server certificate before the next request is sent.
++// The scheme cannot be continued preemptively, so authentication must
++// restart with the next challenge.
++TEST(HttpAuthControllerTest,
++     ConnectionBasedHandlerDroppedOnCertificateChangeBeforeGenerate) {
++  NetLogWithSource dummy_log;
++  HttpRequestInfo request;
++  request.method = "GET";
++  request.url = GURL("https://example.com");
++
++  scoped_refptr<HttpResponseHeaders> initial_headers(
++      HeadersFromString("HTTP/1.1 401\r\n"
++                        "WWW-Authenticate: Mock\r\n"
++                        "\r\n"));
++
++  scoped_refptr<X509Certificate> cert1 =
++      ImportCertFromFile(GetTestCertsDirectory(), "ok_cert.pem");
++  ASSERT_TRUE(cert1);
++  scoped_refptr<X509Certificate> cert2 =
++      ImportCertFromFile(GetTestCertsDirectory(), "wildcard.pem");
++  ASSERT_TRUE(cert2);
++  ASSERT_FALSE(cert1->EqualsExcludingChain(cert2.get()));
++
++  SSLInfo ssl_info1;
++  ssl_info1.cert = cert1;
++  SSLInfo ssl_info2;
++  ssl_info2.cert = cert2;
++
++  auto host_resolver = std::make_unique<MockHostResolver>();
++  HttpAuthCache dummy_auth_cache(
++      false /* key_server_entries_by_network_anonymization_key */);
++  HttpAuthHandlerMock::Factory auth_handler_factory;
++  auth_handler_factory.set_do_init_from_challenge(true);
++
++  auto handler = std::make_unique<HttpAuthHandlerMock>();
++  handler->set_connection_based(true);
++  auth_handler_factory.AddMockHandler(std::move(handler),
++                                      HttpAuth::AUTH_SERVER);
++
++  scoped_refptr<HttpAuthController> controller(
++      base::MakeRefCounted<HttpAuthController>(
++          HttpAuth::AUTH_SERVER, GURL("https://example.com"),
++          NetworkAnonymizationKey(), &dummy_auth_cache, &auth_handler_factory,
++          host_resolver.get()));
++
++  ASSERT_EQ(OK, controller->HandleAuthChallenge(initial_headers, ssl_info1,
++                                                false, false, dummy_log));
++  ASSERT_TRUE(controller->HaveAuthHandler());
++  controller->ResetAuth(AuthCredentials(u"user", u"pass"));
++  ASSERT_TRUE(controller->HaveAuth());
++
++  // The connection was replaced with one that presents a different
++  // certificate, so no token may be generated from the handler created on
++  // the original connection.
++  ASSERT_EQ(OK, controller->MaybeGenerateAuthToken(
++                    &request, ssl_info2, CompletionOnceCallback(), dummy_log));
++  EXPECT_FALSE(controller->HaveAuthHandler());
++  EXPECT_FALSE(controller->HaveAuth());
++}
++
++// Tests that a handler that is not connection-based keeps generating tokens
++// when the connection is replaced with one that presents a different server
++// certificate. Such handlers derive no state from the connection.
++TEST(HttpAuthControllerTest,
++     NonConnectionBasedHandlerKeptOnCertificateChangeBeforeGenerate) {
++  NetLogWithSource dummy_log;
++  HttpRequestInfo request;
++  request.method = "GET";
++  request.url = GURL("https://example.com");
++
++  HttpRequestHeaders request_headers;
++  scoped_refptr<HttpResponseHeaders> initial_headers(
++      HeadersFromString("HTTP/1.1 401\r\n"
++                        "WWW-Authenticate: Mock\r\n"
++                        "\r\n"));
++
++  scoped_refptr<X509Certificate> cert1 =
++      ImportCertFromFile(GetTestCertsDirectory(), "ok_cert.pem");
++  ASSERT_TRUE(cert1);
++  scoped_refptr<X509Certificate> cert2 =
++      ImportCertFromFile(GetTestCertsDirectory(), "wildcard.pem");
++  ASSERT_TRUE(cert2);
++  ASSERT_FALSE(cert1->EqualsExcludingChain(cert2.get()));
++
++  SSLInfo ssl_info1;
++  ssl_info1.cert = cert1;
++  SSLInfo ssl_info2;
++  ssl_info2.cert = cert2;
++
++  auto host_resolver = std::make_unique<MockHostResolver>();
++  HttpAuthCache dummy_auth_cache(
++      false /* key_server_entries_by_network_anonymization_key */);
++  HttpAuthHandlerMock::Factory auth_handler_factory;
++  auth_handler_factory.set_do_init_from_challenge(true);
++
++  auth_handler_factory.AddMockHandler(std::make_unique<HttpAuthHandlerMock>(),
++                                      HttpAuth::AUTH_SERVER);
++
++  scoped_refptr<HttpAuthController> controller(
++      base::MakeRefCounted<HttpAuthController>(
++          HttpAuth::AUTH_SERVER, GURL("https://example.com"),
++          NetworkAnonymizationKey(), &dummy_auth_cache, &auth_handler_factory,
++          host_resolver.get()));
++
++  ASSERT_EQ(OK, controller->HandleAuthChallenge(initial_headers, ssl_info1,
++                                                false, false, dummy_log));
++  ASSERT_TRUE(controller->HaveAuthHandler());
++  controller->ResetAuth(AuthCredentials(u"user", u"pass"));
++  ASSERT_TRUE(controller->HaveAuth());
++
++  ASSERT_EQ(OK, controller->MaybeGenerateAuthToken(
++                    &request, ssl_info2, CompletionOnceCallback(), dummy_log));
++  EXPECT_TRUE(controller->HaveAuthHandler());
++  EXPECT_TRUE(controller->HaveAuth());
++  controller->AddAuthorizationHeader(&request_headers);
++  EXPECT_TRUE(request_headers.HasHeader(HttpRequestHeaders::kAuthorization));
++}
++
+ }  // namespace net
+diff --git a/net/http/http_network_transaction.cc b/net/http/http_network_transaction.cc
+index 1788baf80729ca55c0abfba04de999b7b1522d4b..6b28ed991d381bc236b4692d3333e942085d1886 100644
+--- a/net/http/http_network_transaction.cc
++++ b/net/http/http_network_transaction.cc
+@@ -1007,6 +1007,15 @@ bool HttpNetworkTransaction::UsingHttpProxyWithoutTunnel() const {
+          request_->url.SchemeIs("http");
+ }
+ 
++SSLInfo HttpNetworkTransaction::GetStreamSSLInfo() {
++  CHECK(stream_);
++  SSLInfo ssl_info;
++  if (IsSecureRequest()) {
++    stream_->GetSSLInfo(&ssl_info);
++  }
++  return ssl_info;
++}
++
+ void HttpNetworkTransaction::DoCallback(int rv) {
+   DCHECK_NE(rv, ERR_IO_PENDING);
+   DCHECK(!callback_.is_null());
+@@ -1335,8 +1344,9 @@ int HttpNetworkTransaction::DoInitStreamComplete(int result) {
+ 
+ int HttpNetworkTransaction::DoGenerateProxyAuthToken() {
+   next_state_ = STATE_GENERATE_PROXY_AUTH_TOKEN_COMPLETE;
+-  if (!ShouldApplyProxyAuth())
++  if (!ShouldApplyProxyAuth()) {
+     return OK;
++  }
+   HttpAuth::Target target = HttpAuth::AUTH_PROXY;
+   GURL auth_url = AuthURL(target);
+   // The proxy may have changed (for example due to fallback to another proxy
+@@ -1350,13 +1360,25 @@ int HttpNetworkTransaction::DoGenerateProxyAuthToken() {
+           url::SchemeHostPort(auth_url))) {
+     auth_controllers_[target] = nullptr;
+   }
+-  if (!auth_controllers_[target].get())
++  if (!auth_controllers_[target].get()) {
+     auth_controllers_[target] = base::MakeRefCounted<HttpAuthController>(
+         target, auth_url, request_->network_anonymization_key,
+         session_->http_auth_cache(), session_->http_auth_handler_factory(),
+         session_->host_resolver());
++  }
++  // This is only reached for GET proxies (see ShouldApplyProxyAuth()); CONNECT
++  // proxy auth is handled by the proxy client sockets instead. GET proxy auth
++  // controllers are never given a certificate, so pass an empty SSLInfo.
++  //
++  // GetStreamSSLInfo() would also return an empty SSLInfo here, because a GET
++  // proxy is only used for "http" requests, so IsSecureRequest() is false. It
++  // is not used, to avoid implying that the proxy's certificate could show up
++  // here: GetStreamSSLInfo() only describes the destination server.
++  //
++  // As a result, GET proxy auth handlers derive no channel bindings and are not
++  // pinned to the proxy's certificate. This is legacy behavior.
+   return auth_controllers_[target]->MaybeGenerateAuthToken(
+-      request_, io_callback_, net_log_);
++      request_, SSLInfo(), io_callback_, net_log_);
+ }
+ 
+ int HttpNetworkTransaction::DoGenerateProxyAuthTokenComplete(int rv) {
+@@ -1374,13 +1396,15 @@ int HttpNetworkTransaction::DoGenerateServerAuthToken() {
+         target, AuthURL(target), request_->network_anonymization_key,
+         session_->http_auth_cache(), session_->http_auth_handler_factory(),
+         session_->host_resolver());
+-    if (request_->load_flags & LOAD_DO_NOT_USE_EMBEDDED_IDENTITY)
++    if (request_->load_flags & LOAD_DO_NOT_USE_EMBEDDED_IDENTITY) {
+       auth_controllers_[target]->DisableEmbeddedIdentity();
++    }
+   }
+-  if (!ShouldApplyServerAuth())
++  if (!ShouldApplyServerAuth()) {
+     return OK;
++  }
+   return auth_controllers_[target]->MaybeGenerateAuthToken(
+-      request_, io_callback_, net_log_);
++      request_, GetStreamSSLInfo(), io_callback_, net_log_);
+ }
+ 
+ int HttpNetworkTransaction::DoGenerateServerAuthTokenComplete(int rv) {
+@@ -2412,8 +2436,18 @@ int HttpNetworkTransaction::HandleAuthChallenge() {
+   if (!auth_controllers_[target].get())
+     return ERR_UNEXPECTED_PROXY_AUTH;
+ 
++  // CONNECT proxy auth challenges do not go through this path; they are
++  // handled by the proxy client sockets. Only challenges from GET proxies, or
++  // directly from servers, reach here. A proxy auth challenge sent by a server
++  // when there is no GET proxy results in ERR_UNEXPECTED_PROXY_AUTH above.
++  //
++  // GetStreamSSLInfo() describes the connection to the destination server, so
++  // only pass it to the server auth controller. The GET proxy auth controller
++  // gets an empty SSLInfo, matching DoGenerateProxyAuthToken().
++  const SSLInfo ssl_info =
++      target == HttpAuth::AUTH_SERVER ? GetStreamSSLInfo() : SSLInfo();
+   int rv = auth_controllers_[target]->HandleAuthChallenge(
+-      headers, response_.ssl_info, !ShouldApplyServerAuth(), false, net_log_);
++      headers, ssl_info, !ShouldApplyServerAuth(), false, net_log_);
+   if (auth_controllers_[target]->HaveAuthHandler())
+     pending_auth_target_ = target;
+ 
+diff --git a/net/http/http_network_transaction.h b/net/http/http_network_transaction.h
+index 831fcf140ec60237f3493cb10d8aac5eef5c9087..3c5a5de8bf0af12b35733415d8a9d88e50da3a48 100644
+--- a/net/http/http_network_transaction.h
++++ b/net/http/http_network_transaction.h
+@@ -187,6 +187,24 @@ class NET_EXPORT_PRIVATE HttpNetworkTransaction
+   // tunneled via the CONNECT method.
+   bool UsingHttpProxyWithoutTunnel() const;
+ 
++  // Returns the SSLInfo of the destination server's connection. This is the
++  // sole source of certificate information for *server* authentication, used
++  // by both HandleAuthChallenge() and MaybeGenerateAuthToken(), so the two are
++  // guaranteed to observe the same value for a given `stream_`. Proxy
++  // authentication never uses this; it is always passed an empty SSLInfo.
++  //
++  // Returns an empty SSLInfo for non-secure requests, even if the connection
++  // uses TLS: an "http" request through an HTTPS proxy runs over TLS to that
++  // proxy, but that certificate belongs to the proxy rather than to the
++  // destination server, so server auth must not observe it.
++  //
++  // Consequently this never returns a proxy's certificate. When
++  // `IsSecureRequest()` is true the connection is either direct or tunneled
++  // through CONNECT -- a GET-to-proxy connection is impossible, because
++  // `UsingHttpProxyWithoutTunnel()` requires an "http" scheme -- so in both
++  // cases the top of the socket stack terminates at the destination server.
++  SSLInfo GetStreamSSLInfo();
++
+   void DoCallback(int result);
+   void OnIOComplete(int result);
+ 
+diff --git a/net/http/http_network_transaction_unittest.cc b/net/http/http_network_transaction_unittest.cc
+index 0d22182f78652bec371abc759befabd035509b3a..b2c60bb96ba15b883e26e3f8b74a26e3673a87f1 100644
+--- a/net/http/http_network_transaction_unittest.cc
++++ b/net/http/http_network_transaction_unittest.cc
+@@ -922,13 +922,16 @@ bool CheckNTLMServerAuth(
+   return true;
+ }
+ 
++// `expected_challenger` defaults to the HTTP proxy that most tests use. Tests
++// that authenticate to an HTTPS proxy pass their own value.
+ bool CheckNTLMProxyAuth(
+-    const std::optional<AuthChallengeInfo>& auth_challenge) {
++    const std::optional<AuthChallengeInfo>& auth_challenge,
++    std::string_view expected_challenger = "http://server") {
+   if (!auth_challenge) {
+     return false;
+   }
+   EXPECT_TRUE(auth_challenge->is_proxy);
+-  EXPECT_EQ("http://server", auth_challenge->challenger.Serialize());
++  EXPECT_EQ(expected_challenger, auth_challenge->challenger.Serialize());
+   EXPECT_EQ(std::string(), auth_challenge->realm);
+   EXPECT_EQ(kNtlmAuthScheme, auth_challenge->scheme);
+   return true;
+@@ -12481,6 +12484,575 @@ TEST_P(HttpNetworkTransactionTest, NTLMAuthV2WrongThenRightPassword) {
+   EXPECT_TRUE(data3.AllWriteDataConsumed());
+ }
+ 
++// The server closes the connection on the challenge response, so the
++// authenticate message is sent on a replacement connection. As long as the
++// replacement connection presents the same server certificate, the handshake
++// continues where it left off.
++TEST_P(HttpNetworkTransactionTest, NTLMAuthV2ContinuesAcrossReconnect) {
++  HttpRequestInfo request;
++  request.method = "GET";
++  request.url = GURL("https://server/kids/login.aspx");
++  request.traffic_annotation =
++      MutableNetworkTrafficAnnotationTag(TRAFFIC_ANNOTATION_FOR_TESTS);
++  request.load_flags = LOAD_DO_NOT_USE_EMBEDDED_IDENTITY;
++
++  HttpAuthNtlmMechanism::ScopedProcSetter proc_setter(
++      MockGetMSTime, MockGenerateRandom, MockGetHostName);
++  std::unique_ptr<HttpNetworkSession> session(CreateSession(&session_deps_));
++
++  // Generate the NTLM messages based on known test data.
++  std::string negotiate_msg = base::Base64Encode(std::string_view(
++      reinterpret_cast<const char*>(ntlm::test::kExpectedNegotiateMsg),
++      std::size(ntlm::test::kExpectedNegotiateMsg)));
++  std::string challenge_msg = base::Base64Encode(std::string_view(
++      reinterpret_cast<const char*>(ntlm::test::kChallengeMsgFromSpecV2),
++      std::size(ntlm::test::kChallengeMsgFromSpecV2)));
++  std::string authenticate_msg = base::Base64Encode(std::string_view(
++      reinterpret_cast<const char*>(
++          ntlm::test::kExpectedAuthenticateMsgEmptyChannelBindingsV2),
++      std::size(ntlm::test::kExpectedAuthenticateMsgEmptyChannelBindingsV2)));
++
++  std::string request_write2 =
++      base::StrCat({"GET /kids/login.aspx HTTP/1.1\r\n"
++                    "Host: server\r\n"
++                    "Connection: keep-alive\r\n"
++                    "Authorization: NTLM ",
++                    negotiate_msg, "\r\n\r\n"});
++
++  std::string response_read2 =
++      base::StrCat({"HTTP/1.1 401 Access Denied\r\n"
++                    "WWW-Authenticate: NTLM ",
++                    challenge_msg,
++                    "\r\n"
++                    "Connection: close\r\n"
++                    "Content-Length: 42\r\n"
++                    "Content-Type: text/html\r\n\r\n"});
++
++  std::string request_write3 =
++      base::StrCat({"GET /kids/login.aspx HTTP/1.1\r\n"
++                    "Host: server\r\n"
++                    "Connection: keep-alive\r\n"
++                    "Authorization: NTLM ",
++                    authenticate_msg, "\r\n\r\n"});
++
++  MockWrite data_writes1[] = {
++      MockWrite(ASYNC, 0,
++                "GET /kids/login.aspx HTTP/1.1\r\n"
++                "Host: server\r\n"
++                "Connection: keep-alive\r\n\r\n"),
++  };
++
++  MockRead data_reads1[] = {
++      MockRead(ASYNC, 1,
++               "HTTP/1.1 401 Access Denied\r\n"
++               "WWW-Authenticate: NTLM\r\n"
++               "Connection: close\r\n"
++               "Content-Length: 42\r\n"
++               "Content-Type: text/html\r\n\r\n"),
++      // Missing content -- won't matter, as connection will be reset.
++  };
++
++  MockWrite data_writes2[] = {
++      // After restarting with a null identity, this is the
++      // request we should be issuing -- the final header line contains a Type
++      // 1 message.
++      MockWrite(ASYNC, 0, request_write2),
++  };
++
++  MockRead data_reads2[] = {
++      // The origin server responds with a Type 2 message, but closes the
++      // connection, so the Type 3 message has to be sent on a fresh one.
++      MockRead(ASYNC, 1, response_read2),
++      // Missing content -- won't matter, as connection will be reset.
++  };
++
++  MockWrite data_writes3[] = {
++      // The Type 3 message is sent on the replacement connection.
++      MockWrite(ASYNC, 0, request_write3),
++  };
++
++  MockRead data_reads3[] = {
++      // The desired content.
++      MockRead(ASYNC, 1,
++               "HTTP/1.1 200 OK\r\n"
++               "Content-Type: text/html; charset=utf-8\r\n"
++               "Content-Length: 14\r\n\r\n"),
++      MockRead(ASYNC, 2, "Please Login\r\n"),
++  };
++
++  SequencedSocketData data1(data_reads1, data_writes1);
++  SequencedSocketData data2(data_reads2, data_writes2);
++  SequencedSocketData data3(data_reads3, data_writes3);
++  session_deps_.socket_factory->AddSocketDataProvider(&data1);
++  session_deps_.socket_factory->AddSocketDataProvider(&data2);
++  session_deps_.socket_factory->AddSocketDataProvider(&data3);
++
++  SSLSocketDataProvider ssl1(ASYNC, OK);
++  session_deps_.socket_factory->AddSSLSocketDataProvider(&ssl1);
++  SSLSocketDataProvider ssl2(ASYNC, OK);
++  session_deps_.socket_factory->AddSSLSocketDataProvider(&ssl2);
++  SSLSocketDataProvider ssl3(ASYNC, OK);
++  session_deps_.socket_factory->AddSSLSocketDataProvider(&ssl3);
++
++  TestCompletionCallback callback1;
++
++  HttpNetworkTransaction trans(DEFAULT_PRIORITY, session.get());
++
++  int rv = trans.Start(&request, callback1.callback(), NetLogWithSource());
++  EXPECT_THAT(rv, IsError(ERR_IO_PENDING));
++
++  rv = callback1.WaitForResult();
++  EXPECT_THAT(rv, IsOk());
++
++  EXPECT_FALSE(trans.IsReadyToRestartForAuth());
++
++  const HttpResponseInfo* response = trans.GetResponseInfo();
++  ASSERT_TRUE(response);
++  EXPECT_TRUE(CheckNTLMServerAuth(response->auth_challenge));
++
++  TestCompletionCallback callback2;
++
++  rv = trans.RestartWithAuth(
++      AuthCredentials(ntlm::test::kDomainUserCombined, ntlm::test::kPassword),
++      callback2.callback());
++  EXPECT_THAT(rv, IsError(ERR_IO_PENDING));
++
++  rv = callback2.WaitForResult();
++  EXPECT_THAT(rv, IsOk());
++
++  EXPECT_TRUE(trans.IsReadyToRestartForAuth());
++
++  response = trans.GetResponseInfo();
++  ASSERT_TRUE(response);
++  EXPECT_FALSE(response->auth_challenge.has_value());
++
++  TestCompletionCallback callback3;
++
++  rv = trans.RestartWithAuth(AuthCredentials(), callback3.callback());
++  EXPECT_THAT(rv, IsError(ERR_IO_PENDING));
++
++  rv = callback3.WaitForResult();
++  EXPECT_THAT(rv, IsOk());
++
++  response = trans.GetResponseInfo();
++  ASSERT_TRUE(response);
++  EXPECT_FALSE(response->auth_challenge.has_value());
++  EXPECT_EQ(14u, response->headers->GetContentLength()->InBytes());
++
++  std::string response_data;
++  rv = ReadTransaction(&trans, &response_data);
++  EXPECT_THAT(rv, IsOk());
++  EXPECT_EQ("Please Login\r\n", response_data);
++
++  EXPECT_TRUE(data1.AllReadDataConsumed());
++  EXPECT_TRUE(data1.AllWriteDataConsumed());
++  EXPECT_TRUE(data2.AllReadDataConsumed());
++  EXPECT_TRUE(data2.AllWriteDataConsumed());
++  EXPECT_TRUE(data3.AllReadDataConsumed());
++  EXPECT_TRUE(data3.AllWriteDataConsumed());
++}
++
++// The server closes the connection on the challenge response, and the
++// replacement connection presents a different server certificate. The
++// handler created on the original connection derives state from that
++// connection's certificate, so no authorization header may be generated from
++// it for the replacement connection; the handshake restarts from scratch
++// after the server challenges again.
++TEST_P(HttpNetworkTransactionTest,
++       NTLMAuthV2RestartsWhenCertificateChangesAcrossReconnect) {
++  HttpRequestInfo request;
++  request.method = "GET";
++  request.url = GURL("https://server/kids/login.aspx");
++  request.traffic_annotation =
++      MutableNetworkTrafficAnnotationTag(TRAFFIC_ANNOTATION_FOR_TESTS);
++  request.load_flags = LOAD_DO_NOT_USE_EMBEDDED_IDENTITY;
++
++  HttpAuthNtlmMechanism::ScopedProcSetter proc_setter(
++      MockGetMSTime, MockGenerateRandom, MockGetHostName);
++  std::unique_ptr<HttpNetworkSession> session(CreateSession(&session_deps_));
++
++  // Generate the NTLM messages based on known test data. Only the negotiate
++  // message is expected on the wire; the authenticate message must never be
++  // sent to the connection with the changed certificate.
++  std::string negotiate_msg = base::Base64Encode(std::string_view(
++      reinterpret_cast<const char*>(ntlm::test::kExpectedNegotiateMsg),
++      std::size(ntlm::test::kExpectedNegotiateMsg)));
++  std::string challenge_msg = base::Base64Encode(std::string_view(
++      reinterpret_cast<const char*>(ntlm::test::kChallengeMsgFromSpecV2),
++      std::size(ntlm::test::kChallengeMsgFromSpecV2)));
++
++  scoped_refptr<X509Certificate> cert1 =
++      ImportCertFromFile(GetTestCertsDirectory(), "ok_cert.pem");
++  ASSERT_TRUE(cert1);
++
++  // Two live connections to the same server yield distinct X509Certificate
++  // objects with identical contents. Import the certificate a second time so
++  // the first two connections model that. This keeps ServerCertMatches() off
++  // its pointer-identity fast path, so the EqualsExcludingChain() byte
++  // comparison that runs in production is actually exercised here.
++  scoped_refptr<X509Certificate> cert1_reimported =
++      ImportCertFromFile(GetTestCertsDirectory(), "ok_cert.pem");
++  ASSERT_TRUE(cert1_reimported);
++  ASSERT_NE(cert1.get(), cert1_reimported.get());
++  ASSERT_TRUE(cert1->EqualsExcludingChain(cert1_reimported.get()));
++  scoped_refptr<X509Certificate> cert2 =
++      ImportCertFromFile(GetTestCertsDirectory(), "wildcard.pem");
++  ASSERT_TRUE(cert2);
++  ASSERT_FALSE(cert1->EqualsExcludingChain(cert2.get()));
++
++  std::string request_write2 =
++      base::StrCat({"GET /kids/login.aspx HTTP/1.1\r\n"
++                    "Host: server\r\n"
++                    "Connection: keep-alive\r\n"
++                    "Authorization: NTLM ",
++                    negotiate_msg, "\r\n\r\n"});
++
++  std::string response_read2 =
++      base::StrCat({"HTTP/1.1 401 Access Denied\r\n"
++                    "WWW-Authenticate: NTLM ",
++                    challenge_msg,
++                    "\r\n"
++                    "Connection: close\r\n"
++                    "Content-Length: 42\r\n"
++                    "Content-Type: text/html\r\n\r\n"});
++
++  std::string request_write3_restarted =
++      base::StrCat({"GET /kids/login.aspx HTTP/1.1\r\n"
++                    "Host: server\r\n"
++                    "Connection: keep-alive\r\n"
++                    "Authorization: NTLM ",
++                    negotiate_msg, "\r\n\r\n"});
++
++  std::string response_read3_restarted =
++      base::StrCat({"HTTP/1.1 401 Access Denied\r\n"
++                    "WWW-Authenticate: NTLM ",
++                    challenge_msg,
++                    "\r\n"
++                    "Content-Length: 0\r\n\r\n"});
++
++  MockWrite data_writes1[] = {
++      MockWrite(ASYNC, 0,
++                "GET /kids/login.aspx HTTP/1.1\r\n"
++                "Host: server\r\n"
++                "Connection: keep-alive\r\n\r\n"),
++  };
++
++  MockRead data_reads1[] = {
++      MockRead(ASYNC, 1,
++               "HTTP/1.1 401 Access Denied\r\n"
++               "WWW-Authenticate: NTLM\r\n"
++               "Connection: close\r\n"
++               "Content-Length: 42\r\n"
++               "Content-Type: text/html\r\n\r\n"),
++      // Missing content -- won't matter, as connection will be reset.
++  };
++
++  MockWrite data_writes2[] = {
++      // After restarting with a null identity, this is the
++      // request we should be issuing -- the final header line contains a Type
++      // 1 message.
++      MockWrite(ASYNC, 0, request_write2),
++  };
++
++  MockRead data_reads2[] = {
++      // The origin server responds with a Type 2 message, but closes the
++      // connection.
++      MockRead(ASYNC, 1, response_read2),
++      // Missing content -- won't matter, as connection will be reset.
++  };
++
++  MockWrite data_writes3[] = {
++      // The replacement connection presents a different certificate, so the
++      // request goes out without an authorization header.
++      MockWrite(ASYNC, 0,
++                "GET /kids/login.aspx HTTP/1.1\r\n"
++                "Host: server\r\n"
++                "Connection: keep-alive\r\n\r\n"),
++
++      // After the server challenges again, the handshake starts over on this
++      // connection with a Type 1 message.
++      MockWrite(ASYNC, 2, request_write3_restarted),
++  };
++
++  MockRead data_reads3[] = {
++      // A fresh challenge for the request without an authorization header.
++      MockRead(ASYNC, 1,
++               "HTTP/1.1 401 Access Denied\r\n"
++               "WWW-Authenticate: NTLM\r\n"
++               "Content-Length: 0\r\n\r\n"),
++
++      // The server responds to the new Type 1 message with a Type 2 message.
++      MockRead(ASYNC, 3, response_read3_restarted),
++  };
++
++  SequencedSocketData data1(data_reads1, data_writes1);
++  SequencedSocketData data2(data_reads2, data_writes2);
++  SequencedSocketData data3(data_reads3, data_writes3);
++  session_deps_.socket_factory->AddSocketDataProvider(&data1);
++  session_deps_.socket_factory->AddSocketDataProvider(&data2);
++  session_deps_.socket_factory->AddSocketDataProvider(&data3);
++
++  SSLSocketDataProvider ssl1(ASYNC, OK);
++  ssl1.ssl_info.cert = cert1;
++  session_deps_.socket_factory->AddSSLSocketDataProvider(&ssl1);
++  SSLSocketDataProvider ssl2(ASYNC, OK);
++  ssl2.ssl_info.cert = cert1_reimported;
++  session_deps_.socket_factory->AddSSLSocketDataProvider(&ssl2);
++  SSLSocketDataProvider ssl3(ASYNC, OK);
++  ssl3.ssl_info.cert = cert2;
++  session_deps_.socket_factory->AddSSLSocketDataProvider(&ssl3);
++
++  TestCompletionCallback callback1;
++
++  HttpNetworkTransaction trans(DEFAULT_PRIORITY, session.get());
++
++  int rv = trans.Start(&request, callback1.callback(), NetLogWithSource());
++  EXPECT_THAT(rv, IsError(ERR_IO_PENDING));
++
++  rv = callback1.WaitForResult();
++  EXPECT_THAT(rv, IsOk());
++
++  EXPECT_FALSE(trans.IsReadyToRestartForAuth());
++
++  const HttpResponseInfo* response = trans.GetResponseInfo();
++  ASSERT_TRUE(response);
++  EXPECT_TRUE(CheckNTLMServerAuth(response->auth_challenge));
++
++  TestCompletionCallback callback2;
++
++  rv = trans.RestartWithAuth(
++      AuthCredentials(ntlm::test::kDomainUserCombined, ntlm::test::kPassword),
++      callback2.callback());
++  EXPECT_THAT(rv, IsError(ERR_IO_PENDING));
++
++  rv = callback2.WaitForResult();
++  EXPECT_THAT(rv, IsOk());
++
++  ASSERT_TRUE(trans.IsReadyToRestartForAuth());
++
++  response = trans.GetResponseInfo();
++  ASSERT_TRUE(response);
++  EXPECT_FALSE(response->auth_challenge.has_value());
++
++  TestCompletionCallback callback3;
++
++  // This would have sent the Type 3 message, but the replacement connection
++  // presents a different certificate, so the request is sent without an
++  // authorization header and the server challenges from scratch.
++  rv = trans.RestartWithAuth(AuthCredentials(), callback3.callback());
++  EXPECT_THAT(rv, IsError(ERR_IO_PENDING));
++
++  rv = callback3.WaitForResult();
++  EXPECT_THAT(rv, IsOk());
++
++  // The cached credentials are used to respond to the fresh challenge, so no
++  // credentials are requested from the caller again.
++  ASSERT_TRUE(trans.IsReadyToRestartForAuth());
++
++  response = trans.GetResponseInfo();
++  ASSERT_TRUE(response);
++  EXPECT_FALSE(response->auth_challenge.has_value());
++
++  TestCompletionCallback callback4;
++
++  // The restarted handshake sends a new Type 1 message on the replacement
++  // connection.
++  rv = trans.RestartWithAuth(AuthCredentials(), callback4.callback());
++  EXPECT_THAT(rv, IsError(ERR_IO_PENDING));
++
++  rv = callback4.WaitForResult();
++  EXPECT_THAT(rv, IsOk());
++
++  ASSERT_TRUE(trans.IsReadyToRestartForAuth());
++
++  response = trans.GetResponseInfo();
++  ASSERT_TRUE(response);
++  EXPECT_FALSE(response->auth_challenge.has_value());
++
++  EXPECT_TRUE(data1.AllReadDataConsumed());
++  EXPECT_TRUE(data1.AllWriteDataConsumed());
++  EXPECT_TRUE(data2.AllReadDataConsumed());
++  EXPECT_TRUE(data2.AllWriteDataConsumed());
++  EXPECT_TRUE(data3.AllReadDataConsumed());
++  EXPECT_TRUE(data3.AllWriteDataConsumed());
++}
++
++// Runs an NTLMv2 server auth handshake for an "http" origin through an HTTPS
++// GET proxy. The initial request and the NTLM handshake run on two separate
++// connections to the proxy. The first presents ok_cert.pem, and the second
++// presents `second_proxy_cert`.
++void RunNTLMAuthV2HttpServerOverHttpsProxy(
++    SpdySessionDependencies* session_deps,
++    std::string_view second_proxy_cert) {
++  HttpRequestInfo request;
++  request.method = "GET";
++  request.url = GURL("http://server/kids/login.aspx");
++  request.traffic_annotation =
++      MutableNetworkTrafficAnnotationTag(TRAFFIC_ANNOTATION_FOR_TESTS);
++  request.load_flags = LOAD_DO_NOT_USE_EMBEDDED_IDENTITY;
++
++  session_deps->proxy_resolution_service =
++      ConfiguredProxyResolutionService::CreateFixedForTest(
++          "https://proxy:70", TRAFFIC_ANNOTATION_FOR_TESTS);
++  session_deps->net_log = NetLog::Get();
++
++  HttpAuthNtlmMechanism::ScopedProcSetter proc_setter(
++      MockGetMSTime, MockGenerateRandom, MockGetHostName);
++  std::unique_ptr<HttpNetworkSession> session(CreateSession(session_deps));
++
++  // Generate the NTLM messages based on known test data.
++  std::string negotiate_msg = base::Base64Encode(std::string_view(
++      reinterpret_cast<const char*>(ntlm::test::kExpectedNegotiateMsg),
++      std::size(ntlm::test::kExpectedNegotiateMsg)));
++  std::string challenge_msg = base::Base64Encode(std::string_view(
++      reinterpret_cast<const char*>(ntlm::test::kChallengeMsgFromSpecV2),
++      std::size(ntlm::test::kChallengeMsgFromSpecV2)));
++  std::string authenticate_msg = base::Base64Encode(std::string_view(
++      reinterpret_cast<const char*>(
++          ntlm::test::kExpectedAuthenticateMsgEmptyChannelBindingsV2),
++      std::size(ntlm::test::kExpectedAuthenticateMsgEmptyChannelBindingsV2)));
++
++  std::string request_write2_1 =
++      base::StrCat({"GET http://server/kids/login.aspx HTTP/1.1\r\n"
++                    "Host: server\r\n"
++                    "Proxy-Connection: keep-alive\r\n"
++                    "Authorization: NTLM ",
++                    negotiate_msg, "\r\n\r\n"});
++
++  std::string response_read2_1 =
++      base::StrCat({"HTTP/1.1 401 Access Denied\r\n"
++                    "WWW-Authenticate: NTLM ",
++                    challenge_msg,
++                    "\r\n"
++                    "Content-Length: 42\r\n"
++                    "Content-Type: text/html\r\n\r\n"
++                    "You are not authorized to view this page\r\n"});
++
++  std::string request_write2_2 =
++      base::StrCat({"GET http://server/kids/login.aspx HTTP/1.1\r\n"
++                    "Host: server\r\n"
++                    "Proxy-Connection: keep-alive\r\n"
++                    "Authorization: NTLM ",
++                    authenticate_msg, "\r\n\r\n"});
++
++  MockWrite data_writes1[] = {
++      MockWrite(ASYNC, 0,
++                "GET http://server/kids/login.aspx HTTP/1.1\r\n"
++                "Host: server\r\n"
++                "Proxy-Connection: keep-alive\r\n\r\n"),
++  };
++
++  MockRead data_reads1[] = {
++      MockRead(ASYNC, 1,
++               "HTTP/1.1 401 Access Denied\r\n"
++               "WWW-Authenticate: NTLM\r\n"
++               "Connection: close\r\n"
++               "Content-Length: 42\r\n"
++               "Content-Type: text/html\r\n\r\n"),
++  };
++
++  MockWrite data_writes2[] = {
++      MockWrite(ASYNC, 0, request_write2_1),
++      MockWrite(ASYNC, 2, request_write2_2),
++  };
++
++  MockRead data_reads2[] = {
++      MockRead(ASYNC, 1, response_read2_1),
++      MockRead(ASYNC, 3,
++               "HTTP/1.1 200 OK\r\n"
++               "Content-Type: text/html; charset=utf-8\r\n"
++               "Content-Length: 14\r\n\r\n"),
++      MockRead(ASYNC, 4, "Please Login\r\n"),
++  };
++
++  SequencedSocketData data1(data_reads1, data_writes1);
++  SequencedSocketData data2(data_reads2, data_writes2);
++  session_deps->socket_factory->AddSocketDataProvider(&data1);
++  session_deps->socket_factory->AddSocketDataProvider(&data2);
++
++  SSLSocketDataProvider ssl1(ASYNC, OK);
++  ssl1.ssl_info.cert =
++      ImportCertFromFile(GetTestCertsDirectory(), "ok_cert.pem");
++  ASSERT_TRUE(ssl1.ssl_info.cert);
++  session_deps->socket_factory->AddSSLSocketDataProvider(&ssl1);
++
++  SSLSocketDataProvider ssl2(ASYNC, OK);
++  ssl2.ssl_info.cert =
++      ImportCertFromFile(GetTestCertsDirectory(), second_proxy_cert);
++  ASSERT_TRUE(ssl2.ssl_info.cert);
++  session_deps->socket_factory->AddSSLSocketDataProvider(&ssl2);
++
++  TestCompletionCallback callback1;
++  HttpNetworkTransaction trans(DEFAULT_PRIORITY, session.get());
++
++  int rv = trans.Start(&request, callback1.callback(), NetLogWithSource());
++  EXPECT_THAT(rv, IsError(ERR_IO_PENDING));
++  rv = callback1.WaitForResult();
++  EXPECT_THAT(rv, IsOk());
++
++  EXPECT_FALSE(trans.IsReadyToRestartForAuth());
++
++  const HttpResponseInfo* response = trans.GetResponseInfo();
++  ASSERT_TRUE(response);
++  ASSERT_TRUE(response->auth_challenge.has_value());
++  EXPECT_FALSE(response->auth_challenge->is_proxy);
++  EXPECT_EQ("http://server", response->auth_challenge->challenger.Serialize());
++  EXPECT_EQ(kNtlmAuthScheme, response->auth_challenge->scheme);
++
++  TestCompletionCallback callback2;
++  rv = trans.RestartWithAuth(
++      AuthCredentials(ntlm::test::kDomainUserCombined, ntlm::test::kPassword),
++      callback2.callback());
++  EXPECT_THAT(rv, IsError(ERR_IO_PENDING));
++  rv = callback2.WaitForResult();
++  EXPECT_THAT(rv, IsOk());
++
++  ASSERT_TRUE(trans.IsReadyToRestartForAuth());
++  response = trans.GetResponseInfo();
++  ASSERT_TRUE(response);
++  EXPECT_FALSE(response->auth_challenge.has_value());
++
++  TestCompletionCallback callback3;
++  rv = trans.RestartWithAuth(AuthCredentials(), callback3.callback());
++  EXPECT_THAT(rv, IsError(ERR_IO_PENDING));
++  rv = callback3.WaitForResult();
++  EXPECT_THAT(rv, IsOk());
++
++  response = trans.GetResponseInfo();
++  ASSERT_TRUE(response);
++  EXPECT_EQ(200, response->headers->response_code());
++  EXPECT_EQ(14u, response->headers->GetContentLength()->InBytes());
++
++  std::string response_data;
++  rv = ReadTransaction(&trans, &response_data);
++  EXPECT_THAT(rv, IsOk());
++  EXPECT_EQ("Please Login\r\n", response_data);
++
++  EXPECT_TRUE(data1.AllReadDataConsumed());
++  EXPECT_TRUE(data1.AllWriteDataConsumed());
++  EXPECT_TRUE(data2.AllReadDataConsumed());
++  EXPECT_TRUE(data2.AllWriteDataConsumed());
++}
++
++// An "http" request through an HTTPS proxy runs over TLS to the proxy, but the
++// proxy's certificate must not be attributed to the origin server. Here the
++// proxy presents the same certificate on both connections. If its certificate
++// were attributed to the origin, the NTLM server auth handler would derive
++// channel bindings from it, and the authenticate message would not match
++// kExpectedAuthenticateMsgEmptyChannelBindingsV2.
++TEST_P(HttpNetworkTransactionTest, NTLMAuthV2HttpServerOverHttpsProxy) {
++  RunNTLMAuthV2HttpServerOverHttpsProxy(&session_deps_, "ok_cert.pem");
++}
++
++// Same as above, but the proxy presents a different certificate on the second
++// connection. If the proxy's certificate were attributed to the origin, the
++// server auth handler created on the first connection would be invalidated by
++// the certificate change, and no NTLM negotiate message would be sent.
++TEST_P(HttpNetworkTransactionTest,
++       NTLMAuthV2HttpServerOverHttpsProxyCertChanges) {
++  RunNTLMAuthV2HttpServerOverHttpsProxy(&session_deps_, "spdy_pooling.pem");
++}
++
+ // Server requests NTLM authentication, which is not supported over HTTP/2.
+ // Subsequent request with authorization header should be sent over HTTP/1.1.
+ TEST_P(HttpNetworkTransactionTest, NTLMOverHttp2) {
+@@ -13417,6 +13989,184 @@ TEST_P(HttpNetworkTransactionTest, NTLMProxyTLSHandshakeReset) {
+   EXPECT_THAT(rv, IsError(ERR_CONNECTION_RESET));
+ }
+ 
++// Proxy authentication handlers are created with an empty SSLInfo. The CONNECT
++// proxy client sockets pass their HttpResponseInfo::ssl_info, which is
++// origin-scoped and never populated (HttpProxyClientSocket::GetSSLInfo()
++// deliberately reports on the tunneled connection to the origin rather than on
++// the proxy's TLS). HttpNetworkTransaction passes an explicit empty SSLInfo
++// for GET proxies. Since HttpAuthHandlerNTLM::Init() only derives channel
++// bindings when ssl_info.is_valid(), a proxy NTLM token carries no
++// tls-server-end-point binding even when the proxy presents a certificate.
++//
++// This test pins that behavior for CONNECT proxies. If it fails because proxy
++// channel bindings were added, that change MUST pass the proxy's certificate
++// to both HttpAuthController::HandleAuthChallenge() and
++// HttpAuthController::MaybeGenerateAuthToken(), so that the certificate
++// comparison in the latter covers it. The proxy auth handler deliberately
++// survives reconnects:
++// HttpProxyConnectJob::DoRestartWithAuthComplete() keeps the controller when
++// the proxy sends "Proxy-Connection: close", so that each leg of the handshake
++// may run on a separate connection. Adding bindings without that comparison
++// would therefore allow a token bound to one proxy certificate to be sent over
++// a connection presenting a different one, which is the server-auth
++// vulnerability fixed in https://crbug.com/557075191.
++TEST_P(HttpNetworkTransactionTest, NTLMProxyAuthHasNoChannelBindings) {
++  // The NTLM test data expects the authentication target to be named 'server'.
++  // An HTTPS proxy on the default port keeps the SPN "HTTP/server", matching
++  // the test vectors, while still giving the proxy connection a certificate.
++  session_deps_.proxy_resolution_service =
++      ConfiguredProxyResolutionService::CreateFixedFromPacResultForTest(
++          "HTTPS server", TRAFFIC_ANNOTATION_FOR_TESTS);
++
++  HttpRequestInfo request;
++  request.method = "GET";
++  request.url = GURL("https://origin/");
++  request.traffic_annotation =
++      MutableNetworkTrafficAnnotationTag(TRAFFIC_ANNOTATION_FOR_TESTS);
++  // Ensure load is not disrupted by flags which suppress behaviour specific
++  // to other auth schemes.
++  request.load_flags = LOAD_DO_NOT_USE_EMBEDDED_IDENTITY;
++
++  HttpAuthNtlmMechanism::ScopedProcSetter proc_setter(
++      MockGetMSTime, MockGenerateRandom, MockGetHostName);
++  std::unique_ptr<HttpNetworkSession> session(CreateSession(&session_deps_));
++
++  // Generate the NTLM messages based on known test data. The authenticate
++  // message used here is the variant whose channel binding AvPair is all
++  // zeroes.
++  std::string negotiate_msg = base::Base64Encode(std::string_view(
++      reinterpret_cast<const char*>(ntlm::test::kExpectedNegotiateMsg),
++      std::size(ntlm::test::kExpectedNegotiateMsg)));
++  std::string challenge_msg = base::Base64Encode(std::string_view(
++      reinterpret_cast<const char*>(ntlm::test::kChallengeMsgFromSpecV2),
++      std::size(ntlm::test::kChallengeMsgFromSpecV2)));
++  std::string authenticate_msg = base::Base64Encode(std::string_view(
++      reinterpret_cast<const char*>(
++          ntlm::test::kExpectedAuthenticateMsgEmptyChannelBindingsV2),
++      std::size(ntlm::test::kExpectedAuthenticateMsgEmptyChannelBindingsV2)));
++
++  std::string connect_write_negotiate =
++      base::StrCat({"CONNECT origin:443 HTTP/1.1\r\n"
++                    "Host: origin:443\r\n"
++                    "Proxy-Connection: keep-alive\r\n"
++                    "User-Agent: test-ua\r\n"
++                    "Proxy-Authorization: NTLM ",
++                    negotiate_msg, "\r\n\r\n"});
++
++  std::string connect_write_authenticate =
++      base::StrCat({"CONNECT origin:443 HTTP/1.1\r\n"
++                    "Host: origin:443\r\n"
++                    "Proxy-Connection: keep-alive\r\n"
++                    "User-Agent: test-ua\r\n"
++                    "Proxy-Authorization: NTLM ",
++                    authenticate_msg, "\r\n\r\n"});
++
++  std::string challenge_read =
++      base::StrCat({"HTTP/1.1 407 Access Denied\r\n"
++                    "Content-Length: 0\r\n"
++                    "Proxy-Authenticate: NTLM ",
++                    challenge_msg, "\r\n\r\n"});
++
++  MockWrite data_writes[] = {
++      // The initial CONNECT request.
++      MockWrite(ASYNC, 0,
++                "CONNECT origin:443 HTTP/1.1\r\n"
++                "Host: origin:443\r\n"
++                "Proxy-Connection: keep-alive\r\n"
++                "User-Agent: test-ua\r\n\r\n"),
++
++      // After restarting with an identity.
++      MockWrite(ASYNC, 2, connect_write_negotiate),
++
++      // The second restart, carrying the authenticate message.
++      MockWrite(ASYNC, 4, connect_write_authenticate),
++
++      // The tunneled request.
++      MockWrite(ASYNC, 6,
++                "GET / HTTP/1.1\r\n"
++                "Host: origin\r\n"
++                "Connection: keep-alive\r\n\r\n"),
++  };
++
++  MockRead data_reads[] = {
++      // The initial NTLM response.
++      MockRead(ASYNC, 1,
++               "HTTP/1.1 407 Access Denied\r\n"
++               "Content-Length: 0\r\n"
++               "Proxy-Authenticate: NTLM\r\n\r\n"),
++
++      // The NTLM challenge message.
++      MockRead(ASYNC, 3, challenge_read),
++
++      // The tunnel is established.
++      MockRead(ASYNC, 5, "HTTP/1.1 200 Connected\r\n\r\n"),
++
++      MockRead(ASYNC, 7,
++               "HTTP/1.1 200 OK\r\n"
++               "Content-Type: text/html; charset=utf-8\r\n"
++               "Content-Length: 13\r\n\r\n"),
++      MockRead(ASYNC, 8, "Hello World\r\n"),
++  };
++
++  SequencedSocketData data(data_reads, data_writes);
++  session_deps_.socket_factory->AddSocketDataProvider(&data);
++
++  // The connection to the proxy presents a real certificate. Despite that, the
++  // NTLM proxy auth handler does not derive channel bindings from it.
++  SSLSocketDataProvider proxy_ssl(ASYNC, OK);
++  proxy_ssl.ssl_info.cert =
++      ImportCertFromFile(GetTestCertsDirectory(), "ok_cert.pem");
++  ASSERT_TRUE(proxy_ssl.ssl_info.cert);
++  session_deps_.socket_factory->AddSSLSocketDataProvider(&proxy_ssl);
++
++  // The tunneled connection to the origin.
++  SSLSocketDataProvider origin_ssl(ASYNC, OK);
++  session_deps_.socket_factory->AddSSLSocketDataProvider(&origin_ssl);
++
++  TestCompletionCallback callback;
++  HttpNetworkTransaction trans(DEFAULT_PRIORITY, session.get());
++
++  // The proxy responds with an NTLM authentication request.
++  int rv = callback.GetResult(
++      trans.Start(&request, callback.callback(), NetLogWithSource()));
++  EXPECT_THAT(rv, IsOk());
++  EXPECT_FALSE(trans.IsReadyToRestartForAuth());
++  const HttpResponseInfo* response = trans.GetResponseInfo();
++  ASSERT_TRUE(response);
++  EXPECT_TRUE(CheckNTLMProxyAuth(response->auth_challenge, "https://server"));
++
++  // Supply credentials. The negotiate message is sent, and the proxy responds
++  // with the challenge message.
++  rv = callback.GetResult(trans.RestartWithAuth(
++      AuthCredentials(ntlm::test::kDomainUserCombined, ntlm::test::kPassword),
++      callback.callback()));
++  EXPECT_THAT(rv, IsOk());
++  EXPECT_TRUE(trans.IsReadyToRestartForAuth());
++  response = trans.GetResponseInfo();
++  ASSERT_TRUE(response);
++  EXPECT_FALSE(response->auth_challenge.has_value());
++
++  // Send the authenticate message and establish the tunnel.
++  rv = callback.GetResult(
++      trans.RestartWithAuth(AuthCredentials(), callback.callback()));
++  EXPECT_THAT(rv, IsOk());
++  response = trans.GetResponseInfo();
++  ASSERT_TRUE(response);
++  ASSERT_TRUE(response->headers);
++  EXPECT_EQ(200, response->headers->response_code());
++
++  std::string response_data;
++  EXPECT_THAT(ReadTransaction(&trans, &response_data), IsOk());
++  EXPECT_EQ("Hello World\r\n", response_data);
++
++  // Consuming every write asserts that the token delivered to the proxy was
++  // kExpectedAuthenticateMsgEmptyChannelBindingsV2, whose channel binding
++  // AvPair is all zeroes, even though the proxy connection above presented a
++  // certificate.
++  EXPECT_TRUE(data.AllReadDataConsumed());
++  EXPECT_TRUE(data.AllWriteDataConsumed());
++}
++
+ #endif  // NTLM_PORTABLE
+ 
+ // Test reading a server response which has only headers, and no body.
+diff --git a/net/http/http_proxy_client_socket.cc b/net/http/http_proxy_client_socket.cc
+index 2b864b051ffa34c984414d6cf4f7b06a4a7dd095..9f72c8afe4ec8edb799d5654bf50c9ef41f4f0db 100644
+--- a/net/http/http_proxy_client_socket.cc
++++ b/net/http/http_proxy_client_socket.cc
+@@ -339,7 +339,7 @@ int HttpProxyClientSocket::DoLoop(int last_io_result) {
+ int HttpProxyClientSocket::DoGenerateAuthToken() {
+   next_state_ = STATE_GENERATE_AUTH_TOKEN_COMPLETE;
+   return auth_->MaybeGenerateAuthToken(
+-      &request_,
++      &request_, response_.ssl_info,
+       base::BindOnce(&HttpProxyClientSocket::OnIOComplete,
+                      weak_factory_.GetWeakPtr()),
+       net_log_);
+diff --git a/net/quic/quic_proxy_client_socket.cc b/net/quic/quic_proxy_client_socket.cc
+index 7ebbcf64e80c2589e5616efc4704d73e3affc58b..5a95b2f62dddcbfa1d328321bf5668ac6736e33b 100644
+--- a/net/quic/quic_proxy_client_socket.cc
++++ b/net/quic/quic_proxy_client_socket.cc
+@@ -338,7 +338,7 @@ int QuicProxyClientSocket::DoLoop(int last_io_result) {
+ int QuicProxyClientSocket::DoGenerateAuthToken() {
+   next_state_ = STATE_GENERATE_AUTH_TOKEN_COMPLETE;
+   return auth_->MaybeGenerateAuthToken(
+-      &request_,
++      &request_, response_.ssl_info,
+       base::BindOnce(&QuicProxyClientSocket::OnIOComplete,
+                      weak_factory_.GetWeakPtr()),
+       net_log_);
+diff --git a/net/spdy/spdy_proxy_client_socket.cc b/net/spdy/spdy_proxy_client_socket.cc
+index 3963896271f13ae2eed18197179cfdb5d5aca5bb..ba4110d8c2a1d76a7de017f5099c39b036e13d75 100644
+--- a/net/spdy/spdy_proxy_client_socket.cc
++++ b/net/spdy/spdy_proxy_client_socket.cc
+@@ -397,7 +397,7 @@ int SpdyProxyClientSocket::DoLoop(int last_io_result) {
+ int SpdyProxyClientSocket::DoGenerateAuthToken() {
+   next_state_ = STATE_GENERATE_AUTH_TOKEN_COMPLETE;
+   return auth_->MaybeGenerateAuthToken(
+-      &request_,
++      &request_, response_.ssl_info,
+       base::BindOnce(&SpdyProxyClientSocket::OnIOComplete,
+                      weak_factory_.GetWeakPtr()),
+       net_log_);

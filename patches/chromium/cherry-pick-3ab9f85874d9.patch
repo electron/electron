@@ -1,0 +1,112 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kent Tamura <tkent@chromium.org>
+Date: Wed, 7 Oct 2026 18:00:46 -0700
+Subject: Remove redundant IsHidden() check in FrameCaret::PaintCaret()
+
+FrameCaret::PaintCaret() called FrameSelection::IsHidden(), which calls
+FrameSelection::SelectionHasFocus() and synchronously invokes
+Document::UpdateStyleAndLayout(). When FrameCaret::PaintCaret() is
+reached during PrePaintTreeWalk (for example, via an SVG <feImage>
+filter painting a subtree with a caret), re-entering style and layout
+can rebuild physical fragments while PrePaintTreeWalk is iterating over
+them.
+
+Checking FrameSelection::IsHidden() in FrameCaret::PaintCaret() is
+unnecessary:
+- For a caret (non-range selection), FrameSelection::IsHidden() is
+  equivalent to !FrameSelection::SelectionHasFocus().
+- At the end of layout, FrameCaret::UpdateStyleAndLayoutIfNeeded() calls
+  FrameCaret::UpdateAppearance(), which checks
+  FrameCaret::ShouldShowCaret() (including
+  FrameSelection::SelectionHasFocus()).
+- If ShouldShowCaret() returns false, UpdateAppearance() returns a null
+  position and CaretDisplayItemClient::UpdateStyleAndLayoutIfNeeded()
+  clears `layout_block_`.
+- FrameCaret::PaintCaret() is only called when `layout_block_` is
+  non-null, so SelectionHasFocus() is already guaranteed to be true, and
+  CaretDisplayItemClient::PaintCaret() right above RecordSelection()
+  already paints the caret unconditionally.
+
+Remove the redundant IsHidden() check and call
+CaretDisplayItemClient::RecordSelection() unconditionally in
+FrameCaret::PaintCaret().
+
+Bug: 570740320
+Change-Id: Id7e18c4fc26d8dcd35ba558046d164c0ad47b3b1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8523219
+Reviewed-by: Philip Rogers <pdr@chromium.org>
+Auto-Submit: Kent Tamura <tkent@chromium.org>
+Reviewed-by: Xianzhu Wang <wangxianzhu@chromium.org>
+Commit-Queue: Kent Tamura <tkent@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1714054}
+
+diff --git a/third_party/blink/renderer/core/editing/frame_caret.cc b/third_party/blink/renderer/core/editing/frame_caret.cc
+index 69760b2e009d0232e731c09faebe9508c159e620..09ec71c2200e2b6ce2b640513259a5bdf91a0582 100644
+--- a/third_party/blink/renderer/core/editing/frame_caret.cc
++++ b/third_party/blink/renderer/core/editing/frame_caret.cc
+@@ -297,7 +297,8 @@ void FrameCaret::PaintCaret(GraphicsContext& context,
+ 
+   display_item_client_->PaintCaret(context, paint_offset, DisplayItem::kCaret);
+ 
+-  if (!frame_->Selection().IsHidden()) {
++  if (RuntimeEnabledFeatures::FrameCaretSkipHiddenCheckEnabled() ||
++      !frame_->Selection().IsHidden()) {
+     auto type = frame_->Selection().IsHandleVisible()
+                     ? gfx::SelectionBound::Type::CENTER
+                     : gfx::SelectionBound::Type::HIDDEN;
+diff --git a/third_party/blink/renderer/core/editing/frame_selection_test.cc b/third_party/blink/renderer/core/editing/frame_selection_test.cc
+index fe7f9f33ae2c5052a3025be2544d2a3afce368b3..a9085447eb33b040b9d46c897847e17cdff42627 100644
+--- a/third_party/blink/renderer/core/editing/frame_selection_test.cc
++++ b/third_party/blink/renderer/core/editing/frame_selection_test.cc
+@@ -1575,6 +1575,35 @@ TEST_F(FrameSelectionTest, PaintCaretRecordsSelectionWithNoSelectionHandles) {
+   EXPECT_EQ(gfx::SelectionBound::HIDDEN, selection_data->end->type);
+ }
+ 
++// crbug.com/570740320
++TEST_F(FrameSelectionTest, PaintCaretDoesNotUpdateStyleAndLayout) {
++  Text* text = AppendTextNode("Hello, World!");
++  UpdateAllLifecyclePhasesForTest();
++
++  GetDocument().body()->setContentEditable("true", ASSERT_NO_EXCEPTION);
++  GetDocument().body()->Focus();
++  Selection().SetCaretEnabled(true);
++  Selection().SetSelection(
++      SelectionInDomTree::Builder().Collapse(Position(text, 0)).Build(),
++      SetSelectionOptions());
++  UpdateAllLifecyclePhasesForTest();
++  ASSERT_TRUE(Selection().ShouldPaintCaret(
++      *To<LayoutBlock>(GetDocument().body()->GetLayoutObject())));
++
++  GetDocument().body()->SetInlineStyleProperty(CSSPropertyID::kColor, "red");
++  ASSERT_TRUE(GetDocument().NeedsLayoutTreeUpdate());
++
++  PaintController paint_controller;
++  {
++    GraphicsContext context(paint_controller);
++    paint_controller.UpdateCurrentPaintChunkProperties(
++        root_paint_chunk_id_, *root_paint_property_client_,
++        PropertyTreeState::Root());
++    Selection().PaintCaret(context, PhysicalOffset());
++  }
++  EXPECT_TRUE(GetDocument().NeedsLayoutTreeUpdate());
++}
++
+ // ===========================================================================
+ // Bidi state persistence in FrameSelection::Modify()
+ // Tests the affinity override branch that adjusts selection affinity
+diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index ec42d8decc654df1d09efda40466f4fc2c9d5a04..7050efac675c3fca73b560b54f95c7817590f64e 100644
+--- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -3339,6 +3339,11 @@
+       // fragmentation, such as multicol. See crbug.com/40267498
+       name: "FragmentedOofInCb",
+     },
++    {
++      // crbug.com/570740320
++      name: "FrameCaretSkipHiddenCheck",
++      status: "stable",
++    },
+     {
+       name: "FreezeFramesOnVisibility",
+       status: "experimental",

@@ -1,0 +1,297 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Tue, 13 Oct 2026 19:33:19 -0700
+Subject: [HiC] Invalidate iframe contents correctly on top layer removal
+
+This adds the `CanvasSubtreePropagation` enum to allow forcibly
+invalidating an entire subtree as necessary. A heavy hammer, but should
+probably be the default fix for under-invalidation bugs unless and until
+we can figure out a more fine-grained fix.
+
+Fixed: 572598342
+Change-Id: Iceb8dd3f0001d8afc46377ff374f75426549fc6b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8560060
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1718252}
+
+Electron adaptation notes (44-x-y): Element::SetIsInCanvasSubtree() on
+this branch still uses the older child-traversal shape (shadow root,
+then slot-assigned nodes, then DOM children skipping slotted ones); the
+propagation_behavior parameter is threaded through that existing
+traversal instead of upstream's flat-tree else-if chain, and the
+kOnlyIfChanged early-return is adapted verbatim. SetIsInTopLayer() on
+this branch had no canvas-subtree handling at all, so the fixed block
+(forced kAlways re-propagation) is added rather than replacing an
+earlier DidChangeIsInCanvasSubtree() call. HTMLInstallElement does not
+override DidChangeIsInCanvasSubtree() here, so that hunk is dropped;
+the html_canvas_element_test.cc changes are dropped (test-only drift).
+
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index 79bb19873681dbb57a15d7ac80698e2ffc6e1f42..58be62c99370f36ad8931b0cc69954a0564742e6 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -4349,8 +4349,11 @@ void Element::VerifySubtreeIsInCanvas(bool value) {
+ }
+ #endif
+ 
+-void Element::SetIsInCanvasSubtree(bool value) {
+-  if (value == IsInCanvasSubtree()) {
++void Element::SetIsInCanvasSubtree(
++    bool value,
++    CanvasSubtreePropagation propagation_behavior) {
++  if (propagation_behavior == CanvasSubtreePropagation::kOnlyIfChanged &&
++      value == IsInCanvasSubtree()) {
+ #if DCHECK_IS_ON()
+     if (!GetDocument().IsSlotAssignmentRecalcForbidden()) {
+       VerifySubtreeIsInCanvas(value);
+@@ -4361,7 +4364,7 @@ void Element::SetIsInCanvasSubtree(bool value) {
+ 
+   SetElementFlag(ElementFlags::kIsInCanvasSubtree, value);
+   // Note that this call leads to HTMLFrameOwnerElement updating iframes.
+-  DidChangeIsInCanvasSubtree();
++  DidChangeIsInCanvasSubtree(propagation_behavior);
+   if (!value && IsA<HTMLCanvasElement>(*this)) {
+     // Nested canvas element must reset the value to true.
+     value = true;
+@@ -4369,13 +4372,13 @@ void Element::SetIsInCanvasSubtree(bool value) {
+ 
+   if (ShadowRoot* shadow_root = GetShadowRoot()) {
+     for (Element& child : ElementTraversal::ChildrenOf(*shadow_root)) {
+-      child.SetIsInCanvasSubtree(value);
++      child.SetIsInCanvasSubtree(value, propagation_behavior);
+     }
+   }
+   if (auto* slot = ToHTMLSlotElementIfSupportsAssignmentOrNull(*this)) {
+     for (Node* node : slot->AssignedNodesNoRecalc()) {
+       if (auto* child = DynamicTo<Element>(node)) {
+-        child->SetIsInCanvasSubtree(value);
++        child->SetIsInCanvasSubtree(value, propagation_behavior);
+       }
+     }
+   }
+@@ -4383,11 +4386,11 @@ void Element::SetIsInCanvasSubtree(bool value) {
+     if (!child.IsPseudoElement() && child.AssignedSlotWithoutRecalc()) {
+       continue;
+     }
+-    child.SetIsInCanvasSubtree(value);
++    child.SetIsInCanvasSubtree(value, propagation_behavior);
+   }
+   if (const NodeRareData* rare_data = RareData()) {
+     for (PseudoElement* pseudo_element : rare_data->GetPseudoElements()) {
+-      pseudo_element->SetIsInCanvasSubtree(value);
++      pseudo_element->SetIsInCanvasSubtree(value, propagation_behavior);
+     }
+   }
+ }
+@@ -4429,7 +4432,7 @@ bool Element::IsCanvasOrInCanvasSubtree() const {
+   return false;
+ }
+ 
+-void Element::DidChangeIsInCanvasSubtree() {
++void Element::DidChangeIsInCanvasSubtree(CanvasSubtreePropagation) {
+   if (auto* layout_object = GetLayoutObject()) {
+     layout_object->SetNeedsPaintPropertyUpdate();
+     ObjectPaintInvalidator(*layout_object)
+@@ -11661,6 +11664,16 @@ void Element::SetIsInTopLayer(bool in_top_layer) {
+     return;
+   }
+ 
++  if (IsInCanvasSubtree()) {
++    // A popover inside a canvas subtree does not render with privacy
++    // protections when in the top layer. So treat transitioning between top
++    // layer states as equivalent to moving in or out of the canvas subtree.
++    // Moving into or out of the top layer does not by itself imply a change in
++    // IsInCanvasSubtree state, so kAlways is used to force invalidation.
++    SetIsInCanvasSubtree(IsInCanvasSubtree(),
++                         CanvasSubtreePropagation::kAlways);
++  }
++
+   bool user_action_stops_at_top_layer =
+       RuntimeEnabledFeatures::UserActionPseudosStopAtTopLayerEnabled();
+   bool update_focus_within = user_action_stops_at_top_layer && HasFocusWithin();
+diff --git a/third_party/blink/renderer/core/dom/element.h b/third_party/blink/renderer/core/dom/element.h
+index 2ec1f99d833e6ef7c91fc9b67a741b69956f730f..795dd7f711f4e0594337762936b7f39f7f0e99f5 100644
+--- a/third_party/blink/renderer/core/dom/element.h
++++ b/third_party/blink/renderer/core/dom/element.h
+@@ -1133,16 +1133,27 @@ class CORE_EXPORT Element : public ContainerNode {
+   // Determine whether the parent or owner of this element is a canvas element
+   // or in a canvas subtree.
+   bool ComputeIsInCanvasSubtree() const;
++
++  enum class CanvasSubtreePropagation { kOnlyIfChanged, kAlways };
++
+   // Recursively sets the IsInCanvasSubtree bit for the element and its subtree.
+-  void SetIsInCanvasSubtree(bool value);
++  // If propagation_behavior is kOnlyIfChanged, the recursion stops when it
++  // reaches a Node where `value` is the same as the Node's current state. If
++  // the behavior is kAlways, the recursion forcibly continues all the way down
++  // the tree regardless of the previous value.
++  void SetIsInCanvasSubtree(bool value,
++                            CanvasSubtreePropagation propagation_behavior =
++                                CanvasSubtreePropagation::kOnlyIfChanged);
+   // Is in the subtree of a canvas element, but not the canvas element itself.
+   bool IsInCanvasSubtree() const {
+     return HasElementFlag(ElementFlags::kIsInCanvasSubtree);
+   }
+   // Like `IsInCanvasSubtree()`, but includes <canvas> elements.
+   bool IsCanvasOrInCanvasSubtree() const;
+-  // Called when `IsInCanvasSubtree()` changes.
+-  virtual void DidChangeIsInCanvasSubtree();
++  // Called when `IsInCanvasSubtree()` changes, or when content should be
++  // invalidated *as if* `IsInCanvasSubtree()` changed (e.g., when showing
++  // or hiding a popover).
++  virtual void DidChangeIsInCanvasSubtree(CanvasSubtreePropagation);
+ #if DCHECK_IS_ON()
+   void VerifySubtreeIsInCanvas(bool value);
+ #endif
+diff --git a/third_party/blink/renderer/core/html/forms/html_input_element.cc b/third_party/blink/renderer/core/html/forms/html_input_element.cc
+index 8188130c68f1a60c30f36242faf8cbdd6a96f3f0..8e64fa64e930a0f0e8852fcb47622d2be8f224eb 100644
+--- a/third_party/blink/renderer/core/html/forms/html_input_element.cc
++++ b/third_party/blink/renderer/core/html/forms/html_input_element.cc
+@@ -1364,8 +1364,9 @@ void HTMLInputElement::SetSuggestedValue(const String& value) {
+   input_type_view_->UpdateView();
+ }
+ 
+-void HTMLInputElement::DidChangeIsInCanvasSubtree() {
+-  TextControlElement::DidChangeIsInCanvasSubtree();
++void HTMLInputElement::DidChangeIsInCanvasSubtree(
++    CanvasSubtreePropagation propagation_behavior) {
++  TextControlElement::DidChangeIsInCanvasSubtree(propagation_behavior);
+   if (IsInCanvasSubtree()) {
+     // Hide suggested values when under canvas, to prevent leaking this
+     // information to javascript.
+diff --git a/third_party/blink/renderer/core/html/forms/html_input_element.h b/third_party/blink/renderer/core/html/forms/html_input_element.h
+index 5aa2f4de7100579100baf78d03e3c89c29ac4235..ea9947b45f00cfbf832f0bba954f30d003b85458 100644
+--- a/third_party/blink/renderer/core/html/forms/html_input_element.h
++++ b/third_party/blink/renderer/core/html/forms/html_input_element.h
+@@ -524,7 +524,7 @@ class CORE_EXPORT HTMLInputElement
+ 
+   void MaybeReportPiiMetrics();
+ 
+-  void DidChangeIsInCanvasSubtree() final;
++  void DidChangeIsInCanvasSubtree(CanvasSubtreePropagation) final;
+ 
+   AtomicString name_;
+   // The value string in |value| value mode.
+diff --git a/third_party/blink/renderer/core/html/forms/html_select_element.cc b/third_party/blink/renderer/core/html/forms/html_select_element.cc
+index 46630bf1a8aee522d4b240639d42f00bdf1f04b8..2bf41a658f29512d8d86146e0f81c33801c99944 100644
+--- a/third_party/blink/renderer/core/html/forms/html_select_element.cc
++++ b/third_party/blink/renderer/core/html/forms/html_select_element.cc
+@@ -886,8 +886,10 @@ int HTMLSelectElement::SelectedListIndex() const {
+   return -1;
+ }
+ 
+-void HTMLSelectElement::DidChangeIsInCanvasSubtree() {
+-  HTMLFormControlElementWithState::DidChangeIsInCanvasSubtree();
++void HTMLSelectElement::DidChangeIsInCanvasSubtree(
++    CanvasSubtreePropagation propagation_behavior) {
++  HTMLFormControlElementWithState::DidChangeIsInCanvasSubtree(
++      propagation_behavior);
+   if (IsInCanvasSubtree()) {
+     // Hide suggested values when under canvas, to prevent leaking this
+     // information to javascript.
+diff --git a/third_party/blink/renderer/core/html/forms/html_select_element.h b/third_party/blink/renderer/core/html/forms/html_select_element.h
+index 7826c9eaac517eb15ee4b0c20d44592ac6908685..6f9af7071ba4321a44f235e2055fe84940361bb9 100644
+--- a/third_party/blink/renderer/core/html/forms/html_select_element.h
++++ b/third_party/blink/renderer/core/html/forms/html_select_element.h
+@@ -538,7 +538,7 @@ class CORE_EXPORT HTMLSelectElement final
+   // Helper to update the select descendants' mutation observer.
+   void UpdateMutationObserver();
+ 
+-  void DidChangeIsInCanvasSubtree() final;
++  void DidChangeIsInCanvasSubtree(CanvasSubtreePropagation) final;
+ 
+   // last_on_change_option_ is the currently selected option. It provides faster
+   // access to the currently selected option than iterating through each option
+diff --git a/third_party/blink/renderer/core/html/forms/html_text_area_element.cc b/third_party/blink/renderer/core/html/forms/html_text_area_element.cc
+index 6924407f8bb2bf679254ae6a8609b9120147101a..a06a94795e8cc69f8906f916c3b7add1bbb7feef 100644
+--- a/third_party/blink/renderer/core/html/forms/html_text_area_element.cc
++++ b/third_party/blink/renderer/core/html/forms/html_text_area_element.cc
+@@ -715,8 +715,9 @@ void HTMLTextAreaElement::SetSuggestedValue(const String& value) {
+       StyleChangeReasonForTracing::Create(style_change_reason::kControlValue));
+ }
+ 
+-void HTMLTextAreaElement::DidChangeIsInCanvasSubtree() {
+-  TextControlElement::DidChangeIsInCanvasSubtree();
++void HTMLTextAreaElement::DidChangeIsInCanvasSubtree(
++    CanvasSubtreePropagation propagation_behavior) {
++  TextControlElement::DidChangeIsInCanvasSubtree(propagation_behavior);
+   if (IsInCanvasSubtree()) {
+     // Hide suggested values when under canvas, to prevent leaking this
+     // information to javascript.
+diff --git a/third_party/blink/renderer/core/html/forms/html_text_area_element.h b/third_party/blink/renderer/core/html/forms/html_text_area_element.h
+index d064ace1ce1658e8b5621fa109893eef033f6369..be463064ae0293e56becc88173fdc7898dac0e93 100644
+--- a/third_party/blink/renderer/core/html/forms/html_text_area_element.h
++++ b/third_party/blink/renderer/core/html/forms/html_text_area_element.h
+@@ -170,7 +170,7 @@ class CORE_EXPORT HTMLTextAreaElement final : public TextControlElement {
+   bool TooLong(const String*, NeedsToCheckDirtyFlag) const;
+   bool TooShort(const String*, NeedsToCheckDirtyFlag) const;
+ 
+-  void DidChangeIsInCanvasSubtree() final;
++  void DidChangeIsInCanvasSubtree(CanvasSubtreePropagation) final;
+ 
+   unsigned rows_;
+   unsigned cols_;
+diff --git a/third_party/blink/renderer/core/html/html_frame_owner_element.cc b/third_party/blink/renderer/core/html/html_frame_owner_element.cc
+index eb18037e4645d84bd2fed8d6cac739bafac3a193..60a8c097ed35ed766e5c73389bd5be820ffe949f 100644
+--- a/third_party/blink/renderer/core/html/html_frame_owner_element.cc
++++ b/third_party/blink/renderer/core/html/html_frame_owner_element.cc
+@@ -241,11 +241,12 @@ Node::InsertionNotificationRequest HTMLFrameOwnerElement::InsertedInto(
+   return result;
+ }
+ 
+-void HTMLFrameOwnerElement::DidChangeIsInCanvasSubtree() {
+-  HTMLElement::DidChangeIsInCanvasSubtree();
++void HTMLFrameOwnerElement::DidChangeIsInCanvasSubtree(
++    CanvasSubtreePropagation propagation_behavior) {
++  HTMLElement::DidChangeIsInCanvasSubtree(propagation_behavior);
+   if (Document* inner_document = contentDocument()) {
+     if (Element* root = inner_document->documentElement()) {
+-      root->SetIsInCanvasSubtree(IsInCanvasSubtree());
++      root->SetIsInCanvasSubtree(IsInCanvasSubtree(), propagation_behavior);
+       if (auto* layout_view = inner_document->GetLayoutView()) {
+         layout_view->SetNeedsPaintPropertyUpdate();
+         layout_view->Layer()->SetNeedsRepaint();
+diff --git a/third_party/blink/renderer/core/html/html_frame_owner_element.h b/third_party/blink/renderer/core/html/html_frame_owner_element.h
+index 45afbe3628a3cf5210a3dd82d4e04631d7bbe1d7..dd55eb9dd48a69bc2222d113c3527c131662fa7a 100644
+--- a/third_party/blink/renderer/core/html/html_frame_owner_element.h
++++ b/third_party/blink/renderer/core/html/html_frame_owner_element.h
+@@ -114,7 +114,7 @@ class CORE_EXPORT HTMLFrameOwnerElement : public HTMLElement,
+   // Node overrides:
+   Node::InsertionNotificationRequest InsertedInto(
+       ContainerNode& insertion_point) override;
+-  void DidChangeIsInCanvasSubtree() override;
++  void DidChangeIsInCanvasSubtree(CanvasSubtreePropagation) override;
+   void RemovedFrom(ContainerNode& insertion_point) override;
+   // Element overrides:
+   void DidRecalcStyle(const StyleRecalcChange) override;
+diff --git a/third_party/blink/renderer/core/html/media/html_video_element.cc b/third_party/blink/renderer/core/html/media/html_video_element.cc
+index 06421e248305a04ee1356dc888b7f8e4d9114d47..985ff463ebb4ecda75668c71d7931fd84709595a 100644
+--- a/third_party/blink/renderer/core/html/media/html_video_element.cc
++++ b/third_party/blink/renderer/core/html/media/html_video_element.cc
+@@ -857,8 +857,9 @@ unsigned HTMLVideoElement::webkitDecodedFrameCount() const {
+   return 0;
+ }
+ 
+-void HTMLVideoElement::DidChangeIsInCanvasSubtree() {
+-  HTMLMediaElement::DidChangeIsInCanvasSubtree();
++void HTMLVideoElement::DidChangeIsInCanvasSubtree(
++    CanvasSubtreePropagation propagation_behavior) {
++  HTMLMediaElement::DidChangeIsInCanvasSubtree(propagation_behavior);
+   if (IsInCanvasSubtree()) {
+     UpdateLayoutObject();
+     if (auto* wmp = GetWebMediaPlayer()) {
+diff --git a/third_party/blink/renderer/core/html/media/html_video_element.h b/third_party/blink/renderer/core/html/media/html_video_element.h
+index 867eee4cc8bdb25274aee4b453a0c6a200878bbc..a12fac01ad33d05084a6ccfffbd769823dd88663 100644
+--- a/third_party/blink/renderer/core/html/media/html_video_element.h
++++ b/third_party/blink/renderer/core/html/media/html_video_element.h
+@@ -244,7 +244,7 @@ class CORE_EXPORT HTMLVideoElement final
+   void RequestVisibility(RequestVisibilityCallback request_visibility_cb) final;
+ 
+   void DidMoveToNewDocument(Document& old_document) override;
+-  void DidChangeIsInCanvasSubtree() override;
++  void DidChangeIsInCanvasSubtree(CanvasSubtreePropagation) override;
+ 
+   void UpdatePictureInPictureAvailability();
+   void UpdateVideoFrameAvailability() override;

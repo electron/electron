@@ -1,0 +1,159 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kent Tamura <tkent@chromium.org>
+Date: Tue, 13 Oct 2026 04:44:56 -0700
+Subject: Prevent cross-frame selection on GestureLongPress
+
+When an event handler for `gesturelongpress` mutates the DOM (e.g.
+removing an overlay element above an `<iframe>`), the subsequent hit
+test in GestureManager::HandleGestureLongPress() could descend into a
+child frame and set a cross-document selection on the parent frame's
+FrameSelection.
+
+* gesture_manager.cc: Use event_handling_util::HitTestResultInFrame()
+  instead of EventHandler::HitTestResultAtLocation() in
+  GestureManager::HandleGestureLongPress() so the re-hit-test stays
+  within the handling frame and does not descend into child frames.
+  This is the main fix of the issue.
+
+* web_view_test.cc: Update WebViewTest.LongPressLink to long-press at
+  (499, 299) on the link inside the 500x300 viewport instead of
+  out-of-bounds at (500, 300). This test worked by accident because
+  HitTestResultAtLocation() doesn't have viewport bounds check.
+
+* selection_controller.cc: Verify in `SelectionController::
+  UpdateSelectionForMouseDownDispatchingSelectStart()` that
+  `target_node` and `selection` belong to GetDocument() before and
+  after dispatching `selectstart`, matching
+  UpdateSelectionForMouseDrag().
+  This is an optional change for defence-in-depth.
+
+* selection_template.cc: Upgrade DCHECK_EQ() to CHECK_EQ() in
+  SelectionTemplate::AssertValidFor() to prevent setting a selection
+  whose document does not match the FrameSelection's document.
+  This is another optional change for defence-in-depth.
+
+Bug: 572893186
+Change-Id: I2e51c75838351009987dc7820a7fe3d2cef944ac
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8561139
+Auto-Submit: Kent Tamura <tkent@chromium.org>
+Commit-Queue: Koji Ishii <kojii@chromium.org>
+Reviewed-by: Koji Ishii <kojii@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1717499}
+
+diff --git a/third_party/blink/renderer/core/editing/selection_controller.cc b/third_party/blink/renderer/core/editing/selection_controller.cc
+index 86ced5f6911bcb4cdf873a61804766dc755343d9..ad92ae287c0eae1f20a73ad15282787fd647e344 100644
+--- a/third_party/blink/renderer/core/editing/selection_controller.cc
++++ b/third_party/blink/renderer/core/editing/selection_controller.cc
+@@ -713,6 +713,13 @@ bool SelectionController::UpdateSelectionForMouseDownDispatchingSelectStart(
+     Node* target_node,
+     const SelectionInFlatTree& selection,
+     const SetSelectionOptions& set_selection_options) {
++  if (RuntimeEnabledFeatures::LongPressHitTestInFrameEnabled()) {
++    if ((target_node && target_node->GetDocument() != GetDocument()) ||
++        !selection.Anchor().IsValidFor(GetDocument()) ||
++        !selection.Focus().IsValidFor(GetDocument())) {
++      return false;
++    }
++  }
+   if (target_node && target_node->GetLayoutObject() &&
+       !target_node->GetLayoutObject()->IsSelectable())
+     return false;
+@@ -726,6 +733,11 @@ bool SelectionController::UpdateSelectionForMouseDownDispatchingSelectStart(
+   // |DispatchSelectStart()| can change document hosted by |frame_|.
+   if (!Selection().IsAvailable())
+     return false;
++  if (RuntimeEnabledFeatures::LongPressHitTestInFrameEnabled() &&
++      (!selection.Anchor().IsValidFor(GetDocument()) ||
++       !selection.Focus().IsValidFor(GetDocument()))) {
++    return false;
++  }
+ 
+   // TODO(editing-dev): Use of UpdateStyleAndLayout
+   // needs to be audited.  See http://crbug.com/590369 for more details.
+diff --git a/third_party/blink/renderer/core/editing/selection_template.cc b/third_party/blink/renderer/core/editing/selection_template.cc
+index 988fad2509a48d3f26a6ce00a0a58e0fef928d87..27916aa58ccef7d04eeee512b6fa45676703ee1d 100644
+--- a/third_party/blink/renderer/core/editing/selection_template.cc
++++ b/third_party/blink/renderer/core/editing/selection_template.cc
+@@ -10,6 +10,7 @@
+ #include "third_party/blink/renderer/core/dom/document.h"
+ #include "third_party/blink/renderer/core/editing/ephemeral_range.h"
+ #include "third_party/blink/renderer/core/editing/position_with_affinity.h"
++#include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+ 
+ namespace blink {
+ 
+@@ -96,7 +97,11 @@ bool SelectionTemplate<Strategy>::AssertValidFor(
+   if (anchor_.IsNull()) {
+     return true;
+   }
+-  DCHECK_EQ(anchor_.GetDocument(), document) << *this;
++  if (RuntimeEnabledFeatures::LongPressHitTestInFrameEnabled()) {
++    CHECK_EQ(anchor_.GetDocument(), document) << *this;
++  } else {
++    DCHECK_EQ(anchor_.GetDocument(), document) << *this;
++  }
+   return true;
+ }
+ 
+diff --git a/third_party/blink/renderer/core/exported/web_view_test.cc b/third_party/blink/renderer/core/exported/web_view_test.cc
+index c33ad74aa6097298c8bb7a30c5a16e788b0baa27..77016126f56747bb4c0216733e8f4ac3101bcd13 100644
+--- a/third_party/blink/renderer/core/exported/web_view_test.cc
++++ b/third_party/blink/renderer/core/exported/web_view_test.cc
+@@ -4161,7 +4161,7 @@ TEST_F(WebViewTest, LongPressLink) {
+                         WebInputEvent::kNoModifiers,
+                         WebInputEvent::GetStaticTimeStampForTests(),
+                         WebGestureDevice::kTouchscreen);
+-  event.SetPositionInWidget(gfx::PointF(500, 300));
++  event.SetPositionInWidget(gfx::PointF(499, 299));
+ 
+   EXPECT_EQ(WebInputEventResult::kHandledSystem,
+             web_view->MainFrameWidget()->HandleInputEvent(
+diff --git a/third_party/blink/renderer/core/input/gesture_manager.cc b/third_party/blink/renderer/core/input/gesture_manager.cc
+index 523cc6b953cb60a1e3e4c7dd886c95e41e2adf35..e33ed4e8fa7a0f65ba95c36a954a63f73bd8a1e4 100644
+--- a/third_party/blink/renderer/core/input/gesture_manager.cc
++++ b/third_party/blink/renderer/core/input/gesture_manager.cc
+@@ -483,10 +483,24 @@ WebInputEventResult GestureManager::HandleGestureLongPress(
+   // scenario that it's unlikely to matter much in practice.
+ 
+   long_press_position_in_root_frame_ = gesture_event.PositionInRootFrame();
+-  HitTestLocation location(frame_->View()->ConvertFromRootFrame(
+-      gfx::ToFlooredPoint(long_press_position_in_root_frame_)));
+-  HitTestResult hit_test_result =
+-      frame_->GetEventHandler().HitTestResultAtLocation(location);
++  HitTestResult hit_test_result;
++  if (RuntimeEnabledFeatures::LongPressHitTestInFrameEnabled()) {
++    LocalFrame& main_frame = frame_->LocalFrameRoot();
++    if (!frame_->View() || !main_frame.View() ||
++        !main_frame.View()->UpdateAllLifecyclePhasesExceptPaint(
++            DocumentUpdateReason::kHitTest)) {
++      return WebInputEventResult::kNotHandled;
++    }
++    HitTestLocation location(frame_->View()->ConvertFromRootFrame(
++        gfx::ToFlooredPoint(long_press_position_in_root_frame_)));
++    hit_test_result = event_handling_util::HitTestResultInFrame(
++        frame_, location, GetHitTypeForGestureType(gesture_event.GetType()));
++  } else {
++    HitTestLocation location(frame_->View()->ConvertFromRootFrame(
++        gfx::ToFlooredPoint(long_press_position_in_root_frame_)));
++    hit_test_result =
++        frame_->GetEventHandler().HitTestResultAtLocation(location);
++  }
+ 
+   gesture_context_menu_deferred_ = false;
+ 
+diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index 7050efac675c3fca73b560b54f95c7817590f64e..ceb5b98f2ce4a2eaf0ca3987e8f22d0e67aab31b 100644
+--- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -4016,6 +4016,11 @@
+       name: "LongAnimationFrameWorker",
+       status: "test",
+     },
++    {
++      // https://crbug.com/572893186
++      name: "LongPressHitTestInFrame",
++      status: "stable",
++    },
+     {
+       // Long press on a link selects the link text instead of bringing up
+       // context menu. Enabled only on Android AuthView.

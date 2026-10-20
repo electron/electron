@@ -1,0 +1,367 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Wed, 7 Oct 2026 17:12:04 -0700
+Subject: Sync separate GL texture content on write access in
+ ExternalVkImageBacking
+
+crrev.com/c/8436737 made ExternalVkImageBacking reject the separate GL
+texture mode under WebGPU GL-Vk interop and stopped UpdateContent() from
+masking failed copies. This handles the remaining issues:
+
+- The interop/separate-GL bail-outs in Create() and CreateFromGMB() ran
+  after the VkImage(s) had been allocated/imported. Returning nullptr
+  there drops VulkanImages without calling Destroy(), which hits
+  DCHECK(!device_queue_) and leaks the images in release builds. Move
+  the checks ahead of any allocation. Likewise, destroy the images
+  already allocated for earlier planes if a later plane fails to
+  allocate in Create().
+
+- BeginAccess() only synchronized content between the separate GL
+  texture and the VkImage on read-only access. On write/read-write
+  access EndAccess() then marks the written side as exclusively holding
+  the latest content, so a partial write or READWRITE access that does
+  not overwrite everything exposes stale or uninitialized storage.
+  Synchronize the accessed side on write accesses too, after rejecting
+  conflicting accesses up front so no copy runs for an access that will
+  fail.
+
+- Only report descriptor.isInitialized to Dawn when the VkImage holds
+  the latest content, so a failed GL->Vk sync is not treated as valid
+  data.
+
+Bug: 563357593
+Fixed: 563357593
+Change-Id: I8a492e00009eb89f87695f3d296ca13a380d166b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8427415
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Reviewed-by: vikas soni <vikassoni@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1714023}
+
+diff --git a/gpu/command_buffer/service/shared_image/external_vk_image_backing.cc b/gpu/command_buffer/service/shared_image/external_vk_image_backing.cc
+index 5feea6accd29428d3cefb45517510dcb58a7ac71..443e372abf98e3c95e3c12aedbafeb38ca15f025 100644
+--- a/gpu/command_buffer/service/shared_image/external_vk_image_backing.cc
++++ b/gpu/command_buffer/service/shared_image/external_vk_image_backing.cc
+@@ -171,6 +171,22 @@ std::unique_ptr<ExternalVkImageBacking> ExternalVkImageBacking::Create(
+     base::span<const uint8_t> pixel_data) {
+   auto format = si_info.format;
+   auto usage = si_info.usage;
++
++  bool use_separate_gl_texture =
++      ExternalVkImageBacking::UseSeparateGLTexture(context_state.get(), format);
++  // The separate GL texture path keeps an independent GL texture in sync with
++  // the VkImage by copying pixels on access. WebGPU interop requires a single
++  // allocation aliased into both APIs, and ExternalVkImageBackingFactory
++  // already refuses formats that would end up here, so this is unreachable
++  // unless a caller bypasses IsSupported(). Fail rather than silently handing
++  // back a backing that cannot keep its two copies coherent. This must happen
++  // before any VulkanImage is allocated, since those must be explicitly
++  // destroyed.
++  if (enable_webgpu_on_vk_via_gl_interop && use_separate_gl_texture) {
++    DLOG(ERROR) << "Separate GL texture is not supported with WebGPU interop";
++    return nullptr;
++  }
++
+   bool is_external = context_state->support_vulkan_external_object();
+   auto* device_queue = context_state->vk_context_provider()->GetDeviceQueue();
+ 
+@@ -232,6 +248,11 @@ std::unique_ptr<ExternalVkImageBacking> ExternalVkImageBacking::Create(
+                                   VK_IMAGE_TILING_OPTIMAL);
+     }
+     if (!image) {
++      // VulkanImages must be explicitly destroyed, so release the images
++      // already allocated for earlier planes.
++      for (auto& texture : textures) {
++        texture.vulkan_image->Destroy();
++      }
+       return nullptr;
+     }
+ 
+@@ -239,18 +260,6 @@ std::unique_ptr<ExternalVkImageBacking> ExternalVkImageBacking::Create(
+     textures.emplace_back(std::move(image), format, si_info.color_space);
+   }
+ 
+-  bool use_separate_gl_texture =
+-      ExternalVkImageBacking::UseSeparateGLTexture(context_state.get(), format);
+-  // The separate GL texture path keeps an independent GL texture in sync with
+-  // the VkImage by copying pixels on access. WebGPU interop requires a single
+-  // allocation aliased into both APIs, and ExternalVkImageBackingFactory
+-  // already refuses formats that would end up here, so this is unreachable
+-  // unless a caller bypasses IsSupported(). Fail rather than silently handing
+-  // back a backing that cannot keep its two copies coherent.
+-  if (enable_webgpu_on_vk_via_gl_interop && use_separate_gl_texture) {
+-    DLOG(ERROR) << "Separate GL texture is not supported with WebGPU interop";
+-    return nullptr;
+-  }
+   auto backing = std::make_unique<ExternalVkImageBacking>(
+       base::PassKey<ExternalVkImageBacking>(), mailbox, si_info, estimated_size,
+       std::move(context_state), std::move(textures), command_pool,
+@@ -292,6 +301,14 @@ std::unique_ptr<ExternalVkImageBacking> ExternalVkImageBacking::CreateFromGMB(
+     return nullptr;
+   }
+ 
++  bool use_separate_gl_texture =
++      ExternalVkImageBacking::UseSeparateGLTexture(context_state.get(), format);
++  // See the comment on the same check in Create().
++  if (enable_webgpu_on_vk_via_gl_interop && use_separate_gl_texture) {
++    DLOG(ERROR) << "Separate GL texture is not supported with WebGPU interop";
++    return nullptr;
++  }
++
+   auto* vulkan_implementation =
+       context_state->vk_context_provider()->GetVulkanImplementation();
+   auto* device_queue = context_state->vk_context_provider()->GetDeviceQueue();
+@@ -316,13 +333,6 @@ std::unique_ptr<ExternalVkImageBacking> ExternalVkImageBacking::CreateFromGMB(
+   textures.reserve(1);
+   textures.emplace_back(std::move(image), format, color_space);
+ 
+-  bool use_separate_gl_texture =
+-      ExternalVkImageBacking::UseSeparateGLTexture(context_state.get(), format);
+-  // See the comment on the same check in Create().
+-  if (enable_webgpu_on_vk_via_gl_interop && use_separate_gl_texture) {
+-    DLOG(ERROR) << "Separate GL texture is not supported with WebGPU interop";
+-    return nullptr;
+-  }
+   auto backing = std::make_unique<ExternalVkImageBacking>(
+       base::PassKey<ExternalVkImageBacking>(), mailbox, si_info, estimated_size,
+       std::move(context_state), std::move(textures), command_pool,
+@@ -471,6 +481,12 @@ bool ExternalVkImageBacking::BeginAccess(
+     return true;
+   }
+ 
++  if (is_write_in_progress_ || (!readonly && reads_in_progress_)) {
++    DLOG(ERROR) << "Unable to begin read or write access because another "
++                   "conflicting access is in progress";
++    return false;
++  }
++
+   if (readonly && !reads_in_progress_) {
+     if (!is_updating_content_) {
+       UpdateContent(kInVkImage);
+@@ -478,6 +494,8 @@ bool ExternalVkImageBacking::BeginAccess(
+     if (!gl_textures_.empty() && !is_updating_content_) {
+       UpdateContent(kInGLTexture);
+     }
++  } else if (!readonly && !is_updating_content_) {
++    UpdateContent(is_gl ? kInGLTexture : kInVkImage);
+   }
+ 
+   if (gl_reads_in_progress_ && need_synchronization()) {
+diff --git a/gpu/command_buffer/service/shared_image/external_vk_image_backing.h b/gpu/command_buffer/service/shared_image/external_vk_image_backing.h
+index d47fcc0f39bbe94f1a37c9aba2b785e762c48cbb..160183f4857ec9ea5f86f819c34adead4b82a607 100644
+--- a/gpu/command_buffer/service/shared_image/external_vk_image_backing.h
++++ b/gpu/command_buffer/service/shared_image/external_vk_image_backing.h
+@@ -21,6 +21,7 @@
+ #include "gpu/command_buffer/service/shared_image/shared_image_backing.h"
+ #include "gpu/command_buffer/service/shared_image/texture_holder_vk.h"
+ #include "gpu/command_buffer/service/shared_memory_region_wrapper.h"
++#include "gpu/gpu_gles2_export.h"
+ #include "gpu/ipc/common/surface_handle.h"
+ #include "gpu/vulkan/vulkan_device_queue.h"
+ #include "third_party/skia/include/private/chromium/GrPromiseImageTexture.h"
+@@ -32,7 +33,8 @@ class GLTextureHolder;
+ class VulkanCommandPool;
+ class VulkanImage;
+ 
+-class ExternalVkImageBacking final : public ClearTrackingSharedImageBacking {
++class GPU_GLES2_EXPORT ExternalVkImageBacking final
++    : public ClearTrackingSharedImageBacking {
+  public:
+   static std::unique_ptr<ExternalVkImageBacking> Create(
+       scoped_refptr<SharedContextState> context_state,
+@@ -107,6 +109,9 @@ class ExternalVkImageBacking final : public ClearTrackingSharedImageBacking {
+   bool enable_webgpu_on_vk_via_gl_interop() const {
+     return enable_webgpu_on_vk_via_gl_interop_;
+   }
++  bool HasLatestContentInVkImage() const {
++    return (latest_content_ & kInVkImage) != 0;
++  }
+ 
+   bool need_synchronization() const {
+     if (usage().HasAny(SHARED_IMAGE_USAGE_WEBGPU_READ |
+diff --git a/gpu/command_buffer/service/shared_image/external_vk_image_backing_factory_unittest.cc b/gpu/command_buffer/service/shared_image/external_vk_image_backing_factory_unittest.cc
+index cf6ac4a39acd4203ed517c5d775728b892bb9059..7fe2fcf88cfe938c09f17d3cc3b9a72974b6b473 100644
+--- a/gpu/command_buffer/service/shared_image/external_vk_image_backing_factory_unittest.cc
++++ b/gpu/command_buffer/service/shared_image/external_vk_image_backing_factory_unittest.cc
+@@ -17,6 +17,7 @@
+ #include "components/viz/common/resources/shared_image_format.h"
+ #include "gpu/command_buffer/service/service_utils.h"
+ #include "gpu/command_buffer/service/shared_context_state.h"
++#include "gpu/command_buffer/service/shared_image/external_vk_image_backing.h"
+ #include "gpu/command_buffer/service/shared_image/external_vk_image_dawn_representation.h"
+ #include "gpu/command_buffer/service/shared_image/external_vk_image_skia_representation.h"
+ #include "gpu/command_buffer/service/shared_image/shared_image_factory.h"
+@@ -609,5 +610,149 @@ INSTANTIATE_TEST_SUITE_P(,
+                          kSharedImageFormats,
+                          TestParamToString);
+ 
++#if BUILDFLAG(USE_WEBGPU_ON_VULKAN_VIA_GL_INTEROP)
++TEST_F(ExternalVkImageBackingFactoryTest, InteropRejectsSeparateGLTexture) {
++  const auto format = viz::SinglePlaneFormat::kBGRA_8888;
++  if (!ExternalVkImageBacking::UseSeparateGLTexture(context_state_.get(),
++                                                    format)) {
++    GTEST_SKIP() << "Test requires separate GL texture mode";
++  }
++
++  auto interop_factory = std::make_unique<ExternalVkImageBackingFactory>(
++      context_state_, /*enable_webgpu_on_vk_via_gl_interop=*/true);
++
++  const gfx::Size size(64, 64);
++  const auto color_space = gfx::ColorSpace::CreateSRGB();
++  const gpu::SharedImageUsageSet usage =
++      SHARED_IMAGE_USAGE_WEBGPU_READ | SHARED_IMAGE_USAGE_WEBGPU_WRITE |
++      SHARED_IMAGE_USAGE_GLES2_READ | SHARED_IMAGE_USAGE_GLES2_WRITE;
++
++  EXPECT_FALSE(interop_factory->IsSupported(
++      usage, format, size, /*thread_safe=*/false, gfx::EMPTY_BUFFER,
++      GrContextType::kGL, /*pixel_data=*/{}));
++
++  auto backing = interop_factory->CreateSharedImage(
++      Mailbox::Generate(),
++      {format, size, color_space, kTopLeft_GrSurfaceOrigin, kPremul_SkAlphaType,
++       usage, "TestInteropSeparateGL"},
++      gpu::kNullSurfaceHandle, /*is_thread_safe=*/false);
++  EXPECT_EQ(backing, nullptr);
++}
++#endif  // BUILDFLAG(USE_WEBGPU_ON_VULKAN_VIA_GL_INTEROP)
++
++TEST_F(ExternalVkImageBackingFactoryTest,
++       SeparateGLTextureWriteAccessSyncsContent) {
++  const auto format = viz::SinglePlaneFormat::kBGRA_8888;
++  if (!ExternalVkImageBacking::UseSeparateGLTexture(context_state_.get(),
++                                                    format)) {
++    GTEST_SKIP() << "Test requires separate GL texture mode";
++  }
++
++  auto mailbox = Mailbox::Generate();
++  const gfx::Size size(16, 16);
++  const auto color_space = gfx::ColorSpace::CreateSRGB();
++  const gpu::SharedImageUsageSet usage =
++      SHARED_IMAGE_USAGE_DISPLAY_READ | SHARED_IMAGE_USAGE_RASTER_WRITE |
++      SHARED_IMAGE_USAGE_GLES2_READ | SHARED_IMAGE_USAGE_GLES2_WRITE;
++
++  auto backing = backing_factory_->CreateSharedImage(
++      mailbox,
++      {format, size, color_space, kTopLeft_GrSurfaceOrigin, kPremul_SkAlphaType,
++       usage, "TestSeparateGLSync"},
++      gpu::kNullSurfaceHandle, /*is_thread_safe=*/false);
++  ASSERT_TRUE(backing);
++
++  auto* vk_backing = static_cast<ExternalVkImageBacking*>(backing.get());
++  ASSERT_TRUE(vk_backing->use_separate_gl_texture());
++  EXPECT_FALSE(vk_backing->HasLatestContentInVkImage());
++
++  std::unique_ptr<SharedImageRepresentationFactoryRef> shared_image =
++      shared_image_manager_.Register(std::move(backing), &memory_type_tracker_);
++  ASSERT_TRUE(shared_image);
++
++  // Write red pixels using Skia (Vulkan) write access.
++  std::vector<SkBitmap> red_bitmaps = AllocateRedBitmaps(format, size);
++  {
++    auto skia_representation = shared_image_representation_factory_.ProduceSkia(
++        mailbox, context_state_.get());
++    ASSERT_TRUE(skia_representation);
++
++    std::vector<GrBackendSemaphore> begin_semaphores;
++    std::vector<GrBackendSemaphore> end_semaphores;
++    auto scoped_write = skia_representation->BeginScopedWriteAccess(
++        &begin_semaphores, &end_semaphores,
++        SharedImageRepresentation::AllowUnclearedAccess::kYes);
++    ASSERT_TRUE(scoped_write);
++    scoped_write->surface()->writePixels(red_bitmaps[0], 0, 0);
++    scoped_write->ApplyBackendSurfaceEndState();
++    if (!end_semaphores.empty()) {
++      GrFlushInfo flush_info = {
++          .fNumSemaphores = end_semaphores.size(),
++          .fSignalSemaphores = end_semaphores.data(),
++      };
++      gr_context()->flush(scoped_write->surface(), flush_info, nullptr);
++      gr_context()->submit();
++    }
++    skia_representation->SetCleared();
++  }
++  EXPECT_TRUE(vk_backing->HasLatestContentInVkImage());
++
++  // Perform a GL READWRITE access without modifying the GL texture. The
++  // Vulkan-side content must be synchronized into the separate GL texture on
++  // BeginAccess so that when EndAccess marks the GL texture as holding the
++  // latest content, it is not stale/uninitialized.
++  if (use_passthrough()) {
++    auto gl_representation =
++        shared_image_representation_factory_.ProduceGLTexturePassthrough(
++            mailbox);
++    ASSERT_TRUE(gl_representation);
++    auto scoped_access = gl_representation->BeginScopedAccess(
++        GL_SHARED_IMAGE_ACCESS_MODE_READWRITE_CHROMIUM,
++        SharedImageRepresentation::AllowUnclearedAccess::kNo);
++    ASSERT_TRUE(scoped_access);
++  } else {
++    auto gl_representation =
++        shared_image_representation_factory_.ProduceGLTexture(mailbox);
++    ASSERT_TRUE(gl_representation);
++    auto scoped_access = gl_representation->BeginScopedAccess(
++        GL_SHARED_IMAGE_ACCESS_MODE_READWRITE_CHROMIUM,
++        SharedImageRepresentation::AllowUnclearedAccess::kNo);
++    ASSERT_TRUE(scoped_access);
++  }
++
++  // After the GL READWRITE access ends, latest_content_ is exclusively
++  // kInGLTexture until the next Vulkan access synchronizes it back.
++  EXPECT_FALSE(vk_backing->HasLatestContentInVkImage());
++
++  // Now begin a Vulkan write access (mirroring Dawn/Skia write-mode
++  // BeginAccess) and verify that BeginAccess synchronizes the GL texture back
++  // to VkImage.
++  {
++    auto skia_representation = shared_image_representation_factory_.ProduceSkia(
++        mailbox, context_state_.get());
++    ASSERT_TRUE(skia_representation);
++
++    std::vector<GrBackendSemaphore> begin_semaphores;
++    std::vector<GrBackendSemaphore> end_semaphores;
++    auto scoped_write = skia_representation->BeginScopedWriteAccess(
++        &begin_semaphores, &end_semaphores,
++        SharedImageRepresentation::AllowUnclearedAccess::kNo);
++    ASSERT_TRUE(scoped_write);
++    EXPECT_TRUE(vk_backing->HasLatestContentInVkImage());
++
++    scoped_write->ApplyBackendSurfaceEndState();
++    if (!end_semaphores.empty()) {
++      GrFlushInfo flush_info = {
++          .fNumSemaphores = end_semaphores.size(),
++          .fSignalSemaphores = end_semaphores.data(),
++      };
++      gr_context()->flush(scoped_write->surface(), flush_info, nullptr);
++      gr_context()->submit();
++    }
++  }
++
++  VerifyPixelsWithReadbackGanesh(mailbox, red_bitmaps);
++}
++
+ }  // anonymous namespace
+ }  // namespace gpu
+diff --git a/gpu/command_buffer/service/shared_image/external_vk_image_dawn_representation.cc b/gpu/command_buffer/service/shared_image/external_vk_image_dawn_representation.cc
+index d45a90f9b453e8624fad8881f029be0444df80ce..f2c17c69bcc77b28d69861c4834a866843531d47 100644
+--- a/gpu/command_buffer/service/shared_image/external_vk_image_dawn_representation.cc
++++ b/gpu/command_buffer/service/shared_image/external_vk_image_dawn_representation.cc
+@@ -88,7 +88,8 @@ wgpu::Texture ExternalVkImageDawnImageRepresentation::BeginAccess(
+   dawn::native::vulkan::ExternalImageDescriptorOpaqueFD descriptor = {};
+   descriptor.cTextureDescriptor =
+       reinterpret_cast<WGPUTextureDescriptor*>(&texture_descriptor);
+-  descriptor.isInitialized = IsCleared();
++  descriptor.isInitialized =
++      IsCleared() && backing_impl()->HasLatestContentInVkImage();
+   descriptor.allocationSize = backing_impl()->image()->device_size();
+   descriptor.memoryTypeIndex = backing_impl()->image()->memory_type_index();
+   descriptor.memoryFD = dup(memory_fd_.get());
+diff --git a/testing/buildbot/filters/linux.swiftshader.tsan.gl_tests_passthrough.filter b/testing/buildbot/filters/linux.swiftshader.tsan.gl_tests_passthrough.filter
+index f796aedecfdcbbf7adc4150913eeaab7d6bcdd1f..10ad5b191aa8450c025811b626edf4bd73bbda98 100644
+--- a/testing/buildbot/filters/linux.swiftshader.tsan.gl_tests_passthrough.filter
++++ b/testing/buildbot/filters/linux.swiftshader.tsan.gl_tests_passthrough.filter
+@@ -1,4 +1,6 @@
+ # crbug.com/462477487
++-ExternalVkImageBackingFactoryTest.InteropRejectsSeparateGLTexture
++-ExternalVkImageBackingFactoryTest.SeparateGLTextureWriteAccessSyncsContent
+ -ExternalVkImageBackingFactoryWithFormatTest.Basic/*
+ -ExternalVkImageBackingFactoryWithFormatTest.ReadbackToMemory/*
+ -ExternalVkImageBackingFactoryWithFormatTest.Upload/*

@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Sat, 19 Sep 2026 23:07:38 -0400
+Subject: HLSL: Fix name collision due to lack of delimiter
+
+The HLSL names were generated as `nameID`, which could collide with a
+different name ending with a prefix of `ID` and an ID that's the suffix
+of `ID`, for example `a` with ID `13579` and `a1` with id `3579`.
+
+This change removes the possibility of collisions by producing names
+like `name_ID`, which aligns with how the IR produces names.
+
+There is no regression test in this fix because causing such a collision
+reliably (across changes to ANGLE, which frequently changes the IDs)
+requires too many try and errors in the test to be practical.  Note that
+the IDs between the two variables must be at least 10000 apart, given
+the translator starts user IDs at 3000.
+
+Bug: chromium:562040486
+Change-Id: I8eb54fa55d982882c47d66e84bf0757c527f62a5
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8427126
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/compiler/translator/hlsl/UtilsHLSL.cpp b/src/compiler/translator/hlsl/UtilsHLSL.cpp
+index ae8eae4190ba7a99efa93f3ef35a001e26ceb3ba..110e52f8b7b689e864c47d79e80e3d638b3afd40 100644
+--- a/src/compiler/translator/hlsl/UtilsHLSL.cpp
++++ b/src/compiler/translator/hlsl/UtilsHLSL.cpp
+@@ -858,7 +858,7 @@ TString DecorateVariableIfNeeded(const TVariable &variable)
+               qualifier == EvqParamIn || qualifier == EvqParamOut || qualifier == EvqParamInOut ||
+               qualifier == EvqParamConst))
+     {
+-        return Decorate(variable.name()) + str(variable.uniqueId().get());
++        return Decorate(variable.name()) + '_' + str(variable.uniqueId().get());
+     }
+     else
+     {

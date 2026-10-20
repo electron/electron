@@ -1,0 +1,136 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Fri, 18 Sep 2026 11:07:05 +0200
+Subject: [maglev] Mark sloppy eval context extension slot as mutable
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+In MaglevReducer::GetContextMaybeAssigned, header slots up to
+scope_info.ContextHeaderLength() were unconditionally marked as
+kNotAssigned (with VariableMode::kConst). When HasContextExtensionSlot()
+is true, Context::EXTENSION_INDEX (slot 2) falls within
+ContextHeaderLength().
+
+For scopes where SloppyEvalCanExtendVars() is true, the context
+extension slot is initialized to undefined and can be mutated at runtime
+when sloppy eval declares variables. Treating it as kNotAssigned caused
+TrySpecializeLoadContextSlotToFunctionContext to constant-fold the
+extension slot in CheckContextExtensions to undefined, and cached loads
+in loaded_context_constants_ across calls.
+
+Return kMaybeAssigned (with VariableMode::kVar) for
+Context::EXTENSION_INDEX when scope_info.SloppyEvalCanExtendVars() is
+true.
+
+TAG=agy
+CONV=1b7d9654-2731-4157-8abc-cd9414138332
+
+Bug: 559932543
+Change-Id: I2ae18d66e935ac13dd0f361bf2aab7c37527e95c
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8420505
+Reviewed-by: Marja Hölttä <marja@chromium.org>
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#109968}
+
+diff --git a/src/maglev/maglev-reducer-inl.h b/src/maglev/maglev-reducer-inl.h
+index 7e3cb8060305af16cea44977edc012e4e7b67baf..3a453bef5ffe4e052c6b71b0d9542a2864e1ef68 100644
+--- a/src/maglev/maglev-reducer-inl.h
++++ b/src/maglev/maglev-reducer-inl.h
+@@ -574,6 +574,11 @@ MaybeAssignedFlag MaglevReducer<BaseT>::GetContextMaybeAssigned(
+   }
+   int header_length = scope_info.ContextHeaderLength();
+   if (index < header_length) {
++    DCHECK_EQ(index, Context::EXTENSION_INDEX);
++    if (scope_info.SloppyEvalCanExtendVars()) {
++      *mode = VariableMode::kVar;
++      return kMaybeAssigned;
++    }
+     *mode = VariableMode::kConst;
+     return kNotAssigned;
+   }
+diff --git a/test/mjsunit/maglev/context-extension-mutability.js b/test/mjsunit/maglev/context-extension-mutability.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..0f0db24296025a540ee2ef334c27c72886bcad2e
+--- /dev/null
++++ b/test/mjsunit/maglev/context-extension-mutability.js
+@@ -0,0 +1,78 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --maglev
++// Flags: --optimize-on-next-call-optimizes-to-maglev
++
++globalThis.x = "global";
++
++// Test 1: Sloppy eval extending the outer context after `inner` has been
++// optimized with function context specialization. The extension slot must not
++// be constant-folded to `undefined`.
++(function TestExtensionMutatedBetweenCalls() {
++  function outer(cb) {
++    if (!cb) {
++      eval('var x = "init";');
++      return;
++    }
++    const inner = function () {
++      return x;
++    };
++    cb(inner, false);
++    eval('var x = "shadowed";');
++    cb(inner, true);
++  }
++
++  // Invalidate the EmptyContextExtension dependency on outer's ScopeInfo.
++  outer(null);
++
++  outer((inner, after_eval) => {
++    if (!after_eval) {
++      %PrepareFunctionForOptimization(inner);
++      assertEquals("global", inner());
++      %OptimizeFunctionOnNextCall(inner);
++      assertEquals("global", inner());
++    } else {
++      assertEquals("shadowed", inner());
++    }
++  });
++})();
++
++// Test 2: Sloppy eval extending the outer context in the middle of an
++// optimized function (via generator resume) between two dynamic global
++// lookups. The extension slot load before the call must not be cached as an
++// immutable constant across the call.
++(function TestExtensionMutatedDuringCall() {
++  let gen;
++  function advance(resume) {
++    if (resume) gen.next();
++  }
++  %NeverOptimizeFunction(advance);
++
++  function* outer(init_eval) {
++    if (init_eval) {
++      eval('var x = "init";');
++      return;
++    }
++    const inner = function (resume) {
++      const before = x;
++      advance(resume);
++      const after = x;
++      return [before, after];
++    };
++    yield inner;
++    eval('var x = "shadowed_mid_call";');
++  }
++
++  outer(true).next();
++
++  gen = outer(false);
++  const inner = gen.next().value;
++  %PrepareFunctionForOptimization(inner);
++  assertEquals(["global", "global"], inner(false));
++  %OptimizeFunctionOnNextCall(inner);
++  assertEquals(["global", "global"], inner(false));
++
++  assertEquals(["global", "shadowed_mid_call"], inner(true));
++})();

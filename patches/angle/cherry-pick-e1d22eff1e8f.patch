@@ -1,0 +1,131 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ran Wang <wangra@google.com>
+Date: Thu, 17 Sep 2026 12:51:43 -0400
+Subject: D3D11: Do not sync incomplete texture images from storage
+
+Only sync image staging memory from render target storage when the
+image index is valid and complete, avoiding uninitialized memory
+imports. Also remove unused hasDirtyImages().
+
+Test:
+    angle_end2end_tests --gtest_filter="IncompleteLevelDoesNotSyncFromStorage"
+Bug: b/561613775
+Change-Id: I3fd62c57271dd80af91a06861b0c7dd43b77f87d
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8423401
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Ran Wang <wangra@google.com>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/renderer/d3d/TextureD3D.cpp b/src/libANGLE/renderer/d3d/TextureD3D.cpp
+index c70c4abb2ebcc9d1b26c277c220750ca2083f423..2318957f12ada484168cc750c07d03eba1541d53 100644
+--- a/src/libANGLE/renderer/d3d/TextureD3D.cpp
++++ b/src/libANGLE/renderer/d3d/TextureD3D.cpp
+@@ -189,12 +189,12 @@ angle::Result TextureD3D::getImageAndSyncFromStorage(const gl::Context *context,
+                                                      ImageD3D **outImage)
+ {
+     ImageD3D *image = getImage(index);
+-    if (mTexStorage && mTexStorage->isRenderTarget())
++    if (mTexStorage && mTexStorage->isRenderTarget() && isValidIndex(index) &&
++        isImageComplete(index))
+     {
+         ANGLE_TRY(image->copyFromTexStorage(context, index, mTexStorage));
+-        mDirtyImages = true;
++        image->markClean();
+     }
+-    image->markClean();
+     *outImage = image;
+     return angle::Result::Continue;
+ }
+diff --git a/src/libANGLE/renderer/d3d/TextureD3D.h b/src/libANGLE/renderer/d3d/TextureD3D.h
+index 38af6b561de6387dec8551f416bddeb8494a4ee2..bcd95e837a4e10d784cdcb947e12dd89848fb259 100644
+--- a/src/libANGLE/renderer/d3d/TextureD3D.h
++++ b/src/libANGLE/renderer/d3d/TextureD3D.h
+@@ -42,7 +42,6 @@ class TextureD3D : public TextureImpl, public angle::ObserverInterface
+ 
+     angle::Result getNativeTexture(const gl::Context *context, TextureStorage **outStorage);
+ 
+-    bool hasDirtyImages() const { return mDirtyImages; }
+     void resetDirty() { mDirtyImages = false; }
+ 
+     virtual ImageD3D *getImage(const gl::ImageIndex &index) const = 0;
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 52ce5d553b45e4d8bc6f31e5496c38aabfa2cbcd..6b857cbcb7e2ad236df878059801ba7f27525a5d 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -167,6 +167,7 @@
+ 448658624 WIN INTEL VULKAN : GLSLTest_ES31.ConstantPrecisionPropagation/* = SKIP
+ 452159379 WIN INTEL VULKAN : ProgramBinaryTest.ReturnedBinaryTwiceShouldMatch/* = SKIP
+ 519062400 WIN INTEL OPENGL : CopyTextureTestES3.ChangeBaseLevel/* = SKIP
++561613775 WIN INTEL OPENGL : CopyTextureTestES3.IncompleteLevelDoesNotSyncFromStorage/* = SKIP
+ 523371282 WIN INTEL OPENGL : TransformFeedbackTest.RenderOnceChangeXfbBufferRenderAgain/* = SKIP
+ 526503288 WIN INTEL OPENGL : BaseInstanceOverflowTest.BaseInstanceOverflow2/ES3_OpenGL_AlwaysEnableEmulatedMultidrawExtensions = SKIP
+ 553857574 WIN INTEL OPENGL : Texture2DArrayTestES3.BaseLevelChangeWithFewerLayersReleasesStorage/* = SKIP
+diff --git a/src/tests/gl_tests/CopyTextureTest.cpp b/src/tests/gl_tests/CopyTextureTest.cpp
+index dcb2781d4b08069bae9552268d406c46446fdf0a..20b57ac1e00158af837a1cf4110d337cd1c066b4 100644
+--- a/src/tests/gl_tests/CopyTextureTest.cpp
++++ b/src/tests/gl_tests/CopyTextureTest.cpp
+@@ -3768,6 +3768,64 @@ TEST_P(CopyTextureTest, SelfCopyOOBWrite)
+     ASSERT_GL_NO_ERROR();
+ }
+ 
++// Test that CopySubTexture to an incomplete level does not import mismatched/uninitialized storage
++// data.
++TEST_P(CopyTextureTestES3, IncompleteLevelDoesNotSyncFromStorage)
++{
++    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_CHROMIUM_copy_texture"));
++
++    // Create a 1x1 red source texture.
++    GLTexture sourceTex;
++    glBindTexture(GL_TEXTURE_2D, sourceTex);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &GLColor::red);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Create destination texture with mip 0 defined as 8x8 yellow and mip 1 as 2x2 blue.
++    // Notice: for an 8x8 base level, mip 1 is expected to be 4x4, so 2x2 is logically incomplete.
++    GLTexture destTex;
++    glBindTexture(GL_TEXTURE_2D, destTex);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    const std::vector<GLColor> yellowData(8 * 8, GLColor::yellow);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, yellowData.data());
++    const std::vector<GLColor> blueData(2 * 2, GLColor::blue);
++    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 2, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE, blueData.data());
++
++    // Attach level 0 to an FBO and clear it to green, materializing native 8x8 storage with mips on
++    // D3D11.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, destTex, 0);
++    ASSERT_GLENUM_EQ(GL_FRAMEBUFFER_COMPLETE, glCheckFramebufferStatus(GL_FRAMEBUFFER));
++    glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++
++    // Copy 1x1 red source into destTex mip 1 at offset (0, 0).
++    // The defect in TextureD3D imported native storage into staging because mip 1 was incomplete,
++    // overwriting unwritten blue pixels (1,0), (0,1), (1,1).
++    glCopySubTextureCHROMIUM(sourceTex, 0, GL_TEXTURE_2D, destTex, 1, 0, 0, 0, 0, 1, 1, GL_FALSE,
++                             GL_FALSE, GL_FALSE);
++    ASSERT_GL_NO_ERROR();
++
++    // Expose level 1 by rebasing: redefine level 0 to 4x4 and set BASE_LEVEL = 1, MAX_LEVEL = 1.
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
++
++    // Attach level 1 to FBO and read back.
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, destTex, 1);
++    ASSERT_GLENUM_EQ(GL_FRAMEBUFFER_COMPLETE, glCheckFramebufferStatus(GL_FRAMEBUFFER));
++
++    // Pixel (0,0) was overwritten by the 1x1 copy and must be red.
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++    // Pixels (1,0), (0,1), (1,1) were not written and must retain the initial blue color.
++    EXPECT_PIXEL_COLOR_EQ(1, 0, GLColor::blue);
++    EXPECT_PIXEL_COLOR_EQ(0, 1, GLColor::blue);
++    EXPECT_PIXEL_COLOR_EQ(1, 1, GLColor::blue);
++}
++
+ // Test that copy from non-zero level of texture works when a direct copy is possible.
+ TEST_P(CopyTextureTestES3, NonZeroLevel)
+ {

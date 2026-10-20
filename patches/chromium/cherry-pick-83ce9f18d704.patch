@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sky Debreuil <skydebreuil@google.com>
+Date: Fri, 9 Oct 2026 09:35:50 -0700
+Subject: [a11y] Mark image dirty directly when removing image map
+
+When removing an HTMLMapElement during immediate tree updates, mark the
+associated image AXObject's children dirty directly instead of calling
+NotifyParentChildrenChanged mid-traversal.
+
+Change-Id: Ia25df628d938a6bd48d17de46c9e716de847eefd
+Bug: 570093145
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8526087
+Reviewed-by: Lucas Radaelli <lucasradaelli@google.com>
+Auto-Submit: Sky Debreuil <skydebreuil@google.com>
+Reviewed-by: David Tseng <dtseng@chromium.org>
+Commit-Queue: Sky Debreuil <skydebreuil@google.com>
+Commit-Queue: David Tseng <dtseng@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1715691}
+
+diff --git a/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc b/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc
+index 823413167ace04ebc1b8ccbf2e509a792636a8a8..0502199cf9e2964d624100885f035ff8827898d3 100644
+--- a/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc
++++ b/third_party/blink/renderer/modules/accessibility/ax_object_cache_impl.cc
+@@ -2167,7 +2167,14 @@ void AXObjectCacheImpl::RemoveSubtreeInternal(
+       // **important**: this call must come before the node traversal remove
+       // below since that could remove a child which would cause it to not point
+       // to its image parent, making it impossible to notify the parent.
+-      NotifyParentChildrenChanged(image_ax_object);
++      if (lifecycle_.GetState() ==
++          AXObjectCacheLifecycle::kProcessDeferredUpdates) {
++        if (AXObject* ancestor = InvalidateChildren(image_ax_object)) {
++          ancestor->ChildrenChangedWithCleanLayout();
++        }
++      } else {
++        NotifyParentChildrenChanged(image_ax_object);
++      }
+     }
+   }
+ 

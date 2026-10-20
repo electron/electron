@@ -1,0 +1,358 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jonathan Ross <jonross@chromium.org>
+Date: Thu, 15 Oct 2026 08:34:45 -0700
+Subject: [M152] gpu: Restore GL context/surface after WrappedSkImageBacking
+ MakeCurrent
+
+Original change's description:
+> gpu: Restore GL context/surface after WrappedSkImageBacking MakeCurrent
+>
+> WrappedSkImageBacking makes its shared context current during
+> initialization and destruction. Restore whichever GL context was
+> previously current once that work is done, so callers' context state is
+> preserved.
+>
+> Also make the passthrough decoder verify after each command that its own
+> context is still current. If a command left a different context current,
+> the decoder now marks its context as lost instead of continuing.
+>
+> Bug: 568215670
+> Change-Id: I3fb356bbe3796c2c6c61cfc2ff2548c26f63cca4
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8520423
+> Commit-Queue: Jonathan Ross <jonross@chromium.org>
+> Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1714771}
+
+(cherry picked from commit 86cca8f0478c1f55964583d4b8036806c07e1bc2)
+
+Bug: 572074005,568215670
+Change-Id: I3fb356bbe3796c2c6c61cfc2ff2548c26f63cca4
+
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8570320
+Commit-Queue: Jonathan Ross <jonross@chromium.org>
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7977@{#2842}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc
+index 8cbf7ae77b9825d57656361efd8a96b27bcd0777..1ca147bbe26af8e58a7de39ee5dbc2aa8bd0bd91 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough.cc
+@@ -950,6 +950,19 @@ GLES2Decoder::Error GLES2DecoderPassthroughImpl::DoCommandsImpl(
+       result = DoCommonCommand(command, arg_count, cmd_data);
+     }
+ 
++    // A command must not leave a different GL context or surface current. If
++    // one did, subsequent commands would operate on the wrong context or
++    // surface, so treat it as a lost context. This only checks Chromium's
++    // bookkeeping, which is cheap enough to do per command.
++    if (result == error::kNoError && !context_lost_ &&
++        (gl::GLContext::GetCurrent() != context_.get() ||
++         gl::GLSurface::GetCurrent() != surface_.get())) {
++      LOG(ERROR) << "GLES2DecoderPassthroughImpl: context or surface is no "
++                    "longer current after command "
++                 << GetCommandName(command);
++      MarkContextLost(error::kMakeCurrentFailed);
++    }
++
+     if (result == error::kNoError && context_lost_) {
+       result = error::kLostContext;
+     }
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_unittest_textures.cc b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_unittest_textures.cc
+index 72987b26c3540b3c97d98fb945b1a166b1cebb46..e2f59fdb0607dc3c616eee6d5da48f06602dfb6d 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_unittest_textures.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_unittest_textures.cc
+@@ -12,6 +12,10 @@
+ #include "gpu/command_buffer/service/shared_image/shared_image_format_service_utils.h"
+ #include "gpu/command_buffer/service/shared_image/shared_image_representation.h"
+ #include "gpu/command_buffer/service/shared_image/test_image_backing.h"
++#include "ui/gl/gl_context.h"
++#include "ui/gl/gl_surface.h"
++#include "ui/gl/gl_utils.h"
++#include "ui/gl/init/gl_factory.h"
+ 
+ namespace gpu {
+ namespace gles2 {
+@@ -337,5 +341,128 @@ TEST_F(GLES2DecoderPassthroughTest,
+   shared_image.reset();
+ }
+ 
++namespace {
++
++// A TestImageBacking that makes the given GL context and surface current
++// while producing a GLTexturePassthrough representation.
++class ContextSwitchingTestImageBacking : public TestImageBacking {
++ public:
++  ContextSwitchingTestImageBacking(const Mailbox& mailbox,
++                                   const SharedImageInfo& si_info,
++                                   GLuint texture_id,
++                                   scoped_refptr<gl::GLContext> context,
++                                   scoped_refptr<gl::GLSurface> surface)
++      : TestImageBacking(mailbox, si_info, /*estimated_size=*/0, texture_id),
++        context_(std::move(context)),
++        surface_(std::move(surface)) {}
++
++ protected:
++  std::unique_ptr<GLTexturePassthroughImageRepresentation>
++  ProduceGLTexturePassthrough(SharedImageManager* manager,
++                              MemoryTypeTracker* tracker) override {
++    auto representation =
++        TestImageBacking::ProduceGLTexturePassthrough(manager, tracker);
++    EXPECT_TRUE(context_->MakeCurrent(surface_.get()));
++    return representation;
++  }
++
++ private:
++  scoped_refptr<gl::GLContext> context_;
++  scoped_refptr<gl::GLSurface> surface_;
++};
++
++}  // namespace
++
++// If a command leaves a GL context other than the decoder's current, the
++// decoder must lose its context rather than continue on the wrong context.
++TEST_F(GLES2DecoderPassthroughTest,
++       ContextLostWhenCommandLeavesOtherContextCurrent) {
++  scoped_refptr<gl::GLContext> decoder_context = gl::GLContext::GetCurrent();
++  scoped_refptr<gl::GLSurface> decoder_surface = gl::GLSurface::GetCurrent();
++  ASSERT_TRUE(decoder_context);
++  ASSERT_TRUE(decoder_surface);
++
++  scoped_refptr<gl::GLContext> other_context = gl::init::CreateGLContext(
++      nullptr, decoder_surface.get(), gl::GLContextAttribs());
++  ASSERT_TRUE(other_context);
++
++  MemoryTypeTracker memory_tracker(nullptr);
++  Mailbox mailbox = Mailbox::Generate();
++  auto format = viz::SinglePlaneFormat::kRGBA_8888;
++  gfx::Size size(10, 10);
++  GLuint service_id;
++  glGenTextures(1, &service_id);
++  glBindTexture(GL_TEXTURE_2D, service_id);
++  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size.width(), size.height(), 0,
++               GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++  auto backing = std::make_unique<ContextSwitchingTestImageBacking>(
++      mailbox,
++      SharedImageInfo(
++          format, size, gfx::ColorSpace(), kTopLeft_GrSurfaceOrigin,
++          kPremul_SkAlphaType,
++          {SHARED_IMAGE_USAGE_GLES2_READ, SHARED_IMAGE_USAGE_GLES2_WRITE},
++          "TestLabel"),
++      service_id, other_context, decoder_surface);
++  std::unique_ptr<SharedImageRepresentationFactoryRef> shared_image =
++      GetSharedImageManager()->Register(std::move(backing), &memory_tracker);
++
++  auto& cmd = *GetImmediateAs<
++      cmds::CreateAndTexStorage2DSharedImageINTERNALImmediate>();
++  cmd.Init(kNewClientId, mailbox.name);
++  EXPECT_EQ(error::kLostContext,
++            ExecuteImmediateCmd(cmd, sizeof(mailbox.name)));
++  EXPECT_TRUE(GetDecoder()->WasContextLost());
++
++  // Restore the decoder's context for teardown.
++  ASSERT_TRUE(decoder_context->MakeCurrent(decoder_surface.get()));
++  shared_image.reset();
++}
++
++// If a command leaves the decoder's context current but with a different
++// surface, the decoder must lose its context.
++TEST_F(GLES2DecoderPassthroughTest,
++       ContextLostWhenCommandLeavesOtherSurfaceCurrent) {
++  scoped_refptr<gl::GLContext> decoder_context = gl::GLContext::GetCurrent();
++  scoped_refptr<gl::GLSurface> decoder_surface = gl::GLSurface::GetCurrent();
++  ASSERT_TRUE(decoder_context);
++  ASSERT_TRUE(decoder_surface);
++
++  scoped_refptr<gl::GLSurface> other_surface =
++      gl::init::CreateOffscreenGLSurface(gl::GetDefaultDisplayEGL(),
++                                         gfx::Size(4, 4));
++  ASSERT_TRUE(other_surface);
++
++  MemoryTypeTracker memory_tracker(nullptr);
++  Mailbox mailbox = Mailbox::Generate();
++  auto format = viz::SinglePlaneFormat::kRGBA_8888;
++  gfx::Size size(10, 10);
++  GLuint service_id;
++  glGenTextures(1, &service_id);
++  glBindTexture(GL_TEXTURE_2D, service_id);
++  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size.width(), size.height(), 0,
++               GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++  auto backing = std::make_unique<ContextSwitchingTestImageBacking>(
++      mailbox,
++      SharedImageInfo(
++          format, size, gfx::ColorSpace(), kTopLeft_GrSurfaceOrigin,
++          kPremul_SkAlphaType,
++          {SHARED_IMAGE_USAGE_GLES2_READ, SHARED_IMAGE_USAGE_GLES2_WRITE},
++          "TestLabel"),
++      service_id, decoder_context, other_surface);
++  std::unique_ptr<SharedImageRepresentationFactoryRef> shared_image =
++      GetSharedImageManager()->Register(std::move(backing), &memory_tracker);
++
++  auto& cmd = *GetImmediateAs<
++      cmds::CreateAndTexStorage2DSharedImageINTERNALImmediate>();
++  cmd.Init(kNewClientId, mailbox.name);
++  EXPECT_EQ(error::kLostContext,
++            ExecuteImmediateCmd(cmd, sizeof(mailbox.name)));
++  EXPECT_TRUE(GetDecoder()->WasContextLost());
++
++  // Restore the decoder's surface for teardown.
++  ASSERT_TRUE(decoder_context->MakeCurrent(decoder_surface.get()));
++  shared_image.reset();
++}
++
+ }  // namespace gles2
+ }  // namespace gpu
+diff --git a/gpu/command_buffer/service/shared_image/wrapped_sk_image_backing.cc b/gpu/command_buffer/service/shared_image/wrapped_sk_image_backing.cc
+index 4f99ebae1fe3e39142108ff4bee0977066452963..c20ed3734b4f12a6770a7f0ad617592d14585529 100644
+--- a/gpu/command_buffer/service/shared_image/wrapped_sk_image_backing.cc
++++ b/gpu/command_buffer/service/shared_image/wrapped_sk_image_backing.cc
+@@ -31,6 +31,8 @@
+ #include "third_party/skia/include/gpu/ganesh/SkImageGanesh.h"
+ #include "third_party/skia/include/gpu/ganesh/SkSurfaceGanesh.h"
+ #include "third_party/skia/include/private/chromium/GrPromiseImageTexture.h"
++#include "ui/gl/gl_context.h"
++#include "ui/gl/gl_surface.h"
+ 
+ namespace gpu {
+ 
+@@ -42,6 +44,43 @@ std::string GetLabel(const std::string& debug_label) {
+   return std::string("WrappedSkImage_" + debug_label);
+ }
+ 
++// Saves the GL context and surface that are current on construction, and
++// makes them current again on destruction if a different context or surface
++// was made current in between. Backings in this file make the
++// SharedContextState current, and may be created or destroyed while another
++// client's context (e.g. a command decoder's) is current. That client expects
++// its context to still be current afterwards.
++class ScopedRestoreCurrentGLContext {
++ public:
++  ScopedRestoreCurrentGLContext()
++      : context_(gl::GLContext::GetCurrent()),
++        surface_(gl::GLSurface::GetCurrent()) {}
++
++  ScopedRestoreCurrentGLContext(const ScopedRestoreCurrentGLContext&) = delete;
++  ScopedRestoreCurrentGLContext& operator=(
++      const ScopedRestoreCurrentGLContext&) = delete;
++
++  ~ScopedRestoreCurrentGLContext() {
++    if (!context_ || (gl::GLContext::GetCurrent() == context_.get() &&
++                      gl::GLSurface::GetCurrent() == surface_.get())) {
++      return;
++    }
++    if (!context_->MakeCurrent(surface_.get())) {
++      LOG(ERROR) << "Failed to restore the previously current GL context.";
++      // MakeCurrent can fail without changing the current context. Release
++      // whatever is current so the caller does not continue on the wrong
++      // context; it will instead fail to find its context current.
++      if (gl::GLContext* current = gl::GLContext::GetCurrent()) {
++        current->ReleaseCurrent(nullptr);
++      }
++    }
++  }
++
++ private:
++  scoped_refptr<gl::GLContext> context_;
++  scoped_refptr<gl::GLSurface> surface_;
++};
++
+ }  // namespace
+ 
+ class WrappedSkImageBacking::SkiaImageRepresentationImpl
+@@ -149,6 +188,7 @@ WrappedSkImageBacking::WrappedSkImageBacking(
+ WrappedSkImageBacking::~WrappedSkImageBacking() {
+   auto destroy_resources = [](scoped_refptr<SharedContextState> context_state,
+                               std::vector<TextureHolder> textures) {
++    ScopedRestoreCurrentGLContext restore_context;
+     context_state->MakeCurrent(nullptr);
+ 
+     for (auto& texture : textures) {
+@@ -189,6 +229,7 @@ bool WrappedSkImageBacking::Initialize(const std::string& debug_label) {
+ 
+   // MakeCurrent to avoid destroying another client's state because Skia may
+   // change GL state to create and upload textures (crbug.com/1095679).
++  ScopedRestoreCurrentGLContext restore_context;
+   if (!context_state_->MakeCurrent(nullptr)) {
+     return false;
+   }
+@@ -258,6 +299,7 @@ bool WrappedSkImageBacking::InitializeWithData(
+ 
+   // MakeCurrent to avoid destroying another client's state because Skia may
+   // change GL state to create and upload textures (crbug.com/1095679).
++  ScopedRestoreCurrentGLContext restore_context;
+   if (!context_state_->MakeCurrent(nullptr)) {
+     return false;
+   }
+diff --git a/gpu/command_buffer/service/shared_image/wrapped_sk_image_backing_factory_unittest.cc b/gpu/command_buffer/service/shared_image/wrapped_sk_image_backing_factory_unittest.cc
+index b0bc889d4d3a27c670e77e7826271c7e389fb1cf..66a8b57a56d8ce64094122c567f6cc03cd099d62 100644
+--- a/gpu/command_buffer/service/shared_image/wrapped_sk_image_backing_factory_unittest.cc
++++ b/gpu/command_buffer/service/shared_image/wrapped_sk_image_backing_factory_unittest.cc
+@@ -29,6 +29,11 @@
+ #include "third_party/skia/include/gpu/ganesh/GrBackendSemaphore.h"
+ #include "third_party/skia/include/gpu/ganesh/SkImageGanesh.h"
+ #include "third_party/skia/include/private/chromium/GrPromiseImageTexture.h"
++#include "ui/gfx/skia_span_util.h"
++#include "ui/gl/gl_context.h"
++#include "ui/gl/gl_surface.h"
++#include "ui/gl/gl_utils.h"
++#include "ui/gl/init/gl_factory.h"
+ 
+ namespace gpu {
+ namespace {
+@@ -237,6 +242,56 @@ TEST_P(WrappedSkImageBackingFactoryTest, UploadAndReadback) {
+   }
+ }
+ 
++// Verify that creating and destroying a backing leaves whichever GL context and
++// surface were current beforehand still current.
++TEST_P(WrappedSkImageBackingFactoryTest, RestoresPreviouslyCurrentGLContext) {
++  if (GetGrContextType() != GrContextType::kGL) {
++    GTEST_SKIP() << "Only relevant when Skia uses GL";
++  }
++
++  auto format = GetFormat();
++  gfx::Size size(100, 100);
++  SharedImageInfo si_info(format, size, kColorSpace, kSurfaceOrigin,
++                          kAlphaType, kUsage, "TestLabel");
++
++  // Use a different context and surface from the SharedContextState's.
++  scoped_refptr<gl::GLSurface> other_surface =
++      gl::init::CreateOffscreenGLSurface(gl::GetDefaultDisplayEGL(),
++                                         gfx::Size(4, 4));
++  ASSERT_TRUE(other_surface);
++  scoped_refptr<gl::GLContext> other_context = gl::init::CreateGLContext(
++      nullptr, other_surface.get(), gl::GLContextAttribs());
++  ASSERT_TRUE(other_context);
++  ASSERT_TRUE(other_context->MakeCurrent(other_surface.get()));
++
++  auto backing = backing_factory_->CreateSharedImage(
++      Mailbox::Generate(), si_info, gpu::kNullSurfaceHandle,
++      /*is_thread_safe=*/false);
++  ASSERT_TRUE(backing);
++  EXPECT_EQ(gl::GLContext::GetCurrent(), other_context.get());
++  EXPECT_EQ(gl::GLSurface::GetCurrent(), other_surface.get());
++
++  backing.reset();
++  EXPECT_EQ(gl::GLContext::GetCurrent(), other_context.get());
++  EXPECT_EQ(gl::GLSurface::GetCurrent(), other_surface.get());
++
++  if (format.is_single_plane()) {
++    std::vector<SkBitmap> bitmaps = AllocateRedBitmaps(format, size);
++    auto pixels = gfx::SkPixmapToSpan(bitmaps[0].pixmap());
++    backing = backing_factory_->CreateSharedImage(
++        Mailbox::Generate(), si_info, /*is_thread_safe=*/false, pixels);
++    ASSERT_TRUE(backing);
++    EXPECT_EQ(gl::GLContext::GetCurrent(), other_context.get());
++    EXPECT_EQ(gl::GLSurface::GetCurrent(), other_surface.get());
++
++    backing.reset();
++    EXPECT_EQ(gl::GLContext::GetCurrent(), other_context.get());
++    EXPECT_EQ(gl::GLSurface::GetCurrent(), other_surface.get());
++  }
++
++  ASSERT_TRUE(gl_context_->MakeCurrent(gl_surface_.get()));
++}
++
+ std::string TestParamToString(
+     const testing::TestParamInfo<
+         std::tuple<viz::SharedImageFormat, GrContextType>>& param_info) {

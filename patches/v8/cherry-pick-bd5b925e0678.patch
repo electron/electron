@@ -1,0 +1,359 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
+Date: Fri, 9 Oct 2026 13:25:00 +0200
+Subject: [turbolev] Migrations can change maps
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+We didn't realize that MigrateMapIfNeeded can change the map of an
+object, so we cannot delete a CheckMaps after.
+
+Triggering the problem case is quite involved, see
+https://issues.chromium.org/u/1/issues/570003644#comment5 for a longer
+explanation.
+
+Fixed: 570003644
+Change-Id: I4085564abce734aa20aa74a70c06e7d047dfd869
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8537446
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110528}
+
+diff --git a/src/maglev/maglev-known-node-aspects.cc b/src/maglev/maglev-known-node-aspects.cc
+index 4586a291645ac162f5638ced992d1b10e9d7d1f0..fcc8a0d278923eb73aad590051861b0dee63a881 100644
+--- a/src/maglev/maglev-known-node-aspects.cc
++++ b/src/maglev/maglev-known-node-aspects.cc
+@@ -529,22 +529,22 @@ void KnownNodeAspects::ClearUnstableNodeAspectsForStoreMap(
+     StoreMap* node, bool is_tracing_enabled) {
+   if (!node->is_transitioning()) return;
+ 
+-  if (NodeInfo* node_info = TryGetInfoFor(node->ValueInput().node())) {
+-    if (node_info->possible_maps_are_known() && !node_info->maps_are_stale() &&
+-        node_info->possible_maps().size() == 1) {
+-      compiler::MapRef old_map = node_info->possible_maps().at(0);
+-      auto MaybeAliases = [&](compiler::MapRef map) -> bool {
+-        return map.equals(old_map);
+-      };
+-      // Mark aliasing maps as stale.
+-      if (MarkMapsStaleIfAny(MaybeAliases)) {
+-        if (V8_UNLIKELY(v8_flags.trace_maglev_kna && is_tracing_enabled)) {
+-          std::cout << kRed << "[KNA] StoreMap: Invalidate alias "
+-                    << Brief(*old_map.object()) << kReset << std::endl;
+-        }
+-      }
+-      return;
+-    }
++  if (MarkSingleMapAsStale(node->ValueInput().node(), is_tracing_enabled)) {
++    return;
++  }
++
++  // TODO(olivf): Only invalidate nodes with the same type.
++  OnSideEffect();
++  if (V8_UNLIKELY(v8_flags.trace_maglev_kna && is_tracing_enabled)) {
++    std::cout << kRed << "[KNA] StoreMap: Invalidate all unstable maps"
++              << kReset << std::endl;
++  }
++}
++
++void KnownNodeAspects::ClearUnstableNodeAspectsForMigration(
++    Node* node, bool is_tracing_enabled) {
++  if (MarkSingleMapAsStale(node->input_node(0), is_tracing_enabled)) {
++    return;
+   }
+ 
+   // TODO(olivf): Only invalidate nodes with the same type.
+@@ -892,6 +892,28 @@ KnownNodeAspects::ContextStoreResult KnownNodeAspects::RecordContextSlotStore(
+   return {ContextStoreResult::kSetNewValue, std::move(aliased_slots)};
+ }
+ 
++bool KnownNodeAspects::MarkSingleMapAsStale(ValueNode* node,
++                                            bool is_tracing_enabled) {
++  if (NodeInfo* node_info = TryGetInfoFor(node)) {
++    if (node_info->possible_maps_are_known() && !node_info->maps_are_stale() &&
++        node_info->possible_maps().size() == 1) {
++      compiler::MapRef old_map = node_info->possible_maps().at(0);
++      auto MaybeAliases = [&](compiler::MapRef map) -> bool {
++        return map.equals(old_map);
++      };
++      // Mark aliasing maps as stale.
++      if (MarkMapsStaleIfAny(MaybeAliases)) {
++        if (V8_UNLIKELY(v8_flags.trace_maglev_kna && is_tracing_enabled)) {
++          std::cout << kRed << "[KNA]: MarkSingleMapAsStale: Invalidate alias "
++                    << Brief(*old_map.object()) << kReset << std::endl;
++        }
++      }
++      return true;
++    }
++  }
++  return false;
++}
++
+ #ifdef DEBUG
+ bool IsStringRootIndex(RootIndex index) {
+   if (index > RootIndex::kLastReadOnlyRoot) return false;
+diff --git a/src/maglev/maglev-known-node-aspects.h b/src/maglev/maglev-known-node-aspects.h
+index 6fdd8ed10202994692b9afaacb668ef8795f06d2..4f6b39b94152099a12bdbb4fc7703e5642dd754e 100644
+--- a/src/maglev/maglev-known-node-aspects.h
++++ b/src/maglev/maglev-known-node-aspects.h
+@@ -404,6 +404,8 @@ class KnownNodeAspects {
+ 
+   void ClearUnstableNodeAspectsForStoreMap(StoreMap* node,
+                                            bool is_tracing_enabled);
++  void ClearUnstableNodeAspectsForMigration(Node* node,
++                                            bool is_tracing_enabled);
+   void ClearUnstableNodeAspectsForElementsTransition(
+       const ZoneVector<compiler::MapRef>& transition_sources,
+       bool is_tracing_enabled);
+@@ -820,8 +822,7 @@ class KnownNodeAspects {
+                          std::is_same_v<NodeT,
+                                         CheckMapsWithMigrationAndDeopt> ||
+                          std::is_same_v<NodeT, MigrateMapIfNeeded>) {
+-      // These instructions only migrate representations of values, not the
+-      // values themselves, so cached values are still valid.
++      ClearUnstableNodeAspectsForMigration(node, is_tracing_enabled);
+     } else if constexpr (std::is_same_v<NodeT, StoreMap>) {
+       ClearUnstableNodeAspectsForStoreMap(node, is_tracing_enabled);
+     } else if constexpr (std::is_same_v<NodeT, TransitionElementsKind> ||
+@@ -862,6 +863,8 @@ class KnownNodeAspects {
+   SmallZoneVector<LoadedContextSlotsKey, 8> ClearAliasedContextSlotsFor(
+       Graph* graph, ValueNode* context, int offset, ValueNode* value);
+ 
++  bool MarkSingleMapAsStale(ValueNode* node, bool is_tracing_enabled);
++
+   static constexpr uint32_t kEffectEpochForPureInstructions =
+       std::numeric_limits<uint32_t>::max();
+   static constexpr uint32_t kEffectEpochOverflow =
+diff --git a/test/mjsunit/regress/regress-570003644-1.js b/test/mjsunit/regress/regress-570003644-1.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..f56634f7a54b50bcd3a7b479a70aba53b70b0cee
+--- /dev/null
++++ b/test/mjsunit/regress/regress-570003644-1.js
+@@ -0,0 +1,110 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --maglev-non-eager-inlining --expose-gc --allow-natives-syntax
++
++class D {
++  constructor(x) {
++    this.x = x;
++    this.p = 7;
++    this.q = 9;
++  }
++}
++
++// Map: MD1 where x is const SMI
++let dOld = new D(1);
++
++// Map: MD2 (after adding "tail")
++// Map transition: MD1 --tail--> MD2
++let dExtra = new D(1);
++dExtra.tail = 1;
++
++class C {
++  constructor(z) {
++    this.z = z;
++    this.q = 11;
++  }
++}
++
++// Map: MC1 where z is a const SMI
++let cOld = new C(1);
++
++// Map: MC2 w where z is a const HeapNumber
++let cTarget = new C(1.5);
++
++// Migrate to MC2: this makes MC2 a migration target
++cOld.z = 2.5;
++
++// Larger than the eager-inline bytecode limit.
++function noop() {
++  let n = 0;
++  n += 0;
++  n += 0;
++  n += 0;
++  n += 0;
++  n += 0;
++  n += 0;
++  n += 0;
++  n += 0;
++  n += 0;
++  n += 0;
++  n += 0;
++  n += 0;
++  return n;
++}
++%PrepareFunctionForOptimization(noop);
++
++function polyQ(o) {
++  noop(); // Not inlined
++  // MigrateMapIfNeeded, then a polymorphic branch with MC2 and MD1 (in this
++  // order).
++  return o.q;
++}
++%PrepareFunctionForOptimization(polyQ);
++
++polyQ(cTarget);
++polyQ(dOld);
++
++let smi_array = [0, 0];
++
++function victim(cObj, dObj) {
++  // CheckMapsWithMigration(MC2) cObj; tries to migrate to MC2 (but the cTarget we
++  // pass already has MC2).
++  cObj.q;
++
++  // CheckMaps(MD1) dObj
++  dObj.p;
++
++  // Eagerly inlining polyQ. Here we need to conservatively assume that the noop
++  // call might change the maps, so we get:
++  // CallFunction noop
++  // MigrateMapIfNeeded dObj
++  // Polymoprhic branch (MC2, MD1):
++  // /-- Branch if dObj's map is MC2
++  // |      |
++  // |      v
++  // |   CheckMap(MD1) dObj <<< Load-bearing! Must not be eliminated
++  // |      |
++  // |      v
++  // \--> Result unused, so this is empty
++  polyQ(dObj);
++
++  // The map better be MD1 or this goes wrong.
++  smi_array[0] = dObj.x;
++}
++%PrepareFunctionForOptimization(victim);
++victim(cTarget, dOld);
++
++%OptimizeMaglevOnNextCall(victim);
++
++victim(cTarget, dOld);
++
++// Move the smi_array backing store to old space before storing a young pointer.
++gc();
++
++// Create a new map MD3 where x is a HeapNumber; MD1 deprecated.
++new D(1.5);
++
++// Now the MigrateMapIfNeeded will migrate dOld to MD3 where x is a HeapNumber.
++victim(cTarget, dOld);
+diff --git a/test/mjsunit/regress/regress-570003644-2.js b/test/mjsunit/regress/regress-570003644-2.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..fe9c96dd215b37fe2e794cb81393d1b64b04bc68
+--- /dev/null
++++ b/test/mjsunit/regress/regress-570003644-2.js
+@@ -0,0 +1,111 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --maglev-non-eager-inlining --expose-gc --allow-natives-syntax
++// Flags: --max-maglev-eager-inlined-bytecode-size=0
++
++class D {
++  constructor(x) {
++    this.x = x;
++    this.p = 7;
++    this.q = 9;
++  }
++}
++
++// Map: MD1 where x is const SMI
++let dOld = new D(1);
++
++// Map: MD2 (after adding "tail")
++// Map transition: MD1 --tail--> MD2
++let dExtra = new D(1);
++dExtra.tail = 1;
++
++class C {
++  constructor(z) {
++    this.z = z;
++    this.q = 11;
++  }
++}
++
++// Map: MC1 where z is a const SMI
++let cOld = new C(1);
++
++// Map: MC2 w where z is a const HeapNumber
++let cTarget = new C(1.5);
++
++// Migrate to MC2: this makes MC2 a migration target
++cOld.z = 2.5;
++
++// Larger than the eager-inline bytecode limit.
++function noop() {
++  let n = 0;
++  n += 0;
++  n += 0;
++  n += 0;
++  n += 0;
++  n += 0;
++  n += 0;
++  n += 0;
++  n += 0;
++  n += 0;
++  n += 0;
++  n += 0;
++  n += 0;
++  return n;
++}
++%PrepareFunctionForOptimization(noop);
++
++function polyQ(o) {
++  noop(); // Not inlined
++  // MigrateMapIfNeeded, then a polymorphic branch with MC2 and MD1 (in this
++  // order).
++  return o.q;
++}
++%PrepareFunctionForOptimization(polyQ);
++
++polyQ(cTarget);
++polyQ(dOld);
++
++let smi_array = [0, 0];
++
++function victim(cObj, dObj) {
++  // CheckMapsWithMigration(MC2) cObj; tries to migrate to MC2 (but the cTarget we
++  // pass already has MC2).
++  cObj.q;
++
++  // CheckMaps(MD1) dObj
++  dObj.p;
++
++  // Eventually we'l inline polyQ here. Here we need to conservatively assume
++  // that the noop call might change the maps, so we get:
++  // CallFunction noop
++  // MigrateMapIfNeeded dObj
++  // Polymoprhic branch (MC2, MD1):
++  // /-- Branch if dObj's map is MC2
++  // |      |
++  // |      v
++  // |   CheckMap(MD1) dObj <<< Load-bearing! Must not be eliminated
++  // |      |
++  // |      v
++  // \--> Result unused, so this is empty
++  polyQ(dObj);
++
++  // The map better be MD1 or this goes wrong.
++  smi_array[0] = dObj.x;
++}
++%PrepareFunctionForOptimization(victim);
++victim(cTarget, dOld);
++
++%OptimizeMaglevOnNextCall(victim);
++
++victim(cTarget, dOld);
++
++// Move the smi_array backing store to old space before storing a young pointer.
++gc();
++
++// Create a new map MD3 where x is a HeapNumber; MD1 deprecated.
++new D(1.5);
++
++// Now the MigrateMapIfNeeded will migrate dOld to MD3 where x is a HeapNumber.
++victim(cTarget, dOld);

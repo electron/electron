@@ -1,0 +1,153 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Fri, 9 Oct 2026 11:52:18 +0200
+Subject: [ic] Check access check and array prototype chain in element handlers
+
+Ensure that element handler computation in KeyedLoadIC::LoadElementHandler
+and KeyedStoreIC::StoreElementHandler returns slow handlers for receiver
+maps that require access checks or belong to the Array prototype chain.
+
+Fixed: 566091009
+
+TAG=agy
+CONV=be615bab-5e7a-4aa3-a0cc-c6325a9e2477
+
+Change-Id: Idff0ae62aa44fd67c69dbf1940720b61203de5b9
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8547996
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Auto-Submit: Igor Sheludko <ishell@chromium.org>
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110514}
+
+diff --git a/src/ic/ic.cc b/src/ic/ic.cc
+index 2c6612178d731a71c786744b21c0ebf291c8f2cc..7922a4ac84c9a2246fa256a4f8d48dc7298ecfc6 100644
+--- a/src/ic/ic.cc
++++ b/src/ic/ic.cc
+@@ -1747,17 +1747,6 @@ KeyedAccessLoadMode GetUpdatedLoadModeForMap(Isolate* isolate,
+ Handle<Object> KeyedLoadIC::LoadElementHandler(
+     DirectHandle<Map> receiver_map, KeyedAccessLoadMode new_load_mode,
+     MaybeDirectHandle<Map> maybe_transition_target) {
+-  // Has a getter interceptor, or is any has and has a query interceptor.
+-  if (receiver_map->has_indexed_interceptor() &&
+-      (receiver_map->GetIndexedInterceptor()->has_getter() ||
+-       (IsAnyHas() && receiver_map->GetIndexedInterceptor()->has_query())) &&
+-      !receiver_map->GetIndexedInterceptor()->non_masking()) {
+-    // TODO(jgruber): Update counter name.
+-    TRACE_HANDLER_STATS(isolate(), KeyedLoadIC_LoadIndexedInterceptorStub);
+-    return IsAnyHas() ? BUILTIN_CODE(isolate(), HasIndexedInterceptorIC)
+-                      : BUILTIN_CODE(isolate(), LoadIndexedInterceptorIC);
+-  }
+-
+   InstanceType instance_type = receiver_map->instance_type();
+   if (instance_type < FIRST_NONSTRING_TYPE) {
+     TRACE_HANDLER_STATS(isolate(), KeyedLoadIC_LoadIndexedStringDH);
+@@ -1771,6 +1760,23 @@ Handle<Object> KeyedLoadIC::LoadElementHandler(
+   if (instance_type == JS_PROXY_TYPE) {
+     return LoadHandler::LoadProxy(isolate());
+   }
++  if (receiver_map->is_access_check_needed()) {
++    TRACE_HANDLER_STATS(isolate(), KeyedLoadIC_SlowStub);
++    return LoadHandler::LoadSlow(isolate());
++  }
++
++  // Has a getter interceptor, or is any has and has a query interceptor.
++  if (receiver_map->has_indexed_interceptor() &&
++      (receiver_map->GetIndexedInterceptor()->has_getter() ||
++       (IsAnyHas() && receiver_map->GetIndexedInterceptor()->has_query())) &&
++      !receiver_map->GetIndexedInterceptor()->non_masking()) {
++    DCHECK(!receiver_map->is_access_check_needed());
++    // TODO(jgruber): Update counter name.
++    TRACE_HANDLER_STATS(isolate(), KeyedLoadIC_LoadIndexedInterceptorStub);
++    return IsAnyHas() ? BUILTIN_CODE(isolate(), HasIndexedInterceptorIC)
++                      : BUILTIN_CODE(isolate(), LoadIndexedInterceptorIC);
++  }
++
+ #if V8_ENABLE_WEBASSEMBLY
+   if (InstanceTypeChecker::IsWasmObject(instance_type)) {
+     // TODO(jgruber): Update counter name.
+@@ -2842,7 +2848,8 @@ void KeyedStoreIC::UpdateStoreElement(Handle<Map> receiver_map,
+ Handle<Object> KeyedStoreIC::StoreElementHandler(
+     DirectHandle<Map> receiver_map, KeyedAccessStoreMode store_mode,
+     MaybeDirectHandle<UnionOf<Smi, Cell>> prev_validity_cell) {
+-  if (!IsJSObjectMap(*receiver_map)) {
++  if (!IsJSObjectMap(*receiver_map) || receiver_map->is_access_check_needed() ||
++      receiver_map->IsMapInArrayPrototypeChain(isolate())) {
+     // DefineKeyedOwnIC, which is used to define computed fields in instances,
+     // should handled by the slow stub below instead of the proxy stub.
+     if (IsJSProxyMap(*receiver_map) && !IsDefineKeyedOwnIC()) {
+diff --git a/test/mjsunit/regress/regress-566091009.js b/test/mjsunit/regress/regress-566091009.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..aaf8c217d3c71c091d9b9212d91600d1a9f6edd7
+--- /dev/null
++++ b/test/mjsunit/regress/regress-566091009.js
+@@ -0,0 +1,69 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --no-lazy-feedback-allocation --allow-natives-syntax
++
++(function TestAccessCheck() {
++  const target = d8.test.createAccessCheckedObject(true);
++  target[0] = "secret";
++  d8.test.setAccessPolicy(target, false);
++
++  const namedObj = { a: 1 };
++
++  // 1. KeyedLoadIC: transition from named property access to element access.
++  function read(obj, key) {
++    return obj[key];
++  }
++  read(namedObj, "a");
++  assertThrows(() => read(target, "a"), TypeError);
++  read([1.1], 0);
++  assertThrows(() => read(target, 0), TypeError);
++
++  // 2. KeyedHasIC: transition from named property access to element access.
++  function has(obj, key) {
++    return key in obj;
++  }
++  has(namedObj, "a");
++  assertThrows(() => has(target, "a"), TypeError);
++  has([1.1], 0);
++  assertThrows(() => has(target, 0), TypeError);
++
++  // 3. KeyedStoreIC: transition from named property access to element access.
++  function write(obj, key, val) {
++    obj[key] = val;
++  }
++  write(namedObj, "a", 2);
++  assertThrows(() => write(target, "a", 2), TypeError);
++  write([1.1], 0, 2.2);
++  assertThrows(() => write(target, 0, "overwritten"), TypeError);
++
++  d8.test.setAccessPolicy(target, true);
++  assertEquals("secret", target[0]);
++})();
++
++(function TestNoElementsProtector() {
++  function readHole(a) {
++    return a[0];
++  }
++  const holey = [, 1];
++  %PrepareFunctionForOptimization(readHole);
++  assertEquals(undefined, readHole(holey));
++  %OptimizeFunctionOnNextCall(readHole);
++  assertEquals(undefined, readHole(holey));
++
++  Object.defineProperty(Object.prototype, "prop", {
++    set(_) {},
++    configurable: true,
++  });
++  function write(o, k, v) {
++    o[k] = v;
++  }
++  write({ prop: 1 }, "prop", 1);
++  write(Array.prototype, "prop", 1);
++  write([], 0, 1);
++  write(Array.prototype, 0, "boom");
++
++  assertEquals("boom", holey[0]);
++  assertEquals("boom", readHole(holey));
++})();

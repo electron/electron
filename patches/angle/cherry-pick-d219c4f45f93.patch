@@ -1,0 +1,167 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Tue, 15 Sep 2026 16:05:05 -0400
+Subject: Always robust init all levels of immutable textures
+
+A previous change made it such that only BASE+ levels are
+robust-initialized.  This is fine for mutable textures, since levels
+outside this range are inaccessible to GL.  However, that's not true for
+immutable textures, where framebuffer completeness is always true
+regardless of which level the framebuffer is attached to.
+
+Bug: chromium:553117511
+Change-Id: Ied52d392f79bed56152c063816be2986b810080f
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8415406
+Reviewed-by: Ran Wang <wangra@google.com>
+
+Electron adaptation notes (44-x-y): this ANGLE revision has no
+EnsureInitializedLevels parameter on Texture::ensureInitialized() (it
+always initializes all enabled levels), so the BaseOnly early-exit the
+upstream diff rewrites does not exist here. The fix is applied as:
+start the init iteration at level 0 instead of the effective base
+level when the texture is immutable, and treat the texture as fully
+initialized only when iteration starts at level 0. New tests in
+angle_end2end_tests_expectations.txt are dropped (test-only drift).
+
+diff --git a/src/libANGLE/Texture.cpp b/src/libANGLE/Texture.cpp
+index 7a4a0199d01ca9bafa3c4e689ebdbd09434a3943..304310a3deccbec43e049454237313d2296381d8 100644
+--- a/src/libANGLE/Texture.cpp
++++ b/src/libANGLE/Texture.cpp
+@@ -2591,12 +2591,18 @@ angle::Result Texture::ensureInitialized(const Context *context)
+         return angle::Result::Continue;
+     }
+ 
+-    bool anyDirty = false;
+-    bool allInitialized = (mState.getEffectiveBaseLevel() == 0);
++    const GLint baseLevel = mState.getEffectiveBaseLevel();
++    // Start initializing from baseLevel if the texture is mutable.  If the texture is immutable,
++    // initialize all the levels because framebuffers outside [BASE, MAX] range are complete for
++    // immutable textures.
++    const GLint initFirstLevel = !getImmutableFormat() ? baseLevel : 0;
++
++    bool anyDirty       = false;
++    bool allInitialized = (initFirstLevel == 0);
+ 
+     ImageIndexIterator it = ImageIndexIterator::MakeGeneric(
+-        mState.mType, static_cast<GLint>(mState.getEffectiveBaseLevel()),
+-        IMPLEMENTATION_MAX_TEXTURE_LEVELS + 1, ImageIndex::kEntireLevel, ImageIndex::kEntireLevel);
++        mState.mType, initFirstLevel, IMPLEMENTATION_MAX_TEXTURE_LEVELS + 1,
++        ImageIndex::kEntireLevel, ImageIndex::kEntireLevel);
+     while (it.hasNext())
+     {
+         const ImageIndex index = it.next();
+diff --git a/src/tests/gl_tests/CopyTextureTest.cpp b/src/tests/gl_tests/CopyTextureTest.cpp
+index 240ccf87cb4ee9cf79151e32ded4aab8359d9fc8..dcb2781d4b08069bae9552268d406c46446fdf0a 100644
+--- a/src/tests/gl_tests/CopyTextureTest.cpp
++++ b/src/tests/gl_tests/CopyTextureTest.cpp
+@@ -3478,8 +3478,9 @@ TEST_P(CopyTextureTestES3, TextureCopyMultipleSlicesBetween2DArrayAnd3D)
+ }
+ 
+ // Test that glCopyTextureCHROMIUM and glCopySubTextureCHROMIUM fail validation if the source level
+-// is outside the [BASE, MAX] range.
+-TEST_P(CopyTextureTestES3, VerifySourceLevelInBaseMaxRange)
++// is outside the [BASE, MAX] range, which makes the source not framebuffer attachment complete.
++// This is only the case for mutable textures; for immutable textures all source levels are valid.
++TEST_P(CopyTextureTestES3, VerifyMutableSourceLevelInBaseMaxRange)
+ {
+     ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_CHROMIUM_copy_texture"));
+ 
+@@ -3586,6 +3587,52 @@ TEST_P(CopyTextureTestES3, VerifySourceTexturesComplete)
+     EXPECT_GL_ERROR(GL_INVALID_OPERATION);
+ }
+ 
++// Test that glCopyTextureCHROMIUM and glCopySubTextureCHROMIUM work if the source level is outside
++// the [BASE, MAX] range but the texture is immutable.
++TEST_P(CopyTextureTestES3, ImmutableSourceLevelOutsideBaseMaxRange)
++{
++    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_CHROMIUM_copy_texture"));
++
++    const std::vector<GLColor> kLevel0(64 * 64, GLColor::red);
++    const std::vector<GLColor> kLevel1(32 * 32, GLColor::green);
++    const std::vector<GLColor> kLevel2(16 * 16, GLColor::blue);
++    const std::vector<GLColor> kLevel3(8 * 8, GLColor::yellow);
++    const std::vector<GLColor> kLevel4(4 * 4, GLColor::magenta);
++
++    GLTexture src;
++    glBindTexture(GL_TEXTURE_2D, src);
++    glTexStorage2D(GL_TEXTURE_2D, 5, GL_RGBA8, 64, 64);
++    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 64, 64, GL_RGBA, GL_UNSIGNED_BYTE, kLevel0.data());
++    glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, 32, 32, GL_RGBA, GL_UNSIGNED_BYTE, kLevel1.data());
++    glTexSubImage2D(GL_TEXTURE_2D, 2, 0, 0, 16, 16, GL_RGBA, GL_UNSIGNED_BYTE, kLevel2.data());
++    glTexSubImage2D(GL_TEXTURE_2D, 3, 0, 0, 8, 8, GL_RGBA, GL_UNSIGNED_BYTE, kLevel3.data());
++    glTexSubImage2D(GL_TEXTURE_2D, 4, 0, 0, 4, 4, GL_RGBA, GL_UNSIGNED_BYTE, kLevel4.data());
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 2);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 3);
++
++    // Copy from level 1 of source texture, which is below base level.
++    GLTexture dst1;
++    glBindTexture(GL_TEXTURE_2D, dst1);
++    glCopyTextureCHROMIUM(src, 1, GL_TEXTURE_2D, dst1, 0, GL_RGBA, GL_UNSIGNED_BYTE, GL_FALSE,
++                          GL_FALSE, GL_FALSE);
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dst1, 0);
++    EXPECT_PIXEL_RECT_EQ(0, 0, 32, 32, kLevel1[0]);
++
++    // Copy from level 4 of source texture, which is above max level.
++    GLTexture dst2;
++    glBindTexture(GL_TEXTURE_2D, dst2);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++    glCopySubTextureCHROMIUM(src, 4, GL_TEXTURE_2D, dst2, 0, 0, 0, 0, 0, 4, 4, GL_FALSE, GL_FALSE,
++                             GL_FALSE);
++
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dst2, 0);
++    EXPECT_PIXEL_RECT_EQ(0, 0, 4, 4, kLevel4[0]);
++    ASSERT_GL_NO_ERROR();
++}
++
+ // Test that glCopyTextureCHROMIUM and glCopySubTextureCHROMIUM work if the texture base level
+ // changes after the texture is synced.
+ TEST_P(CopyTextureTestES3, ChangeBaseLevel)
+diff --git a/src/tests/gl_tests/RobustResourceInitTest.cpp b/src/tests/gl_tests/RobustResourceInitTest.cpp
+index 152af44f06c8fe75c31c2356c2ba7860ee2c9608..8f2c8680da03032e23ebf20fc058473be0bec271 100644
+--- a/src/tests/gl_tests/RobustResourceInitTest.cpp
++++ b/src/tests/gl_tests/RobustResourceInitTest.cpp
+@@ -4611,6 +4611,41 @@ void main()
+     }
+ }
+ 
++// Test that source of glCopyTextureCHROMIUM and glCopySubTextureCHROMIUM is initialized if the
++// source level is outside the [BASE, MAX] range but the texture is immutable.
++TEST_P(RobustResourceInitTestES3, ImmutableSourceLevelOutsideBaseMaxRange)
++{
++    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_CHROMIUM_copy_texture"));
++
++    GLTexture src;
++    glBindTexture(GL_TEXTURE_2D, src);
++    glTexStorage2D(GL_TEXTURE_2D, 5, GL_RGBA8, 64, 64);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 2);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 3);
++
++    // Copy from level 1 of source texture, which is below base level.
++    GLTexture dst1;
++    glBindTexture(GL_TEXTURE_2D, dst1);
++    glCopyTextureCHROMIUM(src, 1, GL_TEXTURE_2D, dst1, 0, GL_RGBA, GL_UNSIGNED_BYTE, GL_FALSE,
++                          GL_FALSE, GL_FALSE);
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dst1, 0);
++    EXPECT_PIXEL_RECT_EQ(0, 0, 32, 32, GLColor::transparentBlack);
++
++    // Copy from level 4 of source texture, which is above max level.
++    GLTexture dst2;
++    glBindTexture(GL_TEXTURE_2D, dst2);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++    glCopySubTextureCHROMIUM(src, 4, GL_TEXTURE_2D, dst2, 0, 0, 0, 0, 0, 4, 4, GL_FALSE, GL_FALSE,
++                             GL_FALSE);
++
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dst2, 0);
++    EXPECT_PIXEL_RECT_EQ(0, 0, 4, 4, GLColor::transparentBlack);
++    ASSERT_GL_NO_ERROR();
++}
++
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3_AND(
+     RobustResourceInitTest,
+     ES3_METAL().enable(Feature::EmulateDontCareLoadWithRandomClear),

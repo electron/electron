@@ -1,0 +1,607 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Thu, 17 Sep 2026 14:10:48 +0200
+Subject: [interpreter] Initialize private accessors early in BuildClassLiteral
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Private accessors were previously initialized after evaluating the
+extends clause and computed property keys. If execution was suspended or
+escaped during computed property key evaluation (e.g. via a generator
+yield), the private accessor context slots could be observed in their
+uninitialized state (the_hole) and cached as constants by Maglev.
+
+Initialize private accessor pairs early alongside private methods and
+brand symbols, before evaluating the extends clause or computed property
+keys.
+
+TAG=agy
+CONV=1b7d9654-2731-4157-8abc-cd9414138332
+Fixed: 559932543
+
+Change-Id: I3bb6cb9a92513249c225963be85a0ca9acc0286b
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8424799
+Reviewed-by: Marja Hölttä <marja@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#109928}
+
+diff --git a/src/interpreter/bytecode-generator.cc b/src/interpreter/bytecode-generator.cc
+index e5356eb231416a747f5373e5244535c36fa68f63..7d8c152c213a6ce31be6b80b4bed54b7bf2fab0f 100644
+--- a/src/interpreter/bytecode-generator.cc
++++ b/src/interpreter/bytecode-generator.cc
+@@ -3649,6 +3649,36 @@ void BytecodeGenerator::BuildClassLiteral(ClassLiteral* expr, Register name) {
+     }
+   }
+ 
++  // Define private accessors early, using only a single call to the runtime for
++  // each pair of corresponding getters and setters, in the order the first
++  // component is declared.
++  for (auto accessors : private_accessors.ordered_accessors()) {
++    RegisterAllocationScope inner_register_scope(this);
++    RegisterList accessors_reg = register_allocator()->NewRegisterList(2);
++    ClassLiteral::Property* getter = accessors.second->getter;
++    ClassLiteral::Property* setter = accessors.second->setter;
++    Variable* accessor_pair_var;
++    if (getter && getter->kind() == ClassLiteral::Property::AUTO_ACCESSOR) {
++      DCHECK_EQ(setter, getter);
++      AutoAccessorInfo* auto_accessor_info = getter->auto_accessor_info();
++      VisitForRegisterValue(auto_accessor_info->generated_getter(),
++                            accessors_reg[0]);
++      VisitForRegisterValue(auto_accessor_info->generated_setter(),
++                            accessors_reg[1]);
++      accessor_pair_var =
++          auto_accessor_info->property_private_name_proxy()->var();
++    } else {
++      VisitLiteralAccessor(getter, accessors_reg[0]);
++      VisitLiteralAccessor(setter, accessors_reg[1]);
++      accessor_pair_var = getter != nullptr ? getter->private_name_var()
++                                            : setter->private_name_var();
++    }
++    builder()->CallRuntime(Runtime::kCreatePrivateAccessors, accessors_reg);
++    DCHECK_NOT_NULL(accessor_pair_var);
++    BuildVariableAssignment(accessor_pair_var, Token::kInit,
++                            HoleCheckMode::kElided);
++  }
++
+   {
+     RegisterAllocationScope register_scope(this);
+     RegisterList args = register_allocator()->NewGrowableRegisterList();
+@@ -3769,36 +3799,6 @@ void BytecodeGenerator::BuildClassLiteral(ClassLiteral* expr, Register name) {
+                             HoleCheckMode::kElided);
+   }
+ 
+-  // Define private accessors, using only a single call to the runtime for
+-  // each pair of corresponding getters and setters, in the order the first
+-  // component is declared.
+-  for (auto accessors : private_accessors.ordered_accessors()) {
+-    RegisterAllocationScope inner_register_scope(this);
+-    RegisterList accessors_reg = register_allocator()->NewRegisterList(2);
+-    ClassLiteral::Property* getter = accessors.second->getter;
+-    ClassLiteral::Property* setter = accessors.second->setter;
+-    Variable* accessor_pair_var;
+-    if (getter && getter->kind() == ClassLiteral::Property::AUTO_ACCESSOR) {
+-      DCHECK_EQ(setter, getter);
+-      AutoAccessorInfo* auto_accessor_info = getter->auto_accessor_info();
+-      VisitForRegisterValue(auto_accessor_info->generated_getter(),
+-                            accessors_reg[0]);
+-      VisitForRegisterValue(auto_accessor_info->generated_setter(),
+-                            accessors_reg[1]);
+-      accessor_pair_var =
+-          auto_accessor_info->property_private_name_proxy()->var();
+-    } else {
+-      VisitLiteralAccessor(getter, accessors_reg[0]);
+-      VisitLiteralAccessor(setter, accessors_reg[1]);
+-      accessor_pair_var = getter != nullptr ? getter->private_name_var()
+-                                            : setter->private_name_var();
+-    }
+-    builder()->CallRuntime(Runtime::kCreatePrivateAccessors, accessors_reg);
+-    DCHECK_NOT_NULL(accessor_pair_var);
+-    BuildVariableAssignment(accessor_pair_var, Token::kInit,
+-                            HoleCheckMode::kElided);
+-  }
+-
+   if (expr->instance_members_initializer_function() != nullptr) {
+     VisitForAccumulatorValue(expr->instance_members_initializer_function());
+ 
+diff --git a/src/parsing/parser.cc b/src/parsing/parser.cc
+index a80275f796ec54645c63abf12c090ed75f1aa774..4447f1fabc91d30e43bae487efa0139d7facce87 100644
+--- a/src/parsing/parser.cc
++++ b/src/parsing/parser.cc
+@@ -106,6 +106,7 @@ FunctionLiteral* Parser::MakeAutoAccessorGetter(VariableProxy* name_proxy,
+   }
+   // TODO(42202709): Enable lazy compilation by adding custom handling in
+   //                 `Parser::DoParseFunction`.
++  function_scope->set_force_eager_compilation(true);
+   FunctionLiteral* getter = factory()->NewFunctionLiteral(
+       nullptr, function_scope, body, 0, 0, 0,
+       FunctionLiteral::kNoDuplicateParameters,
+@@ -137,6 +138,7 @@ FunctionLiteral* Parser::MakeAutoAccessorSetter(VariableProxy* name_proxy,
+   }
+   // TODO(42202709): Enable lazy compilation by adding custom handling in
+   //                 `Parser::DoParseFunction`.
++  function_scope->set_force_eager_compilation(true);
+   FunctionLiteral* setter = factory()->NewFunctionLiteral(
+       nullptr, function_scope, body, 0, 1, 0,
+       FunctionLiteral::kNoDuplicateParameters,
+diff --git a/test/mjsunit/maglev/regress-559932543.js b/test/mjsunit/maglev/regress-559932543.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..d8ce1892b95e1e803c5d586fb4a115be1c2e9225
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-559932543.js
+@@ -0,0 +1,135 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --maglev --js-decorators
++
++// Test 1: Private getter accessed in try/catch before class literal
++// finishes evaluating (paused at yield in computed property key).
++(function TestPrivateGetterBeforeYield() {
++  let gen;
++  let object;
++  let exported;
++  function advance(resume) {
++    if (resume) {
++      const result = gen.next();
++      object = new result.value();
++    }
++  }
++  function* maker() {
++    class C {
++      get #m() { return 42; }
++      [(exported = function access(receiver, resume) {
++        try { receiver.#m; } catch (e) {}
++        advance(resume);
++        try { return object.#m; } catch (e) { return "caught"; }
++      }, yield exported, "x")] = 1;
++    }
++    return C;
++  }
++  for (let i = 0; i < 10; ++i) {
++    gen = maker();
++    const access = gen.next().value;
++    const C = gen.next().value;
++    object = new C();
++    assertEquals(42, access(object, false));
++  }
++  for (let i = 0; i < 10; ++i) {
++    gen = maker();
++    const access = gen.next().value;
++    advance(true);
++    assertEquals(42, access(object, false));
++  }
++  gen = maker();
++  const access = gen.next().value;
++  object = {};
++  %PrepareFunctionForOptimization(access);
++  for (let i = 0; i < 10; ++i) {
++    assertEquals("caught", access({}, false));
++  }
++  %OptimizeFunctionOnNextCall(access);
++  assertEquals("caught", access({}, false));
++  assertEquals(42, access({}, true));
++})();
++
++// Test 2: Private setter accessed in try/catch before class literal
++// finishes evaluating.
++(function TestPrivateSetterBeforeYield() {
++  let gen;
++  let object;
++  let exported;
++  let stored = 0;
++  function advance(resume) {
++    if (resume) {
++      const result = gen.next();
++      object = new result.value();
++    }
++  }
++  function* maker() {
++    class C {
++      set #m(v) { stored = v; }
++      [(exported = function access(receiver, resume) {
++        try { receiver.#m = 1; } catch (e) {}
++        advance(resume);
++        try { object.#m = 99; return stored; } catch (e) { return "caught"; }
++      }, yield exported, "x")] = 1;
++    }
++    return C;
++  }
++  for (let i = 0; i < 10; ++i) {
++    gen = maker();
++    const access = gen.next().value;
++    advance(true);
++    assertEquals(99, access(object, false));
++  }
++  gen = maker();
++  const access = gen.next().value;
++  object = {};
++  %PrepareFunctionForOptimization(access);
++  for (let i = 0; i < 10; ++i) {
++    assertEquals("caught", access({}, false));
++  }
++  %OptimizeFunctionOnNextCall(access);
++  assertEquals("caught", access({}, false));
++  assertEquals(99, access({}, true));
++})();
++
++// Test 3: Private auto-accessor accessed in try/catch before yield.
++(function TestPrivateAutoAccessorBeforeYield() {
++  let gen;
++  let object;
++  let exported;
++  function advance(resume) {
++    if (resume) {
++      const result = gen.next();
++      object = new result.value();
++    }
++  }
++  function* maker() {
++    class C {
++      accessor #m = 10;
++      [(exported = function access(receiver, resume) {
++        try { receiver.#m; } catch (e) {}
++        advance(resume);
++        try { return object.#m; } catch (e) { return "caught"; }
++      }, yield exported, "x")] = 1;
++    }
++    return C;
++  }
++  for (let i = 0; i < 10; ++i) {
++    gen = maker();
++    const access = gen.next().value;
++    advance(true);
++    assertEquals(10, access(object, false));
++  }
++  gen = maker();
++  const access = gen.next().value;
++  object = {};
++  %PrepareFunctionForOptimization(access);
++  for (let i = 0; i < 10; ++i) {
++    assertEquals("caught", access({}, false));
++  }
++  %OptimizeFunctionOnNextCall(access);
++  assertEquals("caught", access({}, false));
++  assertEquals(10, access({}, true));
++})();
+diff --git a/test/unittests/interpreter/bytecode_expectations/PrivateAccessorDeclaration.golden b/test/unittests/interpreter/bytecode_expectations/PrivateAccessorDeclaration.golden
+index 779c80e1a278f753380f45e41b2dc2c1c797f50e..e52f9bb33d62f60c0adcaf957e2fe71ac94031ff 100644
+--- a/test/unittests/interpreter/bytecode_expectations/PrivateAccessorDeclaration.golden
++++ b/test/unittests/interpreter/bytecode_expectations/PrivateAccessorDeclaration.golden
+@@ -24,22 +24,22 @@ bytecodes: [
+                 B(Star3),
+                 B(CallRuntime), U16(Runtime::kCreatePrivateBrandSymbol), R(3), RegCount8(1),
+                 B(StaCurrentContextSlotNoCell), C8(3),
++                B(CreateClosure), U8(3:SHARED_FUNCTION_INFO_TYPE), FBV(0), Flag8(0x2),
++                B(Star3),
++                B(CreateClosure), U8(4:SHARED_FUNCTION_INFO_TYPE), FBV(1), Flag8(0x2),
++                B(Star4),
++                B(CallRuntime), U16(Runtime::kCreatePrivateAccessors), R(3), RegCount8(2),
++                B(StaCurrentContextSlotNoCell), C8(2),
+                 B(LdaTheHole),
+                 B(Star5),
+-                B(CreateClosure), U8(3:SHARED_FUNCTION_INFO_TYPE), FBV(0), Flag8(0x2),
++                B(CreateClosure), U8(5:SHARED_FUNCTION_INFO_TYPE), FBV(2), Flag8(0x2),
+                 B(Star2),
+                 B(LdaConstant), U8(1:CLASS_BOILERPLATE_TYPE),
+                 B(Star3),
+                 B(Mov), R(2), R(4),
+                 B(CallRuntime), U16(Runtime::kDefineClass), R(3), RegCount8(3),
+-                B(CreateClosure), U8(4:SHARED_FUNCTION_INFO_TYPE), FBV(1), Flag8(0x2),
+-                B(Star3),
+-                B(CreateClosure), U8(5:SHARED_FUNCTION_INFO_TYPE), FBV(2), Flag8(0x2),
+-                B(Star4),
+-                B(CallRuntime), U16(Runtime::kCreatePrivateAccessors), R(3), RegCount8(2),
+-                B(StaCurrentContextSlotNoCell), C8(2),
+                 B(PopContext), R(1),
+-                B(Mov), R(2), R(0),
++                B(Mov), R(4), R(0),
+                 B(LdaUndefined),
+   /*  101 S> */ B(Return),
+ ]
+@@ -72,22 +72,22 @@ bytecodes: [
+                 B(Star3),
+                 B(CallRuntime), U16(Runtime::kCreatePrivateBrandSymbol), R(3), RegCount8(1),
+                 B(StaCurrentContextSlotNoCell), C8(3),
++                B(CreateClosure), U8(3:SHARED_FUNCTION_INFO_TYPE), FBV(0), Flag8(0x2),
++                B(Star3),
++                B(LdaNull),
++                B(Star4),
++                B(CallRuntime), U16(Runtime::kCreatePrivateAccessors), R(3), RegCount8(2),
++                B(StaCurrentContextSlotNoCell), C8(2),
+                 B(LdaTheHole),
+                 B(Star5),
+-                B(CreateClosure), U8(3:SHARED_FUNCTION_INFO_TYPE), FBV(0), Flag8(0x2),
++                B(CreateClosure), U8(4:SHARED_FUNCTION_INFO_TYPE), FBV(1), Flag8(0x2),
+                 B(Star2),
+                 B(LdaConstant), U8(1:CLASS_BOILERPLATE_TYPE),
+                 B(Star3),
+                 B(Mov), R(2), R(4),
+                 B(CallRuntime), U16(Runtime::kDefineClass), R(3), RegCount8(3),
+-                B(CreateClosure), U8(4:SHARED_FUNCTION_INFO_TYPE), FBV(1), Flag8(0x2),
+-                B(Star3),
+-                B(LdaNull),
+-                B(Star4),
+-                B(CallRuntime), U16(Runtime::kCreatePrivateAccessors), R(3), RegCount8(2),
+-                B(StaCurrentContextSlotNoCell), C8(2),
+                 B(PopContext), R(1),
+-                B(Mov), R(2), R(0),
++                B(Mov), R(4), R(0),
+                 B(LdaUndefined),
+   /*   81 S> */ B(Return),
+ ]
+@@ -119,22 +119,22 @@ bytecodes: [
+                 B(Star3),
+                 B(CallRuntime), U16(Runtime::kCreatePrivateBrandSymbol), R(3), RegCount8(1),
+                 B(StaCurrentContextSlotNoCell), C8(3),
++                B(LdaNull),
++                B(Star3),
++                B(CreateClosure), U8(3:SHARED_FUNCTION_INFO_TYPE), FBV(0), Flag8(0x2),
++                B(Star4),
++                B(CallRuntime), U16(Runtime::kCreatePrivateAccessors), R(3), RegCount8(2),
++                B(StaCurrentContextSlotNoCell), C8(2),
+                 B(LdaTheHole),
+                 B(Star5),
+-                B(CreateClosure), U8(3:SHARED_FUNCTION_INFO_TYPE), FBV(0), Flag8(0x2),
++                B(CreateClosure), U8(4:SHARED_FUNCTION_INFO_TYPE), FBV(1), Flag8(0x2),
+                 B(Star2),
+                 B(LdaConstant), U8(1:CLASS_BOILERPLATE_TYPE),
+                 B(Star3),
+                 B(Mov), R(2), R(4),
+                 B(CallRuntime), U16(Runtime::kDefineClass), R(3), RegCount8(3),
+-                B(LdaNull),
+-                B(Star3),
+-                B(CreateClosure), U8(4:SHARED_FUNCTION_INFO_TYPE), FBV(1), Flag8(0x2),
+-                B(Star4),
+-                B(CallRuntime), U16(Runtime::kCreatePrivateAccessors), R(3), RegCount8(2),
+-                B(StaCurrentContextSlotNoCell), C8(2),
+                 B(PopContext), R(1),
+-                B(Mov), R(2), R(0),
++                B(Mov), R(4), R(0),
+                 B(LdaUndefined),
+   /*   74 S> */ B(Return),
+ ]
+@@ -172,43 +172,43 @@ bytecodes: [
+                 B(Star4),
+                 B(CallRuntime), U16(Runtime::kCreatePrivateBrandSymbol), R(4), RegCount8(1),
+                 B(StaCurrentContextSlotNoCell), C8(3),
++                B(CreateClosure), U8(3:SHARED_FUNCTION_INFO_TYPE), FBV(0), Flag8(0x2),
++                B(Star4),
++                B(CreateClosure), U8(4:SHARED_FUNCTION_INFO_TYPE), FBV(1), Flag8(0x2),
++                B(Star5),
++                B(CallRuntime), U16(Runtime::kCreatePrivateAccessors), R(4), RegCount8(2),
++                B(StaCurrentContextSlotNoCell), C8(2),
+                 B(LdaTheHole),
+                 B(Star6),
+-                B(CreateClosure), U8(3:SHARED_FUNCTION_INFO_TYPE), FBV(0), Flag8(0x2),
++                B(CreateClosure), U8(5:SHARED_FUNCTION_INFO_TYPE), FBV(2), Flag8(0x2),
+                 B(Star3),
+                 B(LdaConstant), U8(1:CLASS_BOILERPLATE_TYPE),
+                 B(Star4),
+                 B(Mov), R(3), R(5),
+                 B(CallRuntime), U16(Runtime::kDefineClass), R(4), RegCount8(3),
+-                B(CreateClosure), U8(4:SHARED_FUNCTION_INFO_TYPE), FBV(1), Flag8(0x2),
+-                B(Star4),
+-                B(CreateClosure), U8(5:SHARED_FUNCTION_INFO_TYPE), FBV(2), Flag8(0x2),
+-                B(Star5),
+-                B(CallRuntime), U16(Runtime::kCreatePrivateAccessors), R(4), RegCount8(2),
+-                B(StaCurrentContextSlotNoCell), C8(2),
+                 B(PopContext), R(2),
+-                B(Mov), R(3), R(0),
++                B(Mov), R(5), R(0),
+   /*   38 E> */ B(CreateBlockContext), U8(6:SCOPE_INFO_TYPE),
+                 B(PushContext), R(2),
+                 B(LdaConstant), U8(8:"E"),
+                 B(Star4),
+                 B(CallRuntime), U16(Runtime::kCreatePrivateBrandSymbol), R(4), RegCount8(1),
+                 B(StaCurrentContextSlotNoCell), C8(3),
+-  /*  118 E> */ B(CreateClosure), U8(9:SHARED_FUNCTION_INFO_TYPE), FBV(3), Flag8(0x2),
++                B(CreateClosure), U8(9:SHARED_FUNCTION_INFO_TYPE), FBV(3), Flag8(0x2),
++                B(Star4),
++                B(CreateClosure), U8(10:SHARED_FUNCTION_INFO_TYPE), FBV(4), Flag8(0x2),
++                B(Star5),
++                B(CallRuntime), U16(Runtime::kCreatePrivateAccessors), R(4), RegCount8(2),
++                B(StaCurrentContextSlotNoCell), C8(2),
++  /*  118 E> */ B(CreateClosure), U8(11:SHARED_FUNCTION_INFO_TYPE), FBV(5), Flag8(0x2),
+                 B(Star3),
+                 B(LdaConstant), U8(7:CLASS_BOILERPLATE_TYPE),
+                 B(Star4),
+                 B(Mov), R(3), R(5),
+                 B(Mov), R(0), R(6),
+                 B(CallRuntime), U16(Runtime::kDefineClass), R(4), RegCount8(3),
+-                B(CreateClosure), U8(10:SHARED_FUNCTION_INFO_TYPE), FBV(4), Flag8(0x2),
+-                B(Star4),
+-                B(CreateClosure), U8(11:SHARED_FUNCTION_INFO_TYPE), FBV(5), Flag8(0x2),
+-                B(Star5),
+-                B(CallRuntime), U16(Runtime::kCreatePrivateAccessors), R(4), RegCount8(2),
+-                B(StaCurrentContextSlotNoCell), C8(2),
+                 B(PopContext), R(2),
+-                B(Mov), R(3), R(1),
++                B(Mov), R(5), R(1),
+                 B(LdaUndefined),
+   /*  175 S> */ B(Return),
+ ]
+@@ -241,7 +241,7 @@ snippet: "
+ "
+ frame size: 8
+ parameter count: 1
+-bytecode array length: 99
++bytecode array length: 95
+ bytecodes: [
+   /*   30 E> */ B(CreateBlockContext), U8(0:SCOPE_INFO_TYPE),
+                 B(PushContext), R(2),
+@@ -263,7 +263,13 @@ bytecodes: [
+                 B(Star4),
+                 B(CallRuntime), U16(Runtime::kCreatePrivateBrandSymbol), R(4), RegCount8(1),
+                 B(StaCurrentContextSlotNoCell), C8(3),
+-  /*   77 E> */ B(CreateClosure), U8(7:SHARED_FUNCTION_INFO_TYPE), FBV(2), Flag8(0x2),
++                B(CreateClosure), U8(7:SHARED_FUNCTION_INFO_TYPE), FBV(2), Flag8(0x2),
++                B(Star4),
++                B(LdaNull),
++                B(Star5),
++                B(CallRuntime), U16(Runtime::kCreatePrivateAccessors), R(4), RegCount8(2),
++                B(StaCurrentContextSlotNoCell), C8(2),
++  /*   77 E> */ B(CreateClosure), U8(8:SHARED_FUNCTION_INFO_TYPE), FBV(3), Flag8(0x2),
+                 B(Star3),
+                 B(LdaConstant), U8(5:CLASS_BOILERPLATE_TYPE),
+                 B(Star4),
+@@ -273,16 +279,9 @@ bytecodes: [
+                 B(StaCurrentContextSlotNoCell), C8(4),
+                 B(Ldar), R(5),
+                 B(StaCurrentContextSlotNoCell), C8(5),
+-                B(CreateClosure), U8(8:SHARED_FUNCTION_INFO_TYPE), FBV(3), Flag8(0x2),
+-                B(Star4),
+-                B(LdaNull),
+-                B(Star5),
+-                B(CallRuntime), U16(Runtime::kCreatePrivateAccessors), R(4), RegCount8(2),
+-                B(StaCurrentContextSlotNoCell), C8(2),
+                 B(PopContext), R(2),
+-                B(Mov), R(3), R(1),
+-  /*  122 S> */ B(Ldar), R(1),
+-  /*  122 E> */ B(Construct), R(1), R(0), RegCount8(0), FBV(0),
++                B(Star1),
++  /*  122 S> */ B(Construct), R(1), R(0), RegCount8(0), FBV(0),
+                 B(LdaUndefined),
+   /*  133 S> */ B(Return),
+ ]
+@@ -312,7 +311,7 @@ snippet: "
+ "
+ frame size: 8
+ parameter count: 1
+-bytecode array length: 99
++bytecode array length: 95
+ bytecodes: [
+   /*   30 E> */ B(CreateBlockContext), U8(0:SCOPE_INFO_TYPE),
+                 B(PushContext), R(2),
+@@ -334,7 +333,13 @@ bytecodes: [
+                 B(Star4),
+                 B(CallRuntime), U16(Runtime::kCreatePrivateBrandSymbol), R(4), RegCount8(1),
+                 B(StaCurrentContextSlotNoCell), C8(3),
+-  /*   80 E> */ B(CreateClosure), U8(7:SHARED_FUNCTION_INFO_TYPE), FBV(2), Flag8(0x2),
++                B(LdaNull),
++                B(Star4),
++                B(CreateClosure), U8(7:SHARED_FUNCTION_INFO_TYPE), FBV(2), Flag8(0x2),
++                B(Star5),
++                B(CallRuntime), U16(Runtime::kCreatePrivateAccessors), R(4), RegCount8(2),
++                B(StaCurrentContextSlotNoCell), C8(2),
++  /*   80 E> */ B(CreateClosure), U8(8:SHARED_FUNCTION_INFO_TYPE), FBV(3), Flag8(0x2),
+                 B(Star3),
+                 B(LdaConstant), U8(5:CLASS_BOILERPLATE_TYPE),
+                 B(Star4),
+@@ -344,16 +349,9 @@ bytecodes: [
+                 B(StaCurrentContextSlotNoCell), C8(4),
+                 B(Ldar), R(5),
+                 B(StaCurrentContextSlotNoCell), C8(5),
+-                B(LdaNull),
+-                B(Star4),
+-                B(CreateClosure), U8(8:SHARED_FUNCTION_INFO_TYPE), FBV(3), Flag8(0x2),
+-                B(Star5),
+-                B(CallRuntime), U16(Runtime::kCreatePrivateAccessors), R(4), RegCount8(2),
+-                B(StaCurrentContextSlotNoCell), C8(2),
+                 B(PopContext), R(2),
+-                B(Mov), R(3), R(1),
+-  /*  126 S> */ B(Ldar), R(1),
+-  /*  126 E> */ B(Construct), R(1), R(0), RegCount8(0), FBV(0),
++                B(Star1),
++  /*  126 S> */ B(Construct), R(1), R(0), RegCount8(0), FBV(0),
+                 B(LdaUndefined),
+   /*  137 S> */ B(Return),
+ ]
+diff --git a/test/unittests/interpreter/bytecode_expectations/StaticPrivateMethodDeclaration.golden b/test/unittests/interpreter/bytecode_expectations/StaticPrivateMethodDeclaration.golden
+index c4926a54d72ba473ba44e0cbf45662cddd0217db..14e2e51478e8e2b69c2125201c740bd74766a4bd 100644
+--- a/test/unittests/interpreter/bytecode_expectations/StaticPrivateMethodDeclaration.golden
++++ b/test/unittests/interpreter/bytecode_expectations/StaticPrivateMethodDeclaration.golden
+@@ -57,22 +57,22 @@ bytecode array length: 43
+ bytecodes: [
+   /*   30 E> */ B(CreateBlockContext), U8(0:SCOPE_INFO_TYPE),
+                 B(PushContext), R(1),
++                B(CreateClosure), U8(2:SHARED_FUNCTION_INFO_TYPE), FBV(0), Flag8(0x2),
++                B(Star3),
++                B(LdaNull),
++                B(Star4),
++                B(CallRuntime), U16(Runtime::kCreatePrivateAccessors), R(3), RegCount8(2),
++                B(StaCurrentContextSlotNoCell), C8(2),
+                 B(LdaTheHole),
+                 B(Star5),
+-                B(CreateClosure), U8(2:SHARED_FUNCTION_INFO_TYPE), FBV(0), Flag8(0x2),
++                B(CreateClosure), U8(3:SHARED_FUNCTION_INFO_TYPE), FBV(1), Flag8(0x2),
+                 B(Star2),
+                 B(LdaConstant), U8(1:CLASS_BOILERPLATE_TYPE),
+                 B(Star3),
+                 B(Mov), R(2), R(4),
+                 B(CallRuntime), U16(Runtime::kDefineClass), R(3), RegCount8(3),
+-                B(CreateClosure), U8(3:SHARED_FUNCTION_INFO_TYPE), FBV(1), Flag8(0x2),
+-                B(Star3),
+-                B(LdaNull),
+-                B(Star4),
+-                B(CallRuntime), U16(Runtime::kCreatePrivateAccessors), R(3), RegCount8(2),
+-                B(StaCurrentContextSlotNoCell), C8(2),
+                 B(PopContext), R(1),
+-                B(Mov), R(2), R(0),
++                B(Mov), R(4), R(0),
+                 B(LdaUndefined),
+   /*   88 S> */ B(Return),
+ ]
+@@ -99,22 +99,22 @@ bytecode array length: 43
+ bytecodes: [
+   /*   30 E> */ B(CreateBlockContext), U8(0:SCOPE_INFO_TYPE),
+                 B(PushContext), R(1),
++                B(LdaNull),
++                B(Star3),
++                B(CreateClosure), U8(2:SHARED_FUNCTION_INFO_TYPE), FBV(0), Flag8(0x2),
++                B(Star4),
++                B(CallRuntime), U16(Runtime::kCreatePrivateAccessors), R(3), RegCount8(2),
++                B(StaCurrentContextSlotNoCell), C8(2),
+                 B(LdaTheHole),
+                 B(Star5),
+-                B(CreateClosure), U8(2:SHARED_FUNCTION_INFO_TYPE), FBV(0), Flag8(0x2),
++                B(CreateClosure), U8(3:SHARED_FUNCTION_INFO_TYPE), FBV(1), Flag8(0x2),
+                 B(Star2),
+                 B(LdaConstant), U8(1:CLASS_BOILERPLATE_TYPE),
+                 B(Star3),
+                 B(Mov), R(2), R(4),
+                 B(CallRuntime), U16(Runtime::kDefineClass), R(3), RegCount8(3),
+-                B(LdaNull),
+-                B(Star3),
+-                B(CreateClosure), U8(3:SHARED_FUNCTION_INFO_TYPE), FBV(1), Flag8(0x2),
+-                B(Star4),
+-                B(CallRuntime), U16(Runtime::kCreatePrivateAccessors), R(3), RegCount8(2),
+-                B(StaCurrentContextSlotNoCell), C8(2),
+                 B(PopContext), R(1),
+-                B(Mov), R(2), R(0),
++                B(Mov), R(4), R(0),
+                 B(LdaUndefined),
+   /*   81 S> */ B(Return),
+ ]
+@@ -142,22 +142,22 @@ bytecode array length: 46
+ bytecodes: [
+   /*   30 E> */ B(CreateBlockContext), U8(0:SCOPE_INFO_TYPE),
+                 B(PushContext), R(1),
++                B(CreateClosure), U8(2:SHARED_FUNCTION_INFO_TYPE), FBV(0), Flag8(0x2),
++                B(Star3),
++                B(CreateClosure), U8(3:SHARED_FUNCTION_INFO_TYPE), FBV(1), Flag8(0x2),
++                B(Star4),
++                B(CallRuntime), U16(Runtime::kCreatePrivateAccessors), R(3), RegCount8(2),
++                B(StaCurrentContextSlotNoCell), C8(2),
+                 B(LdaTheHole),
+                 B(Star5),
+-                B(CreateClosure), U8(2:SHARED_FUNCTION_INFO_TYPE), FBV(0), Flag8(0x2),
++                B(CreateClosure), U8(4:SHARED_FUNCTION_INFO_TYPE), FBV(2), Flag8(0x2),
+                 B(Star2),
+                 B(LdaConstant), U8(1:CLASS_BOILERPLATE_TYPE),
+                 B(Star3),
+                 B(Mov), R(2), R(4),
+                 B(CallRuntime), U16(Runtime::kDefineClass), R(3), RegCount8(3),
+-                B(CreateClosure), U8(3:SHARED_FUNCTION_INFO_TYPE), FBV(1), Flag8(0x2),
+-                B(Star3),
+-                B(CreateClosure), U8(4:SHARED_FUNCTION_INFO_TYPE), FBV(2), Flag8(0x2),
+-                B(Star4),
+-                B(CallRuntime), U16(Runtime::kCreatePrivateAccessors), R(3), RegCount8(2),
+-                B(StaCurrentContextSlotNoCell), C8(2),
+                 B(PopContext), R(1),
+-                B(Mov), R(2), R(0),
++                B(Mov), R(4), R(0),
+                 B(LdaUndefined),
+   /*  115 S> */ B(Return),
+ ]

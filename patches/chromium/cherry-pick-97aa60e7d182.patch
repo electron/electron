@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Lukaszewicz <tluk@chromium.org>
+Date: Mon, 21 Sep 2026 11:10:16 -0700
+Subject: [Views] Prevent potential UAF in NativeWidgetAura::Show()
+
+Both window_->Show() and Activate() notify aura::Window observers,
+which are explicitly permitted to synchronously destroy window_ during
+visibility notifications. Under NATIVE_WIDGET_OWNS_WIDGET or
+CLIENT_OWNS_WIDGET ownership models, OnWindowDestroyed() deletes `this`.
+Continuing execution in Show() after the window is destroyed results in
+a heap-use-after-free when accessing member fields or invoking further
+methods (e.g. Activate(), SetInitialFocus(), Minimize()).
+
+Use a WeakPtr to verify that `this` and `window_` remain valid after
+invoking window_->Show() and Activate(), returning early if destroyed.
+
+Add a regression test covering synchronous widget destruction during
+Show().
+
+Fixed: 553140050
+Change-Id: I855479577166b018d94388c3e5a0d6326c228390
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8423564
+Reviewed-by: Allen Bauer <kylixrd@chromium.org>
+Commit-Queue: Thomas Lukaszewicz <tluk@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1701883}
+
+diff --git a/ui/views/widget/native_widget_aura.cc b/ui/views/widget/native_widget_aura.cc
+index 33b87762cb4820708c2965b5c750ea9ff6e2d3d2..5338969c255def72292611169e31fd4a72eacfde 100644
+--- a/ui/views/widget/native_widget_aura.cc
++++ b/ui/views/widget/native_widget_aura.cc
+@@ -790,10 +790,24 @@ void NativeWidgetAura::Show(ui::mojom::WindowShowState show_state,
+     disabler.emplace(window_);
+   }
+ 
++  // `window_->Show()` and `Activate()` below fan out to aura::Window
++  // observers, which are explicitly permitted to synchronously destroy
++  // `window_` (see Window::NotifyWindowVisibilityChangedAtReceiver()). When
++  // that happens under NATIVE_WIDGET_OWNS_WIDGET or CLIENT_OWNS_WIDGET
++  // ownership, OnWindowDestroyed() deletes `this`, so the rest of this method
++  // must not run.
++  auto weak_this = weak_factory.GetWeakPtr();
++
+   window_->Show();
++  if (!weak_this || !window_) {
++    return;
++  }
+   if (delegate_->CanActivate()) {
+     if (show_state != ui::mojom::WindowShowState::kInactive) {
+       Activate();
++      if (!weak_this || !window_) {
++        return;
++      }
+     }
+     // SetInitialFocus() should be always be called, even for
+     // SHOW_STATE_INACTIVE. If the window has to stay inactive, the method will

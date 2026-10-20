@@ -1,0 +1,117 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Sun, 20 Sep 2026 16:33:45 -0400
+Subject: MSL: Correctly identify uint >= 0 condition as an infinite loop
+
+Bug: chromium:563788518
+Change-Id: Idf857a8ed20b71b50739b8799017c88fb301f99a
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8427087
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+
+diff --git a/src/compiler/translator/ir/src/transform/msl/ensure_loop_forward_progress.rs b/src/compiler/translator/ir/src/transform/msl/ensure_loop_forward_progress.rs
+index c4eb07683eb060a4756d37b331200f6bc0df57e2..89c5e815cdf037e90babd0a45dceb333169f9c38 100644
+--- a/src/compiler/translator/ir/src/transform/msl/ensure_loop_forward_progress.rs
++++ b/src/compiler/translator/ir/src/transform/msl/ensure_loop_forward_progress.rs
+@@ -166,6 +166,18 @@ fn matches_finite_loop_condition(ir_meta: &IRMeta, block: &Block) -> Option<Vari
+             return None;
+         }
+ 
++        // If the type is uint and the condition is >=, it might be |>= 0| which is always true;
++        // don't consider that a finite loop.  Only |>= 0| and |>= variable_that_could_be_zero| may
++        // lead to infinite loop, but all uint with >= is considered infinite loop for simplicity.
++        if matches!(type_info, Type::Scalar(BasicType::Uint))
++            && matches!(
++                ir_meta.get_instruction(op_result).op,
++                OpCode::Binary(BinaryOpCode::GreaterThanEqual, ..)
++            )
++        {
++            return None;
++        }
++
+         loop_variable.id.get_variable()
+     } else {
+         return None;
+diff --git a/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp b/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp
+index 55df11588ff8bc23edd52d3ded06412953e5486b..1c773d484f4dd5d14d635ec491ac8f3db765110b 100644
+--- a/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp
++++ b/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp
+@@ -93,7 +93,16 @@ const TVariable *computeFiniteLoopVariable(TIntermLoop *loop)
+         case EOpLessThan:
+         case EOpGreaterThan:
+         case EOpLessThanEqual:
++            break;
+         case EOpGreaterThanEqual:
++            // If the type is uint and the condition is >=, it might be |>= 0| which is always true;
++            // don't consider that a finite loop.  Only |>= 0| and |>= variable_that_could_be_zero|
++            // may lead to infinite loop, but all uint with >= is considered infinite loop for
++            // simplicity.
++            if (variable->getType().getBasicType() == EbtUInt)
++            {
++                return nullptr;
++            }
+             break;
+         default:
+             return nullptr;
+diff --git a/src/tests/gl_tests/GLSLOutputTest.cpp b/src/tests/gl_tests/GLSLOutputTest.cpp
+index 08f170575c583d3aea4c151322496106e2954633..eb22cd87d611d475942ba4d1353aa6ebd8c57b66 100644
+--- a/src/tests/gl_tests/GLSLOutputTest.cpp
++++ b/src/tests/gl_tests/GLSLOutputTest.cpp
+@@ -566,19 +566,30 @@ void main() {
+ 
+ )";
+     const char kShaderSuffix[] = "}\n";
+-    const char *kTests[]{"int i = 101; for (; i < 10; i++) { }",
+-                         "int i = 101; for (; i < 10; i+=1) { }",
+-                         "int i = 101; for (; i < 10; i-=1) { }",
+-                         "for (int i = 0; i < 10; i++) { }",
+-                         "for (int i = 0; i < a; i++) { }",
+-                         "for (int i = 0; i < 100000/2; ++i) { }",
+-                         "for (uint i = 0u; i < 10u; i++) { }",
+-                         "for (uint i = 0u; i < b; i++) { }",
+-                         "for (uint i = 0u; i < 100000u/2u; ++i) { }",
+-                         "for (uint i = 0u; i < 4294967295u; ++i) { }",
+-                         "for (uint i = 10u; i > 1u+3u ; --i) { }",
+-                         "const int z = 7; for (int i = 0; i < z; i++) { }",
+-                         "for (int i = 0; i < 10; i++) { for (int j = 0; j < 1000; ++j) { }}"};
++    const char *kTests[]{
++        "int i = 101; for (; i < 10; i++) { }",
++        "int i = 101; for (; i < 10; i+=1) { }",
++        "int i = 101; for (; i < 10; i-=1) { }",
++        "for (int i = 0; i < 10; i++) { }",
++        "for (int i = 0; i < a; i++) { }",
++        "for (int i = 0; i < 100000/2; ++i) { }",
++        "for (uint i = 0u; i < 10u; i++) { }",
++        "for (uint i = 0u; i < b; i++) { }",
++        "for (uint i = 0u; i < 100000u/2u; ++i) { }",
++        "for (uint i = 0u; i < 4294967295u; ++i) { }",
++        "for (uint i = 10u; i > 1u+3u ; --i) { }",
++        "const int z = 7; for (int i = 0; i < z; i++) { }",
++        "for (int i = 0; i < 10; i++) { for (int j = 0; j < 1000; ++j) { }}",
++        // Finite because |int| is implemented with |uint| such that wraparound has
++        // well-defined behavior, and eventually the values wrap around to make the
++        // condition false.
++        "for (int i = 0; i >= 0; ++i) { }",
++        "for (int i = 1; i >= 0; ++i) { }",
++        "for (int i = 1; i > 0; ++i) { }",
++        "for (int i = 0; i < 10; i -= 1) { }",
++        // Finite because of eventual wrap around to zero.
++        "for (uint i = 1u; i > 0u; ++i) { }",
++    };
+ 
+     for (const char *test : kTests)
+     {
+@@ -622,6 +633,13 @@ void main() {
+         "for (int i = 0; i < 10; a == 0 ? i++ : i = 0) { }",
+         "for (ivec2 i = ivec2(0); i != ivec2(10, 20); i++) { }",
+         "for (ivec2 i = ivec2(0); i != ivec2(10, 10); i += ivec2(1, 2)) { }",
++        // Infinite loop because the condition is always true
++        "for (int i = 0; i == 0; i += 0) { }",
++        "for (uint i = 0u; i >= 0u; ++i) { }",
++        // Infinite loop because the |b| might be zero
++        "for (uint i = 10u; i >= b; ++i) { }",
++        // Infinite loop because the condition is always true as |i| never changes.
++        "for (uint i = 0u; i == 0u; i += 0u) { }",
+     };
+ 
+     for (const char *test : kTests)

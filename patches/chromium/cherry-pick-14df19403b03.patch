@@ -1,0 +1,430 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Emmanuele Bassi <ebassi@igalia.com>
+Date: Fri, 18 Sep 2026 09:36:37 -0700
+Subject: Defer XMLDocumentParser::Finish() while inside ParseChunk
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+XMLDocumentParser buffers data that arrives while ParseChunk() is
+running into pending_src_, but a Finish() call received during this
+state—such as when a navigation body load completes synchronously under
+a running script—previously invoked end() immediately and re-entered
+the parser before the active chunk finished processing.
+
+Treat an in-chunk Finish() call like the paused parser case by recording
+it in finish_called_ and allowing DoWrite() to process completion after
+the current chunk and any buffered data are parsed. Additionally, reset
+finish_called_ in end() so that DoWrite() and ResumeParsing() do not
+process the same deferred finish twice.
+
+Bug: https://issues.chromium.org/issues/553121395#comment8
+Change-Id: I8dca1106bf642003351bf56feb15f71c3b0e163e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8419603
+Reviewed-by: Dominik Röttsches <drott@chromium.org>
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Commit-Queue: Joey Arhar <jarhar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1700858}
+
+diff --git a/third_party/blink/renderer/core/xml/build.gni b/third_party/blink/renderer/core/xml/build.gni
+index 7349cd986e81bef75934c733a6b5774faa5b3058..eb9c9a9cdb65ede5528b3b9d4b3c868255a1eeab 100644
+--- a/third_party/blink/renderer/core/xml/build.gni
++++ b/third_party/blink/renderer/core/xml/build.gni
+@@ -67,6 +67,7 @@ blink_core_sources_xml = [
+ blink_core_tests_xml = [
+   "dom_parser_test.cc",
+   "parser/shared_buffer_reader_test.cc",
++  "parser/xml_document_parser_sim_test.cc",
+   "parser/xml_document_parser_test.cc",
+   "xpath_functions_test.cc",
+ ]
+diff --git a/third_party/blink/renderer/core/xml/parser/xml_document_parser.cc b/third_party/blink/renderer/core/xml/parser/xml_document_parser.cc
+index 828ae117a7f0b043ab91bf362afd5117bae110bf..35944c3468f7af926ff115eaa1ab18f007d55d94 100644
+--- a/third_party/blink/renderer/core/xml/parser/xml_document_parser.cc
++++ b/third_party/blink/renderer/core/xml/parser/xml_document_parser.cc
+@@ -491,6 +491,10 @@ void XMLDocumentParser::end() {
+   if (parser_paused_)
+     return;
+ 
++  // Any deferred Finish() is carried out below; reset the flag so that
++  // DoWrite() and ResumeParsing() do not call end() a second time.
++  finish_called_ = false;
++
+   // StopParsing() calls InsertErrorMessageBlock() if there was a parsing
+   // error. Avoid showing the error message block twice.
+   // TODO(crbug.com/898775): Rationalize this.
+@@ -519,10 +523,14 @@ void XMLDocumentParser::Finish() {
+   if (IsDetached())
+     return;
+ 
+-  if (parser_paused_)
++  // If ParseChunk() is on the stack, ending the document now would re-enter
++  // libxml2 (see DoWrite()). Defer exactly like the paused case; DoWrite()
++  // honors finish_called_ once the current chunk has been parsed.
++  if (parser_paused_ || in_parse_chunk_) {
+     finish_called_ = true;
+-  else
++  } else {
+     end();
++  }
+ }
+ 
+ void XMLDocumentParser::InsertErrorMessageBlock() {
+@@ -970,35 +978,59 @@ void XMLDocumentParser::DoWrite(const String& parse_string) {
+   // Protect the libxml context from deletion during a callback
+   scoped_refptr<XMLParserContext> context = context_;
+ 
+-  // libxml2's push parser is not re-entrant: xmlParseEndTag2 holds multiple
+-  // raw pointers inside ctxt, and a nested xmlParseChunk can xmlRealloc()
+-  // those buffers. Crash safely rather than corrupt the heap. (Append()
+-  // routes re-entrant data to pending_src_ so this should be unreachable.)
+-  CHECK(!in_parse_chunk_);
+-  base::AutoReset<bool> reentrancy_guard(&in_parse_chunk_, true);
+-
+-  // libXML throws an error if you try to switch the encoding for an empty
+-  // string.
+-  if (parse_string.length()) {
+-    XMLDocumentParserScope scope(GetDocument());
+-    base::AutoReset<bool> encoding_scope(&is_currently_parsing8_bit_chunk_,
+-                                         parse_string.Is8Bit());
+-    ParseChunk(context->Context(), parse_string);
+-
+-    // JavaScript (which may be run under the parseChunk callstack) may
+-    // cause the parser to be stopped or detached.
+-    if (IsStopped())
++  {
++    // libxml2's push parser is not re-entrant: xmlParseEndTag2 holds multiple
++    // raw pointers inside ctxt, and a nested xmlParseChunk can xmlRealloc()
++    // those buffers. Crash safely rather than corrupt the heap. (Append()
++    // routes re-entrant data to pending_src_ and Finish() defers to
++    // finish_called_, so this should be unreachable.)
++    CHECK(!in_parse_chunk_);
++    base::AutoReset<bool> reentrancy_guard(&in_parse_chunk_, true);
++
++    // libXML throws an error if you try to switch the encoding for an empty
++    // string.
++    if (parse_string.length()) {
++      XMLDocumentParserScope scope(GetDocument());
++      base::AutoReset<bool> encoding_scope(&is_currently_parsing8_bit_chunk_,
++                                           parse_string.Is8Bit());
++      ParseChunk(context->Context(), parse_string);
++
++      // JavaScript (which may be run under the parseChunk callstack) may
++      // cause the parser to be stopped or detached.
++      if (IsStopped() && !finish_called_) {
++        return;
++      }
++    }
++
++    // FIXME: Why is this here? And why is it after we process the passed
++    // source?
++    if (!IsStopped() && GetDocument()->SawDecodingError()) {
++      // If the decoder saw an error, report it as fatal (stops parsing)
++      TextPosition position(
++          OrdinalNumber::FromOneBasedInt(context->Context()->input->line),
++          OrdinalNumber::FromOneBasedInt(context->Context()->input->col));
++      HandleError(XMLErrors::kErrorTypeFatal, "Encoding error", position);
++    }
++  }
++
++  if (IsDetached() || parser_paused_) {
++    return;
++  }
++
++  // Data appended and a Finish() call received while ParseChunk() was on the
++  // stack above were deferred; take care of them now that the chunk has been
++  // parsed.
++  if (!pending_src_.IsEmpty()) {
++    SegmentedString rest = pending_src_;
++    pending_src_.Clear();
++    Append(rest.ToString());
++    if (IsDetached() || parser_paused_) {
+       return;
++    }
+   }
+ 
+-  // FIXME: Why is this here? And why is it after we process the passed
+-  // source?
+-  if (GetDocument()->SawDecodingError()) {
+-    // If the decoder saw an error, report it as fatal (stops parsing)
+-    TextPosition position(
+-        OrdinalNumber::FromOneBasedInt(context->Context()->input->line),
+-        OrdinalNumber::FromOneBasedInt(context->Context()->input->col));
+-    HandleError(XMLErrors::kErrorTypeFatal, "Encoding error", position);
++  if (finish_called_ && pending_callbacks_.empty()) {
++    end();
+   }
+ }
+ 
+@@ -1771,7 +1803,10 @@ void XMLDocumentParser::InitializeParserContext(const std::string& chunk) {
+ void XMLDocumentParser::DoEnd() {
+   if (!IsStopped()) {
+     if (context_) {
+-      // Tell libxml we're done.
++      // Tell libxml we're done. The terminating chunk may run SAX callbacks,
++      // so it needs the same re-entrancy protection as DoWrite().
++      CHECK(!in_parse_chunk_);
++      base::AutoReset<bool> reentrancy_guard(&in_parse_chunk_, true);
+       {
+         XMLDocumentParserScope scope(GetDocument());
+         FinishParsing(Context());
+diff --git a/third_party/blink/renderer/core/xml/parser/xml_document_parser.h b/third_party/blink/renderer/core/xml/parser/xml_document_parser.h
+index 00d6e6f4c6402a6f65ee3ee7398f81396ac00343..665c7a89be10afb2bfb67eb71b0eaae0a094ea80 100644
+--- a/third_party/blink/renderer/core/xml/parser/xml_document_parser.h
++++ b/third_party/blink/renderer/core/xml/parser/xml_document_parser.h
+@@ -227,9 +227,9 @@ class XMLDocumentParser final : public ScriptableDocumentParser,
+   bool saw_first_element_;
+   bool is_xhtml_document_;
+   bool parser_paused_;
+-  // Re-entrancy guard for DoWrite()/xmlParseChunk(). libxml2 push-parser
+-  // contexts are not re-entrant; calling xmlParseChunk while already inside
+-  // a SAX callback corrupts ctxt->pushTab/nsTab.
++  // Re-entrancy guard for DoWrite()/DoEnd()/xmlParseChunk(). libxml2
++  // push-parser contexts are not re-entrant; calling xmlParseChunk while
++  // already inside a SAX callback corrupts ctxt->pushTab/nsTab.
+   bool in_parse_chunk_ = false;
+   bool requesting_script_;
+   bool finish_called_;
+diff --git a/third_party/blink/renderer/core/xml/parser/xml_document_parser_sim_test.cc b/third_party/blink/renderer/core/xml/parser/xml_document_parser_sim_test.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..2f659db671f7fb09dcb62b0eef2aea1b51aa039a
+--- /dev/null
++++ b/third_party/blink/renderer/core/xml/parser/xml_document_parser_sim_test.cc
+@@ -0,0 +1,237 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/blink/renderer/core/dom/document.h"
++#include "third_party/blink/renderer/core/dom/element.h"
++#include "third_party/blink/renderer/core/dom/events/event.h"
++#include "third_party/blink/renderer/core/dom/events/native_event_listener.h"
++#include "third_party/blink/renderer/core/html/html_element.h"
++#include "third_party/blink/renderer/core/testing/sim/sim_request.h"
++#include "third_party/blink/renderer/core/testing/sim/sim_test.h"
++#include "third_party/blink/renderer/platform/testing/unit_test_helpers.h"
++#include "third_party/blink/renderer/platform/wtf/text/strcat.h"
++#include "third_party/blink/renderer/platform/wtf/text/string_builder.h"
++
++namespace blink {
++
++namespace {
++
++// Writes the given data (if any) to the response and then finishes it when
++// an event is dispatched. Dispatching the event from an inline script lets a
++// test deliver the end of the navigation body while XMLDocumentParser is
++// still parsing the chunk that contains the script.
++class FinishResponseListener final : public NativeEventListener {
++ public:
++  FinishResponseListener(SimRequest* response, const String& final_data)
++      : response_(response), final_data_(final_data) {}
++
++  void Invoke(ExecutionContext*, Event*) override {
++    EXPECT_FALSE(was_invoked_);
++    was_invoked_ = true;
++    if (!final_data_.empty()) {
++      response_->Write(final_data_);
++    }
++    response_->Finish();
++  }
++
++  bool WasInvoked() const { return was_invoked_; }
++
++ private:
++  SimRequest* const response_;
++  const String final_data_;
++  bool was_invoked_ = false;
++};
++
++constexpr int kNestingDepth = 24;
++
++// An inline script that reports the end of the response and records the
++// document's readyState right afterwards, followed by a deeply nested run of
++// elements with namespace declarations so that plenty of markup remains to
++// be parsed after the script.
++String BuildChunkAfterExternalScript(bool close_document) {
++  StringBuilder markup;
++  markup.Append(
++      "<script>"
++      "document.dispatchEvent(new Event('finish-response'));"
++      "document.documentElement.setAttribute('data-ready-state',"
++      " document.readyState);"
++      "</script>");
++  for (int i = 0; i < kNestingDepth; ++i) {
++    markup.Append("<e");
++    markup.AppendNumber(i);
++    markup.Append(" xmlns:n");
++    markup.AppendNumber(i);
++    markup.Append("=\"http://example.com/ns/");
++    markup.AppendNumber(i);
++    markup.Append("\">");
++  }
++  markup.Append("<p id=\"last\">x</p>");
++  for (int i = kNestingDepth - 1; i >= 0; --i) {
++    markup.Append("</e");
++    markup.AppendNumber(i);
++    markup.Append(">");
++  }
++  if (close_document) {
++    markup.Append("</body></html>");
++  }
++  return markup.ToString();
++}
++
++class XMLDocumentParserSimTest : public SimTest {};
++
++// The response of an XHTML navigation may finish while the parser is in the
++// middle of a chunk, e.g. when an inline script run by the parser causes the
++// remainder of the body to be consumed. The parser must defer the completion
++// until the chunk has been fully parsed instead of ending the document from
++// inside the script.
++TEST_F(XMLDocumentParserSimTest, LoadCompletionDuringInlineScript) {
++  SimRequest main_resource("https://example.com/test.xhtml",
++                           "application/xhtml+xml");
++  SimSubresourceRequest external_script("https://example.com/ext.js",
++                                        "text/javascript");
++
++  LoadURL("https://example.com/test.xhtml");
++
++  // The external script pauses parsing until it has loaded.
++  main_resource.Write(
++      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
++      "<html xmlns=\"http://www.w3.org/1999/xhtml\"><body>"
++      "<script src=\"ext.js\"></script>");
++
++  auto* listener = MakeGarbageCollected<FinishResponseListener>(
++      &main_resource, /*final_data=*/String());
++  GetDocument().addEventListener(AtomicString("finish-response"), listener);
++
++  // Buffered while the parser waits for the external script.
++  main_resource.Write(BuildChunkAfterExternalScript(/*close_document=*/true));
++
++  // Resumes parsing; the buffered chunk above is parsed in one go and the
++  // inline script finishes the response from within it.
++  external_script.Complete("");
++  test::RunPendingTasks();
++
++  EXPECT_TRUE(listener->WasInvoked());
++
++  // The document must not have been finished while the inline script was
++  // still running.
++  EXPECT_EQ(GetDocument().documentElement()->getAttribute(
++                AtomicString("data-ready-state")),
++            "loading");
++
++  // The markup following the inline script must have been parsed normally.
++  Element* last = GetDocument().getElementById(AtomicString("last"));
++  ASSERT_TRUE(last);
++  ASSERT_TRUE(last->parentElement());
++  EXPECT_EQ(last->parentElement()->localName(),
++            StrCat({"e", String::Number(kNestingDepth - 1)}));
++
++  // The deferred completion must still finish the document.
++  EXPECT_TRUE(GetDocument().LoadEventFinished());
++}
++
++// Same as above, but the final piece of the body arrives together with the
++// completion while the parser is inside the chunk. The data must be parsed
++// before the document is finished.
++TEST_F(XMLDocumentParserSimTest, FinalDataAndLoadCompletionDuringInlineScript) {
++  SimRequest main_resource("https://example.com/test.xhtml",
++                           "application/xhtml+xml");
++  SimSubresourceRequest external_script("https://example.com/ext.js",
++                                        "text/javascript");
++
++  LoadURL("https://example.com/test.xhtml");
++
++  main_resource.Write(
++      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
++      "<html xmlns=\"http://www.w3.org/1999/xhtml\"><body>"
++      "<script src=\"ext.js\"></script>");
++
++  auto* listener = MakeGarbageCollected<FinishResponseListener>(
++      &main_resource, /*final_data=*/"<p id=\"tail\">y</p></body></html>");
++  GetDocument().addEventListener(AtomicString("finish-response"), listener);
++
++  main_resource.Write(BuildChunkAfterExternalScript(/*close_document=*/false));
++
++  external_script.Complete("");
++  test::RunPendingTasks();
++
++  EXPECT_TRUE(listener->WasInvoked());
++
++  EXPECT_EQ(GetDocument().documentElement()->getAttribute(
++                AtomicString("data-ready-state")),
++            "loading");
++
++  Element* last = GetDocument().getElementById(AtomicString("last"));
++  ASSERT_TRUE(last);
++  ASSERT_TRUE(last->parentElement());
++  EXPECT_EQ(last->parentElement()->localName(),
++            StrCat({"e", String::Number(kNestingDepth - 1)}));
++
++  // The data received together with the completion must have been parsed.
++  Element* tail = GetDocument().getElementById(AtomicString("tail"));
++  ASSERT_TRUE(tail);
++  EXPECT_EQ(tail->parentElement(), GetDocument().body());
++
++  EXPECT_TRUE(GetDocument().LoadEventFinished());
++}
++
++// Like LoadCompletionDuringInlineScript, but the markup after the inline
++// script is not well-formed: a stray end tag followed by a deep run of
++// unclosed elements with namespace declarations. The response finishing
++// during the inline script must not end the document from inside the chunk;
++// the parser has to fail the document in an orderly way afterwards.
++TEST_F(XMLDocumentParserSimTest, LoadCompletionDuringInlineScriptBadMarkup) {
++  SimRequest main_resource("https://example.com/test.xhtml",
++                           "application/xhtml+xml");
++  SimSubresourceRequest external_script("https://example.com/ext.js",
++                                        "text/javascript");
++
++  LoadURL("https://example.com/test.xhtml");
++
++  main_resource.Write(
++      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
++      "<html xmlns=\"http://www.w3.org/1999/xhtml\"><body>"
++      "<script src=\"ext.js\"></script>");
++
++  auto* listener = MakeGarbageCollected<FinishResponseListener>(
++      &main_resource, /*final_data=*/String());
++  GetDocument().addEventListener(AtomicString("finish-response"), listener);
++
++  StringBuilder markup;
++  markup.Append(
++      "<script>"
++      "document.dispatchEvent(new Event('finish-response'));"
++      "document.documentElement.setAttribute('data-ready-state',"
++      " document.readyState);"
++      "</script>"
++      "</script>");
++  for (int i = 0; i < kNestingDepth; ++i) {
++    markup.Append("<e");
++    markup.AppendNumber(i);
++    markup.Append(" xmlns:n");
++    markup.AppendNumber(i);
++    markup.Append("=\"http://example.com/ns/");
++    markup.AppendNumber(i);
++    markup.Append("\">");
++  }
++  main_resource.Write(markup.ToString());
++
++  external_script.Complete("");
++  test::RunPendingTasks();
++
++  EXPECT_TRUE(listener->WasInvoked());
++
++  // The document must not have been finished while the inline script was
++  // still running, even though the markup afterwards fails to parse.
++  EXPECT_EQ(GetDocument().documentElement()->getAttribute(
++                AtomicString("data-ready-state")),
++            "loading");
++
++  // The malformed document must still reach completion.
++  EXPECT_TRUE(GetDocument().LoadEventFinished());
++}
++
++}  // namespace
++
++}  // namespace blink

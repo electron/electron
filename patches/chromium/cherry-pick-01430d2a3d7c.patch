@@ -1,0 +1,1240 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ming-Ying Chung <mych@chromium.org>
+Date: Wed, 30 Sep 2026 07:56:17 -0700
+Subject: [FSA] Block handle use in third-party contexts
+
+The File System Access API restricts file picker dialogs and permission
+requests to first-party contexts. However, the permission model
+decouples permission grant tracking from handle execution contexts.
+`ChromeFileSystemAccessPermissionContext` caches permission grants keyed
+strictly by origin, allowing operational methods in
+`FileSystemAccessHandleBase` such as `AsBlob()` and
+`RunWithPermission()` to proceed immediately when an origin already
+holds `PermissionStatus::GRANTED`.
+
+Consequently, cross-origin iframes obtaining handles via `postMessage()`
+or `document.requestStorageAccess({indexedDB: true})` can read, write,
+and observe granted host directories without triggering third-party
+context blocks or displaying permission prompts.
+This occurs because:
+* `PermissionGrantImpl::RequestPermission()` evaluates active grants and
+  persistent permissions before validating the requesting frame
+  hierarchy against the grant origin.
+* `FileSystemAccessHandleBase::GetReadPermissionStatus()`,
+  `GetWritePermissionStatus()`, and `DoRequestPermission()` query shared
+  grant status without evaluating whether the bound handle executes in a
+  third-party context.
+* Handle read methods including `AsBlob()`, `GetFile()`,
+  `GetDirectoryResolved()`, and `GetEntries()`, along with
+  `FileSystemAccessObserverHost`, check permission status without
+  verifying execution context.
+
+This CL enforces third-party execution context restrictions across both
+the embedder permission boundary and the content handle boundary, while
+preserving user Drag-and-Drop capabilities:
+
+Third-Party Context Detection & Embedder Hardening:
+* Adds `FileSystemAccessHandleBase::IsThirdPartyContext()` to detect
+  non-sandboxed file system paths bound to third-party storage keys,
+  exempting partitioned Origin Private File System paths under
+  `storage::kFileSystemTypeTemporary`.
+* Validates `RenderFrameHost` and rejects cross-origin or third-party
+  iframes with `PermissionRequestOutcome::kThirdPartyContext` at the
+  start of `PermissionGrantImpl::RequestPermission()`, prior to
+  inspecting active or persistent permission statuses.
+* Rejects `DoRequestPermission()` with `kSecurityError` in third-party
+  contexts, preventing prompts from being shown.
+
+Ensure Drag-and-Drop still supported in Third-Party Contexts:
+* Mints a `Fixed(GRANTED)` read grant and `Fixed(DENIED)` write grant in
+  `FileSystemAccessManagerImpl::GetSharedHandleStateForNonSandboxedPath()`
+  for drag-and-drop gestures in third-party contexts, scoping transient
+  read authorization exclusively to explicit user drops while denying
+  reloaded storage or ambient origin access.
+* Updates `GetReadPermissionStatus()` to report
+  `PermissionStatus::GRANTED` in third-party contexts if the handle
+  holds an active `GRANTED` read grant (minted for user drops), and
+  `DENIED` otherwise.
+* Updates `GetWritePermissionStatus()` and
+  `GetReadWritePermissionStatus()` to unconditionally report `DENIED` in
+  third-party contexts.
+
+Operational Handle & Observation Guards:
+* Rejects operational read methods (`AsBlob()`, `GetFile()`,
+  `GetDirectoryResolved()`, and `GetEntries()`) with `kSecurityError` in
+  third-party contexts unless the handle holds an active read grant.
+* Downgrades non-sandboxed grants to `Fixed(DENIED)` when a transfer
+  token is redeemed in a third-party context
+  (`FileSystemAccessTransferTokenImpl::CreateFileHandle()` and
+  `CreateDirectoryHandle()`). This covers handles obtained via
+  `postMessage()` and `document.requestStorageAccess({indexedDB: true})`.
+  As a result, a handle transferred into a third-party context, including
+  a dropped handle posted to a worker, is not readable, and a handle sent
+  back from a third-party context to a first-party context stays denied.
+* Rejects
+  `FileSystemAccessObserverHost::DidResolveTransferTokenToObserve()`
+  with `kSecurityError` in third-party contexts.
+
+Bug: 526039697
+Change-Id: Id9de262d5999f9f73c30990e1f5e68b649254ee9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8302993
+Commit-Queue: Ming-Ying Chung <mych@chromium.org>
+Reviewed-by: Mingyu Lei <leimy@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1708111}
+
+Electron adaptation notes (44-x-y): content::FileSystemAccessPermissionContext
+on this branch still names the enum UserAction (it was renamed to
+AccessTrigger upstream), so the third-party drag-and-drop check added to
+GetSharedHandleStateForNonSandboxedPath() uses the existing user_action
+parameter and UserAction::kDragAndDrop. Conflicting test changes
+(chrome_file_system_access_permission_context_unittest.cc,
+file_system_access_browsertest.cc,
+file_system_access_directory_handle_impl_unittest.cc) are dropped as
+test-only drift. The chrome/ permission-context hunk is mirrored into
+Electron's own copy in a separate commit.
+
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
+index aeb2e7d73f70e7b244a037c5dc2a01d4b73aa28c..1d2b76f08946b87bdac6bca856ae8b406cf1788f 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
+@@ -680,12 +680,55 @@ class ChromeFileSystemAccessPermissionContext::PermissionGrantImpl
+     return path_info_.display_name;
+   }
+ 
++  // Validates that the requesting frame is authorized to access the File System
++  // Access API before checking or granting permissions.
++  //
++  // Returns a failure outcome if `rfh` is null, embedded within a fenced frame,
++  // or executing in a cross-origin or third-party context. Returns base::ok()
++  // when the frame context is authorized.
++  base::expected<void, PermissionRequestOutcome> ValidateRequestingFrame(
++      content::RenderFrameHost* rfh) {
++    if (!rfh) {
++      return base::unexpected(PermissionRequestOutcome::kInvalidFrame);
++    }
++
++    // Fenced frames must not access local file system data or prompt the user.
++    if (rfh->IsNestedWithinFencedFrame()) {
++      return base::unexpected(PermissionRequestOutcome::kInvalidFrame);
++    }
++
++    // Reject third-party iframes and partitioned contexts before checking
++    // existing grants. This prevents cross-origin frames from inheriting or
++    // upgrading permissions granted to the top-level origin.
++    url::Origin embedding_origin = url::Origin::Create(
++        permissions::PermissionUtil::GetLastCommittedOriginAsURL(
++            rfh->GetMainFrame()));
++    if (embedding_origin != origin_ ||
++        rfh->GetStorageKey().IsThirdPartyContext()) {
++      return base::unexpected(PermissionRequestOutcome::kThirdPartyContext);
++    }
++
++    return base::ok();
++  }
++
+   void RequestPermission(
+       content::GlobalRenderFrameHostId frame_id,
+       UserActivationState user_activation_state,
+       base::OnceCallback<void(PermissionRequestOutcome)> callback) override {
+     DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+ 
++    content::RenderFrameHost* rfh = content::RenderFrameHost::FromID(frame_id);
++
++    // Validate the security context of the calling frame before evaluating
++    // grants. Cross-origin frames must be rejected even if the target origin
++    // already holds an active or persisted grant.
++    if (auto validation_result = ValidateRequestingFrame(rfh);
++        !validation_result.has_value()) {
++      RunCallbackAndRecordPermissionRequestOutcome(std::move(callback),
++                                                   validation_result.error());
++      return;
++    }
++
+     // Check if a permission request has already been processed previously. This
+     // check is done first because we don't want to reset the status of a
+     // permission if it has already been granted.
+@@ -751,24 +794,9 @@ class ChromeFileSystemAccessPermissionContext::PermissionGrantImpl
+       return;
+     }
+ 
+-    // Otherwise, perform checks and ask the user for permission.
+-
+-    content::RenderFrameHost* rfh = content::RenderFrameHost::FromID(frame_id);
+-    if (!rfh) {
+-      // Requested from a no longer valid RenderFrameHost.
+-      RunCallbackAndRecordPermissionRequestOutcome(
+-          std::move(callback), PermissionRequestOutcome::kInvalidFrame);
+-      return;
+-    }
+-
+-    // Don't show request permission UI for an inactive RenderFrameHost as the
+-    // page might not distinguish properly between user denying the permission
+-    // and automatic rejection, leading to an inconsistent UX once the page
+-    // becomes active again.
+-    // - If this is called when RenderFrameHost is in BackForwardCache, evict
+-    //   the document from the cache.
+-    // - If this is called when RenderFrameHost is in prerendering, cancel
+-    //   prerendering.
++    // Verify prerequisites for prompting the user. Inactive documents in
++    // BackForwardCache or prerendering cannot present dialogs; evict or cancel
++    // them to prevent inconsistent UI state.
+     if (rfh->IsInactiveAndDisallowActivation(
+             content::DisallowActivationReasonId::
+                 kFileSystemAccessPermissionRequest)) {
+@@ -776,13 +804,8 @@ class ChromeFileSystemAccessPermissionContext::PermissionGrantImpl
+           std::move(callback), PermissionRequestOutcome::kInvalidFrame);
+       return;
+     }
+-    // We don't allow file system access from fenced frames.
+-    if (rfh->IsNestedWithinFencedFrame()) {
+-      RunCallbackAndRecordPermissionRequestOutcome(
+-          std::move(callback), PermissionRequestOutcome::kInvalidFrame);
+-      return;
+-    }
+ 
++    // Prevent background permission dialog spam by requiring a user gesture.
+     if (user_activation_state == UserActivationState::kRequired &&
+         !rfh->HasTransientUserActivation()) {
+       // No permission prompts without user activation.
+@@ -800,16 +823,6 @@ class ChromeFileSystemAccessPermissionContext::PermissionGrantImpl
+       return;
+     }
+ 
+-    url::Origin embedding_origin = url::Origin::Create(
+-        permissions::PermissionUtil::GetLastCommittedOriginAsURL(
+-            rfh->GetMainFrame()));
+-    if (embedding_origin != origin_) {
+-      // Third party iframes are not allowed to request more permissions.
+-      RunCallbackAndRecordPermissionRequestOutcome(
+-          std::move(callback), PermissionRequestOutcome::kThirdPartyContext);
+-      return;
+-    }
+-
+ #if BUILDFLAG(ENABLE_EXTENSIONS_CORE) && BUILDFLAG(ENABLE_GUEST_VIEW)
+     // A permission request from a webview is normally delegated to its embedder
+     // without showing a prompt. However, filesystem permissions are known to be
+diff --git a/content/browser/file_system_access/file_system_access_directory_handle_impl.cc b/content/browser/file_system_access/file_system_access_directory_handle_impl.cc
+index 0ea7d45ad1c4f33ebda6dea433496aad066a579d..177d6307ffda835d7e9cad6960de37e19b245d8d 100644
+--- a/content/browser/file_system_access/file_system_access_directory_handle_impl.cc
++++ b/content/browser/file_system_access/file_system_access_directory_handle_impl.cc
+@@ -532,7 +532,11 @@ void FileSystemAccessDirectoryHandleImpl::ResolveImpl(
+     FileSystemAccessTransferTokenImpl* possible_child) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+ 
+-  if (!possible_child) {
++  // TODO(crbug.com/526039697): Consider restricting topology resolution in
++  // third-party contexts if the directory handle lacks active read permissions.
++
++  if (!possible_child ||
++      possible_child->origin() != context().storage_key.origin()) {
+     std::move(callback).Run(
+         file_system_access_error::FromStatus(
+             blink::mojom::FileSystemAccessStatus::kOperationFailed),
+diff --git a/content/browser/file_system_access/file_system_access_file_handle_impl_unittest.cc b/content/browser/file_system_access/file_system_access_file_handle_impl_unittest.cc
+index 0880dd82f16b629459ba58f37375b58cb91db914..3fe12e277e34edadf582e843f3c1c20244df2d67 100644
+--- a/content/browser/file_system_access/file_system_access_file_handle_impl_unittest.cc
++++ b/content/browser/file_system_access/file_system_access_file_handle_impl_unittest.cc
+@@ -61,12 +61,12 @@
+ #include "url/gurl.h"
+ 
+ #if BUILDFLAG(IS_ANDROID)
+-#include "base/strings/string_view_util.h"
+-#include "crypto/obsolete/sha1.h"
+ #include "base/android/content_uri_utils.h"
+ #include "base/android/path_utils.h"
+ #include "base/strings/string_number_conversions.h"
++#include "base/strings/string_view_util.h"
+ #include "base/test/android/content_uri_test_utils.h"
++#include "crypto/obsolete/sha1.h"
+ #endif
+ 
+ namespace content {
+@@ -331,6 +331,59 @@ class FileSystemAccessFileHandleImplTestBase : public testing::Test {
+   base::test::ScopedFeatureList scoped_feature_list;
+ };
+ 
++// Verifies that `AsBlob()` is blocked in a third-party context and returns
++// `kSecurityError` with a null blob.
++TEST_F(FileSystemAccessFileHandleImplTestBase,
++       AsBlob_ThirdPartyContext_Blocked) {
++  const blink::StorageKey kThirdPartyStorageKey = blink::StorageKey::Create(
++      url::Origin::Create(GURL("https://example.com/")),
++      net::SchemefulSite(GURL("https://other.com/")),
++      blink::mojom::AncestorChainBit::kCrossSite);
++
++  auto handle = std::make_unique<FileSystemAccessFileHandleImpl>(
++      manager_.get(),
++      FileSystemAccessManagerImpl::BindingContext(
++          kThirdPartyStorageKey, test_src_url_,
++          web_contents_->GetPrimaryMainFrame()->GetGlobalId()),
++      test_file_url_, "test",
++      FileSystemAccessManagerImpl::SharedHandleState(deny_grant_, deny_grant_));
++
++  base::test::TestFuture<blink::mojom::FileSystemAccessErrorPtr,
++                         const base::File::Info&,
++                         blink::mojom::SerializedBlobPtr>
++      future;
++  handle->AsBlob(future.GetCallback());
++  EXPECT_EQ(future.Get<0>()->status, FileSystemAccessStatus::kSecurityError);
++  EXPECT_TRUE(future.Get<2>().is_null());
++}
++
++// Verifies that `AsBlob()` is allowed in a third-party context if the handle
++// originated from a drag-and-drop operation.
++TEST_F(FileSystemAccessFileHandleImplTestBase,
++       AsBlob_ThirdPartyContext_DragAndDrop_Allowed) {
++  const blink::StorageKey kThirdPartyStorageKey = blink::StorageKey::Create(
++      url::Origin::Create(GURL("https://example.com/")),
++      net::SchemefulSite(GURL("https://other.com/")),
++      blink::mojom::AncestorChainBit::kCrossSite);
++
++  auto handle = std::make_unique<FileSystemAccessFileHandleImpl>(
++      manager_.get(),
++      FileSystemAccessManagerImpl::BindingContext(
++          kThirdPartyStorageKey, test_src_url_,
++          web_contents_->GetPrimaryMainFrame()->GetGlobalId()),
++      test_file_url_, "test",
++      FileSystemAccessManagerImpl::SharedHandleState(allow_grant_,
++                                                     deny_grant_));
++
++  base::test::TestFuture<blink::mojom::FileSystemAccessErrorPtr,
++                         const base::File::Info&,
++                         blink::mojom::SerializedBlobPtr>
++      future;
++  handle->AsBlob(future.GetCallback());
++  EXPECT_EQ(future.Get<0>()->status, FileSystemAccessStatus::kOk);
++  EXPECT_FALSE(future.Get<2>().is_null());
++}
++
+ class FileSystemAccessAccessHandleTest
+     : public FileSystemAccessFileHandleImplTestBase {
+  public:
+diff --git a/content/browser/file_system_access/file_system_access_handle_base.cc b/content/browser/file_system_access/file_system_access_handle_base.cc
+index 876656f1eb7a1270e0bcbcaaacb897310227dc7f..e090de5cad42c35a7763fe51f7bbc6f5905bbaee 100644
+--- a/content/browser/file_system_access/file_system_access_handle_base.cc
++++ b/content/browser/file_system_access/file_system_access_handle_base.cc
+@@ -33,6 +33,7 @@
+ #include "storage/common/file_system/file_system_types.h"
+ #include "storage/common/file_system/file_system_util.h"
+ #include "third_party/blink/public/common/features_generated.h"
++#include "third_party/blink/public/common/storage_key/storage_key.h"
+ #include "third_party/blink/public/mojom/file_system_access/file_system_access_error.mojom-forward.h"
+ 
+ namespace content {
+@@ -91,12 +92,34 @@ FileSystemAccessHandleBase::~FileSystemAccessHandleBase() {
+ FileSystemAccessHandleBase::PermissionStatus
+ FileSystemAccessHandleBase::GetReadPermissionStatus() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  return handle_state_.read_grant->GetStatus();
++  // In 3P contexts, user permission prompts are blocked and ambient origin
++  // permissions cannot be upgraded. Read access is permitted only if the
++  // handle already holds an active `GRANTED` capability minted for explicit
++  // Drag & Drop user gestures. Write access remains blocked regardless of
++  // grant status.
++  const PermissionStatus status = handle_state_.read_grant->GetStatus();
++  if (IsThirdPartyContext() && status != PermissionStatus::GRANTED) {
++    return PermissionStatus::DENIED;
++  }
++  return status;
+ }
+ 
+ base::expected<void, blink::mojom::FileSystemAccessErrorPtr>
+ FileSystemAccessHandleBase::CheckReadAccess() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  // In 3P contexts, accessing non-sandboxed files without an active explicit
++  // grant (e.g. from user drop) violates the security boundary and must return
++  // `kSecurityError`, mapping to SecurityError in JS.
++  if (IsThirdPartyContext() &&
++      GetReadPermissionStatus() != PermissionStatus::GRANTED) {
++    return base::unexpected(file_system_access_error::FromStatus(
++        blink::mojom::FileSystemAccessStatus::kSecurityError,
++        "Not allowed to access files or directories in a third-party "
++        "context."));
++  }
++
++  // In 1P contexts, standard permission denial or unprompted state returns
++  // `kPermissionDenied`, mapping to `NotAllowedError` in JS.
+   if (GetReadPermissionStatus() != PermissionStatus::GRANTED) {
+     return base::unexpected(file_system_access_error::FromStatus(
+         blink::mojom::FileSystemAccessStatus::kPermissionDenied));
+@@ -115,12 +138,18 @@ FileSystemAccessHandleBase::GetWritePermissionStatus() {
+     mojo::ReportBadMessage("feature 'FileSystemAccessWriteMode' not enabled");
+     NOTREACHED();
+   }
++  if (IsThirdPartyContext()) {
++    return PermissionStatus::DENIED;
++  }
+   return handle_state_.write_grant->GetStatus();
+ }
+ 
+ FileSystemAccessHandleBase::PermissionStatus
+ FileSystemAccessHandleBase::GetReadWritePermissionStatus() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  if (IsThirdPartyContext()) {
++    return PermissionStatus::DENIED;
++  }
+   PermissionStatus read_status = GetReadPermissionStatus();
+   if (read_status != PermissionStatus::GRANTED) {
+     return read_status;
+@@ -157,6 +186,15 @@ void FileSystemAccessHandleBase::DoRequestPermission(
+     NOTREACHED();
+   }
+ 
++  if (IsThirdPartyContext()) {
++    std::move(callback).Run(
++        file_system_access_error::FromStatus(
++            blink::mojom::FileSystemAccessStatus::kSecurityError,
++            "Not allowed to request permissions in a third-party context."),
++        PermissionStatus::DENIED);
++    return;
++  }
++
+   PermissionStatus current_status = GetPermissionStatusForMode(mode);
+   // If we already have a valid permission status, just return that. Also just
+   // return the current permission status if this is called from a worker, as we
+@@ -266,7 +304,7 @@ void FileSystemAccessHandleBase::DidRequestPermission(
+       std::move(callback).Run(
+           file_system_access_error::FromStatus(
+               blink::mojom::FileSystemAccessStatus::kSecurityError,
+-              "Not allowed to request permissions in this context."),
++              "Not allowed to request permissions in a third-party context."),
+           GetPermissionStatusForMode(mode));
+       return;
+     case Outcome::kNoUserActivation:
+@@ -842,4 +880,17 @@ FileSystemAccessHandleBase::GetPermissionStatusForMode(
+   }
+ }
+ 
++bool FileSystemAccessHandleBase::IsThirdPartyContext() const {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  return IsThirdPartyContext(url_, context_.storage_key);
++}
++
++// static
++bool FileSystemAccessHandleBase::IsThirdPartyContext(
++    const storage::FileSystemURL& url,
++    const blink::StorageKey& storage_key) {
++  return url.type() != storage::kFileSystemTypeTemporary &&
++         storage_key.IsThirdPartyContext();
++}
++
+ }  // namespace content
+diff --git a/content/browser/file_system_access/file_system_access_handle_base.h b/content/browser/file_system_access/file_system_access_handle_base.h
+index b44c18d0532ebc74b39661d590744f6c0e9525df..b5442190014c49f8ef215d4c0bc26e42653ccbee 100644
+--- a/content/browser/file_system_access/file_system_access_handle_base.h
++++ b/content/browser/file_system_access/file_system_access_handle_base.h
+@@ -94,6 +94,12 @@ class CONTENT_EXPORT FileSystemAccessHandleBase {
+   base::expected<void, blink::mojom::FileSystemAccessErrorPtr>
+   CheckReadAccess();
+ 
++  // Checks whether a file system URL and storage key represent a non-sandboxed
++  // file system path bound to a third-party execution context. Sandboxed file
++  // systems (OPFS) are partitioned by storage key and exempt from third-party
++  // restrictions.
++  static bool IsThirdPartyContext(const storage::FileSystemURL& url,
++                                  const blink::StorageKey& storage_key);
+   storage::FileSystemURL GetParentURLForTesting() { return GetParentURL(); }
+ 
+   // Implementation for the GetPermissionStatus method in the
+@@ -159,6 +165,11 @@ class CONTENT_EXPORT FileSystemAccessHandleBase {
+  protected:
+   virtual base::WeakPtr<FileSystemAccessHandleBase> AsWeakPtr() = 0;
+ 
++  // Checks whether the handle represents a non-sandboxed file system path
++  // bound to a third-party execution context. Sandboxed file systems (OPFS)
++  // are partitioned by storage key and exempt from third-party restrictions.
++  bool IsThirdPartyContext() const;
++
+   // Returns the effective write permission status.
+   // This currently returns permission status for kReadWrite, but will switch to
+   // the one for kWrite only when the FileSystemAccessWriteMode feature is fully
+diff --git a/content/browser/file_system_access/file_system_access_handle_base_unittest.cc b/content/browser/file_system_access/file_system_access_handle_base_unittest.cc
+index 3dd44b45564be9031e72121fcb4624ac3382a9e5..85242624482bdaf3d3cebfd6dde3e5ad1fb21b85 100644
+--- a/content/browser/file_system_access/file_system_access_handle_base_unittest.cc
++++ b/content/browser/file_system_access/file_system_access_handle_base_unittest.cc
+@@ -20,6 +20,7 @@
+ #include "content/browser/file_system_access/mock_file_system_access_permission_context.h"
+ #include "content/browser/file_system_access/mock_file_system_access_permission_grant.h"
+ #include "content/public/test/browser_task_environment.h"
++#include "net/base/schemeful_site.h"
+ #include "storage/browser/blob/blob_storage_context.h"
+ #include "storage/browser/quota/quota_manager_proxy.h"
+ #include "storage/browser/test/test_file_system_context.h"
+@@ -98,6 +99,7 @@ MATCHER_P2(PermissionStatusIs,
+ 
+ class TestFileSystemAccessHandle : public FileSystemAccessHandleBase {
+  public:
++  using FileSystemAccessHandleBase::DoGetCloudIdentifiers;
+   using FileSystemAccessHandleBase::GetRenamePermission;
+   using FileSystemAccessHandleBase::RenamePermission;
+ 
+@@ -229,6 +231,61 @@ TEST_P(FileSystemAccessHandleGetReadPermissionStatusTest, DoesReturnStatus) {
+   EXPECT_EQ(PermissionStatus::GRANTED, handle.GetReadPermissionStatus());
+ }
+ 
++// Verifies that `GetReadPermissionStatus()` reports `GRANTED` in a third-party
++// context when the underlying read grant holds `GRANTED` (e.g. from user drop
++// or transfer).
++TEST_P(FileSystemAccessHandleGetReadPermissionStatusTest,
++       ThirdPartyContext_GrantedWhenGrantIsGranted) {
++  const blink::StorageKey kThirdPartyStorageKey = blink::StorageKey::Create(
++      url::Origin::Create(GURL("https://example.com/")),
++      net::SchemefulSite(GURL("https://other.com/")),
++      blink::mojom::AncestorChainBit::kCrossSite);
++
++  auto context = is_worker()
++                     ? FileSystemAccessManagerImpl::BindingContext(
++                           kThirdPartyStorageKey, kTestURL, kWorkerProcessId)
++                     : FileSystemAccessManagerImpl::BindingContext(
++                           kThirdPartyStorageKey, kTestURL, kFrameId);
++  TestFileSystemAccessHandle handle(
++      manager_.get(), context,
++      FileSystemURL::CreateForTest(kThirdPartyStorageKey,
++                                   storage::kFileSystemTypeLocal,
++                                   base::FilePath::FromUTF8Unsafe("/test")),
++      handle_state_);
++
++  EXPECT_CALL(*read_grant_, GetStatus())
++      .WillRepeatedly(testing::Return(PermissionStatus::GRANTED));
++  EXPECT_EQ(handle.GetReadPermissionStatus(), PermissionStatus::GRANTED);
++}
++
++// Verifies that `GetReadPermissionStatus()` reports `DENIED` in a third-party
++// context when the underlying read grant is `ASK` or `DENIED`.
++TEST_P(FileSystemAccessHandleGetReadPermissionStatusTest,
++       ThirdPartyContext_DeniedWhenGrantNotGranted) {
++  const blink::StorageKey kThirdPartyStorageKey = blink::StorageKey::Create(
++      url::Origin::Create(GURL("https://example.com/")),
++      net::SchemefulSite(GURL("https://other.com/")),
++      blink::mojom::AncestorChainBit::kCrossSite);
++
++  auto context = is_worker()
++                     ? FileSystemAccessManagerImpl::BindingContext(
++                           kThirdPartyStorageKey, kTestURL, kWorkerProcessId)
++                     : FileSystemAccessManagerImpl::BindingContext(
++                           kThirdPartyStorageKey, kTestURL, kFrameId);
++  TestFileSystemAccessHandle handle(
++      manager_.get(), context,
++      FileSystemURL::CreateForTest(kThirdPartyStorageKey,
++                                   storage::kFileSystemTypeLocal,
++                                   base::FilePath::FromUTF8Unsafe("/test")),
++      handle_state_);
++
++  EXPECT_CALL(*read_grant_, GetStatus())
++      .WillOnce(testing::Return(PermissionStatus::ASK))
++      .WillOnce(testing::Return(PermissionStatus::DENIED));
++  EXPECT_EQ(handle.GetReadPermissionStatus(), PermissionStatus::DENIED);
++  EXPECT_EQ(handle.GetReadPermissionStatus(), PermissionStatus::DENIED);
++}
++
+ INSTANTIATE_TEST_SUITE_P(
+     All,
+     FileSystemAccessHandleGetReadPermissionStatusTest,
+@@ -457,6 +514,154 @@ TEST_P(FileSystemAccessDoRequestReadPermissionTest, AlreadyDenied) {
+                          PermissionStatus::DENIED));
+ }
+ 
++// Verifies that `DoRequestPermission()` rejects read access requests for a
++// handle bound to a third-party context, even when the underlying permission
++// grant holds status `GRANTED`. Dispatches no permission prompt requests to the
++// frame and returns status `PermissionStatus::DENIED` with error
++// `kSecurityError`.
++TEST_P(FileSystemAccessDoRequestReadPermissionTest,
++       ThirdPartyContext_ReadPermissionBlocked) {
++  const blink::StorageKey kThirdPartyStorageKey = blink::StorageKey::Create(
++      url::Origin::Create(GURL("https://example.com/")),
++      net::SchemefulSite(GURL("https://other.com/")),
++      blink::mojom::AncestorChainBit::kCrossSite);
++
++  auto context = is_worker()
++                     ? FileSystemAccessManagerImpl::BindingContext(
++                           kThirdPartyStorageKey, kTestURL, kWorkerProcessId)
++                     : FileSystemAccessManagerImpl::BindingContext(
++                           kThirdPartyStorageKey, kTestURL, kFrameId);
++  TestFileSystemAccessHandle handle(
++      manager_.get(), context,
++      FileSystemURL::CreateForTest(kThirdPartyStorageKey,
++                                   storage::kFileSystemTypeLocal,
++                                   base::FilePath::FromUTF8Unsafe("/test")),
++      handle_state_);
++
++  EXPECT_CALL(*read_grant_, GetStatus())
++      .WillRepeatedly(testing::Return(PermissionStatus::GRANTED));
++
++  // No permission prompt requests should be dispatched to the frame.
++  EXPECT_CALL(*read_grant_,
++              RequestPermission_(testing::_, testing::_, testing::_))
++      .Times(0);
++  EXPECT_CALL(*write_grant_,
++              RequestPermission_(testing::_, testing::_, testing::_))
++      .Times(0);
++
++  // In an unfixed state, `DoRequestPermission()` checks only whether the active
++  // grant status differs from `ASK`. When the status is `GRANTED` (inherited
++  // from a first-party origin), read access is permitted without evaluating the
++  // third-party embedding hierarchy.
++  EXPECT_THAT(
++      DoRequestPermission(handle, FileSystemAccessPermissionMode::kRead),
++      PermissionStatusIs(FileSystemAccessStatus::kSecurityError,
++                         PermissionStatus::DENIED));
++}
++
++// Verifies that `GetReadPermissionStatus()` returns `PermissionStatus::DENIED`
++// for a non-drag-and-drop handle in a third-party context holding a denied
++// grant.
++TEST_P(FileSystemAccessDoRequestReadPermissionTest,
++       GetReadPermissionStatus_ThirdPartyContext_Blocked) {
++  const blink::StorageKey kThirdPartyStorageKey = blink::StorageKey::Create(
++      url::Origin::Create(GURL("https://example.com/")),
++      net::SchemefulSite(GURL("https://other.com/")),
++      blink::mojom::AncestorChainBit::kCrossSite);
++
++  auto context = is_worker()
++                     ? FileSystemAccessManagerImpl::BindingContext(
++                           kThirdPartyStorageKey, kTestURL, kWorkerProcessId)
++                     : FileSystemAccessManagerImpl::BindingContext(
++                           kThirdPartyStorageKey, kTestURL, kFrameId);
++  auto deny_grant = base::MakeRefCounted<
++      testing::StrictMock<MockFileSystemAccessPermissionGrant>>();
++  FileSystemAccessManagerImpl::SharedHandleState deny_state(deny_grant,
++                                                            write_grant_);
++  TestFileSystemAccessHandle handle(
++      manager_.get(), context,
++      FileSystemURL::CreateForTest(kThirdPartyStorageKey,
++                                   storage::kFileSystemTypeLocal,
++                                   base::FilePath::FromUTF8Unsafe("/test")),
++      deny_state);
++
++  EXPECT_CALL(*deny_grant, GetStatus())
++      .WillRepeatedly(testing::Return(PermissionStatus::DENIED));
++
++  EXPECT_EQ(handle.GetReadPermissionStatus(), PermissionStatus::DENIED);
++}
++
++// Verifies that `GetReadPermissionStatus()` returns `GRANTED` in a third-party
++// context if the handle originated from a drag-and-drop operation.
++TEST_P(FileSystemAccessDoRequestReadPermissionTest,
++       GetReadPermissionStatus_ThirdPartyContext_DragAndDrop_Allowed) {
++  const blink::StorageKey kThirdPartyStorageKey = blink::StorageKey::Create(
++      url::Origin::Create(GURL("https://example.com/")),
++      net::SchemefulSite(GURL("https://other.com/")),
++      blink::mojom::AncestorChainBit::kCrossSite);
++
++  auto context = is_worker()
++                     ? FileSystemAccessManagerImpl::BindingContext(
++                           kThirdPartyStorageKey, kTestURL, kWorkerProcessId)
++                     : FileSystemAccessManagerImpl::BindingContext(
++                           kThirdPartyStorageKey, kTestURL, kFrameId);
++  TestFileSystemAccessHandle handle(
++      manager_.get(), context,
++      FileSystemURL::CreateForTest(kThirdPartyStorageKey,
++                                   storage::kFileSystemTypeLocal,
++                                   base::FilePath::FromUTF8Unsafe("/test")),
++      FileSystemAccessManagerImpl::SharedHandleState(read_grant_,
++                                                     write_grant_));
++
++  EXPECT_CALL(*read_grant_, GetStatus())
++      .WillRepeatedly(testing::Return(PermissionStatus::GRANTED));
++
++  EXPECT_EQ(handle.GetReadPermissionStatus(), PermissionStatus::GRANTED);
++}
++
++// Verifies that `DoGetCloudIdentifiers()` returns `kSecurityError` for a
++// handle bound to a third-party context without active read grant.
++TEST_P(FileSystemAccessDoRequestReadPermissionTest,
++       DoGetCloudIdentifiers_ThirdPartyContext_SecurityError) {
++  base::test::ScopedFeatureList features;
++  features.InitAndEnableFeature(
++      blink::features::kFileSystemAccessGetCloudIdentifiers);
++
++  const blink::StorageKey kThirdPartyStorageKey = blink::StorageKey::Create(
++      url::Origin::Create(GURL("https://example.com/")),
++      net::SchemefulSite(GURL("https://other.com/")),
++      blink::mojom::AncestorChainBit::kCrossSite);
++
++  auto context = is_worker()
++                     ? FileSystemAccessManagerImpl::BindingContext(
++                           kThirdPartyStorageKey, kTestURL, kWorkerProcessId)
++                     : FileSystemAccessManagerImpl::BindingContext(
++                           kThirdPartyStorageKey, kTestURL, kFrameId);
++  auto deny_grant = base::MakeRefCounted<
++      testing::StrictMock<MockFileSystemAccessPermissionGrant>>();
++  FileSystemAccessManagerImpl::SharedHandleState deny_state(deny_grant,
++                                                            write_grant_);
++  TestFileSystemAccessHandle handle(
++      manager_.get(), context,
++      FileSystemURL::CreateForTest(kThirdPartyStorageKey,
++                                   storage::kFileSystemTypeLocal,
++                                   base::FilePath::FromUTF8Unsafe("/test")),
++      deny_state);
++
++  EXPECT_CALL(*deny_grant, GetStatus())
++      .WillRepeatedly(testing::Return(PermissionStatus::DENIED));
++
++  base::test::TestFuture<
++      blink::mojom::FileSystemAccessErrorPtr,
++      std::vector<blink::mojom::FileSystemAccessCloudIdentifierPtr>>
++      future;
++  handle.DoGetCloudIdentifiers(
++      FileSystemAccessPermissionContext::HandleType::kFile,
++      future.GetCallback());
++  EXPECT_EQ(future.Get<0>()->status,
++            blink::mojom::FileSystemAccessStatus::kSecurityError);
++}
++
+ class FileSystemAccessDoRequestReadWritePermissionTest
+     : public FileSystemAccessDoRequestPermissionTestBase,
+       public testing::WithParamInterface<TestContextParam> {
+@@ -1129,6 +1334,164 @@ TEST_P(FileSystemAccessDoRequestWritePermissionTest, AlreadyDenied) {
+                          PermissionStatus::DENIED));
+ }
+ 
++// Verifies that `DoRequestPermission()` rejects write access requests for a
++// handle bound to a third-party context, even when the underlying permission
++// grant holds status `GRANTED`. Dispatches no permission prompt requests to the
++// frame and returns status `PermissionStatus::DENIED` with error
++// `kSecurityError`.
++TEST_P(FileSystemAccessDoRequestWritePermissionTest, ThirdPartyContextBlocked) {
++  base::test::ScopedFeatureList features;
++  features.InitAndEnableFeature(blink::features::kFileSystemAccessWriteMode);
++
++  const blink::StorageKey kThirdPartyStorageKey = blink::StorageKey::Create(
++      url::Origin::Create(GURL("https://example.com/")),
++      net::SchemefulSite(GURL("https://other.com/")),
++      blink::mojom::AncestorChainBit::kCrossSite);
++
++  auto context = is_worker()
++                     ? FileSystemAccessManagerImpl::BindingContext(
++                           kThirdPartyStorageKey, kTestURL, kWorkerProcessId)
++                     : FileSystemAccessManagerImpl::BindingContext(
++                           kThirdPartyStorageKey, kTestURL, kFrameId);
++  TestFileSystemAccessHandle handle(
++      manager_.get(), context,
++      FileSystemURL::CreateForTest(kThirdPartyStorageKey,
++                                   storage::kFileSystemTypeLocal,
++                                   base::FilePath::FromUTF8Unsafe("/test")),
++      handle_state_);
++
++  EXPECT_CALL(*write_grant_, GetStatus())
++      .WillRepeatedly(testing::Return(PermissionStatus::GRANTED));
++
++  // No permission prompt requests should be dispatched to the frame.
++  EXPECT_CALL(*read_grant_,
++              RequestPermission_(testing::_, testing::_, testing::_))
++      .Times(0);
++  EXPECT_CALL(*write_grant_,
++              RequestPermission_(testing::_, testing::_, testing::_))
++      .Times(0);
++
++  // In an unfixed state, `DoRequestPermission()` checks only whether the active
++  // write grant status differs from `ASK`, skipping third-party ancestor checks
++  // and allowing cross-origin frames to modify local files.
++  EXPECT_THAT(
++      DoRequestPermission(handle, FileSystemAccessPermissionMode::kWrite),
++      PermissionStatusIs(FileSystemAccessStatus::kSecurityError,
++                         PermissionStatus::DENIED));
++}
++
++// Verifies that operational handle write operations invoked via
++// `RunWithPermission()` are blocked for a handle bound to a third-party
++// context, routing to the failure callback with `kSecurityError` instead of
++// executing the success callback.
++TEST_P(FileSystemAccessDoRequestWritePermissionTest,
++       RunWithPermission_ThirdPartyContext_Blocked) {
++  base::test::ScopedFeatureList features;
++  features.InitAndEnableFeature(blink::features::kFileSystemAccessWriteMode);
++
++  const blink::StorageKey kThirdPartyStorageKey = blink::StorageKey::Create(
++      url::Origin::Create(GURL("https://example.com/")),
++      net::SchemefulSite(GURL("https://other.com/")),
++      blink::mojom::AncestorChainBit::kCrossSite);
++
++  auto context = is_worker()
++                     ? FileSystemAccessManagerImpl::BindingContext(
++                           kThirdPartyStorageKey, kTestURL, kWorkerProcessId)
++                     : FileSystemAccessManagerImpl::BindingContext(
++                           kThirdPartyStorageKey, kTestURL, kFrameId);
++  TestFileSystemAccessHandle handle(
++      manager_.get(), context,
++      FileSystemURL::CreateForTest(kThirdPartyStorageKey,
++                                   storage::kFileSystemTypeLocal,
++                                   base::FilePath::FromUTF8Unsafe("/test")),
++      handle_state_);
++
++  EXPECT_CALL(*write_grant_, GetStatus())
++      .WillRepeatedly(testing::Return(PermissionStatus::GRANTED));
++
++  base::test::TestFuture<bool> success_future;
++  base::test::TestFuture<blink::mojom::FileSystemAccessErrorPtr, bool>
++      failure_future;
++
++  handle.RunWithPermission(blink::mojom::FileSystemAccessPermissionMode::kWrite,
++                           success_future.GetCallback(),
++                           failure_future.GetCallback(), true);
++
++  // In an unfixed state, `RunWithPermission()` checks only whether the write
++  // grant status differs from `ASK`. When `GRANTED`, it directly invokes the
++  // success callback, allowing third-party contexts to write without
++  // validation.
++  EXPECT_FALSE(success_future.IsReady())
++      << "RunWithPermission unexpectedly executed success callback in "
++         "third-party context";
++  ASSERT_TRUE(failure_future.IsReady())
++      << "RunWithPermission did not invoke failure callback in third-party "
++         "context";
++  EXPECT_EQ(failure_future.Get<0>()->status,
++            blink::mojom::FileSystemAccessStatus::kSecurityError);
++}
++
++// Verifies that `GetWritePermissionStatus()` returns `DENIED` in a third-party
++// context, even when the underlying permission grant holds status `GRANTED`.
++TEST_P(FileSystemAccessDoRequestWritePermissionTest,
++       GetWritePermissionStatus_ThirdPartyContext_Blocked) {
++  base::test::ScopedFeatureList features;
++  features.InitAndEnableFeature(blink::features::kFileSystemAccessWriteMode);
++
++  const blink::StorageKey kThirdPartyStorageKey = blink::StorageKey::Create(
++      url::Origin::Create(GURL("https://example.com/")),
++      net::SchemefulSite(GURL("https://other.com/")),
++      blink::mojom::AncestorChainBit::kCrossSite);
++
++  auto context = is_worker()
++                     ? FileSystemAccessManagerImpl::BindingContext(
++                           kThirdPartyStorageKey, kTestURL, kWorkerProcessId)
++                     : FileSystemAccessManagerImpl::BindingContext(
++                           kThirdPartyStorageKey, kTestURL, kFrameId);
++  TestFileSystemAccessHandle handle(
++      manager_.get(), context,
++      FileSystemURL::CreateForTest(kThirdPartyStorageKey,
++                                   storage::kFileSystemTypeLocal,
++                                   base::FilePath::FromUTF8Unsafe("/test")),
++      handle_state_);
++
++  EXPECT_CALL(*write_grant_, GetStatus())
++      .WillRepeatedly(testing::Return(PermissionStatus::GRANTED));
++
++  EXPECT_EQ(handle.GetWritePermissionStatus(), PermissionStatus::DENIED);
++}
++
++// Verifies that `GetWritePermissionStatus()` returns `DENIED` in a third-party
++// context even if the handle originated from a drag-and-drop operation.
++TEST_P(FileSystemAccessDoRequestWritePermissionTest,
++       GetWritePermissionStatus_ThirdPartyContext_DragAndDrop_Blocked) {
++  base::test::ScopedFeatureList features;
++  features.InitAndEnableFeature(blink::features::kFileSystemAccessWriteMode);
++
++  const blink::StorageKey kThirdPartyStorageKey = blink::StorageKey::Create(
++      url::Origin::Create(GURL("https://example.com/")),
++      net::SchemefulSite(GURL("https://other.com/")),
++      blink::mojom::AncestorChainBit::kCrossSite);
++
++  auto context = is_worker()
++                     ? FileSystemAccessManagerImpl::BindingContext(
++                           kThirdPartyStorageKey, kTestURL, kWorkerProcessId)
++                     : FileSystemAccessManagerImpl::BindingContext(
++                           kThirdPartyStorageKey, kTestURL, kFrameId);
++  TestFileSystemAccessHandle handle(
++      manager_.get(), context,
++      FileSystemURL::CreateForTest(kThirdPartyStorageKey,
++                                   storage::kFileSystemTypeLocal,
++                                   base::FilePath::FromUTF8Unsafe("/test")),
++      FileSystemAccessManagerImpl::SharedHandleState(read_grant_,
++                                                     write_grant_));
++
++  EXPECT_CALL(*write_grant_, GetStatus())
++      .WillRepeatedly(testing::Return(PermissionStatus::GRANTED));
++
++  EXPECT_EQ(handle.GetWritePermissionStatus(), PermissionStatus::DENIED);
++}
++
+ class FileSystemAccessDoGetPermissionStatusTest
+     : public FileSystemAccessHandleParamTestBase {
+  public:
+diff --git a/content/browser/file_system_access/file_system_access_manager_impl.cc b/content/browser/file_system_access/file_system_access_manager_impl.cc
+index 6d9e8178eea04dd8228fddca3b441e5e294830e7..623c97ee8e1e3a350ab3bef6d2dcc4287caf476a 100644
+--- a/content/browser/file_system_access/file_system_access_manager_impl.cc
++++ b/content/browser/file_system_access/file_system_access_manager_impl.cc
+@@ -2051,8 +2051,23 @@ FileSystemAccessManagerImpl::GetSharedHandleStateForNonSandboxedPath(
+     HandleType handle_type,
+     FileSystemAccessPermissionContext::UserAction user_action) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++
+   scoped_refptr<FileSystemAccessPermissionGrant> read_grant, write_grant;
+-  if (permission_context_) {
++  if (storage_key.IsThirdPartyContext()) {
++    // Non-sandboxed paths in third-party contexts bypass embedder permission
++    // prompts. Drag-and-drop explicitly confers transient read access via user
++    // drop intent, while writes and non-drop reads are strictly denied.
++    if (user_action ==
++        FileSystemAccessPermissionContext::UserAction::kDragAndDrop) {
++      read_grant = base::MakeRefCounted<FixedFileSystemAccessPermissionGrant>(
++          PermissionStatus::GRANTED, path_info);
++    } else {
++      read_grant = base::MakeRefCounted<FixedFileSystemAccessPermissionGrant>(
++          PermissionStatus::DENIED, path_info);
++    }
++    write_grant = base::MakeRefCounted<FixedFileSystemAccessPermissionGrant>(
++        PermissionStatus::DENIED, path_info);
++  } else if (permission_context_) {
+     read_grant = permission_context_->GetReadPermissionGrant(
+         storage_key.origin(), path_info, handle_type, user_action);
+     write_grant = permission_context_->GetWritePermissionGrant(
+diff --git a/content/browser/file_system_access/file_system_access_manager_impl_unittest.cc b/content/browser/file_system_access/file_system_access_manager_impl_unittest.cc
+index b54ac9ab2025177652d495f63881a73a8c42081c..a735749ac37b110a38f04f6e220682b3670bed19 100644
+--- a/content/browser/file_system_access/file_system_access_manager_impl_unittest.cc
++++ b/content/browser/file_system_access/file_system_access_manager_impl_unittest.cc
+@@ -2624,4 +2624,170 @@ TEST_F(FileSystemAccessManagerImplTest, IsSafePathComponent) {
+   }
+ }
+ 
++// Verifies that redeeming a first-party `FileSystemAccessTransferToken` with
++// `PermissionStatus::GRANTED` inside a third-party `BindingContext` (such as
++// via `postMessage` or `StorageAccessHandle.indexedDB`) downgrades
++// non-sandboxed file and directory handles to `PermissionStatus::DENIED`, while
++// preserving `PermissionStatus::GRANTED` for sandboxed (OPFS) handles.
++TEST_F(FileSystemAccessManagerImplTest,
++       GetHandleFromToken_ThirdPartyContextBlocksNonSandboxedReadAndWrite) {
++  const blink::StorageKey kThirdPartyStorageKey = blink::StorageKey::Create(
++      kTestStorageKey.origin(), net::SchemefulSite(GURL("https://other.com")),
++      blink::mojom::AncestorChainBit::kCrossSite);
++  const FileSystemAccessManagerImpl::BindingContext third_party_context = {
++      kThirdPartyStorageKey, kTestURL, frame_id_};
++  mojo::Remote<blink::mojom::FileSystemAccessManager> third_party_manager;
++  manager_->BindReceiver(third_party_context,
++                         third_party_manager.BindNewPipeAndPassReceiver());
++
++  // 1. Non-sandboxed file token minted in 1P context with GRANTED permissions.
++  auto local_file_url = file_system_context_->CreateCrackedFileSystemURL(
++      kTestStorageKey, storage::kFileSystemTypeLocal,
++      dir_.GetPath().AppendASCII("local_file.txt"));
++  FileSystemAccessFileHandleImpl first_party_file(
++      manager_.get(), binding_context_, local_file_url, "local_file.txt",
++      {allow_grant_, allow_grant_});
++  mojo::PendingRemote<blink::mojom::FileSystemAccessTransferToken>
++      file_token_remote;
++  manager_->CreateTransferToken(
++      first_party_file, file_token_remote.InitWithNewPipeAndPassReceiver());
++
++  mojo::Remote<blink::mojom::FileSystemAccessFileHandle> third_party_file;
++  third_party_manager->GetFileHandleFromToken(
++      std::move(file_token_remote),
++      third_party_file.BindNewPipeAndPassReceiver());
++  EXPECT_EQ(PermissionStatus::DENIED,
++            GetPermissionStatusSync(
++                blink::mojom::FileSystemAccessPermissionMode::kRead,
++                third_party_file.get()));
++  EXPECT_EQ(PermissionStatus::DENIED,
++            GetPermissionStatusSync(
++                blink::mojom::FileSystemAccessPermissionMode::kReadWrite,
++                third_party_file.get()));
++
++  // 2. Non-sandboxed directory token minted in 1P context with GRANTED
++  // permissions.
++  auto local_dir_url = file_system_context_->CreateCrackedFileSystemURL(
++      kTestStorageKey, storage::kFileSystemTypeLocal,
++      dir_.GetPath().AppendASCII("local_dir"));
++  FileSystemAccessDirectoryHandleImpl first_party_dir(
++      manager_.get(), binding_context_, local_dir_url,
++      {allow_grant_, allow_grant_});
++  mojo::PendingRemote<blink::mojom::FileSystemAccessTransferToken>
++      dir_token_remote;
++  manager_->CreateTransferToken(
++      first_party_dir, dir_token_remote.InitWithNewPipeAndPassReceiver());
++
++  mojo::Remote<blink::mojom::FileSystemAccessDirectoryHandle> third_party_dir;
++  third_party_manager->GetDirectoryHandleFromToken(
++      std::move(dir_token_remote),
++      third_party_dir.BindNewPipeAndPassReceiver());
++  EXPECT_EQ(PermissionStatus::DENIED,
++            GetPermissionStatusSync(
++                blink::mojom::FileSystemAccessPermissionMode::kRead,
++                third_party_dir.get()));
++  EXPECT_EQ(PermissionStatus::DENIED,
++            GetPermissionStatusSync(
++                blink::mojom::FileSystemAccessPermissionMode::kReadWrite,
++                third_party_dir.get()));
++
++  // 3. Sandboxed (OPFS) file token redeemed in 3P context retains GRANTED.
++  ASSERT_OK_AND_ASSIGN(auto default_bucket,
++                       CreateSandboxFileSystemAndGetDefaultBucket());
++  auto sandboxed_url = file_system_context_->CreateCrackedFileSystemURL(
++      kTestStorageKey, storage::kFileSystemTypeTemporary,
++      base::FilePath::FromUTF8Unsafe("opfs_file.txt"));
++  sandboxed_url.SetBucket(default_bucket);
++  FileSystemAccessFileHandleImpl sandboxed_file(
++      manager_.get(), binding_context_, sandboxed_url, "opfs_file.txt",
++      {allow_grant_, allow_grant_});
++  mojo::PendingRemote<blink::mojom::FileSystemAccessTransferToken>
++      sandboxed_token_remote;
++  manager_->CreateTransferToken(
++      sandboxed_file, sandboxed_token_remote.InitWithNewPipeAndPassReceiver());
++
++  mojo::Remote<blink::mojom::FileSystemAccessFileHandle>
++      third_party_sandboxed_file;
++  third_party_manager->GetFileHandleFromToken(
++      std::move(sandboxed_token_remote),
++      third_party_sandboxed_file.BindNewPipeAndPassReceiver());
++  EXPECT_EQ(PermissionStatus::GRANTED,
++            GetPermissionStatusSync(
++                blink::mojom::FileSystemAccessPermissionMode::kRead,
++                third_party_sandboxed_file.get()));
++  EXPECT_EQ(PermissionStatus::GRANTED,
++            GetPermissionStatusSync(
++                blink::mojom::FileSystemAccessPermissionMode::kReadWrite,
++                third_party_sandboxed_file.get()));
++}
++
++// Verifies that a native file handle deserialized with a first-party storage
++// key, as `BucketContext` does for unpartitioned IndexedDB reached through
++// `document.requestStorageAccess({indexedDB: true})`, is not readable once
++// redeemed in a third-party `BindingContext`, even if the origin holds
++// `PermissionStatus::GRANTED`.
++TEST_F(FileSystemAccessManagerImplTest,
++       DeserializeHandle_FirstPartyKey_RedeemedInThirdPartyContext_Denied) {
++  const PathInfo kTestPathInfo(dir_.GetPath().AppendASCII("foo"));
++  auto grant = base::MakeRefCounted<FixedFileSystemAccessPermissionGrant>(
++      FixedFileSystemAccessPermissionGrant::PermissionStatus::GRANTED,
++      kTestPathInfo);
++
++  // The first-party origin holds GRANTED for both the initial open and the
++  // later load from storage.
++  EXPECT_CALL(permission_context_,
++              GetReadPermissionGrant(kTestStorageKey.origin(), kTestPathInfo,
++                                     HandleType::kFile, testing::_))
++      .WillRepeatedly(testing::Return(grant));
++  EXPECT_CALL(permission_context_,
++              GetWritePermissionGrant(kTestStorageKey.origin(), kTestPathInfo,
++                                      HandleType::kFile, testing::_))
++      .WillRepeatedly(testing::Return(grant));
++
++  blink::mojom::FileSystemAccessEntryPtr entry =
++      manager_->CreateFileEntryFromPath(
++          binding_context_, kTestPathInfo,
++          FileSystemAccessPermissionContext::UserAction::kOpen);
++  mojo::Remote<blink::mojom::FileSystemAccessFileHandle> handle(
++      std::move(entry->entry_handle->get_file()));
++  mojo::PendingRemote<blink::mojom::FileSystemAccessTransferToken> token_remote;
++  handle->Transfer(token_remote.InitWithNewPipeAndPassReceiver());
++
++  // Serialize, then deserialize with the first-party storage key.
++  base::test::TestFuture<std::vector<uint8_t>> serialize_future;
++  manager_->SerializeHandle(
++      std::move(token_remote),
++      serialize_future.GetCallback<const std::vector<uint8_t>&>());
++  std::vector<uint8_t> serialized = serialize_future.Take();
++  ASSERT_FALSE(serialized.empty());
++  mojo::PendingRemote<blink::mojom::FileSystemAccessTransferToken>
++      deserialized_token;
++  manager_->DeserializeHandle(
++      kTestStorageKey, serialized,
++      deserialized_token.InitWithNewPipeAndPassReceiver());
++
++  // Redeem the token in a third-party context.
++  const blink::StorageKey kThirdPartyStorageKey = blink::StorageKey::Create(
++      kTestStorageKey.origin(), net::SchemefulSite(GURL("https://other.com")),
++      blink::mojom::AncestorChainBit::kCrossSite);
++  const FileSystemAccessManagerImpl::BindingContext third_party_context = {
++      kThirdPartyStorageKey, kTestURL, frame_id_};
++  mojo::Remote<blink::mojom::FileSystemAccessManager> third_party_manager;
++  manager_->BindReceiver(third_party_context,
++                         third_party_manager.BindNewPipeAndPassReceiver());
++  mojo::Remote<blink::mojom::FileSystemAccessFileHandle> third_party_file;
++  third_party_manager->GetFileHandleFromToken(
++      std::move(deserialized_token),
++      third_party_file.BindNewPipeAndPassReceiver());
++
++  EXPECT_EQ(PermissionStatus::DENIED,
++            GetPermissionStatusSync(
++                blink::mojom::FileSystemAccessPermissionMode::kRead,
++                third_party_file.get()));
++  EXPECT_EQ(PermissionStatus::DENIED,
++            GetPermissionStatusSync(
++                blink::mojom::FileSystemAccessPermissionMode::kReadWrite,
++                third_party_file.get()));
++}
++
+ }  // namespace content
+diff --git a/content/browser/file_system_access/file_system_access_observer_browsertest.cc b/content/browser/file_system_access/file_system_access_observer_browsertest.cc
+index 3c294fa0608f5b6de2f755a8b3201e901df9ea02..db3c2fcf5e3c2b9bbd49e77aff4bd762ea651609 100644
+--- a/content/browser/file_system_access/file_system_access_observer_browsertest.cc
++++ b/content/browser/file_system_access/file_system_access_observer_browsertest.cc
+@@ -1592,6 +1592,81 @@ IN_PROC_BROWSER_TEST_F(FileSystemAccessObserverCrossOriginTokenBypassTest,
+             blink::mojom::FileSystemAccessStatus::kInvalidArgument);
+ }
+ 
++// Verifies that `Observe()` refuses requests from a third-party context and
++// returns `kSecurityError`.
++IN_PROC_BROWSER_TEST_F(FileSystemAccessObserverCrossOriginTokenBypassTest,
++                       ObserveRefusesThirdPartyContext) {
++  base::FilePath dir_path;
++  {
++    base::ScopedAllowBlockingForTesting allow_blocking;
++    ASSERT_TRUE(base::CreateTemporaryDirInDir(
++        temp_dir_.GetPath(), FILE_PATH_LITERAL("test"), &dir_path));
++  }
++
++  GURL url_a = GetURL("a.com", "/title1.html");
++  const url::Origin origin_a = url::Origin::Create(url_a);
++  const blink::StorageKey key_a = blink::StorageKey::CreateFirstParty(origin_a);
++
++  GURL url_b = GetURL("b.com", "/title1.html");
++  const net::SchemefulSite site_b(url_b);
++
++  const blink::StorageKey key_third_party = blink::StorageKey::Create(
++      origin_a, site_b, blink::mojom::AncestorChainBit::kCrossSite);
++
++  ASSERT_TRUE(NavigateToURL(shell(), url_a));
++  RenderFrameHost* rfh = shell()->web_contents()->GetPrimaryMainFrame();
++  ASSERT_TRUE(rfh);
++
++  auto* manager = GetManager();
++  ASSERT_TRUE(manager);
++
++  const storage::FileSystemURL dir_url =
++      manager->CreateFileSystemURLFromPath(PathInfo(dir_path));
++
++  auto read_grant = base::MakeRefCounted<FixedFileSystemAccessPermissionGrant>(
++      FixedFileSystemAccessPermissionGrant::PermissionStatus::GRANTED,
++      PathInfo(dir_path));
++  auto write_grant = base::MakeRefCounted<FixedFileSystemAccessPermissionGrant>(
++      FixedFileSystemAccessPermissionGrant::PermissionStatus::GRANTED,
++      PathInfo(dir_path));
++  FileSystemAccessManagerImpl::SharedHandleState handle_state(read_grant,
++                                                              write_grant);
++
++  // Create a directory handle owned by origin A.
++  FileSystemAccessManagerImpl::BindingContext context_a(key_a, url_a,
++                                                        rfh->GetGlobalId());
++  auto dir_handle = std::make_unique<FileSystemAccessDirectoryHandleImpl>(
++      manager, context_a, dir_url, handle_state);
++
++  // Create a registered transfer token from the directory handle.
++  mojo::PendingRemote<blink::mojom::FileSystemAccessTransferToken> token_remote;
++  manager->CreateTransferToken(*dir_handle,
++                               token_remote.InitWithNewPipeAndPassReceiver());
++
++  // Bind an ObserverHost with a third-party context for origin A in site B.
++  FileSystemAccessManagerImpl::BindingContext third_party_context(
++      key_third_party, url_a, rfh->GetGlobalId());
++  mojo::Remote<blink::mojom::FileSystemAccessObserverHost> observer_host;
++  manager->watcher_manager().BindObserverHost(
++      third_party_context, observer_host.BindNewPipeAndPassReceiver());
++
++  base::RunLoop run_loop;
++  blink::mojom::FileSystemAccessStatus observe_status;
++  observer_host->Observe(
++      std::move(token_remote), /*is_recursive=*/true,
++      base::BindLambdaForTesting(
++          [&](blink::mojom::FileSystemAccessErrorPtr result,
++              mojo::PendingReceiver<blink::mojom::FileSystemAccessObserver>
++                  receiver) {
++            observe_status = result->status;
++            run_loop.Quit();
++          }));
++  run_loop.Run();
++
++  EXPECT_EQ(observe_status,
++            blink::mojom::FileSystemAccessStatus::kSecurityError);
++}
++
+ // Checks that a destination-directory TransferToken from an unexpected origin
+ // cannot be used to move a file into another origin's granted directory.
+ // Same pattern as https://crbug.com/499917177 (observer variant), applied to
+diff --git a/content/browser/file_system_access/file_system_access_observer_host.cc b/content/browser/file_system_access/file_system_access_observer_host.cc
+index a3afbb64f4f781aebde72b85ef83d69d083171c6..0db10b6db52b9e104a48a8d31f3a77a0f774f204 100644
+--- a/content/browser/file_system_access/file_system_access_observer_host.cc
++++ b/content/browser/file_system_access/file_system_access_observer_host.cc
+@@ -14,6 +14,7 @@
+ #include "content/browser/file_system_access/file_system_access_directory_handle_impl.h"
+ #include "content/browser/file_system_access/file_system_access_error.h"
+ #include "content/browser/file_system_access/file_system_access_file_handle_impl.h"
++#include "content/browser/file_system_access/file_system_access_handle_base.h"
+ #include "content/browser/file_system_access/file_system_access_manager_impl.h"
+ #include "content/browser/file_system_access/file_system_access_observer_observation.h"
+ #include "content/browser/file_system_access/file_system_access_transfer_token_impl.h"
+@@ -24,6 +25,7 @@
+ #include "services/metrics/public/cpp/ukm_source_id.h"
+ #include "storage/browser/file_system/file_system_operation_runner.h"
+ #include "storage/browser/file_system/file_system_url.h"
++#include "third_party/blink/public/common/storage_key/storage_key.h"
+ #include "third_party/blink/public/mojom/file_system_access/file_system_access_observer.mojom.h"
+ #include "third_party/blink/public/mojom/permissions/permission_status.mojom-shared.h"
+ 
+@@ -84,6 +86,16 @@ void FileSystemAccessObserverHost::DidResolveTransferTokenToObserve(
+     return;
+   }
+ 
++  if (FileSystemAccessHandleBase::IsThirdPartyContext(
++          resolved_token->url(), binding_context_.storage_key)) {
++    std::move(callback).Run(
++        file_system_access_error::FromStatus(
++            blink::mojom::FileSystemAccessStatus::kSecurityError,
++            "Not allowed to observe file system in a third-party context."),
++        mojo::NullReceiver());
++    return;
++  }
++
+   if (resolved_token->GetReadGrant()->GetStatus() !=
+       blink::mojom::PermissionStatus::GRANTED) {
+     std::move(callback).Run(
+diff --git a/content/browser/file_system_access/file_system_access_transfer_token_impl.cc b/content/browser/file_system_access/file_system_access_transfer_token_impl.cc
+index ec7ec98b067527631fd3857c002c0280a95cc511..3a6f5e323ae4f8c6fec9cc683b54c715e75b06a2 100644
+--- a/content/browser/file_system_access/file_system_access_transfer_token_impl.cc
++++ b/content/browser/file_system_access/file_system_access_transfer_token_impl.cc
+@@ -6,6 +6,8 @@
+ 
+ #include "content/browser/file_system_access/file_system_access_directory_handle_impl.h"
+ #include "content/browser/file_system_access/file_system_access_file_handle_impl.h"
++#include "content/browser/file_system_access/fixed_file_system_access_permission_grant.h"
++#include "storage/common/file_system/file_system_types.h"
+ #include "third_party/blink/public/mojom/file_system_access/file_system_access_directory_handle.mojom.h"
+ 
+ namespace content {
+@@ -13,6 +15,27 @@ namespace content {
+ using HandleType = FileSystemAccessPermissionContext::HandleType;
+ using SharedHandleState = FileSystemAccessManagerImpl::SharedHandleState;
+ 
++namespace {
++
++// Non-sandboxed transfer tokens redeemed into a third-party context (such as
++// via `postMessage` or `document.requestStorageAccess({indexedDB: true})`) must
++// not inherit first-party permission grants.
++SharedHandleState GetEffectiveHandleStateForContext(
++    const storage::FileSystemURL& url,
++    const FileSystemAccessManagerImpl::BindingContext& binding_context,
++    const SharedHandleState& handle_state) {
++  if (url.type() != storage::kFileSystemTypeTemporary &&
++      binding_context.storage_key.IsThirdPartyContext()) {
++    auto denied_grant =
++        base::MakeRefCounted<FixedFileSystemAccessPermissionGrant>(
++            blink::mojom::PermissionStatus::DENIED, PathInfo(url.path()));
++    return SharedHandleState(denied_grant, denied_grant);
++  }
++  return handle_state;
++}
++
++}  // namespace
++
+ FileSystemAccessTransferTokenImpl::FileSystemAccessTransferTokenImpl(
+     const storage::FileSystemURL& url,
+     const url::Origin& origin,
+@@ -47,7 +70,8 @@ FileSystemAccessTransferTokenImpl::CreateFileHandle(
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   DCHECK_EQ(handle_type_, HandleType::kFile);
+   return std::make_unique<FileSystemAccessFileHandleImpl>(
+-      manager_, binding_context, url_, display_name_, handle_state_);
++      manager_, binding_context, url_, display_name_,
++      GetEffectiveHandleStateForContext(url_, binding_context, handle_state_));
+ }
+ 
+ std::unique_ptr<FileSystemAccessDirectoryHandleImpl>
+@@ -56,7 +80,8 @@ FileSystemAccessTransferTokenImpl::CreateDirectoryHandle(
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   DCHECK_EQ(handle_type_, HandleType::kDirectory);
+   return std::make_unique<FileSystemAccessDirectoryHandleImpl>(
+-      manager_, binding_context, url_, handle_state_);
++      manager_, binding_context, url_,
++      GetEffectiveHandleStateForContext(url_, binding_context, handle_state_));
+ }
+ 
+ FileSystemAccessPermissionGrant*

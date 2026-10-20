@@ -1,0 +1,303 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Simon=20Z=C3=BCnd?= <szuend@chromium.org>
+Date: Tue, 8 Sep 2026 12:16:18 +0000
+Subject: [M154][compiler][objects] Record CompilationKind and
+ outer_language_mode in ScriptFlags
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Record CompilationKind and outer_language_mode in ScriptFlags to
+eliminate heuristics and state reconstruction when reparsing scripts
+(e.g. for the debugger).
+
+Problem: When reparsing a script, consumers must reconstruct initial
+compile-time attributes: compilation type (host, direct/indirect eval,
+Function constructor, wrapped) and outer language mode (sloppy vs
+strict). Previously, this required fragile heuristics: inspecting caller
+SFI in eval_from_shared() (which may impose caller strictness on
+indirect eval), probing weak references in script->infos(), or falling
+back to sloppy mode post-GC.
+
+Design: Replace 1-bit compilation_type with a unified 3-bit enum and add
+a 1-bit outer language mode on ScriptFlags (net +3 bits out of 21 spare
+bits; 0 heap cost):
+- compilation_kind: CompilationKind: 3 bit
+    - kHost: Regular host script.
+    - kDirectEval: Direct eval script.
+    - kIndirectEval: Indirect eval script.
+    - kFunctionConstructor: new Function(...), requires ONLY_SINGLE_FUNCTION_LITERAL.
+    - kWrapped: Embedder-wrapped function script (CompileFunction).
+- outer_language_mode: LanguageMode: 1 bit (preserves strictness across GCs).
+
+Script accessors & invariants:
+- compilation_type(): returns kHost for kHost / kWrapped, kEval otherwise.
+- is_wrapped(): checks compilation_kind == kWrapped (DCHECKs IsFixedArray).
+- set_wrapped_arguments(): DCHECKs compilation_kind == kWrapped first.
+
+Propagation: Recorded during initial compilation
+(ParseInfo::CreateScript, Compiler::GetFunctionFromEval) and
+automatically propagated to UnoptimizedCompileFlags during reparse.
+
+TAG=agy
+CONV=3b550fe0-dacb-44da-9c3c-a45d3445d58e
+
+(cherry picked from commit e1ac1f641ab15b3594ca1752b14f9add55040243)
+
+Bug: 545412300
+Change-Id: I5df443e3ee216a93eda65c0ed8f093746d6151f6
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8369882
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Simon Zünd <szuend@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#109758}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8566878
+Auto-Submit: Gyuyoung Kim (xWF) <qkim@google.com>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/branch-heads/15.4@{#55}
+Cr-Branched-From: df65d5c8f2932045c5af72cd7ecd0c8002fa631e-refs/heads/15.4.80@{#1}
+Cr-Branched-From: 80bc5f0e75b24b5af485e0e46b1ffd7f561f323f-refs/heads/main@{#109578}
+
+diff --git a/src/codegen/compiler.cc b/src/codegen/compiler.cc
+index de15e52404a6545dd6ce7d5a54cfa3fe7f38205d..a32825b70a1cf05acc6c1d4d8333c34b5350d41f 100644
+--- a/src/codegen/compiler.cc
++++ b/src/codegen/compiler.cc
+@@ -3357,6 +3357,15 @@ MaybeDirectHandle<JSFunction> Compiler::GetFunctionFromEval(
+     script = parse_info.CreateScript(
+         isolate, source, kNullMaybeHandle,
+         OriginOptionsForEval(outer_info->script(), parsing_while_debugging));
++    script->set_outer_language_mode(language_mode);
++    if (eval_position == kNoSourcePosition) {
++      script->set_compilation_kind(
++          restriction == ONLY_SINGLE_FUNCTION_LITERAL
++              ? Script::CompilationKind::kFunctionConstructor
++              : Script::CompilationKind::kIndirectEval);
++    } else {
++      script->set_compilation_kind(Script::CompilationKind::kDirectEval);
++    }
+     script->set_eval_from_shared(*outer_info);
+     if (eval_position == kNoSourcePosition) {
+       // If the position is missing, attempt to get the code offset by
+diff --git a/src/objects/script-inl.h b/src/objects/script-inl.h
+index 270bb3d5886ade6551380b17b0661ca7bb7a2b87..ce538ebec33a217240fce779740ef445fb60df4e 100644
+--- a/src/objects/script-inl.h
++++ b/src/objects/script-inl.h
+@@ -110,7 +110,16 @@ void Script::set_wasm_weak_instance_list(Tagged<WeakArrayList> value,
+ #endif  // V8_ENABLE_WEBASSEMBLY
+ 
+ bool Script::is_wrapped() const {
+-  return IsFixedArray(eval_from_shared_or_wrapped_arguments());
++  bool is_wrapped = compilation_kind() == CompilationKind::kWrapped;
++  DCHECK_EQ(is_wrapped, IsFixedArray(eval_from_shared_or_wrapped_arguments()));
++  return is_wrapped;
++}
++
++LanguageMode Script::outer_language_mode() const {
++  return OuterLanguageModeBit::decode(flags());
++}
++void Script::set_outer_language_mode(LanguageMode mode) {
++  set_flags(OuterLanguageModeBit::update(flags(), mode));
+ }
+ 
+ bool Script::has_eval_from_shared() const {
+@@ -119,6 +128,7 @@ bool Script::has_eval_from_shared() const {
+ 
+ void Script::set_wrapped_arguments(Tagged<FixedArray> value,
+                                    WriteBarrierMode mode) {
++  DCHECK_EQ(compilation_kind(), CompilationKind::kWrapped);
+   DCHECK(!has_eval_from_shared());
+   set_eval_from_shared_or_wrapped_arguments(value, mode);
+ }
+@@ -199,11 +209,18 @@ void Script::set_flags(uint32_t new_flags) {
+   flags_.Relaxed_Store(this, Smi::FromInt(new_flags));
+ }
+ 
+-Script::CompilationType Script::compilation_type() const {
+-  return CompilationTypeBit::decode(flags());
++Script::CompilationKind Script::compilation_kind() const {
++  return CompilationKindBits::decode(flags());
+ }
+-void Script::set_compilation_type(CompilationType type) {
+-  set_flags(CompilationTypeBit::update(flags(), type));
++void Script::set_compilation_kind(CompilationKind kind) {
++  set_flags(CompilationKindBits::update(flags(), kind));
++}
++
++Script::CompilationType Script::compilation_type() const {
++  return (compilation_kind() == CompilationKind::kHost ||
++          compilation_kind() == CompilationKind::kWrapped)
++             ? CompilationType::kHost
++             : CompilationType::kEval;
+ }
+ Script::CompilationState Script::compilation_state() {
+   return CompilationStateBit::decode(flags());
+diff --git a/src/objects/script.cc b/src/objects/script.cc
+index 21cce51f8ca10175577817f9d2906a251f2d6796..067ec784d8ffd8f8ef8c08f53c5e464943e4d3e5 100644
+--- a/src/objects/script.cc
++++ b/src/objects/script.cc
+@@ -51,6 +51,22 @@ const char* ToString(Script::CompilationState type) {
+   UNREACHABLE();
+ }
+ 
++const char* ToString(Script::CompilationKind type) {
++  switch (type) {
++    case Script::CompilationKind::kHost:
++      return "host";
++    case Script::CompilationKind::kDirectEval:
++      return "direct-eval";
++    case Script::CompilationKind::kIndirectEval:
++      return "indirect-eval";
++    case Script::CompilationKind::kFunctionConstructor:
++      return "function-constructor";
++    case Script::CompilationKind::kWrapped:
++      return "wrapped";
++  }
++  UNREACHABLE();
++}
++
+ template <typename IsolateT>
+ MaybeHandle<SharedFunctionInfo> Script::FindSharedFunctionInfo(
+     DirectHandle<Script> script, IsolateT* isolate,
+diff --git a/src/objects/script.h b/src/objects/script.h
+index b7819b1fdc7802110736dc50597747bd5f7ae842..faf1b42919b90c02a903cb0fcad5ed8befb99331 100644
+--- a/src/objects/script.h
++++ b/src/objects/script.h
+@@ -57,6 +57,15 @@ V8_OBJECT class Script : public Struct {
+   // Script compilation state.
+   enum class CompilationState { kInitial = 0, kCompiled = 1 };
+ 
++  // Script compilation kinds.
++  enum class CompilationKind {
++    kHost = 0,
++    kDirectEval = 1,
++    kIndirectEval = 2,
++    kFunctionConstructor = 3,
++    kWrapped = 4,
++  };
++
+   // [source]: the script source.
+   inline Tagged<UnionOf<String, Undefined>> source() const;
+   inline void set_source(Tagged<UnionOf<String, Undefined>> value,
+@@ -112,6 +121,16 @@ V8_OBJECT class Script : public Struct {
+   // Whether the script is implicitly wrapped in a function.
+   inline bool is_wrapped() const;
+ 
++  // [compilation_kind]: how the script was compiled (host, direct/indirect
++  // eval, Function constructor, or wrapped). Encoded in the 'flags' field.
++  inline CompilationKind compilation_kind() const;
++  inline void set_compilation_kind(CompilationKind kind);
++
++  // [outer_language_mode]: the lexical language mode of the enclosing scope.
++  // Encoded in the 'flags' field.
++  inline LanguageMode outer_language_mode() const;
++  inline void set_outer_language_mode(LanguageMode mode);
++
+   // Whether the eval_from_shared field is set with a shared function info
+   // for the eval site.
+   inline bool has_eval_from_shared() const;
+@@ -177,7 +196,6 @@ V8_OBJECT class Script : public Struct {
+   // [compilation_type]: how the script was compiled. Encoded in the
+   // 'flags' field.
+   inline CompilationType compilation_type() const;
+-  inline void set_compilation_type(CompilationType type);
+ 
+   inline bool produce_compile_hints() const;
+   inline void set_produce_compile_hints(bool produce_compile_hints);
+@@ -393,15 +411,16 @@ V8_OBJECT class Script : public Struct {
+   friend class TorqueGeneratedBitFieldAsserts;
+ 
+   // Bit positions in the flags field.
+-  using CompilationTypeBit =
+-      base::BitField<Script::CompilationType, 0, 1, uint32_t>;
++  using CompilationKindBits =
++      base::BitField<Script::CompilationKind, 0, 3, uint32_t>;
+   using CompilationStateBit =
+-      CompilationTypeBit::Next<Script::CompilationState, 1>;
++      CompilationKindBits::Next<Script::CompilationState, 1>;
+   using IsReplModeBit = CompilationStateBit::Next<bool, 1>;
+   using OriginOptionsBits = IsReplModeBit::Next<int32_t, 4>;
+   using BreakOnEntryBit = OriginOptionsBits::Next<bool, 1>;
+   using ProduceCompileHintsBit = BreakOnEntryBit::Next<bool, 1>;
+   using DeserializedBit = ProduceCompileHintsBit::Next<bool, 1>;
++  using OuterLanguageModeBit = DeserializedBit::Next<LanguageMode, 1>;
+ 
+   template <typename IsolateT>
+   EXPORT_TEMPLATE_DECLARE(V8_EXPORT_PRIVATE)
+@@ -412,6 +431,7 @@ V8_OBJECT class Script : public Struct {
+ V8_EXPORT_PRIVATE const char* ToString(Script::Type type);
+ V8_EXPORT_PRIVATE const char* ToString(Script::CompilationType type);
+ V8_EXPORT_PRIVATE const char* ToString(Script::CompilationState type);
++V8_EXPORT_PRIVATE const char* ToString(Script::CompilationKind type);
+ 
+ }  // namespace internal
+ }  // namespace v8
+diff --git a/src/objects/script.tq b/src/objects/script.tq
+index 15329dafb03cab0584f33d0f1235eb46a4ae0262..f84afb8fffcbbf70a3f44f4ca2bcf79b014e2a95 100644
+--- a/src/objects/script.tq
++++ b/src/objects/script.tq
+@@ -2,12 +2,12 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+-type CompilationType extends int32 constexpr 'Script::CompilationType';
+ type CompilationState extends int32 constexpr 'Script::CompilationState';
++type CompilationKind extends int32 constexpr 'Script::CompilationKind';
+ 
+ @cppScope('Script')
+ bitfield struct ScriptFlags extends uint31 {
+-  compilation_type: CompilationType: 1 bit;
++  compilation_kind: CompilationKind: 3 bit;
+   compilation_state: CompilationState: 1 bit;
+   is_repl_mode: bool: 1 bit;
+   origin_options: int32: 4 bit;
+@@ -15,6 +15,7 @@ bitfield struct ScriptFlags extends uint31 {
+   break_on_entry: bool: 1 bit;
+   produce_compile_hints: bool: 1 bit;
+   deserialized: bool: 1 bit;
++  outer_language_mode: LanguageMode: 1 bit;
+ }
+ 
+ @cppObjectLayoutDefinition
+diff --git a/src/parsing/parse-info.cc b/src/parsing/parse-info.cc
+index 574b60550c727587007df3bd2cd4f6e154b4252b..3402ce37a476cbf11786eac09337fc622af38f8d 100644
+--- a/src/parsing/parse-info.cc
++++ b/src/parsing/parse-info.cc
+@@ -67,14 +67,20 @@ UnoptimizedCompileFlags UnoptimizedCompileFlags::ForScriptCompile(
+   UnoptimizedCompileFlags flags(isolate, script->id());
+ 
+   flags.SetFlagsForToplevelCompile(
+-      script->IsUserJavaScript(), flags.outer_language_mode(),
++      script->IsUserJavaScript(), script->outer_language_mode(),
+       construct_repl_mode(script->is_repl_mode()),
+       script->origin_options().IsModule() ? ScriptType::kModule
+                                           : ScriptType::kClassic,
+       v8_flags.lazy);
++  flags.set_outer_language_mode(script->outer_language_mode());
++  if (script->compilation_kind() ==
++      Script::CompilationKind::kFunctionConstructor) {
++    flags.set_parse_restriction(ONLY_SINGLE_FUNCTION_LITERAL);
++  }
+   flags.SetFlagsForFunctionFromScript(script);
+   if (script->is_wrapped()) {
+     flags.set_function_syntax_kind(FunctionSyntaxKind::kWrapped);
++    flags.set_is_eval(true);
+   }
+ 
+   return flags;
+@@ -262,13 +268,15 @@ Handle<Script> ParseInfo::CreateScript(
+   }
+   raw_script->set_origin_options(origin_options);
+   raw_script->set_is_repl_mode(flags().is_repl_mode());
++  raw_script->set_outer_language_mode(flags().outer_language_mode());
+ 
+   DCHECK_EQ(is_wrapped_as_function(), !maybe_wrapped_arguments.is_null());
+   if (is_wrapped_as_function()) {
++    raw_script->set_compilation_kind(Script::CompilationKind::kWrapped);
+     raw_script->set_wrapped_arguments(
+         *maybe_wrapped_arguments.ToHandleChecked());
+   } else if (flags().is_eval()) {
+-    raw_script->set_compilation_type(Script::CompilationType::kEval);
++    raw_script->set_compilation_kind(Script::CompilationKind::kDirectEval);
+   }
+   CheckFlagsForToplevelCompileFromScript(raw_script);
+ 
