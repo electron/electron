@@ -9,7 +9,6 @@
 #include "base/containers/unique_ptr_adapters.h"
 #include "base/notimplemented.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "shell/browser/api/electron_api_ipc_dispatch.h"
