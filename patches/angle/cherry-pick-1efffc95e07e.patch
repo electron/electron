@@ -25,7 +25,11 @@ gl::OwnerLevel/OwnerLayer/OwnerImageIndex types, so the fix is expressed
 with gl::LevelIndex, uint32_t layers and gl::ImageIndex (adding .get()
 where the gl::ImageIndex factories take GLint). The layer-range helpers
 (matchesLayerRange/intersectsLayerRange/getDestSubresource) move from
-SubresourceUpdate onto ImageHelper exactly as upstream does. New
+SubresourceUpdate onto ImageHelper exactly as upstream does; their old
+SubresourceUpdate declarations are removed, and the remaining caller in
+ImageHelper::removeSingleStagedClearAfterInvalidate (already gone
+upstream, still present on this revision) is switched to the ImageHelper
+helper so the old definition is not left unresolved at link time. New
 end2end test expectations are dropped (test-only drift).
 
 diff --git a/src/libANGLE/renderer/vulkan/RenderTargetVk.cpp b/src/libANGLE/renderer/vulkan/RenderTargetVk.cpp
@@ -131,7 +135,7 @@ index 9b576c4ddb98fd12e014358ad86ef9454cac3f7a..78f8acd46105aa13b56341c228363b16
      return mImage->flushStagedUpdates(contextVk, firstLevel, firstLevel + getImageViewLevelCount(),
                                        firstLayer, layerEnd, mRedefinedLevels);
 diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
-index 1967b02799832e34e55744fc8c168bcb87cd8d48..def8b406ddf70a8b8657d9cb4751d01327cf34e5 100644
+index 1967b02799832e34e55744fc8c168bcb87cd8d48..6d8538b69d560e4ee920e65d60124f3d6854378d 100644
 --- a/src/libANGLE/renderer/vulkan/vk_helpers.cpp
 +++ b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
 @@ -8462,7 +8462,7 @@ void ImageHelper::removeSingleSubresourceStagedUpdates(ContextVk *contextVk,
@@ -152,6 +156,15 @@ index 1967b02799832e34e55744fc8c168bcb87cd8d48..def8b406ddf70a8b8657d9cb4751d013
              index++;
          }
      }
+@@ -8500,7 +8500,7 @@ void ImageHelper::removeSingleStagedClearAfterInvalidate(gl::LevelIndex levelInd
+     {
+         auto update = levelUpdates->begin() + index;
+         if (update->updateSource == UpdateSource::ClearAfterInvalidate &&
+-            update->matchesLayerRange(layerIndex, layerCount, mLayerCount))
++            matchesLayerRange(*update, levelIndexGL, layerIndex, layerCount))
+         {
+             // It's a clear, so doesn't need to be released.
+             levelUpdates->erase(update);
 @@ -8936,8 +8936,9 @@ angle::Result ImageHelper::updateSubresourceOnHost(ContextVk *contextVk,
      const gl::LevelIndex updateLevelGL(index.getLevelIndex());
      const uint32_t layerIndex = index.hasLayer() ? index.getLayerIndex() : 0;
@@ -543,10 +556,31 @@ index 1967b02799832e34e55744fc8c168bcb87cd8d48..def8b406ddf70a8b8657d9cb4751d013
          ASSERT(*layerCountOut != static_cast<uint32_t>(gl::ImageIndex::kEntireLevel));
      }
 diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.h b/src/libANGLE/renderer/vulkan/vk_helpers.h
-index 9ae8a42cbf097d961b53631a97970d6f2aef1778..00a6041a2de068b8a8464b367778848896331758 100644
+index 9ae8a42cbf097d961b53631a97970d6f2aef1778..59d7ce8fc6235cdbd91920afbff087f738a9fb16 100644
 --- a/src/libANGLE/renderer/vulkan/vk_helpers.h
 +++ b/src/libANGLE/renderer/vulkan/vk_helpers.h
-@@ -3440,9 +3440,32 @@ class ImageHelper final : public Resource, public angle::Subject
+@@ -3145,20 +3145,6 @@ class ImageHelper final : public Resource, public angle::Subject
+ 
+         void release(Renderer *renderer);
+ 
+-        // Returns true if the update's layer range exact matches [layerIndex,
+-        // layerIndex+layerCount) range.  To support VK_REMAINING_ARRAY_LAYERS, the number of layers
+-        // in the image is also passed in.
+-        bool matchesLayerRange(uint32_t layerIndex,
+-                               uint32_t layerCount,
+-                               uint32_t imageLayerCount) const;
+-        // Returns true if the update is to any layer within range of [layerIndex,
+-        // layerIndex+layerCount)
+-        bool intersectsLayerRange(uint32_t layerIndex,
+-                                  uint32_t layerCount,
+-                                  uint32_t imageLayerCount) const;
+-        void getDestSubresource(uint32_t imageLayerCount,
+-                                uint32_t *baseLayerOut,
+-                                uint32_t *layerCountOut) const;
+         VkImageAspectFlags getDestAspectFlags() const;
+ 
+         UpdateSource updateSource;
+@@ -3440,9 +3426,32 @@ class ImageHelper final : public Resource, public angle::Subject
      }
  
      void adjustLayerRange(const SubresourceUpdates &levelUpdates,
@@ -579,7 +613,7 @@ index 9ae8a42cbf097d961b53631a97970d6f2aef1778..00a6041a2de068b8a8464b3677788488
      // Copy most of state and move VkImage/VkDeviceMemory from other ImageHelper. This should not be
      // used for general usage. It is specifically for stageSelfUpdate and falling back from tile
      // memory where the VkImage and storage will be reallocated but most of ImageHelper property
-@@ -3529,6 +3552,7 @@ class ImageHelper final : public Resource, public angle::Subject
+@@ -3529,6 +3538,7 @@ class ImageHelper final : public Resource, public angle::Subject
      // Track whether each subresource of VkImage has defined contents. Up to 8 layers are tracked
      // per level, above which the contents are considered unconditionally defined. Note that this is
      // only tracking VkImage. Staged update will not set this bit until it is flushed.

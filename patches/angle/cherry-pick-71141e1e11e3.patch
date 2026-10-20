@@ -16,7 +16,7 @@ Electron adaptation notes (44-x-y): gl::OwnerLayer is mapped to
 uint32_t (type absent on this revision); otherwise applied verbatim.
 
 diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
-index af6a523e643fb9704a01ddd56e40e783a4f9ac3b..dafebb3f56c9f8e5c96302c942d8e56e7fb16abc 100644
+index 6965e165c4d5fb378a6a30a6edfe6628f4bd9f38..b5f93ddeff7bb3a1099e0a23e3486270b9faee75 100644
 --- a/src/libANGLE/renderer/vulkan/vk_helpers.cpp
 +++ b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
 @@ -7272,11 +7272,12 @@ bool ImageHelper::isReadSubresourceBarrierNecessary(ImageAccess newAccess,
@@ -134,10 +134,10 @@ index af6a523e643fb9704a01ddd56e40e783a4f9ac3b..dafebb3f56c9f8e5c96302c942d8e56e
  
              // Add the necessary commands to the outside command buffer.
 diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.h b/src/libANGLE/renderer/vulkan/vk_helpers.h
-index dd2b99ca14712efd9b1c754046fa613835759f1d..c0419af6ca3f67c5834ee0a4eea7dddeb3bfd34b 100644
+index 6c414f190091ece38f76d07f2ad6d3c36469a172..245bd70742a910e9c754aa26b3f377503744f7c0 100644
 --- a/src/libANGLE/renderer/vulkan/vk_helpers.h
 +++ b/src/libANGLE/renderer/vulkan/vk_helpers.h
-@@ -3227,16 +3227,16 @@ class ImageHelper final : public Resource, public angle::Subject
+@@ -3213,16 +3213,16 @@ class ImageHelper final : public Resource, public angle::Subject
                                   PrimaryCommandBuffer *commandBuffer,
                                   VkSemaphore *acquireNextImageSemaphoreOut);
  
@@ -157,7 +157,7 @@ index dd2b99ca14712efd9b1c754046fa613835759f1d..c0419af6ca3f67c5834ee0a4eea7ddde
      }
  
      bool verifyNoStagedUpdates() const;
-@@ -3574,6 +3574,7 @@ class ImageHelper final : public Resource, public angle::Subject
+@@ -3560,6 +3560,7 @@ class ImageHelper final : public Resource, public angle::Subject
      // Used to track subresource writes per level/layer. This can help parallelize writes to
      // different levels or layers of the image, such as data uploads.
      // See comment on kMaxParallelLayerWrites.

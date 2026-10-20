@@ -38,7 +38,7 @@ index 9e09d65d0638bc90766c3ecdce4d25a6e2392ee8..85b4616ef7af70e6d40163fdd9c8df8a
  
      for (const vk::CommandResourceBuffer &readBuffer : resources.getReadBuffers())
 diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
-index dafebb3f56c9f8e5c96302c942d8e56e7fb16abc..ccb205db150e26f7ffe0a831cdae565a2ac8d212 100644
+index b5f93ddeff7bb3a1099e0a23e3486270b9faee75..6d32e10a003aa1c8cefaa647b50dc3fbf34e6f6b 100644
 --- a/src/libANGLE/renderer/vulkan/vk_helpers.cpp
 +++ b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
 @@ -1184,8 +1184,9 @@ void CommandBufferHelperCommon::imageWriteImpl(Context *context,
@@ -216,7 +216,7 @@ index dafebb3f56c9f8e5c96302c942d8e56e7fb16abc..ccb205db150e26f7ffe0a831cdae565a
                      break;
                  }
 diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.h b/src/libANGLE/renderer/vulkan/vk_helpers.h
-index c0419af6ca3f67c5834ee0a4eea7dddeb3bfd34b..334c8f1e5c83fa98b7dfe0e1e654323c9b550cd6 100644
+index 245bd70742a910e9c754aa26b3f377503744f7c0..0aeeb5b78dc346dd1271fe302ce633aeb994586d 100644
 --- a/src/libANGLE/renderer/vulkan/vk_helpers.h
 +++ b/src/libANGLE/renderer/vulkan/vk_helpers.h
 @@ -2799,12 +2799,12 @@ class ImageHelper final : public Resource, public angle::Subject

@@ -102,7 +102,7 @@ index 301815a1a7ed8d00afccafe6710cf64e92c298d4..cd41e690330c7fe4f1b74b5d0bb46adb
                  ANGLE_TRY(flushDeferredClears(contextVk));
              }
 diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
-index ccb205db150e26f7ffe0a831cdae565a2ac8d212..c5f6f951d98e57944dca4add9f9d39a8116b28e0 100644
+index 6d32e10a003aa1c8cefaa647b50dc3fbf34e6f6b..41af449610f933808c3f3a4e3dfda62a811a521a 100644
 --- a/src/libANGLE/renderer/vulkan/vk_helpers.cpp
 +++ b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
 @@ -8032,12 +8032,13 @@ void ImageHelper::clearColor(Renderer *renderer,
@@ -285,10 +285,10 @@ index ccb205db150e26f7ffe0a831cdae565a2ac8d212..c5f6f951d98e57944dca4add9f9d39a8
      data.clearPartial.levelIndex  = levelIndex.get();
      data.clearPartial.layerIndex  = layerIndex;
 diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.h b/src/libANGLE/renderer/vulkan/vk_helpers.h
-index 334c8f1e5c83fa98b7dfe0e1e654323c9b550cd6..fdccc2a719c1c2683be330d54d451f34cc0b8c36 100644
+index 0aeeb5b78dc346dd1271fe302ce633aeb994586d..466cab1bc30fb4268d99adc8b3c31ec396f7a8d0 100644
 --- a/src/libANGLE/renderer/vulkan/vk_helpers.h
 +++ b/src/libANGLE/renderer/vulkan/vk_helpers.h
-@@ -3256,6 +3256,15 @@ class ImageHelper final : public Resource, public angle::Subject
+@@ -3242,6 +3242,15 @@ class ImageHelper final : public Resource, public angle::Subject
                 uint32_t layerCount,
                 OutsideRenderPassCommandBuffer *commandBuffer);
  
