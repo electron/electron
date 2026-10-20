@@ -1162,6 +1162,16 @@ describe('chrome extensions', () => {
       const textContent = await w.webContents.executeJavaScript('document.body.textContent');
       expect(textContent).toBe('script loaded ok\n');
     });
+
+    it('localizes messages in stylesheets', async () => {
+      const { id } = await session.defaultSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'css-localization')
+      );
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL(`chrome-extension://${id}/page.html`);
+      const content = await w.webContents.executeJavaScript("getComputedStyle(document.body, '::after').content");
+      expect(content).toBe(`"${id}"`);
+    });
   });
 
   describe('manifest v3', () => {
