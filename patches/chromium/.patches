@@ -483,3 +483,4 @@ cherry-pick-1d69cc5a0259.patch
 cherry-pick-cc41d04685b9.patch
 cherry-pick-3f6b73b9e0b3.patch
 cherry-pick-08f529c57faa.patch
+add_entries_to_the_spki_blocklist.patch
