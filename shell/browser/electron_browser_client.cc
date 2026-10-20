@@ -201,8 +201,10 @@
 #include "extensions/common/mojom/guest_view.mojom.h"
 #include "extensions/common/mojom/renderer_host.mojom.h"
 #include "extensions/common/mojom/web_request_host.mojom.h"
+#include "extensions/common/switches.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
+#include "third_party/blink/public/common/features.h"
 #endif
 
 #if BUILDFLAG(ENABLE_PLUGINS)
@@ -699,6 +701,16 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
       command_line->AppendSwitch(switches::kEnableSandbox);
     }
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+    // Tells the renderer to turn on web platform features that are only
+    // exposed to extensions.
+    if (render_process_host &&
+        extensions::ProcessMap::Get(render_process_host->GetBrowserContext())
+            ->GetEnabledExtensionByProcessID(render_process_host->GetID())) {
+      command_line->AppendSwitch(extensions::switches::kExtensionProcess);
+    }
+#endif
+
     renderer_process_sandboxed_[unsafe_process_id] =
         !command_line->HasSwitch(sandbox::policy::switches::kNoSandbox);
   }
@@ -1010,6 +1022,31 @@ bool ElectronBrowserClient::ShouldTryToUpdateServiceWorkerRegistration(
 #endif
   return content::ContentBrowserClient::
       ShouldTryToUpdateServiceWorkerRegistration(scope, browser_context);
+}
+
+bool ElectronBrowserClient::IsClipboardAllowedForServiceWorker(
+    const url::Origin& origin) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  // The renderer only exposes navigator.clipboard to extension service
+  // workers, and only while this feature is on.
+  return base::FeatureList::IsEnabled(
+             blink::features::kClipboardOnExtensionServiceWorker) &&
+         origin.scheme() == extensions::kExtensionScheme;
+#else
+  return false;
+#endif
+}
+
+bool ElectronBrowserClient::AllowWorkerWriteToClipboard(
+    const url::Origin& origin,
+    content::BrowserContext* browser_context) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  return origin.scheme() == extensions::kExtensionScheme &&
+         extensions::util::HasClipboardWritePermission(origin.host(),
+                                                       browser_context);
+#else
+  return false;
+#endif
 }
 
 void ElectronBrowserClient::GetMediaDeviceIDSalt(

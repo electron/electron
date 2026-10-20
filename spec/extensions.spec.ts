@@ -1338,6 +1338,17 @@ describe('chrome extensions', () => {
       expect(await messageWorker()).toBe('Hello from background.js');
     });
 
+    it('can write to the clipboard from the background service worker', { tags: ['serial'] }, async () => {
+      const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      const extension = await customSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'clipboard-service-worker')
+      );
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      await w.loadURL(`${extension.url}page.html`);
+      const result = await w.webContents.executeJavaScript("chrome.runtime.sendMessage('from a service worker')");
+      expect(result).toEqual({ written: true });
+    });
+
     it('can run chrome extension APIs', async () => {
       const customSession = session.fromPartition(`persist:${randomUUID()}`);
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });

@@ -393,6 +393,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   bool ShouldTryToUpdateServiceWorkerRegistration(
       const GURL& scope,
       content::BrowserContext* browser_context) override;
+  bool IsClipboardAllowedForServiceWorker(const url::Origin& origin) override;
+  bool AllowWorkerWriteToClipboard(
+      const url::Origin& origin,
+      content::BrowserContext* browser_context) override;
   void GetMediaDeviceIDSalt(
       content::RenderFrameHost* rfh,
       const net::SiteForCookies& site_for_cookies,

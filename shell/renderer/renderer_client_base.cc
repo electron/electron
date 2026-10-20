@@ -42,6 +42,7 @@
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
+#include "third_party/blink/public/common/features.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/platform/web_runtime_features.h"
 #include "third_party/blink/public/platform/web_security_origin.h"
@@ -95,6 +96,7 @@
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/common/constants.h"
 #include "extensions/common/extensions_client.h"
+#include "extensions/common/switches.h"
 #include "extensions/renderer/api/core_extensions_renderer_api_provider.h"
 #include "extensions/renderer/dispatcher.h"
 #include "extensions/renderer/extension_frame_helper.h"
@@ -335,6 +337,18 @@ void RendererClientBase::RenderThreadStarted() {
       command_line->GetSwitchValueNative(switches::kAppUserModelId);
   if (!app_id.empty()) {
     SetCurrentProcessExplicitAppUserModelID(app_id.c_str());
+  }
+#endif
+}
+
+void RendererClientBase::SetRuntimeFeaturesDefaultsBeforeBlinkInitialization() {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  // Web platform features that are only exposed to extensions.
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          extensions::switches::kExtensionProcess) &&
+      base::FeatureList::IsEnabled(
+          blink::features::kClipboardOnExtensionServiceWorker)) {
+    blink::WebRuntimeFeatures::EnableClipboardOnExtensionServiceWorker(true);
   }
 #endif
 }

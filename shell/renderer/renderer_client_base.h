@@ -120,6 +120,7 @@ class RendererClientBase : public content::ContentRendererClient
 
   // content::ContentRendererClient:
   void RenderThreadStarted() override;
+  void SetRuntimeFeaturesDefaultsBeforeBlinkInitialization() override;
   void ExposeInterfacesToBrowser(mojo::BinderMap* binders) override;
   void RenderFrameCreated(content::RenderFrame*) override;
   void SetPendingCreateNewWindowStartupData(mojo_base::BigBuffer data) override;
