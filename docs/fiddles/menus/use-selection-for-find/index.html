@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+    <title>Use Selection for Find</title>
+    <style>
+      /* Generated content is not matched by `findInPage`, so the current
+         search text is shown this way to keep it out of the results. */
+      #find-text::after { content: attr(data-text); font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <!-- highlight-start -->
+    <p>
+      <input id="search" type="search" placeholder="Type and press Enter">
+      Searching for: <span id="find-text"></span> <span id="status"></span>
+    </p>
+    <!-- highlight-end -->
+    <h1>Use Selection for Find</h1>
+    <p>
+      Select a word in this paragraph and press <kbd>Cmd+E</kbd> to use it as the
+      search text, then press <kbd>Cmd+G</kbd> to jump to the next match. Switch to
+      another app such as Safari or TextEdit and press <kbd>Cmd+G</kbd> there: it
+      searches for the same text, because it was shared through the macOS find
+      pasteboard.
+    </p>
+    <p>
+      Electron is a framework for building desktop applications using JavaScript,
+      HTML, and CSS. By embedding Chromium and Node.js into its binary, Electron
+      allows you to maintain one JavaScript codebase and create cross-platform apps
+      that work on Windows, macOS, and Linux.
+    </p>
+  </body>
+</html>
