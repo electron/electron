@@ -14,7 +14,7 @@ import { setImmediate } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 
 import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers.ts';
-import { defer, deferKillUtilityProcess, ifit, listen, sleepSync, startRemoteControlApp } from './lib/spec-helpers.ts';
+import { defer, deferKillUtilityProcess, ifit, listen, startRemoteControlApp } from './lib/spec-helpers.ts';
 import { closeWindow } from './lib/window-helpers.ts';
 
 const require = createRequire(import.meta.url);
@@ -541,7 +541,7 @@ describe('utilityProcess module', () => {
       await exit;
     });
 
-    it('delivers messages the child posted right before exiting', async () => {
+    it('delivers messages that reached this process before the child exited', async () => {
       const count = 20;
       const child = utilityProcess.fork(path.join(fixturesPath, 'post-message-then-exit.js'));
       deferKillUtilityProcess(child);
@@ -551,11 +551,15 @@ describe('utilityProcess module', () => {
       child.once('exit', () => {
         receivedBeforeExit = [...received];
       });
+      // The child posts on this port after its parentPort messages, which share
+      // the same ordered Mojo channel, so they have all reached this process
+      // when the port message does. Only then is the child told to exit.
+      const { port1, port2 } = new MessageChannelMain();
+      defer(() => port1.close());
+      port1.once('message', () => port1.postMessage('exit'));
+      port1.start();
       await once(child, 'spawn');
-      child.postMessage(count);
-      // Block this thread while the child posts and exits, so that its
-      // messages and its exit are both waiting here when it gets back to them.
-      sleepSync(1000);
+      child.postMessage(count, [port2]);
       const [code] = await once(child, 'exit');
       expect(code).toBe(0);
       expect(receivedBeforeExit).toEqual(Array.from({ length: count }, (_, index) => index));
