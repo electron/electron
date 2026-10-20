@@ -90,6 +90,20 @@ describe('chrome extensions', () => {
     ).resolves.toHaveProperty('id');
   });
 
+  it('supports chrome.management with the management permission', async () => {
+    const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+    const extension = await customSession.extensions.loadExtension(
+      path.join(fixtures, 'extensions', 'chrome-management')
+    );
+    const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+    await w.loadURL(`${extension.url}page.html`);
+
+    const all = await w.webContents.executeJavaScript('chrome.management.getAll()');
+    expect(all.map((info: any) => info.id)).toContain(extension.id);
+    const info = await w.webContents.executeJavaScript(`chrome.management.get('${extension.id}')`);
+    expect(info).toMatchObject({ id: extension.id, name: 'chrome-management' });
+  });
+
   describe('Chrome Web Store origin', () => {
     // The core //extensions feature files expose some APIs to web pages on the
     // Chrome Web Store origin. Electron does not support chrome.webstorePrivate
