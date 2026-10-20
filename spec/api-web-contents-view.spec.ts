@@ -694,9 +694,9 @@ describe('WebContentsView', () => {
       expect(() => view.setInteractive(true)).not.toThrow();
     });
 
-    it('prevents interaction when setInteractive(false) is called', async function () {
+    it('prevents interaction when setInteractive(false) is called', async function (ctx) {
       if (!robot) {
-        this.skip();
+        ctx.skip();
       }
 
       await new Promise((resolve) => setTimeout(resolve, 100));
