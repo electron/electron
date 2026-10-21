@@ -1385,6 +1385,58 @@ describe('chrome extensions', () => {
       expect((await extension.launch()).marker).toBe('second');
     });
 
+    it('persists alarms and dynamic content scripts across restarts', async () => {
+      const partition = `persist:${crypto.randomUUID()}`;
+      const extensionPath = path.join(fixtures, 'extensions', 'persistent-state');
+
+      const runRemoteControlApp = async (script: string) => {
+        const rc = await startRemoteControlApp();
+        const exitPromise = once(rc.process, 'exit');
+
+        const result = await rc.remotely(
+          async (partition: string, extensionPath: string, script: string) => {
+            const { BrowserWindow, session } = require('electron/main');
+            const { setTimeout } = require('node:timers/promises');
+
+            const customSession = session.fromPartition(partition);
+            const extension = await customSession.extensions.loadExtension(extensionPath);
+            const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+            await w.loadURL(`${extension.url}page.html`);
+            const result = await w.webContents.executeJavaScript(script);
+
+            // Give Chromium some time to write the extension's state to disk.
+            await setTimeout(500);
+
+            global.setTimeout(() => require('electron').app.quit());
+
+            return result;
+          },
+          partition,
+          extensionPath,
+          script
+        );
+
+        await exitPromise;
+        return result;
+      };
+
+      const getState = `(async () => ({
+        alarms: (await chrome.alarms.getAll()).map((alarm) => alarm.name),
+        scripts: (await chrome.scripting.getRegisteredContentScripts()).map((script) => script.id)
+      }))()`;
+
+      const created = await runRemoteControlApp(`(async () => {
+        await chrome.alarms.create('persisted', { delayInMinutes: 60 });
+        await chrome.scripting.registerContentScripts([
+          { id: 'persisted', js: ['content.js'], matches: ['<all_urls>'], persistAcrossSessions: true }
+        ]);
+        return ${getState};
+      })()`);
+      expect(created).toEqual({ alarms: ['persisted'], scripts: ['persisted'] });
+
+      expect(await runRemoteControlApp(getState)).toEqual({ alarms: ['persisted'], scripts: ['persisted'] });
+    });
+
     it('keeps the background service worker when storage data is cleared', async () => {
       const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
