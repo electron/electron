@@ -336,6 +336,44 @@ describe('asar package', () => {
       }
     });
 
+    // Skipped on Windows, where an open archive cannot be renamed.
+    ifit(process.platform !== 'win32')(
+      'keeps reading an opened archive after its path is replaced by a directory',
+      () => {
+        const swapped = j(tmp, 'swap', 'app.asar');
+        originalFs.mkdirSync(j(tmp, 'swap'));
+        writeAsar(swapped, { 'a.txt': 'from the archive' });
+        expect(new asarBinding.Archive(swapped)).toBeTruthy();
+        originalFs.renameSync(swapped, swapped + '.orig');
+        originalFs.mkdirSync(swapped);
+        originalFs.writeFileSync(j(swapped, 'a.txt'), 'from a plain directory');
+        expect(fs.readFileSync(j(swapped, 'a.txt'), 'utf8')).toBe('from the archive');
+      }
+    );
+
+    // Skipped on Windows, where an open archive cannot be renamed.
+    ifit(process.platform !== 'win32')(
+      'keeps treating an opened archive as an archive after an earlier directory probe',
+      () => {
+        const swapped = j(tmp, 'previously-directory.asar');
+        const entry = j(swapped, 'a.txt');
+
+        originalFs.mkdirSync(swapped);
+        expect(splitPath(entry, true)).toBe(-1);
+        originalFs.rmdirSync(swapped);
+
+        writeAsar(swapped, { 'a.txt': 'from the archive' });
+        expect(new asarBinding.Archive(swapped)).toBeTruthy();
+
+        originalFs.renameSync(swapped, swapped + '.orig');
+        originalFs.mkdirSync(swapped);
+        originalFs.writeFileSync(entry, 'from a plain directory');
+
+        expect(splitPath(entry, true)).toBe(swapped.length);
+        expect(fs.readFileSync(entry, 'utf8')).toBe('from the archive');
+      }
+    );
+
     describe('splitPath (native archive prefix detection)', () => {
       it('finds the archive component and returns its length in JS string units', () => {
         const cases: [string, number][] = [
