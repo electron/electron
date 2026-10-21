@@ -36,24 +36,26 @@ index 31d319ca34fd0f940e2bebe196794d9b01312d51..178df8b17f9ab6cf7e89ebfd160f0cb9
        }
        break;
  
-@@ -3431,6 +3431,52 @@ void MenuController::CloseSubmenu() {
+@@ -3431,6 +3431,54 @@ void MenuController::CloseSubmenu() {
    }
  }
  
 +void MenuController::OpenSubmenuOrSwitchSiblingMenu() {
 +  MenuItemView* const selected = pending_state_.item;
 +  // If the selected item can open a submenu, open it as usual.
-+  if (selected && selected->HasSubmenu() && selected->GetEnabled()) {
++  if (selected && selected->GetParentMenuItem() && selected->HasSubmenu() &&
++      selected->GetEnabled()) {
 +    OpenSubmenuChangeSelectionIfCan();
 +    return;
 +  }
-+  // Otherwise, only switch to the next sibling menu when the selection
-+  // is a direct child of the root menu. Switching is not allowed from
-+  // within a nested submenu.
-+  const bool is_top_level_child =
-+      selected && !selected->HasSubmenu() && selected->GetParentMenuItem() &&
-+      !selected->GetParentMenuItem()->GetParentMenuItem();
-+  if (is_top_level_child && selected->GetDelegate() &&
++  // Switch from the root or a direct child that cannot open a submenu,
++  // but not from within a nested submenu.
++  const bool can_switch_sibling =
++      selected &&
++      (!selected->GetParentMenuItem() ||
++       ((!selected->HasSubmenu() || !selected->GetEnabled()) &&
++        !selected->GetParentMenuItem()->GetParentMenuItem()));
++  if (can_switch_sibling && selected->GetDelegate() &&
 +      selected->GetDelegate()->SwitchToSiblingMenu(/*next=*/true)) {
 +    return;
 +  }
@@ -71,15 +73,15 @@ index 31d319ca34fd0f940e2bebe196794d9b01312d51..178df8b17f9ab6cf7e89ebfd160f0cb9
 +    CloseSubmenu();
 +    return;
 +  }
-+  // Otherwise, only switch to the previous sibling menu when the selection is a
-+  // direct child of the root menu. Use pending_state_.item, not state_.item:
-+  // keyboard selection of a submenu item defers the state_ commit, so state_
-+  // may still point at the previously selected leaf.
++  // Switch from the root or a direct child that cannot open a submenu.
++  // Use pending_state_: keyboard selection may defer state_ updates.
 +  MenuItemView* const selected = pending_state_.item;
-+  const bool is_top_level_child =
-+      selected && !selected->HasSubmenu() && selected->GetParentMenuItem() &&
-+      !selected->GetParentMenuItem()->GetParentMenuItem();
-+  if (is_top_level_child && selected->GetDelegate() &&
++  const bool can_switch_sibling =
++      selected &&
++      (!selected->GetParentMenuItem() ||
++       ((!selected->HasSubmenu() || !selected->GetEnabled()) &&
++        !selected->GetParentMenuItem()->GetParentMenuItem()));
++  if (can_switch_sibling && selected->GetDelegate() &&
 +      selected->GetDelegate()->SwitchToSiblingMenu(/*next=*/false)) {
 +    return;
 +  }
