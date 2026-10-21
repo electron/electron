@@ -242,8 +242,10 @@ bool IsArchivePrefix(std::string_view prefix) {
   }
   bool exists = false;
   const bool is_archive = !IsDirectoryCached(as_path, &exists);
-  // Only remember answers backed by something on disk (see IsDirectoryCached).
-  if (exists) {
+  // Only remember archives backed by something on disk (see
+  // IsDirectoryCached). A directory is left to IsDirectoryCached(), whose
+  // answer changes if an archive is later opened at this path.
+  if (exists && is_archive) {
     base::AutoLock auto_lock(*lock);
     cache->emplace(std::string(prefix), is_archive);
   }
