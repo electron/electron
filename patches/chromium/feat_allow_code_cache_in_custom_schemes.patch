@@ -197,18 +197,18 @@ index 34aaa303261a4094a98667e48ad341ac4c989e7c..64c71028add8e951fbe9d2591c92f79c
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index 60a0878d18e5817bdc6d1c38ae7e8ac03a3198d0..52bfe6f56fa4f8c47ceaef6b1f1752a8c6bd2c24 100644
+index 6c41056fb7fd39f2047636f5b7034a466ca5d7a5..ae648a2eafd9ee29ba08d18b691812faeb430a60 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
-@@ -53,6 +53,7 @@
- #include "third_party/perfetto/include/perfetto/tracing/track_event_args.h"
+@@ -46,6 +46,7 @@
+ #include "third_party/blink/public/mojom/loader/code_cache.mojom-shared.h"
  #include "url/gurl.h"
  #include "url/origin.h"
 +#include "url/url_util.h"
  
  namespace content {
  
-@@ -77,11 +78,12 @@ bool CheckSecurityForAccessingCodeCacheData(const GURL& resource_url,
+@@ -70,11 +71,12 @@ bool CheckSecurityForAccessingCodeCacheData(const GURL& resource_url,
        ChildProcessSecurityPolicyImpl::GetInstance()->GetProcessLock(
            render_process_id);
  
@@ -226,7 +226,7 @@ index 60a0878d18e5817bdc6d1c38ae7e8ac03a3198d0..52bfe6f56fa4f8c47ceaef6b1f1752a8
    if (resource_url.SchemeIs(content::kChromeUIScheme) ||
        resource_url.SchemeIs(content::kChromeUIUntrustedScheme)) {
      if (!process_lock.IsLockedToSite()) {
-@@ -114,6 +116,11 @@ bool CheckSecurityForAccessingCodeCacheData(const GURL& resource_url,
+@@ -107,6 +109,11 @@ bool CheckSecurityForAccessingCodeCacheData(const GURL& resource_url,
      }
      return true;
    }
@@ -238,7 +238,7 @@ index 60a0878d18e5817bdc6d1c38ae7e8ac03a3198d0..52bfe6f56fa4f8c47ceaef6b1f1752a8
  
    if (operation == Operation::kWrite) {
      mojo::ReportBadMessage("Invalid URL scheme for code cache.");
-@@ -201,7 +208,8 @@ std::optional<GURL> GetOriginLock(ChildProcessId render_process_id) {
+@@ -194,7 +201,8 @@ std::optional<GURL> GetOriginLock(ChildProcessId render_process_id) {
        process_lock.MatchesScheme(content::kChromeUIScheme) ||
        process_lock.MatchesScheme(content::kChromeUIUntrustedScheme) ||
        blink::CommonSchemeRegistry::IsExtensionScheme(

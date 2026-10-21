@@ -790,7 +790,7 @@ index a7b1aab90ef4b24116895acbe31464223dd77e79..5e1edc2dfe6828dcb7e866f76a8bb0f7
    virtual bool StopTracing(
        const scoped_refptr<TraceDataEndpoint>& trace_data_endpoint) = 0;
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index bca04eeb794fb61d940c3a5f86b97147a6066491..4efb63cdcb34f251c31db478ba69f4e5ae410b0b 100644
+index 61d253342065d92edd880b6c875ab33836b5e09d..f99fd01a27e75648f79b6d0f50bd6adc1c14f002 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -2012,6 +2012,7 @@ test("content_browsertests") {
