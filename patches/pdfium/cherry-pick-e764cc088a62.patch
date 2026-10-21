@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Sepez <tsepez@google.com>
+Date: Tue, 13 Oct 2026 18:43:02 -0700
+Subject: Guard against re-entrant destruction of the CJS_Runtime
+
+Prevent a (somewhat) misbehaving embedder from tearing down the
+runtime while a callback is still in-flight.
+
+Bug: 572237007
+Change-Id: I003a6b67703305c465a2ed0845f4274df93ed5af
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/160614
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+
+diff --git a/fxjs/cjs_app.cpp b/fxjs/cjs_app.cpp
+index 793b6442f0dbc8b29515273ae80980f2af912820..54a2470b20543c43f5f5e0b4dbca03c0c3073d67 100644
+--- a/fxjs/cjs_app.cpp
++++ b/fxjs/cjs_app.cpp
+@@ -289,7 +289,10 @@ CJS_Result CJS_App::beep(CJS_Runtime* pRuntime,
+     type = pRuntime->ToInt32Reentrant(params[0]);
+   }
+ 
++  pRuntime->BeginBlock();
+   pRuntime->GetFormFillEnv()->JS_appBeep(type);
++  pRuntime->EndBlock();
++
+   return CJS_Result::Success();
+ }
+ 
+@@ -586,8 +589,11 @@ CJS_Result CJS_App::response(CJS_Runtime* pRuntime,
+   static constexpr int kMaxWideChars = 1024;
+   static constexpr int kMaxBytes = kMaxWideChars * sizeof(uint16_t);
+   auto buffer = FixedSizeDataVector<uint8_t>::Zeroed(kMaxBytes);
++
++  pRuntime->BeginBlock();
+   int byte_length = pRuntime->GetFormFillEnv()->JS_appResponse(
+       swQuestion, swTitle, swDefault, swLabel, bPassword, buffer.span());
++  pRuntime->EndBlock();
+ 
+   if (byte_length < 0 || byte_length > kMaxBytes) {
+     return CJS_Result::Failure(JSMessage::kParamTooLongError);
+diff --git a/fxjs/cjs_runtime.cpp b/fxjs/cjs_runtime.cpp
+index 941d378bd80e3483daa22f15ba3c012c5cc5512e..5507ad3d656fc04e29a9f17bcb8446b52b73597e 100644
+--- a/fxjs/cjs_runtime.cpp
++++ b/fxjs/cjs_runtime.cpp
+@@ -74,6 +74,7 @@ CJS_Runtime::CJS_Runtime(CPDFSDK_FormFillEnvironment* pFormFillEnv)
+ }
+ 
+ CJS_Runtime::~CJS_Runtime() {
++  CHECK(!IsBlocking());
+   NotifyObservers();
+   ReleaseEngine();
+   if (isolate_managed_) {

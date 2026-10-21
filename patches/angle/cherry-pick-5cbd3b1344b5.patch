@@ -1,0 +1,124 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: wangra <wangra@google.com>
+Date: Tue, 4 Aug 2026 11:50:56 -0400
+Subject: GL/D3D11: Clamp multiview-adjusted attribute divisor
+
+Scale vertex attribute divisor in 64-bit and clamp to GLuint max when
+emulating multiview. This prevents integer overflow wrapping large
+divisors to zero and causing validation-driver state desynchronization.
+
+Test: angle_end2end_tests --gtest_filter="*MultiviewRenderTest.LargeAttribDivisor*"
+Bug: b/536544435
+Change-Id: Ifbda72d7a0c11f3ca0287e2d25e3d2ab3d5c682e
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8194046
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Ran Wang <wangra@google.com>
+
+Electron adaptation notes (43-x-y): Prerequisite for cherry-pick-48a16bd63d2d (adds GetMultiviewAdjustedDivisor). The GL backend's local GetAdjustedDivisor helper was removed as upstream did; call sites use the shared helper.
+
+diff --git a/src/libANGLE/renderer/d3d/d3d11/VertexArray11.cpp b/src/libANGLE/renderer/d3d/d3d11/VertexArray11.cpp
+index 51a0479fceff697073ea73c8f30bec3b701d3591..895b15a4703250d0dc5bf80b1dfe47eb8d2c5774 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/VertexArray11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/VertexArray11.cpp
+@@ -14,6 +14,7 @@
+ #include "libANGLE/renderer/d3d/IndexBuffer.h"
+ #include "libANGLE/renderer/d3d/d3d11/Buffer11.h"
+ #include "libANGLE/renderer/d3d/d3d11/Context11.h"
++#include "libANGLE/renderer/renderer_utils.h"
+ 
+ using namespace angle;
+ 
+@@ -272,8 +273,8 @@ angle::Result VertexArray11::updateDirtyAttribs(const gl::Context *context,
+         translatedAttrib->bufferBindingPointer =
+             &getBufferBindingPointer(translatedAttrib->attribute->bindingIndex);
+         translatedAttrib->currentValueType = currentValue.Type;
+-        translatedAttrib->divisor =
+-            translatedAttrib->binding->getDivisor() * mAppliedNumViewsToDivisor;
++        translatedAttrib->divisor          = GetMultiviewAdjustedDivisor(
++            mAppliedNumViewsToDivisor, translatedAttrib->binding->getDivisor());
+ 
+         switch (mAttributeStorageTypes[dirtyAttribIndex])
+         {
+@@ -332,7 +333,8 @@ angle::Result VertexArray11::updateDynamicAttribs(const gl::Context *context,
+         dynamicAttrib->bufferBindingPointer =
+             &getBufferBindingPointer(dynamicAttrib->attribute->bindingIndex);
+         dynamicAttrib->currentValueType = currentValue.Type;
+-        dynamicAttrib->divisor = dynamicAttrib->binding->getDivisor() * mAppliedNumViewsToDivisor;
++        dynamicAttrib->divisor = GetMultiviewAdjustedDivisor(mAppliedNumViewsToDivisor,
++                                                             dynamicAttrib->binding->getDivisor());
+     }
+ 
+     ANGLE_TRY(vertexDataManager->storeDynamicAttribs(context, &mTranslatedAttribs,
+diff --git a/src/libANGLE/renderer/gl/VertexArrayGL.cpp b/src/libANGLE/renderer/gl/VertexArrayGL.cpp
+index 81c41022bd94773a77830c4fc21a000e7b79d0fc..2be7c6643a1081c5331ef0528c844d794c70a043 100644
+--- a/src/libANGLE/renderer/gl/VertexArrayGL.cpp
++++ b/src/libANGLE/renderer/gl/VertexArrayGL.cpp
+@@ -25,6 +25,7 @@
+ #include "libANGLE/renderer/gl/FunctionsGL.h"
+ #include "libANGLE/renderer/gl/StateManagerGL.h"
+ #include "libANGLE/renderer/gl/renderergl_utils.h"
++#include "libANGLE/renderer/renderer_utils.h"
+ 
+ using namespace gl;
+ 
+@@ -64,11 +65,6 @@ bool IsVertexAttribPointerSupported(size_t attribIndex, const VertexAttribute &a
+     return (attribIndex == attrib.bindingIndex && attrib.relativeOffset == 0);
+ }
+ 
+-GLuint GetAdjustedDivisor(GLuint numViews, GLuint divisor)
+-{
+-    return numViews * divisor;
+-}
+-
+ static angle::Result ValidateStateHelperGetIntegerv(const gl::Context *context,
+                                                     const GLuint localValue,
+                                                     const GLenum pname,
+@@ -392,7 +388,8 @@ void VertexArrayGL::computeStreamingAttributeSizes(
+         // and how much slack space at the beginning of the buffer will be required by determining
+         // the attribute with the largest data size.
+         size_t typeSize        = ComputeVertexAttributeTypeSize(attrib);
+-        GLuint adjustedDivisor = GetAdjustedDivisor(mAppliedNumViews, binding.getDivisor());
++        GLuint adjustedDivisor =
++            GetMultiviewAdjustedDivisor(mAppliedNumViews, binding.getDivisor());
+         size_t streamedVertexCount = ComputeVertexBindingElementCount(
+             adjustedDivisor, indexRange.vertexCount(), std::max(instanceCount, 1), 0);
+         if (applyExtraOffsetWorkaroundForInstancedAttributes && adjustedDivisor > 0)
+@@ -472,7 +469,8 @@ angle::Result VertexArrayGL::streamAttributes(
+ 
+             const auto &binding = bindings[attrib.bindingIndex];
+ 
+-            GLuint adjustedDivisor = GetAdjustedDivisor(mAppliedNumViews, binding.getDivisor());
++            GLuint adjustedDivisor =
++                GetMultiviewAdjustedDivisor(mAppliedNumViews, binding.getDivisor());
+             // streamedVertexCount is only going to be modified by
+             // shiftInstancedArrayDataWithOffset workaround, otherwise it's const
+             size_t streamedVertexCount = ComputeVertexBindingElementCount(
+@@ -895,8 +893,8 @@ angle::Result VertexArrayGL::updateBindingBuffer(const gl::Context *context, siz
+ 
+ angle::Result VertexArrayGL::updateBindingDivisor(const gl::Context *context, size_t bindingIndex)
+ {
+-    GLuint adjustedDivisor =
+-        GetAdjustedDivisor(mAppliedNumViews, mState.getVertexBinding(bindingIndex).getDivisor());
++    GLuint adjustedDivisor = GetMultiviewAdjustedDivisor(
++        mAppliedNumViews, mState.getVertexBinding(bindingIndex).getDivisor());
+     if (mNativeState->bindings[bindingIndex].divisor == adjustedDivisor)
+     {
+         return angle::Result::Continue;
+diff --git a/src/libANGLE/renderer/renderer_utils.h b/src/libANGLE/renderer/renderer_utils.h
+index df82242a7f9bed02a76506a3180f9153ee8bc9f8..46a4608b960922faa500f1ba61f4189be20a314b 100644
+--- a/src/libANGLE/renderer/renderer_utils.h
++++ b/src/libANGLE/renderer/renderer_utils.h
+@@ -646,6 +646,12 @@ inline size_t PackSampleCount(int32_t sampleCount)
+     return gl::ScanForward(static_cast<uint32_t>(sampleCount));
+ }
+ 
++inline GLuint GetMultiviewAdjustedDivisor(int numViews, GLuint divisor)
++{
++    uint64_t adjusted = static_cast<uint64_t>(numViews) * static_cast<uint64_t>(divisor);
++    return static_cast<GLuint>(std::min<uint64_t>(adjusted, std::numeric_limits<GLuint>::max()));
++}
++
+ }  // namespace rx
+ 
+ // MultiDraw macro patterns
