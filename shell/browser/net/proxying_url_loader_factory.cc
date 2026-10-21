@@ -709,7 +709,10 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToResponseStarted(
   proxied_client_receiver_.Resume();
 
   factory_->web_request_->OnResponseStarted(&info_.value(), request_);
-  target_client_->OnReceiveResponse(current_response_.Clone(),
+  auto response = current_response_.Clone();
+  response->cache_storage_side_data_writer =
+      std::move(current_response_->cache_storage_side_data_writer);
+  target_client_->OnReceiveResponse(std::move(response),
                                     std::move(current_body_),
                                     std::move(current_cached_metadata_));
 }
