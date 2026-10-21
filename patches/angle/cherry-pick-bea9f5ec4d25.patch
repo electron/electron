@@ -1,0 +1,573 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Wed, 16 Sep 2026 22:30:37 -0400
+Subject: Translator: Fix off-by-one error in variable-size check
+
+Bug: chromium:525685715
+Bug: chromium:561999377
+Change-Id: I67146644ea6da349c5f8208d479e222cbc5eca24
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8414095
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+
+Electron adaptation notes (43-x-y): The variable-size check on this branch is computed inline (no mValidatedVariableTypeSizes cache); only the comparison was changed from > to >=.
+
+diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
+index 667f99c0190a38cbc32d1636d017661cfd6c0222..7001038b0f923bb8191ceff8e7b3c45ca52a7c71 100644
+--- a/src/compiler/translator/ParseContext.cpp
++++ b/src/compiler/translator/ParseContext.cpp
+@@ -1922,7 +1922,7 @@ bool TParseContext::checkVariableSize(const TSourceLoc &line,
+     const size_t variableSize =
+         CalculateVariableSize(type, type->isInterfaceBlock() || type->getQualifier() == EvqUniform)
+             .ValueOrDefault(std::numeric_limits<size_t>::max());
+-    if (variableSize > kWebGLMaxVariableSizeInBytes)
++    if (variableSize >= kWebGLMaxVariableSizeInBytes)
+     {
+         error(line, "Size of declared variable exceeds implementation-defined limit", identifier);
+         mValidatedVariableTypeSizes[*type] = false;
+@@ -1967,7 +1967,7 @@ bool TParseContext::checkVariableSize(const TSourceLoc &line,
+         case EvqPerVertexIn:
+         case EvqPerVertexOut:
+ 
+-            if (variableSize > kWebGLMaxPrivateVariableSizeInBytes)
++            if (variableSize >= kWebGLMaxPrivateVariableSizeInBytes)
+             {
+                 error(line,
+                       "Size of declared private variable exceeds implementation-defined limit",
+diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
+index 1a3f11959e3fa35c0dfacaed8ab7bd4453c78f48..fc814825102335a253716c2ac96c876b0eb7a7b0 100644
+--- a/src/tests/gl_tests/GLSLTest.cpp
++++ b/src/tests/gl_tests/GLSLTest.cpp
+@@ -25662,6 +25662,434 @@ void main()
+     drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
+     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::white);
+ }
++
++// Test that having dynamic indexing of a vector inside the right hand side of logical or works
++// correctly.
++TEST_P(GLSLTest_ES3, DynamicIndexingOfVectorOnRightSideOfLogicalOr)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 my_FragColor;
++uniform int u1;
++void main() {
++   bvec4 v = bvec4(true, true, true, false);
++   my_FragColor = vec4(v[u1 + 1] || v[u1]);
++})";
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    glUseProgram(program);
++    GLint u1Loc = glGetUniformLocation(program, "u1");
++    ASSERT_NE(-1, u1Loc);
++    glUniform1i(u1Loc, 2);  // v[3] || v[2] -> false || true -> true
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_GL_NO_ERROR();
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::white);
++}
++
++// Test that rewriting else blocks in a function that returns a struct doesn't use the struct name
++// without a prefix.
++TEST_P(GLSLTest, RewriteElseBlockReturningStruct)
++{
++    constexpr char kVS[] = R"(attribute vec4 a_position;
++struct foo
++{
++    float member;
++};
++uniform bool b;
++varying float outMember;
++foo getFoo()
++{
++    if (b)
++    {
++        return foo(0.5);
++    }
++    else
++    {
++        return foo(1.0);
++    }
++}
++void main()
++{
++   gl_Position = a_position;
++   outMember = getFoo().member;
++})";
++    constexpr char kFS[] = R"(precision mediump float;
++varying float outMember;
++void main() {
++   gl_FragColor = vec4(outMember, 0.0, 0.0, 1.0);
++})";
++    ANGLE_GL_PROGRAM(program, kVS, kFS);
++    glUseProgram(program);
++    GLint bLoc = glGetUniformLocation(program, "b");
++    ASSERT_NE(-1, bLoc);
++    glUniform1i(bLoc, 1);
++    drawQuad(program, "a_position", 0.5f);
++    EXPECT_GL_NO_ERROR();
++    EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(127, 0, 0, 255), 2);
++}
++
++// Regression test for RemoveDynamicIndexing transformation producing invalid AST, based on fuzzer
++// test.
++TEST_P(GLSLTest, RemoveDynamicingIndexIndexPrecisionBug)
++{
++    constexpr char kVS[] = R"(void main()
++{
++    mat3 tmp;
++    vec3 res = vec3(0);
++    for (int i = 0; res += 0., ivec3(0)[i], ivec3(tmp)[i], i < 0;);
++    gl_Position = vec4(0.0);
++})";
++    ANGLE_GL_PROGRAM(program, kVS, essl1_shaders::fs::Red());
++    EXPECT_GL_NO_ERROR();
++}
++
++// Test that having an array constructor as a statement doesn't trigger an assert in compiler
++// output. This test has a constant array constructor statement.
++TEST_P(GLSLTest_ES3, ConstArrayConstructorStatement)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision mediump float;
++out vec4 outColor;
++void main()
++{
++    int[1](0);
++    outColor = vec4(0.0, 1.0, 0.0, 1.0);
++})";
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    glUseProgram(program);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_GL_NO_ERROR();
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++}
++
++// Test that having an array constructor as a statement doesn't trigger an assert in compiler
++// output.
++TEST_P(GLSLTest_ES3, ArrayConstructorStatement)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision mediump float;
++out vec4 outColor;
++void main()
++{
++    outColor = vec4(0.0, 0.0, 0.0, 1.0);
++    float[1](outColor[1]++);
++})";
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    glUseProgram(program);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_GL_NO_ERROR();
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor(0, 255, 0, 255));
++}
++
++// Test an array of arrays constructor as a statement.
++TEST_P(GLSLTest_ES31, ArrayOfArraysStatement)
++{
++    constexpr char kFS[] = R"(#version 310 es
++precision mediump float;
++out vec4 outColor;
++void main()
++{
++    outColor = vec4(0.0, 0.0, 0.0, 1.0);
++    float[2][2](float[2](outColor[1]++, 0.0), float[2](1.0, 2.0));
++})";
++    ANGLE_GL_PROGRAM(program, essl31_shaders::vs::Simple(), kFS);
++    glUseProgram(program);
++    drawQuad(program, essl31_shaders::PositionAttrib(), 0.5f);
++    EXPECT_GL_NO_ERROR();
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor(0, 255, 0, 255));
++}
++
++// Test dynamic indexing of a vector. This makes sure that helper functions added for dynamic
++// indexing have correct data that subsequent traversal steps rely on.
++TEST_P(GLSLTest_ES3, VectorDynamicIndexing)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision mediump float;
++out vec4 outColor;
++uniform int i;
++void main()
++{
++    vec4 foo = vec4(0.0, 0.5, 0.0, 1.0);
++    outColor = vec4(0.0, foo[i], 0.0, 1.0);
++})";
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    glUseProgram(program);
++    GLint iLoc = glGetUniformLocation(program, "i");
++    ASSERT_NE(-1, iLoc);
++    glUniform1i(iLoc, 1);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_GL_NO_ERROR();
++    EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(0, 127, 0, 255), 2);
++}
++
++// Test returning an array from a user-defined function. This makes sure that function symbols are
++// changed consistently when the user-defined function is changed to have an array out parameter.
++TEST_P(GLSLTest_ES31, ArrayReturnValue)
++{
++    constexpr char kFS[] = R"(#version 310 es
++precision highp float;
++uniform float u;
++out vec4 outColor;
++float[2] getArray(float f)
++{
++    return float[2](f, f + 0.5);
++}
++void main()
++{
++    float[2] arr = getArray(u);
++    outColor = vec4(arr[0], arr[1], 0.0, 1.0);
++})";
++    ANGLE_GL_PROGRAM(program, essl31_shaders::vs::Simple(), kFS);
++    glUseProgram(program);
++    GLint uLoc = glGetUniformLocation(program, "u");
++    ASSERT_NE(-1, uLoc);
++    glUniform1f(uLoc, 0.25f);
++    drawQuad(program, essl31_shaders::PositionAttrib(), 0.5f);
++    EXPECT_GL_NO_ERROR();
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor(64, 191, 0, 255));
++}
++
++// Test that writing parameters without a name doesn't assert.
++TEST_P(GLSLTest, ParameterWithNoName)
++{
++    constexpr char kFS[] = R"(precision mediump float;
++uniform vec4 v;
++vec4 s(vec4)
++{
++    return v;
++}
++void main()
++{
++    gl_FragColor = s(v);
++})";
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), kFS);
++    glUseProgram(program);
++    GLint vLoc = glGetUniformLocation(program, "v");
++    ASSERT_NE(-1, vLoc);
++    glUniform4f(vLoc, 0.0f, 1.0f, 0.0f, 1.0f);
++    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
++    EXPECT_GL_NO_ERROR();
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++}
++
++// Test that array dimensions are written out correctly.
++TEST_P(GLSLTest_ES3, ArrayDimensionsCompile)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision mediump float;
++uniform float uf;
++out vec4 my_FragColor;
++void main()
++{
++    my_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
++    float arr[2];
++    for (int i = 0; i < 2; ++i) {
++        arr[i] = uf * 0.25;
++        my_FragColor.x += arr[i];
++    }
++})";
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    glUseProgram(program);
++    GLint ufLoc = glGetUniformLocation(program, "uf");
++    ASSERT_NE(-1, ufLoc);
++    glUniform1f(ufLoc, 1.0f);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_GL_NO_ERROR();
++    EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(127, 0, 0, 255), 2);
++}
++
++// Test that initializing array with previously declared array will not be overwritten
++TEST_P(GLSLTest_ES3, SameNameArray)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 my_FragColor;
++void main()
++{
++  float arr[2] = float[2](0.5, 1.0);
++  {
++    float arr[2] = arr;
++    my_FragColor = vec4(0.0, arr[0], 0.0, arr[1]);
++  }
++})";
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    glUseProgram(program);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_GL_NO_ERROR();
++    EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(0, 127, 0, 255), 2);
++}
++
++// Test that passing a non-struct member of a std140 structure to a function won't trigger the
++// struct mapping.
++TEST_P(GLSLTest_ES3, NonStructMemberAsFunctionArgument)
++{
++    constexpr char kFS[] = R"(#version 300 es
++    precision highp float;
++    out vec4 my_FragColor;
++    struct InstancingData
++    {
++        vec4 data;
++    };
++    layout(std140) uniform InstanceBlock
++    {
++        InstancingData instances[8];
++    };
++    void main()
++    {
++        // Restrict array indexing via '% 8' to avoid out-of-bounds array reads.
++        int index = int(gl_FragCoord.x) % 8;
++        // Multiply by vec4(0.25) so that dot(vec4(1.0), vec4(0.25)) evaluates exactly to 1.0 (unclamped)
++        float result = dot(instances[index].data, vec4(0.25, 0.25, 0.25, 0.25));
++        my_FragColor = vec4(result, 0.0, 0.0, 1.0);
++    })";
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    glUseProgram(program);
++    GLuint blockIndex = glGetUniformBlockIndex(program, "InstanceBlock");
++    ASSERT_NE(GL_INVALID_INDEX, blockIndex);
++
++    GLBuffer ubo;
++    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
++    std::vector<float> data(8 * 4, 1.0f);
++    glBufferData(GL_UNIFORM_BUFFER, data.size() * sizeof(float), data.data(), GL_STATIC_DRAW);
++    glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
++    glUniformBlockBinding(program, blockIndex, 0);
++
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_GL_NO_ERROR();
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++}
++
++// Test that a uniform block with a structure containing a mat3 (unsupported for StructuredBuffer
++// optimization) compiles, links, and runs correctly by falling back to cbuffer.
++TEST_P(GLSLTest_ES3, UniformBlockWithUnsupportedFieldStructuredBufferFallback)
++{
++    // The D3D11 backend translates uniform blocks to HLSL constant buffers (cbuffer) or structured
++    // buffers (StructuredBuffer). An HLSL StructuredBuffer packs structures tightly, giving S (with
++    // mat3) a stride of 52 or 56 bytes, whereas a standard cbuffer preserves std140's 64-byte
++    // stride. We populate the buffer using std140 layout (64-byte stride) and read element i = 49
++    // using a uniform index. The CPU sets:
++    //   buf[49].a = (0.49, 0.0, 0.0, 1.0)
++    //   buf[49].b[0] = (0.0, 0.49, 0.0)
++    // The shader computes:
++    //   fragColor = buf[u_index].a + vec4(buf[u_index].b[0], 0.0) = (0.49, 0.49, 0.0, 1.0)
++    // This evaluates to GLColor(125, 125, 0, 255) since 0.49 * 255 = 124.95.
++    // If translation incorrectly used StructuredBuffer, the GPU would read element 49 from offset
++    // 49 * 52 = 2548 instead of the correct CPU offset 49 * 64 = 3136, reading garbage and
++    // rendering a wrong color.
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++struct S {
++    vec4 a;
++    mat3 b;
++};
++layout(std140) uniform Block {
++    S buf[50];
++};
++uniform int u_index;
++out vec4 fragColor;
++void main() {
++    fragColor = buf[u_index].a + vec4(buf[u_index].b[0], 0.0);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    glUseProgram(program);
++    GLuint blockIndex = glGetUniformBlockIndex(program, "Block");
++    ASSERT_NE(GL_INVALID_INDEX, blockIndex);
++
++    GLint indexLoc = glGetUniformLocation(program, "u_index");
++    ASSERT_NE(-1, indexLoc);
++    glUniform1i(indexLoc, 49);
++
++    // S size in std140 is 16 (for vec4 a) + 48 (for mat3 b, 3 * vec4 aligned columns) = 64 bytes
++    constexpr size_t kElementStride = 64;
++    std::vector<uint8_t> bufferData(50 * kElementStride, 0);
++    for (int i = 0; i < 50; ++i)
++    {
++        // buf[i].a is at offset 0
++        float *aPtr = reinterpret_cast<float *>(&bufferData[i * kElementStride]);
++        aPtr[0]     = 0.01f * i;
++        aPtr[1]     = 0.0f;
++        aPtr[2]     = 0.0f;
++        aPtr[3]     = 1.0f;
++
++        // buf[i].b[0] (column 0 of mat3) is at offset 16
++        float *b0Ptr = reinterpret_cast<float *>(&bufferData[i * kElementStride + 16]);
++        b0Ptr[0]     = 0.0f;
++        b0Ptr[1]     = 0.01f * i;
++        b0Ptr[2]     = 0.0f;
++    }
++
++    GLBuffer ubo;
++    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
++    glBufferData(GL_UNIFORM_BUFFER, bufferData.size(), bufferData.data(), GL_STATIC_DRAW);
++    glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
++    glUniformBlockBinding(program, blockIndex, 0);
++
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_GL_NO_ERROR();
++
++    EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(125, 125, 0, 255), 2);
++}
++
++// Test that a uniform block with only supported field types in its structure is translated and
++// rendered correctly.
++TEST_P(GLSLTest_ES3, UniformBlockWithSupportedFieldsStructuredBuffer)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++struct S {
++    vec4 a;
++    mat4 b;
++};
++layout(std140) uniform Block {
++    S buf[50];
++};
++uniform int u_index;
++out vec4 fragColor;
++void main() {
++    fragColor = buf[u_index].a + buf[u_index].b[0];
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    glUseProgram(program);
++    GLuint blockIndex = glGetUniformBlockIndex(program, "Block");
++    ASSERT_NE(GL_INVALID_INDEX, blockIndex);
++
++    GLint indexLoc = glGetUniformLocation(program, "u_index");
++    ASSERT_NE(-1, indexLoc);
++    glUniform1i(indexLoc, 49);
++
++    // S size in std140 is 16 (for vec4 a) + 64 (for mat4 b, 4 * vec4 aligned columns) = 80 bytes
++    constexpr size_t kElementStride = 80;
++    std::vector<uint8_t> bufferData(50 * kElementStride, 0);
++    for (int i = 0; i < 50; ++i)
++    {
++        // buf[i].a is at offset 0
++        float *aPtr = reinterpret_cast<float *>(&bufferData[i * kElementStride]);
++        aPtr[0]     = 0.01f * i;
++        aPtr[1]     = 0.0f;
++        aPtr[2]     = 0.0f;
++        aPtr[3]     = 1.0f;
++
++        // buf[i].b[0] (column 0 of mat4) is at offset 16
++        float *b0Ptr = reinterpret_cast<float *>(&bufferData[i * kElementStride + 16]);
++        b0Ptr[0]     = 0.0f;
++        b0Ptr[1]     = 0.01f * i;
++        b0Ptr[2]     = 0.0f;
++        b0Ptr[3]     = 0.0f;
++    }
++
++    GLBuffer ubo;
++    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
++    glBufferData(GL_UNIFORM_BUFFER, bufferData.size(), bufferData.data(), GL_STATIC_DRAW);
++    glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
++    glUniformBlockBinding(program, blockIndex, 0);
++
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_GL_NO_ERROR();
++
++    EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(125, 125, 0, 255), 2);
++}
++
+ }  // anonymous namespace
+ 
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3_AND_ES31_AND_ES32(
+diff --git a/src/tests/gl_tests/GLSLValidationTest.cpp b/src/tests/gl_tests/GLSLValidationTest.cpp
+index 2de376b2239f5f24d04bbc1a659412c03d73e431..a32fb50c9f2c5e3e5bf7a4ab47137a044eff9195 100644
+--- a/src/tests/gl_tests/GLSLValidationTest.cpp
++++ b/src/tests/gl_tests/GLSLValidationTest.cpp
+@@ -2904,6 +2904,55 @@ void main() {
+                   "'a' : Size of declared private variable exceeds implementation-defined limit");
+ }
+ 
++// Test that too large local variables are rejected after the same type passes validation as a
++// uniform
++TEST_P(WebGL2GLSLValidationTest, LargeArrayAfterUsedAsUniform)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++struct S
++{
++    float a[65536];
++};
++uniform S u;
++out vec4 color;
++void main() {
++    S l = u;
++    color = vec4(l.a[0], 0.0, 0.0, 1.0);
++})";
++    validateError(GL_FRAGMENT_SHADER, kFS,
++                  "'l' : Size of declared private variable exceeds implementation-defined limit");
++}
++
++// Test that repeated declarations are counted towards the total private variable limit
++TEST_P(WebGL2GLSLValidationTest, RepeatedDeclarationsOfSameTimeTooLarge)
++{
++    std::ostringstream fs;
++    fs << R"(#version 300 es
++precision highp float;
++// Declare a struct that's within the 65536-byte limit
++struct S
++{
++    float a[16383];
++};
++out vec4 color;
++void main() {
++    float f;
++)";
++    // Repeatedly declare a variable of this type, so that the total limit is reached, which is 256
++    // times the per-variable limit.
++    for (uint32_t i = 0; i < 257; ++i)
++    {
++        fs << "S s" << i << "; f += s" << i << ".a[0];\n";
++    }
++    fs << R"(
++    color = vec4(f, 0.0, 0.0, 1.0);
++})";
++    validateError(
++        GL_FRAGMENT_SHADER, fs.str().c_str(),
++        "'' : Total size of declared private variables exceeds implementation-defined limit");
++}
++
+ // Test that too large array, where cast to signed int would produce negative sizes, does not crash.
+ TEST_P(WebGL2GLSLValidationTest, LargeArrayUintMaxSize)
+ {
+@@ -3040,6 +3089,38 @@ TEST_P(WebGL2GLSLValidationTest, InlineLargeConstant)
+                   "'' : Size of declared variable exceeds implementation-defined limit");
+ }
+ 
++// Test using a large constant that is declared inline. Construction of such a large object, even if
++// it may be constant folded is not allowed.
++TEST_P(WebGL2GLSLValidationTest, InlineLargeConstant2)
++{
++    // Make a constant that's exactly 2GB.
++    std::ostringstream vs;
++    vs << R"(#version 300 es
++struct S { float a[16384]; };
++struct S2 { S s[32768]; };
++in vec4 position;
++out float v;
++void main() {
++  const float A[16384] = float[16384])";
++    for (uint32_t i = 0; i < 16384; ++i)
++    {
++        vs << (i == 0 ? "(" : ",") << "123.0";
++    }
++    vs << R"();
++  const S s = S(A);
++  v = S2(S[32768])";
++    for (uint32_t i = 0; i < 32768; ++i)
++    {
++        vs << (i == 0 ? "(" : ",") << "s";
++    }
++    vs << R"()).s[0].a[0];
++  gl_Position = position;
++})";
++
++    validateError(GL_VERTEX_SHADER, vs.str().c_str(),
++                  "'' : Size of declared variable exceeds implementation-defined limit");
++}
++
+ // Validate that too-large structures cannot be instantiated as temporaries.
+ TEST_P(WebGL2GLSLValidationTest, LargeStructConstructorOnly)
+ {

@@ -1,0 +1,406 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ran Wang <wangra@google.com>
+Date: Mon, 28 Sep 2026 17:28:16 -0400
+Subject: D3D11: Fix uniform and structured buffer partial update and zeroing
+
+Prevent range-cache storages from becoming mLatestBufferStorage, route
+partial copySubData on uniform buffers through staging, clamp
+copyFromStorage ranges, and zero-fill uninitialized tail bytes in
+dynamic uniform and structured buffers.
+
+Test:
+    angle_end2end_tests --gtest_filter="*CopySubDataPartialOverwritePreservesRemainingUniformData*:*UninitializedStructuredBufferRangeCacheAndUpdate*"
+Bug: b/550626693
+Change-Id: I6b5382f0788843faaa88e9046c66ea93d6552384
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8480731
+Commit-Queue: Ran Wang <wangra@google.com>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Quyen Le <lehoangquyen@google.com>
+
+diff --git a/src/libANGLE/renderer/d3d/d3d11/Buffer11.cpp b/src/libANGLE/renderer/d3d/d3d11/Buffer11.cpp
+index 6dff1d37e299cbbb8c8c040b86bd321306281cc8..23c10625f705098a52fa447f5f62d7f3b4a33bcc 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/Buffer11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/Buffer11.cpp
+@@ -404,18 +404,17 @@ angle::Result Buffer11::setSubData(const gl::Context *context,
+                 size <= static_cast<UINT>(mRenderer->getNativeCaps().maxUniformBlockSize) &&
+                 !mRenderer->getFeatures().useSystemMemoryForConstantBuffers.enabled)
+             {
+-                BufferStorage *latestStorage = nullptr;
+-                ANGLE_TRY(getLatestBufferStorage(context, &latestStorage, feedback));
+-                if (latestStorage && (latestStorage->getUsage() == BUFFER_USAGE_STRUCTURED))
+-                {
+-                    ANGLE_TRY(
+-                        getBufferStorage(context, BUFFER_USAGE_STRUCTURED, &writeBuffer, feedback));
+-                }
+-                else
+-                {
+-                    ANGLE_TRY(
+-                        getBufferStorage(context, BUFFER_USAGE_UNIFORM, &writeBuffer, feedback));
+-                }
++                // Always use BUFFER_USAGE_UNIFORM here. StructuredBufferStorage requires a
++                // shader-dependent structureByteStride at draw time, lives exclusively in
++                // mStructuredBufferRangeStoragesCache, and is always synced downstream from
++                // mLatestBufferStorage (SYSTEM_MEMORY, STAGING, or UNIFORM) in
++                // getStructuredBufferRangeSRV. Because onCopyStorage only updates
++                // mLatestBufferStorage to lower BufferUsage enum values and onStorageUpdate is
++                // never called on range-cache entries, mLatestBufferStorage can never be
++                // BUFFER_USAGE_STRUCTURED.
++                ASSERT(!mLatestBufferStorage ||
++                       mLatestBufferStorage->getUsage() != BUFFER_USAGE_STRUCTURED);
++                ANGLE_TRY(getBufferStorage(context, BUFFER_USAGE_UNIFORM, &writeBuffer, feedback));
+             }
+             else
+             {
+@@ -465,8 +464,15 @@ angle::Result Buffer11::copySubData(const gl::Context *context,
+ 
+     BufferStorage *copyDest = nullptr;
+     ANGLE_TRY(getLatestBufferStorage(context, &copyDest, feedback));
+-
+-    if (!copyDest)
++    // copyDest comes from mLatestBufferStorage, which only tracks canonical storages in
++    // mBufferStorages and can never be a BUFFER_USAGE_STRUCTURED range-cache entry.
++    ASSERT(!copyDest || copyDest->getUsage() != BUFFER_USAGE_STRUCTURED);
++
++    // BUFFER_USAGE_UNIFORM uses D3D11_USAGE_DYNAMIC + D3D11_BIND_CONSTANT_BUFFER, which maps with
++    // D3D11_MAP_WRITE_DISCARD (discarding the entire buffer on partial CPU writes) and cannot
++    // preserve existing data when copyFromStorage uses the CPU setData path. Route through
++    // BUFFER_USAGE_STAGING so existing bytes outside [destOffset, destOffset + size) are preserved.
++    if (!copyDest || copyDest->getUsage() == BUFFER_USAGE_UNIFORM)
+     {
+         ANGLE_TRY(getStagingStorage(context, &copyDest));
+     }
+@@ -805,6 +811,9 @@ angle::Result Buffer11::getBufferStorage(const gl::Context *context,
+                                          BufferFeedback *feedback)
+ {
+     ASSERT(0 <= usage && usage < BUFFER_USAGE_COUNT);
++    // Structured buffers require a shader-dependent structureByteStride (via
++    // resizeStructuredBuffer) and are managed exclusively in mStructuredBufferRangeStoragesCache.
++    ASSERT(usage != BUFFER_USAGE_STRUCTURED);
+     BufferStorage *&newStorage = mBufferStorages[usage];
+ 
+     if (!newStorage)
+@@ -1007,7 +1016,27 @@ angle::Result Buffer11::updateBufferStorage(const gl::Context *context,
+ 
+     if (!latestBuffer)
+     {
+-        onStorageUpdate(storage);
++        // updateBufferStorage is called by getBufferStorage (for canonical full-buffer storages in
++        // mBufferStorages) as well as getConstantBufferRangeStorage and
++        // getStructuredBufferRangeSRV (for sub-range cache entries stored in
++        // mConstantBufferRangeStoragesCache and mStructuredBufferRangeStoragesCache).
++        //
++        // When mLatestBufferStorage is nullptr (e.g., after glBufferData with data == nullptr), we
++        // must only promote |storage| to mLatestBufferStorage if:
++        // 1. mBufferStorages[storage->getUsage()] == storage: |storage| is a canonical storage in
++        //    mBufferStorages and not a range-cache entry (range-cache entries only cover a
++        //    sub-range, can be freed by LRU eviction without checking mLatestBufferStorage, and
++        //    StructuredBufferStorage cannot be resized via NativeStorage::resize).
++        // 2. storage->getSize() >= mSize: |storage| covers the full buffer size. For
++        //    BUFFER_USAGE_UNIFORM on D3D11.0 devices (!supportsConstantBufferOffsets),
++        //    FillBufferDesc clamps ByteWidth to maxUniformBlockSize. If
++        //    mSize > maxUniformBlockSize, a clamped uniform storage has getSize() < mSize and would
++        //    cause getLatestBufferStorage to repeatedly reallocate the buffer on every call while
++        //    truncating data above maxUniformBlockSize.
++        if (mBufferStorages[storage->getUsage()] == storage && storage->getSize() >= mSize)
++        {
++            onStorageUpdate(storage);
++        }
+         return angle::Result::Continue;
+     }
+ 
+@@ -1111,6 +1140,12 @@ void Buffer11::onCopyStorage(BufferStorage *dest, BufferStorage *source)
+ 
+ void Buffer11::onStorageUpdate(BufferStorage *updatedStorage)
+ {
++    // StructuredBufferStorage instances live exclusively in mStructuredBufferRangeStoragesCache as
++    // downstream range caches (which may only cover a sub-range of the buffer and can be evicted by
++    // LRU). They cannot be read back or copied from (copyFromStorage only supports
++    // SystemMemoryStorage and NativeStorage sources), so they must never become
++    // mLatestBufferStorage.
++    ASSERT(updatedStorage->getUsage() != BUFFER_USAGE_STRUCTURED);
+     updatedStorage->setDataRevision(updatedStorage->getDataRevision() + 1);
+     mLatestBufferStorage = updatedStorage;
+ }
+@@ -1129,12 +1164,37 @@ angle::Result Buffer11::BufferStorage::setData(const gl::Context *context,
+ 
+     // Uniform storage can have a different internal size than the buffer size. Ensure we don't
+     // overflow.
+-    size_t mapSize = std::min(size, mBufferSize - offset);
++    const size_t copySize = std::min(size, mBufferSize - offset);
++
++    // Uniform and structured buffers are D3D11_USAGE_DYNAMIC and mapped with
++    // D3D11_MAP_WRITE_DISCARD, which discards the entire buffer and returns fresh uninitialized
++    // memory. Therefore, when copySize < mBufferSize (e.g., due to constant buffer alignment
++    // padding or a range binding extending past the source buffer), we must map up to the
++    // end of the buffer and zero-fill the remaining tail bytes. Non-discard storages
++    // (SYSTEM_MEMORY, STAGING, PIXEL_PACK) preserve untouched bytes and only map copySize bytes.
++    const bool zeroTail  = (mUsage == BUFFER_USAGE_UNIFORM || mUsage == BUFFER_USAGE_STRUCTURED);
++    const size_t mapSize = zeroTail ? (mBufferSize - offset) : copySize;
++    if (mapSize == 0)
++    {
++        return angle::Result::Continue;
++    }
+ 
+     uint8_t *writePointer = nullptr;
+     ANGLE_TRY(map(context, offset, mapSize, GL_MAP_WRITE_BIT, &writePointer));
+ 
+-    memcpy(writePointer, data, mapSize);
++    if (copySize > 0)
++    {
++        memcpy(writePointer, data, copySize);
++    }
++
++    if (zeroTail)
++    {
++        ASSERT(offset == 0);
++        if (copySize < mapSize)
++        {
++            memset(writePointer + copySize, 0, mapSize - copySize);
++        }
++    }
+ 
+     unmap();
+ 
+@@ -1188,24 +1248,43 @@ angle::Result Buffer11::NativeStorage::copyFromStorage(const gl::Context *contex
+         *resultOut = CopyResult::NOT_RECREATED;
+     }
+ 
+-    size_t clampedSize = size;
+-    if (mUsage == BUFFER_USAGE_UNIFORM)
+-    {
+-        clampedSize = std::min(clampedSize, mBufferSize - destOffset);
+-    }
++    // Clamp the copy size to both the available source bytes and destination capacity:
++    // - sourceOffset + size can exceed source->getSize() when a shader uniform/structured block or
++    //   glBindBufferRange window is larger than the source storage.
++    // - destOffset + size can exceed mBufferSize when BUFFER_USAGE_UNIFORM is capped at
++    //   maxUniformBlockSize in FillBufferDesc.
++    size_t sourceAvailable =
++        (sourceOffset < source->getSize()) ? (source->getSize() - sourceOffset) : 0;
++    size_t destAvailable = (destOffset < mBufferSize) ? (mBufferSize - destOffset) : 0;
++    size_t clampedSize   = std::min({size, sourceAvailable, destAvailable});
+ 
+     if (clampedSize == 0)
+     {
++        // If no source bytes are available (e.g., sourceOffset >= source->getSize()), uniform and
++        // structured buffers must still be zero-filled via setData so the shader does not read
++        // uninitialized D3D11 memory.
++        if (mUsage == BUFFER_USAGE_UNIFORM || mUsage == BUFFER_USAGE_STRUCTURED)
++        {
++            ANGLE_TRY(setData(context, nullptr, destOffset, 0));
++        }
+         return angle::Result::Continue;
+     }
+ 
++    // Route uniform and structured buffers with clampedSize < mBufferSize through CPU map + setData
++    // instead of GPU CopySubresourceRegion. CopySubresourceRegion can only copy clampedSize bytes
++    // from the source buffer (since srcBox must fit within source), which would leave the remaining
++    // [clampedSize, mBufferSize) tail bytes uninitialized in a newly allocated or previously
++    // discarded buffer. setData maps with D3D11_MAP_WRITE_DISCARD and zero-fills the tail.
+     if (source->getUsage() == BUFFER_USAGE_PIXEL_PACK ||
+-        source->getUsage() == BUFFER_USAGE_SYSTEM_MEMORY)
++        source->getUsage() == BUFFER_USAGE_SYSTEM_MEMORY ||
++        ((mUsage == BUFFER_USAGE_UNIFORM || mUsage == BUFFER_USAGE_STRUCTURED) &&
++         clampedSize < mBufferSize))
+     {
+         ASSERT(source->isCPUAccessible(GL_MAP_READ_BIT) && isCPUAccessible(GL_MAP_WRITE_BIT));
+ 
+-        // Uniform buffers must be mapped with write/discard.
+-        ASSERT(!(preserveData && mUsage == BUFFER_USAGE_UNIFORM));
++        // Uniform and structured buffers must be mapped with write/discard.
++        ASSERT(!(preserveData &&
++                 (mUsage == BUFFER_USAGE_UNIFORM || mUsage == BUFFER_USAGE_STRUCTURED)));
+ 
+         uint8_t *sourcePointer = nullptr;
+         ANGLE_TRY(source->map(context, sourceOffset, clampedSize, GL_MAP_READ_BIT, &sourcePointer));
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 9ab30c9fd94fe6f1afee0fb1615fb306b833df5a..35aedfa51162437f68c917d05b50432254636e72 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -1306,6 +1306,8 @@
+ 523128541 PIXEL10 GLES : UniformBlockWithOneLargeArrayMemberTest.TwoUniformBlocksInDiffProgram/* = SKIP
+ 523128541 PIXEL10 GLES : UniformBlockWithOneLargeArrayMemberTest.TwoUniformBlocksInSameProgram/* = SKIP
+ 523128541 PIXEL10 GLES : UniformBufferTest.SameBufferDifferentMetalSize/* = SKIP
++562821012 PIXEL10 GLES : UniformBufferTest.DifferentRangeSizesSameOffsetAndStride/* = SKIP
++562821012 PIXEL10 GLES : UniformBufferTest.CopySubDataPartialOverwritePreservesRemainingUniformData/* = SKIP
+ 526503288 PIXEL10 GLES : BaseInstanceOverflowTest.BaseInstanceOverflow2/ES3_OpenGLES_AlwaysEnableEmulatedMultidrawExtensions = SKIP
+ 516824665 PIXEL10 GLES : Texture2DTest.InvalidFormatTypeCombosShouldFail/* = SKIP
+ 516824665 PIXEL10 GLES : Texture2DTest.FormatRGB10A2REVToRGB565/* = SKIP
+diff --git a/src/tests/gl_tests/UniformBufferTest.cpp b/src/tests/gl_tests/UniformBufferTest.cpp
+index 45de0dd5aae2458188b3fb386476cf3c68846214..d41828975b0dd185ce2d29e03e5381fb762fb517 100644
+--- a/src/tests/gl_tests/UniformBufferTest.cpp
++++ b/src/tests/gl_tests/UniformBufferTest.cpp
+@@ -4600,6 +4600,173 @@ void main(void){
+     EXPECT_GL_NO_ERROR();
+ }
+ 
++// Test that using different sized uniform block ranges with the same offset and stride
++// properly updates and accesses the entire buffer data without reading stale or discarded memory.
++TEST_P(UniformBufferTest, DifferentRangeSizesSameOffsetAndStride)
++{
++    // Program 1 with 100 elements (1600 bytes).
++    constexpr char kFSLarge[] =
++        "#version 300 es\n"
++        "precision highp float;\n"
++        "out vec4 my_FragColor;\n"
++        "layout(std140) uniform BlockLarge {\n"
++        "    uvec4 data[100];\n"
++        "};\n"
++        "void main() {\n"
++        "    my_FragColor = (data[75] == uvec4(76u)) ? vec4(0.0, 1.0, 0.0, 1.0) : vec4(1.0, 0.0, "
++        "0.0, 1.0);\n"
++        "}\n";
++
++    // Program 2 with 50 elements (800 bytes) at the same offset and stride.
++    constexpr char kFSSmall[] =
++        "#version 300 es\n"
++        "precision highp float;\n"
++        "out vec4 my_FragColor;\n"
++        "layout(std140) uniform BlockSmall {\n"
++        "    uvec4 data[50];\n"
++        "};\n"
++        "void main() {\n"
++        "    my_FragColor = (data[0] == uvec4(1u)) ? vec4(0.0, 1.0, 0.0, 1.0) : vec4(1.0, 0.0, "
++        "0.0, 1.0);\n"
++        "}\n";
++
++    ANGLE_GL_PROGRAM(progLarge, essl3_shaders::vs::Simple(), kFSLarge);
++    ANGLE_GL_PROGRAM(progSmall, essl3_shaders::vs::Simple(), kFSSmall);
++
++    std::vector<GLuint> initialData(100 * 4);
++    for (size_t i = 0; i < 100; ++i)
++    {
++        initialData[i * 4 + 0] = static_cast<GLuint>(i + 1);
++        initialData[i * 4 + 1] = static_cast<GLuint>(i + 1);
++        initialData[i * 4 + 2] = static_cast<GLuint>(i + 1);
++        initialData[i * 4 + 3] = static_cast<GLuint>(i + 1);
++    }
++
++    GLBuffer ubo;
++    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
++    glBufferData(GL_UNIFORM_BUFFER, initialData.size() * sizeof(GLuint), initialData.data(),
++                 GL_DYNAMIC_DRAW);
++
++    // 1. Initial draw with progLarge (size = 1600 bytes).
++    glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
++    glUniformBlockBinding(progLarge, glGetUniformBlockIndex(progLarge, "BlockLarge"), 0);
++    drawQuad(progLarge, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++
++    // 2. Modify buffer contents to increment the source buffer revision.
++    glBufferSubData(GL_UNIFORM_BUFFER, 0, initialData.size() * sizeof(GLuint), initialData.data());
++
++    // 3. Draw with progSmall (size = 800 bytes).
++    glUniformBlockBinding(progSmall, glGetUniformBlockIndex(progSmall, "BlockSmall"), 0);
++    drawQuad(progSmall, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++
++    // 4. Draw again with progLarge (size = 1600 bytes).
++    // Elements 50..99 must reflect the updated buffer values and not discarded memory.
++    drawQuad(progLarge, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++}
++
++// Test that partial updates to a uniform buffer via glCopyBufferSubData preserve the remaining
++// untouched buffer data.
++TEST_P(UniformBufferTest, CopySubDataPartialOverwritePreservesRemainingUniformData)
++{
++    constexpr size_t kElementCount         = 64;
++    constexpr size_t kComponentsPerElement = 4;
++    constexpr GLsizeiptr kElementStride    = kComponentsPerElement * sizeof(GLuint);
++
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 my_FragColor;
++layout(std140) uniform BlockLarge {
++    uvec4 data[64];
++};
++void main() {
++    bool ok = (data[0] == uvec4(100u)) && (data[1] == uvec4(200u)) &&
++              (data[63] == uvec4(64u));
++    my_FragColor = ok ? vec4(0.0, 1.0, 0.0, 1.0) : vec4(1.0, 0.0, 0.0, 1.0);
++})";
++
++    ANGLE_GL_PROGRAM(prog, essl3_shaders::vs::Simple(), kFS);
++    glUniformBlockBinding(prog, glGetUniformBlockIndex(prog, "BlockLarge"), 0);
++
++    std::vector<GLuint> initialData(kElementCount * kComponentsPerElement);
++    for (size_t i = 0; i < kElementCount; ++i)
++    {
++        for (size_t c = 0; c < kComponentsPerElement; ++c)
++        {
++            initialData[i * kComponentsPerElement + c] = static_cast<GLuint>(i + 1);
++        }
++    }
++
++    GLBuffer ubo;
++    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
++    glBufferData(GL_UNIFORM_BUFFER, initialData.size() * sizeof(GLuint), initialData.data(),
++                 GL_DYNAMIC_DRAW);
++    glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
++
++    // Use a non-uniform target with GL_DYNAMIC_DRAW so the D3D11 backend keeps the source buffer in
++    // system memory and takes the CPU copy path into the uniform buffer.
++    GLBuffer copySrc;
++    glBindBuffer(GL_COPY_READ_BUFFER, copySrc);
++    std::vector<GLuint> patchData = {100u, 100u, 100u, 100u, 200u, 200u, 200u, 200u};
++    glBufferData(GL_COPY_READ_BUFFER, patchData.size() * sizeof(GLuint), patchData.data(),
++                 GL_DYNAMIC_DRAW);
++
++    // Partially overwrite element 0 and element 1 of ubo.
++    glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_UNIFORM_BUFFER, 0, 0, kElementStride);
++    glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_UNIFORM_BUFFER, kElementStride, kElementStride,
++                        kElementStride);
++    EXPECT_GL_NO_ERROR();
++
++    // Verify that elements 0 and 1 have the copied data and element 63 still retains its value.
++    drawQuad(prog, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++}
++
++// Test that drawing with an uninitialized uniform buffer followed by a full-buffer glBufferSubData
++// update works properly when the shader uses the D3D11 structured buffer path.
++TEST_P(UniformBufferTest, UninitializedStructuredBufferRangeCacheAndUpdate)
++{
++    constexpr size_t kElementCount         = 64;
++    constexpr size_t kComponentsPerElement = 4;
++    constexpr GLsizeiptr kBlockSize        = kElementCount * kComponentsPerElement * sizeof(GLuint);
++    constexpr GLsizeiptr kTotalSize        = kBlockSize * 2;
++
++    // It is important to use a std140 uniform block with a sufficiently large array so the
++    // D3D11 backend translates the uniform block into a StructuredBuffer instead of a cbuffer.
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 my_FragColor;
++layout(std140) uniform BlockLarge {
++    uvec4 data[64];
++};
++void main() {
++    my_FragColor = (data[0] == uvec4(42u)) ? vec4(0.0, 1.0, 0.0, 1.0)
++                                           : vec4(1.0, 0.0, 0.0, 1.0);
++})";
++
++    ANGLE_GL_PROGRAM(prog, essl3_shaders::vs::Simple(), kFS);
++    glUniformBlockBinding(prog, glGetUniformBlockIndex(prog, "BlockLarge"), 0);
++
++    // Allocate an uninitialized buffer (data = nullptr) larger than the shader block size.
++    GLBuffer ubo;
++    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
++    glBufferData(GL_UNIFORM_BUFFER, kTotalSize, nullptr, GL_DYNAMIC_DRAW);
++    glBindBufferBase(GL_UNIFORM_BUFFER, 0, ubo);
++
++    // Draw once before populating the buffer to trigger structured buffer range cache creation on
++    // the D3D11 backend while the buffer has no canonical storage yet.
++    drawQuad(prog, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_GL_NO_ERROR();
++
++    // Populate the full buffer (kTotalSize > kBlockSize) via glBufferSubData and draw again.
++    std::vector<GLuint> fullData(kTotalSize / sizeof(GLuint), 42u);
++    glBufferSubData(GL_UNIFORM_BUFFER, 0, kTotalSize, fullData.data());
++    drawQuad(prog, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++}
++
+ // Tests rendering with a bound, unreferenced UBO that has no data. Covers a paticular back-end bug.
+ TEST_P(UniformBufferTest, EmptyUnusedUniformBuffer)
+ {
