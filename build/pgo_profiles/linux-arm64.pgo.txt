@@ -1,1 +1,1 @@
-electron-linux-arm64-1792296131-0399edbe6a.profdata 4bbbb5580e5696f061bcc87017f83aabf9b046b62b8ca3fe214b29b3c48feb9f
+electron-linux-arm64-1792552612-54f961b44b.profdata b3ec22da56acd39a507087f8f460d460bb9681d8dabac80db34edb4c9c836651
