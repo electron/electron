@@ -106,13 +106,13 @@ const base::DictValue* GetNodeFromPath(std::string_view path,
 
 bool FillFileInfoWithNode(Archive::FileInfo* info,
                           uint32_t header_size,
+                          uint64_t file_size,
                           bool load_integrity,
                           const base::DictValue* node) {
-  if (std::optional<int> size = node->FindInt("size")) {
-    info->size = static_cast<uint32_t>(*size);
-  } else {
+  std::optional<int> size = node->FindInt("size");
+  if (!size || *size < 0)
     return false;
-  }
+  info->size = static_cast<uint32_t>(*size);
 
   if (std::optional<bool> unpacked = node->FindBool("unpacked")) {
     info->unpacked = *unpacked;
@@ -122,12 +122,19 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
   }
 
   const std::string* offset = node->FindString("offset");
-  if (offset &&
-      base::StringToUint64(std::string_view{*offset}, &info->offset)) {
-    info->offset += header_size;
-  } else {
+  uint64_t relative_offset;
+  if (!offset ||
+      !base::StringToUint64(std::string_view{*offset}, &relative_offset)) {
     return false;
   }
+
+  // Init() guarantees |file_size| >= |header_size|.
+  const uint64_t content_size = file_size - header_size;
+  if (relative_offset > content_size ||
+      info->size > content_size - relative_offset) {
+    return false;
+  }
+  info->offset = header_size + relative_offset;
 
   if (std::optional<bool> executable = node->FindBool("executable")) {
     info->executable = *executable;
@@ -231,6 +238,18 @@ bool Archive::Init() {
     LOG(ERROR) << "Failed to parse header size from " << path_.value();
     return false;
   }
+
+  int64_t file_length;
+  {
+    electron::ScopedAllowBlockingForElectron allow_blocking;
+    file_length = file_.GetLength();
+  }
+  if (file_length < 0 || static_cast<uint64_t>(file_length) < buf.size() ||
+      size > static_cast<uint64_t>(file_length) - buf.size()) {
+    LOG(ERROR) << "Header size exceeds archive size in " << path_.value();
+    return false;
+  }
+  file_size_ = static_cast<uint64_t>(file_length);
 
   buf.resize(size);
   {
@@ -339,7 +358,8 @@ bool Archive::GetFileInfo(std::string_view path,
     return GetFileInfo(*link, info, depth + 1);
   }
 
-  return FillFileInfoWithNode(info, header_size_, header_validated_, node);
+  return FillFileInfoWithNode(info, header_size_, file_size_, header_validated_,
+                              node);
 }
 
 bool Archive::Stat(std::string_view path, Stats* stats) const {
@@ -360,7 +380,8 @@ bool Archive::Stat(std::string_view path, Stats* stats) const {
     return true;
   }
 
-  return FillFileInfoWithNode(stats, header_size_, header_validated_, node);
+  return FillFileInfoWithNode(stats, header_size_, file_size_,
+                              header_validated_, node);
 }
 
 bool Archive::Readdir(std::string_view path,
