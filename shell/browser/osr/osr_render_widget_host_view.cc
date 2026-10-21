@@ -22,7 +22,9 @@
 #include "components/viz/common/frame_sinks/copy_output_request.h"
 #include "components/viz/common/frame_sinks/delay_based_time_source.h"
 #include "components/viz/common/quads/compositor_render_pass.h"
+#include "content/browser/renderer_host/delegated_frame_host.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_delegate.h"  // nogncheck
+#include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_owner_delegate.h"  // nogncheck
 #include "content/common/input/synthetic_gesture.h"  // nogncheck
 #include "content/common/input/synthetic_gesture_target.h"
@@ -31,6 +33,7 @@
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_process_host.h"
 #include "shell/browser/osr/osr_host_display_client.h"
+#include "shell/browser/osr/osr_paint_event.h"
 #include "shell/browser/osr/osr_video_consumer.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/skia/include/core/SkCanvas.h"

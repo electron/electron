@@ -4,7 +4,7 @@
 
 #include "shell/browser/api/electron_api_native_theme.h"
 
-#include "shell/browser/mac/electron_application.h"
+#import <AppKit/AppKit.h>
 
 namespace electron::api {
 

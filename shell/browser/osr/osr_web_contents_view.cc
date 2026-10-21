@@ -5,11 +5,13 @@
 #include "shell/browser/osr/osr_web_contents_view.h"
 
 #include "base/check.h"
-#include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
+#include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
+#include "content/browser/web_contents/web_contents_impl.h"         // nogncheck
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "ui/display/screen.h"
 #include "ui/display/screen_info.h"
 

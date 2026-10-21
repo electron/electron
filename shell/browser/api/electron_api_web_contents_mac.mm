@@ -11,7 +11,7 @@
 #include "ui/events/keycodes/keyboard_codes.h"
 #include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 
 @interface NSWindow (EventDispatchingWindow)
 - (void)redispatchKeyEvent:(NSEvent*)event;

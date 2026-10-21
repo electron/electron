@@ -3,12 +3,6 @@
 // found in the LICENSE file.
 #include "shell/browser/extensions/electron_process_manager_delegate.h"
 
-#include "extensions/browser/extension_system.h"
-#include "extensions/browser/process_manager.h"
-#include "extensions/browser/process_manager_factory.h"
-#include "extensions/common/extension.h"
-#include "extensions/common/permissions/permissions_data.h"
-
 namespace extensions {
 
 ElectronProcessManagerDelegate::ElectronProcessManagerDelegate() = default;

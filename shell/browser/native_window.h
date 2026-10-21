@@ -20,7 +20,6 @@
 #include "base/strings/cstring_view.h"
 #include "base/timer/timer.h"
 #include "content/public/browser/desktop_media_id.h"
-#include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
 #include "shell/browser/native_window_observer.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
@@ -29,6 +28,10 @@
 
 class DraggableRegionProvider;
 class PrefService;
+
+namespace content {
+class WebContents;
+}
 
 namespace input {
 struct NativeWebKeyboardEvent;
@@ -631,27 +634,6 @@ class NativeWindow : public views::WidgetDelegate {
   views::ViewTracker primary_web_contents_view_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
-};
-
-// This class provides a hook to get a NativeWindow from a WebContents.
-class NativeWindowRelay
-    : public content::WebContentsUserData<NativeWindowRelay> {
- public:
-  static void CreateForWebContents(content::WebContents*,
-                                   base::WeakPtr<NativeWindow>);
-
-  ~NativeWindowRelay() override;
-
-  NativeWindow* GetNativeWindow() const { return native_window_.get(); }
-
-  WEB_CONTENTS_USER_DATA_KEY_DECL();
-
- private:
-  friend class content::WebContentsUserData<NativeWindow>;
-  explicit NativeWindowRelay(content::WebContents* web_contents,
-                             base::WeakPtr<NativeWindow> window);
-
-  base::WeakPtr<NativeWindow> native_window_;
 };
 
 }  // namespace electron

@@ -6,7 +6,7 @@
 
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/node_linked_binding.h"
 #include "third_party/blink/public/web/web_blob.h"
 
 namespace electron::api::web_utils {

@@ -15,7 +15,6 @@
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/converted_value.h"
 #include "ui/base/accelerators/accelerator.h"
-#include "ui/base/models/image_model.h"
 #include "ui/gfx/image/image.h"
 #include "v8/include/cppgc/member.h"
 #include "v8/include/v8-traced-handle.h"
@@ -23,6 +22,10 @@
 namespace gin_helper {
 class ErrorThrower;
 }  // namespace gin_helper
+
+namespace ui {
+class ImageModel;
+}  // namespace ui
 
 namespace electron::api {
 

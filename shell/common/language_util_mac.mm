@@ -4,7 +4,7 @@
 
 #include "shell/common/language_util.h"
 
-#import <Cocoa/Cocoa.h>
+#import <Foundation/Foundation.h>
 #include <string>
 #include <vector>
 

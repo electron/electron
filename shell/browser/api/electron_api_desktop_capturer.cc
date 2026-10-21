@@ -30,7 +30,7 @@
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/node_linked_binding.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capture_options.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capturer.h"
 #include "ui/base/ozone_buildflags.h"

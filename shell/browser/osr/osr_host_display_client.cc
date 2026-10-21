@@ -7,8 +7,10 @@
 #include <optional>
 #include <utility>
 
+#include "base/logging.h"
 #include "components/viz/common/resources/shared_image_format_utils.h"
 #include "mojo/public/cpp/system/platform_handle.h"
+#include "shell/browser/osr/osr_paint_event.h"
 #include "skia/ext/platform_canvas.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkCanvas.h"

@@ -6,8 +6,6 @@
 
 #include <string>
 
-#include "base/allocator/buildflags.h"
-#include "base/allocator/partition_allocator/src/partition_alloc/shim/allocator_shim.h"
 #include "base/apple/foundation_util.h"
 #include "base/functional/callback.h"
 #include "base/mac/mac_util.h"

@@ -9,6 +9,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -17,11 +18,11 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/media_stream_request.h"
 #include "mojo/public/cpp/bindings/remote.h"
-#include "services/network/public/cpp/url_loader_factory_builder.h"
-#include "services/network/public/mojom/network_context.mojom.h"
+#include "services/network/public/mojom/network_context.mojom-forward.h"
 #include "services/network/public/mojom/ssl_config.mojom.h"
-#include "services/network/public/mojom/url_loader_factory.mojom.h"
+#include "services/network/public/mojom/url_loader_factory.mojom-forward.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
+#include "url/origin.h"
 
 class PrefService;
 class ValueMapPrefStore;
@@ -37,7 +38,8 @@ class Arguments;
 
 namespace network {
 class SharedURLLoaderFactory;
-}
+class URLLoaderFactoryBuilder;
+}  // namespace network
 
 namespace storage {
 class SpecialStoragePolicy;

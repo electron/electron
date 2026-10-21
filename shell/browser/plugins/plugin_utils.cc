@@ -12,7 +12,6 @@
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/browser/extension_registry.h"
-#include "extensions/browser/extension_util.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/extension.h"
 #include "extensions/common/manifest_handlers/mime_types_handler.h"

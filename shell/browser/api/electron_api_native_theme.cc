@@ -14,11 +14,15 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/node_linked_binding.h"
 #include "ui/native_theme/native_theme.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8-cppgc.h"
+
+#if BUILDFLAG(IS_WIN)
+#include <windows.h>
+#endif
 
 namespace electron::api {
 

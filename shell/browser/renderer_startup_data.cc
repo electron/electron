@@ -23,6 +23,7 @@
 #include "shell/browser/preload_code_cache.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/web_contents_preferences.h"
+#include "shell/common/api/api.mojom.h"
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/node_includes.h"
 

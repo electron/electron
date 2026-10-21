@@ -5,7 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_COCOA_WINDOW_BUTTONS_PROXY_H_
 #define ELECTRON_SHELL_BROWSER_UI_COCOA_WINDOW_BUTTONS_PROXY_H_
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 
 #include <optional>
 

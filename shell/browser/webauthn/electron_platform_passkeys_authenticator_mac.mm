@@ -42,6 +42,7 @@
 #include "device/fido/public/public_key_credential_descriptor.h"
 #include "device/fido/public/public_key_credential_user_entity.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/native_window_relay.h"
 #include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
 
 namespace electron {

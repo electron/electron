@@ -8,7 +8,7 @@
 #include <utility>
 
 #import <AVFoundation/AVFoundation.h>
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 #import <LocalAuthentication/LocalAuthentication.h>
 #import <Security/Security.h>
 

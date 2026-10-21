@@ -5,7 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_MAC_H_
 #define ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_MAC_H_
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 
 #include <memory>
 #include <optional>

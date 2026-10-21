@@ -52,6 +52,7 @@
 #include "components/prefs/scoped_user_pref_update.h"
 #include "components/security_state/content/content_utils.h"
 #include "components/security_state/core/security_state.h"
+#include "components/viz/common/frame_sinks/copy_output_result.h"
 #include "content/browser/renderer_host/frame_tree_node.h"  // nogncheck
 #include "content/browser/renderer_host/navigation_controller_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_frame_host_impl.h"  // nogncheck
@@ -131,6 +132,8 @@
 #include "shell/browser/file_system_access/file_system_access_web_contents_helper.h"
 #include "shell/browser/microtasks_runner.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/native_window_relay.h"
+#include "shell/browser/osr/osr_paint_event.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_web_contents_view.h"
 #include "shell/browser/renderer_startup_data.h"
@@ -186,6 +189,7 @@
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/common/peerconnection/webrtc_ip_handling_policy.h"
+#include "third_party/blink/public/common/renderer_preferences/renderer_preferences.h"
 #include "third_party/blink/public/common/tokens/tokens.h"
 #include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"

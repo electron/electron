@@ -20,10 +20,10 @@
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_permission_manager.h"
-#include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/usb_device_info_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "third_party/blink/public/common/permissions/permission_utils.h"
 #include "ui/base/l10n/l10n_util.h"
 
 namespace {

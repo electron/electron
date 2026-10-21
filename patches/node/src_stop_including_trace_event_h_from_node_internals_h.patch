@@ -1,0 +1,224 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 17 Oct 2026 01:59:55 +0000
+Subject: src: stop including trace_event.h from node_internals.h
+
+node_internals.h does not use anything from tracing/trace_event.h. The
+include is a leftover umbrella include from when it was moved out of
+node.h (https://github.com/nodejs/node/pull/10959), and it drags the
+tracing headers (and, with V8_USE_PERFETTO, the Perfetto SDK headers)
+into every translation unit that includes node_internals.h.
+
+Drop it and include tracing/trace_event.h directly in the files that
+use the TRACE_* macros. The TRACING_CATEGORY_NODE* and
+NODE_TRACE_CATEGORY_ENABLED macros stay in node_internals.h; they only
+need trace_event.h at their expansion sites, which now include it.
+node_test_fixture.h relied on the include for tracing::Agent, so it
+now includes tracing/agent.h.
+
+This should be upstreamed.
+
+diff --git a/src/api/hooks.cc b/src/api/hooks.cc
+index 3213a30a7bc734a6626d0f93d4ce2ac7ddc747f6..b6cc82eb1a044946d3e86d343c15a110006f0a03 100644
+--- a/src/api/hooks.cc
++++ b/src/api/hooks.cc
+@@ -1,6 +1,7 @@
+ #include "env-inl.h"
+ #include "node_internals.h"
+ #include "node_process-inl.h"
++#include "tracing/trace_event.h"
+ #include "async_wrap.h"
+ 
+ namespace node {
+diff --git a/src/async_wrap.cc b/src/async_wrap.cc
+index b48efd7e1a611dddb5724d65d623c8a20168d252..34b906d5a760db506a27323f978ff9d96a9e5eb4 100644
+--- a/src/async_wrap.cc
++++ b/src/async_wrap.cc
+@@ -25,6 +25,7 @@
+ #include "env-inl.h"
+ #include "node_errors.h"
+ #include "node_external_reference.h"
++#include "tracing/trace_event.h"
+ #include "tracing/traced_value.h"
+ #include "util-inl.h"
+ 
+diff --git a/src/cares_wrap.h b/src/cares_wrap.h
+index dd62c2f6ff05271a7d9692a9bcfbdd04f8b5d182..ede86bb050d266e07de1caca470c60d6242357df 100644
+--- a/src/cares_wrap.h
++++ b/src/cares_wrap.h
+@@ -11,6 +11,7 @@
+ #include "memory_tracker.h"
+ #include "node.h"
+ #include "node_internals.h"
++#include "tracing/trace_event.h"
+ #include "util.h"
+ 
+ #include "ares.h"
+diff --git a/src/connection_wrap.cc b/src/connection_wrap.cc
+index 8cb6b8e66cec7512e3dcd86e21d3d38f64dec0bf..884292a028fb5ce7a8329f857ee05aed6d807f24 100644
+--- a/src/connection_wrap.cc
++++ b/src/connection_wrap.cc
+@@ -6,6 +6,7 @@
+ #include "stream_base-inl.h"
+ #include "stream_wrap.h"
+ #include "tcp_wrap.h"
++#include "tracing/trace_event.h"
+ #include "util-inl.h"
+ 
+ namespace node {
+diff --git a/src/env.cc b/src/env.cc
+index 65df49c367c6a378ffe1931bf8afa6315388a446..fa40100cce29cda47f94b909fecf326048f8e7a6 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -22,6 +22,7 @@
+ #include "req_wrap-inl.h"
+ #include "stream_base.h"
+ #include "tracing/agent.h"
++#include "tracing/trace_event.h"
+ #include "tracing/traced_value.h"
+ #include "util-inl.h"
+ #include "v8-cppgc.h"
+diff --git a/src/node_constants.cc b/src/node_constants.cc
+index 7ce1a775884a617361a79e1e696c3fd010c2375f..e09a60d5f8228fd12f7001b4c2f32656b522d1a7 100644
+--- a/src/node_constants.cc
++++ b/src/node_constants.cc
+@@ -22,6 +22,7 @@
+ #include "env-inl.h"
+ #include "node_constants.h"
+ #include "node_internals.h"
++#include "tracing/trace_event.h"
+ #include "util-inl.h"
+ 
+ #include "v8-local-handle.h"
+diff --git a/src/node_contextify.cc b/src/node_contextify.cc
+index 5801ee7773824a216cc6114fc602fd79071ebc28..128e91ead55f13cc76a2fb16ab61ad8cdd481dc6 100644
+--- a/src/node_contextify.cc
++++ b/src/node_contextify.cc
+@@ -35,6 +35,7 @@
+ #include "node_snapshot_builder.h"
+ #include "node_url.h"
+ #include "node_watchdog.h"
++#include "tracing/trace_event.h"
+ #include "util-inl.h"
+ 
+ namespace node {
+diff --git a/src/node_internals.h b/src/node_internals.h
+index 7b6a516eab2239428368357aec177ea7d9b50ded..2e3fd902c42f2f348a93b99927b454909e2b72e7 100644
+--- a/src/node_internals.h
++++ b/src/node_internals.h
+@@ -28,7 +28,6 @@
+ #include "node.h"
+ #include "node_binding.h"
+ #include "node_mutex.h"
+-#include "tracing/trace_event.h"
+ #include "util.h"
+ #include "uv.h"
+ #include "v8.h"
+diff --git a/src/node_perf.cc b/src/node_perf.cc
+index b4c74e9a09a70b0028811f93bdadc03b67e9802d..1a0c21ca42ce15327a8a4a8af9604027d1d8b52a 100644
+--- a/src/node_perf.cc
++++ b/src/node_perf.cc
+@@ -7,6 +7,7 @@
+ #include "node_external_reference.h"
+ #include "node_internals.h"
+ #include "node_process-inl.h"
++#include "tracing/trace_event.h"
+ #include "util-inl.h"
+ 
+ #include <cinttypes>
+diff --git a/src/node_platform.cc b/src/node_platform.cc
+index bf2dac8f5d9e11f52603c562ff049cabc67eb91e..c4b85211d96af9a86690704ac946ad4234f9bcc7 100644
+--- a/src/node_platform.cc
++++ b/src/node_platform.cc
+@@ -3,6 +3,7 @@
+ 
+ #include "env-inl.h"
+ #include "debug_utils-inl.h"
++#include "tracing/trace_event.h"
+ #include <algorithm>  // find_if(), find(), move()
+ #include <cmath>  // llround()
+ #include <memory>  // unique_ptr(), shared_ptr(), make_shared()
+diff --git a/src/node_process_object.cc b/src/node_process_object.cc
+index 3132a96abb87f9275080ca0d8b2015b12bb7be38..e0c3277d5e009b94b6a7472d76a0f5ce7cf96a43 100644
+--- a/src/node_process_object.cc
++++ b/src/node_process_object.cc
+@@ -7,6 +7,7 @@
+ #include "node_process-inl.h"
+ #include "node_realm-inl.h"
+ #include "node_revert.h"
++#include "tracing/trace_event.h"
+ #include "util-inl.h"
+ 
+ #include <climits>  // PATH_MAX
+diff --git a/src/node_realm.cc b/src/node_realm.cc
+index 4444b7d6c52dff2d5ea4c5509df7d932789c8e3a..6258880912a84787b87dc093591ec7fe6dab8118 100644
+--- a/src/node_realm.cc
++++ b/src/node_realm.cc
+@@ -4,6 +4,7 @@
+ #include "memory_tracker-inl.h"
+ #include "node_builtins.h"
+ #include "node_process.h"
++#include "tracing/trace_event.h"
+ #include "util.h"
+ 
+ namespace node {
+diff --git a/src/node_task_queue.cc b/src/node_task_queue.cc
+index dfc5eeb188cfe7c38b68c1a5c605c3dcee03729e..02d74eec26aa366c001ce116100887d9d8e2930a 100644
+--- a/src/node_task_queue.cc
++++ b/src/node_task_queue.cc
+@@ -5,6 +5,7 @@
+ #include "node_external_reference.h"
+ #include "node_internals.h"
+ #include "node_process-inl.h"
++#include "tracing/trace_event.h"
+ #include "util-inl.h"
+ #include "v8.h"
+ 
+diff --git a/src/node_worker.cc b/src/node_worker.cc
+index 91949db98400298ae7a770a76c387fcf2b388571..cda9dd20f4eeae94d3545d324b6d16df4e3c8993 100644
+--- a/src/node_worker.cc
++++ b/src/node_worker.cc
+@@ -11,6 +11,7 @@
+ #include "node_profiling.h"
+ #include "node_snapshot_builder.h"
+ #include "permission/permission.h"
++#include "tracing/trace_event.h"
+ #include "util-inl.h"
+ #include "v8-cppgc.h"
+ #include "v8-profiler.h"
+diff --git a/src/pipe_wrap.cc b/src/pipe_wrap.cc
+index 7e8d37e548964ccfab9d8ae9934d12b155f23d5d..ec3e675f47b6e9c32742f750877110aa3ec765ad 100644
+--- a/src/pipe_wrap.cc
++++ b/src/pipe_wrap.cc
+@@ -31,6 +31,7 @@
+ #include "node_external_reference.h"
+ #include "stream_base-inl.h"
+ #include "stream_wrap.h"
++#include "tracing/trace_event.h"
+ #include "util-inl.h"
+ 
+ namespace node {
+diff --git a/src/tcp_wrap.cc b/src/tcp_wrap.cc
+index 7ed24661ae181266bb6c1b905cbd73e73d806e15..fc077fc0041965eeb90953d1c168ee6d5c792c04 100644
+--- a/src/tcp_wrap.cc
++++ b/src/tcp_wrap.cc
+@@ -35,6 +35,7 @@
+ #include "node_internals.h"
+ #include "stream_base-inl.h"
+ #include "stream_wrap.h"
++#include "tracing/trace_event.h"
+ #include "util-inl.h"
+ 
+ #ifndef _WIN32
+diff --git a/test/cctest/node_test_fixture.h b/test/cctest/node_test_fixture.h
+index 10f2a26d72ebd4dac9344fd123ee79ff293d5484..11f2eb5651ee8b3080ba98a3f361d67f6550486c 100644
+--- a/test/cctest/node_test_fixture.h
++++ b/test/cctest/node_test_fixture.h
+@@ -8,6 +8,7 @@
+ #include "node_platform.h"
+ #include "node_internals.h"
+ #include "env-inl.h"
++#include "tracing/agent.h"
+ #include "util-inl.h"
+ #include "v8.h"
+ #include "libplatform/libplatform.h"

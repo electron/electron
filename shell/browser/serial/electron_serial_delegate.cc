@@ -7,7 +7,6 @@
 #include <utility>
 
 #include "content/public/browser/web_contents.h"
-#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/serial/serial_chooser_context.h"
 #include "shell/browser/serial/serial_chooser_context_factory.h"
 #include "shell/browser/serial/serial_chooser_controller.h"

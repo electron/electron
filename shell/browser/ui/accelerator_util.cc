@@ -10,6 +10,7 @@
 #include "base/logging.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
+#include "shell/browser/ui/electron_menu_model.h"
 #include "shell/common/keyboard_util.h"
 
 namespace accelerator_util {

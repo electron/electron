@@ -17,6 +17,7 @@
 #include "shell/renderer/preload_environment.h"
 #include "shell/renderer/preload_utils.h"
 #include "shell/renderer/service_worker_data.h"
+#include "third_party/blink/public/web/modules/service_worker/web_service_worker_context_proxy.h"
 #include "third_party/blink/renderer/bindings/core/v8/script_state_impl.h"  // nogncheck
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 #include "third_party/blink/renderer/core/inspector/worker_thread_debugger.h"  // nogncheck

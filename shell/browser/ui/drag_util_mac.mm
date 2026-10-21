@@ -4,7 +4,7 @@
 
 #include "shell/browser/ui/drag_util.h"
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 
 #include <vector>
 

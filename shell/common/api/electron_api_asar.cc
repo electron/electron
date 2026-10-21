@@ -15,6 +15,7 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
+#include "third_party/electron_node/src/node_object_wrap.h"
 
 #if BUILDFLAG(IS_WIN)
 #include <fcntl.h>

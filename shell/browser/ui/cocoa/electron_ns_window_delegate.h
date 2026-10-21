@@ -5,7 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_NS_WINDOW_DELEGATE_H_
 #define ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_NS_WINDOW_DELEGATE_H_
 
-#include <Quartz/Quartz.h>
+#import <Quartz/QuickLookUI.h>
 
 #include <optional>
 

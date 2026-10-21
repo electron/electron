@@ -4,7 +4,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 
 #include "content/public/common/color_parser.h"
 #include "shell/browser/ui/cocoa/NSString+ANSI.h"

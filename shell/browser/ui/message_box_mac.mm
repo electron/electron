@@ -6,7 +6,7 @@
 
 #include <utility>
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 
 #include "base/containers/flat_map.h"
 #include "base/logging.h"

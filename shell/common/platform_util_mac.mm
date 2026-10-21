@@ -7,20 +7,16 @@
 #include <string>
 #include <utility>
 
-#import <Carbon/Carbon.h>
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 #import <ServiceManagement/ServiceManagement.h>
 
 #include "base/apple/foundation_util.h"
-#include "base/apple/osstatus_logging.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/functional/bind.h"
 #include "base/logging.h"
-#include "base/mac/scoped_aedesc.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/sequenced_task_runner.h"
-#include "base/task/thread_pool.h"
 #include "electron/mas.h"
 #include "net/base/apple/url_conversions.h"
 #include "url/gurl.h"

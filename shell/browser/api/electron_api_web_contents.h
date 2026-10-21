@@ -19,13 +19,11 @@
 #include "base/task/thread_pool.h"
 #include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_context.h"  // nogncheck
-#include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
 #include "content/common/frame.mojom-forward.h"
 #include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/javascript_dialog_manager.h"
 #include "content/public/browser/navigation_controller.h"
-#include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -38,7 +36,7 @@
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/extended_web_contents_observer.h"
-#include "shell/browser/osr/osr_paint_event.h"
+#include "shell/browser/osr/osr_paint_event_fwd.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "shell/common/api/api.mojom-forward.h"
@@ -46,10 +44,6 @@
 #include "shell/common/gin_helper/self_keep_alive.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "v8/include/cppgc/persistent.h"
-
-#if defined(TOOLKIT_VIEWS) && !BUILDFLAG(IS_MAC)
-#include "ui/base/models/image_model.h"
-#endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/common/mojom/view_type.mojom-forward.h"
@@ -72,6 +66,7 @@ class Value;
 namespace content {
 enum class KeyboardEventProcessingResult;
 class DevToolsAgentHost;
+class NavigationEntry;
 class WebContents;
 }  // namespace content
 
@@ -99,7 +94,8 @@ enum class PdfPrintResult;
 
 namespace ui {
 class Cursor;
-}
+class ImageModel;
+}  // namespace ui
 
 class DevToolsEyeDropper;
 

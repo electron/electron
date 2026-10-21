@@ -23,7 +23,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/node_linked_binding.h"
 #include "shell/common/node_util.h"
 #include "shell/common/skia_util.h"
 #include "third_party/skia/include/core/SkBitmap.h"

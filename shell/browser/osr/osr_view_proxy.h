@@ -10,9 +10,12 @@
 #include "base/memory/raw_ptr.h"
 #include "ui/events/event.h"
 #include "ui/gfx/geometry/rect.h"
-#include "ui/views/view.h"
 
 class SkBitmap;
+
+namespace views {
+class View;
+}  // namespace views
 
 namespace electron {
 

@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "build/build_config.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/ui/certificate_trust.h"
 #include "shell/browser/ui/file_dialog.h"
@@ -14,13 +15,16 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/message_box_converter.h"
 #include "shell/common/gin_converters/native_window_converter.h"
-#include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/node_linked_binding.h"
 #include "v8/include/v8-isolate.h"
 #include "v8/include/v8-local-handle.h"
 #include "v8/include/v8-promise.h"
+
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
+#include "shell/common/gin_converters/net_converter.h"
+#endif
 
 namespace {
 

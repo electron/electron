@@ -33,6 +33,7 @@
 #include "extensions/common/manifest_handlers/chrome_url_overrides_handler.h"
 #include "extensions/common/manifest_handlers/devtools_page_handler.h"
 #include "extensions/common/manifest_handlers/manifest_url_handlers.h"
+#include "net/http/http_response_headers.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"

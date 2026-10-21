@@ -10,7 +10,7 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/node_linked_binding.h"
 #include "ui/base/idle/idle.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"

@@ -8,7 +8,11 @@
 
 #include <string>
 
-#include "ui/base/models/image_model.h"
+#include "build/build_config.h"
+
+namespace ui {
+class ImageModel;
+}  // namespace ui
 
 namespace electron {
 

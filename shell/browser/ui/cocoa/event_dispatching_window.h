@@ -5,7 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_COCOA_EVENT_DISPATCHING_WINDOW_H_
 #define ELECTRON_SHELL_BROWSER_UI_COCOA_EVENT_DISPATCHING_WINDOW_H_
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 
 @interface EventDispatchingWindow : NSWindow {
  @private

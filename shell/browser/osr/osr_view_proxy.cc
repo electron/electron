@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "third_party/skia/include/core/SkBitmap.h"
+#include "ui/views/view.h"
 
 namespace electron {
 

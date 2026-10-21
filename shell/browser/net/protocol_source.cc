@@ -26,7 +26,6 @@
 #include "services/network/public/cpp/url_loader_completion_status.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
-#include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
 #include "shell/common/asar/asar_util.h"

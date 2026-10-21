@@ -4,6 +4,8 @@
 
 #include "shell/browser/native_window_mac_remote.h"
 
+#import <AppKit/AppKit.h>
+
 #include <algorithm>
 #include <utility>
 

@@ -14,13 +14,16 @@
 #include "base/values.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "electron/buildflags/buildflags.h"
-#include "third_party/blink/public/common/renderer_preferences/renderer_preferences.h"
 #include "third_party/blink/public/mojom/v8_cache_options.mojom-forward.h"
 #include "third_party/blink/public/mojom/webpreferences/web_preferences.mojom-forward.h"
 
 namespace base {
 class CommandLine;
 }
+
+namespace blink {
+struct RendererPreferences;
+}  // namespace blink
 
 namespace gin_helper {
 class Dictionary;

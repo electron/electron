@@ -17,9 +17,9 @@
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_permission_manager.h"
-#include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/serial_port_info_converter.h"
+#include "third_party/blink/public/common/permissions/permission_utils.h"
 
 namespace electron {
 

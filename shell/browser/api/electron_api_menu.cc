@@ -22,8 +22,6 @@
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/api/ui_event.h"
 #include "shell/browser/javascript_environment.h"
-#include "shell/browser/native_window.h"
-#include "shell/browser/window_list.h"
 #include "shell/common/gin_converters/accelerator_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"

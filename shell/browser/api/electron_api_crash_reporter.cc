@@ -33,7 +33,7 @@
 #include "shell/common/gin_converters/time_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/node_linked_binding.h"
 #include "shell/common/node_util.h"
 #include "shell/common/process_util.h"
 #include "shell/common/thread_restrictions.h"

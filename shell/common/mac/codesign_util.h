@@ -6,7 +6,7 @@
 #ifndef SHELL_COMMON_MAC_CODESIGN_UTIL_H_
 #define SHELL_COMMON_MAC_CODESIGN_UTIL_H_
 
-#include <Security/Security.h>
+#include <mach/message.h>
 
 #include <optional>
 

@@ -9,8 +9,11 @@
 #include "content/public/common/widget_type.h"
 #include "media/base/video_types.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
-#include "services/viz/privileged/mojom/compositing/frame_sink_video_capture.mojom.h"
-#include "third_party/skia/include/core/SkCanvas.h"
+#include "services/viz/privileged/mojom/compositing/frame_sink_video_capture.mojom-forward.h"
+#include "shell/browser/osr/osr_paint_event_fwd.h"
+#include "ui/gfx/color_space.h"
+#include "ui/gfx/geometry/rect.h"
+#include "ui/gfx/gpu_memory_buffer_handle.h"
 
 #include <cstdint>
 
@@ -102,12 +105,6 @@ struct OffscreenSharedTextureValue {
   bool supports_zero_copy_webgpu_import;
 #endif
 };
-
-typedef std::optional<OffscreenSharedTextureValue> OffscreenSharedTexture;
-
-typedef base::RepeatingCallback<
-    void(const gfx::Rect&, const SkBitmap&, const OffscreenSharedTexture&)>
-    OnPaintCallback;
 
 }  // namespace electron
 

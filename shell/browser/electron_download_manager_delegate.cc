@@ -24,6 +24,7 @@
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/native_window_relay.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -36,6 +37,7 @@
 #include <vector>
 
 #include "base/i18n/case_conversion.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/win/registry.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/shell_dialogs/execute_select_file_win.h"

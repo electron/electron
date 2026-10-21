@@ -18,7 +18,7 @@
 #include "shell/common/process_util.h"
 #include "shell/common/thread_restrictions.h"
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 #import <sys/sysctl.h>
 
 namespace electron::api {

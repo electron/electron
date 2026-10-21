@@ -13,7 +13,7 @@
 #include "components/viz/host/client_frame_sink_video_capturer.h"
 #include "media/capture/mojom/video_capture_buffer.mojom-forward.h"
 #include "media/capture/mojom/video_capture_types.mojom.h"
-#include "shell/browser/osr/osr_paint_event.h"
+#include "shell/browser/osr/osr_paint_event_fwd.h"
 
 namespace electron {
 

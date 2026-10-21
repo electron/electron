@@ -23,7 +23,6 @@
 #include "ui/base/l10n/l10n_util_mac.h"
 #include "ui/gfx/image/image.h"
 
-#import <AppKit/AppKit.h>
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 namespace electron {

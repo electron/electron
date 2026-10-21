@@ -6,7 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_RENDERER_STARTUP_DATA_H_
 
 #include "shell/browser/preload_script.h"
-#include "shell/common/api/api.mojom.h"
+#include "shell/common/api/api.mojom-forward.h"
 
 namespace content {
 class BrowserContext;

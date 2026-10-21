@@ -8,7 +8,7 @@
 #include "shell/browser/web_view_manager.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/node_includes.h"
+#include "shell/common/node_linked_binding.h"
 #include "shell/common/options_switches.h"
 
 using electron::WebContentsPreferences;

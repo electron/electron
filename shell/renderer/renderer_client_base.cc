@@ -26,7 +26,6 @@
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/js2c_bundle_ids.h"
-#include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/plugin.mojom.h"
@@ -64,6 +63,8 @@
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 #if BUILDFLAG(IS_WIN)
+#include <windows.h>
+
 #include <shlobj.h>
 #endif
 

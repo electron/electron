@@ -4,7 +4,7 @@
 
 #include "shell/app_shim/app_shim_controller.h"
 
-#import <Cocoa/Cocoa.h>
+#import <AppKit/AppKit.h>
 #include <mach/mach.h>
 
 #include <utility>

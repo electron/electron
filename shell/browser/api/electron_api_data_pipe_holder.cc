@@ -22,8 +22,6 @@
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
 
-#include "shell/common/node_includes.h"
-
 namespace electron::api {
 
 namespace {
