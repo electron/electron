@@ -18,6 +18,7 @@
 #include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/render_process_host_observer.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/child_process_id.h"
 #include "electron/buildflags/buildflags.h"
 #include "net/ssl/client_cert_identity.h"
 #include "services/metrics/public/cpp/ukm_source_id.h"
@@ -160,7 +161,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   // certificate handling (see ClientCertificateResponderDelegate).
   base::OnceClosure SelectClientCertificate(
       content::BrowserContext* browser_context,
-      int process_id,
+      content::ChildProcessId process_id,
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
       net::ClientCertIdentityList client_certs,
