@@ -23,7 +23,7 @@ const server = http.createServer((req, res) => {
     res.end();
     return;
   }
-  if (req.url === '/landed-method') {
+  if (req.url === '/landed-method' || req.url === '/upload') {
     let bodyLength = 0;
     req.on('data', (chunk) => {
       bodyLength += chunk.length;

@@ -876,6 +876,7 @@ describe('webRequest module', () => {
     afterAll(() => server.kill());
     afterEach(() => {
       ses.webRequest.onBeforeRequest(null);
+      ses.webRequest.onBeforeSendHeaders(null);
       ses.webRequest.onHeadersReceived(null);
       ses.webRequest.onSendHeaders(null);
       ses.webRequest.onBeforeRedirect(null);
@@ -1090,6 +1091,78 @@ describe('webRequest module', () => {
       await expect(ajax(`${url}/`)).rejects.toThrow();
       expect(await error).toMatch(/^net::ERR_/);
       closed.close();
+    });
+
+    it('upload a Blob without passing uploadData to observers', async () => {
+      const uploadURL = `${serverURL}/upload`;
+      const filter = { urls: [uploadURL] };
+      const uploadData: Record<string, unknown> = {};
+      ses.webRequest.onSendHeaders(filter, (details) => {
+        uploadData.onSendHeaders = (details as any).uploadData;
+      });
+      ses.webRequest.onResponseStarted(filter, (details) => {
+        uploadData.onResponseStarted = (details as any).uploadData;
+      });
+      const completed = new Promise<void>((resolve) => {
+        ses.webRequest.onCompleted(filter, (details) => {
+          uploadData.onCompleted = (details as any).uploadData;
+          resolve();
+        });
+      });
+      const response = await contents.executeJavaScript(
+        `fetch(${JSON.stringify(uploadURL)}, { method: 'POST', body: new Blob(['blob body']) }).then((r) => r.text())`
+      );
+      await completed;
+      expect(response).toBe('POST /upload 9');
+      expect(uploadData).toStrictEqual({
+        onSendHeaders: undefined,
+        onResponseStarted: undefined,
+        onCompleted: undefined
+      });
+    });
+
+    it('pass uploadData to onBeforeRequest and onBeforeSendHeaders only', async () => {
+      const uploadURL = `${serverURL}/upload`;
+      const filter = { urls: [uploadURL] };
+      const uploadData: Record<string, unknown> = {};
+      ses.webRequest.onBeforeRequest(filter, (details, callback) => {
+        uploadData.onBeforeRequest = details.uploadData;
+        callback({});
+      });
+      ses.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
+        uploadData.onBeforeSendHeaders = details.uploadData;
+        callback({});
+      });
+      ses.webRequest.onSendHeaders(filter, (details) => {
+        uploadData.onSendHeaders = (details as any).uploadData;
+      });
+      ses.webRequest.onHeadersReceived(filter, (details, callback) => {
+        uploadData.onHeadersReceived = (details as any).uploadData;
+        callback({});
+      });
+      ses.webRequest.onResponseStarted(filter, (details) => {
+        uploadData.onResponseStarted = (details as any).uploadData;
+      });
+      const completed = new Promise<void>((resolve) => {
+        ses.webRequest.onCompleted(filter, (details) => {
+          uploadData.onCompleted = (details as any).uploadData;
+          resolve();
+        });
+      });
+      const response = await contents.executeJavaScript(
+        `fetch(${JSON.stringify(uploadURL)}, { method: 'POST', body: new Blob(['blob body']) }).then((r) => r.text())`
+      );
+      await completed;
+      expect(response).toBe('POST /upload 9');
+      const blob = [expect.objectContaining({ type: 'blob', blobUUID: expect.any(String) })];
+      expect(uploadData).toStrictEqual({
+        onBeforeRequest: blob,
+        onBeforeSendHeaders: blob,
+        onSendHeaders: undefined,
+        onHeadersReceived: undefined,
+        onResponseStarted: undefined,
+        onCompleted: undefined
+      });
     });
   });
 
