@@ -284,6 +284,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
           handshake_client,
       WebSocketOptions options) override;
   bool WillInterceptWebSocket(content::RenderFrameHost*) override;
+  bool HasWebRequestAPIProxy(content::BrowserContext* browser_context) override;
   void WillCreateURLLoaderFactory(
       content::BrowserContext* browser_context,
       content::RenderFrameHost* frame,

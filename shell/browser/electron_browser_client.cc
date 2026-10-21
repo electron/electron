@@ -1630,6 +1630,26 @@ bool ElectronBrowserClient::ShouldTreatAsFirstPartyWhenTopLevel(
 #endif
 }
 
+bool ElectronBrowserClient::HasWebRequestAPIProxy(
+    content::BrowserContext* browser_context) {
+  // Requests are proxied for Electron's webRequest module as well as for
+  // extensions using the webRequest or declarativeNetRequest APIs.
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  auto* web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
+  if (web_request && web_request->HasListener())
+    return true;
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  const auto* web_request_api =
+      extensions::BrowserContextKeyedAPIFactory<extensions::WebRequestAPI>::Get(
+          browser_context);
+  return web_request_api && web_request_api->MayHaveProxies();
+#else
+  return false;
+#endif
+}
+
 bool ElectronBrowserClient::WillInterceptWebSocket(
     content::RenderFrameHost* frame) {
   if (!frame)
