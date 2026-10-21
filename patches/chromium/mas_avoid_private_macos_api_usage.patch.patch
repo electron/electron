@@ -14,6 +14,8 @@ Subject: mas: avoid private macOS API usage
   * _CFIsObjC
   * CGSSetWindowCaptureExcludeShape
   * CGRegionCreateWithRect
+  * CGSGetEventPort
+  * CGEventCreateNextEvent
   * CTFontCopyVariationAxesInternal
   * AudioDeviceDuck
   * NSNextStepFrame
@@ -44,13 +46,19 @@ out -- if there are any side-effects, we should be able to work around them.
     could hit 60fps before will likely still be able to hit 60fps. There may even be
     cases where performance improves when disabling remote CoreAnimation (remote
     CoreAnimation is really only about battery usage).
+* WindowServerEventPumpThread is a no-op in the MAS build because draining
+  the WindowServer event queue needs CGSMainConnectionID, CGSGetEventPort
+  and CGEventCreateNextEvent. The pump is treated as failed up front so that
+  CADisplayLink is never created in the GPU process and every root frame
+  sink falls back to a timer-based VSync source, matching upstream's own
+  behavior when the pump cannot be started.
 * CTFontDescriptorIsSystemUIFont is a private API, we're using an
 _interesting_ technique in the MAS build to determine if the font is a
 system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 559dc98860e425e973852e4e9cf441359875e57e..3e00942a6d41466c755001e0f3216f20484a0836 100644
+index ce307f24f31e740e4afc05fe531a1fe9e2463a92..7f5ef6fc7f4f8f42d6d259310684ec535ae85e72 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1154,6 +1154,7 @@ component("base") {
@@ -129,10 +137,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index 7780529ef26ed86f74ca452745eda8801f3181c6..c4042f2eb818db39f2cb51ffa6e9c16e238a8427 100644
+index 9e9f063efe6f16f2f960e520badd025d0dea0a87..67aabbd6a143d9a6b0e6f2de7dd22cf03984908c 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -1047,6 +1047,7 @@ if (is_clang_or_gcc) {
+@@ -1029,6 +1029,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -1005,7 +1013,7 @@ index c74a6130862162d4fdb07cf3d4a60604d0ae0482..92eaacfb3256ded77bd119e6ca306404
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 56de9c52be3c20327b7a14cca46b4d24fa9d80f2..d1e0d849eec52d97fcd10e99c40491b0c92faf79 100644
+index cda5d70ca84a6ac0a326bda684292810f42a363f..2673ba0a388130d54b2c63b115a705d917d343a8 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -385,6 +385,7 @@ source_set("browser") {
@@ -1220,10 +1228,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 749d414b5ac90f23ea4ae285bd7b9251308ea9cc..1b514295dfa0ce6cc50c1c03bb1dc19076f58c3d 100644
+index 675418f6057ea053db13fe1fad74ecb0ae916652..69a4f3508c1339163daf8e1dccb1f0246c87d9f9 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -653,6 +653,7 @@ static_library("test_support") {
+@@ -651,6 +651,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -1231,7 +1239,7 @@ index 749d414b5ac90f23ea4ae285bd7b9251308ea9cc..1b514295dfa0ce6cc50c1c03bb1dc190
    ]
  
    data_deps = [
-@@ -1137,6 +1138,8 @@ static_library("browsertest_support") {
+@@ -1135,6 +1136,8 @@ static_library("browsertest_support") {
    }
  
    configs += [ "//v8:external_startup_data" ]
@@ -1240,7 +1248,7 @@ index 749d414b5ac90f23ea4ae285bd7b9251308ea9cc..1b514295dfa0ce6cc50c1c03bb1dc190
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2063,6 +2066,7 @@ test("content_browsertests") {
+@@ -2061,6 +2064,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1248,7 +1256,7 @@ index 749d414b5ac90f23ea4ae285bd7b9251308ea9cc..1b514295dfa0ce6cc50c1c03bb1dc190
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3455,6 +3459,7 @@ test("content_unittests") {
+@@ -3453,6 +3457,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -2284,7 +2292,7 @@ index 93e90c4eba9bc9b93d68e834eb6baabeb2d0ecf0..1b90f41d05f847a94adf2f4da827b1d0
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 6c05f8468aa42999be7a1b5d5d3f854813252e0c..16030a4b11926eb0f4c3b960d3209c8d028c5f65 100644
+index 71144801e65cf220e160b9c03d93dd07e20cbcce..935594966ce0deb145ffe99a6d9af6265b113c5c 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -142,6 +142,12 @@ component("display") {
@@ -2300,6 +2308,82 @@ index 6c05f8468aa42999be7a1b5d5d3f854813252e0c..16030a4b11926eb0f4c3b960d3209c8d
    if (is_ios) {
      deps += [ "//build:ios_buildflags" ]
    }
+diff --git a/ui/display/mac/ca_display_link_mac.mm b/ui/display/mac/ca_display_link_mac.mm
+index 6e1add2ad1ccd151b98f9926d8cde3268f56de05..94a44aa0b97fb1dd2365c135c35e74769115bc51 100644
+--- a/ui/display/mac/ca_display_link_mac.mm
++++ b/ui/display/mac/ca_display_link_mac.mm
+@@ -20,15 +20,18 @@
+ #include "base/metrics/histogram_macros.h"
+ #include "base/no_destructor.h"
+ #include "base/trace_event/trace_event.h"
++#include "electron/mas.h"
+ #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
+ #include "ui/display/mac/screen_utils_mac.h"
+ 
+ extern "C" {
++#if !IS_MAS_BUILD()
+ // Undocumented CoreGraphics framework functions.
+ using CGSConnectionID = uint32_t;
+ CGSConnectionID CGSMainConnectionID();
+ CGError CGSGetEventPort(CGSConnectionID connection_id, mach_port_t* port);
+ CGEventRef CGEventCreateNextEvent(CGSConnectionID connection_id);
++#endif
+ 
+ // Undocumented SkyLight framework functions.
+ // SLSGetDisplayLink() is a private function (SPI) that creates a CADisplayLink
+@@ -299,6 +302,15 @@ void RecordWindowServerEventPumpResult(
+       viz_task_runner_(base::SingleThreadTaskRunner::GetCurrentDefault()) {
+   weak_ptr_ = weak_factory_.GetWeakPtr();
+ 
++#if IS_MAS_BUILD()
++  // Draining the WindowServer event queue needs the private CGS* functions
++  // declared above, which the Mac App Store build cannot use. Without the
++  // pump, CADisplayLink may stop firing after display reconfiguration or power
++  // resume, so treat the pump as failed up front and let every root frame sink
++  // fall back to a timer-based VSync source.
++  shutdown_ = true;
++  CADisplayLinkGlobals::Get().SetWindowServerEventPumpFailed();
++#else
+   base::Thread::Options thread_options;
+   thread_options.message_pump_type = base::MessagePumpType::NS_RUNLOOP;
+   thread_options.thread_type = base::ThreadType::kPresentation;
+@@ -308,6 +320,7 @@ void RecordWindowServerEventPumpResult(
+       FROM_HERE,
+       base::BindOnce(&WindowServerEventPumpThread::PumpWindowServerEvents,
+                      base::Unretained(this)));
++#endif
+ }
+ 
+ // In a standard out-of-process GPU scenario,
+@@ -325,6 +338,7 @@ void RecordWindowServerEventPumpResult(
+ 
+   shutdown_ = true;
+ 
++#if !IS_MAS_BUILD()
+   // Send an empty message to wake up the thread and quit the while loop.
+   // See WindowServerEventPumpThread::PumpWindowServerEvents() for details.
+   CGSConnectionID connection_id = CGSMainConnectionID();
+@@ -348,10 +362,12 @@ void RecordWindowServerEventPumpResult(
+         << "CGSGetEventPort() in ~WindowServerEventPumpThread failed. Error: "
+         << err;
+   }
++#endif
+ 
+   Stop();
+ }
+ 
++#if !IS_MAS_BUILD()
+ void WindowServerEventPumpThread::PumpWindowServerEvents() {
+   CGSConnectionID connection_id = CGSMainConnectionID();
+   // We haven't seen this happen in practice, but WebKit's implementation
+@@ -499,6 +515,7 @@ void RecordWindowServerEventPumpResult(
+     }
+   }
+ }
++#endif
+ 
+ void WindowServerEventPumpThread::DisableDisplayLink(Result failure) {
+   // This may be called from the pump thread. Hop to the Viz thread, which owns
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
 index 618217772a2fa38077ca0913dc017ecc6a702142..f06c9cf5bd3d841935d4e7353e7040272d51abb4 100644
 --- a/ui/display/mac/screen_mac.mm

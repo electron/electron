@@ -200,7 +200,7 @@ index 27586bd03af05294eb977a72052f2334c3d1aa61..fdceecae58237c48777b800ca218b2ad
        ->ContextWillBeDestroyed(script_state_);
    if (next_status == Lifecycle::kV8MemoryIsForciblyPurged ||
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client.h b/third_party/blink/renderer/core/frame/local_frame_client.h
-index e52ca6e121c9da8eaf4d75f0a3d07c124641168d..6f4f6a0f3a5fc8f666cc8b9dc1cda8f2584f81f8 100644
+index 3e6cdd12f46a1ab090ff3c7f9e21729e734424d4..1e491baa6cae4ff6153c59e15e96316fff2917af 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client.h
 +++ b/third_party/blink/renderer/core/frame/local_frame_client.h
 @@ -317,7 +317,8 @@ class CORE_EXPORT LocalFrameClient : public FrameClient {
@@ -214,7 +214,7 @@ index e52ca6e121c9da8eaf4d75f0a3d07c124641168d..6f4f6a0f3a5fc8f666cc8b9dc1cda8f2
  
    virtual void DidChangeScrollOffset(mojom::blink::ScrollType) {}
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-index 36df921ae55c367d40e21ddb7f35c9b5a0964dd5..b9449c53bb442595aef7789ea3db1a922988c9e3 100644
+index d29e83fc3641858816d0ed479771c84672d176fe..1306ae1aae7b8620a31e98765e4a9b0ec4702817 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 @@ -310,10 +310,11 @@ void LocalFrameClientImpl::DidInstallConditionalFeatures(
@@ -231,7 +231,7 @@ index 36df921ae55c367d40e21ddb7f35c9b5a0964dd5..b9449c53bb442595aef7789ea3db1a92
  }
  
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.h b/third_party/blink/renderer/core/frame/local_frame_client_impl.h
-index f69c4120bd88467108193d180b2ac9e35b3f673c..703259fc3fe1628d5f7898196b372126a43b79f3 100644
+index 2d9475f3d838308bcded05bf85c3523dbdfcf034..fe863753863998eb9ed1caf1897bc990a699b353 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.h
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.h
 @@ -80,7 +80,8 @@ class CORE_EXPORT LocalFrameClientImpl final : public LocalFrameClient {
@@ -245,7 +245,7 @@ index f69c4120bd88467108193d180b2ac9e35b3f673c..703259fc3fe1628d5f7898196b372126
  
    bool HasWebView() const override;
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index d3b0656ff4e99725062f36c0f12347d6779f0350..4c5085428c60f2a730fd8938a143de51d4c62319 100644
+index 60a18b62a97b13f1501e4e2b45010e51b2c69d26..9880bf5a122cf3fc34d9ea94980be1aa24699a41 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
 @@ -430,7 +430,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {

@@ -72,7 +72,7 @@ to modify the upstream chrome/browser/printing/print_view_manager.{cc,h}, which
 Electron does not compile.
 
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index 24c92f4035410f68c48aa97bb49c0fe759194901..6704bf804c4d4d96ba7e2df06d8690c034209058 100644
+index a62b37a927e7c85d85ad3bea2b70f53e19b6e5bf..bc24a5e4690649ab0c4ccc889975fb0368cc04ce 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
 @@ -97,6 +97,7 @@ bool PrintWithReducedRasterization(PrefService* prefs) {
@@ -91,7 +91,7 @@ index 24c92f4035410f68c48aa97bb49c0fe759194901..6704bf804c4d4d96ba7e2df06d8690c0
  
  #endif  // BUILDFLAG(IS_WIN)
  
-@@ -204,10 +206,8 @@ void PrintJob::Initialize(std::unique_ptr<PrinterQuery> query,
+@@ -206,10 +208,8 @@ void PrintJob::Initialize(std::unique_ptr<PrinterQuery> query,
  
  #if BUILDFLAG(IS_WIN)
    pdf_page_mapping_ = PageNumber::GetPages(settings->ranges(), page_count);
@@ -104,7 +104,7 @@ index 24c92f4035410f68c48aa97bb49c0fe759194901..6704bf804c4d4d96ba7e2df06d8690c0
  #endif
  
    auto new_doc = base::MakeRefCounted<PrintedDocument>(std::move(settings),
-@@ -407,8 +407,10 @@ void PrintJob::StartPdfToEmfConversion(
+@@ -409,8 +409,10 @@ void PrintJob::StartPdfToEmfConversion(
  
    const PrintSettings& settings = document()->settings();
  
@@ -116,7 +116,7 @@ index 24c92f4035410f68c48aa97bb49c0fe759194901..6704bf804c4d4d96ba7e2df06d8690c0
  
    using RenderMode = PdfRenderSettings::Mode;
    RenderMode mode = print_with_reduced_rasterization
-@@ -500,8 +502,10 @@ void PrintJob::StartPdfToPostScriptConversion(
+@@ -502,8 +504,10 @@ void PrintJob::StartPdfToPostScriptConversion(
    if (ps_level2) {
      mode = PdfRenderSettings::Mode::POSTSCRIPT_LEVEL2;
    } else {

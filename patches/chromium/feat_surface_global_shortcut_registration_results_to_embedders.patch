@@ -25,10 +25,10 @@ is upstream as of 154.0.8023.0.)
 This patch should be submitted upstream.
 
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
-index a48b7b73508942cc05e0dcf0fe108313f265c7c6..ed5f8cdd054a557a672a5bc1eb8def33ec544706 100644
+index 2e6b062c5162adfd7716f510c7ac1542c894e219..8146142e14f91d7b778d3162de87f97376517bca 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
-@@ -85,6 +85,18 @@ class GlobalAcceleratorListener {
+@@ -86,6 +86,18 @@ class COMPONENT_EXPORT(GLOBAL_ACCELERATOR_LISTENER) GlobalAcceleratorListener {
        base::RepeatingCallback<void(const std::string&, const std::string&)>
            execute_command) {}
  
@@ -189,10 +189,10 @@ index 3ccf93da7d44721b5e015f2c82950c4d7e9dca75..30a440a5557a2750549833ecd8d68a2b
    std::erase_if(bound_commands_, [](const auto& pair) {
      return pair.second.execute_command.IsCancelled();
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.h b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.h
-index f6f91f90a4ade8f47eb210ef42e41fe5d1430340..b302b3b5a1804736de94321405a4d1e9e29d3f1a 100644
+index e958a852b589637e24e03369e6f2d64ac11c21f6..36caacda4b1452255647b8cccbf9df9a3669d812 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.h
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.h
-@@ -117,6 +117,8 @@ class GlobalAcceleratorListenerLinux : public GlobalAcceleratorListener {
+@@ -119,6 +119,8 @@ class COMPONENT_EXPORT(GLOBAL_ACCELERATOR_LISTENER)
        gfx::AcceleratedWidget widget,
        base::RepeatingCallback<void(const std::string&, const std::string&)>
            execute_command) override;
@@ -201,7 +201,7 @@ index f6f91f90a4ade8f47eb210ef42e41fe5d1430340..b302b3b5a1804736de94321405a4d1e9
    void PruneStaleCommands() override;
  
    void OnCreateSessionResponse(dbus_xdg::Session* session);
-@@ -155,6 +157,14 @@ class GlobalAcceleratorListenerLinux : public GlobalAcceleratorListener {
+@@ -157,6 +159,14 @@ class COMPONENT_EXPORT(GLOBAL_ACCELERATOR_LISTENER)
    // in this session.
    bool IsIdOfLoadedGroup(const std::string& id) const;
  
@@ -216,7 +216,7 @@ index f6f91f90a4ade8f47eb210ef42e41fe5d1430340..b302b3b5a1804736de94321405a4d1e9
    // DBus components.
    scoped_refptr<dbus::Bus> bus_;
    raw_ptr<dbus::ObjectProxy> global_shortcuts_proxy_ = nullptr;
-@@ -189,6 +199,10 @@ class GlobalAcceleratorListenerLinux : public GlobalAcceleratorListener {
+@@ -191,6 +201,10 @@ class COMPONENT_EXPORT(GLOBAL_ACCELERATOR_LISTENER)
    // IDs sent in the in-flight BindShortcuts call.
    base::flat_set<std::string> pending_bind_ids_;
  
