@@ -20,7 +20,9 @@
 #include "base/synchronization/lock.h"
 #include "base/threading/thread_local.h"
 #include "crypto/hash.h"
+#include "electron/fuses.h"
 #include "shell/common/asar/archive.h"
+#include "shell/common/node_bindings.h"
 #include "shell/common/thread_restrictions.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 
@@ -32,23 +34,58 @@ using ArchiveMap = std::map<base::FilePath, std::shared_ptr<Archive>>;
 
 const base::FilePath::CharType kAsarExtension[] = FILE_PATH_LITERAL(".asar");
 
+// Memo of which existing "*.asar" paths are directories.
+// GetOrCreateAsarArchive() also records every path it opens as an archive.
+struct DirectoryCache {
+  std::map<base::FilePath, bool> is_directory;
+  base::Lock lock;
+};
+
+DirectoryCache& GetDirectoryCache() {
+  static base::NoDestructor<DirectoryCache> s_cache;
+  return *s_cache;
+}
+
+// Whether |path| is the app's own archive in an app that may only load from
+// one. Decided without looking at the disk, so that every process agrees: a
+// directory at this path is then refused when opened, not read in place of
+// the archive. Both spellings are accepted because the module loader asks
+// about the resolved path.
+bool IsRequiredAppArchive(const base::FilePath& path) {
+  if (!electron::fuses::IsOnlyLoadAppFromAsarEnabled())
+    return false;
+  static const base::NoDestructor<std::pair<base::FilePath, base::FilePath>>
+      s_paths([] {
+        electron::ScopedAllowBlockingForElectron allow_blocking;
+        const base::FilePath resources = electron::GetResourcesPath();
+        const base::FilePath name(FILE_PATH_LITERAL("app.asar"));
+        return std::make_pair(
+            resources.Append(name),
+            base::MakeAbsoluteFilePath(resources).Append(name));
+      }());
+  return path == s_paths->first || path == s_paths->second;
+}
+
 // Whether |path| is an existing directory. The answer is memoised only for
 // paths that exist: a "*.asar" path probed before anything is created there
 // (the win32 mkdir wrapper does exactly that) must not be pinned as "not a
 // directory" for the rest of the process.
 bool IsDirectoryCached(const base::FilePath& path, bool* exists = nullptr) {
-  static base::NoDestructor<std::map<base::FilePath, bool>>
-      s_is_directory_cache;
-  static base::NoDestructor<base::Lock> lock;
+  DirectoryCache& cache = GetDirectoryCache();
 
   {
-    base::AutoLock auto_lock(*lock);
-    auto it = s_is_directory_cache->find(path);
-    if (it != s_is_directory_cache->end()) {
+    base::AutoLock auto_lock(cache.lock);
+    auto it = cache.is_directory.find(path);
+    if (it != cache.is_directory.end()) {
       if (exists)
         *exists = true;
       return it->second;
     }
+  }
+  if (IsRequiredAppArchive(path)) {
+    if (exists)
+      *exists = true;
+    return false;
   }
   base::File::Info info;
   bool found;
@@ -60,8 +97,8 @@ bool IsDirectoryCached(const base::FilePath& path, bool* exists = nullptr) {
     *exists = found;
   if (!found)
     return false;
-  base::AutoLock auto_lock(*lock);
-  s_is_directory_cache->emplace(path, info.is_directory);
+  base::AutoLock auto_lock(cache.lock);
+  cache.is_directory.emplace(path, info.is_directory);
   return info.is_directory;
 }
 
@@ -90,6 +127,11 @@ std::shared_ptr<Archive> GetOrCreateAsarArchive(const base::FilePath& path) {
   auto archive = std::make_shared<Archive>(path);
   if (archive->Init()) {
     map.try_emplace(lower, path, archive);
+    // The file just opened is the archive for this path from now on; a
+    // directory swapped in after the open must not be read in its place.
+    DirectoryCache& cache = GetDirectoryCache();
+    base::AutoLock dir_lock(cache.lock);
+    cache.is_directory.insert_or_assign(path, false);
     return archive;
   }
 
