@@ -150,7 +150,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 #endif
 
 #if BUILDFLAG(IS_MAC)
-  base::FilePath GetChildProcessPath(int child_flags) override;
+  base::FilePath GetChildProcessPath(
+      int child_flags,
+      content::ChildProcessId child_process_id) override;
   device::GeolocationSystemPermissionManager*
   GetGeolocationSystemPermissionManager() override;
 #endif
