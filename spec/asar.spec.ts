@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain } from 'electron/main';
 
-import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import * as importedFs from 'node:fs';
@@ -193,6 +193,94 @@ describe('asar package', () => {
       expect(message).toBe('ping');
       await w.terminate();
     });
+  });
+
+  describe('archives with out-of-range size fields', () => {
+    const fs = importedFs;
+    // The wrapped fs refuses to create files named *.asar; the fixtures are
+    // written through the unwrapped module.
+    const originalFs = require('original-fs') as typeof importedFs;
+    const j = (...parts: string[]) => parts.join(path.sep);
+
+    // Writes a minimal flat asar archive of |files| (name -> contents) and lets
+    // |patch| rewrite the header entries before they are serialized.
+    const writeAsar = (file: string, files: Record<string, string>, patch?: (entries: Record<string, any>) => void) => {
+      const chunks: Buffer[] = [];
+      const entries: Record<string, any> = {};
+      let offset = 0;
+      for (const [name, value] of Object.entries(files)) {
+        const data = Buffer.from(value);
+        entries[name] = { size: data.length, offset: String(offset) };
+        offset += data.length;
+        chunks.push(data);
+      }
+      patch?.(entries);
+      const json = Buffer.from(JSON.stringify({ files: entries }));
+      const padded = (json.length + 3) & ~3;
+      const headerPickle = Buffer.alloc(8 + padded);
+      headerPickle.writeUInt32LE(4 + padded, 0);
+      headerPickle.writeUInt32LE(json.length, 4);
+      json.copy(headerPickle, 8);
+      const sizePickle = Buffer.alloc(8);
+      sizePickle.writeUInt32LE(4, 0);
+      sizePickle.writeUInt32LE(headerPickle.length, 4);
+      originalFs.writeFileSync(file, Buffer.concat([sizePickle, headerPickle, ...chunks]));
+    };
+
+    let tmp: string;
+    let oversizedHeader: string; // header size field larger than the file
+    let badEntries: string; // entries whose size/offset do not fit the file
+
+    beforeAll(() => {
+      tmp = importedFs.realpathSync(importedFs.mkdtempSync(path.join(os.tmpdir(), 'electron-asar-sizes-')));
+
+      oversizedHeader = j(tmp, 'oversized-header.asar');
+      writeAsar(oversizedHeader, { 'a.txt': 'alpha' });
+      const bytes = Buffer.from(originalFs.readFileSync(oversizedHeader));
+      bytes.writeUInt32LE(0xffffffff, 4);
+      originalFs.writeFileSync(oversizedHeader, bytes);
+
+      badEntries = j(tmp, 'bad-entries.asar');
+      writeAsar(
+        badEntries,
+        { 'ok.txt': 'ok', 'negative.txt': 'neg', 'too-long.txt': 'long', 'far-away.txt': 'far' },
+        (entries) => {
+          entries['negative.txt'].size = -1;
+          entries['too-long.txt'].size = 1 << 30;
+          entries['far-away.txt'].offset = String(2 ** 40);
+        }
+      );
+    });
+
+    afterAll(() => {
+      try {
+        originalFs.rmSync(tmp, { recursive: true, force: true });
+      } catch (error: any) {
+        // The archives stay open for the rest of the process (the asar layer
+        // caches Archive objects), and Windows will not delete an open file.
+        if (process.platform !== 'win32' || !['EBUSY', 'EPERM'].includes(error.code)) throw error;
+      }
+    });
+
+    it('rejects an archive whose header size exceeds the file size', () => {
+      expect(() => fs.readFileSync(j(oversizedHeader, 'a.txt'))).toThrow(/Invalid package/);
+      expect(() => fs.statSync(j(oversizedHeader, 'a.txt'))).toThrow(/Invalid package/);
+    });
+
+    it('still serves well-formed entries next to malformed ones', () => {
+      expect(fs.readFileSync(j(badEntries, 'ok.txt'), 'utf8')).toBe('ok');
+    });
+
+    for (const name of ['negative.txt', 'too-long.txt', 'far-away.txt']) {
+      it(`treats ${name} as missing instead of reading past the archive`, () => {
+        const p = j(badEntries, name);
+        expect(() => fs.statSync(p)).toThrow(/ENOENT/);
+        expect(() => fs.readFileSync(p)).toThrow(/ENOENT/);
+        expect(() => fs.openSync(p, 'r')).toThrow(/ENOENT/);
+        expect(() => fs.copyFileSync(p, j(tmp, 'copied-' + name))).toThrow(/ENOENT/);
+        expect(fs.existsSync(p)).toBe(false);
+      });
+    }
   });
 });
 

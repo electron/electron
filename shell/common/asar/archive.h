@@ -122,6 +122,7 @@ class Archive {
   base::File file_{base::File::FILE_OK};
   int fd_ = -1;
   uint32_t header_size_ = 0;
+  uint64_t file_size_ = 0;
   std::optional<base::DictValue> header_;
 
   // Cached external temporary files.
