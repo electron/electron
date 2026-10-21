@@ -1,0 +1,4 @@
+{
+  "name": "electron-test-asar-integrity-swap",
+  "main": "main.js"
+}

@@ -334,6 +334,21 @@ describe('asar package', () => {
       }
     });
 
+    // Skipped on Windows, where an open archive cannot be renamed.
+    ifit(process.platform !== 'win32')(
+      'keeps reading an opened archive after its path is replaced by a directory',
+      () => {
+        const swapped = j(tmp, 'swap', 'app.asar');
+        originalFs.mkdirSync(j(tmp, 'swap'));
+        writeAsar(swapped, { 'a.txt': 'from the archive' });
+        expect(new asarBinding.Archive(swapped)).toBeTruthy();
+        originalFs.renameSync(swapped, swapped + '.orig');
+        originalFs.mkdirSync(swapped);
+        originalFs.writeFileSync(j(swapped, 'a.txt'), 'from a plain directory');
+        expect(fs.readFileSync(j(swapped, 'a.txt'), 'utf8')).toBe('from the archive');
+      }
+    );
+
     describe('splitPath (native archive prefix detection)', () => {
       it('finds the archive component and returns its length in JS string units', () => {
         const cases: [string, number][] = [
