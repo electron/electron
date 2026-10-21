@@ -2853,10 +2853,16 @@ describe('protocol module', () => {
         return elapsed;
       };
 
-      const measureInterceptedPayload = async () => {
+      // `relayed` returns net.fetch's Response untouched, which protocol.handle
+      // relays natively; `piped` re-wraps the body so every chunk is pumped
+      // through JS, the path relaying replaced.
+      type Path = 'direct' | 'relayed' | 'piped';
+      const measure = async (path: Path) => {
+        if (path === 'direct') return fetchPayload();
         protocol.handle('http', async (req) => {
           handlerCalls++;
-          return net.fetch(req, { bypassCustomProtocolHandlers: true });
+          const response = await net.fetch(req, { bypassCustomProtocolHandlers: true });
+          return path === 'relayed' ? response : new Response(response.body, response);
         });
         try {
           return await fetchPayload(true);
@@ -2865,30 +2871,41 @@ describe('protocol module', () => {
         }
       };
 
-      await fetchPayload(); // Warm the direct network path.
-      await measureInterceptedPayload(); // Warm the protocol handler path.
+      // Warm every path.
+      for (const path of ['direct', 'relayed', 'piped'] as const) await measure(path);
 
-      // Fetching through an intercepted handler should not be too much slower
-      // than it would be if the protocol hadn't been intercepted.
-      const samples = [];
-      for (const directFirst of [true, false, true, false]) {
-        let directTime: number;
-        let interceptedTime: number;
-        if (directFirst) {
-          directTime = await fetchPayload();
-          interceptedTime = await measureInterceptedPayload();
-        } else {
-          interceptedTime = await measureInterceptedPayload();
-          directTime = await fetchPayload();
-        }
-        samples.push({ directTime, interceptedTime, ratio: interceptedTime / directTime });
+      // Run every order of the three paths once so drift and per-position
+      // effects hit each path equally, then compare medians of per-round ratios.
+      const orders: Path[][] = [
+        ['direct', 'relayed', 'piped'],
+        ['relayed', 'piped', 'direct'],
+        ['piped', 'direct', 'relayed'],
+        ['direct', 'piped', 'relayed'],
+        ['piped', 'relayed', 'direct'],
+        ['relayed', 'direct', 'piped']
+      ];
+      const samples: Record<Path, number>[] = [];
+      for (const order of orders) {
+        const sample = {} as Record<Path, number>;
+        for (const path of order) sample[path] = await measure(path);
+        samples.push(sample);
       }
-
-      const ratios = samples.map(({ ratio }) => ratio).sort((a, b) => a - b);
-      const medianRatio = (ratios[1] + ratios[2]) / 2;
-      // Balance pair order to reduce drift and use the median to limit isolated outliers.
-      // Interception adds another response body pipeline; allow headroom above its expected ~2x cost.
-      expect(medianRatio, `timings: ${JSON.stringify(samples)}`).toBeLessThan(3);
+      const median = (values: number[]) => {
+        const sorted = [...values].sort((a, b) => a - b);
+        return (sorted[2] + sorted[3]) / 2;
+      };
+      const relayedVsDirect = median(samples.map((s) => s.relayed / s.direct));
+      const relayedVsPiped = median(samples.map((s) => s.relayed / s.piped));
+      const details = `timings: ${JSON.stringify({ relayedVsDirect, relayedVsPiped, samples })}`;
+      // Interception adds another response body pipeline. Its cost relative to
+      // a direct fetch depends on the machine: about 1.4-1.8x on Linux, but
+      // 3.0-3.9x on Windows CI runners, so this only catches gross regressions.
+      expect(relayedVsDirect, details).toBeLessThan(5);
+      // Relaying should beat pumping the body through JS on the same machine
+      // (about 0.5x on Linux). Only Linux has been measured so far.
+      if (process.platform === 'linux') {
+        expect(relayedVsPiped, details).toBeLessThan(0.8);
+      }
     });
   });
 });

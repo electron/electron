@@ -41,10 +41,10 @@ Upstream CL: https://chromium-review.googlesource.com/c/chromium/src/+/7795303
 Chromium bug: https://crbug.com/505299810
 
 diff --git a/third_party/blink/renderer/core/execution_context/window_agent_factory.cc b/third_party/blink/renderer/core/execution_context/window_agent_factory.cc
-index 86ce2d493dc833dd1601787fc042b8a4a612fc2e..b9bd1f459f240401d7a6b0bce03cf82b6b54e9fc 100644
+index 1343694eec0a22025201b43049f5e34d1644c725..0339245132ab66ff05228ced02b454346ae71149 100644
 --- a/third_party/blink/renderer/core/execution_context/window_agent_factory.cc
 +++ b/third_party/blink/renderer/core/execution_context/window_agent_factory.cc
-@@ -20,19 +20,27 @@ WindowAgentFactory::WindowAgentFactory(
+@@ -22,19 +22,27 @@ WindowAgentFactory::WindowAgentFactory(
      AgentGroupScheduler& agent_group_scheduler)
      : agent_group_scheduler_(agent_group_scheduler) {}
  
@@ -80,10 +80,10 @@ index 86ce2d493dc833dd1601787fc042b8a4a612fc2e..b9bd1f459f240401d7a6b0bce03cf82b
        file_url_agent_ = MakeGarbageCollected<WindowAgent>(
            *agent_group_scheduler_, agent_cluster_key);
 diff --git a/third_party/blink/renderer/core/execution_context/window_agent_factory.h b/third_party/blink/renderer/core/execution_context/window_agent_factory.h
-index b5464975a3c365a29e342b0dd57a8a73a311924a..72ebd275330e61a8abebfe6d2c06f42544a83bec 100644
+index a13cd92bc70a5eb20cfc46469a6be481766d793c..b26653958baa3a35b6f9a6b4f5deee2e3c5f9816 100644
 --- a/third_party/blink/renderer/core/execution_context/window_agent_factory.h
 +++ b/third_party/blink/renderer/core/execution_context/window_agent_factory.h
-@@ -40,12 +40,15 @@ class WindowAgentFactory final : public GarbageCollected<WindowAgentFactory> {
+@@ -42,12 +42,15 @@ class CORE_EXPORT WindowAgentFactory final
    //   * --run-web-tests is set,
    //   * or, the Blink instance is running for Android WebView.
    WindowAgent* GetAgentForAgentClusterKey(

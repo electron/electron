@@ -84,10 +84,15 @@ on:
         type: boolean
         default: false
       run-include-analysis:
-        description: 'Run analyze_includes.py and upload include-analysis.html as an artifact'
+        description: 'Run analyze_includes.py and upload include-analysis.<platform>.html as an artifact'
         required: false
         type: boolean
         default: false
+      include-analysis-root-filter:
+        description: 'Regex passed to analyze_includes.py --root-filter'
+        required: false
+        type: string
+        default: '^electron/'
     secrets:
       # ACTIONS_STEP_DEBUG is a reserved name for workflow_call secrets; the
       # workflows that read it map this back to the ACTIONS_STEP_DEBUG env.
@@ -354,6 +359,7 @@ jobs:
         upload-out-gen-artifacts: '${{ inputs.upload-out-gen-artifacts }}'
         publish: '${{ inputs.publish }}'
         run-include-analysis: '${{ inputs.run-include-analysis }}'
+        include-analysis-root-filter: '${{ inputs.include-analysis-root-filter }}'
         # With both macOS variants in this job, the darwin artifacts upload in
         # the background step below while the MAS variant builds.
         upload-artifacts: ${{ inputs.target-platform != 'macos' || inputs.target-variant != 'all' }}

@@ -437,6 +437,21 @@ describe('chrome extensions', () => {
         w.destroy();
       }
     });
+
+    it('emits onChanged in a service worker', async () => {
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
+      const extension = await customSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'chrome-storage-service-worker')
+      );
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      try {
+        await w.loadURL(`${extension.url}page.html`);
+        const change = await w.webContents.executeJavaScript("chrome.runtime.sendMessage('set-and-wait-for-change')");
+        expect(change).toEqual({ changes: { key: { newValue: 'value' } }, areaName: 'local' });
+      } finally {
+        w.destroy();
+      }
+    });
   });
 
   describe('chrome.webRequest', () => {
