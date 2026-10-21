@@ -200,6 +200,7 @@ describe('asar package', () => {
     // The wrapped fs refuses to create files named *.asar; the fixtures are
     // written through the unwrapped module.
     const originalFs = require('original-fs') as typeof importedFs;
+    const asarBinding: NodeJS.AsarBinding = process._linkedBinding('electron_common_asar');
     const j = (...parts: string[]) => parts.join(path.sep);
 
     // Writes a minimal flat asar archive of |files| (name -> contents) and lets
@@ -266,6 +267,21 @@ describe('asar package', () => {
       expect(() => fs.readFileSync(j(oversizedHeader, 'a.txt'))).toThrow(/Invalid package/);
       expect(() => fs.statSync(j(oversizedHeader, 'a.txt'))).toThrow(/Invalid package/);
     });
+
+    // Skipped on Windows, where an open archive cannot be renamed.
+    ifit(process.platform !== 'win32')(
+      'keeps reading an opened archive after its path is replaced by a directory',
+      () => {
+        const swapped = j(tmp, 'swap', 'app.asar');
+        originalFs.mkdirSync(j(tmp, 'swap'));
+        writeAsar(swapped, { 'a.txt': 'from the archive' });
+        expect(new asarBinding.Archive(swapped)).toBeTruthy();
+        originalFs.renameSync(swapped, swapped + '.orig');
+        originalFs.mkdirSync(swapped);
+        originalFs.writeFileSync(j(swapped, 'a.txt'), 'from a plain directory');
+        expect(fs.readFileSync(j(swapped, 'a.txt'), 'utf8')).toBe('from the archive');
+      }
+    );
 
     it('still serves well-formed entries next to malformed ones', () => {
       expect(fs.readFileSync(j(badEntries, 'ok.txt'), 'utf8')).toBe('ok');
