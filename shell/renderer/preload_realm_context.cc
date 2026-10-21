@@ -15,12 +15,12 @@
 #include "shell/common/js2c_bundle_ids.h"
 #include "shell/common/node_util.h"
 #include "shell/renderer/preload_environment.h"
+#include "shell/renderer/preload_realm_global_scope.h"
 #include "shell/renderer/preload_utils.h"
 #include "shell/renderer/service_worker_data.h"
 #include "third_party/blink/renderer/bindings/core/v8/script_state_impl.h"  // nogncheck
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 #include "third_party/blink/renderer/core/inspector/worker_thread_debugger.h"  // nogncheck
-#include "third_party/blink/renderer/core/preload_realm/preload_realm_global_scope.h"  // nogncheck
 #include "third_party/blink/renderer/core/workers/worker_or_worklet_global_scope.h"  // nogncheck
 #include "third_party/blink/renderer/platform/bindings/script_state.h"  // nogncheck
 #include "third_party/blink/renderer/platform/bindings/v8_dom_wrapper.h"  // nogncheck
@@ -227,18 +227,19 @@ class PreloadRealmLifetimeController
 
 }  // namespace
 
+bool IsPreloadRealmContext(v8::Local<v8::Context> context) {
+  DCHECK(!context.IsEmpty());
+  auto* controller = PreloadRealmLifetimeController::From(context);
+  v8::Local<v8::Context> preload_context;
+  return controller && controller->GetContext().ToLocal(&preload_context) &&
+         preload_context == context;
+}
+
 v8::MaybeLocal<v8::Context> GetInitiatorContext(
     v8::Local<v8::Context> context) {
-  DCHECK(!context.IsEmpty());
-  blink::ExecutionContext* execution_context =
-      blink::ExecutionContext::From(context);
-  if (!execution_context->IsPreloadRealmGlobalScope())
+  if (!IsPreloadRealmContext(context))
     return v8::MaybeLocal<v8::Context>();
-  auto* controller = PreloadRealmLifetimeController::From(context);
-  if (controller) {
-    return controller->GetInitiatorContext();
-  }
-  return v8::MaybeLocal<v8::Context>();
+  return PreloadRealmLifetimeController::From(context)->GetInitiatorContext();
 }
 
 v8::MaybeLocal<v8::Context> GetPreloadRealmContext(
