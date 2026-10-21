@@ -1109,9 +1109,8 @@ void Session::CreateInterruptedDownload(const gin_helper::Dictionary& options) {
       base::Time::FromSecondsSinceUnixEpoch(start_time)));
 }
 
-std::string Session::RegisterPreloadScript(
-    gin_helper::ErrorThrower thrower,
-    const PreloadScript& new_preload_script) {
+std::string Session::RegisterPreloadScript(gin_helper::ErrorThrower thrower,
+                                           PreloadScript new_preload_script) {
   auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
   DCHECK(prefs);
 
@@ -1142,11 +1141,16 @@ std::string Session::RegisterPreloadScript(
     }
   }
 
-  preload_scripts.push_back(new_preload_script);
+  if (std::string error; !new_preload_script.ParseUrlPatterns(&error)) {
+    thrower.ThrowError(error);
+    return "";
+  }
+
+  preload_scripts.push_back(std::move(new_preload_script));
   // A service worker that starts after this point picks up the new preload
   // automatically — GetServiceWorkerStartupData() rebuilds from
   // SessionPreferences on every StartWorker.
-  return new_preload_script.id;
+  return preload_scripts.back().id;
 }
 
 void Session::UnregisterPreloadScript(gin_helper::ErrorThrower thrower,
