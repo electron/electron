@@ -19,12 +19,6 @@
     "channel": "stable",
     "extension_types": ["extension", "platform_app"]
   },
-  "aiLanguageModelOriginTrial": {
-    "channel": "stable",
-    "extension_types": [
-      "extension"
-    ]
-  },
   "background": {
     "channel": "stable",
     "extension_types": [
@@ -134,10 +128,6 @@
   "identity.email": {
     "channel": "stable",
     "extension_types": ["extension", "platform_app"]
-  },
-  "idltest": {
-    "channel": "trunk",
-    "extension_types": ["extension"]
   },
   "management": {
     "channel": "stable",
