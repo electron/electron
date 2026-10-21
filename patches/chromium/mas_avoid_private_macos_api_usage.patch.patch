@@ -14,6 +14,8 @@ Subject: mas: avoid private macOS API usage
   * _CFIsObjC
   * CGSSetWindowCaptureExcludeShape
   * CGRegionCreateWithRect
+  * CGSGetEventPort
+  * CGEventCreateNextEvent
   * CTFontCopyVariationAxesInternal
   * AudioDeviceDuck
   * NSNextStepFrame
@@ -44,6 +46,12 @@ out -- if there are any side-effects, we should be able to work around them.
     could hit 60fps before will likely still be able to hit 60fps. There may even be
     cases where performance improves when disabling remote CoreAnimation (remote
     CoreAnimation is really only about battery usage).
+* WindowServerEventPumpThread is a no-op in the MAS build because draining
+  the WindowServer event queue needs CGSMainConnectionID, CGSGetEventPort
+  and CGEventCreateNextEvent. The pump is treated as failed up front so that
+  CADisplayLink is never created in the GPU process and every root frame
+  sink falls back to a timer-based VSync source, matching upstream's own
+  behavior when the pump cannot be started.
 * CTFontDescriptorIsSystemUIFont is a private API, we're using an
 _interesting_ technique in the MAS build to determine if the font is a
 system font by checking if it's kCTFontPriorityAttribute is set to
@@ -2300,6 +2308,82 @@ index 71144801e65cf220e160b9c03d93dd07e20cbcce..935594966ce0deb145ffe99a6d9af626
    if (is_ios) {
      deps += [ "//build:ios_buildflags" ]
    }
+diff --git a/ui/display/mac/ca_display_link_mac.mm b/ui/display/mac/ca_display_link_mac.mm
+index 6e1add2ad1ccd151b98f9926d8cde3268f56de05..94a44aa0b97fb1dd2365c135c35e74769115bc51 100644
+--- a/ui/display/mac/ca_display_link_mac.mm
++++ b/ui/display/mac/ca_display_link_mac.mm
+@@ -20,15 +20,18 @@
+ #include "base/metrics/histogram_macros.h"
+ #include "base/no_destructor.h"
+ #include "base/trace_event/trace_event.h"
++#include "electron/mas.h"
+ #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
+ #include "ui/display/mac/screen_utils_mac.h"
+ 
+ extern "C" {
++#if !IS_MAS_BUILD()
+ // Undocumented CoreGraphics framework functions.
+ using CGSConnectionID = uint32_t;
+ CGSConnectionID CGSMainConnectionID();
+ CGError CGSGetEventPort(CGSConnectionID connection_id, mach_port_t* port);
+ CGEventRef CGEventCreateNextEvent(CGSConnectionID connection_id);
++#endif
+ 
+ // Undocumented SkyLight framework functions.
+ // SLSGetDisplayLink() is a private function (SPI) that creates a CADisplayLink
+@@ -299,6 +302,15 @@ void RecordWindowServerEventPumpResult(
+       viz_task_runner_(base::SingleThreadTaskRunner::GetCurrentDefault()) {
+   weak_ptr_ = weak_factory_.GetWeakPtr();
+ 
++#if IS_MAS_BUILD()
++  // Draining the WindowServer event queue needs the private CGS* functions
++  // declared above, which the Mac App Store build cannot use. Without the
++  // pump, CADisplayLink may stop firing after display reconfiguration or power
++  // resume, so treat the pump as failed up front and let every root frame sink
++  // fall back to a timer-based VSync source.
++  shutdown_ = true;
++  CADisplayLinkGlobals::Get().SetWindowServerEventPumpFailed();
++#else
+   base::Thread::Options thread_options;
+   thread_options.message_pump_type = base::MessagePumpType::NS_RUNLOOP;
+   thread_options.thread_type = base::ThreadType::kPresentation;
+@@ -308,6 +320,7 @@ void RecordWindowServerEventPumpResult(
+       FROM_HERE,
+       base::BindOnce(&WindowServerEventPumpThread::PumpWindowServerEvents,
+                      base::Unretained(this)));
++#endif
+ }
+ 
+ // In a standard out-of-process GPU scenario,
+@@ -325,6 +338,7 @@ void RecordWindowServerEventPumpResult(
+ 
+   shutdown_ = true;
+ 
++#if !IS_MAS_BUILD()
+   // Send an empty message to wake up the thread and quit the while loop.
+   // See WindowServerEventPumpThread::PumpWindowServerEvents() for details.
+   CGSConnectionID connection_id = CGSMainConnectionID();
+@@ -348,10 +362,12 @@ void RecordWindowServerEventPumpResult(
+         << "CGSGetEventPort() in ~WindowServerEventPumpThread failed. Error: "
+         << err;
+   }
++#endif
+ 
+   Stop();
+ }
+ 
++#if !IS_MAS_BUILD()
+ void WindowServerEventPumpThread::PumpWindowServerEvents() {
+   CGSConnectionID connection_id = CGSMainConnectionID();
+   // We haven't seen this happen in practice, but WebKit's implementation
+@@ -499,6 +515,7 @@ void RecordWindowServerEventPumpResult(
+     }
+   }
+ }
++#endif
+ 
+ void WindowServerEventPumpThread::DisableDisplayLink(Result failure) {
+   // This may be called from the pump thread. Hop to the Viz thread, which owns
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
 index 618217772a2fa38077ca0913dc017ecc6a702142..f06c9cf5bd3d841935d4e7353e7040272d51abb4 100644
 --- a/ui/display/mac/screen_mac.mm
