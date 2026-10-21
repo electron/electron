@@ -48,7 +48,7 @@ shell/browser/file_system_access/file_system_access_permission_context.cc is
 switched to NormalizeFilePathForBlocklist() in a separate commit.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 32a5ae7074cad7575b3923b2bf6930ea92631285..783c925f2a280a8bae1f20d41fb36d943bdb4fd1 100644
+index adecb51d0a5a95ff2724b8f1870a84331be95187..3f89ba9b7660704e88dd51e3a2e4165b417b5ec9 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -315,12 +315,12 @@ bool ShouldBlockAccessToPath(
@@ -146,10 +146,10 @@ index 956e285889efc1ac0547efaff03d5572a898511c..2d1b759edc805be3d60f01f67f8d0052
      }
  
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc
-index d6e6ae8bedbe101760dfc2a26844bd5e1c1e297d..5e6fd785bb5d3eed9559d9cba3093fe430ba72f0 100644
+index fe3b0bd489e58774254e8085ff19138bab017f7f..14c442607b7273b0db388e79c5fc2fb73950a3e3 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context_unittest.cc
-@@ -907,6 +907,113 @@ TEST_F(ChromeFileSystemAccessPermissionContextTest,
+@@ -909,6 +909,113 @@ TEST_F(ChromeFileSystemAccessPermissionContextTest,
                  HandleType::kDirectory, UserAction::kOpen),
              SensitiveDirectoryResult::kAbort);
  }
@@ -263,7 +263,7 @@ index d6e6ae8bedbe101760dfc2a26844bd5e1c1e297d..5e6fd785bb5d3eed9559d9cba3093fe4
  #endif  // BUILDFLAG(IS_MAC)
  
  #if BUILDFLAG(IS_WIN)
-@@ -1173,6 +1280,40 @@ TEST_F(ChromeFileSystemAccessPermissionContextSymbolicLinkCheckTest,
+@@ -1175,6 +1282,40 @@ TEST_F(ChromeFileSystemAccessPermissionContextSymbolicLinkCheckTest,
        SensitiveDirectoryResult::kAbort);
  }
  
