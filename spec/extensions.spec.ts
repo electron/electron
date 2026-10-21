@@ -393,7 +393,7 @@ describe('chrome extensions', () => {
     });
 
     it('emits onChanged in a service worker', async () => {
-      const customSession = session.fromPartition(`persist:${randomUUID()}`);
+      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
       const extension = await customSession.extensions.loadExtension(
         path.join(fixtures, 'extensions', 'chrome-storage-service-worker')
       );
