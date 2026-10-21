@@ -1091,6 +1091,28 @@ describe('webRequest module', () => {
       expect(await error).toMatch(/^net::ERR_/);
       closed.close();
     });
+
+    it('send Blob bodies while observers listen', async () => {
+      const requestURL = `${serverURL}/blob`;
+      let observed = 0;
+      ses.webRequest.onSendHeaders({ urls: [requestURL] }, () => {
+        observed++;
+      });
+      // Each request is one chance to hit the race, so it takes many of them.
+      const sent = await contents.executeJavaScript(`(async () => {
+        let next = 0;
+        const send = async () => {
+          while (next < 1000) {
+            next++;
+            await fetch(${JSON.stringify(requestURL)}, { method: 'POST', body: new Blob(['blob body']) });
+          }
+        };
+        await Promise.all(Array.from({ length: 16 }, send));
+        return next;
+      })()`);
+      expect(sent).toBe(1000);
+      expect(observed).toBe(1000);
+    });
   });
 
   describe('WebSocket connections', () => {
