@@ -1,0 +1,236 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Simon=20Z=C3=BCnd?= <szuend@chromium.org>
+Date: Tue, 6 Oct 2026 05:26:19 +0000
+Subject: [M154][parser] Restore parse restriction when reparsing Function
+ constructor top-level
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Move the Script::CompilationKind::kFunctionConstructor check into
+UnoptimizedCompileFlags::SetFlagsForFunctionFromScript (guarded by
+is_toplevel()) so that top-level
+UnoptimizedCompileFlags::ForFunctionCompile also sets
+ONLY_SINGLE_FUNCTION_LITERAL.
+
+Also use parsing_dynamic_function_declaration_ for the eager compile
+hint in Parser::ParseFunctionLiteral, and check that syntax_kind and
+kind match when matching an existing SharedFunctionInfo to a
+FunctionLiteral.
+
+R=verwaest@chromium.org
+
+(cherry picked from commit 17f229f3ea0662f8fce3a77b1c1fcb2350748d7d)
+
+Fixed: 568831099
+Change-Id: Ie918dad4ee60ccbeb3d403e293d4802ba8123f2a
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8523457
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Simon Zünd <szuend@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#110345}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8561836
+Auto-Submit: Gyuyoung Kim (xWF) <qkim@google.com>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/branch-heads/15.4@{#64}
+Cr-Branched-From: df65d5c8f2932045c5af72cd7ecd0c8002fa631e-refs/heads/15.4.80@{#1}
+Cr-Branched-From: 80bc5f0e75b24b5af485e0e46b1ffd7f561f323f-refs/heads/main@{#109578}
+
+Electron adaptation notes (44-x-y): V8 15.2 has no
+parsing_dynamic_function_declaration_ member; the equivalent predicate
+here is Parser::ParsingDynamicFunctionDeclaration() (parameters_end_pos_
+!= kNoSourcePosition), which is what the removed params_need_validation
+local computed, so the eager-compile hint uses that call.
+
+diff --git a/src/codegen/compiler.cc b/src/codegen/compiler.cc
+index a32825b70a1cf05acc6c1d4d8333c34b5350d41f..aaa7e304ccd91a943099f9ead47a2eb432513e22 100644
+--- a/src/codegen/compiler.cc
++++ b/src/codegen/compiler.cc
+@@ -724,6 +724,8 @@ void EnsureInfosArrayOnScript(DirectHandle<Script> script,
+ void UpdateSharedFunctionFlagsAfterCompilation(FunctionLiteral* literal) {
+   Tagged<SharedFunctionInfo> shared_info = *literal->shared_function_info();
+   DCHECK_EQ(shared_info->language_mode(), literal->language_mode());
++  DCHECK_EQ(shared_info->syntax_kind(), literal->syntax_kind());
++  DCHECK_EQ(shared_info->kind(), literal->kind());
+ 
+   // These fields are all initialised in ParseInfo from the SharedFunctionInfo,
+   // and then set back on the literal after parse. Hence, they should already
+diff --git a/src/objects/script.cc b/src/objects/script.cc
+index 067ec784d8ffd8f8ef8c08f53c5e464943e4d3e5..f85f81f5899df6966b7a86a814038dd56ed9fa74 100644
+--- a/src/objects/script.cc
++++ b/src/objects/script.cc
+@@ -93,6 +93,8 @@ MaybeHandle<SharedFunctionInfo> Script::FindSharedFunctionInfo(
+   CHECK_EQ(result->EndPosition(), function_literal->end_position());
+   CHECK_EQ(result->function_literal_id(kRelaxedLoad),
+            function_literal->function_literal_id());
++  CHECK_EQ(result->syntax_kind(), function_literal->syntax_kind());
++  CHECK_EQ(result->kind(), function_literal->kind());
+   function_literal->set_shared_function_info(result);
+   return result;
+ }
+diff --git a/src/objects/shared-function-info.h b/src/objects/shared-function-info.h
+index a30a685b1d558f6d6811910649a1b34646460771..13a50f8f54d8b4d44e574f5a8fe0b183b23222be 100644
+--- a/src/objects/shared-function-info.h
++++ b/src/objects/shared-function-info.h
+@@ -824,13 +824,13 @@ V8_OBJECT class SharedFunctionInfo : public HeapObject {
+   void SetFunctionTokenPosition(int function_token_position,
+                                 int start_position);
+ 
+-  static void EnsureBytecodeArrayAvailable(
++  V8_EXPORT_PRIVATE static void EnsureBytecodeArrayAvailable(
+       Isolate* isolate, Handle<SharedFunctionInfo> shared_info,
+       IsCompiledScope* is_compiled_scope,
+       CreateSourcePositions flag = CreateSourcePositions{false});
+ 
+   inline bool CanCollectSourcePosition(Isolate* isolate);
+-  static void EnsureSourcePositionsAvailable(
++  V8_EXPORT_PRIVATE static void EnsureSourcePositionsAvailable(
+       Isolate* isolate, DirectHandle<SharedFunctionInfo> shared_info);
+ 
+   template <typename IsolateT>
+diff --git a/src/parsing/parse-info.cc b/src/parsing/parse-info.cc
+index 3402ce37a476cbf11786eac09337fc622af38f8d..f786d9e8cd0bd255c8a12544691212cd4a23904c 100644
+--- a/src/parsing/parse-info.cc
++++ b/src/parsing/parse-info.cc
+@@ -158,6 +158,10 @@ void UnoptimizedCompileFlags::SetFlagsForFunctionFromScript(
+ 
+   set_block_coverage_enabled(block_coverage_enabled() &&
+                              script->IsUserJavaScript());
++  if (is_toplevel() && script->compilation_kind() ==
++                           Script::CompilationKind::kFunctionConstructor) {
++    set_parse_restriction(ONLY_SINGLE_FUNCTION_LITERAL);
++  }
+ }
+ 
+ ReusableUnoptimizedCompileState::ReusableUnoptimizedCompileState(
+diff --git a/src/parsing/parser.cc b/src/parsing/parser.cc
+index 51fabf77ed3ec0805624174b1f9b37095166771c..93a4319fb678f4ad5d9c3005d5c157d297a52ca8 100644
+--- a/src/parsing/parser.cc
++++ b/src/parsing/parser.cc
+@@ -2844,13 +2844,11 @@ FunctionLiteral* Parser::ParseFunctionLiteral(
+     function_name = ast_value_factory()->empty_string();
+   }
+ 
+-  // This is true if we get here through CreateDynamicFunction.
+-  bool params_need_validation = parameters_end_pos_ != kNoSourcePosition;
+   int compile_hint_position = peek_position();
+ 
+   FunctionLiteral::EagerCompileHint eager_compile_hint =
+       function_state_->next_function_is_likely_called() || is_wrapped ||
+-              params_need_validation ||
++              ParsingDynamicFunctionDeclaration() ||
+               (info()->flags().compile_hints_magic_enabled() &&
+                scanner()->SawMagicCommentCompileHintsAll()) ||
+               (info()->flags().compile_hints_per_function_magic_enabled() &&
+diff --git a/test/unittests/BUILD.gn b/test/unittests/BUILD.gn
+index a4b8a7c3cc0a41858f69dc5d961aabe735c10347..484d90c66afa7075d32e5a481ec7af9afa176deb 100644
+--- a/test/unittests/BUILD.gn
++++ b/test/unittests/BUILD.gn
+@@ -510,6 +510,7 @@ v8_cluster_source_set("v8_unittests_sources") {
+     "profiler/strings-storage-unittest.cc",
+     "regexp/regexp-unittest.cc",
+     "regress/regress-536271629-unittest.cc",
++    "regress/regress-568831099-unittest.cc",
+     "regress/regress-crbug-1041240-unittest.cc",
+     "regress/regress-crbug-1056054-unittest.cc",
+     "regress/regress-crbug-938251-unittest.cc",
+diff --git a/test/unittests/regress/regress-568831099-unittest.cc b/test/unittests/regress/regress-568831099-unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..26f523c848f1c174e148492bd39e97d284880006
+--- /dev/null
++++ b/test/unittests/regress/regress-568831099-unittest.cc
+@@ -0,0 +1,94 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "src/api/api-inl.h"
++#include "src/codegen/compiler.h"
++#include "src/execution/isolate-inl.h"
++#include "src/objects/feedback-vector-inl.h"
++#include "src/objects/js-function-inl.h"
++#include "src/objects/script-inl.h"
++#include "src/objects/shared-function-info-inl.h"
++#include "src/parsing/parse-info.h"
++#include "test/unittests/test-utils.h"
++#include "testing/gtest/include/gtest/gtest.h"
++
++namespace v8 {
++namespace internal {
++
++using Regress568831099Test = TestWithContext;
++
++TEST_F(Regress568831099Test, ReparseFunctionConstructorToplevel) {
++  v8::HandleScope scope(isolate());
++
++  RunJS(
++      "var anonymous = 40;\n"
++      "var fn = new Function('a', 'if (a === 0) { anonymous; a.x } a.s = 1; "
++      "return a.s + anonymous;');\n"
++      "for (var i = 0; i < 20; i++) fn({s: 0});\n");
++
++  v8::Local<v8::Object> global = context()->Global();
++  DirectHandle<JSFunction> fn = Cast<JSFunction>(v8::Utils::OpenDirectHandle(
++      *global->Get(context(), NewString("fn")).ToLocalChecked()));
++
++  Handle<SharedFunctionInfo> inner_sfi(fn->shared(), i_isolate());
++  DirectHandle<Script> script(Cast<Script>(inner_sfi->script()), i_isolate());
++  EXPECT_EQ(script->compilation_kind(),
++            Script::CompilationKind::kFunctionConstructor);
++  EXPECT_EQ(inner_sfi->syntax_kind(), FunctionSyntaxKind::kAnonymousExpression);
++
++  const int expected_slot_count = inner_sfi->feedback_metadata()->slot_count();
++  ASSERT_TRUE(fn->has_feedback_vector());
++  EXPECT_EQ(static_cast<int>(fn->feedback_vector()->length().value()),
++            expected_slot_count);
++
++  Tagged<MaybeObject> maybe_toplevel =
++      script->infos()->get(kFunctionLiteralIdTopLevel);
++  Handle<SharedFunctionInfo> toplevel_sfi(
++      Cast<SharedFunctionInfo>(maybe_toplevel.GetHeapObjectAssumeWeak()),
++      i_isolate());
++  ASSERT_TRUE(toplevel_sfi->is_toplevel());
++
++  // Top-level compiles for kFunctionConstructor scripts must restore the
++  // ONLY_SINGLE_FUNCTION_LITERAL parse restriction, while inner function
++  // compiles must not.
++  UnoptimizedCompileFlags toplevel_flags =
++      UnoptimizedCompileFlags::ForFunctionCompile(i_isolate(), *toplevel_sfi);
++  EXPECT_EQ(toplevel_flags.parse_restriction(), ONLY_SINGLE_FUNCTION_LITERAL);
++
++  UnoptimizedCompileFlags inner_flags =
++      UnoptimizedCompileFlags::ForFunctionCompile(i_isolate(), *inner_sfi);
++  EXPECT_EQ(inner_flags.parse_restriction(), NO_PARSE_RESTRICTION);
++
++  // Exercise source position collection on the top-level SFI while compiled.
++  SharedFunctionInfo::EnsureSourcePositionsAvailable(i_isolate(), toplevel_sfi);
++
++  // Flush bytecode from both the top-level SFI and the inner function SFI,
++  // while `fn` keeps its FeedbackVector.
++  if (toplevel_sfi->CanDiscardCompiled()) {
++    SharedFunctionInfo::DiscardCompiled(i_isolate(), toplevel_sfi);
++  }
++  ASSERT_TRUE(inner_sfi->CanDiscardCompiled());
++  SharedFunctionInfo::DiscardCompiled(i_isolate(), inner_sfi);
++  ASSERT_FALSE(toplevel_sfi->is_compiled());
++  ASSERT_FALSE(inner_sfi->is_compiled());
++
++  // Recompiling the top-level SFI also eagerly recompiles the parenthesized
++  // `(function anonymous(...) { ... })` inner SFI. It must still be parsed as
++  // an anonymous dynamic function declaration rather than a named function
++  // expression.
++  IsCompiledScope is_compiled_scope;
++  SharedFunctionInfo::EnsureBytecodeArrayAvailable(i_isolate(), toplevel_sfi,
++                                                   &is_compiled_scope,
++                                                   CreateSourcePositions{true});
++  EXPECT_TRUE(toplevel_sfi->is_compiled());
++  EXPECT_TRUE(inner_sfi->is_compiled());
++  EXPECT_EQ(inner_sfi->syntax_kind(), FunctionSyntaxKind::kAnonymousExpression);
++  EXPECT_EQ(inner_sfi->feedback_metadata()->slot_count(), expected_slot_count);
++
++  v8::Local<v8::Value> result = RunJS("fn({s: 0})");
++  EXPECT_EQ(result->Int32Value(context()).FromJust(), 41);
++}
++
++}  // namespace internal
++}  // namespace v8

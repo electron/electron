@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Mon, 12 Oct 2026 07:54:12 -0700
+Subject: [HiC] Fix IsInCanvasSubtree for pseudo element on shadow host
+
+Fixed: 553117109
+Change-Id: Ib12e73273f23c6488bc1416fac37401eda1bdb4a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8544046
+Reviewed-by: Stephen Chenney <schenney@chromium.org>
+Auto-Submit: Stefan Zager <szager@chromium.org>
+Commit-Queue: Stephen Chenney <schenney@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1716768}
+
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index ea4cf128bb7d96f11c343f98cc69a5ad75475eee..3aaba5621be39775bbc3961239f4cc8ff0fbd730 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -4149,7 +4149,13 @@ Node::InsertionNotificationRequest Element::InsertedInto(
+   // the checks will be re-run when slot assignment completes.
+   auto* parent = ParentOrShadowHostElement();
+   if (parent && parent->IsCanvasOrInCanvasSubtree()) {
+-    SetIsInCanvasSubtree(true);
++    const auto* slot = ToHTMLSlotElementIfSupportsAssignmentOrNull(*parent);
++    const bool is_inactive_fallback_content =
++        slot && !slot->AssignedNodesNoRecalc().empty();
++    if (IsPseudoElement() ||
++        (!IsChildOfShadowHost() && !is_inactive_fallback_content)) {
++      SetIsInCanvasSubtree(true);
++    }
+   } else if (!parent && insertion_point.IsDocumentNode()) {
+     auto* owner = GetDocument().LocalOwner();
+     if (owner && owner->IsCanvasOrInCanvasSubtree()) {

@@ -1,0 +1,765 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Tue, 22 Sep 2026 17:04:40 -0400
+Subject: Vulkan: Allow staged clears of 3D image slices
+
+Prior to GL_EXT_clear_texture support, only entire levels of 3D images
+could be cleared.  The implementation of that extension added
+UpdateSource::ClearPartial which allows clearing slices of a 3D image.
+As a result, it is no longer necessary to disable deferred clears for
+them.
+
+This change is not meant as an optimization however, but a bug fix.  If
+a slice of a 3D image is invalidated via the framebuffer and robust-init
+is enabled, we automatically attempt to stage a clear to that slice, but
+it used to use UpdateSource::Clear which clears the entire level.
+
+Bug: chromium:556750158
+Change-Id: I4f2088c9d40f2f22b1b719f997ac9f3cba0f9685
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8446101
+Reviewed-by: Charlie Lao <cclao@google.com>
+Reviewed-by: Amirali Abdolrashidi <abdolrashidi@google.com>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+Electron adaptation notes (44-x-y): vk::LayerIndex/gl::OwnerLayer are
+mapped to uint32_t (types absent on this revision), including the new
+ImageHelper::clearPartial() signature and the slice-range checks in
+flushStagedUpdatesImpl(); new end2end test expectations are dropped
+(test-only drift).
+
+diff --git a/src/libANGLE/renderer/vulkan/FramebufferVk.cpp b/src/libANGLE/renderer/vulkan/FramebufferVk.cpp
+index 301815a1a7ed8d00afccafe6710cf64e92c298d4..cd41e690330c7fe4f1b74b5d0bb46adb44f674de 100644
+--- a/src/libANGLE/renderer/vulkan/FramebufferVk.cpp
++++ b/src/libANGLE/renderer/vulkan/FramebufferVk.cpp
+@@ -355,32 +355,6 @@ vk::FramebufferNonResolveAttachmentMask MakeUnresolveAttachmentMask(const vk::Re
+     return unresolveMask;
+ }
+ 
+-bool IsAnyAttachment3DWithoutAllLayers(const RenderTargetCache<RenderTargetVk> &renderTargetCache,
+-                                       gl::DrawBufferMask colorAttachmentsMask,
+-                                       uint32_t framebufferLayerCount)
+-{
+-    const auto &colorRenderTargets = renderTargetCache.getColors();
+-    for (size_t colorIndexGL : colorAttachmentsMask)
+-    {
+-        RenderTargetVk *colorRenderTarget = colorRenderTargets[colorIndexGL];
+-        ASSERT(colorRenderTarget);
+-
+-        const vk::ImageHelper &image = colorRenderTarget->getImageForRenderPass();
+-
+-        if (image.getType() == VK_IMAGE_TYPE_3D && image.getExtents().depth > framebufferLayerCount)
+-        {
+-            return true;
+-        }
+-    }
+-
+-    // Depth/stencil attachments cannot be 3D.
+-    ASSERT(renderTargetCache.getDepthStencil() == nullptr ||
+-           renderTargetCache.getDepthStencil()->getImageForRenderPass().getType() !=
+-               VK_IMAGE_TYPE_3D);
+-
+-    return false;
+-}
+-
+ // Should be called when the image type is VK_IMAGE_TYPE_3D.  Typically, the subresource, offsets
+ // and extents are filled in as if images are 2D layers (because depth slices of 3D images are also
+ // specified through "layers" everywhere, particularly by gl::ImageIndex).  This function adjusts
+@@ -801,10 +775,6 @@ angle::Result FramebufferVk::clearImpl(const gl::Context *context,
+         const bool clearAnyWithDraw =
+             clearColorWithDraw || clearDepthWithDraw || clearStencilWithDraw;
+ 
+-        bool isAnyAttachment3DWithoutAllLayers =
+-            IsAnyAttachment3DWithoutAllLayers(mRenderTargetCache, mState.getColorAttachmentsMask(),
+-                                              mCurrentFramebufferDesc.getLayerCount());
+-
+         // If we are in an active renderpass that has recorded commands and the framebuffer hasn't
+         // changed, inline the clear.
+         if (isMidRenderPassClear)
+@@ -838,7 +808,7 @@ angle::Result FramebufferVk::clearImpl(const gl::Context *context,
+                 // corner cases, such as with 3D or external attachments.  In those cases, a clear
+                 // can open a render pass that's otherwise empty, and additional clears can continue
+                 // to be accumulated in the render pass loadOps.
+-                ASSERT(isAnyAttachment3DWithoutAllLayers || hasAnyExternalAttachments());
++                ASSERT(hasAnyExternalAttachments());
+                 clearWithLoadOp(contextVk);
+             }
+ 
+@@ -847,15 +817,9 @@ angle::Result FramebufferVk::clearImpl(const gl::Context *context,
+             // flush deferred clears, which will start a render pass with deferred clear values.
+             // The subsequent draw call will then operate on the cleared attachments.
+             //
+-            // Additionally, if the framebuffer is layered, any attachment is 3D and it has a larger
+-            // depth than the framebuffer layers, clears cannot be deferred.  This is because the
+-            // clear may later need to be flushed with vkCmdClearColorImage, which cannot partially
+-            // clear the 3D texture.  In that case, the clears are flushed immediately too.
+-            //
+             // For external images such as from AHBs, the clears are not deferred so that they are
+             // definitely applied before the application uses them outside of the control of ANGLE.
+-            if (clearAnyWithDraw || isAnyAttachment3DWithoutAllLayers ||
+-                hasAnyExternalAttachments())
++            if (clearAnyWithDraw || hasAnyExternalAttachments())
+             {
+                 ANGLE_TRY(flushDeferredClears(contextVk));
+             }
+diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+index 6d32e10a003aa1c8cefaa647b50dc3fbf34e6f6b..41af449610f933808c3f3a4e3dfda62a811a521a 100644
+--- a/src/libANGLE/renderer/vulkan/vk_helpers.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+@@ -8032,12 +8032,13 @@ void ImageHelper::clearColor(Renderer *renderer,
+     if (mImageType == VK_IMAGE_TYPE_3D)
+     {
+         ASSERT(baseArrayLayer == 0);
+-        ASSERT(layerCount == 1 ||
+-               layerCount == static_cast<uint32_t>(getLevelExtents(baseMipLevelVk).depth));
++        ASSERT(layerCount == static_cast<uint32_t>(getLevelExtents(baseMipLevelVk).depth));
+         range.layerCount = 1;
+     }
+ 
+     commandBuffer->clearColorImage(mImage, getCurrentLayout(renderer), color, 1, &range);
++
++    onWrite(baseMipLevelVk, 1, baseArrayLayer, layerCount, VK_IMAGE_ASPECT_COLOR_BIT);
+ }
+ 
+ void ImageHelper::clearDepthStencil(Renderer *renderer,
+@@ -8063,13 +8064,14 @@ void ImageHelper::clearDepthStencil(Renderer *renderer,
+     if (mImageType == VK_IMAGE_TYPE_3D)
+     {
+         ASSERT(baseArrayLayer == 0);
+-        ASSERT(layerCount == 1 ||
+-               layerCount == static_cast<uint32_t>(getLevelExtents(baseMipLevelVk).depth));
++        ASSERT(layerCount == static_cast<uint32_t>(getLevelExtents(baseMipLevelVk).depth));
+         range.layerCount = 1;
+     }
+ 
+     commandBuffer->clearDepthStencilImage(mImage, getCurrentLayout(renderer), depthStencil, 1,
+                                           &range);
++
++    onWrite(baseMipLevelVk, 1, baseArrayLayer, layerCount, clearAspectFlags);
+ }
+ 
+ void ImageHelper::clear(Renderer *renderer,
+@@ -8096,6 +8098,39 @@ void ImageHelper::clear(Renderer *renderer,
+     }
+ }
+ 
++angle::Result ImageHelper::clearPartial(ContextVk *contextVk,
++                                        VkImageAspectFlags aspectFlags,
++                                        const VkClearValue &value,
++                                        LevelIndex mipLevel,
++                                        uint32_t baseArrayLayer,
++                                        uint32_t layerCount,
++                                        const gl::Rectangle &clearArea,
++                                        OutsideRenderPassCommandBufferHelper **commandBuffer)
++{
++    // clearTexture() uses LOAD_OP_CLEAR in a render pass to clear the texture. If
++    // the texture has the depth dimension or multiple layers, the clear will be
++    // performed layer by layer.
++    UtilsVk::ClearTextureParameters params = {};
++    params.aspectFlags                     = aspectFlags;
++    params.level                           = mipLevel;
++    params.clearArea                       = clearArea;
++    params.clearValue                      = value;
++
++    for (uint32_t layerIndex = baseArrayLayer; layerIndex < baseArrayLayer + layerCount;
++         ++layerIndex)
++    {
++        params.layer = layerIndex;
++        // Note: clearTexture() starts a render pass that automatically marks the
++        // contents of the subresource as defined.  onWrite is
++        // unnecessary.
++        ANGLE_TRY(contextVk->getUtils().clearTexture(contextVk, this, params));
++    }
++
++    // Queue serial index becomes invalid after starting render pass for the op
++    // above. Therefore, the outside command buffer should be re-acquired.
++    return contextVk->getOutsideRenderPassCommandBufferHelper({}, commandBuffer);
++}
++
+ angle::Result ImageHelper::clearEmulatedChannels(ContextVk *contextVk,
+                                                  VkColorComponentFlags colorMaskFlags,
+                                                  const VkClearValue &value,
+@@ -10463,32 +10498,48 @@ angle::Result ImageHelper::flushStagedUpdatesImpl(ContextVk *contextVk,
+                 {
+                     if (canTransferTo())
+                     {
+-                        clear(renderer, update.data.clear.aspectFlags, update.data.clear.value,
+-                              updateMipLevelVk, updateBaseLayer, updateLayerCount,
+-                              &commandBuffer->getCommandBuffer());
++                        // If clearing only a slice of a 3D image, vkCmdClear*Image cannot be used.
++                        const bool isSliceOf3D =
++                            mImageType == VK_IMAGE_TYPE_3D &&
++                            (updateBaseLayer != 0 ||
++                             (updateBaseLayer + updateLayerCount) !=
++                                 static_cast<uint32_t>(getLevelExtents(updateMipLevelVk).depth));
++                        if (isSliceOf3D)
++                        {
++                            const gl::Extents clearExtents = getLevelExtents(updateMipLevelVk);
++                            const gl::Rectangle clearArea(0, 0, clearExtents.width,
++                                                          clearExtents.height);
++                            ASSERT(updateBaseLayer < static_cast<uint32_t>(clearExtents.depth));
++                            ASSERT((updateBaseLayer + updateLayerCount) <=
++                                   static_cast<uint32_t>(clearExtents.depth));
++
++                            ANGLE_TRY(clearPartial(contextVk, update.data.clear.aspectFlags,
++                                                   update.data.clear.value, updateMipLevelVk,
++                                                   updateBaseLayer, updateLayerCount, clearArea,
++                                                   &commandBuffer));
++                        }
++                        else
++                        {
++                            clear(renderer, update.data.clear.aspectFlags, update.data.clear.value,
++                                  updateMipLevelVk, updateBaseLayer, updateLayerCount,
++                                  &commandBuffer->getCommandBuffer());
++                        }
+                     }
+                     else
+                     {
+                         ASSERT(mUseTileMemory);
+                         ASSERT(mImageType != VK_IMAGE_TYPE_3D);
+-                        UtilsVk::ClearTextureParameters params = {};
+-                        params.aspectFlags                     = getAspectFlags();
+-                        params.level                           = updateMipLevelVk;
+-                        params.clearArea  = gl::Rectangle(0, 0, mExtents.width, mExtents.height);
+-                        params.clearValue = update.data.clear.value;
+-                        params.layer      = updateBaseLayer;
+-                        ANGLE_TRY(contextVk->getUtils().clearTexture(contextVk, this, params));
++
++                        ANGLE_TRY(clearPartial(contextVk, getAspectFlags(), update.data.clear.value,
++                                               updateMipLevelVk, updateBaseLayer, updateLayerCount,
++                                               gl::Rectangle(0, 0, mExtents.width, mExtents.height),
++                                               &commandBuffer));
+                     }
+                     contextVk->getPerfCounters().fullImageClears++;
+                     // Remember the latest operation is a clear call.  Note that the tracked level
+                     // is the GL level.
+                     mCurrentSingleClearValue = update.data.clear;
+                     mCurrentSingleClearValue.value().levelIndex = updateMipLevelGL.get();
+-
+-                    // Do not call onWrite as it removes mCurrentSingleClearValue, but instead call
+-                    // setContentDefined directly.
+-                    setContentDefined(updateMipLevelVk, 1, updateBaseLayer, updateLayerCount,
+-                                      update.data.clear.aspectFlags);
+                     break;
+                 }
+                 case UpdateSource::ClearPartial:
+@@ -10497,29 +10548,11 @@ angle::Result ImageHelper::flushStagedUpdatesImpl(ContextVk *contextVk,
+                     const gl::Rectangle clearArea =
+                         gl::Rectangle(clearPartialUpdate.offset, clearPartialUpdate.extent);
+ 
+-                    // clearTexture() uses LOAD_OP_CLEAR in a render pass to clear the texture. If
+-                    // the texture has the depth dimension or multiple layers, the clear will be
+-                    // performed layer by layer.
+-                    UtilsVk::ClearTextureParameters params = {};
+-                    params.aspectFlags                     = clearPartialUpdate.aspectFlags;
+-                    params.level                           = updateMipLevelVk;
+-                    params.clearArea                       = clearArea;
+-                    params.clearValue                      = clearPartialUpdate.clearValue;
+-
+-                    for (uint32_t layerIndex = updateBaseLayer;
+-                         layerIndex < updateBaseLayer + updateLayerCount; ++layerIndex)
+-                    {
+-                        params.layer = layerIndex;
+-                        // Note: clearTexture() starts a render pass that automatically marks the
+-                        // contents of the subresource as defined.  setContentDefined is
+-                        // unnecessary.
+-                        ANGLE_TRY(contextVk->getUtils().clearTexture(contextVk, this, params));
+-                    }
++                    ANGLE_TRY(clearPartial(contextVk, clearPartialUpdate.aspectFlags,
++                                           clearPartialUpdate.clearValue, updateMipLevelVk,
++                                           updateBaseLayer, updateLayerCount, clearArea,
++                                           &commandBuffer));
+ 
+-                    // Queue serial index becomes invalid after starting render pass for the op
+-                    // above. Therefore, the outside command buffer should be re-acquired.
+-                    ANGLE_TRY(
+-                        contextVk->getOutsideRenderPassCommandBufferHelper({}, &commandBuffer));
+                     break;
+                 }
+                 case UpdateSource::Buffer:
+@@ -11931,6 +11964,7 @@ ImageHelper::SubresourceUpdate::SubresourceUpdate(const VkImageAspectFlags aspec
+                                                   const gl::Rectangle &clearArea)
+     : updateSource(UpdateSource::ClearPartial)
+ {
++    refCounted.image              = nullptr;
+     data.clearPartial.aspectFlags = aspectFlags;
+     data.clearPartial.levelIndex  = levelIndex.get();
+     data.clearPartial.layerIndex  = layerIndex;
+diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.h b/src/libANGLE/renderer/vulkan/vk_helpers.h
+index 0aeeb5b78dc346dd1271fe302ce633aeb994586d..466cab1bc30fb4268d99adc8b3c31ec396f7a8d0 100644
+--- a/src/libANGLE/renderer/vulkan/vk_helpers.h
++++ b/src/libANGLE/renderer/vulkan/vk_helpers.h
+@@ -3242,6 +3242,15 @@ class ImageHelper final : public Resource, public angle::Subject
+                uint32_t layerCount,
+                OutsideRenderPassCommandBuffer *commandBuffer);
+ 
++    angle::Result clearPartial(ContextVk *contextVk,
++                               VkImageAspectFlags aspectFlags,
++                               const VkClearValue &value,
++                               LevelIndex mipLevel,
++                               uint32_t baseArrayLayer,
++                               uint32_t layerCount,
++                               const gl::Rectangle &clearArea,
++                               OutsideRenderPassCommandBufferHelper **commandBuffer);
++
+     void clearColor(Renderer *renderer,
+                     const VkClearColorValue &color,
+                     LevelIndex baseMipLevelVk,
+diff --git a/src/tests/gl_tests/RobustResourceInitTest.cpp b/src/tests/gl_tests/RobustResourceInitTest.cpp
+index 8f2c8680da03032e23ebf20fc058473be0bec271..069984fe305893be470ac934dc07d12280ad84fe 100644
+--- a/src/tests/gl_tests/RobustResourceInitTest.cpp
++++ b/src/tests/gl_tests/RobustResourceInitTest.cpp
+@@ -4646,6 +4646,454 @@ TEST_P(RobustResourceInitTestES3, ImmutableSourceLevelOutsideBaseMaxRange)
+     ASSERT_GL_NO_ERROR();
+ }
+ 
++// Test that invalidating a slice of 3D texture leads to correct robust-init.  Verification is done
++// by sampling.
++TEST_P(RobustResourceInitTestES3, InvalidateSliceOf3DSample)
++{
++    ANGLE_SKIP_TEST_IF(!hasGLExtension());
++
++    constexpr uint32_t kWidth  = 17;
++    constexpr uint32_t kHeight = 23;
++    constexpr uint32_t kDepth  = 5;
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_3D, texture);
++    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, kWidth, kHeight, kDepth, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Initialize slices 1 and 3
++    const std::vector<GLColor> kSlice1Data(kWidth * kHeight, GLColor::green);
++    const std::vector<GLColor> kSlice3Data(kWidth * kHeight, GLColor::blue);
++
++    glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 1, kWidth, kHeight, 1, GL_RGBA, GL_UNSIGNED_BYTE,
++                    kSlice1Data.data());
++    glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 3, kWidth, kHeight, 1, GL_RGBA, GL_UNSIGNED_BYTE,
++                    kSlice3Data.data());
++
++    // Attach the framebuffer to layer 1 and invalidate it.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, 1);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    ASSERT_GL_NO_ERROR();
++
++    const GLenum kDiscard = GL_COLOR_ATTACHMENT0;
++    glInvalidateFramebuffer(GL_FRAMEBUFFER, 1, &kDiscard);
++    glBindFramebuffer(GL_FRAMEBUFFER, 0);
++
++    // Verify all slices; they should all be black except slice 3 that is still blue.
++    constexpr char kVS[] = R"(#version 300 es
++out vec2 texcoord;
++in vec4 position;
++
++void main()
++{
++    gl_Position = vec4(position.xy, 0.0, 1.0);
++    texcoord = (position.xy * 0.5) + 0.5;
++})";
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform highp sampler3D tex3D;
++uniform float slice;
++in vec2 texcoord;
++out vec4 fragColor;
++void main()
++{
++    fragColor = texture(tex3D, vec3(texcoord, slice));
++})";
++    ANGLE_GL_PROGRAM(program, kVS, kFS);
++    glUseProgram(program);
++    const GLint sliceLoc = glGetUniformLocation(program, "slice");
++
++    for (uint32_t slice = 0; slice < kDepth; ++slice)
++    {
++        glUniform1f(sliceLoc, slice * (1.0 / kDepth) + (0.5 / kDepth));
++        drawQuad(program, "position", 0.5f);
++        EXPECT_PIXEL_COLOR_EQ(0, 0, slice == 3 ? kSlice3Data[0] : GLColor::transparentBlack)
++            << slice;
++        ASSERT_GL_NO_ERROR();
++    }
++}
++
++// Test that invalidating a slice of 3D texture leads to correct robust-init.  Verification is done
++// using FBO readback.
++TEST_P(RobustResourceInitTestES3, InvalidateSliceOf3DReadback)
++{
++    ANGLE_SKIP_TEST_IF(!hasGLExtension());
++
++    constexpr uint32_t kWidth  = 17;
++    constexpr uint32_t kHeight = 23;
++    constexpr uint32_t kDepth  = 5;
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_3D, texture);
++    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, kWidth, kHeight, kDepth, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Initialize slices 1 and 3
++    const std::vector<GLColor> kSlice1Data(kWidth * kHeight, GLColor::green);
++    const std::vector<GLColor> kSlice3Data(kWidth * kHeight, GLColor::blue);
++
++    glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 1, kWidth, kHeight, 1, GL_RGBA, GL_UNSIGNED_BYTE,
++                    kSlice1Data.data());
++    glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 3, kWidth, kHeight, 1, GL_RGBA, GL_UNSIGNED_BYTE,
++                    kSlice3Data.data());
++
++    // Attach the framebuffer to layer 1 and invalidate it.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, 1);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    ASSERT_GL_NO_ERROR();
++
++    const GLenum kDiscard = GL_COLOR_ATTACHMENT0;
++    glInvalidateFramebuffer(GL_FRAMEBUFFER, 1, &kDiscard);
++
++    for (uint32_t slice = 0; slice < kDepth; ++slice)
++    {
++        glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, slice);
++        EXPECT_PIXEL_COLOR_EQ(0, 0, slice == 3 ? kSlice3Data[0] : GLColor::transparentBlack)
++            << slice;
++        ASSERT_GL_NO_ERROR();
++    }
++}
++
++// Test that invalidating a slice of 3D texture leads to correct robust-init.  Verification is done
++// using blend and readback.
++TEST_P(RobustResourceInitTestES3, InvalidateSliceOf3DBlendReadback)
++{
++    ANGLE_SKIP_TEST_IF(!hasGLExtension());
++
++    constexpr uint32_t kWidth  = 17;
++    constexpr uint32_t kHeight = 23;
++    constexpr uint32_t kDepth  = 5;
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_3D, texture);
++    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, kWidth, kHeight, kDepth, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Initialize slices 1 and 3
++    const std::vector<GLColor> kSlice1Data(kWidth * kHeight, GLColor::green);
++    const std::vector<GLColor> kSlice3Data(kWidth * kHeight, GLColor::blue);
++
++    glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 1, kWidth, kHeight, 1, GL_RGBA, GL_UNSIGNED_BYTE,
++                    kSlice1Data.data());
++    glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 3, kWidth, kHeight, 1, GL_RGBA, GL_UNSIGNED_BYTE,
++                    kSlice3Data.data());
++
++    // Attach the framebuffer to layer 1 and invalidate it.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, 1);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    ASSERT_GL_NO_ERROR();
++
++    const GLenum kDiscard = GL_COLOR_ATTACHMENT0;
++    glInvalidateFramebuffer(GL_FRAMEBUFFER, 1, &kDiscard);
++
++    // Verify by blending into the slices.  This exercises the robust clear potentially being
++    // applied to a render pass load op.
++    glEnable(GL_BLEND);
++    glBlendFunc(GL_ONE, GL_ONE);
++
++    ANGLE_GL_PROGRAM(drawRed, essl1_shaders::vs::Simple(), essl1_shaders::fs::Red());
++
++    for (uint32_t slice = 0; slice < kDepth; ++slice)
++    {
++        glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, slice);
++        drawQuad(drawRed, essl1_shaders::PositionAttrib(), 0.5);
++        EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, slice == 3 ? GLColor::magenta : GLColor::red);
++        ASSERT_GL_NO_ERROR();
++    }
++}
++
++// Test that invalidating a layer of 2D array texture leads to correct robust-init.  Verification is
++// done using blend and readback.
++TEST_P(RobustResourceInitTestES3, InvalidateLayerOf2DArrayBlendReadback)
++{
++    ANGLE_SKIP_TEST_IF(!hasGLExtension());
++
++    constexpr uint32_t kWidth      = 17;
++    constexpr uint32_t kHeight     = 23;
++    constexpr uint32_t kLayerCount = 5;
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_2D_ARRAY, texture);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, kWidth, kHeight, kLayerCount, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, nullptr);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Initialize layers 1 and 3
++    const std::vector<GLColor> kLayer1Data(kWidth * kHeight, GLColor::green);
++    const std::vector<GLColor> kLayer3Data(kWidth * kHeight, GLColor::blue);
++
++    glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 1, kWidth, kHeight, 1, GL_RGBA, GL_UNSIGNED_BYTE,
++                    kLayer1Data.data());
++    glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 3, kWidth, kHeight, 1, GL_RGBA, GL_UNSIGNED_BYTE,
++                    kLayer3Data.data());
++
++    // Attach the framebuffer to layer 1 and invalidate it.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, 1);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    ASSERT_GL_NO_ERROR();
++
++    const GLenum kDiscard = GL_COLOR_ATTACHMENT0;
++    glInvalidateFramebuffer(GL_FRAMEBUFFER, 1, &kDiscard);
++
++    // Verify by blending into the layers.  This exercises the robust clear potentially being
++    // applied to a render pass load op.
++    glEnable(GL_BLEND);
++    glBlendFunc(GL_ONE, GL_ONE);
++
++    ANGLE_GL_PROGRAM(drawRed, essl1_shaders::vs::Simple(), essl1_shaders::fs::Red());
++
++    for (uint32_t layer = 0; layer < kLayerCount; ++layer)
++    {
++        glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, layer);
++        drawQuad(drawRed, essl1_shaders::PositionAttrib(), 0.5);
++        EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, layer == 3 ? GLColor::magenta : GLColor::red);
++        ASSERT_GL_NO_ERROR();
++    }
++}
++
++// Test that rendering to a new 3D texture at a non-zero slice correctly clears the texture.
++// Verification is done by sampling.
++TEST_P(RobustResourceInitTestES3, DrawToSliceOf3DSample)
++{
++    ANGLE_SKIP_TEST_IF(!hasGLExtension());
++
++    constexpr uint32_t kWidth  = 17;
++    constexpr uint32_t kHeight = 23;
++    constexpr uint32_t kDepth  = 5;
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_3D, texture);
++    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, kWidth, kHeight, kDepth, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Partial draw to slice 1
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, 1);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    ASSERT_GL_NO_ERROR();
++
++    ANGLE_GL_PROGRAM(drawRed, essl1_shaders::vs::Simple(), essl1_shaders::fs::Red());
++    glEnable(GL_SCISSOR_TEST);
++    glScissor(0, 0, 1, 1);
++    drawQuad(drawRed, essl1_shaders::PositionAttrib(), 0.5);
++    glBindFramebuffer(GL_FRAMEBUFFER, 0);
++
++    // Verify all slices; they should all be black except 1 pixel in slice 1 that is red.
++    constexpr char kVS[] = R"(#version 300 es
++out vec2 texcoord;
++in vec4 position;
++
++void main()
++{
++    gl_Position = vec4(position.xy, 0.0, 1.0);
++    texcoord = (position.xy * 0.5) + 0.5;
++})";
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform highp sampler3D tex3D;
++uniform float slice;
++in vec2 texcoord;
++out vec4 fragColor;
++void main()
++{
++    fragColor = texture(tex3D, vec3(texcoord, slice));
++})";
++    ANGLE_GL_PROGRAM(program, kVS, kFS);
++    glUseProgram(program);
++    const GLint sliceLoc = glGetUniformLocation(program, "slice");
++
++    for (uint32_t slice = 0; slice < kDepth; ++slice)
++    {
++        glUniform1f(sliceLoc, slice * (1.0 / kDepth) + (0.5 / kDepth));
++        drawQuad(program, "position", 0.5f);
++        if (slice == 1)
++        {
++            EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++            EXPECT_PIXEL_RECT_EQ(1, 0, kWidth - 1, kHeight, GLColor::transparentBlack);
++        }
++        else
++        {
++            EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, GLColor::transparentBlack);
++        }
++        ASSERT_GL_NO_ERROR();
++    }
++}
++
++// Test that rendering to a new 3D texture at a non-zero slice correctly clears the texture.
++// Verification is done using readback.
++TEST_P(RobustResourceInitTestES3, DrawToSliceOf3DReadback)
++{
++    ANGLE_SKIP_TEST_IF(!hasGLExtension());
++
++    constexpr uint32_t kWidth  = 17;
++    constexpr uint32_t kHeight = 23;
++    constexpr uint32_t kDepth  = 5;
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_3D, texture);
++    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, kWidth, kHeight, kDepth, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Partial draw to slice 1
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, 1);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    ASSERT_GL_NO_ERROR();
++
++    ANGLE_GL_PROGRAM(drawRed, essl1_shaders::vs::Simple(), essl1_shaders::fs::Red());
++    glEnable(GL_SCISSOR_TEST);
++    glScissor(0, 0, 1, 1);
++    drawQuad(drawRed, essl1_shaders::PositionAttrib(), 0.5);
++
++    for (uint32_t slice = 0; slice < kDepth; ++slice)
++    {
++        glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, slice);
++        if (slice == 1)
++        {
++            EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++            EXPECT_PIXEL_RECT_EQ(1, 0, kWidth - 1, kHeight, GLColor::transparentBlack);
++        }
++        else
++        {
++            EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, GLColor::transparentBlack);
++        }
++        ASSERT_GL_NO_ERROR();
++    }
++}
++
++// Test that rendering to a new 3D texture at a non-zero slice correctly clears the texture.
++// Verification is done using blend and readback.
++TEST_P(RobustResourceInitTestES3, DrawToSliceOf3DBlendReadback)
++{
++    ANGLE_SKIP_TEST_IF(!hasGLExtension());
++
++    constexpr uint32_t kWidth  = 17;
++    constexpr uint32_t kHeight = 23;
++    constexpr uint32_t kDepth  = 5;
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_3D, texture);
++    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, kWidth, kHeight, kDepth, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Partial draw to slice 1
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, 1);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    ASSERT_GL_NO_ERROR();
++
++    ANGLE_GL_PROGRAM(drawRed, essl1_shaders::vs::Simple(), essl1_shaders::fs::Red());
++    glEnable(GL_SCISSOR_TEST);
++    glScissor(0, 0, 1, 1);
++    drawQuad(drawRed, essl1_shaders::PositionAttrib(), 0.5);
++
++    // Verify by blending into the slices.  This exercises the robust clear potentially being
++    // applied to a render pass load op.
++    glEnable(GL_BLEND);
++    glBlendFunc(GL_ONE, GL_ONE);
++    glDisable(GL_SCISSOR_TEST);
++
++    ANGLE_GL_PROGRAM(drawGreen, essl1_shaders::vs::Simple(), essl1_shaders::fs::Green());
++
++    for (uint32_t slice = 0; slice < kDepth; ++slice)
++    {
++        glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, slice);
++        drawQuad(drawGreen, essl1_shaders::PositionAttrib(), 0.5);
++        if (slice == 1)
++        {
++            EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::yellow);
++            EXPECT_PIXEL_RECT_EQ(1, 0, kWidth - 1, kHeight, GLColor::green);
++        }
++        else
++        {
++            EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, GLColor::green);
++        }
++        ASSERT_GL_NO_ERROR();
++    }
++}
++
++// Test that clearing a 3D slice and then invalidating _another_ attachment correctly clears the 3D
++// texture.  Verification is done using readback.
++TEST_P(RobustResourceInitTestES3, ClearSliceOf3DInvalidateAnotherAttachmentReadback)
++{
++    ANGLE_SKIP_TEST_IF(!hasGLExtension());
++
++    constexpr uint32_t kWidth  = 17;
++    constexpr uint32_t kHeight = 23;
++    constexpr uint32_t kDepth  = 5;
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_3D, texture);
++    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, kWidth, kHeight, kDepth, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Clear slice 1
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, 1);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    ASSERT_GL_NO_ERROR();
++
++    glClearColor(1, 0, 0, 1);
++    glClear(GL_COLOR_BUFFER_BIT);
++
++    // Attach a second attachment and invalidate it.
++    GLTexture toInvalidate;
++    glBindTexture(GL_TEXTURE_2D, toInvalidate);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, toInvalidate, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    ASSERT_GL_NO_ERROR();
++
++    const GLenum kDiscard = GL_COLOR_ATTACHMENT1;
++    glInvalidateFramebuffer(GL_FRAMEBUFFER, 1, &kDiscard);
++
++    glReadBuffer(GL_COLOR_ATTACHMENT0);
++    for (uint32_t slice = 0; slice < kDepth; ++slice)
++    {
++        glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, slice);
++        if (slice == 1)
++        {
++            EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, GLColor::red);
++        }
++        else
++        {
++            EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, GLColor::transparentBlack);
++        }
++    }
++
++    glReadBuffer(GL_COLOR_ATTACHMENT1);
++    EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, GLColor::transparentBlack);
++    ASSERT_GL_NO_ERROR();
++}
++
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3_AND(
+     RobustResourceInitTest,
+     ES3_METAL().enable(Feature::EmulateDontCareLoadWithRandomClear),

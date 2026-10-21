@@ -1,0 +1,305 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Wed, 23 Sep 2026 12:59:38 +0200
+Subject: [scopes] Mark saved class variable as MaybeAssigned
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When a class has static private methods or accessors that require
+runtime brand checks (should_save_class_variable()), its class_variable
+is context-allocated and loaded with HoleCheckMode::kElided during
+static brand checks (obj.#x or #x in obj). Because the hole check is
+elided, no ThrowReferenceErrorIfHole is emitted when loading
+class_variable before the class constructor finishes initializing.
+
+If class_variable is marked kNotAssigned in ScopeInfo, Maglev caches
+uninitialized loads (which evaluate to the_hole) in
+loaded_context_constants_ and reuses the stale the_hole value even after
+class evaluation finishes and stores the constructor into the context.
+
+Mark class_variable as kMaybeAssigned in ScopeInfo whenever
+should_save_class_variable() is true so that loads are treated as
+mutable context slot accesses across all tiers and lazy compilation
+without needing bytecode overrides.
+
+Bug: 559932543
+TAG=agy
+CONV=1b7d9654-2731-4157-8abc-cd9414138332
+
+Change-Id: I84e6ef2f096ad1999591366df1f70c397f14aca2
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8425123
+Reviewed-by: Marja Hölttä <marja@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110032}
+
+diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
+index 5a8a9db00f47d8fbca581d78088baddad4d3013a..c5f3a41898ad112a1d3d3661ba35968e8680b1ff 100644
+--- a/src/ast/scopes.cc
++++ b/src/ast/scopes.cc
+@@ -232,12 +232,13 @@ ClassScope::ClassScope(IsolateT* isolate, Zone* zone,
+     DCHECK_EQ(scope_info->ContextLocalInitFlag(index),
+               InitializationFlag::kNeedsInitialization);
+     DCHECK_EQ(scope_info->ContextLocalMaybeAssignedFlag(index),
+-              MaybeAssignedFlag::kNotAssigned);
++              MaybeAssignedFlag::kMaybeAssigned);
+     Variable* var = DeclareClassVariable(
+         ast_value_factory,
+         ast_value_factory->GetString(name,
+                                      SharedStringAccessGuardIfNeeded(isolate)),
+         scope_info->EndPosition());
++    var->set_maybe_assigned();
+     var->AllocateTo(VariableLocation::CONTEXT,
+                     Context::MIN_CONTEXT_SLOTS + index);
+   }
+diff --git a/src/ast/variables.h b/src/ast/variables.h
+index b0bb070545105cf5e959ae14675df4acc3e3764e..e77332772f5405ff941a96cf3a18116c69a98616 100644
+--- a/src/ast/variables.h
++++ b/src/ast/variables.h
+@@ -93,6 +93,9 @@ class Variable final : public ZoneObject {
+   void clear_maybe_assigned() {
+     bit_field_ = MaybeAssignedFlagField::update(bit_field_, kNotAssigned);
+   }
++  void set_maybe_assigned() {
++    bit_field_ = MaybeAssignedFlagField::update(bit_field_, kMaybeAssigned);
++  }
+   void SetMaybeAssigned() {
+     if (IsImmutableLexicalVariableMode(mode())) {
+       return;
+@@ -353,10 +356,6 @@ class Variable final : public ZoneObject {
+   uint16_t bit_field_;
+   uint16_t hole_check_analysis_bit_field_;
+ 
+-  void set_maybe_assigned() {
+-    bit_field_ = MaybeAssignedFlagField::update(bit_field_, kMaybeAssigned);
+-  }
+-
+   uint8_t HoleCheckBitmapIndex() const {
+     return HoleCheckBitmapIndexField::decode(hole_check_analysis_bit_field_);
+   }
+diff --git a/src/interpreter/bytecode-array-builder.cc b/src/interpreter/bytecode-array-builder.cc
+index 80d6bdf43e1f4fa05a46943caa2d81e90cecc02f..5162a123765fed16b40e788cdf540a8924cbf5c0 100644
+--- a/src/interpreter/bytecode-array-builder.cc
++++ b/src/interpreter/bytecode-array-builder.cc
+@@ -825,14 +825,17 @@ BytecodeArrayBuilder& BytecodeArrayBuilder::LoadContextSlot(Register context,
+       OutputLdaImmutableContextSlot(context, slot_index, depth);
+     }
+   } else {
+-    DCHECK_NE(VariableMode::kConst, variable->mode());
+     if (variable->scope()->has_context_cells()) {
++      DCHECK_NE(VariableMode::kConst, variable->mode());
+       if (context.is_current_context() && depth == 0) {
+         OutputLdaCurrentContextSlot(slot_index);
+       } else {
+         OutputLdaContextSlot(context, slot_index, depth);
+       }
+     } else {
++      DCHECK(variable->mode() != VariableMode::kConst ||
++             (variable->scope()->is_class_scope() &&
++              variable->scope()->AsClassScope()->class_variable() == variable));
+       if (context.is_current_context() && depth == 0) {
+         OutputLdaCurrentContextSlotNoCell(slot_index);
+       } else {
+diff --git a/src/parsing/parser-base.h b/src/parsing/parser-base.h
+index 6a4e9c3d995e6f38103f03e59f66639fa0df2d2d..3f44e66f2280efc51b97862d0b09908fdf765a41 100644
+--- a/src/parsing/parser-base.h
++++ b/src/parsing/parser-base.h
+@@ -5356,6 +5356,10 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseClassLiteral(
+     if (should_save_class_variable) {
+       class_scope->class_variable()->set_is_used();
+       class_scope->class_variable()->ForceContextAllocation();
++      // Static brand checks elide the hole check and can observe `the_hole`
++      // before the class is initialized. Mark as assigned so `the_hole` is not
++      // propagated across initialization.
++      class_scope->class_variable()->set_maybe_assigned();
+     }
+   }
+ 
+diff --git a/src/parsing/preparse-data.cc b/src/parsing/preparse-data.cc
+index 65d6a6cb5d5efb4e51bdf3d0743bfd6f7128abc3..451f557198ece8f460cdd927fc60698c161401e8 100644
+--- a/src/parsing/preparse-data.cc
++++ b/src/parsing/preparse-data.cc
+@@ -691,6 +691,7 @@ void BaseConsumedPreparseData<Data>::RestoreDataForScope(
+     }
+     var->set_is_used();
+     var->ForceContextAllocation();
++    var->set_maybe_assigned();
+     scope->AsClassScope()->set_should_save_class_variable();
+   }
+ 
+diff --git a/test/mjsunit/maglev/static-private-brand-inverted-generator.js b/test/mjsunit/maglev/static-private-brand-inverted-generator.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e1dd6712433055de792c3268aa6405bdc2abf08b
+--- /dev/null
++++ b/test/mjsunit/maglev/static-private-brand-inverted-generator.js
+@@ -0,0 +1,85 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --maglev
++
++// Test static private method call when brand check runs before class constructor
++// initialization finishes (paused at yield in computed property key).
++(function TestStaticPrivateMethodBeforeYield() {
++  let gen;
++  let cls;
++  let exported;
++  function advance(resume) {
++    if (resume) {
++      cls = gen.next().value;
++    }
++  }
++  function* maker() {
++    class C {
++      static #m() { return 42; }
++      [(exported = function access(receiver, resume) {
++        try { receiver.#m(); } catch (e) {}
++        advance(resume);
++        try { return cls.#m(); } catch (e) { return "caught"; }
++      }, yield exported, "x")] = 1;
++    }
++    return C;
++  }
++  for (let i = 0; i < 10; ++i) {
++    gen = maker();
++    const access = gen.next().value;
++    advance(true);
++    assertEquals(42, access(cls, false));
++  }
++  gen = maker();
++  const access = gen.next().value;
++  cls = {};
++  %PrepareFunctionForOptimization(access);
++  for (let i = 0; i < 10; ++i) {
++    assertEquals("caught", access({}, false));
++  }
++  %OptimizeFunctionOnNextCall(access);
++  assertEquals("caught", access({}, false));
++  assertEquals(42, access({}, true));
++})();
++
++// Test static private `#m in obj` brand check before class constructor
++// initialization finishes (without throwing an exception).
++(function TestStaticPrivateInBeforeYield() {
++  let gen;
++  let cls;
++  let exported;
++  function advance(resume) {
++    if (resume) {
++      cls = gen.next().value;
++    }
++  }
++  function* maker() {
++    class C {
++      static #m() { return 42; }
++      [(exported = function access(receiver, resume) {
++        let before = #m in receiver;
++        advance(resume);
++        return #m in cls;
++      }, yield exported, "x")] = 1;
++    }
++    return C;
++  }
++  for (let i = 0; i < 10; ++i) {
++    gen = maker();
++    const access = gen.next().value;
++    advance(true);
++    assertTrue(access(cls, false));
++  }
++  gen = maker();
++  const access = gen.next().value;
++  cls = {};
++  %PrepareFunctionForOptimization(access);
++  for (let i = 0; i < 10; ++i) {
++    assertFalse(access({}, false));
++  }
++  %OptimizeFunctionOnNextCall(access);
++  assertFalse(access({}, false));
++  assertTrue(access({}, true));
++})();
+diff --git a/test/unittests/interpreter/bytecode_expectations/StaticPrivateMethodAccess.golden b/test/unittests/interpreter/bytecode_expectations/StaticPrivateMethodAccess.golden
+index 41f81c2c61a38e2ef905983c7ae7520fbf4544d1..06bb32a8245ca0e842a62aca05326b1ca8c53a92 100644
+--- a/test/unittests/interpreter/bytecode_expectations/StaticPrivateMethodAccess.golden
++++ b/test/unittests/interpreter/bytecode_expectations/StaticPrivateMethodAccess.golden
+@@ -20,7 +20,7 @@ frame size: 4
+ parameter count: 1
+ bytecode array length: 32
+ bytecodes: [
+-  /*   56 S> */ B(LdaImmutableCurrentContextSlot), C8(3),
++  /*   56 S> */ B(LdaCurrentContextSlotNoCell), C8(3),
+                 B(TestReferenceEqual), R(this),
+                 B(Mov), R(this), R(1),
+                 B(JumpIfTrue), U8(16),
+@@ -57,7 +57,7 @@ bytecode array length: 40
+ bytecodes: [
+   /*   56 S> */ B(LdaImmutableCurrentContextSlot), C8(2),
+                 B(Star1),
+-                B(LdaImmutableCurrentContextSlot), C8(3),
++                B(LdaCurrentContextSlotNoCell), C8(3),
+                 B(TestReferenceEqual), R(this),
+                 B(Mov), R(this), R(0),
+                 B(JumpIfTrue), U8(16),
+@@ -95,7 +95,7 @@ frame size: 3
+ parameter count: 1
+ bytecode array length: 37
+ bytecodes: [
+-  /*   56 S> */ B(LdaImmutableCurrentContextSlot), C8(3),
++  /*   56 S> */ B(LdaCurrentContextSlotNoCell), C8(3),
+                 B(TestReferenceEqual), R(this),
+                 B(Mov), R(this), R(0),
+                 B(JumpIfTrue), U8(16),
+@@ -141,7 +141,7 @@ bytecode array length: 127
+ bytecodes: [
+   /*   90 S> */ B(LdaImmutableCurrentContextSlot), C8(2),
+                 B(Star1),
+-                B(LdaImmutableCurrentContextSlot), C8(3),
++                B(LdaCurrentContextSlotNoCell), C8(3),
+                 B(TestReferenceEqual), R(this),
+                 B(Mov), R(this), R(0),
+                 B(JumpIfTrue), U8(16),
+@@ -163,7 +163,7 @@ bytecodes: [
+                 B(Star1),
+                 B(LdaSmi), I8(1),
+                 B(Star2),
+-                B(LdaImmutableCurrentContextSlot), C8(3),
++                B(LdaCurrentContextSlotNoCell), C8(3),
+                 B(TestReferenceEqual), R(this),
+                 B(Mov), R(this), R(0),
+                 B(JumpIfTrue), U8(16),
+@@ -178,7 +178,7 @@ bytecodes: [
+                 B(CallProperty1), R(3), R(0), R(2), FBV(5),
+   /*  122 S> */ B(LdaImmutableCurrentContextSlot), C8(2),
+                 B(Star1),
+-                B(LdaImmutableCurrentContextSlot), C8(3),
++                B(LdaCurrentContextSlotNoCell), C8(3),
+                 B(TestReferenceEqual), R(this),
+                 B(Mov), R(this), R(0),
+                 B(JumpIfTrue), U8(16),
+@@ -212,7 +212,7 @@ frame size: 3
+ parameter count: 1
+ bytecode array length: 37
+ bytecodes: [
+-  /*   60 S> */ B(LdaImmutableCurrentContextSlot), C8(3),
++  /*   60 S> */ B(LdaCurrentContextSlotNoCell), C8(3),
+                 B(TestReferenceEqual), R(this),
+                 B(Mov), R(this), R(0),
+                 B(JumpIfTrue), U8(16),
+@@ -249,7 +249,7 @@ frame size: 3
+ parameter count: 1
+ bytecode array length: 37
+ bytecodes: [
+-  /*   53 S> */ B(LdaImmutableCurrentContextSlot), C8(3),
++  /*   53 S> */ B(LdaCurrentContextSlotNoCell), C8(3),
+                 B(TestReferenceEqual), R(this),
+                 B(Mov), R(this), R(0),
+                 B(JumpIfTrue), U8(16),
+@@ -288,7 +288,7 @@ bytecode array length: 40
+ bytecodes: [
+   /*   60 S> */ B(LdaImmutableCurrentContextSlot), C8(2),
+                 B(Star1),
+-                B(LdaImmutableCurrentContextSlot), C8(3),
++                B(LdaCurrentContextSlotNoCell), C8(3),
+                 B(TestReferenceEqual), R(this),
+                 B(Mov), R(this), R(0),
+                 B(JumpIfTrue), U8(16),

@@ -1,0 +1,582 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eriko Kurimoto <elkurin@chromium.org>
+Date: Mon, 19 Oct 2026 10:33:21 -0700
+Subject: [M156] Preserve CacheStorageSideDataWriter across response clones
+
+Original change's description:
+> Preserve CacheStorageSideDataWriter across response clones
+>
+> Previously, CacheStorageSideDataWriter was dropped when a Service
+> Worker called Response.clone() or cache.put() on a kCacheStorage
+> Response before passing a clone to FetchEvent.respondWith(), or when
+> WebRequestProxyingURLLoaderFactory cloned URLResponseHead.
+>
+> Wrap CacheStorageSideDataWriter in a ref-counted PendingRemote holder
+> across ResourceResponse and FetchResponseData (replacing SharedRemote
+> and unifying the pending/bound fields), and consume the PendingRemote
+> in FetchRespondWithObserver::OnResponseFulfilled() rather than
+> PopulateFetchAPIResponse() (which is also called by cache.put()).
+>
+> Also preserve the writer when WebRequestProxyingURLLoaderFactory clones
+> URLResponseHead before forwarding to OnReceiveResponse().
+>
+> Bug: 548989584, 570132114, 571209032
+> Change-Id: I1adaff51c410c3326feedbf551576a20f68defad
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8522482
+> Auto-Submit: Eriko Kurimoto <elkurin@chromium.org>
+> Reviewed-by: Evan Stade <evanstade@microsoft.com>
+> Reviewed-by: Kentaro Hara <haraken@chromium.org>
+> Reviewed-by: Hidehiko Abe <hidehiko@chromium.org>
+> Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+> Commit-Queue: Eriko Kurimoto <elkurin@chromium.org>
+> Reviewed-by: Andrea Orru <andreaorru@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1720452}
+
+(cherry picked from commit 928928c148a572fdf0ba208d256ff228ca5cb653)
+
+TAG=agy
+CONV=99336a30-f904-4506-af30-ff0fd74459de
+
+Bug: 575253061, 548989584, 570132114, 571209032
+Change-Id: I1adaff51c410c3326feedbf551576a20f68defad
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8602630
+Auto-Submit: Eriko Kurimoto <elkurin@chromium.org>
+Commit-Queue: Srinivas Sista <srinivassista@chromium.org>
+Owners-Override: Srinivas Sista <srinivassista@chromium.org>
+Reviewed-by: Nate Chapin <japhet@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8078@{#1304}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/content/test/data/service_worker/fetch_event_response_via_cache.js b/content/test/data/service_worker/fetch_event_response_via_cache.js
+index 815939c9d2761cbf1efd6a4690fbadd16aae8477..5d43e1201341e1c880302660d66109b11ad4c332 100644
+--- a/content/test/data/service_worker/fetch_event_response_via_cache.js
++++ b/content/test/data/service_worker/fetch_event_response_via_cache.js
+@@ -8,13 +8,15 @@ this.onfetch = function(event) {
+     var url = event.request.url;
+     event.respondWith(
+         caches.open(CACHE_NAME)
+-          .then(function(c) {
++            .then(function(c) {
+               cache = c;
+               return cache.match(url);
+             })
+-          .then(function(response) {
+-              if (response)
+-                return response;
++            .then(function(response) {
++              if (response) {
++                return self.location.search === '?clone' ? response.clone() :
++                                                           response;
++              }
+               var cloned_response = undefined;
+               return fetch(url)
+                 .then(function(res) {
+diff --git a/extensions/browser/api/web_request/web_request_proxying_url_loader_factory.cc b/extensions/browser/api/web_request/web_request_proxying_url_loader_factory.cc
+index ac1f5c0f544d30d9445aced7154958df0b868903..c6862344fcc74d779741301bedcead0e0af30ecd 100644
+--- a/extensions/browser/api/web_request/web_request_proxying_url_loader_factory.cc
++++ b/extensions/browser/api/web_request/web_request_proxying_url_loader_factory.cc
+@@ -1261,7 +1261,10 @@ void WebRequestProxyingURLLoaderFactory::InProgressRequest::
+   // debug crbug.com/463388771.
+   CHECK(!has_forwarded_response_);
+   has_forwarded_response_ = true;
+-  target_client_->OnReceiveResponse(current_response_.Clone(),
++  auto response = current_response_.Clone();
++  response->cache_storage_side_data_writer =
++      std::move(current_response_->cache_storage_side_data_writer);
++  target_client_->OnReceiveResponse(std::move(response),
+                                     std::move(current_body_),
+                                     std::move(current_cached_metadata_));
+ }
+diff --git a/third_party/blink/renderer/bindings/core/v8/v8_wasm_response_extensions.cc b/third_party/blink/renderer/bindings/core/v8/v8_wasm_response_extensions.cc
+index 168294e2a491abda8796d72dd02dc38641e479bc..9e7b84a5d60cf16f70d01431c45ffadfbb0771d2 100644
+--- a/third_party/blink/renderer/bindings/core/v8/v8_wasm_response_extensions.cc
++++ b/third_party/blink/renderer/bindings/core/v8/v8_wasm_response_extensions.cc
+@@ -58,12 +58,13 @@ static const int kWasmModuleTag = 2;
+ void SendCachedData(
+     String response_url,
+     base::Time response_time,
+-    mojo::SharedRemote<network::mojom::blink::CacheStorageSideDataWriter>
++    mojo::PendingRemote<network::mojom::blink::CacheStorageSideDataWriter>
+         cache_storage_side_data_writer,
+     ExecutionContext* execution_context,
+     Vector<uint8_t> serialized_module) {
+-  if (!execution_context)
++  if (!execution_context) {
+     return;
++  }
+   scoped_refptr<CachedMetadata> cached_metadata =
+       CachedMetadata::CreateFromSerializedData(std::move(serialized_module));
+ 
+@@ -71,7 +72,7 @@ void SendCachedData(
+       ExecutionContext::GetCodeCacheHostFromContext(execution_context);
+   CachedMetadataSender::SendToCodeCacheHost(
+       code_cache_host, mojom::blink::CodeCacheType::kWebAssembly, response_url,
+-      response_time, cache_storage_side_data_writer,
++      response_time, std::move(cache_storage_side_data_writer),
+       cached_metadata->SerializedData());
+ }
+ 
+@@ -80,7 +81,7 @@ class WasmCodeCachingCallback {
+   WasmCodeCachingCallback(
+       const String& response_url,
+       const base::Time& response_time,
+-      mojo::SharedRemote<network::mojom::blink::CacheStorageSideDataWriter>
++      mojo::PendingRemote<network::mojom::blink::CacheStorageSideDataWriter>
+           cache_storage_side_data_writer,
+       scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+       ExecutionContext* execution_context)
+@@ -106,8 +107,9 @@ class WasmCodeCachingCallback {
+       serialized_module = compiled_module.Serialize();
+     }
+     // V8 might not be able to serialize the module.
+-    if (serialized_module.size == 0)
++    if (serialized_module.size == 0) {
+       return;
++    }
+ 
+     TRACE_EVENT_INSTANT(TRACE_DISABLED_BY_DEFAULT("devtools.timeline"),
+                         "v8.wasm.cachedModule", "producedCacheSize",
+@@ -122,8 +124,9 @@ class WasmCodeCachingCallback {
+                          wire_bytes_digest)) {
+         return;
+       }
+-      if (wire_bytes_digest.size() != kWireBytesDigestSize)
++      if (wire_bytes_digest.size() != kWireBytesDigestSize) {
+         return;
++      }
+     }
+ 
+     // The resources needed for caching may have been GC'ed, but we should still
+@@ -140,21 +143,23 @@ class WasmCodeCachingCallback {
+         serialized_module.size)));
+ 
+     // Make sure the data could be copied.
+-    if (serialized_data.size() < serialized_module.size)
++    if (serialized_data.size() < serialized_module.size) {
+       return;
++    }
+ 
+     DCHECK(execution_context_task_runner_.get());
+     execution_context_task_runner_->PostTask(
+-        FROM_HERE, ConvertToBaseOnceCallback(CrossThreadBindOnce(
+-                       &SendCachedData, response_url_, response_time_,
+-                       cache_storage_side_data_writer_, execution_context_,
+-                       std::move(serialized_data))));
++        FROM_HERE,
++        ConvertToBaseOnceCallback(CrossThreadBindOnce(
++            &SendCachedData, response_url_, response_time_,
++            std::move(cache_storage_side_data_writer_), execution_context_,
++            std::move(serialized_data))));
+   }
+ 
+  private:
+   const String response_url_;
+   const base::Time response_time_;
+-  const mojo::SharedRemote<network::mojom::blink::CacheStorageSideDataWriter>
++  mojo::PendingRemote<network::mojom::blink::CacheStorageSideDataWriter>
+       cache_storage_side_data_writer_;
+   scoped_refptr<base::SingleThreadTaskRunner> execution_context_task_runner_;
+   CrossThreadWeakPersistent<ExecutionContext> execution_context_;
+@@ -615,7 +620,7 @@ void StreamFromResponseCallback(
+         url, response->GetResponse()->InternalResponse()->ResponseTime(),
+         response->GetResponse()
+             ->InternalResponse()
+-            ->CacheStorageSideDataWriter(),
++            ->TakeCacheStorageSideDataWriter(),
+         GetContextTaskRunner(*execution_context), execution_context);
+     streaming->SetMoreFunctionsCanBeSerializedCallback(
+         [code_caching_callback](v8::CompiledWasmModule compiled_module) {
+diff --git a/third_party/blink/renderer/core/fetch/fetch_response_data.cc b/third_party/blink/renderer/core/fetch/fetch_response_data.cc
+index d62f3eefdfdfc55999c1095d320130771e901773..0066b97aa90df59f1878b34ca3eb93089182bd8a 100644
+--- a/third_party/blink/renderer/core/fetch/fetch_response_data.cc
++++ b/third_party/blink/renderer/core/fetch/fetch_response_data.cc
+@@ -175,17 +175,12 @@ String FetchResponseData::InternalMIMEType() const {
+   return mime_type_;
+ }
+ 
+-const mojo::SharedRemote<network::mojom::blink::CacheStorageSideDataWriter>&
+-FetchResponseData::CacheStorageSideDataWriter() const {
++mojo::PendingRemote<network::mojom::blink::CacheStorageSideDataWriter>
++FetchResponseData::TakeCacheStorageSideDataWriter() {
+   if (internal_response_) {
+-    return internal_response_->CacheStorageSideDataWriter();
++    return internal_response_->TakeCacheStorageSideDataWriter();
+   }
+-  if (pending_cache_storage_side_data_writer_.is_valid()) {
+-    cache_storage_side_data_writer_ =
+-        mojo::SharedRemote<network::mojom::blink::CacheStorageSideDataWriter>(
+-            std::move(pending_cache_storage_side_data_writer_));
+-  }
+-  return cache_storage_side_data_writer_;
++  return std::move(cache_storage_side_data_writer_->data);
+ }
+ 
+ bool FetchResponseData::RequestIncludeCredentials() const {
+@@ -222,8 +217,8 @@ FetchResponseData* FetchResponseData::Clone(ScriptState* script_state,
+   new_response->request_method_ = request_method_;
+   new_response->response_time_ = response_time_;
+   new_response->cache_storage_cache_name_ = cache_storage_cache_name_;
+-  new_response->cache_storage_side_data_writer_ =
+-      cache_storage_side_data_writer_;
++  new_response->ShareCacheStorageSideDataWriterHolder(
++      cache_storage_side_data_writer_);
+   new_response->cors_exposed_header_names_ = cors_exposed_header_names_;
+   new_response->connection_info_ = connection_info_;
+   new_response->alpn_negotiated_protocol_ = alpn_negotiated_protocol_;
+@@ -302,8 +297,6 @@ mojom::blink::FetchAPIResponsePtr FetchResponseData::PopulateFetchAPIResponse(
+   response->request_method = request_method_;
+   response->response_time = response_time_;
+   response->cache_storage_cache_name = cache_storage_cache_name_;
+-  response->cache_storage_side_data_writer =
+-      std::move(pending_cache_storage_side_data_writer_);
+   response->cors_exposed_header_names =
+       HeaderSetToVector(cors_exposed_header_names_);
+   response->connection_info = connection_info_;
+@@ -357,7 +350,8 @@ void FetchResponseData::InitFromResourceResponse(
+   SetRequestMethod(request_method);
+   SetResponseTime(response.ResponseTime());
+   SetCacheStorageCacheName(response.CacheStorageCacheName());
+-  SetCacheStorageSideDataWriter(response.CacheStorageSideDataWriter());
++  ShareCacheStorageSideDataWriterHolder(
++      response.CacheStorageSideDataWriterHolder());
+ 
+   if (response.WasCached()) {
+     SetResponseSource(network::mojom::FetchResponseSource::kHttpCache);
+diff --git a/third_party/blink/renderer/core/fetch/fetch_response_data.h b/third_party/blink/renderer/core/fetch/fetch_response_data.h
+index c1e6cedcc306e8d0b361f72229df1dc425376cc5..3c0154af25d0b7da2e828ea860e528f926cda8f1 100644
+--- a/third_party/blink/renderer/core/fetch/fetch_response_data.h
++++ b/third_party/blink/renderer/core/fetch/fetch_response_data.h
+@@ -7,6 +7,8 @@
+ 
+ #include <memory>
+ 
++#include "base/memory/ref_counted.h"
++#include "base/memory/scoped_refptr.h"
+ #include "base/time/time.h"
+ #include "net/http/http_connection_info.h"
+ #include "services/network/public/mojom/fetch_api.mojom-blink-forward.h"
+@@ -17,6 +19,7 @@
+ #include "third_party/blink/renderer/core/fetch/fetch_request_data.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/resource_response.h"
++#include "third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler.h"
+ #include "third_party/blink/renderer/platform/network/http_header_set.h"
+ #include "third_party/blink/renderer/platform/weborigin/kurl.h"
+ #include "third_party/blink/renderer/platform/wtf/text/atomic_string.h"
+@@ -81,8 +84,8 @@ class CORE_EXPORT FetchResponseData final
+   String InternalMIMEType() const;
+   base::Time ResponseTime() const { return response_time_; }
+   String CacheStorageCacheName() const { return cache_storage_cache_name_; }
+-  const mojo::SharedRemote<network::mojom::blink::CacheStorageSideDataWriter>&
+-  CacheStorageSideDataWriter() const;
++  mojo::PendingRemote<network::mojom::blink::CacheStorageSideDataWriter>
++  TakeCacheStorageSideDataWriter();
+   const HTTPHeaderSet& CorsExposedHeaderNames() const {
+     return cors_exposed_header_names_;
+   }
+@@ -112,16 +115,17 @@ class CORE_EXPORT FetchResponseData final
+   void SetCacheStorageCacheName(const String& cache_storage_cache_name) {
+     cache_storage_cache_name_ = cache_storage_cache_name;
+   }
+-  void SetCacheStorageSideDataWriter(
+-      mojo::SharedRemote<network::mojom::blink::CacheStorageSideDataWriter>
++  void ShareCacheStorageSideDataWriterHolder(
++      scoped_refptr<CacheStorageSideDataWriterHolder>
+           cache_storage_side_data_writer) {
++    CHECK(cache_storage_side_data_writer);
+     cache_storage_side_data_writer_ = std::move(cache_storage_side_data_writer);
+   }
+-  void SetPendingCacheStorageSideDataWriter(
++  void SetCacheStorageSideDataWriter(
+       mojo::PendingRemote<network::mojom::blink::CacheStorageSideDataWriter>
+-          pending_cache_storage_side_data_writer) {
+-    pending_cache_storage_side_data_writer_ =
+-        std::move(pending_cache_storage_side_data_writer);
++          cache_storage_side_data_writer) {
++    cache_storage_side_data_writer_->data =
++        std::move(cache_storage_side_data_writer);
+   }
+   void SetCorsExposedHeaderNames(const HTTPHeaderSet& header_names) {
+     cors_exposed_header_names_ = header_names;
+@@ -178,10 +182,9 @@ class CORE_EXPORT FetchResponseData final
+   AtomicString request_method_;
+   base::Time response_time_;
+   String cache_storage_cache_name_;
+-  mutable mojo::PendingRemote<network::mojom::blink::CacheStorageSideDataWriter>
+-      pending_cache_storage_side_data_writer_;
+-  mutable mojo::SharedRemote<network::mojom::blink::CacheStorageSideDataWriter>
+-      cache_storage_side_data_writer_;
++  scoped_refptr<CacheStorageSideDataWriterHolder>
++      cache_storage_side_data_writer_ =
++          base::MakeRefCounted<CacheStorageSideDataWriterHolder>();
+   HTTPHeaderSet cors_exposed_header_names_;
+   net::HttpConnectionInfo connection_info_ = net::HttpConnectionInfo::kUNKNOWN;
+   AtomicString alpn_negotiated_protocol_;
+diff --git a/third_party/blink/renderer/core/fetch/response.cc b/third_party/blink/renderer/core/fetch/response.cc
+index 50a4f840676d5d970e9f74459c702b5b29802e09..9ec22d1cd556ac944432e5cd3c1b791beacde1cc 100644
+--- a/third_party/blink/renderer/core/fetch/response.cc
++++ b/third_party/blink/renderer/core/fetch/response.cc
+@@ -425,7 +425,7 @@ FetchResponseData* Response::CreateUnfilteredFetchResponseDataWithoutBody(
+   response->SetCacheStorageCacheName(
+       fetch_api_response.cache_storage_cache_name);
+   if (fetch_api_response.cache_storage_side_data_writer.is_valid()) {
+-    response->SetPendingCacheStorageSideDataWriter(
++    response->SetCacheStorageSideDataWriter(
+         std::move(fetch_api_response.cache_storage_side_data_writer));
+   }
+   response->SetConnectionInfo(fetch_api_response.connection_info);
+diff --git a/third_party/blink/renderer/core/fetch/response.h b/third_party/blink/renderer/core/fetch/response.h
+index b4df35ed12aa4aabf0a68555c5501ac2692db465..d38b9928fb6b9c333ad023c0ff015320b227a2fb 100644
+--- a/third_party/blink/renderer/core/fetch/response.h
++++ b/third_party/blink/renderer/core/fetch/response.h
+@@ -75,6 +75,7 @@ class CORE_EXPORT Response final : public ScriptWrappable, public Body {
+   Response(const Response&) = delete;
+   Response& operator=(const Response&) = delete;
+ 
++  FetchResponseData* GetResponse() { return response_.Get(); }
+   const FetchResponseData* GetResponse() const { return response_.Get(); }
+ 
+   // From Response.idl:
+diff --git a/third_party/blink/renderer/modules/service_worker/fetch_respond_with_observer.cc b/third_party/blink/renderer/modules/service_worker/fetch_respond_with_observer.cc
+index 594d4f6ba2f48aeda1c0a002e7401c2d6237f5cb..b81962fd900380b35838b970681ec57b668617ae 100644
+--- a/third_party/blink/renderer/modules/service_worker/fetch_respond_with_observer.cc
++++ b/third_party/blink/renderer/modules/service_worker/fetch_respond_with_observer.cc
+@@ -357,6 +357,12 @@ void FetchRespondWithObserver::OnResponseFulfilled(ScriptState* script_state,
+     return;
+   }
+ 
++  if (auto pending_side_data_writer =
++          response->GetResponse()->TakeCacheStorageSideDataWriter()) {
++    fetch_api_response->cache_storage_side_data_writer =
++        std::move(pending_side_data_writer);
++  }
++
+   BodyStreamBuffer* buffer = response->InternalBodyBuffer();
+   if (buffer) {
+     // The |side_data_blob| must be taken before the body buffer is
+diff --git a/third_party/blink/renderer/platform/exported/web_url_response.cc b/third_party/blink/renderer/platform/exported/web_url_response.cc
+index efa9813987f4ec88fae0cd5c5f58caf9b593d3b7..f80073a4e2165bab2a1ba9305ea741bd84abe421 100644
+--- a/third_party/blink/renderer/platform/exported/web_url_response.cc
++++ b/third_party/blink/renderer/platform/exported/web_url_response.cc
+@@ -573,14 +573,10 @@ void WebURLResponse::SetCacheStorageSideDataWriter(
+       remote.is_valid()) {
+     uint32_t version = remote.version();
+     resource_response_->SetCacheStorageSideDataWriter(
+-        mojo::SharedRemote<network::mojom::blink::CacheStorageSideDataWriter>(
+-            mojo::PendingRemote<
+-                network::mojom::blink::CacheStorageSideDataWriter>(
+-                remote.PassPipe(), version)));
++        mojo::PendingRemote<network::mojom::blink::CacheStorageSideDataWriter>(
++            remote.PassPipe(), version));
+   } else {
+-    resource_response_->SetCacheStorageSideDataWriter(
+-        mojo::SharedRemote<
+-            network::mojom::blink::CacheStorageSideDataWriter>());
++    resource_response_->SetCacheStorageSideDataWriter(mojo::NullRemote());
+   }
+ }
+ 
+diff --git a/third_party/blink/renderer/platform/loader/fetch/resource_response.cc b/third_party/blink/renderer/platform/loader/fetch/resource_response.cc
+index 178c2056117ee095085eeabb6557a0799ce0a59c..ae807008db83dca046d886c639c09496ed5d4699 100644
+--- a/third_party/blink/renderer/platform/loader/fetch/resource_response.cc
++++ b/third_party/blink/renderer/platform/loader/fetch/resource_response.cc
+@@ -164,7 +164,7 @@ KURL ResourceResponse::ResponseUrl() const {
+ bool ResourceResponse::IsServiceWorkerPassThrough() const {
+   return service_worker_response_source_ !=
+              network::mojom::FetchResponseSource::kCacheStorage &&
+-         !cache_storage_side_data_writer_.is_bound() &&
++         !cache_storage_side_data_writer_->data.is_valid() &&
+          !url_list_via_service_worker_.empty() &&
+          ResponseUrl() == CurrentRequestUrl();
+ }
+diff --git a/third_party/blink/renderer/platform/loader/fetch/resource_response.h b/third_party/blink/renderer/platform/loader/fetch/resource_response.h
+index ee983d233a2d9b3b9880f2275cf6448e7e2a6a23..7c58ec0ea3f909caa9376d7da08f48b60d2da89e 100644
+--- a/third_party/blink/renderer/platform/loader/fetch/resource_response.h
++++ b/third_party/blink/renderer/platform/loader/fetch/resource_response.h
+@@ -31,9 +31,10 @@
+ #include <optional>
+ #include <utility>
+ 
++#include "base/memory/ref_counted.h"
+ #include "base/memory/scoped_refptr.h"
+ #include "base/time/time.h"
+-#include "mojo/public/cpp/bindings/shared_remote.h"
++#include "mojo/public/cpp/bindings/pending_remote.h"
+ #include "net/base/auth.h"
+ #include "net/base/ip_endpoint.h"
+ #include "net/http/alternate_protocol_usage.h"
+@@ -46,6 +47,7 @@
+ #include "services/network/public/mojom/ip_address_space.mojom-shared.h"
+ #include "third_party/blink/public/mojom/timing/resource_timing.mojom-blink-forward.h"
+ #include "third_party/blink/public/platform/web_url_response.h"
++#include "third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler.h"
+ #include "third_party/blink/renderer/platform/network/http_header_map.h"
+ #include "third_party/blink/renderer/platform/network/http_parsers.h"
+ #include "third_party/blink/renderer/platform/platform_export.h"
+@@ -285,14 +287,15 @@ class PLATFORM_EXPORT ResourceResponse final {
+     cache_storage_cache_name_ = cache_storage_cache_name;
+   }
+ 
+-  const mojo::SharedRemote<network::mojom::blink::CacheStorageSideDataWriter>&
+-  CacheStorageSideDataWriter() const {
++  const scoped_refptr<CacheStorageSideDataWriterHolder>&
++  CacheStorageSideDataWriterHolder() const {
+     return cache_storage_side_data_writer_;
+   }
+   void SetCacheStorageSideDataWriter(
+-      mojo::SharedRemote<network::mojom::blink::CacheStorageSideDataWriter>
++      mojo::PendingRemote<network::mojom::blink::CacheStorageSideDataWriter>
+           cache_storage_side_data_writer) {
+-    cache_storage_side_data_writer_ = std::move(cache_storage_side_data_writer);
++    cache_storage_side_data_writer_->data =
++        std::move(cache_storage_side_data_writer);
+   }
+ 
+   const Vector<String>& CorsExposedHeaderNames() const {
+@@ -675,9 +678,11 @@ class PLATFORM_EXPORT ResourceResponse final {
+ 
+   // Direct Mojo remote to the CacheStorageCache entry from where the response
+   // is served via the ServiceWorker, used for writing code cache side data.
+-  // Unbound if the response isn't from CacheStorage.
+-  mojo::SharedRemote<network::mojom::blink::CacheStorageSideDataWriter>
+-      cache_storage_side_data_writer_;
++  // The underlying PendingRemote is invalid if the response isn't from
++  // CacheStorage.
++  scoped_refptr<blink::CacheStorageSideDataWriterHolder>
++      cache_storage_side_data_writer_ =
++          base::MakeRefCounted<blink::CacheStorageSideDataWriterHolder>();
+ 
+   // The headers that should be exposed according to CORS. Only guaranteed
+   // to be set if the response was fetched by a ServiceWorker.
+diff --git a/third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler.cc b/third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler.cc
+index ed5a49e30f00a11f0d4fa26861135cdf55c78db3..bf8eea53afe74f4942216349acd6a3f77ebd545a 100644
+--- a/third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler.cc
++++ b/third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler.cc
+@@ -6,6 +6,7 @@
+ 
+ #include "base/debug/dump_without_crashing.h"
+ #include "base/time/time.h"
++#include "mojo/public/cpp/bindings/remote.h"
+ #include "third_party/blink/public/mojom/fetch/fetch_api_request.mojom-blink.h"
+ #include "third_party/blink/public/mojom/loader/code_cache.mojom-blink.h"
+ #include "third_party/blink/public/platform/platform.h"
+@@ -42,7 +43,7 @@ CachedMetadataSenderImpl::CachedMetadataSenderImpl(
+       original_response_time_(response.OriginalResponseTime()),
+       code_cache_type_(code_cache_type) {
+   // WebAssembly always uses the site isolated code cache.
+-  DCHECK(!response.CacheStorageSideDataWriter().is_bound() ||
++  DCHECK(!response.CacheStorageSideDataWriterHolder()->data.is_valid() ||
+          code_cache_type_ == mojom::blink::CodeCacheType::kWebAssembly);
+   DCHECK(!response.WasFetchedViaServiceWorker() ||
+          response.IsServiceWorkerPassThrough() ||
+@@ -81,22 +82,26 @@ class ServiceWorkerCachedMetadataSender : public CachedMetadataSender {
+   bool IsServedFromCacheStorage() override { return true; }
+ 
+  private:
+-  const mojo::SharedRemote<network::mojom::blink::CacheStorageSideDataWriter>
++  const scoped_refptr<CacheStorageSideDataWriterHolder>
+       cache_storage_side_data_writer_;
+ };
+ 
+ ServiceWorkerCachedMetadataSender::ServiceWorkerCachedMetadataSender(
+     const ResourceResponse& response)
+-    : cache_storage_side_data_writer_(response.CacheStorageSideDataWriter()) {
+-  CHECK(cache_storage_side_data_writer_.is_bound());
++    : cache_storage_side_data_writer_(
++          response.CacheStorageSideDataWriterHolder()) {
++  CHECK(cache_storage_side_data_writer_);
++  CHECK(cache_storage_side_data_writer_->data.is_valid());
+ }
+ 
+ void ServiceWorkerCachedMetadataSender::Send(CodeCacheHost*,
+                                              base::span<const uint8_t> data) {
+-  if (!cache_storage_side_data_writer_.is_bound()) {
++  if (!cache_storage_side_data_writer_->data.is_valid()) {
+     return;
+   }
+-  cache_storage_side_data_writer_->WriteSideData(mojo_base::BigBuffer(data));
++  mojo::Remote<network::mojom::blink::CacheStorageSideDataWriter>(
++      std::move(cache_storage_side_data_writer_->data))
++      ->WriteSideData(mojo_base::BigBuffer(data));
+ }
+ 
+ // static
+@@ -105,11 +110,13 @@ void CachedMetadataSender::SendToCodeCacheHost(
+     mojom::blink::CodeCacheType code_cache_type,
+     String url,
+     base::Time response_time,
+-    const mojo::SharedRemote<network::mojom::blink::CacheStorageSideDataWriter>&
++    mojo::PendingRemote<network::mojom::blink::CacheStorageSideDataWriter>
+         cache_storage_side_data_writer,
+     base::span<const uint8_t> data) {
+-  if (cache_storage_side_data_writer.is_bound()) {
+-    cache_storage_side_data_writer->WriteSideData(mojo_base::BigBuffer(data));
++  if (cache_storage_side_data_writer.is_valid()) {
++    mojo::Remote<network::mojom::blink::CacheStorageSideDataWriter>(
++        std::move(cache_storage_side_data_writer))
++        ->WriteSideData(mojo_base::BigBuffer(data));
+     return;
+   }
+   if (!code_cache_host) {
+@@ -139,7 +146,7 @@ std::unique_ptr<CachedMetadataSender> CachedMetadataSender::Create(
+ 
+   // If the service worker provided a Response produced from cache_storage,
+   // then we need to use a different code cache sender.
+-  if (response.CacheStorageSideDataWriter().is_bound()) {
++  if (response.CacheStorageSideDataWriterHolder()->data.is_valid()) {
+     CHECK_EQ(response.GetServiceWorkerResponseSource(),
+              network::mojom::FetchResponseSource::kCacheStorage);
+     // TODO(leszeks): Check whether it's correct that |origin| can be nullptr.
+@@ -149,10 +156,8 @@ std::unique_ptr<CachedMetadataSender> CachedMetadataSender::Create(
+     return std::make_unique<ServiceWorkerCachedMetadataSender>(response);
+   } else if (response.GetServiceWorkerResponseSource() ==
+              network::mojom::FetchResponseSource::kCacheStorage) {
+-    // TODO(crbug.com/570132114): Some paths (e.g., Response.clone() or certain
+-    // URLLoaderThrottles) drop the writer for kCacheStorage responses. This
+-    // silently disables code caching. Find and fix these paths, then restore
+-    // the bidirectional CHECK.
++    // TODO(crbug.com/570132114): Restore the bidirectional CHECK once we verify
++    // no remaining paths drop the writer for kCacheStorage responses.
+     base::debug::DumpWithoutCrashing();
+   }
+ 
+diff --git a/third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler.h b/third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler.h
+index 98e48f1b13106ac84a27d55dc805a8d94117bd21..be9576f855bff40a1c16bb51f82401ab188f7898 100644
+--- a/third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler.h
++++ b/third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler.h
+@@ -8,7 +8,9 @@
+ #include <stdint.h>
+ 
+ #include "base/containers/span.h"
+-#include "mojo/public/cpp/bindings/shared_remote.h"
++#include "base/memory/ref_counted.h"
++#include "base/memory/scoped_refptr.h"
++#include "mojo/public/cpp/bindings/pending_remote.h"
+ #include "services/network/public/mojom/cache_storage_side_data_writer.mojom-blink-forward.h"
+ #include "third_party/blink/public/mojom/fetch/fetch_api_request.mojom-blink-forward.h"
+ #include "third_party/blink/public/mojom/loader/code_cache.mojom-blink-forward.h"
+@@ -34,6 +36,14 @@ class ParkableString;
+ class ResourceResponse;
+ class WebProcessMemoryDump;
+ 
++// Ref-counted wrapper around a PendingRemote<CacheStorageSideDataWriter>.
++// This allows the one-shot writer to be shared across cloned responses
++// (ResourceResponse / FetchResponseData) and ServiceWorkerCachedMetadataSender,
++// so that whichever consumer uses it first takes the underlying PendingRemote
++// from `data`.
++using CacheStorageSideDataWriterHolder = base::RefCountedData<
++    mojo::PendingRemote<network::mojom::blink::CacheStorageSideDataWriter>>;
++
+ // A callback for sending the serialized data of cached metadata to the
+ // persistent storage.
+ // TODO(pasko): rename this class to CachedMetadataPersister.
+@@ -51,8 +61,7 @@ class PLATFORM_EXPORT CachedMetadataSender {
+       mojom::blink::CodeCacheType,
+       String,
+       base::Time,
+-      const mojo::SharedRemote<
+-          network::mojom::blink::CacheStorageSideDataWriter>&,
++      mojo::PendingRemote<network::mojom::blink::CacheStorageSideDataWriter>,
+       base::span<const uint8_t>);
+ 
+   virtual ~CachedMetadataSender() = default;

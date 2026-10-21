@@ -1,0 +1,78 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eriko Kurimoto <elkurin@chromium.org>
+Date: Mon, 19 Oct 2026 10:18:59 -0700
+Subject: [M156] Fix CHECK_EQ in CachedMetadataSender::Create for unbound
+ writer
+
+Original change's description:
+> Fix CHECK_EQ in CachedMetadataSender::Create for unbound writer
+>
+> A kCacheStorage response can have an unbound CacheStorageSideDataWriter
+> when the response was cloned (e.g., Response.clone() in a Service Worker
+> or URLResponseHead::Clone() in a throttle) or when the CacheStorage
+> backend is closed.
+>
+> Move the CHECK_EQ inside the `is_bound()` branch so we only assert that
+> a bound writer comes from kCacheStorage, and call DumpWithoutCrashing()
+> when a kCacheStorage response has an unbound writer while falling
+> through to NullCachedMetadataSender.
+>
+> Bug: 548989584, 570132114
+> Change-Id: I04561ea22d751c1dbc73879cb61557fbc36f418c
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8524348
+> Reviewed-by: Kentaro Hara <haraken@chromium.org>
+> Auto-Submit: Eriko Kurimoto <elkurin@chromium.org>
+> Commit-Queue: Eriko Kurimoto <elkurin@chromium.org>
+> Commit-Queue: Kentaro Hara <haraken@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1713048}
+
+(cherry picked from commit 01c4bf3467db6ca2e1bd6f55acc46ade42d003a9)
+
+TAG=agy
+CONV=99336a30-f904-4506-af30-ff0fd74459de
+
+Bug: 575253061, 548989584, 570132114
+Change-Id: I04561ea22d751c1dbc73879cb61557fbc36f418c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8602629
+Reviewed-by: Nate Chapin <japhet@chromium.org>
+Commit-Queue: Eriko Kurimoto <elkurin@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8078@{#1303}
+Cr-Branched-From: c50edc4214d81e4f944c3415d55104a49e46d214-refs/heads/main@{#1706539}
+
+diff --git a/third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler.cc b/third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler.cc
+index 75d353d594a3fe23d4de7b29a7300a06ab088dbd..ed5a49e30f00a11f0d4fa26861135cdf55c78db3 100644
+--- a/third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler.cc
++++ b/third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "third_party/blink/renderer/platform/loader/fetch/url_loader/cached_metadata_handler.h"
+ 
++#include "base/debug/dump_without_crashing.h"
+ #include "base/time/time.h"
+ #include "third_party/blink/public/mojom/fetch/fetch_api_request.mojom-blink.h"
+ #include "third_party/blink/public/mojom/loader/code_cache.mojom-blink.h"
+@@ -138,15 +139,21 @@ std::unique_ptr<CachedMetadataSender> CachedMetadataSender::Create(
+ 
+   // If the service worker provided a Response produced from cache_storage,
+   // then we need to use a different code cache sender.
+-  CHECK_EQ(response.GetServiceWorkerResponseSource() ==
+-               network::mojom::FetchResponseSource::kCacheStorage,
+-           response.CacheStorageSideDataWriter().is_bound());
+   if (response.CacheStorageSideDataWriter().is_bound()) {
++    CHECK_EQ(response.GetServiceWorkerResponseSource(),
++             network::mojom::FetchResponseSource::kCacheStorage);
+     // TODO(leszeks): Check whether it's correct that |origin| can be nullptr.
+     if (!requestor_origin) {
+       return std::make_unique<NullCachedMetadataSender>();
+     }
+     return std::make_unique<ServiceWorkerCachedMetadataSender>(response);
++  } else if (response.GetServiceWorkerResponseSource() ==
++             network::mojom::FetchResponseSource::kCacheStorage) {
++    // TODO(crbug.com/570132114): Some paths (e.g., Response.clone() or certain
++    // URLLoaderThrottles) drop the writer for kCacheStorage responses. This
++    // silently disables code caching. Find and fix these paths, then restore
++    // the bidirectional CHECK.
++    base::debug::DumpWithoutCrashing();
+   }
+ 
+   // If the service worker provides a synthetic `new Response()` or a

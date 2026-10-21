@@ -1,0 +1,155 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
+Date: Wed, 14 Oct 2026 11:07:17 +0200
+Subject: [maglev range analysis] Fix phi ranges in resumable loops
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Resumable loops might not have a live forward predecessor, but it might
+still be possible to enter them via a resume point.
+
+Previously, the phi ranges in such resumable loops were left
+uninitialized and the range analysis went wrong.
+
+This CL initializes the phi ranges for blocks which didn't have them
+initialized through a live predecessor. If a block has a live
+predecessor, this should be a no-op.
+
+Fixed: 570203091
+Change-Id: I89842d78c6b7e70dafd18894e275a5706c7722ee
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8559780
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110690}
+
+diff --git a/src/maglev/maglev-range-analysis.h b/src/maglev/maglev-range-analysis.h
+index 630f74a9618304435d9b9ef483b2248a6f4d9f24..04d3d0f097a5a29ed8c84f5a46c9a5438e7ab584 100644
+--- a/src/maglev/maglev-range-analysis.h
++++ b/src/maglev/maglev-range-analysis.h
+@@ -67,6 +67,18 @@ class NodeRanges {
+     return *range;
+   }
+ 
++  void InitializeRangeIfMissing(BasicBlock* block, ValueNode* node,
++                                Range range) {
++    DCHECK(ranges_initialized_.Contains(block->id()));
++    RangeMap& map = ranges_[block->id()];
++    if (!map.find(node)) {
++      map = map.insert(zone(), node, range);
++      TRACE_RANGE("Initializing in Block b" << block->id() << ": "
++                                            << PrintNodeBrief(node) << ": "
++                                            << range);
++    }
++  }
++
+   void UnionUpdate(BasicBlock* block, ValueNode* node, Range range) {
+     DCHECK(ranges_initialized_.Contains(block->id()));
+     RangeMap& map = ranges_[block->id()];
+@@ -210,6 +222,15 @@ class RangeProcessor {
+   BlockProcessResult PreProcessBasicBlock(BasicBlock* block) {
+     current_block_ = block;
+     ranges_.EnsureMapExistsFor(block);
++    if (block->has_state() && block->state()->is_resumable_loop() &&
++        block->predecessor_count() == 1) {
++      // Resumable loop headers might not have a live forward predecessor: that
++      // part of the code might be dead even though the loop is still reachable
++      // via a resume point. Make sure we initialize phis in such case. If the
++      // loop has a live predecessor, ProcessPhis is called when processing that
++      // live predecessor, and this code is a no-op.
++      InitializeLoopPhisIfMissing(block);
++    }
+     return BlockProcessResult::kContinue;
+   }
+   BlockProcessResult PostProcessBasicBlock(BasicBlock* block) {
+@@ -537,6 +558,14 @@ class RangeProcessor {
+     }
+   }
+ 
++  void InitializeLoopPhisIfMissing(BasicBlock* block) {
++    if (!block->has_phi()) return;
++    for (Phi* phi : *block->phis()) {
++      ranges_.InitializeRangeIfMissing(
++          block, phi, phi->is_int32() ? Range::Int32() : Range::All());
++    }
++  }
++
+   // Returns true if the loop reach a fixpoint.
+   bool ProcessLoopPhisBackedge(BasicBlock* block, BasicBlock* backedge_pred) {
+     if (!block->has_phi()) return true;
+diff --git a/test/mjsunit/regress/regress-570203091-1.js b/test/mjsunit/regress/regress-570203091-1.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..2ac6c407c776168b7d852f05ad928b04c531944a
+--- /dev/null
++++ b/test/mjsunit/regress/regress-570203091-1.js
+@@ -0,0 +1,29 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --turbolev --allow-natives-syntax
++
++let sink = 0;
++function* gen() {
++  try { unknown_global; } catch {}
++  let x = 0;
++  for (;;) {
++    if (x === 0) {
++      sink = 1;
++    } else {
++      sink = 2;
++    }
++    const is_zero = x === 0 ? true : false;
++    x = (yield is_zero).length;
++  }
++}
++
++%PrepareFunctionForOptimization(gen);
++const g = gen();
++g.next();     // x = 0
++g.next("a");  // x = 1
++g.next("");   // x = 0
++
++%OptimizeFunctionOnNextCall(gen);
++assertEquals(false, g.next("hello").value);
+diff --git a/test/mjsunit/regress/regress-570203091-2.js b/test/mjsunit/regress/regress-570203091-2.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..f99037288cda5a8c1ff9276ae234ef2e20fec534
+--- /dev/null
++++ b/test/mjsunit/regress/regress-570203091-2.js
+@@ -0,0 +1,35 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --turbolev --allow-natives-syntax
++
++let sink = 0;
++const arr = [1.1, 2.2];
++const victim = [3.3];
++
++function* gen() {
++  try { unknown_global; } catch {}
++  let x = 0;
++  for (;;) {
++    if (x === 0) {
++      sink = 1;
++    } else {
++      sink = 2;
++    }
++    if (arr.length <= 0) return;
++    arr[x] = 1.5;
++    x = (yield).length;
++  }
++}
++
++%PrepareFunctionForOptimization(gen);
++const g = gen();
++g.next();     // x = 0
++g.next("a");  // x = 1
++g.next("");   // x = 0
++
++%OptimizeFunctionOnNextCall(gen);
++g.next("abcdef");
++assertEquals(3.3, victim[0]);
++assertEquals(7, arr.length);

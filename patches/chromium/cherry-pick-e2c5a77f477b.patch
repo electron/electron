@@ -1,0 +1,199 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ming-Ying Chung <mych@chromium.org>
+Date: Thu, 17 Sep 2026 00:24:40 -0700
+Subject: [FSA] Refactor read permission checks into `CheckReadAccess()`
+
+To prepare for restricting File System Access handle usage in 3P
+contexts, this CL consolidates duplicated read permission checks across
+leaf handle method into `FileSystemAccessHandleBase::CheckReadAccess()`.
+
+This CL should introduce no behavioral changes.
+
+Bug: 526039697
+Change-Id: I81e1300466577adf73be27d93cd693863ad3ef94
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8411405
+Reviewed-by: Mingyu Lei <leimy@chromium.org>
+Commit-Queue: Ming-Ying Chung <mych@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1699571}
+
+diff --git a/content/browser/file_system_access/file_system_access_directory_handle_impl.cc b/content/browser/file_system_access/file_system_access_directory_handle_impl.cc
+index 2de16b335518610931dbd54a5b19d09f89509087..0ea7d45ad1c4f33ebda6dea433496aad066a579d 100644
+--- a/content/browser/file_system_access/file_system_access_directory_handle_impl.cc
++++ b/content/browser/file_system_access/file_system_access_directory_handle_impl.cc
+@@ -196,10 +196,8 @@ void FileSystemAccessDirectoryHandleImpl::GetFileResolved(
+     return;
+   }
+ 
+-  if (GetReadPermissionStatus() != PermissionStatus::GRANTED) {
+-    std::move(callback).Run(file_system_access_error::FromStatus(
+-                                FileSystemAccessStatus::kPermissionDenied),
+-                            mojo::NullRemote());
++  if (auto read_access = CheckReadAccess(); !read_access.has_value()) {
++    std::move(callback).Run(std::move(read_access.error()), mojo::NullRemote());
+     return;
+   }
+ 
+@@ -334,10 +332,8 @@ void FileSystemAccessDirectoryHandleImpl::GetDirectoryResolved(
+     return;
+   }
+ 
+-  if (GetReadPermissionStatus() != PermissionStatus::GRANTED) {
+-    std::move(callback).Run(file_system_access_error::FromStatus(
+-                                FileSystemAccessStatus::kPermissionDenied),
+-                            mojo::NullRemote());
++  if (auto read_access = CheckReadAccess(); !read_access.has_value()) {
++    std::move(callback).Run(std::move(read_access.error()), mojo::NullRemote());
+     return;
+   }
+ 
+@@ -375,11 +371,9 @@ void FileSystemAccessDirectoryHandleImpl::GetEntries(
+           std::move(pending_listener),
+           base::SequencedTaskRunner::GetCurrentDefault());
+ 
+-  if (GetReadPermissionStatus() != PermissionStatus::GRANTED) {
+-    listener_holder->listener->DidReadDirectory(
+-        file_system_access_error::FromStatus(
+-            FileSystemAccessStatus::kPermissionDenied),
+-        {}, false);
++  if (auto read_access = CheckReadAccess(); !read_access.has_value()) {
++    listener_holder->listener->DidReadDirectory(std::move(read_access.error()),
++                                                {}, false);
+     return;
+   }
+ 
+diff --git a/content/browser/file_system_access/file_system_access_file_handle_impl.cc b/content/browser/file_system_access/file_system_access_file_handle_impl.cc
+index 8a987f8c633b7ddc40a07cc608dce2ecf25cb162..a159617843fec8eaf5544b921e7e460048867179 100644
+--- a/content/browser/file_system_access/file_system_access_file_handle_impl.cc
++++ b/content/browser/file_system_access/file_system_access_file_handle_impl.cc
+@@ -177,10 +177,9 @@ void FileSystemAccessFileHandleImpl::RequestPermission(
+ void FileSystemAccessFileHandleImpl::AsBlob(AsBlobCallback callback) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+ 
+-  if (GetReadPermissionStatus() != PermissionStatus::GRANTED) {
+-    std::move(callback).Run(file_system_access_error::FromStatus(
+-                                FileSystemAccessStatus::kPermissionDenied),
+-                            base::File::Info(), nullptr);
++  if (auto read_access = CheckReadAccess(); !read_access.has_value()) {
++    std::move(callback).Run(std::move(read_access.error()), base::File::Info(),
++                            nullptr);
+     return;
+   }
+ 
+diff --git a/content/browser/file_system_access/file_system_access_handle_base.cc b/content/browser/file_system_access/file_system_access_handle_base.cc
+index 4aeb55d93e362d6d007fb4e62dab605d90dbe469..876656f1eb7a1270e0bcbcaaacb897310227dc7f 100644
+--- a/content/browser/file_system_access/file_system_access_handle_base.cc
++++ b/content/browser/file_system_access/file_system_access_handle_base.cc
+@@ -94,6 +94,16 @@ FileSystemAccessHandleBase::GetReadPermissionStatus() {
+   return handle_state_.read_grant->GetStatus();
+ }
+ 
++base::expected<void, blink::mojom::FileSystemAccessErrorPtr>
++FileSystemAccessHandleBase::CheckReadAccess() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  if (GetReadPermissionStatus() != PermissionStatus::GRANTED) {
++    return base::unexpected(file_system_access_error::FromStatus(
++        blink::mojom::FileSystemAccessStatus::kPermissionDenied));
++  }
++  return base::ok();
++}
++
+ FileSystemAccessHandleBase::PermissionStatus
+ FileSystemAccessHandleBase::GetWritePermissionStatus() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+@@ -782,11 +792,8 @@ void FileSystemAccessHandleBase::DoGetCloudIdentifiers(
+     return;
+   }
+ 
+-  if (GetReadPermissionStatus() != PermissionStatus::GRANTED) {
+-    std::move(callback).Run(
+-        file_system_access_error::FromStatus(
+-            blink::mojom::FileSystemAccessStatus::kPermissionDenied),
+-        {});
++  if (auto read_access = CheckReadAccess(); !read_access.has_value()) {
++    std::move(callback).Run(std::move(read_access.error()), {});
+     return;
+   }
+ 
+diff --git a/content/browser/file_system_access/file_system_access_handle_base.h b/content/browser/file_system_access/file_system_access_handle_base.h
+index b43a70c07729db2d71152ea9a4e298fbb64dfc3f..b44c18d0532ebc74b39661d590744f6c0e9525df 100644
+--- a/content/browser/file_system_access/file_system_access_handle_base.h
++++ b/content/browser/file_system_access/file_system_access_handle_base.h
+@@ -10,6 +10,7 @@
+ #include "base/memory/weak_ptr.h"
+ #include "base/sequence_checker.h"
+ #include "base/thread_annotations.h"
++#include "base/types/expected.h"
+ #include "content/browser/file_system_access/file_system_access_error.h"
+ #include "content/browser/file_system_access/file_system_access_lock_manager.h"
+ #include "content/browser/file_system_access/file_system_access_manager_impl.h"
+@@ -75,6 +76,24 @@ class CONTENT_EXPORT FileSystemAccessHandleBase {
+   // `GetWritePermissionStatus()` if appropriate. Returns the permission status
+   // for reading and writing.
+   PermissionStatus GetReadWritePermissionStatus();
++
++  // Checks whether the handle currently allows read operations. Returns
++  // base::ok() if read access is permitted, or an error status on failure.
++  //
++  // Distinction from `GetReadPermissionStatus()`:
++  // - `GetReadPermissionStatus()` queries only whether the underlying
++  //   permission grant is GRANTED, ASK, or DENIED.
++  // - `CheckReadAccess()` is the authorization check for actual read
++  //   operations (e.g. AsBlob, GetEntries). A GRANTED status from
++  //   `GetReadPermissionStatus()` is necessary but not always sufficient: read
++  //   operations may still be blocked by broader context or security
++  //   constraints even when the underlying grant is GRANTED. Callers
++  //   executing read operations should always call `CheckReadAccess()`.
++  // - Use `DoGetPermissionStatus()` to handle the renderer's
++  //   `queryPermission()` API call.
++  base::expected<void, blink::mojom::FileSystemAccessErrorPtr>
++  CheckReadAccess();
++
+   storage::FileSystemURL GetParentURLForTesting() { return GetParentURL(); }
+ 
+   // Implementation for the GetPermissionStatus method in the
+diff --git a/content/browser/file_system_access/file_system_access_handle_base_unittest.cc b/content/browser/file_system_access/file_system_access_handle_base_unittest.cc
+index b57ff24654de555403b512b5ce12c8628644950f..3dd44b45564be9031e72121fcb4624ac3382a9e5 100644
+--- a/content/browser/file_system_access/file_system_access_handle_base_unittest.cc
++++ b/content/browser/file_system_access/file_system_access_handle_base_unittest.cc
+@@ -237,6 +237,41 @@ INSTANTIATE_TEST_SUITE_P(
+       return info.param.test_name;
+     });
+ 
++class FileSystemAccessHandleCheckReadAccessTest
++    : public FileSystemAccessHandleParamTestBase {};
++
++TEST_P(FileSystemAccessHandleCheckReadAccessTest, AllowedWhenGranted) {
++  auto handle = CreateTestHandle();
++
++  EXPECT_CALL(*read_grant_, GetStatus())
++      .WillOnce(testing::Return(PermissionStatus::GRANTED));
++  EXPECT_TRUE(handle.CheckReadAccess().has_value());
++}
++
++TEST_P(FileSystemAccessHandleCheckReadAccessTest, DeniedWhenNotGranted) {
++  auto handle = CreateTestHandle();
++
++  EXPECT_CALL(*read_grant_, GetStatus())
++      .WillOnce(testing::Return(PermissionStatus::ASK));
++  auto result = handle.CheckReadAccess();
++  ASSERT_FALSE(result.has_value());
++  EXPECT_EQ(result.error()->status, FileSystemAccessStatus::kPermissionDenied);
++
++  EXPECT_CALL(*read_grant_, GetStatus())
++      .WillOnce(testing::Return(PermissionStatus::DENIED));
++  result = handle.CheckReadAccess();
++  ASSERT_FALSE(result.has_value());
++  EXPECT_EQ(result.error()->status, FileSystemAccessStatus::kPermissionDenied);
++}
++
++INSTANTIATE_TEST_SUITE_P(
++    All,
++    FileSystemAccessHandleCheckReadAccessTest,
++    testing::ValuesIn(kTestContextParams),
++    [](const testing::TestParamInfo<TestContextParam>& info) {
++      return info.param.test_name;
++    });
++
+ class FileSystemAccessHandleGetWritePermissionStatusTest
+     : public FileSystemAccessHandleParamTestBase {};
+ 

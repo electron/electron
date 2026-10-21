@@ -1,0 +1,167 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Wed, 23 Sep 2026 17:33:31 -0400
+Subject: Vulkan: Track image "subresources written" by vk::LevelIndex
+
+Helps a future refactoring where vk::LevelIndex is more readily
+available.
+
+Bug: chromium:556750158
+Change-Id: Id4691f2537a9bc42bd7c21fbd53cad4d25e67b3b
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8452364
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Amirali Abdolrashidi <abdolrashidi@google.com>
+
+Electron adaptation notes (44-x-y): gl::OwnerLayer is mapped to
+uint32_t (type absent on this revision); otherwise applied verbatim.
+
+diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+index 6965e165c4d5fb378a6a30a6edfe6628f4bd9f38..b5f93ddeff7bb3a1099e0a23e3486270b9faee75 100644
+--- a/src/libANGLE/renderer/vulkan/vk_helpers.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+@@ -7272,11 +7272,12 @@ bool ImageHelper::isReadSubresourceBarrierNecessary(ImageAccess newAccess,
+         layerCount = 1;
+     }
+ 
++    const LevelIndex levelStartVk = toVkLevel(levelStart);
++
+     ImageLayerWriteMask layerMask = GetImageLayerWriteMask(layerStart, layerCount);
+     for (uint32_t levelOffset = 0; levelOffset < levelCount; levelOffset++)
+     {
+-        uint32_t level = levelStart.get() + levelOffset;
+-        if (areLevelSubresourcesWrittenWithinMaskRange(level, layerMask))
++        if (areLevelSubresourcesWrittenWithinMaskRange(levelStartVk + levelOffset, layerMask))
+         {
+             return true;
+         }
+@@ -7309,13 +7310,14 @@ bool ImageHelper::isWriteBarrierNecessary(ImageAccess newAccess,
+         layerCount = 1;
+     }
+ 
++    const LevelIndex levelStartVk = toVkLevel(levelStart);
++
+     // If we are writing to the same parts of the image (level/layer), we need a barrier. Otherwise,
+     // it can be done in parallel.
+     ImageLayerWriteMask layerMask = GetImageLayerWriteMask(layerStart, layerCount);
+     for (uint32_t levelOffset = 0; levelOffset < levelCount; levelOffset++)
+     {
+-        uint32_t level = levelStart.get() + levelOffset;
+-        if (areLevelSubresourcesWrittenWithinMaskRange(level, layerMask))
++        if (areLevelSubresourcesWrittenWithinMaskRange(levelStartVk + levelOffset, layerMask))
+         {
+             return true;
+         }
+@@ -7600,7 +7602,7 @@ void ImageHelper::recordBarrierOneOffImpl(Renderer *renderer,
+                 acquireNextImageSemaphoreOut);
+ }
+ 
+-void ImageHelper::setSubresourcesWrittenSinceBarrier(gl::LevelIndex levelStart,
++void ImageHelper::setSubresourcesWrittenSinceBarrier(LevelIndex levelStart,
+                                                      uint32_t levelCount,
+                                                      uint32_t layerStart,
+                                                      uint32_t layerCount)
+@@ -7614,15 +7616,15 @@ void ImageHelper::setSubresourcesWrittenSinceBarrier(gl::LevelIndex levelStart,
+ 
+     for (uint32_t levelOffset = 0; levelOffset < levelCount; levelOffset++)
+     {
+-        uint32_t level = levelStart.get() + levelOffset;
++        LevelIndex level = levelStart + levelOffset;
+         if (layerCount >= kMaxParallelLayerWrites)
+         {
+-            mSubresourcesWrittenSinceBarrier[level].set();
++            mSubresourcesWrittenSinceBarrier[level.get()].set();
+         }
+         else
+         {
+             ImageLayerWriteMask layerMask = GetImageLayerWriteMask(layerStart, layerCount);
+-            mSubresourcesWrittenSinceBarrier[level] |= layerMask;
++            mSubresourcesWrittenSinceBarrier[level.get()] |= layerMask;
+         }
+     }
+ }
+@@ -7658,7 +7660,7 @@ void ImageHelper::recordWriteBarrier(Context *context,
+         }
+     }
+ 
+-    setSubresourcesWrittenSinceBarrier(levelStart, levelCount, layerStart, layerCount);
++    setSubresourcesWrittenSinceBarrier(toVkLevel(levelStart), levelCount, layerStart, layerCount);
+ }
+ 
+ void ImageHelper::recordReadSubresourceBarrier(Context *context,
+@@ -7688,7 +7690,7 @@ void ImageHelper::recordReadSubresourceBarrier(Context *context,
+     }
+ 
+     // Levels/layers being read from are also registered to avoid RAW and WAR hazards.
+-    setSubresourcesWrittenSinceBarrier(levelStart, levelCount, layerStart, layerCount);
++    setSubresourcesWrittenSinceBarrier(toVkLevel(levelStart), levelCount, layerStart, layerCount);
+ }
+ 
+ void ImageHelper::recordReadBarrier(Context *context,
+@@ -9208,7 +9210,7 @@ void ImageHelper::onWrite(gl::LevelIndex levelStart,
+     // Mark contents of the given subresource as defined.
+     setContentDefined(toVkLevel(levelStart), levelCount, layerStart, layerCount, aspectFlags);
+ 
+-    setSubresourcesWrittenSinceBarrier(levelStart, levelCount, layerStart, layerCount);
++    setSubresourcesWrittenSinceBarrier(levelStartVk, levelCount, layerStart, layerCount);
+ }
+ 
+ bool ImageHelper::hasSubresourceDefinedContent(gl::LevelIndex level,
+@@ -10423,22 +10425,21 @@ angle::Result ImageHelper::flushStagedUpdatesImpl(ContextVk *contextVk,
+                 // If there are more subresources than bits we can track, always insert a barrier.
+                 recordWriteBarrier(contextVk, aspectFlags, barrierAccess, updateMipLevelGL, 1,
+                                    updateBaseLayer, updateLayerCount, commandBuffer);
+-                mSubresourcesWrittenSinceBarrier[updateMipLevelGL.get()].set();
++                mSubresourcesWrittenSinceBarrier[updateMipLevelVk.get()].set();
+             }
+             else
+             {
+                 ImageLayerWriteMask subresourceHash =
+                     GetImageLayerWriteMask(updateBaseLayer, updateLayerCount);
+ 
+-                if (areLevelSubresourcesWrittenWithinMaskRange(updateMipLevelGL.get(),
+-                                                               subresourceHash))
++                if (areLevelSubresourcesWrittenWithinMaskRange(updateMipLevelVk, subresourceHash))
+                 {
+                     // If there's overlap in subresource upload, issue a barrier.
+                     recordWriteBarrier(contextVk, aspectFlags, barrierAccess, updateMipLevelGL, 1,
+                                        updateBaseLayer, updateLayerCount, commandBuffer);
+-                    mSubresourcesWrittenSinceBarrier[updateMipLevelGL.get()].reset();
++                    mSubresourcesWrittenSinceBarrier[updateMipLevelVk.get()].reset();
+                 }
+-                mSubresourcesWrittenSinceBarrier[updateMipLevelGL.get()] |= subresourceHash;
++                mSubresourcesWrittenSinceBarrier[updateMipLevelVk.get()] |= subresourceHash;
+             }
+ 
+             // Add the necessary commands to the outside command buffer.
+diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.h b/src/libANGLE/renderer/vulkan/vk_helpers.h
+index 6c414f190091ece38f76d07f2ad6d3c36469a172..245bd70742a910e9c754aa26b3f377503744f7c0 100644
+--- a/src/libANGLE/renderer/vulkan/vk_helpers.h
++++ b/src/libANGLE/renderer/vulkan/vk_helpers.h
+@@ -3213,16 +3213,16 @@ class ImageHelper final : public Resource, public angle::Subject
+                                  PrimaryCommandBuffer *commandBuffer,
+                                  VkSemaphore *acquireNextImageSemaphoreOut);
+ 
+-    void setSubresourcesWrittenSinceBarrier(gl::LevelIndex levelStart,
++    void setSubresourcesWrittenSinceBarrier(LevelIndex levelStart,
+                                             uint32_t levelCount,
+                                             uint32_t layerStart,
+                                             uint32_t layerCount);
+ 
+     void resetSubresourcesWrittenSinceBarrier();
+-    bool areLevelSubresourcesWrittenWithinMaskRange(uint32_t level,
++    bool areLevelSubresourcesWrittenWithinMaskRange(LevelIndex level,
+                                                     ImageLayerWriteMask &layerMask) const
+     {
+-        return (mSubresourcesWrittenSinceBarrier[level] & layerMask) != 0;
++        return (mSubresourcesWrittenSinceBarrier[level.get()] & layerMask) != 0;
+     }
+ 
+     bool verifyNoStagedUpdates() const;
+@@ -3560,6 +3560,7 @@ class ImageHelper final : public Resource, public angle::Subject
+     // Used to track subresource writes per level/layer. This can help parallelize writes to
+     // different levels or layers of the image, such as data uploads.
+     // See comment on kMaxParallelLayerWrites.
++    // Indexed by vk::LevelIndex
+     gl::TexLevelArray<ImageLayerWriteMask> mSubresourcesWrittenSinceBarrier;
+ };
+ 

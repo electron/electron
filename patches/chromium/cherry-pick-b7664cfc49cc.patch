@@ -1,0 +1,256 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zhenyao Mo <zmo@chromium.org>
+Date: Tue, 22 Sep 2026 11:36:58 -0700
+Subject: gpu: Reject separate GL texture mode for WebGPU/Vulkan GL interop
+
+ExternalVkImageBacking normally allocates a single VkImage and imports
+it into GL via GL_EXT_memory_object, so both APIs alias one allocation.
+When that import is unavailable it falls back to use_separate_gl_texture
+mode, which allocates an independent GL texture next to the VkImage and
+keeps the two in sync by reading pixels back and re-uploading them on
+access, tracked by the latest_content_ bitmask.
+
+UpdateContent() set the destination content bit even when that copy
+failed. Because the function short-circuits once the bit is set, a
+single failed sync is permanently masked and subsequent readers sample
+never-written VkDeviceMemory or GL texture storage.
+
+Create() and CreateFromGMB() already DCHECK that the WebGPU-on-Vulkan-
+via-GL-interop configuration never selects that mode, but the DCHECK is
+compiled out in release and UseSeparateGLTexture() depends on the shared
+image format, which is renderer-controlled. In that configuration GL is
+ANGLE on its GL backend, so BGRA_8888 takes the fallback (see
+angleproject/4831) even though the drivers interop is enabled on all
+support external objects. A well-behaved client never gets there, since
+Blink allocates the WebGPU swap texture with the preferred canvas
+format and that is forced to RGBA on Linux, but a compromised renderer
+can ask for BGRA_8888 directly.
+
+Enforce the invariant rather than harden the sync path.
+ExternalVkImageBackingFactory::IsSupported() now rejects any format that
+would take the fallback when interop is enabled, and the two DCHECKs
+become bail-outs so a caller that skips IsSupported() gets no backing
+instead of an incoherent one. Keying the rejection on
+UseSeparateGLTexture() rather than on the format also covers
+--ignore-gpu-blocklist forcing interop onto a driver without the
+external objects extension, where every format takes the fallback.
+
+This is deliberately scoped to the interop configuration:
+
+- Fuchsia runs ANGLE on Vulkan, so UseSeparateGLTexture() is always
+  false there and the mode is already unreachable. Fuchsia is also the
+  only platform where this factory imports client GMBs, and Flatland
+  supports BGRA_8888, so rejecting that format outright would risk
+  breaking a shipping path for no security benefit.
+
+- Vulkan on Linux enabled from the command line either comes with
+  VulkanFromANGLE, which means ANGLE on Vulkan again and
+  AngleVulkanImageBackingFactory taking precedence, or is an unsupported
+  configuration. Both are reachable only behind flags and are covered by
+  the hardening below.
+
+Also included:
+
+- UpdateContent() now only sets a content bit when the copy succeeded,
+  and CopyPixelsFromGLTextureToVkImage() and
+  CopyPixelsFromVkImageToGLTexture() return [[nodiscard]] bool to make
+  that possible. The rejection above does not cover the flag-only
+  configurations that still reach the fallback, so this stays as defense
+  in depth.
+
+- CreateFromGMB() initializes latest_content_ to kInVkImage. This is a
+  separate bug: an imported buffer's content is in the VkImage, but with
+  no content bits set UpdateContent() copies nothing, so a GL read of a
+  separate GL texture would observe uninitialized storage regardless of
+  any copy failure.
+
+No test changes are needed: the unit test fixture constructs the factory
+with interop disabled, so its format coverage is unaffected.
+
+Longer term the fallback should go away entirely, along with
+ExternalVkImageBacking being forked for Fuchsia and Vulkan on Linux
+requiring AngleVulkan, but that is out of scope here.
+
+This supersedes the approach in crrev.com/c/8421508, which gated
+BeginAccess() on the content bits and added a testing-only override to
+force use_separate_gl_texture on.
+
+Bug: 533122125
+Change-Id: I1775a7c7dfa97683b364915f5fa7deb7c29f7c3d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8436737
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1702813}
+
+diff --git a/gpu/command_buffer/service/shared_image/external_vk_image_backing.cc b/gpu/command_buffer/service/shared_image/external_vk_image_backing.cc
+index 4a6f3b47bbfaef26e523c888e3cf922647ebb49e..5feea6accd29428d3cefb45517510dcb58a7ac71 100644
+--- a/gpu/command_buffer/service/shared_image/external_vk_image_backing.cc
++++ b/gpu/command_buffer/service/shared_image/external_vk_image_backing.cc
+@@ -241,7 +241,16 @@ std::unique_ptr<ExternalVkImageBacking> ExternalVkImageBacking::Create(
+ 
+   bool use_separate_gl_texture =
+       ExternalVkImageBacking::UseSeparateGLTexture(context_state.get(), format);
+-  DCHECK(!enable_webgpu_on_vk_via_gl_interop || !use_separate_gl_texture);
++  // The separate GL texture path keeps an independent GL texture in sync with
++  // the VkImage by copying pixels on access. WebGPU interop requires a single
++  // allocation aliased into both APIs, and ExternalVkImageBackingFactory
++  // already refuses formats that would end up here, so this is unreachable
++  // unless a caller bypasses IsSupported(). Fail rather than silently handing
++  // back a backing that cannot keep its two copies coherent.
++  if (enable_webgpu_on_vk_via_gl_interop && use_separate_gl_texture) {
++    DLOG(ERROR) << "Separate GL texture is not supported with WebGPU interop";
++    return nullptr;
++  }
+   auto backing = std::make_unique<ExternalVkImageBacking>(
+       base::PassKey<ExternalVkImageBacking>(), mailbox, si_info, estimated_size,
+       std::move(context_state), std::move(textures), command_pool,
+@@ -309,13 +318,21 @@ std::unique_ptr<ExternalVkImageBacking> ExternalVkImageBacking::CreateFromGMB(
+ 
+   bool use_separate_gl_texture =
+       ExternalVkImageBacking::UseSeparateGLTexture(context_state.get(), format);
+-  DCHECK(!enable_webgpu_on_vk_via_gl_interop || !use_separate_gl_texture);
++  // See the comment on the same check in Create().
++  if (enable_webgpu_on_vk_via_gl_interop && use_separate_gl_texture) {
++    DLOG(ERROR) << "Separate GL texture is not supported with WebGPU interop";
++    return nullptr;
++  }
+   auto backing = std::make_unique<ExternalVkImageBacking>(
+       base::PassKey<ExternalVkImageBacking>(), mailbox, si_info, estimated_size,
+       std::move(context_state), std::move(textures), command_pool,
+       use_separate_gl_texture, enable_webgpu_on_vk_via_gl_interop,
+       std::move(handle), std::move(buffer_usage));
+   backing->SetCleared();
++  // The imported buffer's content is in the VkImage. Without recording that,
++  // UpdateContent() sees no content bits set at all and copies nothing, so a
++  // GL read of a separate GL texture would observe uninitialized storage.
++  backing->latest_content_ = kInVkImage;
+   return backing;
+ }
+ 
+@@ -1016,15 +1033,22 @@ void ExternalVkImageBacking::UpdateContent(uint32_t content_flags) {
+   if ((latest_content_ & content_flags) == content_flags)
+     return;
+ 
++  // Only mark the destination as holding valid content if the copy actually
++  // succeeded. Setting the bit unconditionally permanently masks a failed sync,
++  // because the early-out at the top of this function short-circuits every
++  // subsequent call, and leaves readers sampling uninitialized VkDeviceMemory
++  // or GL texture storage.
+   if (content_flags == kInVkImage) {
+     if ((latest_content_ & kInGLTexture)) {
+-      CopyPixelsFromGLTextureToVkImage();
+-      latest_content_ |= kInVkImage;
++      if (CopyPixelsFromGLTextureToVkImage()) {
++        latest_content_ |= kInVkImage;
++      }
+     }
+   } else if (content_flags == kInGLTexture) {
+     if (latest_content_ & kInVkImage) {
+-      CopyPixelsFromVkImageToGLTexture();
+-      latest_content_ |= kInGLTexture;
++      if (CopyPixelsFromVkImageToGLTexture()) {
++        latest_content_ |= kInGLTexture;
++      }
+     }
+   }
+ }
+@@ -1049,12 +1073,12 @@ ExternalVkImageBacking::GetMapPlaneData() const {
+   return {data, total_data_bytes};
+ }
+ 
+-void ExternalVkImageBacking::CopyPixelsFromGLTextureToVkImage() {
++bool ExternalVkImageBacking::CopyPixelsFromGLTextureToVkImage() {
+   DCHECK(use_separate_gl_texture());
+   DCHECK_EQ(vk_textures_.size(), gl_textures_.size());
+ 
+   if (!MakeGLContextCurrent()) {
+-    return;
++    return false;
+   }
+ 
+   auto [plane_data, total_data_bytes] = GetMapPlaneData();
+@@ -1068,21 +1092,23 @@ void ExternalVkImageBacking::CopyPixelsFromGLTextureToVkImage() {
+ 
+     if (!gl_textures_[plane]->ReadbackToMemory(pixmaps.back())) {
+       DLOG(ERROR) << "GL readback failed";
+-      return;
++      return false;
+     }
+   }
+ 
+   if (!UploadToVkImage(pixmaps)) {
+     DLOG(ERROR) << "UploadToVkImage failed";
++    return false;
+   }
++  return true;
+ }
+ 
+-void ExternalVkImageBacking::CopyPixelsFromVkImageToGLTexture() {
++bool ExternalVkImageBacking::CopyPixelsFromVkImageToGLTexture() {
+   DCHECK(use_separate_gl_texture());
+   DCHECK_EQ(vk_textures_.size(), gl_textures_.size());
+ 
+   if (!MakeGLContextCurrent()) {
+-    return;
++    return false;
+   }
+ 
+   auto [plane_data, total_data_bytes] = GetMapPlaneData();
+@@ -1097,12 +1123,14 @@ void ExternalVkImageBacking::CopyPixelsFromVkImageToGLTexture() {
+ 
+   if (!ReadbackToMemory(pixmaps)) {
+     DLOG(ERROR) << "ReadbackToMemory failed";
+-    return;
++    return false;
+   }
+ 
+   if (!UploadToGLTexture(pixmaps)) {
+     DLOG(ERROR) << "UploadToGLTexture failed";
++    return false;
+   }
++  return true;
+ }
+ 
+ bool ExternalVkImageBacking::UploadToVkImage(
+diff --git a/gpu/command_buffer/service/shared_image/external_vk_image_backing.h b/gpu/command_buffer/service/shared_image/external_vk_image_backing.h
+index e6010020b18ec81a5892740ef41c1d7dffcc8930..d47fcc0f39bbe94f1a37c9aba2b785e762c48cbb 100644
+--- a/gpu/command_buffer/service/shared_image/external_vk_image_backing.h
++++ b/gpu/command_buffer/service/shared_image/external_vk_image_backing.h
+@@ -220,8 +220,8 @@ class ExternalVkImageBacking final : public ClearTrackingSharedImageBacking {
+   // mapping VkImage.
+   std::pair<std::vector<MapPlaneData>, size_t> GetMapPlaneData() const;
+ 
+-  void CopyPixelsFromGLTextureToVkImage();
+-  void CopyPixelsFromVkImageToGLTexture();
++  [[nodiscard]] bool CopyPixelsFromGLTextureToVkImage();
++  [[nodiscard]] bool CopyPixelsFromVkImageToGLTexture();
+ 
+   scoped_refptr<SharedContextState> context_state_;
+   std::vector<TextureHolderVk> vk_textures_;
+diff --git a/gpu/command_buffer/service/shared_image/external_vk_image_backing_factory.cc b/gpu/command_buffer/service/shared_image/external_vk_image_backing_factory.cc
+index 918cb1e307321776382abc1d237691317f62a541..e63ed4f68ed6e1785bb2df85c8157eb53825dac3 100644
+--- a/gpu/command_buffer/service/shared_image/external_vk_image_backing_factory.cc
++++ b/gpu/command_buffer/service/shared_image/external_vk_image_backing_factory.cc
+@@ -300,6 +300,22 @@ bool ExternalVkImageBackingFactory::IsSupported(
+       // Only support GL vulkan webgpu interop.
+       return false;
+     }
++
++    // WebGPU interop requires a single allocation aliased into both APIs. When
++    // ExternalVkImageBacking cannot do that it falls back to allocating an
++    // independent GL texture next to the VkImage and keeping the two in sync
++    // by reading back and re-uploading pixels on access. Nothing in this
++    // configuration is supposed to reach that fallback: the drivers it is
++    // enabled on all support external objects, and Blink always allocates the
++    // WebGPU swap texture with the preferred canvas format, which is RGBA on
++    // Linux (see GPU::GetPreferredCanvasFormat()). The format is
++    // renderer-controlled though, so enforce the invariant rather than relying
++    // on a well-behaved client - the fallback is untested here and exposes
++    // uninitialized memory when a copy fails.
++    if (ExternalVkImageBacking::UseSeparateGLTexture(context_state_.get(),
++                                                     format)) {
++      return false;
++    }
+   }
+ #endif
+   return true;

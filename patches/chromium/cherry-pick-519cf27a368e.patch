@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Fredrik=20S=C3=B6derquist?= <fs@opera.com>
+Date: Tue, 13 Oct 2026 06:57:42 -0700
+Subject: Harden ElementSMILAnimations::Apply() against removals during
+ iteration
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Style resolution during ApplyAnimationValues() can cause animation
+elements to be removed.
+
+Fixed: 572862424
+Change-Id: I3233b96629fe48d13fcbd0c24bc75649b04b9ad7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8563759
+Auto-Submit: Fredrik Söderquist <fs@opera.com>
+Reviewed-by: Stephen Chenney <schenney@chromium.org>
+Commit-Queue: Stephen Chenney <schenney@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1717535}
+
+diff --git a/third_party/blink/renderer/core/svg/animation/element_smil_animations.cc b/third_party/blink/renderer/core/svg/animation/element_smil_animations.cc
+index 4a4e55afc7f34d2ae059b83788370fef67c441a3..9d5996d7ea7046a901b332489244a225b82d5067 100644
+--- a/third_party/blink/renderer/core/svg/animation/element_smil_animations.cc
++++ b/third_party/blink/renderer/core/svg/animation/element_smil_animations.cc
+@@ -33,7 +33,8 @@ void ElementSMILAnimations::RemoveAnimation(const QualifiedName& attribute,
+ 
+ bool ElementSMILAnimations::Apply(SMILTime elapsed) {
+   bool did_apply = false;
+-  for (SMILAnimationSandwich* sandwich : sandwiches_.Values()) {
++  HeapVector<Member<SMILAnimationSandwich>> sandwiches(sandwiches_.Values());
++  for (SMILAnimationSandwich* sandwich : sandwiches) {
+     sandwich->UpdateActiveAnimationStack(elapsed);
+     if (sandwich->ApplyAnimationValues())
+       did_apply = true;

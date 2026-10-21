@@ -1,0 +1,676 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Aeryn Moss <aerynm@google.com>
+Date: Fri, 25 Sep 2026 10:46:21 -0700
+Subject: [a11y] Validate renderer-provided AXNodeIDs at browser entry points
+
+Previously, crrev.com/c/7727677 added AXNodeID validation in shared
+StructTraits<AXNodeData>::Read and StructTraits<AXTreeUpdate>::Read.
+However, because AXTreeUpdate and AXNodeData are used bidirectionally
+(such as Browser -> ChromeOS Extension Renderer in automation and
+reading mode), those StructTraits checks caused valid browser-generated
+negative internal node IDs to be rejected when sent to ChromeOS
+extensions, and were reverted in crrev.com/c/8250159 and
+crrev.com/c/8288690.
+
+This CL reintroduces browser-side validation of renderer-provided
+AXNodeIDs specifically at untrusted browser-side entry points, avoiding
+the bidirectional StructTraits deserialization path: 1.
+RenderAccessibilityHost::HandleAXEvents and HandleAXLocationChanges
+(covers all web renderers and PDF renderers via
+blink.mojom.RenderAccessibilityHost), with defense-in-depth checks also
+in RenderFrameHostImpl. 2. AXMediaAppUntrustedService::OnPageOcred
+(ScreenAI OCR utility output). ReadAnythingUntrustedPageHandler was
+already validated in crrev.com/c/7795304.
+
+To support this cleanly, validation helper functions are added to
+ui/accessibility:
+- IsValidAXNodeDataFromRenderer
+- IsValidAXTreeUpdateFromRenderer
+- IsValidAXLocationAndScrollUpdatesFromRenderer
+- IsValidAXUpdatesAndEventsFromRenderer
+
+Unit and browser tests are added to verify that invalid IDs trigger a
+Mojo bad message or are rejected.
+
+Bug: 498205735, 555337558
+Change-Id: Icb84364ebf251293a8519d8988e73b929c3f35ad
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8433909
+Commit-Queue: Aeryn Moss <aerynm@google.com>
+Reviewed-by: Jonathan Ross <jonross@chromium.org>
+Reviewed-by: David Tseng <dtseng@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1704923}
+
+diff --git a/chrome/browser/accessibility/media_app/ax_media_app_untrusted_service.cc b/chrome/browser/accessibility/media_app/ax_media_app_untrusted_service.cc
+index 21634b5d06f7e13ea2e092109e036bd45ad76558..b5fa76c0f5f8b8ffc6e6e6570cf7eeceb869f4fd 100644
+--- a/chrome/browser/accessibility/media_app/ax_media_app_untrusted_service.cc
++++ b/chrome/browser/accessibility/media_app/ax_media_app_untrusted_service.cc
+@@ -1312,7 +1312,13 @@ void AXMediaAppUntrustedService::OnPageOcred(
+           // TODO(b/319536234): Validate tree ID.
+           // !tree_update.has_tree_data ||
+           // ui::AXTreeIDUnknown() == tree_update.tree_data.tree_id ||
+-          ui::kInvalidAXNodeID == tree_update.root_id)) {
++          ui::kInvalidAXNodeID == tree_update.root_id) &&
++      mojo::IsInMessageDispatch()) {
++    mojo::ReportBadMessage("OnPageOcred() bad tree update from Screen AI.");
++    return;
++  }
++  if (!tree_update.HasValidAXNodeIDsFromRenderer() &&
++      mojo::IsInMessageDispatch()) {
+     mojo::ReportBadMessage("OnPageOcred() bad tree update from Screen AI.");
+     return;
+   }
+diff --git a/chrome/browser/accessibility/media_app/ax_media_app_untrusted_service.h b/chrome/browser/accessibility/media_app/ax_media_app_untrusted_service.h
+index 97ef4a654bfd2f9f9bcea4805bb7835338845c0f..ddf6e90ba7fd3cc65117cb4a0b060d70fc559a15 100644
+--- a/chrome/browser/accessibility/media_app/ax_media_app_untrusted_service.h
++++ b/chrome/browser/accessibility/media_app/ax_media_app_untrusted_service.h
+@@ -47,6 +47,10 @@
+ 
+ class SkBitmap;
+ 
++namespace ash::test {
++class TestAXMediaAppUntrustedService;
++}  // namespace ash::test
++
+ namespace content {
+ 
+ class RenderFrameHost;
+@@ -137,6 +141,9 @@ class AXMediaAppUntrustedService
+   std::optional<std::string> PopDirtyPage();
+   virtual void OcrNextDirtyPageIfAny();
+ 
++ private:
++  friend class ash::test::TestAXMediaAppUntrustedService;
++
+   size_t min_pages_per_batch_ = 2u;
+   size_t pages_ocred_on_initial_load_ = 0u;
+   // `AXMediaApp` should outlive this handler.
+diff --git a/chrome/browser/accessibility/media_app/ax_media_app_untrusted_service_browsertest.cc b/chrome/browser/accessibility/media_app/ax_media_app_untrusted_service_browsertest.cc
+index 21146041ecc8cc26e0329da0f17b37eea93489a6..61d784c77657430dd3eb7aa7cbedb36abd43f6e7 100644
+--- a/chrome/browser/accessibility/media_app/ax_media_app_untrusted_service_browsertest.cc
++++ b/chrome/browser/accessibility/media_app/ax_media_app_untrusted_service_browsertest.cc
+@@ -479,6 +479,23 @@ IN_PROC_BROWSER_TEST_F(AXMediaAppUntrustedServiceTest,
+   EXPECT_TRUE(bad_message_observer.got_bad_message());
+ }
+ 
++IN_PROC_BROWSER_TEST_F(AXMediaAppUntrustedServiceTest,
++                       OnPageOcredWithInvalidNodeId) {
++  mojo::FakeMessageDispatchContext fake_dispatch_context;
++  mojo::test::BadMessageObserver bad_message_observer;
++
++  ui::AXTreeUpdate tree_update;
++  tree_update.root_id = ui::kFirstGeneratedBrowserNodeID;
++  ui::AXNodeData node;
++  node.id = ui::kFirstGeneratedBrowserNodeID;
++  tree_update.nodes.push_back(node);
++
++  service_->OnPageOcredForTesting("page1", tree_update);
++
++  EXPECT_EQ("OnPageOcred() bad tree update from Screen AI.",
++            bad_message_observer.WaitForBadMessage());
++}
++
+ IN_PROC_BROWSER_TEST_F(AXMediaAppUntrustedServiceTest,
+                        PageMetadataUpdatedWithDeleteAndUndoDelete) {
+   service_->DisableStatusNodesForTesting();
+diff --git a/chrome/browser/accessibility/media_app/test/test_ax_media_app_untrusted_service.h b/chrome/browser/accessibility/media_app/test/test_ax_media_app_untrusted_service.h
+index b74b86ee4fee95ceceeaf02a4939c7a3612df2d5..f03a5f75f5c896a6577e318712c9d00e59a02821 100644
+--- a/chrome/browser/accessibility/media_app/test/test_ax_media_app_untrusted_service.h
++++ b/chrome/browser/accessibility/media_app/test/test_ax_media_app_untrusted_service.h
+@@ -100,6 +100,11 @@ class TestAXMediaAppUntrustedService : public AXMediaAppUntrustedService {
+   void PushDirtyPageForTesting(const std::string& dirty_page_id);
+   std::string PopDirtyPageForTesting();
+ 
++  void OnPageOcredForTesting(const std::string& dirty_page_id,
++                             const ui::AXTreeUpdate& tree_update) {
++    OnPageOcred(dirty_page_id, tree_update);
++  }
++
+  protected:
+   void OcrNextDirtyPageIfAny() override;
+ 
+diff --git a/content/browser/accessibility/render_accessibility_host.cc b/content/browser/accessibility/render_accessibility_host.cc
+index 8b88ab151138cbbd18165b349ed6af7dab0d6749..84305ec9ceaa721cd026aeacb5867a762c585bd7 100644
+--- a/content/browser/accessibility/render_accessibility_host.cc
++++ b/content/browser/accessibility/render_accessibility_host.cc
+@@ -13,6 +13,8 @@
+ #include "content/browser/renderer_host/render_frame_host_impl.h"
+ #include "content/public/browser/browser_thread.h"
+ #include "mojo/public/cpp/bindings/message.h"
++#include "ui/accessibility/ax_location_and_scroll_updates.h"
++#include "ui/accessibility/ax_updates_and_events.h"
+ 
+ namespace content {
+ namespace {
+@@ -70,6 +72,12 @@ void RenderAccessibilityHost::HandleAXEvents(
+     }
+     return;
+   }
++  if (!updates_and_events.HasValidAXNodeIDsFromRenderer() ||
++      !location_and_scroll_updates.HasValidAXNodeIDsFromRenderer()) {
++    mojo::ReportBadMessage("Invalid AXNodeID from renderer.");
++    std::move(callback).Run();
++    return;
++  }
+   // Post the HandleAXEvents task onto the UI thread, and then when that
+   // finishes, post back the response callback onto this runner (to satisfy
+   // the mojo contract).
+@@ -97,6 +105,10 @@ void RenderAccessibilityHost::HandleAXLocationChanges(
+           std::memory_order_relaxed)) {
+     return;
+   }
++  if (!changes.HasValidAXNodeIDsFromRenderer()) {
++    mojo::ReportBadMessage("Invalid AXNodeID from renderer.");
++    return;
++  }
+   GetUIThreadTaskRunner({})->PostTask(
+       FROM_HERE,
+       base::BindOnce(&RenderFrameHostImpl::HandleAXLocationChanges,
+diff --git a/content/browser/accessibility/render_accessibility_host_unittest.cc b/content/browser/accessibility/render_accessibility_host_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..91dbbc15a07394a1da2d961e4a11da6900014098
+--- /dev/null
++++ b/content/browser/accessibility/render_accessibility_host_unittest.cc
+@@ -0,0 +1,137 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "content/browser/accessibility/render_accessibility_host.h"
++
++#include <memory>
++
++#include "base/functional/callback_helpers.h"
++#include "base/run_loop.h"
++#include "content/public/test/browser_task_environment.h"
++#include "mojo/public/cpp/bindings/remote.h"
++#include "mojo/public/cpp/test_support/test_utils.h"
++#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/blink/public/mojom/render_accessibility.mojom.h"
++#include "ui/accessibility/ax_location_and_scroll_updates.h"
++#include "ui/accessibility/ax_node_id_forward.h"
++#include "ui/accessibility/ax_updates_and_events.h"
++
++namespace content {
++
++class RenderAccessibilityHostTest : public testing::Test {
++ public:
++  RenderAccessibilityHostTest() = default;
++
++ protected:
++  BrowserTaskEnvironment task_environment_;
++};
++
++TEST_F(RenderAccessibilityHostTest, HandleAXEvents_ValidIds) {
++  mojo::Remote<blink::mojom::RenderAccessibilityHost> remote;
++  RenderAccessibilityHost host(nullptr, ui::AXTreeID::CreateNewAXTreeID());
++  host.Bind(remote.BindNewPipeAndPassReceiver());
++
++  mojo::test::BadMessageObserver bad_message_observer;
++  ui::AXUpdatesAndEvents updates_and_events;
++  ui::AXTreeUpdate update;
++  update.root_id = 1;
++  updates_and_events.updates.push_back(update);
++  ui::AXLocationAndScrollUpdates location_and_scroll_updates;
++
++  base::RunLoop run_loop;
++  remote->HandleAXEvents(updates_and_events, location_and_scroll_updates, 0,
++                         run_loop.QuitClosure());
++  run_loop.Run();
++
++  EXPECT_FALSE(bad_message_observer.got_bad_message());
++}
++
++TEST_F(RenderAccessibilityHostTest, HandleAXEvents_InvalidEventId) {
++  mojo::Remote<blink::mojom::RenderAccessibilityHost> remote;
++  RenderAccessibilityHost host(nullptr, ui::AXTreeID::CreateNewAXTreeID());
++  host.Bind(remote.BindNewPipeAndPassReceiver());
++
++  mojo::test::BadMessageObserver bad_message_observer;
++  ui::AXUpdatesAndEvents updates_and_events;
++  ui::AXEvent event;
++  event.id = ui::kFirstGeneratedBrowserNodeID;
++  updates_and_events.events.push_back(event);
++  ui::AXLocationAndScrollUpdates location_and_scroll_updates;
++
++  remote->HandleAXEvents(updates_and_events, location_and_scroll_updates, 0,
++                         base::DoNothing());
++  EXPECT_EQ("Invalid AXNodeID from renderer.",
++            bad_message_observer.WaitForBadMessage());
++}
++
++TEST_F(RenderAccessibilityHostTest, HandleAXEvents_InvalidUpdateId) {
++  mojo::Remote<blink::mojom::RenderAccessibilityHost> remote;
++  RenderAccessibilityHost host(nullptr, ui::AXTreeID::CreateNewAXTreeID());
++  host.Bind(remote.BindNewPipeAndPassReceiver());
++
++  mojo::test::BadMessageObserver bad_message_observer;
++  ui::AXUpdatesAndEvents updates_and_events;
++  ui::AXTreeUpdate update;
++  update.root_id = ui::kFirstGeneratedBrowserNodeID;
++  updates_and_events.updates.push_back(update);
++  ui::AXLocationAndScrollUpdates location_and_scroll_updates;
++
++  remote->HandleAXEvents(updates_and_events, location_and_scroll_updates, 0,
++                         base::DoNothing());
++  EXPECT_EQ("Invalid AXNodeID from renderer.",
++            bad_message_observer.WaitForBadMessage());
++}
++
++TEST_F(RenderAccessibilityHostTest, HandleAXEvents_InvalidLocationChangeId) {
++  mojo::Remote<blink::mojom::RenderAccessibilityHost> remote;
++  RenderAccessibilityHost host(nullptr, ui::AXTreeID::CreateNewAXTreeID());
++  host.Bind(remote.BindNewPipeAndPassReceiver());
++
++  mojo::test::BadMessageObserver bad_message_observer;
++  ui::AXUpdatesAndEvents updates_and_events;
++  ui::AXLocationAndScrollUpdates location_and_scroll_updates;
++  ui::AXLocationChange loc;
++  loc.id = ui::kFirstGeneratedBrowserNodeID;
++  location_and_scroll_updates.location_changes.push_back(loc);
++
++  remote->HandleAXEvents(updates_and_events, location_and_scroll_updates, 0,
++                         base::DoNothing());
++  EXPECT_EQ("Invalid AXNodeID from renderer.",
++            bad_message_observer.WaitForBadMessage());
++}
++
++TEST_F(RenderAccessibilityHostTest, HandleAXLocationChanges_ValidId) {
++  mojo::Remote<blink::mojom::RenderAccessibilityHost> remote;
++  RenderAccessibilityHost host(nullptr, ui::AXTreeID::CreateNewAXTreeID());
++  host.Bind(remote.BindNewPipeAndPassReceiver());
++
++  mojo::test::BadMessageObserver bad_message_observer;
++  ui::AXLocationAndScrollUpdates changes;
++  ui::AXLocationChange loc;
++  loc.id = 1;
++  changes.location_changes.push_back(loc);
++
++  remote->HandleAXLocationChanges(changes, 0);
++  remote.FlushForTesting();
++
++  EXPECT_FALSE(bad_message_observer.got_bad_message());
++}
++
++TEST_F(RenderAccessibilityHostTest, HandleAXLocationChanges_InvalidId) {
++  mojo::Remote<blink::mojom::RenderAccessibilityHost> remote;
++  RenderAccessibilityHost host(nullptr, ui::AXTreeID::CreateNewAXTreeID());
++  host.Bind(remote.BindNewPipeAndPassReceiver());
++
++  mojo::test::BadMessageObserver bad_message_observer;
++  ui::AXLocationAndScrollUpdates changes;
++  ui::AXLocationChange loc;
++  loc.id = ui::kFirstGeneratedBrowserNodeID;
++  changes.location_changes.push_back(loc);
++
++  remote->HandleAXLocationChanges(changes, 0);
++  EXPECT_EQ("Invalid AXNodeID from renderer.",
++            bad_message_observer.WaitForBadMessage());
++}
++
++}  // namespace content
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 963431d57baed64a09d398b96223731f1c5067e7..4982f8eadf0d3f05c9357f8be44606c4164fadac 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -11794,6 +11794,15 @@ void RenderFrameHostImpl::HandleAXEvents(
+     return;
+   }
+ 
++  if (!updates_and_events.HasValidAXNodeIDsFromRenderer() ||
++      !location_and_scroll_updates.HasValidAXNodeIDsFromRenderer()) {
++    if (report_bad_message_callback) {
++      std::move(report_bad_message_callback)
++          .Run("Invalid AXNodeID from renderer.");
++    }
++    return;
++  }
++
+   // Don't process this IPC if either we're waiting on a reset and this IPC
+   // doesn't have the matching token ID.
+   // The token prevents obsolete data from being processed.
+@@ -11930,6 +11939,14 @@ void RenderFrameHostImpl::HandleAXLocationChanges(
+     return;
+   }
+ 
++  if (!changes.HasValidAXNodeIDsFromRenderer()) {
++    if (report_bad_message_callback) {
++      std::move(report_bad_message_callback)
++          .Run("Invalid AXNodeID from renderer.");
++    }
++    return;
++  }
++
+   if (*accessibility_reset_token_ != reset_token &&
+       reset_token != kAccessibilityResetTokenForTesting) {
+     DVLOG(1) << "Ignoring obsolete accessibility data.";
+diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
+index cf0efce5f28802511b89a34c254913c63f0a72e8..ea541adc5d7a873edbafb09084bfedc2897c3564 100644
+--- a/content/test/BUILD.gn
++++ b/content/test/BUILD.gn
+@@ -2543,6 +2543,7 @@ test("content_unittests") {
+     "../browser/accessibility/browser_accessibility_state_impl_unittest.cc",
+     "../browser/accessibility/browser_accessibility_unittest.cc",
+     "../browser/accessibility/one_shot_accessibility_tree_search_unittest.cc",
++    "../browser/accessibility/render_accessibility_host_unittest.cc",
+     "../browser/accessibility/scoped_mode_collection_unittest.cc",
+     "../browser/agent_cluster_key_unittest.cc",
+     "../browser/aggregation_service/aggregatable_report_assembler_unittest.cc",
+diff --git a/ui/accessibility/ax_location_and_scroll_updates.cc b/ui/accessibility/ax_location_and_scroll_updates.cc
+index 207ec0213b2ac36c78dc2987b32c1a71eed6a450..9a23d4bee240e2c553b6d35ffdf69c5b6e4fa4af 100644
+--- a/ui/accessibility/ax_location_and_scroll_updates.cc
++++ b/ui/accessibility/ax_location_and_scroll_updates.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "ui/accessibility/ax_location_and_scroll_updates.h"
+ 
++#include "ui/accessibility/ax_node_id_forward.h"
+ #include "ui/accessibility/ax_relative_bounds.h"
+ 
+ namespace ui {
+@@ -28,4 +29,18 @@ AXLocationAndScrollUpdates& AXLocationAndScrollUpdates::operator=(
+     AXLocationAndScrollUpdates&& other) = default;
+ AXLocationAndScrollUpdates::~AXLocationAndScrollUpdates() = default;
+ 
++bool AXLocationAndScrollUpdates::HasValidAXNodeIDsFromRenderer() const {
++  for (const AXLocationChange& change : location_changes) {
++    if (!IsValidAXNodeIDFromRenderer(change.id)) {
++      return false;
++    }
++  }
++  for (const AXScrollChange& change : scroll_changes) {
++    if (!IsValidAXNodeIDFromRenderer(change.id)) {
++      return false;
++    }
++  }
++  return true;
++}
++
+ }  // namespace ui
+diff --git a/ui/accessibility/ax_location_and_scroll_updates.h b/ui/accessibility/ax_location_and_scroll_updates.h
+index 0603f8bac38142ba8d431a5ec30d55e82b87893a..ddbe135f88ef2c6fa3cbdecba007d4f66bf43713 100644
+--- a/ui/accessibility/ax_location_and_scroll_updates.h
++++ b/ui/accessibility/ax_location_and_scroll_updates.h
+@@ -58,6 +58,9 @@ struct AX_BASE_EXPORT AXLocationAndScrollUpdates {
+ 
+   ~AXLocationAndScrollUpdates();
+ 
++  // Returns true if all node IDs are valid from an untrusted renderer.
++  bool HasValidAXNodeIDsFromRenderer() const;
++
+   std::vector<AXLocationChange> location_changes;
+   std::vector<AXScrollChange> scroll_changes;
+ };
+diff --git a/ui/accessibility/ax_node_data.cc b/ui/accessibility/ax_node_data.cc
+index f2d7ee325cd760c7e2d0f283cf178d17befc6871..fe131a44d8d16c6048b01216e43431d55ebf55b0 100644
+--- a/ui/accessibility/ax_node_data.cc
++++ b/ui/accessibility/ax_node_data.cc
+@@ -887,6 +887,18 @@ bool AXNodeData::SupportsExpandCollapse() const {
+   return ui::SupportsExpandCollapse(role);
+ }
+ 
++bool AXNodeData::HasValidAXNodeIDsFromRenderer() const {
++  if (!IsValidAXNodeIDFromRenderer(id)) {
++    return false;
++  }
++  for (AXNodeID child_id : child_ids) {
++    if (!IsValidAXNodeIDFromRenderer(child_id)) {
++      return false;
++    }
++  }
++  return true;
++}
++
+ // TODO(accessibility) Consider reusing code from AXTreeFormatterBlink, where
+ // the |verbose| parameter alters the property filter. Would remove ~800 lines.
+ std::string AXNodeData::ToString(bool verbose) const {
+diff --git a/ui/accessibility/ax_node_data.h b/ui/accessibility/ax_node_data.h
+index dec2f868ea8d76dcb522e64e95a4c5255c27c9b9..ed93219a86e5fdbd4931ecee4559da3dc226b403 100644
+--- a/ui/accessibility/ax_node_data.h
++++ b/ui/accessibility/ax_node_data.h
+@@ -397,6 +397,9 @@ struct AX_BASE_EXPORT AXNodeData final {
+   bool HasChildTreeID() const;
+   std::optional<AXTreeID> GetChildTreeID() const;
+ 
++  // Returns true if all node IDs are valid from an untrusted renderer.
++  bool HasValidAXNodeIDsFromRenderer() const;
++
+   // Return a string representation of this data, for debugging.
+   std::string ToString(bool verbose = true) const;
+ 
+diff --git a/ui/accessibility/ax_node_data_unittest.cc b/ui/accessibility/ax_node_data_unittest.cc
+index fb3b9cfd0fe5767fa2ab8d98bd414e82ecd3aaea..b03c5a7dd55498d3a2cf326c13b7364c1a1e980e 100644
+--- a/ui/accessibility/ax_node_data_unittest.cc
++++ b/ui/accessibility/ax_node_data_unittest.cc
+@@ -10,7 +10,9 @@
+ #include <utility>
+ 
+ #include "base/test/gtest_util.h"
++#include "base/test/scoped_feature_list.h"
+ #include "testing/gtest/include/gtest/gtest.h"
++#include "ui/accessibility/accessibility_features.h"
+ #include "ui/accessibility/ax_enum_util.h"
+ #include "ui/accessibility/ax_enums.mojom.h"
+ #include "ui/accessibility/ax_role_properties.h"
+@@ -474,4 +476,42 @@ TEST(AXNodeDataTest, BitFieldsConfidenceCheck) {
+             sizeof(AXNodeData::actions) * 8);
+ }
+ 
++TEST(AXNodeDataTest, IsValidAXNodeDataFromRenderer) {
++  // Test IsValidAXNodeIDFromRenderer directly.
++  EXPECT_TRUE(IsValidAXNodeIDFromRenderer(1));
++  EXPECT_TRUE(IsValidAXNodeIDFromRenderer(42));
++  EXPECT_TRUE(IsValidAXNodeIDFromRenderer(kInvalidAXNodeID));
++  EXPECT_TRUE(IsValidAXNodeIDFromRenderer(kFirstGeneratedRendererNodeID));
++  EXPECT_TRUE(IsValidAXNodeIDFromRenderer(kFirstGeneratedRendererNodeID - 1));
++  EXPECT_TRUE(IsValidAXNodeIDFromRenderer(kLastGeneratedRendererNodeID));
++
++  EXPECT_FALSE(IsValidAXNodeIDFromRenderer(kFirstGeneratedBrowserNodeID));
++  EXPECT_FALSE(IsValidAXNodeIDFromRenderer(-100));
++  EXPECT_FALSE(IsValidAXNodeIDFromRenderer(kLastGeneratedBrowserNodeID));
++  EXPECT_FALSE(IsValidAXNodeIDFromRenderer(kInitialEmptyDocumentRootNodeID));
++
++  // Test AXNodeData.HasValidAXNodeIDsFromRenderer.
++  AXNodeData valid_node;
++  valid_node.id = 1;
++  valid_node.child_ids = {2, 3, kFirstGeneratedRendererNodeID};
++  EXPECT_TRUE(valid_node.HasValidAXNodeIDsFromRenderer());
++
++  AXNodeData invalid_node_id;
++  invalid_node_id.id = kFirstGeneratedBrowserNodeID;
++  EXPECT_FALSE(invalid_node_id.HasValidAXNodeIDsFromRenderer());
++
++  AXNodeData invalid_child_id;
++  invalid_child_id.id = 1;
++  invalid_child_id.child_ids = {2, kInitialEmptyDocumentRootNodeID};
++  EXPECT_FALSE(invalid_child_id.HasValidAXNodeIDsFromRenderer());
++
++  // When feature flag is disabled, all IDs are accepted.
++  base::test::ScopedFeatureList scoped_feature_list;
++  scoped_feature_list.InitAndDisableFeature(
++      ::features::kAccessibilityCheckAXNodeIDs);
++  EXPECT_TRUE(IsValidAXNodeIDFromRenderer(kFirstGeneratedBrowserNodeID));
++  EXPECT_TRUE(invalid_node_id.HasValidAXNodeIDsFromRenderer());
++  EXPECT_TRUE(invalid_child_id.HasValidAXNodeIDsFromRenderer());
++}
++
+ }  // namespace ui
+diff --git a/ui/accessibility/ax_tree_update.cc b/ui/accessibility/ax_tree_update.cc
+index 110fbf6bfbcfded353a6c0666fb3b32eef630269..9e89f0abe2c8d90ac2d78f57bfa070a600b0c277 100644
+--- a/ui/accessibility/ax_tree_update.cc
++++ b/ui/accessibility/ax_tree_update.cc
+@@ -10,6 +10,7 @@
+ #include "base/strings/strcat.h"
+ #include "base/strings/string_number_conversions.h"
+ #include "ui/accessibility/ax_enum_util.h"
++#include "ui/accessibility/ax_node_id_forward.h"
+ #include "ui/accessibility/ax_tree_checks.h"
+ #include "ui/accessibility/ax_tree_data.h"
+ 
+@@ -97,4 +98,19 @@ void AXTreeUpdate::AccumulateSize(
+   }
+ }
+ 
++bool AXTreeUpdate::HasValidAXNodeIDsFromRenderer() const {
++  if (!IsValidAXNodeIDFromRenderer(node_id_to_clear)) {
++    return false;
++  }
++  if (!IsValidAXNodeIDFromRenderer(root_id)) {
++    return false;
++  }
++  for (const AXNodeData& node : nodes) {
++    if (!node.HasValidAXNodeIDsFromRenderer()) {
++      return false;
++    }
++  }
++  return true;
++}
++
+ }  // namespace ui
+diff --git a/ui/accessibility/ax_tree_update.h b/ui/accessibility/ax_tree_update.h
+index 9d99163be6a91175009605256f6d752a9c363ee4..de228ea4213f19bb3e7192607ab1de44aeb28bfb 100644
+--- a/ui/accessibility/ax_tree_update.h
++++ b/ui/accessibility/ax_tree_update.h
+@@ -62,6 +62,9 @@ struct AX_BASE_EXPORT AXTreeUpdate {
+ 
+   void AccumulateSize(AXNodeData::AXNodeDataSize& node_data_size) const;
+ 
++  // Returns true if all node IDs are valid from an untrusted renderer.
++  bool HasValidAXNodeIDsFromRenderer() const;
++
+   // If |has_tree_data| is true, the value of |tree_data| should be used
+   // to update the tree data, otherwise it should be ignored.
+   bool has_tree_data = false;
+diff --git a/ui/accessibility/ax_tree_update_util_unittest.cc b/ui/accessibility/ax_tree_update_util_unittest.cc
+index 340d68932aaa06cda6657971123952ebd5a6c5ab..614d350870d7e19353dc5c25dd8d8814837c6cda 100644
+--- a/ui/accessibility/ax_tree_update_util_unittest.cc
++++ b/ui/accessibility/ax_tree_update_util_unittest.cc
+@@ -5,7 +5,9 @@
+ #include "ui/accessibility/ax_tree_update_util.h"
+ 
+ #include "testing/gtest/include/gtest/gtest.h"
++#include "ui/accessibility/ax_location_and_scroll_updates.h"
+ #include "ui/accessibility/ax_tree_update.h"
++#include "ui/accessibility/ax_updates_and_events.h"
+ 
+ namespace ui {
+ 
+@@ -283,4 +285,74 @@ TEST(AXTreeUpdateUtilTest, MergeAXTreeUpdates_AtLeastTwoMerges) {
+   }
+ }
+ 
++TEST(AXTreeUpdateUtilTest, IsValidAXTreeUpdateFromRenderer) {
++  AXTreeUpdate valid_update;
++  valid_update.root_id = 1;
++  valid_update.node_id_to_clear = kInvalidAXNodeID;
++  AXNodeData node;
++  node.id = 1;
++  node.child_ids = {2};
++  valid_update.nodes.push_back(node);
++  EXPECT_TRUE(valid_update.HasValidAXNodeIDsFromRenderer());
++
++  AXTreeUpdate invalid_root;
++  invalid_root.root_id = kFirstGeneratedBrowserNodeID;
++  EXPECT_FALSE(invalid_root.HasValidAXNodeIDsFromRenderer());
++
++  AXTreeUpdate invalid_clear;
++  invalid_clear.node_id_to_clear = kFirstGeneratedBrowserNodeID;
++  EXPECT_FALSE(invalid_clear.HasValidAXNodeIDsFromRenderer());
++
++  AXTreeUpdate invalid_node;
++  invalid_node.root_id = 1;
++  AXNodeData bad_node;
++  bad_node.id = kFirstGeneratedBrowserNodeID;
++  invalid_node.nodes.push_back(bad_node);
++  EXPECT_FALSE(invalid_node.HasValidAXNodeIDsFromRenderer());
++}
++
++TEST(AXTreeUpdateUtilTest, IsValidAXLocationAndScrollUpdatesFromRenderer) {
++  AXLocationAndScrollUpdates valid_updates;
++  AXLocationChange loc;
++  loc.id = 1;
++  valid_updates.location_changes.push_back(loc);
++  AXScrollChange scroll(2, 0, 0);
++  valid_updates.scroll_changes.push_back(scroll);
++  EXPECT_TRUE(valid_updates.HasValidAXNodeIDsFromRenderer());
++
++  AXLocationAndScrollUpdates invalid_loc;
++  AXLocationChange bad_loc;
++  bad_loc.id = kFirstGeneratedBrowserNodeID;
++  invalid_loc.location_changes.push_back(bad_loc);
++  EXPECT_FALSE(invalid_loc.HasValidAXNodeIDsFromRenderer());
++
++  AXLocationAndScrollUpdates invalid_scroll;
++  AXScrollChange bad_scroll(kFirstGeneratedBrowserNodeID, 0, 0);
++  invalid_scroll.scroll_changes.push_back(bad_scroll);
++  EXPECT_FALSE(invalid_scroll.HasValidAXNodeIDsFromRenderer());
++}
++
++TEST(AXTreeUpdateUtilTest, IsValidAXUpdatesAndEventsFromRenderer) {
++  AXUpdatesAndEvents valid;
++  AXTreeUpdate update;
++  update.root_id = 1;
++  valid.updates.push_back(update);
++  AXEvent event;
++  event.id = 1;
++  valid.events.push_back(event);
++  EXPECT_TRUE(valid.HasValidAXNodeIDsFromRenderer());
++
++  AXUpdatesAndEvents invalid_update;
++  AXTreeUpdate bad_update;
++  bad_update.root_id = kFirstGeneratedBrowserNodeID;
++  invalid_update.updates.push_back(bad_update);
++  EXPECT_FALSE(invalid_update.HasValidAXNodeIDsFromRenderer());
++
++  AXUpdatesAndEvents invalid_event;
++  AXEvent bad_event;
++  bad_event.id = kFirstGeneratedBrowserNodeID;
++  invalid_event.events.push_back(bad_event);
++  EXPECT_FALSE(invalid_event.HasValidAXNodeIDsFromRenderer());
++}
++
+ }  // namespace ui
+diff --git a/ui/accessibility/ax_updates_and_events.cc b/ui/accessibility/ax_updates_and_events.cc
+index 95c876b4d823989729c96653b3d4e53163d72ed6..2cd64f21aa82ca193c39b6e79e5fd50642183d70 100644
+--- a/ui/accessibility/ax_updates_and_events.cc
++++ b/ui/accessibility/ax_updates_and_events.cc
+@@ -5,6 +5,7 @@
+ #include "ui/accessibility/ax_updates_and_events.h"
+ 
+ #include "ui/accessibility/ax_event.h"
++#include "ui/accessibility/ax_node_id_forward.h"
+ 
+ namespace ui {
+ 
+@@ -16,4 +17,18 @@ AXUpdatesAndEvents& AXUpdatesAndEvents::operator=(AXUpdatesAndEvents&& other) =
+ 
+ AXUpdatesAndEvents::~AXUpdatesAndEvents() = default;
+ 
++bool AXUpdatesAndEvents::HasValidAXNodeIDsFromRenderer() const {
++  for (const AXTreeUpdate& update : updates) {
++    if (!update.HasValidAXNodeIDsFromRenderer()) {
++      return false;
++    }
++  }
++  for (const AXEvent& event : events) {
++    if (!IsValidAXNodeIDFromRenderer(event.id)) {
++      return false;
++    }
++  }
++  return true;
++}
++
+ }  // namespace ui
+diff --git a/ui/accessibility/ax_updates_and_events.h b/ui/accessibility/ax_updates_and_events.h
+index fe6c028874cb391c1a3651451f0f37a3b3b6af0a..4afdbe2beafef1cfd6f20460bb0fb1e6fdabb3ac 100644
+--- a/ui/accessibility/ax_updates_and_events.h
++++ b/ui/accessibility/ax_updates_and_events.h
+@@ -29,6 +29,9 @@ struct AX_BASE_EXPORT AXUpdatesAndEvents {
+ 
+   ~AXUpdatesAndEvents();
+ 
++  // Returns true if all node IDs are valid from an untrusted renderer.
++  bool HasValidAXNodeIDsFromRenderer() const;
++
+   // The unique ID of the accessibility tree this event bundle applies to.
+   AXTreeID ax_tree_id;
+ 

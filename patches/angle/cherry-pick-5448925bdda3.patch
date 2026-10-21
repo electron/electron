@@ -1,0 +1,224 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Wed, 23 Sep 2026 16:50:18 -0400
+Subject: Vulkan: Use Rectangle instead of Box for ClearPartial
+
+The z/depth information is redundant with layerIndex/Count now.
+
+Bug: chromium:556750158
+Change-Id: Ieb1a759a13e8a9be9b547cd31029777c77567394
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8452363
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Amirali Abdolrashidi <abdolrashidi@google.com>
+
+Electron adaptation notes (44-x-y): vk::LayerIndex does not exist on
+this revision, so UtilsVk::ClearTextureParameters::layer stays a
+uint32_t; gl::OwnerLayer/OwnerLevel are mapped to uint32_t/gl::LevelIndex
+as in the preceding pick.
+
+diff --git a/src/libANGLE/angletypes.h b/src/libANGLE/angletypes.h
+index cec8f6442315f8abd18012dcc3a93f695c5ec0bf..19cea20e1335456f71f82c9342999fecef553d4b 100644
+--- a/src/libANGLE/angletypes.h
++++ b/src/libANGLE/angletypes.h
+@@ -158,6 +158,10 @@ struct RectangleImpl
+     explicit constexpr RectangleImpl(const RectangleImpl<S> rect)
+         : x(rect.x), y(rect.y), width(rect.width), height(rect.height)
+     {}
++    template <typename O, typename E>
++    RectangleImpl(const O &offset, const E &size)
++        : x(offset.x), y(offset.y), width(size.width), height(size.height)
++    {}
+ 
+     T x0() const { return x; }
+     T y0() const { return y; }
+diff --git a/src/libANGLE/renderer/vulkan/ContextVk.cpp b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+index ff8035a4f53536313f959ef1dcb480f1de713372..9e09d65d0638bc90766c3ecdce4d25a6e2392ee8 100644
+--- a/src/libANGLE/renderer/vulkan/ContextVk.cpp
++++ b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+@@ -9186,10 +9186,9 @@ angle::Result ContextVk::finalizeImageWithTileMemory()
+         params.level                           = vk::LevelIndex(0);
+         params.layer                           = 0;
+         params.clearValue                      = {};
+-        params.clearArea                       = gl::Box(0, 0, 0, 0, 0, 1);
++        params.clearArea = gl::Rectangle(0, 0, mImageWithTileMemory->getExtents().width,
++                                         mImageWithTileMemory->getExtents().height);
+         params.aspectFlags                     = mImageWithTileMemory->getAspectFlags();
+-        params.clearArea.width                 = mImageWithTileMemory->getExtents().width;
+-        params.clearArea.height                = mImageWithTileMemory->getExtents().height;
+         ANGLE_TRY(mUtils.clearTextureNoFlush(this, mImageWithTileMemory, params));
+ 
+         // Since this may called from submitCommands, use no submit version to avoid
+diff --git a/src/libANGLE/renderer/vulkan/UtilsVk.h b/src/libANGLE/renderer/vulkan/UtilsVk.h
+index d1d9c10d24bfaee4bba39e97c33e855d532f3256..02d0bbed99918d13f927a99e7875d0b773b58bd3 100644
+--- a/src/libANGLE/renderer/vulkan/UtilsVk.h
++++ b/src/libANGLE/renderer/vulkan/UtilsVk.h
+@@ -115,11 +115,11 @@ class UtilsVk : angle::NonCopyable
+ 
+     struct ClearTextureParameters
+     {
+-        VkImageAspectFlags aspectFlags;
+-        vk::LevelIndex level;
+-        uint32_t layer;
+-        gl::Box clearArea;
+-        VkClearValue clearValue;
++        VkImageAspectFlags aspectFlags = 0;
++        vk::LevelIndex level           = vk::LevelIndex(0);
++        uint32_t layer                 = 0;
++        gl::Rectangle clearArea        = {};
++        VkClearValue clearValue        = {};
+     };
+ 
+     struct BlitResolveParameters
+diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+index 6d8538b69d560e4ee920e65d60124f3d6854378d..6965e165c4d5fb378a6a30a6edfe6628f4bd9f38 100644
+--- a/src/libANGLE/renderer/vulkan/vk_helpers.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+@@ -9534,8 +9534,8 @@ angle::Result ImageHelper::stagePartialClear(ContextVk *contextVk,
+     ASSERT(!is3D || index.getLayerIndex() == clearArea.z);
+     ASSERT(!is3D || index.getLayerCount() == clearArea.depth);
+ 
+-    const uint32_t layerIndex = is3D ? 0 : index.getLayerIndex();
+-    const uint32_t layerCount = is3D ? 1 : index.getLayerCount();
++    const uint32_t layerIndex = index.getLayerIndex();
++    const uint32_t layerCount       = index.getLayerCount();
+ 
+     if (clearMode == ClearTextureMode::FullClear)
+     {
+@@ -9545,9 +9545,11 @@ angle::Result ImageHelper::stagePartialClear(ContextVk *contextVk,
+     }
+     else
+     {
+-        appendSubresourceUpdate(levelIndexGL,
+-                                SubresourceUpdate(aspectFlags, clearValue, levelIndexGL, layerIndex,
+-                                                  layerCount, clearArea));
++        appendSubresourceUpdate(
++            levelIndexGL,
++            SubresourceUpdate(
++                aspectFlags, clearValue, levelIndexGL, layerIndex, layerCount,
++                gl::Rectangle(clearArea.x, clearArea.y, clearArea.width, clearArea.height)));
+     }
+     return angle::Result::Continue;
+ }
+@@ -10458,7 +10460,7 @@ angle::Result ImageHelper::flushStagedUpdatesImpl(ContextVk *contextVk,
+                         UtilsVk::ClearTextureParameters params = {};
+                         params.aspectFlags                     = getAspectFlags();
+                         params.level                           = updateMipLevelVk;
+-                        params.clearArea  = gl::Box(0, 0, 0, mExtents.width, mExtents.height, 1);
++                        params.clearArea  = gl::Rectangle(0, 0, mExtents.width, mExtents.height);
+                         params.clearValue = update.data.clear.value;
+                         params.layer      = updateBaseLayer;
+                         ANGLE_TRY(contextVk->getUtils().clearTexture(contextVk, this, params));
+@@ -10477,14 +10479,13 @@ angle::Result ImageHelper::flushStagedUpdatesImpl(ContextVk *contextVk,
+                 }
+                 case UpdateSource::ClearPartial:
+                 {
+-                    ClearPartialUpdate &clearPartialUpdate = update.data.clearPartial;
+-                    gl::Box clearArea =
+-                        gl::Box(clearPartialUpdate.offset, clearPartialUpdate.extent);
++                    const ClearPartialUpdate &clearPartialUpdate = update.data.clearPartial;
++                    const gl::Rectangle clearArea =
++                        gl::Rectangle(clearPartialUpdate.offset, clearPartialUpdate.extent);
+ 
+                     // clearTexture() uses LOAD_OP_CLEAR in a render pass to clear the texture. If
+                     // the texture has the depth dimension or multiple layers, the clear will be
+-                    // performed layer by layer. In case of the former, the z-dimension will be used
+-                    // as the layer index.
++                    // performed layer by layer.
+                     UtilsVk::ClearTextureParameters params = {};
+                     params.aspectFlags                     = clearPartialUpdate.aspectFlags;
+                     params.level                           = updateMipLevelVk;
+@@ -10995,9 +10996,10 @@ void ImageHelper::pruneSupersededUpdatesForLevelImpl(ContextVk *contextVk,
+         }
+         else if (update.updateSource == UpdateSource::ClearPartial)
+         {
+-            currentUpdateBox =
+-                MakeUpdateBoundingBox(update.data.clearPartial.offset,
+-                                      update.data.clearPartial.extent, layerIndex, layerCount);
++            const ClearPartialUpdate &clearPartial = update.data.clearPartial;
++            const VkOffset3D offset = {clearPartial.offset.x, clearPartial.offset.y, 0};
++            const VkExtent3D extent = {clearPartial.extent.width, clearPartial.extent.height, 1};
++            currentUpdateBox        = MakeUpdateBoundingBox(offset, extent, layerIndex, layerCount);
+         }
+         else
+         {
+@@ -11912,17 +11914,16 @@ ImageHelper::SubresourceUpdate::SubresourceUpdate(const VkImageAspectFlags aspec
+                                                   const gl::LevelIndex levelIndex,
+                                                   const uint32_t layerIndex,
+                                                   const uint32_t layerCount,
+-                                                  const gl::Box &clearArea)
++                                                  const gl::Rectangle &clearArea)
+     : updateSource(UpdateSource::ClearPartial)
+ {
+     data.clearPartial.aspectFlags = aspectFlags;
+     data.clearPartial.levelIndex  = levelIndex.get();
+     data.clearPartial.layerIndex  = layerIndex;
+     data.clearPartial.layerCount  = layerCount;
+-    data.clearPartial.offset      = {clearArea.x, clearArea.y, clearArea.z};
++    data.clearPartial.offset      = {clearArea.x, clearArea.y};
+     data.clearPartial.extent      = {static_cast<uint32_t>(clearArea.width),
+-                                     static_cast<uint32_t>(clearArea.height),
+-                                     static_cast<uint32_t>(clearArea.depth)};
++                                     static_cast<uint32_t>(clearArea.height)};
+     data.clearPartial.clearValue  = clearValue;
+ }
+ 
+@@ -12145,25 +12146,14 @@ void ImageHelper::getDestSubresource(const SubresourceUpdate &update,
+             *layerCountOut = is3D ? getLevelExtents(toVkLevel(levelIndex)).depth : mLayerCount;
+         }
+     }
+-    else if (update.updateSource == UpdateSource::ClearPartial && is3D)
+-    {
+-        *baseLayerOut  = update.data.clearPartial.offset.z;
+-        *layerCountOut = update.data.clearPartial.extent.depth;
+-
+-        if (*layerCountOut == static_cast<uint32_t>(gl::ImageIndex::kEntireLevel))
+-        {
+-            *layerCountOut = getLevelExtents(toVkLevel(levelIndex)).depth;
+-        }
+-    }
+     else if (update.updateSource == UpdateSource::ClearPartial)
+     {
+-        ASSERT(!is3D);
+         *baseLayerOut  = update.data.clearPartial.layerIndex;
+         *layerCountOut = update.data.clearPartial.layerCount;
+ 
+         if (*layerCountOut == static_cast<uint32_t>(gl::ImageIndex::kEntireLevel))
+         {
+-            *layerCountOut = mLayerCount;
++            *layerCountOut = is3D ? getLevelExtents(toVkLevel(levelIndex)).depth : mLayerCount;
+         }
+     }
+     else if (update.updateSource == UpdateSource::Buffer)
+diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.h b/src/libANGLE/renderer/vulkan/vk_helpers.h
+index 59d7ce8fc6235cdbd91920afbff087f738a9fb16..6c414f190091ece38f76d07f2ad6d3c36469a172 100644
+--- a/src/libANGLE/renderer/vulkan/vk_helpers.h
++++ b/src/libANGLE/renderer/vulkan/vk_helpers.h
+@@ -3077,8 +3077,6 @@ class ImageHelper final : public Resource, public angle::Subject
+         // For ClearEmulatedChannelsOnly, mask of which channels to clear.
+         VkColorComponentFlags colorMaskFlags;
+     };
+-    ANGLE_DISABLE_STRUCT_PADDING_WARNINGS
+-    ANGLE_ENABLE_STRUCT_PADDING_WARNINGS
+     struct ClearPartialUpdate
+     {
+         bool operator==(const ClearPartialUpdate &rhs) const
+@@ -3091,8 +3089,8 @@ class ImageHelper final : public Resource, public angle::Subject
+         uint32_t levelIndex;
+         uint32_t layerIndex;
+         uint32_t layerCount;
+-        VkOffset3D offset;
+-        VkExtent3D extent;
++        VkOffset2D offset;
++        VkExtent2D extent;
+     };
+     ANGLE_DISABLE_STRUCT_PADDING_WARNINGS
+     struct BufferUpdate
+@@ -3128,7 +3126,7 @@ class ImageHelper final : public Resource, public angle::Subject
+                           const gl::LevelIndex levelIndex,
+                           const uint32_t layerIndex,
+                           const uint32_t layerCount,
+-                          const gl::Box &clearArea);
++                          const gl::Rectangle &clearArea);
+         SubresourceUpdate(VkImageAspectFlags aspectFlags,
+                           const VkClearValue &clearValue,
+                           gl::LevelIndex level,

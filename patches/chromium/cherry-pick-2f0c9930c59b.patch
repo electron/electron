@@ -1,0 +1,351 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Vladimir Levin <vmpstr@chromium.org>
+Date: Thu, 1 Oct 2026 15:09:57 -0700
+Subject: c-v: Harden display locking + VT interactions
+
+This does 4 things:
+
+- This ensures that we don't access and invalidate containers as we
+  iterate them (by making a copy of the collections and iterating
+  that collection)
+- Calls NotifyPriorityScrollAnchorStatusChanged only if we have a layout
+  object, since it would be a no-op otherwise
+- avoid exposing GetTransitioningElements when we finished the
+  transition
+- avoids exposing pseudos to Performance API as nodes.
+
+All of this ensures that the given test doesn't DCHECK/crash
+
+R=futhark@chromium.org, flackr@chromium.org
+
+Bug: 567612004
+Change-Id: I3345ad5c1dc9cfe6ef4b1b5e7bc2a9b54b6d56ad
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8490475
+Reviewed-by: Robert Flack <flackr@chromium.org>
+Reviewed-by: Rune Lillesveen <futhark@chromium.org>
+Commit-Queue: Vladimir Levin <vmpstr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1709446}
+
+diff --git a/third_party/blink/renderer/core/display_lock/display_lock_context.cc b/third_party/blink/renderer/core/display_lock/display_lock_context.cc
+index 1a02074416a0674f014e0279698dc37306742052..4937b8a62bfb660e6fb9f25d783dc688d4647399 100644
+--- a/third_party/blink/renderer/core/display_lock/display_lock_context.cc
++++ b/third_party/blink/renderer/core/display_lock/display_lock_context.cc
+@@ -282,6 +282,23 @@ void DisplayLockContext::Lock() {
+     MarkForStyleRecalcIfNeeded();
+   }
+ 
++  // We need to notify the AX cache (if it exists) to update |element_|'s
++  // children in the AX cache.
++  if (AXObjectCache* cache = element_->GetDocument().ExistingAXObjectCache()) {
++    cache->ChildrenChanged(element_);
++  }
++
++  // If we have top layer elements in our subtree, we have to detach their
++  // layout objects, since otherwise they would be hoisted out of our subtree.
++  DetachDescendantTopLayerElements();
++
++  // Schedule ContentVisibilityAutoStateChange event if needed.
++  ScheduleStateChangeEventIfNeeded();
++
++  if (!element_->GetLayoutObject()) {
++    return;
++  }
++
+   // TODO(vmpstr): Note when an 'auto' context gets locked, we should clear
+   // the ancestor scroll anchors. This is a workaround for a behavior that
+   // happens when the user quickly scrolls (e.g. scrollbar scrolls) into an
+@@ -300,21 +317,6 @@ void DisplayLockContext::Lock() {
+   // scroll anchor to get out of this behavior.
+   element_->NotifyPriorityScrollAnchorStatusChanged();
+ 
+-  // We need to notify the AX cache (if it exists) to update |element_|'s
+-  // children in the AX cache.
+-  if (AXObjectCache* cache = element_->GetDocument().ExistingAXObjectCache())
+-    cache->ChildrenChanged(element_);
+-
+-  // If we have top layer elements in our subtree, we have to detach their
+-  // layout objects, since otherwise they would be hoisted out of our subtree.
+-  DetachDescendantTopLayerElements();
+-
+-  // Schedule ContentVisibilityAutoStateChange event if needed.
+-  ScheduleStateChangeEventIfNeeded();
+-
+-  if (!element_->GetLayoutObject())
+-    return;
+-
+   // If this element is a scroller, then stash its current scroll offset, so
+   // that we can restore it when needed.
+   // Note that this only applies if the element itself is a scroller. Any
+diff --git a/third_party/blink/renderer/core/display_lock/display_lock_document_state.cc b/third_party/blink/renderer/core/display_lock/display_lock_document_state.cc
+index 3b4d8127d47537dd493d414f3f2eeb79462ad8e9..e131bde7620af986daf4aaee8da29b275556286f 100644
+--- a/third_party/blink/renderer/core/display_lock/display_lock_document_state.cc
++++ b/third_party/blink/renderer/core/display_lock/display_lock_document_state.cc
+@@ -267,8 +267,10 @@ void DisplayLockDocumentState::NotifyViewTransitionPseudoTreeChanged() {
+   // Reset the view transition element flag.
+   // TODO(vmpstr): This should be optimized to keep track of elements that
+   // actually have this flag set.
+-  for (auto context : display_lock_contexts_)
++  HeapVector<Member<DisplayLockContext>> contexts(display_lock_contexts_);
++  for (auto& context : contexts) {
+     context->ResetDescendantIsViewTransitionElement();
++  }
+ 
+   // Process the view transition elements to check if their ancestors are
+   // locks that need to be made relevant.
+@@ -293,8 +295,10 @@ void DisplayLockDocumentState::UpdateViewTransitionElementAncestorLocks() {
+ }
+ 
+ void DisplayLockDocumentState::NotifySelectionRemoved() {
+-  for (auto context : display_lock_contexts_)
++  HeapVector<Member<DisplayLockContext>> contexts(display_lock_contexts_);
++  for (auto& context : contexts) {
+     context->NotifySubtreeLostSelection();
++  }
+ }
+ 
+ void DisplayLockDocumentState::BeginNodeForcedScope(
+@@ -374,7 +378,9 @@ DisplayLockDocumentState::ScopedForceActivatableDisplayLocks::
+     ScopedForceActivatableDisplayLocks(DisplayLockDocumentState* state)
+     : state_(state) {
+   if (++state_->activatable_display_locks_forced_ == 1) {
+-    for (auto context : state_->display_lock_contexts_) {
++    HeapVector<Member<DisplayLockContext>> contexts(
++        state_->display_lock_contexts_);
++    for (auto& context : contexts) {
+       if (context->HasElement()) {
+         context->DidForceActivatableDisplayLocks();
+       } else {
+@@ -419,8 +425,10 @@ void DisplayLockDocumentState::NotifyPrintingOrPreviewChanged() {
+   if (printing_ == was_printing)
+     return;
+ 
+-  for (auto& context : display_lock_contexts_)
++  HeapVector<Member<DisplayLockContext>> contexts(display_lock_contexts_);
++  for (auto& context : contexts) {
+     context->SetShouldUnlockAutoForPrint(printing_);
++  }
+ }
+ 
+ void DisplayLockDocumentState::IssueForcedRenderWarning(Element* element) {
+diff --git a/third_party/blink/renderer/core/timing/performance.cc b/third_party/blink/renderer/core/timing/performance.cc
+index a6040f83e19267bf805c47c357c6c9ed4661392b..e1f590ee16b5dcf3939e8289d0196369dcf1f627 100644
+--- a/third_party/blink/renderer/core/timing/performance.cc
++++ b/third_party/blink/renderer/core/timing/performance.cc
+@@ -1348,8 +1348,10 @@ DOMHighResTimeStamp Performance::now() const {
+ 
+ // static
+ bool Performance::CanExposeNode(Node* node) {
+-  if (!node || !node->isConnected() || node->IsInShadowTree())
++  if (!node || !node->isConnected() || node->IsInShadowTree() ||
++      node->IsPseudoElement()) {
+     return false;
++  }
+ 
+   // Do not expose |node| when the document is not 'fully active'.
+   const Document& document = node->GetDocument();
+diff --git a/third_party/blink/renderer/core/view_transition/view_transition_style_tracker.cc b/third_party/blink/renderer/core/view_transition/view_transition_style_tracker.cc
+index 3b079864d7764651c34c5e616ba0a2cb33f8cbee..e2097be418aae8804b5c4aff506d3f4c634be60e 100644
+--- a/third_party/blink/renderer/core/view_transition/view_transition_style_tracker.cc
++++ b/third_party/blink/renderer/core/view_transition/view_transition_style_tracker.cc
+@@ -1167,8 +1167,10 @@ void ViewTransitionStyleTracker::CaptureResolved() {
+ 
+ VectorOf<Element> ViewTransitionStyleTracker::GetTransitioningElements() const {
+   // In stable states, we don't have transitioning elements.
+-  if (state_ == State::kIdle || state_ == State::kCaptured)
++  if (state_ == State::kIdle || state_ == State::kCaptured ||
++      state_ == State::kFinished) {
+     return {};
++  }
+ 
+   VectorOf<Element> result;
+   for (auto& entry : element_data_map_) {
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-view-transitions/content-visibility-auto-ancestor-skipped-after-finish.html b/third_party/blink/web_tests/external/wpt/css/css-view-transitions/content-visibility-auto-ancestor-skipped-after-finish.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..0bcd5ae3c1eec1fbb4987b7118407c014358b3ab
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-view-transitions/content-visibility-auto-ancestor-skipped-after-finish.html
+@@ -0,0 +1,61 @@
++<!DOCTYPE html>
++<title>View transitions: content-visibility:auto ancestor of a participant skips its contents again after the transition finishes</title>
++<link rel="help" href="https://drafts.csswg.org/css-view-transitions-1/">
++<link rel="help" href="https://drafts.csswg.org/css-contain-2/#relevant-to-the-user">
++<link rel="author" href="mailto:vmpstr@chromium.org">
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++<style>
++#container { content-visibility: auto; }
++#participant { width: 100px; height: 100px; view-transition-name: participant; }
++::view-transition-group(*) { animation-duration: 0s; }
++</style>
++<script>
++// Track #container's skipped state from the start. This listener is registered
++// (in the capture phase on the document) before #container is parsed, so that
++// no contentvisibilityautostatechange event can be missed.
++let lastSkipped;
++let pendingWait = null;
++document.addEventListener("contentvisibilityautostatechange", e => {
++  if (e.target.id !== "container")
++    return;
++  lastSkipped = e.skipped;
++  if (pendingWait && pendingWait.skipped === e.skipped) {
++    pendingWait.resolve();
++    pendingWait = null;
++  }
++}, { capture: true });
++
++// Resolves once the most recent contentvisibilityautostatechange event for
++// #container reported the given `skipped` value. Events with other values are
++// ignored, since the order of intermediate states is not guaranteed. For
++// example, the element may first report skipped=true before its first
++// viewport intersection has been determined.
++function waitForSkipped(skipped) {
++  if (lastSkipped === skipped)
++    return Promise.resolve();
++  return new Promise(resolve => { pendingWait = { skipped, resolve }; });
++}
++</script>
++<div id="spacer"></div>
++<div id="container"><div id="participant"></div></div>
++<script>
++promise_test(async () => {
++  assert_implements(document.startViewTransition, "Missing document.startViewTransition");
++  await waitForSkipped(false);
++  assert_true(participant.checkVisibility({ contentVisibilityAuto: true }),
++              "onscreen and not skipped before the transition");
++
++  // Move #container offscreen in the update callback. It stays relevant while
++  // #participant is captured in the transition.
++  const transition = document.startViewTransition(() => {
++    spacer.style.height = "3000px";
++  });
++  await transition.finished;
++
++  // #container is offscreen and no longer has a captured descendant.
++  await waitForSkipped(true);
++  assert_false(participant.checkVisibility({ contentVisibilityAuto: true }),
++               "skipped after the transition");
++}, "content-visibility:auto ancestor is skipped again once the transition finishes");
++</script>
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-view-transitions/content-visibility-auto-relock-crash.html b/third_party/blink/web_tests/external/wpt/css/css-view-transitions/content-visibility-auto-relock-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..4b5772ba790e060abfde28cff8e640382486d3e7
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-view-transitions/content-visibility-auto-relock-crash.html
+@@ -0,0 +1,63 @@
++<!DOCTYPE html>
++<html class="test-wait">
++<title>View transitions: relocking content-visibility:auto during transition end does not crash</title>
++<style>
++#box { width: 600px; height: 40px }
++#box::before { content: "B"; display: block; width: 200px; height: 20px }
++#box.shift::before { margin-left: 300px }
++#lock { content-visibility: auto; position: absolute; top: 200px; width: 50px; height: 20px }
++#lock div { width: 10px; height: 10px; view-transition-name: a }
++#pool.cv div { content-visibility: auto }
++::view-transition { display: none }
++</style>
++<div id="host">
++  <div id="box"></div>
++  <div id="lock"><div></div></div>
++</div>
++<div id="pool"></div>
++<input id="input" list="x0">
++<datalist id="x0"><option value="a" id="opt" disabled></datalist>
++<script>
++const frame = () => new Promise(r => requestAnimationFrame(r));
++let pseudo;
++new PerformanceObserver(l => {
++  for (const e of l.getEntries()) {
++    for (const s of e.sources) {
++      if (s.node && s.node !== box && s.node.parentNode === box)
++        pseudo = s.node;
++    }
++  }
++}).observe({ type: 'layout-shift' });
++
++onload = async () => {
++  const root = host.attachShadow({ mode: 'open' });
++  root.innerHTML = '<slot></slot><svg></svg>';
++  root.lastChild.appendChild(document.createElement('slot')).name = 'v';
++  pool.innerHTML = '<div></div>'.repeat(16);
++
++  for (let i = 0; i < 6 && !pseudo; i++) {
++    await frame();
++    box.classList.toggle('shift');
++  }
++
++  await document.startViewTransition(() => { lock.style.top = '9000px'; }).finished;
++  await frame();
++
++  lock.slot = 'v';
++  if (pseudo)
++    Element.prototype.setAttribute.call(pseudo, 'id', 'x0');
++  input.focus();
++  await frame();
++
++  opt.disabled = false;
++  pool.className = 'cv';
++  box.slot = 'none';
++  const skipped = document.startViewTransition();
++  // The transition is skipped right away, so `ready` rejects; that's expected.
++  skipped.ready.catch(() => {});
++  skipped.skipTransition();
++
++  document.documentElement.classList.remove('test-wait');
++};
++</script>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/layout-instability/sources-pseudo-element.html b/third_party/blink/web_tests/external/wpt/layout-instability/sources-pseudo-element.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..a3a016ab17f0dc13ec9c542c2991c50c48dc1315
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/layout-instability/sources-pseudo-element.html
+@@ -0,0 +1,48 @@
++<!DOCTYPE html>
++<title>Layout Instability: a shifted pseudo-element is not exposed as a source node</title>
++<link rel="help" href="https://wicg.github.io/layout-instability/#sec-layout-shift-attribution" />
++<style>
++
++body { margin: 10px; }
++#target { width: 300px; height: 100px; }
++#target::before {
++  content: "";
++  display: block;
++  position: relative;
++  width: 300px;
++  height: 100px;
++  background: blue;
++}
++#target.shift::before { top: 60px; }
++
++</style>
++<div id="target"></div>
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++<script src="resources/util.js"></script>
++<script>
++
++const strrect = r => `${r.x},${r.y} ${r.width}x${r.height}`;
++
++promise_test(async () => {
++  const watcher = new ScoreWatcher;
++  const target = document.querySelector("#target");
++
++  // Wait for the initial render to complete.
++  await waitForAnimationFrames(2);
++
++  // Shift only the ::before box; #target itself does not move.
++  target.classList.add("shift");
++  await watcher.promise;
++
++  const sources = watcher.lastEntry.sources;
++  assert_equals(sources.length, 1);
++
++  const source = sources[0];
++  // Pseudo-elements are not DOM nodes, so they are not exposed.
++  assert_equals(source.node, null);
++  assert_equals(strrect(source.previousRect), "10,10 300x100");
++  assert_equals(strrect(source.currentRect), "10,70 300x100");
++}, "A shifted pseudo-element is reported with a null source node.");
++
++</script>

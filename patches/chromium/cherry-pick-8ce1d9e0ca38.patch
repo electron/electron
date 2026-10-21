@@ -1,0 +1,499 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tiago Vignatti <vignatti@google.com>
+Date: Tue, 20 Oct 2026 15:55:29 -0300
+Subject: [M150-LTS] Don't rebuild date-time edit fields when layout parameters
+ are unchanged.
+
+M150-LTS conflicts:
+- third_party/blink/renderer/core/html/forms/date_time_edit_element.cc:
+  Resolved conflicts in DateTimeEditBuilder::VisitField() where M150
+  uses DateTimeFormat::kFieldType* rather than FieldType::kFieldType*
+  (renamed in https://crrev.com/c/8474771).
+
+Original change's description:
+> Don't rebuild date-time edit fields when layout parameters are unchanged.
+>
+> The primary change here is changing DateTimeEditElement::GetLayout to
+> return early if the layout parameters are unchanged.  However, this
+> change has a number of prerequisites that are also included here:
+>
+> * Adds default comparison operators to make it possible to compare
+>   LayoutParameters objects.
+>
+> * Moves the needs-millisecond-field information into the
+>   LayoutParameters.
+>
+> * Recompute style when changing values (in cases where, previously,
+>   elements were reconstructed, plus SetValueAsDateTimeFieldsState which
+>   was likely buggy) so that GetCustomStyleForLayoutObject will rerun
+>   when the value changes, since it depends on the value (e.g., setting a
+>   different width for 5-digit years).
+>
+> * Clear cached type-ahead buffers when changing the values (which
+>   reconstructing the elements previously did, except in the
+>   SetValueAsDateTimeFieldsState case).
+>
+> Fixed: 565838017
+> Change-Id: Ic248053b6731c83db92ba99e110a652acfb1ace0
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8464610
+> Reviewed-by: Kent Tamura <tkent@chromium.org>
+> Commit-Queue: David Baron <dbaron@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1707763}
+
+(cherry picked from commit 0e25d492d813c083e39834cd47a7a39e7f253a71)
+
+Fixed: 565838017
+Change-Id: Ic248053b6731c83db92ba99e110a652acfb1ace0
+
+Electron adaptation notes (44-x-y): Element::SetFocused() on this branch
+takes (bool, mojom::blink::FocusType) with no BlurEventBehavior
+parameter, so the new DateTimeSymbolicFieldElement::SetFocused()
+override (which resets the type-ahead session on blur) uses that
+two-argument signature.
+
+diff --git a/third_party/blink/renderer/core/html/forms/date_input_type.cc b/third_party/blink/renderer/core/html/forms/date_input_type.cc
+index 032e86f8e3c337de0643dc78ed918e3f6ea711cc..23a69e167bad1e371cc2968e5da1823f3379ee6b 100644
+--- a/third_party/blink/renderer/core/html/forms/date_input_type.cc
++++ b/third_party/blink/renderer/core/html/forms/date_input_type.cc
+@@ -107,7 +107,7 @@ String DateInputType::FormatDateTimeFieldsState(
+ void DateInputType::SetupLayoutParameters(
+     DateTimeEditElement::LayoutParameters& layout_parameters,
+     const DateComponents& date) const {
+-  layout_parameters.date_time_format = layout_parameters.locale.DateFormat();
++  layout_parameters.date_time_format = layout_parameters.locale->DateFormat();
+   layout_parameters.fallback_date_time_format = "yyyy-MM-dd";
+   if (!ParseToDateComponents(
+           GetElement().FastGetAttribute(html_names::kMinAttr),
+diff --git a/third_party/blink/renderer/core/html/forms/date_time_edit_element.cc b/third_party/blink/renderer/core/html/forms/date_time_edit_element.cc
+index 6be5915295766d1c5d438d0f02f9b9f9aa95338e..35b70ab42c7a58fb9cf9617c6ca2568005d1eabb 100644
+--- a/third_party/blink/renderer/core/html/forms/date_time_edit_element.cc
++++ b/third_party/blink/renderer/core/html/forms/date_time_edit_element.cc
+@@ -150,11 +150,7 @@ bool DateTimeEditBuilder::Build(const String& format_string) {
+ }
+ 
+ bool DateTimeEditBuilder::NeedMillisecondField() const {
+-  static constexpr int kMillisecondsPerSecond =
+-      static_cast<int>(base::Time::kMillisecondsPerSecond);
+-  return date_value_.Millisecond() ||
+-         !GetStepRange().Minimum().Remainder(kMillisecondsPerSecond).IsZero() ||
+-         !GetStepRange().Step().Remainder(kMillisecondsPerSecond).IsZero();
++  return parameters_.need_millisecond_field;
+ }
+ 
+ void DateTimeEditBuilder::VisitField(DateTimeFormat::FieldType field_type,
+@@ -241,16 +237,16 @@ void DateTimeEditBuilder::VisitField(DateTimeFormat::FieldType field_type,
+           field = MakeGarbageCollected<DateTimeSymbolicMonthFieldElement>(
+               document, EditElement(),
+               field_type == DateTimeFormat::kFieldTypeMonth
+-                  ? parameters_.locale.ShortMonthLabels()
+-                  : parameters_.locale.ShortStandAloneMonthLabels(),
++                  ? parameters_.locale->ShortMonthLabels()
++                  : parameters_.locale->ShortStandAloneMonthLabels(),
+               min_month, max_month);
+           break;
+         case kCountForFullMonth:
+           field = MakeGarbageCollected<DateTimeSymbolicMonthFieldElement>(
+               document, EditElement(),
+               field_type == DateTimeFormat::kFieldTypeMonth
+-                  ? parameters_.locale.MonthLabels()
+-                  : parameters_.locale.StandAloneMonthLabels(),
++                  ? parameters_.locale->MonthLabels()
++                  : parameters_.locale->StandAloneMonthLabels(),
+               min_month, max_month);
+           break;
+         default:
+@@ -271,7 +267,7 @@ void DateTimeEditBuilder::VisitField(DateTimeFormat::FieldType field_type,
+     case DateTimeFormat::kFieldTypePeriodFlexible: {
+       DateTimeFieldElement* field =
+           MakeGarbageCollected<DateTimeAMPMFieldElement>(
+-              document, EditElement(), parameters_.locale.TimeAmPmLabels());
++              document, EditElement(), parameters_.locale->TimeAmPmLabels());
+       EditElement().AddField(field);
+       return;
+     }
+@@ -285,7 +281,7 @@ void DateTimeEditBuilder::VisitField(DateTimeFormat::FieldType field_type,
+       EditElement().AddField(field);
+ 
+       if (NeedMillisecondField()) {
+-        VisitLiteral(parameters_.locale.LocalizedDecimalSeparator());
++        VisitLiteral(parameters_.locale->LocalizedDecimalSeparator());
+         VisitField(DateTimeFormat::kFieldTypeFractionalSecond, 3);
+       }
+       return;
+@@ -449,7 +445,7 @@ void DateTimeEditBuilder::VisitLiteral(const String& text) {
+   element->SetShadowPseudoId(text_pseudo_id);
+   element->SetInlineStyleProperty(CSSPropertyID::kUnicodeBidi,
+                                   CSSValueID::kNormal);
+-  if (parameters_.locale.IsRtl() && text.length()) {
++  if (parameters_.locale->IsRtl() && text.length()) {
+     unicode::CharDirection dir = unicode::Direction(text[0]);
+     if (dir == unicode::kSegmentSeparator ||
+         dir == unicode::kWhiteSpaceNeutral || dir == unicode::kOtherNeutral) {
+@@ -722,6 +718,16 @@ bool DateTimeEditElement::IsReadOnly() const {
+ 
+ void DateTimeEditElement::GetLayout(const LayoutParameters& layout_parameters,
+                                     const DateComponents& date_value) {
++  // Don't rebuild the layout if the parameters are unchanged.  This is not
++  // just an optimization since it prevents us from trying to do things to
++  // nodes at times when that is inappropriate, such as within
++  // SetIsInCanvasSubtree().
++  if (layout_parameters == current_layout_parameters_) {
++    CHECK(HasChildren());
++    return;
++  }
++  current_layout_parameters_.emplace(layout_parameters);
++
+   // TODO(tkent): We assume this function never dispatches events. However this
+   // can dispatch 'blur' event in Node::removeChild().
+ 
+@@ -810,22 +816,40 @@ void DateTimeEditElement::SetValueAsDate(
+     const LayoutParameters& layout_parameters,
+     const DateComponents& date) {
+   GetLayout(layout_parameters, date);
+-  for (const auto& field : fields_)
++  for (const auto& field : fields_) {
++    field->ResetTypeAhead();
+     field->SetValueAsDate(date);
++  }
++  // Make CustomStyleForLayoutObject rerun, since it depends on the value.
++  SetNeedsStyleRecalc(
++      kSubtreeStyleChange,
++      StyleChangeReasonForTracing::Create(style_change_reason::kControlValue));
+ }
+ 
+ void DateTimeEditElement::SetValueAsDateTimeFieldsState(
+     const DateTimeFieldsState& date_time_fields_state) {
+-  for (const auto& field : fields_)
++  for (const auto& field : fields_) {
++    field->ResetTypeAhead();
+     field->SetValueAsDateTimeFieldsState(date_time_fields_state);
++  }
++  // Make CustomStyleForLayoutObject rerun, since it depends on the value.
++  SetNeedsStyleRecalc(
++      kSubtreeStyleChange,
++      StyleChangeReasonForTracing::Create(style_change_reason::kControlValue));
+ }
+ 
+ void DateTimeEditElement::SetEmptyValue(
+     const LayoutParameters& layout_parameters,
+     const DateComponents& date_for_read_only_field) {
+   GetLayout(layout_parameters, date_for_read_only_field);
+-  for (const auto& field : fields_)
++  for (const auto& field : fields_) {
++    field->ResetTypeAhead();
+     field->SetEmptyValue(DateTimeFieldElement::kDispatchNoEvent);
++  }
++  // Make CustomStyleForLayoutObject rerun, since it depends on the value.
++  SetNeedsStyleRecalc(
++      kSubtreeStyleChange,
++      StyleChangeReasonForTracing::Create(style_change_reason::kControlValue));
+ }
+ 
+ DateTimeFieldElement* DateTimeEditElement::GetField(DateTimeField type) const {
+diff --git a/third_party/blink/renderer/core/html/forms/date_time_edit_element.h b/third_party/blink/renderer/core/html/forms/date_time_edit_element.h
+index a1765e96fec79cbeeb4efc3c1f76a46718eb60f9..a2f82d15b374abe7f75a46234ff811d1ebf5b80b 100644
+--- a/third_party/blink/renderer/core/html/forms/date_time_edit_element.h
++++ b/third_party/blink/renderer/core/html/forms/date_time_edit_element.h
+@@ -26,6 +26,8 @@
+ #ifndef THIRD_PARTY_BLINK_RENDERER_CORE_HTML_FORMS_DATE_TIME_EDIT_ELEMENT_H_
+ #define THIRD_PARTY_BLINK_RENDERER_CORE_HTML_FORMS_DATE_TIME_EDIT_ELEMENT_H_
+ 
++#include <optional>
++
+ #include "third_party/blink/public/mojom/input/focus_type.mojom-blink-forward.h"
+ #include "third_party/blink/renderer/core/html/forms/date_time_field_element.h"
+ #include "third_party/blink/renderer/core/html/forms/step_range.h"
+@@ -63,21 +65,26 @@ class DateTimeEditElement final : public HTMLDivElement,
+   };
+ 
+   struct LayoutParameters {
+-    STACK_ALLOCATED();
++    DISALLOW_NEW();
+ 
+    public:
+     String date_time_format;
+     String fallback_date_time_format;
+-    Locale& locale;
++    // The Locale must be owned by the Document and come from
++    // Document::GetCachedLocale.
++    Locale* locale;
+     const StepRange step_range;
+     DateComponents minimum;
+     DateComponents maximum;
+     String placeholder_for_day;
+     String placeholder_for_month;
+     String placeholder_for_year;
++    bool need_millisecond_field = false;
+ 
+     LayoutParameters(Locale& locale, const StepRange& step_range)
+-        : locale(locale), step_range(step_range) {}
++        : locale(&locale), step_range(step_range) {}
++
++    bool operator==(const LayoutParameters&) const = default;
+   };
+ 
+   DateTimeEditElement(Document&, EditControlOwner&);
+@@ -157,6 +164,7 @@ class DateTimeEditElement final : public HTMLDivElement,
+   void FieldDidChangeValueByKeyboard() override;
+ 
+   HeapVector<Member<DateTimeFieldElement>, kMaximumNumberOfFields> fields_;
++  std::optional<LayoutParameters> current_layout_parameters_;
+   Member<EditControlOwner> edit_control_owner_;
+ };
+ 
+diff --git a/third_party/blink/renderer/core/html/forms/date_time_field_element.h b/third_party/blink/renderer/core/html/forms/date_time_field_element.h
+index ff0d8af4f3bdc4841dc095b2d2731294006e5f7a..3269d8ce3c2878fe57f9e2b7c96d0769606147be 100644
+--- a/third_party/blink/renderer/core/html/forms/date_time_field_element.h
++++ b/third_party/blink/renderer/core/html/forms/date_time_field_element.h
+@@ -83,6 +83,7 @@ class DateTimeFieldElement : public HTMLSpanElement {
+   virtual String Placeholder() const = 0;
+   virtual void PopulateDateTimeFieldsState(DateTimeFieldsState&) = 0;
+   void RemoveEventHandler() { field_owner_ = nullptr; }
++  virtual void ResetTypeAhead() {}
+   void SetDisabled();
+   virtual void SetEmptyValue(EventBehavior = kDispatchNoEvent) = 0;
+   virtual void SetValueAsDate(const DateComponents&) = 0;
+diff --git a/third_party/blink/renderer/core/html/forms/date_time_local_input_type.cc b/third_party/blink/renderer/core/html/forms/date_time_local_input_type.cc
+index bdd220c0c75205d862a78ceae62539ae768aed98..92ee94e832ec4664321043f79865816d2179c2aa 100644
+--- a/third_party/blink/renderer/core/html/forms/date_time_local_input_type.cc
++++ b/third_party/blink/renderer/core/html/forms/date_time_local_input_type.cc
+@@ -167,17 +167,17 @@ void DateTimeLocalInputType::SetupLayoutParameters(
+     const DateComponents& date) const {
+   if (ShouldHaveSecondField(date)) {
+     layout_parameters.date_time_format =
+-        layout_parameters.locale.DateTimeFormatWithSeconds();
++        layout_parameters.locale->DateTimeFormatWithSeconds();
+     layout_parameters.fallback_date_time_format = "yyyy-MM-dd'T'HH:mm:ss";
+   } else {
+     layout_parameters.date_time_format =
+-        layout_parameters.locale.DateTimeFormatWithoutSeconds();
++        layout_parameters.locale->DateTimeFormatWithoutSeconds();
+     layout_parameters.fallback_date_time_format = "yyyy-MM-dd'T'HH:mm";
+   }
+ 
+   // Workaround for an Arabic date-time format issue.
+   // TODO(crbug.com/40153320): Support ARABIC COMMA.
+-  if (layout_parameters.locale.IsRtl()) {
++  if (layout_parameters.locale->IsRtl()) {
+     layout_parameters.date_time_format =
+         layout_parameters.date_time_format.RemoveCharacters(
+             [](UChar ch) -> bool { return ch == uchar::kArabicComma; });
+@@ -197,6 +197,16 @@ void DateTimeLocalInputType::SetupLayoutParameters(
+       GetLocale().QueryString(IDS_FORM_PLACEHOLDER_FOR_MONTH_FIELD);
+   layout_parameters.placeholder_for_year =
+       GetLocale().QueryString(IDS_FORM_PLACEHOLDER_FOR_YEAR_FIELD);
++  static constexpr int kMillisecondsPerSecond =
++      static_cast<int>(base::Time::kMillisecondsPerSecond);
++  layout_parameters.need_millisecond_field =
++      date.Millisecond() ||
++      !layout_parameters.step_range.Minimum()
++           .Remainder(kMillisecondsPerSecond)
++           .IsZero() ||
++      !layout_parameters.step_range.Step()
++           .Remainder(kMillisecondsPerSecond)
++           .IsZero();
+ }
+ 
+ bool DateTimeLocalInputType::IsValidFormat(bool has_year,
+diff --git a/third_party/blink/renderer/core/html/forms/date_time_numeric_field_element.cc b/third_party/blink/renderer/core/html/forms/date_time_numeric_field_element.cc
+index da806dba511b4ddc2c23143d9cc48f9cbe64cb12..7779f4f5d850604ce7420e72538af324a1a8ff10 100644
+--- a/third_party/blink/renderer/core/html/forms/date_time_numeric_field_element.cc
++++ b/third_party/blink/renderer/core/html/forms/date_time_numeric_field_element.cc
+@@ -176,6 +176,10 @@ String DateTimeNumericFieldElement::Placeholder() const {
+   return placeholder_;
+ }
+ 
++void DateTimeNumericFieldElement::ResetTypeAhead() {
++  type_ahead_buffer_.Clear();
++}
++
+ void DateTimeNumericFieldElement::SetEmptyValue(EventBehavior event_behavior) {
+   if (IsDisabled())
+     return;
+diff --git a/third_party/blink/renderer/core/html/forms/date_time_numeric_field_element.h b/third_party/blink/renderer/core/html/forms/date_time_numeric_field_element.h
+index 4249f3694c30ca03a9411cf58f8ca5f0da18e5c2..2344d7f085aef018a375df35449077928b3d2427 100644
+--- a/third_party/blink/renderer/core/html/forms/date_time_numeric_field_element.h
++++ b/third_party/blink/renderer/core/html/forms/date_time_numeric_field_element.h
+@@ -91,6 +91,7 @@ class DateTimeNumericFieldElement : public DateTimeFieldElement {
+   void Initialize(const AtomicString& pseudo, const String& ax_help_text);
+   int Maximum() const;
+   String Placeholder() const override;
++  void ResetTypeAhead() override;
+   void SetEmptyValue(EventBehavior = kDispatchNoEvent) final;
+   void SetValueAsInteger(int, EventBehavior = kDispatchNoEvent) override;
+   int ValueAsInteger() const final;
+diff --git a/third_party/blink/renderer/core/html/forms/date_time_symbolic_field_element.cc b/third_party/blink/renderer/core/html/forms/date_time_symbolic_field_element.cc
+index 005d0fbc876e929d8c62c90c2fd8d15917a2049e..391882a453047c313ea21d72e361dd39db497d9d 100644
+--- a/third_party/blink/renderer/core/html/forms/date_time_symbolic_field_element.cc
++++ b/third_party/blink/renderer/core/html/forms/date_time_symbolic_field_element.cc
+@@ -118,10 +118,23 @@ void DateTimeSymbolicFieldElement::Initialize(const AtomicString& pseudo,
+ void DateTimeSymbolicFieldElement::SetEmptyValue(EventBehavior event_behavior) {
+   if (IsDisabled())
+     return;
++  type_ahead_.ResetSession();
+   selected_index_ = kInvalidIndex;
+   UpdateVisibleValue(event_behavior);
+ }
+ 
++void DateTimeSymbolicFieldElement::ResetTypeAhead() {
++  type_ahead_.ResetSession();
++}
++
++void DateTimeSymbolicFieldElement::SetFocused(bool value,
++                                              mojom::blink::FocusType focus_type) {
++  if (!value) {
++    type_ahead_.ResetSession();
++  }
++  DateTimeFieldElement::SetFocused(value, focus_type);
++}
++
+ void DateTimeSymbolicFieldElement::SetValueAsInteger(
+     int new_selected_index,
+     EventBehavior event_behavior) {
+diff --git a/third_party/blink/renderer/core/html/forms/date_time_symbolic_field_element.h b/third_party/blink/renderer/core/html/forms/date_time_symbolic_field_element.h
+index 55c7a3897f53f9a436cf90865294bf8b67f43ffc..9a1aa528bd03425387d3810c1e822892d0a1a7c9 100644
+--- a/third_party/blink/renderer/core/html/forms/date_time_symbolic_field_element.h
++++ b/third_party/blink/renderer/core/html/forms/date_time_symbolic_field_element.h
+@@ -66,12 +66,16 @@ class DateTimeSymbolicFieldElement : public DateTimeFieldElement,
+   void HandleKeyboardEvent(KeyboardEvent&) final;
+   float MaximumWidth(const ComputedStyle&) override;
+   String Placeholder() const override;
++  void ResetTypeAhead() override;
+   void StepDown() final;
+   void StepUp() final;
+   String Value() const final;
+   int ValueForARIAValueNow() const final;
+   String VisibleValue() const final;
+ 
++  // Node functions.
++  void SetFocused(bool, mojom::blink::FocusType) override;
++
+   // TypeAheadDataSource functions.
+   int IndexOfSelectedOption() const override;
+   int OptionCount() const override;
+diff --git a/third_party/blink/renderer/core/html/forms/month_input_type.cc b/third_party/blink/renderer/core/html/forms/month_input_type.cc
+index 0ab4d1e451f35c3f92a69468e8827e5a855607f8..b98109965a4e0ee8b40bd046069ffdbe8d8026ed 100644
+--- a/third_party/blink/renderer/core/html/forms/month_input_type.cc
++++ b/third_party/blink/renderer/core/html/forms/month_input_type.cc
+@@ -141,7 +141,7 @@ String MonthInputType::FormatDateTimeFieldsState(
+ void MonthInputType::SetupLayoutParameters(
+     DateTimeEditElement::LayoutParameters& layout_parameters,
+     const DateComponents& date) const {
+-  layout_parameters.date_time_format = layout_parameters.locale.MonthFormat();
++  layout_parameters.date_time_format = layout_parameters.locale->MonthFormat();
+   layout_parameters.fallback_date_time_format = "yyyy-MM";
+   if (!ParseToDateComponents(
+           GetElement().FastGetAttribute(html_names::kMinAttr),
+diff --git a/third_party/blink/renderer/core/html/forms/step_range.h b/third_party/blink/renderer/core/html/forms/step_range.h
+index d388aaae440144b4eaabb3ba795e56195b703c45..6e1416432bfe024c0a55cdfb02c0a5409990cefc 100644
+--- a/third_party/blink/renderer/core/html/forms/step_range.h
++++ b/third_party/blink/renderer/core/html/forms/step_range.h
+@@ -65,6 +65,8 @@ class CORE_EXPORT StepRange {
+           step_scale_factor(1),
+           step_value_should_be(kStepValueShouldBeReal) {}
+ 
++    bool operator==(const StepDescription&) const = default;
++
+     Decimal DefaultValue() const { return default_step * step_scale_factor; }
+   };
+ 
+@@ -79,6 +81,8 @@ class CORE_EXPORT StepRange {
+             const Decimal& step,
+             const StepDescription&);
+ 
++  bool operator==(const StepRange&) const = default;
++
+   Decimal AlignValueForStep(const Decimal& current_value,
+                             const Decimal& new_value) const;
+   Decimal ClampValue(const Decimal& value) const;
+diff --git a/third_party/blink/renderer/core/html/forms/time_input_type.cc b/third_party/blink/renderer/core/html/forms/time_input_type.cc
+index 0f147796891231e4b30061c7bd7a8f467a0ee1aa..d7a78b0d6deee76eabfb09b2bea14ed159af663a 100644
+--- a/third_party/blink/renderer/core/html/forms/time_input_type.cc
++++ b/third_party/blink/renderer/core/html/forms/time_input_type.cc
+@@ -142,11 +142,11 @@ void TimeInputType::SetupLayoutParameters(
+     DateTimeEditElement::LayoutParameters& layout_parameters,
+     const DateComponents& date) const {
+   if (ShouldHaveSecondField(date)) {
+-    layout_parameters.date_time_format = layout_parameters.locale.TimeFormat();
++    layout_parameters.date_time_format = layout_parameters.locale->TimeFormat();
+     layout_parameters.fallback_date_time_format = "HH:mm:ss";
+   } else {
+     layout_parameters.date_time_format =
+-        layout_parameters.locale.ShortTimeFormat();
++        layout_parameters.locale->ShortTimeFormat();
+     layout_parameters.fallback_date_time_format = "HH:mm";
+   }
+   if (!ParseToDateComponents(
+@@ -157,6 +157,16 @@ void TimeInputType::SetupLayoutParameters(
+           GetElement().FastGetAttribute(html_names::kMaxAttr),
+           &layout_parameters.maximum))
+     layout_parameters.maximum = DateComponents();
++  static constexpr int kMillisecondsPerSecond =
++      static_cast<int>(base::Time::kMillisecondsPerSecond);
++  layout_parameters.need_millisecond_field =
++      date.Millisecond() ||
++      !layout_parameters.step_range.Minimum()
++           .Remainder(kMillisecondsPerSecond)
++           .IsZero() ||
++      !layout_parameters.step_range.Step()
++           .Remainder(kMillisecondsPerSecond)
++           .IsZero();
+ }
+ 
+ bool TimeInputType::IsValidFormat(bool has_year,
+diff --git a/third_party/blink/renderer/platform/text/date_components.h b/third_party/blink/renderer/platform/text/date_components.h
+index 6f5dc35a68c3cc7bf492c7a1c9f30eeec79c93d1..8349cf07157b03786812b9ab805a56f0e98779e8 100644
+--- a/third_party/blink/renderer/platform/text/date_components.h
++++ b/third_party/blink/renderer/platform/text/date_components.h
+@@ -63,6 +63,8 @@ class PLATFORM_EXPORT DateComponents {
+         week_(0),
+         type_(kInvalid) {}
+ 
++  bool operator==(const DateComponents&) const = default;
++
+   enum Type {
+     kInvalid,
+     kDate,
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/date-input-slot-assignment-crash.tentative.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/date-input-slot-assignment-crash.tentative.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..d7edfdade67179fd85407ef4ca0a50f3dec51b85
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/date-input-slot-assignment-crash.tentative.html
+@@ -0,0 +1,37 @@
++<!DOCTYPE html>
++<title>Testcase for crash involving slot assignment and type=date input</title>
++<canvas layoutsubtree>
++  <div id="host1">
++    <template shadowrootmode=open>
++      <slot name=a></slot>
++    </template>
++    <div id=manuallyslotted slot=a>
++      <div id="host2">
++        <template shadowrootmode=open>
++          <slot></slot>
++        </template>
++        <input id=d type=date value="2001-02-03">
++        <span id=y></span>
++        <span id=z></span>
++      </div>
++    </div>
++  </div>
++</canvas>
++<script>
++  let slot1 = host1.shadowRoot.querySelector('slot');
++  let slot2 = host2.shadowRoot.querySelector('slot');
++  window.addEventListener("load", event => {
++    run(y);
++    host2.firstChild.remove();
++    slot2.assignedNodes();
++    run(z);
++  });
++  function run(element) {
++    d.focus();
++    manuallyslotted.slot = 'x';
++    slot1.assignedNodes();
++    element.slot = 'away';
++    manuallyslotted.slot = 'a';
++    slot1.assignedNodes();
++  }
++</script>

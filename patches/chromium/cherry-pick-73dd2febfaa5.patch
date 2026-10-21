@@ -1,0 +1,87 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rune Lillesveen <futhark@chromium.org>
+Date: Tue, 13 Oct 2026 15:29:08 -0700
+Subject: Do not expose pseudo-elements through LargestContentfulPaint API
+
+If a PseudoElement is stored as the element_ in the
+LargestContentfulPaint object, we would expose that to javascript
+through the element attribute.
+
+This could cause all sorts of problems, letting javascript be able to
+modify them as if they were true elements, moving them around the tree
+in unexpected places and setting attributes on them, for instance.
+
+Specifically, the issue reported was modifying querySelector caches
+while being traversed due to slot re-assignment.
+
+Bug: 570638836
+Change-Id: I44d87a537a7da52fa9dc2aa577a58a888c94f3de
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8545831
+Commit-Queue: Scott Haseley <shaseley@chromium.org>
+Commit-Queue: Rune Lillesveen <futhark@chromium.org>
+Auto-Submit: Rune Lillesveen <futhark@chromium.org>
+Reviewed-by: Scott Haseley <shaseley@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1718007}
+
+diff --git a/third_party/blink/renderer/core/timing/largest_contentful_paint.cc b/third_party/blink/renderer/core/timing/largest_contentful_paint.cc
+index 289f28896a6128438fe8fd6771d39143fe83c098..0e91d2fc220ce754a48cf51a76177f2516a575b5 100644
+--- a/third_party/blink/renderer/core/timing/largest_contentful_paint.cc
++++ b/third_party/blink/renderer/core/timing/largest_contentful_paint.cc
+@@ -7,6 +7,7 @@
+ #include "third_party/blink/renderer/bindings/core/v8/v8_object_builder.h"
+ #include "third_party/blink/renderer/core/dom/document.h"
+ #include "third_party/blink/renderer/core/performance_entry_names.h"
++#include "third_party/blink/renderer/core/timing/performance.h"
+ #include "third_party/blink/renderer/platform/wtf/text/atomic_string.h"
+ 
+ namespace blink {
+@@ -43,8 +44,9 @@ PerformanceEntryType LargestContentfulPaint::EntryTypeEnum() const {
+ }
+ 
+ Element* LargestContentfulPaint::element() const {
+-  if (!element_ || !element_->isConnected() || element_->IsInShadowTree())
++  if (!Performance::CanExposeNode(element_)) {
+     return nullptr;
++  }
+ 
+   // Do not expose |element_| when the document is not 'fully active'.
+   const Document& document = element_->GetDocument();
+diff --git a/third_party/blink/web_tests/external/wpt/largest-contentful-paint/observe-pseudo-element.tentative-expected.txt b/third_party/blink/web_tests/external/wpt/largest-contentful-paint/observe-pseudo-element.tentative-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..9554236940cbea505ac6956479a4341785269159
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/largest-contentful-paint/observe-pseudo-element.tentative-expected.txt
+@@ -0,0 +1,5 @@
++This is a testharness.js-based test.
++[FAIL] largest-contentful-paint should not expose pseudo-elements
++  assert_equals: expected Element node <div id="target"></div> but got null
++Harness: the test ran to completion.
++
+diff --git a/third_party/blink/web_tests/external/wpt/largest-contentful-paint/observe-pseudo-element.tentative.html b/third_party/blink/web_tests/external/wpt/largest-contentful-paint/observe-pseudo-element.tentative.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..e190aa4259154958d2ecdc2c39cf87ad65b7a9fc
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/largest-contentful-paint/observe-pseudo-element.tentative.html
+@@ -0,0 +1,22 @@
++<!DOCTYPE html>
++<title>Largest Contentful Paint Test: pseudo-elements should not be exposed to javascript</title>
++<link rel="help" href="https://w3c.github.io/largest-contentful-paint">
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++<style>
++  #target::before {
++    content: "Content";
++    display: block;
++  }
++</style>
++<div id="target"></div>
++<script>
++  async_test(t => {
++    new PerformanceObserver(l => {
++      t.step(() => {
++        assert_equals(l.getEntries()[0].element, target);
++      }, "#target is reported as node for lcp");
++      t.done();
++    }).observe({ type: 'largest-contentful-paint' });
++  }, "largest-contentful-paint should not expose pseudo-elements");
++</script>

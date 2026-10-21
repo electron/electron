@@ -1,0 +1,370 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Guido Urdaneta <guidou@chromium.org>
+Date: Fri, 16 Oct 2026 07:12:49 -0700
+Subject: Prevent attaching WebRtcAudioRenderer to terminated audio device
+
+WebRtcAudioDeviceImpl::SetAudioRenderer() previously checked only
+whether `renderer_` was null before calling
+WebRtcAudioRenderer::Initialize() and registering the renderer. If the
+audio device had already been terminated via
+WebRtcAudioDeviceImpl::Terminate(), or if Terminate() ran on the
+signaling thread while Initialize() was executing with `lock_` released,
+the renderer retained a raw `source_` pointer to the terminated device
+that would not be cleared on subsequent Terminate() calls.
+
+Fix this by:
+- Guarding `initialized_` with `lock_` across threads and returning
+`renderer_` by value under `lock_` in
+WebRtcAudioDeviceImpl::renderer().
+- Checking `initialized_` before and after the unlocked
+WebRtcAudioRenderer::Initialize() call in SetAudioRenderer(), while
+retaining a reference to `this` across Initialize().
+- Calling DisconnectSource() and stopping the renderer if Terminate()
+intervened during Initialize().
+
+Fixed: 574041825
+Change-Id: I36c202aae365df56f7f2a8180233179f6c9b88c7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8591863
+Reviewed-by: Johannes Kron <kron@chromium.org>
+Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1720672}
+
+diff --git a/third_party/blink/renderer/modules/peerconnection/webrtc_audio_renderer_test.cc b/third_party/blink/renderer/modules/peerconnection/webrtc_audio_renderer_test.cc
+index fb4e597b922d355ef0925764f3d2ec1ced26dadd..9162f19f534e6d08e0b3653d9493e05970997b53 100644
+--- a/third_party/blink/renderer/modules/peerconnection/webrtc_audio_renderer_test.cc
++++ b/third_party/blink/renderer/modules/peerconnection/webrtc_audio_renderer_test.cc
+@@ -117,6 +117,10 @@ class AudioDeviceFactoryTestingPlatformSupport : public blink::Platform {
+     if (params.device_id != kInvalidOutputDeviceId) {
+       EXPECT_CALL(*mock_sink_.get(), Start());
+       EXPECT_CALL(*mock_sink_.get(), Play());
++      if (expect_stop_on_next_sink_) {
++        EXPECT_CALL(*mock_sink_.get(), Stop());
++        expect_stop_on_next_sink_ = false;
++      }
+     } else {
+       EXPECT_CALL(*mock_sink_.get(), Stop());
+     }
+@@ -124,6 +128,10 @@ class AudioDeviceFactoryTestingPlatformSupport : public blink::Platform {
+     return mock_sink_;
+   }
+ 
++  void set_expect_stop_on_next_sink(bool expect_stop) {
++    expect_stop_on_next_sink_ = expect_stop;
++  }
++
+   MOCK_METHOD3(MockNewAudioRendererSink,
+                void(blink::WebAudioDeviceSourceType,
+                     blink::WebLocalFrame*,
+@@ -142,6 +150,7 @@ class AudioDeviceFactoryTestingPlatformSupport : public blink::Platform {
+ 
+  private:
+   scoped_refptr<media::MockAudioRendererSink> mock_sink_;
++  bool expect_stop_on_next_sink_ = false;
+ };
+ 
+ class MockAudioSourceInterface : public webrtc::AudioSourceInterface {
+@@ -606,6 +615,70 @@ TEST_F(WebRtcAudioRendererTest, SourceDisconnectedOnDeviceTerminate) {
+   renderer_proxy->Stop();
+ }
+ 
++TEST_F(WebRtcAudioRendererTest, SetAudioRendererRejectedAfterDeviceTerminate) {
++  scoped_refptr<blink::WebRtcAudioDeviceImpl> audio_device(
++      new webrtc::RefCountedObject<blink::WebRtcAudioDeviceImpl>());
++  webrtc::AudioDeviceModule* adm = audio_device.get();
++
++  auto renderer = base::MakeRefCounted<WebRtcAudioRenderer>(
++      scheduler::GetSingleThreadTaskRunnerForTesting(), stream_descriptor_,
++      *web_local_frame_, base::UnguessableToken::Create(),
++      kDefaultOutputDeviceId, base::RepeatingCallback<void()>());
++
++  EXPECT_CALL(*audio_device_factory_platform_,
++              MockNewAudioRendererSink(_, _, _))
++      .Times(0);
++
++  // Rejects attachment before Init().
++  EXPECT_FALSE(audio_device->SetAudioRenderer(renderer.get()));
++  EXPECT_EQ(audio_device->renderer(), nullptr);
++
++  adm->Init();
++  adm->Terminate();
++
++  // Rejects attachment after Terminate().
++  EXPECT_FALSE(audio_device->SetAudioRenderer(renderer.get()));
++  EXPECT_EQ(audio_device->renderer(), nullptr);
++}
++
++TEST_F(WebRtcAudioRendererTest,
++       SetAudioRendererDisconnectedIfDeviceTerminatesDuringInitialize) {
++  scoped_refptr<blink::WebRtcAudioDeviceImpl> audio_device(
++      new webrtc::RefCountedObject<blink::WebRtcAudioDeviceImpl>());
++  webrtc::AudioDeviceModule* adm = audio_device.get();
++  adm->Init();
++
++  auto renderer = base::MakeRefCounted<WebRtcAudioRenderer>(
++      scheduler::GetSingleThreadTaskRunnerForTesting(), stream_descriptor_,
++      *web_local_frame_, base::UnguessableToken::Create(),
++      kDefaultOutputDeviceId, base::RepeatingCallback<void()>());
++
++  audio_device_factory_platform_->set_expect_stop_on_next_sink(true);
++  EXPECT_CALL(*audio_device_factory_platform_,
++              MockNewAudioRendererSink(blink::WebAudioDeviceSourceType::kWebRtc,
++                                       web_local_frame_.get(), _))
++      .WillOnce(InvokeWithoutArgs([&]() {
++        // Simulate Terminate() and dropping the last external reference while
++        // SetAudioRenderer() has released its lock to run Initialize().
++        adm->Terminate();
++        adm = nullptr;
++        audio_device = nullptr;
++      }));
++
++  // Hold a raw pointer only for the call; SetAudioRenderer() must keep `this`
++  // alive across Initialize(), detect that Terminate() intervened, and
++  // disconnect and stop the renderer.
++  blink::WebRtcAudioDeviceImpl* raw_audio_device = audio_device.get();
++  EXPECT_FALSE(raw_audio_device->SetAudioRenderer(renderer.get()));
++
++  auto renderer_proxy =
++      renderer->CreateSharedAudioRendererProxy(stream_descriptor_);
++  base::test::TestFuture<media::OutputDeviceStatus> future;
++  renderer_proxy->SwitchOutputDevice(kOtherOutputDeviceId,
++                                     future.GetCallback());
++  EXPECT_EQ(future.Get(), media::OUTPUT_DEVICE_STATUS_ERROR_INTERNAL);
++}
++
+ class WebRtcAudioRendererTrackSourceTest : public WebRtcAudioRendererTest {
+  public:
+   WebRtcAudioRendererTrackSourceTest() {
+diff --git a/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.cc b/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.cc
+index 929962dc3c8facd864b0e3512b76a15f07a0ed04..f6b442e8fa8c65d2af01e80e900365c317facc47 100644
+--- a/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.cc
++++ b/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.cc
+@@ -141,6 +141,12 @@ void WebRtcAudioDeviceImpl::RenderData(
+   }
+ }
+ 
++scoped_refptr<blink::WebRtcAudioRenderer> WebRtcAudioDeviceImpl::renderer()
++    const {
++  base::AutoLock auto_lock(lock_);
++  return renderer_;
++}
++
+ void WebRtcAudioDeviceImpl::RemoveAudioRenderer(
+     blink::WebRtcAudioRenderer* renderer) {
+   DCHECK_CALLED_ON_VALID_THREAD(main_thread_checker_);
+@@ -198,6 +204,7 @@ int32_t WebRtcAudioDeviceImpl::Init() {
+   // We need to return a success to continue the initialization of WebRtc VoE
+   // because failure on the capturer_ initialization should not prevent WebRTC
+   // from working. See issue http://crbug.com/144421 for details.
++  base::AutoLock auto_lock(lock_);
+   initialized_ = true;
+ 
+   return 0;
+@@ -208,8 +215,12 @@ int32_t WebRtcAudioDeviceImpl::Terminate() {
+   DCHECK_CALLED_ON_VALID_THREAD(signaling_thread_checker_);
+ 
+   // Calling Terminate() multiple times in a row is OK.
+-  if (!initialized_)
+-    return 0;
++  {
++    base::AutoLock auto_lock(lock_);
++    if (!initialized_) {
++      return 0;
++    }
++  }
+ 
+   StopRecording();
+   StopPlayout();
+@@ -221,6 +232,7 @@ int32_t WebRtcAudioDeviceImpl::Terminate() {
+     base::AutoLock auto_lock(lock_);
+     renderer_to_disconnect = std::move(renderer_);
+     capturers_.clear();
++    initialized_ = false;
+   }
+ 
+   if (renderer_to_disconnect) {
+@@ -239,23 +251,25 @@ int32_t WebRtcAudioDeviceImpl::Terminate() {
+     }
+   }
+ 
+-  initialized_ = false;
+   return 0;
+ }
+ 
+ bool WebRtcAudioDeviceImpl::Initialized() const {
+   DCHECK_CALLED_ON_VALID_THREAD(signaling_thread_checker_);
++  base::AutoLock auto_lock(lock_);
+   return initialized_;
+ }
+ 
+ int32_t WebRtcAudioDeviceImpl::PlayoutIsAvailable(bool* available) {
+   DCHECK_CALLED_ON_VALID_THREAD(signaling_thread_checker_);
++  base::AutoLock auto_lock(lock_);
+   *available = initialized_;
+   return 0;
+ }
+ 
+ bool WebRtcAudioDeviceImpl::PlayoutIsInitialized() const {
+   DCHECK_CALLED_ON_VALID_THREAD(signaling_thread_checker_);
++  base::AutoLock auto_lock(lock_);
+   return initialized_;
+ }
+ 
+@@ -291,7 +305,6 @@ int32_t WebRtcAudioDeviceImpl::StartPlayout() {
+ 
+ int32_t WebRtcAudioDeviceImpl::StopPlayout() {
+   DVLOG(1) << "WebRtcAudioDeviceImpl::StopPlayout()";
+-  DCHECK(initialized_);
+   // Can be called both from the worker thread (e.g. when called from webrtc)
+   // or the signaling thread (e.g. when we call it ourselves internally).
+   // The order in this check is important so that we won't incorrectly
+@@ -301,6 +314,7 @@ int32_t WebRtcAudioDeviceImpl::StopPlayout() {
+          worker_thread_checker_.CalledOnValidThread());
+ #endif
+   base::AutoLock auto_lock(lock_);
++  DCHECK(initialized_);
+   // webrtc::VoiceEngine assumes that it is OK to call Stop() multiple times.
+   playing_ = false;
+   return 0;
+@@ -314,9 +328,9 @@ bool WebRtcAudioDeviceImpl::Playing() const {
+ 
+ int32_t WebRtcAudioDeviceImpl::StartRecording() {
+   DCHECK_CALLED_ON_VALID_THREAD(worker_thread_checker_);
+-  DCHECK(initialized_);
+   SendLogMessage(base::StringPrintf("%s()", __func__));
+   base::AutoLock auto_lock(lock_);
++  DCHECK(initialized_);
+   base::AutoLock callback_lock(audio_transport_callback_lock_);
+   if (!audio_transport_callback_) {
+     LOG(ERROR) << "Audio transport is missing";
+@@ -329,7 +343,6 @@ int32_t WebRtcAudioDeviceImpl::StartRecording() {
+ }
+ 
+ int32_t WebRtcAudioDeviceImpl::StopRecording() {
+-  DCHECK(initialized_);
+   // Can be called both from the worker thread (e.g. when called from webrtc)
+   // or the signaling thread (e.g. when we call it ourselves internally).
+   // The order in this check is important so that we won't incorrectly
+@@ -340,6 +353,7 @@ int32_t WebRtcAudioDeviceImpl::StopRecording() {
+ #endif
+   SendLogMessage(base::StringPrintf("%s()", __func__));
+   base::AutoLock auto_lock(lock_);
++  DCHECK(initialized_);
+   recording_ = false;
+   return 0;
+ }
+@@ -365,11 +379,17 @@ bool WebRtcAudioDeviceImpl::SetAudioRenderer(
+   DCHECK(renderer);
+   SendLogMessage(base::StringPrintf("%s()", __func__));
+ 
++  // Defense-in-depth: retain |this| across the unlocked initialization interval
++  // in case a caller does not keep an external reference alive for the duration
++  // of the call.
++  scoped_refptr<WebRtcAudioDeviceImpl> self(this);
++
+   // Here we acquire |lock_| in order to protect the internal state.
+   {
+     base::AutoLock auto_lock(lock_);
+-    if (renderer_)
++    if (!initialized_ || renderer_) {
+       return false;
++    }
+   }
+ 
+   // We release |lock_| here because invoking |renderer|->Initialize while
+@@ -390,12 +410,28 @@ bool WebRtcAudioDeviceImpl::SetAudioRenderer(
+   // it attach later to the new thread.
+   DETACH_FROM_THREAD(audio_renderer_thread_checker_);
+ 
+-  // We acquire |lock_| again and assert our precondition, since we are
+-  // accessing the internal state again.
+-  base::AutoLock auto_lock(lock_);
+-  DCHECK(!renderer_);
+-  renderer_ = renderer;
+-  return true;
++  // We acquire |lock_| again and recheck |initialized_| in case Terminate()
++  // ran while |lock_| was released.
++  {
++    base::AutoLock auto_lock(lock_);
++    if (initialized_ && !renderer_) {
++      renderer_ = renderer;
++      return true;
++    }
++  }
++
++  // Terminate() ran while |lock_| was released. Disconnect the renderer from
++  // |this| and tear it down: after a successful Initialize() the renderer is
++  // paused with a started sink, and it must be back in the uninitialized state
++  // before it can be destroyed. Start()/Stop() are private on
++  // WebRtcAudioRenderer, so go via the MediaStreamAudioRenderer interface.
++  // DisconnectSource() must come first so that Stop() does not call back into
++  // RemoveAudioRenderer() on |this|.
++  renderer->DisconnectSource();
++  MediaStreamAudioRenderer* media_stream_renderer = renderer;
++  media_stream_renderer->Start();
++  media_stream_renderer->Stop();
++  return false;
+ }
+ 
+ void WebRtcAudioDeviceImpl::AddAudioCapturer(
+diff --git a/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.h b/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.h
+index 3a34e2c6f70cd6c8396792b149807683d27bb268..879510d190f38b14a33ac0e738c368dbc4e83e70 100644
+--- a/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.h
++++ b/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.h
+@@ -94,7 +94,9 @@ class MODULES_EXPORT WebRtcAudioDeviceImpl
+   int32_t PlayoutDelay(uint16_t* delay_ms) const override;
+ 
+  public:
+-  // Sets the |renderer_|, returns false if |renderer_| already exists.
++  // Sets the |renderer_|, returns false if |renderer_| already exists, if the
++  // device is not initialized, or if Terminate() ran while initializing
++  // |renderer| (in which case |renderer| has been disconnected and stopped).
+   // Called on the main renderer thread.
+   bool SetAudioRenderer(blink::WebRtcAudioRenderer* renderer);
+ 
+@@ -112,9 +114,7 @@ class MODULES_EXPORT WebRtcAudioDeviceImpl
+   // function will not be able to pick an appropriate device and return 0.
+   base::UnguessableToken GetAuthorizedDeviceSessionIdForAudioRenderer();
+ 
+-  const scoped_refptr<blink::WebRtcAudioRenderer>& renderer() const {
+-    return renderer_;
+-  }
++  scoped_refptr<blink::WebRtcAudioRenderer> renderer() const;
+ 
+   // blink::WebRtcAudioRendererSource implementation.
+ 
+@@ -182,11 +182,11 @@ class MODULES_EXPORT WebRtcAudioDeviceImpl
+   // Cached value of the current audio delay on the output/renderer side.
+   base::TimeDelta output_delay_ GUARDED_BY(lock_);
+ 
+-  // Protects |renderer_|, |playout_sinks_|, |output_delay_|, |playing_|,
+-  // and |recording_|.
++  // Protects |renderer_|, |playout_sinks_|, |output_delay_|, |initialized_|,
++  // |playing_|, and |recording_|.
+   mutable base::Lock lock_;
+ 
+-  bool initialized_;
++  bool initialized_ GUARDED_BY(lock_);
+   bool playing_ GUARDED_BY(lock_);
+   bool recording_ GUARDED_BY(lock_);
+ 
+diff --git a/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl_test.cc b/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl_test.cc
+index 3d43a5f37d3c74ac5e8e6cddec8490778e3be5b9..7c6b0ff58be56e3952fbb052421ae67ac889b573 100644
+--- a/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl_test.cc
++++ b/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl_test.cc
+@@ -239,7 +239,6 @@ class WebRtcAudioDeviceImplReleaseTest : public WebRtcAudioDeviceImplTest {
+         base::RepeatingCallback<void()>(), run_loop_.QuitClosure());
+ 
+     test_audio_device_ = new webrtc::RefCountedObject<WebRtcAudioDeviceImpl>();
+-    EXPECT_TRUE(test_audio_device_->SetAudioRenderer(renderer_.get()));
+ 
+     worker_thread_ = std::make_unique<base::Thread>("WebRTC_Worker");
+     worker_thread_->Start();
+@@ -254,6 +253,8 @@ class WebRtcAudioDeviceImplReleaseTest : public WebRtcAudioDeviceImplTest {
+                        base::Unretained(test_audio_device_.get()),
+                        base::Unretained(&init_loop)));
+     init_loop.Run();
++
++    EXPECT_TRUE(test_audio_device_->SetAudioRenderer(renderer_.get()));
+   }
+ 
+   ~WebRtcAudioDeviceImplReleaseTest() override {

@@ -1,0 +1,216 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: wangra <wangra@google.com>
+Date: Tue, 4 Aug 2026 11:50:56 -0400
+Subject: GL/D3D11: Clamp multiview-adjusted attribute divisor
+
+Scale vertex attribute divisor in 64-bit and clamp to GLuint max when
+emulating multiview. This prevents integer overflow wrapping large
+divisors to zero and causing validation-driver state desynchronization.
+
+Test: angle_end2end_tests --gtest_filter="*MultiviewRenderTest.LargeAttribDivisor*"
+Bug: b/536544435
+Change-Id: Ifbda72d7a0c11f3ca0287e2d25e3d2ab3d5c682e
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8194046
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Ran Wang <wangra@google.com>
+
+Electron adaptation notes (44-x-y): picked as the prerequisite of
+"D3D11: Fix InputLayoutCache key for disabled and multiview attributes",
+which calls GetMultiviewAdjustedDivisor(); its absence on this branch
+is why the M152 branch merge of that fix broke the m152 builders and was
+reverted. VertexArrayGL.cpp had a context conflict with this branch's
+extra validation helpers; only the removal of the local
+GetAdjustedDivisor() helper is applied there. The new test is dropped
+(test-only).
+
+diff --git a/src/libANGLE/renderer/d3d/d3d11/VertexArray11.cpp b/src/libANGLE/renderer/d3d/d3d11/VertexArray11.cpp
+index 51a0479fceff697073ea73c8f30bec3b701d3591..895b15a4703250d0dc5bf80b1dfe47eb8d2c5774 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/VertexArray11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/VertexArray11.cpp
+@@ -14,6 +14,7 @@
+ #include "libANGLE/renderer/d3d/IndexBuffer.h"
+ #include "libANGLE/renderer/d3d/d3d11/Buffer11.h"
+ #include "libANGLE/renderer/d3d/d3d11/Context11.h"
++#include "libANGLE/renderer/renderer_utils.h"
+ 
+ using namespace angle;
+ 
+@@ -272,8 +273,8 @@ angle::Result VertexArray11::updateDirtyAttribs(const gl::Context *context,
+         translatedAttrib->bufferBindingPointer =
+             &getBufferBindingPointer(translatedAttrib->attribute->bindingIndex);
+         translatedAttrib->currentValueType = currentValue.Type;
+-        translatedAttrib->divisor =
+-            translatedAttrib->binding->getDivisor() * mAppliedNumViewsToDivisor;
++        translatedAttrib->divisor          = GetMultiviewAdjustedDivisor(
++            mAppliedNumViewsToDivisor, translatedAttrib->binding->getDivisor());
+ 
+         switch (mAttributeStorageTypes[dirtyAttribIndex])
+         {
+@@ -332,7 +333,8 @@ angle::Result VertexArray11::updateDynamicAttribs(const gl::Context *context,
+         dynamicAttrib->bufferBindingPointer =
+             &getBufferBindingPointer(dynamicAttrib->attribute->bindingIndex);
+         dynamicAttrib->currentValueType = currentValue.Type;
+-        dynamicAttrib->divisor = dynamicAttrib->binding->getDivisor() * mAppliedNumViewsToDivisor;
++        dynamicAttrib->divisor = GetMultiviewAdjustedDivisor(mAppliedNumViewsToDivisor,
++                                                             dynamicAttrib->binding->getDivisor());
+     }
+ 
+     ANGLE_TRY(vertexDataManager->storeDynamicAttribs(context, &mTranslatedAttribs,
+diff --git a/src/libANGLE/renderer/gl/VertexArrayGL.cpp b/src/libANGLE/renderer/gl/VertexArrayGL.cpp
+index b00e1702abb387653691efd14195b82585855c96..6b197326dae1e40402c0ba095c52e94e6efc42db 100644
+--- a/src/libANGLE/renderer/gl/VertexArrayGL.cpp
++++ b/src/libANGLE/renderer/gl/VertexArrayGL.cpp
+@@ -22,6 +22,7 @@
+ #include "libANGLE/renderer/gl/FunctionsGL.h"
+ #include "libANGLE/renderer/gl/StateManagerGL.h"
+ #include "libANGLE/renderer/gl/renderergl_utils.h"
++#include "libANGLE/renderer/renderer_utils.h"
+ 
+ using namespace gl;
+ 
+@@ -61,11 +62,6 @@ bool IsVertexAttribPointerSupported(size_t attribIndex, const VertexAttribute &a
+     return (attribIndex == attrib.bindingIndex && attrib.relativeOffset == 0);
+ }
+ 
+-GLuint GetAdjustedDivisor(GLuint numViews, GLuint divisor)
+-{
+-    return numViews * divisor;
+-}
+-
+ static angle::Result ValidateStateHelperGetIntegerv(const gl::Context *context,
+                                                     const GLuint localValue,
+                                                     const GLenum pname,
+@@ -389,7 +385,8 @@ void VertexArrayGL::computeStreamingAttributeSizes(
+         // and how much slack space at the beginning of the buffer will be required by determining
+         // the attribute with the largest data size.
+         size_t typeSize        = ComputeVertexAttributeTypeSize(attrib);
+-        GLuint adjustedDivisor = GetAdjustedDivisor(mAppliedNumViews, binding.getDivisor());
++        GLuint adjustedDivisor =
++            GetMultiviewAdjustedDivisor(mAppliedNumViews, binding.getDivisor());
+         size_t streamedVertexCount = ComputeVertexBindingElementCount(
+             adjustedDivisor, indexRange.vertexCount(), std::max(instanceCount, 1), 0);
+         if (applyExtraOffsetWorkaroundForInstancedAttributes && adjustedDivisor > 0)
+@@ -469,7 +466,8 @@ angle::Result VertexArrayGL::streamAttributes(
+ 
+             const auto &binding = bindings[attrib.bindingIndex];
+ 
+-            GLuint adjustedDivisor = GetAdjustedDivisor(mAppliedNumViews, binding.getDivisor());
++            GLuint adjustedDivisor =
++                GetMultiviewAdjustedDivisor(mAppliedNumViews, binding.getDivisor());
+             // streamedVertexCount is only going to be modified by
+             // shiftInstancedArrayDataWithOffset workaround, otherwise it's const
+             size_t streamedVertexCount = ComputeVertexBindingElementCount(
+@@ -894,8 +892,8 @@ angle::Result VertexArrayGL::updateBindingBuffer(const gl::Context *context, siz
+ 
+ angle::Result VertexArrayGL::updateBindingDivisor(const gl::Context *context, size_t bindingIndex)
+ {
+-    GLuint adjustedDivisor =
+-        GetAdjustedDivisor(mAppliedNumViews, mState.getVertexBinding(bindingIndex).getDivisor());
++    GLuint adjustedDivisor = GetMultiviewAdjustedDivisor(
++        mAppliedNumViews, mState.getVertexBinding(bindingIndex).getDivisor());
+     if (mNativeState->bindings[bindingIndex].divisor == adjustedDivisor)
+     {
+         return angle::Result::Continue;
+diff --git a/src/libANGLE/renderer/renderer_utils.h b/src/libANGLE/renderer/renderer_utils.h
+index 1c66bcb2f12a8bfb3de4012b81031b30f797f437..2311e07d6f8fdc13997229471bcb729351edec2c 100644
+--- a/src/libANGLE/renderer/renderer_utils.h
++++ b/src/libANGLE/renderer/renderer_utils.h
+@@ -644,6 +644,12 @@ inline size_t PackSampleCount(int32_t sampleCount)
+     return gl::ScanForward(static_cast<uint32_t>(sampleCount));
+ }
+ 
++inline GLuint GetMultiviewAdjustedDivisor(int numViews, GLuint divisor)
++{
++    uint64_t adjusted = static_cast<uint64_t>(numViews) * static_cast<uint64_t>(divisor);
++    return static_cast<GLuint>(std::min<uint64_t>(adjusted, std::numeric_limits<GLuint>::max()));
++}
++
+ }  // namespace rx
+ 
+ // MultiDraw macro patterns
+diff --git a/src/tests/gl_tests/MultiviewDrawTest.cpp b/src/tests/gl_tests/MultiviewDrawTest.cpp
+index 4dea2a63b38621d767a6dcc3fb6818fed204c455..7a47e1b233ff8e88a1093b2a7049129535272b0f 100644
+--- a/src/tests/gl_tests/MultiviewDrawTest.cpp
++++ b/src/tests/gl_tests/MultiviewDrawTest.cpp
+@@ -1546,6 +1546,80 @@ void main()
+     }
+ }
+ 
++// The test verifies that the adjusted attribute divisor propagated to the driver remains non-zero
++// when the application supplies a very large divisor.
++TEST_P(MultiviewRenderTest, LargeAttribDivisor)
++{
++    ANGLE_SKIP_TEST_IF(!requestMultiviewExtension(isMultisampled()));
++    ANGLE_SKIP_TEST_IF(IsARM64() && IsWindows() && IsD3D());
++
++    updateFBOs(1, 1, 2);
++
++    const std::string VS = R"(#version 300 es
++#extension )" + extensionName() +
++                           R"( : require
++layout(num_views = 2) in;
++layout(location = 0) in vec2 vPosition;
++layout(location = 1) in float offsetX;
++void main()
++{
++       vec4 p = vec4(vPosition, 0.0, 1.0);
++       p.x += offsetX;
++       gl_Position = p;
++})";
++
++    const std::string FS = R"(#version 300 es
++#extension )" + extensionName() +
++                           R"( : require
++precision mediump float;
++out vec4 col;
++void main()
++{
++    col = vec4(0,1,0,1);
++})";
++
++    ANGLE_GL_PROGRAM(program, VS.c_str(), FS.c_str());
++
++    GLBuffer vertexVBO;
++    glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
++    Vector2 kQuadVertices[6] = {Vector2(-1.f, -1.f), Vector2(1.f, -1.f), Vector2(1.f, 1.f),
++                                Vector2(-1.f, -1.f), Vector2(1.f, 1.f),  Vector2(-1.f, 1.f)};
++    glBufferData(GL_ARRAY_BUFFER, sizeof(kQuadVertices), kQuadVertices, GL_STATIC_DRAW);
++
++    GLBuffer xOffsetVBO;
++    glBindBuffer(GL_ARRAY_BUFFER, xOffsetVBO);
++    const GLfloat xOffsetData[6] = {0.0f, 4.0f, 4.0f, 4.0f, 4.0f, 4.0f};
++    glBufferData(GL_ARRAY_BUFFER, sizeof(xOffsetData), xOffsetData, GL_STATIC_DRAW);
++
++    GLVertexArray vao;
++    glBindVertexArray(vao);
++
++    glBindBuffer(GL_ARRAY_BUFFER, vertexVBO);
++    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
++    glEnableVertexAttribArray(0);
++
++    glBindBuffer(GL_ARRAY_BUFFER, xOffsetVBO);
++    glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 0, 0);
++    glEnableVertexAttribArray(1);
++    // Use 2^31 here so that if an overflow occurs (bug present), the divisor wraps to 0
++    // and Attribute 1 becomes per-vertex. If fixed, the divisor is clamped to UINT_MAX
++    // and Attribute 1 remains per-instance.
++    glVertexAttribDivisor(1, 0x80000000u);
++    ASSERT_GL_NO_ERROR();
++
++    glViewport(0, 0, 1, 1);
++    glClearColor(0, 0, 0, 1);
++    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
++
++    glUseProgram(program);
++    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 1);
++    ASSERT_GL_NO_ERROR();
++
++    resolveMultisampledFBO();
++    EXPECT_EQ(GLColor::green, GetViewColor(0, 0, 0));
++    EXPECT_EQ(GLColor::green, GetViewColor(0, 0, 1));
++}
++
+ // Test that different sequences of vertexAttribDivisor, useProgram and bindVertexArray in a
+ // multi-view context propagate the correct divisor to the driver.
+ TEST_P(MultiviewRenderTest, DivisorOrderOfOperation)

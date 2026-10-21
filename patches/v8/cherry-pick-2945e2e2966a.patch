@@ -1,0 +1,411 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Linke <jgruber@chromium.org>
+Date: Tue, 6 Oct 2026 13:38:13 +0200
+Subject: [turbolev] Fix expression invalidation at loop headers
+
+MergeForLoop compares effect epochs from graph building and KNA
+recomputation. These counters belong to different traversals, so equal
+values can incorrectly preserve stale loads across loop effects.
+
+Save the loop header's builder epoch and compare it with the saved
+backedge epoch. During recomputation, invalidate epoch-dependent
+expressions when that comparison indicates effects; otherwise retain
+valid forward expressions. Treat epoch overflow conservatively.
+
+This replaces backedge expression matching with loop-effect filtering.
+Add a regression test and unit coverage for both backedge paths,
+effectless loops, and stale forward expressions.
+
+Fixed: 567175125
+Change-Id: I3bf29885c7c7bd8c67475d1305c2fa8844cfdbed
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8493491
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Jakob Linke <jgruber@chromium.org>
+Auto-Submit: Jakob Linke <jgruber@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#110355}
+
+Electron adaptation notes (44-x-y): V8 15.2 has no
+LoopMergePointInterpreterFrameState subclass; loop-header state lives
+directly on MergePointInterpreterFrameState. InitializeLoopEffectEpoch(),
+loop_has_effects() and loop_header_effect_epoch_ are therefore added to
+MergePointInterpreterFrameState (next to backedge_known_node_aspects_),
+InitializeLoop() calls InitializeLoopEffectEpoch() directly, and
+RecomputeKnownNodeAspectsProcessor passes block->state()->loop_has_effects().
+The V8_EXPORT_PRIVATE additions that only serve the new unittest are kept
+where the declarations exist; MayBeHoleOrUndefinedNan() does not exist
+here and the new unittest file changes are dropped (test-only).
+
+diff --git a/src/compiler/heap-refs.h b/src/compiler/heap-refs.h
+index 59195c2824b73e95711106b925af52ecf05e9312..ddae57e1818ad6b719b7277f4e59ccfe177287b7 100644
+--- a/src/compiler/heap-refs.h
++++ b/src/compiler/heap-refs.h
+@@ -765,7 +765,7 @@ class HeapNumberRef : public HeapObjectRef {
+ 
+   IndirectHandle<HeapNumber> object() const;
+ 
+-  double value() const;
++  V8_EXPORT_PRIVATE double value() const;
+   uint64_t value_as_bits() const;
+ };
+ 
+diff --git a/src/maglev/maglev-compilation-info.h b/src/maglev/maglev-compilation-info.h
+index e05d1201a67422cc9f23cdaaa59a4c110f774c19..15b20245b78f522129f0075f097065be1204449b 100644
+--- a/src/maglev/maglev-compilation-info.h
++++ b/src/maglev/maglev-compilation-info.h
+@@ -175,7 +175,8 @@ class MaglevCompilationInfo final {
+   bool trace_json_enabled() const { return trace_json_enabled_; }
+ 
+   bool has_graph_labeller() const { return !!graph_labeller_; }
+-  void set_graph_labeller(MaglevGraphLabeller* graph_labeller);
++  V8_EXPORT_PRIVATE void set_graph_labeller(
++      MaglevGraphLabeller* graph_labeller);
+   MaglevGraphLabeller* graph_labeller() const {
+     DCHECK(has_graph_labeller());
+     return graph_labeller_.get();
+diff --git a/src/maglev/maglev-graph-labeller.h b/src/maglev/maglev-graph-labeller.h
+index 60e8ff8d4083c27d423f35debe33a3daf2338bf6..e766fdcb185d66c8e61f47d78ce14067fc7d3c45 100644
+--- a/src/maglev/maglev-graph-labeller.h
++++ b/src/maglev/maglev-graph-labeller.h
+@@ -102,7 +102,7 @@ class MaglevGraphLabeller {
+   int next_node_label_ = 1;
+ };
+ 
+-class MaglevGraphLabellerScope {
++class V8_EXPORT_PRIVATE MaglevGraphLabellerScope {
+  public:
+   explicit MaglevGraphLabellerScope(MaglevGraphLabeller* graph_labeller);
+   ~MaglevGraphLabellerScope();
+diff --git a/src/maglev/maglev-graph.h b/src/maglev/maglev-graph.h
+index d78d2fa4ad4befa936071bee84a0a77f7bbb65fd..939d639b539cadeb1b29e06fba05bbad31e00797 100644
+--- a/src/maglev/maglev-graph.h
++++ b/src/maglev/maglev-graph.h
+@@ -342,7 +342,7 @@ class Graph final : public ZoneObject {
+                                    constant.get_bits());
+   }
+ 
+-  HeapConstant* GetHeapNumberConstant(double constant);
++  V8_EXPORT_PRIVATE HeapConstant* GetHeapNumberConstant(double constant);
+ 
+   RootConstant* GetRootConstant(RootIndex index) {
+     return GetOrAddNewConstantNode(root_constants_, index);
+diff --git a/src/maglev/maglev-interpreter-frame-state.cc b/src/maglev/maglev-interpreter-frame-state.cc
+index c35ba2aea80b37477b0a7034bceb80fc453aed4f..9b3067ced200dcd57267f47053e4b5b099dc6656 100644
+--- a/src/maglev/maglev-interpreter-frame-state.cc
++++ b/src/maglev/maglev-interpreter-frame-state.cc
+@@ -444,6 +444,7 @@ void MergePointInterpreterFrameState::InitializeLoop(
+   DCHECK_EQ(predecessors_so_far_, 0);
+   known_node_aspects_ = unmerged.known_node_aspects()->CloneForLoopHeader(
+       optimistic_initial_state, loop_effects, graph->zone());
++  InitializeLoopEffectEpoch(*known_node_aspects_);
+   unmerged.virtual_objects().Snapshot();
+   const MaglevCompilationInfo* info = compilation_unit.info();
+   TRACE(TraceColor::kInfo << "Initializing "
+diff --git a/src/maglev/maglev-interpreter-frame-state.h b/src/maglev/maglev-interpreter-frame-state.h
+index 7d35640a61b0ed642a39de8fbf442d68dccbbbcd..d2039c186a39ff2d7fa65f782880be24de33bd77 100644
+--- a/src/maglev/maglev-interpreter-frame-state.h
++++ b/src/maglev/maglev-interpreter-frame-state.h
+@@ -404,7 +404,7 @@ class MergePointInterpreterFrameState {
+     clear_is_loop();
+   }
+ 
+-  void RemovePredecessorAt(int predecessor_id);
++  V8_EXPORT_PRIVATE void RemovePredecessorAt(int predecessor_id);
+ 
+   // Returns and clears the known node aspects on this state. Expects to only
+   // ever be called once, when starting a basic block with this state.
+@@ -527,6 +527,16 @@ class MergePointInterpreterFrameState {
+     return backedge_known_node_aspects_;
+   }
+ 
++  void InitializeLoopEffectEpoch(const KnownNodeAspects& aspects) {
++    loop_header_effect_epoch_ = aspects.effect_epoch_;
++  }
++  bool loop_has_effects() const {
++    return loop_header_effect_epoch_ ==
++               KnownNodeAspects::kEffectEpochOverflow ||
++           loop_header_effect_epoch_ !=
++               backedge_known_node_aspects()->effect_epoch_;
++  }
++
+   const compiler::LoopInfo* loop_info() const {
+     DCHECK(loop_metadata_.has_value());
+     DCHECK_NOT_NULL(loop_metadata_->loop_info);
+@@ -593,7 +603,7 @@ class MergePointInterpreterFrameState {
+                         Alternatives::List* per_predecessor_alternatives,
+                         bool optimistic_loop_phis = false);
+ 
+-  void ReducePhiPredecessorCount(unsigned num);
++  V8_EXPORT_PRIVATE void ReducePhiPredecessorCount(unsigned num);
+ 
+   void MergeVirtualObjects(Graph* graph, bool is_tracing,
+                            const MaglevCompilationUnit& compilation_unit,
+@@ -642,6 +652,9 @@ class MergePointInterpreterFrameState {
+ 
+   // The KNA from the backedge (end of the loop). Only used for loop headers.
+   KnownNodeAspects* backedge_known_node_aspects_ = nullptr;
++  // Effect epoch of the loop header KNA, used to detect whether the loop body
++  // had any effects. Only used for loop headers.
++  uint32_t loop_header_effect_epoch_ = KnownNodeAspects::kEffectEpochOverflow;
+ 
+   union {
+     // {pre_predecessor_alternatives_} is used to keep track of the alternatives
+diff --git a/src/maglev/maglev-ir.h b/src/maglev/maglev-ir.h
+index c56d26b7b0b300e01a6c1d9817796946f6072908..b726fe6b76c70b93e42a0de070547128bcba87f8 100644
+--- a/src/maglev/maglev-ir.h
++++ b/src/maglev/maglev-ir.h
+@@ -1819,8 +1819,8 @@ inline compiler::BytecodeArrayRef DeoptFrame::GetBytecodeArray() const {
+ 
+ class DeoptInfo {
+  protected:
+-  DeoptInfo(Zone* zone, DeoptFrame* top_frame,
+-            compiler::FeedbackSource feedback_to_update);
++  V8_EXPORT_PRIVATE DeoptInfo(Zone* zone, DeoptFrame* top_frame,
++                              compiler::FeedbackSource feedback_to_update);
+ 
+  public:
+   DeoptFrame& top_frame() { return *top_frame_; }
+@@ -2826,8 +2826,8 @@ class ValueNode : public Node {
+   compiler::OptionalHeapObjectRef TryGetConstant(
+       compiler::JSHeapBroker* broker);
+ 
+-  NodeType GetStaticType(compiler::JSHeapBroker* broker);
+-  Range GetStaticRange() const;
++  V8_EXPORT_PRIVATE NodeType GetStaticType(compiler::JSHeapBroker* broker);
++  V8_EXPORT_PRIVATE Range GetStaticRange() const;
+ 
+   bool StaticTypeIs(compiler::JSHeapBroker* broker, NodeType type) {
+     return NodeTypeIs(GetStaticType(broker), type);
+@@ -10230,8 +10230,8 @@ class Phi : public ValueNodeT<Phi> {
+   // Records a use hint for this Phi. If {force_same_loop} is true, the hint
+   // is recorded as a same-loop use, which is important for loop-related
+   // optimizations like Phi untagging.
+-  void RecordUseReprHint(UseRepresentationSet repr_mask,
+-                         bool force_same_loop = false);
++  V8_EXPORT_PRIVATE void RecordUseReprHint(UseRepresentationSet repr_mask,
++                                           bool force_same_loop = false);
+ 
+   UseRepresentationSet use_repr_hints() { return use_repr_hints_; }
+   UseRepresentationSet same_loop_use_repr_hints() {
+diff --git a/src/maglev/maglev-kna-processor.h b/src/maglev/maglev-kna-processor.h
+index c1be4bfa560931545f0f84bf56ddf05aa4632fbc..63bcf391d89dd75158b65c4706d5cfee29e8d339 100644
+--- a/src/maglev/maglev-kna-processor.h
++++ b/src/maglev/maglev-kna-processor.h
+@@ -97,7 +97,8 @@ class RecomputeKnownNodeAspectsProcessor {
+                 << *backedge_known_node_aspects);
+       backedge_known_node_aspects->UnwrapIdentitiesAndPhisInKeys(zone());
+       known_node_aspects_->MergeForLoop(*backedge_known_node_aspects, zone(),
+-                                        block->state()->loop_effects());
++                                        block->state()->loop_effects(),
++                                        block->state()->loop_has_effects());
+     } else if (block->has_state()) {
+       known_node_aspects_ = block->state()->TakeKnownNodeAspects();
+     } else if (block->is_edge_split_block()) {
+diff --git a/src/maglev/maglev-known-node-aspects.cc b/src/maglev/maglev-known-node-aspects.cc
+index fcc8a0d278923eb73aad590051861b0dee63a881..8d827beac04ea4410f4c9cd07017c27d7a8d7779 100644
+--- a/src/maglev/maglev-known-node-aspects.cc
++++ b/src/maglev/maglev-known-node-aspects.cc
+@@ -288,8 +288,8 @@ void KnownNodeAspects::Merge(const KnownNodeAspects& other, Zone* zone) {
+ // loop-invariant values the peeler cloned), invalidating only what the loop
+ // body can change.
+ void KnownNodeAspects::MergeForLoop(const KnownNodeAspects& backedge,
+-                                    Zone* zone,
+-                                    const LoopEffects* loop_effects) {
++                                    Zone* zone, const LoopEffects* loop_effects,
++                                    bool loop_has_effects) {
+   if (side_effects_require_invalidation_ &&
+       (loop_effects == nullptr || loop_effects->unstable_aspects_cleared ||
+        loop_effects->elements_kind_transitioned)) {
+@@ -302,45 +302,23 @@ void KnownNodeAspects::MergeForLoop(const KnownNodeAspects& backedge,
+     side_effects_require_invalidation_ = false;
+   }
+ 
+-  if (effect_epoch_ != backedge.effect_epoch_) {
+-    effect_epoch_ = std::max(effect_epoch_, backedge.effect_epoch_) + 1;
+-  }
+-  // Forward entries for pure (epoch-exempt) expressions are kept even without
+-  // a backedge equivalent: the forward predecessor dominates the loop body and
+-  // loop effects cannot invalidate a pure expression. Other entries need a
+-  // structurally equal backedge entry with a still-valid epoch.
+-  for (auto it = available_expressions_.begin();
+-       it != available_expressions_.end();) {
+-    const AvailableExpression& lhs = it->second;
+-    DCHECK_NE(lhs.effect_epoch, kEffectEpochOverflow);
+-    DCHECK_IMPLIES(!lhs.node->Is<Identity>(),
+-                   Node::needs_epoch_check(lhs.node->opcode()) ==
+-                       (lhs.effect_epoch != kEffectEpochForPureInstructions));
+-    if (lhs.node->Is<Identity>()) {
+-      it = available_expressions_.erase(it);
+-      continue;
+-    }
+-    if (lhs.effect_epoch == kEffectEpochForPureInstructions) {
+-      ++it;
+-      continue;
+-    }
+-    bool keep = false;
+-    auto rhs_it = backedge.available_expressions_.find(it->first);
+-    if (rhs_it != backedge.available_expressions_.end()) {
+-      const AvailableExpression& rhs = rhs_it->second;
+-      DCHECK_IMPLIES(lhs.node == rhs.node,
+-                     lhs.effect_epoch == rhs.effect_epoch);
+-      ValueNode* rhs_value = rhs.node->TryCast<ValueNode>();
+-      NodeBase* rhs_node = rhs_value ? rhs_value->UnwrapIdentities() : rhs.node;
+-      keep = lhs.node->IsStructurallyEqualTo(rhs_node) &&
+-             lhs.effect_epoch >= effect_epoch_;
+-    }
+-    if (keep) {
+-      ++it;
+-    } else {
+-      it = available_expressions_.erase(it);
+-    }
+-  }
++  // TODO(jgruber): Recompute loop effects after lazy inlining, which can
++  // replace effectful calls with pure operations.
++  if (loop_has_effects) increment_effect_epoch();
++
++  std::erase_if(available_expressions_, [&](const auto& entry) {
++    const AvailableExpression& expr = entry.second;
++    DCHECK_NE(expr.effect_epoch, kEffectEpochOverflow);
++    DCHECK_IMPLIES(!expr.node->Is<Identity>(),
++                   Node::needs_epoch_check(expr.node->opcode()) ==
++                       (expr.effect_epoch != kEffectEpochForPureInstructions));
++    if (expr.node->Is<Identity>()) return true;
++    if (expr.effect_epoch == kEffectEpochForPureInstructions) return false;
++    // The graph builder's backedge epoch is not comparable with the recomputed
++    // forward epoch. loop_has_effects was determined during graph building.
++    if (loop_has_effects) return true;
++    return expr.effect_epoch < effect_epoch_;
++  });
+ 
+   const bool keep_invariant_loads =
+       loop_effects != nullptr && !loop_effects->unstable_aspects_cleared;
+diff --git a/src/maglev/maglev-known-node-aspects.h b/src/maglev/maglev-known-node-aspects.h
+index 4f6b39b94152099a12bdbb4fc7703e5642dd754e..be6962109f2ea7de9f2e98e6d36e13009859a5b7 100644
+--- a/src/maglev/maglev-known-node-aspects.h
++++ b/src/maglev/maglev-known-node-aspects.h
+@@ -577,8 +577,10 @@ class KnownNodeAspects {
+   }
+ 
+   void Merge(const KnownNodeAspects& other, Zone* zone);
+-  void MergeForLoop(const KnownNodeAspects& backedge, Zone* zone,
+-                    const LoopEffects* loop_effects);
++  V8_EXPORT_PRIVATE void MergeForLoop(const KnownNodeAspects& backedge,
++                                      Zone* zone,
++                                      const LoopEffects* loop_effects,
++                                      bool loop_has_effects);
+ 
+   // If IsCompatibleWithLoopHeader(other) returns true, it means that
+   // Merge(other) would not remove any information from `this`.
+diff --git a/test/mjsunit/turbolev/loop-peel-effect-epochs.js b/test/mjsunit/turbolev/loop-peel-effect-epochs.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..708ef92f78ef164226ce44d5e1f7856a6fb57ea2
+--- /dev/null
++++ b/test/mjsunit/turbolev/loop-peel-effect-epochs.js
+@@ -0,0 +1,37 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --turbolev --turbofan
++
++let shrink = false;
++function callback(array, iteration) {
++  if (shrink && iteration === 1) array.length = 2;
++}
++%NeverOptimizeFunction(callback);
++
++function sum(array, n, callback) {
++  const at = Array.prototype.at;
++  let result = 0;
++  // This loop aligns the effect epochs at the second loop header.
++  for (let i = 0; i < 3; ++i) {
++    callback(null, 9);
++    callback(null, 9);
++  }
++  for (let i = 0; i < n; ++i) {
++    if (i === 0) result += array.length;
++    result += at.call(array, 3);
++    callback(array, i);
++    result += at.call(array, 0);
++    result += array[0];
++  }
++  return result;
++}
++
++const array = [11, 12, 13, 14];
++%PrepareFunctionForOptimization(sum);
++assertEquals(148, sum(array, 4, callback));
++assertEquals(148, sum(array, 4, callback));
++%OptimizeFunctionOnNextCall(sum);
++shrink = true;
++assertTrue(Number.isNaN(sum(array, 4, callback)));
+diff --git a/test/unittests/maglev/maglev-graph-builder-unittest.cc b/test/unittests/maglev/maglev-graph-builder-unittest.cc
+index 23a99256d2e9ca179f9354c5bf93cee549674bef..caeb4f984b971a0b1d3f34905cda84e2f906f12c 100644
+--- a/test/unittests/maglev/maglev-graph-builder-unittest.cc
++++ b/test/unittests/maglev/maglev-graph-builder-unittest.cc
+@@ -8,8 +8,10 @@
+ 
+ #include "src/maglev/maglev-compilation-info.h"
+ #include "src/maglev/maglev-compiler.h"
++#include "src/maglev/maglev-graph-labeller.h"
+ #include "src/maglev/maglev-ir-inl.h"
+ #include "src/maglev/maglev-ir.h"
++#include "test/common/flag-utils.h"
+ #include "test/unittests/maglev/maglev-test.h"
+ 
+ namespace v8 {
+@@ -18,6 +20,55 @@ namespace maglev {
+ 
+ class MaglevGraphBuilderTest : public TestWithNativeContextAndZone {};
+ 
++TEST_F(MaglevGraphBuilderTest, LoopEffectEpochComparison) {
++  FlagScope<bool> allow_natives_syntax(&v8_flags.allow_natives_syntax, true);
++  FlagScope<bool> non_eager_inlining(&v8_flags.maglev_non_eager_inlining, true);
++  FlagScope<bool> optimistic_loops(&v8_flags.maglev_optimistic_peeled_loops,
++                                   true);
++  for (bool peeling : {false, true}) {
++    FlagScope<bool> loop_peeling(&v8_flags.maglev_loop_peeling, peeling);
++    for (bool has_effects : {false, true}) {
++      HandleScope scope(isolate());
++      std::string script = R"(
++        function f(object, n) {
++          let result = 0;
++          for (let i = 0; i < n; ++i) {
++            result += i;
++      )";
++      if (has_effects) script += "object.x = i;";
++      script += R"(
++          }
++          return result;
++        }
++        %PrepareFunctionForOptimization(f);
++        f({x: 0}, 10);
++        (f)
++      )";
++      Handle<JSFunction> function = RunJS<JSFunction>(script.c_str());
++      auto info = MaglevCompilationInfo::New(isolate(), function,
++                                             BytecodeOffset::None());
++      info->set_graph_labeller(new MaglevGraphLabeller());
++      MaglevGraphLabellerScope graph_labeller_scope(info->graph_labeller());
++      Graph* graph = Graph::New(info.get());
++      compiler::CurrentHeapBrokerScope current_broker(info->broker());
++      MaglevGraphBuilder graph_builder(isolate()->AsLocalIsolate(),
++                                       info->toplevel_compilation_unit(),
++                                       graph);
++      PersistentHandlesScope persistent_scope(isolate());
++      ASSERT_TRUE(graph_builder.Build());
++      int loop_count = 0;
++      for (BasicBlock* block : graph->blocks()) {
++        if (!block->is_loop()) continue;
++        ++loop_count;
++        EXPECT_EQ(has_effects,
++                  block->state()->AsLoopHeader()->loop_has_effects());
++      }
++      EXPECT_EQ(1, loop_count);
++      persistent_scope.Detach();
++    }
++  }
++}
++
+ template <typename T>
+ static T* getUniqueNode(Graph* graph) {
+   T* target = nullptr;

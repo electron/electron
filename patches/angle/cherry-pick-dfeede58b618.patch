@@ -1,0 +1,2317 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Thu, 24 Sep 2026 14:06:31 -0400
+Subject: Translator: Fold constant switch statements
+
+When a switch statement has a constant selector, previously there was no
+dead-code elimination done for it in AST.  In IR, cases that would not
+be hit were eliminated, but the switch remained with its single matching
+case.  Primarily, this was done to avoid having to deal with break and
+continue statements nested in the switch.
+
+However, due to driver bugs, a pass is added to completely remove switch
+statements that have a constant selector.  Where there are nested break
+and continue statements, the switch statement is replaced with a
+`while (true) { ... break; }` to allow breaking out of it.  To support
+continue statements, a variable is introduced to be set instead of
+continue, and the loop is followed by an `if (flag) continue;`.
+
+Some tests are credit zork@
+
+Bug: chromium:548066294
+Change-Id: I8b8ad101c37029358c4d4f03282fa463b318c420
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8465623
+Reviewed-by: Matthew Denton <mpdenton@chromium.org>
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/compiler.gni b/src/compiler.gni
+index ad6d37d6346b764f1b5974d2df6a090a0093ff89..533600ba86b572e848af1164463475f2b28c7ecc 100644
+--- a/src/compiler.gni
++++ b/src/compiler.gni
+@@ -139,6 +139,8 @@ angle_translator_sources = [
+   "src/compiler/translator/tree_ops/EmulateGLFragColorBroadcast.h",
+   "src/compiler/translator/tree_ops/EmulateMultiDrawShaderBuiltins.cpp",
+   "src/compiler/translator/tree_ops/EmulateMultiDrawShaderBuiltins.h",
++  "src/compiler/translator/tree_ops/FoldConstantSwitch.cpp",
++  "src/compiler/translator/tree_ops/FoldConstantSwitch.h",
+   "src/compiler/translator/tree_ops/FoldExpressions.cpp",
+   "src/compiler/translator/tree_ops/FoldExpressions.h",
+   "src/compiler/translator/tree_ops/GatherDefaultUniforms.cpp",
+diff --git a/src/compiler/translator/Compiler.cpp b/src/compiler/translator/Compiler.cpp
+index 450d2a86519bdcda52ad59fce69f6ca3a9ac8219..9c60b6812fa29c267312dadc03d311615eb617af 100644
+--- a/src/compiler/translator/Compiler.cpp
++++ b/src/compiler/translator/Compiler.cpp
+@@ -31,6 +31,7 @@
+ #include "compiler/translator/tree_ops/DeferGlobalInitializers.h"
+ #include "compiler/translator/tree_ops/EmulateGLFragColorBroadcast.h"
+ #include "compiler/translator/tree_ops/EmulateMultiDrawShaderBuiltins.h"
++#include "compiler/translator/tree_ops/FoldConstantSwitch.h"
+ #include "compiler/translator/tree_ops/FoldExpressions.h"
+ #include "compiler/translator/tree_ops/InitializeVariables.h"
+ #include "compiler/translator/tree_ops/PruneEmptyCases.h"
+@@ -777,8 +778,8 @@ bool TCompiler::checkAndSimplifyAST(TIntermBlock *root,
+         }
+     }
+ 
+-    // Fold expressions that could not be folded before validation that was done as a part of
+-    // parsing.
++    // Fold expressions that could not be folded before validation or otherwise that was done as a
++    // part of parsing.
+     if (!FoldExpressions(this, root, &mDiagnostics))
+     {
+         return false;
+@@ -786,6 +787,13 @@ bool TCompiler::checkAndSimplifyAST(TIntermBlock *root,
+     // Folding should only be able to generate warnings.
+     ASSERT(mDiagnostics.numErrors() == 0);
+ 
++    // Fold switch statements with constant expression.  Run after FoldExpressions because the
++    // switch selector may need folding.
++    if (!FoldConstantSwitch(this, root, &mSymbolTable))
++    {
++        return false;
++    }
++
+     const bool hasAnyClipCullDistance =
+         parseContext.isExtensionEnabled(TExtension::ANGLE_clip_cull_distance) ||
+         parseContext.isExtensionEnabled(TExtension::EXT_clip_cull_distance) ||
+diff --git a/src/compiler/translator/ir/src/builder.rs b/src/compiler/translator/ir/src/builder.rs
+index 97d9aab4fe36ba9a0554b6d7730d27b8e7f14df9..08832fa49c92d97ea783891d973a113951e36c26 100644
+--- a/src/compiler/translator/ir/src/builder.rs
++++ b/src/compiler/translator/ir/src/builder.rs
+@@ -62,6 +62,44 @@ impl IntermediateBlock {
+     }
+ }
+ 
++// Information needed to constant-fold switch statements
++#[cfg_attr(debug_assertions, derive(Debug))]
++struct ConstantSwitchInfo {
++    // Whether the current target of `break` is a `switch` (possibly nested under another switch)
++    // with a constant expression.  In particular, this switch would have to specially handle
++    // `continue` (see comments below).
++    is_constant_switch: bool,
++    // If the current constant-switch has had a `continue` branch, a variable is declared before
++    // the switch and set to true at the point of `continue`, and the branch is changed to
++    // `break`.  An `if (flag) continue;` statement is added after the (replaced) switch.
++    continue_variable: Option<(VariableId, TypedId)>,
++}
++
++impl ConstantSwitchInfo {
++    fn new() -> ConstantSwitchInfo {
++        ConstantSwitchInfo { is_constant_switch: false, continue_variable: None }
++    }
++
++    fn get_continue_variable(&mut self, ir_meta: &mut IRMeta) -> TypedId {
++        if let Some(continue_variable) = self.continue_variable {
++            continue_variable.1
++        } else {
++            let variable = ir_meta.declare_variable(
++                Name::new_temp("continue_flag"),
++                TYPE_ID_BOOL,
++                Precision::NotApplicable,
++                false,
++                Decorations::new_none(),
++                None,
++                Some(CONSTANT_ID_FALSE),
++                VariableScope::Local,
++            );
++            self.continue_variable = Some(variable);
++            variable.1
++        }
++    }
++}
++
+ // Helper to construct the CFG of a function.
+ #[cfg_attr(debug_assertions, derive(Debug))]
+ struct CFGBuilder {
+@@ -75,16 +113,24 @@ struct CFGBuilder {
+     // The blocks of the CFG that is being built.  Once a function is complete, this stack
+     // should be empty.
+     interm_blocks: Vec<IntermediateBlock>,
++    // A stack of nested switch / loop info used for folding switch statements with a constant
++    // selector.
++    constant_switch_stack: Vec<ConstantSwitchInfo>,
+ }
+ 
+ impl CFGBuilder {
+     fn new() -> CFGBuilder {
+-        CFGBuilder { current_block: IntermediateBlock::new(), interm_blocks: Vec::new() }
++        CFGBuilder {
++            current_block: IntermediateBlock::new(),
++            interm_blocks: Vec::new(),
++            constant_switch_stack: Vec::new(),
++        }
+     }
+ 
+     fn clear(&mut self) {
+         let _ = std::mem::replace(&mut self.current_block, IntermediateBlock::new());
+         self.interm_blocks.clear();
++        self.constant_switch_stack.clear();
+     }
+ 
+     fn is_empty(&self) -> bool {
+@@ -192,14 +238,18 @@ impl CFGBuilder {
+     // Add an instruction to the current block.  This may be a break, continue, return or discard,
+     // in which case the block terminates early.  If another instruction is added after the block
+     // is terminated, it is dropped as dead-code.
+-    fn add_void_instruction(&mut self, op: OpCode) {
++    fn add_void_instruction(&mut self, ir_meta: &mut IRMeta, op: OpCode) {
+         if !self.current_block.new_instructions_are_dead_code {
+             if matches!(op, OpCode::Discard | OpCode::Return(_) | OpCode::Break | OpCode::Continue)
+             {
+                 self.current_block.new_instructions_are_dead_code = true;
+             }
+ 
+-            self.current_block.block.add_void_instruction(op);
++            // If `continue` is observed under a switch with a constant selector, it's replaced with
++            // a `break` after setting a flag (to `continue` after the `switch`).
++            if !matches!(op, OpCode::Continue) || !self.constant_switch_nested_continue(ir_meta) {
++                self.current_block.block.add_void_instruction(op);
++            }
+         }
+     }
+     fn add_typed_instruction(&mut self, id: RegisterId) {
+@@ -379,6 +429,8 @@ impl CFGBuilder {
+             self.current_block.block.terminate(OpCode::Loop);
+         }
+         self.push_block();
++
++        self.constant_switch_stack.push(ConstantSwitchInfo::new());
+     }
+ 
+     fn end_loop_condition_common(&mut self, condition: TypedId) {
+@@ -426,6 +478,8 @@ impl CFGBuilder {
+             self.current_block.block.terminate(OpCode::Continue);
+         }
+ 
++        self.constant_switch_stack.pop();
++
+         // Retrieve and set the body block of the loop.  The header of the loop is already at the
+         // top of the stack.  Prepare a merge block to continue what comes after the loop.
+         //
+@@ -482,6 +536,8 @@ impl CFGBuilder {
+             self.current_block.block.terminate(OpCode::DoLoop);
+         }
+         self.push_block();
++
++        self.constant_switch_stack.push(ConstantSwitchInfo::new());
+     }
+ 
+     fn begin_do_loop_condition(&mut self) {
+@@ -504,6 +560,8 @@ impl CFGBuilder {
+     fn end_do_loop(&mut self, condition: TypedId) {
+         self.end_loop_condition_common(condition);
+ 
++        self.constant_switch_stack.pop();
++
+         // Prepare a merge block to continue what comes after the do-loop.  If the entire do-loop
+         // was dead-code eliminated however, restore the previous (already terminated) block.
+         if self.are_new_instructions_dead_code_in_parent_block() {
+@@ -522,6 +580,15 @@ impl CFGBuilder {
+             self.current_block.block.terminate(OpCode::Switch(value, Vec::new()));
+         }
+         self.push_block();
++
++        let mut switch_info = ConstantSwitchInfo::new();
++        switch_info.is_constant_switch = value.id.is_constant()
++            || self
++                .constant_switch_stack
++                .last()
++                .map(|info| info.is_constant_switch)
++                .unwrap_or(false);
++        self.constant_switch_stack.push(switch_info);
+     }
+ 
+     fn is_empty_switch_block(block: &Block) -> bool {
+@@ -624,10 +691,12 @@ impl CFGBuilder {
+         (true, None)
+     }
+ 
+-    fn end_switch(&mut self) {
++    fn end_switch(&mut self, ir_meta: &mut IRMeta) {
+         // Terminate the last case, if not already.
+         self.end_previous_case();
+ 
++        let constant_switch_info = self.constant_switch_stack.pop().unwrap();
++
+         // The case blocks have already been processed.  The header of the switch is already at the
+         // top of the stack.  Prepare a merge block to continue what comes after the switch.
+         //
+@@ -658,9 +727,12 @@ impl CFGBuilder {
+         // - The switch has a constant expression, but none of the cases match it: In this case, the
+         //   switch can be removed as well.
+         // - The switch has a constant expression with a matching case: In this case, the
+-        //   non-matching cases (that also cannot be fallen-through) can be removed.  Note that
+-        //   sometimes the entire switch can be replaced with the matching blocks, but it can get
+-        //   tricky with break and continue in it.
++        //   non-matching cases (that also cannot be fallen-through) can be removed.  The blocks in
++        //   the matching cases are placed under an infinite loop, which is broken out of with the
++        //   `break` instructions. Note that `continue` instructions are already turned into `break`
++        //   instructions, in which case a "continue variable" is declared and needs to be added to
++        //   the parent block. After the block, an `if (continue_variable) continue` statement
++        //   should be added.
+ 
+         let (has_matching_case, matching_block_index) =
+             Self::switch_has_matching_case(&mut switch_block.block);
+@@ -672,50 +744,145 @@ impl CFGBuilder {
+         } else {
+             // If the switch expression is constant, remove the case blocks that cannot be executed
+             if let Some(matching_block_index) = matching_block_index {
+-                let case_blocks = std::mem::take(&mut switch_block.block.case_blocks);
+-
+-                // Starting from the matching block, take blocks while their terminator is
+-                // `Passthrough` and then the final block with a different terminator.  Note that
+-                // take_while stops _after_ the first element that doesn't match the predicate,
+-                // i.e. that element is lost.  Because of that, the first element after
+-                // `Passthrough` is also matched.
+-                let mut iter = case_blocks.into_iter().skip(matching_block_index);
+-                let mut matching_case_block = iter.next().unwrap();
+-                let mut fallthrough_chain_last_block =
+-                    matching_case_block.get_merge_chain_last_block_mut();
+-
+-                for fallthrough_block in iter {
+-                    // If the previous block was fallthrough, chain this block to it. Otherwise
+-                    // this block and all after it are unreachable.
+-                    if !matches!(
+-                        fallthrough_chain_last_block.get_terminating_op(),
+-                        &OpCode::Passthrough
+-                    ) {
+-                        break;
+-                    }
++                self.constant_switch_prune(switch_block, matching_block_index)
++            } else {
++                // The switch block has to remain (whether constant and folded or not), push it back
++                // and make the current block a merge block.
++                self.interm_blocks.push(switch_block);
++            }
++            self.constant_switch_declare_continue_variable(ir_meta, constant_switch_info);
++            self.current_block.is_merge_block = true;
++        }
++    }
+ 
+-                    fallthrough_chain_last_block.unterminate();
+-                    fallthrough_chain_last_block.terminate(OpCode::NextBlock);
+-                    fallthrough_chain_last_block.set_merge_block(fallthrough_block);
+-                    fallthrough_chain_last_block =
+-                        fallthrough_chain_last_block.get_merge_chain_last_block_mut();
+-                }
++    // Handle `continue` nested under a switch with a constant selector.  If `false` is returned,
++    // the instruction was not handled.
++    fn constant_switch_nested_continue(&mut self, ir_meta: &mut IRMeta) -> bool {
++        if let Some(info) = self.constant_switch_stack.last_mut()
++            && info.is_constant_switch
++        {
++            let continue_variable = info.get_continue_variable(ir_meta);
++            self.current_block
++                .block
++                .add_void_instruction(OpCode::Store(continue_variable, TYPED_CONSTANT_ID_TRUE));
++            self.current_block.block.add_void_instruction(OpCode::Break);
++            return true;
++        }
++        return false;
++    }
++
++    fn constant_switch_extract_matching_blocks(
++        switch_block: &mut IntermediateBlock,
++        matching_block_index: usize,
++    ) -> Block {
++        let case_blocks = std::mem::take(&mut switch_block.block.case_blocks);
++
++        // Starting from the matching block, take blocks while their terminator is
++        // `Passthrough` and then the final block with a different terminator.  Note that
++        // take_while stops _after_ the first element that doesn't match the predicate,
++        // i.e. that element is lost.  Because of that, the first element after
++        // `Passthrough` is also matched.
++        let mut iter = case_blocks.into_iter().skip(matching_block_index);
++        let mut matching_case_block = iter.next().unwrap();
++        let mut fallthrough_chain_last_block = matching_case_block.get_merge_chain_last_block_mut();
++
++        for fallthrough_block in iter {
++            // If the previous block was fallthrough, chain this block to it. Otherwise
++            // this block and all after it are unreachable.
++            if !matches!(fallthrough_chain_last_block.get_terminating_op(), &OpCode::Passthrough) {
++                break;
++            }
++
++            fallthrough_chain_last_block.unterminate();
++            fallthrough_chain_last_block.terminate(OpCode::NextBlock);
++            fallthrough_chain_last_block.set_merge_block(fallthrough_block);
++            fallthrough_chain_last_block =
++                fallthrough_chain_last_block.get_merge_chain_last_block_mut();
++        }
+ 
+-                let (switch_expression, switch_cases) =
+-                    switch_block.block.get_terminating_op().get_switch_expression_and_cases();
+-                let matching_case = switch_cases[matching_block_index];
+-                // Replace the switch with one that has only one target, that is the matching case.
+-                switch_block.block.unterminate();
+-                switch_block
+-                    .block
+-                    .terminate(OpCode::Switch(switch_expression, vec![matching_case]));
+-                switch_block.block.case_blocks = vec![matching_case_block];
++        matching_case_block
++    }
++
++    fn constant_switch_prune(
++        &mut self,
++        mut switch_block: IntermediateBlock,
++        matching_block_index: usize,
++    ) {
++        let matching_case_block =
++            Self::constant_switch_extract_matching_blocks(&mut switch_block, matching_block_index);
++
++        // Build the infinite loop with the matching_case_block as its body.
++        let mut condition_block = Block::new();
++        condition_block.terminate(OpCode::LoopIf(TYPED_CONSTANT_ID_TRUE));
++
++        let mut loop_block = Block::new();
++        loop_block.set_loop_condition_block(condition_block);
++        loop_block.set_loop_body_block(matching_case_block);
++        loop_block.terminate(OpCode::Loop);
++
++        // Instead of issuing a Switch, jump to the loop block directly.
++        switch_block.block.unterminate();
++        switch_block.block.terminate(OpCode::NextBlock);
++
++        self.interm_blocks.push(switch_block);
++
++        self.interm_blocks.push(IntermediateBlock {
++            block: loop_block,
++            is_merge_block: true,
++            new_instructions_are_dead_code: false,
++        });
++    }
++
++    fn constant_switch_declare_continue_variable(
++        &mut self,
++        ir_meta: &mut IRMeta,
++        constant_switch_info: ConstantSwitchInfo,
++    ) {
++        // If there's a continue variable, declare it in the loop block.  Also add
++        // `if (continue_variable) continue;` after the block.  Note that if nested under a switch
++        // with constant selector, this `continue` should be replaced with `break` too.
++        if let Some(continue_variable) = constant_switch_info.continue_variable {
++            self.interm_blocks.last_mut().unwrap().block.variables.push(continue_variable.0);
++
++            let mut if_body = Block::new();
++
++            if let Some(parent_info) = self.constant_switch_stack.last_mut()
++                && parent_info.is_constant_switch
++            {
++                // Generate:
++                //
++                //     Store parent_continue_variable true
++                //     Break
++                let parent_continue_variable = parent_info.get_continue_variable(ir_meta);
++                if_body.add_void_instruction(OpCode::Store(
++                    parent_continue_variable,
++                    TYPED_CONSTANT_ID_TRUE,
++                ));
++                if_body.terminate(OpCode::Break);
++            } else {
++                // Generate:
++                //
++                //     Continue
++                if_body.terminate(OpCode::Continue);
+             }
+ 
+-            // The switch has to remain (whether constant or not), push it back and make the
+-            // current block a merge block.
+-            self.interm_blocks.push(switch_block);
+-            self.current_block.is_merge_block = true;
++            // Generate:
++            //
++            //     should_continue = Load continue_variable
++            //                       If should_continue
++            let mut if_block = Block::new();
++            let condition =
++                if_block.add_typed_instruction(instruction::load(ir_meta, continue_variable.1));
++
++            if_block.set_if_true_block(if_body);
++            if_block.terminate(OpCode::If(condition));
++
++            // Set the if block as the merge block of the loop so it runs after it.
++            self.interm_blocks.push(IntermediateBlock {
++                block: if_block,
++                is_merge_block: true,
++                new_instructions_are_dead_code: false,
++            });
+         }
+     }
+ }
+@@ -1179,11 +1346,17 @@ impl Builder {
+     // Many instructions are generated either as part of a function or the initialization code for
+     // global variables.  The following function should be used so that the generated code is
+     // placed in the appropriate scope (function or global).
++    fn scope_and_ir_meta(&mut self) -> (&mut CFGBuilder, &mut IRMeta) {
++        (
++            match self.current_function {
++                Some(_) => &mut self.current_function_cfg,
++                None => &mut self.global_initializers_cfg,
++            },
++            &mut self.ir.meta,
++        )
++    }
+     fn scope(&mut self) -> &mut CFGBuilder {
+-        match self.current_function {
+-            Some(_) => &mut self.current_function_cfg,
+-            None => &mut self.global_initializers_cfg,
+-        }
++        self.scope_and_ir_meta().0
+     }
+ 
+     // Used internally, loads an id from the top of the id stack.  If that is a pointer, its value
+@@ -1230,7 +1403,8 @@ impl Builder {
+         } else {
+             self.ir.meta.on_variable_initialized(id);
+             let id = TypedId::from_variable_id(&self.ir.meta, id);
+-            self.scope().add_void_instruction(OpCode::Store(id, value));
++            let (scope, ir_meta) = self.scope_and_ir_meta();
++            scope.add_void_instruction(ir_meta, OpCode::Store(id, value));
+         }
+     }
+ 
+@@ -1443,7 +1617,8 @@ impl Builder {
+         self.scope().begin_default();
+     }
+     pub fn end_switch(&mut self) {
+-        self.scope().end_switch();
++        let (scope, ir_meta) = self.scope_and_ir_meta();
++        scope.end_switch(ir_meta);
+     }
+ 
+     pub fn branch_discard(&mut self) {
+@@ -1559,7 +1734,10 @@ impl Builder {
+             instruction::Result::Constant(id) => {
+                 self.interm_ids.push(TypedId::from_typed_constant_id(id))
+             }
+-            instruction::Result::Void(op) => self.scope().add_void_instruction(op),
++            instruction::Result::Void(op) => {
++                let (scope, ir_meta) = self.scope_and_ir_meta();
++                scope.add_void_instruction(ir_meta, op)
++            }
+             instruction::Result::Register(id) => {
+                 self.scope().add_typed_instruction(id.id);
+                 self.interm_ids.push(TypedId::from_register_id(id))
+diff --git a/src/compiler/translator/ir/src/output/legacy.rs b/src/compiler/translator/ir/src/output/legacy.rs
+index e02207d90ae08ed76c42916eda21e7c844d5fe4d..42cb23d3fcf6e8a62160079ba9fc640477771884 100644
+--- a/src/compiler/translator/ir/src/output/legacy.rs
++++ b/src/compiler/translator/ir/src/output/legacy.rs
+@@ -3346,8 +3346,12 @@ impl ast::Target for Generator<'_> {
+     }
+     fn branch_loop_if(&mut self, block: &mut *mut TIntermBlock, condition: TypedId) {
+         // The condition block of a loop ends in `if (!condition) break;`
+-        // SAFETY: Pointers are obtained from C++ and passed back to it.
+-        unsafe { ffi::branch_loop_if(*block, &self.get_expression(condition)) };
++        //
++        // No-op if the condition is `true`
++        if !matches!(condition.id, Id::Constant(CONSTANT_ID_TRUE)) {
++            // SAFETY: Pointers are obtained from C++ and passed back to it.
++            unsafe { ffi::branch_loop_if(*block, &self.get_expression(condition)) };
++        }
+     }
+     fn branch_switch(
+         &mut self,
+diff --git a/src/compiler/translator/tree_ops/FoldConstantSwitch.cpp b/src/compiler/translator/tree_ops/FoldConstantSwitch.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..42f0a49320cc4006cd2d5df7f8469e1f254a2aef
+--- /dev/null
++++ b/src/compiler/translator/tree_ops/FoldConstantSwitch.cpp
+@@ -0,0 +1,397 @@
++//
++// Copyright 2026 The ANGLE Project Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++//
++
++#include "compiler/translator/tree_ops/FoldConstantSwitch.h"
++
++#include "compiler/translator/IntermNode.h"
++#include "compiler/translator/tree_util/IntermNode_util.h"
++#include "compiler/translator/tree_util/IntermTraverse.h"
++
++namespace sh
++{
++
++namespace
++{
++
++struct ControlFlowInfo
++{
++    // Whether the current target of |break| is a switch (possibly nested under another switch) with
++    // a constant expression.  In particular, this switch would have to specially handle |continue|
++    // (see comments below).
++    bool isConstantSwitch = false;
++    // Whether the current constant-switch has had a |break| (other than the one terminating the
++    // case) or |continue| branch inside.
++    bool hasBranch = false;
++    // If the current constant-switch has had a |continue| branch, a variable is declared before the
++    // switch and set to true at the point of |continue|, and the branch is changed to |break|.  An
++    // |if (flag) continue;| statement is added after the (replaced) switch.
++    const TVariable *continueVariable        = nullptr;
++    TIntermDeclaration *continueVariableDecl = nullptr;
++    // As the switch body is visited, some variables may be pruned, but they may be used in what's
++    // not dead-code eliminated, like:
++    //    switch(1){
++    //        case 0:
++    //            break;
++    //            vec4 d = vec4(0);
++    //        default:
++    //            d = vec4(1);
++    //    }
++    //
++    // Declaration of those variables is moved to before the switch.
++    TVector<const TVariable *> prunedDeclarations;
++};
++
++class FoldConstantSwitchTraverser : public TIntermTraverser
++{
++  public:
++    FoldConstantSwitchTraverser(TSymbolTable *symbolTable)
++        : TIntermTraverser(true, false, true, symbolTable)
++    {}
++
++  protected:
++    bool visitBranch(Visit visit, TIntermBranch *node) override;
++    bool visitSwitch(Visit visit, TIntermSwitch *node) override;
++    bool visitLoop(Visit visit, TIntermLoop *node) override;
++
++    // No-op some common nodes that don't need to be recursed as they cannot affect this
++    // transformation
++    bool visitUnary(Visit visit, TIntermUnary *node) override { return false; }
++    bool visitBinary(Visit visit, TIntermBinary *node) override { return false; }
++    bool visitTernary(Visit visit, TIntermTernary *node) override { return false; }
++    bool visitAggregate(Visit visit, TIntermAggregate *node) override { return false; }
++    bool visitDeclaration(Visit visit, TIntermDeclaration *node) override { return false; }
++
++  private:
++    void visitSwitchBody(TIntermSwitch *node);
++    void onSwitchPostVisit(TIntermSwitch *node);
++    void keepDeclaredVariables(TIntermNode *statement);
++    TIntermSymbol *getContinueVariable();
++
++    std::vector<ControlFlowInfo> mControlFlowStack;
++};
++
++bool FoldConstantSwitchTraverser::visitLoop(Visit visit, TIntermLoop *node)
++{
++    // Push/pop into the control flow stack so that nested break/continue are not attributed to an
++    // enclosing switch.
++    if (visit == PreVisit)
++    {
++        mControlFlowStack.push_back({});
++    }
++    else
++    {
++        ASSERT(visit == PostVisit);
++        mControlFlowStack.pop_back();
++    }
++    return true;
++}
++
++bool FoldConstantSwitchTraverser::visitSwitch(Visit visit, TIntermSwitch *node)
++{
++    if (visit == PostVisit)
++    {
++        onSwitchPostVisit(node);
++        return true;
++    }
++
++    const bool nestedUnderConstantSwitch =
++        !mControlFlowStack.empty() && mControlFlowStack.back().isConstantSwitch;
++    mControlFlowStack.push_back({});
++    mControlFlowStack.back().isConstantSwitch = nestedUnderConstantSwitch;
++
++    // If the selector is not a constant, traverse the children as usual
++    const bool isConstantSelector = node->getInit()->getAsConstantUnion() != nullptr;
++    if (!isConstantSelector)
++    {
++        return true;
++    }
++
++    mControlFlowStack.back().isConstantSwitch = true;
++
++    node->getInit()->traverse(this);
++    visitSwitchBody(node);
++
++    onSwitchPostVisit(node);
++    return false;
++}
++
++void FoldConstantSwitchTraverser::onSwitchPostVisit(TIntermSwitch *node)
++{
++    TIntermBlock *body          = node->getStatementList();
++    TIntermSequence &statements = *body->getSequence();
++
++    TIntermSequence replacement;
++
++    // If the switch has no instructions left, just remove the whole switch.
++    if (statements.empty())
++    {
++        // Keep the selector if it has a side effect.
++        if (node->getInit()->hasSideEffects())
++        {
++            replacement.push_back(node->getInit());
++        }
++        mMultiReplacements.emplace_back(getParentNode()->getAsBlock(), node,
++                                        std::move(replacement));
++        return;
++    }
++
++    // If there are pruned declarations, declare them before the switch.
++    const bool hasPrunedDeclarations = !mControlFlowStack.back().prunedDeclarations.empty();
++    for (const TVariable *toDeclare : mControlFlowStack.back().prunedDeclarations)
++    {
++        TIntermDeclaration *decl = new TIntermDeclaration();
++        decl->appendDeclarator(new TIntermSymbol(toDeclare));
++        replacement.push_back(decl);
++    }
++
++    // If a continue branch was visited, declare the continue variable before the switch, and add an
++    // |if (flag) continue;| after it.
++    const TVariable *continueVariable        = mControlFlowStack.back().continueVariable;
++    TIntermDeclaration *continueVariableDecl = mControlFlowStack.back().continueVariableDecl;
++    if (continueVariableDecl)
++    {
++        replacement.push_back(continueVariableDecl);
++    }
++
++    // Different cases to handle for the switch itself:
++    //
++    // * Selector is not constant: Keep switch as-is
++    // * Select is constant, no branches: Use the body of the switch without the selector
++    // * Select is constant, there are branches: Create a while(true), with the switch's body as its
++    //   body.  Append |break| to the body.
++    if (node->getInit()->getAsConstantUnion() == nullptr)
++    {
++        replacement.push_back(node);
++    }
++    else if (!mControlFlowStack.back().hasBranch)
++    {
++        replacement.push_back(body);
++    }
++    else
++    {
++        statements.push_back(new TIntermBranch(EOpBreak, nullptr));
++        replacement.push_back(new TIntermLoop(ELoopFor, nullptr, nullptr, nullptr, body));
++    }
++
++    // Variables declared in the switch must be scoped to it.  If there are any that have been
++    // hoisted out, create a scope for them.
++    if (hasPrunedDeclarations)
++    {
++        TIntermBlock *scope = new TIntermBlock;
++        scope->replaceAllChildren(std::move(replacement));
++        ASSERT(replacement.empty());
++        replacement.push_back(scope);
++    }
++
++    mControlFlowStack.pop_back();
++
++    // |if (flag) continue;|.  Note that if nested under a switch with constant selector, this
++    // continue should be replaced with break too.
++    if (continueVariableDecl)
++    {
++        TIntermBlock *ifBody = new TIntermBlock;
++        if (!mControlFlowStack.empty() && mControlFlowStack.back().isConstantSwitch)
++        {
++            TIntermSymbol *parentContinueVar = getContinueVariable();
++            ifBody->appendStatement(
++                new TIntermBinary(EOpAssign, parentContinueVar, CreateBoolNode(true)));
++            ifBody->appendStatement(new TIntermBranch(EOpBreak, nullptr));
++        }
++        else
++        {
++            ifBody->appendStatement(new TIntermBranch(EOpContinue, nullptr));
++        }
++        if (!mControlFlowStack.empty())
++        {
++            mControlFlowStack.back().hasBranch = true;
++        }
++
++        replacement.push_back(
++            new TIntermIfElse(new TIntermSymbol(continueVariable), ifBody, nullptr));
++    }
++
++    mMultiReplacements.emplace_back(getParentNode()->getAsBlock(), node, std::move(replacement));
++}
++
++TIntermSymbol *FoldConstantSwitchTraverser::getContinueVariable()
++{
++    if (mControlFlowStack.back().continueVariable == nullptr)
++    {
++        mControlFlowStack.back().continueVariable =
++            DeclareTempVariable(mSymbolTable, CreateBoolNode(false), EvqTemporary,
++                                &mControlFlowStack.back().continueVariableDecl);
++    }
++
++    return new TIntermSymbol(mControlFlowStack.back().continueVariable);
++}
++
++bool FoldConstantSwitchTraverser::visitBranch(Visit visit, TIntermBranch *node)
++{
++    if (mControlFlowStack.empty() || !mControlFlowStack.back().isConstantSwitch)
++    {
++        return false;
++    }
++
++    if (node->getFlowOp() == EOpContinue || node->getFlowOp() == EOpBreak)
++    {
++        mControlFlowStack.back().hasBranch = true;
++    }
++
++    if (node->getFlowOp() == EOpContinue)
++    {
++        // If |continue| is encountered in a to-be-pruned switch, set a variable and issue a break
++        // instead.
++        TIntermSymbol *continueVar = getContinueVariable();
++        TIntermSequence replacement;
++        replacement.push_back(new TIntermBinary(EOpAssign, continueVar, CreateBoolNode(true)));
++        replacement.push_back(new TIntermBranch(EOpBreak, nullptr));
++        mMultiReplacements.emplace_back(getParentNode()->getAsBlock(), node,
++                                        std::move(replacement));
++    }
++    return false;
++}
++
++uint32_t GetConstantAsUInt(const TConstantUnion *value)
++{
++    TConstantUnion asUInt;
++    if (value->getType() == EbtYuvCscStandardEXT)
++    {
++        asUInt.setUConst(value->getYuvCscStandardEXTConst());
++    }
++    else
++    {
++        bool valid = asUInt.cast(EbtUInt, *value);
++        ASSERT(valid);
++    }
++    return asUInt.getUConst();
++}
++
++void FoldConstantSwitchTraverser::visitSwitchBody(TIntermSwitch *node)
++{
++    TIntermBlock *body          = node->getStatementList();
++    TIntermSequence &statements = *body->getSequence();
++
++    ScopedNodeInTraversalPath addToPath(this, body);
++
++    TIntermConstantUnion *selectorConstant = node->getInit()->getAsConstantUnion();
++    ASSERT(selectorConstant != nullptr);
++    const uint32_t selectorValue = GetConstantAsUInt(selectorConstant->getConstantValue());
++
++    // First, find if there's an exact match for the selector value, or otherwise if there is a
++    // default to match.
++    size_t matchedCaseIndex = statements.size();
++    if (selectorConstant)
++    {
++        for (size_t statementIndex = 0; statementIndex < statements.size(); ++statementIndex)
++        {
++            TIntermNode *statement = statements[statementIndex];
++            TIntermCase *caseLabel = statement->getAsCaseNode();
++            if (caseLabel == nullptr)
++            {
++                continue;
++            }
++            // Default matches everything.  Remember its index if no exact match is yet visited.
++            // Later, if an exact match is visited, it will overwrite this index.
++            if (!caseLabel->hasCondition())
++            {
++                if (matchedCaseIndex == statements.size())
++                {
++                    matchedCaseIndex = statementIndex;
++                }
++                continue;
++            }
++
++            TIntermConstantUnion *condition = caseLabel->getCondition()->getAsConstantUnion();
++            ASSERT(condition != nullptr);
++
++            // If any case matches the value, it's not a no-op.
++            const uint32_t caseValue = GetConstantAsUInt(condition->getConstantValue());
++            if (caseValue == selectorValue)
++            {
++                matchedCaseIndex = statementIndex;
++                break;
++            }
++        }
++    }
++
++    // Prune every statement up to the matching case
++    for (size_t statementIndex = 0; statementIndex < matchedCaseIndex; ++statementIndex)
++    {
++        // Keep the declared variables to be declared above the if.  The statements that are not
++        // pruned may reference these variables.
++        keepDeclaredVariables(statements[statementIndex]);
++    }
++
++    // Visit every surviving statement, starting from the matching case.
++    size_t writeIndex = 0;
++    for (size_t statementIndex = matchedCaseIndex; statementIndex < statements.size();
++         ++statementIndex)
++    {
++        TIntermNode *statement = statements[statementIndex];
++
++        // Drop case statements since the switch is going to be folded.  This naturally makes
++        // fallthrough work.
++        if (statement->getAsCaseNode() != nullptr)
++        {
++            continue;
++        }
++
++        // If a branch is visited, stop; everything after this is going to be dead code.
++        TIntermBranch *asBranch = statement->getAsBranchNode();
++        if (asBranch == nullptr || asBranch->getFlowOp() != EOpBreak)
++        {
++            // The statement itself needs to stay, except for a terminating break which can be
++            // pruned.
++            statement->traverse(this);
++            statements[writeIndex++] = statement;
++        }
++        if (asBranch != nullptr)
++        {
++            // Drop everything after this.  Note that |{ break; }| is not matched, since it's inside
++            // a block.  That's ok, PruneNoOps will do a thorough job later.
++            break;
++        }
++    }
++    statements.resize(writeIndex);
++}
++
++void FoldConstantSwitchTraverser::keepDeclaredVariables(TIntermNode *statement)
++{
++    TIntermDeclaration *decl = statement->getAsDeclarationNode();
++    if (decl == nullptr)
++    {
++        return;
++    }
++
++    for (TIntermNode *declarator : *decl->getSequence())
++    {
++        TIntermSymbol *symbol        = declarator->getAsSymbolNode();
++        const TVariable *declaredVar = nullptr;
++        if (symbol != nullptr)
++        {
++            declaredVar = &symbol->variable();
++        }
++        else
++        {
++            TIntermBinary *initNode = declarator->getAsBinaryNode();
++            ASSERT(initNode && initNode->getOp() == EOpInitialize);
++            ASSERT(initNode->getLeft()->getAsSymbolNode());
++            declaredVar = &initNode->getLeft()->getAsSymbolNode()->variable();
++        }
++
++        mControlFlowStack.back().prunedDeclarations.push_back(declaredVar);
++    }
++}
++}  // anonymous namespace
++
++bool FoldConstantSwitch(TCompiler *compiler, TIntermBlock *root, TSymbolTable *symbolTable)
++{
++    FoldConstantSwitchTraverser traverser(symbolTable);
++    root->traverse(&traverser);
++    return traverser.updateTree(compiler, root);
++}
++
++}  // namespace sh
+diff --git a/src/compiler/translator/tree_ops/FoldConstantSwitch.h b/src/compiler/translator/tree_ops/FoldConstantSwitch.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..746abf19d610c99f7b4422cfb4f42a01d27dda51
+--- /dev/null
++++ b/src/compiler/translator/tree_ops/FoldConstantSwitch.h
+@@ -0,0 +1,27 @@
++//
++// Copyright 2026 The ANGLE Project Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++//
++// FoldConstantSwitch.h: Run after FoldExpressions, folds switch statements with constant
++// expression.
++
++#ifndef COMPILER_TRANSLATOR_TREEOPS_FOLDCONSTANTSWITCH_H_
++#define COMPILER_TRANSLATOR_TREEOPS_FOLDCONSTANTSWITCH_H_
++
++#include "common/angleutils.h"
++
++namespace sh
++{
++
++class TCompiler;
++class TIntermBlock;
++class TSymbolTable;
++
++[[nodiscard]] bool FoldConstantSwitch(TCompiler *compiler,
++                                      TIntermBlock *root,
++                                      TSymbolTable *symbolTable);
++
++}  // namespace sh
++
++#endif  // COMPILER_TRANSLATOR_TREEOPS_FOLDCONSTANTSWITCH_H_
+diff --git a/src/compiler/translator/tree_ops/PruneNoOps.cpp b/src/compiler/translator/tree_ops/PruneNoOps.cpp
+index 0895324891dd9dd0a3520671016434e563414579..c53fadbcf19a06da2432f01c199781b20bd2d962 100644
+--- a/src/compiler/translator/tree_ops/PruneNoOps.cpp
++++ b/src/compiler/translator/tree_ops/PruneNoOps.cpp
+@@ -15,68 +15,6 @@ namespace sh
+ 
+ namespace
+ {
+-uint32_t GetSwitchConstantAsUInt(const TConstantUnion *value)
+-{
+-    TConstantUnion asUInt;
+-    if (value->getType() == EbtYuvCscStandardEXT)
+-    {
+-        asUInt.setUConst(value->getYuvCscStandardEXTConst());
+-    }
+-    else
+-    {
+-        bool valid = asUInt.cast(EbtUInt, *value);
+-        ASSERT(valid);
+-    }
+-    return asUInt.getUConst();
+-}
+-
+-bool IsNoOpSwitch(TIntermSwitch *node)
+-{
+-    if (node == nullptr)
+-    {
+-        return false;
+-    }
+-
+-    TIntermConstantUnion *expr = node->getInit()->getAsConstantUnion();
+-    if (expr == nullptr)
+-    {
+-        return false;
+-    }
+-
+-    const uint32_t exprValue = GetSwitchConstantAsUInt(expr->getConstantValue());
+-
+-    // See if any block matches the constant value
+-    const TIntermSequence &statements = *node->getStatementList()->getSequence();
+-
+-    for (TIntermNode *statement : statements)
+-    {
+-        TIntermCase *caseLabel = statement->getAsCaseNode();
+-        if (caseLabel == nullptr)
+-        {
+-            continue;
+-        }
+-
+-        // Default matches everything, consider it not a no-op.
+-        if (!caseLabel->hasCondition())
+-        {
+-            return false;
+-        }
+-
+-        TIntermConstantUnion *condition = caseLabel->getCondition()->getAsConstantUnion();
+-        ASSERT(condition != nullptr);
+-
+-        // If any case matches the value, it's not a no-op.
+-        const uint32_t caseValue = GetSwitchConstantAsUInt(condition->getConstantValue());
+-        if (caseValue == exprValue)
+-        {
+-            return false;
+-        }
+-    }
+-
+-    // No case matched the constant value the switch was used on, so the entire switch is a no-op.
+-    return true;
+-}
+-
+ bool IsNoOp(TIntermNode *node)
+ {
+     bool isEmptyDeclaration = node->getAsDeclarationNode() != nullptr &&
+@@ -86,11 +24,6 @@ bool IsNoOp(TIntermNode *node)
+         return true;
+     }
+ 
+-    if (IsNoOpSwitch(node->getAsSwitchNode()))
+-    {
+-        return true;
+-    }
+-
+     if (node->getAsTyped() == nullptr || node->getAsFunctionPrototypeNode() != nullptr)
+     {
+         return false;
+diff --git a/src/compiler/translator/tree_util/IntermTraverse.h b/src/compiler/translator/tree_util/IntermTraverse.h
+index 3a48556a1f28089eb8b126679ace7ef3ceb254a4..7857ba019e4e672d28b831bbddf43a5e1b7708e5 100644
+--- a/src/compiler/translator/tree_util/IntermTraverse.h
++++ b/src/compiler/translator/tree_util/IntermTraverse.h
+@@ -186,7 +186,10 @@ class TIntermTraverser : angle::NonCopyable
+                                      TIntermNode *originalIn,
+                                      TIntermSequence &&replacementsIn)
+             : parent(parentIn), original(originalIn), replacements(std::move(replacementsIn))
+-        {}
++        {
++            ASSERT(parentIn);
++            ASSERT(originalIn);
++        }
+ 
+         TIntermAggregateBase *parent;
+         TIntermNode *original;
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 6cf759f7babbe39c215c394f47d6292fc2a7f9ef..52ce5d553b45e4d8bc6f31e5496c38aabfa2cbcd 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -548,6 +548,7 @@
+ 
+ // D3D
+ 42264653 WIN D3D11 : GLSLTestLoops.*ContinueInSwitch/* = SKIP
++42264653 WIN D3D11 : GLSLTest_ES3.NestedSwitchContinueInEnclosingLoop3/* = SKIP
+ // D3D does not support compressed textures where the base mip level is not a multiple of 4
+ 40644741 WIN D3D11 : DXT1CompressedTextureTest.NonBlockSizesMipLevels/* = SKIP
+ 42265582 WIN D3D11 : ClearTestRGB_ES3.*/* = SKIP
+diff --git a/src/tests/angle_unittests.gni b/src/tests/angle_unittests.gni
+index 4465a9311897778646074f770483769c70febf3e..95111ae157566d131a3dbd29d14f7f4a78af04e6 100644
+--- a/src/tests/angle_unittests.gni
++++ b/src/tests/angle_unittests.gni
+@@ -102,7 +102,6 @@ angle_unittests_compiler_tests_sources = [
+   "compiler_tests/Parse_test.cpp",
+   "compiler_tests/PruneEmptyCases_test.cpp",
+   "compiler_tests/PruneEmptyDeclarations_test.cpp",
+-  "compiler_tests/PruneNoOps_test.cpp",
+   "compiler_tests/PrunePureLiteralStatements_test.cpp",
+   "compiler_tests/PruneUnusedFunctions_test.cpp",
+   "compiler_tests/QualificationOrderESSL31_test.cpp",
+diff --git a/src/tests/compiler_tests/PruneNoOps_test.cpp b/src/tests/compiler_tests/PruneNoOps_test.cpp
+deleted file mode 100644
+index b60f17e0032516f13e8debf557a436aedce5c970..0000000000000000000000000000000000000000
+--- a/src/tests/compiler_tests/PruneNoOps_test.cpp
++++ /dev/null
+@@ -1,101 +0,0 @@
+-//
+-// Copyright 2024 The ANGLE Project Authors. All rights reserved.
+-// Use of this source code is governed by a BSD-style license that can be
+-// found in the LICENSE file.
+-//
+-// PruneNoOps_test.cpp:
+-//   Tests for pruning no-op statements.
+-//
+-
+-#include "GLSLANG/ShaderLang.h"
+-#include "angle_gl.h"
+-#include "gtest/gtest.h"
+-#include "tests/test_utils/compiler_test.h"
+-
+-using namespace sh;
+-
+-namespace
+-{
+-
+-class PruneNoOpsTest : public MatchOutputCodeTest
+-{
+-  public:
+-    PruneNoOpsTest() : MatchOutputCodeTest(GL_FRAGMENT_SHADER, SH_GLSL_150_CORE_OUTPUT) {}
+-};
+-
+-// Test that a switch statement with a constant expression without a matching case is pruned.
+-TEST_F(PruneNoOpsTest, SwitchStatementWithConstantExpressionNoMatchingCase)
+-{
+-    const std::string shaderString = R"(#version 300 es
+-precision mediump float;
+-out vec4 color;
+-
+-void main(void)
+-{
+-    switch (10)
+-    {
+-        case 0:
+-            color = vec4(0);
+-            break;
+-        case 1:
+-            color = vec4(1);
+-            break;
+-    }
+-})";
+-    compile(shaderString);
+-    ASSERT_TRUE(notFoundInCode("switch"));
+-    ASSERT_TRUE(notFoundInCode("case"));
+-}
+-
+-// Test that a switch statement with a constant expression with a default is not pruned.
+-TEST_F(PruneNoOpsTest, SwitchStatementWithConstantExpressionWithDefault)
+-{
+-    const std::string shaderString = R"(#version 300 es
+-precision mediump float;
+-out vec4 color;
+-
+-void main(void)
+-{
+-    switch (10)
+-    {
+-        case 0:
+-            color = vec4(0);
+-            break;
+-        case 1:
+-            color = vec4(1);
+-            break;
+-        default:
+-            color = vec4(0.5);
+-            break;
+-    }
+-})";
+-    compile(shaderString);
+-    ASSERT_TRUE(foundInCode("switch"));
+-    ASSERT_TRUE(foundInCode("case"));
+-}
+-
+-// Test that a switch statement with a constant expression with a matching case is not pruned.
+-TEST_F(PruneNoOpsTest, SwitchStatementWithConstantExpressionWithMatchingCase)
+-{
+-    const std::string shaderString = R"(#version 300 es
+-precision mediump float;
+-out vec4 color;
+-
+-void main(void)
+-{
+-    switch (10)
+-    {
+-        case 0:
+-            color = vec4(0);
+-            break;
+-        case 10:
+-            color = vec4(1);
+-            break;
+-    }
+-})";
+-    compile(shaderString);
+-    ASSERT_TRUE(foundInCode("switch"));
+-    ASSERT_TRUE(foundInCode("case"));
+-}
+-
+-}  // namespace
+diff --git a/src/tests/deqp_support/deqp_gles3_test_expectations.txt b/src/tests/deqp_support/deqp_gles3_test_expectations.txt
+index 2f52fd0eb25556aee6049383884a170328a34518..f305fd48d69a80565195a8b3e57b65dc89cebc15 100644
+--- a/src/tests/deqp_support/deqp_gles3_test_expectations.txt
++++ b/src/tests/deqp_support/deqp_gles3_test_expectations.txt
+@@ -786,6 +786,7 @@
+ // Translator IR failures
+ // IR's use of `while` and `if (!condition) break` instead of `for(..)` makes the HLSL generator think the loops are discontinuous, and as a result it drops the derivative built-ins!
+ 349994211 IR D3D11 NVIDIA : dEQP-GLES3.functional.shaders.derivate.*.uniform_loop* = SKIP
++349994211 IR D3D11 NVIDIA : dEQP-GLES3.functional.shaders.derivate.*.static_switch* = SKIP
+ // Untriaged failures with HLSL
+ 349994211 IR D3D11 NVIDIA : dEQP-GLES3.functional.shaders.switch.default_label_static_* = SKIP
+ 349994211 IR D3D11 NVIDIA : dEQP-GLES3.functional.shaders.switch.default_not_last_static_* = SKIP
+diff --git a/src/tests/gl_tests/GLSLOutputTest.cpp b/src/tests/gl_tests/GLSLOutputTest.cpp
+index eb22cd87d611d475942ba4d1353aa6ebd8c57b66..b75c7c5043ff3beee6c69ab4db10a71bc09b6ab2 100644
+--- a/src/tests/gl_tests/GLSLOutputTest.cpp
++++ b/src/tests/gl_tests/GLSLOutputTest.cpp
+@@ -688,6 +688,232 @@ TEST_P(WebGLGLSLOutputGLSLTest, ComplexExpression)
+     verifyIsInTranslation(GL_FRAGMENT_SHADER, "vec4(511.0, 511.0, 511.0, 511.0)));");
+     verifyIsInTranslation(GL_FRAGMENT_SHADER, "vec4(599.0, 599.0, 599.0, 599.0)));");
+ }
++
++// Test that a constant switch with matching case is folded away in the translated shader.
++TEST_P(GLSLOutputGLSLTest_ES3, BasicConstantSwitch)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++void main()
++{
++    float f = 0.0;
++    switch (0)
++    {
++        case 156: f = 1234.0; break;
++        case 0:   f = 2.0; break;
++        default:  f = 3.0; break;
++    }
++    color = f == 2.0 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++    compileShader(GL_FRAGMENT_SHADER, kFS);
++    verifyIsNotInTranslation(GL_FRAGMENT_SHADER, "switch");
++}
++
++// Test that a constant switch without matching case is completely pruned in the translated shader.
++TEST_P(GLSLOutputGLSLTest_ES3, BasicConstantSwitchPruned)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++void main()
++{
++    float f = 0.0;
++    switch (10)
++    {
++        case 156: f = 1234.0; break;
++        case 0:   f = 567.0; break;
++    }
++    color = f == 0.0 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++    compileShader(GL_FRAGMENT_SHADER, kFS);
++    verifyIsNotInTranslation(GL_FRAGMENT_SHADER, "switch");
++}
++
++// Test that nested constant switch statements (https://crbug.com/548066294) are folded away.
++TEST_P(GLSLOutputGLSLTest_ES3, NestedConstantSwitch)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++void main()
++{
++    int result = 0;
++    switch (0)
++    {
++        case 0:
++            result += 1;
++            switch (1)
++            {
++                case 0:
++                    result += 10;
++                    break;
++                case 1:
++                    result += 20;
++                    switch (2)
++                    {
++                        case 2:
++                            result += 300;
++                            break;
++                        default:
++                            result += 400;
++                            break;
++                    }
++                    break;
++                default:
++                    result += 50;
++                    break;
++            }
++            break;
++        case 1:
++            result += 1000;
++            break;
++        default:
++            result += 2000;
++            break;
++    }
++    color = result == 321 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++    compileShader(GL_FRAGMENT_SHADER, kFS);
++    verifyIsNotInTranslation(GL_FRAGMENT_SHADER, "switch");
++}
++
++// Test that fall-through across cases in a constant switch is folded away.
++TEST_P(GLSLOutputGLSLTest_ES3, FallThrough)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++void main()
++{
++    float f = 0.0;
++    switch (1)
++    {
++        case 1: f += 5.0;
++        case 2: f += 2.0; break;
++        case 3: f += 4.0; break;
++    }
++    color = f == 7.0 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++    compileShader(GL_FRAGMENT_SHADER, kFS);
++    verifyIsNotInTranslation(GL_FRAGMENT_SHADER, "switch");
++}
++
++// Test that conditional break inside folded switch statements emits a do-while loop wrapper.
++TEST_P(GLSLOutputGLSLTest_ES3, ConditionalBreak)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform int u_zero;
++out vec4 color;
++void main()
++{
++    float f = 0.0;
++    switch (0)
++    {
++        case 0:
++            if (u_zero != 0) { break; }
++            f = 2.0;
++            break;
++        default:
++            f = 5.0;
++            break;
++    }
++    color = f == 2.0 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++    compileShader(GL_FRAGMENT_SHADER, kFS);
++    verifyIsNotInTranslation(GL_FRAGMENT_SHADER, "switch");
++}
++
++// Test that continue targeting an enclosing loop is preserved when folding switch statements.
++TEST_P(GLSLOutputGLSLTest_ES3, ContinueInEnclosingLoop)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform int u_zero;
++out vec4 color;
++void main()
++{
++    int count = 0;
++    for (int i = 0; i < 4; ++i)
++    {
++        switch (0)
++        {
++            case 0:
++                if (u_zero != 0) { break; }
++                if (i == 2) { continue; }
++                count += 1;
++                break;
++            default:
++                count += 100;
++                break;
++        }
++        count += 10;
++    }
++    color = count == 33 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++    compileShader(GL_FRAGMENT_SHADER, kFS);
++    verifyIsNotInTranslation(GL_FRAGMENT_SHADER, "switch");
++}
++
++// Test that declarations in skipped cases are preserved without initializers in translation.
++TEST_P(GLSLOutputGLSLTest_ES3, SkippedDeclaration)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform int u;
++out vec4 color;
++void main()
++{
++    float res = 0.0;
++    switch (u, 1)
++    {
++        case 0:
++            float d = 4.0;
++            break;
++        case 2:
++            float e = 5.0;
++            break;
++        case 1:
++            d = 2.0;
++            res = d;
++            break;
++    }
++    color = res == 2.0 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++    compileShader(GL_FRAGMENT_SHADER, kFS);
++    verifyIsNotInTranslation(GL_FRAGMENT_SHADER, "switch");
++}
++
++// Test that case blocks with compound statements are truncated at break and subsequent cases
++// are not emitted in translated output.
++TEST_P(GLSLOutputGLSLTest_ES3, CaseWithCompoundStatementBlock)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform int u;
++out vec4 color;
++void main()
++{
++    float f = 0.0;
++    switch (true ? 0 : u)
++    {
++        case 0:
++        {
++            f = 2.0;
++            break;
++        }
++        case 1:
++        {
++            f = 5.0;
++            break;
++        }
++    }
++    color = f == 2.0 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++    compileShader(GL_FRAGMENT_SHADER, kFS);
++    verifyIsNotInTranslation(GL_FRAGMENT_SHADER, "switch");
++}
+ }  // namespace
+ 
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(GLSLOutputGLSLTest);
+diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
+index e9f188ae8eb27ed7e45f2c2d48e2ffefd3f29d4f..9591e08ba71e6658460a06f305cfa6ed5c5cf48b 100644
+--- a/src/tests/gl_tests/GLSLTest.cpp
++++ b/src/tests/gl_tests/GLSLTest.cpp
+@@ -17524,7 +17524,8 @@ void main()
+             int d = 31;
+             // fallthrough
+         case 123:
+-            result += 2 + d;
++            // Note: because the initialization of d has never executed, it's value is undefined
++            result += 2 + d * 0;
+             // fallthrough
+         case 3:
+             result += 4;
+@@ -17533,7 +17534,7 @@ void main()
+             result += 100000;
+     }
+ 
+-    color = result == 48 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++    color = result == 17 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
+ })";
+ 
+     ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
+@@ -22407,6 +22408,862 @@ void main()
+     EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(191, 0, 63, 127), 1);
+ }
+ 
++// Tests for constant switch statement folding (https://crbug.com/548066294).
++// Test that a constant switch with matching case executes and draws correctly.
++TEST_P(GLSLTest_ES3, BasicConstantSwitch)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++void main()
++{
++    float f = 0.0;
++    switch (0)
++    {
++        case 156: f = 1234.0; break;
++        case 0:   f = 2.0; break;
++        default:  f = 3.0; break;
++    }
++    color = (f == 2.0) ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test nested constant switch statements (the pattern from https://crbug.com/548066294).
++TEST_P(GLSLTest_ES3, NestedConstantSwitch)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++void main()
++{
++    int result = 0;
++    switch (0)
++    {
++        case 0:
++            result += 1;
++            switch (1)
++            {
++                case 0:
++                    result += 10;
++                    break;
++                case 1:
++                    result += 20;
++                    switch (2)
++                    {
++                        case 2:
++                            result += 300;
++                            break;
++                        default:
++                            result += 400;
++                            break;
++                    }
++                    break;
++                default:
++                    result += 50;
++                    break;
++            }
++            break;
++        case 1:
++            result += 1000;
++            break;
++        default:
++            result += 2000;
++            break;
++    }
++    color = (result == 321) ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test fall-through across cases in a constant switch.
++TEST_P(GLSLTest_ES3, FallThrough)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++void main()
++{
++    float f = 0.0;
++    switch (1)
++    {
++        case 1: f += 5.0;
++        case 2: f += 2.0; break;
++        case 3: f += 4.0; break;
++    }
++    color = (f == 7.0) ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that conditional break inside folded switch statements executes correctly with wrapper.
++TEST_P(GLSLTest_ES3, ConditionalBreak)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform int u_zero;
++out vec4 color;
++void main()
++{
++    float f = 0.0;
++    switch (0)
++    {
++        case 0:
++            if (u_zero != 0) { break; }
++            f = 2.0;
++            break;
++        default:
++            f = 5.0;
++            break;
++    }
++    color = (f == 2.0) ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that continue targeting an enclosing loop from within a constant switch works properly.
++TEST_P(GLSLTest_ES3, ContinueInEnclosingForLoop)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform int u_zero;
++out vec4 color;
++void main()
++{
++    int count = 0;
++    for (int i = 0; i < 4; ++i)
++    {
++        switch (0)
++        {
++            case 0:
++                if (u_zero != 0) { break; }
++                if (i == 2) { continue; }
++                count += 1;
++                break;
++            default:
++                count += 100;
++                break;
++        }
++        count += 10;
++    }
++    color = (count == 33) ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that continue targeting an enclosing loop from within a constant switch works properly.
++TEST_P(GLSLTest_ES3, ContinueInEnclosingWhileLoop)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform int u_zero;
++out vec4 color;
++void main()
++{
++    int count = 0;
++    int i = 0;
++    while (i < 4)
++    {
++        switch (0)
++        {
++            case 0:
++                if (u_zero != 0) { break; }
++                if (i == 2) { ++i; continue; }
++                count += 1;
++                break;
++            default:
++                count += 100;
++                break;
++        }
++        count += 10;
++        ++i;
++    }
++    color = (count == 33) ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that continue targeting an enclosing loop from within a constant switch works properly.
++TEST_P(GLSLTest_ES3, ContinueInEnclosingDoWhileLoop)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform int u_zero;
++out vec4 color;
++void main()
++{
++    int count = 0;
++    int i = 0;
++    do
++    {
++        if (i >= 4)
++        {
++            break;
++        }
++        switch (0)
++        {
++            case 0:
++                if (u_zero != 0) { break; }
++                if (i == 2) { ++i; continue; }
++                count += 1;
++                break;
++            default:
++                count += 100;
++                break;
++        }
++        count += 10;
++        ++i;
++    }
++    while (true);
++    color = (count == 33) ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that declarations in skipped cases are preserved and accessible in the executed case.
++TEST_P(GLSLTest_ES3, SkippedDeclaration)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform int u;
++out vec4 color;
++void main()
++{
++    float res = 0.0;
++    switch (true ? 1 : u)
++    {
++        case 0:
++            float d = 4.0;
++            break;
++        case 2:
++            float e = 5.0;
++            break;
++        case 1:
++            d = 2.0;
++            res = d;
++            break;
++    }
++    color = (res == 2.0) ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that dynamic switch selectors are not folded and execute correctly.
++TEST_P(GLSLTest_ES3, DynamicSelectorUntouched)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform int u_zero;
++out vec4 color;
++void main()
++{
++    float f = 0.0;
++    switch (u_zero)
++    {
++        case 0: f = 1.0; break;
++        default: f = 2.0; break;
++    }
++    color = (f == 1.0) ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that switch selectors with side effects in sequence expressions are not folded.
++TEST_P(GLSLTest_ES3, SequenceOperatorInSelector)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++void main()
++{
++    int v = 0;
++    switch (v += 1, 0)
++    {
++        case 0:
++            switch (v += 2, 1)
++            {
++                case 1:
++                    v += 4;
++                    break;
++            }
++            break;
++    }
++    color = (v == 7) ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that return inside a folded constant switch statement returns from the function properly.
++TEST_P(GLSLTest_ES3, ReturnInConstantSwitch)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++float eval()
++{
++    float f = 0.0;
++    switch (1)
++    {
++        case 1: f += 1.0;
++        case 2: f += 2.0; return f;
++        case 3: f += 4.0; break;
++    }
++    return f;
++}
++void main()
++{
++    color = eval() == 3.0 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that return inside a folded constant switch inside a loop returns properly from the
++// function.
++TEST_P(GLSLTest_ES3, ReturnInConstantSwitchInsideLoop)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform int u;
++out vec4 color;
++float eval()
++{
++    float f = 0.0;
++    for (int i = 0; i < 4; ++i)
++    {
++        switch (u, 1)
++        {
++            case 1: f += 1.0;
++            case 2: f += 2.0; return f;
++            case 3: f += 4.0; break;
++        }
++    }
++    return f;
++}
++void main()
++{
++    color = eval() == 3.0 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test shadow variable declaration in constant switch.
++TEST_P(GLSLTest_ES3, ConstantSwitchShadowVariable)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform int u;
++out vec4 color;
++void main()
++{
++    vec4 c = vec4(0, 0.8, 0, 1);
++    vec4 d;
++    switch (1)
++    {
++        case 0:
++            {
++                vec4 c = vec4(0.1, 0, 0, 1);
++                vec4 d = vec4(0.4, 0, 0, 1);
++            }
++            break;
++        case 1:
++            // Shadows c outside switch, but is declared in the case that matches the selector.
++            vec4 c = vec4(0, 0.3, 0, 0);
++            d = c;
++            break;
++        case 2:
++            vec4 d = vec4(0, 0, 1, 1);
++            break;
++    }
++    color = c + d;
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test shadow variable declaration in constant switch.
++TEST_P(GLSLTest_ES3, ConstantSwitchShadowVariable2)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform int u;
++out vec4 color;
++void main()
++{
++    vec4 c = vec4(0, 0.8, 0, 1);
++    vec4 d;
++    switch (1)
++    {
++        case 0:
++            // Shadows c outside switch, but is declared before the case that matches the selector.
++            vec4 c = vec4(0.1, 0, 0, 1);
++            break;
++        case 1:
++            // Make sure the shadow variable is not dead-code eliminated.  However, its value cannot
++            // be relied upon because its initialization never runs.
++            d = vec4(c.y * 0.0, 0.3, 0, 0);
++            break;
++        case 2:
++            break;
++    }
++    color = c + d;
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that nested constant switches inside a loop targeting the loop with continue work properly.
++TEST_P(GLSLTest_ES3, NestedSwitchContinueInEnclosingLoop)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++void main()
++{
++    int count = 0;
++    switch (0)
++    {
++        case 0:
++            for (int i = 0; i < 4; ++i)
++            {
++                count += 1;
++                switch (1)
++                {
++                    case 1:
++                        switch (2)
++                        {
++                            case 2:
++                                continue;
++                        }
++                        break;
++                }
++                break;
++            }
++            break;
++    }
++    color = count == 4 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that nested constant switches inside a loop targeting the loop with continue work properly.
++// The nested switch is not a constant
++TEST_P(GLSLTest_ES3, NestedSwitchContinueInEnclosingLoop2)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform int u;
++out vec4 color;
++void main()
++{
++    int count = 0;
++    switch (0)
++    {
++        case 0:
++            for (int i = 0; i < 4; ++i)
++            {
++                count += 1;
++                switch (1)
++                {
++                    case 1:
++                        switch (u)
++                        {
++                            case 0:
++                                continue;
++                        }
++                        break;
++                }
++                break;
++            }
++            break;
++    }
++    color = count == 4 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that nested constant switches inside a loop targeting the loop with continue work properly.
++// The enclosing switch is not a constant
++TEST_P(GLSLTest_ES3, NestedSwitchContinueInEnclosingLoop3)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform int u;
++out vec4 color;
++void main()
++{
++    int count = 0;
++    switch (0)
++    {
++        case 0:
++            for (int i = 0; i < 4; ++i)
++            {
++                count += 1;
++                switch (u + 1)
++                {
++                    case 1:
++                        switch (0)
++                        {
++                            case 0:
++                                continue;
++                        }
++                        break;
++                }
++                break;
++            }
++            break;
++    }
++    color = count == 4 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that nested switches with continues in both inner and outer switch execute correctly.
++TEST_P(GLSLTest_ES3, NestedSwitchMultipleContinues)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++void main()
++{
++    int count = 0;
++    switch (0)
++    {
++        case 0:
++            for (int i = 0; i < 4; ++i)
++            {
++                count += 1;
++                switch (1)
++                {
++                    case 1:
++                        switch (2)
++                        {
++                            case 2:
++                                continue;
++                        }
++                        continue;
++                }
++                break;
++            }
++            break;
++    }
++    color = count == 4 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that nested switches with false conditional continue fall through to break and exit the
++// loop.
++TEST_P(GLSLTest_ES3, NestedSwitchConditionalContinueFalse)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform int u_zero;
++out vec4 color;
++void main()
++{
++    int count = 0;
++    switch (0)
++    {
++        case 0:
++            for (int i = 0; i < 4; ++i)
++            {
++                count += 1;
++                switch (1)
++                {
++                    case 1:
++                        switch (2)
++                        {
++                            case 2:
++                                if (u_zero != 0)
++                                {
++                                    continue;
++                                }
++                        }
++                        break;
++                }
++                break;
++            }
++            break;
++    }
++    color = count == 1 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that nested switches with true conditional continue jump to the loop header and continue
++// iterating.
++TEST_P(GLSLTest_ES3, NestedSwitchConditionalContinueTrue)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform int u_zero;
++out vec4 color;
++void main()
++{
++    int count = 0;
++    switch (0)
++    {
++        case 0:
++            for (int i = 0; i < 4; ++i)
++            {
++                count += 1;
++                switch (1)
++                {
++                    case 1:
++                        switch (2)
++                        {
++                            case 2:
++                                if (u_zero == 0)
++                                {
++                                    continue;
++                                }
++                        }
++                        break;
++                }
++                break;
++            }
++            break;
++    }
++    color = count == 4 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that nested switches with conditional continue jump to the loop header and continue
++// iterating.
++TEST_P(GLSLTest_ES3, NestedSwitchConditionalContinueWhile)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform int u_zero;
++out vec4 color;
++void main()
++{
++    int count = 0;
++    switch (0)
++    {
++        case 0:
++            int i = 0;
++            while (i < 4)
++            {
++                count += 1;
++                switch (1)
++                {
++                    case 1:
++                        switch (2)
++                        {
++                            case 2:
++                                ++i;
++                                continue;
++                        }
++                        break;
++                }
++                break;
++            }
++            break;
++    }
++    color = count == 4 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that nested switches with conditional continue jump to the loop header and continue
++// iterating.
++TEST_P(GLSLTest_ES3, NestedSwitchConditionalContinueDoWhile)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform int u_zero;
++out vec4 color;
++void main()
++{
++    int count = 0;
++    switch (0)
++    {
++        case 0:
++            int i = 0;
++            do
++            {
++                if (i >= 4)
++                {
++                    break;
++                }
++                count += 1;
++                switch (1)
++                {
++                    case 1:
++                        switch (2)
++                        {
++                            case 2:
++                                ++i;
++                                continue;
++                        }
++                        break;
++                }
++                break;
++            }
++            while (true);
++            break;
++    }
++    color = count == 4 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that case blocks with compound statements ({ ... break; }) are properly truncated and do
++// not execute subsequent cases or emit redundant wrappers.
++TEST_P(GLSLTest_ES3, CaseWithCompoundStatementBlock)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++void main()
++{
++    float f = 0.0;
++    switch (0)
++    {
++        case 0:
++        {
++            f = 2.0;
++            break;
++        }
++        case 1:
++        {
++            f = 5.0;
++            break;
++        }
++    }
++    color = f == 2.0 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that case blocks with compound statement returning from function ({ ... return; }) properly
++// return and do not execute subsequent cases.
++TEST_P(GLSLTest_ES3, CaseWithCompoundStatementReturn)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++out vec4 color;
++float eval()
++{
++    float f = 0.0;
++    switch (0)
++    {
++        case 0:
++        {
++            f = 2.0;
++            return f;
++        }
++        case 1:
++        {
++            f = 5.0;
++            break;
++        }
++    }
++    return f;
++}
++void main()
++{
++    color = eval() == 2.0 ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
+ // Test that lowp and mediump varyings can be correctly matched between VS and FS.
+ TEST_P(GLSLTest, LowpMediumpVarying)
+ {

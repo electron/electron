@@ -1,0 +1,463 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Antonio Maiorano <amaiorano@google.com>
+Date: Thu, 1 Oct 2026 15:29:41 -0400
+Subject: D3D11: Fix UNPACK_ROW_LENGTH handling in fast PBO unpack
+
+In PixelTransfer11::setBufferToTextureCopyParams, PixelsPerRow was set
+to unpack.rowLength (when > 0) instead of destArea.width. Because
+PixelsPerRow controls the number of destination columns drawn per row,
+setting it to unpack.rowLength caused incomplete row writes when 0 <
+unpack.rowLength < destArea.width and out-of-bounds row writes when
+unpack.rowLength > destArea.width on partial-width updates.
+
+Set PixelsPerRow to destArea.width and compute RowStride from
+unpack.rowLength (when > 0) or destArea.width.
+
+Also move PBO unpack validation and hardened-context unpack parameter
+validation from ValidateES3TexImageParametersBase into
+ValidImageDataSize so ES2 contexts with GL_EXT_unpack_subimage and
+GL_NV_pixel_buffer_object enforce the same checks as ES3.
+
+Add tests:
+- Texture2DTestES3.TexImageUnpackRowLengthSmallerThanWidthAndSubRectPBO
+- WebGL1CompatibilityTest.UnpackStateAndPBOValidation
+
+Skip
+Texture2DTestES3.TexImageUnpackRowLengthSmallerThanWidthAndSubRectPBO on
+PIXEL10 GLES (PowerVR), where the native GLES driver fails with
+GL_INVALID_OPERATION when unpacking overlapping rows (0 <
+GL_UNPACK_ROW_LENGTH < width) from a PBO, matching existing skips under
+crbug.com/480069042.
+
+Bug: b/556750258
+Change-Id: Idf1791c5e0eead05c9bbf2a1995cbc393b3e1127
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8502520
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Antonio Maiorano <amaiorano@google.com>
+Reviewed-by: Ran Wang <wangra@google.com>
+
+Electron adaptation notes (44-x-y): on this revision the WebGL-only
+unpack validation is gated on (context->isWebGL() ||
+context->isHardenedContext()) rather than isHardenedContext() alone,
+so the checks that this change moves from ValidateES3TexImageParametersBase
+into ValidImageDataSize() keep that combined condition. The upstream
+context around the removed block also calls
+ValidateHardenedContextTextureLevelRedefine(), which does not exist
+here, so that surrounding code is left as it was (the removed block
+simply goes away). New test expectations are dropped (test-only drift).
+
+diff --git a/src/libANGLE/renderer/d3d/d3d11/PixelTransfer11.cpp b/src/libANGLE/renderer/d3d/d3d11/PixelTransfer11.cpp
+index b806942caf44afadb86ad888fd7dad7064e232a5..cf9097d0e14dff97b5157142add9a210d58724d6 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/PixelTransfer11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/PixelTransfer11.cpp
+@@ -135,9 +135,10 @@ void PixelTransfer11::setBufferToTextureCopyParams(const gl::Box &destArea,
+         (alignmentBytes <= bytesPerPixel ? 1 : alignmentBytes / bytesPerPixel);
+ 
+     parametersOut->FirstPixelOffset = offset / bytesPerPixel;
+-    parametersOut->PixelsPerRow =
+-        static_cast<unsigned int>((unpack.rowLength > 0) ? unpack.rowLength : destArea.width);
+-    parametersOut->RowStride    = roundUp(parametersOut->PixelsPerRow, alignmentPixels);
++    parametersOut->PixelsPerRow     = static_cast<unsigned int>(destArea.width);
++    parametersOut->RowStride        = roundUp(
++        static_cast<unsigned int>((unpack.rowLength > 0) ? unpack.rowLength : destArea.width),
++        alignmentPixels);
+     parametersOut->RowsPerSlice = static_cast<unsigned int>(destArea.height);
+     parametersOut->PositionOffset[0] =
+         texelCenterX + (destArea.x / float(destSize.width)) * 2.0f - 1.0f;
+diff --git a/src/libANGLE/validationES.cpp b/src/libANGLE/validationES.cpp
+index de8de400a475ae48143b7283f911f27cbd142ed4..bad111df4ee0108e77ec3e0499b1ba99fb439d98 100644
+--- a/src/libANGLE/validationES.cpp
++++ b/src/libANGLE/validationES.cpp
+@@ -1226,6 +1226,7 @@ bool ValidImageDataSize(const Context *context,
+                         GLsizei width,
+                         GLsizei height,
+                         GLsizei depth,
++                        bool isSubImage,
+                         GLenum format,
+                         GLenum type,
+                         const void *pixels,
+@@ -1271,12 +1272,83 @@ bool ValidImageDataSize(const Context *context,
+             ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kParamOverflow);
+             return false;
+         }
++
++        if ((context->isWebGL() || context->isHardenedContext()) &&
++            pixelUnpackBuffer->hasTFBBindingConflict())
++        {
++            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION,
++                                   kPixelUnpackBufferBoundForTransformFeedback);
++            return false;
++        }
++
++        // ...data is not evenly divisible into the number of bytes needed to store in memory a
++        // datum indicated by type.
++        {
++            size_t offset            = reinterpret_cast<size_t>(pixels);
++            size_t dataBytesPerPixel = static_cast<size_t>(GetTypeInfo(type).bytes);
++
++            if ((offset % dataBytesPerPixel) != 0)
++            {
++                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kDataTypeNotAligned);
++                return false;
++            }
++        }
++
++        // ...the buffer object's data store is currently mapped but not persistently.
++        if (pixelUnpackBuffer->isMapped() && !pixelUnpackBuffer->isPersistentlyMapped())
++        {
++            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kBufferMapped);
++            return false;
++        }
+     }
+     else if (outImageSize != nullptr)
+     {
+         *outImageSize = endByte;
+     }
+ 
++    if (context->isWebGL() || context->isHardenedContext())
++    {
++        // Define:
++        //   DataStoreWidth  = (GL_UNPACK_ROW_LENGTH ? GL_UNPACK_ROW_LENGTH : width)
++        //   DataStoreHeight = (GL_UNPACK_IMAGE_HEIGHT ? GL_UNPACK_IMAGE_HEIGHT : height)
++        //
++        // WebGL 2.0 / hardened contexts impose the following additional constraints:
++        //
++        // 1) texImage2D and texSubImage2D generate INVALID_OPERATION if:
++        //      GL_UNPACK_SKIP_PIXELS + width > DataStoreWidth
++        //    except for texImage2D if no GL_PIXEL_UNPACK_BUFFER is
++        //    bound and _pixels_ is null.
++        //
++        // 2) texImage3D and texSubImage3D generate INVALID_OPERATION if:
++        //      GL_UNPACK_SKIP_PIXELS + width > DataStoreWidth
++        //      GL_UNPACK_SKIP_ROWS + height > DataStoreHeight
++        //    except for texImage3D if no GL_PIXEL_UNPACK_BUFFER is
++        //    bound and _pixels_ is null.
++        if (!pixelUnpackBuffer && !pixels && !isSubImage)
++        {
++            // Exception case for texImage2D or texImage3D, above.
++        }
++        else
++        {
++            GLint dataStoreWidth = unpack.rowLength ? unpack.rowLength : width;
++            if (unpack.skipPixels + width > dataStoreWidth)
++            {
++                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidUnpackParametersForWebGL);
++                return false;
++            }
++            if (texType == TextureType::_3D || texType == TextureType::_2DArray)
++            {
++                // Note that CubeMapArray is not supported as a texture target in WebGL.
++                GLint dataStoreHeight = unpack.imageHeight ? unpack.imageHeight : height;
++                if (unpack.skipRows + height > dataStoreHeight)
++                {
++                    ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidUnpackParametersForWebGL);
++                    return false;
++                }
++            }
++        }
++    }
++
+     return true;
+ }
+ 
+diff --git a/src/libANGLE/validationES.h b/src/libANGLE/validationES.h
+index db3a5aebe8b3b856473c371a68c058525e9fee11..da63d282d96da8d2f9c7b23cd0ab52ec3b3e7280 100644
+--- a/src/libANGLE/validationES.h
++++ b/src/libANGLE/validationES.h
+@@ -79,6 +79,7 @@ bool ValidImageDataSize(const Context *context,
+                         GLsizei width,
+                         GLsizei height,
+                         GLsizei depth,
++                        bool isSubImage,
+                         GLenum format,
+                         GLenum type,
+                         const void *pixels,
+diff --git a/src/libANGLE/validationES2.cpp b/src/libANGLE/validationES2.cpp
+index 68939b0007412d42280e8e9dc645a3aee67d9907..fd51a7a98e3b397542abae389d174d75d1169b5c 100644
+--- a/src/libANGLE/validationES2.cpp
++++ b/src/libANGLE/validationES2.cpp
+@@ -1764,8 +1764,8 @@ bool ValidateES2TexImageParameters(const Context *context,
+     }
+ 
+     GLenum sizeCheckFormat = isSubImage ? format : internalformat;
+-    return ValidImageDataSize(context, entryPoint, texType, width, height, 1, sizeCheckFormat, type,
+-                              pixels, outImageSize);
++    return ValidImageDataSize(context, entryPoint, texType, width, height, 1, isSubImage,
++                              sizeCheckFormat, type, pixels, outImageSize);
+ }
+ 
+ bool ValidateCompressedTexImage(const Context *context,
+diff --git a/src/libANGLE/validationES3.cpp b/src/libANGLE/validationES3.cpp
+index 2b6fe78060fd67f6ac6c2091f1c30eab51fd9847..1709c84a3efb5370e750129776c6022705b66566 100644
+--- a/src/libANGLE/validationES3.cpp
++++ b/src/libANGLE/validationES3.cpp
+@@ -645,90 +645,12 @@ bool ValidateES3TexImageParametersBase(const Context *context,
+     }
+ 
+     GLenum sizeCheckFormat = isSubImage ? format : internalformat;
+-    if (!ValidImageDataSize(context, entryPoint, texType, width, height, depth, sizeCheckFormat,
+-                            type, pixels, outImageSize))
++    if (!ValidImageDataSize(context, entryPoint, texType, width, height, depth, isSubImage,
++                            sizeCheckFormat, type, pixels, outImageSize))
+     {
+         return false;
+     }
+ 
+-    // Check for pixel unpack buffer related API errors
+-    Buffer *pixelUnpackBuffer = context->getState().getTargetBuffer(BufferBinding::PixelUnpack);
+-    if (pixelUnpackBuffer != nullptr)
+-    {
+-        if ((context->isWebGL() || context->isHardenedContext()) &&
+-            pixelUnpackBuffer->hasTFBBindingConflict())
+-        {
+-            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION,
+-                                   kPixelUnpackBufferBoundForTransformFeedback);
+-            return false;
+-        }
+-
+-        // ...data is not evenly divisible into the number of bytes needed to store in memory a
+-        // datum
+-        // indicated by type.
+-        {
+-            size_t offset            = reinterpret_cast<size_t>(pixels);
+-            size_t dataBytesPerPixel = static_cast<size_t>(GetTypeInfo(type).bytes);
+-
+-            if ((offset % dataBytesPerPixel) != 0)
+-            {
+-                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kDataTypeNotAligned);
+-                return false;
+-            }
+-        }
+-
+-        // ...the buffer object's data store is currently mapped but not persistently.
+-        if (pixelUnpackBuffer->isMapped() && !pixelUnpackBuffer->isPersistentlyMapped())
+-        {
+-            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kBufferMapped);
+-            return false;
+-        }
+-    }
+-
+-    if (context->isWebGL() || context->isHardenedContext())
+-    {
+-        // Define:
+-        //   DataStoreWidth  = (GL_UNPACK_ROW_LENGTH ? GL_UNPACK_ROW_LENGTH : width)
+-        //   DataStoreHeight = (GL_UNPACK_IMAGE_HEIGHT ? GL_UNPACK_IMAGE_HEIGHT : height)
+-        //
+-        // WebGL 2.0 imposes the following additional constraints:
+-        //
+-        // 1) texImage2D and texSubImage2D generate INVALID_OPERATION if:
+-        //      GL_UNPACK_SKIP_PIXELS + width > DataStoreWidth
+-        //    except for texImage2D if no GL_PIXEL_UNPACK_BUFFER is
+-        //    bound and _pixels_ is null.
+-        //
+-        // 2) texImage3D and texSubImage3D generate INVALID_OPERATION if:
+-        //      GL_UNPACK_SKIP_PIXELS + width > DataStoreWidth
+-        //      GL_UNPACK_SKIP_ROWS + height > DataStoreHeight
+-        //    except for texImage3D if no GL_PIXEL_UNPACK_BUFFER is
+-        //    bound and _pixels_ is null.
+-        if (!pixelUnpackBuffer && !pixels && !isSubImage)
+-        {
+-            // Exception case for texImage2D or texImage3D, above.
+-        }
+-        else
+-        {
+-            const auto &unpack   = context->getState().getUnpackState();
+-            GLint dataStoreWidth = unpack.rowLength ? unpack.rowLength : width;
+-            if (unpack.skipPixels + width > dataStoreWidth)
+-            {
+-                ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidUnpackParametersForWebGL);
+-                return false;
+-            }
+-            if (target == TextureTarget::_3D || target == TextureTarget::_2DArray)
+-            {
+-                // Note that CubeMapArray is not supported as a texture target in WebGL.
+-                GLint dataStoreHeight = unpack.imageHeight ? unpack.imageHeight : height;
+-                if (unpack.skipRows + height > dataStoreHeight)
+-                {
+-                    ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kInvalidUnpackParametersForWebGL);
+-                    return false;
+-                }
+-            }
+-        }
+-    }
+-
+     return true;
+ }
+ 
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 6b857cbcb7e2ad236df878059801ba7f27525a5d..7c8ac2fe0657946bb4a7011714b3374594674464 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -1215,6 +1215,7 @@
+ 480069042 PIXEL10 GLES : Texture2DTestES3.DrawWithLevelZeroUndefined/* = SKIP
+ 480069042 PIXEL10 GLES : Texture2DTestES3.DrawWithLevelsOutsideRangeUndefined/* = SKIP
+ 480069042 PIXEL10 GLES : Texture2DTestES3.MipmapIncompleteMipmappingDisabled/* = SKIP
++480069042 PIXEL10 GLES : Texture2DTestES3.TexImageUnpackRowLengthSmallerThanWidthAndSubRectPBO/* = SKIP
+ 480069042 PIXEL10 GLES : Texture2DTestES3.TextureFormatChangesWithBaseLevel/* = SKIP
+ 480069042 PIXEL10 GLES : Texture2DTestES3.UnpackOverlappingRowsFromUnpackBuffer/* = SKIP
+ 480069042 PIXEL10 GLES : Texture3DTestES2.CopySubImageAlpha/* = SKIP
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index 0aa215d262cbc8d477729cc21988e7fb822d2eda..03e24db70c3205df32fee4b26e9e20131a3d0a27 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -4316,6 +4316,74 @@ TEST_P(Texture2DTest, TexImageUnpackRowLengthPBO)
+     EXPECT_PIXEL_COLOR_EQ(0, height - 1, GLColor::blue);
+ }
+ 
++// Test that PBO unpack respects GL_UNPACK_ROW_LENGTH when 0 < rowLength < width
++// and when rowLength > subWidth for a partial-width glTexSubImage2D.
++TEST_P(Texture2DTestES3, TexImageUnpackRowLengthSmallerThanWidthAndSubRectPBO)
++{
++    const int width  = getWindowWidth();
++    const int height = getWindowHeight();
++
++    GLTexture tex2D;
++    glActiveTexture(GL_TEXTURE0);
++    glBindTexture(GL_TEXTURE_2D, tex2D);
++    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, width, height);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Pre-fill the entire texture with red so unwritten texels are deterministically detected.
++    std::vector<GLColor> redPixels(width * height, GLColor::red);
++    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE,
++                    redPixels.data());
++
++    // 1. Unpack full texture from PBO with 0 < rowLength < width.
++    const int smallRowLength  = width / 2;
++    const int smallBufferSize = (height - 1) * smallRowLength + width;
++    std::vector<GLColor> greenPixels(smallBufferSize, GLColor::green);
++
++    GLBuffer pbo;
++    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
++    glBufferData(GL_PIXEL_UNPACK_BUFFER, smallBufferSize * sizeof(GLColor), greenPixels.data(),
++                 GL_STATIC_DRAW);
++
++    glPixelStorei(GL_UNPACK_ROW_LENGTH, smallRowLength);
++    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++    EXPECT_GL_NO_ERROR();
++
++    glUseProgram(mProgram);
++    glUniform1i(mTexture2DUniformLocation, 0);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_GL_NO_ERROR();
++
++    // Both the left half [0, width/2) and right half [width/2, width) must be green.
++    EXPECT_PIXEL_RECT_EQ(0, 0, width, height, GLColor::green);
++
++    // 2. Unpack a partial-width sub-rectangle (subWidth = width / 4) with rowLength > subWidth.
++    const int subWidth        = width / 4;
++    const int largeRowLength  = width / 2;
++    const int largeBufferSize = (height - 1) * largeRowLength + subWidth;
++    std::vector<GLColor> bluePixels(largeBufferSize, GLColor::yellow);
++    for (int r = 0; r < height; ++r)
++    {
++        for (int c = 0; c < subWidth; ++c)
++        {
++            bluePixels[r * largeRowLength + c] = GLColor::blue;
++        }
++    }
++    glBufferData(GL_PIXEL_UNPACK_BUFFER, largeBufferSize * sizeof(GLColor), bluePixels.data(),
++                 GL_STATIC_DRAW);
++
++    glPixelStorei(GL_UNPACK_ROW_LENGTH, largeRowLength);
++    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, subWidth, height, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++    EXPECT_GL_NO_ERROR();
++
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_GL_NO_ERROR();
++
++    // [0, width/4) must be blue, and [width/4, width) must remain green.
++    EXPECT_PIXEL_RECT_EQ(0, 0, subWidth, height, GLColor::blue);
++    EXPECT_PIXEL_RECT_EQ(subWidth, 0, width - subWidth, height, GLColor::green);
++}
++
+ // Test if the KHR debug label is set and passed to D3D correctly using glCopyTexImage2D.
+ TEST_P(Texture2DTest, TextureKHRDebugLabelWithCopyTexImage2D)
+ {
+diff --git a/src/tests/gl_tests/WebGLCompatibilityTest.cpp b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+index 8af122e2035ef3990455dc6de7139f7dff777123..8f7ddfc1de47edee88c15ef735cc7cef0095eb2f 100644
+--- a/src/tests/gl_tests/WebGLCompatibilityTest.cpp
++++ b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+@@ -8161,6 +8161,81 @@ TEST_P(WebGL2CompatibilityTest, UnpackStateValidation)
+     test(GL_TEXTURE_3D, 1, 4, 1, 4, GL_INVALID_OPERATION);  // 1 + 4 > 4
+ }
+ 
++// Tests that hardened-context unpack state validation and PBO validation are enforced on ES2
++// contexts when GL_EXT_unpack_subimage and GL_NV_pixel_buffer_object are enabled.
++TEST_P(WebGL1CompatibilityTest, UnpackStateAndPBOValidation)
++{
++    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_EXT_unpack_subimage"));
++
++    constexpr size_t kPixelCount = 8 * 8;
++    std::vector<GLColor> data(kPixelCount);
++
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    ASSERT_GL_NO_ERROR();
++
++    auto testClientMemory = [&](GLint skipPixels, GLint rowLength, GLenum expectedError) {
++        glPixelStorei(GL_UNPACK_ROW_LENGTH_EXT, rowLength);
++        glPixelStorei(GL_UNPACK_SKIP_PIXELS_EXT, skipPixels);
++
++        // When no PBO is bound and pixels is nullptr, glTexImage2D must succeed regardless of
++        // unpack parameters.
++        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++        EXPECT_GL_NO_ERROR();
++
++        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
++        EXPECT_GL_ERROR(expectedError);
++
++        glPixelStorei(GL_UNPACK_ROW_LENGTH_EXT, 0);
++        glPixelStorei(GL_UNPACK_SKIP_PIXELS_EXT, 0);
++        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
++        EXPECT_GL_NO_ERROR();
++
++        glPixelStorei(GL_UNPACK_ROW_LENGTH_EXT, rowLength);
++        glPixelStorei(GL_UNPACK_SKIP_PIXELS_EXT, skipPixels);
++        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 4, 4, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
++        EXPECT_GL_ERROR(expectedError);
++    };
++
++    testClientMemory(0, 0, GL_NO_ERROR);
++    testClientMemory(0, 4, GL_NO_ERROR);           // 0 + 4 <= 4
++    testClientMemory(1, 5, GL_NO_ERROR);           // 1 + 4 <= 5
++    testClientMemory(0, 3, GL_INVALID_OPERATION);  // 0 + 4 > 3
++    testClientMemory(1, 0, GL_INVALID_OPERATION);  // 1 + 4 > 4
++    testClientMemory(1, 4, GL_INVALID_OPERATION);  // 1 + 4 > 4
++
++    if (EnsureGLExtensionEnabled("GL_NV_pixel_buffer_object"))
++    {
++        GLBuffer pbo;
++        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
++        glBufferData(GL_PIXEL_UNPACK_BUFFER, kPixelCount * sizeof(GLColor), data.data(),
++                     GL_STATIC_DRAW);
++        ASSERT_GL_NO_ERROR();
++
++        // With a bound PBO, glTexImage2D(..., nullptr) must also reject overlapping unpack rows.
++        glPixelStorei(GL_UNPACK_ROW_LENGTH_EXT, 1);
++        glPixelStorei(GL_UNPACK_SKIP_PIXELS_EXT, 0);
++        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++        EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++
++        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 4, 4, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++        EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++
++        // Valid row length with PBO succeeds.
++        glPixelStorei(GL_UNPACK_ROW_LENGTH_EXT, 4);
++        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++        EXPECT_GL_NO_ERROR();
++
++        // Unaligned PBO offset for GL_UNSIGNED_SHORT_5_6_5 (2 bytes per datum) must fail.
++        glPixelStorei(GL_UNPACK_ROW_LENGTH_EXT, 0);
++        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 4, 4, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5,
++                     reinterpret_cast<const void *>(1));
++        EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++
++        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
++    }
++}
++
+ // Tests that using cube map arrays is not supported in WebGL.
+ TEST_P(WebGL2CompatibilityTest, CubeMapArrayNotSupported)
+ {

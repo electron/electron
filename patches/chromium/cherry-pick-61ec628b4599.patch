@@ -1,0 +1,93 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shunya Shishido <sisidovski@chromium.org>
+Date: Mon, 19 Oct 2026 16:06:32 +0900
+Subject: [M152] [ServiceWorker] Defer clone completion callback in
+ SimpleBufferManager
+
+Original change's description:
+> [ServiceWorker] Defer clone completion callback in SimpleBufferManager
+>
+> Post clone_complete_callback_ via
+> SequencedTaskRunner::GetCurrentDefault()->PostTask() in
+> RaceNetworkRequestSimpleBufferManager::Finish() instead of running it
+> synchronously.
+>
+> Bug: 566136673
+> Change-Id: I8f5cb74a4a882334b3d7cb5d1b81987fefdc5ca4
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8474871
+> Commit-Queue: Shunya Shishido <sisidovski@chromium.org>
+> Reviewed-by: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1706765}
+
+(cherry picked from commit 6cd7214ad1aa1bd46daec62fbabbe5a6287e9ab0)
+
+Bug: 567812787,566136673
+Change-Id: I8f5cb74a4a882334b3d7cb5d1b81987fefdc5ca4
+
+diff --git a/content/common/service_worker/race_network_request_simple_buffer_manager.cc b/content/common/service_worker/race_network_request_simple_buffer_manager.cc
+index 2c924def2272866b0f2d4c09aab69b696964bfd0..e329841f028d0fffb4397e2c2744434838eff9b6 100644
+--- a/content/common/service_worker/race_network_request_simple_buffer_manager.cc
++++ b/content/common/service_worker/race_network_request_simple_buffer_manager.cc
+@@ -73,7 +73,10 @@ void RaceNetworkRequestSimpleBufferManager::Finish() {
+   write_position_ = 0;
+   producer_handle_.reset();
+   producer_handle_watcher_.reset();
+-  std::move(clone_complete_callback_).Run();
++  if (clone_complete_callback_) {
++    base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
++        FROM_HERE, std::move(clone_complete_callback_));
++  }
+ }
+ 
+ void RaceNetworkRequestSimpleBufferManager::MaybeWriteData() {
+diff --git a/content/common/service_worker/race_network_request_simple_buffer_manager_unittest.cc b/content/common/service_worker/race_network_request_simple_buffer_manager_unittest.cc
+index 971773efbe6286cd2252dbb83b3fa4093712fce3..e50f11c9c7f02681012810294965df0d6cefff13 100644
+--- a/content/common/service_worker/race_network_request_simple_buffer_manager_unittest.cc
++++ b/content/common/service_worker/race_network_request_simple_buffer_manager_unittest.cc
+@@ -5,6 +5,7 @@
+ 
+ #include "base/functional/bind.h"
+ #include "base/run_loop.h"
++#include "base/test/bind.h"
+ #include "base/test/task_environment.h"
+ #include "mojo/public/cpp/system/data_pipe_utils.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+@@ -81,5 +82,38 @@ TEST_F(RaceNetworkRequestSimpleBufferManagerTest,
+     EXPECT_EQ(data, received_data);
+   }
+ }
++
++TEST_F(RaceNetworkRequestSimpleBufferManagerTest,
++       DestroyManagerInCloneCompleteCallback) {
++  mojo::ScopedDataPipeProducerHandle source_producer;
++  mojo::ScopedDataPipeConsumerHandle source_consumer;
++  ASSERT_EQ(MOJO_RESULT_OK,
++            mojo::CreateDataPipe(nullptr, source_producer, source_consumer));
++  auto manager = std::make_unique<RaceNetworkRequestSimpleBufferManager>(
++      std::move(source_consumer));
++
++  const std::string data = "test data";
++  size_t actual_written_bytes = 0;
++  ASSERT_EQ(MOJO_RESULT_OK,
++            source_producer->WriteData(base::as_byte_span(data),
++                                       MOJO_WRITE_DATA_FLAG_ALL_OR_NONE,
++                                       actual_written_bytes));
++
++  base::RunLoop run_loop;
++  mojo::ScopedDataPipeProducerHandle destination_producer;
++  mojo::ScopedDataPipeConsumerHandle destination_consumer;
++  ASSERT_EQ(MOJO_RESULT_OK, mojo::CreateDataPipe(nullptr, destination_producer,
++                                                 destination_consumer));
++
++  manager->Clone(std::move(destination_producer),
++                 base::BindLambdaForTesting([&]() {
++                   manager.reset();
++                   run_loop.Quit();
++                 }));
++  source_producer.reset();
++
++  run_loop.Run();
++  EXPECT_FALSE(manager);
++}
+ }  // namespace
+ }  // namespace content

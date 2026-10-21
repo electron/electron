@@ -1,0 +1,426 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zonghan Xu <xzonghan@google.com>
+Date: Tue, 13 Oct 2026 03:58:26 -0700
+Subject: [Net][CPRS] Improve lifetime management in CPRRequest
+
+When an in-flight proxy resolution request fails with
+ERR_PAC_SCRIPT_TERMINATED, ConfiguredProxyResolutionService resets its
+config and may synchronously re-initialize other pending requests.
+During this synchronous re-initialization, a sibling request's callback
+can cancel and destroy the completing request while its completion stack
+frames are still active.
+
+This change improves request lifetime management:
+- End the PROXY_RESOLUTION_SERVICE NetLog event before resetting the
+  proxy config in DidFinishResolvingProxy().
+- Clear `service_` and `results_` in ConfiguredProxyResolutionRequest
+  before calling DidFinishResolvingProxy().
+- Guard completion paths with base::WeakPtr to return early if the
+  request is destroyed during re-entrant callbacks.
+
+Bug: 568906040
+Change-Id: I270e5efe43ebaabc29c8ceead1bae85f3462082d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8560657
+Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+Commit-Queue: Zonghan Xu <xzonghan@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1717484}
+
+diff --git a/net/proxy_resolution/configured_proxy_resolution_request.cc b/net/proxy_resolution/configured_proxy_resolution_request.cc
+index e42676f0c05a26ac1225aa5edbedf5ce47fe662f..460f0c4b6eda835da537f4a113b9a51eaee2a33f 100644
+--- a/net/proxy_resolution/configured_proxy_resolution_request.cc
++++ b/net/proxy_resolution/configured_proxy_resolution_request.cc
+@@ -169,26 +169,38 @@ int ConfiguredProxyResolutionRequest::QueryDidComplete(int result_code) {
+     Reset();
+   }
+ 
+-  // Note that DidFinishResolvingProxy might modify `results_`.
+-  int rv = service_->DidFinishResolvingProxy(url_, network_anonymization_key_,
+-                                             method_, results_, result_code,
+-                                             net_log_);
++  // Detach `service_` and `results_` before `DidFinishResolvingProxy()` in case
++  // a sibling callback synchronously destroys `this` or `results` (avoids
++  // double-removal in our destructor and dangling raw_ptrs).
++  ConfiguredProxyResolutionService* service = std::exchange(service_, nullptr);
++  ProxyInfo* results = std::exchange(results_, nullptr);
++  base::WeakPtr<ConfiguredProxyResolutionRequest> weak_this =
++      weak_factory_.GetWeakPtr();
++
++  // Note that DidFinishResolvingProxy might modify `results`.
++  int rv =
++      service->DidFinishResolvingProxy(url_, network_anonymization_key_,
++                                       method_, results, result_code, net_log_);
++  if (!weak_this) {
++    return ERR_ABORTED;
++  }
+ 
+   // Make a note in the results which configuration was in use at the
+   // time of the resolve.
+-  results_->set_proxy_resolve_start_time(creation_time_);
+-  results_->set_proxy_resolve_end_time(base::TimeTicks::Now());
++  results->set_proxy_resolve_start_time(creation_time_);
++  results->set_proxy_resolve_end_time(base::TimeTicks::Now());
+ 
+   // If annotation is not already set, e.g. through TryToCompleteSynchronously
+   // function, use in-progress-resolve annotation.
+-  if (!results_->traffic_annotation().is_valid())
+-    results_->set_traffic_annotation(traffic_annotation_);
++  if (!results->traffic_annotation().is_valid()) {
++    results->set_traffic_annotation(traffic_annotation_);
++  }
+ 
+   // If proxy is set without error, ensure that an annotation is provided.
+   if (result_code != ERR_ABORTED && !rv) {
+     // TODO(crbug.com/469006851): Turn this back into a CHECK once crashes were
+     // fully fixed.
+-    DCHECK(results_->traffic_annotation().is_valid());
++    DCHECK(results->traffic_annotation().is_valid());
+   }
+ 
+   // Reset the state associated with in-progress-resolve.
+@@ -199,9 +211,7 @@ int ConfiguredProxyResolutionRequest::QueryDidComplete(int result_code) {
+ 
+ int ConfiguredProxyResolutionRequest::QueryDidCompleteSynchronously(
+     int result_code) {
+-  int rv = QueryDidComplete(result_code);
+-  service_ = nullptr;
+-  return rv;
++  return QueryDidComplete(result_code);
+ }
+ 
+ LoadState ConfiguredProxyResolutionRequest::GetLoadState() const {
+@@ -222,8 +232,12 @@ void ConfiguredProxyResolutionRequest::QueryComplete(int result_code) {
+   // prevent re-entrant dispatch if the service re-initializes synchronously.
+   service_->RemovePendingRequest(this);
+ 
++  base::WeakPtr<ConfiguredProxyResolutionRequest> weak_this =
++      weak_factory_.GetWeakPtr();
+   result_code = QueryDidComplete(result_code);
+-  service_ = nullptr;
++  if (!weak_this) {
++    return;
++  }
+ 
+   CompletionOnceCallback callback = std::move(user_callback_);
+   user_callback_.Reset();
+diff --git a/net/proxy_resolution/configured_proxy_resolution_service.cc b/net/proxy_resolution/configured_proxy_resolution_service.cc
+index 6198b816417d29837d1185074a106dad5e3992a1..521679857afeb1de2e0e7080db4144b8257ec3e3 100644
+--- a/net/proxy_resolution/configured_proxy_resolution_service.cc
++++ b/net/proxy_resolution/configured_proxy_resolution_service.cc
+@@ -1293,6 +1293,7 @@ int ConfiguredProxyResolutionService::DidFinishResolvingProxy(
+         !pac_retry_throttler_.HasFailedDuringCurrentLoad()) {
+       ResetPacRetryThrottler();
+     }
++    net_log.EndEvent(NetLogEventType::PROXY_RESOLUTION_SERVICE);
+   } else {
+     net_log.AddEventWithNetErrorCode(
+         NetLogEventType::PROXY_RESOLUTION_SERVICE_RESOLVED_PROXY_LIST,
+@@ -1335,6 +1336,10 @@ int ConfiguredProxyResolutionService::DidFinishResolvingProxy(
+       }
+     }
+ 
++    // End the NetLog event before resetting the config, as synchronous
++    // re-initialization can destroy the completing request (and `net_log`).
++    net_log.EndEvent(NetLogEventType::PROXY_RESOLUTION_SERVICE);
++
+     if (reset_config) {
+       ResetProxyConfig(false);
+       if (!pending_requests_.empty()) {
+@@ -1346,7 +1351,6 @@ int ConfiguredProxyResolutionService::DidFinishResolvingProxy(
+     }
+   }
+ 
+-  net_log.EndEvent(NetLogEventType::PROXY_RESOLUTION_SERVICE);
+   return result_code;
+ }
+ 
+diff --git a/net/proxy_resolution/configured_proxy_resolution_service_unittest.cc b/net/proxy_resolution/configured_proxy_resolution_service_unittest.cc
+index 10b32a0d5ceb81ea43bd2d46ad7e61298bad8446..bf83c326b94ae754b7420a5a282104a2ff30e199 100644
+--- a/net/proxy_resolution/configured_proxy_resolution_service_unittest.cc
++++ b/net/proxy_resolution/configured_proxy_resolution_service_unittest.cc
+@@ -461,6 +461,105 @@ ProxyList CreateProxyList(std::string_view pac_result_string) {
+   return proxy_list;
+ }
+ 
++// ProxyResolverFactory that delegates to MockAsyncProxyResolverFactory by
++// default, or fails synchronously when `synchronous_fail_` is set.
++class SyncFailProxyResolverFactory : public ProxyResolverFactory {
++ public:
++  explicit SyncFailProxyResolverFactory(bool resolvers_expect_pac_bytes)
++      : ProxyResolverFactory(resolvers_expect_pac_bytes),
++        async_factory_(resolvers_expect_pac_bytes) {}
++
++  // Returns ERR_PAC_SCRIPT_FAILED synchronously if `synchronous_fail_` is set,
++  // or forwards to `async_factory_` otherwise.
++  int CreateProxyResolver(
++      const scoped_refptr<PacFileData>& pac_script,
++      std::unique_ptr<ProxyResolver>* resolver,
++      CompletionOnceCallback callback,
++      std::unique_ptr<ProxyResolverFactory::Request>* request_handle) override {
++    if (synchronous_fail_) {
++      return ERR_PAC_SCRIPT_FAILED;
++    }
++    return async_factory_.CreateProxyResolver(
++        pac_script, resolver, std::move(callback), request_handle);
++  }
++
++  void set_synchronous_fail(bool synchronous_fail) {
++    synchronous_fail_ = synchronous_fail;
++  }
++
++  const MockAsyncProxyResolverFactory::RequestsList& pending_requests() const {
++    return async_factory_.pending_requests();
++  }
++
++ private:
++  bool synchronous_fail_ = false;
++  MockAsyncProxyResolverFactory async_factory_;
++};
++
++// Bundles the caller-owned state for a single proxy resolution request in
++// tests.
++struct TestResolveRequest {
++  std::unique_ptr<ProxyInfo> info = std::make_unique<ProxyInfo>();
++  std::unique_ptr<ProxyResolutionRequest> request;
++  NetLogWithSource net_log = NetLogWithSource::Make(NetLogSourceType::NONE);
++  CompletionOnceCallback callback;
++};
++
++// Starts two concurrent PAC requests and fails the first with
++// ERR_PAC_SCRIPT_TERMINATED while forcing synchronous PAC re-initialization.
++void SimulatePacTerminatedWithSyncReinit(TestResolveRequest& req1,
++                                         TestResolveRequest& req2) {
++  auto config_service =
++      std::make_unique<MockProxyConfigService>("http://foopy/proxy.pac");
++
++  MockAsyncProxyResolver resolver;
++  auto resolver_factory = std::make_unique<SyncFailProxyResolverFactory>(false);
++  auto* resolver_factory_ptr = resolver_factory.get();
++
++  ConfiguredProxyResolutionService service(
++      std::move(config_service), std::move(resolver_factory),
++      /*host_resolver_for_override_rules=*/nullptr, /*net_log=*/nullptr,
++      /*quick_check_enabled=*/true);
++
++  GURL url1("http://www.google.com/");
++  GURL url2("https://www.google.com/");
++
++  // Request 1: In-flight resolve request that will encounter
++  // ERR_PAC_SCRIPT_TERMINATED and trigger proxy re-initialization.
++  int rv1 = service.ResolveProxy(url1, std::string(), NetworkAnonymizationKey(),
++                                 handles::kInvalidNetworkHandle,
++                                 req1.info.get(), std::move(req1.callback),
++                                 &req1.request, req1.net_log, DEFAULT_PRIORITY);
++
++  // Request 2: Concurrent in-flight resolve request that will be paused in
++  // `pending_requests_` and restarted upon re-initialization.
++  int rv2 = service.ResolveProxy(url2, std::string(), NetworkAnonymizationKey(),
++                                 handles::kInvalidNetworkHandle,
++                                 req2.info.get(), std::move(req2.callback),
++                                 &req2.request, req2.net_log, DEFAULT_PRIORITY);
++
++  // Both requests should be waiting for PAC compilation now.
++  EXPECT_THAT(rv1, IsError(ERR_IO_PENDING));
++  EXPECT_THAT(rv2, IsError(ERR_IO_PENDING));
++
++  // Complete PAC script compilation so the service becomes ready and
++  // dispatches `url1` and `url2` to the resolver.
++  ASSERT_EQ(1u, resolver_factory_ptr->pending_requests().size());
++  EXPECT_EQ(GURL("http://foopy/proxy.pac"),
++            resolver_factory_ptr->pending_requests()[0]->script_data()->url());
++  resolver_factory_ptr->pending_requests()[0]->CompleteNowWithForwarder(
++      OK, &resolver);
++
++  // Both `url1` and `url2` are now running as in-flight jobs in the resolver.
++  JobMap jobs = GetPendingJobsForURLs(resolver, url1, url2);
++
++  // Force synchronous re-initialization failure and crash `url1`.
++  resolver_factory_ptr->set_synchronous_fail(true);
++  jobs[url1]->CompleteNow(ERR_PAC_SCRIPT_TERMINATED);
++  EXPECT_FALSE(req1.request);
++  EXPECT_FALSE(req2.request);
++}
++
+ }  // namespace
+ 
+ // When a PAC runtime error occurs (ERR_PAC_SCRIPT_FAILED), subsequent
+@@ -1860,135 +1959,71 @@ TEST_F(ConfiguredProxyResolutionServiceTest,
+ // Test what happens when the ProxyResolver fails with
+ // ERR_PAC_SCRIPT_TERMINATED while multiple requests are in progress, and the
+ // subsequent proxy re-initialization completes synchronously (e.g. fails and
+-// falls back to DIRECT). Make sure no use-after-free occurs.
++// falls back to DIRECT). Make sure no use-after-free occurs when each request
++// destroys itself in its completion callback (crbug.com/533534913).
+ TEST_F(ConfiguredProxyResolutionServiceTest,
+-       ProxyResolverTerminatedDuringRequestWithSyncReinit) {
+-  class SyncFailProxyResolverFactory : public ProxyResolverFactory {
+-   public:
+-    explicit SyncFailProxyResolverFactory(bool resolvers_expect_pac_bytes)
+-        : ProxyResolverFactory(resolvers_expect_pac_bytes),
+-          async_factory_(resolvers_expect_pac_bytes) {}
+-
+-    int CreateProxyResolver(const scoped_refptr<PacFileData>& pac_script,
+-                            std::unique_ptr<ProxyResolver>* resolver,
+-                            CompletionOnceCallback callback,
+-                            std::unique_ptr<ProxyResolverFactory::Request>*
+-                                request_handle) override {
+-      if (synchronous_fail_) {
+-        return ERR_PAC_SCRIPT_FAILED;
+-      }
+-      return async_factory_.CreateProxyResolver(
+-          pac_script, resolver, std::move(callback), request_handle);
+-    }
+-
+-    void set_synchronous_fail(bool synchronous_fail) {
+-      synchronous_fail_ = synchronous_fail;
+-    }
+-
+-    const MockAsyncProxyResolverFactory::RequestsList& pending_requests()
+-        const {
+-      return async_factory_.pending_requests();
+-    }
+-
+-   private:
+-    bool synchronous_fail_ = false;
+-    MockAsyncProxyResolverFactory async_factory_;
+-  };
+-
+-  auto config_service =
+-      std::make_unique<MockProxyConfigService>("http://foopy/proxy.pac");
+-
+-  MockAsyncProxyResolver resolver;
+-  auto resolver_factory = std::make_unique<SyncFailProxyResolverFactory>(false);
+-  auto* resolver_factory_ptr = resolver_factory.get();
+-
+-  ConfiguredProxyResolutionService service(std::move(config_service),
+-                                           std::move(resolver_factory),
+-                                           mock_host_resolver_.get(), nullptr,
+-                                           /*quick_check_enabled=*/true);
+-
+-  // Start two resolve requests.
+-  GURL url1("http://www.google.com/");
+-  GURL url2("https://www.google.com/");
+-  ProxyInfo info1, info2;
+-  std::unique_ptr<ProxyResolutionRequest> request1, request2;
++       ProxyResolverTerminatedSyncReinitSelfDeletion) {
++  TestResolveRequest req1, req2;
+ 
+   int callback1_result = ERR_IO_PENDING;
+-  base::RunLoop run_loop1;
+-  auto callback1 = base::BindLambdaForTesting([&](int rv) {
++  req1.callback = base::BindLambdaForTesting([&](int rv) {
+     callback1_result = rv;
+     // Destroy the request inside the completion callback, simulating the
+     // behavior of consumers like HttpStreamFactory::JobController.
+-    request1.reset();
+-    run_loop1.Quit();
++    req1.request.reset();
+   });
+ 
+   int callback2_result = ERR_IO_PENDING;
+-  base::RunLoop run_loop2;
+-  auto callback2 = base::BindLambdaForTesting([&](int rv) {
++  req2.callback = base::BindLambdaForTesting([&](int rv) {
+     callback2_result = rv;
+-    request2.reset();
+-    run_loop2.Quit();
++    req2.request.reset();
+   });
+ 
+-  // Request 1: In-flight resolve request that will encounter
+-  // ERR_PAC_SCRIPT_TERMINATED and trigger proxy re-initialization.
+-  int rv1 = service.ResolveProxy(url1, std::string(), NetworkAnonymizationKey(),
+-                                 handles::kInvalidNetworkHandle, &info1,
+-                                 std::move(callback1), &request1,
+-                                 NetLogWithSource(), DEFAULT_PRIORITY);
+-
+-  // Request 2: Concurrent in-flight resolve request that will be paused in
+-  // `pending_requests_` and restarted upon re-initialization.
+-  int rv2 = service.ResolveProxy(url2, std::string(), NetworkAnonymizationKey(),
+-                                 handles::kInvalidNetworkHandle, &info2,
+-                                 std::move(callback2), &request2,
+-                                 NetLogWithSource(), DEFAULT_PRIORITY);
+-
+-  // Both requests should be waiting for PAC compilation now.
+-  EXPECT_THAT(rv1, IsError(ERR_IO_PENDING));
+-  EXPECT_THAT(rv2, IsError(ERR_IO_PENDING));
++  SimulatePacTerminatedWithSyncReinit(req1, req2);
+ 
+-  // The service must first create a ProxyResolver by fetching and compiling
+-  // the PAC script. We should have one PAC factory creation request for
+-  // "http://foopy/proxy.pac".
+-  ASSERT_EQ(1u, resolver_factory_ptr->pending_requests().size());
+-  EXPECT_EQ(GURL("http://foopy/proxy.pac"),
+-            resolver_factory_ptr->pending_requests()[0]->script_data()->url());
++  // `req1` fell back to DIRECT per-request as the error fallback for
++  // PAC runtime script crash (ERR_PAC_SCRIPT_TERMINATED).
++  EXPECT_THAT(callback1_result, IsOk());
++  EXPECT_TRUE(req1.info->is_direct());
+ 
+-  // Complete PAC script compilation now so the service becomes ready and
+-  // dispatches `url1` and `url2` to the resolver.
+-  resolver_factory_ptr->pending_requests()[0]->CompleteNowWithForwarder(
+-      OK, &resolver);
++  // PAC re-initialization failed, so the entire service entered DIRECT fallback
++  // mode and restarted `req2` against this new DIRECT configuration.
++  EXPECT_THAT(callback2_result, IsOk());
++  EXPECT_TRUE(req2.info->is_direct());
++}
+ 
+-  // Both `url1` and `url2` are now running as in-flight jobs in the resolver.
+-  JobMap jobs = GetPendingJobsForURLs(resolver, url1, url2);
++// Verifies that cancelling the completing request from a sibling request's
++// callback during synchronous PAC re-initialization is handled safely.
++TEST_F(ConfiguredProxyResolutionServiceTest,
++       ProxyResolverTerminatedSyncReinitSiblingDeletion) {
++  TestResolveRequest req1, req2;
++  RecordingNetLogObserver net_log_observer;
+ 
+-  // Configure the next CreateProxyResolver call (when the service attempts to
+-  // reset and re-initialize the PAC resolver after `url1` crashes) to fail
+-  // synchronously.
+-  resolver_factory_ptr->set_synchronous_fail(true);
++  bool callback1_called = false;
++  req1.callback =
++      base::BindLambdaForTesting([&](int rv) { callback1_called = true; });
+ 
+-  // Simulate a PAC script crash on `url1`. DidFinishResolvingProxy() will then
+-  // reset the configuration, attempt re-initialization (which fails
+-  // synchronously), and fall back to DIRECT.
+-  //
+-  // Note: this covers the edge case reported in crbug.com/533534913 and
+-  // confirms that destroying `request1` inside its completion callback does not
+-  // cause a use-after-free.
+-  jobs[url1]->CompleteNow(ERR_PAC_SCRIPT_TERMINATED);
++  int callback2_result = ERR_IO_PENDING;
++  req2.callback = base::BindLambdaForTesting([&](int rv) {
++    callback2_result = rv;
++    // Cancel `req1` while its completion frames are still on the stack.
++    req1.info.reset();
++    req1.request.reset();
++    req2.request.reset();
++  });
+ 
+-  // `request1` fell back to DIRECT per-request as the error fallback for
+-  // PAC runtime script crash (ERR_PAC_SCRIPT_TERMINATED).
+-  run_loop1.Run();
+-  EXPECT_THAT(callback1_result, IsOk());
+-  EXPECT_TRUE(info1.is_direct());
++  SimulatePacTerminatedWithSyncReinit(req1, req2);
+ 
+-  // PAC re-initialization failed, so the entire service entered DIRECT fallback
+-  // mode and restarted `request2` against this new DIRECT configuration.
+-  run_loop2.Run();
+   EXPECT_THAT(callback2_result, IsOk());
+-  EXPECT_TRUE(info2.is_direct());
++  EXPECT_TRUE(req2.info->is_direct());
++  EXPECT_FALSE(callback1_called);
++
++  auto entries1 = net_log_observer.GetEntriesForSource(req1.net_log.source());
++  ASSERT_EQ(5u, entries1.size());
++  EXPECT_TRUE(LogContainsBeginEvent(entries1, 0,
++                                    NetLogEventType::PROXY_RESOLUTION_SERVICE));
++  EXPECT_TRUE(LogContainsEndEvent(entries1, 4,
++                                  NetLogEventType::PROXY_RESOLUTION_SERVICE));
+ }
+ 
+ TEST_F(ConfiguredProxyResolutionServiceTest,

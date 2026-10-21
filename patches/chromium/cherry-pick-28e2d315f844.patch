@@ -1,0 +1,124 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stefan Zager <szager@chromium.org>
+Date: Mon, 12 Oct 2026 19:39:10 -0700
+Subject: [HiC] Invalidate filters when an element moves into canvas
+
+Typically compositor filter operations are not rebuilt unless the style
+filter value changes, regardless of paint invalidation. With this change
+compositor filter operations will be aggressively rebuilt whenever
+content moves into a canvas.
+
+Fixed: 572598342
+Change-Id: I4ea26b5c4974088b53fe5cfe96c6d316f81f7882
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8558681
+Reviewed-by: Stephen Chenney <schenney@chromium.org>
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1717279}
+
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index 3aaba5621be39775bbc3961239f4cc8ff0fbd730..79bb19873681dbb57a15d7ac80698e2ffc6e1f42 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -4435,6 +4435,11 @@ void Element::DidChangeIsInCanvasSubtree() {
+     ObjectPaintInvalidator(*layout_object)
+         .SlowSetPaintingLayerNeedsRepaintAndInvalidateDisplayItemClient(
+             *layout_object, PaintInvalidationReason::kUncacheable);
++    if (layout_object->HasLayer()) {
++      To<LayoutBoxModelObject>(layout_object)
++          ->Layer()
++          ->SetFilterOnEffectNodeDirty();
++    }
+   }
+ }
+ 
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/box-reflect-images-in-iframe-moved-ignored.tentative.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/box-reflect-images-in-iframe-moved-ignored.tentative.https.sub.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..179f42cd8f3232980012f25009a8b3245599dcf8
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/box-reflect-images-in-iframe-moved-ignored.tentative.https.sub.html
+@@ -0,0 +1,85 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>drawElementImage does not draw cross-origin box-reflect images in an iframe moved under canvas</title>
++  <link rel="help" href="https://github.com/WICG/html-in-canvas">
++  <script src='/resources/testharness.js'></script>
++  <script src='/resources/testharnessreport.js'></script>
++  <script src='/html/canvas/resources/canvas-tests.js'></script>
++  <script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
++  <style>
++  #iframe {
++    width: 200px;
++    height: 200px;
++    border: none;
++  }
++  </style>
++</head>
++<body>
++  <iframe drawable id="iframe" srcdoc='
++    <!DOCTYPE html>
++    <style>
++      body {
++        margin: 0;
++        width: 200px;
++        height: 200px;
++        background: blue;
++        position: relative;
++      }
++      #sameOrigin {
++        position: absolute;
++        left: 0px;
++        top: 0px;
++        width: 100px;
++        height: 100px;
++        background: green;
++        -webkit-box-reflect: below 0 url("https://{{location[host]}}/html/canvas/element/manual/draw-element-image/resources/left-half-mask-50.svg");
++      }
++      #crossOrigin {
++        position: absolute;
++        left: 100px;
++        top: 0px;
++        width: 100px;
++        height: 100px;
++        background: green;
++        -webkit-box-reflect: below 0 url("https://{{hosts[alt][www]}}:{{ports[https][0]}}/html/canvas/element/manual/draw-element-image/resources/left-half-mask-50.svg");
++      }
++    </style>
++    <div id="sameOrigin"></div>
++    <div id="crossOrigin"></div>
++  '></iframe>
++  <canvas id="canvas" width="200" height="200" content=drawable></canvas>
++
++  <script>
++    window.onload = () => {
++      promise_test(async function(t) {
++        await waitForCanvasPaint(canvas);
++
++        // Atomically move the iframe into the canvas.
++        canvas.moveBefore(iframe, null);
++
++        await waitForCanvasPaint(canvas);
++        const context = canvas.getContext("2d");
++        context.drawElementImage(iframe, 0, 0);
++
++        // Fetch all pixel data once to avoid multiple slow readbacks.
++        const imgData = context.getImageData(0, 0, canvas.width, canvas.height);
++
++        let pixel = _getPixelFromImageData(imgData, 50, 50);
++        assert_array_equals(pixel, [0, 128, 0, 255], "Same origin div should draw");
++        pixel = _getPixelFromImageData(imgData, 25, 150);
++        assert_array_equals(pixel, [0, 128, 0, 255], "Same origin box-reflect mask should not mask out left side of reflection");
++        pixel = _getPixelFromImageData(imgData, 75, 150);
++        assert_array_equals(pixel, [0, 0, 255, 255], "Same origin box-reflect mask should mask out right side of reflection");
++
++        pixel = _getPixelFromImageData(imgData, 150, 50);
++        assert_array_equals(pixel, [0, 128, 0, 255], "Cross origin div should draw");
++        pixel = _getPixelFromImageData(imgData, 125, 150);
++        assert_array_equals(pixel, [0, 128, 0, 255], "Cross origin box-reflect mask should not mask out left side of reflection");
++        pixel = _getPixelFromImageData(imgData, 175, 150);
++        assert_array_equals(pixel, [0, 128, 0, 255], "Cross origin box-reflect mask should not mask out right side of reflection");
++      });
++    };
++  </script>
++</body>
++</html>

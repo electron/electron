@@ -1,0 +1,245 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Wed, 23 Sep 2026 17:41:19 -0400
+Subject: Vulkan: Pass vk::LevelIndex to ImageHelper::onWrite
+
+Helps a future refactoring where vk::LevelIndex is more readily
+available.
+
+Bug: chromium:556750158
+Change-Id: Ia33454a7ee34809c1265b5398392c57e80d6d1a8
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8452365
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Amirali Abdolrashidi <abdolrashidi@google.com>
+
+Electron adaptation notes (44-x-y): gl::OwnerLayer is mapped to
+uint32_t (type absent on this revision), so the new range ASSERT in
+ImageHelper::onWrite() uses plain integer arithmetic; otherwise applied
+verbatim.
+
+Additional adaptation (44-x-y): this revision has one more onWrite()
+caller (the generateMipmapsWithCompute fallback in vk_helpers.cpp) that
+passes a GL level; it is converted with toVkLevel() like the other
+call sites.
+
+diff --git a/src/libANGLE/renderer/vulkan/ContextVk.cpp b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+index 9e09d65d0638bc90766c3ecdce4d25a6e2392ee8..85b4616ef7af70e6d40163fdd9c8df8a9ed3f3ca 100644
+--- a/src/libANGLE/renderer/vulkan/ContextVk.cpp
++++ b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+@@ -8659,8 +8659,8 @@ angle::Result ContextVk::onResourceAccess(const vk::CommandResources &resources)
+                                   writeImage.layerStart, writeImage.layerCount,
+                                   mOutsideRenderPassCommands);
+         mOutsideRenderPassCommands->retainImage(mRenderer, image);
+-        image->onWrite(writeImage.levelStart, writeImage.levelCount, writeImage.layerStart,
+-                       writeImage.layerCount, writeImage.image.aspectFlags);
++        image->onWrite(image->toVkLevel(writeImage.levelStart), writeImage.levelCount,
++                       writeImage.layerStart, writeImage.layerCount, writeImage.image.aspectFlags);
+     }
+ 
+     for (const vk::CommandResourceBuffer &readBuffer : resources.getReadBuffers())
+diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+index b5f93ddeff7bb3a1099e0a23e3486270b9faee75..6d32e10a003aa1c8cefaa647b50dc3fbf34e6f6b 100644
+--- a/src/libANGLE/renderer/vulkan/vk_helpers.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+@@ -1184,8 +1184,9 @@ void CommandBufferHelperCommon::imageWriteImpl(Context *context,
+                                                BarrierType barrierType,
+                                                ImageHelper *image)
+ {
+-    image->onWrite(level, 1, layerStart, layerCount, aspectFlags);
+-    if (image->isWriteBarrierNecessary(imageAccess, level, 1, layerStart, layerCount))
++    const LevelIndex levelVk = image->toVkLevel(level);
++    image->onWrite(levelVk, 1, layerStart, layerCount, aspectFlags);
++    if (image->isWriteBarrierNecessary(imageAccess, levelVk, 1, layerStart, layerCount))
+     {
+         updateImageLayoutAndBarrier(context, image, aspectFlags, imageAccess, barrierType);
+     }
+@@ -7252,7 +7253,7 @@ bool ImageHelper::isReadBarrierNecessary(Renderer *renderer, ImageAccess newAcce
+ }
+ 
+ bool ImageHelper::isReadSubresourceBarrierNecessary(ImageAccess newAccess,
+-                                                    gl::LevelIndex levelStart,
++                                                    LevelIndex levelStart,
+                                                     uint32_t levelCount,
+                                                     uint32_t layerStart,
+                                                     uint32_t layerCount) const
+@@ -7272,12 +7273,10 @@ bool ImageHelper::isReadSubresourceBarrierNecessary(ImageAccess newAccess,
+         layerCount = 1;
+     }
+ 
+-    const LevelIndex levelStartVk = toVkLevel(levelStart);
+-
+     ImageLayerWriteMask layerMask = GetImageLayerWriteMask(layerStart, layerCount);
+     for (uint32_t levelOffset = 0; levelOffset < levelCount; levelOffset++)
+     {
+-        if (areLevelSubresourcesWrittenWithinMaskRange(levelStartVk + levelOffset, layerMask))
++        if (areLevelSubresourcesWrittenWithinMaskRange(levelStart + levelOffset, layerMask))
+         {
+             return true;
+         }
+@@ -7287,7 +7286,7 @@ bool ImageHelper::isReadSubresourceBarrierNecessary(ImageAccess newAccess,
+ }
+ 
+ bool ImageHelper::isWriteBarrierNecessary(ImageAccess newAccess,
+-                                          gl::LevelIndex levelStart,
++                                          LevelIndex levelStart,
+                                           uint32_t levelCount,
+                                           uint32_t layerStart,
+                                           uint32_t layerCount) const
+@@ -7310,14 +7309,12 @@ bool ImageHelper::isWriteBarrierNecessary(ImageAccess newAccess,
+         layerCount = 1;
+     }
+ 
+-    const LevelIndex levelStartVk = toVkLevel(levelStart);
+-
+     // If we are writing to the same parts of the image (level/layer), we need a barrier. Otherwise,
+     // it can be done in parallel.
+     ImageLayerWriteMask layerMask = GetImageLayerWriteMask(layerStart, layerCount);
+     for (uint32_t levelOffset = 0; levelOffset < levelCount; levelOffset++)
+     {
+-        if (areLevelSubresourcesWrittenWithinMaskRange(levelStartVk + levelOffset, layerMask))
++        if (areLevelSubresourcesWrittenWithinMaskRange(levelStart + levelOffset, layerMask))
+         {
+             return true;
+         }
+@@ -7646,7 +7643,8 @@ void ImageHelper::recordWriteBarrier(Context *context,
+                                      uint32_t layerCount,
+                                      OutsideRenderPassCommandBufferHelper *commands)
+ {
+-    if (isWriteBarrierNecessary(newAccess, levelStart, levelCount, layerStart, layerCount))
++    if (isWriteBarrierNecessary(newAccess, toVkLevel(levelStart), levelCount, layerStart,
++                                layerCount))
+     {
+         ASSERT(!mCurrentEvent.valid() || !commands->hasSetEventPendingFlush(mCurrentEvent));
+         VkSemaphore acquireNextImageSemaphore;
+@@ -7672,9 +7670,11 @@ void ImageHelper::recordReadSubresourceBarrier(Context *context,
+                                                uint32_t layerCount,
+                                                OutsideRenderPassCommandBufferHelper *commands)
+ {
++    const LevelIndex levelStartVk = toVkLevel(levelStart);
++
+     // This barrier is used for an image with both read/write permissions, including during mipmap
+     // generation and self-copy.
+-    if (isReadSubresourceBarrierNecessary(newAccess, levelStart, levelCount, layerStart,
++    if (isReadSubresourceBarrierNecessary(newAccess, levelStartVk, levelCount, layerStart,
+                                           layerCount))
+     {
+         ASSERT(!mCurrentEvent.valid() || !commands->hasSetEventPendingFlush(mCurrentEvent));
+@@ -7690,7 +7690,7 @@ void ImageHelper::recordReadSubresourceBarrier(Context *context,
+     }
+ 
+     // Levels/layers being read from are also registered to avoid RAW and WAR hazards.
+-    setSubresourcesWrittenSinceBarrier(toVkLevel(levelStart), levelCount, layerStart, layerCount);
++    setSubresourcesWrittenSinceBarrier(levelStartVk, levelCount, layerStart, layerCount);
+ }
+ 
+ void ImageHelper::recordReadBarrier(Context *context,
+@@ -8407,7 +8407,8 @@ angle::Result ImageHelper::generateMipmapsWithBlit(ContextVk *contextVk,
+         // Make sure the following commands know a transfer operation has happened since the last
+         // barrier, and what subresource it has affected.
+         setCurrentImageAccess(renderer, ImageAccess::TransferSrcDst);
+-        onWrite(baseLevelGL + 1, mLevelCount - 1, 0, mLayerCount, VK_IMAGE_ASPECT_COLOR_BIT);
++        onWrite(toVkLevel(baseLevelGL + 1), mLevelCount - 1, 0, mLayerCount,
++                VK_IMAGE_ASPECT_COLOR_BIT);
+     }
+ 
+     contextVk->trackImageWithOutsideRenderPassEvent(this);
+@@ -8992,7 +8993,8 @@ angle::Result ImageHelper::updateSubresourceOnHost(ContextVk *contextVk,
+         }
+     }
+ 
+-    onWrite(updateLevelGL, 1, baseArrayLayer, layerCount, aspectMask);
++    const LevelIndex updateLevelVk = toVkLevel(updateLevelGL);
++    onWrite(updateLevelVk, 1, baseArrayLayer, layerCount, aspectMask);
+     *copiedOut = true;
+ 
+     // Perform the copy without holding the lock.  This is important for applications that perform
+@@ -9002,8 +9004,8 @@ angle::Result ImageHelper::updateSubresourceOnHost(ContextVk *contextVk,
+     // in this call (just without holding the lock), the sync function won't be called until the
+     // copy is done.
+     auto doCopy = [contextVk, image = mImage.getHandle(), source, memoryRowLength,
+-                   memoryImageHeight, aspectMask, levelVk = toVkLevel(updateLevelGL), is3D,
+-                   baseArrayLayer, layerCount, offset, glExtents,
++                   memoryImageHeight, aspectMask, levelVk = updateLevelVk, is3D, baseArrayLayer,
++                   layerCount, offset, glExtents,
+                    layout = getCurrentLayout(renderer)](void *resultOut) {
+         ANGLE_TRACE_EVENT0("gpu.angle", "Upload image data on host");
+         ANGLE_UNUSED_VARIABLE(resultOut);
+@@ -9199,18 +9201,29 @@ void ImageHelper::onRenderPassAttach(const QueueSerial &queueSerial)
+     mPipelineStageAccessHeuristic.onAccess(PipelineStageGroup::FragmentOnly);
+ }
+ 
+-void ImageHelper::onWrite(gl::LevelIndex levelStart,
++void ImageHelper::onWrite(LevelIndex levelStart,
+                           uint32_t levelCount,
+                           uint32_t layerStart,
+                           uint32_t layerCount,
+                           VkImageAspectFlags aspectFlags)
+ {
++    ASSERT((levelStart + levelCount).get() <= mLevelCount);
++    // As a special case, the caller might get kMaxContentDefinedLayerCount as layer and a layer
++    // count of 0.
++    const bool isInDepthRange =
++        mImageType == VK_IMAGE_TYPE_3D &&
++        (layerStart + layerCount) <= std::max(mExtents.depth >> levelStart.get(), 1u);
++    const bool isInLayerRange =
++        mImageType != VK_IMAGE_TYPE_3D && (layerStart + layerCount) <= mLayerCount;
++    ASSERT((layerStart == kMaxContentDefinedLayerCount && layerCount == 0) ||
++           isInDepthRange || isInLayerRange);
++
+     mCurrentSingleClearValue.reset();
+ 
+     // Mark contents of the given subresource as defined.
+-    setContentDefined(toVkLevel(levelStart), levelCount, layerStart, layerCount, aspectFlags);
++    setContentDefined(levelStart, levelCount, layerStart, layerCount, aspectFlags);
+ 
+-    setSubresourcesWrittenSinceBarrier(levelStartVk, levelCount, layerStart, layerCount);
++    setSubresourcesWrittenSinceBarrier(levelStart, levelCount, layerStart, layerCount);
+ }
+ 
+ bool ImageHelper::hasSubresourceDefinedContent(gl::LevelIndex level,
+@@ -10540,7 +10553,7 @@ angle::Result ImageHelper::flushStagedUpdatesImpl(ContextVk *contextVk,
+                     bool commandBufferWasFlushed = false;
+                     ANGLE_TRY(contextVk->onCopyUpdate(currentBuffer->getSize(),
+                                                       &commandBufferWasFlushed));
+-                    onWrite(updateMipLevelGL, 1, updateBaseLayer, updateLayerCount,
++                    onWrite(updateMipLevelVk, 1, updateBaseLayer, updateLayerCount,
+                             copyRegion->imageSubresource.aspectMask);
+ 
+                     // Update total staging buffer size.
+@@ -10565,7 +10578,7 @@ angle::Result ImageHelper::flushStagedUpdatesImpl(ContextVk *contextVk,
+                         update.refCounted.image->get().getImage(),
+                         update.refCounted.image->get().getCurrentLayout(renderer), mImage,
+                         getCurrentLayout(renderer), 1, copyRegion);
+-                    onWrite(updateMipLevelGL, 1, updateBaseLayer, updateLayerCount,
++                    onWrite(updateMipLevelVk, 1, updateBaseLayer, updateLayerCount,
+                             copyRegion->dstSubresource.aspectMask);
+                     break;
+                 }
+diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.h b/src/libANGLE/renderer/vulkan/vk_helpers.h
+index 245bd70742a910e9c754aa26b3f377503744f7c0..0aeeb5b78dc346dd1271fe302ce633aeb994586d 100644
+--- a/src/libANGLE/renderer/vulkan/vk_helpers.h
++++ b/src/libANGLE/renderer/vulkan/vk_helpers.h
+@@ -2799,12 +2799,12 @@ class ImageHelper final : public Resource, public angle::Subject
+     // This function can be used to prevent issuing redundant layout transition commands.
+     bool isReadBarrierNecessary(Renderer *renderer, ImageAccess newAccess) const;
+     bool isReadSubresourceBarrierNecessary(ImageAccess newAccess,
+-                                           gl::LevelIndex levelStart,
++                                           LevelIndex levelStart,
+                                            uint32_t levelCount,
+                                            uint32_t layerStart,
+                                            uint32_t layerCount) const;
+     bool isWriteBarrierNecessary(ImageAccess newAccess,
+-                                 gl::LevelIndex levelStart,
++                                 LevelIndex levelStart,
+                                  uint32_t levelCount,
+                                  uint32_t layerStart,
+                                  uint32_t layerCount) const;
+@@ -2952,7 +2952,7 @@ class ImageHelper final : public Resource, public angle::Subject
+ 
+     // Mark a given subresource as written to.  The subresource is identified by [levelStart,
+     // levelStart + levelCount) and [layerStart, layerStart + layerCount).
+-    void onWrite(gl::LevelIndex levelStart,
++    void onWrite(LevelIndex levelStart,
+                  uint32_t levelCount,
+                  uint32_t layerStart,
+                  uint32_t layerCount,

@@ -1,0 +1,87 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rakina Zata Amni <rakina@chromium.org>
+Date: Wed, 14 Oct 2026 04:24:26 -0700
+Subject: Don't use a deleted source RenderFrameHost in
+ WebContentsImpl::OpenURL
+
+WebContentsImpl::OpenURL() looks up the source RenderFrameHost, calls
+delegate_->OpenURLFromTab(), and then uses the source RenderFrameHost.
+However, OpenURLFromTab() can synchronously delete it: e.g. if a
+ServiceWorker calls WindowClient.navigate() on a frame whose renderer
+process has crashed, starting the navigation performs an early
+RenderFrameHost swap, which deletes the crashed source RenderFrameHost.
+
+Fix this by checking the source SiteInstance before calling
+OpenURLFromTab(), and only accessing the source RenderFrameHost through
+a WeakPtr after that.
+
+Bug: 569408568
+Change-Id: Ib38179939a27b2461a23ce230f281069d50e9644
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8536146
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1718495}
+
+diff --git a/content/browser/service_worker/service_worker_client_utils.h b/content/browser/service_worker/service_worker_client_utils.h
+index 126be43df3e568633a184e91463580a382c7cfe0..336faf631139648434aeb4b12a80138ed3967093 100644
+--- a/content/browser/service_worker/service_worker_client_utils.h
++++ b/content/browser/service_worker/service_worker_client_utils.h
+@@ -7,6 +7,7 @@
+ 
+ #include "base/functional/callback.h"
+ #include "base/memory/weak_ptr.h"
++#include "content/common/content_export.h"
+ #include "services/network/public/mojom/client_security_state.mojom.h"
+ #include "third_party/blink/public/common/service_worker/service_worker_status_code.h"
+ #include "third_party/blink/public/mojom/service_worker/service_worker.mojom.h"
+@@ -69,7 +70,7 @@ void OpenWindow(
+ 
+ // Navigates the client specified by `rfh_id` to `url`. `callback` is called
+ // with the client information on completion.
+-void NavigateClient(
++CONTENT_EXPORT void NavigateClient(
+     const GURL& url,
+     const GURL& script_url,
+     const blink::StorageKey& key,
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 92c62d8432ac129c25b1f2e17b6f3a90a617e937..144b2e28dd84bdbab9db0ccf846a9525dfba2820 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -6777,19 +6777,31 @@ WebContents* WebContentsImpl::OpenURL(
+     }
+   }
+ 
+-  WebContents* new_contents = delegate_->OpenURLFromTab(
+-      this, params, std::move(navigation_handle_callback));
+-
+   if (source_render_frame_host && params.source_site_instance) {
+     CHECK_EQ(source_render_frame_host->GetSiteInstance(),
+              params.source_site_instance.get());
+   }
+ 
+-  if (new_contents && source_render_frame_host && new_contents != this) {
++  // `OpenURLFromTab()` can synchronously delete `source_render_frame_host`.
++  // For example, if the source frame's renderer process has crashed (e.g. a
++  // ServiceWorker calls WindowClient.navigate() on a crashed frame), starting
++  // the navigation performs an early RenderFrameHost swap, which deletes the
++  // crashed source RenderFrameHost. So, don't use `source_render_frame_host`
++  // after this point. In that case the disposition is CURRENT_TAB and
++  // `new_contents` is `this`, so the observer notification below won't run,
++  // but use a WeakPtr to avoid relying on that.
++  base::WeakPtr<RenderFrameHostImpl> weak_source_rfh =
++      source_render_frame_host ? source_render_frame_host->GetWeakPtr()
++                               : nullptr;
++  source_render_frame_host = nullptr;
++  WebContents* new_contents = delegate_->OpenURLFromTab(
++      this, params, std::move(navigation_handle_callback));
++
++  if (new_contents && weak_source_rfh && new_contents != this) {
+     observers_.NotifyObservers(
+         &WebContentsObserver::DidOpenRequestedURL, new_contents,
+-        source_render_frame_host, params.url, params.referrer,
+-        params.disposition, params.transition, params.started_from_context_menu,
++        weak_source_rfh.get(), params.url, params.referrer, params.disposition,
++        params.transition, params.started_from_context_menu,
+         params.is_renderer_initiated);
+   }
+ 

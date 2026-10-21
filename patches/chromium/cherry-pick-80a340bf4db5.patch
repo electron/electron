@@ -1,0 +1,211 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Vladimir Levin <vmpstr@chromium.org>
+Date: Tue, 13 Oct 2026 14:40:11 -0700
+Subject: Avoid flat tree traversal when unlocking a display lock
+
+DisplayLockContext::SetRequestedState() called ForceLockIfNeeded() on
+every state change. ForceLockIfNeeded() walks the flat tree to find out
+if a newly requested lock is on the ancestor chain of the node of an
+active forced update scope. This is not needed when unlocking.
+
+DisplayLockContext::DetachLayoutTree() requests an unlock, and it can be
+called during slot assignment recalc, where flat tree traversal is not
+allowed. The traversal could then recalc the slot assignment of another
+shadow root while the assigned nodes of the slots being recalculated
+were not up to date. As a result, parts of the layout tree were not
+detached when they left the flat tree.
+
+Only call ForceLockIfNeeded() when a lock is requested.
+
+Also make ScrollMarkerGroupData::ChooseMarkerRecursively() more robust.
+It runs after layout, and its flat tree walks must not recalc slot
+assignments. It now ignores scroll markers whose scroll targets are not
+connected, runs on a stable list of scroll markers instead of the live
+focus group, and verifies that no slot assignment recalc happens.
+
+Bug: 570167919
+Change-Id: Ib2912912fabbc4368e6eea0c80ef88b0dfe5a9f9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8550701
+Commit-Queue: Vladimir Levin <vmpstr@chromium.org>
+Reviewed-by: Rune Lillesveen <futhark@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1717859}
+
+diff --git a/third_party/blink/renderer/core/display_lock/display_lock_context.cc b/third_party/blink/renderer/core/display_lock/display_lock_context.cc
+index 4937b8a62bfb660e6fb9f25d783dc688d4647399..a3bff0f5dcbe430e6d00f080d35ebbd8e274bedf 100644
+--- a/third_party/blink/renderer/core/display_lock/display_lock_context.cc
++++ b/third_party/blink/renderer/core/display_lock/display_lock_context.cc
+@@ -120,9 +120,16 @@ void DisplayLockContext::SetRequestedState(EContentVisibility state) {
+   NotifyRenderAffectingStateChanged();
+ 
+   // Since our state changed, check if we need to create a scoped force update
+-  // object.
+-  element_->GetDocument().GetDisplayLockDocumentState().ForceLockIfNeeded(
+-      element_.Get());
++  // object. This is only needed if a lock is requested: there is nothing to
++  // force if we are unlocking. This matters, since DetachLayoutTree() requests
++  // an unlock, and it can be called during slot assignment recalc, where flat
++  // tree traversal (as done by ForceLockIfNeeded()) is not allowed. Such a
++  // traversal could recalc the slot assignment of another shadow root, while
++  // the assigned nodes of the slots being recalculated are not up to date.
++  if (state_ != EContentVisibility::kVisible) {
++    element_->GetDocument().GetDisplayLockDocumentState().ForceLockIfNeeded(
++        element_.Get());
++  }
+ }
+ 
+ const ComputedStyle* DisplayLockContext::AdjustElementStyle(
+diff --git a/third_party/blink/renderer/core/dom/scroll_marker_group_data.cc b/third_party/blink/renderer/core/dom/scroll_marker_group_data.cc
+index 4aedfef5dc8a8b9dbec99b5e7f9d50f815c38f58..dfbaab7d6cabd0071a3450bf0cce7ff44acc8c4c 100644
+--- a/third_party/blink/renderer/core/dom/scroll_marker_group_data.cc
++++ b/third_party/blink/renderer/core/dom/scroll_marker_group_data.cc
+@@ -8,6 +8,7 @@
+ #include "third_party/blink/renderer/core/dom/element.h"
+ #include "third_party/blink/renderer/core/dom/layout_tree_builder_traversal.h"
+ #include "third_party/blink/renderer/core/dom/scroll_marker_group_pseudo_element.h"
++#include "third_party/blink/renderer/core/dom/slot_assignment_recalc_forbidden_scope.h"
+ #include "third_party/blink/renderer/core/html/forms/html_form_control_element.h"
+ #include "third_party/blink/renderer/core/html/html_anchor_element.h"
+ #include "third_party/blink/renderer/core/layout/geometry/axis.h"
+@@ -528,12 +529,42 @@ Node* NearestScrollContainer(const Node& node) {
+ // This function follows:
+ // https://drafts.csswg.org/css-overflow-5/#example-d2ca6884.
+ Element* ScrollMarkerGroupData::ChooseMarkerRecursively() {
+-  if (focus_group_.empty()) {
++  // This runs after layout, and must not modify the DOM. However, the flat
++  // tree walks below (see NearestScrollContainer()) recalculate dirty slot
++  // assignments, which may remove nodes from the flat tree, detach their
++  // layout trees, and dispose of their pseudo-elements. That includes the
++  // ::scroll-marker-group pseudo-element which owns this group, which would
++  // clear `focus_group_`.
++  //
++  // At this point, slot assignments are up to date for all connected shadow
++  // roots, but not necessarily for shadow roots in disconnected trees. So,
++  // leave out scroll markers whose scroll targets are not connected. Those are
++  // not part of the document, and cannot be scrolled to anyway. Note that the
++  // scroll target needs to be checked rather than the scroll marker itself,
++  // since a ::scroll-marker may still be marked as connected while its
++  // originating element is not, if it hasn't been disposed of yet.
++  //
++  // The scroll markers are collected up front, without calling into code that
++  // could modify `focus_group_`, so that the algorithm below operates on a
++  // stable list.
++  HeapVector<Member<Element>> scroll_markers;
++  for (Element* scroll_marker : focus_group_) {
++    Element* scroll_target = ScrollTargetElement(scroll_marker);
++    if (scroll_target && !scroll_target->isConnected()) {
++      continue;
++    }
++    scroll_markers.push_back(scroll_marker);
++  }
++  if (scroll_markers.empty()) {
+     return nullptr;
+   }
++  // Verify that the flat tree walks below do not recalculate slot assignments.
++  SlotAssignmentRecalcForbiddenScope forbid_slot_assignment_recalc(
++      scroll_markers.front()->GetDocument());
++
+   HeapVector<Member<Element>> scroll_marker_targets;
+   HeapVector<Member<Node>> nearest_ancestor_scroll_container;
+-  for (Element* scroll_marker : focus_group_) {
++  for (Element* scroll_marker : scroll_markers) {
+     Element* target = scroll_marker->IsScrollMarkerPseudoElement()
+                           ? scroll_marker
+                           : ScrollTargetElement(scroll_marker);
+@@ -557,8 +588,8 @@ Element* ScrollMarkerGroupData::ChooseMarkerRecursively() {
+     // which contain scroll target elements targeted by the scroll marker group
+     // whose nearest ancestor scroll container is scroller.
+     HeapVector<Member<Element>> targets;
+-    for (wtf_size_t i = 0; i < focus_group_.size(); ++i) {
+-      Element* scroll_marker = focus_group_[i];
++    for (wtf_size_t i = 0; i < scroll_markers.size(); ++i) {
++      Element* scroll_marker = scroll_markers[i];
+       Element* target = scroll_marker_targets[i];
+       Node* target_scroller = nearest_ancestor_scroll_container[i];
+       // 3.2.a. Let targets be the set of the scroll target elements whose
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-overflow/scroll-markers/chrome-570167919-crash.html b/third_party/blink/web_tests/external/wpt/css/css-overflow/scroll-markers/chrome-570167919-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..b7553de59b912bf32a97b96c50859c6d7dc75044
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-overflow/scroll-markers/chrome-570167919-crash.html
+@@ -0,0 +1,81 @@
++<!DOCTYPE html>
++<html class="test-wait">
++<title>Chrome crash bug 570167919</title>
++<link rel="help" href="https://crbug.com/570167919">
++<link rel="help" href="https://drafts.csswg.org/css-overflow-5/#scroll-marker-group-property">
++<div id="host"><span id="host_child"></span></div>
++<script>
++  // A carousel with a ::scroll-marker-group lives in a nested shadow tree. Its
++  // ancestors are removed from the flat tree and from the document, and then
++  // the slot assignment of a shadow root in the now disconnected tree is
++  // dirtied. Updating the scroll marker group after the next layout must not
++  // crash.
++  const host_root = host.attachShadow({mode: "open"});
++  host_root.innerHTML =
++    `<slot name="q"><span id="fallback" style="display:contents"></span></slot>`;
++
++  const outer = document.createElement("div");
++  outer.style.display = "contents";
++  host_root.getElementById("fallback").append(outer);
++  outer.attachShadow({mode: "open"}).innerHTML =
++    `<slot name="s1"></slot><slot name="s2"></slot>`;
++  outer.innerHTML = `
++    <div id="locked" slot="s1"
++         style="content-visibility:hidden;contain-intrinsic-size:10px 10px">x</div>
++    <div slot="s2">
++      <div id="sibling">n</div>
++      <div id="inner_host"><span id="inner_child" slot="unknown">k</span></div>
++    </div>`;
++  const locked = outer.querySelector("#locked");
++  const sibling = outer.querySelector("#sibling");
++  const inner_host = outer.querySelector("#inner_host");
++  const inner_child = outer.querySelector("#inner_child");
++
++  inner_host.attachShadow({mode: "open"}).innerHTML = `
++    <style>
++      .carousel {
++        overflow: auto;
++        width: 50%;
++        height: 40px;
++        scroll-marker-group: after;
++        white-space: nowrap;
++      }
++      .carousel span {
++        display: inline-block;
++        width: 2px;
++        height: 2px;
++      }
++      .carousel span::scroll-marker {
++        content: "";
++        width: 1px;
++        height: 1px;
++      }
++      .carousel::scroll-marker-group {
++        display: flex;
++        height: 4px;
++        overflow: hidden;
++      }
++    </style>
++    <slot name="q">
++      <div class="carousel">${"<span></span>".repeat(3)}<slot name="s"><span></span></slot>${"<span></span>".repeat(11)}</div>
++    </slot>`;
++
++  requestAnimationFrame(() => requestAnimationFrame(() => {
++    // Dirty the slot assignment of the shadow root of #host: #host_child
++    // replaces the fallback content (which contains the carousel) of slot "q".
++    host_child.slot = "q";
++    // Dirty the slot assignment of the shadow root of `outer`.
++    locked.slot = "none";
++    // Force a style and layout update.
++    sibling.getBoundingClientRect();
++    // Disconnect the tree which contains the carousel.
++    outer.remove();
++    // Dirty the slot assignment of the shadow root of #inner_host, which is
++    // now in a disconnected tree.
++    inner_child.slot = "q";
++    host.style.width = "400px";
++    requestAnimationFrame(() => requestAnimationFrame(() => {
++      document.documentElement.classList.remove("test-wait");
++    }));
++  }));
++</script>

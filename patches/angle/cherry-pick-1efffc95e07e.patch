@@ -1,0 +1,846 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Tue, 22 Sep 2026 22:22:07 -0400
+Subject: Vulkan: Fix content-defined tracking for 3D images
+
+Unlike every other image type, when content subresources are defined for
+3D images are tracked per "slice" rather than layer.  However, many
+operations turn the layer range to [0, 1) for them, leading to incorrect
+content-defined tracking.  This change modifies the few places that need
+it to take 3D images into account and use the z/depth instead of
+layer/count for tracking.
+
+This change also paves the way for fixing staged clear of 3D images in
+some corner cases.
+
+Bug: chromium:556750158
+Change-Id: I5cbc364016b93b03342f672ebbee728e574d5234
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8446121
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Charlie Lao <cclao@google.com>
+Reviewed-by: Amirali Abdolrashidi <abdolrashidi@google.com>
+
+Electron adaptation notes (44-x-y): this ANGLE revision predates the
+gl::OwnerLevel/OwnerLayer/OwnerImageIndex types, so the fix is expressed
+with gl::LevelIndex, uint32_t layers and gl::ImageIndex (adding .get()
+where the gl::ImageIndex factories take GLint). The layer-range helpers
+(matchesLayerRange/intersectsLayerRange/getDestSubresource) move from
+SubresourceUpdate onto ImageHelper exactly as upstream does; their old
+SubresourceUpdate declarations are removed, and the remaining caller in
+ImageHelper::removeSingleStagedClearAfterInvalidate (already gone
+upstream, still present on this revision) is switched to the ImageHelper
+helper so the old definition is not left unresolved at link time. New
+end2end test expectations are dropped (test-only drift).
+
+diff --git a/src/libANGLE/renderer/vulkan/RenderTargetVk.cpp b/src/libANGLE/renderer/vulkan/RenderTargetVk.cpp
+index 5408cb41d48b0fee3c357967c807d78f1637e5a6..048e1b1c716baa83fc1824e5c445015b0fa05d90 100644
+--- a/src/libANGLE/renderer/vulkan/RenderTargetVk.cpp
++++ b/src/libANGLE/renderer/vulkan/RenderTargetVk.cpp
+@@ -389,17 +389,6 @@ angle::Result RenderTargetVk::flushStagedUpdates(ContextVk *contextVk,
+     ASSERT(mImage->valid() && (!isResolveImageOwnerOfData() || mResolveImage->valid()));
+     ASSERT(framebufferLayerCount != 0);
+ 
+-    // It's impossible to defer clears to slices of a 3D images, as the clear applies to all the
+-    // slices, while deferred clears only clear a single slice (where the framebuffer is attached).
+-    // Additionally, the layer index for 3D textures is always zero according to Vulkan.
+-    uint32_t layerIndex = mLayerIndex;
+-    if (mImage->getType() == VK_IMAGE_TYPE_3D)
+-    {
+-        layerIndex         = 0;
+-        deferredClears     = nullptr;
+-        deferredClearIndex = 0;
+-    }
+-
+     vk::ImageHelper *image = getOwnerOfData();
+ 
+     // All updates should be staged on the image that owns the data as the source of truth.  With
+@@ -410,16 +399,16 @@ angle::Result RenderTargetVk::flushStagedUpdates(ContextVk *contextVk,
+     // is a clear, it will accumulate it in the |deferredClears| array.  Later, when the render pass
+     // is started, the deferred clears are applied to the transient multisampled image.
+     ASSERT(!isResolveImageOwnerOfData() ||
+-           !mImage->hasStagedUpdatesForSubresource(mLevelIndexGL, layerIndex, mLayerCount));
++           !mImage->hasStagedUpdatesForSubresource(mLevelIndexGL, mLayerIndex, mLayerCount));
+     ASSERT(isResolveImageOwnerOfData() || mResolveImage == nullptr ||
+-           !mResolveImage->hasStagedUpdatesForSubresource(mLevelIndexGL, layerIndex, mLayerCount));
++           !mResolveImage->hasStagedUpdatesForSubresource(mLevelIndexGL, mLayerIndex, mLayerCount));
+ 
+-    if (!image->hasStagedUpdatesForSubresource(mLevelIndexGL, layerIndex, framebufferLayerCount))
++    if (!image->hasStagedUpdatesForSubresource(mLevelIndexGL, mLayerIndex, framebufferLayerCount))
+     {
+         return angle::Result::Continue;
+     }
+ 
+-    return image->flushSingleSubresourceStagedUpdates(contextVk, mLevelIndexGL, layerIndex,
++    return image->flushSingleSubresourceStagedUpdates(contextVk, mLevelIndexGL, mLayerIndex,
+                                                       framebufferLayerCount, deferredClears,
+                                                       deferredClearIndex);
+ }
+@@ -455,14 +444,17 @@ void RenderTargetVk::invalidateEntireStencilContent(ContextVk *contextVk,
+ gl::ImageIndex RenderTargetVk::getImageIndexForClear(uint32_t layerCount) const
+ {
+     // Determine the GL type from the Vk Image properties.
+-    if (mImage->getType() == VK_IMAGE_TYPE_3D || mImage->getLayerCount() > 1)
++    if (mImage->getLayerCount() > 1)
+     {
+-        // This is used for the sake of staging clears.  The depth slices of the 3D image are
+-        // threated as layers for this purpose.
+-        //
+-        // We also don't need to distinguish 2D array and cube.
++        // We don't need to distinguish 2D array and cube.
+         return gl::ImageIndex::Make2DArrayRange(mLevelIndexGL.get(), mLayerIndex, layerCount);
+     }
++    if (mImage->getType() == VK_IMAGE_TYPE_3D)
++    {
++        // The depth slices of the 3D image are treated as layers for this purpose.
++        return gl::ImageIndex::MakeFromType(gl::TextureType::_3D, mLevelIndexGL.get(), mLayerIndex,
++                                                 layerCount);
++    }
+ 
+     ASSERT(mLayerIndex == 0);
+     ASSERT(mLayerCount == 1);
+diff --git a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+index 9b576c4ddb98fd12e014358ad86ef9454cac3f7a..78f8acd46105aa13b56341c228363b16ac64c4e0 100644
+--- a/src/libANGLE/renderer/vulkan/TextureVk.cpp
++++ b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+@@ -2629,10 +2629,10 @@ angle::Result TextureVk::redefineLevel(const gl::Context *context,
+         ASSERT(levelIndex.get() == ownIndex.getLevelIndex().getUntranslated());
+         ASSERT(layerIndex.get() == ownIndex.getLayerIndex().getUntranslated());
+ 
+-        if (gl::IsArrayTextureType(index.getType()))
++        if (gl::IsArrayTextureType(index.getType()) || index.getType() == gl::TextureType::_3D)
+         {
+-            // A multi-layer texture is being redefined, remove all updates to this level; the
+-            // number of layers may have changed.
++            // A multi-layer or 3D texture is being redefined, remove all updates to this level; the
++            // number of layers/slices may have changed.
+             mImage->redefineLevels(contextVk, levelIndex.get(), levelIndex.get());
+         }
+         else
+@@ -3544,11 +3544,12 @@ angle::Result TextureVk::flushImageStagedUpdates(ContextVk *contextVk)
+     const bool isEGLImageSibling =
+         mState.getEGLImageSourceAttributes().type != gl::TextureType::InvalidEnum;
+     const bool is3D                 = mImage->getType() == VK_IMAGE_TYPE_3D;
+-    const gl::LevelIndex firstLevel = isEGLImageSibling
+-                                          ? mState.toSourceLevel(gl::OwnLevel(0)).get()
+-                                          : mImage->getFirstAllocatedLevel();
+-    const uint32_t firstLayer       = is3D ? 0 : mState.toSourceLayer(gl::OwnLayer(0)).get();
+-    const uint32_t layerEnd         = is3D ? 1 : firstLayer + getImageViewLayerCount();
++    const gl::LevelIndex firstLevel = isEGLImageSibling ? mState.toSourceLevel(gl::OwnLevel(0)).get()
++                                                        : mImage->getFirstAllocatedLevel();
++    const uint32_t firstLayer =
++        is3D ? 0 : mState.toSourceLayer(gl::OwnLayer(0)).get();
++    const uint32_t layerEnd =
++        firstLayer + (is3D ? mImage->getExtents().depth : getImageViewLayerCount());
+ 
+     return mImage->flushStagedUpdates(contextVk, firstLevel, firstLevel + getImageViewLevelCount(),
+                                       firstLayer, layerEnd, mRedefinedLevels);
+diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+index 1967b02799832e34e55744fc8c168bcb87cd8d48..6d8538b69d560e4ee920e65d60124f3d6854378d 100644
+--- a/src/libANGLE/renderer/vulkan/vk_helpers.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+@@ -8462,7 +8462,7 @@ void ImageHelper::removeSingleSubresourceStagedUpdates(ContextVk *contextVk,
+     for (size_t index = 0; index < levelUpdates->size();)
+     {
+         auto update = levelUpdates->begin() + index;
+-        if (update->matchesLayerRange(layerIndex, layerCount, mLayerCount))
++        if (matchesLayerRange(*update, levelIndexGL, layerIndex, layerCount))
+         {
+             // Update total staging buffer size
+             mTotalStagedBufferUpdateSize -= update->updateSource == UpdateSource::Buffer
+@@ -8476,7 +8476,7 @@ void ImageHelper::removeSingleSubresourceStagedUpdates(ContextVk *contextVk,
+             // The layer range should either match the update, or not intersect with it.  If this
+             // assertion fails, the update should be pertially removed, but is retained which is
+             // incorrect.
+-            ASSERT(!update->intersectsLayerRange(layerIndex, layerCount, mLayerCount));
++            ASSERT(!intersectsLayerRange(*update, levelIndexGL, layerIndex, layerCount));
+             index++;
+         }
+     }
+@@ -8500,7 +8500,7 @@ void ImageHelper::removeSingleStagedClearAfterInvalidate(gl::LevelIndex levelInd
+     {
+         auto update = levelUpdates->begin() + index;
+         if (update->updateSource == UpdateSource::ClearAfterInvalidate &&
+-            update->matchesLayerRange(layerIndex, layerCount, mLayerCount))
++            matchesLayerRange(*update, levelIndexGL, layerIndex, layerCount))
+         {
+             // It's a clear, so doesn't need to be released.
+             levelUpdates->erase(update);
+@@ -8936,8 +8936,9 @@ angle::Result ImageHelper::updateSubresourceOnHost(ContextVk *contextVk,
+     const gl::LevelIndex updateLevelGL(index.getLevelIndex());
+     const uint32_t layerIndex = index.hasLayer() ? index.getLayerIndex() : 0;
+     const uint32_t layerCount = index.getLayerCount();
+-    const bool isArray            = gl::IsArrayTextureType(index.getType());
+-    const uint32_t baseArrayLayer = isArray ? offset.z : layerIndex;
++    const bool isArray                  = gl::IsArrayTextureType(index.getType());
++    const bool is3D                     = mImageType == VK_IMAGE_TYPE_3D;
++    const uint32_t baseArrayLayer = isArray || is3D ? offset.z : layerIndex;
+     const gl::Box updateBoundingBox =
+         MakeUpdateBoundingBox(offset, glExtents, baseArrayLayer, layerCount);
+     pruneSupersededUpdatesForLevelImpl(contextVk, updateLevelGL, updateBoundingBox,
+@@ -8999,7 +9000,7 @@ angle::Result ImageHelper::updateSubresourceOnHost(ContextVk *contextVk,
+     // in this call (just without holding the lock), the sync function won't be called until the
+     // copy is done.
+     auto doCopy = [contextVk, image = mImage.getHandle(), source, memoryRowLength,
+-                   memoryImageHeight, aspectMask, levelVk = toVkLevel(updateLevelGL), isArray,
++                   memoryImageHeight, aspectMask, levelVk = toVkLevel(updateLevelGL), is3D,
+                    baseArrayLayer, layerCount, offset, glExtents,
+                    layout = getCurrentLayout(renderer)](void *resultOut) {
+         ANGLE_TRACE_EVENT0("gpu.angle", "Upload image data on host");
+@@ -9017,7 +9018,12 @@ angle::Result ImageHelper::updateSubresourceOnHost(ContextVk *contextVk,
+         gl_vk::GetOffset(offset, &copyRegion.imageOffset);
+         gl_vk::GetExtent(glExtents, &copyRegion.imageExtent);
+ 
+-        if (isArray)
++        if (is3D)
++        {
++            copyRegion.imageSubresource.baseArrayLayer = 0;
++            copyRegion.imageSubresource.layerCount     = 1;
++        }
++        else
+         {
+             copyRegion.imageOffset.z     = 0;
+             copyRegion.imageExtent.depth = 1;
+@@ -9239,7 +9245,8 @@ bool ImageHelper::hasSubresourceDefinedStencilContent(gl::LevelIndex level,
+ void ImageHelper::invalidateEntireLevelContent(vk::ErrorContext *context, gl::LevelIndex level)
+ {
+     invalidateSubresourceContentImpl(
+-        context, level, 0, mLayerCount,
++        context, level, 0,
++        mImageType == VK_IMAGE_TYPE_3D ? mExtents.depth : mLayerCount,
+         static_cast<VkImageAspectFlagBits>(getIntendedAspectFlags() & ~VK_IMAGE_ASPECT_STENCIL_BIT),
+         nullptr, nullptr);
+ }
+@@ -9269,8 +9276,10 @@ void ImageHelper::invalidateEntireLevelStencilContent(vk::ErrorContext *context,
+ {
+     if (getIntendedFormat().stencilBits > 0)
+     {
+-        invalidateSubresourceContentImpl(context, level, 0, mLayerCount,
+-                                         VK_IMAGE_ASPECT_STENCIL_BIT, nullptr, nullptr);
++        invalidateSubresourceContentImpl(
++            context, level, 0,
++            mImageType == VK_IMAGE_TYPE_3D ? mExtents.depth : mLayerCount,
++            VK_IMAGE_ASPECT_STENCIL_BIT, nullptr, nullptr);
+     }
+ }
+ 
+@@ -9752,14 +9761,38 @@ void ImageHelper::stageSubresourceUpdateFromImage(RefCounted<ImageHelper> *image
+         updateLevelGL, SubresourceUpdate(image, copyToImage, image->get().getActualFormatID()));
+ }
+ 
++gl::ImageIndex ImageHelper::getImageIndexForLevel(gl::LevelIndex level)
++{
++    if (mLayerCount > 1)
++    {
++        // We don't need to distinguish 2D array and cube.
++        return gl::ImageIndex::Make2DArrayRange(level.get(), 0, mLayerCount);
++    }
++    if (mImageType == VK_IMAGE_TYPE_3D)
++    {
++        // The depth slices of the 3D image are treated as layers for this purpose.
++        return gl::ImageIndex::MakeFromType(gl::TextureType::_3D, level.get(), 0,
++                                                 getLevelExtents(toVkLevel(level)).depth);
++    }
++
++    ASSERT(mExtents.depth == 1);
++    ASSERT(mLayerCount == 1);
++    return gl::ImageIndex::Make2D(level.get());
++}
++
+ void ImageHelper::stageSubresourceUpdatesFromAllImageLevels(RefCounted<ImageHelper> *image,
+                                                             gl::LevelIndex baseLevel)
+ {
++    // The given image must match this image in dimensions, but not necessarily levels
++    ASSERT(image->get().getExtents().width == getExtents().width);
++    ASSERT(image->get().getExtents().height == getExtents().height);
++    ASSERT(image->get().getExtents().depth == getExtents().depth);
++    ASSERT(image->get().getLayerCount() == getLayerCount());
++
+     for (LevelIndex levelVk(0); levelVk < LevelIndex(image->get().getLevelCount()); ++levelVk)
+     {
+-        const gl::LevelIndex levelGL = vk_gl::GetLevelIndex(levelVk, baseLevel);
+-        const gl::ImageIndex index =
+-            gl::ImageIndex::Make2DArrayRange(levelGL.get(), 0, image->get().getLayerCount());
++        const gl::LevelIndex levelGL    = vk_gl::GetLevelIndex(levelVk, baseLevel);
++        const gl::ImageIndex index = getImageIndexForLevel(levelGL);
+ 
+         stageSubresourceUpdateFromImage(image, index, levelVk, 0, gl::kOffsetZero,
+                                         image->get().getLevelExtents(levelVk),
+@@ -9921,9 +9954,8 @@ void ImageHelper::stageClearIfEmulatedFormat(bool isRobustResourceInitEnabled, b
+ 
+     for (LevelIndex level(0); level < LevelIndex(mLevelCount); ++level)
+     {
+-        gl::LevelIndex updateLevelGL = toGLLevel(level);
+-        gl::ImageIndex index =
+-            gl::ImageIndex::Make2DArrayRange(updateLevelGL.get(), 0, mLayerCount);
++        const gl::LevelIndex updateLevelGL = toGLLevel(level);
++        const gl::ImageIndex index    = getImageIndexForLevel(updateLevelGL);
+ 
+         if (clearOnlyEmulatedChannels)
+         {
+@@ -10097,8 +10129,7 @@ void ImageHelper::stageSelfAsSubresourceUpdates(
+         }
+         else if (!skipLevelsAllFaces.test(levelGL.get()))
+         {
+-            const gl::ImageIndex index =
+-                gl::ImageIndex::Make2DArrayRange(levelGL.get(), 0, mLayerCount);
++            const gl::ImageIndex index = getImageIndexForLevel(levelGL);
+ 
+             stageSubresourceUpdateFromImage(prevImage.get(), index, levelVk, 0, gl::kOffsetZero,
+                                             getLevelExtents(levelVk), mImageType, mImageType);
+@@ -10131,12 +10162,12 @@ angle::Result ImageHelper::flushSingleSubresourceStagedUpdates(ContextVk *contex
+         {
+             SubresourceUpdate &update = (*levelUpdates)[updateIndex];
+ 
+-            if (update.intersectsLayerRange(layer, layerCount, mLayerCount))
++            if (intersectsLayerRange(update, levelGL, layer, layerCount))
+             {
+                 // On any data update or the clear does not match exact layer range, we'll need to
+                 // do a full upload.
+                 const bool isClear = IsClearOfAllChannels(update.updateSource);
+-                if (isClear && update.matchesLayerRange(layer, layerCount, mLayerCount))
++                if (isClear && matchesLayerRange(update, levelGL, layer, layerCount))
+                 {
+                     foundClear = updateIndex;
+                 }
+@@ -10203,8 +10234,9 @@ angle::Result ImageHelper::flushStagedClearEmulatedChannelsUpdates(ContextVk *co
+         // If found, ClearEmulatedChannelsOnly should be flushed before the others and removed from
+         // the update list.
+         ASSERT(update->updateSource == UpdateSource::ClearEmulatedChannelsOnly);
+-        uint32_t updateBaseLayer, updateLayerCount;
+-        update->getDestSubresource(mLayerCount, &updateBaseLayer, &updateLayerCount);
++        uint32_t updateBaseLayer;
++        uint32_t updateLayerCount;
++        getDestSubresource(*update, updateMipLevelGL, &updateBaseLayer, &updateLayerCount);
+ 
+         const LevelIndex updateMipLevelVk = toVkLevel(updateMipLevelGL);
+         update->data.clear.levelIndex     = updateMipLevelGL.get();
+@@ -10293,7 +10325,8 @@ angle::Result ImageHelper::flushStagedUpdatesImpl(ContextVk *contextVk,
+         uint32_t adjustedLayerStart = layerStart, adjustedLayerEnd = layerEnd;
+         if (levelUpdates->size() > 1)
+         {
+-            adjustLayerRange(*levelUpdates, &adjustedLayerStart, &adjustedLayerEnd);
++            adjustLayerRange(*levelUpdates, updateMipLevelGL, &adjustedLayerStart,
++                             &adjustedLayerEnd);
+         }
+ 
+         for (SubresourceUpdate &update : *levelUpdates)
+@@ -10309,8 +10342,9 @@ angle::Result ImageHelper::flushStagedUpdatesImpl(ContextVk *contextVk,
+                 update.refCounted.image->assertIsReferenced();
+             }
+ 
+-            uint32_t updateBaseLayer, updateLayerCount;
+-            update.getDestSubresource(mLayerCount, &updateBaseLayer, &updateLayerCount);
++            uint32_t updateBaseLayer;
++            uint32_t updateLayerCount;
++            getDestSubresource(update, updateMipLevelGL, &updateBaseLayer, &updateLayerCount);
+ 
+             // If the update layers don't intersect the requested layers, skip the update.
+             const bool areUpdateLayersOutsideRange =
+@@ -10420,6 +10454,7 @@ angle::Result ImageHelper::flushStagedUpdatesImpl(ContextVk *contextVk,
+                     else
+                     {
+                         ASSERT(mUseTileMemory);
++                        ASSERT(mImageType != VK_IMAGE_TYPE_3D);
+                         UtilsVk::ClearTextureParameters params = {};
+                         params.aspectFlags                     = getAspectFlags();
+                         params.level                           = updateMipLevelVk;
+@@ -10456,16 +10491,13 @@ angle::Result ImageHelper::flushStagedUpdatesImpl(ContextVk *contextVk,
+                     params.clearArea                       = clearArea;
+                     params.clearValue                      = clearPartialUpdate.clearValue;
+ 
+-                    const bool is3D = mImageType == VK_IMAGE_TYPE_3D;
+-                    const uint32_t clearBaseLayer =
+-                        is3D ? clearArea.z : clearPartialUpdate.layerIndex;
+-                    const uint32_t clearLayerCount =
+-                        is3D ? clearArea.depth : clearPartialUpdate.layerCount;
+-
+-                    for (uint32_t layerIndex = clearBaseLayer;
+-                         layerIndex < clearBaseLayer + clearLayerCount; ++layerIndex)
++                    for (uint32_t layerIndex = updateBaseLayer;
++                         layerIndex < updateBaseLayer + updateLayerCount; ++layerIndex)
+                     {
+                         params.layer = layerIndex;
++                        // Note: clearTexture() starts a render pass that automatically marks the
++                        // contents of the subresource as defined.  setContentDefined is
++                        // unnecessary.
+                         ANGLE_TRY(contextVk->getUtils().clearTexture(contextVk, this, params));
+                     }
+ 
+@@ -10473,8 +10505,6 @@ angle::Result ImageHelper::flushStagedUpdatesImpl(ContextVk *contextVk,
+                     // above. Therefore, the outside command buffer should be re-acquired.
+                     ANGLE_TRY(
+                         contextVk->getOutsideRenderPassCommandBufferHelper({}, &commandBuffer));
+-                    setContentDefined(updateMipLevelVk, 1, updateBaseLayer, updateLayerCount,
+-                                      clearPartialUpdate.aspectFlags);
+                     break;
+                 }
+                 case UpdateSource::Buffer:
+@@ -10663,8 +10693,9 @@ bool ImageHelper::hasStagedUpdatesForSubresource(gl::LevelIndex levelGL,
+ 
+     for (const SubresourceUpdate &update : *levelUpdates)
+     {
+-        uint32_t updateBaseLayer, updateLayerCount;
+-        update.getDestSubresource(mLayerCount, &updateBaseLayer, &updateLayerCount);
++        uint32_t updateBaseLayer;
++        uint32_t updateLayerCount;
++        getDestSubresource(update, levelGL, &updateBaseLayer, &updateLayerCount);
+ 
+         const uint32_t updateLayerEnd = updateBaseLayer + updateLayerCount;
+         const uint32_t layerEnd       = layer + layerCount;
+@@ -10709,14 +10740,16 @@ bool ImageHelper::removeStagedClearUpdatesAndReturnColor(gl::LevelIndex levelGL,
+ }
+ 
+ void ImageHelper::adjustLayerRange(const SubresourceUpdates &levelUpdates,
++                                   const gl::LevelIndex levelIndex,
+                                    uint32_t *layerStart,
+                                    uint32_t *layerEnd)
+ {
+     for (const SubresourceUpdate &update : levelUpdates)
+     {
+-        uint32_t updateBaseLayer, updateLayerCount;
+-        update.getDestSubresource(mLayerCount, &updateBaseLayer, &updateLayerCount);
+-        uint32_t updateLayerEnd = updateBaseLayer + updateLayerCount;
++        uint32_t updateBaseLayer;
++        uint32_t updateLayerCount;
++        getDestSubresource(update, levelIndex, &updateBaseLayer, &updateLayerCount);
++        const uint32_t updateLayerEnd = updateBaseLayer + updateLayerCount;
+ 
+         // In some cases, the update has the bigger layer range than the request. If the update
+         // layers intersect the requested layers, then expand the layer range to the maximum from
+@@ -10944,7 +10977,7 @@ void ImageHelper::pruneSupersededUpdatesForLevelImpl(ContextVk *contextVk,
+ 
+         uint32_t layerIndex = 0;
+         uint32_t layerCount = 0;
+-        update.getDestSubresource(mLayerCount, &layerIndex, &layerCount);
++        getDestSubresource(update, level, &layerIndex, &layerCount);
+ 
+         gl::Box currentUpdateBox(gl::kOffsetZero, gl::Extents());
+         if (update.updateSource == UpdateSource::Buffer)
+@@ -11572,8 +11605,7 @@ angle::Result ImageHelper::readPixelsImpl(ContextVk *contextVk,
+ 
+     ImageHelper *src = this;
+ 
+-    const bool is3D = mImageType == VK_IMAGE_TYPE_3D;
+-    ASSERT(!hasStagedUpdatesForSubresource(levelGL, is3D ? 0 : layer, 1));
++    ASSERT(!hasStagedUpdatesForSubresource(levelGL, layer, 1));
+ 
+     if (isMultisampled)
+     {
+@@ -11617,7 +11649,7 @@ angle::Result ImageHelper::readPixelsImpl(ContextVk *contextVk,
+     VkExtent3D srcExtent = {static_cast<uint32_t>(area.width), static_cast<uint32_t>(area.height),
+                             1};
+ 
+-    if (is3D)
++    if (mImageType == VK_IMAGE_TYPE_3D)
+     {
+         // For 3D texture we need special handling
+         srcOffset.z                   = layer;
+@@ -12071,63 +12103,88 @@ void ImageHelper::SubresourceUpdate::release(Renderer *renderer)
+     }
+ }
+ 
+-bool ImageHelper::SubresourceUpdate::matchesLayerRange(uint32_t layerIndex,
+-                                                       uint32_t layerCount,
+-                                                       uint32_t imageLayerCount) const
++bool ImageHelper::matchesLayerRange(const SubresourceUpdate &update,
++                                    const gl::LevelIndex levelIndex,
++                                    uint32_t layerIndex,
++                                    uint32_t layerCount) const
+ {
+-    uint32_t updateBaseLayer, updateLayerCount;
+-    getDestSubresource(gl::ImageIndex::kEntireLevel, &updateBaseLayer, &updateLayerCount);
+-
+-    if (updateLayerCount == VK_REMAINING_ARRAY_LAYERS)
+-    {
+-        updateLayerCount = imageLayerCount;
+-    }
++    ASSERT(layerCount != VK_REMAINING_ARRAY_LAYERS);
++    uint32_t updateBaseLayer;
++    uint32_t updateLayerCount;
++    getDestSubresource(update, levelIndex, &updateBaseLayer, &updateLayerCount);
+ 
+     return updateBaseLayer == layerIndex && updateLayerCount == layerCount;
+ }
+ 
+-bool ImageHelper::SubresourceUpdate::intersectsLayerRange(uint32_t layerIndex,
+-                                                          uint32_t layerCount,
+-                                                          uint32_t imageLayerCount) const
++bool ImageHelper::intersectsLayerRange(const SubresourceUpdate &update,
++                                       const gl::LevelIndex levelIndex,
++                                       uint32_t layerIndex,
++                                       uint32_t layerCount) const
+ {
+-    uint32_t updateBaseLayer, updateLayerCount;
+-    getDestSubresource(imageLayerCount, &updateBaseLayer, &updateLayerCount);
+-    uint32_t updateLayerEnd = updateBaseLayer + updateLayerCount;
++    uint32_t updateBaseLayer;
++    uint32_t updateLayerCount;
++    getDestSubresource(update, levelIndex, &updateBaseLayer, &updateLayerCount);
++    const uint32_t updateLayerEnd = updateBaseLayer + updateLayerCount;
+ 
+     return updateBaseLayer < (layerIndex + layerCount) && updateLayerEnd > layerIndex;
+ }
+ 
+-void ImageHelper::SubresourceUpdate::getDestSubresource(uint32_t imageLayerCount,
+-                                                        uint32_t *baseLayerOut,
+-                                                        uint32_t *layerCountOut) const
++void ImageHelper::getDestSubresource(const SubresourceUpdate &update,
++                                     const gl::LevelIndex levelIndex,
++                                     uint32_t *baseLayerOut,
++                                     uint32_t *layerCountOut) const
+ {
+-    if (IsClear(updateSource))
++    const bool is3D = mImageType == VK_IMAGE_TYPE_3D;
++    if (IsClear(update.updateSource))
+     {
+-        *baseLayerOut  = data.clear.layerIndex;
+-        *layerCountOut = data.clear.layerCount;
++        *baseLayerOut  = update.data.clear.layerIndex;
++        *layerCountOut = update.data.clear.layerCount;
+ 
+         if (*layerCountOut == static_cast<uint32_t>(gl::ImageIndex::kEntireLevel))
+         {
+-            *layerCountOut = imageLayerCount;
++            *layerCountOut = is3D ? getLevelExtents(toVkLevel(levelIndex)).depth : mLayerCount;
+         }
+     }
+-    else if (updateSource == UpdateSource::ClearPartial)
++    else if (update.updateSource == UpdateSource::ClearPartial && is3D)
++    {
++        *baseLayerOut  = update.data.clearPartial.offset.z;
++        *layerCountOut = update.data.clearPartial.extent.depth;
++
++        if (*layerCountOut == static_cast<uint32_t>(gl::ImageIndex::kEntireLevel))
++        {
++            *layerCountOut = getLevelExtents(toVkLevel(levelIndex)).depth;
++        }
++    }
++    else if (update.updateSource == UpdateSource::ClearPartial)
+     {
+-        *baseLayerOut  = data.clearPartial.layerIndex;
+-        *layerCountOut = data.clearPartial.layerCount;
++        ASSERT(!is3D);
++        *baseLayerOut  = update.data.clearPartial.layerIndex;
++        *layerCountOut = update.data.clearPartial.layerCount;
+ 
+         if (*layerCountOut == static_cast<uint32_t>(gl::ImageIndex::kEntireLevel))
+         {
+-            *layerCountOut = imageLayerCount;
++            *layerCountOut = mLayerCount;
+         }
+     }
++    else if (update.updateSource == UpdateSource::Buffer)
++    {
++        const VkImageSubresourceLayers &dstSubresource =
++            update.data.buffer.copyRegion.imageSubresource;
++        const VkOffset3D &dstOffset = update.data.buffer.copyRegion.imageOffset;
++        const VkExtent3D &dstExtent = update.data.buffer.copyRegion.imageExtent;
++        *baseLayerOut  = is3D ? dstOffset.z : dstSubresource.baseArrayLayer;
++        *layerCountOut = is3D ? dstExtent.depth : dstSubresource.layerCount;
++
++        ASSERT(*layerCountOut != static_cast<uint32_t>(gl::ImageIndex::kEntireLevel));
++    }
+     else
+     {
+         const VkImageSubresourceLayers &dstSubresource =
+-            updateSource == UpdateSource::Buffer ? data.buffer.copyRegion.imageSubresource
+-                                                 : data.image.copyRegion.dstSubresource;
+-        *baseLayerOut  = dstSubresource.baseArrayLayer;
+-        *layerCountOut = dstSubresource.layerCount;
++            update.data.image.copyRegion.dstSubresource;
++        const VkOffset3D &dstOffset = update.data.image.copyRegion.dstOffset;
++        const VkExtent3D &dstExtent = update.data.image.copyRegion.extent;
++        *baseLayerOut  = is3D ? dstOffset.z : dstSubresource.baseArrayLayer;
++        *layerCountOut = is3D ? dstExtent.depth : dstSubresource.layerCount;
+ 
+         ASSERT(*layerCountOut != static_cast<uint32_t>(gl::ImageIndex::kEntireLevel));
+     }
+diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.h b/src/libANGLE/renderer/vulkan/vk_helpers.h
+index 9ae8a42cbf097d961b53631a97970d6f2aef1778..59d7ce8fc6235cdbd91920afbff087f738a9fb16 100644
+--- a/src/libANGLE/renderer/vulkan/vk_helpers.h
++++ b/src/libANGLE/renderer/vulkan/vk_helpers.h
+@@ -3145,20 +3145,6 @@ class ImageHelper final : public Resource, public angle::Subject
+ 
+         void release(Renderer *renderer);
+ 
+-        // Returns true if the update's layer range exact matches [layerIndex,
+-        // layerIndex+layerCount) range.  To support VK_REMAINING_ARRAY_LAYERS, the number of layers
+-        // in the image is also passed in.
+-        bool matchesLayerRange(uint32_t layerIndex,
+-                               uint32_t layerCount,
+-                               uint32_t imageLayerCount) const;
+-        // Returns true if the update is to any layer within range of [layerIndex,
+-        // layerIndex+layerCount)
+-        bool intersectsLayerRange(uint32_t layerIndex,
+-                                  uint32_t layerCount,
+-                                  uint32_t imageLayerCount) const;
+-        void getDestSubresource(uint32_t imageLayerCount,
+-                                uint32_t *baseLayerOut,
+-                                uint32_t *layerCountOut) const;
+         VkImageAspectFlags getDestAspectFlags() const;
+ 
+         UpdateSource updateSource;
+@@ -3440,9 +3426,32 @@ class ImageHelper final : public Resource, public angle::Subject
+     }
+ 
+     void adjustLayerRange(const SubresourceUpdates &levelUpdates,
++                          const gl::LevelIndex levelIndex,
+                           uint32_t *layerStart,
+                           uint32_t *layerEnd);
+ 
++    // Returns true if the update's layer range exactly matches [layerIndex, layerIndex+layerCount).
++    // For 3D images, layer indicates slice.
++    bool matchesLayerRange(const SubresourceUpdate &update,
++                           const gl::LevelIndex levelIndex,
++                           uint32_t layerIndex,
++                           uint32_t layerCount) const;
++    // Returns true if the update is to any layer within range of [layerIndex,
++    // layerIndex+layerCount).
++    // For 3D images, layer indicates slice.
++    bool intersectsLayerRange(const SubresourceUpdate &update,
++                              const gl::LevelIndex levelIndex,
++                              uint32_t layerIndex,
++                              uint32_t layerCount) const;
++    // Get the layer range modified by the update.  For 3D images, layer indicates slice.
++    void getDestSubresource(const SubresourceUpdate &update,
++                            const gl::LevelIndex levelIndex,
++                            uint32_t *baseLayerOut,
++                            uint32_t *layerCountOut) const;
++
++    // Make an image index that covers the entire level
++    gl::ImageIndex getImageIndexForLevel(gl::LevelIndex level);
++
+     // Copy most of state and move VkImage/VkDeviceMemory from other ImageHelper. This should not be
+     // used for general usage. It is specifically for stageSelfUpdate and falling back from tile
+     // memory where the VkImage and storage will be reallocated but most of ImageHelper property
+@@ -3529,6 +3538,7 @@ class ImageHelper final : public Resource, public angle::Subject
+     // Track whether each subresource of VkImage has defined contents. Up to 8 layers are tracked
+     // per level, above which the contents are considered unconditionally defined. Note that this is
+     // only tracking VkImage. Staged update will not set this bit until it is flushed.
++    // For 3D images, tracking is done per slice.
+     gl::TexLevelArray<LevelContentDefinedMask> mVkImageContentDefined;
+     gl::TexLevelArray<LevelContentDefinedMask> mVkImageStencilContentDefined;
+ 
+diff --git a/src/tests/gl_tests/ClearTest.cpp b/src/tests/gl_tests/ClearTest.cpp
+index adb4abcff79f672c8b39497fed27ac911c57d9c1..240beb157f58244ab223f1382e0db8d3ffa421a0 100644
+--- a/src/tests/gl_tests/ClearTest.cpp
++++ b/src/tests/gl_tests/ClearTest.cpp
+@@ -5500,6 +5500,37 @@ TEST_P(ClearTextureEXTTest, Clear3DLayers)
+     }
+ }
+ 
++// Test that clearing a non-zero slice of a 3D texture and blending into it works.
++TEST_P(ClearTextureEXTTest, Clear3DLayerThenBlend)
++{
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_clear_texture"));
++    constexpr uint32_t kWidth  = 51;
++    constexpr uint32_t kHeight = 71;
++    constexpr uint32_t kDepth  = 7;
++    constexpr uint32_t kSlice  = 3;
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_3D, texture);
++    glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGBA8, kWidth, kHeight, kDepth);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL, 0);
++
++    glClearTexSubImageEXT(texture, 0, 0, 0, kSlice, kWidth, kHeight, 1, GL_RGBA, GL_UNSIGNED_BYTE,
++                          &GLColor::red);
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTextureLayer(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, kSlice);
++
++    glEnable(GL_BLEND);
++    glBlendFunc(GL_ONE, GL_ONE);
++
++    ANGLE_GL_PROGRAM(drawGreen, essl1_shaders::vs::Simple(), essl1_shaders::fs::Green());
++    drawQuad(drawGreen, essl1_shaders::PositionAttrib(), 0.95f);
++
++    EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, GLColor::yellow);
++    ASSERT_GL_NO_ERROR();
++}
++
+ // Test that clearing slices of a 3D texture with dimensions of zero does not change it.
+ TEST_P(ClearTextureEXTTest, Clear3DZeroDims)
+ {
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index eb14c2c5bcbc900cb5c976cd738930e3209914a2..0aa215d262cbc8d477729cc21988e7fb822d2eda 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -9000,6 +9000,84 @@ TEST_P(Texture3DTestES3, DrawWithLevelsOutsideRangeWithInconsistentDimensions)
+     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::cyan);
+ }
+ 
++// Test that uploading to a non-zero slice of a 3D texture and blending into it works.
++TEST_P(Texture3DTestES3, UploadLayerThenBlend)
++{
++    constexpr uint32_t kWidth  = 16;
++    constexpr uint32_t kHeight = 17;
++    constexpr uint32_t kDepth  = 5;
++    constexpr uint32_t kSlice  = 3;
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_3D, texture);
++    glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGBA8, kWidth, kHeight, kDepth);
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL, 0);
++
++    const std::vector<GLColor> kInitData(kWidth * kHeight, GLColor::red);
++    glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, kSlice, kWidth, kHeight, 1, GL_RGBA, GL_UNSIGNED_BYTE,
++                    kInitData.data());
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTextureLayer(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, kSlice);
++
++    glEnable(GL_BLEND);
++    glBlendFunc(GL_ONE, GL_ONE);
++
++    ANGLE_GL_PROGRAM(drawGreen, essl1_shaders::vs::Simple(), essl1_shaders::fs::Green());
++    drawQuad(drawGreen, essl1_shaders::PositionAttrib(), 0.95f);
++
++    EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, GLColor::yellow);
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that generating mipmap on a single-level 3D texture blending into a non-zero slice works.
++TEST_P(Texture3DTestES3, GenMipmapThenBlend)
++{
++    constexpr uint32_t kWidth  = 16;
++    constexpr uint32_t kHeight = 17;
++    constexpr uint32_t kDepth  = 5;
++    constexpr uint32_t kSlice  = 3;
++
++    const std::vector<GLColor> kInitData(kWidth * kHeight * kDepth, GLColor::red);
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_3D, texture);
++    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, kWidth, kHeight, kDepth, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kInitData.data());
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL, 0);
++
++    // Make sure the texture's backing storage is created by drawing to a slice of it
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTextureLayer(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, kSlice - 1);
++
++    ANGLE_GL_PROGRAM(drawGreen, essl1_shaders::vs::Simple(), essl1_shaders::fs::Green());
++    drawQuad(drawGreen, essl1_shaders::PositionAttrib(), 0.95f);
++
++    // Generate mipmaps
++    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL, 1000);
++    glGenerateMipmap(GL_TEXTURE_3D);
++
++    // Blend into a different slice, it should have retained its original data.
++
++    glFramebufferTextureLayer(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, kSlice);
++    glEnable(GL_BLEND);
++    glBlendFunc(GL_ONE, GL_ONE);
++
++    drawQuad(drawGreen, essl1_shaders::PositionAttrib(), 0.95f);
++
++    EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, GLColor::yellow);
++    ASSERT_GL_NO_ERROR();
++
++    // For completeness, also verify that the slice that was drawn to has retained its color.
++    ANGLE_GL_PROGRAM(drawBlue, essl1_shaders::vs::Simple(), essl1_shaders::fs::Blue());
++    glFramebufferTextureLayer(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, kSlice - 1);
++    drawQuad(drawBlue, essl1_shaders::PositionAttrib(), 0.95f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, GLColor::cyan);
++    ASSERT_GL_NO_ERROR();
++}
++
+ // Test that drawing works correctly when levels outside the BASE_LEVEL/MAX_LEVEL range do not
+ // have images defined.
+ TEST_P(Texture2DArrayTestES3, DrawWithLevelsOutsideRangeUndefined)
+@@ -9437,7 +9515,7 @@ TEST_P(Texture2DArrayTestES3, RedefineLevelData)
+     glBindTexture(GL_TEXTURE_2D_ARRAY, m2DArrayTexture);
+ 
+     // Fill both levels with red
+-    std::vector<GLColor> pixelsRed(2 * 2 * 1, GLColor::red);
++    const std::vector<GLColor> pixelsRed(2 * 2 * 1, GLColor::red);
+     glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 2, 2, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                  pixelsRed.data());
+     glTexImage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, 1, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+@@ -9464,6 +9542,51 @@ TEST_P(Texture2DArrayTestES3, RedefineLevelData)
+     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
+ }
+ 
++// Test that increasing the layers of a mutable array texture while there are staged updates works.
++TEST_P(Texture2DArrayTestES3, IncreaseLayersWithStagedUpdates)
++{
++    glBindTexture(GL_TEXTURE_2D_ARRAY, m2DArrayTexture);
++
++    // Define levels 3 and 4 incompatibly, initialize both.
++    const std::vector<GLColor> kLevel3Data(2 * 2 * 1, GLColor::red);
++    const std::vector<GLColor> kLevel4Data(1 * 1 * 2, GLColor::green);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 3, GL_RGBA8, 2, 2, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kLevel3Data.data());
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 4, GL_RGBA8, 1, 1, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kLevel4Data.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Make sure the texture's backing storage is allocated, covering only level 3.
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, 3);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 3);
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m2DArrayTexture, 3, 0);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++
++    // Redefine level 1 with a different number of layers (fewer)
++    const std::vector<GLColor> kLevel4Data2(1 * 1 * 1, GLColor::blue);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 4, GL_RGBA8, 1, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kLevel4Data2.data());
++
++    // Redefine level 1 with a different number of layers (more)
++    const std::vector<GLColor> kLevel4Data3(1 * 1 * 3, GLColor::magenta);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 4, GL_RGBA8, 1, 1, 3, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 kLevel4Data3.data());
++
++    // Level 0 is unaffacted
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++
++    // Verify level 1
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, 4);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 4);
++    for (uint32_t layer = 0; layer < 3; ++layer)
++    {
++        glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m2DArrayTexture, 4, layer);
++        EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::magenta);
++    }
++}
++
+ class Texture2DArrayTestES3_ReattachTextureToFbo : public Texture2DArrayTestES3
+ {};
+ 
+@@ -16192,6 +16315,30 @@ TEST_P(Texture3DTestES3, BasicUnpackBufferOOB)
+     }
+ }
+ 
++// Test that an RGB8 3D texture has alpha 1 when read back
++TEST_P(Texture3DTestES3, RGB3D)
++{
++    // Create a 3D texture and initialize it with a draw call that writes 0 to the alpha channel.
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_3D, tex);
++    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGB8, 20, 30, 10, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
++    ASSERT_GL_NO_ERROR();
++
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex, 0, 1);
++
++    ANGLE_GL_PROGRAM(drawColor, angle::essl1_shaders::vs::Simple(),
++                     angle::essl1_shaders::fs::UniformColor());
++    glUseProgram(drawColor);
++    const GLint colorLoc = glGetUniformLocation(drawColor, angle::essl1_shaders::ColorUniform());
++    ASSERT_NE(colorLoc, -1);
++    glUniform4f(colorLoc, 1, 0, 0, 0);
++    drawQuad(drawColor, angle::essl1_shaders::PositionAttrib(), 0.5f);
++
++    // Read back should not be transparent.
++    EXPECT_PIXEL_RECT_EQ(0, 0, 20, 30, GLColor::red);
++    ASSERT_GL_NO_ERROR();
++}
++
+ // Tests behaviour with a single texture and multiple sampler objects.
+ TEST_P(Texture2DTestES3, SingleTextureMultipleSamplers)
+ {

@@ -1,0 +1,896 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Fri, 18 Sep 2026 13:27:10 +0200
+Subject: [maglev] Do not cache the_hole in loaded_context_constants_
+
+When a kNotAssigned (let/const) context variable is accessed in a try
+block before initialization, LdaImmutableContextSlot emits a
+LoadContextSlotNoCells and caches it in loaded_context_constants_
+before ThrowReferenceErrorIfHole runs. When ThrowReferenceErrorIfHole
+merges KnownNodeAspects into the catch handler (both during graph
+building in VisitThrowReferenceErrorIfHole and during KNA recomputation
+in ProcessThrowingNode), the uninitialized load (which evaluates to
+the_hole on the exception path) was being merged into the catch block's
+loaded_context_constants_. If the catch block resumes a generator that
+initializes the variable and then reads it again, Maglev reused the
+stale load from before initialization.
+
+Clear the cached slot in loaded_context_constants_ before merging into
+the exception handler in VisitThrowReferenceErrorIfHole and
+RecomputeKnownNodeAspectsProcessor::ProcessThrowingNode, restoring it on
+the non-throwing fallthrough path. Also erase any cached value in
+SetContextCachedValue when storing the_hole (e.g. during loop TDZ
+re-initialization) instead of caching RootConstant(kTheHoleValue).
+
+This general fix handles both let and const variables in inverted
+generators, allowing us to revert the parser/preparser/ScopeInfo
+workaround from commits e935736811d and 37e1db4a5e8.
+
+Bug: 559932543
+TAG=agy
+CONV=1b7d9654-2731-4157-8abc-cd9414138332
+
+Change-Id: I5d4aaf955e586b688960228e9c8acd240987c1ff
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8419542
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#109939}
+
+diff --git a/src/ast/ast.h b/src/ast/ast.h
+index 21ed80e6a4dfa5b1ea39969623d7056834df6935..b036f590d0445f934939708ceee0bb0829e3867e 100644
+--- a/src/ast/ast.h
++++ b/src/ast/ast.h
+@@ -1578,13 +1578,6 @@ class VariableProxy final : public Expression {
+     bit_field_ = IsNewTargetField::update(bit_field_, true);
+   }
+ 
+-  bool is_inside_try_catch() const {
+-    return IsInsideTryCatchField::decode(bit_field_);
+-  }
+-  void set_is_inside_try_catch() {
+-    bit_field_ = IsInsideTryCatchField::update(bit_field_, true);
+-  }
+-
+   HoleCheckMode hole_check_mode() const {
+     HoleCheckMode mode = HoleCheckModeField::decode(bit_field_);
+     DCHECK_IMPLIES(mode == HoleCheckMode::kRequired,
+@@ -1658,7 +1651,6 @@ class VariableProxy final : public Expression {
+                   IsResolvedField::encode(false) |
+                   IsRemovedFromUnresolvedField::encode(false) |
+                   IsHomeObjectField::encode(false) |
+-                  IsInsideTryCatchField::encode(false) |
+                   HoleCheckModeField::encode(HoleCheckMode::kElided);
+   }
+ 
+@@ -1669,8 +1661,7 @@ class VariableProxy final : public Expression {
+   using IsRemovedFromUnresolvedField = IsResolvedField::Next<bool, 1>;
+   using IsNewTargetField = IsRemovedFromUnresolvedField::Next<bool, 1>;
+   using IsHomeObjectField = IsNewTargetField::Next<bool, 1>;
+-  using IsInsideTryCatchField = IsHomeObjectField::Next<bool, 1>;
+-  using HoleCheckModeField = IsInsideTryCatchField::Next<HoleCheckMode, 1>;
++  using HoleCheckModeField = IsHomeObjectField::Next<HoleCheckMode, 1>;
+ 
+   union {
+     const AstRawString* raw_name_;  // if !is_resolved_
+diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
+index 61b61e5c470ece50e86459c10f0230ff26faad42..5a8a9db00f47d8fbca581d78088baddad4d3013a 100644
+--- a/src/ast/scopes.cc
++++ b/src/ast/scopes.cc
+@@ -473,10 +473,6 @@ Scope* Scope::DeserializeScopeChain(
+       continue;
+     }
+ 
+-    if (parse_info && IsGeneratorFunction(scope_info->function_kind())) {
+-      parse_info->set_has_generator_in_scope_chain();
+-    }
+-
+     if (scope_info->scope_type() == FUNCTION_SCOPE) {
+       outer_scope = zone->New<DeclarationScope>(
+           zone, FUNCTION_SCOPE, ast_value_factory, handle(scope_info, isolate));
+@@ -622,11 +618,6 @@ const DeclarationScope* Scope::AsDeclarationScope() const {
+   return static_cast<const DeclarationScope*>(this);
+ }
+ 
+-FunctionKind Scope::scope_closure_function_kind() const {
+-  if (!scope_info_.is_null()) return scope_info_->function_kind();
+-  return GetClosureScope()->function_kind();
+-}
+-
+ ModuleScope* Scope::AsModuleScope() {
+   SBXCHECK(is_module_scope());
+   return static_cast<ModuleScope*>(this);
+@@ -1043,37 +1034,6 @@ void Scope::Snapshot::Reparent(DeclarationScope* new_parent) {
+   }
+ }
+ 
+-void Scope::MarkUnresolvedVariablesAsInsideTryCatch() {
+-  // While proxy marking is generic, we only actually call this when nested in a
+-  // generator because that's the only place we care about variables escaping
+-  // try-catch blocks (for hole check elision and resume logic).
+-  for (VariableProxy* proxy : unresolved_list_) {
+-    proxy->set_is_inside_try_catch();
+-  }
+-  for (Scope* inner = inner_scope_; inner; inner = inner->sibling_) {
+-    if (inner->is_closure_scope()) continue;
+-    inner->MarkUnresolvedVariablesAsInsideTryCatch();
+-  }
+-}
+-
+-void Scope::Snapshot::MarkUnresolvedVariablesAsInsideTryCatch() {
+-  // While proxy marking is generic, we only actually call this when nested in a
+-  // generator because that's the only place we care about variables escaping
+-  // try-catch blocks (for hole check elision and resume logic).
+-  auto it = top_unresolved_;
+-  auto end = outer_scope_->unresolved_list_.end();
+-
+-  while (it != end) {
+-    (*it)->set_is_inside_try_catch();
+-    ++it;
+-  }
+-  for (Scope* inner = outer_scope_->inner_scope_; inner != top_inner_scope_;
+-       inner = inner->sibling_) {
+-    if (inner->is_closure_scope()) continue;
+-    inner->MarkUnresolvedVariablesAsInsideTryCatch();
+-  }
+-}
+-
+ Variable* Scope::LookupInScopeInfo(const AstRawString* name, Scope* cache) {
+   DCHECK(!scope_info_.is_null());
+   DCHECK(this->IsOuterScopeOf(cache));
+@@ -1612,18 +1572,6 @@ DeclarationScope* Scope::GetClosureScope() {
+   return scope->AsDeclarationScope();
+ }
+ 
+-bool Scope::HasOuterGenerator() const {
+-  const Scope* scope = GetClosureScope()->outer_scope();
+-  while (scope != nullptr) {
+-    scope = scope->GetClosureScope();
+-    if (IsGeneratorFunction(scope->AsDeclarationScope()->function_kind())) {
+-      return true;
+-    }
+-    scope = scope->outer_scope();
+-  }
+-  return false;
+-}
+-
+ bool Scope::NeedsScopeInfo() const {
+   DCHECK(!already_resolved_);
+   DCHECK(GetClosureScope()->ShouldEagerCompile());
+@@ -1779,7 +1727,7 @@ void Scope::AnalyzePartially(DeclarationScope* max_outer_scope,
+         }
+       } else {
+         var->set_is_used();
+-        UpdateVariableMaybeAssigned(var, proxy, scope);
++        if (proxy->is_assigned()) var->SetMaybeAssigned();
+       }
+     }
+ 
+@@ -2535,36 +2483,11 @@ bool UpdateNeedsHoleCheck(Variable* var, VariableProxy* proxy, Scope* scope,
+ 
+ }  // anonymous namespace
+ 
+-void Scope::UpdateVariableMaybeAssigned(Variable* var, VariableProxy* proxy,
+-                                        Scope* current_scope) {
+-  if (proxy->is_assigned()) {
+-    var->SetMaybeAssigned();
+-    return;
+-  }
+-
+-  if (proxy->is_inside_try_catch()) {
+-    Variable* true_var = var;
+-    while (true_var->has_local_if_not_shadowed()) {
+-      true_var = true_var->local_if_not_shadowed();
+-    }
+-    if (!true_var->scope()->IsOuterScopeUpToClosureScopeOf(current_scope) &&
+-        IsGeneratorFunction(true_var->scope()->scope_closure_function_kind())) {
+-      // We treat variables captured by generator yields in a try-catch as
+-      // maybe_assigned since the context allocation and assignment might be
+-      // skipped when resuming from a yield.
+-      // See test/mjsunit/maglev/context-inverted-generator2.js.
+-      true_var->SetMaybeAssigned();
+-    }
+-  }
+-}
+-
+ void Scope::ResolveTo(VariableProxy* proxy, Variable* var,
+                       int access_position) {
+   DCHECK_NOT_NULL(var);
+   UpdateNeedsHoleCheck(var, proxy, this, access_position);
+   proxy->BindTo(var);
+-
+-  UpdateVariableMaybeAssigned(var, proxy, this);
+ }
+ 
+ void Scope::ResolvePreparsedVariable(VariableProxy* proxy, Scope* scope,
+@@ -2576,7 +2499,7 @@ void Scope::ResolvePreparsedVariable(VariableProxy* proxy, Scope* scope,
+       var->set_is_used();
+       if (!var->is_dynamic()) {
+         var->ForceContextAllocation();
+-        UpdateVariableMaybeAssigned(var, proxy, scope);
++        if (proxy->is_assigned()) var->SetMaybeAssigned();
+         return;
+       }
+     }
+@@ -2892,8 +2815,7 @@ void Scope::AllocateVariablesRecursively() {
+ template <typename IsolateT>
+ void Scope::AllocateScopeInfosRecursively(
+     IsolateT* isolate, MaybeHandle<ScopeInfo> outer_scope,
+-    std::unordered_map<int, IndirectHandle<ScopeInfo>>& scope_infos_to_reuse,
+-    FunctionKind closure_function_kind) {
++    std::unordered_map<int, IndirectHandle<ScopeInfo>>& scope_infos_to_reuse) {
+   DCHECK(scope_info_.is_null());
+   MaybeHandle<ScopeInfo> next_outer_scope = outer_scope;
+ 
+@@ -2915,8 +2837,7 @@ void Scope::AllocateScopeInfosRecursively(
+     it->second = {};
+ #endif
+   } else if (NeedsScopeInfo()) {
+-    scope_info_ = ScopeInfo::Create(isolate, zone(), this, outer_scope,
+-                                    closure_function_kind);
++    scope_info_ = ScopeInfo::Create(isolate, zone(), this, outer_scope);
+ #ifdef DEBUG
+     // Mark this ID as being used.
+     scope_infos_to_reuse[UniqueIdInScript()] = {};
+@@ -2940,12 +2861,8 @@ void Scope::AllocateScopeInfosRecursively(
+     }
+     if (!scope->is_function_scope() ||
+         scope->AsDeclarationScope()->ShouldEagerCompile()) {
+-      FunctionKind inner_closure_kind =
+-          scope->is_closure_scope()
+-              ? scope->AsDeclarationScope()->function_kind()
+-              : closure_function_kind;
+-      scope->AllocateScopeInfosRecursively(
+-          isolate, next_outer_scope, scope_infos_to_reuse, inner_closure_kind);
++      scope->AllocateScopeInfosRecursively(isolate, next_outer_scope,
++                                           scope_infos_to_reuse);
+     } else {
+       auto scope_it = scope_infos_to_reuse.find(scope->UniqueIdInScript());
+       if (scope_it != scope_infos_to_reuse.end()) {
+@@ -2963,14 +2880,12 @@ template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) void Scope::
+     AllocateScopeInfosRecursively<Isolate>(
+         Isolate* isolate, MaybeHandle<ScopeInfo> outer_scope,
+         std::unordered_map<int, IndirectHandle<ScopeInfo>>&
+-            scope_infos_to_reuse,
+-        FunctionKind closure_function_kind);
++            scope_infos_to_reuse);
+ template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE) void Scope::
+     AllocateScopeInfosRecursively<LocalIsolate>(
+         LocalIsolate* isolate, MaybeHandle<ScopeInfo> outer_scope,
+         std::unordered_map<int, IndirectHandle<ScopeInfo>>&
+-            scope_infos_to_reuse,
+-        FunctionKind closure_function_kind);
++            scope_infos_to_reuse);
+ 
+ void DeclarationScope::RecalcPrivateNameContextChain() {
+   // The outermost scope in a class heritage expression is marked to skip the
+@@ -3179,17 +3094,16 @@ void DeclarationScope::AllocateScopeInfos(ParseInfo* parse_info,
+     }
+   }
+ 
+-  scope->AllocateScopeInfosRecursively(
+-      isolate, outer_scope, scope_infos_to_reuse,
+-      scope->GetClosureScope()->function_kind());
++  scope->AllocateScopeInfosRecursively(isolate, outer_scope,
++                                       scope_infos_to_reuse);
+ 
+   // The debugger expects all shared function infos to contain a scope info.
+   // Since the top-most scope will end up in a shared function info, make sure
+   // it has one, even if it doesn't need a scope info.
+   // TODO(yangguo): Remove this requirement.
+   if (scope->scope_info_.is_null()) {
+-    scope->scope_info_ = ScopeInfo::Create(isolate, scope->zone(), scope,
+-                                           outer_scope, scope->function_kind());
++    scope->scope_info_ =
++        ScopeInfo::Create(isolate, scope->zone(), scope, outer_scope);
+   }
+ 
+   // Ensuring that the outer script scope has a scope info avoids having
+diff --git a/src/ast/scopes.h b/src/ast/scopes.h
+index 5a7effdcafa2aea832d470699a820464af80c5a3..f85e7420968f401eafa11d245ec0aeb5eeb9fb6f 100644
+--- a/src/ast/scopes.h
++++ b/src/ast/scopes.h
+@@ -121,10 +121,6 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
+   // to REPL_GLOBAL. Should only be called on REPL scripts.
+   void RewriteReplGlobalVariables();
+ 
+-  // Mark all unresolved variables added after taking the snapshot as inside a
+-  // try/catch.
+-  void MarkUnresolvedVariablesAsInsideTryCatch();
+-
+   class Snapshot final {
+    public:
+     inline explicit Snapshot(Scope* scope);
+@@ -145,9 +141,6 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
+     }
+ 
+     void Reparent(DeclarationScope* new_parent);
+-    // Mark all unresolved variables added after taking the snapshot as inside a
+-    // try/catch.
+-    void MarkUnresolvedVariablesAsInsideTryCatch();
+ 
+    private:
+     Scope* outer_scope_;
+@@ -580,12 +573,6 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
+   DeclarationScope* GetClosureScope();
+   const DeclarationScope* GetClosureScope() const;
+ 
+-  // Returns the function kind of the closure scope, even if the scope is fully
+-  // deserialized and its closure scope isn't available.
+-  FunctionKind scope_closure_function_kind() const;
+-
+-  bool HasOuterGenerator() const;
+-
+   // Returns true if this scope is an outer scope of the given scope, up to
+   // and including the closure scope of the given scope.
+   bool IsOuterScopeUpToClosureScopeOf(Scope* scope) const;
+@@ -814,8 +801,6 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
+                                     bool force_context_allocation = false);
+   static void ResolvePreparsedVariable(VariableProxy* proxy, Scope* scope,
+                                        Scope* end);
+-  static void UpdateVariableMaybeAssigned(Variable* var, VariableProxy* proxy,
+-                                          Scope* current_scope);
+   void ResolveTo(VariableProxy* proxy, Variable* var, int access_position);
+   void ResolveVariable(VariableProxy* proxy);
+   V8_WARN_UNUSED_RESULT bool ResolveVariablesRecursively(Scope* end);
+@@ -846,8 +831,7 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
+   template <typename IsolateT>
+   void AllocateScopeInfosRecursively(
+       IsolateT* isolate, MaybeHandle<ScopeInfo> outer_scope,
+-      std::unordered_map<int, IndirectHandle<ScopeInfo>>& scope_infos_to_reuse,
+-      FunctionKind closure_function_kind);
++      std::unordered_map<int, IndirectHandle<ScopeInfo>>& scope_infos_to_reuse);
+ 
+   // Construct a scope based on the scope info.
+   Scope(Zone* zone, ScopeType type, AstValueFactory* ast_value_factory,
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index a5677e7f07feed3f4006e1563a9cea198a1bc99e..b37673efb47cbc9328b2ea445666739741ae9151 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -15442,9 +15442,34 @@ ReduceResult MaglevGraphBuilder::VisitThrowReferenceErrorIfHole() {
+                                 GetConstant(name));
+     case Tribool::kFalse:
+       return ReduceResult::Done();
+-    case Tribool::kMaybe:
++    case Tribool::kMaybe: {
+       DCHECK(value->is_tagged());
+-      return AddNewNode<ThrowReferenceErrorIfHole>({value}, name);
++      // Temporarily clear the cached constant value before emitting
++      // ThrowReferenceErrorIfHole so that known_node_aspects() merged into the
++      // exception handler (the catch block) does not cache this load. On the
++      // exception path, the value is guaranteed to be the_hole, and the catch
++      // block may resume a generator that initializes the const variable.
++      // Restore the cached value afterward for the non-throwing fallthrough
++      // path where the value is known not to be the_hole.
++      // TODO(verwaest): Look into making loaded_context_constants_ monotonic,
++      // e.g. by folding the hole check into the context load rather than
++      // temporarily clearing the cached constant here.
++      ValueNode** cached_slot = nullptr;
++      if (auto* load = value->TryCast<LoadContextSlotNoCells>();
++          load && load->maybe_assigned() == kNotAssigned) {
++        ValueNode*& slot = known_node_aspects().GetContextCachedValue(
++            load->input(0).node(), load->offset(), kNotAssigned);
++        if (slot == value) {
++          cached_slot = &slot;
++          *cached_slot = nullptr;
++        }
++      }
++      ReduceResult res = AddNewNode<ThrowReferenceErrorIfHole>({value}, name);
++      if (cached_slot) {
++        *cached_slot = value;
++      }
++      return res;
++    }
+   }
+   UNREACHABLE();
+ }
+diff --git a/src/maglev/maglev-kna-processor.h b/src/maglev/maglev-kna-processor.h
+index 8460859ae0d8c44ade12913733c0e06b095735a1..c1be4bfa560931545f0f84bf56ddf05aa4632fbc 100644
+--- a/src/maglev/maglev-kna-processor.h
++++ b/src/maglev/maglev-kna-processor.h
+@@ -167,7 +167,33 @@ class RecomputeKnownNodeAspectsProcessor {
+       if (mark_handler_reachable) {
+         tracker_.MarkReachable(exception_handler);
+       }
++      // Temporarily clear the cached constant value before merging into the
++      // exception handler so that the catch block does not cache this load. On
++      // the exception path, the value is guaranteed to be the_hole, and the
++      // catch block may resume a generator that initializes the variable.
++      // Restore the cached value afterward for the non-throwing fallthrough
++      // path where the value is known not to be the_hole.
++      // TODO(verwaest): Look into making loaded_context_constants_ monotonic,
++      // e.g. by folding the hole check into the context load rather than
++      // temporarily clearing the cached constant here.
++      ValueNode** cached_slot = nullptr;
++      ValueNode* value = nullptr;
++      if (auto* throw_if_hole = node->TryCast<ThrowReferenceErrorIfHole>()) {
++        value = throw_if_hole->ValueInput().node();
++        if (auto* load = value->TryCast<LoadContextSlotNoCells>();
++            load && load->maybe_assigned() == kNotAssigned) {
++          ValueNode*& slot = known_node_aspects().GetContextCachedValue(
++              load->input(0).node(), load->offset(), kNotAssigned);
++          if (slot == value) {
++            cached_slot = &slot;
++            *cached_slot = nullptr;
++          }
++        }
++      }
+       Merge(exception_handler);
++      if (cached_slot) {
++        *cached_slot = value;
++      }
+     }
+   }
+ 
+diff --git a/src/maglev/maglev-known-node-aspects.cc b/src/maglev/maglev-known-node-aspects.cc
+index 2c1aa7973264b824493035a722222aff0609a9f1..4586a291645ac162f5638ced992d1b10e9d7d1f0 100644
+--- a/src/maglev/maglev-known-node-aspects.cc
++++ b/src/maglev/maglev-known-node-aspects.cc
+@@ -857,6 +857,13 @@ bool KnownNodeAspects::SetContextCachedValue(ValueNode* context, int offset,
+                                              ValueNode* value,
+                                              MaybeAssignedFlag assigned) {
+   value = value->UnwrapIdentities();
++  if (assigned == kNotAssigned) {
++    if (auto* root_const = value->TryCast<RootConstant>();
++        root_const && root_const->index() == RootIndex::kTheHoleValue) {
++      loaded_context_constants_.erase({context, offset});
++      return false;
++    }
++  }
+   auto& target_map = (assigned == kMaybeAssigned) ? loaded_context_slots_
+                                                   : loaded_context_constants_;
+ 
+diff --git a/src/objects/scope-info.cc b/src/objects/scope-info.cc
+index 1037ed7d3c3b7abfbf0c18be29efd7d6669c1de4..76f836e19e4f48480442008aed6df7d7a7e3831d 100644
+--- a/src/objects/scope-info.cc
++++ b/src/objects/scope-info.cc
+@@ -123,8 +123,7 @@ bool ScopeInfo::Equals(Tagged<ScopeInfo> other, bool is_live_edit_compare,
+ // static
+ template <typename IsolateT>
+ Handle<ScopeInfo> ScopeInfo::Create(IsolateT* isolate, Zone* zone, Scope* scope,
+-                                    MaybeDirectHandle<ScopeInfo> outer_scope,
+-                                    FunctionKind closure_function_kind) {
++                                    MaybeDirectHandle<ScopeInfo> outer_scope) {
+   // Collect variables.
+   int context_local_count = 0;
+   int module_vars_count = 0;
+@@ -226,8 +225,10 @@ Handle<ScopeInfo> ScopeInfo::Create(IsolateT* isolate, Zone* zone, Scope* scope,
+                                             scope->AsModuleScope()->module());
+   }
+ 
++  FunctionKind function_kind = FunctionKind::kNormalFunction;
+   bool sloppy_eval_can_extend_vars = false;
+   if (scope->is_declaration_scope()) {
++    function_kind = scope->AsDeclarationScope()->function_kind();
+     sloppy_eval_can_extend_vars =
+         scope->AsDeclarationScope()->sloppy_eval_can_extend_vars();
+   }
+@@ -281,7 +282,7 @@ Handle<ScopeInfo> ScopeInfo::Create(IsolateT* isolate, Zone* zone, Scope* scope,
+         FunctionVariableBits::encode(function_name_info) |
+         HasInferredFunctionNameBit::encode(has_inferred_function_name) |
+         HasSimpleParametersBit::encode(has_simple_parameters) |
+-        FunctionKindBits::encode(closure_function_kind) |
++        FunctionKindBits::encode(function_kind) |
+         HasOuterScopeInfoBit::encode(has_outer_scope_info) |
+         IsDebugEvaluateScopeBit::encode(false) |
+         ForceContextAllocationBit::encode(
+@@ -498,13 +499,11 @@ Handle<ScopeInfo> ScopeInfo::Create(IsolateT* isolate, Zone* zone, Scope* scope,
+ template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE)
+     Handle<ScopeInfo> ScopeInfo::Create(
+         Isolate* isolate, Zone* zone, Scope* scope,
+-        MaybeDirectHandle<ScopeInfo> outer_scope,
+-        FunctionKind closure_function_kind);
++        MaybeDirectHandle<ScopeInfo> outer_scope);
+ template EXPORT_TEMPLATE_DEFINE(V8_EXPORT_PRIVATE)
+     Handle<ScopeInfo> ScopeInfo::Create(
+         LocalIsolate* isolate, Zone* zone, Scope* scope,
+-        MaybeDirectHandle<ScopeInfo> outer_scope,
+-        FunctionKind closure_function_kind);
++        MaybeDirectHandle<ScopeInfo> outer_scope);
+ 
+ // static
+ DirectHandle<ScopeInfo> ScopeInfo::CreateForWithScope(
+diff --git a/src/objects/scope-info.h b/src/objects/scope-info.h
+index f60bbba01a3f5f06888fad7a63dc0963d2dbef53..2256ee1360970cce5bf3c4410cc503557655522b 100644
+--- a/src/objects/scope-info.h
++++ b/src/objects/scope-info.h
+@@ -316,8 +316,7 @@ V8_OBJECT class ScopeInfo : public HeapObject {
+ 
+   template <typename IsolateT>
+   static Handle<ScopeInfo> Create(IsolateT* isolate, Zone* zone, Scope* scope,
+-                                  MaybeDirectHandle<ScopeInfo> outer_scope,
+-                                  FunctionKind closure_function_kind);
++                                  MaybeDirectHandle<ScopeInfo> outer_scope);
+   V8_EXPORT_PRIVATE static DirectHandle<ScopeInfo> CreateForWithScope(
+       Isolate* isolate, MaybeDirectHandle<ScopeInfo> outer_scope);
+   V8_EXPORT_PRIVATE static DirectHandle<ScopeInfo> CreateForEmptyFunction(
+diff --git a/src/parsing/parse-info.cc b/src/parsing/parse-info.cc
+index 31c278f4c65e29c7523d0b1eb51f904b1a7338cb..574b60550c727587007df3bd2cd4f6e154b4252b 100644
+--- a/src/parsing/parse-info.cc
++++ b/src/parsing/parse-info.cc
+@@ -206,8 +206,7 @@ ParseInfo::ParseInfo(const UnoptimizedCompileFlags flags,
+       language_mode_(flags.outer_language_mode()),
+       is_background_compilation_(false),
+       is_streaming_compilation_(false),
+-      has_module_in_scope_chain_(flags.is_module()),
+-      has_generator_in_scope_chain_(false) {
++      has_module_in_scope_chain_(flags.is_module()) {
+   if (flags.block_coverage_enabled()) {
+     AllocateSourceRangeMap();
+   }
+diff --git a/src/parsing/parse-info.h b/src/parsing/parse-info.h
+index 65da7d537d9f63287e0749f4bc3eb735db518a8b..4deb9aa0076a60152cc11afb5507f1a2cdffc056 100644
+--- a/src/parsing/parse-info.h
++++ b/src/parsing/parse-info.h
+@@ -347,13 +347,6 @@ class V8_EXPORT_PRIVATE ParseInfo {
+   bool has_module_in_scope_chain() const { return has_module_in_scope_chain_; }
+   void set_has_module_in_scope_chain() { has_module_in_scope_chain_ = true; }
+ 
+-  bool has_generator_in_scope_chain() const {
+-    return has_generator_in_scope_chain_;
+-  }
+-  void set_has_generator_in_scope_chain() {
+-    has_generator_in_scope_chain_ = true;
+-  }
+-
+   void SetCompileHintCallbackAndData(CompileHintCallback callback, void* data) {
+     DCHECK_NULL(compile_hint_callback_);
+     DCHECK_NULL(compile_hint_callback_data_);
+@@ -404,7 +397,6 @@ class V8_EXPORT_PRIVATE ParseInfo {
+   bool is_background_compilation_ : 1;
+   bool is_streaming_compilation_ : 1;
+   bool has_module_in_scope_chain_ : 1;
+-  bool has_generator_in_scope_chain_ : 1;
+ };
+ 
+ }  // namespace internal
+diff --git a/src/parsing/parser-base.h b/src/parsing/parser-base.h
+index db7a75291d11d946622145bd19dd533881868e9c..6a4e9c3d995e6f38103f03e59f66639fa0df2d2d 100644
+--- a/src/parsing/parser-base.h
++++ b/src/parsing/parser-base.h
+@@ -254,7 +254,6 @@ class ParserBase {
+       : scope_(nullptr),
+         original_scope_(nullptr),
+         function_state_(nullptr),
+-        has_generator_in_scope_chain_(false),
+         fni_(ast_value_factory),
+         ast_value_factory_(ast_value_factory),
+         ast_node_factory_(ast_value_factory, zone),
+@@ -280,13 +279,6 @@ class ParserBase {
+   const UnoptimizedCompileFlags& flags() const { return flags_; }
+   bool has_module_in_scope_chain() const { return has_module_in_scope_chain_; }
+ 
+-  bool has_generator_in_scope_chain() const {
+-    return has_generator_in_scope_chain_;
+-  }
+-  void set_has_generator_in_scope_chain(bool has_generator) {
+-    has_generator_in_scope_chain_ = has_generator;
+-  }
+-
+   // DebugEvaluate code
+   bool IsParsingWhileDebugging() const {
+     return flags().parsing_while_debugging() == ParsingWhileDebugging::kYes;
+@@ -458,7 +450,7 @@ class ParserBase {
+   class FunctionState final : public BlockState {
+    public:
+     FunctionState(FunctionState** function_state_stack, Scope** scope_stack,
+-                  DeclarationScope* scope, bool* has_generator_in_scope_chain);
++                  DeclarationScope* scope);
+     ~FunctionState();
+ 
+     DeclarationScope* scope() const { return scope_->AsDeclarationScope(); }
+@@ -558,9 +550,6 @@ class ParserBase {
+     // Track if a function or eval occurs within this FunctionState
+     bool contains_function_or_eval_;
+ 
+-    bool* has_generator_in_scope_chain_ptr_;
+-    bool previous_has_generator_in_scope_chain_;
+-
+     friend Impl;
+   };
+ 
+@@ -1769,7 +1758,6 @@ class ParserBase {
+   Scope* object_literal_scope_ = nullptr;
+   Scope* original_scope_;  // The top scope for the current parsing item.
+   FunctionState* function_state_;  // Function state stack.
+-  bool has_generator_in_scope_chain_;
+   FuncNameInferrer fni_;
+   AstValueFactory* ast_value_factory_;  // Not owned.
+   typename Types::Factory ast_node_factory_;
+@@ -1851,7 +1839,7 @@ class ParserBase {
+ template <typename Impl>
+ ParserBase<Impl>::FunctionState::FunctionState(
+     FunctionState** function_state_stack, Scope** scope_stack,
+-    DeclarationScope* scope, bool* has_generator_in_scope_chain)
++    DeclarationScope* scope)
+     : BlockState(scope_stack, scope),
+       expected_property_count_(0),
+       suspend_count_(0),
+@@ -1861,23 +1849,18 @@ ParserBase<Impl>::FunctionState::FunctionState(
+       dont_optimize_reason_(BailoutReason::kNoReason),
+       next_function_is_likely_called_(false),
+       previous_function_was_likely_called_(false),
+-      contains_function_or_eval_(false),
+-      has_generator_in_scope_chain_ptr_(has_generator_in_scope_chain),
+-      previous_has_generator_in_scope_chain_(*has_generator_in_scope_chain) {
++      contains_function_or_eval_(false) {
+   *function_state_stack = this;
+   if (outer_function_state_) {
+     outer_function_state_->previous_function_was_likely_called_ =
+         outer_function_state_->next_function_is_likely_called_;
+     outer_function_state_->next_function_is_likely_called_ = false;
+   }
+-  *has_generator_in_scope_chain_ptr_ =
+-      previous_has_generator_in_scope_chain_ || IsGeneratorFunction(kind());
+ }
+ 
+ template <typename Impl>
+ ParserBase<Impl>::FunctionState::~FunctionState() {
+   *function_state_stack_ = outer_function_state_;
+-  *has_generator_in_scope_chain_ptr_ = previous_has_generator_in_scope_chain_;
+ }
+ 
+ template <typename Impl>
+@@ -2912,8 +2895,7 @@ typename ParserBase<Impl>::ExpressionT ParserBase<Impl>::ParseMemberInitializer(
+ 
+   if (Check(Token::kAssign)) {
+     FunctionState initializer_state(&function_state_, &scope_,
+-                                    initializer_scope,
+-                                    &has_generator_in_scope_chain_);
++                                    initializer_scope);
+ 
+     AcceptINScope scope(this, true);
+     auto result = ParseAssignmentExpression();
+@@ -2932,8 +2914,7 @@ typename ParserBase<Impl>::BlockT ParserBase<Impl>::ParseClassStaticBlock(
+   DeclarationScope* initializer_scope =
+       class_info->EnsureStaticElementsScope(this, position(), PeekNextInfoId());
+ 
+-  FunctionState initializer_state(&function_state_, &scope_, initializer_scope,
+-                                  &has_generator_in_scope_chain_);
++  FunctionState initializer_state(&function_state_, &scope_, initializer_scope);
+   FunctionParsingScope body_parsing_scope(impl());
+   AcceptINScope accept_in(this, true);
+ 
+@@ -5155,8 +5136,7 @@ ParserBase<Impl>::ParseArrowFunctionLiteral(
+   StatementListT body(pointer_buffer());
+   {
+     FunctionState function_state(&function_state_, &scope_,
+-                                 formal_parameters.scope,
+-                                 &has_generator_in_scope_chain_);
++                                 formal_parameters.scope);
+ 
+     Consume(Token::kArrow);
+ 
+@@ -5204,8 +5184,7 @@ ParserBase<Impl>::ParseArrowFunctionLiteral(
+ 
+           DeclarationScope* function_scope = next_arrow_function_info_.scope;
+           FunctionState inner_function_state(&function_state_, &scope_,
+-                                             function_scope,
+-                                             &has_generator_in_scope_chain_);
++                                             function_scope);
+           Scanner::Location loc(function_scope->start_position(),
+                                 end_position());
+           FormalParametersT parameters(function_scope);
+@@ -6544,17 +6523,8 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseTryStatement() {
+   Consume(Token::kTry);
+   int pos = position();
+ 
+-  std::optional<typename Scope::Snapshot> try_catch_snapshot;
+-  if (has_generator_in_scope_chain()) {
+-    try_catch_snapshot.emplace(scope());
+-  }
+-
+   BlockT try_block = ParseBlock(nullptr);
+ 
+-  if (try_catch_snapshot.has_value()) {
+-    try_catch_snapshot->MarkUnresolvedVariablesAsInsideTryCatch();
+-  }
+-
+   CatchInfo catch_info(this);
+ 
+   if (peek() != Token::kCatch && peek() != Token::kFinally) {
+@@ -6658,7 +6628,6 @@ typename ParserBase<Impl>::StatementT ParserBase<Impl>::ParseTryStatement() {
+   }
+ 
+   RETURN_IF_PARSE_ERROR;
+-
+   return impl()->RewriteTryStatement(try_block, catch_block, catch_range,
+                                      finally_block, finally_range, catch_info,
+                                      pos);
+diff --git a/src/parsing/parser.cc b/src/parsing/parser.cc
+index 4447f1fabc91d30e43bae487efa0139d7facce87..51fabf77ed3ec0805624174b1f9b37095166771c 100644
+--- a/src/parsing/parser.cc
++++ b/src/parsing/parser.cc
+@@ -55,8 +55,7 @@ FunctionLiteral* Parser::DefaultConstructor(const AstRawString* name,
+   ScopedPtrList<Statement> body(pointer_buffer());
+ 
+   {
+-    FunctionState function_state(&function_state_, &scope_, function_scope,
+-                                 &has_generator_in_scope_chain_);
++    FunctionState function_state(&function_state_, &scope_, function_scope);
+ 
+     // https://tc39.es/ecma262/#sec-runtime-semantics-classdefinitionevaluation
+     //
+@@ -100,8 +99,7 @@ FunctionLiteral* Parser::MakeAutoAccessorGetter(VariableProxy* name_proxy,
+   function_scope->set_start_position(pos);
+   function_scope->set_end_position(pos);
+   {
+-    FunctionState function_state(&function_state_, &scope_, function_scope,
+-                                 &has_generator_in_scope_chain_);
++    FunctionState function_state(&function_state_, &scope_, function_scope);
+     body.Add(factory()->NewAutoAccessorGetterBody(name_proxy, pos));
+   }
+   // TODO(42202709): Enable lazy compilation by adding custom handling in
+@@ -132,8 +130,7 @@ FunctionLiteral* Parser::MakeAutoAccessorSetter(VariableProxy* name_proxy,
+                                    VariableMode::kTemporary, false, false,
+                                    ast_value_factory(), kNoSourcePosition);
+   {
+-    FunctionState function_state(&function_state_, &scope_, function_scope,
+-                                 &has_generator_in_scope_chain_);
++    FunctionState function_state(&function_state_, &scope_, function_scope);
+     body.Add(factory()->NewAutoAccessorSetterBody(name_proxy, pos));
+   }
+   // TODO(42202709): Enable lazy compilation by adding custom handling in
+@@ -693,9 +690,6 @@ void Parser::DeserializeScopeChain(
+     if (info->has_module_in_scope_chain()) {
+       set_has_module_in_scope_chain();
+     }
+-    if (info->has_generator_in_scope_chain()) {
+-      set_has_generator_in_scope_chain(true);
+-    }
+   }
+ }
+ 
+@@ -806,8 +800,7 @@ FunctionLiteral* Parser::DoParseProgram(Isolate* isolate, ParseInfo* info,
+     DeclarationScope* scope = outer->AsDeclarationScope();
+     scope->set_start_position(0);
+ 
+-    FunctionState function_state(&function_state_, &scope_, scope,
+-                                 &has_generator_in_scope_chain_);
++    FunctionState function_state(&function_state_, &scope_, scope);
+     ScopedPtrList<Statement> body(pointer_buffer());
+     int beg_pos = scanner()->location().beg_pos;
+     if (flags().is_module()) {
+@@ -979,8 +972,7 @@ void Parser::ParseWrapped(Isolate* isolate, ParseInfo* info,
+ 
+   // Set function and block state for the outer eval scope.
+   DCHECK(outer_scope->is_eval_scope());
+-  FunctionState function_state(&function_state_, &scope_, outer_scope,
+-                               &has_generator_in_scope_chain_);
++  FunctionState function_state(&function_state_, &scope_, outer_scope);
+ 
+   const AstRawString* function_name = nullptr;
+   Scanner::Location location(0, 0);
+@@ -1180,8 +1172,7 @@ FunctionLiteral* Parser::DoParseFunction(Isolate* isolate, ParseInfo* info,
+     Scope* outer = original_scope_;
+     DeclarationScope* outer_function = outer->GetClosureScope();
+     DCHECK(outer);
+-    FunctionState function_state(&function_state_, &scope_, outer_function,
+-                                 &has_generator_in_scope_chain_);
++    FunctionState function_state(&function_state_, &scope_, outer_function);
+     BlockState block_state(&scope_, outer);
+     DCHECK(is_sloppy(outer->language_mode()) ||
+            is_strict(info->language_mode()));
+@@ -1303,8 +1294,7 @@ FunctionLiteral* Parser::ParseClassForMemberInitialization(
+   // Insert a FunctionState with the closest outer Declaration scope
+   DeclarationScope* nearest_decl_scope = original_scope_->GetDeclarationScope();
+   DCHECK_NOT_NULL(nearest_decl_scope);
+-  FunctionState function_state(&function_state_, &scope_, nearest_decl_scope,
+-                               &has_generator_in_scope_chain_);
++  FunctionState function_state(&function_state_, &scope_, nearest_decl_scope);
+ 
+   // We preparse the class members that are not fields with initializers
+   // in order to collect the function literal ids.
+@@ -3063,8 +3053,7 @@ bool Parser::SkipFunction(int function_literal_id,
+                           DeclarationScope* function_scope, int* num_parameters,
+                           int* function_length,
+                           ProducedPreparseData** produced_preparse_data) {
+-  FunctionState function_state(&function_state_, &scope_, function_scope,
+-                               &has_generator_in_scope_chain_);
++  FunctionState function_state(&function_state_, &scope_, function_scope);
+   function_scope->set_zone(&preparser_zone_);
+ 
+   DCHECK_NE(kNoSourcePosition, function_scope->start_position());
+@@ -3124,8 +3113,6 @@ bool Parser::SkipFunction(int function_literal_id,
+     timer->Start();
+   }
+ 
+-  reusable_preparser()->set_has_generator_in_scope_chain(
+-      has_generator_in_scope_chain());
+   reusable_preparser()->set_max_drift(this->max_drift());
+   PreParser::PreParseResult result = reusable_preparser()->PreParseFunction(
+       function_literal_id, function_name, kind, function_syntax_kind,
+@@ -3240,8 +3227,7 @@ void Parser::ParseFunction(
+   ScopedModification<Mode> mode_scope(
+       &mode_, allow_lazy_ ? PARSE_LAZILY : PARSE_EAGERLY);
+ 
+-  FunctionState function_state(&function_state_, &scope_, function_scope,
+-                               &has_generator_in_scope_chain_);
++  FunctionState function_state(&function_state_, &scope_, function_scope);
+ 
+   bool is_wrapped = function_syntax_kind == FunctionSyntaxKind::kWrapped;
+ 
+diff --git a/src/parsing/preparser.cc b/src/parsing/preparser.cc
+index 1be7edce8508c3b6466a6d3bc8dcb5b8ba534f5c..997657fba13ee8c45fdf87ae7240908fa71e0d00 100644
+--- a/src/parsing/preparser.cc
++++ b/src/parsing/preparser.cc
+@@ -73,8 +73,7 @@ PreParser::PreParseResult PreParser::PreParseProgram() {
+   // the global scope.
+   if (flags().is_module()) scope = NewModuleScope(scope);
+ 
+-  FunctionState top_scope(&function_state_, &scope_, scope,
+-                          &has_generator_in_scope_chain_);
++  FunctionState top_scope(&function_state_, &scope_, scope);
+   original_scope_ = scope_;
+   int start_position = peek_position();
+   PreParserScopedStatementList body(pointer_buffer());
+@@ -116,8 +115,7 @@ PreParser::PreParseResult PreParser::PreParseFunction(
+   // PreParser.
+   DCHECK_NULL(function_state_);
+   DCHECK_NULL(scope_);
+-  FunctionState function_state(&function_state_, &scope_, function_scope,
+-                               &has_generator_in_scope_chain_);
++  FunctionState function_state(&function_state_, &scope_, function_scope);
+ 
+   // Start collecting data for a new function which might contain skippable
+   // functions.
+@@ -291,8 +289,7 @@ PreParser::Expression PreParser::ParseFunctionLiteral(
+       preparse_data_builder_scope.Start(function_scope);
+     }
+ 
+-    FunctionState function_state(&function_state_, &scope_, function_scope,
+-                                 &has_generator_in_scope_chain_);
++    FunctionState function_state(&function_state_, &scope_, function_scope);
+ 
+     Expect(Token::kLeftParen);
+     int start_position = position();
+diff --git a/src/parsing/preparser.h b/src/parsing/preparser.h
+index a1b10511bcdb12a4ce53205cdf93cb04d58aacdb..beef2b93234e3f5ba84a75625d33fcbb71c78d9c 100644
+--- a/src/parsing/preparser.h
++++ b/src/parsing/preparser.h
+@@ -1188,8 +1188,7 @@ class PreParser : public ParserBase<PreParser> {
+     SetLanguageMode(function_scope, LanguageMode::kStrict);
+     function_scope->set_start_position(pos);
+     function_scope->set_end_position(pos);
+-    FunctionState function_state(&function_state_, &scope_, function_scope,
+-                                 &has_generator_in_scope_chain_);
++    FunctionState function_state(&function_state_, &scope_, function_scope);
+     GetNextInfoId();
+   }
+ 
+diff --git a/test/mjsunit/maglev/context-inverted-generator3.js b/test/mjsunit/maglev/context-inverted-generator3.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..3a91ef8ec3c546116597db2391eb61b9246ca815
+--- /dev/null
++++ b/test/mjsunit/maglev/context-inverted-generator3.js
+@@ -0,0 +1,30 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++function* f() {
++  yield function g() {
++    try { test } catch (e) { gen.next(); return test }
++  }
++  const test = 10;
++}
++
++var gen = f();
++var g = gen.next().value;
++%PrepareFunctionForOptimization(g);
++assertEquals(10, g());
++
++gen = f();
++g = gen.next().value;
++assertEquals(10, g());
++
++gen = f();
++g = gen.next().value;
++assertEquals(10, g());
++
++gen = f();
++g = gen.next().value;
++%OptimizeMaglevOnNextCall(g);
++assertEquals(10, g());

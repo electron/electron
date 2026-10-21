@@ -1,0 +1,578 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ran Wang <wangra@google.com>
+Date: Wed, 23 Sep 2026 20:42:06 -0400
+Subject: D3D11: Sync image from storage before CPU CopyTexSubImage
+
+Check getBaseLevel() in canCreateRenderTargetForImage and sync clean
+staging images from mTexStorage via getImageAndSyncFromStorageIfNeeded
+before copyFromFramebuffer so partial copies preserve existing storage
+contents.
+
+Test:
+    angle_end2end_tests --gtest_filter="*CopyTexImageTestES3.*Preserves**"
+Bug: b/563355257
+Change-Id: I3ad952bbd73af45e6938e43c9e1e31ce8d67437b
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8452764
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+Commit-Queue: Ran Wang <wangra@google.com>
+
+diff --git a/src/libANGLE/renderer/d3d/TextureD3D.cpp b/src/libANGLE/renderer/d3d/TextureD3D.cpp
+index 2318957f12ada484168cc750c07d03eba1541d53..e55ef6134aed83b81f302b2eccf37de4c8be705b 100644
+--- a/src/libANGLE/renderer/d3d/TextureD3D.cpp
++++ b/src/libANGLE/renderer/d3d/TextureD3D.cpp
+@@ -155,7 +155,7 @@ angle::Result TextureD3D::handleCopyImageSelfCopyRedefine(
+     }
+ 
+     ImageD3D *destImage = nullptr;
+-    ANGLE_TRY(getImageAndSyncFromStorage(context, destIndex, &destImage));
++    ANGLE_TRY(getImageAndSyncFromStorageIfNeeded(context, destIndex, &destImage));
+ 
+     const gl::Box sourceBox(0, 0, 0, clippedArea.width, clippedArea.height, 1);
+     ANGLE_TRY(mRenderer->copyImage(context, destImage, sourceCopy.get(), sourceBox, destOffset,
+@@ -184,13 +184,18 @@ angle::Result TextureD3D::getNativeTexture(const gl::Context *context, TextureSt
+     return angle::Result::Continue;
+ }
+ 
+-angle::Result TextureD3D::getImageAndSyncFromStorage(const gl::Context *context,
+-                                                     const gl::ImageIndex &index,
+-                                                     ImageD3D **outImage)
++angle::Result TextureD3D::getImageAndSyncFromStorageIfNeeded(const gl::Context *context,
++                                                             const gl::ImageIndex &index,
++                                                             ImageD3D **outImage)
+ {
+     ImageD3D *image = getImage(index);
+-    if (mTexStorage && mTexStorage->isRenderTarget() && isValidIndex(index) &&
+-        isImageComplete(index))
++    // Syncing from mTexStorage is needed only when mTexStorage exists/is complete and
++    // !image->isDirty(). In TextureD3D, !image->isDirty() means mTexStorage holds the latest
++    // authoritative data (e.g. from FBO rendering/clears or direct TextureStorage11::setData
++    // uploads) while the CPU staging buffer does not. Conversely, when image->isDirty() is true,
++    // the CPU staging image already holds newer uncommitted data, so we must not overwrite it from
++    // mTexStorage (and we defer flushing staging to mTexStorage until commitRegion/updateStorage).
++    if (mTexStorage && isValidIndex(index) && isImageComplete(index) && !image->isDirty())
+     {
+         ANGLE_TRY(image->copyFromTexStorage(context, index, mTexStorage));
+         image->markClean();
+@@ -851,10 +856,42 @@ bool TextureD3D::canCreateRenderTargetForImage(const gl::ImageIndex &index) cons
+ 
+     ImageD3D *image = getImage(index);
+     ASSERT(image);
+-    bool levelsComplete = (isImageComplete(index) && isImageComplete(getImageIndex(0, 0)));
++    bool levelsComplete =
++        (isImageComplete(index) && isImageComplete(getImageIndex(getBaseLevel(), 0)));
+     return (image->isRenderableFormat() && levelsComplete);
+ }
+ 
++angle::Result TextureD3D::copyImageFromFramebufferToStaging(const gl::Context *context,
++                                                            const gl::ImageIndex &index,
++                                                            const gl::Offset &destOffset,
++                                                            const gl::Rectangle &clippedArea,
++                                                            gl::Framebuffer *source)
++{
++    ASSERT(!canCreateRenderTargetForImage(index));
++    // canCreateRenderTargetForImage(index) checks isRenderableFormat(), isImageComplete(index),
++    // and base-level completeness. Because all formats valid for CopyTexImage/CopyTexSubImage are
++    // renderable and isImageComplete(index) implies the base level is also complete,
++    // !canCreateRenderTargetForImage(index) means !isImageComplete(index).
++    //
++    // Since mTexStorage only stores mip-complete levels (and updateStorage() skips incomplete
++    // levels), mTexStorage never holds newer data for an incomplete index, so no sync from
++    // mTexStorage to the staging image is needed.
++    //
++    // onStateChange(DirtyBitsFlagged) is not needed here: CopyTexImage already signals
++    // SubjectChanged via signalDirtyStorage(), and for CopyTexSubImage an incomplete level cannot
++    // be uploaded to mTexStorage or sampled until a subsequent level redefinition or texture
++    // parameter change (e.g. GL_TEXTURE_BASE_LEVEL) makes it complete, which itself signals
++    // SubjectChanged.
++    ASSERT(!isImageComplete(index));
++
++    ImageD3D *image = getImage(index);
++    ASSERT(image);
++    gl::Offset stagingOffset(destOffset.x, destOffset.y, 0);
++    ANGLE_TRY(image->copyFromFramebuffer(context, stagingOffset, clippedArea, source));
++    mDirtyImages = true;
++    return angle::Result::Continue;
++}
++
+ angle::Result TextureD3D::commitRegion(const gl::Context *context,
+                                        const gl::ImageIndex &index,
+                                        const gl::Box &region)
+@@ -1407,9 +1444,8 @@ angle::Result TextureD3D_2D::copyImage(const gl::Context *context,
+ 
+     if (!canCreateRenderTargetForImage(index))
+     {
+-        ANGLE_TRY(mImageArray[index.getLevelIndex()]->copyFromFramebuffer(context, destOffset,
+-                                                                          clippedArea, source));
+-        mDirtyImages = true;
++        ANGLE_TRY(
++            copyImageFromFramebufferToStaging(context, index, destOffset, clippedArea, source));
+     }
+     else
+     {
+@@ -1447,16 +1483,14 @@ angle::Result TextureD3D_2D::copySubImage(const gl::Context *context,
+     const gl::Offset clippedOffset(destOffset.x + clippedArea.x - sourceArea.x,
+                                    destOffset.y + clippedArea.y - sourceArea.y, 0);
+ 
+-    // can only make our texture storage to a render target if level 0 is defined (with a width &
+-    // height) and the current level we're copying to is defined (with appropriate format, width &
+-    // height)
++    // can only make our texture storage to a render target if the base level is defined (with a
++    // width & height) and the current level we're copying to is defined (with appropriate format,
++    // width & height)
+ 
+     if (!canCreateRenderTargetForImage(index))
+     {
+-        ANGLE_TRY(mImageArray[index.getLevelIndex()]->copyFromFramebuffer(context, clippedOffset,
+-                                                                          clippedArea, source));
+-        mDirtyImages = true;
+-        onStateChange(angle::SubjectMessage::DirtyBitsFlagged);
++        ANGLE_TRY(
++            copyImageFromFramebufferToStaging(context, index, clippedOffset, clippedArea, source));
+     }
+     else
+     {
+@@ -1519,10 +1553,11 @@ angle::Result TextureD3D_2D::copyTexture(const gl::Context *context,
+         gl::ImageIndex sourceImageIndex = gl::ImageIndex::Make2D(sourceLevel);
+         TextureD3D *sourceD3D           = GetImplAs<TextureD3D>(source);
+         ImageD3D *sourceImage           = nullptr;
+-        ANGLE_TRY(sourceD3D->getImageAndSyncFromStorage(context, sourceImageIndex, &sourceImage));
++        ANGLE_TRY(
++            sourceD3D->getImageAndSyncFromStorageIfNeeded(context, sourceImageIndex, &sourceImage));
+ 
+         ImageD3D *destImage = nullptr;
+-        ANGLE_TRY(getImageAndSyncFromStorage(context, index, &destImage));
++        ANGLE_TRY(getImageAndSyncFromStorageIfNeeded(context, index, &destImage));
+ 
+         ANGLE_TRY(mRenderer->copyImage(context, destImage, sourceImage, sourceBox, destOffset,
+                                        unpackFlipY, unpackPremultiplyAlpha, unpackUnmultiplyAlpha));
+@@ -1570,10 +1605,11 @@ angle::Result TextureD3D_2D::copySubTexture(const gl::Context *context,
+         gl::ImageIndex sourceImageIndex = gl::ImageIndex::Make2D(sourceLevel);
+         TextureD3D *sourceD3D           = GetImplAs<TextureD3D>(source);
+         ImageD3D *sourceImage           = nullptr;
+-        ANGLE_TRY(sourceD3D->getImageAndSyncFromStorage(context, sourceImageIndex, &sourceImage));
++        ANGLE_TRY(
++            sourceD3D->getImageAndSyncFromStorageIfNeeded(context, sourceImageIndex, &sourceImage));
+ 
+         ImageD3D *destImage = nullptr;
+-        ANGLE_TRY(getImageAndSyncFromStorage(context, index, &destImage));
++        ANGLE_TRY(getImageAndSyncFromStorageIfNeeded(context, index, &destImage));
+ 
+         ANGLE_TRY(mRenderer->copyImage(context, destImage, sourceImage, sourceBox, destOffset,
+                                        unpackFlipY, unpackPremultiplyAlpha, unpackUnmultiplyAlpha));
+@@ -2150,10 +2186,8 @@ angle::Result TextureD3D_Cube::copyImage(const gl::Context *context,
+ 
+     if (!canCreateRenderTargetForImage(index))
+     {
+-        ANGLE_TRY(mImageArray[faceIndex][index.getLevelIndex()]->copyFromFramebuffer(
+-            context, destOffset, clippedArea, source));
+-        mDirtyImages = true;
+-        onStateChange(angle::SubjectMessage::DirtyBitsFlagged);
++        ANGLE_TRY(
++            copyImageFromFramebufferToStaging(context, index, destOffset, clippedArea, source));
+     }
+     else
+     {
+@@ -2194,10 +2228,8 @@ angle::Result TextureD3D_Cube::copySubImage(const gl::Context *context,
+ 
+     if (!canCreateRenderTargetForImage(index))
+     {
+-        ANGLE_TRY(mImageArray[faceIndex][index.getLevelIndex()]->copyFromFramebuffer(
+-            context, clippedOffset, clippedArea, source));
+-        mDirtyImages = true;
+-        onStateChange(angle::SubjectMessage::DirtyBitsFlagged);
++        ANGLE_TRY(
++            copyImageFromFramebufferToStaging(context, index, clippedOffset, clippedArea, source));
+     }
+     else
+     {
+@@ -2260,10 +2292,11 @@ angle::Result TextureD3D_Cube::copyTexture(const gl::Context *context,
+         gl::ImageIndex sourceImageIndex = gl::ImageIndex::Make2D(sourceLevel);
+         TextureD3D *sourceD3D           = GetImplAs<TextureD3D>(source);
+         ImageD3D *sourceImage           = nullptr;
+-        ANGLE_TRY(sourceD3D->getImageAndSyncFromStorage(context, sourceImageIndex, &sourceImage));
++        ANGLE_TRY(
++            sourceD3D->getImageAndSyncFromStorageIfNeeded(context, sourceImageIndex, &sourceImage));
+ 
+         ImageD3D *destImage = nullptr;
+-        ANGLE_TRY(getImageAndSyncFromStorage(context, index, &destImage));
++        ANGLE_TRY(getImageAndSyncFromStorageIfNeeded(context, index, &destImage));
+ 
+         ANGLE_TRY(mRenderer->copyImage(context, destImage, sourceImage, sourceBox, destOffset,
+                                        unpackFlipY, unpackPremultiplyAlpha, unpackUnmultiplyAlpha));
+@@ -2313,10 +2346,11 @@ angle::Result TextureD3D_Cube::copySubTexture(const gl::Context *context,
+         gl::ImageIndex sourceImageIndex = gl::ImageIndex::Make2D(sourceLevel);
+         TextureD3D *sourceD3D           = GetImplAs<TextureD3D>(source);
+         ImageD3D *sourceImage           = nullptr;
+-        ANGLE_TRY(sourceD3D->getImageAndSyncFromStorage(context, sourceImageIndex, &sourceImage));
++        ANGLE_TRY(
++            sourceD3D->getImageAndSyncFromStorageIfNeeded(context, sourceImageIndex, &sourceImage));
+ 
+         ImageD3D *destImage = nullptr;
+-        ANGLE_TRY(getImageAndSyncFromStorage(context, index, &destImage));
++        ANGLE_TRY(getImageAndSyncFromStorageIfNeeded(context, index, &destImage));
+ 
+         ANGLE_TRY(mRenderer->copyImage(context, destImage, sourceImage, sourceBox, destOffset,
+                                        unpackFlipY, unpackPremultiplyAlpha, unpackUnmultiplyAlpha));
+@@ -2905,18 +2939,14 @@ angle::Result TextureD3D_3D::copySubImage(const gl::Context *context,
+     // date before the copy and then copy back to the storage afterwards if needed.
+     // TODO: Investigate 3D blits in D3D11.
+ 
+-    bool syncTexStorage = mTexStorage && isLevelComplete(index.getLevelIndex());
+-    if (syncTexStorage)
+-    {
+-        ANGLE_TRY(
+-            mImageArray[index.getLevelIndex()]->copyFromTexStorage(context, index, mTexStorage));
+-    }
+-    ANGLE_TRY(mImageArray[index.getLevelIndex()]->copyFromFramebuffer(context, clippedDestOffset,
+-                                                                      clippedSourceArea, source));
++    gl::ImageIndex levelIndex = gl::ImageIndex::Make3D(index.getLevelIndex());
++    ImageD3D *image           = nullptr;
++    ANGLE_TRY(getImageAndSyncFromStorageIfNeeded(context, levelIndex, &image));
++    ANGLE_TRY(image->copyFromFramebuffer(context, clippedDestOffset, clippedSourceArea, source));
+     mDirtyImages = true;
+     onStateChange(angle::SubjectMessage::DirtyBitsFlagged);
+ 
+-    if (syncTexStorage)
++    if (mTexStorage && isLevelComplete(index.getLevelIndex()))
+     {
+         ANGLE_TRY(updateStorageLevel(context, index.getLevelIndex()));
+     }
+@@ -2973,8 +3003,9 @@ angle::Result TextureD3D_3D::copyTexture(const gl::Context *context,
+         ImageD3D *destImage        = nullptr;
+         TextureD3D *sourceD3D      = GetImplAs<TextureD3D>(source);
+ 
+-        ANGLE_TRY(getImageAndSyncFromStorage(context, destIndex, &destImage));
+-        ANGLE_TRY(sourceD3D->getImageAndSyncFromStorage(context, sourceIndex, &sourceImage));
++        ANGLE_TRY(getImageAndSyncFromStorageIfNeeded(context, destIndex, &destImage));
++        ANGLE_TRY(
++            sourceD3D->getImageAndSyncFromStorageIfNeeded(context, sourceIndex, &sourceImage));
+ 
+         ANGLE_TRY(mRenderer->copyImage(context, destImage, sourceImage, sourceBox, destOffset,
+                                        unpackFlipY, unpackPremultiplyAlpha, unpackUnmultiplyAlpha));
+@@ -3023,10 +3054,11 @@ angle::Result TextureD3D_3D::copySubTexture(const gl::Context *context,
+         gl::ImageIndex sourceImageIndex = gl::ImageIndex::Make3D(sourceLevel);
+         TextureD3D *sourceD3D           = GetImplAs<TextureD3D>(source);
+         ImageD3D *sourceImage           = nullptr;
+-        ANGLE_TRY(sourceD3D->getImageAndSyncFromStorage(context, sourceImageIndex, &sourceImage));
++        ANGLE_TRY(
++            sourceD3D->getImageAndSyncFromStorageIfNeeded(context, sourceImageIndex, &sourceImage));
+ 
+         ImageD3D *destImage = nullptr;
+-        ANGLE_TRY(getImageAndSyncFromStorage(context, destIndex, &destImage));
++        ANGLE_TRY(getImageAndSyncFromStorageIfNeeded(context, destIndex, &destImage));
+ 
+         ANGLE_TRY(mRenderer->copyImage(context, destImage, sourceImage, sourceBox, destOffset,
+                                        unpackFlipY, unpackPremultiplyAlpha, unpackUnmultiplyAlpha));
+@@ -3587,11 +3619,8 @@ angle::Result TextureD3D_2DArray::copySubImage(const gl::Context *context,
+ 
+     if (!canCreateRenderTargetForImage(index))
+     {
+-        gl::Offset destLayerOffset(clippedDestOffset.x, clippedDestOffset.y, 0);
+-        ANGLE_TRY(ANGLE_UNSAFE_TODO(mImageArray[index.getLevelIndex()][clippedDestOffset.z])
+-                      ->copyFromFramebuffer(context, destLayerOffset, clippedSourceArea, source));
+-        mDirtyImages = true;
+-        onStateChange(angle::SubjectMessage::DirtyBitsFlagged);
++        ANGLE_TRY(copyImageFromFramebufferToStaging(context, index, clippedDestOffset,
++                                                    clippedSourceArea, source));
+     }
+     else
+     {
+@@ -3665,9 +3694,10 @@ angle::Result TextureD3D_2DArray::copyTexture(const gl::Context *context,
+             ImageD3D *destImage   = nullptr;
+             TextureD3D *sourceD3D = GetImplAs<TextureD3D>(source);
+ 
+-            ANGLE_TRY(getImageAndSyncFromStorage(context, currentDestDepthIndex, &destImage));
+-            ANGLE_TRY(sourceD3D->getImageAndSyncFromStorage(context, currentSourceDepthIndex,
+-                                                            &sourceImage));
++            ANGLE_TRY(
++                getImageAndSyncFromStorageIfNeeded(context, currentDestDepthIndex, &destImage));
++            ANGLE_TRY(sourceD3D->getImageAndSyncFromStorageIfNeeded(
++                context, currentSourceDepthIndex, &sourceImage));
+             gl::Box imageBox(sourceBox.x, sourceBox.y, 0, sourceBox.width, sourceBox.height, 1);
+             ANGLE_TRY(mRenderer->copyImage(context, destImage, sourceImage, imageBox, destOffset,
+                                            unpackFlipY, unpackPremultiplyAlpha,
+@@ -3730,11 +3760,11 @@ angle::Result TextureD3D_2DArray::copySubTexture(const gl::Context *context,
+ 
+             TextureD3D *sourceD3D = GetImplAs<TextureD3D>(source);
+             ImageD3D *sourceImage = nullptr;
+-            ANGLE_TRY(
+-                sourceD3D->getImageAndSyncFromStorage(context, currentSourceIndex, &sourceImage));
++            ANGLE_TRY(sourceD3D->getImageAndSyncFromStorageIfNeeded(context, currentSourceIndex,
++                                                                    &sourceImage));
+ 
+             ImageD3D *destImage = nullptr;
+-            ANGLE_TRY(getImageAndSyncFromStorage(context, currentDestIndex, &destImage));
++            ANGLE_TRY(getImageAndSyncFromStorageIfNeeded(context, currentDestIndex, &destImage));
+ 
+             ANGLE_TRY(mRenderer->copyImage(context, destImage, sourceImage, currentLayerBox,
+                                            destOffset, unpackFlipY, unpackPremultiplyAlpha,
+diff --git a/src/libANGLE/renderer/d3d/TextureD3D.h b/src/libANGLE/renderer/d3d/TextureD3D.h
+index bcd95e837a4e10d784cdcb947e12dd89848fb259..8d0789d53bad698e56cd2d8fb30ddcf37cbaf14a 100644
+--- a/src/libANGLE/renderer/d3d/TextureD3D.h
++++ b/src/libANGLE/renderer/d3d/TextureD3D.h
+@@ -47,9 +47,12 @@ class TextureD3D : public TextureImpl, public angle::ObserverInterface
+     virtual ImageD3D *getImage(const gl::ImageIndex &index) const = 0;
+     virtual GLsizei getLayerCount(int level) const                = 0;
+ 
+-    angle::Result getImageAndSyncFromStorage(const gl::Context *context,
+-                                             const gl::ImageIndex &index,
+-                                             ImageD3D **outImage);
++    // Returns the ImageD3D for |index|, syncing its CPU staging buffer from |mTexStorage| if
++    // |mTexStorage| holds newer data (i.e. when |mTexStorage| is valid/complete and the image does
++    // not already have uncommitted CPU-side modifications).
++    angle::Result getImageAndSyncFromStorageIfNeeded(const gl::Context *context,
++                                                     const gl::ImageIndex &index,
++                                                     ImageD3D **outImage);
+ 
+     GLint getBaseLevelWidth() const;
+     GLint getBaseLevelHeight() const;
+@@ -182,6 +185,11 @@ class TextureD3D : public TextureImpl, public angle::ObserverInterface
+     virtual bool isImageComplete(const gl::ImageIndex &index) const = 0;
+ 
+     bool canCreateRenderTargetForImage(const gl::ImageIndex &index) const;
++    angle::Result copyImageFromFramebufferToStaging(const gl::Context *context,
++                                                    const gl::ImageIndex &index,
++                                                    const gl::Offset &destOffset,
++                                                    const gl::Rectangle &clippedArea,
++                                                    gl::Framebuffer *source);
+     angle::Result ensureBindFlags(const gl::Context *context, BindFlags bindFlags);
+     angle::Result ensureRenderTarget(const gl::Context *context);
+ 
+diff --git a/src/tests/gl_tests/CopyTexImageTest.cpp b/src/tests/gl_tests/CopyTexImageTest.cpp
+index e0f116bc67ceecc24b6fbfba7d759c0e465cfd91..b5aea99e81478a1a1aa452c0e1d149fd123944b4 100644
+--- a/src/tests/gl_tests/CopyTexImageTest.cpp
++++ b/src/tests/gl_tests/CopyTexImageTest.cpp
+@@ -1450,7 +1450,8 @@ TEST_P(CopyTexImageTestES3, CopyTexSubImageToNonZeroBase)
+                         kTexSize / 2);
+     ASSERT_GL_NO_ERROR();
+ 
+-    // Verify it.
++    // Verify both regions.
++    verifyResults(dstColor, kExpected.data(), kTexSize, 0, 0, kTexSize / 2, kTexSize / 2, 1.0);
+     verifyResults(dstColor, kExpected.data(), kTexSize, kTexSize / 2, kTexSize / 2, kTexSize,
+                   kTexSize, 1.0);
+ }
+@@ -2133,6 +2134,222 @@ TEST_P(CopyTexImageTest, MixedCubeMapFormats)
+     EXPECT_GL_NO_ERROR();
+ }
+ 
++// Verify that partial glCopyTexSubImage2D into a cleared non-zero base level (with level 0
++// undefined) preserves the rest of the cleared level.
++TEST_P(CopyTexImageTestES3, CopyTexSubImagePreservesClearedNonZeroBaseLevel2D)
++{
++    constexpr GLsizei kSize = 64;
++
++    GLTexture dstTex;
++    glBindTexture(GL_TEXTURE_2D, dstTex);
++    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA8, kSize, kSize, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
++
++    GLFramebuffer dstFbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, dstFbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, dstTex, 1);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++
++    GLRenderbuffer srcRbo;
++    glBindRenderbuffer(GL_RENDERBUFFER, srcRbo);
++    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, 4, 4);
++    GLFramebuffer srcFbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, srcFbo);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, srcRbo);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, srcFbo);
++    glCopyTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, 0, 0, 1, 1);
++    ASSERT_GL_NO_ERROR();
++
++    glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++    glCopyTexSubImage2D(GL_TEXTURE_2D, 1, 1, 0, 0, 0, 1, 1);
++    ASSERT_GL_NO_ERROR();
++
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, dstFbo);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++    EXPECT_PIXEL_COLOR_EQ(1, 0, GLColor::blue);
++    EXPECT_PIXEL_RECT_EQ(2, 0, kSize - 2, 1, GLColor::green);
++    EXPECT_PIXEL_RECT_EQ(0, 1, kSize, kSize - 1, GLColor::green);
++}
++
++// Verify that partial glCopyTexSubImage2D into a cleared non-zero base level of a cubemap face
++// (with level 0 undefined) preserves the rest of the cleared face.
++TEST_P(CopyTexImageTestES3, CopyTexSubImagePreservesClearedNonZeroBaseLevelCube)
++{
++    constexpr GLsizei kSize = 64;
++
++    GLTexture dstTex;
++    glBindTexture(GL_TEXTURE_CUBE_MAP, dstTex);
++    for (GLenum face = GL_TEXTURE_CUBE_MAP_POSITIVE_X; face <= GL_TEXTURE_CUBE_MAP_NEGATIVE_Z;
++         ++face)
++    {
++        glTexImage2D(face, 1, GL_RGBA8, kSize, kSize, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++    }
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, 1);
++
++    GLFramebuffer dstFbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, dstFbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X,
++                           dstTex, 1);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++
++    GLRenderbuffer srcRbo;
++    glBindRenderbuffer(GL_RENDERBUFFER, srcRbo);
++    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, 4, 4);
++    GLFramebuffer srcFbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, srcFbo);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, srcRbo);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, srcFbo);
++    glCopyTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 1, 0, 0, 0, 0, 1, 1);
++    ASSERT_GL_NO_ERROR();
++
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, dstFbo);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++    EXPECT_PIXEL_RECT_EQ(1, 0, kSize - 1, 1, GLColor::green);
++    EXPECT_PIXEL_RECT_EQ(0, 1, kSize, kSize - 1, GLColor::green);
++}
++
++// Verify that partial glCopyTexSubImage3D into a cleared non-zero base level of a 2D array texture
++// (with level 0 undefined) preserves the rest of the cleared layer.
++TEST_P(CopyTexImageTestES3, CopyTexSubImagePreservesClearedNonZeroBaseLevel2DArray)
++{
++    constexpr GLsizei kSize = 64;
++
++    GLTexture dstTex;
++    glBindTexture(GL_TEXTURE_2D_ARRAY, dstTex);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, kSize, kSize, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 nullptr);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 1);
++
++    GLFramebuffer dstFbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, dstFbo);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, dstTex, 1, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++
++    GLRenderbuffer srcRbo;
++    glBindRenderbuffer(GL_RENDERBUFFER, srcRbo);
++    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, 4, 4);
++    GLFramebuffer srcFbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, srcFbo);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, srcRbo);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, srcFbo);
++    glCopyTexSubImage3D(GL_TEXTURE_2D_ARRAY, 1, 0, 0, 0, 0, 0, 1, 1);
++    ASSERT_GL_NO_ERROR();
++
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, dstFbo);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++    EXPECT_PIXEL_RECT_EQ(1, 0, kSize - 1, 1, GLColor::green);
++    EXPECT_PIXEL_RECT_EQ(0, 1, kSize, kSize - 1, GLColor::green);
++}
++
++// Verify that partial glCopyTexSubImage3D into a cleared 3D texture (which always uses the CPU
++// fallback via getImageAndSyncFromStorageIfNeeded in TextureD3D_3D::copySubImage) preserves the
++// cleared slice across multiple sub-region copies.
++TEST_P(CopyTexImageTestES3, CopyTexSubImagePreservesCleared3D)
++{
++    constexpr GLsizei kSize = 16;
++
++    GLTexture dstTex;
++    glBindTexture(GL_TEXTURE_3D, dstTex);
++    glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGBA8, kSize, kSize, 2);
++
++    GLFramebuffer dstFbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, dstFbo);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, dstTex, 0, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++
++    GLRenderbuffer srcRbo;
++    glBindRenderbuffer(GL_RENDERBUFFER, srcRbo);
++    glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, 4, 4);
++    GLFramebuffer srcFbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, srcFbo);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, srcRbo);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++    glCopyTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, 0, 0, 1, 1);
++    ASSERT_GL_NO_ERROR();
++
++    glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++    glCopyTexSubImage3D(GL_TEXTURE_3D, 0, 1, 0, 0, 0, 0, 1, 1);
++    ASSERT_GL_NO_ERROR();
++
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, dstFbo);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++    EXPECT_PIXEL_COLOR_EQ(1, 0, GLColor::blue);
++    EXPECT_PIXEL_RECT_EQ(2, 0, kSize - 2, 1, GLColor::green);
++    EXPECT_PIXEL_RECT_EQ(0, 1, kSize, kSize - 1, GLColor::green);
++}
++
++// Verify that partial glCopySubTextureCHROMIUM into a GL_SRGB8_ALPHA8 texture (which forces the
++// CPU fallback in TextureD3D_2D::copySubTexture even at base level 0) preserves storage data
++// uploaded via setData when the storage is not a render target.
++TEST_P(CopyTexImageTestES3, CopySubTexturePreservesStorageDataSRGB)
++{
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_CHROMIUM_copy_texture"));
++
++    constexpr GLsizei kSize = 16;
++    std::vector<GLColor> greenData(kSize * kSize, GLColor::green);
++    std::vector<GLColor> redData(4 * 4, GLColor::red);
++    std::vector<GLColor> blueData(4 * 4, GLColor::blue);
++
++    GLTexture dstTex;
++    glBindTexture(GL_TEXTURE_2D, dstTex);
++    glTexStorage2D(GL_TEXTURE_2D, 1, GL_SRGB8_ALPHA8, kSize, kSize);
++    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, kSize, kSize, GL_RGBA, GL_UNSIGNED_BYTE,
++                    greenData.data());
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    GLTexture srcTex;
++    glBindTexture(GL_TEXTURE_2D, srcTex);
++    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 4, 4);
++    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 4, 4, GL_RGBA, GL_UNSIGNED_BYTE, redData.data());
++
++    glCopySubTextureCHROMIUM(srcTex, 0, GL_TEXTURE_2D, dstTex, 0, 0, 0, 0, 0, 1, 1, GL_FALSE,
++                             GL_FALSE, GL_FALSE);
++    ASSERT_GL_NO_ERROR();
++
++    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 4, 4, GL_RGBA, GL_UNSIGNED_BYTE, blueData.data());
++    glCopySubTextureCHROMIUM(srcTex, 0, GL_TEXTURE_2D, dstTex, 0, 1, 0, 0, 0, 1, 1, GL_FALSE,
++                             GL_FALSE, GL_FALSE);
++    ASSERT_GL_NO_ERROR();
++
++    glBindTexture(GL_TEXTURE_2D, dstTex);
++    glBindFramebuffer(GL_FRAMEBUFFER, 0);
++    glViewport(0, 0, kSize, kSize);
++    draw2DTexturedQuad(0.5f, 1.0f, true);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++    EXPECT_PIXEL_COLOR_EQ(1, 0, GLColor::blue);
++    EXPECT_PIXEL_RECT_EQ(2, 0, kSize - 2, 1, GLColor::green);
++    EXPECT_PIXEL_RECT_EQ(0, 1, kSize, kSize - 1, GLColor::green);
++}
++
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3_AND(
+     CopyTexImageTest,
+     ES2_D3D11_PRESENT_PATH_FAST(),

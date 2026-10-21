@@ -17,6 +17,7 @@
 #include "base/task/thread_pool.h"
 #include "base/time/time.h"
 #include "base/timer/timer.h"
+#include "base/types/expected.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/file_system_access/chrome_file_system_access_permission_context.h"  // nogncheck
@@ -40,6 +41,7 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "third_party/blink/public/common/features_generated.h"
+#include "third_party/blink/public/common/storage_key/storage_key.h"
 #include "third_party/blink/public/mojom/file_system_access/file_system_access_manager.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/origin.h"
@@ -304,11 +306,52 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
     return path_info_.display_name;
   }
 
+  // Validates that the requesting frame is authorized to access the File System
+  // Access API before checking or granting permissions.
+  //
+  // Returns a failure outcome if `rfh` is null, embedded within a fenced frame,
+  // or executing in a cross-origin or third-party context. Returns base::ok()
+  // when the frame context is authorized.
+  base::expected<void, PermissionRequestOutcome> ValidateRequestingFrame(
+      content::RenderFrameHost* rfh) {
+    if (!rfh) {
+      return base::unexpected(PermissionRequestOutcome::kInvalidFrame);
+    }
+
+    // Fenced frames must not access local file system data or prompt the user.
+    if (rfh->IsNestedWithinFencedFrame()) {
+      return base::unexpected(PermissionRequestOutcome::kInvalidFrame);
+    }
+
+    // Reject third-party iframes and partitioned contexts before checking
+    // existing grants. This prevents cross-origin frames from inheriting or
+    // upgrading permissions granted to the top-level origin.
+    const url::Origin embedding_origin =
+        rfh->GetMainFrame()->GetLastCommittedOrigin();
+    if (embedding_origin != origin_ ||
+        rfh->GetStorageKey().IsThirdPartyContext()) {
+      return base::unexpected(PermissionRequestOutcome::kThirdPartyContext);
+    }
+
+    return base::ok();
+  }
+
   void RequestPermission(
       content::GlobalRenderFrameHostId frame_id,
       UserActivationState user_activation_state,
       base::OnceCallback<void(PermissionRequestOutcome)> callback) override {
     DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+
+    content::RenderFrameHost* rfh = content::RenderFrameHost::FromID(frame_id);
+
+    // Validate the security context of the calling frame before evaluating
+    // grants. Cross-origin frames must be rejected even if the target origin
+    // already holds an active or persisted grant.
+    if (auto validation_result = ValidateRequestingFrame(rfh);
+        !validation_result.has_value()) {
+      std::move(callback).Run(validation_result.error());
+      return;
+    }
 
     // Check if a permission request has already been processed previously. This
     // check is done first because we don't want to reset the status of a
@@ -321,25 +364,12 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
       return;
     }
 
-    content::RenderFrameHost* rfh = content::RenderFrameHost::FromID(frame_id);
-    if (!rfh) {
-      // Requested from a no longer valid RenderFrameHost.
-      std::move(callback).Run(PermissionRequestOutcome::kInvalidFrame);
-      return;
-    }
-
     // Don't request permission for an inactive RenderFrameHost as the
     // page might not distinguish properly between user denying the permission
     // and automatic rejection.
     if (rfh->IsInactiveAndDisallowActivation(
             content::DisallowActivationReasonId::
                 kFileSystemAccessPermissionRequest)) {
-      std::move(callback).Run(PermissionRequestOutcome::kInvalidFrame);
-      return;
-    }
-
-    // We don't allow file system access from fenced frames.
-    if (rfh->IsNestedWithinFencedFrame()) {
       std::move(callback).Run(PermissionRequestOutcome::kInvalidFrame);
       return;
     }
@@ -356,15 +386,6 @@ class FileSystemAccessPermissionContext::PermissionGrantImpl
       return;
     }
 
-    // Third party iframes are not allowed to request more permissions: the
-    // grant belongs to |origin_|, and only a top-level document of that origin
-    // may ask to widen it.
-    const url::Origin embedding_origin =
-        rfh->GetMainFrame()->GetLastCommittedOrigin();
-    if (embedding_origin != origin_) {
-      std::move(callback).Run(PermissionRequestOutcome::kThirdPartyContext);
-      return;
-    }
     auto origin = rfh->GetLastCommittedOrigin().GetURL();
 
     auto* permission_manager =
