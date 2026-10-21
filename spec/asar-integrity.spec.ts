@@ -336,6 +336,58 @@ describe('fuses', { timeout: 120000 }, () => {
         });
       });
 
+      ifdescribe(process.platform === 'darwin')('when the app archive is replaced while running', () => {
+        let replacement: string;
+
+        beforeEach(async () => {
+          const resourcesDir = path.resolve(appPath, 'Contents', 'Resources');
+          const appAsar = path.resolve(resourcesDir, 'app.asar');
+          replacement = path.resolve(resourcesDir, 'replacement');
+          await createPackage(path.resolve(import.meta.dirname, 'fixtures/apps/asar-integrity-swap'), appAsar);
+
+          const infoPlistPath = path.resolve(appPath, 'Contents', 'Info.plist');
+          const info = plist.parse(await fs.promises.readFile(infoPlistPath, 'utf8'));
+          info.ElectronAsarIntegrity = {
+            ...info.ElectronAsarIntegrity,
+            'Resources/app.asar': { algorithm: 'SHA256', hash: headerHash(appAsar) }
+          };
+          await fs.promises.writeFile(infoPlistPath, plist.build(info));
+        }, 120000);
+
+        ensureFusesBeforeEach({
+          [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
+          [FuseV1Options.OnlyLoadAppFromAsar]: true
+        });
+
+        const writeReplacementFiles = async (dir: string) => {
+          await fs.promises.mkdir(dir);
+          await fs.promises.writeFile(path.join(dir, 'package.json'), '{"main":"child.js"}');
+          await fs.promises.writeFile(
+            path.join(dir, 'child.js'),
+            "process.parentPort.postMessage('child-loaded-replacement');"
+          );
+        };
+        // Any argument, so that launchApp() opts out of AppKit state restoration.
+        const launchSwapApp = () =>
+          launchApp(['--enable-logging'], { env: { ...process.env, ASAR_SWAP_REPLACEMENT: replacement } });
+
+        it('does not load a child process from a directory', async () => {
+          await writeReplacementFiles(replacement);
+          const res = await launchSwapApp();
+          expect(res.out).toContain('child-exited');
+          expect(res.out).not.toContain('child-loaded-replacement');
+        });
+
+        it('does not load a child process from a modified archive', async () => {
+          const src = path.resolve(tmpDir, 'replacement-src');
+          await writeReplacementFiles(src);
+          await createPackage(src, replacement);
+          const res = await launchSwapApp();
+          expect(res.out).toContain('child-exited');
+          expect(res.out).not.toContain('child-loaded-replacement');
+        });
+      });
+
       describe('when disabled', () => {
         ensureFusesBeforeEach({
           [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: false
