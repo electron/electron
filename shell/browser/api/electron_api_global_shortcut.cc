@@ -154,8 +154,9 @@ void GlobalShortcut::ExecuteCommand(const extensions::ExtensionId& extension_id,
   }
 }
 
-bool GlobalShortcut::RegisterAll(const std::vector<std::string>& accelerators,
-                                 const base::RepeatingClosure& callback) {
+bool GlobalShortcut::RegisterAll(
+    const std::vector<ShortcutRegistration>& shortcuts,
+    const base::RepeatingClosure& callback) {
   if (!electron::Browser::Get()->is_ready()) {
     gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
         .ThrowError("globalShortcut cannot be used before the app is ready");
@@ -163,23 +164,24 @@ bool GlobalShortcut::RegisterAll(const std::vector<std::string>& accelerators,
   }
   std::vector<ui::Accelerator> registered;
 
-  for (const auto& accelerator_str : accelerators) {
-    if (!Register(accelerator_str, callback)) {
+  for (const auto& shortcut : shortcuts) {
+    if (!Register(shortcut, callback)) {
       // Unregister all shortcuts if any failed.
       UnregisterSome(registered);
       return false;
     }
 
     ui::Accelerator accelerator;
-    accelerator_util::StringToAccelerator(accelerator_str, &accelerator);
+    accelerator_util::StringToAccelerator(shortcut.accelerator, &accelerator);
     registered.push_back(accelerator);
   }
   return true;
 }
 
-bool GlobalShortcut::Register(const std::string& accelerator_str,
+bool GlobalShortcut::Register(const ShortcutRegistration& shortcut,
                               const base::RepeatingClosure& callback) {
   v8::Isolate* const isolate = JavascriptEnvironment::GetIsolate();
+  const std::string& accelerator_str = shortcut.accelerator;
 
   if (!electron::Browser::Get()->is_ready()) {
     gin_helper::ErrorThrower(isolate).ThrowError(
@@ -225,12 +227,18 @@ bool GlobalShortcut::Register(const std::string& accelerator_str,
     // map this accelerator with registered commands.
     const std::string command_str =
         extensions::Command::AcceleratorToString(accelerator);
+    // The description is user-facing: the portal shows it in its bind dialog
+    // and in the desktop's shortcut settings. Let apps label a shortcut with
+    // what it does, and otherwise fall back to naming the accelerator.
+    const std::u16string description =
+        shortcut.description.empty()
+            ? base::UTF8ToUTF16(electron::Browser::Get()->GetName() +
+                                " shortcut: " + command_str)
+            : shortcut.description;
     ui::CommandMap commands;
-    extensions::Command command(
-        command_str,
-        base::UTF8ToUTF16(electron::Browser::Get()->GetName() +
-                          " shortcut: " + command_str),
-        /*accelerator=*/std::string(), /*global=*/true);
+    extensions::Command command(command_str, description,
+                                /*accelerator=*/std::string(),
+                                /*global=*/true);
     command.set_accelerator(accelerator);
     commands[command_str] = command;
 
@@ -261,7 +269,18 @@ bool GlobalShortcut::Register(const std::string& accelerator_str,
   return false;
 }
 
-void GlobalShortcut::Unregister(const ui::Accelerator& accelerator) {
+void GlobalShortcut::Unregister(const ShortcutRegistration& shortcut) {
+  ui::Accelerator accelerator;
+  if (!accelerator_util::StringToAccelerator(shortcut.accelerator,
+                                             &accelerator)) {
+    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
+        .ThrowTypeError("Invalid accelerator: " + shortcut.accelerator);
+    return;
+  }
+  UnregisterAccelerator(accelerator);
+}
+
+void GlobalShortcut::UnregisterAccelerator(const ui::Accelerator& accelerator) {
   if (!electron::Browser::Get()->is_ready()) {
     gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
         .ThrowError("globalShortcut cannot be used before the app is ready");
@@ -305,11 +324,23 @@ void GlobalShortcut::Unregister(const ui::Accelerator& accelerator) {
 void GlobalShortcut::UnregisterSome(
     const std::vector<ui::Accelerator>& accelerators) {
   for (auto& accelerator : accelerators) {
-    Unregister(accelerator);
+    UnregisterAccelerator(accelerator);
   }
 }
 
-bool GlobalShortcut::IsRegistered(const ui::Accelerator& accelerator) {
+bool GlobalShortcut::IsRegistered(const ShortcutRegistration& shortcut) {
+  ui::Accelerator accelerator;
+  if (!accelerator_util::StringToAccelerator(shortcut.accelerator,
+                                             &accelerator)) {
+    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
+        .ThrowTypeError("Invalid accelerator: " + shortcut.accelerator);
+    return false;
+  }
+  return IsRegisteredAccelerator(accelerator);
+}
+
+bool GlobalShortcut::IsRegisteredAccelerator(
+    const ui::Accelerator& accelerator) {
   if (accelerator_callback_map_.contains(accelerator)) {
     return true;
   }
