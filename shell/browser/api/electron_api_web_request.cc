@@ -147,8 +147,6 @@ void ToDictionary(gin_helper::Dictionary* details,
 void ToDictionary(gin_helper::Dictionary* details,
                   const network::ResourceRequest& request) {
   details->Set("referrer", request.referrer);
-  if (request.request_body)
-    details->Set("uploadData", *request.request_body);
 }
 
 void ToDictionary(gin_helper::Dictionary* details,
@@ -412,6 +410,8 @@ int WebRequest::HandleOnBeforeRequestResponseEvent(
   v8::HandleScope handle_scope(isolate);
   gin_helper::Dictionary details(isolate, v8::Object::New(isolate));
   FillDetails(&details, request_info, request, *new_url);
+  if (request.request_body)
+    details.Set("uploadData", *request.request_body);
 
   auto& allocation_handle = isolate->GetCppHeap()->GetAllocationHandle();
   ResponseCallback response = base::BindOnce(
@@ -479,6 +479,8 @@ int WebRequest::HandleOnBeforeSendHeadersResponseEvent(
   v8::HandleScope handle_scope(isolate);
   gin_helper::Dictionary details(isolate, v8::Object::New(isolate));
   FillDetails(&details, request_info, request, *headers);
+  if (request.request_body)
+    details.Set("uploadData", *request.request_body);
 
   ResponseCallback response =
       base::BindOnce(&WebRequest::OnBeforeSendHeadersListenerResult,

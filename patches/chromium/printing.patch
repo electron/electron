@@ -38,7 +38,7 @@ components/printing/renderer/print_render_frame_helper.cc
   path does not send DidGetPrintedPagesCount(). Candidate for upstreaming.
 
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index 24c92f4035410f68c48aa97bb49c0fe759194901..3c0f6e53c10effe07acc1a41a76be418d4c28fea 100644
+index a62b37a927e7c85d85ad3bea2b70f53e19b6e5bf..35246f4615e981b0da9a36e28eb6bb9b2a220410 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
 @@ -34,10 +34,11 @@

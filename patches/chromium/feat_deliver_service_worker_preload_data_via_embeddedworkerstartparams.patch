@@ -33,7 +33,7 @@ index de70e90d1fb9aff03ab972c15aedd618358fc1d1..9b3d66e0e646d384f24d1b905c1e7b59
    if (policy_container_host_) {
      params->policy_container =
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 3c7e405ffc99a26b7eb47cda609de23337456714..5fdad1a3c3c33694fc2c04a3ac0a6242bb6aa488 100644
+index b73374946e0ff282a4cf84883294c0fadd9837d0..99bf7893adc958094d80c18c807c94f1711e88b3 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -858,6 +858,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
@@ -51,7 +51,7 @@ index 3c7e405ffc99a26b7eb47cda609de23337456714..5fdad1a3c3c33694fc2c04a3ac0a6242
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index c8bbd4cfd257d78976360993fc616012ebc793a5..e3ed1524ca3ee5109d4bc304f3a3e6defb1157ce 100644
+index 8597727170d8c8c10739c62bf77846c0133ac249..58eb10b0e36ad3c9ab9111478bf0511abec6de69 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -1325,6 +1325,17 @@ class CONTENT_EXPORT ContentBrowserClient {
