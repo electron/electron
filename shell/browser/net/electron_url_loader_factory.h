@@ -64,6 +64,17 @@ using ProtocolHandler =
 using HandlersMap = std::
     map<std::string, std::pair<ProtocolType, ProtocolHandler>, std::less<>>;
 
+// Per-scheme factories are reached directly from the renderer's factory
+// bundle, bypassing CorsURLLoader, so they apply its checks themselves.
+bool IsCorsDisabledSchemeRequest(const network::ResourceRequest& request);
+void FailCorsDisabledSchemeRequest(
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client);
+bool IsCrossOriginNoCorsRequest(const network::ResourceRequest& request);
+// For sinks that build their own response head.
+mojo::PendingRemote<network::mojom::URLLoaderClient>
+WrapClientForOpaqueResponse(
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client);
+
 // Implementation of URLLoaderFactory.
 class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
  public:

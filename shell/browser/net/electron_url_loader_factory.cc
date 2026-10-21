@@ -396,6 +396,34 @@ class OpaqueResponseFilter : public network::mojom::URLLoaderClient {
 
 }  // namespace
 
+bool IsCorsDisabledSchemeRequest(const network::ResourceRequest& request) {
+  // Browser-initiated requests have no initiator and are trusted.
+  return request.request_initiator &&
+         network::cors::ShouldCheckCors(request.url, request.request_initiator,
+                                        request.mode) &&
+         !std::ranges::contains(url::GetCorsEnabledSchemes(),
+                                request.url.GetScheme());
+}
+
+void FailCorsDisabledSchemeRequest(
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client) {
+  mojo::Remote<network::mojom::URLLoaderClient>(std::move(client))
+      ->OnComplete(network::URLLoaderCompletionStatus(network::CorsErrorStatus(
+          network::mojom::CorsError::kCorsDisabledScheme)));
+}
+
+bool IsCrossOriginNoCorsRequest(const network::ResourceRequest& request) {
+  return request.mode == network::mojom::RequestMode::kNoCors &&
+         request.request_initiator &&
+         !request.request_initiator->IsSameOriginWith(request.url);
+}
+
+mojo::PendingRemote<network::mojom::URLLoaderClient>
+WrapClientForOpaqueResponse(
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client) {
+  return OpaqueResponseFilter::Wrap(std::move(client));
+}
+
 ElectronURLLoaderFactory::RedirectedRequest::RedirectedRequest(
     const net::RedirectInfo& redirect_info,
     mojo::PendingReceiver<network::mojom::URLLoader> loader_receiver,
@@ -518,18 +546,9 @@ void ElectronURLLoaderFactory::CreateLoaderAndStart(
   // network service's CorsURLLoaderFactory entirely. Replicate the
   // kCorsDisabledScheme gate from CorsURLLoader::StartRequest so a cross-origin
   // page cannot read responses from a scheme registered with
-  // {supportFetchAPI: true} but without {corsEnabled: true}. Browser-initiated
-  // requests (no |request_initiator|) are trusted and skipped.
-  if (request.request_initiator &&
-      network::cors::ShouldCheckCors(request.url, request.request_initiator,
-                                     request.mode) &&
-      !std::ranges::contains(url::GetCorsEnabledSchemes(),
-                             request.url.GetScheme())) {
-    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
-        std::move(client));
-    client_remote->OnComplete(
-        network::URLLoaderCompletionStatus(network::CorsErrorStatus(
-            network::mojom::CorsError::kCorsDisabledScheme)));
+  // {supportFetchAPI: true} but without {corsEnabled: true}.
+  if (IsCorsDisabledSchemeRequest(request)) {
+    FailCorsDisabledSchemeRequest(std::move(client));
     return;
   }
 
@@ -602,10 +621,7 @@ void ElectronURLLoaderFactory::StartLoading(
   // but the file and http sinks build or forward their own head, so those are
   // wrapped separately to carry the tag through - see StartLoadingFile and
   // StartLoadingHttp.
-  const bool tag_response_opaque =
-      request.mode == network::mojom::RequestMode::kNoCors &&
-      request.request_initiator &&
-      !request.request_initiator->IsSameOriginWith(request.url);
+  const bool tag_response_opaque = IsCrossOriginNoCorsRequest(request);
   if (tag_response_opaque)
     head->response_type = network::mojom::FetchResponseType::kOpaque;
 
