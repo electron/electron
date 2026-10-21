@@ -1,0 +1,198 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Fri, 16 Oct 2026 05:35:44 +0000
+Subject: [M150-LTS] Don't use a deleted source RenderFrameHost in
+ WebContentsImpl::OpenURL
+
+WebContentsImpl::OpenURL() looks up the source RenderFrameHost, calls
+delegate_->OpenURLFromTab(), and then uses the source RenderFrameHost.
+However, OpenURLFromTab() can synchronously delete it: e.g. if a
+ServiceWorker calls WindowClient.navigate() on a frame whose renderer
+process has crashed, starting the navigation performs an early
+RenderFrameHost swap, which deletes the crashed source RenderFrameHost.
+
+Fix this by checking the source SiteInstance before calling
+OpenURLFromTab(), and only accessing the source RenderFrameHost through
+a WeakPtr after that.
+
+Bug: 569408568
+Change-Id: Ib38179939a27b2461a23ce230f281069d50e9644
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8536146
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1718495}
+(cherry picked from commit fa4d1be86a1ca97c8b49ca173618ce3d93c4563a)
+
+diff --git a/content/browser/service_worker/service_worker_client_utils.h b/content/browser/service_worker/service_worker_client_utils.h
+index fdef1d284077ef6e0e0f8d4561ed53b5f14faca9..e5fe837490e056eda874cec5c524cbdb323a21bc 100644
+--- a/content/browser/service_worker/service_worker_client_utils.h
++++ b/content/browser/service_worker/service_worker_client_utils.h
+@@ -7,6 +7,7 @@
+ 
+ #include "base/functional/callback.h"
+ #include "base/memory/weak_ptr.h"
++#include "content/common/content_export.h"
+ #include "services/network/public/mojom/client_security_state.mojom.h"
+ #include "third_party/blink/public/common/service_worker/service_worker_status_code.h"
+ #include "third_party/blink/public/mojom/service_worker/service_worker.mojom.h"
+@@ -66,7 +67,7 @@ void OpenWindow(const GURL& url,
+ 
+ // Navigates the client specified by `rfh_id` to `url`. `callback` is called
+ // with the client information on completion.
+-void NavigateClient(
++CONTENT_EXPORT void NavigateClient(
+     const GURL& url,
+     const GURL& script_url,
+     const blink::StorageKey& key,
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 79a70a2019f40bf9fe79c9108b082bf04039566e..9c99749912ccf0677367b0b9452a405c78fab18d 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -6626,19 +6626,31 @@ WebContents* WebContentsImpl::OpenURL(
+     }
+   }
+ 
+-  WebContents* new_contents = delegate_->OpenURLFromTab(
+-      this, params, std::move(navigation_handle_callback));
+-
+   if (source_render_frame_host && params.source_site_instance) {
+     CHECK_EQ(source_render_frame_host->GetSiteInstance(),
+              params.source_site_instance.get());
+   }
+ 
+-  if (new_contents && source_render_frame_host && new_contents != this) {
++  // `OpenURLFromTab()` can synchronously delete `source_render_frame_host`.
++  // For example, if the source frame's renderer process has crashed (e.g. a
++  // ServiceWorker calls WindowClient.navigate() on a crashed frame), starting
++  // the navigation performs an early RenderFrameHost swap, which deletes the
++  // crashed source RenderFrameHost. So, don't use `source_render_frame_host`
++  // after this point. In that case the disposition is CURRENT_TAB and
++  // `new_contents` is `this`, so the observer notification below won't run,
++  // but use a WeakPtr to avoid relying on that.
++  base::WeakPtr<RenderFrameHostImpl> weak_source_rfh =
++      source_render_frame_host ? source_render_frame_host->GetWeakPtr()
++                               : nullptr;
++  source_render_frame_host = nullptr;
++  WebContents* new_contents = delegate_->OpenURLFromTab(
++      this, params, std::move(navigation_handle_callback));
++
++  if (new_contents && weak_source_rfh && new_contents != this) {
+     observers_.NotifyObservers(
+         &WebContentsObserver::DidOpenRequestedURL, new_contents,
+-        source_render_frame_host, params.url, params.referrer,
+-        params.disposition, params.transition, params.started_from_context_menu,
++        weak_source_rfh.get(), params.url, params.referrer, params.disposition,
++        params.transition, params.started_from_context_menu,
+         params.is_renderer_initiated);
+   }
+ 
+diff --git a/content/browser/web_contents/web_contents_impl_browsertest.cc b/content/browser/web_contents/web_contents_impl_browsertest.cc
+index 108f3473a3d2dd6477ca16194fa11906599224a5..3563faf933d2c5d559a0a594a880e341d2b31230 100644
+--- a/content/browser/web_contents/web_contents_impl_browsertest.cc
++++ b/content/browser/web_contents/web_contents_impl_browsertest.cc
+@@ -53,6 +53,7 @@
+ #include "content/browser/renderer_host/render_widget_host_view_base.h"
+ #include "content/browser/renderer_host/render_widget_host_view_child_frame.h"
+ #include "content/browser/renderer_host/text_input_manager.h"
++#include "content/browser/service_worker/service_worker_client_utils.h"
+ #include "content/browser/surface_embed/surface_embed_connector_impl.h"
+ #include "content/browser/web_contents/file_chooser_impl.h"
+ #include "content/browser/web_contents/web_contents_impl.h"
+@@ -125,6 +126,7 @@
+ #include "third_party/blink/public/common/client_hints/client_hints.h"
+ #include "third_party/blink/public/common/features.h"
+ #include "third_party/blink/public/common/page/page_zoom.h"
++#include "third_party/blink/public/common/storage_key/storage_key.h"
+ #include "third_party/blink/public/common/user_agent/user_agent_metadata.h"
+ #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
+ #include "ui/base/clipboard/clipboard_format_type.h"
+@@ -593,6 +595,89 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest, OpenURLNonExistentSubframe) {
+   EXPECT_EQ(controller->GetPendingEntry(), nullptr);
+ }
+ 
++namespace {
++
++// Crashes the renderer process of `frame_tree_node`, then navigates it to `url`
++// through `service_worker_client_utils::NavigateClient()`, which is what a
++// ServiceWorker's WindowClient.navigate() runs. This calls
++// WebContentsImpl::OpenURL() with the crashed RenderFrameHost as the source
++// RenderFrameHost. Checks that the navigation works even if the source
++// RenderFrameHost is deleted synchronously during OpenURL(). See
++// https://crbug.com/569408568.
++void NavigateCrashedFrameFromServiceWorker(WebContentsImpl* web_contents,
++                                           FrameTreeNode* frame_tree_node,
++                                           const GURL& url) {
++  RenderFrameHostImpl* rfh = frame_tree_node->current_frame_host();
++  base::WeakPtr<RenderFrameHostImpl> weak_rfh = rfh->GetWeakPtr();
++  RenderProcessHostWatcher exit_observer(
++      rfh->GetProcess(), RenderProcessHostWatcher::WATCH_FOR_PROCESS_EXIT);
++  rfh->GetProcess()->Shutdown(0);
++  exit_observer.Wait();
++  ASSERT_TRUE(weak_rfh);
++  EXPECT_FALSE(rfh->IsRenderFrameLive());
++
++  const url::Origin sw_origin = rfh->GetLastCommittedOrigin();
++  service_worker_client_utils::NavigateClient(
++      url, sw_origin.GetURL().Resolve("/sw.js"),
++      blink::StorageKey::CreateFirstParty(sw_origin), rfh->GetGlobalId(),
++      rfh->BuildClientSecurityState(),
++      /*context=*/nullptr, base::DoNothing());
++
++  if (ShouldSkipEarlyCommitPendingForCrashedFrame()) {
++    // The crashed RenderFrameHost is kept until the navigation commits.
++    EXPECT_TRUE(weak_rfh);
++  } else {
++    // Starting the navigation performs an early RenderFrameHost swap for the
++    // crashed frame, which synchronously deletes the crashed RenderFrameHost
++    // while it's still the source RenderFrameHost in OpenURL().
++    EXPECT_FALSE(weak_rfh);
++  }
++  EXPECT_TRUE(WaitForLoadStop(web_contents));
++  EXPECT_EQ(url, frame_tree_node->current_frame_host()->GetLastCommittedURL());
++}
++
++}  // namespace
++
++// In practice, this can be triggered by a b.com ServiceWorker calling
++// WindowClient.navigate() on its client b.com subframe after the subframe's
++// renderer process crashed, but before the client's ServiceWorkerClient is torn
++// down. The test calls NavigateClient() directly to avoid depending on that
++// race.
++IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
++                       OpenURLCrashedSubframeEarlySwap) {
++  ASSERT_TRUE(embedded_test_server()->Start());
++  if (!AreAllSitesIsolatedForTesting()) {
++    IsolateOriginsForTesting(embedded_test_server(), shell()->web_contents(),
++                             {"b.com"});
++  }
++
++  ASSERT_TRUE(NavigateToURL(
++      shell(), embedded_test_server()->GetURL(
++                   "a.com", "/cross_site_iframe_factory.html?a(b)")));
++  WebContentsImpl* wc = static_cast<WebContentsImpl*>(shell()->web_contents());
++  FrameTreeNode* root = wc->GetPrimaryFrameTree().root();
++  ASSERT_EQ(1u, root->child_count());
++  FrameTreeNode* child_node = root->child_at(0);
++  ASSERT_NE(child_node->current_frame_host()->GetProcess(),
++            wc->GetPrimaryMainFrame()->GetProcess());
++
++  NavigateCrashedFrameFromServiceWorker(
++      wc, child_node, embedded_test_server()->GetURL("b.com", "/title1.html"));
++}
++
++// Same as above, but for a crashed main frame.
++IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
++                       OpenURLCrashedMainFrameEarlySwap) {
++  ASSERT_TRUE(embedded_test_server()->Start());
++  ASSERT_TRUE(NavigateToURL(
++      shell(), embedded_test_server()->GetURL("a.com", "/title1.html")));
++  WebContentsImpl* wc = static_cast<WebContentsImpl*>(shell()->web_contents());
++
++  NavigateCrashedFrameFromServiceWorker(
++      wc, wc->GetPrimaryFrameTree().root(),
++      embedded_test_server()->GetURL("a.com", "/title2.html"));
++}
++
+ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
+                        AppendingFrameInWebUIDoesNotCrash) {
+   const GURL kWebUIUrl(GetWebUIURL("gpu"));

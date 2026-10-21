@@ -1,0 +1,261 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tiago Vignatti <vignatti@google.com>
+Date: Mon, 19 Oct 2026 14:46:13 -0300
+Subject: [M150-LTS] Prevent attaching WebRtcAudioRenderer to terminated audio
+ device
+
+M150-LTS conflicts:
+- third_party/blink/r/m/webrtc/webrtc_audio_device_impl_test.cc:
+  Resolved conflict in ReleaseRendererSoonWithShutDownQueue (which was
+  later refactored into the WebRtcAudioDeviceImplReleaseTest fixture in
+  https://crrev.com/c/7942489) by moving SetAudioRenderer() to after
+  ADM->Init() completes on the worker thread.
+
+Original change's description:
+> Prevent attaching WebRtcAudioRenderer to terminated audio device
+>
+> WebRtcAudioDeviceImpl::SetAudioRenderer() previously checked only
+> whether `renderer_` was null before calling
+> WebRtcAudioRenderer::Initialize() and registering the renderer. If the
+> audio device had already been terminated via
+> WebRtcAudioDeviceImpl::Terminate(), or if Terminate() ran on the
+> signaling thread while Initialize() was executing with `lock_` released,
+> the renderer retained a raw `source_` pointer to the terminated device
+> that would not be cleared on subsequent Terminate() calls.
+>
+> Fix this by:
+> - Guarding `initialized_` with `lock_` across threads and returning
+> `renderer_` by value under `lock_` in
+> WebRtcAudioDeviceImpl::renderer().
+> - Checking `initialized_` before and after the unlocked
+> WebRtcAudioRenderer::Initialize() call in SetAudioRenderer(), while
+> retaining a reference to `this` across Initialize().
+> - Calling DisconnectSource() and stopping the renderer if Terminate()
+> intervened during Initialize().
+>
+> Fixed: 574041825
+> Change-Id: I36c202aae365df56f7f2a8180233179f6c9b88c7
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8591863
+> Reviewed-by: Johannes Kron <kron@chromium.org>
+> Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1720672}
+
+(cherry picked from commit e193ceb7de134efa938172d45c38daec31658357)
+
+Fixed: 574041825
+Change-Id: I36c202aae365df56f7f2a8180233179f6c9b88c7
+
+Electron adaptation notes (42-x-y): test-only hunks that did not apply were dropped: third_party/blink/renderer/modules/peerconnection/webrtc_audio_renderer_test.cc third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl_test.cc.
+
+diff --git a/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.cc b/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.cc
+index 5935f96a9f37eb69fa62626f577be3c63170dd1a..9b288009bf04c7cc1e10a6b33184aac9075d7790 100644
+--- a/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.cc
++++ b/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.cc
+@@ -139,6 +139,12 @@ void WebRtcAudioDeviceImpl::RenderData(
+   }
+ }
+ 
++scoped_refptr<blink::WebRtcAudioRenderer> WebRtcAudioDeviceImpl::renderer()
++    const {
++  base::AutoLock auto_lock(lock_);
++  return renderer_;
++}
++
+ void WebRtcAudioDeviceImpl::RemoveAudioRenderer(
+     blink::WebRtcAudioRenderer* renderer) {
+   DCHECK_CALLED_ON_VALID_THREAD(main_thread_checker_);
+@@ -196,6 +202,7 @@ int32_t WebRtcAudioDeviceImpl::Init() {
+   // We need to return a success to continue the initialization of WebRtc VoE
+   // because failure on the capturer_ initialization should not prevent WebRTC
+   // from working. See issue http://crbug.com/144421 for details.
++  base::AutoLock auto_lock(lock_);
+   initialized_ = true;
+ 
+   return 0;
+@@ -206,8 +213,12 @@ int32_t WebRtcAudioDeviceImpl::Terminate() {
+   DCHECK_CALLED_ON_VALID_THREAD(signaling_thread_checker_);
+ 
+   // Calling Terminate() multiple times in a row is OK.
+-  if (!initialized_)
+-    return 0;
++  {
++    base::AutoLock auto_lock(lock_);
++    if (!initialized_) {
++      return 0;
++    }
++  }
+ 
+   StopRecording();
+   StopPlayout();
+@@ -221,29 +232,32 @@ int32_t WebRtcAudioDeviceImpl::Terminate() {
+         << "The shared audio renderer shouldn't be running";
+     renderer_to_disconnect = renderer_;
+     capturers_.clear();
++    initialized_ = false;
+   }
+ 
+   if (renderer_to_disconnect) {
+     renderer_to_disconnect->DisconnectSource();
+   }
+ 
+-  initialized_ = false;
+   return 0;
+ }
+ 
+ bool WebRtcAudioDeviceImpl::Initialized() const {
+   DCHECK_CALLED_ON_VALID_THREAD(signaling_thread_checker_);
++  base::AutoLock auto_lock(lock_);
+   return initialized_;
+ }
+ 
+ int32_t WebRtcAudioDeviceImpl::PlayoutIsAvailable(bool* available) {
+   DCHECK_CALLED_ON_VALID_THREAD(signaling_thread_checker_);
++  base::AutoLock auto_lock(lock_);
+   *available = initialized_;
+   return 0;
+ }
+ 
+ bool WebRtcAudioDeviceImpl::PlayoutIsInitialized() const {
+   DCHECK_CALLED_ON_VALID_THREAD(signaling_thread_checker_);
++  base::AutoLock auto_lock(lock_);
+   return initialized_;
+ }
+ 
+@@ -279,7 +293,6 @@ int32_t WebRtcAudioDeviceImpl::StartPlayout() {
+ 
+ int32_t WebRtcAudioDeviceImpl::StopPlayout() {
+   DVLOG(1) << "WebRtcAudioDeviceImpl::StopPlayout()";
+-  DCHECK(initialized_);
+   // Can be called both from the worker thread (e.g. when called from webrtc)
+   // or the signaling thread (e.g. when we call it ourselves internally).
+   // The order in this check is important so that we won't incorrectly
+@@ -289,6 +302,7 @@ int32_t WebRtcAudioDeviceImpl::StopPlayout() {
+          worker_thread_checker_.CalledOnValidThread());
+ #endif
+   base::AutoLock auto_lock(lock_);
++  DCHECK(initialized_);
+   // webrtc::VoiceEngine assumes that it is OK to call Stop() multiple times.
+   playing_ = false;
+   return 0;
+@@ -302,9 +316,9 @@ bool WebRtcAudioDeviceImpl::Playing() const {
+ 
+ int32_t WebRtcAudioDeviceImpl::StartRecording() {
+   DCHECK_CALLED_ON_VALID_THREAD(worker_thread_checker_);
+-  DCHECK(initialized_);
+   SendLogMessage(base::StringPrintf("%s()", __func__));
+   base::AutoLock auto_lock(lock_);
++  DCHECK(initialized_);
+   base::AutoLock callback_lock(audio_transport_callback_lock_);
+   if (!audio_transport_callback_) {
+     LOG(ERROR) << "Audio transport is missing";
+@@ -317,7 +331,6 @@ int32_t WebRtcAudioDeviceImpl::StartRecording() {
+ }
+ 
+ int32_t WebRtcAudioDeviceImpl::StopRecording() {
+-  DCHECK(initialized_);
+   // Can be called both from the worker thread (e.g. when called from webrtc)
+   // or the signaling thread (e.g. when we call it ourselves internally).
+   // The order in this check is important so that we won't incorrectly
+@@ -328,6 +341,7 @@ int32_t WebRtcAudioDeviceImpl::StopRecording() {
+ #endif
+   SendLogMessage(base::StringPrintf("%s()", __func__));
+   base::AutoLock auto_lock(lock_);
++  DCHECK(initialized_);
+   recording_ = false;
+   return 0;
+ }
+@@ -353,11 +367,17 @@ bool WebRtcAudioDeviceImpl::SetAudioRenderer(
+   DCHECK(renderer);
+   SendLogMessage(base::StringPrintf("%s()", __func__));
+ 
++  // Defense-in-depth: retain |this| across the unlocked initialization interval
++  // in case a caller does not keep an external reference alive for the duration
++  // of the call.
++  scoped_refptr<WebRtcAudioDeviceImpl> self(this);
++
+   // Here we acquire |lock_| in order to protect the internal state.
+   {
+     base::AutoLock auto_lock(lock_);
+-    if (renderer_)
++    if (!initialized_ || renderer_) {
+       return false;
++    }
+   }
+ 
+   // We release |lock_| here because invoking |renderer|->Initialize while
+@@ -378,12 +398,28 @@ bool WebRtcAudioDeviceImpl::SetAudioRenderer(
+   // it attach later to the new thread.
+   DETACH_FROM_THREAD(audio_renderer_thread_checker_);
+ 
+-  // We acquire |lock_| again and assert our precondition, since we are
+-  // accessing the internal state again.
+-  base::AutoLock auto_lock(lock_);
+-  DCHECK(!renderer_);
+-  renderer_ = renderer;
+-  return true;
++  // We acquire |lock_| again and recheck |initialized_| in case Terminate()
++  // ran while |lock_| was released.
++  {
++    base::AutoLock auto_lock(lock_);
++    if (initialized_ && !renderer_) {
++      renderer_ = renderer;
++      return true;
++    }
++  }
++
++  // Terminate() ran while |lock_| was released. Disconnect the renderer from
++  // |this| and tear it down: after a successful Initialize() the renderer is
++  // paused with a started sink, and it must be back in the uninitialized state
++  // before it can be destroyed. Start()/Stop() are private on
++  // WebRtcAudioRenderer, so go via the MediaStreamAudioRenderer interface.
++  // DisconnectSource() must come first so that Stop() does not call back into
++  // RemoveAudioRenderer() on |this|.
++  renderer->DisconnectSource();
++  MediaStreamAudioRenderer* media_stream_renderer = renderer;
++  media_stream_renderer->Start();
++  media_stream_renderer->Stop();
++  return false;
+ }
+ 
+ void WebRtcAudioDeviceImpl::AddAudioCapturer(
+diff --git a/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.h b/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.h
+index 3a34e2c6f70cd6c8396792b149807683d27bb268..879510d190f38b14a33ac0e738c368dbc4e83e70 100644
+--- a/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.h
++++ b/third_party/blink/renderer/modules/webrtc/webrtc_audio_device_impl.h
+@@ -94,7 +94,9 @@ class MODULES_EXPORT WebRtcAudioDeviceImpl
+   int32_t PlayoutDelay(uint16_t* delay_ms) const override;
+ 
+  public:
+-  // Sets the |renderer_|, returns false if |renderer_| already exists.
++  // Sets the |renderer_|, returns false if |renderer_| already exists, if the
++  // device is not initialized, or if Terminate() ran while initializing
++  // |renderer| (in which case |renderer| has been disconnected and stopped).
+   // Called on the main renderer thread.
+   bool SetAudioRenderer(blink::WebRtcAudioRenderer* renderer);
+ 
+@@ -112,9 +114,7 @@ class MODULES_EXPORT WebRtcAudioDeviceImpl
+   // function will not be able to pick an appropriate device and return 0.
+   base::UnguessableToken GetAuthorizedDeviceSessionIdForAudioRenderer();
+ 
+-  const scoped_refptr<blink::WebRtcAudioRenderer>& renderer() const {
+-    return renderer_;
+-  }
++  scoped_refptr<blink::WebRtcAudioRenderer> renderer() const;
+ 
+   // blink::WebRtcAudioRendererSource implementation.
+ 
+@@ -182,11 +182,11 @@ class MODULES_EXPORT WebRtcAudioDeviceImpl
+   // Cached value of the current audio delay on the output/renderer side.
+   base::TimeDelta output_delay_ GUARDED_BY(lock_);
+ 
+-  // Protects |renderer_|, |playout_sinks_|, |output_delay_|, |playing_|,
+-  // and |recording_|.
++  // Protects |renderer_|, |playout_sinks_|, |output_delay_|, |initialized_|,
++  // |playing_|, and |recording_|.
+   mutable base::Lock lock_;
+ 
+-  bool initialized_;
++  bool initialized_ GUARDED_BY(lock_);
+   bool playing_ GUARDED_BY(lock_);
+   bool recording_ GUARDED_BY(lock_);
+ 

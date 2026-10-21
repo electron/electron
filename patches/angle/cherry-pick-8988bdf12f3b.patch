@@ -1,0 +1,493 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ran Wang <wangra@google.com>
+Date: Mon, 5 Oct 2026 18:15:04 -0400
+Subject: D3D11: Fix stale vertex and index buffer pointers
+
+Clear cached D3D11 vertex and index buffer pointers on invalidation
+and buffer release, keep state updates atomic on errors, and propagate
+vertex array binding dirty bits across shared attributes.
+
+Test:
+    angle_end2end_tests --gtest_filter="*DeletedVertexBufferBeforeInternalDraw*:*VertexBufferOffsetOverflowRecovery*"
+Bug: b/568897206
+Change-Id: I9f10aae425328e514359c4008fe31f3fa05c2901
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8520817
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Ran Wang <wangra@google.com>
+
+Electron adaptation notes (42-x-y): Renderer11's constructor on this
+revision still initializes mScratchMemoryBuffer, so mResourceManager11(this)
+is added alongside it in declaration order; the enabled-attribute early
+`continue` in StateManager11::syncCurrentValueAttribs had no braces here and
+was resolved to upstream's braced form with the
+mDirtyCurrentValueAttribs.reset() call. VertexAttributeTest hunks did not
+apply and were dropped.
+
+diff --git a/src/libANGLE/renderer/d3d/IndexDataManager.h b/src/libANGLE/renderer/d3d/IndexDataManager.h
+index 53bfc721da739bee219722f35ca52097dd9d9361..40aea6ee5b720148a21e81b50c2f38f469752418 100644
+--- a/src/libANGLE/renderer/d3d/IndexDataManager.h
++++ b/src/libANGLE/renderer/d3d/IndexDataManager.h
+@@ -45,7 +45,6 @@ struct SourceIndexData
+     const void *srcIndices;
+     unsigned int srcCount;
+     gl::DrawElementsType srcIndexType;
+-    bool srcIndicesChanged;
+ };
+ 
+ struct TranslatedIndexData
+diff --git a/src/libANGLE/renderer/d3d/d3d11/Buffer11.cpp b/src/libANGLE/renderer/d3d/d3d11/Buffer11.cpp
+index 5b3a15e5739c0c16b928b3672b6cbf0018e1692c..631bb81b0cfe0d2d61d610b62c442be2d7377a4a 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/Buffer11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/Buffer11.cpp
+@@ -788,6 +788,11 @@ angle::Result Buffer11::packPixels(const gl::Context *context,
+     ANGLE_TRY(packStorage->packPixels(context, readAttachment, params));
+     onStorageUpdate(packStorage);
+ 
++    // Pixel pack writes new data into this buffer. If the buffer is also bound as a vertex or
++    // index buffer, we must invalidate any cached static translated vertex/index buffers and set
++    // feedback->bufferStateChanged so bound VertexArrays re-sync on the next draw.
++    invalidateStaticData(context, feedback);
++
+     return angle::Result::Continue;
+ }
+ 
+diff --git a/src/libANGLE/renderer/d3d/d3d11/Renderer11.cpp b/src/libANGLE/renderer/d3d/d3d11/Renderer11.cpp
+index 082edc967a55cce67750b717924a2cb99995adf4..7a69c5388dc193f58c82089bde3f02ed109a34b5 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/Renderer11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/Renderer11.cpp
+@@ -419,7 +419,8 @@ Renderer11::Renderer11(egl::Display *display)
+       mStateCache(),
+       mStateManager(this),
+       mDebug(nullptr),
+-      mScratchMemoryBuffer(ScratchMemoryBufferLifetime)
++      mScratchMemoryBuffer(ScratchMemoryBufferLifetime),
++      mResourceManager11(this)
+ {
+     mLineLoopIB    = nullptr;
+     mTriangleFanIB = nullptr;
+diff --git a/src/libANGLE/renderer/d3d/d3d11/ResourceManager11.cpp b/src/libANGLE/renderer/d3d/d3d11/ResourceManager11.cpp
+index d13aa40345df4eab0900805c10328aee7d60cb66..5b20171ef0ae47c500dfb905860ca131e673c578 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/ResourceManager11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/ResourceManager11.cpp
+@@ -446,7 +446,8 @@ static_assert(kResourceTypeErrors[NumResourceTypes - 1] != nullptr,
+ }  // anonymous namespace
+ 
+ // ResourceManager11 Implementation.
+-ResourceManager11::ResourceManager11() : mInitializeAllocations(false)
++ResourceManager11::ResourceManager11(Renderer11 *renderer)
++    : mRenderer(renderer), mInitializeAllocations(false)
+ {
+     for (auto &count : mAllocatedResourceCounts)
+     {
+@@ -526,6 +527,15 @@ void ResourceManager11::decrResource(ResourceType resourceType, uint64_t memoryS
+ void ResourceManager11::onReleaseGeneric(ResourceType resourceType, ID3D11DeviceChild *resource)
+ {
+     ASSERT(resource);
++    // Only Buffer needs to notify StateManager11 here: mCurrentVertexBuffers and mAppliedIB are the
++    // only caches in StateManager11 that store raw COM pointers and re-submit cached slots to D3D11
++    // (via IASetVertexBuffers). Other resource types (textures/views, shaders, input layouts, and
++    // state objects) are tracked via integer serials or value structs and never re-submit cached
++    // pointers to D3D11.
++    if (resourceType == ResourceType::Buffer)
++    {
++        mRenderer->getStateManager()->onReleaseBuffer(static_cast<ID3D11Buffer *>(resource));
++    }
+     decrResource(resourceType, ComputeGenericMemoryUsage(resourceType, resource));
+ }
+ 
+diff --git a/src/libANGLE/renderer/d3d/d3d11/ResourceManager11.h b/src/libANGLE/renderer/d3d/d3d11/ResourceManager11.h
+index 67302c5fce6bf7496545842f8852ce0050d55195..8449f4c5cffc2e1cf9545ee279ed15ec3cead517 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/ResourceManager11.h
++++ b/src/libANGLE/renderer/d3d/d3d11/ResourceManager11.h
+@@ -329,7 +329,7 @@ class SharedResource11 : public Resource11Base<T, std::shared_ptr, TypedData<T>>
+ class ResourceManager11 final : angle::NonCopyable
+ {
+   public:
+-    ResourceManager11();
++    ResourceManager11(Renderer11 *renderer);
+     ~ResourceManager11();
+ 
+     template <typename T>
+@@ -369,6 +369,7 @@ class ResourceManager11 final : angle::NonCopyable
+     template <typename T>
+     GetInitDataFromD3D11<T> *createInitDataIfNeeded(const GetDescFromD3D11<T> *desc);
+ 
++    Renderer11 *mRenderer;
+     bool mInitializeAllocations;
+ 
+     std::array<std::atomic_size_t, NumResourceTypes> mAllocatedResourceCounts;
+diff --git a/src/libANGLE/renderer/d3d/d3d11/StateManager11.cpp b/src/libANGLE/renderer/d3d/d3d11/StateManager11.cpp
+index 1465d7a5dbc7a6998cf568592aa883971077d5a7..59ada9bf2810268d48de501b32ad490f984507d3 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/StateManager11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/StateManager11.cpp
+@@ -1397,9 +1397,10 @@ void StateManager11::invalidateBoundViews()
+ 
+ void StateManager11::invalidateVertexBuffer()
+ {
+-    unsigned int limit      = std::min<unsigned int>(mRenderer->getNativeCaps().maxVertexAttributes,
+-                                                     gl::MAX_VERTEX_ATTRIBS);
+-    mDirtyVertexBufferRange = gl::RangeUI(0, limit);
++    mCurrentVertexBuffers.fill(nullptr);
++    mCurrentVertexStrides.fill(std::numeric_limits<UINT>::max());
++    mCurrentVertexOffsets.fill(std::numeric_limits<UINT>::max());
++    mDirtyVertexBufferRange = gl::RangeUI(gl::MAX_VERTEX_ATTRIBS, 0);
+     invalidateInputLayout();
+     invalidateShaders();
+     mInternalDirtyBits.set(DIRTY_BIT_CURRENT_VALUE_ATTRIBS);
+@@ -1488,6 +1489,9 @@ void StateManager11::invalidateInputLayout()
+ void StateManager11::invalidateIndexBuffer()
+ {
+     mIndexBufferIsDirty = true;
++    mAppliedIB          = nullptr;
++    mAppliedIBFormat    = DXGI_FORMAT_UNKNOWN;
++    mAppliedIBOffset    = std::numeric_limits<UINT>::max();
+ }
+ 
+ void StateManager11::setRenderTarget(ID3D11RenderTargetView *rtv, ID3D11DepthStencilView *dsv)
+@@ -1545,6 +1549,30 @@ void StateManager11::onDeleteQueryObject(Query11 *query)
+     mCurrentQueries.erase(query);
+ }
+ 
++void StateManager11::onReleaseBuffer(ID3D11Buffer *buffer)
++{
++    if (buffer == nullptr)
++    {
++        return;
++    }
++
++    for (size_t attribIndex = 0; attribIndex < gl::MAX_VERTEX_ATTRIBS; ++attribIndex)
++    {
++        if (mCurrentVertexBuffers[attribIndex] == buffer)
++        {
++            mCurrentVertexBuffers[attribIndex] = nullptr;
++            mCurrentVertexStrides[attribIndex] = std::numeric_limits<UINT>::max();
++            mCurrentVertexOffsets[attribIndex] = std::numeric_limits<UINT>::max();
++            invalidateInputLayout();
++        }
++    }
++
++    if (mAppliedIB == buffer)
++    {
++        invalidateIndexBuffer();
++    }
++}
++
+ angle::Result StateManager11::onMakeCurrent(const gl::Context *context)
+ {
+     ANGLE_TRY(ensureInitialized(context));
+@@ -1726,6 +1754,8 @@ void StateManager11::deinitialize()
+     mInputLayoutCache.clear();
+     mVertexDataManager.deinitialize();
+     mIndexDataManager.deinitialize();
++    invalidateVertexBuffer();
++    invalidateIndexBuffer();
+ 
+     for (d3d11::Buffer &ShaderDriverConstantBuffer : mShaderDriverConstantBuffers)
+     {
+@@ -1828,7 +1858,8 @@ void StateManager11::invalidateCurrentValueAttrib(size_t attribIndex)
+ 
+ angle::Result StateManager11::syncCurrentValueAttribs(
+     const gl::Context *context,
+-    const std::vector<gl::VertexAttribCurrentValueData> &currentValues)
++    const std::vector<gl::VertexAttribCurrentValueData> &currentValues,
++    DirtyBits::Iterator &iter)
+ {
+     const gl::ProgramExecutable *executable = mExecutableD3D->getExecutable();
+     const auto &activeAttribsMask           = executable->getActiveAttribLocationsMask();
+@@ -1841,12 +1872,14 @@ angle::Result StateManager11::syncCurrentValueAttribs(
+ 
+     const auto &vertexAttributes = mVertexArray11->getState().getVertexAttributes();
+     const auto &vertexBindings   = mVertexArray11->getState().getVertexBindings();
+-    mDirtyCurrentValueAttribs    = (mDirtyCurrentValueAttribs & ~dirtyActiveAttribs);
+ 
+     for (auto attribIndex : dirtyActiveAttribs)
+     {
+         if (vertexAttributes[attribIndex].enabled)
++        {
++            mDirtyCurrentValueAttribs.reset(attribIndex);
+             continue;
++        }
+ 
+         const auto *attrib                      = &vertexAttributes[attribIndex];
+         const auto &currentValue                = currentValues[attribIndex];
+@@ -1857,10 +1890,19 @@ angle::Result StateManager11::syncCurrentValueAttribs(
+         currentValueAttrib->bufferBindingPointer =
+             &mVertexArray11->getBufferBindingPointer(attrib->bindingIndex);
+ 
+-        mDirtyVertexBufferRange.extend(static_cast<unsigned int>(attribIndex));
+-
+         ANGLE_TRY(mVertexDataManager.storeCurrentValue(context, currentValue, currentValueAttrib,
+                                                        static_cast<size_t>(attribIndex)));
++        // Only clear the dirty bit after storeCurrentValue succeeds so a failed allocation will be
++        // retried on a subsequent draw call.
++        mDirtyCurrentValueAttribs.reset(attribIndex);
++        // D3D11 emulates disabled ("current value") vertex attributes using a stride-0 vertex
++        // buffer. storeCurrentValue writes the new constant into a D3D11 buffer and updates
++        // mCurrentValueAttribs[attribIndex], so we must set
++        // DIRTY_BIT_VERTEX_BUFFERS_AND_INPUT_LAYOUT (via invalidateInputLayout and iter) so
++        // syncVertexBuffersAndInputLayout -> applyVertexBuffers binds the updated buffer and offset
++        // to D3D11 via IASetVertexBuffers.
++        invalidateInputLayout();
++        iter.setLaterBit(DIRTY_BIT_VERTEX_BUFFERS_AND_INPUT_LAYOUT);
+     }
+ 
+     return angle::Result::Continue;
+@@ -2053,7 +2095,6 @@ angle::Result StateManager11::updateState(const gl::Context *context,
+ 
+     for (auto iter = dirtyBitsCopy.begin(), end = dirtyBitsCopy.end(); iter != end; ++iter)
+     {
+-        mInternalDirtyBits.reset(*iter);
+         switch (*iter)
+         {
+             case DIRTY_BIT_RENDER_TARGET:
+@@ -2102,7 +2143,8 @@ angle::Result StateManager11::updateState(const gl::Context *context,
+                 ANGLE_TRY(syncProgram(context, mode));
+                 break;
+             case DIRTY_BIT_CURRENT_VALUE_ATTRIBS:
+-                ANGLE_TRY(syncCurrentValueAttribs(context, glState.getVertexAttribCurrentValues()));
++                ANGLE_TRY(
++                    syncCurrentValueAttribs(context, glState.getVertexAttribCurrentValues(), iter));
+                 break;
+             case DIRTY_BIT_TRANSFORM_FEEDBACK:
+                 ANGLE_TRY(syncTransformFeedbackBuffers(context));
+@@ -2119,6 +2161,10 @@ angle::Result StateManager11::updateState(const gl::Context *context,
+                 UNREACHABLE();
+                 break;
+         }
++
++        // Clear the dirty bit only after its sync handler succeeds so that if an ANGLE_TRY fails,
++        // the bit remains set and will be retried on a subsequent draw call.
++        mInternalDirtyBits.reset(*iter);
+     }
+ 
+     // Check that we haven't set any dirty bits in the flushing of the dirty bits loop.
+@@ -2768,10 +2814,11 @@ angle::Result StateManager11::syncVertexBuffersAndInputLayout(
+     ANGLE_TRY(mInputLayoutCache.getInputLayout(GetImplAs<Context11>(context), state,
+                                                mCurrentAttributes, sortedSemanticIndices, mode,
+                                                vertexOrIndexCount, instanceCount, &inputLayout));
+-    setInputLayoutInternal(inputLayout);
+ 
+-    // Update the applied vertex buffers.
++    // Update the applied vertex buffers before committing inputLayout so that if applyVertexBuffers
++    // fails via ANGLE_TRY, we do not leave a partially updated input layout state.
+     ANGLE_TRY(applyVertexBuffers(context, mode, indexTypeOrInvalid, firstVertex));
++    setInputLayoutInternal(inputLayout);
+ 
+     return angle::Result::Continue;
+ }
+@@ -2781,40 +2828,46 @@ angle::Result StateManager11::applyVertexBuffers(const gl::Context *context,
+                                                  gl::DrawElementsType indexTypeOrInvalid,
+                                                  GLint firstVertex)
+ {
+-    for (size_t attribIndex = 0; attribIndex < gl::MAX_VERTEX_ATTRIBS; ++attribIndex)
++    // Resolve all vertex buffers and offsets into local arrays before calling
++    // queueVertexBufferChange. If getBuffer or computeOffset fails partway through the loop, this
++    // avoids leaving uncommitted buffer pointers queued in mCurrentVertexBuffers and
++    // mDirtyVertexBufferRange without applyVertexBufferChanges being called.
++    gl::AttribArray<ID3D11Buffer *> buffers = {};
++    gl::AttribArray<UINT> vertexStrides     = {};
++    gl::AttribArray<UINT> vertexOffsets     = {};
++
++    for (size_t attribIndex = 0; attribIndex < mCurrentAttributes.size(); ++attribIndex)
+     {
+-        ID3D11Buffer *buffer = nullptr;
+-        UINT vertexStride    = 0;
+-        UINT vertexOffset    = 0;
++        const TranslatedAttribute &attrib = *mCurrentAttributes[attribIndex];
++        Buffer11 *bufferStorage = attrib.storage ? GetAs<Buffer11>(attrib.storage) : nullptr;
+ 
+-        if (attribIndex < mCurrentAttributes.size())
++        // If indexed pointsprite emulation is active, then we need to take a less efficient code
++        // path. Emulated indexed pointsprite rendering requires that the vertex buffers match
++        // exactly to the indices passed by the caller.  This could expand or shrink the vertex
++        // buffer depending on the number of points indicated by the index list or how many
++        // duplicates are found on the index list.
++        if (bufferStorage == nullptr)
+         {
+-            const TranslatedAttribute &attrib = *mCurrentAttributes[attribIndex];
+-            Buffer11 *bufferStorage = attrib.storage ? GetAs<Buffer11>(attrib.storage) : nullptr;
+-
+-            // If indexed pointsprite emulation is active, then we need to take a less efficent code
+-            // path. Emulated indexed pointsprite rendering requires that the vertex buffers match
+-            // exactly to the indices passed by the caller.  This could expand or shrink the vertex
+-            // buffer depending on the number of points indicated by the index list or how many
+-            // duplicates are found on the index list.
+-            if (bufferStorage == nullptr)
+-            {
+-                ASSERT(attrib.vertexBuffer.get());
+-                buffer = GetAs<VertexBuffer11>(attrib.vertexBuffer.get())->getBuffer().get();
+-            }
+-            else
+-            {
+-                BufferFeedback feedback;
+-                ANGLE_TRY(bufferStorage->getBuffer(
+-                    context, BUFFER_USAGE_VERTEX_OR_TRANSFORM_FEEDBACK, &buffer, &feedback));
+-                attrib.bufferBindingPointer->get()->applyImplFeedback(context, feedback);
+-            }
+-
+-            vertexStride = attrib.stride;
+-            ANGLE_TRY(attrib.computeOffset(context, firstVertex, &vertexOffset));
++            ASSERT(attrib.vertexBuffer.get());
++            buffers[attribIndex] =
++                GetAs<VertexBuffer11>(attrib.vertexBuffer.get())->getBuffer().get();
++        }
++        else
++        {
++            BufferFeedback feedback;
++            ANGLE_TRY(bufferStorage->getBuffer(context, BUFFER_USAGE_VERTEX_OR_TRANSFORM_FEEDBACK,
++                                               &buffers[attribIndex], &feedback));
++            attrib.bufferBindingPointer->get()->applyImplFeedback(context, feedback);
+         }
+ 
+-        queueVertexBufferChange(attribIndex, buffer, vertexStride, vertexOffset);
++        vertexStrides[attribIndex] = attrib.stride;
++        ANGLE_TRY(attrib.computeOffset(context, firstVertex, &vertexOffsets[attribIndex]));
++    }
++
++    for (size_t attribIndex = 0; attribIndex < gl::MAX_VERTEX_ATTRIBS; ++attribIndex)
++    {
++        queueVertexBufferChange(attribIndex, buffers[attribIndex], vertexStrides[attribIndex],
++                                vertexOffsets[attribIndex]);
+     }
+ 
+     applyVertexBufferChanges();
+@@ -2857,9 +2910,7 @@ angle::Result StateManager11::applyIndexBuffer(const gl::Context *context,
+         buffer                     = indexBuffer->getBuffer().get();
+     }
+ 
+-    // Track dirty indices in the index range cache.
+-    indexInfo.srcIndexData.srcIndicesChanged =
+-        syncIndexBuffer(buffer, bufferFormat, indexInfo.startOffset);
++    syncIndexBuffer(buffer, bufferFormat, indexInfo.startOffset);
+ 
+     mIndexBufferIsDirty = false;
+ 
+@@ -2873,7 +2924,10 @@ void StateManager11::setIndexBuffer(ID3D11Buffer *buffer,
+ {
+     if (syncIndexBuffer(buffer, indexFormat, offset))
+     {
+-        invalidateIndexBuffer();
++        // Only mark the index buffer dirty for the next GL draw without calling
++        // invalidateIndexBuffer(), since syncIndexBuffer just updated mAppliedIB, mAppliedIBFormat,
++        // and mAppliedIBOffset to match the D3D11 device context.
++        mIndexBufferIsDirty = true;
+     }
+ }
+ 
+diff --git a/src/libANGLE/renderer/d3d/d3d11/StateManager11.h b/src/libANGLE/renderer/d3d/d3d11/StateManager11.h
+index 0e02a8f3aefc7413b4c003af4d5077d944fb3473..ac6722485f2d42e2c5430c707b812b0e7f6aadab 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/StateManager11.h
++++ b/src/libANGLE/renderer/d3d/d3d11/StateManager11.h
+@@ -207,6 +207,7 @@ class StateManager11 final : angle::NonCopyable
+ 
+     void onBeginQuery(Query11 *query);
+     void onDeleteQueryObject(Query11 *query);
++    void onReleaseBuffer(ID3D11Buffer *buffer);
+     angle::Result onMakeCurrent(const gl::Context *context);
+ 
+     void setInputLayout(const d3d11::InputLayout *inputLayout);
+@@ -344,10 +345,6 @@ class StateManager11 final : angle::NonCopyable
+                                    const gl::ImageUnit &imageUnit,
+                                    UAVList *uavList);
+ 
+-    angle::Result syncCurrentValueAttribs(
+-        const gl::Context *context,
+-        const std::vector<gl::VertexAttribCurrentValueData> &currentValues);
+-
+     angle::Result generateSwizzle(const gl::Context *context, gl::Texture *texture);
+     angle::Result generateSwizzlesForShader(const gl::Context *context, gl::ShaderType type);
+     angle::Result generateSwizzles(const gl::Context *context);
+@@ -434,6 +431,11 @@ class StateManager11 final : angle::NonCopyable
+ 
+     using DirtyBits = angle::BitSet<DIRTY_BIT_MAX>;
+ 
++    angle::Result syncCurrentValueAttribs(
++        const gl::Context *context,
++        const std::vector<gl::VertexAttribCurrentValueData> &currentValues,
++        DirtyBits::Iterator &iter);
++
+     Renderer11 *mRenderer;
+ 
+     // Internal dirty bits.
+diff --git a/src/libANGLE/renderer/d3d/d3d11/VertexArray11.cpp b/src/libANGLE/renderer/d3d/d3d11/VertexArray11.cpp
+index 0f6ecb17ec65248c4190a5d776fcfc4b201b8d4a..51a0479fceff697073ea73c8f30bec3b701d3591 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/VertexArray11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/VertexArray11.cpp
+@@ -34,19 +34,22 @@ VertexArray11::~VertexArray11() {}
+ void VertexArray11::destroy(const gl::Context *context) {}
+ 
+ // As VertexAttribPointer can modify both attribute and binding, we should also set other attributes
+-// that are also using this binding dirty.
+-#define ANGLE_VERTEX_DIRTY_ATTRIB_FUNC(INDEX)                                                \
+-    case gl::VertexArray::DIRTY_BIT_ATTRIB_0 + INDEX:                                        \
+-        if ((*attribBits)[INDEX][gl::VertexArray::DirtyAttribBitType::DIRTY_ATTRIB_POINTER]) \
+-        {                                                                                    \
+-            attributesToUpdate |= mState.getBindingToAttributesMask(INDEX);                  \
+-        }                                                                                    \
+-        else                                                                                 \
+-        {                                                                                    \
+-            attributesToUpdate.set(INDEX);                                                   \
+-        }                                                                                    \
+-        invalidateVertexBuffer = true;                                                       \
+-        (*attribBits)[INDEX].reset();                                                        \
++// that are also using this binding dirty. Look for both DIRTY_ATTRIB_POINTER (when format/stride
++// changes) and DIRTY_ATTRIB_POINTER_BUFFER (when only the bound buffer or offset changes).
++#define ANGLE_VERTEX_DIRTY_ATTRIB_FUNC(INDEX)                                                  \
++    case gl::VertexArray::DIRTY_BIT_ATTRIB_0 + INDEX:                                          \
++        if ((*attribBits)[INDEX][gl::VertexArray::DirtyAttribBitType::DIRTY_ATTRIB_POINTER] || \
++            (*attribBits)[INDEX]                                                               \
++                         [gl::VertexArray::DirtyAttribBitType::DIRTY_ATTRIB_POINTER_BUFFER])   \
++        {                                                                                      \
++            attributesToUpdate |= mState.getBindingToAttributesMask(INDEX);                    \
++        }                                                                                      \
++        else                                                                                   \
++        {                                                                                      \
++            attributesToUpdate.set(INDEX);                                                     \
++        }                                                                                      \
++        invalidateVertexBuffer = true;                                                         \
++        (*attribBits)[INDEX].reset();                                                          \
+         break;
+ 
+ #define ANGLE_VERTEX_DIRTY_BINDING_FUNC(INDEX)                          \
+@@ -56,13 +59,16 @@ void VertexArray11::destroy(const gl::Context *context) {}
+         (*bindingBits)[INDEX].reset();                                  \
+         break;
+ 
+-#define ANGLE_VERTEX_DIRTY_BUFFER_DATA_FUNC(INDEX)                      \
+-    case gl::VertexArray::DIRTY_BIT_BUFFER_DATA_0 + INDEX:              \
+-        if (mAttributeStorageTypes[INDEX] == VertexStorageType::STATIC) \
+-        {                                                               \
+-            invalidateVertexBuffer = true;                              \
+-            mAttribsToTranslate.set(INDEX);                             \
+-        }                                                               \
++#define ANGLE_VERTEX_DIRTY_BUFFER_DATA_FUNC(INDEX)                                \
++    case gl::VertexArray::DIRTY_BIT_BUFFER_DATA_0 + INDEX:                        \
++        for (size_t attribIndex : mState.getBindingToAttributesMask(INDEX))       \
++        {                                                                         \
++            if (mAttributeStorageTypes[attribIndex] == VertexStorageType::STATIC) \
++            {                                                                     \
++                invalidateVertexBuffer = true;                                    \
++                mAttribsToTranslate.set(attribIndex);                             \
++            }                                                                     \
++        }                                                                         \
+         break;
+ 
+ angle::Result VertexArray11::syncState(const gl::Context *context,
+@@ -175,12 +181,14 @@ angle::Result VertexArray11::syncStateForDraw(const gl::Context *context,
+             mLastDrawElementsIndices.value() != indices ||
+             mLastPrimitiveRestartEnabled.value() != restartEnabled)
+         {
++            ANGLE_TRY(updateElementArrayStorage(context, vertexOrIndexCount, indexTypeOrInvalid,
++                                                indices, restartEnabled));
++            // Only cache the draw parameters after updateElementArrayStorage succeeds so a failed
++            // call will be retried on a subsequent draw.
+             mLastDrawElementsType        = indexTypeOrInvalid;
+             mLastDrawElementsIndices     = indices;
+             mLastPrimitiveRestartEnabled = restartEnabled;
+ 
+-            ANGLE_TRY(updateElementArrayStorage(context, vertexOrIndexCount, indexTypeOrInvalid,
+-                                                indices, restartEnabled));
+             stateManager->invalidateIndexBuffer();
+         }
+         else if (mCurrentElementArrayStorage == IndexStorageType::Dynamic)

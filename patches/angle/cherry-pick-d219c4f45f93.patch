@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Tue, 15 Sep 2026 16:05:05 -0400
+Subject: Always robust init all levels of immutable textures
+
+A previous change made it such that only BASE+ levels are
+robust-initialized.  This is fine for mutable textures, since levels
+outside this range are inaccessible to GL.  However, that's not true for
+immutable textures, where framebuffer completeness is always true
+regardless of which level the framebuffer is attached to.
+
+Bug: chromium:553117511
+Change-Id: Ied52d392f79bed56152c063816be2986b810080f
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8415406
+Reviewed-by: Ran Wang <wangra@google.com>
+
+Electron adaptation notes (42-x-y): this ANGLE revision predates the
+EnsureInitializedLevels parameter of Texture::ensureInitialized, so the
+BaseOnly handling has no counterpart here; the fix is applied to the
+single-mode function (initFirstLevel = 0 for immutable textures, base
+level otherwise). Test-only hunks (expectations, CopyTextureTest,
+RobustResourceInitTest) were dropped because they did not apply.
+
+diff --git a/src/libANGLE/Texture.cpp b/src/libANGLE/Texture.cpp
+index 201d8955105036d6682d47cfc7f399ab8c375bf1..1d6ea0a03ac678583ffccb723e288f6840337a68 100644
+--- a/src/libANGLE/Texture.cpp
++++ b/src/libANGLE/Texture.cpp
+@@ -2529,12 +2529,18 @@ angle::Result Texture::ensureInitialized(const Context *context)
+         return angle::Result::Continue;
+     }
+ 
+-    bool anyDirty = false;
+-    bool allInitialized = (mState.getEffectiveBaseLevel() == 0);
++    const GLint baseLevel = mState.getEffectiveBaseLevel();
++    // Start initializing from baseLevel if the texture is mutable.  If the texture is immutable,
++    // initialize all the levels because framebuffers outside [BASE, MAX] range are complete for
++    // immutable textures.
++    const GLint initFirstLevel = !getImmutableFormat() ? baseLevel : 0;
++
++    bool anyDirty       = false;
++    bool allInitialized = (initFirstLevel == 0);
+ 
+     ImageIndexIterator it = ImageIndexIterator::MakeGeneric(
+-        mState.mType, static_cast<GLint>(mState.getEffectiveBaseLevel()),
+-        IMPLEMENTATION_MAX_TEXTURE_LEVELS + 1, ImageIndex::kEntireLevel, ImageIndex::kEntireLevel);
++        mState.mType, initFirstLevel, IMPLEMENTATION_MAX_TEXTURE_LEVELS + 1,
++        ImageIndex::kEntireLevel, ImageIndex::kEntireLevel);
+     while (it.hasNext())
+     {
+         const ImageIndex index = it.next();

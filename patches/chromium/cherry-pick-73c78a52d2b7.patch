@@ -1,0 +1,104 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stephen Chenney <schenney@chromium.org>
+Date: Wed, 14 Oct 2026 10:21:23 -0700
+Subject: [HiC] Disallow SVG masks on SVG content in readback-allowed mode
+
+We were missing a check for readback-allowed in SVGMaskPainter,
+used to paint masks on SVG content.
+
+Fixed: 572695599
+
+CHECK on privacy
+
+Change-Id: I1a2d07b756f5c6a5d9fe1fb5f2997fa7bf512e6d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8580323
+Commit-Queue: Stephen Chenney <schenney@chromium.org>
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Auto-Submit: Stephen Chenney <schenney@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1718722}
+
+Electron adaptation notes (42-x-y): M148 spells the html-in-canvas
+privacy paint mode PaintFlag::kPrivacyPreserving (upstream:
+kReadBackAllowedRendering) and checks images with
+StyleImage::IsAccessAllowed(String&) (upstream: IsCorsSameOrigin()), exactly
+as BoxPainterBase does on this branch, so the new check in PaintMaskLayer
+uses those names. The upstream IterateFillLayersReveresed -> Reversed
+rename hunk did not apply and is omitted (no behavior change).
+
+diff --git a/third_party/blink/renderer/core/paint/svg_mask_painter.cc b/third_party/blink/renderer/core/paint/svg_mask_painter.cc
+index 0f136f82906d71a4c4066200048358f9af54667f..5996671317fad34912eaa3c5373f174f99fc2cb3 100644
+--- a/third_party/blink/renderer/core/paint/svg_mask_painter.cc
++++ b/third_party/blink/renderer/core/paint/svg_mask_painter.cc
+@@ -102,6 +102,12 @@ void PaintMaskLayer(const FillLayer& layer,
+     return;
+   }
+ 
++  String failing_url;
++  if ((paint_flags & PaintFlag::kPrivacyPreserving) &&
++      !style_image->IsAccessAllowed(failing_url)) {
++    return;
++  }
++
+   std::optional<ScopedMaskLuminanceLayer> mask_luminance_scope;
+   SkBlendMode composite_op = SkBlendMode::kSrcOver;
+   // Don't use the operator if this is the bottom layer.
+diff --git a/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg/svg-mask-on-svg-content-ignored.tentative.https.sub.html b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg/svg-mask-on-svg-content-ignored.tentative.https.sub.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..bf210f6fdf25f13edb487fe1e2bb8bd0908c3c19
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/canvas/element/manual/draw-element-image/privacy/svg/svg-mask-on-svg-content-ignored.tentative.https.sub.html
+@@ -0,0 +1,53 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>drawElementImage does not use cross-origin mask images on SVG content</title>
++  <script src='/resources/testharness.js'></script>
++  <script src='/resources/testharnessreport.js'></script>
++  <script src='/html/canvas/resources/canvas-tests.js'></script>
++  <script src="/html/canvas/resources/wait-for-canvas-paint.js"></script>
++  <style>
++  #child {
++    width: 100px;
++    height: 200px;
++    background: green;
++  }
++  </style>
++</head>
++<body>
++  <canvas id=canvas width=100 height=200 content=drawable>
++    <svg drawable id=child width=100px height=200px>
++      <rect id=sameOrigin x=0 y=0 width=100 height=100 fill="rgb(0, 0, 255)" style="mask-image: url('https://{{location[host]}}/images/blue-100x50-transparent-100x50.svg');"/>
++      <rect id=crossOrigin x=0 y=100 width=100 height=100 fill="rgb(0, 0, 255)" style="mask-image: url('https://{{hosts[alt][www]}}:{{ports[https][0]}}/images/blue-100x50-transparent-100x50.svg')"/>
++    </svg>
++  </canvas>
++
++  <script>
++    window.onload = () => {
++      promise_test(async function(t) {
++        await waitForCanvasPaint(canvas);
++        const context = canvas.getContext("2d");
++        context.fillStyle = 'red';
++        context.fillRect(0, 100, 100, 100);
++        context.drawElementImage(child, 0, 0);
++
++        // Fetch all pixel data once to avoid multiple slow readbacks.
++        const imgData = context.getImageData(0, 0, canvas.width, canvas.height);
++
++        let pixel = _getPixelFromImageData(imgData, 50, 25);
++        assert_array_equals(pixel, [0, 128, 0, 255], "Same origin should mask");
++
++        pixel = _getPixelFromImageData(imgData, 50, 75);
++        assert_array_equals(pixel, [0, 0, 255, 255], "Same origin should mask");
++
++        // Missing mask image renders as black, blocking the red background
++        pixel = _getPixelFromImageData(imgData, 50, 125);
++        assert_array_equals(pixel, [0, 0, 255, 255], "Cross origin should not mask");
++
++        pixel = _getPixelFromImageData(imgData, 50, 175);
++        assert_array_equals(pixel, [0, 0, 255, 255], "Cross origin should not mask");
++      });
++    }
++  </script>
++</body>
++</html>

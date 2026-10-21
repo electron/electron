@@ -1,0 +1,349 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ran Wang <wangra@google.com>
+Date: Wed, 23 Sep 2026 10:34:51 -0400
+Subject: D3D11: Expand 3D texture depth in MakeValidSize
+
+When d3d11::MakeValidSize expands sub-block compressed mip dimensions
+by levelOffset, also shift requestDepth for 3D textures so the selected
+D3D11 mip subresource has mDepth slices.
+
+Test:
+    angle_end2end_tests --gtest_filter="*BPTCCompressedTextureTestES3.CompressedTexImage3DSubBlockMipDepth/*"
+Bug: b/564064199
+Change-Id: I913ba2abcd631714b617ea8d835c9a2bcfb6f36a
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8451922
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Ran Wang <wangra@google.com>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+
+Electron adaptation notes (42-x-y): TextureStorage11_2D/Cube constructors
+on this ANGLE revision carry an extra zeroMaxLodWorkaround ASSERT next to
+the mTextureDepth assignment; the conflict was resolved by keeping that
+ASSERT and taking upstream's `mTextureDepth = depth`.
+
+This branch also still has the D3D_FEATURE_LEVEL_9_3 CopySubresourceRegion
+path in TextureStorage11::copySubresourceLevel, which upstream had already
+removed; its MakeValidSize call is converted to the new signature with
+TextureType::_2D and a local depth/levelOffset (previously nullptr).
+
+diff --git a/src/libANGLE/renderer/d3d/d3d11/Image11.cpp b/src/libANGLE/renderer/d3d/d3d11/Image11.cpp
+index 935fb0077babd878808b4daa506972ec945d3e26..b4de2efd6ceb2338ebace5510fc9dc5d03be3f9f 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/Image11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/Image11.cpp
+@@ -556,9 +556,10 @@ angle::Result Image11::createStagingTexture(const gl::Context *context)
+     int lodOffset  = 1;
+     GLsizei width  = mWidth;
+     GLsizei height = mHeight;
++    GLsizei depth  = mDepth;
+ 
+     // adjust size if needed for compressed textures
+-    d3d11::MakeValidSize(false, dxgiFormat, &width, &height, &lodOffset);
++    d3d11::MakeValidSize(false, dxgiFormat, mType, width, height, depth, lodOffset);
+ 
+     Context11 *context11 = GetImplAs<Context11>(context);
+ 
+@@ -569,7 +570,7 @@ angle::Result Image11::createStagingTexture(const gl::Context *context)
+             D3D11_TEXTURE3D_DESC desc;
+             desc.Width          = width;
+             desc.Height         = height;
+-            desc.Depth          = mDepth;
++            desc.Depth          = depth;
+             desc.MipLevels      = lodOffset + 1;
+             desc.Format         = dxgiFormat;
+             desc.Usage          = D3D11_USAGE_STAGING;
+@@ -582,7 +583,7 @@ angle::Result Image11::createStagingTexture(const gl::Context *context)
+                 gl::TexLevelArray<D3D11_SUBRESOURCE_DATA> initialData;
+                 ANGLE_TRY(d3d11::GenerateInitialTextureData(
+                     context, mInternalFormat, mRenderer->getRenderer11DeviceCaps(), width, height,
+-                    mDepth, lodOffset + 1, &initialData));
++                    depth, lodOffset + 1, &initialData));
+ 
+                 ANGLE_TRY(mRenderer->allocateTexture(context11, desc, formatInfo,
+                                                      initialData.data(), &mStagingTexture));
+diff --git a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
+index b0062195b22f73c751e8cae9c1924123de2c780b..ea5b515ddd04cfabbcf0d301202567924b194014 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
+@@ -739,9 +739,12 @@ angle::Result TextureStorage11::copySubresourceLevel(const gl::Context *context,
+     D3D11_BOX *pSrcBox = nullptr;
+     if (mRenderer->getRenderer11DeviceCaps().featureLevel <= D3D_FEATURE_LEVEL_9_3)
+     {
+-        GLsizei width  = region.width;
+-        GLsizei height = region.height;
+-        d3d11::MakeValidSize(false, mFormatInfo.texFormat, &width, &height, nullptr);
++        GLsizei width   = region.width;
++        GLsizei height  = region.height;
++        GLsizei depth   = 1;
++        int levelOffset = 0;
++        d3d11::MakeValidSize(false, mFormatInfo.texFormat, gl::TextureType::_2D, width, height,
++                             depth, levelOffset);
+ 
+         // Keep srcbox as nullptr if we're dealing with tiny mips of compressed textures.
+         if (width == region.width && height == region.height)
+@@ -1068,11 +1071,13 @@ TextureStorage11_2D::TextureStorage11_2D(Renderer11 *renderer,
+         mRenderTarget[i]     = nullptr;
+     }
+ 
+-    d3d11::MakeValidSize(false, mFormatInfo.texFormat, &width, &height, &mTopLevel);
++    GLsizei depth = 1;
++    d3d11::MakeValidSize(false, mFormatInfo.texFormat, gl::TextureType::_2D, width, height, depth,
++                         mTopLevel);
+     mMipLevels     = mTopLevel + levels;
+     mTextureWidth  = width;
+     mTextureHeight = height;
+-    mTextureDepth  = 1;
++    mTextureDepth  = depth;
+ 
+     // The LevelZeroOnly hint should only be true if the zero max LOD workaround is active.
+     ASSERT(!mUseLevelZeroTexture || mRenderer->getFeatures().zeroMaxLodWorkaround.enabled);
+@@ -2207,13 +2212,15 @@ TextureStorage11_Cube::TextureStorage11_Cube(Renderer11 *renderer,
+     }
+ 
+     // adjust size if needed for compressed textures
+-    int height = size;
+-    d3d11::MakeValidSize(false, mFormatInfo.texFormat, &size, &height, &mTopLevel);
++    int height    = size;
++    GLsizei depth = 1;
++    d3d11::MakeValidSize(false, mFormatInfo.texFormat, gl::TextureType::CubeMap, size, height,
++                         depth, mTopLevel);
+ 
+     mMipLevels     = mTopLevel + levels;
+     mTextureWidth  = size;
+     mTextureHeight = size;
+-    mTextureDepth  = 1;
++    mTextureDepth  = depth;
+ 
+     // The LevelZeroOnly hint should only be true if the zero max LOD workaround is active.
+     ASSERT(!mUseLevelZeroTexture || mRenderer->getFeatures().zeroMaxLodWorkaround.enabled);
+@@ -2898,7 +2905,8 @@ TextureStorage11_3D::TextureStorage11_3D(Renderer11 *renderer,
+     }
+ 
+     // adjust size if needed for compressed textures
+-    d3d11::MakeValidSize(false, mFormatInfo.texFormat, &width, &height, &mTopLevel);
++    d3d11::MakeValidSize(false, mFormatInfo.texFormat, gl::TextureType::_3D, width, height, depth,
++                         mTopLevel);
+ 
+     mMipLevels     = mTopLevel + levels;
+     mTextureWidth  = width;
+@@ -3274,7 +3282,8 @@ TextureStorage11_2DArray::TextureStorage11_2DArray(Renderer11 *renderer,
+           label)
+ {
+     // adjust size if needed for compressed textures
+-    d3d11::MakeValidSize(false, mFormatInfo.texFormat, &width, &height, &mTopLevel);
++    d3d11::MakeValidSize(false, mFormatInfo.texFormat, gl::TextureType::_2DArray, width, height,
++                         depth, mTopLevel);
+ 
+     mMipLevels     = mTopLevel + levels;
+     mTextureWidth  = width;
+diff --git a/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.cpp b/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.cpp
+index 4de7ba5c3d097db03450c8e63d5a7152ce9b3387..9a10ba6d9777b91fdeb54d113a456704f83be35c 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.cpp
+@@ -2153,9 +2153,11 @@ ANGLED3D11DeviceType GetDeviceType(ID3D11Device *device)
+ 
+ void MakeValidSize(bool isImage,
+                    DXGI_FORMAT format,
+-                   GLsizei *requestWidth,
+-                   GLsizei *requestHeight,
+-                   int *levelOffset)
++                   gl::TextureType type,
++                   GLsizei &requestWidth,
++                   GLsizei &requestHeight,
++                   GLsizei &requestDepth,
++                   int &levelOffset)
+ {
+     const DXGIFormatSize &dxgiFormatInfo = d3d11::GetDXGIFormatSizeInfo(format);
+     bool validFormat                     = format != DXGI_FORMAT_UNKNOWN;
+@@ -2163,35 +2165,36 @@ void MakeValidSize(bool isImage,
+ 
+     int upsampleCount = 0;
+     // Don't expand the size of full textures that are at least (blockWidth x blockHeight) already.
+-    if (validImage || *requestWidth < static_cast<GLsizei>(dxgiFormatInfo.blockWidth) ||
+-        *requestHeight < static_cast<GLsizei>(dxgiFormatInfo.blockHeight))
++    if (validImage || requestWidth < static_cast<GLsizei>(dxgiFormatInfo.blockWidth) ||
++        requestHeight < static_cast<GLsizei>(dxgiFormatInfo.blockHeight))
+     {
+-        while (*requestWidth % dxgiFormatInfo.blockWidth != 0 ||
+-               *requestHeight % dxgiFormatInfo.blockHeight != 0)
++        while (requestWidth % dxgiFormatInfo.blockWidth != 0 ||
++               requestHeight % dxgiFormatInfo.blockHeight != 0)
+         {
+-            *requestWidth <<= 1;
+-            *requestHeight <<= 1;
++            requestWidth <<= 1;
++            requestHeight <<= 1;
++            if (type == gl::TextureType::_3D)
++            {
++                requestDepth <<= 1;
++            }
+             upsampleCount++;
+         }
+     }
+     else if (validFormat)
+     {
+-        if (*requestWidth % dxgiFormatInfo.blockWidth != 0)
++        if (requestWidth % dxgiFormatInfo.blockWidth != 0)
+         {
+-            *requestWidth = roundUp(*requestWidth, static_cast<GLsizei>(dxgiFormatInfo.blockWidth));
++            requestWidth = roundUp(requestWidth, static_cast<GLsizei>(dxgiFormatInfo.blockWidth));
+         }
+ 
+-        if (*requestHeight % dxgiFormatInfo.blockHeight != 0)
++        if (requestHeight % dxgiFormatInfo.blockHeight != 0)
+         {
+-            *requestHeight =
+-                roundUp(*requestHeight, static_cast<GLsizei>(dxgiFormatInfo.blockHeight));
++            requestHeight =
++                roundUp(requestHeight, static_cast<GLsizei>(dxgiFormatInfo.blockHeight));
+         }
+     }
+ 
+-    if (levelOffset)
+-    {
+-        *levelOffset = upsampleCount;
+-    }
++    levelOffset = upsampleCount;
+ }
+ 
+ angle::Result GenerateInitialTextureData(
+diff --git a/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.h b/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.h
+index 8c3ee454fcba84648b86d9cf395671a1a3075c72..4e03f19213b9375dcd678c4892e04c190e57a5b9 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.h
++++ b/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.h
+@@ -104,9 +104,11 @@ ANGLED3D11DeviceType GetDeviceType(ID3D11Device *device);
+ 
+ void MakeValidSize(bool isImage,
+                    DXGI_FORMAT format,
+-                   GLsizei *requestWidth,
+-                   GLsizei *requestHeight,
+-                   int *levelOffset);
++                   gl::TextureType type,
++                   GLsizei &requestWidth,
++                   GLsizei &requestHeight,
++                   GLsizei &requestDepth,
++                   int &levelOffset);
+ 
+ angle::Result GenerateInitialTextureData(
+     const gl::Context *context,
+diff --git a/src/tests/gl_tests/BPTCCompressedTextureTest.cpp b/src/tests/gl_tests/BPTCCompressedTextureTest.cpp
+index 3e547fcb2a7828fddb8cc857394fefff05396653..c0931796401aa7e69eb753366f41089c1cf14a0b 100644
+--- a/src/tests/gl_tests/BPTCCompressedTextureTest.cpp
++++ b/src/tests/gl_tests/BPTCCompressedTextureTest.cpp
+@@ -25,6 +25,17 @@ const std::array<GLubyte, 16> kBC7Data4x4 = {0x50, 0x1f, 0xfc, 0xf, 0x0,  0xf0,
+ // Sampling from a zero-filled block is undefined, so use a valid one.
+ const std::array<GLubyte, 16> kBC7BlackData4x4 = {0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
++
++// BC7 Mode 6 packs fields LSB-first across 128 bits:
++//   bits [0..6]   = 0b1000000 (Mode 6: 7-bit RGBA endpoints + 1-bit p-bit)
++//   bits [7..13]  = R0, [14..20] = R1, [21..27] = G0, [28..34] = G1,
++//   bits [35..41] = B0, [42..48] = B1, [49..55] = A0, [56..62] = A1,
++//   bit  [63]     = P0, [64]     = P1, [65..127] = 16 texel indices (all 0 -> endpoint 0).
++// Mode 6 with R0=0x7f (bits 7..13 -> byte 0 bit 7 = 0x80, byte 1 bits 0..5 = 0x3f),
++// A0=0x7f (bits 49..55 -> byte 6 bits 1..7 = 0xfe), and P0=1 (bit 63 -> byte 7 = 0x80)
++// -> endpoint 0 is solid RGBA(255, 0, 0, 255) (red).
++constexpr std::array<GLubyte, 16> kBC7RedData4x4 = {0xc0, 0x3f, 0x00, 0x00, 0x00, 0x00, 0xfe, 0x80,
++                                                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+ }  // anonymous namespace
+ 
+ class BPTCCompressedTextureTest : public ANGLETest<>
+@@ -446,6 +457,82 @@ TEST_P(BPTCCompressedTextureTestES3, CompressedTexSubImage3DValidation)
+     ASSERT_GL_ERROR(GL_INVALID_VALUE);
+ }
+ 
++// Test that uploading and sampling 3D BPTC mip levels smaller than a 4x4 block with depth > 1
++// allocates a staging texture with sufficient depth at the selected mip subresource.
++TEST_P(BPTCCompressedTextureTestES3, CompressedTexImage3DSubBlockMipDepth)
++{
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_texture_compression_bptc"));
++
++    constexpr char kVS[] = R"(#version 300 es
++in vec4 a_position;
++void main()
++{
++    gl_Position = a_position;
++})";
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++precision highp sampler3D;
++uniform sampler3D u_tex;
++uniform float u_z;
++out vec4 my_FragColor;
++void main()
++{
++    my_FragColor = texture(u_tex, vec3(0.5, 0.5, u_z));
++})";
++    ANGLE_GL_PROGRAM(program, kVS, kFS);
++    glUseProgram(program);
++    GLint zLoc = glGetUniformLocation(program, "u_z");
++    ASSERT_NE(-1, zLoc);
++
++    auto testSubBlockMipUploadAndSample = [&](GLint level, GLsizei width, GLsizei height,
++                                              GLsizei depth) {
++        GLTexture tex;
++        glBindTexture(GL_TEXTURE_3D, tex);
++        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
++        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_BASE_LEVEL, level);
++        glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL, level);
++
++        const size_t blocksPerSlice =
++            static_cast<size_t>((width + 3) / 4) * static_cast<size_t>((height + 3) / 4);
++        const size_t totalBlocks = blocksPerSlice * static_cast<size_t>(depth);
++        std::vector<GLubyte> data;
++        data.reserve(totalBlocks * 16);
++
++        // Fill slices [0, depth - 2] with transparentBlack and the last slice (depth - 1) with red.
++        for (size_t block = 0; block < totalBlocks; ++block)
++        {
++            const auto &blockData = (block < blocksPerSlice * static_cast<size_t>(depth - 1))
++                                        ? kBC7BlackData4x4
++                                        : kBC7RedData4x4;
++            data.insert(data.end(), blockData.begin(), blockData.end());
++        }
++
++        glCompressedTexImage3D(GL_TEXTURE_3D, level, GL_COMPRESSED_RGBA_BPTC_UNORM_EXT, width,
++                               height, depth, 0, static_cast<GLsizei>(data.size()), data.data());
++        ASSERT_GL_NO_ERROR();
++
++        glUniform1f(zLoc, 0.5f / static_cast<float>(depth));
++        drawQuad(program, "a_position", 0.5f);
++        EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor::transparentBlack, kPixelTolerance);
++
++        glUniform1f(zLoc, (static_cast<float>(depth) - 0.5f) / static_cast<float>(depth));
++        drawQuad(program, "a_position", 0.5f);
++        EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor::red, kPixelTolerance);
++    };
++
++    // Level 1 at 1024x2x1024 (height < 4 -> lodOffset = 1): inputRowPitch (4096) != mapped D3D11
++    // DepthPitch (32768), exercising the strided per-slice/per-row loop in LoadCompressedToNative.
++    // Without expanding staging depth by lodOffset, mip 1 only has 512 physical slices instead of
++    // 1024, writing 512 slices across a 16 MiB out-of-bounds span.
++    testSubBlockMipUploadAndSample(1, 1024, 2, 1024);
++
++    // Level 2 at 1x1x512 (width < 4, height < 4 -> lodOffset = 2): both inputDepthPitch and
++    // mapped D3D11 DepthPitch are 16 bytes, exercising the single contiguous memcpy fast-path
++    // (inputImageSize == outputImageSize) in LoadCompressedToNative.
++    testSubBlockMipUploadAndSample(2, 1, 1, 512);
++}
++
+ // Use this to select which configurations (e.g. which renderer, which GLES major version) these
+ // tests should be run against.
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3(BPTCCompressedTextureTest);
+diff --git a/src/tests/gl_tests/D3D11FormatTablesTest.cpp b/src/tests/gl_tests/D3D11FormatTablesTest.cpp
+index 0583cb2125a064bef658f64de339afaef624f5f2..8613f190d90ce5a5195f3af1dfeac3b78ad0c929 100644
+--- a/src/tests/gl_tests/D3D11FormatTablesTest.cpp
++++ b/src/tests/gl_tests/D3D11FormatTablesTest.cpp
+@@ -180,9 +180,11 @@ TEST_P(D3D11FormatTablesTest, TestFormatMakeValidSize)
+         {
+             int reqWidth  = 32;
+             int reqHeight = 32;
++            int reqDepth  = 32;
+             int level     = 0;
+ 
+-            rx::d3d11::MakeValidSize(image, formatInfo.texFormat, &reqWidth, &reqHeight, &level);
++            rx::d3d11::MakeValidSize(image, formatInfo.texFormat, gl::TextureType::_3D, reqWidth,
++                                     reqHeight, reqDepth, level);
+         }
+     }
+ }

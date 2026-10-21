@@ -1,0 +1,92 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Tue, 15 Sep 2026 14:47:34 -0400
+Subject: Vulkan: Don't ghost images if base level has changed
+
+Bug: b/560140367
+Bug: chromium:561499641
+Change-Id: Ib21dfece7075e00c5193214c06440e2c5f90ce91
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8415126
+Reviewed-by: Charlie Lao <cclao@google.com>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+Electron adaptation notes (42-x-y): test-only hunks that did not apply were dropped: src/tests/angle_end2end_tests_expectations.txt.
+
+Build fix-up: this ANGLE revision has no gl::OwnerLevel / TextureState::toOwnerLevel; the base level is mapped to the image level with the existing TextureVk::getNativeImageLevel(gl::LevelIndex).
+
+diff --git a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+index 183f4a9f3a4d765e753d3bcf1fb2e7a8906a7dfb..400941e5f63481ceb1c1d8e7e308a6a8be74ff38 100644
+--- a/src/libANGLE/renderer/vulkan/TextureVk.cpp
++++ b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+@@ -1167,6 +1167,9 @@ angle::Result TextureVk::ghostOnOverwrite(ContextVk *contextVk,
+     }
+ 
+     // Size check: Can only ghost the image if the area being overwritten covers the entire image.
++    // Base level check: If base level has changed, don't attempt to ghost it as
++    //                   getBaseLevelFormat() and initImage() will be wrong below, but also it's
++    //                   possible the texture has to be reallocated anyway later.
+     //
+     // As a targeted optimization, only limit to non-array 2D color textures.  Other texture types
+     // can be very easily added if need, but need additional tests similar to those that have landed
+@@ -1174,6 +1177,12 @@ angle::Result TextureVk::ghostOnOverwrite(ContextVk *contextVk,
+     const gl::LevelIndex overwriteLevel = gl::LevelIndex(index.getLevelIndex());
+     const gl::LevelIndex imageLevel     = mImage->getFirstAllocatedLevel();
+ 
++    const gl::LevelIndex baseLevel = getNativeImageLevel(gl::LevelIndex(mState.getBaseLevel()));
++    if (baseLevel != imageLevel)
++    {
++        return angle::Result::Continue;
++    }
++
+     const bool is2DImage = mImage->getLevelCount() == 1 && mImage->getLayerCount() == 1 &&
+                            mImage->getType() == VK_IMAGE_TYPE_2D;
+     const bool is2DUpdate  = mState.getType() == gl::TextureType::_2D && index.getLayerCount() == 1;
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index 5e86954c5e078f3f96e33d9761302c8b9ad7b016..03525c0ec415e6c415e367037cff3559f29b8aaf 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -11582,6 +11582,44 @@ void main()
+     }
+ }
+ 
++// Test completely overwriting a texture with a data upload while the texture is being sampled from
++// by the GPU.
++// Test changes base level just before upload.
++TEST_P(Texture2DTestES3, SampleThenFullUpdateWithBaseChange)
++{
++    constexpr uint32_t kWidth  = 16;
++    constexpr uint32_t kHeight = 24;
++
++    ANGLE_GL_PROGRAM(program, getVertexShaderSource(), getExpensiveFragmentShaderSource());
++
++    glViewport(0, 0, kWidth, kHeight);
++
++    GLTexture tex;
++    const std::vector<GLColor> texDataRed(kWidth * kHeight, GLColor::red);
++    const std::vector<GLColor> texDataGreen(kWidth * kHeight, GLColor::green);
++    const std::vector<GLColor> texDataBlue(kWidth * kHeight, GLColor::blue);
++
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kWidth, kHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 texDataRed.data());
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
++    drawQuad(program, "position", 0.0f);
++    ASSERT_GL_NO_ERROR();
++
++    // Set the base level to something random before the upload; that shouldn't have any effect on
++    // the upload.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 123);
++    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, kWidth, kHeight, GL_RGBA, GL_UNSIGNED_BYTE,
++                    texDataGreen.data());
++    // Restore base level
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++    drawQuad(program, "position", 0.0f);
++
++    EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, GLColor::green);
++    ASSERT_GL_NO_ERROR();
++}
++
+ // Test for ASTC decode mode queries
+ TEST_P(Texture2DTestES3, ASTCDecodeModeQueries)
+ {

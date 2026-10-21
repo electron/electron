@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sky Debreuil <skydebreuil@google.com>
+Date: Thu, 15 Oct 2026 21:39:57 -0700
+Subject: [M150] [a11y] Copy title attribute value in AXNodeObject
+
+Original change's description:
+> [a11y] Copy title attribute value in AXNodeObject
+>
+> Store the title attribute in a local AtomicString rather than a
+> reference in AXNodeObject::Description(), and take it by value in
+> AXNodeObject::TextAlternativeFromTitleAttribute(), matching how other
+> attribute reads in Blink avoid holding references into element
+> attribute storage across calls that may update it.
+>
+> Change-Id: Ie67fb6fd2bcddf55d5bfe506a4d33d8e5f1f5efd
+> Bug: 571618833
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8551193
+> Reviewed-by: Lucas Radaelli <lucasradaelli@google.com>
+> Auto-Submit: Sky Debreuil <skydebreuil@google.com>
+> Reviewed-by: David Tseng <dtseng@chromium.org>
+> Commit-Queue: Sky Debreuil <skydebreuil@google.com>
+> Cr-Commit-Position: refs/heads/main@{#1718179}
+
+(cherry picked from commit 15248c94bc3d90896e0a56d66ebc3a362318fe49)
+
+Bug: 574210113,571618833
+Change-Id: Ie67fb6fd2bcddf55d5bfe506a4d33d8e5f1f5efd
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8595560
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#4483}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/third_party/blink/renderer/modules/accessibility/ax_node_object.cc b/third_party/blink/renderer/modules/accessibility/ax_node_object.cc
+index b2510bb26af0d2483e3678a2cc8e450932045492..d3d7b050f885460bc4f4997f10b7de9458e37e2b 100644
+--- a/third_party/blink/renderer/modules/accessibility/ax_node_object.cc
++++ b/third_party/blink/renderer/modules/accessibility/ax_node_object.cc
+@@ -7033,7 +7033,7 @@ String AXNodeObject::TextAlternativeFromTooltip(
+ }
+ 
+ String AXNodeObject::TextAlternativeFromTitleAttribute(
+-    const AtomicString& title,
++    AtomicString title,
+     ax::mojom::blink::NameFrom& name_from,
+     NameSources* name_sources,
+     bool* found_text_alternative) const {
+@@ -7958,7 +7958,8 @@ String AXNodeObject::Description(
+           DescriptionSource(found_description, kTitleAttr));
+       description_sources->back().type = description_from;
+     }
+-    const AtomicString& title = element->FastGetAttribute(kTitleAttr);
++    // Copy title as computing inner text can modify the attribute storage.
++    const AtomicString title = element->FastGetAttribute(kTitleAttr);
+     if (!title.empty() &&
+         String(title).StripWhiteSpace() !=
+             element->GetInnerTextWithoutUpdate().StripWhiteSpace()) {
+diff --git a/third_party/blink/renderer/modules/accessibility/ax_node_object.h b/third_party/blink/renderer/modules/accessibility/ax_node_object.h
+index 4c09ff1c40660d4c9e65d675006d12a192447be9..44ef6eb254e2b32a47419332fa8baa44ac2daae9 100644
+--- a/third_party/blink/renderer/modules/accessibility/ax_node_object.h
++++ b/third_party/blink/renderer/modules/accessibility/ax_node_object.h
+@@ -389,8 +389,9 @@ class MODULES_EXPORT AXNodeObject : public AXObject {
+       String* text_alternative,
+       AXRelatedObjectVector* related_objects) const;
+ 
++  // Takes title by value as computing inner text can modify attribute storage.
+   String TextAlternativeFromTitleAttribute(
+-      const AtomicString& title,
++      AtomicString title,
+       ax::mojom::blink::NameFrom& name_from,
+       NameSources* name_sources,
+       bool* found_text_alternative) const;

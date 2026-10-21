@@ -1,0 +1,97 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shunya Shishido <sisidovski@chromium.org>
+Date: Mon, 28 Sep 2026 23:03:02 -0700
+Subject: [ServiceWorker] Defer completion callback in
+ DataPipeConnector::Finish
+
+Post on_complete_ via
+SequencedTaskRunner::GetCurrentDefault()->PostTask() in
+ServiceWorkerSyntheticResponseDataPipeConnector::Finish() instead of
+running it synchronously.
+
+TAG=agy
+CONV=c5d6b78e-c384-4777-abd7-544e2261302c
+
+Bug: 566136673
+Change-Id: I258b82748cda4ceb402fe71b70aba6984bc0744a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8474873
+Reviewed-by: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Commit-Queue: Shunya Shishido <sisidovski@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1706766}
+
+diff --git a/content/browser/service_worker/service_worker_synthetic_response_data_pipe_connector.cc b/content/browser/service_worker/service_worker_synthetic_response_data_pipe_connector.cc
+index 7ebc49af82527f07e698b4e0758a23bf0a1a17fd..042210e92aaa4ab3a6a4f6efc1bf6f8ae1351e2a 100644
+--- a/content/browser/service_worker/service_worker_synthetic_response_data_pipe_connector.cc
++++ b/content/browser/service_worker/service_worker_synthetic_response_data_pipe_connector.cc
+@@ -5,6 +5,7 @@
+ #include "content/browser/service_worker/service_worker_synthetic_response_data_pipe_connector.h"
+ 
+ #include "base/sequence_checker.h"
++#include "base/task/sequenced_task_runner.h"
+ #include "base/trace_event/trace_event.h"
+ 
+ namespace content {
+@@ -137,7 +138,10 @@ void ServiceWorkerSyntheticResponseDataPipeConnector::Finish() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   producer_handle_.reset();
+   producer_handle_watcher_.reset();
+-  std::move(on_complete_).Run();
++  if (on_complete_) {
++    base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
++        FROM_HERE, std::move(on_complete_));
++  }
+ }
+ 
+ }  // namespace content
+diff --git a/content/browser/service_worker/service_worker_synthetic_response_data_pipe_connector_unittest.cc b/content/browser/service_worker/service_worker_synthetic_response_data_pipe_connector_unittest.cc
+index 9a61b1ed60a1058f5ec9e34a0110fd1106c30267..62be4770d2aa5d09dfed25711a522d86bf72b712 100644
+--- a/content/browser/service_worker/service_worker_synthetic_response_data_pipe_connector_unittest.cc
++++ b/content/browser/service_worker/service_worker_synthetic_response_data_pipe_connector_unittest.cc
+@@ -7,6 +7,7 @@
+ #include <string>
+ 
+ #include "base/run_loop.h"
++#include "base/test/bind.h"
+ #include "base/test/task_environment.h"
+ #include "content/browser/service_worker/service_worker_test_utils.h"
+ #include "mojo/public/cpp/system/data_pipe.h"
+@@ -269,4 +270,39 @@ TEST_F(ServiceWorkerSyntheticResponseDataPipeConnectorTest,
+   run_loop.Run();
+ }
+ 
++TEST_F(ServiceWorkerSyntheticResponseDataPipeConnectorTest,
++       DestroyConnectorInOnFinishedOnWriteError) {
++  mojo::ScopedDataPipeConsumerHandle source_consumer;
++  mojo::ScopedDataPipeProducerHandle source_producer;
++  ASSERT_EQ(MOJO_RESULT_OK,
++            mojo::CreateDataPipe(nullptr, source_producer, source_consumer));
++
++  auto connector =
++      std::make_unique<ServiceWorkerSyntheticResponseDataPipeConnector>(
++          std::move(source_consumer));
++
++  const std::string kData = "data";
++  size_t actual_written_bytes = 0;
++  ASSERT_EQ(MOJO_RESULT_OK,
++            source_producer->WriteData(base::as_byte_span(kData),
++                                       MOJO_WRITE_DATA_FLAG_ALL_OR_NONE,
++                                       actual_written_bytes));
++
++  mojo::ScopedDataPipeConsumerHandle dest_consumer;
++  mojo::ScopedDataPipeProducerHandle dest_producer;
++  ASSERT_EQ(MOJO_RESULT_OK,
++            mojo::CreateDataPipe(nullptr, dest_producer, dest_consumer));
++
++  base::RunLoop run_loop;
++  connector->Transfer(std::move(dest_producer),
++                      base::BindLambdaForTesting([&]() {
++                        connector.reset();
++                        run_loop.Quit();
++                      }));
++  dest_consumer.reset();
++
++  run_loop.Run();
++  EXPECT_FALSE(connector);
++}
++
+ }  // namespace content
