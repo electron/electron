@@ -26,10 +26,10 @@ behavior for Chrome and other embedders.
 Fixes: https://github.com/electron/electron/issues/51035
 
 diff --git a/content/browser/devtools/devtools_http_handler.cc b/content/browser/devtools/devtools_http_handler.cc
-index fab13300e5d8f6f562dfef1e5bc8e902ca0a43c4..a297c10e939fe79a1bfcee3ed465f1b75fc74f0b 100644
+index b1a097466d126e5c9cb5aed3c96dd6c5ad80728d..8eded12b50133958a1540a5e936d1bdec65428cf 100644
 --- a/content/browser/devtools/devtools_http_handler.cc
 +++ b/content/browser/devtools/devtools_http_handler.cc
-@@ -553,7 +553,8 @@ std::string DevToolsHttpHandler::GetFrontendURLInternal(
+@@ -561,7 +561,8 @@ std::string DevToolsHttpHandler::GetFrontendURLInternal(
      const std::string& host) {
    std::string frontend_url;
    const std::string git_revision = CHROMIUM_GIT_REVISION;
