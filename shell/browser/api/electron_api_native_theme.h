@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NATIVE_THEME_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NATIVE_THEME_H_
 
+#include <optional>
+
 #include "base/memory/raw_ptr.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
@@ -23,6 +25,12 @@ class NativeTheme final : public gin::Wrappable<NativeTheme>,
                           public gin_helper::EventEmitterMixin<NativeTheme>,
                           private ui::NativeThemeObserver {
  public:
+  enum class ThemeSource {
+    kSystem,
+    kForcedDark,
+    kForcedLight,
+  };
+
   static NativeTheme* Create(v8::Isolate* isolate);
 
   // gin::Wrappable
@@ -41,18 +49,15 @@ class NativeTheme final : public gin::Wrappable<NativeTheme>,
   NativeTheme& operator=(const NativeTheme&) = delete;
 
   // Make public for cppgc::MakeGarbageCollected.
-  NativeTheme(v8::Isolate* isolate,
-              ui::NativeTheme* ui_theme,
-              ui::NativeTheme* web_theme);
+  NativeTheme(v8::Isolate* isolate, ui::NativeTheme* ui_theme);
   ~NativeTheme() override;
 
  private:
-  void SetThemeSource(ui::NativeTheme::ThemeSource override);
+  void SetThemeSource(ThemeSource override);
 #if BUILDFLAG(IS_MAC)
-  void UpdateMacOSAppearanceForOverrideValue(
-      ui::NativeTheme::ThemeSource override);
+  void UpdateMacOSAppearanceForOverrideValue(ThemeSource override);
 #endif
-  ui::NativeTheme::ThemeSource GetThemeSource() const;
+  ThemeSource GetThemeSource() const;
   bool ShouldUseDarkColors();
   bool ShouldUseHighContrastColors();
   bool ShouldUseDarkColorsForSystemIntegratedUI();
@@ -72,8 +77,12 @@ class NativeTheme final : public gin::Wrappable<NativeTheme>,
 #endif
   std::optional<bool> should_use_dark_colors_for_system_integrated_ui_ =
       std::nullopt;
+  ThemeSource theme_source_ = ThemeSource::kSystem;
+  // What kSystem goes back to: dark under --force-dark-mode, otherwise unset.
+  const std::optional<ui::NativeTheme::PreferredColorScheme>
+      system_color_scheme_override_ =
+          ui::NativeTheme::GetPreferredColorSchemeOverride();
   raw_ptr<ui::NativeTheme> ui_theme_;
-  raw_ptr<ui::NativeTheme> web_theme_;
   gin::WeakCellFactory<NativeTheme> weak_factory_{this};
 };
 
@@ -82,12 +91,13 @@ class NativeTheme final : public gin::Wrappable<NativeTheme>,
 namespace gin {
 
 template <>
-struct Converter<ui::NativeTheme::ThemeSource> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const ui::NativeTheme::ThemeSource& val);
+struct Converter<electron::api::NativeTheme::ThemeSource> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const electron::api::NativeTheme::ThemeSource& val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     ui::NativeTheme::ThemeSource* out);
+                     electron::api::NativeTheme::ThemeSource* out);
 };
 
 }  // namespace gin

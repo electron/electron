@@ -11,10 +11,10 @@ counter to the design of globalShortcuts, and so we need to instead
 use `ui::MediaKeysListener`.
 
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
-index 885e248ce02046d4f64f1aa44aa4c44265f9eecd..671a6a0c44fd2f7b3c3cf4eb63c5d478552c76cd 100644
+index 9f532919895d135fcce15be3cd79b4460535b479..dfe2bffe603c69da8bc5e5e61ea501deb0675c86 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
 +++ b/content/browser/media/media_keys_listener_manager_impl.cc
-@@ -81,7 +81,11 @@ bool MediaKeysListenerManagerImpl::StartWatchingMediaKey(
+@@ -82,7 +82,11 @@ bool MediaKeysListenerManagerImpl::StartWatchingMediaKey(
        CanActiveMediaSessionControllerReceiveEvents();
  
    // Tell the underlying MediaKeysListener to listen for the key.
@@ -27,9 +27,9 @@ index 885e248ce02046d4f64f1aa44aa4c44265f9eecd..671a6a0c44fd2f7b3c3cf4eb63c5d478
        !media_keys_listener_->StartWatchingMediaKey(key_code)) {
      return false;
    }
-@@ -355,6 +359,20 @@ void MediaKeysListenerManagerImpl::StartListeningForMediaKeysIfNecessary() {
+@@ -360,6 +364,20 @@ void MediaKeysListenerManagerImpl::StartListeningForMediaKeysIfNecessary() {
          this, ui::MediaKeysListener::Scope::kGlobal);
-     DCHECK(media_keys_listener_);
+     CHECK(media_keys_listener_, base::NotFatalUntil::M160);
    }
 +
 +#if BUILDFLAG(IS_MAC)
@@ -41,7 +41,7 @@ index 885e248ce02046d4f64f1aa44aa4c44265f9eecd..671a6a0c44fd2f7b3c3cf4eb63c5d478
 +  if (!media_keys_listener_) {
 +    media_keys_listener_ = ui::MediaKeysListener::Create(
 +        this, ui::MediaKeysListener::Scope::kGlobal);
-+    DCHECK(media_keys_listener_);
++    CHECK(media_keys_listener_, base::NotFatalUntil::M160);
 +  }
 +#endif
 +
@@ -76,18 +76,18 @@ index 0e9bffaf0203d39d9fb82d717f36b449d5566181..5cf3d98f4679a252290a34c15491a8a4
    auto it = accelerator_map_.begin();
    while (it != accelerator_map_.end()) {
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
-index 4a343f4e701928644ff3f2a855cc04c3fea2932a..a48b7b73508942cc05e0dcf0fe108313f265c7c6 100644
+index cb21419eecd14718c467f068c618f7b75b98efc5..2e6b062c5162adfd7716f510c7ac1542c894e219 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
-@@ -9,6 +9,7 @@
- 
+@@ -10,6 +10,7 @@
+ #include "base/component_export.h"
  #include "base/functional/callback.h"
  #include "base/memory/raw_ptr.h"
 +#include "content/public/browser/media_keys_listener_manager.h"
  #include "ui/base/accelerators/command.h"
  #include "ui/gfx/native_ui_types.h"
  
-@@ -43,6 +44,9 @@ class GlobalAcceleratorListener {
+@@ -44,6 +45,9 @@ class COMPONENT_EXPORT(GLOBAL_ACCELERATOR_LISTENER) GlobalAcceleratorListener {
    // The instance may be nullptr.
    static GlobalAcceleratorListener* GetInstance();
  

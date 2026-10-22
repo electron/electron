@@ -83,6 +83,10 @@ class NativeWindow : public views::WidgetDelegate {
   virtual void Close() = 0;
   virtual void CloseImmediately() = 0;
   virtual bool IsClosed() const;
+  // macOS: whether the window's NSWindow is in an app shim's process. What
+  // GetNativeWindow() names is then a stand-in that is never on screen, and
+  // nothing may be attached to it.
+  virtual bool IsInAppShim() const;
   virtual void Focus(bool focus) = 0;
   virtual bool IsFocused() const = 0;
   virtual void Show() = 0;
@@ -514,7 +518,7 @@ class NativeWindow : public views::WidgetDelegate {
   FullScreenTransitionType fullscreen_transition_type_ =
       FullScreenTransitionType::kNone;
 
-  std::list<NativeWindow*> child_windows_;
+  std::list<raw_ptr<NativeWindow>> child_windows_;
 
  private:
   static bool PlatformHasClientFrame();
@@ -577,7 +581,7 @@ class NativeWindow : public views::WidgetDelegate {
 
   bool is_transitioning_fullscreen_ = false;
 
-  std::list<DraggableRegionProvider*> draggable_region_providers_;
+  std::list<raw_ptr<DraggableRegionProvider>> draggable_region_providers_;
 
   // Observers of this window.
   base::ObserverList<NativeWindowObserver,

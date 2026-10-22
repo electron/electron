@@ -4,14 +4,11 @@
 
 #include "shell/browser/electron_crypto_module_delegate_nss.h"
 
+#include "base/functional/bind.h"
 #include "base/threading/thread_restrictions.h"
 #include "content/public/browser/browser_thread.h"
 #include "crypto/nss_crypto_module_delegate.h"
 #include "shell/browser/api/electron_api_app.h"
-#include "shell/browser/javascript_environment.h"
-#include "shell/common/gin_converters/callback_converter.h"
-#include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/v8_util.h"
 
 ElectronNSSCryptoModuleDelegate::ElectronNSSCryptoModuleDelegate(
     const net::HostPortPair& server)
@@ -44,32 +41,15 @@ void ElectronNSSCryptoModuleDelegate::RequestPasswordOnUIThread(
     const std::string& token_name,
     bool retry) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-
-  v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-
-  gin_helper::internal::Event* event =
-      gin_helper::internal::Event::New(isolate);
-  v8::Local<v8::Object> event_object =
-      event->GetWrapper(isolate).ToLocalChecked();
-  gin_helper::Dictionary dict(isolate, event_object);
-  dict.Set("hostname", server_.host());
-  dict.Set("tokenName", token_name);
-  dict.Set("isRetry", retry);
-
-  electron::api::App::Get()->EmitWithoutEvent(
-      "-client-certificate-request-password", event_object,
-      base::BindOnce(&ElectronNSSCryptoModuleDelegate::OnPassword, this));
-
-  if (!event->GetDefaultPrevented()) {
-    password_ = "";
-    cancelled_ = true;
-    event_.Signal();
+  if (!electron::api::App::Get()->RequestClientCertPassword(
+          server_.host(), token_name, retry,
+          base::BindOnce(&ElectronNSSCryptoModuleDelegate::OnPassword, this))) {
+    OnPassword(std::string());
   }
 }
 
-void ElectronNSSCryptoModuleDelegate::OnPassword(gin::Arguments* args) {
-  args->GetNext(&password_);
+void ElectronNSSCryptoModuleDelegate::OnPassword(const std::string& password) {
+  password_ = password;
   cancelled_ = password_.empty();
   event_.Signal();
 }

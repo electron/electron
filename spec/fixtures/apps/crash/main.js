@@ -7,6 +7,7 @@ app.setVersion('0.1.0');
 
 const url = app.commandLine.getSwitchValue('crash-reporter-url');
 const uploadToServer = !app.commandLine.hasSwitch('no-upload');
+const setUploadToServer = app.commandLine.getSwitchValue('set-upload-to-server');
 const setExtraParameters = app.commandLine.hasSwitch('set-extra-parameters-in-renderer');
 const addGlobalParam = app.commandLine.getSwitchValue('add-global-param')?.split(':');
 
@@ -22,6 +23,10 @@ crashReporter.start({
   },
   globalExtra: addGlobalParam[0] ? { [addGlobalParam[0]]: addGlobalParam[1] } : {}
 });
+
+if (setUploadToServer) {
+  crashReporter.setUploadToServer(setUploadToServer === 'true');
+}
 
 app.whenReady().then(() => {
   const crashType = app.commandLine.getSwitchValue('crash-type');

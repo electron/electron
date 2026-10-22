@@ -117,7 +117,8 @@ class ElectronDelegatedFrameHostClient
   }
 
   [[nodiscard]] SkColor DelegatedFrameHostGetGutterColor() const override {
-    if (view_->render_widget_host()->delegate() &&
+    if (view_->render_widget_host() &&
+        view_->render_widget_host()->delegate() &&
         view_->render_widget_host()->delegate()->IsFullscreen()) {
       return SK_ColorWHITE;
     }
@@ -126,7 +127,10 @@ class ElectronDelegatedFrameHostClient
 
   void OnFrameTokenChanged(uint32_t frame_token,
                            base::TimeTicks activation_time) override {
-    view_->render_widget_host()->DidProcessFrame(frame_token, activation_time);
+    if (view_->render_widget_host()) {
+      view_->render_widget_host()->DidProcessFrame(frame_token,
+                                                   activation_time);
+    }
   }
 
   [[nodiscard]] float GetDeviceScaleFactor() const override {
@@ -135,8 +139,10 @@ class ElectronDelegatedFrameHostClient
 
   viz::FrameEvictorClient::EvictIds CollectSurfaceIdsForEviction() override {
     viz::FrameEvictorClient::EvictIds ids;
-    ids.embedded_ids =
-        view_->render_widget_host()->CollectSurfaceIdsForEviction();
+    if (view_->render_widget_host()) {
+      ids.embedded_ids =
+          view_->render_widget_host()->CollectSurfaceIdsForEviction();
+    }
     return ids;
   }
 
@@ -443,10 +449,22 @@ input::CursorManager* OffScreenRenderWidgetHostView::GetCursorManager() {
 }
 
 void OffScreenRenderWidgetHostView::RenderProcessGone() {
-  Destroy();
+  DestroyOrDefer();
 }
 
-void OffScreenRenderWidgetHostView::Destroy() {
+void OffScreenRenderWidgetHostView::CleanUpHostObservers() {
+  if (!render_widget_host_) {
+    return;
+  }
+  render_widget_host_->render_frame_metadata_provider()->RemoveObserver(this);
+  // Ask the RWH to drop reference to us.
+  render_widget_host_->ViewDestroyed();
+  // The host may be deleted before a deferred DestroyImpl() runs, so drop our
+  // reference to it here, mirroring RenderWidgetHostViewBase::host_.
+  render_widget_host_ = nullptr;
+}
+
+void OffScreenRenderWidgetHostView::DestroyImpl() {
   if (!is_destroyed_) {
     is_destroyed_ = true;
 
@@ -466,13 +484,15 @@ void OffScreenRenderWidgetHostView::Destroy() {
   delete this;
 }
 
-void OffScreenRenderWidgetHostView::CopyFromSurface(
+void OffScreenRenderWidgetHostView::CopyFromSurfaceImpl(
     const gfx::Rect& src_rect,
     const gfx::Size& output_size,
+    bool is_copy_request_secure,
     base::TimeDelta timeout,
     base::OnceCallback<void(const content::CopyFromSurfaceResult&)> callback) {
   delegated_frame_host()->CopyFromCompositingSurface(
-      src_rect, output_size, base::TimeDelta(), std::move(callback));
+      src_rect, output_size, is_copy_request_secure, base::TimeDelta(),
+      std::move(callback));
 }
 
 gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInScreen() {
@@ -548,7 +568,7 @@ void OffScreenRenderWidgetHostView::CancelWidget() {
 
   if (render_widget_host_ && !is_destroyed_) {
     is_destroyed_ = true;
-    // Results in a call to Destroy().
+    // Results in a call to DestroyOrDefer().
     render_widget_host_->ShutdownAndDestroyWidget(true);
   }
 }

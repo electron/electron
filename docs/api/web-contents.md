@@ -613,18 +613,15 @@ Emitted when the user is requesting to change the zoom level using the mouse whe
 
 Emitted when the `WebContents` loses focus.
 
+The `blur` event is also emitted when switching between windows or apps for the
+`WebContents` that has focus within its window.
+
 #### Event: 'focus'
 
 Emitted when the `WebContents` gains focus.
 
-Note that on macOS, having focus means the `WebContents` is the first responder
-of window, so switching focus between windows would not trigger the `focus` and
-`blur` events of `WebContents`, as the first responder of each window is not
-changed.
-
-The `focus` and `blur` events of `WebContents` should only be used to detect
-focus change between different `WebContents` and `BrowserView` in the same
-window.
+The `focus` event is also emitted when switching between windows or apps for the
+`WebContents` that has focus within its window.
 
 #### Event: 'devtools-open-url'
 
@@ -1524,11 +1521,6 @@ mainWindow.webContents.setWindowOpenHandler((details) => {
       const browserView = new BrowserView(options)
       mainWindow.addBrowserView(browserView)
       browserView.setBounds({ x: 0, y: 0, width: 640, height: 480 })
-      // For `background-tab` disposition (e.g., when middle-clicking or ctrl/cmd-clicking a link),
-      // `options.webContents` is undefined because its creation can be deferred. So load the URL manually.
-      if (details.disposition === 'background-tab') {
-        browserView.webContents.loadURL(details.url)
-      }
       return browserView.webContents
     }
   }
@@ -1580,7 +1572,8 @@ Returns `boolean` - Whether [caret browsing](#contentscaretbrowsingenabled) is e
 Changes the zoom factor to the specified factor. Zoom factor is
 zoom percent divided by 100, so 300% = 3.0.
 
-The factor must be greater than 0.0.
+The factor must be greater than 0.0. Values outside the range Chromium can
+display (0.25 to 5.0) are clamped to it.
 
 #### `contents.getZoomFactor()`
 
@@ -1591,9 +1584,9 @@ Returns `number` - the current zoom factor.
 * `level` number - Zoom level.
 
 Changes the zoom level to the specified level. The original size is 0 and each
-increment above or below represents zooming 20% larger or smaller to default
-limits of 300% and 50% of original size, respectively. The formula for this is
-`scale := 1.2 ^ level`.
+increment above or below represents zooming 20% larger or smaller. The formula
+for this is `scale := 1.2 ^ level`, and the level is clamped to the range
+Chromium can display (25% to 500%, about -7.6 to 8.8).
 
 > [!NOTE]
 > The zoom policy at the Chromium level is same-origin by default, meaning that
@@ -1649,7 +1642,8 @@ Returns `string` - The current zoom mode. Can be `default`, `isolated`,
 
 Returns `Promise<void>`
 
-Sets the maximum and minimum pinch-to-zoom level.
+Sets the maximum and minimum pinch-to-zoom level. The page keeps its normal
+scale until the user pinches; a `minimumLevel` below 1 only allows zooming out.
 
 > [!NOTE]
 > Visual zoom is disabled by default in Electron. To re-enable it, call:

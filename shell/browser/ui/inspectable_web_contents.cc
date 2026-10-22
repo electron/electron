@@ -6,7 +6,6 @@
 #include "shell/browser/ui/inspectable_web_contents.h"
 
 #include <algorithm>
-#include <array>
 #include <memory>
 #include <string_view>
 #include <utility>
@@ -28,6 +27,7 @@
 #include "build/util/chromium_git_revision.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "chrome/common/pref_names.h"
+#include "chrome/common/webui_url_constants.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -109,6 +109,25 @@ constexpr std::string_view kFrontendHostMethod = "method";
 constexpr std::string_view kFrontendHostParams = "params";
 constexpr std::string_view kTitleFormat = "Developer Tools - %s";
 
+// Mirrors IsLocalDevToolsFrontendURL() in
+// chrome/browser/devtools/devtools_ui_bindings.cc: only the bundled, custom
+// and blank devtools:// frontends are trusted to access profile DevTools
+// settings and the other local-only embedder messages.
+bool IsLocalDevToolsFrontendURL(const GURL& url) {
+  if (!url.is_valid() || url.IsAboutBlank() ||
+      !url.SchemeIs(content::kChromeDevToolsScheme) ||
+      url.host() != chrome::kChromeUIDevToolsHost) {
+    return false;
+  }
+  std::string_view path = url.path();
+  if (path.starts_with("/")) {
+    path = path.substr(1);
+  }
+  return path.starts_with(chrome::kChromeUIDevToolsBundledPath) ||
+         path.starts_with(chrome::kChromeUIDevToolsCustomPath) ||
+         path.starts_with(chrome::kChromeUIDevToolsBlankPath);
+}
+
 const size_t kMaxMessageChunkSize = IPC::mojom::kChannelMaximumMessageSize / 4;
 
 base::DictValue RectToDictionary(const gfx::Rect& bounds) {
@@ -138,19 +157,22 @@ void SetZoomLevelForWebContents(content::WebContents* web_contents,
 }
 
 double GetNextZoomLevel(double level, bool out) {
-  static constexpr std::array<double, 16U> kPresetFactors{
-      0.25, 0.333, 0.5,  0.666, 0.75, 0.9, 1.0, 1.1,
-      1.25, 1.5,   1.75, 2.0,   2.5,  3.0, 4.0, 5.0};
-  static constexpr size_t size = std::size(kPresetFactors);
-
+  // Step to the neighbouring preset (the same list the browser zoom menu
+  // uses), even when the current level sits between two presets. Compare
+  // factors rather than levels so a stored level for a rounded factor such as
+  // 0.333 counts as the 1/3 preset.
   const double factor = blink::ZoomLevelToZoomFactor(level);
-  for (size_t i = 0U; i < size; ++i) {
-    if (!blink::ZoomValuesEqual(kPresetFactors[i], factor))
-      continue;
-    if (out && i > 0U)
-      return blink::ZoomFactorToZoomLevel(kPresetFactors[i - 1U]);
-    if (!out && i + 1U < size)
-      return blink::ZoomFactorToZoomLevel(kPresetFactors[i + 1U]);
+  const base::span<const double> presets = blink::kPresetBrowserZoomFactors;
+  if (out) {
+    for (size_t i = presets.size(); i-- > 0;) {
+      if (presets[i] < factor && !blink::ZoomValuesEqual(presets[i], factor))
+        return blink::ZoomFactorToZoomLevel(presets[i]);
+    }
+  } else {
+    for (double preset : presets) {
+      if (preset > factor && !blink::ZoomValuesEqual(preset, factor))
+        return blink::ZoomFactorToZoomLevel(preset);
+    }
   }
   return level;
 }
@@ -593,6 +615,13 @@ double InspectableWebContents::GetDevToolsZoomLevel() const {
 
 void InspectableWebContents::UpdateDevToolsZoomLevel(double level) {
   pref_service_->SetDouble(kDevToolsZoomPref, level);
+}
+
+bool InspectableWebContents::IsLocalFrontend() const {
+  content::WebContents* devtools_web_contents = GetDevToolsWebContents();
+  return devtools_web_contents &&
+         IsLocalDevToolsFrontendURL(
+             devtools_web_contents->GetLastCommittedURL());
 }
 
 void InspectableWebContents::ActivateWindow() {

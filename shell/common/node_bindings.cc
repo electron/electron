@@ -32,7 +32,6 @@
 #include "electron/fuses.h"
 #include "electron/mas.h"
 #include "gin/per_context_data.h"
-#include "gin/per_isolate_data.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/electron_command_line.h"
@@ -800,9 +799,6 @@ void NodeBindings::SetUpIsolate(v8::Isolate* const isolate) {
       browser_env_ == BrowserEnvironment::kUtility) {
     // Node.js requires that microtask checkpoints be explicitly invoked.
     is.policy = v8::MicrotasksPolicy::kExplicit;
-    // node::CreateEnvironment already added Node's listener if it built the
-    // environment from the Node snapshot; keep exactly one.
-    isolate->RemoveMessageListeners(node::errors::PerIsolateMessageListener);
   } else {
     // Blink expects the microtasks policy to be kScoped, but Node.js expects it
     // to be kExplicit. In the renderer, there can be many contexts within the
@@ -872,10 +868,9 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 
   // The Node startup snapshot's per-isolate data (templates, primordials)
   // is fed to CreateIsolateData so the bootstrap is deserialized.
-  auto snapshot_wrapper = from_snapshot
-                              ? node::SnapshotBuilder::GetEmbeddedSnapshotData()
-                                    ->AsEmbedderWrapper()
-                              : node::EmbedderSnapshotData::Pointer{};
+  auto snapshot_wrapper =
+      from_snapshot ? node::EmbedderSnapshotData::BuiltinSnapshotData()
+                    : node::EmbedderSnapshotData::Pointer{};
   auto* isolate_data =
       node::CreateIsolateData(isolate, uv_loop_, platform,
                               /*allocator=*/nullptr, snapshot_wrapper.get());
@@ -1223,18 +1218,6 @@ void OnNodePreload(node::Environment* env,
       env->principal_realm()) {
     return;
   }
-  // A Node.js worker's isolate has no gin::PerIsolateData, so gin never frees
-  // the callback holders created in it. Free them when the environment is torn
-  // down, which happens on the worker's thread after its JavaScript has ended.
-  if (!gin::PerIsolateData::From(env->isolate())) {
-    env->AddCleanupHook(
-        [](void* isolate) {
-          gin_helper::CallbackHolderBase::DisposeAllInIsolateWithoutGin(
-              static_cast<v8::Isolate*>(isolate));
-        },
-        env->isolate());
-  }
-
   // Set custom process properties.
   gin_helper::Dictionary dict(env->isolate(), process.As<v8::Object>());
   dict.SetReadOnly("resourcesPath", GetResourcesPath());

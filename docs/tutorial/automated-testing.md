@@ -195,7 +195,7 @@ Playwright launches your app in development mode through the `_electron.launch` 
 To point this API to your Electron app, you can pass the path to your main process
 entry point (here, it is `main.js`).
 
-```js {5} @ts-nocheck
+```js {4} @ts-nocheck
 import { test, _electron as electron } from '@playwright/test'
 
 test('launch app', async () => {
@@ -227,7 +227,7 @@ test('get isPackaged', async () => {
 It can also create individual [Page][playwright-page] objects from Electron BrowserWindow instances.
 For example, to grab the first BrowserWindow and save a screenshot:
 
-```js {6-7} @ts-nocheck
+```js {5-6} @ts-nocheck
 import { test, _electron as electron } from '@playwright/test'
 
 test('save screenshot', async () => {

@@ -154,6 +154,8 @@ static_library("chrome") {
       "//chrome/browser/icon_loader_win.cc",
       "//chrome/browser/media/webrtc/window_icon_util_win.cc",
       "//chrome/browser/process_singleton_win.cc",
+      "//chrome/browser/ui/views/frame/windows_icon_painter.cc",
+      "//chrome/browser/ui/views/frame/windows_icon_painter.h",
       "//chrome/browser/win/chrome_process_finder.cc",
       "//chrome/browser/win/chrome_process_finder.h",
       "//chrome/browser/win/chrome_select_file_dialog_factory.cc",
@@ -210,6 +212,8 @@ static_library("chrome") {
   if (is_linux) {
     sources += [
       "//chrome/browser/icon_loader_auralinux.cc",
+      "//chrome/browser/ui/views/frame/caption_button_placeholder_container.cc",
+      "//chrome/browser/ui/views/frame/caption_button_placeholder_container.h",
       "//chrome/browser/ui/views/status_icons/concat_menu_model.cc",
       "//chrome/browser/ui/views/status_icons/concat_menu_model.h",
       "//chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc",
@@ -217,7 +221,8 @@ static_library("chrome") {
     ]
     public_deps += [
       "//components/dbus",
-      "//ui/linux:dark_mode_manager",
+      "//components/dbus/menu",
+      "//ui/linux:portal_settings",
     ]
     if (use_aura && use_dbus) {
       sources += [
@@ -272,12 +277,11 @@ static_library("chrome") {
     deps += [ ":system_media_capture_permissions_mac_conflict" ]
   }
 
-  if (enable_widevine) {
+  # See //chrome/renderer/BUILD.gn L:278
+  if (enable_library_cdms || is_win || is_android) {
     sources += [
       "//chrome/renderer/media/chrome_key_systems.cc",
       "//chrome/renderer/media/chrome_key_systems.h",
-      "//chrome/renderer/media/chrome_key_systems_provider.cc",
-      "//chrome/renderer/media/chrome_key_systems_provider.h",
     ]
     deps += [ "//components/cdm/renderer" ]
   }

@@ -1,3 +1,4 @@
+import * as dbus from 'dbus-native';
 // For these tests we use a fake DBus daemon to verify powerMonitor module
 // interaction with the system bus. This requires python-dbusmock installed and
 // running (with the DBUS_SYSTEM_BUS_ADDRESS environment variable set).
@@ -6,8 +7,7 @@
 //
 // See https://pypi.python.org/pypi/python-dbusmock for more information about
 // python-dbusmock.
-import { expect } from 'chai';
-import * as dbus from 'dbus-native';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { once } from 'node:events';
 import { createRequire } from 'node:module';
@@ -18,13 +18,13 @@ import { ifdescribe, ifit, startRemoteControlApp } from './lib/spec-helpers.ts';
 
 const require = createRequire(import.meta.url);
 
-describe('powerMonitor', () => {
+describe('powerMonitor', { tags: ['serial'] }, () => {
   let logindMock: any, dbusMockPowerMonitor: any, getCalls: any, emitSignal: any, reset: any;
 
   ifdescribe(process.platform === 'linux' && process.env.DBUS_SYSTEM_BUS_ADDRESS != null)(
     'when powerMonitor module is loaded with dbus mock',
     () => {
-      before(async () => {
+      beforeAll(async () => {
         const systemBus = dbus.systemBus();
         const loginService = systemBus.getService('org.freedesktop.login1');
         const getInterface = promisify(loginService.getInterface.bind(loginService));
@@ -32,9 +32,12 @@ describe('powerMonitor', () => {
         getCalls = promisify(logindMock.GetCalls.bind(logindMock));
         emitSignal = promisify(logindMock.EmitSignal.bind(logindMock));
         reset = promisify(logindMock.Reset.bind(logindMock));
+        // The mock outlives this process; forget calls other Electron processes
+        // of the same test run have made so the counts below are ours alone.
+        await promisify(logindMock.ClearCalls.bind(logindMock))();
       });
 
-      after(async () => {
+      afterAll(async () => {
         await reset();
       });
 
@@ -46,17 +49,22 @@ describe('powerMonitor', () => {
         return cb;
       }
 
-      before((done) => {
-        logindMock.on('MethodCalled', onceMethodCalled(done));
-        // lazy load powerMonitor after we listen to MethodCalled mock signal
-        dbusMockPowerMonitor = require('electron').powerMonitor;
-      });
+      beforeAll(
+        () =>
+          new Promise<void>((resolve, reject) => {
+            const done = (error?: unknown) => (error ? reject(error) : resolve());
+            logindMock.on('MethodCalled', onceMethodCalled(done));
+            // lazy load powerMonitor after we listen to MethodCalled mock signal
+            dbusMockPowerMonitor = require('electron').powerMonitor;
+          })
+      );
 
       it('should call Inhibit to delay suspend once a listener is added', async () => {
         // No calls to dbus until a listener is added
         {
           const calls = await getCalls();
-          expect(calls).to.be.an('array').that.has.lengthOf(0);
+          expect(calls).toBeInstanceOf(Array);
+          expect(calls).toHaveLength(0);
         }
         // Add a dummy listener to engage the monitors
         dbusMockPowerMonitor.on('dummy-event', () => {});
@@ -70,8 +78,9 @@ describe('powerMonitor', () => {
             if (calls.length > 0) break;
             await setTimeout(1000);
           }
-          expect(calls).to.be.an('array').that.has.lengthOf(1);
-          expect(calls[0].slice(1)).to.deep.equal([
+          expect(calls).toBeInstanceOf(Array);
+          expect(calls).toHaveLength(1);
+          expect(calls[0].slice(1)).toEqual([
             'Inhibit',
             [
               [[{ type: 's', child: [] }], ['sleep']],
@@ -101,8 +110,9 @@ describe('powerMonitor', () => {
 
           it('should have called Inhibit again', async () => {
             const calls = await getCalls();
-            expect(calls).to.be.an('array').that.has.lengthOf(2);
-            expect(calls[1].slice(1)).to.deep.equal([
+            expect(calls).toBeInstanceOf(Array);
+            expect(calls).toHaveLength(2);
+            expect(calls[1].slice(1)).toEqual([
               'Inhibit',
               [
                 [[{ type: 's', child: [] }], ['sleep']],
@@ -116,16 +126,18 @@ describe('powerMonitor', () => {
       });
 
       describe('when a listener is added to shutdown event', () => {
-        before(async () => {
+        beforeAll(async () => {
           const calls = await getCalls();
-          expect(calls).to.be.an('array').that.has.lengthOf(2);
+          expect(calls).toBeInstanceOf(Array);
+          expect(calls).toHaveLength(2);
           dbusMockPowerMonitor.once('shutdown', () => {});
         });
 
         it('should call Inhibit to delay shutdown', async () => {
           const calls = await getCalls();
-          expect(calls).to.be.an('array').that.has.lengthOf(3);
-          expect(calls[2].slice(1)).to.deep.equal([
+          expect(calls).toBeInstanceOf(Array);
+          expect(calls).toHaveLength(3);
+          expect(calls[2].slice(1)).toEqual([
             'Inhibit',
             [
               [[{ type: 's', child: [] }], ['shutdown']],
@@ -137,12 +149,13 @@ describe('powerMonitor', () => {
         });
 
         describe('when PrepareForShutdown(true) signal is sent by logind', () => {
-          it('should emit "shutdown" event', (done) => {
-            dbusMockPowerMonitor.once('shutdown', () => {
-              done();
-            });
-            emitSignal('org.freedesktop.login1.Manager', 'PrepareForShutdown', 'b', [['b', true]]);
-          });
+          it('should emit "shutdown" event', () =>
+            new Promise<void>((resolve) => {
+              dbusMockPowerMonitor.once('shutdown', () => {
+                resolve();
+              });
+              emitSignal('org.freedesktop.login1.Manager', 'PrepareForShutdown', 'b', [['b', true]]);
+            }));
         });
       });
     }
@@ -170,10 +183,10 @@ describe('powerMonitor', () => {
           setImmediate(() => app.quit());
         }
       });
-      expect(emitted).to.equal(true);
+      expect(emitted).toBe(true);
 
       const [code] = await once(remoteApp.process, 'exit');
-      expect(code).to.equal(0);
+      expect(code).toBe(0);
     }
   );
 
@@ -181,12 +194,12 @@ describe('powerMonitor', () => {
     const remoteApp = await startRemoteControlApp([
       '--boot-eval=globalThis.initialValue=require("electron").powerMonitor.getSystemIdleTime()'
     ]);
-    expect(await remoteApp.remoteEval('globalThis.initialValue')).to.be.a('number');
+    expect(await remoteApp.remoteEval('globalThis.initialValue')).toBeTypeOf('number');
   });
 
   describe('when powerMonitor module is loaded', () => {
     let powerMonitor: typeof Electron.powerMonitor;
-    before(() => {
+    beforeAll(() => {
       powerMonitor = require('electron').powerMonitor;
     });
     describe('powerMonitor.getSystemIdleState', () => {
@@ -194,49 +207,43 @@ describe('powerMonitor', () => {
         // this function is not mocked out, so we can test the result's
         // form and type but not its value.
         const idleState = powerMonitor.getSystemIdleState(1);
-        expect(idleState).to.be.a('string');
+        expect(idleState).toBeTypeOf('string');
         const validIdleStates = ['active', 'idle', 'locked', 'unknown'];
-        expect(validIdleStates).to.include(idleState);
+        expect(validIdleStates).toContain(idleState);
       });
 
       it('does not accept non positive integer threshold', () => {
         expect(() => {
           powerMonitor.getSystemIdleState(-1);
-        }).to.throw(/must be greater than 0/);
+        }).toThrow(/must be greater than 0/);
 
         expect(() => {
           powerMonitor.getSystemIdleState(NaN);
-        }).to.throw(/conversion failure/);
+        }).toThrow(/conversion failure/);
 
         expect(() => {
           powerMonitor.getSystemIdleState('a' as any);
-        }).to.throw(/conversion failure/);
+        }).toThrow(/conversion failure/);
       });
     });
 
     describe('powerMonitor.getSystemIdleTime', () => {
       it('returns current system idle time', () => {
         const idleTime = powerMonitor.getSystemIdleTime();
-        expect(idleTime).to.be.at.least(0);
+        expect(idleTime).toBeGreaterThanOrEqual(0);
       });
     });
 
     describe('powerMonitor.getCurrentThermalState', () => {
       it('returns a valid state', () => {
-        expect(powerMonitor.getCurrentThermalState()).to.be.oneOf([
-          'unknown',
-          'nominal',
-          'fair',
-          'serious',
-          'critical'
-        ]);
+        expect(['unknown', 'nominal', 'fair', 'serious', 'critical']).toContain(powerMonitor.getCurrentThermalState());
       });
     });
 
     describe('powerMonitor.onBatteryPower', () => {
       it('returns a boolean', () => {
-        expect(powerMonitor.onBatteryPower).to.be.a('boolean');
-        expect(powerMonitor.isOnBatteryPower()).to.be.a('boolean');
+        expect(powerMonitor.onBatteryPower).toBeTypeOf('boolean');
+        expect(powerMonitor.isOnBatteryPower()).toBeTypeOf('boolean');
       });
     });
   });

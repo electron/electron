@@ -663,9 +663,9 @@ void RendererClientBase::SetupMainWorldOverrides(
   v8::Context::Scope context_scope{context};
 
   auto isolated_api = gin_helper::Dictionary::CreateEmpty(isolate);
-  isolated_api.SetMethod("allowGuestViewElementDefinition",
-                         &AllowGuestViewElementDefinition);
-  isolated_api.SetMethod("setIsWebView", &SetIsWebView);
+  isolated_api.SetMethod<&AllowGuestViewElementDefinition>(
+      "allowGuestViewElementDefinition");
+  isolated_api.SetMethod<&SetIsWebView>("setIsWebView");
 
   auto source_context = GetContext(render_frame->GetWebFrame(), isolate);
   gin_helper::Dictionary global(isolate, source_context->Global());

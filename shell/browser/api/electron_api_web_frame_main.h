@@ -7,6 +7,7 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "base/process/process_handle.h"
@@ -45,6 +46,19 @@ class Promise;
 }  // namespace gin_helper
 
 namespace electron::api {
+
+// Reads (channel, ...args) for a send() call. Throws a TypeError and returns
+// false when |channel| is not a string; emits a warning naming |source| and
+// returns false when the arguments cannot be serialized.
+bool ReadIPCSendArguments(gin::Arguments* args,
+                          std::string_view source,
+                          std::string* channel,
+                          electron::SerializedValue* message);
+
+// Reports a send() that could not be delivered from |source|.
+void WarnIPCSendFailed(v8::Isolate* isolate,
+                       std::string_view source,
+                       std::string_view reason);
 
 class WebContents;
 
@@ -96,6 +110,14 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   WebFrameMain(const WebFrameMain&) = delete;
   WebFrameMain& operator=(const WebFrameMain&) = delete;
 
+  // Delivers an IPC message to this frame, warning rather than throwing when
+  // the render frame is gone.
+  void DeliverMessage(v8::Isolate* isolate,
+                      bool internal,
+                      std::string_view source,
+                      const std::string& channel,
+                      electron::SerializedValue message);
+
  private:
   friend class WebContents;
 
@@ -140,10 +162,10 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   void SaveVideoFrameAs(int x, int y);
   bool Reload();
   bool IsDestroyed() const;
-  void Send(v8::Isolate* isolate,
-            bool internal,
-            const std::string& channel,
-            v8::Local<v8::Value> args);
+  // send(channel, ...args). A missing channel throws; a message that cannot
+  // be serialized or delivered is reported as a warning.
+  void Send(gin::Arguments* args);
+
   void PostMessage(v8::Isolate* isolate,
                    const std::string& channel,
                    v8::Local<v8::Value> message_value,

@@ -32,10 +32,26 @@ app (surprise!) that can be found in the `spec` folder. Note that it has
 its own `package.json` and that its dependencies are therefore not defined
 in the top-level `package.json`.
 
-To run only specific tests matching a pattern, run `npm run test --
--g=PATTERN`, replacing the `PATTERN` with a regex that matches the tests
-you would like to run. As an example: If you want to run only IPC tests, you
+The suite is driven by [vitest](https://vitest.dev): the `vitest` CLI runs
+under Node.js and starts several instances of the `spec` app, each of which
+runs one spec file at a time in Electron's main process. Suites that need the
+machine to themselves (window focus, the clipboard, the screen, global
+shortcuts) are declared with `describe(title, { tags: ['serial'] }, fn)` and
+run one at a time after everything else has finished. Set
+`ELECTRON_SPEC_WORKERS` to change how many Electron processes run at once.
+
+To run only some spec files, pass them with `--files`:
+`npm run test -- --files spec/api-app.spec.ts`. To run only tests whose
+name matches a pattern, run `npm run test -- -g=PATTERN`, replacing
+`PATTERN` with a regex. As an example: If you want to run only IPC tests, you
 would run `npm run test -- -g ipc`.
+
+Specs import `describe`, `it`, `expect` and the hooks from `vitest` and assert
+with its matchers (`expect(x).toBe(y)`, `toEqual`, `toHaveProperty`, ...);
+chai-style chains (`expect(x).to.equal(y)`) are rejected by the linter because
+their property form can silently assert nothing. A few Electron specific
+behaviours (a macrotask between tests, `defer()` cleanup,
+`spec/disabled-tests.json`) live in `spec/vitest/runner.ts`.
 
 ## Node.js Smoke Tests
 

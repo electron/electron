@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/memory/scoped_refptr.h"
+#include "base/memory/stack_allocated.h"
 #include "build/build_config.h"
 #include "components/os_crypt/async/common/encryptor.h"
 #include "gin/weak_cell.h"
@@ -103,6 +104,9 @@ class SafeStorage final : public gin::Wrappable<SafeStorage> {
     PendingDecrypt(PendingDecrypt&&);
     PendingDecrypt& operator=(PendingDecrypt&&);
 
+    // gin::Dictionary is STACK_ALLOCATED(), but Promise<T> only names T as
+    // its resolve type and never stores one.
+    STACK_ALLOCATED_IGNORE("Promise<T> does not store a T")
     gin_helper::Promise<gin_helper::Dictionary> promise;
     std::string ciphertext;
   };

@@ -11,7 +11,7 @@ import {
   type ServiceWorkersRunningStatusChangedEventParams
 } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { WebSocketServer } from 'ws';
 
 import { spawn } from 'node:child_process';
@@ -20,6 +20,7 @@ import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import * as path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { emittedNTimes, emittedUntil } from './lib/events-helpers.ts';
 import { ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
@@ -36,7 +37,7 @@ describe('chrome extensions', () => {
   let url: string;
   let port: number;
   let wss: WebSocketServer;
-  before(async () => {
+  beforeAll(async () => {
     server = http.createServer((req, res) => {
       if (req.url === '/cors') {
         res.setHeader('Access-Control-Allow-Origin', 'http://example.com');
@@ -55,7 +56,7 @@ describe('chrome extensions', () => {
 
     ({ port, url } = await listen(server));
   });
-  after(async () => {
+  afterAll(async () => {
     server.close();
     wss.close();
     await cleanupWebContents();
@@ -86,7 +87,7 @@ describe('chrome extensions', () => {
         })
       })();
     `)
-    ).to.eventually.have.property('id');
+    ).resolves.toHaveProperty('id');
   });
 
   describe('Chrome Web Store origin', () => {
@@ -117,7 +118,7 @@ describe('chrome extensions', () => {
       const type = await w.webContents.executeJavaScript(
         "typeof chrome === 'undefined' ? 'undefined' : typeof chrome.webstorePrivate"
       );
-      expect(type).to.equal('undefined');
+      expect(type).toBe('undefined');
     });
 
     it('does not crash if the page tries to call chrome.webstorePrivate', async () => {
@@ -131,12 +132,11 @@ describe('chrome extensions', () => {
           resolve('threw: ' + e.message);
         }
       })`);
-      expect(result)
-        .to.be.a('string')
-        .and.match(/^threw: |not supported/);
-      expect(w.webContents.isCrashed()).to.be.false();
+      expect(result).toBeTypeOf('string');
+      expect(result).toMatch(/^threw: |not supported/);
+      expect(w.webContents.isCrashed()).toBe(false);
       // The browser process is still alive if we get here; do a round trip to be sure.
-      expect(await w.webContents.executeJavaScript('1 + 1')).to.equal(2);
+      expect(await w.webContents.executeJavaScript('1 + 1')).toBe(2);
     });
   });
 
@@ -181,22 +181,22 @@ describe('chrome extensions', () => {
       const [{ message: responseString }] = await once(w.webContents, 'console-message');
       const response = JSON.parse(responseString);
 
-      expect(response).to.have.lengthOf(1);
+      expect(response).toHaveLength(1);
 
       const tab = response[0];
-      expect(tab).to.have.property('url').that.is.a('string');
-      expect(tab).to.have.property('title').that.is.a('string');
-      expect(tab).to.have.property('active').that.is.a('boolean');
-      expect(tab).to.have.property('autoDiscardable').that.is.a('boolean');
-      expect(tab).to.have.property('discarded').that.is.a('boolean');
-      expect(tab).to.have.property('groupId').that.is.a('number');
-      expect(tab).to.have.property('highlighted').that.is.a('boolean');
-      expect(tab).to.have.property('id').that.is.a('number');
-      expect(tab).to.have.property('incognito').that.is.a('boolean');
-      expect(tab).to.have.property('index').that.is.a('number');
-      expect(tab).to.have.property('pinned').that.is.a('boolean');
-      expect(tab).to.have.property('selected').that.is.a('boolean');
-      expect(tab).to.have.property('windowId').that.is.a('number');
+      expect(tab).toHaveProperty('url', expect.any(String));
+      expect(tab).toHaveProperty('title', expect.any(String));
+      expect(tab).toHaveProperty('active', expect.any(Boolean));
+      expect(tab).toHaveProperty('autoDiscardable', expect.any(Boolean));
+      expect(tab).toHaveProperty('discarded', expect.any(Boolean));
+      expect(tab).toHaveProperty('groupId', expect.any(Number));
+      expect(tab).toHaveProperty('highlighted', expect.any(Boolean));
+      expect(tab).toHaveProperty('id', expect.any(Number));
+      expect(tab).toHaveProperty('incognito', expect.any(Boolean));
+      expect(tab).toHaveProperty('index', expect.any(Number));
+      expect(tab).toHaveProperty('pinned', expect.any(Boolean));
+      expect(tab).toHaveProperty('selected', expect.any(Boolean));
+      expect(tab).toHaveProperty('windowId', expect.any(Number));
     });
   });
 
@@ -214,7 +214,7 @@ describe('chrome extensions', () => {
 
     const extPath = path.join(fixtures, 'extensions', 'minimum-chrome-version');
     const load = customSession.extensions.loadExtension(extPath);
-    await expect(load).to.eventually.be.rejectedWith(
+    await expect(load).rejects.toThrow(
       `Loading extension at ${extPath} failed with: This extension requires Chromium version 999 or greater.`
     );
   });
@@ -228,7 +228,7 @@ describe('chrome extensions', () => {
     const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
     const extension = await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'ui-page'));
     await w.loadURL(`${extension.url}bare-page.html`);
-    await expect(fetch(w.webContents, `${url}/cors`)).to.not.be.rejectedWith(TypeError);
+    await fetch(w.webContents, `${url}/cors`);
   });
 
   it('loads an extension', async () => {
@@ -241,19 +241,19 @@ describe('chrome extensions', () => {
     const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
     await w.loadURL(url);
     const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
-    expect(bg).to.equal('red');
+    expect(bg).toBe('red');
   });
 
   it('does not crash when loading an extension with missing manifest', async () => {
     const customSession = session.fromPartition(`persist:${randomUUID()}`);
     const promise = customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'missing-manifest'));
-    await expect(promise).to.eventually.be.rejectedWith(/Manifest file is missing or unreadable/);
+    await expect(promise).rejects.toThrow(/Manifest file is missing or unreadable/);
   });
 
   it('does not crash when failing to load an extension', async () => {
     const customSession = session.fromPartition(`persist:${randomUUID()}`);
     const promise = customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'load-error'));
-    await expect(promise).to.eventually.be.rejected();
+    await expect(promise).rejects.toThrow();
   });
 
   it('serializes a loaded extension', async () => {
@@ -261,12 +261,12 @@ describe('chrome extensions', () => {
     const manifest = JSON.parse(await fs.readFile(path.join(extensionPath, 'manifest.json'), 'utf-8'));
     const customSession = session.fromPartition(`persist:${randomUUID()}`);
     const extension = await customSession.extensions.loadExtension(extensionPath);
-    expect(extension.id).to.be.a('string');
-    expect(extension.name).to.be.a('string');
-    expect(extension.path).to.be.a('string');
-    expect(extension.version).to.be.a('string');
-    expect(extension.url).to.be.a('string');
-    expect(extension.manifest).to.deep.equal(manifest);
+    expect(extension.id).toBeTypeOf('string');
+    expect(extension.name).toBeTypeOf('string');
+    expect(extension.path).toBeTypeOf('string');
+    expect(extension.version).toBeTypeOf('string');
+    expect(extension.url).toBeTypeOf('string');
+    expect(extension.manifest).toEqual(manifest);
   });
 
   it('removes an extension', async () => {
@@ -276,14 +276,14 @@ describe('chrome extensions', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
       await w.loadURL(url);
       const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
-      expect(bg).to.equal('red');
+      expect(bg).toBe('red');
     }
     customSession.extensions.removeExtension(id);
     {
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
       await w.loadURL(url);
       const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
-      expect(bg).to.equal('');
+      expect(bg).toBe('');
     }
   });
 
@@ -302,27 +302,27 @@ describe('chrome extensions', () => {
     const [, loadedExtension] = await loadedPromise;
     const [, readyExtension] = await readyPromise;
 
-    expect(loadedExtension).to.deep.equal(extension);
-    expect(readyExtension).to.deep.equal(extension);
+    expect(loadedExtension).toEqual(extension);
+    expect(readyExtension).toEqual(extension);
 
     const unloadedPromise = once(customSession.extensions, 'extension-unloaded');
     await customSession.extensions.removeExtension(extension.id);
     const [, unloadedExtension] = await unloadedPromise;
-    expect(unloadedExtension).to.deep.equal(extension);
+    expect(unloadedExtension).toEqual(extension);
   });
 
   it('lists loaded extensions in getAllExtensions', async () => {
     const customSession = session.fromPartition(`persist:${randomUUID()}`);
     const e = await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
-    expect(customSession.extensions.getAllExtensions()).to.deep.equal([e]);
+    expect(customSession.extensions.getAllExtensions()).toEqual([e]);
     customSession.extensions.removeExtension(e.id);
-    expect(customSession.extensions.getAllExtensions()).to.deep.equal([]);
+    expect(customSession.extensions.getAllExtensions()).toEqual([]);
   });
 
   it('gets an extension by id', async () => {
     const customSession = session.fromPartition(`persist:${randomUUID()}`);
     const e = await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
-    expect(customSession.extensions.getExtension(e.id)).to.deep.equal(e);
+    expect(customSession.extensions.getExtension(e.id)).toEqual(e);
   });
 
   it('confines an extension to the session it was loaded in', async () => {
@@ -331,14 +331,14 @@ describe('chrome extensions', () => {
     const w = new BrowserWindow({ show: false }); // not in the session
     await w.loadURL(url);
     const bg = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
-    expect(bg).to.equal('');
+    expect(bg).toBe('');
   });
 
   it('loading an extension in a temporary session throws an error', async () => {
     const customSession = session.fromPartition(randomUUID());
-    await expect(
-      customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'red-bg'))
-    ).to.eventually.be.rejectedWith('Extensions cannot be loaded in a temporary session');
+    await expect(customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'red-bg'))).rejects.toThrow(
+      'Extensions cannot be loaded in a temporary session'
+    );
   });
 
   describe('chrome.i18n', () => {
@@ -365,12 +365,15 @@ describe('chrome extensions', () => {
     });
     it('getAcceptLanguages()', async () => {
       const result = await exec('getAcceptLanguages');
-      expect(result).to.be.an('array').and.deep.equal(['en-US', 'en']);
+      expect(result).toBeInstanceOf(Array);
+      expect(result).toEqual(['en-US', 'en']);
     });
     it('getMessage()', async () => {
       const result = await exec('getMessage');
-      expect(result.id).to.be.a('string').and.equal(extension.id);
-      expect(result.name).to.be.a('string').and.equal('chrome-i18n');
+      expect(result.id).toBeTypeOf('string');
+      expect(result.id).toBe(extension.id);
+      expect(result.name).toBeTypeOf('string');
+      expect(result.name).toBe('chrome-i18n');
     });
   });
 
@@ -397,23 +400,24 @@ describe('chrome extensions', () => {
     });
     it('getManifest()', async () => {
       const result = await exec('getManifest');
-      expect(result).to.be.an('object').with.property('name', 'chrome-runtime');
+      expect(result).toBeTypeOf('object');
+      expect(result).toHaveProperty('name', 'chrome-runtime');
     });
     it('id', async () => {
       const result = await exec('id');
-      expect(result).to.be.a('string').with.lengthOf(32);
+      expect(result).toBeTypeOf('string');
+      expect(result).toHaveLength(32);
     });
     it('getURL()', async () => {
       const result = await exec('getURL');
-      expect(result)
-        .to.be.a('string')
-        .and.match(/^chrome-extension:\/\/.*main.js$/);
+      expect(result).toBeTypeOf('string');
+      expect(result).toMatch(/^chrome-extension:\/\/.*main.js$/);
     });
     it('getPlatformInfo()', async () => {
       const result = await exec('getPlatformInfo');
-      expect(result).to.be.an('object');
-      expect(result.os).to.be.a('string');
-      expect(result.arch).to.be.a('string');
+      expect(result).toBeTypeOf('object');
+      expect(result.os).toBeTypeOf('string');
+      expect(result.arch).toBeTypeOf('string');
     });
   });
 
@@ -429,7 +433,22 @@ describe('chrome extensions', () => {
         const p = once(ipcMain, 'storage-success');
         await w.loadURL(url);
         const [, v] = await p;
-        expect(v).to.equal('value');
+        expect(v).toBe('value');
+      } finally {
+        w.destroy();
+      }
+    });
+
+    it('emits onChanged in a service worker', async () => {
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
+      const extension = await customSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'chrome-storage-service-worker')
+      );
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      try {
+        await w.loadURL(`${extension.url}page.html`);
+        const change = await w.webContents.executeJavaScript("chrome.runtime.sendMessage('set-and-wait-for-change')");
+        expect(change).toEqual({ changes: { key: { newValue: 'value' } }, areaName: 'local' });
       } finally {
         w.destroy();
       }
@@ -470,12 +489,64 @@ describe('chrome extensions', () => {
       it('can cancel http requests', async () => {
         await w.loadURL(url);
         await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest'));
-        await expect(waitUntil(haveRejectedFetch)).to.eventually.be.fulfilled();
+        await waitUntil(haveRejectedFetch);
       });
 
       it('does not cancel http requests when no extension loaded', async () => {
         await w.loadURL(url);
-        await expect(fetch(w.webContents, url)).to.not.be.rejectedWith('Failed to fetch');
+        await fetch(w.webContents, url);
+      });
+
+      it('loads a file worker when only an extension uses webRequest', async () => {
+        await w.loadURL(url);
+        const extension = await customSession.extensions.loadExtension(
+          path.join(fixtures, 'extensions', 'chrome-webRequest')
+        );
+
+        const workerDataUrl = pathToFileURL(path.join(fixtures, 'pages', 'worker-data.txt')).toString();
+        const seenProtocolUrls: string[] = [];
+        customSession.protocol.handle('file', (req) => {
+          seenProtocolUrls.push(req.url);
+          if (req.url === workerDataUrl) {
+            return new Response('pong');
+          }
+          return customSession.fetch(req, { bypassCustomProtocolHandlers: true });
+        });
+
+        try {
+          await waitUntil(haveRejectedFetch);
+          await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+          const reply = await w.webContents.executeJavaScript(`
+            new Promise((resolve, reject) => {
+              const worker = new Worker(
+                new URL('../workers/worker.js', location.href).href
+              );
+              worker.onmessage = async (event) => {
+                try {
+                  const res = await fetch(${JSON.stringify(workerDataUrl)});
+                  const text = await res.text();
+                  worker.terminate();
+                  resolve(\`\${event.data}:\${text}\`);
+                } catch (err) {
+                  worker.terminate();
+                  reject(err);
+                }
+              };
+              worker.onerror = (event) => {
+                worker.terminate();
+                reject(new Error(event.message || 'worker error'));
+              };
+              worker.postMessage('ping');
+            })
+          `);
+
+          expect(reply).toBe('ping:pong');
+          expect(seenProtocolUrls).toContain(workerDataUrl);
+        } finally {
+          customSession.protocol.unhandle('file');
+          customSession.extensions.removeExtension(extension.id);
+        }
       });
     });
 
@@ -512,7 +583,7 @@ describe('chrome extensions', () => {
         await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest-wss'));
         customSession.webRequest.onSendHeaders((details) => {
           if (details.url.startsWith('ws://')) {
-            expect(details.requestHeaders.foo).be.equal('bar');
+            expect(details.requestHeaders.foo).toBe('bar');
           }
         });
       });
@@ -521,7 +592,7 @@ describe('chrome extensions', () => {
 
   describe('chrome.tabs', () => {
     let customSession: Session;
-    before(async () => {
+    beforeAll(async () => {
       customSession = session.fromPartition(`persist:${randomUUID()}`);
       await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
     });
@@ -537,7 +608,7 @@ describe('chrome extensions', () => {
       const [{ message: responseString }] = await once(w.webContents, 'console-message');
       const response = JSON.parse(responseString);
 
-      expect(response).to.equal(3);
+      expect(response).toBe(3);
     });
 
     it('connect', async () => {
@@ -550,8 +621,8 @@ describe('chrome extensions', () => {
 
       const [{ message: responseString }] = await once(w.webContents, 'console-message');
       const response = responseString.split(',');
-      expect(response[0]).to.equal(portName);
-      expect(response[1]).to.equal('howdy');
+      expect(response[0]).toBe(portName);
+      expect(response[1]).toBe('howdy');
     });
 
     it('sendMessage receives the response', async () => {
@@ -564,8 +635,8 @@ describe('chrome extensions', () => {
       const [{ message: responseString }] = await once(w.webContents, 'console-message');
       const response = JSON.parse(responseString);
 
-      expect(response.message).to.equal('Hello World!');
-      expect(response.tabId).to.equal(w.webContents.id);
+      expect(response.message).toBe('Hello World!');
+      expect(response.tabId).toBe(w.webContents.id);
     });
 
     it('update', async () => {
@@ -585,9 +656,9 @@ describe('chrome extensions', () => {
 
       await w2Navigated;
 
-      expect(new URL(w2.getURL()).toString()).to.equal(new URL(url).toString());
+      expect(new URL(w2.getURL()).toString()).toBe(new URL(url).toString());
 
-      expect(response.id).to.equal(w2.webContents.id);
+      expect(response.id).toBe(w2.webContents.id);
     });
   });
 
@@ -603,10 +674,10 @@ describe('chrome extensions', () => {
       try {
         w.loadURL(url);
         const [, resp] = await once(ipcMain, 'bg-page-message-response');
-        expect(resp.message).to.deep.equal({ some: 'message' });
-        expect(resp.sender.id).to.be.a('string');
-        expect(resp.sender.origin).to.equal(url);
-        expect(resp.sender.url).to.equal(url + '/');
+        expect(resp.message).toEqual({ some: 'message' });
+        expect(resp.sender.id).toBeTypeOf('string');
+        expect(resp.sender.origin).toBe(url);
+        expect(resp.sender.url).toBe(url + '/');
       } finally {
         w.destroy();
       }
@@ -620,7 +691,7 @@ describe('chrome extensions', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
       await w.loadURL(`chrome-extension://${id}/page-get-background.html`);
       const receivedMessage = await w.webContents.executeJavaScript('window.completionPromise');
-      expect(receivedMessage).to.deep.equal({ some: 'message' });
+      expect(receivedMessage).toEqual({ some: 'message' });
     });
 
     it('can use extension.getBackgroundPage from a ui page', async () => {
@@ -631,7 +702,7 @@ describe('chrome extensions', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
       await w.loadURL(`chrome-extension://${id}/page-get-background.html`);
       const receivedMessage = await w.webContents.executeJavaScript('window.completionPromise');
-      expect(receivedMessage).to.deep.equal({ some: 'message' });
+      expect(receivedMessage).toEqual({ some: 'message' });
     });
 
     it('can use runtime.getBackgroundPage from a ui page', async () => {
@@ -642,7 +713,7 @@ describe('chrome extensions', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
       await w.loadURL(`chrome-extension://${id}/page-runtime-get-background.html`);
       const receivedMessage = await w.webContents.executeJavaScript('window.completionPromise');
-      expect(receivedMessage).to.deep.equal({ some: 'message' });
+      expect(receivedMessage).toEqual({ some: 'message' });
     });
 
     it('has session in background page', async () => {
@@ -652,10 +723,10 @@ describe('chrome extensions', () => {
         path.join(fixtures, 'extensions', 'persistent-background-page')
       );
       const [, bgPageContents] = await promise;
-      expect(bgPageContents.getType()).to.equal('backgroundPage');
+      expect(bgPageContents.getType()).toBe('backgroundPage');
       await once(bgPageContents, 'did-finish-load');
-      expect(bgPageContents.getURL()).to.equal(`chrome-extension://${id}/_generated_background_page.html`);
-      expect(bgPageContents.session).to.not.equal(undefined);
+      expect(bgPageContents.getURL()).toBe(`chrome-extension://${id}/_generated_background_page.html`);
+      expect(bgPageContents.session).not.toBe(undefined);
     });
 
     it('can open devtools of background page', async () => {
@@ -663,7 +734,7 @@ describe('chrome extensions', () => {
       const promise = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
       await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
       const [, bgPageContents] = await promise;
-      expect(bgPageContents.getType()).to.equal('backgroundPage');
+      expect(bgPageContents.getType()).toBe('backgroundPage');
       bgPageContents.openDevTools();
       bgPageContents.closeDevTools();
     });
@@ -722,9 +793,9 @@ describe('chrome extensions', () => {
     const addExtension = (name: string) =>
       session.defaultSession.extensions.loadExtension(path.resolve(extensionPath, name));
     const removeAllExtensions = () => {
-      Object.keys(session.defaultSession.extensions.getAllExtensions()).forEach((extName) => {
-        session.defaultSession.extensions.removeExtension(extName);
-      });
+      for (const { id } of session.defaultSession.extensions.getAllExtensions()) {
+        session.defaultSession.extensions.removeExtension(id);
+      }
     };
 
     let responseIdCounter = 0;
@@ -766,7 +837,7 @@ describe('chrome extensions', () => {
             await addExtension('content-script-document-start');
             w.webContents.once('dom-ready', async () => {
               const result = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
-              expect(result).to.equal('red');
+              expect(result).toBe('red');
             });
             w.loadURL(url);
           });
@@ -791,8 +862,8 @@ describe('chrome extensions', () => {
             createdWorlds: number[];
             isolatedWorlds: number[];
           }) => {
-            expect(isolatedWorlds.some((worldId) => worldId >= 1 << 20)).to.equal(true);
-            expect([...startupWorlds, ...createdWorlds].some((worldId) => worldId >= 1 << 20)).to.equal(true);
+            expect(isolatedWorlds.some((worldId) => worldId >= 1 << 20)).toBe(true);
+            expect([...startupWorlds, ...createdWorlds].some((worldId) => worldId >= 1 << 20)).toBe(true);
           };
 
           const createWorldDiscoveryWindow = async () => {
@@ -817,7 +888,7 @@ describe('chrome extensions', () => {
             const discoveryResult = await w.webContents.executeJavaScript(
               'document.documentElement.dataset.worldDiscovered'
             );
-            expect(discoveryResult).to.equal('yes');
+            expect(discoveryResult).toBe('yes');
 
             expectExtensionWorldDiscovered(await getWorldDiscoveryState());
           });
@@ -834,7 +905,7 @@ describe('chrome extensions', () => {
             const reloadedDiscoveryResult = await w.webContents.executeJavaScript(
               'document.documentElement.dataset.worldDiscovered'
             );
-            expect(reloadedDiscoveryResult).to.equal('yes');
+            expect(reloadedDiscoveryResult).toBe('yes');
 
             expectExtensionWorldDiscovered(await getWorldDiscoveryState());
           });
@@ -843,14 +914,14 @@ describe('chrome extensions', () => {
             await addExtension('content-script-document-idle');
             w.loadURL(url);
             const result = await w.webContents.executeJavaScript('document.body.style.backgroundColor');
-            expect(result).to.equal('red');
+            expect(result).toBe('red');
           });
 
           it('should run content script at document_end', async () => {
             await addExtension('content-script-document-end');
             w.webContents.once('did-finish-load', async () => {
               const result = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
-              expect(result).to.equal('red');
+              expect(result).toBe('red');
             });
             w.loadURL(url);
           });
@@ -867,7 +938,7 @@ describe('chrome extensions', () => {
 
           let server: http.Server;
           let port: number;
-          before(async () => {
+          beforeAll(async () => {
             server = http.createServer(async (_, res) => {
               try {
                 const content = await fs.readFile(contentPath, 'utf-8');
@@ -880,16 +951,15 @@ describe('chrome extensions', () => {
             });
 
             ({ port } = await listen(server));
-
-            session.defaultSession.extensions.loadExtension(contentScript);
           });
 
-          after(() => {
-            session.defaultSession.extensions.removeExtension('content-script-test');
+          afterAll(() => {
             server.close();
           });
 
-          beforeEach(() => {
+          let extensionId: string;
+          beforeEach(async () => {
+            ({ id: extensionId } = await session.defaultSession.extensions.loadExtension(contentScript));
             w = new BrowserWindow({
               show: false,
               webPreferences: {
@@ -900,11 +970,11 @@ describe('chrome extensions', () => {
             });
           });
 
-          afterEach(() =>
-            closeWindow(w).then(() => {
-              w = null as unknown as BrowserWindow;
-            })
-          );
+          afterEach(async () => {
+            await closeWindow(w);
+            w = null as unknown as BrowserWindow;
+            session.defaultSession.extensions.removeExtension(extensionId);
+          });
 
           it('applies matching rules in subframes', async () => {
             const detailsPromise = emittedNTimes(w.webContents, 'did-frame-finish-load', 2);
@@ -915,7 +985,7 @@ describe('chrome extensions', () => {
               frameEvents.map(async (frameEvent) => {
                 const [, isMainFrame, frameProcessId, frameRoutingId] = frameEvent;
                 const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
-                expect(frame).to.not.be.undefined();
+                expect(frame).not.toBeUndefined();
                 const result: any = await executeJavaScriptInFrame(
                   w.webContents,
                   frame!.frameToken,
@@ -929,8 +999,8 @@ describe('chrome extensions', () => {
                   })()`
                 );
 
-                expect(result.enabledColor).to.equal(COLOR_RED);
-                expect(result.disabledColor).to.equal(isMainFrame ? COLOR_BLUE : COLOR_TRANSPARENT);
+                expect(result.enabledColor).toBe(COLOR_RED);
+                expect(result.disabledColor).toBe(isMainFrame ? COLOR_BLUE : COLOR_TRANSPARENT);
               })
             );
           });
@@ -959,7 +1029,7 @@ describe('chrome extensions', () => {
       const w = new BrowserWindow({ show: false });
       await w.loadURL(`chrome-extension://${id}/bare-page.html`);
       const textContent = await w.webContents.executeJavaScript('document.body.textContent');
-      expect(textContent).to.equal('ui page loaded ok\n');
+      expect(textContent).toBe('ui page loaded ok\n');
     });
 
     it('can load resources', async () => {
@@ -969,7 +1039,7 @@ describe('chrome extensions', () => {
       const w = new BrowserWindow({ show: false });
       await w.loadURL(`chrome-extension://${id}/page-script-load.html`);
       const textContent = await w.webContents.executeJavaScript('document.body.textContent');
-      expect(textContent).to.equal('script loaded ok\n');
+      expect(textContent).toBe('script loaded ok\n');
     });
   });
 
@@ -984,7 +1054,7 @@ describe('chrome extensions', () => {
         path.join(fixtures, 'extensions', 'mv3-service-worker')
       );
       const scope = await registrationPromise;
-      expect(scope).equals(extension.url);
+      expect(scope).toBe(extension.url);
     });
 
     it('launches background service worker', async () => {
@@ -999,7 +1069,7 @@ describe('chrome extensions', () => {
       );
       await launchPromise;
       const serviceWorkers = customSession.serviceWorkers.getAllRunning();
-      expect(Object.values(serviceWorkers).some((worker) => worker.scope === extension.url)).equals(true);
+      expect(Object.values(serviceWorkers).some((worker) => worker.scope === extension.url)).toBe(true);
     });
 
     it('launches background service worker when the extension is loaded again without restarting the app', async () => {
@@ -1019,7 +1089,7 @@ describe('chrome extensions', () => {
         });
         const extension = await customSession.extensions.loadExtension(extensionPath);
         await launchPromise;
-        expect(isWorkerRunning(extension)).equals(true);
+        expect(isWorkerRunning(extension)).toBe(true);
 
         const stopPromise = new Promise<void>((resolve) => {
           customSession.serviceWorkers.on('running-status-changed', ({ runningStatus }) => {
@@ -1028,7 +1098,7 @@ describe('chrome extensions', () => {
         });
         customSession.extensions.removeExtension(extension.id);
         await stopPromise;
-        expect(isWorkerRunning(extension)).equals(false);
+        expect(isWorkerRunning(extension)).toBe(false);
       };
 
       for (let i = 0; i < 3; i++) {
@@ -1081,7 +1151,7 @@ describe('chrome extensions', () => {
 
         await exitPromise;
 
-        expect(workerScopes.includes(extensionUrl)).equals(true);
+        expect(workerScopes.includes(extensionUrl)).toBe(true);
       };
 
       for (let i = 0; i < 3; i++) {
@@ -1101,14 +1171,14 @@ describe('chrome extensions', () => {
       const [{ message: responseString }] = await once(w.webContents, 'console-message');
       const { message } = JSON.parse(responseString);
 
-      expect(message).to.equal('Hello from background.js');
+      expect(message).toBe('Hello from background.js');
     });
 
     describe('chrome.i18n', () => {
       let customSession: Session;
       let w = null as unknown as BrowserWindow;
 
-      before(async () => {
+      beforeAll(async () => {
         customSession = session.fromPartition(`persist:${randomUUID()}`);
         await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-i18n', 'v3'));
       });
@@ -1134,7 +1204,8 @@ describe('chrome extensions', () => {
         const [{ message: responseString }] = await once(w.webContents, 'console-message');
         const response = JSON.parse(responseString);
 
-        expect(response).to.be.an('array').that.is.not.empty('languages array is empty');
+        expect(response, 'languages array is empty').toBeInstanceOf(Array);
+        expect(response, 'languages array is empty').not.toHaveLength(0);
       });
 
       it('getUILanguage', async () => {
@@ -1146,7 +1217,7 @@ describe('chrome extensions', () => {
         const [{ message: responseString }] = await once(w.webContents, 'console-message');
         const response = JSON.parse(responseString);
 
-        expect(response).to.be.a('string');
+        expect(response).toBeTypeOf('string');
       });
 
       it('getMessage', async () => {
@@ -1158,7 +1229,7 @@ describe('chrome extensions', () => {
         const [{ message: responseString }] = await once(w.webContents, 'console-message');
         const response = JSON.parse(responseString);
 
-        expect(response).to.equal('Hola mundo!!');
+        expect(response).toBe('Hola mundo!!');
       });
 
       it('detectLanguage', async () => {
@@ -1177,14 +1248,14 @@ describe('chrome extensions', () => {
         const [{ message: responseString }] = await once(w.webContents, 'console-message');
         const response = JSON.parse(responseString);
 
-        expect(response).to.be.an('array');
+        expect(response).toBeInstanceOf(Array);
 
         for (const item of response) {
-          expect(Object.keys(item)).to.deep.equal(['isReliable', 'languages']);
+          expect(Object.keys(item)).toEqual(['isReliable', 'languages']);
         }
 
         const languages = response.map((r: { isReliable: boolean; languages: any[] }) => r.languages[0]);
-        expect(languages).to.deep.equal([
+        expect(languages).toEqual([
           { language: 'de', percentage: 100 },
           { language: 'fil', percentage: 100 },
           { language: 'ja', percentage: 100 },
@@ -1200,7 +1271,7 @@ describe('chrome extensions', () => {
       let customSession: Session;
       let w = null as unknown as BrowserWindow;
 
-      before(async () => {
+      beforeAll(async () => {
         customSession = session.fromPartition(`persist:${randomUUID()}`);
         await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-action-fail'));
       });
@@ -1225,7 +1296,7 @@ describe('chrome extensions', () => {
         const [{ message: responseString }] = await once(w.webContents, 'console-message');
 
         const response = JSON.parse(responseString);
-        expect(response).to.equal(false);
+        expect(response).toBe(false);
       });
 
       it('setIcon', async () => {
@@ -1237,7 +1308,7 @@ describe('chrome extensions', () => {
         const [{ message: responseString }] = await once(w.webContents, 'console-message');
 
         const response = JSON.parse(responseString);
-        expect(response).to.equal(null);
+        expect(response).toBe(null);
       });
 
       it('getBadgeText', async () => {
@@ -1249,7 +1320,7 @@ describe('chrome extensions', () => {
         const [{ message: responseString }] = await once(w.webContents, 'console-message');
 
         const response = JSON.parse(responseString);
-        expect(response).to.equal('');
+        expect(response).toBe('');
       });
     });
 
@@ -1257,7 +1328,7 @@ describe('chrome extensions', () => {
       let customSession: Session;
       let w = null as unknown as BrowserWindow;
 
-      before(async () => {
+      beforeAll(async () => {
         customSession = session.fromPartition(`persist:${randomUUID()}`);
         await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-tabs', 'api-async'));
       });
@@ -1282,7 +1353,7 @@ describe('chrome extensions', () => {
         const [{ message: responseString }] = await once(w.webContents, 'console-message');
 
         const response = JSON.parse(responseString);
-        expect(response).to.equal(1);
+        expect(response).toBe(1);
       });
 
       it('setZoom', async () => {
@@ -1294,7 +1365,7 @@ describe('chrome extensions', () => {
         const [{ message: responseString }] = await once(w.webContents, 'console-message');
 
         const response = JSON.parse(responseString);
-        expect(response).to.deep.equal(2);
+        expect(response).toEqual(2);
       });
 
       it('getZoomSettings', async () => {
@@ -1306,7 +1377,7 @@ describe('chrome extensions', () => {
         const [{ message: responseString }] = await once(w.webContents, 'console-message');
 
         const response = JSON.parse(responseString);
-        expect(response).to.deep.equal({
+        expect(response).toEqual({
           defaultZoomFactor: 1,
           mode: 'automatic',
           scope: 'per-origin'
@@ -1322,7 +1393,7 @@ describe('chrome extensions', () => {
         const [{ message: responseString }] = await once(w.webContents, 'console-message');
 
         const response = JSON.parse(responseString);
-        expect(response).to.deep.equal({
+        expect(response).toEqual({
           defaultZoomFactor: 1,
           mode: 'disabled',
           scope: 'per-tab'
@@ -1340,19 +1411,19 @@ describe('chrome extensions', () => {
           const [{ message: responseString }] = await once(w.webContents, 'console-message');
 
           const response = JSON.parse(responseString);
-          expect(response).to.have.property('url').that.is.a('string');
-          expect(response).to.have.property('title').that.is.a('string');
-          expect(response).to.have.property('active').that.is.a('boolean');
-          expect(response).to.have.property('autoDiscardable').that.is.a('boolean');
-          expect(response).to.have.property('discarded').that.is.a('boolean');
-          expect(response).to.have.property('groupId').that.is.a('number');
-          expect(response).to.have.property('highlighted').that.is.a('boolean');
-          expect(response).to.have.property('id').that.is.a('number');
-          expect(response).to.have.property('incognito').that.is.a('boolean');
-          expect(response).to.have.property('index').that.is.a('number');
-          expect(response).to.have.property('pinned').that.is.a('boolean');
-          expect(response).to.have.property('selected').that.is.a('boolean');
-          expect(response).to.have.property('windowId').that.is.a('number');
+          expect(response).toHaveProperty('url', expect.any(String));
+          expect(response).toHaveProperty('title', expect.any(String));
+          expect(response).toHaveProperty('active', expect.any(Boolean));
+          expect(response).toHaveProperty('autoDiscardable', expect.any(Boolean));
+          expect(response).toHaveProperty('discarded', expect.any(Boolean));
+          expect(response).toHaveProperty('groupId', expect.any(Number));
+          expect(response).toHaveProperty('highlighted', expect.any(Boolean));
+          expect(response).toHaveProperty('id', expect.any(Number));
+          expect(response).toHaveProperty('incognito', expect.any(Boolean));
+          expect(response).toHaveProperty('index', expect.any(Number));
+          expect(response).toHaveProperty('pinned', expect.any(Boolean));
+          expect(response).toHaveProperty('selected', expect.any(Boolean));
+          expect(response).toHaveProperty('windowId', expect.any(Number));
         });
 
         it('does not return privileged properties without tabs permission', async () => {
@@ -1367,19 +1438,19 @@ describe('chrome extensions', () => {
           w.webContents.executeJavaScript("window.postMessage('{}', '*')");
           const [{ message: responseString }] = await once(w.webContents, 'console-message');
           const response = JSON.parse(responseString);
-          expect(response).not.to.have.property('url');
-          expect(response).not.to.have.property('title');
-          expect(response).to.have.property('active').that.is.a('boolean');
-          expect(response).to.have.property('autoDiscardable').that.is.a('boolean');
-          expect(response).to.have.property('discarded').that.is.a('boolean');
-          expect(response).to.have.property('groupId').that.is.a('number');
-          expect(response).to.have.property('highlighted').that.is.a('boolean');
-          expect(response).to.have.property('id').that.is.a('number');
-          expect(response).to.have.property('incognito').that.is.a('boolean');
-          expect(response).to.have.property('index').that.is.a('number');
-          expect(response).to.have.property('pinned').that.is.a('boolean');
-          expect(response).to.have.property('selected').that.is.a('boolean');
-          expect(response).to.have.property('windowId').that.is.a('number');
+          expect(response).not.toHaveProperty('url');
+          expect(response).not.toHaveProperty('title');
+          expect(response).toHaveProperty('active', expect.any(Boolean));
+          expect(response).toHaveProperty('autoDiscardable', expect.any(Boolean));
+          expect(response).toHaveProperty('discarded', expect.any(Boolean));
+          expect(response).toHaveProperty('groupId', expect.any(Number));
+          expect(response).toHaveProperty('highlighted', expect.any(Boolean));
+          expect(response).toHaveProperty('id', expect.any(Number));
+          expect(response).toHaveProperty('incognito', expect.any(Boolean));
+          expect(response).toHaveProperty('index', expect.any(Number));
+          expect(response).toHaveProperty('pinned', expect.any(Boolean));
+          expect(response).toHaveProperty('selected', expect.any(Boolean));
+          expect(response).toHaveProperty('windowId', expect.any(Number));
         });
 
         it('does not return privileged properties from query without tabs permission', async () => {
@@ -1395,11 +1466,12 @@ describe('chrome extensions', () => {
           w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
           const [{ message: responseString }] = await once(w.webContents, 'console-message');
           const response = JSON.parse(responseString);
-          expect(response).to.be.an('array').that.is.not.empty();
+          expect(response).toBeInstanceOf(Array);
+          expect(response).not.toHaveLength(0);
           for (const tab of response) {
-            expect(tab).not.to.have.property('url');
-            expect(tab).not.to.have.property('title');
-            expect(tab).to.have.property('id').that.is.a('number');
+            expect(tab).not.toHaveProperty('url');
+            expect(tab).not.toHaveProperty('title');
+            expect(tab).toHaveProperty('id', expect.any(Number));
           }
         });
       });
@@ -1407,16 +1479,21 @@ describe('chrome extensions', () => {
       it('reload', async () => {
         await w.loadURL(url);
 
+        const finish = once(w.webContents, 'did-finish-load');
         const message = { method: 'reload' };
         w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+        await finish;
 
+        // chrome.tabs.reload() replaces the document that sent the 'reload'
+        // message, so the reply to that message races the navigation commit and
+        // is dropped when the commit wins. Ask the reloaded document instead.
         const consoleMessage = once(w.webContents, 'console-message');
-        const finish = once(w.webContents, 'did-finish-load');
+        const statusMessage = { method: 'getReloadStatus' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(statusMessage)}', '*')`);
 
-        await Promise.all([consoleMessage, finish]).then(([[{ message: responseString }]]) => {
-          const response = JSON.parse(responseString);
-          expect(response.status).to.equal('reloaded');
-        });
+        const [{ message: responseString }] = await consoleMessage;
+        const response = JSON.parse(responseString);
+        expect(response.status).toBe('reloaded');
       });
 
       describe('update', () => {
@@ -1429,9 +1506,9 @@ describe('chrome extensions', () => {
           const [{ message: responseString }] = await once(w.webContents, 'console-message');
           const response = JSON.parse(responseString);
 
-          expect(response).to.have.property('mutedInfo').that.is.a('object');
+          expect(response).toHaveProperty('mutedInfo', expect.any(Object));
           const { mutedInfo } = response;
-          expect(mutedInfo).to.deep.eq({
+          expect(mutedInfo).toEqual({
             muted: true,
             reason: 'user'
           });
@@ -1445,7 +1522,7 @@ describe('chrome extensions', () => {
 
           const [{ message: responseString }] = await once(w.webContents, 'console-message');
           const { error } = JSON.parse(responseString);
-          expect(error).to.eq("I'm sorry. I'm afraid I can't do that.");
+          expect(error).toBe("I'm sorry. I'm afraid I can't do that.");
         });
 
         it('fails when navigating to prohibited url', async () => {
@@ -1456,7 +1533,7 @@ describe('chrome extensions', () => {
 
           const [{ message: responseString }] = await once(w.webContents, 'console-message');
           const { error } = JSON.parse(responseString);
-          expect(error).to.eq("I'm sorry. I'm afraid I can't do that.");
+          expect(error).toBe("I'm sorry. I'm afraid I can't do that.");
         });
 
         it('fails when navigating to a devtools url without permission', async () => {
@@ -1467,7 +1544,7 @@ describe('chrome extensions', () => {
 
           const [{ message: responseString }] = await once(w.webContents, 'console-message');
           const { error } = JSON.parse(responseString);
-          expect(error).to.eq(
+          expect(error).toBe(
             'Cannot navigate to a devtools:// page without either the devtools or debugger permission.'
           );
         });
@@ -1480,7 +1557,7 @@ describe('chrome extensions', () => {
 
           const [{ message: responseString }] = await once(w.webContents, 'console-message');
           const { error } = JSON.parse(responseString);
-          expect(error).to.eq('Cannot navigate to a chrome-untrusted:// page.');
+          expect(error).toBe('Cannot navigate to a chrome-untrusted:// page.');
         });
 
         it('fails when navigating to a file url withotut file access', async () => {
@@ -1491,7 +1568,7 @@ describe('chrome extensions', () => {
 
           const [{ message: responseString }] = await once(w.webContents, 'console-message');
           const { error } = JSON.parse(responseString);
-          expect(error).to.eq('Cannot navigate to a file URL without local file access.');
+          expect(error).toBe('Cannot navigate to a file URL without local file access.');
         });
       });
 
@@ -1500,19 +1577,19 @@ describe('chrome extensions', () => {
         it('can query for a tab with specific properties', async () => {
           await w.loadURL(url);
 
-          expect(w.webContents.isAudioMuted()).to.be.false('muted');
+          expect(w.webContents.isAudioMuted(), 'muted').toBe(false);
           w.webContents.setAudioMuted(true);
-          expect(w.webContents.isAudioMuted()).to.be.true('not muted');
+          expect(w.webContents.isAudioMuted(), 'not muted').toBe(true);
 
           const message = { method: 'query', args: [{ muted: true }] };
           w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
           const [{ message: responseString }] = await once(w.webContents, 'console-message');
           const response = JSON.parse(responseString);
-          expect(response).to.have.lengthOf(1);
+          expect(response).toHaveLength(1);
 
           const tab = response[0];
-          expect(tab.mutedInfo).to.deep.equal({
+          expect(tab.mutedInfo).toEqual({
             muted: true,
             reason: 'user'
           });
@@ -1546,9 +1623,9 @@ describe('chrome extensions', () => {
 
           const [{ message: responseString }] = await once(w.webContents, 'console-message');
           const response = JSON.parse(responseString);
-          expect(response).to.have.lengthOf(2);
+          expect(response).toHaveLength(2);
           for (const tab of response) {
-            expect(tab.mutedInfo).to.deep.equal({
+            expect(tab.mutedInfo).toEqual({
               muted: true,
               reason: 'user'
             });
@@ -1561,7 +1638,7 @@ describe('chrome extensions', () => {
       let customSession: Session;
       let w = null as unknown as BrowserWindow;
 
-      before(async () => {
+      beforeAll(async () => {
         customSession = session.fromPartition(`persist:${randomUUID()}`);
         await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-scripting'));
       });
@@ -1585,7 +1662,7 @@ describe('chrome extensions', () => {
         w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
         const updated = await once(w.webContents, 'page-title-updated');
-        expect(updated[1]).to.equal('HEY HEY HEY');
+        expect(updated[1]).toBe('HEY HEY HEY');
       });
 
       it('registerContentScripts', async () => {
@@ -1596,8 +1673,9 @@ describe('chrome extensions', () => {
 
         const [{ message: responseString }] = await once(w.webContents, 'console-message');
         const response = JSON.parse(responseString);
-        expect(response).to.be.an('array').with.lengthOf(1);
-        expect(response[0]).to.deep.equal({
+        expect(response).toBeInstanceOf(Array);
+        expect(response).toHaveLength(1);
+        expect(response[0]).toEqual({
           allFrames: false,
           id: 'session-script',
           js: ['content.js'],
@@ -1616,7 +1694,7 @@ describe('chrome extensions', () => {
         w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
         const [{ message: responseString }] = await once(w.webContents, 'console-message');
         const response = JSON.parse(responseString);
-        expect(response).to.deep.equal({ changed: true });
+        expect(response).toEqual({ changed: true });
       });
 
       it('insertCSS', async () => {
@@ -1625,17 +1703,17 @@ describe('chrome extensions', () => {
         const bgBefore = await w.webContents.executeJavaScript(
           'window.getComputedStyle(document.body).backgroundColor'
         );
-        expect(bgBefore).to.equal('rgba(0, 0, 0, 0)');
+        expect(bgBefore).toBe('rgba(0, 0, 0, 0)');
 
         const message = { method: 'insertCSS' };
         w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
         const [{ message: responseString }] = await once(w.webContents, 'console-message');
         const response = JSON.parse(responseString);
-        expect(response.success).to.be.true();
+        expect(response.success).toBe(true);
 
         const bgAfter = await w.webContents.executeJavaScript('window.getComputedStyle(document.body).backgroundColor');
-        expect(bgAfter).to.equal('rgb(255, 0, 0)');
+        expect(bgAfter).toBe('rgb(255, 0, 0)');
       });
     });
 
@@ -1645,7 +1723,7 @@ describe('chrome extensions', () => {
       let driver: BrowserWindow;
       let victim: BrowserWindow;
 
-      before(async () => {
+      beforeAll(async () => {
         extSession = session.fromPartition(`persist:${randomUUID()}`);
         otherSession = session.fromPartition(`persist:${randomUUID()}`);
         await extSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'tabs-cross-session'));
@@ -1670,31 +1748,31 @@ describe('chrome extensions', () => {
 
       it('chrome.tabs.get cannot resolve a tab from another session', async () => {
         const sameSession = await callExtension('get', driver.webContents.id);
-        expect(sameSession.ok).to.be.true();
-        expect(sameSession.result.id).to.equal(driver.webContents.id);
+        expect(sameSession.ok).toBe(true);
+        expect(sameSession.result.id).toBe(driver.webContents.id);
 
         const crossSession = await callExtension('get', victim.webContents.id);
-        expect(crossSession.ok).to.be.false();
-        expect(crossSession.error).to.match(/No such tab|No tab with id/);
+        expect(crossSession.ok).toBe(false);
+        expect(crossSession.error).toMatch(/No such tab|No tab with id/);
       });
 
       it('chrome.tabs.update cannot navigate a tab in another session', async () => {
         const before = victim.webContents.getURL();
         const crossSession = await callExtension('update', victim.webContents.id, [{ url }]);
-        expect(crossSession.ok).to.be.false();
-        expect(crossSession.error).to.match(/No such tab|No tab with id/);
-        expect(victim.webContents.getURL()).to.equal(before);
+        expect(crossSession.ok).toBe(false);
+        expect(crossSession.error).toMatch(/No such tab|No tab with id/);
+        expect(victim.webContents.getURL()).toBe(before);
       });
 
       it('chrome.scripting.executeScript cannot target a tab in another session', async () => {
         const crossSession = await callExtension('executeScript', victim.webContents.id);
-        expect(crossSession.ok).to.be.false();
-        expect(crossSession.error).to.match(/No tab with id/);
+        expect(crossSession.ok).toBe(false);
+        expect(crossSession.error).toMatch(/No tab with id/);
       });
 
       it('chrome.tabs.sendMessage cannot reach a tab in another session', async () => {
         const crossSession = await callExtension('sendMessage', victim.webContents.id, ['ping']);
-        expect(crossSession.ok).to.be.false();
+        expect(crossSession.ok).toBe(false);
       });
     });
   });
@@ -1716,12 +1794,12 @@ describe('chrome extensions', () => {
 
     it('loads DevTools extensions on custom protocols with allowExtensions privileges and runs content and background scripts', async () => {
       const output = await runFixture('custom-protocol');
-      expect(output).to.equal('Title: MESSAGE RECEIVED');
+      expect(output).toBe('Title: MESSAGE RECEIVED');
     });
 
     it('loads DevTools panels on custom protocols with allowExtensions privileges', async () => {
       const output = await runFixture('custom-protocol-panel');
-      expect(output).to.equal('ELECTRON TEST PANEL created');
+      expect(output).toBe('ELECTRON TEST PANEL created');
     });
   });
 });

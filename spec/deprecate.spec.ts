@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { createRequire } from 'node:module';
 
@@ -30,7 +30,7 @@ describe('deprecate', () => {
     });
 
     deprecate.log('this is deprecated');
-    expect(messages).to.deep.equal(['this is deprecated']);
+    expect(messages).toEqual(['this is deprecated']);
   });
 
   it('returns a deprecation handler after one is set', () => {
@@ -41,7 +41,7 @@ describe('deprecate', () => {
     });
 
     deprecate.log('this is deprecated');
-    expect(deprecate.getHandler()).to.be.a('function');
+    expect(deprecate.getHandler()).toBeTypeOf('function');
   });
 
   it('renames a property', () => {
@@ -55,18 +55,18 @@ describe('deprecate', () => {
 
     let value = 0;
     const o: Record<string, number> = { [newProp]: value };
-    expect(o).to.not.have.property(oldProp);
-    expect(o).to.have.property(newProp).that.is.a('number');
+    expect(o).not.toHaveProperty([oldProp]);
+    expect(o).toHaveProperty([newProp], expect.any(Number));
 
     deprecate.renameProperty(o, oldProp, newProp);
     o[oldProp] = ++value;
 
-    expect(msg).to.be.a('string');
-    expect(msg).to.include(oldProp);
-    expect(msg).to.include(newProp);
+    expect(msg).toBeTypeOf('string');
+    expect(msg).toContain(oldProp);
+    expect(msg).toContain(newProp);
 
-    expect(o).to.have.property(newProp).that.is.equal(value);
-    expect(o).to.have.property(oldProp).that.is.equal(value);
+    expect(o).toHaveProperty([newProp], value);
+    expect(o).toHaveProperty([oldProp], value);
   });
 
   it("doesn't deprecate a property not on an object", () => {
@@ -74,7 +74,7 @@ describe('deprecate', () => {
 
     expect(() => {
       deprecate.removeProperty(o, 'iDoNotExist');
-    }).to.throw(/iDoNotExist/);
+    }).toThrow(/iDoNotExist/);
   });
 
   it('deprecates a property of an object', () => {
@@ -90,9 +90,9 @@ describe('deprecate', () => {
 
     const temp = o[prop];
 
-    expect(temp).to.equal(0);
-    expect(msg).to.be.a('string');
-    expect(msg).to.include(prop);
+    expect(temp).toBe(0);
+    expect(msg).toBeTypeOf('string');
+    expect(msg).toContain(prop);
   });
 
   it('deprecates a property of an but retains the existing accessors and setters', () => {
@@ -114,11 +114,11 @@ describe('deprecate', () => {
 
     deprecate.removeProperty(o, prop);
 
-    expect(o[prop]).to.equal(1);
-    expect(msg).to.be.a('string');
-    expect(msg).to.include(prop);
+    expect(o[prop]).toBe(1);
+    expect(msg).toBeTypeOf('string');
+    expect(msg).toContain(prop);
     o[prop] = 2;
-    expect(o[prop]).to.equal(3);
+    expect(o[prop]).toBe(3);
   });
 
   it('warns exactly once when a function is deprecated with no replacement', () => {
@@ -133,8 +133,8 @@ describe('deprecate', () => {
     const deprecatedFn = deprecate.removeFunction(oldFn, 'oldFn');
     deprecatedFn();
 
-    expect(msg).to.be.a('string');
-    expect(msg).to.include('oldFn');
+    expect(msg).toBeTypeOf('string');
+    expect(msg).toContain('oldFn');
   });
 
   it('preserves the return value and `this` of a deprecated function with no replacement', () => {
@@ -147,7 +147,7 @@ describe('deprecate', () => {
     const context = { name: 'ctx' };
     const result = deprecatedFn.call(context, 2, 3);
 
-    expect(result).to.deep.equal({ self: context, sum: 5 });
+    expect(result).toEqual({ self: context, sum: 5 });
   });
 
   it('warns exactly once when a function is deprecated with a replacement', () => {
@@ -162,9 +162,9 @@ describe('deprecate', () => {
     const deprecatedFn = deprecate.renameFunction(oldFn, 'newFn');
     deprecatedFn();
 
-    expect(msg).to.be.a('string');
-    expect(msg).to.include('oldFn');
-    expect(msg).to.include('newFn');
+    expect(msg).toBeTypeOf('string');
+    expect(msg).toContain('oldFn');
+    expect(msg).toContain('newFn');
   });
 
   it('warns only once per item', () => {
@@ -177,8 +177,8 @@ describe('deprecate', () => {
     deprecate.removeProperty(o, key);
 
     for (let i = 0; i < 3; ++i) {
-      expect(o[key]).to.equal(val);
-      expect(messages).to.have.length(1);
+      expect(o[key]).toBe(val);
+      expect(messages).toHaveLength(1);
     }
   });
 
@@ -194,15 +194,15 @@ describe('deprecate', () => {
     const o: Record<string, number> = { [oldProp]: 0 };
     deprecate.renameProperty(o, oldProp, newProp);
 
-    expect(msg).to.be.a('string');
-    expect(msg).to.include(oldProp);
-    expect(msg).to.include(newProp);
+    expect(msg).toBeTypeOf('string');
+    expect(msg).toContain(oldProp);
+    expect(msg).toContain(newProp);
   });
 
   it('throws an exception if no deprecation handler is specified', () => {
     expect(() => {
       deprecate.log('this is deprecated');
-    }).to.throw(/this is deprecated/);
+    }).toThrow(/this is deprecated/);
   });
 
   describe('moveAPI', () => {
@@ -220,7 +220,7 @@ describe('deprecate', () => {
       };
       const deprecated = deprecate.moveAPI(fn, 'old', 'new');
       deprecated();
-      expect(called).to.equal(true);
+      expect(called).toBe(true);
     });
 
     it('should log the deprecation warning once', () => {
@@ -229,10 +229,10 @@ describe('deprecate', () => {
 
       const deprecated = deprecate.moveAPI(() => null, 'old', 'new');
       deprecated();
-      expect(warnings).to.have.lengthOf(1);
+      expect(warnings).toHaveLength(1);
       deprecated();
-      expect(warnings).to.have.lengthOf(1);
-      expect(warnings[0]).to.equal("'old' is deprecated and will be removed. Please use 'new' instead.");
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0]).toBe("'old' is deprecated and will be removed. Please use 'new' instead.");
     });
   });
 });

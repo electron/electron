@@ -85,7 +85,7 @@ interface ElectronRenderer {
 
   ReceivePostMessage(string channel, blink.mojom.TransferableMessage message);
 
-  TakeHeapSnapshot(handle file) => (bool success);
+  TakeHeapSnapshot(handle<platform> file) => (bool success);
 };
 
 interface ElectronAutofillAgent {
