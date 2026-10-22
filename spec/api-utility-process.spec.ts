@@ -221,10 +221,33 @@ describe('utilityProcess module', () => {
     };
 
     it('with default serviceName', async () => {
+      // Every utility process forked without a serviceName has this name, and
+      // for a child that ended through process.exit() the event can arrive
+      // after its 'exit' event, i.e. while a later test runs. On Windows a
+      // child of an earlier test that exited with code 1 is reported here as
+      // 'killed'. Pick this child's event by its exit code, which both events
+      // take from the same termination info ('exit' reports it unsigned, the
+      // details as a signed int, so compare them as unsigned).
       const name = 'Node Utility Process';
-      const crashPromise = waitForCrash(name);
-      utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
-      const details = await crashPromise;
+      const gone: Electron.Details[] = [];
+      let onGoneForName = () => {};
+      const onGone = (_event: Electron.Event, details: Electron.Details) => {
+        if (details.name === name) {
+          gone.push(details);
+          onGoneForName();
+        }
+      };
+      app.on('child-process-gone', onGone);
+      defer(() => app.off('child-process-gone', onGone));
+      const child = utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
+      const [exitCode] = await once(child, 'exit');
+      const details = await new Promise<Electron.Details>((resolve) => {
+        onGoneForName = () => {
+          const ours = gone.find((details) => details.exitCode >>> 0 === exitCode >>> 0);
+          if (ours) resolve(ours);
+        };
+        onGoneForName();
+      });
       expect(details.type).toBe('Utility');
       expect(details.serviceName).toBe('node.mojom.NodeService');
       expect(details.name).toBe(name);

@@ -116,7 +116,21 @@ class RemoteControlApp {
 
 export async function startRemoteControlApp(extraArgs: string[] = [], options?: childProcess.SpawnOptionsWithoutStdio) {
   const appPath = path.join(import.meta.dirname, '..', 'fixtures', 'apps', 'remote-control');
-  const appProcess = childProcess.spawn(process.execPath, [appPath, ...ciGpuArgs, ...extraArgs], options);
+  // The app quits by itself after --remote-app-timeout (30s unless given) in
+  // case nothing stops it. Sanitizer builds give each test 180s
+  // (ELECTRON_SPEC_TIMEOUT) and are slow enough that a test can still be
+  // talking to the app after 30s, which then fails with "socket hang up" or
+  // hangs. Keep the app alive at least as long as the test may run; defer()
+  // below stops it when the test is done.
+  const specTimeout = Number(process.env.ELECTRON_SPEC_TIMEOUT) || 30_000;
+  const timeoutArgs = extraArgs.some((arg) => arg.startsWith('--remote-app-timeout='))
+    ? []
+    : [`--remote-app-timeout=${specTimeout}`];
+  const appProcess = childProcess.spawn(
+    process.execPath,
+    [appPath, ...ciGpuArgs, ...timeoutArgs, ...extraArgs],
+    options
+  );
   // Register cleanup before awaiting the port so a stalled startup that trips
   // the test's timeout doesn't leak the child into the in-job retry.
   defer(() => {
