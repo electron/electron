@@ -211,6 +211,7 @@ class App final : public gin::Wrappable<App>,
                const base::FilePath& path);
 
   void SetDesktopName(const std::string& desktop_name);
+  void SetActivationToken(const std::string& token);
   std::string GetLocale();
   std::string GetLocaleCountryCode();
   std::string GetSystemLocale(gin_helper::ErrorThrower thrower) const;
