@@ -532,6 +532,23 @@ action("electron_generate_preload_realm_bindings") {
              wrapper_type_info_header,
            ] + core_idl_files + modules_idl_files
 
+  # Read Blink's own .pydeps files directly instead of using action_with_pydeps
+  # (which expects a checked-in build/generate_preload_realm_bindings.pydeps)
+  # so we automatically pick up upstream Blink bindings script changes on rolls
+  # without manually maintaining a duplicate .pydeps file in //electron.
+  _blink_scripts_dir = "//third_party/blink/renderer/bindings/scripts"
+  _pydeps_files = [
+    "$_blink_scripts_dir/collect_idl_files.pydeps",
+    "$_blink_scripts_dir/generate_bindings.pydeps",
+  ]
+  _pydeps_lines = []
+  foreach(_pydeps_file, _pydeps_files) {
+    _pydeps_lines += read_file(_pydeps_file, "list lines")
+  }
+  _pydeps_entries = filter_exclude(_pydeps_lines, [ "#*" ])
+  inputs +=
+      rebase_path(_pydeps_entries, ".", _blink_scripts_dir) + _pydeps_files
+
   outputs = [
     "$target_gen_dir/preload_realm/v8_preload_realm_global_scope.cc",
     "$target_gen_dir/preload_realm/v8_preload_realm_global_scope.h",
