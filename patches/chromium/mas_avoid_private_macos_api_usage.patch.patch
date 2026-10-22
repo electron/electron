@@ -14,6 +14,8 @@ Subject: mas: avoid private macOS API usage
   * _CFIsObjC
   * CGSSetWindowCaptureExcludeShape
   * CGRegionCreateWithRect
+  * CGSGetEventPort
+  * CGEventCreateNextEvent
   * CTFontCopyVariationAxesInternal
   * AudioDeviceDuck
   * NSNextStepFrame
@@ -44,13 +46,19 @@ out -- if there are any side-effects, we should be able to work around them.
     could hit 60fps before will likely still be able to hit 60fps. There may even be
     cases where performance improves when disabling remote CoreAnimation (remote
     CoreAnimation is really only about battery usage).
+* WindowServerEventPumpThread is a no-op in the MAS build because draining
+  the WindowServer event queue needs CGSMainConnectionID, CGSGetEventPort
+  and CGEventCreateNextEvent. The pump is treated as failed up front so that
+  CADisplayLink is never created in the GPU process and every root frame
+  sink falls back to a timer-based VSync source, matching upstream's own
+  behavior when the pump cannot be started.
 * CTFontDescriptorIsSystemUIFont is a private API, we're using an
 _interesting_ technique in the MAS build to determine if the font is a
 system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 2587bd828b83beac1ea36b119b3674c1b5d6b4c2..8e7174ba2fe424ac4440fa81c97e976ccf71edf1 100644
+index ce307f24f31e740e4afc05fe531a1fe9e2463a92..7f5ef6fc7f4f8f42d6d259310684ec535ae85e72 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1154,6 +1154,7 @@ component("base") {
@@ -129,10 +137,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index a93b1d54a43b2cdee79bb1ff64d14e70c30a8160..5df1705ad1d2827f51fc32c61bae19e56ce7cfd1 100644
+index 9e9f063efe6f16f2f960e520badd025d0dea0a87..67aabbd6a143d9a6b0e6f2de7dd22cf03984908c 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -1051,6 +1051,7 @@ if (is_clang_or_gcc) {
+@@ -1029,6 +1029,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -843,7 +851,7 @@ index c5c652c6c67da33e9a2127cbbc35ec5fc535df6c..e58bb7368359e6ba13c249b8677a91e5
  
  - (NSWindow*)rootWindow {
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index e7a596db9798ce0dfa27d2f7691b7e3548405ac7..a1aba79563a33893a9d13e764065ec0db5d25bdf 100644
+index 5abdca1cb441d306b5dbea7d7bf7e1400ce3a14d..d2235a096f5ea7b5c3ecdc84af9b10a839615347 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -1005,7 +1013,7 @@ index c74a6130862162d4fdb07cf3d4a60604d0ae0482..92eaacfb3256ded77bd119e6ca306404
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index bee9872ba3e310dcc1d57fc399d44926c178b884..3de9bb066f0a204695b402528975703bf6d52e13 100644
+index cda5d70ca84a6ac0a326bda684292810f42a363f..2673ba0a388130d54b2c63b115a705d917d343a8 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -385,6 +385,7 @@ source_set("browser") {
@@ -1126,10 +1134,10 @@ index 10d8a0e16d6bd7e603eddabfd3f053f44d43d7a1..23b8154e7695d2fb4efbd777de6e84f2
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 2e1af512e770c9bee1b3d3c430f5537e0193f069..aeca39edb1bfd856c5a5722155097dfb13eb4f65 100644
+index e41489d4c98fbf96f9bfadfb78c5b0b0f5a5d841..1a6298d187d6245370d7c29c419617a8c401c5d0 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -280,6 +280,7 @@ source_set("common") {
+@@ -279,6 +279,7 @@ source_set("common") {
      "//ui/shell_dialogs",
      "//url",
      "//url/ipc:url_ipc",
@@ -1138,10 +1146,10 @@ index 2e1af512e770c9bee1b3d3c430f5537e0193f069..aeca39edb1bfd856c5a5722155097dfb
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index a63c3bea226425589ebb8b9b55b1bace381d3a96..1e3d510414fda0657c61499187b58f4862ab63f4 100644
+index cf78814644054c5557ba7d4192384531c56143d3..e91c3a6f5109349cf9c26a3da1d06dbbdfb8402b 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -322,6 +322,7 @@ target(link_target_type, "renderer") {
+@@ -321,6 +321,7 @@ target(link_target_type, "renderer") {
      "//ui/strings:auto_image_annotation_strings_grit",
      "//url",
      "//v8",
@@ -1220,10 +1228,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 309d2cd9282f07e64c894f134e007ff31960743a..01d30e1eadb5b4237d326ac51e112f4ba32795bd 100644
+index 675418f6057ea053db13fe1fad74ecb0ae916652..69a4f3508c1339163daf8e1dccb1f0246c87d9f9 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -653,6 +653,7 @@ static_library("test_support") {
+@@ -651,6 +651,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -1231,16 +1239,16 @@ index 309d2cd9282f07e64c894f134e007ff31960743a..01d30e1eadb5b4237d326ac51e112f4b
    ]
  
    data_deps = [
-@@ -1141,6 +1142,8 @@ static_library("browsertest_support") {
-   # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
-   # enable the diagnostic by removing this line.
-   configs += [ "//build/config/compiler:no_exit_time_destructors" ]
+@@ -1135,6 +1136,8 @@ static_library("browsertest_support") {
+   }
+ 
+   configs += [ "//v8:external_startup_data" ]
 +
 +  deps += ["//electron/build/config:generate_mas_config"]
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2067,6 +2070,7 @@ test("content_browsertests") {
+@@ -2061,6 +2064,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1248,7 +1256,7 @@ index 309d2cd9282f07e64c894f134e007ff31960743a..01d30e1eadb5b4237d326ac51e112f4b
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3456,6 +3460,7 @@ test("content_unittests") {
+@@ -3453,6 +3457,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1817,7 +1825,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index e5fe811ee0c302fdc22eb7d6678d48b5dd5ccc34..d7b9372e0f071374de358e5825ed3bb46719a79e 100644
+index a96e9c9df209abba41bccf9d348eee89058b5f83..12942929d97d2bfff86fc43c506253934fd8e68e 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -446,6 +446,7 @@ component("core") {
@@ -1939,10 +1947,10 @@ index b3fd5abd10fae78c0bb62da6966e516400d1a452..9af448405391822f851b70e76725ec6c
      return;
    }
 diff --git a/ui/accelerated_widget_mac/BUILD.gn b/ui/accelerated_widget_mac/BUILD.gn
-index daa300a59ab92b1af2dadfa37d42f9d85951aa38..1377a290136a82516c27ea54b97624513a5c1207 100644
+index eb90cda4852ca7dc0932cc77801f6b4d62c5624d..2b2dedabfc75548cb46227905035cdc6a4ed681e 100644
 --- a/ui/accelerated_widget_mac/BUILD.gn
 +++ b/ui/accelerated_widget_mac/BUILD.gn
-@@ -85,6 +85,7 @@ component("accelerated_widget_mac") {
+@@ -84,6 +84,7 @@ component("accelerated_widget_mac") {
      "//ui/gfx",
      "//ui/gfx/geometry",
      "//ui/gl",
@@ -2163,10 +2171,10 @@ index 9423a2891552e8df3ea5b05c720ab11795c4b92d..610c479ef03759d3082b42d7a402cbea
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index dd9811827c1d7a4a0afe006ba6c0bbc17f58d3a6..3399f82675e57a1f9feb8f33ba1666dde84731cb 100644
+index c92c5700536048d3fafc030ff259526c6e7dba55..ecfa2b7713024a0f9d1dc3b2a394b4ccd8ebdf10 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -367,6 +367,13 @@ component("base") {
+@@ -365,6 +365,13 @@ component("base") {
      ]
    }
  
@@ -2180,7 +2188,7 @@ index dd9811827c1d7a4a0afe006ba6c0bbc17f58d3a6..3399f82675e57a1f9feb8f33ba1666dd
    if (is_ios) {
      sources += [
        "device_form_factor_ios.mm",
-@@ -523,6 +530,12 @@ component("base") {
+@@ -521,6 +528,12 @@ component("base") {
      "//url",
    ]
  
@@ -2284,7 +2292,7 @@ index 93e90c4eba9bc9b93d68e834eb6baabeb2d0ecf0..1b90f41d05f847a94adf2f4da827b1d0
  
  }  // namespace
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 6c05f8468aa42999be7a1b5d5d3f854813252e0c..16030a4b11926eb0f4c3b960d3209c8d028c5f65 100644
+index 71144801e65cf220e160b9c03d93dd07e20cbcce..935594966ce0deb145ffe99a6d9af6265b113c5c 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -142,6 +142,12 @@ component("display") {
@@ -2300,6 +2308,82 @@ index 6c05f8468aa42999be7a1b5d5d3f854813252e0c..16030a4b11926eb0f4c3b960d3209c8d
    if (is_ios) {
      deps += [ "//build:ios_buildflags" ]
    }
+diff --git a/ui/display/mac/ca_display_link_mac.mm b/ui/display/mac/ca_display_link_mac.mm
+index 6e1add2ad1ccd151b98f9926d8cde3268f56de05..94a44aa0b97fb1dd2365c135c35e74769115bc51 100644
+--- a/ui/display/mac/ca_display_link_mac.mm
++++ b/ui/display/mac/ca_display_link_mac.mm
+@@ -20,15 +20,18 @@
+ #include "base/metrics/histogram_macros.h"
+ #include "base/no_destructor.h"
+ #include "base/trace_event/trace_event.h"
++#include "electron/mas.h"
+ #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
+ #include "ui/display/mac/screen_utils_mac.h"
+ 
+ extern "C" {
++#if !IS_MAS_BUILD()
+ // Undocumented CoreGraphics framework functions.
+ using CGSConnectionID = uint32_t;
+ CGSConnectionID CGSMainConnectionID();
+ CGError CGSGetEventPort(CGSConnectionID connection_id, mach_port_t* port);
+ CGEventRef CGEventCreateNextEvent(CGSConnectionID connection_id);
++#endif
+ 
+ // Undocumented SkyLight framework functions.
+ // SLSGetDisplayLink() is a private function (SPI) that creates a CADisplayLink
+@@ -299,6 +302,15 @@ void RecordWindowServerEventPumpResult(
+       viz_task_runner_(base::SingleThreadTaskRunner::GetCurrentDefault()) {
+   weak_ptr_ = weak_factory_.GetWeakPtr();
+ 
++#if IS_MAS_BUILD()
++  // Draining the WindowServer event queue needs the private CGS* functions
++  // declared above, which the Mac App Store build cannot use. Without the
++  // pump, CADisplayLink may stop firing after display reconfiguration or power
++  // resume, so treat the pump as failed up front and let every root frame sink
++  // fall back to a timer-based VSync source.
++  shutdown_ = true;
++  CADisplayLinkGlobals::Get().SetWindowServerEventPumpFailed();
++#else
+   base::Thread::Options thread_options;
+   thread_options.message_pump_type = base::MessagePumpType::NS_RUNLOOP;
+   thread_options.thread_type = base::ThreadType::kPresentation;
+@@ -308,6 +320,7 @@ void RecordWindowServerEventPumpResult(
+       FROM_HERE,
+       base::BindOnce(&WindowServerEventPumpThread::PumpWindowServerEvents,
+                      base::Unretained(this)));
++#endif
+ }
+ 
+ // In a standard out-of-process GPU scenario,
+@@ -325,6 +338,7 @@ void RecordWindowServerEventPumpResult(
+ 
+   shutdown_ = true;
+ 
++#if !IS_MAS_BUILD()
+   // Send an empty message to wake up the thread and quit the while loop.
+   // See WindowServerEventPumpThread::PumpWindowServerEvents() for details.
+   CGSConnectionID connection_id = CGSMainConnectionID();
+@@ -348,10 +362,12 @@ void RecordWindowServerEventPumpResult(
+         << "CGSGetEventPort() in ~WindowServerEventPumpThread failed. Error: "
+         << err;
+   }
++#endif
+ 
+   Stop();
+ }
+ 
++#if !IS_MAS_BUILD()
+ void WindowServerEventPumpThread::PumpWindowServerEvents() {
+   CGSConnectionID connection_id = CGSMainConnectionID();
+   // We haven't seen this happen in practice, but WebKit's implementation
+@@ -499,6 +515,7 @@ void RecordWindowServerEventPumpResult(
+     }
+   }
+ }
++#endif
+ 
+ void WindowServerEventPumpThread::DisableDisplayLink(Result failure) {
+   // This may be called from the pump thread. Hop to the Viz thread, which owns
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
 index 618217772a2fa38077ca0913dc017ecc6a702142..f06c9cf5bd3d841935d4e7353e7040272d51abb4 100644
 --- a/ui/display/mac/screen_mac.mm
@@ -2331,7 +2415,7 @@ index 618217772a2fa38077ca0913dc017ecc6a702142..f06c9cf5bd3d841935d4e7353e704027
    // Query the display's refresh rate. To get a float number such as 59.95Hz,
    // use 1.0/screen.minimumRefreshInterval instead of
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 6927db7d4a5d4d81658ff6b81269113b25949f47..c7816052d396ac50987a2a70c37f242903c0cfa8 100644
+index 250c1ad2048f80386864f6037e2d0eda6eeebc26..b6d4aeba0072475d384a96bc838d0e1de56c65f4 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -286,6 +286,8 @@ component("gfx") {
@@ -2382,7 +2466,7 @@ index 65ae8170664d15c7884261812400d0ed638a681d..86c937f1e6d03b88803a2ca80abff19c
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index cb35a2682b68f90a0e6d9916a845c8e1b4b52e23..686c60c0a57be23aa323b96fa5d423278eeeaa1a 100644
+index c0d1b5edde7890a13fcdf1e8a18d7733041593fa..d88b9590e4ea4170aa680e56dca5916f9e7363b8 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -791,6 +791,8 @@ component("views") {

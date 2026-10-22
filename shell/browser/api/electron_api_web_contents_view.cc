@@ -153,6 +153,7 @@ class WebContentsViewHost final : public View::Host,
   void ApplyBorderRadius(std::optional<int> radius);
 
   // DraggableRegionProvider:
+  views::View* GetDraggableRegionView() override { return view(); }
   int NonClientHitTest(const gfx::Point& point) override;
 
  private:

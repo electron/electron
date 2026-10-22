@@ -15,7 +15,7 @@ makes it defer main frames until the view is eventually shown. Key the
 decision off the host's visibility, as RenderWidgetHostViewMac does.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index f0377b9acce6ff3d56f0b98266f7288b3be29358..9babca6b48195d7f44d0d4864812a4b465a8234a 100644
+index 421fa454dce53943cf90f1073f6938bb624f0c6d..b0ed11224b554839111e47d37ea1fe10e165b054 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -910,6 +910,10 @@ void RenderWidgetHostImpl::WasHidden() {
@@ -43,10 +43,10 @@ index 02bdef3bae5a29d874956d88e33e37bf0fd9ce5c..f3c132412ca87c3abda84cf91434a9f7
    // |routing_id| must not be IPC::mojom::kRoutingIdNone.
    // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 5e68fd479b3c466ca38f1d5ee0b1e2831ca32755..1e111b10c91f752fc6f6c7f6413ca8670900f2ec 100644
+index 98303c3ef0ad6abff3ddbfd1472d19b57fdd01d1..c910f273bb3f2388d087043f76d84fcf5406fde2 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -753,7 +753,7 @@ void RenderWidgetHostViewAura::HideImpl() {
+@@ -745,7 +745,7 @@ void RenderWidgetHostViewAura::HideImpl() {
    CHECK(visibility_ == Visibility::HIDDEN ||
          visibility_ == Visibility::OCCLUDED);
  
@@ -55,7 +55,7 @@ index 5e68fd479b3c466ca38f1d5ee0b1e2831ca32755..1e111b10c91f752fc6f6c7f6413ca867
      host()->WasHidden();
      aura::WindowTreeHost* host = window_->GetHost();
        aura::Window* parent = window_->parent();
-@@ -3866,7 +3866,12 @@ RenderWidgetHostViewAura::DidUpdateVisualProperties(
+@@ -3871,7 +3871,12 @@ RenderWidgetHostViewAura::DidUpdateVisualProperties(
  void RenderWidgetHostViewAura::DidNavigate() {
    CHECK(delegated_frame_host_) << "Cannot be invoked during destruction.";
  

@@ -13,15 +13,17 @@ Refs: https://github.com/nodejs/node/pull/59941
 Refs: https://chromium-review.googlesource.com/c/v8/v8/+/6937664
 
 diff --git a/src/node.cc b/src/node.cc
-index c977e31ab87158a527bf76d0e1f7283e6eeb40eb..f303b0c694c4c32863b15cbcabd315b4f435cd5e 100644
+index d7fa3d8fdf23610917723b0bb808e19adc002f76..eb8835d5e66c67d6727ef75636770c7cd7c27930 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -790,9 +790,6 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,
+@@ -790,11 +790,6 @@ static ExitCode ProcessGlobalArgsInternal(std::vector<std::string>* args,
      v8_args.emplace_back("--js-source-phase-imports");
    }
  
+-#if V8_ENABLE_WEBASSEMBLY
 -  // WebAssembly JS Promise Integration
 -  v8_args.emplace_back("--experimental-wasm-jspi");
+-#endif  // V8_ENABLE_WEBASSEMBLY
 -
  #ifdef __POSIX__
    // Block SIGPROF signals when sleeping in epoll_wait/kevent/etc.  Avoids the

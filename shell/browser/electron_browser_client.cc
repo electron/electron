@@ -145,6 +145,7 @@
 #include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/native_theme/native_theme.h"
+#include "url/url_constants.h"
 #include "v8/include/v8.h"
 
 #if BUILDFLAG(USE_NSS_CERTS)
@@ -805,7 +806,11 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
   mojom::RendererStartupDataPtr data;
   {
     ScopedAllowBlockingForElectron allow_blocking;
-    data = renderer_startup_data::BuildForFrame(new_window_main_frame);
+    // The popup's initial empty document has already inherited its opener's
+    // origin, if it has one.
+    data = renderer_startup_data::BuildForFrame(
+        new_window_main_frame, GURL(url::kAboutBlankURL),
+        new_window_main_frame->GetLastCommittedOrigin());
   }
   // Opaque blob — Chromium can't depend on Electron's mojom types.
   return mojo_base::BigBuffer(mojom::RendererStartupData::Serialize(&data));
@@ -819,14 +824,14 @@ ElectronBrowserClient::GetServiceWorkerStartupData(
   // when SW preloads are registered. Skip the asar reads + serialization
   // otherwise — this runs on every service worker start.
   auto* session_prefs = SessionPreferences::FromBrowserContext(browser_context);
-  if (!session_prefs || !session_prefs->HasServiceWorkerPreloadScript())
+  if (!session_prefs || !session_prefs->HasServiceWorkerPreloadScript(scope))
     return std::nullopt;
 
   mojom::RendererStartupDataPtr data;
   {
     ScopedAllowBlockingForElectron allow_blocking;
     data = renderer_startup_data::Build(
-        browser_context, PreloadScript::ScriptType::kServiceWorker);
+        browser_context, PreloadScript::ScriptType::kServiceWorker, scope);
   }
   return mojo_base::BigBuffer(mojom::RendererStartupData::Serialize(&data));
 }
@@ -1693,6 +1698,11 @@ void ElectronBrowserClient::RegisterAssociatedInterfaceBindersForServiceWorker(
                           service_worker_version_info.process_id));
   associated_registry.AddInterface<extensions::mojom::ServiceWorkerHost>(
       base::BindRepeating(&extensions::ServiceWorkerHost::BindReceiver,
+                          service_worker_version_info.process_id));
+  // Service workers register their extension event listeners over this
+  // interface; without it the browser never dispatches events to them.
+  associated_registry.AddInterface<extensions::mojom::EventRouter>(
+      base::BindRepeating(&extensions::EventRouter::BindForRenderer,
                           service_worker_version_info.process_id));
 #endif
 }

@@ -6,7 +6,7 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl_unittest.cc b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
-index 0a7642ce2d3512a7fba15e1944cca08f26a2bcea..2029e19f570630e4864af0f8e403840842bdaf22 100644
+index 9fc4f42f65e30ea69c8baf449de2c427dcfa4333..5750b977ebb911a6499003e21f21b2a45909cd39 100644
 --- a/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 @@ -171,6 +171,12 @@ class MockPageBroadcast : public blink::mojom::PageBroadcast {
@@ -51,10 +51,10 @@ index d98b5dda96208e3f923aa8a9c6e6eb988004904b..7c91ed2d7a397ad9e36cbecfc13de7bd
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 1e111b10c91f752fc6f6c7f6413ca8670900f2ec..9eeb4b7c76b37707c110a943ce880136906e5a86 100644
+index c910f273bb3f2388d087043f76d84fcf5406fde2..147a2b7c59f404f3b5c19780b71548e4a1c67269 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -694,8 +694,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
+@@ -686,8 +686,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
    // OnShowWithPageVisibility will not call NotifyHostAndDelegateOnWasShown,
    // which updates `visibility_`, unless the host is hidden. Make sure no update
    // is needed.
@@ -116,7 +116,7 @@ index 8bd6b07c5c47f6625b24b1ee227d632bf5d97c5d..b87a4ff69d2b68194bcabe1a60668645
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 210e182a80343b67302a2ed347c1ab984cdc3b09..ecb2deab23578181025b0282f02960d4a71a3c1f 100644
+index ae5055c9cae7e4e6de10155cfea95319fc267525..ec828bb7553343e55b768b699d9dc5c13715953e 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -618,6 +618,7 @@ WebViewImpl::WebViewImpl(
@@ -141,7 +141,7 @@ index 210e182a80343b67302a2ed347c1ab984cdc3b09..ecb2deab23578181025b0282f02960d4
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -4327,10 +4335,26 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -4316,10 +4324,26 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  

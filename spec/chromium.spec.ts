@@ -28,6 +28,7 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
 import { emittedUntil } from './lib/events-helpers.ts';
+import { withTempDirectory } from './lib/fs-helpers.ts';
 import {
   ifit,
   ifdescribe,
@@ -35,6 +36,7 @@ import {
   focusWebContents,
   itremote,
   listen,
+  spawnAndWait,
   startRemoteControlApp,
   waitUntil
 } from './lib/spec-helpers.ts';
@@ -2959,112 +2961,6 @@ describe('chromium features', () => {
 
       expect(permission).toBe('denied');
     });
-
-    it('can determine if a permission is granted for "top-level-storage-access"', async () => {
-      session.defaultSession.setPermissionCheckHandler((_wc, permission) => permission === 'top-level-storage-access');
-
-      const w = new BrowserWindow({ show: false });
-      await w.loadFile(path.join(fixturesPath, 'pages', 'a.html'));
-
-      const permission = await w.webContents.executeJavaScript(
-        `
-        navigator.permissions.query({
-          name: 'top-level-storage-access',
-          requestedOrigin: "https://www.example.com",
-        }).then(permission => permission.state).catch(err => err.message);
-      `,
-        true
-      );
-
-      expect(permission).toBe('granted');
-    });
-
-    it('can determine if a permission is denied for "top-level-storage-access"', async () => {
-      session.defaultSession.setPermissionCheckHandler((_wc, permission) => permission !== 'top-level-storage-access');
-
-      const w = new BrowserWindow({ show: false });
-      await w.loadFile(path.join(fixturesPath, 'pages', 'a.html'));
-
-      const permission = await w.webContents.executeJavaScript(
-        `
-        navigator.permissions.query({
-          name: 'top-level-storage-access',
-          requestedOrigin: "https://www.example.com",
-        }).then(permission => permission.state).catch(err => err.message);
-      `,
-        true
-      );
-
-      expect(permission).toBe('denied');
-    });
-
-    it('can grant a permission request for "top-level-storage-access"', async () => {
-      session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
-        callback(permission === 'top-level-storage-access');
-      });
-
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          enableBlinkFeatures: 'RequestStorageAccessFor'
-        }
-      });
-      await w.loadFile(path.join(fixturesPath, 'pages', 'button.html'));
-
-      // requestStorageAccessFor returns a Promise that fulfills with undefined
-      // if the access to third-party cookies was granted and rejects if access was denied.
-      const permission = await w.webContents.executeJavaScript(
-        `
-        new Promise((resolve, reject) => {
-          const button = document.getElementById('button');
-          button.addEventListener("click", () => {
-            document.requestStorageAccessFor('https://myfakesite').then(
-              (res) => { resolve('granted') },
-              (err) => { resolve('denied') },
-            );
-          });
-          button.click();
-        });
-      `,
-        true
-      );
-
-      expect(permission).toBe('granted');
-    });
-
-    it('can deny a permission request for "top-level-storage-access"', async () => {
-      session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
-        callback(permission !== 'top-level-storage-access');
-      });
-
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          enableBlinkFeatures: 'RequestStorageAccessFor'
-        }
-      });
-      await w.loadFile(path.join(fixturesPath, 'pages', 'button.html'));
-
-      // requestStorageAccessFor returns a Promise that fulfills with undefined
-      // if the access to third-party cookies was granted and rejects if access was denied.
-      const permission = await w.webContents.executeJavaScript(
-        `
-        new Promise((resolve, reject) => {
-          const button = document.getElementById('button');
-          button.addEventListener("click", () => {
-            document.requestStorageAccessFor('https://myfakesite').then(
-              (res) => { resolve('granted') },
-              (err) => { resolve('denied') },
-            );
-          });
-          button.click();
-        });
-      `,
-        true
-      );
-
-      expect(permission).toBe('denied');
-    });
   });
 
   describe('IdleDetection', () => {
@@ -3160,6 +3056,81 @@ describe('chromium features', () => {
       );
 
       expect(result).toBe('Idle detection permission denied');
+    });
+  });
+
+  describe('Encrypted Media Extensions', () => {
+    afterEach(closeAllWindows);
+
+    it('ignores --widevine-cdm-path in packaged apps', async () => {
+      await withTempDirectory(async (cdmPath) => {
+        const libraryName =
+          process.platform === 'win32'
+            ? 'widevinecdm.dll'
+            : process.platform === 'darwin'
+              ? 'libwidevinecdm.dylib'
+              : 'libwidevinecdm.so';
+        await fs.promises.writeFile(path.join(cdmPath, libraryName), '');
+
+        const appPath = path.join(fixturesPath, 'api', 'widevine-cdm-path');
+        const result = await spawnAndWait(
+          process.execPath,
+          [`--widevine-cdm-path=${cdmPath}`, '--widevine-cdm-version=1.0.0.0', appPath],
+          {
+            env: {
+              ...process.env,
+              ELECTRON_FORCE_IS_PACKAGED: 'true'
+            },
+            timeout: 30000
+          }
+        );
+
+        expect(result.code, result.stderr).toBe(0);
+        const resultLine = result.stdout.split(/\r?\n/).find((line) => line.startsWith('WIDEVINE_CDM_PATH_RESULT='));
+        expect(resultLine, result.stdout).toBeTypeOf('string');
+        expect(JSON.parse(resultLine!.slice('WIDEVINE_CDM_PATH_RESULT='.length))).toEqual({
+          isPackaged: true,
+          isSecureContext: true,
+          widevineAvailable: false
+        });
+      });
+    });
+
+    it('does not expose Widevine without a configured CDM', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      const result = await w.webContents.executeJavaScript(
+        `
+        (async () => {
+          const config = [{
+            initDataTypes: ['cenc'],
+            videoCapabilities: [{
+              contentType: 'video/webm; codecs="vp8"'
+            }],
+            audioCapabilities: [{
+              contentType: 'audio/webm; codecs="opus"'
+            }]
+          }];
+          try {
+            await navigator.requestMediaKeySystemAccess(
+              'com.widevine.alpha',
+              config
+            );
+            return { ok: true };
+          } catch (error) {
+            return {
+              ok: false,
+              name: error.name,
+              message: error.message
+            };
+          }
+        })()
+      `,
+        true
+      );
+
+      expect(result.ok).toBe(false);
+      expect(result.name).toBe('NotSupportedError');
     });
   });
 

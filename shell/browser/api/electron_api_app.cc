@@ -453,7 +453,11 @@ bool NotificationCallbackWrapper(
   // Set the global activation token sent as a command line switch by another
   // electron app instance. This also removes the switch after use to prevent
   // any side effects of leaving it in the command line after this point.
-  base::nix::ExtractXdgActivationTokenFromCmdLine(cmd);
+  if (std::optional<std::string> token =
+          base::nix::GetXdgActivationTokenFromCommandLine(cmd)) {
+    base::nix::SetActivationToken(std::move(*token));
+    cmd.RemoveSwitch(base::nix::kXdgActivationTokenSwitch);
+  }
 #endif
   // Make sure the callback is called after app gets ready.
   if (Browser::Get()->is_ready()) {
@@ -734,19 +738,8 @@ bool App::CanCreateWindow(
     bool user_gesture,
     bool opener_suppressed,
     bool* no_javascript_access) {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  content::WebContents* web_contents =
-      content::WebContents::FromRenderFrameHost(opener);
-  if (web_contents) {
-    WebContents* api_web_contents = WebContents::From(web_contents);
-    // No need to emit any event if the WebContents is not available in JS.
-    if (api_web_contents) {
-      api_web_contents->OnCreateWindow(target_url, referrer, frame_name,
-                                       disposition, raw_features, body);
-    }
-  }
-
+  // Only reached for openers Electron did not create (no
+  // WebContentsPreferences); those may not open windows.
   return false;
 }
 
@@ -2155,6 +2148,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("isInApplicationsFolder", &App::IsInApplicationsFolder)
       .SetMethod("setActivationPolicy", &App::SetActivationPolicy)
       .SetMethod("configureWebAuthn", &App::ConfigureWebAuthn)
+      .SetMethod("startAppShimServer", &App::StartAppShimServer)
+      .SetMethod("stopAppShimServer", &App::StopAppShimServer)
 #endif
       .SetMethod("setAboutPanelOptions",
                  base::BindRepeating(&Browser::SetAboutPanelOptions, browser))

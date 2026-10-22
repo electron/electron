@@ -67,7 +67,7 @@ index e58bb7368359e6ba13c249b8677a91e509313ce3..036a2af6bb00a4c06682692c964c10bd
    return _headless_info.get();
  }
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index a1aba79563a33893a9d13e764065ec0db5d25bdf..8c957449321971e953e1348ed9a8474d9031285d 100644
+index d2235a096f5ea7b5c3ecdc84af9b10a839615347..7cbf2596bf6b0dc70568f5a591745c38e3572ef9 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -613,7 +613,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -141,7 +141,7 @@ index dcdfee94a5959f49422b4c37a0fbac9c7a378760..0d796595adc97607f9c84990123d8a60
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
-index dd051b97e2c34c147b42feda9e46367086ace871..10475df955762caff8732b1329c2a912e1683726 100644
+index eb2f39791d6fd0ea24df04de41b417985e5f409a..1654a05d0f0751aa9f5515b6466278ee41ef12dc 100644
 --- a/ui/views/widget/widget.cc
 +++ b/ui/views/widget/widget.cc
 @@ -262,6 +262,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
