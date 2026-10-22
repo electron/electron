@@ -845,7 +845,8 @@ added:
 ```
 -->
 
-* `token` string - An [XDG activation](https://wayland.app/protocols/xdg-activation-v1) token.
+* `token` string - An [XDG activation](https://wayland.app/protocols/xdg-activation-v1) token, or a
+  [startup notification](https://specifications.freedesktop.org/startup-notification-spec/latest/) ID on X11.
 
 Sets the token that the next window activation uses, for example
 [`win.focus()`](base-window.md#winfocus) or [`win.show()`](base-window.md#winshow).
@@ -860,10 +861,8 @@ to the front. The token is used once. Set it before the window is created or
 shown, or once the window is on screen: a token that is set while a new window
 is still being shown may not be used.
 
-On X11 the token is a
-[startup notification](https://specifications.freedesktop.org/startup-notification-spec/latest/)
-ID. It is set as the `_NET_STARTUP_ID` of the next window that is created or
-activated, which is where window managers read it.
+On X11 the token is set as the `_NET_STARTUP_ID` of the next window that is
+created or activated, which is where window managers read it.
 
 ### `app.getLocale()`
 
