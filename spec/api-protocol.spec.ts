@@ -2021,6 +2021,63 @@ describe('protocol module', () => {
         w.loadFile(filePath);
       }));
 
+    it('intercepts file:// worker main script and subresource requests', async () => {
+      const ses = session.fromPartition(`protocol-handle-file-worker-${randomUUID()}`);
+      const pagePath = path.join(fixturesPath, 'pages', 'a.html');
+      const workerScriptUrl = url.pathToFileURL(path.join(fixturesPath, 'pages', 'worker-intercept.js')).toString();
+      const workerFetchUrl = url.pathToFileURL(path.join(fixturesPath, 'pages', 'worker-data.txt')).toString();
+
+      const seenProtocolUrls: string[] = [];
+      const seenWebRequestUrls: string[] = [];
+
+      ses.protocol.handle('file', (req) => {
+        seenProtocolUrls.push(req.url);
+        if (req.url === workerScriptUrl) {
+          return new Response(
+            `fetch(${JSON.stringify(workerFetchUrl)}).then(r => r.text()).then(t => postMessage(t));`,
+            { headers: { 'content-type': 'text/javascript' } }
+          );
+        }
+        if (req.url === workerFetchUrl) {
+          return new Response('from-worker-file-fetch');
+        }
+        return ses.fetch(req, { bypassCustomProtocolHandlers: true });
+      });
+      defer(() => {
+        ses.protocol.unhandle('file');
+      });
+
+      ses.webRequest.onBeforeRequest((details, callback) => {
+        seenWebRequestUrls.push(details.url);
+        callback({});
+      });
+      defer(() => {
+        ses.webRequest.onBeforeRequest(null);
+      });
+
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await w.webContents.loadFile(pagePath);
+      const workerReply = await w.webContents.executeJavaScript(`
+        new Promise((resolve, reject) => {
+          const worker = new Worker(${JSON.stringify(workerScriptUrl)});
+          worker.onmessage = (e) => {
+            worker.terminate();
+            resolve(e.data);
+          };
+          worker.onerror = (e) => {
+            worker.terminate();
+            reject(new Error(e.message || 'worker error'));
+          };
+        })
+      `);
+
+      expect(workerReply).toBe('from-worker-file-fetch');
+      expect(seenProtocolUrls).toContain(workerScriptUrl);
+      expect(seenProtocolUrls).toContain(workerFetchUrl);
+      expect(seenWebRequestUrls).toContain(workerScriptUrl);
+      expect(seenWebRequestUrls).toContain(workerFetchUrl);
+    });
+
     it('receives requests to an existing scheme when navigating', async () => {
       protocol.handle('https', (req) => new Response('hello ' + req.url));
       defer(() => {
