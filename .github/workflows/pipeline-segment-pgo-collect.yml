@@ -61,7 +61,7 @@ jobs:
       if: ${{ inputs.target-platform != 'linux' }}
       uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
       with:
-        node-version: 22.21.x
+        node-version: 22.23.4
     # Installs only the @electron-ci/pgo workspace's dependencies (a focused
     # install takes seconds; a full yarn install takes minutes).
     - name: Install collection dependencies

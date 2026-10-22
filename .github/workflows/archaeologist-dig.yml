@@ -19,7 +19,7 @@ jobs:
       - name: Setup Node.js/npm
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
-          node-version: 24.12.x
+          node-version: 24.22.1
       - name: Setting Up Dig Site
         env:
           CLONE_URL: ${{ github.event.pull_request.head.repo.clone_url }}
