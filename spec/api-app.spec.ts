@@ -2081,10 +2081,16 @@ describe('app module', () => {
       child.stderr.on('data', (chunk) => {
         protocolLog += chunk;
       });
-      await once(child, 'close');
+      const hasActivationProtocol = () => protocolLog.includes('"xdg_activation_v1"');
+      await waitUntil(() => {
+        expect(child.exitCode ?? child.signalCode, protocolLog).toBeNull();
+        return (
+          /xdg_activation_v1[#@]\d+\.activate\(/.test(protocolLog) ||
+          (/xdg_surface[#@]\d+\.ack_configure\(/.test(protocolLog) && !hasActivationProtocol())
+        );
+      });
 
-      // Not every compositor implements the activation protocol.
-      if (!/"xdg_activation_v1"/.test(protocolLog)) ctx.skip();
+      if (!hasActivationProtocol()) ctx.skip();
       expect(protocolLog).toMatch(/xdg_activation_v1[#@]\d+\.activate\("electron-test-token"/);
     });
   });

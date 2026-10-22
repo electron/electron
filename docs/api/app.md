@@ -856,9 +856,14 @@ such tokens along by itself when the app is launched or when one of its
 [`Notification`](notification.md)s is clicked. Use this method when the app gets
 a token some other way, for example from a notification it sent over D-Bus
 itself or from another process, and wants the window it activates next to come
-to the front. The token is used once.
+to the front. The token is used once. Set it before the window is created or
+shown, or once the window is on screen: a token that is set while a new window
+is still being shown may not be used.
 
-This has no effect on X11.
+On X11 the token is a
+[startup notification](https://specifications.freedesktop.org/startup-notification-spec/latest/)
+ID. It is set as the `_NET_STARTUP_ID` of the next window that is created or
+activated, which is where window managers read it.
 
 ### `app.getLocale()`
 
