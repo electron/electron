@@ -5884,7 +5884,7 @@ void WebContents::PostMessage(v8::Isolate* isolate,
         "webContents has no main frame to post to");
     return;
   }
-  frame->PostMessage(isolate, channel, message, std::move(transfer));
+  frame->PostMessage(isolate, channel, message, transfer);
 }
 
 void WebContents::SendInternal(gin::Arguments* args) {
