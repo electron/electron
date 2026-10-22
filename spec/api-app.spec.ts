@@ -1029,7 +1029,7 @@ describe('app module', () => {
 
     ifit(isWin)('finds launch items whose executable path contains spaces', () => {
       app.setLoginItemSettings({ openAtLogin: true, name: 'spacedEntry', path: exeWithSpaces });
-      expect(app.getLoginItemSettings({ path: exeWithSpaces })).to.deep.equal({
+      expect(app.getLoginItemSettings({ path: exeWithSpaces })).toEqual({
         openAtLogin: false,
         wasOpenedAtLogin: false,
         executableWillLaunchAtLogin: true,
