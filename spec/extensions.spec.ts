@@ -20,6 +20,7 @@ import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import * as path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { emittedNTimes, emittedUntil } from './lib/events-helpers.ts';
 import { ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
@@ -502,6 +503,16 @@ describe('chrome extensions', () => {
           path.join(fixtures, 'extensions', 'chrome-webRequest')
         );
 
+        const workerDataUrl = pathToFileURL(path.join(fixtures, 'pages', 'worker-data.txt')).toString();
+        const seenProtocolUrls: string[] = [];
+        customSession.protocol.handle('file', (req) => {
+          seenProtocolUrls.push(req.url);
+          if (req.url === workerDataUrl) {
+            return new Response('pong');
+          }
+          return customSession.fetch(req, { bypassCustomProtocolHandlers: true });
+        });
+
         try {
           await waitUntil(haveRejectedFetch);
           await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
@@ -511,9 +522,16 @@ describe('chrome extensions', () => {
               const worker = new Worker(
                 new URL('../workers/worker.js', location.href).href
               );
-              worker.onmessage = (event) => {
-                worker.terminate();
-                resolve(event.data);
+              worker.onmessage = async (event) => {
+                try {
+                  const res = await fetch(${JSON.stringify(workerDataUrl)});
+                  const text = await res.text();
+                  worker.terminate();
+                  resolve(\`\${event.data}:\${text}\`);
+                } catch (err) {
+                  worker.terminate();
+                  reject(err);
+                }
               };
               worker.onerror = (event) => {
                 worker.terminate();
@@ -523,8 +541,10 @@ describe('chrome extensions', () => {
             })
           `);
 
-          expect(reply).toBe('ping');
+          expect(reply).toBe('ping:pong');
+          expect(seenProtocolUrls).toContain(workerDataUrl);
         } finally {
+          customSession.protocol.unhandle('file');
           customSession.extensions.removeExtension(extension.id);
         }
       });

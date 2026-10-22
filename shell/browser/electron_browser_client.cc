@@ -1587,6 +1587,8 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
   auto* const web_request =
       api::WebRequest::FromOrCreate(isolate, browser_context);
   DCHECK(web_request);
+  auto* protocol_registry =
+      ProtocolRegistry::FromBrowserContext(browser_context);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // Factories for requests made from the main process (e.g. net.fetch) or
@@ -1610,7 +1612,8 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
 
     if (bypass_redirect_checks)
       *bypass_redirect_checks = used_proxy_for_web_request;
-    if (used_proxy_for_web_request)
+    if (used_proxy_for_web_request &&
+        protocol_registry->intercept_handlers().empty())
       return;
   }
 #endif
@@ -1649,11 +1652,9 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
 
   mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
       header_client_receiver;
-  if (header_client)
+  if (header_client && !header_client->is_valid())
     header_client_receiver = header_client->InitWithNewPipeAndPassReceiver();
 
-  auto* protocol_registry =
-      ProtocolRegistry::FromBrowserContext(browser_context);
   new ProxyingURLLoaderFactory{
       web_request,
       protocol_registry->intercept_handlers(),
