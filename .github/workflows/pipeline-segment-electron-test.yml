@@ -393,7 +393,7 @@ jobs:
       # Best effort: if the window stays up, the specs report what covers
       # them (describeWindowAtPoint) rather than failing here.
       continue-on-error: true
-      uses: ./src/electron/.github/actions/dismiss-windows-first-sign-in
+      uses: $/.github/actions/dismiss-windows-first-sign-in
       with:
         minimizer-seconds: 3600
 
