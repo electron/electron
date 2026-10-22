@@ -2063,6 +2063,38 @@ describe('app module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'linux')('app.setActivationToken(token)', () => {
+    it('throws when the token is not a string', () => {
+      expect(() => app.setActivationToken(1 as any)).toThrow(/Error processing argument at index 0/);
+    });
+
+    ifit(isWayland)('activates the next window with the token', async (ctx) => {
+      const child = cp.spawn(
+        process.execPath,
+        [path.join(fixturesPath, 'api', 'activation-token'), '--ozone-platform=wayland'],
+        { env: { ...process.env, WAYLAND_DEBUG: '1' }, stdio: ['ignore', 'ignore', 'pipe'] }
+      );
+      defer(() => {
+        if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+      });
+      let protocolLog = '';
+      child.stderr.on('data', (chunk) => {
+        protocolLog += chunk;
+      });
+      const hasActivationProtocol = () => protocolLog.includes('"xdg_activation_v1"');
+      await waitUntil(() => {
+        expect(child.exitCode ?? child.signalCode, protocolLog).toBeNull();
+        return (
+          /xdg_activation_v1[#@]\d+\.activate\(/.test(protocolLog) ||
+          (/xdg_surface[#@]\d+\.ack_configure\(/.test(protocolLog) && !hasActivationProtocol())
+        );
+      });
+
+      if (!hasActivationProtocol()) ctx.skip();
+      expect(protocolLog).toMatch(/xdg_activation_v1[#@]\d+\.activate\("electron-test-token"/);
+    });
+  });
+
   ifdescribe(process.platform === 'linux')('display server selection', () => {
     let runtimeDir: string;
     beforeEach(() => {

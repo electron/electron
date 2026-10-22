@@ -8,7 +8,7 @@ respond to the first mouse click in their window, which is desirable for some
 kinds of utility windows. Similarly for `disableAutoHideCursor`.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index b72b0edd65c823f5dd8933a1eaf6b1ca59a61e6b..c74a6130862162d4fdb07cf3d4a60604d0ae0482 100644
+index 53bc6fac1a8f8a287ab05438f019c5c0dd6bd767..45e8631ea6e5497edb90b91223d962abe3071849 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -192,6 +192,11 @@ void ExtractUnderlines(NSAttributedString* string,
@@ -23,7 +23,7 @@ index b72b0edd65c823f5dd8933a1eaf6b1ca59a61e6b..c74a6130862162d4fdb07cf3d4a60604
  // RenderWidgetHostViewCocoa ---------------------------------------------------
  
  // Private methods:
-@@ -856,6 +861,10 @@ - (AcceptMouseEvents)acceptsMouseEventsOption {
+@@ -858,6 +863,10 @@ - (AcceptMouseEvents)acceptsMouseEventsOption {
  }
  
  - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
@@ -34,7 +34,7 @@ index b72b0edd65c823f5dd8933a1eaf6b1ca59a61e6b..c74a6130862162d4fdb07cf3d4a60604
    // A click that another process posts straight to this process does not
    // activate the app, unlike one the window server routes here, so treating it
    // as an activation click would only drop it.
-@@ -1527,6 +1536,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
+@@ -1529,6 +1538,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
                                eventType == NSEventTypeKeyDown &&
                                !(modifierFlags & NSEventModifierFlagCommand);
  
