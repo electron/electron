@@ -20,7 +20,7 @@ shell/renderer/preload_realm_context.cc. This patch is specific to Electron
 and is not intended to be upstreamed.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 461f4656d8045de3425d6ee3949f0ac48cc69a16..f33541c19d65a46453b968e7f90bbddacdd9b1ec 100644
+index 41a5db4e019084d47763a43bd548b29faa070660..3e62033228307ef2474c91e250db08cd72934ad6 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 @@ -78,6 +78,7 @@
@@ -57,7 +57,7 @@ index 788f261f96ef65df2bc7fef0fa2a793da22e44ca..7b8efe1bc88c18e3ccf6e9a663c6670f
    "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_progress_event.h",
    "$root_gen_dir/third_party/blink/renderer/bindings/core/v8/v8_promise_rejection_event.cc",
 diff --git a/third_party/blink/renderer/bindings/generated_in_modules.gni b/third_party/blink/renderer/bindings/generated_in_modules.gni
-index 0002dbc6a5a8cd955f25de307a8ece71c2d5ebd0..9ae42c8e84572b4cef031585880576596d05036c 100644
+index b56e9a96ebd3d598e53848fa955d02ac45628900..4f4d8a5ec938f7b4ccd336b64221d62017fb83b4 100644
 --- a/third_party/blink/renderer/bindings/generated_in_modules.gni
 +++ b/third_party/blink/renderer/bindings/generated_in_modules.gni
 @@ -2793,6 +2793,8 @@ generated_interface_sources_in_modules = [
