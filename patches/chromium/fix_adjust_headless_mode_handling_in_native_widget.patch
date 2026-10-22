@@ -67,7 +67,7 @@ index e58bb7368359e6ba13c249b8677a91e509313ce3..036a2af6bb00a4c06682692c964c10bd
    return _headless_info.get();
  }
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 23f119b4adf8d604a5f283ecf58f23a08a1f88f7..df23bb8f408e9a712ceeb24558947a83ce62e634 100644
+index d2235a096f5ea7b5c3ecdc84af9b10a839615347..7cbf2596bf6b0dc70568f5a591745c38e3572ef9 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -613,7 +613,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -94,10 +94,10 @@ index a41254c1f31654c1326b4bf1f29237bdf44bbe5a..8ca5673a225b69b5630383ed9673653b
    StateRestorationData? state_restoration_data;
  
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index ad6a2ca5960749d2b1a45f39f4ab419370dde406..2c850a6c5d01936052f2eb41f814a25ea109055e 100644
+index 37cdddfb2f8309aa1bb331d2052eeff02fc5584b..c3547acc8b176181b950c98ea6d2d421830a63e6 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-@@ -579,6 +579,7 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
+@@ -580,6 +580,7 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
    bool is_miniaturized_ = false;
    bool is_window_key_ = false;
    bool is_mouse_capture_active_ = false;
@@ -141,7 +141,7 @@ index dcdfee94a5959f49422b4c37a0fbac9c7a378760..0d796595adc97607f9c84990123d8a60
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
-index dd051b97e2c34c147b42feda9e46367086ace871..10475df955762caff8732b1329c2a912e1683726 100644
+index eb2f39791d6fd0ea24df04de41b417985e5f409a..1654a05d0f0751aa9f5515b6466278ee41ef12dc 100644
 --- a/ui/views/widget/widget.cc
 +++ b/ui/views/widget/widget.cc
 @@ -262,6 +262,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {

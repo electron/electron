@@ -1630,6 +1630,79 @@ describe('protocol module', () => {
         const body = await net.fetch('no-cors://host/secret').then((r) => r.text());
         expect(body).toBe(secret);
       });
+
+      describe('with protocol.registerSource', () => {
+        let root: string;
+        beforeAll(() => {
+          root = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-protocol-source-cors-'));
+          fs.writeFileSync(path.join(root, 'secret.txt'), secret);
+          fs.writeFileSync(path.join(root, 'page.html'), '<!doctype html><body>page');
+        });
+        afterAll(() => fs.rmSync(root, { recursive: true, force: true }));
+        beforeEach(() => {
+          if (protocol.isProtocolHandled('no-cors-standard')) protocol.unhandle('no-cors-standard');
+          protocol.registerSource('no-cors-standard', {
+            routes: [{ source: { type: 'directory', root } }]
+          });
+        });
+
+        it('blocks a remote http origin from reading a source file via fetch() and XHR', async () => {
+          await w.loadURL(remoteUrl);
+          const result = await w.webContents.executeJavaScript(`
+            Promise.all([
+              fetch('no-cors-standard://app/secret.txt')
+                .then(r => r.text()).then(body => ({ body, error: null }))
+                .catch(e => ({ body: null, error: String(e) })),
+              new Promise(resolve => {
+                const x = new XMLHttpRequest();
+                x.onload = () => resolve({ body: x.responseText, errored: false });
+                x.onerror = () => resolve({ body: null, errored: true });
+                x.open('GET', 'no-cors-standard://app/secret.txt');
+                x.send();
+              })
+            ])
+          `);
+          expect(result[0].body).not.toBe(secret);
+          expect(result[0].error).toMatch(/Failed to fetch/);
+          expect(result[1]).toEqual({ body: null, errored: true });
+        });
+
+        it('returns an opaque response for a source file fetched cross-origin with mode: no-cors', async () => {
+          await w.loadURL(remoteUrl);
+          const { type, status, body } = await w.webContents.executeJavaScript(`
+            fetch('no-cors-standard://app/secret.txt', { mode: 'no-cors' })
+              .then(async r => ({ type: r.type, status: r.status, body: await r.text() }))
+          `);
+          expect(type).toBe('opaque');
+          expect(status).toBe(0);
+          expect(body).toBe('');
+        });
+
+        it('allows same-origin fetch and blocks cross-origin fetch between source hosts', async () => {
+          await w.loadURL('no-cors-standard://app/page.html');
+          const same = await w.webContents.executeJavaScript(
+            "fetch('no-cors-standard://app/secret.txt').then(r => r.text())"
+          );
+          expect(same).toBe(secret);
+          const cross = await w.webContents.executeJavaScript(
+            "fetch('no-cors-standard://other/secret.txt').then(() => null, e => String(e))"
+          );
+          expect(cross).toMatch(/Failed to fetch/);
+        });
+
+        it('does not affect cross-origin fetch to a corsEnabled source', async () => {
+          protocol.registerSource('http-like', { routes: [{ source: { type: 'directory', root } }] });
+          defer(() => protocol.unhandle('http-like'));
+          await w.loadURL(remoteUrl);
+          const body = await w.webContents.executeJavaScript("fetch('http-like://app/secret.txt').then(r => r.text())");
+          expect(body).toBe(secret);
+        });
+
+        it('does not affect main-process net.fetch', async () => {
+          const body = await net.fetch('no-cors-standard://app/secret.txt').then((r) => r.text());
+          expect(body).toBe(secret);
+        });
+      });
     });
 
     it('disallows CORS and fetch requests when only supportFetchAPI is specified', async () => {
@@ -1947,6 +2020,63 @@ describe('protocol module', () => {
         const w = new BrowserWindow();
         w.loadFile(filePath);
       }));
+
+    it('intercepts file:// worker main script and subresource requests', async () => {
+      const ses = session.fromPartition(`protocol-handle-file-worker-${randomUUID()}`);
+      const pagePath = path.join(fixturesPath, 'pages', 'a.html');
+      const workerScriptUrl = url.pathToFileURL(path.join(fixturesPath, 'pages', 'worker-intercept.js')).toString();
+      const workerFetchUrl = url.pathToFileURL(path.join(fixturesPath, 'pages', 'worker-data.txt')).toString();
+
+      const seenProtocolUrls: string[] = [];
+      const seenWebRequestUrls: string[] = [];
+
+      ses.protocol.handle('file', (req) => {
+        seenProtocolUrls.push(req.url);
+        if (req.url === workerScriptUrl) {
+          return new Response(
+            `fetch(${JSON.stringify(workerFetchUrl)}).then(r => r.text()).then(t => postMessage(t));`,
+            { headers: { 'content-type': 'text/javascript' } }
+          );
+        }
+        if (req.url === workerFetchUrl) {
+          return new Response('from-worker-file-fetch');
+        }
+        return ses.fetch(req, { bypassCustomProtocolHandlers: true });
+      });
+      defer(() => {
+        ses.protocol.unhandle('file');
+      });
+
+      ses.webRequest.onBeforeRequest((details, callback) => {
+        seenWebRequestUrls.push(details.url);
+        callback({});
+      });
+      defer(() => {
+        ses.webRequest.onBeforeRequest(null);
+      });
+
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await w.webContents.loadFile(pagePath);
+      const workerReply = await w.webContents.executeJavaScript(`
+        new Promise((resolve, reject) => {
+          const worker = new Worker(${JSON.stringify(workerScriptUrl)});
+          worker.onmessage = (e) => {
+            worker.terminate();
+            resolve(e.data);
+          };
+          worker.onerror = (e) => {
+            worker.terminate();
+            reject(new Error(e.message || 'worker error'));
+          };
+        })
+      `);
+
+      expect(workerReply).toBe('from-worker-file-fetch');
+      expect(seenProtocolUrls).toContain(workerScriptUrl);
+      expect(seenProtocolUrls).toContain(workerFetchUrl);
+      expect(seenWebRequestUrls).toContain(workerScriptUrl);
+      expect(seenWebRequestUrls).toContain(workerFetchUrl);
+    });
 
     it('receives requests to an existing scheme when navigating', async () => {
       protocol.handle('https', (req) => new Response('hello ' + req.url));
@@ -2853,10 +2983,16 @@ describe('protocol module', () => {
         return elapsed;
       };
 
-      const measureInterceptedPayload = async () => {
+      // `relayed` returns net.fetch's Response untouched, which protocol.handle
+      // relays natively; `piped` re-wraps the body so every chunk is pumped
+      // through JS, the path relaying replaced.
+      type Path = 'direct' | 'relayed' | 'piped';
+      const measure = async (path: Path) => {
+        if (path === 'direct') return fetchPayload();
         protocol.handle('http', async (req) => {
           handlerCalls++;
-          return net.fetch(req, { bypassCustomProtocolHandlers: true });
+          const response = await net.fetch(req, { bypassCustomProtocolHandlers: true });
+          return path === 'relayed' ? response : new Response(response.body, response);
         });
         try {
           return await fetchPayload(true);
@@ -2865,30 +3001,41 @@ describe('protocol module', () => {
         }
       };
 
-      await fetchPayload(); // Warm the direct network path.
-      await measureInterceptedPayload(); // Warm the protocol handler path.
+      // Warm every path.
+      for (const path of ['direct', 'relayed', 'piped'] as const) await measure(path);
 
-      // Fetching through an intercepted handler should not be too much slower
-      // than it would be if the protocol hadn't been intercepted.
-      const samples = [];
-      for (const directFirst of [true, false, true, false]) {
-        let directTime: number;
-        let interceptedTime: number;
-        if (directFirst) {
-          directTime = await fetchPayload();
-          interceptedTime = await measureInterceptedPayload();
-        } else {
-          interceptedTime = await measureInterceptedPayload();
-          directTime = await fetchPayload();
-        }
-        samples.push({ directTime, interceptedTime, ratio: interceptedTime / directTime });
+      // Run every order of the three paths once so drift and per-position
+      // effects hit each path equally, then compare medians of per-round ratios.
+      const orders: Path[][] = [
+        ['direct', 'relayed', 'piped'],
+        ['relayed', 'piped', 'direct'],
+        ['piped', 'direct', 'relayed'],
+        ['direct', 'piped', 'relayed'],
+        ['piped', 'relayed', 'direct'],
+        ['relayed', 'direct', 'piped']
+      ];
+      const samples: Record<Path, number>[] = [];
+      for (const order of orders) {
+        const sample = {} as Record<Path, number>;
+        for (const path of order) sample[path] = await measure(path);
+        samples.push(sample);
       }
-
-      const ratios = samples.map(({ ratio }) => ratio).sort((a, b) => a - b);
-      const medianRatio = (ratios[1] + ratios[2]) / 2;
-      // Balance pair order to reduce drift and use the median to limit isolated outliers.
-      // Interception adds another response body pipeline; allow headroom above its expected ~2x cost.
-      expect(medianRatio, `timings: ${JSON.stringify(samples)}`).toBeLessThan(3);
+      const median = (values: number[]) => {
+        const sorted = [...values].sort((a, b) => a - b);
+        return (sorted[2] + sorted[3]) / 2;
+      };
+      const relayedVsDirect = median(samples.map((s) => s.relayed / s.direct));
+      const relayedVsPiped = median(samples.map((s) => s.relayed / s.piped));
+      const details = `timings: ${JSON.stringify({ relayedVsDirect, relayedVsPiped, samples })}`;
+      // Interception adds another response body pipeline. Its cost relative to
+      // a direct fetch depends on the machine: about 1.4-1.8x on Linux, but
+      // 3.0-3.9x on Windows CI runners, so this only catches gross regressions.
+      expect(relayedVsDirect, details).toBeLessThan(5);
+      // Relaying should beat pumping the body through JS on the same machine
+      // (about 0.5x on Linux). Only Linux has been measured so far.
+      if (process.platform === 'linux') {
+        expect(relayedVsPiped, details).toBeLessThan(0.8);
+      }
     });
   });
 });

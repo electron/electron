@@ -76,18 +76,18 @@ index 0e9bffaf0203d39d9fb82d717f36b449d5566181..5cf3d98f4679a252290a34c15491a8a4
    auto it = accelerator_map_.begin();
    while (it != accelerator_map_.end()) {
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
-index 4a343f4e701928644ff3f2a855cc04c3fea2932a..a48b7b73508942cc05e0dcf0fe108313f265c7c6 100644
+index 0712e324023e5db9e7a550c1d0167cea39292860..4f996dce458e50cc00f556f7da5681d926c8dec8 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
-@@ -9,6 +9,7 @@
- 
+@@ -13,6 +13,7 @@
  #include "base/functional/callback.h"
  #include "base/memory/raw_ptr.h"
+ #include "base/values.h"
 +#include "content/public/browser/media_keys_listener_manager.h"
  #include "ui/base/accelerators/command.h"
  #include "ui/gfx/native_ui_types.h"
  
-@@ -43,6 +44,9 @@ class GlobalAcceleratorListener {
+@@ -47,6 +48,9 @@ class COMPONENT_EXPORT(GLOBAL_ACCELERATOR_LISTENER) GlobalAcceleratorListener {
    // The instance may be nullptr.
    static GlobalAcceleratorListener* GetInstance();
  

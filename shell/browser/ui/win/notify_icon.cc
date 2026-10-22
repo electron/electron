@@ -121,6 +121,10 @@ void NotifyIcon::ResetIcon() {
   // Shell_NotifyIcon() to set the image for the status icon it creates.
   if (icon_data.hIcon)
     icon_data.uFlags |= NIF_ICON;
+  if (!tool_tip_.empty()) {
+    icon_data.uFlags |= NIF_TIP;
+    base::wcslcpy(icon_data.szTip, tool_tip_);
+  }
   // Re-add our icon.
   BOOL result = Shell_NotifyIcon(NIM_ADD, &icon_data);
   if (!result)
@@ -147,8 +151,9 @@ void NotifyIcon::SetPressedImage(HICON image) {
 void NotifyIcon::SetToolTip(const std::string& tool_tip) {
   // Create the icon.
   NOTIFYICONDATA icon_data = InitIconData();
+  tool_tip_ = base::UTF8ToWide(tool_tip);
   icon_data.uFlags |= NIF_TIP;
-  base::wcslcpy(icon_data.szTip, base::UTF8ToWide(tool_tip));
+  base::wcslcpy(icon_data.szTip, tool_tip_);
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
   if (!result)
     LOG(WARNING) << "Unable to set tooltip for status tray icon";

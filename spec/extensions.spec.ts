@@ -20,6 +20,7 @@ import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import * as path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { emittedNTimes, emittedUntil } from './lib/events-helpers.ts';
 import { ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
@@ -437,6 +438,21 @@ describe('chrome extensions', () => {
         w.destroy();
       }
     });
+
+    it('emits onChanged in a service worker', async () => {
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
+      const extension = await customSession.extensions.loadExtension(
+        path.join(fixtures, 'extensions', 'chrome-storage-service-worker')
+      );
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      try {
+        await w.loadURL(`${extension.url}page.html`);
+        const change = await w.webContents.executeJavaScript("chrome.runtime.sendMessage('set-and-wait-for-change')");
+        expect(change).toEqual({ changes: { key: { newValue: 'value' } }, areaName: 'local' });
+      } finally {
+        w.destroy();
+      }
+    });
   });
 
   describe('chrome.webRequest', () => {
@@ -479,6 +495,58 @@ describe('chrome extensions', () => {
       it('does not cancel http requests when no extension loaded', async () => {
         await w.loadURL(url);
         await fetch(w.webContents, url);
+      });
+
+      it('loads a file worker when only an extension uses webRequest', async () => {
+        await w.loadURL(url);
+        const extension = await customSession.extensions.loadExtension(
+          path.join(fixtures, 'extensions', 'chrome-webRequest')
+        );
+
+        const workerDataUrl = pathToFileURL(path.join(fixtures, 'pages', 'worker-data.txt')).toString();
+        const seenProtocolUrls: string[] = [];
+        customSession.protocol.handle('file', (req) => {
+          seenProtocolUrls.push(req.url);
+          if (req.url === workerDataUrl) {
+            return new Response('pong');
+          }
+          return customSession.fetch(req, { bypassCustomProtocolHandlers: true });
+        });
+
+        try {
+          await waitUntil(haveRejectedFetch);
+          await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+          const reply = await w.webContents.executeJavaScript(`
+            new Promise((resolve, reject) => {
+              const worker = new Worker(
+                new URL('../workers/worker.js', location.href).href
+              );
+              worker.onmessage = async (event) => {
+                try {
+                  const res = await fetch(${JSON.stringify(workerDataUrl)});
+                  const text = await res.text();
+                  worker.terminate();
+                  resolve(\`\${event.data}:\${text}\`);
+                } catch (err) {
+                  worker.terminate();
+                  reject(err);
+                }
+              };
+              worker.onerror = (event) => {
+                worker.terminate();
+                reject(new Error(event.message || 'worker error'));
+              };
+              worker.postMessage('ping');
+            })
+          `);
+
+          expect(reply).toBe('ping:pong');
+          expect(seenProtocolUrls).toContain(workerDataUrl);
+        } finally {
+          customSession.protocol.unhandle('file');
+          customSession.extensions.removeExtension(extension.id);
+        }
       });
     });
 

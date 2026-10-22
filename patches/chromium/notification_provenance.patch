@@ -92,7 +92,7 @@ index 6f405c9b8c2a34ac071cc4c2b3bdc953c7f5ea1a..9346ccc6249672f133975386cc8c44fa
          contents_.get()->GetPrimaryMainFrame()->GetWeakDocumentPtr(),
          RenderProcessHost::NotificationServiceCreatorType::kDocument,
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index 827ea31d1b87443e7062725491a4be883a7d5128..b90f5faad8a8470a785fb0775e366b953bb2285c 100644
+index 3c200766a4b26e415b74b14ba04e7e199685fe00..693695165ddaf095210a5d1f8a2f7da5ac344617 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
 @@ -289,6 +289,7 @@ void PlatformNotificationContextImpl::Shutdown() {
@@ -133,7 +133,7 @@ index 9bf238e64af483294ae3c3f18a4e9aed49a8658d..b9b2a4c8c387b8e8b4eb1f02fc0f891c
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index cf64747dbc2a2800d42a8993d8f0b856c7ba1822..712445d23f1375d9089d3f33366e418ca880b2c1 100644
+index 766cd4bdabacfa02ccf4432ab88d755eb2ac338a..a74018cf7431452d32a1523dc902362697d75971 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -2557,7 +2557,7 @@ void RenderProcessHostImpl::CreateNotificationService(

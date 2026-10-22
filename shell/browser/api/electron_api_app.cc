@@ -43,6 +43,7 @@
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/render_frame_host.h"
+#include "content/public/common/child_process_id.h"
 #include "content/public/common/content_switches.h"
 #include "crypto/crypto_buildflags.h"
 #include "electron/mas.h"
@@ -453,7 +454,11 @@ bool NotificationCallbackWrapper(
   // Set the global activation token sent as a command line switch by another
   // electron app instance. This also removes the switch after use to prevent
   // any side effects of leaving it in the command line after this point.
-  base::nix::ExtractXdgActivationTokenFromCmdLine(cmd);
+  if (std::optional<std::string> token =
+          base::nix::GetXdgActivationTokenFromCommandLine(cmd)) {
+    base::nix::SetActivationToken(std::move(*token));
+    cmd.RemoveSwitch(base::nix::kXdgActivationTokenSwitch);
+  }
 #endif
   // Make sure the callback is called after app gets ready.
   if (Browser::Get()->is_ready()) {
@@ -775,7 +780,7 @@ void App::AllowCertificateError(
 
 base::OnceClosure App::SelectClientCertificate(
     content::BrowserContext* browser_context,
-    int process_id,
+    content::ChildProcessId process_id,
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
     net::ClientCertIdentityList identities,
@@ -1031,6 +1036,12 @@ void App::SetDesktopName(const std::string& desktop_name) {
   env->SetVar("CHROME_DESKTOP", desktop_name);
   // The Linux application name, and so the user agent, comes from this file.
   InvalidateApplicationUserAgent();
+#endif
+}
+
+void App::SetActivationToken(const std::string& token) {
+#if BUILDFLAG(IS_LINUX)
+  base::nix::SetActivationToken(token);
 #endif
 }
 
@@ -2171,6 +2182,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("getPath", &App::GetPath)
       .SetMethod("setAppLogsPath", &App::SetAppLogsPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
+      .SetMethod("setActivationToken", &App::SetActivationToken)
       .SetMethod("getLocale", &App::GetLocale)
       .SetMethod("getPreferredSystemLanguages", &GetPreferredLanguages)
       .SetMethod("getSystemLocale", &App::GetSystemLocale)

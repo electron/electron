@@ -25,10 +25,10 @@ is upstream as of 154.0.8023.0.)
 This patch should be submitted upstream.
 
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
-index a48b7b73508942cc05e0dcf0fe108313f265c7c6..ed5f8cdd054a557a672a5bc1eb8def33ec544706 100644
+index 4f996dce458e50cc00f556f7da5681d926c8dec8..6f0de8ce780defb9db80fbef1427256abd4ed971 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h
-@@ -85,6 +85,18 @@ class GlobalAcceleratorListener {
+@@ -89,6 +89,18 @@ class COMPONENT_EXPORT(GLOBAL_ACCELERATOR_LISTENER) GlobalAcceleratorListener {
        base::RepeatingCallback<void(const std::string&, const std::string&)>
            execute_command) {}
  
@@ -48,10 +48,10 @@ index a48b7b73508942cc05e0dcf0fe108313f265c7c6..ed5f8cdd054a557a672a5bc1eb8def33
    virtual void PruneStaleCommands() {}
  
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
-index 3ccf93da7d44721b5e015f2c82950c4d7e9dca75..30a440a5557a2750549833ecd8d68a2bfa243df4 100644
+index 8a4e6872a3288da51db9b7cc72310b49c30b3857..47634846e414e83f9e3848789b36f8a247dc1719 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
-@@ -111,6 +111,7 @@ void GlobalAcceleratorListenerLinux::OnServiceStarted(uint32_t version) {
+@@ -115,6 +115,7 @@ void GlobalAcceleratorListenerLinux::OnServiceStarted(uint32_t version) {
    portal_version_ = version;
  
    if (!*service_started_) {
@@ -59,7 +59,7 @@ index 3ccf93da7d44721b5e015f2c82950c4d7e9dca75..30a440a5557a2750549833ecd8d68a2b
      bound_commands_.clear();
      return;
    }
-@@ -165,8 +166,12 @@ void GlobalAcceleratorListenerLinux::OnCommandsChanged(
+@@ -169,8 +170,12 @@ void GlobalAcceleratorListenerLinux::OnCommandsChanged(
      gfx::AcceleratedWidget widget,
      base::RepeatingCallback<void(const std::string&, const std::string&)>
          execute_command) {
@@ -73,9 +73,9 @@ index 3ccf93da7d44721b5e015f2c82950c4d7e9dca75..30a440a5557a2750549833ecd8d68a2b
      return;
    }
  
-@@ -209,6 +214,13 @@ void GlobalAcceleratorListenerLinux::OnCommandsChanged(
-   }
+@@ -217,6 +222,13 @@ void GlobalAcceleratorListenerLinux::OnCommandsChanged(
  
+   SaveState();
    MaybeBind();
 +
 +  // If every global command of this group is already bound in the current
@@ -86,8 +86,8 @@ index 3ccf93da7d44721b5e015f2c82950c4d7e9dca75..30a440a5557a2750549833ecd8d68a2b
 +  }
  }
  
- void GlobalAcceleratorListenerLinux::MaybeBind() {
-@@ -265,6 +277,8 @@ void GlobalAcceleratorListenerLinux::OnCreateSessionResponse(
+ void GlobalAcceleratorListenerLinux::SetStateStore(
+@@ -289,6 +301,8 @@ void GlobalAcceleratorListenerLinux::OnCreateSessionResponse(
    if (!session) {
      VLOG(1) << "Failed to create portal session.";
      session_.reset();
@@ -96,7 +96,7 @@ index 3ccf93da7d44721b5e015f2c82950c4d7e9dca75..30a440a5557a2750549833ecd8d68a2b
      return;
    }
  
-@@ -323,6 +337,7 @@ void GlobalAcceleratorListenerLinux::OnListShortcuts(
+@@ -356,6 +370,7 @@ void GlobalAcceleratorListenerLinux::OnListShortcuts(
            [&](const std::string& id) { return listed_ids.contains(id); })) {
      session_ids_ = ids_to_bind;
      bind_state_ = BindState::kBound;
@@ -104,7 +104,7 @@ index 3ccf93da7d44721b5e015f2c82950c4d7e9dca75..30a440a5557a2750549833ecd8d68a2b
      return;
    }
  
-@@ -352,10 +367,16 @@ void GlobalAcceleratorListenerLinux::BindShortcuts(std::string parent_handle) {
+@@ -385,12 +400,18 @@ void GlobalAcceleratorListenerLinux::BindShortcuts(std::string parent_handle) {
    }
  
    const base::flat_set<std::string> ids_to_bind = GetIdsToBind();
@@ -113,16 +113,18 @@ index 3ccf93da7d44721b5e015f2c82950c4d7e9dca75..30a440a5557a2750549833ecd8d68a2b
    for (const std::string& id : ids_to_bind) {
      dbus_xdg::Dictionary& props = shortcut_map[id];
      props.clear();
--    const ui::Command& command = bound_commands_.at(id).command;
-+    const BoundCommand& bound_cmd = bound_commands_.at(id);
-+    if (pending_groups_seen.insert(bound_cmd.accelerator_group_id).second) {
-+      pending_bind_groups_.push_back(bound_cmd.accelerator_group_id);
-+    }
-+    const ui::Command& command = bound_cmd.command;
-     props["description"] =
-         dbus_utils::Variant::Wrap<"s">(GetDescription(command));
-     std::string trigger = AcceleratorToXdgShortcut(command.accelerator());
-@@ -397,11 +418,25 @@ void GlobalAcceleratorListenerLinux::OnBindShortcuts(
+     auto bound_it = bound_commands_.find(id);
+     if (bound_it != bound_commands_.end()) {
+-      const ui::Command& command = bound_it->second.command;
++      const BoundCommand& bound_cmd = bound_it->second;
++      if (pending_groups_seen.insert(bound_cmd.accelerator_group_id).second) {
++        pending_bind_groups_.push_back(bound_cmd.accelerator_group_id);
++      }
++      const ui::Command& command = bound_cmd.command;
+       props["description"] =
+           dbus_utils::Variant::Wrap<"s">(GetDescription(command));
+       std::string trigger = AcceleratorToXdgShortcut(command.accelerator());
+@@ -438,6 +459,10 @@ void GlobalAcceleratorListenerLinux::OnBindShortcuts(
    const bool needs_rebind = bind_state_ == BindState::kNeedsRebind;
    base::flat_set<std::string> bound_ids = std::move(pending_bind_ids_);
    pending_bind_ids_.clear();
@@ -131,7 +133,10 @@ index 3ccf93da7d44721b5e015f2c82950c4d7e9dca75..30a440a5557a2750549833ecd8d68a2b
 +  const std::vector<std::string> groups = std::move(pending_bind_groups_);
 +  pending_bind_groups_.clear();
  
-   if (!results.has_value()) {
+   if (results.has_value()) {
+     for (const std::string& id : bound_ids) {
+@@ -450,7 +475,17 @@ void GlobalAcceleratorListenerLinux::OnBindShortcuts(
+   } else {
      LOG(ERROR) << "Failed to call BindShortcuts (error code "
                 << static_cast<int>(results.error()) << ").";
 +    NotifyGroupsResolved(groups, false);
@@ -148,7 +153,7 @@ index 3ccf93da7d44721b5e015f2c82950c4d7e9dca75..30a440a5557a2750549833ecd8d68a2b
  
    session_ids_ = std::move(bound_ids);
    bind_state_ = BindState::kBound;
-@@ -445,6 +480,39 @@ void GlobalAcceleratorListenerLinux::OnSignalConnected(
+@@ -494,6 +529,39 @@ void GlobalAcceleratorListenerLinux::OnSignalConnected(
    }
  }
  
@@ -186,24 +191,24 @@ index 3ccf93da7d44721b5e015f2c82950c4d7e9dca75..30a440a5557a2750549833ecd8d68a2b
 +}
 +
  void GlobalAcceleratorListenerLinux::PruneStaleCommands() {
-   std::erase_if(bound_commands_, [](const auto& pair) {
-     return pair.second.execute_command.IsCancelled();
+   // The shortcuts stay in `offered_shortcuts_` so that they remain stored in
+   // the portal while their owner isn't loaded.
 diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.h b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.h
-index f6f91f90a4ade8f47eb210ef42e41fe5d1430340..b302b3b5a1804736de94321405a4d1e9e29d3f1a 100644
+index 2ac4df595566e680fc90a4513000a96167d6479e..e3272d105487098539c1fb8123885aa346d41a26 100644
 --- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.h
 +++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.h
-@@ -117,6 +117,8 @@ class GlobalAcceleratorListenerLinux : public GlobalAcceleratorListener {
+@@ -135,6 +135,8 @@ class COMPONENT_EXPORT(GLOBAL_ACCELERATOR_LISTENER)
        gfx::AcceleratedWidget widget,
        base::RepeatingCallback<void(const std::string&, const std::string&)>
            execute_command) override;
 +  void SetRegistrationResolvedCallback(
 +      RegistrationResolvedCallback callback) override;
    void PruneStaleCommands() override;
+   void SetStateStore(std::unique_ptr<StateStore> store) override;
  
-   void OnCreateSessionResponse(dbus_xdg::Session* session);
-@@ -155,6 +157,14 @@ class GlobalAcceleratorListenerLinux : public GlobalAcceleratorListener {
-   // in this session.
-   bool IsIdOfLoadedGroup(const std::string& id) const;
+@@ -182,6 +184,14 @@ class COMPONENT_EXPORT(GLOBAL_ACCELERATOR_LISTENER)
+   void LoadState();
+   void SaveState();
  
 +  // Runs `registration_resolved_callback_` once per accelerator group that
 +  // has global commands.
@@ -216,9 +221,9 @@ index f6f91f90a4ade8f47eb210ef42e41fe5d1430340..b302b3b5a1804736de94321405a4d1e9
    // DBus components.
    scoped_refptr<dbus::Bus> bus_;
    raw_ptr<dbus::ObjectProxy> global_shortcuts_proxy_ = nullptr;
-@@ -189,6 +199,10 @@ class GlobalAcceleratorListenerLinux : public GlobalAcceleratorListener {
-   // IDs sent in the in-flight BindShortcuts call.
-   base::flat_set<std::string> pending_bind_ids_;
+@@ -224,6 +234,10 @@ class COMPONENT_EXPORT(GLOBAL_ACCELERATOR_LISTENER)
+ 
+   std::unique_ptr<StateStore> state_store_;
  
 +  RegistrationResolvedCallback registration_resolved_callback_;
 +  // Accelerator groups included in the in-flight BindShortcuts request.
