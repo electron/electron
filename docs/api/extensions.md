@@ -131,6 +131,11 @@ The following events of `chrome.runtime` are supported:
 - `chrome.runtime.onConnect`
 - `chrome.runtime.onMessage`
 
+> [!NOTE]
+> `chrome.runtime.onInstalled` is emitted with the reason `install` the first
+> time a session loads an extension and `update` when a later load has a
+> different version. Loading the same version again does not emit it.
+
 See [official documentation](https://developer.chrome.com/docs/extensions/reference/runtime) for more information.
 
 ### `chrome.scripting`

@@ -19,11 +19,12 @@ import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { emittedNTimes, emittedUntil } from './lib/events-helpers.ts';
-import { ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
+import { defer, ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
 import { expectWarningMessages } from './lib/warning-helpers.ts';
 import { closeAllWindows, closeWindow, cleanupWebContents } from './lib/window-helpers.ts';
 
@@ -1157,6 +1158,88 @@ describe('chrome extensions', () => {
       for (let i = 0; i < 3; i++) {
         await runRemoteControlApp();
       }
+    });
+
+    // Loads a generated extension in a fresh app, reports what its worker saw
+    // and quits. `write` replaces the extension's files between launches.
+    const setUpRestartingExtension = async () => {
+      const partition = `persist:${crypto.randomUUID()}`;
+      const extensionPath = await fs.mkdtemp(path.join(os.tmpdir(), 'electron-extension-'));
+      defer(() => fs.rm(extensionPath, { recursive: true, force: true }));
+
+      const writeExtension = async (version: string, marker: string) => {
+        await fs.writeFile(
+          path.join(extensionPath, 'manifest.json'),
+          JSON.stringify({
+            name: 'restart',
+            version,
+            manifest_version: 3,
+            background: { service_worker: 'background.js' }
+          })
+        );
+        await fs.writeFile(path.join(extensionPath, 'page.html'), '<!doctype html>');
+        await fs.writeFile(
+          path.join(extensionPath, 'background.js'),
+          `let installed = null;
+          chrome.runtime.onInstalled.addListener((details) => { installed = details; });
+          chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            sendResponse({ marker: ${JSON.stringify(marker)}, installed });
+          });`
+        );
+      };
+
+      const runRemoteControlApp = async (expectInstalled: boolean) => {
+        const rc = await startRemoteControlApp();
+        const exitPromise = once(rc.process, 'exit');
+
+        const state = await rc.remotely(
+          async (partition: string, extensionPath: string, expectInstalled: boolean) => {
+            const { BrowserWindow, session } = require('electron/main');
+            const { setTimeout } = require('node:timers/promises');
+
+            const customSession = session.fromPartition(partition);
+            const extension = await customSession.extensions.loadExtension(extensionPath);
+            const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+            await w.loadURL(`${extension.url}page.html`);
+
+            // onInstalled is dispatched once the worker has started. When none
+            // is expected, give a stray one a second to show up.
+            let state;
+            for (let i = 0; i < 40; i++) {
+              state = await w.webContents.executeJavaScript('chrome.runtime.sendMessage({})');
+              if (state.installed || (!expectInstalled && i >= 4)) break;
+              await setTimeout(250);
+            }
+
+            // Give Chromium some time to write the extension's prefs to disk.
+            await setTimeout(500);
+
+            global.setTimeout(() => require('electron').app.quit());
+
+            return state;
+          },
+          partition,
+          extensionPath,
+          expectInstalled
+        );
+
+        await exitPromise;
+        return state;
+      };
+
+      return { write: writeExtension, launch: runRemoteControlApp };
+    };
+
+    it('emits runtime.onInstalled for a first load and a new version only', async () => {
+      const extension = await setUpRestartingExtension();
+
+      await extension.write('1.0', 'first');
+      expect((await extension.launch(true)).installed).toEqual({ reason: 'install' });
+
+      expect((await extension.launch(false)).installed).toBeNull();
+
+      await extension.write('2.0', 'second');
+      expect((await extension.launch(true)).installed).toEqual({ reason: 'update', previousVersion: '1.0' });
     });
 
     it('can run chrome extension APIs', async () => {

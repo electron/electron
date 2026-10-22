@@ -19,7 +19,9 @@
 #include "base/task/sequenced_task_runner.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/time/time.h"
+#include "base/version.h"
 #include "content/public/browser/browser_context.h"
+#include "extensions/browser/api/runtime/runtime_api.h"
 #include "extensions/browser/extension_file_task_runner.h"
 #include "extensions/browser/extension_pref_names.h"
 #include "extensions/browser/extension_prefs.h"
@@ -34,6 +36,10 @@
 namespace extensions {
 
 namespace {
+
+// Extension pref holding the version of the extension this session loaded
+// last.
+constexpr char kPrefLastLoadedVersion[] = "electron_last_loaded_version";
 
 std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
     const base::FilePath& extension_dir,
@@ -159,7 +165,29 @@ void ElectronExtensionLoader::FinishExtensionLoad(
           base::Value(false));
     }
 
+    // The version this session loaded last tells a first install and an update
+    // apart from a relaunch.
+    std::string last_loaded_version;
+    extension_prefs->ReadPrefAsString(extension->id(), kPrefLastLoadedVersion,
+                                      &last_loaded_version);
+    const base::Version previous_version(last_loaded_version);
+
     extension_registrar_->AddExtension(extension);
+
+    // Chromium dispatches runtime.onInstalled from its install flow, which
+    // loading an unpacked extension on every launch does not go through.
+    if (!previous_version.IsValid() ||
+        previous_version != extension->version()) {
+      extension_prefs->UpdateExtensionPref(
+          extension->id(), kPrefLastLoadedVersion,
+          base::Value(extension->VersionString()));
+      base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+          FROM_HERE,
+          base::BindOnce(
+              &RuntimeEventRouter::DispatchOnInstalledEvent,
+              base::UnsafeDangling(static_cast<void*>(browser_context_.get())),
+              extension->id(), previous_version, false));
+    }
 
     // Write extension install time to ExtensionPrefs.
     // This is required by extensions::WebRequestAPI
