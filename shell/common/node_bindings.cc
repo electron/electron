@@ -516,8 +516,6 @@ void SetNodeOptions(base::Environment* env) {
 
 namespace electron {
 
-namespace {
-
 base::FilePath GetResourcesPath() {
 #if BUILDFLAG(IS_MAC)
   return MainApplicationBundlePath().Append("Contents").Append("Resources");
@@ -528,7 +526,6 @@ base::FilePath GetResourcesPath() {
   return assets_path.Append(FILE_PATH_LITERAL("resources"));
 #endif
 }
-}  // namespace
 
 NodeBindings::NodeBindings(BrowserEnvironment browser_env, uv_loop_t* loop)
     : browser_env_{browser_env},
