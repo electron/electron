@@ -1433,18 +1433,20 @@ describe('chrome extensions', () => {
         await fs.writeFile(path.join(extensionPath, 'page.html'), '<!doctype html>');
         await fs.writeFile(
           path.join(extensionPath, 'background.js'),
-          `chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-            sendResponse({ marker: ${JSON.stringify(marker)} });
+          `let installed = null;
+          chrome.runtime.onInstalled.addListener((details) => { installed = details; });
+          chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+            sendResponse({ marker: ${JSON.stringify(marker)}, installed });
           });`
         );
       };
 
-      const runRemoteControlApp = async () => {
+      const runRemoteControlApp = async (expectInstalled: boolean) => {
         const rc = await startRemoteControlApp();
         const exitPromise = once(rc.process, 'exit');
 
         const state = await rc.remotely(
-          async (partition: string, extensionPath: string) => {
+          async (partition: string, extensionPath: string, expectInstalled: boolean) => {
             const { BrowserWindow, session } = require('electron/main');
             const { setTimeout } = require('node:timers/promises');
 
@@ -1453,7 +1455,14 @@ describe('chrome extensions', () => {
             const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
             await w.loadURL(`${extension.url}page.html`);
 
-            const state = await w.webContents.executeJavaScript('chrome.runtime.sendMessage({})');
+            // onInstalled is dispatched once the worker has started. When none
+            // is expected, give a stray one a second to show up.
+            let state;
+            for (let i = 0; i < 40; i++) {
+              state = await w.webContents.executeJavaScript('chrome.runtime.sendMessage({})');
+              if (state.installed || (!expectInstalled && i >= 4)) break;
+              await setTimeout(250);
+            }
 
             // Give Chromium some time to write the extension's prefs to disk.
             await setTimeout(500);
@@ -1463,7 +1472,8 @@ describe('chrome extensions', () => {
             return state;
           },
           partition,
-          extensionPath
+          extensionPath,
+          expectInstalled
         );
 
         await exitPromise;
@@ -1477,11 +1487,11 @@ describe('chrome extensions', () => {
       const extension = await setUpRestartingExtension();
 
       await extension.write('1.0', 'first');
-      expect((await extension.launch()).marker).toBe('first');
+      expect((await extension.launch(true)).marker).toBe('first');
 
       // Same version, new script.
       await extension.write('1.0', 'second');
-      expect((await extension.launch()).marker).toBe('second');
+      expect((await extension.launch(false)).marker).toBe('second');
     });
 
     it('persists alarms and dynamic content scripts across restarts', async () => {
@@ -1570,6 +1580,18 @@ describe('chrome extensions', () => {
       await w.loadURL(`${extension.url}page.html`);
       const result = await w.webContents.executeJavaScript("chrome.runtime.sendMessage('from a service worker')");
       expect(result).toEqual({ written: true });
+    });
+
+    it('emits runtime.onInstalled for a first load and a new version only', async () => {
+      const extension = await setUpRestartingExtension();
+
+      await extension.write('1.0', 'first');
+      expect((await extension.launch(true)).installed).toEqual({ reason: 'install' });
+
+      expect((await extension.launch(false)).installed).toBeNull();
+
+      await extension.write('2.0', 'second');
+      expect((await extension.launch(true)).installed).toEqual({ reason: 'update', previousVersion: '1.0' });
     });
 
     it('can run chrome extension APIs', async () => {
