@@ -12,10 +12,10 @@ that the new window is created in its own BrowsingInstance (and process).
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 69c52b10aca962914aa2b274d0147c7540d4039e..397360f399d230da5ff3b93bdd9acb8960e5772f 100644
+index 82a03e4f7fb8087c9f125fdcfe51173d740f2fe0..0c56e616025ada059a0752eae8bec91ee1acbe28 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -10822,6 +10822,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10821,6 +10821,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -23,7 +23,7 @@ index 69c52b10aca962914aa2b274d0147c7540d4039e..397360f399d230da5ff3b93bdd9acb89
            effective_transient_activation_state, params->opener_suppressed,
            &no_javascript_access);
  
-@@ -10832,6 +10833,11 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10831,6 +10832,11 @@ void RenderFrameHostImpl::CreateNewWindow(
      return;
    }
  
@@ -188,10 +188,10 @@ index b4ef8f00ca8ce9f35ef5dad5f553423baf0acf39..440c5f7ed9ee4b3ace56a4264a12dd9a
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 2cbaf6fdb3498e520d8da1291b5c0e4f12538b52..fae2ead4f8f3363c129e05f09114aa45a4cd037e 100644
+index a04d543bce65b5347da1dbc411ac745e7a357f8d..78e6f24be911453e4512d26178d1fa83596e2547 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -7155,6 +7155,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -7164,6 +7164,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
    params->started_by_ad =
        GetWebFrame()->IsAdFrame() || GetWebFrame()->IsAdScriptInStack();
  

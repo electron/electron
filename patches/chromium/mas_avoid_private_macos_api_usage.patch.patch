@@ -137,10 +137,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index 9e9f063efe6f16f2f960e520badd025d0dea0a87..67aabbd6a143d9a6b0e6f2de7dd22cf03984908c 100644
+index e96b4e6a0e2dfe30a9f132499f71e8ed1c3b59f2..f6b1c802fd5fa2d49315a41ce2d114d6f20f7064 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -1029,6 +1029,7 @@ if (is_clang_or_gcc) {
+@@ -1033,6 +1033,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -1228,7 +1228,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 55748f1d95405ecdb2fd730791cd063621f12872..0ac18717077395f3698f1d4b0a2bca4c2554874d 100644
+index 9674e7884a537e421ae475ba10e9127c7a2d60d7..7b11c454b25816b486dd50fba99e5d117890936a 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -649,6 +649,7 @@ static_library("test_support") {
@@ -1256,7 +1256,7 @@ index 55748f1d95405ecdb2fd730791cd063621f12872..0ac18717077395f3698f1d4b0a2bca4c
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3446,6 +3450,7 @@ test("content_unittests") {
+@@ -3452,6 +3456,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -2309,10 +2309,10 @@ index 6f419c1255ad8e10e50a0de3bc9599a07e8d917e..8f93adfc525f98fb569f3dd63ff97883
      deps += [ "//build:ios_buildflags" ]
    }
 diff --git a/ui/display/mac/ca_display_link_mac.mm b/ui/display/mac/ca_display_link_mac.mm
-index 6e1add2ad1ccd151b98f9926d8cde3268f56de05..94a44aa0b97fb1dd2365c135c35e74769115bc51 100644
+index 3cd58d02890ac5f60f7fd9eb14a1e23f633dedcd..88e0f3b68a007a60ccf9b6c6dd6c4386f5cc231b 100644
 --- a/ui/display/mac/ca_display_link_mac.mm
 +++ b/ui/display/mac/ca_display_link_mac.mm
-@@ -20,15 +20,18 @@
+@@ -21,15 +21,18 @@
  #include "base/metrics/histogram_macros.h"
  #include "base/no_destructor.h"
  #include "base/trace_event/trace_event.h"
@@ -2331,7 +2331,7 @@ index 6e1add2ad1ccd151b98f9926d8cde3268f56de05..94a44aa0b97fb1dd2365c135c35e7476
  
  // Undocumented SkyLight framework functions.
  // SLSGetDisplayLink() is a private function (SPI) that creates a CADisplayLink
-@@ -299,6 +302,15 @@ void RecordWindowServerEventPumpResult(
+@@ -305,6 +308,15 @@ void RecordWindowServerEventPumpResult(
        viz_task_runner_(base::SingleThreadTaskRunner::GetCurrentDefault()) {
    weak_ptr_ = weak_factory_.GetWeakPtr();
  
@@ -2347,7 +2347,7 @@ index 6e1add2ad1ccd151b98f9926d8cde3268f56de05..94a44aa0b97fb1dd2365c135c35e7476
    base::Thread::Options thread_options;
    thread_options.message_pump_type = base::MessagePumpType::NS_RUNLOOP;
    thread_options.thread_type = base::ThreadType::kPresentation;
-@@ -308,6 +320,7 @@ void RecordWindowServerEventPumpResult(
+@@ -314,6 +326,7 @@ void RecordWindowServerEventPumpResult(
        FROM_HERE,
        base::BindOnce(&WindowServerEventPumpThread::PumpWindowServerEvents,
                       base::Unretained(this)));
@@ -2355,7 +2355,7 @@ index 6e1add2ad1ccd151b98f9926d8cde3268f56de05..94a44aa0b97fb1dd2365c135c35e7476
  }
  
  // In a standard out-of-process GPU scenario,
-@@ -325,6 +338,7 @@ void RecordWindowServerEventPumpResult(
+@@ -331,6 +344,7 @@ void RecordWindowServerEventPumpResult(
  
    shutdown_ = true;
  
@@ -2363,7 +2363,7 @@ index 6e1add2ad1ccd151b98f9926d8cde3268f56de05..94a44aa0b97fb1dd2365c135c35e7476
    // Send an empty message to wake up the thread and quit the while loop.
    // See WindowServerEventPumpThread::PumpWindowServerEvents() for details.
    CGSConnectionID connection_id = CGSMainConnectionID();
-@@ -348,10 +362,12 @@ void RecordWindowServerEventPumpResult(
+@@ -354,10 +368,12 @@ void RecordWindowServerEventPumpResult(
          << "CGSGetEventPort() in ~WindowServerEventPumpThread failed. Error: "
          << err;
    }
@@ -2376,7 +2376,7 @@ index 6e1add2ad1ccd151b98f9926d8cde3268f56de05..94a44aa0b97fb1dd2365c135c35e7476
  void WindowServerEventPumpThread::PumpWindowServerEvents() {
    CGSConnectionID connection_id = CGSMainConnectionID();
    // We haven't seen this happen in practice, but WebKit's implementation
-@@ -499,6 +515,7 @@ void RecordWindowServerEventPumpResult(
+@@ -505,6 +521,7 @@ void RecordWindowServerEventPumpResult(
      }
    }
  }

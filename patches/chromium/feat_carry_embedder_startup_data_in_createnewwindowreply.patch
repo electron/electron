@@ -26,10 +26,10 @@ hook called before the new RenderFrame is created so it can be picked up
 by RenderFrameCreated() on the same call stack.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 47d9ed286e8d3acb2535bbd32f91f04e8f29d623..2224838eff19125c8b1219eb3164db4727a9781c 100644
+index 360af5b9f6263a9e2f50bedb1daaeae5466bfcd1..18c974a5419e06f53e86453cae1fe7965bf12713 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -11021,7 +11021,12 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -11020,7 +11020,12 @@ void RenderFrameHostImpl::CreateNewWindow(
        new_main_rfh->GetSiteInstance()->browsing_instance_token(),
        delegate_->GetColorProviderColorMaps(),
        /*widget_screen_rect=*/std::nullopt,
@@ -148,10 +148,10 @@ index db698a9a9adfd9bd2dfc8dd29932b3e4b7764f73..9088b206b2101b8e8b101d5a75809308
    // `outermost_origin` is only set if it is an extension scheme, otherwise
    // it will be null. It is null to avoid leaking unnecessary information into
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 711ab3e34f3c625176c0ff3aae3cdf684708041e..7c3292c5799b3c532285f23280164958540d3bfe 100644
+index a4950327155e1c9560da74fd50ddb894a0cb7785..380409fe7d9ba5a2eeb21628ce96c520686f42fe 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -7212,6 +7212,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -7221,6 +7221,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
      return nullptr;
    }
  
