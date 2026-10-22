@@ -24,6 +24,7 @@
   "parallel/test-repl-underscore",
   "parallel/test-runner-v8-deserializer",
   "parallel/test-shadow-realm-custom-loaders",
+  "parallel/test-crypto-random-cache-snapshot",
   "parallel/test-snapshot",
   "parallel/test-strace-openat-openssl",
   "parallel/test-max-old-space-size-percentage",

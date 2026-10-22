@@ -39,10 +39,10 @@ index ea0747511a107c96befd2dae1d7bd56759dd95b6..ad056b5610bc8f0db2137402cecc07e1
        X509View ca(sk_X509_value(peer_certs.get(), i));
        if (!cert->view().isIssuedBy(ca)) continue;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 74ea622dad505586a9437097d36e84b7c11f0aa5..57e4bc771fafc2eee2c13ff0d35295d9c3d6fd67 100644
+index 71debb0805b62deba0b941fc7679b08a9c41d542..0b7ebcebadf11023e0cfad105f53518ff31e09e1 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -170,7 +170,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
+@@ -175,7 +175,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
      // the CA certificates.
      SSL_CTX_clear_extra_chain_certs(ctx);
  
@@ -51,7 +51,7 @@ index 74ea622dad505586a9437097d36e84b7c11f0aa5..57e4bc771fafc2eee2c13ff0d35295d9
        X509* ca = sk_X509_value(extra_certs, i);
  
        // NOTE: Increments reference count on `ca`
-@@ -2360,7 +2360,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
+@@ -2618,7 +2618,7 @@ void SecureContext::LoadPKCS12(const FunctionCallbackInfo<Value>& args) {
    }
  
    // Add CA certs too
@@ -74,10 +74,10 @@ index 2cf971347b9ea98bf76a8d277a46d7a6842efda6..9391b884e18557815365e0b3c2442e36
    // This is to cause hash() to fail when an incorrect
    // outputLength option was passed for a non-XOF hash function.
 diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
-index 0050e5591e2ae0afb517500934ddfb223078bd76..cd5217a960c539a799d05e306776430b32cf5144 100644
+index 8e6d934d22077b5f4efc21366fbfcc09fca95ee9..912e07c911c86e23a35e395d720376b3d269bca0 100644
 --- a/src/crypto/crypto_x509.cc
 +++ b/src/crypto/crypto_x509.cc
-@@ -946,7 +946,8 @@ MaybeLocal<Object> X509Certificate::NewWithIssuers(
+@@ -1041,7 +1041,8 @@ MaybeLocal<Object> X509Certificate::NewWithIssuers(
    }
  
    Local<Object> issuer;
