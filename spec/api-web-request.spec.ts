@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain, net, protocol, session, type WebContents, webContents, View } from 'electron/main';
 
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { WebSocketServer } from 'ws';
 
 import * as childProcess from 'node:child_process';
@@ -1190,12 +1190,14 @@ describe('webRequest module', () => {
     let server: childProcess.ChildProcess;
     let base: string; // http://127.0.0.1:port
     let other: string; // same server as http://localhost:port
-    before(async () => {
+    beforeAll(async () => {
       server = childProcess.fork(path.join(fixturesPath, 'api', 'web-request', 'server.js'));
       [{ url: base }] = await once(server, 'message');
       other = base.replace('127.0.0.1', 'localhost');
     });
-    after(() => server.kill());
+    afterAll(() => {
+      server.kill();
+    });
     afterEach(() => {
       ses.webRequest.setHeaderRules([]);
       ses.webRequest.onBeforeSendHeaders(null);
@@ -1248,29 +1250,28 @@ describe('webRequest module', () => {
       ['an equivalent onBeforeSendHeaders listener', () => ses.webRequest.onBeforeSendHeaders(equivalentListener)]
     ] as const) {
       describe(`with ${name}`, () => {
-        beforeEach(install);
+        beforeEach(() => {
+          install();
+        });
 
         it('sets the header on a matching request', async () => {
-          expect(await runChain('127.0.0.1', [])).to.deep.equal(['0:127.0.0.1:secret']);
+          expect(await runChain('127.0.0.1', [])).toEqual(['0:127.0.0.1:secret']);
         });
 
         it('does not set it on a non-matching request', async () => {
-          expect(await runChain('localhost', [])).to.deep.equal(['0:localhost:-']);
+          expect(await runChain('localhost', [])).toEqual(['0:localhost:-']);
         });
 
         it('keeps it across a same-host redirect', async () => {
-          expect(await runChain('127.0.0.1', ['127.0.0.1'])).to.deep.equal([
-            '0:127.0.0.1:secret',
-            '1:127.0.0.1:secret'
-          ]);
+          expect(await runChain('127.0.0.1', ['127.0.0.1'])).toEqual(['0:127.0.0.1:secret', '1:127.0.0.1:secret']);
         });
 
         it('drops it when redirected to a non-matching host', async () => {
-          expect(await runChain('127.0.0.1', ['localhost'])).to.deep.equal(['0:127.0.0.1:secret', '1:localhost:-']);
+          expect(await runChain('127.0.0.1', ['localhost'])).toEqual(['0:127.0.0.1:secret', '1:localhost:-']);
         });
 
         it('drops it on the non-matching leg of a matching -> non-matching -> matching chain', async () => {
-          expect(await runChain('127.0.0.1', ['localhost', '127.0.0.1'])).to.deep.equal([
+          expect(await runChain('127.0.0.1', ['localhost', '127.0.0.1'])).toEqual([
             '0:127.0.0.1:secret',
             '1:localhost:-',
             '2:127.0.0.1:secret'
@@ -1278,7 +1279,7 @@ describe('webRequest module', () => {
         });
 
         it('adds it when a non-matching request redirects into scope', async () => {
-          expect(await runChain('localhost', ['127.0.0.1'])).to.deep.equal(['0:localhost:-', '1:127.0.0.1:secret']);
+          expect(await runChain('localhost', ['127.0.0.1'])).toEqual(['0:localhost:-', '1:127.0.0.1:secret']);
         });
       });
     }
@@ -1292,7 +1293,7 @@ describe('webRequest module', () => {
       await delay(150);
       ses.webRequest.setHeaderRules([]);
       await done;
-      expect((await received(t)).map((l) => `${l.leg}:${l.token ?? '-'}`)).to.deep.equal(['0:secret', '1:-']);
+      expect((await received(t)).map((l) => `${l.leg}:${l.token ?? '-'}`)).toEqual(['0:secret', '1:-']);
     });
 
     it('removes headers and honors excludeUrls and types', async () => {
@@ -1310,7 +1311,7 @@ describe('webRequest module', () => {
         `fetch(${JSON.stringify(`${base}/r/${t}/a`)}, { headers: { 'X-Extra': 'from-page' } }).then(r => r.text())`
       );
       await contents.executeJavaScript(`fetch(${JSON.stringify(`${base}/r/${t}/skipped`)}).then(r => r.text())`);
-      expect((await received(t)).map((l) => `${l.leg}:${l.token ?? '-'}:${l.extra ?? '-'}`)).to.deep.equal([
+      expect((await received(t)).map((l) => `${l.leg}:${l.token ?? '-'}:${l.extra ?? '-'}`)).toEqual([
         'a:typed:-',
         'skipped:-:-'
       ]);
@@ -1323,8 +1324,8 @@ describe('webRequest module', () => {
         seen = details.requestHeaders['X-Token'];
         callback({ requestHeaders: { ...details.requestHeaders, 'X-Token': 'listener' } });
       });
-      expect(await runChain('127.0.0.1', [])).to.deep.equal(['0:127.0.0.1:listener']);
-      expect(seen).to.equal('secret');
+      expect(await runChain('127.0.0.1', [])).toEqual(['0:127.0.0.1:listener']);
+      expect(seen).toBe('secret');
     });
 
     it('rewrites response headers for the page and for onHeadersReceived', async () => {
@@ -1346,8 +1347,8 @@ describe('webRequest module', () => {
       const headers = await contents.executeJavaScript(
         `fetch(${JSON.stringify(`${base}/r/${token()}/x`)}).then(r => [r.headers.get('x-reply'), r.headers.get('x-original')])`
       );
-      expect(headers).to.deep.equal(['1', null]);
-      expect(seenByListener!['X-Reply'] ?? seenByListener!['x-reply']).to.deep.equal(['1']);
+      expect(headers).toEqual(['1', null]);
+      expect(seenByListener!['X-Reply'] ?? seenByListener!['x-reply']).toEqual(['1']);
     });
 
     it('applies without the main process when no blocking listener matches', async () => {
@@ -1360,32 +1361,32 @@ describe('webRequest module', () => {
       while (Date.now() < end) {
         /* busy */
       }
-      expect(await contents.executeJavaScript('window.fetchTiming')).to.be.lessThan(300);
-      expect((await received(t))[0].token).to.equal('secret');
+      expect(await contents.executeJavaScript('window.fetchTiming')).toBeLessThan(300);
+      expect((await received(t))[0].token).toBe('secret');
     });
 
     it('round-trips through getHeaderRules and clears with an empty array', () => {
       ses.webRequest.setHeaderRules([tokenRule]);
-      expect(ses.webRequest.getHeaderRules()).to.deep.equal([tokenRule]);
+      expect(ses.webRequest.getHeaderRules()).toEqual([tokenRule]);
       ses.webRequest.setHeaderRules([]);
-      expect(ses.webRequest.getHeaderRules()).to.deep.equal([]);
+      expect(ses.webRequest.getHeaderRules()).toEqual([]);
       ses.webRequest.setHeaderRules([tokenRule]);
       ses.webRequest.setHeaderRules(null as any);
-      expect(ses.webRequest.getHeaderRules()).to.deep.equal([]);
+      expect(ses.webRequest.getHeaderRules()).toEqual([]);
     });
 
     it('rejects rules that could broadcast a request header', () => {
       expect(() =>
         ses.webRequest.setHeaderRules([{ urls: ['<all_urls>'], requestHeaders: { 'X-Token': 'x' } }])
-      ).to.throw(/hosts/);
-      expect(() => ses.webRequest.setHeaderRules([{ urls: ['*://*/*'], requestHeaders: { 'X-Token': 'x' } }])).to.throw(
+      ).toThrow(/hosts/);
+      expect(() => ses.webRequest.setHeaderRules([{ urls: ['*://*/*'], requestHeaders: { 'X-Token': 'x' } }])).toThrow(
         /hosts/
       );
-      expect(() => ses.webRequest.setHeaderRules([{ requestHeaders: { 'X-Token': 'x' } } as any])).to.throw(/urls/);
-      expect(() => ses.webRequest.setHeaderRules([{ urls: ['nope'], requestHeaders: {} }])).to.throw(/pattern/i);
+      expect(() => ses.webRequest.setHeaderRules([{ requestHeaders: { 'X-Token': 'x' } } as any])).toThrow(/urls/);
+      expect(() => ses.webRequest.setHeaderRules([{ urls: ['nope'], requestHeaders: {} }])).toThrow(/pattern/i);
       expect(() =>
         ses.webRequest.setHeaderRules([{ urls: ['<all_urls>'], requestHeaders: { 'X-Token': null } }])
-      ).to.not.throw();
+      ).not.toThrow();
     });
   });
 
