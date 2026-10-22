@@ -4327,6 +4327,38 @@ describe('BrowserWindow module', () => {
             expect(locations).toEqual([`${url}/allowed/page`, `${url}/other?included=1`, `${url}/other`]);
           });
 
+          it(`treats ? in a glob as zero or one character (sandbox: ${sandbox})`, async () => {
+            const server = http.createServer((_request, response) => {
+              response.writeHead(200, { 'Content-Type': 'text/html' });
+              response.end('<html></html>');
+            });
+            defer(() => server.close());
+            const { url } = await listen(server);
+            const ses = session.fromPartition(`preload-glob-optional-char-${sandbox}`);
+            const preload = path.join(fixtures, 'module', 'preload-location.js');
+            // Each page below matches at most one of these scripts.
+            const ids = [
+              ses.registerPreloadScript({ type: 'frame', filePath: preload, includeGlobs: [`${url}/item?`] }),
+              ses.registerPreloadScript({
+                type: 'frame',
+                filePath: preload,
+                matches: [`${url}/skip*`],
+                excludeGlobs: [`${url}/skip?`]
+              }),
+              // A backslash makes the `?` literal.
+              ses.registerPreloadScript({ type: 'frame', filePath: preload, includeGlobs: [`${url}/query\\?id=*`] })
+            ];
+            defer(() => ids.forEach((id) => ses.unregisterPreloadScript(id)));
+            const locations: string[] = [];
+            ipcMain.on('preload-location', (_e, href: string) => locations.push(href));
+            defer(() => ipcMain.removeAllListeners('preload-location'));
+            const w = new BrowserWindow({ show: false, webPreferences: { sandbox, session: ses } });
+            for (const page of ['item', 'item1', 'item12', 'skip', 'skip1', 'skip12', 'query?id=1', 'queryXid=1']) {
+              await w.loadURL(`${url}/${page}`);
+            }
+            expect(locations).toEqual([`${url}/item`, `${url}/item1`, `${url}/skip12`, `${url}/query?id=1`]);
+          });
+
           it(`runs a session preload matching <all_urls> on any document (sandbox: ${sandbox})`, async () => {
             const server = http.createServer((_request, response) => {
               response.writeHead(200, { 'Content-Type': 'text/html' });

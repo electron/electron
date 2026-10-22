@@ -13,7 +13,7 @@
 * `excludeMatches` string[] (optional) - Match patterns for URLs the script will not run in.
 * `includeGlobs` string[] (optional) - Glob patterns applied after `matches`. A URL must
   also match one of these globs. `*` matches any sequence of characters and `?` matches
-  any single character. Must not be empty.
+  zero or one character. Must not be empty.
 * `excludeGlobs` string[] (optional) - Glob patterns for URLs the script will not run in.
 * `matchOriginAsFallback` boolean (optional) - Whether a document whose URL has no origin of
   its own (`about:`, `blob:`, `data:` or `filesystem:`) is matched by the origin of the frame
