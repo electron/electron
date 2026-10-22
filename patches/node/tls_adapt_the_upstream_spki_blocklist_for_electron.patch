@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Attard <sattard@anthropic.com>
+Date: Tue, 20 Oct 2026 00:00:21 +0000
+Subject: tls: adapt the upstream SPKI blocklist for Electron
+
+Node.js v24.22.1 ships the SubjectPublicKeyInfo blocklist that Electron
+previously carried in this patch (same compiled-in entries, applied to
+every SSL_CTX via InstallCertVerifyCallback). What remains here is what
+Electron still needs on top of it:
+
+- BoringSSL's sk_X509_num() returns size_t, so the new CheckSPKIs() loop
+  uses OPENSSL_SIZE_T to build cleanly with -Wsign-compare.
+- Upstream only exposes the test-only list extension through
+  internalBinding('crypto'). Export C++ hooks that share the same list
+  and mutex so Electron's testing binding can extend it at runtime.
+
+diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
+index 083e650823472920db76b201ca5616a87112cd84..cdf0290c7084c9c813dc088794f666d9676b4e35 100644
+--- a/src/crypto/crypto_context.cc
++++ b/src/crypto/crypto_context.cc
+@@ -1541,12 +1541,12 @@ SpkiCheck CheckSPKIs(const STACK_OF(X509) * certs,
+                      X509** offender,
+                      int* depth) {
+   if (certs == nullptr) return SpkiCheck::kAllowed;
+-  for (int i = 0; i < sk_X509_num(certs); i++) {
++  for (OPENSSL_SIZE_T i = 0; i < sk_X509_num(certs); i++) {
+     X509* cert = sk_X509_value(certs, i);
+     SpkiCheck result = CheckSPKI(cert);
+     if (result != SpkiCheck::kAllowed) {
+       *offender = cert;
+-      *depth = i;
++      *depth = static_cast<int>(i);
+       return result;
+     }
+   }
+@@ -1650,6 +1650,18 @@ void InstallCertVerifyCallback(SSL_CTX* ctx) {
+   SSL_CTX_set_cert_verify_callback(ctx, CertVerifyCallback, nullptr);
+ }
+ 
++void AddBlockedSPKIForTesting(const uint8_t* sha256_hash) {
++  SpkiHash entry;
++  memcpy(entry.data(), sha256_hash, entry.size());
++  Mutex::ScopedLock lock(BlockedSPKIsForTestingMutex());
++  BlockedSPKIsForTesting().push_back(entry);
++}
++
++void ClearBlockedSPKIsForTesting() {
++  Mutex::ScopedLock lock(BlockedSPKIsForTestingMutex());
++  BlockedSPKIsForTesting().clear();
++}
++
+ void SecureContext::AddBlockedSPKIForTesting(
+     const FunctionCallbackInfo<Value>& args) {
+   Environment* env = Environment::GetCurrent(args);
+diff --git a/src/crypto/crypto_context.h b/src/crypto/crypto_context.h
+index b82b206f4f3eacc8921763917e3261f1fba735dd..cc10282eaa13896ec4e6df1ec617ec8729289027 100644
+--- a/src/crypto/crypto_context.h
++++ b/src/crypto/crypto_context.h
+@@ -33,6 +33,12 @@ X509_STORE* GetOrCreateRootCertStore(Environment* env);
+ // creates, since SSL_CTX_set_cert_verify_callback replaces any earlier hook.
+ void InstallCertVerifyCallback(SSL_CTX* ctx);
+ 
++// Embedder hooks for the test-only extension of the SPKI blocklist, for
++// callers that cannot reach the internalBinding('crypto') methods. The hash
++// is the SHA-256 of a DER-encoded SubjectPublicKeyInfo.
++NODE_EXTERN void AddBlockedSPKIForTesting(const uint8_t* sha256_hash);
++NODE_EXTERN void ClearBlockedSPKIsForTesting();
++
+ ncrypto::BIOPointer LoadBIO(Environment* env, v8::Local<v8::Value> v);
+ 
+ class SecureContext final : public BaseObject {

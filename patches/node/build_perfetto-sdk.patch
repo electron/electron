@@ -10,7 +10,7 @@ Reviewed-By: James M Snell <jasnell@gmail.com>
 Reviewed-By: Ryuhei Shima <shimaryuhei@gmail.com>
 
 diff --git a/common.gypi b/common.gypi
-index 3c48fa0ce140e0467fa95ce8b449a39493864bd8..2fdafef6b4cda0042613a9e78da5ddaead6f1197 100644
+index 94612a0d95561fb8361024c38379ed4450fa21c6..8a0cad346ec9891aaaacc174f7a6a7ccc24b3694 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -93,7 +93,7 @@

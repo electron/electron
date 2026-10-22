@@ -22,6 +22,7 @@
   "parallel/test-promise-swallowed-event",
   "parallel/test-repl-underscore",
   "parallel/test-runner-v8-deserializer",
+  "parallel/test-crypto-random-cache-snapshot",
   "parallel/test-snapshot",
   "parallel/test-strace-openat-openssl",
   "parallel/test-max-old-space-size-percentage",
