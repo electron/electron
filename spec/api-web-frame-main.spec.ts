@@ -472,6 +472,12 @@ describe('webFrameMain module', () => {
     });
 
     it('disposes detached frame after cross-origin navigation', async () => {
+      // Waits for the same unload IPC as the test above, so it needs the old
+      // renderer at foreground priority too.
+      if (!app.commandLine.hasSwitch('disable-renderer-backgrounding')) {
+        app.commandLine.appendSwitch('disable-renderer-backgrounding');
+        defer(() => app.commandLine.removeSwitch('disable-renderer-backgrounding'));
+      }
       w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -582,9 +588,12 @@ describe('webFrameMain module', () => {
     it('collects call stack during JS execution', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadURL(server.url);
-      const callStackPromise = w.webContents.mainFrame.collectJavaScriptCallStack();
-      w.webContents.mainFrame.executeJavaScript('"run a lil js"');
-      const callStack = await callStackPromise;
+      // The renderer collects the stack from a V8 interrupt, which only runs
+      // while the page is executing JavaScript, and a single short script can
+      // finish before the request reaches the renderer. Keep the page running
+      // script until the call stack arrives.
+      await w.webContents.mainFrame.executeJavaScript('void setInterval(() => {}, 1)');
+      const callStack = await w.webContents.mainFrame.collectJavaScriptCallStack();
       expect(callStack).toBeTypeOf('string');
     });
   });
@@ -668,6 +677,12 @@ describe('webFrameMain module', () => {
       const videoFilePath = url.pathToFileURL(path.join(fixtures, 'cat-spin.mp4')).href;
       await frame.executeJavaScript(`
         const video = document.createElement('video');
+        // A fixed box, so the point copyVideoFrameInFrame() picks is on the
+        // video whether or not its metadata has loaded yet; at its natural
+        // size (480x360) the centre would be outside the 300x150 iframe.
+        video.style.display = 'block';
+        video.style.width = '100px';
+        video.style.height = '100px';
         video.src = '${videoFilePath}';
         video.muted = true;
         video.loop = true;
@@ -690,6 +705,17 @@ describe('webFrameMain module', () => {
     };
 
     const copyVideoFrameInFrame = async (frame: WebFrameMain) => {
+      // wait for video to load
+      await frame.executeJavaScript(
+        `(${() => {
+          const video = document.querySelector('video');
+          if (!video) return;
+          return new Promise((resolve) => {
+            if (video.readyState >= 4) resolve(null);
+            else video.addEventListener('canplaythrough', resolve, { once: true });
+          });
+        }})()`
+      );
       const point = (await frame.executeJavaScript(
         `(${() => {
           const video = document.querySelector('video');
@@ -712,17 +738,6 @@ describe('webFrameMain module', () => {
       }
 
       expect(await clipboardHasImageType()).toBe(false);
-      // wait for video to load
-      await frame.executeJavaScript(
-        `(${() => {
-          const video = document.querySelector('video');
-          if (!video) return;
-          return new Promise((resolve) => {
-            if (video.readyState >= 4) resolve(null);
-            else video.addEventListener('canplaythrough', resolve, { once: true });
-          });
-        }})()`
-      );
       frame.copyVideoFrameAt(point.x, point.y);
       await waitUntil(clipboardHasImageType);
     };
