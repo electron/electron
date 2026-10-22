@@ -13,8 +13,6 @@ class ServiceWorkerData;
 
 namespace electron::preload_realm {
 
-bool IsPreloadRealmContext(v8::Local<v8::Context> context);
-
 // Get initiator context given the preload context.
 v8::MaybeLocal<v8::Context> GetInitiatorContext(v8::Local<v8::Context> context);
 
