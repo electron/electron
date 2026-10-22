@@ -388,6 +388,13 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const content::ChildProcessTerminationInfo& info) override;
 
  private:
+  void ProxyNonNetworkURLLoaderFactories(
+      content::BrowserContext* browser_context,
+      int render_process_id,
+      URLLoaderFactoryType type,
+      const std::optional<url::Origin>& request_initiator,
+      NonNetworkURLLoaderFactoryMap* factories);
+
   bool IsRendererSubFrame(content::ChildProcessId process_id) const;
 
   // What ShouldUseSpareRenderProcessHost() answers: set around
