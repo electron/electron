@@ -30,11 +30,13 @@ SessionPreferences* SessionPreferences::FromBrowserContext(
   return static_cast<SessionPreferences*>(context->GetUserData(&kLocatorKey));
 }
 
-bool SessionPreferences::HasServiceWorkerPreloadScript() {
+bool SessionPreferences::HasServiceWorkerPreloadScript(const GURL& scope) {
   const auto& preloads = preload_scripts();
   auto it = std::find_if(
-      preloads.begin(), preloads.end(), [](const PreloadScript& script) {
-        return script.script_type == PreloadScript::ScriptType::kServiceWorker;
+      preloads.begin(), preloads.end(), [&scope](const PreloadScript& script) {
+        return script.script_type ==
+                   PreloadScript::ScriptType::kServiceWorker &&
+               script.MatchesURL(scope);
       });
   return it != preloads.end();
 }

@@ -99,6 +99,7 @@
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/platform_handle.h"
+#include "net/base/net_errors.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/network/public/cpp/web_sandbox_flags.h"
 #include "services/network/public/mojom/web_sandbox_flags.mojom-shared.h"
@@ -187,6 +188,8 @@
 #include "ui/base/mojom/menu_source_type.mojom.h"
 #include "ui/events/base_event_utils.h"
 #include "ui/views/widget/widget.h"
+#include "url/gurl.h"
+#include "url/url_constants.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "ui/base/cocoa/defaults_utils.h"
@@ -2148,7 +2151,8 @@ void WebContents::HandleNewRenderFrame(
     const bool allow_subframes =
         web_preferences && web_preferences->AllowsNodeIntegrationInSubFrames();
     if (!render_frame_host->GetParent() || allow_subframes)
-      SendRendererStartupData(render_frame_host);
+      SendRendererStartupData(render_frame_host, GURL(url::kAboutBlankURL),
+                              render_frame_host->GetLastCommittedOrigin());
   }
 }
 
@@ -2531,10 +2535,24 @@ void WebContents::MaybeSendRendererStartupData(
   if (!main_frame && !allow_subframes && !is_devtools_like)
     return;
 
-  SendRendererStartupData(rfh);
+  // loadURL(dataUrl, {baseURLForDataURL}) commits the data: URL as a document
+  // at the base URL, so match URL filters against that. Same condition as
+  // content::NavigationRequest::IsLoadDataWithBaseURL().
+  const GURL& base_url = navigation_handle->GetBaseURLForDataURL();
+  const bool is_load_data_with_base_url =
+      navigation_handle->IsInPrimaryMainFrame() &&
+      navigation_handle->GetNetErrorCode() == net::OK &&
+      url.SchemeIs(url::kDataScheme) && base_url.is_valid();
+
+  // Has a value whenever the navigation has a RenderFrameHost to commit in.
+  SendRendererStartupData(
+      rfh, is_load_data_with_base_url ? base_url : url,
+      navigation_handle->GetOriginToCommit().value_or(url::Origin()));
 }
 
-void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh) {
+void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh,
+                                          const GURL& url,
+                                          const url::Origin& origin) {
   if (!rfh || !rfh->IsRenderFrameLive())
     return;
 
@@ -2545,7 +2563,7 @@ void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh) {
     // parked waiting on us here — we haven't sent CommitNavigation yet — so
     // unlike the old sync IPC handler this can't amplify under contention.
     ScopedAllowBlockingForElectron allow_blocking;
-    data = renderer_startup_data::BuildForFrame(rfh);
+    data = renderer_startup_data::BuildForFrame(rfh, url, origin);
   }
 
   // GetRemoteAssociatedInterfaces() routes over the same channel as
@@ -4449,8 +4467,9 @@ void WebContents::SetTemporaryZoomLevel(double level) {
 std::optional<PreloadScript> WebContents::GetPreloadScript() const {
   if (auto* web_preferences = WebContentsPreferences::From(web_contents())) {
     if (auto preload = web_preferences->GetPreloadPath()) {
-      auto preload_script = PreloadScript{
-          "", PreloadScript::ScriptType::kWebFrame, preload.value()};
+      PreloadScript preload_script;
+      preload_script.script_type = PreloadScript::ScriptType::kWebFrame;
+      preload_script.file_path = preload.value();
       return preload_script;
     }
   }
