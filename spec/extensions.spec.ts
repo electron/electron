@@ -495,6 +495,39 @@ describe('chrome extensions', () => {
         await w.loadURL(url);
         await fetch(w.webContents, url);
       });
+
+      it('loads a file worker when only an extension uses webRequest', async () => {
+        await w.loadURL(url);
+        const extension = await customSession.extensions.loadExtension(
+          path.join(fixtures, 'extensions', 'chrome-webRequest')
+        );
+
+        try {
+          await waitUntil(haveRejectedFetch);
+          await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+          const reply = await w.webContents.executeJavaScript(`
+            new Promise((resolve, reject) => {
+              const worker = new Worker(
+                new URL('../workers/worker.js', location.href).href
+              );
+              worker.onmessage = (event) => {
+                worker.terminate();
+                resolve(event.data);
+              };
+              worker.onerror = (event) => {
+                worker.terminate();
+                reject(new Error(event.message || 'worker error'));
+              };
+              worker.postMessage('ping');
+            })
+          `);
+
+          expect(reply).toBe('ping');
+        } finally {
+          customSession.extensions.removeExtension(extension.id);
+        }
+      });
     });
 
     it('does not take precedence over Electron webRequest - http', async () => {

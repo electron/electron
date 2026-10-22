@@ -1296,6 +1296,9 @@ void ElectronBrowserClient::
       extensions::CreateExtensionWorkerMainResourceURLLoaderFactory(
           browser_context, request_initiator));
 #endif
+  // Chromium does not pass the creator frame or worker process ID to this
+  // hook, so non-network worker main script requests are proxied without
+  // frame/process association.
   ProxyNonNetworkURLLoaderFactories(
       browser_context, content::ChildProcessHost::kInvalidUniqueID,
       URLLoaderFactoryType::kWorkerMainResource, request_initiator, factories);
@@ -1586,10 +1589,14 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
   DCHECK(web_request);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  // Factories for requests made from the main process (e.g. net.fetch) have
-  // no frame and are not routed through extensions.
+  // Factories for requests made from the main process (e.g. net.fetch) or
+  // non-network worker main script loads have no frame or renderer process ID
+  // and are not routed through extensions.
   const bool is_browser_process_request =
-      type == URLLoaderFactoryType::kNavigation && !frame_host;
+      (type == URLLoaderFactoryType::kNavigation ||
+       type == URLLoaderFactoryType::kWorkerMainResource) &&
+      render_process_id == content::ChildProcessHost::kInvalidUniqueID &&
+      !frame_host;
   if (!web_request->HasListener() && !is_browser_process_request) {
     auto* web_request_api = extensions::BrowserContextKeyedAPIFactory<
         extensions::WebRequestAPI>::Get(browser_context);
