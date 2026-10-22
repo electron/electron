@@ -2040,17 +2040,27 @@ describe('app module', () => {
   // losing the display server connection went straight to LOG(FATAL).
   ifdescribe(process.platform === 'linux')('GDK_BACKEND', () => {
     const fixture = path.join(fixturesPath, 'apps', 'gdk-backend');
+    // Wait for the app to exit, not just for its output. Otherwise the next
+    // test (or retry) launches the fixture again while this copy is still
+    // quitting, which on the ASAN lane can hold up the new launch for longer
+    // than a fixed wait for output allows.
     const run = async (env: NodeJS.ProcessEnv) => {
-      const child = cp.spawn(process.execPath, [fixture], { env, stdio: ['ignore', 'pipe', 'ignore'] });
+      const child = cp.spawn(process.execPath, [fixture], { env, stdio: ['ignore', 'pipe', 'pipe'] });
       defer(() => {
         if (child.exitCode === null && child.signalCode === null) child.kill();
       });
       let out = '';
+      let err = '';
       child.stdout.on('data', (chunk) => {
         out += chunk;
       });
-      await waitUntil(() => /GDK_BACKEND in child: .*\n/.test(out));
-      return out.match(/GDK_BACKEND in child: (.*)\n/)![1];
+      child.stderr.on('data', (chunk) => {
+        err += chunk;
+      });
+      const [code, signal] = await once(child, 'close');
+      const match = /GDK_BACKEND in child: (.*)\n/.exec(out);
+      expect(match, `exited with ${code ?? signal}\nstdout:\n${out}\nstderr:\n${err}`).not.toBeNull();
+      return match![1];
     };
 
     it('is not added to the environment that child processes inherit', async () => {
