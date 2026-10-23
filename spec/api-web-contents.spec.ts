@@ -617,7 +617,10 @@ describe('webContents module', () => {
 
     it('resolves when navigating within the page', async () => {
       await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
-      await setTimeout();
+      // loadFile() resolves on did-finish-load, and did-stop-loading can come
+      // later. A did-stop-loading that arrives after the next loadURL() has
+      // started would reject it, so start from a page that has stopped loading.
+      if (w.webContents.isLoading()) await once(w.webContents, 'did-stop-loading');
       await w.loadURL(w.getURL() + '#foo');
     });
 
@@ -1271,7 +1274,9 @@ describe('webContents module', () => {
         webPreferences: { partition }
       });
 
-      wcv.webContents.navigationHistory.restore({
+      // Wait for the restored page to load, so the script below runs in it
+      // rather than in the initial empty document that it replaces.
+      await wcv.webContents.navigationHistory.restore({
         entries: [
           {
             url: urlPage1,
@@ -2371,10 +2376,11 @@ describe('webContents module', () => {
 
       const origWebContents = w.webContents;
 
-      // Destroy the original WebContents
+      // Destroy the original WebContents. destroy() disposes it from a posted
+      // task, so wait for that rather than for a timer.
+      const destroyed = once(origWebContents, 'destroyed');
       w.webContents.destroy();
-
-      await setTimeout();
+      await destroyed;
 
       // Original should be destroyed, but cloned should still be alive
       expect(origWebContents.isDestroyed()).toBe(true);
@@ -4224,8 +4230,6 @@ describe('webContents module', () => {
         pdfs.push(await w.webContents.printToPDF({ pageSize: format }));
       }
 
-      // Parse every PDF in one pdf.js subprocess: one Electron launch per
-      // format is enough to push this test past its timeout on slow CI hosts.
       const pdfInfos = await readPDFs(pdfs);
 
       const approxEq = (a: number, b: number, epsilon = 0.01) => Math.abs(a - b) <= epsilon;
