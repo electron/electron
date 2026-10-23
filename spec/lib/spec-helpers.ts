@@ -141,13 +141,42 @@ export async function startRemoteControlApp(extraArgs: string[] = [], options?: 
   appProcess.stderr.on('data', (d) => {
     process.stderr.write(d);
   });
-  const port = await new Promise<number>((resolve) => {
-    appProcess.stdout.on('data', (d) => {
+  // Fail as soon as the app goes away before it reports its port, instead of
+  // waiting for the test's timeout.
+  const port = await new Promise<number>((resolve, reject) => {
+    let stderr = '';
+    const onStderr = (d: Buffer) => {
+      stderr += d.toString();
+    };
+    const onStdout = (d: Buffer) => {
       const m = /Listening: (\d+)/.exec(d.toString());
       if (m && m[1] != null) {
+        done();
         resolve(Number(m[1]));
       }
-    });
+    };
+    const onExit = (code: number | null, signal: NodeJS.Signals | null) => {
+      done();
+      reject(
+        new Error(
+          `remote-control app exited (code ${code}, signal ${signal}) before reporting its port.\n\nstderr:\n${stderr}`
+        )
+      );
+    };
+    const onError = (err: Error) => {
+      done();
+      reject(new Error(`remote-control app failed to start: ${err.message}\n\nstderr:\n${stderr}`, { cause: err }));
+    };
+    const done = () => {
+      appProcess.stderr.off('data', onStderr);
+      appProcess.stdout.off('data', onStdout);
+      appProcess.off('exit', onExit);
+      appProcess.off('error', onError);
+    };
+    appProcess.stderr.on('data', onStderr);
+    appProcess.stdout.on('data', onStdout);
+    appProcess.on('exit', onExit);
+    appProcess.on('error', onError);
   });
   return new RemoteControlApp(appProcess, port);
 }
