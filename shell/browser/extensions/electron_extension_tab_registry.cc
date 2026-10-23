@@ -258,14 +258,14 @@ ElectronExtensionTabRegistry::ParseDetails(
   }
   if (!electron_api::tabs::Tab::FromValue(BuildTabDict(
           parsed.window_id, parsed.index, parsed.active, parsed.details))) {
-    return base::unexpected("Invalid tab details");
+    return base::unexpected("Invalid view details");
   }
 
   const std::optional<std::string> json = base::WriteJson(parsed.details);
   if (!json)
-    return base::unexpected("Tab details must be JSON-serializable");
+    return base::unexpected("View details must be JSON-serializable");
   if (json->size() > kMaxDetailsSize)
-    return base::unexpected("Tab details are too large");
+    return base::unexpected("View details are too large");
 
   return parsed;
 }
