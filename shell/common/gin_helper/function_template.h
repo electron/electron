@@ -69,7 +69,7 @@ class CallbackHolder final : public gin::internal::CallbackHolderBase {
       : gin::internal::CallbackHolderBase(
             reinterpret_cast<uintptr_t>(&kSignatureId<Sig>)),
         callback(std::move(callback)),
-        invoker_options(std::move(invoker_options)) {}
+        invoker_options(invoker_options) {}
   CallbackHolder(const CallbackHolder&) = delete;
   CallbackHolder& operator=(const CallbackHolder&) = delete;
 

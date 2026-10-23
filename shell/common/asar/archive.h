@@ -34,6 +34,9 @@ struct IntegrityPayload {
   IntegrityPayload();
   ~IntegrityPayload();
   IntegrityPayload(const IntegrityPayload& other);
+  IntegrityPayload(IntegrityPayload&& other);
+  IntegrityPayload& operator=(const IntegrityPayload& other);
+  IntegrityPayload& operator=(IntegrityPayload&& other);
   HashAlgorithm algorithm = HashAlgorithm::kNone;
   std::string hash;
   uint32_t block_size = 0U;
