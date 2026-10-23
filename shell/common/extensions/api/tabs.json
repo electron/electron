@@ -95,7 +95,7 @@
           "height": {"type": "integer", "optional": true, "description": "The height of the tab in pixels."},
           "sessionId": {"type": "string", "optional": true, "description": "The session ID used to uniquely identify a tab obtained from the $(ref:sessions) API."}
         },
-        // Custom properties an app sets with Extensions.addTab().
+        // Custom properties an app sets with Extensions.addView().
         "additionalProperties": {"type": "any"}
       },
       {

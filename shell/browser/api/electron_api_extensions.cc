@@ -156,9 +156,9 @@ void Extensions::SetTabMode(gin_helper::ErrorThrower thrower,
   }
 }
 
-void Extensions::AddTab(gin_helper::ErrorThrower thrower,
-                        v8::Local<v8::Value> web_contents_value,
-                        const base::DictValue& details) {
+void Extensions::AddView(gin_helper::ErrorThrower thrower,
+                         v8::Local<v8::Value> web_contents_value,
+                         const base::DictValue& details) {
   content::WebContents* web_contents =
       ToWebContents(thrower.isolate(), web_contents_value);
   if (!web_contents) {
@@ -172,9 +172,9 @@ void Extensions::AddTab(gin_helper::ErrorThrower thrower,
     thrower.ThrowError(result.error());
 }
 
-void Extensions::UpdateTab(gin_helper::ErrorThrower thrower,
-                           v8::Local<v8::Value> web_contents_value,
-                           const base::DictValue& details) {
+void Extensions::UpdateView(gin_helper::ErrorThrower thrower,
+                            v8::Local<v8::Value> web_contents_value,
+                            const base::DictValue& details) {
   content::WebContents* web_contents =
       ToWebContents(thrower.isolate(), web_contents_value);
   if (!web_contents) {
@@ -188,7 +188,7 @@ void Extensions::UpdateTab(gin_helper::ErrorThrower thrower,
     thrower.ThrowError(result.error());
 }
 
-void Extensions::RemoveTab(v8::Local<v8::Value> web_contents_value) {
+void Extensions::RemoveView(v8::Local<v8::Value> web_contents_value) {
   // A destroyed WebContents has already been removed.
   content::WebContents* web_contents =
       ToWebContents(JavascriptEnvironment::GetIsolate(), web_contents_value);
@@ -243,9 +243,9 @@ gin::ObjectTemplateBuilder Extensions::GetObjectTemplateBuilder(
       .SetMethod("getExtension", &Extensions::GetExtension)
       .SetMethod("getAllExtensions", &Extensions::GetAllExtensions)
       .SetMethod("setTabMode", &Extensions::SetTabMode)
-      .SetMethod("addTab", &Extensions::AddTab)
-      .SetMethod("updateTab", &Extensions::UpdateTab)
-      .SetMethod("removeTab", &Extensions::RemoveTab)
+      .SetMethod("addView", &Extensions::AddView)
+      .SetMethod("updateView", &Extensions::UpdateView)
+      .SetMethod("removeView", &Extensions::RemoveView)
       .SetMethod("setFocusedWindow", &Extensions::SetFocusedWindow);
 }
 

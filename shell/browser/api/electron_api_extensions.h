@@ -48,13 +48,13 @@ class Extensions final : public gin::Wrappable<Extensions>,
                                     const std::string& extension_id);
   v8::Local<v8::Value> GetAllExtensions(v8::Isolate* isolate);
   void SetTabMode(gin_helper::ErrorThrower thrower, const std::string& mode);
-  void AddTab(gin_helper::ErrorThrower thrower,
-              v8::Local<v8::Value> web_contents_value,
-              const base::DictValue& details);
-  void UpdateTab(gin_helper::ErrorThrower thrower,
-                 v8::Local<v8::Value> web_contents_value,
-                 const base::DictValue& details);
-  void RemoveTab(v8::Local<v8::Value> web_contents_value);
+  void AddView(gin_helper::ErrorThrower thrower,
+               v8::Local<v8::Value> web_contents_value,
+               const base::DictValue& details);
+  void UpdateView(gin_helper::ErrorThrower thrower,
+                  v8::Local<v8::Value> web_contents_value,
+                  const base::DictValue& details);
+  void RemoveView(v8::Local<v8::Value> web_contents_value);
   void SetFocusedWindow(gin_helper::ErrorThrower thrower,
                         v8::Local<v8::Value> window_id_value);
 

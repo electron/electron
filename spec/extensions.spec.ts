@@ -726,7 +726,8 @@ describe('chrome extensions', () => {
         `new Promise((resolve) => chrome.runtime.sendMessage(${JSON.stringify(message)}, resolve))`
       );
     const call = (api: string, ...args: unknown[]) => ask({ type: 'call', api, args });
-    const tabError = (contents: WebContents, details: object) => () => ses.extensions.addTab(contents, details as any);
+    const addViewError = (contents: WebContents, details: object) => () =>
+      ses.extensions.addView(contents, details as any);
 
     beforeEach(async () => {
       ses = session.fromPartition(`persist:${crypto.randomUUID()}`);
@@ -743,8 +744,8 @@ describe('chrome extensions', () => {
       const watched = createWindow();
       const other = createWindow();
       // 7 is the window the fixture filters its second webRequest listener on.
-      ses.extensions.addTab(watched.webContents, { windowId: 7, index: 2, active: true });
-      ses.extensions.addTab(other.webContents, { windowId: 8, index: 0 });
+      ses.extensions.addView(watched.webContents, { windowId: 7, index: 2, active: true });
+      ses.extensions.addView(other.webContents, { windowId: 8, index: 0 });
       await other.loadURL(`${url}/?other-window`);
       await watched.loadURL(`${url}/?watched-window`);
 
@@ -762,7 +763,7 @@ describe('chrome extensions', () => {
       const otherSender = await ask({ type: 'wait-for', list: 'senders', marker: 'other-window' });
       expect(otherSender.tab).toMatchObject({ id: other.webContents.id, windowId: 8, index: 0, active: false });
 
-      ses.extensions.updateTab(other.webContents, { windowId: 7, index: 3 });
+      ses.extensions.updateView(other.webContents, { windowId: 7, index: 3 });
       await other.loadURL(`${url}/?moved-window`);
       const moved = await ask({ type: 'wait-for', list: 'windowRequests', marker: 'moved-window' });
       expect(moved.tabId).toBe(other.webContents.id);
@@ -772,8 +773,8 @@ describe('chrome extensions', () => {
       ses.extensions.setTabMode('registered');
       const tab = createWindow();
       const popup = createWindow();
-      ses.extensions.addTab(tab.webContents, { windowId: 1, index: 0 });
-      ses.extensions.addTab(popup.webContents, { type: 'popup', windowId: 1 });
+      ses.extensions.addView(tab.webContents, { windowId: 1, index: 0 });
+      ses.extensions.addView(popup.webContents, { type: 'popup', windowId: 1 });
       await Promise.all([tab.loadURL(`${extension.url}page.html`), popup.loadURL(`${extension.url}page.html`)]);
 
       const fromTab = await ask({ type: 'sender' }, tab.webContents);
@@ -781,13 +782,13 @@ describe('chrome extensions', () => {
       expect((await ask({ type: 'sender' }, popup.webContents)).hasTab).toBe(false);
       expect((await ask({ type: 'sender' })).hasTab).toBe(false);
 
-      ses.extensions.removeTab(tab.webContents);
+      ses.extensions.removeView(tab.webContents);
       expect((await ask({ type: 'sender' }, tab.webContents)).hasTab).toBe(false);
     });
 
     it('still treats an unregistered webContents as a tab by default', async () => {
       const popup = createWindow();
-      ses.extensions.addTab(popup.webContents, { type: 'popup', windowId: 1 });
+      ses.extensions.addView(popup.webContents, { type: 'popup', windowId: 1 });
       await popup.loadURL(`${extension.url}page.html`);
 
       const fromDriver = await ask({ type: 'sender' });
@@ -800,7 +801,7 @@ describe('chrome extensions', () => {
       it(`rejects a view added as a popup wherever a tab is expected in ${mode} mode`, async () => {
         ses.extensions.setTabMode(mode);
         const popup = createWindow();
-        ses.extensions.addTab(popup.webContents, { type: 'popup', windowId: 1 });
+        ses.extensions.addView(popup.webContents, { type: 'popup', windowId: 1 });
         await popup.loadURL(`${url}/?popup`);
         const { id } = popup.webContents;
 
@@ -831,7 +832,7 @@ describe('chrome extensions', () => {
       const request = await ask({ type: 'wait-for', list: 'requests', marker: 'unregistered' });
       expect(request.tabId).toBe(-1);
 
-      ses.extensions.addTab(w.webContents, { windowId: 1, index: 0 });
+      ses.extensions.addView(w.webContents, { windowId: 1, index: 0 });
       expect((await call('tabs.get', id)).result).toMatchObject({ id, windowId: 1, index: 0 });
       expect((await call('tabs.sendMessage', id, 'ping')).result).toEqual({ echo: 'ping' });
     });
@@ -841,11 +842,11 @@ describe('chrome extensions', () => {
       ses.extensions.setTabMode('registered');
       const mv2Driver = createWindow();
       const [a, b, c, d, e] = [0, 1, 2, 3, 4].map(createWindow);
-      ses.extensions.addTab(a.webContents, { windowId: 1, index: 0 });
-      ses.extensions.addTab(b.webContents, { windowId: 1, index: 1, active: true });
-      ses.extensions.addTab(c.webContents, { windowId: 2, index: 0, active: true });
-      ses.extensions.addTab(d.webContents, { windowId: 3, index: 0 });
-      ses.extensions.addTab(e.webContents, { windowId: 3, index: 1, active: true });
+      ses.extensions.addView(a.webContents, { windowId: 1, index: 0 });
+      ses.extensions.addView(b.webContents, { windowId: 1, index: 1, active: true });
+      ses.extensions.addView(c.webContents, { windowId: 2, index: 0, active: true });
+      ses.extensions.addView(d.webContents, { windowId: 3, index: 0 });
+      ses.extensions.addView(e.webContents, { windowId: 3, index: 1, active: true });
       await Promise.all([
         mv2Driver.loadURL(`${mv2.url}page.html`),
         a.loadURL(`${url}/?a`),
@@ -861,7 +862,7 @@ describe('chrome extensions', () => {
       expect(await run()).toEqual({ error: 'No current window' });
       ses.extensions.setFocusedWindow(1);
       expect(await run()).toEqual({ results: ['?b'] });
-      ses.extensions.updateTab(a.webContents, { active: true });
+      ses.extensions.updateView(a.webContents, { active: true });
       expect(await run()).toEqual({ results: ['?a'] });
       ses.extensions.setFocusedWindow(2);
       expect(await run()).toEqual({ results: ['?c'] });
@@ -872,7 +873,7 @@ describe('chrome extensions', () => {
       })`);
       expect(fromTab).toEqual(['?e']);
 
-      ses.extensions.updateTab(c.webContents, { active: false });
+      ses.extensions.updateView(c.webContents, { active: false });
       expect(await run()).toEqual({ error: 'No active tab' });
       ses.extensions.setFocusedWindow(null);
       expect(await run()).toEqual({ error: 'No current window' });
@@ -882,10 +883,10 @@ describe('chrome extensions', () => {
       ses.extensions.setTabMode('registered');
       const [a, b, c, d] = [0, 1, 2, 3].map(createWindow);
       // Added out of order: results follow the window and index.
-      ses.extensions.addTab(c.webContents, { windowId: 2, index: 0, active: true });
-      ses.extensions.addTab(b.webContents, { windowId: 1, index: 1, active: true });
-      ses.extensions.addTab(a.webContents, { windowId: 1, index: 0 });
-      ses.extensions.addTab(d.webContents, { windowId: 1, index: 2 });
+      ses.extensions.addView(c.webContents, { windowId: 2, index: 0, active: true });
+      ses.extensions.addView(b.webContents, { windowId: 1, index: 1, active: true });
+      ses.extensions.addView(a.webContents, { windowId: 1, index: 0 });
+      ses.extensions.addView(d.webContents, { windowId: 1, index: 2 });
       await d.loadURL(`${extension.url}page.html`);
       ses.extensions.setFocusedWindow(2);
       const ids = (tabs: { id: number }[]) => tabs.map((tab) => tab.id);
@@ -907,11 +908,11 @@ describe('chrome extensions', () => {
     it('reports the type of a registered view to runtime.getContexts', async () => {
       // Every extension page open here is registered: a build with DCHECKs
       // crashes in runtime.getContexts() while one has no view type.
-      ses.extensions.addTab(driver.webContents, { windowId: 1, index: 0 });
+      ses.extensions.addView(driver.webContents, { windowId: 1, index: 0 });
       const popup = createWindow();
       const sidePanel = createWindow();
-      ses.extensions.addTab(popup.webContents, { type: 'popup', windowId: 1 });
-      ses.extensions.addTab(sidePanel.webContents, { type: 'side-panel', windowId: 1 });
+      ses.extensions.addView(popup.webContents, { type: 'popup', windowId: 1 });
+      ses.extensions.addView(sidePanel.webContents, { type: 'side-panel', windowId: 1 });
       await Promise.all([popup.loadURL(`${extension.url}page.html`), sidePanel.loadURL(`${extension.url}page.html`)]);
 
       const contexts: { contextType: string }[] = (await call('runtime.getContexts', {})).result;
@@ -928,7 +929,7 @@ describe('chrome extensions', () => {
       const tab = createWindow();
       const { id } = tab.webContents;
       const custom = { workspace: { name: 'work', pinnedIds: [1, 2] }, container: 'personal' };
-      ses.extensions.addTab(tab.webContents, { windowId: 1, index: 0, pinned: true, splitViewId: 3, ...custom });
+      ses.extensions.addView(tab.webContents, { windowId: 1, index: 0, pinned: true, splitViewId: 3, ...custom });
       await tab.loadURL(`${url}/?custom`);
       const expected = { id, windowId: 1, index: 0, pinned: true, splitViewId: 3, url: `${url}/?custom`, ...custom };
 
@@ -938,7 +939,7 @@ describe('chrome extensions', () => {
       expect((await call('tabs.query', { windowId: 1 })).result).toMatchObject([expected]);
       expect((await call('tabs.update', id, { muted: true })).result).toMatchObject(expected);
 
-      ses.extensions.updateTab(tab.webContents, { workspace: 'home', container: null, splitViewId: null } as any);
+      ses.extensions.updateView(tab.webContents, { workspace: 'home', container: null, splitViewId: null } as any);
       const updated = (await call('tabs.get', id)).result;
       expect(updated).toHaveProperty('workspace', 'home');
       expect(updated).toHaveProperty('pinned', true);
@@ -962,13 +963,13 @@ describe('chrome extensions', () => {
         'width'
       ];
       for (const key of derived) {
-        expect(tabError(tab.webContents, { windowId: 1, index: 0, [key]: 'spoofed' })).toThrow(
+        expect(addViewError(tab.webContents, { windowId: 1, index: 0, [key]: 'spoofed' })).toThrow(
           `'${key}' is set by Electron`
         );
       }
 
-      ses.extensions.addTab(tab.webContents, { windowId: 1, index: 0 });
-      expect(() => ses.extensions.updateTab(tab.webContents, { url: 'https://example.com/' } as any)).toThrow(
+      ses.extensions.addView(tab.webContents, { windowId: 1, index: 0 });
+      expect(() => ses.extensions.updateView(tab.webContents, { url: 'https://example.com/' } as any)).toThrow(
         "'url' is set by Electron"
       );
     });
@@ -976,41 +977,41 @@ describe('chrome extensions', () => {
     it('throws for a webContents or details it cannot register', async () => {
       const tab = createWindow();
       const valid = { windowId: 1, index: 0 };
-      expect(tabError(tab.webContents, { index: 0 })).toThrow("'windowId' is required");
-      expect(tabError(tab.webContents, { windowId: 1 })).toThrow("'index' is required for a tab");
-      expect(tabError(tab.webContents, { windowId: -1, index: 0 })).toThrow(
+      expect(addViewError(tab.webContents, { index: 0 })).toThrow("'windowId' is required");
+      expect(addViewError(tab.webContents, { windowId: 1 })).toThrow("'index' is required for a tab");
+      expect(addViewError(tab.webContents, { windowId: -1, index: 0 })).toThrow(
         "'windowId' must be a non-negative integer"
       );
-      expect(tabError(tab.webContents, { ...valid, type: 'window' })).toThrow("'type' must be");
-      expect(tabError(tab.webContents, { ...valid, type: 'popup' })).toThrow("'index' cannot be set on a view");
-      expect(tabError(tab.webContents, { windowId: 1, type: 'side-panel', pinned: true })).toThrow(
+      expect(addViewError(tab.webContents, { ...valid, type: 'window' })).toThrow("'type' must be");
+      expect(addViewError(tab.webContents, { ...valid, type: 'popup' })).toThrow("'index' cannot be set on a view");
+      expect(addViewError(tab.webContents, { windowId: 1, type: 'side-panel', pinned: true })).toThrow(
         "'pinned' cannot be set on a view"
       );
-      expect(tabError(tab.webContents, { ...valid, pinned: 'yes' })).toThrow("Invalid value for 'pinned'");
-      expect(tabError(tab.webContents, { ...valid, groupId: -2 })).toThrow("Invalid value for 'groupId'");
-      expect(tabError(tab.webContents, { ...valid, blob: 'x'.repeat(70_000) })).toThrow('too large');
+      expect(addViewError(tab.webContents, { ...valid, pinned: 'yes' })).toThrow("Invalid value for 'pinned'");
+      expect(addViewError(tab.webContents, { ...valid, groupId: -2 })).toThrow("Invalid value for 'groupId'");
+      expect(addViewError(tab.webContents, { ...valid, blob: 'x'.repeat(70_000) })).toThrow('too large');
 
       const otherSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
       const foreign = new BrowserWindow({ show: false, webPreferences: { session: otherSession } });
-      expect(() => ses.extensions.addTab(foreign.webContents, valid)).toThrow('belongs to another session');
-      expect(() => ses.extensions.updateTab(foreign.webContents, { index: 1 })).toThrow('is not registered');
+      expect(() => ses.extensions.addView(foreign.webContents, valid)).toThrow('belongs to another session');
+      expect(() => ses.extensions.updateView(foreign.webContents, { index: 1 })).toThrow('is not registered');
 
       const created = once(app, 'web-contents-created') as Promise<[unknown, WebContents]>;
       await ses.extensions.loadExtension(fixture('mv2'));
       const [, background] = await created;
       expect(background.getType()).toBe('backgroundPage');
-      expect(tabError(background, valid)).toThrow('extension background page');
+      expect(addViewError(background, valid)).toThrow('extension background page');
 
       const closed = createWindow();
       const closedContents = closed.webContents;
       closed.destroy();
       await waitUntil(() => closedContents.isDestroyed());
-      expect(tabError(closedContents, valid)).toThrow('not destroyed');
-      expect(() => ses.extensions.removeTab(closedContents)).not.toThrow();
+      expect(addViewError(closedContents, valid)).toThrow('not destroyed');
+      expect(() => ses.extensions.removeView(closedContents)).not.toThrow();
 
-      ses.extensions.addTab(tab.webContents, valid);
-      expect(tabError(tab.webContents, valid)).toThrow('already registered');
-      expect(() => ses.extensions.updateTab(tab.webContents, { type: 'popup' } as any)).toThrow(
+      ses.extensions.addView(tab.webContents, valid);
+      expect(addViewError(tab.webContents, valid)).toThrow('already registered');
+      expect(() => ses.extensions.updateView(tab.webContents, { type: 'popup' } as any)).toThrow(
         "'type' cannot be changed"
       );
       expect(() => ses.extensions.setTabMode('tabs' as any)).toThrow('mode must be');

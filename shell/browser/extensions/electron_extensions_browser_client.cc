@@ -403,7 +403,7 @@ void ElectronExtensionsBrowserClient::GetTabAndWindowIdForWebContents(
     int* tab_id,
     int* window_id) {
   // Tab ids are WebContents ids, the same ids chrome.tabs hands out. A window
-  // id exists only for a tab the app registered with Extensions.addTab().
+  // id exists only for a tab the app registered with Extensions.addView().
   *tab_id = -1;
   *window_id = -1;
   if (!extensions::IsTab(web_contents))

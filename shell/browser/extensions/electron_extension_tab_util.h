@@ -30,7 +30,7 @@ class Extension;
 // the one answer behind tab lookup by ID, the tab and window IDs stamped on
 // network requests, and `sender.tab`.
 //
-// A WebContents registered with Extensions.addTab() is a tab only if it was
+// A WebContents registered with Extensions.addView() is a tab only if it was
 // added as one: a registered popup or side panel never is. An unregistered
 // WebContents is a tab only while its session treats every WebContents as one
 // (ElectronTabMode::kAllWebContents, the default).

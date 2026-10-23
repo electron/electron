@@ -144,9 +144,9 @@ Sets which `webContents` of this session are tabs to its extensions. The
 default is `all-web-contents`.
 
 * `all-web-contents` - Every `webContents` in the session is a tab, unless it
-  was added with [`extensions.addTab`](#extensionsaddtabwebcontents-details-experimental)
+  was added with [`extensions.addView`](#extensionsaddviewwebcontents-details-experimental)
   as a `popup` or `side-panel`.
-* `registered` - Only a `webContents` added with `extensions.addTab` as a `tab`
+* `registered` - Only a `webContents` added with `extensions.addView` as a `tab`
   is a tab.
 
 A `webContents` that is not a tab has no tab ID. Extensions cannot target it
@@ -157,7 +157,7 @@ have no `sender.tab`.
 Set the mode before loading extensions and creating tabs: changing it later
 changes whether existing `webContents` are tabs.
 
-#### `extensions.addTab(webContents, details)` _Experimental_
+#### `extensions.addView(webContents, details)` _Experimental_
 
 <!--
 ```YAML history
@@ -248,7 +248,7 @@ app.whenReady().then(() => {
 
   const view = new WebContentsView({ webPreferences: { session: ses } })
   win.contentView.addChildView(view)
-  ses.extensions.addTab(view.webContents, {
+  ses.extensions.addView(view.webContents, {
     windowId: win.id,
     index: 0,
     active: true
@@ -257,7 +257,7 @@ app.whenReady().then(() => {
 })
 ```
 
-#### `extensions.updateTab(webContents, details)` _Experimental_
+#### `extensions.updateView(webContents, details)` _Experimental_
 
 <!--
 ```YAML history
@@ -267,7 +267,7 @@ added:
 -->
 
 * `webContents` [WebContents](web-contents.md) - A `webContents` added with
-  [`extensions.addTab`](#extensionsaddtabwebcontents-details-experimental).
+  [`extensions.addView`](#extensionsaddviewwebcontents-details-experimental).
 * `details` Object
   * `windowId` Integer (optional)
   * `index` Integer (optional)
@@ -284,15 +284,15 @@ added:
   * `favIconUrl` string | null (optional)
   * `sessionId` string | null (optional)
 
-Changes the details of a view added with `extensions.addTab`. The keys of
+Changes the details of a view added with `extensions.addView`. The keys of
 `details`, custom properties included, are merged into the stored details. A
 key set to `null` is removed, which restores its default.
 
 This method throws an error if `webContents` was not added, if `details`
-contains `type`, and for the same invalid details as `extensions.addTab`. To
+contains `type`, and for the same invalid details as `extensions.addView`. To
 change the type of a view, remove it and add it again.
 
-#### `extensions.removeTab(webContents)` _Experimental_
+#### `extensions.removeView(webContents)` _Experimental_
 
 <!--
 ```YAML history
@@ -303,7 +303,7 @@ added:
 
 * `webContents` [WebContents](web-contents.md)
 
-Removes a view added with `extensions.addTab`. Does nothing if `webContents`
+Removes a view added with `extensions.addView`. Does nothing if `webContents`
 was not added.
 
 #### `extensions.setFocusedWindow(windowId)` _Experimental_
@@ -320,7 +320,7 @@ added:
 
 Sets the window that extensions get as the last focused window. It is also the
 current window for an extension context that is not in a view added with
-`extensions.addTab`, such as a service worker.
+`extensions.addView`, such as a service worker.
 
 When the session's tab mode is `registered`, a `chrome.tabs` method called
 without a tab ID acts on the active tab of the caller's current window, and

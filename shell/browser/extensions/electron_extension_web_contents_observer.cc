@@ -31,7 +31,7 @@ void ElectronExtensionWebContentsObserver::InitializeRenderFrame(
     content::RenderFrameHost* render_frame_host) {
   ExtensionWebContentsObserver::InitializeRenderFrame(render_frame_host);
 
-  // Frames created after Extensions.addTab() learn their window here; the
+  // Frames created after Extensions.addView() learn their window here; the
   // registry tells the frames that already exist.
   const auto* data = ElectronExtensionTabData::FromWebContents(web_contents());
   if (!data)

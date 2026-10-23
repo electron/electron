@@ -35,7 +35,7 @@ enum class ElectronTabMode {
   kRegistered,
 };
 
-// What the app registered about one WebContents through Extensions.addTab().
+// What the app registered about one WebContents through Extensions.addView().
 // Present on every registered view. A registered view is not necessarily a
 // tab: popups and side panels are registered too, so ask is_tab(), or better
 // extensions::IsTab(), never "does this WebContents have tab data?".
@@ -103,7 +103,7 @@ class ElectronExtensionTabRegistry : public base::SupportsUserData::Data {
   }
 
   // Registers |web_contents|, which must belong to this registry's
-  // BrowserContext. |details| is the object passed to Extensions.addTab().
+  // BrowserContext. |details| is the object passed to Extensions.addView().
   // On failure, returns the error to throw and changes nothing.
   base::expected<void, std::string> AddView(content::WebContents* web_contents,
                                             const base::DictValue& details);
