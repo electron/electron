@@ -2045,21 +2045,12 @@ describe('app module', () => {
     // quitting, which on the ASAN lane can hold up the new launch for longer
     // than a fixed wait for output allows.
     const run = async (env: NodeJS.ProcessEnv) => {
-      const child = cp.spawn(process.execPath, [fixture], { env, stdio: ['ignore', 'pipe', 'pipe'] });
-      defer(() => {
-        if (child.exitCode === null && child.signalCode === null) child.kill();
-      });
-      let out = '';
-      let err = '';
-      child.stdout.on('data', (chunk) => {
-        out += chunk;
-      });
-      child.stderr.on('data', (chunk) => {
-        err += chunk;
-      });
-      const [code, signal] = await once(child, 'close');
-      const match = /GDK_BACKEND in child: (.*)\n/.exec(out);
-      expect(match, `exited with ${code ?? signal}\nstdout:\n${out}\nstderr:\n${err}`).not.toBeNull();
+      // Starting Electron is slow on sanitizer builds, so stay within the
+      // per-test timeout (raised there) rather than a fixed short poll.
+      const timeout = (Number(process.env.ELECTRON_SPEC_TIMEOUT) || 30_000) - 5_000;
+      const { code, signal, stdout, stderr } = await spawnAndWait(process.execPath, [fixture], { env, timeout });
+      const match = /GDK_BACKEND in child: (.*)/.exec(stdout);
+      expect(match, `exited with ${code}/${signal}\nstdout:\n${stdout}\nstderr:\n${stderr}`).not.toBeNull();
       return match![1];
     };
 
