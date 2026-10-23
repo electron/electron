@@ -2185,7 +2185,9 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
 }
 
 #if BUILDFLAG(IS_MAC)
-base::FilePath ElectronBrowserClient::GetChildProcessPath(int child_flags) {
+base::FilePath ElectronBrowserClient::GetChildProcessPath(
+    int child_flags,
+    content::ChildProcessId child_process_id) {
   if (child_flags !=
       static_cast<int>(
           ElectronChildProcessHostFlags::kChildProcessHelperPlugin)) {
