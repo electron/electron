@@ -20,36 +20,6 @@ import '@electron/internal/browser/api/session';
 const binding = process._linkedBinding('electron_browser_web_contents');
 const { WebContents } = binding as { WebContents: { prototype: Electron.WebContents } };
 
-WebContents.prototype.postMessage = function (...args) {
-  return this.mainFrame.postMessage(...args);
-};
-
-WebContents.prototype.send = function (channel, ...args) {
-  if (typeof channel !== 'string') {
-    throw new TypeError('Missing required channel argument');
-  }
-
-  try {
-    return this._sendToMainFrame(false /* internal */, channel, args);
-  } catch (e) {
-    if (e instanceof TypeError) throw e;
-    console.error('Error sending from webContents: ', e);
-  }
-};
-
-WebContents.prototype._sendInternal = function (channel, ...args) {
-  if (typeof channel !== 'string') {
-    throw new TypeError('Missing required channel argument');
-  }
-
-  try {
-    return this._sendToMainFrame(true /* internal */, channel, args);
-  } catch (e) {
-    if (e instanceof TypeError) throw e;
-    console.error('Error sending from webContents: ', e);
-  }
-};
-
 function getWebFrame(contents: Electron.WebContents, frame: number | [number, number]) {
   let webFrame: Electron.WebFrameMain | undefined;
   if (typeof frame === 'number') {
@@ -234,14 +204,6 @@ const consoleMessageDeprecated = deprecate.warnOnceMessage(
 
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
-  // Read off the ID at construction time, so that it's accessible even after
-  // the underlying C++ WebContents is destroyed.
-  const id = this.id;
-  Object.defineProperty(this, 'id', {
-    value: id,
-    writable: false
-  });
-
   this._windowOpenHandler = null;
 
   const ipc = new IpcMainImpl();
@@ -292,51 +254,6 @@ WebContents.prototype._init = function () {
   });
 
   if (this.getType() !== 'remote') {
-    // Make new windows requested by links behave like "window.open".
-    this.on(
-      '-new-window',
-      (event, url, frameName, disposition, rawFeatures, referrer, postData, sandboxFlags, navigate) => {
-        const postBody = postData
-          ? {
-              data: postData,
-              ...parseContentTypeFormat(postData)
-            }
-          : undefined;
-        const details: Electron.HandlerDetails = {
-          url,
-          frameName,
-          features: rawFeatures,
-          referrer,
-          postBody,
-          disposition
-        };
-
-        let result: ReturnType<typeof this._callWindowOpenHandler>;
-        try {
-          result = this._callWindowOpenHandler(event, details);
-        } catch (err) {
-          event.preventDefault();
-          throw err;
-        }
-
-        const options = result.browserWindowConstructorOptions;
-        if (!event.defaultPrevented) {
-          openGuestWindow({
-            embedder: this,
-            disposition,
-            referrer,
-            postData,
-            overrideBrowserWindowOptions: options || {},
-            windowOpenArgs: details,
-            outlivesOpener: result.outlivesOpener,
-            createWindow: result.createWindow,
-            inheritedSandboxFlags: sandboxFlags,
-            navigate
-          });
-        }
-      }
-    );
-
     let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
     let windowOpenOutlivesOpenerOption: boolean = false;
     let createWindow: Electron.CreateWindowFunction | undefined;
@@ -393,7 +310,8 @@ WebContents.prototype._init = function () {
       }
     });
 
-    // Create a new browser window for "window.open"
+    // Create a new browser window for window.open() and for links opened into
+    // a new window; both arrive here with the new webContents already created.
     this.on(
       '-add-new-contents',
       (
@@ -420,7 +338,12 @@ WebContents.prototype._init = function () {
         // false is the default
         windowOpenOutlivesOpenerOption = false;
 
-        if (disposition !== 'foreground-tab' && disposition !== 'new-window' && disposition !== 'background-tab') {
+        if (
+          disposition !== 'foreground-tab' &&
+          disposition !== 'new-window' &&
+          disposition !== 'background-tab' &&
+          disposition !== 'save-to-disk'
+        ) {
           event.preventDefault();
           return;
         }
@@ -512,47 +435,6 @@ WebContents.prototype._init = function () {
     if (eventName === 'console-message' && !this.isDestroyed() && this.listenerCount('console-message') === 0) {
       this._setConsoleMessageObserved(false);
     }
-  });
-  // Properties
-
-  Object.defineProperty(this, 'audioMuted', {
-    get: () => this.isAudioMuted(),
-    set: (muted) => this.setAudioMuted(muted)
-  });
-
-  Object.defineProperty(this, 'userAgent', {
-    get: () => this.getUserAgent(),
-    set: (agent) => this.setUserAgent(agent)
-  });
-
-  Object.defineProperty(this, 'zoomLevel', {
-    get: () => this.getZoomLevel(),
-    set: (level) => this.setZoomLevel(level)
-  });
-
-  Object.defineProperty(this, 'zoomFactor', {
-    get: () => this.getZoomFactor(),
-    set: (factor) => this.setZoomFactor(factor)
-  });
-
-  Object.defineProperty(this, 'zoomMode', {
-    get: () => this.getZoomMode(),
-    set: (mode) => this.setZoomMode(mode)
-  });
-
-  Object.defineProperty(this, 'frameRate', {
-    get: () => this.getFrameRate(),
-    set: (rate) => this.setFrameRate(rate)
-  });
-
-  Object.defineProperty(this, 'backgroundThrottling', {
-    get: () => this.getBackgroundThrottling(),
-    set: (allowed) => this.setBackgroundThrottling(allowed)
-  });
-
-  Object.defineProperty(this, 'caretBrowsingEnabled', {
-    get: () => this.isCaretBrowsingEnabled(),
-    set: (enabled) => this.setCaretBrowsingEnabled(enabled)
   });
 };
 

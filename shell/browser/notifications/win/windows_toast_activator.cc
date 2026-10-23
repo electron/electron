@@ -529,7 +529,7 @@ void HandleToastActivation(const std::wstring& invoked_args,
   handle_callback(activation_args);
 
   Notification* target = nullptr;
-  for (auto* n : presenter->notifications()) {
+  for (Notification* n : presenter->notifications()) {
     std::wstring tag = base::UTF8ToWide(n->notification_id());
     if (tag == tag_str) {
       target = n;

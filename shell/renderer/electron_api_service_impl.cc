@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "gin/converter.h"
-#include "mojo/public/cpp/system/platform_handle.h"
+#include "mojo/public/cpp/platform/platform_handle.h"
 #include "shell/common/api/electron_api_shared_texture.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/serialized_value_converter.h"
@@ -244,7 +244,7 @@ void ElectronApiServiceImpl::ReceivePostMessage(
 }
 
 void ElectronApiServiceImpl::TakeHeapSnapshot(
-    mojo::ScopedHandle file,
+    mojo::PlatformHandle file,
     TakeHeapSnapshotCallback callback) {
   blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
   if (!frame)
@@ -252,14 +252,12 @@ void ElectronApiServiceImpl::TakeHeapSnapshot(
 
   ScopedAllowBlockingForElectron allow_blocking;
 
-  base::ScopedPlatformFile platform_file;
-  if (mojo::UnwrapPlatformFile(std::move(file), &platform_file) !=
-      MOJO_RESULT_OK) {
+  if (!file.is_valid()) {
     LOG(ERROR) << "Unable to get the file handle from mojo.";
     std::move(callback).Run(false);
     return;
   }
-  base::File base_file(std::move(platform_file));
+  base::File base_file(file.TakePlatformFile());
 
   v8::Isolate* isolate = frame->GetAgentGroupScheduler()->Isolate();
   bool success = electron::TakeHeapSnapshot(isolate, &base_file);
@@ -327,8 +325,11 @@ void ElectronApiServiceImpl::SetVisualZoomLevelLimits(
     double min_level,
     double max_level,
     SetVisualZoomLevelLimitsCallback callback) {
-  render_frame()->GetWebFrame()->View()->SetDefaultPageScaleLimits(min_level,
-                                                                   max_level);
+  blink::WebView* web_view = render_frame()->GetWebFrame()->View();
+  web_view->SetDefaultPageScaleLimits(min_level, max_level);
+  // Without an explicit initial scale Blink starts the page at the minimum,
+  // so a minimum below 1 would shrink the page instead of only allowing it.
+  web_view->SetInitialPageScaleOverride(1.f);
   std::move(callback).Run();
 }
 
@@ -340,7 +341,7 @@ void ReleaseReceivedSharedTexture(
     const v8::FunctionCallbackInfo<v8::Value>& info) {
   v8::Isolate* isolate = info.GetIsolate();
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
-  v8::Local<v8::Array> data = info.Data().As<v8::Array>();
+  v8::Local<v8::Array> data = info.DataV2().As<v8::Value>().As<v8::Array>();
   v8::Local<v8::Value> imported, texture_id, release;
   if (!data->Get(context, 0).ToLocal(&imported) || !imported->IsObject() ||
       !data->Get(context, 1).ToLocal(&texture_id) ||
@@ -374,7 +375,7 @@ void ReleaseReceivedSharedTexture(
              v8::Local<v8::Value> args[] = {
                  gin::StringToV8(
                      isolate, "IMPORT_SHARED_TEXTURE_RELEASE_RENDERER_TO_MAIN"),
-                 info.Data()};
+                 info.DataV2().As<v8::Value>()};
              v8::Local<v8::Value> result;
              if (invoke.As<v8::Function>()
                      ->Call(context, ipc_renderer, 2, args)

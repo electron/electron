@@ -283,7 +283,7 @@ class NodeBindings {
   uv_sem_t embed_sem_;
 
   // Environment that to wrap the uv loop.
-  raw_ptr<node::Environment> uv_env_ = nullptr;
+  raw_ptr<node::Environment, DanglingUntriaged> uv_env_ = nullptr;
 
   base::WeakPtrFactory<NodeBindings> weak_factory_{this};
 };

@@ -63,7 +63,7 @@ class WrappableBase {
   static void SecondWeakCallback(
       const v8::WeakCallbackInfo<WrappableBase>& data);
 
-  raw_ptr<v8::Isolate> isolate_ = nullptr;
+  raw_ptr<v8::Isolate, LeakedDanglingUntriaged> isolate_ = nullptr;
 };
 
 }  // namespace gin_helper

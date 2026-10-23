@@ -1,9 +1,9 @@
 <html>
 <body>
-  <!-- Use mocha which has a large enough js file -->
-  <script src="mocha.js"></script>
+  <!-- Any script large enough for V8 to bother caching its code -->
+  <script src="jquery.js"></script>
   <script>
-    mocha.setup('bdd');
+    window.jQuery.isArray([]);
   </script>
 </body>
 </html>

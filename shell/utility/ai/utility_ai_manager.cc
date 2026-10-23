@@ -22,6 +22,7 @@
 #include "shell/utility/api/electron_api_local_ai_handler.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 #include "third_party/blink/public/mojom/ai/ai_common.mojom.h"
+#include "third_party/blink/public/mojom/ai/ai_decision_model.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_language_model.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_proofreader.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_rewriter.mojom.h"
@@ -270,6 +271,13 @@ void UtilityAIManager::HandleLanguageModelResult(
       enabled_input_types.insert(expected_input->type);
     }
   }
+  base::flat_set<blink::mojom::AILanguageModelPromptType> enabled_output_types =
+      {blink::mojom::AILanguageModelPromptType::kText};
+  if (options->expected_outputs.has_value()) {
+    for (const auto& expected_output : options->expected_outputs.value()) {
+      enabled_output_types.insert(expected_output->type);
+    }
+  }
 
   blink::mojom::AIManagerCreateLanguageModelClient* client =
       create_model_client_set_.Get(client_id);
@@ -291,6 +299,8 @@ void UtilityAIManager::HandleLanguageModelResult(
           blink::mojom::AILanguageModelSamplingParams::New(),
           std::vector<blink::mojom::AILanguageModelPromptType>(
               enabled_input_types.begin(), enabled_input_types.end()),
+          std::vector<blink::mojom::AILanguageModelPromptType>(
+              enabled_output_types.begin(), enabled_output_types.end()),
           /*audio_sample_rate_hz=*/std::nullopt,
           /*audio_channel_count=*/std::nullopt,
           /*sampling_mode=*/std::nullopt));
@@ -541,6 +551,21 @@ void UtilityAIManager::CanCreateProofreader(
 void UtilityAIManager::CreateProofreader(
     mojo::PendingRemote<blink::mojom::AIManagerCreateProofreaderClient> client,
     blink::mojom::AIProofreaderCreateOptionsPtr options,
+    mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
+  NOTIMPLEMENTED();
+}
+
+void UtilityAIManager::CanCreateDecisionModel(
+    blink::mojom::AIDecisionModelCreateOptionsPtr options,
+    CanCreateDecisionModelCallback callback) {
+  std::move(callback).Run(
+      blink::mojom::ModelAvailabilityCheckResult::kUnavailableUnknown);
+}
+
+void UtilityAIManager::CreateDecisionModel(
+    mojo::PendingRemote<blink::mojom::AIManagerCreateDecisionModelClient>
+        client,
+    blink::mojom::AIDecisionModelCreateOptionsPtr options,
     mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
   NOTIMPLEMENTED();
 }

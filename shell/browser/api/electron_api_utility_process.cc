@@ -17,6 +17,7 @@
 #include "base/task/single_thread_task_runner.h"
 #include "chrome/browser/browser_process.h"
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
+#include "content/public/browser/browser_child_process_host_iterator.h"
 #include "content/public/browser/child_process_data.h"
 #include "content/public/browser/child_process_host.h"
 #include "content/public/browser/child_process_termination_info.h"
@@ -27,6 +28,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
+#include "mojo/public/cpp/bindings/connector.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "services/network/public/cpp/originating_process_id.h"
 #include "shell/browser/api/electron_api_session.h"
@@ -297,6 +299,17 @@ void UtilityProcessWrapper::OnServiceProcessLaunch(
   DCHECK(node_service_remote_.is_connected());
   pid_ = process.Pid();
   GetAllUtilityProcessWrappers().Add(pid_, this);
+  // Remember the child process id: the process has already gone from the
+  // ChildProcessData that BrowserChildProcessCrashed/Killed receive.
+  for (content::BrowserChildProcessHostIterator it(
+           content::PROCESS_TYPE_UTILITY);
+       !it.Done(); ++it) {
+    const base::Process& host_process = it.GetProcess();
+    if (host_process.IsValid() && host_process.Pid() == pid_) {
+      child_process_id_ = it.GetData().GetChildProcessId();
+      break;
+    }
+  }
   // JS wraps these in net.Socket and owns them from here on.
   if (stdout_read_fd_ != -1)
     EmitWithoutEvent("stdout", std::exchange(stdout_read_fd_, -1));
@@ -319,8 +332,10 @@ void UtilityProcessWrapper::HandleTermination(uint32_t exit_code) {
     GetAllUtilityProcessWrappers().Remove(pid_);
 
   pid_ = base::kNullProcessId;
+  child_process_id_ = content::ChildProcessId();
   content::ServiceProcessHost::RemoveObserver(this);
   content::BrowserChildProcessObserver::Remove(this);
+  DispatchPendingMessages();
   CloseConnectorPort();
   CloseStdioReadFds();
   if (killed_) {
@@ -368,10 +383,10 @@ void UtilityProcessWrapper::OnServiceProcessTerminatedNormally(
 
 bool UtilityProcessWrapper::IsThisProcess(
     const content::ChildProcessData& data) const {
-  return pid_ != base::kNullProcessId &&
+  return !child_process_id_.is_null() &&
          data.process_type == content::PROCESS_TYPE_UTILITY &&
          data.metrics_name == node::mojom::NodeService::Name_ &&
-         data.GetProcess().Pid() == pid_;
+         data.GetChildProcessId() == child_process_id_;
 }
 
 void UtilityProcessWrapper::BrowserChildProcessCrashed(
@@ -411,8 +426,26 @@ void UtilityProcessWrapper::CloseConnectorPort() {
   }
 }
 
+void UtilityProcessWrapper::DispatchPendingMessages() {
+  // Messages the child posted before it exited can still be queued on the
+  // port when its exit is observed: the connector dispatches them one per
+  // task, and the exit notification may already be ahead of those tasks.
+  // Dispatch whatever is already queued so it is emitted before 'exit'
+  // instead of being dropped with the port. A readable pipe never blocks
+  // WaitForIncomingMessage(). If dispatch fails, the connector's error
+  // handler closes the port and the loop ends.
+  while (!connector_closed_ && connector_ && connector_->is_valid() &&
+         connector_->handle().QuerySignalsState().readable()) {
+    if (!connector_->WaitForIncomingMessage())
+      break;
+  }
+}
+
 void UtilityProcessWrapper::Shutdown(uint32_t exit_code) {
   node_service_remote_.reset();
+  // The child is still running during browser shutdown; drop its messages
+  // rather than dispatching them.
+  CloseConnectorPort();
   HandleTermination(exit_code);
 }
 
@@ -696,7 +729,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("_fork", &electron::api::UtilityProcessWrapper::Create);
+  dict.SetMethod<&electron::api::UtilityProcessWrapper::Create>("_fork");
 }
 
 }  // namespace

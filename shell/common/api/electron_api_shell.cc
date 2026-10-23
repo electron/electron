@@ -184,14 +184,14 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("showItemInFolder", &platform_util::ShowItemInFolder);
-  dict.SetMethod("openPath", &OpenPath);
-  dict.SetMethod("openExternal", &OpenExternal);
-  dict.SetMethod("trashItem", &TrashItem);
-  dict.SetMethod("beep", &platform_util::Beep);
+  dict.SetMethod<&platform_util::ShowItemInFolder>("showItemInFolder");
+  dict.SetMethod<&OpenPath>("openPath");
+  dict.SetMethod<&OpenExternal>("openExternal");
+  dict.SetMethod<&TrashItem>("trashItem");
+  dict.SetMethod<&platform_util::Beep>("beep");
 #if BUILDFLAG(IS_WIN)
-  dict.SetMethod("writeShortcutLink", &WriteShortcutLink);
-  dict.SetMethod("readShortcutLink", &ReadShortcutLink);
+  dict.SetMethod<&WriteShortcutLink>("writeShortcutLink");
+  dict.SetMethod<&ReadShortcutLink>("readShortcutLink");
 #endif
 }
 

@@ -10,11 +10,6 @@ declare namespace Electron {
     setVersion(version: string): void;
     setDesktopName(name: string): void;
     setAppPath(path: string | null): void;
-    _clientCertRequestPasswordHandler: ((params: ClientCertRequestParams) => Promise<string>) | null;
-    on(
-      event: '-client-certificate-request-password',
-      listener: (event: Event<ClientCertRequestParams>, callback: (password: string) => void) => Promise<void>
-    ): this;
   }
 
   interface AutoUpdater {
@@ -73,9 +68,6 @@ declare namespace Electron {
   }
 
   interface ServiceWorkerMain {
-    _send(internal: boolean, channel: string, args: any): void;
-    _startExternalRequest(hasTimeout: boolean): { id: string; ok: boolean };
-    _finishExternalRequest(uuid: string): void;
     _countExternalRequests(): number;
   }
 
@@ -106,8 +98,6 @@ declare namespace Electron {
       prefs: Partial<Electron.BrowserWindowConstructorOptions['webPreferences']> &
         Pick<Electron.BrowserWindowConstructorOptions, 'backgroundColor'>
     ): void;
-    _send(internal: boolean, channel: string, args: any): boolean;
-    _sendToMainFrame(internal: boolean, channel: string, args: any): void;
     _sendInternal(channel: string, ...args: any[]): void;
     _executeJavaScript(worldId: number, sources: Electron.WebSource[], hasUserGesture: boolean): Promise<any>;
     _init(): void;
@@ -135,7 +125,6 @@ declare namespace Electron {
   }
 
   interface WebFrameMain {
-    _send(internal: boolean, channel: string, args: any): void;
     _transferSharedTexture(transfer: any, textureId: string, args: any[]): Promise<Electron.SharedTextureSyncToken>;
     _lifecycleStateForTesting: string;
   }
@@ -149,7 +138,6 @@ declare namespace Electron {
   interface WebPreferences {
     disablePopups?: boolean;
     embedder?: Electron.WebContents;
-    openerSandboxFlags?: number;
     type?: 'backgroundPage' | 'window' | 'browserView' | 'remote' | 'webview' | 'offscreen';
   }
 
@@ -207,20 +195,6 @@ declare namespace Electron {
   }
 
   interface WebContents {
-    on(
-      event: '-new-window',
-      listener: (
-        event: Electron.Event,
-        url: string,
-        frameName: string,
-        disposition: Electron.HandlerDetails['disposition'],
-        rawFeatures: string,
-        referrer: Electron.Referrer,
-        postData: LoadURLOptions['postData'],
-        inheritedSandboxFlags: number,
-        navigate: (webContents: Electron.WebContents) => void
-      ) => void
-    ): this;
     on(
       event: '-add-new-contents',
       listener: (
@@ -282,7 +256,9 @@ declare namespace ElectronInternal {
       captureWindow: boolean,
       captureScreen: boolean,
       thumbnailSize: Electron.Size,
-      fetchWindowIcons: boolean
+      fetchWindowIcons: boolean,
+      persistent: boolean,
+      restoreToken: string
     ): void;
     _onerror?: (error: string) => void;
     _onfinished?: (sources: Electron.DesktopCapturerSource[], fetchWindowIcons: boolean) => void;
@@ -293,6 +269,8 @@ declare namespace ElectronInternal {
     captureScreen: boolean;
     thumbnailSize: Electron.Size;
     fetchWindowIcons: boolean;
+    persistent: boolean;
+    restoreToken: string;
   }
 
   interface GetSourcesResult {
@@ -300,6 +278,7 @@ declare namespace ElectronInternal {
     name: string;
     thumbnail: Electron.NativeImage;
     display_id: string;
+    restoreToken: string;
     appIcon: Electron.NativeImage | null;
   }
 

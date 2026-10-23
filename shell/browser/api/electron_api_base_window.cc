@@ -5,7 +5,11 @@
 #include "shell/browser/api/electron_api_base_window.h"
 
 #include <algorithm>
+#include <cmath>
+#include <limits>
+#include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -37,6 +41,12 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
+#include "ui/gfx/geometry/rect_conversions.h"
+#include "ui/gfx/geometry/rect_f.h"
+
+#if BUILDFLAG(IS_MAC)
+#include "shell/browser/api/electron_api_app_shim_host.h"
+#endif
 
 #if defined(TOOLKIT_VIEWS)
 #include "shell/browser/native_window_views.h"
@@ -76,6 +86,24 @@ struct Converter<electron::TaskbarHost::ThumbarButton> {
 namespace electron::api {
 
 namespace {
+
+// Reads |key| into |out| when the dictionary has it. Returns false when it is
+// there but is not a finite number that fits in an int, the same values the
+// gfx::Rect converter rejects.
+bool ReadCoordinate(gin_helper::Dictionary& dict,
+                    std::string_view key,
+                    std::optional<float>* out) {
+  v8::Local<v8::Value> field;
+  if (!dict.Get(key, &field) || field->IsUndefined())
+    return true;
+  double value = 0;
+  if (!gin::ConvertFromV8(dict.isolate(), field, &value) ||
+      !std::isfinite(value) || value < std::numeric_limits<int>::min() ||
+      value > std::numeric_limits<int>::max())
+    return false;
+  *out = static_cast<float>(value);
+  return true;
+}
 
 #if !BUILDFLAG(IS_MAC)
 // Converts binary data to Buffer.
@@ -386,18 +414,14 @@ void BaseWindow::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
 }
 #endif
 
-void BaseWindow::SetContentView(gin_helper::Handle<View> view) {
-  content_view_.Reset(JavascriptEnvironment::GetIsolate(), view.ToV8());
+void BaseWindow::SetContentView(View* view) {
+  content_view_ = view;
   window_->SetContentView(view->view());
 }
 
 void BaseWindow::CloseImmediately() {
   if (!window_->IsClosed())
     window_->CloseImmediately();
-}
-
-void BaseWindow::Close() {
-  window_->Close();
 }
 
 void BaseWindow::Focus() {
@@ -408,86 +432,41 @@ void BaseWindow::Blur() {
   window_->Focus(false);
 }
 
-bool BaseWindow::IsFocused() const {
-  return window_->IsFocused();
-}
-
 void BaseWindow::Show() {
   window_->Show();
 }
 
 void BaseWindow::ShowInactive() {
   // This method doesn't make sense for modal window.
-  if (IsModal())
+  if (window_->is_modal())
     return;
   window_->ShowInactive();
 }
 
-void BaseWindow::Hide() {
-  window_->Hide();
-}
-
-bool BaseWindow::IsVisible() const {
-  return window_->IsVisible();
-}
-
-bool BaseWindow::IsEnabled() const {
-  return window_->IsEnabled();
-}
-
-void BaseWindow::SetEnabled(bool enable) {
-  window_->SetEnabled(enable);
-}
-
-void BaseWindow::Maximize() {
-  window_->Maximize();
-}
-
-void BaseWindow::Unmaximize() {
-  window_->Unmaximize();
-}
-
-bool BaseWindow::IsMaximized() const {
-  return window_->IsMaximized();
-}
-
-void BaseWindow::Minimize() {
-  window_->Minimize();
-}
-
-void BaseWindow::Restore() {
-  window_->Restore();
-}
-
-bool BaseWindow::IsMinimized() const {
-  return window_->IsMinimized();
-}
-
-void BaseWindow::SetFullScreen(bool fullscreen) {
-  window_->SetFullScreen(fullscreen);
-}
-
-bool BaseWindow::IsFullscreen() const {
-  return window_->IsFullscreen();
-}
-
-void BaseWindow::SetBounds(const gfx::Rect& bounds,
+void BaseWindow::SetBounds(v8::Local<v8::Object> partial,
                            gin::Arguments* const args) {
+  // Any of x, y, width and height may be left out and keeps its current
+  // value. The rounding is the same as gfx::Rect's converter.
+  gin_helper::Dictionary dict(args->isolate(), partial);
+  std::optional<float> x, y, width, height;
+  if (!ReadCoordinate(dict, "x", &x) || !ReadCoordinate(dict, "y", &y) ||
+      !ReadCoordinate(dict, "width", &width) ||
+      !ReadCoordinate(dict, "height", &height)) {
+    args->ThrowError();
+    return;
+  }
+  gfx::RectF bounds(window_->GetBounds());
+  if (x)
+    bounds.set_x(*x);
+  if (y)
+    bounds.set_y(*y);
+  if (width)
+    bounds.set_width(*width);
+  if (height)
+    bounds.set_height(*height);
   bool animate = false;
   args->GetNext(&animate);
-  window_->SetBounds(bounds, animate);
-}
-
-gfx::Rect BaseWindow::GetBounds() const {
-  return window_->GetBounds();
-}
-
-bool BaseWindow::IsNormal() const {
-  return window_->IsNormal();
-}
-
-gfx::Rect BaseWindow::GetNormalBounds() const {
-  return window_->GetNormalBounds();
+  window_->SetBounds(gfx::ToRoundedRect(bounds), animate);
 }
 
 void BaseWindow::SetContentBounds(const gfx::Rect& bounds,
@@ -495,10 +474,6 @@ void BaseWindow::SetContentBounds(const gfx::Rect& bounds,
   bool animate = false;
   args->GetNext(&animate);
   window_->SetContentBounds(bounds, animate);
-}
-
-gfx::Rect BaseWindow::GetContentBounds() const {
-  return window_->GetContentBounds();
 }
 
 void BaseWindow::SetSize(int width, int height, gin::Arguments* args) {
@@ -548,54 +523,6 @@ void BaseWindow::SetSheetOffset(const double offsetY,
   window_->SetSheetOffset(offsetX, offsetY);
 }
 
-void BaseWindow::SetResizable(bool resizable) {
-  window_->SetResizable(resizable);
-}
-
-bool BaseWindow::IsResizable() const {
-  return window_->IsResizable();
-}
-
-void BaseWindow::SetMovable(bool movable) {
-  window_->SetMovable(movable);
-}
-
-bool BaseWindow::IsMovable() const {
-  return window_->IsMovable();
-}
-
-void BaseWindow::SetMinimizable(bool minimizable) {
-  window_->SetMinimizable(minimizable);
-}
-
-bool BaseWindow::IsMinimizable() const {
-  return window_->IsMinimizable();
-}
-
-void BaseWindow::SetMaximizable(bool maximizable) {
-  window_->SetMaximizable(maximizable);
-}
-
-bool BaseWindow::IsMaximizable() const {
-  return window_->IsMaximizable();
-}
-
-void BaseWindow::SetFullScreenable(bool fullscreenable) {
-  window_->SetFullScreenable(fullscreenable);
-}
-
-bool BaseWindow::IsFullScreenable() const {
-  return window_->IsFullScreenable();
-}
-
-void BaseWindow::SetClosable(bool closable) {
-  window_->SetClosable(closable);
-}
-
-bool BaseWindow::IsClosable() const {
-  return window_->IsClosable();
-}
-
 void BaseWindow::SetAlwaysOnTop(bool top, gin::Arguments* args) {
   std::string level = "floating";
   int relative_level = 0;
@@ -609,10 +536,6 @@ void BaseWindow::SetAlwaysOnTop(bool top, gin::Arguments* args) {
 
 bool BaseWindow::IsAlwaysOnTop() const {
   return window_->GetZOrderLevel() != ui::ZOrderLevel::kNormal;
-}
-
-void BaseWindow::Center() {
-  window_->Center();
 }
 
 void BaseWindow::SetPosition(const int x,
@@ -630,10 +553,6 @@ void BaseWindow::MoveAbove(const std::string& sourceId,
                            gin::Arguments* const args) {
   if (!window_->MoveAbove(sourceId))
     args->ThrowTypeError("Invalid media source id");
-}
-
-void BaseWindow::MoveTop() {
-  window_->MoveTop();
 }
 
 void BaseWindow::SetTitle(const std::string& title) {
@@ -655,54 +574,6 @@ bool BaseWindow::SetTitleFromPageIfNotSetFromApi(const std::string& title) {
   }
 }
 
-std::string BaseWindow::GetTitle() const {
-  return window_->GetTitle();
-}
-
-void BaseWindow::SetAccessibleTitle(const std::string& title) {
-  window_->SetAccessibleTitle(title);
-}
-
-std::string BaseWindow::GetAccessibleTitle() const {
-  return window_->GetAccessibleTitle();
-}
-
-void BaseWindow::FlashFrame(bool flash) {
-  window_->FlashFrame(flash);
-}
-
-void BaseWindow::SetSkipTaskbar(bool skip) {
-  window_->SetSkipTaskbar(skip);
-}
-
-void BaseWindow::SetExcludedFromShownWindowsMenu(bool excluded) {
-  window_->SetExcludedFromShownWindowsMenu(excluded);
-}
-
-bool BaseWindow::IsExcludedFromShownWindowsMenu() const {
-  return window_->IsExcludedFromShownWindowsMenu();
-}
-
-void BaseWindow::SetSimpleFullScreen(bool simple_fullscreen) {
-  window_->SetSimpleFullScreen(simple_fullscreen);
-}
-
-bool BaseWindow::IsSimpleFullScreen() const {
-  return window_->IsSimpleFullScreen();
-}
-
-void BaseWindow::SetKiosk(bool kiosk) {
-  window_->SetKiosk(kiosk);
-}
-
-bool BaseWindow::IsKiosk() const {
-  return window_->IsKiosk();
-}
-
-bool BaseWindow::IsTabletMode() const {
-  return window_->IsTabletMode();
-}
-
 void BaseWindow::SetBackgroundColor(const std::string& color_name) {
   SkColor color = ParseCSSColor(color_name).value_or(SK_ColorWHITE);
   window_->SetBackgroundColor(color);
@@ -712,46 +583,6 @@ std::string BaseWindow::GetBackgroundColor() const {
   return ToRGBHex(window_->GetBackgroundColor());
 }
 
-void BaseWindow::InvalidateShadow() {
-  window_->InvalidateShadow();
-}
-
-void BaseWindow::SetHasShadow(bool has_shadow) {
-  window_->SetHasShadow(has_shadow);
-}
-
-bool BaseWindow::HasShadow() const {
-  return window_->HasShadow();
-}
-
-void BaseWindow::SetOpacity(const double opacity) {
-  window_->SetOpacity(opacity);
-}
-
-double BaseWindow::GetOpacity() const {
-  return window_->GetOpacity();
-}
-
-void BaseWindow::SetShape(const std::vector<gfx::Rect>& rects) {
-  window_->SetShape(rects);
-}
-
-void BaseWindow::SetRepresentedFilename(const std::string& filename) {
-  window_->SetRepresentedFilename(filename);
-}
-
-std::string BaseWindow::GetRepresentedFilename() const {
-  return window_->GetRepresentedFilename();
-}
-
-void BaseWindow::SetDocumentEdited(bool edited) {
-  window_->SetDocumentEdited(edited);
-}
-
-bool BaseWindow::IsDocumentEdited() const {
-  return window_->IsDocumentEdited();
-}
-
 void BaseWindow::SetIgnoreMouseEvents(bool ignore, gin::Arguments* const args) {
   gin_helper::Dictionary options;
   bool forward = false;
@@ -759,26 +590,10 @@ void BaseWindow::SetIgnoreMouseEvents(bool ignore, gin::Arguments* const args) {
   return window_->SetIgnoreMouseEvents(ignore, forward);
 }
 
-void BaseWindow::SetContentProtection(bool enable) {
-  return window_->SetContentProtection(enable);
-}
-
-bool BaseWindow::IsContentProtected() const {
-  return window_->IsContentProtected();
-}
-
-void BaseWindow::SetFocusable(bool focusable) {
-  return window_->SetFocusable(focusable);
-}
-
-bool BaseWindow::IsFocusable() const {
-  return window_->IsFocusable();
-}
-
 // static
 BaseWindow* BaseWindow::GetFocusedWindow() {
   for (BaseWindow* window : GetAllNative()) {
-    if (window->window() && window->IsFocused())
+    if (window->window() && window->window()->IsFocused())
       return window;
   }
   return nullptr;
@@ -838,7 +653,7 @@ void BaseWindow::RemoveMenu() {
 
 void BaseWindow::SetParentWindow(v8::Local<v8::Value> value,
                                  gin::Arguments* const args) {
-  if (IsModal()) {
+  if (window_->is_modal()) {
     args->ThrowTypeError("Can not be called for modal window");
     return;
   }
@@ -847,7 +662,13 @@ void BaseWindow::SetParentWindow(v8::Local<v8::Value> value,
   if (value->IsNull() || value->IsUndefined()) {
     parent_window_.Reset();
     window_->SetParentWindow(nullptr);
+  } else if (window_->IsInAppShim()) {
+    args->ThrowTypeError("A window in an app shim can't have a parent window");
   } else if (gin::ConvertFromV8(isolate(), value, &parent)) {
+    if (parent->window() && parent->window()->IsInAppShim()) {
+      args->ThrowTypeError("A window in an app shim can't be a parent window");
+      return;
+    }
     parent_window_.Reset(isolate(), parent.ToV8());
     window_->SetParentWindow(parent->window());
   } else {
@@ -887,11 +708,6 @@ void BaseWindow::SetProgressBar(double progress, gin::Arguments* args) {
   window_->SetProgressBar(progress, state);
 }
 
-void BaseWindow::SetOverlayIcon(const gfx::Image& overlay,
-                                const std::string& description) {
-  window_->SetOverlayIcon(overlay, description);
-}
-
 void BaseWindow::SetVisibleOnAllWorkspaces(bool visible,
                                            gin::Arguments* const args) {
   gin_helper::Dictionary options;
@@ -903,14 +719,6 @@ void BaseWindow::SetVisibleOnAllWorkspaces(bool visible,
   }
   return window_->SetVisibleOnAllWorkspaces(visible, visibleOnFullScreen,
                                             skipTransformProcessType);
-}
-
-bool BaseWindow::IsVisibleOnAllWorkspaces() const {
-  return window_->IsVisibleOnAllWorkspaces();
-}
-
-void BaseWindow::SetAutoHideCursor(bool auto_hide) {
-  window_->SetAutoHideCursor(auto_hide);
 }
 
 void BaseWindow::SetVibrancy(v8::Isolate* const isolate,
@@ -931,80 +739,15 @@ void BaseWindow::SetBackgroundMaterial(const std::string& material) {
   window_->SetBackgroundMaterial(material);
 }
 
-#if BUILDFLAG(IS_MAC)
-std::string BaseWindow::GetAlwaysOnTopLevel() const {
-  return window_->GetAlwaysOnTopLevel();
-}
-
-void BaseWindow::SetWindowButtonVisibility(bool visible) {
-  window_->SetWindowButtonVisibility(visible);
-}
-
-bool BaseWindow::GetWindowButtonVisibility() const {
-  return window_->GetWindowButtonVisibility();
-}
-
-void BaseWindow::SetWindowButtonPosition(std::optional<gfx::Point> position) {
-  window_->SetWindowButtonPosition(std::move(position));
-}
-
-std::optional<gfx::Point> BaseWindow::GetWindowButtonPosition() const {
-  return window_->GetWindowButtonPosition();
-}
-#endif
-
-#if BUILDFLAG(IS_MAC)
-bool BaseWindow::IsHiddenInMissionControl() {
-  return window_->IsHiddenInMissionControl();
-}
-
-void BaseWindow::SetHiddenInMissionControl(bool hidden) {
-  window_->SetHiddenInMissionControl(hidden);
-}
-#endif
-
-void BaseWindow::SetTouchBar(
-    std::vector<gin_helper::PersistentDictionary> items) {
-  window_->SetTouchBar(std::move(items));
-}
-
-void BaseWindow::RefreshTouchBarItem(const std::string& item_id) {
-  window_->RefreshTouchBarItem(item_id);
-}
-
-void BaseWindow::SetEscapeTouchBarItem(gin_helper::PersistentDictionary item) {
-  window_->SetEscapeTouchBarItem(std::move(item));
-}
-
-void BaseWindow::SelectPreviousTab() {
-  window_->SelectPreviousTab();
-}
-
-void BaseWindow::SelectNextTab() {
-  window_->SelectNextTab();
-}
-
-void BaseWindow::ShowAllTabs() {
-  window_->ShowAllTabs();
-}
-
-void BaseWindow::MergeAllWindows() {
-  window_->MergeAllWindows();
-}
-
-void BaseWindow::MoveTabToNewWindow() {
-  window_->MoveTabToNewWindow();
-}
-
-void BaseWindow::ToggleTabBar() {
-  window_->ToggleTabBar();
-}
-
 void BaseWindow::AddTabbedWindow(NativeWindow* const window,
                                  gin::Arguments* const args) {
-  if (!window_->AddTabbedWindow(window))
+  if (!window_->AddTabbedWindow(window)) {
     args->ThrowTypeError(
-        "AddTabbedWindow cannot be called by a window on itself.");
+        window_.get() != window &&
+                (window_->IsInAppShim() || window->IsInAppShim())
+            ? "AddTabbedWindow needs both windows to be in the same app"
+            : "AddTabbedWindow cannot be called by a window on itself.");
+  }
 }
 
 v8::Local<v8::Value> BaseWindow::GetTabbingIdentifier() {
@@ -1013,22 +756,6 @@ v8::Local<v8::Value> BaseWindow::GetTabbingIdentifier() {
     return v8::Undefined(isolate());
 
   return gin::ConvertToV8(isolate(), tabbing_id.value());
-}
-
-void BaseWindow::SetAutoHideMenuBar(bool auto_hide) {
-  window_->SetAutoHideMenuBar(auto_hide);
-}
-
-bool BaseWindow::IsMenuBarAutoHide() const {
-  return window_->IsMenuBarAutoHide();
-}
-
-void BaseWindow::SetMenuBarVisibility(bool visible) {
-  window_->SetMenuBarVisibility(visible);
-}
-
-bool BaseWindow::IsMenuBarVisible() const {
-  return window_->IsMenuBarVisible();
 }
 
 void BaseWindow::SetAspectRatio(const double aspect_ratio,
@@ -1046,15 +773,11 @@ void BaseWindow::PreviewFile(const std::string& path,
   window_->PreviewFile(path, display_name);
 }
 
-void BaseWindow::CloseFilePreview() {
-  window_->CloseFilePreview();
-}
-
 v8::Local<v8::Value> BaseWindow::GetContentView() const {
-  if (content_view_.IsEmpty())
-    return v8::Null(isolate());
-  else
-    return v8::Local<v8::Value>::New(isolate(), content_view_);
+  v8::Local<v8::Object> wrapper;
+  if (content_view_ && content_view_->GetWrapper(isolate()).ToLocal(&wrapper))
+    return wrapper;
+  return v8::Null(isolate());
 }
 
 BaseWindow* BaseWindow::GetParentWindow() const {
@@ -1079,10 +802,6 @@ std::vector<BaseWindow*> BaseWindow::GetChildWindows() const {
       children.emplace_back(win);
   }
   return children;
-}
-
-bool BaseWindow::IsModal() const {
-  return window_->is_modal();
 }
 
 bool BaseWindow::SetThumbarButtons(gin::Arguments* args) {
@@ -1173,10 +892,6 @@ void BaseWindow::SetAppDetails(const gin_helper::Dictionary& options) {
                                   window_->GetAcceleratedWidget());
 }
 
-bool BaseWindow::IsSnapped() const {
-  return window_->IsSnapped();
-}
-
 void BaseWindow::SetAccentColor(gin::Arguments* const args) {
   v8::Local<v8::Value> ac_val;
   args->GetNext(&ac_val);
@@ -1258,6 +973,11 @@ gin_helper::WrappableBase* BaseWindow::New(gin::Arguments* const args) {
     args->ThrowTypeError(error_message);
     return nullptr;
   }
+  if (!IsAppShimValid(options, &error_message) ||
+      !IsParentValid(options, &error_message)) {
+    args->ThrowTypeError(error_message);
+    return nullptr;
+  }
 
   return new BaseWindow(args, options);
 }
@@ -1285,6 +1005,47 @@ bool BaseWindow::IsWindowNameValid(const gin_helper::Dictionary& options,
 }
 
 // static
+bool BaseWindow::IsAppShimValid(const gin_helper::Dictionary& options,
+                                std::string* error_message) {
+#if BUILDFLAG(IS_MAC)
+  v8::Local<v8::Value> value;
+  if (!options.Get(options::kAppShim, &value) || value->IsNullOrUndefined())
+    return true;
+  AppShimHost* app_shim = nullptr;
+  if (!gin::ConvertFromV8(options.isolate(), value, &app_shim) || !app_shim) {
+    *error_message = "appShim must be an AppShimHost";
+    return false;
+  }
+  if (!app_shim->GetRemoteCocoaApplicationHost()) {
+    *error_message = "The app shim has disconnected";
+    return false;
+  }
+  if (bool modal = false; options.Get(options::kModal, &modal) && modal) {
+    *error_message = "A window in an app shim can't be modal";
+    return false;
+  }
+  if (v8::Local<v8::Value> parent;
+      options.Get("parent", &parent) && !parent->IsNullOrUndefined()) {
+    *error_message = "A window in an app shim can't have a parent window";
+    return false;
+  }
+#endif
+  return true;
+}
+
+// static
+bool BaseWindow::IsParentValid(const gin_helper::Dictionary& options,
+                               std::string* error_message) {
+  gin_helper::Handle<BaseWindow> parent;
+  if (options.Get("parent", &parent) && !parent.IsEmpty() && parent->window() &&
+      parent->window()->IsInAppShim()) {
+    *error_message = "A window in an app shim can't be a parent window";
+    return false;
+  }
+  return true;
+}
+
+// static
 v8::Local<v8::FunctionTemplate> BaseWindow::GetConstructorTemplate(
     v8::Isolate* isolate) {
   static bool created = false;
@@ -1301,171 +1062,210 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
   prototype->SetClassName(gin::StringToV8(isolate, "BaseWindow"));
   prototype->Inherit(gin_helper::internal::GetEventEmitterTemplate(isolate));
   gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
+  // A NativeWindow method bound here takes its receiver from the JavaScript
+  // `this` through gin::Converter<NativeWindow*>, which unwraps the BaseWindow
+  // wrapper, so calling one on a destroyed window still throws "Object has
+  // been destroyed".
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("setContentView", &BaseWindow::SetContentView)
-      .SetMethod("close", &BaseWindow::Close)
-      .SetMethod("focus", &BaseWindow::Focus)
-      .SetMethod("blur", &BaseWindow::Blur)
-      .SetMethod("isFocused", &BaseWindow::IsFocused)
-      .SetMethod("show", &BaseWindow::Show)
-      .SetMethod("showInactive", &BaseWindow::ShowInactive)
-      .SetMethod("hide", &BaseWindow::Hide)
-      .SetMethod("isVisible", &BaseWindow::IsVisible)
-      .SetMethod("isEnabled", &BaseWindow::IsEnabled)
-      .SetMethod("setEnabled", &BaseWindow::SetEnabled)
-      .SetMethod("maximize", &BaseWindow::Maximize)
-      .SetMethod("unmaximize", &BaseWindow::Unmaximize)
-      .SetMethod("isMaximized", &BaseWindow::IsMaximized)
-      .SetMethod("minimize", &BaseWindow::Minimize)
-      .SetMethod("restore", &BaseWindow::Restore)
-      .SetMethod("isMinimized", &BaseWindow::IsMinimized)
-      .SetMethod("setFullScreen", &BaseWindow::SetFullScreen)
-      .SetMethod("isFullScreen", &BaseWindow::IsFullscreen)
-      .SetMethod("setBounds", &BaseWindow::SetBounds)
-      .SetMethod("getBounds", &BaseWindow::GetBounds)
-      .SetMethod("isNormal", &BaseWindow::IsNormal)
-      .SetMethod("getNormalBounds", &BaseWindow::GetNormalBounds)
-      .SetMethod("setSize", &BaseWindow::SetSize)
-      .SetMethod("getSize", &BaseWindow::GetSize)
-      .SetMethod("setContentBounds", &BaseWindow::SetContentBounds)
-      .SetMethod("getContentBounds", &BaseWindow::GetContentBounds)
-      .SetMethod("setContentSize", &BaseWindow::SetContentSize)
-      .SetMethod("getContentSize", &BaseWindow::GetContentSize)
-      .SetMethod("setMinimumSize", &BaseWindow::SetMinimumSize)
-      .SetMethod("getMinimumSize", &BaseWindow::GetMinimumSize)
-      .SetMethod("setMaximumSize", &BaseWindow::SetMaximumSize)
-      .SetMethod("getMaximumSize", &BaseWindow::GetMaximumSize)
-      .SetMethod("setSheetOffset", &BaseWindow::SetSheetOffset)
-      .SetMethod("moveAbove", &BaseWindow::MoveAbove)
-      .SetMethod("moveTop", &BaseWindow::MoveTop)
-      .SetMethod("setResizable", &BaseWindow::SetResizable)
-      .SetMethod("isResizable", &BaseWindow::IsResizable)
-      .SetMethod("setMovable", &BaseWindow::SetMovable)
-      .SetMethod("isMovable", &BaseWindow::IsMovable)
-      .SetMethod("setMinimizable", &BaseWindow::SetMinimizable)
-      .SetMethod("isMinimizable", &BaseWindow::IsMinimizable)
-      .SetMethod("setMaximizable", &BaseWindow::SetMaximizable)
-      .SetMethod("isMaximizable", &BaseWindow::IsMaximizable)
-      .SetMethod("setFullScreenable", &BaseWindow::SetFullScreenable)
-      .SetMethod("isFullScreenable", &BaseWindow::IsFullScreenable)
-      .SetMethod("setClosable", &BaseWindow::SetClosable)
-      .SetMethod("isClosable", &BaseWindow::IsClosable)
-      .SetMethod("setAlwaysOnTop", &BaseWindow::SetAlwaysOnTop)
-      .SetMethod("isAlwaysOnTop", &BaseWindow::IsAlwaysOnTop)
-      .SetMethod("center", &BaseWindow::Center)
-      .SetMethod("setPosition", &BaseWindow::SetPosition)
-      .SetMethod("getPosition", &BaseWindow::GetPosition)
-      .SetMethod("setTitle", &BaseWindow::SetTitle)
-      .SetMethod("getTitle", &BaseWindow::GetTitle)
-      .SetProperty("accessibleTitle", &BaseWindow::GetAccessibleTitle,
-                   &BaseWindow::SetAccessibleTitle)
-      .SetMethod("flashFrame", &BaseWindow::FlashFrame)
-      .SetMethod("setSkipTaskbar", &BaseWindow::SetSkipTaskbar)
-      .SetMethod("setSimpleFullScreen", &BaseWindow::SetSimpleFullScreen)
-      .SetMethod("isSimpleFullScreen", &BaseWindow::IsSimpleFullScreen)
-      .SetMethod("setKiosk", &BaseWindow::SetKiosk)
-      .SetMethod("isKiosk", &BaseWindow::IsKiosk)
-      .SetMethod("isTabletMode", &BaseWindow::IsTabletMode)
-      .SetMethod("setBackgroundColor", &BaseWindow::SetBackgroundColor)
-      .SetMethod("getBackgroundColor", &BaseWindow::GetBackgroundColor)
-      .SetMethod("setHasShadow", &BaseWindow::SetHasShadow)
-      .SetMethod("hasShadow", &BaseWindow::HasShadow)
-      .SetMethod("setOpacity", &BaseWindow::SetOpacity)
-      .SetMethod("getOpacity", &BaseWindow::GetOpacity)
-      .SetMethod("setShape", &BaseWindow::SetShape)
-      .SetMethod("setRepresentedFilename", &BaseWindow::SetRepresentedFilename)
-      .SetMethod("getRepresentedFilename", &BaseWindow::GetRepresentedFilename)
-      .SetMethod("setDocumentEdited", &BaseWindow::SetDocumentEdited)
-      .SetMethod("isDocumentEdited", &BaseWindow::IsDocumentEdited)
-      .SetMethod("setIgnoreMouseEvents", &BaseWindow::SetIgnoreMouseEvents)
-      .SetMethod("setContentProtection", &BaseWindow::SetContentProtection)
-      .SetMethod("isContentProtected", &BaseWindow::IsContentProtected)
-      .SetMethod("setFocusable", &BaseWindow::SetFocusable)
-      .SetMethod("isFocusable", &BaseWindow::IsFocusable)
-      .SetMethod("setMenu", &BaseWindow::SetMenu)
-      .SetMethod("removeMenu", &BaseWindow::RemoveMenu)
-      .SetMethod("setParentWindow", &BaseWindow::SetParentWindow)
-      .SetMethod("getMediaSourceId", &BaseWindow::GetMediaSourceId)
-      .SetMethod("getNativeWindowHandle", &BaseWindow::GetNativeWindowHandle)
-      .SetMethod("setProgressBar", &BaseWindow::SetProgressBar)
-      .SetMethod("setOverlayIcon", &BaseWindow::SetOverlayIcon)
-      .SetMethod("setVisibleOnAllWorkspaces",
-                 &BaseWindow::SetVisibleOnAllWorkspaces)
-      .SetMethod("isVisibleOnAllWorkspaces",
-                 &BaseWindow::IsVisibleOnAllWorkspaces)
+      .SetMethod<&BaseWindow::SetContentView>("setContentView")
+      .SetMethod<&NativeWindow::Close>("close")
+      .SetMethod<&BaseWindow::Focus>("focus")
+      .SetMethod<&BaseWindow::Blur>("blur")
+      .SetMethod<&NativeWindow::IsFocused>("isFocused")
+      .SetMethod<&BaseWindow::Show>("show")
+      .SetMethod<&BaseWindow::ShowInactive>("showInactive")
+      .SetMethod<&NativeWindow::Hide>("hide")
+      .SetMethod<&NativeWindow::IsVisible>("isVisible")
+      .SetMethod<&NativeWindow::IsEnabled>("isEnabled")
+      .SetMethod<&NativeWindow::SetEnabled>("setEnabled")
+      .SetMethod<&NativeWindow::Maximize>("maximize")
+      .SetMethod<&NativeWindow::Unmaximize>("unmaximize")
+      .SetMethod<&NativeWindow::IsMaximized>("isMaximized")
+      .SetMethod<&NativeWindow::Minimize>("minimize")
+      .SetMethod<&NativeWindow::Restore>("restore")
+      .SetMethod<&NativeWindow::IsMinimized>("isMinimized")
+      .SetMethod<&NativeWindow::SetFullScreen>("setFullScreen")
+      .SetMethod<&NativeWindow::IsFullscreen>("isFullScreen")
+      .SetProperty<&NativeWindow::IsFullscreen, &NativeWindow::SetFullScreen>(
+          "fullScreen")
+      .SetMethod<&BaseWindow::SetBounds>("setBounds")
+      .SetMethod<&NativeWindow::GetBounds>("getBounds")
+      .SetMethod<&NativeWindow::IsNormal>("isNormal")
+      .SetMethod<&NativeWindow::GetNormalBounds>("getNormalBounds")
+      .SetMethod<&BaseWindow::SetSize>("setSize")
+      .SetMethod<&BaseWindow::GetSize>("getSize")
+      .SetMethod<&BaseWindow::SetContentBounds>("setContentBounds")
+      .SetMethod<&NativeWindow::GetContentBounds>("getContentBounds")
+      .SetMethod<&BaseWindow::SetContentSize>("setContentSize")
+      .SetMethod<&BaseWindow::GetContentSize>("getContentSize")
+      .SetMethod<&BaseWindow::SetMinimumSize>("setMinimumSize")
+      .SetMethod<&BaseWindow::GetMinimumSize>("getMinimumSize")
+      .SetMethod<&BaseWindow::SetMaximumSize>("setMaximumSize")
+      .SetMethod<&BaseWindow::GetMaximumSize>("getMaximumSize")
+      .SetMethod<&BaseWindow::SetSheetOffset>("setSheetOffset")
+      .SetMethod<&BaseWindow::MoveAbove>("moveAbove")
+      .SetMethod<&NativeWindow::MoveTop>("moveTop")
+      .SetMethod<&NativeWindow::SetResizable>("setResizable")
+      .SetMethod<&NativeWindow::IsResizable>("isResizable")
+      .SetProperty<&NativeWindow::IsResizable, &NativeWindow::SetResizable>(
+          "resizable")
+      .SetMethod<&NativeWindow::SetMovable>("setMovable")
+      .SetMethod<&NativeWindow::IsMovable>("isMovable")
+      .SetProperty<&NativeWindow::IsMovable, &NativeWindow::SetMovable>(
+          "movable")
+      .SetMethod<&NativeWindow::SetMinimizable>("setMinimizable")
+      .SetMethod<&NativeWindow::IsMinimizable>("isMinimizable")
+      .SetProperty<&NativeWindow::IsMinimizable, &NativeWindow::SetMinimizable>(
+          "minimizable")
+      .SetMethod<&NativeWindow::SetMaximizable>("setMaximizable")
+      .SetMethod<&NativeWindow::IsMaximizable>("isMaximizable")
+      .SetProperty<&NativeWindow::IsMaximizable, &NativeWindow::SetMaximizable>(
+          "maximizable")
+      .SetMethod<&NativeWindow::SetFullScreenable>("setFullScreenable")
+      .SetMethod<&NativeWindow::IsFullScreenable>("isFullScreenable")
+      .SetProperty<&NativeWindow::IsFullScreenable,
+                   &NativeWindow::SetFullScreenable>("fullScreenable")
+      .SetMethod<&NativeWindow::SetClosable>("setClosable")
+      .SetMethod<&NativeWindow::IsClosable>("isClosable")
+      .SetProperty<&NativeWindow::IsClosable, &NativeWindow::SetClosable>(
+          "closable")
+      .SetMethod<&BaseWindow::SetAlwaysOnTop>("setAlwaysOnTop")
+      .SetMethod<&BaseWindow::IsAlwaysOnTop>("isAlwaysOnTop")
+      .SetMethod<&NativeWindow::Center>("center")
+      .SetMethod<&BaseWindow::SetPosition>("setPosition")
+      .SetMethod<&BaseWindow::GetPosition>("getPosition")
+      .SetMethod<&BaseWindow::SetTitle>("setTitle")
+      .SetMethod<&NativeWindow::GetTitle>("getTitle")
+      .SetProperty<&NativeWindow::GetTitle, &BaseWindow::SetTitle>("title")
+      .SetProperty<&NativeWindow::GetAccessibleTitle,
+                   &NativeWindow::SetAccessibleTitle>("accessibleTitle")
+      .SetMethod<&NativeWindow::FlashFrame>("flashFrame")
+      .SetMethod<&NativeWindow::SetSkipTaskbar>("setSkipTaskbar")
+      .SetMethod<&NativeWindow::SetSimpleFullScreen>("setSimpleFullScreen")
+      .SetMethod<&NativeWindow::IsSimpleFullScreen>("isSimpleFullScreen")
+      .SetProperty<&NativeWindow::IsSimpleFullScreen,
+                   &NativeWindow::SetSimpleFullScreen>("simpleFullScreen")
+      .SetMethod<&NativeWindow::SetKiosk>("setKiosk")
+      .SetMethod<&NativeWindow::IsKiosk>("isKiosk")
+      .SetProperty<&NativeWindow::IsKiosk, &NativeWindow::SetKiosk>("kiosk")
+      .SetMethod<&NativeWindow::IsTabletMode>("isTabletMode")
+      .SetMethod<&BaseWindow::SetBackgroundColor>("setBackgroundColor")
+      .SetMethod<&BaseWindow::GetBackgroundColor>("getBackgroundColor")
+      .SetMethod<&NativeWindow::SetHasShadow>("setHasShadow")
+      .SetMethod<&NativeWindow::HasShadow>("hasShadow")
+      .SetProperty<&NativeWindow::HasShadow, &NativeWindow::SetHasShadow>(
+          "shadow")
+      .SetMethod<&NativeWindow::SetOpacity>("setOpacity")
+      .SetMethod<&NativeWindow::GetOpacity>("getOpacity")
+      .SetMethod<&NativeWindow::SetShape>("setShape")
+      .SetMethod<&NativeWindow::SetRepresentedFilename>(
+          "setRepresentedFilename")
+      .SetMethod<&NativeWindow::GetRepresentedFilename>(
+          "getRepresentedFilename")
+      .SetProperty<&NativeWindow::GetRepresentedFilename,
+                   &NativeWindow::SetRepresentedFilename>("representedFilename")
+      .SetMethod<&NativeWindow::SetDocumentEdited>("setDocumentEdited")
+      .SetMethod<&NativeWindow::IsDocumentEdited>("isDocumentEdited")
+      .SetProperty<&NativeWindow::IsDocumentEdited,
+                   &NativeWindow::SetDocumentEdited>("documentEdited")
+      .SetMethod<&BaseWindow::SetIgnoreMouseEvents>("setIgnoreMouseEvents")
+      .SetMethod<&NativeWindow::SetContentProtection>("setContentProtection")
+      .SetMethod<&NativeWindow::IsContentProtected>("isContentProtected")
+      .SetMethod<&NativeWindow::SetFocusable>("setFocusable")
+      .SetMethod<&NativeWindow::IsFocusable>("isFocusable")
+      .SetProperty<&NativeWindow::IsFocusable, &NativeWindow::SetFocusable>(
+          "focusable")
+      .SetMethod<&BaseWindow::SetMenu>("setMenu")
+      .SetMethod<&BaseWindow::RemoveMenu>("removeMenu")
+      .SetMethod<&BaseWindow::SetParentWindow>("setParentWindow")
+      .SetMethod<&BaseWindow::GetMediaSourceId>("getMediaSourceId")
+      .SetMethod<&BaseWindow::GetNativeWindowHandle>("getNativeWindowHandle")
+      .SetMethod<&BaseWindow::SetProgressBar>("setProgressBar")
+      .SetMethod<&NativeWindow::SetOverlayIcon>("setOverlayIcon")
+      .SetMethod<&BaseWindow::SetVisibleOnAllWorkspaces>(
+          "setVisibleOnAllWorkspaces")
+      .SetMethod<&NativeWindow::IsVisibleOnAllWorkspaces>(
+          "isVisibleOnAllWorkspaces")
+      .SetProperty<&NativeWindow::IsVisibleOnAllWorkspaces,
+                   &BaseWindow::SetVisibleOnAllWorkspaces>(
+          "visibleOnAllWorkspaces")
 #if BUILDFLAG(IS_MAC)
-      .SetMethod("invalidateShadow", &BaseWindow::InvalidateShadow)
-      .SetMethod("_getAlwaysOnTopLevel", &BaseWindow::GetAlwaysOnTopLevel)
-      .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
+      .SetMethod<&NativeWindow::InvalidateShadow>("invalidateShadow")
+      .SetMethod<&NativeWindow::GetAlwaysOnTopLevel>("_getAlwaysOnTopLevel")
+      .SetMethod<&NativeWindow::SetAutoHideCursor>("setAutoHideCursor")
 #endif
-      .SetMethod("setVibrancy", &BaseWindow::SetVibrancy)
-      .SetMethod("setBackgroundMaterial", &BaseWindow::SetBackgroundMaterial)
+      .SetMethod<&BaseWindow::SetVibrancy>("setVibrancy")
+      .SetMethod<&BaseWindow::SetBackgroundMaterial>("setBackgroundMaterial")
 
 #if BUILDFLAG(IS_MAC)
-      .SetMethod("isHiddenInMissionControl",
-                 &BaseWindow::IsHiddenInMissionControl)
-      .SetMethod("setHiddenInMissionControl",
-                 &BaseWindow::SetHiddenInMissionControl)
+      .SetMethod<&NativeWindow::IsHiddenInMissionControl>(
+          "isHiddenInMissionControl")
+      .SetMethod<&NativeWindow::SetHiddenInMissionControl>(
+          "setHiddenInMissionControl")
 #endif
-      .SetMethod("_setTouchBarItems", &BaseWindow::SetTouchBar)
-      .SetMethod("_refreshTouchBarItem", &BaseWindow::RefreshTouchBarItem)
-      .SetMethod("_setEscapeTouchBarItem", &BaseWindow::SetEscapeTouchBarItem)
+      .SetMethod<&NativeWindow::SetTouchBar>("_setTouchBarItems")
+      .SetMethod<&NativeWindow::RefreshTouchBarItem>("_refreshTouchBarItem")
+      .SetMethod<&NativeWindow::SetEscapeTouchBarItem>("_setEscapeTouchBarItem")
 #if BUILDFLAG(IS_MAC)
-      .SetMethod("selectPreviousTab", &BaseWindow::SelectPreviousTab)
-      .SetMethod("selectNextTab", &BaseWindow::SelectNextTab)
-      .SetMethod("showAllTabs", &BaseWindow::ShowAllTabs)
-      .SetMethod("mergeAllWindows", &BaseWindow::MergeAllWindows)
-      .SetMethod("moveTabToNewWindow", &BaseWindow::MoveTabToNewWindow)
-      .SetMethod("toggleTabBar", &BaseWindow::ToggleTabBar)
-      .SetMethod("addTabbedWindow", &BaseWindow::AddTabbedWindow)
-      .SetProperty("tabbingIdentifier", &BaseWindow::GetTabbingIdentifier)
-      .SetMethod("setWindowButtonVisibility",
-                 &BaseWindow::SetWindowButtonVisibility)
-      .SetMethod("_getWindowButtonVisibility",
-                 &BaseWindow::GetWindowButtonVisibility)
-      .SetMethod("setWindowButtonPosition",
-                 &BaseWindow::SetWindowButtonPosition)
-      .SetMethod("getWindowButtonPosition",
-                 &BaseWindow::GetWindowButtonPosition)
-      .SetProperty("excludedFromShownWindowsMenu",
-                   &BaseWindow::IsExcludedFromShownWindowsMenu,
-                   &BaseWindow::SetExcludedFromShownWindowsMenu)
+      .SetMethod<&NativeWindow::SelectPreviousTab>("selectPreviousTab")
+      .SetMethod<&NativeWindow::SelectNextTab>("selectNextTab")
+      .SetMethod<&NativeWindow::ShowAllTabs>("showAllTabs")
+      .SetMethod<&NativeWindow::MergeAllWindows>("mergeAllWindows")
+      .SetMethod<&NativeWindow::MoveTabToNewWindow>("moveTabToNewWindow")
+      .SetMethod<&NativeWindow::ToggleTabBar>("toggleTabBar")
+      .SetMethod<&BaseWindow::AddTabbedWindow>("addTabbedWindow")
+      .SetProperty<&BaseWindow::GetTabbingIdentifier>("tabbingIdentifier")
+      .SetMethod<&NativeWindow::SetWindowButtonVisibility>(
+          "setWindowButtonVisibility")
+      .SetMethod<&NativeWindow::GetWindowButtonVisibility>(
+          "_getWindowButtonVisibility")
+      .SetMethod<&NativeWindow::SetWindowButtonPosition>(
+          "setWindowButtonPosition")
+      .SetMethod<&NativeWindow::GetWindowButtonPosition>(
+          "getWindowButtonPosition")
+      .SetProperty<&NativeWindow::IsExcludedFromShownWindowsMenu,
+                   &NativeWindow::SetExcludedFromShownWindowsMenu>(
+          "excludedFromShownWindowsMenu")
 #endif
-      .SetMethod("setAutoHideMenuBar", &BaseWindow::SetAutoHideMenuBar)
-      .SetMethod("isMenuBarAutoHide", &BaseWindow::IsMenuBarAutoHide)
-      .SetMethod("setMenuBarVisibility", &BaseWindow::SetMenuBarVisibility)
-      .SetMethod("isMenuBarVisible", &BaseWindow::IsMenuBarVisible)
-      .SetMethod("setAspectRatio", &BaseWindow::SetAspectRatio)
-      .SetMethod("previewFile", &BaseWindow::PreviewFile)
-      .SetMethod("closeFilePreview", &BaseWindow::CloseFilePreview)
-      .SetMethod("getContentView", &BaseWindow::GetContentView)
-      .SetProperty("contentView", &BaseWindow::GetContentView,
-                   &BaseWindow::SetContentView)
-      .SetMethod("getParentWindow", &BaseWindow::GetParentWindow)
-      .SetMethod("getChildWindows", &BaseWindow::GetChildWindows)
-      .SetMethod("isModal", &BaseWindow::IsModal)
-      .SetMethod("setThumbarButtons", &BaseWindow::SetThumbarButtons)
+      .SetMethod<&NativeWindow::SetAutoHideMenuBar>("setAutoHideMenuBar")
+      .SetMethod<&NativeWindow::IsMenuBarAutoHide>("isMenuBarAutoHide")
+      .SetProperty<&NativeWindow::IsMenuBarAutoHide,
+                   &NativeWindow::SetAutoHideMenuBar>("autoHideMenuBar")
+      .SetMethod<&NativeWindow::SetMenuBarVisibility>("setMenuBarVisibility")
+      .SetMethod<&NativeWindow::IsMenuBarVisible>("isMenuBarVisible")
+      .SetProperty<&NativeWindow::IsMenuBarVisible,
+                   &NativeWindow::SetMenuBarVisibility>("menuBarVisible")
+      .SetMethod<&BaseWindow::SetAspectRatio>("setAspectRatio")
+      .SetMethod<&BaseWindow::PreviewFile>("previewFile")
+      .SetMethod<&NativeWindow::CloseFilePreview>("closeFilePreview")
+      .SetMethod<&BaseWindow::GetContentView>("getContentView")
+      .SetProperty<&BaseWindow::GetContentView, &BaseWindow::SetContentView>(
+          "contentView")
+      .SetMethod<&BaseWindow::GetParentWindow>("getParentWindow")
+      .SetMethod<&BaseWindow::GetChildWindows>("getChildWindows")
+      .SetMethod<&NativeWindow::is_modal>("isModal")
+      .SetMethod<&BaseWindow::SetThumbarButtons>("setThumbarButtons")
 #if defined(TOOLKIT_VIEWS)
-      .SetMethod("setIcon", &BaseWindow::SetIcon)
+      .SetMethod<&BaseWindow::SetIcon>("setIcon")
 #endif
 #if BUILDFLAG(IS_WIN)
-      .SetMethod("isSnapped", &BaseWindow::IsSnapped)
-      .SetProperty("snapped", &BaseWindow::IsSnapped)
-      .SetMethod("setAccentColor", &BaseWindow::SetAccentColor)
-      .SetMethod("getAccentColor", &BaseWindow::GetAccentColor)
-      .SetMethod("hookWindowMessage", &BaseWindow::HookWindowMessage)
-      .SetMethod("isWindowMessageHooked", &BaseWindow::IsWindowMessageHooked)
-      .SetMethod("unhookWindowMessage", &BaseWindow::UnhookWindowMessage)
-      .SetMethod("unhookAllWindowMessages",
-                 &BaseWindow::UnhookAllWindowMessages)
-      .SetMethod("setThumbnailClip", &BaseWindow::SetThumbnailClip)
-      .SetMethod("setThumbnailToolTip", &BaseWindow::SetThumbnailToolTip)
-      .SetMethod("setAppDetails", &BaseWindow::SetAppDetails)
+      .SetMethod<&NativeWindow::IsSnapped>("isSnapped")
+      .SetProperty<&NativeWindow::IsSnapped>("snapped")
+      .SetMethod<&BaseWindow::SetAccentColor>("setAccentColor")
+      .SetMethod<&BaseWindow::GetAccentColor>("getAccentColor")
+      .SetMethod<&BaseWindow::HookWindowMessage>("hookWindowMessage")
+      .SetMethod<&BaseWindow::IsWindowMessageHooked>("isWindowMessageHooked")
+      .SetMethod<&BaseWindow::UnhookWindowMessage>("unhookWindowMessage")
+      .SetMethod<&BaseWindow::UnhookAllWindowMessages>(
+          "unhookAllWindowMessages")
+      .SetMethod<&BaseWindow::SetThumbnailClip>("setThumbnailClip")
+      .SetMethod<&BaseWindow::SetThumbnailToolTip>("setThumbnailToolTip")
+      .SetMethod<&BaseWindow::SetAppDetails>("setAppDetails")
 #endif
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
-      .SetMethod("setTitleBarOverlay", &BaseWindow::SetTitleBarOverlay)
+      .SetMethod<&BaseWindow::SetTitleBarOverlay>("setTitleBarOverlay")
 #endif
-      .SetProperty("id", &BaseWindow::GetID);
+      .SetProperty<&BaseWindow::GetID>("id");
 }
 
 }  // namespace electron::api
@@ -1483,11 +1283,11 @@ void Initialize(v8::Local<v8::Object> exports,
                                      BaseWindow::GetConstructorTemplate(isolate)
                                          ->GetFunction(context)
                                          .ToLocalChecked());
-  constructor.SetMethod("fromId", &BaseWindow::FromWeakMapID);
-  constructor.SetMethod("getAllWindows", &BaseWindow::GetAll);
-  constructor.SetMethod("getFocusedWindow", &BaseWindow::GetFocusedWindow);
-  constructor.SetMethod("clearPersistedState",
-                        &BaseWindow::ClearPersistedState);
+  constructor.SetMethod<&BaseWindow::FromWeakMapID>("fromId");
+  constructor.SetMethod<&BaseWindow::GetAll>("getAllWindows");
+  constructor.SetMethod<&BaseWindow::GetFocusedWindow>("getFocusedWindow");
+  constructor.SetMethod<&BaseWindow::ClearPersistedState>(
+      "clearPersistedState");
 
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("BaseWindow", constructor);

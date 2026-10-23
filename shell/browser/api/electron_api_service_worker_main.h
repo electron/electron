@@ -93,20 +93,17 @@ class ServiceWorkerMain final
   void MaybeDisconnectRemote();
   const blink::StorageKey GetStorageKey();
 
-  // Increments external requests for the service worker to keep it alive.
-  gin_helper::Dictionary StartExternalRequest(v8::Isolate* isolate,
-                                              bool has_timeout);
   void FinishExternalRequest(v8::Isolate* isolate, std::string uuid);
   size_t CountExternalRequestsForTest();
 
   // Get or create a Mojo connection to the renderer process.
   mojom::ElectronRenderer* GetRendererApi();
 
-  // Send a message to the renderer process.
-  void Send(v8::Isolate* isolate,
-            bool internal,
-            const std::string& channel,
-            v8::Local<v8::Value> args);
+  // send(channel, ...args) to the worker.
+  void Send(gin::Arguments* args);
+  // startTask(): an external request that keeps the worker alive until the
+  // returned task's end() is called.
+  v8::Local<v8::Value> StartTask(v8::Isolate* isolate);
 
   void InvalidateVersionInfo();
   const content::ServiceWorkerVersionBaseInfo* version_info() const {

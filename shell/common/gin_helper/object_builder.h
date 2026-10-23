@@ -7,7 +7,7 @@
 
 #include <cstddef>
 
-#include "base/memory/raw_ptr.h"
+#include "base/memory/stack_allocated.h"
 #include "gin/converter.h"
 #include "shell/common/gin_helper/interned_strings.h"
 #include "v8/include/v8-context.h"
@@ -25,6 +25,8 @@ namespace gin_helper {
 //       .Set("y", rect.y())
 //       .Build();
 class ObjectBuilder {
+  STACK_ALLOCATED();
+
  public:
   explicit ObjectBuilder(v8::Isolate* isolate);
   ~ObjectBuilder();
@@ -48,7 +50,7 @@ class ObjectBuilder {
   [[nodiscard]] v8::Local<v8::Object> Build();
 
  private:
-  const raw_ptr<v8::Isolate> isolate_;
+  v8::Isolate* const isolate_;
   v8::Local<v8::Context> context_;
   v8::Local<v8::Object> object_;
 };

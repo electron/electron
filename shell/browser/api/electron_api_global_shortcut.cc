@@ -416,8 +416,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("createGlobalShortcut",
-                 base::BindRepeating(&electron::api::GlobalShortcut::Create));
+  dict.SetMethod<&electron::api::GlobalShortcut::Create>(
+      "createGlobalShortcut");
 }
 
 }  // namespace

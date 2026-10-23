@@ -20,10 +20,10 @@ tag ranges used by Blink and gin, which share isolates with Node.js in
 renderer processes.
 
 diff --git a/src/cppgc_helpers-inl.h b/src/cppgc_helpers-inl.h
-index 0e52bf5a6f4837d0f4bfed83987c6903796fda55..68c70153b96cc3e62db1b5dc74ac4026fa306271 100644
+index 745f2c0526fafc1079b94be875a9e5a519d3a794..f81b087ad21a28ec2385cd0cfae3177a470a2850 100644
 --- a/src/cppgc_helpers-inl.h
 +++ b/src/cppgc_helpers-inl.h
-@@ -16,7 +16,7 @@ void CppgcMixin::Wrap(T* ptr, Realm* realm, v8::Local<v8::Object> obj) {
+@@ -15,7 +15,7 @@ void CppgcMixin::Wrap(T* ptr, Realm* realm, v8::Local<v8::Object> obj) {
    ptr->traced_reference_ = v8::TracedReference<v8::Object>(isolate, obj);
    // Note that ptr must be of concrete type T in Wrap.
    auto* wrappable = static_cast<v8::Object::Wrappable*>(ptr);
@@ -33,7 +33,7 @@ index 0e52bf5a6f4837d0f4bfed83987c6903796fda55..68c70153b96cc3e62db1b5dc74ac4026
    obj->SetAlignedPointerInInternalField(
        kEmbedderType, realm->isolate_data()->embedder_id_for_cppgc(), 0);
 diff --git a/src/cppgc_helpers.h b/src/cppgc_helpers.h
-index fe6300a5d5d2d6602a84cbd33736c2133041d1b0..b9153306b6cbc34d076c0eb5b32ecce3c5de98de 100644
+index f1363d5da78f7a3603fb4502489ecf2ee3483fdb..7baf7b11a68c2cbb83bd67a152be74a8533ecdb0 100644
 --- a/src/cppgc_helpers.h
 +++ b/src/cppgc_helpers.h
 @@ -19,6 +19,25 @@ class Environment;
@@ -63,10 +63,10 @@ index fe6300a5d5d2d6602a84cbd33736c2133041d1b0..b9153306b6cbc34d076c0eb5b32ecce3
   * This is a helper mixin with a BaseObject-like interface to help
   * implementing wrapper objects managed by V8's cppgc (Oilpan) library.
 diff --git a/src/env.cc b/src/env.cc
-index c665e08b6d4eb3f1f772451e6bed1ae746f0d2f3..ea0ff5b84f4a54a3f8efdfadb9f22e1120a9519e 100644
+index f86232b125d9967f3021348cf88f132c391b2e0e..f72aafe07c039c6d63b74c80cd252f830930d121 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -643,8 +643,7 @@ IsolateData::~IsolateData() {}
+@@ -644,8 +644,7 @@ IsolateData::~IsolateData() {}
  void SetCppgcReference(Isolate* isolate,
                         Local<Object> object,
                         v8::Object::Wrappable* wrappable) {
@@ -77,7 +77,7 @@ index c665e08b6d4eb3f1f772451e6bed1ae746f0d2f3..ea0ff5b84f4a54a3f8efdfadb9f22e11
  
  void IsolateData::MemoryInfo(MemoryTracker* tracker) const {
 diff --git a/unofficial.gni b/unofficial.gni
-index bc31136d8f4ad1fa08083832623f4ef98795cfab..98921973b2a75597832b68f12816c6bdc6698447 100644
+index 1b95224d0555fd5d3ea2396535967d87631e0f91..a4cfd7fe8d80c96b11e33daff90e95b7581772be 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -73,6 +73,12 @@ template("node_gn_build") {

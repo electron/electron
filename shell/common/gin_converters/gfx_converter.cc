@@ -4,13 +4,17 @@
 
 #include "shell/common/gin_converters/gfx_converter.h"
 
+#include <cmath>
+#include <limits>
 #include <string>
 
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/object_builder.h"
 #include "ui/display/display.h"
 #include "ui/gfx/color_space.h"
+#include "ui/gfx/display_color_spaces.h"
 #include "ui/gfx/geometry/insets.h"
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/point_f.h"
@@ -18,6 +22,15 @@
 #include "ui/gfx/geometry/rect_f.h"
 #include "ui/gfx/geometry/resize_utils.h"
 #include "ui/gfx/geometry/size.h"
+
+namespace {
+
+bool FitsInInt(double value) {
+  return std::isfinite(value) && value >= std::numeric_limits<int>::min() &&
+         value <= std::numeric_limits<int>::max();
+}
+
+}  // namespace
 
 namespace gin {
 
@@ -37,6 +50,8 @@ bool Converter<gfx::Point>::FromV8(v8::Isolate* isolate,
     return false;
   double x, y;
   if (!dict.Get("x", &x) || !dict.Get("y", &y))
+    return false;
+  if (!FitsInInt(x) || !FitsInInt(y))
     return false;
   *out = gfx::Point(static_cast<int>(std::round(x)),
                     static_cast<int>(std::round(y)));
@@ -106,6 +121,9 @@ bool Converter<gfx::Rect>::FromV8(v8::Isolate* isolate,
       !dict.Get("height", &height))
     return false;
 
+  if (!FitsInInt(x) || !FitsInInt(y) || !FitsInInt(width) || !FitsInInt(height))
+    return false;
+
   *out = ToRoundedRect(gfx::RectF(x, y, width, height));
   return true;
 }
@@ -134,6 +152,9 @@ bool Converter<gfx::Insets>::FromV8(v8::Isolate* isolate,
   if (!dict.Get("bottom", &bottom))
     return false;
   if (!dict.Get("right", &right))
+    return false;
+  if (!FitsInInt(top) || !FitsInInt(left) || !FitsInInt(bottom) ||
+      !FitsInInt(right))
     return false;
   *out = gfx::Insets::TLBR(top, left, bottom, right);
   return true;

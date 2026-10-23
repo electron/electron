@@ -21,7 +21,12 @@ try {
   app.whenReady().then(() => {
     setImmediate(() => {
       try {
-        output(Menu.getApplicationMenu() === expectedMenu);
+        const menu = Menu.getApplicationMenu();
+        if (app.commandLine.hasSwitch('print-items')) {
+          output(menu ? menu.items.map((item) => item.role || item.label) : null);
+        } else {
+          output(menu === expectedMenu);
+        }
       } catch {
         output(null);
       }

@@ -8,10 +8,10 @@ an ExternalPointerTypeTag parameter. Use kExternalPointerTypeTagDefault
 for all existing call sites.
 
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 9fbca1812491c8a181ab791eeb33a18f906af66f..03a3b93f0cf60a6eab4128a8e58a240169ed2d06 100644
+index 1bab35b2a7e6ae652991235999ee1270612b0c7c..083e650823472920db76b201ca5616a87112cd84 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -2625,7 +2625,7 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
+@@ -2880,7 +2880,7 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
  void SecureContext::CtxGetter(const FunctionCallbackInfo<Value>& info) {
    SecureContext* sc;
    ASSIGN_OR_RETURN_UNWRAP(&sc, info.This());
@@ -21,7 +21,7 @@ index 9fbca1812491c8a181ab791eeb33a18f906af66f..03a3b93f0cf60a6eab4128a8e58a2401
  }
  
 diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
-index 75ce4c921b5acf5d612aeb5a7720b5874b6066ac..6c87611f7cbaf8a0b4c04f812f65381ede112056 100644
+index 5c4a7b611888664ad70e48fb240be7320bac032b..29e2e1808a3f42a35d9478f2f8949037b0011880 100644
 --- a/src/js_native_api_v8.cc
 +++ b/src/js_native_api_v8.cc
 @@ -356,7 +356,7 @@ inline napi_status Unwrap(napi_env env,
@@ -100,10 +100,10 @@ index 757d39558f7853d39ee0d574152bb3810cfa3ca5..51c097e69388a516aa7a9239053367fa
    env->compile_cache_handler()->MaybeSave(cache_entry, utf8.ToStringView());
  }
 diff --git a/src/node_util.cc b/src/node_util.cc
-index ce381c00888b032c281938a7bab334058e075ec8..6d3373caae6c5cc22e16fc32e7ea007178aa1a20 100644
+index c3a6fbed06efc92e3cc0ac59ab51c8b802033c81..39523bd256c8bf22597ba79dd06ea451025ffabb 100644
 --- a/src/node_util.cc
 +++ b/src/node_util.cc
-@@ -93,7 +93,7 @@ static void GetExternalValue(
+@@ -96,7 +96,7 @@ static void GetExternalValue(
    Isolate* isolate = args.GetIsolate();
    Local<External> external = args[0].As<External>();
  
@@ -113,10 +113,10 @@ index ce381c00888b032c281938a7bab334058e075ec8..6d3373caae6c5cc22e16fc32e7ea0071
    Local<BigInt> ret = BigInt::NewFromUnsigned(isolate, value);
    args.GetReturnValue().Set(ret);
 diff --git a/src/stream_base.cc b/src/stream_base.cc
-index f57f75e5f2750a8f56258c043717c15adad1cf2a..287a41b3af00ea937ca0267a230b94c9c6566f00 100644
+index ad9affc538732fcc88ef839598b9cbf7e22fd79d..74717fbae8776bdba7c288308c5c1cc7fc8393ef 100644
 --- a/src/stream_base.cc
 +++ b/src/stream_base.cc
-@@ -649,7 +649,7 @@ void StreamBase::GetExternal(const FunctionCallbackInfo<Value>& args) {
+@@ -685,7 +685,7 @@ void StreamBase::GetExternal(const FunctionCallbackInfo<Value>& args) {
    StreamBase* wrap = StreamBase::FromObject(args.This().As<Object>());
    if (wrap == nullptr) return;
  

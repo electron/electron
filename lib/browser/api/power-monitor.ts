@@ -4,9 +4,9 @@ const { createPowerMonitor, getSystemIdleState, getSystemIdleTime, getCurrentThe
   process._linkedBinding('electron_browser_power_monitor');
 
 // Hold the native PowerMonitor at module level so it is never garbage-collected
-// while this module is alive. The C++ side registers OS-level callbacks (HWND
-// user-data on Windows, shutdown handler on macOS, notification observers) that
-// prevent safe collection of the C++ wrapper while those registrations exist.
+// while this module is alive. The C++ side registers OS-level callbacks (session
+// change observer on Windows, shutdown handler on macOS, notification observers)
+// that prevent safe collection of the C++ wrapper while those registrations exist.
 let pm: any;
 
 class PowerMonitor extends EventEmitter implements Electron.PowerMonitor {

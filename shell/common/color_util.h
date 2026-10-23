@@ -40,7 +40,6 @@ std::string ToRGBHex(SkColor color);
 std::string ToRGBAHex(SkColor color, bool include_hash = true);
 
 #if BUILDFLAG(IS_WIN)
-std::optional<DWORD> GetSystemAccentColor();
 SkColor GetSysSkColor(int which);
 #endif
 

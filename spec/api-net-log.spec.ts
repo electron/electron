@@ -1,6 +1,6 @@
 import { session, net } from 'electron/main';
 
-import { expect } from 'chai';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import * as ChildProcess from 'node:child_process';
 import { randomUUID } from 'node:crypto';
@@ -25,7 +25,7 @@ describe('netLog module', () => {
   let serverUrl: string;
   const connections: Set<Socket> = new Set();
 
-  before(async () => {
+  beforeAll(async () => {
     server = http.createServer();
     server.on('connection', (connection) => {
       connections.add(connection);
@@ -39,20 +39,28 @@ describe('netLog module', () => {
     serverUrl = (await listen(server)).url;
   });
 
-  after((done) => {
-    for (const connection of connections) {
-      connection.destroy();
-    }
-    server.close(() => {
-      server = null as any;
-      done();
-    });
-  });
+  afterAll(
+    () =>
+      new Promise<void>((resolve) => {
+        for (const connection of connections) {
+          connection.destroy();
+        }
+        server.close(() => {
+          server = null as any;
+          resolve();
+        });
+      })
+  );
 
   beforeEach(() => {
-    expect(testNetLog().currentlyLogging).to.be.false('currently logging');
+    expect(testNetLog().currentlyLogging, 'currently logging').toBe(false);
   });
-  afterEach(() => {
+  afterEach(async () => {
+    // Stop a log that a failed test left running. Otherwise this hook and
+    // beforeEach would fail every later test, including the retry.
+    if (testNetLog().currentlyLogging) {
+      await testNetLog().stopLogging();
+    }
     try {
       if (fs.existsSync(dumpFile)) {
         fs.unlinkSync(dumpFile);
@@ -63,29 +71,28 @@ describe('netLog module', () => {
     } catch {
       // Ignore error
     }
-    expect(testNetLog().currentlyLogging).to.be.false('currently logging');
   });
 
   it('should begin and end logging to file when .startLogging() and .stopLogging() is called', async () => {
     await testNetLog().startLogging(dumpFileDynamic);
 
-    expect(testNetLog().currentlyLogging).to.be.true('currently logging');
+    expect(testNetLog().currentlyLogging, 'currently logging').toBe(true);
 
     await testNetLog().stopLogging();
 
-    expect(fs.existsSync(dumpFileDynamic)).to.be.true('currently logging');
+    expect(fs.existsSync(dumpFileDynamic), 'currently logging').toBe(true);
   });
 
   it('should throw an error when .stopLogging() is called without calling .startLogging()', async () => {
-    await expect(testNetLog().stopLogging()).to.be.rejectedWith('No net log in progress');
+    await expect(testNetLog().stopLogging()).rejects.toThrow('No net log in progress');
   });
 
   it('should throw an error when .startLogging() is called with an invalid argument', () => {
-    expect(() => testNetLog().startLogging('')).to.throw();
-    expect(() => testNetLog().startLogging(null as any)).to.throw();
-    expect(() => testNetLog().startLogging([] as any)).to.throw();
-    expect(() => testNetLog().startLogging('aoeu', { captureMode: 'aoeu' as any })).to.throw();
-    expect(() => testNetLog().startLogging('aoeu', { maxFileSize: null as any })).to.throw();
+    expect(() => testNetLog().startLogging('')).toThrow();
+    expect(() => testNetLog().startLogging(null as any)).toThrow();
+    expect(() => testNetLog().startLogging([] as any)).toThrow();
+    expect(() => testNetLog().startLogging('aoeu', { captureMode: 'aoeu' as any })).toThrow();
+    expect(() => testNetLog().startLogging('aoeu', { maxFileSize: null as any })).toThrow();
   });
 
   it('should include cookies when requested', async () => {
@@ -101,9 +108,9 @@ describe('netLog module', () => {
       req.end();
     });
     await testNetLog().stopLogging();
-    expect(fs.existsSync(dumpFileDynamic)).to.be.true('dump file exists');
+    expect(fs.existsSync(dumpFileDynamic), 'dump file exists').toBe(true);
     const dump = fs.readFileSync(dumpFileDynamic, 'utf8');
-    expect(dump).to.contain(`foo=${unique}`);
+    expect(dump).toContain(`foo=${unique}`);
   });
 
   it('should include socket bytes when requested', async () => {
@@ -118,13 +125,14 @@ describe('netLog module', () => {
       req.end(Buffer.from(unique));
     });
     await testNetLog().stopLogging();
-    expect(fs.existsSync(dumpFileDynamic)).to.be.true('dump file exists');
+    expect(fs.existsSync(dumpFileDynamic), 'dump file exists').toBe(true);
     const dump = fs.readFileSync(dumpFileDynamic, 'utf8');
     expect(
       JSON.parse(dump).events.some(
         (x: any) => x.params && x.params.bytes && Buffer.from(x.params.bytes, 'base64').includes(unique)
-      )
-    ).to.be.true('uuid present in dump');
+      ),
+      'uuid present in dump'
+    ).toBe(true);
   });
 
   ifit(process.platform !== 'linux')(
@@ -138,7 +146,7 @@ describe('netLog module', () => {
       });
 
       await once(appProcess, 'exit');
-      expect(fs.existsSync(dumpFile)).to.be.true('dump file exists');
+      expect(fs.existsSync(dumpFile), 'dump file exists').toBe(true);
     }
   );
 
@@ -155,8 +163,8 @@ describe('netLog module', () => {
       });
 
       await once(appProcess, 'exit');
-      expect(fs.existsSync(dumpFile)).to.be.true('dump file exists');
-      expect(fs.existsSync(dumpFileDynamic)).to.be.true('dynamic dump file exists');
+      expect(fs.existsSync(dumpFile), 'dump file exists').toBe(true);
+      expect(fs.existsSync(dumpFileDynamic), 'dynamic dump file exists').toBe(true);
     }
   );
 
@@ -171,7 +179,7 @@ describe('netLog module', () => {
       });
 
       await once(appProcess, 'exit');
-      expect(fs.existsSync(dumpFileDynamic)).to.be.true('dynamic dump file exists');
+      expect(fs.existsSync(dumpFileDynamic), 'dynamic dump file exists').toBe(true);
     }
   );
 });

@@ -184,7 +184,7 @@ class PreloadRealmLifetimeController
 
     gin_helper::Dictionary process = gin::Dictionary::CreateEmpty(isolate);
     ElectronBindings::BindProcess(isolate, &process, metrics_.get());
-    process.SetMethod("uptime", preload_utils::Uptime);
+    process.SetMethod<&preload_utils::Uptime>("uptime");
     process.Set("argv", base::CommandLine::ForCurrentProcess()->argv());
     process.Set("pid", base::GetCurrentProcId());
     process.Set("sandboxed", true);
@@ -216,7 +216,7 @@ class PreloadRealmLifetimeController
   blink::Member<blink::ScriptState> shadow_realm_script_state_;
 
   std::unique_ptr<base::ProcessMetrics> metrics_;
-  raw_ptr<ServiceWorkerData> service_worker_data_;
+  raw_ptr<ServiceWorkerData, DanglingUntriaged> service_worker_data_;
 
   GC_PLUGIN_IGNORE(
       "Intentional GC root to keep this object alive until the context is "
