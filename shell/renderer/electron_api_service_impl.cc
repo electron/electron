@@ -234,7 +234,7 @@ void ElectronApiServiceImpl::ReceivePostMessage(
   for (auto& port : message.ports) {
     ports.emplace_back(
         blink::WebMessagePortConverter::EntangleAndInjectMessagePortChannel(
-            isolate, context, std::move(port)));
+            isolate, context, port));
   }
 
   std::vector<v8::Local<v8::Value>> args = {message_value};

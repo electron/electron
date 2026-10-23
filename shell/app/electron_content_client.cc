@@ -7,6 +7,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "base/command_line.h"
@@ -164,7 +165,7 @@ bool TryGetBundledWidevineCdm(
     return false;
   }
 
-  *cdm_path = cdm_library_path;
+  *cdm_path = std::move(cdm_library_path);
   *capability_out = std::move(capability);
   return true;
 }
