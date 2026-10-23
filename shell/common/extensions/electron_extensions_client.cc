@@ -15,6 +15,7 @@
 #include "extensions/common/features/simple_feature.h"
 #include "extensions/common/permissions/permission_message_provider.h"
 #include "extensions/common/url_pattern_set.h"
+#include "shell/common/application_info.h"
 #include "shell/common/extensions/electron_extensions_api_provider.h"
 
 using extensions::ExtensionsClient;
@@ -86,8 +87,7 @@ ElectronExtensionsClient::GetPermissionMessageProvider() const {
 }
 
 const std::string ElectronExtensionsClient::GetProductName() {
-  // TODO(samuelmaddock):
-  return "app_shell";
+  return GetApplicationName();
 }
 
 void ElectronExtensionsClient::FilterHostPermissions(
