@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 
+#include "components/value_store/value_store_factory.h"
 #include "extensions/browser/api/storage/settings_namespace.h"
 #include "extensions/browser/guest_view/extensions_guest_view_manager_delegate.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest_delegate.h"
