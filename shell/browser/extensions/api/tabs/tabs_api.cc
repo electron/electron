@@ -4,6 +4,7 @@
 
 #include "shell/browser/extensions/api/tabs/tabs_api.h"
 
+#include <algorithm>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -18,6 +19,7 @@
 #include "content/public/browser/navigation_entry.h"
 #include "extensions/browser/extension_api_frame_id_map.h"
 #include "extensions/browser/extension_util.h"
+#include "extensions/common/constants.h"
 #include "extensions/common/error_utils.h"
 #include "extensions/common/extension_features.h"
 #include "extensions/common/feature_switch.h"
@@ -25,6 +27,7 @@
 #include "extensions/common/mojom/host_id.mojom.h"
 #include "extensions/common/permissions/permissions_data.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/extensions/electron_extension_tab_registry.h"
 #include "shell/browser/extensions/electron_extension_tab_util.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/web_contents_zoom_controller.h"
@@ -78,25 +81,6 @@ bool MatchesBool(const std::optional<bool>& boolean, bool value) {
   return !boolean || *boolean == value;
 }
 
-tabs::MutedInfo CreateMutedInfo(content::WebContents* contents) {
-  DCHECK(contents);
-  tabs::MutedInfo info;
-  info.muted = contents->IsAudioMuted();
-  info.reason = tabs::MutedInfoReason::kUser;
-  return info;
-}
-
-// "title" and "url" properties are considered privileged data and can only
-// be exposed if the extension has the "tabs" permission or it has access to
-// the WebContents's origin.
-bool CanAccessPrivilegedTabFields(const Extension* extension,
-                                  int tab_id,
-                                  const GURL& url) {
-  return extension->permissions_data()->HasAPIPermissionForTab(
-             tab_id, mojom::APIPermissionID::kTab) ||
-         extension->permissions_data()->HasHostPermission(url);
-}
-
 }  // namespace
 
 ExecuteCodeInTabFunction::ExecuteCodeInTabFunction() = default;
@@ -131,10 +115,16 @@ ExecuteCodeFunction::InitResult ExecuteCodeInTabFunction::Init() {
   }
 
   if (tab_id == -1) {
-    // There's no useful concept of a "default tab" in Electron.
-    // TODO(nornagon): we could potentially kick this to an event to allow the
-    // app to decide what "default tab" means for them?
-    return set_init_result(VALIDATION_FAILURE);
+    // There's no useful concept of a "default tab" in a session that treats
+    // every WebContents as a tab.
+    if (ElectronExtensionTabRegistry::Get(browser_context())->mode() ==
+        ElectronTabMode::kAllWebContents) {
+      return set_init_result(VALIDATION_FAILURE);
+    }
+    const auto contents = ResolveTab(this, std::nullopt);
+    if (!contents.has_value())
+      return set_init_result_error(contents.error());
+    tab_id = contents.value()->ID();
   }
 
   execute_tab_id_ = tab_id;
@@ -237,10 +227,10 @@ ExtensionFunction::ResponseAction TabsReloadFunction::Run() {
     bypass_cache = *params->reload_properties->bypass_cache;
   }
 
-  int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = GetElectronTabById(tab_id, browser_context());
-  if (!contents)
-    return RespondNow(Error("No such tab"));
+  const auto tab = ResolveTab(this, params->tab_id);
+  if (!tab.has_value())
+    return RespondNow(Error(tab.error()));
+  auto* contents = tab.value();
 
   contents->web_contents()->GetController().Reload(
       bypass_cache ? content::ReloadType::BYPASSING_CACHE
@@ -276,7 +266,17 @@ ExtensionFunction::ResponseAction TabsQueryFunction::Run() {
   std::optional<bool> audible = params->query_info.audible;
   std::optional<bool> muted = params->query_info.muted;
 
-  base::ListValue result;
+  const int window_id =
+      params->query_info.window_id.value_or(extension_misc::kUnknownWindowId);
+  const std::optional<int> current_window = GetCurrentWindowId(this);
+  const std::optional<int> focused_window =
+      ElectronExtensionTabRegistry::Get(browser_context())->focused_window_id();
+
+  struct Match {
+    raw_ptr<const ElectronExtensionTabData> data;
+    tabs::Tab tab;
+  };
+  std::vector<Match> matches;
 
   // Filter out webContents that don't belong to the current browser context.
   auto* bc = browser_context();
@@ -287,6 +287,9 @@ ExtensionFunction::ResponseAction TabsQueryFunction::Run() {
       continue;
 
     auto* wc = contents->web_contents();
+    if (!IsTab(wc))
+      continue;
+    const auto* data = ElectronExtensionTabData::FromWebContents(wc);
 
     // Match webContents audible value.
     if (!MatchesBool(audible, wc->IsCurrentlyAudible()))
@@ -296,13 +299,34 @@ ExtensionFunction::ResponseAction TabsQueryFunction::Run() {
     if (!MatchesBool(muted, wc->IsAudioMuted()))
       continue;
 
-    // Match webContents active status.
-    if (!MatchesBool(params->query_info.active, contents->IsFocused()))
+    // Match the tab's active status. A tab the app did not register has no
+    // tab strip, so it is active when focused.
+    if (!MatchesBool(params->query_info.active,
+                     data ? data->active() : contents->IsFocused()))
       continue;
 
+    // Match the tab's window and position. A tab the app did not register has
+    // neither, so these filters do not exclude it.
+    if (data) {
+      if (window_id >= 0 && data->window_id() != window_id)
+        continue;
+      if (window_id == extension_misc::kCurrentWindowId &&
+          current_window != data->window_id())
+        continue;
+      if (!MatchesBool(params->query_info.current_window,
+                       current_window == data->window_id()))
+        continue;
+      if (!MatchesBool(params->query_info.last_focused_window,
+                       focused_window == data->window_id()))
+        continue;
+      if (params->query_info.index &&
+          *params->query_info.index != data->index())
+        continue;
+    }
+
     const GURL& committed_url = wc->GetLastCommittedURL();
-    const bool has_privileged_access = CanAccessPrivilegedTabFields(
-        extension(), contents->ID(), committed_url);
+    const bool has_privileged_access =
+        CanAccessPrivilegedTabFields(extension(), contents.Get());
 
     if (!title.empty() || !url_patterns.is_empty()) {
       // Without privileged access, this tab is considered not matched.
@@ -319,20 +343,20 @@ ExtensionFunction::ResponseAction TabsQueryFunction::Run() {
         continue;
     }
 
-    tabs::Tab tab;
-    tab.id = contents->ID();
-    if (has_privileged_access) {
-      tab.title = base::UTF16ToUTF8(wc->GetTitle());
-      tab.url = committed_url.spec();
-    }
-    tab.active = contents->IsFocused();
-    tab.audible = contents->IsCurrentlyAudible();
-    tab.muted_info = CreateMutedInfo(wc);
-    // TODO: Add proper support for split views
-    tab.split_view_id = -1;
-
-    result.Append(tab.ToValue());
+    matches.push_back({data, CreateTabObject(contents.Get(), extension())});
   }
+
+  // Registered tabs come first, in tab strip order.
+  std::ranges::stable_sort(matches, [](const Match& a, const Match& b) {
+    if (!a.data || !b.data)
+      return a.data && !b.data;
+    return std::pair(a.data->window_id(), a.data->index()) <
+           std::pair(b.data->window_id(), b.data->index());
+  });
+
+  base::ListValue result;
+  for (const Match& match : matches)
+    result.Append(match.tab.ToValue());
 
   return RespondNow(WithArguments(std::move(result)));
 }
@@ -346,22 +370,8 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
   if (!contents)
     return RespondNow(Error("No such tab"));
 
-  tabs::Tab tab;
-  tab.id = tab_id;
-
-  auto* wc = contents->web_contents();
-  if (CanAccessPrivilegedTabFields(extension(), contents->ID(),
-                                   wc->GetLastCommittedURL())) {
-    tab.url = wc->GetLastCommittedURL().spec();
-    tab.title = base::UTF16ToUTF8(wc->GetTitle());
-  }
-
-  tab.active = contents->IsFocused();
-  tab.last_accessed = wc->GetLastActiveTime().InMillisecondsFSinceUnixEpoch();
-  // TODO: Add proper support for split views
-  tab.split_view_id = -1;
-
-  return RespondNow(ArgumentList(tabs::Get::Results::Create(std::move(tab))));
+  return RespondNow(ArgumentList(
+      tabs::Get::Results::Create(CreateTabObject(contents, extension()))));
 }
 
 ExtensionFunction::ResponseAction TabsSetZoomFunction::Run() {
@@ -369,10 +379,10 @@ ExtensionFunction::ResponseAction TabsSetZoomFunction::Run() {
       tabs::SetZoom::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
 
-  int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = GetElectronTabById(tab_id, browser_context());
-  if (!contents)
-    return RespondNow(Error("No such tab"));
+  const auto tab = ResolveTab(this, params->tab_id);
+  if (!tab.has_value())
+    return RespondNow(Error(tab.error()));
+  auto* contents = tab.value();
 
   auto* web_contents = contents->web_contents();
   GURL url(web_contents->GetVisibleURL());
@@ -396,10 +406,10 @@ ExtensionFunction::ResponseAction TabsGetZoomFunction::Run() {
       tabs::GetZoomSettings::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
 
-  int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = GetElectronTabById(tab_id, browser_context());
-  if (!contents)
-    return RespondNow(Error("No such tab"));
+  const auto tab = ResolveTab(this, params->tab_id);
+  if (!tab.has_value())
+    return RespondNow(Error(tab.error()));
+  auto* contents = tab.value();
 
   const double zoom_factor = contents->GetZoomFactor();
   return RespondNow(ArgumentList(tabs::GetZoom::Results::Create(zoom_factor)));
@@ -410,10 +420,10 @@ ExtensionFunction::ResponseAction TabsGetZoomSettingsFunction::Run() {
       tabs::GetZoomSettings::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
 
-  int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = GetElectronTabById(tab_id, browser_context());
-  if (!contents)
-    return RespondNow(Error("No such tab"));
+  const auto tab = ResolveTab(this, params->tab_id);
+  if (!tab.has_value())
+    return RespondNow(Error(tab.error()));
+  auto* contents = tab.value();
 
   const auto* zoom_controller = contents->GetZoomController();
   const WebContentsZoomController::ZoomMode zoom_mode =
@@ -434,10 +444,10 @@ ExtensionFunction::ResponseAction TabsSetZoomSettingsFunction::Run() {
       tabs::SetZoomSettings::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
 
-  int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = GetElectronTabById(tab_id, browser_context());
-  if (!contents)
-    return RespondNow(Error("No such tab"));
+  const auto tab = ResolveTab(this, params->tab_id);
+  if (!tab.has_value())
+    return RespondNow(Error(tab.error()));
+  auto* contents = tab.value();
 
   std::string error;
   GURL url(contents->web_contents()->GetVisibleURL());
@@ -603,10 +613,10 @@ ExtensionFunction::ResponseAction TabsUpdateFunction::Run() {
       tabs::Update::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
 
-  int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = GetElectronTabById(tab_id, browser_context());
-  if (!contents)
-    return RespondNow(Error("No such tab"));
+  const auto tab = ResolveTab(this, params->tab_id);
+  if (!tab.has_value())
+    return RespondNow(Error(tab.error()));
+  auto* contents = tab.value();
 
   web_contents_ = contents->web_contents();
 
@@ -614,7 +624,7 @@ ExtensionFunction::ResponseAction TabsUpdateFunction::Run() {
   std::string error;
   if (params->update_properties.url) {
     std::string updated_url = *params->update_properties.url;
-    if (!UpdateURL(updated_url, tab_id, &error))
+    if (!UpdateURL(updated_url, contents->ID(), &error))
       return RespondNow(Error(std::move(error)));
   }
 
@@ -674,26 +684,8 @@ ExtensionFunction::ResponseValue TabsUpdateFunction::GetResult() {
   if (!has_callback())
     return NoArguments();
 
-  tabs::Tab tab;
-
-  auto* api_web_contents = electron::api::WebContents::From(web_contents_);
-  tab.id = (api_web_contents ? api_web_contents->ID() : -1);
-
-  if (CanAccessPrivilegedTabFields(
-          extension(), api_web_contents ? api_web_contents->ID() : -1,
-          web_contents_->GetLastCommittedURL())) {
-    tab.url = web_contents_->GetLastCommittedURL().spec();
-    tab.title = base::UTF16ToUTF8(web_contents_->GetTitle());
-  }
-
-  if (api_web_contents)
-    tab.active = api_web_contents->IsFocused();
-  tab.muted_info = CreateMutedInfo(web_contents_);
-  tab.audible = web_contents_->IsCurrentlyAudible();
-  // TODO: Add proper support for split views
-  tab.split_view_id = -1;
-
-  return ArgumentList(tabs::Get::Results::Create(std::move(tab)));
+  return ArgumentList(tabs::Get::Results::Create(CreateTabObject(
+      electron::api::WebContents::From(web_contents_), extension())));
 }
 
 }  // namespace extensions

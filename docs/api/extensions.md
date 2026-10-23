@@ -166,13 +166,22 @@ The following methods of `chrome.tabs` are supported:
 - `chrome.tabs.executeScript`
 - `chrome.tabs.query` (partial support)
   - supported properties: `url`, `title`, `audible`, `active`, `muted`.
+  - `windowId`, `index`, `currentWindow` and `lastFocusedWindow` are supported
+    for tabs added with [`extensions.addTab`](extensions-api.md#extensionsaddtabwebcontents-details-experimental).
 - `chrome.tabs.update` (partial support)
   - supported properties: `url`, `muted`.
 
 > [!NOTE]
 > In Chrome, passing `-1` as a tab ID signifies the "currently active
-> tab". Since Electron has no such concept, passing `-1` as a tab ID is not
-> supported and will raise an error.
+> tab". By default Electron has no such concept, so passing `-1` as a tab ID is
+> not supported and will raise an error. An app that sets the
+> [tab mode](extensions-api.md#extensionssettabmodemode-experimental) to `registered` and
+> reports its tabs and focused window gives extensions a current tab.
+
+By default every `webContents` in a session is a tab. An app can instead tell
+Electron which `webContents` are tabs, which window and position each one has,
+and add its own properties to the `Tab` objects extensions receive. See
+[`extensions.addTab`](extensions-api.md#extensionsaddtabwebcontents-details-experimental).
 
 See [official documentation](https://developer.chrome.com/docs/extensions/reference/tabs) for more information.
 

@@ -1,0 +1,10 @@
+{
+  "name": "tab-identity-mv2",
+  "version": "1.0",
+  "manifest_version": 2,
+  "permissions": ["tabs", "<all_urls>"],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": true
+  }
+}

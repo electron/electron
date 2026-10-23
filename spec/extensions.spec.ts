@@ -712,6 +712,308 @@ describe('chrome extensions', () => {
     });
   });
 
+  describe('tab identity', () => {
+    const fixture = (name: string) => path.join(fixtures, 'extensions', 'tab-identity', name);
+    let ses: Session;
+    let extension: Extension;
+    // An extension page the app has not registered, used to reach the
+    // extension's service worker.
+    let driver: BrowserWindow;
+
+    const createWindow = () => new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    const ask = (message: object, from: WebContents = driver.webContents) =>
+      from.executeJavaScript(
+        `new Promise((resolve) => chrome.runtime.sendMessage(${JSON.stringify(message)}, resolve))`
+      );
+    const call = (api: string, ...args: unknown[]) => ask({ type: 'call', api, args });
+    const tabError = (contents: WebContents, details: object) => () => ses.extensions.addTab(contents, details as any);
+
+    beforeEach(async () => {
+      ses = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      extension = await ses.extensions.loadExtension(fixture('mv3'));
+      driver = createWindow();
+      await driver.loadURL(`${extension.url}page.html`);
+    });
+
+    it('reports the window of a registered tab to webRequest and sender.tab', async () => {
+      ses.extensions.setTabMode('registered');
+      const watched = createWindow();
+      const other = createWindow();
+      // 7 is the window the fixture filters its second webRequest listener on.
+      ses.extensions.addTab(watched.webContents, { windowId: 7, index: 2, active: true });
+      ses.extensions.addTab(other.webContents, { windowId: 8, index: 0 });
+      await other.loadURL(`${url}/?other-window`);
+      await watched.loadURL(`${url}/?watched-window`);
+
+      const request = await ask({ type: 'wait-for', list: 'windowRequests', marker: 'watched-window' });
+      expect(request.tabId).toBe(watched.webContents.id);
+      // The unfiltered listener saw the other window's request, which was sent
+      // first, so only the windowId filter can have kept it from this one.
+      const unfiltered = await ask({ type: 'wait-for', list: 'requests', marker: 'other-window' });
+      expect(unfiltered.tabId).toBe(other.webContents.id);
+      const windowRequests: { url: string }[] = await ask({ type: 'list', list: 'windowRequests' });
+      expect(windowRequests.filter((r) => r.url.includes('other-window'))).toEqual([]);
+
+      const sender = await ask({ type: 'wait-for', list: 'senders', marker: 'watched-window' });
+      expect(sender.tab).toMatchObject({ id: watched.webContents.id, windowId: 7, index: 2, active: true });
+      const otherSender = await ask({ type: 'wait-for', list: 'senders', marker: 'other-window' });
+      expect(otherSender.tab).toMatchObject({ id: other.webContents.id, windowId: 8, index: 0, active: false });
+
+      ses.extensions.updateTab(other.webContents, { windowId: 7, index: 3 });
+      await other.loadURL(`${url}/?moved-window`);
+      const moved = await ask({ type: 'wait-for', list: 'windowRequests', marker: 'moved-window' });
+      expect(moved.tabId).toBe(other.webContents.id);
+    });
+
+    it('gives no sender.tab to a popup or to an unregistered webContents in registered mode', async () => {
+      ses.extensions.setTabMode('registered');
+      const tab = createWindow();
+      const popup = createWindow();
+      ses.extensions.addTab(tab.webContents, { windowId: 1, index: 0 });
+      ses.extensions.addTab(popup.webContents, { type: 'popup', windowId: 1 });
+      await Promise.all([tab.loadURL(`${extension.url}page.html`), popup.loadURL(`${extension.url}page.html`)]);
+
+      const fromTab = await ask({ type: 'sender' }, tab.webContents);
+      expect(fromTab.tab).toMatchObject({ id: tab.webContents.id, windowId: 1 });
+      expect((await ask({ type: 'sender' }, popup.webContents)).hasTab).toBe(false);
+      expect((await ask({ type: 'sender' })).hasTab).toBe(false);
+
+      ses.extensions.removeTab(tab.webContents);
+      expect((await ask({ type: 'sender' }, tab.webContents)).hasTab).toBe(false);
+    });
+
+    it('still treats an unregistered webContents as a tab by default', async () => {
+      const popup = createWindow();
+      ses.extensions.addTab(popup.webContents, { type: 'popup', windowId: 1 });
+      await popup.loadURL(`${extension.url}page.html`);
+
+      const fromDriver = await ask({ type: 'sender' });
+      expect(fromDriver.tab).toHaveProperty('id', driver.webContents.id);
+      expect((await call('tabs.get', driver.webContents.id)).result).toHaveProperty('id', driver.webContents.id);
+      expect((await ask({ type: 'sender' }, popup.webContents)).hasTab).toBe(false);
+    });
+
+    for (const mode of ['all-web-contents', 'registered'] as const) {
+      it(`rejects a view added as a popup wherever a tab is expected in ${mode} mode`, async () => {
+        ses.extensions.setTabMode(mode);
+        const popup = createWindow();
+        ses.extensions.addTab(popup.webContents, { type: 'popup', windowId: 1 });
+        await popup.loadURL(`${url}/?popup`);
+        const { id } = popup.webContents;
+
+        expect(await call('tabs.get', id)).toEqual({ error: 'No such tab' });
+        expect(await call('tabs.update', id, { muted: true })).toEqual({ error: 'No such tab' });
+        expect((await call('tabs.sendMessage', id, 'ping')).error).toMatch(/Receiving end does not exist/);
+        expect((await ask({ type: 'execute-script', tabId: id })).error).toMatch(/No tab with id/);
+        const tabs: { id: number }[] = (await call('tabs.query', {})).result;
+        expect(tabs.map((tab) => tab.id)).not.toContain(id);
+
+        const request = await ask({ type: 'wait-for', list: 'requests', marker: 'popup' });
+        expect(request.tabId).toBe(-1);
+        const sender = await ask({ type: 'wait-for', list: 'senders', marker: 'popup' });
+        expect(sender.hasTab).toBe(false);
+      });
+    }
+
+    it('rejects an unregistered webContents wherever a tab is expected in registered mode', async () => {
+      ses.extensions.setTabMode('registered');
+      const w = createWindow();
+      await w.loadURL(`${url}/?unregistered`);
+      const { id } = w.webContents;
+
+      expect(await call('tabs.get', id)).toEqual({ error: 'No such tab' });
+      expect((await call('tabs.sendMessage', id, 'ping')).error).toMatch(/Receiving end does not exist/);
+      expect((await ask({ type: 'execute-script', tabId: id })).error).toMatch(/No tab with id/);
+      expect((await call('tabs.query', {})).result).toEqual([]);
+      const request = await ask({ type: 'wait-for', list: 'requests', marker: 'unregistered' });
+      expect(request.tabId).toBe(-1);
+
+      ses.extensions.addTab(w.webContents, { windowId: 1, index: 0 });
+      expect((await call('tabs.get', id)).result).toMatchObject({ id, windowId: 1, index: 0 });
+      expect((await call('tabs.sendMessage', id, 'ping')).result).toEqual({ echo: 'ping' });
+    });
+
+    it('runs tabs.executeScript without a tab ID in the active tab of the current window', async () => {
+      const mv2 = await ses.extensions.loadExtension(fixture('mv2'));
+      ses.extensions.setTabMode('registered');
+      const mv2Driver = createWindow();
+      const [a, b, c, d, e] = [0, 1, 2, 3, 4].map(createWindow);
+      ses.extensions.addTab(a.webContents, { windowId: 1, index: 0 });
+      ses.extensions.addTab(b.webContents, { windowId: 1, index: 1, active: true });
+      ses.extensions.addTab(c.webContents, { windowId: 2, index: 0, active: true });
+      ses.extensions.addTab(d.webContents, { windowId: 3, index: 0 });
+      ses.extensions.addTab(e.webContents, { windowId: 3, index: 1, active: true });
+      await Promise.all([
+        mv2Driver.loadURL(`${mv2.url}page.html`),
+        a.loadURL(`${url}/?a`),
+        b.loadURL(`${url}/?b`),
+        c.loadURL(`${url}/?c`),
+        d.loadURL(`${mv2.url}page.html`),
+        e.loadURL(`${url}/?e`)
+      ]);
+      // The background page is not in a window, so its current window is the
+      // focused one.
+      const run = () => ask({ type: 'execute-script', code: 'location.search' }, mv2Driver.webContents);
+
+      expect(await run()).toEqual({ error: 'No current window' });
+      ses.extensions.setFocusedWindow(1);
+      expect(await run()).toEqual({ results: ['?b'] });
+      ses.extensions.updateTab(a.webContents, { active: true });
+      expect(await run()).toEqual({ results: ['?a'] });
+      ses.extensions.setFocusedWindow(2);
+      expect(await run()).toEqual({ results: ['?c'] });
+
+      // A caller in a registered tab acts on its own window, focused or not.
+      const fromTab = await d.webContents.executeJavaScript(`new Promise((resolve) => {
+        chrome.tabs.executeScript({ code: 'location.search' }, resolve);
+      })`);
+      expect(fromTab).toEqual(['?e']);
+
+      ses.extensions.updateTab(c.webContents, { active: false });
+      expect(await run()).toEqual({ error: 'No active tab' });
+      ses.extensions.setFocusedWindow(null);
+      expect(await run()).toEqual({ error: 'No current window' });
+    });
+
+    it('matches chrome.tabs.query window filters against registered tabs', async () => {
+      ses.extensions.setTabMode('registered');
+      const [a, b, c, d] = [0, 1, 2, 3].map(createWindow);
+      // Added out of order: results follow the window and index.
+      ses.extensions.addTab(c.webContents, { windowId: 2, index: 0, active: true });
+      ses.extensions.addTab(b.webContents, { windowId: 1, index: 1, active: true });
+      ses.extensions.addTab(a.webContents, { windowId: 1, index: 0 });
+      ses.extensions.addTab(d.webContents, { windowId: 1, index: 2 });
+      await d.loadURL(`${extension.url}page.html`);
+      ses.extensions.setFocusedWindow(2);
+      const ids = (tabs: { id: number }[]) => tabs.map((tab) => tab.id);
+      const query = async (queryInfo: object) => ids((await call('tabs.query', queryInfo)).result);
+      const [idA, idB, idC, idD] = [a, b, c, d].map((w) => w.webContents.id);
+
+      expect(await query({})).toEqual([idA, idB, idD, idC]);
+      expect(await query({ windowId: 1 })).toEqual([idA, idB, idD]);
+      expect(await query({ windowId: 1, index: 1 })).toEqual([idB]);
+      expect(await query({ active: true })).toEqual([idB, idC]);
+      expect(await query({ active: true, currentWindow: true })).toEqual([idC]);
+      expect(await query({ lastFocusedWindow: false })).toEqual([idA, idB, idD]);
+
+      // The current window of a caller in a registered tab is its own window.
+      const fromTab = await d.webContents.executeJavaScript('chrome.tabs.query({ active: true, currentWindow: true })');
+      expect(ids(fromTab)).toEqual([idB]);
+    });
+
+    it('reports the type of a registered view to runtime.getContexts', async () => {
+      // Every extension page open here is registered: a build with DCHECKs
+      // crashes in runtime.getContexts() while one has no view type.
+      ses.extensions.addTab(driver.webContents, { windowId: 1, index: 0 });
+      const popup = createWindow();
+      const sidePanel = createWindow();
+      ses.extensions.addTab(popup.webContents, { type: 'popup', windowId: 1 });
+      ses.extensions.addTab(sidePanel.webContents, { type: 'side-panel', windowId: 1 });
+      await Promise.all([popup.loadURL(`${extension.url}page.html`), sidePanel.loadURL(`${extension.url}page.html`)]);
+
+      const contexts: { contextType: string }[] = (await call('runtime.getContexts', {})).result;
+      expect(contexts.map((context) => context.contextType).sort()).toEqual([
+        'BACKGROUND',
+        'POPUP',
+        'SIDE_PANEL',
+        'TAB'
+      ]);
+    });
+
+    it('adds custom properties to sender.tab and to chrome.tabs results', async () => {
+      ses.extensions.setTabMode('registered');
+      const tab = createWindow();
+      const { id } = tab.webContents;
+      const custom = { workspace: { name: 'work', pinnedIds: [1, 2] }, container: 'personal' };
+      ses.extensions.addTab(tab.webContents, { windowId: 1, index: 0, pinned: true, ...custom });
+      await tab.loadURL(`${url}/?custom`);
+      const expected = { id, windowId: 1, index: 0, pinned: true, url: `${url}/?custom`, ...custom };
+
+      const sender = await ask({ type: 'wait-for', list: 'senders', marker: 'custom' });
+      expect(sender.tab).toMatchObject(expected);
+      expect((await call('tabs.get', id)).result).toMatchObject(expected);
+      expect((await call('tabs.query', { windowId: 1 })).result).toMatchObject([expected]);
+      expect((await call('tabs.update', id, { muted: true })).result).toMatchObject(expected);
+
+      ses.extensions.updateTab(tab.webContents, { workspace: 'home', container: null } as any);
+      const updated = (await call('tabs.get', id)).result;
+      expect(updated).toHaveProperty('workspace', 'home');
+      expect(updated).toHaveProperty('pinned', true);
+      expect(updated).not.toHaveProperty('container');
+    });
+
+    it('throws when details set a field Electron derives', () => {
+      const tab = createWindow();
+      const derived = [
+        'audible',
+        'height',
+        'id',
+        'incognito',
+        'mutedInfo',
+        'pendingUrl',
+        'selected',
+        'status',
+        'title',
+        'url',
+        'width'
+      ];
+      for (const key of derived) {
+        expect(tabError(tab.webContents, { windowId: 1, index: 0, [key]: 'spoofed' })).toThrow(
+          `'${key}' is set by Electron`
+        );
+      }
+
+      ses.extensions.addTab(tab.webContents, { windowId: 1, index: 0 });
+      expect(() => ses.extensions.updateTab(tab.webContents, { url: 'https://example.com/' } as any)).toThrow(
+        "'url' is set by Electron"
+      );
+    });
+
+    it('throws for a webContents or details it cannot register', async () => {
+      const tab = createWindow();
+      const valid = { windowId: 1, index: 0 };
+      expect(tabError(tab.webContents, { index: 0 })).toThrow("'windowId' is required");
+      expect(tabError(tab.webContents, { windowId: 1 })).toThrow("'index' is required for a tab");
+      expect(tabError(tab.webContents, { windowId: -1, index: 0 })).toThrow(
+        "'windowId' must be a non-negative integer"
+      );
+      expect(tabError(tab.webContents, { ...valid, type: 'window' })).toThrow("'type' must be");
+      expect(tabError(tab.webContents, { ...valid, type: 'popup' })).toThrow("'index' cannot be set on a view");
+      expect(tabError(tab.webContents, { windowId: 1, type: 'side-panel', pinned: true })).toThrow(
+        "'pinned' cannot be set on a view"
+      );
+      expect(tabError(tab.webContents, { ...valid, pinned: 'yes' })).toThrow("Invalid value for 'pinned'");
+      expect(tabError(tab.webContents, { ...valid, groupId: -2 })).toThrow("Invalid value for 'groupId'");
+      expect(tabError(tab.webContents, { ...valid, blob: 'x'.repeat(70_000) })).toThrow('too large');
+
+      const otherSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+      const foreign = new BrowserWindow({ show: false, webPreferences: { session: otherSession } });
+      expect(() => ses.extensions.addTab(foreign.webContents, valid)).toThrow('belongs to another session');
+      expect(() => ses.extensions.updateTab(foreign.webContents, { index: 1 })).toThrow('is not registered');
+
+      const created = once(app, 'web-contents-created') as Promise<[unknown, WebContents]>;
+      await ses.extensions.loadExtension(fixture('mv2'));
+      const [, background] = await created;
+      expect(background.getType()).toBe('backgroundPage');
+      expect(tabError(background, valid)).toThrow('extension background page');
+
+      const closed = createWindow();
+      const closedContents = closed.webContents;
+      closed.destroy();
+      await waitUntil(() => closedContents.isDestroyed());
+      expect(tabError(closedContents, valid)).toThrow('not destroyed');
+      expect(() => ses.extensions.removeTab(closedContents)).not.toThrow();
+
+      ses.extensions.addTab(tab.webContents, valid);
+      expect(tabError(tab.webContents, valid)).toThrow('already registered');
+      expect(() => ses.extensions.updateTab(tab.webContents, { type: 'popup' } as any)).toThrow(
+        "'type' cannot be changed"
+      );
+      expect(() => ses.extensions.setTabMode('tabs' as any)).toThrow('mode must be');
+      expect(() => ses.extensions.setFocusedWindow(-1)).toThrow('windowId must be');
+    });
+  });
+
   describe('chrome.tabs', () => {
     let customSession: Session;
     beforeAll(async () => {
