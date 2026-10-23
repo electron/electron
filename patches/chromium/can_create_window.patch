@@ -12,10 +12,10 @@ that the new window is created in its own BrowsingInstance (and process).
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 69c52b10aca962914aa2b274d0147c7540d4039e..397360f399d230da5ff3b93bdd9acb8960e5772f 100644
+index 32a76945364d02008521cce72123cb7918d3a47d..cbd9c1577384785d7d85f89ef60cf86c91b70071 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -10822,6 +10822,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10839,6 +10839,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -23,7 +23,7 @@ index 69c52b10aca962914aa2b274d0147c7540d4039e..397360f399d230da5ff3b93bdd9acb89
            effective_transient_activation_state, params->opener_suppressed,
            &no_javascript_access);
  
-@@ -10832,6 +10833,11 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10849,6 +10850,11 @@ void RenderFrameHostImpl::CreateNewWindow(
      return;
    }
  
@@ -36,7 +36,7 @@ index 69c52b10aca962914aa2b274d0147c7540d4039e..397360f399d230da5ff3b93bdd9acb89
    // important to do this before we return from the |opener_suppressed| case
    // below.
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index b065c47a91c143faf14841702ecccad60ab7346f..ae2247461de16e8d1b80d719fd8ff197718831e7 100644
+index 788df9dce10886c92e95491f34e54ad874d15b1f..ba976a15144675b904d3050c4520bd01f1638dd6 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5810,6 +5810,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -79,7 +79,7 @@ index b065c47a91c143faf14841702ecccad60ab7346f..ae2247461de16e8d1b80d719fd8ff197
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 572c5763b9995dde20a0a7a2ddaa077934939b1d..66c36cedacc93897e1bf51bee5181eeed3e310ee 100644
+index 115c8589dd52daae3b3d0472bfb7c6113131c394..c1a08cef12a58935839bfa42f937b2ee65fb39d2 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -623,6 +623,10 @@ struct CreateNewWindowParams {
@@ -107,7 +107,7 @@ index 4e9dde914bf78d0a2a9d633ae05c5a853c1b4073..225a1e707b6b6b37210b04acba30404a
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index a65c03cf1d94784ec965638826017f0659aeaa0c..ecf2fdb84c4195b3d97663e36b7c5cd4d28833a3 100644
+index 9fc5fa3ce4121e8eb784c7e62fc0321b509788dd..3bdab819749ab7e693ad40852645dce700e701eb 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -206,6 +206,7 @@ class TrustedURLLoaderHeaderClient;
@@ -188,10 +188,10 @@ index b4ef8f00ca8ce9f35ef5dad5f553423baf0acf39..440c5f7ed9ee4b3ace56a4264a12dd9a
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 2cbaf6fdb3498e520d8da1291b5c0e4f12538b52..fae2ead4f8f3363c129e05f09114aa45a4cd037e 100644
+index 4d740159bbf7665963ecce0afc82ef2c34a517bb..1b14f775cd4b316ca9235faf51c3399824413a68 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -7155,6 +7155,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -7166,6 +7166,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
    params->started_by_ad =
        GetWebFrame()->IsAdFrame() || GetWebFrame()->IsAdScriptInStack();
  

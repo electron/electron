@@ -294,20 +294,20 @@ struct Converter<WindowOpenDisposition> {
                                    WindowOpenDisposition val) {
     std::string_view disposition = "other";
     switch (val) {
-      case WindowOpenDisposition::CURRENT_TAB:
+      case WindowOpenDisposition::kCurrentTab:
         disposition = "default";
         break;
-      case WindowOpenDisposition::NEW_FOREGROUND_TAB:
+      case WindowOpenDisposition::kNewForegroundTab:
         disposition = "foreground-tab";
         break;
-      case WindowOpenDisposition::NEW_BACKGROUND_TAB:
+      case WindowOpenDisposition::kNewBackgroundTab:
         disposition = "background-tab";
         break;
-      case WindowOpenDisposition::NEW_POPUP:
-      case WindowOpenDisposition::NEW_WINDOW:
+      case WindowOpenDisposition::kNewPopup:
+      case WindowOpenDisposition::kNewWindow:
         disposition = "new-window";
         break;
-      case WindowOpenDisposition::SAVE_TO_DISK:
+      case WindowOpenDisposition::kSaveToDisk:
         disposition = "save-to-disk";
         break;
       default:
@@ -2399,7 +2399,7 @@ content::WebContents* WebContents::OpenURLFromTab(
     base::OnceCallback<void(content::NavigationHandle&)>
         navigation_handle_callback) {
   auto weak_this = WeakRef();
-  if (params.disposition != WindowOpenDisposition::CURRENT_TAB) {
+  if (params.disposition != WindowOpenDisposition::kCurrentTab) {
     // A link opened into a new window (modifier-click, middle-click,
     // target=_blank form post routed here, ...) is a popup like window.open()
     // and is subject to the same embedder policy; see
