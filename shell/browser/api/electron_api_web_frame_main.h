@@ -175,6 +175,7 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
   content::FrameTreeNodeId FrameTreeNodeID() const;
   std::string Name() const;
   std::string FrameToken() const;
+  std::string DocumentID() const;
   base::ProcessId OSProcessID() const;
   int32_t ProcessID() const;
   int RoutingID() const;

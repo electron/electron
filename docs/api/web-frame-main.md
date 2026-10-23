@@ -320,6 +320,16 @@ A `string` representing the frame name.
 A `string` which uniquely identifies the frame within its associated renderer
 process. This is equivalent to [`webFrame.frameToken`](web-frame.md#webframeframetoken-readonly).
 
+#### `frame.documentId` _Readonly_
+
+A `string` which uniquely identifies the document loaded in the frame. The
+identifier changes when the frame navigates to a new document and stays the same
+across same-document navigations, such as a change to the URL fragment.
+
+This is the `documentId` that Chrome extension APIs use, for example
+[`MessageSender.documentId`](https://developer.chrome.com/docs/extensions/reference/api/runtime#type-MessageSender)
+in `chrome.runtime.onMessage`.
+
 #### `frame.osProcessId` _Readonly_
 
 An `Integer` representing the operating system `pid` of the process which owns this frame.
