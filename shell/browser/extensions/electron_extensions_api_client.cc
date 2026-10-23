@@ -4,14 +4,18 @@
 
 #include "shell/browser/extensions/electron_extensions_api_client.h"
 
+#include <map>
 #include <memory>
 #include <string>
 
+#include "components/value_store/value_store_factory.h"
+#include "extensions/browser/api/storage/settings_namespace.h"
 #include "extensions/browser/guest_view/extensions_guest_view_manager_delegate.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest_delegate.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/extensions/api/management/electron_management_api_delegate.h"
+#include "shell/browser/extensions/api/storage/electron_sync_value_store_cache.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #include "shell/browser/extensions/electron_messaging_delegate.h"
 #include "shell/common/gin_helper/handle.h"
@@ -79,6 +83,20 @@ class ElectronMimeHandlerViewGuestDelegate
 
 ElectronExtensionsAPIClient::ElectronExtensionsAPIClient() = default;
 ElectronExtensionsAPIClient::~ElectronExtensionsAPIClient() = default;
+
+void ElectronExtensionsAPIClient::AddAdditionalValueStoreCaches(
+    content::BrowserContext* context,
+    const scoped_refptr<value_store::ValueStoreFactory>& factory,
+    SettingsChangedCallback observer,
+    std::map<settings_namespace::Namespace,
+             raw_ptr<ValueStoreCache, CtnExperimental>>* caches) {
+  // Add support for chrome.storage.sync. There is no sync service in
+  // Electron, so the cache is backed by a second local store, the same as
+  // Chrome when sync is disabled. chrome.storage.managed stays unsupported
+  // because there is no policy source to read from.
+  (*caches)[settings_namespace::SYNC] =
+      new ElectronSyncValueStoreCache(factory);
+}
 
 MessagingDelegate* ElectronExtensionsAPIClient::GetMessagingDelegate() {
   if (!messaging_delegate_)

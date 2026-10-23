@@ -2041,16 +2041,13 @@ describe('app module', () => {
   ifdescribe(process.platform === 'linux')('GDK_BACKEND', () => {
     const fixture = path.join(fixturesPath, 'apps', 'gdk-backend');
     const run = async (env: NodeJS.ProcessEnv) => {
-      const child = cp.spawn(process.execPath, [fixture], { env, stdio: ['ignore', 'pipe', 'ignore'] });
-      defer(() => {
-        if (child.exitCode === null && child.signalCode === null) child.kill();
-      });
-      let out = '';
-      child.stdout.on('data', (chunk) => {
-        out += chunk;
-      });
-      await waitUntil(() => /GDK_BACKEND in child: .*\n/.test(out));
-      return out.match(/GDK_BACKEND in child: (.*)\n/)![1];
+      // Starting Electron is slow on sanitizer builds, so stay within the
+      // per-test timeout (raised there) rather than a fixed short poll.
+      const timeout = (Number(process.env.ELECTRON_SPEC_TIMEOUT) || 30_000) - 5_000;
+      const { code, signal, stdout, stderr } = await spawnAndWait(process.execPath, [fixture], { env, timeout });
+      const match = /GDK_BACKEND in child: (.*)/.exec(stdout);
+      expect(match, `exited with ${code}/${signal}\nstdout:\n${stdout}\nstderr:\n${stderr}`).not.toBeNull();
+      return match![1];
     };
 
     it('is not added to the environment that child processes inherit', async () => {
@@ -2060,6 +2057,38 @@ describe('app module', () => {
 
     it('is left as the user set it', async () => {
       expect(await run({ ...process.env, GDK_BACKEND: 'x11' })).toBe('x11');
+    });
+  });
+
+  ifdescribe(process.platform === 'linux')('app.setActivationToken(token)', () => {
+    it('throws when the token is not a string', () => {
+      expect(() => app.setActivationToken(1 as any)).toThrow(/Error processing argument at index 0/);
+    });
+
+    ifit(isWayland)('activates the next window with the token', async (ctx) => {
+      const child = cp.spawn(
+        process.execPath,
+        [path.join(fixturesPath, 'api', 'activation-token'), '--ozone-platform=wayland'],
+        { env: { ...process.env, WAYLAND_DEBUG: '1' }, stdio: ['ignore', 'ignore', 'pipe'] }
+      );
+      defer(() => {
+        if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+      });
+      let protocolLog = '';
+      child.stderr.on('data', (chunk) => {
+        protocolLog += chunk;
+      });
+      const hasActivationProtocol = () => protocolLog.includes('"xdg_activation_v1"');
+      await waitUntil(() => {
+        expect(child.exitCode ?? child.signalCode, protocolLog).toBeNull();
+        return (
+          /xdg_activation_v1[#@]\d+\.activate\(/.test(protocolLog) ||
+          (/xdg_surface[#@]\d+\.ack_configure\(/.test(protocolLog) && !hasActivationProtocol())
+        );
+      });
+
+      if (!hasActivationProtocol()) ctx.skip();
+      expect(protocolLog).toMatch(/xdg_activation_v1[#@]\d+\.activate\("electron-test-token"/);
     });
   });
 

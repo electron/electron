@@ -20,6 +20,7 @@ import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import * as path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { emittedNTimes, emittedUntil } from './lib/events-helpers.ts';
 import { ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
@@ -452,6 +453,42 @@ describe('chrome extensions', () => {
         w.destroy();
       }
     });
+
+    it('supports chrome.storage.sync as a storage area separate from local', async () => {
+      const customSession = session.fromPartition(`persist:${randomUUID()}`);
+      await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-storage-sync'));
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { session: customSession, nodeIntegration: true, contextIsolation: false }
+      });
+      try {
+        const p = once(ipcMain, 'storage-sync-result');
+        await w.loadURL(url);
+        const [, json] = await p;
+        const result = JSON.parse(json);
+        expect(result.error).toBeUndefined();
+        expect(result.change).toEqual({
+          key: { newValue: 'sync-value' },
+          other: { newValue: 'sync-other' }
+        });
+        expect(result.sync).toEqual({ key: 'sync-value', other: 'sync-other' });
+        expect(result.local).toEqual({ key: 'local-value' });
+        expect(result.syncAfterRemove).toEqual({ key: 'sync-value' });
+        expect(result.bytesInUse).toBeTypeOf('number');
+        expect(result.bytesInUse).toBeGreaterThan(0);
+        expect(result.perItemError).toBeTypeOf('string');
+        expect(result.perItemError).toContain('kQuotaBytesPerItem quota exceeded');
+        expect(result.syncAfterClear).toEqual({});
+        expect(result.localAfterSyncClear).toEqual({ key: 'local-value' });
+        expect(result.constants).toEqual({
+          QUOTA_BYTES: 102400,
+          QUOTA_BYTES_PER_ITEM: 8192,
+          MAX_ITEMS: 512
+        });
+      } finally {
+        w.destroy();
+      }
+    });
   });
 
   describe('chrome.webRequest', () => {
@@ -494,6 +531,58 @@ describe('chrome extensions', () => {
       it('does not cancel http requests when no extension loaded', async () => {
         await w.loadURL(url);
         await fetch(w.webContents, url);
+      });
+
+      it('loads a file worker when only an extension uses webRequest', async () => {
+        await w.loadURL(url);
+        const extension = await customSession.extensions.loadExtension(
+          path.join(fixtures, 'extensions', 'chrome-webRequest')
+        );
+
+        const workerDataUrl = pathToFileURL(path.join(fixtures, 'pages', 'worker-data.txt')).toString();
+        const seenProtocolUrls: string[] = [];
+        customSession.protocol.handle('file', (req) => {
+          seenProtocolUrls.push(req.url);
+          if (req.url === workerDataUrl) {
+            return new Response('pong');
+          }
+          return customSession.fetch(req, { bypassCustomProtocolHandlers: true });
+        });
+
+        try {
+          await waitUntil(haveRejectedFetch);
+          await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+          const reply = await w.webContents.executeJavaScript(`
+            new Promise((resolve, reject) => {
+              const worker = new Worker(
+                new URL('../workers/worker.js', location.href).href
+              );
+              worker.onmessage = async (event) => {
+                try {
+                  const res = await fetch(${JSON.stringify(workerDataUrl)});
+                  const text = await res.text();
+                  worker.terminate();
+                  resolve(\`\${event.data}:\${text}\`);
+                } catch (err) {
+                  worker.terminate();
+                  reject(err);
+                }
+              };
+              worker.onerror = (event) => {
+                worker.terminate();
+                reject(new Error(event.message || 'worker error'));
+              };
+              worker.postMessage('ping');
+            })
+          `);
+
+          expect(reply).toBe('ping:pong');
+          expect(seenProtocolUrls).toContain(workerDataUrl);
+        } finally {
+          customSession.protocol.unhandle('file');
+          customSession.extensions.removeExtension(extension.id);
+        }
       });
     });
 
