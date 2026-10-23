@@ -1,8 +1,8 @@
 import { getCppHeapStatistics } from 'node:v8';
 
-// These helpers measure the calling isolate's C++ heap. Pass this file's path
-// into remotely() and require() it there, like heapsnapshot-helpers.js; the
-// app must run with --js-flags=--expose-gc.
+// These helpers measure what the calling isolate keeps alive. Pass this file's
+// path into remotely() and require() it there, like heapsnapshot-helpers.js;
+// the app must run with --js-flags=--expose-gc.
 
 // Counts the C++ heap objects of each cppgc type, e.g.
 // countCppHeapObjects({ menus: 'Electron / Menu' }) returns { menus: 11 }.
@@ -33,4 +33,9 @@ export async function collectGarbagePrecisely() {
   for (let i = 0; i < 3; i++) {
     await globalThis.gc({ type: 'major', execution: 'async' });
   }
+}
+
+// Counts the WeakRefs in `refs` whose targets have not been collected.
+export function countAlive(refs) {
+  return refs.filter((ref) => ref.deref() !== undefined).length;
 }

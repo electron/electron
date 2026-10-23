@@ -649,7 +649,7 @@ describe('cpp heap', () => {
         const os = require('node:os');
         const path = require('node:path');
         const { getCppHeapStatistics } = require('node:v8');
-        const { collectGarbagePrecisely, countCppHeapObjects } = require(cppHeapHelpers);
+        const { collectGarbagePrecisely, countAlive, countCppHeapObjects } = require(cppHeapHelpers);
 
         const payload = Buffer.alloc(1024);
         const server = http.createServer((_req: any, res: any) => {
@@ -694,7 +694,7 @@ describe('cpp heap', () => {
           return {
             liveInUse,
             live: countItems(),
-            itemsAlive: items.filter((ref) => ref.deref() !== undefined).length,
+            itemsAlive: countAlive(items),
             usedSize: getCppHeapStatistics('brief').used_size_bytes
           };
         }
@@ -1343,7 +1343,7 @@ describe('cpp heap', () => {
         const { net, app } = require('electron');
         const http = require('node:http');
         const { getCppHeapStatistics } = require('node:v8');
-        const { collectGarbagePrecisely, countCppHeapObjects } = require(cppHeapHelpers);
+        const { collectGarbagePrecisely, countAlive, countCppHeapObjects } = require(cppHeapHelpers);
         const server = http.createServer((req: any, res: any) => {
           req.on('data', () => {});
           req.on('end', () => res.end('ok'));
@@ -1393,7 +1393,7 @@ describe('cpp heap', () => {
           return {
             inFlight,
             live: count(),
-            requestsAlive: requests.filter((ref) => ref.deref() !== undefined).length,
+            requestsAlive: countAlive(requests),
             usedSize: getCppHeapStatistics('brief').used_size_bytes
           };
         }
@@ -1830,7 +1830,7 @@ describe('cpp heap', () => {
       const result = await remotely(async (cppHeapHelpers: string) => {
         const { Menu } = require('electron');
         const { getCppHeapStatistics } = require('node:v8');
-        const { collectGarbagePrecisely, countCppHeapObjects } = require(cppHeapHelpers);
+        const { collectGarbagePrecisely, countAlive, countCppHeapObjects } = require(cppHeapHelpers);
 
         function buildLargeMenu() {
           return Menu.buildFromTemplate(
@@ -1858,24 +1858,18 @@ describe('cpp heap', () => {
           }
         }
 
-        const countAlive = (refs: WeakRef<object>[]) => refs.filter((ref) => ref.deref() !== undefined).length;
-
-        function measure() {
-          return {
-            ...countCppHeapObjects({ menus: 'Electron / Menu', items: 'Electron / MenuItem' }),
-            usedSize: getCppHeapStatistics('brief').used_size_bytes,
-            replacedAlive: countAlive(builtMenus.slice(0, -1)),
-            currentAlive: countAlive(builtMenus.slice(-1))
-          };
-        }
-
         async function rebuildAndMeasure(n: number) {
           rebuild(n);
           // On macOS the new application menu is installed on a later run-loop pass,
           // and the previously installed menu stays alive until then.
           await new Promise((resolve) => setTimeout(resolve, 0));
           await collectGarbagePrecisely();
-          return measure();
+          return {
+            live: countCppHeapObjects({ menus: 'Electron / Menu', items: 'Electron / MenuItem' }),
+            replacedAlive: countAlive(builtMenus.slice(0, -1)),
+            currentAlive: countAlive(builtMenus.slice(-1)),
+            usedSize: getCppHeapStatistics('brief').used_size_bytes
+          };
         }
 
         await rebuildAndMeasure(50);
@@ -1887,20 +1881,16 @@ describe('cpp heap', () => {
       const { after1, after2 } = result;
       // The live application menu is a root menu and 10 submenus with 210 items in all,
       // so lower counts would mean the type names no longer match.
-      expect(after1.menus).toBeGreaterThanOrEqual(11);
-      expect(after1.items).toBeGreaterThanOrEqual(210);
+      expect(after1.live.menus).toBeGreaterThanOrEqual(11);
+      expect(after1.live.items).toBeGreaterThanOrEqual(210);
       for (const after of [after1, after2]) {
         expect(after.currentAlive, 'the application menu should stay alive').toBe(1);
         expect(after.replacedAlive, 'replaced application menus should be collected').toBe(0);
       }
       expect(
-        after2.menus,
-        'live Menu count changed between two identical rounds of 50 menu rebuilds — likely a leak'
-      ).toBe(after1.menus);
-      expect(
-        after2.items,
-        'live MenuItem count changed between two identical rounds of 50 menu rebuilds — likely a leak'
-      ).toBe(after1.items);
+        after2.live,
+        'live Menu and MenuItem counts changed between two identical rounds of 50 menu rebuilds — likely a leak'
+      ).toEqual(after1.live);
       // The whole-heap size is only a coarse secondary check for growth in other types.
       const growth = after2.usedSize - after1.usedSize;
       expect(
@@ -2936,7 +2926,7 @@ describe('cpp heap', () => {
           const { utilityProcess } = require('electron');
           const { once } = require('node:events');
           const { getCppHeapStatistics } = require('node:v8');
-          const { collectGarbagePrecisely, countCppHeapObjects } = require(cppHeapHelpers);
+          const { collectGarbagePrecisely, countAlive, countCppHeapObjects } = require(cppHeapHelpers);
 
           const countWrappers = () => countCppHeapObjects({ wrappers: 'Electron / UtilityProcess' }).wrappers;
 
@@ -2965,7 +2955,7 @@ describe('cpp heap', () => {
             return {
               afterFork,
               live: countWrappers(),
-              childrenAlive: children.filter((ref) => ref.deref() !== undefined).length,
+              childrenAlive: countAlive(children),
               usedSize: getCppHeapStatistics('brief').used_size_bytes
             };
           }
