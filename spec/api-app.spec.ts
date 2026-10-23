@@ -2119,17 +2119,18 @@ describe('app module', () => {
   // losing the display server connection went straight to LOG(FATAL).
   ifdescribe(process.platform === 'linux')('GDK_BACKEND', () => {
     const fixture = path.join(fixturesPath, 'apps', 'gdk-backend');
+    // Wait for the app to exit, not just for its output. Otherwise the next
+    // test (or retry) launches the fixture again while this copy is still
+    // quitting, which on the ASAN lane can hold up the new launch for longer
+    // than a fixed wait for output allows.
     const run = async (env: NodeJS.ProcessEnv) => {
-      const child = cp.spawn(process.execPath, [fixture], { env, stdio: ['ignore', 'pipe', 'ignore'] });
-      defer(() => {
-        if (child.exitCode === null && child.signalCode === null) child.kill();
-      });
-      let out = '';
-      child.stdout.on('data', (chunk) => {
-        out += chunk;
-      });
-      await waitUntil(() => /GDK_BACKEND in child: .*\n/.test(out));
-      return out.match(/GDK_BACKEND in child: (.*)\n/)![1];
+      // Starting Electron is slow on sanitizer builds, so stay within the
+      // per-test timeout (raised there) rather than a fixed short poll.
+      const timeout = (Number(process.env.ELECTRON_SPEC_TIMEOUT) || 30_000) - 5_000;
+      const { code, signal, stdout, stderr } = await spawnAndWait(process.execPath, [fixture], { env, timeout });
+      const match = /GDK_BACKEND in child: (.*)/.exec(stdout);
+      expect(match, `exited with ${code}/${signal}\nstdout:\n${stdout}\nstderr:\n${stderr}`).not.toBeNull();
+      return match![1];
     };
 
     it('is not added to the environment that child processes inherit', async () => {
