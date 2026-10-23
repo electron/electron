@@ -712,7 +712,7 @@ describe('cpp heap', () => {
         expect(after.itemsAlive, 'finished download items should be collected').toBe(0);
         expect(after.live, 'no DownloadItem should outlive its download').toBe(0);
       }
-      // The whole heap also covers objects of other types that a download might leave behind.
+      // The whole-heap size is only a coarse secondary check for growth in other types.
       const growth = after2.usedSize - after1.usedSize;
       expect(
         growth,
@@ -1416,7 +1416,7 @@ describe('cpp heap', () => {
         expect(after.requestsAlive, 'finished requests should be collected').toBe(0);
         expect(after.live, 'no URL loader object should outlive its request').toEqual({ loaders: 0, pipeGetters: 0 });
       }
-      // The whole heap also covers objects of other types that an upload might leave behind.
+      // The whole-heap size is only a coarse secondary check for growth in other types.
       const growth = after2.usedSize - after1.usedSize;
       expect(
         growth,
@@ -1871,6 +1871,9 @@ describe('cpp heap', () => {
 
         async function rebuildAndMeasure(n: number) {
           rebuild(n);
+          // On macOS the new application menu is installed on a later run-loop pass,
+          // and the previously installed menu stays alive until then.
+          await new Promise((resolve) => setTimeout(resolve, 0));
           await collectGarbagePrecisely();
           return measure();
         }
@@ -1898,7 +1901,7 @@ describe('cpp heap', () => {
         after2.items,
         'live MenuItem count changed between two identical rounds of 50 menu rebuilds — likely a leak'
       ).toBe(after1.items);
-      // The whole heap also covers objects of other types that a rebuild might leave behind.
+      // The whole-heap size is only a coarse secondary check for growth in other types.
       const growth = after2.usedSize - after1.usedSize;
       expect(
         growth,
@@ -2940,24 +2943,27 @@ describe('cpp heap', () => {
           // Every child so far.
           const children: WeakRef<object>[] = [];
 
-          // Once this returns, only the running process's native wrapper holds the child,
+          // Once this returns, only the process's native wrapper holds the child,
           // and the promise resolves with a number, so no suspended async frame keeps a child alive.
-          // The count is taken while the child runs, so it must include its wrapper.
+          // The count is taken right after fork(), so it must include the child's wrapper.
           function forkOnce() {
             const child = utilityProcess.fork(fixturePath);
             children.push(new WeakRef(child));
-            const whileRunning = countWrappers();
-            return once(child, 'exit').then(() => whileRunning);
+            const afterFork = countWrappers();
+            return once(child, 'exit').then(([code]: number[]) => {
+              if (code !== 0) throw new Error(`child exited with code ${code}`);
+              return afterFork;
+            });
           }
 
           async function measure(n: number) {
-            let whileRunning = 0;
+            let afterFork = 0;
             for (let i = 0; i < n; i++) {
-              whileRunning = await forkOnce();
+              afterFork = await forkOnce();
             }
             await collectGarbagePrecisely();
             return {
-              whileRunning,
+              afterFork,
               live: countWrappers(),
               childrenAlive: children.filter((ref) => ref.deref() !== undefined).length,
               usedSize: getCppHeapStatistics('brief').used_size_bytes
@@ -2974,12 +2980,12 @@ describe('cpp heap', () => {
       );
 
       const { after1, after2 } = result;
-      expect(after1.whileRunning, 'a running child should be counted').toBeGreaterThanOrEqual(1);
+      expect(after1.afterFork, 'a forked child should be counted').toBeGreaterThanOrEqual(1);
       for (const after of [after1, after2]) {
         expect(after.childrenAlive, 'exited children should be collected').toBe(0);
         expect(after.live, 'no UtilityProcess wrapper should outlive its process').toBe(0);
       }
-      // The whole heap also covers objects of other types that a fork might leave behind.
+      // The whole-heap size is only a coarse secondary check for growth in other types.
       const growth = after2.usedSize - after1.usedSize;
       expect(
         growth,
