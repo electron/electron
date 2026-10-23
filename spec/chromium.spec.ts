@@ -1396,10 +1396,15 @@ describe('chromium features', () => {
 
   describe('File System API,', { tags: ['serial'] }, () => {
     let w: BrowserWindow | null = null;
+    let ses: Electron.Session;
+
+    beforeEach(() => {
+      ses = session.fromPartition(`file-system-spec-${Math.random()}`);
+    });
 
     afterEach(async () => {
-      session.defaultSession.setPermissionCheckHandler(null);
-      session.defaultSession.setPermissionRequestHandler(null);
+      ses.setPermissionCheckHandler(null);
+      ses.setPermissionRequestHandler(null);
       await closeAllWindows();
     });
 
@@ -1429,7 +1434,7 @@ describe('chromium features', () => {
         show: false,
         webPreferences: {
           nodeIntegration: true,
-          partition: 'file-system-spec',
+          session: ses,
           contextIsolation: false
         }
       });
@@ -1454,7 +1459,7 @@ describe('chromium features', () => {
         show: false,
         webPreferences: {
           nodeIntegration: true,
-          partition: 'file-system-spec',
+          session: ses,
           contextIsolation: false
         }
       });
@@ -1479,7 +1484,7 @@ describe('chromium features', () => {
         show: false,
         webPreferences: {
           nodeIntegration: true,
-          partition: 'file-system-spec',
+          session: ses,
           contextIsolation: false
         }
       });
@@ -1509,6 +1514,7 @@ describe('chromium features', () => {
         show: false,
         webPreferences: {
           nodeIntegration: true,
+          session: ses,
           contextIsolation: false,
           sandbox: false
         }
@@ -1561,6 +1567,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({
         webPreferences: {
           nodeIntegration: true,
+          session: ses,
           contextIsolation: false,
           sandbox: false
         }
@@ -1617,6 +1624,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({
         webPreferences: {
           nodeIntegration: true,
+          session: ses,
           contextIsolation: false,
           sandbox: false
         }
@@ -1661,6 +1669,7 @@ describe('chromium features', () => {
 
       const permission = await w.webContents.executeJavaScript('handle.queryPermission({ mode: "readwrite" })');
       trace(`initial permission: ${permission}`);
+      expect(permission).toBe('prompt');
       trace('createWritable requested');
       // webFrameMain.executeJavaScript(),
       // so that the browser process knows of the user activation before the request (see above).
@@ -1698,6 +1707,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({
         webPreferences: {
           nodeIntegration: true,
+          session: ses,
           contextIsolation: false,
           sandbox: false
         }
@@ -1744,6 +1754,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({
         webPreferences: {
           nodeIntegration: true,
+          session: ses,
           contextIsolation: false,
           sandbox: false
         }
@@ -1786,6 +1797,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({
         webPreferences: {
           nodeIntegration: true,
+          session: ses,
           contextIsolation: false,
           sandbox: false
         }
@@ -1828,6 +1840,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({
         webPreferences: {
           nodeIntegration: true,
+          session: ses,
           contextIsolation: false,
           sandbox: false
         }
