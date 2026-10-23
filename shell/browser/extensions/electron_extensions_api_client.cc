@@ -15,6 +15,7 @@
 #include "printing/buildflags/buildflags.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/extensions/api/management/electron_management_api_delegate.h"
+#include "shell/browser/extensions/api/storage/electron_managed_value_store_cache.h"
 #include "shell/browser/extensions/api/storage/electron_sync_value_store_cache.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #include "shell/browser/extensions/electron_messaging_delegate.h"
@@ -92,10 +93,14 @@ void ElectronExtensionsAPIClient::AddAdditionalValueStoreCaches(
              raw_ptr<ValueStoreCache, CtnExperimental>>* caches) {
   // Add support for chrome.storage.sync. There is no sync service in
   // Electron, so the cache is backed by a second local store, the same as
-  // Chrome when sync is disabled. chrome.storage.managed stays unsupported
-  // because there is no policy source to read from.
+  // Chrome when sync is disabled.
   (*caches)[settings_namespace::SYNC] =
       new ElectronSyncValueStoreCache(factory);
+
+  // Add support for chrome.storage.managed. There is no policy source in
+  // Electron, so the cache serves an empty read-only store, the same as
+  // Chrome when no policy is set for the extension.
+  (*caches)[settings_namespace::MANAGED] = new ElectronManagedValueStoreCache;
 }
 
 MessagingDelegate* ElectronExtensionsAPIClient::GetMessagingDelegate() {
