@@ -626,7 +626,10 @@ describe('webContents module', () => {
 
     it('resolves when navigating within the page', async () => {
       await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
-      await setTimeout();
+      // loadFile() resolves on did-finish-load, and did-stop-loading can come
+      // later. A did-stop-loading that arrives after the next loadURL() has
+      // started would reject it, so start from a page that has stopped loading.
+      if (w.webContents.isLoading()) await once(w.webContents, 'did-stop-loading');
       await w.loadURL(w.getURL() + '#foo');
     });
 
@@ -1280,7 +1283,9 @@ describe('webContents module', () => {
         webPreferences: { partition }
       });
 
-      wcv.webContents.navigationHistory.restore({
+      // Wait for the restored page to load, so the script below runs in it
+      // rather than in the initial empty document that it replaces.
+      await wcv.webContents.navigationHistory.restore({
         entries: [
           {
             url: urlPage1,
@@ -2499,10 +2504,11 @@ describe('webContents module', () => {
 
       const origWebContents = w.webContents;
 
-      // Destroy the original WebContents
+      // Destroy the original WebContents. destroy() disposes it from a posted
+      // task, so wait for that rather than for a timer.
+      const destroyed = once(origWebContents, 'destroyed');
       w.webContents.destroy();
-
-      await setTimeout();
+      await destroyed;
 
       // Original should be destroyed, but cloned should still be alive
       expect(origWebContents.isDestroyed()).toBe(true);
@@ -3949,9 +3955,29 @@ describe('webContents module', () => {
     );
 
     it('is not followed by responsive just because the window is hidden', { timeout: 90000 }, async () => {
+      // The page stays hung in a synchronous XHR until the test answers it,
+      // rather than spinning for a fixed time that a slow host can use up
+      // before the hang is reported a second time.
+      let release: (() => void) | undefined;
+      const server = http.createServer((req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        release = () => res.end('released');
+      });
+      defer(() => {
+        release?.();
+        server.close();
+      });
+      const { url: serverUrl } = await listen(server);
       const w = new BrowserWindow({ show: true });
       await w.loadURL('about:blank');
-      await hangAndPoke(w, 40000);
+      const requested = once(server, 'request');
+      w.webContents
+        .executeJavaScript(
+          `{ const xhr = new XMLHttpRequest(); xhr.open('GET', ${JSON.stringify(serverUrl)}, false); xhr.send(); }`
+        )
+        .catch(() => {});
+      await requested;
+      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'A' });
       await once(w.webContents, 'unresponsive');
       const events: string[] = [];
       w.webContents.on('responsive', () => events.push('responsive'));
@@ -3962,8 +3988,10 @@ describe('webContents module', () => {
       w.show();
       // Still hung and visible again: reported again after one delay.
       await once(w.webContents, 'unresponsive');
-      // The spin ends ~40 s in; the pending key event is then acked.
-      await once(w.webContents, 'responsive');
+      // End the hang; the pending key event is then acked.
+      const responsive = once(w.webContents, 'responsive');
+      release!();
+      await responsive;
       expect(events).toEqual(['unresponsive', 'responsive']);
     });
 
@@ -4778,6 +4806,11 @@ describe('webContents module', () => {
         waitUntil(async () => (await framesInHalfSecond(wc, frame)) === 0, { timeout: 10000 });
       const startsPainting = (wc: Electron.WebContents, frame?: Electron.WebFrameMain | null) =>
         waitUntil(async () => (await framesInHalfSecond(wc, frame)) > 0, { timeout: 10000 });
+      // The page learns its visibility from the browser separately from its
+      // widget being shown or hidden, so it can still report the old state for
+      // a moment after frames have started or stopped.
+      const becomes = (state: string, wc: Electron.WebContents, frame?: Electron.WebFrameMain | null) =>
+        waitUntil(async () => (await visibilityState(wc, frame)) === state, { timeout: 10000 });
 
       // Regression test: re-enabling throttling on a hidden page used to leave
       // the RenderWidgetHost shown (from the setBackgroundThrottling(false)
@@ -4788,13 +4821,13 @@ describe('webContents module', () => {
         await w.loadURL('about:blank');
         w.hide();
         await stopsPainting(w.webContents);
-        expect(await visibilityState(w.webContents)).toBe('hidden');
+        await becomes('hidden', w.webContents);
         w.webContents.setBackgroundThrottling(false);
         await startsPainting(w.webContents);
-        expect(await visibilityState(w.webContents)).toBe('visible');
+        await becomes('visible', w.webContents);
         w.webContents.setBackgroundThrottling(true);
         await stopsPainting(w.webContents);
-        expect(await visibilityState(w.webContents)).toBe('hidden');
+        await becomes('hidden', w.webContents);
       });
 
       // Same, but with throttling disabled before the window is hidden (the
@@ -4810,10 +4843,10 @@ describe('webContents module', () => {
         expect(await visibilityState(w.webContents)).toBe('visible');
         w.webContents.setBackgroundThrottling(true);
         await stopsPainting(w.webContents);
-        expect(await visibilityState(w.webContents)).toBe('hidden');
+        await becomes('hidden', w.webContents);
         w.show();
         await startsPainting(w.webContents);
-        expect(await visibilityState(w.webContents)).toBe('visible');
+        await becomes('visible', w.webContents);
       });
 
       // Cross-process iframes have their own RenderWidgetHost; re-enabling
@@ -4834,12 +4867,15 @@ describe('webContents module', () => {
         await w.loadURL(serverUrl);
         const child = w.webContents.mainFrame.frames.find((f) => f.name === 'child')!;
         expect(child.osProcessId).not.toBe(w.webContents.mainFrame.osProcessId);
+        // Start from an iframe that is rendering: until Blink has seen it on
+        // screen it may hold back the iframe's frames, hidden or not.
+        await startsPainting(w.webContents, child);
         w.hide();
         await setTimeout(500);
         expect(await framesInHalfSecond(w.webContents, child)).toBeGreaterThan(0);
         w.webContents.setBackgroundThrottling(true);
         await stopsPainting(w.webContents, child);
-        expect(await visibilityState(w.webContents, child)).toBe('hidden');
+        await becomes('hidden', w.webContents, child);
         w.webContents.setBackgroundThrottling(false);
         await startsPainting(w.webContents, child);
         w.show();
@@ -5055,8 +5091,6 @@ describe('webContents module', () => {
         pdfs.push(await w.webContents.printToPDF({ pageSize: format }));
       }
 
-      // Parse every PDF in one pdf.js subprocess: one Electron launch per
-      // format is enough to push this test past its timeout on slow CI hosts.
       const pdfInfos = await readPDFs(pdfs);
 
       const approxEq = (a: number, b: number, epsilon = 0.01) => Math.abs(a - b) <= epsilon;
