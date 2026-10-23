@@ -721,7 +721,7 @@ void ElectronBrowserClient::AllowCertificateError(
 
 base::OnceClosure ElectronBrowserClient::SelectClientCertificate(
     content::BrowserContext* browser_context,
-    int process_id,
+    content::ChildProcessId process_id,
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
     net::ClientCertIdentityList client_certs,
@@ -2200,7 +2200,9 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
 }
 
 #if BUILDFLAG(IS_MAC)
-base::FilePath ElectronBrowserClient::GetChildProcessPath(int child_flags) {
+base::FilePath ElectronBrowserClient::GetChildProcessPath(
+    int child_flags,
+    content::ChildProcessId child_process_id) {
   if (child_flags !=
       static_cast<int>(
           ElectronChildProcessHostFlags::kChildProcessHelperPlugin)) {
