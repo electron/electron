@@ -8,6 +8,7 @@ import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as http2 from 'node:http2';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import * as qs from 'node:querystring';
 import { ReadableStream } from 'node:stream/web';
@@ -888,11 +889,21 @@ describe('webRequest module', () => {
     // Served from another process: these tests block the main process on purpose.
     let server: childProcess.ChildProcess;
     let serverURL: string;
+    // The server appends every path it answers to this file, so a test can
+    // see what reached the network while the main process is kept busy and
+    // cannot run its event loop.
+    let servedLogDir: string;
+    let servedLog: string;
     beforeAll(async () => {
-      server = childProcess.fork(path.join(fixturesPath, 'api', 'web-request', 'server.js'));
+      servedLogDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-web-request-'));
+      servedLog = path.join(servedLogDir, 'served.log');
+      server = childProcess.fork(path.join(fixturesPath, 'api', 'web-request', 'server.js'), [servedLog]);
       [{ url: serverURL }] = await once(server, 'message');
     });
-    afterAll(() => server.kill());
+    afterAll(() => {
+      server.kill();
+      fs.rmSync(servedLogDir, { recursive: true, force: true });
+    });
     afterEach(() => {
       ses.webRequest.onBeforeRequest(null);
       ses.webRequest.onBeforeSendHeaders(null);
@@ -904,28 +915,72 @@ describe('webRequest module', () => {
       ses.webRequest.onErrorOccurred(null);
     });
 
-    // Starts a fetch from the page, then keeps the main process busy; a request
-    // that had to visit the main process could not finish before the busy loop.
-    async function fetchWhileMainIsBusy(url: string, busyMs = 600) {
+    const served = (requestPath: string) => {
+      try {
+        return fs.readFileSync(servedLog, 'utf8').split('\n').includes(requestPath);
+      } catch {
+        return false;
+      }
+    };
+
+    // The served log lives for the whole describe block, and a vitest retry
+    // re-runs only the test body, so an attempt could otherwise find entries
+    // that requests from an earlier attempt left there. Give every request
+    // its own path, so that an entry can only come from this attempt.
+    const uniquePath = (name: string) => `/${name}-${crypto.randomUUID()}`;
+
+    // Resolves with the URL of the first onCompleted event for `url`.
+    const completedFor = (url: string) =>
+      new Promise<string>((resolve) => {
+        ses.webRequest.onCompleted((details) => {
+          if (details.url === url) resolve(details.url);
+        });
+      });
+
+    // Has the page fetch `requestPath` and, once that response is in,
+    // `requestPath?done`; then keeps the main process busy until the server
+    // has answered the second request. Both requests have to finish while the
+    // main process is busy, which a request that had to visit the main
+    // process could not do. Returns false if the round trip has not finished
+    // after `maxBusyMs`.
+    async function roundTripWhileMainIsBusy(requestPath: string, maxBusyMs = 10_000) {
+      const url = `${serverURL}${requestPath}`;
+      // The page waits a moment before it fetches so that the main process is
+      // already busy by then.
       await contents.executeJavaScript(
-        `window.fetchTiming = new Promise(r => setTimeout(() => { const t = performance.now(); fetch(${JSON.stringify(url)}).then(x => x.text()).then(() => r(performance.now() - t)); }, 50)); true`
+        `window.fetchDone = new Promise(r => setTimeout(() => fetch(${JSON.stringify(url)}).then(x => x.text()).then(() => fetch(${JSON.stringify(`${url}?done`)})).then(x => x.text()).then(r), 50)); true`
+      );
+      const end = Date.now() + maxBusyMs;
+      let finished = false;
+      while (!finished && Date.now() < end) {
+        finished = served(`${requestPath}?done`);
+      }
+      await contents.executeJavaScript('window.fetchDone');
+      return finished;
+    }
+
+    // Has the page fetch `requestPath` and keeps the main process busy for
+    // `busyMs`. Returns whether the request reached the server in that time.
+    async function reachedServerWhileMainIsBusy(requestPath: string, busyMs = 600) {
+      const url = `${serverURL}${requestPath}`;
+      await contents.executeJavaScript(
+        `window.fetchDone = new Promise(r => setTimeout(() => fetch(${JSON.stringify(url)}).then(x => x.text()).then(r), 50)); true`
       );
       const end = Date.now() + busyMs;
-      while (Date.now() < end) {
-        /* busy */
+      let reached = false;
+      while (!reached && Date.now() < end) {
+        reached = served(requestPath);
       }
-      return contents.executeJavaScript('window.fetchTiming');
+      await contents.executeJavaScript('window.fetchDone');
+      return reached;
     }
 
     it('reach the network without the main process when only observers listen', async () => {
-      const completed: string[] = [];
-      ses.webRequest.onCompleted((details) => {
-        completed.push(details.url);
-      });
+      const requestPath = uniquePath('observed');
+      const completed = completedFor(`${serverURL}${requestPath}`);
       ses.webRequest.onErrorOccurred(() => {});
-      const elapsed = await fetchWhileMainIsBusy(`${serverURL}/observed`);
-      expect(elapsed).toBeLessThan(300);
-      expect(completed).toContain(`${serverURL}/observed`);
+      expect(await roundTripWhileMainIsBusy(requestPath)).toBe(true);
+      await completed;
     });
 
     it('reach the network without the main process when blocking listeners filter them out by type', async () => {
@@ -941,26 +996,26 @@ describe('webRequest module', () => {
         calls++;
         callback({});
       });
-      const elapsed = await fetchWhileMainIsBusy(`${serverURL}/typed`);
-      expect(elapsed).toBeLessThan(300);
+      expect(await roundTripWhileMainIsBusy(uniquePath('typed'))).toBe(true);
       expect(calls).toBe(0);
     });
 
     it('let a matching blocking listener take precedence over observers', async () => {
-      const completed: string[] = [];
-      ses.webRequest.onCompleted((details) => {
-        completed.push(new URL(details.url).pathname);
-      });
+      const blockedPath = uniquePath('blocked');
+      const blockedCompleted = completedFor(`${serverURL}${blockedPath}`);
       ses.webRequest.onBeforeRequest({ urls: ['<all_urls>'], types: ['xhr'] }, (details, callback) => {
         callback({});
       });
-      const elapsed = await fetchWhileMainIsBusy(`${serverURL}/blocked`);
-      expect(elapsed).toBeGreaterThan(400);
+      // The blocking listener runs in the main process, so the request cannot
+      // reach the server while the main process is busy.
+      expect(await reachedServerWhileMainIsBusy(blockedPath)).toBe(false);
+      await blockedCompleted;
 
       ses.webRequest.onBeforeRequest(null);
-      const directElapsed = await fetchWhileMainIsBusy(`${serverURL}/observed-after-blocking`);
-      expect(directElapsed).toBeLessThan(300);
-      expect(completed).toEqual(expect.arrayContaining(['/blocked', '/observed-after-blocking']));
+      const directPath = uniquePath('observed-after-blocking');
+      const directCompleted = completedFor(`${serverURL}${directPath}`);
+      expect(await roundTripWhileMainIsBusy(directPath)).toBe(true);
+      await directCompleted;
     });
 
     it('report redirect, response and completion details to observers', async () => {
