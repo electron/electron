@@ -24,16 +24,13 @@
 #include "chrome/browser/ui/color/chrome_color_mixers.h"
 #include "chrome/common/chrome_switches.h"
 #include "content/public/browser/browser_child_process_host_delegate.h"
-#include "content/public/browser/browser_child_process_host_iterator.h"
 #include "content/public/browser/browser_main_runner.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/child_process_data.h"
 #include "content/public/browser/device_service.h"
 #include "content/public/browser/download_manager.h"
 #include "content/public/browser/web_ui_controller_factory.h"
 #include "content/public/common/content_switches.h"
-#include "content/public/common/process_type.h"
 #include "content/public/common/result_codes.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
@@ -704,26 +701,9 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   // use case.
   // https://source.chromium.org/chromium/chromium/src/+/main:content/browser/browser_main_loop.cc;l=1086-1108
   //
-  // The following logic is based on
-  // https://source.chromium.org/chromium/chromium/src/+/main:content/browser/browser_process_io_thread.cc;l=127-159
-  //
-  // Although content::BrowserChildProcessHostIterator is only to be called from
-  // IO thread, it is safe to call from PostMainMessageLoopRun because thread
-  // restrictions have been lifted.
-  // https://source.chromium.org/chromium/chromium/src/+/main:content/browser/browser_main_loop.cc;l=1062-1078
-  for (content::BrowserChildProcessHostIterator it(
-           content::PROCESS_TYPE_UTILITY);
-       !it.Done(); ++it) {
-    if (it.GetDelegate()->GetServiceName() == node::mojom::NodeService::Name_) {
-      const base::Process& process = it.GetProcess();
-      if (!process.IsValid())
-        continue;
-      auto* utility_process_wrapper =
-          api::UtilityProcessWrapper::FromProcessId(process.Pid());
-      if (utility_process_wrapper)
-        utility_process_wrapper->Shutdown(0 /* exit_code */);
-    }
-  }
+  // This includes wrappers whose child is still launching; otherwise they
+  // would only be torn down with the heap, after Node.js has stopped.
+  api::UtilityProcessWrapper::ShutdownAll();
 
   // Destroy node platform after all destructors_ are executed, as they may
   // invoke Node/V8 APIs inside them.
