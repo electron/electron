@@ -105,7 +105,8 @@ electron_api::tabs::Tab CreateTabObject(electron::api::WebContents* contents,
     tab = data->CreateTab();
   } else {
     tab.active = contents->IsFocused();
-    // TODO: Add proper support for split views
+    // Only a tab the app registered can be in a split view: the app reports
+    // it as `splitViewId` through Extensions.addTab().
     tab.split_view_id = -1;
   }
   if (!data || !data->details().contains("lastAccessed")) {
