@@ -43,7 +43,7 @@ index 2cdc91e243d010941a6878b26cb164125fc25dcb..741410776eb26868aef2b05d9a3aa042
        "bluetooth/bluetooth_device_win_unittest.cc",
        "bluetooth/bluetooth_service_record_win_unittest.cc",
 diff --git a/device/base/device_monitor_win.cc b/device/base/device_monitor_win.cc
-index 72073904d7805ffe60f6077736a548ff83cde78e..b923089e55afe97d2460cc4e479a93650a19a615 100644
+index 72073904d7805ffe60f6077736a548ff83cde78e..ff1858cb5476f116f0595d8cbb850431e2c418ce 100644
 --- a/device/base/device_monitor_win.cc
 +++ b/device/base/device_monitor_win.cc
 @@ -13,13 +13,13 @@
@@ -181,6 +181,58 @@ index 72073904d7805ffe60f6077736a548ff83cde78e..b923089e55afe97d2460cc4e479a9365
  };
  
  void DeviceMonitorWin::Observer::OnDeviceAdded(
+@@ -202,10 +202,12 @@ DeviceMonitorWin* DeviceMonitorWin::GetForAllInterfaces() {
+ DeviceMonitorWin::~DeviceMonitorWin() {}
+ 
+ void DeviceMonitorWin::AddObserver(Observer* observer) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   observer_list_.AddObserver(observer);
+ }
+ 
+ void DeviceMonitorWin::RemoveObserver(Observer* observer) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   observer_list_.RemoveObserver(observer);
+ }
+ 
+@@ -213,6 +215,7 @@ DeviceMonitorWin::DeviceMonitorWin() {}
+ 
+ void DeviceMonitorWin::NotifyDeviceAdded(const GUID& class_guid,
+                                          const std::wstring& device_path) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   for (auto& observer : observer_list_) {
+     observer.OnDeviceAdded(class_guid, device_path);
+   }
+@@ -220,6 +223,7 @@ void DeviceMonitorWin::NotifyDeviceAdded(const GUID& class_guid,
+ 
+ void DeviceMonitorWin::NotifyDeviceRemoved(const GUID& class_guid,
+                                            const std::wstring& device_path) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   for (auto& observer : observer_list_) {
+     observer.OnDeviceRemoved(class_guid, device_path);
+   }
+diff --git a/device/base/device_monitor_win.h b/device/base/device_monitor_win.h
+index 0b1c2a4edd9cccc22cdd1b947b35f8e86adccb65..1ada9645dd940d49b5a19fc2699c79079fb5db82 100644
+--- a/device/base/device_monitor_win.h
++++ b/device/base/device_monitor_win.h
+@@ -8,6 +8,7 @@
+ #include <string>
+ 
+ #include "base/observer_list.h"
++#include "base/sequence_checker.h"
+ #include "base/win/windows_types.h"
+ #include "device/base/device_base_export.h"
+ 
+@@ -48,6 +49,10 @@ class DEVICE_BASE_EXPORT DeviceMonitorWin {
+   void NotifyDeviceRemoved(const GUID& class_guid,
+                            const std::wstring& device_path);
+ 
++  // `observer_list_` is not thread-safe, so observers must be added and
++  // removed on the sequence that delivers notifications.
++  SEQUENCE_CHECKER(sequence_checker_);
++
+   base::ObserverList<Observer>::Unchecked observer_list_;
+ };
+ 
 diff --git a/device/base/device_monitor_win_unittest.cc b/device/base/device_monitor_win_unittest.cc
 new file mode 100644
 index 0000000000000000000000000000000000000000..fea61c4b0a98d31bcd1174425746076addd91ae5
