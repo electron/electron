@@ -173,6 +173,7 @@
 #include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/web_ui_url_loader_factory.h"
 #include "extensions/browser/api/mime_handler_private/mime_handler_private.h"
+#include "extensions/browser/api/web_request/extension_web_request_event_router.h"
 #include "extensions/browser/api/web_request/web_request_api.h"
 #include "extensions/browser/browser_context_keyed_api_factory.h"
 #include "extensions/browser/event_router.h"
@@ -199,6 +200,7 @@
 #include "extensions/common/mojom/event_router.mojom.h"
 #include "extensions/common/mojom/guest_view.mojom.h"
 #include "extensions/common/mojom/renderer_host.mojom.h"
+#include "extensions/common/mojom/web_request_host.mojom.h"
 #include "extensions/common/switches.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
@@ -1832,6 +1834,12 @@ void ElectronBrowserClient::RegisterAssociatedInterfaceBindersForServiceWorker(
   associated_registry.AddInterface<extensions::mojom::EventRouter>(
       base::BindRepeating(&extensions::EventRouter::BindForRenderer,
                           service_worker_version_info.process_id));
+  // Extension service workers report that their blocking webRequest
+  // listeners are done over this interface; see the comment in
+  // ExposeInterfacesToRenderer().
+  associated_registry.AddInterface<extensions::mojom::WebRequestHost>(
+      base::BindRepeating(&extensions::WebRequestEventRouter::BindForRenderer,
+                          service_worker_version_info.process_id));
 #endif
 }
 
@@ -2122,6 +2130,13 @@ void ElectronBrowserClient::ExposeInterfacesToRenderer(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   associated_registry->AddInterface<extensions::mojom::RendererHost>(
       base::BindRepeating(&extensions::RendererStartupHelper::BindForRenderer,
+                          render_process_host->GetID()));
+  // With kWebRequestPerContextEventDispatch (enabled by default), the browser
+  // keeps a request blocked until the renderer calls
+  // WebRequestHost.EventHandlingDone. Without this binder that call is dropped
+  // and requests seen by a blocking chrome.webRequest listener can stall.
+  associated_registry->AddInterface<extensions::mojom::WebRequestHost>(
+      base::BindRepeating(&extensions::WebRequestEventRouter::BindForRenderer,
                           render_process_host->GetID()));
 #endif
 }
