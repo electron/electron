@@ -661,7 +661,7 @@ describe('webFrameMain module', () => {
     });
   });
 
-  describe('webFrameMain.copyVideoFrameAt', () => {
+  describe('webFrameMain.copyVideoFrameAt', { tags: ['serial'] }, () => {
     const insertVideoInFrame = async (frame: WebFrameMain) => {
       const videoFilePath = url.pathToFileURL(path.join(fixtures, 'cat-spin.mp4')).href;
       await frame.executeJavaScript(`
