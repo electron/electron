@@ -131,6 +131,13 @@ Returns `Extension[]` - A list of all loaded extensions.
 
 #### `extensions.setTabMode(mode)` _Experimental_
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/55270
+```
+-->
+
 * `mode` string - Can be `all-web-contents` or `registered`.
 
 Sets which `webContents` of this session are tabs to its extensions. The
@@ -151,6 +158,13 @@ Set the mode before loading extensions and creating tabs: changing it later
 changes whether existing `webContents` are tabs.
 
 #### `extensions.addTab(webContents, details)` _Experimental_
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/55270
+```
+-->
 
 * `webContents` [WebContents](web-contents.md) - Must belong to this session.
 * `details` Object
@@ -245,6 +259,13 @@ app.whenReady().then(() => {
 
 #### `extensions.updateTab(webContents, details)` _Experimental_
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/55270
+```
+-->
+
 * `webContents` [WebContents](web-contents.md) - A `webContents` added with
   [`extensions.addTab`](#extensionsaddtabwebcontents-details-experimental).
 * `details` Object
@@ -273,12 +294,26 @@ change the type of a view, remove it and add it again.
 
 #### `extensions.removeTab(webContents)` _Experimental_
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/55270
+```
+-->
+
 * `webContents` [WebContents](web-contents.md)
 
 Removes a view added with `extensions.addTab`. Does nothing if `webContents`
 was not added.
 
 #### `extensions.setFocusedWindow(windowId)` _Experimental_
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/55270
+```
+-->
 
 * `windowId` Integer | null - The `windowId` of the focused window, or `null`
   if none of the app's windows is focused.
