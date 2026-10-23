@@ -1630,6 +1630,79 @@ describe('protocol module', () => {
         const body = await net.fetch('no-cors://host/secret').then((r) => r.text());
         expect(body).toBe(secret);
       });
+
+      describe('with protocol.registerSource', () => {
+        let root: string;
+        beforeAll(() => {
+          root = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-protocol-source-cors-'));
+          fs.writeFileSync(path.join(root, 'secret.txt'), secret);
+          fs.writeFileSync(path.join(root, 'page.html'), '<!doctype html><body>page');
+        });
+        afterAll(() => fs.rmSync(root, { recursive: true, force: true }));
+        beforeEach(() => {
+          if (protocol.isProtocolHandled('no-cors-standard')) protocol.unhandle('no-cors-standard');
+          protocol.registerSource('no-cors-standard', {
+            routes: [{ source: { type: 'directory', root } }]
+          });
+        });
+
+        it('blocks a remote http origin from reading a source file via fetch() and XHR', async () => {
+          await w.loadURL(remoteUrl);
+          const result = await w.webContents.executeJavaScript(`
+            Promise.all([
+              fetch('no-cors-standard://app/secret.txt')
+                .then(r => r.text()).then(body => ({ body, error: null }))
+                .catch(e => ({ body: null, error: String(e) })),
+              new Promise(resolve => {
+                const x = new XMLHttpRequest();
+                x.onload = () => resolve({ body: x.responseText, errored: false });
+                x.onerror = () => resolve({ body: null, errored: true });
+                x.open('GET', 'no-cors-standard://app/secret.txt');
+                x.send();
+              })
+            ])
+          `);
+          expect(result[0].body).not.toBe(secret);
+          expect(result[0].error).toMatch(/Failed to fetch/);
+          expect(result[1]).toEqual({ body: null, errored: true });
+        });
+
+        it('returns an opaque response for a source file fetched cross-origin with mode: no-cors', async () => {
+          await w.loadURL(remoteUrl);
+          const { type, status, body } = await w.webContents.executeJavaScript(`
+            fetch('no-cors-standard://app/secret.txt', { mode: 'no-cors' })
+              .then(async r => ({ type: r.type, status: r.status, body: await r.text() }))
+          `);
+          expect(type).toBe('opaque');
+          expect(status).toBe(0);
+          expect(body).toBe('');
+        });
+
+        it('allows same-origin fetch and blocks cross-origin fetch between source hosts', async () => {
+          await w.loadURL('no-cors-standard://app/page.html');
+          const same = await w.webContents.executeJavaScript(
+            "fetch('no-cors-standard://app/secret.txt').then(r => r.text())"
+          );
+          expect(same).toBe(secret);
+          const cross = await w.webContents.executeJavaScript(
+            "fetch('no-cors-standard://other/secret.txt').then(() => null, e => String(e))"
+          );
+          expect(cross).toMatch(/Failed to fetch/);
+        });
+
+        it('does not affect cross-origin fetch to a corsEnabled source', async () => {
+          protocol.registerSource('http-like', { routes: [{ source: { type: 'directory', root } }] });
+          defer(() => protocol.unhandle('http-like'));
+          await w.loadURL(remoteUrl);
+          const body = await w.webContents.executeJavaScript("fetch('http-like://app/secret.txt').then(r => r.text())");
+          expect(body).toBe(secret);
+        });
+
+        it('does not affect main-process net.fetch', async () => {
+          const body = await net.fetch('no-cors-standard://app/secret.txt').then((r) => r.text());
+          expect(body).toBe(secret);
+        });
+      });
     });
 
     it('disallows CORS and fetch requests when only supportFetchAPI is specified', async () => {
@@ -1947,6 +2020,63 @@ describe('protocol module', () => {
         const w = new BrowserWindow();
         w.loadFile(filePath);
       }));
+
+    it('intercepts file:// worker main script and subresource requests', async () => {
+      const ses = session.fromPartition(`protocol-handle-file-worker-${randomUUID()}`);
+      const pagePath = path.join(fixturesPath, 'pages', 'a.html');
+      const workerScriptUrl = url.pathToFileURL(path.join(fixturesPath, 'pages', 'worker-intercept.js')).toString();
+      const workerFetchUrl = url.pathToFileURL(path.join(fixturesPath, 'pages', 'worker-data.txt')).toString();
+
+      const seenProtocolUrls: string[] = [];
+      const seenWebRequestUrls: string[] = [];
+
+      ses.protocol.handle('file', (req) => {
+        seenProtocolUrls.push(req.url);
+        if (req.url === workerScriptUrl) {
+          return new Response(
+            `fetch(${JSON.stringify(workerFetchUrl)}).then(r => r.text()).then(t => postMessage(t));`,
+            { headers: { 'content-type': 'text/javascript' } }
+          );
+        }
+        if (req.url === workerFetchUrl) {
+          return new Response('from-worker-file-fetch');
+        }
+        return ses.fetch(req, { bypassCustomProtocolHandlers: true });
+      });
+      defer(() => {
+        ses.protocol.unhandle('file');
+      });
+
+      ses.webRequest.onBeforeRequest((details, callback) => {
+        seenWebRequestUrls.push(details.url);
+        callback({});
+      });
+      defer(() => {
+        ses.webRequest.onBeforeRequest(null);
+      });
+
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await w.webContents.loadFile(pagePath);
+      const workerReply = await w.webContents.executeJavaScript(`
+        new Promise((resolve, reject) => {
+          const worker = new Worker(${JSON.stringify(workerScriptUrl)});
+          worker.onmessage = (e) => {
+            worker.terminate();
+            resolve(e.data);
+          };
+          worker.onerror = (e) => {
+            worker.terminate();
+            reject(new Error(e.message || 'worker error'));
+          };
+        })
+      `);
+
+      expect(workerReply).toBe('from-worker-file-fetch');
+      expect(seenProtocolUrls).toContain(workerScriptUrl);
+      expect(seenProtocolUrls).toContain(workerFetchUrl);
+      expect(seenWebRequestUrls).toContain(workerScriptUrl);
+      expect(seenWebRequestUrls).toContain(workerFetchUrl);
+    });
 
     it('receives requests to an existing scheme when navigating', async () => {
       protocol.handle('https', (req) => new Response('hello ' + req.url));

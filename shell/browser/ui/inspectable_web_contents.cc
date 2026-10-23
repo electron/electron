@@ -120,7 +120,7 @@ bool IsLocalDevToolsFrontendURL(const GURL& url) {
     return false;
   }
   std::string_view path = url.path();
-  if (path.starts_with("/")) {
+  if (path.starts_with('/')) {
     path = path.substr(1);
   }
   return path.starts_with(chrome::kChromeUIDevToolsBundledPath) ||

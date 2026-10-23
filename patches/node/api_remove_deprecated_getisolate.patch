@@ -85,10 +85,10 @@ index cc60ddddb037e0279615bbe24821eb20fd8da677..37d83e41b618a07aca98118260abe961
  
    return handle;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 57e4bc771fafc2eee2c13ff0d35295d9c3d6fd67..c78551c250acb14a988677aa6bf6949068a7fe41 100644
+index 0b7ebcebadf11023e0cfad105f53518ff31e09e1..1bab35b2a7e6ae652991235999ee1270612b0c7c 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -1174,7 +1174,7 @@ bool ArrayOfStringsToX509s(Local<Context> context,
+@@ -1179,7 +1179,7 @@ bool ArrayOfStringsToX509s(Local<Context> context,
                             Local<Array> cert_array,
                             std::vector<X509*>* certs) {
    ClearErrorOnReturn clear_error_on_return;
@@ -98,10 +98,10 @@ index 57e4bc771fafc2eee2c13ff0d35295d9c3d6fd67..c78551c250acb14a988677aa6bf69490
    uint32_t array_length = cert_array->Length();
  
 diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
-index fbca682b804a0a1b7e688d01359c20a416584f15..624102e31b593e0b72872f53d5cfd46d0f54d6e2 100644
+index 87104ca622b6ad847c8a13b3bc567f6762a44c70..1cc6552fa2e4c1f8d03f2d3687a679821abfc49e 100644
 --- a/src/crypto/crypto_x509.cc
 +++ b/src/crypto/crypto_x509.cc
-@@ -109,7 +109,7 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, BIOPointer&& bio) {
+@@ -122,7 +122,7 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, BIOPointer&& bio) {
    if (!mem) [[unlikely]]
      return {};
    Local<Value> ret;
@@ -110,7 +110,7 @@ index fbca682b804a0a1b7e688d01359c20a416584f15..624102e31b593e0b72872f53d5cfd46d
                             mem->data,
                             NewStringType::kNormal,
                             mem->length)
-@@ -125,7 +125,7 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, const BIOPointer& bio) {
+@@ -138,7 +138,7 @@ MaybeLocal<Value> ToV8Value(Local<Context> context, const BIOPointer& bio) {
    if (!mem) [[unlikely]]
      return {};
    Local<Value> ret;

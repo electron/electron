@@ -43,6 +43,7 @@
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/render_frame_host.h"
+#include "content/public/common/child_process_id.h"
 #include "content/public/common/content_switches.h"
 #include "crypto/crypto_buildflags.h"
 #include "electron/mas.h"
@@ -448,22 +449,23 @@ bool NotificationCallbackWrapper(
              const std::vector<uint8_t> additional_data)>& callback,
     base::CommandLine cmd,
     const base::FilePath& cwd,
-    const std::vector<uint8_t> additional_data) {
+    std::vector<uint8_t> additional_data) {
 #if BUILDFLAG(IS_LINUX)
   // Set the global activation token sent as a command line switch by another
   // electron app instance. This also removes the switch after use to prevent
   // any side effects of leaving it in the command line after this point.
-  base::nix::ExtractXdgActivationTokenFromCmdLine(cmd);
+  if (std::optional<std::string> token =
+          base::nix::GetXdgActivationTokenFromCommandLine(cmd)) {
+    base::nix::SetActivationToken(std::move(*token));
+    cmd.RemoveSwitch(base::nix::kXdgActivationTokenSwitch);
+  }
 #endif
   // Make sure the callback is called after app gets ready.
   if (Browser::Get()->is_ready()) {
     callback.Run(std::move(cmd), cwd, std::move(additional_data));
   } else {
-    scoped_refptr<base::SingleThreadTaskRunner> task_runner(
-        base::SingleThreadTaskRunner::GetCurrentDefault());
-
     // Make a copy of the span so that the data isn't lost.
-    task_runner->PostTask(
+    base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
         FROM_HERE, base::BindOnce(base::IgnoreResult(callback), std::move(cmd),
                                   cwd, std::move(additional_data)));
   }
@@ -775,7 +777,7 @@ void App::AllowCertificateError(
 
 base::OnceClosure App::SelectClientCertificate(
     content::BrowserContext* browser_context,
-    int process_id,
+    content::ChildProcessId process_id,
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
     net::ClientCertIdentityList identities,
@@ -1034,6 +1036,12 @@ void App::SetDesktopName(const std::string& desktop_name) {
 #endif
 }
 
+void App::SetActivationToken(const std::string& token) {
+#if BUILDFLAG(IS_LINUX)
+  base::nix::SetActivationToken(token);
+#endif
+}
+
 std::string App::GetLocale() {
   return g_browser_process->GetApplicationLocale();
 }
@@ -1094,7 +1102,7 @@ void App::OnSecondInstance(base::CommandLine cmd,
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Value> data_value =
-      DeserializeV8Value(isolate, std::move(additional_data));
+      DeserializeV8Value(isolate, additional_data);
   Emit("second-instance", cmd.argv(), cwd, data_value);
 }
 
@@ -2171,6 +2179,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("getPath", &App::GetPath)
       .SetMethod("setAppLogsPath", &App::SetAppLogsPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
+      .SetMethod("setActivationToken", &App::SetActivationToken)
       .SetMethod("getLocale", &App::GetLocale)
       .SetMethod("getPreferredSystemLanguages", &GetPreferredLanguages)
       .SetMethod("getSystemLocale", &App::GetSystemLocale)
