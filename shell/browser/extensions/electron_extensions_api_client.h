@@ -28,9 +28,11 @@ class ElectronExtensionsAPIClient : public ExtensionsAPIClient {
   ManagementAPIDelegate* CreateManagementAPIDelegate() const override;
   std::unique_ptr<guest_view::GuestViewManagerDelegate>
   CreateGuestViewManagerDelegate() const override;
+  CookiesApiDelegate* GetCookiesApiDelegate() override;
 
  private:
   std::unique_ptr<ElectronMessagingDelegate> messaging_delegate_;
+  std::unique_ptr<CookiesApiDelegate> cookies_api_delegate_;
 };
 
 }  // namespace extensions
