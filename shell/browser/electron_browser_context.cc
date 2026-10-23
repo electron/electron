@@ -465,6 +465,7 @@ void ElectronBrowserContext::InitPrefs() {
   registry->RegisterFilePathPref(prefs::kDownloadDefaultDirectory,
                                  download_dir);
   registry->RegisterDictionaryPref(prefs::kDevToolsFileSystemPaths);
+  registry->RegisterBooleanPref(prefs::kViewSourceLineWrappingEnabled, false);
   InspectableWebContents::RegisterPrefs(registry.get());
   MediaDeviceIDSalt::RegisterPrefs(registry.get());
   ZoomLevelDelegate::RegisterPrefs(registry.get());
