@@ -458,7 +458,7 @@ describe('chrome extensions', () => {
     });
 
     it('supports chrome.storage.sync as a storage area separate from local', async () => {
-      const customSession = session.fromPartition(`persist:${randomUUID()}`);
+      const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
       await customSession.extensions.loadExtension(path.join(fixtures, 'extensions', 'chrome-storage-sync'));
       const w = new BrowserWindow({
         show: false,
