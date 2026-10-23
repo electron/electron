@@ -1,0 +1,7 @@
+{
+  "name": "persistent-state",
+  "version": "1.0",
+  "permissions": ["alarms", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "manifest_version": 3
+}

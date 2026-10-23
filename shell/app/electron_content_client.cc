@@ -340,6 +340,7 @@ void ElectronContentClient::AddAdditionalSchemes(Schemes* schemes) {
   schemes->cors_enabled_schemes.push_back(extensions::kExtensionScheme);
   schemes->csp_bypassing_schemes.push_back(extensions::kExtensionScheme);
   schemes->code_cache_schemes.push_back(extensions::kExtensionScheme);
+  schemes->extension_schemes.push_back(extensions::kExtensionScheme);
 #endif
 }
 
