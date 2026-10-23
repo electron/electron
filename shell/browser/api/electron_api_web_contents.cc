@@ -5346,6 +5346,11 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
     }
   }
 
+  if (web_contents()->IsBeingDestroyed()) {
+    promise.RejectWithErrorMessage("WebContents is being destroyed");
+    return handle;
+  }
+
   auto* const view = web_contents()->GetRenderWidgetHostView();
   if (!view || view->GetViewBounds().size().IsEmpty()) {
     promise.Resolve(gfx::Image());
