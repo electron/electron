@@ -1,4 +1,4 @@
-import { getRawHeader } from '@electron/asar';
+import { createPackage, getRawHeader } from '@electron/asar';
 import { flipFuses, type FuseV1Config, FuseV1Options, FuseVersion } from '@electron/fuses';
 import { resedit } from '@electron/packager/dist/resedit.js';
 
@@ -7,12 +7,17 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import * as cp from 'node:child_process';
 import * as nodeCrypto from 'node:crypto';
 import * as fs from 'node:fs';
+import { createRequire } from 'node:module';
 import * as originalFs from 'node:original-fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { copyApp } from './lib/fs-helpers.ts';
 import { ifdescribe } from './lib/spec-helpers.ts';
+
+const require = createRequire(import.meta.url);
+
+const plist = require('plist');
 
 const bufferReplace = (haystack: Buffer, needle: string, replacement: string, throwOnMissing = true): Buffer => {
   const needleBuffer = Buffer.from(needle);
@@ -64,11 +69,18 @@ describe('fuses', { timeout: 120000 }, () => {
   let tmpDir: string;
   let appPath: string;
 
-  const launchApp = (args: string[] = []) => {
+  const launchApp = (args: string[] = [], opts: any = {}) => {
     if (process.platform === 'darwin') {
-      return spawn(path.resolve(appPath, 'Contents/MacOS/Electron'), args);
+      // Several of these apps terminate abnormally on purpose; tell AppKit
+      // not to save/restore window state for them so macOS does not show the
+      // "unexpectedly quit while reopening windows" dialog on the next launch
+      // of an app with the same bundle identifier.
+      // (Only when a script/flag is given: with no arguments the default app
+      // would otherwise treat 'YES' as the app path.)
+      const macArgs = args.length > 0 ? [...args, '-ApplePersistenceIgnoreState', 'YES'] : args;
+      return spawn(path.resolve(appPath, 'Contents/MacOS/Electron'), macArgs, opts);
     }
-    return spawn(appPath, args);
+    return spawn(appPath, args, opts);
   };
 
   const ensureFusesBeforeEach = (
@@ -98,6 +110,9 @@ describe('fuses', { timeout: 120000 }, () => {
       } catch {}
     }
   }, 120000);
+
+  const headerHash = (asarPath: string) =>
+    nodeCrypto.createHash('sha256').update(getRawHeader(asarPath).headerString).digest('hex');
 
   ifdescribe((process.platform === 'win32' && process.arch !== 'arm64') || process.platform === 'darwin')(
     'ASAR Integrity',
@@ -176,6 +191,58 @@ describe('fuses', { timeout: 120000 }, () => {
           const res = await launchApp();
           expectToHaveCrashed(res);
           expect(res.out).toContain('Failed to validate block while ending ASAR file stream');
+        });
+      });
+
+      ifdescribe(process.platform === 'darwin')('when the app archive is replaced while running', () => {
+        let replacement: string;
+
+        beforeEach(async () => {
+          const resourcesDir = path.resolve(appPath, 'Contents', 'Resources');
+          const appAsar = path.resolve(resourcesDir, 'app.asar');
+          replacement = path.resolve(resourcesDir, 'replacement');
+          await createPackage(path.resolve(import.meta.dirname, 'fixtures/apps/asar-integrity-swap'), appAsar);
+
+          const infoPlistPath = path.resolve(appPath, 'Contents', 'Info.plist');
+          const info = plist.parse(await fs.promises.readFile(infoPlistPath, 'utf8'));
+          info.ElectronAsarIntegrity = {
+            ...info.ElectronAsarIntegrity,
+            'Resources/app.asar': { algorithm: 'SHA256', hash: headerHash(appAsar) }
+          };
+          await fs.promises.writeFile(infoPlistPath, plist.build(info));
+        }, 120000);
+
+        ensureFusesBeforeEach({
+          [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
+          [FuseV1Options.OnlyLoadAppFromAsar]: true
+        });
+
+        const writeReplacementFiles = async (dir: string) => {
+          await fs.promises.mkdir(dir);
+          await fs.promises.writeFile(path.join(dir, 'package.json'), '{"main":"child.js"}');
+          await fs.promises.writeFile(
+            path.join(dir, 'child.js'),
+            "process.parentPort.postMessage('child-loaded-replacement');"
+          );
+        };
+        // Any argument, so that launchApp() opts out of AppKit state restoration.
+        const launchSwapApp = () =>
+          launchApp(['--enable-logging'], { env: { ...process.env, ASAR_SWAP_REPLACEMENT: replacement } });
+
+        it('does not load a child process from a directory', async () => {
+          await writeReplacementFiles(replacement);
+          const res = await launchSwapApp();
+          expect(res.out).toContain('child-exited');
+          expect(res.out).not.toContain('child-loaded-replacement');
+        });
+
+        it('does not load a child process from a modified archive', async () => {
+          const src = path.resolve(tmpDir, 'replacement-src');
+          await writeReplacementFiles(src);
+          await createPackage(src, replacement);
+          const res = await launchSwapApp();
+          expect(res.out).toContain('child-exited');
+          expect(res.out).not.toContain('child-loaded-replacement');
         });
       });
 

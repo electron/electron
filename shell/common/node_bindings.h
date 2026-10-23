@@ -11,6 +11,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "base/files/file_path.h"
 #include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ptr_exclusion.h"
@@ -31,6 +32,10 @@ class MultiIsolatePlatform;
 }  // namespace node
 
 namespace electron {
+
+// <bundle>/Contents/Resources on macOS, <assets dir>/resources elsewhere;
+// process.resourcesPath.
+base::FilePath GetResourcesPath();
 
 // A helper class to manage uv_handle_t types, e.g. uv_async_t.
 //
