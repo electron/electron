@@ -2040,6 +2040,10 @@ describe('app module', () => {
   // losing the display server connection went straight to LOG(FATAL).
   ifdescribe(process.platform === 'linux')('GDK_BACKEND', () => {
     const fixture = path.join(fixturesPath, 'apps', 'gdk-backend');
+    // Wait for the app to exit, not just for its output. Otherwise the next
+    // test (or retry) launches the fixture again while this copy is still
+    // quitting, which on the ASAN lane can hold up the new launch for longer
+    // than a fixed wait for output allows.
     const run = async (env: NodeJS.ProcessEnv) => {
       // Starting Electron is slow on sanitizer builds, so stay within the
       // per-test timeout (raised there) rather than a fixed short poll.
