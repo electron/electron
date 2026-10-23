@@ -361,7 +361,6 @@ describe('cpp heap', () => {
   describe('systemPreferences module', () => {
     it('does not crash on exit with a live wrapper', async () => {
       const rc = await startRemoteControlApp();
-      const exited = once(rc.process, 'exit');
       await rc.remotely(async () => {
         const { app, systemPreferences } = require('electron');
         systemPreferences.getAnimationSettings();
@@ -371,7 +370,7 @@ describe('cpp heap', () => {
         setTimeout(() => app.quit());
       });
 
-      const [code] = await exited;
+      const [code] = await once(rc.process, 'exit');
       expect(code).toBe(0);
     });
 
@@ -419,7 +418,6 @@ describe('cpp heap', () => {
   describe('session module', () => {
     it('does not crash on exit with live session wrappers', async () => {
       const rc = await startRemoteControlApp();
-      const exited = once(rc.process, 'exit');
       await rc.remotely(async () => {
         const { app, session } = require('electron');
 
@@ -441,7 +439,7 @@ describe('cpp heap', () => {
         setTimeout(() => app.quit());
       });
 
-      const [code] = await exited;
+      const [code] = await once(rc.process, 'exit');
       expect(code).toBe(0);
     });
 
@@ -828,7 +826,6 @@ describe('cpp heap', () => {
 
     it('does not crash on exit with a live service worker wrapper', async () => {
       const rc = await startRemoteControlApp();
-      const exited = once(rc.process, 'exit');
       await rc.remotely(
         async (fixturesDir: string, setupWorker: string) => {
           const { app } = require('electron');
@@ -844,7 +841,7 @@ describe('cpp heap', () => {
         setupWorkerSource
       );
 
-      const [code] = await exited;
+      const [code] = await once(rc.process, 'exit');
       expect(code).toBe(0);
     });
 
@@ -989,20 +986,18 @@ describe('cpp heap', () => {
   describe('Notification module', () => {
     it('does not crash on exit with a live wrapper', async () => {
       const rc = await startRemoteControlApp();
-      const exited = once(rc.process, 'exit');
       await rc.remotely(async () => {
         const { app, Notification } = require('electron');
         (globalThis as any).notificationRef = new Notification({ title: 'cppgc' });
         setTimeout(() => app.quit());
       });
 
-      const [code] = await exited;
+      const [code] = await once(rc.process, 'exit');
       expect(code).toBe(0);
     });
 
     it('does not crash when show() runs after its native peer is released at exit', async () => {
       const rc = await startRemoteControlApp();
-      const closed = once(rc.process, 'close');
       let stdout = '';
       rc.process.stdout!.on('data', (chunk) => {
         stdout += chunk;
@@ -1022,7 +1017,7 @@ describe('cpp heap', () => {
         setTimeout(() => app.quit());
       });
 
-      const [code] = await closed;
+      const [code] = await once(rc.process, 'close');
       expect(code).toBe(0);
       expect(stdout).toContain('notification-show: returned');
     });
@@ -1332,7 +1327,6 @@ describe('cpp heap', () => {
 
     it('does not crash on exit with a live started port', async () => {
       const rc = await startRemoteControlApp();
-      const exited = once(rc.process, 'exit');
       await rc.remotely(async () => {
         const { app, MessageChannelMain } = require('electron');
         const { port1, port2 } = new MessageChannelMain();
@@ -1341,7 +1335,7 @@ describe('cpp heap', () => {
         setTimeout(() => app.quit());
       });
 
-      const [code] = await exited;
+      const [code] = await once(rc.process, 'exit');
       expect(code).toBe(0);
     });
   });
@@ -1349,7 +1343,6 @@ describe('cpp heap', () => {
   describe('url loader module', () => {
     it('should not leak when performing chunked (streaming) uploads', async () => {
       const rc = await startRemoteControlApp(['--js-flags=--expose-gc']);
-      const exited = once(rc.process, 'exit');
       const result = await rc.remotely(async () => {
         const { net, app } = require('electron');
         const http = require('node:http');
@@ -1400,7 +1393,7 @@ describe('cpp heap', () => {
         return { after1, after2 };
       });
 
-      const [code] = await exited;
+      const [code] = await once(rc.process, 'exit');
       expect(code).toBe(0);
 
       const growth = result.after2 - result.after1;
@@ -1412,7 +1405,6 @@ describe('cpp heap', () => {
 
     it('completes request after JS drops reference but listeners are registered', async () => {
       const rc = await startRemoteControlApp(['--js-flags=--expose-gc']);
-      const exited = once(rc.process, 'exit');
       const result = await rc.remotely(async () => {
         const { net, app } = require('electron');
         const http = require('node:http');
@@ -1469,7 +1461,7 @@ describe('cpp heap', () => {
         return { completed, errorOccurred, released };
       });
 
-      const [code] = await exited;
+      const [code] = await once(rc.process, 'exit');
       expect(code).toBe(0);
 
       expect(result.errorOccurred, `request errored: ${result.errorOccurred}`).toBe(null);
@@ -1483,7 +1475,6 @@ describe('cpp heap', () => {
         '--js-flags=--expose-gc',
         '--remote-app-timeout=120000'
       ]);
-      const exited = once(rc.process, 'exit');
       const result = await rc.remotely(
         async (heap: string, snapshotHelper: string) => {
           const { protocol, net, app } = require('electron');
@@ -1610,7 +1601,7 @@ describe('cpp heap', () => {
         path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
 
-      const [code] = await exited;
+      const [code] = await once(rc.process, 'exit');
       expect(code).toBe(0);
 
       expect(result.ok, `test setup failed: ${result.error}`).toBe(true);
@@ -1900,7 +1891,6 @@ describe('cpp heap', () => {
 
     it('emits debugger detach exactly once at exit', async () => {
       const rc = await startRemoteControlApp();
-      const closed = once(rc.process, 'close');
       let stdout = '';
       rc.process.stdout!.on('data', (chunk) => {
         stdout += chunk;
@@ -1923,7 +1913,7 @@ describe('cpp heap', () => {
         setTimeout(() => app.quit());
       });
 
-      const [code] = await closed;
+      const [code] = await once(rc.process, 'close');
       expect(code).toBe(0);
       expect(stdout.match(/^debugger-detach: .*$/gm)).toEqual([
         'debugger-detach: target closed; attach: No target available'
@@ -2315,12 +2305,13 @@ describe('cpp heap', () => {
     });
 
     it('releases the remote DevTools root when DevTools closes', async () => {
-      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
       const result = await remotely(
-        async (snapshotHelper: string) => {
+        async (heap: string, snapshotHelper: string) => {
           const { webContents } = require('electron');
           const { once } = require('node:events');
-          const { snapshotContainsRetainingPath, takeHeapSnapshot } = require(snapshotHelper);
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
           const v8Util = process._linkedBinding('electron_common_v8_util');
           const contents = webContents.create();
           await contents.loadURL('about:blank');
@@ -2329,7 +2320,7 @@ describe('cpp heap', () => {
           v8Util.requestGarbageCollectionForTesting();
           await opened;
           const ref = new WeakRef(contents.devToolsWebContents);
-          const rooted = snapshotContainsRetainingPath(takeHeapSnapshot(), [
+          const rooted = containsRetainingPath(recordState().snapshot, [
             'C++ Persistent roots',
             'Electron / WebContents'
           ]);
@@ -2343,7 +2334,7 @@ describe('cpp heap', () => {
             if (!ref.deref()) break;
           }
           const released = !ref.deref();
-          const rootReleased = !snapshotContainsRetainingPath(takeHeapSnapshot(), [
+          const rootReleased = !containsRetainingPath(recordState().snapshot, [
             'C++ Persistent roots',
             'Electron / WebContents'
           ]);
@@ -2352,6 +2343,7 @@ describe('cpp heap', () => {
           await destroyed;
           return { rooted, released, rootReleased };
         },
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
         path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
 
@@ -2362,7 +2354,6 @@ describe('cpp heap', () => {
 
     it('stops DevTools indexing without retaining cppgc handles on its worker sequence', async () => {
       const rc = await startRemoteControlApp(['--js-flags=--expose-gc']);
-      const exited = once(rc.process, 'exit');
       await rc.remotely(async () => {
         const { app, webContents } = require('electron');
         const { once } = require('node:events');
@@ -2403,14 +2394,13 @@ describe('cpp heap', () => {
         setTimeout(() => app.quit());
       });
 
-      const [code] = await exited;
+      const [code] = await once(rc.process, 'exit');
       expect(code).toBe(0);
     });
 
     for (const collect of [false, true]) {
       it(`does not crash on exit with ${collect ? 'collected' : 'live'} WebContents`, async () => {
         const rc = await startRemoteControlApp(['--js-flags=--expose-gc']);
-        const exited = once(rc.process, 'exit');
         await rc.remotely(async (collect: boolean) => {
           const { app, webContents } = require('electron');
           const v8Util = process._linkedBinding('electron_common_v8_util');
@@ -2433,14 +2423,13 @@ describe('cpp heap', () => {
           }
           setTimeout(() => app.quit());
         }, collect);
-        const [code] = await exited;
+        const [code] = await once(rc.process, 'exit');
         expect(code).toBe(0);
       });
     }
 
     it('destroys a live WebContentsView before its Session at exit', async () => {
       const rc = await startRemoteControlApp();
-      const exited = once(rc.process, 'exit');
       await rc.remotely(async () => {
         const { app, WebContentsView } = require('electron');
         const view = new WebContentsView({
@@ -2457,13 +2446,12 @@ describe('cpp heap', () => {
         setTimeout(() => app.quit());
       });
 
-      const [code] = await exited;
+      const [code] = await once(rc.process, 'exit');
       expect(code).toBe(0);
     });
 
     it('makes wrappers inert before shutdown cleanup regardless of registration order', async () => {
       const rc = await startRemoteControlApp();
-      const closed = once(rc.process, 'close');
       let stdout = '';
       rc.process.stdout!.on('data', (chunk) => {
         stdout += chunk;
@@ -2488,7 +2476,7 @@ describe('cpp heap', () => {
         setTimeout(() => app.quit());
       });
 
-      const [code] = await closed;
+      const [code] = await once(rc.process, 'close');
       expect(code).toBe(0);
       expect(stdout).toContain('inert-session: Object has been destroyed');
     });
@@ -2497,7 +2485,6 @@ describe('cpp heap', () => {
   describe('webFrameMain module', () => {
     it('does not crash on exit with live frame wrappers', async () => {
       const rc = await startRemoteControlApp();
-      const exited = once(rc.process, 'exit');
       await rc.remotely(async () => {
         const { app, BrowserWindow } = require('electron');
 
@@ -2509,16 +2496,17 @@ describe('cpp heap', () => {
         setTimeout(() => app.quit());
       });
 
-      const [code] = await exited;
+      const [code] = await once(rc.process, 'exit');
       expect(code).toBe(0);
     });
 
     it('should be rooted while the frame is live', async () => {
-      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
       const result = await remotely(
-        async (snapshotHelper: string) => {
+        async (heap: string, snapshotHelper: string) => {
           const { BrowserWindow } = require('electron');
-          const { snapshotContainsRetainingPath, takeHeapSnapshot } = require(snapshotHelper);
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
           const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
 
           const w = new BrowserWindow({ show: false });
@@ -2532,23 +2520,25 @@ describe('cpp heap', () => {
             v8Util.requestGarbageCollectionForTesting();
           }
 
-          const snapshot = takeHeapSnapshot();
-          const rooted = snapshotContainsRetainingPath(snapshot, ['C++ Persistent roots', 'Electron / WebFrameMain']);
+          const state = recordState();
+          const rooted = containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / WebFrameMain']);
 
           w.destroy();
           return rooted;
         },
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
         path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result, 'WebFrameMain should stay rooted via SelfKeepAlive while the frame is live').toBe(true);
     });
 
     it('should be released after the frame is destroyed', async () => {
-      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
       const result = await remotely(
-        async (snapshotHelper: string) => {
+        async (heap: string, snapshotHelper: string) => {
           const { app, BrowserWindow } = require('electron');
-          const { snapshotContainsRetainingPath, takeHeapSnapshot } = require(snapshotHelper);
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
           const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
 
           // Keep the app alive when the window closes so we can snapshot.
@@ -2573,8 +2563,8 @@ describe('cpp heap', () => {
           const mainFrameIsActive = w.webContents.mainFrame === mainFrame && !mainFrame.detached;
           const remainingSubframeCount = mainFrame.frames.length;
           const subframeIsDetached = subframes[0]?.detached;
-          const hasOneFrame = snapshotContainsRetainingPath(
-            takeHeapSnapshot(),
+          const hasOneFrame = containsRetainingPath(
+            recordState().snapshot,
             ['C++ Persistent roots', 'Electron / WebFrameMain'],
             {
               occurrences: 1
@@ -2590,6 +2580,7 @@ describe('cpp heap', () => {
             hasOneFrame
           };
         },
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
         path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result.subframeCount, 'a subframe WebFrameMain should be created before navigation').toBe(1);
@@ -2603,17 +2594,14 @@ describe('cpp heap', () => {
     });
 
     it('should release the root for a detached frame after navigation', async () => {
-      // The test waits for an IPC from the old page's unload handler. Once the
-      // cross-origin page commits, Chromium backgrounds the old renderer, which
-      // can then miss the 500 ms unload timeout and drop the IPC (see 'is
-      // detached when unload handler sends IPC' in api-web-frame-main.spec.ts).
-      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc', '--disable-renderer-backgrounding']);
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
       const result = await remotely(
-        async (snapshotHelper: string, preload: string) => {
+        async (heap: string, snapshotHelper: string, preload: string) => {
           const { BrowserWindow, ipcMain } = require('electron');
           const { once } = require('node:events');
           const http = require('node:http');
-          const { snapshotContainsRetainingPath, takeHeapSnapshot } = require(snapshotHelper);
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
           const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
 
           const createServer = async () => {
@@ -2662,18 +2650,15 @@ describe('cpp heap', () => {
             }
 
             console.log(detachedFrame!.detached);
-            return snapshotContainsRetainingPath(
-              takeHeapSnapshot(),
-              ['C++ Persistent roots', 'Electron / WebFrameMain'],
-              {
-                occurrences: 1
-              }
-            );
+            return containsRetainingPath(recordState().snapshot, ['C++ Persistent roots', 'Electron / WebFrameMain'], {
+              occurrences: 1
+            });
           } finally {
             w.destroy();
             server.close();
           }
         },
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
         path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js'),
         path.join(fixturesPath, 'sub-frames', 'preload.js')
       );
@@ -2686,6 +2671,7 @@ describe('cpp heap', () => {
         const { app, BrowserWindow } = require('electron');
         const { once } = require('node:events');
         const http = require('node:http');
+        const { setTimeout: delay } = require('node:timers/promises');
 
         app.on('window-all-closed', () => {});
 
@@ -2700,12 +2686,6 @@ describe('cpp heap', () => {
         try {
           await w.loadURL(`http://127.0.0.1:${server.address().port}`);
 
-          // The renderer collects the stack from a V8 interrupt, which only
-          // runs while JavaScript is executing. Keep the renderer's isolate
-          // running script so the request is answered whenever it arrives,
-          // rather than only if it lands before the frame removal below.
-          await w.webContents.mainFrame.executeJavaScript('void setInterval(() => {}, 1)');
-
           const childFrame = w.webContents.mainFrame.frames[0];
           const callStackPromise = childFrame.collectJavaScriptCallStack();
           const settled = callStackPromise.then(
@@ -2714,7 +2694,7 @@ describe('cpp heap', () => {
           );
 
           childFrame.executeJavaScript('window.frameElement.remove()').catch(() => {});
-          return await settled;
+          return Promise.race([settled, delay(5000).then(() => 'timeout')]);
         } finally {
           w.destroy();
           server.close();
@@ -2765,7 +2745,6 @@ describe('cpp heap', () => {
   describe('powerMonitor module', () => {
     it('should retain native PowerMonitor via JS module reference', async () => {
       const rc = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
-      const exited = once(rc.process, 'exit');
       const result = await rc.remotely(
         async (heap: string) => {
           const { powerMonitor, app } = require('electron');
@@ -2797,7 +2776,7 @@ describe('cpp heap', () => {
         path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap')
       );
 
-      const [code] = await exited;
+      const [code] = await once(rc.process, 'exit');
       expect(code).toBe(0);
       expect(result.found, 'PowerMonitor should be in snapshot (held by JS module)').toBe(true);
       expect(result.noDuplicates, 'should have exactly one PowerMonitor instance').toBe(true);
@@ -2832,12 +2811,13 @@ describe('cpp heap', () => {
     });
 
     it('should be released from heap snapshot after process exits', async () => {
-      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
       const result = await remotely(
-        async (snapshotHelper: string, fixturePath: string) => {
+        async (heap: string, snapshotHelper: string, fixturePath: string) => {
           const { utilityProcess } = require('electron');
           const { once } = require('node:events');
-          const { snapshotContainsRetainingPath, takeHeapSnapshot } = require(snapshotHelper);
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
           const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
 
           let child: any = utilityProcess.fork(fixturePath);
@@ -2849,10 +2829,11 @@ describe('cpp heap', () => {
             v8Util.requestGarbageCollectionForTesting();
           }
 
-          const snapshot = takeHeapSnapshot();
-          const found = snapshotContainsRetainingPath(snapshot, ['C++ Persistent roots', 'Electron / UtilityProcess']);
+          const state = recordState();
+          const found = containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / UtilityProcess']);
           return !found;
         },
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
         path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js'),
         path.join(import.meta.dirname, 'fixtures/api/utility-process/empty.js')
       );
@@ -2860,13 +2841,13 @@ describe('cpp heap', () => {
     });
 
     it('should survive GC when JS reference is dropped but process is still running', async () => {
-      const rc = await startRemoteControlApp(['--js-flags=--expose-gc']);
-      const exited = once(rc.process, 'exit');
+      const rc = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
       const result = await rc.remotely(
-        async (snapshotHelper: string, fixturePath: string) => {
+        async (heap: string, snapshotHelper: string, fixturePath: string) => {
           const { utilityProcess, app } = require('electron');
           const { once } = require('node:events');
-          const { snapshotContainsRetainingPath, takeHeapSnapshot } = require(snapshotHelper);
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
           const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
 
           let child: any = utilityProcess.fork(fixturePath);
@@ -2880,8 +2861,8 @@ describe('cpp heap', () => {
             v8Util.requestGarbageCollectionForTesting();
           }
 
-          const snapshot = takeHeapSnapshot();
-          const stillAlive = snapshotContainsRetainingPath(snapshot, [
+          const state = recordState();
+          const stillAlive = containsRetainingPath(state.snapshot, [
             'C++ Persistent roots',
             'Electron / UtilityProcess'
           ]);
@@ -2889,11 +2870,12 @@ describe('cpp heap', () => {
           setTimeout(() => app.quit());
           return stillAlive;
         },
+        path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap'),
         path.join(import.meta.dirname, 'lib', 'heapsnapshot-helpers.js'),
         path.join(import.meta.dirname, 'fixtures/api/utility-process/endless.js')
       );
 
-      const [code] = await exited;
+      const [code] = await once(rc.process, 'exit');
       expect(code).toBe(0);
       expect(result, 'UtilityProcess should survive GC while process is running').toBe(true);
     });
@@ -2999,7 +2981,6 @@ describe('cpp heap', () => {
 
     it('should record as node in heap snapshot', async () => {
       const rc = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
-      const exited = once(rc.process, 'exit');
       const result = await rc.remotely(
         async (heap: string) => {
           const { autoUpdater, app } = require('electron');
@@ -3020,7 +3001,7 @@ describe('cpp heap', () => {
         path.join(import.meta.dirname, '../../third_party/electron_node/test/common/heap')
       );
 
-      const [code] = await exited;
+      const [code] = await once(rc.process, 'exit');
       expect(code).toBe(0);
       expect(result.found, 'AutoUpdater should be in snapshot (held by JS module)').toBe(true);
       expect(result.noDuplicates, 'should have exactly one AutoUpdater instance').toBe(true);
@@ -3030,7 +3011,6 @@ describe('cpp heap', () => {
   ifdescribe(isTestingBindingAvailable())('gin_helper::Promise cppgc', () => {
     it('does not crash on exit with a live PromiseBase', async () => {
       const rc = await startRemoteControlApp();
-      const exited = once(rc.process, 'exit');
       await rc.remotely(async () => {
         const { app } = require('electron');
         const testingBinding = (process as any)._linkedBinding('electron_common_testing');
@@ -3043,7 +3023,7 @@ describe('cpp heap', () => {
         setTimeout(() => app.quit());
       });
 
-      const [code] = await exited;
+      const [code] = await once(rc.process, 'exit');
       expect(code).toBe(0);
     });
 

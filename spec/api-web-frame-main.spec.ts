@@ -18,7 +18,7 @@ import * as url from 'node:url';
 
 import { emittedNTimes } from './lib/events-helpers.ts';
 import { containsText, readPDF } from './lib/pdf-helpers.ts';
-import { defer, ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers.ts';
+import { defer, ifdescribe, ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 const features = process._linkedBinding('electron_common_features');
@@ -472,27 +472,80 @@ describe('webFrameMain module', () => {
     });
 
     it('disposes detached frame after cross-origin navigation', async () => {
-      // Waits for the same unload IPC as the test above, so it needs the old
-      // renderer at foreground priority too.
-      if (!app.commandLine.hasSwitch('disable-renderer-backgrounding')) {
-        app.commandLine.appendSwitch('disable-renderer-backgrounding');
-        defer(() => app.commandLine.removeSwitch('disable-renderer-backgrounding'));
-      }
-      w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          preload: path.join(subframesPath, 'preload.js')
-        }
-      });
-      await w.webContents.loadURL(server.url);
-      const unloadPromise = onceUnload(w.webContents);
-      const crossOriginPromise = w.webContents.loadURL(server.crossOriginUrl);
-      const { senderFrame } = await unloadPromise;
-      expect(senderFrame!.detached).toBe(true);
-      await crossOriginPromise;
-      // The detached frame is not destroyed immediately, so wait until it is
-      await waitUntil(() => senderFrame!.isDestroyed());
-      expect(() => senderFrame!.url).toThrow(/Render frame was disposed/);
+      // This waits for the old page's unload IPC. Once the cross-origin page
+      // commits, Chromium backgrounds the old renderer, which can then miss
+      // the 500 ms unload timeout and drop the IPC. Run it in its own app
+      // with renderer backgrounding disabled, so the spec runner's switches
+      // are left alone.
+      const { remotely } = await startRemoteControlApp(['--disable-renderer-backgrounding']);
+      const result = await remotely(
+        async (preload: string) => {
+          const { app, BrowserWindow, ipcMain } = require('electron');
+          const { once } = require('node:events');
+          const http = require('node:http');
+          const { setTimeout: delay } = require('node:timers/promises');
+
+          app.on('window-all-closed', () => {});
+
+          const server = http.createServer((_request: any, response: any) => {
+            // Chromium deprecates unload handlers on http(s) pages by default.
+            response.setHeader('permissions-policy', 'unload=*');
+            response.end('');
+          });
+          server.listen(0, '127.0.0.1');
+          await once(server, 'listening');
+          const url = `http://127.0.0.1:${server.address().port}/`;
+          const crossOriginUrl = url.replace('127.0.0.1', 'localhost');
+          const w = new BrowserWindow({ show: false, webPreferences: { preload } });
+
+          // Polls like waitUntil() in the spec runner, with the same bound.
+          const poll = async (condition: () => boolean) => {
+            for (const start = Date.now(); Date.now() - start < 10000; await delay(10)) {
+              if (condition()) return true;
+            }
+            return false;
+          };
+
+          try {
+            await w.webContents.loadURL(url);
+            // senderFrame stops resolving once the frame is disposed, so read
+            // it when the IPC arrives.
+            let senderFrame: Electron.WebFrameMain | null | undefined;
+            const listener = (event: Electron.IpcMainEvent) => {
+              if (event.sender !== w.webContents) return;
+              senderFrame = event.senderFrame;
+              ipcMain.off('preload-unload', listener);
+            };
+            ipcMain.on('preload-unload', listener);
+            const crossOriginPromise = w.webContents.loadURL(crossOriginUrl);
+            // Awaited below; this only keeps an early return from leaving it unhandled.
+            crossOriginPromise.catch(() => {});
+            const unloaded = await poll(() => senderFrame !== undefined);
+            ipcMain.off('preload-unload', listener);
+            if (!unloaded || !senderFrame) return { unloaded, hasSenderFrame: !!senderFrame };
+            const detached = senderFrame.detached;
+            await crossOriginPromise;
+            // The detached frame is not destroyed immediately, so wait until it is
+            const destroyed = await poll(() => senderFrame!.isDestroyed());
+            let urlError = 'did not throw';
+            try {
+              console.log(senderFrame.url);
+            } catch (error) {
+              urlError = (error as Error).message;
+            }
+            return { unloaded, hasSenderFrame: true, detached, destroyed, urlError };
+          } finally {
+            w.destroy();
+            server.close();
+          }
+        },
+        path.join(subframesPath, 'preload.js')
+      );
+      expect(result.unloaded, 'the old page should send its unload IPC').toBe(true);
+      expect(result.hasSenderFrame).toBe(true);
+      expect(result.detached).toBe(true);
+      expect(result.destroyed, 'the detached frame should be destroyed').toBe(true);
+      expect(result.urlError).toMatch(/Render frame was disposed/);
     });
 
     // Skip test as we don't have an offline repro yet
