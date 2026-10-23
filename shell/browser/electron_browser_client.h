@@ -107,6 +107,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
   bool DoesSiteRequireDedicatedProcess(content::BrowserContext* browser_context,
                                        const GURL& effective_site_url) override;
+  bool ShouldAllowCrossProcessSandboxedFrameForPrecursor(
+      content::BrowserContext* browser_context,
+      const GURL& precursor,
+      const GURL& url) override;
   void BindHostReceiverForRenderer(
       content::RenderProcessHost* render_process_host,
       mojo::GenericPendingReceiver receiver) override;
@@ -280,6 +284,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
           handshake_client,
       WebSocketOptions options) override;
   bool WillInterceptWebSocket(content::RenderFrameHost*) override;
+  bool HasWebRequestAPIProxy(content::BrowserContext* browser_context) override;
   void WillCreateWebTransport(
       int process_id,
       int frame_routing_id,
@@ -384,6 +389,23 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   bool ShouldUseProcessPerSite(
       content::BrowserContext* browser_context,
       const content::SecurityPrincipal& security_principal) override;
+  content::AllowServiceWorkerResult AllowServiceWorker(
+      const GURL& scope,
+      const net::SiteForCookies& site_for_cookies,
+      const std::optional<url::Origin>& top_frame_origin,
+      const blink::StorageKey& storage_key,
+      const GURL& script_url,
+      content::BrowserContext* context) override;
+  bool MayDeleteServiceWorkerRegistration(
+      const GURL& scope,
+      content::BrowserContext* browser_context) override;
+  bool ShouldTryToUpdateServiceWorkerRegistration(
+      const GURL& scope,
+      content::BrowserContext* browser_context) override;
+  bool IsClipboardAllowedForServiceWorker(const url::Origin& origin) override;
+  bool AllowWorkerWriteToClipboard(
+      const url::Origin& origin,
+      content::BrowserContext* browser_context) override;
   void GetMediaDeviceIDSalt(
       content::RenderFrameHost* rfh,
       const net::SiteForCookies& site_for_cookies,
