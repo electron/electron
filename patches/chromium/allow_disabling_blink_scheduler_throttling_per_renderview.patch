@@ -51,10 +51,10 @@ index d98b5dda96208e3f923aa8a9c6e6eb988004904b..7c91ed2d7a397ad9e36cbecfc13de7bd
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index c910f273bb3f2388d087043f76d84fcf5406fde2..147a2b7c59f404f3b5c19780b71548e4a1c67269 100644
+index 56f2629d87ac241199599f4f4fa3b32f9307da5f..8339aff54788d987cbd2b8c42172e699dbac6478 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -686,8 +686,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
+@@ -709,8 +709,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
    // OnShowWithPageVisibility will not call NotifyHostAndDelegateOnWasShown,
    // which updates `visibility_`, unless the host is hidden. Make sure no update
    // is needed.
@@ -116,7 +116,7 @@ index 8bd6b07c5c47f6625b24b1ee227d632bf5d97c5d..b87a4ff69d2b68194bcabe1a60668645
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index ae5055c9cae7e4e6de10155cfea95319fc267525..ec828bb7553343e55b768b699d9dc5c13715953e 100644
+index 30d264afe13ae801fc830666b26f82dd91f7da5a..dbe4ac5fba0fe5e628c23c0d1adbdc9ef4de89f0 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -618,6 +618,7 @@ WebViewImpl::WebViewImpl(
@@ -127,7 +127,7 @@ index ae5055c9cae7e4e6de10155cfea95319fc267525..ec828bb7553343e55b768b699d9dc5c1
    SetVisibilityState(visibility, /*is_initial_state=*/true);
    if (prerender_param) {
      page_->SetIsPrerendering(true);
-@@ -2593,6 +2594,13 @@ void WebViewImpl::SetPageLifecycleStateInternal(
+@@ -2598,6 +2599,13 @@ void WebViewImpl::SetPageLifecycleStateInternal(
    TRACE_EVENT2("navigation", "WebViewImpl::SetPageLifecycleStateInternal",
                 "old_state", old_state, "new_state", new_state);
  
@@ -141,7 +141,7 @@ index ae5055c9cae7e4e6de10155cfea95319fc267525..ec828bb7553343e55b768b699d9dc5c1
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -4316,10 +4324,26 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -4323,10 +4331,26 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  

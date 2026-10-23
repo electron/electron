@@ -185,7 +185,7 @@ index f3c132412ca87c3abda84cf91434a9f7d874cb35..c615390ea3d0bc57b39af463ead589a3
        bool unadjusted_movement,
        input::InputRouterImpl::RequestMouseLockCallback response) override;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d62e51cd001251cdc504d1d25fb9974d2f9725d1..e5b1eb3da2946bdc2ac0b7e4ee654df3d148a1c0 100644
+index d0af3bbca5c1476c93c66dde15f566bfbdf07e78..2b83659cdfb4c150d6ec76c1723df89a9d0dbf64 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5505,6 +5505,7 @@ blink::mojom::ApplicationContext WebContentsImpl::GetApplicationContext()
@@ -240,7 +240,7 @@ index d62e51cd001251cdc504d1d25fb9974d2f9725d1..e5b1eb3da2946bdc2ac0b7e4ee654df3
      static_cast<SurfaceEmbedConnectorImpl*>(connector)
          ->SetPointerLockWidgetInParentChain(widget);
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 2b0c7cc4288629ea399a1f37eb988093dabbfacb..5f0b26475dd7951119ec42f17bd3583a7a5d6a45 100644
+index 4b30b9752a54d7a30fd4f8b2187416bbab025f52..7c766e1e6fb23958691ef3ce0aed1978f6fe5e50 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -1233,6 +1233,7 @@ class CONTENT_EXPORT WebContentsImpl
