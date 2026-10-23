@@ -733,6 +733,9 @@ describe('chrome extensions', () => {
       extension = await ses.extensions.loadExtension(fixture('mv3'));
       driver = createWindow();
       await driver.loadURL(`${extension.url}page.html`);
+      // A request made before the service worker has registered its webRequest
+      // listeners is never reported to it.
+      await ask({ type: 'ping' });
     });
 
     it('reports the window of a registered tab to webRequest and sender.tab', async () => {
@@ -925,9 +928,9 @@ describe('chrome extensions', () => {
       const tab = createWindow();
       const { id } = tab.webContents;
       const custom = { workspace: { name: 'work', pinnedIds: [1, 2] }, container: 'personal' };
-      ses.extensions.addTab(tab.webContents, { windowId: 1, index: 0, pinned: true, ...custom });
+      ses.extensions.addTab(tab.webContents, { windowId: 1, index: 0, pinned: true, splitViewId: 3, ...custom });
       await tab.loadURL(`${url}/?custom`);
-      const expected = { id, windowId: 1, index: 0, pinned: true, url: `${url}/?custom`, ...custom };
+      const expected = { id, windowId: 1, index: 0, pinned: true, splitViewId: 3, url: `${url}/?custom`, ...custom };
 
       const sender = await ask({ type: 'wait-for', list: 'senders', marker: 'custom' });
       expect(sender.tab).toMatchObject(expected);
@@ -935,10 +938,11 @@ describe('chrome extensions', () => {
       expect((await call('tabs.query', { windowId: 1 })).result).toMatchObject([expected]);
       expect((await call('tabs.update', id, { muted: true })).result).toMatchObject(expected);
 
-      ses.extensions.updateTab(tab.webContents, { workspace: 'home', container: null } as any);
+      ses.extensions.updateTab(tab.webContents, { workspace: 'home', container: null, splitViewId: null } as any);
       const updated = (await call('tabs.get', id)).result;
       expect(updated).toHaveProperty('workspace', 'home');
       expect(updated).toHaveProperty('pinned', true);
+      expect(updated).toHaveProperty('splitViewId', -1);
       expect(updated).not.toHaveProperty('container');
     });
 
