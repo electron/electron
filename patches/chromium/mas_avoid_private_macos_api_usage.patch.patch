@@ -58,10 +58,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index ce307f24f31e740e4afc05fe531a1fe9e2463a92..7f5ef6fc7f4f8f42d6d259310684ec535ae85e72 100644
+index 7190f24b26c2a251c1da7fa33a6a68fe440fafeb..90129e83bab359966e08fee0d2faede144757268 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1154,6 +1154,7 @@ component("base") {
+@@ -1153,6 +1153,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -137,10 +137,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index 9e9f063efe6f16f2f960e520badd025d0dea0a87..67aabbd6a143d9a6b0e6f2de7dd22cf03984908c 100644
+index e96b4e6a0e2dfe30a9f132499f71e8ed1c3b59f2..f6b1c802fd5fa2d49315a41ce2d114d6f20f7064 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -1029,6 +1029,7 @@ if (is_clang_or_gcc) {
+@@ -1033,6 +1033,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -660,10 +660,10 @@ index 48f47bf3eeb8464d1c3925f0f73f62c790cac2f0..b7b2b7c1b7e99927012ce1676cc753b2
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index c5c652c6c67da33e9a2127cbbc35ec5fc535df6c..e58bb7368359e6ba13c249b8677a91e509313ce3 100644
+index 0e5d0e59d926ecd0ea53ef7c3eaaada1af40a044..e1093d964d4f27fd3222dfa2a216ef5f5dffe3b5 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-@@ -23,6 +23,7 @@
+@@ -24,6 +24,7 @@
  #import "components/remote_cocoa/app_shim/views_nswindow_delegate.h"
  #import "components/remote_cocoa/app_shim/window_touch_bar_delegate.h"
  #include "components/remote_cocoa/common/native_widget_ns_window_host.mojom.h"
@@ -671,7 +671,7 @@ index c5c652c6c67da33e9a2127cbbc35ec5fc535df6c..e58bb7368359e6ba13c249b8677a91e5
  #include "ui/accessibility/platform/ax_platform_node.h"
  #import "ui/base/cocoa/default_command_dispatcher_delegate.h"
  #import "ui/base/cocoa/user_interface_item_command_handler.h"
-@@ -112,15 +113,17 @@ void OrderChildWindow(NSWindow* child_window,
+@@ -113,15 +114,17 @@ void OrderChildWindow(NSWindow* child_window,
  
  }  // namespace
  
@@ -690,7 +690,7 @@ index c5c652c6c67da33e9a2127cbbc35ec5fc535df6c..e58bb7368359e6ba13c249b8677a91e5
  - (long long)_resizeDirectionForMouseLocation:(CGPoint)location;
  - (BOOL)_isConsideredOpenForPersistentState;
  - (void)_zoomToScreenEdge:(NSUInteger)edge;
-@@ -131,6 +134,8 @@ - (void)_setFrame:(NSRect)frameRect
+@@ -132,6 +135,8 @@ - (void)_setFrame:(NSRect)frameRect
                     animate:(BOOL)animate;
  - (void)_setFrameAfterMove:(NSRect)frameRect;
  - (BOOL)_isNonactivatingPanel;
@@ -699,7 +699,7 @@ index c5c652c6c67da33e9a2127cbbc35ec5fc535df6c..e58bb7368359e6ba13c249b8677a91e5
  @end
  
  struct NSEdgeAndCornerThicknesses {
-@@ -175,13 +180,30 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event;
+@@ -176,13 +181,30 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event;
  @implementation NSView (CRFrameViewAdditions)
  // If a mouseDown: falls through to the frame view, turn it into a window drag.
  - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
@@ -730,7 +730,7 @@ index c5c652c6c67da33e9a2127cbbc35ec5fc535df6c..e58bb7368359e6ba13c249b8677a91e5
  @implementation NativeWidgetMacNSWindowTitledFrame
  - (void)mouseDown:(NSEvent*)event {
    if (self.window.movable) {
-@@ -210,6 +232,8 @@ - (BOOL)usesCustomDrawing {
+@@ -211,6 +233,8 @@ - (BOOL)usesCustomDrawing {
  }
  @end
  
@@ -739,7 +739,7 @@ index c5c652c6c67da33e9a2127cbbc35ec5fc535df6c..e58bb7368359e6ba13c249b8677a91e5
  @implementation NativeWidgetMacNSWindow {
   @private
    CommandDispatcher* __strong _commandDispatcher;
-@@ -290,6 +314,7 @@ - (BOOL)invokeOriginalIsVisibleForTesting {
+@@ -291,6 +315,7 @@ - (BOOL)invokeOriginalIsVisibleForTesting {
  // bubbles and the find bar, but these should not be movable.
  // Instead, let's push this up to the parent window which should be
  // the browser.
@@ -747,7 +747,7 @@ index c5c652c6c67da33e9a2127cbbc35ec5fc535df6c..e58bb7368359e6ba13c249b8677a91e5
  - (void)_zoomToScreenEdge:(NSUInteger)edge {
    if (self.parentWindow) {
      [self.parentWindow _zoomToScreenEdge:edge];
-@@ -297,6 +322,7 @@ - (void)_zoomToScreenEdge:(NSUInteger)edge {
+@@ -298,6 +323,7 @@ - (void)_zoomToScreenEdge:(NSUInteger)edge {
      [super _zoomToScreenEdge:edge];
    }
  }
@@ -755,7 +755,7 @@ index c5c652c6c67da33e9a2127cbbc35ec5fc535df6c..e58bb7368359e6ba13c249b8677a91e5
  
  // This override helps diagnose lifetime issues in crash stacktraces by
  // inserting a symbol on NativeWidgetMacNSWindow and should be kept even if it
-@@ -429,6 +455,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -430,6 +456,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -764,7 +764,7 @@ index c5c652c6c67da33e9a2127cbbc35ec5fc535df6c..e58bb7368359e6ba13c249b8677a91e5
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -440,6 +468,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -441,6 +469,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
@@ -773,7 +773,7 @@ index c5c652c6c67da33e9a2127cbbc35ec5fc535df6c..e58bb7368359e6ba13c249b8677a91e5
  // Constrains the frame rect during an active window move loop so that the top
  // of the window does not exceed the menu bar / visible top of the display,
  // while allowing smooth unrestricted dragging across display boundaries without
-@@ -537,6 +567,8 @@ - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
+@@ -538,6 +568,8 @@ - (NSRect)constrainFrameRect:(NSRect)frameRect toScreen:(NSScreen*)screen {
    return [super constrainFrameRect:frameRect toScreen:screen];
  }
  
@@ -782,7 +782,7 @@ index c5c652c6c67da33e9a2127cbbc35ec5fc535df6c..e58bb7368359e6ba13c249b8677a91e5
  // AppKit's internal screen layout manager invokes
  // _setFrame:fromAdjustmentToScreen: and _setFrameAfterMove: asynchronously
  // during screen layout changes or display boundary transitions to adjust the
-@@ -585,6 +617,8 @@ - (void)_setFrameAfterMove:(NSRect)frameRect {
+@@ -586,6 +618,8 @@ - (void)_setFrameAfterMove:(NSRect)frameRect {
    }
  }
  
@@ -791,7 +791,7 @@ index c5c652c6c67da33e9a2127cbbc35ec5fc535df6c..e58bb7368359e6ba13c249b8677a91e5
  - (NSWindow*)topmostVisibleChildModalWindow {
    if (!_bridge) {
      return nil;
-@@ -628,12 +662,14 @@ - (BOOL)_usesCustomDrawing {
+@@ -629,12 +663,14 @@ - (BOOL)_usesCustomDrawing {
  // if it were valid to set that style for windows, setting the window style
  // recalculates and re-caches a bunch of stuff, so a surgical override is the
  // cleanest approach.
@@ -806,7 +806,7 @@ index c5c652c6c67da33e9a2127cbbc35ec5fc535df6c..e58bb7368359e6ba13c249b8677a91e5
  
  + (void)_getExteriorResizeEdgeThicknesses:
              (NSEdgeAndCornerThicknesses*)outThicknesses
-@@ -947,9 +983,11 @@ - (id)archiver:(NSKeyedArchiver*)archiver willEncodeObject:(id)object {
+@@ -959,9 +995,11 @@ - (id)archiver:(NSKeyedArchiver*)archiver willEncodeObject:(id)object {
  }
  
  - (void)saveRestorableState {
@@ -818,7 +818,7 @@ index c5c652c6c67da33e9a2127cbbc35ec5fc535df6c..e58bb7368359e6ba13c249b8677a91e5
  
    // Certain conditions, such as in the Speedometer 3 benchmark, can trigger a
    // rapid succession of calls to saveRestorableState. If there's no pending
-@@ -1016,6 +1054,7 @@ - (void)reallySaveRestorableState {
+@@ -1028,6 +1066,7 @@ - (void)reallySaveRestorableState {
  // affects its restorable state changes.
  - (void)invalidateRestorableState {
    [super invalidateRestorableState];
@@ -826,7 +826,7 @@ index c5c652c6c67da33e9a2127cbbc35ec5fc535df6c..e58bb7368359e6ba13c249b8677a91e5
    if ([self _isConsideredOpenForPersistentState]) {
      if (_willUpdateRestorableState)
        return;
-@@ -1028,6 +1067,7 @@ - (void)invalidateRestorableState {
+@@ -1040,6 +1079,7 @@ - (void)invalidateRestorableState {
      _willUpdateRestorableState = NO;
      [NSObject cancelPreviousPerformRequestsWithTarget:self];
    }
@@ -834,7 +834,7 @@ index c5c652c6c67da33e9a2127cbbc35ec5fc535df6c..e58bb7368359e6ba13c249b8677a91e5
  }
  
  // On newer SDKs, _canMiniaturize respects NSWindowStyleMaskMiniaturizable in
-@@ -1206,6 +1246,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+@@ -1218,6 +1258,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
    // Since _removeFromGroups: is not documented it could go away in newer
    // versions of macOS. If the selector does not exist, DumpWithoutCrashing() so
    // we hear about the change.
@@ -842,7 +842,7 @@ index c5c652c6c67da33e9a2127cbbc35ec5fc535df6c..e58bb7368359e6ba13c249b8677a91e5
    if (![NSWindow instancesRespondToSelector:@selector(_removeFromGroups:)]) {
      base::debug::DumpWithoutCrashing();
      return;
-@@ -1223,6 +1264,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
+@@ -1235,6 +1276,7 @@ - (void)maybeRemoveTreeFromOrderingGroups {
        [currentWindow _removeFromGroups:child];
      }
    }
@@ -1228,7 +1228,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 55748f1d95405ecdb2fd730791cd063621f12872..0ac18717077395f3698f1d4b0a2bca4c2554874d 100644
+index 9674e7884a537e421ae475ba10e9127c7a2d60d7..7b11c454b25816b486dd50fba99e5d117890936a 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -649,6 +649,7 @@ static_library("test_support") {
@@ -1256,7 +1256,7 @@ index 55748f1d95405ecdb2fd730791cd063621f12872..0ac18717077395f3698f1d4b0a2bca4c
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3446,6 +3450,7 @@ test("content_unittests") {
+@@ -3452,6 +3456,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -2309,10 +2309,10 @@ index 6f419c1255ad8e10e50a0de3bc9599a07e8d917e..8f93adfc525f98fb569f3dd63ff97883
      deps += [ "//build:ios_buildflags" ]
    }
 diff --git a/ui/display/mac/ca_display_link_mac.mm b/ui/display/mac/ca_display_link_mac.mm
-index 6e1add2ad1ccd151b98f9926d8cde3268f56de05..94a44aa0b97fb1dd2365c135c35e74769115bc51 100644
+index 3cd58d02890ac5f60f7fd9eb14a1e23f633dedcd..88e0f3b68a007a60ccf9b6c6dd6c4386f5cc231b 100644
 --- a/ui/display/mac/ca_display_link_mac.mm
 +++ b/ui/display/mac/ca_display_link_mac.mm
-@@ -20,15 +20,18 @@
+@@ -21,15 +21,18 @@
  #include "base/metrics/histogram_macros.h"
  #include "base/no_destructor.h"
  #include "base/trace_event/trace_event.h"
@@ -2331,7 +2331,7 @@ index 6e1add2ad1ccd151b98f9926d8cde3268f56de05..94a44aa0b97fb1dd2365c135c35e7476
  
  // Undocumented SkyLight framework functions.
  // SLSGetDisplayLink() is a private function (SPI) that creates a CADisplayLink
-@@ -299,6 +302,15 @@ void RecordWindowServerEventPumpResult(
+@@ -305,6 +308,15 @@ void RecordWindowServerEventPumpResult(
        viz_task_runner_(base::SingleThreadTaskRunner::GetCurrentDefault()) {
    weak_ptr_ = weak_factory_.GetWeakPtr();
  
@@ -2347,7 +2347,7 @@ index 6e1add2ad1ccd151b98f9926d8cde3268f56de05..94a44aa0b97fb1dd2365c135c35e7476
    base::Thread::Options thread_options;
    thread_options.message_pump_type = base::MessagePumpType::NS_RUNLOOP;
    thread_options.thread_type = base::ThreadType::kPresentation;
-@@ -308,6 +320,7 @@ void RecordWindowServerEventPumpResult(
+@@ -314,6 +326,7 @@ void RecordWindowServerEventPumpResult(
        FROM_HERE,
        base::BindOnce(&WindowServerEventPumpThread::PumpWindowServerEvents,
                       base::Unretained(this)));
@@ -2355,7 +2355,7 @@ index 6e1add2ad1ccd151b98f9926d8cde3268f56de05..94a44aa0b97fb1dd2365c135c35e7476
  }
  
  // In a standard out-of-process GPU scenario,
-@@ -325,6 +338,7 @@ void RecordWindowServerEventPumpResult(
+@@ -331,6 +344,7 @@ void RecordWindowServerEventPumpResult(
  
    shutdown_ = true;
  
@@ -2363,7 +2363,7 @@ index 6e1add2ad1ccd151b98f9926d8cde3268f56de05..94a44aa0b97fb1dd2365c135c35e7476
    // Send an empty message to wake up the thread and quit the while loop.
    // See WindowServerEventPumpThread::PumpWindowServerEvents() for details.
    CGSConnectionID connection_id = CGSMainConnectionID();
-@@ -348,10 +362,12 @@ void RecordWindowServerEventPumpResult(
+@@ -354,10 +368,12 @@ void RecordWindowServerEventPumpResult(
          << "CGSGetEventPort() in ~WindowServerEventPumpThread failed. Error: "
          << err;
    }
@@ -2376,7 +2376,7 @@ index 6e1add2ad1ccd151b98f9926d8cde3268f56de05..94a44aa0b97fb1dd2365c135c35e7476
  void WindowServerEventPumpThread::PumpWindowServerEvents() {
    CGSConnectionID connection_id = CGSMainConnectionID();
    // We haven't seen this happen in practice, but WebKit's implementation
-@@ -499,6 +515,7 @@ void RecordWindowServerEventPumpResult(
+@@ -505,6 +521,7 @@ void RecordWindowServerEventPumpResult(
      }
    }
  }
@@ -2466,10 +2466,10 @@ index 65ae8170664d15c7884261812400d0ed638a681d..86c937f1e6d03b88803a2ca80abff19c
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 86668cf470ff935533b03342b0afdc4c24f976d8..5223189e074ff1871fd0b916a24b7753101d433e 100644
+index 5b10316192ea3e9e7ce13d4fdc9d4c789088d9d0..5498c7b4e4bf9f998ad1bb1804f69ad0984a7498 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -791,6 +791,8 @@ component("views") {
+@@ -792,6 +792,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -2478,7 +2478,7 @@ index 86668cf470ff935533b03342b0afdc4c24f976d8..5223189e074ff1871fd0b916a24b7753
    }
  
    if (is_win) {
-@@ -1212,6 +1214,8 @@ source_set("test_support") {
+@@ -1213,6 +1215,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  

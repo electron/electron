@@ -294,20 +294,20 @@ struct Converter<WindowOpenDisposition> {
                                    WindowOpenDisposition val) {
     std::string_view disposition = "other";
     switch (val) {
-      case WindowOpenDisposition::CURRENT_TAB:
+      case WindowOpenDisposition::kCurrentTab:
         disposition = "default";
         break;
-      case WindowOpenDisposition::NEW_FOREGROUND_TAB:
+      case WindowOpenDisposition::kNewForegroundTab:
         disposition = "foreground-tab";
         break;
-      case WindowOpenDisposition::NEW_BACKGROUND_TAB:
+      case WindowOpenDisposition::kNewBackgroundTab:
         disposition = "background-tab";
         break;
-      case WindowOpenDisposition::NEW_POPUP:
-      case WindowOpenDisposition::NEW_WINDOW:
+      case WindowOpenDisposition::kNewPopup:
+      case WindowOpenDisposition::kNewWindow:
         disposition = "new-window";
         break;
-      case WindowOpenDisposition::SAVE_TO_DISK:
+      case WindowOpenDisposition::kSaveToDisk:
         disposition = "save-to-disk";
         break;
       default:
@@ -438,7 +438,7 @@ struct Converter<content::NavigationEntry*> {
         if (!page_state.IsValid())
           return false;
 
-        entry->SetPageState(std::move(page_state), restore_context.get());
+        entry->SetPageState(page_state, restore_context.get());
       }
     }
 
@@ -2406,7 +2406,7 @@ content::WebContents* WebContents::OpenURLFromTab(
     base::OnceCallback<void(content::NavigationHandle&)>
         navigation_handle_callback) {
   auto weak_this = WeakRef();
-  if (params.disposition != WindowOpenDisposition::CURRENT_TAB) {
+  if (params.disposition != WindowOpenDisposition::kCurrentTab) {
     // A link opened into a new window (modifier-click, middle-click,
     // target=_blank form post routed here, ...) is a popup like window.open()
     // and is subject to the same embedder policy; see
@@ -3661,13 +3661,13 @@ void WebContents::DidFinishNavigation(
 }
 
 void WebContents::NotifyPageTitleUpdated(
-    content::NavigationEntry* entry,
+    const content::NavigationEntry* entry,
     bool from_same_document_history_navigation) {
   std::u16string final_title;
   bool explicit_set = true;
   if (entry) {
-    auto title = entry->GetTitle();
-    auto url = entry->GetURL();
+    const auto& title = entry->GetTitle();
+    const auto& url = entry->GetURL();
     if (url.SchemeIsFile() && title.empty()) {
       final_title = base::UTF8ToUTF16(url.ExtractFileName());
       explicit_set = false;
@@ -4024,7 +4024,7 @@ v8::Local<v8::Promise> WebContents::LoadURL(gin::Arguments* args,
 
   GURL base_url_for_data_url;
   if (options.Get("baseURLForDataURL", &base_url_for_data_url)) {
-    params.base_url_for_data_url = base_url_for_data_url;
+    params.base_url_for_data_url = std::move(base_url_for_data_url);
     params.load_type = content::NavigationController::LOAD_TYPE_DATA;
   }
 
@@ -5900,7 +5900,7 @@ void WebContents::PostMessage(v8::Isolate* isolate,
         "webContents has no main frame to post to");
     return;
   }
-  frame->PostMessage(isolate, channel, message, std::move(transfer));
+  frame->PostMessage(isolate, channel, message, transfer);
 }
 
 void WebContents::SendInternal(gin::Arguments* args) {
