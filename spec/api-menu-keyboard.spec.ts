@@ -154,6 +154,13 @@ ifdescribe(process.platform !== 'darwin' && !!robot?.keyTap)(
       expect(lastClicked).toBe('beta-leaf');
     });
 
+    it('switches to the first sibling menu when Left is pressed on the second menu', async () => {
+      await pressKeys([['b', ['alt']], 'left', 'enter']);
+
+      await waitUntil(() => lastClicked !== null);
+      expect(lastClicked).toBe('alpha-item');
+    });
+
     it('wraps to the last sibling menu when Left is pressed on the first menu', async () => {
       await pressKeys([
         ['a', ['alt']], // open Alpha (Alpha Item selected)
@@ -176,11 +183,12 @@ ifdescribe(process.platform !== 'darwin' && !!robot?.keyTap)(
       expect(lastClicked).toBe('alpha-item');
     });
 
-    for (const [key, expected] of [
-      ['right', 'beta-leaf'],
-      ['left', 'gamma-item']
-    ]) {
-      it(`switches sibling menus when ${key} is pressed after opening a menu by mouse`, async () => {
+    for (const [keys, expected] of [
+      [['right'], 'beta-leaf'],
+      [['left'], 'gamma-item'],
+      [['right', 'left'], 'alpha-item']
+    ] as const) {
+      it(`switches sibling menus when ${keys.join(' then ')} is pressed after opening a menu by mouse`, async () => {
         const bounds = w.getContentBounds();
         // The menu bar is immediately above the content area.
         const point = { x: Math.round(bounds.x + 20), y: Math.round(bounds.y - 10) };
@@ -189,7 +197,7 @@ ifdescribe(process.platform !== 'darwin' && !!robot?.keyTap)(
         robot.mouseClick();
         await setTimeout(KEY_DELAY);
 
-        await pressKeys([key, 'enter']);
+        await pressKeys([...keys, 'enter']);
 
         await waitUntil(() => lastClicked !== null);
         expect(lastClicked).toBe(expected);
