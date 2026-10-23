@@ -33,10 +33,10 @@ Reviewed-by: Lei Zhang <thestig@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1716984}
 
 diff --git a/ui/base/x/selection_requester.cc b/ui/base/x/selection_requester.cc
-index 53375068081707c83201bc1651ea4ebaa0ce6c3c..e9078cdc9650acd9a9a364e906155acfeef312d0 100644
+index 40e1a4c3e45d5cde1be8e79299a680ccb6acb05f..5a1ae8870aed40235545c118a26caad2bc278e7b 100644
 --- a/ui/base/x/selection_requester.cc
 +++ b/ui/base/x/selection_requester.cc
-@@ -23,6 +23,13 @@ namespace {
+@@ -21,6 +21,13 @@ namespace {
  
  const char kChromeSelection[] = "CHROME_SELECTION";
  
@@ -50,7 +50,7 @@ index 53375068081707c83201bc1651ea4ebaa0ce6c3c..e9078cdc9650acd9a9a364e906155acf
  // Combines |data| into a single std::vector<uint8_t>.
  std::vector<uint8_t> CombineData(
      const std::vector<scoped_refptr<base::RefCountedMemory>>& data) {
-@@ -56,7 +63,7 @@ void SelectionRequester::PerformConvertSelectionAsync(
+@@ -55,7 +62,7 @@ void SelectionRequester::PerformConvertSelectionAsync(
      x11::Atom selection,
      x11::Atom target,
      ConvertSelectionCallback callback) {
@@ -59,7 +59,7 @@ index 53375068081707c83201bc1651ea4ebaa0ce6c3c..e9078cdc9650acd9a9a364e906155acf
        std::make_unique<Request>(selection, target, std::move(callback)));
    if (requests_.size() == 1) {
      ConvertSelectionForCurrentRequest();
-@@ -111,8 +118,7 @@ void SelectionRequester::OnSelectionNotify(
+@@ -110,8 +117,7 @@ void SelectionRequester::OnSelectionNotify(
      const x11::SelectionNotifyEvent& selection) {
    Request* request = GetCurrentRequest();
    x11::Atom event_property = selection.property;
@@ -69,7 +69,7 @@ index 53375068081707c83201bc1651ea4ebaa0ce6c3c..e9078cdc9650acd9a9a364e906155acf
        request->target != selection.target) {
      // ICCCM requires us to delete the property passed into SelectionNotify.
      if (event_property != x11::Atom::None) {
-@@ -139,9 +145,11 @@ void SelectionRequester::OnSelectionNotify(
+@@ -138,9 +144,11 @@ void SelectionRequester::OnSelectionNotify(
      request->data_sent_incrementally = true;
      request->out_data.clear();
      request->out_type = x11::Atom::None;
@@ -82,7 +82,7 @@ index 53375068081707c83201bc1651ea4ebaa0ce6c3c..e9078cdc9650acd9a9a364e906155acf
    }
  }
  
-@@ -164,13 +172,13 @@ void SelectionRequester::OnPropertyEvent(
+@@ -163,13 +171,13 @@ void SelectionRequester::OnPropertyEvent(
        ui::GetRawBytesOfProperty(x_window_, x_property_, &out_data, &out_type);
    if (!success) {
      // Note: `this` may be deleted after this call.
@@ -98,7 +98,7 @@ index 53375068081707c83201bc1651ea4ebaa0ce6c3c..e9078cdc9650acd9a9a364e906155acf
      return;
    }
  
-@@ -182,63 +190,59 @@ void SelectionRequester::OnPropertyEvent(
+@@ -181,63 +189,59 @@ void SelectionRequester::OnPropertyEvent(
  
    if (!out_data->size()) {
      // Note: `this` may be deleted after this call.
@@ -197,7 +197,7 @@ index 53375068081707c83201bc1651ea4ebaa0ce6c3c..e9078cdc9650acd9a9a364e906155acf
  }
  
  SelectionRequester::Request* SelectionRequester::GetCurrentRequest() {
-@@ -252,8 +256,6 @@ SelectionRequester::Request::Request(x11::Atom selection,
+@@ -251,8 +255,6 @@ SelectionRequester::Request::Request(x11::Atom selection,
        target(target),
        data_sent_incrementally(false),
        out_type(x11::Atom::None),
