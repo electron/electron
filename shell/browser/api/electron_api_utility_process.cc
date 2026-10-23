@@ -6,8 +6,8 @@
 
 #include <array>
 #include <map>
-#include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "base/functional/bind.h"
 #include "base/location.h"
@@ -71,21 +71,24 @@ namespace electron {
 
 namespace {
 
-// Maps process IDs to their UtilityProcessWrapper instances.
+// Tracks every UtilityProcessWrapper from construction until termination,
+// including ones whose child has not launched yet and so has no pid.
 struct UtilityProcessRegistry {
-  void Add(base::ProcessId pid, api::UtilityProcessWrapper* wrapper) {
-    map_.emplace(pid, wrapper);
+  using Entries =
+      std::vector<cppgc::WeakPersistent<api::UtilityProcessWrapper>>;
+
+  void Add(api::UtilityProcessWrapper* wrapper) {
+    wrappers_.emplace_back(wrapper);
   }
-  void Remove(base::ProcessId pid) { map_.erase(pid); }
-  api::UtilityProcessWrapper* Lookup(base::ProcessId pid) {
-    auto it = map_.find(pid);
-    return it != map_.end() ? it->second.Get() : nullptr;
+  void Remove(api::UtilityProcessWrapper* wrapper) {
+    std::erase_if(wrappers_, [wrapper](const auto& entry) {
+      return !entry || entry.Get() == wrapper;
+    });
   }
+  const Entries& wrappers() const { return wrappers_; }
 
  private:
-  std::unordered_map<base::ProcessId,
-                     cppgc::WeakPersistent<api::UtilityProcessWrapper>>
-      map_;
+  Entries wrappers_;
 };
 
 UtilityProcessRegistry& GetAllUtilityProcessWrappers() {
@@ -102,81 +105,6 @@ namespace api {
 const gin::WrapperInfo UtilityProcessWrapper::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronUtilityProcess);
 
-// Owns the browser end of the postMessage port.
-// blink::MessagePortDescriptor DCHECKs if it is destroyed while the connector
-// still holds its handle, and the wrapper's destructor runs during cppgc
-// sweeping, where native teardown is not allowed. TearDownNative() closes the
-// port of a wrapper that is still alive at shutdown, e.g. one whose child had
-// not finished launching when ElectronBrowserMainParts shut the others down.
-class UtilityProcessWrapper::PortLifecycle final
-    : public NativePeer<UtilityProcessWrapper>,
-      private mojo::MessageReceiver {
- public:
-  PortLifecycle(UtilityProcessWrapper* wrapper,
-                blink::MessagePortDescriptor host_port)
-      : NativePeer<UtilityProcessWrapper>(wrapper),
-        host_port_(std::move(host_port)) {
-    connector_ = std::make_unique<mojo::Connector>(
-        host_port_.TakeHandleToEntangleWithEmbedder(),
-        mojo::Connector::SINGLE_THREADED_SEND,
-        base::SingleThreadTaskRunner::GetCurrentDefault());
-    connector_->set_incoming_receiver(this);
-    // The connector is owned here, so destroying it cancels the handler.
-    connector_->set_connection_error_handler(
-        base::BindOnce(&PortLifecycle::Close, base::Unretained(this)));
-    StartObservingShutdown();
-  }
-
-  bool is_open() const { return connector_ != nullptr; }
-
-  void Post(mojo::Message* message) {
-    if (connector_)
-      connector_->Accept(message);
-  }
-
-  // Messages the child posted before it exited can still be queued on the
-  // port when its exit is observed: the connector dispatches them one per
-  // task, and the exit notification may already be ahead of those tasks.
-  // Dispatch whatever is already queued so it is emitted before 'exit'
-  // instead of being dropped with the port. A readable pipe never blocks
-  // WaitForIncomingMessage(). If dispatch fails, the connector's error
-  // handler closes the port and the loop ends.
-  void DispatchPending() {
-    while (connector_ && connector_->is_valid() &&
-           connector_->handle().QuerySignalsState().readable()) {
-      if (!connector_->WaitForIncomingMessage())
-        break;
-    }
-  }
-
-  // Idempotent.
-  void Close() {
-    if (!connector_)
-      return;
-    // Take the handle back from the connector so the descriptor is no longer
-    // entangled when it is reset. A null handle is replaced by a dangling one.
-    host_port_.GiveDisentangledHandle(connector_->PassMessagePipe());
-    connector_.reset();
-    host_port_.Reset();
-  }
-
- private:
-  ~PortLifecycle() override = default;
-
-  // mojo::MessageReceiver:
-  bool Accept(mojo::Message* message) override {
-    if (auto utility_process = wrapper())
-      return utility_process->OnPortMessage(message);
-    return true;
-  }
-
-  // NativePeer:
-  void TearDownNative() override { Close(); }
-
-  blink::MessagePortDescriptor host_port_;
-  std::unique_ptr<mojo::Connector> connector_;
-};
-
 UtilityProcessWrapper::UtilityProcessWrapper(
     node::mojom::NodeServiceParamsPtr params,
     std::u16string display_name,
@@ -188,6 +116,9 @@ UtilityProcessWrapper::UtilityProcessWrapper(
     bool disclaim_responsibility,
     Session* session)
     : create_network_observer_(create_network_observer), session_(session) {
+  // Registered before anything can fail, so that browser shutdown also reaches
+  // a wrapper whose child is still launching. HandleTermination() removes it.
+  GetAllUtilityProcessWrappers().Add(this);
   auto& allocation_handle =
       JavascriptEnvironment::GetIsolate()->GetCppHeap()->GetAllocationHandle();
 #if BUILDFLAG(IS_WIN)
@@ -340,9 +271,17 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   // support queuing of messages without having to block other
   // interfaces.
   blink::MessagePortDescriptorPair pipe;
+  host_port_ = pipe.TakePort0();
   params->port = pipe.TakePort1();
-  port_lifecycle_ = NativePeer<UtilityProcessWrapper>::Create<PortLifecycle>(
-      this, pipe.TakePort0());
+  connector_ = std::make_unique<mojo::Connector>(
+      host_port_.TakeHandleToEntangleWithEmbedder(),
+      mojo::Connector::SINGLE_THREADED_SEND,
+      base::SingleThreadTaskRunner::GetCurrentDefault());
+  connector_->set_incoming_receiver(this);
+  // |connector_| is owned by this wrapper and only ever reset, never moved, so
+  // destroying it cancels the handler.
+  connector_->set_connection_error_handler(base::BindOnce(
+      &UtilityProcessWrapper::CloseConnectorPort, base::Unretained(this)));
 
   params->url_loader_factory_params = CreateURLLoaderFactoryParams();
   node_service_remote_->Initialize(std::move(params),
@@ -358,6 +297,12 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 UtilityProcessWrapper::~UtilityProcessWrapper() {
   content::ServiceProcessHost::RemoveObserver(this);
   content::BrowserChildProcessObserver::Remove(this);
+  // A wrapper that never reached HandleTermination(), e.g. one still alive at
+  // heap teardown, still owns its port and stdio read ends. Both are native,
+  // non-GC members. A port destroyed while still lent to |connector_| fails a
+  // DCHECK in MessagePortDescriptor::Reset().
+  CloseConnectorPort();
+  CloseStdioReadFds();
 }
 
 void UtilityProcessWrapper::OnServiceProcessLaunch(
@@ -366,7 +311,6 @@ void UtilityProcessWrapper::OnServiceProcessLaunch(
     return;
   DCHECK(node_service_remote_.is_connected());
   pid_ = process.Pid();
-  GetAllUtilityProcessWrappers().Add(pid_, this);
   // Remember the child process id: the process has already gone from the
   // ChildProcessData that BrowserChildProcessCrashed/Killed receive.
   for (content::BrowserChildProcessHostIterator it(
@@ -396,8 +340,7 @@ void UtilityProcessWrapper::HandleTermination(uint32_t exit_code) {
     return;
   terminated_ = true;
 
-  if (pid_ != base::kNullProcessId)
-    GetAllUtilityProcessWrappers().Remove(pid_);
+  GetAllUtilityProcessWrappers().Remove(this);
 
   pid_ = base::kNullProcessId;
   child_process_id_ = content::ChildProcessId();
@@ -486,13 +429,29 @@ void UtilityProcessWrapper::CloseStdioReadFds() {
 }
 
 void UtilityProcessWrapper::CloseConnectorPort() {
-  if (port_lifecycle_)
-    port_lifecycle_->Close();
+  // GiveDisentangledHandle() replaces an invalid handle with a dangling one, so
+  // the port is always reset, even if the connector's pipe is gone.
+  if (!connector_closed_ && connector_) {
+    host_port_.GiveDisentangledHandle(connector_->PassMessagePipe());
+    connector_ = nullptr;
+    host_port_.Reset();
+    connector_closed_ = true;
+  }
 }
 
 void UtilityProcessWrapper::DispatchPendingMessages() {
-  if (port_lifecycle_)
-    port_lifecycle_->DispatchPending();
+  // Messages the child posted before it exited can still be queued on the
+  // port when its exit is observed: the connector dispatches them one per
+  // task, and the exit notification may already be ahead of those tasks.
+  // Dispatch whatever is already queued so it is emitted before 'exit'
+  // instead of being dropped with the port. A readable pipe never blocks
+  // WaitForIncomingMessage(). If dispatch fails, the connector's error
+  // handler closes the port and the loop ends.
+  while (!connector_closed_ && connector_ && connector_->is_valid() &&
+         connector_->handle().QuerySignalsState().readable()) {
+    if (!connector_->WaitForIncomingMessage())
+      break;
+  }
 }
 
 void UtilityProcessWrapper::Shutdown(uint32_t exit_code) {
@@ -504,7 +463,7 @@ void UtilityProcessWrapper::Shutdown(uint32_t exit_code) {
 }
 
 void UtilityProcessWrapper::PostMessage(gin::Arguments* const args) {
-  if (!port_lifecycle_ || !port_lifecycle_->is_open())
+  if (!connector_ || connector_closed_)
     return;
 
   blink::TransferableMessage transferable_message;
@@ -537,7 +496,7 @@ void UtilityProcessWrapper::PostMessage(gin::Arguments* const args) {
 
   mojo::Message mojo_message = blink::mojom::TransferableMessage::WrapAsMessage(
       std::move(transferable_message));
-  port_lifecycle_->Post(&mojo_message);
+  connector_->Accept(&mojo_message);
 }
 
 bool UtilityProcessWrapper::Kill() {
@@ -562,7 +521,7 @@ v8::Local<v8::Value> UtilityProcessWrapper::GetOSProcessId(
   return gin::ConvertToV8(isolate, pid_);
 }
 
-bool UtilityProcessWrapper::OnPortMessage(mojo::Message* mojo_message) {
+bool UtilityProcessWrapper::Accept(mojo::Message* mojo_message) {
   blink::TransferableMessage message;
   if (!blink::mojom::TransferableMessage::DeserializeFromMessage(
           std::move(*mojo_message), &message)) {
@@ -658,8 +617,27 @@ void UtilityProcessWrapper::BindAIManager(
 // static
 UtilityProcessWrapper* UtilityProcessWrapper::FromProcessId(
     base::ProcessId pid) {
-  auto* utility_process_wrapper = GetAllUtilityProcessWrappers().Lookup(pid);
-  return utility_process_wrapper ? utility_process_wrapper : nullptr;
+  // Wrappers whose child has not launched yet have no pid.
+  if (pid == base::kNullProcessId)
+    return nullptr;
+  for (const auto& wrapper : GetAllUtilityProcessWrappers().wrappers()) {
+    if (wrapper && wrapper->pid_ == pid)
+      return wrapper.Get();
+  }
+  return nullptr;
+}
+
+// static
+void UtilityProcessWrapper::ShutdownAll() {
+  // Shutdown() removes each wrapper from the registry and runs 'exit'
+  // listeners, so iterate over a copy that keeps the wrappers alive.
+  std::vector<cppgc::Persistent<UtilityProcessWrapper>> wrappers;
+  for (const auto& wrapper : GetAllUtilityProcessWrappers().wrappers()) {
+    if (wrapper)
+      wrappers.emplace_back(wrapper.Get());
+  }
+  for (const auto& wrapper : wrappers)
+    wrapper->Shutdown(0 /* exit_code */);
 }
 
 // static
