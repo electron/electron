@@ -393,7 +393,7 @@ ElectronBrowserContext::ElectronBrowserContext(
                  std::get_if<std::reference_wrapper<const base::FilePath>>(
                      &partition_location)) {
     const base::FilePath& partition_path = filepath_partition->get();
-    path_ = std::move(partition_path);
+    path_ = partition_path;
   }
 
   BrowserContextDependencyManager::GetInstance()->MarkBrowserContextLive(this);
