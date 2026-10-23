@@ -514,19 +514,21 @@ describe('chrome extensions', () => {
         await w.loadURL(url);
         const [, json] = await p;
         const result = JSON.parse(json);
-        expect(result.error).to.be.undefined();
-        expect(result.change).to.deep.equal({
+        expect(result.error).toBeUndefined();
+        expect(result.change).toEqual({
           key: { newValue: 'sync-value' },
           other: { newValue: 'sync-other' }
         });
-        expect(result.sync).to.deep.equal({ key: 'sync-value', other: 'sync-other' });
-        expect(result.local).to.deep.equal({ key: 'local-value' });
-        expect(result.syncAfterRemove).to.deep.equal({ key: 'sync-value' });
-        expect(result.bytesInUse).to.be.a('number').and.be.greaterThan(0);
-        expect(result.perItemError).to.be.a('string').and.include('kQuotaBytesPerItem quota exceeded');
-        expect(result.syncAfterClear).to.deep.equal({});
-        expect(result.localAfterSyncClear).to.deep.equal({ key: 'local-value' });
-        expect(result.constants).to.deep.equal({
+        expect(result.sync).toEqual({ key: 'sync-value', other: 'sync-other' });
+        expect(result.local).toEqual({ key: 'local-value' });
+        expect(result.syncAfterRemove).toEqual({ key: 'sync-value' });
+        expect(result.bytesInUse).toBeTypeOf('number');
+        expect(result.bytesInUse).toBeGreaterThan(0);
+        expect(result.perItemError).toBeTypeOf('string');
+        expect(result.perItemError).toContain('kQuotaBytesPerItem quota exceeded');
+        expect(result.syncAfterClear).toEqual({});
+        expect(result.localAfterSyncClear).toEqual({ key: 'local-value' });
+        expect(result.constants).toEqual({
           QUOTA_BYTES: 102400,
           QUOTA_BYTES_PER_ITEM: 8192,
           MAX_ITEMS: 512
