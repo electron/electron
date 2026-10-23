@@ -4952,13 +4952,13 @@ describe('webContents module', () => {
         await w.loadURL('about:blank');
         w.hide();
         await stopsPainting(w.webContents);
-        expect(await visibilityState(w.webContents)).toBe('hidden');
+        await becomes('hidden', w.webContents);
         w.webContents.setBackgroundThrottling(false);
         await startsPainting(w.webContents);
-        expect(await visibilityState(w.webContents)).toBe('visible');
+        await becomes('visible', w.webContents);
         w.webContents.setBackgroundThrottling(true);
         await stopsPainting(w.webContents);
-        expect(await visibilityState(w.webContents)).toBe('hidden');
+        await becomes('hidden', w.webContents);
       });
 
       // Same, but with throttling disabled before the window is hidden (the
