@@ -21,6 +21,7 @@
 #include "mojo/public/cpp/bindings/message.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/browser/native_peer.h"
 #include "shell/browser/net/url_loader_network_observer.h"
 #include "shell/common/gc_plugin.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
@@ -40,10 +41,6 @@ namespace base {
 class Process;
 }  // namespace base
 
-namespace mojo {
-class Connector;
-}  // namespace mojo
-
 namespace electron::api {
 
 class Session;
@@ -51,7 +48,6 @@ class Session;
 class UtilityProcessWrapper final
     : public gin::Wrappable<UtilityProcessWrapper>,
       public gin_helper::EventEmitterMixin<UtilityProcessWrapper>,
-      private mojo::MessageReceiver,
       public node::mojom::NodeServiceClient,
       public content::ServiceProcessHost::Observer,
       public content::BrowserChildProcessObserver {
@@ -97,6 +93,8 @@ class UtilityProcessWrapper final
       v8::Isolate* isolate) override;
 
  private:
+  class PortLifecycle;
+
   void OnServiceProcessLaunch(const base::Process& process);
   void CloseConnectorPort();
   void DispatchPendingMessages();
@@ -109,8 +107,8 @@ class UtilityProcessWrapper final
   bool Kill();
   v8::Local<v8::Value> GetOSProcessId(v8::Isolate* isolate) const;
 
-  // mojo::MessageReceiver
-  bool Accept(mojo::Message* mojo_message) override;
+  // Forwarded by PortLifecycle while this wrapper is reachable.
+  bool OnPortMessage(mojo::Message* mojo_message);
 
   // node::mojom::NodeServiceClient
   void OnV8FatalError(const std::string& location,
@@ -148,12 +146,11 @@ class UtilityProcessWrapper final
 #endif
   int stdout_read_fd_ = -1;
   int stderr_read_fd_ = -1;
-  bool connector_closed_ = false;
   bool terminated_ = false;
   bool killed_ = false;
   bool create_network_observer_ = false;
-  std::unique_ptr<mojo::Connector> connector_;
-  blink::MessagePortDescriptor host_port_;
+  // Owns the postMessage port, which must be closed outside cppgc sweeping.
+  std::unique_ptr<PortLifecycle, NativePeerBase::Deleter> port_lifecycle_;
   GC_PLUGIN_IGNORE(
       "Context tracking of receiver is not needed in the browser process.")
   mojo::Receiver<node::mojom::NodeServiceClient> receiver_{this};

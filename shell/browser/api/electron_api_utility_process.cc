@@ -102,6 +102,81 @@ namespace api {
 const gin::WrapperInfo UtilityProcessWrapper::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronUtilityProcess);
 
+// Owns the browser end of the postMessage port.
+// blink::MessagePortDescriptor DCHECKs if it is destroyed while the connector
+// still holds its handle, and the wrapper's destructor runs during cppgc
+// sweeping, where native teardown is not allowed. TearDownNative() closes the
+// port of a wrapper that is still alive at shutdown, e.g. one whose child had
+// not finished launching when ElectronBrowserMainParts shut the others down.
+class UtilityProcessWrapper::PortLifecycle final
+    : public NativePeer<UtilityProcessWrapper>,
+      private mojo::MessageReceiver {
+ public:
+  PortLifecycle(UtilityProcessWrapper* wrapper,
+                blink::MessagePortDescriptor host_port)
+      : NativePeer<UtilityProcessWrapper>(wrapper),
+        host_port_(std::move(host_port)) {
+    connector_ = std::make_unique<mojo::Connector>(
+        host_port_.TakeHandleToEntangleWithEmbedder(),
+        mojo::Connector::SINGLE_THREADED_SEND,
+        base::SingleThreadTaskRunner::GetCurrentDefault());
+    connector_->set_incoming_receiver(this);
+    // The connector is owned here, so destroying it cancels the handler.
+    connector_->set_connection_error_handler(
+        base::BindOnce(&PortLifecycle::Close, base::Unretained(this)));
+    StartObservingShutdown();
+  }
+
+  bool is_open() const { return connector_ != nullptr; }
+
+  void Post(mojo::Message* message) {
+    if (connector_)
+      connector_->Accept(message);
+  }
+
+  // Messages the child posted before it exited can still be queued on the
+  // port when its exit is observed: the connector dispatches them one per
+  // task, and the exit notification may already be ahead of those tasks.
+  // Dispatch whatever is already queued so it is emitted before 'exit'
+  // instead of being dropped with the port. A readable pipe never blocks
+  // WaitForIncomingMessage(). If dispatch fails, the connector's error
+  // handler closes the port and the loop ends.
+  void DispatchPending() {
+    while (connector_ && connector_->is_valid() &&
+           connector_->handle().QuerySignalsState().readable()) {
+      if (!connector_->WaitForIncomingMessage())
+        break;
+    }
+  }
+
+  // Idempotent.
+  void Close() {
+    if (!connector_)
+      return;
+    // Take the handle back from the connector so the descriptor is no longer
+    // entangled when it is reset. A null handle is replaced by a dangling one.
+    host_port_.GiveDisentangledHandle(connector_->PassMessagePipe());
+    connector_.reset();
+    host_port_.Reset();
+  }
+
+ private:
+  ~PortLifecycle() override = default;
+
+  // mojo::MessageReceiver:
+  bool Accept(mojo::Message* message) override {
+    if (auto utility_process = wrapper())
+      return utility_process->OnPortMessage(message);
+    return true;
+  }
+
+  // NativePeer:
+  void TearDownNative() override { Close(); }
+
+  blink::MessagePortDescriptor host_port_;
+  std::unique_ptr<mojo::Connector> connector_;
+};
+
 UtilityProcessWrapper::UtilityProcessWrapper(
     node::mojom::NodeServiceParamsPtr params,
     std::u16string display_name,
@@ -265,16 +340,9 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   // support queuing of messages without having to block other
   // interfaces.
   blink::MessagePortDescriptorPair pipe;
-  host_port_ = pipe.TakePort0();
   params->port = pipe.TakePort1();
-  connector_ = std::make_unique<mojo::Connector>(
-      host_port_.TakeHandleToEntangleWithEmbedder(),
-      mojo::Connector::SINGLE_THREADED_SEND,
-      base::SingleThreadTaskRunner::GetCurrentDefault());
-  connector_->set_incoming_receiver(this);
-  connector_->set_connection_error_handler(base::BindOnce(
-      &UtilityProcessWrapper::CloseConnectorPort,
-      gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle))));
+  port_lifecycle_ = NativePeer<UtilityProcessWrapper>::Create<PortLifecycle>(
+      this, pipe.TakePort0());
 
   params->url_loader_factory_params = CreateURLLoaderFactoryParams();
   node_service_remote_->Initialize(std::move(params),
@@ -418,27 +486,13 @@ void UtilityProcessWrapper::CloseStdioReadFds() {
 }
 
 void UtilityProcessWrapper::CloseConnectorPort() {
-  if (!connector_closed_ && connector_ && connector_->is_valid()) {
-    host_port_.GiveDisentangledHandle(connector_->PassMessagePipe());
-    connector_ = nullptr;
-    host_port_.Reset();
-    connector_closed_ = true;
-  }
+  if (port_lifecycle_)
+    port_lifecycle_->Close();
 }
 
 void UtilityProcessWrapper::DispatchPendingMessages() {
-  // Messages the child posted before it exited can still be queued on the
-  // port when its exit is observed: the connector dispatches them one per
-  // task, and the exit notification may already be ahead of those tasks.
-  // Dispatch whatever is already queued so it is emitted before 'exit'
-  // instead of being dropped with the port. A readable pipe never blocks
-  // WaitForIncomingMessage(). If dispatch fails, the connector's error
-  // handler closes the port and the loop ends.
-  while (!connector_closed_ && connector_ && connector_->is_valid() &&
-         connector_->handle().QuerySignalsState().readable()) {
-    if (!connector_->WaitForIncomingMessage())
-      break;
-  }
+  if (port_lifecycle_)
+    port_lifecycle_->DispatchPending();
 }
 
 void UtilityProcessWrapper::Shutdown(uint32_t exit_code) {
@@ -450,7 +504,7 @@ void UtilityProcessWrapper::Shutdown(uint32_t exit_code) {
 }
 
 void UtilityProcessWrapper::PostMessage(gin::Arguments* const args) {
-  if (!connector_ || connector_closed_)
+  if (!port_lifecycle_ || !port_lifecycle_->is_open())
     return;
 
   blink::TransferableMessage transferable_message;
@@ -483,7 +537,7 @@ void UtilityProcessWrapper::PostMessage(gin::Arguments* const args) {
 
   mojo::Message mojo_message = blink::mojom::TransferableMessage::WrapAsMessage(
       std::move(transferable_message));
-  connector_->Accept(&mojo_message);
+  port_lifecycle_->Post(&mojo_message);
 }
 
 bool UtilityProcessWrapper::Kill() {
@@ -508,7 +562,7 @@ v8::Local<v8::Value> UtilityProcessWrapper::GetOSProcessId(
   return gin::ConvertToV8(isolate, pid_);
 }
 
-bool UtilityProcessWrapper::Accept(mojo::Message* mojo_message) {
+bool UtilityProcessWrapper::OnPortMessage(mojo::Message* mojo_message) {
   blink::TransferableMessage message;
   if (!blink::mojom::TransferableMessage::DeserializeFromMessage(
           std::move(*mojo_message), &message)) {
