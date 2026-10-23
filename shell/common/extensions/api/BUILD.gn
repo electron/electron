@@ -71,7 +71,11 @@ generated_types("generated_api_types") {
   configs = [ "//build/config:precompiled_headers" ]
   schema_include_rules = "extensions/common/api:extensions::api::%(namespace)s"
 
-  root_namespace = "extensions::api::%(namespace)s"
+  # Not extensions::api: //chrome/common/extensions/api, which Electron also
+  # links, generates extensions::api::tabs from Chrome's own tabs.json. With
+  # the same names the linker keeps one library's definitions for both, so
+  # these types could not differ from Chrome's.
+  root_namespace = "extensions::electron_api::%(namespace)s"
   deps = [ "//extensions/common/api" ]
 
   visibility = [ ":api" ]

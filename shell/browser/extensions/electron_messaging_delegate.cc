@@ -42,18 +42,14 @@ ElectronMessagingDelegate::IsNativeMessagingHostAllowed(
 
 std::optional<base::DictValue> ElectronMessagingDelegate::MaybeGetTabInfo(
     content::WebContents* web_contents) {
-  if (web_contents) {
-    auto* api_contents = electron::api::WebContents::From(web_contents);
-    if (api_contents) {
-      api::tabs::Tab tab;
-      tab.id = api_contents->ID();
-      tab.url = api_contents->GetURL().spec();
-      tab.title = base::UTF16ToUTF8(api_contents->GetTitle());
-      tab.audible = api_contents->IsCurrentlyAudible();
-      return tab.ToValue();
-    }
-  }
-  return std::nullopt;
+  // Extensions use `sender.tab` to tell content scripts from extension pages,
+  // so a sender that is not a tab must not get one.
+  if (!IsTab(web_contents))
+    return std::nullopt;
+  // Not scrubbed: the extension has to be able to identify who messaged it.
+  return CreateTabObject(electron::api::WebContents::From(web_contents),
+                         nullptr)
+      .ToValue();
 }
 
 content::WebContents* ElectronMessagingDelegate::GetWebContentsByTabId(

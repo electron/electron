@@ -11,18 +11,37 @@
 #include "gin/object_template_builder.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/extensions/electron_extension_system.h"
+#include "shell/browser/extensions/electron_extension_tab_registry.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/extension_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_util.h"
 #include "v8/include/cppgc/allocation.h"
 
 namespace electron::api {
+
+namespace {
+
+// Null for anything that is not a live WebContents, a destroyed one included.
+content::WebContents* ToWebContents(v8::Isolate* isolate,
+                                    v8::Local<v8::Value> value) {
+  content::WebContents* web_contents = nullptr;
+  if (!gin::ConvertFromV8(isolate, value, &web_contents))
+    return nullptr;
+  return web_contents;
+}
+
+constexpr char kInvalidWebContentsError[] =
+    "webContents must be a WebContents that is not destroyed";
+
+}  // namespace
 
 const gin::WrapperInfo Extensions::kWrapperInfo =
     electron::MakeWrapperInfo(electron::kElectronExtensions);
@@ -124,6 +143,79 @@ v8::Local<v8::Value> Extensions::GetAllExtensions(v8::Isolate* isolate) {
   return gin::ConvertToV8(isolate, extensions_vector);
 }
 
+void Extensions::SetTabMode(gin_helper::ErrorThrower thrower,
+                            const std::string& mode) {
+  auto* registry =
+      extensions::ElectronExtensionTabRegistry::Get(browser_context());
+  if (mode == "all-web-contents") {
+    registry->set_mode(extensions::ElectronTabMode::kAllWebContents);
+  } else if (mode == "registered") {
+    registry->set_mode(extensions::ElectronTabMode::kRegistered);
+  } else {
+    thrower.ThrowTypeError("mode must be 'all-web-contents' or 'registered'");
+  }
+}
+
+void Extensions::AddView(gin_helper::ErrorThrower thrower,
+                         v8::Local<v8::Value> web_contents_value,
+                         const base::DictValue& details) {
+  content::WebContents* web_contents =
+      ToWebContents(thrower.isolate(), web_contents_value);
+  if (!web_contents) {
+    thrower.ThrowTypeError(kInvalidWebContentsError);
+    return;
+  }
+  const auto result =
+      extensions::ElectronExtensionTabRegistry::Get(browser_context())
+          ->AddView(web_contents, details);
+  if (!result.has_value())
+    thrower.ThrowError(result.error());
+}
+
+void Extensions::UpdateView(gin_helper::ErrorThrower thrower,
+                            v8::Local<v8::Value> web_contents_value,
+                            const base::DictValue& details) {
+  content::WebContents* web_contents =
+      ToWebContents(thrower.isolate(), web_contents_value);
+  if (!web_contents) {
+    thrower.ThrowTypeError(kInvalidWebContentsError);
+    return;
+  }
+  const auto result =
+      extensions::ElectronExtensionTabRegistry::Get(browser_context())
+          ->UpdateView(web_contents, details);
+  if (!result.has_value())
+    thrower.ThrowError(result.error());
+}
+
+void Extensions::RemoveView(v8::Local<v8::Value> web_contents_value) {
+  // A destroyed WebContents has already been removed.
+  content::WebContents* web_contents =
+      ToWebContents(JavascriptEnvironment::GetIsolate(), web_contents_value);
+  if (!web_contents)
+    return;
+  extensions::ElectronExtensionTabRegistry::Get(browser_context())
+      ->RemoveView(web_contents);
+}
+
+void Extensions::SetFocusedWindow(gin_helper::ErrorThrower thrower,
+                                  v8::Local<v8::Value> window_id_value) {
+  auto* registry =
+      extensions::ElectronExtensionTabRegistry::Get(browser_context());
+  if (window_id_value->IsNull()) {
+    registry->set_focused_window_id(std::nullopt);
+    return;
+  }
+  int window_id = -1;
+  if (!window_id_value->IsInt32() ||
+      !gin::ConvertFromV8(thrower.isolate(), window_id_value, &window_id) ||
+      window_id < 0) {
+    thrower.ThrowTypeError("windowId must be a non-negative integer or null");
+    return;
+  }
+  registry->set_focused_window_id(window_id);
+}
+
 void Extensions::OnExtensionLoaded(content::BrowserContext* browser_context,
                                    const extensions::Extension* extension) {
   Emit("extension-loaded", extension);
@@ -149,7 +241,12 @@ gin::ObjectTemplateBuilder Extensions::GetObjectTemplateBuilder(
       .SetMethod("loadExtension", &Extensions::LoadExtension)
       .SetMethod("removeExtension", &Extensions::RemoveExtension)
       .SetMethod("getExtension", &Extensions::GetExtension)
-      .SetMethod("getAllExtensions", &Extensions::GetAllExtensions);
+      .SetMethod("getAllExtensions", &Extensions::GetAllExtensions)
+      .SetMethod("setTabMode", &Extensions::SetTabMode)
+      .SetMethod("addView", &Extensions::AddView)
+      .SetMethod("updateView", &Extensions::UpdateView)
+      .SetMethod("removeView", &Extensions::RemoveView)
+      .SetMethod("setFocusedWindow", &Extensions::SetFocusedWindow);
 }
 
 const gin::WrapperInfo* Extensions::wrapper_info() const {
