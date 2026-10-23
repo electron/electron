@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "components/value_store/value_store_factory.h"
 #include "extensions/browser/api/cookies/cookies_api_delegate.h"
 #include "extensions/browser/api/storage/settings_namespace.h"
 #include "extensions/browser/guest_view/extensions_guest_view_manager_delegate.h"
