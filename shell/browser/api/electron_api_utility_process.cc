@@ -6,8 +6,8 @@
 
 #include <array>
 #include <map>
-#include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "base/files/file_util.h"
 #include "base/functional/bind.h"
@@ -60,21 +60,24 @@ namespace electron {
 
 namespace {
 
-// Maps process IDs to their UtilityProcessWrapper instances.
+// Tracks every UtilityProcessWrapper from construction until termination,
+// including ones whose child has not launched yet and so has no pid.
 struct UtilityProcessRegistry {
-  void Add(base::ProcessId pid, api::UtilityProcessWrapper* wrapper) {
-    map_.emplace(pid, wrapper);
+  using Entries =
+      std::vector<cppgc::WeakPersistent<api::UtilityProcessWrapper>>;
+
+  void Add(api::UtilityProcessWrapper* wrapper) {
+    wrappers_.emplace_back(wrapper);
   }
-  void Remove(base::ProcessId pid) { map_.erase(pid); }
-  api::UtilityProcessWrapper* Lookup(base::ProcessId pid) {
-    auto it = map_.find(pid);
-    return it != map_.end() ? it->second.Get() : nullptr;
+  void Remove(api::UtilityProcessWrapper* wrapper) {
+    std::erase_if(wrappers_, [wrapper](const auto& entry) {
+      return !entry || entry.Get() == wrapper;
+    });
   }
+  const Entries& wrappers() const { return wrappers_; }
 
  private:
-  std::unordered_map<base::ProcessId,
-                     cppgc::WeakPersistent<api::UtilityProcessWrapper>>
-      map_;
+  Entries wrappers_;
 };
 
 UtilityProcessRegistry& GetAllUtilityProcessWrappers() {
@@ -100,6 +103,9 @@ UtilityProcessWrapper::UtilityProcessWrapper(
     bool disclaim_responsibility,
     Session* session)
     : create_network_observer_(create_network_observer), session_(session) {
+  // Registered before anything can fail, so that browser shutdown also reaches
+  // a wrapper whose child is still launching. HandleTermination() removes it.
+  GetAllUtilityProcessWrappers().Add(this);
   auto& allocation_handle =
       JavascriptEnvironment::GetIsolate()->GetCppHeap()->GetAllocationHandle();
 #if BUILDFLAG(IS_WIN)
@@ -240,9 +246,10 @@ UtilityProcessWrapper::UtilityProcessWrapper(
       mojo::Connector::SINGLE_THREADED_SEND,
       base::SingleThreadTaskRunner::GetCurrentDefault());
   connector_->set_incoming_receiver(this);
+  // |connector_| is owned by this wrapper and only ever reset, never moved, so
+  // destroying it cancels the handler.
   connector_->set_connection_error_handler(base::BindOnce(
-      &UtilityProcessWrapper::CloseConnectorPort,
-      gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle))));
+      &UtilityProcessWrapper::CloseConnectorPort, base::Unretained(this)));
 
   params->url_loader_factory_params = CreateURLLoaderFactoryParams();
   node_service_remote_->Initialize(std::move(params),
@@ -257,13 +264,20 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 
 UtilityProcessWrapper::~UtilityProcessWrapper() {
   content::ServiceProcessHost::RemoveObserver(this);
+  // A wrapper that never reached HandleTermination(), e.g. one still alive at
+  // heap teardown, still owns its port. It is a native, non-GC member. A port
+  // destroyed while still lent to |connector_| fails a DCHECK in
+  // MessagePortDescriptor::Reset().
+  CloseConnectorPort();
 }
 
 void UtilityProcessWrapper::OnServiceProcessLaunch(
     const base::Process& process) {
+  // ShutdownAll() can terminate a wrapper whose child is still launching.
+  if (terminated_)
+    return;
   DCHECK(node_service_remote_.is_connected());
   pid_ = process.Pid();
-  GetAllUtilityProcessWrappers().Add(pid_, this);
   if (stdout_read_fd_ != -1)
     EmitWithoutEvent("stdout", stdout_read_fd_);
   if (stderr_read_fd_ != -1)
@@ -281,8 +295,7 @@ void UtilityProcessWrapper::HandleTermination(uint32_t exit_code) {
     return;
   terminated_ = true;
 
-  if (pid_ != base::kNullProcessId)
-    GetAllUtilityProcessWrappers().Remove(pid_);
+  GetAllUtilityProcessWrappers().Remove(this);
 
   pid_ = base::kNullProcessId;
   content::ServiceProcessHost::RemoveObserver(this);
@@ -336,7 +349,9 @@ void UtilityProcessWrapper::OnServiceProcessCrashed(
 }
 
 void UtilityProcessWrapper::CloseConnectorPort() {
-  if (!connector_closed_ && connector_->is_valid()) {
+  // GiveDisentangledHandle() replaces an invalid handle with a dangling one, so
+  // the port is always reset, even if the connector's pipe is gone.
+  if (!connector_closed_ && connector_) {
     host_port_.GiveDisentangledHandle(connector_->PassMessagePipe());
     connector_ = nullptr;
     host_port_.Reset();
@@ -523,8 +538,27 @@ UtilityProcessWrapper::CreateURLLoaderFactoryParams() {
 // static
 UtilityProcessWrapper* UtilityProcessWrapper::FromProcessId(
     base::ProcessId pid) {
-  auto* utility_process_wrapper = GetAllUtilityProcessWrappers().Lookup(pid);
-  return utility_process_wrapper ? utility_process_wrapper : nullptr;
+  // Wrappers whose child has not launched yet have no pid.
+  if (pid == base::kNullProcessId)
+    return nullptr;
+  for (const auto& wrapper : GetAllUtilityProcessWrappers().wrappers()) {
+    if (wrapper && wrapper->pid_ == pid)
+      return wrapper.Get();
+  }
+  return nullptr;
+}
+
+// static
+void UtilityProcessWrapper::ShutdownAll() {
+  // Shutdown() removes each wrapper from the registry and runs 'exit'
+  // listeners, so iterate over a copy that keeps the wrappers alive.
+  std::vector<cppgc::Persistent<UtilityProcessWrapper>> wrappers;
+  for (const auto& wrapper : GetAllUtilityProcessWrappers().wrappers()) {
+    if (wrapper)
+      wrappers.emplace_back(wrapper.Get());
+  }
+  for (const auto& wrapper : wrappers)
+    wrapper->Shutdown(0 /* exit_code */);
 }
 
 // static
