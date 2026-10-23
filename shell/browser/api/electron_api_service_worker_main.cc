@@ -83,7 +83,7 @@ ServiceWorkerMain* ServiceWorkerMain::FromVersionID(
     content::StoragePartitionConfig storage_partition_config,
     int64_t version_id) {
   const ServiceWorkerKey key{std::move(browser_context_id),
-                             std::move(storage_partition_config), version_id};
+                             storage_partition_config, version_id};
   return FromServiceWorkerKey(key);
 }
 
@@ -329,8 +329,7 @@ ServiceWorkerMain* ServiceWorkerMain::From(
     content::StoragePartitionConfig storage_partition_config,
     int64_t version_id) {
   ServiceWorkerKey service_worker_key{std::move(browser_context_id),
-                                      std::move(storage_partition_config),
-                                      version_id};
+                                      storage_partition_config, version_id};
 
   if (auto* service_worker = FromServiceWorkerKey(service_worker_key))
     return service_worker;

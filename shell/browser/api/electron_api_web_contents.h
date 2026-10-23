@@ -736,7 +736,7 @@ class WebContents final : public ExclusiveAccessContext,
   void DidUpdateFaviconURL(content::RenderFrameHost* render_frame_host,
                            const std::vector<blink::mojom::FaviconURLPtr>& urls,
                            blink::mojom::FaviconUpdateReason reason) override;
-  void NotifyPageTitleUpdated(content::NavigationEntry* entry,
+  void NotifyPageTitleUpdated(const content::NavigationEntry* entry,
                               bool from_same_document_history_navigation);
   void MediaStartedPlaying(const MediaPlayerInfo& video_type,
                            const content::MediaPlayerId& id) override;

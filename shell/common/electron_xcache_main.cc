@@ -38,6 +38,7 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include "libplatform/libplatform.h"
@@ -235,7 +236,7 @@ bool ParseBlobAt(std::string_view data, size_t offset, BlobInfo* info) {
               static_cast<uInt>(b.size - kSnapRoChecksumOffset));
   b.checksum_ok = static_cast<uint32_t>(a) == ReadU32(p + kSnapChecksumOffset);
   b.ro_checksum = ReadU32(p + kSnapRoChecksumOffset);
-  *info = b;
+  *info = std::move(b);
   return true;
 }
 
