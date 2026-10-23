@@ -45,7 +45,7 @@ std::optional<base::DictValue> ElectronMessagingDelegate::MaybeGetTabInfo(
   if (web_contents) {
     auto* api_contents = electron::api::WebContents::From(web_contents);
     if (api_contents) {
-      api::tabs::Tab tab;
+      electron_api::tabs::Tab tab;
       tab.id = api_contents->ID();
       tab.url = api_contents->GetURL().spec();
       tab.title = base::UTF16ToUTF8(api_contents->GetTitle());

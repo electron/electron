@@ -38,7 +38,7 @@ using electron::WebContentsZoomController;
 
 namespace extensions {
 
-namespace tabs = api::tabs;
+namespace tabs = electron_api::tabs;
 
 constexpr std::string_view kFrameNotFoundError = "No frame with id * in tab *.";
 const char kPerOriginOnlyInAutomaticError[] =
@@ -49,24 +49,24 @@ using api::extension_types::InjectDetails;
 
 namespace {
 void ZoomModeToZoomSettings(WebContentsZoomController::ZoomMode zoom_mode,
-                            api::tabs::ZoomSettings* zoom_settings) {
+                            tabs::ZoomSettings* zoom_settings) {
   DCHECK(zoom_settings);
   switch (zoom_mode) {
     case WebContentsZoomController::ZOOM_MODE_DEFAULT:
-      zoom_settings->mode = api::tabs::ZoomSettingsMode::kAutomatic;
-      zoom_settings->scope = api::tabs::ZoomSettingsScope::kPerOrigin;
+      zoom_settings->mode = tabs::ZoomSettingsMode::kAutomatic;
+      zoom_settings->scope = tabs::ZoomSettingsScope::kPerOrigin;
       break;
     case WebContentsZoomController::ZOOM_MODE_ISOLATED:
-      zoom_settings->mode = api::tabs::ZoomSettingsMode::kAutomatic;
-      zoom_settings->scope = api::tabs::ZoomSettingsScope::kPerTab;
+      zoom_settings->mode = tabs::ZoomSettingsMode::kAutomatic;
+      zoom_settings->scope = tabs::ZoomSettingsScope::kPerTab;
       break;
     case WebContentsZoomController::ZOOM_MODE_MANUAL:
-      zoom_settings->mode = api::tabs::ZoomSettingsMode::kManual;
-      zoom_settings->scope = api::tabs::ZoomSettingsScope::kPerTab;
+      zoom_settings->mode = tabs::ZoomSettingsMode::kManual;
+      zoom_settings->scope = tabs::ZoomSettingsScope::kPerTab;
       break;
     case WebContentsZoomController::ZOOM_MODE_DISABLED:
-      zoom_settings->mode = api::tabs::ZoomSettingsMode::kDisabled;
-      zoom_settings->scope = api::tabs::ZoomSettingsScope::kPerTab;
+      zoom_settings->mode = tabs::ZoomSettingsMode::kDisabled;
+      zoom_settings->scope = tabs::ZoomSettingsScope::kPerTab;
       break;
   }
 }
@@ -78,11 +78,11 @@ bool MatchesBool(const std::optional<bool>& boolean, bool value) {
   return !boolean || *boolean == value;
 }
 
-api::tabs::MutedInfo CreateMutedInfo(content::WebContents* contents) {
+tabs::MutedInfo CreateMutedInfo(content::WebContents* contents) {
   DCHECK(contents);
-  api::tabs::MutedInfo info;
+  tabs::MutedInfo info;
   info.muted = contents->IsAudioMuted();
-  info.reason = api::tabs::MutedInfoReason::kUser;
+  info.reason = tabs::MutedInfoReason::kUser;
   return info;
 }
 
