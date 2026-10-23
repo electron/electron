@@ -806,7 +806,7 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
       frame_routing_id_(frame_routing_id),
       request_id_generator_(request_id_generator),
       navigation_ui_data_(std::move(navigation_ui_data)),
-      navigation_id_(std::move(navigation_id)),
+      navigation_id_(navigation_id),
       loader_factory_type_(loader_factory_type) {
   target_factory_.Bind(std::move(target_factory_remote));
   target_factory_.set_disconnect_handler(base::BindOnce(
