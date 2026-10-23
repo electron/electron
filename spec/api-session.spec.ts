@@ -22,7 +22,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { parseBasicAuth } from './lib/net-helpers.ts';
-import { defer, deferKillUtilityProcess, ifit, listen, waitUntil } from './lib/spec-helpers.ts';
+import { defer, deferKillUtilityProcess, ifit, listen, spawnAndWait, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
 
 describe('session module', () => {
@@ -338,23 +338,20 @@ describe('session module', () => {
     it('should survive an app restart for persistent partition', { timeout: 60000 }, async () => {
       const appPath = path.join(fixtures, 'api', 'cookie-app');
 
-      const runAppWithPhase = (phase: string) => {
-        return new Promise((resolve) => {
-          let output = '';
-
-          const appProcess = ChildProcess.spawn(process.execPath, [appPath], { env: { PHASE: phase, ...process.env } });
-
-          appProcess.stdout.on('data', (data) => {
-            output += data;
-          });
-          appProcess.on('close', () => {
-            resolve(output.replaceAll(/(\r\n|\n|\r)/gm, ''));
-          });
+      const runAppWithPhase = async (phase: string, expected: string) => {
+        const { code, signal, stdout, stderr } = await spawnAndWait(process.execPath, [appPath], {
+          env: { PHASE: phase, ...process.env },
+          timeout: 25_000
         });
+        // Include what the app printed, so a failure shows why it exited or
+        // what it saw (e.g. a sanitizer report), not only the cookie counts.
+        const details = `phase ${phase}\nstdout:\n${stdout}\nstderr:\n${stderr}`;
+        expect({ code, signal }, details).toEqual({ code: 0, signal: null });
+        expect(stdout.replaceAll(/(\r\n|\n|\r)/gm, ''), details).toBe(expected);
       };
 
-      expect(await runAppWithPhase('one')).toBe('011');
-      expect(await runAppWithPhase('two')).toBe('110');
+      await runAppWithPhase('one', '011');
+      await runAppWithPhase('two', '110');
     });
   });
 
