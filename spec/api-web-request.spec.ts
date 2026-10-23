@@ -923,6 +923,12 @@ describe('webRequest module', () => {
       }
     };
 
+    // The served log lives for the whole describe block, and a vitest retry
+    // re-runs only the test body, so an attempt could otherwise find entries
+    // that requests from an earlier attempt left there. Give every request
+    // its own path, so that an entry can only come from this attempt.
+    const uniquePath = (name: string) => `/${name}-${crypto.randomUUID()}`;
+
     // Resolves with the URL of the first onCompleted event for `url`.
     const completedFor = (url: string) =>
       new Promise<string>((resolve) => {
@@ -970,9 +976,10 @@ describe('webRequest module', () => {
     }
 
     it('reach the network without the main process when only observers listen', async () => {
-      const completed = completedFor(`${serverURL}/observed`);
+      const requestPath = uniquePath('observed');
+      const completed = completedFor(`${serverURL}${requestPath}`);
       ses.webRequest.onErrorOccurred(() => {});
-      expect(await roundTripWhileMainIsBusy('/observed')).toBe(true);
+      expect(await roundTripWhileMainIsBusy(requestPath)).toBe(true);
       await completed;
     });
 
@@ -989,23 +996,25 @@ describe('webRequest module', () => {
         calls++;
         callback({});
       });
-      expect(await roundTripWhileMainIsBusy('/typed')).toBe(true);
+      expect(await roundTripWhileMainIsBusy(uniquePath('typed'))).toBe(true);
       expect(calls).toBe(0);
     });
 
     it('let a matching blocking listener take precedence over observers', async () => {
-      const blockedCompleted = completedFor(`${serverURL}/blocked`);
+      const blockedPath = uniquePath('blocked');
+      const blockedCompleted = completedFor(`${serverURL}${blockedPath}`);
       ses.webRequest.onBeforeRequest({ urls: ['<all_urls>'], types: ['xhr'] }, (details, callback) => {
         callback({});
       });
       // The blocking listener runs in the main process, so the request cannot
       // reach the server while the main process is busy.
-      expect(await reachedServerWhileMainIsBusy('/blocked')).toBe(false);
+      expect(await reachedServerWhileMainIsBusy(blockedPath)).toBe(false);
       await blockedCompleted;
 
       ses.webRequest.onBeforeRequest(null);
-      const directCompleted = completedFor(`${serverURL}/observed-after-blocking`);
-      expect(await roundTripWhileMainIsBusy('/observed-after-blocking')).toBe(true);
+      const directPath = uniquePath('observed-after-blocking');
+      const directCompleted = completedFor(`${serverURL}${directPath}`);
+      expect(await roundTripWhileMainIsBusy(directPath)).toBe(true);
       await directCompleted;
     });
 

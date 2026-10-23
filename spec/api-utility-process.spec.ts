@@ -240,6 +240,7 @@ describe('utilityProcess module', () => {
       app.on('child-process-gone', onGone);
       defer(() => app.off('child-process-gone', onGone));
       const child = utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
+      deferKillUtilityProcess(child);
       const [exitCode] = await once(child, 'exit');
       const details = await new Promise<Electron.Details>((resolve) => {
         onGoneForName = () => {
