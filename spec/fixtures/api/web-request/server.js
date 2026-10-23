@@ -1,11 +1,17 @@
 // Serves any path with a small body from a separate process, so a spec can
 // keep the main process busy without also stalling the server.
+const fs = require('node:fs');
 const http = require('node:http');
+
+// When given a file, appends each request's path to it before answering, so a
+// spec can tell what reached the network while its main process is busy.
+const servedLog = process.argv[2];
 
 // /r/<token>/<leg> records the headers it was sent; /log/<token> returns them.
 const received = new Map();
 
 const server = http.createServer((req, res) => {
+  if (servedLog) fs.appendFileSync(servedLog, `${req.url}\n`);
   res.setHeader('Access-Control-Allow-Origin', '*');
   const url = new URL(req.url, 'http://host');
   if (url.pathname === '/hop' || url.pathname === '/slow-hop') {

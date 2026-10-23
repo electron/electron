@@ -173,6 +173,7 @@
 #include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/web_ui_url_loader_factory.h"
 #include "extensions/browser/api/mime_handler_private/mime_handler_private.h"
+#include "extensions/browser/api/web_request/extension_web_request_event_router.h"
 #include "extensions/browser/api/web_request/web_request_api.h"
 #include "extensions/browser/browser_context_keyed_api_factory.h"
 #include "extensions/browser/event_router.h"
@@ -195,6 +196,7 @@
 #include "extensions/common/mojom/event_router.mojom.h"
 #include "extensions/common/mojom/guest_view.mojom.h"
 #include "extensions/common/mojom/renderer_host.mojom.h"
+#include "extensions/common/mojom/web_request_host.mojom.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #endif
@@ -719,7 +721,7 @@ void ElectronBrowserClient::AllowCertificateError(
 
 base::OnceClosure ElectronBrowserClient::SelectClientCertificate(
     content::BrowserContext* browser_context,
-    int process_id,
+    content::ChildProcessId process_id,
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
     net::ClientCertIdentityList client_certs,
@@ -1749,6 +1751,12 @@ void ElectronBrowserClient::RegisterAssociatedInterfaceBindersForServiceWorker(
   associated_registry.AddInterface<extensions::mojom::EventRouter>(
       base::BindRepeating(&extensions::EventRouter::BindForRenderer,
                           service_worker_version_info.process_id));
+  // Extension service workers report that their blocking webRequest
+  // listeners are done over this interface; see the comment in
+  // ExposeInterfacesToRenderer().
+  associated_registry.AddInterface<extensions::mojom::WebRequestHost>(
+      base::BindRepeating(&extensions::WebRequestEventRouter::BindForRenderer,
+                          service_worker_version_info.process_id));
 #endif
 }
 
@@ -2012,6 +2020,13 @@ void ElectronBrowserClient::ExposeInterfacesToRenderer(
   associated_registry->AddInterface<extensions::mojom::RendererHost>(
       base::BindRepeating(&extensions::RendererStartupHelper::BindForRenderer,
                           render_process_host->GetID()));
+  // With kWebRequestPerContextEventDispatch (enabled by default), the browser
+  // keeps a request blocked until the renderer calls
+  // WebRequestHost.EventHandlingDone. Without this binder that call is dropped
+  // and requests seen by a blocking chrome.webRequest listener can stall.
+  associated_registry->AddInterface<extensions::mojom::WebRequestHost>(
+      base::BindRepeating(&extensions::WebRequestEventRouter::BindForRenderer,
+                          render_process_host->GetID()));
 #endif
 }
 
@@ -2195,7 +2210,9 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
 }
 
 #if BUILDFLAG(IS_MAC)
-base::FilePath ElectronBrowserClient::GetChildProcessPath(int child_flags) {
+base::FilePath ElectronBrowserClient::GetChildProcessPath(
+    int child_flags,
+    content::ChildProcessId child_process_id) {
   if (child_flags !=
       static_cast<int>(
           ElectronChildProcessHostFlags::kChildProcessHelperPlugin)) {
