@@ -2427,7 +2427,8 @@ describe('session module', () => {
         show: false,
         webPreferences: { nodeIntegration: true, contextIsolation: false }
       });
-      await w.loadFile(path.join(fixtures, 'api', 'localstorage-and-indexeddb.html'));
+      const fixture = path.join(fixtures, 'api', 'localstorage-and-indexeddb.html');
+      await w.loadFile(fixture);
 
       const { webContents } = w;
       const { session } = webContents;
@@ -2447,6 +2448,12 @@ describe('session module', () => {
 
       // Clear only indexedDB, not localStorage
       await session.clearData({ dataTypes: ['indexedDB'] });
+
+      // Read the data back from a new document. Clearing IndexedDB disconnects
+      // this page's IndexedDB pipe, but the page learns that separately from
+      // the IPC below. If it handles the IPC first, its indexedDB.open() goes
+      // down the dead pipe and fails.
+      await w.loadFile(fixture, { query: { readOnly: '' } });
 
       // The localStorage data should still be there
       await expect(queryData('localstorage')).resolves.toBe('hello localstorage');
