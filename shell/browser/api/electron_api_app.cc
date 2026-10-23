@@ -449,7 +449,7 @@ bool NotificationCallbackWrapper(
              const std::vector<uint8_t> additional_data)>& callback,
     base::CommandLine cmd,
     const base::FilePath& cwd,
-    const std::vector<uint8_t> additional_data) {
+    std::vector<uint8_t> additional_data) {
 #if BUILDFLAG(IS_LINUX)
   // Set the global activation token sent as a command line switch by another
   // electron app instance. This also removes the switch after use to prevent
@@ -462,12 +462,12 @@ bool NotificationCallbackWrapper(
 #endif
   // Make sure the callback is called after app gets ready.
   if (Browser::Get()->is_ready()) {
-    callback.Run(std::move(cmd), cwd, additional_data);
+    callback.Run(std::move(cmd), cwd, std::move(additional_data));
   } else {
     // Make a copy of the span so that the data isn't lost.
     base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
         FROM_HERE, base::BindOnce(base::IgnoreResult(callback), std::move(cmd),
-                                  cwd, additional_data));
+                                  cwd, std::move(additional_data)));
   }
   // ProcessSingleton needs to know whether current process is quitting.
   return !Browser::Get()->is_shutting_down();

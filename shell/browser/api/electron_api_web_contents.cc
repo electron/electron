@@ -3654,7 +3654,7 @@ void WebContents::DidFinishNavigation(
 }
 
 void WebContents::NotifyPageTitleUpdated(
-    content::NavigationEntry* entry,
+    const content::NavigationEntry* entry,
     bool from_same_document_history_navigation) {
   std::u16string final_title;
   bool explicit_set = true;
