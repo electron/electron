@@ -176,6 +176,8 @@ void ShowMessageBoxForNSWindow(const MessageBoxSettings& settings,
     __block MessageBoxCallback callback_ = std::move(callback);
     __block std::optional<int> id = settings.id;
     __block int cancel_id = settings.cancel_id;
+    // A copy is needed: the block below would capture a reference by reference.
+    // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
     scoped_refptr<base::SequencedTaskRunner> task_runner =
         base::SequencedTaskRunner::GetCurrentDefault();
 
