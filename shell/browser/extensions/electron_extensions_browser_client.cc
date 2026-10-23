@@ -397,6 +397,18 @@ ElectronExtensionsBrowserClient::GetScriptExecutorForTab(
   return contents ? contents->script_executor() : nullptr;
 }
 
+void ElectronExtensionsBrowserClient::GetTabAndWindowIdForWebContents(
+    content::WebContents* web_contents,
+    int* tab_id,
+    int* window_id) {
+  // Tab ids are WebContents ids, the same ids chrome.tabs hands out. Electron
+  // has no window concept for extensions.
+  auto* contents =
+      web_contents ? electron::api::WebContents::From(web_contents) : nullptr;
+  *tab_id = contents ? contents->ID() : -1;
+  *window_id = -1;
+}
+
 extensions::KioskDelegate* ElectronExtensionsBrowserClient::GetKioskDelegate() {
   if (!kiosk_delegate_)
     kiosk_delegate_ = std::make_unique<ElectronKioskDelegate>();
