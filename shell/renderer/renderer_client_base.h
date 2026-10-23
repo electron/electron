@@ -169,6 +169,11 @@ class RendererClientBase : public content::ContentRendererClient
   void WebViewCreated(blink::WebView* web_view,
                       bool was_created_by_renderer,
                       const url::Origin* outermost_origin) override;
+  std::unique_ptr<blink::URLLoaderThrottleProvider>
+  CreateURLLoaderThrottleProvider(
+      blink::URLLoaderThrottleProviderType provider_type) override;
+  bool ShouldNotifyServiceWorkerOnWebSocketActivity(
+      v8::Local<v8::Context> context) override;
 
  private:
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)

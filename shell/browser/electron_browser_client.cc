@@ -188,10 +188,14 @@
 #include "extensions/browser/process_map.h"
 #include "extensions/browser/renderer_startup_helper.h"
 #include "extensions/browser/service_worker/service_worker_host.h"
+#include "extensions/browser/service_worker/service_worker_task_queue.h"
 #include "extensions/browser/url_loader_factory_manager.h"
 #include "extensions/common/api/mime_handler.mojom.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/extension.h"
+#include "extensions/common/extension_set.h"
+#include "extensions/common/manifest_handlers/background_info.h"
+#include "extensions/common/manifest_handlers/sandboxed_page_info.h"
 #include "extensions/common/mojom/event_router.mojom.h"
 #include "extensions/common/mojom/guest_view.mojom.h"
 #include "extensions/common/mojom/renderer_host.mojom.h"
@@ -377,6 +381,20 @@ const extensions::Extension* GetEnabledExtensionFromSecurityPrincipal(
 
   return registry->enabled_extensions().GetByID(
       extensions::ExtensionId(principal.GetHost()));
+}
+
+// Returns the enabled extension whose background service worker is registered
+// at `scope`, if any. Only the root scope hosts the background worker.
+const extensions::Extension* GetServiceWorkerBasedExtensionForScope(
+    const GURL& scope,
+    content::BrowserContext* context) {
+  const extensions::Extension* extension =
+      GetEnabledExtensionFromEffectiveURL(context, scope);
+  if (!extension || scope != extension->url() ||
+      !extensions::BackgroundInfo::IsServiceWorkerBased(extension)) {
+    return nullptr;
+  }
+  return extension;
 }
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
@@ -890,12 +908,17 @@ void ElectronBrowserClient::SiteInstanceGotProcessAndSite(
     content::SiteInstance* site_instance) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* browser_context = site_instance->GetBrowserContext();
-  extensions::ExtensionRegistry* registry =
-      extensions::ExtensionRegistry::Get(browser_context);
+  const content::SecurityPrincipal& principal =
+      site_instance->GetSecurityPrincipal();
   const extensions::Extension* extension =
-      registry->enabled_extensions().GetExtensionOrAppByURL(
-          site_instance->GetSecurityPrincipal().GetDeprecatedSiteURL());
+      GetEnabledExtensionFromSecurityPrincipal(browser_context, principal);
   if (!extension)
+    return;
+
+  // Frames isolated in a sandbox (see
+  // ShouldAllowCrossProcessSandboxedFrameForPrecursor) have no extension API
+  // access, so their process must not count as an extension process.
+  if (principal.IsSandboxed())
     return;
 
   extensions::ProcessMap::Get(browser_context)
@@ -934,6 +957,74 @@ bool ElectronBrowserClient::ShouldUseProcessPerSite(
   return content::ContentBrowserClient::ShouldUseProcessPerSite(
       browser_context, security_principal);
 #endif
+}
+
+content::AllowServiceWorkerResult ElectronBrowserClient::AllowServiceWorker(
+    const GURL& scope,
+    const net::SiteForCookies& site_for_cookies,
+    const std::optional<url::Origin>& top_frame_origin,
+    const blink::StorageKey& storage_key,
+    const GURL& script_url,
+    content::BrowserContext* context) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  if (top_frame_origin &&
+      top_frame_origin->scheme() == extensions::kExtensionScheme) {
+    const extensions::Extension* extension =
+        GetEnabledExtensionFromEffectiveURL(context,
+                                            top_frame_origin->GetURL());
+    // An extension URL without an enabled extension must not run a worker.
+    if (!extension)
+      return content::AllowServiceWorkerResult::No();
+
+    // The root scope of a service worker-based extension is reserved for the
+    // script named in its manifest. `script_url` is empty when the caller
+    // does not know it, which never happens at registration.
+    if (extensions::BackgroundInfo::IsServiceWorkerBased(extension) &&
+        !script_url.is_empty() && scope == extension->url() &&
+        script_url !=
+            extensions::BackgroundInfo::GetBackgroundServiceWorkerScriptURL(
+                extension)) {
+      return content::AllowServiceWorkerResult::No();
+    }
+  }
+#endif
+  return content::ContentBrowserClient::AllowServiceWorker(
+      scope, site_for_cookies, top_frame_origin, storage_key, script_url,
+      context);
+}
+
+bool ElectronBrowserClient::MayDeleteServiceWorkerRegistration(
+    const GURL& scope,
+    content::BrowserContext* browser_context) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  const extensions::Extension* extension =
+      GetServiceWorkerBasedExtensionForScope(scope, browser_context);
+  if (extension) {
+    // The extension system owns the registration of a loaded extension's
+    // background worker: nothing re-registers it if, say, clearing storage
+    // data deletes it. A missing or outdated registration is not in use.
+    const base::Version registered_version =
+        extensions::ServiceWorkerTaskQueue::Get(browser_context)
+            ->RetrieveRegisteredServiceWorkerVersion(extension->id());
+    return !registered_version.IsValid() ||
+           registered_version != extension->version();
+  }
+#endif
+  return content::ContentBrowserClient::MayDeleteServiceWorkerRegistration(
+      scope, browser_context);
+}
+
+bool ElectronBrowserClient::ShouldTryToUpdateServiceWorkerRegistration(
+    const GURL& scope,
+    content::BrowserContext* browser_context) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  // Extension workers are updated with their extension, not by the web
+  // service worker update flow.
+  if (GetServiceWorkerBasedExtensionForScope(scope, browser_context))
+    return false;
+#endif
+  return content::ContentBrowserClient::
+      ShouldTryToUpdateServiceWorkerRegistration(scope, browser_context);
 }
 
 void ElectronBrowserClient::GetMediaDeviceIDSalt(
@@ -1487,6 +1578,26 @@ bool ElectronBrowserClient::ShouldTreatAsFirstPartyWhenTopLevel(
 #endif
 }
 
+bool ElectronBrowserClient::HasWebRequestAPIProxy(
+    content::BrowserContext* browser_context) {
+  // Requests are proxied for Electron's webRequest module as well as for
+  // extensions using the webRequest or declarativeNetRequest APIs.
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  auto* web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
+  if (web_request && web_request->HasListener())
+    return true;
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  const auto* web_request_api =
+      extensions::BrowserContextKeyedAPIFactory<extensions::WebRequestAPI>::Get(
+          browser_context);
+  return web_request_api && web_request_api->MayHaveProxies();
+#else
+  return false;
+#endif
+}
+
 bool ElectronBrowserClient::WillInterceptWebSocket(
     content::RenderFrameHost* frame) {
   if (!frame)
@@ -1928,6 +2039,34 @@ bool ElectronBrowserClient::DoesSiteRequireDedicatedProcess(
   return content::ContentBrowserClient::DoesSiteRequireDedicatedProcess(
       browser_context, effective_site_url);
 #endif
+}
+
+bool ElectronBrowserClient::ShouldAllowCrossProcessSandboxedFrameForPrecursor(
+    content::BrowserContext* browser_context,
+    const GURL& precursor,
+    const GURL& url) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  // Only pages an extension's manifest lists as sandboxed, and sandboxed
+  // about:srcdoc and data: documents, are isolated without API access. Other
+  // sandboxed extension documents may not control their sandbox status (an
+  // embedder's sandbox is inherited), so they stay in the extension's process.
+  const extensions::ExtensionId extension_id =
+      extensions::ExtensionSet::GetExtensionIdByURL(precursor);
+  if (!precursor.is_empty() && !extension_id.empty() && !url.IsAboutSrcdoc() &&
+      !url.SchemeIs(url::kDataScheme)) {
+    const extensions::Extension* extension =
+        extensions::ExtensionRegistry::Get(browser_context)
+            ->enabled_extensions()
+            .GetByID(extension_id);
+    if (extension) {
+      return extensions::SandboxedPageInfo::IsSandboxedPage(extension,
+                                                            url.GetPath());
+    }
+  }
+#endif
+  return content::ContentBrowserClient::
+      ShouldAllowCrossProcessSandboxedFrameForPrecursor(browser_context,
+                                                        precursor, url);
 }
 
 void ElectronBrowserClient::BindHostReceiverForRenderer(

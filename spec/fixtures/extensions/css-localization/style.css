@@ -1,0 +1,3 @@
+body::after {
+  content: '__MSG_@@extension_id__';
+}
