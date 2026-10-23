@@ -6,9 +6,14 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_EXTENSIONS_H_
 
 #include "base/memory/raw_ptr.h"
+#include "base/values.h"
 #include "extensions/browser/extension_registry_observer.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
+
+namespace gin_helper {
+class ErrorThrower;
+}  // namespace gin_helper
 
 namespace electron {
 
@@ -42,6 +47,16 @@ class Extensions final : public gin::Wrappable<Extensions>,
   v8::Local<v8::Value> GetExtension(v8::Isolate* isolate,
                                     const std::string& extension_id);
   v8::Local<v8::Value> GetAllExtensions(v8::Isolate* isolate);
+  void SetTabMode(gin_helper::ErrorThrower thrower, const std::string& mode);
+  void AddTab(gin_helper::ErrorThrower thrower,
+              v8::Local<v8::Value> web_contents_value,
+              const base::DictValue& details);
+  void UpdateTab(gin_helper::ErrorThrower thrower,
+                 v8::Local<v8::Value> web_contents_value,
+                 const base::DictValue& details);
+  void RemoveTab(v8::Local<v8::Value> web_contents_value);
+  void SetFocusedWindow(gin_helper::ErrorThrower thrower,
+                        v8::Local<v8::Value> window_id_value);
 
   // extensions::ExtensionRegistryObserver:
   void OnExtensionLoaded(content::BrowserContext* browser_context,

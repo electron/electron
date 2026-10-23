@@ -42,6 +42,7 @@
 #include "shell/browser/extensions/electron_component_extension_resource_manager.h"
 #include "shell/browser/extensions/electron_extension_host_delegate.h"
 #include "shell/browser/extensions/electron_extension_system_factory.h"
+#include "shell/browser/extensions/electron_extension_tab_registry.h"
 #include "shell/browser/extensions/electron_extension_tab_util.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #include "shell/browser/extensions/electron_extensions_api_client.h"
@@ -401,12 +402,17 @@ void ElectronExtensionsBrowserClient::GetTabAndWindowIdForWebContents(
     content::WebContents* web_contents,
     int* tab_id,
     int* window_id) {
-  // Tab ids are WebContents ids, the same ids chrome.tabs hands out. Electron
-  // has no window concept for extensions.
-  auto* contents =
-      web_contents ? electron::api::WebContents::From(web_contents) : nullptr;
-  *tab_id = contents ? contents->ID() : -1;
+  // Tab ids are WebContents ids, the same ids chrome.tabs hands out. A window
+  // id exists only for a tab the app registered with Extensions.addTab().
+  *tab_id = -1;
   *window_id = -1;
+  if (!extensions::IsTab(web_contents))
+    return;
+  *tab_id = electron::api::WebContents::From(web_contents)->ID();
+  if (const auto* data =
+          extensions::ElectronExtensionTabData::FromWebContents(web_contents)) {
+    *window_id = data->window_id();
+  }
 }
 
 extensions::KioskDelegate* ElectronExtensionsBrowserClient::GetKioskDelegate() {

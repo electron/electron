@@ -128,3 +128,165 @@ Returns `Extension[]` - A list of all loaded extensions.
 > [!NOTE]
 > This API cannot be called before the `ready` event of the `app` module
 > is emitted.
+
+#### `extensions.setTabMode(mode)` _Experimental_
+
+* `mode` string - Can be `all-web-contents` or `registered`.
+
+Sets which `webContents` of this session are tabs to its extensions. The
+default is `all-web-contents`.
+
+* `all-web-contents` - Every `webContents` in the session is a tab, unless it
+  was added with [`extensions.addTab`](#extensionsaddtabwebcontents-details-experimental)
+  as a `popup` or `side-panel`.
+* `registered` - Only a `webContents` added with `extensions.addTab` as a `tab`
+  is a tab.
+
+A `webContents` that is not a tab has no tab ID. Extensions cannot target it
+with `chrome.tabs`, `chrome.scripting` or `chrome.tabs.sendMessage`, its
+network requests are reported with a `tabId` of `-1`, and messages it sends
+have no `sender.tab`.
+
+Set the mode before loading extensions and creating tabs: changing it later
+changes whether existing `webContents` are tabs.
+
+#### `extensions.addTab(webContents, details)` _Experimental_
+
+* `webContents` [WebContents](web-contents.md) - Must belong to this session.
+* `details` Object
+  * `type` string (optional) - Can be `tab`, `popup` or `side-panel`. Default
+    is `tab`. Cannot be changed once added.
+  * `windowId` Integer - ID of the window that contains the view. The app
+    chooses its window IDs, which must not be negative.
+    [`BaseWindow.id`](base-window.md#winid-readonly) is a good choice.
+  * `index` Integer (optional) - Zero-based position of the tab in its window.
+    Required for a `tab`.
+  * `active` boolean (optional) - Whether the tab is the active tab of its
+    window. Default is `false`. Setting it to `true` makes the window's other
+    tabs inactive.
+  * `highlighted` boolean (optional) - Default is the value of `active`.
+  * `pinned` boolean (optional) - Default is `false`.
+  * `groupId` Integer (optional) - Default is `-1`.
+  * `splitViewId` Integer (optional) - Default is `-1`.
+  * `openerTabId` Integer (optional)
+  * `discarded` boolean (optional) - Default is `false`.
+  * `autoDiscardable` boolean (optional) - Default is `false`.
+  * `frozen` boolean (optional) - Default is `false`.
+  * `lastAccessed` number (optional) - Default is the time the `webContents`
+    was last active.
+  * `favIconUrl` string (optional)
+  * `sessionId` string (optional)
+
+Registers a `webContents` hosted by the app with the extension system, either
+as a tab or as an extension view that is not a tab.
+
+The `type` decides what the view is to extensions:
+
+* `tab` - A tab. Its tab ID is always `webContents.id`.
+* `popup` - An extension's action popup. Not a tab.
+* `side-panel` - An extension's side panel. Not a tab.
+
+A `popup` or `side-panel` is never a tab, whatever the
+[tab mode](#extensionssettabmodemode-experimental), and accepts no detail other than
+`type` and `windowId`. The `type` is also what the extension gets as the
+`contextType` of the view from
+[`chrome.runtime.getContexts`](https://developer.chrome.com/docs/extensions/reference/api/runtime#method-getContexts).
+
+For a tab, Electron itself uses `windowId`, `index` and `active`. It copies the
+other details into the
+[`Tab`](https://developer.chrome.com/docs/extensions/reference/api/tabs#type-Tab)
+object that extensions receive as `sender.tab` and from `chrome.tabs.get`,
+`chrome.tabs.query` and `chrome.tabs.update`.
+
+`details` may also contain keys that are not listed above. Electron adds each
+one to the `Tab` object as a custom property, with its value unchanged. The
+values must be serializable to JSON. Every extension that can see the tab can
+read its custom properties, so do not store anything private in them.
+
+The properties `id`, `url`, `pendingUrl`, `title`, `status`, `audible`,
+`mutedInfo`, `incognito`, `selected`, `width` and `height` are set by Electron
+and cannot be set in `details`. A key that names any other property of
+Chrome's `Tab` type must have that property's type. A future version of
+Electron may add properties to `Tab`, at which point a custom property with
+the same name becomes subject to these rules.
+
+This method throws an error if:
+
+* `webContents` is destroyed, belongs to another session, or was already added.
+* `webContents` is an extension's background page or offscreen document.
+* `type` is not one of the values above, or `windowId` is missing.
+* `index` is missing for a `tab`, or a `popup` or `side-panel` is given a
+  detail other than `type` and `windowId`.
+* `details` sets a property that Electron sets, gives a property of `Tab` a
+  value of the wrong type, or is larger than 64 KiB when serialized to JSON.
+
+The view is removed automatically when its `webContents` is destroyed.
+
+```js
+const { app, BaseWindow, WebContentsView, session } = require('electron')
+
+app.whenReady().then(() => {
+  const ses = session.fromPartition('persist:browser')
+  ses.extensions.setTabMode('registered')
+
+  const win = new BaseWindow()
+  win.on('focus', () => ses.extensions.setFocusedWindow(win.id))
+
+  const view = new WebContentsView({ webPreferences: { session: ses } })
+  win.contentView.addChildView(view)
+  ses.extensions.addTab(view.webContents, {
+    windowId: win.id,
+    index: 0,
+    active: true
+  })
+  view.webContents.loadURL('https://electronjs.org')
+})
+```
+
+#### `extensions.updateTab(webContents, details)` _Experimental_
+
+* `webContents` [WebContents](web-contents.md) - A `webContents` added with
+  [`extensions.addTab`](#extensionsaddtabwebcontents-details-experimental).
+* `details` Object
+  * `windowId` Integer (optional)
+  * `index` Integer (optional)
+  * `active` boolean (optional)
+  * `highlighted` boolean | null (optional)
+  * `pinned` boolean | null (optional)
+  * `groupId` Integer | null (optional)
+  * `splitViewId` Integer | null (optional)
+  * `openerTabId` Integer | null (optional)
+  * `discarded` boolean | null (optional)
+  * `autoDiscardable` boolean | null (optional)
+  * `frozen` boolean | null (optional)
+  * `lastAccessed` number | null (optional)
+  * `favIconUrl` string | null (optional)
+  * `sessionId` string | null (optional)
+
+Changes the details of a view added with `extensions.addTab`. The keys of
+`details`, custom properties included, are merged into the stored details. A
+key set to `null` is removed, which restores its default.
+
+This method throws an error if `webContents` was not added, if `details`
+contains `type`, and for the same invalid details as `extensions.addTab`. To
+change the type of a view, remove it and add it again.
+
+#### `extensions.removeTab(webContents)` _Experimental_
+
+* `webContents` [WebContents](web-contents.md)
+
+Removes a view added with `extensions.addTab`. Does nothing if `webContents`
+was not added.
+
+#### `extensions.setFocusedWindow(windowId)` _Experimental_
+
+* `windowId` Integer | null - The `windowId` of the focused window, or `null`
+  if none of the app's windows is focused.
+
+Sets the window that extensions get as the last focused window. It is also the
+current window for an extension context that is not in a view added with
+`extensions.addTab`, such as a service worker.
+
+When the session's tab mode is `registered`, a `chrome.tabs` method called
+without a tab ID acts on the active tab of the caller's current window, and
+fails if there is no such window or tab.
