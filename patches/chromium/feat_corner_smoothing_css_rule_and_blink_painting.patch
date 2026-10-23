@@ -204,7 +204,7 @@ index b721dd3809c0b6c89574a515bac32d397a1bfb09..750a3603bd18680228220b831709d327
      return result;
    }
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index b2c0eee479261c74ebbd0bf72be84bb547474deb..00be0476737a9c17f61dad2296bee75620ba9501 100644
+index 817d8653da0dd6307d1663385aa698253092e774..8bc20d06c5f4fa7c734178f7ed937071285298e5 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
 @@ -1745,6 +1745,8 @@ component("platform") {
