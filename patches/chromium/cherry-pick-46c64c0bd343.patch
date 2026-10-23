@@ -50,7 +50,7 @@ index b02d351c569ca1b361019de5b5975296e5cf15ee..64fd6d75b33fe87ccdea33eee0324e15
    if (common_params->url.IsAboutSrcdoc()) {
      // TODO(wjmaclean): initialize this in NavigationRequest's constructor
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index e582ef356b240f5e7bf3d62b7249334716bb5bb1..494f4233a8e48ee28b1d4d766d61391f70042f6f 100644
+index 5b53efa359ce15d5578e70d7e656969ef83e6562..ce6370580562eabe478ce392f78256b270a402cc 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
 @@ -1411,7 +1411,7 @@ std::unique_ptr<NavigationRequest> NavigationRequest::CreateRendererInitiated(
