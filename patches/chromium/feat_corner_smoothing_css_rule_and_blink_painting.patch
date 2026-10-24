@@ -165,10 +165,10 @@ index 3ffc4fc86d7af9f8a0d2b12109759164f24eae0a..9e680f0ff181f08ecac15d469e92ef4e
    static TextOverflowData ConvertTextOverflow(StyleResolverState&,
                                                const CSSValue&);
 diff --git a/third_party/blink/renderer/core/paint/contoured_border_geometry.cc b/third_party/blink/renderer/core/paint/contoured_border_geometry.cc
-index b721dd3809c0b6c89574a515bac32d397a1bfb09..750a3603bd18680228220b831709d3271e96afa8 100644
+index 2976bcc89a26701aeb829c0fe0a205defe1e4997..85642753239137de0e4e8c8f4654f131e7de5df7 100644
 --- a/third_party/blink/renderer/core/paint/contoured_border_geometry.cc
 +++ b/third_party/blink/renderer/core/paint/contoured_border_geometry.cc
-@@ -53,6 +53,24 @@ float EffectiveCurvature(Superellipse superellipse, const gfx::SizeF& radius) {
+@@ -54,6 +54,24 @@ float EffectiveCurvature(Superellipse superellipse, const gfx::SizeF& radius) {
                            : superellipse.Exponent();
  }
  
@@ -193,7 +193,7 @@ index b721dd3809c0b6c89574a515bac32d397a1bfb09..750a3603bd18680228220b831709d327
  gfx::QuadF ComputeHullQuad(const ContouredRect::Corner& corner) {
    const gfx::PointF half_corner = corner.HalfCorner();
    const gfx::PointF perpendicular_line =
-@@ -164,7 +182,8 @@ ContouredRect ComputeContouredBorderFromStyle(
+@@ -165,7 +183,8 @@ ContouredRect ComputeContouredBorderFromStyle(
        EffectiveCurvature(style.CornerTopLeftShape(), radii.TopLeft()),
        EffectiveCurvature(style.CornerTopRightShape(), radii.TopRight()),
        EffectiveCurvature(style.CornerBottomRightShape(), radii.BottomRight()),
@@ -204,7 +204,7 @@ index b721dd3809c0b6c89574a515bac32d397a1bfb09..750a3603bd18680228220b831709d327
      return result;
    }
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index 817d8653da0dd6307d1663385aa698253092e774..8bc20d06c5f4fa7c734178f7ed937071285298e5 100644
+index 046674a5eebaf52be9d85e82647fd821e1b6809e..bdfa4851b362832b7620f64a024083f378123cd5 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
 @@ -1745,6 +1745,8 @@ component("platform") {
@@ -315,7 +315,7 @@ index 9d125de843259dae40e6b08eaf65ea3650435295..428219fb35d7a967dcaee91aa1c3628e
  
    auto draw_as_single_path = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index f4aac923866bdfe12187d630d804f3e3e6042929..e54930c610e8f6a5939f7e3fa8d26dcecba59360 100644
+index b307ae877f3220fa2ffab61574bcf8438231003e..40bf6411988cce117037cd23f07f6f2fdcc8476c 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -237,6 +237,10 @@
