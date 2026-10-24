@@ -537,6 +537,39 @@ describe('chrome extensions', () => {
         w.destroy();
       }
     });
+
+    describe('storage.managed', () => {
+      let w: BrowserWindow;
+
+      beforeEach(async () => {
+        const customSession = session.fromPartition(`persist:${crypto.randomUUID()}`);
+        const extension = await customSession.extensions.loadExtension(
+          path.join(fixtures, 'extensions', 'chrome-storage-service-worker')
+        );
+        w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+        await w.loadURL(`${extension.url}page.html`);
+      });
+
+      afterEach(() => {
+        w.destroy();
+      });
+
+      it('is empty', async () => {
+        expect(await w.webContents.executeJavaScript('chrome.storage.managed.get()')).toEqual({});
+        expect(await w.webContents.executeJavaScript("chrome.storage.managed.get('key')")).toEqual({});
+        expect(await w.webContents.executeJavaScript('chrome.storage.managed.getBytesInUse()')).toBe(0);
+      });
+
+      it('is empty in a service worker', async () => {
+        expect(await w.webContents.executeJavaScript("chrome.runtime.sendMessage('get-managed')")).toEqual({});
+      });
+
+      it('rejects writes', async () => {
+        for (const call of ["set({ key: 'value' })", "remove('key')", 'clear()']) {
+          await expect(w.webContents.executeJavaScript(`chrome.storage.managed.${call}`)).rejects.toThrow(/read-only/);
+        }
+      });
+    });
   });
 
   describe('chrome.webRequest', () => {
