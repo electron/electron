@@ -135,7 +135,7 @@ on macOS or <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>R</kbd> on other platforms.
 ## Global shortcuts
 
 **Global** keyboard shortcuts work even when your app is out of focus. To configure a global keyboard
-shortcut, you can use the [`globalShortcut.register`](../api/global-shortcut.md#globalshortcutregisteraccelerator-callback)
+shortcut, you can use the [`globalShortcut.register`](../api/global-shortcut.md#globalshortcutregistershortcut-callback)
 function to specify shortcuts.
 
 ```js title='Opening a dialog via accelerator (global)'
@@ -146,7 +146,7 @@ globalShortcut.register('CommandOrControl+Alt+R', () => {
 })
 ```
 
-To later unregister a shortcut, you can use the [`globalShortcut.unregisterAccelerator`](../api/global-shortcut.md#globalshortcutunregisteraccelerator)
+To later unregister a shortcut, you can use the [`globalShortcut.unregister`](../api/global-shortcut.md#globalshortcutunregistershortcut)
 function.
 
 ```js title='Opening a dialog via accelerator (global)'
