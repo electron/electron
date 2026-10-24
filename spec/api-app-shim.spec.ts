@@ -8,6 +8,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
+import { promisify } from 'node:util';
 
 import { ifdescribe, waitUntil } from './lib/spec-helpers.ts';
 import { closeAllWindows } from './lib/window-helpers.ts';
@@ -28,9 +29,18 @@ const SHIM_BUNDLE_ID = 'org.electronjs.spec.app-shim';
 
 type OnScreenWindow = { pid: number; x: number; y: number; width: number; height: number };
 
+const execFile = promisify(cp.execFile);
+
 // The windows the window server has on screen, with the process that owns
 // each. Read with JXA so that the answer comes from outside Electron.
-function onScreenWindows(): OnScreenWindow[] {
+//
+// osascript runs without blocking this process: AppKit in a shim asks the
+// host synchronously, through remote_cocoa, whether a window can become key,
+// whether it has the key appearance, whether its title shows, and so on, each
+// time it orders, lays out or draws one. While this thread waits on a child
+// process those questions go unanswered and the shim stalls, so polling with a
+// synchronous spawn holds back the very change that it is waiting for.
+async function onScreenWindows(): Promise<OnScreenWindow[]> {
   const script = `
     ObjC.import('CoreGraphics');
     const list = ObjC.deepUnwrap(ObjC.castRefToObject(
@@ -42,7 +52,7 @@ function onScreenWindows(): OnScreenWindow[] {
       width: w.kCGWindowBounds.Width,
       height: w.kCGWindowBounds.Height
     })));`;
-  const { stdout } = cp.spawnSync('osascript', ['-l', 'JavaScript', '-e', script], { encoding: 'utf8' });
+  const { stdout } = await execFile('osascript', ['-l', 'JavaScript', '-e', script], { encoding: 'utf8' });
   return JSON.parse(stdout);
 }
 
@@ -127,9 +137,9 @@ ifdescribe(process.platform === 'darwin' && !process.mas)('app shims', () => {
     expect(await w.webContents.executeJavaScript('document.title')).toBe('in a shim');
 
     const sameSize = (win: OnScreenWindow) => win.width === size.width && win.height === size.height;
-    await waitUntil(() => onScreenWindows().some((win) => win.pid === shim.pid && sameSize(win)));
+    await waitUntil(async () => (await onScreenWindows()).some((win) => win.pid === shim.pid && sameSize(win)));
     // Its stand-in in this process is never on screen.
-    expect(onScreenWindows().some((win) => win.pid === process.pid && sameSize(win))).toBe(false);
+    expect((await onScreenWindows()).some((win) => win.pid === process.pid && sameSize(win))).toBe(false);
   });
 
   it('reports the bounds and state of a window in a shim', async () => {
@@ -143,8 +153,8 @@ ifdescribe(process.platform === 'darwin' && !process.mas)('app shims', () => {
     w.setSize(500, 350);
     expect(w.getSize()).toEqual([500, 350]);
     // What the shim's process did with it, according to the window server.
-    await waitUntil(() =>
-      onScreenWindows().some((win) => win.pid === shim.pid && win.width === 500 && win.height === 350)
+    await waitUntil(async () =>
+      (await onScreenWindows()).some((win) => win.pid === shim.pid && win.width === 500 && win.height === 350)
     );
 
     const hidden = once(w, 'hide');
@@ -182,8 +192,8 @@ ifdescribe(process.platform === 'darwin' && !process.mas)('app shims', () => {
     // The limits are the window's, title bar included.
     w.setMinimumSize(300, 200);
     w.setSize(100, 100);
-    await waitUntil(() =>
-      onScreenWindows().some((win) => win.pid === shim.pid && win.width === 300 && win.height === 200)
+    await waitUntil(async () =>
+      (await onScreenWindows()).some((win) => win.pid === shim.pid && win.width === 300 && win.height === 200)
     );
   });
 
@@ -269,8 +279,8 @@ ifdescribe(process.platform === 'darwin' && !process.mas)('app shims', () => {
     const shim = await launchShim();
     const w = new BaseWindow({ appShim: shim, width: 400, height: 300 });
     await once(w, 'show');
-    const windowsOfShim = () => onScreenWindows().filter((win) => win.pid === shim.pid).length;
-    await waitUntil(() => windowsOfShim() === 1);
+    const windowsOfShim = async () => (await onScreenWindows()).filter((win) => win.pid === shim.pid).length;
+    await waitUntil(async () => (await windowsOfShim()) === 1);
 
     const controller = new AbortController();
     const result = dialog.showMessageBox(w, {
@@ -280,10 +290,10 @@ ifdescribe(process.platform === 'darwin' && !process.mas)('app shims', () => {
       signal: controller.signal
     });
     // The sheet is a second window of the shim's process, not of this one.
-    await waitUntil(() => windowsOfShim() === 2);
+    await waitUntil(async () => (await windowsOfShim()) === 2);
     controller.abort();
     expect((await result).response).toBe(1);
-    await waitUntil(() => windowsOfShim() === 1);
+    await waitUntil(async () => (await windowsOfShim()) === 1);
   });
 
   it('answers a dialog with "cancelled" when its shim goes away', async () => {
@@ -291,7 +301,7 @@ ifdescribe(process.platform === 'darwin' && !process.mas)('app shims', () => {
     const w = new BaseWindow({ appShim: shim, width: 400, height: 300 });
     await once(w, 'show');
     const result = dialog.showOpenDialog(w, { properties: ['openFile'] });
-    await waitUntil(() => onScreenWindows().filter((win) => win.pid === shim.pid).length >= 2);
+    await waitUntil(async () => (await onScreenWindows()).filter((win) => win.pid === shim.pid).length >= 2);
     shimProcess!.kill('SIGKILL');
     expect(await result).toEqual({ canceled: true, filePaths: [] });
   });
@@ -311,8 +321,8 @@ ifdescribe(process.platform === 'darwin' && !process.mas)('app shims', () => {
     const w = new BaseWindow({ appShim: shim, width: 400, height: 300, titleBarStyle: 'hidden' });
     await once(w, 'show');
     expect(w.getContentSize()).toEqual([400, 300]);
-    await waitUntil(() =>
-      onScreenWindows().some((win) => win.pid === shim.pid && win.width === 400 && win.height === 300)
+    await waitUntil(async () =>
+      (await onScreenWindows()).some((win) => win.pid === shim.pid && win.width === 400 && win.height === 300)
     );
     // The window buttons are the shim's to move and hide.
     w.setWindowButtonPosition({ x: 20, y: 20 });
@@ -326,14 +336,14 @@ ifdescribe(process.platform === 'darwin' && !process.mas)('app shims', () => {
 
   it('tabs two windows of one shim together, and no others', async () => {
     const shim = await launchShim();
-    const windowsOfShim = () => onScreenWindows().filter((win) => win.pid === shim.pid).length;
+    const windowsOfShim = async () => (await onScreenWindows()).filter((win) => win.pid === shim.pid).length;
     const a = new BaseWindow({ appShim: shim, width: 400, height: 300, tabbingIdentifier: 'group' });
     const b = new BaseWindow({ appShim: shim, width: 400, height: 300, tabbingIdentifier: 'group' });
     expect(a.tabbingIdentifier).toBe('group');
-    await waitUntil(() => windowsOfShim() === 2);
+    await waitUntil(async () => (await windowsOfShim()) === 2);
     a.addTabbedWindow(b);
     // One window on screen, with the other as a tab in it.
-    await waitUntil(() => windowsOfShim() === 1);
+    await waitUntil(async () => (await windowsOfShim()) === 1);
 
     const local = new BaseWindow({ show: false, tabbingIdentifier: 'group' });
     expect(() => a.addTabbedWindow(local)).toThrow(/same app/);
