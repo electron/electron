@@ -58,6 +58,13 @@ where the user has three options.
 
 Your application should then always use `shouldUseDarkColors` to determine what CSS to apply.
 
+> [!NOTE]
+> To override the color scheme for an individual view without affecting native UI
+> or other views, call [`webContents.setColorScheme`](web-contents.md#contentssetcolorschemecolorscheme)
+> on the view's `webContents`. Use
+> [`webContents.getColorScheme`](web-contents.md#contentsgetcolorscheme) to read its
+> current override.
+
 ### `nativeTheme.shouldUseHighContrastColors` _macOS_ _Windows_ _Readonly_
 
 A `boolean` for if the OS / Chromium currently has high-contrast mode enabled
