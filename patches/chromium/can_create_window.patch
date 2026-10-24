@@ -12,10 +12,10 @@ that the new window is created in its own BrowsingInstance (and process).
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 32a76945364d02008521cce72123cb7918d3a47d..cbd9c1577384785d7d85f89ef60cf86c91b70071 100644
+index f3b309d863130b88c200257bcadbfce5660449fa..f2e64e5569741000552218689ae5edf1f1d63791 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -10839,6 +10839,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10867,6 +10867,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -23,7 +23,7 @@ index 32a76945364d02008521cce72123cb7918d3a47d..cbd9c1577384785d7d85f89ef60cf86c
            effective_transient_activation_state, params->opener_suppressed,
            &no_javascript_access);
  
-@@ -10849,6 +10850,11 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10877,6 +10878,11 @@ void RenderFrameHostImpl::CreateNewWindow(
      return;
    }
  
@@ -128,7 +128,7 @@ index 9fc5fa3ce4121e8eb784c7e62fc0321b509788dd..3bdab819749ab7e693ad40852645dce7
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index ae8753aa363d3bf4ad0b58bbb720b7ba9d647a3d..884166af9292168b8b998af0feef7f165996dbbe 100644
+index 434bf4b1743d6d85b9912cd369e1e68d80a416e5..c4dd5f3e8c4d88814ecae130eaeee5db63862cae 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -35,6 +35,18 @@ namespace content {
@@ -151,7 +151,7 @@ index ae8753aa363d3bf4ad0b58bbb720b7ba9d647a3d..884166af9292168b8b998af0feef7f16
      WebContents* source,
      const OpenURLParams& params,
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index b4ef8f00ca8ce9f35ef5dad5f553423baf0acf39..440c5f7ed9ee4b3ace56a4264a12dd9a7f043707 100644
+index afebf55b1abc5d3eefde47b3b317bb1692b1b5d4..a5fd5dae63d9d66e974c0c68e831b2b051d78ea0 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -19,6 +19,7 @@

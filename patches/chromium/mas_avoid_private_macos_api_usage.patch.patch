@@ -58,10 +58,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 7190f24b26c2a251c1da7fa33a6a68fe440fafeb..90129e83bab359966e08fee0d2faede144757268 100644
+index ea07454ba2928ad744ff61f3c4c0602d3489ce34..d81cc42c3bf121930c2faa450d182c1fff9ce60c 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1153,6 +1153,7 @@ component("base") {
+@@ -1154,6 +1154,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -1013,10 +1013,10 @@ index 45e8631ea6e5497edb90b91223d962abe3071849..dbd8cbc192931ee7821f7e76923c6cb2
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 4e929a8d7ce90f7bc4aa9205fd676e27b4d659c9..2402a6091de68d5e37c5ec1039eeb2b4055c6976 100644
+index 2bfd29be2bb6e68d521201aea3b1a40d29a32157..959caf0b3b0d88fa7d0bbe455bf604b8a6ef4c45 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -384,6 +384,7 @@ source_set("browser") {
+@@ -383,6 +383,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -1134,7 +1134,7 @@ index 10d8a0e16d6bd7e603eddabfd3f053f44d43d7a1..23b8154e7695d2fb4efbd777de6e84f2
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index e41489d4c98fbf96f9bfadfb78c5b0b0f5a5d841..1a6298d187d6245370d7c29c419617a8c401c5d0 100644
+index 3339832ee0c80de9f33b1a138db27d8d1e89bb29..55708ed138cc30b3e449afa60b48c6e91e4c75d6 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -279,6 +279,7 @@ source_set("common") {
@@ -1228,7 +1228,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 9674e7884a537e421ae475ba10e9127c7a2d60d7..7b11c454b25816b486dd50fba99e5d117890936a 100644
+index a22c2b959397c41c967e615a9c51e35703e577f1..8bb7e9f280b20f1902776069dc230bda04acfdb5 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -649,6 +649,7 @@ static_library("test_support") {
@@ -1248,7 +1248,7 @@ index 9674e7884a537e421ae475ba10e9127c7a2d60d7..7b11c454b25816b486dd50fba99e5d11
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2058,6 +2061,7 @@ test("content_browsertests") {
+@@ -2059,6 +2062,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1256,7 +1256,7 @@ index 9674e7884a537e421ae475ba10e9127c7a2d60d7..7b11c454b25816b486dd50fba99e5d11
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3452,6 +3456,7 @@ test("content_unittests") {
+@@ -3453,6 +3457,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1907,7 +1907,7 @@ index 94afefcee81b87c05bf9b1199d90d3d4b5ea84a6..3e3aaea0ec6c8fad0d90a931d269af3a
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm b/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
-index b3fd5abd10fae78c0bb62da6966e516400d1a452..9af448405391822f851b70e76725ec6c8b0adee1 100644
+index 21aa5006a3cd8a2000ed446592118e045ac1592f..03b31de65d5e89d69032dd554e30a2b54511ba25 100644
 --- a/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
 +++ b/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
 @@ -41,6 +41,7 @@
@@ -2428,7 +2428,7 @@ index c50d748fb83207ff46e5d46a8979ebea1d5c30f7..e4c4a8cdb71bc872e8dbf998b6bfa7a0
    if (is_ios) {
      sources += [
 diff --git a/ui/gfx/platform_font_mac.mm b/ui/gfx/platform_font_mac.mm
-index 65ae8170664d15c7884261812400d0ed638a681d..86c937f1e6d03b88803a2ca80abff19c5acc6408 100644
+index 84060d2c442e2786e12d9837e0128bc4536d7d0b..933f2020ae89a02a39e21a7115b5f651d4a55d21 100644
 --- a/ui/gfx/platform_font_mac.mm
 +++ b/ui/gfx/platform_font_mac.mm
 @@ -19,6 +19,7 @@
@@ -2466,10 +2466,10 @@ index 65ae8170664d15c7884261812400d0ed638a681d..86c937f1e6d03b88803a2ca80abff19c
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 5b10316192ea3e9e7ce13d4fdc9d4c789088d9d0..5498c7b4e4bf9f998ad1bb1804f69ad0984a7498 100644
+index 8826a46286029be6c4e6b9b6fcf3edb039b3be12..6d93048ea3d6d029e9d6252e12d1e97583aa282c 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -792,6 +792,8 @@ component("views") {
+@@ -793,6 +793,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -2478,7 +2478,7 @@ index 5b10316192ea3e9e7ce13d4fdc9d4c789088d9d0..5498c7b4e4bf9f998ad1bb1804f69ad0
    }
  
    if (is_win) {
-@@ -1213,6 +1215,8 @@ source_set("test_support") {
+@@ -1214,6 +1216,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
@@ -2602,10 +2602,10 @@ index 352ef08958711c421ef89c48125c7505ed024afe..dcdfee94a5959f49422b4c37a0fbac9c
  }
  
 diff --git a/ui/views/controls/webview/BUILD.gn b/ui/views/controls/webview/BUILD.gn
-index f9d0756f8031155c15df2e861c11de9343d6d938..ca00e8523a1b82e86fc74421ff90b566c58687cc 100644
+index 56bc81e2f5288a4f59324c1e122b3657d5f24fb2..081f432c376c3ae420cf29769dbd9efd190b4b53 100644
 --- a/ui/views/controls/webview/BUILD.gn
 +++ b/ui/views/controls/webview/BUILD.gn
-@@ -51,6 +51,12 @@ component("webview") {
+@@ -53,6 +53,12 @@ component("webview") {
      "//url",
    ]
  
