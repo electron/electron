@@ -9,8 +9,10 @@
 #include <set>
 #include <string>
 
+#include "base/memory/scoped_refptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/types/pass_key.h"
+#include "base/values.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "net/base/completion_once_callback.h"
@@ -34,6 +36,7 @@ class Arguments;
 
 namespace electron {
 class ElectronBrowserContext;
+class HeaderRules;
 }  // namespace electron
 
 namespace net {
@@ -103,6 +106,8 @@ class WebRequest final : public gin::Wrappable<WebRequest> {
       v8::Isolate* isolate) override;
 
   bool HasListener() const;
+  // session.webRequest.setHeaderRules(); null when none are set.
+  const HeaderRules* header_rules() const { return header_rules_.get(); }
   int OnBeforeRequest(extensions::WebRequestInfo* info,
                       const network::ResourceRequest& request,
                       net::CompletionOnceCallback callback,
@@ -289,6 +294,11 @@ class WebRequest final : public gin::Wrappable<WebRequest> {
   // Pushes which resource types blocking / observing listeners cover to the
   // session's InterceptState.
   void UpdateInterceptState();
+
+  void SetHeaderRules(gin::Arguments* args);
+  v8::Local<v8::Value> GetHeaderRules(v8::Isolate* isolate) const;
+  base::ListValue header_rules_value_;
+  scoped_refptr<const HeaderRules> header_rules_;
 
   struct ObservedRequest;
   std::map<uint64_t, std::unique_ptr<ObservedRequest>> observed_requests_;
